@@ -91,6 +91,8 @@ trait Definitions {
     lazy val AnnotationClass: Symbol = getClass("scala.Annotation")
     lazy val ClassfileAnnotationClass: Symbol = getClass("scala.ClassfileAnnotation")
     lazy val StaticAnnotationClass: Symbol = getClass("scala.StaticAnnotation")
+    lazy val TypeConstraintClass: Symbol = getClass("scala.TypeConstraint")
+
     var CodeClass: Symbol = _
     var CodeModule: Symbol = _
       def Code_lift = getMember(CodeModule, nme.lift_)
@@ -116,6 +118,7 @@ trait Definitions {
     lazy val ArrayClass: Symbol = getClass("scala.Array")
       def Array_apply = getMember(ArrayClass, nme.apply)
     lazy val ArrayModule: Symbol = getModule("scala.Array")
+      def ArrayModule_apply = getMember(ArrayModule, nme.apply)
     lazy val SerializableClass: Symbol = getClass(sn.Serializable)
     lazy val PredefModule: Symbol = getModule("scala.Predef")
       def Predef_classOf = getMember(PredefModule, nme.classOf)

@@ -10,11 +10,13 @@ import java.io.{PrintWriter, StringWriter}
 
 import scala.tools.nsc.symtab.{Flags, SymbolTable}
 import scala.tools.nsc.symtab.Flags._
-import scala.tools.nsc.util.{HashSet, Position, NoPosition, SourceFile}
+import scala.tools.nsc.util.{FreshNameCreator, HashSet, Position, NoPosition, SourceFile}
 import scala.collection.mutable.ListBuffer
 
 
-abstract class Trees extends SymbolTable {
+trait Trees {
+  self: SymbolTable =>
+
   //statistics
 
   var nodeCount = 0
@@ -22,6 +24,7 @@ abstract class Trees extends SymbolTable {
   trait CompilationUnitTrait {
     var body: Tree
     val source: SourceFile
+    def fresh : FreshNameCreator
   }
 
   type CompilationUnit <: CompilationUnitTrait
@@ -122,11 +125,11 @@ abstract class Trees extends SymbolTable {
     def isErroneous = (tpe ne null) && tpe.isErroneous
 
     /** Apply `f' to each subtree */
-    def foreach(f: Tree => Unit): Unit = new ForeachTraverser(f).traverse(this)
+    def foreach(f: Tree => Unit): Unit = new ForeachTreeTraverser(f).traverse(this)
 
     /** Find all subtrees matching predicate `p' */
     def filter(f: Tree => Boolean): List[Tree] = {
-      val ft = new FilterTraverser(f)
+      val ft = new FilterTreeTraverser(f)
       ft.traverse(this)
       ft.hits.toList
     }
@@ -135,7 +138,7 @@ abstract class Trees extends SymbolTable {
      *  or None if none exists.
      */
     def find(p: Tree => Boolean): Option[Tree] = {
-      val ft = new FindTraverser(p)
+      val ft = new FindTreeTraverser(p)
       ft.traverse(this)
       ft.result
     }
@@ -207,6 +210,9 @@ abstract class Trees extends SymbolTable {
     def duplicate: this.type =
       (duplicator transform this).asInstanceOf[this.type]
 
+    def shallowDuplicate: this.type =
+      ((new ShallowDuplicator(this)) transform this).asInstanceOf[this.type]
+
     def copyAttrs(tree: Tree): this.type = {
       rawpos = tree.rawpos
       tpe = tree.tpe
@@ -239,6 +245,15 @@ abstract class Trees extends SymbolTable {
 
   private lazy val duplicator = new Transformer {
     override val copy = new StrictTreeCopier
+  }
+
+  private class ShallowDuplicator(orig: Tree) extends Transformer {
+    override val copy = new StrictTreeCopier
+    override def transform(tree: Tree) =
+      if (tree eq orig)
+	super.transform(tree)
+      else
+	tree
   }
 
   private def syntheticParams(owner: Symbol, mtp: Type): List[List[Symbol]] = {
@@ -1586,14 +1601,14 @@ abstract class Trees extends SymbolTable {
     }
   }
 
-  class ForeachTraverser(f: Tree => Unit) extends Traverser {
+  class ForeachTreeTraverser(f: Tree => Unit) extends Traverser {
     override def traverse(t: Tree) {
       f(t)
       super.traverse(t)
     }
   }
 
-  class FilterTraverser(p: Tree => Boolean) extends Traverser {
+  class FilterTreeTraverser(p: Tree => Boolean) extends Traverser {
     val hits = new ListBuffer[Tree]
     override def traverse(t: Tree) {
       if (p(t)) hits += t
@@ -1601,7 +1616,7 @@ abstract class Trees extends SymbolTable {
     }
   }
 
-  class FindTraverser(p: Tree => Boolean) extends Traverser {
+  class FindTreeTraverser(p: Tree => Boolean) extends Traverser {
     var result: Option[Tree] = None
     override def traverse(t: Tree) {
       if (result.isEmpty) {

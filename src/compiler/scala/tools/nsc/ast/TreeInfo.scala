@@ -7,6 +7,7 @@
 package scala.tools.nsc.ast
 
 import symtab.Flags._
+import symtab.SymbolTable
 import util.HashSet
 
 /** This class ...
@@ -16,7 +17,7 @@ import util.HashSet
  */
 abstract class TreeInfo {
 
-  val trees: Trees
+  val trees: SymbolTable
   import trees._
 
   def isTerm(tree: Tree): Boolean = tree.isTerm

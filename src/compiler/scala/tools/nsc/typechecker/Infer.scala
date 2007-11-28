@@ -851,7 +851,7 @@ trait Infer {
         widen(tp.normalize)
       case rtp @ RefinedType(parents, decls) =>
         copyRefinedType(rtp, List.mapConserve(parents)(widen), decls)
-      case AnnotatedType(_, underlying) =>
+      case AnnotatedType(_, underlying, _) =>
         widen(underlying)
       case _ =>
         tp

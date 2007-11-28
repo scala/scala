@@ -32,7 +32,7 @@ import backend.msil.GenMSIL
 import backend.opt.{Inliners, ClosureElimination, DeadCodeElimination}
 import backend.icode.analysis._
 
-class Global(var settings: Settings, var reporter: Reporter) extends Trees
+class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
                                                              with CompilationUnits
                                                              with Plugins
 {
@@ -55,6 +55,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends Trees
 
   object gen extends TreeGen {
     val global: Global.this.type = Global.this
+    def mkAttributedCast(tree: Tree, pt: Type): Tree =
+      typer.typed(mkAttributedCastUntyped(tree, pt))
   }
 
   object constfold extends ConstantFolder {

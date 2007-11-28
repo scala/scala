@@ -9,10 +9,11 @@ package scala.tools.nsc.ast
 import compat.Platform.{EOL => LINE_SEPARATOR}
 import java.io.{OutputStream, PrintWriter, Writer}
 import symtab.Flags._
+import symtab.SymbolTable
 
 abstract class TreePrinters {
 
-  val trees: Trees
+  val trees: SymbolTable
   import trees._
 
   final val showOuterTests = false

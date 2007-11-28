@@ -83,7 +83,7 @@ trait Variances {
       flip(varianceInSyms(tparams)(tparam)) & varianceInType(restpe)(tparam)
     case ExistentialType(tparams, restpe) =>
       varianceInSyms(tparams)(tparam) & varianceInType(restpe)(tparam)
-    case AnnotatedType(attribs, tp) =>
+    case AnnotatedType(attribs, tp, _) =>
       varianceInType(tp)(tparam)
   }
 }

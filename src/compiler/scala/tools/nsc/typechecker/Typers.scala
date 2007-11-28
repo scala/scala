@@ -513,7 +513,7 @@ trait Typers { self: Analyzer =>
     private def isNarrowable(tpe: Type): Boolean = tpe match {
       case TypeRef(_, _, _) | RefinedType(_, _) => true
       case ExistentialType(_, tpe1) => isNarrowable(tpe1)
-      case AnnotatedType(_, tpe1) => isNarrowable(tpe1)
+      case AnnotatedType(_, tpe1, _) => isNarrowable(tpe1)
       case PolyType(_, tpe1) => isNarrowable(tpe1)
       case _ => !phase.erasedTypes
     }
@@ -1776,7 +1776,13 @@ trait Typers { self: Analyzer =>
       }
     }
 
-    def typedAnnotation(annot: Annotation): AnnotationInfo = {
+    def typedAnnotation(annot: Annotation): AnnotationInfo =
+      typedAnnotation(annot, EXPRmode)
+
+    def typedAnnotation(annot: Annotation, mode: Int): AnnotationInfo =
+      typedAnnotation(annot, NoSymbol, mode)
+
+    def typedAnnotation(annot: Annotation, selfsym: Symbol, mode: Int): AnnotationInfo = {
       var attrError: Boolean = false
       def error(pos: Position, msg: String): Null = {
         context.error(pos, msg)
@@ -1787,9 +1793,34 @@ trait Typers { self: Analyzer =>
         error(tr.pos, "attribute argument needs to be a constant; found: "+tr)
       }
 
-      typed(annot.constr, EXPRmode, AnnotationClass.tpe) match {
+      val typedConstr =
+	if (selfsym == NoSymbol)
+	  typed(annot.constr, mode, AnnotationClass.tpe)
+	else {
+	  // Since a selfsym is supplied, the annotation should have
+	  // an extra "self" identifier in scope for type checking.
+	  // This is implemented by wrapping the rhs
+	  // in a function like "self => rhs" during type checking,
+	  // and then stripping the "self =>" and substituting
+          // in the supplied selfsym.
+	  val funcparm = ValDef(NoMods, nme.self, TypeTree(selfsym.info), EmptyTree)
+	  val func = Function(List(funcparm), annot.constr)
+	  val fun1clazz = FunctionClass(1)
+	  val funcType = typeRef(fun1clazz.tpe.prefix,
+				 fun1clazz,
+				 List(selfsym.info, AnnotationClass.tpe))
+
+	  typed (func, mode, funcType) match {
+	    case t @ Function(List(arg), rhs) =>
+	      val subs =
+		new TreeSymSubstituter(List(arg.symbol),List(selfsym))
+	      subs(rhs)
+	  }
+	}
+
+      typedConstr match {
         case t @ Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
-          if (t.isErroneous) {
+          if ((t.tpe==null) || t.tpe.isErroneous) {
             AnnotationInfo(ErrorType, List(), List())
           }
           else {
@@ -1797,10 +1828,10 @@ trait Typers { self: Analyzer =>
 
             val needsConstant =
               (!settings.Xplugtypes.value ||
-               annType <:< ClassfileAnnotationClass.tpe)
+               (annType.typeSymbol isNonBottomSubClass ClassfileAnnotationClass))
 
             def annotArg(tree: Tree): AnnotationArgument = {
-              val arg = new AnnotationArgument(liftcode.reify(tree))
+              val arg = new AnnotationArgument(tree)
               if(needsConstant && !arg.isConstant)
                 needConst(tree)
               arg
@@ -1858,20 +1889,24 @@ trait Typers { self: Analyzer =>
      *  produce a set of fresh type parameters and a type so that it can be
      *  abstracted to an existential type.
      *  Every type symbol `T' in `rawSyms' is mapped to a clone.
-     *  Every term symbol `x' of type `T' in `rawSyms' is mapped to a type parameter
+     *  Every term symbol `x' of type `T' in `rawSyms' is given an
+     *  associated type symbol of the following form:
      *
      *    type x.type <: T with <singleton>
      *
      *  The name of the type parameter is `x.type', to produce nice diagnostics.
      *  The <singleton> parent ensures that the type parameter is still seen as a stable type.
-     *  The new symbols are substituted for the old ones in all type parameter infos
-     *  and in the returned type itself.
+     *  Type symbols in rawSyms are fully replaced by the new symbols.
+     *  Term symbols are also replaced, except when they are the term
+     *  symbol of an Ident tree, in which case only the type of the
+     *  Ident is changed.
      */
     protected def existentialTransform(rawSyms: List[Symbol], tp: Type) = {
       val typeParams: List[Symbol] = rawSyms map { sym =>
         val name = if (sym.isType) sym.name else newTypeName(sym.name+".type")
         val bound = existentialBound(sym)
-        val quantified: Symbol = recycle(sym.owner.newAbstractType(sym.pos, name))
+        val quantified: Symbol =
+	  recycle(sym.owner.newAbstractType(sym.pos, name))
         trackSetInfo(quantified setFlag EXISTENTIAL)(bound.cloneInfo(quantified))
       }
       val typeParamTypes = typeParams map (_.tpe) // don't trackSetInfo here, since type already set!
@@ -1963,17 +1998,33 @@ trait Typers { self: Analyzer =>
             }
           }
         }
-        for (t <- tp) {
+	for (t <- tp) {
           t match {
             case ExistentialType(tparams, _) =>
               boundSyms ++= tparams
+	    case AnnotatedType(annots, _, _) =>
+	      for (annot <- annots; arg <- annot.args; t <- arg.intTree) {
+		t match {
+		  case Ident(_) =>
+		    // Check the symbol of an Ident, unless the
+		    // Ident's type is already over an existential.
+		    // (If the type is already over an existential,
+                    // then remap the type, not the core symbol.)
+		    if (!t.tpe.typeSymbol.hasFlag(EXISTENTIAL))
+		      addIfLocal(t.symbol, t.tpe)
+		  case _ => ()
+		}
+	      }
             case _ =>
           }
           addIfLocal(t.termSymbol, t)
           addIfLocal(t.typeSymbol, t)
         }
       }
-      val substLocals = new TypeMap {
+
+      object substLocals extends TypeMap {
+	override val dropNonConstraintAnnotations = true
+
         def apply(t: Type): Type = t match {
           case TypeRef(_, sym, args) if (sym.isLocal && args.length > 0) =>
             localInstances.get(new SymInstance(sym, t)) match {
@@ -1982,9 +2033,28 @@ trait Typers { self: Analyzer =>
             }
           case _ => mapOver(t)
         }
+
+	override def mapOver(arg: Tree, giveup: ()=>Nothing) = {
+	  object substLocalTrees extends TypeMapTransformer {
+	    override def transform(tr: Tree) = {
+              localInstances.get(new SymInstance(tr.symbol, tr.tpe)) match {
+		case Some(local) =>
+		  Ident(local.existentialToString)
+		    .setSymbol(tr.symbol).copyAttrs(tr).setType(
+		      typeRef(NoPrefix, local, List()))
+
+		case None => super.transform(tr)
+	      }
+	    }
+	  }
+
+	  substLocalTrees.transform(arg)
+	}
       }
+
       val normalizedTpe = normalizeLocals(tree.tpe)
       addLocals(normalizedTpe)
+
       packSymbols(localSyms.toList ::: localInstances.values.toList, substLocals(normalizedTpe))
     }
 
@@ -2017,14 +2087,51 @@ trait Typers { self: Analyzer =>
       }
 
       def typedAnnotated(annot: Annotation, arg1: Tree): Tree = {
-        def annotTypeTree(ainfo: AnnotationInfo): Tree =
-          TypeTree(arg1.tpe.withAttribute(ainfo)) setOriginal tree
-
         if (arg1.isType) {
-          val annotInfo = typedAnnotation(annot)
-          if (settings.Xplugtypes.value) annotTypeTree(annotInfo) else arg1
+	  val selfsym =
+	    if (!settings.selfInAnnots.value)
+	      NoSymbol
+	    else
+	      arg1.tpe.selfsym match {
+		case NoSymbol =>
+                  /* Implementation limitation: Currently this
+                   * can cause cyclical reference errors even
+                   * when the self symbol is not referenced at all.
+                   * Surely at least some of these cases can be
+                   * fixed by proper use of LazyType's.  Lex tinkered
+                   * on this but did not succeed, so is leaving
+                   * it alone for now. Example code with the problem:
+                   *  class peer extends Annotation
+                   *  class NPE[T <: NPE[T] @peer]
+                   *
+                   * (Note: -Yself-in-annots must be on to see the problem)
+                   **/
+		  val sym =
+		    newLocalDummy(context.owner, annot.pos)
+		      .newValue(annot.pos, nme.self)
+		  sym.setInfo(arg1.tpe.withoutAttributes)
+		  sym
+		case sym => sym
+	      }
+
+          val ainfo = typedAnnotation(annot, selfsym, mode)
+	  val atype0 = arg1.tpe.withAttribute(ainfo)
+	  val atype =
+	    if ((selfsym != NoSymbol) && (ainfo.refsSymbol(selfsym)))
+	      atype0.withSelfsym(selfsym)
+	    else
+	      atype0 // do not record selfsym if
+		     // this annotation did not need it
+
+          if (settings.Xplugtypes.value && !ainfo.isErroneous)
+	    TypeTree(atype) setOriginal tree
+	  else
+	    arg1
         } else {
-          val annotInfo = typedAnnotation(annot)
+          def annotTypeTree(ainfo: AnnotationInfo): Tree =
+            TypeTree(arg1.tpe.withAttribute(ainfo)) setOriginal tree
+
+          val annotInfo = typedAnnotation(annot, mode)
 
           arg1 match {
             case _: DefTree =>
@@ -3297,7 +3404,7 @@ trait Typers { self: Analyzer =>
               getParts(tp.widen, s)
             case RefinedType(ps, _) =>
               for (p <- ps) getParts(p, s)
-            case AnnotatedType(_, t) =>
+            case AnnotatedType(_, t, _) =>
 	      getParts(t, s)
             case _ =>
           }

@@ -155,6 +155,8 @@ class Settings(error: String => Unit) {
   val Xcasetags     = ChoiceSetting("-Ycasetags", "test integer tags for case classes", List("on","off"),
                                      /*default*/"off")
 
+  val selfInAnnots = BooleanSetting    ("-Yself-in-annots", "Include a \"self\" identifier inside of annotations")
+
   /** scaladoc specific options */
   val memberaccess   = ChoiceSetting    ("-access", "Show only public, protected/public (default) or all classes and members",
                                          List("public", "protected", "private"), "protected").dependsOn(doc)

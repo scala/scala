@@ -316,6 +316,7 @@ trait StdNames {
     val runtime = newTermName("runtime")
     val sameElements = newTermName("sameElements")
     val scala_ = newTermName("scala")
+    val self = newTermName("self")
     val send = newTermName("send")
     val synchronized_ = newTermName("synchronized")
     val tail = newTermName("tail")

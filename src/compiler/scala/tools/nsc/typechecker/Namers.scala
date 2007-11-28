@@ -543,6 +543,8 @@ trait Namers { self: Analyzer =>
         methodArgumentNames(meth) = vparamss.map(_.map(_.symbol));
 
       def convertToDeBruijn(vparams: List[Symbol], level: Int): TypeMap = new TypeMap {
+	def debruijnFor(param: Symbol) =
+	  DeBruijnIndex(level, vparams indexOf param)
         def apply(tp: Type) = {
           tp match {
             case SingleType(_, sym) =>
@@ -553,7 +555,7 @@ trait Namers { self: Analyzer =>
                   ErrorType
                 } else
 */
-                DeBruijnIndex(level, vparams indexOf sym)
+		debruijnFor(sym)
               } else tp
             case MethodType(formals, restpe) =>
               val formals1 = List.mapConserve(formals)(this)
@@ -564,6 +566,24 @@ trait Namers { self: Analyzer =>
               mapOver(tp)
           }
         }
+
+	object treeTrans extends TypeMapTransformer {
+	  override def transform(tree: Tree): Tree =
+	    tree match {
+	      case Ident(name) if (vparams contains tree.symbol) =>
+	        val dtpe = debruijnFor(tree.symbol)
+	        val dsym =
+		    newLocalDummy(context.owner, tree.symbol.pos)
+		      .newValue(tree.symbol.pos, name)
+
+	        dsym.setFlag(PARAM)
+	        dsym.setInfo(dtpe)
+		Ident(name).setSymbol(dsym).copyAttrs(tree).setType(dtpe)
+	      case tree => super.transform(tree)
+	    }
+	}
+
+	override def mapOver(arg: Tree) = Some(treeTrans.transform(arg))
       }
 
       val checkDependencies: TypeTraverser = new TypeTraverser {

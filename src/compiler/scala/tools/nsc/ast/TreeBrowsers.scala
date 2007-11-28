@@ -17,6 +17,7 @@ import javax.swing.tree._
 import scala.concurrent.Lock
 import scala.text._
 import symtab.Flags._
+import symtab.SymbolTable
 
 /**
  * Tree browsers can show the AST in a graphical and interactive
@@ -26,7 +27,6 @@ import symtab.Flags._
  * @version 1.0
  */
 abstract class TreeBrowsers {
-
   val global: Global
   import global._
   import nme.EMPTY
@@ -663,7 +663,7 @@ abstract class TreeBrowsers {
                         toDocument(result) :: ")")
         )
 
-      case AnnotatedType(attribs, tp) =>
+      case AnnotatedType(attribs, tp, _) =>
         Document.group(
           Document.nest(4, "AnnotatedType(" :/:
                         attribs.mkString("[", ",", "]") :/:

@@ -452,7 +452,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
 
           var checkExhaustive = true
           def isUncheckedAnnotation(tpe: Type) = tpe match {
-            case AnnotatedType(List(AnnotationInfo(atp, _, _)), _) if atp.typeSymbol == UncheckedClass =>
+            case AnnotatedType(List(AnnotationInfo(atp, _, _)), _, _) if atp.typeSymbol == UncheckedClass =>
               true
             case _ =>
               false

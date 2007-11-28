@@ -6,127 +6,76 @@
 
 package scala.tools.nsc.symtab
 
-import scala.tools.nsc.transform.SymbolReifier
+import scala.tools.nsc.transform.Reifiers
 import util._
 
 /** AnnotationInfo and its helpers */
 trait AnnotationInfos {
   self: SymbolTable =>
 
-  /** Convert a reflect tree to a Constant, if possible */
-  private def refltree2cons(tree: reflect.Tree): Option[Constant] =
+  /** Convert a tree to a Constant, if possible */
+  private def tree2cons(tree: Tree): Option[Constant] =
     tree match {
-      case reflect.Literal(v) =>
-        Some(Constant(v))
+      case Literal(v) => Some(v)
 
-      case reflect.Apply(
-        reflect.TypeApply(
-          reflect.Select(_,
-                reflect.Method(
-		  "scala.Array.apply",
-		  reflect.PolyType(_, _,
-                    reflect.MethodType(_, reflect.AppliedType(arrayType,_))))),
-		  List(elemType)),
-        members) =>
-
-	refltrees2consArray(
-	  members,
-	  reflect.AppliedType(arrayType, List(elemType)))
+      case Apply(
+        TypeApply(
+          meth@Select(_,_),
+	  List(elemType)),
+	members)
+      if (definitions.ArrayModule_apply.alternatives contains meth.symbol) =>
+	trees2consArray(members, tree.tpe)
 
 
-      case reflect.Apply(
-        reflect.Select(_,
-          reflect.Method(
-            "scala.Array.apply",
-            reflect.MethodType(_, arrayType))),
-          members) =>
+      case Apply(meth, members)
+      if (definitions.ArrayModule_apply.alternatives contains meth.symbol) =>
+ 	trees2consArray(members, tree.tpe)
 
- 	refltrees2consArray(members, arrayType)
 
       case tree =>
         //println("could not convert: " + tree);
         None
     }
 
-  private object symbolReifier extends SymbolReifier {
-    val symbols: AnnotationInfos.this.type = AnnotationInfos.this
-  }
-
-  /** Convert a sequence of trees to an array type,
-   *  if all of the array elements are constants.
-   *  Use arrayType as type of the resulting constant.
-   */
-  private def refltrees2consArray(
-    trees: Seq[reflect.Tree],
-    arrayType: reflect.Type)
+  private def trees2consArray(trees: Seq[Tree], arrayType:Type)
   : Option[Constant] =
   {
-        // println("arrayType is " + arrayType + " (" +
- 	//         symbolReifier.unreify(arrayType) + ")")
-
-    val mems = trees.map(refltree2cons)
+    val mems = trees.map(tree2cons)
 
     if (mems.exists(_.isEmpty))
       None
     else
       Some(new ArrayConstant(
 	mems.map(_.get).toArray,
-	symbolReifier.unreify(arrayType)))
+	arrayType))
   }
-
-
-  /** Convert a constant to an equivalent reflect tree. */
-  private def cons2refltree(cons: Constant): reflect.Tree = {
-    import reflect._
-
-    (cons: @unchecked) match {
-      case acons:ArrayConstant =>
-	val elems = acons.arrayValue.toList
-	val arrayType = symbolReifier.reify(cons.tpe)
-	val elemType: reflect.Type = arrayType match {
-	  case AppliedType(_, List(et)) => et
-	  case _ =>
-	    assert(false, "array type is not an array type");
-	    reflect.NoType
-	}
-        val elemTrees = elems map cons2refltree
-
-        val arrayObject = reflect.This(reflect.Class("scala.Array"))
-
-        // The following two gigantic trees were found by printing
-        // out what the reifier makes.  If the reifier changes, they
-        // should be updated.
-        if (symbolReifier.unreify(elemType) <:< definitions.AnyValClass.tpe)
-          Apply(Select(Select(Ident(Field("scala",PrefixedType(reflect.ThisType(RootSymbol),Class("scala")))),Field("scala.Array",PrefixedType(reflect.ThisType(Class("scala")),Class("scala.Array")))),Method("scala.Array.apply",reflect.MethodType(List(AppliedType(PrefixedType(reflect.ThisType(Class("scala")),Class("scala.<repeated>")),List(PrefixedType(reflect.ThisType(Class("scala")),Class("scala.Int"))))),AppliedType(PrefixedType(reflect.ThisType(Class("scala")),Class("scala.Array")),
-          List(elemType))))), elemTrees)
-
-
-	else
-	  Apply(TypeApply(Select(Select(Ident(Field("scala",PrefixedType(reflect.ThisType(RootSymbol),Class("scala")))),Field("scala.Array",PrefixedType(reflect.ThisType(Class("scala")),Class("scala.Array")))),Method("scala.Array.apply",reflect.PolyType(List(reflect.NoSymbol),List((PrefixedType(reflect.ThisType(Class("scala")),Class("scala.Nothing")),PrefixedType(reflect.ThisType(Class("scala")),TypeField("scala.AnyRef",PrefixedType(reflect.ThisType(Class("java.lang")),Class("java.lang.Object")))))),reflect.MethodType(List(AppliedType(PrefixedType(reflect.ThisType(Class("scala")),Class("scala.<repeated>")),List(PrefixedType(reflect.NoType,reflect.NoSymbol)))),AppliedType(PrefixedType(reflect.ThisType(Class("scala")),Class("scala.Array")),List(PrefixedType(reflect.NoType,reflect.NoSymbol))))))),
-         List(elemType)), elemTrees)
-
-      case Constant(value) => reflect.Literal(value)
-    }
-  }
-
-
-
 
 
   /** An argument to an annotation.  It includes a parse tree,
    *  and it includes a compile-time constant for the tree if possible.
    */
-  class AnnotationArgument(val tree: reflect.Tree) {
-    def this(cons: Constant) = this(cons2refltree(cons))
+  class AnnotationArgument(val intTree: Tree) {
+    def this(cons: Constant) = this(
+      Literal(cons).setType(cons.tpe))
 
-    val constant: Option[Constant] = refltree2cons(tree)
+
+    @deprecated
+    lazy val tree = {
+      object reifiers extends Reifiers {
+	val symbols: AnnotationInfos.this.type = AnnotationInfos.this
+      }
+
+      reifiers.reify(intTree)
+    }
+
+    val constant: Option[Constant] = tree2cons(intTree)
 
     def isConstant = !constant.isEmpty
 
     override def toString: String =
       constant match {
         case Some(cons) => cons.escapedStringValue
-        case None => reflect.Print(tree)
+        case None => intTree.toString
       }
   }
 
@@ -149,5 +98,20 @@ trait AnnotationInfos {
     def isConstant =
       ((args forall (_.isConstant)) &&
        (assocs map (_._2) forall (_.isConstant)))
+
+    /** Check whether the type or any of the arguments are erroneous */
+    def isErroneous = atp.isErroneous || args.exists(_.intTree.isErroneous)
+
+    /** Check whether any of the arguments mention a symbol */
+    def refsSymbol(sym: Symbol) =
+      args.exists(_.intTree.exists(_.symbol == sym))
+
+    /** Change all ident's with Symbol "from" to instead use symbol "to" */
+    def substIdentSyms(from: Symbol, to: Symbol) = {
+      val subs = new TreeSymSubstituter(List(from), List(to))
+      AnnotationInfo(atp,
+		     args.map(arg => new AnnotationArgument(subs(arg.intTree))),
+		     assocs)
+    }
   }
 }

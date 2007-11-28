@@ -95,6 +95,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         case RefinedType(parents, decls) =>
           if (parents.isEmpty) erasedTypeRef(ObjectClass)
           else apply(parents.head)
+	case AnnotatedType(_, atp, _) =>
+	  apply(atp)
         case ClassInfoType(parents, decls, clazz) =>
           ClassInfoType(
             if ((clazz == ObjectClass) || (isValueType(clazz))) List()

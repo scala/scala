@@ -155,7 +155,7 @@ abstract class Pickler extends SubComponent {
         case SingleType(pre, sym) =>
           putType(pre); putSymbol(sym)
         case ConstantType(value) =>
-          putConstant(value)
+	  putConstant(value)
         case TypeRef(pre, sym, args) =>
           putType(pre); putSymbol(sym); putTypes(args)
         case TypeBounds(lo, hi) =>
@@ -173,109 +173,226 @@ abstract class Pickler extends SubComponent {
           putType(restpe); putSymbols(tparams)
         case ExistentialType(tparams, restpe) =>
           putType(restpe); putSymbols(tparams)
-        case AnnotatedType(attribs, tp) =>
+        case AnnotatedType(attribs, tp, selfsym) =>
           putType(tp); putAnnotations(attribs)
+	  if (settings.selfInAnnots.value) putSymbol(selfsym)
         case _ =>
           throw new FatalError("bad type: " + tp + "(" + tp.getClass + ")")
       }
     }
     private def putTypes(tps: List[Type]) { tps foreach putType }
 
-    private def putTree(tree: reflect.Tree): Unit = if (putEntry(tree)) {
+    private def putTree(tree: Tree): Unit = if (putEntry(tree)) {
+      if (tree != EmptyTree)
+	putType(tree.tpe)
+      if (tree.hasSymbol)
+	putSymbol(tree.symbol)
+
       tree match {
-        case reflect.Ident(sym) => putSymbol(sym)
-        case reflect.Select(qual, sym) =>  putTree(qual); putSymbol(sym)
-        case reflect.Literal(value) => putConstant(Constant(value))
-        case reflect.Apply(fun, args) => putTree(fun); putRefTrees(args)
-        case reflect.TypeApply(fun, args) =>  putTree(fun); putRefTypes(args)
-        case reflect.Function(params, body) =>
-          putRefSymbols(params); putTree(body)
-        case reflect.This(sym) =>  putSymbol(sym)
-        case reflect.Block(stats, expr) => putRefTrees(stats); putTree(expr)
-        case reflect.New(clz) => putTree(clz)
-        case reflect.If(condition, trueCase, falseCase) =>
-          putTree(condition); putTree(trueCase); putTree(falseCase)
-        case reflect.Assign(destination, source) =>
-          putTree(destination); putTree(source)
-        case reflect.Target(sym, body) => putSymbol(sym); putTree(body)
-        case reflect.Goto(target) => putSymbol(target)
-        case reflect.ValDef(sym, rhs)  => putSymbol(sym); putTree(rhs)
-        case reflect.ClassDef(sym, tpe, impl) =>
-          putSymbol(sym); putType(tpe); putTree(impl)
-        case reflect.DefDef(sym, vparamss, ret, rhs) =>
-          putSymbol(sym); putRefTreess(vparamss); putType(ret); putTree(rhs)
-        case reflect.Super(psym) => putSymbol(psym)
-        case reflect.Template(parents, body) =>
-          putRefTypes(parents); putRefTrees(body)
-        case _ =>
-          throw new FatalError("bad tree: " + tree + "(" + tree.getClass + ")")
+	case EmptyTree =>
+
+	case tree@PackageDef(name, stats) =>
+	  putEntry(name)
+          putTrees(stats)
+
+	case ClassDef(mods, name, tparams, impl) =>
+	  putMods(mods)
+	  putEntry(name)
+          putTree(impl)
+	  putTrees(tparams)
+
+	case ModuleDef(mods, name, impl) =>
+	  putMods(mods)
+	  putEntry(name)
+	  putTree(impl)
+
+	case ValDef(mods, name, tpt, rhs) =>
+	  putMods(mods)
+	  putEntry(name)
+	  putTree(tpt)
+	  putTree(rhs)
+
+	case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+	  putMods(mods)
+	  putEntry(name)
+	  putTrees(tparams)
+	  putTreess(vparamss)
+	  putTree(tpt)
+	  putTree(rhs)
+
+
+	case TypeDef(mods, name, tparams, rhs) =>
+	  putMods(mods)
+	  putEntry(name)
+	  putTree(rhs)
+	  putTrees(tparams)
+
+
+	case LabelDef(name, params, rhs) =>
+	  putTree(rhs)
+	  putTrees(params)
+
+
+	case Import(expr, selectors) =>
+	  putTree(expr)
+	  for ((from,to) <- selectors) {
+	    putEntry(from)
+	    putEntry(to)
+	  }
+
+	case Annotation(constr, elements) =>
+	  putTree(constr)
+	  putTrees(elements)
+
+	case DocDef(comment, definition) =>
+	  putConstant(Constant(comment))
+	  putTree(definition)
+
+	case Template(parents, self, body) =>
+          writeNat(parents.length)
+	  putTrees(parents)
+	  putTree(self)
+	  putTrees(body)
+
+	case Block(stats, expr) =>
+	  putTree(expr)
+	  putTrees(stats)
+
+	case CaseDef(pat, guard, body) =>
+	  putTree(pat)
+	  putTree(guard)
+	  putTree(body)
+
+	case Sequence(trees) =>
+	  putTrees(trees)
+
+	case Alternative(trees) =>
+	  putTrees(trees)
+
+	case Star(elem) =>
+	  putTree(elem)
+
+	case Bind(name, body) =>
+	  putEntry(name)
+	  putTree(body)
+
+	case UnApply(fun: Tree, args) =>
+	  putTree(fun)
+	  putTrees(args)
+
+	case ArrayValue(elemtpt, trees) =>
+	  putTree(elemtpt)
+	  putTrees(trees)
+
+
+	case Function(vparams, body) =>
+	  putTree(body)
+	  putTrees(vparams)
+
+	case Assign(lhs, rhs) =>
+	  putTree(lhs)
+	  putTree(rhs)
+
+	case If(cond, thenp, elsep) =>
+	  putTree(cond)
+	  putTree(thenp)
+	  putTree(elsep)
+
+	case Match(selector, cases) =>
+	  putTree(selector)
+	  putTrees(cases)
+
+	case Return(expr) =>
+	  putTree(expr)
+
+	case Try(block, catches, finalizer) =>
+	  putTree(block)
+	  putTree(finalizer)
+	  putTrees(catches)
+
+	case Throw(expr) =>
+	  putTree(expr)
+
+	case New(tpt) =>
+	  putTree(tpt)
+
+	case Typed(expr, tpt) =>
+	  putTree(expr)
+	  putTree(tpt)
+
+	case TypeApply(fun, args) =>
+	  putTree(fun)
+	  putTrees(args)
+
+	case Apply(fun, args) =>
+	  putTree(fun)
+	  putTrees(args)
+
+	case ApplyDynamic(qual, args) =>
+	  writeEntry(qual)
+	  putTrees(args)
+
+	case Super(qual, mix) =>
+	  putEntry(qual:Name)
+	  putEntry(mix:Name)
+
+        case This(qual) =>
+	  putEntry(qual)
+
+        case Select(qualifier, selector) =>
+	  putTree(qualifier)
+	  putEntry(selector)
+
+	case Ident(name) =>
+	  putEntry(name)
+
+	case Literal(value) =>
+	  putEntry(value)
+
+	case TypeTree() =>
+
+	case Annotated(annot, arg) =>
+	  putTree(annot)
+	  putTree(arg)
+
+	case SingletonTypeTree(ref) =>
+	  putTree(ref)
+
+	case SelectFromTypeTree(qualifier, selector) =>
+	  putTree(qualifier)
+	  putEntry(selector)
+
+	case CompoundTypeTree(templ: Template) =>
+	  putTree(templ)
+
+	case AppliedTypeTree(tpt, args) =>
+	  putTree(tpt)
+	  putTrees(args)
+
+	case TypeBoundsTree(lo, hi) =>
+	  putTree(lo)
+	  putTree(hi)
+
+	case ExistentialTypeTree(tpt, whereClauses) =>
+	  putTree(tpt)
+	  putTrees(whereClauses)
       }
     }
-    private def putRefTrees(trees: List[reflect.Tree]) = trees foreach putTree
-    private def putRefTreess(trees: List[List[reflect.Tree]]) =
-      trees foreach putRefTrees
 
-    private def putType(tpe: reflect.Type): Unit = if (putEntry(tpe)) {
-      tpe match {
-        case reflect.NoPrefix => ()
-        case reflect.NoType => ()
-        case reflect.NamedType(fullname) => putConstant(Constant(fullname))
-        case reflect.PrefixedType(pre, sym) => putType(pre); putSymbol(sym)
-        case reflect.SingleType(pre, sym) => putType(pre); putSymbol(sym)
-        case reflect.ThisType(clazz) => putSymbol(clazz)
-        case reflect.AppliedType(tpe, args) => putType(tpe); putRefTypes(args)
-        case reflect.TypeBounds(lo, hi) => putType(lo); putType(hi)
-        case reflect.MethodType(formals, restpe) => //can be implicit
-          putRefTypes(formals); putType(restpe)
-        case reflect.PolyType(typeParams, typeBounds, resultType) =>
-          putRefSymbols(typeParams)
-          for ((t1,t2) <- typeBounds) {
-            putType(t1)
-            putType(t2)
-          }
-          putType(resultType)
-        case _ =>
-          throw new FatalError("bad type: " + tpe + "(" + tpe.getClass + ")")
+    private def putTrees(trees: List[Tree]) =
+      trees.foreach(putTree _)
 
-      }
-    }
-    private def putRefTypes(tpes: List[reflect.Type]) {
-      tpes foreach putType
+    private def putTreess(treess: List[List[Tree]]) =
+      treess.foreach(putTrees _)
+
+    private def putMods(mods: Modifiers) = if (putEntry(mods)) {
+      val Modifiers(flags, privateWithin, annotations) = mods
+      putEntry(privateWithin)
+      putTrees(annotations)
     }
 
-    private def putSymbol(sym: reflect.Symbol): Unit = if(putEntry(sym)) {
-      sym match {
-        case reflect.Class(fullname) =>
-          putConstant(Constant(fullname))
-        case reflect.Method(fullname, tpe) =>
-          putConstant(Constant(fullname))
-          putType(tpe)
-        case reflect.Field(fullname, tpe) =>
-          putConstant(Constant(fullname))
-          putType(tpe)
-        case reflect.TypeField(fullname, tpe) =>
-          putConstant(Constant(fullname))
-          putType(tpe)
-        case reflect.LocalValue(owner, name, tpe) =>
-          putSymbol(owner)
-          putConstant(Constant(name))
-          putType(tpe)
-        case reflect.LocalMethod(owner, name, tpe) =>
-          putSymbol(owner)
-          putConstant(Constant(name))
-          putType(tpe)
-        case reflect.NoSymbol => ()
-        case reflect.RootSymbol => ()
-        case reflect.LabelSymbol(name) =>
-          putConstant(Constant(name))
-      }
-    }
-    private def putRefSymbols(syms: List[reflect.Symbol]) =
-      syms foreach putSymbol
-
-    /** Store constant in map <code>index</code>.
-     *
-     *  @param c ...
+    /** Store a constant in map <code>index</code> along with
+     *  anything it references.
      */
     private def putConstant(c: Constant) =
       if (putEntry(c)) {
@@ -309,7 +426,7 @@ abstract class Pickler extends SubComponent {
       if (putEntry(arg)) {
         arg.constant match {
 	  case Some(c) => putConstant(c)
-	  case _ => putTree(arg.tree)
+	  case _ => putTree(arg.intTree)
 	}
       }
     }
@@ -415,10 +532,17 @@ abstract class Pickler extends SubComponent {
           else if (c.tag == StringTag) writeRef(newTermName(c.stringValue))
           else if (c.tag == ClassTag) writeRef(c.typeValue)
           LITERAL + c.tag
-        case AnnotatedType(attribs, tp) =>
-          writeRef(tp)
-          writeRefs(attribs)
-          ANNOTATEDtpe
+        case AnnotatedType(attribs, tp, selfsym) =>
+	  if (settings.selfInAnnots.value) {
+	    writeRef(tp)
+	    writeRef(selfsym)
+	    writeRefs(attribs)
+	    ANNOTATEDWSELFtpe
+	  } else {
+            writeRef(tp)
+            writeRefs(attribs)
+            ANNOTATEDtpe
+	  }
         case (target: Symbol, attr @ AnnotationInfo(atp, args, assocs)) =>
           writeRef(target)
           writeRef(atp)
@@ -429,205 +553,376 @@ abstract class Pickler extends SubComponent {
           writeRef(target)
           for (c <- children) writeRef(c.asInstanceOf[Symbol])
           CHILDREN
-        case reflect.Ident(sym) =>
-          writeNat(IDENTtree)
-          writeRef(sym)
-          REFLTREE
-        case reflect.Select(qual, sym) =>
-          writeNat(SELECTtree)
-          writeRef(qual)
-          writeRef(sym)
-          REFLTREE
-        case reflect.Literal(value) =>
-          writeNat(LITERALtree)
-          writeRef(Constant(value))
-          REFLTREE
-        case reflect.Apply(fun, args) =>
-          writeNat(APPLYtree)
-          writeRef(fun)
-          writeRefs(args)
-          REFLTREE
-        case reflect.TypeApply(fun, args) =>
-          writeNat(TYPEAPPLYtree)
-          writeRef(fun)
-          writeRefs(args)
-          REFLTREE
-        case reflect.Function(params, body) =>
-          writeNat(FUNCTIONtree)
-          writeRef(body)
-          writeRefs(params)
-          REFLTREE
-        case reflect.This(sym) =>
-          writeNat(THIStree)
-          writeRef(sym)
-          REFLTREE
-        case reflect.Block(stats, expr) =>
-          writeNat(BLOCKtree)
-          writeRef(expr)
-          writeRefs(stats)
-          REFLTREE
-        case reflect.New(clz) =>
-          writeNat(NEWtree)
-          writeRef(clz)
-          REFLTREE
-        case reflect.If(condition, trueCase, falseCase) =>
-          writeNat(IFtree)
-          writeRef(condition)
-          writeRef(trueCase)
-          writeRef(falseCase)
-          REFLTREE
-        case reflect.Assign(destination, source) =>
-          writeNat(ASSIGNtree)
-          writeRef(destination)
-          writeRef(source)
-          REFLTREE
-        case reflect.Target(sym, body) =>
-          writeNat(TARGETtree)
-          writeRef(sym)
-          writeRef(body)
-          REFLTREE
-        case reflect.Goto(target) =>
-          writeNat(GOTOtree)
-          writeRef(target)
-          REFLTREE
-        case reflect.ValDef(sym, rhs)  =>
-          writeNat(VALDEFtree)
-          writeRef(sym)
-          writeRef(rhs)
-          REFLTREE
-        case reflect.ClassDef(sym, tpe, impl) =>
-          writeNat(CLASSDEFtree)
-          writeRef(sym)
-          writeRef(tpe)
-          writeRef(impl)
-          REFLTREE
-        case reflect.DefDef(sym, vparamss, ret, rhs) =>
-          writeNat(DEFDEFtree)
-          writeRef(sym)
-          writeRef(ret)
-          writeRef(rhs)
-          for (vparams <- vparamss) {
-            writeNat(vparams.length)
-            writeRefs(vparams)
-          }
-          REFLTREE
-        case reflect.Super(psym) =>
-          writeNat(SUPERtree)
-          writeRef(psym)
-          REFLTREE
-        case reflect.Template(parents, body) =>
-          writeNat(TEMPLATEtree)
-          writeNat(parents.length)
-          writeRefs(parents)
-          writeRefs(body)
-          REFLTREE
-        case reflect.NoPrefix =>
-          writeNat(NOPREFIXrtpe)
-          REFLTYPE
-        case reflect.NoType =>
-          writeNat(NOrtpe)
-          REFLTYPE
-        case reflect.NamedType(fullname) =>
-          writeNat(NAMEDrtpe)
-          writeRef(Constant(fullname))
-          REFLTYPE
-        case reflect.PrefixedType(pre, sym) =>
-          writeNat(PREFIXEDrtpe)
-          writeRef(pre)
-          writeRef(sym)
-          REFLTYPE
-        case reflect.SingleType(pre, sym) =>
-          writeNat(SINGLErtpe)
-          writeRef(pre)
-          writeRef(sym)
-          REFLTYPE
-        case reflect.ThisType(clazz) =>
-          writeNat(THISrtpe)
-          writeRef(clazz)
-          REFLTYPE
-        case reflect.AppliedType(tpe, args) =>
-          writeNat(APPLIEDrtpe)
-          writeRef(tpe)
-          writeRefs(args)
-          REFLTYPE
-        case reflect.TypeBounds(lo, hi) =>
-          writeNat(TYPEBOUNDSrtpe)
-          writeRef(lo)
-          writeRef(hi)
-          REFLTYPE
-        case entry@reflect.MethodType(formals, restpe) => //can be implicit
-          if(entry.isInstanceOf[ImplicitMethodType])
-            writeNat(IMPLICITMETHODrtpe)
-          else
-            writeNat(METHODrtpe)
-          writeRef(restpe)
-          writeRefs(formals)
-          REFLTYPE
-        case reflect.PolyType(typeParams, typeBounds, resultType) =>
-          writeNat(POLYrtpe)
-          writeRef(resultType)
-          writeNat(typeBounds.length)
-          for ((t1,t2) <- typeBounds) {
-            writeRef(t1)
-            writeRef(t2)
-          }
-          writeRefs(typeParams)
-          REFLTYPE
-        case reflect.Class(fullname) =>
-          writeNat(CLASSrsym)
-          writeRef(Constant(fullname))
-          REFLSYM
-        case reflect.Method(fullname, tpe) =>
-          writeNat(METHODrsym)
-          writeRef(Constant(fullname))
-          writeRef(tpe)
-          REFLSYM
-        case reflect.Field(fullname, tpe) =>
-          writeNat(FIELDrsym)
-          writeRef(Constant(fullname))
-          writeRef(tpe)
-          REFLSYM
-        case reflect.TypeField(fullname, tpe) =>
-          writeNat(TYPEFIELDrsym)
-          writeRef(Constant(fullname))
-          writeRef(tpe)
-          REFLSYM
-        case reflect.LocalValue(owner, name, tpe) =>
-          writeNat(LOCALVALUErsym)
-          writeRef(owner)
-          writeRef(Constant(name))
-          writeRef(tpe)
-          REFLSYM
-        case reflect.LocalMethod(owner, name, tpe) =>
-          writeNat(LOCALMETHODrsym)
-          writeRef(owner)
-          writeRef(Constant(name))
-          writeRef(tpe)
-          REFLSYM
-        case reflect.NoSymbol =>
-          writeNat(NOSYMBOLrsym)
-          REFLSYM
-        case reflect.RootSymbol =>
-          writeNat(ROOTSYMBOLrsym)
-          REFLSYM
-        case reflect.LabelSymbol(name) =>
-          writeNat(LABELSYMBOLrsym)
+
+	case EmptyTree =>
+	  writeNat(EMPTYtree)
+	  TREE
+
+	case tree@PackageDef(name, stats) =>
+	  writeNat(PACKAGEtree)
+	  writeRef(tree.tpe)
+	  writeRef(tree.symbol)
+	  writeRef(tree.mods)
 	  writeRef(name)
-          REFLSYM
-        case AnnotationInfo(target, args, assocs) =>
-          writeRef(target)
+          writeRefs(stats)
+	  TREE
+
+	case tree@ClassDef(mods, name, tparams, impl) =>
+	  writeNat(CLASStree)
+	  writeRef(tree.tpe)
+	  writeRef(tree.symbol)
+	  writeRef(mods)
+	  writeRef(name)
+          writeRef(impl)
+	  writeRefs(tparams)
+	  TREE
+
+	case tree@ModuleDef(mods, name, impl) =>
+	  writeNat(MODULEtree)
+	  writeRef(tree.tpe)
+	  writeRef(tree.symbol)
+	  writeRef(mods)
+	  writeRef(name)
+	  writeRef(impl)
+	  TREE
+
+	case tree@ValDef(mods, name, tpt, rhs) =>
+          writeNat(VALDEFtree)
+	  writeRef(tree.tpe)
+	  writeRef(tree.symbol)
+	  writeRef(mods)
+	  writeRef(name)
+	  writeRef(tpt)
+	  writeRef(rhs)
+	  TREE
+
+
+	case tree@DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+          writeNat(DEFDEFtree)
+	  writeRef(tree.tpe)
+	  writeRef(tree.symbol)
+	  writeRef(mods)
+	  writeRef(name)
+	  writeNat(tparams.length)
+	  writeRefs(tparams)
+	  writeNat(vparamss.length)
+	  for(vparams <- vparamss) {
+	    writeNat(vparams.length)
+	    writeRefs(vparams)
+	  }
+	  writeRef(tpt)
+	  writeRef(rhs)
+	  TREE
+
+
+	case tree@TypeDef(mods, name, tparams, rhs) =>
+	  writeNat(TYPEDEFtree)
+	  writeRef(tree.tpe)
+	  writeRef(tree.symbol)
+	  writeRef(mods)
+	  writeRef(name)
+	  writeRef(rhs)
+	  writeRefs(tparams)
+	  TREE
+
+
+	case tree@LabelDef(name, params, rhs) =>
+	  writeNat(LABELtree)
+	  writeRef(tree.tpe)
+	  writeRef(tree.symbol)
+	  writeRef(rhs)
+	  writeRefs(params)
+	  TREE
+
+
+	case tree@Import(expr, selectors) =>
+	  writeNat(IMPORTtree)
+	  writeRef(tree.tpe)
+	  writeRef(tree.symbol)
+	  writeRef(expr)
+	  for ((from, to) <- selectors) {
+	    writeRef(from)
+	    writeRef(to)
+	  }
+	  TREE
+
+
+	case tree@Annotation(constr, elements) =>
+	  writeNat(ANNOTATIONtree)
+	  writeRef(tree.tpe)
+	  writeRef(constr)
+	  writeRefs(elements)
+	  TREE
+
+	case tree@DocDef(comment, definition) =>
+          writeNat(DOCDEFtree)
+	  writeRef(tree.tpe)
+	  writeRef(Constant(comment))
+	  writeRef(definition)
+	  TREE
+
+	case tree@Template(parents, self, body) =>
+          writeNat(TEMPLATEtree)
+	  writeRef(tree.tpe)
+          writeRef(tree.symbol)
+          writeNat(parents.length)
+	  writeRefs(parents)
+	  writeRef(self)
+	  writeRefs(body)
+	  TREE
+
+	case tree@Block(stats, expr) =>
+          writeNat(BLOCKtree)
+	  writeRef(tree.tpe)
+	  writeRef(expr)
+	  writeRefs(stats)
+	  TREE
+
+	case tree@CaseDef(pat, guard, body) =>
+	  writeNat(CASEtree)
+	  writeRef(tree.tpe)
+	  writeRef(pat)
+	  writeRef(guard)
+	  writeRef(body)
+	  TREE
+
+	case tree@Sequence(trees) =>
+          writeNat(SEQUENCEtree)
+	  writeRef(tree.tpe)
+	  writeRefs(trees)
+	  TREE
+
+	case tree@Alternative(trees) =>
+	  writeNat(ALTERNATIVEtree)
+	  writeRef(tree.tpe)
+	  writeRefs(trees)
+	  TREE
+
+	case tree@Star(elem) =>
+          writeNat(STARtree)
+	  writeRef(tree.tpe)
+	  writeRef(elem)
+	  TREE
+
+	case tree@Bind(name, body) =>
+	  writeNat(BINDtree)
+	  writeRef(tree.tpe)
+	  writeRef(tree.symbol)
+	  writeRef(name)
+	  writeRef(body)
+	  TREE
+
+	case tree@UnApply(fun: Tree, args) =>
+	  writeNat(UNAPPLYtree)
+	  writeRef(tree.tpe)
+	  writeRef(fun)
+	  writeRefs(args)
+	  TREE
+
+	case tree@ArrayValue(elemtpt, trees) =>
+	  writeNat(ARRAYVALUEtree)
+	  writeRef(tree.tpe)
+	  writeRef(elemtpt)
+	  writeRefs(trees)
+	  TREE
+
+
+	case tree@Function(vparams, body) =>
+          writeNat(FUNCTIONtree)
+	  writeRef(tree.tpe)
+	  writeRef(tree.symbol)
+	  writeRef(body)
+	  writeRefs(vparams)
+	  TREE
+
+	case tree@Assign(lhs, rhs) =>
+          writeNat(ASSIGNtree)
+	  writeRef(tree.tpe)
+	  writeRef(lhs)
+	  writeRef(rhs)
+	  TREE
+
+	case tree@If(cond, thenp, elsep) =>
+          writeNat(IFtree)
+          writeRef(tree.tpe)
+	  writeRef(cond)
+	  writeRef(thenp)
+	  writeRef(elsep)
+	  TREE
+
+	case tree@Match(selector, cases) =>
+          writeNat(MATCHtree)
+	  writeRef(tree.tpe)
+	  writeRef(selector)
+	  writeRefs(cases)
+	  TREE
+
+	case tree@Return(expr) =>
+	  writeNat(RETURNtree)
+	  writeRef(tree.tpe)
+	  writeRef(tree.symbol)
+	  writeRef(expr)
+	  TREE
+
+	case tree@Try(block, catches, finalizer) =>
+          writeNat(TREtree)
+	  writeRef(tree.tpe)
+	  writeRef(block)
+	  writeRef(finalizer)
+	  writeRefs(catches)
+	  TREE
+
+	case tree@Throw(expr) =>
+	  writeNat(THROWtree)
+	  writeRef(tree.tpe)
+	  writeRef(expr)
+	  TREE
+
+	case tree@New(tpt) =>
+	  writeNat(NEWtree)
+	  writeRef(tree.tpe)
+	  writeRef(tpt)
+	  TREE
+
+	case tree@Typed(expr, tpt) =>
+	  writeNat(TYPEDtree)
+	  writeRef(tree.tpe)
+	  writeRef(expr)
+	  writeRef(tpt)
+	  TREE
+
+	case tree@TypeApply(fun, args) =>
+	  writeNat(TYPEAPPLYtree)
+	  writeRef(tree.tpe)
+	  writeRef(fun)
+	  writeRefs(args)
+	  TREE
+
+	case tree@Apply(fun, args) =>
+	  writeNat(APPLYtree)
+	  writeRef(tree.tpe)
+	  writeRef(fun)
+	  writeRefs(args)
+	  TREE
+
+	case tree@ApplyDynamic(qual, args) =>
+	  writeNat(APPLYDYNAMICtree)
+	  writeRef(tree.tpe)
+	  writeRef(tree.symbol)
+	  writeRef(qual)
+	  writeRefs(args)
+	  TREE
+
+	case tree@Super(qual, mix) =>
+	  writeNat(SUPERtree)
+	  writeRef(tree.tpe)
+	  writeRef(tree.symbol)
+	  writeRef(qual)
+	  writeRef(mix)
+	  TREE
+
+        case tree@This(qual) =>
+	  writeNat(THIStree)
+	  writeRef(tree.tpe)
+	  writeRef(tree.symbol)
+	  writeRef(qual)
+	  TREE
+
+        case tree@Select(qualifier, selector) =>
+	  writeNat(SELECTtree)
+	  writeRef(tree.tpe)
+	  writeRef(tree.symbol)
+	  writeRef(qualifier)
+	  writeRef(selector)
+	  TREE
+
+	case tree@Ident(name) =>
+	  writeNat(IDENTtree)
+	  writeRef(tree.tpe)
+	  writeRef(tree.symbol)
+	  writeRef(name)
+	  TREE
+
+	case tree@Literal(value) =>
+	  writeNat(LITERALtree)
+	  writeRef(tree.tpe)
+	  writeRef(value)
+	  TREE
+
+	case tree@TypeTree() =>
+	  writeNat(TYPEtree)
+	  writeRef(tree.tpe)
+	  TREE
+
+	case tree@Annotated(annot, arg) =>
+	  writeNat(ANNOTATEDtree)
+	  writeRef(tree.tpe)
+	  writeRef(annot)
+	  writeRef(arg)
+	  TREE
+
+	case tree@SingletonTypeTree(ref) =>
+	  writeNat(SINGLETONTYPEtree)
+	  writeRef(tree.tpe)
+	  writeRef(ref)
+	  TREE
+
+	case tree@SelectFromTypeTree(qualifier, selector) =>
+	  writeNat(SELECTFROMTYPEtree)
+	  writeRef(tree.tpe)
+	  writeRef(qualifier)
+	  writeRef(selector)
+	  TREE
+
+	case tree@CompoundTypeTree(templ: Template) =>
+	  writeNat(COMPOUNDTYPEtree)
+	  writeRef(tree.tpe)
+	  writeRef(templ)
+	  TREE
+
+	case tree@AppliedTypeTree(tpt, args) =>
+	  writeNat(APPLIEDTYPEtree)
+	  writeRef(tree.tpe)
+	  writeRef(tpt)
+	  writeRefs(args)
+	  TREE
+
+	case tree@TypeBoundsTree(lo, hi) =>
+	  writeNat(TYPEBOUNDStree)
+	  writeRef(tree.tpe)
+	  writeRef(lo)
+	  writeRef(hi)
+	  TREE
+
+	case tree@ExistentialTypeTree(tpt, whereClauses) =>
+	  writeNat(EXISTENTIALTYPEtree)
+	  writeRef(tree.tpe)
+	  writeRef(tpt)
+	  writeRefs(whereClauses)
+	  TREE
+
+
+	case Modifiers(flags, privateWithin, annotations) =>
+	  writeNat((flags >> 32).toInt)
+	  writeNat((flags & 0xFFFFFFFF).toInt)
+	  writeRef(privateWithin)
+          writeRefs(annotations)
+	  MODIFIERS
+
+        case AnnotationInfo(atp, args, assocs) =>
+          writeRef(atp)
           writeNat(args.length)
           for (arg <- args) writeRef(arg)
           for ((name, arg) <- assocs) {
             writeRef(name);
             writeRef(arg)
           }
-          ATTRIBTREE
+          ANNOTINFO
 
 	case arg:AnnotationArgument =>
 	  arg.constant match {
 	    case Some(c) => writeBody(c)
-	    case None => writeBody(arg.tree)
+	    case None => writeBody(arg.intTree)
 	  }
 
         case _ =>

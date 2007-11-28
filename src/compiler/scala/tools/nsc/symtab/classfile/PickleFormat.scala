@@ -8,6 +8,9 @@ package scala.tools.nsc.symtab.classfile
 
 /** This object provides constants for pickling attributes.
  *
+ *  If you extend the format, be sure to increase the
+ *  version minor number.
+ *
  *  @author Martin Odersky
  *  @version 1.0
  */
@@ -53,46 +56,56 @@ object PickleFormat {
  *                  | 40 ATTRIBUTE len_Nat sym_Ref info_Ref {constant_Ref} {nameRef constantRef}
  *                  | 41 CHILDREN len_Nat sym_Ref {sym_Ref}
  *                  | 42 ANNOTATEDtpe len_Nat tpe_Ref {attribtree_Ref}
- *                  | 43 ATTRIBTREE refltree_Ref len_Nat attarg_Ref {constant_Ref attarg_Ref}
- *                  | 44 REFLTREE len_Nat 1 IDENTtree sym_Ref
- *                  | 44 REFLTREE len_Nat 2 SELECTtree qual_Ref sym_Ref
- *                  | 44 REFLTREE len_Nat 3 LITERALtree constant_Ref
- *                  | 44 REFLTREE len_Nat 4 APPLYtree fun_Ref {arg_Ref}
- *                  | 44 REFLTREE len_Nat 5 TYPEAPPLYtree fun_Ref {arg_Ref}
- *                  | 44 REFLTREE len_Nat 6 FUNCTIONtree body_Ref {param_Ref}
- *                  | 44 REFLTREE len_Nat 7 THIStree sym_Ref
- *                  | 44 REFLTREE len_Nat 8 BLOCKtree exp_Ref {stat_Ref}
- *                  | 44 REFLTREE len_Nat 9 NEWtree clz_Ref
- *                  | 44 REFLTREE len_Nat 10 IFtree cond_Ref true_Ref false_Ref
- *                  | 44 REFLTREE len_Nat 11 ASSIGNtree lhs_Ref rhs_Ref
- *                  | 44 REFLTREE len_Nat 12 TARGETtree sym_Ref body_Ref
- *                  | 44 REFLTREE len_Nat 13 GOTOtree target_Ref
- *                  | 44 REFLTREE len_Nat 14 VALDEFtree sym_Ref rhs_Ref
- *                  | 44 REFLTREE len_Nat 15 CLASSDEFtree sym_Ref tpe_Ref impl_Ref
- *                  | 44 REFLTREE len_Nat 16 DEFDEFtree sym_Ref ret_Ref rhs_Ref {pl_Nat {param_Ref}}
- *                  | 44 REFLTREE len_Nat 17 SUPERtree psym_Ref
- *                  | 44 REFLTREE len_Nat 18 TEMPLATEtree parents_Nat {parent_Ref} body_Ref
- *                  | 45 REFLTYPE len_Nat 1 NOPREFIXrtpe
- *                  | 45 REFLTYPE len_Nat 2 NOrtpe
- *                  | 45 REFLTYPE len_Nat 3 NAMEDrtpe name_Ref
- *                  | 45 REFLTYPE len_Nat 4 PREFIXEDrtpe pre_Ref sym_Ref
- *                  | 45 REFLTYPE len_Nat 5 SINGLErtpe pre_Ref sym_Ref
- *                  | 45 REFLTYPE len_Nat 6 THISrtpe class_Ref
- *                  | 45 REFLTYPE len_Nat 7 APPLIEDrtpe tpe_Ref {arg_Ref}
- *                  | 45 REFLTYPE len_Nat 8 TYPEBOUNDSrtpe lo_Ref hi_Ref
- *                  | 45 REFLTYPE len_Nat 9 METHODrtpe restpe_Ref {paramtpe_Ref}
- *                  | 45 REFLTYPE len_Nat 10 POLYrtpe restpe_Ref boundslen_Nat {lo_Ref hi_Ref} {typeParam_Ref}
- *                  | 45 REFLTYPE len_Nat 11 IMPLICITMETHODrtpe restpe_Ref {paramtpe_Ref}
- *                  | 46 REFLSYM len_Nat 1 CLASSrsym name_Ref
- *                  | 46 REFLSYM len_Nat 2 METHODrsym fullname_Ref
- *                  | 46 REFLSYM len_Nat 3 FIELDrsym tpe_Ref fullname_Ref tpe_Ref
- *                  | 46 REFLSYM len_Nat 4 TYPEFIELDrsym fullname_Ref tpe_Ref
- *                  | 46 REFLSYM len_Nat 5 LOCALVALUErsym owner_Ref name_Ref tpe_Ref
- *                  | 46 REFLSYM len_Nat 6 LOCALMETHODrsym owner_Ref name_Ref tpe_Ref
- *                  | 46 REFLSYM len_Nat 7 NOSYMBOLrsym
- *                  | 46 REFLSYM len_Nat 8 ROOTSYMBOLrsym
- *                  | 46 REFLSYM len_Nat 9 LABELSYMBOLrsym name_Ref
+ *                  | 51 ANNOTATEDWSELFtpe len_Nat tpe_Ref sym_Ref {attribtree_Ref}
+ *                  | 43 ANNOTINFO attarg_Ref len_Nat attarg_Ref {constant_Ref attarg_Ref}
  *                  | 47 DEBRUIJNINDEXtpe len_Nat level_Nat index_Nat
+ *                  | 48 EXISTENTIALtpe len_Nat type_Ref {symbol_Ref}
+ *                  | 49 TREE len_Nat 1 EMPTYtree
+ *                  | 49 TREE len_Nat 2 PACKAGEtree type_Ref sym_Ref mods_Ref name_Ref {tree_Ref}
+ *                  | 49 TREE len_Nat 3 CLASStree type_Ref sym_Ref mods_Ref name_Ref tree_Ref {tree_Ref}
+ *                  | 49 TREE len_Nat 4 MODULEtree type_Ref sym_Ref mods_Ref name_Ref tree_Ref
+ *                  | 49 TREE len_Nat 5 VALDEFtree type_Ref sym_Ref mods_Ref name_Ref tree_Ref tree_Ref
+ *                  | 49 TREE len_Nat 6 DEFDEFtree type_Ref sym_Ref mods_Ref name_Ref numtparams_Nat {tree_Ref} numparamss_Nat {numparams_Nat {tree_Ref}} tree_Ref tree_Ref
+ *                  | 49 TREE len_Nat 7 TYPEDEFtree type_Ref sym_Ref mods_Ref name_Ref tree_Ref {tree_Ref}
+ *                  | 49 TREE len_Nat 8 LABELtree type_Ref sym_Ref tree_Ref {tree_Ref}
+ *                  | 49 TREE len_Nat 9 IMPORTtree type_Ref sym_Ref tree_Ref {name_Ref name_Ref}
+ *                  | 49 TREE len_Nat 10 ANNOTATIONtree type_Ref sym_Ref tree_Ref {tree_Ref}
+ *                  | 49 TREE len_Nat 11 DOCDEFtree type_Ref sym_Ref string_Ref tree_Ref
+ *                  | 49 TREE len_Nat 12 TEMPLATEtree type_Ref sym_Ref numparents_Nat {tree_Ref} tree_Ref {tree_Ref}
+ *                  | 49 TREE len_Nat 13 BLOCKtree type_Ref tree_Ref {tree_Ref}
+ *                  | 49 TREE len_Nat 14 CASEtree type_Ref tree_Ref tree_Ref tree_Ref
+ *                  | 49 TREE len_Nat 15 SEQUENCEtree type_Ref {tree_Ref}
+ *                  | 49 TREE len_Nat 16 ALTERNATIVEtree type_Ref {tree_Ref}
+ *                  | 49 TREE len_Nat 17 STARtree type_Ref {tree_Ref}
+ *                  | 49 TREE len_Nat 18 BINDtree type_Ref sym_Ref name_Ref tree_Ref
+ *                  | 49 TREE len_Nat 19 UNAPPLYtree type_Ref tree_Ref {tree_Ref}
+ *                  | 49 TREE len_Nat 20 ARRAYVALUEtree type_Ref tree_Ref {tree_Ref}
+ *                  | 49 TREE len_Nat 21 FUNCTIONtree type_Ref sym_Ref tree_Ref {tree_Ref}
+ *                  | 49 TREE len_Nat 22 ASSIGNtree type_Ref tree_Ref tree_Ref
+ *                  | 49 TREE len_Nat 23 IFtree type_Ref tree_Ref tree_Ref tree_Ref
+ *                  | 49 TREE len_Nat 24 MATCHtree type_Ref tree_Ref {tree_Ref}
+ *                  | 49 TREE len_Nat 25 RETURNtree type_Ref sym_Ref tree_Ref
+ *                  | 49 TREE len_Nat 26 TREtree type_Ref tree_Ref tree_Ref {tree_Ref}
+ *                  | 49 TREE len_Nat 27 THROWtree type_Ref tree_Ref
+ *                  | 49 TREE len_Nat 28 NEWtree type_Ref tree_Ref
+ *                  | 49 TREE len_Nat 29 TYPEDtree type_Ref tree_Ref tree_Ref
+ *                  | 49 TREE len_Nat 30 TYPEAPPLYtree type_Ref tree_Ref {tree_Ref}
+ *                  | 49 TREE len_Nat 31 APPLYtree type_Ref tree_Ref {tree_Ref}
+ *                  | 49 TREE len_Nat 32 APPLYDYNAMICtree type_Ref sym_Ref tree_Ref {tree_Ref}
+ *                  | 49 TREE len_Nat 33 SUPERtree type_Ref sym_Ref tree_Ref name_Ref
+ *                  | 49 TREE len_Nat 34 THIStree type_Ref sym_Ref  name_Ref
+ *                  | 49 TREE len_Nat 35 SELECTtree type_Ref sym_Ref tree_Ref name_Ref
+ *                  | 49 TREE len_Nat 36 IDENTtree type_Ref sym_Ref name_Ref
+ *                  | 49 TREE len_Nat 37 LITERALtree type_Ref constant_Ref
+ *                  | 49 TREE len_Nat 38 TYPEtree type_Ref
+ *                  | 49 TREE len_Nat 39 ANNOTATEDtree type_Ref tree_Ref tree_Ref
+ *                  | 49 TREE len_Nat 40 SINGLETONTYPEtree type_Ref tree_Ref
+ *                  | 49 TREE len_Nat 41 SELECTFROMTYPEtree type_Ref tree_Ref name_Ref
+ *                  | 49 TREE len_Nat 42 COMPOUNDTYPEtree type_Ref tree_Ref
+ *                  | 49 TREE len_Nat 43 APPLIEDTYPEtree type_Ref tree_Ref {tree_Ref}
+ *                  | 49 TREE len_Nat 44 TYPEBOUNDStree type_Ref tree_Ref tree_Ref
+ *                  | 49 TREE len_Nat 45 EXISTENTIALTYPEtree type_Ref tree_Ref {tree_Ref}
+ *                  | 50 MODIFIERS len_Nat flags_Long privateWithin_Ref {Annotation_Ref}
  *                  | 68 PosTYPEsym len_Nat pos_Nat SymbolInfo
  *                  | 69 PosALIASsym len_Nat pos_Nat SymbolInfo
  *                  | 70 PosCLASSsym len_Nat pos_Nat SymbolInfo [thistype_Ref]
@@ -149,54 +162,68 @@ object PickleFormat {
   final val CHILDREN = 41
 
   final val ANNOTATEDtpe = 42
-  final val ATTRIBTREE = 43  // an annotation with trees
-  final val REFLTREE = 44  // prefix saying that a prefix tree is coming
-    final val IDENTtree = 1
-    final val SELECTtree = 2
-    final val LITERALtree = 3
-    final val APPLYtree = 4
-    final val TYPEAPPLYtree = 5
-    final val FUNCTIONtree = 6
-    final val THIStree = 7
-    final val BLOCKtree = 8
-    final val NEWtree = 9
-    final val IFtree = 10
-    final val ASSIGNtree = 11
-    final val TARGETtree = 12
-    final val GOTOtree = 13
-    final val VALDEFtree = 14
-    final val CLASSDEFtree = 15
-    final val DEFDEFtree = 16
-    final val SUPERtree = 17
-    final val TEMPLATEtree = 18
-
+  final val ANNOTINFO = 43  // an annotation with trees
+  final val REFLTREE = 44  // prefix saying that a reflect tree is coming
+                           // support dropped in September of 2007
 
   final val REFLTYPE = 45   // prefix code that means a reflect type is coming
-    final val NOPREFIXrtpe = 1
-    final val NOrtpe = 2
-    final val NAMEDrtpe = 3
-    final val PREFIXEDrtpe = 4
-    final val SINGLErtpe = 5
-    final val THISrtpe = 6
-    final val APPLIEDrtpe = 7
-    final val TYPEBOUNDSrtpe = 8
-    final val METHODrtpe = 9
-    final val POLYrtpe = 10
-    final val IMPLICITMETHODrtpe = 11
+                           // support dropped in September of 2007
 
-  final val REFLSYM = 46
-    final val CLASSrsym = 1
-    final val METHODrsym = 2
-    final val FIELDrsym = 3
-    final val TYPEFIELDrsym = 4
-    final val LOCALVALUErsym = 5
-    final val LOCALMETHODrsym = 6
-    final val NOSYMBOLrsym = 7
-    final val ROOTSYMBOLrsym = 8
-    final val LABELSYMBOLrsym = 9
+  final val REFLSYM = 46   // prefix code that means a reflect symbol is coming
+                           // support dropped in September of 2007
 
   final val DEBRUIJNINDEXtpe = 47
   final val EXISTENTIALtpe = 48
+
+  final val TREE = 49      // prefix code that means a tree is coming
+    final val EMPTYtree = 1
+    final val PACKAGEtree = 2
+    final val CLASStree = 3
+    final val MODULEtree = 4
+    final val VALDEFtree = 5
+    final val DEFDEFtree = 6
+    final val TYPEDEFtree = 7
+    final val LABELtree = 8
+    final val IMPORTtree = 9
+    final val ANNOTATIONtree = 10
+    final val DOCDEFtree = 11
+    final val TEMPLATEtree = 12
+    final val BLOCKtree = 13
+    final val CASEtree = 14
+    final val SEQUENCEtree = 15
+    final val ALTERNATIVEtree = 16
+    final val STARtree = 17
+    final val BINDtree = 18
+    final val UNAPPLYtree = 19
+    final val ARRAYVALUEtree = 20
+    final val FUNCTIONtree = 21
+    final val ASSIGNtree = 22
+    final val IFtree = 23
+    final val MATCHtree = 24
+    final val RETURNtree = 25
+    final val TREtree = 26
+    final val THROWtree = 27
+    final val NEWtree = 28
+    final val TYPEDtree = 29
+    final val TYPEAPPLYtree = 30
+    final val APPLYtree = 31
+    final val APPLYDYNAMICtree = 32
+    final val SUPERtree = 33
+    final val THIStree = 34
+    final val SELECTtree = 35
+    final val IDENTtree = 36
+    final val LITERALtree = 37
+    final val TYPEtree = 38
+    final val ANNOTATEDtree = 39
+    final val SINGLETONTYPEtree = 40
+    final val SELECTFROMTYPEtree = 41
+    final val COMPOUNDTYPEtree = 42
+    final val APPLIEDTYPEtree = 43
+    final val TYPEBOUNDStree = 44
+    final val EXISTENTIALTYPEtree = 45
+
+  final val MODIFIERS = 50
+  final val ANNOTATEDWSELFtpe = 51 // annotated type with selfsym
 
   final val firstSymTag = NONEsym
   final val lastSymTag = VALsym

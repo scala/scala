@@ -9,6 +9,8 @@ package scala.tools.nsc.symtab
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{Position, NoPosition, SourceFile, BatchSourceFile}
 import Flags._
+import java.util.regex.Pattern
+import nsc.util.RegexCache
 
 trait Symbols {
   self: SymbolTable =>
@@ -1055,6 +1057,8 @@ trait Symbols {
       var s = simpleName.decode.toString
       if (s endsWith nme.LOCAL_SUFFIX)
         s = s.substring(0, s.length - nme.LOCAL_SUFFIX.length)
+      if (s endsWith ".type")
+	s = s.substring(0, s.length - ".type".length)
       s + idString
     }
 
@@ -1320,7 +1324,7 @@ trait Symbols {
                    initName: Name, origin: AnyRef)
   extends TypeSymbol(initOwner, initPos, initName) {
 
-    /** The skolemizatuon level in place when the skolem was constructed */
+    /** The skolemization level in place when the skolem was constructed */
     val level = skolemizationLevel
 
     override def isSkolem = true
@@ -1337,6 +1341,7 @@ trait Symbols {
       if (settings.debug.value) (super.nameString + "&" + level)
       else super.nameString
   }
+
 
   /** A class for class symbols */
   class ClassSymbol(initOwner: Symbol, initPos: Position, initName: Name)

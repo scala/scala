@@ -8,10 +8,11 @@ package scala.tools.nsc.ast
 
 import scala.collection.mutable.ListBuffer
 import symtab.Flags._
+import symtab.SymbolTable
 
 abstract class TreeGen {
 
-  val global: Global
+  val global: SymbolTable
 
   import global._
   import definitions._
@@ -44,10 +45,26 @@ abstract class TreeGen {
           case _ =>
             qual
         }
-      } else {
-        assert(phase.erasedTypes)
+      } else if (sym.isModule || sym.isClass) {
+        assert(phase.erasedTypes, tpe)
         mkAttributedThis(sym)
+      } else {
+	mkAttributedRef(pre, sym)
       }
+
+    case ConstantType(value) =>
+      Literal(value) setType tpe
+
+    case AnnotatedType(_, atp, _) =>
+      mkAttributedQualifier(atp)
+
+    case RefinedType(parents, _) =>
+      // I am unclear whether this is reachable, but
+      // the following implementation looks logical -Lex
+      val firstStable = parents.find(_.isStable)
+      assert(!firstStable.isEmpty)
+      mkAttributedQualifier(firstStable.get)
+
     case _ =>
       throw new Error("bad qualifier: " + tpe)
   }
@@ -83,14 +100,12 @@ abstract class TreeGen {
   }
 
   /** Cast `tree' to type `pt' */
-  def mkAttributedCast(tree: Tree, pt: Type): Tree = {
+  def mkAttributedCastUntyped(tree: Tree, pt: Type): Tree = {
     if (settings.debug.value) log("casting " + tree + ":" + tree.tpe + " to " + pt)
     assert(!tree.tpe.isInstanceOf[MethodType], tree)
     assert(pt eq pt.normalize) //@MAT only called during erasure, which already takes care of that
-    typer.typed {
-      atPos(tree.pos) {
-        Apply(TypeApply(mkAttributedSelect(tree, Object_asInstanceOf), List(TypeTree(pt))), List())
-      }
+    atPos(tree.pos) {
+      Apply(TypeApply(mkAttributedSelect(tree, Object_asInstanceOf), List(TypeTree(pt))), List())
     }
   }
 
@@ -105,7 +120,7 @@ abstract class TreeGen {
     This(sym.name) setSymbol sym setType sym.thisType
 
   def mkAttributedIdent(sym: Symbol): Tree = {
-    assert(sym.isTerm)
+    assert(sym.isTerm, sym)
     Ident(sym.name) setSymbol sym setType sym.tpe
   }
 
