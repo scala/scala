@@ -28,27 +28,30 @@ object ScalaRunTime {
   val DoubleTag = ".Double"
   val BooleanTag = ".Boolean"
 
-  def isArray(x: AnyRef): Boolean = (x != null && x.getClass.isArray) || (x != null && x.isInstanceOf[BoxedArray])
+  def isArray(x: AnyRef): Boolean =
+    (x != null && x.getClass.isArray) || (x != null && x.isInstanceOf[BoxedArray])
+
   def isValueTag(tag: String) = tag.charAt(0) == '.'
+
   def isValueClass(clazz: Class) = clazz.isPrimitive()
 
   def checkInitialized[T <: AnyRef](x: T): T =
     if (x == null) throw new UninitializedError else x
 
-  abstract class Try[a] {
-    def Catch[b >: a](handler: PartialFunction[Throwable, b]): b
-    def Finally(handler: Unit): a
+  abstract class Try[A] {
+    def Catch[B >: A](handler: PartialFunction[Throwable, B]): B
+    def Finally(handler: Unit): A
   }
 
-  def Try[a](block: => a): Try[a] = new Try[a] with Runnable {
-    var result: a = _
+  def Try[A](block: => A): Try[A] = new Try[A] with Runnable {
+    var result: A = _
     var exception: Throwable = ExceptionHandling.tryCatch(this)
 
-    def run(): Unit = result = block
+    def run() { result = block }
 
-    def Catch[b >: a](handler: PartialFunction[Throwable, b]): b =
+    def Catch[B >: A](handler: PartialFunction[Throwable, B]): B =
       if (exception eq null)
-        result.asInstanceOf[b]
+        result.asInstanceOf[B]
       // !!! else if (exception is LocalReturn)
       // !!!   // ...
       else if (handler isDefinedAt exception)
@@ -56,9 +59,9 @@ object ScalaRunTime {
       else
         throw exception
 
-    def Finally(handler: Unit): a =
+    def Finally(handler: Unit): A =
       if (exception eq null)
-        result.asInstanceOf[a]
+        result.asInstanceOf[A]
       else
         throw exception
   }
@@ -117,7 +120,7 @@ object ScalaRunTime {
   //def checkDefined[T >: Null](x: T): T =
   //  if (x == null) throw new UndefinedException else x
 
-  def Seq[a](xs: a*): Seq[a] = null // interpreted specially by new backend.
+  def Seq[A](xs: A*): Seq[A] = null // interpreted specially by new backend.
 
   def arrayValue(x: BoxedArray, elemTag: String): AnyRef =
     if (x eq null) null else x.unbox(elemTag)
