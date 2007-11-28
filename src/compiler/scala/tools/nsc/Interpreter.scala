@@ -71,6 +71,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   import compiler.CompilationUnit
   import compiler.{Symbol,Name,Type}
   import compiler.nme
+  import Interpreter.string2code
 
   /** construct an interpreter that reports to Console */
   def this(settings: Settings) =
@@ -219,6 +220,9 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 	str.println(line)
       })
   }
+
+  implicit def name2string(name: Name) = name.toString
+
 
   /** Compute imports that allow definitions from previous
    *  requests to be visible in a new request.  Returns
@@ -691,8 +695,12 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
     def resultExtractionCode(code: PrintWriter) {
       for (vname <- valAndVarNames) {
-        code.print(" + \"" + vname + ": " + typeOf(vname) + " = \" + " +
-                   " (if(" + fullPath(vname) + ".toString.contains('\\n')) " +
+        code.print(" + \"" + vname + ": " +
+		   string2code(typeOf(vname)) +
+		   " = \" + " +
+                   " (if(" +
+		   fullPath(vname) +
+		   ".toString.contains('\\n')) " +
                    " \"\\n\" else \"\") + " +
                    fullPath(vname) + " + \"\\n\"")
       }
@@ -790,7 +798,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     def defTypesSummary: String =
       stringFrom(summ => {
         for (methname <- defNames)
-          summ.println("" + methname + ": " + typeOf(methname))
+          summ.println("" + methname + ": " +
+		       string2code(typeOf(methname)))
       })
   }
 
@@ -808,8 +817,11 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
     /** Print out lhs instead of the generated varName */
     override def resultExtractionCode(code: PrintWriter) {
-      code.print(" + \"" + lhs + ": " + typeOf(compiler.encode(varName)) +
-                 " = \" + " + fullPath(varName) + " + \"\\n\"")
+      code.print(" + \"" + lhs + ": " +
+		 string2code(typeOf(compiler.encode(varName))) +
+                 " = \" + " +
+		 string2code(fullPath(varName))
+		 + " + \"\\n\"")
 //      override def resultExtractionCode(code: PrintWriter) {
 //        {wrapperObj; lhs}
 //    }
@@ -836,7 +848,9 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     }
     override def resultExtractionCode(code: PrintWriter) {
       super.resultExtractionCode(code)
-      code.println(" + \"defined module " + moduleName + "\\n\"")
+      code.println(" + \"defined module " +
+		   string2code(moduleName)
+		   + "\\n\"")
     }
   }
 
@@ -860,7 +874,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
           " + \"defined " +
           keyword +
           " " +
-          newClassName +
+          string2code(newClassName) +
           "\\n\"")
     }
   }
@@ -912,7 +926,7 @@ object Interpreter {
 
   /** Delete a directory tree recursively.  Use with care!
    */
-  def deleteRecursively(path: File) {
+  private[nsc] def deleteRecursively(path: File) {
     path match  {
       case _ if !path.exists =>
         ()
@@ -931,5 +945,35 @@ object Interpreter {
   def stripWrapperGunk(str: String): String = {
     val wrapregex = "(line[0-9]+\\$object[$.])?(\\$iw[$.])*"
     str.replaceAll(wrapregex, "")
+  }
+
+  /** Convert a string into code that can recreate the string.
+   *  This requires replacing all special characters by escape
+   *  codes. It does not add the surrounding " marks.  */
+  def string2code(str: String): String = {
+    /** Convert a character to a backslash-u escape */
+    def char2uescape(c: Char): String = {
+      var rest = c.toInt
+      val buf = new StringBuilder
+      for (i <- 1 to 4) {
+	buf ++= (rest % 16).toHexString
+	rest = rest / 16
+      }
+      "\\" + "u" + buf.toString.reverse
+    }
+
+
+    val res = new StringBuilder
+    for (c <- str) {
+      if ("'\"\\" contains c) {
+	res += '\\'
+	res += c
+      } else if (!c.isControl) {
+	res += c
+      } else {
+	res ++= char2uescape(c)
+      }
+    }
+    res.toString
   }
 }
