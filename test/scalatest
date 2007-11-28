@@ -351,15 +351,15 @@ test_run_android() {
     cpath=`get_os_pathlist $ANDROID_LIB:"$dstbase"` &&
     $SCALAC -bootclasspath $cpath -cp "$os_classes" -d "$os_classes" -encoding ascii "$os_srcbase".scala &&
 #    echo $JAVACCMD -bootclasspath $cpath -cp "$os_classes" -d "$os_classes" -encoding ascii "$os_srcbase"/**/*.java &&
-    (cd "$os_classes" && $JARCMD xf $SCALA_LIB) &&
     extdirs=`get_os_pathlist "$ANDROID_HOME/tools/lib"` &&
     dex_file=`get_os_filename "$os_dstbase"/classes.dex` &&
+    scala_lib=`get_os_filename "$SCALA_LIB"` &&
     $JAVACMD -Djava.ext.dirs=$extdirs -Xmx384M -jar $DX_LIB \
         --dex --output=$dex_file --locals=full --positions=lines \
-        "$os_classes" &&
-    (cd "$dstbase" && zip -9q Test.apk *.xml *.dex &&
-     $ANDROID_ADB shell '"cd data/app; rm Test.apk"' 2>&1 1> /dev/null &&
-     $ANDROID_ADB install Test.apk 2> /dev/null)
+        "$scala_lib" "$os_classes" &&
+    ( cd "$dstbase" && zip -9q Test.apk *.xml *.dex &&
+      $ANDROID_ADB shell '"cd data/app; rm Test.apk"' 2>&1 1> /dev/null &&
+      $ANDROID_ADB install Test.apk 2> /dev/null)
 }
 
 # Tests a script with Scala code embedded in it
@@ -898,8 +898,8 @@ else
         if [ -d "$KVEM_HOME" ]; then
             KVEM_PREVERIFY="$KVEM_HOME/bin/preverify";
             KVEM_EMULATOR="$KVEM_HOME/bin/emulator";
-            KVEM_CLDC=$KVEM_HOME/lib/cldcapi10.jar;
-            KVEM_MIDP=$KVEM_HOME/lib/midpapi10.jar;
+            KVEM_CLDC="$KVEM_HOME/lib/cldcapi10.jar";
+            KVEM_MIDP="$KVEM_HOME/lib/midpapi10.jar";
             JARCMD="$bin_dir/jar";
         elif [ -d "/home/linuxsoft/apps/" ]; then
             error "option '--cldc' requires variable KVEM_HOME to be set"
