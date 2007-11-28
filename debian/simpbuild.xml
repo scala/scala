@@ -519,7 +519,7 @@
 
   <target name="docs" depends="docs.lib, docs.manual"/>
 
-  <target name="dist" depends="build, docs">
+  <target name="dist" depends="build">  <!-- should build docs manually -->
     <!-- Create the SBaz packages -->
     <mkdir dir="${dist.sbaz.dir}"/>
     <!-- Create the Scala library package -->
