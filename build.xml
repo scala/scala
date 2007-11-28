@@ -59,6 +59,7 @@ PROPERTIES
   <property name="android.dir" value="${build.dir}/android"/>
   <property name="msil.dir" value="${build.dir}/msil"/>
   <property name="mono.dir" value="${src.dir}/mono"/>
+
   <!--  Sets location and structure of the distribution -->
   <property name="dist.dir" value="${basedir}/dists"/>
   <property name="lib.jar.name" value="scala-library.jar"/>
@@ -76,8 +77,19 @@ PROPERTIES
   <property name="comp.prop.name" value="compiler.properties"/>
   <property name="lib.prop.name" value="library.properties"/>
   <property name="par.prop.name" value="partest.properties"/>
+
   <!-- if available, faster stability checking -->
   <property name="stability.tool" value="/home/linuxsoft/apps/stability/stability"/>
+
+  <!-- Sets location of Android installation -->
+  <condition property="android.home" value="${unix.android.home}">
+    <and><os family="unix"/><isset property="unix.android.home"/></and>
+  </condition>
+  <condition property="android.home" value="${win.android.home}">
+    <and><os family="windows"/><isset property="win.android.home"/></and>
+  </condition>
+  <property name="android.home" value="${env.ANDROID_HOME}"/>
+
 <!-- ===========================================================================
 ANT INITIALISATION
 ============================================================================ -->
