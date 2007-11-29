@@ -1,23 +1,15 @@
 package examples.actors
 
-import scala.actors.Actor._
-
 object seq extends Application {
-
-  case object A
-
+  import scala.actors.Actor._
   val a = actor {
-    {
-      react {
-        case A => Console.println("received A")
-      }
-      ()
-    } andThen {
-      react {
-        case A => Console.println("received 2nd A")
-      }
+    { react {
+        case 'A => println("received 1st message")
+      }; ()
+    } andThen react {
+      case 'A => println("received 2nd message")
     }
   }
-  a ! A
-  a ! A
+  a ! 'A
+  a ! 'A
 }
