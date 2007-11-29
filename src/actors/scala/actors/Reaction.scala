@@ -19,10 +19,24 @@ import java.lang.{InterruptedException, Runnable}
  *    return type <code>Nothing</code>.
  *  </p>
  *
- *  @version 0.9.8
+ *  @version 0.9.10
  *  @author Philipp Haller
  */
-private[actors] class ExitActorException extends Throwable
+private[actors] class ExitActorException extends Throwable {
+  /*
+   * For efficiency reasons we do not fill in
+   * the execution stack trace.
+   */
+  override def fillInStackTrace(): Throwable = this
+}
+
+private[actors] class KillActorException extends Throwable {
+  /*
+   * For efficiency reasons we do not fill in
+   * the execution stack trace.
+   */
+  override def fillInStackTrace(): Throwable = this
+}
 
 /** <p>
  *    The abstract class <code>Reaction</code> associates
@@ -31,7 +45,7 @@ private[actors] class ExitActorException extends Throwable
  *    <code>java.lang.Runnable</code></a>.
  *  </p>
  *
- *  @version 0.9.8
+ *  @version 0.9.10
  *  @author Philipp Haller
  */
 /*private[actors]*/ class Reaction(a: Actor,
@@ -47,10 +61,14 @@ private[actors] class ExitActorException extends Throwable
       if (a.shouldExit) // links
         a.exit()
       else {
-        if (f == null)
-          a.act()
-        else
-          f(msg)
+        try {
+          if (f == null)
+            a.act()
+          else
+            f(msg)
+        } catch {
+          case _: KillActorException =>
+        }
         a.kill(); a.exit()
       }
     }

@@ -205,6 +205,7 @@ object Actor {
    */
   def loopWhile(cond: => Boolean)(body: => Unit): Unit =
     if (cond) { body andThen loopWhile(cond)(body) }
+    else continue
 
   /**
    * Links <code>self</code> to actor <code>to</code>.
@@ -261,7 +262,7 @@ object Actor {
    */
   def exit(): Nothing = self.exit()
 
-  def continue: Unit = self.kill()
+  def continue: Unit = throw new KillActorException
 }
 
 /**
@@ -612,7 +613,7 @@ trait Actor extends OutputChannel[Any] {
   private var isWaiting = false
 
   // guarded by lock of this
-  private def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
+  protected def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
     if ((f eq null) && (continuation eq null)) {
       // do nothing (timeout is handled instead)
     }
@@ -697,6 +698,7 @@ trait Actor extends OutputChannel[Any] {
       throw new SuspendActorException
     }
     first
+    throw new KillActorException
   }
 
   private[actors] var links: List[Actor] = Nil
