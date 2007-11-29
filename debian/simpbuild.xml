@@ -413,6 +413,8 @@
       class="scala.tools.nsc.MainGenericRunner"
       javaFlags="-Xmx256M -Xms16M"
     />
+    <chmod perm="ugo+rx"
+           file="${build.bin.dir}/${scala.exec.name}"/>
     <scalatool
       file="${build.bin.dir}/${scalac.exec.name}"
       name="Scala compiler"
@@ -421,6 +423,8 @@
       copyright="${copyright}"
       javaFlags="-Xmx256M -Xms16M"
     />
+    <chmod perm="ugo+rx"
+           file="${build.bin.dir}/${scalac.exec.name}"/>
     <scalatool
       file="${build.bin.dir}/${scaladoc.exec.name}"
       name="Scala doc generator"
@@ -430,6 +434,8 @@
       copyright="${copyright}"
       javaFlags="-Xmx256M -Xms16M"
     />
+    <chmod perm="ugo+rx"
+           file="${build.bin.dir}/${scaladoc.exec.name}"/>
     <scalatool
       file="${build.bin.dir}/${fsc.exec.name}"
       name="Fast Scala compiler"
@@ -438,6 +444,8 @@
       copyright="${copyright}"
       javaFlags="-Xmx256M -Xms16M"
     />
+    <chmod perm="ugo+rx"
+           file="${build.bin.dir}/${fsc.exec.name}"/>
   	
     <!-- build source jars -->
     <jar
@@ -455,6 +463,31 @@
       destfile="${build.jar.dir}/${compsrc.jar.name}"
       basedir="${src.comp.dir}"
       includes="**/*.scala"
+    />
+  </target>
+
+  <target name="build.tests" depends="build">
+    <mkdir dir="${build.dir}/partest"/>
+    <scalac
+      srcdir="${topdir}/src/partest"
+      destdir="${build.dir}/partest"
+      deprecation="yes" unchecked="yes">
+      <classpath>
+        <pathelement location="${build.lib.dir}"/>
+        <pathelement location="${build.comp.dir}"/>
+        <pathelement location="${build.actors.dir}"/>
+      </classpath>
+      <include name="**/*.scala"/>
+    </scalac>
+
+    <jar
+      destfile="${build.jar.dir}/scala-partest-src.jar"
+      basedir="${topdir}/src/partest"
+      includes="**/*.scala"
+    />
+    <jar
+      destfile="${build.jar.dir}/scala-partest.jar"
+      basedir="${build.dir}/partest"
     />
   </target>
 
@@ -566,7 +599,7 @@
     />
   </target>
 
-  <target name="dist.tests">
+  <target name="dist.tests" depends="build.tests">
     <sbaz
       file="${dist.sbaz.dir}/${sbaz.test.name}-${version.number}.sbp"
       adfile="${dist.sbaz.dir}/${sbaz.test.name}-${version.number}.advert"
@@ -577,12 +610,14 @@
     >
       <binset
         dir="${topdir}/test"
-        includes="scalatest"
+        includes="scalatest,partest"
       />
       <miscset
         dir="${topdir}/test"
         includes="files/**"
       />
+      <libset dir="${build.jar.dir}" includes="scala-partest.jar"/>
+      <srcset dir="${build.jar.dir}" includes="scala-partest-src.jar"/>
     </sbaz>
   </target>
 
@@ -595,6 +630,12 @@
     </exec>
     <exec executable="sbaz">
       <arg line="-v install -f ${dist.sbaz.dir}/${sbaz.scala.name}-${version.number}.sbp"/>
+    </exec>
+  </target>
+
+  <target name="install.tests" depends="dist.tests">
+    <exec executable="sbaz">
+      <arg line="-v install -f ${dist.sbaz.dir}/${sbaz.test.name}-${version.number}.sbp"/>
     </exec>
   </target>
 
