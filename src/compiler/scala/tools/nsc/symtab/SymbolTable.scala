@@ -116,6 +116,8 @@ abstract class SymbolTable extends Names
     val IOOBException: Name // IndexOutOfBoundsException
     val Code         : Name
     val BoxedNumber  : Name
+    val BoxedCharacter : Name
+    val BoxedBoolean : Name
 
     import scala.collection.mutable.HashMap
     val Boxed = new HashMap[Name, Name]
@@ -132,6 +134,8 @@ abstract class SymbolTable extends Names
     final val Delegate      = nme.NOSYMBOL
     final val IOOBException = newTermName("java.lang.IndexOutOfBoundsException")
     final val BoxedNumber   = newTermName("java.lang.Number")
+    final val BoxedCharacter = newTermName("java.lang.Character")
+    final val BoxedBoolean = newTermName("java.lang.Boolean")
 
     Boxed += nme.Boolean -> newTermName("java.lang.Boolean")
     Boxed += nme.Byte    -> newTermName("java.lang.Byte")
@@ -157,6 +161,8 @@ abstract class SymbolTable extends Names
     final val IOOBException = newTermName("System.IndexOutOfRangeException")
     final val Code          = nme.NOSYMBOL
     final val BoxedNumber   = newTermName("System.IConvertible")
+    final val BoxedCharacter = newTermName("System.IConvertible")
+    final val BoxedBoolean = newTermName("System.IConvertible")
 
     Boxed += nme.Boolean -> newTermName("System.Boolean")
     Boxed += nme.Byte    -> newTermName("System.Byte")

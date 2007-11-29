@@ -43,9 +43,7 @@ abstract class GenICode extends SubComponent  {
     val SCALA_ALLREF = REFERENCE(definitions.AllRefClass)
     val THROWABLE    = REFERENCE(definitions.ThrowableClass)
 
-    val BoxedCharacterClass = if (forMSIL) null else definitions.getClass("java.lang.Character")
-    val Comparator_equals = definitions.getMember(definitions.getModule("scala.runtime.Comparator"),
-                                                 nme.equals_)
+    val BoxesRunTime_equals = definitions.getMember(definitions.BoxesRunTimeClass, nme.equals_)
 
     override def run: Unit = {
       scalaPrimitives.init
@@ -1450,7 +1448,7 @@ abstract class GenICode extends SubComponent  {
             (sym isNonBottomSubClass definitions.LongClass)
           }
           else ((sym isNonBottomSubClass definitions.BoxedNumberClass) ||
-            (!forMSIL && (sym isNonBottomSubClass BoxedCharacterClass)))
+            (!forMSIL && (sym isNonBottomSubClass definitions.BoxedCharacterClass)))
 
         val lsym = l.tpe.typeSymbol
         val rsym = r.tpe.typeSymbol
@@ -1463,7 +1461,7 @@ abstract class GenICode extends SubComponent  {
 
         val ctx1 = genLoad(l, ctx, ANY_REF_CLASS)
         val ctx2 = genLoad(r, ctx1, ANY_REF_CLASS)
-        ctx2.bb.emit(CALL_METHOD(Comparator_equals, Static(false)))
+        ctx2.bb.emit(CALL_METHOD(BoxesRunTime_equals, Static(false)))
         ctx2.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL))
         ctx2.bb.close
 
