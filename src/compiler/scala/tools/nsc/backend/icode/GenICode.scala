@@ -43,7 +43,11 @@ abstract class GenICode extends SubComponent  {
     val SCALA_ALLREF = REFERENCE(definitions.AllRefClass)
     val THROWABLE    = REFERENCE(definitions.ThrowableClass)
 
-    val BoxesRunTime_equals = definitions.getMember(definitions.BoxesRunTimeClass, nme.equals_)
+    val BoxesRunTime_equals =
+      if (!forMSIL)
+        definitions.getMember(definitions.BoxesRunTimeClass, nme.equals_)
+      else
+        definitions.getMember(definitions.getClass("scala.runtime.Comparator"), nme.equals_)
 
     override def run: Unit = {
       scalaPrimitives.init
