@@ -903,15 +903,15 @@ ANDROID
       <jvmarg value="-Djava.ext.dirs=${android.home}${file.separator}tools${file.separator}lib"/>
       <jvmarg value="-Xmx384M"/>
       <arg value="--dex"/>
-      <arg value="--output=${android.dir}/lib/classes.dex"/>
+      <arg value="--output=${android.dir}/lib/scala.dex"/>
       <arg value="--locals=full"/>
       <arg value="--positions=lines"/>
       <arg value="${android.dir}/lib/library"/>
     </java>
     <jar
-      destfile="${android.dir}/lib/scala.jar"
+      destfile="${android.dir}/lib/scala-dex.jar"
       basedir="${android.dir}/lib"
-      includes="classes.dex"
+      includes="scala.dex"
     />
     <jar
       destfile="${android.dir}/lib/scala-android.jar"
@@ -1710,7 +1710,7 @@ GENERATES A DISTRIBUTION
   </target>
 
   <target name="build.dist"
-    depends="binaries,docs,docs.manual,msil,cldc,android"
+    depends="binaries,docs,docs.manual"
     description="Creates the latest Scala distribution">
   <!-- Copy the API, examples and man -->
     <copy todir="${dist.current.dir}/doc/scala">
@@ -1737,7 +1737,7 @@ GENERATES A DISTRIBUTION
   </target>
 
   <!-- Create the SBaz packages -->
-  <target name="build.sbaz" depends="build.dist">
+  <target name="build.sbaz" depends="build.dist,msil,cldc,android">
     <property name="sbaz.universe" value="http://www.scala-lang.org/downloads/packages"/>
     <mkdir dir="${dist.dir}"/>
   <!-- Create the Scala library package -->
