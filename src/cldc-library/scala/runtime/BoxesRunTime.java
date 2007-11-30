@@ -88,8 +88,10 @@ public class BoxesRunTime {
         }
     }
 
+    private static final Boolean TRUE = new Boolean(true);
+    private static final Boolean FALSE = new Boolean(false);
     public static Boolean boxToBoolean(boolean b) {
-        return b ? Boolean.TRUE : Boolean.FALSE;
+        return b ? TRUE : FALSE;
     }
 
     public static Character boxToCharacter(char c) {
@@ -158,469 +160,164 @@ public class BoxesRunTime {
       * <code>java.lang.Number</code>, of <code>java.lang.Character</code> or
       * is exactly <code>Any</code> or <code>AnyRef</code>. */
     public static boolean equals(Object a, Object b) {
-        if (a == null || b == null)
-            return a == b;
+        if (a == null)
+            return b == null;
+        if (b == null)
+            return false;
         if (a.equals(b))
             return true;
-        if (a instanceof Number || a instanceof Character || b instanceof Number || b instanceof Character) {
-            int acode = typeCode(a);
-            int bcode = typeCode(b);
-            int maxcode = (acode < bcode) ? bcode : acode;
-            if (maxcode <= INT) {
-                int aa = (acode == CHAR) ? ((Character) a).charValue() : ((Number) a).intValue();
-                int bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).intValue();
-                return aa == bb;
-            }
-            if (maxcode <= LONG) {
-                long aa = (acode == CHAR) ? ((Character) a).charValue() : ((Number) a).longValue();
-                long bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).longValue();
-                return aa == bb;
-            }
-        }
-        return false;
+
+        final long left =
+            (a instanceof Integer) ? ((Integer)a).intValue() :
+            (a instanceof Character) ? ((Character)a).charValue() :
+            (a instanceof Long) ? ((Long)a).longValue() :
+            (a instanceof Byte) ? ((Byte)a).byteValue() :
+            ((Short)a).shortValue();
+
+        final long right =
+            (b instanceof Integer) ? ((Integer)b).intValue() :
+            (b instanceof Character) ? ((Character)b).charValue() :
+            (b instanceof Long) ? ((Long)b).longValue() :
+            (b instanceof Byte) ? ((Byte)b).byteValue() :
+            ((Short)b).shortValue();
+
+        return left == right;
     }
 
 /* OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS */
 
     /** arg1 + arg2 */
-    public static Object add(Object arg1, Object arg2) throws NoSuchMethodException {
-        int code1 = typeCode(arg1);
-        int code2 = typeCode(arg2);
-        int maxcode = (code1 < code2) ? code2 : code1;
-        if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).intValue();
-            return boxToInteger(val1 + val2);
-        }
-        if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).longValue();
-            return boxToLong(val1 + val2);
-        }
-        throw new NoSuchMethodException();
+    public static Object add(Object arg1, Object arg2) throws Error {
+        throw new Error();
     }
 
     /** arg1 - arg2 */
-    public static Object substract(Object arg1, Object arg2) throws NoSuchMethodException {
-        int code1 = typeCode(arg1);
-        int code2 = typeCode(arg2);
-        int maxcode = (code1 < code2) ? code2 : code1;
-        if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).intValue();
-            return boxToInteger(val1 - val2);
-        }
-        if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).longValue();
-            return boxToLong(val1 - val2);
-        }
-        throw new NoSuchMethodException();
+    public static Object substract(Object arg1, Object arg2) throws Error {
+        throw new Error();
     }
 
     /** arg1 * arg2 */
-    public static Object multiply(Object arg1, Object arg2) throws NoSuchMethodException {
-        int code1 = typeCode(arg1);
-        int code2 = typeCode(arg2);
-        int maxcode = (code1 < code2) ? code2 : code1;
-        if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).intValue();
-            return boxToInteger(val1 * val2);
-        }
-        if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).longValue();
-            return boxToLong(val1 * val2);
-        }
-        throw new NoSuchMethodException();
+    public static Object multiply(Object arg1, Object arg2) throws Error {
+        throw new Error();
     }
 
     /** arg1 / arg2 */
-    public static Object divide(Object arg1, Object arg2) throws NoSuchMethodException {
-        int code1 = typeCode(arg1);
-        int code2 = typeCode(arg2);
-        int maxcode = (code1 < code2) ? code2 : code1;
-        if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).intValue();
-            return boxToInteger(val1 / val2);
-        }
-        if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).longValue();
-            return boxToLong(val1 / val2);
-        }
-        throw new NoSuchMethodException();
+    public static Object divide(Object arg1, Object arg2) throws Error {
+        throw new Error();
     }
 
     /** arg1 % arg2 */
-    public static Object takeModulo(Object arg1, Object arg2) throws NoSuchMethodException {
-        int code1 = typeCode(arg1);
-        int code2 = typeCode(arg2);
-        int maxcode = (code1 < code2) ? code2 : code1;
-        if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).intValue();
-            return boxToInteger(val1 % val2);
-        }
-        if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).longValue();
-            return boxToLong(val1 % val2);
-        }
-        throw new NoSuchMethodException();
+    public static Object takeModulo(Object arg1, Object arg2) throws Error {
+        throw new Error();
     }
 
     /** arg1 >> arg2 */
-    public static Object shiftSignedRight(Object arg1, Object arg2) throws NoSuchMethodException {
-        int code1 = typeCode(arg1);
-        int code2 = typeCode(arg2);
-        if (code1 <= INT) {
-            int val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).intValue();
-            if (code2 <= INT) {
-                int val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).intValue();
-                return boxToInteger(val1 >> val2);
-            }
-            if (code2 <= LONG) {
-                long val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).longValue();
-                return boxToInteger(val1 >> val2);
-            }
-        }
-        if (code1 <= LONG) {
-            long val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).longValue();
-            if (code2 <= INT) {
-                int val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).intValue();
-                return boxToLong(val1 >> val2);
-            }
-            if (code2 <= LONG) {
-                long val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).longValue();
-                return boxToLong(val1 >> val2);
-            }
-        }
-        throw new NoSuchMethodException();
+    public static Object shiftSignedRight(Object arg1, Object arg2) throws Error {
+        throw new Error();
     }
 
     /** arg1 << arg2 */
-    public static Object shiftSignedLeft(Object arg1, Object arg2) throws NoSuchMethodException {
-        int code1 = typeCode(arg1);
-        int code2 = typeCode(arg2);
-        if (code1 <= INT) {
-            int val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).intValue();
-            if (code2 <= INT) {
-                int val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).intValue();
-                return boxToInteger(val1 << val2);
-            }
-            if (code2 <= LONG) {
-                long val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).longValue();
-                return boxToInteger(val1 << val2);
-            }
-        }
-        if (code1 <= LONG) {
-            long val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).longValue();
-            if (code2 <= INT) {
-                int val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).intValue();
-                return boxToLong(val1 << val2);
-            }
-            if (code2 <= LONG) {
-                long val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).longValue();
-                return boxToLong(val1 << val2);
-            }
-        }
-        throw new NoSuchMethodException();
+    public static Object shiftSignedLeft(Object arg1, Object arg2) throws Error {
+        throw new Error();
     }
 
     /** arg1 >>> arg2 */
-    public static Object shiftLogicalRight(Object arg1, Object arg2) throws NoSuchMethodException {
-        int code1 = typeCode(arg1);
-        int code2 = typeCode(arg2);
-        if (code1 <= INT) {
-            int val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).intValue();
-            if (code2 <= INT) {
-                int val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).intValue();
-                return boxToInteger(val1 >>> val2);
-            }
-            if (code2 <= LONG) {
-                long val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).longValue();
-                return boxToInteger(val1 >>> val2);
-            }
-        }
-        if (code1 <= LONG) {
-            long val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).longValue();
-            if (code2 <= INT) {
-                int val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).intValue();
-                return boxToLong(val1 >>> val2);
-            }
-            if (code2 <= LONG) {
-                long val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).longValue();
-                return boxToLong(val1 >>> val2);
-            }
-        }
-        throw new NoSuchMethodException();
+    public static Object shiftLogicalRight(Object arg1, Object arg2) throws Error {
+        throw new Error();
     }
 
     /** -arg */
-    public static Object negate(Object arg) throws NoSuchMethodException {
-        int code = typeCode(arg);
-        if (code <= INT) {
-            int val = (code == CHAR) ? ((Character) arg).charValue() : ((Number) arg).intValue();
-            return boxToInteger(-val);
-        }
-        if (code <= LONG) {
-            long val = (code == CHAR) ? ((Character) arg).charValue() : ((Number) arg).longValue();
-            return boxToLong(-val);
-        }
-        throw new NoSuchMethodException();
+    public static Object negate(Object arg) throws Error {
+        throw new Error();
     }
 
     /** +arg */
-    public static Object positive(Object arg) throws NoSuchMethodException {
-        int code = typeCode(arg);
-        if (code <= INT) {
-            int val = (code == CHAR) ? ((Character) arg).charValue() : ((Number) arg).intValue();
-            return boxToInteger(+val);
-        }
-        if (code <= LONG) {
-            long val = (code == CHAR) ? ((Character) arg).charValue() : ((Number) arg).longValue();
-            return boxToLong(+val);
-        }
-        throw new NoSuchMethodException();
+    public static Object positive(Object arg) throws Error {
+        throw new Error();
     }
 
     /** arg1 & arg2 */
-    public static Object takeAnd(Object arg1, Object arg2) throws NoSuchMethodException {
-        if ((arg1 instanceof Boolean) || (arg2 instanceof Boolean)) {
-            if (!((arg1 instanceof Boolean) && (arg2 instanceof Boolean))) {
-                throw new NoSuchMethodException();
-            }
-            return boxToBoolean(((Boolean) arg1).booleanValue() & ((Boolean) arg2).booleanValue());
-        }
-        int code1 = typeCode(arg1);
-        int code2 = typeCode(arg2);
-        int maxcode = (code1 < code2) ? code2 : code1;
-        if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).intValue();
-            return boxToInteger(val1 & val2);
-        }
-        if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).longValue();
-            return boxToLong(val1 & val2);
-        }
-        throw new NoSuchMethodException();
+    public static Object takeAnd(Object arg1, Object arg2) throws Error {
+        throw new Error();
     }
 
     /** arg1 | arg2 */
-    public static Object takeOr(Object arg1, Object arg2) throws NoSuchMethodException {
-        if ((arg1 instanceof Boolean) || (arg2 instanceof Boolean)) {
-            if (!((arg1 instanceof Boolean) && (arg2 instanceof Boolean))) {
-                throw new NoSuchMethodException();
-            }
-            return boxToBoolean(((Boolean) arg1).booleanValue() | ((Boolean) arg2).booleanValue());
-        }
-        int code1 = typeCode(arg1);
-        int code2 = typeCode(arg2);
-        int maxcode = (code1 < code2) ? code2 : code1;
-        if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).intValue();
-            return boxToInteger(val1 | val2);
-        }
-        if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).longValue();
-            return boxToLong(val1 | val2);
-        }
-        throw new NoSuchMethodException();
+    public static Object takeOr(Object arg1, Object arg2) throws Error {
+        throw new Error();
     }
 
     /** arg1 ^ arg2 */
-    public static Object takeXor(Object arg1, Object arg2) throws NoSuchMethodException {
-        if ((arg1 instanceof Boolean) || (arg2 instanceof Boolean)) {
-            if (!((arg1 instanceof Boolean) && (arg2 instanceof Boolean))) {
-                throw new NoSuchMethodException();
-            }
-            return boxToBoolean(((Boolean) arg1).booleanValue() ^ ((Boolean) arg2).booleanValue());
-        }
-        int code1 = typeCode(arg1);
-        int code2 = typeCode(arg2);
-        int maxcode = (code1 < code2) ? code2 : code1;
-        if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).intValue();
-            return boxToInteger(val1 ^ val2);
-        }
-        if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).longValue();
-            return boxToLong(val1 ^ val2);
-        }
-        throw new NoSuchMethodException();
+    public static Object takeXor(Object arg1, Object arg2) throws Error {
+        throw new Error();
     }
 
     /** arg1 && arg2 */
-    public static Object takeConditionalAnd(Object arg1, Object arg2) throws NoSuchMethodException {
-        if ((arg1 instanceof Boolean) && (arg2 instanceof Boolean)) {
-            return boxToBoolean(((Boolean) arg1).booleanValue() && ((Boolean) arg2).booleanValue());
-        }
-        throw new NoSuchMethodException();
+    public static Object takeConditionalAnd(Object arg1, Object arg2) throws Error {
+        throw new Error();
     }
 
     /** arg1 || arg2 */
-    public static Object takeConditionalOr(Object arg1, Object arg2) throws NoSuchMethodException {
-        if ((arg1 instanceof Boolean) && (arg2 instanceof Boolean)) {
-            return boxToBoolean(((Boolean) arg1).booleanValue() || ((Boolean) arg2).booleanValue());
-        }
-        throw new NoSuchMethodException();
+    public static Object takeConditionalOr(Object arg1, Object arg2) throws Error {
+        throw new Error();
     }
 
     /** ~arg */
-    public static Object complement(Object arg) throws NoSuchMethodException {
-        int code = typeCode(arg);
-        if (code <= INT) {
-            int val = (code == CHAR) ? ((Character) arg).charValue() : ((Number) arg).intValue();
-            return boxToInteger(~val);
-        }
-        if (code <= LONG) {
-            long val = (code == CHAR) ? ((Character) arg).charValue() : ((Number) arg).longValue();
-            return boxToLong(~val);
-        }
-        throw new NoSuchMethodException();
+    public static Object complement(Object arg) throws Error {
+        throw new Error();
     }
 
     /** !arg */
-    public static Object takeNot(Object arg) throws NoSuchMethodException {
-        if (arg instanceof Boolean) {
-          return boxToBoolean(!((Boolean) arg).booleanValue());
-        }
-        throw new NoSuchMethodException();
+    public static Object takeNot(Object arg) throws Error {
+        throw new Error();
     }
 
-    public static Object testEqual(Object arg1, Object arg2) throws NoSuchMethodException {
-        return boxToBoolean(arg1 == arg2);
+    public static Object testEqual(Object arg1, Object arg2) throws Error {
+        throw new Error();
     }
 
-    public static Object testNotEqual(Object arg1, Object arg2) throws NoSuchMethodException {
-        return boxToBoolean(arg1 != arg2);
+    public static Object testNotEqual(Object arg1, Object arg2) throws Error {
+        throw new Error();
     }
 
-    public static Object testLessThan(Object arg1, Object arg2) throws NoSuchMethodException {
-        int code1 = typeCode(arg1);
-        int code2 = typeCode(arg2);
-        int maxcode = (code1 < code2) ? code2 : code1;
-        if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).intValue();
-            return boxToBoolean(val1 < val2);
-        }
-        if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).longValue();
-            return boxToBoolean(val1 < val2);
-        }
-        throw new NoSuchMethodException();
+    public static Object testLessThan(Object arg1, Object arg2) throws Error {
+        throw new Error();
     }
 
-    public static Object testLessOrEqualThan(Object arg1, Object arg2) throws NoSuchMethodException {
-        int code1 = typeCode(arg1);
-        int code2 = typeCode(arg2);
-        int maxcode = (code1 < code2) ? code2 : code1;
-        if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).intValue();
-            return boxToBoolean(val1 <= val2);
-        }
-        if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).longValue();
-            return boxToBoolean(val1 <= val2);
-        }
-        throw new NoSuchMethodException();
+    public static Object testLessOrEqualThan(Object arg1, Object arg2) throws Error {
+        throw new Error();
     }
 
-    public static Object testGreaterOrEqualThan(Object arg1, Object arg2) throws NoSuchMethodException {
-        int code1 = typeCode(arg1);
-        int code2 = typeCode(arg2);
-        int maxcode = (code1 < code2) ? code2 : code1;
-        if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).intValue();
-            return boxToBoolean(val1 >= val2);
-        }
-        if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).longValue();
-            return boxToBoolean(val1 >= val2);
-        }
-        throw new NoSuchMethodException();
+    public static Object testGreaterOrEqualThan(Object arg1, Object arg2) throws Error {
+        throw new Error();
     }
 
-    public static Object testGreaterThan(Object arg1, Object arg2) throws NoSuchMethodException {
-        int code1 = typeCode(arg1);
-        int code2 = typeCode(arg2);
-        int maxcode = (code1 < code2) ? code2 : code1;
-        if (maxcode <= INT) {
-            int val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).intValue();
-            int val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).intValue();
-            return boxToBoolean(val1 > val2);
-        }
-        if (maxcode <= LONG) {
-            long val1 = (code1 == CHAR) ? ((Character) arg1).charValue() : ((Number) arg1).longValue();
-            long val2 = (code2 == CHAR) ? ((Character) arg2).charValue() : ((Number) arg2).longValue();
-            return boxToBoolean(val1 > val2);
-        }
-        throw new NoSuchMethodException();
+    public static Object testGreaterThan(Object arg1, Object arg2) throws Error {
+        throw new Error();
     }
 
     /** arg.toChar */
-    public static Character toCharacter(Object arg) throws NoSuchMethodException {
-        if (arg instanceof Character) return (Character)arg;
-        if (arg instanceof Byte) return boxToCharacter((char)unboxToByte(arg));
-        if (arg instanceof Short) return boxToCharacter((char)unboxToShort(arg));
-        if (arg instanceof Integer) return boxToCharacter((char)unboxToInt(arg));
-        if (arg instanceof Long) return boxToCharacter((char)unboxToLong(arg));
-        throw new NoSuchMethodException();
+    public static Character toCharacter(Object arg) throws Error {
+        throw new Error();
     }
 
     /** arg.toByte */
-    public static Byte toByte(Object arg) throws NoSuchMethodException {
-        if (arg instanceof Character) return boxToByte((byte)unboxToChar(arg));
-        if (arg instanceof Byte) return (Byte)arg;
-        if (arg instanceof Short) return boxToByte((byte)unboxToShort(arg));
-        if (arg instanceof Integer) return boxToByte((byte)unboxToInt(arg));
-        if (arg instanceof Long) return boxToByte((byte)unboxToLong(arg));
-        throw new NoSuchMethodException();
+    public static Byte toByte(Object arg) throws Error {
+        throw new Error();
     }
 
     /** arg.toShort */
-    public static Short toShort(Object arg) throws NoSuchMethodException {
-        if (arg instanceof Character) return boxToShort((short)unboxToChar(arg));
-        if (arg instanceof Byte) return boxToShort((short)unboxToByte(arg));
-        if (arg instanceof Short) return (Short)arg;
-        if (arg instanceof Integer) return boxToShort((short)unboxToInt(arg));
-        if (arg instanceof Long) return boxToShort((short)unboxToLong(arg));
-        throw new NoSuchMethodException();
+    public static Short toShort(Object arg) throws Error {
+        throw new Error();
     }
 
     /** arg.toInt */
-    public static Integer toInteger(Object arg) throws NoSuchMethodException {
-        if (arg instanceof Character) return boxToInteger((int)unboxToChar(arg));
-        if (arg instanceof Byte) return boxToInteger((int)unboxToByte(arg));
-        if (arg instanceof Short) return boxToInteger((int)unboxToShort(arg));
-        if (arg instanceof Integer) return (Integer)arg;
-        if (arg instanceof Long) return boxToInteger((int)unboxToLong(arg));
-        throw new NoSuchMethodException();
+    public static Integer toInteger(Object arg) throws Error {
+        throw new Error();
     }
 
     /** arg.toLong */
-    public static Long toLong(Object arg) throws NoSuchMethodException {
-        if (arg instanceof Character) return boxToLong((long)unboxToChar(arg));
-        if (arg instanceof Byte) return boxToLong((long)unboxToByte(arg));
-        if (arg instanceof Short) return boxToLong((long)unboxToShort(arg));
-        if (arg instanceof Integer) return boxToLong((long)unboxToInt(arg));
-        if (arg instanceof Long) return (Long)arg;
-        throw new NoSuchMethodException();
+    public static Long toLong(Object arg) throws Error {
+        throw new Error();
     }
 
 }
