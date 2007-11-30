@@ -1804,17 +1804,26 @@ trait Typers { self: Analyzer =>
 	  // and then stripping the "self =>" and substituting
           // in the supplied selfsym.
 	  val funcparm = ValDef(NoMods, nme.self, TypeTree(selfsym.info), EmptyTree)
-	  val func = Function(List(funcparm), annot.constr)
+	  val func = Function(List(funcparm), annot.constr.duplicate)
+                                         // The .duplicate of annot.constr
+                                         // deals with problems that
+                                         // accur if this annotation is
+                                         // later typed again, which
+                                         // the compiler sometimes does.
+                                         // The problem is that "self"
+                                         // ident's within annot.constr
+                                         // will retain the old symbol
+                                         // from the previous typing.
 	  val fun1clazz = FunctionClass(1)
 	  val funcType = typeRef(fun1clazz.tpe.prefix,
 				 fun1clazz,
 				 List(selfsym.info, AnnotationClass.tpe))
 
-	  typed (func, mode, funcType) match {
+	  typed(func, mode, funcType) match {
 	    case t @ Function(List(arg), rhs) =>
 	      val subs =
 		new TreeSymSubstituter(List(arg.symbol),List(selfsym))
-	      subs(rhs)
+              subs(rhs)
 	  }
 	}
 

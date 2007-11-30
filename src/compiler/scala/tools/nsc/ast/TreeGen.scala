@@ -18,9 +18,21 @@ abstract class TreeGen {
   import definitions._
   import posAssigner.atPos
 
+
   /** Builds a reference to value whose type is given stable prefix.
+   *  The type must be suitable for this.  For example, it
+   *  must not be a TypeRef pointing to an abstract type variable.
    */
-  def mkAttributedQualifier(tpe: Type): Tree = tpe match {
+  def mkAttributedQualifier(tpe: Type): Tree =
+    mkAttributedQualifier(tpe, NoSymbol)
+
+  /** Builds a reference to value whose type is given stable prefix.
+   *  If the type is unsuitable, e.g. it is a TypeRef for an
+   *  abstract type variable, then an Ident will be made using
+   *  termSym as the Ident's symbol.  In that case, termSym must
+   *  not be NoSymbol.
+   */
+  def mkAttributedQualifier(tpe: Type, termSym: Symbol): Tree = tpe match {
     case NoPrefix =>
       EmptyTree
     case ThisType(clazz) =>
@@ -48,6 +60,9 @@ abstract class TreeGen {
       } else if (sym.isModule || sym.isClass) {
         assert(phase.erasedTypes, tpe)
         mkAttributedThis(sym)
+      } else if (sym.isType) {
+        assert(termSym != NoSymbol)
+	mkAttributedIdent(termSym) setType tpe
       } else {
 	mkAttributedRef(pre, sym)
       }

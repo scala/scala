@@ -2477,9 +2477,13 @@ A type's typeSymbol should never be inspected directly.
 	    case This(_)
 	    if (tree.symbol isNonBottomSubClass clazz) &&
 	       (pre.widen.typeSymbol isNonBottomSubClass tree.symbol) =>
-  	      if (pre.isStable)
-		mkAttributedQualifier(pre)
-	      else
+  	      if (pre.isStable) {
+		val termSym =
+		  pre.typeSymbol.owner.newValue(
+		    pre.typeSymbol.pos,
+		    pre.typeSymbol.name).setInfo(pre)  // what symbol should really be used?
+		mkAttributedQualifier(pre, termSym)
+	      } else
 		giveup()
 
 	    case tree => tree
@@ -2810,7 +2814,7 @@ A type's typeSymbol should never be inspected directly.
 		case DeBruijnIndex(level, pid) =>
 		  if (level == 1) {
 		    if (actuals(pid).isStable)
-		      mkAttributedQualifier(actuals(pid))
+		      mkAttributedQualifier(actuals(pid), tree.symbol)
 		    else {
 		      val sym = existSymFor(pid, tree.symbol)
                       (Ident(tree.symbol.name)
