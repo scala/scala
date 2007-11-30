@@ -23,6 +23,6 @@ final class StringAdd(self: Any) {
    *  http://msdn2.microsoft.com/en-us/library/system.string.format(VS.71).aspx
    *  and http://www.codeproject.com/books/0735616485.asp).
    */
-  def format(format: String): String =
+  def formatted(format: String): String =
     String.Format(format, Array(self.asInstanceOf[Object]))
 }

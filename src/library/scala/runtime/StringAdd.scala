@@ -25,12 +25,12 @@ final class StringAdd(self: Any) {
 
   def +(other: String) = self.toString + other
 
-  /** Formats string according to given <code>format</code> string.
+  /** Returns string formatted according to given <code>format</code> string.
    *  Format strings are as for <code>String.format</code>
    *  (@see java.lang.String.format).
    *  Only works on Java 1.5 or higher!
    */
-  def format(format: String): String = {
+  def formatted(format: String): String = {
     // This should be:
     // String.format(format, Array(self.asInstanceOf[Object]))
     // However, the line above does not compile on Java 1.4 because String.format exists only in 1.5
