@@ -204,6 +204,7 @@ public class BoxesRunTime {
                 double bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).doubleValue();
                 return aa == bb;
             }
+			return b.equals(a);
         }
         return false;
     }
