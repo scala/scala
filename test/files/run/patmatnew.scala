@@ -112,7 +112,7 @@ object Test extends TestConsoleMain {
       })
       assertEquals("s3", 1, ("hello") match {
         case s:String => 1
-        case _        => 0
+        //case _        => 0 // unreachable!
       })
       val xyz: (int, String, boolean) = (1, "abc", true);
       assertEquals("s4", 1, xyz._1 match {
@@ -797,6 +797,14 @@ object Test extends TestConsoleMain {
     override def runTest { assert(Y.toString ne null) /*instantiate Y*/ }
   }
 
+  object Ticket211 extends TestCase("#211") {
+    override def runTest {
+      (Some(123):Option[Int]) match {
+        case (x:Option[a]) if false => {};
+        case (y:Option[b]) => {};
+      }
+    }
+  }
 }
 
 

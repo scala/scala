@@ -261,7 +261,7 @@ abstract class GenerateIdeMaps extends SubComponent {
             val types = tpe.asInstanceOf[TypeRef].args
             trees.zip(types).foreach{
             case (tree,tpe) => assert(tree != null && tpe != null); h(tree, tpe)
-            case _ =>
+            //case _ =>
             }
           case _ =>
           }

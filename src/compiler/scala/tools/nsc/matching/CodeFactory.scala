@@ -77,23 +77,6 @@ trait CodeFactory {
     tpe1.typeArgs(0)
   }
 
-  // --------- these are new
-
-/*
-  final def renamingBind(defaultv: Set[Symbol], scrut: Symbol, ndefault: Tree) = {
-    Console.println("renamingbind "+defaultv+" "+scrut+" "+ndefault)
-    if (!defaultv.isEmpty) {
-      var dv: List[Symbol] = Nil
-      var to: List[Symbol] = Nil
-      val it = defaultv.elements; while(it.hasNext) {
-        dv = it.next :: dv
-        to = scrut   :: to
-      }
-      val tss = new TreeSymSubstituter(dv, to)
-      tss.traverse(ndefault)
-    }
-  }
-*/
   final def emptynessCheck(vsym: Symbol) = {
     if (vsym.tpe.typeSymbol == definitions.SomeClass)  // is Some[_]
       Literal(Constant(true))
@@ -193,57 +176,6 @@ trait CodeFactory {
     }
   }
 
-  // used by Equals
-  /*
-  private def getCoerceToInt(left: Type): Symbol = {
-    val sym = left.nonPrivateMember( nme.coerce );
-    //assert sym != Symbol.NONE : Debug.show(left);
-
-    sym.alternatives.find {
-      x => x.info match {
-        case MethodType(vparams, restpe) =>
-          vparams.length == 0 && isSameType(restpe,definitions.IntClass.info)
-      }
-    }.get
-  }
-  */
-  // used by Equals
-/*
-  private def getEqEq(left: Type, right: Type): Symbol = {
-    //Console.println("getEqeq of left  ==  "+left);
-    val sym = left.nonPrivateMember( nme.EQEQ );
-
-
-    //if (sym == NoSymbol)
-    //  error("no eqeq for "+left);
-    //    : Debug.show(left) + "::" + Debug.show(left.members());
-
-    var fun: Symbol  = null;
-    var ftype:Type  = null; // faster than `definitions.AnyClass.tpe'
-    sym.alternatives.foreach {
-      x =>
-        //Console.println("getEqEq: "+x);
-        val vparams = x.info.paramTypes;
-        //Console.println("vparams.length ==  "+vparams.length);
-
-        if (vparams.length == 1) {
-          val vptype = vparams(0);
-          //Console.println("vptype ==  "+vptype);
-          //Console.println("   ftype ==  "+ftype);
-          //Console.println("   cond1 ==  "+isSubType(right, vptype));
-          //Console.println("   cond2("+vptype+","+ftype+") ==  "+(ftype == null || isSubType(vptype, ftype)));
-          //Console.println("vptype.getClass "+vptype.getClass());
-          if (isSubType(right, vptype) && (ftype == null || isSubType(vptype, ftype)) ) {
-            fun = x;
-            ftype = vptype;
-            //Console.println("fun now: "+fun+"  ftype now "+ftype);
-          }
-        }
-    }
-    //if (fun == null) scala.Predef.error("couldn't find eqeq for left"+left);
-    fun;
-  }
-*/
   final def Equals(left: Tree, right: Tree): Tree =
     Apply(Select(left, nme.EQEQ), List(right))
 
@@ -360,6 +292,46 @@ trait CodeFactory {
     }
   }
 
+  final def debugStrings(tps:List[Type]):String = tps.foldLeft("[")({ (x:String,y:Type) => x+","+debugString(y) })+"]"
 
+  final def debugString(tp:Type):String = tp match {
+    case ErrorType => "ErrorType"
+    // internal: error
+    case WildcardType => "WildcardType"
+    // internal: unknown
+    case NoType => "NoType"
+    case NoPrefix => "NoPrefix"
+    case ThisType(sym) => "ThisType("+sym.toString+")"
+    // sym.this.type
+    case SingleType(pre, sym) => "SingleType("+debugString(pre)+","+sym+")"
+    // pre.sym.type
+    case ConstantType(value) => "ConstantType("+value+")"
+    // int(2)
+    case TypeRef(pre, sym, args) => "TypeRef("+debugString(pre)+","+sym.getClass()+"(=="+sym+")"+","+ debugStrings(args)+")"
+    // pre.sym[targs]
+    case RefinedType(parents, defs) => "RefinedType("+debugStrings(parents)+","+defs+")"
+    // parent1 with ... with parentn { defs }
+    case AnnotatedType(attribs, tp, selfsym) => "AnnotatedType("+attribs+","+ debugString(tp)+","+ selfsym+")"
+    // tp @attribs
+    case p:Product => tp.getClass.toString+"(=="+tp.toString+")"+runtime.ScalaRunTime._toString(p)
+
+    case _ => tp.getClass.toString+"(=="+tp.toString+")"
+    /*
+     // the following are non-value types; you cannot write them down in Scala source.
+
+     case TypeBounds(lo, hi) =>
+     // >: lo <: hi
+     case ClassInfoType(parents, defs, clazz) =>
+     // same as RefinedType except as body of class
+     case MethodType(paramtypes, result) =>
+     // (paramtypes)result
+     case PolyType(tparams, result) =>
+     // [tparams]result where result is a MethodType or ClassInfoType
+     // or
+     // []T  for a eval-by-name type
+     case ExistentialType(tparams, result) =>
+     // exists[tparams]result
+     */
+  }
 }
 

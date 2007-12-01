@@ -682,6 +682,12 @@ trait ParallelMatching  {
       }
     }
 
+    def subsumes_erased(_tp1:Type, tp2:Type) = {
+      val tp1 = patternType_wrtEquals(_tp1)
+      tp1.isInstanceOf[TypeRef] && tp2.isInstanceOf[TypeRef] &&
+      ((tp1.prefix =:= tp2.prefix) && (tp1.typeSymbol eq tp2.typeSymbol) && (tp1.typeSymbol ne definitions.ArrayClass))
+    }
+
     /** returns true if pattern tests an object */
     final def objectPattern(pat:Tree): Boolean = try {
       (pat.symbol ne null) &&
@@ -716,7 +722,7 @@ trait ParallelMatching  {
           case z:UnApply =>
             (ms,ss,(j,pat)::rs)
 
-          case qq if (patternType_wrtEquals(patternType) <:< headPatternType) && !isDefaultPattern(pat) =>
+          case qq if subsumes_erased(patternType, headPatternType) || (patternType_wrtEquals(patternType) <:< headPatternType) && !isDefaultPattern(pat) =>
             ({if (pat.tpe =:= headPatternType /*never true for <equals>*/) EmptyTree else pat}::ms, (j,subpatterns(pat))::ss, rs);
 
           case _ if (headPatternType <:< patternType /*never true for <equals>*/) || isDefaultPattern(pat) =>
@@ -939,7 +945,8 @@ trait ParallelMatching  {
     markReachedTwice(bx) // if some bx is not reached twice, its LabelDef
     val args = new ListBuffer[Ident] // is replaced with body itself
     var vs   = vss(bx).elements; while(vs.hasNext) {
-      val substv = subst(vs.next)
+      val v = vs.next
+      val substv = subst(v)
       assert(substv ne null, "subst is null") // if sharing takes place, then 'binding elsewhere' is not allowed
       args += substv
     }
@@ -1181,6 +1188,7 @@ trait ParallelMatching  {
                   singleType(sym.tpe.prefix, sym.linkedModuleOfClass) // e.g. None, Nil
                 } else sym.tpe
                 (ptpe.typeSymbol == sym) || (symtpe <:< ptpe) ||
+                (symtpe.parents.exists(_.typeSymbol eq ptpe.typeSymbol)) || // e.g. Some[Int] <: Option[&b]
                 /* outer, see scala.util.parsing.combinator.lexical.Scanner */
                 (ptpe.prefix.memberType(sym) <:< ptpe)
               }
