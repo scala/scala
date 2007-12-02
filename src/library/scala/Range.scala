@@ -33,18 +33,19 @@ class Range(val start: Int, val end: Int, val step: Int) extends RandomAccessSeq
   /** create a new range with the start and end values of this range and a new <code>step</code> */
   def by(step : Int) = new Range(start, end, step)
 
-  def length : Int = {
-    if (this.step == 0) throw new Predef.UnsupportedOperationException
-    if (start < end && this.step < 0) return 0
-    if (start > end && this.step > 0) return 0
-
-    val base = if (start < end) end - start
-               else start - end
-    assert(base >= 0)
-    val step = if (this.step < 0) -this.step else this.step
-    assert(step >= 0)
-    base / step + (if (base % step != 0) 1 else 0)
+  lazy val length : Int = {
+    if (start < end && this.step < 0) 0
+    else if (start > end && this.step > 0) 0
+    else {
+      val base = if (start < end) end - start
+                 else start - end
+      assert(base >= 0)
+      val step = if (this.step < 0) -this.step else this.step
+      assert(step >= 0)
+      base / step + last(base, step)
+    }
   }
+  protected def last(base : Int, step : Int) = (if (base % step != 0) 1 else 0)
   def apply(idx : Int) = {
     if (idx < 0 || idx >= length) throw new Predef.IndexOutOfBoundsException
     start + (step * idx)
@@ -52,5 +53,12 @@ class Range(val start: Int, val end: Int, val step: Int) extends RandomAccessSeq
   /** a <code>Seq.contains</code>, not a <code>Iterator.contains</code>! */
   def contains(x : Int): Boolean =
     x >= start && x < end && (((x - start) % step) == 0)
-
+  def inclusive = new Range.Inclusive(start,end,step)
 }
+object Range {
+  class Inclusive(start : Int, end : Int, by : Int) extends Range(start,end,by) {
+    override protected def last(base : Int, step : Int) = 1
+    override def by(step : Int) = new Inclusive(start, end, step)
+  }
+}
+
