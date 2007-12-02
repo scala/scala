@@ -260,7 +260,7 @@ abstract class SymbolLoaders {
       val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
     }
     protected def doComplete(root: Symbol) {
-      typeParser.parse(typ, root)
+      typeParser.parse(typ, root.asInstanceOf)
     }
     protected def kindString: String = typ.FullName
     protected def sourceString = typ.Assembly.FullName
@@ -292,7 +292,7 @@ abstract class SymbolLoaders {
       case _ =>
       }
       if (root.sourceFile ne null) {
-        global.generateIdeMaps.sourceFiles(root.sourceFile) = classFile.container
+        //global.generateIdeMaps.sourceFiles(root.sourceFile) = classFile.container
       }
     }
     protected def kindString: String = "class file"
