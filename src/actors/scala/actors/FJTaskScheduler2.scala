@@ -12,7 +12,7 @@ package scala.actors
 
 import compat.Platform
 
-import java.lang.{Runnable, Thread, InterruptedException, System}
+import java.lang.{Runnable, Thread, InterruptedException, System, Runtime}
 
 import scala.collection.Set
 import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, HashSet}
@@ -20,15 +20,17 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
 /**
  * FJTaskScheduler2
  *
- * @version 0.9.10
+ * @version 0.9.11
  * @author Philipp Haller
  */
 class FJTaskScheduler2 extends Thread with IScheduler {
   // as long as this thread runs, JVM should not exit
   setDaemon(false)
 
-  val printStats = false
-  //val printStats = true
+  var printStats = false
+
+  val rt = Runtime.getRuntime()
+  val minNumThreads = 4
 
   val coreProp = try {
     System.getProperty("actors.corePoolSize")
@@ -46,7 +48,13 @@ class FJTaskScheduler2 extends Thread with IScheduler {
 
   val initCoreSize =
     if (null ne coreProp) Integer.parseInt(coreProp)
-    else 4
+    else {
+      val numCores = rt.availableProcessors()
+      if (2 * numCores > minNumThreads)
+        2 * numCores
+      else
+        minNumThreads
+    }
 
   val maxSize =
     if (null ne maxProp) Integer.parseInt(maxProp)
@@ -114,6 +122,7 @@ class FJTaskScheduler2 extends Thread with IScheduler {
             if (Platform.currentTime - lastActivity >= TICK_FREQ
                 && coreSize < maxSize
                 && executor.checkPoolSize()) {
+                  //Debug.info(this+": increasing thread pool size")
                   coreSize += 1
                   lastActivity = Platform.currentTime
                 }
