@@ -39,8 +39,8 @@ object Scheduler {
     sched.start()
   }
 
-  var tasks: LinkedQueue = null
-  var pendingCount = 0
+  private var tasks: LinkedQueue = null
+  private var pendingCount = 0
 
   def snapshot(): Unit = synchronized {
     tasks = sched.snapshot()

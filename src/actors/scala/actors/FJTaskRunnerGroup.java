@@ -257,7 +257,9 @@ public class FJTaskRunnerGroup implements IFJTaskRunnerGroup {
             System.arraycopy(threads, 0, newar, 0, newsize-1);
             synchronized(this) {
                 threads = newar;
-                threads[newsize-1] = new FJTaskRunner(this);
+                FJTaskRunner t = new FJTaskRunner(this);
+                threads[newsize-1] = t;
+                setActive(t);
             }
             return true;
         }
