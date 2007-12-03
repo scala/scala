@@ -162,6 +162,7 @@ abstract class ICodeReader extends ClassfileParser {
     if (sym != NoSymbol) {
       log("Parsing method " + sym.fullNameString + ": " + sym.tpe);
       this.method = new IMethod(sym);
+      this.method.returnType = toTypeKind(sym.tpe.resultType)
       getCode(jflags).addMethod(this.method)
       if ((jflags & JAVA_ACC_NATIVE) != 0)
         this.method.native = true
