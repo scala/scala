@@ -31,7 +31,10 @@ class Range(val start: Int, val end: Int, val step: Int) extends RandomAccessSeq
   if (step == 0) throw new Predef.IllegalArgumentException
 
   /** create a new range with the start and end values of this range and a new <code>step</code> */
-  def by(step : Int) = new Range(start, end, step)
+  def by(step : Int) : Range = this match {
+    case inclusive : Range.Inclusive => new Range.Inclusive(start, end, step)
+    case _ => new Range(start, end, step)
+  }
 
   lazy val length : Int = {
     if (start < end && this.step < 0) 0
@@ -46,7 +49,7 @@ class Range(val start: Int, val end: Int, val step: Int) extends RandomAccessSeq
     }
   }
   protected def last(base : Int, step : Int) = (if (base % step != 0) 1 else 0)
-  def apply(idx : Int) = {
+  def apply(idx : Int) : Int = {
     if (idx < 0 || idx >= length) throw new Predef.IndexOutOfBoundsException
     start + (step * idx)
   }
@@ -57,8 +60,10 @@ class Range(val start: Int, val end: Int, val step: Int) extends RandomAccessSeq
 }
 object Range {
   class Inclusive(start : Int, end : Int, by : Int) extends Range(start,end,by) {
-    override protected def last(base : Int, step : Int) = 1
-    override def by(step : Int) = new Inclusive(start, end, step)
+    override def apply(idx : Int) : Int = super.apply(idx)
+    override protected def last(base : Int, step : Int) : Int = 1
+    // XXX: breaks scala doc!
+    // override def by(step : Int) : Range = new Inclusive(start, end, step)
   }
 }
 
