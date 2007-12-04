@@ -1,8 +1,8 @@
 object test {
-  def foo(s: Int*): Unit = {
+  def foo(s: Int*) {
     s.toList match {
       case t: List[Int] => foo(t: _*)
-      case _ =>
+      //case _ =>  // unreachable code
     }
   }
 }
