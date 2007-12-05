@@ -1826,7 +1826,7 @@ GENERATES A DISTRIBUTION
       <libset dir="${cldc.dir}/lib" includes="*.jar"/>
     </quicksbaz>
   <!-- Creates the Android package -->
-    <if><isset property="android.supported"/>
+    <if><isset property="android.supported"/><then>
       <quicksbaz
         file="${dist.dir}/scala-android-${version.number}.sbp"
         adfile="${dist.dir}/scala-android-${version.number}.advert"
@@ -1836,7 +1836,7 @@ GENERATES A DISTRIBUTION
         link="${sbaz.universe}/scala-android-${version.number}.sbp">
         <libset dir="${android.dir}/lib" includes="*.jar"/>
       </quicksbaz>
-    </if>
+    </then></if>
   </target>
 
   <target name="build.archive" depends="build.dist">
