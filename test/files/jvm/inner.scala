@@ -9,8 +9,8 @@ class A {
   val abc = "A.abc"
 
   protected class B(x: Int, y: String) {
-    Console.println(abc); Console.println(x)
-    Console.println(y)
+    println(abc); println(x)
+    println(y)
   }
 
   trait Itf {
@@ -27,15 +27,15 @@ class A {
 
   class Impl(a: Int) extends Itf {
     def method1(x: Int) = {
-      Console.println(x)
-      Console.println(a)
+      println(x)
+      println(a)
       x + a
     }
   }
 
   class Impl2 extends Impl(1) with Itf#Itf2 {
     def method2 = {
-      Console.println(abc)
+      println(abc)
     }
   }
 
@@ -45,7 +45,7 @@ class A {
   class Outer1(arg1: Int) {
     class Outer2(arg2: Int) {
       class Outer3(arg3: Int) {
-        Console.println("Outer3: " + arg1 + " " + arg2 + " " + arg3);
+        println("Outer3: " + arg1 + " " + arg2 + " " + arg3);
       }
     }
   }
@@ -75,16 +75,15 @@ object Scalatest {
     val inp = new BufferedReader(new InputStreamReader(proc.getInputStream))
     val errp = new BufferedReader(new InputStreamReader(proc.getErrorStream))
     proc.waitFor()
-    while (inp.ready) Console.println(inp.readLine())
-    while (errp.ready) Console.println(errp.readLine())
+    while (inp.ready) println(inp.readLine())
+    while (errp.ready) println(errp.readLine())
   }
 }
 
-
 object Test {
-  val program = """
-public class tmpJavaInterraction {
-
+  def main(args: Array[String]) {
+    val javaInteraction = """
+public class JavaInteraction {
     public static void main(String[] args) {
         A a = new A();
         A.B b = a.new B(1, "Hello");
@@ -101,9 +100,19 @@ public class tmpJavaInterraction {
     }
 }
 """
-  def main(args: Array[String]) {
-    Scalatest.javac(program, "tmpJavaInterraction.java")
-    Scalatest.java("tmpJavaInterraction")
+    Scalatest.javac(javaInteraction, "JavaInteraction.java")
+    Scalatest.java("JavaInteraction")
+
+    val accessingScala = """
+public class AccessingScala {
+    public static void main(String[] args) {
+        A a = new A();
+        System.out.println(a.abc());
+    }
+}
+"""
+    Scalatest.javac(accessingScala, "AccessingScala.java")
+    Scalatest.java("AccessingScala")
   }
 }
 
