@@ -41,11 +41,11 @@ trait ModelExtractor {
     if (sym == definitions.ScalaObjectClass || sym == definitions.ObjectClass)
       definitions.AnyRefClass
     else sym match {
-      case sym : ModuleClassSymbol => sym.sourceModule
+      case sym: ModuleClassSymbol => sym.sourceModule
       case sym => sym
     }
 
-  protected def decodeComment(comment0 : String) : Comment = {
+  protected def decodeComment(comment0: String): Comment = {
     //Console.println("COMMENT: " + comment0)
   //  assert(comment0.startsWith("/**"))
 //    assert(comment0.endsWith("*/"))
@@ -74,22 +74,20 @@ trait ModelExtractor {
           buf.append(s + LINE_SEPARATOR)
       }
     }
-    (Comment(buf.toString,attributes.toList.map({x => Tag(x._1,x._2,x._3.toString)})));
+    Comment(buf.toString,attributes.toList.map({x => Tag(x._1,x._2,x._3.toString)}))
   }
-
 
   sealed abstract class Entity(val sym: Symbol) {
     private[ModelExtractor] def sym0 = sym
 
     override def toString = sym.toString
-    def comment : Option[String] = global.comments.get(sym)
+    def comment: Option[String] = global.comments.get(sym)
     // comments decoded, now what?
     def attributes = sym.attributes
-    def decodeComment : Option[Comment] = {
-      val comment0 = this.comment;
-      if (comment0.isEmpty) return None;
-      var comment = comment0.get.trim;
-      Some(ModelExtractor.this.decodeComment(comment));
+    def decodeComment: Option[Comment] = {
+      val comment0 = this.comment
+      if (comment0.isEmpty) None
+      else Some(ModelExtractor.this.decodeComment(comment0.get.trim))
     }
     protected def accessQualified(core: String, qual: String) = core match {
       case "public" => "" // assert(qual == null); "";
@@ -98,28 +96,28 @@ trait ModelExtractor {
 
     def flagsString = {
       import symtab.Flags
-        val isLocal = sym.hasFlag(Flags.LOCAL)
-        val x =
-          if (sym.hasFlag(Flags.PRIVATE)) "private"
-          else if (sym.hasFlag(Flags.PROTECTED)) "protected"
-          else "public"
-        var string = accessQualified(x, {
-          if (sym.hasFlag(Flags.LOCAL)) "this";
-          else if (sym.privateWithin != null && sym.privateWithin != NoSymbol)
-            sym.privateWithin.nameString;
-          else null;
-        });
-        def f(flag: Int, str: String) =
-          if (sym.hasFlag(flag)) string = string + " " + str;
+      //val isLocal = sym.hasFlag(Flags.LOCAL)
+      val x =
+        if (sym hasFlag Flags.PRIVATE) "private"
+        else if (sym hasFlag Flags.PROTECTED) "protected"
+        else "public"
+      var string = accessQualified(x,
+        if (sym hasFlag Flags.LOCAL) "this"
+        else if (sym.privateWithin != null && sym.privateWithin != NoSymbol)
+          sym.privateWithin.nameString
+        else null
+      )
+      def f(flag: Int, str: String) =
+        if (sym.hasFlag(flag)) string = string + " " + str;
 
-        f(Flags.IMPLICIT, "implicit");
-        f(Flags.SEALED, "sealed");
-        f(Flags.OVERRIDE, "override");
-        f(Flags.CASE, "case");
-        if (!sym.isTrait) f(Flags.ABSTRACT, "abstract");
-        if (!sym.isModule) f(Flags.FINAL, "final");
-        if (!sym.isTrait) f(Flags.DEFERRED, "abstract");
-        string.trim;
+      f(Flags.IMPLICIT, "implicit")
+      f(Flags.SEALED, "sealed")
+      f(Flags.OVERRIDE, "override")
+      f(Flags.CASE, "case")
+      if (!sym.isTrait) f(Flags.ABSTRACT, "abstract")
+      if (!sym.isModule) f(Flags.FINAL, "final")
+      if (!sym.isTrait) f(Flags.DEFERRED, "abstract")
+      string.trim
     }
     def listName = name
     def name = sym.nameString
@@ -196,12 +194,12 @@ trait ModelExtractor {
     var pA = pathA
     var pB = pathB
     while (true) {
-      if (pA.isEmpty) return -1;
-      if (pB.isEmpty) return +1;
-      val diff = pA.head.name compare pB.head.name;
-      if (diff != 0) return diff;
-      pA = pA.tail;
-      pB = pB.tail;
+      if (pA.isEmpty) return -1
+      if (pB.isEmpty) return +1
+      val diff = pA.head.name compare pB.head.name
+      if (diff != 0) return diff
+      pA = pA.tail
+      pB = pB.tail
     }
     0
   }
@@ -217,12 +215,12 @@ trait ModelExtractor {
   }
 
   trait ClassOrObject extends Entity {
-    def path : List[ClassOrObject] = this :: Nil;
-    override def listName = path.map(_.name).mkString("",".","");
+    def path: List[ClassOrObject] = this :: Nil
+    override def listName = path.map(_.name).mkString("",".","")
 
     object freshParents extends jcl.LinkedHashSet[Type] {
-      this addAll sym.tpe.parents;
-      this.toList.foreach(e => this removeAll e.parents);
+      this addAll sym.tpe.parents
+      this.toList.foreach(e => this removeAll e.parents)
     }
     object constructorArgs extends jcl.LinkedHashMap[Symbol,Param] {
       sym.constrParamAccessors.foreach(arg => {
@@ -313,13 +311,14 @@ trait ModelExtractor {
       def resultType0: Type = sym.tpe
       override def kind = {
         import symtab.Flags._
-        if (sym.hasFlag(ACCESSOR)) {
-          val setterName = nme.getterToSetter(sym.name);
-          val setter = sym.owner.info.decl(setterName);
-          if (setter == NoSymbol) "val" else "var";
+        if (sym hasFlag ACCESSOR) {
+          val setterName = nme.getterToSetter(sym.name)
+          val setter = sym.owner.info.decl(setterName)
+          val lazyMod = if (sym hasFlag LAZY) "lazy " else ""
+          lazyMod + (if (setter == NoSymbol) "val" else "var")
         } else {
-          assert(sym.hasFlag(JAVA));
-          if (sym.hasFlag(FINAL)) "val" else "var";
+          assert(sym hasFlag JAVA)
+          if (sym hasFlag FINAL) "val" else "var"
         }
       }
     }
@@ -331,9 +330,10 @@ trait ModelExtractor {
       override def path: List[ClassOrObject] = ClassOrObject.this.path ::: (super.path);
     }
 
-    case class NestedClass(override val sym : ClassSymbol) extends NestedClassOrObject(sym) with Clazz;
-    case class NestedObject(override val sym : ModuleSymbol) extends NestedClassOrObject(sym) with Object;
-    def isVisible(sym : Symbol): Boolean = {
+    case class NestedClass(override val sym: ClassSymbol) extends NestedClassOrObject(sym) with Clazz
+    case class NestedObject(override val sym: ModuleSymbol) extends NestedClassOrObject(sym) with Object
+
+    def isVisible(sym: Symbol): Boolean = {
       import symtab.Flags._
       if (sym.isLocalClass) return false
       if (sym.isLocal) return false
@@ -345,12 +345,13 @@ trait ModelExtractor {
       if (sym.hasFlag(CASE) && sym.isMethod) return false
       return true
     }
+
     def Member(sym: Symbol): Option[Member] = {
       import global._
       import symtab.Flags
-      if (!isVisible(sym)) return None;
-      if (!isAccessible(sym)) return None;
-      if (sym.hasFlag(Flags.ACCESSOR)) {
+      if (!isVisible(sym)) return None
+      if (!isAccessible(sym)) return None
+      if (sym hasFlag Flags.ACCESSOR) {
         if (sym.isSetter) return None;
         assert(sym.isGetter);
         return Some[Member](new Val(sym.asInstanceOf[TermSymbol]));
@@ -374,7 +375,7 @@ trait ModelExtractor {
     }
 
   }
-  case class Category(label : String)(g : Symbol => Boolean) {
+  case class Category(label: String)(g: Symbol => Boolean) {
     val f = g
     def plural = label + "s"
   }
@@ -401,12 +402,12 @@ trait ModelExtractor {
   private val pat2 = Pattern.compile(
     "[ \t]*@(exception|param|throws)[ \t]+(\\p{Graph}*)[ \t]*(.*)")
 
-  def sort[E <: Entity](entities : Iterable[E]) : Iterable[E] = {
-    val set = new jcl.TreeSet[E]()({eA : E => new Ordered[E] {
-      def compare(eB : E) : Int = {
+  def sort[E <: Entity](entities: Iterable[E]): Iterable[E] = {
+    val set = new jcl.TreeSet[E]()({eA: E => new Ordered[E] {
+      def compare(eB: E): Int = {
         if (eA eq eB) return 0;
         (eA,eB) match {
-        case (eA:ClassOrObject,eB:ClassOrObject) =>
+        case (eA: ClassOrObject, eB: ClassOrObject) =>
           val diff = ModelExtractor.this.compare(eA.path, eB.path);
           if (diff!= 0) return diff;
         case _ =>
