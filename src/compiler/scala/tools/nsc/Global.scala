@@ -262,10 +262,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
-  object generateIdeMaps extends GenerateIdeMaps {
-    val global: Global.this.type = Global.this
-  }
-
   object superAccessors extends SuperAccessors {
     val global: Global.this.type = Global.this
   }
@@ -381,10 +377,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
    */
   protected def builtInPhaseDescriptors: List[SubComponent] = List(
     analyzer.namerFactory: SubComponent, // note: types are there because otherwise
-    analyzer.typerFactory: SubComponent // consistency check after refchecks would fail.
-  ) :::
-  (if (inIDE) List(generateIdeMaps) else List()) ::: // optionally generate .ide files from symbol info that can be used in the IDE
-  List(
+    analyzer.typerFactory: SubComponent, // consistency check after refchecks would fail.
     superAccessors,  // add super accessors
     pickler,         // serializes symbol tables
     refchecks,       // perform reference and override checking, translate nested objects

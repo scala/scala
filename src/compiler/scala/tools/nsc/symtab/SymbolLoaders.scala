@@ -292,7 +292,7 @@ abstract class SymbolLoaders {
       case _ =>
       }
       if (root.sourceFile ne null) {
-        global.generateIdeMaps.sourceFiles(root.sourceFile) = classFile.container
+        //global.generateIdeMaps.sourceFiles(root.sourceFile) = classFile.container
       }
     }
     protected def kindString: String = "class file"
