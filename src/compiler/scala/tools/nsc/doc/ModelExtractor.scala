@@ -188,7 +188,9 @@ trait ModelExtractor {
 
   trait TopLevel extends ClassOrObject
   class TopLevelClass (sym: Symbol) extends Entity(sym) with TopLevel with Clazz
-  class TopLevelObject(sym: Symbol) extends Entity(sym) with TopLevel with Object
+  class TopLevelObject(sym: Symbol) extends Entity(sym) with TopLevel with Object {
+    override def attributes = sym.moduleClass.attributes
+  }
 
   def compare(pathA: List[ClassOrObject], pathB: List[ClassOrObject]): Int = {
     var pA = pathA
@@ -322,6 +324,7 @@ trait ModelExtractor {
         }
       }
     }
+
     case class AbstractType(override val sym: Symbol) extends Member(sym) {
       override def kind = "type"
     }
@@ -331,7 +334,9 @@ trait ModelExtractor {
     }
 
     case class NestedClass(override val sym: ClassSymbol) extends NestedClassOrObject(sym) with Clazz
-    case class NestedObject(override val sym: ModuleSymbol) extends NestedClassOrObject(sym) with Object
+    case class NestedObject(override val sym: ModuleSymbol) extends NestedClassOrObject(sym) with Object {
+      override def attributes = sym.moduleClass.attributes
+    }
 
     def isVisible(sym: Symbol): Boolean = {
       import symtab.Flags._
@@ -360,7 +365,7 @@ trait ModelExtractor {
           Console.println("SYM: " + sym + " " + sym.fullNameString('.'));
           Console.println("FLA: " + Flags.flagsToString(sym.flags));
         }
-        assert(sym.hasFlag(Flags.JAVA))
+        assert(sym hasFlag Flags.JAVA)
         return Some[Member](new Val(sym.asInstanceOf[TermSymbol]))
       }
       if (sym.isValue && !sym.isModule) {
@@ -384,10 +389,10 @@ trait ModelExtractor {
   }
   val Objects = Category("Object")(_.isModule);
   val Classes = new Category("Class")(_.isClass) {
-    override def plural = "Classes";
+    override def plural = "Classes"
   }
-  val Values = new Category("Value")(e => (e.isValue) && e.hasFlag(symtab.Flags.ACCESSOR)) {
-    override def plural = "Values and Variables";
+  val Values = new Category("Value")(e => e.isValue && e.hasFlag(symtab.Flags.ACCESSOR)) {
+    override def plural = "Values and Variables"
   }
   val Methods = Category("Method")(e => e.isValue && e.isMethod && !e.isConstructor && !e.hasFlag(symtab.Flags.ACCESSOR));
   val Types = Category("Type")(e => e.isAliasType || e.isAbstractType);
@@ -407,25 +412,25 @@ trait ModelExtractor {
       def compare(eB: E): Int = {
         if (eA eq eB) return 0;
         (eA,eB) match {
-        case (eA: ClassOrObject, eB: ClassOrObject) =>
-          val diff = ModelExtractor.this.compare(eA.path, eB.path);
-          if (diff!= 0) return diff;
-        case _ =>
+          case (eA: ClassOrObject, eB: ClassOrObject) =>
+            val diff = ModelExtractor.this.compare(eA.path, eB.path)
+            if (diff!= 0) return diff
+          case _ =>
         }
         if (eA.getClass != eB.getClass) {
-          val diff = eA.getClass.getName.compare(eB.getClass.getName);
-          assert(diff != 0);
-          return diff;
+          val diff = eA.getClass.getName.compare(eB.getClass.getName)
+          assert(diff != 0)
+          return diff
         }
         if (!eA.sym0.isPackage) {
-          val diff = eA.sym0.nameString compare eB.sym0.nameString;
-          if (diff != 0) return diff;
+          val diff = eA.sym0.nameString compare eB.sym0.nameString
+          if (diff != 0) return diff
         }
         val diff0 = eA.sym0.fullNameString compare eB.sym0.fullNameString;
         assert(diff0 != 0);
         return diff0;
       }
-    }});
+    }})
     set addAll entities;
     set
   }
