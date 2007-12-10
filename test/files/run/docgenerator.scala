@@ -14,17 +14,27 @@ object Test {
     if (dirname eq null) dirname = System.getProperty("java.io.tmpdir")
     val tmpDir = new File(dirname)
     tmpDir.mkdirs()
+    test1(tmpDir)
+    test2(tmpDir)
+  }
+
+  private def test1(tmpDir: File) {
+    def testOptions(inFile: File, outDir: File, opts: String*) {
+      val args = Array.concat(Array("-Ydoc", "-d", outDir.getPath, inFile.getPath), opts.toArray:Array[String])
+      if (MainDoc.main0(args)) {
+        for (name <- List("all-classes.html", "index.html")) {
+          val f = new File(outDir, name)
+          println(name + ": " + generateMD5Sum(f))
+        }
+        println
+      }
+    }
     val inFile = {
-      val f = new File(tmpDir.getPath, "docgenerator_.scala")
+      val f = new File(tmpDir.getPath, "docgenerator1.scala")
       val writer = new FileWriter(f)
-      writer.write(code, 0, code.length)
+      writer.write(code1, 0, code1.length)
       writer.close
       f
-    }
-    def createDir(parent: File, dirname: String): File = {
-      val outDir = new File(parent, dirname)
-      outDir.mkdir
-      outDir
     }
     testOptions(inFile, createDir(tmpDir, "test1"), "") // none (default is -access:protected)
     testOptions(inFile, createDir(tmpDir, "test2"), "-access:public")
@@ -32,8 +42,51 @@ object Test {
     testOptions(inFile, createDir(tmpDir, "test4"), "-access:private")
   }
 
-  private def testOptions(inFile: File, outDir: File, opts: String*) {
-    val args = Array.concat(Array("-Ydoc", "-d", outDir.getPath, inFile.getPath), opts.toArray:Array[String])
+  private def test2(tmpDir: File) {
+    val code ="""
+package annots
+
+@deprecated
+object Foo { val x = 0 }
+
+@deprecated
+class Bar { val x = 1 }
+
+object Foo1 {
+  @deprecated
+  object Foo11 { val x = 3 }
+}
+
+class Bar1 {
+  @deprecated
+  object Foo11 { val x = 2 }
+}
+
+class Bar2 {
+  def bar {
+    @deprecated
+    object Foo21 { val x = 4 }
+    ()
+  }
+}
+
+object Foo2 {
+  def foo {
+    @deprecated
+    object Foo21 { val x = 5 }
+    ()
+  }
+}
+"""
+    val inFile = {
+      val f = new File(tmpDir.getPath, "docgenerator2.scala")
+      val writer = new FileWriter(f)
+      writer.write(code, 0, code.length)
+      writer.close
+      f
+    }
+    val outDir = createDir(tmpDir, "annots1")
+    val args = Array.concat(Array("-Ydoc", "-d", outDir.getPath, inFile.getPath))
     if (MainDoc.main0(args)) {
       for (name <- List("all-classes.html", "index.html")) {
         val f = new File(outDir, name)
@@ -85,6 +138,12 @@ object Test {
     }
   }
 
+  private def createDir(parent: File, dirname: String): File = {
+    val outDir = new File(parent, dirname)
+    outDir.mkdir
+    outDir
+  }
+
   private def generateMD5Sum(f: java.io.File): String = {
     import java.io._, java.security._
     val digest = MessageDigest.getInstance("MD5")
@@ -117,7 +176,7 @@ object Test {
     }
   }
 
-  private val code = """
+  private val code1 = """
 package examples
 
 abstract class C0 {
