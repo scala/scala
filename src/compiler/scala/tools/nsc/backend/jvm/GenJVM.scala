@@ -387,9 +387,9 @@ abstract class GenJVM extends SubComponent {
         case _ => ();
       }}
       var flags = javaFlags(f.symbol)
-   /* if (!f.symbol.hasFlag(Flags.MUTABLE))
+      if (!f.symbol.hasFlag(Flags.MUTABLE))
         flags = flags | JAccessFlags.ACC_FINAL
-      */
+
       val jfield =
         jclass.addNewField(flags | attributes,
                            javaName(f.symbol),

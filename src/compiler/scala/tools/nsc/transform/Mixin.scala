@@ -249,6 +249,7 @@ abstract class Mixin extends InfoTransform {
                   addMember(clazz,
                             clazz.newValue(member.pos, nme.getterToLocal(member.name))
                             setFlag (LOCAL | PRIVATE | member.getFlag(MUTABLE | LAZY))
+                            setFlag (if (!member.hasFlag(STABLE)) MUTABLE else 0)
                             setInfo member.tpe.resultType)
               }
           } else if (member hasFlag SUPERACCESSOR) { // mixin super accessors
