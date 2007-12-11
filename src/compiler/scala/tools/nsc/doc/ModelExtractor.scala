@@ -20,8 +20,11 @@ trait ModelExtractor {
   import global._
 
   def assert(b: Boolean) {
-    if (!b)
-      throw new Error;
+    if (!b) throw new Error
+  }
+
+  def assert(b: Boolean, message: Any) {
+    if (!b) throw new Error(message.toString)
   }
 
   case class Tag(tag: String, option: String, body: String)

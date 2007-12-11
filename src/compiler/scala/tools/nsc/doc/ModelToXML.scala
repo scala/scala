@@ -197,14 +197,17 @@ trait ModelToXML extends ModelExtractor {
     if (xs.elements.hasNext) {
       // alphabetic
       val set = new scala.collection.jcl.TreeSet[entity.Member]()(mA => new Ordered[entity.Member] {
-        def compare(mB: entity.Member): Int = {
-          if (mA eq mB) return 0;
-          val diff = mA.name compare mB.name;
-          if (diff != 0) return diff;
-          val diff0 = mA.hashCode - mB.hashCode;
-          assert(diff0 != 0);
-          return diff0
-        }
+        def compare(mB: entity.Member): Int =
+          if (mA eq mB) 0
+          else {
+            val diff = mA.name compare mB.name
+            if (diff != 0) diff
+            else {
+              val diff0 = mA.hashCode - mB.hashCode
+              assert(diff0 != 0, mA.name)
+              diff0
+            }
+          }
       });
       set addAll xs;
       seq = seq ++ <table cellpadding="3" class="member" summary="">
