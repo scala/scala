@@ -103,7 +103,7 @@ object Predef {
 
   def assume(assumption: Boolean, message: Any) {
     if (!assumption)
-      throw new IllegalArgumentException("assumption failed: " + message)
+      throw new IllegalArgumentException(message.toString)
   }
 
   // tupling ------------------------------------------------------------
