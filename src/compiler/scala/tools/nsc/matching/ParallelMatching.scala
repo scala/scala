@@ -682,10 +682,17 @@ trait ParallelMatching  {
       }
     }
 
+    /** an approximation of _tp1 <:< tp2 that ignores _ types. this code is wrong,
+     *  ideally there is a better way to do it, and ideally defined in Types.scala
+     */
     def subsumes_erased(_tp1:Type, tp2:Type) = {
       val tp1 = patternType_wrtEquals(_tp1)
       tp1.isInstanceOf[TypeRef] && tp2.isInstanceOf[TypeRef] &&
-      ((tp1.prefix =:= tp2.prefix) && (tp1.typeSymbol eq tp2.typeSymbol) && (tp1.typeSymbol ne definitions.ArrayClass))
+      ((tp1.prefix =:= tp2.prefix) &&
+       ((tp1.typeSymbol eq tp2.typeSymbol) &&
+        (tp1.typeSymbol ne definitions.ArrayClass)) ||
+       tp1.parents.exists(_.typeSymbol eq tp2.typeSymbol))
+      // rather: tp1.baseTypes.exists...?
     }
 
     /** returns true if pattern tests an object */
@@ -706,7 +713,6 @@ trait ParallelMatching  {
         val pat = pats.head
         val strippedPattern = strip2(pat)
         val patternType = strippedPattern.tpe
-
         sr = strippedPattern match {
           case Literal(Constant(null)) if !(headPatternType =:= patternType) => //special case for constant null pattern
             (ms,ss,(j,pat)::rs);
@@ -725,7 +731,7 @@ trait ParallelMatching  {
           case qq if subsumes_erased(patternType, headPatternType) || (patternType_wrtEquals(patternType) <:< headPatternType) && !isDefaultPattern(pat) =>
             ({if (pat.tpe =:= headPatternType /*never true for <equals>*/) EmptyTree else pat}::ms, (j,subpatterns(pat))::ss, rs);
 
-          case _ if (headPatternType <:< patternType /*never true for <equals>*/) || isDefaultPattern(pat) =>
+          case _ if subsumes_erased(headPatternType, patternType) || (headPatternType <:< patternType /*never true for <equals>*/) || isDefaultPattern(pat) =>
             (EmptyTree::ms, (j, dummies)::ss, (j,pat)::rs)  // subsuming (matched *and* remaining pattern)
 
           case _ =>
