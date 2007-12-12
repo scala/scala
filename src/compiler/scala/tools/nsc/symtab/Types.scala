@@ -183,8 +183,8 @@ trait Types {
     override def isComplete = underlying.isComplete
     override def complete(sym: Symbol) = underlying.complete(sym)
     override def load(sym: Symbol): Unit = underlying.load(sym)
-    override def withAttributes(attribs: List[AnnotationInfo]) = underlying.withAttributes(attribs)
-    override def withoutAttributes = underlying.withoutAttributes
+    override def withAttributes(attribs: List[AnnotationInfo]) = maybeRewrap(underlying.withAttributes(attribs))
+    override def withoutAttributes = maybeRewrap(underlying.withoutAttributes)
   }
 
   /** The base class for all types */
@@ -736,8 +736,12 @@ trait Types {
         case _ => AnnotatedType(attribs, this, NoSymbol)
       }
 
-    /** Remove any attributes from this type */
+    /** Remove any annotations from this type */
     def withoutAttributes = this
+
+    /** Remove any annotations from this type and from any
+     *  types embedded in this type. */
+    def stripAnnotations = StripAnnotationsMap(this)
 
     /** Set the self symbol of an annotated type, or do nothing
      *  otherwise.  */
@@ -2844,6 +2848,15 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
+  object StripAnnotationsMap extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case AnnotatedType(_, atp, _) =>
+        mapOver(atp)
+      case tp =>
+        mapOver(tp)
+    }
+  }
+
   /** A map to convert every occurrence of a wildcard type to a fresh
    *  type variable */
   object wildcardToTypeVarMap extends TypeMap {
@@ -3422,7 +3435,8 @@ A type's typeSymbol should never be inspected directly.
   /** Does type `tp1' conform to `tp2'?
    */
   private def isSubType0(tp1: Type, tp2: Type): Boolean = {
-    (tp1, tp2) match {
+    annotationsConform(tp1, tp2) &&
+    ((tp1.withoutAttributes, tp2.withoutAttributes) match {
       case (ErrorType, _)    => true
       case (WildcardType, _) => true
       case (_, ErrorType)    => true
@@ -3491,10 +3505,6 @@ A type's typeSymbol should never be inspected directly.
       case (tv1 @ TypeVar(_, constr1), _) =>
         if (constr1.inst != NoType) constr1.inst <:< tp2
         else isRelatable(tv1, tp2) && { constr1.hibounds = tp2 :: constr1.hibounds; true }
-      case (AnnotatedType(_,atp1,_), _) =>
-        atp1 <:< tp2
-      case (_, AnnotatedType(_,atp2,_)) =>
-        tp1 <:< atp2
       case (_, _)  if (tp1.isHigherKinded || tp2.isHigherKinded) =>
         (tp1.typeSymbol == AllClass
          ||
@@ -3546,7 +3556,7 @@ A type's typeSymbol should never be inspected directly.
          sym1 == AllRefClass && tp2.isInstanceOf[SingletonType] && (tp1 <:< tp2.widen))
       case _ =>
         false
-    }
+    })
   } || {
     val tp1n = tp1.normalize
     val tp2n = tp2.normalize

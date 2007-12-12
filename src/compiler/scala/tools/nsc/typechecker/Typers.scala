@@ -3138,6 +3138,9 @@ trait Typers { self: Analyzer =>
 //      Console.println("typing "+tree+" at "+tree.pos);//DEBUG
         var tree1 = if (tree.tpe ne null) tree else typed1(tree, mode, dropExistential(pt))
 //      Console.println("typed "+tree1+":"+tree1.tpe+", "+context.undetparams);//DEBUG
+
+        tree1.tpe = addAnnotations(tree1, tree1.tpe)
+
         val result = if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt)
 //      Console.println("adapted "+tree1+":"+tree1.tpe+" to "+pt+", "+context.undetparams);//DEBUG
 //      if ((mode & TYPEmode) != 0) println("type: "+tree1+" has type "+tree1.tpe)

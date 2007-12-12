@@ -18,6 +18,7 @@ abstract class SymbolTable extends Names
                               with InfoTransformers
                               with StdNames
                               with AnnotationInfos
+                              with AnnotationCheckers
                               with Trees
 {
   def settings: Settings
