@@ -11,7 +11,7 @@ class Test4$Foo2
 class Test4$Foo3
 
 @test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=file:///dev/null)
-private int Test4$Foo4.x
+private final int Test4$Foo4.x
 
 @test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=file:///dev/null)
 public int Test4$Foo4.x()
@@ -26,7 +26,7 @@ public Test4$Foo6(java.lang.String)
 public Test4$Foo7()
 
 @test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=constructor val)
-private int Test4$Foo8.n
+private final int Test4$Foo8.n
 
 @test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=constructor val)
 public int Test4$Foo8.n()
