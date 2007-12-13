@@ -700,7 +700,7 @@ SCALA_CLDC="$LATEST_CLDC";
 SCALA_CLDCAPI="$LATEST_CLDCAPI";
 
 [ -x "$JAVACMD" ] || JAVACMD=java;
-[ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx384M -Xms16M";
+[ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx256M -Xms16M";
 case `$JAVACMD \-version 2>&1 | xargs` in
     *1.5.*IBM* ) JAVA5="true"; IBM_J9="true"; JAVA_OPTS="$JAVA_OPTS -Xss2M";;
     *1.6.*IBM* ) JAVA5="true"; IBM_J9="true";;
