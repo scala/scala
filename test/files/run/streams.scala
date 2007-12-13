@@ -22,7 +22,7 @@ object Test extends Application {
   println(s2.dropWhile(_ > 0))
   println
 
-  val s3 = Stream.range(1, 100000)
+  val s3 = Stream.range(1, 100000) // ticket #153: Stackoverflow
   println(s3.length)
 
   // ticket #153

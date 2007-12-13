@@ -58,7 +58,7 @@ object Stream {
       }
     }
 
-    def unapply[A](str: Stream[A]): Option[(A,Stream[A])] =
+    def unapply[A](str: Stream[A]): Option[(A, Stream[A])] =
       if(str.isEmpty)
         None
       else
@@ -113,7 +113,7 @@ object Stream {
   def range(start: Int, end: Int, step: Int): Stream[Int] = {
     def loop(lo: Int): Stream[Int] =
       if (lo >= end) empty
-      else cons(lo, loop(lo + step));
+      else cons(lo, loop(lo + step))
     loop(start)
   }
 
@@ -131,7 +131,7 @@ object Stream {
   def range(start: Int, end: Int, step: Int => Int): Stream[Int] = {
     def loop(lo: Int): Stream[Int] =
       if (lo >= end) empty
-      else cons(lo, loop(step(lo)));
+      else cons(lo, loop(step(lo)))
     loop(start)
   }
 
@@ -170,7 +170,7 @@ object Stream {
    *  @return     the stream composed of n elements all equal to elem
    */
   def make[A](n: Int, elem: A): Stream[A] =
-    Stream.const(elem).take(n)
+    Stream.const(elem) take n
 }
 
 /**
@@ -237,7 +237,7 @@ trait Stream[+A] extends Seq.Projection[A] {
    *  @param rest   The stream that gets appended to this stream
    */
   override def append[B >: A](rest: => Iterable[B]): Stream[B] =
-    if (isEmpty) rest.toStream else Stream.cons(head, tail.append(rest))
+    if (isEmpty) rest.toStream else Stream.cons(head, tail append rest)
 
 
   /** An iterator returning the elements of this stream one by one.
@@ -288,7 +288,7 @@ trait Stream[+A] extends Seq.Projection[A] {
    */
   override def take(n: Int): Stream[A] =
     if (isEmpty || n <= 0) Stream.empty
-    else Stream.cons(head, tail.take(n-1))
+    else Stream.cons(head, tail take (n-1))
 
   /** Returns the stream without its <code>n</code> first elements.
    *  If the stream has less than <code>n</code> elements, the empty stream is returned.
@@ -313,7 +313,7 @@ trait Stream[+A] extends Seq.Projection[A] {
    */
   override def takeWhile(p: A => Boolean): Stream[A] =
     if (isEmpty || !p(head)) Stream.empty
-    else Stream.cons(head, tail.takeWhile(p))
+    else Stream.cons(head, tail takeWhile p)
 
   /** Returns the longest suffix of this stream whose first element
    *  does not satisfy the predicate <code>p</code>.
@@ -337,7 +337,7 @@ trait Stream[+A] extends Seq.Projection[A] {
    */
   override def map[B](f: A => B): Stream[B] =
     if (isEmpty) Stream.empty
-    else Stream.cons(f(head), tail.map(f))
+    else Stream.cons(f(head), tail map f)
 
   /** Apply the given function <code>f</code> to each element of this stream
    *  (while respecting the order of the elements).
@@ -374,11 +374,10 @@ trait Stream[+A] extends Seq.Projection[A] {
    *           predicate <code>p</code>.
    */
   override def forall(p: A => Boolean): Boolean = {
-    def loop(s: Stream[A]): Boolean = {
+    def loop(s: Stream[A]): Boolean =
       if (s.isEmpty) true
       else if (p(s.head)) loop(s.tail)
       else false
-    }
     loop(this)
   }
 
@@ -390,11 +389,10 @@ trait Stream[+A] extends Seq.Projection[A] {
    *           satisfies the predicate <code>p</code>.
    */
   override def exists(p: A => Boolean): Boolean = {
-    def loop(s: Stream[A]): Boolean = {
+    def loop(s: Stream[A]): Boolean =
       if (s.isEmpty) false
       else if (p(s.head)) true
       else loop(s.tail)
-    }
     loop(this)
   }
 
@@ -433,7 +431,14 @@ trait Stream[+A] extends Seq.Projection[A] {
    */
   override def flatMap[B](f: A => Iterable[B]): Stream[B] =
     if (isEmpty) Stream.empty
-    else Stream.fromIterator(f(head).elements) append (tail flatMap f)
+    else {
+      val s: Stream[B] = f(head) match {
+        case x: Stream[_] => x
+        case y: List[_]   => y.toStream
+        case z            => z.toList.toStream
+      }
+      s append (tail flatMap f)
+    }
 
   override def toStream = this
 
@@ -466,9 +471,9 @@ trait Stream[+A] extends Seq.Projection[A] {
    *              <code>Stream(a<sub>0</sub>, ..., a<sub>m</sub>)
    *              zip Stream(b<sub>0</sub>, ..., b<sub>n</sub>)</code> is invoked.
    */
-  def zip[B](that: Stream[B]): Stream[Tuple2[A, B]] =
+  def zip[B](that: Stream[B]): Stream[(A, B)] =
     if (this.isEmpty || that.isEmpty) Stream.empty
-    else Stream.cons(Tuple2(this.head, that.head), this.tail.zip(that.tail))
+    else Stream.cons((this.head, that.head), this.tail zip that.tail)
 
 
   /** Returns a stream that pairs each element of this stream
@@ -477,7 +482,7 @@ trait Stream[+A] extends Seq.Projection[A] {
    *  @return      the stream <code>Stream({a<sub>0</sub>,0}, {a<sub>0</sub>,1},...)</code>
    *               where <code>a<sub>i</sub></code> are the elements of this stream.
    */
-  def zipWithIndex: Stream[Tuple2[A, Int]] =
+  def zipWithIndex: Stream[(A, Int)] =
     zip(Stream.from(0))
 
   /** Prints elements of this stream one by one, separated by commas */

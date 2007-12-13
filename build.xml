@@ -820,8 +820,6 @@ CLDC
 ANDROID
 ============================================================================ -->
 
-  <property name="dx.jar" value="${android.home}/tools/lib/dx.jar"/>
-
   <target name="android.sources"
           description="Create the source directory for Android library"
   >
@@ -843,7 +841,7 @@ ANDROID
     </copy>
   </target>
 
-  <target name="android.libraries" 
+  <target name="android.libraries"
           depends="setup.quick, android.sources"
           description="Builds the Scala library for Android">
     <fail message="Android home is not set or could not find android.jar in ${android.home}">
@@ -897,9 +895,9 @@ ANDROID
     </quick>
   </target>
 
-  <target name="android" depends="android.libraries"
+  <target name="android.build" depends="android.libraries"
           description="Convert this project's .class files into .dex files">
-    <java jar="${dx.jar}" fork="true" failonerror="true">
+     <java jar="${dx.jar}" fork="true" failonerror="true">
       <jvmarg value="-Djava.ext.dirs=${android.home}${file.separator}tools${file.separator}lib"/>
       <jvmarg value="-Xmx384M"/>
       <arg value="--dex"/>
@@ -918,7 +916,22 @@ ANDROID
       basedir="${android.dir}/lib/library"
       includes="scala/**/*.class"
     />
-    <!-- examples ? -->
+  </target>
+
+  <target name="android" depends="init">
+    <condition property="android.supported">
+      <and>
+        <not><contains string="${java.version}" substring="1.4"/></not>
+        <contains string="${java.vendor}" substring="Sun"/>
+      </and>
+    </condition>
+    <if><isset property="android.supported"/><then>
+      <antcall target="android.build">
+        <param name="dx.jar" value="${android.home}/tools/lib/dx.jar"/>
+      </antcall>
+    </then><else>
+      <echo message="The Android library build requires Sun Java 1.5 or newer"/>
+    </else></if>
   </target>
 
 <!-- ===========================================================================
@@ -1751,7 +1764,7 @@ GENERATES A DISTRIBUTION
       <libset dir="${dist.current.dir}/lib" includes="${lib.jar.name},${dbc.jar.name}"/>
       <srcset dir="${dist.current.dir}/lib" includes="${libsrc.jar.name},${dbcsrc.jar.name}"/>
     </quicksbaz>
-  <!-- Create the Scala developper package -->
+  <!-- Create the Scala developer package -->
     <quicksbaz
       file="${dist.dir}/scala-devel-${version.number}.sbp"
       adfile="${dist.dir}/scala-devel-${version.number}.advert"
@@ -1812,15 +1825,23 @@ GENERATES A DISTRIBUTION
       <libset dir="${cldc.dir}/lib" includes="*.jar"/>
     </quicksbaz>
   <!-- Creates the Android package -->
-    <quicksbaz
-      file="${dist.dir}/scala-android-${version.number}.sbp"
-      adfile="${dist.dir}/scala-android-${version.number}.advert"
-      name="scala-android"
-      version="${version.number}"
-      desc="The Scala Android package contains everything needed to use Scala on Android."
-      link="${sbaz.universe}/scala-android-${version.number}.sbp">
-      <libset dir="${android.dir}/lib" includes="*.jar"/>
-    </quicksbaz>
+    <if><isset property="android.supported"/><then>
+      <copy todir="${dist.current.dir}/doc/scala-android/examples">
+        <fileset dir="${docs.dir}/android-examples">
+          <exclude name="**/R.java"/>
+        </fileset>
+      </copy>
+      <quicksbaz
+        file="${dist.dir}/scala-android-${version.number}.sbp"
+        adfile="${dist.dir}/scala-android-${version.number}.advert"
+        name="scala-android"
+        version="${version.number}"
+        desc="The Scala Android package contains everything needed to use Scala on Android."
+        link="${sbaz.universe}/scala-android-${version.number}.sbp">
+        <libset dir="${android.dir}/lib" includes="*.jar"/>
+        <docset dir="${dist.current.dir}/doc/scala-android" includes="**"/>
+      </quicksbaz>
+    </then></if>
   </target>
 
   <target name="build.archive" depends="build.dist">
