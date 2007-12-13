@@ -916,7 +916,6 @@ ANDROID
       basedir="${android.dir}/lib/library"
       includes="scala/**/*.class"
     />
-    <!-- examples ? -->
   </target>
 
   <target name="android" depends="init">
@@ -1827,6 +1826,11 @@ GENERATES A DISTRIBUTION
     </quicksbaz>
   <!-- Creates the Android package -->
     <if><isset property="android.supported"/><then>
+      <copy todir="${dist.current.dir}/doc/scala-android/examples">
+        <fileset dir="${docs.dir}/android-examples">
+          <exclude name="**/R.java"/>
+        </fileset>
+      </copy>
       <quicksbaz
         file="${dist.dir}/scala-android-${version.number}.sbp"
         adfile="${dist.dir}/scala-android-${version.number}.advert"
@@ -1835,6 +1839,7 @@ GENERATES A DISTRIBUTION
         desc="The Scala Android package contains everything needed to use Scala on Android."
         link="${sbaz.universe}/scala-android-${version.number}.sbp">
         <libset dir="${android.dir}/lib" includes="*.jar"/>
+        <docset dir="${dist.current.dir}/doc/scala-android" includes="**"/>
       </quicksbaz>
     </then></if>
   </target>
