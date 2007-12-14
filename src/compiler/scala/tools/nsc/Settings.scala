@@ -88,7 +88,6 @@ class Settings(error: String => Unit) {
   val verbose       = BooleanSetting    ("-verbose", "Output messages about what the compiler is doing").hideToIDE
   val deprecation   = BooleanSetting    ("-deprecation", "Output source locations where deprecated APIs are used").hideToIDE
   val unchecked     = BooleanSetting    ("-unchecked", "Enable detailed unchecked warnings").hideToIDE
-  val noide         = BooleanSetting    ("-noide", "Do not generate class-source mappings that are used by the Scala IDE").hideToIDE
   val classpath     = new StringSetting ("-classpath", "path", "Specify where to find user class files", classpathDefault) { override val abbreviation = "-cp" }
   val sourcepath    = StringSetting     ("-sourcepath", "path", "Specify where to find input source files", "")
   val bootclasspath = StringSetting     ("-bootclasspath", "path", "Override location of bootstrap class files", bootclasspathDefault)
