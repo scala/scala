@@ -66,6 +66,10 @@ trait Typers { self: Analyzer =>
     sym
   }
 
+  /** when in 1.4 mode the compiler accepts and ignores useless
+   *  type parameters of Java generics
+   */
+  def onePointFourMode = true // todo changeto: settings.target.value == "jvm-1.4"
 
   // Mode constants
 
@@ -2007,7 +2011,7 @@ trait Typers { self: Analyzer =>
             }
           }
         }
-	for (t <- tp) {
+        for (t <- tp) {
           t match {
             case ExistentialType(tparams, _) =>
               boundSyms ++= tparams
@@ -2032,7 +2036,7 @@ trait Typers { self: Analyzer =>
       }
 
       object substLocals extends TypeMap {
-	override val dropNonConstraintAnnotations = true
+	    override val dropNonConstraintAnnotations = true
 
         def apply(t: Type): Type = t match {
           case TypeRef(_, sym, args) if (sym.isLocal && args.length > 0) =>
@@ -2844,7 +2848,8 @@ trait Typers { self: Analyzer =>
             }}
             TypeTree(owntype) setOriginal(tree) // setPos tree.pos
           } else if (tparams.length == 0) {
-            errorTree(tree, tpt1.tpe+" does not take type parameters")
+            if (onePointFourMode && (tpt1.symbol hasFlag JAVA)) tpt1
+            else errorTree(tree, tpt1.tpe+" does not take type parameters")
           } else {
             //Console.println("\{tpt1}:\{tpt1.symbol}:\{tpt1.symbol.info}")
             if (settings.debug.value) Console.println(tpt1+":"+tpt1.symbol+":"+tpt1.symbol.info);//debug
