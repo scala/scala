@@ -1797,10 +1797,12 @@ GENERATES A DISTRIBUTION
       desc="The Scala test package contains everything needed to test Scala."
       link="${sbaz.universe}/scala-test-${version.number}.sbp">
       <binset dir="${basedir}/test"
-        includes="clitest,diff/diff.*,diff/lib*.dll,scalatest,scalatest.bat"/>
+        includes="clitest,diff/diff.*,diff/lib*.dll,scalatest,scalatest.bat,partest"/>
       <miscset
         dir="${basedir}/test"
         includes="files/**/*.args,files/**/*.check,files/**/*.jar,files/**/*.java,files/**/*.scala,files/cli/**/*.check.*,files/jvm/*.so,files/shootout/*.javaopts,files/shootout/*.runner,files/shootout/*.txt"/>
+      <srcset dir="${dist.current.dir}/lib" includes="${parsrc.jar.name}"/>
+      <libset dir="${dist.current.dir}/lib" includes="${partest.jar.name}"/>
     </quicksbaz>
   <!-- Creates the MSIL package -->
     <quicksbaz
