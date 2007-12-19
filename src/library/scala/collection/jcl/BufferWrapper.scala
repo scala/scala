@@ -15,7 +15,7 @@ package scala.collection.jcl;
  *  @author Sean McDirmid
  */
 trait BufferWrapper[A] extends Buffer[A] with CollectionWrapper[A] {
-  def underlying : java.util.List;
+  def underlying : java.util.List[A];
   override def elements : BufferIterator[Int,A] = new IteratorWrapper(underlying.listIterator);
   override def remove(idx : Int) = underlying.remove(idx).asInstanceOf[A];
   override def add(a : A) = underlying.add(a);
@@ -40,7 +40,7 @@ trait BufferWrapper[A] extends Buffer[A] with CollectionWrapper[A] {
     }
     override def elements = super[BufferWrapper].elements;
   }
-  class IteratorWrapper(underlying : java.util.ListIterator) extends MutableIterator.Wrapper[A](underlying) with BufferIterator[Int,A] {
+  class IteratorWrapper(underlying : java.util.ListIterator[A]) extends MutableIterator.Wrapper[A](underlying) with BufferIterator[Int,A] {
     def add(a : A) = underlying.add(a);
     def set(a : A) = underlying.set(a);
     def hasPrevious = underlying.hasPrevious;

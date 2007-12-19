@@ -11,7 +11,7 @@
 package scala.collection.jcl;
 
 object MutableIterator {
-  class Wrapper[A](val underlying : java.util.Iterator) extends MutableIterator[A] {
+  class Wrapper[A](val underlying : java.util.Iterator[A]) extends MutableIterator[A] {
     def hasNext = underlying.hasNext;
     def next = underlying.next.asInstanceOf[A];
     def remove = underlying.remove;

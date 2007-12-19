@@ -15,7 +15,7 @@ package scala.collection.jcl;
  *  @author Sean McDirmid
  */
 trait MapWrapper[K,E] extends jcl.Map[K,E] {
-  def underlying : java.util.Map;
+  def underlying : java.util.Map[K,E];
   override def size = underlying.size;
   override def isEmpty = underlying.isEmpty;
   override def clear() = underlying.clear;
@@ -46,7 +46,7 @@ trait MapWrapper[K,E] extends jcl.Map[K,E] {
     def hasNext = underlying.hasNext;
     def remove = underlying.remove;
     def next = {
-      val next = underlying.next.asInstanceOf[java.util.Map.Entry];
+      val next = underlying.next.asInstanceOf[java.util.Map.Entry[K,E]];
       Tuple2(next.getKey.asInstanceOf[K],next.getValue.asInstanceOf[E]);
     }
   }

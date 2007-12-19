@@ -17,7 +17,7 @@ import Predef._
 object StringAdd {
   // Needed for the format hack. Can be removed once we drop 1.4
   lazy val formatMethod: java.lang.reflect.Method = {
-    val paramTypes = Array(classOf[String], classOf[Array[Object]])
+    val paramTypes = Array[Class[T] forSome { type T }](classOf[String], classOf[Array[Object]])
     classOf[String].getDeclaredMethod("format", paramTypes)
   }
 }

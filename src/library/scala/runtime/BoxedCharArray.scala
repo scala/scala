@@ -26,7 +26,7 @@ final class BoxedCharArray(val value: Array[Char]) extends BoxedArray {
   }
 
   def unbox(elemTag: String): AnyRef = value
-  def unbox(elemClass: Class): AnyRef = value
+  def unbox(elemClass: Class[_]): AnyRef = value
 
   override def equals(other: Any) = (
     value == other ||

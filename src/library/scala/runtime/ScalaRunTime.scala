@@ -28,30 +28,27 @@ object ScalaRunTime {
   val DoubleTag = ".Double"
   val BooleanTag = ".Boolean"
 
-  def isArray(x: AnyRef): Boolean =
-    (x != null && x.getClass.isArray) || (x != null && x.isInstanceOf[BoxedArray])
-
+  def isArray(x: AnyRef): Boolean = (x != null && x.getClass.isArray) || (x != null && x.isInstanceOf[BoxedArray])
   def isValueTag(tag: String) = tag.charAt(0) == '.'
-
-  def isValueClass(clazz: Class) = clazz.isPrimitive()
+  def isValueClass(clazz: Class[_]) = clazz.isPrimitive()
 
   def checkInitialized[T <: AnyRef](x: T): T =
     if (x == null) throw new UninitializedError else x
 
-  abstract class Try[A] {
-    def Catch[B >: A](handler: PartialFunction[Throwable, B]): B
-    def Finally(handler: Unit): A
+  abstract class Try[a] {
+    def Catch[b >: a](handler: PartialFunction[Throwable, b]): b
+    def Finally(handler: Unit): a
   }
 
-  def Try[A](block: => A): Try[A] = new Try[A] with Runnable {
-    var result: A = _
+  def Try[a](block: => a): Try[a] = new Try[a] with Runnable {
+    var result: a = _
     var exception: Throwable = ExceptionHandling.tryCatch(this)
 
-    def run() { result = block }
+    def run(): Unit = result = block
 
-    def Catch[B >: A](handler: PartialFunction[Throwable, B]): B =
+    def Catch[b >: a](handler: PartialFunction[Throwable, b]): b =
       if (exception eq null)
-        result.asInstanceOf[B]
+        result.asInstanceOf[b]
       // !!! else if (exception is LocalReturn)
       // !!!   // ...
       else if (handler isDefinedAt exception)
@@ -59,9 +56,9 @@ object ScalaRunTime {
       else
         throw exception
 
-    def Finally(handler: Unit): A =
+    def Finally(handler: Unit): a =
       if (exception eq null)
-        result.asInstanceOf[A]
+        result.asInstanceOf[a]
       else
         throw exception
   }
@@ -82,8 +79,7 @@ object ScalaRunTime {
     val arr =  x.productArity
     var i = 0
     while (i < arr) {
-      val elem = x.productElement(i)
-      code = code * 41 + (if (elem == null) 0 else elem.hashCode())
+      code = code * 41 + x.productElement(i).hashCode()
       i += 1
     }
     code
@@ -121,12 +117,12 @@ object ScalaRunTime {
   //def checkDefined[T >: Null](x: T): T =
   //  if (x == null) throw new UndefinedException else x
 
-  def Seq[A](xs: A*): Seq[A] = null // interpreted specially by new backend.
+  def Seq[a](xs: a*): Seq[a] = null // interpreted specially by new backend.
 
   def arrayValue(x: BoxedArray, elemTag: String): AnyRef =
     if (x eq null) null else x.unbox(elemTag)
 
-  def arrayValue(x: BoxedArray, elemClass: Class): AnyRef =
+  def arrayValue(x: BoxedArray, elemClass: Class[_]): AnyRef =
     if (x eq null) null else x.unbox(elemClass)
 
   def boxArray(value: AnyRef): BoxedArray = value match {

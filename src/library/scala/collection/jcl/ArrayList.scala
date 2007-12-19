@@ -14,6 +14,6 @@ package scala.collection.jcl;
  *
  *  @author Sean McDirmid
  */
-class ArrayList[A](override val underlying : java.util.ArrayList) extends BufferWrapper[A]  {
-  def this() = this(new java.util.ArrayList);
+class ArrayList[A](override val underlying : java.util.ArrayList[A]) extends BufferWrapper[A]  {
+  def this() = this(new java.util.ArrayList[A]);
 }

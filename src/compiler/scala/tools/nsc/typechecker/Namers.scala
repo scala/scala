@@ -522,7 +522,7 @@ trait Namers { self: Analyzer =>
     }
 
     private def classSig(tparams: List[TypeDef], impl: Template): Type =
-      parameterizedType(typer.reenterTypeParams(tparams), templateSig(impl))
+      polyType(typer.reenterTypeParams(tparams), templateSig(impl))
 
     private def methodSig(tparams: List[TypeDef], vparamss: List[List[ValDef]],
                           tpt: Tree, rhs: Tree): Type = {
@@ -613,7 +613,7 @@ trait Namers { self: Analyzer =>
       }
 
       def thisMethodType(restpe: Type) =
-        parameterizedType(
+        polyType(
           tparamSyms,
           if (vparamSymss.isEmpty) PolyType(List(), restpe)
           else checkDependencies((vparamSymss :\ restpe) (makeMethodType)))
@@ -739,7 +739,7 @@ trait Namers { self: Analyzer =>
       if (tpsym.owner.isRefinementClass &&  // only needed in refinements
           !tpsym.allOverriddenSymbols.forall{verifyOverriding(_)})
 	      ErrorType
-      else parameterizedType(tparamSyms, tp)
+      else polyType(tparamSyms, tp)
     }
 
     def typeSig(tree: Tree): Type = {

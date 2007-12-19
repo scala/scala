@@ -37,12 +37,12 @@ object Platform {
    *  @param length    ..
    *  @return          ..
    */
-  def createArray(elemClass: Class, length: Int): AnyRef =
+  def createArray(elemClass: Class[_], length: Int): AnyRef =
     java.lang.reflect.Array.newInstance(elemClass, length)
 
   def arrayclear(arr: Array[Int]): Unit = java.util.Arrays.fill(arr, 0)
 
-  def getClassForName(name: String): Class = java.lang.Class.forName(name)
+  def getClassForName(name: String): Class[_] = java.lang.Class.forName(name)
 
   val EOL = System.getProperty("line.separator", "\n")
 

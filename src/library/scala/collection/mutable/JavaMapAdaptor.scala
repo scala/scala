@@ -18,7 +18,7 @@ package scala.collection.mutable
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
  */
-@deprecated class JavaMapAdaptor[A, B](jmap: java.util.Map) extends Map[A, B] {
+@deprecated class JavaMapAdaptor[A, B](jmap: java.util.Map[A, B]) extends Map[A, B] {
 
   def size: Int = jmap.size()
 

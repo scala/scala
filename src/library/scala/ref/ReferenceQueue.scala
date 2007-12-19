@@ -14,10 +14,10 @@ package scala.ref
  *  @author Sean McDirmid
  */
 class ReferenceQueue[+T <: AnyRef] {
-  private[ref] val underlying = new java.lang.ref.ReferenceQueue
+  private[ref] val underlying: java.lang.ref.ReferenceQueue[_ <: T] = new java.lang.ref.ReferenceQueue[T]
   override def toString = underlying.toString;
-  class Wrapper(val underlying: java.lang.ref.Reference) extends ReferenceWrapper[T]
-  def Wrapper(ref: java.lang.ref.Reference) = ref match {
+  class Wrapper[U <: AnyRef](val underlying: java.lang.ref.Reference[U]) extends ReferenceWrapper[U]
+  def Wrapper[U <: AnyRef](ref: java.lang.ref.Reference[U]) = ref match {
     case null => None
     case ref => new Wrapper(ref)
   }

@@ -1659,6 +1659,7 @@ A type's typeSymbol should never be inspected directly.
   {
     override protected def rewrap(newtp: Type) = existentialAbstraction(quantified, newtp)
 
+    override def isTrivial = false
     override def isStable: Boolean = false
     override def bounds = TypeBounds(maybeRewrap(underlying.bounds.lo), maybeRewrap(underlying.bounds.hi))
     override def parents = underlying.parents map maybeRewrap
@@ -2037,7 +2038,7 @@ A type's typeSymbol should never be inspected directly.
   /** A creator for type parameterizations
    *  If tparams is empty, simply returns result type
    */
-  def parameterizedType(tparams: List[Symbol], tpe: Type): Type =
+  def polyType(tparams: List[Symbol], tpe: Type): Type =
     if (tparams.isEmpty) tpe
     else
       PolyType(tparams, tpe match {
@@ -2462,10 +2463,17 @@ A type's typeSymbol should never be inspected directly.
   private val emptySymMap = scala.collection.immutable.Map[Symbol, Symbol]()
   private val emptySymCount = scala.collection.immutable.Map[Symbol, Int]()
 
-  private def makeExistential(suffix: String, owner: Symbol, lo: Type, hi: Type) =
+  /** Make an existential variable.
+   *  @param suffix  A suffix to be appended to the freshly generated name
+   *                 It's ususally "", except for type variables abstracting
+   *                 over values, where it is ".type".
+   *  @param owner   The owner of the variable
+   *  @param bounds  The variable's bounds
+   */
+  def makeExistential(suffix: String, owner: Symbol, bounds: TypeBounds): Symbol =
     recycle(
       owner.newAbstractType(owner.pos, newTypeName(freshTypeName()+suffix)).setFlag(EXISTENTIAL)
-    ).setInfo(TypeBounds(lo, hi))
+    ).setInfo(bounds)
 
   /** A map to compute the asSeenFrom method  */
   class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap {
@@ -2507,7 +2515,8 @@ A type's typeSymbol should never be inspected directly.
     def stabilize(pre: Type, clazz: Symbol): Type = {
       capturedPre get clazz match {
         case None =>
-          val qvar = makeExistential(".type", clazz, AllClass.tpe, intersectionType(List(pre, SingletonClass.tpe)))
+          val qvar = makeExistential(".type", clazz,
+            mkTypeBounds(AllClass.tpe, intersectionType(List(pre, SingletonClass.tpe))))
           capturedPre += (clazz -> qvar)
           capturedParams = qvar :: capturedParams
           qvar
@@ -2586,7 +2595,7 @@ A type's typeSymbol should never be inspected directly.
                         "something is wrong (wrong class file?): "+basesym+
                         " with type parameters "+
                         basesym.typeParams.map(_.name).mkString("[",",","]")+
-                        " gets applied to arguments "+baseargs.mkString("(",",",")")+", phase = "+phase)
+                        " gets applied to arguments "+baseargs.mkString("[",",","]")+", phase = "+phase)
                     instParam(basesym.typeParams, baseargs);
                   case ExistentialType(tparams, qtpe) =>
                     capturedParams = capturedParams union tparams
@@ -3180,7 +3189,14 @@ A type's typeSymbol should never be inspected directly.
         !(List.map3(args1, args2, sym1.typeParams) {
           (arg1, arg2, tparam) =>
             //if (tparam.variance == 0 && !(arg1 =:= arg2)) Console.println("inconsistent: "+arg1+"!="+arg2)//DEBUG
-          tparam.variance != 0 || arg1 =:= arg2
+          if (tparam.variance == 0) arg1 =:= arg2
+          else if (arg1.isInstanceOf[TypeVar])
+            // if left-hand argument is a typevar, make it compatible with variance
+            // this is for more precise pattern matching
+            // todo: work this in the spec of this method
+            // also: think what happens if there are embedded typevars?
+            if (tparam.variance < 0) arg1 <:< arg2 else arg2 <:< arg1
+          else true
         } contains false)
       case (et: ExistentialType, _) =>
         et.withTypeVars(isConsistent(_, tp2))
@@ -4090,7 +4106,7 @@ A type's typeSymbol should never be inspected directly.
               if (l <:< g) l
               else {
                 val owner = commonOwner(as)
-                val qvar = makeExistential("", commonOwner(as), g, l)
+                val qvar = makeExistential("", commonOwner(as), mkTypeBounds(g, l))
                 capturedParams += qvar
                 qvar.tpe
               }

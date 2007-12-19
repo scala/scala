@@ -1890,7 +1890,7 @@ trait Typers { self: Analyzer =>
 
     protected def existentialBound(sym: Symbol): Type =
       if (sym.isClass)
-         parameterizedType(sym.typeParams, mkTypeBounds(AllClass.tpe, sym.classBound))
+         polyType(sym.typeParams, mkTypeBounds(AllClass.tpe, sym.classBound))
       else if (sym.isAbstractType)
          sym.info
       else if (sym.isTerm)
@@ -2340,7 +2340,7 @@ trait Typers { self: Analyzer =>
           // of the type arguments as we don't know which alternative to choose... here we do
           val args1 = map2Conserve(args, tparams) {
             //@M! the polytype denotes the expected kind
-            (arg, tparam) => typedHigherKindedType(arg, parameterizedType(tparam.typeParams, AnyClass.tpe))
+            (arg, tparam) => typedHigherKindedType(arg, polyType(tparam.typeParams, AnyClass.tpe))
           }
           typedTypeApply(fun, args1)
         case SingleType(_, _) =>
@@ -2829,7 +2829,7 @@ trait Typers { self: Analyzer =>
                 // if symbol hasn't been fully loaded, can't check kind-arity
               else map2Conserve(args, tparams) {
                 (arg, tparam) =>
-                  typedHigherKindedType(arg, parameterizedType(tparam.typeParams, AnyClass.tpe))
+                  typedHigherKindedType(arg, polyType(tparam.typeParams, AnyClass.tpe))
                   //@M! the polytype denotes the expected kind
               }
             val argtypes = args1 map (_.tpe)
@@ -3020,7 +3020,7 @@ trait Typers { self: Analyzer =>
           // @M maybe the well-kindedness check should be done when checking the type arguments conform to the type parameters' bounds?
           val args1 = if(args.length == tparams.length) map2Conserve(args, tparams) {
                         //@M! the polytype denotes the expected kind
-                        (arg, tparam) => typedHigherKindedType(arg, parameterizedType(tparam.typeParams, AnyClass.tpe))
+                        (arg, tparam) => typedHigherKindedType(arg, polyType(tparam.typeParams, AnyClass.tpe))
                       } else {
                       //@M  this branch is correctly hit for an overloaded polymorphic type. It also has to handle erroneous cases.
                       // Until the right alternative for an overloaded method is known, be very liberal,

@@ -46,11 +46,9 @@ trait Ranged[K,A] extends scala.collection.Ranged[K,A] with MutableIterable[A] {
   override final def range(from: K, until: K) : SortedSelf = rangeImpl(Some(from),Some(until));
 
   /** A wrapper around Java comparators. */
-  protected class Comparator[K <% Ordered[K]] extends java.util.Comparator {
+  protected class Comparator[K <% Ordered[K]] extends java.util.Comparator[Any] {
     def compare(x0 : Any, x1 : Any) = {
-      val k0 = x0.asInstanceOf[K];
-      val k1 = x1.asInstanceOf[K];
-      k0.compare(k1);
+      x0.asInstanceOf[K].compare(x1.asInstanceOf[K]); //!!!
     }
   }
 }

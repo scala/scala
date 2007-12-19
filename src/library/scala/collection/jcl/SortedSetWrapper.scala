@@ -20,7 +20,7 @@ package scala.collection.jcl;
  *  @author Sean McDirmid
  */
 trait SortedSetWrapper[A] extends SortedSet[A] with SetWrapper[A] {
-  def underlying : java.util.SortedSet;
+  def underlying : java.util.SortedSet[A];
   /** delegates to the comparator of the underlying Java sorted set */
   override def compare(a0 : A, a1 : A) = underlying.comparator.compare(a0, a1);
   override def firstKey = underlying.first.asInstanceOf[A];

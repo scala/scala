@@ -21,7 +21,7 @@ object Predef {
   // classOf dummy ------------------------------------------------------
 
   /** Return the runtime representation of a class type. */
-  def classOf[T]: Class = null
+  def classOf[T]: Class[T] = null
 
   // aliases ------------------------------------------------------------
 
@@ -46,7 +46,7 @@ object Predef {
 
   type String        = java.lang.String
   type StringBuilder = compat.StringBuilder
-  type Class         = java.lang.Class
+  type Class[T]      = java.lang.Class[T]
   type Runnable      = java.lang.Runnable
 
   type Throwable = java.lang.Throwable

@@ -14,7 +14,7 @@ package scala.ref
  *  @author Seam McDirmid
  */
 trait ReferenceWrapper[+T <: AnyRef] extends Reference[T] {
-  val underlying: java.lang.ref.Reference
+  val underlying: java.lang.ref.Reference[_ <: T]
   @deprecated def isValid = underlying.get != null
   override def get = {
     val ret = underlying.get.asInstanceOf[T]

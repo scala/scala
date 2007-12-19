@@ -470,11 +470,10 @@ abstract class ClassfileParser {
         case VOID_TAG   => definitions.UnitClass.tpe
         case BOOL_TAG   => definitions.BooleanClass.tpe
         case 'L' => {
-          val classSym = classNameToSymbol(subName(c => ((c == ';') || (c == '<'))))
+          val classSym = classNameToSymbol(subName(c => c == ';' || c == '<'))
           assert(!classSym.hasFlag(OVERLOADED), classSym.alternatives)
           val existentials = new ListBuffer[Symbol]()
           val tpe: Type = if (sig(index) == '<') {
-            assert(sym != null)
             accept('<')
             val xs = new ListBuffer[Type]()
             while (sig(index) != '>') {
@@ -489,13 +488,11 @@ abstract class ClassfileParser {
                     case '*' => mkTypeBounds(definitions.AllClass.tpe,
                                              definitions.AnyClass.tpe)
                   }
-                  val name = fresh.newName("T_" + sym.name)
-                  val newtparam = sym.newTypeParameter(NoPosition, name)
+                  val newtparam = makeExistential("", sym, bounds)
                   existentials += newtparam
-                  newtparam.setInfo(bounds)
                   xs += newtparam.tpe
-
-                case _ => xs += sig2type(tparams)
+                case _ =>
+                  xs += sig2type(tparams)
               }
             }
             accept('>')
@@ -571,7 +568,7 @@ abstract class ClassfileParser {
         }
         ClassInfoType(parents.toList, instanceDefs, sym)
       }
-    parameterizedType(newTParams.toList, tpe)
+    polyType(newTParams.toList, tpe)
   } // polySigToType
 
 
@@ -592,8 +589,8 @@ abstract class ClassfileParser {
             val sig = pool.getExternalName(in.nextChar)
             val newType = sigToType(sym, sig)
             sym.setInfo(newType)
-            if (settings.debug.value)
-              global.inform("" + sym + "; signatire = " + sig + " type = " + newType)
+//            if (settings.debug.value)
+              println("" + sym + "; signature = " + sig + " type = " + newType)
             hasMeta = true
           } else
             in.skip(attrLen)
@@ -731,7 +728,8 @@ abstract class ClassfileParser {
             pool.getClassSymbol(outerIndex) == sym) {
           val innerAlias = getOwner(jflags)
             .newAliasType(NoPosition, pool.getName(nameIndex).toTypeName)
-            .setInfo(pool.getClassSymbol(innerIndex).tpe)
+            .setFlag(JAVA)
+            .setInfo(new LazyAliasType(pool.getClassSymbol(innerIndex)))
           getScope(jflags).enter(innerAlias)
 
           if ((jflags & JAVA_ACC_STATIC) != 0) {
@@ -744,6 +742,14 @@ abstract class ClassfileParser {
     }
     val attrCount = in.nextChar
     for (i <- 0 until attrCount) parseAttribute()
+  }
+
+  class LazyAliasType(alias: Symbol) extends LazyType {
+    override def complete(sym: Symbol) {
+      alias.initialize
+      val tparams1 = cloneSymbols(alias.typeParams)
+      sym.setInfo(polyType(tparams1, alias.tpe.substSym(alias.typeParams, tparams1)))
+    }
   }
 
   def skipAttributes() {

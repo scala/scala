@@ -32,7 +32,7 @@ import java.lang.NoSuchMethodException
  *  @author  Stephane Micheloud
  *  @version 1.0, 04/05/2004
  */
-class Code(clazz: java.lang.Class) {
+class Code(clazz: java.lang.Class[_]) {
 
   private type JObject = java.lang.Object
 
@@ -40,10 +40,12 @@ class Code(clazz: java.lang.Class) {
 
   ///////////////////////////// apply methods ///////////////////////////////
 
+  type AnyClass = Class[T] forSome { type T }
+
   def apply[R](funName: String) =
     () => {
       val args  = Array[JObject]()
-      val types = Array[Class]()
+      val types = Array[AnyClass]()
       applyFun(funName, args, types).asInstanceOf[R]
     }
 
@@ -51,7 +53,7 @@ class Code(clazz: java.lang.Class) {
     (_0: A0) => {
       val p     = boxValue(_0)
       val args  = Array(p._1)
-      val types = Array(p._2)
+      val types = Array[AnyClass](p._2)
       applyFun(funName, args, types).asInstanceOf[R]
     }
 
@@ -60,7 +62,7 @@ class Code(clazz: java.lang.Class) {
       val p0    = boxValue(_0)
       val p1    = boxValue(_1)
       val args  = Array(p0._1, p1._1)
-      val types = Array(p0._2, p1._2)
+      val types = Array[AnyClass](p0._2, p1._2)
       applyFun(funName, args, types).asInstanceOf[R]
     }
 
@@ -70,7 +72,7 @@ class Code(clazz: java.lang.Class) {
       val p1    = boxValue(_1)
       val p2    = boxValue(_2)
       val args  = Array(p0._1, p1._1, p2._1)
-      val types = Array(p0._2, p1._2, p2._2)
+      val types = Array[AnyClass](p0._2, p1._2, p2._2)
       applyFun(funName, args, types).asInstanceOf[R]
     }
 
@@ -81,7 +83,7 @@ class Code(clazz: java.lang.Class) {
       val p2    = boxValue(_2)
       val p3    = boxValue(_3)
       val args  = Array(p0._1, p1._1, p2._1, p3._1)
-      val types = Array(p0._2, p1._2, p2._2, p3._2)
+      val types = Array[AnyClass](p0._2, p1._2, p2._2, p3._2)
       applyFun(funName, args, types).asInstanceOf[R]
     }
 
@@ -93,7 +95,7 @@ class Code(clazz: java.lang.Class) {
       val p3    = boxValue(_3)
       val p4    = boxValue(_4)
       val args  = Array(p0._1, p1._1, p2._1, p3._1, p4._1)
-      val types = Array(p0._2, p1._2, p2._2, p3._2, p4._2)
+      val types = Array[AnyClass](p0._2, p1._2, p2._2, p3._2, p4._2)
       applyFun(funName, args, types).asInstanceOf[R]
     }
 
@@ -106,7 +108,7 @@ class Code(clazz: java.lang.Class) {
       val p4    = boxValue(_4)
       val p5    = boxValue(_5)
       val args  = Array(p0._1, p1._1, p2._1, p3._1, p4._1, p5._1)
-      val types = Array(p0._2, p1._2, p2._2, p3._2, p4._2, p5._2)
+      val types = Array[AnyClass](p0._2, p1._2, p2._2, p3._2, p4._2, p5._2)
       applyFun(funName, args, types).asInstanceOf[R]
     }
 
@@ -120,7 +122,7 @@ class Code(clazz: java.lang.Class) {
       val p5    = boxValue(_5)
       val p6    = boxValue(_6)
       val args  = Array(p0._1, p1._1, p2._1, p3._1, p4._1, p5._1, p6._1)
-      val types = Array(p0._2, p1._2, p2._2, p3._2, p4._2, p5._2, p6._2)
+      val types = Array[AnyClass](p0._2, p1._2, p2._2, p3._2, p4._2, p5._2, p6._2)
       applyFun(funName, args, types).asInstanceOf[R]
     }
 
@@ -135,7 +137,7 @@ class Code(clazz: java.lang.Class) {
       val p6    = boxValue(_6)
       val p7    = boxValue(_7)
       val args  = Array(p0._1, p1._1, p2._1, p3._1, p4._1, p5._1, p6._1, p7._1)
-      val types = Array(p0._2, p1._2, p2._2, p3._2, p4._2, p5._2, p6._2, p7._2)
+      val types = Array[AnyClass](p0._2, p1._2, p2._2, p3._2, p4._2, p5._2, p6._2, p7._2)
       applyFun(funName, args, types).asInstanceOf[R]
     }
 
@@ -151,7 +153,7 @@ class Code(clazz: java.lang.Class) {
       val p7    = boxValue(_7)
       val p8    = boxValue(_8)
       val args  = Array(p0._1, p1._1, p2._1, p3._1, p4._1, p5._1, p6._1, p7._1, p8._1)
-      val types = Array(p0._2, p1._2, p2._2, p3._2, p4._2, p5._2, p6._2, p7._2, p8._2)
+      val types = Array[AnyClass](p0._2, p1._2, p2._2, p3._2, p4._2, p5._2, p6._2, p7._2, p8._2)
       applyFun(funName, args, types).asInstanceOf[R]
     }
 
@@ -180,19 +182,20 @@ class Code(clazz: java.lang.Class) {
     methName.equals(className)
   }
 
-  private def applyFun(methName: String, args: Array[JObject], argTypes: Array[Class]): JObject = {
+  private def applyFun(methName: String, args: Array[JObject],
+                       argTypes: Array[Class[T] forSome { type T }]): JObject = {
     try {
       val method = clazz.getMethod(methName, argTypes)
       var obj: JObject = null
       if (! Modifier.isStatic(method.getModifiers())) {
         if (instance eq null) {
           instance = try {
-            clazz.newInstance()
+            clazz.newInstance().asInstanceOf[AnyRef]
           } catch { case _ =>
             val cs = clazz.getConstructors()
 //Console.println("cs.length=" + cs.length);
             if (cs.length > 0) {
-              cs(0).newInstance(Array(""))
+              cs(0).newInstance(Array("")).asInstanceOf[AnyRef]
             } else {
               error("class " + clazz.getName() + " has no public constructor")
               null
@@ -209,7 +212,7 @@ class Code(clazz: java.lang.Class) {
         if (isConstructorName(methName)) {
           try {
             val cstr = clazz.getConstructor(argTypes)
-            instance = cstr.newInstance(args)
+            instance = cstr.newInstance(args).asInstanceOf[AnyRef]
             instance
           }
           catch {

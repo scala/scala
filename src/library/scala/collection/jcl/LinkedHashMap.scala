@@ -15,6 +15,6 @@ package scala.collection.jcl;
  *
  *  @author Sean McDirmid
  */
-class LinkedHashMap[K,E](override val underlying: java.util.LinkedHashMap) extends MapWrapper[K,E] {
-  def this() = this(new java.util.LinkedHashMap);
+class LinkedHashMap[K,E](override val underlying: java.util.LinkedHashMap[K,E]) extends MapWrapper[K,E] {
+  def this() = this(new java.util.LinkedHashMap[K,E]);
 }

@@ -18,13 +18,15 @@ trait CollectionWrapper[A] extends Collection[A] with IterableWrapper[A] {
   /** Override to specify the collection being accessed through this wrapper.
    ** Collection operations are then routed through the wrapped Java collection.
    **/
-  def underlying : java.util.Collection;
+  def underlying : java.util.Collection[A];
   override def has(a : A) = underlying.contains(a);
   override def elements : MutableIterator[A] = super.elements;
   override def size = underlying.size;
 
   override def hasAll(that : Iterable[A]) = that match {
-  case that : CollectionWrapper[_] => underlying.containsAll(that.underlying);
+  case that : CollectionWrapper[_] =>
+    val u = underlying;
+    u.containsAll(that.underlying);
   case _ => super.hasAll(that);
   }
   override def add(a : A) = underlying.add(a);

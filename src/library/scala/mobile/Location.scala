@@ -55,7 +55,7 @@ class Location(url: URL) {
 
   /** A cache containing all classes of this location.
    */
-  private var ccache: Map[String, java.lang.Class] = new HashMap
+  private var ccache: Map[String, java.lang.Class[T] forSome { type T }] = new HashMap
 
   /** Return the code description for the string <code>className</code>
    *  at this location.

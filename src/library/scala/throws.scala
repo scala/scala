@@ -25,4 +25,4 @@ package scala
  * @author  Nikolay Mihaylov
  * @version 1.0, 19/05/2006
  */
-class throws(clazz: java.lang.Class) extends Annotation
+class throws(clazz: java.lang.Class[_]) extends Annotation

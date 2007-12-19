@@ -17,6 +17,6 @@ package scala.collection.jcl;
  *
  *  @author Sean McDirmid
  */
-class IdentityHashMap[K,E](override val underlying : java.util.IdentityHashMap) extends MapWrapper[K,E] {
-  def this() = this(new java.util.IdentityHashMap);
+class IdentityHashMap[K,E](override val underlying : java.util.IdentityHashMap[K,E]) extends MapWrapper[K,E] {
+  def this() = this(new java.util.IdentityHashMap[K,E]);
 }

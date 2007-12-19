@@ -39,7 +39,7 @@ abstract class BoxedArray extends Array.Array0[Any] {
   //todo: remove
   def unbox(elemTag: String): AnyRef
 
-  def unbox(elemClass: Class): AnyRef
+  def unbox(elemClass: Class[_]): AnyRef
 
   override def isDefinedAt(x: Int): Boolean = 0 <= x && x < length
 

@@ -24,6 +24,6 @@ package scala.collection.jcl;
  *
  *  @author Sean McDirmid
  */
-class WeakHashMap[K,E](override val underlying: java.util.WeakHashMap) extends MapWrapper[K,E] {
-  def this() = this(new java.util.WeakHashMap);
+class WeakHashMap[K,E](override val underlying: java.util.WeakHashMap[K,E]) extends MapWrapper[K,E] {
+  def this() = this(new java.util.WeakHashMap[K,E])
 }

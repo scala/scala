@@ -15,7 +15,7 @@ package scala.collection.jcl;
  *  @author Sean McDirmid
  */
 trait SortedMapWrapper[K,E] extends SortedMap[K,E] with MapWrapper[K,E] {
-  override def underlying : java.util.SortedMap;
+  override def underlying : java.util.SortedMap[K,E];
   /** the comparator function of this sorted map is defined in terms
     * of the underlying sorted map's comparator.
     */

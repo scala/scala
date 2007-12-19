@@ -15,5 +15,5 @@ package scala.collection.jcl;
  * @author Sean McDirmid
  */
 class TreeMap[K <% Ordered[K],E] extends SortedMapWrapper[K,E] {
-  val underlying = (new java.util.TreeMap(new Comparator[K]));
+  val underlying = (new java.util.TreeMap[K,E](new Comparator[K]));
 }

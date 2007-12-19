@@ -15,12 +15,12 @@ package scala.collection.mutable
  *  @author Sean McDirmid
  *  @version 1.0
  */
-@deprecated class LinkedHashSet[A](private val set0 : java.util.LinkedHashSet) extends Set[A] {
+@deprecated class LinkedHashSet[A](private val set0 : java.util.LinkedHashSet[A]) extends Set[A] {
 
-  def this() = this(new java.util.LinkedHashSet)
+  def this() = this(new java.util.LinkedHashSet[A])
 
-  private def this(set1 : java.util.Set, b : Boolean) =
-    this(new java.util.LinkedHashSet(set1))
+  private def this(set1 : java.util.Set[A], b : Boolean) =
+    this(new java.util.LinkedHashSet[A](set1))
 
   def contains(elem: A): Boolean = set0.contains(elem)
 

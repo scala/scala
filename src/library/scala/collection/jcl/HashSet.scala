@@ -14,7 +14,7 @@ package scala.collection.jcl;
  *
  *  @author Sean McDirmid
  */
-class HashSet[A](override val underlying: java.util.HashSet) extends SetWrapper[A] {
+class HashSet[A](override val underlying: java.util.HashSet[A]) extends SetWrapper[A] {
   /** Creates an underlying Java hash set. */
-  def this() = this(new java.util.HashSet);
+  def this() = this(new java.util.HashSet[A]);
 }

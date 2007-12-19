@@ -27,7 +27,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
   private var boxed = new Array[AnyRef](length)
   private val hash = boxed.hashCode()
   private var unboxed: AnyRef = null
-  private var elemClass: Class = null
+  private var elemClass: Class[_] = null
 
   def apply(index: Int): Any = synchronized {
     if (unboxed eq null)
@@ -87,7 +87,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
     else if (elemTag eq ScalaRunTime.BooleanTag) unbox(classOf[Boolean])
     else unbox(Platform.getClassForName(elemTag))
 
-  def unbox(elemClass: Class): AnyRef = synchronized {
+  def unbox(elemClass: Class[_]): AnyRef = synchronized {
     if (unboxed eq null) {
       this.elemClass = elemClass;
       if (elemClass eq classOf[Int]) {
