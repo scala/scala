@@ -1,6 +1,4 @@
 NodeSeq
-passed ok
-passed ok
 <result>
      <title>Blabla</title>
      <remarks> Hallo Welt. </remarks>
@@ -20,17 +18,5 @@ List(<book><title>Blabla</title></book>)
      <phone where="mobile">+41 79 602 23 23</phone>
 </result>
 namespaces
-passed ok
-passed ok
-passed ok
 validation - elements
-passed ok
-passed ok
-passed ok
-passed ok
 validation - attributes
-passed ok
-passed ok
-passed ok
-passed ok
-passed ok

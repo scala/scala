@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -28,22 +28,9 @@ trait Product extends AnyRef {
    */
   def productElement(n: Int): Any
 
-  /** for a case class <code>A(x_1,...,x_k))</code>, returns <code>x_(i+1)</code>
-   *  for <code>0 &lt;= i &lt; k</code>
-   *
-   *  @param  n the position of the n-th element
-   *  @throws IndexOutOfBoundsException
-   *  @return  ...
-   */
-  @deprecated def element(n: Int): Any = productElement(n)
-
   /** return k for a product <code>A(x_1,...,x_k))</code>
    */
   def productArity: Int
-
-  /** return k for a product <code>A(x_1,...,x_k))</code>
-   */
-  @deprecated def arity: Int = productArity
 
   /**
    *  By default the empty string. Implementations may override this

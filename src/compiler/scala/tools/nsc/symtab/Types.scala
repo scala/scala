@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -141,7 +141,6 @@ trait Types {
     override def typeParams = underlying.typeParams
     override def typeSymbol = underlying.typeSymbol
     override def typeSymbolDirect = underlying.typeSymbolDirect
-    @deprecated override def symbol = underlying.symbol
     override def widen = underlying.widen
     override def typeOfThis = underlying.typeOfThis
     override def bounds = underlying.bounds
@@ -210,8 +209,6 @@ trait Types {
       IsDependentTraverser.traverse(this)
       IsDependentTraverser.result
     }
-
-    @deprecated def symbol: Symbol = NoSymbol
 
     /** The term symbol associated with the type
       * Note that the symbol of the normalized type is returned (@see normalize)
@@ -868,7 +865,6 @@ trait Types {
     override def isTrivial: Boolean = sym.isPackageClass
     override def isNotNull = true
     override def typeSymbol = sym
-    @deprecated override def symbol = sym
     override def underlying: Type = sym.typeOfThis
     override def prefixString =
       if (settings.debug.value) sym.nameString + ".this."
@@ -930,7 +926,6 @@ trait Types {
     override def narrow: Type = this
 
     override def termSymbol = sym
-    @deprecated override def symbol = sym
     override def prefix: Type = pre
     override def prefixString: String =
       if ((sym.isEmptyPackage || sym.isInterpreterWrapper || sym.isPredefModule || sym.isScalaPackage) && !settings.debug.value) ""
@@ -942,7 +937,6 @@ trait Types {
     override val isTrivial: Boolean = thistpe.isTrivial && supertpe.isTrivial
     override def isNotNull = true;
     override def typeSymbol = thistpe.typeSymbol
-    @deprecated override def symbol = thistpe.symbol
     override def underlying = supertpe
     override def prefix: Type = supertpe.prefix
     override def prefixString =
@@ -1154,7 +1148,6 @@ trait Types {
     override val decls: Scope,
     override val typeSymbol: Symbol) extends CompoundType
   {
-    @deprecated override def symbol = typeSymbol
 
     /** refs indices */
     private final val NonExpansive = 0
@@ -1369,7 +1362,6 @@ trait Types {
     override def termSymbol = if (sym.isAliasType) normalize.termSymbol else super.termSymbol
     override def typeSymbolDirect = sym
     override def termSymbolDirect = super.termSymbol
-    @deprecated override def symbol = if (sym.isAliasType) normalize.symbol else sym
 
 /* @MAT
 whenever you see `tp.typeSymbol.isXXXX' and then act on tp based on that predicate, you're on thin ice,
@@ -1618,7 +1610,6 @@ A type's typeSymbol should never be inspected directly.
     override def decls: Scope = resultType.decls
     override def termSymbol: Symbol = resultType.termSymbol
     override def typeSymbol: Symbol = resultType.typeSymbol
-    @deprecated override def symbol: Symbol = resultType.symbol
     override def prefix: Type = resultType.prefix
     override def closure: Array[Type] = resultType.closure
     override def closureDepth: Int = resultType.closureDepth
@@ -1746,7 +1737,6 @@ A type's typeSymbol should never be inspected directly.
     val level = skolemizationLevel
 
     override def typeSymbol = origin.typeSymbol
-    @deprecated override def symbol = origin.symbol
     override def toString: String =
       if (constr.inst eq null) "<null " + origin + ">"
       else if (constr.inst eq NoType)
@@ -1895,7 +1885,6 @@ A type's typeSymbol should never be inspected directly.
   def refinementOfClass(clazz: Symbol, parents: List[Type], decls: Scope) = {
     class RefinementOfClass extends RefinedType(parents, decls) {
       override def typeSymbol: Symbol = clazz
-      @deprecated override def symbol: Symbol = clazz
     }
     new RefinementOfClass
   }

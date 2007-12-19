@@ -1,21 +1,18 @@
-object Test {
+import scala.testing.SUnit._
+import scala.xml._
 
-  import scala.testing.UnitTest._
-  import scala.xml._
+object Test extends AnyRef with Assert {
 
-  def handle[A](x:Node): A = {
-    Console println x
+  private def handle[A](x: Node): A = {
+    println(x)
     x.child(0).asInstanceOf[Atom[A]].data
   }
 
-  def main(args:Array[String]) = {
-    import scala.xml.NodeSeq
-    import NodeSeq.view
-    import testing.UnitTest._
+  def main(args: Array[String]) {
 
     val xNull = <hello>{null}</hello> // these used to be Atom(unit), changed to empty children
 
-    assertSameElements( xNull.child, Nil )
+    assertSameElements(xNull.child, Nil)
 
     val x0 = <hello>{}</hello> // these used to be Atom(unit), changed to empty children
     val x00 = <hello>{ }</hello> //  dto.
@@ -23,45 +20,44 @@ object Test {
     val xa = <hello>{ "world" }</hello>
 
 
-    assertSameElements( x0.child,  Nil )
-    assertSameElements( x00.child, Nil )
-    assertEquals( handle[String](xa),"world" )
+    assertSameElements(x0.child,  Nil)
+    assertSameElements(x00.child, Nil)
+    assertEquals(handle[String](xa), "world")
 
     val xb = <hello>{ 1.5 }</hello>
 
-    assertEquals( handle[Double](xb), 1.5 )
+    assertEquals(handle[Double](xb), 1.5)
 
     val xc = <hello>{ 5 }</hello>
 
-    assertEquals( handle[Int](xc), 5 )
+    assertEquals(handle[Int](xc), 5)
 
     val xd = <hello>{ true }</hello>
 
-    assertEquals( handle[Boolean](xd), true )
+    assertEquals(handle[Boolean](xd), true)
 
     val xe = <hello>{ 5:short }</hello>
 
-    assertEquals( handle[Short](xe), 5:short )
+    assertEquals(handle[Short](xe), 5:short)
 
     val xf = <hello>{ val x = 27; x }</hello>
 
-    assertEquals( handle[Int](xf), 27 )
+    assertEquals(handle[Int](xf), 27)
 
     val xg = <hello>{ List(1,2,3,4) }</hello>
 
-    Console println xg
-    for(val z <- xg.child) {
-      Console println z.toString() + {if (z.isInstanceOf[Text]) "(is text node ' ')" else ""}
+    println(xg)
+    for (z <- xg.child) {
+      println(z.toString() + {if (z.isInstanceOf[Text]) "(is text node ' ')" else ""})
     }
 
     val xh = <hello>{ for(val x <- List(1,2,3,4); x % 2 == 0) yield x }</hello>
 
-    Console println xh
-    for(val z <- xh.child) {
-      Console println z.toString() + {if (z.isInstanceOf[Text]) "(is text node ' ')" else ""}
+    println(xh)
+    for (z <- xh.child) {
+      println(z.toString() + {if (z.isInstanceOf[Text]) "(is text node ' ')" else ""})
     }
 
-
-}
+  }
 
 }

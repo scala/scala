@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -163,6 +163,12 @@ object SUnit {
 
     def enableStackTrace: Boolean = true
 
+    /** fails if <code>! actual.sameElements(expected)</code> */
+    def assertSameElements[A](actual: Seq[A], expected: Seq[A]) {
+      if (! actual.sameElements(expected))
+        fail("(no message)", actual.toString, expected.toString)
+    }
+
     /** fails if expected != actual */
     def assertEquals[A](msg: String, expected: A, actual: A) {
       if (expected != actual) fail(msg, expected, actual)
@@ -192,28 +198,12 @@ object SUnit {
     def assertNotNull(actual: AnyRef): Unit  =
       assertNotNull("(no message)", actual)
 
-    /**
-     *  @deprecated use assertNotEq instead
-     */
-    @deprecated
-    def assertNotSame(msg: String, expected: AnyRef, actual: AnyRef) {
-      if (expected eq actual) fail(msg)
-    }
-
-    /**
-     *  @deprecated use assertNotEq instead
-     */
-    @deprecated
-    def assertNotSame(expected: AnyRef, actual: AnyRef) {
-      assertNotEq("(no message)", expected, actual)
-    }
-
-    /** fail if expected eq actual */
+    /** fails if <code>expected eq actual</code> */
     def assertNotEq(msg: String, expected: AnyRef, actual: AnyRef) {
       if (expected eq actual) fail(msg)
     }
 
-    /** fail if expected eq actual */
+    /** fails if <code>expected eq actual</code> */
     def assertNotEq(expected: AnyRef, actual: AnyRef) {
       assertNotEq("(no message)", expected, actual)
     }
@@ -228,23 +218,7 @@ object SUnit {
       assertNull("(no message)", actual)
     }
 
-    /**
-     *  @deprecated use assertEq instead
-     */
-    @deprecated
-    def assertSame(msg: String, expected: AnyRef, actual: AnyRef) {
-      if (expected ne actual) fail(msg)
-    }
-
-    /**
-     *  @deprecated use assertEq instead
-     */
-    @deprecated
-    def assertSame(expected: AnyRef, actual: AnyRef) {
-      assertEq("(no message)", expected, actual)
-    }
-
-    /** fails if expected ne actual */
+    /** fails if <code>expected ne actual</code> */
     def assertEq(msg: String, expected: AnyRef, actual: AnyRef) {
       if (expected ne actual) fail(msg)
     }

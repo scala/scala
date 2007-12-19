@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -35,10 +35,6 @@ object Predef {
   type boolean = scala.Boolean
   type unit    = scala.Unit
 
-  /** @deprecated use <code>Nothing</code> instead */
-  @deprecated type All = Nothing
-  /** @deprecated use <code>Null</code> instead */
-  @deprecated type AllRef = Null
   /** @deprecated use <code>Int</code> instead */
   @deprecated type Integer = java.lang.Integer
   /** @deprecated use <code>Char</code> instead */

@@ -1,37 +1,37 @@
-import java.io.StringReader;
-import org.xml.sax.InputSource;
-import scala.xml._;
-import scala.util.logging._;
+import java.io.StringReader
+import org.xml.sax.InputSource
 
-import scala.testing.UnitTest._ ;
+import scala.xml._
+import scala.util.logging._
 
-object Test {
-  def main(args:Array[String]) = {
-  val e:  scala.xml.MetaData         = Null; //Node.NoAttributes;
-  val sc: scala.xml.NamespaceBinding = TopScope;
+import scala.testing.SUnit._
+
+object Test extends Application with Assert {
+  val e:  scala.xml.MetaData         = Null  //Node.NoAttributes
+  val sc: scala.xml.NamespaceBinding = TopScope
 
   val xmlFile1    = "<hello><world/></hello>";
-  val isrc1       = new InputSource( new StringReader(xmlFile1) );
-  val parsedxml1  = XML.load(isrc1);
-  val isrc11      = new InputSource( new StringReader( xmlFile1 ) );
-  val parsedxml11 = XML.load(isrc11);
+  val isrc1       = new InputSource(new StringReader(xmlFile1))
+  val parsedxml1  = XML.load(isrc1)
+  val isrc11      = new InputSource(new StringReader(xmlFile1))
+  val parsedxml11 = XML.load(isrc11)
 
   val c = new Node {
-    def label = "hello";
+    def label = "hello"
     override def hashCode() =
       Utility.hashCode(prefix, label, attributes.hashCode(), scope.hashCode(), child);
     def child = Elem(null, "world", e, sc);
     //def attributes = e;
-    override def text = "";
-  };
+    override def text = ""
+  }
 
-  assertSameElements( List( 3 ), List( 3 ));
+  assertSameElements(List(3), List(3))
 
-  Console.println("equality");
-  assertEquals(c, parsedxml11);
-  assertEquals(parsedxml1, parsedxml11);
-  assertSameElements( List(parsedxml1), List(parsedxml11));
-  assertSameElements( Iterator.fromArray(Array(parsedxml1)).toList, List(parsedxml11));
+  println("equality")
+  assertEquals(c, parsedxml11)
+  assertEquals(parsedxml1, parsedxml11)
+  assertSameElements(List(parsedxml1), List(parsedxml11))
+  assertSameElements(Iterator.fromArray(Array(parsedxml1)).toList, List(parsedxml11))
 
   val x2 = "<book><author>Peter Buneman</author><author>Dan Suciu</author><title>Data on ze web</title></book>";
 
@@ -200,7 +200,7 @@ object Test {
     assertTrue(uup == "&<<>\"\"^%@$!#")
     // test unicode escapes backslash u
 
-  Console println ("attribute value normalization");
+  println("attribute value normalization")
   val xmlAttrValueNorm = "<personne id='p0003' nom='&#x015e;ahingöz' />";
     {
       val isrcA       = new InputSource( new StringReader(xmlAttrValueNorm) );
@@ -225,9 +225,4 @@ object Test {
   val p = scala.xml.parsing.ConstructingParser.fromSource(scala.io.Source.fromString("<foo bar:attr='&amp;'/>"),true)
   val n = p.element(new scala.xml.NamespaceBinding("bar","BAR",scala.xml.TopScope))(0)
   assertFalse( n.attributes.get("BAR", n, "attr").isEmpty)
-
-  }
-
-
-
 }
