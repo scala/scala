@@ -1,5 +1,6 @@
 object F {
-  def tryf[T](ignore: List[Class])(f: => T): Any = {
+  type AnyClass = Class[_]
+  def tryf[T](ignore: List[AnyClass])(f: => T): Any = {
     try {
       f
     } catch {

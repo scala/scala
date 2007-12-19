@@ -172,8 +172,9 @@ object TypeRep {
   implicit def floatRep: TypeRep[Float] = FloatRep
   implicit def doubleRep: TypeRep[Double] = DoubleRep
 
+  type AnyClass = Class[_]
   implicit def unitRep: TypeRep[Unit] = UnitRep
-  implicit def classRep: TypeRep[Class] = ClassRep
+  implicit def classRep: TypeRep[AnyClass] = ClassRep
   implicit def stringRep: TypeRep[String] = StringRep
   implicit def noneRep: TypeRep[Option[Nothing]] = NoneRep[Nothing](NothingRep.asInstanceOf[TypeRep[Nothing]])
   implicit def anyRep: TypeRep[Any] = AnyRep
@@ -224,7 +225,7 @@ object TypeRep {
   implicit def func9Rep[A1, A2, A3, A4, A5, A6, A7, A8, A9, B](implicit a1: TypeRep[A1], a2: TypeRep[A2], a3: TypeRep[A3], a4: TypeRep[A4], a5: TypeRep[A5], a6: TypeRep[A6], a7: TypeRep[A7], a8: TypeRep[A8], a9: TypeRep[A9], b: TypeRep[B]): TypeRep[Function9[A1, A2, A3, A4, A5, A6, A7, A8, A9, B]] =
     Function9Rep(a1, a2, a3, a4, a5, a6, a7, a8, a9, b)
 /*
-  implicit def objectRep[A <: AnyRef](obj: A)(implicit rep: TypeRep[A]): TypeRep[Class] =
+  implicit def objectRep[A <: AnyRef](obj: A)(implicit rep: TypeRep[A]): TypeRep[AnyClass] =
     ObjectRep(obj.getClass)
 */
 
@@ -256,7 +257,7 @@ object TypeRep {
   case object UnitRep extends TypeRep[Unit] {
     override def toString = "Unit"
   }
-  case object ClassRep extends TypeRep[Class] {
+  case object ClassRep extends TypeRep[AnyClass] {
     override def toString = "Class"
   }
   case object StringRep extends TypeRep[String] {
