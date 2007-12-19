@@ -166,7 +166,8 @@ object EmitManPage {
     try {
       val cl = this.getClass.getClassLoader()
       val clasz = cl.loadClass(args(0))
-      val meth = clasz.getDeclaredMethod("manpage", Array[Class]())
+      type AnyClass = Class[_]
+      val meth = clasz.getDeclaredMethod("manpage", Array[AnyClass]())
       val doc = meth.invoke(null, Array[Object]()).asInstanceOf[Document]
       emitDocument(doc)
     } catch {
