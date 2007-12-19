@@ -19,7 +19,7 @@ import java.sql.{Connection, Driver};
  */
 abstract class Vendor {
 
-  def nativeDriverClass: Class[Driver];
+  def nativeDriverClass: Class[_];
   def uri: java.net.URI;
   def user: String;
   def pass: String;

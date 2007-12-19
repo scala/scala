@@ -27,6 +27,8 @@ class SemanticTokens(val compiler: Global) {
   object ARG    extends Kind
   object TPARAM extends Kind
 
+  type AnyClass = Class[_]
+
   // static constants here
 
   abstract class Token {
@@ -282,7 +284,7 @@ class SemanticTokens(val compiler: Global) {
       case tree : TypeTree =>
         val treex = tree
         val tree1 = if (tree.original ne null) tree.original else tree
-        def classes(clazz: java.lang.Class): List[java.lang.Class] =
+        def classes(clazz: AnyClass): List[AnyClass] =
           if (clazz eq null) Nil
           else clazz :: classes(clazz.getSuperclass())
         if (tree.original eq null) {

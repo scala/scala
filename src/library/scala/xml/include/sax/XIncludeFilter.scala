@@ -96,8 +96,8 @@ class XIncludeFilter extends XMLFilterImpl {
 
   final val  XINCLUDE_NAMESPACE = "http://www.w3.org/2001/XInclude";
 
-  private val bases = new Stack();
-  private val locators = new Stack();
+  private val bases = new Stack[URL]();
+  private val locators = new Stack[Locator]();
 
 /*    private EntityResolver resolver;
 

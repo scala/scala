@@ -9,7 +9,6 @@ Float
 Double
 String
 Unit
-Class
 
 Some[Int]
 Some[Int]

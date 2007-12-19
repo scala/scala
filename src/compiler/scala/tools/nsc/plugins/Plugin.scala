@@ -96,11 +96,13 @@ object Plugin {
     }
   }
 
+  type AnyClass = Class[_]
+
   /** Loads a plugin class from the named jar file.  Returns None
    *  if the jar file has no plugin in it or if the plugin
    *  is badly formed.
    */
-  def loadFrom(jarfile: File, loader: ClassLoader): Option[Class[_]] = {
+  def loadFrom(jarfile: File, loader: ClassLoader): Option[AnyClass] = {
     val pluginInfo = loadDescription(jarfile).get
 
     try {
@@ -120,7 +122,7 @@ object Plugin {
    */
   def loadAllFrom(jars: List[File],
 		  dirs: List[File],
-		  ignoring: List[String]): List[Class[_]] =
+		  ignoring: List[String]): List[AnyClass] =
   {
     val alljars = new ListBuffer[File]
 
@@ -143,7 +145,7 @@ object Plugin {
   /** Instantiate a plugin class, given the class and
    *  the compiler it is to be used in.
    */
-  def instantiate(clazz: Class[_], global: Global): Plugin = {
+  def instantiate(clazz: AnyClass, global: Global): Plugin = {
     val constructor = clazz.getConstructor(Array(classOf[Global]))
     constructor.newInstance(Array(global)).asInstanceOf[Plugin]
   }

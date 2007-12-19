@@ -585,11 +585,11 @@ abstract class ClassfileParser {
       val oldpb = in.bp
       attrName match {
         case nme.SignatureATTR =>
-          if (global.settings.Xgenerics.value) {
+          if (global.settings.target.value == "jvm-1.5") {
             val sig = pool.getExternalName(in.nextChar)
             val newType = sigToType(sym, sig)
             sym.setInfo(newType)
-//            if (settings.debug.value)
+            if (settings.debug.value)
               println("" + sym + "; signature = " + sig + " type = " + newType)
             hasMeta = true
           } else

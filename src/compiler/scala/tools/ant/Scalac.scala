@@ -555,7 +555,7 @@ class Scalac extends MatchingTask {
 
     if (!assemname.isEmpty) settings.assemname.value = assemname.get
     if (!assemrefs.isEmpty) settings.assemrefs.value = assemrefs.get
-    if (!generics.isEmpty) settings.Xgenerics.value = generics.get
+//    if (!generics.isEmpty) settings.Xgenerics.value = generics.get
 
     log("Scalac params = '" + addParams + "'", Project.MSG_DEBUG)
     var args =

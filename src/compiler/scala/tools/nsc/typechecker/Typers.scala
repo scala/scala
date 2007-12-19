@@ -3341,22 +3341,23 @@ trait Typers { self: Analyzer =>
       val tc = newTyper(context.makeImplicit(reportAmbiguous))
 
       def ambiguousImplicitError(info1: ImplicitInfo, info2: ImplicitInfo,
-                                 pre1: String, pre2: String, trailer: String) = {
-        val coreMsg =
-          pre1+" "+info1.sym+info1.sym.locationString+" of type "+info1.tpe+"\n "+
-          pre2+" "+info2.sym+info2.sym.locationString+" of type "+info2.tpe+"\n "+
-          trailer
-        error(pos,
-          if (isView) {
-            val found = pt.typeArgs(0)
-            val req = pt.typeArgs(1)
-            typeErrorMsg(found, req)+
-            "\nNote that implicit conversions are not applicable because they are ambiguous:\n "+
-            coreMsg+"are possible conversion functions from "+ found+" to "+req
-          } else {
-            "ambiguous implicit values:\n "+coreMsg + "match expected type "+pt
-          })
-      }
+                                 pre1: String, pre2: String, trailer: String) =
+        if (!info1.tpe.isErroneous && !info2.tpe.isErroneous) {
+          val coreMsg =
+            pre1+" "+info1.sym+info1.sym.locationString+" of type "+info1.tpe+"\n "+
+            pre2+" "+info2.sym+info2.sym.locationString+" of type "+info2.tpe+"\n "+
+            trailer
+          error(pos,
+            if (isView) {
+              val found = pt.typeArgs(0)
+              val req = pt.typeArgs(1)
+              typeErrorMsg(found, req)+
+              "\nNote that implicit conversions are not applicable because they are ambiguous:\n "+
+              coreMsg+"are possible conversion functions from "+ found+" to "+req
+            } else {
+              "ambiguous implicit values:\n "+coreMsg + "match expected type "+pt
+            })
+        }
 
       /** Search list of implicit info lists for one matching prototype
        *  <code>pt</code>. If found return a tree from found implicit info

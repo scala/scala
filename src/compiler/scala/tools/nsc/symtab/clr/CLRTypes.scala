@@ -116,8 +116,8 @@ abstract class CLRTypes {
       alltypes = Array.concat(alltypes, atypes)
     }
 
-    val typeNameComparator: Comparator =
-      new Comparator() {
+    val typeNameComparator: Comparator[Any] =
+      new Comparator[Any]() {
         def compare(o1: Any, o2: Any): Int = {
           val t1 = o1.asInstanceOf[Type]
           val t2 = o2.asInstanceOf[Type]

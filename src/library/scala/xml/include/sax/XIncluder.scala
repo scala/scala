@@ -146,7 +146,7 @@ with ContentHandler with LexicalHandler {
 
   // LexicalHandler methods
   private var inDTD: Boolean = false
-  private val entities: Stack = new Stack()
+  private val entities = new Stack[String]()
 
   def startDTD(name: String, publicID: String, systemID: String) {
     inDTD = true

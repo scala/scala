@@ -133,7 +133,7 @@ object Test5 {
     private var count: Integer = 0
 
     private val getter =
-      getClass().getMethod("getCount", Array[java.lang.Class]())
+      getClass().getMethod("getCount", Array[java.lang.Class[T] forSome { type T }]())
     private val setter =
       getClass().getMethod("setCount", Array(classOf[Integer]))
 

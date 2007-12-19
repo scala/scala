@@ -23,7 +23,7 @@ object ObjectRunner {
 
   /** Look up a class with a given class path. */
   private def findClass(loader: ClassLoader, objectName: String)
-  : Option[Class] =
+  : Option[Class[T] forSome { type T }] =
   {
     try {
       Some(Class.forName(objectName, true, loader))

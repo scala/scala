@@ -24,7 +24,7 @@ import scala.compat.Platform
  */
 object Actor {
 
-  private[actors] val tl = new ThreadLocal
+  private[actors] val tl = new ThreadLocal[Actor]
 
   /**
    * Returns the currently executing actor. Should be used instead

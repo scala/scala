@@ -17,6 +17,7 @@ object Test extends Application {
 
 object serialize {
   import java.io._
+
   @throws(classOf[IOException])
   def write[A](o: A): Array[Byte] = {
     val ba = new ByteArrayOutputStream(512)
@@ -48,7 +49,7 @@ object testPrimitives {
   println(getType(0.0d))
   println(getType("abc"))
   println(getType(())) // Unit
-  println(getType(classOf[Int])) // Class
+//  println(getType(classOf[Int])) // Class
   println
 }
 
@@ -172,9 +173,8 @@ object TypeRep {
   implicit def floatRep: TypeRep[Float] = FloatRep
   implicit def doubleRep: TypeRep[Double] = DoubleRep
 
-  type AnyClass = Class[_]
   implicit def unitRep: TypeRep[Unit] = UnitRep
-  implicit def classRep: TypeRep[AnyClass] = ClassRep
+//  implicit def classRep: TypeRep[Class] = ClassRep
   implicit def stringRep: TypeRep[String] = StringRep
   implicit def noneRep: TypeRep[Option[Nothing]] = NoneRep[Nothing](NothingRep.asInstanceOf[TypeRep[Nothing]])
   implicit def anyRep: TypeRep[Any] = AnyRep
@@ -257,9 +257,9 @@ object TypeRep {
   case object UnitRep extends TypeRep[Unit] {
     override def toString = "Unit"
   }
-  case object ClassRep extends TypeRep[AnyClass] {
-    override def toString = "Class"
-  }
+//  case object ClassRep extends TypeRep[AnyClass] {
+//    override def toString = "Class"
+//  }
   case object StringRep extends TypeRep[String] {
     override def toString = "String"
   }

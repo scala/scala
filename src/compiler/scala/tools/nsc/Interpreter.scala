@@ -776,7 +776,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
     /** load and run the code using reflection */
     def loadAndRun: (String, Boolean) = {
-      val interpreterResultObject: Class =
+      val interpreterResultObject: Class[_] =
         Class.forName(resultObjectName, true, classLoader)
       val resultValMethod: java.lang.reflect.Method =
         interpreterResultObject.getMethod("result", null)
