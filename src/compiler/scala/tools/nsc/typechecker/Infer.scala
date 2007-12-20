@@ -328,6 +328,8 @@ trait Infer {
                            else " contains a "+ex.msg))
               ErrorType
           }
+          if (sym1.isTerm && (sym1 hasFlag JAVA))
+            owntype = rawToExistential(owntype)
           if (pre.isInstanceOf[SuperType])
             owntype = owntype.substSuper(pre, site.symbol.thisType)
           tree setSymbol sym1 setType owntype

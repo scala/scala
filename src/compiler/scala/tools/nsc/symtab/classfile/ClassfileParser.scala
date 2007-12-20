@@ -503,10 +503,7 @@ abstract class ClassfileParser {
           else if (classSym.isMonomorphicType) classSym.tpe
           else {
             // raw type - existentially quantify all type parameters
-            val eparams = for (tparam <- classSym.unsafeTypeParams) yield {
-              val newSym = clazz.newAbstractType(NoPosition, fresh.newName)
-              newSym.setInfo(tparam.info.bounds) setFlag EXISTENTIAL
-            }
+            val eparams = typeParamsToExistentials(classSym, classSym.unsafeTypeParams)
             val t = appliedType(classSym.typeConstructor, eparams.map(_.tpe))
             val res = existentialAbstraction(eparams, t)
             if (settings.debug.value && settings.verbose.value) println("raw type " + classSym + " -> " + res)

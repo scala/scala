@@ -2464,6 +2464,32 @@ A type's typeSymbol should never be inspected directly.
       owner.newAbstractType(owner.pos, newTypeName(freshTypeName()+suffix)).setFlag(EXISTENTIAL)
     ).setInfo(bounds)
 
+  def typeParamsToExistentials(clazz: Symbol, tparams: List[Symbol]): List[Symbol] = {
+    val eparams = for (tparam <- tparams) yield {
+      makeExistential("", clazz, tparam.info.bounds)
+    }
+    for (val tparam <- eparams) tparam setInfo tparam.info.substSym(tparams, eparams)
+    eparams
+  }
+
+  /** The raw to existential map converts a ``raw type'' to an existential type.
+   *  It is necessary because we might have read a raw type of a
+   *  parameterized Java class from a class file. At the time we read the type
+   *  the corresponding class file might still not be read, so we do not
+   *  know what the type parameters of the type are. Therefore
+   *  the conversion of raw types to existential types might not have taken place
+   *  in ClassFileparser.sigToType (where it is usually done)
+   */
+  object rawToExistential extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case TypeRef(pre, sym, List()) if (sym.hasFlag(JAVA) && !sym.typeParams.isEmpty) =>
+        val eparams = typeParamsToExistentials(sym, sym.typeParams)
+        existentialAbstraction(eparams, TypeRef(pre, sym, eparams map (_.tpe)))
+      case _ =>
+        mapOver(tp)
+    }
+  }
+
   /** A map to compute the asSeenFrom method  */
   class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap {
     override val dropNonConstraintAnnotations = true
@@ -2579,13 +2605,15 @@ A type's typeSymbol should never be inspected directly.
                 pre.baseType(symclazz) match {
                   case TypeRef(_, basesym, baseargs) =>
                     //Console.println("instantiating " + sym + " from " + basesym + " with " + basesym.typeParams + " and " + baseargs+", pre = "+pre+", symclazz = "+symclazz);//DEBUG
-                    if (basesym.typeParams.length != baseargs.length)
+                    if (basesym.typeParams.length == baseargs.length) {
+                      instParam(basesym.typeParams, baseargs)
+                    } else {
                       throw new TypeError(
                         "something is wrong (wrong class file?): "+basesym+
                         " with type parameters "+
                         basesym.typeParams.map(_.name).mkString("[",",","]")+
                         " gets applied to arguments "+baseargs.mkString("[",",","]")+", phase = "+phase)
-                    instParam(basesym.typeParams, baseargs);
+                    }
                   case ExistentialType(tparams, qtpe) =>
                     capturedParams = capturedParams union tparams
                     toInstance(qtpe, clazz)
