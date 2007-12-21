@@ -587,7 +587,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       val decls = root.info.decls
       var e = decls.elems
       while (e ne null) {
-        if (e.sym.isTerm && !e.sym.isConstructor) {
+        if (e.sym.isTerm) {
           var e1 = decls.lookupNextEntry(e)
           while (e1 ne null) {
             if (atPhase(phase.next)(e1.sym.info =:= e.sym.info)) doubleDefError(e.sym, e1.sym)
