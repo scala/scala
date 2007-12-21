@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -31,12 +31,10 @@ object ScalaRunTime {
 
   def isValueTag(tag: String) = tag.charAt(0) == '.'
 
-  def isValueClass(clazz: Class) = (clazz == classOf[Boolean]
-                                    || clazz == classOf[Byte]
-                                    || clazz == classOf[Short]
-                                    || clazz == classOf[Char]
-                                    || clazz == classOf[Int]
-                                    || clazz == classOf[Long])
+  def isValueClass(clazz: Class[_]) =
+    clazz == classOf[Boolean] || clazz == classOf[Byte] ||
+    clazz == classOf[Short  ] || clazz == classOf[Char] ||
+    clazz == classOf[Int    ] || clazz == classOf[Long]
 
   def checkInitialized[T <: AnyRef](x: T): T =
     if (x == null) throw new UninitializedError else x
@@ -128,7 +126,7 @@ object ScalaRunTime {
   def arrayValue(x: BoxedArray, elemTag: String): AnyRef =
     if (x eq null) null else x.unbox(elemTag)
 
-  def arrayValue(x: BoxedArray, elemClass: Class): AnyRef =
+  def arrayValue(x: BoxedArray, elemClass: Class[_]): AnyRef =
     if (x eq null) null else x.unbox(elemClass)
 
   def boxArray(value: AnyRef): BoxedArray = value match {

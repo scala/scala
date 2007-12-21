@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -21,7 +21,7 @@ object Predef {
   // classOf dummy ------------------------------------------------------
 
   /** Return the runtime representation of a class type. */
-  def classOf[T]: Class = null
+  def classOf[T]: Class[T] = null
 
   // aliases ------------------------------------------------------------
 
@@ -33,10 +33,6 @@ object Predef {
   type boolean = scala.Boolean
   type unit    = scala.Unit
 
-  /** @deprecated use <code>Nothing</code> instead */
-  @deprecated type All = Nothing
-  /** @deprecated use <code>Null</code> instead */
-  @deprecated type AllRef = Null
   /** @deprecated use <code>Int</code> instead */
   @deprecated type Integer = java.lang.Integer
   /** @deprecated use <code>Char</code> instead */
@@ -44,7 +40,7 @@ object Predef {
 
   type String        = java.lang.String
   type StringBuilder = compat.StringBuilder
-  type Class         = java.lang.Class
+  type Class[T]      = java.lang.Class[T]
   type Runnable      = java.lang.Runnable
 
   type Throwable = java.lang.Throwable

@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -25,7 +25,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
   private var boxed = new Array[AnyRef](length)
   private val hash = boxed.hashCode()
   private var unboxed: AnyRef = null
-  private var elemClass: Class = null
+  private var elemClass: Class[_] = null
 
   def apply(index: Int): Any = synchronized {
     if (unboxed eq null)
@@ -75,9 +75,9 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
     else if (elemTag eq ScalaRunTime.BooleanTag) unbox(classOf[Boolean])
     else unbox(Platform.getClassForName(elemTag))
 
-  def unbox(elemClass: Class): AnyRef = synchronized {
+  def unbox(elemClass: Class[_]): AnyRef = synchronized {
     if (unboxed eq null) {
-      this.elemClass = elemClass;
+      this.elemClass = elemClass
       if (elemClass eq classOf[Int]) {
         val newvalue = new Array[Int](length)
         var i = 0
@@ -109,7 +109,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
           newvalue(i) = Byte.unbox(boxed(i))
           i += 1
         }
-        unboxed = newvalue;
+        unboxed = newvalue
       } else if (elemClass eq classOf[Short]) {
         val newvalue = new Array[Short](length)
         var i = 0
@@ -117,7 +117,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
           newvalue(i) = Short.unbox(boxed(i))
           i += 1
         }
-        unboxed = newvalue;
+        unboxed = newvalue
       } else if (elemClass eq classOf[Boolean]) {
         val newvalue = new Array[Boolean](length)
         var i = 0

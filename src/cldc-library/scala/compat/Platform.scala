@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -37,14 +37,14 @@ object Platform {
    *  @param length    ..
    *  @return          ..
    */
-  def createArray(elemClass: Class, length: Int): AnyRef =
+  def createArray(elemClass: Class[_], length: Int): AnyRef =
     throw new RuntimeException("" + elemClass + "[" + length+ "]")
     //java.lang.reflect.Array.newInstance(elemClass, length)
 
   //def arrayclear(arr: Array[Int]): Unit = java.util.Arrays.fill(arr, 0)
   def arrayclear(arr: Array[Int]): Unit = for (i <- 0 to arr.length) arr(i) = 0
 
-  def getClassForName(name: String): Class = java.lang.Class.forName(name)
+  def getClassForName(name: String): Class[_] = java.lang.Class.forName(name)
 
   val EOL = "\n"
 
