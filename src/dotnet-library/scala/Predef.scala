@@ -171,10 +171,10 @@ object Predef {
   implicit def exceptionWrapper(exc: Throwable) = new runtime.RichException(exc)
 
   final class GetClassWrapper(obj: AnyRef) {
-    def getClass(): runtime.RichClass[Any] = classWrapper(obj.GetType())
+    def getClass(): runtime.RichClass = classWrapper(obj.GetType())
   }
   implicit def getClassWrapper(obj: AnyRef) = new GetClassWrapper(obj)
-  implicit def classWrapper[A](clazz: Class[A]): runtime.RichClass[A] =
+  implicit def classWrapper(clazz: Class[_]): runtime.RichClass =
     new runtime.RichClass(clazz)
 
   implicit def unit2ordered(x: Unit): Ordered[Unit] = new Ordered[Unit] with Proxy {

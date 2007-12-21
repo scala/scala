@@ -13,13 +13,13 @@ package scala.runtime
 
 import Predef.Class
 
-final class RichClass[A](val self: Class[A]) extends Proxy {
+final class RichClass(val self: Class[_]) extends Proxy {
 
   def isPrimitive(): Boolean = self.IsPrimitive
   def isArray(): Boolean = self.IsArray
 
-  def getClass(): RichClass[A] = this
+  def getClass(): RichClass = this
   def getName(): String = self.Name
-  def getComponentType(): Class[A] = self.GetElementType
+  def getComponentType(): Class[_] = self.GetElementType
 
 }
