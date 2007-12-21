@@ -12,7 +12,7 @@ import java.lang.Integer.toHexString
 import scala.collection.immutable.{Map, ListMap}
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.util.{FreshNameCreator, Position, NoPosition}
+import scala.tools.nsc.util.{Position, NoPosition}
 
 
 /** This abstract class implements a class file parser.
@@ -39,7 +39,6 @@ abstract class ClassfileParser {
   protected var hasMeta: Boolean = _        // does class file contain jaco meta attribute?s
   protected var busy: Boolean = false       // lock to detect recursive reads
   protected var classTParams = Map[Name,Symbol]()
-  protected val fresh = new FreshNameCreator.Default
 
   private object metaParser extends MetaParser {
     val global: ClassfileParser.this.global.type = ClassfileParser.this.global
@@ -476,6 +475,7 @@ abstract class ClassfileParser {
           val tpe: Type = if (sig(index) == '<') {
             accept('<')
             val xs = new ListBuffer[Type]()
+            var i = 0
             while (sig(index) != '>') {
               sig(index) match {
                 case variance @ ('+' | '-' | '*') =>
@@ -488,9 +488,10 @@ abstract class ClassfileParser {
                     case '*' => mkTypeBounds(definitions.AllClass.tpe,
                                              definitions.AnyClass.tpe)
                   }
-                  val newtparam = makeExistential("", sym, bounds)
+                  val newtparam = makeExistential("?"+i, sym, bounds)
                   existentials += newtparam
                   xs += newtparam.tpe
+                  i += 1
                 case _ =>
                   xs += sig2type(tparams)
               }

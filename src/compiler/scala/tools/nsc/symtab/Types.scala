@@ -2459,14 +2459,18 @@ A type's typeSymbol should never be inspected directly.
    *  @param owner   The owner of the variable
    *  @param bounds  The variable's bounds
    */
-  def makeExistential(suffix: String, owner: Symbol, bounds: TypeBounds): Symbol =
+  def makeExistential(name: String, owner: Symbol, bounds: TypeBounds): Symbol =
     recycle(
-      owner.newAbstractType(owner.pos, newTypeName(freshTypeName()+suffix)).setFlag(EXISTENTIAL)
+      owner.newAbstractType(owner.pos, newTypeName(name)).setFlag(EXISTENTIAL)
     ).setInfo(bounds)
 
+  /** Make an existential variable with a fresh name. */
+  def makeFreshExistential(suffix: String, owner: Symbol, bounds: TypeBounds): Symbol =
+    makeExistential(freshName()+suffix, owner, bounds)
+
   def typeParamsToExistentials(clazz: Symbol, tparams: List[Symbol]): List[Symbol] = {
-    val eparams = for (tparam <- tparams) yield {
-      makeExistential("", clazz, tparam.info.bounds)
+    val eparams = for ((tparam, i) <- tparams.zipWithIndex) yield {
+      makeExistential("?"+i, clazz, tparam.info.bounds)
     }
     for (val tparam <- eparams) tparam setInfo tparam.info.substSym(tparams, eparams)
     eparams
@@ -2530,7 +2534,7 @@ A type's typeSymbol should never be inspected directly.
     def stabilize(pre: Type, clazz: Symbol): Type = {
       capturedPre get clazz match {
         case None =>
-          val qvar = makeExistential(".type", clazz,
+          val qvar = makeFreshExistential(".type", clazz,
             mkTypeBounds(AllClass.tpe, intersectionType(List(pre, SingletonClass.tpe))))
           capturedPre += (clazz -> qvar)
           capturedParams = qvar :: capturedParams
@@ -3118,9 +3122,9 @@ A type's typeSymbol should never be inspected directly.
   import Math.max
 
   private var nextid = 0
-  private def freshTypeName() = {
+  private def freshName() = {
     nextid += 1
-    newTypeName("_"+nextid)
+    "_"+nextid
   }
 
   /** The maximum depth of all types in the closures of each of the types `tps' */
@@ -4123,7 +4127,7 @@ A type's typeSymbol should never be inspected directly.
               if (l <:< g) l
               else {
                 val owner = commonOwner(as)
-                val qvar = makeExistential("", commonOwner(as), mkTypeBounds(g, l))
+                val qvar = makeFreshExistential("", commonOwner(as), mkTypeBounds(g, l))
                 capturedParams += qvar
                 qvar.tpe
               }
