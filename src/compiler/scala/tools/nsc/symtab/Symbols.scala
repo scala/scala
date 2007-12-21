@@ -85,6 +85,8 @@ trait Symbols {
 
     var attributes: List[AnnotationInfo] = List()
 
+    def setAttributes(attrs: List[AnnotationInfo]): this.type = { this.attributes = attrs; this }
+
     /** Does this symbol have an attribute of the given class? */
     def hasAttribute(cls: Symbol): Boolean =
       attributes.exists {
@@ -709,7 +711,8 @@ trait Symbols {
 
     /** A clone of this symbol, but with given owner */
     final def cloneSymbol(owner: Symbol): Symbol =
-      cloneSymbolImpl(owner).setInfo(info.cloneInfo(this)).setFlag(this.rawflags)
+      cloneSymbolImpl(owner).setInfo(info.cloneInfo(this))
+        .setFlag(this.rawflags).setAttributes(this.attributes)
 
     /** Internal method to clone a symbol's implementation without flags or type
      */
