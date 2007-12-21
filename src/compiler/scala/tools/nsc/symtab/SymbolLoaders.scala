@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -119,11 +119,11 @@ abstract class SymbolLoaders {
       assert(owner.info.decls.lookup(name) == NoSymbol, owner.fullNameString + "." + name)
       val clazz = owner.newClass(NoPosition, name.toTypeName)
       val module = owner.newModule(NoPosition, name)
-      clazz.setInfo(completer)
-      module.setInfo(completer)
-      module.moduleClass.setInfo(moduleClassLoader)
-      owner.info.decls.enter(clazz)
-      owner.info.decls.enter(module)
+      clazz setInfo completer
+      module setInfo completer
+      module.moduleClass setInfo moduleClassLoader
+      owner.info.decls enter clazz
+      owner.info.decls enter module
 //       if (completer.sourceFile != null) {
 //         clazz.sourceFile = completer.sourceFile;
 //         module.moduleClass.sourceFile = completer.sourceFile
@@ -135,8 +135,8 @@ abstract class SymbolLoaders {
     }
     def checkAdd(name0 : String) = {
       var name = name0
-      while (name.indexOf('$') != -1) {
-        name = name.substring(0, name.indexOf('$'))
+      while ((name indexOf '$') != -1) {
+        name = name.substring(0, name indexOf '$')
       }
     }
     protected def doComplete(root: Symbol) {
@@ -201,12 +201,6 @@ abstract class SymbolLoaders {
     }
   }
 
-/*
-  private object symblfileParser extends SymblfileParser {
-    val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global;
-  }
-*/
-
   class NamespaceLoader(directory: global.classPath0.Context) extends PackageLoader(directory) {
 
     override protected def kindString: String = "namespace " + namespace
@@ -232,7 +226,7 @@ abstract class SymbolLoaders {
       super.doComplete(root)
 
       for (namespace <- namespaces.elements) {
-        val oldPkg = root.info.decls.lookup(newTermName(namespace))
+        val oldPkg = root.info.decls lookup newTermName(namespace)
         if (oldPkg == NoSymbol)
           enterPackage(namespace, new NamespaceLoader(new classPath0.Context(List())))
         //else System.out.println("PackageLoader: package already in scope: " + oldPkg.fullNameString)
@@ -240,7 +234,7 @@ abstract class SymbolLoaders {
 
       // import the CLR types contained in the package (namespace)
       for ((name, typ) <- types.elements) {
-        assert(namespace == typ.Namespace, typ.FullName);
+        assert(namespace == typ.Namespace, typ.FullName)
 
         if (typ.IsDefined(clrTypes.SCALA_SYMTAB_ATTR, false)) {
           val attrs = typ.GetCustomAttributes(clrTypes.SCALA_SYMTAB_ATTR, false)
@@ -266,8 +260,8 @@ abstract class SymbolLoaders {
     protected def sourceString = typ.Assembly.FullName
   }
   // IDE hook.
-  protected def completeClassfile(root : Symbol, loader : ClassfileLoader)(f : => Unit) : Unit = f
-  protected def completeSourcefile(root : Symbol, loader : SourcefileLoader)(f : => Unit) : Unit = f
+  protected def completeClassfile(root: Symbol, loader: ClassfileLoader)(f: => Unit): Unit = f
+  protected def completeSourcefile(root: Symbol, loader: SourcefileLoader)(f: => Unit): Unit = f
 
   class ClassfileLoader(val classFile: AbstractFile, override val sourceFile: AbstractFile, sourcePath0: AbstractFile) extends SymbolLoader {
     if (sourcePath0 == null) {
@@ -284,12 +278,12 @@ abstract class SymbolLoaders {
         classfileParser.parse(classFile, root)
       }
       root match {
-      case clazz : ClassSymbol =>
-        global.attachSourceToClass(clazz, this, if (sourceFile ne null) sourceFile else clazz.sourceFile)
-      case module : ModuleSymbol if module.moduleClass.isInstanceOf[ClassSymbol] =>
-        val clazz = module.moduleClass.asInstanceOf[ClassSymbol]
-        global.attachSourceToClass(module, this, if (sourceFile ne null) sourceFile else clazz.sourceFile)
-      case _ =>
+        case clazz: ClassSymbol =>
+          global.attachSourceToClass(clazz, this, if (sourceFile ne null) sourceFile else clazz.sourceFile)
+        case module: ModuleSymbol if module.moduleClass.isInstanceOf[ClassSymbol] =>
+          val clazz = module.moduleClass.asInstanceOf[ClassSymbol]
+          global.attachSourceToClass(module, this, if (sourceFile ne null) sourceFile else clazz.sourceFile)
+        case _ =>
       }
       if (root.sourceFile ne null) {
         //global.generateIdeMaps.sourceFiles(root.sourceFile) = classFile.container
@@ -298,15 +292,10 @@ abstract class SymbolLoaders {
     protected def kindString: String = "class file"
     protected def sourceString = classFile.toString()
   }
-/*
-  class SymblfileLoader(file: AbstractFile) extends SymbolLoader(file) {
-    protected def doComplete(root: Symbol) { symblfileParser.parse(file, root) }
-    protected def kindString: String = "symbl file";
-  }
-*/
+
   class SourcefileLoader(override val sourceFile: AbstractFile) extends SymbolLoader {
-    protected def doComplete(root: Symbol): Unit = completeSourcefile(root, this){
-      global.currentRun.compileLate(sourceFile)
+    protected def doComplete(root: Symbol): Unit = completeSourcefile(root, this) {
+      global.currentRun compileLate sourceFile
     }
     protected def kindString: String = "source file"
     protected def sourceString = sourceFile.toString()

@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -21,7 +21,7 @@ object Predef {
   // classOf dummy ------------------------------------------------------
 
   /** Return the runtime representation of a class type. */
-  def classOf[T]: Class = null
+  def classOf[T]: Class[T] = null
 
   // aliases ------------------------------------------------------------
 
@@ -35,14 +35,9 @@ object Predef {
   type boolean = scala.Boolean
   type unit    = scala.Unit
 
-  /** @deprecated use <code>Nothing</code> instead */
-  @deprecated type All = Nothing
-  /** @deprecated use <code>Null</code> instead */
-  @deprecated type AllRef = Null
-
   type String        = System.String
   type StringBuilder = compat.StringBuilder
-  type Class         = System.Type
+  type Class[T]      = System.Type
   type Runnable      = scala.runtime.Runnable
 
   type Throwable = System.Exception
@@ -176,10 +171,11 @@ object Predef {
   implicit def exceptionWrapper(exc: Throwable) = new runtime.RichException(exc)
 
   final class GetClassWrapper(obj: AnyRef) {
-    def getClass(): runtime.RichClass = classWrapper(obj.GetType())
+    def getClass(): runtime.RichClass[Any] = classWrapper(obj.GetType())
   }
   implicit def getClassWrapper(obj: AnyRef) = new GetClassWrapper(obj)
-  implicit def classWrapper(clazz: Class): runtime.RichClass = new runtime.RichClass(clazz)
+  implicit def classWrapper[A](clazz: Class[A]): runtime.RichClass[A] =
+    new runtime.RichClass(clazz)
 
   implicit def unit2ordered(x: Unit): Ordered[Unit] = new Ordered[Unit] with Proxy {
     def self: Any = x

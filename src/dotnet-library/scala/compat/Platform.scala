@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -39,14 +39,14 @@ object Platform {
    *  @param length    ..
    *  @return          ..
    */
-  def createArray(elemClass: Class, length: Int): AnyRef =
+  def createArray(elemClass: Class[_], length: Int): AnyRef =
     System.Array.CreateInstance(elemClass, length)
 
   def arrayclear(arr: Array[Int]) {
     System.Array.Clear(arr.asInstanceOf[System.Array], 0, arr.length)
   }
 
-  def getClassForName(name: String): Class = System.Type.GetType(name)
+  def getClassForName(name: String): Class[_] = System.Type.GetType(name)
 
   val EOL = System.Environment.NewLine
 
