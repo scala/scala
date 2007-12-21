@@ -72,7 +72,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         case TypeRef(pre, sym, args) =>
           def isGeneric(tp: Type): Boolean = tp match {
             case TypeRef(pre, sym, args) =>
-              sym.isAbstractType || sym == ArrayClass && args.length == 1 && isGeneric(args.head)
+              sym.isAbstractType && !(sym.owner hasFlag JAVA) ||
+              sym == ArrayClass && args.length == 1 && isGeneric(args.head)
             case _ =>
               false
           }
