@@ -107,15 +107,10 @@ abstract class SymbolLoaders {
       pkg.setInfo(pkg.moduleClass.tpe)
       root.info.decls.enter(pkg)
     }
-
     // @return - the symbol of the class
     def enterClassAndModule(name: String, completer: SymbolLoader): Symbol = {
       val owner = if (root.isRoot) definitions.EmptyPackageClass else root
       val className = newTermName(name)
-      if (inIDE && owner.info.decls.lookup(name) != NoSymbol) {
-        // refresh
-        return owner.info.decls.lookup(name)
-      }
       assert(owner.info.decls.lookup(name) == NoSymbol, owner.fullNameString + "." + name)
       val clazz = owner.newClass(NoPosition, name.toTypeName)
       val module = owner.newModule(NoPosition, name)
@@ -124,13 +119,8 @@ abstract class SymbolLoaders {
       module.moduleClass setInfo moduleClassLoader
       owner.info.decls enter clazz
       owner.info.decls enter module
-//       if (completer.sourceFile != null) {
-//         clazz.sourceFile = completer.sourceFile;
-//         module.moduleClass.sourceFile = completer.sourceFile
-//       }
       assert(clazz.linkedModuleOfClass == module, module)
       assert(module.linkedClassOfModule == clazz, clazz)
-      //System.out.println("Added class " + clazz.fullNameString);
       clazz
     }
     def checkAdd(name0 : String) = {
@@ -195,7 +185,6 @@ abstract class SymbolLoaders {
         }
         enterClassAndModule(name, loader)
       }
-
       for ((name, file) <- packages.elements)
         enterPackage(name, newPackageLoader(file))
     }
@@ -254,14 +243,13 @@ abstract class SymbolLoaders {
       val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
     }
     protected def doComplete(root: Symbol) {
-      typeParser.parse(typ, root)
+      typeParser.parse(typ, root) // don't check this
     }
     protected def kindString: String = typ.FullName
     protected def sourceString = typ.Assembly.FullName
   }
   // IDE hook.
-  protected def completeClassfile(root: Symbol, loader: ClassfileLoader)(f: => Unit): Unit = f
-  protected def completeSourcefile(root: Symbol, loader: SourcefileLoader)(f: => Unit): Unit = f
+  protected def completeClassfile(root : Symbol, loader : ClassfileLoader)(f : => Unit) : Unit = f
 
   class ClassfileLoader(val classFile: AbstractFile, override val sourceFile: AbstractFile, sourcePath0: AbstractFile) extends SymbolLoader {
     if (sourcePath0 == null) {
@@ -285,18 +273,13 @@ abstract class SymbolLoaders {
           global.attachSourceToClass(module, this, if (sourceFile ne null) sourceFile else clazz.sourceFile)
         case _ =>
       }
-      if (root.sourceFile ne null) {
-        //global.generateIdeMaps.sourceFiles(root.sourceFile) = classFile.container
-      }
     }
     protected def kindString: String = "class file"
     protected def sourceString = classFile.toString()
   }
 
   class SourcefileLoader(override val sourceFile: AbstractFile) extends SymbolLoader {
-    protected def doComplete(root: Symbol): Unit = completeSourcefile(root, this) {
-      global.currentRun compileLate sourceFile
-    }
+    protected def doComplete(root: Symbol): Unit = global.currentRun.compileLate(sourceFile)
     protected def kindString: String = "source file"
     protected def sourceString = sourceFile.toString()
   }

@@ -516,7 +516,7 @@ trait Symbols {
       val curPeriod = currentPeriod
       val curPid = phaseId(curPeriod)
 
-      if (!inIDE && validTo != NoPeriod) {
+      if (!inIDE && validTo != NoPeriod) { // IDE doesn't adapt.
 
         // skip any infos that concern later phases
         while (curPid < phaseId(infos.validFrom) && infos.prev != null)
