@@ -42,8 +42,10 @@ trait Scopes {
    */
   def newScope(initElems: ScopeEntry): Scope = new NormalScope(initElems)
   final def newScope: Scope = newScope(null: ScopeEntry)
-  def newClassScope = newScope // for use in ClassInfoType creation
+  def newClassScope(clazz : Symbol) = newScope // for use in ClassInfoType creation
   def newTempScope = newScope(null : ScopeEntry)
+  def scopeFor(             tree : Tree) : Scope = newScope
+  def scopeFor(old : Scope, tree : Tree) : Scope = newScope(old)
 
   final def newScope(base: Scope) : Scope = newScope(base.elems)
   final def newScope(decls: List[Symbol]) : Scope = {
@@ -52,6 +54,9 @@ trait Scopes {
     ret
   }
   def newThrowAwayScope(decls : List[Symbol]) : Scope = newScope(decls)
+  // for symbols that don't exist in scopes!
+  def recycle(sym : Symbol) : Symbol = sym
+  def newLocalDummy(clazz : Symbol, pos : util.Position) = clazz.newLocalDummy(pos)
 
   private class NormalScope(initElems: ScopeEntry) extends Scope(initElems)
 
@@ -107,6 +112,13 @@ trait Scopes {
       this.toList.foreach(sym => clone.enter(sym))
       clone
     }
+    /* clear the contents of this scope */
+    def clear = {
+      elems = null
+      elemsCache = null
+      hashtable = null
+    }
+
 
     /** is the scope empty? */
     def isEmpty: Boolean = elems eq null
@@ -295,6 +307,8 @@ trait Scopes {
     /** Return the nesting level of this scope, i.e. the number of times this scope
      *  was nested in another */
     def nestingLevel = nestinglevel
+
+    def invalidate(name : Name) = {}
   }
 
   /** The empty scope (immutable).
