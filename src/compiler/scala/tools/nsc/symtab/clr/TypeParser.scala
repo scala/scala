@@ -74,7 +74,8 @@ abstract class TypeParser {
       val a = attrs(0).asInstanceOf[MSILAttribute];
       assert (a.getConstructor() == clrTypes.SYMTAB_CONSTR);
       val symtab = a.getConstructorArguments()(0).asInstanceOf[Array[Byte]]
-      unpickler.unpickle(symtab, 0, clazz.asInstanceOf, staticModule.asInstanceOf, typ.FullName);
+      unpickler.unpickle(symtab, 0, clazz.asInstanceOf[unpickler.global.Symbol],
+                                    staticModule.asInstanceOf[unpickler.global.Symbol], typ.FullName);
       val mClass = clrTypes.getType(typ.FullName + "$");
       if (mClass != null) {
         clrTypes.types(statics) = mClass;
@@ -90,8 +91,8 @@ abstract class TypeParser {
                     else  if (typ.IsInterface()) definitions.ObjectClass.tpe
                     else definitions.AnyClass.tpe; // this is System.Object
     val parents = superType :: ifaces.map(getCLRType).toList
-    instanceDefs = newClassScope
-    staticDefs = newClassScope
+    instanceDefs = newClassScope(clazz)
+    staticDefs = newClassScope(staticModule)
 
     val classInfo = ClassInfoType(parents, instanceDefs, clazz)
     val staticInfo = ClassInfoType(List(), staticDefs, statics)
