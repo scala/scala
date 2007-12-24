@@ -38,11 +38,6 @@ trait Namers { self: Analyzer =>
         mapOver(tp)
     }
   }
-  /** overridden by IDE to not manually enter value parameters */
-  protected final def doEnterValueParams = true // !inIDE;
-  // can't use the other ones.
-  protected def newDecls(classSym : Symbol) : Scope = newClassScope
-
   private class NormalNamer(context : Context) extends Namer(context)
   def newNamer(context : Context) : Namer = new NormalNamer(context)
 
@@ -164,7 +159,6 @@ trait Namers { self: Analyzer =>
         updatePosFlags(c, tree.pos, tree.mods.flags)
         setPrivateWithin(tree, c, tree.mods)
       } else {
-        //if (inIDE && c != NoSymbol) currentRun.compiles(c) // in IDE, will unload/save non-source symbol
         var sym = context.owner.newClass(tree.pos, tree.name)
         sym = sym.setFlag(tree.mods.flags | inConstructorFlag)
         sym = setPrivateWithin(tree, sym, tree.mods)
@@ -194,9 +188,6 @@ trait Namers { self: Analyzer =>
         updatePosFlags(m, tree.pos, tree.mods.flags|MODULE|FINAL)
         setPrivateWithin(tree, m, tree.mods)
       } else {
-        //if (m.isTerm && !m.isPackage && currentRun.compiles(m) && (context.scope == m.owner.info.decls))
-        //  context.scope.unlink(m)
-
         m = context.owner.newModule(tree.pos, tree.name)
         m.setFlag(tree.mods.flags)
         m = setPrivateWithin(tree, m, tree.mods)
@@ -463,7 +454,7 @@ trait Namers { self: Analyzer =>
     }
 
     def enterValueParams(owner: Symbol, vparamss: List[List[ValDef]]): List[List[Symbol]] = {
-      def enterValueParam(param: ValDef): Symbol = if (doEnterValueParams) {
+      def enterValueParam(param: ValDef): Symbol = {
         if (inIDE) param.symbol = {
           var sym = owner.newValueParameter(param.pos, param.name).
             setFlag(param.mods.flags & (BYNAMEPARAM | IMPLICIT))
@@ -479,7 +470,7 @@ trait Namers { self: Analyzer =>
             setPrivateWithin(param, sym, param.mods)
           })(typeCompleter(param))
         param.symbol
-      } else param.symbol
+      }
       vparamss.map(_.map(enterValueParam))
     }
 
@@ -516,7 +507,7 @@ trait Namers { self: Analyzer =>
       }
       val parents = typer.parentTypes(templ) map checkParent
       enterSelf(templ.self)
-      val decls = newDecls(clazz)
+      val decls = newClassScope(clazz)
       newNamer(context.make(templ, clazz, decls)).enterSyms(templ.body)
       ClassInfoType(parents, decls, clazz)
     }
