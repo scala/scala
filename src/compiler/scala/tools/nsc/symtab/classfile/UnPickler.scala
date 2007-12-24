@@ -259,7 +259,7 @@ abstract class UnPickler {
           }
         case CLASSINFOtpe =>
           val clazz = readSymbolRef()
-          ClassInfoType(until(end, readTypeRef), symScope(clazz)(newClassScope), clazz)
+          ClassInfoType(until(end, readTypeRef), symScope(clazz)(newClassScope(clazz)), clazz)
         case METHODtpe =>
           val restpe = readTypeRef()
           MethodType(until(end, readTypeRef), restpe)
