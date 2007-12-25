@@ -563,7 +563,8 @@ trait ParallelMatching  {
           val failRep = rep.make(          scrutinee :: rest.temp, frows.toList)
           // fixed length
           val cond = getCond(treeAsSeq, xs.length)
-          return ({thenp:Tree => {elsep:Tree => squeezedBlock(bindings.toList,If(cond, thenp, elsep))}}, succRep, failRep)
+          return ({thenp:Tree => {elsep:Tree =>
+            If(cond, squeezedBlock(bindings.toList, thenp), elsep)}}, succRep, failRep)
       }
     }
 
