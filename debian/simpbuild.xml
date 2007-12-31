@@ -323,6 +323,7 @@
       message="copyright.string=${copyright.string}${line.separator}"
       append="true"
     />
+    <parallel>
     <jar destfile="${build.jar.dir}/scala-compiler.jar">
       <fileset dir="${build.comp.dir}"/>
       <zipfileset src="${fjbg.jar}"/>
@@ -402,6 +403,7 @@
         </section>
       </manifest>
     </jar>
+    </parallel>
 
     <!-- build tool scripts -->
     <mkdir dir="${build.bin.dir}"/>
@@ -448,6 +450,7 @@
            file="${build.bin.dir}/${fsc.exec.name}"/>
   	
     <!-- build source jars -->
+    <parallel>
     <jar
       destfile="${build.jar.dir}/${libsrc.jar.name}"
       includes="**/*.scala">
@@ -464,6 +467,7 @@
       basedir="${src.comp.dir}"
       includes="**/*.scala"
     />
+    </parallel>
   </target>
 
   <target name="build.tests" depends="build">
@@ -555,6 +559,7 @@
   <target name="dist" depends="build">  <!-- should build docs manually -->
     <!-- Create the SBaz packages -->
     <mkdir dir="${dist.sbaz.dir}"/>
+    <parallel>
     <!-- Create the Scala library package -->
     <sbaz
       file="${dist.sbaz.dir}/${sbaz.lib.name}-${version.number}.sbp"
@@ -597,6 +602,7 @@
       depends="${sbaz.lib.name},${sbaz.dev.name}"
       link="${sbaz.universe}/${sbaz.scala.name}-${version.number}.sbp"
     />
+  </parallel>
   </target>
 
   <target name="dist.tests" depends="build.tests">
