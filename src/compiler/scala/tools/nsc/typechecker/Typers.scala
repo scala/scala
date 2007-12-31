@@ -2100,6 +2100,9 @@ trait Typers { self: Analyzer =>
       }
 
       def typedAnnotated(annot: Annotation, arg1: Tree): Tree = {
+        /** mode for typing the annotation itself */
+        val annotMode = mode & ~TYPEmode | EXPRmode
+
         if (arg1.isType) {
 	  val selfsym =
 	    if (!settings.selfInAnnots.value)
@@ -2127,7 +2130,7 @@ trait Typers { self: Analyzer =>
 		case sym => sym
 	      }
 
-          val ainfo = typedAnnotation(annot, selfsym, mode)
+          val ainfo = typedAnnotation(annot, selfsym, annotMode)
 	  val atype0 = arg1.tpe.withAttribute(ainfo)
 	  val atype =
 	    if ((selfsym != NoSymbol) && (ainfo.refsSymbol(selfsym)))
@@ -2144,7 +2147,7 @@ trait Typers { self: Analyzer =>
           def annotTypeTree(ainfo: AnnotationInfo): Tree =
             TypeTree(arg1.tpe.withAttribute(ainfo)) setOriginal tree
 
-          val annotInfo = typedAnnotation(annot, mode)
+          val annotInfo = typedAnnotation(annot, annotMode)
 
           arg1 match {
             case _: DefTree =>
