@@ -1593,12 +1593,10 @@ trait Parsers extends NewScanners with MarkupParsers {
      */
     def typeAttributes(): List[Tree] = {
       val exps = new ListBuffer[Tree]
-      if (settings.Xplugtypes.value) {
-        while(inToken == LBRACKET) {
-          accept(LBRACKET)
-          exps ++= exprs()
-          accept(RBRACKET)
-        }
+      while(inToken == LBRACKET) {
+        accept(LBRACKET)
+        exps ++= exprs()
+        accept(RBRACKET)
       }
       exps.toList
     }

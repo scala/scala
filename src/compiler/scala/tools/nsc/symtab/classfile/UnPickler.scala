@@ -277,17 +277,11 @@ abstract class UnPickler {
 	  val selfsym = if (tag == ANNOTATEDWSELFtpe) readSymbolRef()
                         else NoSymbol
           val attribs = until(end, readTreeAttribRef)
-          if(settings.Xplugtypes.value) {
-	    if (settings.selfInAnnots.value || (selfsym eq NoSymbol))
-              AnnotatedType(attribs, tp, selfsym)
-	    else
-	      tp // drop annotations with a self symbol unless
-	         // -Yself-in-annots is on
-          } else
-            tp  // Drop the annotations unless -Xplug-types is on.
-                // This way, people can distribute classfiles
-                // including annotated types without them much
-                // affecting those who disable -Xplug-types
+          if (settings.selfInAnnots.value || (selfsym eq NoSymbol))
+            AnnotatedType(attribs, tp, selfsym)
+          else
+            tp // drop annotations with a self symbol unless
+               // -Yself-in-annots is on
         case DEBRUIJNINDEXtpe =>
           DeBruijnIndex(readNat(), readNat())
         case _ =>

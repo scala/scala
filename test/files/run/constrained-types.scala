@@ -87,7 +87,6 @@ object Test {
 
   def main(args: Array[String]) {
     val settings = new Settings
-    settings.Xplugtypes.value = true
     settings.Xexperimental.value = true
     settings.selfInAnnots.value = true
 

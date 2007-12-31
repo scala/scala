@@ -110,7 +110,6 @@ class Settings(error: String => Unit) {
   val Xexperimental = BooleanSetting    ("-Xexperimental", "Enable experimental extensions")
   val Xnojline      = new BooleanSetting("-Xnojline", "Do not use JLine for editing").hideToIDE
   val nouescape     = BooleanSetting    ("-Xno-uescape", "Disables handling of \\u unicode escapes")
-  val Xplugtypes    = BooleanSetting    ("-Xplug-types", "Process annotations on types")
   val plugin        = MultiStringSetting("-Xplugin", "file", "Load a plugin from a file")
   val disable       = MultiStringSetting("-Xplugin-disable", "plugin", "Disable a plugin")
   val showPlugins   = BooleanSetting    ("-Xplugin-list", "Print a synopsis of loaded plugins").hideToIDE

@@ -1840,8 +1840,7 @@ trait Typers { self: Analyzer =>
             val annType = tpt.tpe
 
             val needsConstant =
-              (!settings.Xplugtypes.value ||
-               (annType.typeSymbol isNonBottomSubClass ClassfileAnnotationClass))
+              (annType.typeSymbol isNonBottomSubClass ClassfileAnnotationClass)
 
             def annotArg(tree: Tree): AnnotationArgument = {
               val arg = new AnnotationArgument(tree)
@@ -2139,10 +2138,10 @@ trait Typers { self: Analyzer =>
 	      atype0 // do not record selfsym if
 		     // this annotation did not need it
 
-          if (settings.Xplugtypes.value && !ainfo.isErroneous)
-	    TypeTree(atype) setOriginal tree
+          if (ainfo.isErroneous)
+	    arg1  // simply drop erroneous annotations
 	  else
-	    arg1
+	    TypeTree(atype) setOriginal tree
         } else {
           def annotTypeTree(ainfo: AnnotationInfo): Tree =
             TypeTree(arg1.tpe.withAttribute(ainfo)) setOriginal tree
