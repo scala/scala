@@ -3471,9 +3471,13 @@ A type's typeSymbol should never be inspected directly.
 
   /** Does type `tp1' conform to `tp2'?
    */
-  private def isSubType0(tp1: Type, tp2: Type): Boolean = {
-    annotationsConform(tp1, tp2) &&
-    ((tp1.withoutAttributes, tp2.withoutAttributes) match {
+  private def isSubType0(tp1raw: Type, tp2raw: Type): Boolean = {
+    if (!annotationsConform(tp1raw, tp2raw))
+      return false
+    val tp1 = tp1raw.withoutAttributes
+    val tp2 = tp2raw.withoutAttributes
+
+    ((tp1, tp2) match {
       case (ErrorType, _)    => true
       case (WildcardType, _) => true
       case (_, ErrorType)    => true
@@ -3593,11 +3597,11 @@ A type's typeSymbol should never be inspected directly.
          sym1 == AllRefClass && tp2.isInstanceOf[SingletonType] && (tp1 <:< tp2.widen))
       case _ =>
         false
-    })
-  } || {
+    }) || {
     val tp1n = tp1.normalize
     val tp2n = tp2.normalize
     ((tp1n ne tp1) || (tp2n ne tp2)) && isSubType0(tp1n, tp2n)
+    }
   }
 
   /** Are `tps1' and `tps2' lists of equal length such
