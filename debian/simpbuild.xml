@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- This is a simplified build file for Scala on Debian -->
+<!-- This is a simplified build file for Scala on Debian.
+   - It takes a lot of shortcuts compared to the
+   - standard build file. -->
 <!-- $Id$ -->
 <project name="scala" default="build">
   <property environment="env"/>
@@ -224,7 +226,9 @@
   </macrodef>
 
   <target name="build">
+    <parallel threadsPerProcessor="1">
     <!-- Build library -->
+    <sequential>
     <mkdir dir="${build.lib.dir}"/>
     <javac
       srcdir="${src.lib.dir}"
@@ -258,8 +262,11 @@
       <exclude name="scala/Predef.scala"/>
       <exclude name="scala/dbc/**"/>
     </scalac>
+    </sequential>
 
+   
     <!-- Build compiler -->
+    <sequential>
     <mkdir dir="${build.comp.dir}"/>
     <scalac
       srcdir="${src.comp.dir}"
@@ -267,14 +274,16 @@
       deprecation="yes" unchecked="yes"
     >
       <classpath>
-        <pathelement location="${build.lib.dir}"/>
+        <pathelement location="${starr.lib.jar}"/>
         <pathelement location="${ant.jar}"/>
         <path refid="starr.classpath"/>
       </classpath>
       <include name="**/*.scala"/>
     </scalac>
+    </sequential>
 
     <!-- Build DBC -->
+    <sequential>
     <mkdir dir="${build.dbc.dir}"/>
     <scalac
       srcdir="${src.dbc.dir}"
@@ -282,13 +291,15 @@
       deprecation="yes" unchecked="yes"
     >
       <classpath>
-        <pathelement location="${build.lib.dir}"/>
-        <pathelement location="${build.comp.dir}"/>
+        <pathelement location="${starr.lib.jar}"/>
+        <pathelement location="${starr.comp.jar}"/>
       </classpath>
       <include name="**/*.scala"/>
     </scalac>
+    </sequential>
 
     <!-- Build Actors -->
+    <sequential>
     <mkdir dir="${build.actors.dir}"/>
     <javac
       srcdir="${src.actors.dir}"
@@ -303,12 +314,12 @@
       deprecation="yes" unchecked="yes"
     >
       <classpath>
-        <pathelement location="${build.lib.dir}"/>
-        <pathelement location="${build.comp.dir}"/>
-        <pathelement location="${build.actors.dir}"/>
+        <pathelement location="${starr.lib.jar}"/>
       </classpath>
       <include name="**/*.scala"/>
     </scalac>
+    </sequential>
+    </parallel>
 
   	
     <!-- Build jars -->
@@ -323,7 +334,7 @@
       message="copyright.string=${copyright.string}${line.separator}"
       append="true"
     />
-    <parallel>
+    <parallel threadsPerProcessor="1">
     <jar destfile="${build.jar.dir}/scala-compiler.jar">
       <fileset dir="${build.comp.dir}"/>
       <zipfileset src="${fjbg.jar}"/>
@@ -450,7 +461,7 @@
            file="${build.bin.dir}/${fsc.exec.name}"/>
   	
     <!-- build source jars -->
-    <parallel>
+    <parallel threadsPerProcessor="1">
     <jar
       destfile="${build.jar.dir}/${libsrc.jar.name}"
       includes="**/*.scala">
@@ -559,7 +570,7 @@
   <target name="dist" depends="build">  <!-- should build docs manually -->
     <!-- Create the SBaz packages -->
     <mkdir dir="${dist.sbaz.dir}"/>
-    <parallel>
+    <parallel threadsPerProcessor="1">
     <!-- Create the Scala library package -->
     <sbaz
       file="${dist.sbaz.dir}/${sbaz.lib.name}-${version.number}.sbp"
