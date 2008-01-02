@@ -518,6 +518,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       else false
 
     def compileSources(sources: List[SourceFile]) {
+      if (reporter.hasErrors)
+        return  // there is a problem already, e.g. a
+                // plugin was passed a bad option
       val startTime = currentTime
       reporter.reset
       for (source <- sources) addUnit(new CompilationUnit(source))
