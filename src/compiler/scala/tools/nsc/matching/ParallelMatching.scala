@@ -1078,7 +1078,7 @@ trait ParallelMatching  {
                   pats = (makeBind(vs, npat) setType argtpe)::pats
               }
 
-            case o @ Apply(fn, List()) if !isCaseClass(o.tpe) =>
+            case o @ Apply(fn, List()) if !isCaseClass(o.tpe) || /*see t301*/ !Apply_Value.unapply(o).isEmpty =>
               val stpe: Type = fn match {
                 case _ if (o.symbol.isModule) =>
                   singleType(o.tpe.prefix, o.symbol)
