@@ -20,8 +20,12 @@ missing combination             Gp
 
     def ma4(x:Deep) = x match { // missing cases: Gu, Gp
                       ^
+patmatexhaust.scala:53: warning: match is not exhaustive!
+
+    def ma5(x:Deep) = x match { // Gp
+                      ^
 patmatexhaust.scala:70: error: unreachable code
       case 1 => 
              ^
-four warnings found
+5 warnings found
 one error found

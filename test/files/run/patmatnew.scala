@@ -805,6 +805,19 @@ object Test extends TestConsoleMain {
       }
     }
   }
+
+  sealed abstract class Tree
+  case class Node(l: Tree, v: Int, r: Tree) extends Tree
+  case object EmptyTree extends Tree
+
+  object Ticket335 extends TestCase("#335") { // compile-only
+    override def runTest {
+      (EmptyTree: Tree) match {
+        case Node(_,v,_) if (v == 0) => 0
+        case EmptyTree => 2
+      }
+    }
+  }
 }
 
 

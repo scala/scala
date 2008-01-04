@@ -1202,7 +1202,7 @@ trait ParallelMatching  {
             res
           }
 
-        val coversAll = allcomb forall { combination => row exists { r => covers(r.pat, combination)}}
+        val coversAll = allcomb forall { combination => row exists { r => (r.guard eq EmptyTree) && covers(r.pat, combination)}}
         if (!coversAll) {
           val sb = new StringBuilder()
           sb.append("match is not exhaustive!\n")
