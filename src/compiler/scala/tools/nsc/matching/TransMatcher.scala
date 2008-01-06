@@ -225,8 +225,8 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
         implicit val fail: Tree = theFailTree
 
         val mch  = typed{ repToTree(irep)}
-        var dfatree = typed{squeezedBlock(vds.toList, mch)}
-
+        var dfatree = typed{Block(vds.toList, mch)}
+        // cannot use squeezedBlock because of side-effects, see t275
         //DEBUG("**** finished\n"+dfatree.toString)
         var bx = 0; var cs = cases; while(cs ne Nil) {
           if (!rep.isReached(bx)) {
