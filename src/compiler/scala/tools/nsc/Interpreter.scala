@@ -700,9 +700,12 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 		   " = \" + " +
                    " (if(" +
 		   fullPath(vname) +
+                   ".asInstanceOf[AnyRef] != null) " +
+                   " ((if(" +
+		   fullPath(vname) +
 		   ".toString.contains('\\n')) " +
                    " \"\\n\" else \"\") + " +
-                   fullPath(vname) + " + \"\\n\"")
+                   fullPath(vname) + " + \"\\n\") else \"null\\n\") ")
       }
     }
 
