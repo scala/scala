@@ -753,8 +753,8 @@ while [ $# -gt 0 ]; do
     esac;
 done;
 
-if [ "$JAVA5" = "true" -a "$TEST_TYPE" != "msil" ]; then
-    FLAGS="$FLAGS -target:jvm-1.5"
+if [ "$JAVA5" = "false" -o "$TEST_TYPE" = "msil" ]; then
+    FLAGS="$FLAGS -target:jvm-1.4";
 fi;
 
 if [ -z "$ERRORS" ]; then
