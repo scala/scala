@@ -1461,6 +1461,7 @@ DOCUMENTATION
     <quick
       srcdir="${src.dir}/manual"
       destdir="${tooldocs.dir}/classes"
+      deprecation="yes" target="jvm-1.4"
       classpathref="manual.classpath">
       <include name="**/*.scala"/>
     </quick>
