@@ -54,11 +54,11 @@ object scalac extends Command {
     Section("Standard Options",
       DefinitionList(
         Definition(
-          CmdOption("g:{none,source,lines,vars,notc}"),
+          CmdOption("g:{none,source,line,vars,notc}"),
           SeqPara(
             Mono("\"none\"") & " generates no debugging info,",
             Mono("\"source\"") & " generates only the source file attribute,",
-            Mono("\"lines\"") & " generates source and line number information,",
+            Mono("\"line\"") & " generates source and line number information,",
             Mono("\"vars\"") & " generates source, line number and local " &
             "variable information,",
             Mono("\"notc\"") & " generates all of the above and " &
