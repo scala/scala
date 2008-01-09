@@ -16,22 +16,24 @@ class HashSet[T >: Null <: AnyRef](initialCapacity: Int) extends Set[T] {
 
   def size: Int = used
 
+  private def index(x: Int): Int = Math.abs(x % capacity)
+
   def findEntry(x: T): T = {
-    var h = x.hashCode() % capacity
+    var h = index(x.hashCode())
     var entry = table(h)
     while ((entry ne null) && entry != x) {
-      h = (h + 1) % capacity
+      h = index(h + 1)
       entry = table(h)
     }
     entry.asInstanceOf[T]
   }
 
   def addEntry(x: T) {
-    var h = x.hashCode() % capacity
+    var h = index(x.hashCode())
     var entry = table(h)
     while (entry ne null) {
       if (entry == x) return
-      h = (h + 1) % capacity
+      h = index((h + 1))
       entry = table(h)
     }
     table(h) = x
