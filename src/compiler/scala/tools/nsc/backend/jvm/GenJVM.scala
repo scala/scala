@@ -73,6 +73,10 @@ abstract class GenJVM extends SubComponent {
     val VolatileAttr     = definitions.getClass("scala.volatile")
     val RemoteAttr       = definitions.getClass("scala.remote")
     val ThrowsAttr       = definitions.getClass("scala.throws")
+    val BeanInfoAttr     = definitions.getClass("scala.reflect.BeanInfo")
+    val BeanInfoSkipAttr = definitions.getClass("scala.reflect.BeanInfoSkip")
+    val BeanDisplayNameAttr = definitions.getClass("scala.reflect.BeanDisplayName")
+    val BeanDescriptionAttr = definitions.getClass("scala.reflect.BeanDescription")
 
     lazy val CloneableClass  = definitions.getClass("java.lang.Cloneable")
     lazy val RemoteInterface = definitions.getClass("java.rmi.Remote")
@@ -194,6 +198,84 @@ abstract class GenJVM extends SubComponent {
       addAnnotations(jclass, c.symbol.attributes)
 
       emitClass(jclass, c.symbol)
+
+      if (c.symbol.attributes.exists(_.atp.typeSymbol == BeanInfoAttr))
+        genBeanInfoClass(c)
+    }
+
+    /**
+     * Generate a bean info class that describes the given class.
+     *
+     * @author Ross Judson (ross.judson@soletta.com)
+     */
+    def genBeanInfoClass(c: IClass) {
+      val description = c.symbol.attributes.find(_.atp.typeSymbol == BeanDescriptionAttr)
+      // informProgress(description.toString())
+
+      val beanInfoClass = fjbgContext.JClass(javaFlags(c.symbol),
+            javaName(c.symbol) + "BeanInfo",
+            "scala/reflect/ScalaBeanInfo",
+            JClass.NO_INTERFACES,
+            c.cunit.source.toString)
+
+      var fieldList = List[String]()
+      for (f <- clasz.fields if f.symbol.hasGetter;
+	   val g = f.symbol.getter(c.symbol);
+	   val s = f.symbol.setter(c.symbol);
+	   if g.isPublic)
+	fieldList = javaName(f.symbol) :: javaName(g) :: (if (s != NoSymbol) javaName(s) else null) :: fieldList
+      val methodList =
+	for (m <- clasz.methods
+	    if !m.symbol.isConstructor &&
+	       m.symbol.isPublic &&
+	       !(m.symbol.name startsWith "$") &&
+	       !m.symbol.isGetter &&
+	       !m.symbol.isSetter) yield javaName(m.symbol)
+
+      val constructor = beanInfoClass.addNewMethod(JAccessFlags.ACC_PUBLIC, "<init>", JType.VOID, javaTypes(Nil), javaNames(Nil))
+      jcode = constructor.getCode().asInstanceOf[JExtendedCode]
+      val strKind = new JObjectType(javaName(definitions.StringClass))
+      val stringArrayKind = new JArrayType(strKind)
+      val conType = new JMethodType(JType.VOID, Array(javaType(definitions.ClassClass), stringArrayKind, stringArrayKind))
+
+      def push(lst:Seq[String]) {
+	var fi = 0
+	for (f <- lst) {
+	  jcode.emitDUP()
+	  jcode.emitPUSH(fi)
+	  if (f != null)
+	    jcode.emitPUSH(f)
+	  else
+	    jcode.emitACONST_NULL()
+	  jcode.emitASTORE(strKind)
+	  fi = fi + 1
+	}
+      }
+
+      jcode.emitALOAD_0()
+      // push the class
+      jcode.emitPUSH(javaType(c.symbol).asInstanceOf[JReferenceType])
+
+      // push the the string array of field information
+      jcode.emitPUSH(fieldList.length)
+      jcode.emitANEWARRAY(strKind)
+      push(fieldList)
+
+      // push the string array of method information
+      jcode.emitPUSH(methodList.length)
+      jcode.emitANEWARRAY(strKind)
+      push(methodList)
+
+      // invoke the superclass constructor, which will do the
+      // necessary java reflection and create Method objects.
+      jcode.emitINVOKESPECIAL("scala/reflect/ScalaBeanInfo", "<init>", conType)
+      jcode.emitRETURN()
+
+      // write the bean information class file.
+      val outfile = getFile(beanInfoClass, ".class")
+      beanInfoClass.writeTo(outfile)
+      val file = scala.tools.nsc.io.AbstractFile.getFile(outfile)
+      informProgress("wrote BeanInfo " + outfile)
     }
 
     def addExceptionsAttribute(sym: Symbol): Unit = {
