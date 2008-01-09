@@ -40,7 +40,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
               (settings.doc.value == setting.isDocOption))
       .map(setting =>
            format(setting.helpSyntax) + "  " + setting.helpDescription)
-      .mkString("Usage: " + cmdName + " <options | source files>\n" +
+      .mkString("Usage: " + cmdName + " <options> <source files>\n" +
                 "where possible standard options include:\n  ",
                 "\n  ",
                 "\n")
