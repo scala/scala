@@ -62,7 +62,7 @@ class Lexer extends StdLexical with ImplicitConversions {
     case None => ""
   }
 
-  def zero: Parser[String] = '0' ^^ toString
+  def zero: Parser[String] = '0' ^^ "0"
   def nonzero = elem("nonzero digit", d => d.isDigit && d != '0')
   def exponent = elem("exponent character", d => d == 'e' || d == 'E')
   def sign = elem("sign character", d => d == '-' || d == '+')

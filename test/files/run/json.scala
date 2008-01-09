@@ -8,6 +8,7 @@ object Test extends Application {
   printJSON("{\"name\": \"va1ue\"}")  // ticket #136
   printJSON("{\"name\": { \"name1\": \"va1ue1\", \"name2\": \"va1ue2\" } }")
   printJSON("{\"name\": \"\\u0022\"}")
+  printJSON("{\"age\": 0}")
   println
 
   // from http://en.wikipedia.org/wiki/JSON
