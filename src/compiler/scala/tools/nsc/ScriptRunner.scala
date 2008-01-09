@@ -385,6 +385,11 @@ object ScriptRunner {
       return
     }
 
+    val major = System.getProperty("java.class.version").split("\\.")(0)
+    if (Integer.valueOf(major).intValue < 49) {
+      settings.target.value = "jvm-1.4"
+    }
+
     withCompiledScript(settings, scriptFile){compiledLocation =>
       runCompiled(settings, compiledLocation, scriptArgs)
     }
@@ -403,6 +408,11 @@ object ScriptRunner {
       val str = new FileWriter(scriptFile)
       str.write(command)
       str.close()
+    }
+
+    val major = System.getProperty("java.class.version").split("\\.")(0)
+    if (Integer.valueOf(major).intValue < 49) {
+      settings.target.value = "jvm-1.4"
     }
 
     withCompiledScript(settings, scriptFile.getPath){compiledLocation =>
