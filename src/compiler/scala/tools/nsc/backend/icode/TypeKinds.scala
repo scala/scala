@@ -117,6 +117,7 @@ trait TypeKinds { self: ICodes =>
     else (a, b) match {
       case (BOXED(a1), BOXED(b1)) => if (a1 == b1) a else REFERENCE(definitions.AnyRefClass)
       case (BOXED(_), REFERENCE(_)) | (REFERENCE(_), BOXED(_)) => REFERENCE(definitions.AnyRefClass)
+      case (BOXED(_), ARRAY(_)) | (ARRAY(_), BOXED(_)) => REFERENCE(definitions.AnyRefClass)
       case (BYTE, INT) | (INT, BYTE) => INT
       case (SHORT, INT) | (INT, SHORT) => INT
       case (CHAR, INT) | (INT, CHAR) => INT
