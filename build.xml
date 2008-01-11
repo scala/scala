@@ -826,7 +826,9 @@ ANDROID
     <mkdir dir="${android.dir}/src"/>
 
     <copy todir="${android.dir}/src">
-      <fileset dir="${src.dir}/library" includes="**/*.scala, **/*.java">
+      <fileset dir="${src.dir}/library" 
+               includes="**/*.scala, **/*.java"
+               excludes="scala/reflect/ScalaBeanInfo.scala">
         <not>
           <present targetdir="${src.dir}/android-library"/>
         </not>
