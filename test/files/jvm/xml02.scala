@@ -39,7 +39,7 @@ object Test extends TestConsoleMain {
   object DodgyNamespace extends TestCase("DodgyNamespace") with Assert {
     override def runTest = {
       val x = <flog xmlns:ee="http://ee.com"><foo xmlns:dog="http://dog.com"><dog:cat/></foo></flog>
-      assertTrue(x.toString.contains("xmlns:dog=\"http://dog.com\""));
+      assertTrue(x.toString.matches(".*xmlns:dog=\"http://dog.com\".*"));
     }
   }
   def suite = new TestSuite(
