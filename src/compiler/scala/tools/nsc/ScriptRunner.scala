@@ -272,6 +272,13 @@ object ScriptRunner {
   {
     import Interpreter.deleteRecursively
 
+    /* If the script is running on pre-jvm-1.5 JVM,
+       it is necessary to force the target setting to jvm-1.4 */
+    val major = System.getProperty("java.class.version").split("\\.")(0)
+    if (Integer.valueOf(major).intValue < 49) {
+      settings.target.value = "jvm-1.4"
+    }
+
     /** Compiles the script file, and returns two things:
       * the directory with the compiled class files,
       * and a flag for whether the compilation succeeded.
@@ -385,11 +392,6 @@ object ScriptRunner {
       return
     }
 
-    val major = System.getProperty("java.class.version").split("\\.")(0)
-    if (Integer.valueOf(major).intValue < 49) {
-      settings.target.value = "jvm-1.4"
-    }
-
     withCompiledScript(settings, scriptFile){compiledLocation =>
       runCompiled(settings, compiledLocation, scriptArgs)
     }
@@ -408,11 +410,6 @@ object ScriptRunner {
       val str = new FileWriter(scriptFile)
       str.write(command)
       str.close()
-    }
-
-    val major = System.getProperty("java.class.version").split("\\.")(0)
-    if (Integer.valueOf(major).intValue < 49) {
-      settings.target.value = "jvm-1.4"
     }
 
     withCompiledScript(settings, scriptFile.getPath){compiledLocation =>

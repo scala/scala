@@ -278,11 +278,6 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
   def main(settings: Settings) {
     this.settings = settings
 
-    val major = System.getProperty("java.class.version").split("\\.")(0)
-    if (Integer.valueOf(major).intValue < 49) {
-      this.settings.target.value = "jvm-1.4"
-    }
-
     in =
       in0 match {
         case Some(in0) =>

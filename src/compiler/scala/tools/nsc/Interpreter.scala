@@ -60,6 +60,13 @@ import nsc.{InterpreterResults=>IR}
 class Interpreter(val settings: Settings, out: PrintWriter) {
   import symtab.Names
 
+  /* If the interpreter is running on pre-jvm-1.5 JVM,
+     it is necessary to force the target setting to jvm-1.4 */
+  val major = System.getProperty("java.class.version").split("\\.")(0)
+  if (Integer.valueOf(major).intValue < 49) {
+    this.settings.target.value = "jvm-1.4"
+  }
+
   /** the compiler to compile expressions with */
   val compiler: scala.tools.nsc.Global = newCompiler(settings, reporter)
 
