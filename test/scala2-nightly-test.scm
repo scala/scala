@@ -17,7 +17,7 @@ exec scsh -e main -s "$0" "$@"
 (define scala-svn-module-name "scala")
 
 ;; E-mail address to which the failure notification should be sent.
-(define notify-email "scala-devel@groupes.epfl.ch")
+(define notify-email "scala-reports@groupes.epfl.ch")
 ;;(define notify-email "stephane.micheloud@epfl.ch") ; DEBUG
 ;;(define notify-email "lex.spoon@epfl.ch") ; DEBUG
 
@@ -79,7 +79,8 @@ exec scsh -e main -s "$0" "$@"
           (with-cwd scala-svn-module-name
                     (start-section "Creating small Scala distribution")
                     (fail-if-error (run (ant pack)))
-                    (fail-if-error (run (ant docs.compiler)))
+;;                  (fail-if-error (run (ant msil)))
+                    (run (ant msil))
                     (start-section "Testing Scala compiler")
                     (fail-if-error
                      (run (./test/scalatest --color=none
