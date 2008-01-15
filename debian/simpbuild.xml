@@ -24,7 +24,7 @@
 
   <!-- General properties -->
   <property name="copyright.holder" value="LAMP/EPFL"/>
-  <property name="copyright.string" value="(c) 2002-2007 ${copyright.holder}"/>
+  <property name="copyright.string" value="(c) 2002-2008 ${copyright.holder}"/>
 
 
   <!-- Javac configuration properties -->
@@ -88,9 +88,10 @@
   <!-- sbaz properties -->
   <property name="sbaz.lib.name" value="${dist.name}-library"/>
   <property name="sbaz.dev.name" value="${dist.name}-devel"/>
+  <property name="sbaz.dev.docs.name" value="${dist.name}-devel-docs"/>
   <property name="sbaz.test.name" value="${dist.name}-test"/>
   <property name="sbaz.scala.name" value="${dist.name}"/>
-  <property name="sbaz.universe" value="http://scala.epfl.ch/downloads/packages"/>
+  <property name="sbaz.universe" value="http://www.scala-lang.org/downloads/packages"/>
 
   <!-- Testing if everything is in place -->
   <echo level="verbose" message="starr.lib.jar=${starr.lib.jar}"/>
@@ -585,23 +586,32 @@
       <srcset dir="${build.jar.dir}" includes="${libsrc.jar.name}"/>
       <srcset dir="${build.jar.dir}" includes="${dbcsrc.jar.name}"/>
     </sbaz>
-    <!-- Create the Scala developper package -->
+    <!-- Create the Scala developer package -->
     <sbaz
       file="${dist.sbaz.dir}/${sbaz.dev.name}-${version.number}.sbp"
       adfile="${dist.sbaz.dir}/${sbaz.dev.name}-${version.number}.advert"
       name="${sbaz.dev.name}"
       version="${version.number}"
-      desc="The Scala developper tools. This contains everything that is required to write, test and document new Scala programs, as well as all developper documentation."
+      desc="The Scala developer tools. This contains everything that is required to write, test and document new Scala programs."
       depends="${sbaz.lib.name}"
       link="${sbaz.universe}/${sbaz.dev.name}-${version.number}.sbp"
     >
       <binset dir="${build.bin.dir}" includes="**"/>
-      <libset dir="${build.jar.dir}" includes="scala-compiler.jar"/>
-      <manset dir="${tooldocs.dir}" includes="man1/*.1"/>
+      <libset dir="${build.jar.dir}" includes="scala-compiler.jar,${compsrc.jar.name}"/>
       <docset dir="${docs.dir}" includes="README,LICENSE"/>
+    </sbaz>
+    <!-- Create the Scala developer documentation package -->
+    <sbaz
+      file="${dist.sbaz.dir}/${sbaz.dev.docs.name}-${version.number}.sbp"
+      adfile="${dist.sbaz.dir}/${sbaz.dev.docs.name}-${version.number}.advert"
+      name="${sbaz.dev.name}"
+      version="${version.number}"
+      desc="The Scala developper tools. This contains all developer documentation."
+      link="${sbaz.universe}/${sbaz.dev.docs.name}-${version.number}.sbp"
+    >
+      <manset dir="${tooldocs.dir}" includes="man1/*.1"/>
       <docset dir="${api.lib.pdir}" includes="scala/**"/>
       <docset dir="${tooldocs.dir}" includes="*.html"/>
-      <srcset dir="${build.jar.dir}" includes="${compsrc.jar.name}"/>
     </sbaz>
     <!-- Creates the empty umbrella Scala package -->
     <sbaz
