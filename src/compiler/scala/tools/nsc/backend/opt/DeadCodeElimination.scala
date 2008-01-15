@@ -259,7 +259,7 @@ abstract class DeadCodeElimination extends SubComponent {
 
     /** Is 'sym' a side-effecting method? TODO: proper analysis.  */
     private def isSideEffecting(sym: Symbol): Boolean = {
-      !(sym.isGetter // for testing only
+      !((sym.isGetter && !sym.hasFlag(Flags.LAZY)) // for testing only
        || (sym.isConstructor
            && sym.owner.owner == definitions.getModule("scala.runtime").moduleClass)
        || (sym.isConstructor && inliner.isClosureClass(sym.owner))
