@@ -1774,13 +1774,23 @@ GENERATES A DISTRIBUTION
       adfile="${dist.dir}/scala-devel-${version.number}.advert"
       name="scala-devel"
       version="${version.number}"
-      desc="The Scala developper tools. This contains everything that is required to write, test and document new Scala programs, as well as all developper documentation."
+      desc="The Scala developer tools. This contains everything that is required to write, test and document new Scala programs."
       depends="scala-library"
       link="${sbaz.universe}/scala-devel-${version.number}.sbp">
       <binset dir="${dist.current.dir}/bin" includes="**"/>
-      <docset dir="${dist.current.dir}/doc" includes="**"/>
+      <docset dir="${dist.current.dir}/doc" includes="**" excludes="**/scala/api/**,**/scala/tools/**"/>
       <libset dir="${dist.current.dir}/lib" includes="${comp.jar.name}"/>
       <srcset dir="${dist.current.dir}/lib" includes="${compsrc.jar.name}"/>
+    </quicksbaz>
+  <!-- Create the Scala developer docs package -->
+    <quicksbaz
+      file="${dist.dir}/scala-devel-docs-${version.number}.sbp"
+      adfile="${dist.dir}/scala-devel-docs-${version.number}.advert"
+      name="scala-devel"
+      version="${version.number}"
+      desc="The Scala developer documentation. This contains all developer documentation."
+      link="${sbaz.universe}/scala-devel-docs-${version.number}.sbp">
+      <docset dir="${dist.current.dir}/doc" includes="**/scala/api/**,**/scala/tools/**"/>
       <manset dir="${dist.current.dir}/man" includes="**"/>
     </quicksbaz>
   <!-- Creates the empty umbrella Scala package -->
