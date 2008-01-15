@@ -275,7 +275,7 @@ object ScriptRunner {
     /* If the script is running on pre-jvm-1.5 JVM,
        it is necessary to force the target setting to jvm-1.4 */
     val major = System.getProperty("java.class.version").split("\\.")(0)
-    if (Integer.valueOf(major).intValue < 49) {
+    if (major.toInt < 49) {
       settings.target.value = "jvm-1.4"
     }
 
