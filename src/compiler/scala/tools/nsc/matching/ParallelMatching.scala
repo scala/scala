@@ -541,7 +541,7 @@ trait ParallelMatching  {
             ys = ys.tail
           }
           val tail = newVar(scrutinee.pos, sequenceType)
-          bindings += typedValDef(tail, {if (ix-1>0) seqDrop(treeAsSeq.duplicate, ix) else mkIdent(scrutinee)})
+          bindings += typedValDef(tail, {if (ix > 0) seqDrop(treeAsSeq.duplicate, ix) else mkIdent(scrutinee)})
 
 
           val nrows = new ListBuffer[Row]

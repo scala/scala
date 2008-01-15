@@ -165,11 +165,16 @@ object Test extends TestConsoleMain {
     def doMatch(xs: List[String]): String = xs match {
       case List(_*) => "ok"
     }
+    def doMatch2(xs: List[String]): List[String] = xs match {
+      case List(_, rest @ _*) => rest.toList
+    }
     override def runTest() {
       val list1 = List()
       assertEquals(doMatch(list1), "ok")
       val list2 = List("1","2","3")
       assertEquals(doMatch(list2), "ok")
+      val list3 = List("1","2","3")
+      assertEquals(doMatch2(list3), List("2","3"))
     }
   }
 
