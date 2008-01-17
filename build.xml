@@ -1780,6 +1780,7 @@ GENERATES A DISTRIBUTION
       <binset dir="${dist.current.dir}/bin" includes="**"/>
       <docset dir="${dist.current.dir}/doc" includes="**" excludes="**/scala/api/**,**/scala/tools/**"/>
       <libset dir="${dist.current.dir}/lib" includes="${comp.jar.name}"/>
+      <manset dir="${dist.current.dir}/man" includes="**"/>
       <srcset dir="${dist.current.dir}/lib" includes="${compsrc.jar.name}"/>
     </quicksbaz>
   <!-- Create the Scala developer docs package -->
@@ -1791,7 +1792,6 @@ GENERATES A DISTRIBUTION
       desc="The Scala developer documentation. This contains all developer documentation."
       link="${sbaz.universe}/scala-devel-docs-${version.number}.sbp">
       <docset dir="${dist.current.dir}/doc" includes="**/scala/api/**,**/scala/tools/**"/>
-      <manset dir="${dist.current.dir}/man" includes="**"/>
     </quicksbaz>
   <!-- Creates the empty umbrella Scala package -->
     <quicksbaz
