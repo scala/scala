@@ -46,7 +46,7 @@ abstract class LazyVals extends Transform {
      *    but moved to the host class. local lazy values should be statically implemented.
      */
     override def transform(tree: Tree): Tree = {
-       val sym = tree.symbol
+      val sym = tree.symbol
       tree match {
         case DefDef(mods, name, tparams, vparams, tpt, rhs) =>
           val res = if (!sym.owner.isClass && sym.hasFlag(LAZY)) {
@@ -58,9 +58,29 @@ abstract class LazyVals extends Transform {
           } else
             super.transform(rhs)
           val bmps = bitmaps(sym) map { b => ValDef(b, Literal(Constant(0))) }
-          copy.DefDef(tree, mods, name, tparams, vparams, tpt, typed(if (bmps.isEmpty) res else Block(bmps, res)))
+          val tmp = addBitmapDefs(sym, res, bmps)
+          copy.DefDef(tree, mods, name, tparams, vparams, tpt,
+                      typed(addBitmapDefs(sym, res, bmps)))
 
         case _ => super.transform(tree)
+      }
+    }
+
+    /** Add the bitmap definitions to the rhs of a method definition.
+     *  If the rhs has been tail-call trasnformed, insert the bitmap
+     *  definitions inside the top-level label definition, so that each
+     *  iteration has the lazy values un-initialized. Otherwise add them
+     *  at the very beginning of the method.
+     */
+    private def addBitmapDefs(methSym: Symbol, rhs: Tree, bmps: List[Tree]): Tree = {
+      if (bmps.isEmpty) rhs else rhs match {
+        case Block(assign, l @ LabelDef(name, params, rhs1))
+          if (name.toString.equals("_" + methSym.name)
+              && List.forall2(params.tail, methSym.tpe.paramTypes) { (ident, tpe) => ident.tpe == tpe }) =>
+            val sym = l.symbol
+            Block(assign, copy.LabelDef(l, name, params, typed(Block(bmps, rhs1))))
+
+        case _ => Block(bmps, rhs)
       }
     }
 
