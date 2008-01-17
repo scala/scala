@@ -528,7 +528,7 @@ object Test extends TestConsoleMain {
        val offset : Int
        def matching : Option[Token]
      }
-    def go(tok : Token) = tok.matching match {
+    def go(tok : Token) = (tok.matching: @unchecked) match {
       case Some(other) if true => Some(other)
       case _ if true => tok.matching match {
         case Some(other) => Some(other)
@@ -597,7 +597,7 @@ object Test extends TestConsoleMain {
       s.isDefinedAt(42)
       // just load the thing, to see if the classes are found
 
-      (None:Option[Boolean]) match {
+      (None:Option[Boolean] @unchecked) match {
         case x if x.map(x => x).isEmpty =>
       }
     }
@@ -817,7 +817,7 @@ object Test extends TestConsoleMain {
 
   object Ticket335 extends TestCase("#335") { // compile-only
     override def runTest {
-      (EmptyTree: Tree) match {
+      (EmptyTree: Tree @unchecked) match {
         case Node(_,v,_) if (v == 0) => 0
         case EmptyTree => 2
       }
