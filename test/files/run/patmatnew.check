@@ -1,14 +1,2 @@
-patmatnew.scala:526: warning: match is not exhaustive!
-
-    def go(tok : Token) = tok.matching match {
-                              ^
-patmatnew.scala:595: warning: match is not exhaustive!
-
-      (None:Option[Boolean]) match {
-           ^
-patmatnew.scala:815: warning: match is not exhaustive!
-
-      (EmptyTree: Tree) match {
-                ^
 warning: there were unchecked warnings; re-run with -unchecked for details
-four warnings found
+one warning found
