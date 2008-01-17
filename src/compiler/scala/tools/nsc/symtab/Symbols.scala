@@ -261,9 +261,9 @@ trait Symbols {
     final def isPrimaryConstructor =
       isConstructor && owner.primaryConstructor == this
 
-    /** Is this symbol a case class factory method? */
-    final def isCaseFactory =
-      isMethod && hasFlag(CASE)
+    /** Is this symbol a synthetic apply or unapply method in a companion object of a case class? */
+    final def isCaseApplyOrUnapply =
+      isMethod && hasFlag(CASE) && hasFlag(SYNTHETIC)
 
     /** Is this symbol an implementation class for a mixin? */
     final def isImplClass: Boolean = isClass && hasFlag(IMPLCLASS)
@@ -930,14 +930,14 @@ trait Symbols {
     final def setter(base: Symbol): Symbol =
       base.info.decl(nme.getterToSetter(nme.getterName(name))) filter (_.hasFlag(ACCESSOR))
 
-    /** The case factory corresponding to this case class
+    /** The case module corresponding to this case class
      *  @pre case class is a member of some other class or package
      */
-    final def caseFactory: Symbol = {
-      var facname = name.toTermName
+    final def caseModule: Symbol = {
+      var modname = name.toTermName
       if (privateWithin.isClass && !privateWithin.isModuleClass && !hasFlag(EXPANDEDNAME))
-        facname = privateWithin.expandedName(facname)
-      initialize.owner.info.decl(facname).suchThat(_.isCaseFactory)
+        modname = privateWithin.expandedName(modname)
+      initialize.owner.info.decl(modname).suchThat(_.isModule)
     }
 
     /** If this symbol is a type parameter skolem (not an existential skolem!)

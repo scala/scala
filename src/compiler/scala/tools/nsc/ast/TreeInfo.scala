@@ -244,22 +244,6 @@ abstract class TreeInfo {
     case _ => false
   }
 
-  /** is this pattern of the form S(...) where S is a subclass of Seq
-   *  and S is not a case class?  The pattern might be wrapped in binds or alternatives.
-   */
-  def isSequencePattern(tree: Tree): Boolean = tree match {
-    case Apply(fn, _) =>
-      (fn.symbol ne null) &&
-      !fn.symbol.hasFlag(CASE) &&
-      fn.symbol.isNonBottomSubClass(definitions.SeqClass)
-    case Bind(name, body) =>
-      isSequencePattern(body)
-    case Alternative(ts) =>
-      ts forall isSequencePattern
-    case _ =>
-      false
-  }
-
   /** The method part of an application node
    */
   def methPart(tree: Tree): Tree = tree match {

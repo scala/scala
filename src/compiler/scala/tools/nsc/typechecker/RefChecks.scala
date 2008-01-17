@@ -373,7 +373,7 @@ abstract class RefChecks extends InfoTransform {
           var state = CoVariance
           while (sym != clazz && state != AnyVariance) {
             //Console.println("flip: " + sym + " " + sym.isParameter());//DEBUG
-            if ((sym hasFlag PARAM) && !sym.owner.isConstructor && !sym.owner.isCaseFactory &&
+            if ((sym hasFlag PARAM) && !sym.owner.isConstructor && !sym.owner.isCaseApplyOrUnapply &&
                 !(tvar.isTypeParameterOrSkolem && sym.isTypeParameterOrSkolem &&
                   tvar.owner == sym.owner)) state = -state;
             else if (!sym.owner.isClass ||
@@ -574,9 +574,6 @@ abstract class RefChecks extends InfoTransform {
       }
     }
 
-    def isConcreteLocalCaseFactory(clazz: Symbol) =
-      (clazz hasFlag CASE) && !(clazz hasFlag ABSTRACT) && !(clazz.owner hasFlag PACKAGE)
-
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       pushLevel()
       enterSyms(stats)
@@ -633,32 +630,6 @@ abstract class RefChecks extends InfoTransform {
 
           if (sym.owner.isTrait) transformTrees(List(cdef, ddef))
           else transformTrees(List(cdef, vdef, ddef))
-        }
-
-      case ClassDef(_, _, _, _) if isConcreteLocalCaseFactory(tree.symbol) =>
-        val clazz = tree.symbol
-        val factory = clazz.caseFactory
-        if (factory == NoSymbol) {
-          assert(clazz.owner.isTerm, clazz)
-          List(transform(tree))
-        } else {
-          def mkArgument(vparam: Symbol) = {
-            val id = Ident(vparam)
-            if (vparam.tpe.typeSymbol == RepeatedParamClass) Typed(id, Ident(nme.WILDCARD_STAR.toTypeName))
-            else id
-          }
-          val caseFactoryDef =
-            localTyper.typed {
-              atPos(tree.pos) {
-                DefDef(
-                  factory,
-                  vparamss =>
-                    (toConstructor(tree.pos, factory.tpe) /: vparamss) {
-                      (fn, vparams) => Apply(fn, vparams map mkArgument)
-                    })
-              }
-            }
-          List(transform(tree), caseFactoryDef)
         }
 
       case ValDef(_, _, _, _) =>

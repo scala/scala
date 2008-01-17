@@ -18,6 +18,21 @@ abstract class TreeGen {
   import definitions._
   import posAssigner.atPos
 
+  def scalaDot(name: Name): Tree =
+    Select(Ident(nme.scala_) setSymbol ScalaPackage, name)
+  def scalaAnyRefConstr: Tree =
+    scalaDot(nme.AnyRef.toTypeName)
+  def scalaUnitConstr: Tree =
+    scalaDot(nme.Unit.toTypeName)
+  def scalaScalaObjectConstr: Tree =
+    scalaDot(nme.ScalaObject.toTypeName)
+  def productConstr: Tree =
+    scalaDot(nme.Product.toTypeName)
+
+  def scalaFunctionConstr(argtpes: List[Tree], restpe: Tree): Tree =
+    AppliedTypeTree(
+      scalaDot(newTypeName("Function"+argtpes.length)),
+      argtpes ::: List(restpe))
 
   /** Builds a reference to value whose type is given stable prefix.
    *  The type must be suitable for this.  For example, it
@@ -135,7 +150,6 @@ abstract class TreeGen {
     This(sym.name) setSymbol sym setType sym.thisType
 
   def mkAttributedIdent(sym: Symbol): Tree = {
-    assert(sym.isTerm, sym)
     Ident(sym.name) setSymbol sym setType sym.tpe
   }
 
@@ -145,7 +159,6 @@ abstract class TreeGen {
          qual.symbol.name.toTermName == nme.EMPTY_PACKAGE_NAME)) {
       mkAttributedIdent(sym)
     } else {
-      assert(sym.isTerm)
       val result = Select(qual, sym.name) setSymbol sym
       if (qual.tpe ne null) result setType qual.tpe.memberType(sym)
       result
@@ -207,7 +220,9 @@ abstract class TreeGen {
   /** Builds a tuple */
   def mkTuple(elems: List[Tree]): Tree =
     if (elems.isEmpty) Literal(())
-    else Apply(mkAttributedRef(definitions.TupleClass(elems.length).caseFactory), elems)
+    else Apply(
+      Select(mkAttributedRef(definitions.TupleClass(elems.length).caseModule), nme.apply),
+      elems)
 
   def mkAnd(tree1: Tree, tree2: Tree) =
     Apply(Select(tree1, Boolean_and), List(tree2))

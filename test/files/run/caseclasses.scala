@@ -2,6 +2,16 @@ case class Foo(x: int)(y: int);
 
 case class Bar;
 
+object M {
+  abstract case class C(x: String) {}
+  object C extends (String => C) {
+    def apply(x: String): C = {
+      println("creating C("+x+")")
+      new C(x) {}
+    }
+  }
+}
+
 object Test extends Application {
 
   def fn[a,b](x: a => b) = x;
@@ -16,6 +26,11 @@ object Test extends Application {
     throw new NullPointerException("duh")
   } catch {
     case x:IndexOutOfBoundsException =>
+  }
+
+  M.C("hi") match {
+    case M.C("hi") => println("OK")
+    case _ => println("NO")
   }
 
   try {

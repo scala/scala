@@ -6,6 +6,8 @@
 
 package scala.tools.nsc.typechecker
 
+import symtab.Flags._
+
 /*
  *  @author  Martin Odersky
  *  @version 1.0
@@ -14,6 +16,7 @@ trait Unapplies { self: Analyzer =>
 
   import global._
   import definitions._
+  import posAssigner.atPos
 
   /** returns type list for return type of the extraction */
   def unapplyTypeList(ufn: Symbol, ufntpe: Type) = {
@@ -79,7 +82,6 @@ trait Unapplies { self: Analyzer =>
     else
       productType({val es = elems; if(useWildCards) elems map { x => WildcardType} else elems})
    */
-
   def unapplyReturnTypeExpected(argsLength: Int) = argsLength match {
     case 0 => BooleanClass.tpe
     case 1 => optionType(WildcardType)
@@ -91,5 +93,89 @@ trait Unapplies { self: Analyzer =>
     var unapp = tp.member(nme.unapply)
     if (unapp == NoSymbol) unapp = tp.member(nme.unapplySeq)
     unapp
+  }
+
+  private def copyUntyped[T <: Tree](tree: T): T = {
+    val tree1 = tree.duplicate
+    UnTyper.traverse(tree1)
+    tree1
+  }
+
+  private def classType(cdef: ClassDef, tparams: List[TypeDef]): Tree = {
+    val tycon = gen.mkAttributedRef(cdef.symbol)
+    if (tparams.isEmpty) tycon else AppliedTypeTree(tycon, tparams map (x => Ident(x.name)))
+  }
+
+  private def constrParams(cdef: ClassDef): List[List[ValDef]] = {
+    val constr = treeInfo.firstConstructor(cdef.impl.body)
+    (constr: @unchecked) match {
+      case DefDef(_, _, _, vparamss, _, _) => vparamss map (_ map copyUntyped[ValDef])
+    }
+  }
+
+  /** The return value of an unapply method of a case class C[Ts]
+   *  @param param  The name of the parameter of the unapply method, assumed to be of type C[Ts]
+   *  @param caseclazz  The case class C[Ts]
+   */
+  private def caseClassUnapplyReturnValue(param: Name, caseclazz: Symbol) = {
+    def caseFieldAccessorValue(selector: Symbol) = Select(Ident(param), selector)
+    val accessors = caseclazz.caseFieldAccessors
+    if (accessors.isEmpty) Literal(true)
+    else if (accessors.tail.isEmpty) caseFieldAccessorValue(accessors.head)
+    else Apply(gen.scalaDot(newTermName( "Tuple" + accessors.length)), accessors map caseFieldAccessorValue)
+  }
+
+  /** The module corresponding to a case class; without any member definitions
+   */
+  def caseModuleDef(cdef: ClassDef): ModuleDef = atPos(cdef.pos) {
+    var parents = List(gen.scalaScalaObjectConstr)
+    if (cdef.tparams.isEmpty && constrParams(cdef).length == 1)
+      parents = gen.scalaFunctionConstr(constrParams(cdef).head map (_.tpt),
+                                        Ident(cdef.name)) :: parents
+    ModuleDef(
+      Modifiers(cdef.mods.flags & AccessFlags | SYNTHETIC, cdef.mods.privateWithin),
+      cdef.name.toTermName,
+      Template(parents, emptyValDef, Modifiers(0), List(), List(List()), List()))
+  }
+
+  /** The apply method corresponding to a case class
+   */
+  def caseModuleApplyMeth(cdef: ClassDef): DefDef = {
+    val tparams = cdef.tparams map copyUntyped[TypeDef]
+    def paramToArg(param: ValDef) = {
+      val id = Ident(param.name)
+      val RP = nme.REPEATED_PARAM_CLASS_NAME.toTypeName
+      param.tpt match {
+        case AppliedTypeTree(Select(_, RP), _) => Typed(id, Ident(nme.WILDCARD_STAR.toTypeName))
+        case _ =>id
+      }
+    }
+    val cparams = constrParams(cdef)
+    atPos(cdef.pos) {
+      DefDef(
+        Modifiers(SYNTHETIC | CASE),
+        nme.apply,
+        tparams,
+        cparams,
+        classType(cdef, tparams),
+        New(classType(cdef, tparams), cparams map (_ map paramToArg)))
+    }
+  }
+
+  /** The unapply method corresponding to a case class
+   */
+  def caseModuleUnapplyMeth(cdef: ClassDef): DefDef = {
+    val tparams = cdef.tparams map copyUntyped[TypeDef]
+    val unapplyParamName = newTermName("x$0")
+    atPos(cdef.pos) {
+      DefDef(
+        Modifiers(SYNTHETIC | CASE),
+        nme.unapply,
+        tparams,
+        List(List(ValDef(Modifiers(PARAM | SYNTHETIC), unapplyParamName,
+                         classType(cdef, tparams), EmptyTree))),
+        TypeTree(),
+        caseClassUnapplyReturnValue(unapplyParamName, cdef.symbol))
+    }
   }
 }

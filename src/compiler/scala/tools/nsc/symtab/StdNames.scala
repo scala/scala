@@ -215,6 +215,7 @@ trait StdNames {
     val Finally = newTermName("Finally")
     val Float = newTermName("Float")
     val Function = newTermName("Function")
+    val Function1 = newTermName("Function1")
     val Int = newTermName("Int")
     val Labelled = newTermName("Labelled")
     val Long = newTermName("Long")

@@ -1,0 +1,146 @@
+x1 = List()
+y1 = List()
+x1 eq y1: true - y1 eq x1: true
+
+x2 = None
+y2 = None
+x2 eq y2: true - y2 eq x2: true
+
+x3 = Array[1,2,3]
+y3 = Array[1,2,3]
+arrayEquals(x3, y3): true
+
+x4 = <na>
+y4 = <na>
+x4(2): 4 - y4(2): 4
+
+x = List((buffers,20), (layers,2), (title,3))
+y = List((buffers,20), (layers,2), (title,3))
+x equals y: true - y equals x: true
+
+x = Map(buffers -> 20, layers -> 2, title -> 3)
+y = Map(buffers -> 20, layers -> 2, title -> 3)
+x equals y: true - y equals x: true
+
+x = Set(2, 3)
+y = Set(2, 3)
+x equals y: true - y equals x: true
+
+x = Set(5, 3)
+y = Set(5, 3)
+x equals y: true - y equals x: true
+
+x = Queue(a,b,c)
+y = Queue(a,b,c)
+x equals y: true - y equals x: true
+
+x = Stack(c, b, a)
+y = Stack(c, b, a)
+x equals y: true - y equals x: true
+
+x = Map(42 -> FortyTwo)
+y = Map(42 -> FortyTwo)
+x equals y: true - y equals x: true
+
+x = Set(0, 2)
+y = Set(0, 2)
+x equals y: true - y equals x: true
+
+x = ArrayBuffer(one, two)
+y = ArrayBuffer(one, two)
+x equals y: true - y equals x: true
+
+x = Map(title -> 3, buffers -> 20, layers -> 2)
+y = Map(title -> 3, buffers -> 20, layers -> 2)
+x equals y: true - y equals x: true
+
+x = Set(0, 8, 9)
+y = Set(0, 8, 9)
+x equals y: true - y equals x: true
+
+x = Set(layers, buffers, title)
+y = Set(layers, buffers, title)
+x equals y: true - y equals x: true
+
+x = LinkedList(2, 3)
+y = LinkedList(2, 3)
+x equals y: true - y equals x: true
+
+x = Queue(20, 2, 3)
+y = Queue(20, 2, 3)
+x equals y: true - y equals x: true
+
+x = Stack(20, 2, 3)
+y = Stack(20, 2, 3)
+x equals y: true - y equals x: true
+
+x = ListBuffer(white, black)
+y = ListBuffer(white, black)
+x equals y: true - y equals x: true
+
+x = <html><title>title</title><body></body></html>
+y = <html><title>title</title><body></body></html>
+x equals y: true - y equals x: true
+
+x = <html>
+      <body>
+       <table cellpadding="2" cellspacing="0">
+        <tr>
+          <th>Last Name</th>
+          <th>First Name</th>
+        </tr>
+        <tr>
+          <td> Tom </td>
+          <td> 20 </td>
+        </tr><tr>
+          <td> Bob </td>
+          <td> 22 </td>
+        </tr><tr>
+          <td> James </td>
+          <td> 19 </td>
+        </tr>
+      </table>
+      </body>
+    </html>
+y = <html>
+      <body>
+       <table cellpadding="2" cellspacing="0">
+        <tr>
+          <th>Last Name</th>
+          <th>First Name</th>
+        </tr>
+        <tr>
+          <td> Tom </td>
+          <td> 20 </td>
+        </tr><tr>
+          <td> Bob </td>
+          <td> 22 </td>
+        </tr><tr>
+          <td> James </td>
+          <td> 19 </td>
+        </tr>
+      </table>
+      </body>
+    </html>
+x equals y: true - y equals x: true
+
+x = Tim
+y = Tim
+x equals y: true - y equals x: true
+
+x = Bob
+y = Bob
+x equals y: true - y equals x: true
+
+x = John
+y = John
+x equals y: true - y equals x: true
+
+x = Bill
+y = Bill
+x equals y: true - y equals x: true
+
+x = Paul
+y = Paul
+x equals y: true - y equals x: true
+

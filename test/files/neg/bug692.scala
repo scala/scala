@@ -7,7 +7,7 @@ abstract class test3 {
   abstract class ClassType[C <: Z, Z <: AnyRef](zuper : RefType[Z]) extends RefType[C];
 
 
-  case class FooType extends ClassType[Foo,AnyRef](ObjectType);
+  case class FooType extends ClassType[Foo,AnyRef](ObjectType());
   implicit def typeOfFoo = FooType();
 
   case class BarType[T3 <: Foo](tpeT : RefType[T3]) extends ClassType[Bar[T3],Foo](FooType);

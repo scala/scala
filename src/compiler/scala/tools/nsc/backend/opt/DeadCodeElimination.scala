@@ -244,7 +244,7 @@ abstract class DeadCodeElimination extends SubComponent {
       def find(bb: BasicBlock): Option[(BasicBlock, Int)] = {
         var xs = bb.toList
         xs.zipWithIndex find { hd => hd._1 eq i } match {
-          case Some(_, idx) => Some(bb, idx)
+          case Some((_, idx)) => Some(bb, idx)
           case None => None
         }
       }

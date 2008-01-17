@@ -59,7 +59,7 @@ abstract class Mixin extends InfoTransform {
    *  inherits the trait.
    */
   private def isForwarded(sym: Symbol) =
-    isImplementedStatically(sym) && !sym.isImplOnly && !sym.isCaseFactory
+    isImplementedStatically(sym) && !sym.isImplOnly
 
   /** Maps the type of an implementation class to its interface;
    *  maps all other types to themselves.

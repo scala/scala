@@ -673,9 +673,9 @@ trait ParallelMatching  {
       pat match {
         case Bind(_,p)                                                          =>
           subpatterns(p)
-        case app @ Apply(fn, pats) if isCaseClass(app.tpe) && (fn.symbol eq null)=>
+        case app @ Apply(fn, pats) if isCaseClass(app.tpe) && fn.isType =>
           if (isCaseHead) pats else dummies
-        case Apply(fn,xs) => assert((xs.isEmpty) && (fn.symbol ne null), "strange Apply"); dummies // named constant
+        case Apply(fn,xs) => assert((xs.isEmpty) && (!fn.isType), "strange Apply"); dummies // named constant
         case _: UnApply                                                         =>
           dummies
         case pat                                                                =>
@@ -1230,7 +1230,7 @@ trait ParallelMatching  {
      */
     final def applyRule(implicit theOwner: Symbol, rep: RepFactory): RuleApplication = row match {
       case Nil =>
-        ErrorRule
+        ErrorRule()
       case Row(pats, subst, g, bx)::xs =>
         var px = 0; var rpats = pats; var bnd = subst; var temps = temp; while((bnd ne null) && (rpats ne Nil)) {
           val (vs,p) = strip(rpats.head);

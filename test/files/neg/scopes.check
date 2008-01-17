@@ -22,4 +22,9 @@ scopes.scala:15: error: x is already defined as value x
 scopes.scala:17: error: x is already defined as value x
     case x::x => x
             ^
-8 errors found
+scopes.scala:1: error: type mismatch;
+ found   : float
+ required: int
+case class test0(x: int, x: float)
+           ^
+9 errors found

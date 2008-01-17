@@ -154,12 +154,18 @@ abstract class Constructors extends Transform {
           if (stat.symbol.tpe.isInstanceOf[ConstantType])
             assert(stat.symbol.getter(stat.symbol.owner) != NoSymbol, stat)
           else {
+           try {
             if (rhs != EmptyTree && !stat.symbol.hasFlag(LAZY)) {
               val rhs1 = intoConstructor(stat.symbol, rhs);
               (if (canBeMoved(stat)) constrPrefixBuf else constrStatBuf) += mkAssign(
                 stat.symbol, rhs1)
             }
             defBuf += copy.ValDef(stat, mods, name, tpt, EmptyTree)
+           } catch {
+             case ex: Throwable =>
+               println("error when transforming "+stat+" in "+stats)
+               throw ex
+           }
           }
         case ClassDef(_, _, _, _) =>
           defBuf += (new ConstructorTransformer).transform(stat)
@@ -205,14 +211,13 @@ abstract class Constructors extends Transform {
                     defBuf.toList filter (stat => isAccessed(stat.symbol)))
     }
 
-    override def transform(tree: Tree): Tree = {
+    override def transform(tree: Tree): Tree =
       tree match {
         case ClassDef(mods, name, tparams, impl) if !tree.symbol.hasFlag(INTERFACE) =>
           copy.ClassDef(tree, mods, name, tparams, transformClassTemplate(impl))
         case _ =>
           super.transform(tree)
       }
-    }
 
   } // ConstructorTransformer
 

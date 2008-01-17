@@ -493,7 +493,7 @@ BUILD QUICK-TEST LAYER
       srcdir="${src.dir}/library"
       destdir="${quick.dir}/lib/library"
       usepredefs="no"
-      addparams="${nsc.params}" target="jvm-1.4"
+      addparams="${nsc.params}" target="jvm-1.5"
       deprecation="yes" unchecked="yes"
       scalacdebugging="${nsc.log-files}"
       classpath="${quick.dir}/lib/library"
@@ -501,7 +501,7 @@ BUILD QUICK-TEST LAYER
     <locker
       srcdir="${src.dir}/library"
       destdir="${quick.dir}/lib/library"
-      addparams="${nsc.params}" target="jvm-1.4"
+      addparams="${nsc.params}" target="jvm-1.5"
       deprecation="yes" unchecked="yes"
       scalacdebugging="${nsc.log-files}"
       classpath="${quick.dir}/lib/library">
@@ -526,7 +526,7 @@ BUILD QUICK-TEST LAYER
     <locker
       srcdir="${src.dir}/dbc"
       destdir="${quick.dir}/lib/dbc"
-      addparams="${nsc.params}" target="jvm-1.4"
+      addparams="${nsc.params}" target="jvm-1.5"
       deprecation="yes" unchecked="yes"
       scalacdebugging="${nsc.log-files}">
       <classpath>
@@ -547,7 +547,7 @@ BUILD QUICK-TEST LAYER
     <locker
       srcdir="${src.dir}/actors"
       destdir="${quick.dir}/lib/actors"
-      addparams="${nsc.params}" target="jvm-1.4"
+      addparams="${nsc.params}" target="jvm-1.5"
       deprecation="yes" unchecked="yes"
       scalacdebugging="${nsc.log-files}">
       <classpath>
@@ -562,7 +562,7 @@ BUILD QUICK-TEST LAYER
     <locker
       srcdir="${src.dir}/compiler"
       destdir="${quick.dir}/lib/compiler"
-      addparams="${nsc.params}" target="jvm-1.4"
+      addparams="${nsc.params}" target="jvm-1.5"
       deprecation="yes" unchecked="yes"
       scalacdebugging="${nsc.log-files}">
       <classpath>
@@ -591,7 +591,7 @@ BUILD QUICK-TEST LAYER
     <locker
       srcdir="${src.dir}/partest"
       destdir="${quick.dir}/lib/partest"
-      addparams="${nsc.params}" target="jvm-1.4"
+      addparams="${nsc.params}" target="jvm-1.5"
       deprecation="yes" unchecked="yes">
       <classpath>
         <pathelement location="${quick.dir}/lib/library"/>
@@ -1207,14 +1207,14 @@ TEST
       srcdir="${src.dir}/library"
       destdir="${strap.dir}/lib/library"
       usepredefs="no"
-      addparams="${nsc.params}" target="jvm-1.4"
+      addparams="${nsc.params}" target="jvm-1.5"
       deprecation="yes" unchecked="yes"
       classpath="${strap.dir}/lib/library"
       includes="scala/Predef.scala"/>
     <quick
       srcdir="${src.dir}/library"
       destdir="${strap.dir}/lib/library"
-      addparams="${nsc.params}" target="jvm-1.4"
+      addparams="${nsc.params}" target="jvm-1.5"
       deprecation="yes" unchecked="yes"
       classpath="${strap.dir}/lib/library">
       <include name="**/*.scala"/>
@@ -1238,7 +1238,7 @@ TEST
     <quick
       srcdir="${src.dir}/dbc"
       destdir="${strap.dir}/lib/dbc"
-      addparams="${nsc.params}" target="jvm-1.4"
+      addparams="${nsc.params}" target="jvm-1.5"
       deprecation="yes" unchecked="yes">
       <classpath>
         <pathelement location="${strap.dir}/lib/library"/>
@@ -1258,7 +1258,7 @@ TEST
     <quick
       srcdir="${src.dir}/actors"
       destdir="${strap.dir}/lib/actors"
-      addparams="${nsc.params}" target="jvm-1.4">
+      addparams="${nsc.params}" target="jvm-1.5">
       <classpath>
         <pathelement location="${strap.dir}/lib/library"/>
         <pathelement location="${strap.dir}/lib/actors"/>
@@ -1271,7 +1271,7 @@ TEST
     <quick
       srcdir="${src.dir}/compiler"
       destdir="${strap.dir}/lib/compiler"
-      addparams="${nsc.params}" target="jvm-1.4">
+      addparams="${nsc.params}" target="jvm-1.5">
       <classpath>
         <pathelement location="${strap.dir}/lib/library"/>
         <pathelement location="${strap.dir}/lib/compiler"/>
@@ -1298,7 +1298,7 @@ TEST
     <quick
       srcdir="${src.dir}/partest"
       destdir="${strap.dir}/lib/partest"
-      addparams="${nsc.params}" target="jvm-1.4"
+      addparams="${nsc.params}" target="jvm-1.5"
       deprecation="yes" unchecked="yes">
       <classpath>
         <pathelement location="${strap.dir}/lib/library"/>
@@ -1463,7 +1463,7 @@ DOCUMENTATION
     <quick
       srcdir="${src.dir}/manual"
       destdir="${tooldocs.dir}/classes"
-      deprecation="yes" target="jvm-1.4"
+      deprecation="yes" target="jvm-1.5"
       classpathref="manual.classpath">
       <include name="**/*.scala"/>
     </quick>

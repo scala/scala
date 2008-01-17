@@ -78,14 +78,14 @@ trait PatternNodes { self: transform.ExplicitOuter =>
   }
 
   object Apply_Value {
-    def unapply(x:Apply) = if ((x.symbol ne null) && (x.args eq Nil)) Some(x.tpe.prefix, x.symbol) else None
+    def unapply(x:Apply) = if (!x.fun.isType && x.args.isEmpty) Some(x.tpe.prefix, x.symbol) else None
   }
 
   object Apply_CaseClass_NoArgs {
-    def unapply(x:Apply) = if ((x.symbol eq null) && (x.args eq Nil)) Some(x.tpe) else None
+    def unapply(x:Apply) = if (x.fun.isType && x.args.isEmpty) Some(x.tpe) else None
   }
   object Apply_CaseClass_WithArgs {
-    def unapply(x:Apply) = if (x.symbol eq null) true else false
+    def unapply(x:Apply) = x.fun.isType
   }
 
   object __UnApply {

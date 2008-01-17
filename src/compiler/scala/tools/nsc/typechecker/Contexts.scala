@@ -76,7 +76,7 @@ trait Contexts { self: Analyzer =>
     c
   }
 
-  def resetContexts {
+  def resetContexts() {
     var sc = startContext
     while (sc != NoContext) {
       sc.tree match {

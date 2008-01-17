@@ -1,4 +1,6 @@
-bug414.scala:5: error: stable identifier required, but Empty found.
+bug414.scala:5: error: pattern type is incompatibe with expected type;
+ found   : object Empty
+ required: IntMap[a]
                 case Empty =>
                      ^
 bug414.scala:7: error: type mismatch;

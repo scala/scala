@@ -512,10 +512,31 @@ trait Infer {
         if (targ.typeSymbol == AllClass && (varianceInType(restpe)(tparam) & COVARIANT) == 0) {
           uninstantiated += tparam
           tparam.tpe  //@M TODO: might be affected by change to tpe in Symbol
-        } else targ.widen
+        } else if (targ.typeSymbol == RepeatedParamClass) {
+          targ.baseType(SeqClass)
+        } else {
+          targ.widen
+        }
       }
 //      println("meth type args "+", tparams = "+tparams+", formals = "+formals+", restpe = "+restpe+", argtpes = "+argtpes+", underlying = "+(argtpes map (_.widen))+", pt = "+pt+", uninstantiated = "+uninstantiated.toList+", result = "+res) //DEBUG
 //      res
+    }
+
+    def followApply(tp: Type): Type = tp match {
+      case PolyType(List(), restp) =>
+        val restp1 = followApply(restp)
+        if (restp1 eq restp) tp else restp1
+      case _ =>
+        val appmeth = tp.nonPrivateMember(nme.apply) filter (_.isPublic)
+        if (appmeth == NoSymbol) tp
+        else OverloadedType(tp, appmeth.alternatives)
+    }
+
+    def hasExactlyNumParams(tp: Type, n: Int): Boolean = tp match {
+      case OverloadedType(pre, alts) =>
+        alts exists (alt => hasExactlyNumParams(pre.memberType(alt), n))
+      case _ =>
+        formalTypes(tp.paramTypes, n).length == n
     }
 
     /** Is there an instantiation of free type variables <code>undetparams</code>
@@ -531,6 +552,8 @@ trait Infer {
     def isApplicable(undetparams: List[Symbol], ftpe: Type,
                      argtpes0: List[Type], pt: Type): Boolean =
       ftpe match {
+        case OverloadedType(pre, alts) =>
+          alts exists (alt => isApplicable(undetparams, pre.memberType(alt), argtpes0, pt))
         case ExistentialType(tparams, qtpe) =>
           isApplicable(undetparams, qtpe, argtpes0, pt)
         case MethodType(formals0, _) =>
@@ -573,29 +596,70 @@ trait Infer {
       }
     }
 
-    /** Does type <code>ftpe1</code> specialize type <code>ftpe2</code>
+    /** Is type <code>ftpe1</code> strictly more specific than type <code>ftpe2</code>
      *  when both are alternatives in an overloaded function?
+     *  @see SLS (sec:overloading-resolution)
      *
      *  @param ftpe1 ...
      *  @param ftpe2 ...
      *  @return      ...
      */
-    def specializes(ftpe1: Type, ftpe2: Type): Boolean = ftpe1 match {
+    def isMoreSpecific(ftpe1: Type, ftpe2: Type): Boolean = ftpe1 match {
+      case OverloadedType(pre, alts) =>
+        alts exists (alt => isMoreSpecific(pre.memberType(alt), ftpe2))
       case et: ExistentialType =>
-        et.withTypeVars(specializes(_, ftpe2))
-      case MethodType(formals, _) =>
+        et.withTypeVars(isStrictlyMoreSpecific(_, ftpe2))
+      case MethodType(formals @ (x :: xs), _) =>
         isApplicable(List(), ftpe2, formals, WildcardType)
-      case PolyType(tparams, MethodType(formals, _)) =>
+      case PolyType(_, MethodType(formals @ (x :: xs), _)) =>
         isApplicable(List(), ftpe2, formals, WildcardType)
       case ErrorType =>
         true
       case _ =>
-        false
+        ftpe2 match {
+          case OverloadedType(pre, alts) =>
+            alts forall (alt => isMoreSpecific(ftpe1, pre.memberType(alt)))
+          case et: ExistentialType =>
+            et.withTypeVars(isStrictlyMoreSpecific(ftpe1, _))
+          case MethodType(_, _) | PolyType(_, MethodType(_, _)) =>
+            true
+          case _ =>
+            isMoreSpecificValueType(ftpe1, ftpe2, List(), List())
+        }
     }
 
+    def isStrictlyMoreSpecific(ftpe1: Type, ftpe2: Type): Boolean =
+      ftpe1.isError || isMoreSpecific(ftpe1, ftpe2) &&
+      (!isMoreSpecific(ftpe2, ftpe1) ||
+       !ftpe1.isInstanceOf[OverloadedType] && ftpe2.isInstanceOf[OverloadedType])
+
+    def isMoreSpecificValueType(tpe1: Type, tpe2: Type, undef1: List[Symbol], undef2: List[Symbol]): Boolean = (tpe1, tpe2) match {
+      case (PolyType(tparams1, rtpe1), _) =>
+        isMoreSpecificValueType(rtpe1, tpe2, undef1 ::: tparams1, undef2)
+      case (_, PolyType(tparams2, rtpe2)) =>
+        isMoreSpecificValueType(tpe1, rtpe2, undef1, undef2 ::: tparams2)
+      case _ =>
+        existentialAbstraction(undef1, tpe1) <:< existentialAbstraction(undef2, tpe2)
+    }
+
+/*
     /** Is type `tpe1' a strictly better expression alternative than type `tpe2'?
      */
     def isStrictlyBetterExpr(tpe1: Type, tpe2: Type) = {
+      isMethod(tpe2) && !isMethod(tpe1) ||
+      isNullary(tpe1) && !isNullary(tpe2) ||
+      isStrictlyBetter(tpe1, tpe2)
+    }
+
+    /** Is type `tpe1' a strictly better alternative than type `tpe2'?
+     *  non-methods are always strictly better than methods
+     *  nullary methods are always strictly better than non-nullary
+     *  if both are non-nullary methods, then tpe1 is strictly better than tpe2 if
+     *   - tpe1 specializes tpe2 and tpe2 does not specialize tpe1
+     *   - tpe1 and tpe2 specialize each other and tpe1 has a strictly better resulttype than
+     *     tpe2
+     */
+    def isStrictlyBetter(tpe1: Type, tpe2: Type) = {
       def isNullary(tpe: Type): Boolean = tpe match {
         case tp: RewrappingTypeProxy => isNullary(tp.underlying)
         case _ => tpe.paramSectionCount == 0 || tpe.paramTypes.isEmpty
@@ -605,16 +669,21 @@ trait Infer {
         case MethodType(_, _) | PolyType(_, _) => true
         case _ => false
       }
-      isMethod(tpe2) && !isMethod(tpe1) ||
+      def hasStrictlyBetterResult =
+        resultIsBetter(tpe1, tpe2, List(), List()) && !resultIsBetter(tpe2, tpe1, List(), List())
+      if (!isMethod(tpe1))
+        isMethod(tpe2) || hasStrictlyBetterResult
+
       isNullary(tpe1) && !isNullary(tpe2) ||
-      isStrictlyBetter(tpe1, tpe2)
+      is
+
+      else if (isNullary(tpe1))
+        isMethod(tpe2) && (!isNullary(tpe2) || hasStrictlyBetterResult)
+      else
+        specializes(tpe1, tpe2) && (!specializes(tpe2, tpe1) || hasStrictlyBetterResult)
     }
 
-    /** Is type `tpe1' a strictly better alternative than type `tpe2'?
-     */
-    def isStrictlyBetter(tpe1: Type, tpe2: Type) =
-      specializes(tpe1, tpe2) && !specializes(tpe2, tpe1)
-
+*/
     /** error if arguments not within bounds. */
     def checkBounds(pos: Position, pre: Type, owner: Symbol,
                     tparams: List[Symbol], targs: List[Type], prefix: String) = {
@@ -715,7 +784,7 @@ trait Infer {
         else if (s.isContravariant) "contravariant"
         else "invariant";
 
-      def qualify(a0: Symbol, b0: Symbol): String = if(a0.toString != b0.toString) "" else {
+      def qualify(a0: Symbol, b0: Symbol): String = if (a0.toString != b0.toString) "" else {
         assert((a0 ne b0) && (a0.owner ne b0.owner));
         var a = a0; var b = b0
         while (a.owner.name == b.owner.name) { a = a.owner; b = b.owner}
@@ -1123,7 +1192,7 @@ trait Infer {
      */
     def inferExprAlternative(tree: Tree, pt: Type): Unit = tree.tpe match {
       case OverloadedType(pre, alts) => tryTwice {
-        var alts1 = alts filter (alt => isCompatible(pre.memberType(alt), pt))
+        var alts1 = alts filter (alt => isWeaklyCompatible(pre.memberType(alt), pt))
         var secondTry = false
         if (alts1.isEmpty) {
           alts1 = alts
@@ -1134,8 +1203,8 @@ trait Infer {
           { val tp1 = pre.memberType(sym1)
             val tp2 = pre.memberType(sym2)
             (tp2 == ErrorType ||
-             !global.typer.infer.isCompatible(tp2, pt) && global.typer.infer.isCompatible(tp1, pt) ||
-             isStrictlyBetterExpr(tp1, tp2)) }
+             !global.typer.infer.isWeaklyCompatible(tp2, pt) && global.typer.infer.isWeaklyCompatible(tp1, pt) ||
+             isStrictlyMoreSpecific(tp1, tp2)) }
         val best = ((NoSymbol: Symbol) /: alts1) ((best, alt) =>
           if (improves(alt, best)) alt else best)
         val competing = alts1 dropWhile (alt => best == alt || improves(best, alt))
@@ -1161,7 +1230,7 @@ trait Infer {
           }
         } else {
           val applicable = alts1 filter (alt =>
-            global.typer.infer.isCompatible(pre.memberType(alt), pt))
+            global.typer.infer.isWeaklyCompatible(pre.memberType(alt), pt))
           checkNotShadowed(tree.pos, pre, best, applicable)
           tree.setSymbol(best).setType(pre.memberType(best))
         }
@@ -1180,10 +1249,10 @@ trait Infer {
       case OverloadedType(pre, alts) =>
         tryTwice {
           if (settings.debug.value) log("infer method alt " + tree.symbol + " with alternatives " + (alts map pre.memberType) + ", argtpes = " + argtpes + ", pt = " + pt)
-          val applicable = alts filter (alt => isApplicable(undetparams, pre.memberType(alt), argtpes, pt))
+          val applicable = alts filter (alt => isApplicable(undetparams, followApply(pre.memberType(alt)), argtpes, pt))
           def improves(sym1: Symbol, sym2: Symbol) =
             sym2 == NoSymbol || sym2.isError ||
-            isStrictlyBetter(pre.memberType(sym1), pre.memberType(sym2))
+            isStrictlyMoreSpecific(followApply(pre.memberType(sym1)), followApply(pre.memberType(sym2)))
           val best = ((NoSymbol: Symbol) /: applicable) ((best, alt) =>
             if (improves(alt, best)) alt else best)
           val competing = applicable dropWhile (alt => best == alt || improves(best, alt))

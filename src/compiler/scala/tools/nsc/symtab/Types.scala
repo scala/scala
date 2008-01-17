@@ -139,6 +139,7 @@ trait Types {
     override def termSymbol = underlying.termSymbol
     override def termSymbolDirect = underlying.termSymbolDirect
     override def typeParams = underlying.typeParams
+    override def boundSyms = underlying.boundSyms
     override def typeSymbol = underlying.typeSymbol
     override def typeSymbolDirect = underlying.typeSymbolDirect
     override def widen = underlying.widen
@@ -172,7 +173,6 @@ trait Types {
     override def paramSectionCount = 0
     override def paramTypes: List[Type] = List()
     override def typeArgs = underlying.typeArgs
-    override def typeParams = underlying.typeParams
     override def notNull = maybeRewrap(underlying.notNull)
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) = underlying.instantiateTypeParams(formals, actuals)
     override def skolemizeExistential(owner: Symbol, origin: AnyRef) = underlying.skolemizeExistential(owner, origin)
@@ -296,9 +296,13 @@ trait Types {
      *  the empty list for all other types */
     def paramTypes: List[Type] = List()
 
-    /** For a poly type, its type parameters,
+    /** For a (potentially wrapped) poly type, its type parameters,
      *  the empty list for all other types */
     def typeParams: List[Symbol] = List()
+
+    /** For a (potentially wrapped) poly or existential type, its bound symbols,
+     *  the empty list for all other types */
+    def boundSyms: List[Symbol] = List()
 
     /** Mixin a NotNull trait unless type already has one */
     def notNull: Type =
@@ -709,8 +713,8 @@ trait Types {
       var skolems: List[Symbol] = List()
       for (t <- this) {
         t match {
-          case ExistentialType(tparams, qtpe) =>
-            boundSyms = boundSyms ::: tparams
+          case ExistentialType(quantified, qtpe) =>
+            boundSyms = boundSyms ::: quantified
           case TypeRef(_, sym, _) =>
             if ((sym hasFlag EXISTENTIAL) && !(boundSyms contains sym) && !(skolems contains sym))
               skolems = sym :: skolems
@@ -1610,6 +1614,7 @@ A type's typeSymbol should never be inspected directly.
     override def decls: Scope = resultType.decls
     override def termSymbol: Symbol = resultType.termSymbol
     override def typeSymbol: Symbol = resultType.typeSymbol
+    override def boundSyms: List[Symbol] = typeParams
     override def prefix: Type = resultType.prefix
     override def closure: Array[Type] = resultType.closure
     override def closureDepth: Int = resultType.closureDepth
@@ -1654,6 +1659,7 @@ A type's typeSymbol should never be inspected directly.
     override def isStable: Boolean = false
     override def bounds = TypeBounds(maybeRewrap(underlying.bounds.lo), maybeRewrap(underlying.bounds.hi))
     override def parents = underlying.parents map maybeRewrap
+    override def boundSyms: List[Symbol] = quantified
     override def prefix = maybeRewrap(underlying.prefix)
     override def typeArgs = underlying.typeArgs map maybeRewrap
     override def paramTypes = underlying.paramTypes map maybeRewrap
@@ -2648,8 +2654,22 @@ A type's typeSymbol should never be inspected directly.
         else if (matches(from.head, sym)) toType(tp, to.head)
         else subst(tp, sym, from.tail, to.tail)
 
+    private def renameBoundSyms(tp: Type) = tp match {
+      case PolyType(bs, restp) =>
+        val bs1 = cloneSymbols(bs)
+        PolyType(bs1, restp.substSym(bs, bs1))
+      case ExistentialType(bs, restp) =>
+        val bs1 = cloneSymbols(bs)
+        ExistentialType(bs1, restp.substSym(bs, bs1))
+      case _ =>
+        tp
+    }
+
     def apply(tp0: Type): Type = if (from.isEmpty) tp0 else {
-      val tp = mapOver(tp0)
+      val boundSyms = tp0.boundSyms
+      val tp1 = if (boundSyms.isEmpty || !(boundSyms exists (from contains))) tp0
+                else renameBoundSyms(tp0)
+      val tp = mapOver(tp1)
 
       tp match {
         // @M
@@ -2673,13 +2693,6 @@ A type's typeSymbol should never be inspected directly.
           }
         case SingleType(NoPrefix, sym) =>
           subst(tp, sym, from, to)
-        case PolyType(tparams, restp) =>
-          assert(!(tparams exists (from contains)))
-          tp
-        case ExistentialType(tparams, restp) =>
-          if (tparams exists (from contains))
-            assert(false, "["+from.mkString(",")+":="+to.mkString(",")+"]"+tp)
-          tp
         case _ =>
           tp
       }

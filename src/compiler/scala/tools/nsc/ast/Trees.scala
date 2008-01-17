@@ -755,6 +755,8 @@ trait Trees {
   case class TypeTree() extends TypTree {
     var original: Tree = _
 
+    override def symbol = tpe.typeSymbol
+
     def setOriginal(tree: Tree): this.type = {
       original = tree
       setPos(tree.pos)

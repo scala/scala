@@ -6,6 +6,7 @@
 
 package scala.tools.nsc.typechecker
 
+import scala.collection.mutable.HashMap
 import scala.tools.nsc.util.Position
 import symtab.Flags
 import symtab.Flags._
@@ -18,6 +19,7 @@ import symtab.Flags._
 trait Namers { self: Analyzer =>
   import global._
   import definitions._
+  import posAssigner.atPos
 
   /** Convert to corresponding type parameters all skolems which satisfy one
    *  of the following two conditions:
@@ -41,6 +43,12 @@ trait Namers { self: Analyzer =>
   private class NormalNamer(context : Context) extends Namer(context)
   def newNamer(context : Context) : Namer = new NormalNamer(context)
 
+  private val caseClassOfModuleClass = new HashMap[Symbol, ClassDef]
+
+  def resetNamer() {
+    caseClassOfModuleClass.clear
+  }
+
   abstract class Namer(val context: Context) {
 
     val typer = newTyper(context)
@@ -51,6 +59,14 @@ trait Namers { self: Analyzer =>
       sym
     }
 
+
+    def inConstructorFlag: Long =
+      if (context.owner.isConstructor && !context.inConstructorSuffix || context.owner.isEarly) INCONSTRUCTOR
+      else 0l
+
+    def moduleClassFlags(moduleFlags: Long) =
+      (moduleFlags & ModuleToClassFlags) | FINAL | inConstructorFlag
+
     def updatePosFlags(sym: Symbol, pos: Position, flags: Long): Symbol = {
       if (settings.debug.value) log("overwriting " + sym)
       val lockedFlag = sym.flags & LOCKED
@@ -58,7 +74,7 @@ trait Namers { self: Analyzer =>
       sym setPos pos
       sym.flags = flags | lockedFlag
       if (sym.isModule && sym.moduleClass != NoSymbol)
-        updatePosFlags(sym.moduleClass, pos, (flags & ModuleToClassFlags) | MODULE | FINAL)
+        updatePosFlags(sym.moduleClass, pos, moduleClassFlags(flags))
       if (sym.owner.isPackageClass &&
           (sym.linkedSym.rawInfo.isInstanceOf[loaders.SymbolLoader] ||
            sym.linkedSym.rawInfo.isComplete && runId(sym.validTo) != currentRunId))
@@ -112,12 +128,19 @@ trait Namers { self: Analyzer =>
         !((newS.owner.isTypeParameter || newS.owner.isAbstractType) &&
           newS.name.length==1 && newS.name(0)=='_') //@M: allow repeated use of `_' for higher-order type params
     }
+
+    // IDE hook
     protected def setInfo[Sym <: Symbol](sym : Sym)(tpe : LazyType) : Sym = sym.setInfo(tpe)
+
     private def doubleDefError(pos: Position, sym: Symbol) {
       context.error(pos,
         sym.name.toString() + " is already defined as " +
         (if (sym.hasFlag(CASE)) "case class " + sym.name else sym.toString()))
     }
+
+    private def inCurrentScope(m: Symbol) =
+      if (context.owner.isClass) context.owner == m.owner
+      else context.scope == m.owner.info.decls
 
     def enterInScope(sym: Symbol): Symbol = {
       // allow for overloaded methods
@@ -149,10 +172,6 @@ trait Namers { self: Analyzer =>
       }
     }
 
-    def inConstructorFlag: Long =
-      if (context.owner.isConstructor && !context.inConstructorSuffix || context.owner.isEarly) INCONSTRUCTOR
-      else 0l
-
     def enterClassSymbol(tree : ClassDef): Symbol = {
       var c: Symbol = context.scope.lookup(tree.name);
       if (!inIDE && c.isType && context.scope == c.owner.info.decls && !currentRun.compiles(c)) {
@@ -179,21 +198,25 @@ trait Namers { self: Analyzer =>
       assert(c.name.toString.indexOf('(') == -1)
       c
     }
+
+    /** Enter a module symbol. The tree parameter can be either a module definition
+     *  or a class definition */
     def enterModuleSymbol(tree : ModuleDef): Symbol = {
       // .pos, mods.flags | MODULE | FINAL, name
-      assert(tree.name.isTermName)
       var m: Symbol = context.scope.lookup(tree.name)
-      if (!inIDE && m.isModule && !m.isPackage && (context.scope == m.owner.info.decls) &&
-          !currentRun.compiles(m)) {
-        updatePosFlags(m, tree.pos, tree.mods.flags|MODULE|FINAL)
+      val moduleFlags = tree.mods.flags | MODULE | FINAL
+      if (!inIDE && m.isModule && !m.isPackage && inCurrentScope(m) &&
+          (!currentRun.compiles(m) || (m hasFlag SYNTHETIC))) {
+        updatePosFlags(m, tree.pos, moduleFlags)
         setPrivateWithin(tree, m, tree.mods)
+        synthetics -= m
       } else {
         m = context.owner.newModule(tree.pos, tree.name)
-        m.setFlag(tree.mods.flags)
+        m.setFlag(moduleFlags)
         m = setPrivateWithin(tree, m, tree.mods)
         m = enterInScope(m)
 
-        m.moduleClass.setFlag(tree.mods.flags|MODULE|FINAL| inConstructorFlag)
+        m.moduleClass.setFlag(moduleClassFlags(moduleFlags))
         setPrivateWithin(tree, m.moduleClass, tree.mods)
       }
       if (m.owner.isPackageClass) {
@@ -203,26 +226,6 @@ trait Namers { self: Analyzer =>
       m
     }
 
-    def enterCaseFactorySymbol(tree : ClassDef): Symbol = {
-      val pos = tree.pos
-      val flags = tree.mods.flags & AccessFlags | METHOD | CASE
-      val name = tree.name.toTermName
-      var m: Symbol = context.scope.lookup(name)
-      if (!inIDE && m.isTerm && !m.isPackage && !currentRun.compiles(m) && context.scope == m.owner.info.decls) {
-        updatePosFlags(m, pos, flags)
-        setPrivateWithin(tree, m, tree.mods)
-      } else {
-        // recycle the old fashion way.
-        m = enterInScope{
-          var sym = context.owner.newMethod(pos, name).setFlag(flags)
-          sym = setPrivateWithin(tree, sym, tree.mods)
-          sym
-        }
-      }
-      if (m.owner.isPackageClass)
-        currentRun.symSource(m) = context.unit.source.file
-      m
-    }
     def enterSyms(trees: List[Tree]): Namer = {
       var namer : Namer = this
       for (tree <- trees) {
@@ -231,6 +234,7 @@ trait Namers { self: Analyzer =>
       }
       namer
     }
+
     def newTypeSkolems(tparams: List[Symbol]): List[Symbol] = {
       val tskolems = tparams map (_.newTypeSkolem)
       val ltp = new LazyType {
@@ -280,7 +284,6 @@ trait Namers { self: Analyzer =>
       }
       def finish = finishWith(List())
 
-
       if (tree.symbol == NoSymbol) {
         val owner = context.owner
         tree match {
@@ -292,9 +295,12 @@ trait Namers { self: Analyzer =>
           case tree @ ClassDef(mods, name, tparams, impl) =>
             tree.symbol = enterClassSymbol(tree)
             finishWith(tparams)
-            if ((mods.flags & CASE) != 0) { // enter case factory method.
-              val sym = enterCaseFactorySymbol(tree)
-              setInfo(sym)(namerOf(sym).caseFactoryCompleter(reuse(tree)))
+            if ((mods.flags & CASE) != 0) {
+              var m: Symbol = context.scope.lookup(tree.name.toTermName).filter(! _.isSourceMethod)
+              if (!(m.isModule && inCurrentScope(m) && currentRun.compiles(m))) {
+                m = enterSyntheticSym(caseModuleDef(tree))
+              }
+              caseClassOfModuleClass(m.moduleClass) = tree
             }
           case tree @ ModuleDef(mods, name, _) =>
             tree.symbol = enterModuleSymbol(tree)
@@ -370,6 +376,12 @@ trait Namers { self: Analyzer =>
       this.context
     }
 
+    def enterSyntheticSym(tree: Tree): Symbol = {
+      enterSym(tree)
+      synthetics(tree.symbol) = tree
+      tree.symbol
+    }
+
 // --- Lazy Type Assignment --------------------------------------------------
 
     def typeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
@@ -419,14 +431,6 @@ trait Namers { self: Analyzer =>
         selftpe = intersectionType(List(sym.owner.tpe, selftpe))
 //    println("completing self of "+sym.owner+": "+selftpe)
       sym.setInfo(selftpe)
-    }
-
-    def caseFactoryCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
-      val clazz = tree.symbol
-      var tpe = clazz.primaryConstructor.tpe
-      val tparams = clazz.typeParams
-      if (!tparams.isEmpty) tpe = PolyType(tparams, tpe).cloneInfo(sym);
-      sym.setInfo(tpe)
     }
 
     private def widenIfNotFinal(sym: Symbol, tpe: Type, pt: Type): Type = {
@@ -508,7 +512,14 @@ trait Namers { self: Analyzer =>
       val parents = typer.parentTypes(templ) map checkParent
       enterSelf(templ.self)
       val decls = newClassScope(clazz)
-      newNamer(context.make(templ, clazz, decls)).enterSyms(templ.body)
+      val templateNamer = newNamer(context.make(templ, clazz, decls))
+        .enterSyms(templ.body)
+      caseClassOfModuleClass get clazz match {
+        case Some(cdef) =>
+          addApplyUnapply(cdef, templateNamer)
+          caseClassOfModuleClass -= clazz
+        case None =>
+      }
       ClassInfoType(parents, decls, clazz)
     }
 
@@ -733,6 +744,28 @@ trait Namers { self: Analyzer =>
       else polyType(tparamSyms, tp)
     }
 
+    /** Given a case class
+     *
+     *   case class C[Ts] (ps: Us)
+     *
+     *  Add the following methods to toScope:
+     *
+     *  1. if case class is not abstract, add
+     *
+     *   <synthetic> <case> def apply[Ts](ps: Us): C[Ts] = new C[Ts](ps)
+     *
+     *  2. add a method
+     *
+     *   <synthetic> <case> def unapply[Ts](x: C[Ts]) = <ret-val>
+     *
+     *  where <ret-val> is the caseClassUnapplyReturnValue of class C (see UnApplies.scala)
+     */
+    def addApplyUnapply(cdef: ClassDef, namer: Namer) {
+      if (!(cdef.symbol hasFlag ABSTRACT))
+        namer.enterSyntheticSym(caseModuleApplyMeth(cdef))
+      namer.enterSyntheticSym(caseModuleUnapplyMeth(cdef))
+    }
+
     def typeSig(tree: Tree): Type = {
       val sym: Symbol = tree.symbol
       tree match {
@@ -758,7 +791,7 @@ trait Namers { self: Analyzer =>
               val clazz = sym.moduleClass
               clazz.setInfo(newNamer(context.makeNewScope(tree, clazz)).templateSig(impl))
               //clazz.typeOfThis = singleType(sym.owner.thisType, sym);
-              clazz.tpe;
+              clazz.tpe
 
             case DefDef(_, _, tparams, vparamss, tpt, rhs) =>
               val result =
@@ -884,7 +917,7 @@ trait Namers { self: Analyzer =>
       checkNoConflict(PRIVATE, PROTECTED)
       checkNoConflict(PRIVATE, OVERRIDE)
       checkNoConflict(DEFERRED, FINAL)
-      checkNoConflict(ABSTRACT, CASE)
+//    checkNoConflict(ABSTRACT, CASE)
     }
   }
 

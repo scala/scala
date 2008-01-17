@@ -9,6 +9,7 @@
 // $Id$
 
 package scala.collection.jcl;
+import Predef._
 
 object SortedSet {
   trait Projection[A] extends Set.Projection[A] with SortedSet[A] {
@@ -49,7 +50,8 @@ trait SortedSet[A] extends scala.collection.SortedSet[A] with jcl.Set[A] with So
     override def has(a : A) : Boolean = SortedSet.this.has(a)
   }
 
-  protected class Filter(p : A => Boolean) extends super.Filter(p) with SortedSet.Projection[A] {
+  protected class Filter(pp : A => Boolean) extends super.Filter(pp) with SortedSet.Projection[A] {
+    override def p(a : A) = pp(a)
     def compare(a0 : A, a1 : A) : Int = SortedSet.this.compare(a0, a1);
     override def filter(p0 : A => Boolean) = SortedSet.this.projection.filter(k => p(k) && p0(k));
   }
