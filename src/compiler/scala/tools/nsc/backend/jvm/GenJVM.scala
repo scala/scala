@@ -439,11 +439,17 @@ abstract class GenJVM extends SubComponent {
 
       if (!innerClasses.isEmpty) {
         val innerClassesAttr = jclass.getInnerClasses();
-        for (val innerSym <- innerClasses)
+        for (val innerSym <- innerClasses) {
+          var outerName = javaName(innerSym.rawowner)
+          // remove the trailing '$'
+          if (outerName.endsWith("$"))
+            outerName = outerName.substring(0, outerName.length - 1)
+
           innerClassesAttr.addEntry(javaName(innerSym),
-              javaName(innerSym.rawowner),
+              outerName,
               innerSym.rawname.toString,
               javaFlags(innerSym));
+        }
       }
     }
 

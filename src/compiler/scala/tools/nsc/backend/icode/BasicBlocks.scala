@@ -382,7 +382,6 @@ trait BasicBlocks {
 
     def isClosed = closed
 
-    // TODO: Take care of exception handlers!
     def successors : List[BasicBlock] = if (isEmpty) Nil else {
       var res = lastInstruction match {
         case JUMP (whereto) => List(whereto)
