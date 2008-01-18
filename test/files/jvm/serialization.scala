@@ -94,10 +94,10 @@ object Test2_immutable {
     Pair("title", 3)
   )
 
-  val x2 = new ListMap[String, Int]
-    .incl(Pair("buffers", 20))
-    .incl(Pair("layers", 2))
-    .incl(Pair("title", 3))
+  val x2 = new ListMap[String, Int] +
+    Pair("buffers", 20) +
+    Pair("layers", 2) +
+    Pair("title", 3)
 
   val x3 = {
     val bs = new collection.mutable.BitSet()
@@ -105,15 +105,15 @@ object Test2_immutable {
     bs.toImmutable
   }
 
-  val x4 = new ListSet[Int]().incl(3).incl(5)
+  val x4 = new ListSet[Int]() + 3 + 5
 
   val x5 = new Queue("a", "b", "c")
 
   val x6 = new Stack().push("a", "b", "c")
 
-  val x7 = new TreeMap[Int, String] + 42 -> "FortyTwo"
+  val x7 = new TreeMap[Int, String] + Pair(42, "FortyTwo")
 
-  val x8 = new TreeSet[Int]().incl(2).incl(0)
+  val x8 = new TreeSet[Int]() + 2 + 0
 
   try {
     val y1: List[Pair[String, Int]] = Serialize.read(Serialize.write(x1))
