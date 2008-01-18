@@ -24,18 +24,29 @@ PROPERTIES
   <property name="lib.dir" value="${basedir}/lib"/>
   <property name="src.dir" value="${basedir}/src"/>
   <property name="test.dir" value="${basedir}/test"/>
+
   <!-- Loads custom properties definitions -->
   <property name="properties.file" value="${basedir}/build.properties"/>
   <property file="${properties.file}"/>
+
   <!-- Defines the product being built -->
   <property name="vendor.name" value="LAMP/EPFL"/>
   <property name="copyright.string" value="(c) 2002-2008 ${vendor.name}"/>
   <property name="java.flags" value="-Xmx256M -Xms16M"/>
   <property name="number.file" value="${basedir}/build.number"/>
+
   <!-- Configuring how the compiler is run -->
   <property name="nsc.log-files" value="no"/>
   <property name="nsc.excludes.file" value="${basedir}/build.excludes"/>
   <property name="nsc.params" value=""/>
+  <condition property="nsc.target" value="jvm-1.5">
+    <matches pattern="1.[5-7]" string="${ant.java.version}"/>
+  </condition>
+  <condition property="nsc.target" value="jvm-1.4">
+    <matches pattern="1.4" string="${ant.java.version}"/>
+  </condition>
+  <property name="nsc.target" value=""/>
+
   <!-- Sets location of pre-compiled libraries -->
   <property name="lib.starr.jar" value="${lib.dir}/scala-library.jar"/>
   <property name="comp.starr.jar" value="${lib.dir}/scala-compiler.jar"/>
@@ -493,7 +504,7 @@ BUILD QUICK-TEST LAYER
       srcdir="${src.dir}/library"
       destdir="${quick.dir}/lib/library"
       usepredefs="no"
-      addparams="${nsc.params}" target="jvm-1.5"
+      addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes"
       scalacdebugging="${nsc.log-files}"
       classpath="${quick.dir}/lib/library"
@@ -501,7 +512,7 @@ BUILD QUICK-TEST LAYER
     <locker
       srcdir="${src.dir}/library"
       destdir="${quick.dir}/lib/library"
-      addparams="${nsc.params}" target="jvm-1.5"
+      addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes"
       scalacdebugging="${nsc.log-files}"
       classpath="${quick.dir}/lib/library">
@@ -526,7 +537,7 @@ BUILD QUICK-TEST LAYER
     <locker
       srcdir="${src.dir}/dbc"
       destdir="${quick.dir}/lib/dbc"
-      addparams="${nsc.params}" target="jvm-1.5"
+      addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes"
       scalacdebugging="${nsc.log-files}">
       <classpath>
@@ -547,7 +558,7 @@ BUILD QUICK-TEST LAYER
     <locker
       srcdir="${src.dir}/actors"
       destdir="${quick.dir}/lib/actors"
-      addparams="${nsc.params}" target="jvm-1.5"
+      addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes"
       scalacdebugging="${nsc.log-files}">
       <classpath>
@@ -562,7 +573,7 @@ BUILD QUICK-TEST LAYER
     <locker
       srcdir="${src.dir}/compiler"
       destdir="${quick.dir}/lib/compiler"
-      addparams="${nsc.params}" target="jvm-1.5"
+      addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes"
       scalacdebugging="${nsc.log-files}">
       <classpath>
@@ -591,7 +602,7 @@ BUILD QUICK-TEST LAYER
     <locker
       srcdir="${src.dir}/partest"
       destdir="${quick.dir}/lib/partest"
-      addparams="${nsc.params}" target="jvm-1.5"
+      addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes">
       <classpath>
         <pathelement location="${quick.dir}/lib/library"/>
@@ -1108,7 +1119,7 @@ OPTIMIZE
       srcdir="${src.dir}"
       destdir="${optimised.dir}/lib/compiler"
       optimise="yes"
-      addparams="${nsc.params}">
+      addparams="${nsc.params}" target="${nsc.target}">
       <classpath>
         <pathelement location="${optimised.dir}/lib/library"/>
         <pathelement location="${optimised.dir}/lib/compiler"/>
@@ -1207,14 +1218,14 @@ TEST
       srcdir="${src.dir}/library"
       destdir="${strap.dir}/lib/library"
       usepredefs="no"
-      addparams="${nsc.params}" target="jvm-1.5"
+      addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes"
       classpath="${strap.dir}/lib/library"
       includes="scala/Predef.scala"/>
     <quick
       srcdir="${src.dir}/library"
       destdir="${strap.dir}/lib/library"
-      addparams="${nsc.params}" target="jvm-1.5"
+      addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes"
       classpath="${strap.dir}/lib/library">
       <include name="**/*.scala"/>
@@ -1238,7 +1249,7 @@ TEST
     <quick
       srcdir="${src.dir}/dbc"
       destdir="${strap.dir}/lib/dbc"
-      addparams="${nsc.params}" target="jvm-1.5"
+      addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes">
       <classpath>
         <pathelement location="${strap.dir}/lib/library"/>
@@ -1258,7 +1269,7 @@ TEST
     <quick
       srcdir="${src.dir}/actors"
       destdir="${strap.dir}/lib/actors"
-      addparams="${nsc.params}" target="jvm-1.5">
+      addparams="${nsc.params}" target="${nsc.target}">
       <classpath>
         <pathelement location="${strap.dir}/lib/library"/>
         <pathelement location="${strap.dir}/lib/actors"/>
@@ -1271,7 +1282,7 @@ TEST
     <quick
       srcdir="${src.dir}/compiler"
       destdir="${strap.dir}/lib/compiler"
-      addparams="${nsc.params}" target="jvm-1.5">
+      addparams="${nsc.params}" target="${nsc.target}">
       <classpath>
         <pathelement location="${strap.dir}/lib/library"/>
         <pathelement location="${strap.dir}/lib/compiler"/>
@@ -1298,7 +1309,7 @@ TEST
     <quick
       srcdir="${src.dir}/partest"
       destdir="${strap.dir}/lib/partest"
-      addparams="${nsc.params}" target="jvm-1.5"
+      addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes">
       <classpath>
         <pathelement location="${strap.dir}/lib/library"/>
@@ -1463,7 +1474,8 @@ DOCUMENTATION
     <quick
       srcdir="${src.dir}/manual"
       destdir="${tooldocs.dir}/classes"
-      deprecation="yes" target="jvm-1.5"
+      addparams="${nsc.params}" target="${nsc.target}"
+      deprecation="yes" unchecked="true"
       classpathref="manual.classpath">
       <include name="**/*.scala"/>
     </quick>
