@@ -50,12 +50,12 @@ object Covariant {
     val b : Int = 42
   }
   class Test extends AbstractTest {
-    val a : Foo[Character] = new Foo[Character]
+    val a : Foo[Char] = new Foo[Char]
   }
-  def main(args : Array[String]) : Unit = {
+  def main(args : Array[String]) {
     val test = new Test
     test.c.doit(test.b)
-    val x : Character = test.a.getA
+    val x : Char = test.a.getA
     Console.println("XXX " + x)
   }
 }

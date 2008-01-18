@@ -1,12 +1,3 @@
-variances.scala:53: warning: type Character in object Predef is deprecated
-    val a : Foo[Character] = new Foo[Character]
-                ^
-variances.scala:53: warning: type Character in object Predef is deprecated
-    val a : Foo[Character] = new Foo[Character]
-                                     ^
-variances.scala:58: warning: type Character in object Predef is deprecated
-    val x : Character = test.a.getA
-            ^
 variances.scala:4: error: covariant type A occurs in contravariant position in type test.Vector[A] of value x
   def append(x: Vector[A]): Vector[A] 
              ^
@@ -16,5 +7,4 @@ variances.scala:14: error: covariant type A occurs in contravariant position in 
 variances.scala:16: error: covariant type A occurs in invariant position in type test.C[A] with ScalaObject{def this(): object Foo.this.Baz} of object Baz
     object Baz extends C[A]
            ^
-three warnings found
 three errors found
