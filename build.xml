@@ -1472,7 +1472,7 @@ DOCUMENTATION
       srcdir="${src.dir}/manual"
       destdir="${tooldocs.dir}/classes"
       addparams="${nsc.params}" target="${nsc.target}"
-      deprecation="yes" unchecked="true"
+      deprecation="yes" unchecked="yes"
       classpathref="manual.classpath">
       <include name="**/*.scala"/>
     </quick>
