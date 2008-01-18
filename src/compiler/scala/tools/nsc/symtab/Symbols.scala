@@ -622,7 +622,8 @@ trait Symbols {
       val thistp = tp.typeSymbol.thisType
       for (sym <- info.decls.toList) {
         if (sym.isPublic && !sym.isClass && !sym.isConstructor)
-          addMember(thistp, tp, sym.cloneSymbol(tp.typeSymbol).setInfo(sym.info))
+          addMember(thistp, tp,
+            sym.cloneSymbol(tp.typeSymbol).setInfo(sym.info.substThis(this, thistp)))
       }
       tp
     }
