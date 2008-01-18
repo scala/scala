@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: $
 
 
 package scala.runtime
@@ -24,7 +24,7 @@ final class RichLong(x: Long) extends Proxy with Ordered[Long] {
   def max(y: Long): Long = if (x > y) x else y
   def abs: Long = if (x < 0) -x else x
 
-  def toBinaryString: String = java.lang.Long.toBinaryString(x)
-  def toHexString: String = java.lang.Long.toHexString(x)
-  def toOctalString: String = java.lang.Long.toOctalString(x)
+  def toBinaryString: String = System.Convert.ToString(x, 2)
+  def toHexString: String = System.Convert.ToString(x, 16)
+  def toOctalString: String = System.Convert.ToString(x, 8)
 }
