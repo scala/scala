@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -15,8 +15,6 @@ package scala.io
 import java.io.{BufferedInputStream, File, FileInputStream, InputStream,
                 PrintStream}
 import java.net.{URI, URL}
-
-import compat.StringBuilder
 
 /** This object provides convenience methods to create an iterable
  *  representation of a source file.
@@ -64,7 +62,7 @@ object Source {
    *  @return      ...
    */
   def fromChars(chars: Array[Char]): Source = {
-    val it = Iterator.fromArray(chars)
+    val it = chars.elements
     new Source {
       def reset() = fromChars(chars)
       val iter = it
@@ -134,7 +132,7 @@ object Source {
    *  @return     ...
    */
   def setFileDescriptor(file: File, s: Source): Source = {
-    s.descr = new StringBuilder().append( "file:" ).append(file.getAbsolutePath()).toString();
+    s.descr = new StringBuilder("file:").append(file.getAbsolutePath()).toString();
     s
   }
 
@@ -262,11 +260,11 @@ abstract class Source extends Iterator[Char] {
 
     var ch = it.next
     while (it.hasNext && '\n' != ch) {
-      buf.append(ch)
+      buf append ch
       ch = it.next
     }
     val res = buf.toString()
-    buf.setLength(0) // hopefully help collector to deallocate StringBuilder
+    buf setLength 0  // hopefully help collector to deallocate StringBuilder
     res
   }
 
@@ -278,12 +276,12 @@ abstract class Source extends Iterator[Char] {
     def next = {
       var ch = iter.next
       while(ch != '\n' && iter.hasNext) {
-        buf.append(ch)
+        buf append ch
         ch = iter.next
       }
       buf.append(ch)
       val res = buf.toString()
-      buf.setLength(0) // clean things up for next call of "next"
+      buf setLength 0  // clean things up for next call of "next"
       res
     }
     def hasNext = iter.hasNext

@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -46,7 +46,7 @@ object Iterator {
   /**
    *  @param xs the array of elements
    *  @return   the iterator on <code>xs</code>.
-   *  @deprecated replaced by RandomAccessSeq.elements and slice
+   *  @deprecated replaced by <code>RandomAccessSeq.elements</code> and </code>slice</code>.
    */
   @deprecated def fromArray[a](xs: Array[a]): Iterator[a] =
     fromArray(xs, 0, xs.length)

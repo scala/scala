@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -46,7 +46,7 @@ abstract class BaseBerrySethi {
     case x:Alt =>
       var tmp = emptySet
       val it = x.rs.elements                       // union
-      while (it.hasNext) { tmp = tmp incl compFirst(it.next) }
+      while (it.hasNext) { tmp = tmp ++ compFirst(it.next) }
       tmp
     case Eps =>
       emptySet
@@ -58,12 +58,13 @@ abstract class BaseBerrySethi {
       val it = x.rs.elements;                       // union
       while (it.hasNext) {
 	val z = it.next
-	tmp = tmp incl compFirst(z)
+	tmp = tmp ++ compFirst(z)
 	if (!z.isNullable)
           return tmp
       }
       tmp
-    case Star(t) => compFirst(t)
+    case Star(t) =>
+      compFirst(t)
     case _ =>
       throw new IllegalArgumentException("unexpected pattern " + r.getClass())
   }
@@ -73,23 +74,26 @@ abstract class BaseBerrySethi {
     case x:Alt =>
       var tmp = emptySet
       val it = x.rs.elements                      // union
-      while (it.hasNext) { tmp = tmp incl compFirst(it.next) }
+      while (it.hasNext) { tmp = tmp ++ compFirst(it.next) }
       tmp
-    case Eps => emptySet
+    case Eps =>
+      emptySet
     //case x:Letter => emptySet + posMap(x) // singleton set
-    case x:Meta => compLast(x.r)
+    case x:Meta =>
+      compLast(x.r)
     case x:Sequ =>
       var tmp = emptySet
       val it = x.rs.elements.toList.reverse.elements       // union
       while (it.hasNext) {
         val z = it.next
-        tmp = tmp incl compLast(z)
+        tmp = tmp ++ compLast(z)
         if (!z.isNullable)
           return tmp
       }
       tmp
-    case Star(t)  => compLast(t)
-    case _        =>
+    case Star(t) =>
+      compLast(t)
+    case _ =>
       throw new IllegalArgumentException("unexpected pattern " + r.getClass())
   }
 
@@ -101,7 +105,6 @@ abstract class BaseBerrySethi {
    *  @return  ...
    */
   protected def compFollow(r: Seq[RegExp]): immutable.Set[Int] = {
-    //Console.println("compFollow( "+r.toList)
     var first = emptySet
     var fol = emptySet
     if (r.length > 0) {//non-empty expr
@@ -111,18 +114,13 @@ abstract class BaseBerrySethi {
       fol = fol + pos // don't modify pos !
       while (it.hasNext) {
         val p = it.next
-        //Console.println("  p now = "+p)
         first = compFollow1(fol, p)
-        //Console.println("  first = "+first)
-        //Console.println("  fol before = "+fol)
         fol =
-          if (p.isNullable) fol incl first
+          if (p.isNullable) fol ++ first
           else first
-        //Console.println("  fol after = "+fol)
       }
     }
     this.follow.update(0, fol /*first*/)
-    //Console.println("follow(0) = "+fol)
     fol
   }
 
@@ -135,14 +133,13 @@ abstract class BaseBerrySethi {
    */
   protected def compFollow1(fol1: immutable.Set[Int], r: RegExp): immutable.Set[Int] = {
     var fol = fol1
-    //System.out.println("compFollow1("+fol+","+r+")")
     r match {
 
       case x:Alt =>
         var first = emptySet
         val it = x.rs.elements.toList.reverse.elements
         while (it.hasNext)
-          first = first incl compFollow1(fol, it.next);
+          first = first ++ compFollow1(fol, it.next);
         first
 
       /*
@@ -155,7 +152,7 @@ abstract class BaseBerrySethi {
         compFollow1(fol1, x.r)
 
       case x:Star =>
-        fol = fol incl compFirst(x.r)
+        fol = fol ++ compFirst(x.r)
         compFollow1(fol, x.r)
 
       case x:Sequ =>
@@ -165,7 +162,7 @@ abstract class BaseBerrySethi {
           val p = it.next
           first = compFollow1(fol, p)
           fol =
-            if (p.isNullable) fol incl first
+            if (p.isNullable) fol ++ first
             else first
         }
         first

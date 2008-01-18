@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -30,11 +30,10 @@ object Set {
  *    on an immutable set leave the original set unchanged, and return
  *    a new set if needed.
  *  </p>
-
- *  <p>Concrete set implementations
- *    just have to provide functionality for the abstract methods in
- *    <code>scala.collection.Set</code> as well as for <code>+</code> and
- *    <code>-</code>.
+ *  <p>
+ *    Concrete set implementations just have to provide functionality for
+ *    the abstract methods in <code>scala.collection.Set</code> as well as
+ *    for <code>+</code> and <code>-</code>.
  *  </p>
  *  <p>
  *    Note that abstract immutable.Set's are not covariant in their type
@@ -102,6 +101,7 @@ trait Set[A] extends AnyRef with collection.Set[A] {
   def -(elem: A): Set[A]
 
   /** Remove two or more elements from this set.
+   *
    *  @param    elem1 the first element.
    *  @param    elem2 the second element.
    *  @param    elems the remaining elements.
@@ -120,6 +120,7 @@ trait Set[A] extends AnyRef with collection.Set[A] {
 
   /** Remove all the elements provided by an iterator
    *  <code>elems</code> from the set.
+   *
    *  @param elems An iterator containing the elements to remove from the set.
    *  @return a new set with the elements removed.
    */
@@ -133,6 +134,8 @@ trait Set[A] extends AnyRef with collection.Set[A] {
 
   /** This method removes all the elements provided by an iterator
    *  of the iterable object <code>that</code> from the set.
+   *
+   *  @param that the iterable collection.
    */
   @deprecated
   def excl(that: Iterable[A]): Set[A] =
@@ -141,7 +144,7 @@ trait Set[A] extends AnyRef with collection.Set[A] {
   /** This method computes an intersection with set <code>that</code>.
    *  It removes all the elements that are not present in <code>that</code>.
    *
-   *  @param that the set to intersect with
+   *  @param that the set to intersect with.
    */
   def intersect(that: collection.Set[A]): Set[A] = filter(that.contains)
 
@@ -165,12 +168,13 @@ trait Set[A] extends AnyRef with collection.Set[A] {
 
   /** Applies the given function <code>f</code> to each element of
    *  this set, then forms the union of all results.
+   *
    *  @param f function to apply to each element.
    *  @return a set containing all elements in each <code>f(a0), ..., f(an)</code>
    *          if this set contains <code>a0, ..., an</code>.
    */
   override def flatMap[B](f: A => Iterable[B]): Set[B] =
-    foldLeft(empty[B])((set: Set[B], elem: A) => set + f(elem))
+    foldLeft(empty[B])((set: Set[B], elem: A) => set ++ f(elem))
 
   /** Method <code>filter</code> removes all elements from the set for
    *  which the predicate <code>p</code> yields the value <code>false</code>.

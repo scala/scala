@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2008, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -14,7 +14,7 @@ package scala.collection
 import Predef._
 
 object Map {
-  trait Projection[A, +B] extends Iterable.Projection[(A,B)] with Map[A,B];
+  trait Projection[A, +B] extends Iterable.Projection[(A, B)] with Map[A, B]
 }
 
 
@@ -57,7 +57,7 @@ trait Map[A, +B] extends PartialFunction[A, B] with Collection[(A, B)] {
   /** Check if this map maps <code>key</code> to a value.
     *  Return that value if it exists, otherwise return <code>default</code>.
     */
-  def getOrElse[B2 >: B](key: A, default: =>B2): B2 =
+  def getOrElse[B2 >: B](key: A, default: => B2): B2 =
     get(key) match {
       case Some(v) => v
       case None => default
@@ -168,31 +168,31 @@ trait Map[A, +B] extends PartialFunction[A, B] with Collection[(A, B)] {
   def default(key: A): B =
     throw new NoSuchElementException("key not found: " + key)
 
-  override def projection : Map.Projection[A,B] = new Map.Projection[A,B] {
+  override def projection: Map.Projection[A,B] = new Map.Projection[A, B] {
     override def elements = Map.this.elements
     override def size = Map.this.size
-    override def get(key : A) : Option[B] = Map.this.get(key)
+    override def get(key: A): Option[B] = Map.this.get(key)
   }
   /** non-strict filter based on keys only */
-  def filterKeys(p : A => Boolean) : Map.Projection[A,B] = new Map.Projection[A,B] {
+  def filterKeys(p: A => Boolean): Map.Projection[A, B] = new Map.Projection[A, B] {
     def elements = Map.this.elements.filter(x => p(x._1))
     def size = {
       var sz = 0
       Map.this.foreach(x => if (p(x._1)) sz = sz + 1)
       sz
     }
-    override def contains(key : A) = Map.this.contains(key) && p(key)
-    override def get(key : A) = if (!p(key)) None else Map.this.get(key)
+    override def contains(key: A) = Map.this.contains(key) && p(key)
+    override def get(key: A) = if (!p(key)) None else Map.this.get(key)
   }
   /** non-strict map elements using existing key set */
-  def mapElements[C](f : B => C) : Map.Projection[A,C] = new Map.Projection[A,C] {
+  def mapElements[C](f: B => C) : Map.Projection[A,C] = new Map.Projection[A,C] {
     def elements = Map.this.elements.map(e => (e._1, f(e._2)))
     def size = Map.this.size
-    override def contains(key : A) = Map.this.contains(key)
-    override def get(key : A) = Map.this.get(key).map(f)
+    override def contains(key: A) = Map.this.contains(key)
+    override def get(key: A) = Map.this.get(key).map(f)
   }
 
   /** Defines the prefix of this object's <code>toString</code> representation.
    */
-  override protected def stringPrefix : String = "Map"
+  override protected def stringPrefix: String = "Map"
 }
