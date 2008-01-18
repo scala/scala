@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -27,8 +27,8 @@ import scala.collection.mutable.Map
  * @author Adriaan Moors
  */
 trait Mappable {
-  trait Mapper { def apply[t  <% Mappable[t]](x :t): t } /* TODO: having type `Forall t. t => t' is too strict:
-  sometimes we want to allow `Forall t >: precision. t => t' for some type `precision', so that,
+  trait Mapper { def apply[T <% Mappable[T]](x: T): T } /* TODO: having type `Forall T. T => T' is too strict:
+  sometimes we want to allow `Forall T >: precision. T => T' for some type `precision', so that,
   beneath a certain threshold, we have some leeway.
   concretely: to use gmap for substitution, we simply require that ast nodes are mapped to ast nodes,
   we can't require that the type is preserved precisely: a Name may map to e.g., a MethodCall
@@ -49,12 +49,12 @@ trait Mappable {
 
   implicit def ListIsMappable[t <% Mappable[t]](xs: List[t]): Mappable[List[t]] =
     new Mappable[List[t]] {
-      def gmap(f: Mapper): List[t] = (for(val x <- xs) yield f(x)).toList
+      def gmap(f: Mapper): List[t] = (for (x <- xs) yield f(x)).toList
     }
 
   implicit def OptionIsMappable[t <% Mappable[t]](xs: Option[t]): Mappable[Option[t]] =
     new Mappable[Option[t]] {
-      def gmap(f: Mapper): Option[t] = (for(val x <- xs) yield f(x))
+      def gmap(f: Mapper): Option[t] = (for (x <- xs) yield f(x))
     }
 }
 
@@ -113,12 +113,12 @@ trait Binders extends AbstractSyntax with Mappable {
 
     def indexFor(b: binderType): Option[Int] = {
       val iter = elements.counted
-      (for(val that <- iter) {
-        if(that.name == b.name) // TODO: why do name equals and structural equals differ?
+      for (that <- iter) {
+        if (that.name == b.name) // TODO: why do name equals and structural equals differ?
           return Some(iter.count)
         else
           Console.println(that+"!="+b)
-      })
+      }
 
       None
     }
@@ -132,7 +132,7 @@ trait Binders extends AbstractSyntax with Mappable {
      * @post binds(b)
      * @post getElementFor(b) eq b
      */
-    def addBinder(b: binderType) = substitution += b -> b
+    def addBinder(b: binderType) { substitution += Pair(b, b) }
 
     /** `canAddElement' indicates whether `b' may be added to this scope.
      *
@@ -160,7 +160,7 @@ trait Binders extends AbstractSyntax with Mappable {
     /** Returns the current value for the bound occurrences of `b'.
      *
      * @param b the contained binder whose current value should be returned
-		 * @pre binds(b)
+     * @pre binds(b)
      */
     def getElementFor(b: binderType): Element = substitution(b)
 
@@ -212,7 +212,7 @@ trait Binders extends AbstractSyntax with Mappable {
 
   /** A variable that escaped its scope (i.e., a free variable) -- we don't deal very well with these yet
    */
-  class UnboundElement[n <: NameElement](private val el: n) extends NameElement {
+  class UnboundElement[N <: NameElement](private val el: N) extends NameElement {
     def name = el.name+"@??"
   }
 
@@ -255,7 +255,7 @@ trait Binders extends AbstractSyntax with Mappable {
     }})
 
     // TODO
-    def cloneElementNoBoundElements = element.gmap(new Mapper { def apply[t  <% Mappable[t]](x :t): t = x match{
+    def cloneElementNoBoundElements = element.gmap(new Mapper { def apply[t <% Mappable[t]](x :t): t = x match{
       case BoundElement(el, _) => new UnboundElement(el).asInstanceOf[t] // TODO: precision stuff
       case x => x
     }})
@@ -303,12 +303,12 @@ trait Binders extends AbstractSyntax with Mappable {
    * @pre !orig.isEmpty implies orig.forall(ub => ub.scope eq orig(0).scope)
    *
    */
-  def sequence[bt  <: NameElement, st <% Mappable[st]](orig: List[UnderBinder[bt, st]]): UnderBinder[bt, List[st]] =
+  def sequence[bt <: NameElement, st <% Mappable[st]](orig: List[UnderBinder[bt, st]]): UnderBinder[bt, List[st]] =
     if(orig.isEmpty) UnderBinder.unit(Nil)
     else UnderBinder(orig(0).scope, orig.map(_.element))
 
   // couldn't come up with a better name...
-  def unsequence[bt  <: NameElement, st <% Mappable[st]](orig: UnderBinder[bt, List[st]]): List[UnderBinder[bt, st]] =
+  def unsequence[bt <: NameElement, st <% Mappable[st]](orig: UnderBinder[bt, List[st]]): List[UnderBinder[bt, st]] =
     orig.element.map(sc => UnderBinder(orig.scope, sc))
 
   /** An environment that maps a `NameElement' to the scope in which it is bound.
@@ -319,9 +319,8 @@ trait Binders extends AbstractSyntax with Mappable {
    *
    * TODO: more documentation
    */
-  abstract class BinderEnv
-  {
-    def apply[a <: NameElement](v : a): Option[Scope[a]]
+  abstract class BinderEnv {
+    def apply[A <: NameElement](v: A): Option[Scope[A]]
     def extend[a <: NameElement](v : a, x : Scope[a]) = new BinderEnv {
       def apply[b <: NameElement](w : b): Option[Scope[b]] =
         if(w == v) Some(x.asInstanceOf[Scope[b]])

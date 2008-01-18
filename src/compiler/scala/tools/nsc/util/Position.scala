@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -13,29 +13,31 @@ object Position {
 
 trait Position {
   import Position.tabInc
-  def offset : Option[Int] = None
-  def source : Option[SourceFile] = None
+  def offset: Option[Int] = None
+  def source: Option[SourceFile] = None
 
   def line: Option[Int] =
     if (offset.isEmpty || source.isEmpty) None
     else Some(source.get.offsetToLine(offset.get) + 1)
 
-  def column: Option[Int] = {
-    if (offset.isEmpty || source.isEmpty) return None
-    var column = 1
-    // find beginning offset for line
-    val line = source.get.offsetToLine(offset.get)
-    var coffset = source.get.lineToOffset(line)
-    var continue = true
-    while (continue) {
-      if (coffset == offset.get(-1)) continue = false
-      else if (source.get.asInstanceOf[BatchSourceFile].content(coffset) == '\t')
-        column = ((column - 1) / tabInc * tabInc) + tabInc + 1
-      else column += 1
-      coffset += 1
+  def column: Option[Int] =
+    if (offset.isEmpty || source.isEmpty)
+      None
+    else {
+      var column = 1
+      // find beginning offset for line
+      val line = source.get.offsetToLine(offset.get)
+      var coffset = source.get.lineToOffset(line)
+      var continue = true
+      while (continue) {
+        if (coffset == offset.getOrElse(-1)) continue = false
+        else if (source.get.asInstanceOf[BatchSourceFile].content(coffset) == '\t')
+          column = ((column - 1) / tabInc * tabInc) + tabInc + 1
+        else column += 1
+        coffset += 1
+      }
+      Some(column)
     }
-    Some(column)
-  }
 
   def lineContent: String = {
     val line = this.line

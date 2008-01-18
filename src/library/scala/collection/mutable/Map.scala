@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -230,9 +230,9 @@ trait Map[A, B] extends AnyRef
   /** This method defines syntactic sugar for adding or modifying
    *  mappings. It is typically used in the following way:
    *  <pre>
-   *  map += key -> value;
+   *  map += key -> value
    *  </pre>
-   *  @deprecated   use <code>+={key, value}</code>
+   *  @deprecated   use <code>+= Pair(key, value)</code>
    */
   @deprecated
   def +=(key: A): MapTo = new MapTo(key)

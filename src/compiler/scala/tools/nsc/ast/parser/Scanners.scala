@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -961,7 +961,7 @@ trait Scanners {
 
 // XML lexing----------------------------------------------------------------
     def xSync = {
-      token = NEWLINE; // avoid getting NEWLINE from nextToken if last was RBRACE
+      token = NEWLINE  // avoid getting NEWLINE from nextToken if last was RBRACE
       //in.next
       nextToken
     }
@@ -1030,7 +1030,7 @@ trait Scanners {
     def error  (pos: Int, msg: String) = unit.  error(pos, msg)
     def incompleteInputError(pos: Int, msg: String) = unit.incompleteInputError(pos, msg)
     def deprecationWarning(pos: Int, msg: String) = unit.deprecationWarning(pos, msg)
-    implicit def p2g(pos: Position): Int = pos.offset.get(-1)
+    implicit def p2g(pos: Position): Int = pos.offset.getOrElse(-1)
     implicit def g2p(pos: Int): Position = new OffsetPosition(unit.source, pos)
   }
 }

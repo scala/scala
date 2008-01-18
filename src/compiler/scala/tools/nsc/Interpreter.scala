@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -781,7 +781,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
       val names1 = getTypes(valAndVarNames, n=>compiler.nme.getterToLocal(n))
       val names2 = getTypes(defNames, identity)
-      names1.incl(names2)
+      names1 ++ names2
     }
 
     /** load and run the code using reflection */
@@ -794,13 +794,11 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
         (resultValMethod.invoke(interpreterResultObject, null).toString(),
              true)
       } catch {
-        case e => {
+        case e =>
           def caus(e: Throwable): Throwable =
             if (e.getCause eq null) e else caus(e.getCause)
-            val orig = caus(e)
-            (stringFrom(str => orig.printStackTrace(str)),
-                 false)
-        }
+          val orig = caus(e)
+          (stringFrom(str => orig.printStackTrace(str)), false)
       }
     }
 

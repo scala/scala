@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -8,10 +8,10 @@ package scala.tools.nsc.ast
 
 import java.io.{PrintWriter, StringWriter}
 
+import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.symtab.{Flags, SymbolTable}
 import scala.tools.nsc.symtab.Flags._
 import scala.tools.nsc.util.{FreshNameCreator, HashSet, Position, NoPosition, SourceFile}
-import scala.collection.mutable.ListBuffer
 
 
 trait Trees {
@@ -125,7 +125,7 @@ trait Trees {
     def isErroneous = (tpe ne null) && tpe.isErroneous
 
     /** Apply `f' to each subtree */
-    def foreach(f: Tree => Unit): Unit = new ForeachTreeTraverser(f).traverse(this)
+    def foreach(f: Tree => Unit) { new ForeachTreeTraverser(f).traverse(this) }
 
     /** Find all subtrees matching predicate `p' */
     def filter(f: Tree => Boolean): List[Tree] = {
@@ -160,7 +160,7 @@ trait Trees {
       case t: Tree => this eq t
       case _ => false
     }
-    def hashCodeStructure : Int = {
+    def hashCodeStructure: Int = {
       var hc = getClass.hashCode
       def f(what : Any) : Unit = what match {
       case what : Tree => hc += what.hashCodeStructure
@@ -169,7 +169,7 @@ trait Trees {
       case null =>
       case what => hc += what.hashCode
       }
-      def g(what : Product) : Unit = {
+      def g(what: Product) {
         hc += what.productArity
         var i = 0
         while (i < what.productArity) {
@@ -436,7 +436,7 @@ trait Trees {
   /** Abstract type, type parameter, or type alias */
   case class TypeDef(mods: Modifiers, name: Name, tparams: List[TypeDef], rhs: Tree)
        extends MemberDef {
-    def namePos = pos.offset.map(n => n - name.length).get(-1)
+    def namePos = pos.offset.map(n => n - name.length).getOrElse(-1)
   }
 
   /** A TypeDef node which defines given `sym' with given tight hand side `rhs'. */

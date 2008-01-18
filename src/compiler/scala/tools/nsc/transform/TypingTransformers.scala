@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author Martin Odersky
  */
 // $Id$
@@ -29,7 +29,7 @@ trait TypingTransformers {
     def atOwner[A](tree: Tree, owner: Symbol)(trans: => A): A = {
       val savedLocalTyper = localTyper
       localTyper = localTyper.atOwner(tree, owner)
-      typers += owner -> localTyper
+      typers += Pair(owner, localTyper)
       val result = super.atOwner(owner)(trans)
       localTyper = savedLocalTyper
       typers -= owner

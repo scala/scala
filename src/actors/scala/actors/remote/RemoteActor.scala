@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -53,7 +53,7 @@ object RemoteActor {
     val serv = TcpService(port)
     val kern = serv.kernel
     val s = Actor.self
-    kernels += s -> kern
+    kernels += Pair(s, kern)
 
     Scheduler.onTerminate(s) {
       Debug.info("alive actor "+s+" terminated")
@@ -75,7 +75,7 @@ object RemoteActor {
       case None =>
         val serv = new TcpService(TcpService.generatePort)
         serv.start()
-        kernels += Actor.self -> serv.kernel
+        kernels += Pair(Actor.self, serv.kernel)
         serv.kernel
       case Some(k) =>
         k
@@ -89,7 +89,7 @@ object RemoteActor {
       // return path (sender)
       val serv = new TcpService(TcpService.generatePort)
       serv.start()
-      kernels += Actor.self -> serv.kernel
+      kernels += Pair(Actor.self, serv.kernel)
       serv.kernel
     case Some(k) =>
       k

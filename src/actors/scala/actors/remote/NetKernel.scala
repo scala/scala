@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -54,8 +54,8 @@ class NetKernel(service: Service) {
   private val names = new HashMap[Actor, Symbol]
 
   def register(name: Symbol, a: Actor): Unit = synchronized {
-    actors += name -> a
-    names += a -> name
+    actors += Pair(name, a)
+    names += Pair(a, name)
   }
 
   def selfName = names.get(Actor.self) match {
@@ -79,7 +79,7 @@ class NetKernel(service: Service) {
 
   def createProxy(node: Node, sym: Symbol): Actor = {
     val p = new Proxy(node, sym, this)
-    proxies += Pair(node, sym) -> p
+    proxies += Pair((node, sym), p)
     p
   }
 

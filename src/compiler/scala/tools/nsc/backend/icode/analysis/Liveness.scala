@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -13,6 +13,8 @@ import scala.collection.immutable.{Set, ListSet}
 
 /**
  * Compute liveness information for local variables.
+ *
+ * @author Iulian Dragos
  */
 abstract class Liveness {
   val global: Global
@@ -31,7 +33,7 @@ abstract class Liveness {
       override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
     }
 
-    def lub2(a: Elem, b: Elem): Elem = a incl b
+    def lub2(a: Elem, b: Elem): Elem = a ++ b
   }
 
   final class LivenessAnalysis extends DataFlowAnalysis[livenessLattice.type] {
@@ -43,13 +45,13 @@ abstract class Liveness {
     val gen: Map[BasicBlock, Set[Local]] = new HashMap()
     val kill:Map[BasicBlock, Set[Local]] = new HashMap()
 
-    def init(m: IMethod): Unit = {
+    def init(m: IMethod) {
       this.method = m
       gen.clear
       kill.clear
 
-      for (val b <- m.code.blocks.toList;
-           val Pair(g, k) = genAndKill(b)) {
+      for (b <- m.code.blocks.toList;
+           (g, k) = genAndKill(b)) {
         gen  += b -> g
         kill += b -> k
       }
@@ -66,10 +68,10 @@ abstract class Liveness {
     import opcodes._
 
     /** Return the gen and kill sets for this block. */
-    def genAndKill(b: BasicBlock): Pair[Set[Local], Set[Local]] = {
+    def genAndKill(b: BasicBlock): (Set[Local], Set[Local]) = {
       var genSet = new ListSet[Local]
       var killSet = new ListSet[Local]
-      for (val i <- b.toList) i match {
+      for (i <- b.toList) i match {
         case LOAD_LOCAL(local)  if (!killSet(local)) => genSet = genSet + local
         case STORE_LOCAL(local) if (!genSet(local))  => killSet = killSet + local
         case _ => ()
@@ -77,7 +79,7 @@ abstract class Liveness {
       Pair(genSet, killSet)
     }
 
-    override def run: Unit = {
+    override def run {
       backwardAnalysis(blockTransfer)
       if (settings.debug.value) {
         linearizer.linearize(method).foreach(b => if (b != method.code.startBlock)
@@ -87,7 +89,7 @@ abstract class Liveness {
     }
 
     def blockTransfer(b: BasicBlock, out: lattice.Elem): lattice.Elem =
-      gen(b) incl (out excl kill(b))
+      gen(b) ++ (out excl kill(b))
 
     /** Abstract interpretation for one instruction. Very important:
      *  liveness is a backward DFA, so this method should be used to compute

@@ -1,15 +1,16 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
 
 package scala.tools.nsc.symtab
 
+import java.util.regex.Pattern
+
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{Position, NoPosition, SourceFile, BatchSourceFile}
 import Flags._
-import java.util.regex.Pattern
 import nsc.util.RegexCache
 
 trait Symbols {
@@ -53,7 +54,7 @@ trait Symbols {
     def setPos(pos: Position): this.type = { this.rawpos = pos; this }
 
     def namePos(source: BatchSourceFile) = {
-      val pos: Int = this.pos.offset.get(-1)
+      val pos: Int = this.pos.offset.getOrElse(-1)
       val buf = source.content
       if (pos == -1) -1
       else if (isTypeParameter) pos - name.length

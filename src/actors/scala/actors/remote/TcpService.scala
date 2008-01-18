@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -12,8 +12,8 @@
 package scala.actors.remote
 
 
-import java.lang.{Thread, SecurityException}
 import java.io.{DataInputStream, DataOutputStream, IOException}
+import java.lang.{Thread, SecurityException}
 import java.net.{InetAddress, ServerSocket, Socket, UnknownHostException}
 
 import scala.collection.mutable.HashMap
@@ -29,10 +29,11 @@ object TcpService {
 
   def apply(port: Int): TcpService =
     ports.get(port) match {
-      case Some(service) => service
+      case Some(service) =>
+        service
       case None =>
         val service = new TcpService(port)
-        ports += port -> service
+        ports += Pair(port, service)
         service.start()
         service
     }
@@ -79,14 +80,14 @@ class TcpService(port: Int) extends Thread with Service {
    */
   def send(node: Node, data: Array[Byte]): Unit = synchronized {
 
-    def bufferMsg(t: Throwable) = {
+    def bufferMsg(t: Throwable) {
       // buffer message, so that it can be re-sent
       // when remote net kernel comes up
-      pendingSends.get(node) match {
+      (pendingSends.get(node): @unchecked) match {
         case None =>
-          pendingSends += node -> (data :: Nil)
+          pendingSends += Pair(node, List(data))
         case Some(msgs) if msgs.length < TcpService.BufSize =>
-          pendingSends += node -> (data :: msgs)
+          pendingSends += Pair(node, data :: msgs)
       }
     }
 
@@ -162,7 +163,7 @@ class TcpService(port: Int) extends Thread with Service {
     new scala.collection.mutable.HashMap[Node, TcpServiceWorker]
 
   private[actors] def addConnection(node: Node, worker: TcpServiceWorker) = synchronized {
-    connections += node -> worker
+    connections += Pair(node, worker)
   }
 
   def getConnection(n: Node) = synchronized {
