@@ -801,6 +801,9 @@ abstract class RefChecks extends InfoTransform {
           }
 
         case Select(qual, name) =>
+          if (sym.isDeprecated && !currentOwner.ownerChain.exists(_.isDeprecated)) {
+            unit.deprecationWarning(tree.pos, sym+sym.locationString+" is deprecated")
+          }
           if (currentClass != sym.owner && (sym hasFlag LOCAL)) {
             var o = currentClass
             var hidden = false

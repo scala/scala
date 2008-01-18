@@ -82,14 +82,14 @@ trait Set[A] extends AnyRef with collection.Set[A] {
 
   /** <code>incl</code> can be used to add many elements to the set
    *  at the same time.
+   *  @deprecated use <code>+</code> instead
    */
   @deprecated
   def incl(elems: A*): Set[A] = incl(elems)
 
   /** This method will add all the elements provided by an iterator
    *  of the iterable object <code>that</code> to the set.
-   *
-   *  @param that ...
+   *  @deprecated use <code>++</code> instead
    */
   @deprecated
   def incl(that: Iterable[A]): Set[A] =
@@ -170,7 +170,7 @@ trait Set[A] extends AnyRef with collection.Set[A] {
    *          if this set contains <code>a0, ..., an</code>.
    */
   override def flatMap[B](f: A => Iterable[B]): Set[B] =
-    foldLeft(empty[B])((set: Set[B], elem: A) => set incl f(elem))
+    foldLeft(empty[B])((set: Set[B], elem: A) => set + f(elem))
 
   /** Method <code>filter</code> removes all elements from the set for
    *  which the predicate <code>p</code> yields the value <code>false</code>.

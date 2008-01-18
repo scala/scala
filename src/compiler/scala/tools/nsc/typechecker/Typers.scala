@@ -495,15 +495,9 @@ trait Typers { self: Analyzer =>
      *  </ol>
      */
     private def stabilize(tree: Tree, pre: Type, mode: Int, pt: Type): Tree = {
-      def isDeprecated(sym: Symbol) = sym.isDeprecated
       if (tree.symbol.hasFlag(OVERLOADED) && (mode & FUNmode) == 0)
         inferExprAlternative(tree, pt)
       val sym = tree.symbol
-      if (!phase.erasedTypes &&
-          isDeprecated(sym) && !context.owner.ownerChain.exists(isDeprecated)) {
-        unit.deprecationWarning(tree.pos,
-          sym+sym.locationString+" is deprecated")
-      }
       if (tree.tpe.isError) tree
       else if ((mode & (PATTERNmode | FUNmode)) == PATTERNmode && tree.isTerm) { // (1)
         checkStable(tree)
@@ -1521,7 +1515,7 @@ trait Typers { self: Analyzer =>
             val result = checkDead(localTyper.typed(stat))
             if (treeInfo.isSelfOrSuperConstrCall(result)) {
               context.inConstructorSuffix = true
-              if (!inIDE && treeInfo.isSelfConstrCall(result) && result.symbol.pos.offset.get(0) >= exprOwner.enclMethod.pos.offset.get(0))
+              if (!inIDE && treeInfo.isSelfConstrCall(result) && result.symbol.pos.offset.getOrElse(0) >= exprOwner.enclMethod.pos.offset.getOrElse(0))
                 error(stat.pos, "called constructor's definition must precede calling constructor's definition")
             }
             result
