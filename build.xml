@@ -1085,7 +1085,7 @@ OPTIMIZE
     <quick
       srcdir="${src.dir}/library"
       destdir="${optimised.dir}/lib/library"
-      usepredefs="no" addparams="${nsc.params}"
+      usepredefs="no" addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes"
       optimise="yes"
       classpath="${optimised.dir}/lib/library"
@@ -1093,7 +1093,7 @@ OPTIMIZE
     <quick
       srcdir="${src.dir}/library"
       destdir="${optimised.dir}/lib/library"
-      addparams="${nsc.params}"
+      addparams="${nsc.params}" target="${nsc.target}"
       optimise="yes"
       deprecation="yes" unchecked="yes"
       classpath="${optimised.dir}/lib/library">
