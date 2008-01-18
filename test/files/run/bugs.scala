@@ -7,9 +7,9 @@
 // Bug 98
 
 object Bug98Test {
-  object MyCase { def name = "mycase" };
-  def test(args: Array[String]) = {
-    Console.println(MyCase.name);
+  object MyCase { def name = "mycase" }
+  def test(args: Array[String]) {
+    println(MyCase.name)
   }
 }
 
@@ -17,23 +17,24 @@ object Bug98Test {
 // Bug 120
 
 class Bug120A(x: Int) {
-  Console.println("A");
+  println("A")
 }
 
 trait Bug120B {
-  Console.println("B");
+  println("B")
 }
 class Bug120C(x: Int)
     extends Bug120A(Bug120Test.print("one", 1))
     with Bug120B {
-  Console.println("C");
+  println("C")
 }
 object Bug120Test {
   def print[A](str: String, res: A): A = {
-    Console.println(str); res
+    println(str); res
   }
-  def test(args: Array[String]) = {
-    val c = new Bug120C(1);
+  def test(args: Array[String]) {
+    val c = new Bug120C(1)
+    ()
   }
 }
 
@@ -42,12 +43,12 @@ object Bug120Test {
 
 object Bug135Test {
 
-  import scala.collection.immutable.TreeMap;
+  import scala.collection.immutable.TreeMap
 
-  def test(args: Array[String]): Unit = {
-    val myMap:TreeMap[int,String] = new TreeMap;
-    val map1 = myMap + 42 -> "The answer";
-    Console.println(map1.get(42));
+  def test(args: Array[String]) {
+    val myMap:TreeMap[Int, String] = new TreeMap
+    val map1 = myMap + Pair(42, "The answer")
+    println(map1.get(42))
   }
 
 }
@@ -65,17 +66,17 @@ trait Bug142Bar2 { type  Inner; def foo: Inner; foo; }
 trait Bug142Bar3 { class Inner; def foo: Inner = {Console.println("ok"); null}; }
 trait Bug142Bar4 { class Inner; def foo: Inner; foo; }
 
-object Bug142Test1 extends Bug142Foo1 with Bug142Bar1 {def test(args:Array[String]):Unit=();}
-object Bug142Test2 extends Bug142Foo2 with Bug142Bar2 {def test(args:Array[String]):Unit=();}
-object Bug142Test3 extends Bug142Foo3 with Bug142Bar3 {def test(args:Array[String]):Unit=();}
-object Bug142Test4 extends Bug142Foo4 with Bug142Bar4 {def test(args:Array[String]):Unit=();}
-object Bug142Test5 extends    Bug142Foo1 with Bug142Bar1 {def test(args:Array[String]):Unit=();}
-object Bug142Test6 extends    Bug142Foo2 with Bug142Bar2 {def test(args:Array[String]):Unit=();}
-object Bug142Test7 extends    Bug142Foo3 with Bug142Bar3 {def test(args:Array[String]):Unit=();}
-object Bug142Test8 extends    Bug142Foo4 with Bug142Bar4 {def test(args:Array[String]):Unit=();}
+object Bug142Test1 extends Bug142Foo1 with Bug142Bar1 { def test(args: Array[String]) {} }
+object Bug142Test2 extends Bug142Foo2 with Bug142Bar2 { def test(args: Array[String]) {} }
+object Bug142Test3 extends Bug142Foo3 with Bug142Bar3 { def test(args: Array[String]) {} }
+object Bug142Test4 extends Bug142Foo4 with Bug142Bar4 { def test(args: Array[String]) {} }
+object Bug142Test5 extends Bug142Foo1 with Bug142Bar1 { def test(args: Array[String]) {} }
+object Bug142Test6 extends Bug142Foo2 with Bug142Bar2 { def test(args: Array[String]) {} }
+object Bug142Test7 extends Bug142Foo3 with Bug142Bar3 { def test(args: Array[String]) {} }
+object Bug142Test8 extends Bug142Foo4 with Bug142Bar4 { def test(args: Array[String]) {} }
 
 object Bug142Test {
-  def test(args:Array[String]): Unit = {
+  def test(args:Array[String]) {
     Bug142Test1;
     Bug142Test2;
     Bug142Test3;
@@ -92,10 +93,10 @@ object Bug142Test {
 // Bug 166
 
 object Bug166Test {
-  import scala.collection.mutable.HashMap ;
-  def test(args:Array[String]) = {
-    val m:HashMap[String,String] = new HashMap[String,String];
-    m.update("foo","bar");
+  import scala.collection.mutable.HashMap
+  def test(args: Array[String]) {
+    val m: HashMap[String,String] = new HashMap[String, String]
+    m.update("foo","bar")
   }
 }
 
@@ -110,8 +111,8 @@ class Bug167Node(bar:Int) {
 }
 
 object Bug167Test {
-  def test(args: Array[String]): Unit = {
-    if (new Bug167Node(0).foo != 1) Console.println("bug 167");
+  def test(args: Array[String]) {
+    if (new Bug167Node(0).foo != 1) println("bug 167");
   }
 }
 
@@ -119,13 +120,13 @@ object Bug167Test {
 // Bug 168
 
 class Bug168Foo {
-  class Bar;
-  def foo = new Bar;
+  class Bar
+  def foo = new Bar
 }
 
 object Bug168Test {
-  def test(args: Array[String]): Unit = {
-    (new Bug168Foo).foo;
+  def test(args: Array[String]) {
+    (new Bug168Foo).foo
     ()
   }
 }
@@ -135,25 +136,25 @@ object Bug168Test {
 
 class Bug174Foo[X] {
 
-  class Tree;
-  class Node extends Tree;
+  class Tree
+  class Node extends Tree
 
 
-  val inner:Inner = new SubInner;
+  val inner: Inner = new SubInner
 
   trait Inner {
-    def test: Bug174Foo[X]#Tree ;
+    def test: Bug174Foo[X]#Tree
   }
 
   class SubInner extends Inner {
-    def test = new Node;
+    def test = new Node
   }
 
 }
 
 object Bug174Test {
-  def test(args: Array[String]): Unit = {
-    (new Bug174Foo[Int]).inner.test;
+  def test(args: Array[String]) {
+    (new Bug174Foo[Int]).inner.test
     ()
   }
 }

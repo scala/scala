@@ -1,5 +1,5 @@
 trait Parsers {
-  type Input=List[char]
+  type Input = List[Char]
 
   sealed class ParseResult[+t](val next: Input)
     case class Success[+t](override val next: Input, result: t) extends ParseResult[t](next)
@@ -105,5 +105,5 @@ trait ParserIdioms extends Parsers with Idioms {
 }
 
 object Test extends ParserIdioms with Application {
-  Console.println(expr(List.fromString("12")))
+  println(expr("12".toList))
 }

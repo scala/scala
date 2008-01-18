@@ -1,10 +1,10 @@
 import java.io.StringReader
 import org.xml.sax.InputSource
 
-import scala.xml._
-import scala.util.logging._
-
 import scala.testing.SUnit._
+import scala.util.logging._
+import scala.xml._
+
 
 object Test extends Application with Assert {
   val e:  scala.xml.MetaData         = Null  //Node.NoAttributes
@@ -31,12 +31,12 @@ object Test extends Application with Assert {
   assertEquals(c, parsedxml11)
   assertEquals(parsedxml1, parsedxml11)
   assertSameElements(List(parsedxml1), List(parsedxml11))
-  assertSameElements(Iterator.fromArray(Array(parsedxml1)).toList, List(parsedxml11))
+  assertSameElements(Array(parsedxml1).toList, List(parsedxml11))
 
   val x2 = "<book><author>Peter Buneman</author><author>Dan Suciu</author><title>Data on ze web</title></book>";
 
-  val i = new InputSource( new StringReader( x2 ));
-  val x2p = XML.load( i );
+  val i = new InputSource(new StringReader(x2))
+  val x2p = XML.load(i)
 
   assertEquals(x2p, Elem(null, "book"  , e, sc,
                         Elem(null, "author", e, sc,Text("Peter Buneman")),
@@ -44,16 +44,16 @@ object Test extends Application with Assert {
                         Elem(null, "title" , e, sc,Text("Data on ze web"))));
 
   val xmlFile2 = "<bib><book><author>Peter Buneman</author><author>Dan Suciu</author><title>Data on ze web</title></book><book><author>John Mitchell</author><title>Foundations of Programming Languages</title></book></bib>";
-  val isrc2 = new InputSource( new StringReader( xmlFile2 ) );
-  val parsedxml2 = XML.load( isrc2 );
+  val isrc2 = new InputSource(new StringReader(xmlFile2))
+  val parsedxml2 = XML.load(isrc2)
 
   // xmlFile2/book -> book,book
-  Console.println("xpath \\");
+  println("xpath \\")
 
 
-  assertSameElements( parsedxml1 \ "_" ,    List( Elem(null,"world",e,sc) ) );
+  assertSameElements(parsedxml1 \ "_" ,    List(Elem(null,"world", e, sc)))
 
-  assertSameElements( parsedxml1 \ "world", List( Elem(null,"world",e,sc) ) );
+  assertSameElements(parsedxml1 \ "world", List(Elem(null,"world", e, sc)))
 
 /*
   Console.println( parsedxml2 \ "_" );
@@ -143,7 +143,7 @@ object Test extends Application with Assert {
   );
 
 
-  Console.println(
+  println(
     (parsedxml2 \\ "book" ){ n:Node => n \ "title" == "Data on ze web" }
   );
 
