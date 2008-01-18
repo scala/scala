@@ -39,13 +39,10 @@ PROPERTIES
   <property name="nsc.log-files" value="no"/>
   <property name="nsc.excludes.file" value="${basedir}/build.excludes"/>
   <property name="nsc.params" value=""/>
-  <condition property="nsc.target" value="jvm-1.5">
-    <matches pattern="1.[5-7]" string="${ant.java.version}"/>
-  </condition>
   <condition property="nsc.target" value="jvm-1.4">
-    <matches pattern="1.4" string="${ant.java.version}"/>
+    <contains string="${ant.java.version}" substring="1.4"/>
   </condition>
-  <property name="nsc.target" value=""/>
+  <property name="nsc.target" value="jvm-1.5"/>
 
   <!-- Sets location of pre-compiled libraries -->
   <property name="lib.starr.jar" value="${lib.dir}/scala-library.jar"/>
@@ -375,14 +372,14 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       srcdir="${src.dir}/library"
       destdir="${locker.dir}/lib/library"
       usepredefs="no"
-      addparams="${nsc.params}"
+      addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes"
       classpath="${locker.dir}/lib/library"
       includes="scala/Predef.scala"/>
     <starr
       srcdir="${src.dir}/library"
       destdir="${locker.dir}/lib/library"
-      addparams="${nsc.params}"
+      addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes"
       classpath="${locker.dir}/lib/library">
       <include name="**/*.scala"/>
@@ -406,7 +403,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
     <starr
       srcdir="${src.dir}/compiler"
       destdir="${locker.dir}/lib/compiler"
-      addparams="${nsc.params}"
+      addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes">
       <classpath>
         <pathelement location="${locker.dir}/lib/library"/>
