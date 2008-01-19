@@ -94,10 +94,7 @@ object Test2_immutable {
     Pair("title", 3)
   )
 
-  val x2 = new ListMap[String, Int] +
-    Pair("buffers", 20) +
-    Pair("layers", 2) +
-    Pair("title", 3)
+  val x2 = new ListMap[String, Int] + ("buffers" -> 20, "layers" -> 2, "title" -> 3)
 
   val x3 = {
     val bs = new collection.mutable.BitSet()
@@ -111,7 +108,7 @@ object Test2_immutable {
 
   val x6 = new Stack().push("a", "b", "c")
 
-  val x7 = new TreeMap[Int, String] + Pair(42, "FortyTwo")
+  val x7 = new TreeMap[Int, String] + (42 -> "FortyTwo")
 
   val x8 = new TreeSet[Int]() + 2 + 0
 
