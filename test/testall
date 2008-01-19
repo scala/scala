@@ -1,0 +1,7 @@
+sh partest --jvm
+sh partest --pos
+sh partest --neg
+sh partest --shootout
+sh partest --script
+sh partest --res
+

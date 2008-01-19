@@ -1,0 +1,11 @@
+class X10Trees extends Trees {
+
+  case class Async(place: Expr, clock: Clock, body: List[Tree])
+
+  override def transform(tree: Tree) = tree match {
+    case Async(place, clock, body) =>
+      copy.Async(tree, transform(place), transform(clock), transform(body))
+    case _ =>
+      super.transform(tree)
+  }
+}
