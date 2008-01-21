@@ -31,6 +31,7 @@ trait AnnotationInfos {
       if (definitions.ArrayModule_apply.alternatives contains meth.symbol) =>
  	trees2consArray(members, tree.tpe)
 
+      case Typed(t, _) => tree2cons(t)
 
       case tree =>
         //println("could not convert: " + tree);

@@ -146,11 +146,14 @@ trait StdNames {
 
     def superName(name: Name) = newTermName("super$" + name)
 
+    val PROTECTED_PREFIX = "protected$"
+    def isProtectedAccessor(name: Name) = name.startsWith(PROTECTED_PREFIX)
+
     /** The name of an accessor for protected symbols. */
-    def protName(name: Name): Name = newTermName("protected$" + name)
+    def protName(name: Name): Name = newTermName(PROTECTED_PREFIX.toString() + name)
 
     /** The name of a setter for protected symbols. Used for inherited Java fields. */
-    def protSetterName(name: Name): Name = newTermName("protected$set" + name)
+    def protSetterName(name: Name): Name = newTermName(PROTECTED_PREFIX.toString() + "set" + name)
 
     /** The name of bitmaps for initialized lazy vals. */
     def bitmapName(n: Int): Name = newTermName("bitmap$" + n)
