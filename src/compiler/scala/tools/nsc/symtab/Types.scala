@@ -421,8 +421,10 @@ trait Types {
           }
 */
         case tp =>
-          //Console.println("" + this + ".memberType(" + sym +":" + sym.tpe +")" + sym.ownerChain);//debug
-          tp.asSeenFrom(this, sym.owner)
+//          if (sym.name.toString == "c") print(this + ".memberType(" + sym +":" + sym.tpe +")" + sym.ownerChain);//debug
+          val res = tp.asSeenFrom(this, sym.owner)
+//          if (sym.name.toString == "c") println(" = "+res)
+          res
       }
     }
 
@@ -651,7 +653,7 @@ trait Types {
                    (bcs eq bcs0) ||
                    sym.getFlag(PRIVATE | LOCAL) != (PRIVATE | LOCAL) ||
                    (bcs0.head.hasTransOwner(bcs.head)))) {
-                if (name.isTypeName || stableOnly) {
+                if (name.isTypeName || stableOnly && sym.isStable) {
                   checkMalformedSwitch = savedCheckMalformedSwitch
                   if (util.Statistics.enabled)
                     findMemberMillis = findMemberMillis + currentTime - startTime
@@ -1701,7 +1703,7 @@ A type's typeSymbol should never be inspected directly.
       val tvars = quantified map (tparam => new TypeVar(tparam.tpe, new TypeConstraint))
       val underlying1 = underlying.instantiateTypeParams(quantified, tvars)
       op(underlying1) && {
-        solve(tvars, quantified, quantified map (x => 0), false)
+        solve(tvars, quantified, quantified map (x => 0), false) &&
         isWithinBounds(NoPrefix, NoSymbol, quantified, tvars map (_.constr.inst))
       }
     }
@@ -3066,7 +3068,7 @@ A type's typeSymbol should never be inspected directly.
         }
         val rebind = rebind0.suchThat(sym => sym.isType || sym.isStable)
         if (rebind == NoSymbol) {
-          if (settings.debug.value) Console.println("" + phase + " " + phase.flatClasses+sym.owner+sym.name)
+          if (settings.debug.value) Console.println("" + phase + " " +phase.flatClasses+sym.owner+sym.name+" "+sym.isType)
           throw new MalformedType(pre, sym.nameString)
         }
         rebind
@@ -3585,6 +3587,10 @@ A type's typeSymbol should never be inspected directly.
           skolemizationLevel -= 1
         }
       case (_, et: ExistentialType) =>
+//        println("<<< "+tp1+" with "+tp2)
+//        settings.explaintypes.value = true
+//        et.withTypeVars { x => explainTypes(tp1, x); true }
+//        settings.explaintypes.value = false
         et.withTypeVars(tp1 <:< _)
       case (RefinedType(parents1, ref1), _) =>
         parents1 exists (_ <:< tp2)
@@ -3722,7 +3728,7 @@ A type's typeSymbol should never be inspected directly.
    *  @throws NoInstance
    */
   def solve(tvars: List[TypeVar], tparams: List[Symbol],
-            variances: List[Int], upper: Boolean) {
+            variances: List[Int], upper: Boolean): Boolean = {
     val config = tvars zip (tparams zip variances)
 
     def solveOne(tvar: TypeVar, tparam: Symbol, variance: Int) {
@@ -3769,6 +3775,14 @@ A type's typeSymbol should never be inspected directly.
     }
     for ((tvar, (tparam, variance)) <- config)
       solveOne(tvar, tparam, variance)
+
+    var ok = true
+    for (tvar <- tvars)
+      if (!(tvar.constr.lobounds forall (_ <:< tvar.constr.inst)) ||
+          !(tvar.constr.hibounds forall (tvar.constr.inst <:< _))) {
+        ok = false
+      }
+    ok
   }
 
   /** Do type arguments `targs' conform to formal parameters

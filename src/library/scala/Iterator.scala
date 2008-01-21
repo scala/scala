@@ -45,20 +45,18 @@ object Iterator {
 
   /**
    *  @param xs the array of elements
-   *  @return   the iterator on <code>xs</code>.
-   *  @deprecated replaced by <code>RandomAccessSeq.elements</code> and </code>slice</code>.
+   *  @see also: RandomAccessSeq.elements and slice
    */
-  @deprecated def fromArray[a](xs: Array[a]): Iterator[a] =
+  def fromArray[a](xs: Array[a]): Iterator[a] =
     fromArray(xs, 0, xs.length)
 
   /**
    *  @param xs     the array of elements
-   *  @param start  ...
-   *  @param length ...
-   *  @return       ...
-   *  @deprecated replaced by RandomAccessSeq.elements and slice
+   *  @param start  the start index
+   *  @param length  the end index
+   *  @see also: RandomAccessSeq.elements and slice
    */
-  @deprecated def fromArray[a](xs: Array[a], start: Int, length: Int): Iterator[a] =
+  def fromArray[a](xs: Array[a], start: Int, length: Int): Iterator[a] =
     new BufferedIterator.Advanced[a] {
       private var i = start
       val end = if ((start + length) < xs.length) start else xs.length

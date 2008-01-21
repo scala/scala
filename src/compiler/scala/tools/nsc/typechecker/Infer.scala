@@ -137,7 +137,16 @@ trait Infer {
    */
   private def solvedTypes(tvars: List[TypeVar], tparams: List[Symbol],
                           variances: List[Int], upper: Boolean): List[Type] = {
-    solve(tvars, tparams, variances, upper)
+    def boundsString(tvar: TypeVar) =
+      "\n  "+
+      ((tvar.constr.lobounds map (_ + " <: " + tvar.origin.typeSymbol.name)) :::
+       (tvar.constr.hibounds map (tvar.origin.typeSymbol.name + " <: " + _)) mkString ", ")
+    if (!solve(tvars, tparams, variances, upper)) {
+//    no panic, it's good enough to just guess a solution, we'll find out
+//    later whether it works.
+//      throw new DeferredNoInstance(() =>
+//        "no solution exists for constraints"+(tvars map boundsString))
+    }
     for (val tvar <- tvars) assert(tvar.constr.inst != tvar, tvar.origin)
     tvars map instantiate
   }
@@ -952,7 +961,7 @@ trait Infer {
         } catch {
           case ex: NoInstance =>
             errorTree(tree, "constructor of type " + restpe +
-                      " can be instantiated in more than one way to expected type " + pt +
+                      " cannot be uniquely instantiated to expected type " + pt +
                       "\n --- because ---\n" + ex.getMessage())
         }
       def instError = {
