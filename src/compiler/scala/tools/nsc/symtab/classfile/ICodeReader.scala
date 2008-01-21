@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author Iulian Dragos
  */
 // $Id$
@@ -73,7 +73,7 @@ abstract class ICodeReader extends ClassfileParser {
     } else super.getOwner(jflags)
   }
 
-  override def parseClass(): Unit = {
+  override def parseClass() {
     val jflags = in.nextChar
     val isAttribute = (jflags & JAVA_ACC_ANNOTATION) != 0
     var sflags = transFlags(jflags)
@@ -92,7 +92,7 @@ abstract class ICodeReader extends ClassfileParser {
     staticCode.methods = staticCode.methods.reverse
   }
 
-  override def parseField(): Unit = {
+  override def parseField() {
     val (jflags, sym) = parseMember(true)
     getCode(jflags).addField(new IField(sym))
     skipAttributes()
@@ -174,7 +174,7 @@ abstract class ICodeReader extends ClassfileParser {
     }
   }
 
-  def parseAttribute(): Unit = {
+  def parseAttribute() {
     val attrName = pool.getName(in.nextChar)
     val attrLen = in.nextInt
     attrName match {
@@ -215,13 +215,13 @@ abstract class ICodeReader extends ClassfileParser {
   var pc = 0
 
   /** Parse java bytecode into ICode */
-  def parseByteCode(): Unit = {
+  def parseByteCode() {
     maxStack = in.nextChar
     maxLocals = in.nextChar
     val codeLength = in.nextInt
     val code = new LinearCode
 
-    def parseInstruction: Unit = {
+    def parseInstruction {
       import opcodes._
       import code._
       var size = 1 // instruction size
@@ -236,7 +236,7 @@ abstract class ICodeReader extends ClassfileParser {
       }
 
       /** Parse 32 bit jump target. */
-      def parseJumpTargetW = {
+      def parseJumpTargetW: Int = {
         size += 4
         val offset = in.nextInt
         val target = pc + offset
@@ -450,8 +450,8 @@ abstract class ICodeReader extends ClassfileParser {
           size += padding
           in.bp += padding
           assert((pc + size % 4) != 0)
-/*          var byte1 = in.nextByte; size = size + 1;
-          while (byte1 == 0) { byte1 = in.nextByte; size = size + 1; }
+/*          var byte1 = in.nextByte; size += 1;
+          while (byte1 == 0) { byte1 = in.nextByte; size += 1; }
           val default = byte1 << 24 | in.nextByte << 16 | in.nextByte << 8 | in.nextByte;
           size = size + 3
        */
@@ -557,7 +557,7 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.monitorenter  => code.emit(MONITOR_ENTER())
         case JVM.monitorexit   => code.emit(MONITOR_EXIT())
         case JVM.wide          =>
-          size = size + 1;
+          size += 1
           toUnsignedByte(in.nextByte) match {
             case JVM.iload  => code.emit(LOAD_LOCAL(code.getLocal(in.nextChar, INT)));    size += 2
             case JVM.lload  => code.emit(LOAD_LOCAL(code.getLocal(in.nextChar, LONG)));   size += 2
@@ -651,7 +651,7 @@ abstract class ICodeReader extends ClassfileParser {
     var containsDUPX = false
     var containsNEW  = false
 
-    def emit(i: Instruction) = {
+    def emit(i: Instruction) {
       instrs += (pc, i)
       if (i.isInstanceOf[DupX])
         containsDUPX = true
@@ -671,7 +671,7 @@ abstract class ICodeReader extends ClassfileParser {
 
       def makeBasicBlocks: Map[Int, BasicBlock] = {
         val block: Map[Int, BasicBlock] = new HashMap
-        for (pc <- jmpTargets) block += pc -> code.newBlock
+        for (pc <- jmpTargets) block += Pair(pc, code.newBlock)
         block
       }
 
@@ -729,7 +729,7 @@ abstract class ICodeReader extends ClassfileParser {
       code
     }
 
-    def resolveDups: Unit = {
+    def resolveDups {
       import opcodes._
 
       val tfa = new analysis.MethodTFA() {
@@ -944,7 +944,7 @@ abstract class ICodeReader extends ClassfileParser {
     def getLocal(idx: Int, kind: TypeKind): Local = {
       assert(idx < maxLocals, "Index too large for local variable.");
 
-      def checkValidIndex: Unit = {
+      def checkValidIndex {
         locals.get(idx - 1) match {
           case Some(others) if ((others find { x => x._1 == LONG || x._1 == DOUBLE}) != None) =>
             error("Illegal index: " + idx + " points in the middle of another local")
@@ -973,7 +973,7 @@ abstract class ICodeReader extends ClassfileParser {
           checkValidIndex
           val l = freshLocal(idx, kind, false)
           log("Added new local for idx " + idx + ": " + kind)
-          locals += idx -> List((l, kind))
+          locals += Pair(idx, List((l, kind)))
           l
       }
     }
@@ -989,12 +989,12 @@ abstract class ICodeReader extends ClassfileParser {
       l
     }
 
-    private var count = 0;
+    private var count = 0
 
     /** Invent a new local, with a new index value outside the range of
      *  the original method. */
     def freshLocal(kind: TypeKind): Local = {
-      count = count + 1
+      count += 1
       freshLocal(maxLocals + count, kind, false)
     }
 
@@ -1003,7 +1003,7 @@ abstract class ICodeReader extends ClassfileParser {
       val sym = method.symbol.newVariable(NoPosition, "par" + idx).setInfo(kind.toType);
       val l = new Local(sym, kind, true)
       assert(!locals.isDefinedAt(idx))
-      locals += idx -> List((l, kind))
+      locals += Pair(idx, List((l, kind)))
       l
     }
 

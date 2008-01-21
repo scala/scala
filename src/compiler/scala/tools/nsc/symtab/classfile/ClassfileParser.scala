@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -542,7 +542,7 @@ abstract class ClassfileParser {
       while (sig(index) != '>') {
         val tpname = subName(':'.==).toTypeName
         val s = sym.newTypeParameter(NoPosition, tpname)
-        tparams = tparams + tpname -> s
+        tparams = tparams + Pair(tpname, s)
         val ts = new ListBuffer[Type]
         while (sig(index) == ':') {
           index += 1

@@ -6,11 +6,11 @@
 
 package scala.tools.nsc.symtab
 
-import scala.collection.mutable.{ListBuffer, HashMap}
 import scala.collection.immutable
+import scala.collection.mutable.{ListBuffer, HashMap}
 import scala.compat.Platform.currentTime
-import scala.tools.nsc.util.{HashSet, Position, NoPosition}
 import scala.tools.nsc.ast.TreeGen
+import scala.tools.nsc.util.{HashSet, Position, NoPosition}
 import Flags._
 
 /* A standard type pattern match:
@@ -181,7 +181,7 @@ trait Types {
     override def prefixString = underlying.prefixString
     override def isComplete = underlying.isComplete
     override def complete(sym: Symbol) = underlying.complete(sym)
-    override def load(sym: Symbol): Unit = underlying.load(sym)
+    override def load(sym: Symbol) { underlying.load(sym) }
     override def withAttributes(attribs: List[AnnotationInfo]) = maybeRewrap(underlying.withAttributes(attribs))
     override def withoutAttributes = maybeRewrap(underlying.withoutAttributes)
   }
@@ -460,7 +460,7 @@ trait Types {
     }
 
     /** Apply `f' to each part of this type */
-    def foreach(f: Type => Unit): Unit = new ForEachTypeTraverser(f).traverse(this)
+    def foreach(f: Type => Unit) { new ForEachTypeTraverser(f).traverse(this) }
 
     /** Is there part of this type which satisfies predicate `p'? */
     def exists(p: Type => Boolean): Boolean = !find(p).isEmpty
@@ -475,7 +475,7 @@ trait Types {
 
     /** Is this type a subtype of that type? */
     def <:<(that: Type): Boolean = {
-      if (util.Statistics.enabled) subtypeCount = subtypeCount + 1
+      if (util.Statistics.enabled) subtypeCount += 1
       val startTime = if (util.Statistics.enabled) currentTime else 0l
       val result =
         ((this eq that) ||
@@ -623,7 +623,7 @@ trait Types {
     //TODO: use narrow only for modules? (correct? efficiency gain?)
     def findMember(name: Name, excludedFlags: Int, requiredFlags: Long, stableOnly: Boolean): Symbol = {
       if (inIDE) trackTypeIDE(typeSymbol)
-      if (util.Statistics.enabled) findMemberCount = findMemberCount + 1
+      if (util.Statistics.enabled) findMemberCount += 1
       val startTime = if (util.Statistics.enabled) currentTime else 0l
 
       //Console.println("find member " + name.decode + " in " + this + ":" + this.baseClasses)//DEBUG
@@ -698,10 +698,10 @@ trait Types {
       if (util.Statistics.enabled)
         findMemberMillis = findMemberMillis + currentTime - startTime
       if (members eq null) {
-        if (util.Statistics.enabled) if (member == NoSymbol) noMemberCount = noMemberCount + 1;
+        if (util.Statistics.enabled) if (member == NoSymbol) noMemberCount += 1;
         member
       } else {
-        if (util.Statistics.enabled) multMemberCount = multMemberCount + 1;
+        if (util.Statistics.enabled) multMemberCount += 1;
         //val pre = if (this.typeSymbol.isClass) this.typeSymbol.thisType else this;
         (baseClasses.head.newOverloaded(this, members.toList))
       }
@@ -798,7 +798,7 @@ trait Types {
     override def isStable = true
     override def widen: Type = underlying.widen
     override def closure: Array[Type] = {
-      if (util.Statistics.enabled) singletonClosureCount = singletonClosureCount + 1
+      if (util.Statistics.enabled) singletonClosureCount += 1
       addClosure(this, underlying.closure)
     }
     override def toString: String = prefixString + "type"
@@ -977,7 +977,7 @@ trait Types {
       def computeClosure: Array[Type] =
         try {
           if (util.Statistics.enabled)
-            compoundClosureCount = compoundClosureCount + 1
+            compoundClosureCount += 1
           //Console.println("computing closure of " + typeSymbol.tpe + " " + parents)//DEBUG
           val buf = new ListBuffer[Type]
           buf += typeSymbol.tpe
@@ -1015,10 +1015,10 @@ trait Types {
                   if (!(minTypes exists (tp =:=))) minTypes = tp :: minTypes;
                   index(i) = index(i) + 1
                 }
-                i = i + 1
+                i += 1
               }
               buf += intersectionType(minTypes)
-              clSize = clSize + 1
+              clSize += 1
             }
           }
           closureCache = new Array[Type](clSize)
@@ -1037,7 +1037,7 @@ trait Types {
                 assert(!closureCache(j).isInstanceOf[RefinedType], closureCache(j))
               case _ =>
             }
-            j = j + 1
+            j += 1
           }
           //Console.println("closure of " + typeSymbol.tpe + " = " + List.fromArray(closureCache))//DEBUG
           closureCache
@@ -1357,7 +1357,7 @@ trait Types {
       var i = 0
       while (i < cl.length) {
         cl1(i) = transform(cl(i))
-        i = i + 1
+        i += 1
       }
       cl1
     }
@@ -1487,7 +1487,7 @@ A type's typeSymbol should never be inspected directly.
         closurePeriod = currentPeriod
         if (!isValidForBaseClasses(period)) {
           if (util.Statistics.enabled)
-            typerefClosureCount = typerefClosureCount + 1
+            typerefClosureCount += 1
           closureCache =
             if (sym.isAbstractType) addClosure(this, transform(bounds.hi).closure)
             else transform(sym.info.closure)
@@ -2839,7 +2839,7 @@ A type's typeSymbol should never be inspected directly.
 	sym.setFlag(EXISTENTIAL)
 
 
-	existSyms = existSyms + actualIdx -> sym
+	existSyms = existSyms + Pair(actualIdx, sym)
 	sym
       }
 
@@ -3853,7 +3853,7 @@ A type's typeSymbol should never be inspected directly.
     var i = 0
     while (i < arr.length) {
       arr(i) = lubs.head
-      i = i + 1
+      i += 1
       lubs = lubs.tail
     }
     arr
