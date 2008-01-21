@@ -1,15 +1,14 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 
-// $Id:  $
+// $Id$
 
 package scala.tools.nsc.backend.icode.analysis
 
-import compat.StringBuilder
-import scala.collection.jcl.{HashMap, Map}
 import scala.collection.immutable.{Set, ListSet, HashSet}
+import scala.collection.jcl.{HashMap, Map}
 
 /** Compute reaching definitions. We are only interested in reaching
  *  definitions for local variables, since values on the stack
@@ -42,11 +41,11 @@ abstract class ReachingDefinitions {
       if (bottom == a) b
       else if (bottom == b) a
       else {
-        val locals = a.vars incl b.vars
+        val locals = a.vars ++ b.vars
         val stack = if (a.stack == Nil)
           b.stack
         else if (b.stack == Nil) a.stack
-        else List.map2(a.stack, b.stack) (_ incl _)
+        else List.map2(a.stack, b.stack) (_ ++ _)
 
         val res = IState(locals, stack)
 
@@ -73,18 +72,18 @@ abstract class ReachingDefinitions {
     val drops: Map[BasicBlock, Int]           = new HashMap()
     val outStack: Map[BasicBlock, Stack]      = new HashMap()
 
-    def init(m: IMethod): Unit = {
+    def init(m: IMethod) {
       this.method = m
       gen.clear;   kill.clear
       drops.clear; outStack.clear
 
-      for (val b <- m.code.blocks.toList;
-           val (g, k) = genAndKill(b);
-           val (d, st) = dropsAndGen(b)) {
-        gen  += b -> g
-        kill += b -> k
-        drops += b -> d
-        outStack += b -> st
+      for (b <- m.code.blocks.toList;
+           (g, k) = genAndKill(b);
+           (d, st) = dropsAndGen(b)) {
+        gen  += Pair(b, g)
+        kill += Pair(b, k)
+        drops += Pair(b, d)
+        outStack += Pair(b, st)
       }
 
       init {
@@ -142,7 +141,7 @@ abstract class ReachingDefinitions {
       (drops, stackOut)
     }
 
-    override def run: Unit = {
+    override def run {
       forwardAnalysis(blockTransfer)
       if (settings.debug.value) {
         linearizer.linearize(method).foreach(b => if (b != method.code.startBlock)
@@ -163,7 +162,7 @@ abstract class ReachingDefinitions {
     }
 
     private def blockTransfer(b: BasicBlock, in: lattice.Elem): lattice.Elem = {
-      var locals: Set[Definition] = (in.vars filter { case (l, _, _) => !kill(b)(l) }) incl gen(b)
+      var locals: Set[Definition] = (in.vars filter { case (l, _, _) => !kill(b)(l) }) ++ gen(b)
       if (locals eq lattice.bottom.vars) locals = new ListSet[Definition]
       IState(locals, outStack(b) ::: in.stack.drop(drops(b)))
     }
@@ -186,7 +185,7 @@ abstract class ReachingDefinitions {
       var prod = instr.produced
       while (prod > 0) {
         stack = (new collection.immutable.Set1((b, idx))) :: stack
-        prod = prod - 1
+        prod -= 1
       }
 
       IState(locals, stack)
@@ -239,9 +238,9 @@ abstract class ReachingDefinitions {
       findDefs(bb, idx, m, 0)
 
     override def toString: String = {
-      val sb = new compat.StringBuilder
+      val sb = new StringBuilder
       sb.append("rdef: \n")
-      for (val b <- method.code.blocks)
+      for (b <- method.code.blocks)
         sb.append("rdef_entry(" + b + ")= " + in(b)).append("\nrdef_exit(" + b + ")= " + out(b))
       sb.toString()
     }

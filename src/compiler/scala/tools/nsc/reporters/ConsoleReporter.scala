@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2002-2007 LAMP/EPFL
+ * Copyright 2002-2008 LAMP/EPFL
  * @author Martin Odersky
  */
 // $Id$
@@ -40,7 +40,7 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
     countElementsAsString((severity).count, label(severity))
 
   /** Prints the message. */
-  def printMessage(msg: String) = writer.println(msg)
+  def printMessage(msg: String) { writer.println(msg) }
 
   /** Prints the message with the given position indication. */
   def printMessage(posIn: Position, msg: String) {
@@ -49,7 +49,7 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
       val buf = new StringBuilder(msg)
       if (!pos.source.isEmpty) {
         buf.insert(0, " ")
-        buf.insert(0, pos.line.map(ln => ":" + pos.line.get + ":").get(":"))
+        buf.insert(0, pos.line.map(ln => ":" + pos.line.get + ":").getOrElse(":"))
       }
       //println(getSource.file)
       pos match {

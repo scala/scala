@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Iulian Dragos
  */
 
@@ -32,8 +32,9 @@ abstract class Inliners extends SubComponent {
     def name = phaseName
     val inliner = new Inliner
 
-    override def apply(c: IClass): Unit =
+    override def apply(c: IClass) {
       inliner.analyzeClass(c)
+    }
   }
 
   /**
@@ -65,7 +66,7 @@ abstract class Inliners extends SubComponent {
     def inline(caller: IMethod,
                block:  BasicBlock,
                instr:  Instruction,
-               callee: IMethod): Unit = {
+               callee: IMethod) {
        log("Inlining " + callee + " in " + caller + " at pos: " +
            (try {
              instr.pos.offset.get
@@ -207,17 +208,17 @@ abstract class Inliners extends SubComponent {
        if (retVal ne null)
          addLocal(caller, retVal);
        callee.code.blocks.foreach { b =>
-         inlinedBlock += b -> newBlock;
+         inlinedBlock += Pair(b, newBlock)
          inlinedBlock(b).varsInScope ++= (b.varsInScope map inlinedLocals)
        }
 
        // analyse callee
-       a.run;
+       a.run
 
        // re-emit the instructions before the call
-       block.open;
-       block.clear;
-       instrBefore.foreach(i => block.emit(i, i.pos));
+       block.open
+       block.clear
+       instrBefore.foreach(i => block.emit(i, i.pos))
 
        // store the arguments into special locals
        callee.params.reverse.foreach { param =>
@@ -227,7 +228,7 @@ abstract class Inliners extends SubComponent {
 
        // jump to the start block of the callee
        block.emit(JUMP(inlinedBlock(callee.code.startBlock)), targetPos);
-       block.close;
+       block.close
 
        // duplicate the other blocks in the callee
        linearizer.linearize(callee).foreach { bb =>
@@ -251,12 +252,12 @@ abstract class Inliners extends SubComponent {
            inlinedBlock(bb).emit(map(i), targetPos);
            info = a.interpret(info, i);
          }
-         inlinedBlock(bb).close;
+         inlinedBlock(bb).close
        }
 
        instrAfter.foreach(i => afterBlock.emit(i, i.pos));
        afterBlock.close;
-       count = count + 1;
+       count += 1
 
        // add exception handlers of the callee
        caller.exh = (callee.exh map translateExh) ::: caller.exh;
@@ -274,8 +275,8 @@ abstract class Inliners extends SubComponent {
     tfa.stat = settings.statistics.value
 
     def analyzeMethod(m: IMethod): Unit = try {
-      var retry = false;
-      var count = 0;
+      var retry = false
+      var count = 0
       fresh.clear
       // how many times have we already inlined this method here?
       val inlinedMethods: Map[Symbol, Int] = new HashMap[Symbol, Int] {
@@ -385,12 +386,13 @@ abstract class Inliners extends SubComponent {
      *    - synthetic private members are made public in this pass.
      */
     def isSafeToInline(caller: IMethod, callee: IMethod, stack: TypeStack): Boolean = {
-      var callsPrivateMember = false;
+      var callsPrivateMember = false
 
-      if (callee.recursive) return false;
+      if (callee.recursive) return false
 
       callsPrivate get (callee) match {
-        case Some(b) => callsPrivateMember = b;
+        case Some(b) =>
+          callsPrivateMember = b
         case None =>
           for (b <- callee.code.blocks)
             for (i <- b.toList)
@@ -420,7 +422,7 @@ abstract class Inliners extends SubComponent {
 
                 case _ => ()
               }
-          callsPrivate += callee -> callsPrivateMember;
+          callsPrivate += Pair(callee, callsPrivateMember)
         }
 
       if (callsPrivateMember && (caller.symbol.owner != callee.symbol.owner))
@@ -471,7 +473,7 @@ abstract class Inliners extends SubComponent {
        if (callee.code.blocks.length <= SMALL_METHOD_SIZE) score = score + 1
        if (caller.code.blocks.length <= SMALL_METHOD_SIZE
            && ((caller.code.blocks.length + callee.code.blocks.length) > SMALL_METHOD_SIZE)) {
-         score = score - 1
+         score -= 1
          if (settings.debug.value)
            log("shouldInline: score decreased to " + score + " because small " + caller + " would become large")
        }
@@ -481,10 +483,10 @@ abstract class Inliners extends SubComponent {
        if (callee.symbol.tpe.paramTypes.exists(t => definitions.FunctionClass.contains(t.typeSymbol))) {
          if (settings.debug.value)
            log("increased score to: " + score)
-         score = score + 2
+         score += 2
        }
        if (isClosureClass(callee.symbol.owner))
-         score = score + 2
+         score += 2
 
        score > 0
      }

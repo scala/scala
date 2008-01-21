@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -27,9 +27,6 @@ class PlainFile(val file: File) extends AbstractFile {
 
   assert(file ne null)
   assert(file.exists(), "non-existent file: " + file)
-
-  //########################################################################
-  // Public Methods
 
   /** Returns the name of this abstract file. */
   def name = file.getName()
@@ -60,7 +57,7 @@ class PlainFile(val file: File) extends AbstractFile {
     assert(isDirectory, "not a directory '" + this + "'")
     val names: Array[String] = file.list()
     if ((names eq null) || names.length == 0) Iterator.empty
-    else Iterator.fromArray(names).map { name: String => new File(file, name) }
+    else names.elements.map { name: String => new File(file, name) }
       .filter(_.exists).map(file => new PlainFile(file))
   }
 
@@ -82,5 +79,4 @@ class PlainFile(val file: File) extends AbstractFile {
     else new PlainFile(child)
   }
 
-  //########################################################################
 }

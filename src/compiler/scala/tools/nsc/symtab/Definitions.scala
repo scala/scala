@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -844,7 +844,7 @@ trait Definitions {
 
     def addScalaCallerInfo(scalaCaller: Symbol, methSym: Symbol) = {
       assert(Delegate_scalaCallers contains scalaCaller)
-      Delegate_scalaCallerTargets += scalaCaller -> methSym
+      Delegate_scalaCallerTargets += Pair(scalaCaller, methSym)
     }
   }
 }
