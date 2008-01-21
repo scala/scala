@@ -719,7 +719,7 @@ trait Parsers extends NewScanners with MarkupParsers {
           val whereClauses = refinement()
           for (wc <- whereClauses) {
             wc match {
-              case TypeDef(_, _, _, TypeBoundsTree(_, _)) | ValDef(_, _, _, EmptyTree) =>
+              case TypeDef(_, _, _, TypeBoundsTree(_, _)) | ValDef(_, _, _, EmptyTree) | EmptyTree =>
                 ;
               case _ =>
                 syntaxError(wc.pos, "not a legal where clause", false)
