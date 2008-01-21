@@ -547,7 +547,7 @@ sealed abstract class List[+A] extends Seq[A] {
   /** Returns the last element of this list.
    *
    *  @return the last element of the list.
-   *  @throws Predef.UnsupportedOperationException if the list is empty.
+   *  @throws Predef.NoSuchElementException if the list is empty.
    */
   override def last: A =
     if (isEmpty) throw new Predef.NoSuchElementException("Nil.last")
