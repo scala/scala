@@ -380,8 +380,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     analyzer.typerFactory: SubComponent, // consistency check after refchecks would fail.
     superAccessors,  // add super accessors
     pickler,         // serializes symbol tables
-    refchecks,       // perform reference and override checking, translate nested objects
-    liftcode,        // generate reified trees
+    refchecks       // perform reference and override checking, translate nested objects
+  ) ::: (
+    if (forMSIL) List() else List(liftcode)  // generate reified trees
+  ) ::: List(
     uncurry,         // uncurry, translate function values to anonymous classes
     tailCalls,       // replace tail calls by jumps
     explicitOuter,   // replace C.this by explicit outer pointers, eliminate pattern matching
@@ -400,7 +402,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     closureElimination, // optimization: get rid of uncalled closures
     deadCode,           // optimization: get rid of dead cpde
     if (forMSIL) genMSIL else genJVM, // generate .class files
-    sampleTransform)
+    sampleTransform
+  )
 
 
   private var phasesCache: Option[List[SubComponent]] = None
