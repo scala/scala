@@ -382,7 +382,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     pickler,         // serializes symbol tables
     refchecks       // perform reference and override checking, translate nested objects
   ) ::: (
-    if (forMSIL) List() else List(liftcode)  // generate reified trees
+    if (forJVM) List(liftcode) else List()  // generate reified trees
   ) ::: List(
     uncurry,         // uncurry, translate function values to anonymous classes
     tailCalls,       // replace tail calls by jumps
@@ -692,6 +692,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   }
 
   def forCLDC: Boolean = settings.target.value == "cldc"
+  def forJVM : Boolean = settings.target.value startsWith "jvm"
   def forMSIL: Boolean = settings.target.value == "msil"
   def onlyPresentation = settings.doc.value
 
