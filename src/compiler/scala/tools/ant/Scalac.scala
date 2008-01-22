@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala Ant Tasks                      **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -156,8 +156,6 @@ class Scalac extends MatchingTask {
   /** Whether the compiler is being debuged. Prints more information in case
    *  in case of failure. */
   private var scalacDebugging: Boolean = false
-
-  private var generics: Option[Boolean] = None
 
 /*============================================================================*\
 **                             Properties setters                             **
@@ -352,8 +350,6 @@ class Scalac extends MatchingTask {
   def setAssemname(input: String) { assemname = Some(input) }
 
   def setAssemrefs(input: String) { assemrefs = Some(input) }
-
-  def setGenerics(input: Boolean) { generics = Some(input) }
 
 /*============================================================================*\
 **                             Properties getters                             **
@@ -555,7 +551,6 @@ class Scalac extends MatchingTask {
 
     if (!assemname.isEmpty) settings.assemname.value = assemname.get
     if (!assemrefs.isEmpty) settings.assemrefs.value = assemrefs.get
-//    if (!generics.isEmpty) settings.Xgenerics.value = generics.get
 
     log("Scalac params = '" + addParams + "'", Project.MSG_DEBUG)
     var args =

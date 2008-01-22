@@ -1,11 +1,14 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author Stephane Micheloud
  */
 //$Id$
 
 package scala.man1
 
+/**
+ *  @author Stephane Micheloud
+ */
 object scalac extends Command {
   import _root_.scala.tools.docutil.ManPage._
 
@@ -124,7 +127,8 @@ object scalac extends Command {
           SeqPara(
             "Specify which backend to use (" & Mono("jvm-1.5,jvm-1.4," &
             "msil,cldc") & ").",
-            "The default value is " & Mono("\"jvm-1.4\"") & ".")),
+            "The default value is " & Mono("\"jvm-1.5\"") & " (was " &
+            Mono("\"jvm-1.4\"") & " up to Scala version 2.6.1).")),
         Definition(
           CmdOption("print"),
           "Print program with all Scala-specific features removed"
@@ -157,9 +161,6 @@ object scalac extends Command {
         Definition(
           CmdOption("Xcheck-null"),
           "Emit warning on selection of nullable reference"),
-        Definition(
-          CmdOption("Xdebug"),
-          "Output debugging messages."),
         Definition(
           CmdOption("Xdisable-assertions"),
           "Generate no assertions and assumptions"),
@@ -197,6 +198,9 @@ object scalac extends Command {
           CmdOption("Xprint-types"),
           "Print tree types (debugging option)."),
         Definition(
+          CmdOption("Xprompt"),
+          "Display a prompt after each error (debugging option)."),
+        Definition(
           CmdOption("Xresident"),
           "Compiler stays resident, files to compile are read from standard " &
           "input."),
@@ -211,7 +215,10 @@ object scalac extends Command {
           "Print a synopsis of compiler phases."),
         Definition(
           CmdOption("Xsource-reader", Argument("classname")),
-          "Specify a custom method for reading source files.")
+          "Specify a custom method for reading source files."),
+        Definition(
+          CmdOption("Xscript", Argument("object")),
+          "Compile as a script, wrapping the code into object.main().")
       )
     ),
 
