@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Iulian Dragos
  */
 
@@ -31,9 +31,10 @@ abstract class DeadCodeElimination extends SubComponent {
     def name = phaseName
     val dce = new DeadCode()
 
-    override def apply(c: IClass): Unit =
+    override def apply(c: IClass) {
       if (settings.Xdce.value)
         dce.analyzeClass(c)
+    }
   }
 
   /** closures that are instantiated at least once, after dead code elimination */
@@ -43,7 +44,7 @@ abstract class DeadCodeElimination extends SubComponent {
    */
   class DeadCode {
 
-    def analyzeClass(cls: IClass): Unit = {
+    def analyzeClass(cls: IClass) {
       cls.methods.foreach { m =>
         this.method = m
 //        analyzeMethod(m);
@@ -71,19 +72,21 @@ abstract class DeadCodeElimination extends SubComponent {
     /** Map instructions who have a drop on some control path, to that DROP instruction. */
     val dropOf: mutable.Map[(BasicBlock, Int), (BasicBlock, Int)] = new mutable.HashMap()
 
-    def dieCodeDie(m: IMethod): Unit = if (m.code ne null) {
-      log("dead code elimination on " + m);
-      dropOf.clear
-      m.code.blocks.clear
-      accessedLocals = m.params.reverse
-      m.code.blocks ++= linearizer.linearize(m)
-      collectRDef(m)
-      mark
-      sweep(m)
-      accessedLocals = accessedLocals.removeDuplicates
-      if (m.locals.diff(accessedLocals).length > 0) {
-        log("Removed dead locals: " + m.locals.diff(accessedLocals))
-        m.locals = accessedLocals.reverse
+    def dieCodeDie(m: IMethod) {
+      if (m.code ne null) {
+        log("dead code elimination on " + m);
+        dropOf.clear
+        m.code.blocks.clear
+        accessedLocals = m.params.reverse
+        m.code.blocks ++= linearizer.linearize(m)
+        collectRDef(m)
+        mark
+        sweep(m)
+        accessedLocals = accessedLocals.removeDuplicates
+        if (m.locals.diff(accessedLocals).length > 0) {
+          log("Removed dead locals: " + m.locals.diff(accessedLocals))
+          m.locals = accessedLocals.reverse
+        }
       }
     }
 
@@ -99,7 +102,7 @@ abstract class DeadCodeElimination extends SubComponent {
         for (Pair(i, idx) <- bb.toList.zipWithIndex) {
           i match {
             case LOAD_LOCAL(l) =>
-              defs = defs + ((bb, idx)) -> rd.vars
+              defs = defs + Pair(((bb, idx)), rd.vars)
 //              Console.println(i + ": " + (bb, idx) + " rd: " + rd + " and having: " + defs)
             case RETURN(_) | JUMP(_) | CJUMP(_, _, _, _) | CZJUMP(_, _, _, _) | STORE_FIELD(_, _) |
                  THROW()   | STORE_ARRAY_ITEM(_) | SCOPE_ENTER(_) | SCOPE_EXIT(_) | STORE_THIS(_) |
@@ -122,7 +125,7 @@ abstract class DeadCodeElimination extends SubComponent {
               if (necessary) worklist += ((bb, idx))
             case _ => ()
           }
-          rd = rdef.interpret(bb, idx, rd);
+          rd = rdef.interpret(bb, idx, rd)
         }
       }
     }

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -74,16 +74,16 @@ abstract class Checkers {
       classes.values foreach check
     }
 
-    def check(cls: IClass): Unit = {
+    def check(cls: IClass) {
       log("Checking class " + cls)
       clasz = cls
 
-      for (val f1 <- cls.fields; val f2 <- cls.fields; f1 ne f2)
+      for (f1 <- cls.fields; f2 <- cls.fields if f1 ne f2)
         if (f1.symbol.name == f2.symbol.name)
           Checkers.this.global.error("Repetitive field name: " +
                                      f1.symbol.fullNameString);
 
-      for (val m1 <- cls.methods; val m2 <- cls.methods; m1 ne m2)
+      for (m1 <- cls.methods; m2 <- cls.methods if m1 ne m2)
         if (m1.symbol.name == m2.symbol.name &&
             m1.symbol.tpe =:= m2.symbol.tpe)
           Checkers.this.global.error("Repetitive method: " +
@@ -99,14 +99,14 @@ abstract class Checkers {
         l2 foreach { y => f(x, y) }
       }
 
-    def check(m: IMethod): Unit = {
-      log("Checking method " + m);
-      method = m;
+    def check(m: IMethod) {
+      log("Checking method " + m)
+      method = m
       if (!m.isDeferred)
-        check(m.code);
+        check(m.code)
     }
 
-    def check(c: Code): Unit = {
+    def check(c: Code) {
       var worklist: Buffer[BasicBlock] = new ListBuffer()
 
       def append(elems: List[BasicBlock]) = elems foreach appendBlock;
@@ -117,8 +117,8 @@ abstract class Checkers {
       in.clear;  out.clear;
       code = c;
       worklist + c.startBlock;
-      c.blocks foreach ( bl => { in  += bl -> emptyStack;
-                                 out += bl -> emptyStack } );
+      c.blocks foreach ( bl => { in  += Pair(bl, emptyStack);
+                                 out += Pair(bl, emptyStack) } );
 
       while (worklist.length > 0) {
         val block = worklist(0); worklist.trimStart(1);
@@ -138,7 +138,7 @@ abstract class Checkers {
      * :-). Compute the input to bl by checking that all stacks have the
      * same length, and taking the lub of types at the same positions.
      */
-    def meet(bl: BasicBlock): Unit = {
+    def meet(bl: BasicBlock) {
       val preds = bl.predecessors
 
       def meet2(s1: TypeStack, s2: TypeStack): TypeStack = {
@@ -166,30 +166,33 @@ abstract class Checkers {
      * produced type stack.
      */
     def check(b: BasicBlock, initial: TypeStack): TypeStack = {
-      log("** Checking block:\n" + b.fullString + " with initial stack:\n" + initial);
+      log("** Checking block:\n" + b.fullString + " with initial stack:\n" + initial)
       var stack = new TypeStack(initial)
 
       this.typeStack = stack
       this.basicBlock = b
 
-      def typeError(k1: TypeKind, k2: TypeKind): Unit =
+      def typeError(k1: TypeKind, k2: TypeKind) {
         error(" expected: " + k1 + " but " + k2 + " found")
+      }
 
       b traverse (instr => {
 
-        def checkStack(len: Int) =
+        def checkStack(len: Int) {
           if (stack.length < len)
             ICodeChecker.this.error("Expected at least " + len + " elements on the stack", stack);
           else
-            ();
+            ()
+        }
 
-        def checkLocal(local: Local) =
+        def checkLocal(local: Local) {
           method.lookupLocal(local.sym.name) match {
             case None => error(" " + local + " is not defined in method " + method);
             case _ => ()
           }
+        }
 
-        def checkField(obj: TypeKind, field: Symbol) =
+        def checkField(obj: TypeKind, field: Symbol) {
           obj match {
             case REFERENCE(sym) =>
               if (sym.info.member(field.name) == NoSymbol)
@@ -197,25 +200,27 @@ abstract class Checkers {
             case _ =>
               error(" expected reference type, but " + obj + " found");
           }
+        }
 
         /** Checks that tpe is a subtype of one of the allowed types */
-        def checkType(tpe: TypeKind, allowed: TypeKind*) =
+        def checkType(tpe: TypeKind, allowed: TypeKind*) {
           if (isOneOf(tpe, allowed: _*))
             ()
           else
             error(tpe.toString() + " is not one of: " + allowed.toList.mkString("{", ", ", "}"));
+        }
 
         /** Checks that the 2 topmost elements on stack are of the
          *  kind TypeKind.
          */
-        def checkBinop(kind: TypeKind) = {
+        def checkBinop(kind: TypeKind) {
           val (a, b) = stack.pop2
           checkType(a, kind)
           checkType(b, kind)
         }
 
         /** Check that arguments on the stack match method params. */
-        def checkMethodArgs(method: Symbol) = {
+        def checkMethodArgs(method: Symbol) {
           val params = method.info.paramTypes
           checkStack(params.length)
           params.reverse.foreach( (tpe) => checkType(stack.pop, toTypeKind(tpe)))
@@ -556,7 +561,7 @@ abstract class Checkers {
 
     //////////////// Error reporting /////////////////////////
 
-    def error(msg: String): Unit = {
+    def error(msg: String) {
       Console.println(method.toString() + " in block: " + basicBlock.label)
       printLastIntructions
 
@@ -564,22 +569,22 @@ abstract class Checkers {
     }
 
     /** Prints the last 4 instructions. */
-    def printLastIntructions = {
+    def printLastIntructions {
       var printed = 0
       var buf: List[Instruction] = Nil
 
       basicBlock.traverseBackwards( (i) =>
         if (i == instruction || (printed > 0 && printed < 3)) {
           buf = i :: buf
-          printed = printed + 1
+          printed += 1
         });
       buf foreach Console.println
       Console.println("at: " + (buf.head.pos))
     }
 
-    def error(msg: String, stack: TypeStack): Unit =
+    def error(msg: String, stack: TypeStack) {
       error(msg + "\n type stack: " + stack)
-
+    }
 
     //////////////////// Checking /////////////////////////////
 
