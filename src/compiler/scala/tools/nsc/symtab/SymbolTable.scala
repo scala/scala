@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -25,10 +25,13 @@ abstract class SymbolTable extends Names
   def rootLoader: LazyType
   def log(msg: AnyRef)
 
-  /** Are we compiling for the J2ME CLDC platform? */
+  /** Are we compiling for the J2ME CLDC platform ? */
   def forCLDC: Boolean
 
-  /** Are we compiling for .NET*/
+  /** Are we compiling for Java SE ? */
+  def forJVM: Boolean
+
+  /** Are we compiling for .NET ? */
   def forMSIL: Boolean
 
   /** are we in a lampion presentation compiler? cannot get inIDE flag from global */
@@ -144,14 +147,14 @@ abstract class SymbolTable extends Names
     final val BoxedCharacter = newTermName("java.lang.Character")
     final val BoxedBoolean = newTermName("java.lang.Boolean")
 
-    Boxed += nme.Boolean -> newTermName("java.lang.Boolean")
-    Boxed += nme.Byte    -> newTermName("java.lang.Byte")
-    Boxed += nme.Char    -> newTermName("java.lang.Character")
-    Boxed += nme.Short   -> newTermName("java.lang.Short")
-    Boxed += nme.Int     -> newTermName("java.lang.Integer")
-    Boxed += nme.Long    -> newTermName("java.lang.Long")
-    Boxed += nme.Float   -> newTermName("java.lang.Float")
-    Boxed += nme.Double  -> newTermName("java.lang.Double")
+    Boxed += Pair(nme.Boolean, newTermName("java.lang.Boolean"))
+    Boxed += Pair(nme.Byte   , newTermName("java.lang.Byte"))
+    Boxed += Pair(nme.Char   , newTermName("java.lang.Character"))
+    Boxed += Pair(nme.Short  , newTermName("java.lang.Short"))
+    Boxed += Pair(nme.Int    , newTermName("java.lang.Integer"))
+    Boxed += Pair(nme.Long   , newTermName("java.lang.Long"))
+    Boxed += Pair(nme.Float  , newTermName("java.lang.Float"))
+    Boxed += Pair(nme.Double , newTermName("java.lang.Double"))
   }
 
   private class MSILNames extends SymbolNames {
@@ -171,14 +174,14 @@ abstract class SymbolTable extends Names
     final val BoxedCharacter = newTermName("System.IConvertible")
     final val BoxedBoolean = newTermName("System.IConvertible")
 
-    Boxed += nme.Boolean -> newTermName("System.Boolean")
-    Boxed += nme.Byte    -> newTermName("System.Byte")
-    Boxed += nme.Char    -> newTermName("System.Char")
-    Boxed += nme.Short   -> newTermName("System.Int16")
-    Boxed += nme.Int     -> newTermName("System.Int32")
-    Boxed += nme.Long    -> newTermName("System.Int64")
-    Boxed += nme.Float   -> newTermName("System.Single")
-    Boxed += nme.Double  -> newTermName("System.Double")
+    Boxed += Pair(nme.Boolean, newTermName("System.Boolean"))
+    Boxed += Pair(nme.Byte   , newTermName("System.Byte"))
+    Boxed += Pair(nme.Char   , newTermName("System.Char"))
+    Boxed += Pair(nme.Short  , newTermName("System.Int16"))
+    Boxed += Pair(nme.Int    , newTermName("System.Int32"))
+    Boxed += Pair(nme.Long   , newTermName("System.Int64"))
+    Boxed += Pair(nme.Float  , newTermName("System.Single"))
+    Boxed += Pair(nme.Double , newTermName("System.Double"))
   }
 
   private class J2SENames extends JavaNames {
