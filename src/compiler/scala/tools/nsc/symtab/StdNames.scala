@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -256,6 +256,7 @@ trait StdNames {
     val assume_ = newTermName("assume")
     val asInstanceOf_ = newTermName("asInstanceOf")
     val asInstanceOfErased = newTermName("asInstanceOf$erased")
+    val bind = newTermName("bind")
     val booleanValue = newTermName("booleanValue")
     val box = newTermName("box")
     val boxArray = newTermName("boxArray")
@@ -323,6 +324,7 @@ trait StdNames {
     val self = newTermName("self")
     val send = newTermName("send")
     val synchronized_ = newTermName("synchronized")
+    val tag = newTermName("$tag")
     val tail = newTermName("tail")
     val toList = newTermName("toList")
     val toString_ = newTermName("toString")
@@ -333,11 +335,11 @@ trait StdNames {
     val true_ = newTermName("true")
     val unapply = newTermName("unapply")
     val unapplySeq = newTermName("unapplySeq")
+    val unbind = newTermName("unbind")
     val unbox = newTermName("unbox")
     val update = newTermName("update")
     val value = newTermName("value")
     val view_ = newTermName("view")
-    val tag = newTermName("$tag")
     val wait_ = newTermName("wait")
     val xml = newTermName("xml")
     val zip = newTermName("zip")

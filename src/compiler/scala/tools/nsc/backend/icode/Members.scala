@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -89,9 +89,9 @@ trait Members { self: ICodes =>
 	    if (!visited(b)) {
 	      f(b, visited);
 	      blockToVisit = b.successors ::: xs;
-	      visited += b -> true;
+	      visited += Pair(b, true)
 	    } else
-	      blockToVisit = xs;
+	      blockToVisit = xs
           case _ =>
             error("impossible match")
 	}
@@ -102,9 +102,9 @@ trait Members { self: ICodes =>
     override def toString() : String = "ICode '" + label + "'";
 
     /* Compute a unique new label */
-    def nextLabel = {
-      currentLabel = currentLabel + 1;
-      currentLabel;
+    def nextLabel: Int = {
+      currentLabel += 1
+      currentLabel
     }
 
     /* Create a new block and append it to the list
@@ -159,21 +159,21 @@ trait Members { self: ICodes =>
    * finished (GenICode does that).
    */
   class IMethod(val symbol: Symbol) {
-    var code: Code = null;
-    var native = false;
+    var code: Code = null
+    var native = false
 
     /** The list of exception handlers, ordered from innermost to outermost. */
-    var exh: List[ExceptionHandler] = Nil;
-    var sourceFile: String = _;
-    var returnType: TypeKind = _;
+    var exh: List[ExceptionHandler] = Nil
+    var sourceFile: String = _
+    var returnType: TypeKind = _
 
     var recursive: Boolean = false
 
     /** local variables and method parameters */
-    var locals: List[Local] = Nil;
+    var locals: List[Local] = Nil
 
     /** method parameters */
-    var params: List[Local] = Nil;
+    var params: List[Local] = Nil
 
     def setCode(code: Code): IMethod = {
       this.code = code;
@@ -188,17 +188,20 @@ trait Members { self: ICodes =>
           l
       }
 
-    def addLocals(ls: List[Local]): Unit =
-      ls foreach { l => addLocal(l); };
+    def addLocals(ls: List[Local]) {
+      ls foreach addLocal
+    }
 
-    def addParam(p: Local): Unit =
+    def addParam(p: Local) {
       if (!(params contains p)) {
         params = p :: params;
         locals = p :: locals;
       }
+    }
 
-    def addParams(as: List[Local]): Unit =
-      as foreach addParam;
+    def addParams(as: List[Local]) {
+      as foreach addParam
+    }
 
     def lookupLocal(n: Name): Option[Local] =
       locals find ((l) => l.sym.name == n);
@@ -206,8 +209,9 @@ trait Members { self: ICodes =>
     def lookupLocal(sym: Symbol): Option[Local] =
       locals find ((l) => l.sym == sym);
 
-    def addHandler(e: ExceptionHandler): Unit =
-      exh = e :: exh;
+    def addHandler(e: ExceptionHandler) {
+      exh = e :: exh
+    }
 
     /** Is this method deferred ('abstract' in Java sense) */
     def isDeferred = (
@@ -224,7 +228,7 @@ trait Members { self: ICodes =>
     import opcodes._
     def checkLocals: Unit = if (code ne null) {
       Console.println("[checking locals of " + this + "]")
-      for (val bb <- code.blocks; val i <- bb.toList) i match {
+      for (bb <- code.blocks; i <- bb.toList) i match {
         case LOAD_LOCAL(l) =>
           if (!this.locals.contains(l))
             Console.println("Local " + l + " is not declared in " + this)

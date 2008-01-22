@@ -775,11 +775,11 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
             case rawType => rawType
           }
 
-          map + name -> compiler.atPhase(objRun.typerPhase.next) { cleanedType.toString }
+          map + Pair(name, compiler.atPhase(objRun.typerPhase.next) { cleanedType.toString })
         })
       }
 
-      val names1 = getTypes(valAndVarNames, n=>compiler.nme.getterToLocal(n))
+      val names1 = getTypes(valAndVarNames, n => compiler.nme.getterToLocal(n))
       val names2 = getTypes(defNames, identity)
       names1 ++ names2
     }
