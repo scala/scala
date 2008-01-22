@@ -1873,8 +1873,16 @@ GENERATES A DISTRIBUTION
     <tar
       destfile="${dist.dir}/scala-${version.number}.tgz"
       compression="gzip">
-      <tarfileset dir="${dist.current.dir}" includes="bin/**" mode="755"/>
-      <tarfileset dir="${dist.current.dir}" excludes="bin/**"/>
+      <tarfileset
+        prefix="scala-${version.number}"
+        dir="${dist.current.dir}"
+        includes="bin/**" mode="755"
+      />
+      <tarfileset
+        prefix="scala-${version.number}"
+        dir="${dist.current.dir}"
+        excludes="bin/**"
+      />
     </tar>
     <checksum
       file="${dist.dir}/scala-${version.number}.tgz"
@@ -1882,8 +1890,12 @@ GENERATES A DISTRIBUTION
       fileext=".md5"/>
   <!-- Create zip archive -->
     <zip
-      basedir="${dist.current.dir}"
-      destfile="${dist.dir}/scala-${version.number}.zip"/>
+      destfile="${dist.dir}/scala-${version.number}.zip">
+      <zipfileset
+        prefix="scala-${version.number}"
+        dir="${dist.current.dir}"
+      />
+    </zip>
     <checksum
       file="${dist.dir}/scala-${version.number}.zip"
       forceOverwrite="yes"
