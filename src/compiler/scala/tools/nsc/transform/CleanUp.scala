@@ -504,12 +504,15 @@ abstract class CleanUp extends Transform {
 
       /* end of dynamic call transformer. */
 
-      case Template(parents, self, body) if !forMSIL =>
+      case Template(parents, self, body) =>
         localTyper = typer.atOwner(tree, currentOwner)
-        classConstantMeth.clear
-        newDefs.clear
-        val body1 = transformTrees(body)
-        copy.Template(tree, parents, self, newDefs.toList ::: body1)
+        if (!forMSIL) {
+          classConstantMeth.clear
+          newDefs.clear
+          val body1 = transformTrees(body)
+          copy.Template(tree, parents, self, newDefs.toList ::: body1)
+        }
+        else super.transform(tree)
 
       case Literal(c) if (c.tag == ClassTag) && !forMSIL=>
         val tpe = c.typeValue
@@ -524,6 +527,25 @@ abstract class CleanUp extends Transform {
             else tree
           }
         }
+
+      /* MSIL requires that the stack is empty at the end of a try-block.
+       * Hence, we here rewrite all try blocks with a result != {Unit, All} such that they
+       * store their result in a local variable. The catch blocks are adjusted as well.
+       * The try tree is subsituted by a block whose result expression is read of that variable. */
+      case theTry @ Try(block, catches, finalizer)
+        if theTry.tpe.typeSymbol != definitions.UnitClass && theTry.tpe.typeSymbol != definitions.AllClass =>
+        val tpe = theTry.tpe.widen
+        val tempVar = currentOwner.newValue(theTry.pos, unit.fresh.newName("exceptionResult"))
+          .setInfo(tpe).setFlag(Flags.MUTABLE)
+
+        val newBlock = Block(Nil, Assign(Ident(tempVar), transform(block)))
+        val newCatches = for (CaseDef(pattern, guard, body) <- catches) yield {
+          CaseDef(pattern, transform(guard), Block(Nil, Assign(Ident(tempVar), transform(body))))
+        }
+        val newTry = Try(newBlock, newCatches, finalizer)
+        val res = Block(List(ValDef(tempVar, EmptyTree), newTry), Ident(tempVar))
+        localTyper.typed(res)
+
       case _ =>
         super.transform(tree)
     }

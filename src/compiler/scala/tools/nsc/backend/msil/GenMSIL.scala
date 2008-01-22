@@ -910,7 +910,13 @@ abstract class GenMSIL extends SubComponent {
              **/
             def adaptBlocks(blocks: List[BasicBlock], exh: ExceptionHandler): (List[BasicBlock], Option[BasicBlock]) = {
               def outsideTargets(block: BasicBlock, blocks: List[BasicBlock]) = {
-                block.successors.filter(scc => !blocks.contains(scc))
+                /* The catch block of the ExceptionHandler is always a successor of any block inside the try
+                 * (see successors method in BasicBlocks.scala)
+                 * Thus, this successor does not correspond to a jump outside the exception handler
+                 * and has to be ignored when computing the list of blocks leaving the exception handler.  */
+                val res = block.successors.filter(scc => !blocks.contains(scc) && scc != exh.startBlock)
+                if (settings.debug.value) log("outside of " + block + " = " + res + " succ " + block.successors)
+                res
               }
               // get leaving blocks and their outside targets
               def leavingBlocks(blocks: List[BasicBlock]): List[(BasicBlock, List[BasicBlock])] = {
@@ -952,11 +958,13 @@ abstract class GenMSIL extends SubComponent {
                   val lBlock = p._1
                   val target = p._2(0) // the elemets of p._2 are all the same, checked before
                   replaceJump(lBlock, target, jumpOutBlock)
+                  if (settings.debug.value) log("replacing " + lBlock + " target " + target + " jump out " + jumpOutBlock)
                 })
                 (blocks ::: List(jumpOutBlock), Some(jumpOutBlock))
               }
 
               val leaving = leavingBlocks(blocks)
+              if (settings.debug.value) log("leaving " + leaving)
               if (leaving.length == 0)
                 (blocks, None)
               else if (leaving.length == 1) {

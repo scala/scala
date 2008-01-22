@@ -248,16 +248,17 @@ abstract class TailCalls extends Transform
         case Typed(expr, tpt) => super.transform(tree)
 
         case Apply(tapply @ TypeApply(fun, targs), vargs) =>
+          lazy val defaultTree = copy.Apply(tree, tapply, transformTrees(vargs, mkContext(ctx, false)))
           if ( ctx.currentMethod.isFinal &&
                ctx.tailPos &&
                isSameTypes(ctx.tparams, targs map (_.tpe.typeSymbol)) &&
                isRecursiveCall(fun)) {
             fun match {
-              case Select(receiver, _) => rewriteTailCall(fun, receiver :: transformTrees(vargs, mkContext(ctx, false)))
+              case Select(receiver, _) => if (!forMSIL) rewriteTailCall(fun, receiver :: transformTrees(vargs, mkContext(ctx, false))) else defaultTree
               case _ => rewriteTailCall(fun, This(currentClass) :: transformTrees(vargs, mkContext(ctx, false)))
             }
           } else
-            copy.Apply(tree, tapply, transformTrees(vargs, mkContext(ctx, false)))
+            defaultTree
 
         case TypeApply(fun, args) =>
           super.transform(tree)
@@ -267,15 +268,17 @@ abstract class TailCalls extends Transform
           copy.Apply(tree, fun, transformTrees(args))
 
         case Apply(fun, args) =>
+          lazy val defaultTree = copy.Apply(tree, fun, transformTrees(args, mkContext(ctx, false)))
           if (ctx.currentMethod.isFinal &&
               ctx.tailPos &&
               isRecursiveCall(fun)) {
             fun match {
-              case Select(receiver, _) => rewriteTailCall(fun, receiver :: transformTrees(args, mkContext(ctx, false)))
+              case Select(receiver, _) => if (!forMSIL) rewriteTailCall(fun, receiver :: transformTrees(args, mkContext(ctx, false))) else defaultTree
               case _ => rewriteTailCall(fun, This(currentClass) :: transformTrees(args, mkContext(ctx, false)))
             }
           } else
-            copy.Apply(tree, fun, transformTrees(args, mkContext(ctx, false)))
+            defaultTree
+
 
         case Super(qual, mix) =>
           tree
