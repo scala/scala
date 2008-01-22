@@ -705,7 +705,15 @@ trait Parsers extends NewScanners with MarkupParsers {
             val ts = types(false, false, true)
             accept(RPAREN)
             if (inToken == ARROW) atPos(inSkipToken) { makeFunctionTypeTree(ts, typ()) }
-            else infixTypeRest(pos, annotTypeRest(pos, false, makeTupleType(ts, true)), false, InfixMode.FirstOp)
+            else {
+              for (t <- ts) t match {
+                case AppliedTypeTree(Select(_, n), _)
+                if (n == nme.BYNAME_PARAM_CLASS_NAME.toTypeName) =>
+                  syntaxError(t.pos, "no by-name parameter type allowed here", false)
+                case _ =>
+              }
+              infixTypeRest(pos, annotTypeRest(pos, false, makeTupleType(ts, true)), false, InfixMode.FirstOp)
+            }
           }
         } else {
           infixType(false, InfixMode.FirstOp)
