@@ -503,8 +503,13 @@ trait Infer {
       // check first whether type variables can be fully defined from
       // expected result type.
       if (!isWeaklyCompatible(restpe.instantiateTypeParams(tparams, tvars), pt)) {
-        throw new DeferredNoInstance(() =>
-          "result type " + normalize(restpe) + " is incompatible with expected type " + pt)
+//      just wait and instantiate form the arguments.
+//      that way, we can try to apply an implicit conversion afterwards.
+//      This case could happen if restpe is not fully defined, so that
+//      search for an implicit from it to pt fails because of an ambiguity.
+//      See #0347. Therefore, the following two lines are commented out.
+//        throw new DeferredNoInstance(() =>
+//          "result type " + normalize(restpe) + " is incompatible with expected type " + pt)
       }
       for (tvar <- tvars)
         if (!isFullyDefined(tvar)) tvar.constr.inst = NoType

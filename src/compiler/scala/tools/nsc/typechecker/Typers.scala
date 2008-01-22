@@ -3313,9 +3313,9 @@ trait Typers { self: Analyzer =>
           else Select(gen.mkAttributedQualifier(info.pre), info.name)
         }
         // println("typed impl?? "+info.name+":"+info.tpe+" ==> "+tree+" with "+pt)
-        def fail(reason: String, sym1: Symbol, sym2: Symbol): Tree = {
-          if (settings.debug.value)
-            println(tree+" is not a valid implicit value because:\n"+reason + sym1+" "+sym2)
+        def fail(reason: String): Tree = {
+          if (settings.XlogImplicits.value)
+            inform(tree+" is not a valid implicit value for "+pt+" because:\n"+reason)
           EmptyTree
         }
         try {
@@ -3340,9 +3340,12 @@ trait Typers { self: Analyzer =>
           }
           if (tree2.tpe.isError) EmptyTree
           else if (hasMatchingSymbol(tree1)) tree2
-          else fail("syms differ: ", tree1.symbol, info.sym)
+          else if (settings.XlogImplicits.value)
+            fail("candidate implicit "+info.sym+info.sym.locationString+
+                 " is shadowed by other implicit: "+tree1.symbol+tree1.symbol.locationString)
+          else EmptyTree
         } catch {
-          case ex: TypeError => fail(ex.getMessage(), NoSymbol, NoSymbol)
+          case ex: TypeError => fail(ex.getMessage())
         }
       } else EmptyTree
     }

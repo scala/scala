@@ -108,6 +108,7 @@ class Settings(error: String => Unit) {
   val Xchecknull    = BooleanSetting    ("-Xcheck-null", "Emit warning on selection of nullable reference")
   val noassertions  = BooleanSetting    ("-Xdisable-assertions", "Generate no assertions and assumptions")
   val Xexperimental = BooleanSetting    ("-Xexperimental", "Enable experimental extensions")
+  val XlogImplicits = BooleanSetting    ("-Xlog-implicits", "Show more info on why some implicits are not applicable")
   val Xnojline      = new BooleanSetting("-Xnojline", "Do not use JLine for editing").hideToIDE
   val nouescape     = BooleanSetting    ("-Xno-uescape", "Disables handling of \\u unicode escapes")
   val plugin        = MultiStringSetting("-Xplugin", "file", "Load a plugin from a file")
