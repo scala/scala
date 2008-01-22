@@ -2315,7 +2315,7 @@ trait Typers { self: Analyzer =>
         }
         if (tpt1.tpe.typeSymbol.isAbstractType || (tpt1.tpe.typeSymbol hasFlag ABSTRACT))
           error(tree.pos, tpt1.tpe.typeSymbol + " is abstract; cannot be instantiated")
-        else if (tpt1.tpe.typeSymbol.thisSym != tpt1.tpe.typeSymbol &&
+        else if (tpt1.tpe.typeSymbol.initialize.thisSym != tpt1.tpe.typeSymbol &&
                  !(tpt1.tpe <:< tpt1.tpe.typeOfThis) &&
                  !phase.erasedTypes)
           error(tree.pos, tpt1.tpe.typeSymbol +
