@@ -147,7 +147,13 @@ trait Infer {
 //      throw new DeferredNoInstance(() =>
 //        "no solution exists for constraints"+(tvars map boundsString))
     }
-    for (val tvar <- tvars) assert(tvar.constr.inst != tvar, tvar.origin)
+    for (val tvar <- tvars)
+      if (tvar.constr.inst == tvar)
+        if (tvar.origin.typeSymbol.info eq ErrorType) {
+          // this can happen if during solving a cyclic type paramater
+          // such as T <: T gets completed. See #360
+          tvar.constr.inst = ErrorType
+        } else assert(false, tvar.origin)
     tvars map instantiate
   }
 
