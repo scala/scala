@@ -1,7 +1,17 @@
-package scala.tools.nsc.backend.icode;
+/* NSC -- new Scala compiler
+ * Copyright 2005-2008 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+
+// $Id$
+
+package scala.tools.nsc.backend.icode
 
 import scala.collection._
 
+/**
+ *  @author Iulian Dragos
+ */
 trait Repository {
   val global: Global
   import global._
@@ -34,7 +44,7 @@ trait Repository {
     val (c1, c2) = icodeReader.readClass(sym)
 
     assert(c1.symbol == sym || c2.symbol == sym)
-    loaded += c1.symbol -> c1
-    loaded += c2.symbol -> c2
+    loaded += Pair(c1.symbol, c1)
+    loaded += Pair(c2.symbol, c2)
   }
 }
