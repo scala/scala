@@ -2494,7 +2494,9 @@ A type's typeSymbol should never be inspected directly.
    */
   object rawToExistential extends TypeMap {
     def apply(tp: Type): Type = tp match {
-      case TypeRef(pre, sym, List()) if (sym.hasFlag(JAVA) && !sym.typeParams.isEmpty) =>
+      case TypeRef(pre, sym, List()) if !sym.typeParams.isEmpty && sym.hasFlag(JAVA) =>
+        //  note: it's important to write the two tests in this order,
+        //  as only typeParams forces the classfile to be read. See #400
         val eparams = typeParamsToExistentials(sym, sym.typeParams)
         existentialAbstraction(eparams, TypeRef(pre, sym, eparams map (_.tpe)))
       case _ =>

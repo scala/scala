@@ -78,10 +78,6 @@ trait Infer {
     override def getMessage(): String = getmsg()
   }
 
-  /*private*/ object instantiateMap extends TypeMap {
-    def apply(t: Type): Type = instantiate(t)
-  }
-
   /** map every TypeVar to its constraint.inst field.
    *  throw a NoInstance exception if a NoType or WildcardType is encountered.
    *
@@ -89,15 +85,26 @@ trait Infer {
    *  @return    ...
    *  @throws    NoInstance
    */
-  def instantiate(tp: Type): Type = tp match {
-    case WildcardType | NoType =>
-      throw new NoInstance("undetermined type")
-    case TypeVar(origin, constr) =>
-      if (constr.inst != NoType) instantiate(constr.inst)
-      else throw new DeferredNoInstance(() =>
-        "no unique instantiation of type variable " + origin + " could be found")
-    case _ =>
-      instantiateMap.mapOver(tp)
+  object instantiate extends TypeMap {
+    private var excludedVars = scala.collection.immutable.Set[TypeVar]()
+    def apply(tp: Type): Type = tp match {
+      case WildcardType | NoType =>
+        throw new NoInstance("undetermined type")
+      case tv @ TypeVar(origin, constr) =>
+        if (constr.inst == NoType) {
+          throw new DeferredNoInstance(() =>
+            "no unique instantiation of type variable " + origin + " could be found")
+        } else if (excludedVars contains tv) {
+          throw new NoInstance("cyclic instantiation")
+        } else {
+          excludedVars += tv
+          val res = apply(constr.inst)
+          excludedVars -= tv
+          res
+        }
+      case _ =>
+        mapOver(tp)
+    }
   }
 
   /** Is type fully defined, i.e. no embedded anytypes or wildcards in it?
