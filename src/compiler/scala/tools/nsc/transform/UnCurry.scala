@@ -373,6 +373,21 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         t
       }
 
+      /** A try needs to be lifted anyway for MSIL if it contains
+       *  return statements. These are disallowed in the CLR. By lifting
+       *  such returns will be converted to throws.
+       */
+      def shouldBeLiftedAnyway(tree: Tree) = {
+        forMSIL && {
+          var returnFound = false
+          for (subtree <- tree) subtree match {
+            case Return(_) => returnFound = true
+            case _ =>
+          }
+          returnFound
+        }
+      }
+
       def withInConstructorFlag(inConstructorFlag: Long)(f: => Tree): Tree = {
         val savedInConstructorFlag = this.inConstructorFlag
         this.inConstructorFlag = inConstructorFlag
@@ -449,7 +464,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           withNeedLift(true) { super.transform(tree) }
 
         case Try(block, catches, finalizer) =>
-          if (needTryLift) {
+          if (needTryLift || shouldBeLiftedAnyway(tree)) {
             if (settings.debug.value)
               log("lifting try at: " + (tree.pos));
 
