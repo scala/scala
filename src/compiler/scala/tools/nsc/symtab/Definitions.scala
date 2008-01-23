@@ -837,14 +837,14 @@ trait Definitions {
       newCaller
     }
 
-    // def addScalaCallerInfo(scalaCaller: Symbol, methSym: Symbol, delType: Type) = {
+    // def addScalaCallerInfo(scalaCaller: Symbol, methSym: Symbol, delType: Type) {
     // assert(Delegate_scalaCallers contains scalaCaller)
-    // Delegate_scalaCallerInfos += scalaCaller -> (methSym, delType)
+    // Delegate_scalaCallerInfos += (scalaCaller -> (methSym, delType))
     // }
 
-    def addScalaCallerInfo(scalaCaller: Symbol, methSym: Symbol) = {
+    def addScalaCallerInfo(scalaCaller: Symbol, methSym: Symbol) {
       assert(Delegate_scalaCallers contains scalaCaller)
-      Delegate_scalaCallerTargets += Pair(scalaCaller, methSym)
+      Delegate_scalaCallerTargets += (scalaCaller -> methSym)
     }
   }
 }
