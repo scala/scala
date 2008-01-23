@@ -52,8 +52,8 @@ abstract class Liveness {
 
       for (b <- m.code.blocks.toList;
            (g, k) = genAndKill(b)) {
-        gen  += b -> g
-        kill += b -> k
+        gen  += (b -> g)
+        kill += (b -> k)
       }
 
       init {
@@ -89,7 +89,7 @@ abstract class Liveness {
     }
 
     def blockTransfer(b: BasicBlock, out: lattice.Elem): lattice.Elem =
-      gen(b) ++ (out excl kill(b))
+      gen(b) ++ (out -- kill(b))
 
     /** Abstract interpretation for one instruction. Very important:
      *  liveness is a backward DFA, so this method should be used to compute
@@ -115,7 +115,7 @@ abstract class Liveness {
 
     override def toString(): String = {
       val buf = new StringBuilder()
-      for (val b <- method.code.blocks.toList) {
+      for (b <- method.code.blocks.toList) {
         buf.append("\nlive-in(" + b + ")=" + in(b) + "\nlive-out(" + b + ")=" + out(b));
       }
       buf.toString()

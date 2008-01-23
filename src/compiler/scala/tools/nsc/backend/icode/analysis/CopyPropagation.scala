@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -161,7 +161,7 @@ abstract class CopyPropagation {
         val commonPairs = a.bindings.toList intersect (b.bindings.toList)
         val resBindings = new HashMap[Location, Value]
         for ((k, v) <- commonPairs)
-          resBindings += k -> v;
+          resBindings += (k -> v);
         new State(resBindings, resStack)
       }
     }
@@ -259,11 +259,12 @@ abstract class CopyPropagation {
               v match {
                 case Deref(LocalVar(other)) =>
                   if (other != local)
-                    out.bindings += LocalVar(local) -> v;
+                    out.bindings += (LocalVar(local) -> v);
                 case _ =>
-                  out.bindings += LocalVar(local) -> v;
+                  out.bindings += (LocalVar(local) -> v)
               }
-            case Nil => Predef.error("Incorrect icode in " + method + ". Expecting something on the stack.")
+            case Nil =>
+              Predef.error("Incorrect icode in " + method + ". Expecting something on the stack.")
           }
           out.stack = out.stack drop 1;
 
@@ -279,7 +280,7 @@ abstract class CopyPropagation {
             cleanReferencesTo(out, Field(AllRecords, field));
             in.stack match {
               case v :: Record(_, bindings) :: vs =>
-                bindings += field -> v;
+                bindings += (field -> v)
               case _ => ();
             }
           }
@@ -492,7 +493,7 @@ abstract class CopyPropagation {
       for ((p, i) <- paramAccessors.zipWithIndex) {
 //        assert(p.tpe == ctor.tpe.paramTypes(i), "In: " + ctor.fullNameString + " having: " + (paramAccessors map (_.tpe))+ " vs. " + ctor.tpe.paramTypes)
 	if (p.tpe == ctor.tpe.paramTypes(i))
-	  bindings += p -> values.head;
+	  bindings += (p -> values.head);
         values = values.tail;
       }
 

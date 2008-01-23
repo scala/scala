@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -463,18 +463,18 @@ trait TypeKinds { self: ICodes =>
   def initPrimitiveTypeMap = {
     log("Initializing primitive map")
     primitiveTypeMap = new HashMap()
-    primitiveTypeMap += definitions.UnitClass -> UNIT
-    primitiveTypeMap += definitions.BooleanClass -> BOOL
-    primitiveTypeMap += definitions.ByteClass -> BYTE
-    primitiveTypeMap += definitions.ShortClass -> SHORT
-    primitiveTypeMap += definitions.CharClass -> CHAR
-    primitiveTypeMap += definitions.IntClass -> INT
-    primitiveTypeMap += definitions.LongClass -> LONG
+    primitiveTypeMap += (definitions.UnitClass -> UNIT)
+    primitiveTypeMap += (definitions.BooleanClass -> BOOL)
+    primitiveTypeMap += (definitions.ByteClass -> BYTE)
+    primitiveTypeMap += (definitions.ShortClass -> SHORT)
+    primitiveTypeMap += (definitions.CharClass -> CHAR)
+    primitiveTypeMap += (definitions.IntClass -> INT)
+    primitiveTypeMap += (definitions.LongClass -> LONG)
     if (!forCLDC) {
-      primitiveTypeMap += definitions.FloatClass -> FLOAT
-      primitiveTypeMap += definitions.DoubleClass -> DOUBLE
+      primitiveTypeMap += (definitions.FloatClass -> FLOAT)
+      primitiveTypeMap += (definitions.DoubleClass -> DOUBLE)
     }
-//    primitiveTypeMap += definitions.StringClass -> STRING
+//    primitiveTypeMap += (definitions.StringClass -> STRING)
   }
 
 }

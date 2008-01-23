@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -49,7 +49,7 @@ abstract class GenICode extends SubComponent  {
       else
         definitions.getMember(definitions.getClass("scala.runtime.Comparator"), nme.equals_)
 
-    override def run: Unit = {
+    override def run {
       scalaPrimitives.init
       classes.clear
       super.run
@@ -83,7 +83,7 @@ abstract class GenICode extends SubComponent  {
         log("Generating class: " + tree.symbol.fullNameString)
         ctx setClass (new IClass(tree.symbol) setCompilationUnit unit)
         addClassFields(ctx, tree.symbol);
-        classes += tree.symbol -> ctx.clazz
+        classes += (tree.symbol -> ctx.clazz)
         unit.icode += ctx.clazz
           gen(impl, ctx)
         ctx setClass null
@@ -195,7 +195,7 @@ abstract class GenICode extends SubComponent  {
     private def genLoad(tree: Tree, ctx: Context, expectedType: TypeKind): Context = {
       var generatedType = expectedType
       if (settings.debug.value)
-        log("at line: " + (tree.pos).line.map(_.toString).get(tree.pos.toString))
+        log("at line: " + (tree.pos).line.map(_.toString).getOrElse(tree.pos.toString))
 
       /**
        * Generate code for primitive arithmetic operations.
@@ -389,7 +389,7 @@ abstract class GenICode extends SubComponent  {
               label.patch(ctx.method.code)
 
             case None =>
-              ctx1.labels += tree.symbol -> (new Label(tree.symbol) anchor ctx1.bb setParams (params map (_.symbol)));
+              ctx1.labels += (tree.symbol -> (new Label(tree.symbol) anchor ctx1.bb setParams (params map (_.symbol))));
               ctx.method.addLocals(params map (p => new Local(p.symbol, toTypeKind(p.symbol.info), false)));
               if (settings.debug.value)
                 log("Adding label " + tree.symbol);
@@ -1290,7 +1290,7 @@ abstract class GenICode extends SubComponent  {
 
           case LabelDef(name, params, rhs) =>
             if (!ctx.labels.contains(tree.symbol)) {
-              ctx.labels += tree.symbol -> (new Label(tree.symbol) setParams(params map (_.symbol)));
+              ctx.labels += (tree.symbol -> (new Label(tree.symbol) setParams(params map (_.symbol))));
               ctx.method.addLocals(params map (p => new Local(p.symbol, toTypeKind(p.symbol.info), false)));
             }
             super.traverse(rhs)
@@ -1310,7 +1310,7 @@ abstract class GenICode extends SubComponent  {
                         thenCtx: Context,
                         elseCtx: Context): Unit =
     {
-      def genComparisonOp(l: Tree, r: Tree, code: Int): Unit = {
+      def genComparisonOp(l: Tree, r: Tree, code: Int) {
         // special-case reference (in)equality test for null
         if (code == scalaPrimitives.ID || code == scalaPrimitives.NI) {
           val expr: Tree = (l, r) match {
@@ -1526,7 +1526,7 @@ abstract class GenICode extends SubComponent  {
      * Add all fields of the given class symbol to the current ICode
      * class.
      */
-    private def addClassFields(ctx: Context, cls: Symbol): Unit = {
+    private def addClassFields(ctx: Context, cls: Symbol) {
       if (settings.debug.value)
         assert(ctx.clazz.symbol eq cls,
                "Classes are not the same: " + ctx.clazz.symbol + ", " + cls)
@@ -1540,7 +1540,7 @@ abstract class GenICode extends SubComponent  {
      * Add parameters to the current ICode method. It is assumed the methods
      * have been uncurried, so the list of lists contains just one list.
      */
-    private def addMethodParams(ctx: Context, vparamss: List[List[ValDef]]): Unit =
+    private def addMethodParams(ctx: Context, vparamss: List[List[ValDef]]) {
       vparamss match {
         case Nil => ()
 
@@ -1556,6 +1556,7 @@ abstract class GenICode extends SubComponent  {
         case _ =>
           abort("Malformed parameter list: " + vparamss)
       }
+    }
 
     /** Does this tree have a try-catch block? */
     def mayCleanStack(tree: Tree): Boolean = {
@@ -1652,7 +1653,7 @@ abstract class GenICode extends SubComponent  {
 
       do {
         changed = false
-        n = n + 1
+        n += 1
         method.code traverse prune0
       } while (changed)
 
@@ -1721,7 +1722,7 @@ abstract class GenICode extends SubComponent  {
             val tree = copy.LabelDef(t, name1, params, transform(rhs))
             tree.symbol = labels(t.symbol)
 
-            ctx.labels += tree.symbol -> (new Label(tree.symbol) setParams(params map (_.symbol)));
+            ctx.labels += (tree.symbol -> (new Label(tree.symbol) setParams(params map (_.symbol))));
             ctx.method.addLocals(params map (p => new Local(p.symbol, toTypeKind(p.symbol.info), false)));
 
             tree
@@ -1933,7 +1934,7 @@ abstract class GenICode extends SubComponent  {
       def removeHandler(exh: ExceptionHandler): Unit = {
         assert(handlerCount > 0 && handlers.head == exh,
                "Wrong nesting of exception handlers." + this + " for " + exh)
-        handlerCount = handlerCount - 1
+        handlerCount -= 1
         handlers = handlers.tail
         if (settings.debug.value)
           log("removed handler: " + exh);
@@ -2056,7 +2057,7 @@ abstract class GenICode extends SubComponent  {
         def substMap: Map[Instruction, Instruction] = {
           val map = new HashMap[Instruction, Instruction]()
 
-          toPatch foreach (i => map += i -> patch(i))
+          toPatch foreach (i => map += (i -> patch(i)))
           map
         }
 
