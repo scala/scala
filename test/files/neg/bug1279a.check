@@ -1,6 +1,8 @@
 bug1279a.scala:34: error: no type parameters for method all4Impl: (M{type T <: U})Stream[M{type T <: U}] exist so that it can be applied to arguments (first.selfType)
  --- because ---
-result type Stream[M{type T <: U}] is incompatible with expected type Stream[M{type T <: U}]
+argument expression's type is not compatible with formal parameter type;
+ found   : first.selfType
+ required: M{type T <: this.T}
    def all4Impl[U](first: M {type T <: U}): Stream[M {type T <: U}] = Stream.cons(first, all4Impl(first.next))
                                                                                          ^
 one error found
