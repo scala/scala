@@ -671,7 +671,7 @@ abstract class ICodeReader extends ClassfileParser {
 
       def makeBasicBlocks: Map[Int, BasicBlock] = {
         val block: Map[Int, BasicBlock] = new HashMap
-        for (pc <- jmpTargets) block += Pair(pc, code.newBlock)
+        for (pc <- jmpTargets) block += (pc -> code.newBlock)
         block
       }
 
@@ -973,7 +973,7 @@ abstract class ICodeReader extends ClassfileParser {
           checkValidIndex
           val l = freshLocal(idx, kind, false)
           log("Added new local for idx " + idx + ": " + kind)
-          locals += Pair(idx, List((l, kind)))
+          locals += (idx -> List((l, kind)))
           l
       }
     }
@@ -1003,7 +1003,7 @@ abstract class ICodeReader extends ClassfileParser {
       val sym = method.symbol.newVariable(NoPosition, "par" + idx).setInfo(kind.toType);
       val l = new Local(sym, kind, true)
       assert(!locals.isDefinedAt(idx))
-      locals += Pair(idx, List((l, kind)))
+      locals += (idx -> List((l, kind)))
       l
     }
 

@@ -44,7 +44,7 @@ trait Repository {
     val (c1, c2) = icodeReader.readClass(sym)
 
     assert(c1.symbol == sym || c2.symbol == sym)
-    loaded += Pair(c1.symbol, c1)
-    loaded += Pair(c2.symbol, c2)
+    loaded += (c1.symbol -> c1)
+    loaded += (c2.symbol -> c2)
   }
 }

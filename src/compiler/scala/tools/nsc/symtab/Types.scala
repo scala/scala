@@ -2841,7 +2841,7 @@ A type's typeSymbol should never be inspected directly.
 	sym.setFlag(EXISTENTIAL)
 
 
-	existSyms = existSyms + Pair(actualIdx, sym)
+	existSyms = existSyms + (actualIdx -> sym)
 	sym
       }
 

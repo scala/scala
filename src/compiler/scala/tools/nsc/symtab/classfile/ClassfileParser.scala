@@ -542,7 +542,7 @@ abstract class ClassfileParser {
       while (sig(index) != '>') {
         val tpname = subName(':'.==).toTypeName
         val s = sym.newTypeParameter(NoPosition, tpname)
-        tparams = tparams + Pair(tpname, s)
+        tparams = tparams + (tpname -> s)
         val ts = new ListBuffer[Type]
         while (sig(index) == ':') {
           index += 1

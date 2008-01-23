@@ -36,7 +36,7 @@ trait Members { self: ICodes =>
     private var currentLabel: Int = 0
 
     // Constructor code
-    startBlock = newBlock;
+    startBlock = newBlock
 
     def removeBlock(b: BasicBlock) {
       if (settings.debug.value) {
@@ -49,7 +49,7 @@ trait Members { self: ICodes =>
 
       if (b == startBlock)
         startBlock = b.successors.head;
-      blocks -= b;
+      blocks -= b
     }
 
     /**
@@ -77,7 +77,7 @@ trait Members { self: ICodes =>
     def traverse(f: BasicBlock => Unit) = blocks.toList foreach f;
 
     /* This method applies the given function to each basic block. */
-    def traverseFeedBack(f: (BasicBlock, HashMap[BasicBlock, Boolean])  => Unit) = {
+    def traverseFeedBack(f: (BasicBlock, HashMap[BasicBlock, Boolean]) => Unit) = {
       val visited : HashMap[BasicBlock, Boolean] = new HashMap;
       visited ++= blocks.elements.map(x => (x, false));
 
@@ -89,7 +89,7 @@ trait Members { self: ICodes =>
 	    if (!visited(b)) {
 	      f(b, visited);
 	      blockToVisit = b.successors ::: xs;
-	      visited += Pair(b, true)
+	      visited += (b -> true)
 	    } else
 	      blockToVisit = xs
           case _ =>
@@ -112,7 +112,7 @@ trait Members { self: ICodes =>
     def newBlock: BasicBlock = {
       val block = new BasicBlock(nextLabel, method);
       blocks += block;
-      block;
+      block
     }
   }
 
@@ -278,7 +278,7 @@ trait Members { self: ICodes =>
       }
     }
 
-    def dump = {
+    def dump {
       val printer = new TextPrinter(new PrintWriter(Console.out, true),
                                     new DumpLinearizer)
       printer.printMethod(this)

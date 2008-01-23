@@ -80,10 +80,10 @@ abstract class ReachingDefinitions {
       for (b <- m.code.blocks.toList;
            (g, k) = genAndKill(b);
            (d, st) = dropsAndGen(b)) {
-        gen  += Pair(b, g)
-        kill += Pair(b, k)
-        drops += Pair(b, d)
-        outStack += Pair(b, st)
+        gen  += (b -> g)
+        kill += (b -> k)
+        drops += (b -> d)
+        outStack += (b -> st)
       }
 
       init {

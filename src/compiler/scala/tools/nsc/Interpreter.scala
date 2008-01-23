@@ -120,8 +120,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   /** Instantiate a compiler.  Subclasses can override this to
    *  change the compiler class used by this interpreter. */
-  protected def newCompiler(settings: Settings, reporter: Reporter)
-    = new scala.tools.nsc.Global(settings, reporter)
+  protected def newCompiler(settings: Settings, reporter: Reporter) =
+    new scala.tools.nsc.Global(settings, reporter)
 
 
   /** the compiler's classpath, as URL's */
@@ -775,7 +775,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
             case rawType => rawType
           }
 
-          map + Pair(name, compiler.atPhase(objRun.typerPhase.next) { cleanedType.toString })
+          map + (name -> compiler.atPhase(objRun.typerPhase.next) { cleanedType.toString })
         })
       }
 
@@ -874,7 +874,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     // TODO: MemberDef.keyword does not include "trait";
     // otherwise it could be used here
     def keyword: String =
-      if(classdef.mods.isTrait) "trait" else "class"
+      if (classdef.mods.isTrait) "trait" else "class"
 
     override def resultExtractionCode(code: PrintWriter) {
       super.resultExtractionCode(code)

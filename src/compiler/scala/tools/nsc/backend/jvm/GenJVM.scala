@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2006 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Iulian Dragos
  */
 
@@ -39,7 +39,7 @@ abstract class GenJVM extends SubComponent {
     override def erasedTypes = true
     object codeGenerator extends BytecodeGenerator
 
-    override def run: Unit = {
+    override def run {
       if (settings.debug.value) inform("[running phase " + name + " on icode]")
       if (settings.Xdce.value)
         icodes.classes.retain { (sym: Symbol, cls: IClass) => !inliner.isClosureClass(sym) || deadCode.liveClosures(sym) }
@@ -47,8 +47,9 @@ abstract class GenJVM extends SubComponent {
       classes.values foreach codeGenerator.genClass
     }
 
-    override def apply(unit: CompilationUnit): Unit =
+    override def apply(unit: CompilationUnit) {
       abort("JVM works on icode classes, not on compilation units!")
+    }
   }
 
   var pickledBytes = 0 // statistics
@@ -103,7 +104,7 @@ abstract class GenJVM extends SubComponent {
      * @param jclass ...
      * @param sym    ...
      */
-    def emitClass(jclass: JClass, sym: Symbol): Unit = {
+    def emitClass(jclass: JClass, sym: Symbol) {
       def addScalaAttr(sym: Symbol): Unit = currentRun.symData.get(sym) match {
         case Some(pickle) =>
           val scalaAttr = fjbgContext.JOtherAttribute(jclass,
@@ -132,7 +133,7 @@ abstract class GenJVM extends SubComponent {
     var serialVUID: Option[Long] = None
     var remoteClass: Boolean = false
 
-    def genClass(c: IClass): Unit = {
+    def genClass(c: IClass) {
       clasz = c
       innerClasses = ListSet.empty
 
@@ -248,7 +249,7 @@ abstract class GenJVM extends SubComponent {
 	  else
 	    jcode.emitACONST_NULL()
 	  jcode.emitASTORE(strKind)
-	  fi = fi + 1
+	  fi += 1
 	}
       }
 
@@ -278,7 +279,7 @@ abstract class GenJVM extends SubComponent {
       informProgress("wrote BeanInfo " + outfile)
     }
 
-    def addExceptionsAttribute(sym: Symbol): Unit = {
+    def addExceptionsAttribute(sym: Symbol) {
       val (excs, others) = sym.attributes.partition((a => a match {
         case AnnotationInfo(tp, _, _) if tp.typeSymbol == ThrowsAttr => true
         case _ => false
@@ -293,11 +294,11 @@ abstract class GenJVM extends SubComponent {
       // put some radom value; the actual number is determined at the end
       buf.putShort(0xbaba.toShort)
 
-      for (val AnnotationInfo(tp, List(exc), _) <- excs.removeDuplicates; tp.typeSymbol == ThrowsAttr) {
+      for (AnnotationInfo(tp, List(exc), _) <- excs.removeDuplicates if tp.typeSymbol == ThrowsAttr) {
         buf.putShort(
           cpool.addClass(
             javaName(exc.constant.get.typeValue.typeSymbol)).shortValue)
-        nattr = nattr + 1
+        nattr += 1
       }
 
       assert(nattr > 0)
@@ -366,7 +367,7 @@ abstract class GenJVM extends SubComponent {
       for (attrib@AnnotationInfo(typ, consts, nvPairs) <- attributes;
            if shouldEmitAttribute(attrib))
       {
-	nattr = nattr + 1
+	nattr += 1
         val jtype = javaType(typ)
         buf.putShort(cpool.addUtf8(jtype.getSignature()).toShort)
         assert(consts.length <= 1, consts.toString)
@@ -375,7 +376,7 @@ abstract class GenJVM extends SubComponent {
           buf.putShort(cpool.addUtf8("value").toShort)
           emitElement(consts.head.constant.get)
         }
-        for (val (name, value) <- nvPairs) {
+        for ((name, value) <- nvPairs) {
           buf.putShort(cpool.addUtf8(name.toString).toShort)
           emitElement(value.constant.get)
         }
@@ -386,7 +387,7 @@ abstract class GenJVM extends SubComponent {
       nattr
     }
 
-    def addAnnotations(jmember: JMember, attributes: List[AnnotationInfo]): Unit = {
+    def addAnnotations(jmember: JMember, attributes: List[AnnotationInfo]) {
       val toEmit = attributes.filter(shouldEmitAttribute(_))
 
       if (toEmit.isEmpty) return
@@ -398,7 +399,7 @@ abstract class GenJVM extends SubComponent {
       addAttribute(jmember, nme.RuntimeAnnotationATTR, buf)
     }
 
-    def addParamAnnotations(pattrss: List[List[AnnotationInfo]]): Unit = {
+    def addParamAnnotations(pattrss: List[List[AnnotationInfo]]) {
       val attributes = for (attrs <- pattrss) yield
         for (attr @ AnnotationInfo(tpe, _, _) <- attrs;
              if attr.isConstant;
@@ -409,13 +410,13 @@ abstract class GenJVM extends SubComponent {
 
       // number of parameters
       buf.put(attributes.length.toByte)
-      for (val attrs <- attributes)
+      for (attrs <- attributes)
         emitAttributes(buf, attrs)
 
       addAttribute(jmethod, nme.RuntimeParamAnnotationATTR, buf)
     }
 
-    def addAttribute(jmember: JMember, name: Name, buf: ByteBuffer): Unit = {
+    def addAttribute(jmember: JMember, name: Name, buf: ByteBuffer) {
       if (buf.position() <= 2)
         return
 
@@ -430,16 +431,16 @@ abstract class GenJVM extends SubComponent {
       jmember.addAttribute(attr)
     }
 
-    def addInnerClasses: Unit = {
+    def addInnerClasses {
       // add inner classes which might not have been referenced yet
       atPhase(currentRun.erasurePhase) {
-        for (val sym <- clasz.symbol.info.decls.elements; sym.isClass)
+        for (sym <- clasz.symbol.info.decls.elements if sym.isClass)
           innerClasses = innerClasses + sym;
       }
 
       if (!innerClasses.isEmpty) {
-        val innerClassesAttr = jclass.getInnerClasses();
-        for (val innerSym <- innerClasses) {
+        val innerClassesAttr = jclass.getInnerClasses()
+        for (innerSym <- innerClasses) {
           var outerName = javaName(innerSym.rawowner)
           // remove the trailing '$'
           if (outerName.endsWith("$"))
@@ -462,7 +463,7 @@ abstract class GenJVM extends SubComponent {
       sym.isModuleClass && !sym.isImplClass && !sym.hasFlag(Flags.LIFTED)
     }
 
-    def genField(f: IField): Unit  = {
+    def genField(f: IField) {
       if (settings.debug.value)
         log("Adding field: " + f.symbol.fullNameString);
       var attributes = 0
@@ -486,7 +487,7 @@ abstract class GenJVM extends SubComponent {
       addAnnotations(jfield, f.symbol.attributes)
     }
 
-    def genMethod(m: IMethod): Unit = {
+    def genMethod(m: IMethod) {
       log("Generating method " + m.symbol.fullNameString)
       method = m
       endPC.clear
@@ -566,14 +567,14 @@ abstract class GenJVM extends SubComponent {
       }
     }
 
-    def addModuleInstanceField: Unit = {
+    def addModuleInstanceField {
       import JAccessFlags._
       jclass.addNewField(ACC_PUBLIC | ACC_FINAL | ACC_STATIC,
                         nme.MODULE_INSTANCE_FIELD.toString,
                         jclass.getType())
     }
 
-    def addStaticInit(cls: JClass): Unit = {
+    def addStaticInit(cls: JClass) {
       import JAccessFlags._
       val clinitMethod = cls.addNewMethod(ACC_PUBLIC | ACC_STATIC,
                                           "<clinit>",
@@ -602,7 +603,7 @@ abstract class GenJVM extends SubComponent {
       clinit.emitRETURN()
     }
 
-    def dumpMirrorClass: Unit = {
+    def dumpMirrorClass {
       import JAccessFlags._
       assert(clasz.symbol.isModuleClass)
       if (settings.debug.value)
@@ -639,7 +640,7 @@ abstract class GenJVM extends SubComponent {
         while (i < argTypes.length) {
           mirrorCode.emitLOAD(index, argTypes(i))
           index = index + argTypes(i).getSize()
-          i = i + 1
+          i += 1
         }
 
         mirrorCode.emitINVOKEVIRTUAL(moduleName, mirrorMethod.getName(), mirrorMethod.getType().asInstanceOf[JMethodType])
@@ -655,7 +656,7 @@ abstract class GenJVM extends SubComponent {
     /**
      *  @param m ...
      */
-    def genCode(m: IMethod): Unit = {
+    def genCode(m: IMethod) {
       labels.clear
       isModuleInitialized = false
 
@@ -678,7 +679,7 @@ abstract class GenJVM extends SubComponent {
 
 
     /** Generate exception handlers for the current method. */
-    def genExceptionHandlers: Unit = {
+    def genExceptionHandlers {
 
       /** Return a list of pairs of intervals where the handler is active.
        *  The intervals in the list have to be inclusive in the beginning and
@@ -742,7 +743,7 @@ abstract class GenJVM extends SubComponent {
     /** local variables whose scope appears in this block. */
     var varsInBlock: collection.mutable.Set[Local] = new HashSet
 
-    def genBlock(b: BasicBlock): Unit = {
+    def genBlock(b: BasicBlock) {
       labels(b).anchorToNext()
 
       if (settings.debug.value)
@@ -1124,7 +1125,7 @@ abstract class GenJVM extends SubComponent {
      *  @param primitive ...
      *  @param pos       ...
      */
-    def genPrimitive(primitive: Primitive, pos: Position): Unit = {
+    def genPrimitive(primitive: Primitive, pos: Position) {
       primitive match {
         case Negation(kind) =>
           kind match {
@@ -1260,7 +1261,7 @@ abstract class GenJVM extends SubComponent {
             log("Converting from: " + src + " to: " + dst);
           if (dst == BOOL) {
             Console.println("Illegal conversion at: " + clasz +
-                            " at: " + pos.source.get + ":" + pos.line.get(-1));
+                            " at: " + pos.source.get + ":" + pos.line.getOrElse(-1));
           } else
             jcode.emitT2T(javaType(src), javaType(dst));
 
@@ -1298,41 +1299,41 @@ abstract class GenJVM extends SubComponent {
     val labels: HashMap[BasicBlock, JCode$Label] = new HashMap()
     val conds: HashMap[TestOp, Int] = new HashMap()
 
-    conds += EQ -> JExtendedCode.COND_EQ
-    conds += NE -> JExtendedCode.COND_NE
-    conds += LT -> JExtendedCode.COND_LT
-    conds += GT -> JExtendedCode.COND_GT
-    conds += LE -> JExtendedCode.COND_LE
-    conds += GE -> JExtendedCode.COND_GE
+    conds += (EQ -> JExtendedCode.COND_EQ)
+    conds += (NE -> JExtendedCode.COND_NE)
+    conds += (LT -> JExtendedCode.COND_LT)
+    conds += (GT -> JExtendedCode.COND_GT)
+    conds += (LE -> JExtendedCode.COND_LE)
+    conds += (GE -> JExtendedCode.COND_GE)
 
     val negate: HashMap[TestOp, TestOp] = new HashMap()
 
-    negate += EQ -> NE
-    negate += NE -> EQ
-    negate += LT -> GE
-    negate += GT -> LE
-    negate += LE -> GT
-    negate += GE -> LT
+    negate += (EQ -> NE)
+    negate += (NE -> EQ)
+    negate += (LT -> GE)
+    negate += (GT -> LE)
+    negate += (LE -> GT)
+    negate += (GE -> LT)
 
     /** Map from type kinds to the Java reference types. It is used for
      *  loading class constants. @see Predef.classOf. */
     val classLiteral: Map[TypeKind, JObjectType] = new HashMap()
 
-    classLiteral += UNIT   -> new JObjectType("java.lang.Void")
-    classLiteral += BOOL   -> new JObjectType("java.lang.Boolean")
-    classLiteral += BYTE   -> new JObjectType("java.lang.Byte")
-    classLiteral += SHORT  -> new JObjectType("java.lang.Short")
-    classLiteral += CHAR   -> new JObjectType("java.lang.Character")
-    classLiteral += INT    -> new JObjectType("java.lang.Integer")
-    classLiteral += LONG   -> new JObjectType("java.lang.Long")
-    classLiteral += FLOAT  -> new JObjectType("java.lang.Float")
-    classLiteral += DOUBLE -> new JObjectType("java.lang.Double")
+    classLiteral += (UNIT   -> new JObjectType("java.lang.Void"))
+    classLiteral += (BOOL   -> new JObjectType("java.lang.Boolean"))
+    classLiteral += (BYTE   -> new JObjectType("java.lang.Byte"))
+    classLiteral += (SHORT  -> new JObjectType("java.lang.Short"))
+    classLiteral += (CHAR   -> new JObjectType("java.lang.Character"))
+    classLiteral += (INT    -> new JObjectType("java.lang.Integer"))
+    classLiteral += (LONG   -> new JObjectType("java.lang.Long"))
+    classLiteral += (FLOAT  -> new JObjectType("java.lang.Float"))
+    classLiteral += (DOUBLE -> new JObjectType("java.lang.Double"))
 
-    def makeLabels(bs: List[BasicBlock]) = {
+    def makeLabels(bs: List[BasicBlock]) {
       //labels.clear
       if (settings.debug.value)
         log("Making labels for: " + method);
-      bs foreach (bb => labels += bb -> jcode.newLabel() )
+      bs foreach (bb => labels += (bb -> jcode.newLabel()) )
     }
 
 
@@ -1361,16 +1362,16 @@ abstract class GenJVM extends SubComponent {
      * Compute the indexes of each local variable of the given
      * method. Assumes parameters come first in the list of locals.
      */
-    def computeLocalVarsIndex(m: IMethod): Unit = {
+    def computeLocalVarsIndex(m: IMethod) {
       var idx = 1
       if (isStaticSymbol(m.symbol))
         idx = 0;
 
-      for (val l <- m.locals) {
+      for (l <- m.locals) {
         if (settings.debug.value)
           log("Index value for " + l + "{" + l.hashCode + "}: " + idx)
         l.index = idx
-        idx = idx + sizeOf(l.kind)
+        idx += sizeOf(l.kind)
       }
     }
 
@@ -1415,7 +1416,7 @@ abstract class GenJVM extends SubComponent {
     def javaNames(syms: List[Symbol]): Array[String] = {
       val res = new Array[String](syms.length)
       var i = 0
-      syms foreach (s => { res(i) = javaName(s); i = i + 1; })
+      syms foreach (s => { res(i) = javaName(s); i += 1 })
       res
     }
 
@@ -1496,7 +1497,7 @@ abstract class GenJVM extends SubComponent {
     def javaTypes(ts: List[TypeKind]): Array[JType] = {
       val res = new Array[JType](ts.length)
       var i = 0
-      ts foreach ( t => { res(i) = javaType(t); i = i + 1; } );
+      ts foreach ( t => { res(i) = javaType(t); i += 1 } );
       res
     }
 
@@ -1508,7 +1509,7 @@ abstract class GenJVM extends SubComponent {
     /** Emit a Local variable table for debugging purposes.
      *  Synthetic locals are skipped. All variables are method-scoped.
      */
-    private def genLocalVariableTable(m: IMethod): Unit = {
+    private def genLocalVariableTable(m: IMethod) {
         var vars = m.locals.filter(l => !l.sym.hasFlag(Flags.SYNTHETIC))
 
         if (vars.length == 0) return
@@ -1517,11 +1518,14 @@ abstract class GenJVM extends SubComponent {
         val pc = jcode.getPC()
         var anonCounter = 0
         var entries = 0
-        vars.foreach { lv => lv.ranges = mergeEntries(lv.ranges.reverse); entries = entries + lv.ranges.length }
-        if (!jmethod.isStatic()) entries = entries + 1
+        vars.foreach { lv =>
+          lv.ranges = mergeEntries(lv.ranges.reverse);
+          entries += lv.ranges.length
+        }
+        if (!jmethod.isStatic()) entries += 1
 
         val lvTab = ByteBuffer.allocate(2 + 10 * entries)
-        def emitEntry(name: String, signature: String, idx: Short, start: Short, end: Short): Unit = {
+        def emitEntry(name: String, signature: String, idx: Short, start: Short, end: Short) {
           lvTab.putShort(start)
           lvTab.putShort(end)
           lvTab.putShort(pool.addUtf8(name).asInstanceOf[Short])
@@ -1535,15 +1539,15 @@ abstract class GenJVM extends SubComponent {
           emitEntry("this", jclass.getType().getSignature(), 0, 0.asInstanceOf[Short], pc.asInstanceOf[Short])
         }
 
-        for (val lv <- vars) {
+        for (lv <- vars) {
             val name = if (javaName(lv.sym) eq null) {
-              anonCounter = anonCounter + 1
+              anonCounter += 1
               "<anon" + anonCounter + ">"
             } else javaName(lv.sym)
 
             val index = indexOf(lv).asInstanceOf[Short]
             val tpe   = javaType(lv.kind).getSignature()
-            for (val (start, end) <- lv.ranges) {
+            for ((start, end) <- lv.ranges) {
               emitEntry(name, tpe, index, start.asInstanceOf[Short], (end - start).asInstanceOf[Short])
             }
         }
@@ -1569,6 +1573,6 @@ abstract class GenJVM extends SubComponent {
       throw new Error(msg + "\nMethod: " + method)
     }
 
-    def assert(cond: Boolean): Unit = assert(cond, "Assertion failed.")
+    def assert(cond: Boolean) { assert(cond, "Assertion failed.") }
   }
 }

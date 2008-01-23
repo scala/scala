@@ -208,7 +208,7 @@ abstract class Inliners extends SubComponent {
        if (retVal ne null)
          addLocal(caller, retVal);
        callee.code.blocks.foreach { b =>
-         inlinedBlock += Pair(b, newBlock)
+         inlinedBlock += (b -> newBlock)
          inlinedBlock(b).varsInScope ++= (b.varsInScope map inlinedLocals)
        }
 
@@ -422,7 +422,7 @@ abstract class Inliners extends SubComponent {
 
                 case _ => ()
               }
-          callsPrivate += Pair(callee, callsPrivateMember)
+          callsPrivate += (callee -> callsPrivateMember)
         }
 
       if (callsPrivateMember && (caller.symbol.owner != callee.symbol.owner))
