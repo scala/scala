@@ -388,6 +388,22 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         }
       }
 
+      /** Transform tree `t' to { def f = t; f } where `f' is a fresh name
+       */
+      def liftTree(tree: Tree) = {
+        if (settings.debug.value)
+          log("lifting tree at: " + (tree.pos))
+        val sym = currentOwner.newMethod(tree.pos, unit.fresh.newName("liftedTree"))
+        sym.setInfo(MethodType(List(), tree.tpe))
+        new ChangeOwnerTraverser(currentOwner, sym).traverse(tree)
+        localTyper.typed {
+          atPos(tree.pos) {
+            Block(List(DefDef(sym, List(List()), tree)),
+                  Apply(Ident(sym), Nil))
+          }
+        }
+      }
+
       def withInConstructorFlag(inConstructorFlag: Long)(f: => Tree): Tree = {
         val savedInConstructorFlag = this.inConstructorFlag
         this.inConstructorFlag = inConstructorFlag
@@ -451,6 +467,8 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
               (fn.symbol.name == nme.assert_ || fn.symbol.name == nme.assume_) &&
               fn.symbol.owner == PredefModule.moduleClass) {
             Literal(()).setPos(tree.pos).setType(UnitClass.tpe)
+          } else if (fn.symbol == Object_synchronized && shouldBeLiftedAnyway(args.head)) {
+            transform(copy.Apply(tree, fn, List(liftTree(args.head))))
           } else {
             withNeedLift(true) {
               val formals = fn.tpe.paramTypes;
@@ -464,19 +482,8 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           withNeedLift(true) { super.transform(tree) }
 
         case Try(block, catches, finalizer) =>
-          if (needTryLift || shouldBeLiftedAnyway(tree)) {
-            if (settings.debug.value)
-              log("lifting try at: " + (tree.pos));
-
-            val sym = currentOwner.newMethod(tree.pos, unit.fresh.newName("liftedTry"));
-            sym.setInfo(MethodType(List(), tree.tpe));
-            new ChangeOwnerTraverser(currentOwner, sym).traverse(tree);
-
-            transform(localTyper.typed(atPos(tree.pos)(
-              Block(List(DefDef(sym, List(List()), tree)),
-                    Apply(Ident(sym), Nil)))))
-          } else
-            super.transform(tree)
+          if (needTryLift || shouldBeLiftedAnyway(tree)) transform(liftTree(tree))
+          else super.transform(tree)
 
         case CaseDef(pat, guard, body) =>
           inPattern = true
