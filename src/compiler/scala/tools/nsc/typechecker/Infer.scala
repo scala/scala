@@ -177,15 +177,15 @@ trait Infer {
    */
   def normalize(tp: Type): Type = skipImplicit(tp) match {
     case MethodType(formals, restpe) if (!restpe.isDependent) =>
-      if (util.Statistics.enabled) normM = normM + 1
+      if (util.Statistics.enabled) normM += 1
       functionType(formals, normalize(restpe))
     case PolyType(List(), restpe) =>
-      if (util.Statistics.enabled) normP = normP + 1
+      if (util.Statistics.enabled) normP += 1
       normalize(restpe)
     case ExistentialType(tparams, qtpe) =>
       ExistentialType(tparams, normalize(qtpe))
     case tp1 =>
-      if (util.Statistics.enabled) normO = normO + 1
+      if (util.Statistics.enabled) normO += 1
       tp1 // @MAT aliases already handled by subtyping
   }
 
@@ -230,7 +230,7 @@ trait Infer {
        (if (pt == WildcardType) "" else " with expected result type " + pt)
 
     // todo: use also for other error messages
-    def existentialContext(tp: Type) = tp.existentialSkolems match {
+    private def existentialContext(tp: Type) = tp.existentialSkolems match {
       case List() => ""
       case skolems => " where "+(skolems map (_.existentialToString) mkString ", ")
     }

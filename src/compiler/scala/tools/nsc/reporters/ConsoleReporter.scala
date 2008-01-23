@@ -40,7 +40,8 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
     countElementsAsString((severity).count, label(severity))
 
   /** Prints the message. */
-  def printMessage(msg: String) { writer.println(msg) }
+  //def printMessage(msg: String) { writer.println(msg) }  // platform-dependent!
+  def printMessage(msg: String) { writer.print(msg + "\n"); writer.flush() }
 
   /** Prints the message with the given position indication. */
   def printMessage(posIn: Position, msg: String) {
@@ -53,12 +54,12 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
       }
       //println(getSource.file)
       pos match {
-      case FakePos(msg) =>
-        buf.insert(0, msg + " ")
-      case _ if !pos.source.isEmpty =>
-        val file = pos.source.get.file
-        buf.insert(0, if (shortname) file.name else file.path)
-      case _ =>
+        case FakePos(msg) =>
+          buf.insert(0, msg + " ")
+        case _ if !pos.source.isEmpty =>
+          val file = pos.source.get.file
+          buf.insert(0, if (shortname) file.name else file.path)
+        case _ =>
       }
       printMessage(buf.toString())
       if (!pos.line.isEmpty)
