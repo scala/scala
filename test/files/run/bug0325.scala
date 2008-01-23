@@ -2,7 +2,7 @@ case class RS(self: String) {
   def split(separator: Char): Array[String] = self.split("\\Q"+separator+"\\E")
 
   def split(separators: Array[Char]): Array[String] = {
-    val re = separators.foldLeft("[\\Q")(_+_) + "\\E]"
+    val re = separators.foldLeft("[")(_+"\\Q"+_+"\\E") + "]"
     self.split(re)
   }
 }
@@ -12,9 +12,10 @@ object Test {
   def test(f: => Array[String], which: String) {
     try {
       val ret = f.toList
-      if (ret != expect) {
+      if (ret != expect)
         println(which + " returned " + ret + " when expecting " + expect)
-      }
+      else
+        println(ret)
     } catch {
       case e@_ => println(which + " failed with " + e.getClass)
     }

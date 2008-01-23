@@ -169,7 +169,7 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
 
   @throws(classOf[java.util.regex.PatternSyntaxException])
   def split(separators: Array[Char]): Array[String] = {
-    val re = separators.foldLeft("[\\Q")(_+_) + "\\E]"
+    val re = separators.foldLeft("[")(_+"\\Q"+_+"\\E") + "]"
     self.split(re)
   }
 
