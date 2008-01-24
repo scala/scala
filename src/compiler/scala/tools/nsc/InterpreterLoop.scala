@@ -1,18 +1,17 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author Alexander Spoon
  */
 // $Id$
 
 package scala.tools.nsc
 
-import java.lang.{ClassLoader, System}
-import java.io.{BufferedReader, InputStreamReader, File, FileReader, PrintWriter}
+import java.io.{BufferedReader, File, FileReader, PrintWriter}
 import java.io.IOException
+import java.lang.{ClassLoader, System}
 
-import scala.tools.nsc.util.{ClassPath, Position}
-import nsc.{InterpreterResults=>IR}
-import nsc.interpreter._
+import scala.tools.nsc.{InterpreterResults => IR}
+import scala.tools.nsc.interpreter._
 
 /** The
  *  <a href="http://scala-lang.org/" target="_top">Scala</a>

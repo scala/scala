@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2002-2007 LAMP/EPFL
+ * Copyright 2002-2008 LAMP/EPFL
  * @author Martin Odersky
  */
 // $Id$
@@ -15,7 +15,7 @@ import scala.tools.nsc.util._
 abstract class Reporter {
   object severity extends Enumeration
   abstract class Severity extends severity.Value {
-    var count : Int = 0
+    var count: Int = 0
   }
   object INFO    extends Severity { def id = 0 }
   object WARNING extends Severity { def id = 1 }
@@ -37,9 +37,9 @@ abstract class Reporter {
 
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit
 
-  private var source : SourceFile = _
-  def setSource(source : SourceFile) : Unit = this.source = source
-  def getSource : SourceFile = source
+  private var source: SourceFile = _
+  def setSource(source: SourceFile) { this.source = source }
+  def getSource: SourceFile = source
 
   def    info(pos: Position, msg: String, force: Boolean): Unit = info0(pos, msg,    INFO, force)
   def warning(pos: Position, msg: String                ): Unit = info0(pos, msg, WARNING, false)

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2002-2007 LAMP/EPFL
+ * Copyright 2002-2008 LAMP/EPFL
  * @author Martin Odersky
  */
 // $Id$
@@ -7,8 +7,8 @@
 package scala.tools.nsc.reporters
 
 import scala.collection.mutable.HashSet
+import scala.tools.nsc.Settings
 import scala.tools.nsc.util.Position
-import nsc.Settings
 
 /**
  * This reporter implements filtering.
@@ -26,7 +26,7 @@ abstract class AbstractReporter extends Reporter {
   def display(pos: Position, msg: String, severity: Severity): Unit
   def displayPrompt: Unit
 
-  protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit =
+  protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean) {
     severity match {
       case INFO    =>
         if (force || settings.verbose.value) display(pos, msg, severity)
@@ -41,6 +41,7 @@ abstract class AbstractReporter extends Reporter {
         if (!hidden || settings.prompt.value) display(pos, msg, severity)
         if (settings.prompt.value) displayPrompt
     }
+  }
 
   /** Logs a position and returns <code>true</code> if it was already logged.
    *
@@ -51,10 +52,8 @@ abstract class AbstractReporter extends Reporter {
     if (pos eq null) return false
     if (pos.offset.isEmpty) return false
     if (positions contains pos) return true
-    //Console.println("ERROR @ " + pos + " into " + positions)
     positions += pos
-
-    return false
+    false
   }
 
 }

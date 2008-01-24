@@ -6,7 +6,7 @@
 
 package scala.tools.nsc
 
-import java.io.{File, PrintWriter, StringWriter}
+import java.io.{File, PrintWriter, StringWriter, Writer}
 import java.lang.{Class, ClassLoader}
 import java.net.{URL, URLClassLoader}
 
@@ -62,7 +62,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   /* If the interpreter is running on pre-jvm-1.5 JVM,
      it is necessary to force the target setting to jvm-1.4 */
-  val major = System.getProperty("java.class.version").split("\\.")(0)
+  private val major = System.getProperty("java.class.version").split("\\.")(0)
   if (major.toInt < 49) {
     this.settings.target.value = "jvm-1.4"
   }
@@ -83,7 +83,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   /** construct an interpreter that reports to Console */
   def this(settings: Settings) =
     this(settings,
-         new PrintWriter(new ConsoleWriter, true))
+         new NewLinePrintWriter(new ConsoleWriter, true))
 
   /** whether to print out result lines */
   private var printResults: Boolean = true
@@ -115,7 +115,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   settings.outdir.value = classfilePath.getPath
 
   object reporter extends ConsoleReporter(settings, null, out) {
-    override def printMessage(msg: String) = out.println(clean(msg))
+    //override def printMessage(msg: String) { out.println(clean(msg)) }
+    override def printMessage(msg: String) { out.print(clean(msg) + "\n"); out.flush() }
   }
 
   /** Instantiate a compiler.  Subclasses can override this to
@@ -156,7 +157,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     Thread.currentThread.setContextClassLoader(classLoader)
   }
 
-
   /** XXX Let's get rid of this.  I believe the Eclipse plugin is
     * the only user of it, so this should be doable.  */
   protected def parentClassLoader: ClassLoader = null
@@ -188,7 +188,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   /** generate a string using a routine that wants to write on a stream */
   private def stringFrom(writer: PrintWriter => Unit): String = {
     val stringWriter = new StringWriter()
-    val stream = new PrintWriter(stringWriter)
+    val stream = new NewLinePrintWriter(stringWriter)
     writer(stream)
     stream.close
     stringWriter.toString
@@ -223,13 +223,13 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
     stringFrom(str =>
       for (line <- code.lines) {
-	str.print(spaces)
-	str.println(line)
+        str.print(spaces)
+        str.print(line + "\n")
+        str.flush()
       })
   }
 
   implicit def name2string(name: Name) = name.toString
-
 
   /** Compute imports that allow definitions from previous
    *  requests to be visible in a new request.  Returns
@@ -302,7 +302,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
       select(prevRequests.toList.reverse, wanted).reverse
     }
-
 
     val code = new StringBuffer
     val trailingBraces = new StringBuffer
@@ -928,6 +927,12 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       yield name
   }
 }
+
+  class NewLinePrintWriter(out: Writer, autoFlush: Boolean)
+  extends PrintWriter(out, autoFlush) {
+    def this(out: Writer) = this(out, false)
+    override def println() { print("\n"); flush() }
+  }
 
 /** Utility methods for the Interpreter. */
 object Interpreter {

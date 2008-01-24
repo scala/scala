@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -36,9 +36,7 @@ trait Contexts { self: Analyzer =>
    *  a root context.  This list is sensitive to the
    *  compiler settings.
    */
-  protected def rootImports(unit: CompilationUnit, tree: Tree)
-  :List[Symbol] =
-  {
+  protected def rootImports(unit: CompilationUnit, tree: Tree) :List[Symbol] = {
     import definitions._
     val imps = new ListBuffer[Symbol]
     if (!settings.noimports.value) {
@@ -65,7 +63,7 @@ trait Contexts { self: Analyzer =>
         Import(qual, List((nme.WILDCARD, null)))
         .setSymbol(NoSymbol.newImport(NoPosition).setFlag(SYNTHETIC).setInfo(ImportType(qual)))
         .setType(NoType))
-      sc.depth = sc.depth + 1
+      sc.depth += 1
     }
     for (imp <- rootImports(unit, tree))
       addImport(imp)
@@ -87,8 +85,8 @@ trait Contexts { self: Analyzer =>
     }
   }
   // IDE hooks
-  protected def sanitize(tree : Tree) : Tree = tree
-  protected def scopeFor(old : Scope, tree : Tree) : Scope = newScope(old)
+  protected def sanitize(tree: Tree): Tree = tree
+  protected def scopeFor(old: Scope, tree: Tree): Scope = newScope(old)
   class Context private[typechecker] {
     var unit: CompilationUnit = _
     var tree: Tree = _ // Tree associated with this context
@@ -115,7 +113,6 @@ trait Contexts { self: Analyzer =>
     var retyping = false
 
     var savedTypeBounds: List[(Symbol, Type)] = List()
-
 
     def intern0 : Context = {
       if (this eq NoContext) return this
@@ -145,11 +142,13 @@ trait Contexts { self: Analyzer =>
       txt.savedTypeBounds = savedTypeBounds
       txt
     }
-    override def equals(that : Any) : Boolean = that match {
-      case that : AnyRef if (this eq that) => true
-      case that if !inIDE => super.equals(that)
+    override def equals(that: Any): Boolean = that match {
+      case that: AnyRef if (this eq that) =>
+        true
+      case that if !inIDE =>
+        super.equals(that)
       //case NoContext => false
-      case that : Context =>
+      case that: Context =>
         if (that eq NoContext) return this eq NoContext
         assert(that ne NoContext)
         if (this eq NoContext) return false
