@@ -175,13 +175,11 @@ object TestRunner {
     master.start
 
     val posFiles = getFiles("pos", posCheck)
-    /*if (! posFiles.isEmpty) {
+    if (! posFiles.isEmpty) {
       printOutline("\nTesting compiler (on files whose compilation should succeed)\n")
       for (file <- posFiles) master ! PosTest(file)
-    }*/
-    master ! PosTest(posFiles(0))
-
-    /*val negFiles = getFiles("neg", negCheck)
+    }
+    val negFiles = getFiles("neg", negCheck)
     if (! negFiles.isEmpty) {
       printOutline("\nTesting compiler (on files whose compilation should fail)\n")
       for (file <- negFiles) master ! NegTest(file)
@@ -202,7 +200,7 @@ object TestRunner {
     if (! shootFiles.isEmpty) {
       printOutline("\nTesting shootout benchmarks\n")
       for (file <- shootFiles) master! ShootoutTest(createTestFile(file, "shootout"))
-    }*/
+    }
 
     master ! ("start", conservative)
   }
