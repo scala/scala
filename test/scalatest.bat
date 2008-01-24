@@ -1,7 +1,7 @@
 @echo off
 
 rem ##########################################################################
-rem # Copyright 2002-2006 LAMP/EPFL
+rem # Copyright 2002-2008 LAMP/EPFL
 rem #
 rem # This is free software; see the distribution for copying conditions.
 rem # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
@@ -35,17 +35,17 @@ set _ARGS=
 :loop
 rem Argument %1 may contain quotes so we use parentheses here
 if (%1)==() goto exec
-if (%1)==(--auto)      set _TYPE=auto & goto next
-if (%1)==(--run)       set _TYPE=run & goto next
-if (%1)==(--jvm)       set _TYPE=jvm & goto next
-if (%1)==(--pos)       set _TYPE=pos & goto next
-if (%1)==(--neg)       set _TYPE=neg & goto next
-if (%1)==(--msil)      set _TYPE=msil & goto next
-if (%1)==(--quick)     set _BIN=build\quick\bin & goto next
-if (%1)==(--no-run)    set _NORUN=1 & goto next
-if (%1)==(--show-log)  set _SHOWLOG=1 & goto next
-if (%1)==(--show-diff) set _SHOWDIFF=1 & goto next
-if (%1)==(--failed)    set _FAILED=1 & goto next
+if (%1)==(--auto)      set _TYPE=auto& goto next
+if (%1)==(--run)       set _TYPE=run& goto next
+if (%1)==(--jvm)       set _TYPE=jvm& goto next
+if (%1)==(--pos)       set _TYPE=pos& goto next
+if (%1)==(--neg)       set _TYPE=neg& goto next
+if (%1)==(--msil)      set _TYPE=msil& goto next
+if (%1)==(--quick)     set _BIN=build\quick\bin& goto next
+if (%1)==(--no-run)    set _NORUN=1& goto next
+if (%1)==(--show-log)  set _SHOWLOG=1& goto next
+if (%1)==(--show-diff) set _SHOWDIFF=1& goto next
+if (%1)==(--failed)    set _FAILED=1& goto next
 if (%1)==(--help)      call :prt_help & goto :eof
 if (%1)==(-h)          call :prt_help & goto :eof
 if (%1)==(-?)          call :prt_help & goto :eof
@@ -70,9 +70,11 @@ if exist "%_SCALA_HOME%\misc\NUL" (
 )
 
 set _SCALA=%_BINDIR%\scala
-set _SCALAC=%_BINDIR%\scalac -encoding iso-8859-1
+set _SCALAC=%_BINDIR%\scalac
 set _SCALAP=%_BINDIR%\scalap
 set _DIFF=%_DIFFDIR%\diff.exe --text --strip-trailing-cr
+
+if not exist "%_BINDIR%" goto err_bin
 
 set _OBJDIR=
 set _TMPDIR=%TEMP%
@@ -151,7 +153,7 @@ rem # NB. goto/call commands use only the first 8 characters of a label
   goto :eof
 
 :prt_version
-  echo Scala test suite 0.9.2 -- (c) 2002-2006 LAMP/EPFL
+  echo Scala test suite 0.9.3 -- (c) 2002-2008 LAMP/EPFL
   goto :eof
 
 :prt_status
@@ -290,6 +292,10 @@ rem Checks everything.
 
 rem ##########################################################################
 rem # errors
+
+:err_bin
+echo ERROR: missing command "%_SCALAC%; run "ant build".
+goto end
 
 :err_home
 echo ERROR: Windows NT or newer is required to run this batch command.
