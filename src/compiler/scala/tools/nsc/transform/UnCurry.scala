@@ -106,7 +106,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
    *  If a `return' is encountered, set `returnFound' to true.
    *  Used for MSIL only.
    */
-  private object lookForReturns extends TreeTraverser {
+  private object lookForReturns extends Traverser {
     var returnFound = false
     override def traverse(tree: Tree): Unit =  tree match {
       case Return(_) => returnFound = true
