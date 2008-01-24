@@ -341,14 +341,14 @@ trait Infer {
           // are converted to existentials C[T] forSome { type T }.
           // We can't do this on class loading because it would result
           // in infinite cycles.
-          if (sym1.isTerm) {
+          if (sym1.isTerm) { /*
             if (sym1 hasFlag JAVA)
               sym1.setInfo(rawToExistential(sym1.info))
             else if (sym1 hasFlag OVERLOADED)
               for (sym2 <- sym1.alternatives)
                 if (sym2 hasFlag JAVA)
                   sym2.setInfo(rawToExistential(sym2.info))
-          }
+          */}
           //Console.println("check acc " + sym1 + ":" + sym1.tpe + " from " + pre);//DEBUG
           var owntype = try{
             pre.memberType(sym1)
