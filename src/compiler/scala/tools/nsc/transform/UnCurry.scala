@@ -102,6 +102,24 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
   def transformInfo(sym: Symbol, tp: Type): Type =
     if (sym.isType) uncurryType(tp) else uncurry(tp)
 
+  /** Traverse tree omitting local method definitions.
+   *  If a `return' is encountered, set `returnFound' to true.
+   *  Used for MSIL only.
+   */
+  private object lookForReturns extends TreeTraverser {
+    var returnFound = false
+    override def traverse(tree: Tree): Unit =  tree match {
+      case Return(_) => returnFound = true
+      case DefDef(_, _, _, _, _, _) => ;
+      case _ => super.traverse(tree)
+    }
+    def found(tree: Tree) = {
+      returnFound = false
+      traverse(tree)
+      returnFound
+    }
+  }
+
   class UnCurryTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
 
     private var needTryLift = false
@@ -377,16 +395,8 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
        *  return statements. These are disallowed in the CLR. By lifting
        *  such returns will be converted to throws.
        */
-      def shouldBeLiftedAnyway(tree: Tree) = {
-        forMSIL && {
-          var returnFound = false
-          for (subtree <- tree) subtree match {
-            case Return(_) => returnFound = true
-            case _ =>
-          }
-          returnFound
-        }
-      }
+      def shouldBeLiftedAnyway(tree: Tree) =
+        forMSIL && lookForReturns.found(tree)
 
       /** Transform tree `t' to { def f = t; f } where `f' is a fresh name
        */
