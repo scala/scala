@@ -1,3 +1,9 @@
+/* NSC -- new Scala compiler
+ * Copyright 2005-2008 LAMP/EPFL
+ * @author Alexander Spoon
+ */
+// $Id$
+
 package scala.tools.nsc
 
 /** Settings for the interpreter
