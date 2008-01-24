@@ -266,15 +266,16 @@ test_run_jvm() {
     fi
     rm -rf "$dstbase".obj &&
     mkdir -p "$dstbase".obj &&
+    ext_classpath=`get_os_pathlist "$JVM_EXT_CLASSPATH"` &&
     (cd "$srcdir" && env JAVACMD="$JAVACMD" JAVA_OPTS="$javaopts" $SCALAC -d "$os_dstbase".obj \
-        -cp "$JVM_EXT_CLASSPATH" "$@" "$testname".scala ) &&
+        -cp "$ext_classpath" "$@" "$testname".scala ) &&
     libpath=`get_os_pathlist "$dstdir"` &&
     scala_javaopts=`echo -Djava.library.path=$libpath` &&
     scala_lib=`get_os_filename "$SCALA_LIB"` &&
-    classpath=`get_os_pathlist "$os_dstbase".obj:$CLASSPATH` &&
+    classpath=`get_os_pathlist "$os_dstbase".obj:$CLASSPATH:$ext_classpath` &&
     env JAVA_OPTS="$scala_javaopts" $SCALA -Djavacmd="$JAVACMD" \
         -Dscalatest.output=$os_dstbase.obj -Dscalatest.lib=$scala_lib \
-        -classpath $classpath:$JVM_EXT_CLASSPATH Test "jvm" &&
+        -classpath "$classpath" Test "jvm" &&
     rm -rf "$dstbase".obj;
 }
 
@@ -399,12 +400,13 @@ test_run_shootout() {
     mkdir -p "$dstbase".obj &&
     testfile=`get_os_filename "$dstbase".obj/test.scala` &&
     cat "$os_srcbase".scala.runner "$os_srcbase".scala > "$testfile" &&
-    $SCALAC -d "$os_dstbase".obj -cp "$JVM_EXT_CLASSPATH" "$@" "$testfile" &&
+    ext_classpath=`get_os_pathlist "$JVM_EXT_CLASSPATH"` &&
+    $SCALAC -d "$os_dstbase".obj -cp "$ext_classpath" "$@" "$testfile" &&
     scala_lib=`get_os_filename "$SCALA_LIB"` &&
-    classpath=`get_os_pathlist "$os_dstbase".obj:$CLASSPATH` &&
+    classpath=`get_os_pathlist "$os_dstbase".obj:$CLASSPATH:$ext_classpath` &&
     env JAVACMD="$JAVACMD" JAVA_OPTS="$javaopts" \
         $SCALA -Dscalatest.cwd="$srcdir" -Dscalatest.output=$os_dstbase.obj \
-               -Dscalatest.lib=$scala_lib -classpath $classpath:$JVM_EXT_CLASSPATH Test &&
+               -Dscalatest.lib=$scala_lib -classpath "$classpath" Test &&
     rm -rf "$dstbase".obj;
 }
 
