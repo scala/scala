@@ -341,14 +341,21 @@ trait Infer {
           // are converted to existentials C[T] forSome { type T }.
           // We can't do this on class loading because it would result
           // in infinite cycles.
-          if (sym1.isTerm) { /*
+          def cook(sym: Symbol) {
+            val tpe1 = rawToExistential(sym.tpe)
+            if (tpe1 ne sym.tpe) {
+              if (settings.debug.value) println("cooked: "+sym+":"+sym.tpe)
+              sym.setInfo(tpe1)
+            }
+          }
+          if (sym1.isTerm) {
             if (sym1 hasFlag JAVA)
-              sym1.setInfo(rawToExistential(sym1.info))
+              cook(sym1)
             else if (sym1 hasFlag OVERLOADED)
               for (sym2 <- sym1.alternatives)
                 if (sym2 hasFlag JAVA)
-                  sym2.setInfo(rawToExistential(sym2.info))
-          */}
+                  cook(sym2)
+          }
           //Console.println("check acc " + sym1 + ":" + sym1.tpe + " from " + pre);//DEBUG
           var owntype = try{
             pre.memberType(sym1)

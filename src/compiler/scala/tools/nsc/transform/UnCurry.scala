@@ -391,7 +391,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         t
       }
 
-      /** A try needs to be lifted anyway for MSIL if it contains
+      /** A try or synchronized needs to be lifted anyway for MSIL if it contains
        *  return statements. These are disallowed in the CLR. By lifting
        *  such returns will be converted to throws.
        */
