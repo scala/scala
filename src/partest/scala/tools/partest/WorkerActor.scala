@@ -89,16 +89,16 @@ class WorkerActor(val master: MasterActor, val settings: Settings, var reporter:
           }
 
           var start = System.currentTimeMillis
-          //println("Starting..." + test.kind + " " + test.test)
+          println("Starting..." + test.kind + " " + test.test)
 
           var toCompile = List(test.file.getPath)
 
           var outDir: File = new File(test.dir, test.fileBase + "-" + test.kind + ".obj")
           if (! outDir.exists) {
             outDir.mkdir
-            //println(this.toString + " " + "Created " + outDir)
+            println(this.toString + " " + "Created " + outDir)
           } else {
-            //println(this.toString + " " + "Didn't need to create " + outDir)
+            println(this.toString + " " + "Didn't need to create " + outDir)
           }
           test match {
             case NegTest(_) =>
@@ -139,16 +139,16 @@ class WorkerActor(val master: MasterActor, val settings: Settings, var reporter:
 
           val c = compiler
 
-          //println("about to define compilation settings...")
+          println("about to define compilation settings...")
 
           test.defineSettings(settings)
           try {
-            //println(this.toString + " " + "Launching compiler on " + toCompile)
+            println(this.toString + " " + "Launching compiler on " + toCompile)
             (new c.Run) compile toCompile
             reporter.printSummary
             reporter.writer.flush
             reporter.writer.close
-            //println(this.toString + " " + "Finished compiling " + test.fileBase)
+            println(this.toString + " " + "Finished compiling " + test.fileBase)
           } catch {
             case e => {
               e.printStackTrace
@@ -172,6 +172,7 @@ class WorkerActor(val master: MasterActor, val settings: Settings, var reporter:
             case NegTest(_) => reporter.hasErrors
             case _ => !reporter.hasErrors
           }
+          println("success: "+success)
 
           (bypassObjectRunner, success, test) match {
             case (_, _, PosTest(_)) =>
