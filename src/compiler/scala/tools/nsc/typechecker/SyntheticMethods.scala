@@ -254,17 +254,19 @@ trait SyntheticMethods { self: Analyzer =>
     if (!phase.erasedTypes) {
       try {
         if (clazz hasFlag CASE) {
+          val isTop = !(clazz.info.baseClasses.tail exists (_ hasFlag CASE))
           // case classes are implicitly declared serializable
           clazz.attributes = AnnotationInfo(SerializableAttr.tpe, List(), List()) :: clazz.attributes
 
-          for (stat <- templ.body) {
-            if (stat.isDef && stat.symbol.isMethod && stat.symbol.hasFlag(CASEACCESSOR) && !isPublic(stat.symbol)) {
-              ts += newAccessorMethod(stat)
-              stat.symbol.resetFlag(CASEACCESSOR)
+          if (isTop) {
+            for (stat <- templ.body) {
+              if (stat.isDef && stat.symbol.isMethod && stat.symbol.hasFlag(CASEACCESSOR) && !isPublic(stat.symbol)) {
+                ts += newAccessorMethod(stat)
+                stat.symbol.resetFlag(CASEACCESSOR)
+              }
             }
+            if (!inIDE && clazz.info.nonPrivateDecl(nme.tag) == NoSymbol) ts += tagMethod
           }
-
-          if (!inIDE && clazz.info.nonPrivateDecl(nme.tag) == NoSymbol) ts += tagMethod
           if (clazz.isModuleClass) {
             if (!hasOverridingImplementation(Object_toString)) ts += moduleToStringMethod
           } else {

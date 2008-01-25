@@ -1,6 +1,8 @@
-case class Foo(x: int)(y: int);
+case class Foo(x: int)(y: int)
 
-case class Bar;
+case class Bar
+
+case class Baz(override val x: Int, y: Int) extends Foo(x)(y)
 
 object M {
   abstract case class C(x: String) {}
@@ -20,7 +22,10 @@ object Test extends Application {
     case Foo(1) => Console.println("OK")
     case Bar() => Console.println("NO")
   }
-
+  (Baz(1, 2): AnyRef) match {
+    case Baz(1, 2) => ;
+    case Bar() => Console.println("NO")
+  }
   try {
     Bar() productElement 3
     throw new NullPointerException("duh")

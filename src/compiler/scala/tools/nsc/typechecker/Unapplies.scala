@@ -121,8 +121,14 @@ trait Unapplies { self: Analyzer =>
     def caseFieldAccessorValue(selector: Symbol) = Select(Ident(param), selector)
     val accessors = caseclazz.caseFieldAccessors
     if (accessors.isEmpty) Literal(true)
-    else if (accessors.tail.isEmpty) caseFieldAccessorValue(accessors.head)
-    else Apply(gen.scalaDot(newTermName( "Tuple" + accessors.length)), accessors map caseFieldAccessorValue)
+    else
+      Apply(
+        gen.scalaDot(nme.Some),
+        List(
+          if (accessors.tail.isEmpty) caseFieldAccessorValue(accessors.head)
+          else Apply(
+            gen.scalaDot(newTermName("Tuple" + accessors.length)),
+            accessors map caseFieldAccessorValue)))
   }
 
   /** The module corresponding to a case class; without any member definitions

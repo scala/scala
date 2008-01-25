@@ -660,6 +660,28 @@ trait Parsers {
     }
   }
 
+  /** <p>
+   *    A parser generator delimiting whole phrases (i.e. programs).
+   *  </p>
+   *  <p>
+   *    <code>phrase(p)</code> succeeds if <code>p</code> succeeds and
+   *    no input is left over after <code>p</code>.
+   *  </p>
+   *
+   *  @param p the parser that must consume all input for the resulting parser
+   *           to succeed.
+   *  @return  a parser that has the same result as `p', but that only succeeds
+   *           if <code>p</code> consumed all the input.
+   */
+  def phrase[T](p: Parser[T]) = new Parser[T] {
+    lastNoSuccess = null
+    def apply(in: Input) = p(in) match {
+      case s @ Success(out, in1) if in1.atEnd => s
+      case s @ Success(out, in1) => Failure("end of input expected", in1)
+      case f : NoSuccess => lastNoSuccess
+    }
+  }
+
   case class ~[+a, +b](_1: a, _2: b) {
     override def toString = "("+ _1 +" ~ "+ _2 +")"
   }

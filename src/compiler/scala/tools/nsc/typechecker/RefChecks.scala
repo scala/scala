@@ -301,19 +301,12 @@ abstract class RefChecks extends InfoTransform {
      *      are subtypes of earlier type instances of the same mixin.
      *    </li>
      *    <li> <!-- 2 -->
-     *      Check that case classes do not inherit from case classes.
-     *    </li>
-     *    <li> <!-- 3 -->
-     *      Check that at most one base type is a case-class.
-     *    </li>
-     *    <li> <!-- 4 -->
      *      Check that inner classes do not inherit from Annotation
      *    </li>
      *  </ol>
      */
     private def validateBaseTypes(clazz: Symbol) {
       val seenTypes = new Array[Type](clazz.info.closure.length)
-      var seenCaseClass = if (clazz hasFlag CASE) clazz else NoSymbol
 
       /** validate all base types of a class in reverse linear order. */
       def validateType(tp: Type) {
@@ -329,14 +322,6 @@ abstract class RefChecks extends InfoTransform {
               }
             } else {
               seenTypes(index) = tp
-              // check that case classes do not inherit from case classes
-              if (baseClass hasFlag CASE) {
-                if (seenCaseClass != NoSymbol && seenCaseClass != baseClass)
-                  unit.error(clazz.pos, "implementation restriction: case " +
-                             seenCaseClass + " and case " + baseClass +
-                             " cannot be combined in one object");
-                seenCaseClass = baseClass
-              }
               // check that inner classes do not inherit from Annotation
               if (baseClass == ClassfileAnnotationClass)
                 if (!clazz.owner.isPackageClass)

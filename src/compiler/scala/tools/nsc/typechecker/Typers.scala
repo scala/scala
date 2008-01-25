@@ -691,7 +691,9 @@ trait Typers { self: Analyzer =>
                     // @M: don't check tree.tpe.symbol.typeParams. check tree.tpe.typeParams!!!
                     // (e.g., m[Int] --> tree.tpe.symbol.typeParams.length == 1, tree.tpe.typeParams.length == 0!)
                      tree.tpe.typeParams.length != pt.typeParams.length &&
-                     !(tree.tpe.typeSymbol==AnyClass || tree.tpe.typeSymbol==AllClass || pt == WildcardType )) {
+                     !(tree.tpe.typeSymbol==AnyClass ||
+                       tree.tpe.typeSymbol==AllClass ||
+                       pt == WildcardType )) {
               // Check that the actual kind arity (tree.symbol.typeParams.length) conforms to the expected
               // kind-arity (pt.typeParams.length). Full checks are done in checkKindBounds in Infer.
               // Note that we treat Any and Nothing as kind-polymorphic.
@@ -711,7 +713,8 @@ trait Typers { self: Analyzer =>
             val unapply = unapplyMember(extractor.tpe)
             val clazz = if (unapply.tpe.paramTypes.length == 1) unapply.tpe.paramTypes.head.typeSymbol
                         else NoSymbol
-            if ((unapply hasFlag CASE) && (clazz hasFlag CASE)) {
+            if ((unapply hasFlag CASE) && (clazz hasFlag CASE) &&
+                !(clazz.info.baseClasses.tail exists (_ hasFlag CASE))) {
               if (!phase.erasedTypes) checkStable(tree) //todo: do we need to demand this?
               // convert synthetic unapply of case class to case class constructor
               val prefix = tree.tpe.prefix
