@@ -177,11 +177,14 @@ trait Trees {
           i += 1
         }
       }
-      g(this.asInstanceOf[Product])
+      this match {
+        case p : Product => g(p)
+        case _ =>
+      }
       hc
     }
-
-    def equalsStructure(that: Tree): Boolean = {
+    def equalsStructure(that : Tree) = equalsStructure0(that){case (t0,t1) => false}
+    def equalsStructure0(that: Tree)(f : (Tree,Tree) => Boolean): Boolean = {
       if (this == that) return true
       if (this.getClass != that.getClass) return false
       val this0 = this.asInstanceOf[Product]
@@ -189,7 +192,7 @@ trait Trees {
       assert(this0.productArity == that0.productArity)
       def equals0(thiz: Any, that: Any): Boolean = thiz match {
         case thiz: Tree =>
-          thiz.equalsStructure(that.asInstanceOf[Tree])
+          f(thiz,that.asInstanceOf[Tree]) || thiz.equalsStructure0(that.asInstanceOf[Tree])(f)
         case thiz: List[_] =>
           val that0 = that.asInstanceOf[List[Any]]
           if (thiz.length != that0.length) false
@@ -800,7 +803,7 @@ trait Trees {
        extends TypTree
 
   trait StubTree extends Tree {
-    override def equalsStructure(that: Tree): Boolean = this eq that
+    override def equalsStructure0(that: Tree)(f : (Tree,Tree) => Boolean): Boolean = this eq that
   }
 /* A standard pattern match
   case EmptyTree =>
@@ -1368,7 +1371,10 @@ trait Trees {
         copy.TypeBoundsTree(tree, transform(lo), transform(hi))
       case ExistentialTypeTree(tpt, whereClauses) =>
         copy.ExistentialTypeTree(tree, transform(tpt), transformTrees(whereClauses))
-      case tree : StubTree => tree.duplicate
+      case tree : StubTree =>
+        tree.symbol = NoSymbol
+        tree.tpe = null
+        tree
     }
 
     def transformTrees(trees: List[Tree]): List[Tree] =
@@ -1669,5 +1675,14 @@ trait Trees {
         super.traverse(tree)
     }
   }
+  /* hook to memoize trees in IDE */
+  trait TreeKind {
+    def isType : Boolean
+    def isTerm : Boolean
+    def isDef : Boolean
+    def hasSymbol : Boolean
+    def isTop : Boolean
+  }
+
 }
 

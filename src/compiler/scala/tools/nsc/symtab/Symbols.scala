@@ -479,7 +479,10 @@ trait Symbols {
         cnt += 1
         // allow for two completions:
         //   one: sourceCompleter to LazyType, two: LazyType to completed type
-        if (cnt == 3) throw new Error("no progress in completing " + this + ":" + tp)
+        if (cnt == 3) {
+          assert(true)
+          throw new Error("no progress in completing " + this + ":" + tp)
+        }
       }
       val result = rawInfo
       result
@@ -488,6 +491,10 @@ trait Symbols {
     /** Set initial info. */
     def setInfo(info: Type): this.type = {
       assert(info ne null)
+      if (name.toString == "Either") {
+        assert(true)
+        assert(true)
+      }
       infos = TypeHistory(currentPeriod, info, null)
       if (info.isComplete) {
         rawflags = rawflags & ~LOCKED
@@ -701,7 +708,7 @@ trait Symbols {
       if (inIDE && (this eq result) && result != NoSymbol && (result hasFlag OVERLOADED)) {
         return result
       }
-      assert(!(result hasFlag OVERLOADED), result.alternatives)
+      if (!inIDE) assert(!(result hasFlag OVERLOADED), result.alternatives)
       result
     }
 
@@ -1085,6 +1092,9 @@ trait Symbols {
 
     final def fullNameString: String = fullNameString('.')
 
+
+
+
     /** If settings.uniqid is set, the symbol's id, else "" */
     final def idString: String =
       if (settings.uniqid.value) "#"+id else ""
@@ -1110,7 +1120,9 @@ trait Symbols {
         " in " + owner else ""
 
     /** String representation of symbol's definition following its name */
-    final def infoString(tp: Type): String = {
+    final def infoString(tp: Option[Type]): String = tp match {
+    case None => "<_>"
+    case Some(tp) =>
       def typeParamsString: String = tp match {
         case PolyType(tparams, _) if (tparams.length != 0) =>
           (tparams map (_.defString)).mkString("[", ",", "]")
@@ -1132,13 +1144,13 @@ trait Symbols {
           }
         }
       else if (isModule)
-        moduleClass.infoString(tp)
+        moduleClass.infoString(Some(tp))
       else
         tp match {
           case PolyType(tparams, res) =>
-            typeParamsString + infoString(res)
+            typeParamsString + infoString(Some(res))
           case MethodType(pts, res) =>
-            pts.mkString("(", ",", ")") + infoString(res)
+            pts.mkString("(", ",", ")") + infoString(Some(res))
           case _ =>
             ": " + tp
         }
@@ -1157,7 +1169,7 @@ trait Symbols {
       val f = if (settings.debug.value) flags
               else if (owner.isRefinementClass) flags & ExplicitFlags & ~OVERRIDE
               else flags & ExplicitFlags
-      compose(List(flagsToString(f), keyString, varianceString + nameString + infoString(rawInfo)))
+      compose(List(flagsToString(f), keyString, varianceString + nameString + infoString(rawInfoSafe)))
     }
 
     /** Concatenate strings separated by spaces */
@@ -1305,9 +1317,12 @@ trait Symbols {
     override def setInfo(tp: Type): this.type = {
       tpePeriod = NoPeriod
       tyconCache = null
-      if (tp.isComplete)
+      if (tp.isComplete && tp != NoType)
         if (tp.isInstanceOf[PolyType]) resetFlag(MONOMORPHIC)
-        else if (!tp.isInstanceOf[AnnotatedType]) setFlag(MONOMORPHIC)
+        else if (!tp.isInstanceOf[AnnotatedType]) {
+          assert(true)
+          setFlag(MONOMORPHIC)
+        }
       super.setInfo(tp)
       this
     }
@@ -1360,6 +1375,7 @@ trait Symbols {
       if (owner.isPackageClass) source else super.sourceFile
     override def sourceFile_=(f: AbstractFile) {
       //System.err.println("set source file of " + this + ": " + f);
+      attachSource(this, f)
       source = f
     }
     override def isFromClassFile = {
@@ -1484,6 +1500,10 @@ trait Symbols {
   def cloneSymbols(syms: List[Symbol]): List[Symbol] = {
     val syms1 = syms map (_.cloneSymbol)
     for (sym1 <- syms1) sym1.setInfo(sym1.info.substSym(syms, syms1))
+    if (inIDE) {
+      assert(true)
+      assert(true)
+    }
     syms1
   }
 

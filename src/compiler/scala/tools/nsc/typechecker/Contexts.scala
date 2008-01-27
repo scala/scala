@@ -84,9 +84,6 @@ trait Contexts { self: Analyzer =>
       sc = sc.outer
     }
   }
-  // IDE hooks
-  protected def sanitize(tree: Tree): Tree = tree
-  protected def scopeFor(old: Scope, tree: Tree): Scope = newScope(old)
   class Context private[typechecker] {
     var unit: CompilationUnit = _
     var tree: Tree = _ // Tree associated with this context
@@ -193,7 +190,7 @@ trait Contexts { self: Analyzer =>
         }
         if (ret) {
           if (!a17) {
-            assert(this.implicitsCache == null || that.implicitsCache == null)
+            //assert(this.implicitsCache == null || that.implicitsCache == null)
           }
         }
         ret
@@ -279,8 +276,10 @@ trait Contexts { self: Analyzer =>
       make(unit, tree, owner, scope, imports)
     }
 
-    def makeNewScope(tree: Tree, owner: Symbol): Context =
-      make(tree, owner, scopeFor(scope, tree))
+
+    def makeNewScope(tree: Tree, owner: Symbol)(implicit kind : ScopeKind): Context =
+      make(tree, owner, scopeFor(scope, tree, kind))
+    // IDE stuff: distinguish between scopes created for typing and scopes created for naming.
 
     def make(tree: Tree, owner: Symbol): Context =
       make0(tree, owner, scope)
@@ -306,7 +305,7 @@ trait Contexts { self: Analyzer =>
       //todo: find out why we need next line
       while (baseContext.tree.isInstanceOf[Template])
         baseContext = baseContext.outer
-      val argContext = baseContext.makeNewScope(tree, owner)
+      val argContext = baseContext.makeNewScope(tree, owner)(Constructor0ScopeKind)
       argContext.reportGeneralErrors = this.reportGeneralErrors
       argContext.reportAmbiguousErrors = this.reportAmbiguousErrors
       def enterElems(c: Context) {
@@ -521,6 +520,7 @@ trait Contexts { self: Analyzer =>
           if (outer.tree.isInstanceOf[Template]) outer.outer.outer
           else outer.outer
         } else outer
+        // can we can do something smarter to bring back the implicit cache?
       if (implicitsRunId != currentRunId) {
         implicitsRunId = currentRunId
         implicitsCache = List()
@@ -569,7 +569,6 @@ trait Contexts { self: Analyzer =>
     }
 
   }
-  def notifyImport(what : Name, container : Type, from : Name, to : Name) : Unit = {}
   class ImportInfo(val tree: Import, val depth: Int) {
     /** The prefix expression */
     def qual: Tree = tree.symbol.info match {
@@ -634,22 +633,6 @@ trait Contexts { self: Analyzer =>
     }
     override def hashCode = if (inIDE) expr.hashCodeStructure else expr.hashCode
   }
-
-  /* APIs for interning contexts */
-  import scala.collection.jcl
-  import scala.ref
   protected def intern(txt : Context) = txt
-  class ContextInternMap extends jcl.WeakHashMap[Context,ref.WeakReference[Context]] {
-    var last : Context = _
-    override def default(txt : Context) : ref.WeakReference[Context] = {
-      if (txt eq NoContext) new ref.WeakReference(NoContext)
-      val txt0 = txt.intern0
-      last = txt0 // to prevent collection
-      val ret = new ref.WeakReference(txt0)
-      this(txt0) = ret
-      ret
-    }
-    def intern(txt : Context) = this(txt).get.get
-  }
 
 }

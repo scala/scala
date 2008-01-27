@@ -42,10 +42,28 @@ trait Scopes {
    */
   def newScope(initElems: ScopeEntry): Scope = new NormalScope(initElems)
   final def newScope: Scope = newScope(null: ScopeEntry)
-  def newClassScope(clazz : Symbol) = newScope // for use in ClassInfoType creation
   def newTempScope = newScope(null : ScopeEntry)
-  def scopeFor(             tree : Tree) : Scope = newScope
-  def scopeFor(old : Scope, tree : Tree) : Scope = newScope(old)
+  class ScopeKind(name : String) { override def toString = name }
+  def allocateScopeKind(name : String) = new ScopeKind(name)
+  lazy val Constructor0ScopeKind : ScopeKind = allocateScopeKind("constructors0")
+  lazy val Constructor1ScopeKind : ScopeKind = allocateScopeKind("constructors1")
+  lazy val InnerScopeKind : ScopeKind = allocateScopeKind("inner")
+  lazy val FinishWithScopeKind : ScopeKind = allocateScopeKind("finishWith")
+  lazy val TypeSigScopeKind : ScopeKind = allocateScopeKind("typeSig")
+  lazy val PolyTypeCompleterScopeKind : ScopeKind = allocateScopeKind("polyType")
+  lazy val CompoundTreeScopeKind : ScopeKind = allocateScopeKind("compoundTree")
+  lazy val FreshArgScopeKind : ScopeKind = allocateScopeKind("freshArgs")
+  lazy val LabelScopeKind : ScopeKind = allocateScopeKind("label")
+  lazy val TypedCasesScopeKind : ScopeKind = allocateScopeKind("typedCases")
+  lazy val TypedDefScopeKind : ScopeKind = allocateScopeKind("typedDef")
+  lazy val ParentTypesScopeKind : ScopeKind = allocateScopeKind("parentType")
+  lazy val TypedScopeKind : ScopeKind = allocateScopeKind("typed")
+  // have to sometimes use constructor depth unfortunately.
+  case class BlockScopeKind(depth : Int) extends ScopeKind("block") { override def toString = super.toString + "-" + depth }
+
+  def newClassScope(clazz : Symbol) = newScope // for use in ClassInfoType creation
+  def scopeFor(             tree : Tree, kind : ScopeKind) : Scope = newScope
+  def scopeFor(old : Scope, tree : Tree, kind : ScopeKind) : Scope = newScope(old)
 
   final def newScope(base: Scope) : Scope = newScope(base.elems)
   final def newScope(decls: List[Symbol]) : Scope = {

@@ -21,7 +21,7 @@ object TreeSet {
 
   /** The canonical factory for this type
    */
-  def apply[A <% Ordered[A]](elems: A*) = empty[A] ++ elems
+  def apply[A <% Ordered[A]](elems: A*) : SortedSet[A] = empty[A] ++ elems
 }
 
 /** This class implements immutable sets using a tree.

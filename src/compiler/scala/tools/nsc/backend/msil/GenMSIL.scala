@@ -118,7 +118,7 @@ abstract class GenMSIL extends SubComponent {
     val toDouble: MethodInfo = SystemConvert.GetMethod("ToDouble", objParam)
 
     //val boxedUnit: FieldInfo = msilType(definitions.BoxedUnitModule.info).GetField("UNIT")
-    val boxedUnit: FieldInfo = fields(definitions.BoxedUnit_UNIT)
+    val boxedUnit: FieldInfo = fields(definitions.BoxedUnit_UNIT.asInstanceOf[clrTypes.global.Symbol])
 
     // Scala attributes
     // symtab.Definitions -> object (singleton..)
@@ -438,7 +438,7 @@ abstract class GenMSIL extends SubComponent {
     def writeAssembly() {
       if (entryPoint != null) {
         assert(entryPoint.enclClass.isModuleClass, "main-method not defined in a module")
-        val mainMethod = methods(entryPoint)
+        val mainMethod = methods(entryPoint.asInstanceOf[clrTypes.global.Symbol])
         val stringArrayTypes: Array[MsilType] = Array(MSTRING_ARRAY)
         val globalMain = mmodule.DefineGlobalMethod(
           "Main", MethodAttributes.Public | MethodAttributes.Static,
@@ -479,8 +479,8 @@ abstract class GenMSIL extends SubComponent {
     private def createTypes() {
       for (sym <- classes.keys) {
         if (settings.debug.value)
-          log("Calling CreatType for " +  sym + ", " + types(sym))
-        types(sym).asInstanceOf[TypeBuilder].CreateType()
+          log("Calling CreatType for " +  sym + ", " + types(sym.asInstanceOf[clrTypes.global.Symbol]))
+        types(sym.asInstanceOf[clrTypes.global.Symbol]).asInstanceOf[TypeBuilder].CreateType()
       }
     }
 
@@ -560,9 +560,9 @@ abstract class GenMSIL extends SubComponent {
       computeLocalVarsIndex(m)
 
       if (m.symbol.isClassConstructor){
-        mcode = constructors(m.symbol).asInstanceOf[ConstructorBuilder].GetILGenerator()
+        mcode = constructors(m.symbol.asInstanceOf[clrTypes.global.Symbol]).asInstanceOf[ConstructorBuilder].GetILGenerator()
       } else {
-        val mBuilder = methods(m.symbol).asInstanceOf[MethodBuilder]
+        val mBuilder = methods(m.symbol.asInstanceOf[clrTypes.global.Symbol]).asInstanceOf[MethodBuilder]
         if (!mBuilder.IsAbstract())
           try {
             mcode = mBuilder.GetILGenerator()
@@ -1285,11 +1285,11 @@ abstract class GenMSIL extends SubComponent {
               log("LOAD_FIELD with owner: " + field.owner +
                   " flags: " + Flags.flagsToString(field.owner.flags))
 
-            var fieldInfo: FieldInfo = fields.get(field) match {
+            var fieldInfo: FieldInfo = fields.get(field.asInstanceOf[clrTypes.global.Symbol]) match {
               case Some(fInfo) => fInfo
               case None =>
                 val fInfo = getType(field.owner).GetField(msilName(field))
-                fields(field) = fInfo
+                fields(field.asInstanceOf[clrTypes.global.Symbol]) = fInfo
                 fInfo
             }
             mcode.Emit(if (isStatic) OpCodes.Ldsfld else OpCodes.Ldfld, fieldInfo)
@@ -1348,11 +1348,11 @@ abstract class GenMSIL extends SubComponent {
             mcode.Emit(OpCodes.Starg_S, 0)
 
           case STORE_FIELD(field, isStatic) =>
-            val fieldInfo: FieldInfo = fields.get(field) match {
+            val fieldInfo: FieldInfo = fields.get(field.asInstanceOf[clrTypes.global.Symbol]) match {
               case Some(fInfo) => fInfo
               case None =>
                 val fInfo = getType(field.owner).GetField(msilName(field))
-                fields(field) = fInfo
+                fields(field.asInstanceOf[clrTypes.global.Symbol]) = fInfo
                 fInfo
             }
             mcode.Emit(if (isStatic) OpCodes.Stsfld else OpCodes.Stfld, fieldInfo)
@@ -1397,7 +1397,7 @@ abstract class GenMSIL extends SubComponent {
               }
 
               var doEmit: Boolean = true
-              types.get(msym.owner) match {
+              types.get(msym.owner.asInstanceOf[clrTypes.global.Symbol]) match {
                 case Some(typ) if (typ.IsEnum) => {
                   def negBool = {
                     mcode.Emit(OpCodes.Ldc_I4_0)
@@ -1877,9 +1877,9 @@ abstract class GenMSIL extends SubComponent {
           mf = mf | FieldAttributes.Static
         else {
           mf = mf | MethodAttributes.Virtual
-          if (sym.isFinal && !types(sym.owner).IsInterface)
+          if (sym.isFinal && !types(sym.owner.asInstanceOf[clrTypes.global.Symbol]).IsInterface)
             mf = mf | MethodAttributes.Final
-          if (sym.hasFlag(Flags.DEFERRED) || types(sym.owner).IsInterface)
+          if (sym.hasFlag(Flags.DEFERRED) || types(sym.owner.asInstanceOf[clrTypes.global.Symbol]).IsInterface)
             mf = mf | MethodAttributes.Abstract
         }
       }
@@ -1977,7 +1977,7 @@ abstract class GenMSIL extends SubComponent {
       sym.tpe.paramTypes.map(msilType).toArray
     }
 
-    def getType(sym: Symbol): MsilType = types.get(sym) match {
+    def getType(sym: Symbol): MsilType = types.get(sym.asInstanceOf[clrTypes.global.Symbol]) match {
       case Some(typ) => typ
       case None =>
         val name = if (sym.isModuleClass && !sym.isTrait) sym.fullNameString + "$"
@@ -1986,27 +1986,27 @@ abstract class GenMSIL extends SubComponent {
         if (typ == null)
           throw new Error(showsym(sym) + " with name " + name)
         else {
-          clrTypes.types(sym) = typ
+          clrTypes.types(sym.asInstanceOf[clrTypes.global.Symbol]) = typ
           typ
         }
     }
 
     def mapType(sym: Symbol, mType: MsilType) {
       assert(mType != null, showsym(sym))
-      types(sym) = mType
+      types(sym.asInstanceOf[clrTypes.global.Symbol]) = mType
     }
 
     def createTypeBuilder(iclass: IClass) {
       def getMsilType(tpe: Type): MsilType = {
         val sym = tpe.typeSymbol
-        types.get(sym) match {
+        types.get(sym.asInstanceOf[clrTypes.global.Symbol]) match {
           case Some(mtype) => mtype
-          case None => createTypeBuilder(classes(sym)); types(sym)
+          case None => createTypeBuilder(classes(sym)); types(sym.asInstanceOf[clrTypes.global.Symbol])
         }
       }
 
       val sym = iclass.symbol
-      if (types contains sym) return
+      if (types contains sym.asInstanceOf[clrTypes.global.Symbol]) return
 
       def isInterface(s: Symbol) = s.isTrait && !s.isImplClass
       val parents: List[Type] =
@@ -2054,7 +2054,7 @@ abstract class GenMSIL extends SubComponent {
 
         var attributes = msilFieldFlags(sym)
         val fBuilder = mtype.DefineField(msilName(sym), msilType(sym.tpe), attributes)
-        fields(sym) = fBuilder
+        fields(sym.asInstanceOf[clrTypes.global.Symbol]) = fBuilder
         addAttributes(fBuilder, sym.attributes)
       }
 
@@ -2085,7 +2085,7 @@ abstract class GenMSIL extends SubComponent {
           for (i <- 0.until(paramTypes.length)){
             method.DefineParameter(i, ParameterAttributes.None, msilName(m.params(i).sym))
           }
-          if (!methods.contains(sym))
+          if (!methods.contains(sym.asInstanceOf[clrTypes.global.Symbol]))
             mapMethod(sym, method)
           addAttributes(method, sym.attributes)
           if (settings.debug.value)
@@ -2126,7 +2126,7 @@ abstract class GenMSIL extends SubComponent {
                            (FieldAttributes.Public |
                             //FieldAttributes.InitOnly |
                             FieldAttributes.Static).toShort)
-      fields(sym) = fb
+      fields(sym.asInstanceOf[clrTypes.global.Symbol]) = fb
     }
 
 
@@ -2141,14 +2141,14 @@ abstract class GenMSIL extends SubComponent {
       // TODO: get module field for modules not defined in the
       // source currently compiling (e.g. Console)
 
-      fields get moduleClassSym match {
+      fields get moduleClassSym.asInstanceOf[clrTypes.global.Symbol] match {
         case Some(sym) => sym
         case None =>
           //val mclass = types(moduleClassSym)
           val mClass = clrTypes.getType(moduleClassSym.fullNameString + "$")
           val mfield = mClass.GetField("MODULE$")
           assert(mfield ne null, "module not found " + showsym(moduleClassSym))
-          fields(moduleClassSym) = mfield
+          fields(moduleClassSym.asInstanceOf[clrTypes.global.Symbol]) = mfield
           mfield
       }
 
@@ -2165,7 +2165,7 @@ abstract class GenMSIL extends SubComponent {
 
       val sicode = staticInit.GetILGenerator()
 
-      val instanceConstructor = constructors(sym.primaryConstructor)
+      val instanceConstructor = constructors(sym.primaryConstructor.asInstanceOf[clrTypes.global.Symbol])
 
       sicode.Emit(OpCodes.Newobj, instanceConstructor)
       // the stsfld is done in the instance constructor, just after the super call.
@@ -2311,7 +2311,7 @@ abstract class GenMSIL extends SubComponent {
     // #####################################################################
     // get and create methods / constructors
 
-    def getConstructor(sym: Symbol): ConstructorInfo = constructors.get(sym) match {
+    def getConstructor(sym: Symbol): ConstructorInfo = constructors.get(sym.asInstanceOf[clrTypes.global.Symbol]) match {
       case Some(constr) => constr
       case None =>
         val mClass = getType(sym.owner)
@@ -2328,7 +2328,7 @@ abstract class GenMSIL extends SubComponent {
     }
 
     def mapConstructor(sym: Symbol, cInfo: ConstructorInfo) = {
-      constructors(sym) = cInfo
+      constructors(sym.asInstanceOf[clrTypes.global.Symbol]) = cInfo
     }
 
     private def getMethod(sym: Symbol): MethodInfo = {
@@ -2343,7 +2343,7 @@ abstract class GenMSIL extends SubComponent {
 //       case SRToShort => toShort
 //       case _ =>
 
-        methods.get(sym) match {
+        methods.get(sym.asInstanceOf[clrTypes.global.Symbol]) match {
         case Some(method) => method
         case None =>
           val mClass = getType(sym.owner)
@@ -2374,7 +2374,7 @@ abstract class GenMSIL extends SubComponent {
      */
     private def mapMethod(sym: Symbol, mInfo: MethodInfo) {
       assert (mInfo != null, mInfo)
-      methods(sym) = mInfo
+      methods(sym.asInstanceOf[clrTypes.global.Symbol]) = mInfo
     }
 
     /*

@@ -58,16 +58,7 @@ trait Typers { self: Analyzer =>
   // IDE hooks
   def newTyper(context: Context): Typer = new NormalTyper(context)
   private class NormalTyper(context : Context) extends Typer(context)
-  def scopeFor(tree : Tree) : Scope = newScope
-  def newLocalDummy(clazz : Symbol, pos : Position) = clazz.newLocalDummy(pos)
-  def recycle(sym : Symbol) : Symbol = sym
   // hooks for auto completion
-  def compare(sym : Symbol, name : Name) = sym.name == name
-  def verifyAndPrioritize[T](g : Symbol => Symbol)(pt : Type)(f : => T) = f
-  def trackSetInfo[T <: Symbol](sym : T)(info : Type) : T = {
-    sym.setInfo(info)
-    sym
-  }
 
   /** when in 1.4 mode the compiler accepts and ignores useless
    *  type parameters of Java generics
@@ -425,17 +416,14 @@ trait Typers { self: Analyzer =>
       }
     }
 
-    def reenterValueParams(vparamss: List[List[ValDef]]) {
-      for (vparams <- vparamss; vparam <- vparams)
-        context.scope enter vparam.symbol
+    def reenterValueParams(vparamss: List[List[ValDef]]): Unit = {
+      for (vparams <- vparamss) for (vparam <- vparams)
+        vparam.symbol = context.scope enter vparam.symbol
     }
 
     def reenterTypeParams(tparams: List[TypeDef]): List[Symbol] =
       for (tparam <- tparams) yield {
-        val rawInfo = tparam.symbol.rawInfo
         tparam.symbol = context.scope enter tparam.symbol
-        // hack, because the skolems are reused.
-        if (inIDE) tparam.symbol.setInfo(rawInfo)
         tparam.symbol.deSkolemize
       }
 
@@ -469,7 +457,7 @@ trait Typers { self: Analyzer =>
      */
     def labelTyper(ldef: LabelDef): Typer =
       if (ldef.symbol == NoSymbol) { // labeldef is part of template
-        val typer1 = newTyper(context.makeNewScope(ldef, context.owner))
+        val typer1 = newTyper(context.makeNewScope(ldef, context.owner)(LabelScopeKind))
         typer1.enterLabelDef(ldef)
         typer1
       } else this
@@ -902,8 +890,8 @@ trait Typers { self: Analyzer =>
             }
 
             val outercontext = context.outer
-            val cbody2 =
-              newTyper(outercontext.makeNewScope(constr, outercontext.owner))
+            val cbody2 = // called both during completion AND typing.
+              newTyper(outercontext.makeNewScope(constr, outercontext.owner)(ParentTypesScopeKind))
                 .typePrimaryConstrBody(clazz,
                   cbody1, supertparams, clazz.unsafeTypeParams, vparamss map (_.map(_.duplicate)))
 
@@ -1024,7 +1012,7 @@ trait Typers { self: Analyzer =>
       assert(clazz != NoSymbol)
       reenterTypeParams(cdef.tparams)
       val tparams1 = List.mapConserve(cdef.tparams)(typedTypeDef)
-      val impl1 = newTyper(context.make(cdef.impl, clazz, scopeFor(cdef.impl)))
+      val impl1 = newTyper(context.make(cdef.impl, clazz, scopeFor(cdef.impl, TypedDefScopeKind)))
         .typedTemplate(cdef.impl, parentTypes(cdef.impl))
       val impl2 = addSyntheticMethods(impl1, clazz, context)
       if ((clazz != ClassfileAnnotationClass) &&
@@ -1048,7 +1036,7 @@ trait Typers { self: Analyzer =>
       val clazz = mdef.symbol.moduleClass
       if (inIDE && clazz == NoSymbol) throw new TypeError("bad signature")
       assert(clazz != NoSymbol)
-      val impl1 = newTyper(context.make(mdef.impl, clazz, scopeFor(mdef.impl)))
+      val impl1 = newTyper(context.make(mdef.impl, clazz, scopeFor(mdef.impl, TypedDefScopeKind)))
         .typedTemplate(mdef.impl, parentTypes(mdef.impl))
       val impl2 = addSyntheticMethods(impl1, clazz, context)
 
@@ -1143,9 +1131,7 @@ trait Typers { self: Analyzer =>
         else clazz.typeOfThis
       // the following is necessary for templates generated later
       assert(clazz.info.decls != EmptyScope)
-      // XXX: let namer in typeSig be definitive, duplicate to ensure typer context doesn't stick.
-      val templBody = if (inIDE) templ.body.map(_.duplicate : Tree) else templ.body
-      enterSyms(context.outer.make(templ, clazz, clazz.info.decls), templBody)
+      enterSyms(context.outer.make(templ, clazz, clazz.info.decls), templ.body)
       validateParentClasses(parents1, selfType)
       if (!phase.erasedTypes && !clazz.info.resultType.isError) // @S: prevent crash for duplicated type members
         checkFinitary(clazz.info.resultType.asInstanceOf[ClassInfoType])
@@ -1367,6 +1353,10 @@ trait Typers { self: Analyzer =>
       block.stats foreach enterLabelDef
       val stats1 = typedStats(block.stats, context.owner)
       val expr1 = typed(block.expr, mode & ~(FUNmode | QUALmode), pt)
+      if (expr1.tpe == null) {
+        assert(true)
+        assert(true)
+      }
       val block1 = copy.Block(block, stats1, expr1)
         .setType(if (treeInfo.isPureExpr(block)) expr1.tpe else expr1.tpe.deconst)
       //checkNoEscaping.locals(context.scope, pt, block1)
@@ -1402,7 +1392,7 @@ trait Typers { self: Analyzer =>
     def typedCases(tree: Tree, cases: List[CaseDef], pattp0: Type, pt: Type): List[CaseDef] = {
       var pattp = pattp0
       List.mapConserve(cases) ( cdef =>
-          newTyper(context.makeNewScope(cdef, context.owner)).typedCase(cdef, pattp, pt))
+          newTyper(context.makeNewScope(cdef, context.owner)(TypedCasesScopeKind)).typedCase(cdef, pattp, pt))
 /* not yet!
         cdef.pat match {
           case Literal(Constant(null)) =>
@@ -1457,7 +1447,7 @@ trait Typers { self: Analyzer =>
           if (context.retyping) context.scope enter vparam.symbol
           vparam.symbol
         }
-        // XXX: here to for IDE hooks.
+
         val vparams = List.mapConserve(fun.vparams)(typedValDef)
 //        for (val vparam <- vparams) {
 //          checkNoEscaping.locals(context.scope, WildcardType, vparam.tpt); ()
@@ -1687,9 +1677,8 @@ trait Typers { self: Analyzer =>
               else {
                 if (settings.debug.value) log("infer method inst "+fun+", tparams = "+tparams+", args = "+args2.map(_.tpe)+", pt = "+pt+", lobounds = "+tparams.map(_.tpe.bounds.lo)+", parambounds = "+tparams.map(_.info));//debug
                 val undetparams = inferMethodInstance(fun, tparams, args2, pt)
-                val result = if (!inIDE) doTypedApply(tree, fun, args2, mode, pt)
-                             else doTypedApply(tree.duplicate,fun.duplicate,args2.map(_.duplicate),mode,pt)
-                 context.undetparams = undetparams
+                val result = doTypedApply(tree, fun, args2, mode, pt)
+                context.undetparams = undetparams
                 result
               }
             }
@@ -1728,7 +1717,7 @@ trait Typers { self: Analyzer =>
                 (ErrorType, List())
             }
             val (unappFormal, freeVars) = freshArgType(unappType)
-            val context1 = context.makeNewScope(context.tree, context.owner)
+            val context1 = context.makeNewScope(context.tree, context.owner)(FreshArgScopeKind)
             freeVars foreach(sym => context1.scope.enter(sym))
             val typer1 = newTyper(context1)
             arg.tpe = typer1.infer.inferTypedPattern(tree.pos, unappFormal, arg.tpe)
@@ -1872,7 +1861,7 @@ trait Typers { self: Analyzer =>
 
             def annotArg(tree: Tree): AnnotationArgument = {
               val arg = new AnnotationArgument(tree)
-              if(needsConstant && !arg.isConstant)
+              if(needsConstant && !arg.isConstant && !inIDE)
                 needConst(tree)
               arg
             }
@@ -2836,7 +2825,7 @@ trait Typers { self: Analyzer =>
         val parents1 = List.mapConserve(templ.parents)(typedType)
         if (parents1 exists (_.tpe.isError)) tree setType ErrorType
         else {
-          val decls = scopeFor(tree)
+          val decls = scopeFor(tree, CompoundTreeScopeKind)
           val self = refinedType(parents1 map (_.tpe), context.enclClass.owner, decls)
           newTyper(context.make(templ, self.typeSymbol, decls)).typedRefinement(templ.body)
           tree setType self
@@ -2889,6 +2878,7 @@ trait Typers { self: Analyzer =>
       }
 
       // begin typed1
+      implicit val scopeKind = TypedScopeKind
       val sym: Symbol = tree.symbol
       if (sym ne null) sym.initialize
       //if (settings.debug.value && tree.isDef) log("typing definition of "+sym);//DEBUG
@@ -2932,7 +2922,7 @@ trait Typers { self: Analyzer =>
           typedAnnotated(annot, typed(arg, mode, pt))
 
         case tree @ Block(_, _) =>
-          newTyper(context.makeNewScope(tree, context.owner))
+          newTyper(context.makeNewScope(tree, context.owner)(BlockScopeKind(context.depth)))
             .typedBlock(tree, mode, pt)
 
         case Sequence(elems) =>
@@ -3129,7 +3119,6 @@ trait Typers { self: Analyzer =>
           val lo1 = typedType(lo)
           val hi1 = typedType(hi)
           copy.TypeBoundsTree(tree, lo1, hi1) setType mkTypeBounds(lo1.tpe, hi1.tpe)
-
         case etpt @ ExistentialTypeTree(_, _) =>
           newTyper(context.makeNewScope(tree, context.owner)).typedExistentialTypeTree(etpt)
 
@@ -3176,7 +3165,7 @@ trait Typers { self: Analyzer =>
 
         tree1.tpe = addAnnotations(tree1, tree1.tpe)
 
-        val result = if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt)
+        val result = if (tree1.isEmpty || (inIDE && tree1.tpe == null)) tree1 else adapt(tree1, mode, pt)
 //      Console.println("adapted "+tree1+":"+tree1.tpe+" to "+pt+", "+context.undetparams);//DEBUG
 //      if ((mode & TYPEmode) != 0) println("type: "+tree1+" has type "+tree1.tpe)
         result
@@ -3442,11 +3431,11 @@ trait Typers { self: Analyzer =>
       }
 
       def implicitsOfType(tp: Type): List[List[ImplicitInfo]] = {
-        def getParts(tp: Type, s: Set[Type]) {
+        def getParts(tp: Type, s: collection.jcl.Set[Type]) {
           tp match {
             case TypeRef(pre, sym, args) if (!sym.isPackageClass) =>
               for (bc <- sym.info.baseClasses)
-                if (sym.isClass) s.addEntry(tp.baseType(bc))
+                if (sym.isClass) s add (tp.baseType(bc))
               getParts(pre, s)
               for (arg <- args) getParts(arg, s)
             case ThisType(_) =>
@@ -3460,7 +3449,7 @@ trait Typers { self: Analyzer =>
             case _ =>
           }
         }
-        val tps = new HashSet[Type]
+        val tps = new collection.jcl.LinkedHashSet[Type]
         getParts(tp, tps)
         tps.elements.map(implicitsOfClass).toList
       }

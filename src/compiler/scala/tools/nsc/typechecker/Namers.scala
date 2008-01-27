@@ -92,7 +92,7 @@ trait Namers { self: Analyzer =>
     private var innerNamerCache: Namer = null
     protected def makeConstructorScope(classContext : Context) : Context = {
       val outerContext = classContext.outer.outer
-      outerContext.makeNewScope(outerContext.tree, outerContext.owner)
+      outerContext.makeNewScope(outerContext.tree, outerContext.owner)(Constructor1ScopeKind)
     }
 
     def namerOf(sym: Symbol): Namer = {
@@ -101,7 +101,7 @@ trait Namers { self: Analyzer =>
         if (innerNamerCache eq null)
           innerNamerCache =
             if (!isTemplateContext(context)) this
-            else newNamer(context.make(context.tree, context.owner, scopeFor(context.tree)))
+            else newNamer(context.make(context.tree, context.owner, scopeFor(context.tree, InnerScopeKind)))
         innerNamerCache
       }
 
@@ -145,11 +145,32 @@ trait Namers { self: Analyzer =>
     def enterInScope(sym: Symbol): Symbol = {
       // allow for overloaded methods
       if (!(sym.isSourceMethod && sym.owner.isClass && !sym.owner.isPackageClass)) {
-        val prev = context.scope.lookupEntry(sym.name);
-        if ((prev ne null) && prev.owner == context.scope && conflict(sym, prev.sym)) {
+        var prev = context.scope.lookupEntry(sym.name);
+        if ((prev ne null) && inIDE) {
+          var guess = prev
+          while ((guess ne null) && (guess.sym ne sym)) guess = context.scope.lookupNextEntry(guess)
+          if (guess != null) prev = guess
+          while (prev != null && (prev.sym.rawInfoSafe.isEmpty || !prev.sym.rawInfo.isComplete ||
+                 (prev.sym.sourceFile == null && sym.getClass == prev.sym.getClass))) {
+            if (prev.sym.rawInfo.isComplete) {
+              Console.println("DITCHING: " + prev.sym)
+            }
+            context.scope unlink prev.sym
+            prev = context.scope.lookupNextEntry(prev)
+          }
+          val sym0 = context.scope enter sym
+          if (sym0 ne sym) {
+            assert(true)
+            Console.println("WEIRD: " + sym0)
+          }
+          if (prev != null && (sym0 ne prev.sym) && conflict(sym0,prev.sym)) {
+            doubleDefError(sym0.pos, prev.sym)
+          }
+          sym0
+        } else if ((prev ne null) && prev.owner == context.scope && conflict(sym, prev.sym)) {
            doubleDefError(sym.pos, prev.sym)
-           if (!inIDE) sym setInfo ErrorType // don't do this in IDE for stability
-           if (!inIDE) context.scope unlink prev.sym // let them co-exist...
+           sym setInfo ErrorType // don't do this in IDE for stability
+           context.scope unlink prev.sym // let them co-exist...
            context.scope enter sym
         } else context.scope enter sym
       } else context.scope enter sym
@@ -258,12 +279,7 @@ trait Namers { self: Analyzer =>
       else applicableTypeParams(owner.owner) ::: owner.typeParams
 
     def deSkolemize: TypeMap = new DeSkolemizeMap(applicableTypeParams(context.owner))
-
-    def reuse[T <: Tree](tree: T) = if (!inIDE) tree else {
-      val tree0 = tree.duplicate
-	    //tree0.symbol = tree.symbol
-      tree0
-    }
+    // should be special path for IDE but maybe not....
 
     def enterSym(tree: Tree): Context = {
 
@@ -276,7 +292,7 @@ trait Namers { self: Analyzer =>
           //@M e.g., in [A[x <: B], B], A and B are entered first as both are in scope in the definition of x
           //@M x is only in scope in `A[x <: B]'
           if(!sym.isAbstractType) //@M TODO: change to isTypeMember ?
-            newNamer(context.makeNewScope(tree, sym)).enterSyms(tparams)
+            newNamer(context.makeNewScope(tree, sym)(FinishWithScopeKind)).enterSyms(tparams)
           ltype = new PolyTypeCompleter(tparams, ltype, tree, sym, context) //@M
           if (sym.isTerm) skolemize(tparams)
         }
@@ -304,9 +320,7 @@ trait Namers { self: Analyzer =>
             }
           case tree @ ModuleDef(mods, name, _) =>
             tree.symbol = enterModuleSymbol(tree)
-            // IDE: do not use the setInfo call for the module class as it is initialized
-            //      through module symbol
-            tree.symbol.moduleClass.setInfo(namerOf(tree.symbol).moduleClassTypeCompleter(reuse(tree)))
+            tree.symbol.moduleClass.setInfo(namerOf(tree.symbol).moduleClassTypeCompleter((tree)))
             finish
 
           case ValDef(mods, name, tp, rhs) =>
@@ -781,6 +795,7 @@ trait Namers { self: Analyzer =>
           }
         case _ =>
       }
+      implicit val scopeKind = TypeSigScopeKind
       val result =
         try {
           tree match {
@@ -979,7 +994,7 @@ trait Namers { self: Analyzer =>
     override val tree = restp.tree
     override def complete(sym: Symbol) {
       if(ownerSym.isAbstractType) //@M an abstract type's type parameters are entered -- TODO: change to isTypeMember ?
-        newNamer(ctx.makeNewScope(owner, ownerSym)).enterSyms(tparams) //@M
+        newNamer(ctx.makeNewScope(owner, ownerSym)(PolyTypeCompleterScopeKind)).enterSyms(tparams) //@M
       restp.complete(sym)
     }
   }

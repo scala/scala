@@ -10,4 +10,8 @@
 
 package scala.collection.immutable
 
-trait SortedSet[A] extends scala.collection.SortedSet[A] with Set[A]
+trait SortedSet[A] extends scala.collection.SortedSet[A] with Set[A] {
+  override def ++ (elems: Iterable[A]): SortedSet[A] =
+    (this /: elems) ((s, elem) => s + elem)
+  override def +(elem: A): SortedSet[A]
+}

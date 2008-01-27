@@ -47,7 +47,33 @@ abstract class SymbolLoaders {
     def sourceFile: AbstractFile = null
     protected def sourceString: String
 
-    override def complete(root: Symbol) {
+    override def complete(root: Symbol) : Unit = {
+      if (inIDE && root.owner != NoSymbol) {
+        assert(root.rawInfo == this)
+        if (root.isModuleClass) {
+          val clazz = root.sourceModule.linkedClassOfModule
+          assert(root.rawInfo == this)
+          if (clazz != NoSymbol && !clazz.rawInfo.isInstanceOf[SymbolLoader]) {
+            // bail
+            assert(true)
+            root.setInfo(ErrorType)
+            Console.println("ditch " + root)
+            return
+          }
+        } else if (root.isClass) {
+          val module = root.linkedModuleOfClass
+          assert(root.rawInfo == this)
+          if (module != NoSymbol && !module.rawInfo.isInstanceOf[SymbolLoader]) {
+            assert(true)
+            root.setInfo(ErrorType)
+            Console.println("ditch " + root)
+            return
+          }
+        } else {
+          assert(root.isModule)
+          assert(true)
+        }
+      }
       try {
         val start = currentTime
         val currentphase = phase
@@ -112,13 +138,13 @@ abstract class SymbolLoaders {
       val owner = if (root.isRoot) definitions.EmptyPackageClass else root
       val className = newTermName(name)
       assert(owner.info.decls.lookup(name) == NoSymbol, owner.fullNameString + "." + name)
-      val clazz = owner.newClass(NoPosition, name.toTypeName)
-      val module = owner.newModule(NoPosition, name)
+      var clazz = owner.newClass(NoPosition, name.toTypeName)
+      var module = owner.newModule(NoPosition, name)
       clazz setInfo completer
       module setInfo completer
       module.moduleClass setInfo moduleClassLoader
-      owner.info.decls enter clazz
-      owner.info.decls enter module
+      clazz = (owner.info.decls enter clazz).asInstanceOf[ClassSymbol]
+      module = (owner.info.decls enter module).asInstanceOf[ModuleSymbol]
       assert(clazz.linkedModuleOfClass == module, module)
       assert(module.linkedClassOfModule == clazz, clazz)
       clazz
@@ -243,7 +269,7 @@ abstract class SymbolLoaders {
       val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
     }
     protected def doComplete(root: Symbol) {
-      typeParser.parse(typ, root) // don't check this
+      typeParser.parse(typ, root.asInstanceOf[typeParser.global.loaders.clrTypes.global.Symbol]) // don't check this
     }
     protected def kindString: String = typ.FullName
     protected def sourceString = typ.Assembly.FullName
@@ -267,12 +293,16 @@ abstract class SymbolLoaders {
       }
       root match {
         case clazz: ClassSymbol =>
-          global.attachSourceToClass(clazz, this, if (sourceFile ne null) sourceFile else clazz.sourceFile)
+          if ((sourceFile ne null) && (clazz.sourceFile eq null))
+            clazz.sourceFile = sourceFile
         case module: ModuleSymbol if module.moduleClass.isInstanceOf[ClassSymbol] =>
           val clazz = module.moduleClass.asInstanceOf[ClassSymbol]
-          global.attachSourceToClass(module, this, if (sourceFile ne null) sourceFile else clazz.sourceFile)
+          if ((sourceFile ne null) && (clazz.sourceFile eq null))
+            clazz.sourceFile = sourceFile
         case _ =>
       }
+      if (root.sourceFile ne null)
+        prepareReset(root, this)
     }
     protected def kindString: String = "class file"
     protected def sourceString = classFile.toString()

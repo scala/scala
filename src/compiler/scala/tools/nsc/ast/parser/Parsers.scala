@@ -1256,8 +1256,11 @@ trait Parsers extends NewScanners with MarkupParsers {
       atPos(accept(CASE)) {
         val pat = pattern()
         val gd = guard()
-        makeCaseDef(pat, gd, atPos(accept(ARROW))(block()))
+        makeCaseDef(pat, gd, caseBlock())
       }
+    // IDE HOOK (so we can memoize case blocks)
+    def caseBlock(): Tree =
+      atPos(accept(ARROW))(block())
 
     /** Guard ::= if PostfixExpr
      */

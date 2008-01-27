@@ -76,10 +76,16 @@ abstract class UnPickler {
     }
 
     /** The `decls' scope associated with given symbol */
-    private def symScope(sym: Symbol)(f : => Scope) = symScopes.get(sym) match {
-      case None => val s = f; symScopes(sym) = s; s
+    private def symScope(sym: Symbol, isTemp : Boolean) = symScopes.get(sym) match {
+      case None =>
+        val s = if (isTemp) newTempScope
+                else if (sym.isClass || sym.isModuleClass || sym.isModule) newClassScope(sym);
+                else newScope
+
+        symScopes(sym) = s; s
       case Some(s) => s
     }
+    private def symScope(sym : Symbol) : Scope = symScope(sym, false)
 
     /** Does entry represent an (internal) symbol */
     private def isSymbolEntry(i: Int): Boolean = {
@@ -223,7 +229,7 @@ abstract class UnPickler {
             else new LazyTypeRef(inforef))
           if (sym.owner.isClass && sym != classRoot && sym != moduleRoot &&
               !sym.isModuleClass && !sym.isRefinementClass && !sym.isTypeParameter)
-            symScope(sym.owner)(newScope) enter sym
+            symScope(sym.owner) enter sym
       }
       sym
     }
@@ -254,12 +260,12 @@ abstract class UnPickler {
           val dcls = symScope(clazz)
           new RefinedType(ps, dcls) { override def symbol = clazz }
 */
-         new RefinedType(until(end, readTypeRef), symScope(clazz)(newTempScope)) {
+         new RefinedType(until(end, readTypeRef), symScope(clazz, true)) {
            override def typeSymbol = clazz
           }
         case CLASSINFOtpe =>
           val clazz = readSymbolRef()
-          ClassInfoType(until(end, readTypeRef), symScope(clazz)(newClassScope(clazz)), clazz)
+          ClassInfoType(until(end, readTypeRef), symScope(clazz), clazz)
         case METHODtpe =>
           val restpe = readTypeRef()
           MethodType(until(end, readTypeRef), restpe)
@@ -761,7 +767,8 @@ abstract class UnPickler {
       private val definedAtRunId = currentRunId
       // In IDE, captures class files dependencies so they can be reloaded when their dependencies change.
       private val ideHook = unpickleIDEHook
-      override def complete(sym: Symbol) {
+      override def complete(sym: Symbol) : Unit = {
+        if (sym.rawInfo != this && inIDE) return
         val tp = ideHook(at(i, readType))
         sym setInfo tp
         if (!inIDE && currentRunId != definedAtRunId) sym.setInfo(adaptToNewRunMap(tp))

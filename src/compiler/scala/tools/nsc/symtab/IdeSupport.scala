@@ -1,0 +1,590 @@
+package scala.tools.nsc.symtab
+import scala.tools.nsc.util._
+import scala.collection.jcl._
+import scala.collection.jcl
+import scala.tools.nsc.io._
+
+trait IdeSupport extends SymbolTable { // added to global, not analyzers.
+  trait ScopeClient {
+    def changed : Unit = {}
+    def addTo(set : => LinkedHashSet[ScopeClient]) = set += this
+    def notify(name : Name, scope : HookedScope) : Boolean = false
+    def notify(name : Name, sym : Symbol) : Unit = {}
+    def verifyAndPrioritize[T](verify : Symbol => Symbol)(pt : Type)(f : => T) : T = f
+    def makeNoChanges : Boolean = false
+  }
+
+  override def inIDE = true
+  import CompatibleResult._
+  trait TrackedPosition extends Position with ReallyHasClients {
+    // symbols without scopes!
+    def asOffset : Option[(Int,AbstractFile)]
+    private var recycled : List[Symbol] = Nil
+    def recycle(sym : Symbol) : Symbol = {
+      recycled.foreach{existing => compatible(existing,sym) match {
+      case NotCompatible => false
+      case GoResult(existing) => return existing
+      }}
+      recycled = sym :: recycled; sym
+    }
+    private var scopes : List[((ScopeKind,AnyRef),PersistentScope)] = Nil
+    def scopeFor(key : (ScopeKind,AnyRef)) : PersistentScope =
+      scopes.find{
+      case (key0,scope) if key == key0 => true
+      case _ => false
+      } match {
+      case Some((_,scope)) => reuse(scope)
+      case None =>
+        val scope = new PersistentScope(key,this)
+        scopes = (key,scope) :: scopes
+        scope
+      }
+  }
+  // dynamic context
+  private object NullClient extends ScopeClient {
+    override def addTo(clients : => LinkedHashSet[ScopeClient]) = {}
+  }
+
+  def currentClient : ScopeClient = NullClient
+  abstract class HookedScope(entry : ScopeEntry) extends Scope(entry) {
+    def record(client : ScopeClient, name : Name) = {}
+    override def lookupEntry(name : Name) = {
+      val client = currentClient
+      if (client.notify(name, this)) null // not found
+      else {
+        record(client, name)
+        super.lookupEntry(name)
+      }
+    }
+  }
+  private val topDefs = new LinkedHashMap[AbstractFile,LinkedHashSet[ClassSymbol]] {
+    override def default(what : AbstractFile) = {
+      val set = new LinkedHashSet[ClassSymbol]
+      this(what) = set; set
+    }
+  }
+  private val emptySet = new jcl.LinkedList[Symbol]
+  val reuseMap = new LinkedHashMap[PersistentScope,jcl.LinkedList[Symbol]] {
+    override def default(key : PersistentScope) = emptySet
+  }
+  def reuse(scope : PersistentScope, sym : Symbol) = {
+    var e = scope.lookupEntry(sym.name)
+    while (e != null && e.sym != sym) e = scope.lookupNextEntry(e)
+    if (e != null && e.sym == sym) {
+      assert(true)
+      val list = reuseMap.get(scope) match {
+      case Some(list) => list
+      case None =>
+        val list = new jcl.LinkedList[Symbol]
+        reuseMap(scope) = list; list
+      }
+      assert(!sym.isPackage)
+      import symtab.Flags._
+      if (sym.isClass && sym.hasFlag(CASE)) {
+        // grab the case factory
+        val name = sym.name.toTermName
+        e = scope.lookupEntry(name)
+        while (e != null && !e.sym.hasFlag(CASE)) e = scope.lookupNextEntry(e)
+        assert(e != null)
+        list += e.sym
+        scope unlink e.sym
+        //Console.println("RS-UNLINK: " + factory)
+      }
+      // if def is abstract, will only unlink its name
+      if (sym.isGetter) {
+        val setter = scope lookup nme.getterToSetter(sym.name)
+        if (setter != NoSymbol && setter.isSetter) {
+          list += setter
+          scope unlink setter
+          //Console.println("RS-UNLINK: " + setter)
+        }
+      } else if (sym.hasGetter) {
+        e = scope lookupEntry nme.getterName(sym.name)
+        while (e != null && !e.sym.isGetter) e = scope lookupNextEntry e
+        if (e != null) {
+          val getter = e.sym
+          assert(getter.accessed == sym && !getter.isSetter)
+          list += getter
+          scope unlink getter
+          //Console.println("RS-UNLINK: " + getter)
+          e = scope lookupEntry nme.getterToSetter(getter.name)
+          while (e != null && !e.sym.isSetter) e = scope lookupNextEntry e
+          if (e != null) {
+            assert(getter.accessed == sym)
+            val setter = e.sym
+            list += setter
+            scope unlink setter
+            //Console.println("RS-UNLINK: " + setter)
+          }
+        }
+      }
+      //Console.println("RS-UNLINK: " + sym)
+      list += sym
+      scope unlink sym // clear from scope.
+    }
+  }
+  private def reuse(scope : PersistentScope) : PersistentScope = {
+    if (currentClient.makeNoChanges) return scope
+    val buf = new jcl.LinkedList[Symbol]
+    buf addAll scope.toList
+    buf.foreach(sym => assert(!sym.isPackage))
+    scope.clear
+    if (!buf.isEmpty) {
+      assert(true)
+      reuseMap(scope) = buf
+    }
+    scope
+  }
+
+  // TODO: implement a good compile late for the IDE.
+  def reloadSource(file : AbstractFile) = {
+    assert(true)
+    if (!currentClient.makeNoChanges) topDefs.removeKey(file) match {
+  case None =>
+  case Some(symbols) => symbols.foreach{sym =>
+      def f(sym : Symbol) = sym.owner.info.decls match {
+      case scope : PersistentScope => reuse(scope, (sym))
+      }
+      if (sym.isModuleClass) {
+        assert(sym.name.isTypeName)
+        if (sym.rawInfoSafe.isDefined)
+          if (sym.linkedModuleOfClass != NoSymbol) f(sym.linkedModuleOfClass)
+      } else {
+        assert(sym.name.isTypeName)
+        f(sym)
+      }
+    }
+  }
+  }
+  override def attachSource(clazz : ClassSymbol, file : io.AbstractFile) = {
+    topDefs(file) += clazz
+    super.attachSource(clazz, file)
+  }
+  def finishTyping = {
+    reuseMap.foreach{
+    case (scope,old) => old.foreach{
+    case NoSymbol =>
+    case sym =>
+      // note that we didn't unlink them
+      val scope0 = scope
+      Console.println("RECYCLE: " + sym + ":" + sym.id + " in " + sym.owner + " " + scope0 + " " + scope0.key);
+      scope0.invalidate(sym.name)
+    }}
+    reuseMap.clear
+    tracedTypes.foreach{case (sym,oldType) =>
+      if (sym.rawInfo != NoType && !sym.rawInfo.isComplete) {
+        Console.println("XXX uncompleted: " + sym)
+      }
+      val resetType = sym.info == NoType || hasError(sym.info)
+      if (!resetType && !compareTypes(sym.info, oldType,Nil)(sym => tracedTypes.get(sym) match {
+      case None => sym.info
+      case Some(oldType) => oldType
+      })) (trackedTypes.removeKey(sym) match {
+      case Some(set) => set.foreach(_.changed)
+      case None =>
+      })
+      if (resetType) {
+        assert(true)
+        sym.setInfo(oldType) // restore old good type.
+      }
+    }
+    tracedTypes.clear
+  }
+  def oldTypeFor(sym : Symbol) = tracedTypes.get(sym) match {
+  case Some(tpe) => tpe
+  case None => NoType
+  }
+
+  private def compare0(newP : Any, oldP : Any, syms : List[Symbol])(implicit oldType : Symbol => Type) : Boolean = ((newP,oldP) match {
+  case (newP:AnyRef,oldP:AnyRef) if newP eq oldP => true
+  case (newP:Type,oldP:Type) => compareTypes(newP,oldP, syms)
+  case (newS:Symbol,oldS:Symbol) if compareSyms(newS,oldS,syms) => true
+  case (newL:List[a],oldL:List[b]) =>
+    var va = newL; var vb = oldL
+    while (!va.isEmpty && !vb.isEmpty) {
+      if (!compare0(va.head,vb.head,syms)) return false
+      va = va.tail; vb = vb.tail
+    }
+    va.isEmpty && vb.isEmpty
+  case (newS:Scope,oldS:Scope) =>
+    val set = new LinkedHashSet[Symbol]
+    set addAll newS.toList
+    oldS.toList.forall{oldS => if (!set.remove(oldS)) {
+      var other = newS.lookupEntry(oldS.name)
+      while (other != null && !compareTypes(other.sym.info,oldType(oldS), syms))
+        other = newS.lookupNextEntry(other)
+      other != null
+    } else true}
+  case (newP,oldP) => newP == oldP
+  })
+  private def compareSyms(newS : Symbol, oldS : Symbol, syms : List[Symbol])(implicit oldType : Symbol => Type) =
+    if (oldS eq newS) {
+      if (syms.contains(oldS)) true
+      else {
+        compareTypes(newS.info, oldType(oldS), newS :: syms)
+      }
+    } else {
+      if (syms.contains(oldS) && syms.contains(newS)) true
+      else newS.name == oldS.name && newS.owner == oldS.owner && newS.flags == oldS.flags &&
+        compareTypes(newS.info,oldType(oldS), newS :: oldS :: syms)
+    }
+
+  def hasError(infoA : Type) : Boolean = {
+    if (infoA == ErrorType) return true
+    infoA match {
+    case MethodType(args,ret) => hasError(ret) || args.exists(hasError)
+    case PolyType(params,ret) => hasError(ret)
+    case TypeBounds(lo,hi) => hasError(lo) || hasError(hi)
+    case TypeRef(pre,_,args) => hasError(pre) || args.exists(hasError)
+    case _ => false
+    }
+  }
+  def compareTypes(newInfo : Type, oldInfo : Type, syms : List[Symbol])(implicit oldType : Symbol => Type) : Boolean = (newInfo eq oldInfo) || (newInfo.getClass == oldInfo.getClass && ((newInfo,oldInfo) match {
+  case (newInfo:ThisType,oldInfo:ThisType) if compare0(newInfo.typeSymbol,oldInfo.typeSymbol,syms) => true
+  case (newInfo:Product, oldInfo:Product) =>
+    (0 until newInfo.productArity).forall(i =>
+      compare0(newInfo.productElement(i), oldInfo.productElement(i),syms))
+  }))
+
+  trait HasClients {
+    def record(client : ScopeClient, name : Name) : Unit
+    def invalidate(name : Name) : Unit
+  }
+
+  trait ReallyHasClients extends HasClients {
+    private var clients : Map = null
+    private class Map extends LinkedHashMap[Int,LinkedHashSet[ScopeClient]] {
+      override def default(hash : Int) = {
+        val set = new LinkedHashSet[ScopeClient]
+        this(hash) = set; set
+      }
+    }
+    def record(client : ScopeClient, name : Name) : Unit =
+      client.addTo({
+        if (clients eq null) clients = new Map
+        clients(name.start)
+      })
+    override def invalidate(name : Name) : Unit = if (clients ne null) clients.removeKey(name.start) match {
+    case Some(clients) => clients.foreach(_.changed)
+    case None =>
+    }
+  }
+
+
+  class PersistentScope(val key : AnyRef, val owner : HasClients) extends HookedScope(null) {
+    override def record(client : ScopeClient, name : Name) =
+      owner.record(client, name)
+    override def invalidate(name : Name) : Unit = owner.invalidate(name)
+    override def enter(symbol : Symbol) : Symbol = {
+      if (currentClient.makeNoChanges) { // might have unpickles.
+        return if (lookupEntry(symbol.name) == null)
+          super.enter(symbol)
+        else symbol
+      }
+      def finish(symbol : Symbol) = {
+        if (symbol.isTypeSkolem) {
+          assert(true)
+          assert(true)
+        }
+        if (symbol.owner.isPackageClass && !symbol.isPackageClass && symbol.sourceFile != null) {
+          assert(true)
+          assert(true)
+          topDefs(symbol.sourceFile) += (symbol match {
+            case symbol : ClassSymbol => symbol
+            case symbol : ModuleSymbol => symbol.moduleClass.asInstanceOf[ClassSymbol]
+          })
+        }
+        super.enter(symbol)
+      }
+      def reuse(existing : Symbol) : Symbol = {
+        def record(existing : Symbol) = if (existing.rawInfoSafe.isDefined &&
+          existing.rawInfo.isComplete && existing.rawInfo != NoType && !hasError(existing.rawInfo)) {
+          tracedTypes(existing) = existing.info
+        }
+        def f(existing: Symbol, other : Symbol) : Unit = {
+          if (existing.isMonomorphicType) existing.resetFlag(Flags.MONOMORPHIC)
+          assert(!existing.isPackage)
+          existing.attributes = Nil // reset attributes, we don't look at these.
+          existing.setInfo(other.rawInfoSafe match {
+          case Some(info) =>
+            assert(true)
+            assert(true)
+            info
+          case _ => NoType
+          })
+          if (existing.isModule && existing.moduleClass != NoSymbol)
+            f(existing.moduleClass,symbol.moduleClass)
+        }
+        record(existing)
+        f(existing,symbol)
+        if (existing.pos == NoPosition) {
+          assert(true)
+          assert(true)
+        }
+
+        finish(existing)
+      }
+
+      assert(symbol != NoSymbol)
+      // catch double defs.
+      record(currentClient, symbol.name)
+      val i = reuseMap(this).elements
+      while (i.hasNext) {
+        var existing = i.next
+        if (existing == symbol) return {
+          assert(true)
+          i.remove
+          finish(existing)
+        }
+        else if ({
+          (symbol.pos,existing.pos) match {
+          case (apos : TrackedPosition, bpos : TrackedPosition) => apos == bpos
+          case (apos : OffsetPosition , bpos : OffsetPosition) => apos == bpos
+          case _ => existing.name == symbol.name
+          }
+        }) {
+          assert(existing != NoSymbol)
+          val oldName = existing.name
+          compatible(existing, symbol) match {
+          case NotCompatible =>
+            assert(true)
+            assert(true)
+          case code@GoResult(existing0) =>
+            i.remove
+            existing = existing0
+            if (code.isInstanceOf[Updated]) {
+              invalidate(oldName)
+              invalidate(existing.name)
+            }
+            return (reuse(existing))
+          }
+        }
+      }
+      if (true) {
+        assert(true)
+        //Console.println("NEW SYMBOL: " + symbol + ":" + symbol.id + " @ " + symbol.owner + " " + key);
+      }
+      invalidate(symbol.name)
+      return finish(symbol)
+    }
+  }
+  private val tops = new LinkedHashMap[OffsetPosition,Symbol]
+
+  protected def compatible(existing : Symbol, symbol : Symbol) : Result = {
+    import scala.tools.nsc.symtab.Flags._
+    if (existing.getClass != symbol.getClass) (existing,symbol) match {
+    case (existing:TypeSkolem,symbol:TypeSymbol) =>
+      val other = existing.deSkolemize
+      return if (!other.isSkolem)
+        compatible(other,symbol)
+      else NotCompatible
+    case _ => return NotCompatible
+    }
+    if (existing.isGetter != symbol.isGetter) return NotCompatible
+    if (existing.isSetter != symbol.isSetter) return NotCompatible
+    if (existing.owner != symbol.owner) return NotCompatible
+    if (existing.name != symbol.name || existing.name.length != symbol.name.length) {
+      val ret = (!existing.name.toString.contains('$') &&
+        !symbol.name.toString.contains('$') &&
+          !(existing hasFlag SYNTHETIC) && !(symbol hasFlag SYNTHETIC) && {
+        existing.name.isTypeName == symbol.name.isTypeName &&
+          nme.isSetterName(existing.name) == nme.isSetterName(symbol.name) &&
+            nme.isLocalName(existing.name) == nme.isLocalName(symbol.name)
+      })
+      if (!ret) return NotCompatible
+    }
+    // because module var shares space with monomorphic.
+    if (existing.isModuleVar != symbol.isModuleVar) return NotCompatible
+    if ((existing.flags|MONOMORPHIC|DEFERRED|ABSTRACT|PRIVATE|PROTECTED|FINAL|SEALED|CASE) !=
+        (symbol.  flags|MONOMORPHIC|DEFERRED|ABSTRACT|PRIVATE|PROTECTED|FINAL|SEALED|CASE)) {
+      return NotCompatible
+    }
+    if (((existing.flags&(MONOMORPHIC|INTERFACE)) != 0) ||
+        ((symbol  .flags&(MONOMORPHIC|INTERFACE)) != 0)) {
+      assert(true)
+      assert(true)
+    }
+    val ret = (existing.owner == symbol.owner || {
+      existing.owner.name == symbol.owner.name && // why????
+        (existing.owner.name == nme.ANON_FUN_NAME||symbol.owner.name == nme.ANON_FUN_NAME) &&
+          existing.owner.pos == symbol.owner.pos
+    })
+    if (!ret) return NotCompatible
+    existing.setPos(symbol.pos) // not significant for updating purposes.
+    if ((existing.privateWithin != symbol.privateWithin ||
+        existing.name != symbol.name || ((existing.flags|MONOMORPHIC) != (symbol.flags|MONOMORPHIC)))) {
+      existing.name = (symbol.name)
+      // don't reset the monomorphic bit until we reset the type.
+      existing.flags = symbol.flags | (existing.flags&MONOMORPHIC)
+      existing.privateWithin = symbol.privateWithin
+      return new Updated(existing)
+    }
+    return new Compatible(existing)
+  }
+  protected object CompatibleResult {
+    abstract class Result {
+      def map(symbol : Symbol) : Result = this
+    }
+    case object NotCompatible extends Result
+    case class GoResult(val symbol : Symbol) extends Result {
+    }
+    class Compatible(override val symbol : Symbol) extends GoResult(symbol) {
+      override def map(symbol : Symbol) = new Compatible(symbol)
+    }
+    class Updated(override val symbol : Symbol) extends GoResult(symbol) {
+      override def map(symbol : Symbol) = new Updated(symbol)
+    }
+  }
+
+  private class DefInfo extends ReallyHasClients {
+    var ref : scala.ref.WeakReference[Symbol] = _
+    var scopes : List[(PersistentScope)] = Nil
+    def scope(kind : ScopeKind) = scopes.find(_.key == kind) match {
+    case Some(scope) => scope
+    case None =>
+      val scope = new PersistentScope(kind,this)
+      assert(scope.key == kind)
+      scopes = (scope) :: scopes
+      scope
+    }
+  }
+
+  private val defMap = new WeakHashMap[Symbol,DefInfo] {
+    override def default(clazz : Symbol) = {
+      val ref = new scala.ref.WeakReference(clazz)
+      val info = new DefInfo
+      this(clazz) = info
+      info.ref = ref
+      info
+    }
+  }
+  override def newClassScope(clazz : Symbol) = {
+    newDefScope0({
+      if (clazz.isModuleClass && !clazz.isPackageClass) {
+        assert(true)
+        clazz
+      } else if (clazz.isModule && !clazz.isPackage) {
+        assert(true)
+        clazz.moduleClass
+      } else clazz
+    }, ClassKind)
+  }
+  private lazy val ClassKind = allocateScopeKind("class")
+  private def newDefScope0(sym : Symbol, key : ScopeKind) = reuse(defMap(sym).scope(key))
+
+  override def recycle(sym : Symbol) = sym.pos match {
+  case pos : TrackedPosition => pos.recycle(sym)
+  case _ => super.recycle(sym)
+  }
+  override def newLocalDummy(clazz : Symbol, pos : util.Position) =
+    recycle(super.newLocalDummy(clazz,pos)).asInstanceOf[TermSymbol]
+
+  def newScope(pos : Position, key : (ScopeKind,AnyRef), old : Option[Scope]) : Scope = pos match {
+  case pos : TrackedPosition => pos.scopeFor(key)
+  case _ if old.isEmpty => newScope(null : ScopeEntry)
+  case _ => super.scopeFor(old.get, null,key._1)
+  }
+
+  private def scopeFor00(tree : Tree, old : Option[Scope], kind : ScopeKind) = (tree,tree.symbol) match {
+  case (_,null|NoSymbol) => newScope(tree.pos, (kind,tree.getClass), (old))
+  case (tree : DefTree, sym) => newDefScope0((sym),kind) // indexed by symbol
+  case _ => newScope(tree.pos, (kind,tree.getClass), old)
+  }
+
+  override def scopeFor(old : Scope, tree : Tree, kind : ScopeKind) = scopeFor00(tree, Some(old), kind)
+  override def scopeFor(tree : Tree, kind : ScopeKind) = scopeFor00(tree, None, kind)
+  override def newScope(initElements : ScopeEntry) : Scope = {
+    object owner extends ReallyHasClients
+    new PersistentScope(null, owner)
+  }
+  override def newTempScope : Scope = new TemporaryScope
+  private class TemporaryScope extends HookedScope(null) {
+    override def hashCode = toList.map(_.hashCode).foldLeft(0)(_ + _)
+    override def equals(that : Any) = that match {
+    case that : TemporaryScope if this eq that => true
+    case that : TemporaryScope => // do a brute force comparison
+      val l0 = this.toList
+      val l1 = that.toList
+      l0.size == l1.size && l0.forall(l1.contains)
+    case _ => false
+    }
+  }
+  private class ThrowAwayScope(decls : List[Symbol]) extends HookedScope(null:ScopeEntry) {
+    decls.foreach(d => enter(d))
+  }
+  override def newThrowAwayScope(decls : List[Symbol]) : Scope= new ThrowAwayScope(decls)
+
+  private val trackedTypes = new LinkedHashMap[Symbol,LinkedHashSet[ScopeClient]] {
+    override def default(sym : Symbol) = {
+      val set = new LinkedHashSet[ScopeClient]
+      this(sym) = set; set
+    }
+  }
+  // trace symbols whose types are watched!
+  private val tracedTypes = new LinkedHashMap[Symbol,Type]
+
+  override def trackTypeIDE(sym : Symbol): Boolean = if (sym != NoSymbol && !sym.isPackageClass && !sym.isPackage) {
+    // will wind up watching a lot of stuff!
+    currentClient.addTo(trackedTypes(sym))
+    super.trackTypeIDE(sym)
+  } else super.trackTypeIDE(sym)
+  override def mkConstantType(value: Constant): ConstantType = {
+    super.mkConstantType(Constant(value.value match {
+    case _ : Int => 0 : Int
+    case _ : Long => 0 : Long
+    case _ : Byte => 0 : Byte
+    case _ : Char => 0 : Char
+    case _ : Short => 0 : Short
+    case _ : Float => 0 : Float
+    case _ : Double => 0 : Double
+    case _ : String => "string"
+    case _ : scala.Symbol => 'symbol
+    case value => value
+    }))
+  }
+  // mostly intellisense hacks.
+  override def verifyAndPrioritize[T](verify : Symbol => Symbol)(pt : Type)(f : => T) : T = {
+    currentClient.verifyAndPrioritize(verify)(pt)(f)
+  }
+  override def compare(sym : Symbol, name : Name) = {
+    val client = currentClient
+    sym.info.decls match {
+    case scope : HookedScope =>
+      scope.record(client, name)
+    case _ =>
+    }
+    client.notify(name, sym)
+    super.compare(sym, name)
+  }
+  override def notifyImport(what : Name, container : Type, from : Name, to : Name) : Unit = {
+    super.notifyImport(what, container, from, to)
+    val from0 = if (what.isTypeName) from.toTypeName else from.toTermName
+    val result = container.member(from0)
+    if (result != NoSymbol)
+      currentClient.notify(what, result)
+  }
+
+  object lightDuplicator extends Transformer {
+    override val copy = new StrictTreeCopier
+  }
+  // make the trees less detailed.
+  override def sanitize(tree : Tree) : Tree = lightDuplicator.transform(tree match {
+  case Template(_,vdef,_) => Template(Nil, sanitize(vdef).asInstanceOf[ValDef], Nil)
+  case PackageDef(nme, _) => PackageDef(nme, Nil)
+  case DefDef(mods, _, _, _, _:TypeTree, _) => DefDef(NoMods, nme.ERROR, Nil, Nil, TypeTree(), Literal(()))
+  case DefDef(mods, _, _, _, restpt, _) => DefDef(NoMods, nme.ERROR, Nil, Nil, sanitize(restpt), Literal(()))
+  case ValDef(_, _, _ : TypeTree, _) => ValDef(NoMods, nme.ERROR, TypeTree(), EmptyTree)
+  case ValDef(_, _, restpt, _) => ValDef(NoMods, nme.ERROR, sanitize(restpt), EmptyTree)
+  case ModuleDef(_, _, impl) =>
+    ModuleDef(NoMods, nme.ERROR, sanitize(impl).asInstanceOf[Template])
+  case ClassDef(_, _, tparams, impl) =>
+    ClassDef(NoMods, nme.ERROR.toTypeName, Nil, sanitize(impl).asInstanceOf[Template])
+  case DocDef(_, definition) => sanitize(definition)
+  case CaseDef(x, y, z) => CaseDef(Literal(()), EmptyTree, Literal(()))
+  case Block(_, _) => Block(Nil, Literal(()))
+  case Function(vparams,body) =>
+    Function(vparams.map(sanitize).asInstanceOf[List[ValDef]],Literal(()))
+  case _ => tree
+  }).setPos(tree.pos)
+
+}

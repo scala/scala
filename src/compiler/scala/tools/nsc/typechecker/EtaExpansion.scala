@@ -40,21 +40,18 @@ trait EtaExpansion { self: Analyzer =>
     var cnt = 0 // for NoPosition
     def freshName(pos : util.Position, n : Int) = {
       cnt += 1
-      if (pos == util.NoPosition) {
-        if (inIDE) newTermName(                  ("eta$" + symbolHash + (cnt - 1)))
-        else       newTermName(unit.fresh.newName("eta$" + symbolHash + (cnt - 1)))
-/*
-      } else if (n == 0) {
-        newTermName(unit.fresh.newName(pos, "etaC$" + symbolHash))
-*/
-      } else {
+      if (!inIDE) {
+        newTermName(unit.fresh.newName(pos, "eta$" + (cnt - 1) + "$"))
+      } else if (pos == util.NoPosition) {
+        // nothing we can do, hope for no conflict!
+        newTermName(("eta$" + symbolHash + (cnt - 1)))
+      } else
         newTermName(unit.fresh.newName(pos, "eta$" + symbolHash + (cnt - 1) + "$"))
         // Martin to Sean: I removed the
         // else if (n == 0) branch and changed `n' in the line above to `(cnt - 1)'
         // this was necessary because otherwise curried eta-expansions would get the same
         // symbol. An example which failes test/files/run/Course-2002-02.scala
         // todo: review and get rid of the `n' argument (which is unused right now).
-      }
     }
     // { cnt = cnt + 1; newTermName("eta$" + cnt) }
     val defs = new ListBuffer[Tree]

@@ -21,7 +21,7 @@ object SourceFile {
 /** abstract base class of a source file used in the compiler */
 abstract class SourceFile {
   import SourceFile._
-  //def content : Seq[Char] // normalized, must end in SU
+  def content : RandomAccessSeq[Char] // normalized, must end in SU
   def file    : AbstractFile
   def isLineBreak(idx : Int) : Boolean
   def length : Int

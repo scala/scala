@@ -130,11 +130,13 @@ trait NewScanners {
       case code => code
       }
       // push on braces
-      val pushOn = current.code match {
+      val pushOn = (current.code) match {
       case LBRACE => RBRACE
       case LPAREN => RPAREN
       case LBRACKET => RBRACKET
-      case CASE => ARROW
+      case CASE =>
+        assert(true)
+        ARROW
       case RBRACE =>
         while (!sepRegions.isEmpty && sepRegions.head != RBRACE)
           sepRegions = sepRegions.tail
@@ -143,6 +145,9 @@ trait NewScanners {
         EMPTY
       case code @ (ARROW) if (!sepRegions.isEmpty && sepRegions.head == code) =>
         sepRegions = sepRegions.tail
+        EMPTY
+      case ARROW =>
+        assert(true)
         EMPTY
       case code @ (RPAREN|RBRACKET) =>
         if (!sepRegions.isEmpty && sepRegions.head == code)
@@ -183,6 +188,7 @@ trait NewScanners {
         if (headIsRBRACE && ((inLastOfStat(lastCode) && inFirstOfStat(next.code))
            /* This need to be commented out, otherwise line
               continuation in the interpreter will not work
+	      XXX: not sure how the IDE reacts with this commented out.
               || next.code == EOF */ )) {
           //if (hasNewline) current.code = NEWLINES
         } else {
@@ -878,7 +884,7 @@ trait NewScanners {
   }
   class UnitScanner(unit: CompilationUnit) extends ParserScanner {
     implicit val in =
-      new DefaultInput(new NewCharArrayReader(unit.source.asInstanceOf[BatchSourceFile].content, !settings.nouescape.value, error)) {
+      new DefaultInput(new NewCharArrayReader(unit.source.content, !settings.nouescape.value, error)) {
         override def error(offset : Int, msg : String) : Unit = UnitScanner.this.error(offset, msg)
         override def incompleteError(offset : Int, msg : String) =
           unit.incompleteInputError(new OffsetPosition(unit.source, offset), msg)

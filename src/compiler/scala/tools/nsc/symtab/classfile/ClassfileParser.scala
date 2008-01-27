@@ -329,7 +329,11 @@ abstract class ClassfileParser {
     val c = pool.getClassSymbol(in.nextChar)
     if (c != clazz) {
       assert(true)
-      if (inIDE) {
+      if ((clazz eq NoSymbol) && (c ne NoSymbol)) { // XXX: needed for build compiler, so can't protect with inIDE
+        assert(true)
+        clazz = c
+      } else if (inIDE) {
+        assert(true)
         Console.println("WRONG CLASS: expected: " + clazz + " found " + c)
       } else throw new IOException("class file '" + in.file + "' contains wrong " + c)
     }

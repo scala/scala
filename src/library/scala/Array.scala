@@ -180,7 +180,10 @@ object Array {
    */
    def unapplySeq[A](x: Array[A]): Option[Seq[A]] = Some(x)
 
-   trait Projection[A] extends RandomAccessSeq.MutableProjection[A] {
+   trait ArrayLike[A] extends RandomAccessSeq.Mutable[A] {
+     def force : Array[A]
+   }
+   trait Projection[A] extends RandomAccessSeq.MutableProjection[A] with ArrayLike[A] {
      protected def newArray[B >: A](length : Int, elements : Iterator[A]) : Array[B]
      override def toArray[B >: A] = (newArray(length, elements))//:Any).asInstanceOf[Array[B]]
      override def force : Array[A] = toArray
@@ -206,12 +209,13 @@ object Array {
        override def stringPrefix = Projection.this.stringPrefix + "R"
      }
    }
-   trait Array0[A] extends RandomAccessSeq.Mutable[A] {
+   trait Array0[A] extends RandomAccessSeq.Mutable[A] with ArrayLike[A] {
      override def projection : Projection[A] = throw new Error
      override def slice(from : Int, until : Int) : Projection[A] = projection.slice(from, until)
      override def take(until : Int) : Projection[A] = projection.take(until)
      override def drop(from : Int) : Projection[A] = projection.drop(from)
      override def reverse = projection.reverse
+     override def force = asInstanceOf[Array[A]]
    }
 }
 

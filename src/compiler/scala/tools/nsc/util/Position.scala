@@ -84,4 +84,9 @@ case class LinePosition(source0: SourceFile, line0: Int) extends Position {
 case class OffsetPosition(source0: SourceFile, offset0: Int) extends Position {
   override def source = Some(source0)
   override def offset = Some(offset0)
+  override def equals(that : Any) = that match {
+  case that : OffsetPosition => offset0 == that.offset0 && source0.file == that.source0.file
+  case that => false
+  }
+  override def hashCode = offset0 + source0.file.hashCode
 }

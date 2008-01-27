@@ -452,8 +452,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     var uncheckedWarnings: Boolean = false
 
     private var p: Phase = firstPhase
+    protected def stopPhase(name : String) = settings.stop.contains(name)
 
-    for (pd <- phaseDescriptors.takeWhile(pd => !(settings.stop contains pd.phaseName)))
+    for (pd <- phaseDescriptors.takeWhile(pd => !(stopPhase(pd.phaseName))))
       if (!(settings.skip contains pd.phaseName)) p = pd.newPhase(p)
 
     def cancel { reporter.cancelled = true }
@@ -495,10 +496,13 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     private var unitbuf = new ListBuffer[CompilationUnit]
     private var fileset = new HashSet[AbstractFile]
 
-    val terminalPhase : Phase =
-      if (onlyPresentation) typerPhase.next.next
-      else new TerminalPhase(p)
-
+    lazy val terminalPhase : Phase = {
+      //var q : Phase = firstPhase
+      //while (q != null && !stopPhase(q.name)) q = q.next
+      //if (q == null)
+      new TerminalPhase(p)
+      //else q
+    }
     private def addUnit(unit: CompilationUnit) {
       unitbuf += unit
       fileset += unit.source.file
@@ -694,15 +698,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def forCLDC: Boolean = settings.target.value == "cldc"
   def forJVM : Boolean = settings.target.value startsWith "jvm"
   def forMSIL: Boolean = settings.target.value == "msil"
-  def onlyPresentation = settings.doc.value
-
-  override def inIDE = false
+  def onlyPresentation = inIDE || settings.doc.value
   private val unpickleIDEHook0 : (( => Type) => Type) = f => f
   def unpickleIDEHook : (( => Type) => Type) = unpickleIDEHook0
+
   def doPickleHash = false
-  /* hook for IDE to detect source from class dependencies */
-  def attachSourceToClass(clazz : Symbol, tpe : LazyType, sourceFile : AbstractFile) = clazz match {
-    case clazz : ClassSymbol => clazz.sourceFile = sourceFile
-    case _ =>
-  }
 }

@@ -73,6 +73,9 @@ trait ModelToXML extends ModelExtractor {
           else parents;
        parents1.mkXML(Text(""), <code> with </code>, Text(""))(link);
      case _ =>
+       if (tpe.typeSymbol == NoSymbol) {
+         throw new Error(tpe + " has no type class " + tpe.getClass)
+       }
        link(decode(tpe.typeSymbol))
     }
   }
@@ -81,7 +84,7 @@ trait ModelToXML extends ModelExtractor {
     if (what.isEmpty) Text("")
     else Text(before) ++ f(what.get) ++ Text(after)
 
-  def bodyFor(entity: Entity)(implicit frame: Frame): NodeSeq = {
+  def bodyFor(entity: Entity)(implicit frame: Frame): NodeSeq = try {
     var seq = {entity.typeParams.surround("[", "]")(e => {
       Text(e.variance) ++ <em>{e.name}</em> ++
         {printIf(e.hi, " <: ", "")(link)} ++
@@ -95,12 +98,18 @@ trait ModelToXML extends ModelExtractor {
           if (str.length == 0) NodeSeq.Empty
           else <code>{Text(str)} </code>
         } ++
-        <em>{arg.name}</em> ++
-        Text(" : ") ++ link(arg.resultType.get)
+        <em>{arg.name}</em> ++ (try {
+
+          Text(" : ") ++ link(arg.resultType.get)
+        } catch {
+          case e : Throwable => System.err.println("ARG " + arg + " in " + entity); throw e
+        })
       );
       seq
     })};
     seq ++ {printIf(entity.resultType, " : ", "")(tpe => link(tpe))}
+  } catch {
+    case e => System.err.println("generating for " + entity); throw e
   }
 
   def extendsFor(entity: Entity)(implicit frame: Frame): NodeSeq = {
