@@ -103,7 +103,7 @@ abstract class Mixin extends InfoTransform {
         if (settings.debug.value) {
           val other = bcs.head.info.nonPrivateDecl(member.name);
           log("rebindsuper " + bcs.head + " " + other + " " + other.tpe +
-              " " + other.hasFlag(DEFERRED))
+              " " + other.isDeferred)
         }
         sym = member.overridingSymbol(bcs.head).suchThat(sym => !sym.hasFlag(DEFERRED | BRIDGE))
         bcs = bcs.tail
@@ -155,7 +155,7 @@ abstract class Mixin extends InfoTransform {
 
       for (val member <- impl.info.decls.toList) {
         if (!member.isMethod && !member.isModule && !member.isModuleVar) {
-          assert(member.isTerm && !member.hasFlag(DEFERRED), member)
+          assert(member.isTerm && !member.isDeferred, member)
           if (member.getter(impl) hasFlag PRIVATE) {
             member.makeNotPrivate(clazz) // this will also make getter&setter not private
           }
@@ -483,7 +483,7 @@ abstract class Mixin extends InfoTransform {
         def isNotDuplicate(tree: Tree) = tree match {
           case DefDef(_, _, _, _, _, _) =>
             val sym = tree.symbol;
-            !((sym hasFlag DEFERRED) &&
+            !(sym.isDeferred &&
               (newSyms exists (nsym => nsym.name == sym.name && (nsym.tpe matches sym.tpe))))
           case _ =>
             true

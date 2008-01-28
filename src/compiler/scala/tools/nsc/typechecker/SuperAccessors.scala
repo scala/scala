@@ -142,7 +142,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       case Select(sup @ Super(_, mix), name) =>
         val sym = tree.symbol
         val clazz = sup.symbol
-        if (sym hasFlag DEFERRED) {
+        if (sym.isDeferred) {
           val member = sym.overridingSymbol(clazz);
           if (mix != nme.EMPTY.toTypeName || member == NoSymbol ||
               !((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz)))

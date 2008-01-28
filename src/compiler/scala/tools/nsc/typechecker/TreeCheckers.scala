@@ -72,7 +72,7 @@ abstract class TreeCheckers extends Analyzer {
           tree match {
             case DefDef(_, _, _, _, _, _) =>
               if (tree.symbol.hasFlag(ACCESSOR) &&
-                  !tree.symbol.hasFlag(DEFERRED) &&
+                  !tree.symbol.isDeferred &&
                   !tree.symbol.tpe.resultType.isInstanceOf[ConstantType]) {
                 assert(tree.symbol.accessed != NoSymbol, tree.symbol)
                 assert(tree.symbol.accessed.getter(tree.symbol.owner) == tree.symbol ||

@@ -286,7 +286,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
      */
     def outerAccessorDef: Tree = {
       val outerAcc = outerAccessor(currentClass)
-      var rhs = if (outerAcc hasFlag DEFERRED) EmptyTree
+      var rhs = if (outerAcc.isDeferred) EmptyTree
                 else Select(This(currentClass), outerField(currentClass))
       localTyper.typed {
         atPos(currentClass.pos) {

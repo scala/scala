@@ -117,8 +117,10 @@ abstract class Checkers {
       in.clear;  out.clear;
       code = c;
       worklist + c.startBlock;
-      c.blocks foreach ( bl => { in  += Pair(bl, emptyStack);
-                                 out += Pair(bl, emptyStack) } );
+      for (bl <- c.blocks) {
+        in  += (bl -> emptyStack)
+        out += (bl -> emptyStack)
+      }
 
       while (worklist.length > 0) {
         val block = worklist(0); worklist.trimStart(1);

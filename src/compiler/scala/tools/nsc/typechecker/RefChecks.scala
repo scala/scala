@@ -145,14 +145,13 @@ abstract class RefChecks extends InfoTransform {
 
         // return if we already checked this combination elsewhere
         if (member.owner != clazz) {
-          if ((member.owner isSubClass other.owner) &&
-              ((member hasFlag DEFERRED) || !(other hasFlag DEFERRED))) {
+          if ((member.owner isSubClass other.owner) && (member.isDeferred || !other.isDeferred)) {
                 //Console.println(infoString(member) + " shadows1 " + infoString(other) " in " + clazz);//DEBUG
                 return;
               }
           if (clazz.info.parents exists (parent =>
             (parent.typeSymbol isSubClass other.owner) && (parent.typeSymbol isSubClass member.owner) &&
-            ((member hasFlag DEFERRED) || !(other hasFlag DEFERRED)))) {
+            (member.isDeferred || !other.isDeferred))) {
               //Console.println(infoString(member) + " shadows2 " + infoString(other) + " in " + clazz);//DEBUG
                 return;
             }
@@ -174,7 +173,7 @@ abstract class RefChecks extends InfoTransform {
           overrideAccessError()
         } else if (other hasFlag FINAL) { // (1.2)
           overrideError("cannot override final member");
-        } else if (!(other hasFlag DEFERRED) && !(member hasFlag (OVERRIDE | ABSOVERRIDE))) { // (1.3)
+        } else if (!other.isDeferred && !(member hasFlag (OVERRIDE | ABSOVERRIDE))) { // (1.3)
           overrideError("needs `override' modifier");
         } else if ((other hasFlag ABSOVERRIDE) && other.isIncompleteIn(clazz) && !(member hasFlag ABSOVERRIDE)) {
           overrideError("needs `abstract override' modifiers")
@@ -183,7 +182,7 @@ abstract class RefChecks extends InfoTransform {
           overrideError("cannot override a mutable variable")
         } else if (other.isStable && !member.isStable) { // (1.4)
           overrideError("needs to be an immutable value")
-        } else if (other.isStable && !(other hasFlag DEFERRED) && other.owner.isTrait && (member hasFlag OVERRIDE)) {
+        } else if (other.isStable && !other.isDeferred && other.owner.isTrait && (member hasFlag OVERRIDE)) {
           overrideError("cannot override a value or variable definition in a trait " +
                         "\n (this is an implementation restriction)")
         } else {
@@ -251,7 +250,7 @@ abstract class RefChecks extends InfoTransform {
           clazz.setFlag(ABSTRACT)
         }
         for (val member <- clazz.tpe.nonPrivateMembers)
-          if ((member hasFlag DEFERRED) && !(clazz hasFlag ABSTRACT)) {
+          if (member.isDeferred && !(clazz hasFlag ABSTRACT)) {
             abstractClassError(
               false, infoString(member) + " is not defined" + analyzer.varNotice(member))
           } else if ((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz)) {
@@ -266,7 +265,7 @@ abstract class RefChecks extends InfoTransform {
         // that are not implemented in a subclass.
         def checkNoAbstractDecls(bc: Symbol) {
           for (val decl <- bc.info.decls.elements) {
-            if (decl hasFlag DEFERRED) {
+            if (decl.isDeferred) {
               val impl = decl.matchingSymbol(clazz.thisType)
               if (impl == NoSymbol || (decl.owner isSubClass impl.owner)) {
                 abstractClassError(false, "there is a deferred declaration of "+infoString(decl)+
@@ -694,7 +693,7 @@ abstract class RefChecks extends InfoTransform {
         if (symbol.isDeprecated) {
           val concrOvers =
             symbol.allOverriddenSymbols.filter(sym =>
-              !sym.isDeprecated && !(sym hasFlag DEFERRED))
+              !sym.isDeprecated && !sym.isDeferred)
           if(!concrOvers.isEmpty)
             unit.deprecationWarning(
               tree.pos,
