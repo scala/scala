@@ -91,7 +91,7 @@ trait ModelToXML extends ModelExtractor {
         {printIf(e.lo, " >: ", "")(link)}
     })} ++ printIf(entity.hi, " <: ", "")(link) ++
            printIf(entity.lo, " >: ", "")(link);
-    {entity.params.foreach(xs => {
+    {entity.valueParams.foreach(xs => {
       seq = seq ++ xs.mkXML("(", ", ", ")")(arg =>
         {
           val str = arg.flagsString.trim

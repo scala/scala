@@ -31,11 +31,11 @@ trait ModelExtractor {
 
   case class Comment(body: String, attributes: List[Tag]) {
     def decodeAttributes = {
-      val map = new jcl.LinkedHashMap[String,List[(String,String)]] {
-        override def default(key : String) = Nil;
+      val map = new jcl.LinkedHashMap[String, List[(String, String)]] {
+        override def default(key: String) = Nil
       }
       attributes.foreach(a => {
-        map(a.tag) = map(a.tag) ::: ((a.option,a.body) :: Nil);
+        map(a.tag) = map(a.tag) ::: List((a.option, a.body))
       });
       map
     }
@@ -49,9 +49,6 @@ trait ModelExtractor {
     }
 
   protected def decodeComment(comment0: String): Comment = {
-    //Console.println("COMMENT: " + comment0)
-  //  assert(comment0.startsWith("/**"))
-//    assert(comment0.endsWith("*/"))
     val comment = comment0 // .substring("/**".length, comment0.length - "*/".length)
     val tok = new java.util.StringTokenizer(comment, LINE_SEPARATOR)
     val buf = new StringBuilder
@@ -77,7 +74,7 @@ trait ModelExtractor {
           buf.append(s + LINE_SEPARATOR)
       }
     }
-    Comment(buf.toString,attributes.toList.map({x => Tag(x._1,x._2,x._3.toString)}))
+    Comment(buf.toString, attributes.toList.map({x => Tag(x._1,x._2,x._3.toString)}))
   }
 
   sealed abstract class Entity(val sym: Symbol) {
@@ -110,9 +107,9 @@ trait ModelExtractor {
           sym.privateWithin.nameString
         else null
       )
-      def f(flag: Int, str: String) =
-        if (sym.hasFlag(flag)) string = string + " " + str;
-
+      def f(flag: Int, str: String) {
+        if (sym hasFlag flag) string = string + " " + str
+      }
       f(Flags.IMPLICIT, "implicit")
       f(Flags.SEALED, "sealed")
       f(Flags.OVERRIDE, "override")
@@ -128,15 +125,15 @@ trait ModelExtractor {
     def kind: String
     def header { }
     def typeParams: List[TypeParam] = Nil
-    def params: List[List[Param]] = Nil
+    def valueParams: List[List[ValueParam]] = Nil
     def resultType: Option[Type] = None
     def parents: Iterable[Type] = Nil
     def lo: Option[Type] = sym.info match {
-      case TypeBounds(lo,hi) if decode(lo.typeSymbol) != definitions.AllClass => Some(lo)
+      case TypeBounds(lo, hi) if decode(lo.typeSymbol) != definitions.AllClass => Some(lo)
       case _ => None
     }
-    def hi : Option[Type] = sym.info match {
-      case TypeBounds(lo,hi) if decode(hi.typeSymbol) != definitions.AnyClass => Some(hi)
+    def hi: Option[Type] = sym.info match {
+      case TypeBounds(lo, hi) if decode(hi.typeSymbol) != definitions.AnyClass => Some(hi)
       case _ => None
     }
     def variance = {
@@ -148,13 +145,13 @@ trait ModelExtractor {
     def overridden: Iterable[Symbol] = Nil
   }
 
-  class Param(sym: Symbol) extends Entity(sym) {
+  class ValueParam(sym: Symbol) extends Entity(sym) {
     override def resultType = Some(sym.tpe)
     //def kind = if (sym.isPublic) "val" else "";
     def kind = ""
   }
 
-  class ConstructorParam(sym: Symbol) extends Param(sym) {
+  class ConstructorParam(sym: Symbol) extends ValueParam(sym) {
     override protected def accessQualified(core: String, qual: String) = core match {
       case "public" => "val"
       case "protected" => super.accessQualified(core,qual) + " val"
@@ -163,7 +160,7 @@ trait ModelExtractor {
     }
   }
 
-  def Param(sym: Symbol) = new Param(sym)
+  def ValueParam(sym: Symbol) = new ValueParam(sym)
   class TypeParam(sym: Symbol) extends Entity(sym) {
     def kind = ""
   }
@@ -172,7 +169,7 @@ trait ModelExtractor {
   trait Clazz extends ClassOrObject {
     private def csym = sym.asInstanceOf[TypeSymbol]
     override def typeParams = csym.typeParams.map(TypeParam)
-    override def params = {
+    override def valueParams = {
       if (constructorArgs.isEmpty) Nil
       else constructorArgs.values.toList :: Nil
     }
@@ -221,26 +218,27 @@ trait ModelExtractor {
 
   trait ClassOrObject extends Entity {
     def path: List[ClassOrObject] = this :: Nil
-    override def listName = path.map(_.name).mkString("",".","")
+    override def listName = path map (_.name) mkString "."
 
     object freshParents extends jcl.LinkedHashSet[Type] {
       this addAll sym.tpe.parents
-      this.toList.foreach(e => this removeAll e.parents)
+      this.toList foreach (this removeAll _.parents)
     }
-    object constructorArgs extends jcl.LinkedHashMap[Symbol,Param] {
-      sym.constrParamAccessors.foreach(arg => {
-        val str = symtab.Flags.flagsToString(arg.flags);
-        assert(arg.hasFlag(symtab.Flags.PRIVATE) && arg.hasFlag(symtab.Flags.LOCAL));
+    object constructorArgs extends jcl.LinkedHashMap[Symbol, ValueParam] {
+      import symtab.Flags._
+      sym.constrParamAccessors.filter(arg => ! (arg hasFlag SYNTHETIC)).foreach(arg => {
+        val str = flagsToString(arg.flags)
+        assert((arg hasFlag PRIVATE) && (arg hasFlag LOCAL), arg)
         val argName = arg.name.toString.trim
         val actual = sym.tpe.decls.elements.find(e => {
           val eName = e.name.toString.trim;
           argName == eName && {
-            val str = symtab.Flags.flagsToString(e.flags);
-            !e.hasFlag(symtab.Flags.LOCAL);
+            val str = flagsToString(e.flags);
+            !e.hasFlag(LOCAL);
           }
         });
-        if (!actual.isEmpty) this(actual.get) = new ConstructorParam(actual.get);
-        else this(arg) = new ConstructorParam(arg);
+        val param = actual getOrElse arg
+        this(param) = new ConstructorParam(param)
       });
     }
     object decls extends jcl.LinkedHashMap[Symbol, Member] {
@@ -262,7 +260,7 @@ trait ModelExtractor {
           val parent = decode(m.enclClass)
           val mo = Member(m)
           if (!mo.isEmpty) {
-            this(parent) = mo.get :: this(parent);
+            this(parent) = mo.get :: this(parent)
           }
         }
       }
@@ -287,25 +285,25 @@ trait ModelExtractor {
           val sym0 = sym.overriddenSymbol(parent.typeSymbol)
           if (sym0 != NoSymbol) {
             if (ret == null) ret = new jcl.LinkedHashSet[Symbol];
-            ret += sym0;
+            ret += sym0
           }
         }
-        if (ret == null) Nil else ret.readOnly;
+        if (ret == null) Nil else ret.readOnly
       }
     }
     case class Def(override val sym : TermSymbol) extends ValDef(sym) {
-      override def resultType0 = sym.tpe.finalResultType;
-      override def typeParams = sym.tpe.typeParams.map(TypeParam);
-      override def params = methodArgumentNames.get(sym) match {
+      override def resultType0 = sym.tpe.finalResultType
+      override def typeParams = sym.tpe.typeParams.map(TypeParam)
+      override def valueParams = methodArgumentNames.get(sym) match {
         case Some(argss) if argss.length > 1 || (!argss.isEmpty && !argss(0).isEmpty) =>
-          argss.map(_.map(Param));
+          argss map (_.map(ValueParam))
         case _ =>
           var i = 0
           val ret = for (tpe <- sym.tpe.paramTypes) yield {
             val ret = sym.newValueParameter(sym.pos, newTermName("arg" + i));
-            ret.setInfo(tpe);
+            ret setInfo tpe
             i += 1
-            Param(ret)
+            ValueParam(ret)
           }
           if (ret.isEmpty) Nil
           else ret :: Nil
@@ -313,9 +311,9 @@ trait ModelExtractor {
       override def kind = "def"
     }
     case class Val(override val sym: TermSymbol) extends ValDef(sym) {
+      import symtab.Flags._
       def resultType0: Type = sym.tpe
-      override def kind = {
-        import symtab.Flags._
+      override def kind: String =
         if (sym hasFlag ACCESSOR) {
           val setterName = nme.getterToSetter(sym.name)
           val setter = sym.owner.info.decl(setterName)
@@ -325,7 +323,6 @@ trait ModelExtractor {
           assert(sym hasFlag JAVA)
           if (sym hasFlag FINAL) "val" else "var"
         }
-      }
     }
 
     case class AbstractType(override val sym: Symbol) extends Member(sym) {
@@ -333,10 +330,11 @@ trait ModelExtractor {
     }
 
     abstract class NestedClassOrObject(override val sym: Symbol) extends Member(sym) with ClassOrObject {
-      override def path: List[ClassOrObject] = ClassOrObject.this.path ::: (super.path);
+      override def path: List[ClassOrObject] = ClassOrObject.this.path ::: super.path
     }
 
     case class NestedClass(override val sym: ClassSymbol) extends NestedClassOrObject(sym) with Clazz
+
     case class NestedObject(override val sym: ModuleSymbol) extends NestedClassOrObject(sym) with Object {
       override def attributes = sym.moduleClass.attributes
     }
@@ -346,40 +344,47 @@ trait ModelExtractor {
       if (sym.isLocalClass) return false
       if (sym.isLocal) return false
       if (sym.isPrivateLocal) return false
-      if (sym.hasFlag(PRIVATE)) return !inIDE //false
-      if (sym.hasFlag(SYNTHETIC)) return false
-      if (sym.hasFlag(BRIDGE)) return false
-      if (sym.nameString.indexOf("$") != -1) return false
-      if (sym.hasFlag(CASE) && sym.isMethod) return false
-      return true
+      if (sym hasFlag PRIVATE) return !inIDE //false
+      if (sym hasFlag SYNTHETIC) return false
+      if (sym hasFlag BRIDGE) return false
+      if ((sym.nameString indexOf "$") != -1) return false
+      if ((sym hasFlag CASE) && sym.isMethod) return false
+      true
     }
 
     def Member(sym: Symbol): Option[Member] = {
       import global._
       import symtab.Flags
-      if (!isVisible(sym)) return None
-      if (!isAccessible(sym)) return None
-      if (sym hasFlag Flags.ACCESSOR) {
+      if (!isVisible(sym))
+        None
+      else if (!isAccessible(sym))
+        None
+      else if (sym hasFlag Flags.ACCESSOR) {
         if (sym.isSetter) return None;
         assert(sym.isGetter);
-        return Some[Member](new Val(sym.asInstanceOf[TermSymbol]));
-      } else if (sym.isValue && !sym.isMethod && !sym.isModule) {
+        Some[Member](new Val(sym.asInstanceOf[TermSymbol]))
+      }
+      else if (sym.isValue && !sym.isMethod && !sym.isModule) {
         if (!sym.hasFlag(Flags.JAVA)) {
-          Console.println("SYM: " + sym + " " + sym.fullNameString('.'));
-          Console.println("FLA: " + Flags.flagsToString(sym.flags));
+          Console.println("SYM: " + sym + " " + sym.fullNameString('.'))
+          Console.println("FLA: " + Flags.flagsToString(sym.flags))
         }
         assert(sym hasFlag Flags.JAVA)
-        return Some[Member](new Val(sym.asInstanceOf[TermSymbol]))
+        Some[Member](new Val(sym.asInstanceOf[TermSymbol]))
       }
-      if (sym.isValue && !sym.isModule) {
-        val str = Flags.flagsToString(sym.flags);
-        assert(sym.isMethod);
-        return new Some[Member](new Def(sym.asInstanceOf[TermSymbol]));
+      else if (sym.isValue && !sym.isModule) {
+        val str = Flags.flagsToString(sym.flags)
+        assert(sym.isMethod)
+        Some[Member](new Def(sym.asInstanceOf[TermSymbol]))
       }
-      if (sym.isAliasType || sym.isAbstractType) return Some(new AbstractType(sym));
-      if (sym.isClass) return Some(new NestedClass(sym.asInstanceOf[ClassSymbol]));
-      if (sym.isModule) return Some(new NestedObject(sym.asInstanceOf[ModuleSymbol]));
-      None;
+      else if (sym.isAliasType || sym.isAbstractType)
+        Some(new AbstractType(sym))
+      else if (sym.isClass)
+        Some(new NestedClass(sym.asInstanceOf[ClassSymbol]))
+      else if (sym.isModule)
+        Some(new NestedObject(sym.asInstanceOf[ModuleSymbol]))
+      else
+        None
     }
 
   }
@@ -414,7 +419,7 @@ trait ModelExtractor {
     val set = new jcl.TreeSet[E]()({eA: E => new Ordered[E] {
       def compare(eB: E): Int = {
         if (eA eq eB) return 0;
-        (eA,eB) match {
+        (eA, eB) match {
           case (eA: ClassOrObject, eB: ClassOrObject) =>
             val diff = ModelExtractor.this.compare(eA.path, eB.path)
             if (diff!= 0) return diff
@@ -429,9 +434,9 @@ trait ModelExtractor {
           val diff = eA.sym0.nameString compare eB.sym0.nameString
           if (diff != 0) return diff
         }
-        val diff0 = eA.sym0.fullNameString compare eB.sym0.fullNameString;
-        assert(diff0 != 0);
-        return diff0;
+        val diff0 = eA.sym0.fullNameString compare eB.sym0.fullNameString
+        assert(diff0 != 0)
+        diff0
       }
     }})
     set addAll entities;
