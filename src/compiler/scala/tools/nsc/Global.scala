@@ -452,7 +452,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     var uncheckedWarnings: Boolean = false
 
     private var p: Phase = firstPhase
-    protected def stopPhase(name : String) = settings.stop.contains(name)
+
+    protected def stopPhase(name : String) =
+      if (onlyPresentation) name == "superaccessors"
+      else settings.stop.contains(name)
+   //  protected def stopPhase(name : String) = settings.stop.contains(name)
 
     for (pd <- phaseDescriptors.takeWhile(pd => !(stopPhase(pd.phaseName))))
       if (!(settings.skip contains pd.phaseName)) p = pd.newPhase(p)
