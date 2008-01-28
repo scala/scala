@@ -36,7 +36,7 @@ trait Contexts { self: Analyzer =>
    *  a root context.  This list is sensitive to the
    *  compiler settings.
    */
-  protected def rootImports(unit: CompilationUnit, tree: Tree) :List[Symbol] = {
+  protected def rootImports(unit: CompilationUnit, tree: Tree): List[Symbol] = {
     import definitions._
     val imps = new ListBuffer[Symbol]
     if (!settings.noimports.value) {
@@ -275,7 +275,6 @@ trait Contexts { self: Analyzer =>
     private def make0(tree : Tree, owner : Symbol, scope : Scope) : Context = {
       make(unit, tree, owner, scope, imports)
     }
-
 
     def makeNewScope(tree: Tree, owner: Symbol)(implicit kind : ScopeKind): Context =
       make(tree, owner, scopeFor(scope, tree, kind))

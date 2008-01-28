@@ -416,9 +416,10 @@ trait Typers { self: Analyzer =>
       }
     }
 
-    def reenterValueParams(vparamss: List[List[ValDef]]): Unit = {
-      for (vparams <- vparamss) for (vparam <- vparams)
-        vparam.symbol = context.scope enter vparam.symbol
+    def reenterValueParams(vparamss: List[List[ValDef]]) {
+      for (vparams <- vparamss)
+        for (vparam <- vparams)
+          vparam.symbol = context.scope enter vparam.symbol
     }
 
     def reenterTypeParams(tparams: List[TypeDef]): List[Symbol] =
@@ -1222,7 +1223,7 @@ trait Typers { self: Analyzer =>
                       alias = NoSymbol
                     if (alias != NoSymbol) {
                       var ownAcc = clazz.info.decl(name).suchThat(_.hasFlag(PARAMACCESSOR))
-                      if ((ownAcc hasFlag ACCESSOR) && !(ownAcc hasFlag DEFERRED))
+                      if ((ownAcc hasFlag ACCESSOR) && !ownAcc.isDeferred)
                         ownAcc = ownAcc.accessed
                       if (!ownAcc.isVariable && !alias.accessed.isVariable) {
                         if (settings.debug.value)
@@ -1353,10 +1354,6 @@ trait Typers { self: Analyzer =>
       block.stats foreach enterLabelDef
       val stats1 = typedStats(block.stats, context.owner)
       val expr1 = typed(block.expr, mode & ~(FUNmode | QUALmode), pt)
-      if (expr1.tpe == null) {
-        assert(true)
-        assert(true)
-      }
       val block1 = copy.Block(block, stats1, expr1)
         .setType(if (treeInfo.isPureExpr(block)) expr1.tpe else expr1.tpe.deconst)
       //checkNoEscaping.locals(context.scope, pt, block1)
@@ -3119,6 +3116,7 @@ trait Typers { self: Analyzer =>
           val lo1 = typedType(lo)
           val hi1 = typedType(hi)
           copy.TypeBoundsTree(tree, lo1, hi1) setType mkTypeBounds(lo1.tpe, hi1.tpe)
+
         case etpt @ ExistentialTypeTree(_, _) =>
           newTyper(context.makeNewScope(tree, context.owner)).typedExistentialTypeTree(etpt)
 

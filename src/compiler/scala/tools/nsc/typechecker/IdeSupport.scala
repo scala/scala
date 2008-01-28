@@ -25,7 +25,7 @@ trait IdeSupport extends Analyzer {
   override def newNamer(context : Context) : Namer = new Namer(context)
   class Namer(context: Context) extends super.Namer(context) {
     override protected def setInfo[Sym <: Symbol](sym : Sym)(tpe : LazyType) : Sym = {
-      assert(!sym.rawInfoSafe.isDefined || sym.rawInfo == NoType) // type information has already been reset.
+      assert(!sym.hasRawInfo || sym.rawInfo == NoType) // type information has already been reset.
       if (currentClient.makeNoChanges) {
         sym.setInfo(tpe)
         sym.info  // force completion.

@@ -26,6 +26,7 @@ abstract class Phase(val prev: Phase) {
 
   def name: String
   def description: String = name
+  def devirtualized: Boolean = false
   def erasedTypes: Boolean = false
   def flatClasses: Boolean = false
   def run: Unit

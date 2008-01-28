@@ -246,6 +246,15 @@ trait Symbols {
     final def isStable =
       isTerm && !hasFlag(MUTABLE) && (!hasFlag(METHOD | BYNAMEPARAM) || hasFlag(STABLE))
 
+    def isDeferred =
+      hasFlag(DEFERRED) && !isClass
+
+    def isVirtualClass =
+      hasFlag(DEFERRED) && isClass
+
+    def isVirtualSubClass =
+      info.baseClasses exists (_.isVirtualClass)
+
     /** Is this symbol a public */
     final def isPublic: Boolean =
       !hasFlag(PRIVATE | PROTECTED) && privateWithin == NoSymbol
@@ -339,13 +348,12 @@ trait Symbols {
      *  @param base ...
      *  @return     ...
      */
-    final def isIncompleteIn(base: Symbol): Boolean = (
-      (this hasFlag DEFERRED) ||
+    final def isIncompleteIn(base: Symbol): Boolean =
+      this.isDeferred ||
       (this hasFlag ABSOVERRIDE) && {
         val supersym = superSymbol(base)
         supersym == NoSymbol || supersym.isIncompleteIn(base)
       }
-    )
 
     final def exists: Boolean =
       this != NoSymbol && (!owner.isPackageClass || { rawInfo.load(this); rawInfo != NoType })
@@ -479,10 +487,7 @@ trait Symbols {
         cnt += 1
         // allow for two completions:
         //   one: sourceCompleter to LazyType, two: LazyType to completed type
-        if (cnt == 3) {
-          assert(true)
-          throw new Error("no progress in completing " + this + ":" + tp)
-        }
+        if (cnt == 3) throw new Error("no progress in completing " + this + ":" + tp)
       }
       val result = rawInfo
       result
@@ -491,10 +496,6 @@ trait Symbols {
     /** Set initial info. */
     def setInfo(info: Type): this.type = {
       assert(info ne null)
-      if (name.toString == "Either") {
-        assert(true)
-        assert(true)
-      }
       infos = TypeHistory(currentPeriod, info, null)
       if (info.isComplete) {
         rawflags = rawflags & ~LOCKED
@@ -514,8 +515,7 @@ trait Symbols {
       this
     }
 
-    /** check if info has been set before, used in the IDE */
-    def rawInfoSafe : Option[Type] = if (infos == null) None else Some(rawInfo)
+    def hasRawInfo: Boolean = infos ne null
 
     /** Return info without checking for initialization or completing */
     def rawInfo: Type = {
@@ -920,8 +920,7 @@ trait Symbols {
       var sym: Symbol = NoSymbol
       while (!bcs.isEmpty && sym == NoSymbol) {
         if (!bcs.head.isImplClass)
-          sym = matchingSymbol(bcs.head, base.thisType).suchThat(
-            sym => !sym.hasFlag(DEFERRED))
+          sym = matchingSymbol(bcs.head, base.thisType).suchThat(!_.isDeferred)
         bcs = bcs.tail
       }
       sym
@@ -963,7 +962,7 @@ trait Symbols {
     final def makeNotPrivate(base: Symbol) {
       if (this hasFlag PRIVATE) {
         setFlag(notPRIVATE)
-        if (!hasFlag(DEFERRED) && isTerm) setFlag(lateFINAL)
+        if (isTerm && !isDeferred) setFlag(lateFINAL)
         if (!isStaticModule && !isClassConstructor) {
           expandName(base)
           if (isModule) moduleClass.makeNotPrivate(base)
@@ -977,7 +976,7 @@ trait Symbols {
     def expandName(base: Symbol) {
       if (this.isTerm && this != NoSymbol && !hasFlag(EXPANDEDNAME)) {
         setFlag(EXPANDEDNAME)
-        if (hasFlag(ACCESSOR) && !hasFlag(DEFERRED)) {
+        if (hasFlag(ACCESSOR) && !isDeferred) {
           accessed.expandName(base)
         } else if (hasGetter) {
           getter(owner).expandName(base)
@@ -1092,9 +1091,6 @@ trait Symbols {
 
     final def fullNameString: String = fullNameString('.')
 
-
-
-
     /** If settings.uniqid is set, the symbol's id, else "" */
     final def idString: String =
       if (settings.uniqid.value) "#"+id else ""
@@ -1120,9 +1116,7 @@ trait Symbols {
         " in " + owner else ""
 
     /** String representation of symbol's definition following its name */
-    final def infoString(tp: Option[Type]): String = tp match {
-    case None => "<_>"
-    case Some(tp) =>
+    final def infoString(tp: Type): String = {
       def typeParamsString: String = tp match {
         case PolyType(tparams, _) if (tparams.length != 0) =>
           (tparams map (_.defString)).mkString("[", ",", "]")
@@ -1144,13 +1138,13 @@ trait Symbols {
           }
         }
       else if (isModule)
-        moduleClass.infoString(Some(tp))
+        moduleClass.infoString(tp)
       else
         tp match {
           case PolyType(tparams, res) =>
-            typeParamsString + infoString(Some(res))
+            typeParamsString + infoString(res)
           case MethodType(pts, res) =>
-            pts.mkString("(", ",", ")") + infoString(Some(res))
+            pts.mkString("(", ",", ")") + infoString(res)
           case _ =>
             ": " + tp
         }
@@ -1169,7 +1163,8 @@ trait Symbols {
       val f = if (settings.debug.value) flags
               else if (owner.isRefinementClass) flags & ExplicitFlags & ~OVERRIDE
               else flags & ExplicitFlags
-      compose(List(flagsToString(f), keyString, varianceString + nameString + infoString(rawInfoSafe)))
+      compose(List(flagsToString(f), keyString, varianceString + nameString +
+                   (if (hasRawInfo) infoString(rawInfo) else "<_>")))
     }
 
     /** Concatenate strings separated by spaces */
@@ -1281,8 +1276,8 @@ trait Symbols {
 
     override def isType = true
     override def isTypeMember = true
-    override def isAbstractType = hasFlag(DEFERRED)
-    override def isAliasType = !hasFlag(DEFERRED)
+    override def isAbstractType = isDeferred
+    override def isAliasType = !isDeferred
 
     override def tpe: Type = {
       if (tpeCache eq NoType) throw CyclicReference(this, typeConstructor)
@@ -1317,11 +1312,11 @@ trait Symbols {
     override def setInfo(tp: Type): this.type = {
       tpePeriod = NoPeriod
       tyconCache = null
-      if (tp.isComplete && tp != NoType)
-        if (tp.isInstanceOf[PolyType]) resetFlag(MONOMORPHIC)
-        else if (!tp.isInstanceOf[AnnotatedType]) {
-          assert(true)
-          setFlag(MONOMORPHIC)
+      if (tp.isComplete)
+        tp match {
+          case PolyType(_, _) => resetFlag(MONOMORPHIC)
+          case NoType | AnnotatedType(_, _, _) => ;
+          case _ => setFlag(MONOMORPHIC)
         }
       super.setInfo(tp)
       this
@@ -1385,9 +1380,9 @@ trait Symbols {
     }
     private var thissym: Symbol = this
 
-    override def isClass: Boolean = true
-    override def isTypeMember = false
-    override def isAbstractType = false
+    override def isClass: Boolean = hasFlag(DEFERRED) || !phase.devirtualized
+    override def isTypeMember = !isClass
+    override def isAbstractType = !isClass
     override def isAliasType = false
 
     override def reset(completer: Type) {
@@ -1418,16 +1413,19 @@ trait Symbols {
       val period = thisTypePeriod
       if (period != currentPeriod) {
         thisTypePeriod = currentPeriod
-        if (!isValid(period)) thisTypeCache = mkThisType(this)
+        if (!isValid(period))
+          thisTypeCache = if (isClass) mkThisType(this) else NoPrefix
       }
       thisTypeCache
     }
 
     /** A symbol carrying the self type of the class as its type */
-    override def thisSym: Symbol = thissym
+    override def thisSym: Symbol =
+      if (isClass) thissym else this
 
     override def typeOfThis: Type =
-      if (getFlag(MODULE | IMPLCLASS) == MODULE && owner != NoSymbol)
+      if (!isClass) tpe
+      else if (getFlag(MODULE | IMPLCLASS) == MODULE && owner != NoSymbol)
         singleType(owner.thisType, sourceModule)
       else thissym.tpe
 

@@ -840,6 +840,15 @@ trait Types {
     override def kind = "WildcardType"
   }
 
+  /** An object representing a missing type;
+   *  used only for IDE. Todo: Merge with WildcardType?
+   */
+  case object MissingType extends Type {
+    override def toString: String = "<_>"
+    // override def isNullable: Boolean = true
+    override def kind = "MissingType"
+  }
+
   case class BoundedWildcardType(override val bounds: TypeBounds) extends Type {
     override def toString: String = "?" + bounds
     override def kind = "BoundedWildcardType"
@@ -1844,7 +1853,7 @@ A type's typeSymbol should never be inspected directly.
    */
   private def removeSuper(tp: Type, sym: Symbol): Type = tp match {
     case SuperType(thistp, _) =>
-      if (sym.isFinal || sym.hasFlag(DEFERRED)) thistp
+      if (sym.isFinal || sym.isDeferred) thistp
       else tp
     case _ =>
       tp
@@ -3591,10 +3600,6 @@ A type's typeSymbol should never be inspected directly.
           skolemizationLevel -= 1
         }
       case (_, et: ExistentialType) =>
-//        println("<<< "+tp1+" with "+tp2)
-//        settings.explaintypes.value = true
-//        et.withTypeVars { x => explainTypes(tp1, x); true }
-//        settings.explaintypes.value = false
         et.withTypeVars(tp1 <:< _)
       case (RefinedType(parents1, ref1), _) =>
         parents1 exists (_ <:< tp2)

@@ -147,7 +147,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
       }
       if (sym.isModuleClass) {
         assert(sym.name.isTypeName)
-        if (sym.rawInfoSafe.isDefined)
+        if (sym.hasRawInfo)
           if (sym.linkedModuleOfClass != NoSymbol) f(sym.linkedModuleOfClass)
       } else {
         assert(sym.name.isTypeName)
@@ -297,7 +297,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
         super.enter(symbol)
       }
       def reuse(existing : Symbol) : Symbol = {
-        def record(existing : Symbol) = if (existing.rawInfoSafe.isDefined &&
+        def record(existing : Symbol) = if (existing.hasRawInfo &&
           existing.rawInfo.isComplete && existing.rawInfo != NoType && !hasError(existing.rawInfo)) {
           tracedTypes(existing) = existing.info
         }
@@ -305,13 +305,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
           if (existing.isMonomorphicType) existing.resetFlag(Flags.MONOMORPHIC)
           assert(!existing.isPackage)
           existing.attributes = Nil // reset attributes, we don't look at these.
-          existing.setInfo(other.rawInfoSafe match {
-          case Some(info) =>
-            assert(true)
-            assert(true)
-            info
-          case _ => NoType
-          })
+          existing.setInfo(if (other.hasRawInfo) other.rawInfo else NoType)
           if (existing.isModule && existing.moduleClass != NoSymbol)
             f(existing.moduleClass,symbol.moduleClass)
         }

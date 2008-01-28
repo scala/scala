@@ -150,7 +150,7 @@ trait Namers { self: Analyzer =>
           var guess = prev
           while ((guess ne null) && (guess.sym ne sym)) guess = context.scope.lookupNextEntry(guess)
           if (guess != null) prev = guess
-          while (prev != null && (prev.sym.rawInfoSafe.isEmpty || !prev.sym.rawInfo.isComplete ||
+          while (prev != null && (!prev.sym.hasRawInfo || !prev.sym.rawInfo.isComplete ||
                  (prev.sym.sourceFile == null && sym.getClass == prev.sym.getClass))) {
             if (prev.sym.rawInfo.isComplete) {
               Console.println("DITCHING: " + prev.sym)
@@ -186,7 +186,7 @@ trait Namers { self: Analyzer =>
         val cowner = if (context.owner == EmptyPackageClass) RootClass else context.owner
         val pkg = cowner.newPackage(pos, name)
         // IDE: newScope should be ok because packages are never destroyed.
-        if (inIDE) assert(pkg.moduleClass.rawInfoSafe.isEmpty  || !pkg.moduleClass.rawInfo.isComplete)
+        if (inIDE) assert(!pkg.moduleClass.hasRawInfo || !pkg.moduleClass.rawInfo.isComplete)
         pkg.moduleClass.setInfo(new PackageClassInfoType(newScope, pkg.moduleClass, null))
         pkg.setInfo(pkg.moduleClass.tpe)
         enterInScope(pkg)
@@ -478,7 +478,7 @@ trait Namers { self: Analyzer =>
             setFlag(param.mods.flags & (BYNAMEPARAM | IMPLICIT))
           setPrivateWithin(param, sym, param.mods)
           sym = enterInScope(sym).asInstanceOf[TermSymbol]
-          if (!sym.rawInfoSafe.isDefined || sym.rawInfo.isComplete)
+          if (!sym.hasRawInfo || sym.rawInfo.isComplete)
             setInfo(sym)(typeCompleter(param))
           sym
         } else param.symbol = setInfo(
@@ -916,7 +916,7 @@ trait Namers { self: Analyzer =>
       if (sym.info.typeSymbol == FunctionClass(0) &&
           sym.isValueParameter && sym.owner.isClass && sym.owner.hasFlag(CASE))
         context.error(sym.pos, "pass-by-name arguments not allowed for case class parameters");
-      if ((sym.flags & DEFERRED) != 0) {
+      if (sym hasFlag DEFERRED) { // virtual classes count, too
         if (sym.hasAttribute(definitions.NativeAttr))
           sym.resetFlag(DEFERRED)
         else if (!sym.isValueParameter && !sym.isTypeParameterOrSkolem &&
@@ -932,7 +932,7 @@ trait Namers { self: Analyzer =>
       checkNoConflict(PRIVATE, PROTECTED)
       checkNoConflict(PRIVATE, OVERRIDE)
       checkNoConflict(DEFERRED, FINAL)
-//    checkNoConflict(ABSTRACT, CASE)
+      checkNoConflict(DEFERRED, CASE) // case classes cannot be virtual
     }
   }
 
@@ -1005,7 +1005,7 @@ trait Namers { self: Analyzer =>
    *  and getters */
   def underlying(member: Symbol): Symbol =
     if (member hasFlag ACCESSOR) {
-      if (member hasFlag DEFERRED) {
+      if (member.isDeferred) {
         val getter = if (member.isSetter) member.getter(member.owner) else member
         if (inIDE && getter == NoSymbol) return NoSymbol;
         val result = getter.owner.newValue(getter.pos, getter.name)

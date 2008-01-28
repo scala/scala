@@ -233,10 +233,14 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     def run { currentRun.units foreach applyPhase }
 
     def apply(unit: CompilationUnit): Unit
+
+    private val isDevirtualized = prev.name == "devirtualize" || prev.devirtualized
+    override def devirtualized = isDevirtualized
     private val isErased = prev.name == "erasure" || prev.erasedTypes
     override def erasedTypes: Boolean = isErased
     private val isFlat = prev.name == "flatten" || prev.flatClasses
     override def flatClasses: Boolean = isFlat
+
     final def applyPhase(unit: CompilationUnit) {
       if (settings.debug.value) inform("[running phase " + name + " on " + unit + "]")
       val unit0 = currentRun.currentUnit
