@@ -19,9 +19,13 @@ class UnprefixedAttribute(val key: String, val value: Seq[Node], next1: MetaData
 
   val next = if (value ne null) next1 else next1.remove(key)
 
-  /** same as this(key, Utility.parseAttributeValue(value), next) */
+  /** same as this(key, Text(value), next) */
   def this(key: String, value: String, next: MetaData) =
-    this(key, if(value ne null) Text(value) else {val z:NodeSeq=null;z}, next)
+    this(key, if (value ne null) Text(value) else {val z:NodeSeq=null;z}, next)
+
+  /** same as this(key, Text(value), next) */
+  def this(key: String, value: Option[Seq[Node]], next: MetaData) =
+    this(key, if (!value.isEmpty) value.get else {val z:NodeSeq=null;z}, next)
 
   /** returns a copy of this unprefixed attribute with the given next field*/
   def copy(next: MetaData) =
