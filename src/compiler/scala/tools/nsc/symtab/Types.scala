@@ -840,15 +840,6 @@ trait Types {
     override def kind = "WildcardType"
   }
 
-  /** An object representing a missing type;
-   *  used only for IDE. Todo: Merge with WildcardType?
-   */
-  case object MissingType extends Type {
-    override def toString: String = "<_>"
-    // override def isNullable: Boolean = true
-    override def kind = "MissingType"
-  }
-
   case class BoundedWildcardType(override val bounds: TypeBounds) extends Type {
     override def toString: String = "?" + bounds
     override def kind = "BoundedWildcardType"
