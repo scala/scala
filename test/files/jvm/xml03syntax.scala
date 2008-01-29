@@ -9,7 +9,11 @@ object Test extends AnyRef with Assert {
   }
 
   def main(args: Array[String]) {
+    test1
+    test2
+  }
 
+  private def test1 {
     val xNull = <hello>{null}</hello> // these used to be Atom(unit), changed to empty children
 
     assertSameElements(xNull.child, Nil)
@@ -51,13 +55,26 @@ object Test extends AnyRef with Assert {
       println(z.toString() + {if (z.isInstanceOf[Text]) "(is text node ' ')" else ""})
     }
 
-    val xh = <hello>{ for(val x <- List(1,2,3,4); x % 2 == 0) yield x }</hello>
+    val xh = <hello>{ for(x <- List(1,2,3,4) if x % 2 == 0) yield x }</hello>
 
     println(xh)
     for (z <- xh.child) {
       println(z.toString() + {if (z.isInstanceOf[Text]) "(is text node ' ')" else ""})
     }
+    println
+  }
 
+  /** see SVN r13821 (emir): support for <elem key={x:Option[Seq[Node]]} />,
+   *  so that Options can be used for optional attributes.
+   */
+  private def test2 {
+    val x1: Option[Seq[Node]] = Some(<b>hello</b>)
+    val n1 = <elem key={x1} />;
+    println("node="+n1+", key="+n1.attribute("key"))
+
+    val x2: Option[Seq[Node]] = None
+    val n2 = <elem key={x2} />;
+    println("node="+n2+", key="+n2.attribute("key"))
   }
 
 }
