@@ -1380,9 +1380,9 @@ trait Symbols {
     }
     private var thissym: Symbol = this
 
-    override def isClass: Boolean = hasFlag(DEFERRED) || !phase.devirtualized
-    override def isTypeMember = !isClass
-    override def isAbstractType = !isClass
+    override def isClass: Boolean = true
+    override def isTypeMember = false
+    override def isAbstractType = false
     override def isAliasType = false
 
     override def reset(completer: Type) {
@@ -1413,19 +1413,16 @@ trait Symbols {
       val period = thisTypePeriod
       if (period != currentPeriod) {
         thisTypePeriod = currentPeriod
-        if (!isValid(period))
-          thisTypeCache = if (isClass) mkThisType(this) else NoPrefix
+        if (!isValid(period)) thisTypeCache = mkThisType(this)
       }
       thisTypeCache
     }
 
     /** A symbol carrying the self type of the class as its type */
-    override def thisSym: Symbol =
-      if (isClass) thissym else this
+    override def thisSym: Symbol = thissym
 
     override def typeOfThis: Type =
-      if (!isClass) tpe
-      else if (getFlag(MODULE | IMPLCLASS) == MODULE && owner != NoSymbol)
+      if (getFlag(MODULE | IMPLCLASS) == MODULE && owner != NoSymbol)
         singleType(owner.thisType, sourceModule)
       else thissym.tpe
 
