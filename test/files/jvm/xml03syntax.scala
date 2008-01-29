@@ -64,6 +64,21 @@ object Test extends AnyRef with Assert {
     println
   }
 
+    // this demonstrates how to handle entities
+    val s = io.Source.fromString("<a>&nbsp;</a>")
+    object parser extends xml.parsing.ConstructingParser(s, false /*ignore ws*/) {
+      override def replacementText(entityName: String): io.Source = {
+        entityName match {
+          case "nbsp" => io.Source.fromString("\u0160");
+          case _ => super.replacementText(entityName);
+        }
+      }
+      nextch; // !!important, to initialize the parser
+    }
+    val parsed = parser.element(TopScope) // parse the source as element
+    // alternatively, we could call document()
+    parsed
+
   /** see SVN r13821 (emir): support for <elem key={x:Option[Seq[Node]]} />,
    *  so that Options can be used for optional attributes.
    */
@@ -75,6 +90,7 @@ object Test extends AnyRef with Assert {
     val x2: Option[Seq[Node]] = None
     val n2 = <elem key={x2} />;
     println("node="+n2+", key="+n2.attribute("key"))
+>>>>>>> .r13822
   }
 
 }
