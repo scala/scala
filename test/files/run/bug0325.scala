@@ -1,8 +1,15 @@
 case class RS(self: String) {
-  def split(separator: Char): Array[String] = self.split("\\Q"+separator+"\\E")
+
+  // NB. "\\Q" + '\\' + "\\E" works on Java 1.5 and newer, but not on Java 1.4
+  private def escape(ch: Char): String = ch match {
+    case '\\' => "\\\\"
+    case _ => "\\Q"+ch+"\\E"
+  }
+
+  def split(separator: Char): Array[String] = self.split(escape(separator))
 
   def split(separators: Array[Char]): Array[String] = {
-    val re = separators.foldLeft("[")(_+"\\Q"+_+"\\E") + "]"
+    val re = separators.foldLeft("[")(_+escape(_)) + "]"
     self.split(re)
   }
 }
