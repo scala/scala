@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -141,7 +141,7 @@ object Math {
    *          in polar coordinates that corresponds to the point
    *          <code>(x, y)</code> in Cartesian coordinates.
    */
-  def atan2(x: Double, y: Double): Double = java.lang.Math.atan2(x, y)
+  def atan2(y: Double, x: Double): Double = java.lang.Math.atan2(y, x)
 
   /** Returns the value of the first argument raised to the power of the
    *  second argument.

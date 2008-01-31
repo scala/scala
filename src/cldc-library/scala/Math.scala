@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -52,7 +52,5 @@ object Math {
   def min(x: Int, y: Int): Int = java.lang.Math.min(x, y)
   def min(x: Long, y: Long): Long  = java.lang.Math.min(x, y)
 
-  // this is only for use by immutable.Hash{Set,Map} and
-  // the imprecision is hopefully tolerable
-  def sqrt(x: Int): Int = x / 4
+  def sqrt(x: Int): Int = runtime.SquareRoot.accurateSqrt(x)
 }

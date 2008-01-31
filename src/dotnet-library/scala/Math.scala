@@ -97,7 +97,7 @@ object Math {
   def floor(x: Double): Double = System.Math.Floor(x)
 
   //def rint(x: Double): Double = System.Math.rint(x)
-  def atan2(x: Double, y: Double): Double = System.Math.Atan2(x, y)
+  def atan2(y: Double, x: Double): Double = System.Math.Atan2(y, x)
   def pow(x: Double, y: Double): Double = System.Math.Pow(x, y)
   def round(x: Float): Int = System.Math.Round(x).toInt
   def round(x: Double): Long = System.Math.Round(x).toLong
