@@ -14,6 +14,8 @@ package scala.io
 
 import java.io.{BufferedInputStream, File, FileInputStream, InputStream,
                 PrintStream}
+import java.nio.{ByteBuffer, CharBuffer}
+import java.nio.charset.Charset
 import java.net.{URI, URL}
 
 /** This object provides convenience methods to create an iterable
@@ -23,6 +25,10 @@ import java.net.{URI, URL}
  *  @version 1.0, 19/08/2004
  */
 object Source {
+
+  val DefaultBufSize = 2048
+
+  val NoReset: () => Source = () => throw new UnsupportedOperationException()
 
   /** Creates a <code>Source</code> instance from the given array of bytes,
    *  with empty description.
@@ -84,8 +90,9 @@ object Source {
 
   /** creates Source from file with given name, setting its description to
    *  filename.
+   *  @deprecated use fromFile(name, enc) instead.
    */
-  def fromFile(name: String): Source =
+  @deprecated def fromFile(name: String): Source =
     fromFile(new File(name))
 
   /** creates Source from file with given name, using given encoding, setting
@@ -95,14 +102,21 @@ object Source {
     fromFile(new File(name), enc)
 
   /** creates Source from file with given file: URI
+   *  @deprecated use fromFile(uri, enc) instead.
    */
-  def fromFile(uri: URI): Source =
+  @deprecated def fromFile(uri: URI): Source =
     fromFile(new File(uri))
+
+  /** creates Source from file with given file: URI
+   */
+  def fromFile(uri: URI, enc: String): Source =
+    fromFile(new File(uri), enc)
 
   /** creates Source from file, using default character encoding, setting its
    *  description to filename.
+   *  @deprecated use fromFile(file, enc) instead.
    */
-  def fromFile(file: File): Source = {
+  @deprecated def fromFile(file: File): Source = {
     val arr: Array[Byte] = new Array[Byte](file.length().asInstanceOf[Int])
     val is = new FileInputStream(file)
     is.read(arr)
@@ -110,26 +124,25 @@ object Source {
     return setFileDescriptor(file, s)
   }
 
-  /** Creates Source from file, using given character encoding, setting its
-   *  description to filename.
-   *
-   *  @param file ...
-   *  @param enc  ...
-   *  @return     ...
+  /** same as fromFile(file, enc, Source.DefaultBufSize)
    */
-  def fromFile(file: File, enc: String): Source = {
-    val arr: Array[Byte] = new Array[Byte](file.length().asInstanceOf[Int])
-    val is = new FileInputStream(file)
-    is.read(arr)
-    val s = fromBytes(arr, enc)
-    s.descr = file.getName()
-    return setFileDescriptor(file, s)
+  def fromFile(file: File, enc: String): Source =
+    fromFile(file, enc, Source.DefaultBufSize)
+
+  /** Creates Source from file, using given character encoding, setting its
+   *  description to filename. Input is buffered in a buffer of size
+   *  buffer_size.
+   */
+  def fromFile(file: File, enc: String, buffer_size: Int): Source = {
+    val inpStream = new FileInputStream(file)
+    return setFileDescriptor(file,
+      BufferedSource.fromInputStream(inpStream, enc, buffer_size, { () => fromFile(file, enc, buffer_size)}))
   }
 
-  /**
-   *  @param file ...
-   *  @param s    ...
-   *  @return     ...
+  /** This method sets the descr property of the given source to a string of the form "file:"+path
+   *  @param file the file whose path we want to describe
+   *  @param s    the source whose property we set
+   *  @return     s
    */
   def setFileDescriptor(file: File, s: Source): Source = {
     s.descr = new StringBuilder("file:").append(file.getAbsolutePath()).toString();
@@ -139,13 +152,20 @@ object Source {
   /**
    *  @param s    ...
    *  @return     ...
+   *  @deprecated use fromURL(s, enc)
    */
   def fromURL(s: String): Source =
     fromURL(new URL(s))
 
+  /** same as fromURL(new URL(s), enc)
+   */
+  def fromURL(s: String, enc:String): Source =
+    fromURL(new URL(s), enc)
+
   /**
    *  @param url  ...
    *  @return     ...
+   *  @deprecated use fromURL(url, enc)
    */
   def fromURL(url: URL): Source = {
     val it = new Iterator[Char] {
@@ -164,6 +184,11 @@ object Source {
     s
   }
 
+  /** same as fromInputStream(url.openStream(), enc)
+   */
+  def fromURL(url: URL, enc:String): Source =
+    fromInputStream(url.openStream(), enc)
+
   /** reads data from inputstream into a byte array, and calls fromBytes with given encoding.
    *  If maxlen is given, reads not more bytes than maxlen. if maxlen was not given, or was <= 0, then
    *  whole inputstream is read and closed afterwards.
@@ -172,10 +197,9 @@ object Source {
    *  @param enc the encoding to apply to the bytes
    *  @param maxlen optionally, a positive int specifying maximum number of bytes to read
    */
-  def fromInputStream(istream: InputStream, enc: String, maxlen: Option[Int]): Source = {
-    val BUFSIZE = 1024
+  @deprecated def fromInputStream(istream: InputStream, enc: String, maxlen: Option[Int]): Source = {
     val limit = maxlen match { case Some(i) => i; case None => 0 }
-    val bi = new BufferedInputStream(istream, BUFSIZE)
+    val bi = new BufferedInputStream(istream, Source.DefaultBufSize)
     val bytes = new collection.mutable.ArrayBuffer[Byte]()
     var b = 0
     var i = 0
@@ -186,13 +210,14 @@ object Source {
     fromBytes(bytes.toArray, enc)
   }
 
-  /** same as fromInputStream(is, enc, None) */
+  /** same as BufferedSource.fromInputStream(is, enc, Source.DefaultBufSize)
+   */
   def fromInputStream(is: InputStream, enc: String): Source =
-    fromInputStream(is, enc, None)
+    BufferedSource.fromInputStream(is, enc, Source.DefaultBufSize, { () => fromInputStream(is, enc) })
 
-  /** same as fromInputStream(is, "utf-8", None) */
+  /** same as BufferedSource.fromInputStream(is, "utf-8", Source.DefaultBufSize) */
   def fromInputStream(is: InputStream): Source =
-    fromInputStream(is, "utf-8", None)
+    BufferedSource.fromInputStream(is, "utf-8", Source.DefaultBufSize, { () => fromInputStream(is) })
 
 }
 

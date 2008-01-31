@@ -1,7 +1,7 @@
 import testing.SUnit._
 
 object Test extends TestConsoleMain {
-  def suite = new TestSuite(new UTF8Tests())
+  def suite = new TestSuite(new UTF8Tests, new SourceTest)
 
   class UTF8Tests extends TestCase("UTF8Codec") {
     import io.UTF8Codec.encode
@@ -20,6 +20,23 @@ object Test extends TestConsoleMain {
         case Some(List(Expected)) => true
         case z => Console.println(z); false
       })
+    }
+  }
+
+  class SourceTest extends TestCase("Source") {
+    def runTest {
+	  val s = "Here is a test string"
+      val f = io.Source.fromBytes(s.getBytes("utf-8"))
+      val b = new collection.mutable.ArrayBuffer[Char]()
+      f.copyToBuffer(b)
+      assertEquals(s, new String(b.toArray))
+
+      /* todo: same factories for BufferedSource and Source
+       val g = io.BufferedSource.fromBytes(s.getBytes("utf-8"))
+       val c = new collection.mutable.ArrayBuffer[Char]()
+       g.copyToBuffer(c)
+       assertEquals(s, new String(c.toArray))
+      */
     }
   }
 }
