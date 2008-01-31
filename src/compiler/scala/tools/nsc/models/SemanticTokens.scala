@@ -17,6 +17,9 @@ import scala.tools.nsc.util.{BatchSourceFile, NameTransformer, NoPosition, Posit
 
 class SemanticTokens(val compiler: Global) {
   import compiler._
+  object walker extends symtab.SymbolWalker {
+    lazy val global : compiler.type = compiler
+  }
 
   abstract class Kind {}
   object OBJECT extends Kind
@@ -195,7 +198,21 @@ class SemanticTokens(val compiler: Global) {
     }
     val list = new TokenList
 
-    build(unit.body)
+    //build(unit.body)
+    val map = new scala.collection.jcl.LinkedHashMap[Int,Symbol]
+    map.clear // populate the map.
+      class visitor extends walker.Visitor {
+      def contains(pos : Position) = map.contains(pos.offset.get)
+      def apply(pos : Position) = map(pos.offset.get)
+      def update(pos : Position, sym : Symbol) : Unit = if (pos.offset.isDefined) {
+        val offset = pos.offset.get
+        map(offset) = sym
+        val isDef = pos.offset == sym.pos.offset
+        list.put(offset, (if (isDef) new Def(sym) else new Use(sym, NoType)));
+      }
+    }
+    walker.walk(unit.body, new visitor)(offset => unit.source.identifier(offset, compiler))
+
 
     // ok start building....
     def build[T <: Tree](trees : List[T]) : Unit =
@@ -416,7 +433,7 @@ class SemanticTokens(val compiler: Global) {
               case e : Error => Console.err.println("SELECTQ: " + tree + " " + tree.qualifier + " " + (tree.qualifier.pos).dbgString); throw e;
             }
             try {
-              if (tree.pos.offset.get >= unit.source.length) {
+              if (tree.pos.offset.isDefined && tree.pos.offset.get >= unit.source.length) {
                 if (false) Console.err.println("BAD_SELECT_QUALIFIER " + tree + " @ " + (tree.pos).dbgString);
 
         } else {
