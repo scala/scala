@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://www.scala-lang.org/           **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -27,7 +27,7 @@ trait Proxy {
   override def hashCode: Int = self.hashCode
   override def equals(that: Any): Boolean = that match {
     case that: Proxy => self equals that.self
-    case that        => self equals that
+    case that        => false
   }
   override def toString: String = self.toString
 }
