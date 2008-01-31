@@ -7,14 +7,14 @@
 \*                                                                      */
 
 // $Id$
+
+
 package scala.io
 
-import java.io.{BufferedInputStream, File, FileInputStream, InputStream,
-                PrintStream}
+import java.io.InputStream
 import java.nio.{ByteBuffer, CharBuffer}
 import java.nio.channels.{ByteChannel, Channels, ReadableByteChannel}
 import java.nio.charset.{Charset, CharsetDecoder}
-import java.net.{URI, URL}
 
 object BufferedSource {
 
