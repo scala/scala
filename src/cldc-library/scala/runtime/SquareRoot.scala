@@ -11,6 +11,8 @@
 
 package scala.runtime
 
+import Predef._
+
 /**
  * <p>
  *   Integer Square Root function (see http://atoms.alife.co.uk/sqrt/index.html).
