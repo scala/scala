@@ -11,7 +11,7 @@ object Test {
     Console.println(str.zipWithIndex.toList)
     assert {
       ary.zipWithIndex match {
-        case _: Array[Pair[String,Int]] => true
+        case _: Array[Pair[_,_]] => true
         case _ => false
       }
     }
