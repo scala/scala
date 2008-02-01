@@ -1,0 +1,126 @@
+/* NEST (New Scala Test)
+ * @author Philipp Haller
+ */
+
+package scala.tools.partest.nest
+
+import scala.tools.nsc.{Global, Settings}
+import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
+
+import java.io.{File, BufferedReader, PrintWriter, FileWriter}
+import java.net.URLClassLoader
+
+class ExtConsoleReporter(override val settings: Settings, reader: BufferedReader, var writer: PrintWriter) extends ConsoleReporter(settings, reader, writer) {
+  def this(settings: Settings) = {
+    this(settings, Console.in, new PrintWriter(new FileWriter("/dev/null")))
+  }
+  def hasWarnings: Boolean = WARNING.count != 0
+}
+
+abstract class SimpleCompiler {
+  def compile(file: File, kind: String): Boolean
+}
+
+class DirectCompiler extends SimpleCompiler {
+  def newGlobal(settings: Settings, reporter: Reporter): Global =
+    new Global(settings, reporter)
+
+  def newGlobal(settings: Settings, log: File): Global = {
+    val rep = new ExtConsoleReporter(new Settings(x => ()),
+                                     Console.in,
+                                     new PrintWriter(new FileWriter(log)))
+    rep.shortname = true
+    newGlobal(settings, rep)
+  }
+
+  def newSettings = {
+    val settings = new Settings(x => ())
+    settings.deprecation.value = true
+    settings.nowarnings.value = false
+    settings.encoding.value = "iso-8859-1"
+    settings
+  }
+
+  def newReporter(sett: Settings) = new ExtConsoleReporter(sett,
+                                                           Console.in,
+                                                           new PrintWriter(new FileWriter("/home/phaller/svn/scala3/test/scalac-out")))
+
+  val testSettings = newSettings
+  val testRep = newReporter(testSettings)
+  val global = newGlobal(testSettings, testRep)
+
+  def compile(file: File, kind: String): Boolean = {
+    val test: TestFile = kind match {
+      case "pos"      => PosTestFile(file)
+      case "neg"      => NegTestFile(file)
+      case "run"      => RunTestFile(file)
+      case "jvm"      => JvmTestFile(file)
+      case "shootout" => ShootoutTestFile(file)
+    }
+    test.defineSettings(testSettings)
+
+    val toCompile = List(file.getPath)
+    try {
+      println(global + " compiling " + toCompile)
+      (new global.Run) compile toCompile
+      testRep.printSummary
+      testRep.writer.flush
+      testRep.writer.close
+      println(global + " finished compiling " + file)
+      println(this+" errors: "+testRep.hasErrors)
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+        false
+    }
+    !testRep.hasErrors
+  }
+}
+
+class ReflectiveCompiler extends SimpleCompiler {
+  val nscDir =
+    new File("/home/phaller/svn/scala3/build/quick/lib/compiler/")
+  val parTestDir =
+    new File("/home/phaller/svn/scala3/build/quick/lib/partest/")
+
+  val sepUrls = Array(nscDir.toURL, parTestDir.toURL)
+  val sepLoader = new URLClassLoader(sepUrls)
+
+  val sepCompilerClass =
+    sepLoader.loadClass("scala.tools.partest.nest.DirectCompiler")
+  // needed for reflective invocation
+  val fileClass = Class.forName("java.io.File")
+  val stringClass = Class.forName("java.lang.String")
+  val sepCompileMethod =
+    sepCompilerClass.getMethod("compile", Array(fileClass, stringClass))
+  val sepCompiler = sepCompilerClass.newInstance()
+
+  def compile(file: File, kind: String): Boolean = {
+    val fileArgs: Array[AnyRef] = Array(file, kind)
+    val res = sepCompileMethod.invoke(sepCompiler, fileArgs).asInstanceOf[java.lang.Boolean]
+    res.booleanValue()
+  }
+}
+
+class CompileManager {
+  var compiler: SimpleCompiler = new ReflectiveCompiler
+
+  var numSeparateCompilers = 1
+  def createSeparateCompiler() = {
+    numSeparateCompilers += 1
+    compiler = new ReflectiveCompiler
+  }
+
+  def shouldCompile(file: File, kind: String): Boolean =
+    compiler.compile(file, kind) || {
+      NestUI.verbose("creating new separate compiler")
+      createSeparateCompiler()
+      compiler.compile(file, kind)
+    }
+
+  def shouldFailCompile(file: File, kind: String): Boolean = {
+    // always create separate compiler
+    createSeparateCompiler()
+    !compiler.compile(file, kind)
+  }
+}
