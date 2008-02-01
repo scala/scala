@@ -279,13 +279,10 @@ abstract class GenJVM extends SubComponent {
       informProgress("wrote BeanInfo " + outfile)
     }
 
-    def addExceptionsAttribute(sym: Symbol) {
-      val (excs, others) = sym.attributes.partition((a => a match {
-        case AnnotationInfo(tp, _, _) if tp.typeSymbol == ThrowsAttr => true
-        case _ => false
-      }))
-      if (excs isEmpty) return;
-      sym.attributes = others
+
+    /** Add the given 'throws' attributes to jmethod */
+    def addExceptionsAttribute(jmethod: JMethod, excs: List[AnnotationInfo]) {
+      if (excs.isEmpty) return
 
       val cpool = jmethod.getConstantPool()
       val buf: ByteBuffer = ByteBuffer.allocate(512)
@@ -313,8 +310,8 @@ abstract class GenJVM extends SubComponent {
        annot.isConstant)
 
 
-    private def emitAttributes(buf: ByteBuffer, attributes: List[AnnotationInfo]): Int = {
-      val cpool = jclass.getConstantPool()
+    private def emitAttributes(cpool: JConstantPool, buf: ByteBuffer, attributes: List[AnnotationInfo]): Int = {
+//      val cpool = jclass.getConstantPool()
 
       def emitElement(const: Constant): Unit = const.tag match {
         case BooleanTag =>
@@ -394,7 +391,7 @@ abstract class GenJVM extends SubComponent {
 
       val buf: ByteBuffer = ByteBuffer.allocate(2048)
 
-      emitAttributes(buf, toEmit)
+      emitAttributes(jmember.getConstantPool, buf, toEmit)
 
       addAttribute(jmember, nme.RuntimeAnnotationATTR, buf)
     }
@@ -411,7 +408,7 @@ abstract class GenJVM extends SubComponent {
       // number of parameters
       buf.put(attributes.length.toByte)
       for (attrs <- attributes)
-        emitAttributes(buf, attrs)
+        emitAttributes(jmethod.getConstantPool, buf, attrs)
 
       addAttribute(jmethod, nme.RuntimeParamAnnotationATTR, buf)
     }
@@ -555,12 +552,24 @@ abstract class GenJVM extends SubComponent {
           genLocalVariableTable(m);
       }
 
-      addExceptionsAttribute(m.symbol)
-      addAnnotations(jmethod, m.symbol.attributes)
+      val (excs, others) = splitAnnotations(m.symbol.attributes, ThrowsAttr)
+      addExceptionsAttribute(jmethod, excs)
+      addAnnotations(jmethod, others)
       addParamAnnotations(m.params.map(_.sym.attributes))
     }
 
-    def isClosureApply(sym: Symbol): Boolean = {
+
+    /** Return a pair of lists of annotations, first one containing all
+     *  annotations for the given symbol, and the rest.
+     */
+    private def splitAnnotations(annotations: List[AnnotationInfo], annotSym: Symbol): (List[AnnotationInfo], List[AnnotationInfo]) = {
+      annotations.partition { a => a match {
+        case AnnotationInfo(tp, _, _) if tp.typeSymbol == annotSym => true
+        case _ => false
+      }}
+    }
+
+    private def isClosureApply(sym: Symbol): Boolean = {
       (sym.name == nme.apply) &&
       sym.owner.hasFlag(Flags.SYNTHETIC) &&
       sym.owner.tpe.parents.exists { t =>
@@ -647,6 +656,10 @@ abstract class GenJVM extends SubComponent {
 
         mirrorCode.emitINVOKEVIRTUAL(moduleName, mirrorMethod.getName(), mirrorMethod.getType().asInstanceOf[JMethodType])
         mirrorCode.emitRETURN(mirrorMethod.getReturnType())
+
+        val (throws, others) = splitAnnotations(m.attributes, ThrowsAttr)
+        addExceptionsAttribute(mirrorMethod, throws)
+        addAnnotations(mirrorMethod, others)
       }
       emitClass(mirrorClass, clasz.symbol)
     }
