@@ -57,7 +57,7 @@ object myAttrs {
   class a2(x: Int) extends scala.Annotation;
   class a3(x: a1) extends scala.Annotation;
 }
-class a4(ns: Array[Int]) extends scala.ClassfileAnnotation;
+class a4(ns: Array[Int]) extends scala.Annotation;
 object O7 {
   class a1 extends scala.Annotation;
   class a2(x: Int) extends scala.Annotation;

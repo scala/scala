@@ -1,7 +1,0 @@
-attributes.scala:60: warning: implementation restriction: subclassing Classfile does not
-make your annotation visible at runtime.  If that is what
-you want, you must write the annotation class in Java.
-class a4(ns: Array[Int]) extends scala.ClassfileAnnotation;
-      ^
-one warning found
-no such file: Test
