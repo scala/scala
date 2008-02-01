@@ -876,6 +876,7 @@ ANDROID
       srcdir="${android.dir}/src"
       destdir="${android.dir}/lib/library"
       usepredefs="no"
+      deprecation="yes" unchecked="yes"
       addparams="${nsc.params}"
       extdirs=""
       scalacdebugging="${nsc.log-files}"
@@ -889,6 +890,7 @@ ANDROID
     <quick
       srcdir="${android.dir}/src"
       destdir="${android.dir}/lib/library"
+      deprecation="yes" unchecked="yes"
       extdirs=""
       addparams="${nsc.params}"
       scalacdebugging="${nsc.log-files}"

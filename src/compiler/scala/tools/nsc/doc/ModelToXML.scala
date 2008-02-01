@@ -267,10 +267,33 @@ trait ModelToXML extends ModelExtractor {
         {
           val cmnt = entity.decodeComment
           if (cmnt.isEmpty) NodeSeq.Empty
-          else <div>{parse(cmnt.get.body)}</div>;
+          else shortComment(cmnt.get)
         }
       </td>
     </tr>
+
+  import java.util.regex.Pattern
+  // pattern detecting first line of comment (see ticket #224)
+  private val pat = Pattern.compile("[ \t]*(/\\*)[ \t]*")
+
+  /** Ticket #224
+   *  Write the first sentence as a short summary of the method, as scaladoc
+   *  automatically places it in the method summary table (and index).
+   *  (see http://java.sun.com/j2se/javadoc/writingdoccomments/)
+   */
+  def shortComment(cmnt: Comment): NodeSeq = {
+    val lines = cmnt.body split "<p>"
+    val first =
+      if (lines.length < 2)
+        lines(0)
+      else {
+        val line0 = lines(0)
+        val mat = pat matcher line0
+        if (mat.matches()) line0 + lines(1)
+        else line0
+      }
+    <div>{parse(first/*cmnt.body*/)}</div>
+  }
 
   def attrsFor(entity: Entity)(implicit from: Frame): NodeSeq = {
     def attrFor(attr: AnnotationInfo): Node = {
