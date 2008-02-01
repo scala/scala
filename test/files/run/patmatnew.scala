@@ -779,7 +779,7 @@ object Test extends TestConsoleMain {
 
   object Ticket37 extends TestCase("#37") {
     def foo() {}
-    val (a,b):(int,int) = { foo(); (2,3) }
+    val (a,b) = { foo(); (2,3) }
     override def runTest { assertEquals(this.a, 2) }
   }
 
