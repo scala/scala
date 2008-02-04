@@ -150,7 +150,29 @@ object test2 {
   x5.f()
 }
 
+object test3 {
+
+  case class Exc extends Exception
+
+  object Rec {
+    def f = throw Exc()
+  }
+
+  def m(r: { def f: Nothing }) =
+    try {
+      r.f
+    }
+    catch {
+      case e: Exc => println("caught")
+      case e => println(e)
+    }
+
+  m(Rec)
+
+}
+
 object Test extends Application {
   test1
   test2
+  test3
 }

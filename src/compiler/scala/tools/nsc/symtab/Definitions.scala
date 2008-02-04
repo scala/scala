@@ -50,6 +50,8 @@ trait Definitions {
     lazy val ThrowableClass: Symbol = getClass(sn.Throwable)
     lazy val NullPointerExceptionClass: Symbol = getClass(sn.NPException)
     lazy val NonLocalReturnExceptionClass: Symbol = getClass(sn.NLRException)
+    lazy val InvocationTargetExceptionClass: Symbol =
+      getClass("java.lang.reflect.InvocationTargetException") // java is hard coded because only used by structural values
 
     // System.ValueType
     lazy val ValueTypeClass: Symbol = getClass(sn.ValueType)

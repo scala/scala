@@ -282,6 +282,7 @@ trait StdNames {
     val forName = newTermName(if (forMSIL) "GetType" else "forName")
     val foreach = newTermName("foreach")
     val get = newTermName("get")
+    val getCause = newTermName("getCause")
     val getClass_ = newTermName("getClass")
     val getMethod_ = newTermName("getMethod")
     val hasAsInstance = newTermName("hasAsInstance")

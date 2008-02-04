@@ -121,7 +121,7 @@ abstract class CleanUp extends Transform {
             }
 
           val rmmeth = owner.newMethod(pos, unit.fresh.newName("reflMethod$Method"))
-            .setFlag(PRIVATE | STATIC | SYNTHETIC)
+            .setFlag(STATIC | SYNTHETIC)
             .setInfo(MethodType(List(ClassClass.tpe), MethodClass.tpe))
           owner.info.decls.enter(rmmeth)
           val rmmdef =
@@ -409,18 +409,28 @@ abstract class CleanUp extends Transform {
         }
 
         def callAsMethod(paramTypes: List[Type], resType: Type): Tree = localTyper.typed {
-          Apply(
-            Select(
-              Apply(
-                gen.mkAttributedRef(reflectiveMethodCache(tree.pos, ad.symbol.name.toString, paramTypes)),
-                List(Apply(Select(qual, ObjectClass.tpe.member(nme.getClass_)), Nil))
+          val invokeExc =
+            currentOwner.newValue(tree.pos, newTermName(unit.fresh.newName)) setInfo InvocationTargetExceptionClass.tpe
+          Try(
+            Apply(
+              Select(
+                Apply(
+                  gen.mkAttributedRef(reflectiveMethodCache(tree.pos, ad.symbol.name.toString, paramTypes)),
+                  List(Apply(Select(qual, ObjectClass.tpe.member(nme.getClass_)), Nil))
+                ),
+                MethodClass.tpe.member(nme.invoke_)
               ),
-              MethodClass.tpe.member(nme.invoke_)
+              List(
+                qual,
+                ArrayValue(TypeTree(ObjectClass.tpe), fixParams(params, paramTypes))
+              )
             ),
-            List(
-              qual,
-              ArrayValue(TypeTree(ObjectClass.tpe), fixParams(params, paramTypes))
-            )
+            List(CaseDef(
+              Bind(invokeExc, Typed(Ident(nme.WILDCARD), TypeTree(InvocationTargetExceptionClass.tpe))),
+              EmptyTree,
+              Throw(Apply(Select(Ident(invokeExc), nme.getCause), Nil))
+            )),
+            EmptyTree
           )
         }
 
