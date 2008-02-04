@@ -38,13 +38,7 @@ class StandardCompileServer extends SocketServer {
   private var inSession: Boolean = false
   private var progress: Boolean = false
 
-  private def settingsAreCompatible(s1: Settings, s2: Settings) =
-    s1.encoding.value == s2.encoding.value &&
-    s1.classpath.value == s2.classpath.value &&
-    s1.sourcepath.value == s2.sourcepath.value &&
-    s1.outdir.value == s2.outdir.value &&
-    s1.bootclasspath.value == s2.bootclasspath.value &&
-    s1.extdirs.value == s2.extdirs.value
+  private def settingsAreCompatible(s1: Settings, s2: Settings) = s1 == s2
 
   private def exit(code: Int): Nothing = {
     System.err.close()

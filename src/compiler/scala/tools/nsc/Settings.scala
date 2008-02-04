@@ -10,6 +10,7 @@ import java.io.File
 import java.lang.System
 
 class Settings(error: String => Unit) {
+
   def this() = this(Console.println)
 
   private var allsettings: List[Setting] = List()
@@ -176,6 +177,16 @@ class Settings(error: String => Unit) {
     allsettings = allsettings filter (s !=)
   }
 
+  override def equals(that: Any) = that match {
+    case s:Settings =>
+      assert(this.allSettings.length == s.allSettings.length)
+      List.forall2 (
+        this.allSettings,
+        s.allSettings
+      )(_==_)
+    case _ => false
+  }
+
   def checkDependencies: Boolean = {
     def hasValue(s: Setting, value: String): Boolean = s match {
       case bs: BooleanSetting => bs.value
@@ -240,7 +251,7 @@ class Settings(error: String => Unit) {
     def dependsOn(s: Setting, value: String): this.type = { dependency = Some((s, value)); this }
     def dependsOn(s: Setting): this.type = dependsOn(s, "")
 
-    def isStandard: Boolean = !isAdvanced && !isPrivate
+    def isStandard: Boolean = !isAdvanced && !isPrivate && !(name eq "-Y")
     def isAdvanced: Boolean =
       (name startsWith "-X") && !(name eq "-X")
     def isPrivate: Boolean =
@@ -265,6 +276,12 @@ class Settings(error: String => Unit) {
     }
 
     def unparse: List[String] = if (value) List(name) else Nil
+
+    override def equals(that: Any) = that match {
+      case bs:BooleanSetting => this.name == bs.name && this.value == bs.value
+      case _ => false
+    }
+
   }
 
   /** A setting represented by a string, (`default' unless set) */
@@ -294,6 +311,12 @@ class Settings(error: String => Unit) {
 
     def unparse: List[String] =
       if (value == default) Nil else List(name, value)
+
+    override def equals(that: Any) = that match {
+      case ss:StringSetting => this.name == ss.name && this.value == ss.value
+      case _ => false
+    }
+
   }
 
   /** A setting that accumulates all strings supplied to it */
@@ -326,8 +349,16 @@ class Settings(error: String => Unit) {
     override def helpSyntax = name + ":<" + arg + ">"
 
     def unparse: List[String] =
-      for (opt <- value)
-	yield nameColon+opt
+      for (opt <- value) yield nameColon+opt
+
+    override def equals(that: Any) = that match {
+      case mss:MultiStringSetting =>
+        this.name == mss.name &&
+        this.value.length == mss.value.length &&
+        List.forall2(this.value.sort(_<_), mss.value.sort(_<_))(_==_)
+      case _ => false
+    }
+
   }
 
   /** A setting represented by a string in a given set of <code>choices</code>,
@@ -371,6 +402,12 @@ class Settings(error: String => Unit) {
 
     def unparse: List[String] =
       if (value == default) Nil else List(name + ":" + value)
+
+    override def equals(that: Any) = that match {
+      case cs:ChoiceSetting => this.name == cs.name && this.value == cs.value
+      case _ => false
+    }
+
   }
 
   /** Same as ChoiceSetting but have a <code>level</code> int which tells the
@@ -451,5 +488,14 @@ class Settings(error: String => Unit) {
           (Nil)
           ((args, phase) =>
             List(name + ":" + phase) ::: args))
+
+    override def equals(that: Any) = that match {
+      case ps:PhasesSetting =>
+        this.name == ps.name &&
+        this.value.length == ps.value.length &&
+        List.forall2(this.value.sort(_<_), ps.value.sort(_<_))(_==_)
+      case _ => false
+    }
+
   }
 }
