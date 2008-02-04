@@ -162,17 +162,22 @@ object MainGenericRunner {
           } catch {
             case e: ClassNotFoundException =>
               Console.println(e)
+              exit(1)
             case e: NoSuchMethodException =>
               Console.println(e)
+              exit(1)
             case e: InvocationTargetException =>
               e.getCause.printStackTrace
+              exit(1)
           }
+
         } else {
           try {
             ScriptRunner.runScript(settings, thingToRun, command.arguments)
           } catch {
             case e: SecurityException =>
               Console.println(e)
+              exit(1)
           }
         }
     }

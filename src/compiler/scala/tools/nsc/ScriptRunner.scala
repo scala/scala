@@ -374,6 +374,7 @@ object ScriptRunner {
     } catch {
       case e:InvocationTargetException =>
         e.getCause.printStackTrace
+        exit(1)
     }
   }
 
