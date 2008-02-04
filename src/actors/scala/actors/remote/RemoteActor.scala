@@ -50,6 +50,10 @@ object RemoteActor {
    * <code>port</code>.
    */
   def alive(port: Int): Unit = synchronized {
+    createKernelOnPort(port)
+  }
+
+  def createKernelOnPort(port: Int): NetKernel = {
     val serv = TcpService(port)
     val kern = serv.kernel
     val s = Actor.self
@@ -64,6 +68,8 @@ object RemoteActor {
         kern.terminate()
       }
     }
+
+    kern
   }
 
   /**
@@ -87,10 +93,7 @@ object RemoteActor {
     case None =>
       // establish remotely accessible
       // return path (sender)
-      val serv = new TcpService(TcpService.generatePort)
-      serv.start()
-      kernels += Pair(Actor.self, serv.kernel)
-      serv.kernel
+      createKernelOnPort(TcpService.generatePort)
     case Some(k) =>
       k
   }

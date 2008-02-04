@@ -48,9 +48,19 @@ private[actors] class KillActorException extends Throwable {
  *  @version 0.9.10
  *  @author Philipp Haller
  */
-/*private[actors]*/ class Reaction(a: Actor,
-                               f: PartialFunction[Any, Unit],
-                               msg: Any) extends Runnable {
+class Reaction extends Runnable {
+
+  private[actors] var a: Actor = _
+  private var f: PartialFunction[Any, Unit] = _
+  private var msg: Any = _
+
+  def this(a: Actor, f: PartialFunction[Any, Unit], msg: Any) = {
+    this()
+    this.a = a
+    this.f = f
+    this.msg = msg
+  }
+
   def this(a: Actor) = this(a, null, null)
 
   def run() {

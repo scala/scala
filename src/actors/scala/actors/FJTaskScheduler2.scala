@@ -17,6 +17,8 @@ import java.lang.{Runnable, Thread, InterruptedException, System, Runtime}
 import scala.collection.Set
 import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, HashSet}
 
+import scala.ref._
+
 /**
  * FJTaskScheduler2
  *
@@ -118,6 +120,29 @@ class FJTaskScheduler2 extends Thread with IScheduler {
           }
 
           if (!suspending) {
+
+            // check whether some actors have become
+            // unreachable
+            /*def drainRefQ: Unit =
+              refQ.poll match {
+                case None =>
+                  // do nothing
+                case refWrapper =>
+                  refWrapper.get match {
+                    case None =>
+                      // can't get hold of the actor
+                      // count down anyways
+                      unPendReaction
+                      // continue draining
+                      drainRefQ
+                    case Some(a) =>
+                      Debug.info(this+": actor is unreachable: "+a)
+                      unPendReaction
+                      // continue draining
+                      drainRefQ
+                  }
+              }*/
+
             // check if we need more threads
             if (Platform.currentTime - lastActivity >= TICK_FREQ
                 && coreSize < maxSize
@@ -161,7 +186,14 @@ class FJTaskScheduler2 extends Thread with IScheduler {
     executor.execute(task)
   }
 
+  //private val refQ = new ReferenceQueue[Actor]
+  //private var storedRefs: List[WeakReference[Actor]] = List()
+
   def start(task: Runnable) {
+    /*if (task.isInstanceOf[Reaction]) {
+      val reaction = task.asInstanceOf[Reaction]
+      storedRefs = new WeakReference(reaction.a, refQ) :: storedRefs
+    }*/
     pendReaction
     executor.execute(task)
   }
