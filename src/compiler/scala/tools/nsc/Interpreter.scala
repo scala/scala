@@ -711,7 +711,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 		   fullPath(vname) +
 		   ".toString.contains('\\n')) " +
                    " \"\\n\" else \"\") + " +
-                   fullPath(vname) + " + \"\\n\") else \"null\\n\") ")
+                   fullPath(vname) + ".toString + \"\\n\") else \"null\\n\") ")
       }
     }
 
