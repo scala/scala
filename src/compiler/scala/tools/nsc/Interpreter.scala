@@ -344,12 +344,14 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
         case req =>
           // For other requests, import each bound variable.
           // import them explicitly instead of with _, so that
-          // ambiguity errors will not be generated.
+          // ambiguity errors will not be generated. Also, quote
+ 	  // the name of the variable, so that we don't need to
+ 	  // handle quoting keywords separately.
           for (imv <- req.boundNames) {
             if (currentImps.contains(imv))
               addWrapper()
             code.append("import ")
-            code.append(req.objectName + req.accessPath + "." + imv + ";\n")
+            code.append(req.objectName + req.accessPath + ".`" + imv + "`;\n")
             currentImps += imv
           }
       }

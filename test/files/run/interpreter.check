@@ -171,9 +171,9 @@ scala>
 scala>      |      | You typed two blank lines.  Starting a new command.
 
 scala> 
-scala> match: Int 
+scala> match: Int
 
 scala> x: Int = 1
 
-scala>
-scala>
+scala> 
+scala> 
