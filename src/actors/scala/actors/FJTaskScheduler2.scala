@@ -17,12 +17,12 @@ import java.lang.{Runnable, Thread, InterruptedException, System, Runtime}
 import scala.collection.Set
 import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, HashSet}
 
-import scala.ref._
+import java.lang.ref.{WeakReference, ReferenceQueue}
 
 /**
  * FJTaskScheduler2
  *
- * @version 0.9.11
+ * @version 0.9.12
  * @author Philipp Haller
  */
 class FJTaskScheduler2 extends Thread with IScheduler {
@@ -121,27 +121,16 @@ class FJTaskScheduler2 extends Thread with IScheduler {
 
           if (!suspending) {
 
-            // check whether some actors have become
-            // unreachable
-            /*def drainRefQ: Unit =
-              refQ.poll match {
-                case None =>
-                  // do nothing
-                case refWrapper =>
-                  refWrapper.get match {
-                    case None =>
-                      // can't get hold of the actor
-                      // count down anyways
-                      unPendReaction
-                      // continue draining
-                      drainRefQ
-                    case Some(a) =>
-                      Debug.info(this+": actor is unreachable: "+a)
-                      unPendReaction
-                      // continue draining
-                      drainRefQ
-                  }
-              }*/
+            // check for unreachable actors
+            def drainRefQ() {
+              val wr = refQ.poll
+              if (wr != null) {
+                unPendReaction
+                // continue draining
+                drainRefQ()
+              }
+            }
+            drainRefQ()
 
             // check if we need more threads
             if (Platform.currentTime - lastActivity >= TICK_FREQ
@@ -186,14 +175,16 @@ class FJTaskScheduler2 extends Thread with IScheduler {
     executor.execute(task)
   }
 
-  //private val refQ = new ReferenceQueue[Actor]
-  //private var storedRefs: List[WeakReference[Actor]] = List()
+  private val refQ = new ReferenceQueue[Actor]
+  private var storedRefs: List[WeakReference[Actor]] = List()
 
   def start(task: Runnable) {
-    /*if (task.isInstanceOf[Reaction]) {
+    if (task.isInstanceOf[Reaction]) {
       val reaction = task.asInstanceOf[Reaction]
-      storedRefs = new WeakReference(reaction.a, refQ) :: storedRefs
-    }*/
+      val wr = new WeakReference[Actor](reaction.a, refQ)
+      //Debug.info("created "+wr+" pointing to "+reaction.a)
+      storedRefs = wr :: storedRefs
+    }
     pendReaction
     executor.execute(task)
   }
