@@ -105,7 +105,8 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
 
   /** Print a welcome message */
   def printWelcome() {
-    out.println("Welcome to Scala " + Properties.versionString + ".")
+    out.println("Welcome to Scala " + Properties.versionString + " (" +
+                System.getProperty("java.vm.name") + ", Java " + System.getProperty("java.version") + ")." )
     out.println("Type in expressions to have them evaluated.")
     out.println("Type :help for more information.")
     out.flush()
