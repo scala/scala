@@ -107,6 +107,9 @@ there
 (1 +   // give up early by typing two blank lines
 
 
+// defining and using quoted names should work (ticket #323)
+def `match` = 1
+val x = `match`
 
 </code>.text
 
