@@ -19,8 +19,8 @@ import Predef._
  *    Sort of acts like a sequence also (supports length and contains).
  *    For example:
  *  </p><pre>
- *     <b>val</b> r1 = Iterator.range(0, 10)
- *     <b>val</b> r2 = Iterator.range(r1.start, r1.end, r1.step + 1)
+ *     <b>val</b> r1 = 0 until 10
+ *     <b>val</b> r2 = r1.start until r1.end by r1.step + 1
  *     println(r2.length) // = 5
  *  </pre>
  *
@@ -31,10 +31,7 @@ class Range(val start: Int, val end: Int, val step: Int) extends RandomAccessSeq
   if (step == 0) throw new Predef.IllegalArgumentException
 
   /** create a new range with the start and end values of this range and a new <code>step</code> */
-  def by(step : Int) : Range = this match {
-    case inclusive : Range.Inclusive => new Range.Inclusive(start, end, step)
-    case _ => new Range(start, end, step)
-  }
+  def by(step : Int) : Range = new Range(start, end, step)
 
   lazy val length : Int = {
     if (start < end && this.step < 0) 0
@@ -59,11 +56,10 @@ class Range(val start: Int, val end: Int, val step: Int) extends RandomAccessSeq
   def inclusive = new Range.Inclusive(start,end,step)
 }
 object Range {
-  class Inclusive(start : Int, end : Int, by : Int) extends Range(start,end,by) {
+  class Inclusive(start : Int, end : Int, step : Int) extends Range(start, end, step) {
     override def apply(idx : Int) : Int = super.apply(idx)
     override protected def last(base : Int, step : Int) : Int = 1
-    // XXX: breaks scala doc!
-    // override def by(step : Int) : Range = new Inclusive(start, end, step)
+    override def by(step : Int) : Range = new Inclusive(start, end, step)
   }
 }
 
