@@ -227,7 +227,6 @@
   </macrodef>
 
   <target name="build">
-    <parallel threadsPerProcessor="1">
     <!-- Build library -->
     <sequential>
     <mkdir dir="${build.lib.dir}"/>
@@ -266,6 +265,7 @@
     </sequential>
 
    
+    <parallel threadsPerProcessor="1">
     <!-- Build compiler -->
     <sequential>
     <mkdir dir="${build.comp.dir}"/>
@@ -275,7 +275,7 @@
       deprecation="yes" unchecked="yes"
     >
       <classpath>
-        <pathelement location="${starr.lib.jar}"/>
+        <pathelement location="${build.lib.dir}"/>
         <pathelement location="${ant.jar}"/>
         <path refid="starr.classpath"/>
       </classpath>
@@ -292,8 +292,8 @@
       deprecation="yes" unchecked="yes"
     >
       <classpath>
-        <pathelement location="${starr.lib.jar}"/>
-        <pathelement location="${starr.comp.jar}"/>
+        <pathelement location="${build.lib.dir}"/>
+	<pathelement location="${starr.comp.jar}"/>
       </classpath>
       <include name="**/*.scala"/>
     </scalac>
@@ -315,7 +315,7 @@
       deprecation="yes" unchecked="yes"
     >
       <classpath>
-        <pathelement location="${starr.lib.jar}"/>
+        <pathelement location="${build.lib.dir}"/>
       </classpath>
       <include name="**/*.scala"/>
     </scalac>
@@ -548,7 +548,7 @@
     <scalac srcdir="${topdir}/src/manual" destdir="${build.manual.dir}"
       deprecation="yes" unchecked="yes">
       <classpath>
-        <path refid="starr.classpath"/>
+	<pathelement location="${build.lib.dir}"/>
       </classpath>
     </scalac>
     <emit command="scala"/>
