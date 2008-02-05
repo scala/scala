@@ -123,7 +123,7 @@ object Source {
 
   /** Creates Source from <code>file</code>, using given character encoding,
    *  setting its description to filename. Input is buffered in a buffer of
-   *  size <code>buffer_size</code>.
+   *  size <code>bufferSize</code>.
    */
   def fromFile(file: File, enc: String, bufferSize: Int): Source = {
     val inpStream = new FileInputStream(file)
