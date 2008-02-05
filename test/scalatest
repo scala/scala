@@ -812,7 +812,7 @@ if [ "$TEST_ALL" = "true" ]; then
 fi;
 
 SCALA="${BIN_DIR}scala";
-[ -z "$SCALAC_OPTS" ] && SCALAC_OPTS="-deprecation -unchecked";
+[ -z "$SCALAC_OPTS" ] && SCALAC_OPTS="-deprecation";
 if [ "$USEFSC" = "true" ]; then
     SCALAC_CMD="${BIN_DIR}fsc";
 else
