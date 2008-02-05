@@ -13,7 +13,7 @@ package scala.ref
 /**
  *  @author Sean McDirmid
  */
-trait ReferenceWrapper[+T <: AnyRef] extends Reference[T] extends Proxy {
+trait ReferenceWrapper[+T <: AnyRef] extends Reference[T] with Proxy {
   val underlying: java.lang.ref.Reference[_ <: T]
   @deprecated def isValid = underlying.get != null
   override def get = {
