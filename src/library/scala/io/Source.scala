@@ -90,7 +90,6 @@ object Source {
 
   /** creates Source from file with given name, setting its description to
    *  filename.
-   *  @deprecated use fromFile(name, enc) instead.
    */
   def fromFile(name: String): Source =
     fromFile(name, util.Properties.encodingString)
@@ -101,8 +100,7 @@ object Source {
   def fromFile(name: String, enc: String): Source =
     fromFile(new File(name), enc)
 
-  /** creates Source from file with given file: URI
-   *  @deprecated use fromFile(uri, enc) instead.
+  /** creates <code>Source</code> from file with given file: URI
    */
   def fromFile(uri: URI): Source =
     fromFile(uri, util.Properties.encodingString)
@@ -114,29 +112,24 @@ object Source {
 
   /** creates Source from file, using default character encoding, setting its
    *  description to filename.
-   *  @deprecated use fromFile(file, enc) instead.
    */
-  @deprecated def fromFile(file: File): Source = {
-    val arr: Array[Byte] = new Array[Byte](file.length().asInstanceOf[Int])
-    val is = new FileInputStream(file)
-    is.read(arr)
-    val s = fromBytes(arr)
-    return setFileDescriptor(file, s)
-  }
+  def fromFile(file: File): Source =
+    fromFile(file, util.Properties.encodingString, Source.DefaultBufSize)
 
   /** same as fromFile(file, enc, Source.DefaultBufSize)
    */
   def fromFile(file: File, enc: String): Source =
     fromFile(file, enc, Source.DefaultBufSize)
 
-  /** Creates Source from file, using given character encoding, setting its
-   *  description to filename. Input is buffered in a buffer of size
-   *  buffer_size.
+  /** Creates Source from <code>file</code>, using given character encoding,
+   *  setting its description to filename. Input is buffered in a buffer of
+   *  size <code>buffer_size</code>.
    */
-  def fromFile(file: File, enc: String, buffer_size: Int): Source = {
+  def fromFile(file: File, enc: String, bufferSize: Int): Source = {
     val inpStream = new FileInputStream(file)
-    return setFileDescriptor(file,
-      BufferedSource.fromInputStream(inpStream, enc, buffer_size, { () => fromFile(file, enc, buffer_size)}))
+    val size = if (bufferSize > 0) bufferSize else Source.DefaultBufSize
+    setFileDescriptor(file,
+      BufferedSource.fromInputStream(inpStream, enc, size, { () => fromFile(file, enc, size)}))
   }
 
   /** This method sets the descr property of the given source to a string of the form "file:"+path
@@ -144,7 +137,7 @@ object Source {
    *  @param s    the source whose property we set
    *  @return     s
    */
-  def setFileDescriptor(file: File, s: Source): Source = {
+  private def setFileDescriptor(file: File, s: Source): Source = {
     s.descr = new StringBuilder("file:").append(file.getAbsolutePath()).toString();
     s
   }
@@ -189,9 +182,11 @@ object Source {
   def fromURL(url: URL, enc:String): Source =
     fromInputStream(url.openStream(), enc)
 
-  /** reads data from inputstream into a byte array, and calls fromBytes with given encoding.
-   *  If maxlen is given, reads not more bytes than maxlen. if maxlen was not given, or was <= 0, then
-   *  whole inputstream is read and closed afterwards.
+  /** reads data from <code>istream</code> into a byte array, and calls
+   *  <code>fromBytes</code> with given encoding <code>enc</code>.
+   *  If <code>maxlen</code> is given, reads not more bytes than <code>maxlen</code>;
+   *  if <code>maxlen</code> was not given, or <code>was &lt;= 0</code>, then
+   *  whole <code>istream</code> is read and closed afterwards.
    *
    *  @param istream the input stream from which to read
    *  @param enc the encoding to apply to the bytes
