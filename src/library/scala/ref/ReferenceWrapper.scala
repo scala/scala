@@ -11,9 +11,9 @@
 package scala.ref
 
 /**
- *  @author Seam McDirmid
+ *  @author Sean McDirmid
  */
-trait ReferenceWrapper[+T <: AnyRef] extends Reference[T] {
+trait ReferenceWrapper[+T <: AnyRef] extends Reference[T] extends Proxy {
   val underlying: java.lang.ref.Reference[_ <: T]
   @deprecated def isValid = underlying.get != null
   override def get = {
@@ -28,9 +28,6 @@ trait ReferenceWrapper[+T <: AnyRef] extends Reference[T] {
   def clear = underlying.clear
   def enqueue = underlying.enqueue
   def isEnqueued = underlying.isEnqueued
-  override def hashCode = underlying.hashCode
-  override def equals(that : Any) = that match {
-  case that : ReferenceWrapper[_] => get equals that.get
-  case that => super.equals(that)
-  }
+
+  def self = underlying
 }

@@ -15,13 +15,13 @@ package scala.ref
  */
 class ReferenceQueue[+T <: AnyRef] {
   private[ref] val underlying: java.lang.ref.ReferenceQueue[_ <: T] = new java.lang.ref.ReferenceQueue[T]
-  override def toString = underlying.toString;
-  class Wrapper[U <: AnyRef](val underlying: java.lang.ref.Reference[U]) extends ReferenceWrapper[U]
-  def Wrapper[U <: AnyRef](ref: java.lang.ref.Reference[U]) = ref match {
+  override def toString = underlying.toString
+  protected class Wrapper[U <: AnyRef](val underlying: java.lang.ref.Reference[U]) extends ReferenceWrapper[U]
+  protected def Wrapper[U <: AnyRef](ref: java.lang.ref.Reference[U]) = ref match {
     case null => None
-    case ref => new Wrapper(ref)
+    case ref => Some(new Wrapper(ref))
   }
-  def poll = Wrapper(underlying.poll)
-  def remove = Wrapper(underlying.remove)
-  def remove(timeout: Long) = Wrapper(underlying.remove(timeout))
+  def poll: Option[Reference[T]] = Wrapper(underlying.poll)
+  def remove: Option[Reference[T]] = Wrapper(underlying.remove)
+  def remove(timeout: Long): Option[Reference[T]] = Wrapper(underlying.remove(timeout))
 }
