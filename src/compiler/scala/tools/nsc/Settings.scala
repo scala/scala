@@ -80,10 +80,6 @@ class Settings(error: String => Unit) {
     } else null
   }
 
-  private val encodingDefault =
-    new java.io.OutputStreamWriter(
-      new java.io.ByteArrayOutputStream()).getEncoding
-
   val debuginfo     = new DebugSetting  ("-g", "Specify level of generated debugging info", List("none", "source", "line", "vars", "notc"), "vars", "vars")
   val nowarnings    = BooleanSetting    ("-nowarn", "Generate no warnings").hideToIDE
   val verbose       = BooleanSetting    ("-verbose", "Output messages about what the compiler is doing").hideToIDE
@@ -94,7 +90,7 @@ class Settings(error: String => Unit) {
   val bootclasspath = StringSetting     ("-bootclasspath", "path", "Override location of bootstrap class files", bootclasspathDefault)
   val extdirs       = StringSetting     ("-extdirs", "dirs", "Override location of installed extensions", extdirsDefault)
   val outdir        = StringSetting     ("-d", "directory", "Specify where to place generated class files", ".")
-  val encoding      = StringSetting     ("-encoding", "encoding", "Specify character encoding used by source files", encodingDefault)
+  val encoding      = StringSetting     ("-encoding", "encoding", "Specify character encoding used by source files", Properties.encodingString)
   val target        = ChoiceSetting     ("-target", "Specify for which target object files should be built", List("jvm-1.5", "jvm-1.4", "msil", "cldc"), "jvm-1.5")
   val printLate     = BooleanSetting    ("-print", "Print program with all Scala-specific features removed").hideToIDE
   val XO            = BooleanSetting    ("-optimise", "Generates faster bytecode by applying optimisations to the program")

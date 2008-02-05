@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2006-2007 LAMP/EPFL
+ * Copyright 2006-2008 LAMP/EPFL
  * @author  Stephane Micheloud
  */
 
@@ -35,12 +35,12 @@ object Properties {
   }
 
   val copyrightString: String = {
-    val defaultString = "(c) 2002-2007 LAMP/EPFL"
+    val defaultString = "(c) 2002-2008 LAMP/EPFL"
     props.getProperty("copyright.string", defaultString)
   }
 
   val encodingString: String = {
-    val defaultString = "ISO-8859-1"
+    val defaultString = "UTF8" //"ISO-8859-1"
     props.getProperty("file.encoding", defaultString)
   }
 

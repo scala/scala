@@ -92,8 +92,8 @@ object Source {
    *  filename.
    *  @deprecated use fromFile(name, enc) instead.
    */
-  @deprecated def fromFile(name: String): Source =
-    fromFile(new File(name))
+  def fromFile(name: String): Source =
+    fromFile(name, util.Properties.encodingString)
 
   /** creates Source from file with given name, using given encoding, setting
    *  its description to filename.
@@ -104,8 +104,8 @@ object Source {
   /** creates Source from file with given file: URI
    *  @deprecated use fromFile(uri, enc) instead.
    */
-  @deprecated def fromFile(uri: URI): Source =
-    fromFile(new File(uri))
+  def fromFile(uri: URI): Source =
+    fromFile(uri, util.Properties.encodingString)
 
   /** creates Source from file with given file: URI
    */
