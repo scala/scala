@@ -67,22 +67,47 @@ elif [ -d "$PREFIX/bin" ]; then
     LATEST_CLDC="$PREFIX/lib/scalaapi10-unverified.jar";
     LATEST_CLDCAPI="$PREFIX/lib/scalaapi10.jar";
 */
-  val LATEST_LIB = {
+  def findLatest() {
+    def prefixFile(relPath: String) =
+      new File(PREFIX, relPath)
+
     NestUI.verbose("PREFIX: "+PREFIX)
     val dists = new File(PREFIX, "dists")
     val build = new File(PREFIX, "build")
     val bin = new File(PREFIX, "bin")
-    val latest_lib: File =
-      if (dists.exists && dists.isDirectory)
-        new File(PREFIX, "dists/latest/lib/scala-library.jar")
-      else if (build.exists && build.isDirectory)
-        new File(PREFIX, "build/quick/lib/library")
-      else if (bin.exists && bin.isDirectory)
-        new File(PREFIX, "lib/scala-library.jar")
-      else
-        error("Scala binaries could not be found")
-    latest_lib.getAbsolutePath
+
+    if (dists.exists && dists.isDirectory) {
+      latestLibFile = prefixFile("dists/latest/lib/scala-library.jar")
+      latestCompFile = prefixFile("dists/latest/lib/scala-compiler.jar")
+      latestPartestFile = prefixFile("dists/latest/lib/scala-partest.jar")
+    }
+    else if (build.exists && build.isDirectory) {
+      latestLibFile = prefixFile("build/quick/lib/library")
+      latestCompFile = prefixFile("build/quick/lib/compiler")
+      latestPartestFile = prefixFile("build/quick/lib/partest")
+    }
+    else if (bin.exists && bin.isDirectory) {
+      latestLibFile = prefixFile("lib/scala-library.jar")
+      latestCompFile = prefixFile("lib/scala-compiler.jar")
+      latestPartestFile = prefixFile("lib/scala-partest.jar")
+    }
+    else
+      error("Scala binaries could not be found")
+
+    LATEST_LIB = latestLibFile.getAbsolutePath
+    LATEST_COMP = latestCompFile.getAbsolutePath
+    LATEST_PARTEST = latestPartestFile.getAbsolutePath
   }
+
+  var LATEST_LIB: String = ""
+  var LATEST_COMP: String = ""
+  var LATEST_PARTEST: String = ""
+
+  var latestLibFile: File = _
+  var latestCompFile: File = _
+  var latestPartestFile: File = _
+  // initialize above fields
+  findLatest()
 }
 
 class FileManager {

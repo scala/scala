@@ -78,12 +78,9 @@ class DirectCompiler extends SimpleCompiler {
 }
 
 class ReflectiveCompiler extends SimpleCompiler {
-  val nscDir =
-    new File("/home/phaller/svn/scala3/build/quick/lib/compiler/")
-  val parTestDir =
-    new File("/home/phaller/svn/scala3/build/quick/lib/partest/")
+  import FileManager.{latestCompFile, latestPartestFile}
 
-  val sepUrls = Array(nscDir.toURL, parTestDir.toURL)
+  val sepUrls = Array(latestCompFile.toURL, latestPartestFile.toURL)
   val sepLoader = new URLClassLoader(sepUrls)
 
   val sepCompilerClass =
