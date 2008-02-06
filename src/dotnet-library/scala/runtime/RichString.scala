@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -141,7 +141,7 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
    *  </blockquote>
    */
   def stripMargin(marginChar: Char): String = {
-    val buf = new scala.compat.StringBuilder()
+    val buf = new StringBuilder()
     for (line <- linesWithSeparators) {
       val len = line.length
       var index = 0

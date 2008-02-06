@@ -36,7 +36,6 @@ object Predef {
   type unit    = scala.Unit
 
   type String        = System.String
-  type StringBuilder = compat.StringBuilder
   type Class[T]      = System.Type
   type Runnable      = scala.runtime.Runnable
 
@@ -49,6 +48,7 @@ object Predef {
   type ClassCastException = System.InvalidCastException
   type IndexOutOfBoundsException = System.IndexOutOfRangeException
   type ArrayIndexOutOfBoundsException = System.IndexOutOfRangeException
+  type StringIndexOutOfBoundsException = System.IndexOutOfRangeException
   type UnsupportedOperationException = System.InvalidOperationException
   type IllegalArgumentException = System.ArgumentException
   type NoSuchElementException = System.InvalidOperationException

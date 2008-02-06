@@ -11,9 +11,6 @@
 
 package scala.io
 
-
-import compat.StringBuilder
-
 /** <p>
  *    The object <code>Position</code> provides convenience methods to encode
  *    line and column number in one single integer. The encode line (column)

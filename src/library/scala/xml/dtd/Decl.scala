@@ -1,7 +1,7 @@
 /*                     __                                               *\
  **     ________ ___   / /  ___     Scala API                            **
- **    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
- **  __\ \/ /__/ __ |/ /__/ __ |                                         **
+ **    / __/ __// _ | / /  / _ |    (c) 2003-2008, LAMP/EPFL             **
+ **  __\ \/ /__/ __ |/ /__/ __ |    http://www.scala-lang.org/           **
  ** /____/\___/_/ |_/____/_/ | |                                         **
  **                          |/                                          **
  \*                                                                      */
@@ -9,15 +9,13 @@
 // $Id$
 
 
-package scala.xml.dtd;
+package scala.xml.dtd
 
-
-import compat.StringBuilder
 
 abstract class Decl;
 
 abstract class MarkupDecl extends Decl {
-  def toString(sb: StringBuilder): StringBuilder;
+  def toString(sb: StringBuilder): StringBuilder
 }
 
 /** an element declaration
@@ -53,7 +51,7 @@ case class AttListDecl(name: String, attrs:List[AttrDecl]) extends MarkupDecl wi
  *  versions might provide a way to access the attribute types more
  *  directly.
  */
-case class AttrDecl( name:String, tpe:String, default:DefaultDecl ) {
+case class AttrDecl(name: String, tpe: String, default: DefaultDecl) {
 
   override def toString(): String =
     toString(new StringBuilder()).toString();
@@ -69,7 +67,7 @@ case class AttrDecl( name:String, tpe:String, default:DefaultDecl ) {
 abstract class EntityDecl extends MarkupDecl;
 
 /** a parsed general entity declaration */
-case class ParsedEntityDecl( name:String, entdef:EntityDef ) extends EntityDecl {
+case class ParsedEntityDecl(name: String, entdef: EntityDef) extends EntityDecl {
 
   override def toString(sb: StringBuilder): StringBuilder = {
     sb.append("<!ENTITY ").append( name ).append(' ');
@@ -101,11 +99,11 @@ case class NotationDecl( name:String, extID:ExternalID ) extends MarkupDecl {
 }
 
 abstract class EntityDef {
-  def toString(sb: StringBuilder): StringBuilder;
+  def toString(sb: StringBuilder): StringBuilder
 }
 
 case class IntDef(value:String) extends EntityDef {
-  private def validateValue(): Unit = {
+  private def validateValue() {
     var tmp = value;
     var ix  = tmp.indexOf('%');
     while( ix != -1) {
@@ -136,7 +134,6 @@ case class ExtDef(extID:ExternalID) extends EntityDef {
 }
 
 
-
 /** a parsed entity reference */
 case class PEReference(ent:String) extends MarkupDecl {
   if( !Utility.isName( ent ))
@@ -150,27 +147,26 @@ case class PEReference(ent:String) extends MarkupDecl {
 // default declarations for attributes
 
 abstract class DefaultDecl {
-  override def toString(): String;
-  def toString(sb: StringBuilder): StringBuilder;
+  override def toString(): String
+  def toString(sb: StringBuilder): StringBuilder
 }
 
 case object REQUIRED extends DefaultDecl {
-  override def toString(): String = "#REQUIRED";
-  override def toString(sb:StringBuilder) = sb.append("#REQUIRED");
+  override def toString(): String = "#REQUIRED"
+  override def toString(sb: StringBuilder) = sb.append("#REQUIRED")
 }
 
 case object IMPLIED extends DefaultDecl {
-  override def toString(): String = "#IMPLIED";
-  override def toString(sb:StringBuilder) = sb.append("#IMPLIED");
+  override def toString(): String = "#IMPLIED"
+  override def toString(sb: StringBuilder) = sb.append("#IMPLIED")
 }
 
 case class DEFAULT(fixed: Boolean, attValue:String) extends DefaultDecl {
   override def toString(): String =
     toString(new StringBuilder()).toString();
 
-  override def toString(sb:StringBuilder): StringBuilder = {
-    if(fixed)
-      sb.append("#FIXED ");
-    Utility.appendEscapedQuoted( attValue, sb );
+  override def toString(sb: StringBuilder): StringBuilder = {
+    if (fixed) sb.append("#FIXED ")
+    Utility.appendEscapedQuoted(attValue, sb)
   }
 }

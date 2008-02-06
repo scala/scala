@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -69,7 +69,7 @@ object Elem {
     *  <code>n</code>.
     */
    override def text = {
-     val sb = new compat.StringBuilder()
+     val sb = new StringBuilder()
      val it = child.elements
      while (it.hasNext)
        sb.append(it.next.text)

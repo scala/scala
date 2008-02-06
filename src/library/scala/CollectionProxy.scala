@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -12,7 +12,6 @@
 package scala
 
 import scala.collection.mutable.Buffer
-import scala.compat.StringBuilder
 
 
 /** This class implements a proxy for iterable objects. It forwards

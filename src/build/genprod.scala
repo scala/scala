@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -238,7 +238,7 @@ object TupleFile {
 <file name={tupleFilename(i)}>
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -255,7 +255,7 @@ case class {tupleClassname(i)}{__typeArgs__}({ __fields__ })
   extends {productClassname(i)}{__typeArgRefs__}  {{
 
    override def toString() = {{
-     val sb = new compat.StringBuilder
+     val sb = new StringBuilder
      { if ({i} == 1)
          "sb.append('(').append(_" + {i} + ").append(\",)\")"
        else {
@@ -284,7 +284,7 @@ object ProductFile {
 <file name={productFilename(i)}>
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **

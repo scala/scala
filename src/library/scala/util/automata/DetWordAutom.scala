@@ -56,8 +56,7 @@ abstract class DetWordAutom[T <: AnyRef] {
   }
 
   override def toString() = {
-    val sb = new compat.StringBuilder()
-    sb.append("[DetWordAutom  nstates=")
+    val sb = new StringBuilder("[DetWordAutom  nstates=")
     sb.append(nstates)
     sb.append(" finals=")
     var map = new scala.collection.immutable.ListMap[Int,Int]

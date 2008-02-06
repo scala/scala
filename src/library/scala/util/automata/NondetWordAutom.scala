@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -86,8 +86,7 @@ abstract class NondetWordAutom[T <: AnyRef] {
   }
 
   override def toString = {
-    val sb = new compat.StringBuilder()
-    sb.append("[NondetWordAutom  nstates=")
+    val sb = new StringBuilder("[NondetWordAutom  nstates=")
     sb.append(nstates)
     sb.append("  finals=")
     var map = new scala.collection.immutable.ListMap[Int,Int]

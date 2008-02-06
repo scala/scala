@@ -39,7 +39,6 @@ object Predef {
   @deprecated type Character = java.lang.Character
 
   type String        = java.lang.String
-  type StringBuilder = compat.StringBuilder
   type Class[T]      = java.lang.Class[T]
   type Runnable      = java.lang.Runnable
 
@@ -47,16 +46,17 @@ object Predef {
   type Exception = java.lang.Exception
   type Error     = java.lang.Error
 
-  type AssertionError                 = java.lang.Error
-  type RuntimeException               = java.lang.RuntimeException
-  type NullPointerException           = java.lang.NullPointerException
-  type ClassCastException             = java.lang.ClassCastException
-  type IndexOutOfBoundsException      = java.lang.IndexOutOfBoundsException
-  type ArrayIndexOutOfBoundsException = java.lang.ArrayIndexOutOfBoundsException
-  type UnsupportedOperationException  = RuntimeException //java.lang.UnsupportedOperationException
-  type IllegalArgumentException       = java.lang.IllegalArgumentException
-  type NoSuchElementException         = java.util.NoSuchElementException
-  type NumberFormatException          = java.lang.NumberFormatException
+  type AssertionError                  = java.lang.Error
+  type RuntimeException                = java.lang.RuntimeException
+  type NullPointerException            = java.lang.NullPointerException
+  type ClassCastException              = java.lang.ClassCastException
+  type IndexOutOfBoundsException       = java.lang.IndexOutOfBoundsException
+  type ArrayIndexOutOfBoundsException  = java.lang.ArrayIndexOutOfBoundsException
+  type StringIndexOutOfBoundsException = java.lang.StringIndexOutOfBoundsException
+  type UnsupportedOperationException   = RuntimeException //java.lang.UnsupportedOperationException
+  type IllegalArgumentException        = java.lang.IllegalArgumentException
+  type NoSuchElementException          = java.util.NoSuchElementException
+  type NumberFormatException           = java.lang.NumberFormatException
 
   // miscelleaneous -----------------------------------------------------
 

@@ -7,7 +7,6 @@
 
 package scala.tools.nsc.backend.icode.analysis
 
-import compat.StringBuilder
 import scala.collection.mutable.{HashMap, Map}
 import scala.collection.immutable.{Set, ListSet}
 
@@ -105,8 +104,8 @@ abstract class Liveness {
       }
 
       i match {
-        case LOAD_LOCAL(l) => in = in + l
-        case STORE_LOCAL(l) => in = in - l
+        case LOAD_LOCAL(l) => in += l
+        case STORE_LOCAL(l) => in -= l
         case _ =>
           ()
       }

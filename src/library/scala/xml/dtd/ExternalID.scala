@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2008, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://www.scala-lang.org/           **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -11,8 +11,6 @@
 
 package scala.xml.dtd
 
-
-import compat.StringBuilder
 
 /** an ExternalIDs - either PublicID or SystemID
  *
@@ -41,16 +39,16 @@ abstract class ExternalID  {
 
 case class SystemID( systemId:String ) extends ExternalID with parsing.TokenTests{
 
-  if( !checkSysID( systemId ) )
+  if( !checkSysID(systemId) )
     throw new IllegalArgumentException(
       "can't use both \" and ' in systemLiteral"
     )
   /** returns " SYSTEM "+systemLiteral */
   override def toString() =
-    Utility.systemLiteralToString( systemId )
+    Utility.systemLiteralToString(systemId)
 
   override def toString(sb: StringBuilder): StringBuilder =
-    Utility.systemLiteralToString( sb, systemId )
+    Utility.systemLiteralToString(sb, systemId)
 }
 
 
@@ -60,7 +58,8 @@ case class SystemID( systemId:String ) extends ExternalID with parsing.TokenTest
  * @param  publicLiteral the public identifier literal
  * @param  systemLiteral (can be null for notation pubIDs) the system identifier literal
 **/
-case class PublicID( publicId:String, systemId:String ) extends ExternalID with parsing.TokenTests{
+case class PublicID(publicId: String, systemId: String)
+extends ExternalID with parsing.TokenTests {
 
   if( !checkPubID( publicId ))
     throw new IllegalArgumentException(

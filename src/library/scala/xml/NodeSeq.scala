@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -168,7 +168,7 @@ abstract class NodeSeq extends Seq[Node] {
 */
 
   def text: String = {
-    val sb = new compat.StringBuilder()
+    val sb = new StringBuilder()
     val it = elements
     while (it.hasNext) {
       sb.append(it.next.text)

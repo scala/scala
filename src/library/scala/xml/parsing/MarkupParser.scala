@@ -105,7 +105,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
 
     m("version") match {
       case null  => ;
-      case Text("1.0") => info_ver = Some("1.0"); n = n + 1
+      case Text("1.0") => info_ver = Some("1.0"); n += 1
       case _     => reportSyntaxError("cannot deal with versions != 1.0")
     }
 
@@ -116,13 +116,13 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
           reportSyntaxError("\"" + enc + "\" is not a valid encoding")
         else {
           info_enc = Some(enc.toString())
-          n = n + 1
+          n += 1
         }
     }
     m("standalone") match {
       case null => ;
-      case Text("yes") => info_stdl = Some(true);  n = n + 1
-      case Text("no")  => info_stdl = Some(false); n = n + 1
+      case Text("yes") => info_stdl = Some(true);  n += 1
+      case Text("no")  => info_stdl = Some(false); n += 1
       case _     => reportSyntaxError("either 'yes' or 'no' expected")
     }
 
@@ -144,7 +144,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
 
     m("version") match {
       case null => ;
-      case Text("1.0") => info_ver = Some("1.0"); n = n + 1
+      case Text("1.0") => info_ver = Some("1.0"); n += 1
       case _     => reportSyntaxError("cannot deal with versions != 1.0")
     }
 
@@ -155,7 +155,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
           reportSyntaxError("\"" + enc + "\" is not a valid encoding")
         else {
           info_enc = Some(enc.toString())
-          n = n + 1
+          n += 1
         }
     }
 
@@ -259,7 +259,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
 
   /** munch expected XML token, report syntax error for unexpected
   */
-  def xToken(that: Char): Unit = {
+  def xToken(that: Char) {
     if (ch == that)
       nextch
     else  {

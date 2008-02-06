@@ -1,3 +1,13 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2008, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id: $
+
 package scala
 
 object RandomAccessSeq {
@@ -82,17 +92,17 @@ object RandomAccessSeq {
     }
     override def drop( from: Int): MutableProjection[A] = slice(from, length)
     override def take(until: Int): MutableProjection[A] = slice(0, until)
-    override def slice(from0 : Int, until0 : Int) : MutableProjection[A] = new MutableSlice[A] {
+    override def slice(from0: Int, until0: Int) : MutableProjection[A] = new MutableSlice[A] {
       def from = from0
       def until = until0
       def underlying = Mutable.this
     }
     override def reverse : MutableProjection[A] = new MutableProjection[A] {
-      def update(idx : Int, what : A) : Unit = Mutable.this.update(length - idx - 1, what)
+      def update(idx: Int, what: A) { Mutable.this.update(length - idx - 1, what) }
       def length = Mutable.this.length
-      def apply(idx : Int) = Mutable.this.apply(length - idx - 1)
+      def apply(idx: Int) = Mutable.this.apply(length - idx - 1)
       override def stringPrefix = Mutable.this.stringPrefix + "R"
-      override def reverse : MutableProjection[A] = Mutable.this.projection
+      override def reverse: MutableProjection[A] = Mutable.this.projection
     }
   }
   trait MutableProjection[A] extends Projection[A] with Mutable[A] {
@@ -133,7 +143,7 @@ trait RandomAccessSeq[+A] extends Seq[A] {
     def next = {
       if (!hasNext) throw new Predef.NoSuchElementException
       val ret = RandomAccessSeq.this.apply(idx)
-      idx = idx + 1
+      idx += 1
       ret
     }
   }
@@ -154,7 +164,7 @@ trait RandomAccessSeq[+A] extends Seq[A] {
   /** insert segment <code>patch</code> into this sequence at <code>from</code>
    *  replacing  <code>replaced</code> elements. The result is a projection.
    */
-  def patch[B >: A](from0 : Int, patch0 : RandomAccessSeq[B], replaced0 : Int) : RandomAccessSeq.Projection[B] = new RandomAccessSeq.Patch[B] {
+  def patch[B >: A](from0: Int, patch0: RandomAccessSeq[B], replaced0: Int): RandomAccessSeq.Projection[B] = new RandomAccessSeq.Patch[B] {
     override def original = RandomAccessSeq.this
     override def from = from0
     override def patch = patch0
@@ -162,26 +172,26 @@ trait RandomAccessSeq[+A] extends Seq[A] {
     override def stringPrefix = RandomAccessSeq.this.stringPrefix + "P"
   }
 
-  override def ++[B >: A](that : Iterable[B]) : RandomAccessSeq[B] = that match {
-  case that : RandomAccessSeq[b] =>
-    val ret = new Array[B](length + that.length)
-    copyToArray(ret, 0)
-    (that : RandomAccessSeq[B]).copyToArray(ret, length)
-    ret
-  case that =>
-    val buf = new scala.collection.mutable.ArrayBuffer[B]
-    this copyToBuffer buf
-    that copyToBuffer buf
-    buf.readOnly
+  override def ++[B >: A](that: Iterable[B]): RandomAccessSeq[B] = that match {
+    case that: RandomAccessSeq[b] =>
+      val ret = new Array[B](length + that.length)
+      copyToArray(ret, 0)
+      (that : RandomAccessSeq[B]).copyToArray(ret, length)
+      ret
+    case that =>
+      val buf = new scala.collection.mutable.ArrayBuffer[B]
+      this copyToBuffer buf
+      that copyToBuffer buf
+      buf.readOnly
   }
 
   override def toStream : Stream[A] = new Stream.Definite[A] {
     override def isEmpty = RandomAccessSeq.this.isEmpty
     override def head = RandomAccessSeq.this.apply(0)
     override def tail = RandomAccessSeq.this.drop(1).toStream
-    protected def addDefinedElems(buf: compat.StringBuilder, prefix: String): compat.StringBuilder = {
+    protected def addDefinedElems(buf: StringBuilder, prefix: String): StringBuilder = {
       var prefix0 = prefix
-      var buf0 =buf
+      var buf0 = buf
       elements.foreach{e =>
         buf0 = buf0.append(prefix0).append(e)
         prefix0 = ", "

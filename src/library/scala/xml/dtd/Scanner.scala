@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -86,7 +86,7 @@ class Scanner extends Tokens with parsing.TokenTests {
     }
 
   final def name = {
-    val sb = new compat.StringBuilder()
+    val sb = new StringBuilder()
     do { sb.append(c); next } while (isNameChar(c));
     value = sb.toString()
     NAME
