@@ -746,6 +746,15 @@ trait Typers { self: Analyzer =>
           assert((mode & HKmode) == 0) //@M
           instantiate(tree, mode, pt)
         } else if (tree.tpe <:< pt) {
+          def isStructuralType(tpe: Type) = tpe match {
+            case RefinedType(ps, decls) =>
+              decls.toList exists (x => x.isTerm && x.allOverriddenSymbols.isEmpty)
+            case _ =>
+              false
+          }
+          if (isStructuralType(pt) && tree.tpe.typeSymbol == ArrayClass) {
+            println("need to insert box for "+tree)
+          }
           tree
         } else {
           if ((mode & PATTERNmode) != 0) {

@@ -449,6 +449,9 @@ trait TypeKinds { self: ICodes =>
             REFERENCE(sym)
       }
 
+    case ExistentialType(tparams, t) =>
+      toTypeKind(t)
+
     //case WildcardType => // bq: useful hack when wildcard types come here
     //  REFERENCE(definitions.ObjectClass)
 
