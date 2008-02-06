@@ -1,0 +1,4 @@
+t0351.scala:2: error: no by-name parameter type allowed here
+  def identity[T](x : => T) : (=> T)
+                               ^
+one error found

@@ -119,33 +119,41 @@ object Iterator {
   /** Create an iterator with elements
    *  <code>e<sub>n+1</sub> = e<sub>n</sub> + step</code>
    *  where <code>e<sub>0</sub> = start</code>
-   *  and <code>e<sub>i</sub> &lt; end</code>. Will return an empty range
-   *  for nonsensical range/step arguments.
+   *  and elements are in the range between <code>start</code> (inclusive)
+   *  and <code>end</code> (exclusive)
    *
    *  @param start the start value of the iterator
    *  @param end   the end value of the iterator
    *  @param step  the increment value of the iterator (must be positive or negative)
    *  @return      the iterator with values in range <code>[start;end)</code>.
    */
- def range(start: Int, end: Int, step: Int): Iterator[Int] = range(start, end, {(_:Int) + step})
+ def range(start: Int, end: Int, step: Int) = new Iterator[Int] {
+   private var i = start
+   def hasNext: Boolean = (step <= 0 || i < end) && (step >= 0 || i > end)
+   def next(): Int =
+     if (hasNext) { val j = i; i = i + step; j }
+     else throw new NoSuchElementException("next on empty iterator")
+ }
 
   /** Create an iterator with elements
    *  <code>e<sub>n+1</sub> = step(e<sub>n</sub>)</code>
    *  where <code>e<sub>0</sub> = start</code>
-   *  and <code>e<sub>i</sub> &lt; end</code>.
+   *  and elements are in the range between <code>start</code> (inclusive)
+   *  and <code>end</code> (exclusive)
    *
    *  @param start the start value of the iterator
    *  @param end   the end value of the iterator
-   *  @param step  the increment function of the iterator
+   *  @param step  the increment function of the iterator, must be monotonically increasing or decreasing
    *  @return      the iterator with values in range <code>[start;end)</code>.
    */
-  def range(start: Int, end: Int, step: Int => Int): Iterator[Int] =
-    new Iterator[Int] {
-      private var i = start
-      def hasNext: Boolean = i < end
-      def next(): Int =
-        if (i < end) { val j = i; i = step(i); j }
-        else throw new NoSuchElementException("next on empty iterator")
+  def range(start: Int, end: Int, step: Int => Int) = new Iterator[Int] {
+    private val up = step(start) > start
+    private val down = step(start) < start
+    private var i = start
+    def hasNext: Boolean = (!up || i < end) && (!down || i > end)
+    def next(): Int =
+      if (hasNext) { val j = i; i = step(i); j }
+      else throw new NoSuchElementException("next on empty iterator")
   }
 
   /** Create an iterator with elements

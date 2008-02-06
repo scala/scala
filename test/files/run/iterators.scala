@@ -22,10 +22,13 @@ object Test {
   }
 
   def check_range2: Int = {
-    val r1 = Iterator.range(0, 10)
-    val r2 = Iterator.range(r1.start, r1.end, r1.step + 1)
-    val r3 = Iterator.range(r1.end, r1.start, -r1.step)
-    val r4 = Iterator.range(0, 10, 11)
+    val r1start = 0
+    val r1end = 10
+    val r1step = 1
+    val r1 = Iterator.range(r1start, r1end, r1step) toList;
+    val r2 = Iterator.range(r1start, r1end, r1step + 1) toList;
+    val r3 = Iterator.range(r1end, r1start, -r1step) toList;
+    val r4 = Iterator.range(0, 10, 11) toList;
     // 10 + 5 + 10 + 1
     r1.length + r2.length + r3.length + r4.length
   }
@@ -34,8 +37,9 @@ object Test {
     def trues(xs: List[Boolean]) = xs.foldLeft(0)((a, b) => if (b) a+1 else a)
     val r1 = Iterator.range(0, 10)
     val xs1 = List(r1 contains 5, r1 contains 6)
-    val r2 = Iterator.range(0, 10, 2)
-    val xs2 = List(r2 contains 5, r2 contains 6)
+    val r2a = Iterator.range(0, 10, 2)
+    val r2b = Iterator.range(0, 10, 2)
+    val xs2 = List(r2a contains 5, r2b contains 6)
     val r3 = Iterator.range(0, 10, 11)
     val xs3 = List(r3 contains 5, r3 contains 6)
     // 2 + 1 + 0

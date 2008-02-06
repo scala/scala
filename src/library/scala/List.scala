@@ -39,37 +39,47 @@ object List {
    *  @param end the end value of the list
    *  @return the sorted list of all integers in range [from;end).
    */
-  def range(from: Int, end: Int): List[Int] =
-    range(from, end, 1)
+  def range(start: Int, end: Int): List[Int] =
+    range(start, end, 1)
 
-  /** Create a sorted list of all integers in a range.
+  /** Create a list with element values
+   * <code>v<sub>n+1</sub> = v<sub>n</sub> + step</code>
+   * where <code>v<sub>0</sub> = start</code>
+   * and elements are in the range between <code>start</code> (inclusive)
+   * and <code>end</code> (exclusive)
    *
-   *  @param from the start value of the list
+   *  @param start the start value of the list
    *  @param end  the end value of the list
    *  @param step the increment value of the list
-   *  @return     the sorted list of all integers in range [from;end).
+   *  @return     the sorted list of all integers in range [start;end).
    */
-  def range(from: Int, end: Int, step: Int): List[Int] = {
+  def range(start: Int, end: Int, step: Int): List[Int] = {
     val b = new ListBuffer[Int]
-    var i = from
-    while (i < end) {
+    var i = start
+    while ((step <= 0 || i < end) && (step >= 0 || i > end)) {
       b += i
       i += step
     }
     b.toList
   }
 
-  /** Create a sorted list of all integers in a range.
+  /** Create a sorted list with element values
+   * <code>v<sub>n+1</sub> = step(v<sub>n</sub>)</code>
+   * where <code>v<sub>0</sub> = start</code>
+   * and elements are in the range between <code>start</code> (inclusive)
+   * and <code>end</code> (exclusive)
    *
-   *  @param from the start value of the list
+   *  @param start the start value of the list
    *  @param end  the end value of the list
-   *  @param step the increment function of the list
-   *  @return     the sorted list of all integers in range [from;end).
+   *  @param step the increment function of the list, must be monotonically increasing or decreasing
+   *  @return     the sorted list of all integers in range [start;end).
    */
-  def range(from: Int, end: Int, step: Int => Int): List[Int] = {
+  def range(start: Int, end: Int, step: Int => Int): List[Int] = {
+    val up = step(start) > start
+    val down = step(start) < start
     val b = new ListBuffer[Int]
-    var i = from
-    while (i < end) {
+    var i = start
+    while ((!up || i < end) && (!down || i > end)) {
       b += i
       i += step(i)
     }

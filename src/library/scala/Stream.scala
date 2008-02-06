@@ -103,7 +103,8 @@ object Stream {
    * Create a stream with element values
    * <code>v<sub>n+1</sub> = v<sub>n</sub> + step</code>
    * where <code>v<sub>0</sub> = start</code>
-   * and <code>v<sub>i</sub> &lt; end</code>.
+   * and elements are in the range between <code>start</code> (inclusive)
+   * and <code>end</code> (exclusive)
    *
    * @param start the start value of the stream
    * @param end the end value of the stream
@@ -112,8 +113,8 @@ object Stream {
    */
   def range(start: Int, end: Int, step: Int): Stream[Int] = {
     def loop(lo: Int): Stream[Int] =
-      if (lo >= end) empty
-      else cons(lo, loop(lo + step))
+      if ((step <= 0 || lo < end) && (step >= 0 || lo > end)) cons(lo, loop(lo + step))
+      else empty
     loop(start)
   }
 
@@ -121,17 +122,20 @@ object Stream {
    * Create a stream with element values
    * <code>v<sub>n+1</sub> = step(v<sub>n</sub>)</code>
    * where <code>v<sub>0</sub> = start</code>
-   * and <code>v<sub>i</sub> &lt; end</code>.
+   * and elements are in the range between <code>start</code> (inclusive)
+   * and <code>end</code> (exclusive)
    *
    * @param start the start value of the stream
    * @param end the end value of the stream
-   * @param step the increment function of the stream
+   * @param step the increment function of the stream, must be monotonically increasing or decreasing
    * @return the stream starting at value <code>start</code>.
    */
   def range(start: Int, end: Int, step: Int => Int): Stream[Int] = {
+    val up = step(start) > start
+    val down = step(start) < start
     def loop(lo: Int): Stream[Int] =
-      if (lo >= end) empty
-      else cons(lo, loop(step(lo)))
+      if ((!up || lo < end) && (!down || lo > end)) cons(lo, loop(step(lo)))
+      else empty
     loop(start)
   }
 
