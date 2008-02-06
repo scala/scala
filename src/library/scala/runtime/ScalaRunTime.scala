@@ -32,6 +32,13 @@ object ScalaRunTime {
   def isValueTag(tag: String) = tag.charAt(0) == '.'
   def isValueClass(clazz: Class[_]) = clazz.isPrimitive()
 
+  def forceBoxedArray[A <: Any](xs: Seq[A]): Array[A] = {
+    val array = new Array[A](xs.length)
+    var i = 0
+    for (x <- xs.elements) { array(i) = x; i += 1 }
+    array
+  }
+
   def checkInitialized[T <: AnyRef](x: T): T =
     if (x == null) throw new UninitializedError else x
 

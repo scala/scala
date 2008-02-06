@@ -171,8 +171,31 @@ object test3 {
 
 }
 
+object test4 {
+
+  class A
+
+  val aar = Array(new A, new A, new A)
+  val nar = Array(1, 2)
+
+  def f(p: {def size: Int}) = println(p.size)
+  //def g[T <: {def size: Int}](p: T) = println(p.size) // open issue
+  //def h[T <% {def size: Int}](p: T) = println(p.size) // open issue
+
+  f(aar)
+  f(nar)
+
+  //g(aar)
+  //g(nar)
+
+  //h(aar)
+  //h(nar)
+
+}
+
 object Test extends Application {
   test1
   test2
   test3
+  test4
 }

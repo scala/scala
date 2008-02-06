@@ -260,6 +260,7 @@ trait StdNames {
     val booleanValue = newTermName("booleanValue")
     val box = newTermName("box")
     val boxArray = newTermName("boxArray")
+    val forceBoxedArray = newTermName("forceBoxedArray")
     val checkInitialized = newTermName("checkInitialized")
     val classOf = newTermName("classOf")
     val coerce = newTermName("coerce")

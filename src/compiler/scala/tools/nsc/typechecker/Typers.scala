@@ -746,16 +746,20 @@ trait Typers { self: Analyzer =>
           assert((mode & HKmode) == 0) //@M
           instantiate(tree, mode, pt)
         } else if (tree.tpe <:< pt) {
-          def isStructuralType(tpe: Type) = tpe match {
+          def isStructuralType(tpe: Type): Boolean = tpe match {
             case RefinedType(ps, decls) =>
               decls.toList exists (x => x.isTerm && x.allOverriddenSymbols.isEmpty)
             case _ =>
               false
           }
           if (isStructuralType(pt) && tree.tpe.typeSymbol == ArrayClass) {
-            println("need to insert box for "+tree)
+            // all Arrays used as structural refinement typed values must be boxed
+            // this does not solve the case where the type to be adapted to comes
+            // from a type variable that was bound by a strctural but is instantiated
+            typed(Apply(Select(gen.mkAttributedRef(ScalaRunTimeModule), nme.forceBoxedArray), List(tree)))
           }
-          tree
+          else
+            tree
         } else {
           if ((mode & PATTERNmode) != 0) {
             if ((tree.symbol ne null) && tree.symbol.isModule)
