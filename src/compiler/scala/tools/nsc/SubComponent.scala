@@ -24,6 +24,9 @@ abstract class SubComponent {
   /** The phase factory */
   def newPhase(prev: Phase): Phase
 
+  /** The phase defined by this subcomponent. Can be called only after phase is installed by newPhase. */
+//  lazy val ownPhase: Phase = global.currentRun.phaseNamed(phaseName)
+
   /** A standard phase template */
   abstract class StdPhase(prev: Phase) extends global.GlobalPhase(prev) {
     def name = phaseName

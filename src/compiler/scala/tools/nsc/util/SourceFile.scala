@@ -175,9 +175,11 @@ extends BatchSourceFile(name, contents)
   override def positionInUltimateSource(position: Position) = {
     if (position.offset.isEmpty) super.positionInUltimateSource(position)
     else {
+      println("!!!")
       var off = position.offset.get
       var compsLeft = components
-      while(compsLeft.head.content.length-1 <= off) {
+      while (compsLeft.head.content.length-1 <= off && !compsLeft.tail.isEmpty) {
+        println("discarding "+compsLeft.head)
         off = off - compsLeft.head.content.length + 1
         compsLeft = compsLeft.tail
       }

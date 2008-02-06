@@ -207,7 +207,7 @@ trait Symbols {
     final def isStaticModule = isModule && isStatic && !isMethod
     final def isPackage = isModule && hasFlag(PACKAGE)
     final def isThisSym = isTerm && owner.thisSym == this
-    final def isMonomorphicType = isType && hasFlag(MONOMORPHIC)
+    //final def isMonomorphicType = isType && hasFlag(MONOMORPHIC)
     final def isError = hasFlag(IS_ERROR)
     final def isErroneous = isError || isInitialized && tpe.isErroneous
     final def isTrait = isClass & hasFlag(TRAIT)
@@ -231,6 +231,19 @@ trait Symbols {
     final def isPredefModule = isModule && name == nme.Predef // not printed as a prefix
     final def isScalaPackage = isPackage && name == nme.scala_ // not printed as a prefix
     final def isScalaPackageClass = isPackageClass && name == nme.scala_.toTypeName // not printed as a prefix
+
+    /** Is symbol a monomophic type?
+     *  assumption: if a type starts out as monomorphic, it will not acquire
+     *  type parameters in later phases.
+     */
+    final def isMonomorphicType =
+      isType && {
+        var is = infos
+        (is eq null) || {
+          while (is.prev ne null) { is = is.prev }
+          is.info.isComplete && is.info.typeParams.isEmpty
+        }
+      }
 
     def isDeprecated =
       attributes exists (attr => attr.atp.typeSymbol == DeprecatedAttr)
@@ -609,14 +622,17 @@ trait Symbols {
 
     def tpeHK = if (isType) typeConstructor else tpe // @M! used in memberType
 
-    /** The type parameters of this symbol */
+    /** The type parameters of this symbol, without ensuring type completion.
+     *  assumption: if a type starts out as monomorphic, it will not acquire
+     *  type parameters later.
+     */
     def unsafeTypeParams: List[Symbol] =
       if (isMonomorphicType) List() else rawInfo.typeParams
-    /*
-      val limit = phaseId(validTo)
-      (if (limit < phase.id) infos.info else rawInfo).typeParams
-    */
 
+    /** The type parameters of this symbol.
+     *  assumption: if a type starts out as monomorphic, it will not acquire
+     *  type parameters later.
+     */
     def typeParams: List[Symbol] =
       if (isMonomorphicType) List() else { rawInfo.load(this); rawInfo.typeParams }
 
@@ -1287,10 +1303,11 @@ trait Symbols {
         } else {
           if (isInitialized) tpePeriod = currentPeriod
           tpeCache = NoType
-          val targs = if (phase.erasedTypes && this != ArrayClass) List()
-          else unsafeTypeParams map (_.typeConstructor) //@M! use typeConstructor to generate dummy type arguments,
-          // sym.tpe should not be called on a symbol that's supposed to be a higher-kinded type
-          // memberType should be used instead, that's why it uses tpeHK and not tpe
+          val targs =
+            if (phase.erasedTypes && this != ArrayClass) List()
+            else unsafeTypeParams map (_.typeConstructor) //@M! use typeConstructor to generate dummy type arguments,
+            // sym.tpe should not be called on a symbol that's supposed to be a higher-kinded type
+            // memberType should be used instead, that's why it uses tpeHK and not tpe
           tpeCache = typeRef(if (hasFlag(PARAM | EXISTENTIAL)) NoPrefix else owner.thisType,
                              this, targs)
         }
@@ -1495,10 +1512,6 @@ trait Symbols {
   def cloneSymbols(syms: List[Symbol]): List[Symbol] = {
     val syms1 = syms map (_.cloneSymbol)
     for (sym1 <- syms1) sym1.setInfo(sym1.info.substSym(syms, syms1))
-    if (inIDE) {
-      assert(true)
-      assert(true)
-    }
     syms1
   }
 

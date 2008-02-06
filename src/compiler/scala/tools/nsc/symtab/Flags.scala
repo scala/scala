@@ -91,6 +91,8 @@ object Flags extends Enumeration {
   final val lateMODULE    = (MODULE: Long) << LateShift
   final val lateFINAL     = (FINAL: Long) << LateShift
   final val lateMETHOD    = (METHOD: Long) << LateShift
+
+  final val notFINAL      = (FINAL: Long) << AntiShift
   final val notPRIVATE    = (PRIVATE: Long) << AntiShift
   final val notDEFERRED   = (DEFERRED: Long) << AntiShift
   final val notPROTECTED  = (PROTECTED: Long) << AntiShift

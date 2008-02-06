@@ -234,8 +234,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
     def apply(unit: CompilationUnit): Unit
 
-    private val isDevirtualized = prev.name == "devirtualize" || prev.devirtualized
-    override def devirtualized = isDevirtualized
     private val isErased = prev.name == "erasure" || prev.erasedTypes
     override def erasedTypes: Boolean = isErased
     private val isFlat = prev.name == "flatten" || prev.flatClasses

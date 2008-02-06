@@ -5,7 +5,7 @@ object Magic {
     trait C1 extends C { type T = T1; }
     trait C2 extends C { type T <: T2; }
 
-    type CX;
+    type CX >: Null;
     val c: CX with C2 = null;
 
     def castA(x: c.T): T2 = x;
