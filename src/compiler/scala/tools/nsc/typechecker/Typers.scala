@@ -643,8 +643,8 @@ trait Typers { self: Analyzer =>
         val meth = tree.symbol
         if (!meth.isConstructor &&
             //isCompatible(tparamsToWildcards(mt, context.undetparams), pt) &&
-            pt != WildcardType &&
-            (pt <:< functionType(mt.paramTypes map (t => WildcardType), WildcardType))) { // (4.2)
+            isFunctionType(pt))/* &&
+            (pt <:< functionType(mt.paramTypes map (t => WildcardType), WildcardType)))*/ { // (4.2)
           if (settings.debug.value) log("eta-expanding "+tree+":"+tree.tpe+" to "+pt)
           checkParamsConvertible(tree.pos, tree.tpe)
           typed(etaExpand(context.unit, tree), mode, pt)
