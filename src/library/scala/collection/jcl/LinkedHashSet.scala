@@ -17,4 +17,6 @@ package scala.collection.jcl;
  */
 class LinkedHashSet[A](override val underlying: java.util.LinkedHashSet[A]) extends SetWrapper[A] {
   def this() = this(new java.util.LinkedHashSet[A]);
+  override def clone: LinkedHashSet[A] =
+    new LinkedHashSet[A](underlying.clone().asInstanceOf[java.util.LinkedHashSet[A]])
 }

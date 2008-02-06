@@ -15,6 +15,11 @@ package scala.collection.jcl;
  *
  *  @author Sean McDirmid
  */
-class TreeSet[A <% Ordered[A]] extends SortedSetWrapper[A] {
+class TreeSet[A <% Ordered[A]] extends SortedSetWrapper[A] { ts =>
   val underlying = new java.util.TreeSet[A](new Comparator[A]);
+  override def clone: TreeSet[A] =
+    new TreeSet[A] {
+      override val underlying =
+        ts.underlying.clone().asInstanceOf[java.util.TreeSet[A]]
+    }
 }

@@ -16,4 +16,6 @@ package scala.collection.jcl;
  */
 class ArrayList[A](override val underlying : java.util.ArrayList[A]) extends BufferWrapper[A]  {
   def this() = this(new java.util.ArrayList[A]);
+  override def clone: ArrayList[A] =
+    new ArrayList[A](underlying.clone().asInstanceOf[java.util.ArrayList[A]])
 }

@@ -26,4 +26,7 @@ class LinkedList[A](override val underlying : java.util.LinkedList[A]) extends B
   //def poll = underlying.poll.asInstanceOf[A];
   //def removeFirst = underlying.removeFirst.asInstanceOf[A];
   //def removeLast  = underlying.removeLast.asInstanceOf[A];
+
+  override def clone: LinkedList[A] =
+    new LinkedList[A](underlying.clone().asInstanceOf[java.util.LinkedList[A]])
 }
