@@ -1800,7 +1800,7 @@ GENERATES A DISTRIBUTION
     <quicksbaz
       file="${dist.dir}/scala-devel-docs-${version.number}.sbp"
       adfile="${dist.dir}/scala-devel-docs-${version.number}.advert"
-      name="scala-devel"
+      name="scala-devel-docs"
       version="${version.number}"
       desc="The Scala developer documentation. This contains all developer documentation."
       link="${sbaz.universe}/scala-devel-docs-${version.number}.sbp">
