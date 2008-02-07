@@ -2368,12 +2368,18 @@ trait Typers { self: Analyzer =>
         case OverloadedType(pre, alts) =>
           inferPolyAlternatives(fun, args map (_.tpe))
           val tparams = fun.symbol.typeParams //@M TODO: fun.symbol.info.typeParams ? (as in typedAppliedTypeTree)
-          assert(args.length == tparams.length)  //@M: in case TypeApply we can't check the kind-arities
-          // of the type arguments as we don't know which alternative to choose... here we do
-          val args1 = map2Conserve(args, tparams) {
-            //@M! the polytype denotes the expected kind
-            (arg, tparam) => typedHigherKindedType(arg, polyType(tparam.typeParams, AnyClass.tpe))
-          }
+          val args1 = if(args.length == tparams.length) {
+            //@M: in case TypeApply we can't check the kind-arities of the type arguments,
+            // as we don't know which alternative to choose... here we do
+            map2Conserve(args, tparams) {
+              //@M! the polytype denotes the expected kind
+              (arg, tparam) => typedHigherKindedType(arg, polyType(tparam.typeParams, AnyClass.tpe))
+            }
+          } else // @M: there's probably something wrong when args.length != tparams.length... (triggered by bug #320)
+           // Martin, I'm using fake trees, because, if you use args or arg.map(typedType),
+           // inferPolyAlternatives loops...  -- I have no idea why :-(
+            args.map(t => errorTree(tree, "wrong number of type parameters for "+treeSymTypeMsg(fun)))
+
           typedTypeApply(fun, args1)
         case SingleType(_, _) =>
           typedTypeApply(fun setType fun.tpe.widen, args)
