@@ -9,7 +9,7 @@
 // $Id: Lexical.scala 12268 2007-07-11 13:45:53Z michelou $
 
 
-package scala.util.parsing.combinator1.lexical
+package scala.util.parsing.combinator.lexical
 
 import scala.util.parsing.syntax._
 import scala.util.parsing.input.CharArrayReader.EofCh

@@ -6,10 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.parsing.combinator1.testing
+package scala.util.parsing.combinator.testing
 
-import scala.util.parsing.combinator1.lexical.Lexical
-import scala.util.parsing.combinator1.syntactical.TokenParsers
+import scala.util.parsing.combinator.lexical.Lexical
+import scala.util.parsing.combinator.syntactical.TokenParsers
 
 /** <p>
  *    Facilitates testing a given parser on various input strings.

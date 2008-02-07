@@ -9,7 +9,7 @@
 // $Id: StdTokenParsers.scala 12242 2007-07-09 09:43:09Z michelou $
 
 
-package scala.util.parsing.combinator1.syntactical
+package scala.util.parsing.combinator.syntactical
 
 import scala.util.parsing.syntax._
 

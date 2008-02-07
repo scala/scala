@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.util.parsing.combinator.syntactical
+package scala.util.parsing.combinatorold.syntactical
 
 /** <p>
  *    This is the core component for token-based parsers.

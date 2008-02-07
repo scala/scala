@@ -8,7 +8,7 @@
 
 // $Id: Parsers.scala 12357 2007-07-18 21:55:08Z moors $
 
-package scala.util.parsing.combinator1
+package scala.util.parsing.combinator
 
 import scala.util.parsing.input._
 import scala.collection.mutable.{Map=>MutableMap}
@@ -667,6 +667,17 @@ trait Parsers {
    */
   def opt[T](p: => Parser[T]): Parser[Option[T]] =
     p ^^ (x => Some(x)) | success(None)
+
+  /** Wrap a parser so that its failures&errors become success and vice versa -- it never consumes any input
+   */
+  def not[T](p: => Parser[T]): Parser[Unit] = Parser { in =>
+    p(in) match {
+      case s @ Success(_, _) => Failure("Expected failure", in)
+      case e @ Error(_, _) => Success((), in)
+      case f @ Failure(msg, next) => Success((), in)
+    }
+  }
+
 
   /** `positioned' decorates a parser's result with the start position of the input it consumed.
    *

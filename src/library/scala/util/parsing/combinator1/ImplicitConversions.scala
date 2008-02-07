@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.parsing.combinator1
+package scala.util.parsing.combinator
 
 /** This object contains implicit conversions that come in handy when using the `^^' combinator
  * {@see Parsers} to construct an AST from the concrete syntax.

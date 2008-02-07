@@ -8,7 +8,7 @@
 
 // $Id$
 
-package scala.util.parsing.combinator
+package scala.util.parsing.combinatorold
 
 import scala.util.parsing.input._
 import scala.collection.mutable.{Map=>MutableMap}

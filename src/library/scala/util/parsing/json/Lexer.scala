@@ -25,12 +25,12 @@ class Lexer extends StdLexical with ImplicitConversions {
     //( '\"' ~ rep(charSeq | letter) ~ '\"' ^^ lift(StringLit)
     ( string ^^ StringLit
     | number ~ letter ^^ { case n ~ l => ErrorToken("Invalid number format : " + n + l) }
-    | '-' ~ whitespace ~ number ~ letter ^^ { case ws ~ num ~ l => ErrorToken("Invalid number format : -" + num + l) }
-    | '-' ~ whitespace ~ number ^^ { case ws ~ num => NumericLit("-" + num) }
+    | '-' ~> whitespace ~ number ~ letter ^^ { case ws ~ num ~ l => ErrorToken("Invalid number format : -" + num + l) }
+    | '-' ~> whitespace ~ number ^^ { case ws ~ num => NumericLit("-" + num) }
     | number ^^ NumericLit
-    | EofCh ^^ EOF
+    | EofCh ^^^ EOF
     | delim
-    | '\"' ~ failure("Unterminated string")
+    | '\"' ~> failure("Unterminated string")
     | rep(letter) ^^ checkKeyword
     | failure("Illegal character")
     )
@@ -43,7 +43,7 @@ class Lexer extends StdLexical with ImplicitConversions {
   /** A string is a collection of zero or more Unicode characters, wrapped in
    *  double quotes, using backslash escapes (cf. http://www.json.org/).
    */
-  def string = '\"' ~ rep(charSeq | chrExcept('\"', '\n', EofCh)) ~ '\"' ^^ { _ mkString "" }
+  def string = '\"' ~> rep(charSeq | chrExcept('\"', '\n', EofCh)) <~ '\"' ^^ { _ mkString "" }
 
   override def whitespace = rep(whitespaceChar)
 
@@ -52,7 +52,7 @@ class Lexer extends StdLexical with ImplicitConversions {
   }
   def intPart = zero | intList
   def intList = nonzero ~ rep(digit) ^^ {case x ~ y => (x :: y) mkString ""}
-  def fracPart = '.' ~ rep(digit) ^^ { _ mkString "" }
+  def fracPart = '.' ~> rep(digit) ^^ { _ mkString "" }
   def expPart = exponent ~ opt(sign) ~ rep1(digit) ^^ { case e ~ s ~ d =>
     e + optString("", s) + d.mkString("")
   }
@@ -62,21 +62,21 @@ class Lexer extends StdLexical with ImplicitConversions {
     case None => ""
   }
 
-  def zero: Parser[String] = '0' ^^ "0"
+  def zero: Parser[String] = '0' ^^^ "0"
   def nonzero = elem("nonzero digit", d => d.isDigit && d != '0')
   def exponent = elem("exponent character", d => d == 'e' || d == 'E')
   def sign = elem("sign character", d => d == '-' || d == '+')
 
   def charSeq: Parser[String] =
-    ('\\' ~ '\"' ^^ "\""
-    |'\\' ~ '\\' ^^ "\\"
-    |'\\' ~ '/'  ^^ "/"
-    |'\\' ~ 'b'  ^^ "\b"
-    |'\\' ~ 'f'  ^^ "\f"
-    |'\\' ~ 'n'  ^^ "\n"
-    |'\\' ~ 'r'  ^^ "\r"
-    |'\\' ~ 't'  ^^ "\t"
-    |'\\' ~ 'u' ~ unicodeBlock)
+    ('\\' ~ '\"' ^^^ "\""
+    |'\\' ~ '\\' ^^^ "\\"
+    |'\\' ~ '/'  ^^^ "/"
+    |'\\' ~ 'b'  ^^^ "\b"
+    |'\\' ~ 'f'  ^^^ "\f"
+    |'\\' ~ 'n'  ^^^ "\n"
+    |'\\' ~ 'r'  ^^^ "\r"
+    |'\\' ~ 't'  ^^^ "\t"
+    |'\\' ~> 'u' ~> unicodeBlock)
 
   val hexDigits = Set[Char]() ++ "0123456789abcdefABCDEF".toArray
   def hexDigit = elem("hex digit", hexDigits.contains(_))

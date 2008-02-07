@@ -12,7 +12,7 @@ import java.io.InputStreamReader
  *
  * Usage: scala examples.parsing.lambda.Main <file>
  *
- * (example files: see test/*.kwi)
+ * (example files: see test/ *.kwi)
  *
  * @author Miles Sabin (adapted slightly by Adriaan Moors)
  */

@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.util.parsing.combinator.syntactical
+package scala.util.parsing.combinatorold.syntactical
 
 import scala.util.parsing.syntax._
 

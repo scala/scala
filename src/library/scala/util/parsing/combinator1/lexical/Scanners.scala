@@ -9,7 +9,7 @@
 // $Id: Scanners.scala 12407 2007-07-25 02:33:18Z emir $
 
 
-package scala.util.parsing.combinator1.lexical
+package scala.util.parsing.combinator.lexical
 
 import scala.util.parsing.syntax._
 import scala.util.parsing.input._

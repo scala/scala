@@ -1,10 +1,10 @@
-package scala.util.parsing.combinator;
+package scala.util.parsing.combinatorold;
 
 // p ~ q ~ r ^^ {case a ~ b ~ c => }
 case class ~[+a, +b](_1: a, _2: b)  // extends Pair[a, b]
 
-// shortcut for scala.util.parsing.combinator.~(_, _) -- just ~(_, _) resolves to unary_~
-object mkTilde { def apply[a, b](_1: a, _2: b) = scala.util.parsing.combinator.~(_1, _2) }
+// shortcut for scala.util.parsing.combinatorold.~(_, _) -- just ~(_, _) resolves to unary_~
+object mkTilde { def apply[a, b](_1: a, _2: b) = scala.util.parsing.combinatorold.~(_1, _2) }
 
 
   //def flatten[t, s <: (~[t, s] \/ t)](p: ~[t, s]): List[t] = p match {

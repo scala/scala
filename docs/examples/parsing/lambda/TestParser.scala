@@ -34,33 +34,33 @@ trait TestParser extends StdTokenParsers  with ImplicitConversions with TestSynt
    chainl1(expr4, expr3, op3 ^^ {o => (a: Term, b: Term) => App(App(o, a), b)})
 
   def expr4 : Parser[Term] =
-  ( "\\" ~ lambdas
-  | "let" ~ name ~ "=" ~ expr1 ~ "in" ~ expr1 ^^ flatten3(Let)
-  | "if" ~ expr1 ~ "then" ~ expr1 ~ "else" ~ expr1 ^^ flatten3(If)
+  ( "\\" ~> lambdas
+  | ("let" ~> name) ~ ("=" ~> expr1) ~ ("in" ~> expr1) ^^ flatten3(Let)
+  | ("if" ~> expr1) ~ ("then" ~> expr1) ~ ("else" ~> expr1) ^^ flatten3(If)
   | chainl1(aexpr, success(App(_: Term, _: Term)))
   )
 
   def lambdas : Parser[Term] =
-    name ~ ("->" ~ expr1 | lambdas) ^^ flatten2(Lam)
+    name ~ ("->" ~> expr1 | lambdas) ^^ flatten2(Lam)
 
   def aexpr : Parser[Term] =
   ( numericLit ^^ (_.toInt) ^^ Lit
   | name ^^ Ref
-  | "unit" ^^ Unit
-  | "(" ~ expr1 ~ ")"
+  | "unit" ^^^ Unit()
+  | "(" ~> expr1 <~ ")"
   )
 
   def op1 : Parser[Term] =
-    "=="  ^^ Ref(Name("=="))
+    "=="  ^^^ Ref(Name("=="))
 
   def op2 : Parser[Term] =
-  ( "+" ^^ Ref(Name("+"))
-  | "-" ^^ Ref(Name("-"))
+  ( "+" ^^^ Ref(Name("+"))
+  | "-" ^^^ Ref(Name("-"))
   )
 
   def op3 : Parser[Term] =
-  ( "*" ^^ Ref(Name("*"))
-  | "/" ^^ Ref(Name("/"))
+  ( "*" ^^^ Ref(Name("*"))
+  | "/" ^^^ Ref(Name("/"))
   )
 
   def parse(r: Reader[char]) : ParseResult[Term] =

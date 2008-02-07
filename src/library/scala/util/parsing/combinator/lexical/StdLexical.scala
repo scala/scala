@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala.util.parsing.combinator.lexical
+package scala.util.parsing.combinatorold.lexical
 
 import scala.util.parsing.syntax._
 import scala.util.parsing.input.CharArrayReader.EofCh

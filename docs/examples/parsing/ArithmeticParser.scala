@@ -21,9 +21,9 @@ object arithmeticParser extends StdTokenParsers {
   type Tokens = StdLexical ; val lexical = new StdLexical
   lexical.delimiters ++= List("(", ")", "+", "-", "*", "/")
 
-  lazy val expr =   term*("+" ^^ {(x: int, y: int) => x + y} | "-" ^^ {(x: int, y: int) => x - y})
-  lazy val term = factor*("*" ^^ {(x: int, y: int) => x * y} | "/" ^^ {(x: int, y: int) => x / y})
-  lazy val factor: Parser[int] = "(" ~ expr ~ ")" | numericLit ^^ (_.toInt)
+  lazy val expr =   term*("+" ^^^ {(x: int, y: int) => x + y} | "-" ^^^ {(x: int, y: int) => x - y})
+  lazy val term = factor*("*" ^^^ {(x: int, y: int) => x * y} | "/" ^^^ {(x: int, y: int) => x / y})
+  lazy val factor: Parser[int] = "(" ~> expr <~ ")" | numericLit ^^ (_.toInt)
 
   def main(args: Array[String]) {
     println(
@@ -41,9 +41,9 @@ object arithmeticParserDesugared extends StdTokenParsers {
   type Tokens = StdLexical ; val lexical = new StdLexical
   lexical.delimiters ++= List("(", ")", "+", "-", "*", "/")
 
-  lazy val expr = chainl1(term, (keyword("+").^^{(x: int, y: int) => x + y}).|(keyword("-").^^{(x: int, y: int) => x - y}))
-  lazy val term = chainl1(factor, (keyword("*").^^{(x: int, y: int) => x * y}).|(keyword("/").^^{(x: int, y: int) => x / y}))
-  lazy val factor: Parser[int] = keyword("(").~(expr.~(keyword(")"))).|(numericLit.^^(x => x.toInt))
+  lazy val expr = chainl1(term, (keyword("+").^^^{(x: int, y: int) => x + y}).|(keyword("-").^^^{(x: int, y: int) => x - y}))
+  lazy val term = chainl1(factor, (keyword("*").^^^{(x: int, y: int) => x * y}).|(keyword("/").^^^{(x: int, y: int) => x / y}))
+  lazy val factor: Parser[int] = keyword("(").~>(expr.<~(keyword(")"))).|(numericLit.^^(x => x.toInt))
 
   def main(args: Array[String]) {
     println(
