@@ -765,6 +765,7 @@ CLDC
       </classpath>
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
+      <exclude name="scala/BigDecimal.scala"/>
       <exclude name="scala/BigInt.scala"/>
       <exclude name="scala/collection/mutable/JavaMapAdaptor.scala"/>
       <exclude name="scala/collection/mutable/JavaSetAdaptor.scala"/>

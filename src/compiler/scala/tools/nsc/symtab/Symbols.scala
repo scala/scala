@@ -6,12 +6,9 @@
 
 package scala.tools.nsc.symtab
 
-import java.util.regex.Pattern
-
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.util.{Position, NoPosition, SourceFile, BatchSourceFile}
+import scala.tools.nsc.util.{Position, NoPosition, BatchSourceFile}
 import Flags._
-import nsc.util.RegexCache
 
 trait Symbols {
   self: SymbolTable =>
@@ -1019,8 +1016,9 @@ trait Symbols {
       ret
     }
 
-    def sourceFile_=(f: AbstractFile): Unit =
+    def sourceFile_=(f: AbstractFile) {
       throw new Error("sourceFile_= inapplicable for " + this)
+    }
 
     def isFromClassFile: Boolean =
       (if (isModule) moduleClass else toplevelClass).isFromClassFile
