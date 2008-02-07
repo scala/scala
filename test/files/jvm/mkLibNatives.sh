@@ -19,7 +19,7 @@ case "`uname`" in
 esac
 
 CLASS_NAME=Test\$
-CLASS_DIR=natives-jvm
+CLASS_DIR=natives-jvm.obj
 
 OBJ_NAME=natives
 LIB_NAME=libnatives
@@ -36,10 +36,18 @@ JAVAH=${JAVA_HOME}/bin/javah
 JAVAH_OPTIONS="-jni -force -classpath ${CLASS_DIR} -o ${OBJ_NAME}.h"
 
 CC=gcc
-CC_OPTIONS=-c
-CC_INCLUDES="-I${JAVA_HOME}/include -I${JAVA_HOME}/include/${OSTYPE}"
 
-LNK_OPTIONS="-shared -Wl,-soname,${LIB_NAME}"
+if $darwin; then
+  CC_OPTIONS="-c -arch ppc -arch i386"
+  CC_INCLUDES="-I/System/Library/Frameworks/JavaVM.framework/Headers"
+  LNK_OPTIONS="-dynamiclib -framework JavaVM"
+  FULL_LIB_NAME=${LIB_NAME}.jnilib
+else
+  CC_OPTIONS=-c
+  CC_INCLUDES="-I${JAVA_HOME}/include -I${JAVA_HOME}/include/${OSTYPE}"
+  LNK_OPTIONS="-shared -Wl,-soname,${LIB_NAME}"
+  FULL_LIB_NAME=${LIB_NAME}.so
+fi
 
 ##############################################################################
 # commands
@@ -50,5 +58,5 @@ ${JAVAH} ${JAVAH_OPTIONS} ${CLASS_NAME}
 [ $debug ] && echo ${CC} ${CC_OPTIONS} ${CC_INCLUDES} -o ${OBJ_NAME}.o natives.c
 ${CC} ${CC_OPTIONS} ${CC_INCLUDES} -o ${OBJ_NAME}.o natives.c
 
-[ $debug ] && echo ${CC} -shared -Wl,-soname,${LIB_NAME} -o ${LIB_NAME}.so ${OBJ_NAME}.o
-${CC} ${LNK_OPTIONS} -o ${LIB_NAME}.so ${OBJ_NAME}.o
+[ $debug ] && echo ${CC} ${LNK_OPTIONS} -o ${FULL_LIB_NAME} ${OBJ_NAME}.o
+${CC} ${LNK_OPTIONS} -o ${FULL_LIB_NAME} ${OBJ_NAME}.o
