@@ -4,6 +4,8 @@
 
 package scala.tools.partest.nest
 
+import java.io.PrintWriter
+
 object NestUI {
 
   val NONE = 0
@@ -33,13 +35,29 @@ object NestUI {
   }
 
   def outline(msg: String) = print(_outline + msg + _default)
+  def outline(msg: String, wr: PrintWriter) = synchronized {
+    wr.print(_outline + msg + _default)
+  }
 
   def success(msg: String) = print(_success  + msg + _default)
+  def success(msg: String, wr: PrintWriter) = synchronized {
+    wr.print(_success + msg + _default)
+  }
 
   def failure(msg: String) = print(_failure  + msg + _default)
+  def failure(msg: String, wr: PrintWriter) = synchronized {
+    wr.print(_failure + msg + _default)
+  }
 
   def warning(msg: String) = print(_warning  + msg + _default)
+  def warning(msg: String, wr: PrintWriter) = synchronized {
+    wr.print(_warning + msg + _default)
+  }
 
+  def normal(msg: String) = print(_default + msg)
+  def normal(msg: String, wr: PrintWriter) = synchronized {
+    wr.print(_default + msg)
+  }
 
   def usage() {
     println("Usage: NestRunner [<options>] [<testfile> ..] [<resfile>]")

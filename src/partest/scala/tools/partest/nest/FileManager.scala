@@ -12,7 +12,7 @@ object FileManager {
   val PATH_SEP = File.pathSeparatorChar
   val CLASSPATH = System.getProperty("java.class.path", ".")
   val PREFIX = System.getProperty("user.dir", ".")+"/.."
-  val JAVACMD = "java" //TODO: detect
+  val JAVACMD = System.getProperty("nest.javacmd", "java")
 
 /*
 if [ -d "$PREFIX/test" ]; then
@@ -77,16 +77,19 @@ elif [ -d "$PREFIX/bin" ]; then
     val bin = new File(PREFIX, "bin")
 
     if (dists.exists && dists.isDirectory) {
+      latestFile = prefixFile("dists/latest/bin")
       latestLibFile = prefixFile("dists/latest/lib/scala-library.jar")
       latestCompFile = prefixFile("dists/latest/lib/scala-compiler.jar")
       latestPartestFile = prefixFile("dists/latest/lib/scala-partest.jar")
     }
     else if (build.exists && build.isDirectory) {
+      latestFile = prefixFile("build/quick/bin")
       latestLibFile = prefixFile("build/quick/lib/library")
       latestCompFile = prefixFile("build/quick/lib/compiler")
       latestPartestFile = prefixFile("build/quick/lib/partest")
     }
     else if (bin.exists && bin.isDirectory) {
+      latestFile = prefixFile("bin")
       latestLibFile = prefixFile("lib/scala-library.jar")
       latestCompFile = prefixFile("lib/scala-compiler.jar")
       latestPartestFile = prefixFile("lib/scala-partest.jar")
@@ -94,26 +97,32 @@ elif [ -d "$PREFIX/bin" ]; then
     else
       error("Scala binaries could not be found")
 
+    BIN_DIR = latestFile.getAbsolutePath
     LATEST_LIB = latestLibFile.getAbsolutePath
     LATEST_COMP = latestCompFile.getAbsolutePath
     LATEST_PARTEST = latestPartestFile.getAbsolutePath
+    SCALA = (new File(latestFile, "scala")).getAbsolutePath
+    SCALAC_CMD = (new File(latestFile, "scalac")).getAbsolutePath
   }
 
+  var BIN_DIR: String = ""
   var LATEST_LIB: String = ""
   var LATEST_COMP: String = ""
   var LATEST_PARTEST: String = ""
+  var SCALA: String = ""
+  var SCALAC_CMD: String = ""
 
+  val SCALAC_OPTS = System.getProperty("nest.scalac_opts", "-deprecation -encoding utf8")
+
+  var latestFile: File = _
   var latestLibFile: File = _
   var latestCompFile: File = _
   var latestPartestFile: File = _
   // initialize above fields
   findLatest()
-}
-
-class FileManager {
 
   val srcDir = {
-    val dirname = System.getProperty("scalatest.cwd", "")
+    val dirname = System.getProperty("nest.cwd", "")
     val dir = if (dirname.isEmpty) { // guess
       val libDir = new File(new URI(classOf[Test].getResource("/").toString))
       val path = libDir.getAbsolutePath
@@ -131,9 +140,17 @@ class FileManager {
   if (!srcDir.isDirectory) {
     NestUI.failure("Test directory \"" + srcDir.getAbsolutePath + "\" not found")
     exit(1)
-  } else {
-    NestUI.verbose(srcDir.getAbsolutePath)
   }
+
+  def deleteRecursive(dir: File) {
+    if (dir.isDirectory) {
+      for (file <- dir.list) deleteRecursive(new File(dir, file))
+    }
+    dir.delete
+  }
+}
+
+class FileManager {
 
   var testFiles: List[File] = List()
 
@@ -141,7 +158,8 @@ class FileManager {
     val filter = new FilenameFilter {
       def accept(dir: File, name: String): Boolean = name endsWith ".scala"
     }
-    val dir = new File(srcDir, kind)
+    val dir = new File(FileManager.srcDir, kind)
+    NestUI.verbose("look in "+dir+" for tests")
     if (dir.isDirectory) {
       if (!testFiles.isEmpty) {
         val dirpath = dir.getAbsolutePath
@@ -155,12 +173,4 @@ class FileManager {
       Nil
     }
   }
-
-  def deleteRecursive(dir: File) {
-    if (dir.isDirectory) {
-      for (file <- dir.list) deleteRecursive(new File(dir, file))
-    }
-    dir.delete
-  }
-
 }

@@ -4,18 +4,59 @@
 
 package scala.tools.partest.nest
 
-import java.io.{File, FileInputStream, FileOutputStream, PrintStream}
+import java.io.{File, FileInputStream, FileOutputStream, PrintStream,
+                PrintWriter, StringWriter}
+
 import java.net.URL
 
 import scala.tools.nsc.ObjectRunner
 
+import scala.actors.Actor
+import scala.actors.Actor._
+
 import FileManager._
 
-class Worker {
+case class RunTests(kind: String, files: List[File])
+case class Results(succ: Int, fail: Int)
+
+class Worker extends Actor {
+  def act() {
+    react {
+      case RunTests(kind, files) =>
+        NestUI.verbose("received "+files.length+" to test")
+        val (succ, fail) = runTests(kind, files)
+        sender ! Results(succ, fail)
+    }
+  }
 
   private def basename(name: String): String = {
     val inx = name.lastIndexOf(".")
     if (inx < 0) name else name.substring(0, inx)
+  }
+
+  def printInfoStart(file: File, printer: PrintWriter) {
+    NestUI.outline("testing: ", printer)
+    val dir = file.getParentFile
+    val dirpath = dir.getAbsolutePath
+    val name = file.getAbsolutePath.substring(dirpath.length)
+    val WIDTH = 56
+    NestUI.normal("[...]"+name+List.toString(List.make(WIDTH-name.length, ' ')), printer)
+  }
+
+  def printInfoEnd(success: boolean, printer: PrintWriter) {
+    NestUI.normal("[", printer)
+    if (success) NestUI.success("  OK  ", printer)
+    else NestUI.failure("FAILED", printer)
+    NestUI.normal("]\n", printer)
+  }
+
+  abstract class TestRun(file: File) {
+    def beforeRun(): Unit
+    def runTest(): Unit
+    def afterRun(): Unit
+    def doAll() {
+      beforeRun(); runTest(); afterRun()
+    }
   }
 
   def execTest(outDir: File, logFile: File) {
@@ -81,13 +122,18 @@ class Worker {
     }
   }
 
-  def runJvmTests(kind: String, files: List[File]) {
+  def runJvmTests(kind: String, files: List[File]): (Int, Int) = {
     val compileMgr = new CompileManager
     var errors = 0
+    var success = true
     for (file <- files) {
-      var success = true
+      val swr = new StringWriter
+      val wr = new PrintWriter(swr)
+      success = true
+      printInfoStart(file, wr)
+
       if (!compileMgr.shouldCompile(file, kind)) {
-        NestUI.failure("compilation of "+file+" failed\n")
+        NestUI.verbose("compilation of "+file+" failed\n")
         success = false
       } else {
         // -------- run test --------
@@ -100,9 +146,9 @@ class Worker {
         //TODO: detect whether we have to use Runtime.exec
         val useRuntime = true
 
-        if (useRuntime)
+        if (useRuntime) {
           execTest(outDir, logFile)
-        else {
+        } else {
           val classpath: List[URL] =
             outDir.toURL ::
             List(file.getParentFile.toURL) :::
@@ -120,50 +166,98 @@ class Worker {
             out.close
           } catch {
             case e: Exception =>
-              NestUI.warning(e+" ("+file.getPath+")")
+              NestUI.verbose(e+" ("+file.getPath+")")
           }
         }
         NestUI.verbose(this+" finished running "+fileBase)
 
         if (!compareOutput(dir, fileBase, kind, logFile)) {
-          NestUI.failure("output differs from log file\n")
+          NestUI.verbose("output differs from log file\n")
           success = false
         }
+
+        // delete log file and output dir
+        FileManager.deleteRecursive(outDir)
+        FileManager.deleteRecursive(logFile)
       } // successful compile
       if (!success) {
         errors += 1
         NestUI.verbose("incremented errors: "+errors)
       }
+      printInfoEnd(success, wr)
+      wr.flush()
+      swr.flush()
+      NestUI.normal(swr.toString)
     } // for each file
     NestUI.verbose("finished testing "+kind+" with "+errors+" errors")
     NestUI.verbose("created "+compileMgr.numSeparateCompilers+" separate compilers")
+    (files.length-errors, errors)
   }
 
-  def runTests(kind: String, files: List[File]): Unit = kind match {
-    case "pos" =>
-      val compileMgr = new CompileManager
-      var errors = 0
-      for (file <- files) {
-        if (!compileMgr.shouldCompile(file, kind))
-          errors += 1
+  def runTests(kind: String, files: List[File]): (Int, Int) = {
+    val compileMgr = new CompileManager
+    var errors = 0
+    var succeeded = true
+
+    abstract class CompileTestRun(file: File, wr: PrintWriter) extends TestRun(file) {
+      def beforeRun() { succeeded = true; printInfoStart(file, wr) }
+      def afterRun() { printInfoEnd(succeeded, wr) }
+    }
+
+    kind match {
+      case "pos" => {
+        def posTestRun(file: File, wr: PrintWriter) = new CompileTestRun(file, wr) {
+          def runTest() {
+            if (!compileMgr.shouldCompile(file, kind)) {
+              succeeded = false
+              errors += 1
+            }
+          }
+        }
+        for (file <- files) {
+          val swr = new StringWriter
+          val wr = new PrintWriter(swr)
+          val testRun = posTestRun(file, wr)
+          testRun.doAll()
+          wr.flush()
+          swr.flush()
+          NestUI.normal(swr.toString)
+        }
+        NestUI.verbose("finished testing "+kind+" with "+errors+" errors")
+        NestUI.verbose("created "+compileMgr.numSeparateCompilers+" separate compilers")
+        (files.length-errors, errors)
       }
-      NestUI.verbose("finished testing "+kind+" with "+errors+" errors")
-      NestUI.verbose("created "+compileMgr.numSeparateCompilers+" separate compilers")
-
-    case "neg" =>
-      val compileMgr = new CompileManager
-      var errors = 0
-      for (file <- files) {
-        if (!compileMgr.shouldFailCompile(file, kind))
-          errors += 1
+      case "neg" => {
+        def negTestRun(file: File, wr: PrintWriter) = new CompileTestRun(file, wr) {
+          def runTest() {
+            if (!compileMgr.shouldFailCompile(file, kind)) {
+              succeeded = false
+              errors += 1
+            }
+          }
+        }
+        for (file <- files) {
+          val swr = new StringWriter
+          val wr = new PrintWriter(swr)
+          val testRun = negTestRun(file, wr)
+          testRun.doAll()
+          wr.flush()
+          swr.flush()
+          NestUI.normal(swr.toString)
+        }
+        NestUI.verbose("finished testing "+kind+" with "+errors+" errors")
+        NestUI.verbose("created "+compileMgr.numSeparateCompilers+" separate compilers")
+        (files.length-errors, errors)
       }
-      NestUI.verbose("finished testing "+kind+" with "+errors+" errors")
-      NestUI.verbose("created "+compileMgr.numSeparateCompilers+" separate compilers")
-
-    case "run" =>
-      runJvmTests(kind, files)
-
-    case "jvm" =>
-      runJvmTests(kind, files)
+      case "run" => {
+        runJvmTests(kind, files)
+      }
+      case "jvm" => {
+        runJvmTests(kind, files)
+      }
+      case "jvm5" => {
+        runJvmTests(kind, files)
+      }
+    }
   }
 }

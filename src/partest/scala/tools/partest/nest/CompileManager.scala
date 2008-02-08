@@ -43,7 +43,7 @@ class DirectCompiler extends SimpleCompiler {
 
   def newReporter(sett: Settings) = new ExtConsoleReporter(sett,
                                                            Console.in,
-                                                           new PrintWriter(new FileWriter("/home/phaller/svn/scala3/test/scalac-out")))
+                                                           new PrintWriter(new FileWriter("scalac-out")))
 
   val testSettings = newSettings
   val testRep = newReporter(testSettings)
@@ -55,19 +55,17 @@ class DirectCompiler extends SimpleCompiler {
       case "neg"      => NegTestFile(file)
       case "run"      => RunTestFile(file)
       case "jvm"      => JvmTestFile(file)
+      case "jvm5"     => Jvm5TestFile(file)
       case "shootout" => ShootoutTestFile(file)
     }
     test.defineSettings(testSettings)
 
     val toCompile = List(file.getPath)
     try {
-      println(global + " compiling " + toCompile)
       (new global.Run) compile toCompile
       testRep.printSummary
       testRep.writer.flush
       testRep.writer.close
-      println(global + " finished compiling " + file)
-      println(this+" errors: "+testRep.hasErrors)
     } catch {
       case e: Exception =>
         e.printStackTrace()
