@@ -188,10 +188,12 @@ object ScriptRunner {
 
     val middle = {
       val f = new File(filename)
+      val bsf = getSourceFile(new PlainFile(f)).asInstanceOf[BatchSourceFile]
       new SourceFileFragment(
-          getSourceFile(new PlainFile(f)).asInstanceOf[BatchSourceFile],
+          bsf,
           headerLength(filename),
-          f.length.asInstanceOf[Int])
+          bsf.length)
+//          f.length.asInstanceOf[Int])
     }
     val end = new BatchSourceFile("<script trailer>", "\n} }\n".toCharArray)
 

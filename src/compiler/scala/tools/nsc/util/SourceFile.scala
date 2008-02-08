@@ -214,7 +214,11 @@ extends BatchSourceFile(name, contents) {
       underlyingFile,
       start,
       stop,
-      underlyingFile.content.slice(start, stop).toArray)
+      { assert(start >= 0)
+        assert(start <= stop)
+        assert(start <= underlyingFile.length)
+        assert(stop <= underlyingFile.length)
+        underlyingFile.content.slice(start, stop).toArray })
 
   def this(underlyingFile: BatchSourceFile, start: Int, stop: Int) =
     this(
