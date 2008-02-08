@@ -47,7 +47,7 @@ abstract class GenICode extends SubComponent  {
       if (!forMSIL)
         definitions.getMember(definitions.BoxesRunTimeClass, nme.equals_)
       else
-        definitions.getMember(definitions.getClass("scala.runtime.Comparator"), nme.equals_)
+        definitions.getMember(definitions.getClass("scala.runtime.Comparator").linkedModuleOfClass, nme.equals_)
 
     override def run {
       scalaPrimitives.init

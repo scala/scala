@@ -600,7 +600,6 @@ abstract class GenMSIL extends SubComponent {
     var needAdditionalRet: Boolean = false
 
     def genCode(m: IMethod) {
-
       code = m.code
 
       labels.clear
@@ -929,7 +928,7 @@ abstract class GenMSIL extends SubComponent {
                 def replaceJump(block: BasicBlock, from: BasicBlock, to: BasicBlock) = block.lastInstruction match {
                   case JUMP(whereto) =>
                     //assert(from == whereto)
-                  block.replaceInstruction(block.lastInstruction, JUMP(to))
+                    block.replaceInstruction(block.lastInstruction, JUMP(to))
                   case CJUMP(success, failure, cond, kind) =>
                     if (from == success)
                       block.replaceInstruction(block.lastInstruction, CJUMP(to, failure, cond, kind))
@@ -948,6 +947,13 @@ abstract class GenMSIL extends SubComponent {
                     val newLabels = labels.map(b => if (b == from) to else b)
                     assert(newLabels.contains(to))
                     block.replaceInstruction(block.lastInstruction, SWITCH(tags, newLabels))
+                  /*
+                  case RETURN(kind) =>
+                    if (kind != UNIT) {
+                        returnVal
+                    }
+                    block.replaceInstruction(block.lastInstructionm JUMP(to))
+                  */
                   case _ => () //abort("expected branch at the end of block " + block)
                 }
 
@@ -993,15 +999,16 @@ abstract class GenMSIL extends SubComponent {
                 affectedHandlers = h :: affectedHandlers
               }
             })
-            affectedHandlers = affectedHandlers.filter(h => {h.covered.length == affectedHandlers(0).covered.length})
-            untreatedHandlers = untreatedHandlers.diff(affectedHandlers)
 
             // shorter try-catch-finally last (the ones contained in another)
             affectedHandlers = affectedHandlers.sort({(h1, h2) => h1.covered.length > h2.covered.length})
+            affectedHandlers = affectedHandlers.filter(h => {h.covered.length == affectedHandlers(0).covered.length})
+            untreatedHandlers = untreatedHandlers.diff(affectedHandlers)
 
             // more than one catch produces more than one exh, but we only need one
             var singleAffectedHandler: ExceptionHandler = affectedHandlers(0) // List[ExceptionHandler] = Nil
             var exceptionBlock: Option[ExceptionBlock] = None
+            if (settings.debug.value) log("affected handlers " + affectedHandlers)
             affectedHandlers.foreach(h1 => {
               val (adaptedBlocks, newBlock) = adaptBlocks(blocksToPut.intersect(h1.blocks), singleAffectedHandler)
               newBlock match {
@@ -1030,6 +1037,7 @@ abstract class GenMSIL extends SubComponent {
                     case None => ()
                   }
                   currentBlock = excBlock.tryBlock
+                  if (settings.debug.value) log("adding try blocks " + tryBlocks)
                   addBlocks(tryBlocks)
 
                   if (singleAffectedHandler.finalizer != null && singleAffectedHandler.finalizer != NoFinalizer) {
@@ -1079,7 +1087,7 @@ abstract class GenMSIL extends SubComponent {
       TopBlock.close()
 
       if (settings.debug.value) log("TopBlock tree is: ")
-      if (settings.debug.value) Console.println(TopBlock)
+      if (settings.debug.value) log(TopBlock)
 
       bb2exHInstructions.clear
       def addExHInstruction(b: BasicBlock, ehi: ExHInstruction) = {
@@ -1109,6 +1117,10 @@ abstract class GenMSIL extends SubComponent {
             for (b <- cb.blocks) flatten(b)
           case eb: ExceptionBlock =>
             val handler = eb.handler
+            if (settings.debug.value) {
+              log("new exception block " + eb)
+              log("try: " + eb.tryBlock)
+            }
             addExHInstruction(eb.tryBlock.firstBasicBlock, new BeginExceptionBlock(handler))
             omitJump(eb.tryBlock.lastBasicBlock)
             flatten(eb.tryBlock)
@@ -1869,7 +1881,6 @@ abstract class GenMSIL extends SubComponent {
     def msilMethodFlags(sym: Symbol): Short = {
       var mf: Int = MethodAttributes.HideBySig |
         (if (sym hasFlag Flags.PRIVATE) MethodAttributes.Private
-         else if (sym hasFlag Flags.PROTECTED) MethodAttributes.Family
          else MethodAttributes.Public)
 
       if (!sym.isClassConstructor) {
@@ -2217,7 +2228,7 @@ abstract class GenMSIL extends SubComponent {
           mirrorCode.Emit(OpCodes.Ldsfld, getModuleInstanceField(sym))
           0.until(paramTypes.length) foreach loadArg(mirrorCode)
 
-          mirrorCode.Emit(OpCodes.Call, getMethod(m))
+          mirrorCode.Emit(OpCodes.Callvirt, getMethod(m))
           mirrorCode.Emit(OpCodes.Ret)
         }
 
