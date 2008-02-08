@@ -564,25 +564,32 @@ trait Parsers {
    * @return A parser that returns a list of results produced by first applying `f' and then
    *         repeatedly `p' to the input (it only succeeds if `f' matches).
    */
-  def rep1[T](first: => Parser[T], p: => Parser[T]): Parser[List[T]] = first ~ rep(p) ^^ { case ~(x, xs) => x :: xs }
+  def rep1[T](first: => Parser[T], p: => Parser[T]): Parser[List[T]] = Parser{ in0 =>
+    val xs = new scala.collection.mutable.ListBuffer[T]
+    var in = in0
 
-  /* new Parser[List[T]] {
-    def apply(in0: Input) = {
-      val xs = new scala.collection.mutable.ListBuffer[T]
-      var in = in0
+    var res = first(in)
 
-      var res = first(in)
-
-      while(res.successful) {
-        xs += res.get
-        in = res.next
-        res = p(in)
-      }
-
-      if (!xs.isEmpty) Success(xs.toList, res.next)
-      else Failure("TODO", TODO)
+    while(res.successful) {
+      xs += res.get
+      in = res.next
+      res = p(in)
     }
-  }*/
+
+    // assert(res.isInstanceOf[NoSuccess])
+
+    if (!xs.isEmpty) {
+      // the next parser should start parsing where p failed,
+      // since `!p(in).successful', the next input to be consumed is `in'
+      Success(xs.toList, in)  // TODO: I don't think in == res.next holds
+    }
+    else {
+      Failure(res.asInstanceOf[NoSuccess].msg, in0)
+    }
+  }
+
+  //= first ~ rep(p) ^^ { case ~(x, xs) => x :: xs }
+
 
   /** A parser generator for a specified number of repetitions.
    *
