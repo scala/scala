@@ -435,12 +435,18 @@ trait Types {
 
     /** Substitute symbols `to' for occurrences of symbols
      *  `from' in this type.
+     * !!! NOTE !!!: If you need to do a substThis and a substSym, the substThis has to come
+     * first, as otherwise symbols will immediately get rebound in typeRef to the old
+     * symbol.
      */
     def substSym(from: List[Symbol], to: List[Symbol]): Type = if (from eq to) this
     else new SubstSymMap(from, to) apply this
 
     /** Substitute all occurrences of `ThisType(from)' in this type
      *  by `to'.
+     * !!! NOTE !!!: If you need to do a substThis and a substSym, the substThis has to come
+     * first, as otherwise symbols will immediately get rebound in typeRef to the old
+     * symbol.
      */
     def substThis(from: Symbol, to: Type): Type =
       new SubstThisMap(from, to) apply this
@@ -1835,7 +1841,11 @@ A type's typeSymbol should never be inspected directly.
     if (owner.isClass && owner != pre.typeSymbol && !sym.isFinal && !sym.isClass) {
       //Console.println("rebind "+pre+" "+sym)//DEBUG
       val rebind = pre.nonPrivateMember(sym.name).suchThat(sym => sym.isType || sym.isStable)
-      if (rebind == NoSymbol) sym else rebind
+      if (rebind == NoSymbol) sym
+      else {
+        // Console.println("rebound "+pre+" "+sym+" to "+rebind)//DEBUG
+        rebind
+      }
     } else sym
   }
 
@@ -1927,7 +1937,7 @@ A type's typeSymbol should never be inspected directly.
       val syms2 = result.decls.toList
       val resultThis = result.typeSymbol.thisType
       for (sym <- syms2)
-        sym.setInfo(sym.info.substSym(syms1, syms2).substThis(original.typeSymbol, resultThis))
+        sym.setInfo(sym.info.substThis(original.typeSymbol, resultThis).substSym(syms1, syms2))
       result
     }
 
@@ -4187,7 +4197,7 @@ A type's typeSymbol should never be inspected directly.
    */
   def addMember(thistp: Type, tp: Type, sym: Symbol) {
     assert(sym != NoSymbol)
-    if (settings.debug.value) log("add member " + sym+":"+tp+" to "+thistp)
+    if (settings.debug.value) log("add member " + sym+":"+sym.info+" to "+thistp)
     if (!(thistp specializes sym)) {
       if (sym.isTerm)
         for (alt <- tp.nonPrivateDecl(sym.name).alternatives)

@@ -1914,16 +1914,6 @@ trait Typers { self: Analyzer =>
       }
     }
 
-    protected def existentialBound(sym: Symbol): Type =
-      if (sym.isClass)
-         polyType(sym.typeParams, mkTypeBounds(AllClass.tpe, sym.classBound))
-      else if (sym.isAbstractType)
-         sym.info
-      else if (sym.isTerm)
-         mkTypeBounds(AllClass.tpe, intersectionType(List(sym.tpe, SingletonClass.tpe)))
-      else
-        throw new Error("unexpected alias type: "+sym)
-
     /** Given a set `rawSyms' of term- and type-symbols, and a type `tp'.
      *  produce a set of fresh type parameters and a type so that it can be
      *  abstracted to an existential type.
@@ -1943,7 +1933,7 @@ trait Typers { self: Analyzer =>
     protected def existentialTransform(rawSyms: List[Symbol], tp: Type) = {
       val typeParams: List[Symbol] = rawSyms map { sym =>
         val name = if (sym.isType) sym.name else newTypeName(sym.name+".type")
-        val bound = existentialBound(sym)
+        val bound = sym.existentialBound
         val quantified: Symbol =
 	  recycle(sym.owner.newAbstractType(sym.pos, name))
         trackSetInfo(quantified setFlag EXISTENTIAL)(bound.cloneInfo(quantified))
@@ -2016,14 +2006,14 @@ trait Typers { self: Analyzer =>
               !(localSyms contains sym) && !(boundSyms contains sym) ) {
             if (sym.typeParams.isEmpty) {
               localSyms += sym
-              addLocals(existentialBound(sym))
+              addLocals(sym.existentialBound)
             } else if (tp.typeArgs.isEmpty) {
               unit.error(tree.pos,
                 "implementation restriction: can't existentially abstract over higher-kinded type" + tp)
             } else {
               val inst = new SymInstance(sym, tp)
               if (!(localInstances contains inst)) {
-                val bound = existentialBound(sym) match {
+                val bound = sym.existentialBound match {
                   case PolyType(tparams, restpe) =>
                     restpe.subst(tparams, tp.typeArgs)
                   case t =>

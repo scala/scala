@@ -684,6 +684,15 @@ abstract class RefChecks extends InfoTransform {
         result
       }
 
+      /** If symbol is deprecated and is not contained in a depreceated definition,
+       *  issue a deprecated warning
+       */
+      def checkDeprecated(sym: Symbol, pos: Position) {
+        if (sym.isDeprecated && !currentOwner.ownerChain.exists(_.isDeprecated)) {
+          unit.deprecationWarning(pos, sym+sym.locationString+" is deprecated")
+        }
+      }
+
       /** Check that a deprecated val or def does not override a
         * concrete, non-deprecated method.  If it does, then
         * deprecation is meaningless.
@@ -736,6 +745,7 @@ abstract class RefChecks extends InfoTransform {
           new TypeTraverser {
             def traverse(tp: Type): TypeTraverser = tp match {
               case TypeRef(pre, sym, args) =>
+                checkDeprecated(sym, tree.pos)
                 if (!tp.isHigherKinded) checkBounds(pre, sym.owner, sym.typeParams, args)
                 this
               case _ =>
@@ -785,9 +795,7 @@ abstract class RefChecks extends InfoTransform {
           }
 
         case Select(qual, name) =>
-          if (sym.isDeprecated && !currentOwner.ownerChain.exists(_.isDeprecated)) {
-            unit.deprecationWarning(tree.pos, sym+sym.locationString+" is deprecated")
-          }
+          checkDeprecated(sym, tree.pos)
           if (currentClass != sym.owner && (sym hasFlag LOCAL)) {
             var o = currentClass
             var hidden = false

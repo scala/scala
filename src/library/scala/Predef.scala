@@ -35,9 +35,9 @@ object Predef {
   type boolean = scala.Boolean
   type unit    = scala.Unit
 
-  /** @deprecated use <code>Int</code> instead */
+  /** @deprecated use <code>java.lang.Integer</code> instead */
   @deprecated type Integer = java.lang.Integer
-  /** @deprecated use <code>Char</code> instead */
+  /** @deprecated use <code>java.lang.Character</code> instead */
   @deprecated type Character = java.lang.Character
 
   type String        = java.lang.String

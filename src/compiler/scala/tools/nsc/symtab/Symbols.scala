@@ -6,6 +6,7 @@
 
 package scala.tools.nsc.symtab
 
+import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{Position, NoPosition, BatchSourceFile}
 import Flags._
@@ -637,17 +638,45 @@ trait Symbols {
       attributes.filter(_.atp.typeSymbol.isNonBottomSubClass(clazz))
 
     /** The least proper supertype of a class; includes all parent types
-     *  and refinement where needed */
+     *  and refinement where needed
+     */
     def classBound: Type = {
       val tp = refinedType(info.parents, owner)
       val thistp = tp.typeSymbol.thisType
+      val oldsymbuf = new ListBuffer[Symbol]
+      val newsymbuf = new ListBuffer[Symbol]
       for (sym <- info.decls.toList) {
-        if (sym.isPublic && !sym.isClass && !sym.isConstructor)
-          addMember(thistp, tp,
-            sym.cloneSymbol(tp.typeSymbol).setInfo(sym.info.substThis(this, thistp)))
+        // todo: what about public references to private symbols?
+        if (sym.isPublic && !sym.isConstructor) {
+          oldsymbuf += sym
+          newsymbuf += (
+            if (sym.isClass)
+              tp.typeSymbol.newAbstractType(sym.pos, sym.name).setInfo(sym.existentialBound)
+            else
+              sym.cloneSymbol(tp.typeSymbol))
+        }
+      }
+      val oldsyms = oldsymbuf.toList
+      val newsyms = newsymbuf.toList
+      for (sym <- newsyms) {
+        addMember(thistp, tp, sym.setInfo(sym.info.substThis(this, thistp).substSym(oldsyms, newsyms)))
       }
       tp
     }
+
+    /** If we quantify existentially over this symbol,
+     *  the bound of the type variable that stands for it
+     *  pre: symbol is a term, a class, or an abstract type (no alias type allowed)
+     */
+    def existentialBound: Type =
+      if (this.isClass)
+         polyType(this.typeParams, mkTypeBounds(AllClass.tpe, this.classBound))
+      else if (this.isAbstractType)
+         this.info
+      else if (this.isTerm)
+         mkTypeBounds(AllClass.tpe, intersectionType(List(this.tpe, SingletonClass.tpe)))
+      else
+        throw new Error("unexpected alias type: "+this)
 
     /** Reset symbol to initial state
      */
