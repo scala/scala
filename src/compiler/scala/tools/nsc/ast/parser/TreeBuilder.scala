@@ -396,13 +396,10 @@ abstract class TreeBuilder {
       List(ValDef(mods, name, tpt, rhs).setPos(pat.pos))
 
     case None =>
-      //  in case there are no variables in pattern
-      //  val/var p = e  ==>  e.match (case p => ())
-      //
       //  in case there is exactly one variable x_1 in pattern
       //  val/var p = e  ==>  val/var x_1 = e.match (case p => (x_1))
       //
-      //  in case there are more variables in pattern
+      //  in case there are zero or more than one variables in pattern
       //  val/var p = e  ==>  private synthetic val t$ = e.match (case p => (x_1, ..., x_N))
       //                  val/var x_1 = t$._1
       //                  ...
@@ -415,8 +412,6 @@ abstract class TreeBuilder {
           List(CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (_._1) map Ident, true))))
       }
       vars match {
-        case List() =>
-          List(matchExpr)
         case List((vname, tpt, pos)) =>
           List(ValDef(mods, vname, tpt, matchExpr).setPos(pos))
         case _ =>

@@ -663,7 +663,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
     /** generate the source code for the object that computes this request */
     def objectSourceCode: String =
-      stringFrom(code => {
+      stringFrom { code =>
         // header for the wrapper object
         code.println("object " + objectName + " {")
 
@@ -681,7 +681,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
         //end the wrapper object
         code.println(";}")
-      })
+      }
 
     /** Types of variables defined by this request.  They are computed
         after compilation of the main object */
