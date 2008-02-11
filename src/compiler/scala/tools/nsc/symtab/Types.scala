@@ -2036,6 +2036,7 @@ A type's typeSymbol should never be inspected directly.
     else tycon match {
       case TypeRef(pre, sym, _) => typeRef(pre, sym, args)
       case PolyType(tparams, restpe) => restpe.instantiateTypeParams(tparams, args)
+      case ExistentialType(tparams, restpe) => ExistentialType(tparams, appliedType(restpe, args))
       case ErrorType => tycon
       case st: SingletonType => appliedType(st.widen, args) // @M TODO: what to do? see bug1
       case _ => throw new Error(debugString(tycon))

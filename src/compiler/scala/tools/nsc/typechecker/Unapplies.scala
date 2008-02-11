@@ -153,7 +153,7 @@ trait Unapplies { self: Analyzer =>
       val RP = nme.REPEATED_PARAM_CLASS_NAME.toTypeName
       param.tpt match {
         case AppliedTypeTree(Select(_, RP), _) => Typed(id, Ident(nme.WILDCARD_STAR.toTypeName))
-        case _ =>id
+        case _ => id
       }
     }
     val cparams = constrParams(cdef)

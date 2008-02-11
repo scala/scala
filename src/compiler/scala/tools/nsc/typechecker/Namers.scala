@@ -392,7 +392,7 @@ trait Namers { self: Analyzer =>
 
     def enterSyntheticSym(tree: Tree): Symbol = {
       enterSym(tree)
-      synthetics(tree.symbol) = tree
+      synthetics(tree.symbol) = (tree, context.unit.source)
       tree.symbol
     }
 

@@ -12,7 +12,7 @@ package scala.tools.nsc.typechecker
 
 import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.compat.Platform.currentTime
-import scala.tools.nsc.util.{HashSet, Position, Set, NoPosition}
+import scala.tools.nsc.util.{HashSet, Position, Set, NoPosition, SourceFile}
 import symtab.Flags._
 import util.HashSet
 
@@ -38,7 +38,7 @@ trait Typers { self: Analyzer =>
 
   private val superDefs = new HashMap[Symbol, ListBuffer[Tree]]
 
-  val synthetics = new HashMap[Symbol, Tree]
+  val synthetics = new HashMap[Symbol, (Tree, SourceFile)]
 
   def resetTyper() {
     resetContexts
@@ -1549,10 +1549,10 @@ trait Typers { self: Analyzer =>
 
           // add synthetics
           synthetics get e.sym match {
-            case Some(tree) =>
+            case Some((tree, source)) if (source eq context.unit.source) =>
               newStats += tree
               synthetics -= e.sym
-            case None =>
+            case _ =>
           }
 
           e = e.next
