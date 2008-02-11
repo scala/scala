@@ -4,7 +4,8 @@
 
 package scala.tools.partest.nest
 
-import java.io.{File, FilenameFilter}
+import java.io.{File, FilenameFilter, ByteArrayOutputStream, PrintStream,
+                IOException, BufferedOutputStream}
 import java.net.URI
 
 object FileManager {
@@ -12,7 +13,7 @@ object FileManager {
   val PATH_SEP = File.pathSeparatorChar
   val CLASSPATH = System.getProperty("java.class.path", ".")
   val PREFIX = System.getProperty("user.dir", ".")+"/.."
-  val JAVACMD = System.getProperty("nest.javacmd", "java")
+  val JAVACMD = System.getProperty("scalatest.javacmd", "java")
 
 /*
 if [ -d "$PREFIX/test" ]; then
@@ -112,7 +113,7 @@ elif [ -d "$PREFIX/bin" ]; then
   var SCALA: String = ""
   var SCALAC_CMD: String = ""
 
-  val SCALAC_OPTS = System.getProperty("nest.scalac_opts", "-deprecation -encoding utf8")
+  val SCALAC_OPTS = System.getProperty("scalatest.scalac_opts", "-deprecation -encoding utf8")
 
   var latestFile: File = _
   var latestLibFile: File = _
@@ -122,7 +123,7 @@ elif [ -d "$PREFIX/bin" ]; then
   findLatest()
 
   val srcDir = {
-    val dirname = System.getProperty("nest.cwd", "")
+    val dirname = System.getProperty("scalatest.cwd", "")
     val dir = if (dirname.isEmpty) { // guess
       val libDir = new File(new URI(classOf[Test].getResource("/").toString))
       val path = libDir.getAbsolutePath
@@ -142,11 +143,52 @@ elif [ -d "$PREFIX/bin" ]; then
     exit(1)
   }
 
+  private def basename(name: String): String = {
+    val inx = name.lastIndexOf(".")
+    if (inx < 0) name else name.substring(0, inx)
+  }
+
+  def getLogFile(file: File, kind: String) = {
+    val dir = file.getParentFile
+    val fileBase = basename(file.getName)
+    new File(dir, fileBase + "-" + kind + ".log")
+  }
+
   def deleteRecursive(dir: File) {
     if (dir.isDirectory) {
       for (file <- dir.list) deleteRecursive(new File(dir, file))
     }
     dir.delete
+  }
+
+  /**
+   * Compares two files using a Java implementation of the GNU diff
+   * available at http://www.bmsi.com/java/#diff.
+   *
+   * @param f1
+   * @param f2
+   */
+  def compareFiles(f1: File, f2: File): String = {
+    var res = ""
+    try {
+      val diffStream = new ByteArrayOutputStream
+      val diffOutput = new PrintStream(
+        new BufferedOutputStream(diffStream), true)
+      System.setOut(diffOutput)
+      System.setErr(diffOutput)
+      val args = Array(f1.getCanonicalPath(), f2.getCanonicalPath())
+      DiffPrint.main(args)
+      System.setOut(System.out)
+      System.setErr(System.err)
+
+      res = diffStream.toString
+      if (res.startsWith("No"))
+        res = ""
+    } catch {
+      case e: IOException =>
+        e.printStackTrace()
+    }
+    res
   }
 }
 

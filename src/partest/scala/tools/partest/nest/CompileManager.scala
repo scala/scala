@@ -19,6 +19,7 @@ class ExtConsoleReporter(override val settings: Settings, reader: BufferedReader
 
 abstract class SimpleCompiler {
   def compile(file: File, kind: String): Boolean
+  def compile(file: File, kind: String, log: File): Boolean
 }
 
 class DirectCompiler extends SimpleCompiler {
@@ -45,11 +46,40 @@ class DirectCompiler extends SimpleCompiler {
                                                            Console.in,
                                                            new PrintWriter(new FileWriter("scalac-out")))
 
-  val testSettings = newSettings
-  val testRep = newReporter(testSettings)
-  val global = newGlobal(testSettings, testRep)
+  def compile(file: File, kind: String, log: File): Boolean = {
+    val testSettings = newSettings
+    val global = newGlobal(testSettings, log)
+    val testRep: ExtConsoleReporter = global.reporter.asInstanceOf[ExtConsoleReporter]
+
+    val test: TestFile = kind match {
+      case "pos"      => PosTestFile(file)
+      case "neg"      => NegTestFile(file)
+      case "run"      => RunTestFile(file)
+      case "jvm"      => JvmTestFile(file)
+      case "jvm5"     => Jvm5TestFile(file)
+      case "shootout" => ShootoutTestFile(file)
+    }
+    test.defineSettings(testSettings)
+
+    val toCompile = List(file.getPath)
+    try {
+      (new global.Run) compile toCompile
+      testRep.printSummary
+      testRep.writer.flush
+      testRep.writer.close
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+        false
+    }
+    !testRep.hasErrors
+  }
 
   def compile(file: File, kind: String): Boolean = {
+    val testSettings = newSettings
+    val testRep = newReporter(testSettings)
+    val global = newGlobal(testSettings, testRep)
+
     val test: TestFile = kind match {
       case "pos"      => PosTestFile(file)
       case "neg"      => NegTestFile(file)
@@ -83,16 +113,25 @@ class ReflectiveCompiler extends SimpleCompiler {
 
   val sepCompilerClass =
     sepLoader.loadClass("scala.tools.partest.nest.DirectCompiler")
+  val sepCompiler = sepCompilerClass.newInstance()
+
   // needed for reflective invocation
   val fileClass = Class.forName("java.io.File")
   val stringClass = Class.forName("java.lang.String")
   val sepCompileMethod =
     sepCompilerClass.getMethod("compile", Array(fileClass, stringClass))
-  val sepCompiler = sepCompilerClass.newInstance()
+  val sepCompileMethod2 =
+    sepCompilerClass.getMethod("compile", Array(fileClass, stringClass, fileClass))
 
   def compile(file: File, kind: String): Boolean = {
     val fileArgs: Array[AnyRef] = Array(file, kind)
     val res = sepCompileMethod.invoke(sepCompiler, fileArgs).asInstanceOf[java.lang.Boolean]
+    res.booleanValue()
+  }
+
+  def compile(file: File, kind: String, log: File): Boolean = {
+    val fileArgs: Array[AnyRef] = Array(file, kind, log)
+    val res = sepCompileMethod2.invoke(sepCompiler, fileArgs).asInstanceOf[java.lang.Boolean]
     res.booleanValue()
   }
 }
@@ -106,16 +145,20 @@ class CompileManager {
     compiler = new ReflectiveCompiler
   }
 
-  def shouldCompile(file: File, kind: String): Boolean =
-    compiler.compile(file, kind) || {
+  def shouldCompile(file: File, kind: String): Boolean = {
+    createSeparateCompiler()
+    compiler.compile(file, kind)
+
+    /*compiler.compile(file, kind) || {
       NestUI.verbose("creating new separate compiler")
       createSeparateCompiler()
       compiler.compile(file, kind)
-    }
+    }*/
+  }
 
-  def shouldFailCompile(file: File, kind: String): Boolean = {
-    // always create separate compiler
+  def shouldFailCompile(file: File, kind: String, log: File): Boolean = {
+    // always create new separate compiler
     createSeparateCompiler()
-    !compiler.compile(file, kind)
+    !compiler.compile(file, kind, log)
   }
 }

@@ -22,12 +22,16 @@ object NestRunner {
 
   private var conservative = false
 
+  var showDiff = false
+  var showLog = false
+  var failed = false
+
   private var testFiles: List[File] = List()
   private val con = new PrintStream(Console.out)
   private var out = con
 
   private val errors =
-    Integer.parseInt(System.getProperty("nest.errors", "0"))
+    Integer.parseInt(System.getProperty("scalatest.errors", "0"))
 
   def main(args: Array[String]) {
     NestUI.initialize(NestUI.MANY)
@@ -45,13 +49,17 @@ object NestRunner {
           case "--shootout"     => shootoutCheck = true
           case "--conservative" => conservative = true
           case "--verbose"      => NestUI._verbose = true
+          case "--show-diff"    => showDiff = true
+          case "--show-log"     => showLog = true
+          case "--failed"       => failed = true
           case "--version"      => //todo: printVersion
           case _ =>
             if (arg endsWith ".scala") {
               val file = new File(arg)
-              if (file.isFile)
+              if (file.isFile) {
+                NestUI.verbose("adding test file "+file)
                 testFiles = file :: testFiles
-              else {
+              } else {
                 NestUI.failure("File \"" + arg + "\" not found")
                 System.exit(1)
               }
@@ -85,8 +93,8 @@ object NestRunner {
       errApp.start()
       val exitCode = proc.waitFor()
       NestUI.verbose("exit code: "+exitCode)
-      writer.flush()
-      errWriter.flush()
+      appender.join()
+      errApp.join()
       val scalaVersion = writer.toString + errWriter.toString
 
       NestUI.outline("Scala version is    : "+scalaVersion)
@@ -124,7 +132,10 @@ object NestRunner {
     if (check) {
       val fileMgr = new FileManager
       val kindFiles =
-        if (!testFiles.isEmpty) testFiles
+        if (!testFiles.isEmpty) {
+          NestUI.verbose("testing "+testFiles)
+          testFiles
+        }
         else fileMgr.getFiles(kind, check)
       if (!kindFiles.isEmpty) {
         NestUI.outline("\n"+msg+"\n")
