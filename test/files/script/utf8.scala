@@ -18,6 +18,7 @@ then
     SOURCE=`cygpath --$format "$SOURCE"`;
 fi
 
+export LC_CTYPE=en_US.UTF-8
 exec scala -nocompdaemon "$SOURCE" "$@"
 !#
 
