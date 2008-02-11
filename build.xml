@@ -1693,23 +1693,24 @@ GENERATES A DISTRIBUTION
     </jar>
 
     <!-- build source jars -->
+    <mkdir dir="${dist.current.dir}/src"/>
     <jar
-      destfile="${dist.current.dir}/lib/${libsrc.jar.name}">
+      destfile="${dist.current.dir}/src/${libsrc.jar.name}">
       <fileset dir="${src.dir}/library"/>
       <fileset dir="${src.dir}/actors"/>
     </jar>
     <jar
-      destfile="${dist.current.dir}/lib/${dbcsrc.jar.name}"
+      destfile="${dist.current.dir}/src/${dbcsrc.jar.name}"
       basedir="${src.dir}/dbc"
       includes="**/*.scala"
       />
     <jar
-      destfile="${dist.current.dir}/lib/${parsrc.jar.name}"
+      destfile="${dist.current.dir}/src/${parsrc.jar.name}"
       basedir="${src.dir}/partest"
       includes="**/*.scala"
       />
     <jar
-      destfile="${dist.current.dir}/lib/${compsrc.jar.name}"
+      destfile="${dist.current.dir}/src/${compsrc.jar.name}"
       basedir="${src.dir}/compiler"
       includes="**/*.scala"
     />
@@ -1779,7 +1780,7 @@ GENERATES A DISTRIBUTION
       desc="The Scala library. This is the minimal requirement to run any Scala program."
       link="${sbaz.universe}/scala-library-${version.number}.sbp">
       <libset dir="${dist.current.dir}/lib" includes="${lib.jar.name},${dbc.jar.name}"/>
-      <srcset dir="${dist.current.dir}/lib" includes="${libsrc.jar.name},${dbcsrc.jar.name}"/>
+      <srcset dir="${dist.current.dir}/src" includes="${libsrc.jar.name},${dbcsrc.jar.name}"/>
     </quicksbaz>
   <!-- Create the Scala developer package -->
     <quicksbaz
@@ -1794,7 +1795,7 @@ GENERATES A DISTRIBUTION
       <docset dir="${dist.current.dir}/doc" includes="**" excludes="**/scala/api/**,**/scala/tools/**"/>
       <libset dir="${dist.current.dir}/lib" includes="${comp.jar.name}"/>
       <manset dir="${dist.current.dir}/man" includes="**"/>
-      <srcset dir="${dist.current.dir}/lib" includes="${compsrc.jar.name}"/>
+      <srcset dir="${dist.current.dir}/src" includes="${compsrc.jar.name}"/>
     </quicksbaz>
   <!-- Create the Scala developer docs package -->
     <quicksbaz
@@ -1828,7 +1829,7 @@ GENERATES A DISTRIBUTION
       <miscset
         dir="${basedir}/test"
         includes="files/**/*.args,files/**/*.check,files/**/*.jar,files/**/*.java,files/**/*.scala,files/cli/**/*.check.*,files/jvm/*.so,files/shootout/*.javaopts,files/shootout/*.runner,files/shootout/*.txt"/>
-      <srcset dir="${dist.current.dir}/lib" includes="${parsrc.jar.name}"/>
+      <srcset dir="${dist.current.dir}/src" includes="${parsrc.jar.name}"/>
       <libset dir="${dist.current.dir}/lib" includes="${partest.jar.name}"/>
     </quicksbaz>
   <!-- Creates the MSIL package -->
