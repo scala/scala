@@ -13,6 +13,8 @@ object NestRunner {
   private val version = System.getProperty("java.version", "")
   private val isJava5 = version matches "1.[5|6|7].*"
 
+  private val numActors = Integer.parseInt(System.getProperty("scalatest.actors", "8"))
+
   private var posCheck = false
   private var negCheck = false
   private var jvmCheck = false
@@ -140,7 +142,6 @@ object NestRunner {
       if (!kindFiles.isEmpty) {
         NestUI.outline("\n"+msg+"\n")
 
-        val numActors = 4
         val len = kindFiles.length
         val (testsEach, lastFrag) = (len/numActors, len%numActors)
         val last = numActors-1
