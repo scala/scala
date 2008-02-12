@@ -230,7 +230,7 @@ trait Namers { self: Analyzer =>
           (!currentRun.compiles(m) || (m hasFlag SYNTHETIC))) {
         updatePosFlags(m, tree.pos, moduleFlags)
         setPrivateWithin(tree, m, tree.mods)
-        synthetics -= m
+        context.unit.synthetics -= m
       } else {
         m = context.owner.newModule(tree.pos, tree.name)
         m.setFlag(moduleFlags)
@@ -392,7 +392,7 @@ trait Namers { self: Analyzer =>
 
     def enterSyntheticSym(tree: Tree): Symbol = {
       enterSym(tree)
-      synthetics(tree.symbol) = (tree, context.unit.source)
+      context.unit.synthetics(tree.symbol) = tree
       tree.symbol
     }
 

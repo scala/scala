@@ -38,14 +38,11 @@ trait Typers { self: Analyzer =>
 
   private val superDefs = new HashMap[Symbol, ListBuffer[Tree]]
 
-  val synthetics = new HashMap[Symbol, (Tree, SourceFile)]
-
   def resetTyper() {
     resetContexts
     resetNamer()
     transformed.clear
     superDefs.clear
-    synthetics.clear
   }
 
   object UnTyper extends Traverser {
@@ -1548,10 +1545,10 @@ trait Typers { self: Analyzer =>
           }
 
           // add synthetics
-          synthetics get e.sym match {
-            case Some((tree, source)) if (source eq context.unit.source) =>
+          context.unit.synthetics get e.sym match {
+            case Some(tree) =>
               newStats += tree
-              synthetics -= e.sym
+              context.unit.synthetics -= e.sym
             case _ =>
           }
 

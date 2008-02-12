@@ -861,12 +861,27 @@ trait Symbols {
         if (isClass) this else moduleClass
       } else owner.toplevelClass
 
+    /** Is this symbol defined in the same scope and compilation unit as `that' symbol?
+     */
+    def isCoDefinedWith(that: Symbol) =
+      (this.rawInfo ne NoType) && {
+        val res =
+          !this.owner.isPackageClass ||
+          (this.sourceFile eq null) ||
+          (that.sourceFile eq null) ||
+          (this.sourceFile eq that.sourceFile)
+        if (!res) {
+          println("strange linked: "+this+" "+this.locationString+";"+this.sourceFile+"/"+that+that.locationString+";"+that.sourceFile+";"+that.moduleClass.sourceFile)
+        }
+        res
+      }
+
     /** The class with the same name in the same package as this module or
      *  case class factory
      */
     final def linkedClassOfModule: Symbol = {
       if (this != NoSymbol)
-        owner.info.decl(name.toTypeName).suchThat(sym => sym.rawInfo ne NoType)
+        owner.info.decl(name.toTypeName).suchThat(_ isCoDefinedWith this)
       else NoSymbol
     }
 
@@ -876,7 +891,7 @@ trait Symbols {
     final def linkedModuleOfClass: Symbol =
       if (this.isClass && !this.isAnonymousClass && !this.isRefinementClass) {
         owner.rawInfo.decl(name.toTermName).suchThat(
-          sym => (sym hasFlag MODULE) && (sym.rawInfo ne NoType))
+          sym => (sym hasFlag MODULE) && (sym isCoDefinedWith this))
       } else NoSymbol
 
     /** For a module its linked class, for a class its linked module or case
@@ -884,7 +899,7 @@ trait Symbols {
      */
     final def linkedSym: Symbol =
       if (isTerm) linkedClassOfModule
-      else if (isClass) owner.info.decl(name.toTermName).suchThat(sym => sym.rawInfo ne NoType)
+      else if (isClass) owner.info.decl(name.toTermName).suchThat(_ isCoDefinedWith this)
       else NoSymbol
 
     /** For a module class its linked class, for a plain class
