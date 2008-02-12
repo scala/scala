@@ -6,17 +6,17 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: $
 
 package scala.collection.jcl
 
-/** A hash set that is backed by a Java hash set.
+/** A hash set that is backed by a Java hash table.
  *
  *  @author Sean McDirmid
  */
-class HashSet[A](override val underlying: java.util.HashSet[A]) extends SetWrapper[A] {
-  def this() = this(new java.util.HashSet[A])
+class Hashtable[K,E](override val underlying: java.util.Hashtable[K,E]) extends MapWrapper[K,E] {
+  def this() = this(new java.util.Hashtable[K,E])
 
-  override def clone: HashSet[A] =
-    new HashSet[A](underlying.clone().asInstanceOf[java.util.HashSet[A]])
+  override def clone() : Hashtable[K,E] =
+    new Hashtable[K,E](underlying.clone().asInstanceOf[java.util.Hashtable[K,E]])
 }
