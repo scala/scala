@@ -16,14 +16,18 @@ import scala.collection.jcl
 private[scala] object internedSymbols extends jcl.WeakHashMap[Symbol, ref.WeakReference[Symbol]]
 
 /** <p>
- *    Instances of <code>Symbol</code> can be created easily with
- *    Scala's built-in quote mechanism.
+ *    This class provides a simple way to get unique objects for
+ *    equal strings. By default, symbols use string equality for
+ *    equality testing, but interned symbols can be compared using
+ *    reference equality for the same effect. Instances of
+ *    <code>Symbol</code> can be created easily with Scala's built-in
+*     quote mechanism.
  *  </p>
  *  <p>
  *    For instance, the <a href="http://scala-lang.org/" target="_top">Scala</a>
  *    term <code>'mysym</code> will invoke the constructor of the
  *    <code>Symbol</code> class in the following way:
- *    <code>new Symbol("mysym")</code>.
+ *    <code>new Symbol("mysym").intern</code>.
  *  </p>
  *
  *  @author  Martin Odersky
