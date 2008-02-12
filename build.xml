@@ -1313,6 +1313,12 @@ TEST
     />
   <!-- Build partest -->
     <mkdir dir="${strap.dir}/lib/partest"/>
+    <javac
+      srcdir="${src.dir}/partest"
+      destdir="${quick.dir}/lib/partest"
+      source="1.4" target="1.4" deprecation="yes"
+      classpath="${quick.dir}/lib/partest"
+      includes="scala/tools/partest/**/*.java"/>
     <quick
       srcdir="${src.dir}/partest"
       destdir="${strap.dir}/lib/partest"
