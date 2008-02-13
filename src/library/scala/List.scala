@@ -1260,8 +1260,8 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
   import java.io._
 
   private def writeObject(out: ObjectOutputStream) {
-    val i = elements
-    while (i.hasNext) out.writeObject(i.next)
+    var xs: List[B] = this
+    while (!xs.isEmpty) { out.writeObject(xs.head); xs = xs.tail }
     out.writeObject(ListSerializeEnd)
   }
 
