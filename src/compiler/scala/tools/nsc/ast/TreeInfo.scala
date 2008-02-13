@@ -156,6 +156,12 @@ abstract class TreeInfo {
     case _ => false
   }
 
+  /** Is type a of the form T* ? */
+  def isRepeatedParamType(tpt: Tree) = tpt match {
+    case AppliedTypeTree(Select(_, rp), _) => rp == nme.REPEATED_PARAM_CLASS_NAME.toTypeName
+    case _ => false
+  }
+
   /** Is name a left-associative operator? */
   def isLeftAssoc(operator: Name): Boolean =
     operator.length > 0 && operator(operator.length - 1) != ':'

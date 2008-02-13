@@ -150,11 +150,8 @@ trait Unapplies { self: Analyzer =>
     val tparams = cdef.tparams map copyUntyped[TypeDef]
     def paramToArg(param: ValDef) = {
       val id = Ident(param.name)
-      val RP = nme.REPEATED_PARAM_CLASS_NAME.toTypeName
-      param.tpt match {
-        case AppliedTypeTree(Select(_, RP), _) => Typed(id, Ident(nme.WILDCARD_STAR.toTypeName))
-        case _ => id
-      }
+      if (treeInfo.isRepeatedParamType(param.tpt)) Typed(id, Ident(nme.WILDCARD_STAR.toTypeName))
+      else id
     }
     val cparams = constrParams(cdef)
     atPos(cdef.pos) {
@@ -173,10 +170,14 @@ trait Unapplies { self: Analyzer =>
   def caseModuleUnapplyMeth(cdef: ClassDef): DefDef = {
     val tparams = cdef.tparams map copyUntyped[TypeDef]
     val unapplyParamName = newTermName("x$0")
+    val hasVarArg = constrParams(cdef) match {
+      case cps :: _ => treeInfo.isRepeatedParamType(cps.last.tpt)
+      case _ => false
+    }
     atPos(cdef.pos) {
       DefDef(
         Modifiers(SYNTHETIC | CASE),
-        nme.unapply,
+        if (hasVarArg) nme.unapplySeq else nme.unapply,
         tparams,
         List(List(ValDef(Modifiers(PARAM | SYNTHETIC), unapplyParamName,
                          classType(cdef, tparams), EmptyTree))),
