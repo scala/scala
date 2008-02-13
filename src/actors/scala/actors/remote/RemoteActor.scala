@@ -45,7 +45,17 @@ object RemoteActor {
 
   private val kernels = new scala.collection.mutable.HashMap[Actor, NetKernel]
 
-  private var cl: ClassLoader = ClassLoader.getSystemClassLoader()
+  private var cl: ClassLoader = try {
+    ClassLoader.getSystemClassLoader()
+  } catch {
+    case sec: SecurityException =>
+      Debug.info(this+": caught "+sec)
+      null
+    case ise: IllegalStateException =>
+      Debug.info(this+": caught "+ise)
+      null
+  }
+
   def classLoader: ClassLoader = cl
   def classLoader_=(x: ClassLoader) { cl = x }
 
@@ -65,8 +75,11 @@ object RemoteActor {
 
     Scheduler.onTerminate(s) {
       Debug.info("alive actor "+s+" terminated")
+      // remove mapping for `s`
       kernels -= s
-      if (kernels.isEmpty) {
+      // terminate `kern` when it does
+      // not appear as value any more
+      if (!kernels.values.contains(kern)) {
         Debug.info("terminating "+kern)
         // terminate NetKernel
         kern.terminate()
@@ -106,8 +119,9 @@ object RemoteActor {
    * Returns (a proxy for) the actor registered under
    * <code>name</code> on <code>node</code>.
    */
-  def select(node: Node, sym: Symbol): Actor =
+  def select(node: Node, sym: Symbol): Actor = synchronized {
     selfKernel.getOrCreateProxy(node, sym)
+  }
 }
 
 
