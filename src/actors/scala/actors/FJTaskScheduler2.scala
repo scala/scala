@@ -210,12 +210,9 @@ class FJTaskScheduler2 extends Thread with IScheduler {
     TimerThread.shutdown()
   }
 
-  def snapshot(): LinkedQueue = synchronized {
+  def snapshot(): LinkedQueue = {
     suspending = true
     executor.snapshot()
-    // grab tasks from executor
-    executor.entryQueue
   }
-
 
 }

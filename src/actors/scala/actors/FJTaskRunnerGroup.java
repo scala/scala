@@ -161,25 +161,25 @@ public class FJTaskRunnerGroup implements IFJTaskRunnerGroup {
 
     /* -------- Suspending -------- */
 
-    void snapshot() throws InterruptedException {
-        // set flag in all task runners to suspend
-        for (int i = 0; i < threads.length; ++i) {
-            FJTaskRunner t = threads[i];
-            t.setSuspending(true);
-        }
-
-        // interrupt all task runners
-        // assume: current thread not in threads (scheduler)
-        for (int i = 0; i < threads.length; ++i) {
-            Thread t = threads[i];
-            t.interrupt();
+    LinkedQueue snapshot() throws InterruptedException {
+        synchronized (this) {
+            for (int i = 0; i < threads.length; ++i) {
+                FJTaskRunner t = threads[i];
+                // set flag in all task runners to suspend
+                t.setSuspending(true);
+                // interrupt all task runners
+                // assume: current thread not in threads (scheduler)
+                t.interrupt();
+            }
         }
 
         // wait until all of them have terminated
         for (int i = 0; i < threads.length; ++i) {
             Thread t = threads[i];
             t.join();
-        }
+        };
+
+        return entryQueue;
     }
 
   /**

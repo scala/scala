@@ -42,7 +42,7 @@ object Scheduler {
   private var tasks: LinkedQueue = null
   private var pendingCount = 0
 
-  def snapshot(): Unit = synchronized {
+  def snapshot(): Unit = {
     tasks = sched.snapshot()
     pendingCount = sched.asInstanceOf[FJTaskScheduler2].getPendingCount
     sched.shutdown()
