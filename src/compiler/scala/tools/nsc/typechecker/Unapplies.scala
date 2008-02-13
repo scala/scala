@@ -171,6 +171,7 @@ trait Unapplies { self: Analyzer =>
     val tparams = cdef.tparams map copyUntyped[TypeDef]
     val unapplyParamName = newTermName("x$0")
     val hasVarArg = constrParams(cdef) match {
+      case Nil :: _ => false
       case cps :: _ => treeInfo.isRepeatedParamType(cps.last.tpt)
       case _ => false
     }
