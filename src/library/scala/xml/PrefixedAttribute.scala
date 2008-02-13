@@ -26,9 +26,9 @@ class PrefixedAttribute(val pre: String,
   if(value eq null)
     throw new UnsupportedOperationException("value is null")
 
-  /** same as this(key, Utility.parseAttributeValue(value), next) */
+  /** same as this(key, Text(value), next) */
   def this(pre: String, key: String, value: String, next: MetaData) =
-    this(pre, key, Utility.parseAttributeValue(value), next)
+    this(pre, key, Text(value), next)
 
   /*
    // the problem here is the fact that we cannot remove the proper attribute from
