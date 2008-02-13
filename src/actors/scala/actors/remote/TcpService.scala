@@ -14,7 +14,7 @@ package scala.actors.remote
 
 import java.io.{DataInputStream, DataOutputStream, IOException}
 import java.lang.{Thread, SecurityException}
-import java.net.{InetAddress, ServerSocket, Socket, UnknownHostException}
+import java.net.{InetAddress, ServerSocket, Socket, UnknownHostException, URLClassLoader}
 
 import scala.collection.mutable.HashMap
 
@@ -27,12 +27,12 @@ object TcpService {
   private val random = new Random
   private val ports = new HashMap[Int, TcpService]
 
-  def apply(port: Int): TcpService =
+  def apply(port: Int, cl: ClassLoader): TcpService =
     ports.get(port) match {
       case Some(service) =>
         service
       case None =>
-        val service = new TcpService(port)
+        val service = new TcpService(port, cl)
         ports += Pair(port, service)
         service.start()
         service
@@ -65,8 +65,8 @@ object TcpService {
  * @version 0.9.10
  * @author Philipp Haller
  */
-class TcpService(port: Int) extends Thread with Service {
-  val serializer: JavaSerializer = new JavaSerializer(this)
+class TcpService(port: Int, cl: ClassLoader) extends Thread with Service {
+  val serializer: JavaSerializer = new JavaSerializer(this, cl)
 
   private val internalNode = new Node(InetAddress.getLocalHost().getHostAddress(), port)
   def node: Node = internalNode
