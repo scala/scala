@@ -1,5 +1,5 @@
 object Test {
-  import java.io.{File, FileWriter}
+  import java.io.{File, FileReader, FileWriter}
 
   /** Tests the generation of the HTML documentation for some Scala
    *  code samples (see value 'code' below) with different scaladoc
@@ -19,12 +19,17 @@ object Test {
   }
 
   private def test1(tmpDir: File) {
-    def testOptions(inFile: File, outDir: File, opts: String*) {
+    def testOptions(inFile: File, outDirName: String, opts: String*) {
+      val outDir = createDir(tmpDir, outDirName)
       val args = Array.concat(Array("-Ydoc", "-d", outDir.getPath, inFile.getPath), opts.toArray:Array[String])
       if (MainDoc.main0(args)) {
         for (name <- List("all-classes.html", "index.html")) {
-          val f = new File(outDir, name)
-          println(name + ": " + generateMD5Sum(f))
+          val outFile = new File(outDir, name)
+          val n = outFile.length.toInt
+          val in = new FileReader(outFile)
+          val cbuf = new Array[Char](n)
+          in.read(cbuf, 0, n)
+          println(new String(cbuf))
         }
         println
       }
@@ -36,10 +41,10 @@ object Test {
       writer.close
       f
     }
-    testOptions(inFile, createDir(tmpDir, "test1"), "") // none (default is -access:protected)
-    testOptions(inFile, createDir(tmpDir, "test2"), "-access:public")
-    testOptions(inFile, createDir(tmpDir, "test3"), "-access:protected")
-    testOptions(inFile, createDir(tmpDir, "test4"), "-access:private")
+    testOptions(inFile, "test1", "") // none (default is -access:protected)
+    testOptions(inFile, "test2", "-access:public")
+    testOptions(inFile, "test3", "-access:protected")
+    testOptions(inFile, "test4", "-access:private")
   }
 
   private def test2(tmpDir: File) {
@@ -89,8 +94,12 @@ object Foo2 {
     val args = Array.concat(Array("-Ydoc", "-d", outDir.getPath, inFile.getPath))
     if (MainDoc.main0(args)) {
       for (name <- List("all-classes.html", "index.html")) {
-        val f = new File(outDir, name)
-        println(name + ": " + generateMD5Sum(f))
+        val outFile = new File(outDir, name)
+        val n = outFile.length.toInt
+        val in = new FileReader(outFile)
+        val cbuf = new Array[Char](n)
+        in.read(cbuf, 0, n)
+        println(new String(cbuf))
       }
       println
     }
@@ -142,38 +151,6 @@ object Foo2 {
     val outDir = new File(parent, dirname)
     outDir.mkdir
     outDir
-  }
-
-  private def generateMD5Sum(f: java.io.File): String = {
-    import java.io._, java.security._
-    val digest = MessageDigest.getInstance("MD5")
-    val is = new FileInputStream(f)
-    val buffer = new Array[Byte](8192)
-    try {
-      var read = is.read(buffer)
-      while (read > 0) {
-        digest.update(buffer, 0, read)
-        read = is.read(buffer)
-      }
-      val hash = digest.digest()
-      val buf = new StringBuilder
-      for (i <- hash.indices)
-        buf.append((hash(i) & 0xFF).toHexString)
-      buf.toString
-    }
-    catch {
-      case e: IOException =>
-        throw new RuntimeException("Unable to process file for MD5", e)
-    }
-    finally {
-      try {
-        is.close();
-      }
-      catch {
-        case e: IOException =>
-          throw new RuntimeException("Unable to close input stream for MD5 calculation", e)
-      }
-    }
   }
 
   private val code1 = """
