@@ -10,7 +10,7 @@ object looping extends Application {
     loop {
       react {
         case A =>
-          cnt = cnt + 1
+          cnt += 1
           if (cnt % 2 != 0) continue
           if (cnt < 10)
             println("received A")
@@ -22,7 +22,5 @@ object looping extends Application {
     }
   }
 
-  for (val i <- 0 until 10) {
-    a ! A
-  }
+  for (i <- 0 until 10) a ! A
 }

@@ -14,11 +14,12 @@ abstract class Producer[T] {
   /** A signal to stop the coordinator. */
   private val Stop = new Object
 
-  protected def produce(x: T): unit = {
+  protected def produce(x: T) {
     coordinator ! Some(x)
     receive { case Next => }
   }
-  protected def produceValues: unit
+
+  protected def produceValues: Unit
 
   def iterator = new Iterator[T] {
     private var current: Any = Undefined
@@ -27,7 +28,7 @@ abstract class Producer[T] {
       current
     }
 
-    def hasNext: boolean = lookAhead match {
+    def hasNext: Boolean = lookAhead match {
       case Some(x) => true
       case None => { coordinator ! Stop; false }
     }
@@ -45,7 +46,8 @@ abstract class Producer[T] {
           reply {
             receive { case x: Option[_] => x }
           }
-        case Stop => exit('stop)
+        case Stop =>
+          exit('stop)
       }
     }
   }
@@ -61,13 +63,13 @@ abstract class Producer[T] {
 
 object producers extends Application {
 
-  class Tree(val left: Tree, val elem: int, val right: Tree)
+  class Tree(val left: Tree, val elem: Int, val right: Tree)
   def node(left: Tree, elem: int, right: Tree): Tree = new Tree(left, elem, right)
   def node(elem: int): Tree = node(null, elem, null)
 
   def tree = node(node(node(3), 4, node(6)), 8, node(node(9), 10, node(11)))
 
-  class PreOrder(n: Tree) extends Producer[int] {
+  class PreOrder(n: Tree) extends Producer[Int] {
     def produceValues = traverse(n)
     def traverse(n: Tree) {
       if (n != null) {
@@ -78,7 +80,7 @@ object producers extends Application {
     }
   }
 
-  class PostOrder(n: Tree) extends Producer[int] {
+  class PostOrder(n: Tree) extends Producer[Int] {
     def produceValues = traverse(n)
     def traverse(n: Tree) {
       if (n != null) {
@@ -89,7 +91,7 @@ object producers extends Application {
     }
   }
 
-  class InOrder(n: Tree) extends Producer[int] {
+  class InOrder(n: Tree) extends Producer[Int] {
     def produceValues = traverse(n)
     def traverse(n: Tree) {
       if (n != null) {
@@ -101,12 +103,12 @@ object producers extends Application {
   }
 
   actor {
-    Console.print("PreOrder:")
-    for (x <- new PreOrder(tree).iterator) Console.print(" "+x)
-    Console.print("\nPostOrder:")
-    for (x <- new PostOrder(tree).iterator) Console.print(" "+x)
-    Console.print("\nInOrder:")
-    for (x <- new InOrder(tree).iterator) Console.print(" "+x)
-    Console.print("\n")
+    print("PreOrder:")
+    for (x <- new PreOrder(tree).iterator) print(" "+x)
+    print("\nPostOrder:")
+    for (x <- new PostOrder(tree).iterator) print(" "+x)
+    print("\nInOrder:")
+    for (x <- new InOrder(tree).iterator) print(" "+x)
+    print("\n")
   }
 }

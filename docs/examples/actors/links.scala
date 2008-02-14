@@ -12,21 +12,21 @@ object links extends Application {
     start ! Stop
   }
 
-  def p(n: int): Actor =
+  def p(n: Int): Actor =
     if (n == 0) top1()
     else top(p(n-1), n)
 
-  def top(a: Actor, n: int): Actor = actor {
-    Console.println("starting actor " + n + " (" + Thread.currentThread() + ")")
+  def top(a: Actor, n: Int): Actor = actor {
+    println("starting actor " + n + " (" + Thread.currentThread() + ")")
     self.trapExit = true
     link(a)
     loop {
       receive {
         case ex @ Exit(from, reason) =>
-          Console.println("Actor " + n + " received " + ex)
+          println("Actor " + n + " received " + ex)
           exit('finished)
         case any => {
-          Console.println("Actor " + n + " received " + any)
+          println("Actor " + n + " received " + any)
           a ! any
         }
       }
@@ -34,13 +34,13 @@ object links extends Application {
   }
 
   def top1(): Actor = actor {
-    Console.println("starting last actor"  + " (" + Thread.currentThread() + ")")
+    println("starting last actor"  + " (" + Thread.currentThread() + ")")
     receive {
       case Stop =>
-        Console.println("Last actor now exiting")
+        println("Last actor now exiting")
         exit('abnormal)
       case any =>
-        Console.println("Last actor received " + any)
+        println("Last actor received " + any)
         top1()
     }
   }

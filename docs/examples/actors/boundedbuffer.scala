@@ -3,21 +3,22 @@ package examples.actors
 import scala.actors.Actor._
 
 object boundedbuffer {
-  class BoundedBuffer[T](N: int) {
+  class BoundedBuffer[T](N: Int) {
     private case class Put(x: T)
     private case object Get
     private case object Stop
 
     private val buffer = actor {
       val buf = new Array[T](N)
-      var in = 0; var out = 0; var n = 0
+      var in, out, n = 0
       loop {
         react {
           case Put(x) if n < N =>
-            buf(in) = x; in = (in + 1) % N; n = n + 1; reply()
+            buf(in) = x; in = (in + 1) % N; n += 1; reply()
           case Get if n > 0 =>
-            val r = buf(out); out = (out + 1) % N; n = n - 1; reply(r)
-          case Stop => reply(); exit("stopped")
+            val r = buf(out); out = (out + 1) % N; n -= 1; reply(r)
+          case Stop =>
+            reply(); exit("stopped")
         }
       }
     }
@@ -27,10 +28,10 @@ object boundedbuffer {
     def stop() { buffer !? Stop }
   }
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]) {
     val buf = new BoundedBuffer[Int](1)
     buf.put(42)
-    scala.Console.println("" + buf.get)
+    println("" + buf.get)
     buf.stop()
   }
 }

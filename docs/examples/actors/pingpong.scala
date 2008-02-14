@@ -20,7 +20,7 @@ object pingpong extends Application {
   pong.start
 }
 
-class Ping(count: int, pong: Actor) extends Actor {
+class Ping(count: Int, pong: Actor) extends Actor {
   def act() {
     var pingsLeft = count - 1
     pong ! Ping
@@ -28,12 +28,12 @@ class Ping(count: int, pong: Actor) extends Actor {
       react {
         case Pong =>
           if (pingsLeft % 1000 == 0)
-            Console.println("Ping: pong")
+            println("Ping: pong")
           if (pingsLeft > 0) {
             pong ! Ping
             pingsLeft -= 1
           } else {
-            Console.println("Ping: stop")
+            println("Ping: stop")
             pong ! Stop
             exit()
           }
@@ -49,11 +49,11 @@ class Pong extends Actor {
       react {
         case Ping =>
           if (pongCount % 1000 == 0)
-            Console.println("Pong: ping "+pongCount)
+            println("Pong: ping "+pongCount)
           sender ! Pong
           pongCount += 1
         case Stop =>
-          Console.println("Pong: stop")
+          println("Pong: stop")
           exit()
       }
     }
