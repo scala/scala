@@ -96,8 +96,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
           if (args eq args0) {
             error("bad option: '" + args.head + "'")
             ok = false
-          } else
-            ok = settings.checkDependencies
+          }
         }
       } else if ((settings.script.value != "") || args.head.endsWith(fileEnding)) {
         fs = args.head :: fs
@@ -109,6 +108,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
         ok = false
       }
     }
+    ok &&= settings.checkDependencies
   }
 
   processArguments()

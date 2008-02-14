@@ -298,7 +298,7 @@ test_run_msil() {
     rm -f "$dstbase".$MSIL &&
     rm -f "$dstbase".$EXE &&
 
-    $SCALAC -nowarn -target:msil -Xassem "$os_dstbase" -Xassem-path $assemblies "$@" \
+    $SCALAC -nowarn -Xassem "$os_dstbase" -Xassem-path $assemblies "$@" \
         -sourcepath "$PREFIX/build/msil/src" "$os_srcbase".scala &&
     case "$UNAME" in
         CYGWIN* )
@@ -755,7 +755,9 @@ while [ $# -gt 0 ]; do
     esac;
 done;
 
-if [ "$JAVA5" = "false" -o "$TEST_TYPE" = "msil" ]; then
+if [ "$TEST_TYPE" = "msil" ]; then
+    FLAGS="$FLAGS -target:msil";
+elif [ "$JAVA5" = "false" ]; then
     FLAGS="$FLAGS -target:jvm-1.4";
 fi;
 

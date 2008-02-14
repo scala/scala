@@ -195,7 +195,7 @@ abstract class CLRTypes {
       }
     }
     throw new RuntimeException(
-      "cannot find assembly " + name + "; use the -r option to specify its location")
+      "cannot find assembly " + name + "; use the -Xassem-path option to specify its location")
   }
 
   /** Load the rest of the assemblies specified with the '-r' option
