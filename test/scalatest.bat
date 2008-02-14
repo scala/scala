@@ -59,7 +59,7 @@ shift
 goto loop
 
 :exec
-if exist "%_SCALA_HOME%\misc\NUL" (
+if exist "%_SCALA_HOME%\meta\universe" (
   set _BINDIR=%_SCALA_HOME%\bin
   set _SRCDIR=%_SCALA_HOME%\misc\scala-test\files
   set _DIFFDIR=%_SCALA_HOME%\bin\diff
