@@ -252,7 +252,7 @@ rem Tests the JVM backend.
   if "%_KIND%"=="neg" call :test_neg %1 & goto status
   goto :eof
   :status
-  if exist %_LOGFILE% %_DIFF% %_LOGFILE% %_CHKFILE%
+  if exist %_LOGFILE% %_DIFF% %_LOGFILE% %_CHKFILE% 2>NUL
   call :prt_status %_KIND% %~nx1
   del /s/q %_LOGFILE% 2>NUL 1>NUL
   goto :eof
