@@ -1,4 +1,6 @@
-package scala.xml
+// $Id$
+
+package scala.xml.parsing
 
 import scala.xml.dtd.{IntDef, ParsedEntityDecl}
 

@@ -1,6 +1,7 @@
-package scala.xml
+// $Id$
 
-import scala.xml.parsing.{MarkupParser, MarkupHandler, FatalError, ConstructingHandler, ExternalSources}
+package scala.xml.parsing
+
 import scala.io.{Source}
 
 /**

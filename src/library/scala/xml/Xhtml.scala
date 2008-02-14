@@ -1,4 +1,6 @@
-package scala.xml;
+package scala.xml
+
+import parsing.XhtmlEntities
 
 /* (c) David Pollak  2007 WorldWide Conferencing, LLC */
 

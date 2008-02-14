@@ -1,3 +1,5 @@
+// $Id$
+
 package scala.xml
 
 /** This class (which is not used by all XML parsers, but always used by the XHTML one)
@@ -7,11 +9,11 @@ package scala.xml
 case class PCData(_data: String) extends Atom[String](_data) {
   /* The following code is a derivative work of scala.xml.Text */
   if (null == data)
-    throw new java.lang.NullPointerException("tried to construct PCData with null")
+    throw new IllegalArgumentException("tried to construct PCData with null")
 
   final override def equals(x: Any) = x match {
-    case s:String  => s.equals(data.toString())
-    case s:Atom[_] => data == s.data
+    case s: String  => s.equals(data.toString())
+    case s: Atom[_] => data == s.data
     case _ => false
   }
 
