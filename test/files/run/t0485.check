@@ -1,0 +1,30 @@
+m1={20=30, 10=20}
+m2={10=20}
+m1 == m2 is false
+
+m1={20=30, 10=20}
+m2={10=20}
+m1 == m2 is false
+
+m1={10=20, 20=30}
+m2={10=20}
+m1 == m2 is false
+
+m1={10=20, 20=30}
+m2={10=20}
+m1 == m2 is false
+
+java.lang.CloneNotSupportedException: The underlying map doesn't implement the Cloneable interface
+
+m1=[20, 10]
+m2=[10]
+m1 == m2 is false
+
+m1=[10, 20]
+m2=[10]
+m1 == m2 is false
+
+m1=[10, 20]
+m2=[10]
+m1 == m2 is false
+

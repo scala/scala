@@ -14,6 +14,8 @@ package scala.collection.jcl
  *
  *  @author Sean McDirmid
  */
-class HashMap[K,E](override val underlying: java.util.HashMap[K,E]) extends MapWrapper[K,E] {
-  def this() = this(new java.util.HashMap[K,E])
+class HashMap[K, E](override val underlying: java.util.HashMap[K, E]) extends MapWrapper[K, E] {
+  def this() = this(new java.util.HashMap[K, E])
+  override def clone: HashMap[K, E] =
+    new HashMap[K, E](underlying.clone().asInstanceOf[java.util.HashMap[K, E]])
 }

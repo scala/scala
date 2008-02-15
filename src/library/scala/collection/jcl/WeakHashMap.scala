@@ -1,14 +1,14 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2008, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://www.scala-lang.org/           **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
 
 // $Id$
 
-package scala.collection.jcl;
+package scala.collection.jcl
 
 /** <p>
  *    A map that is backed by a Java weak hash map, whose keys are maintained
@@ -24,6 +24,8 @@ package scala.collection.jcl;
  *
  *  @author Sean McDirmid
  */
-class WeakHashMap[K,E](override val underlying: java.util.WeakHashMap[K,E]) extends MapWrapper[K,E] {
-  def this() = this(new java.util.WeakHashMap[K,E])
+class WeakHashMap[K, E](override val underlying: java.util.WeakHashMap[K, E]) extends MapWrapper[K, E] {
+  def this() = this(new java.util.WeakHashMap[K, E])
+  override def clone: WeakHashMap[K, E] =
+    throw new CloneNotSupportedException("The underlying map doesn't implement the Cloneable interface")
 }

@@ -16,7 +16,6 @@ package scala.collection.jcl
  */
 class HashSet[A](override val underlying: java.util.HashSet[A]) extends SetWrapper[A] {
   def this() = this(new java.util.HashSet[A])
-
   override def clone: HashSet[A] =
     new HashSet[A](underlying.clone().asInstanceOf[java.util.HashSet[A]])
 }
