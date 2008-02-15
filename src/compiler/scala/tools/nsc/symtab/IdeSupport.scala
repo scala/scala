@@ -84,7 +84,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
         // grab the case factory
         val name = sym.name.toTermName
         e = scope.lookupEntry(name)
-        while (e != null && !e.sym.hasFlag(CASE)) e = scope.lookupNextEntry(e)
+        while (e != null && !e.sym.hasFlag(MODULE)) e = scope.lookupNextEntry(e)
         assert(e != null)
         list += e.sym
         scope unlink e.sym
