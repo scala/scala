@@ -4,8 +4,7 @@
 
 package scala.tools.partest.nest
 
-import java.io.{File, FilenameFilter, ByteArrayOutputStream, PrintStream,
-                IOException, BufferedOutputStream}
+import java.io.{File, FilenameFilter, IOException, StringWriter}
 import java.net.URI
 
 object FileManager {
@@ -171,17 +170,10 @@ elif [ -d "$PREFIX/bin" ]; then
   def compareFiles(f1: File, f2: File): String = {
     var res = ""
     try {
-      val diffStream = new ByteArrayOutputStream
-      val diffOutput = new PrintStream(
-        new BufferedOutputStream(diffStream), true)
-      System.setOut(diffOutput)
-      System.setErr(diffOutput)
+      val diffWriter = new StringWriter
       val args = Array(f1.getCanonicalPath(), f2.getCanonicalPath())
-      DiffPrint.main(args)
-      System.setOut(System.out)
-      System.setErr(System.err)
-
-      res = diffStream.toString
+      DiffPrint.doDiff(args, diffWriter)
+      res = diffWriter.toString
       if (res.startsWith("No"))
         res = ""
     } catch {

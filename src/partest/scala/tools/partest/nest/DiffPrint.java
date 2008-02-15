@@ -52,8 +52,8 @@ public class DiffPrint {
       are provided as well.
    */
   public static abstract class Base {
-    protected Base(Object[] a,Object[] b) {
-      outfile = new PrintWriter(new OutputStreamWriter(System.out));
+    protected Base(Object[] a,Object[] b, Writer w) {
+      outfile = new PrintWriter(w);
       file0 = a;
       file1 = b;
     }
@@ -202,8 +202,8 @@ public class DiffPrint {
    */
   public static class NormalPrint extends Base {
 
-    public NormalPrint(Object[] a,Object[] b) {
-      super(a,b);
+    public NormalPrint(Object[] a,Object[] b, Writer w) {
+      super(a,b,w);
     }
 
     /** Print a hunk of a normal diff.
@@ -244,8 +244,8 @@ public class DiffPrint {
    */
   public static class EdPrint extends Base {
 
-    public EdPrint(Object[] a,Object[] b) {
-      super(a,b);
+    public EdPrint(Object[] a,Object[] b, Writer w) {
+      super(a,b,w);
     }
 
     /** Print a hunk of an ed diff */
@@ -303,8 +303,8 @@ public class DiffPrint {
 
     protected int context = 3;
 
-    public ContextPrint(Object[] a,Object[] b) {
-      super(a,b);
+    public ContextPrint(Object[] a,Object[] b, Writer w) {
+      super(a,b,w);
     }
 
     protected void print_context_label (String mark, File inf, String label) {
@@ -425,8 +425,8 @@ public class DiffPrint {
    */
   public static class UnifiedPrint extends ContextPrint {
 
-    public UnifiedPrint(Object[] a,Object[] b) {
-      super(a,b);
+    public UnifiedPrint(Object[] a,Object[] b, Writer w) {
+      super(a,b,w);
     }
 
     public void print_header(String filea,String fileb) {
@@ -560,15 +560,59 @@ public class DiffPrint {
       System.err.println("No differences");
     else {
       Base p;
+      Writer w = new OutputStreamWriter(System.out);
       switch (style) {
       case 'e':
-        p = new EdPrint(a,b); break;
+        p = new EdPrint(a,b,w); break;
       case 'c':
-        p = new ContextPrint(a,b); break;
+        p = new ContextPrint(a,b,w); break;
       case 'u':
-        p = new UnifiedPrint(a,b); break;
+        p = new UnifiedPrint(a,b,w); break;
       default:
-        p = new NormalPrint(a,b);
+        p = new NormalPrint(a,b,w);
+      }
+      p.print_header(filea,fileb);
+      p.print_script(script);
+    }
+  }
+
+  public static void doDiff(String[] argv, Writer w) throws IOException {
+    String filea = argv[argv.length - 2];
+    String fileb = argv[argv.length - 1];
+    String[] a = slurp(filea);
+    String[] b = slurp(fileb);
+    Diff d = new Diff(a,b);
+    char style = 'n';
+    for (int i = 0; i < argv.length - 2; ++i) {
+      String f = argv[i];
+      if (f.startsWith("-")) {
+        for (int j = 1; j < f.length(); ++j) {
+	  switch (f.charAt(j)) {
+	  case 'e':	// Ed style
+	    style = 'e'; break;
+	  case 'c':	// Context diff
+	    style = 'c'; break;
+	  case 'u':
+	    style = 'u'; break;
+	  }
+	}
+      }
+    }
+    boolean reverse = style == 'e';
+    Diff.change script = d.diff_2(reverse);
+    if (script == null)
+      w.write("No differences\n");
+    else {
+      Base p;
+      switch (style) {
+      case 'e':
+        p = new EdPrint(a,b,w); break;
+      case 'c':
+        p = new ContextPrint(a,b,w); break;
+      case 'u':
+        p = new UnifiedPrint(a,b,w); break;
+      default:
+        p = new NormalPrint(a,b,w);
       }
       p.print_header(filea,fileb);
       p.print_script(script);

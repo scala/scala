@@ -177,6 +177,7 @@ object NestRunner {
    */
   def testCheckAll(): (Int, Int) = {
     val results = List(runTests("pos", posCheck, "Testing compiler (on files whose compilation should succeed)"),
+                       runTests("neg", negCheck, "Testing compiler (on files whose compilation should fail)"),
                        runTests("run", runCheck, "Testing JVM backend"),
                        runTests("jvm", jvmCheck, "Testing JVM backend"),
                        runTests("jvm5", jvm5Check, "Testing JVM backend"))

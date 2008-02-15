@@ -62,15 +62,6 @@ class Worker extends Actor {
     NestUI.normal("]\n", printer)
   }
 
-  abstract class TestRun(file: File) {
-    def beforeRun(): Unit
-    def runTest(): Unit
-    def afterRun(): Unit
-    def doAll() {
-      beforeRun(); runTest(); afterRun()
-    }
-  }
-
   var log = ""
 
   def execTest(outDir: File, logFile: File) {
@@ -221,6 +212,15 @@ class Worker extends Actor {
     (files.length-errors, errors)
   }
 
+  abstract class TestRun(file: File) {
+    def beforeRun(): Unit
+    def runTest(): Unit
+    def afterRun(): Unit
+    def doAll() {
+      beforeRun(); runTest(); afterRun()
+    }
+  }
+
   /** Runs a list of tests.
    *
    * @param kind  The test kind (pos, neg, run, etc.)
@@ -230,9 +230,16 @@ class Worker extends Actor {
     val compileMgr = new CompileManager
     var errors = 0
     var succeeded = true
+    var diff = ""
+    var log = ""
 
     abstract class CompileTestRun(file: File, wr: PrintWriter) extends TestRun(file) {
-      def beforeRun() { succeeded = true; printInfoStart(file, wr) }
+      def beforeRun() {
+        succeeded = true;
+        diff = ""
+        log = ""
+        printInfoStart(file, wr)
+      }
       def afterRun() { printInfoEnd(succeeded, wr) }
     }
 
@@ -260,23 +267,57 @@ class Worker extends Actor {
         (files.length-errors, errors)
       }
       case "neg" => {
-        def negTestRun(file: File, wr: PrintWriter, log: File) = new CompileTestRun(file, wr) {
-          def runTest() {
-            if (!compileMgr.shouldFailCompile(file, kind, log)) {
+        for (file <- files) {
+          // when option "--failed" is provided
+          // execute test only if log file is present
+          // (which means it failed before)
+          val logFile = getLogFile(file, kind)
+          if (!NestRunner.failed || (logFile.exists && logFile.canRead)) {
+            val swr = new StringWriter
+            val wr = new PrintWriter(swr)
+            succeeded = true; diff = ""; log = ""
+            printInfoStart(file, wr)
+
+            if (!compileMgr.shouldFailCompile(file, kind, logFile)) {
               succeeded = false
               errors += 1
-            } //TODO: else compare log file to check file
+            } else { //TODO: else compare log file to check file
+              val fileBase: String = basename(file.getName)
+              val dir = file.getParentFile
+              val outDir = new File(dir, fileBase + "-" + kind + ".obj")
+
+              NestUI.verbose("comparing output with check file...")
+              diff = compareOutput(dir, fileBase, kind, logFile)
+              if (!diff.equals("")) {
+                NestUI.verbose("output differs from log file\n")
+                succeeded = false
+                errors += 1
+              }
+
+              // delete output dir
+              FileManager.deleteRecursive(outDir)
+
+              // delete log file only if test was successful
+              if (succeeded)
+                FileManager.deleteRecursive(logFile)
+            }
+            printInfoEnd(succeeded, wr)
+            wr.flush()
+            swr.flush()
+            NestUI.normal(swr.toString)
+
+            if (!succeeded && NestRunner.showDiff) NestUI.normal(diff)
+            if (!succeeded && NestRunner.showLog) {
+              // output log file
+              val logReader = new FileReader(logFile)
+              val logWriter = new StringWriter
+              val logAppender = new StreamAppender(logReader, logWriter)
+              logAppender.start()
+              logAppender.join()
+              val log = logWriter.toString
+              NestUI.normal(log)
+            }
           }
-        }
-        for (file <- files) {
-          val logFile = getLogFile(file, kind)
-          val swr = new StringWriter
-          val wr = new PrintWriter(swr)
-          val testRun = negTestRun(file, wr, logFile)
-          testRun.doAll()
-          wr.flush()
-          swr.flush()
-          NestUI.normal(swr.toString)
         }
         NestUI.verbose("finished testing "+kind+" with "+errors+" errors")
         NestUI.verbose("created "+compileMgr.numSeparateCompilers+" separate compilers")
