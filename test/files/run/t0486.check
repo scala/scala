@@ -1,0 +1,8 @@
+<wsdl:definitions name="service1" xmlns:tns="target1">
+    </wsdl:definitions>
+<wsdl:definitions name="service2" xmlns:tns="target2">
+    </wsdl:definitions>
+<wsdl:definitions name="service3" xmlns:tns="target3">
+    </wsdl:definitions>
+<wsdl:definitions name="service4" xmlns:tns="target4">
+    </wsdl:definitions>
