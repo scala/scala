@@ -53,15 +53,15 @@ object Elem {
   override def hashCode(): Int =
     Utility.hashCode(prefix, label, attributes.hashCode(), scope.hashCode(), child)
 
-  /** Returns a new element with updated attributes.
-   *
-   *  @param  attrs ...
+  /** Returns a new element with updated attributes, resolving namespace uris from this element's scope.
+   *  See MetaData.update for details.
+   *  @param  updates MetaData with new and updated attributes
    *  @return a new symbol with updated attributes
    */
-  final def %(attrs: MetaData): Elem =
+  final def %(udpates: MetaData): Elem =
     Elem(prefix,
          label,
-         attrs.append(attributes),
+         MetaData.update(attributes, scope, updates),
          scope,
          child:_*)
 
