@@ -58,7 +58,7 @@ object Elem {
    *  @param  updates MetaData with new and updated attributes
    *  @return a new symbol with updated attributes
    */
-  final def %(udpates: MetaData): Elem =
+  final def %(updates: MetaData): Elem =
     Elem(prefix,
          label,
          MetaData.update(attributes, scope, updates),
