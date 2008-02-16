@@ -2,7 +2,7 @@ import testing.SUnit.{Assert, TestCase, TestConsoleMain, TestSuite}
 import xml.{NodeSeq, Null, Text, UnprefixedAttribute}
 
 object Test extends TestConsoleMain {
-  def suite = new TestSuite()
+  def suite = new TestSuite(UnprefixedAttributeTest, AttributeWithOptionTest)
 
   object UnprefixedAttributeTest extends TestCase("UnprefixedAttribute") with Assert {
     override def runTest {
@@ -19,6 +19,13 @@ object Test extends TestConsoleMain {
 
       val z = new UnprefixedAttribute("foo", null:NodeSeq, x)
       assertEquals(None, z.get("foo"))
+
+      var appended = x append x append x append x
+      var len = 0; while (appended ne Null) {
+        appended = appended.next
+        len = len + 1
+      }
+      assertEquals("removal of duplicates for unprefixed attributes in append", 1, len)
     }
   }
 
@@ -39,8 +46,8 @@ object Test extends TestConsoleMain {
       assertEquals(None, y.attributes.get("bar"))
       assertEquals(null, y.attributes("bar"))
 
-      val z = new UnprefixedAttribute("bar", None, x)
-      assertEquals(z.get("foo"), None) // None
+      val z = new UnprefixedAttribute("foo", None, x)
+      assertEquals(None, z.get("foo")) // None
     }
   }
 

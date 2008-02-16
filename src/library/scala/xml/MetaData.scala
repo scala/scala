@@ -11,28 +11,98 @@
 
 package scala.xml
 
+/**
+ * Copyright 2008 Google Inc. All Rights Reserved.
+ * @author Burak Emir <bqe@google.com>
+ */
+object MetaData {
+
+  /**
+   * appends all attributes from new_tail to attribs, without attempting to detect
+   * or remove duplicates. The method guarantees that all attributes from attribs come before
+   * the attributes in new_tail, but does not guarantee to preserve the relative order of attribs.
+   * Duplicates can be removed with normalize.
+   */
+  def concatenate(attribs: MetaData, new_tail: MetaData): MetaData =
+    if (attribs eq Null)
+      new_tail
+    else
+      concatenate(attribs.next, attribs.copy(new_tail)) // tail-recursive
+
+  /**
+   * returns normalized MetaData, with all duplicates removed and namespace prefixes resolved to
+   *  namespace URIs via the given scope.
+   */
+  def normalize(attribs: MetaData, scope: NamespaceBinding): MetaData = {
+    import collection.mutable.HashSet
+    def iterate(md: MetaData, normalized_attribs: MetaData, map: HashSet[String]): MetaData = {
+      if (md eq Null)
+        normalized_attribs
+      else {
+        val universal_key = getUniversalKey(md, scope)
+        if (map.contains(universal_key))
+          iterate(md.next, normalized_attribs, map)
+        else {
+          map += universal_key
+          iterate(md.next, md.copy(normalized_attribs), map)
+        }
+      }
+    }
+    iterate(attribs, Null, new HashSet[String])
+  }
+
+  /**
+   * returns key if md is unprefixed, pre+key is md is prefixed
+   */
+  def getUniversalKey(attrib: MetaData, scope: NamespaceBinding) = attrib match {
+    case prefixed: PrefixedAttribute     => scope.getURI(prefixed.pre) + prefixed.key
+    case unprefixed: UnprefixedAttribute => unprefixed.key
+  }
+
+  /**
+   *  returns MetaData with attributes updated from given MetaData
+   */
+  def update(attribs: MetaData, scope: NamespaceBinding, updates: MetaData): MetaData =
+    normalize(concatenate(updates, attribs), scope)
+
+}
+
 /** <p>
- *    Attribute information item, and linked list of attribute information items.
- *    These are triples consisting of <code>prefix,key,value</code>. To obtain
- *    the namespace, <code>getNamespace</code> must be called with the parent.
- *    If next is null, this is the last attribute in the MetaData list.
- * </p>
- * <p>
- *   Either an UnprefixedAttribute or a PrefixedAttribute
+ *    This class represents an attribute and at the same time a linked list of attributes.
+ *    Every instance of this class is either an instance of UnprefixedAttribute <code>key,value</code>
+ *    or an instance of PrefixedAttribute <code>namespace_prefix,key,value</code> or Null, the empty
+ *    attribute list. Namespace URIs are obtained by using the namespace scope of the element owning
+ *    this attribute (see <code>getNamespace</code>)
  * </p>
  *
- * @todo _vlue should be a normalized attribute value
+ * Copyright 2008 Google Inc. All Rights Reserved.
+ * @author Burak Emir <bqe@google.com>
  */
 @serializable
 abstract class MetaData extends Collection[MetaData] {
 
-  /** appends given MetaData items to this MetaData list.
+  /** updates this MetaData with the MetaData given as argument. All attributes that occur in updates
+   *  are part of the resulting MetaData. If an unprefixed attribute occurs in both this instance and
+   *  updates, only the one in updates is part of the result (avoiding duplicates). However, for
+   *  prefixed attributes no duplicate-detection is attempted, the method
+   *  append(updates: MetaData, scope:NamespaceBinding) should be used instead.
    *
-   *  @param m ...
-   *  @return  ...
+   *  @param updates MetaData with new attributes and updated attributes
+   *  @return a new MetaData instance that contains the combined attributes of this and updates
    */
-  def append(m: MetaData): MetaData =
-    next.append(copy(m))
+  def append(updates: MetaData): MetaData =
+    MetaData.update(this, TopScope, updates)
+
+  /** updates this MetaData with the MetaData given as argument. All attributes that occur in updates
+   *  are part of the resulting MetaData. If an attribute occurs in both this instance and
+   *  updates, only the one in updates is part of the result (avoiding duplicates). For prefixed
+   *  attributes, namespaces are resolved using the given scope.
+   *
+   *  @param updates MetaData with new and updated attributes
+   *  @return a new MetaData instance that contains old, new and updated attributes
+   */
+  def append(updates: MetaData, scope: NamespaceBinding): MetaData =
+    MetaData.update(this, scope, updates)
 
   /**
    * Gets value of unqualified (unprefixed) attribute with given key, null if not found
@@ -44,23 +114,23 @@ abstract class MetaData extends Collection[MetaData] {
 
   /** convenience method, same as <code>apply(namespace, owner.scope, key)</code>.
    *
-   *  @param namespace ...
-   *  @param owner     ...
-   *  @param key       ...
+   *  @param namespace_uri namespace uri of key
+   *  @param owner the element owning this attribute list
+   *  @param key   the attribute key
    *  @return          ...
    */
-  final def apply(namespace: String, owner: Node, key: String): Seq[Node] =
-    apply(namespace, owner.scope, key)
+  final def apply(namespace_uri: String, owner: Node, key: String): Seq[Node] =
+    apply(namespace_uri, owner.scope, key)
 
   /**
    * Gets value of prefixed attribute with given key and namespace, null if not found
    *
-   * @param  uri namespace of key
+   * @param  namespace_uri namespace uri of key
    * @param  scp a namespace scp (usually of the element owning this attribute list)
    * @param  key to be looked fore
    * @return value as Seq[Node] if key is found, null otherwise
    */
-  def apply(uri:String, scp:NamespaceBinding, k:String): Seq[Node]
+  def apply(namespace_uri:String, scp:NamespaceBinding, k:String): Seq[Node]
 
   /**
    *  @param m ...
