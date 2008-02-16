@@ -11,25 +11,35 @@
 
 package scala.xml
 
+/** This singleton object contains the apply and unapplySeq methods for convenient construction and
+ *  deconstruction. It is possible to deconstruct any Node instance (that is not a SpecialNode or
+ *  a Group) using the syntax
+ * <code> case Elem(prefix, label, attribs, scope, child @ _*) => ... </code>
+ *
+ * Copyright 2008 Google Inc. All Rights Reserved.
+ * @author Burak Emir <bqe@google.com>
+ */
 object Elem {
 
   def apply(prefix: String,label: String, attributes: MetaData, scope: NamespaceBinding, child: Node*) =
     new Elem(prefix,label,attributes,scope,child:_*)
 
-  def unapplySeq(n:Node) = if(n.isInstanceOf[SpecialNode]||n.isInstanceOf[Group]) None else
-    Some(Tuple5(n.prefix,n.label,n.attributes,n.scope,n.child))
+  def unapplySeq(n:Node) = if (n.isInstanceOf[SpecialNode] || n.isInstanceOf[Group]) None else
+    Some(Tuple5(n.prefix, n.label, n.attributes, n.scope, n.child))
 
 
 }
 /** The case class <code>Elem</code> extends the <code>Node</code> class,
  *  providing an immutable data object representing an XML element.
  *
- *  @author Burak Emir
- *
- *  @param prefix (may be null)
+ *  @param prefix namespace prefix (may be null, but not the empty string)
  *  @param label the element name
  *  @param attribute the attribute map
+ *  @param scope the scope containing the namespace bindings
  *  @param child the children of this node
+ *
+ * Copyright 2008 Google Inc. All Rights Reserved.
+ * @author Burak Emir <bqe@google.com>
  */
 // "val" is redundant for non-overriding arguments
 @serializable class Elem(override val prefix: String,
