@@ -5,7 +5,7 @@ trait IdeSupport extends Global with symtab.IdeSupport {
   protected def normalCompile[T](f : => T) : T = f
   override def unpickleIDEHook : (( => Type) => Type) = f => normalCompile(f)
   class IdeRun extends Run {
-    override def compiles(sym : Symbol) : Boolean = throw new Error
+    override def compiles(sym : Symbol) : Boolean = false // throw new Error
     override def compileLate(file : AbstractFile) = {
       // don't bother with any of the phase crap since adapt isn't supported
       reloadSource(file)

@@ -275,7 +275,8 @@ trait Namers { self: Analyzer =>
     }
 
     def applicableTypeParams(owner: Symbol): List[Symbol] =
-      if (owner.isTerm || owner.isPackageClass) List()
+      if (inIDE && (owner eq NoSymbol)) List()
+      else if (owner.isTerm || owner.isPackageClass) List()
       else applicableTypeParams(owner.owner) ::: owner.typeParams
 
     def deSkolemize: TypeMap = new DeSkolemizeMap(applicableTypeParams(context.owner))
