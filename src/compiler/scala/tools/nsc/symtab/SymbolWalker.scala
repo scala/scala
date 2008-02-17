@@ -192,9 +192,11 @@ trait SymbolWalker {
         f(tree.qualifier)
       }
       case tree : Literal =>
+      /*
         if (tree.tpe != null && tree.tpe.typeSymbol == definitions.ClassClass) {
           // nothing we can do without original tree.
         }
+      */
 
       case tree : Typed => f(tree.expr); f(tree.tpt)
       case tree : Block => fs(tree.stats); f(tree.expr)

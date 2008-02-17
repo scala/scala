@@ -207,7 +207,11 @@ trait Trees {
       val results = for (i <- 0.until(this0.productArity).toList) yield
         equals0(this0.productElement(i), that0.productElement(i))
       val b = results.foldLeft(true)((x,y) => x && y)
-      b // ignore type!
+      if (b) (this,that) match {
+      case (this0 : TypeTree,that0 : TypeTree) if this0.original != null && that0.original != null =>
+        this0.original.equalsStructure0(that0.original)(f)
+      case _ => true
+      } else false
     }
 
     def duplicate: this.type =

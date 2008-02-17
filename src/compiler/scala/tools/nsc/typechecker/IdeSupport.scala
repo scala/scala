@@ -226,7 +226,10 @@ trait IdeSupport extends Analyzer {
       else if (namerTxt != NoContext && shouldBeTyped) {} else return fakeUpdate(lastTyped)
       val use = useTrees
       if (makeNoChanges) {}
-      else if (use.isEmpty || use.last.symbol != NoSymbol) return fakeUpdate(use) // already named
+      else if (use.isEmpty || use.last.symbol != NoSymbol) {
+        assert(true)
+        return fakeUpdate(use) // already named
+      }
 
       if (kind.isTop) namer.context.unit.source.file match {
       case file : io.PlainFile => reloadSource(file)
@@ -305,16 +308,16 @@ trait IdeSupport extends Analyzer {
         // the type changed in a good way.
         typeChanged
       }
-      if (!makeNoChanges && use.length != lastTyped.length || !use.zip(lastTyped).forall{
+      assert(true)
+      if (!makeNoChanges && (use.length != lastTyped.length || !use.zip(lastTyped).forall{
         case (t0,t1) => t0.equalsStructure0(t1){
         case (t0:StubTree,t1:StubTree) if t0.underlying == t0.underlying || true => true
         case _ => false
         }
-      }) {
+      })) {
         assert(true)
         highlightChanged
       }
-
       if (use.last.tpe == null) ErrorType else use.last.tpe
     }
   }

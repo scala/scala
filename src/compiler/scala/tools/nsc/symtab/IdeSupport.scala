@@ -389,8 +389,8 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
     }
     // because module var shares space with monomorphic.
     if (existing.isModuleVar != symbol.isModuleVar) return NotCompatible
-    if ((existing.flags|MONOMORPHIC|DEFERRED|ABSTRACT|PRIVATE|PROTECTED|FINAL|SEALED|CASE) !=
-        (symbol.  flags|MONOMORPHIC|DEFERRED|ABSTRACT|PRIVATE|PROTECTED|FINAL|SEALED|CASE)) {
+    if ((existing.flags|LOCKED|INTERFACE|MONOMORPHIC|DEFERRED|ABSTRACT|PRIVATE|PROTECTED|FINAL|SEALED|CASE) !=
+        (symbol.  flags|LOCKED|INTERFACE|MONOMORPHIC|DEFERRED|ABSTRACT|PRIVATE|PROTECTED|FINAL|SEALED|CASE)) {
       return NotCompatible
     }
     if (((existing.flags&(MONOMORPHIC|INTERFACE)) != 0) ||
@@ -406,10 +406,10 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
     if (!ret) return NotCompatible
     existing.setPos(symbol.pos) // not significant for updating purposes.
     if ((existing.privateWithin != symbol.privateWithin ||
-        existing.name != symbol.name || ((existing.flags|MONOMORPHIC) != (symbol.flags|MONOMORPHIC)))) {
+        existing.name != symbol.name || ((existing.flags|LOCKED|MONOMORPHIC|INTERFACE) != (symbol.flags|LOCKED|MONOMORPHIC|INTERFACE)))) {
       existing.name = (symbol.name)
       // don't reset the monomorphic bit until we reset the type.
-      existing.flags = symbol.flags | (existing.flags&MONOMORPHIC)
+      existing.flags = symbol.flags
       existing.privateWithin = symbol.privateWithin
       return new Updated(existing)
     }

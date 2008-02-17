@@ -78,13 +78,14 @@ trait HashTable[A] extends AnyRef {
       resize(2 * table.length)
   }
 
-  protected def removeEntry(key: A) {
+  protected def removeEntry(key: A) : Option[Entry] = {
     val h = index(elemHashCode(key))
     var e = table(h)
     if (e != null) {
       if (elemEquals(e.key, key)) {
         table(h) = e.next
         tableSize = tableSize - 1
+        return Some(e)
       } else {
         var e1 = e.next
         while (e1 != null && !elemEquals(e1.key, key)) {
@@ -94,9 +95,11 @@ trait HashTable[A] extends AnyRef {
         if (e1 != null) {
           e.next = e1.next
           tableSize = tableSize - 1
+          return Some(e1)
         }
       }
     }
+    None
   }
 
   protected def entries: Iterator[Entry] = new Iterator[Entry] {

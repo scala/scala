@@ -62,20 +62,21 @@ trait FlatHashTable[A] {
     null != entry
   }
 
-  def addEntry(elem: A) {
+  def addEntry(elem: A) : Boolean = {
     var h = index(elemHashCode(elem))
     var entry = table(h)
     while (null != entry) {
-      if (entry == elem) return
+      if (entry == elem) return false
       h = (h + 1) % table.length
       entry = table(h)
     }
     table(h) = elem.asInstanceOf[AnyRef]
     tableSize = tableSize + 1
     if (tableSize >= threshold) growTable()
+    true
   }
 
-  def removeEntry(elem: A) {
+  def removeEntry(elem: A) : Option[A] = {
     if (tableDebug) checkConsistent()
     def precedes(i: Int, j: Int) = {
       val d = table.length >> 1
@@ -101,11 +102,12 @@ trait FlatHashTable[A] {
         table(h0) = null
         tableSize -= 1
         if (tableDebug) checkConsistent()
-        return
+        return Some(entry.asInstanceOf[A])
       }
       h = (h + 1) % table.length
       entry = table(h)
     }
+    None
   }
 
   def elements = new Iterator[A] {

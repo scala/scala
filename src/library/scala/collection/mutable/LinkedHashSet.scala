@@ -10,43 +10,40 @@
 
 package scala.collection.mutable
 
-/** This class...
- *
- *  @author Sean McDirmid
- *  @version 1.0
- */
-@deprecated class LinkedHashSet[A](private val set0 : java.util.LinkedHashSet[A]) extends Set[A] {
 
-  def this() = this(new java.util.LinkedHashSet[A])
+object LinkedHashSet {
+  /** The empty map of this type */
+  def empty[A] = new LinkedHashSet[A]
 
-  private def this(set1 : java.util.Set[A], b : Boolean) =
-    this(new java.util.LinkedHashSet[A](set1))
+  /** The canonical factory for this type
+   */
+  def apply[A](elems: A*) = empty[A] ++ elems
+}
 
-  def contains(elem: A): Boolean = set0.contains(elem)
+@serializable
+class LinkedHashSet[A] extends Set[A] with FlatHashTable[A] {
+  private var ordered = List[A]()
 
-  def +=(elem: A): Unit = set0.add(elem)
+  def contains(elem: A): Boolean = containsEntry(elem)
 
-  def ++=(set: LinkedHashSet[A]) = set0.addAll(set.set0)
-  def --=(set: LinkedHashSet[A]) = set0.removeAll(set.set0)
+  def +=(elem: A) { add(elem) }
 
-  def -=(elem: A): Unit = set0.remove(elem)
-
-  def elements = new Iterator[A] {
-    val i = set0.iterator
-    def hasNext = i.hasNext()
-    def next = i.next().asInstanceOf[A]
+  def add(elem : A) : Boolean = {
+    if (addEntry(elem)) {
+      ordered = elem :: ordered
+      true
+    } else false
+  }
+  def -=(elem: A) { remove(elem) }
+  def remove(elem : A) : Boolean = removeEntry(elem) match {
+  case None => false
+  case Some(elem) => ordered = ordered.filter(e => e != elem); true
   }
 
-  override def clear() = set0.clear()
-
-  def size = set0.size()
-
-  override def toString() = set0.toString()
-
-  override def clone(): Set[A] = {
-    val res = new LinkedHashSet[A](set0, true)
-    res ++= this
-    res
+  override def clear() = {
+    ordered = Nil
+    super.clear()
   }
-
+  override def clone(): Set[A] = new LinkedHashSet[A] ++ this
+  override def elements = ordered.reverse.elements
 }

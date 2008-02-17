@@ -618,7 +618,8 @@ class SemanticTokens(val compiler: Global) {
           Console.err.println("LIST  =" + this);
           Console.err.println("OFFSET=" + offset + " " + tok + " " + tok.length);
           Console.err.println("       " + cursor.offset + " " + gap.length);
-          throw new Error();
+          gap.length0 = offset - cursor.offset + tok.length
+          //throw new Error();
         }
         if (offset == cursor.offset) {
           // replace or prepend
