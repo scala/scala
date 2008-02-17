@@ -179,7 +179,20 @@ trait SymbolWalker {
           dup.tpe = tree.tpe
           f(dup)
         } else f(tree.ref)
-      case tree : CompoundTypeTree => f(tree.templ)
+      case tree : CompoundTypeTree =>
+        if (tree.tpe.typeSymbol.isRefinementClass) tree.tpe.typeSymbol.info match {
+        case tpe : RefinedType =>
+          tpe.parents.zip(tree.templ.parents).foreach{
+          case (tpe,tree) =>
+            if (tree.hasSymbol && (tree.symbol == NoSymbol || tree.symbol == null)) {
+              tree.symbol = tpe.typeSymbol
+            }
+          }
+
+        case _ =>
+        }
+
+        f(tree.templ)
       case tree : Template => fs(tree.parents); f(tree.self); fs(tree.body)
       case tree : SelectFromTypeTree => {
         if (tree.qualifier.tpe == null) tree.tpe match {

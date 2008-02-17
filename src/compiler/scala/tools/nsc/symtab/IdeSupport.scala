@@ -319,7 +319,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
         finish(existing)
       }
 
-      assert(symbol != NoSymbol)
+      if (symbol == NoSymbol) return symbol
       // catch double defs.
       record(currentClient, symbol.name)
       val i = reuseMap(this).elements
