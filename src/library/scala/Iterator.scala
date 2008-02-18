@@ -673,5 +673,5 @@ trait Iterator[+A] {
     }
     buf.append(end)
   }
-  override def toString = if (hasNext) "has" else "empty"
+  override def toString = (if (hasNext) "non-empty" else "empty")+" iterator"
 }
