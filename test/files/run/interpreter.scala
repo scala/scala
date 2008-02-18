@@ -19,6 +19,8 @@ type anotherint = Int
 val four: anotherint = 4
 val bogus: anotherint = "hello"
 trait PointlessTrait
+val (x,y) = (2,3)
+println("hello")
 
 // implicit conversions
 case class Foo(n: int)
@@ -110,6 +112,12 @@ there
 // defining and using quoted names should work (ticket #323)
 def `match` = 1
 val x = `match`
+
+// multiple classes defined on one line
+sealed class Exp; class Fact extends Exp; class Term extends Exp
+def f(e: Exp) = e match {{  // non-exhaustive warning here
+  case _:Fact => 3
+}}
 
 </code>.text
 
