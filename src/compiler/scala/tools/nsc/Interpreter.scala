@@ -896,16 +896,15 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       }
     }
   }
+}
 
+/** Utility methods for the Interpreter. */
+object Interpreter {
   class NewLinePrintWriter(out: Writer, autoFlush: Boolean)
   extends PrintWriter(out, autoFlush) {
     def this(out: Writer) = this(out, false)
     override def println() { print("\n"); flush() }
   }
-}
-
-/** Utility methods for the Interpreter. */
-object Interpreter {
 
   /** Delete a directory tree recursively.  Use with care!
    */
