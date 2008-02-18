@@ -615,8 +615,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       if (isSymLit) {
         atPos(pos) {
           var symid = scalaDot(nme.Symbol)
-          val symobj = Apply(symid, List(t))
-          if (isPattern) symobj else Select(symobj, nme.intern)
+          Apply(symid, List(t))
         }
       } else {
         t

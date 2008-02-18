@@ -13,13 +13,12 @@ package scala
 
 import scala.collection.jcl
 
-private[scala] object internedSymbols extends jcl.WeakHashMap[Symbol, ref.WeakReference[Symbol]]
+private[scala] object internedSymbols extends jcl.WeakHashMap[String, ref.WeakReference[Symbol]]
 
 /** <p>
  *    This class provides a simple way to get unique objects for
- *    equal strings. By default, symbols use string equality for
- *    equality testing, but interned symbols can be compared using
- *    reference equality for the same effect. Instances of
+ *    equal strings. Since symbols are interned, they can be compared using
+ *    reference equality. Instances of
  *    <code>Symbol</code> can be created easily with Scala's built-in
 *     quote mechanism.
  *  </p>
@@ -27,19 +26,23 @@ private[scala] object internedSymbols extends jcl.WeakHashMap[Symbol, ref.WeakRe
  *    For instance, the <a href="http://scala-lang.org/" target="_top">Scala</a>
  *    term <code>'mysym</code> will invoke the constructor of the
  *    <code>Symbol</code> class in the following way:
- *    <code>new Symbol("mysym").intern</code>.
+ *    <code>Symbol("mysym")</code>.
  *  </p>
  *
- *  @author  Martin Odersky
- *  @version 1.7, 08/12/2003
+ *  @author  Martin Odersky, Iulian Dragos
+ *  @version 1.8
  */
-final case class Symbol(name: String) {
+final class Symbol private (val name: String) {
 
   /** Converts this symbol to a string.
    */
   override def toString(): String = {
     "'" + name
   }
+
+}
+
+object Symbol {
 
   /** <p>
    *    Makes this symbol into a unique reference.
@@ -49,12 +52,17 @@ final case class Symbol(name: String) {
    *    then they must be identical (wrt reference equality).
    *  </p>
    *
-   *  @return the unique reference to this symbol.
+   *  @return the unique reference to this string.
    */
-  def intern: Symbol = internedSymbols.synchronized {
-    internedSymbols.get(this).map(_.get).getOrElse(None) match {
+  def apply(name: String): Symbol = internedSymbols.synchronized {
+    internedSymbols.get(name).map(_.get).getOrElse(None) match {
     case Some(sym) => sym
     case _ =>
-      internedSymbols(this) = new ref.WeakReference(this); this
-  } }
+      val sym = new Symbol(name)
+      internedSymbols(name) = new ref.WeakReference(sym)
+      sym
+    }
+  }
+
+  def unapply(other: Symbol): Option[String] = Some(other.name)
 }

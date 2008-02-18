@@ -532,7 +532,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
     case _ : Float => 0 : Float
     case _ : Double => 0 : Double
     case _ : String => "string"
-    case _ : scala.Symbol => 'symbol
+    case _ : scala.Symbol => Symbol("symbol")
     case value => value
     }))
   }
