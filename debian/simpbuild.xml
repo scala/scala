@@ -484,6 +484,9 @@
 
   <target name="build.tests" depends="build">
     <mkdir dir="${build.dir}/partest"/>
+    <javac
+      srcdir="${topdir}/src/partest"
+      destdir="${build.dir}/partest"/>
     <scalac
       srcdir="${topdir}/src/partest"
       destdir="${build.dir}/partest"
@@ -492,6 +495,7 @@
         <pathelement location="${build.lib.dir}"/>
         <pathelement location="${build.comp.dir}"/>
         <pathelement location="${build.actors.dir}"/>
+        <pathelement location="${build.dir}/partest"/>
       </classpath>
       <include name="**/*.scala"/>
     </scalac>
