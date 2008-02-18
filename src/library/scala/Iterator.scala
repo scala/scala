@@ -53,20 +53,21 @@ object Iterator {
   /**
    *  @param xs     the array of elements
    *  @param start  the start index
-   *  @param length  the end index
+   *  @param length  the length
    *  @see also: RandomAccessSeq.elements and slice
    */
+  @throws(classOf[NoSuchElementException])
   def fromArray[a](xs: Array[a], start: Int, length: Int): Iterator[a] =
     new BufferedIterator.Advanced[a] {
       private var i = start
-      val end = if ((start + length) < xs.length) start else xs.length
+      val end = if (start + length < xs.length) start + length else xs.length
       override def hasNext: Boolean = i < end
       def next: a =
         if (hasNext) { val x = xs(i) ; i += 1 ; x }
         else throw new NoSuchElementException("next on empty iterator")
 
       override protected def defaultPeek : a = throw new NoSuchElementException("no lookahead")
-      override def peekList(sz : Int) : Seq[a] =
+      override def peekList(sz: Int): Seq[a] =
         xs.slice(i, if (i + sz > xs.length) xs.length else i + sz)
   }
 
@@ -83,7 +84,7 @@ object Iterator {
       def next = { val c = str charAt i; i += 1; c }
 
       override protected def defaultPeek : Char = throw new NoSuchElementException
-      override def peekList(sz : Int) : Seq[Char] =
+      override def peekList(sz: Int): Seq[Char] =
         str.substring(i, if (i + sz > str.length) str.length else i + sz)
     }
 
@@ -114,7 +115,7 @@ object Iterator {
    *  @param end   the end value of the iterator
    *  @return      the iterator with values in range <code>[start;end)</code>.
    */
- def range(start: Int, end: Int): Iterator[Int] = range(start, end, 1)
+  def range(start: Int, end: Int): Iterator[Int] = range(start, end, 1)
 
   /** Create an iterator with elements
    *  <code>e<sub>n+1</sub> = e<sub>n</sub> + step</code>
@@ -127,13 +128,14 @@ object Iterator {
    *  @param step  the increment value of the iterator (must be positive or negative)
    *  @return      the iterator with values in range <code>[start;end)</code>.
    */
- def range(start: Int, end: Int, step: Int) = new Iterator[Int] {
-   private var i = start
-   def hasNext: Boolean = (step <= 0 || i < end) && (step >= 0 || i > end)
-   def next(): Int =
-     if (hasNext) { val j = i; i = i + step; j }
-     else throw new NoSuchElementException("next on empty iterator")
- }
+  @throws(classOf[NoSuchElementException])
+  def range(start: Int, end: Int, step: Int) = new Iterator[Int] {
+    private var i = start
+    def hasNext: Boolean = (step <= 0 || i < end) && (step >= 0 || i > end)
+    def next(): Int =
+      if (hasNext) { val j = i; i += step; j }
+      else throw new NoSuchElementException("next on empty iterator")
+  }
 
   /** Create an iterator with elements
    *  <code>e<sub>n+1</sub> = step(e<sub>n</sub>)</code>
@@ -146,6 +148,7 @@ object Iterator {
    *  @param step  the increment function of the iterator, must be monotonically increasing or decreasing
    *  @return      the iterator with values in range <code>[start;end)</code>.
    */
+  @throws(classOf[NoSuchElementException])
   def range(start: Int, end: Int, step: Int => Int) = new Iterator[Int] {
     private val up = step(start) > start
     private val down = step(start) < start
@@ -215,6 +218,7 @@ trait Iterator[+A] {
    *  @param n the number of elements to take
    *  @return  the new iterator
    */
+  @throws(classOf[NoSuchElementException])
   def take(n: Int) = new Iterator[A] {
     var remaining = n
     def hasNext = remaining > 0 && Iterator.this.hasNext
@@ -271,6 +275,7 @@ trait Iterator[+A] {
    *           f(a<sub>n</sub>)</code> if this iterator yields the
    *           elements <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
    */
+  @throws(classOf[NoSuchElementException])
   def flatMap[B](f: A => Iterator[B]): Iterator[B] = new Iterator[B] {
     private var cur: Iterator[B] = Iterator.empty
     def hasNext: Boolean =
@@ -289,7 +294,7 @@ trait Iterator[+A] {
 
   protected class PredicatedIterator(p : A => Boolean) extends BufferedIterator.Default[A] {
     protected def doEnd : Boolean = false
-    protected override def fill(sz : Int) : Seq[A] = {
+    protected override def fill(sz: Int): Seq[A] = {
       while (true) {
         if (!Iterator.this.hasNext) return Nil
         val ret = Iterator.this.next
@@ -415,7 +420,7 @@ trait Iterator[+A] {
    *  @return     <code>true</code> iff there is an element of this iterator which
    *              is equal (w.r.t. <code>==</code>) to <code>elem</code>.
    */
-  def contains(elem: Any): Boolean = exists { x => x == elem }
+  def contains(elem: Any): Boolean = exists { _ == elem }
 
   /** Find and return the first element of the iterable object satisfying a
    *  predicate, if any.
@@ -491,6 +496,7 @@ trait Iterator[+A] {
    *          <code>a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub></code>.
    *  @throws Predef.UnsupportedOperationException if the iterator is empty.
    */
+  @throws(classOf[UnsupportedOperationException])
   def reduceLeft[B >: A](op: (B, B) => B): B = {
     if (hasNext) foldLeft[B](next)(op)
     else throw new UnsupportedOperationException("empty.reduceLeft")
@@ -506,6 +512,7 @@ trait Iterator[+A] {
 
    *  @throws Predef.UnsupportedOperationException if the iterator is empty.
    */
+  @throws(classOf[UnsupportedOperationException])
   def reduceRight[B >: A](op: (B, B) => B): B = {
     if (!hasNext) throw new UnsupportedOperationException("empty.reduceRight")
     val x = next
@@ -573,7 +580,7 @@ trait Iterator[+A] {
    *  @param  start the starting index.
    *  @pre          the array must be large enough to hold all elements.
    */
-  def copyToArray[B >: A](xs: Array[B], start: Int): Unit = {
+  def copyToArray[B >: A](xs: Array[B], start: Int) {
     var i = start
     while (hasNext) {
       xs(i) = next
@@ -589,24 +596,27 @@ trait Iterator[+A] {
    *  @param  sz    the maximum number of elements to be read.
    *  @pre          the array must be large enough to hold <code>sz</code> elements.
    */
-  def readInto[B >: A](xs: Array[B], start : Int, sz : Int) : Unit = {
+  def readInto[B >: A](xs: Array[B], start: Int, sz: Int) {
     var i = start
     while (hasNext && i - start < sz) {
       xs(i) = next
       i += 1
     }
   }
-  def readInto[B >: A](xs : Array[B], start : Int) : Unit = readInto(xs, start, xs.length - start)
-  def readInto[B >: A](xs : Array[B]) : Unit = readInto(xs, 0, xs.length)
-
-
+  def readInto[B >: A](xs: Array[B], start: Int) {
+    readInto(xs, start, xs.length - start)
+  }
+  def readInto[B >: A](xs: Array[B]) {
+    readInto(xs, 0, xs.length)
+  }
 
   /** Copy all elements to a buffer
    *  @param   The buffer to which elements are copied
    *  @return  The buffer to which elements are copied
    */
-  def copyToBuffer[B >: A](dest: Buffer[B]): Unit =
+  def copyToBuffer[B >: A](dest: Buffer[B]) {
     while (hasNext) dest += next
+  }
 
   /** Transform this iterator into a list of all elements.
    *
@@ -633,7 +643,7 @@ trait Iterator[+A] {
    *  @return a string representation of this iterable object.
    */
   def mkString(start: String, sep: String, end: String): String = {
-    val buf = new StringBuilder()
+    val buf = new StringBuilder
     addString(buf, start, sep, end).toString
   }
 

@@ -12,6 +12,7 @@ object Test {
     val it2 = Iterator.from(0, -1)
     it1.next + it2.next
   }
+
   def check_range: Int = {
     val xs1 = Iterator.range(0, 10,  2) toList;
     val xs2 = Iterator.range(0, 10, -2) toList;
@@ -73,20 +74,30 @@ object Test {
     0
   }
 
-  def check_success[A](name: String, closure: => A, expected: A): Unit = {
-    Console.print("test " + name)
+  def check_fromArray: Int = {  // ticket #429
+    val a = List(1, 2, 3, 4).toArray
+    var xs0 = Iterator.fromArray(a).toList;
+    var xs1 = Iterator.fromArray(a, 0, 1).toList;
+    var xs2 = Iterator.fromArray(a, 0, 2).toList;
+    var xs3 = Iterator.fromArray(a, 0, 3).toList;
+    var xs4 = Iterator.fromArray(a, 0, 4).toList;
+    xs0.length + xs1.length + xs2.length + xs3.length + xs4.length
+  }
+
+  def check_success[A](name: String, closure: => A, expected: A) {
+    print("test " + name)
     try {
       val actual: A = closure
       if (actual == expected)
-        Console.print(" was successful")
+        print(" was successful")
       else
-        Console.print(" failed: expected "+ expected +", found "+ actual)
+        print(" failed: expected "+ expected +", found "+ actual)
     }
     catch {
       case exception: Throwable =>
-        Console.print(" raised exception " + exception)
+        print(" raised exception " + exception)
     }
-    Console.println
+    println()
   }
 
   def main(args: Array[String]) {
@@ -98,7 +109,8 @@ object Test {
     check_success("check_drop",     check_drop,     12)
     check_success("check_foreach",  check_foreach, 190)
     check_success("check_forall",   check_forall,    0)
-    Console.println
+    check_success("check_fromArray",check_fromArray, 0)
+    println()
   }
 }
 
