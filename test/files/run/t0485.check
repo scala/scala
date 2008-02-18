@@ -1,28 +1,37 @@
-m1={20=30, 10=20}
-m2={10=20}
-m1 == m2 is false
+m1={(10,20), (20,30)}
+m2={(10,20)}
+m1.size > m2.size is true
+m1 equals m2 is true
 
-m1={10=20, 20=30}
-m2={10=20}
-m1 == m2 is false
+m1={(10,20), (20,30)}
+m2={(10,20)}
+m1.size > m2.size is true
+m1 equals m2 is true
 
-m1={10=20, 20=30}
-m2={10=20}
-m1 == m2 is false
+m1={(10,20), (20,30)}
+m2={(10,20)}
+m1.size > m2.size is true
+m1 equals m2 is true
+
+m1={(10,20), (20,30)}
+m2={(10,20)}
+m1.size > m2.size is true
+m1 equals m2 is true
 
 java.lang.CloneNotSupportedException: The underlying map doesn't implement the Cloneable interface
 
-m1.size > m2.size is true
+s1=[10, 20]
+s2=[10]
+s1.size > s2 is true
+s1 equals s2 is true
 
-m1=[20, 10]
-m2=[10]
-m1 == m2 is false
+s1=[10, 20]
+s2=[10]
+s1.size > s2 is true
+s1 equals s2 is true
 
-m1=[10, 20]
-m2=[10]
-m1 == m2 is false
-
-m1=[10, 20]
-m2=[10]
-m1 == m2 is false
+s1=[10, 20]
+s2=[10]
+s1.size > s2 is true
+s1 equals s2 is true
 

@@ -1,4 +1,4 @@
-import scala.collection.jcl._
+import scala.collection.jcl
 
 object Test extends Application {
   testMap
@@ -6,27 +6,18 @@ object Test extends Application {
 }
 
 object testMap {
-  def test(m1: Map[Int, Int]) {
+  def toString(m1: collection.Map[Int, Int]): String =
+    m1.toList.sort((x, y) => x < y).mkString("{", ", ", "}")
+  def test(m1: jcl.Map[Int, Int]) {
     try {
       m1.put(10, 20)
       val m2 = m1.clone()
       m1.put(20, 30)
-      println("m1="+m1)
-      println("m2="+m2)
-      println("m1 == m2 is "+ (m1 == m2))
-      println()
-    }
-    catch {
-      case e: Exception =>
-        println(e); println()
-    }
-  }
-  def test1(m1: Map[Int, Int]) {
-    try {
-      m1.put(10, 20)
-      val m2 = m1.clone()
-      m1.put(20, 30)
+      println("m1="+toString(m1))
+      println("m2="+toString(m2))
       println("m1.size > m2.size is "+ (m1.size > m2.size))
+      m1.remove((20, 30))
+      println("m1 equals m2 is "+ (m1 equals m2))
       println()
     }
     catch {
@@ -34,28 +25,28 @@ object testMap {
         println(e); println()
     }
   }
-  test(new HashMap[Int, Int])
-  test(new LinkedHashMap[Int, Int])
-  // NB. class IdentityHashMap makes no guarantees as to the order
-  // of the map; in particular, it does not guarantee that the order
-  // will remain constant over time (see Java API docs).
-  //test1(new IdentityHashMap[Int, Int])
-  test(new TreeMap[Int, Int])
-  test(new WeakHashMap[Int, Int])
-  test1(new IdentityHashMap[Int, Int])
+  test(new jcl.HashMap[Int, Int])
+  test(new jcl.IdentityHashMap[Int, Int])
+  test(new jcl.LinkedHashMap[Int, Int])
+  test(new jcl.TreeMap[Int, Int])
+  test(new jcl.WeakHashMap[Int, Int])
 }
 
 object testSet {
-  def test(m1: Set[Int]) {
-    m1.add(10)
-    val m2 = m1.clone()
-    m1.add(20)
-    println("m1="+m1)
-    println("m2="+m2)
-    println("m1 == m2 is "+ (m1 == m2))
+  def toString(s1: collection.Set[Int]): String =
+    s1.toList.sort((x, y) => x < y).mkString("[", ", ", "]")
+  def test(s1: jcl.Set[Int]) {
+    s1.add(10)
+    val s2 = s1.clone()
+    s1.add(20)
+    println("s1="+toString(s1))
+    println("s2="+toString(s2))
+    println("s1.size > s2 is "+ (s1.size > s2.size))
+    s1.remove(20)
+    println("s1 equals s2 is "+ (s1 equals s2))
     println()
   }
-  test(new HashSet[Int])
-  test(new LinkedHashSet[Int])
-  test(new TreeSet[Int])
+  test(new jcl.HashSet[Int])
+  test(new jcl.LinkedHashSet[Int])
+  test(new jcl.TreeSet[Int])
 }
