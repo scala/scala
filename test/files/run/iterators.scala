@@ -101,15 +101,15 @@ object Test {
   }
 
   def main(args: Array[String]) {
-    check_success("check_from",     check_from,     -1)
-    check_success("check_range",    check_range,    11)
-    check_success("check_range2",   check_range2,   26)
-    check_success("check_range3",   check_range3,    3)
-    check_success("check_take",     check_take,     10)
-    check_success("check_drop",     check_drop,     12)
-    check_success("check_foreach",  check_foreach, 190)
-    check_success("check_forall",   check_forall,    0)
-    check_success("check_fromArray",check_fromArray, 0)
+    check_success("check_from",     check_from,      -1)
+    check_success("check_range",    check_range,     11)
+    check_success("check_range2",   check_range2,    26)
+    check_success("check_range3",   check_range3,     3)
+    check_success("check_take",     check_take,      10)
+    check_success("check_drop",     check_drop,      12)
+    check_success("check_foreach",  check_foreach,  190)
+    check_success("check_forall",   check_forall,     0)
+    check_success("check_fromArray",check_fromArray, 14)
     println()
   }
 }
