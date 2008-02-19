@@ -143,7 +143,7 @@ INITIALISATION
     <stopwatch name="timer.dist"/>
     <tstamp prefix="time">
       <format property="human" pattern="EEEE, d MMMM yyyy, HH:mm:ss (zz)"/>
-      <format property="short" pattern="yyyyMMdd-HHmmss"/>
+      <format property="short" pattern="yyyyMMddHHmmss"/>
     </tstamp>
   <!-- Finding out what system architecture is being used -->
     <condition property="os.win"><os family="windows"/></condition>
@@ -244,7 +244,7 @@ SETUP
     <property file="${number.file}"/>
     <property
       name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}.${svn.number}.${time.short}"/>
+      value="${version.major}.${version.minor}.${version.patch}.r${svn.number}-b${time.short}"/>
   <!-- And print-out what we are building -->
     <echo level="info" message="Build number is '${version.number}'"/>
     <echo level="info" message="Built ${time.human} from SVN revision ${svn.number}"/>
@@ -1536,28 +1536,21 @@ GENERATES A DISTRIBUTION
   <target name="dist.devel" depends="init">
     <property file="${number.file}"/>
     <property name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}.${svn.number}"/>
+      value="${version.major}.${version.minor}.${version.patch}.r${svn.number}"/>
     <runtarget target="pack"/>
   </target>
 
   <target name="dist.patch" depends="init">
-    <propertyfile file="${number.file}">
-      <entry key="version.patch" type="int" default="0" operation="+"/>
-    </propertyfile>
     <property file="${number.file}"/>
     <property name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}${version.suffix}"/>
+      value="${version.major}.${version.minor}.${version.patch}.${version.suffix}"/>
     <runtarget target="pack"/>
   </target>
 
   <target name="dist.minor" depends="init">
-    <propertyfile file="${number.file}">
-      <entry key="version.minor" type="int" default="0" operation="+"/>
-      <entry key="version.patch" type="int" value="0"/>
-    </propertyfile>
     <property file="${number.file}"/>
     <property name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}${version.suffix}"/>
+      value="${version.major}.${version.minor}.${version.patch}.${version.suffix}"/>
     <runtarget target="pack"/>
   </target>
 
