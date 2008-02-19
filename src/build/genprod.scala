@@ -17,16 +17,15 @@
  *    where <code>PATH</code> is the desired output directory
  *  </p>
  *
- *  @author  Burak Emir
- *  @version 1.0
+ *  @author  Burak Emir, Stephane Micheloud
+ *  @version 1.1
  */
 object genprod {
 
   /** The biggest ?? has Sup?? - 1 components/arguments */
   val SUP_PRODUCT_ARITY  = 23
   val SUP_TUPLE_ARITY    = 23
-  val SUP_FUNCTION_ARITY =  9
-  val SUP_CHOICE_ARITY   =  9 // not implemented yet
+  val SUP_FUNCTION_ARITY = 23
 
   def productClassname(i: Int) = "Product"+i
 
@@ -59,9 +58,8 @@ object genprod {
   def mdefs(i: Int) =
     for (j <- List.range(1, i+1)) yield "_" + j
 
-
-  def zippedAndCommaSeparated (left: List[String], right: List[String]): String = {
-    val sb = new StringBuffer()
+  def zippedAndCommaSeparated(left: List[String], right: List[String]): String = {
+    val sb = new StringBuilder
     val it = (left zip right).elements
     def append1 = {
       val p = it.next
@@ -87,16 +85,13 @@ object genprod {
   def functionFiles =
     for (i <- List.range(0, SUP_FUNCTION_ARITY)) yield FunctionFile.make(i)
 
-  //def choiceFiles =
-  //  for (i <- List.range(2, SUP_CHOICE_ARITY)) yield ChoiceFile.make(i)
-
   def allfiles =
     productFiles ::: tupleFiles ::: functionFiles
 
-  def main(args:Array[String]) = {
+  def main(args: Array[String]) {
     if (args.length != 1) {
-      Console.println("please give path of output directory")
-      System.exit(-1)
+      println("please give path of output directory")
+      exit(-1)
     }
     import java.io.{File, FileOutputStream}
     import java.nio.channels.Channels
@@ -112,8 +107,8 @@ object genprod {
         w.close
       } catch {
         case e: java.io.IOException =>
-          Console.println(e.getMessage() + ": " + out)
-          System.exit(-1)
+          println(e.getMessage() + ": " + out)
+          exit(-1)
       }
     }
   }
@@ -131,7 +126,7 @@ object FunctionFile {
 <file name={functionFilename(i)}>
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -184,8 +179,8 @@ trait {functionClassname(i)}{__typeArgs__} extends AnyRef {{
  *      <b>def</b> apply(): Long = System.currentTimeMillis() / 1000L
  *    }
  *
- *    Console.println(currentSeconds())
- *    Console.println(anonfun0())
+ *    println(currentSeconds())
+ *    println(anonfun0())
  *  }</pre>"""
     case 1 => """<p>
       In the following example the definition of
@@ -201,8 +196,8 @@ trait {functionClassname(i)}{__typeArgs__} extends AnyRef {{
  *      <b>def</b> apply(x: Int): Int = x + 1
  *    }
  *
- *    Console.println(succ(0))
- *    Console.println(anonfun1(0))
+ *    println(succ(0))
+ *    println(anonfun1(0))
  *  }</pre>"""
     case 2 => """<p>
       In the following example the definition of
@@ -218,8 +213,8 @@ trait {functionClassname(i)}{__typeArgs__} extends AnyRef {{
  *      <b>def</b> apply(x: Int, y: Int): Int = <b>if</b> (x < y) y <b>else</b> x
  *    }
  *
- *    Console.println(max(0, 1))
- *    Console.println(anonfun2(0, 1))
+ *    println(max(0, 1))
+ *    println(anonfun2(0, 1))
  *  }</pre>"""
     case _ => ""
   }
@@ -259,7 +254,7 @@ case class {tupleClassname(i)}{__typeArgs__}({ __fields__ })
      { if ({i} == 1)
          "sb.append('(').append(_" + {i} + ").append(\",)\")"
        else {
-         val xs = List.range(1, i+1).map(i => ".append(_" + i + ")")
+         val xs = (1 to i).map(i => ".append(_" + i + ")")
          xs.mkString("sb.append('(')", ".append(',')",".append(')')")
        }
      }
@@ -321,12 +316,13 @@ trait {productClassname(i)}{__typeArgs__} extends Product {{
    *  @return  same as _(n+1)
    *  @throws  IndexOutOfBoundsException
    */
+  @throws(classOf[IndexOutOfBoundsException])
   override def productElement(n: Int) = n match {{
-    {for (Tuple2(m, j) <- mdefs(i).zip(List.range(0, i)))
+    {for ((m, j) <- mdefs(i).zip(List.range(0, i)))
      yield "case "+j+" => "+m+"\n    "}case _ => throw new IndexOutOfBoundsException(n.toString())
   }}
 
-  {for (Tuple2(m, t) <- mdefs(i) zip targs(i)) yield
+  {for ((m, t) <- mdefs(i) zip targs(i)) yield
     "/** projection of this product */\n  def " + m + ": " + t + "\n\n" }
 }}
 </file>
