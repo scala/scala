@@ -89,15 +89,6 @@ PROPERTIES
   <!-- if available, faster stability checking -->
   <property name="stability.tool" value="/home/linuxsoft/apps/stability/stability"/>
 
-  <!-- Sets location of Android installation -->
-  <condition property="android.home" value="${unix.android.home}">
-    <and><os family="unix"/><isset property="unix.android.home"/></and>
-  </condition>
-  <condition property="android.home" value="${win.android.home}">
-    <and><os family="windows"/><isset property="win.android.home"/></and>
-  </condition>
-  <property name="android.home" value="${env.ANDROID_HOME}"/>
-
 <!-- ===========================================================================
 ANT INITIALISATION
 ============================================================================ -->
@@ -202,16 +193,70 @@ INITIALISATION
 SETUP
 ============================================================================ -->
 
+  <target name="setup.weave">
+    <!-- Sets location of RetroWeaver installation -->
+    <condition property="retroweaver.home" value="${unix.retroweaver.home}">
+      <and><os family="unix"/><isset property="unix.retroweaver.home"/></and>
+    </condition>
+    <condition property="retroweaver.home" value="${win.retroweaver.home}">
+      <and><os family="windows"/><isset property="win.retroweaver.home"/></and>
+    </condition>
+    <property name="retroweaver.home" value="${env.RETROWEAVER_HOME}"/>
+
+    <fail message="Set property 'retroweaver.home' to a valid RetroWeaver installation">
+      <condition><not><and>
+        <available file="${retroweaver.home}/lib" type="dir"/>
+        <available file="${retroweaver.home}/release" type="dir"/>
+      </and></not></condition>
+    </fail>
+    <taskdef name="retroweaver" classname="net.sourceforge.retroweaver.ant.RetroWeaverTask">
+      <classpath>
+        <fileset dir="${retroweaver.home}/lib" includes="**/*.jar"/>
+        <fileset dir="${retroweaver.home}/release" includes="**/*-all-*jar"/>
+      </classpath>
+    </taskdef>
+    <retroweaver
+      inputjar="${lib.starr.jar}"
+      outputjar="${lib.starr14.jar}"
+    />
+    <retroweaver
+      inputjar="${comp.starr.jar}"
+      outputjar="${comp.starr14.jar}"
+    />
+  </target>
+
   <target name="setup" depends="init">
   <!-- Creating class-pathes -->
-    <path id="starr.classpath">
-      <pathelement location="${lib.starr.jar}"/>
-      <pathelement location="${comp.starr.jar}"/>
-      <pathelement location="${fjbg.jar}"/>
-      <pathelement location="${msil.jar}"/>
-      <pathelement location="${ant.jar}"/>
-      <pathelement location="${jline.jar}"/>
-    </path>
+    <if>
+      <contains string="${java.version}" substring="1.4"/>
+      <then>
+        <mkdir dir="${build.dir}/starr"/>
+        <property name="lib.starr14.jar" value="${build.dir}/starr/scala-library-14.jar"/>
+        <property name="comp.starr14.jar" value="${build.dir}/starr/scala-compiler-14.jar"/>
+        <antcall target="setup.weave">
+          <param name="lib.starr14.jar" value="${lib.starr14.jar}"/>
+          <param name="comp.starr14.jar" value="${comp.starr14.jar}"/>
+        </antcall>
+        <path id="starr.classpath">
+          <pathelement location="${lib.starr14.jar}"/>
+          <pathelement location="${comp.starr14.jar}"/>
+          <pathelement location="${fjbg.jar}"/>
+          <pathelement location="${msil.jar}"/>
+          <pathelement location="${ant.jar}"/>
+          <pathelement location="${jline.jar}"/>
+        </path>
+      </then>
+      <else>
+        <path id="starr.classpath">
+          <pathelement location="${lib.starr.jar}"/>
+          <pathelement location="${comp.starr.jar}"/>
+          <pathelement location="${fjbg.jar}"/>
+          <pathelement location="${msil.jar}"/>
+          <pathelement location="${ant.jar}"/>
+          <pathelement location="${jline.jar}"/>
+        </path>
+      </else>
+    </if>
   <!-- Creating boot-level tasks -->
     <taskdef
       name="starr"
@@ -835,7 +880,24 @@ CLDC
 ANDROID
 ============================================================================ -->
 
-  <target name="android.sources"
+  <target name="android.init">
+    <!-- Sets location of Android installation -->
+    <condition property="android.home" value="${unix.android.home}">
+      <and><os family="unix"/><isset property="unix.android.home"/></and>
+    </condition>
+    <condition property="android.home" value="${win.android.home}">
+      <and><os family="windows"/><isset property="win.android.home"/></and>
+    </condition>
+    <property name="android.home" value="${env.ANDROID_HOME}"/>
+
+    <fail message="Android home is not set or could not find android.jar in ${android.home}">
+      <condition><not>
+        <available file="${android.home}/android.jar"/>
+      </not></condition>
+    </fail>
+  </target>
+
+  <target name="android.sources" depends="android.init"
           description="Create the source directory for Android library"
   >
     <mkdir dir="${android.dir}/src"/>
@@ -861,12 +923,6 @@ ANDROID
   <target name="android.libraries"
           depends="setup.quick, android.sources"
           description="Builds the Scala library for Android">
-    <fail message="Android home is not set or could not find android.jar in ${android.home}">
-      <condition><not>
-        <available file="${android.home}/android.jar"/>
-      </not></condition>
-    </fail>
-    
     <mkdir dir="${android.dir}/lib/library"/>
     <javac
       srcdir="${android.dir}/src"
@@ -957,9 +1013,55 @@ ANDROID
 MSIL
 ============================================================================ -->
 
-  <target name="msil.sources">
-    <mkdir dir="${msil.dir}/src"/>
+  <target name="msil.init" depends="ant-init">
+    <!-- Sets ilasm command (either Microsoft .NET Framework or Mono) -->
+    <condition property="ilasm.cmd" value="${msdn.home}/ilasm.exe">
+      <and>
+        <os family="windows"/><isset property="msdn.home"/>
+        <available file="${msdn.home}/ilasm.exe"/>
+      </and>
+    </condition>
+    <condition property="ilasm.cmd" value="${unix.mono.home}/ilasm">
+      <and>
+        <os family="unix"/><isset property="unix.mono.home"/>
+        <available file="${unix.mono.home}/ilasm"/>
+      </and>
+    </condition>
+    <condition property="ilasm.cmd" value="${win.mono.home}/ilasm">
+      <and>
+        <os family="windows"/><isset property="${win.mono.home}/lib/mono/2.0/ilasm.exe"/>
+        <available file="${win.mono.home}/lib/mono/2.0/ilasm.exe"/>
+      </and>
+    </condition>
+    <echo level="verbose" message="Found: ${ilasm.cmd}"/>
+    <condition property="ilasm.cmd" value="ilasm">
+      <and><available file="ilasm" filepath="${env.PATH}"/></and>
+    </condition>
+    <fail message="Command 'ilasm' not found">
+      <condition><not><isset property="ilasm.cmd"/></not></condition>
+    </fail>
+    <!-- Sets ilasm arguments (either Windows or Unix) -->
+    <property name="ilasm.infile" value="${msil.dir}/predef.msil"/>
+    <property name="ilasm.outfile" value="${msil.dir}/predef.dll"/>
+    <if>
+      <isset property="os.win"/>
+      <then>
+        <property
+          name="ilasm.args"
+          value="/quiet /dll /output=${ilasm.outfile} ${ilasm.infile}"
+        />
+      </then>
+      <else>
+        <property
+          name="ilasm.args"
+          value="/dll /output:${ilasm.outfile} ${ilasm.infile}"
+        />
+      </else>
+    </if>
+  </target>
 
+  <target name="msil.sources" depends="msil.init">
+    <mkdir dir="${msil.dir}/src"/>
     <copy todir="${msil.dir}/src">
       <fileset dir="${src.dir}/library" includes="**/*.scala">
         <not>
@@ -968,13 +1070,11 @@ MSIL
         <exclude name="scala/collection/jcl/**/*.scala"/>
       </fileset>
     </copy>
-
     <copy todir="${msil.dir}/src">
       <fileset dir="${src.dir}/dotnet-library">
         <include name="**/*.scala"/>
       </fileset>
     </copy>
-
   </target>
 
   <target name="msil.libraries" depends="setup.quick, msil.sources">
@@ -995,27 +1095,12 @@ MSIL
       <include name="scala/native.scala"/>
       <include name="scala/serializable.scala"/>
       <include name="scala/transient.scala"/>
+      <include name="scala/volatile.scala"/>
       <include name="scala/runtime/*.scala"/>
       <exclude name="scala/runtime/RichStringBuilder.scala"/>
     </quick>
-    <property name="ilasm.infile" value="${msil.dir}/predef.msil"/>
-    <property name="ilasm.outfile" value="${msil.dir}/predef.dll"/>
-    <if><isset property="os.win"/>
-      <then>
-        <property
-          name="ilasm.args"
-          value="/quiet /dll /output=${ilasm.outfile} ${ilasm.infile}"
-        />
-      </then>
-      <else>
-        <property
-          name="ilasm.args"
-          value="/dll /output:${ilasm.outfile} ${ilasm.infile}"
-        />
-      </else>
-    </if>
     <exec
-      executable="ilasm" vmlauncher="no">
+      executable="${ilasm.cmd}" vmlauncher="no">
       <!--
       errorproperty="ilasm.err" outputproperty="ilasm.out">
       -->

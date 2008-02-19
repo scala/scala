@@ -29,7 +29,7 @@ object Test2 {
   println(z == 3)
   println(3 == z)
 
-  val a = BigDecimal(Math.MAX_LONG, Precision.DECIMAL32)
+  val a = BigDecimal(Math.MAX_LONG)
   val b = BigDecimal(Test1.x)
   val c = a - b
   println(c)
