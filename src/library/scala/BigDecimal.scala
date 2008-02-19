@@ -10,7 +10,7 @@
 
 package scala
 
-import java.math.{BigDecimal => BigDec, MathContext}
+import java.math.{BigDecimal => BigDec}
 
 /**
  *  @author  Stephane Micheloud
@@ -18,39 +18,15 @@ import java.math.{BigDecimal => BigDec, MathContext}
  */
 object BigDecimal {
 
-  private val minCached = -256
-  private val maxCached = 256
-  private lazy val cache = new Array[BigDecimal](maxCached - minCached + 1)
-  private lazy val cacheP = new Array[Array[BigDecimal]](maxCached - minCached + 1)
-
-  object Precision extends Enumeration {
-    type Precision = Value
-    val DECIMAL128, DECIMAL32, DECIMAL64, UNLIMITED = Value
+  object RoundingMode extends Enumeration {
+    type RoundingMode = Value
+    val ROUND_UP, ROUND_DOWN, ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP,
+        ROUND_HALF_DOWN, ROUND_HALF_EVEN, ROUND_UNNECESSARY = Value
   }
-  type Precision = Precision.Precision
 
-  private val mc = collection.immutable.ListMap.empty[Precision, MathContext] +
-    (Precision.DECIMAL128 -> MathContext.DECIMAL128) +
-    (Precision.DECIMAL32  -> MathContext.DECIMAL32) +
-    (Precision.DECIMAL64  -> MathContext.DECIMAL64) +
-    (Precision.UNLIMITED  -> MathContext.UNLIMITED)
-
-  /** Constructs a <code>BigDecimal</code> whose value is equal to that of the
-   *  specified <code>Integer</code> value.
-   *
-   *  @param i the specified <code>Integer</code> value
-   *  @param p the specified precision <code>p</code>
-   *  @return  the constructed <code>BigDecimal</code>
-   */
-  def apply(i: Int, p: Precision): BigDecimal =
-    if (minCached <= i && i <= maxCached) {
-      val offset = i - minCached
-      var a = cacheP(offset)
-      if (a eq null) { a = new Array[BigDecimal](mc.size); cacheP(offset) = a }
-      var n = a(p.id)
-      if (n eq null) { n = new BigDecimal(BigDec.valueOf(i)); a(p.id) = n }
-      n
-    } else new BigDecimal(BigDec.valueOf(i))
+  private val minCached = -512
+  private val maxCached = 512
+  private lazy val cache = new Array[BigDecimal](maxCached - minCached + 1)
 
   /** Constructs a <code>BigDecimal</code> whose value is equal to that of the
    *  specified <code>Integer</code> value.
@@ -67,17 +43,6 @@ object BigDecimal {
     } else new BigDecimal(BigDec.valueOf(i))
 
   /** Constructs a <code>BigDecimal</code> whose value is equal to that of the
-   *  specified <code>Long</code> value.
-   *
-   *  @param l the specified long value
-   *  @param p the specified precision
-   *  @return  the constructed <code>BigDecimal</code>
-   */
-  def apply(l: Long, p: Precision): BigDecimal =
-    if (minCached <= l && l <= maxCached) apply(l.toInt, p)
-    else new BigDecimal(BigDec.valueOf(l))
-
-  /** Constructs a <code>BigDecimal</code> whose value is equal to that of the
    *  specified long value.
    *
    *  @param l the specified long value
@@ -88,51 +53,25 @@ object BigDecimal {
     else new BigDecimal(BigDec.valueOf(l))
 
   /** Constructs a <code>BigDecimal</code> whose value is equal to that of the
-   *  specified <code>Double</code> value.
-   *
-   *  @param d the specified <code>Double</code> value
-   *  @param p the specified precision
-   *  @return  the constructed <code>BigDecimal</code>
-   */
-  def apply(d: Double, p: Precision): BigDecimal =
-    new BigDecimal(new BigDec(d, mc(p)))
-
-  /** Constructs a <code>BigDecimal</code> whose value is equal to that of the
    *  specified double value.
    *
    *  @param d the specified <code>Double</code> value
    *  @return  the constructed <code>BigDecimal</code>
    */
   def apply(d: Double): BigDecimal =
-    new BigDecimal(BigDec.valueOf(d))
+    new BigDecimal(new BigDec(d))
 
   /** Translates a character array representation of a <code>BigDecimal</code>
    *  into a <code>BigDecimal</code>.
    */
   def apply(x: Array[Char]): BigDecimal =
-    new BigDecimal(new BigDec(x))
-
-  /** Translates the decimal String representation of a <code>BigDecimal</code>
-   *  into a <code>BigDecimal</code>.
-   */
-  def apply(x: String, p: Precision): BigDecimal =
-    new BigDecimal(new BigDec(x, mc(p)))
+    new BigDecimal(new BigDec(x.toString))
 
   /** Translates the decimal String representation of a <code>BigDecimal</code>
    *  into a <code>BigDecimal</code>.
    */
   def apply(x: String): BigDecimal =
     new BigDecimal(new BigDec(x))
-
-  /** Constructs a <code>BigDecimal</code> whose value is equal to that of the
-   *  specified <code>BigInt</code> value.
-   *
-   *  @param x the specified <code>BigInt</code> value
-   *  @param p the specified precision <code>p</code>
-   *  @return  the constructed <code>BigDecimal</code>
-   */
-  def apply(x: BigInt, p: Precision): BigDecimal =
-    new BigDecimal(new BigDec(x.bigInteger, mc(p)))
 
   /** Constructs a <code>BigDecimal</code> whose value is equal to that of the
    *  specified <code>BigInt</code> value.
@@ -155,8 +94,8 @@ object BigDecimal {
   /** Implicit conversion from BigDecimal to <code>Ordered</code>. */
   implicit def bigDecimal2ordered(x: BigDecimal): Ordered[BigDecimal] =
     new Ordered[BigDecimal] with Proxy {
-      def self: Any = x;
-      def compare (y: BigDecimal): Int = x.bigDecimal.compareTo(y.bigDecimal)
+      def self: Any = x
+      def compare(y: BigDecimal): Int = x.bigDecimal.compareTo(y.bigDecimal)
     }
 }
 
@@ -166,6 +105,7 @@ object BigDecimal {
  */
 @serializable
 class BigDecimal(val bigDecimal: BigDec) extends java.lang.Number {
+  import BigDecimal.RoundingMode._
 
   /** Returns the hash code for this BigDecimal. */
   override def hashCode(): Int = this.bigDecimal.hashCode()
@@ -208,42 +148,33 @@ class BigDecimal(val bigDecimal: BigDec) extends java.lang.Number {
 
   /** Addition of BigDecimals
    */
-  def +  (that: BigDecimal): BigDecimal = new BigDecimal(this.bigDecimal.add(that.bigDecimal))
+  def +  (that: BigDecimal): BigDecimal =
+    new BigDecimal(this.bigDecimal.add(that.bigDecimal))
 
   /** Subtraction of BigDecimals
    */
-  def -  (that: BigDecimal): BigDecimal = new BigDecimal(this.bigDecimal.subtract(that.bigDecimal))
+  def -  (that: BigDecimal): BigDecimal =
+    new BigDecimal(this.bigDecimal.subtract(that.bigDecimal))
 
   /** Multiplication of BigDecimals
    */
-  def *  (that: BigDecimal): BigDecimal = new BigDecimal(this.bigDecimal.multiply(that.bigDecimal))
+  def *  (that: BigDecimal): BigDecimal =
+    new BigDecimal(this.bigDecimal.multiply(that.bigDecimal))
 
   /** Division of BigDecimals
    */
-  def /  (that: BigDecimal): BigDecimal = new BigDecimal(this.bigDecimal.divide(that.bigDecimal))
-
-  /** Remainder of BigDecimals
-   */
-  def %  (that: BigDecimal): BigDecimal = new BigDecimal(this.bigDecimal.remainder(that.bigDecimal))
-
-  /** Returns a pair of two BigDecimals containing (this / that) and (this % that).
-   */
-  def /% (that: BigDecimal): (BigDecimal, BigDecimal) = {
-    val dr = this.bigDecimal.divideAndRemainder(that.bigDecimal)
-    (new BigDecimal(dr(0)), new BigDecimal(dr(1)))
-  }
+  def /  (that: BigDecimal): BigDecimal =
+   new BigDecimal(this.bigDecimal.divide(that.bigDecimal, this.scale - that.scale))
 
   /** Returns the minimum of this and that
    */
-  def min (that: BigDecimal): BigDecimal = new BigDecimal(this.bigDecimal.min(that.bigDecimal))
+  def min (that: BigDecimal): BigDecimal =
+    new BigDecimal(this.bigDecimal.min(that.bigDecimal))
 
   /** Returns the maximum of this and that
    */
-  def max (that: BigDecimal): BigDecimal = new BigDecimal(this.bigDecimal.max(that.bigDecimal))
-
-  /** Returns a BigDecimal whose value is (<tt>this</tt> raised to the power of <tt>exp</tt>).
-   */
-  def pow (exp: Int): BigDecimal = new BigDecimal(this.bigDecimal.pow(exp))
+  def max (that: BigDecimal): BigDecimal =
+    new BigDecimal(this.bigDecimal.max(that.bigDecimal))
 
   /** Returns a BigDecimal whose value is the negation of this BigDecimal
    */
@@ -259,6 +190,19 @@ class BigDecimal(val bigDecimal: BigDec) extends java.lang.Number {
    *   0  if it is equal to 0
    */
   def signum: Int = this.bigDecimal.signum()
+
+  /** Returns the scale of this <code>BigDecimal</code>.
+   */
+  def scale: Int = this.bigDecimal.scale()
+
+  /** Returns a <code>BigDecimal</code> whose scale is the specified value, and whose value is
+   *  numerically equal to this BigDecimal's.
+   */
+  def setScale(scale: Int): BigDecimal =
+    new BigDecimal(this.bigDecimal setScale scale)
+
+  def setScale(scale: Int, mode: RoundingMode): BigDecimal =
+    new BigDecimal(this.bigDecimal.setScale(scale, mode.id))
 
   /** Converts this BigDecimal to a <tt>byte</tt>.
    *  If the BigDecimal is too big to fit in a byte, only the low-order 8 bits are returned.
@@ -311,12 +255,12 @@ class BigDecimal(val bigDecimal: BigDec) extends java.lang.Number {
    */
   def doubleValue = this.bigDecimal.doubleValue
 
+  /** Converts this <code>BigDecimal</code> to a BigInteger.
+   */
+  def toBigInt(): BigInt = new BigInt(this.bigDecimal.toBigInteger())
+
   /** Returns the decimal String representation of this BigDecimal.
    */
   override def toString(): String = this.bigDecimal.toString()
-
-  /** Returns a string representation of this BigDecimal  without an exponent field.
-   */
-  def toPlainString(): String = this.bigDecimal.toPlainString()
 
 }

@@ -341,8 +341,8 @@ extends (Int => Char) with Proxy {
       val temp2 = value(n - j)
       if (!hasSurrogate)
         hasSurrogate =
-          (temp >= Character.MIN_SURROGATE && temp <= Character.MAX_SURROGATE) ||
-       	  (temp2 >= Character.MIN_SURROGATE && temp2 <= Character.MAX_SURROGATE)
+          (temp >= StringBuilder.MIN_SURROGATE && temp <= StringBuilder.MAX_SURROGATE) ||
+       	  (temp2 >= StringBuilder.MIN_SURROGATE && temp2 <= StringBuilder.MAX_SURROGATE)
       value(j) = temp2
       value(n - j) = temp
       j -= 1
@@ -352,9 +352,9 @@ extends (Int => Char) with Proxy {
       var i = 0
       while (i < count - 1) {
         val c2 = value(i)
-	if (Character.isLowSurrogate(c2)) {
+	if (StringBuilder.isLowSurrogate(c2)) {
           val c1 = value(i + 1)
-          if (Character.isHighSurrogate(c1)) {
+          if (StringBuilder.isHighSurrogate(c1)) {
             value(i) = c1; i += 1
             value(i) = c2
           }
@@ -386,6 +386,23 @@ extends (Int => Char) with Proxy {
 
 
 object StringBuilder {
+
+  private val MIN_HIGH_SURROGATE = '\uD800'
+  private val MAX_HIGH_SURROGATE = '\uDBFF'
+
+  private val MIN_LOW_SURROGATE = '\uDC00'
+  private val MAX_LOW_SURROGATE = '\uDFFF'
+
+  // constants <code>java.langCharacter.MIN-/MAX_SURROGATE</code> exist since 1.5
+  private val MIN_SURROGATE = MIN_HIGH_SURROGATE
+  private val MAX_SURROGATE = MAX_LOW_SURROGATE
+
+  // methods <code>java.langCharacter.isLow-/isHighSurrogate</code> exist since 1.5
+  private def isLowSurrogate(ch: Char): Boolean =
+    MIN_LOW_SURROGATE <= ch && ch <= MAX_LOW_SURROGATE
+
+  private def isHighSurrogate(ch: Char): Boolean =
+    MIN_HIGH_SURROGATE <= ch && ch <= MAX_HIGH_SURROGATE
 
   // method <code>java.util.Arrays.copyOf</code> exists since 1.6
   private def copyOf(src: Array[Char], newLength: Int): Array[Char] = {
