@@ -260,11 +260,14 @@ abstract class Source extends Iterator[Char] {
   /** convenience method, returns given line (not including newline)
    *  from Source.
    *
-   *  @param line the line index.
+   *  @param line the line index, first line is 1
    *  @return     the character string of the specified line.
    *  @throws scala.compat.Platform.IllegalArgumentException
+   *
    */
   def getLine(line: Int): String = { // faster than getLines.drop(line).next
+    // todo: should @throws scala.compat.Platform.IndexOutOfBoundsException
+    if (line < 1) throw new IllegalArgumentException(line.toString);
     val buf = new StringBuilder()
     val it = reset
     var i = 0
@@ -275,7 +278,7 @@ abstract class Source extends Iterator[Char] {
 
     if (!it.hasNext) // this should not happen
       throw new IllegalArgumentException(
-        "line " + line + " does not exist?!"
+        "line " + line + " does not exist"
       );
 
     var ch = it.next
@@ -283,6 +286,10 @@ abstract class Source extends Iterator[Char] {
       buf append ch
       ch = it.next
     }
+
+    if ('\n' != ch)
+      buf append ch
+
     val res = buf.toString()
     buf setLength 0  // hopefully help collector to deallocate StringBuilder
     res
