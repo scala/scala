@@ -12,14 +12,18 @@ exec scsh -e main -s "$0" "$@"
 ;; SVN repository containing the Scala compiler.
 (define scala-svn-repository-dir
   "http://lampsvn.epfl.ch/svn-repos/scala/scala/trunk")
+(define sep-svn-repository-dir
+  "http://lampsvn.epfl.ch/svn-repos/scala/plugin")
 
 ;; SVN module containing the compiler.
 (define scala-svn-module-name "scala")
+(define sep-svn-module-name "plugin")
 
 ;; E-mail address to which the failure notification should be sent.
 (define notify-email "scala-reports@groupes.epfl.ch")
 ;;(define notify-email "stephane.micheloud@epfl.ch") ; DEBUG
 ;;(define notify-email "lex.spoon@epfl.ch") ; DEBUG
+;;(define notify-email "gilles.dubochet@epfl.ch") ; DEBUG
 
 ;; Directory in which the distribution should be built.
 (define nightly-build-dir
@@ -79,17 +83,20 @@ exec scsh -e main -s "$0" "$@"
           (with-cwd scala-svn-module-name
                     (start-section "Creating small Scala distribution")
                     (fail-if-error (run (ant pack)))
-;;                  (fail-if-error (run (ant msil)))
                     (run (ant msil))
                     (start-section "Testing Scala compiler")
                     (fail-if-error
-                     (run (./test/scalatest --color=none
-                                            --show-log)))
-;;                  (start-section "Creating nightly distribution")
-;;                  (run (rm -rf ,nightly-build-dir))
-;;                  (create-directory nightly-build-dir)
-;;                  (fail-if-error (run (ant dist) (< /dev/null)))
-                    #t)))
+                      (run (./test/scalatest --color=none
+                                             --show-log))))
+          (start-section "Checking out Plugin module")
+          (fail-if-error (run (svn co ,plugin-svn-repository-dir
+                                   ,plugin-svn-module-name)))
+          (with-cwd plugin-svn-module-name
+                    (start-section "Creating Scala Eclipse plugin")
+                    (fail-if-error (run (ant dist))))
+          #t
+        )
+      )
       (lambda ()
         (start-section "Ending time")
         (display (format-date "~Y-~m-~d ~H:~M ~Z\n" (date))))))
