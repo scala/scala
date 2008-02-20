@@ -24,7 +24,7 @@ exec scsh -e main -s "$0" "$@"
 ;; Directory in which the distribution should be built.
 (define nightly-build-dir
 ;;  (expand-file-name "~lex/scala/nightly"))  ; DEBUG
-    (expand-file-name "~linuxsoft/archives/scala/nightly"))
+    (expand-file-name "/home/linuxsoft/archives/scala/nightly"))
 
 ;; End of configuration section.
 
@@ -118,7 +118,7 @@ exec scsh -e main -s "$0" "$@"
     (newline mail-port)
     (write-string body mail-port)
     (newline mail-port)
-    (run (sendmail "-i" ,to)
+    (run (/usr/sbin/sendmail "-i" ,to)
          (<< ,(string-output-port-output mail-port)))))
 
 ;;; Local Variables:
