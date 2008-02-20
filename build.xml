@@ -972,6 +972,7 @@ ANDROID
 
   <target name="android.build" depends="android.libraries"
           description="Convert this project's .class files into .dex files">
+     <property name="dx.jar" value="${android.home}/tools/lib/dx.jar"/>
      <java jar="${dx.jar}" fork="true" failonerror="true">
       <jvmarg value="-Djava.ext.dirs=${android.home}${file.separator}tools${file.separator}lib"/>
       <jvmarg value="-Xmx384M"/>
@@ -1001,9 +1002,7 @@ ANDROID
       </and>
     </condition>
     <if><isset property="android.supported"/><then>
-      <antcall target="android.build">
-        <param name="dx.jar" value="${android.home}/tools/lib/dx.jar"/>
-      </antcall>
+      <antcall target="android.build"/>
     </then><else>
       <echo message="The Android library build requires Sun Java 1.5 or newer"/>
     </else></if>
