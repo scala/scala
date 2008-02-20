@@ -557,7 +557,7 @@ BUILD QUICK-TEST LAYER
       addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes"
       scalacdebugging="${nsc.log-files}"
-      classpath="${quick.dir}/lib/library">
+	  classpath="${quick.dir}/lib/library">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
       <exclude name="scala/dbc/**"/>
@@ -1096,7 +1096,11 @@ MSIL
       <include name="scala/transient.scala"/>
       <include name="scala/volatile.scala"/>
       <include name="scala/runtime/*.scala"/>
+	  <include name="scala/**.scala"/>
       <exclude name="scala/runtime/RichStringBuilder.scala"/>
+      <exclude name="scala/Enumeration.scala"/>
+      <exclude name="scala/BigDecimal.scala"/>
+      <exclude name="scala/BigInt.scala"/>
     </quick>
     <exec
       executable="${ilasm.cmd}" vmlauncher="no">
