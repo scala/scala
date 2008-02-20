@@ -25,8 +25,9 @@ BUILD_DATE=`date +"%Y-%m-%d"`
 
 OUTPUT_DIR=~/scala-nightly-test/$JAVA_SDK
 TARGET_DIR=$OUTPUT_DIR/$BUILD_DATE-scala2
-BUILD_DIR=$TARGET_DIR/scala/build
+#BUILD_DIR=$TARGET_DIR/scala/build
 LATEST_DIR=$TARGET_DIR/scala/dists
+LATEST_PLUGIN_DIR=$TARGGET_DIR/plugin/dist
 NIGHTLY_DIR=/home/linuxsoft/archives/scala/nightly
 
 [ -d "$OUTPUT_DIR" ] || mkdir -p "$OUTPUT_DIR"
@@ -53,7 +54,12 @@ if [ -d "$LATEST_DIR" ] && [ `ls "$LATEST_DIR"/*.zip 2>1 | wc -l` -gt 0 ]; then
     (cd $NIGHTLY_DIR && for f in *.tgz; do ln -sf $f `echo $f | sed -e 's/\(scala[a-z\-]*[0-9]\+\.[0-9]\+\.[0-9]\+\).*\(\.tgz\)/\1-latest\2/g'`; done)
     (cd $NIGHTLY_DIR && for f in *.zip; do ln -sf $f `echo $f | sed -e 's/\(scala[a-z\-]*[0-9]\+\.[0-9]\+\.[0-9]\+\).*\(\.zip\)/\1-latest\2/g'`; done)
 fi
-if [ -d "$BUILD_DIR/api-compiler" ] && [ -d "$NIGHTLY_DIR/scala/doc/scala" ]; then
-    cp -r $BUILD_DIR/api-compiler $NIGHTLY_DIR/scala/doc/scala
-fi
+if [ -d "$LATEST_PLUGIN_DIR" ]; then
+    (cd $LATEST_PLUGIN_DIR && cp -r *.zip scala.update $NIGHTLY_DIR)
+    (cd $NIGHTLY_DIR && for f in *.zip; do ln -sf $f `echo $f | sed -e s/\(scala[a-z._]*[0-9]\+\.[0-9]\+\.[0-9]\+\).*\(\.zip\)/\1-latest\2/g'`; done)
+if
+#disabled
+#if [ -d "$BUILD_DIR/api-compiler" ] && [ -d "$NIGHTLY_DIR/scala/doc/scala" ]; then
+#    cp -r $BUILD_DIR/api-compiler $NIGHTLY_DIR/scala/doc/scala
+#fi
 
