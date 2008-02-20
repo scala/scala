@@ -49,29 +49,36 @@ object Test1_scala {
   val x2 = None
   val x3 = Array(1, 2, 3)
   val x4 = { x: Int => 2 * x }
+  val x5 = 'hello
 
   try {
     val y1: List[Nothing]      = Serialize.read(Serialize.write(x1))
     val y2: Option[Nothing]    = Serialize.read(Serialize.write(x2))
     val y3: Array[Int]         = Serialize.read(Serialize.write(x3))
     val y4: Function[Int, Int] = Serialize.read(Serialize.write(x4))
+    val y5: Symbol             = Serialize.read(Serialize.write(x5))
 
     println("x1 = " + x1)
     println("y1 = " + y1)
     println("x1 eq y1: " + (x1 eq y1) + " - y1 eq x1: " + (y1 eq x1))
-    println
+    println()
     println("x2 = " + x2)
     println("y2 = " + y2)
     println("x2 eq y2: " + (x2 eq y2) + " - y2 eq x2: " + (y2 eq x2))
-    println
+    println()
     println("x3 = " + arrayToString(x3))
     println("y3 = " + arrayToString(y3))
     println("arrayEquals(x3, y3): " + arrayEquals(x3, y3))
-    println
+    println()
     println("x4 = <na>")
     println("y4 = <na>")
     println("x4(2): " + x4(2) + " - y4(2): " + y4(2))
-    println
+    println()
+    println("x5 = " + x5)
+    println("y5 = " + y5)
+    println("x5 eq y5: " + (x5 eq y5) + " - y5 eq x5: " + (y5 eq x5))
+    println("x5 equals y5: " + (x5 equals y5) + " - y5 equals x5: " + (y5 equals x5))
+    println()
   }
   catch {
     case e: Exception =>

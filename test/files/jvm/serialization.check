@@ -14,6 +14,11 @@ x4 = <na>
 y4 = <na>
 x4(2): 4 - y4(2): 4
 
+x5 = 'hello
+y5 = 'hello
+x5 eq y5: false - y5 eq x5: false
+x5 equals y5: true - y5 equals x5: true
+
 x = List((buffers,20), (layers,2), (title,3))
 y = List((buffers,20), (layers,2), (title,3))
 x equals y: true - y equals x: true
