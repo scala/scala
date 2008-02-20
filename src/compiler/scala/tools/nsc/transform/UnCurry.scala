@@ -446,19 +446,23 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         case ValDef(_, _, _, rhs)
           if (!tree.symbol.owner.isSourceMethod) =>
             withNeedLift(true) { super.transform(tree) }
-
+/*
         case Apply(Select(Block(List(), Function(vparams, body)), nme.apply), args) =>
           // perform beta-reduction; this helps keep view applications small
+          println("beta-reduce1: "+tree)
           withNeedLift(true) {
             mainTransform(new TreeSubstituter(vparams map (_.symbol), args).transform(body))
           }
 
         case Apply(Select(Function(vparams, body), nme.apply), args) =>
+//        if (List.forall2(vparams, args)((vparam, arg) => treeInfo.isAffineIn(body) ||
+//                                        treeInfo.isPureExpr(arg))) =>
           // perform beta-reduction; this helps keep view applications small
+          println("beta-reduce2: "+tree)
           withNeedLift(true) {
             mainTransform(new TreeSubstituter(vparams map (_.symbol), args).transform(body))
           }
-
+*/
         case UnApply(fn, args) =>
           inPattern = false
           val fn1 = transform(fn)
