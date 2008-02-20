@@ -39,12 +39,8 @@ final class Symbol private (val name: String) {
    */
   override def toString(): String = "'" + name
 
-  /** Compares this symbol with the specified value for equality.
-   */
-  override def equals(that: Any): Boolean = that match {
-    case that: Symbol => this.name == that.name
-    case _ => false
-  }
+  @throws(classOf[java.io.ObjectStreamException])
+  private def readResolve(): Any = Symbol.apply(name)
 }
 
 object Symbol {
