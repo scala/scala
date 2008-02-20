@@ -1082,9 +1082,11 @@ MSIL
            failonerror="false">
       <include name="scala/Predef.scala"/>
       <include name="scala/Option.scala"/>
+      <include name="scala/Pair.scala"/>
       <include name="scala/Console.scala"/>
       <include name="scala/Application.scala"/>
       <include name="scala/ByNameFunction.scala"/>
+      <include name="scala/Stream.scala"/>
       <include name="scala/*Annotation.scala"/>
       <include name="scala/Function*.scala"/>
       <include name="scala/Tuple*.scala"/>
@@ -1095,12 +1097,10 @@ MSIL
       <include name="scala/serializable.scala"/>
       <include name="scala/transient.scala"/>
       <include name="scala/volatile.scala"/>
+      <include name="scala/remote.scala"/>
       <include name="scala/runtime/*.scala"/>
-	  <include name="scala/**.scala"/>
-      <exclude name="scala/runtime/RichStringBuilder.scala"/>
-      <exclude name="scala/Enumeration.scala"/>
-      <exclude name="scala/BigDecimal.scala"/>
-      <exclude name="scala/BigInt.scala"/>
+	  <include name="scala/collection/mutable/HashMap.scala"/>
+	  <exclude name="scala/runtime/RichStringBuilder.scala"/>
     </quick>
     <exec
       executable="${ilasm.cmd}" vmlauncher="no">
