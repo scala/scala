@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala Ant Tasks                      **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -18,7 +18,7 @@ import org.apache.tools.ant.types.{Path, Reference}
 import org.apache.tools.ant.util.{FileUtils, GlobPatternMapper}
 
 import scala.tools.nsc.{Global, Settings}
-import scala.tools.nsc.doc.DocDriver
+import scala.tools.nsc.doc.DefaultDocDriver
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 
 /** <p>
@@ -572,7 +572,7 @@ class Scaladoc extends MatchingTask {
     try {
       val run = new compiler.Run
       run.compile(sourceFiles.map (_.toString))
-      object generator extends DocDriver {
+      object generator extends DefaultDocDriver {
         val global: compiler.type = compiler
         def settings = commandSettings
       }
