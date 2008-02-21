@@ -19,6 +19,11 @@ y5 = 'hello
 x5 eq y5: true - y5 eq x5: true
 x5 equals y5: true - y5 equals x5: true
 
+x6 = (BannerLimit,12345)
+y6 = (BannerLimit,12345)
+x6 eq y6: false - y6 eq x6: false
+x6 equals y6: true - y6 equals x6: true
+
 x = List((buffers,20), (layers,2), (title,3))
 y = List((buffers,20), (layers,2), (title,3))
 x equals y: true - y equals x: true

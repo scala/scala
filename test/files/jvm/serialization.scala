@@ -50,6 +50,7 @@ object Test1_scala {
   val x3 = Array(1, 2, 3)
   val x4 = { x: Int => 2 * x }
   val x5 = 'hello
+  val x6 = ("BannerLimit", 12345)
 
   try {
     val y1: List[Nothing]      = Serialize.read(Serialize.write(x1))
@@ -57,6 +58,7 @@ object Test1_scala {
     val y3: Array[Int]         = Serialize.read(Serialize.write(x3))
     val y4: Function[Int, Int] = Serialize.read(Serialize.write(x4))
     val y5: Symbol             = Serialize.read(Serialize.write(x5))
+    val y6: (String, Int)      = Serialize.read(Serialize.write(x6))
 
     println("x1 = " + x1)
     println("y1 = " + y1)
@@ -78,6 +80,11 @@ object Test1_scala {
     println("y5 = " + y5)
     println("x5 eq y5: " + (x5 eq y5) + " - y5 eq x5: " + (y5 eq x5))
     println("x5 equals y5: " + (x5 equals y5) + " - y5 equals x5: " + (y5 equals x5))
+    println()
+    println("x6 = " + x6)
+    println("y6 = " + y6)
+    println("x6 eq y6: " + (x6 eq y6) + " - y6 eq x6: " + (y6 eq x6))
+    println("x6 equals y6: " + (x6 equals y6) + " - y6 equals x6: " + (y6 equals x6))
     println()
   }
   catch {
