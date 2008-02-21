@@ -445,7 +445,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       case member: TypeDef => Some(new TypeAliasHandler(member))
       case member: Import => Some(new ImportHandler(member))
       case DocDef(_, documented) => chooseHandler(documented)
-      case _ => None
+      case member => Some(new GenericHandler(member))
     }
 
   /** <p>
@@ -604,6 +604,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     def extraCodeToEvaluate(req: Request, code: PrintWriter) { }
     def resultExtractionCode(req: Request, code: PrintWriter) { }
   }
+
+  private class GenericHandler(member: Tree) extends MemberHandler(member)
 
   private class ValHandler(member: ValDef) extends MemberHandler(member) {
     override val boundNames = List(member.name)
