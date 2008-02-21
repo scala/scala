@@ -75,7 +75,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   import compiler.{Tree, TermTree,
                    ValOrDefDef, ValDef, DefDef, Assign,
                    ClassDef, ModuleDef, Ident, Select, TypeDef,
-                   Import, MemberDef}
+                   Import, MemberDef, DocDef}
   import compiler.CompilationUnit
   import compiler.{Symbol,Name,Type}
   import compiler.nme
@@ -444,6 +444,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       case member: ClassDef => Some(new ClassHandler(member))
       case member: TypeDef => Some(new TypeAliasHandler(member))
       case member: Import => Some(new ImportHandler(member))
+      case DocDef(_, documented) => chooseHandler(documented)
       case _ => None
     }
 
