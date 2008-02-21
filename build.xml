@@ -1098,9 +1098,9 @@ MSIL
       <include name="scala/transient.scala"/>
       <include name="scala/volatile.scala"/>
       <include name="scala/remote.scala"/>
+      <include name="scala/collection/mutable/HashMap.scala"/>
       <include name="scala/runtime/*.scala"/>
-	  <include name="scala/collection/mutable/HashMap.scala"/>
-	  <exclude name="scala/runtime/RichStringBuilder.scala"/>
+      <exclude name="scala/runtime/RichStringBuilder.scala"/>
     </quick>
     <exec
       executable="${ilasm.cmd}" vmlauncher="no">
