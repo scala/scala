@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -44,7 +44,7 @@ class HashSet[A] extends Set[A] with mutable.FlatHashTable[A] {
     var cnt = 0
     while (m.later != null) {
       if (elem == m.changedElem) return m.deleted
-      cnt = cnt + 1
+      cnt += 1
       m = m.later
     }
     if (cnt > logLimit) makeCopy(m)
@@ -76,8 +76,8 @@ class HashSet[A] extends Set[A] with mutable.FlatHashTable[A] {
     var cnt = 0
     var s = tableSize
     while (m.later != null) {
-      if (m.deleted) s = s + 1 else s = s - 1
-      cnt = cnt + 1
+      if (m.deleted) s += 1 else s -= 1
+      cnt += 1
       m = m.later
     }
     if (cnt > logLimit) makeCopy(m)
