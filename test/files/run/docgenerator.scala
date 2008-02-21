@@ -107,7 +107,7 @@ object Foo2 {
 
   object MainDoc {
     import scala.tools.nsc._
-    import scala.tools.nsc.doc.DocDriver
+    import scala.tools.nsc.doc.DefaultDocDriver
     import scala.tools.nsc.reporters.ConsoleReporter
     def error(msg: String) { Console.err.println(msg) }
     var reporter: ConsoleReporter = _
@@ -123,7 +123,7 @@ object Foo2 {
         }
         val run = new compiler.Run
         run compile command.files
-        object generator extends DocDriver {
+        object generator extends DefaultDocDriver {
           lazy val global: compiler.type = compiler
           def settings = command.settings
         }
