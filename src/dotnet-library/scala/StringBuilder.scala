@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: $
+// $Id: StringBuilder.scala 14093 2008-02-21 16:55:26Z michelou $
 
 
 package scala
@@ -20,9 +20,10 @@ import Predef._
  *  </p>
  *
  *  @author Stephane Micheloud
+ *  @version 1.0
  */
-@throws(classOf[NullPointerException])
-final class StringBuilder(initCapacity: Int, private val initValue: String) extends (Int => Char) with Proxy {
+final class StringBuilder(initCapacity: Int, private val initValue: String)
+extends (Int => Char) with Proxy {
   if (initCapacity < 0) throw new IllegalArgumentException
   if (initValue eq null) throw new NullPointerException
 
@@ -32,11 +33,20 @@ final class StringBuilder(initCapacity: Int, private val initValue: String) exte
   /** The count is the number of characters used. */
   private var count: Int = 0
 
+  /** Constructs a string builder with no characters in it and an
+   *  initial capacity of 16 characters.
+   */
   def this() = this(16, "")
 
+  /** Constructs a string builder with no characters in it and an
+   *  initial capacity specified by the <code>capacity</code> argument.
+   *
+   *  @param  capacity  the initial capacity.
+   *  @throws NegativeArraySizeException  if the <code>capacity</code>
+   *                    argument is less than <code>0</code>.
+   */
   def this(capacity: Int) = this(capacity, "")
 
-  @throws(classOf[NullPointerException])
   def this(str: String) = this(16, str)
 
   append(initValue)
@@ -49,7 +59,11 @@ final class StringBuilder(initCapacity: Int, private val initValue: String) exte
 
   def length_=(n: Int) { setLength(n) }
 
-  @throws(classOf[StringIndexOutOfBoundsException])
+  /** Sets the length of the character sequence.
+   *
+   *  @param  newLength  the new length
+   *  @throws IndexOutOfBoundsException  if the <code>n</code> argument is negative.
+   */
   def setLength(n: Int) {
     if (n < 0)
       throw new StringIndexOutOfBoundsException//(n)
@@ -62,10 +76,33 @@ final class StringBuilder(initCapacity: Int, private val initValue: String) exte
       count = n
   }
 
+  /** Returns the current capacity. The capacity is the amount of storage
+   *  available for newly inserted characters, beyond which an allocation
+   *  will occur.
+   *
+   *  @return  the current capacity
+   */
   def capacity: Int = value.length
 
+  /** Same as <code>ensureCapacity</code>. */
   def capacity_=(n: Int) { ensureCapacity(n) }
 
+  /** <p>
+   *    Ensures that the capacity is at least equal to the specified minimum.
+   *    If the current capacity is less than the argument, then a new internal
+   *    array is allocated with greater capacity. The new capacity is the larger of:
+   *  </p>
+   *  <ul>
+   *    <li>The <code>n</code> argument.
+   *    <li>Twice the old capacity, plus <code>2</code>.
+   *  </ul>
+   *  <p>
+   *    If the <code>n</code> argument is non-positive, this
+   *    method takes no action and simply returns.
+   *  </p>
+   *
+   *  @param n the minimum desired capacity.
+   */
   def ensureCapacity(n: Int) {
     if (n > value.length) expandCapacity(n)
   }
@@ -78,17 +115,40 @@ final class StringBuilder(initCapacity: Int, private val initValue: String) exte
     )
   }
 
-  @throws(classOf[StringIndexOutOfBoundsException])
+  /** <p>
+   *    Returns the <code>Char</code> value in this sequence at the specified index.
+   *    The first <code>Char</code> value is at index <code>0</code>, the next at index
+   *    <code>1</code>, and so on, as in array indexing.
+   *  </p>
+   *  <p>
+   *    The index argument must be greater than or equal to
+   *    <code>0</code>, and less than the length of this sequence.
+   *  </p>
+   *
+   *  @param  index   the index of the desired <code>Char</code> value.
+   *  @return         the <code>Char</code> value at the specified index.
+   *  @throws IndexOutOfBoundsException  if <code>index</code> is
+   *                  negative or greater than or equal to <code>length()</code>.
+   */
   def charAt(index: Int): Char = {
     if (index < 0 || index >= count)
       throw new StringIndexOutOfBoundsException//(index)
     value(index)
   }
 
-  @throws(classOf[StringIndexOutOfBoundsException])
+  /** Same as <code>charAt</code>. */
   def apply(i: Int): Char = charAt(i)
 
-  @throws(classOf[StringIndexOutOfBoundsException])
+  /** <p>
+   *    Removes the <code>Char</code> at the specified position in this
+   *    sequence. This sequence is shortened by one <code>Char</code>.
+   *  </p>
+   *
+   *  @param  index  Index of <code>Char</code> to remove
+   *  @return        This object.
+   *  @throws StringIndexOutOfBoundsException  if the <code>index</code>
+   *	             is negative or greater than or equal to <code>length()</code>.
+   */
   def deleteCharAt(index: Int): StringBuilder = {
     if (index < 0 || index >= count)
       throw new StringIndexOutOfBoundsException//(index)
@@ -97,20 +157,56 @@ final class StringBuilder(initCapacity: Int, private val initValue: String) exte
     this
   }
 
-  @throws(classOf[StringIndexOutOfBoundsException])
-  def setCharAt(index: Int, c: Char) {
+  /** <p>
+   *    The character at the specified index is set to <code>ch</code>. This
+   *    sequence is altered to represent a new character sequence that is
+   *    identical to the old character sequence, except that it contains the
+   *    character <code>ch</code> at position <code>index</code>.
+   *  </p>
+   *  <p>
+   *    The index argument must be greater than or equal to
+   *    <code>0</code>, and less than the length of this sequence.
+   *  </p>
+   *
+   *  @param  index   the index of the character to modify.
+   *  @param  ch      the new character.
+   *  @throws IndexOutOfBoundsException  if <code>index</code> is
+   *                  negative or greater than or equal to <code>length()</code>.
+   */
+  def setCharAt(index: Int, ch: Char) {
     if (index < 0 || index >= count)
       throw new StringIndexOutOfBoundsException//(index)
-    value(index) = c
+    value(index) = ch
   }
 
-  @throws(classOf[StringIndexOutOfBoundsException])
+  /** Same as <code>setCharAt</code>. */
   def update(i: Int, c: Char) { setCharAt(i, c) }
 
-  @throws(classOf[StringIndexOutOfBoundsException])
+  /** Returns a new <code>String</code> that contains a subsequence of
+   *  characters currently contained in this character sequence. The
+   *  substring begins at the specified index and extends to the end of
+   *  this sequence.
+   *
+   *  @param  start  The beginning index, inclusive.
+   *  @return        The new string.
+   *  @throws StringIndexOutOfBoundsException  if <code>start</code> is
+   *                 less than zero, or greater than the length of this object.
+   */
   def substring(start: Int): String = substring(start, count)
 
-  @throws(classOf[StringIndexOutOfBoundsException])
+  /** Returns a new <code>String</code> that contains a subsequence of
+   *  characters currently contained in this sequence. The
+   *  substring begins at the specified <code>start</code> and
+   *  extends to the character at index <code>end - 1</code>.
+   *
+   *  @param  start  The beginning index, inclusive.
+   *  @param  end    The ending index, exclusive.
+   *  @return The new string.
+   *  @throws StringIndexOutOfBoundsException  if <code>start</code>
+   *                 or <code>end</code> are negative or greater than
+   *		     <code>length()</code>, or <code>start</code> is
+   *		     greater than <code>end</code>.
+   */
   def substring(start: Int, end: Int): String = {
     if (start < 0)
       throw new StringIndexOutOfBoundsException//(start)
@@ -121,13 +217,26 @@ final class StringBuilder(initCapacity: Int, private val initValue: String) exte
     new String(value, start, end - start)
   }
 
+  /** <p>
+   *    Appends the string representation of the <code>Any</code>
+   *    argument.
+   *  </p>
+   *  <p>
+   *    The argument is converted to a string as if by the method
+   *    <code>System.Convert.ToString</code>, and the characters of
+   *    that string are then appended to this sequence.
+   *  </p>
+   *
+   *  @param  x   an <code>Any</code> object.
+   *  @return     a reference to this object.
+   */
   def append(x: Any): StringBuilder =
     append(System.Convert.ToString(x))
 
   /** Appends the specified string to this character sequence.
    *
-   *  @param s
-   *  @return
+   *  @param  s   a string.
+   *  @return     a reference to this object.
    */
   def append(s: String): StringBuilder = {
     val str = if (s == null) "null" else s
@@ -135,7 +244,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String) exte
     if (len > 0) {
       val newCount = count + len
       if (newCount > value.length) expandCapacity(newCount)
-      compat.Platform.arraycopy(str.toArray: Array[Char], 0, value, count, len)
+      compat.Platform.arraycopy(str.ToCharArray, 0, value, count, len)
       count = newCount
     }
     this
@@ -158,9 +267,38 @@ final class StringBuilder(initCapacity: Int, private val initValue: String) exte
       this
     }
 
+  /** <p>
+   *    Appends the string representation of the <code>Char</code> array
+   *    argument to this sequence.
+   *  </p>
+   *  <p>
+   *    The characters of the array argument are appended, in order, to
+   *    the contents of this sequence. The length of this sequence
+   *    increases by the length of the argument.
+   *  </p>
+   *
+   *  @param  x  the characters to be appended.
+   *  @return    a reference to this object.
+   */
   def append(x: Array[Char]): StringBuilder =
     append(x, 0, x.length)
 
+  /** <p>
+   *    Appends the string representation of a subarray of the
+   *    <code>char</code> array argument to this sequence.
+   *  </p>
+   *  <p>
+   *    Characters of the <code>Char</code> array <code>x</code>, starting at
+   *    index <code>offset</code>, are appended, in order, to the contents
+   *    of this sequence. The length of this sequence increases
+   *    by the value of <code>len</code>.
+   *  </p>
+   *
+   *  @param  x      the characters to be appended.
+   *  @param  offset the index of the first <code>Char</code> to append.
+   *  @param  len    the number of <code>Char</code>s to append.
+   *  @return        a reference to this object.
+   */
   def append(x: Array[Char], offset: Int, len: Int): StringBuilder = {
     val newCount = count + len
     if (newCount > value.length) expandCapacity(newCount)
@@ -169,6 +307,19 @@ final class StringBuilder(initCapacity: Int, private val initValue: String) exte
     this
   }
 
+  /** <p>
+   *    Appends the string representation of the <code>Boolean</code>
+   *    argument to the sequence.
+   *  </p>
+   *  <p>
+   *    The argument is converted to a string as if by the method
+   *    <code>System.Convert.ToString</code>, and the characters of
+   *    that string are then appended to this sequence.
+   *  </p>
+   *
+   *   @param  x  a <code>Boolean</code>.
+   *   @return    a reference to this object.
+   */
   def append(x: Boolean): StringBuilder = {
     if (x) {
       val newCount = count + 4
@@ -208,7 +359,19 @@ final class StringBuilder(initCapacity: Int, private val initValue: String) exte
   def append(x: Double): StringBuilder =
     append(System.Convert.ToString(x))
 
-  @throws(classOf[StringIndexOutOfBoundsException])
+  /** Removes the characters in a substring of this sequence.
+   *  The substring begins at the specified <code>start</code> and extends to
+   *  the character at index <code>end - 1</code> or to the end of the
+   *  sequence if no such character exists. If
+   *  <code>start</code> is equal to <code>end</code>, no changes are made.
+   *
+   *  @param  start  The beginning index, inclusive.
+   *  @param  end    The ending index, exclusive.
+   *  @return        This object.
+   *  @throws StringIndexOutOfBoundsException  if <code>start</code>
+   *                 is negative, greater than <code>length()</code>, or
+   *		     greater than <code>end</code>.
+   */
   def delete(start: Int, end: Int): StringBuilder = {
     if (start < 0 || start > end)
       throw new StringIndexOutOfBoundsException//(start)
@@ -221,7 +384,21 @@ final class StringBuilder(initCapacity: Int, private val initValue: String) exte
     this
   }
 
-  @throws(classOf[StringIndexOutOfBoundsException])
+  /** Replaces the characters in a substring of this sequence
+   *  with characters in the specified <code>String</code>. The substring
+   *  begins at the specified <code>start</code> and extends to the character
+   *  at index <code>end - 1</code> or to the end of the sequence if no such
+   *  character exists. First the characters in the substring are removed and
+   *  then the specified <code>String</code> is inserted at <code>start</code>.
+   *
+   *  @param  start  The beginning index, inclusive.
+   *  @param  end    The ending index, exclusive.
+   *  @param  str    String that will replace previous contents.
+   *  @return        This object.
+   *  @throws StringIndexOutOfBoundsException  if <code>start</code>
+   *                 is negative, greater than <code>length()</code>, or
+   *		     greater than <code>end</code>.
+   */
   def replace(start: Int, end: Int, str: String) {
     if (start < 0 || start > count || start > end)
       throw new StringIndexOutOfBoundsException//(start)
@@ -232,12 +409,31 @@ final class StringBuilder(initCapacity: Int, private val initValue: String) exte
     if (newCount > value.length) expandCapacity(newCount)
 
     compat.Platform.arraycopy(value, end, value, start + len, count - end)
-    compat.Platform.arraycopy(str.toArray, 0, value, start, len)
+    compat.Platform.arraycopy(str.ToCharArray, 0, value, start, len)
     count = newCount
     this
   }
 
-  @throws(classOf[StringIndexOutOfBoundsException])
+  /** Inserts the string representation of a subarray of the <code>str</code>
+   *  array argument into this sequence. The subarray begins at the specified
+   *  <code>offset</code> and extends <code>len</code> <code>char</code>s.
+   *  The characters of the subarray are inserted into this sequence at
+   *  the position indicated by <code>index</code>. The length of this
+   *  sequence increases by <code>len</code> <code>Char</code>s.
+   *
+   * @param  index   position at which to insert subarray.
+   * @param  str     a <code>Char</code> array.
+   * @param  offset  the index of the first <code>char</code> in subarray to
+   *                 be inserted.
+   * @param  len     the number of <code>Char</code>s in the subarray to
+   *                 be inserted.
+   * @return         This object
+   * @throws StringIndexOutOfBoundsException  if <code>index</code>
+   *                 is negative or greater than <code>length()</code>, or
+   *                 <code>offset</code> or <code>len</code> are negative, or
+   *                 <code>(offset+len)</code> is greater than
+   *                 <code>str.length</code>.
+   */
   def insert(index: Int, str: Array[Char], offset: Int, len: Int): StringBuilder = {
     if (index < 0 || index > count)
       throw new StringIndexOutOfBoundsException//(index)
@@ -253,11 +449,37 @@ final class StringBuilder(initCapacity: Int, private val initValue: String) exte
     this
   }
 
-  @throws(classOf[StringIndexOutOfBoundsException])
+  /** <p>
+   *    Inserts the string representation of the <code>Any</code>
+   *    argument into this character sequence.
+   *  </p>
+   *  <p>
+   *    The second argument is converted to a string as if by the method
+   *    <code>System.Convert.ToString</code>, and the characters of that
+   *    string are then inserted into this sequence at the indicated
+   *    offset.
+   *  </p>
+   *  <p>
+   *    The offset argument must be greater than or equal to
+   *    <code>0</code>, and less than or equal to the length of this
+   *    sequence.
+   *  </p>
+   *
+   *  @param  offset  the offset.
+   *  @param  x       an <code>Any</code> value.
+   *  @return         a reference to this object.
+   *  @throws StringIndexOutOfBoundsException  if the offset is invalid.
+   */
   def insert(at: Int, x: Any): StringBuilder =
     insert(at, System.Convert.ToString(x))
 
-  @throws(classOf[StringIndexOutOfBoundsException])
+  /** Inserts the string into this character sequence.
+   *
+   *  @param  at  the offset position.
+   *  @param  x   a string.
+   *  @return     a reference to this object.
+   *  @throws StringIndexOutOfBoundsException  if the offset is invalid.
+   */
   def insert(at: Int, x: String): StringBuilder = {
     if (at < 0 || at > count)
       throw new StringIndexOutOfBoundsException//(at)
@@ -266,12 +488,19 @@ final class StringBuilder(initCapacity: Int, private val initValue: String) exte
     val newCount = count + len
     if (newCount > value.length) expandCapacity(newCount)
     compat.Platform.arraycopy(value, at, value, at + len, count - at)
-    compat.Platform.arraycopy(str.toArray: Array[Char], 0, value, at, len)
+    compat.Platform.arraycopy(str.ToCharArray, 0, value, at, len)
     count = newCount
     this
   }
 
-  @throws(classOf[StringIndexOutOfBoundsException])
+  /** Inserts the string representation of the <code>Char</code> array
+   *  argument into this sequence.
+   *
+   *  @param  at  the offset position.
+   *  @param  x   a character array.
+   *  @return     a reference to this object.
+   *  @throws StringIndexOutOfBoundsException  if the offset is invalid.
+   */
   def insert(at: Int, x: Array[Char]): StringBuilder = {
     if (at < 0 || at > count)
       throw new StringIndexOutOfBoundsException//(at)
@@ -284,11 +513,9 @@ final class StringBuilder(initCapacity: Int, private val initValue: String) exte
     this
   }
 
-  @throws(classOf[StringIndexOutOfBoundsException])
   def insert(at: Int, x: Boolean): StringBuilder =
     insert(at, System.Convert.ToString(x))
 
-  @throws(classOf[StringIndexOutOfBoundsException])
   def insert(at: Int, x: Char): StringBuilder = {
     if (at < 0 || at > count)
       throw new StringIndexOutOfBoundsException//(at)
@@ -300,36 +527,76 @@ final class StringBuilder(initCapacity: Int, private val initValue: String) exte
     this
   }
 
-  @throws(classOf[StringIndexOutOfBoundsException])
   def insert(at: Int, x: Int): StringBuilder =
     insert(at, System.Convert.ToString(x))
 
-  @throws(classOf[StringIndexOutOfBoundsException])
   def insert(at: Int, x: Long): StringBuilder =
-     insert(at, System.Convert.ToString(x))
+    insert(at, System.Convert.ToString(x))
 
-  @throws(classOf[StringIndexOutOfBoundsException])
   def insert(at: Int, x: Float): StringBuilder =
     insert(at, System.Convert.ToString(x))
 
-  @throws(classOf[StringIndexOutOfBoundsException])
   def insert(at: Int, x: Double): StringBuilder =
     insert(at, System.Convert.ToString(x))
 
-  @throws(classOf[NullPointerException])
+  /** Returns the index within this string of the first occurrence of the
+   *  specified substring. The integer returned is the smallest value
+   *  <i>k</i> such that:
+   *  <blockquote><pre>
+   *  this.toString().startsWith(str, <i>k</i>)
+   *  </pre></blockquote>
+   *  is <code>true</code>.
+   *
+   *  @param  str  any string.
+   *  @return      if the string argument occurs as a substring within this
+   *               object, then the index of the first character of the first
+   *               such substring is returned; if it does not occur as a
+   *               substring, <code>-1</code> is returned.
+   *  @throws NullPointerException if <code>str</code> is <code>null</code>.
+   */
   def indexOf(str: String): Int = indexOf(str, 0)
 
-  @throws(classOf[NullPointerException])
   def indexOf(str: String, fromIndex: Int): Int =
-    StringBuilder.indexOf(value, 0, count, str.toArray, 0, str.length(), fromIndex)
+    StringBuilder.indexOf(value, 0, count, str.ToCharArray, 0, str.length(), fromIndex)
 
-  @throws(classOf[NullPointerException])
+  /** Returns the index within this string of the rightmost occurrence
+   *  of the specified substring.  The rightmost empty string "" is
+   *  considered to occur at the index value <code>this.length()</code>.
+   *  The returned index is the largest value <i>k</i> such that
+   *  <blockquote><pre>
+   *  this.toString().startsWith(str, k)
+   *  </pre></blockquote>
+   *  is true.
+   *
+   * @param  str  the substring to search for.
+   * @return      if the string argument occurs one or more times as a substring
+   *              within this object, then the index of the first character of
+   *              the last such substring is returned. If it does not occur as
+   *              a substring, <code>-1</code> is returned.
+   * @throws NullPointerException  if <code>str</code> is <code>null</code>.
+   */
   def lastIndexOf(str: String): Int = lastIndexOf(str, count)
 
-  @throws(classOf[NullPointerException])
   def lastIndexOf(str: String, fromIndex: Int): Int =
-    StringBuilder.lastIndexOf(value, 0, count, str.toArray, 0, str.length(), fromIndex)
+    StringBuilder.lastIndexOf(value, 0, count, str.ToCharArray, 0, str.length(), fromIndex)
 
+  /** <p>
+   *    Causes this character sequence to be replaced by the reverse of the
+   *    sequence. If there are any surrogate pairs included in the sequence,
+   *    these are treated as single characters for the reverse operation.
+   *    Thus, the order of the high-low surrogates is never reversed.
+   *  </p>
+   *  <p>
+   *    Let <i>n</i> be the character length of this character sequence
+   *    (not the length in <code>Char</code> values) just prior to
+   *    execution of the <code>reverse</code> method. Then the
+   *    character at index <i>k</i> in the new character sequence is
+   *    equal to the character at index <i>n-k-1</i> in the old
+   *    character sequence.
+   *  </p>
+   *
+   *  @return  a reference to this object.
+   */
   def reverse(): StringBuilder = {
     val n = count - 1
     var j = (n-1) >> 1
@@ -343,6 +610,15 @@ final class StringBuilder(initCapacity: Int, private val initValue: String) exte
     this
   }
 
+  /** Returns a string representing the data in this sequence.
+   *  A new <code>String</code> object is allocated and initialized to
+   *  contain the character sequence currently represented by this
+   *  object. This <code>String</code> is then returned. Subsequent
+   *  changes to this sequence do not affect the contents of the
+   *  <code>String</code>.
+   *
+   *  @return  a string representation of this sequence of characters.
+   */
   override def toString(): String = new String(value, 0, count)
 
 }
@@ -353,13 +629,7 @@ object StringBuilder {
   // method <code>java.util.Arrays.copyOf</code> exists since 1.6
   private def copyOf(src: Array[Char], newLength: Int): Array[Char] = {
     val dest = new Array[Char](newLength)
-    val (start, end) =
-      if (src.length < newLength) (src.length, newLength)
-      else (newLength, src.length)
-    compat.Platform.arraycopy(src, 0, dest, 0, start)
-    // For any indices that are valid in the copy but not the original,
-    // the copy will contain '\\u000'.
-    for (i <- start until end) dest(i) = '\0'
+    compat.Platform.arraycopy(src, 0, dest, 0, Math.min(src.length, newLength))
     dest
   }
 

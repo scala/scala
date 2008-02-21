@@ -20,9 +20,9 @@ import Predef._
  *  </p>
  *
  *  @author Stephane Micheloud
+ *  @version 1.0
  */
 @SerialVersionUID(0 - 8525408645367278351L)
-@throws(classOf[NullPointerException])
 final class StringBuilder(initCapacity: Int, private val initValue: String)
 extends (Int => Char) with Proxy {
   if (initCapacity < 0) throw new IllegalArgumentException
@@ -48,7 +48,6 @@ extends (Int => Char) with Proxy {
    */
   def this(capacity: Int) = this(capacity, "")
 
-  @throws(classOf[NullPointerException])
   def this(str: String) = this(16, str)
 
   append(initValue)
@@ -66,7 +65,6 @@ extends (Int => Char) with Proxy {
    *  @param  newLength  the new length
    *  @throws IndexOutOfBoundsException  if the <code>n</code> argument is negative.
    */
-  @throws(classOf[StringIndexOutOfBoundsException])
   def setLength(n: Int) {
     if (n < 0)
       throw new StringIndexOutOfBoundsException(n)
@@ -133,7 +131,6 @@ extends (Int => Char) with Proxy {
    *  @throws IndexOutOfBoundsException  if <code>index</code> is
    *                  negative or greater than or equal to <code>length()</code>.
    */
-  @throws(classOf[StringIndexOutOfBoundsException])
   def charAt(index: Int): Char = {
     if (index < 0 || index >= count)
       throw new StringIndexOutOfBoundsException(index)
@@ -141,7 +138,6 @@ extends (Int => Char) with Proxy {
   }
 
   /** Same as <code>charAt</code>. */
-  @throws(classOf[StringIndexOutOfBoundsException])
   def apply(i: Int): Char = charAt(i)
 
   /** <p>
@@ -154,7 +150,6 @@ extends (Int => Char) with Proxy {
    *  @throws StringIndexOutOfBoundsException  if the <code>index</code>
    *	             is negative or greater than or equal to <code>length()</code>.
    */
-  @throws(classOf[StringIndexOutOfBoundsException])
   def deleteCharAt(index: Int): StringBuilder = {
     if (index < 0 || index >= count)
       throw new StringIndexOutOfBoundsException(index)
@@ -179,7 +174,6 @@ extends (Int => Char) with Proxy {
    *  @throws IndexOutOfBoundsException  if <code>index</code> is
    *                  negative or greater than or equal to <code>length()</code>.
    */
-  @throws(classOf[StringIndexOutOfBoundsException])
   def setCharAt(index: Int, ch: Char) {
     if (index < 0 || index >= count)
       throw new StringIndexOutOfBoundsException(index)
@@ -187,7 +181,6 @@ extends (Int => Char) with Proxy {
   }
 
   /** Same as <code>setCharAt</code>. */
-  @throws(classOf[StringIndexOutOfBoundsException])
   def update(i: Int, c: Char) { setCharAt(i, c) }
 
   /** Returns a new <code>String</code> that contains a subsequence of
@@ -200,7 +193,6 @@ extends (Int => Char) with Proxy {
    *  @throws StringIndexOutOfBoundsException  if <code>start</code> is
    *                 less than zero, or greater than the length of this object.
    */
-  @throws(classOf[StringIndexOutOfBoundsException])
   def substring(start: Int): String = substring(start, count)
 
   /** Returns a new <code>String</code> that contains a subsequence of
@@ -216,7 +208,6 @@ extends (Int => Char) with Proxy {
    *		     <code>length()</code>, or <code>start</code> is
    *		     greater than <code>end</code>.
    */
-  @throws(classOf[StringIndexOutOfBoundsException])
   def substring(start: Int, end: Int): String = {
     if (start < 0)
       throw new StringIndexOutOfBoundsException(start)
@@ -254,7 +245,7 @@ extends (Int => Char) with Proxy {
     if (len > 0) {
       val newCount = count + len
       if (newCount > value.length) expandCapacity(newCount)
-      compat.Platform.arraycopy(str.toArray: Array[Char], 0, value, count, len)
+      compat.Platform.arraycopy(str.toCharArray, 0, value, count, len)
       count = newCount
     }
     this
@@ -382,7 +373,6 @@ extends (Int => Char) with Proxy {
    *                 is negative, greater than <code>length()</code>, or
    *		     greater than <code>end</code>.
    */
-  @throws(classOf[StringIndexOutOfBoundsException])
   def delete(start: Int, end: Int): StringBuilder = {
     if (start < 0 || start > end)
       throw new StringIndexOutOfBoundsException(start)
@@ -410,7 +400,6 @@ extends (Int => Char) with Proxy {
    *                 is negative, greater than <code>length()</code>, or
    *		     greater than <code>end</code>.
    */
-  @throws(classOf[StringIndexOutOfBoundsException])
   def replace(start: Int, end: Int, str: String) {
     if (start < 0 || start > count || start > end)
       throw new StringIndexOutOfBoundsException(start)
@@ -421,7 +410,7 @@ extends (Int => Char) with Proxy {
     if (newCount > value.length) expandCapacity(newCount)
 
     compat.Platform.arraycopy(value, end, value, start + len, count - end)
-    compat.Platform.arraycopy(str.toArray, 0, value, start, len)
+    compat.Platform.arraycopy(str.toCharArray, 0, value, start, len)
     count = newCount
     this
   }
@@ -446,7 +435,6 @@ extends (Int => Char) with Proxy {
    *                 <code>(offset+len)</code> is greater than
    *                 <code>str.length</code>.
    */
-  @throws(classOf[StringIndexOutOfBoundsException])
   def insert(index: Int, str: Array[Char], offset: Int, len: Int): StringBuilder = {
     if (index < 0 || index > count)
       throw new StringIndexOutOfBoundsException(index)
@@ -483,7 +471,6 @@ extends (Int => Char) with Proxy {
    *  @return         a reference to this object.
    *  @throws StringIndexOutOfBoundsException  if the offset is invalid.
    */
-  @throws(classOf[StringIndexOutOfBoundsException])
   def insert(at: Int, x: Any): StringBuilder =
     insert(at, String.valueOf(x))
 
@@ -494,7 +481,6 @@ extends (Int => Char) with Proxy {
    *  @return     a reference to this object.
    *  @throws StringIndexOutOfBoundsException  if the offset is invalid.
    */
-  @throws(classOf[StringIndexOutOfBoundsException])
   def insert(at: Int, x: String): StringBuilder = {
     if (at < 0 || at > count)
       throw new StringIndexOutOfBoundsException(at)
@@ -503,7 +489,7 @@ extends (Int => Char) with Proxy {
     val newCount = count + len
     if (newCount > value.length) expandCapacity(newCount)
     compat.Platform.arraycopy(value, at, value, at + len, count - at)
-    compat.Platform.arraycopy(str.toArray: Array[Char], 0, value, at, len)
+    compat.Platform.arraycopy(str.toCharArray, 0, value, at, len)
     count = newCount
     this
   }
@@ -516,7 +502,6 @@ extends (Int => Char) with Proxy {
    *  @return     a reference to this object.
    *  @throws StringIndexOutOfBoundsException  if the offset is invalid.
    */
-  @throws(classOf[StringIndexOutOfBoundsException])
   def insert(at: Int, x: Array[Char]): StringBuilder = {
     if (at < 0 || at > count)
       throw new StringIndexOutOfBoundsException(at)
@@ -529,11 +514,9 @@ extends (Int => Char) with Proxy {
     this
   }
 
-  @throws(classOf[StringIndexOutOfBoundsException])
   def insert(at: Int, x: Boolean): StringBuilder =
     insert(at, String.valueOf(x))
 
-  @throws(classOf[StringIndexOutOfBoundsException])
   def insert(at: Int, x: Char): StringBuilder = {
     if (at < 0 || at > count)
       throw new StringIndexOutOfBoundsException(at)
@@ -545,19 +528,15 @@ extends (Int => Char) with Proxy {
     this
   }
 
-  @throws(classOf[StringIndexOutOfBoundsException])
   def insert(at: Int, x: Int): StringBuilder =
     insert(at, String.valueOf(x))
 
-  @throws(classOf[StringIndexOutOfBoundsException])
   def insert(at: Int, x: Long): StringBuilder =
     insert(at, String.valueOf(x))
 
-  @throws(classOf[StringIndexOutOfBoundsException])
   def insert(at: Int, x: Float): StringBuilder =
     insert(at, String.valueOf(x))
 
-  @throws(classOf[StringIndexOutOfBoundsException])
   def insert(at: Int, x: Double): StringBuilder =
     insert(at, String.valueOf(x))
 
@@ -576,12 +555,10 @@ extends (Int => Char) with Proxy {
    *               substring, <code>-1</code> is returned.
    *  @throws NullPointerException if <code>str</code> is <code>null</code>.
    */
-  @throws(classOf[NullPointerException])
   def indexOf(str: String): Int = indexOf(str, 0)
 
-  @throws(classOf[NullPointerException])
   def indexOf(str: String, fromIndex: Int): Int =
-    StringBuilder.indexOf(value, 0, count, str.toArray, 0, str.length(), fromIndex)
+    StringBuilder.indexOf(value, 0, count, str.toCharArray, 0, str.length(), fromIndex)
 
   /** Returns the index within this string of the rightmost occurrence
    *  of the specified substring.  The rightmost empty string "" is
@@ -599,12 +576,10 @@ extends (Int => Char) with Proxy {
    *              a substring, <code>-1</code> is returned.
    * @throws NullPointerException  if <code>str</code> is <code>null</code>.
    */
-  @throws(classOf[NullPointerException])
   def lastIndexOf(str: String): Int = lastIndexOf(str, count)
 
-  @throws(classOf[NullPointerException])
   def lastIndexOf(str: String, fromIndex: Int): Int =
-    StringBuilder.lastIndexOf(value, 0, count, str.toArray, 0, str.length(), fromIndex)
+    StringBuilder.lastIndexOf(value, 0, count, str.toCharArray, 0, str.length(), fromIndex)
 
   /** <p>
    *    Causes this character sequence to be replaced by the reverse of the
@@ -675,7 +650,6 @@ extends (Int => Char) with Proxy {
   }
 
   @throws(classOf[java.io.IOException])
-  @throws(classOf[ClassNotFoundException])
   private def readObject(s: java.io.ObjectInputStream ) {
     s.defaultReadObject()
     count = s.readInt()
