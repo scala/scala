@@ -269,6 +269,22 @@ extends (Int => Char) with Proxy {
     }
 
   /** <p>
+   *    Appends the string representation of the <code>Char</code> sequence
+   *    argument to this sequence.
+   *  </p>
+   *  <p>
+   *    The characters of the sequence argument are appended, in order,
+   *    to the contents of this sequence. The length of this sequence
+   *    increases by the length of the argument.
+   *  </p>
+   *
+   *  @param  x  the characters to be appended.
+   *  @return    a reference to this object.
+   */
+  def append(x: Seq[Char]): StringBuilder =
+    append(x.toArray, 0, x.length)
+
+  /** <p>
    *    Appends the string representation of the <code>Char</code> array
    *    argument to this sequence.
    *  </p>
@@ -493,6 +509,17 @@ extends (Int => Char) with Proxy {
     count = newCount
     this
   }
+
+  /** Inserts the string representation of the <code>Char</code> sequence
+   *  argument into this sequence.
+   *
+   *  @param  at  the offset position.
+   *  @param  x   a character sequence.
+   *  @return     a reference to this object.
+   *  @throws StringIndexOutOfBoundsException  if the offset is invalid.
+   */
+  def insert(at: Int, x: Seq[Char]): StringBuilder =
+    insert(at, x.toArray)
 
   /** Inserts the string representation of the <code>Char</code> array
    *  argument into this sequence.
