@@ -221,14 +221,16 @@ abstract class Mixin extends InfoTransform {
        */
       def mixinTraitMembers(mixinClass: Symbol) {
         // For all members of a trait's interface do:
+        def isConcreteAccessor(member: Symbol) =
+          (member hasFlag ACCESSOR) &&
+          (!(member hasFlag DEFERRED) || (member hasFlag lateDEFERRED))
         def isOverridden(member: Symbol) =
-          member.overridingSymbol(clazz) != NoSymbol
+          isConcreteAccessor(member.overridingSymbol(clazz))
         for (val member <- mixinClass.info.decls.toList) {
-          if ((member hasFlag ACCESSOR) &&
-              (!(member hasFlag DEFERRED) || (member hasFlag lateDEFERRED))) {
-            if (isOverridden(member))
+          if (isConcreteAccessor(member)) {
+            if (isOverridden(member)) {
               if (settings.debug.value) println("!!! is overridden val: "+member)
-            else {
+            } else {
               // mixin field accessors
               val member1 = addMember(
                 clazz,
