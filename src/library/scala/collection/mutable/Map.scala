@@ -136,7 +136,7 @@ trait Map[A, B] extends AnyRef
   /** Remove <code>key</code> from this map and return the element
    *  that the key was previously mapped to (if any).
    */
-  def removeKey(key : A) : Option[B] = {
+  def removeKey(key: A): Option[B] = {
     val ret = get(key)
     this -= key
     ret
@@ -145,12 +145,11 @@ trait Map[A, B] extends AnyRef
   /** Map <code>key</code> to <code>elem</code> in this map and return the element
    *  that the key was previously mapped to (if any).
    */
-  def put(key : A, elem : B) : Option[B] = {
+  def put(key: A, elem: B): Option[B] = {
     val ret = get(key)
     this(key) = elem
     ret
   }
-
 
   /** Remove two or more keys from this map
    *  @param    key1 the first key to be removed
@@ -204,8 +203,10 @@ trait Map[A, B] extends AnyRef
    * @param p  The test predicate
    * @deprecated cannot be type inferred because if retain in Iterable.
    */
-  def retain(p: (A, B) => Boolean): Unit = toList foreach {
-    case (key, value) => if (!p(key, value)) -=(key)
+  def retain(p: (A, B) => Boolean) {
+    toList foreach {
+      case (key, value) => if (!p(key, value)) -=(key)
+    }
   }
 
   /** Send a message to this scriptable object.
@@ -226,6 +227,14 @@ trait Map[A, B] extends AnyRef
    *  @return a map with the same elements.
    */
   override def clone(): Map[A, B] = super.clone().asInstanceOf[Map[A, B]]
+
+  /** Return a read-only projection of this map */
+  def readOnly: scala.collection.Map[A, B] = new scala.collection.Map[A, B] {
+    override def toString = "ro-" + Map.this.toString
+    override def size = Map.this.size
+    override def elements = Map.this.elements
+    override def get(key: A) = Map.this.get(key)
+  }
 
   /** This method defines syntactic sugar for adding or modifying
    *  mappings. It is typically used in the following way:
