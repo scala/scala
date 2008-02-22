@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author Nikolay Mihaylov
  */
 
@@ -581,7 +581,7 @@ abstract class GenMSIL extends SubComponent {
       }
 
       if (mcode != null) {
-        for (local <- m.locals.diff(m.params)) {
+        for (local <- m.locals -- m.params) {
           if (settings.debug.value)
             log("add local var: " + local + ", of kind " + local.kind)
           val t: MsilType = msilType(local.kind)
@@ -861,7 +861,7 @@ abstract class GenMSIL extends SubComponent {
           // problem: block may already be added, and and needs to be moved.
           // if nextblock NOT in b: check if nextblock in blocksToPut, if NOT, check if movable, else don't put
           if (nextBlock != null && b.contains(nextBlock)) {
-            val blocksToAdd = nextBlock :: b.diff(List(nextBlock))
+            val blocksToAdd = nextBlock :: (b - nextBlock)
             nextBlock = null
             addBlocks(blocksToAdd)
           }
@@ -874,7 +874,7 @@ abstract class GenMSIL extends SubComponent {
               {
                 // the block is not part of some catch or finally code
                 currentBlock.addBasicBlock(x)
-                blocksToPut = blocksToPut.diff(List(x))
+                blocksToPut = blocksToPut - x
                 if (settings.debug.value) log(" -> addBlocks(" + xs + ")")
                 addBlocks(xs)
               } else {
@@ -885,7 +885,7 @@ abstract class GenMSIL extends SubComponent {
                 // is optimized by compiler (no try left)
                 if(untreatedHandlers.forall(h =>
                   (!h.blocks.contains(x) || h.covered.isEmpty))) {
-                    blocksToPut = blocksToPut.diff(List(x))
+                    blocksToPut = blocksToPut - x
                     addBlocks(xs)
                   } else
                     addBlocks(xs ::: List(x))
@@ -981,7 +981,7 @@ abstract class GenMSIL extends SubComponent {
                 //else ()
                   //assert(firstBlockAfter(exh) == outside(0), "try/catch leaving to multiple targets: " + firstBlockAfter(exh) + ", new: " + outside(0))
                 val last = leaving(0)._1
-                (blocks.diff(List(last)) ::: List(last), None)
+                ((blocks - last) ::: List(last), None)
               } else {
                 val outside = leaving.flatMap(p => p._2)
                 //assert(outside.forall(b => b == outside(0)), "exception-block leaving to multiple targets")
@@ -1003,7 +1003,7 @@ abstract class GenMSIL extends SubComponent {
             // shorter try-catch-finally last (the ones contained in another)
             affectedHandlers = affectedHandlers.sort({(h1, h2) => h1.covered.length > h2.covered.length})
             affectedHandlers = affectedHandlers.filter(h => {h.covered.length == affectedHandlers(0).covered.length})
-            untreatedHandlers = untreatedHandlers.diff(affectedHandlers)
+            untreatedHandlers = untreatedHandlers -- affectedHandlers
 
             // more than one catch produces more than one exh, but we only need one
             var singleAffectedHandler: ExceptionHandler = affectedHandlers(0) // List[ExceptionHandler] = Nil
@@ -1017,7 +1017,7 @@ abstract class GenMSIL extends SubComponent {
                   h1.addBlock(block)
                 case None => ()
               }
-              val orderedCatchBlocks = h1.startBlock :: adaptedBlocks.diff(List(h1.startBlock))
+              val orderedCatchBlocks = h1.startBlock :: (adaptedBlocks - h1.startBlock)
 
               exceptionBlock match {
                 case Some(excBlock) =>
@@ -1048,7 +1048,7 @@ abstract class GenMSIL extends SubComponent {
                         singleAffectedHandler.finalizer.addBlock(block)
                       case None => ()
                     }
-                    val blocks = singleAffectedHandler.finalizer.startBlock :: blocks0.diff(List(singleAffectedHandler.finalizer.startBlock))
+                    val blocks = singleAffectedHandler.finalizer.startBlock :: (blocks0 - singleAffectedHandler.finalizer.startBlock)
                     currentBlock = excBlock.finallyBlock
                     addBlocks(blocks)
                   }
@@ -1148,7 +1148,7 @@ abstract class GenMSIL extends SubComponent {
              "untreated exception handlers left: " + untreatedHandlers)
       // remove catch blocks from empty handlers (finally-blocks remain)
       untreatedHandlers.foreach((h) => {
-        orderedBlocks = orderedBlocks.diff(h.blocks)
+        orderedBlocks = orderedBlocks -- h.blocks
       })
 
       // take care of order in which exHInstructions are executed (BeginExceptionBlock as last)
@@ -1810,7 +1810,7 @@ abstract class GenMSIL extends SubComponent {
         idx += 1 // sizeOf(l.kind)
       }
 
-      val locvars = m.locals.diff(params)
+      val locvars = m.locals -- params
       idx = 0
 
       for (l <- locvars) {
