@@ -1,12 +1,12 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: $
+// $Id$
 
 
 package scala
@@ -30,10 +30,12 @@ import Predef._
 class Range(val start: Int, val end: Int, val step: Int) extends RandomAccessSeq.Projection[Int] {
   if (step == 0) throw new Predef.IllegalArgumentException
 
-  /** create a new range with the start and end values of this range and a new <code>step</code> */
-  def by(step : Int) : Range = new Range(start, end, step)
+  /** Create a new range with the start and end values of this range and
+   *  a new <code>step</code>.
+   */
+  def by(step: Int): Range = new Range(start, end, step)
 
-  lazy val length : Int = {
+  lazy val length: Int = {
     if (start < end && this.step < 0) 0
     else if (start > end && this.step > 0) 0
     else {
@@ -45,21 +47,29 @@ class Range(val start: Int, val end: Int, val step: Int) extends RandomAccessSeq
       base / step + last(base, step)
     }
   }
-  protected def last(base : Int, step : Int) = (if (base % step != 0) 1 else 0)
-  def apply(idx : Int) : Int = {
+
+  protected def last(base: Int, step: Int): Int =
+    if (base % step != 0) 1 else 0
+
+  def apply(idx: Int): Int = {
     if (idx < 0 || idx >= length) throw new Predef.IndexOutOfBoundsException
     start + (step * idx)
   }
+
   /** a <code>Seq.contains</code>, not a <code>Iterator.contains</code>! */
-  def contains(x : Int): Boolean =
-    x >= start && x < end && (((x - start) % step) == 0)
+  def contains(x: Int): Boolean =
+    if (step > 0)
+      x >= start && x < end && (((x - start) % step) == 0)
+    else
+      x <= start && x > end && (((x - end) % step) == 0)
+
   def inclusive = new Range.Inclusive(start,end,step)
 }
+
 object Range {
-  class Inclusive(start : Int, end : Int, step : Int) extends Range(start, end, step) {
-    override def apply(idx : Int) : Int = super.apply(idx)
-    override protected def last(base : Int, step : Int) : Int = 1
-    override def by(step : Int) : Range = new Inclusive(start, end, step)
+  class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
+    override def apply(idx: Int): Int = super.apply(idx)
+    override protected def last(base: Int, step: Int): Int = 1
+    override def by(step: Int): Range = new Inclusive(start, end, step)
   }
 }
-
