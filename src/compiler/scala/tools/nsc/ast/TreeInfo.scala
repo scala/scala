@@ -283,6 +283,20 @@ abstract class TreeInfo {
       false
   }
 
+  /** Compilation unit is the predef object
+   */
+  def isPredefUnit(tree: Tree): Boolean = tree match {
+    case PackageDef(nme.scala_, List(obj)) => isPredefObj(obj)
+    case _ => false
+  }
+
+  private def isPredefObj(tree: Tree): Boolean = tree match {
+    case ModuleDef(_, nme.Predef, _) => true
+    case DocDef(_, tree1) => isPredefObj(tree1)
+    case Annotated(_, tree1) => isPredefObj(tree1)
+    case _ => false
+  }
+
   def isAbsTypeDef(tree: Tree) = tree match {
     case TypeDef(_, _, _, TypeBoundsTree(_, _)) => true
     case TypeDef(_, _, _, rhs) => rhs.tpe.isInstanceOf[TypeBounds]
