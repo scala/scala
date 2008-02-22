@@ -84,6 +84,48 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         }
       }
 
+    private def transformSuperSelect(tree: Tree) = tree match {
+      case Select(sup @ Super(_, mix), name) =>
+        val sym = tree.symbol
+        val clazz = sup.symbol
+        if (sym.isDeferred) {
+          val member = sym.overridingSymbol(clazz);
+          if (mix != nme.EMPTY.toTypeName || member == NoSymbol ||
+              !((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz)))
+            unit.error(tree.pos, ""+sym+sym.locationString+" is accessed from super. It may not be abstract "+
+                                 "unless it is overridden by a member declared `abstract' and `override'");
+        }
+        if (tree.isTerm && mix == nme.EMPTY.toTypeName &&
+            (clazz.isTrait || clazz != currentOwner.enclClass || !validCurrentOwner)) {
+          val supername = nme.superName(sym.name)
+          var superAcc = clazz.info.decl(supername).suchThat(_.alias == sym)
+          if (superAcc == NoSymbol) {
+            if (settings.debug.value) log("add super acc " + sym + sym.locationString + " to `" + clazz);//debug
+            superAcc =
+              clazz.newMethod(tree.pos, supername)
+                .setFlag(SUPERACCESSOR | PRIVATE)
+                .setAlias(sym)
+            var superAccTpe = clazz.thisType.memberType(sym)
+            if (sym.isModule && !sym.isMethod) {
+              // the super accessor always needs to be a method. See #231
+              superAccTpe = PolyType(List(), superAccTpe)
+            }
+            superAcc.setInfo(superAccTpe.cloneInfo(superAcc))
+            //println("creating super acc "+superAcc+":"+superAcc.tpe)//DEBUG
+            clazz.info.decls enter superAcc;
+            accDefBuf(clazz) += typed(DefDef(superAcc, vparamss => EmptyTree))
+          }
+          atPos(sup.pos) {
+            Select(gen.mkAttributedThis(clazz), superAcc) setType tree.tpe;
+          }
+        } else {
+          tree
+        }
+      case _ =>
+        assert(tree.tpe.isError, tree)
+        tree
+    }
+
     override def transform(tree: Tree): Tree = try { tree match {
       case ClassDef(_, _, _, _) =>
         checkCompanionNameClashes(tree.symbol)
@@ -131,7 +173,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           }
           if (settings.debug.value)
             Console.println("alias replacement: " + tree + " ==> " + result);//debug
-          transform(result)
+          transformSuperSelect(result)
         } else {
           if (needsProtectedAccessor(sym, tree.pos)) {
             if (settings.debug.value) log("Adding protected accessor for " + tree);
@@ -141,38 +183,10 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         }
       case Select(sup @ Super(_, mix), name) =>
         val sym = tree.symbol
-        val clazz = sup.symbol
-        if (sym.isDeferred) {
-          val member = sym.overridingSymbol(clazz);
-          if (mix != nme.EMPTY.toTypeName || member == NoSymbol ||
-              !((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz)))
-            unit.error(tree.pos, ""+sym+sym.locationString+" is accessed from super. It may not be abstract "+
-                                 "unless it is overridden by a member declared `abstract' and `override'");
+        if (sym.isValue && !sym.isMethod || sym.hasFlag(ACCESSOR)) {
+          unit.error(tree.pos, "super may be not be used on "+sym)
         }
-        if (tree.isTerm && mix == nme.EMPTY.toTypeName &&
-            (clazz.isTrait || clazz != currentOwner.enclClass || !validCurrentOwner)) {
-          val supername = nme.superName(sym.name)
-          var superAcc = clazz.info.decl(supername).suchThat(_.alias == sym)
-          if (superAcc == NoSymbol) {
-            if (settings.debug.value) log("add super acc " + sym + sym.locationString + " to `" + clazz);//debug
-            superAcc =
-              clazz.newMethod(tree.pos, supername)
-                .setFlag(SUPERACCESSOR | PRIVATE)
-                .setAlias(sym)
-            var superAccTpe = clazz.thisType.memberType(sym)
-            if (sym.isModule && !sym.isMethod) {
-              // the super accessor always needs to be a method. See #231
-              superAccTpe = PolyType(List(), superAccTpe)
-            }
-            superAcc.setInfo(superAccTpe.cloneInfo(superAcc))
-            //println("creating super acc "+superAcc+":"+superAcc.tpe)//DEBUG
-            clazz.info.decls enter superAcc;
-            accDefBuf(clazz) += typed(DefDef(superAcc, vparamss => EmptyTree))
-          }
-          atPos(sup.pos) {
-            Select(gen.mkAttributedThis(clazz), superAcc) setType tree.tpe;
-          }
-        } else tree
+        transformSuperSelect(tree)
 
       case TypeApply(sel @ Select(qual, name), args) =>
         val sym = tree.symbol

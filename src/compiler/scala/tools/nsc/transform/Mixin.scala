@@ -221,38 +221,44 @@ abstract class Mixin extends InfoTransform {
        */
       def mixinTraitMembers(mixinClass: Symbol) {
         // For all members of a trait's interface do:
+        def isOverridden(member: Symbol) =
+          member.overridingSymbol(clazz) != NoSymbol
         for (val member <- mixinClass.info.decls.toList) {
           if ((member hasFlag ACCESSOR) &&
               (!(member hasFlag DEFERRED) || (member hasFlag lateDEFERRED))) {
-            // mixin field accessors
-            val member1 = addMember(
-              clazz,
-              member.cloneSymbol(clazz)
-                setPos clazz.pos
-                setFlag FINAL resetFlag (DEFERRED | lateDEFERRED))
-            if (member.hasFlag(LAZY)) {
-              var init = implClass(mixinClass).info.decl(member.name)
-              assert(init != NoSymbol, "Could not find initializer for " + member.name)
-              initializer(member1) = init
-            }
-            if (!member.isSetter)
-              member.tpe match {
-                case MethodType(List(), ConstantType(_)) =>
-                  // member is a constant; only getter is needed
-                  ;
-                case MethodType(List(), TypeRef(_, tpeSym, _))
-                  if member.hasFlag(LAZY) && tpeSym == definitions.UnitClass =>
-                  // member is a lazy value of type unit. No field needed
-                  ;
-                case _ =>
-                  // otherwise mixin a field as well
-                  addMember(clazz,
-                            clazz.newValue(member.pos, nme.getterToLocal(member.name))
-                            setFlag (LOCAL | PRIVATE | member.getFlag(MUTABLE | LAZY))
-                            setFlag (if (!member.hasFlag(STABLE)) MUTABLE else 0)
-                            setInfo member.tpe.resultType
-                            setAttributes member.attributes)
+            if (isOverridden(member))
+              if (settings.debug.value) println("!!! is overridden val: "+member)
+            else {
+              // mixin field accessors
+              val member1 = addMember(
+                clazz,
+                member.cloneSymbol(clazz)
+                  setPos clazz.pos
+                  setFlag FINAL resetFlag (DEFERRED | lateDEFERRED))
+              if (member.hasFlag(LAZY)) {
+                var init = implClass(mixinClass).info.decl(member.name)
+                assert(init != NoSymbol, "Could not find initializer for " + member.name)
+                initializer(member1) = init
               }
+              if (!member.isSetter)
+                member.tpe match {
+                  case MethodType(List(), ConstantType(_)) =>
+                    // member is a constant; only getter is needed
+                    ;
+                  case MethodType(List(), TypeRef(_, tpeSym, _))
+                    if member.hasFlag(LAZY) && tpeSym == definitions.UnitClass =>
+                    // member is a lazy value of type unit. No field needed
+                    ;
+                  case _ =>
+                    // otherwise mixin a field as well
+                    addMember(clazz,
+                              clazz.newValue(member.pos, nme.getterToLocal(member.name))
+                              setFlag (LOCAL | PRIVATE | member.getFlag(MUTABLE | LAZY))
+                              setFlag (if (!member.hasFlag(STABLE)) MUTABLE else 0)
+                              setInfo member.tpe.resultType
+                              setAttributes member.attributes)
+                }
+            }
           } else if (member hasFlag SUPERACCESSOR) { // mixin super accessors
             val member1 = addMember(clazz, member.cloneSymbol(clazz)) setPos clazz.pos
             assert(member1.alias != NoSymbol, member1)
@@ -613,7 +619,7 @@ abstract class Mixin extends InfoTransform {
             // if current class is a trait interface, add an abstract method for accessor `sym'
             addDefDef(sym, vparamss => EmptyTree)
           } else if (!clazz.isTrait) {
-            // if class is not a trait:
+            // if class is not a trait add accessor definitions
             if ((sym hasFlag ACCESSOR) &&
                 (!(sym hasFlag DEFERRED) || (sym hasFlag lateDEFERRED))) {
               // add accessor definitions
