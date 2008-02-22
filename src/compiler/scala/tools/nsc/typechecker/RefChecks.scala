@@ -182,9 +182,9 @@ abstract class RefChecks extends InfoTransform {
           overrideError("cannot override a mutable variable")
         } else if (other.isStable && !member.isStable) { // (1.4)
           overrideError("needs to be an immutable value")
-        } else if (other.isStable && !other.isDeferred && other.owner.isTrait && (member hasFlag OVERRIDE)) {
-          overrideError("cannot override a value or variable definition in a trait " +
-                        "\n (this is an implementation restriction)")
+//        } else if (other.isStable && !other.isDeferred && other.owner.isTrait && (member hasFlag OVERRIDE)) {
+//          overrideError("cannot override a value or variable definition in a trait " +
+//                        "\n (this is an implementation restriction)")
         } else {
           if (other.isAliasType) {
             //if (!member.typeParams.isEmpty) // (1.5)  @MAT
@@ -405,8 +405,10 @@ abstract class RefChecks extends InfoTransform {
           case MethodType(formals, result) =>
             validateVariance(result, variance)
           case PolyType(tparams, result) =>
+            // type parameters will be validated separately, because they are defined explicitly.
             validateVariance(result, variance)
           case ExistentialType(tparams, result) =>
+            validateVariances(tparams map (_.info), variance)
             validateVariance(result, variance)
           case AnnotatedType(attribs, tp, selfsym) =>
             validateVariance(tp, variance)

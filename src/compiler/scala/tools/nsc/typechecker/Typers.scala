@@ -2252,9 +2252,9 @@ trait Typers { self: Analyzer =>
         } else {
           if (!lhs1.tpe.isError) {
             //println(lhs1+" = "+rhs)//DEBUG
-            error(tree.pos, "assignment to "+
-                  (if ((varsym ne null) && varsym.isValue) "immutable value"
-                   else "non variable"))
+            error(tree.pos,
+                  if ((varsym ne null) && varsym.isValue) "reassignment to val"
+                  else "assignment to non variable")
           }
           setError(tree)
         }
