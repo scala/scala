@@ -1,6 +1,4 @@
-bug562.scala:10: error: error overriding value y in trait YYY of type Int;
- value y cannot override a value or variable definition in a trait 
- (this is an implementation restriction)
+bug562.scala:10: error: super may be not be used on value y
   override val y = super.y;
-               ^
+                         ^
 one error found
