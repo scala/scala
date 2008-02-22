@@ -236,9 +236,14 @@ trait Typers { self: Analyzer =>
       if (treeInfo.isPureExpr(tree)) tree
       else errorTree(tree, "stable identifier required, but " + tree + " found.")
 
-    /** Check that `sym' refers to a non-refinement class type */
-    def checkClassType(pos: Position, sym: Symbol) {
-      if (!sym.isClass || sym.isRefinementClass) error(pos, "class type required")
+    /** Check that `tpt' refers to a non-refinement class type */
+    def checkClassType(tpt: Tree) {
+      def check(tpe: Type): Unit = tpe.normalize match {
+        case TypeRef(_, sym, _) if sym.isClass && !sym.isRefinementClass => ;
+        case PolyType(_, restpe) => check(restpe)
+        case t => error(tpt.pos, "class type required but "+t+" found")
+      }
+      check(tpt.tpe)
     }
 
     /** Check that type <code>tp</code> is not a subtype of itself.
@@ -951,7 +956,7 @@ trait Typers { self: Analyzer =>
       def validateParentClass(parent: Tree, superclazz: Symbol) {
         if (!parent.tpe.isError) {
           val psym = parent.tpe.typeSymbol.initialize
-          checkClassType(parent.pos, psym)
+          checkClassType(parent)
           if (psym != superclazz) {
             if (psym.isTrait) {
               val ps = psym.info.parents
@@ -2296,6 +2301,7 @@ trait Typers { self: Analyzer =>
 
       def typedNew(tpt: Tree) = {
         var tpt1 = typedTypeConstructor(tpt)
+        checkClassType(tpt1)
         if (tpt1.hasSymbol && !tpt1.symbol.typeParams.isEmpty) {
           context.undetparams = cloneSymbols(tpt1.symbol.typeParams)
           tpt1 = TypeTree()
@@ -2375,7 +2381,7 @@ trait Typers { self: Analyzer =>
             val targs = args map (_.tpe)
             checkBounds(tree.pos, NoPrefix, NoSymbol, tparams, targs, "")
             if (fun.symbol == Predef_classOf) {
-              checkClassType(args.head.pos, targs.head.typeSymbol)
+              checkClassType(args.head)
               Literal(Constant(targs.head)) setPos tree.pos setType Predef_classOfType(targs.head)
               // @M: targs.head.normalize is not necessary --> toTypeKind eventually normalizes the type
             } else {
