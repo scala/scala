@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -39,37 +39,47 @@ object List {
    *  @param end the end value of the list
    *  @return the sorted list of all integers in range [from;end).
    */
-  def range(from: Int, end: Int): List[Int] =
-    range(from, end, 1)
+  def range(start: Int, end: Int): List[Int] =
+    range(start, end, 1)
 
-  /** Create a sorted list of all integers in a range.
+  /** Create a list with element values
+   * <code>v<sub>n+1</sub> = v<sub>n</sub> + step</code>
+   * where <code>v<sub>0</sub> = start</code>
+   * and elements are in the range between <code>start</code> (inclusive)
+   * and <code>end</code> (exclusive)
    *
-   *  @param from the start value of the list
+   *  @param start the start value of the list
    *  @param end  the end value of the list
    *  @param step the increment value of the list
-   *  @return     the sorted list of all integers in range [from;end).
+   *  @return     the sorted list of all integers in range [start;end).
    */
-  def range(from: Int, end: Int, step: Int): List[Int] = {
+  def range(start: Int, end: Int, step: Int): List[Int] = {
     val b = new ListBuffer[Int]
-    var i = from
-    while (i < end) {
+    var i = start
+    while ((step <= 0 || i < end) && (step >= 0 || i > end)) {
       b += i
       i += step
     }
     b.toList
   }
 
-  /** Create a sorted list of all integers in a range.
+  /** Create a sorted list with element values
+   * <code>v<sub>n+1</sub> = step(v<sub>n</sub>)</code>
+   * where <code>v<sub>0</sub> = start</code>
+   * and elements are in the range between <code>start</code> (inclusive)
+   * and <code>end</code> (exclusive)
    *
-   *  @param from the start value of the list
+   *  @param start the start value of the list
    *  @param end  the end value of the list
-   *  @param step the increment function of the list
-   *  @return     the sorted list of all integers in range [from;end).
+   *  @param step the increment function of the list, must be monotonically increasing or decreasing
+   *  @return     the sorted list of all integers in range [start;end).
    */
-  def range(from: Int, end: Int, step: Int => Int): List[Int] = {
+  def range(start: Int, end: Int, step: Int => Int): List[Int] = {
+    val up = step(start) > start
+    val down = step(start) < start
     val b = new ListBuffer[Int]
-    var i = from
-    while (i < end) {
+    var i = start
+    while ((!up || i < end) && (!down || i > end)) {
       b += i
       i += step(i)
     }
@@ -354,9 +364,15 @@ object List {
    *  @param xss the list of lists
    *  @return    the transposed list of lists
    */
-  def transpose[A](xss: List[List[A]]): List[List[A]] =
-    if (xss.head.isEmpty) List()
-    else (xss map (xs => xs.head)) :: transpose(xss map (xs => xs.tail))
+  def transpose[A](xss: List[List[A]]): List[List[A]] = {
+    val buf = new ListBuffer[List[A]]
+    var yss = xss
+    while (!yss.head.isEmpty) {
+      buf += (yss map (_.head))
+      yss = (yss map (_.tail))
+    }
+    buf.toList
+  }
 
   /** Lists with ordered elements are ordered
   implicit def list2ordered[a <% Ordered[a]](x: List[a]): Ordered[List[a]] = new Ordered[List[a]] {
@@ -420,12 +436,28 @@ sealed abstract class List[+A] extends Seq[A] {
    *    Add an element <code>x</code> at the beginning of this list.
    *  </p>
    *
-   *  @param x the element to append.
-   *  @return  the list with <code>x</code> appended at the beginning.
+   *  @param x the element to prepend.
+   *  @return  the list with <code>x</code> added at the beginning.
    *  @ex <code>1 :: List(2, 3) = List(2, 3).::(1) = List(1, 2, 3)</code>
    */
   def ::[B >: A] (x: B): List[B] =
     new scala.::(x, this)
+
+  /** <p>
+   *    Add an element <code>x</code> at the end of this list.
+   *  </p>
+   *
+   *  @param x the element to append.
+   *  @return  the list with <code>x</code> added at the end.
+   */
+  def +[B >: A](x: B): List[B] =
+    if (isEmpty) List(x)
+    else {
+      val buf = new ListBuffer[B]
+      this copyToBuffer buf
+      buf += x
+      buf.toList
+    }
 
   /** <p>
    *    Returns a list resulting from the concatenation of the given
@@ -447,6 +479,15 @@ sealed abstract class List[+A] extends Seq[A] {
       }
       b.prependToList(this)
     }
+
+  /** Appends two list objects.
+   */
+  override def ++[B >: A](that: Iterable[B]): List[B] = {
+    val buf = new ListBuffer[B]
+    this copyToBuffer buf
+    that copyToBuffer buf
+    buf.toList
+  }
 
   /** Reverse the given prefix and append the current list to that.
    *  This function is equivalent to an application of <code>reverse</code>
@@ -541,7 +582,7 @@ sealed abstract class List[+A] extends Seq[A] {
   /** Returns the last element of this list.
    *
    *  @return the last element of the list.
-   *  @throws Predef.UnsupportedOperationException if the list is empty.
+   *  @throws Predef.NoSuchElementException if the list is empty.
    */
   override def last: A =
     if (isEmpty) throw new Predef.NoSuchElementException("Nil.last")
@@ -1152,8 +1193,19 @@ sealed abstract class List[+A] extends Seq[A] {
    *  @param that the list of elements to remove from this list.
    *  @return     this list without the elements of the given list
    *              <code>that</code>.
+   *  @deprecated use <code>--</code> instead
    */
-  def diff[B >: A](that: List[B]): List[B] = {
+  @deprecated
+  def diff[B >: A](that: List[B]): List[B] = this -- that
+
+  /** Computes the difference between this list and the given list
+   *  <code>that</code>.
+   *
+   *  @param that the list of elements to remove from this list.
+   *  @return     this list without the elements of the given list
+   *              <code>that</code>.
+   */
+  def -- [B >: A](that: List[B]): List[B] = {
     val b = new ListBuffer[B]
     var these = this
     while (!these.isEmpty) {
@@ -1163,12 +1215,21 @@ sealed abstract class List[+A] extends Seq[A] {
     b.toList
   }
 
+  /** Computes the difference between this list and the given object
+   *  <code>x</code>.
+   *
+   *  @param x    the object to remove from this list.
+   *  @return     this list without the elements of the given object
+   *              <code>x</code>.
+   */
+  def - [B >: A](x: B): List[B] =
+    this -- List(x)
+
   def flatten[B](implicit f : A => Iterable[B]) : List[B] = {
     val buf = new ListBuffer[B]
     foreach(f(_).foreach(buf += _))
     buf.toList
   }
-
 
   /** Computes the intersection between this list and the given list
    *  <code>that</code>.
