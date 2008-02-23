@@ -237,10 +237,12 @@ trait Typers { self: Analyzer =>
       else errorTree(tree, "stable identifier required, but " + tree + " found.")
 
     /** Check that `tpt' refers to a non-refinement class type */
-    def checkClassType(tpt: Tree) {
+    def checkClassType(tpt: Tree, existentialOK: Boolean) {
       def check(tpe: Type): Unit = tpe.normalize match {
         case TypeRef(_, sym, _) if sym.isClass && !sym.isRefinementClass => ;
+        case ErrorType => ;
         case PolyType(_, restpe) => check(restpe)
+        case ExistentialType(_, restpe) if existentialOK => check(restpe)
         case t => error(tpt.pos, "class type required but "+t+" found")
       }
       check(tpt.tpe)
@@ -956,7 +958,7 @@ trait Typers { self: Analyzer =>
       def validateParentClass(parent: Tree, superclazz: Symbol) {
         if (!parent.tpe.isError) {
           val psym = parent.tpe.typeSymbol.initialize
-          checkClassType(parent)
+          checkClassType(parent, false)
           if (psym != superclazz) {
             if (psym.isTrait) {
               val ps = psym.info.parents
@@ -2301,7 +2303,7 @@ trait Typers { self: Analyzer =>
 
       def typedNew(tpt: Tree) = {
         var tpt1 = typedTypeConstructor(tpt)
-        checkClassType(tpt1)
+        checkClassType(tpt1, false)
         if (tpt1.hasSymbol && !tpt1.symbol.typeParams.isEmpty) {
           context.undetparams = cloneSymbols(tpt1.symbol.typeParams)
           tpt1 = TypeTree()
@@ -2381,7 +2383,7 @@ trait Typers { self: Analyzer =>
             val targs = args map (_.tpe)
             checkBounds(tree.pos, NoPrefix, NoSymbol, tparams, targs, "")
             if (fun.symbol == Predef_classOf) {
-              checkClassType(args.head)
+              checkClassType(args.head, true)
               Literal(Constant(targs.head)) setPos tree.pos setType Predef_classOfType(targs.head)
               // @M: targs.head.normalize is not necessary --> toTypeKind eventually normalizes the type
             } else {

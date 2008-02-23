@@ -538,7 +538,8 @@ abstract class RefChecks extends InfoTransform {
                      !(receiver isSubClass actual))
               nonSensible("", false)
             else if ((receiver hasFlag FINAL) && hasObjectEquals && !isValueClass(receiver) &&
-                     !(receiver isSubClass actual) && receiver != AllRefClass && actual != AllRefClass)
+                     !(receiver isSubClass actual) && receiver != AllRefClass && actual != AllRefClass &&
+                     (name == nme.EQ || name == nme.LE))
               nonSensible("non-null ", false)
             else if ((isNew(qual) || isNew(args.head)) && hasObjectEquals)
               nonSensibleWarning("a fresh object", false)

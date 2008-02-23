@@ -1,5 +1,5 @@
 class Foo {
-  object aaa {
+  def aaa {
     println("a")
   }
 }

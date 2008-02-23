@@ -1,5 +1,5 @@
 class A() {
-  val f : Int = 2
+  def f : Int = 2
 }
 
 class B() extends A() {

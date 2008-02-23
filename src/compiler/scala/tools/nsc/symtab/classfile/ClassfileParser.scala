@@ -472,51 +472,62 @@ abstract class ClassfileParser {
         case SHORT_TAG  => definitions.ShortClass.tpe
         case VOID_TAG   => definitions.UnitClass.tpe
         case BOOL_TAG   => definitions.BooleanClass.tpe
-        case 'L' => {
+        case 'L' =>
+          def processClassType(tp: Type): Type = {
+            val classSym = tp.typeSymbol
+            val existentials = new ListBuffer[Symbol]()
+            if (sig(index) == '<') {
+              accept('<')
+              val xs = new ListBuffer[Type]()
+              var i = 0
+              while (sig(index) != '>') {
+                sig(index) match {
+                  case variance @ ('+' | '-' | '*') =>
+                    index += 1
+                    val bounds = variance match {
+                      case '+' => mkTypeBounds(definitions.AllClass.tpe,
+                                               sig2type(tparams))
+                      case '-' => mkTypeBounds(sig2type(tparams),
+                                               definitions.AnyClass.tpe)
+                      case '*' => mkTypeBounds(definitions.AllClass.tpe,
+                                               definitions.AnyClass.tpe)
+                    }
+                    val newtparam = makeExistential("?"+i, sym, bounds)
+                    existentials += newtparam
+                    xs += newtparam.tpe
+                    i += 1
+                  case _ =>
+                    xs += sig2type(tparams)
+                }
+              }
+              accept('>')
+              assert(xs.length > 0)
+              existentialAbstraction(existentials.toList,
+                                     appliedType(tp, xs.toList))
+            } else if (classSym.isMonomorphicType) {
+              tp
+            } else {
+              // raw type - existentially quantify all type parameters
+              val eparams = typeParamsToExistentials(classSym, classSym.unsafeTypeParams)
+              val t = appliedType(classSym.typeConstructor, eparams.map(_.tpe))
+              val res = existentialAbstraction(eparams, t)
+              if (settings.debug.value && settings.verbose.value) println("raw type " + classSym + " -> " + res)
+              res
+            }
+          }
           val classSym = classNameToSymbol(subName(c => c == ';' || c == '<'))
           assert(!classSym.hasFlag(OVERLOADED), classSym.alternatives)
-          val existentials = new ListBuffer[Symbol]()
-          val tpe: Type = if (sig(index) == '<') {
-            accept('<')
-            val xs = new ListBuffer[Type]()
-            var i = 0
-            while (sig(index) != '>') {
-              sig(index) match {
-                case variance @ ('+' | '-' | '*') =>
-                  index += 1
-                  val bounds = variance match {
-                    case '+' => mkTypeBounds(definitions.AllClass.tpe,
-                                             sig2type(tparams))
-                    case '-' => mkTypeBounds(sig2type(tparams),
-                                             definitions.AnyClass.tpe)
-                    case '*' => mkTypeBounds(definitions.AllClass.tpe,
-                                             definitions.AnyClass.tpe)
-                  }
-                  val newtparam = makeExistential("?"+i, sym, bounds)
-                  existentials += newtparam
-                  xs += newtparam.tpe
-                  i += 1
-                case _ =>
-                  xs += sig2type(tparams)
-              }
-            }
-            accept('>')
-            assert(xs.length > 0)
-            existentialAbstraction(existentials.toList,
-                                   appliedType(classSym.tpe, xs.toList))
-          }
-          else if (classSym.isMonomorphicType) classSym.tpe
-          else {
-            // raw type - existentially quantify all type parameters
-            val eparams = typeParamsToExistentials(classSym, classSym.unsafeTypeParams)
-            val t = appliedType(classSym.typeConstructor, eparams.map(_.tpe))
-            val res = existentialAbstraction(eparams, t)
-            if (settings.debug.value && settings.verbose.value) println("raw type " + classSym + " -> " + res)
-            res
+          var tpe = processClassType(classSym.tpe)
+          while (sig(index) == '.') {
+            accept('.')
+            val name = subName(c => c == ';' || c == '.').toTypeName
+            val clazz = tpe.typeSymbol.info.member(name)
+            assert(clazz.isClass,
+                   tpe.typeSymbol.linkedModuleOfClass.moduleClass.info+" "+tpe+" . "+name+"/"+tpe.typeSymbol.info.decls)
+            tpe = processClassType(clazz.tpe)
           }
           accept(';')
           tpe
-        }
         case ARRAY_TAG =>
           while ('0' <= sig(index) && sig(index) <= '9') index += 1
           appliedType(definitions.ArrayClass.tpe, List(sig2type(tparams)))
@@ -719,6 +730,16 @@ abstract class ClassfileParser {
 	}
     }
 
+    def makeInnerAlias(outer: Symbol, name: Name, iclazz: Symbol, scope: Scope): Symbol = {
+      var innerAlias = scope.lookup(name)
+      if (!innerAlias.isAliasType) {
+        innerAlias = outer.newAliasType(NoPosition, name).setFlag(JAVA)
+          .setInfo(new LazyAliasType(iclazz))
+        scope.enter(innerAlias)
+      }
+      innerAlias
+    }
+
     def parseInnerClasses() {
       for (i <- 0 until in.nextChar) {
         val innerIndex = in.nextChar
@@ -728,11 +749,11 @@ abstract class ClassfileParser {
         if (innerIndex != 0 && outerIndex != 0 && nameIndex != 0 &&
             (jflags & (JAVA_ACC_PUBLIC | JAVA_ACC_PROTECTED)) != 0 &&
             pool.getClassSymbol(outerIndex) == sym) {
-          val innerAlias = getOwner(jflags)
-            .newAliasType(NoPosition, pool.getName(nameIndex).toTypeName)
-            .setFlag(JAVA)
-            .setInfo(new LazyAliasType(pool.getClassSymbol(innerIndex)))
-          getScope(jflags).enter(innerAlias)
+          makeInnerAlias(
+            getOwner(jflags),
+            pool.getName(nameIndex).toTypeName,
+            pool.getClassSymbol(innerIndex),
+            getScope(jflags))
 
           if ((jflags & JAVA_ACC_STATIC) != 0) {
             val innerVal = staticModule.newValue(NoPosition, pool.getName(nameIndex).toTermName)
