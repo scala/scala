@@ -80,7 +80,7 @@ class Settings(error: String => Unit) {
     } else null
   }
 
-  val debuginfo     = new DebugSetting  ("-g", "Specify level of generated debugging info", List("none", "source", "line", "vars", "notc"), "vars", "vars")
+  val debuginfo     = new DebugSetting  ("-g", "Specify level of generated debugging info", List("none", "source", "line", "vars", "notailcalls"), "vars", "vars")
   val nowarnings    = BooleanSetting    ("-nowarn", "Generate no warnings").hideToIDE
   val verbose       = BooleanSetting    ("-verbose", "Output messages about what the compiler is doing").hideToIDE
   val deprecation   = BooleanSetting    ("-deprecation", "Output source locations where deprecated APIs are used").hideToIDE
