@@ -30,9 +30,7 @@ while [ -h "$SOURCE" ]; do
         SOURCE=`dirname "$SOURCE"`/${TARGET:-.};
     fi;
 done;
-if [ "$SCALA_HOME" == "" ] then
-  SCALA_HOME=`dirname "$SOURCE"`/..;
-fi;
+SCALA_HOME=`dirname "$SOURCE"`/..;
 SCALA_HOME=`cd "$SCALA_HOME"; pwd`;
 if $cygwin; then
     SCALA_HOME=`cygpath --windows --short-name "$SCALA_HOME"`
