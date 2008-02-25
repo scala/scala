@@ -32,7 +32,7 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
   }
 
   def process(settings: Settings, units: Iterator[CompilationUnit]) {
-      process(units)
+    process(units)
   }
 
   def process(units: Iterator[CompilationUnit]) {
@@ -74,8 +74,8 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
     additions0.init
     copyResources
     val packages0 = sort(allClasses.keySet)
-    new AllPackagesFrame     with Frame { def packages = packages0; }
-    new PackagesContentFrame with Frame { def packages = packages0; }
+    new AllPackagesFrame     with Frame { def packages = packages0 }
+    new PackagesContentFrame with Frame { def packages = packages0 }
     new NavigationFrame      with Frame { }
     new ListClassFrame with Frame {
       def classes = for (p <- allClasses; d <- p._2) yield d
@@ -110,17 +110,17 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
       new ListClassFrame with Frame {
         def title =
           "List of classes and objects in package " + pkg0.fullName('.')
-        def classes = classes0;
-        def path = pkgPath(pkg0.sym) + NAME_SUFFIX_PACKAGE;
-        def navLabel = pkg0.fullName('.');
+        def classes = classes0
+        def path = pkgPath(pkg0.sym) + NAME_SUFFIX_PACKAGE
+        def navLabel = pkg0.fullName('.')
       }
       new PackageContentFrame with Frame {
-        def classes = classes0;
-        def pkg = pkg0;
+        def classes = classes0
+        def pkg = pkg0
       }
       for (clazz0 <- classes0) {
         new ClassContentFrame with Frame {
-          def clazz = clazz0;
+          def clazz = clazz0
           def title =
             clazz0.kind + " " + clazz0.name + " in " + (clazz0.sym.owner.fullNameString('.'));
         }
@@ -190,7 +190,7 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
 
   override protected def decodeOption(tag: String, option: String): NodeSeq = tag match {
     case "throws" if additions0.exceptions.contains(option) =>
-      val (sym, s) = additions0.exceptions(option);
+      val (sym, s) = additions0.exceptions(option)
       val path = "../" //todo: fix path
       val href = path + sym.fullNameString('/') +
       (if (sym.isModule || sym.isModuleClass) NAME_SUFFIX_OBJECT else "") +
