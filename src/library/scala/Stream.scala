@@ -292,7 +292,7 @@ trait Stream[+A] extends Seq.Projection[A] {
    */
   override def take(n: Int): Stream[A] =
     if (isEmpty || n <= 0) Stream.empty
-    else Stream.cons(head, tail take (n-1))
+    else Stream.cons(head, if (n == 1) Stream.empty else (tail take (n-1)))
 
   /** Returns the stream without its <code>n</code> first elements.
    *  If the stream has less than <code>n</code> elements, the empty stream is returned.
