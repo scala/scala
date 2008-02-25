@@ -17,7 +17,9 @@ class StreamAppender(from: Reader, to: Writer) extends Thread {
         writer.println(line)
         line = reader.readLine()
       }
+      reader.close()
       writer.flush()
+      writer.close()
     } catch {
       case e: IOException =>
         e.printStackTrace()

@@ -40,7 +40,7 @@ else
     (libs.listFiles(new FilenameFilter {
       def accept(dir: File, name: String) =
         name.endsWith(".jar")
-    }) map {file => file.getAbsolutePath}).mkString(""+PATH_SEP)
+    }) map {file => file.getCanonicalFile.getAbsolutePath}).mkString(""+PATH_SEP)
   }
 
 /*
@@ -87,6 +87,7 @@ elif [ -d "$PREFIX/bin" ]; then
       latestLibFile = prefixFile("build/quick/lib/library")
       latestCompFile = prefixFile("build/quick/lib/compiler")
       latestPartestFile = prefixFile("build/quick/lib/partest")
+      latestFjbgFile = prefixFile("build/quick/lib/fjbg.jar")
     }
     else if (bin.exists && bin.isDirectory) {
       latestFile = prefixFile("bin")
@@ -118,6 +119,7 @@ elif [ -d "$PREFIX/bin" ]; then
   var latestLibFile: File = _
   var latestCompFile: File = _
   var latestPartestFile: File = _
+  var latestFjbgFile: File = _
   // initialize above fields
   findLatest()
 
@@ -188,9 +190,9 @@ class FileManager {
 
   var testFiles: List[File] = List()
 
-  def getFiles(kind: String, doCheck: Boolean): List[File] = {
+  def getFiles(kind: String, doCheck: Boolean, ending: String): List[File] = {
     val filter = new FilenameFilter {
-      def accept(dir: File, name: String): Boolean = name endsWith ".scala"
+      def accept(dir: File, name: String): Boolean = name endsWith ending
     }
     val dir = new File(FileManager.srcDir, kind)
     NestUI.verbose("look in "+dir+" for tests")
@@ -207,4 +209,7 @@ class FileManager {
       Nil
     }
   }
+
+  def getFiles(kind: String, doCheck: Boolean): List[File] =
+    getFiles(kind, doCheck, ".scala")
 }

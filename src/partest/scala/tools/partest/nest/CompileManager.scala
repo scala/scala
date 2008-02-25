@@ -8,7 +8,6 @@ import scala.tools.nsc.{Global, Settings}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 
 import java.io.{File, BufferedReader, PrintWriter, FileWriter}
-import java.net.URLClassLoader
 
 class ExtConsoleReporter(override val settings: Settings, reader: BufferedReader, var writer: PrintWriter) extends ConsoleReporter(settings, reader, writer) {
   def this(settings: Settings) = {
@@ -106,10 +105,13 @@ class DirectCompiler extends SimpleCompiler {
 }
 
 class ReflectiveCompiler extends SimpleCompiler {
-  import FileManager.{latestCompFile, latestPartestFile}
+  import FileManager.{latestCompFile, latestPartestFile, latestFjbgFile}
 
-  val sepUrls = Array(latestCompFile.toURL, latestPartestFile.toURL)
-  val sepLoader = new URLClassLoader(sepUrls)
+  val sepUrls = Array(latestCompFile.toURL, latestPartestFile.toURL,
+                      latestFjbgFile.toURL)
+  //NestUI.verbose("constructing URLClassLoader from URLs "+latestCompFile+" and "+latestPartestFile)
+
+  val sepLoader = new java.net.URLClassLoader(sepUrls, null)
 
   val sepCompilerClass =
     sepLoader.loadClass("scala.tools.partest.nest.DirectCompiler")
@@ -123,12 +125,22 @@ class ReflectiveCompiler extends SimpleCompiler {
   val sepCompileMethod2 =
     sepCompilerClass.getMethod("compile", Array(fileClass, stringClass, fileClass))
 
+  /* This method throws java.lang.reflect.InvocationTargetException
+   * if the compiler crashes.
+   * This exception is handled in the shouldCompile and shouldFailCompile
+   * methods of class CompileManager.
+   */
   def compile(file: File, kind: String): Boolean = {
     val fileArgs: Array[AnyRef] = Array(file, kind)
     val res = sepCompileMethod.invoke(sepCompiler, fileArgs).asInstanceOf[java.lang.Boolean]
     res.booleanValue()
   }
 
+  /* This method throws java.lang.reflect.InvocationTargetException
+   * if the compiler crashes.
+   * This exception is handled in the shouldCompile and shouldFailCompile
+   * methods of class CompileManager.
+   */
   def compile(file: File, kind: String, log: File): Boolean = {
     val fileArgs: Array[AnyRef] = Array(file, kind, log)
     val res = sepCompileMethod2.invoke(sepCompiler, fileArgs).asInstanceOf[java.lang.Boolean]
@@ -145,20 +157,47 @@ class CompileManager {
     compiler = new ReflectiveCompiler
   }
 
+  /* This method returns true iff compilation succeeds.
+   */
   def shouldCompile(file: File, kind: String): Boolean = {
     createSeparateCompiler()
-    compiler.compile(file, kind)
 
-    /*compiler.compile(file, kind) || {
-      NestUI.verbose("creating new separate compiler")
-      createSeparateCompiler()
+    try {
       compiler.compile(file, kind)
-    }*/
+    } catch {
+      case ite: java.lang.reflect.InvocationTargetException =>
+        NestUI.verbose("while invoking compiler ("+file+"):")
+        NestUI.verbose("caught "+ite)
+        ite.printStackTrace
+        ite.getCause.printStackTrace
+        false
+    }
   }
 
+  /* This method returns true iff compilation fails
+   * _and_ the compiler does _not_ crash.
+   *
+   * If the compiler crashes, this method returns false.
+   */
   def shouldFailCompile(file: File, kind: String, log: File): Boolean = {
     // always create new separate compiler
     createSeparateCompiler()
-    !compiler.compile(file, kind, log)
+
+    try {
+      // simulating compiler crash
+      /*if (file.getName().endsWith("bug752.scala")) {
+        NestUI.verbose("simulating compiler crash")
+        throw new java.lang.reflect.InvocationTargetException(new Throwable)
+      }*/
+
+      !compiler.compile(file, kind, log)
+    } catch {
+      case ite: java.lang.reflect.InvocationTargetException =>
+        NestUI.verbose("while invoking compiler ("+file+"):")
+        NestUI.verbose("caught "+ite)
+        ite.printStackTrace
+        ite.getCause.printStackTrace
+        false
+    }
   }
 }

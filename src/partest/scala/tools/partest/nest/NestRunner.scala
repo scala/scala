@@ -20,6 +20,7 @@ object NestRunner {
   private var jvmCheck = false
   private var jvm5Check = false
   private var runCheck = false
+  private var resCheck = false
   private var shootoutCheck = false
 
   private var conservative = false
@@ -48,6 +49,7 @@ object NestRunner {
           case "--jvm"          => jvmCheck = true
           case "--jvm5"         => jvm5Check = true
           case "--run"          => runCheck = true
+          case "--res"          => resCheck = true
           case "--shootout"     => shootoutCheck = true
           case "--conservative" => conservative = true
           case "--verbose"      => NestUI._verbose = true
@@ -82,6 +84,7 @@ object NestRunner {
       NestUI.outline("Scala binaries in   : "+FileManager.BIN_DIR+"\n")
 
       // obtain scalac version
+      //TODO: this does not work under Windows!
       val cmd = FileManager.SCALAC_CMD+" -version"
       NestUI.verbose("running "+cmd)
       val proc = Runtime.getRuntime.exec(cmd)
@@ -138,7 +141,10 @@ object NestRunner {
           NestUI.verbose("testing "+testFiles)
           testFiles
         }
-        else fileMgr.getFiles(kind, check)
+        else if (kind == "res") //TODO: is there a nicer way?
+          fileMgr.getFiles(kind, check, ".res")
+        else
+          fileMgr.getFiles(kind, check)
       if (!kindFiles.isEmpty) {
         NestUI.outline("\n"+msg+"\n")
 
@@ -180,7 +186,8 @@ object NestRunner {
                        runTests("neg", negCheck, "Testing compiler (on files whose compilation should fail)"),
                        runTests("run", runCheck, "Testing JVM backend"),
                        runTests("jvm", jvmCheck, "Testing JVM backend"),
-                       runTests("jvm5", jvm5Check, "Testing JVM backend"))
+                       runTests("jvm5", jvm5Check, "Testing JVM backend"),
+                       runTests("res", resCheck, "Testing resident compiler"))
     results reduceLeft { (p: (Int, Int), q: (Int, Int)) =>
       (p._1+q._1, p._2+q._2) }
   }

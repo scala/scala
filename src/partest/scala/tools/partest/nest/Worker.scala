@@ -6,7 +6,7 @@ package scala.tools.partest.nest
 
 import java.io.{File, FileInputStream, FileOutputStream, PrintStream,
                 PrintWriter, StringWriter, FileWriter, InputStreamReader,
-                FileReader}
+                FileReader, OutputStreamWriter}
 
 import java.net.URL
 
@@ -87,7 +87,6 @@ class Worker extends Actor {
     proc.waitFor()
     inApp.join()
     errApp.join()
-    writer.close()
 
     if (NestRunner.showLog) {
       // produce log as string in `log`
@@ -96,7 +95,6 @@ class Worker extends Actor {
       val appender = new StreamAppender(reader, writer)
       appender.start()
       appender.join()
-      reader.close()
       log = writer.toString
     }
 
@@ -148,53 +146,61 @@ class Worker extends Actor {
         diff = ""
         printInfoStart(file, wr)
 
-        if (!compileMgr.shouldCompile(file, kind)) {
-          NestUI.verbose("compilation of "+file+" failed\n")
-          success = false
-        } else {
-          // -------- run test --------
+        try { // *catch-all*
 
-          //TODO: detect whether we have to use Runtime.exec
-          val useRuntime = true
-
-          if (useRuntime) {
-            execTest(outDir, logFile)
-          } else {
-            val classpath: List[URL] =
-              outDir.toURL ::
-              List(file.getParentFile.toURL) :::
-              (List.fromString(CLASSPATH, PATH_SEP) map { x =>
-                (new File(x)).toURL }) :::
-              (List.fromString(EXT_CLASSPATH, PATH_SEP) map { x =>
-                (new File(x)).toURL })
-            try {
-              NestUI.verbose("classpath: "+classpath)
-              val out = new FileOutputStream(logFile, true)
-              Console.withOut(new PrintStream(out)) {
-                ObjectRunner.run(classpath, "Test", List("jvm"))
-              }
-              out.flush
-              out.close
-            } catch {
-              case e: Exception =>
-                NestUI.verbose(e+" ("+file.getPath+")")
-            }
-          }
-          NestUI.verbose(this+" finished running "+fileBase)
-
-          diff = compareOutput(dir, fileBase, kind, logFile)
-          if (!diff.equals("")) {
-            NestUI.verbose("output differs from log file\n")
+          if (!compileMgr.shouldCompile(file, kind)) {
+            NestUI.verbose("compilation of "+file+" failed\n")
             success = false
-          }
+          } else {
+            // -------- run test --------
 
-          // delete output dir
-          FileManager.deleteRecursive(outDir)
+            //TODO: detect whether we have to use Runtime.exec
+            val useRuntime = true
 
-          // delete log file only if test was successful
-          if (success)
-            FileManager.deleteRecursive(logFile)
-        } // successful compile
+            if (useRuntime) {
+              execTest(outDir, logFile)
+            } else {
+              val classpath: List[URL] =
+                outDir.toURL ::
+                List(file.getParentFile.toURL) :::
+                (List.fromString(CLASSPATH, PATH_SEP) map { x =>
+                  (new File(x)).toURL }) :::
+                (List.fromString(EXT_CLASSPATH, PATH_SEP) map { x =>
+                  (new File(x)).toURL })
+              try {
+                NestUI.verbose("classpath: "+classpath)
+                val out = new FileOutputStream(logFile, true)
+                Console.withOut(new PrintStream(out)) {
+                  ObjectRunner.run(classpath, "Test", List("jvm"))
+                }
+                out.flush
+                out.close
+              } catch {
+                case e: Exception =>
+                  NestUI.verbose(e+" ("+file.getPath+")")
+              }
+            }
+            NestUI.verbose(this+" finished running "+fileBase)
+
+            diff = compareOutput(dir, fileBase, kind, logFile)
+            if (!diff.equals("")) {
+              NestUI.verbose("output differs from log file\n")
+              success = false
+            }
+
+            // delete output dir
+            FileManager.deleteRecursive(outDir)
+
+            // delete log file only if test was successful
+            if (success)
+              FileManager.deleteRecursive(logFile)
+          } // successful compile
+        } catch { // *catch-all*
+          case e: Exception =>
+            NestUI.verbose("caught "+e)
+            success = false
+        }
+
         if (!success) {
           errors += 1
           NestUI.verbose("incremented errors: "+errors)
@@ -247,9 +253,15 @@ class Worker extends Actor {
       case "pos" => {
         def posTestRun(file: File, wr: PrintWriter) = new CompileTestRun(file, wr) {
           def runTest() {
-            if (!compileMgr.shouldCompile(file, kind)) {
-              succeeded = false
-              errors += 1
+            try {
+              if (!compileMgr.shouldCompile(file, kind)) {
+                succeeded = false
+                errors += 1
+              }
+            } catch {
+              case e: Exception =>
+                succeeded = false
+                errors += 1
             }
           }
         }
@@ -278,29 +290,37 @@ class Worker extends Actor {
             succeeded = true; diff = ""; log = ""
             printInfoStart(file, wr)
 
-            if (!compileMgr.shouldFailCompile(file, kind, logFile)) {
-              succeeded = false
-              errors += 1
-            } else { //TODO: else compare log file to check file
-              val fileBase: String = basename(file.getName)
-              val dir = file.getParentFile
-              val outDir = new File(dir, fileBase + "-" + kind + ".obj")
-
-              NestUI.verbose("comparing output with check file...")
-              diff = compareOutput(dir, fileBase, kind, logFile)
-              if (!diff.equals("")) {
-                NestUI.verbose("output differs from log file\n")
+            try {
+              if (!compileMgr.shouldFailCompile(file, kind, logFile)) {
                 succeeded = false
                 errors += 1
+              } else { // compare log file to check file
+                val fileBase: String = basename(file.getName)
+                val dir = file.getParentFile
+                val outDir = new File(dir, fileBase + "-" + kind + ".obj")
+
+                NestUI.verbose("comparing output with check file...")
+                diff = compareOutput(dir, fileBase, kind, logFile)
+                if (!diff.equals("")) {
+                  NestUI.verbose("output differs from log file\n")
+                  succeeded = false
+                  errors += 1
+                }
+
+                // delete output dir
+                FileManager.deleteRecursive(outDir)
+
+                // delete log file only if test was successful
+                if (succeeded)
+                  FileManager.deleteRecursive(logFile)
               }
-
-              // delete output dir
-              FileManager.deleteRecursive(outDir)
-
-              // delete log file only if test was successful
-              if (succeeded)
-                FileManager.deleteRecursive(logFile)
+            } catch {
+              case e: Exception =>
+                NestUI.verbose("caught "+e)
+                succeeded = false
+                errors += 1
             }
+
             printInfoEnd(succeeded, wr)
             wr.flush()
             swr.flush()
@@ -331,6 +351,97 @@ class Worker extends Actor {
       }
       case "jvm5" => {
         runJvmTests(kind, files)
+      }
+      case "res" => {
+        for (file <- files) {
+          val swr = new StringWriter
+          val wr = new PrintWriter(swr)
+          succeeded = true; diff = ""; log = ""
+          printInfoStart(file, wr)
+
+          val fileBase: String = basename(file.getName)
+          NestUI.verbose(this+" running test "+fileBase)
+          val dir = file.getParentFile
+          val outDir = new File(dir, fileBase + "-" + kind + ".obj")
+          if (!outDir.exists)
+            outDir.mkdir()
+          val logFile = new File(dir, fileBase + "-" + kind + ".log")
+          val resFile = new File(dir, fileBase + ".res")
+
+          // run scalac in resident mode:
+          // $SCALAC -d "$os_dstbase".obj -Xresident -sourcepath . "$@"
+          val cmd =
+            JAVACMD+
+            " -classpath "+outDir+PATH_SEP+CLASSPATH+PATH_SEP+EXT_CLASSPATH+
+            " -Djavacmd="+JAVACMD+
+            " scala.tools.nsc.Main"+
+            " -d "+outDir.getCanonicalFile.getAbsolutePath+
+            " -Xresident"+
+            " -sourcepath "+logFile.getParentFile.getCanonicalFile.getAbsolutePath
+          NestUI.verbose(cmd)
+
+          val proc = Runtime.getRuntime.exec(cmd, null, dir)
+
+          val in = proc.getInputStream
+          val err = proc.getErrorStream
+          val out = proc.getOutputStream
+
+          val writer = new FileWriter(logFile)
+          val reader = new FileReader(resFile)
+          val errWriter = new StringWriter
+
+          val inApp = new StreamAppender(new InputStreamReader(in), writer)
+          val errApp = new StreamAppender(new InputStreamReader(err), errWriter)
+          val outApp = new StreamAppender(reader, new OutputStreamWriter(out))
+
+          inApp.start()
+          errApp.start()
+          outApp.start()
+
+          val exitCode = proc.waitFor()
+          NestUI.verbose("finished with exit code "+exitCode)
+
+          inApp.join()
+          errApp.join()
+          outApp.join()
+
+          //writer.close()
+          //reader.close()
+
+          // compare log file with check file
+          diff = compareOutput(dir, fileBase, kind, logFile)
+          if (!diff.equals("")) {
+            NestUI.verbose("output differs from log file\n")
+            succeeded = false
+            errors += 1
+          }
+
+          if (!succeeded && NestRunner.showDiff) NestUI.normal(diff)
+          if (!succeeded && NestRunner.showLog) {
+            // output log file
+            val logReader = new FileReader(logFile)
+            val logWriter = new StringWriter
+            val logAppender = new StreamAppender(logReader, logWriter)
+            logAppender.start()
+            logAppender.join()
+            val log = logWriter.toString
+            NestUI.normal(log)
+          }
+
+          // delete output dir
+          FileManager.deleteRecursive(outDir)
+          // delete log file only if test was successful
+          if (succeeded)
+            FileManager.deleteRecursive(logFile)
+
+          printInfoEnd(succeeded, wr)
+          wr.flush()
+          swr.flush()
+          NestUI.normal(swr.toString)
+        }
+        NestUI.verbose("finished testing "+kind+" with "+errors+" errors")
+        NestUI.verbose("created "+compileMgr.numSeparateCompilers+" separate compilers")
+        (files.length-errors, errors)
       }
     }
   }
