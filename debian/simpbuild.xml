@@ -242,7 +242,6 @@
     <scalac
       srcdir="${src.lib.dir}"
       destdir="${build.lib.dir}"
-      usepredefs="no"
       deprecation="yes" unchecked="yes"
     >
       <classpath>

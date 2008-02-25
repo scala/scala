@@ -44,7 +44,6 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *    <li>force,</li>
  *    <li>logging,</li>
  *    <li>logphase,</li>
- *    <li>usepredefs,</li>
  *    <li>debuginfo,</li>
  *    <li>addparams,</li>
  *    <li>scalacdebugging,</li>
@@ -133,8 +132,6 @@ class Scalac extends MatchingTask {
   /** Which compilation phases should be logged during compilation. */
   private var logPhase: List[String] = Nil
 
-  /** Whether to use implicit predefined values or not. */
-  private var usepredefs: Option[Boolean] = None
   /** Instruct the compiler to generate debugging information */
   private var debugInfo: Option[String] = None
   /** Instruct the compiler to use additional parameters */
@@ -299,10 +296,6 @@ class Scalac extends MatchingTask {
       }
     }
   }
-
-  /** Sets the <code>usepredefs</code> attribute. Used by Ant.
-   *  @param input The value for <code>usepredefs</code>. */
-  def setUsepredefs(input: Boolean) { usepredefs = Some(input) }
 
   /** Set the <code>debug</code> info attribute.
    *  @param input The value for <code>debug</code>. */
@@ -543,7 +536,6 @@ class Scalac extends MatchingTask {
       settings.debug.value = true
     }
     if (!logPhase.isEmpty) settings.log.value = logPhase
-    if (!usepredefs.isEmpty) settings.nopredefs.value = !usepredefs.get
     if (!debugInfo.isEmpty) settings.debuginfo.value = debugInfo.get
     if (!deprecation.isEmpty) settings.deprecation.value = deprecation.get
     if (!optimise.isEmpty) settings.XO.value = optimise.get
