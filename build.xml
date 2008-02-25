@@ -980,6 +980,7 @@ ANDROID
       <arg value="--output=${android.dir}/lib/scala.dex"/>
       <arg value="--locals=full"/>
       <arg value="--positions=lines"/>
+      <arg value="--no-optimize"/>  <!-- workaround for M5-RC14 bug -->
       <arg value="${android.dir}/lib/library"/>
     </java>
     <jar
