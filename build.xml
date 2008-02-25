@@ -1101,12 +1101,12 @@ MSIL
       <include name="scala/volatile.scala"/>
       <include name="scala/remote.scala"/>
       <include name="scala/throws.scala"/>
-	  <include name="scala/CountedIterator.scala"/>
-	  <include name="scala/collection/**/*.scala"/>
+      <include name="scala/CountedIterator.scala"/>
+      <include name="scala/collection/**/*.scala"/>
       <include name="scala/runtime/*.scala"/>
-	  <exclude name="scala/runtime/RichStringBuilder.scala"/>
-	  <exclude name="scala/collection/mutable/JavaMapAdaptor.scala"/>
-	  <exclude name="scala/collection/mutable/JavaSetAdaptor.scala"/>
+      <exclude name="scala/runtime/RichStringBuilder.scala"/>
+      <exclude name="scala/collection/mutable/JavaMapAdaptor.scala"/>
+      <exclude name="scala/collection/mutable/JavaSetAdaptor.scala"/>
     </quick>
 
     <exec
