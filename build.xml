@@ -1092,6 +1092,7 @@ MSIL
       <include name="scala/Function*.scala"/>
       <include name="scala/Tuple*.scala"/>
       <include name="scala/Product*.scala"/>
+      <include name="scala/List.scala"/>
       <include name="scala/cloneable.scala"/>
       <include name="scala/deprecated.scala"/>
       <include name="scala/native.scala"/>
@@ -1099,10 +1100,15 @@ MSIL
       <include name="scala/transient.scala"/>
       <include name="scala/volatile.scala"/>
       <include name="scala/remote.scala"/>
-      <include name="scala/collection/mutable/HashMap.scala"/>
+      <include name="scala/throws.scala"/>
+	  <include name="scala/CountedIterator.scala"/>
+	  <include name="scala/collection/**/*.scala"/>
       <include name="scala/runtime/*.scala"/>
-      <exclude name="scala/runtime/RichStringBuilder.scala"/>
+	  <exclude name="scala/runtime/RichStringBuilder.scala"/>
+	  <exclude name="scala/collection/mutable/JavaMapAdaptor.scala"/>
+	  <exclude name="scala/collection/mutable/JavaSetAdaptor.scala"/>
     </quick>
+
     <exec
       executable="${ilasm.cmd}" vmlauncher="no">
       <!--
