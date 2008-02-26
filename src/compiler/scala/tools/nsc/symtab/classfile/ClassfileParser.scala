@@ -521,9 +521,8 @@ abstract class ClassfileParser {
           while (sig(index) == '.') {
             accept('.')
             val name = subName(c => c == ';' || c == '.').toTypeName
-            val clazz = tpe.typeSymbol.info.member(name)
-            assert(clazz.isClass,
-                   tpe.typeSymbol.linkedModuleOfClass.moduleClass.info+" "+tpe+" . "+name+"/"+tpe.typeSymbol.info.decls)
+            val clazz = tpe.member(name)
+            assert(clazz.isAliasType, tpe)
             tpe = processClassType(clazz.tpe)
           }
           accept(';')
@@ -747,7 +746,6 @@ abstract class ClassfileParser {
         val nameIndex = in.nextChar
         val jflags = in.nextChar
         if (innerIndex != 0 && outerIndex != 0 && nameIndex != 0 &&
-            (jflags & (JAVA_ACC_PUBLIC | JAVA_ACC_PROTECTED)) != 0 &&
             pool.getClassSymbol(outerIndex) == sym) {
           makeInnerAlias(
             getOwner(jflags),

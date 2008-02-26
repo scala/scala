@@ -43,7 +43,7 @@ abstract class Pickler extends SubComponent {
             stats foreach pickle
           case ClassDef(_, _, _, _) | ModuleDef(_, _, _) =>
             val sym = tree.symbol
-            val pickle = new Pickle(sym.name.toTermName, sym.owner)
+            val pickle = new Pickle(sym, sym.name.toTermName, sym.owner)
             add(sym, pickle)
             add(sym.linkedSym, pickle)
             pickle.finish
@@ -62,23 +62,32 @@ abstract class Pickler extends SubComponent {
     }
   }
 
-  private class Pickle(rootName: Name, rootOwner: Symbol)
+  private class Pickle(root: Symbol, rootName: Name, rootOwner: Symbol)
         extends PickleBuffer(new Array[Byte](4096), -1, 0) {
     import scala.collection.jcl.LinkedHashMap
     private var entries = new Array[AnyRef](256)
     private var ep = 0
     private val index = new LinkedHashMap[AnyRef, Int]
 
+    /** Is symbol an existentially bound variable with a package as owner?
+     *  Such symbols should be treated as if they were local.
+     */
+    private def isUnrootedExistential(sym: Symbol) =
+      false && sym.isAbstractType && sym.hasFlag(EXISTENTIAL) && sym.owner.isPackageClass
+
+    private def normalizedOwner(sym: Symbol) =
+      if (isUnrootedExistential(sym)) root else sym.owner
+
     /** Is root in symbol.owner*?
      *
      *  @param sym ...
      *  @return    ...
      */
-    private def isLocal(sym: Symbol): Boolean = (
+    private def isLocal(sym: Symbol): Boolean =
       sym.isRefinementClass ||
       sym.name.toTermName == rootName && sym.owner == rootOwner ||
-      sym != NoSymbol && isLocal(sym.owner)
-    )
+      sym != NoSymbol && isLocal(sym.owner) ||
+      isUnrootedExistential(sym)
 
     // Phase 1 methods: Populate entries/index ------------------------------------
 
@@ -455,7 +464,7 @@ abstract class Pickler extends SubComponent {
     private def writeSymInfo(sym: Symbol): Int = {
       var posOffset = 0
       writeRef(sym.name)
-      writeRef(sym.owner)
+      writeRef(normalizedOwner(sym))
       writeNat((sym.flags & PickledFlags).asInstanceOf[Int])
       if (sym.privateWithin != NoSymbol) writeRef(sym.privateWithin)
       writeRef(sym.info)
@@ -483,7 +492,7 @@ abstract class Pickler extends SubComponent {
             } else {
               writeRef(sym.name); EXTref
             }
-          if (!sym.owner.isRoot) writeRef(sym.owner);
+          if (!sym.owner.isRoot) writeRef(sym.owner)
           tag
         case sym: ClassSymbol =>
           val posOffset = writeSymInfo(sym)

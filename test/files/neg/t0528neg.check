@@ -1,0 +1,4 @@
+t0528neg.scala:2: error: covariant type A occurs in invariant position in type => Array[T forSome { type T <: A }] of method toArray
+  def toArray: Array[T forSome {type T <: A}]
+      ^
+one error found
