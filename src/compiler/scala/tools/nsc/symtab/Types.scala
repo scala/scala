@@ -4189,6 +4189,8 @@ A type's typeSymbol should never be inspected directly.
       } catch {
         case ex: MalformedType => None
       }
+    case ExistentialType(tparams, quantified) :: rest =>
+      mergePrefixAndArgs(quantified :: rest, variance, depth) map (existentialAbstraction(tparams, _))
     case _ =>
       assert(false, tps); None
   }
