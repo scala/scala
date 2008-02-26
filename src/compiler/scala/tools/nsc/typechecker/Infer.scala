@@ -232,7 +232,12 @@ trait Infer {
     // todo: use also for other error messages
     private def existentialContext(tp: Type) = tp.existentialSkolems match {
       case List() => ""
-      case skolems => " where "+(skolems map (_.existentialToString) mkString ", ")
+      case skolems =>
+        def disambiguate(ss: List[String]) = ss match {
+          case List() => ss
+          case s :: ss1 => s :: (ss1 map (s1 => if (s1 == s) "(some other)"+s1 else s1))
+        }
+      " where "+(disambiguate(skolems map (_.existentialToString)) mkString ", ")
     }
 
     def foundReqMsg(found: Type, req: Type): String =
