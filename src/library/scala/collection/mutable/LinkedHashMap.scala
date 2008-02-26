@@ -33,14 +33,16 @@ object LinkedHashMap {
 class LinkedHashMap[A, B] extends Map[A,B] with HashTable[A] with DefaultMapModel[A,B] {
   private var ordered = List[Entry]()
 
-  def remove(key : A) : Option[B] = removeEntry(key) match {
-  case None => None
-  case Some(e) =>
-    ordered = ordered.filter(_ ne e)
-    Some(e.value)
-  }
+  def remove(key: A): Option[B] = removeEntry(key) match {
+    case None => None
+    case Some(e) =>
+      ordered = ordered.filter(_ ne e)
+      Some(e.value)
+    }
+
   def -= (key: A) { remove(key) }
-  override def put(key : A, value : B) : Option[B] = {
+
+  override def put(key: A, value: B): Option[B] = {
     val e = findEntry(key)
     if (e == null) {
       val e = new Entry(key, value)
@@ -54,10 +56,13 @@ class LinkedHashMap[A, B] extends Map[A,B] with HashTable[A] with DefaultMapMode
     }
   }
   override def update(key: A, value: B) { put(key, value) }
-  override def clear() = {
+
+  override def clear() {
     ordered = Nil
     super.clear()
   }
+
   override def clone(): Map[A, B] = new LinkedHashMap[A, B] ++ this
+
   override def elements = ordered.reverse.elements map {e => (e.key, e.value)}
 }

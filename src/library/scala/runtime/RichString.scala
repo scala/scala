@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -189,12 +189,13 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
     self.split(re)
   }
 
-  def toByte: Byte     = java.lang.Byte.parseByte(self)
-  def toShort: Short   = java.lang.Short.parseShort(self)
-  def toInt: Int       = java.lang.Integer.parseInt(self)
-  def toLong: Long     = java.lang.Long.parseLong(self)
-  def toFloat: Float   = java.lang.Float.parseFloat(self)
-  def toDouble: Double = java.lang.Double.parseDouble(self)
+  def toBoolean: Boolean = parseBoolean(self)
+  def toByte: Byte       = java.lang.Byte.parseByte(self)
+  def toShort: Short     = java.lang.Short.parseShort(self)
+  def toInt: Int         = java.lang.Integer.parseInt(self)
+  def toLong: Long       = java.lang.Long.parseLong(self)
+  def toFloat: Float     = java.lang.Float.parseFloat(self)
+  def toDouble: Double   = java.lang.Double.parseDouble(self)
 }
 
 object RichString {
@@ -203,5 +204,13 @@ object RichString {
   private final val FF: Char = 0x0C
   private final val CR: Char = 0x0D
   private final val SU: Char = 0x1A
-}
 
+  private def parseBoolean(s: String): Boolean =
+    if (s != null) s.toLowerCase match {
+      case "true" => true
+      case "false" => false
+      case _ => throw new NumberFormatException("For input string: \""+s+"\"")
+    }
+    else
+      throw new NumberFormatException("For input string: \"null\"")
+}

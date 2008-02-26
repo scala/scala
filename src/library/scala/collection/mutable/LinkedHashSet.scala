@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2008, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -28,19 +28,19 @@ class LinkedHashSet[A] extends Set[A] with FlatHashTable[A] {
 
   def +=(elem: A) { add(elem) }
 
-  def add(elem : A) : Boolean = {
+  def add(elem: A): Boolean = {
     if (addEntry(elem)) {
       ordered = elem :: ordered
       true
     } else false
   }
   def -=(elem: A) { remove(elem) }
-  def remove(elem : A) : Boolean = removeEntry(elem) match {
-  case None => false
-  case Some(elem) => ordered = ordered.filter(e => e != elem); true
+  def remove(elem: A) : Boolean = removeEntry(elem) match {
+    case None => false
+    case Some(elem) => ordered = ordered.filter(_ != elem); true
   }
 
-  override def clear() = {
+  override def clear() {
     ordered = Nil
     super.clear()
   }
