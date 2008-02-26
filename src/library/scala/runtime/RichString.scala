@@ -138,11 +138,14 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
     linesWithSeparators map (line => new RichString(line).stripLineEnd)
 
   /** Returns this string with first character converted to upper case */
-  def capitalize: String = {
-    val chars = self.toCharArray
-    chars(0) = chars(0).toUpperCase
-    new String(chars)
-  }
+  def capitalize: String =
+    if (self == null) null
+    else if (self.length == 0) ""
+    else {
+      val chars = self.toCharArray
+      chars(0) = chars(0).toUpperCase
+      new String(chars)
+    }
 
   /** <p>
    *    For every line in this string:
