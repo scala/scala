@@ -74,6 +74,7 @@ PROPERTIES
   <property name="dbc.jar.name" value="scala-dbc.jar"/>
   <property name="comp.jar.name" value="scala-compiler.jar"/>
   <property name="partest.jar.name" value="scala-partest.jar"/>
+  <property name="jline.jar.name" value="jline.jar"/>
   <property name="libsrc.jar.name" value="scala-library-src.jar"/>
   <property name="dbcsrc.jar.name" value="scala-dbc-src.jar"/>
   <property name="parsrc.jar.name" value="scala-partest-src.jar"/>
@@ -1889,7 +1890,7 @@ GENERATES A DISTRIBUTION
       link="${sbaz.universe}/scala-devel-${version.number}.sbp">
       <binset dir="${dist.current.dir}/bin" includes="**"/>
       <docset dir="${dist.current.dir}/doc" includes="**" excludes="**/scala/api/**,**/scala/tools/**"/>
-      <libset dir="${dist.current.dir}/lib" includes="${comp.jar.name},${jline.jar}"/>
+      <libset dir="${dist.current.dir}/lib" includes="${comp.jar.name},${jline.jar.name}"/>
       <manset dir="${dist.current.dir}/man" includes="**"/>
       <srcset dir="${dist.current.dir}/src" includes="${compsrc.jar.name}"/>
     </quicksbaz>
