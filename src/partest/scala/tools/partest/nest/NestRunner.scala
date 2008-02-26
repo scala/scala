@@ -1,6 +1,9 @@
 /* NEST (New Scala Test)
+ * Copyright 2007-2008 LAMP/EPFL
  * @author Philipp Haller
  */
+
+// $Id$
 
 package scala.tools.partest.nest
 
@@ -103,6 +106,15 @@ object NestRunner {
 
       NestUI.outline("Scala version is    : "+scalaVersion)
       NestUI.outline("Scalac options are  : "+FileManager.SCALAC_OPTS+"\n")
+
+      val vmBin  = System.getProperty("java.home", "")+File.separator+"bin"
+      val vmName = System.getProperty("java.vm.name", "")+" (build "+
+                   System.getProperty("java.vm.version", "")+", "+
+                   System.getProperty("java.vm.info", "")+")"
+      val vmOpts = System.getProperty("scalatest.java_options", "?")
+      NestUI.outline("Java binaries in    : "+vmBin+"\n")
+      NestUI.outline("Java runtime is     : "+vmName+"\n")
+      NestUI.outline("Java options are    : "+vmOpts+"\n")
 
       val start = System.currentTimeMillis
       val (successes, failures) = testCheckAll()

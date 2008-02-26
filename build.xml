@@ -1786,6 +1786,7 @@ GENERATES A DISTRIBUTION
         <attribute name="Bundle-RequiredExecutionEnvironment" value="J2SE-1.4"/>
       </manifest>
     </jar>
+    <copy todir="${dist.current.dir}/lib" file="${jline.jar}"/>
 
     <!-- build source jars -->
     <mkdir dir="${dist.current.dir}/src"/>
