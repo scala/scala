@@ -21,10 +21,16 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
   override def mkString = self
 
   override def slice(from: Int, until: Int): RichString = {
-    val from0 = if (from < 0) 0 else from
-    val until0 = if (from >= until || from >= self.length) return new RichString("")
-                 else if (until > self.length) self.length else until
-    new RichString(self.substring(from0, until0))
+    val len = self.length
+    new RichString(
+      if (from >= until || from >= len)
+        ""
+      else {
+        val from0 = if (from < 0) 0 else from
+        val until0 = if (until > len) len else until
+        self.substring(from0, until0)
+      }
+    )
   }
 
   //override def ++ [B >: A](that: Iterable[B]): Seq[B] = {
@@ -55,6 +61,16 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
   override def containsSlice[B](that: Seq[B]) = that match {
     case that: RichString => self contains that.self
     case that => super.containsSlice(that)
+  }
+
+  override def reverse: RichString = {
+    val buf = new StringBuilder
+    var i = self.length - 1
+    while (i >= 0) {
+      buf append (self charAt i)
+      i -= 1
+    }
+    new RichString(buf.toString)
   }
 
   override def compare(other: String) = self compareTo other
@@ -126,11 +142,14 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
     linesWithSeparators map (line => new RichString(line).stripLineEnd)
 
   /** Returns this string with first character converted to upper case */
-  def capitalize: String = {
-    val chars = self.toCharArray
-    chars(0) = chars(0).toUpperCase
-    new String(chars)
-  }
+  def capitalize: String =
+    if (self == null) null
+    else if (self.length == 0) ""
+    else {
+      val chars = self.toCharArray
+      chars(0) = chars(0).toUpperCase
+      new String(chars)
+    }
 
   /** <p>
    *    For every line in this string:
@@ -141,7 +160,7 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
    *  </blockquote>
    */
   def stripMargin(marginChar: Char): String = {
-    val buf = new StringBuilder()
+    val buf = new StringBuilder
     for (line <- linesWithSeparators) {
       val len = line.length
       var index = 0
@@ -166,11 +185,12 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
 
   def split(separators: Array[Char]): Array[String] = self.Split(separators)
 
-  def toByte: Byte = System.Byte.Parse(self)
-  def toShort: Short = System.Int16.Parse(self)
-  def toInt: Int = System.Int32.Parse(self)
-  def toLong: Long = System.Int64.Parse(self)
-  def toFloat: Float = System.Single.Parse(self)
-  def toDouble: Double = System.Double.Parse(self)
+  def toBoolean: Boolean = System.Boolean.Parse(self)
+  def toByte: Byte       = System.Byte.Parse(self)
+  def toShort: Short     = System.Int16.Parse(self)
+  def toInt: Int         = System.Int32.Parse(self)
+  def toLong: Long       = System.Int64.Parse(self)
+  def toFloat: Float     = System.Single.Parse(self)
+  def toDouble: Double   = System.Double.Parse(self)
 
 }

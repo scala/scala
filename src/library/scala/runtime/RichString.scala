@@ -65,11 +65,11 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
   }
 
   override def reverse: RichString = {
-    val buf = new StringBuffer
+    val buf = new StringBuilder
     var i = self.length - 1
     while (i >= 0) {
       buf append (self charAt i)
-      i = i - 1
+      i -= 1
     }
     new RichString(buf.toString)
   }
@@ -156,7 +156,7 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
    *  </blockquote>
    */
   def stripMargin(marginChar: Char): String = {
-    val buf = new StringBuilder()
+    val buf = new StringBuilder
     for (line <- linesWithSeparators) {
       val len = line.length
       var index = 0
