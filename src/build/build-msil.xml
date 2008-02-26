@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Id: $ -->
+
+<project name="scala-msil" basedir="../.." default="build">
+
+<!-- ===========================================================================
+PROPERTIES
+============================================================================ -->
+
+  <import file="build-jvm15.xml"/>
+
+  <property name="mono.dir" value="${src.dir}/mono"/>
+
+  <!-- Loads custom properties definitions -->
+  <property file="${scripts.dir}/scripts/build-msil.properties"/>
+
+  <!-- Sets location of build folders -->
+  <property name="build.dir" value="${basedir}/build"/>
+  <property name="msil.dir" value="${build.dir}/msil"/>
+  <property name="dist.dir" value="${basedir}/dists"/>
+
+<!-- ===========================================================================
+SETUP
+============================================================================ -->
+
+  <target name="msil.init" depends="init">
+    <!-- Sets ilasm command (either Microsoft .NET Framework or Mono) -->
+    <condition property="ilasm.cmd" value="${dotnet.home}/ilasm.exe">
+      <and>
+        <os family="windows"/><isset property="dotnet.home"/>
+        <available file="${dotnet.home}/ilasm.exe"/>
+      </and>
+    </condition>
+    <condition property="ilasm.cmd" value="${unix.mono.home}/ilasm">
+      <and>
+        <os family="unix"/><isset property="unix.mono.home"/>
+        <available file="${unix.mono.home}/ilasm"/>
+      </and>
+    </condition>
+    <condition property="ilasm.cmd" value="${win.mono.home}/ilasm">
+      <and>
+        <os family="windows"/><isset property="win.mono.home"/>
+        <available file="${win.mono.home}/lib/mono/2.0/ilasm.exe"/>
+      </and>
+    </condition>
+    <echo level="verbose" message="Found: ${ilasm.cmd}"/>
+    <condition property="ilasm.cmd" value="ilasm">
+      <and><available file="ilasm" filepath="${env.PATH}"/></and>
+    </condition>
+    <fail message="Command 'ilasm' not found">
+      <condition><not><isset property="ilasm.cmd"/></not></condition>
+    </fail>
+    <!-- Sets ilasm arguments (either Windows or Unix) -->
+    <property name="ilasm.infile" value="${msil.dir}/lib/predef.msil"/>
+    <property name="ilasm.outfile" value="${msil.dir}/lib/predef.dll"/>
+    <if>
+      <isset property="os.win"/>
+      <then>
+        <property
+          name="ilasm.args"
+          value="/quiet /dll /output=${ilasm.outfile} ${ilasm.infile}"
+        />
+      </then>
+      <else>
+        <property
+          name="ilasm.args"
+          value="/dll /output:${ilasm.outfile} ${ilasm.infile}"
+        />
+      </else>
+    </if>
+    <property file="${number.file}"/>
+    <property
+      name="version.number"
+      value="${version.major}.${version.minor}.${version.patch}.r${svn.number}-b${time.short}"/>
+    <echo level="verbose" message="${version.number}"/>
+  </target>
+
+  <target name="msil.sources" depends="msil.init">
+    <mkdir dir="${msil.dir}/src"/>
+    <copy todir="${msil.dir}/src">
+      <fileset dir="${src.dir}/library" includes="**/*.scala">
+        <not>
+          <present targetdir="${src.dir}/dotnet-library"/>
+        </not>
+        <exclude name="scala/collection/jcl/**/*.scala"/>
+      </fileset>
+    </copy>
+    <copy todir="${msil.dir}/src">
+      <fileset dir="${src.dir}/dotnet-library">
+        <include name="**/*.scala"/>
+      </fileset>
+    </copy>
+  </target>
+
+  <target name="msil.libraries" depends="msil.sources">
+    <antcall target="build.quick"/>
+    <property name="quick.dir" value="${build.dir}/quick"/>
+    <path id="quick.classpath">
+      <pathelement location="${quick.dir}/lib/library"/>
+      <pathelement location="${quick.dir}/lib/compiler"/>
+      <pathelement location="${fjbg.jar}"/>
+      <pathelement location="${msil.jar}"/>
+    </path>
+    <taskdef
+      name="quick" classname="scala.tools.ant.Scalac"
+      classpathref="quick.classpath"/>
+    <mkdir dir="${msil.dir}/lib"/>
+    <quick srcdir="${msil.dir}/src" usepredefs="no" target="msil"
+           assemname="${msil.dir}/lib/predef" assemrefs="${lib.dir}"
+           failonerror="false">
+      <include name="scala/Predef.scala"/>
+      <include name="scala/Option.scala"/>
+      <include name="scala/Pair.scala"/>
+      <include name="scala/Console.scala"/>
+      <include name="scala/Application.scala"/>
+      <include name="scala/ByNameFunction.scala"/>
+      <include name="scala/Stream.scala"/>
+      <include name="scala/*Annotation.scala"/>
+      <include name="scala/Function*.scala"/>
+      <include name="scala/Tuple*.scala"/>
+      <include name="scala/Product*.scala"/>
+      <include name="scala/cloneable.scala"/>
+      <include name="scala/deprecated.scala"/>
+      <include name="scala/native.scala"/>
+      <include name="scala/serializable.scala"/>
+      <include name="scala/transient.scala"/>
+      <include name="scala/volatile.scala"/>
+      <include name="scala/remote.scala"/>
+      <include name="scala/runtime/*.scala"/>
+      <include name="scala/collection/mutable/HashMap.scala"/>
+      <exclude name="scala/runtime/RichStringBuilder.scala"/>
+    </quick>
+    <exec executable="${ilasm.cmd}" vmlauncher="no">
+      <arg line="${ilasm.args}"/>
+    </exec>
+  </target>
+
+  <target name="msil.build" depends="msil.libraries">
+    <copy todir="${msil.dir}/bin">
+      <fileset
+        dir="${mono.dir}/bin"
+        includes="scala-net*"
+      />
+      <filterset>
+        <filter token="VERSION" value="${version.number}"/>
+        <filter token="COPYRIGHT" value="${copyright.string}"/>
+        <filter token="NAME" value="Scala code runner"/>
+      </filterset>
+    </copy>
+    <copy todir="${msil.dir}/bin">
+      <fileset
+        dir="${mono.dir}/bin"
+        includes="scalac-net*"
+      />
+      <filterset>
+        <filter token="VERSION" value="${version.number}"/>
+        <filter token="COPYRIGHT" value="${copyright.string}"/>
+        <filter token="NAME" value="Scala compiler"/>
+      </filterset>
+    </copy>
+    <chmod perm="ugo+rx" dir="${msil.dir}/bin" includes="*-net*"/>
+    <jar destfile="${msil.dir}/lib/${comp.jar.name}">
+      <fileset dir="${quick.dir}/lib/compiler"/>
+      <zipfileset src="${fjbg.jar}"/>
+      <zipfileset src="${msil.jar}"/>
+    </jar>
+    <jar destfile="${msil.dir}/lib/${lib.jar.name}">
+      <fileset dir="${strap.dir}/lib/library"/>
+      <fileset dir="${strap.dir}/lib/actors"/>
+    </jar>
+  </target>
+
+  <target name="msil.dist" depends="msil.build">
+    <antcall target="binaries"/>
+    <property name="dist.current.dir" value="${dist.dir}/scala-msil-${version.number}"/>
+    <mkdir dir="${dist.current.dir}"/>
+    <copy todir="${dist.current.dir}">
+      <fileset dir="${msil.dir}" includes="bin/**,lib/**"/>
+    </copy>
+    <chmod perm="ugo+rx" dir="${dist.current.dir}/bin" includes="*-net*"/>
+    <copy todir="${dist.current.dir}/lib">
+      <fileset dir="${lib.dir}" includes="*.dll"/>
+    </copy>
+    <copy todir="${dist.current.dir}/lib">
+      <fileset dir="${dist.dir}/latest/lib" includes="scala*.jar"/>
+    </copy>
+    <!-- Recreate the 'latest' link to point to this distribution -->
+    <if><isset property="os.win"/>
+      <then>
+        <copy todir="${dist.dir}/latest-msil">
+          <fileset dir="${dist.current.dir}"/>
+        </copy>
+      </then>
+      <else>
+        <symlink
+          link="${dist.dir}/latest-mono"
+          resource="${dist.current.dir}"
+          overwrite="yes" failonerror="no"/>
+      </else>
+    </if>
+  </target>
+
+<!-- ===========================================================================
+CLEAN
+============================================================================ -->
+
+  <target name="msil.clean" depends="ant-init">
+    <remove dir="${build.dir}/msil"/>
+    <delete includeemptydirs="true" quiet="yes" failonerror="no">
+      <fileset dir="@{dist.dir}" includes="**/scala-msil*"/>
+    </delete>
+    <delete file="${dist.dir}/latest-msil" quiet="yes" failonerror="no"/>
+  </target>
+
+</project>
