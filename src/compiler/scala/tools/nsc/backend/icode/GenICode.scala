@@ -9,6 +9,7 @@ package scala.tools.nsc.backend.icode
 
 import scala.collection.mutable.{Map, HashMap, ListBuffer, Buffer, HashSet}
 import scala.tools.nsc.symtab._
+import scala.tools.nsc.util.Position
 
 
 /** This class ...
@@ -464,6 +465,9 @@ abstract class GenICode extends SubComponent  {
           val returnedKind = toTypeKind(expr.tpe)
           var ctx1 = genLoad(expr, ctx, returnedKind)
           val oldcleanups = ctx1.cleanups
+          lazy val tmp = ctx1.makeLocal(tree.pos, expr.tpe, "tmp")
+          var saved = false
+
           for (op <- ctx1.cleanups) op match {
             case MonitorRelease(m) =>
               if (settings.debug.value) log("removing " + m + " from cleanups: " + ctx1.cleanups)
@@ -472,6 +476,10 @@ abstract class GenICode extends SubComponent  {
               ctx1.exitSynchronized(m)
             case Finalizer(f) =>
               if (settings.debug.value) log("removing " + f + " from cleanups: " + ctx1.cleanups)
+              if (returnedKind != UNIT && mayCleanStack(f) && !saved) {
+                ctx1.bb.emit(STORE_LOCAL(tmp))
+                saved = true
+              }
               // we have to run this without the same finalizer in
               // the list, otherwise infinite recursion happens for
               // finalizers that contain 'return'
@@ -479,6 +487,7 @@ abstract class GenICode extends SubComponent  {
           }
           ctx1.cleanups = oldcleanups
 
+          if (saved) ctx1.bb.emit(LOAD_LOCAL(tmp))
           ctx1.bb.emit(RETURN(returnedKind), tree.pos)
           ctx1.bb.enterIgnoreMode
           generatedType = expectedType
@@ -489,9 +498,7 @@ abstract class GenICode extends SubComponent  {
           var tmp: Local = null
           val guardResult = kind != UNIT && mayCleanStack(finalizer)
           if (guardResult) {
-            tmp = ctx.method.addLocal(
-                new Local(ctx.method.symbol.newVariable(tree.pos, unit.fresh.newName("tmp")).setInfo(tree.tpe).setFlag(Flags.SYNTHETIC),
-                          kind, false))
+            tmp = ctx.makeLocal(tree.pos, tree.tpe, "tmp")
           }
 
           var handlers = for (CaseDef(pat, _, body) <- catches.reverse)
@@ -547,9 +554,7 @@ abstract class GenICode extends SubComponent  {
               generatedType = kind; //toTypeKind(block.tpe);
               val ctx1 = genLoad(block, bodyCtx, generatedType);
               if (guardResult) {
-                val tmp = ctx1.method.addLocal(
-                    new Local(ctx.method.symbol.newVariable(tree.pos, unit.fresh.newName("tmp")).setInfo(tree.tpe).setFlag(Flags.SYNTHETIC),
-                              kind, false))
+                val tmp = ctx1.makeLocal(tree.pos, tree.tpe, "tmp")
                 ctx1.bb.emit(STORE_LOCAL(tmp))
                 val ctx2 = genLoad(duppedFinalizer, ctx1, UNIT)
                 ctx2.bb.emit(LOAD_LOCAL(tmp))
@@ -687,13 +692,7 @@ abstract class GenICode extends SubComponent  {
             // we store this boxed value to a local, even if not really needed.
             // boxing optimization might use it, and dead code elimination will
             // take care of unnecessary stores
-            var loc1 = new Local(ctx.method.symbol.newVariable(
-                tree.pos,
-                unit.fresh.newName("boxed"))
-                  .setInfo(expr.tpe)
-                  .setFlag(Flags.SYNTHETIC),
-                nativeKind, false)
-            loc1 = ctx.method.addLocal(loc1)
+            var loc1 = ctx.makeLocal(tree.pos, expr.tpe, "boxed")
             ctx1.bb.emit(STORE_LOCAL(loc1))
             ctx1.bb.emit(LOAD_LOCAL(loc1))
           }
@@ -767,14 +766,7 @@ abstract class GenICode extends SubComponent  {
               generatedType = BOOL
               ctx1 = afterCtx
             } else if (code == scalaPrimitives.SYNCHRONIZED) {
-              var monitor = new Local(ctx.method.symbol.newVariable(
-                tree.pos,
-                unit.fresh.newName("monitor"))
-                  .setInfo(definitions.ObjectClass.tpe)
-                  .setFlag(Flags.SYNTHETIC),
-                ANY_REF_CLASS, false)
-              monitor = ctx.method.addLocal(monitor)
-
+              val monitor = ctx.makeLocal(tree.pos, definitions.ObjectClass.tpe, "monitor")
               ctx1 = genLoadQualifier(fun, ctx1)
               ctx1.bb.emit(DUP(ANY_REF_CLASS))
               ctx1.bb.emit(STORE_LOCAL(monitor))
@@ -1426,10 +1418,7 @@ abstract class GenICode extends SubComponent  {
       def getTempLocal: Local = ctx.method.lookupLocal(eqEqTempName) match {
         case Some(local) => local
         case None =>
-          val eqEqTempVar =
-            ctx.method.symbol.newVariable(l.pos, eqEqTempName).setFlag(Flags.SYNTHETIC)
-          eqEqTempVar.setInfo(definitions.AnyRefClass.typeConstructor)
-          val local = ctx.method.addLocal(new Local(eqEqTempVar, REFERENCE(definitions.AnyRefClass), false))
+          val local = ctx.makeLocal(l.pos, definitions.AnyRefClass.typeConstructor, eqEqTempName.toString)
           assert(l.pos.source.get == unit.source)
           assert(r.pos.source.get == unit.source)
           local.start = (l.pos).line.get
@@ -1944,6 +1933,15 @@ abstract class GenICode extends SubComponent  {
       /** Clone the current context */
       def dup: Context = new Context(this)
 
+      /** Make a fresh local variable. It ensures the 'name' is unique. */
+      def makeLocal(pos: Position, tpe: Type, name: String): Local = {
+        val sym = method.symbol.newVariable(pos, unit.fresh.newName(name))
+          .setInfo(tpe)
+          .setFlag(Flags.SYNTHETIC)
+        this.method.addLocal(new Local(sym, toTypeKind(tpe), false))
+      }
+
+
       /**
        * Generate exception handlers for the body. Body is evaluated
        * with a context where all the handlers are active. Handlers are
@@ -1972,11 +1970,7 @@ abstract class GenICode extends SubComponent  {
           val exh = outerCtx.newHandler(NoSymbol, toTypeKind(finalizer.tpe)) // finalizer covers exception handlers
           this.addActiveHandler(exh)  // .. and body aswell
           val ctx = finalizerCtx.enterHandler(exh)
-          val exception = ctx.method.addLocal(new Local(ctx.method.symbol
-                                    .newVariable(finalizer.pos, unit.fresh.newName("exc"))
-                                    .setFlag(Flags.SYNTHETIC)
-                                    .setInfo(definitions.ThrowableClass.tpe),
-                                    REFERENCE(definitions.ThrowableClass), false));
+          val exception = ctx.makeLocal(finalizer.pos, definitions.ThrowableClass.tpe, "exc")
           if (settings.Xdce.value) ctx.bb.emit(LOAD_EXCEPTION())
           ctx.bb.emit(STORE_LOCAL(exception));
           val ctx1 = genLoad(finalizer, ctx, UNIT);

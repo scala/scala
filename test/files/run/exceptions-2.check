@@ -50,3 +50,7 @@ finally inside finally
 Outer finally
 Throw in catch and finally:
 ABC
+Return with finally clause that cleans the stack
+Normal execution...
+inner finally
+Outer finally

@@ -255,6 +255,21 @@ object Test {
   }
 
 
+  def returnWithFinallyClean: Int = try {
+    try {
+      Console.println("Normal execution...");
+      return 10
+      Console.println("non reachable code");
+      11
+    } finally {
+      Console.println("inner finally");
+    }
+  } finally {
+    Console.println("Outer finally");
+    try { 1 } catch { case e: java.io.IOException => () }
+  }
+
+
   def main(args: Array[String]): Unit = {
     Console.println("nested1: ");
     execute(nested1);
@@ -310,5 +325,8 @@ object Test {
 
     Console.println("Throw in catch and finally:");
     execute(tryThrowFinally);
+
+    Console.println("Return with finally clause that cleans the stack")
+    returnWithFinallyClean
   }
 }
