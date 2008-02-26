@@ -14,26 +14,31 @@ object FileManager {
 
   val PATH_SEP  = File.pathSeparatorChar
   val CLASSPATH = System.getProperty("java.class.path", ".")
+  val PREFIX    = System.getProperty("user.dir", ".")+"/.."
   val SCALAHOME = System.getProperty("scala.home", ".")
   val JAVACMD   = System.getProperty("scalatest.javacmd", "java")
 
-  val PREFIX: File = {
-    val root = new File(SCALAHOME)
-    if (root.isDirectory)
-      root
-    else
-      error("Installation directory '"+SCALAHOME+"' not found")
-  }
-  val TESTROOT: File = {
+/*
+if [ -d "$PREFIX/test" ]; then
+    TESTROOT="$PREFIX/test";
+elif [ -d "$PREFIX/misc/scala-test" ]; then
+    TESTROOT="$PREFIX/misc/scala-test";
+else
+    abort "Test directory not found";
+*/
+  val TESTROOT = {
     val test = new File(PREFIX, "test")
     val scala_test = new File(PREFIX, "misc/scala-test")
-    if (test.isDirectory)
-      test
-    else if (scala_test.isDirectory)
-      scala_test
-    else
-      error("Test directory '"+SCALAHOME+File.separator+"test' not found")
+    val testroot =
+      if (test.exists && test.isDirectory)
+        test
+      else if (scala_test.exists && scala_test.isDirectory)
+        scala_test
+      else
+        error("Test directory not found")
+    testroot.getAbsolutePath
   }
+
   val EXT_CLASSPATH = {
     val libs = new File(TESTROOT, "files/lib")
     // add all jars in libs to EXT_CLASSPATH
@@ -42,11 +47,35 @@ object FileManager {
     }) map {file => file.getCanonicalFile.getAbsolutePath}).mkString(""+PATH_SEP)
   }
 
+/*
+if [ -d "$PREFIX/dists" ]; then
+    LATEST="$PREFIX/dists/latest/bin";
+    LATEST_LIB="$PREFIX/dists/latest/lib/scala-library.jar";
+    LATEST_COMP="$PREFIX/dists/latest/lib/scala-compiler.jar";
+    LATEST_PREDEF="$PREFIX/dists/latest/lib/predef.dll";
+    LATEST_CLDC=$QUICK_CLDC;
+    LATEST_CLDCAPI=$QUICK_CLDCAPI;
+elif [ -d "$PREFIX/build" ]; then
+    LATEST="$QUICK";
+    LATEST_LIB=$QUICK_LIB;
+    LATEST_COMP=$QUICK_COMP;
+    LATEST_ACT=$QUICK_ACT;
+    LATEST_PREDEF=$QUICK_PREDEF;
+    LATEST_CLDC=$QUICK_CLDC;
+    LATEST_CLDCAPI=$QUICK_CLDCAPI;
+elif [ -d "$PREFIX/bin" ]; then
+    LATEST="$PREFIX/bin";
+    LATEST_LIB="$PREFIX/lib/scala-library.jar";
+    LATEST_COMP="$PREFIX/lib/scala-compiler.jar";
+    LATEST_PREDEF="$PREFIX/lib/predef.dll";
+    LATEST_CLDC="$PREFIX/lib/scalaapi10-unverified.jar";
+    LATEST_CLDCAPI="$PREFIX/lib/scalaapi10.jar";
+*/
   def findLatest() {
     def prefixFile(relPath: String): File =
       (new File(PREFIX, relPath)).getCanonicalFile
 
-    NestUI.verbose("PREFIX: "+SCALAHOME)
+    NestUI.verbose("PREFIX: "+PREFIX)
     val dists = new File(PREFIX, "dists")
     val build = new File(PREFIX, "build")
     val bin = new File(PREFIX, "bin")
@@ -114,7 +143,7 @@ object FileManager {
     if (src.isDirectory)
       src
     else {
-      val path = TESTROOT.getAbsolutePath + File.separator + "files"
+      val path = TESTROOT + File.separator + "files"
       NestUI.failure("Source directory \"" + path + "\" not found")
       exit(1)
     }
