@@ -37,8 +37,6 @@ object NestRunner {
     Integer.parseInt(System.getProperty("scalatest.errors", "0"))
 
   def main(args: Array[String]) {
-    NestUI.initialize(NestUI.MANY)
-
     if (args.length == 0)
       NestUI.usage()
     else {
@@ -57,6 +55,7 @@ object NestRunner {
           case "--show-log"     => showLog = true
           case "--failed"       => failed = true
           case "--version"      => //todo: printVersion
+          case "--ansi"         => NestUI.initialize(NestUI.MANY)
           case _ =>
             if (arg endsWith ".scala") {
               val file = new File(arg)

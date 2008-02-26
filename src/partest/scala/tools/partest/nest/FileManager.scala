@@ -69,7 +69,7 @@ elif [ -d "$PREFIX/bin" ]; then
 */
   def findLatest() {
     def prefixFile(relPath: String) =
-      new File(PREFIX, relPath)
+      (new File(PREFIX, relPath)).getCanonicalFile
 
     NestUI.verbose("PREFIX: "+PREFIX)
     val dists = new File(PREFIX, "dists")
@@ -102,8 +102,18 @@ elif [ -d "$PREFIX/bin" ]; then
     LATEST_LIB = latestLibFile.getAbsolutePath
     LATEST_COMP = latestCompFile.getAbsolutePath
     LATEST_PARTEST = latestPartestFile.getAbsolutePath
-    SCALA = (new File(latestFile, "scala")).getAbsolutePath
-    SCALAC_CMD = (new File(latestFile, "scalac")).getAbsolutePath
+
+    // detect whether we are running on Windows
+    val osName = System.getProperty("os.name")
+    NestUI.verbose("OS: "+osName)
+
+    val scalaCommand = if (osName startsWith "Windows")
+      "scala.bat" else "scala"
+    val scalacCommand = if (osName startsWith "Windows")
+      "scalac.bat" else "scalac"
+
+    SCALA = (new File(latestFile, scalaCommand)).getAbsolutePath
+    SCALAC_CMD = (new File(latestFile, scalacCommand)).getAbsolutePath
   }
 
   var BIN_DIR: String = ""
