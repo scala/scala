@@ -49,23 +49,14 @@ if [ -z "$EXT_CLASSPATH" ] ; then
             fi
         done
     elif [ -d "$SCALA_HOME/build/quick/lib/partest" ] ; then
-        for ext in `ls -d "$SCALA_HOME"/build/quick/lib/*` ; do
+        for lib in `echo "partest library compiler actors fjbg.jar"`; do
+            ext="$SCALA_HOME/build/quick/lib/$lib"
             if [ -z "$EXT_CLASSPATH" ] ; then
                 EXT_CLASSPATH="$ext"
             else
                 EXT_CLASSPATH="$EXT_CLASSPATH:$ext"
             fi
         done
-    fi
-fi
-
-# Setting the boot class-path to be the standard library (either as a JAR or a folder)
-BOOT_CLASSPATH=""
-if [ -z "$BOOT_CLASSPATH" ] ; then
-    if [ -f "$SCALA_HOME/lib/scala-library.jar" ] ; then
-        BOOT_CLASSPATH="$SCALA_HOME/lib/scala-library.jar"
-    elif [ -d "$SCALA_HOME/lib/library" ] ; then
-        BOOT_CLASSPATH="$SCALA_HOME/lib/library"
     fi
 fi
 
@@ -77,11 +68,10 @@ if $cygwin; then
     fi
     SCALA_HOME=`cygpath --$format "$SCALA_HOME"`
     EXT_CLASSPATH=`cygpath --path --$format "$EXT_CLASSPATH"`
-    BOOT_CLASSPATH=`cygpath --path --$format "$BOOT_CLASSPATH"`
 fi
 
 # Reminder: substitution ${JAVA_OPTS:=-Xmx256M -Xms16M} DO NOT work on Solaris
 [ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx256M -Xms16M"
 [ -n "$SCALAC_OPTS" ] || SCALAC_OPTS="-deprecation"
 
-${JAVACMD:=java} $JAVA_OPTS -Xbootclasspath/a:"$BOOT_CLASSPATH" -cp "$EXT_CLASSPATH" -Dscala.home="${SCALA_HOME}" -Dscalatest.javacmd="${JAVACMD}" -Dscalatest.java_options="${JAVA_OPTS}" -Dscalatest.scalac_options="${SCALAC_OPTS}" scala.tools.partest.nest.NestRunner  "$@"
+${JAVACMD:=java} $JAVA_OPTS -cp "$EXT_CLASSPATH" -Dscala.home="${SCALA_HOME}" -Dscalatest.javacmd="${JAVACMD}" -Dscalatest.java_options="${JAVA_OPTS}" -Dscalatest.scalac_options="${SCALAC_OPTS}" scala.tools.partest.nest.NestRunner  "$@"
