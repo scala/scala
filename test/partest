@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ##############################################################################
-# Scala test runner 2.7.0-RC2
+# Scala test runner 2.7.0-final
 ##############################################################################
 # (c) 2002-2008 LAMP/EPFL
 #
@@ -41,8 +41,7 @@ fi
 EXT_CLASSPATH=""
 if [ -z "$EXT_CLASSPATH" ] ; then
     if [ -f "$SCALA_HOME/lib/scala-partest.jar" ] ; then
-        for lib in `echo "scala-partest scala-library scala-compiler"`; do
-            ext="$SCALA_HOME/lib/$lib.jar"
+        for ext in `ls -d "$SCALA_HOME"/lib/*` ; do
             if [ -z "$EXT_CLASSPATH" ] ; then
                 EXT_CLASSPATH="$ext"
             else
@@ -50,8 +49,7 @@ if [ -z "$EXT_CLASSPATH" ] ; then
             fi
         done
     elif [ -d "$SCALA_HOME/build/quick/lib/partest" ] ; then
-        for lib in `echo "partest library compiler"`; do
-            ext="$SCALA_HOME/build/quick/lib/$lib"
+        for ext in `ls -d "$SCALA_HOME"/build/quick/lib/*` ; do
             if [ -z "$EXT_CLASSPATH" ] ; then
                 EXT_CLASSPATH="$ext"
             else
@@ -71,16 +69,6 @@ if [ -z "$BOOT_CLASSPATH" ] ; then
     fi
 fi
 
-# Setting the test directory
-TEST_DIR=""
-if [ -z "$TEST_DIR" ] ; then
-    if [ -f "$SCALA_HOME/misc/scala-test" ] ; then
-        TEST_DIR="$SCALA_HOME/misc/scala-test"
-    elif [ -d "$SCALA_HOME/test" ] ; then
-        TEST_DIR="$SCALA_HOME/test"
-    fi
-fi
-
 if $cygwin; then
     if [ "$OS" = "Windows_NT" ] && cygpath -m .>/dev/null 2>/dev/null ; then
         format=mixed
@@ -90,11 +78,10 @@ if $cygwin; then
     SCALA_HOME=`cygpath --$format "$SCALA_HOME"`
     EXT_CLASSPATH=`cygpath --path --$format "$EXT_CLASSPATH"`
     BOOT_CLASSPATH=`cygpath --path --$format "$BOOT_CLASSPATH"`
-    TEST_DIR=`cygpath --$format "$TEST_DIR"`
 fi
 
 # Reminder: substitution ${JAVA_OPTS:=-Xmx256M -Xms16M} DO NOT work on Solaris
-[ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx1024M -Xms256M -XX:MaxPermSize=256M"
+[ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx256M -Xms16M"
 [ -n "$SCALAC_OPTS" ] || SCALAC_OPTS="-deprecation"
 
-${JAVACMD:=java} $JAVA_OPTS -Xbootclasspath/a:"$BOOT_CLASSPATH" -cp "$EXT_CLASSPATH" -Dscala.home="${SCALA_HOME}" -Dscalatest.javacmd="${JAVACMD}" -Dscalatest.java_options="${JAVA_OPTS}" -Dscalatest.cwd="${TEST_DIR}" -Dscalatest.scalac_options="${SCALAC_OPTS}" scala.tools.partest.nest.NestRunner  "$@"
+${JAVACMD:=java} $JAVA_OPTS -Xbootclasspath/a:"$BOOT_CLASSPATH" -cp "$EXT_CLASSPATH" -Dscala.home="${SCALA_HOME}" -Dscalatest.javacmd="${JAVACMD}" -Dscalatest.java_options="${JAVA_OPTS}" -Dscalatest.scalac_options="${SCALAC_OPTS}" scala.tools.partest.nest.NestRunner  "$@"
