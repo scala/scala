@@ -8,7 +8,7 @@
 package scala.tools.partest.nest
 
 import java.io.{File, PrintStream, FileOutputStream, BufferedReader,
-                InputStreamReader, StringWriter}
+                InputStreamReader, StringWriter, PrintWriter}
 
 import scala.actors.Actor._
 
@@ -86,23 +86,14 @@ object NestRunner {
       NestUI.outline("Scala binaries in   : "+FileManager.BIN_DIR+"\n")
 
       // obtain scalac version
-      //TODO: this does not work under Windows!
       val cmd = FileManager.SCALAC_CMD+" -version"
       NestUI.verbose("running "+cmd)
       val proc = Runtime.getRuntime.exec(cmd)
       val in = proc.getInputStream
       val err = proc.getErrorStream
-      val writer = new StringWriter
-      val errWriter = new StringWriter
-      val appender = new StreamAppender(new InputStreamReader(in), writer)
-      val errApp = new StreamAppender(new InputStreamReader(err), errWriter)
-      appender.start()
-      errApp.start()
       val exitCode = proc.waitFor()
       NestUI.verbose("exit code: "+exitCode)
-      appender.join()
-      errApp.join()
-      val scalaVersion = writer.toString + errWriter.toString
+      val scalaVersion = StreamAppender.appendToString(in, err)
 
       NestUI.outline("Scala version is    : "+scalaVersion)
       NestUI.outline("Scalac options are  : "+FileManager.SCALAC_OPTS+"\n")
@@ -173,11 +164,26 @@ object NestRunner {
           worker
         }
         var succs = 0; var fails = 0
+        var logsToDelete: List[File] = List()
+        var outdirsToDelete: List[File] = List()
         workers foreach { w =>
           receive {
-            case Results(s, f) => succs += s; fails += f
+            case Results(s, f, logs, outdirs) =>
+              logsToDelete = logsToDelete ::: logs.filter(_.toDelete)
+              outdirsToDelete = outdirsToDelete ::: outdirs
+              succs += s
+              fails += f
           }
         }
+        logsToDelete.foreach { log =>
+          NestUI.verbose("deleting "+log+"\n")
+          FileManager.deleteRecursive(log)
+                            }
+        outdirsToDelete.foreach { outdir =>
+          NestUI.verbose("deleting "+outdir+"\n")
+          FileManager.deleteRecursive(outdir)
+                            }
+
         (succs, fails)
 
         //val worker = new Worker

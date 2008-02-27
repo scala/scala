@@ -152,12 +152,12 @@ class ReflectiveCompiler extends SimpleCompiler {
 }
 
 class CompileManager {
-  var compiler: SimpleCompiler = new ReflectiveCompiler
+  var compiler: SimpleCompiler = new /*ReflectiveCompiler*/ DirectCompiler
 
   var numSeparateCompilers = 1
   def createSeparateCompiler() = {
     numSeparateCompilers += 1
-    compiler = new ReflectiveCompiler
+    compiler = new /*ReflectiveCompiler*/ DirectCompiler
   }
 
   /* This method returns true iff compilation succeeds.
@@ -168,11 +168,11 @@ class CompileManager {
     try {
       compiler.compile(file, kind)
     } catch {
-      case ite: java.lang.reflect.InvocationTargetException =>
+      case t: Throwable =>
         NestUI.verbose("while invoking compiler ("+file+"):")
-        NestUI.verbose("caught "+ite)
-        ite.printStackTrace
-        ite.getCause.printStackTrace
+        NestUI.verbose("caught "+t)
+        t.printStackTrace
+        t.getCause.printStackTrace
         false
     }
   }
@@ -195,11 +195,11 @@ class CompileManager {
 
       !compiler.compile(file, kind, log)
     } catch {
-      case ite: java.lang.reflect.InvocationTargetException =>
+      case t: Throwable =>
         NestUI.verbose("while invoking compiler ("+file+"):")
-        NestUI.verbose("caught "+ite)
-        ite.printStackTrace
-        ite.getCause.printStackTrace
+        NestUI.verbose("caught "+t)
+        t.printStackTrace
+        t.getCause.printStackTrace
         false
     }
   }

@@ -154,12 +154,6 @@ elif [ -d "$PREFIX/bin" ]; then
     if (inx < 0) name else name.substring(0, inx)
   }
 
-  def getLogFile(file: File, kind: String): File = {
-    val dir = file.getParentFile
-    val fileBase = basename(file.getName)
-    new File(dir, fileBase + "-" + kind + ".log")
-  }
-
   def deleteRecursive(dir: File) {
     if (dir.isDirectory) {
       for (file <- dir.list) deleteRecursive(new File(dir, file))

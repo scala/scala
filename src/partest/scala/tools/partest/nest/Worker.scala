@@ -6,7 +6,7 @@ package scala.tools.partest.nest
 
 import java.io.{File, FileInputStream, FileOutputStream, PrintStream,
                 PrintWriter, StringWriter, FileWriter, InputStreamReader,
-                FileReader, OutputStreamWriter}
+                FileReader, OutputStreamWriter, BufferedReader}
 
 import java.net.URL
 
@@ -18,7 +18,11 @@ import scala.actors.Actor._
 import FileManager._
 
 case class RunTests(kind: String, files: List[File])
-case class Results(succ: Int, fail: Int)
+case class Results(succ: Int, fail: Int, logs: List[LogFile], outdirs: List[File])
+
+class LogFile(parent: File, child: String) extends File(parent, child) {
+  var toDelete = false
+}
 
 class Worker extends Actor {
   def act() {
@@ -26,7 +30,7 @@ class Worker extends Actor {
       case RunTests(kind, files) =>
         NestUI.verbose("received "+files.length+" to test")
         val (succ, fail) = runTests(kind, files)
-        sender ! Results(succ, fail)
+        sender ! Results(succ, fail, createdLogFiles, createdOutputDirs)
     }
   }
 
@@ -63,6 +67,49 @@ class Worker extends Actor {
   }
 
   var log = ""
+  var createdLogFiles: List[LogFile] = List()
+  var createdOutputDirs: List[File] = List()
+
+  def createLogFile(dir: File, fileBase: String, kind: String): LogFile = {
+    val logFile = new LogFile(dir, fileBase + "-" + kind + ".log")
+    createdLogFiles = logFile :: createdLogFiles
+    logFile
+  }
+
+  def createLogFile(file: File, kind: String): LogFile = {
+    val dir = file.getParentFile
+    val fileBase = basename(file.getName)
+    createLogFile(dir, fileBase, kind)
+  }
+
+  def createOutputDir(dir: File, fileBase: String, kind: String): File = {
+    val outDir = new File(dir, fileBase + "-" + kind + ".obj")
+    createdOutputDirs = outDir :: createdOutputDirs
+    outDir
+  }
+
+  /* Note: not yet used/tested. */
+  def execTestObjectRunner(file: File, outDir: File, logFile: File) {
+    val classpath: List[URL] =
+      outDir.toURL ::
+      List(file.getParentFile.toURL) :::
+      (List.fromString(CLASSPATH, PATH_SEP) map { x =>
+        (new File(x)).toURL }) :::
+      (List.fromString(EXT_CLASSPATH, PATH_SEP) map { x =>
+        (new File(x)).toURL })
+    try {
+      NestUI.verbose("classpath: "+classpath)
+      val out = new FileOutputStream(logFile, true)
+      Console.withOut(new PrintStream(out)) {
+        ObjectRunner.run(classpath, "Test", List("jvm"))
+      }
+      out.flush
+      out.close
+    } catch {
+      case e: Exception =>
+        NestUI.verbose(e+" ("+file.getPath+")")
+    }
+  }
 
   def execTest(outDir: File, logFile: File) {
     val cmd =
@@ -74,40 +121,52 @@ class Worker extends Actor {
       " -Djavacmd="+JAVACMD+
       " scala.tools.nsc.MainGenericRunner"+
       " Test jvm"
-    NestUI.verbose(cmd)
+    //NestUI.verbose(cmd)
 
     val proc = Runtime.getRuntime.exec(cmd)
     val in = proc.getInputStream
     val err = proc.getErrorStream
-    val writer = new FileWriter(logFile)
-    val inApp = new StreamAppender(new InputStreamReader(in), writer)
-    val errApp = new StreamAppender(new InputStreamReader(err), writer)
-    inApp.start()
-    errApp.start()
-    proc.waitFor()
-    inApp.join()
-    errApp.join()
+    val writer = new PrintWriter(new FileWriter(logFile), true)
+    val inApp = new StreamAppender(new BufferedReader(new InputStreamReader(in)),
+                                   writer)
+    val errApp = new StreamAppender(new BufferedReader(new InputStreamReader(err)),
+                                    writer)
+    val async = new Thread(errApp)
+    async.start()
+    inApp.run()
+    async.join()
 
-    if (NestRunner.showLog) {
-      // produce log as string in `log`
-      val reader = new FileReader(logFile)
-      val writer = new StringWriter
-      val appender = new StreamAppender(reader, writer)
-      appender.start()
-      appender.join()
-      log = writer.toString
-    }
+    //proc.waitFor()
+
+    writer.close()
 
     /*val execution = Runtime.getRuntime.exec(cmd)
     val in = execution.getInputStream
+    val err = execution.getErrorStream
     val out = new FileOutputStream(logFile)
-    var c = in.read
-    while (c != -1) {
-      out.write(c)
-      c = in.read
+    var c1 = in.read
+    var c2 = err.read
+    while ((c1 != -1) || (c2 != -1)) {
+      if (c1 != -1) {
+        out.write(c1)
+        c1 = in.read
+      } else {
+        out.write(c2)
+        c2 = err.read
+      }
     }
     in.close
+    err.close
     out.close*/
+
+    if (NestRunner.showLog) {
+      // produce log as string in `log`
+      val reader = new BufferedReader(new FileReader(logFile))
+      val writer = new PrintWriter(new StringWriter, true)
+      val appender = new StreamAppender(reader, writer)
+      appender.run()
+      log = writer.toString
+    }
   }
 
   def compareOutput(dir: File, fileBase: String, kind: String, logFile: File): String = {
@@ -133,8 +192,8 @@ class Worker extends Actor {
       val fileBase: String = basename(file.getName)
       NestUI.verbose(this+" running test "+fileBase)
       val dir = file.getParentFile
-      val outDir = new File(dir, fileBase + "-" + kind + ".obj")
-      val logFile = new File(dir, fileBase + "-" + kind + ".log")
+      val outDir = createOutputDir(dir, fileBase, kind)
+      val logFile = createLogFile(dir, fileBase, kind)
 
       // when option "--failed" is provided
       // execute test only if log file is present
@@ -157,29 +216,10 @@ class Worker extends Actor {
             //TODO: detect whether we have to use Runtime.exec
             val useRuntime = true
 
-            if (useRuntime) {
+            if (useRuntime)
               execTest(outDir, logFile)
-            } else {
-              val classpath: List[URL] =
-                outDir.toURL ::
-                List(file.getParentFile.toURL) :::
-                (List.fromString(CLASSPATH, PATH_SEP) map { x =>
-                  (new File(x)).toURL }) :::
-                (List.fromString(EXT_CLASSPATH, PATH_SEP) map { x =>
-                  (new File(x)).toURL })
-              try {
-                NestUI.verbose("classpath: "+classpath)
-                val out = new FileOutputStream(logFile, true)
-                Console.withOut(new PrintStream(out)) {
-                  ObjectRunner.run(classpath, "Test", List("jvm"))
-                }
-                out.flush
-                out.close
-              } catch {
-                case e: Exception =>
-                  NestUI.verbose(e+" ("+file.getPath+")")
-              }
-            }
+            else
+              execTestObjectRunner(file, outDir, logFile)
             NestUI.verbose(this+" finished running "+fileBase)
 
             diff = compareOutput(dir, fileBase, kind, logFile)
@@ -188,12 +228,9 @@ class Worker extends Actor {
               success = false
             }
 
-            // delete output dir
-            FileManager.deleteRecursive(outDir)
-
             // delete log file only if test was successful
             if (success)
-              FileManager.deleteRecursive(logFile)
+              logFile.toDelete = true
           } // successful compile
         } catch { // *catch-all*
           case e: Exception =>
@@ -254,6 +291,11 @@ class Worker extends Actor {
         def posTestRun(file: File, wr: PrintWriter) = new CompileTestRun(file, wr) {
           def runTest() {
             try {
+              val fileBase: String = basename(file.getName)
+              NestUI.verbose(this+" running test "+fileBase)
+              val dir = file.getParentFile
+              val outDir = createOutputDir(dir, fileBase, kind)
+
               if (!compileMgr.shouldCompile(file, kind)) {
                 succeeded = false
                 errors += 1
@@ -283,7 +325,7 @@ class Worker extends Actor {
           // when option "--failed" is provided
           // execute test only if log file is present
           // (which means it failed before)
-          val logFile = getLogFile(file, kind)
+          val logFile = createLogFile(file, kind)
           if (!NestRunner.failed || (logFile.exists && logFile.canRead)) {
             val swr = new StringWriter
             val wr = new PrintWriter(swr)
@@ -297,7 +339,7 @@ class Worker extends Actor {
               } else { // compare log file to check file
                 val fileBase: String = basename(file.getName)
                 val dir = file.getParentFile
-                val outDir = new File(dir, fileBase + "-" + kind + ".obj")
+                val outDir = createOutputDir(dir, fileBase, kind)
 
                 NestUI.verbose("comparing output with check file...")
                 diff = compareOutput(dir, fileBase, kind, logFile)
@@ -307,12 +349,9 @@ class Worker extends Actor {
                   errors += 1
                 }
 
-                // delete output dir
-                FileManager.deleteRecursive(outDir)
-
                 // delete log file only if test was successful
                 if (succeeded)
-                  FileManager.deleteRecursive(logFile)
+                  logFile.toDelete = true
               }
             } catch {
               case e: Exception =>
@@ -329,11 +368,10 @@ class Worker extends Actor {
             if (!succeeded && NestRunner.showDiff) NestUI.normal(diff)
             if (!succeeded && NestRunner.showLog) {
               // output log file
-              val logReader = new FileReader(logFile)
-              val logWriter = new StringWriter
+              val logReader = new BufferedReader(new FileReader(logFile))
+              val logWriter = new PrintWriter(new StringWriter, true)
               val logAppender = new StreamAppender(logReader, logWriter)
-              logAppender.start()
-              logAppender.join()
+              logAppender.run()
               val log = logWriter.toString
               NestUI.normal(log)
             }
@@ -362,10 +400,9 @@ class Worker extends Actor {
           val fileBase: String = basename(file.getName)
           NestUI.verbose(this+" running test "+fileBase)
           val dir = file.getParentFile
-          val outDir = new File(dir, fileBase + "-" + kind + ".obj")
-          if (!outDir.exists)
-            outDir.mkdir()
-          val logFile = new File(dir, fileBase + "-" + kind + ".log")
+          val outDir = createOutputDir(dir, fileBase, kind)
+          if (!outDir.exists) outDir.mkdir()
+          val logFile = createLogFile(dir, fileBase, kind)
           val resFile = new File(dir, fileBase + ".res")
 
           // run scalac in resident mode:
@@ -386,24 +423,27 @@ class Worker extends Actor {
           val err = proc.getErrorStream
           val out = proc.getOutputStream
 
-          val writer = new FileWriter(logFile)
-          val reader = new FileReader(resFile)
-          val errWriter = new StringWriter
+          val writer = new PrintWriter(new FileWriter(logFile), true)
+          val reader = new BufferedReader(new FileReader(resFile))
+          val errWriter = new PrintWriter(new StringWriter, true)
 
-          val inApp = new StreamAppender(new InputStreamReader(in), writer)
-          val errApp = new StreamAppender(new InputStreamReader(err), errWriter)
-          val outApp = new StreamAppender(reader, new OutputStreamWriter(out))
+          val inApp = new StreamAppender(new BufferedReader(new InputStreamReader(in)),
+                                         writer)
+          val errApp = new StreamAppender(new BufferedReader(new InputStreamReader(err)),
+                                          errWriter)
+          val outApp = new StreamAppender(reader, new PrintWriter(new OutputStreamWriter(out), true))
 
-          inApp.start()
-          errApp.start()
-          outApp.start()
+          val inThr = new Thread(inApp)
+          val errThr = new Thread(errApp)
+          inThr.start()
+          errThr.start()
+          outApp.run()
 
           val exitCode = proc.waitFor()
           NestUI.verbose("finished with exit code "+exitCode)
 
-          inApp.join()
-          errApp.join()
-          outApp.join()
+          inThr.join()
+          errThr.join()
 
           //writer.close()
           //reader.close()
@@ -419,20 +459,18 @@ class Worker extends Actor {
           if (!succeeded && NestRunner.showDiff) NestUI.normal(diff)
           if (!succeeded && NestRunner.showLog) {
             // output log file
-            val logReader = new FileReader(logFile)
-            val logWriter = new StringWriter
+            val logReader = new BufferedReader(new FileReader(logFile))
+            val logWriter = new PrintWriter(new StringWriter, true)
             val logAppender = new StreamAppender(logReader, logWriter)
-            logAppender.start()
-            logAppender.join()
+            logAppender.run()
+            //TODO: close logReader
             val log = logWriter.toString
             NestUI.normal(log)
           }
 
-          // delete output dir
-          FileManager.deleteRecursive(outDir)
           // delete log file only if test was successful
           if (succeeded)
-            FileManager.deleteRecursive(logFile)
+            logFile.toDelete = true
 
           printInfoEnd(succeeded, wr)
           wr.flush()
