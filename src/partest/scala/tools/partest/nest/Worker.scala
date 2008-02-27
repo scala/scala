@@ -159,13 +159,14 @@ class Worker extends Actor {
     err.close
     out.close*/
 
-    if (NestRunner.showLog) {
+    if (FileManager.showLog) {
       // produce log as string in `log`
       val reader = new BufferedReader(new FileReader(logFile))
-      val writer = new PrintWriter(new StringWriter, true)
+      val swriter = new StringWriter
+      val pwriter = new PrintWriter(swriter, true)
       val appender = new StreamAppender(reader, writer)
       appender.run()
-      log = writer.toString
+      log = swriter.toString
     }
   }
 
@@ -198,7 +199,7 @@ class Worker extends Actor {
       // when option "--failed" is provided
       // execute test only if log file is present
       // (which means it failed before)
-      if (!NestRunner.failed || (logFile.exists && logFile.canRead)) {
+      if (!FileManager.failed || (logFile.exists && logFile.canRead)) {
         val swr = new StringWriter
         val wr = new PrintWriter(swr)
         success = true
@@ -246,8 +247,8 @@ class Worker extends Actor {
         wr.flush()
         swr.flush()
         NestUI.normal(swr.toString)
-        if (!success && NestRunner.showDiff) NestUI.normal(diff)
-        if (!success && NestRunner.showLog)  NestUI.normal(log)
+        if (!success && FileManager.showDiff) NestUI.normal(diff)
+        if (!success && FileManager.showLog)  NestUI.normal(log)
       }
     } // for each file
     NestUI.verbose("finished testing "+kind+" with "+errors+" errors")
@@ -326,7 +327,7 @@ class Worker extends Actor {
           // execute test only if log file is present
           // (which means it failed before)
           val logFile = createLogFile(file, kind)
-          if (!NestRunner.failed || (logFile.exists && logFile.canRead)) {
+          if (!FileManager.failed || (logFile.exists && logFile.canRead)) {
             val swr = new StringWriter
             val wr = new PrintWriter(swr)
             succeeded = true; diff = ""; log = ""
@@ -365,8 +366,8 @@ class Worker extends Actor {
             swr.flush()
             NestUI.normal(swr.toString)
 
-            if (!succeeded && NestRunner.showDiff) NestUI.normal(diff)
-            if (!succeeded && NestRunner.showLog) {
+            if (!succeeded && FileManager.showDiff) NestUI.normal(diff)
+            if (!succeeded && FileManager.showLog) {
               // output log file
               val logReader = new BufferedReader(new FileReader(logFile))
               val logWriter = new PrintWriter(new StringWriter, true)
@@ -456,8 +457,8 @@ class Worker extends Actor {
             errors += 1
           }
 
-          if (!succeeded && NestRunner.showDiff) NestUI.normal(diff)
-          if (!succeeded && NestRunner.showLog) {
+          if (!succeeded && FileManager.showDiff) NestUI.normal(diff)
+          if (!succeeded && FileManager.showLog) {
             // output log file
             val logReader = new BufferedReader(new FileReader(logFile))
             val logWriter = new PrintWriter(new StringWriter, true)

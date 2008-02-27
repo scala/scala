@@ -65,8 +65,6 @@ object NestUI {
     println("    --neg          next files test a compilation failure")
     println("    --jvm          next files test the JVM backend")
     println("    --run          next files test the interpreter and all backends")
-    println("    --shootout     ...")
-    println("    --conservative ...")
     println("    --verbose      display progress information")
     println("    --version      output version information and exit")
     println

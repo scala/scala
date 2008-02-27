@@ -10,7 +10,7 @@ package scala.tools.partest.nest
 import scala.tools.nsc.{Global, Settings}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 
-import java.io.{File, BufferedReader, PrintWriter, FileWriter}
+import java.io.{File, BufferedReader, PrintWriter, FileWriter, StringWriter}
 
 class ExtConsoleReporter(override val settings: Settings, reader: BufferedReader, var writer: PrintWriter) extends ConsoleReporter(settings, reader, writer) {
   def this(settings: Settings) = {
@@ -46,7 +46,7 @@ class DirectCompiler extends SimpleCompiler {
 
   def newReporter(sett: Settings) = new ExtConsoleReporter(sett,
                                                            Console.in,
-                                                           new PrintWriter(new FileWriter("scalac-out")))
+                                                           new PrintWriter(new StringWriter))
 
   def compile(file: File, kind: String, log: File): Boolean = {
     val testSettings = newSettings

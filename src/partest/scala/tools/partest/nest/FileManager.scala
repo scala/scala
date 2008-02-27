@@ -14,6 +14,7 @@ object FileManager {
 
   val PATH_SEP  = File.pathSeparatorChar
   val CLASSPATH = System.getProperty("java.class.path", ".")
+  NestUI.verbose("CLASSPATH: "+CLASSPATH)
   val SCALAHOME = System.getProperty("scala.home", ".")
   NestUI.verbose("SCALAHOME: "+SCALAHOME)
   val JAVACMD   = System.getProperty("scalatest.javacmd", "java")
@@ -82,23 +83,26 @@ elif [ -d "$PREFIX/bin" ]; then
     val bin = new File(PREFIX, "bin")
 
     if (dists.isDirectory) {
-      latestFile = prefixFile("dists/latest/bin")
-      latestLibFile = prefixFile("dists/latest/lib/scala-library.jar")
-      latestCompFile = prefixFile("dists/latest/lib/scala-compiler.jar")
+      latestFile        = prefixFile("dists/latest/bin")
+      latestLibFile     = prefixFile("dists/latest/lib/scala-library.jar")
+      latestActFile     = prefixFile("dists/latest/lib/scala-library.jar")
+      latestCompFile    = prefixFile("dists/latest/lib/scala-compiler.jar")
       latestPartestFile = prefixFile("dists/latest/lib/scala-partest.jar")
-      latestFjbgFile = prefixFile("lib/fjbg.jar") // starr
+      latestFjbgFile    = prefixFile("lib/fjbg.jar") // starr
     }
     else if (build.isDirectory) {
-      latestFile = prefixFile("build/quick/bin")
-      latestLibFile = prefixFile("build/quick/lib/library")
-      latestCompFile = prefixFile("build/quick/lib/compiler")
+      latestFile        = prefixFile("build/quick/bin")
+      latestLibFile     = prefixFile("build/quick/lib/library")
+      latestActFile     = prefixFile("build/quick/lib/actors")
+      latestCompFile    = prefixFile("build/quick/lib/compiler")
       latestPartestFile = prefixFile("build/quick/lib/partest")
-      latestFjbgFile = prefixFile("lib/fjbg.jar") // starr
+      latestFjbgFile    = prefixFile("lib/fjbg.jar") // starr
     }
     else if (bin.isDirectory) {
-      latestFile = prefixFile("bin")
-      latestLibFile = prefixFile("lib/scala-library.jar")
-      latestCompFile = prefixFile("lib/scala-compiler.jar")
+      latestFile        = prefixFile("bin")
+      latestLibFile     = prefixFile("lib/scala-library.jar")
+      latestActFile     = prefixFile("lib/scala-library.jar")
+      latestCompFile    = prefixFile("lib/scala-compiler.jar")
       latestPartestFile = prefixFile("lib/scala-partest.jar")
     }
     else
@@ -133,6 +137,7 @@ elif [ -d "$PREFIX/bin" ]; then
 
   var latestFile: File = _
   var latestLibFile: File = _
+  var latestActFile: File = _
   var latestCompFile: File = _
   var latestPartestFile: File = _
   var latestFjbgFile: File = _
@@ -149,6 +154,10 @@ elif [ -d "$PREFIX/bin" ]; then
       exit(1)
     }
   }
+
+  var showDiff = false
+  var showLog = false
+  var failed = false
 
   private def basename(name: String): String = {
     val inx = name.lastIndexOf(".")
