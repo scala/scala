@@ -14,9 +14,10 @@ object FileManager {
 
   val PATH_SEP  = File.pathSeparatorChar
   val CLASSPATH = System.getProperty("java.class.path", ".")
-  val PREFIX    = System.getProperty("user.dir", ".")+"/.."
   val SCALAHOME = System.getProperty("scala.home", ".")
+  NestUI.verbose("SCALAHOME: "+SCALAHOME)
   val JAVACMD   = System.getProperty("scalatest.javacmd", "java")
+  val PREFIX    = (new File(SCALAHOME)).getAbsolutePath
 
 /*
 if [ -d "$PREFIX/test" ]; then
@@ -27,12 +28,12 @@ else
     abort "Test directory not found";
 */
   val TESTROOT = {
-    val test = new File(PREFIX, "test")
-    val scala_test = new File(PREFIX, "misc/scala-test")
+    val test = new File(SCALAHOME, "test")
+    val scala_test = new File(SCALAHOME, "misc/scala-test")
     val testroot =
-      if (test.exists && test.isDirectory)
+      if (test.isDirectory)
         test
-      else if (scala_test.exists && scala_test.isDirectory)
+      else if (scala_test.isDirectory)
         scala_test
       else
         error("Test directory not found")
