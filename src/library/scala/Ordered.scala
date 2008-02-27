@@ -43,8 +43,9 @@ trait Ordered[A] {
    * provide it yourself either when inheiriting or instantiating.
    * Therefore, the default implementation will fail with an error to
    * prevent you from forgetting to do so. */
-  override def equals(other : Any) : Boolean =
-    error("You must implement equals for Ordered yourself.")
+// Breaks the build FIX!!
+//  override def equals(other : Any) : Boolean =
+//    error("You must implement equals for Ordered yourself.")
 
   /** It is important that the hashCode method for an instance of
    * Ordered[A] be consistent with the compare method. However,
@@ -53,6 +54,7 @@ trait Ordered[A] {
    * instance of Ordered[A] you must provide it yourself either when
    * inheiriting or instantiating. Therefore, the default implementation
    * will fail with an error to prevent you from forgetting to do so. */
-  override def hashCode : Int =
-    error("You must implement hashCode for Ordered yourself.")
+// Breaks the build FIX!!
+//  override def hashCode : Int =
+//    error("You must implement hashCode for Ordered yourself.")
 }
