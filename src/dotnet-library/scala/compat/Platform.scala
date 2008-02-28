@@ -50,11 +50,11 @@ object Platform {
 
   val EOL = System.Environment.NewLine
 
-  def currentTime: Long = 0
+  def currentTime: Long = 0L
 /* // compiler crash :-(
+  private val baseTime = new System.DateTime(1970, 1, 1, 0, 0, 0)
   def currentTime: Long = {
     val nowTime = System.DateTime.UtcNow
-    val baseTime = new System.DateTime(1970, 1, 1, 0, 0, 0)
     (nowTime.Ticks - baseTime.Ticks) / 10000
   }
 */
