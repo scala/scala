@@ -52,10 +52,10 @@ object Platform {
 
   def currentTime: Long = 0L
 /* // compiler crash :-(
-  private val baseTime = new System.DateTime(1970, 1, 1, 0, 0, 0)
+  private lazy val baseTicks = (new System.DateTime(1970, 1, 1, 0, 0, 0)).Ticks
   def currentTime: Long = {
-    val nowTime = System.DateTime.UtcNow
-    (nowTime.Ticks - baseTime.Ticks) / 10000
+    val nowTicks = System.DateTime.UtcNow.Ticks
+    (nowTicks - baseTicks) / 10000
   }
 */
   def collectGarbage { System.GC.Collect() }
