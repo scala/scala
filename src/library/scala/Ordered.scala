@@ -13,7 +13,22 @@ package scala
 
 /** A class for totally ordered data.
  *
- *  Note that since version 2006-07-24 this class is no longer covariant in a.
+ * Note that since version 2006-07-24 this class is no longer covariant in a.
+ *
+ * It is important that the equals method for an instance of
+ * Ordered[A] be consistent with the compare method.  However,
+ * due to limitations inherent in the type erasure semantics,
+ * there is no reasonable way to provide a default implementation
+ * of equality for instances of Ordered[A].  Therefore, if you need
+ * to be able to use equality on an instance of Ordered[A] you must
+ * provide it yourself either when inheiriting or instantiating.
+ *
+ * It is important that the hashCode method for an instance of
+ * Ordered[A] be consistent with the compare method. However,
+ * it is not possible to provide a sensible default implementation.
+ * Therefore, if you need to be able compute the hash of an
+ * instance of Ordered[A] you must provide it yourself either when
+ * inheiriting or instantiating.
  *
  *  @author  Martin Odersky
  *  @version 1.1, 2006-07-24
@@ -34,27 +49,5 @@ trait Ordered[A] {
   def >= (that: A): Boolean = (this compare that) >= 0
   def compareTo(that: A): Int = compare(that)
 
-  /** It is important that the equals method for an instance of
-   * Ordered[A] be consistent with the compare method.  However,
-   * due to limitations inherent in the type erasure semantics,
-   * there is no reasonable way to provide a default implementation
-   * of equality for instances of Ordered[A].  Therefore, if you need
-   * to be able to use equality on an instance of Ordered[A] you must
-   * provide it yourself either when inheiriting or instantiating.
-   * Therefore, the default implementation will fail with an error to
-   * prevent you from forgetting to do so. */
-// Breaks the build FIX!!
-//  override def equals(other : Any) : Boolean =
-//    error("You must implement equals for Ordered yourself.")
 
-  /** It is important that the hashCode method for an instance of
-   * Ordered[A] be consistent with the compare method. However,
-   * it is not possible to provide a sensible default implementation.
-   * Therefore, if you need to be able compute the hash of an
-   * instance of Ordered[A] you must provide it yourself either when
-   * inheiriting or instantiating. Therefore, the default implementation
-   * will fail with an error to prevent you from forgetting to do so. */
-// Breaks the build FIX!!
-//  override def hashCode : Int =
-//    error("You must implement hashCode for Ordered yourself.")
 }
