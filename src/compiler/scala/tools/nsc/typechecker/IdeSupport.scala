@@ -34,9 +34,11 @@ trait IdeSupport extends Analyzer {
       object tpe0 extends LazyType with SimpleTypeProxy {
         override def underlying = tpe
         override def complete(sym0 : Symbol) : Unit = {
-          assert(sym eq sym0)
+          if (sym ne sym0) {
+            logError(sym + " "+sym.id + " vs. " + sym0.id + " we have a problem!", null)
+          }
           toComplete -= sym
-          val pos = sym.pos match {
+          val pos = sym0.pos match {
           case pos : TrackedPosition => pos
           }
           val oldType = oldTypeFor(sym0)
@@ -53,7 +55,7 @@ trait IdeSupport extends Analyzer {
               }
             case _=>
           }
-          assert(sym.rawInfo == this)
+          assert(sym0.rawInfo == this)
           val hadTypeErrors = pos.owner != null && pos.owner.hasTypeErrors
           if (pos.owner == null) underlying.complete(sym0) else pos.owner.activate(try {
             underlying.complete(sym0)
@@ -66,12 +68,12 @@ trait IdeSupport extends Analyzer {
             case (PolyType(xxx,_),PolyType(yyy,_)) if xxx != yyy =>
               val oldc = xxx
               val newc = yyy
-              Console.print("DIFF old=" + oldc.map(sym => sym + ":" + sym.pos).mkString("",",",""))
-              Console.println(" new=" + newc.map(sym => sym + ":" + sym.pos).mkString("",",",""))
+              Console.print("DIFF old=" + oldc.map(sym => sym0 + ":" + sym0.pos).mkString("",",",""))
+              Console.println(" new=" + newc.map(sym => sym0+ ":" + sym0.pos).mkString("",",",""))
             case _ =>
           }
 
-          if (!hadTypeErrors && pos.owner != null && pos.owner.hasTypeErrors) pos.owner.dirtyTyped
+          //if (!hadTypeErrors && pos.owner != null && pos.owner.hasTypeErrors) pos.owner.dirtyTyped
           if (pos.owner != null && pos.owner.hasTypeErrors) {
             // go back to original type.
             val oldType = oldTypeFor(sym0)
@@ -186,7 +188,7 @@ trait IdeSupport extends Analyzer {
           if (sym != tree.symbol) {
             assert(true)
             assert(true)
-            Console.println("SCREWED: " + sym + " vs. " + tree.symbol)
+            Console.println("SCREWED: " + sym + " " + sym.id + " vs. " + tree.symbol.id)
           }
           import symtab.Flags._
           val set = reuseMap.get(namer.context.scope.asInstanceOf[PersistentScope])
@@ -262,6 +264,10 @@ trait IdeSupport extends Analyzer {
         val sym = namer.enterInScope(lastSymbol)
         assert(sym == lastSymbol)
         use.last.symbol = lastSymbol
+      }
+      if (lastSymbol != NoSymbol && lastSymbol != use.last.symbol) {
+        assert(true)
+        assert(true)
       }
       use.last.symbol
     }
