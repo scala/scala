@@ -56,9 +56,10 @@ trait Scopes {
   lazy val LabelScopeKind : ScopeKind = allocateScopeKind("label")
   lazy val TypedCasesScopeKind : ScopeKind = allocateScopeKind("typedCases")
   lazy val TypedDefScopeKind : ScopeKind = allocateScopeKind("typedDef")
-  lazy val ParentTypesScopeKind : ScopeKind = allocateScopeKind("parentType")
+  //lazy val ParentTypesScopeKind : ScopeKind = allocateScopeKind("parentType")
   lazy val TypedScopeKind : ScopeKind = allocateScopeKind("typed")
   // have to sometimes use constructor depth unfortunately.
+  case class ParentTypesScopeKind(clazz : Symbol) extends ScopeKind("parentType") { override def toString = super.toString + "-" + clazz }
   case class BlockScopeKind(depth : Int) extends ScopeKind("block") { override def toString = super.toString + "-" + depth }
 
   def newClassScope(clazz : Symbol) = newScope // for use in ClassInfoType creation

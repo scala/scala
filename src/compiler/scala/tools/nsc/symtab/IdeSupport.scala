@@ -69,7 +69,15 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
   }
   def reuse(scope : PersistentScope, sym : Symbol) = {
     var e = scope.lookupEntry(sym.name)
-    while (e != null && e.sym != sym) e = scope.lookupNextEntry(e)
+    var delete = List[Symbol]()
+    while (e != null && e.sym != sym) {
+      if (false && !e.sym.rawInfo.isComplete) {
+        assert(true)
+        delete = e.sym :: delete
+      }
+      e = scope.lookupNextEntry(e)
+    }
+    delete.foreach(scope.unlink)
     if (e != null && e.sym == sym) {
       assert(true)
       val list = reuseMap.get(scope) match {
@@ -161,7 +169,9 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
     super.attachSource(clazz, file)
   }
   def finishTyping = {
-    reuseMap.foreach{
+    val clear = reuseMap.toList
+    reuseMap.clear
+    clear.foreach{
     case (scope,old) => old.foreach{
     case NoSymbol =>
     case sym =>
@@ -296,21 +306,22 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
         }
         super.enter(symbol)
       }
+      def nuke(existing: Symbol, other : Symbol) : Unit = {
+        if (existing.isMonomorphicType) existing.resetFlag(Flags.MONOMORPHIC)
+        assert(!existing.isPackage)
+        existing.attributes = Nil // reset attributes, we don't look at these.
+        existing.setInfo(if (other.hasRawInfo) other.rawInfo else NoType)
+        if (existing.isModule && existing.moduleClass != NoSymbol)
+          nuke(existing.moduleClass,symbol.moduleClass)
+      }
+
       def reuse(existing : Symbol) : Symbol = {
         def record(existing : Symbol) = if (existing.hasRawInfo &&
           existing.rawInfo.isComplete && existing.rawInfo != NoType && !hasError(existing.rawInfo)) {
           tracedTypes(existing) = existing.info
         }
-        def f(existing: Symbol, other : Symbol) : Unit = {
-          if (existing.isMonomorphicType) existing.resetFlag(Flags.MONOMORPHIC)
-          assert(!existing.isPackage)
-          existing.attributes = Nil // reset attributes, we don't look at these.
-          existing.setInfo(if (other.hasRawInfo) other.rawInfo else NoType)
-          if (existing.isModule && existing.moduleClass != NoSymbol)
-            f(existing.moduleClass,symbol.moduleClass)
-        }
         record(existing)
-        f(existing,symbol)
+        nuke(existing,symbol)
         if (existing.pos == NoPosition) {
           assert(true)
           assert(true)
@@ -318,7 +329,22 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
 
         finish(existing)
       }
-
+      val symX = lookup(symbol.name)
+      if (symX != NoSymbol) {
+        if (symX == symbol) return (symX)
+        if (!symbol.hasRawInfo && symX.hasRawInfo && symX.rawInfo.isComplete &&
+            symbol.pos.isInstanceOf[TrackedPosition] && symX.pos.isInstanceOf[TrackedPosition] &&
+            symbol.pos == symX.pos) compatible(symX, symbol) match {
+        case NotCompatible => // do nothing
+        case code@GoResult(existing0) =>
+          val existing = existing0
+          if (code.isInstanceOf[Updated]) {
+            invalidate(existing.name)
+          }
+          nuke(existing,symbol)
+          return (existing)
+        }
+      }
       if (symbol == NoSymbol) return symbol
       // catch double defs.
       record(currentClient, symbol.name)
@@ -366,6 +392,12 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
 
   protected def compatible(existing : Symbol, symbol : Symbol) : Result = {
     import scala.tools.nsc.symtab.Flags._
+    if (existing.hasRawInfo && symbol.hasRawInfo) {
+
+
+    }
+
+
     if (existing.getClass != symbol.getClass) (existing,symbol) match {
     case (existing:TypeSkolem,symbol:TypeSymbol) =>
       val other = existing.deSkolemize
