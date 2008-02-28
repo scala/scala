@@ -2504,13 +2504,21 @@ A type's typeSymbol should never be inspected directly.
    */
   object rawToExistential extends TypeMap {
     def apply(tp: Type): Type = tp match {
+      case RawType(ex) => ex
+      case _ => mapOver(tp)
+    }
+  }
+
+  /** An extractor for raw types */
+  private object RawType {
+    def unapply(t: Type): Option[Type] = t match {
       case TypeRef(pre, sym, List()) if !sym.typeParams.isEmpty && sym.hasFlag(JAVA) =>
         //  note: it's important to write the two tests in this order,
         //  as only typeParams forces the classfile to be read. See #400
         val eparams = typeParamsToExistentials(sym, sym.typeParams)
-        existentialAbstraction(eparams, TypeRef(pre, sym, eparams map (_.tpe)))
+        Some(existentialAbstraction(eparams, TypeRef(pre, sym, eparams map (_.tpe))))
       case _ =>
-        mapOver(tp)
+        None
     }
   }
 
@@ -3340,8 +3348,16 @@ A type's typeSymbol should never be inspected directly.
     if (subsametypeRecursions == 0) undoLog = List()
   }
 
-  private def isSameType0(tp1: Type, tp2: Type): Boolean = {
-    (tp1, tp2) match {
+  def normalizePlus(tp: Type) = tp.normalize match {
+    case RawType(ex1) => ex1
+    case nt => nt
+  }
+
+  private def isSameType0(tp1: Type, tp2: Type): Boolean =
+    if (!tp1.attributes.isEmpty || !tp2.attributes.isEmpty) {
+      annotationsConform(tp1, tp2) && annotationsConform(tp2, tp1) &&
+      isSameType0(tp1.withoutAttributes, tp2.withoutAttributes)
+    } else ((tp1, tp2) match {
       case (ErrorType, _) => true
       case (WildcardType, _) => true
       case (_, ErrorType) => true
@@ -3431,12 +3447,11 @@ A type's typeSymbol should never be inspected directly.
         ((origin1 ne tp1) || (origin2 ne tp2)) && (origin1 =:= origin2)
       case _ =>
         false
+    }) || {
+      val tp1n = normalizePlus(tp1)
+      val tp2n = normalizePlus(tp2)
+      ((tp1n ne tp1) || (tp2n ne tp2)) && isSameType(tp1n, tp2n)
     }
-  } || {
-    val tp1n = tp1.normalize
-    val tp2n = tp2.normalize
-    ((tp1n ne tp1) || (tp2n ne tp2)) && isSameType(tp1n, tp2n)
-  }
 
   /** Are `tps1' and `tps2' lists of pairwise equivalent
    *  types?
@@ -3628,8 +3643,8 @@ A type's typeSymbol should never be inspected directly.
       case _ =>
         false
     }) || {
-    val tp1n = tp1.normalize
-    val tp2n = tp2.normalize
+    val tp1n = normalizePlus(tp1)
+    val tp2n = normalizePlus(tp2)
     ((tp1n ne tp1) || (tp2n ne tp2)) && isSubType0(tp1n, tp2n)
     }
   }
