@@ -1776,6 +1776,8 @@ A type's typeSymbol should never be inspected directly.
 			   override val selfsym: Symbol)
   extends RewrappingTypeProxy {
 
+    assert(!attributes.isEmpty)
+
     override protected def rewrap(tp: Type) = AnnotatedType(attributes, tp, selfsym)
 
     override def toString: String = {
@@ -2319,6 +2321,7 @@ A type's typeSymbol should never be inspected directly.
         val annots1 = mapOverAnnotations(annots)
         val atp1 = this(atp)
         if ((annots1 eq annots) && (atp1 eq atp)) tp
+        else if (annots1.isEmpty) atp1
         else AnnotatedType(annots1, atp1, selfsym)
       case _ =>
         tp
@@ -2504,21 +2507,13 @@ A type's typeSymbol should never be inspected directly.
    */
   object rawToExistential extends TypeMap {
     def apply(tp: Type): Type = tp match {
-      case RawType(ex) => ex
-      case _ => mapOver(tp)
-    }
-  }
-
-  /** An extractor for raw types */
-  private object RawType {
-    def unapply(t: Type): Option[Type] = t match {
       case TypeRef(pre, sym, List()) if !sym.typeParams.isEmpty && sym.hasFlag(JAVA) =>
         //  note: it's important to write the two tests in this order,
         //  as only typeParams forces the classfile to be read. See #400
         val eparams = typeParamsToExistentials(sym, sym.typeParams)
-        Some(existentialAbstraction(eparams, TypeRef(pre, sym, eparams map (_.tpe))))
+        existentialAbstraction(eparams, TypeRef(pre, sym, eparams map (_.tpe)))
       case _ =>
-        None
+        mapOver(tp)
     }
   }
 
@@ -3348,16 +3343,14 @@ A type's typeSymbol should never be inspected directly.
     if (subsametypeRecursions == 0) undoLog = List()
   }
 
-  def normalizePlus(tp: Type) = tp.normalize match {
-    case RawType(ex1) => ex1
-    case nt => nt
+  def normalizePlus(tp: Type) = tp match {
+    case TypeRef(pre, sym, List()) if (sym.isInitialized && sym.hasFlag(JAVA) && !sym.typeParams.isEmpty) =>
+      rawToExistential(tp)
+    case _ => tp.normalize
   }
 
   private def isSameType0(tp1: Type, tp2: Type): Boolean =
-    if (!tp1.attributes.isEmpty || !tp2.attributes.isEmpty) {
-      annotationsConform(tp1, tp2) && annotationsConform(tp2, tp1) &&
-      isSameType0(tp1.withoutAttributes, tp2.withoutAttributes)
-    } else ((tp1, tp2) match {
+    ((tp1, tp2) match {
       case (ErrorType, _) => true
       case (WildcardType, _) => true
       case (_, ErrorType) => true
@@ -3429,10 +3422,10 @@ A type's typeSymbol should never be inspected directly.
       case (_, tv2 @ TypeVar(_, constr2)) =>
         if (constr2.inst != NoType) tp1 =:= constr2.inst
         else isRelatable(tv2, tp1) && (constr2 instantiate wildcardToTypeVarMap(tp1))
-      case (AnnotatedType(_,atp,_), _) =>
-        isSameType(atp, tp2)
-      case (_, AnnotatedType(_,atp,_)) =>
-        isSameType(tp1, atp)
+      case (AnnotatedType(_,_,_), _) =>
+        annotationsConform(tp1, tp2) && annotationsConform(tp2, tp1) && tp1.withoutAttributes =:= tp2.withoutAttributes
+      case (_, AnnotatedType(_,_,_)) =>
+        annotationsConform(tp1, tp2) && annotationsConform(tp2, tp1) && tp1.withoutAttributes =:= tp2.withoutAttributes
       case (_: SingletonType, _: SingletonType) =>
         var origin1 = tp1
         while (origin1.underlying.isInstanceOf[SingletonType]) {
@@ -3513,12 +3506,7 @@ A type's typeSymbol should never be inspected directly.
 
   /** Does type `tp1' conform to `tp2'?
    */
-  private def isSubType0(tp1raw: Type, tp2raw: Type): Boolean = {
-    if (!annotationsConform(tp1raw, tp2raw))
-      return false
-    val tp1 = tp1raw.withoutAttributes
-    val tp2 = tp2raw.withoutAttributes
-
+  private def isSubType0(tp1: Type, tp2: Type): Boolean = {
     ((tp1, tp2) match {
       case (ErrorType, _)    => true
       case (WildcardType, _) => true
@@ -3535,10 +3523,8 @@ A type's typeSymbol should never be inspected directly.
       case (SingleType(_, _), ThisType(_))      => tp1 =:= tp2
       case (SingleType(_, _), SingleType(_, _)) => tp1 =:= tp2
       case (ConstantType(_), ConstantType(_))   => tp1 =:= tp2
-      case (TypeRef(pre1, sym1:TypeSkolem, args1), TypeRef(pre2, sym2:TypeSkolem, args2)) if {
-        inIDE && args1 == args2 && pre1 == pre2 &&
-          sym1.deSkolemize == sym2.deSkolemize
-      } => true
+      case (TypeRef(pre1, sym1:TypeSkolem, args1), TypeRef(pre2, sym2:TypeSkolem, args2))
+      if (inIDE && args1 == args2 && pre1 == pre2 && sym1.deSkolemize == sym2.deSkolemize) => true
       case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2))
       if !(tp1.isHigherKinded || tp2.isHigherKinded) =>
         //Console.println("isSubType " + tp1 + " " + tp2);//DEBUG
@@ -3581,6 +3567,10 @@ A type's typeSymbol should never be inspected directly.
          res1 <:< res2.substSym(tparams2, tparams1))
       case (TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
         lo2 <:< lo1 && hi1 <:< hi2
+      case (AnnotatedType(_,_,_), _) =>
+        annotationsConform(tp1, tp2) && tp1.withoutAttributes <:< tp2.withoutAttributes
+      case (_, AnnotatedType(_,_,_)) =>
+        annotationsConform(tp1, tp2) && tp1.withoutAttributes <:< tp2.withoutAttributes
       case (BoundedWildcardType(bounds), _) =>
         bounds.lo <:< tp2
       case (_, BoundedWildcardType(bounds)) =>
@@ -3643,9 +3633,9 @@ A type's typeSymbol should never be inspected directly.
       case _ =>
         false
     }) || {
-    val tp1n = normalizePlus(tp1)
-    val tp2n = normalizePlus(tp2)
-    ((tp1n ne tp1) || (tp2n ne tp2)) && isSubType0(tp1n, tp2n)
+      val tp1n = normalizePlus(tp1)
+      val tp2n = normalizePlus(tp2)
+      ((tp1n ne tp1) || (tp2n ne tp2)) && isSubType0(tp1n, tp2n)
     }
   }
 
@@ -3819,11 +3809,12 @@ A type's typeSymbol should never be inspected directly.
    *  @return        ...
    */
   def isWithinBounds(pre: Type, owner: Symbol, tparams: List[Symbol], targs: List[Type]): Boolean = {
-    val bounds = tparams map { tparam =>
-      tparam.info.asSeenFrom(pre, owner).instantiateTypeParams(tparams, targs).bounds
-    }
+    val bounds = instantiatedBounds(pre, owner, tparams, targs)
     !(List.map2(bounds, targs)((bound, targ) => bound containsType targ) contains false)
   }
+
+  def instantiatedBounds(pre: Type, owner: Symbol, tparams: List[Symbol], targs: List[Type]): List[TypeBounds] =
+    tparams map (_.info.asSeenFrom(pre, owner).instantiateTypeParams(tparams, targs).bounds)
 
 // Lubs and Glbs ---------------------------------------------------------
 
