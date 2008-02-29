@@ -1420,6 +1420,7 @@ TEST
         <pathelement location="${strap.dir}/lib/library"/>
         <pathelement location="${strap.dir}/lib/compiler"/>
         <pathelement location="${strap.dir}/lib/actors"/>
+        <pathelement location="${ant.jar}"/>
       </classpath>
     </quick>
     <echo
