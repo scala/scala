@@ -1670,7 +1670,7 @@ GENERATES A DISTRIBUTION
     <mkdir dir="${dist.current.dir}"/>
   <!-- Copy all requires libraries -->
     <mkdir dir="${dist.current.dir}/lib"/>
-    <property name="ant.version.number" value="[1.6"/>
+    <property name="ant.version.number" value="[1.6.0,1.8.0)"/>
     <!-- version ::= major('.'minor('.'micro('.'qualifier)?)?)?              -->
     <!-- see http://www2.osgi.org/javadoc/r4/org/osgi/framework/Version.html -->
     <propertyregex
@@ -1703,7 +1703,7 @@ GENERATES A DISTRIBUTION
         <attribute name="Bundle-Version" value="${osgi.version.number}"/>
         <attribute name="Bundle-Vendor" value="${vendor.name}"/>
         <attribute name="Export-Package" value="scala.tools.ant;version=&#34;${osgi.version.number}&#34;,scala.tools.nsc;version=&#34;${osgi.version.number}&#34;,scala.tools.nsc.ast;version=&#34;${osgi.version.number}&#34;,scala.tools.nsc.ast.parser;version=&#34;${osgi.version.number}&#34;,scala.tools.nsc.backend;version=&#34;${osgi.version.number}&#34;,scala.tools.nsc.doc;version=&#34;${osgi.version.number}&#34;,scala.tools.nsc.io;version=&#34;${osgi.version.number}&#34;,scala.tools.nsc.matching;version=&#34;${osgi.version.number}&#34;,scala.tools.nsc.models;version=&#34;${osgi.version.number}&#34;,scala.tools.nsc.symtab;version=&#34;${osgi.version.number}&#34;,scala.tools.nsc.symtab.classfile;version=&#34;${osgi.version.number}&#34;,scala.tools.nsc.symtab.clr;version=&#34;${osgi.version.number}&#34;,scala.tools.nsc.transform;version=&#34;${osgi.version.number}&#34;,scala.tools.nsc.typechecker;version=&#34;${osgi.version.number}&#34;,scala.tools.nsc.util;version=&#34;${osgi.version.number}&#34;,scala.tools.util;version=&#34;${osgi.version.number}&#34;"/>
-        <attribute name="Import-Package" value="org.apachge.ant.tools;version=&#34;${ant.version.number}&#34;,org.apachge.ant.tools.taskdefs;version=&#34;${ant.version.number}&#34;,org.apachge.ant.types;version=&#34;${ant.version.number}&#34;,org.apachge.ant.tools.util;version=&#34;${ant.version.number}&#34;,org.xml.sax"/>
+        <attribute name="Import-Package" value="org.apache.ant.tools;version=&#34;${ant.version.number}&#34;,org.apache.ant.tools.taskdefs;version=&#34;${ant.version.number}&#34;,org.apache.ant.types;version=&#34;${ant.version.number}&#34;,org.apache.ant.tools.util;version=&#34;${ant.version.number}&#34;,org.xml.sax;resolution:=optional"/>
         <attribute name="Bundle-RequiredExecutionEnvironment" value="J2SE-1.4"/>
       </manifest>
     </jar>
