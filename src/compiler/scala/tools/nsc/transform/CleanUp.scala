@@ -548,11 +548,15 @@ abstract class CleanUp extends Transform {
         val tempVar = currentOwner.newValue(theTry.pos, unit.fresh.newName("exceptionResult"))
           .setInfo(tpe).setFlag(Flags.MUTABLE)
 
-        val newBlock = Block(Nil, Assign(Ident(tempVar), transform(block)))
+        val newBlock = super.transform(Block(Nil, Assign(Ident(tempVar), transform(block))))
         val newCatches = for (CaseDef(pattern, guard, body) <- catches) yield {
-          CaseDef(pattern, transform(guard), Block(Nil, Assign(Ident(tempVar), transform(body))))
+          CaseDef(
+            super.transform(pattern),
+            super.transform(guard),
+            Block(Nil, Assign(Ident(tempVar), super.transform(body)))
+          )
         }
-        val newTry = Try(newBlock, newCatches, finalizer)
+        val newTry = Try(newBlock, newCatches, super.transform(finalizer))
         val res = Block(List(ValDef(tempVar, EmptyTree), newTry), Ident(tempVar))
         localTyper.typed(res)
 
