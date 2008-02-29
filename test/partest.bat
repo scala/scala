@@ -41,13 +41,11 @@ if "%_SCALAC_OPTS%"=="" set _SCALAC_OPTS=-deprecation
 set _EXTENSION_CLASSPATH=
 if "%_EXTENSION_CLASSPATH%"=="" (
   if exist "%_SCALA_HOME%\lib\scala-partest.jar" (
-    echo toto
     for %%f in ("%_SCALA_HOME%\lib\*") do call :add_cpath "%%f"
     if "%OS%"=="Windows_NT" (
       for /d %%f in ("%_SCALA_HOME%\lib\*") do call :add_cpath "%%f"
     )
   ) else if exist "%_SCALA_HOME%\build\quick\lib\partest" (
-    echo caca
     for %%f in ("%_SCALA_HOME%\build\quick\lib\*") do call :add_cpath "%%f"
     if "%OS%"=="Windows_NT" (
       for /d %%f in ("%_SCALA_HOME%\build\quick\lib\*") do call :add_cpath "%%f"
