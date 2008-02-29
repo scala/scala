@@ -248,8 +248,8 @@ test_run_neg() {
 test_run_res() {
     rm -rf "$dstbase".obj &&
     mkdir -p "$dstbase".obj &&
-    #(cd "$srcdir" && cat "$testname".res | $SCALAC -d "$os_dstbase".obj -Xresident -sourcepath . "$@"; );
-    (cat "$srcdir/$testname".res | $SCALAC -d "$os_dstbase".obj -Xresident -sourcepath "$srcdir" "$@"; );
+    (cd "$srcdir" && cat "$testname".res | $SCALAC -d "$os_dstbase".obj -Xresident -sourcepath . "$@"; );
+    #(cat "$srcdir/$testname".res | $SCALAC -d "$os_dstbase".obj -Xresident -sourcepath "$srcdir" "$@"; );
     rm -rf "$dstbase".obj;
 }
 
