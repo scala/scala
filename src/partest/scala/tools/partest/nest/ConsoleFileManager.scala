@@ -40,13 +40,14 @@ else
     testroot.getAbsolutePath
   }
 
-  CLASSPATH += File.pathSeparator + {
+  var EXT_CLASSPATH = {
     val libs = new File(TESTROOT, "files/lib")
     // add all jars in libs to EXT_CLASSPATH
     (libs.listFiles(new FilenameFilter {
       def accept(dir: File, name: String) = name endsWith ".jar"
     }) map {file => file.getCanonicalFile.getAbsolutePath}).mkString(""+File.pathSeparator)
   }
+
   def findLatest() {
     def prefixFile(relPath: String): File =
       (new File(PREFIX, relPath)).getCanonicalFile
@@ -81,8 +82,6 @@ else
     }
     else
       error("Scala binaries could not be found")
-
-    println("latestPartestFile="+latestPartestFile)
 
     BIN_DIR = latestFile.getAbsolutePath
     LATEST_LIB = latestLibFile.getAbsolutePath

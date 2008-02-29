@@ -23,6 +23,7 @@ class AntRunner extends DirectRunner {
     var JAVACMD: String = "java"
 
     var CLASSPATH: String = _
+    var EXT_CLASSPATH: String = _
     var LATEST_LIB: String = _
 
   }

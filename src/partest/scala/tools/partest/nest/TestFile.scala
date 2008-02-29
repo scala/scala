@@ -3,7 +3,7 @@
  * @author Philipp Haller
  */
 
-// $Id: $
+// $Id$
 
 package scala.tools.partest.nest
 
@@ -77,21 +77,21 @@ case class RunTestFile(override val file: File, override val fileManager: FileMa
 }
 
 case class JvmTestFile(override val file: File, override val fileManager: FileManager) extends TestFile("jvm", file, fileManager) {
-  import fileManager.CLASSPATH
+  import fileManager.{CLASSPATH, EXT_CLASSPATH}
 
   override def defineSettings(settings: Settings) {
     baseSettings(settings)
-    settings.classpath.value = CLASSPATH
+    settings.classpath.value = CLASSPATH+File.pathSeparatorChar+EXT_CLASSPATH
     //println("settings.classpath.value="+settings.classpath.value)
   }
 }
 
 case class Jvm5TestFile(override val file: File, override val fileManager: FileManager) extends TestFile("jvm5", file, fileManager) {
-  import fileManager.CLASSPATH
+  import fileManager.{CLASSPATH, EXT_CLASSPATH}
 
   override def defineSettings(settings: Settings) {
     baseSettings(settings)
-    settings.classpath.value = CLASSPATH
+    settings.classpath.value = CLASSPATH+File.pathSeparatorChar+EXT_CLASSPATH
     settings.target.value = "jvm-1.5"
     //println("settings.classpath.value="+settings.classpath.value)
   }
@@ -99,9 +99,11 @@ case class Jvm5TestFile(override val file: File, override val fileManager: FileM
 
 case class ShootoutTestFile(override val file: File, override val fileManager: FileManager) extends TestFile("shootout", file, fileManager) {
   import fileManager.CLASSPATH
+
   override def defineSettings(settings: Settings) {
     baseSettings(settings)
     settings.classpath.value = CLASSPATH
-    //println("CLASSPATH="+settings.classpath.value)
+    //println("settings.classpath.value="+settings.classpath.value)
+    settings.outdir.value = file.getParent
   }
 }

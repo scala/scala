@@ -26,6 +26,9 @@ class ConsoleRunner extends DirectRunner {
   private var jvmCheck = false
   private var jvm5Check = false
   private var resCheck = false
+  private var shootoutCheck = false
+  private var scriptCheck = false
+
   private var runAll = false
 
   private var testFiles: List[File] = List()
@@ -37,13 +40,15 @@ class ConsoleRunner extends DirectRunner {
 
   def denotesTestSet(arg: String) =
     arg match {
-      case "--pos"  => true
-      case "--neg"  => true
-      case "--run"  => true
-      case "--jvm"  => true
-      case "--jvm5" => true
-      case "--res"  => true
-      case _        => false
+      case "--pos"      => true
+      case "--neg"      => true
+      case "--run"      => true
+      case "--jvm"      => true
+      case "--jvm5"     => true
+      case "--res"      => true
+      case "--shootout" => true
+      case "--script"   => true
+      case _            => false
     }
 
   def main(argstr: String) {
@@ -57,15 +62,20 @@ class ConsoleRunner extends DirectRunner {
     if (args.length == 0)
       NestUI.usage()
     else {
-      if (!args.exists(denotesTestSet(_))) runAll = true
+      if (!args.exists(denotesTestSet(_)) && !args.exists(_.endsWith(".scala"))) runAll = true
       for (arg <- args) {
         arg match {
+          case "--all"          => runAll = true
+
           case "--pos"          => posCheck = true
           case "--neg"          => negCheck = true
           case "--run"          => runCheck = true
           case "--jvm"          => jvmCheck = true
           case "--jvm5"         => jvm5Check = true
           case "--res"          => resCheck = true
+          case "--shootout"     => shootoutCheck = true
+          case "--script"       => scriptCheck = true
+
           case "--verbose"      => NestUI._verbose = true
           case "--show-diff"    => fileManager.showDiff = true
           case "--show-log"     => fileManager.showLog = true
@@ -185,14 +195,18 @@ class ConsoleRunner extends DirectRunner {
       runCheck = true
       jvmCheck = true
       jvm5Check = true
-      //resCheck = true
+      resCheck = true
+      shootoutCheck = true
+      scriptCheck = true
     }
     val results = List(runTests("pos", posCheck, "Testing compiler (on files whose compilation should succeed)"),
                        runTests("neg", negCheck, "Testing compiler (on files whose compilation should fail)"),
                        runTests("run", runCheck, "Testing JVM backend"),
                        runTests("jvm", jvmCheck, "Testing JVM backend"),
                        runTests("jvm5", jvm5Check, "Testing JVM backend"),
-                       runTests("res", resCheck, "Testing resident compiler"))
+                       runTests("res", resCheck, "Testing resident compiler"),
+                       runTests("shootout", shootoutCheck, "Testing shootout tests"),
+                       runTests("script", scriptCheck, "Testing script tests"))
     results reduceLeft { (p: (Int, Int), q: (Int, Int)) =>
       (p._1+q._1, p._2+q._2) }
   }
