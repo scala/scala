@@ -1,2 +1,2 @@
-bug597/Test.scala
-bug597/Main.scala
+files/res/bug597/Test.scala
+files/res/bug597/Main.scala
