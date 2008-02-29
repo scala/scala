@@ -1670,9 +1670,8 @@ GENERATES A DISTRIBUTION
     <mkdir dir="${dist.current.dir}"/>
   <!-- Copy all requires libraries -->
     <mkdir dir="${dist.current.dir}/lib"/>
-    <property name="ant.version.number" value="[1.6.0,1.8.0)"/>
-    <!-- version ::= major('.'minor('.'micro('.'qualifier)?)?)?              -->
-    <!-- see http://www2.osgi.org/javadoc/r4/org/osgi/framework/Version.html -->
+    <property name="ant.version.number" value="1.6.0"/>
+    <!-- see http://swik.net/Spring/Interface21+Team+Blog/Creating+OSGi+bundles/b2yoy -->
     <propertyregex
       property="osgi.version.number" input="${version.number}"
       regexp="([^-]*)(-.*)?" select="\1"
