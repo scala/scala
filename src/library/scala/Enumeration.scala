@@ -162,6 +162,10 @@ abstract class Enumeration(initial: Int, names: String*) {
     /** the id and bit location of this enumeration value */
     def id: Int
     override def compare(that: Value): Int = this.id - that.id
+    override def equals(other : Any) : Boolean =
+      other match { case that : Value => compare(that) == 0
+                    case _ => false }
+    override def hashCode : Int = id.hashCode
     /** this enumeration value as an <code>Int</code> bit mask.
      *  @throws IllegalArgumentException if <code>id</code> is greater than 31
      */
