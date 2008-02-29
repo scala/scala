@@ -655,6 +655,7 @@ BUILD QUICK-TEST LAYER
         <pathelement location="${quick.dir}/lib/library"/>
         <pathelement location="${quick.dir}/lib/compiler"/>
         <pathelement location="${quick.dir}/lib/actors"/>
+        <pathelement location="${ant.jar}"/>
       </classpath>
     </locker>
     <echo

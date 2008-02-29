@@ -19,7 +19,9 @@ class ReflectiveRunner {
   // to use the same classes as used by `scala` that
   // was used to start the runner.
 
-  import FileManager.{latestCompFile, latestLibFile, latestActFile,
+  val fileManager = new ConsoleFileManager
+
+  import fileManager.{latestCompFile, latestLibFile, latestActFile,
                       latestPartestFile, latestFjbgFile}
 
   val sepUrls = Array(latestCompFile.toURL, latestLibFile.toURL,
@@ -28,7 +30,7 @@ class ReflectiveRunner {
   val sepLoader = new java.net.URLClassLoader(sepUrls, null)
 
   val sepRunnerClass =
-    sepLoader.loadClass("scala.tools.partest.nest.DirectRunner")
+    sepLoader.loadClass("scala.tools.partest.nest.ConsoleRunner")
   val sepRunner = sepRunnerClass.newInstance()
 
   val stringClass = Class.forName("java.lang.String")

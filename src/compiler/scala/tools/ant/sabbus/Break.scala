@@ -1,0 +1,26 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala Ant Tasks                      **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2008, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+package scala.tools.ant.sabbus
+
+import org.apache.tools.ant.Task
+
+class Break extends Task {
+
+  def setId(input: String): Unit = {
+    id = Some(input)
+  }
+
+  private var id: Option[String] = None
+
+  override def execute: Unit = {
+    if (id.isEmpty) error("Attribute 'id' is not set")
+    Compilers.break(id.get)
+  }
+
+}

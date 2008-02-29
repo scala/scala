@@ -1,0 +1,645 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="sabbus" default="build">
+
+  <description>
+    I am SuperSABBUS for Scala core, the fast but simple version of SABBUS.
+  </description>
+  
+  <echo message="SuperSABBUS is BETA: quality cannot be inferred from its result"/>
+
+<!-- ===========================================================================
+PROPERTIES
+============================================================================ -->
+
+  <property environment="env"/>
+
+  <!-- Prevents system classpath from being used -->
+  <property name="build.sysclasspath" value="ignore"/>
+
+  <!-- Defines the repository layout -->
+  <property name="docs.dir" value="${basedir}/docs"/>
+  <property name="lib.dir" value="${basedir}/lib"/>
+  <property name="src.dir" value="${basedir}/src"/>
+  <property name="test.dir" value="${basedir}/test"/>
+
+  <!-- Loads custom properties definitions -->
+  <property name="properties.file" value="${basedir}/build.properties"/>
+  <property file="${properties.file}"/>
+
+  <!-- Sets location of pre-compiled libraries -->
+  <property name="lib.starr.jar" value="${lib.dir}/scala-library.jar"/>
+  <property name="comp.starr.jar" value="${lib.dir}/scala-compiler.jar"/>
+  <property name="fjbg.jar" value="${lib.dir}/fjbg.jar"/>
+  <property name="msil.jar" value="${lib.dir}/msil.jar"/>
+  <property name="jline.jar" value="${lib.dir}/jline.jar"/>
+  <property name="ant.jar" value="${ant.home}/lib/ant.jar"/>
+  <property name="ant-contrib.jar" value="${lib.dir}/ant-contrib.jar"/>
+
+  <!-- Sets location of build folders -->
+  <property name="build.dir" value="${basedir}/build"/>
+  <property name="build-locker.dir" value="${build.dir}/locker"/>
+  <property name="build-quick.dir" value="${build.dir}/quick"/>
+  <property name="build-strap.dir" value="${build.dir}/strap"/>
+  <property name="build-docs.dir" value="${build.dir}/scaladoc"/>
+  <property name="build-partest.dir" value="${build.dir}/partest"/>
+  
+  <property name="dists.dir" value="${basedir}/dists"/>
+  
+  <property name="copyright.string" value="Copyright 2002-2008, LAMP/EPFL"/>
+
+<!-- ===========================================================================
+INITIALISATION
+============================================================================ -->
+
+  <target name="init">
+  <!-- Setting-up Ant contrib tasks -->
+    <taskdef resource="net/sf/antcontrib/antlib.xml"
+             classpath="${ant-contrib.jar}"/>
+  <!-- This is the start time for the distribution -->
+    <stopwatch name="timer.dist"/>
+    <tstamp prefix="time">
+      <format property="human" pattern="EEEE, d MMMM yyyy, HH:mm:ss (zz)"/>
+      <format property="short" pattern="yyyyMMddHHmmss"/>
+    </tstamp>
+  <!-- Finding out SVN revision -->
+    <exec
+      executable="svn" vmlauncher="no"
+      errorproperty="svn.err" outputproperty="svn.out">
+      <arg line=" info ${basedir}"/>
+    </exec>
+    <propertyregex
+      property="svn.number" input="${svn.out}" select="\1"
+      regexp="Revision: ([0-9]+)"
+      defaultValue="0"/>
+    <property name="init.avail" value="yes"/>
+  <!-- Generating version number -->
+    <property file="${basedir}/build.number"/>
+    <property
+      name="version.number"
+      value="${version.major}.${version.minor}.${version.patch}.r${svn.number}-b${time.short}"/>
+  <!-- And print-out what we are building -->
+    <echo level="info" message="Build number is '${version.number}'"/>
+    <echo level="info" message="Built ${time.human} from SVN revision ${svn.number}"/>
+  <!-- Creating class-pathes -->
+    <path id="starr.classpath">
+      <pathelement location="${lib.starr.jar}"/>
+      <pathelement location="${comp.starr.jar}"/>
+      <pathelement location="${lib.dir}/sabbus.jar"/>
+      <pathelement location="${fjbg.jar}"/>
+      <pathelement location="${ant.jar}"/>
+    </path>
+  <!-- Creating boot-level tasks -->
+    <taskdef resource="scala/tools/ant/sabbus/antlib.xml" classpathref="starr.classpath"/>
+  </target>
+
+<!-- ===========================================================================
+BUILD EVERYTHING
+============================================================================ -->
+
+  <target name="build" depends="test, distribution.build"/>
+
+<!-- ===========================================================================
+BUILD LOCAL REFERENCE (LOCKER) LAYER
+============================================================================ -->
+  
+  <target name="locker.check" depends="init">
+    <condition property="locker.available">
+      <available file="${build-locker.dir}/complete"/>
+    </condition>
+  </target>
+
+  <target name="locker.build" depends="locker.check" unless="locker.available">
+    <stopwatch name="locker.timer"/>
+  <!-- Build library -->
+    <mkdir dir="${build-locker.dir}/lib/library"/>
+    <javac
+      srcdir="${src.dir}/library"
+      destdir="${build-locker.dir}/lib/library"
+      classpath="${build-locker.dir}/lib/library"
+      includes="**/*.java"/>
+    <sabmake id="starr.lib.scalac"
+      destdir="${build-locker.dir}/lib/library"
+      compilerpathref="starr.classpath"
+      srcpath="${src.dir}/library">
+      <compilationpath>
+      	<pathelement location="${build-locker.dir}/lib/library"/>
+      </compilationpath>
+    </sabmake>
+    <sabuse id="starr.lib.scalac" srcdir="${src.dir}/library">
+      <include name="scala/Predef.scala"/>
+    </sabuse>
+    <sabuse id="starr.lib.scalac" srcdir="${src.dir}/library">
+      <include name="**/*.scala"/>
+      <exclude name="scala/Predef.scala"/>
+      <exclude name="scala/dbc/**"/>
+      <exclude name="scala/actors/**"/>
+    </sabuse>
+    <propertyfile file="${build-locker.dir}/lib/library/library.properties">
+      <entry key="version.number" value="${version.number}"/>
+      <entry key="copyright.string" value="${copyright.string}"/>
+    </propertyfile>
+    <copy todir="${build-locker.dir}/lib/library">
+      <fileset dir="${src.dir}/library">
+        <include name="**/*.tmpl"/>
+        <include name="**/*.xml"/>
+        <include name="**/*.js"/>
+        <include name="**/*.css"/>
+      </fileset>
+    </copy>
+    <symlink link="${build-locker.dir}/lib/fjbg.jar" resource="${fjbg.jar}" overwrite="yes"/>
+    <sabbreak id="starr.lib.scalac"/>
+  <!-- Build compiler -->
+    <mkdir dir="${build-locker.dir}/lib/compiler"/>
+    <sabmake id="starr.comp.scalac"
+      destdir="${build-locker.dir}/lib/compiler"
+      compilerpathref="starr.classpath"
+      srcpath="${src.dir}/compiler">
+      <compilationpath>
+      	<pathelement location="${build-locker.dir}/lib/library"/>
+      	<pathelement location="${build-locker.dir}/lib/compiler"/>
+        <pathelement location="${fjbg.jar}"/>
+        <pathelement location="${msil.jar}"/>
+        <pathelement location="${jline.jar}"/>
+        <pathelement location="${ant.jar}"/>
+      </compilationpath>
+    </sabmake>
+    <sabuse id="starr.comp.scalac" srcdir="${src.dir}/compiler">
+      <include name="**/*.scala"/>
+    </sabuse>
+    <propertyfile file="${build-locker.dir}/lib/compiler/compiler.properties">
+      <entry key="version.number" value="${version.number}"/>
+      <entry key="copyright.string" value="${copyright.string}"/>
+    </propertyfile>
+    <copy todir="${build-locker.dir}/lib/compiler">
+      <fileset dir="${src.dir}/compiler">
+        <include name="**/*.tmpl"/>
+        <include name="**/*.xml"/>
+        <include name="**/*.js"/>
+        <include name="**/*.css"/>
+      </fileset>
+    </copy>
+    <sabbreak id="starr.comp.scalac"/>
+  <!-- Timing the build -->
+    <touch file="${build-locker.dir}/complete" verbose="no"/>
+    <stopwatch name="locker.timer" action="total"/>
+  </target>
+  
+  <target name="locker.init" depends="locker.build">
+    <path id="locker.classpath">
+      <pathelement location="${build-locker.dir}/lib/library"/>
+      <pathelement location="${build-locker.dir}/lib/compiler"/>
+      <pathelement location="${fjbg.jar}"/>
+      <pathelement location="${ant.jar}"/>
+    </path>
+  </target>
+
+<!-- ===========================================================================
+BUILD QUICK LAYER
+============================================================================ -->
+  
+  <target name="quick.check" depends="locker.init">
+    <uptodate property="quick.available" targetfile="${build-quick.dir}/complete">
+      <srcfiles dir="${src.dir}">
+        <include name="library/**"/>
+        <include name="compiler/**"/>
+        <include name="dbc/**"/>
+        <include name="actors/**"/>
+      </srcfiles>
+    </uptodate>
+  </target>
+
+  <target name="quick.build" depends="quick.check" unless="quick.available">
+    <stopwatch name="quick.timer"/>
+  <!-- Build library -->
+    <mkdir dir="${build-quick.dir}/lib/library"/>
+    <javac
+      srcdir="${src.dir}/library"
+      destdir="${build-quick.dir}/lib/library"
+      classpath="${build-quick.dir}/lib/library"
+      includes="**/*.java"/>
+    <javac srcdir="${src.dir}/actors"
+      destdir="${build-quick.dir}/lib/library"
+      classpath="${build-quick.dir}/lib/library"
+      includes="**/*.java"/>
+    <sabmake id="locker.lib.scalac"
+      destdir="${build-quick.dir}/lib/library"
+      compilerpathref="locker.classpath"
+      srcpath="${src.dir}/library">
+      <compilationpath>
+      	<pathelement location="${build-quick.dir}/lib/library"/>
+      </compilationpath>
+    </sabmake>
+    <sabuse id="locker.lib.scalac" srcdir="${src.dir}/library">
+      <include name="scala/Predef.scala"/>
+    </sabuse>
+    <sabuse id="locker.lib.scalac" srcdir="${src.dir}/library">
+      <include name="**/*.scala"/>
+      <exclude name="scala/Predef.scala"/>
+    </sabuse>
+    <sabuse id="locker.lib.scalac" srcdir="${src.dir}/actors">
+      <include name="**/*.scala"/>
+    </sabuse>
+    <sabuse id="locker.lib.scalac" srcdir="${src.dir}/dbc">
+      <include name="**/*.scala"/>
+    </sabuse>
+    <propertyfile file="${build-quick.dir}/lib/library/library.properties">
+      <entry key="version.number" value="${version.number}"/>
+      <entry key="copyright.string" value="${copyright.string}"/>
+    </propertyfile>
+    <copy todir="${build-quick.dir}/lib/library">
+      <fileset dir="${src.dir}/library">
+        <include name="**/*.tmpl"/>
+        <include name="**/*.xml"/>
+        <include name="**/*.js"/>
+        <include name="**/*.css"/>
+      </fileset>
+    </copy>
+    <symlink link="${build-quick.dir}/lib/fjbg.jar" resource="${fjbg.jar}" overwrite="yes"/>
+    <sabbreak id="locker.lib.scalac"/>
+  <!-- Build compiler -->
+    <mkdir dir="${build-quick.dir}/lib/compiler"/>
+    <sabmake id="locker.comp.scalac"
+      destdir="${build-quick.dir}/lib/compiler"
+      compilerpathref="locker.classpath"
+      srcpath="${src.dir}/compiler">
+      <compilationpath>
+      	<pathelement location="${build-quick.dir}/lib/library"/>
+      	<pathelement location="${build-quick.dir}/lib/compiler"/>
+        <pathelement location="${fjbg.jar}"/>
+        <pathelement location="${msil.jar}"/>
+        <pathelement location="${jline.jar}"/>
+        <pathelement location="${ant.jar}"/>
+      </compilationpath>
+    </sabmake>
+    <sabuse id="locker.comp.scalac" srcdir="${src.dir}/compiler">
+      <include name="**/*.scala"/>
+    </sabuse>
+    <propertyfile file="${build-quick.dir}/lib/compiler/compiler.properties">
+      <entry key="version.number" value="${version.number}"/>
+      <entry key="copyright.string" value="${copyright.string}"/>
+    </propertyfile>
+    <copy todir="${build-quick.dir}/lib/compiler">
+      <fileset dir="${src.dir}/compiler">
+        <include name="**/*.tmpl"/>
+        <include name="**/*.xml"/>
+        <include name="**/*.js"/>
+        <include name="**/*.css"/>
+      </fileset>
+    </copy>
+    <sabbreak id="locker.comp.scalac"/>
+  <!-- Timing the build -->
+    <touch file="${build-quick.dir}/complete" verbose="no"/>
+    <stopwatch name="quick.timer" action="total"/>
+  </target>
+  
+  <target name="quick.init" depends="quick.build">
+    <path id="quick.classpath">
+      <pathelement location="${build-quick.dir}/lib/library"/>
+      <pathelement location="${build-quick.dir}/lib/compiler"/>
+      <pathelement location="${fjbg.jar}"/>
+      <pathelement location="${ant.jar}"/>
+    </path>
+    <taskdef resource="scala/tools/ant/antlib.xml" classpathref="quick.classpath"/>
+  </target>
+
+<!-- ===========================================================================
+BUILD STRAP LAYER
+============================================================================ -->
+  
+  <target name="strap.check" depends="quick.init">
+    <uptodate property="strap.available" targetfile="${build-strap.dir}/complete">
+      <srcfiles dir="${src.dir}">
+        <include name="library/**"/>
+        <include name="compiler/**"/>
+        <include name="dbc/**"/>
+        <include name="actors/**"/>
+      </srcfiles>
+    </uptodate>
+  </target>
+
+  <target name="strap.build" depends="strap.check" unless="strap.available">
+    <stopwatch name="strap.timer"/>
+  <!-- Build library -->
+    <mkdir dir="${build-strap.dir}/lib/library"/>
+    <javac
+      srcdir="${src.dir}/library"
+      destdir="${build-strap.dir}/lib/library"
+      classpath="${build-strap.dir}/lib/library"
+      includes="**/*.java"/>
+    <javac srcdir="${src.dir}/actors"
+      destdir="${build-strap.dir}/lib/library"
+      classpath="${build-strap.dir}/lib/library"
+      includes="**/*.java"/>
+    <sabmake id="quick.lib.scalac"
+      destdir="${build-strap.dir}/lib/library"
+      compilerpathref="quick.classpath"
+      srcpath="${src.dir}/library">
+      <compilationpath>
+      	<pathelement location="${build-strap.dir}/lib/library"/>
+      </compilationpath>
+    </sabmake>
+    <sabuse id="quick.lib.scalac" srcdir="${src.dir}/library">
+      <include name="scala/Predef.scala"/>
+    </sabuse>
+    <sabuse id="quick.lib.scalac" srcdir="${src.dir}/library">
+      <include name="**/*.scala"/>
+      <exclude name="scala/Predef.scala"/>
+    </sabuse>
+    <sabuse id="quick.lib.scalac" srcdir="${src.dir}/actors">
+      <include name="**/*.scala"/>
+    </sabuse>
+    <sabuse id="quick.lib.scalac" srcdir="${src.dir}/dbc">
+      <include name="**/*.scala"/>
+    </sabuse>
+    <propertyfile file="${build-strap.dir}/lib/library/library.properties">
+      <entry key="version.number" value="${version.number}"/>
+      <entry key="copyright.string" value="${copyright.string}"/>
+    </propertyfile>
+    <copy todir="${build-strap.dir}/lib/library">
+      <fileset dir="${src.dir}/library">
+        <include name="**/*.tmpl"/>
+        <include name="**/*.xml"/>
+        <include name="**/*.js"/>
+        <include name="**/*.css"/>
+      </fileset>
+    </copy>
+    <symlink link="${build-strap.dir}/lib/fjbg.jar" resource="${fjbg.jar}" overwrite="yes"/>
+    <sabbreak id="quick.lib.scalac"/>
+  <!-- Build compiler -->
+    <mkdir dir="${build-strap.dir}/lib/compiler"/>
+    <sabmake id="quick.comp.scalac"
+      destdir="${build-strap.dir}/lib/compiler"
+      compilerpathref="quick.classpath"
+      srcpath="${src.dir}/compiler">
+      <compilationpath>
+      	<pathelement location="${build-strap.dir}/lib/library"/>
+      	<pathelement location="${build-strap.dir}/lib/compiler"/>
+        <pathelement location="${fjbg.jar}"/>
+        <pathelement location="${msil.jar}"/>
+        <pathelement location="${jline.jar}"/>
+        <pathelement location="${ant.jar}"/>
+      </compilationpath>
+    </sabmake>
+    <sabuse id="quick.comp.scalac" srcdir="${src.dir}/compiler">
+      <include name="**/*.scala"/>
+    </sabuse>
+    <propertyfile file="${build-strap.dir}/lib/compiler/compiler.properties">
+      <entry key="version.number" value="${version.number}"/>
+      <entry key="copyright.string" value="${copyright.string}"/>
+    </propertyfile>
+    <copy todir="${build-strap.dir}/lib/compiler">
+      <fileset dir="${src.dir}/compiler">
+        <include name="**/*.tmpl"/>
+        <include name="**/*.xml"/>
+        <include name="**/*.js"/>
+        <include name="**/*.css"/>
+      </fileset>
+    </copy>
+    <sabbreak id="quick.comp.scalac"/>
+  <!-- Timing the build -->
+    <touch file="${build-strap.dir}/complete" verbose="no"/>
+    <stopwatch name="strap.timer" action="total"/>
+  </target>
+
+<!-- ===========================================================================
+BUILD DOCUMENTATION
+============================================================================ -->
+  
+  <target name="doc.check" depends="quick.init">
+    <uptodate property="doc.available" targetfile="${build-docs.dir}/complete">
+      <srcfiles dir="${src.dir}">
+        <include name="library/**"/>
+        <include name="dbc/**"/>
+        <include name="actors/**"/>
+      </srcfiles>
+    </uptodate>
+  </target>
+
+  <target name="doc.build" depends="doc.check" unless="doc.available">
+    <stopwatch name="doc.timer"/>
+    <mkdir dir="${build-docs.dir}"/>
+    <scaladoc
+      srcdir="${src.dir}"
+      destdir="${build-docs.dir}"
+      windowtitle="Scala Library"
+      doctitle="Scala ${version.number} API"
+      classpathref="quick.classpath">
+      <include name="dbc/**/*.scala"/>
+      <include name="actors/**/*.scala"/>
+      <include name="library/**/*.scala"/>
+    </scaladoc>
+    <touch file="${build-docs.dir}/complete" verbose="no"/>
+    <stopwatch name="doc.timer" action="total"/>
+  </target>
+
+<!-- ===========================================================================
+MAKE SMALL DISTRIBUTION
+============================================================================ -->
+  
+  <target name="dist.check" depends="quick.init, partest.build">
+    <uptodate property="dist.available" targetfile="${dists.dir}/complete">
+      <srcfiles file="${build-quick.dir}/complete"/>
+      <srcfiles file="${build-partest.dir}/complete"/>
+    </uptodate>
+  </target>
+
+  <target name="dist.build" depends="dist.check" unless="dist.available">
+    <property name="dist.dir" value="${dists.dir}/scala-${version.number}"/>
+  <!-- Packages libraries -->
+    <mkdir dir="${dist.dir}/lib"/>
+    <jar destfile="${dist.dir}/lib/scala-library.jar" update="true">
+      <fileset dir="${build-quick.dir}/lib/library">
+        <exclude name="scala/dbc/**"/>
+      </fileset>
+    </jar>
+    <jar destfile="${dist.dir}/lib/scala-dbc.jar" update="true">
+      <fileset dir="${build-quick.dir}/lib/library">
+        <include name="scala/dbc/**"/>
+      </fileset>
+    </jar>
+    <jar destfile="${dist.dir}/lib/scala-compiler.jar" update="true">
+      <fileset dir="${build-quick.dir}/lib/compiler"/>
+      <zipfileset src="${fjbg.jar}"/>
+      <zipfileset src="${msil.jar}"/>
+    </jar>
+    <jar destfile="${dist.dir}/lib/scala-partest.jar" update="true">
+      <fileset dir="${build-partest.dir}/lib"/>
+    </jar>
+  <!-- Make executables -->
+    <mkdir dir="${dist.dir}/bin"/>
+    <scalatool
+      file="${dist.dir}/bin/scala"
+      name="Scala code runner"
+      class="scala.tools.nsc.MainGenericRunner"
+      version="${version.number}"/>
+    <scalatool
+      file="${dist.dir}/bin/scalac"
+      name="Scala compiler"
+      class="scala.tools.nsc.Main"
+      version="${version.number}"/>
+    <scalatool
+      file="${dist.dir}/bin/scaladoc"
+      name="Scala doc generator"
+      class="scala.tools.nsc.Main"
+      toolflags="-Ydoc"
+      version="${version.number}"/>
+    <scalatool
+      file="${dist.dir}/bin/fsc"
+      name="Fast Scala compiler"
+      class="scala.tools.nsc.CompileClient"
+      version="${version.number}"/>
+    <chmod perm="ugo+rx" file="${dist.dir}/bin/scala"/>
+    <chmod perm="ugo+rx" file="${dist.dir}/bin/scalac"/>
+    <chmod perm="ugo+rx" file="${dist.dir}/bin/scaladoc"/>
+    <chmod perm="ugo+rx" file="${dist.dir}/bin/fsc"/>
+  <!-- Point to latest -->
+    <symlink link="${dists.dir}/latest" resource="${dist.dir}" overwrite="yes"/>
+    <touch file="${dists.dir}/complete" verbose="no"/>
+  </target>
+  
+  <target name="dist.init" depends="dist.build">
+    <path id="dist.classpath">
+      <pathelement location="${dists.dir}/latest/lib/scala-library.jar"/>
+      <pathelement location="${dists.dir}/latest/lib/scala-compiler.jar"/>
+      <pathelement location="${dists.dir}/latest/lib/scala-partest.jar"/>
+      <pathelement location="${ant.jar}"/>
+    </path>
+  </target>
+
+<!-- ===========================================================================
+COMPLETE SMALL DISTRIBUTION
+============================================================================ -->
+  
+  <target name="distribution.check" depends="doc.build, dist.build">
+  </target>
+    
+  <target name="distribution.build" depends="distribution.check" unless="distribution.available">
+  <!-- Packages doc -->
+    <mkdir dir="${dist.dir}/doc/api"/>
+    <copy toDir="${dist.dir}/doc/api">
+      <fileset dir="${build-docs.dir}"/>
+    </copy>
+  <!-- Packages source -->
+    <mkdir dir="${dist.dir}/src"/>
+    <jar destfile="${dist.dir}/src/scala-library-src.jar" update="true">
+      <fileset dir="${src.dir}/library"/>
+      <fileset dir="${src.dir}/actors"/>
+    </jar>
+    <jar destfile="${dist.dir}/src/scala-dbc-src.jar" update="true">
+      <fileset dir="${src.dir}/dbc"/>
+    </jar>
+    <jar destfile="${dist.dir}/src/scala-compiler-src.jar" update="true">
+      <fileset dir="${src.dir}/compiler"/>
+    </jar>
+    <touch file="${dists.dir}/complete-all" verbose="no"/>
+  </target>
+
+<!-- ===========================================================================
+BUILD PARTEST
+============================================================================ -->
+  
+  <target name="partest.check" depends="quick.init">
+  </target>
+    
+  <target name="partest.build" depends="partest.check" unless="partest.available">
+    <mkdir dir="${build-partest.dir}/lib"/>
+    <javac
+      srcdir="${src.dir}/partest"
+      destdir="${build-partest.dir}/lib">
+      <classpath>
+        <path refid="quick.classpath"/>
+        <pathelement location="${build-partest.dir}/lib"/>
+      </classpath>
+      <include name="**/*.java"/>
+    </javac>
+    <scalac
+      srcdir="${src.dir}/partest"
+      destdir="${build-partest.dir}/lib">
+      <classpath>
+        <path refid="quick.classpath"/>
+        <pathelement location="${build-partest.dir}/lib"/>
+      </classpath>
+      <include name="**/*.scala"/>
+    </scalac>
+    <copy todir="${build-partest.dir}/lib">
+      <fileset dir="${src.dir}/partest">
+        <include name="**/*.xml"/>
+      </fileset>
+    </copy>
+    <touch file="${build-partest.dir}/complete" verbose="no"/>
+  </target>
+  
+  <target name="partest.init" depends="partest.build"/>
+
+<!-- ===========================================================================
+TEST DISTRIBUTION
+============================================================================ -->
+
+  <target name="stability.test" depends="strap.build">
+    <stopwatch name="stability.timer"/>
+    <same dir="${build-quick.dir}" todir="${build-strap.dir}" failondifferent="no">
+      <exclude name="**/*.properties"/>
+    </same>
+    <stopwatch name="stability.timer" action="total"/>
+  </target>
+
+  <target name="suite.test" depends="partest.init, dist.init">
+    <taskdef resource="scala/tools/partest/antlib.xml" classpathref="dist.classpath"/>
+    <partest classpathref="dist.classpath" showlog="yes">
+      <postests dir="${test.dir}/files/pos" includes="*.scala"/>
+      <negtests dir="${test.dir}/files/neg" includes="*.scala"/>
+      <runtests dir="${test.dir}/files">
+        <include name="run/**/*.scala"/>
+        <include name="jvm/**/*.scala"/>
+        <include name="jvm5/**/*.scala"/>
+      </runtests>
+    </partest>
+  </target>
+
+  <target name="test" depends="stability.test, suite.test"/>
+
+<!-- ===========================================================================
+MAKE SABBUS JAR (to remove once sabbus is part of starr library)
+============================================================================ -->
+  
+  <target name="sabbus.build" depends="quick.init">
+    <mkdir dir="${build.dir}/sabbus"/>
+    <scalac
+      srcdir="${src.dir}/compiler/scala/tools/ant/sabbus/"
+      destdir="${build.dir}/sabbus">
+      <include name="*.scala"/>
+      <classpath>
+      	<pathelement location="${lib.starr.jar}"/>
+      	<pathelement location="${comp.starr.jar}"/>
+      	<pathelement location="${ant.jar}"/>
+      </classpath>
+    </scalac>
+    <copy
+      file="${src.dir}/compiler/scala/tools/ant/sabbus/antlib.xml"
+      todir="${build.dir}/sabbus/scala/tools/ant/sabbus"/>
+    <jar
+      destfile="${lib.dir}/sabbus.jar"
+      basedir="${build.dir}/sabbus"/>
+  </target>
+  
+  <target name="sabbus.init" depends="sabbus.build">
+    
+  </target>
+
+<!-- ===========================================================================
+CLEAN
+============================================================================ -->
+
+  <target name="build.clean"
+    description="Removes all build products">
+    <delete dir="${build.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+  </target>
+
+  <target name="clean"
+    description="Removes all build products and distributions">
+    <delete dir="${build.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+    <delete dir="${dists.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+  </target>
+
+</project>

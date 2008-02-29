@@ -24,7 +24,7 @@ abstract class SimpleCompiler {
   def compile(file: File, kind: String, log: File): Boolean
 }
 
-class DirectCompiler extends SimpleCompiler {
+class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
   def newGlobal(settings: Settings, reporter: Reporter): Global =
     new Global(settings, reporter)
 
@@ -54,12 +54,12 @@ class DirectCompiler extends SimpleCompiler {
     val testRep: ExtConsoleReporter = global.reporter.asInstanceOf[ExtConsoleReporter]
 
     val test: TestFile = kind match {
-      case "pos"      => PosTestFile(file)
-      case "neg"      => NegTestFile(file)
-      case "run"      => RunTestFile(file)
-      case "jvm"      => JvmTestFile(file)
-      case "jvm5"     => Jvm5TestFile(file)
-      case "shootout" => ShootoutTestFile(file)
+      case "pos"      => PosTestFile(file, fileManager)
+      case "neg"      => NegTestFile(file, fileManager)
+      case "run"      => RunTestFile(file, fileManager)
+      case "jvm"      => JvmTestFile(file, fileManager)
+      case "jvm5"     => Jvm5TestFile(file, fileManager)
+      case "shootout" => ShootoutTestFile(file, fileManager)
     }
     test.defineSettings(testSettings)
 
@@ -83,12 +83,12 @@ class DirectCompiler extends SimpleCompiler {
     val global = newGlobal(testSettings, testRep)
 
     val test: TestFile = kind match {
-      case "pos"      => PosTestFile(file)
-      case "neg"      => NegTestFile(file)
-      case "run"      => RunTestFile(file)
-      case "jvm"      => JvmTestFile(file)
-      case "jvm5"     => Jvm5TestFile(file)
-      case "shootout" => ShootoutTestFile(file)
+      case "pos"      => PosTestFile(file, fileManager)
+      case "neg"      => NegTestFile(file, fileManager)
+      case "run"      => RunTestFile(file, fileManager)
+      case "jvm"      => JvmTestFile(file, fileManager)
+      case "jvm5"     => Jvm5TestFile(file, fileManager)
+      case "shootout" => ShootoutTestFile(file, fileManager)
     }
     test.defineSettings(testSettings)
 
@@ -107,8 +107,8 @@ class DirectCompiler extends SimpleCompiler {
   }
 }
 
-class ReflectiveCompiler extends SimpleCompiler {
-  import FileManager.{latestCompFile, latestPartestFile, latestFjbgFile}
+class ReflectiveCompiler(val fileManager: ConsoleFileManager) extends SimpleCompiler {
+  import fileManager.{latestCompFile, latestPartestFile, latestFjbgFile}
 
   val sepUrls = Array(latestCompFile.toURL, latestPartestFile.toURL,
                       latestFjbgFile.toURL)
@@ -151,13 +151,13 @@ class ReflectiveCompiler extends SimpleCompiler {
   }
 }
 
-class CompileManager {
-  var compiler: SimpleCompiler = new /*ReflectiveCompiler*/ DirectCompiler
+class CompileManager(val fileManager: FileManager) {
+  var compiler: SimpleCompiler = new /*ReflectiveCompiler*/ DirectCompiler(fileManager)
 
   var numSeparateCompilers = 1
   def createSeparateCompiler() = {
     numSeparateCompilers += 1
-    compiler = new /*ReflectiveCompiler*/ DirectCompiler
+    compiler = new /*ReflectiveCompiler*/ DirectCompiler(fileManager)
   }
 
   /* This method returns true iff compilation succeeds.

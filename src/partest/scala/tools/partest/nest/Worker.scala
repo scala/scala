@@ -15,8 +15,6 @@ import scala.tools.nsc.ObjectRunner
 import scala.actors.Actor
 import scala.actors.Actor._
 
-import FileManager._
-
 case class RunTests(kind: String, files: List[File])
 case class Results(succ: Int, fail: Int, logs: List[LogFile], outdirs: List[File])
 
@@ -24,7 +22,8 @@ class LogFile(parent: File, child: String) extends File(parent, child) {
   var toDelete = false
 }
 
-class Worker extends Actor {
+class Worker(val fileManager: FileManager) extends Actor {
+  import fileManager._
   def act() {
     react {
       case RunTests(kind, files) =>
@@ -93,9 +92,7 @@ class Worker extends Actor {
     val classpath: List[URL] =
       outDir.toURL ::
       List(file.getParentFile.toURL) :::
-      (List.fromString(CLASSPATH, PATH_SEP) map { x =>
-        (new File(x)).toURL }) :::
-      (List.fromString(EXT_CLASSPATH, PATH_SEP) map { x =>
+      (List.fromString(CLASSPATH, File.pathSeparatorChar) map { x =>
         (new File(x)).toURL })
     try {
       NestUI.verbose("classpath: "+classpath)
@@ -114,7 +111,7 @@ class Worker extends Actor {
   def execTest(outDir: File, logFile: File) {
     val cmd =
       JAVACMD+
-      " -classpath "+outDir+PATH_SEP+CLASSPATH+PATH_SEP+EXT_CLASSPATH+
+      " -classpath "+outDir+File.pathSeparatorChar+CLASSPATH+
       " -Djava.library.path="+logFile.getParentFile.getAbsolutePath+
       " -Dscalatest.output="+outDir.getAbsolutePath+
       " -Dscalatest.lib="+LATEST_LIB+
@@ -159,7 +156,7 @@ class Worker extends Actor {
     err.close
     out.close*/
 
-    if (FileManager.showLog) {
+    if (fileManager.showLog) {
       // produce log as string in `log`
       val reader = new BufferedReader(new FileReader(logFile))
       val swriter = new StringWriter
@@ -180,12 +177,12 @@ class Worker extends Actor {
         new File(dir, fileBase + "-" + kind + ".check")
     }
     if (!checkFile.exists || !checkFile.canRead) ""
-    else FileManager.compareFiles(logFile, checkFile)
+    else fileManager.compareFiles(logFile, checkFile)
   }
 
   def runJvmTests(kind: String, files: List[File]): (Int, Int) = {
     NestUI.verbose("testing "+files)
-    val compileMgr = new CompileManager
+    val compileMgr = new CompileManager(fileManager)
     var errors = 0
     var success = true
     var diff = ""
@@ -199,7 +196,7 @@ class Worker extends Actor {
       // when option "--failed" is provided
       // execute test only if log file is present
       // (which means it failed before)
-      if (!FileManager.failed || (logFile.exists && logFile.canRead)) {
+      if (!fileManager.failed || (logFile.exists && logFile.canRead)) {
         val swr = new StringWriter
         val wr = new PrintWriter(swr)
         success = true
@@ -247,8 +244,8 @@ class Worker extends Actor {
         wr.flush()
         swr.flush()
         NestUI.normal(swr.toString)
-        if (!success && FileManager.showDiff) NestUI.normal(diff)
-        if (!success && FileManager.showLog)  NestUI.normal(log)
+        if (!success && fileManager.showDiff) NestUI.normal(diff)
+        if (!success && fileManager.showLog)  NestUI.normal(log)
       }
     } // for each file
     NestUI.verbose("finished testing "+kind+" with "+errors+" errors")
@@ -271,7 +268,7 @@ class Worker extends Actor {
    * @param files The list of test files
    */
   def runTests(kind: String, files: List[File]): (Int, Int) = {
-    val compileMgr = new CompileManager
+    val compileMgr = new CompileManager(fileManager)
     var errors = 0
     var succeeded = true
     var diff = ""
@@ -327,7 +324,7 @@ class Worker extends Actor {
           // execute test only if log file is present
           // (which means it failed before)
           val logFile = createLogFile(file, kind)
-          if (!FileManager.failed || (logFile.exists && logFile.canRead)) {
+          if (!fileManager.failed || (logFile.exists && logFile.canRead)) {
             val swr = new StringWriter
             val wr = new PrintWriter(swr)
             succeeded = true; diff = ""; log = ""
@@ -366,8 +363,8 @@ class Worker extends Actor {
             swr.flush()
             NestUI.normal(swr.toString)
 
-            if (!succeeded && FileManager.showDiff) NestUI.normal(diff)
-            if (!succeeded && FileManager.showLog) {
+            if (!succeeded && fileManager.showDiff) NestUI.normal(diff)
+            if (!succeeded && fileManager.showLog) {
               // output log file
               val logReader = new BufferedReader(new FileReader(logFile))
               val logWriter = new PrintWriter(new StringWriter, true)
@@ -410,7 +407,7 @@ class Worker extends Actor {
           // $SCALAC -d "$os_dstbase".obj -Xresident -sourcepath . "$@"
           val cmd =
             JAVACMD+
-            " -classpath "+outDir+PATH_SEP+CLASSPATH+PATH_SEP+EXT_CLASSPATH+
+            " -classpath "+outDir+File.pathSeparator+CLASSPATH+
             " -Djavacmd="+JAVACMD+
             " scala.tools.nsc.Main"+
             " -d "+outDir.getCanonicalFile.getAbsolutePath+
@@ -457,8 +454,8 @@ class Worker extends Actor {
             errors += 1
           }
 
-          if (!succeeded && FileManager.showDiff) NestUI.normal(diff)
-          if (!succeeded && FileManager.showLog) {
+          if (!succeeded && fileManager.showDiff) NestUI.normal(diff)
+          if (!succeeded && fileManager.showLog) {
             // output log file
             val logReader = new BufferedReader(new FileReader(logFile))
             val logWriter = new PrintWriter(new StringWriter, true)
