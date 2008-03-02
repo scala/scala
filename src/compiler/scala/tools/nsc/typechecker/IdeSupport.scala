@@ -206,7 +206,10 @@ trait IdeSupport extends Analyzer {
             val setter0 = namer.enterInScope(setter)
             assert(setter0 == setter)
           } else if (sym.hasGetter && set.isDefined)
-            set.get.find(sym => sym.name == nme.getterName(sym.name) && sym.isGetter) match {
+            set.get.find(sym0 => {
+              sym0.name == nme.getterName(sym.name) &&
+                sym0.isGetter
+            }) match {
           case None =>
           case Some(getter) =>
             val getter0 = namer.enterInScope(getter)
@@ -224,7 +227,8 @@ trait IdeSupport extends Analyzer {
       }; if (trees.isEmpty) NoSymbol else trees.last.symbol }
 
       if (makeNoChanges) {}
-      else if (!typeIsDirty && !lastTyped.isEmpty) return fakeUpdate(lastTyped)
+      else if (!typeIsDirty && !lastTyped.isEmpty)
+        return fakeUpdate(lastTyped)
       else if (namerTxt != NoContext && shouldBeTyped) {} else return fakeUpdate(lastTyped)
       val use = useTrees
       if (makeNoChanges) {}
