@@ -510,7 +510,7 @@ class Scalac extends MatchingTask {
         }
       }
       yield {
-        log(originFile.toString, Project.MSG_DEBUG)
+        log(originFile, Project.MSG_DEBUG)
         nameToFile(originDir)(originFile)
       }
 

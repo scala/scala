@@ -25,7 +25,7 @@ case class Text(_data: String) extends Atom[String](_data) {
     throw new java.lang.NullPointerException("tried to construct Text with null")
 
   final override def equals(x: Any) = x match {
-    case s:String  => s.equals(data.toString())
+    case s:String  => s.equals(data)
     case s:Text    => data == s.data
     case _ => false
   }
@@ -37,6 +37,6 @@ case class Text(_data: String) extends Atom[String](_data) {
    *  @return ...
    */
   override def toString(sb: StringBuilder) =
-    Utility.escape(data.toString(), sb)
+    Utility.escape(data, sb)
 
 }

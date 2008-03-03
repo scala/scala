@@ -1123,7 +1123,7 @@ trait Symbols {
      *  If settings.uniquId adds id.
      */
     def nameString: String = {
-      var s = simpleName.decode.toString
+      var s = simpleName.decode
       if (s endsWith nme.LOCAL_SUFFIX)
         s = s.substring(0, s.length - nme.LOCAL_SUFFIX.length)
       if (s endsWith ".type")

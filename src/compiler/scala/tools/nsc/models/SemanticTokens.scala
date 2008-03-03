@@ -159,7 +159,7 @@ class SemanticTokens(val compiler: Global) {
       else new Info(symbol)
 
     abstract class Semantic(val symbol: Symbol) extends Actual {
-      val name = NameTransformer.decode(symbol.name.toString()).toString().trim()
+      val name = NameTransformer.decode(symbol.name.toString).trim()
       assert(symbol != NoSymbol)
       def myOuter = Process.this
 
@@ -519,7 +519,7 @@ class SemanticTokens(val compiler: Global) {
       //Thread.dumpStack()
     }
     else if (term != NoSymbol) {
-      val name = NameTransformer.decode(term.name.toString()).toString().trim()
+      val name = NameTransformer.decode(term.name.toString).trim()
       val buf = unit.source.asInstanceOf[BatchSourceFile].content
       val cs = name.toChars
       var idx = 0

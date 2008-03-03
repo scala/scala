@@ -112,7 +112,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
     m("encoding") match {
       case null => ;
       case Text(enc) =>
-        if (!isValidIANAEncoding(enc.toString()))
+        if (!isValidIANAEncoding(enc))
           reportSyntaxError("\"" + enc + "\" is not a valid encoding")
         else {
           info_enc = Some(enc.toString())
@@ -151,7 +151,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
     m("encoding") match {
       case null => ;
       case Text(enc)  =>
-        if (!isValidIANAEncoding(enc.toString()))
+        if (!isValidIANAEncoding(enc))
           reportSyntaxError("\"" + enc + "\" is not a valid encoding")
         else {
           info_enc = Some(enc.toString())

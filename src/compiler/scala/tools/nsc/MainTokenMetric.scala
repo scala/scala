@@ -34,7 +34,7 @@ object MainTokenMetric {
       }
       Console.print(i.toString())
       Console.print(" ")
-      Console.println(source.toString())
+      Console.println(source)
       totale += i
     }
     Console.println(totale.toString()+" total")

@@ -151,10 +151,10 @@ trait StdNames {
     def isProtectedAccessor(name: Name) = name.startsWith(PROTECTED_PREFIX)
 
     /** The name of an accessor for protected symbols. */
-    def protName(name: Name): Name = newTermName(PROTECTED_PREFIX.toString() + name)
+    def protName(name: Name): Name = newTermName(PROTECTED_PREFIX + name)
 
     /** The name of a setter for protected symbols. Used for inherited Java fields. */
-    def protSetterName(name: Name): Name = newTermName(PROTECTED_PREFIX.toString() + "set" + name)
+    def protSetterName(name: Name): Name = newTermName(PROTECTED_PREFIX + "set" + name)
 
     /** The name of bitmaps for initialized lazy vals. */
     def bitmapName(n: Int): Name = newTermName("bitmap$" + n)

@@ -508,7 +508,7 @@ class Scaladoc extends MatchingTask {
           list
         }
       } yield {
-        log(originFile.toString, Project.MSG_DEBUG)
+        log(originFile, Project.MSG_DEBUG)
         nameToFile(originDir)(originFile)
       }
 

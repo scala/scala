@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Nothing$.scala 10642 2007-04-06 09:23:03Z moors $
+// $Id$
 
 
 package scala.runtime

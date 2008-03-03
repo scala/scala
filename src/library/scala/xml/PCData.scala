@@ -12,7 +12,7 @@ case class PCData(_data: String) extends Atom[String](_data) {
     throw new IllegalArgumentException("tried to construct PCData with null")
 
   final override def equals(x: Any) = x match {
-    case s: String  => s.equals(data.toString())
+    case s: String  => s.equals(data)
     case s: Atom[_] => data == s.data
     case _ => false
   }

@@ -125,7 +125,7 @@ class Same extends MatchingTask {
     val destBuffer = new Array[Byte](bufferSize)
     for (
       originName: String <- originNames;
-      destName: String <- mapper.mapFileName(originName.toString)
+      destName: String <- mapper.mapFileName(originName)
     ) {
       //println("originName="+originName)
       //println("destName  ="+destName)
