@@ -317,7 +317,7 @@ object Console {
     val iter = s.elements
     while (iter.hasNext) {
       res(i) = iter.next match {
-        case x: Boolean => new java.lang.Boolean(x)
+        case x: Boolean => java.lang.Boolean.valueOf(x)
         case x: Byte    => new java.lang.Byte(x)
         case x: Short   => new java.lang.Short(x)
         case x: Char    => new java.lang.Character(x)

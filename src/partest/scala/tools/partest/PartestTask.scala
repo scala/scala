@@ -116,7 +116,7 @@ class PartestTask extends Task {
     def setFileManagerBooleanProperty(name: String, value: Boolean) = {
       val setMethod =
         antFileManager.getClass.getMethod(name+"_$eq", Array(classOf[Boolean]))
-      setMethod.invoke(antFileManager, Array(new java.lang.Boolean(value)))
+      setMethod.invoke(antFileManager, Array(java.lang.Boolean.valueOf(value)))
     }
 
     def setFileManagerStringProperty(name: String, value: String) = {
