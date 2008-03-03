@@ -47,7 +47,6 @@ trait FileManager {
   var JAVACMD: String
 
   var CLASSPATH: String
-  var EXT_CLASSPATH: String
   var LATEST_LIB: String
 
   var showDiff = false

@@ -40,9 +40,9 @@ else
     testroot.getAbsolutePath
   }
 
-  var EXT_CLASSPATH = {
+  CLASSPATH = CLASSPATH + File.pathSeparator + {
     val libs = new File(TESTROOT, "files/lib")
-    // add all jars in libs to EXT_CLASSPATH
+    // add all jars in libs
     (libs.listFiles(new FilenameFilter {
       def accept(dir: File, name: String) = name endsWith ".jar"
     }) map {file => file.getCanonicalFile.getAbsolutePath}).mkString(""+File.pathSeparator)

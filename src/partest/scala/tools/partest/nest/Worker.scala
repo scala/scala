@@ -122,7 +122,7 @@ class Worker(val fileManager: FileManager) extends Actor {
   def execTest(outDir: File, logFile: File) {
     val cmd =
       JAVACMD+
-      " -classpath "+outDir+File.pathSeparatorChar+CLASSPATH+File.pathSeparatorChar+EXT_CLASSPATH+
+      " -classpath "+outDir+File.pathSeparatorChar+CLASSPATH+
       " -Djava.library.path="+logFile.getParentFile.getAbsolutePath+
       " -Dscalatest.output="+outDir.getAbsolutePath+
       " -Dscalatest.lib="+LATEST_LIB+

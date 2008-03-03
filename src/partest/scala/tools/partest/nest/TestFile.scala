@@ -49,60 +49,49 @@ class TestFile(kind: String, val file: File, val fileManager: FileManager) {
 }
 
 case class PosTestFile(override val file: File, override val fileManager: FileManager) extends TestFile("pos", file, fileManager) {
-  import fileManager.CLASSPATH
-
   override def defineSettings(settings: Settings) {
     baseSettings(settings)
-    settings.classpath.value = CLASSPATH
+    settings.classpath.value = fileManager.CLASSPATH
     //println("settings.classpath.value="+settings.classpath.value)
   }
 }
 
 case class NegTestFile(override val file: File, override val fileManager: FileManager) extends TestFile("neg", file, fileManager) {
-  import fileManager.CLASSPATH
-
   override def defineSettings(settings: Settings) {
     baseSettings(settings)
-    settings.classpath.value = CLASSPATH
+    settings.classpath.value = fileManager.CLASSPATH
     //println("settings.classpath.value="+settings.classpath.value)
   }
 }
 
 case class RunTestFile(override val file: File, override val fileManager: FileManager) extends TestFile("run", file, fileManager) {
-  import fileManager.CLASSPATH
   override def defineSettings(settings: Settings) {
     baseSettings(settings)
-    settings.classpath.value = CLASSPATH
+    settings.classpath.value = fileManager.CLASSPATH
   }
 }
 
 case class JvmTestFile(override val file: File, override val fileManager: FileManager) extends TestFile("jvm", file, fileManager) {
-  import fileManager.{CLASSPATH, EXT_CLASSPATH}
-
   override def defineSettings(settings: Settings) {
     baseSettings(settings)
-    settings.classpath.value = CLASSPATH+File.pathSeparatorChar+EXT_CLASSPATH
+    settings.classpath.value = fileManager.CLASSPATH
     //println("settings.classpath.value="+settings.classpath.value)
   }
 }
 
 case class Jvm5TestFile(override val file: File, override val fileManager: FileManager) extends TestFile("jvm5", file, fileManager) {
-  import fileManager.{CLASSPATH, EXT_CLASSPATH}
-
   override def defineSettings(settings: Settings) {
     baseSettings(settings)
-    settings.classpath.value = CLASSPATH+File.pathSeparatorChar+EXT_CLASSPATH
+    settings.classpath.value = fileManager.CLASSPATH
     settings.target.value = "jvm-1.5"
     //println("settings.classpath.value="+settings.classpath.value)
   }
 }
 
 case class ShootoutTestFile(override val file: File, override val fileManager: FileManager) extends TestFile("shootout", file, fileManager) {
-  import fileManager.CLASSPATH
-
   override def defineSettings(settings: Settings) {
     baseSettings(settings)
-    settings.classpath.value = CLASSPATH
+    settings.classpath.value = fileManager.CLASSPATH
     //println("settings.classpath.value="+settings.classpath.value)
     settings.outdir.value = file.getParent
   }

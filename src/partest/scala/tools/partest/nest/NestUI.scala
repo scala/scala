@@ -61,12 +61,17 @@ object NestUI {
 
   def usage() {
     println("Usage: NestRunner [<options>] [<testfile> ..] [<resfile>]")
+    println("version Mar3")
     println("    --pos          next files test a compilation success")
     println("    --neg          next files test a compilation failure")
-    println("    --jvm          next files test the JVM backend")
     println("    --run          next files test the interpreter and all backends")
+    println("    --jvm          next files test the JVM backend")
+    println("    --jvm5         next files test the JVM backend")
+    println("    --res          next files test the resident compiler")
+    println("    --shootout     next files are shootout tests")
+    println("    --script       next files test the script runner")
     println("    --verbose      display progress information")
-    println("    --version      output version information and exit")
+    //println("    --version      display version information")
     println
     println("Send bugs to <scala@listes.epfl.ch>")
     exit(1)

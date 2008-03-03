@@ -39,6 +39,11 @@ class ReflectiveRunner {
 
   def main(args: String) {
     val cargs: Array[AnyRef] = Array(args)
+    val debug = System.getProperty("partest.debug", "false") equals "true"
+    if (debug) {
+      println("Loading classes from:")
+      sepUrls foreach { url => println(url) }
+    }
     sepMainMethod.invoke(sepRunner, cargs)
   }
 }
