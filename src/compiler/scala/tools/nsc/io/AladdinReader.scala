@@ -74,7 +74,7 @@ class AladdinReader(decoder: CharsetDecoder) extends SourceReader(decoder) {
     if(!wellformed(content))
       throw FatalError("content should just be a bug identifier, like \"#1023\"")
 
-    var bugURL  = ALADDIN_URL + new String(content).trim().substring(1)
+    var bugURL  = ALADDIN_URL + content.trim().substring(1)
     try {
       new java.net.URL(bugURL).getContent().asInstanceOf[Array[Char]]
     } catch {
