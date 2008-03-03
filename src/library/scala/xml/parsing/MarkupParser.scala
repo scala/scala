@@ -706,7 +706,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
       n
     } else {
       reportSyntaxError("name expected")
-      new String()
+      ""
     }
   }
 
