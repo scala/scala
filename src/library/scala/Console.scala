@@ -318,11 +318,11 @@ object Console {
     while (iter.hasNext) {
       res(i) = iter.next match {
         case x: Boolean => java.lang.Boolean.valueOf(x)
-        case x: Byte    => new java.lang.Byte(x)
-        case x: Short   => new java.lang.Short(x)
-        case x: Char    => new java.lang.Character(x)
-        case x: Int     => new java.lang.Integer(x)
-        case x: Long    => new java.lang.Long(x)
+        case x: Byte    => java.lang.Byte.valueOf(x)
+        case x: Short   => java.lang.Short.valueOf(x)
+        case x: Char    => java.lang.Character.valueOf(x)
+        case x: Int     => java.lang.Integer.valueOf(x)
+        case x: Long    => java.lang.Long.valueOf(x)
         case x: Float   => new java.lang.Float(x)
         case x: Double  => new java.lang.Double(x)
         case x: Unit    => "()"
