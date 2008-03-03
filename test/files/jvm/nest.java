@@ -1,4 +1,4 @@
-package a;
+package nestpkg;
 
 
 /** This file is needed for test 'nest.scala'. It should

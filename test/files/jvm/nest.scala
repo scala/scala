@@ -4,7 +4,7 @@
 // $Id: inner.scala 8902 2006-10-10 10:58:10 +0200 (Tue, 10 Oct 2006) mihaylov $
 
 /** found in nest.jar, compiled from nest.java */
-import a._;
+import nestpkg._;
 
 object Test extends Application {
   val x = nest.best.rest.test
