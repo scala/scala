@@ -89,7 +89,7 @@ class ConsoleRunner extends DirectRunner {
                 NestUI.verbose("adding test file "+file)
                 testFiles = file :: testFiles
               } else {
-                NestUI.failure("File \"" + arg + "\" not found")
+                NestUI.failure("File \"" + arg + "\" not found\n")
                 System.exit(1)
               }
             } else if (out eq con) {
@@ -97,7 +97,7 @@ class ConsoleRunner extends DirectRunner {
               if (file.isFile || file.createNewFile)
                 out = new PrintStream(new FileOutputStream(file))
               else {
-                NestUI.failure("Result file \"" + arg + "\" not found")
+                NestUI.failure("Result file \"" + arg + "\" not found\n")
                 System.exit(1)
               }
             } else
@@ -162,24 +162,15 @@ class ConsoleRunner extends DirectRunner {
 
   def runTests(kind: String, check: Boolean, msg: String): (Int, Int) = {
     if (check) {
-      val kindFiles =
-        if (!testFiles.isEmpty) {
-          NestUI.verbose("testing "+testFiles)
-          testFiles
-        }
-        else if (kind == "res") //TODO: is there a nicer way?
-          fileManager.getFiles(kind, check, ".res")
-        else
-          fileManager.getFiles(kind, check)
+      val kindFiles = if (kind == "res") //TODO: is there a nicer way?
+        fileManager.getFiles(kind, check, ".res")
+      else
+        fileManager.getFiles(kind, check)
       if (!kindFiles.isEmpty) {
         NestUI.outline("\n"+msg+"\n")
-
         runTestsForFiles(kindFiles, kind)
-
-        //val worker = new Worker
-        //worker.runTests(kind, kindFiles)
       } else {
-        NestUI.failure("test dir empty")
+        NestUI.failure("test dir empty\n")
         (0, 0)
       }
     } else (0, 0)
@@ -189,6 +180,41 @@ class ConsoleRunner extends DirectRunner {
    * @return (success count, failure count)
    */
   def testCheckAll(): (Int, Int) = {
+    def runTestsFiles = if (!testFiles.isEmpty) {
+      def absName(f: File): String = f.getAbsoluteFile.getCanonicalPath
+
+      def kindOf(f: File): String = {
+        val firstName = absName(f)
+        val filesPos = firstName.indexOf("files")
+        if (filesPos == -1) {
+          NestUI.failure("invalid test file: "+firstName+"\n")
+          Predef.exit(1)
+        } else {
+          val k = firstName.substring(filesPos+6, filesPos+6+3)
+          val short = if (k == "jvm") {
+            if (firstName.substring(filesPos+6, filesPos+6+4) == "jvm5") "jvm5"
+            else k
+          } else k
+          val shortKinds = List("pos", "neg", "run", "jvm", "jvm5", "res")
+          if (shortKinds contains short) short
+          else short match {
+            case "sho" => "shootout"
+            case "scr" => "script"
+          }
+        }
+      }
+
+      val fstKind = kindOf(testFiles.head)
+      NestUI.verbose("all test files expected to have kind "+fstKind)
+      if (!testFiles.forall(kindOf(_) equals fstKind)) {
+        NestUI.failure("test files have different kinds\n")
+        Predef.exit(1)
+      } else {
+        NestUI.outline("\nTesting individual files\n")
+        runTestsForFiles(testFiles, fstKind)
+      }
+    } else (0, 0)
+
     if (runAll) { // run all tests
       posCheck = true
       negCheck = true
@@ -199,7 +225,8 @@ class ConsoleRunner extends DirectRunner {
       shootoutCheck = true
       scriptCheck = true
     }
-    val results = List(runTests("pos", posCheck, "Testing compiler (on files whose compilation should succeed)"),
+    val results = List(runTestsFiles,
+                       runTests("pos", posCheck, "Testing compiler (on files whose compilation should succeed)"),
                        runTests("neg", negCheck, "Testing compiler (on files whose compilation should fail)"),
                        runTests("run", runCheck, "Testing JVM backend"),
                        runTests("jvm", jvmCheck, "Testing JVM backend"),

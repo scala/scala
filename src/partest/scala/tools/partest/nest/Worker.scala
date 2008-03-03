@@ -609,25 +609,31 @@ class Worker(val fileManager: FileManager) extends Actor {
               " "+swriter.toString
             } else ""
 
-            val proc = Runtime.getRuntime.exec(file.getAbsolutePath+argString)
-            val in = proc.getInputStream
-            val err = proc.getErrorStream
-            val writer = new PrintWriter(new FileWriter(logFile), true)
-            val inApp = new StreamAppender(new BufferedReader(new InputStreamReader(in)),
-                                           writer)
-            val errApp = new StreamAppender(new BufferedReader(new InputStreamReader(err)),
-                                            writer)
-            val async = new Thread(errApp)
-            async.start()
-            inApp.run()
-            async.join()
+            try {
+              val proc = Runtime.getRuntime.exec(file.getAbsolutePath+argString)
+              val in = proc.getInputStream
+              val err = proc.getErrorStream
+              val writer = new PrintWriter(new FileWriter(logFile), true)
+              val inApp = new StreamAppender(new BufferedReader(new InputStreamReader(in)),
+                                             writer)
+              val errApp = new StreamAppender(new BufferedReader(new InputStreamReader(err)),
+                                              writer)
+              val async = new Thread(errApp)
+              async.start()
+              inApp.run()
+              async.join()
 
-            writer.close()
+              writer.close()
 
-            diff = compareOutput(file.getParentFile, fileBase, kind, logFile)
-            if (!diff.equals("")) {
-              NestUI.verbose("output differs from log file\n")
-              succeeded = false
+              diff = compareOutput(file.getParentFile, fileBase, kind, logFile)
+              if (!diff.equals("")) {
+                NestUI.verbose("output differs from log file\n")
+                succeeded = false
+              }
+            } catch { // *catch-all*
+              case e: Exception =>
+                NestUI.verbose("caught "+e)
+                succeeded = false
             }
 
             // delete log file only if test was successful
