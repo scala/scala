@@ -217,6 +217,10 @@ trait ModelToXML extends ModelExtractor {
               diff0
             }
           }
+        override def equals(other: Any): Boolean =
+           other match { case that: entity.Member => compare(that) == 0
+                         case that: AnyRef => this.eq(that)
+                         case _ => false }
       });
       set addAll xs;
       seq = seq ++ <table cellpadding="3" class="member" summary="">

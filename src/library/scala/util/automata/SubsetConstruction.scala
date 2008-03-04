@@ -43,6 +43,11 @@ class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
         res
     }
 
+    override def equals(other: Any): Boolean =
+        other match { case that: BitSet => compare(that) == 0
+                      case that: AnyRef => this.eq(that)
+                      case _ => false }
+
       //case _ => -(other.compare(this))
   }
 

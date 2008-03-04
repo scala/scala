@@ -438,6 +438,9 @@ trait ModelExtractor {
         assert(diff0 != 0)
         diff0
       }
+      override def equals(other: Any) : Boolean =
+        eA.equals(other) || (other match { case that: AnyRef => this.eq(that)
+                                           case _ => false })
     }})
     set addAll entities;
     set
