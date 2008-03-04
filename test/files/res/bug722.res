@@ -1,2 +1,2 @@
-bug722/Parser.scala bug722/IfElse.scala
-bug722/Parser.scala bug722/IfElse.scala
+files/res/bug722/Parser.scala files/res/bug722/IfElse.scala
+files/res/bug722/Parser.scala files/res/bug722/IfElse.scala
