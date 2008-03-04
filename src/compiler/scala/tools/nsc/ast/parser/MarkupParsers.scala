@@ -459,7 +459,7 @@ trait MarkupParsers {self: Parsers =>
           if (ch == '?' && { sb.append(ch); nextch; ch == '>' }) {
             sb.length = sb.length - 1
             nextch
-            return handle.procInstr(tmppos, n.toString(), sb.toString())
+            return handle.procInstr(tmppos, n, sb.toString)
           } else
             sb.append(ch);
           nextch

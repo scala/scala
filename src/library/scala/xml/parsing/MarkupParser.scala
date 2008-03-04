@@ -115,7 +115,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
         if (!isValidIANAEncoding(enc))
           reportSyntaxError("\"" + enc + "\" is not a valid encoding")
         else {
-          info_enc = Some(enc.toString())
+          info_enc = Some(enc)
           n += 1
         }
     }
@@ -154,7 +154,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
         if (!isValidIANAEncoding(enc))
           reportSyntaxError("\"" + enc + "\" is not a valid encoding")
         else {
-          info_enc = Some(enc.toString())
+          info_enc = Some(enc)
           n += 1
         }
     }
@@ -734,7 +734,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
         if (ch == '?' && { sb.append( ch ); nextch; ch == '>' }) {
           sb.length = sb.length - 1;
           nextch;
-          return handle.procInstr(tmppos, n.toString(), sb.toString());
+          return handle.procInstr(tmppos, n, sb.toString);
         } else
           sb.append(ch);
         nextch
@@ -742,7 +742,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
     };
     xToken('?')
     xToken('>')
-    handle.procInstr(tmppos, n.toString(), sb.toString())
+    handle.procInstr(tmppos, n, sb.toString)
   }
 
   /** parse character data.
