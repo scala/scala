@@ -253,7 +253,7 @@ class Worker(val fileManager: FileManager) extends Actor {
         swr.flush()
         NestUI.normal(swr.toString)
         if (!success && fileManager.showDiff) NestUI.normal(diff)
-        if (!success && fileManager.showLog)  NestUI.normal(log)
+        if (!success && fileManager.showLog)  /*NestUI.normal(log)*/ showLog(logFile)
       }
     } // for each file
     NestUI.verbose("finished testing "+kind+" with "+errors+" errors")

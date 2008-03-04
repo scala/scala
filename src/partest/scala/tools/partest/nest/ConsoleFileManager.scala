@@ -19,6 +19,8 @@ class ConsoleFileManager extends FileManager {
   var JAVACMD   = System.getProperty("scalatest.javacmd", "java")
   val PREFIX    = (new File(SCALAHOME)).getAbsolutePath
 
+  val debug: Boolean = System.getProperty("partest.debug", "false") equals "true"
+
 /*
 if [ -d "$PREFIX/test" ]; then
     TESTROOT="$PREFIX/test";
@@ -46,6 +48,10 @@ else
     (libs.listFiles(new FilenameFilter {
       def accept(dir: File, name: String) = name endsWith ".jar"
     }) map {file => file.getCanonicalFile.getAbsolutePath}).mkString(""+File.pathSeparator)
+  }
+  if (debug) {
+    println("CLASSPATH:")
+    println(CLASSPATH)
   }
 
   def findLatest() {
