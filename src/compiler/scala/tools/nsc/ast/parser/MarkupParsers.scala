@@ -467,7 +467,7 @@ trait MarkupParsers {self: Parsers =>
       }
       xToken('?')
       xToken('>')
-      handle.procInstr(tmppos, n.toString(), sb.toString())
+      handle.procInstr(tmppos, n, sb.toString)
     }
 
     /** parse character data.
