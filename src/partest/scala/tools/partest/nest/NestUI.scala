@@ -61,7 +61,8 @@ object NestUI {
 
   def usage() {
     println("Usage: NestRunner [<options>] [<testfile> ..] [<resfile>]")
-    println("version Mar3")
+    println("version Mar4")
+    println("    --all          run all tests")
     println("    --pos          next files test a compilation success")
     println("    --neg          next files test a compilation failure")
     println("    --run          next files test the interpreter and all backends")
