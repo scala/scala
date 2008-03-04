@@ -180,7 +180,7 @@ class CompileSocket {
   def setPort(port: Int) {
     try {
       val f = new PrintWriter(new FileOutputStream(portFile(port)))
-      f.println(new java.util.Random().nextInt.toString)
+      f.println(new java.security.SecureRandom().nextInt.toString)
       f.close()
     } catch {
       case ex: /*FileNotFound+Security*/Exception =>
