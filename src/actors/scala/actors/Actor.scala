@@ -710,6 +710,7 @@ trait Actor extends OutputChannel[Any] {
    * @return   ...
    */
   def link(to: Actor): Actor = {
+    assert(Actor.self == this, "link called on actor different from self")
     links = to :: links
     to.linkTo(this)
     to
@@ -727,19 +728,20 @@ trait Actor extends OutputChannel[Any] {
     actor
   }
 
-  private[actors] def linkTo(to: Actor) {
+  private[actors] def linkTo(to: Actor) = synchronized {
     links = to :: links
   }
 
   /**
-   Unlinks <code>self</code> from actor <code>from</code>.
+   * Unlinks <code>self</code> from actor <code>from</code>.
    */
   def unlink(from: Actor) {
+    assert(Actor.self == this, "unlink called on actor different from self")
     links = links.remove(from.==)
     from.unlinkFrom(this)
   }
 
-  private[actors] def unlinkFrom(from: Actor) {
+  private[actors] def unlinkFrom(from: Actor) = synchronized {
     links = links.remove(from.==)
   }
 
