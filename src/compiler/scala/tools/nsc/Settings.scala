@@ -132,7 +132,7 @@ class Settings(error: String => Unit) {
   val debug         = BooleanSetting    ("-Ydebug", "Output debugging messages").hideToIDE
   val Xdce          = BooleanSetting    ("-Ydead-code", "Perform dead code elimination")
   val Xdetach       = BooleanSetting    ("-Ydetach", "Perform detaching of remote closures")
-  val doc           = BooleanSetting    ("-Ydoc", "Generate documentation").hideToIDE
+//  val doc           = BooleanSetting    ("-Ydoc", "Generate documentation").hideToIDE
   val inline        = BooleanSetting    ("-Yinline", "Perform inlining when possible")
   val Xlinearizer   = ChoiceSetting     ("-Ylinearizer", "Linearizer to use", List("normal", "dfs", "rpo", "dump"), "rpo")
   val log           = PhasesSetting     ("-Ylog", "Log operations in")
@@ -151,7 +151,7 @@ class Settings(error: String => Unit) {
                                      /*default*/"off")
 
   val selfInAnnots = BooleanSetting    ("-Yself-in-annots", "Include a \"self\" identifier inside of annotations")
-
+/*
   /** scaladoc specific options */
   val memberaccess   = ChoiceSetting    ("-access", "Show only public, protected/public (default) or all classes and members",
                                          List("public", "protected", "private"), "protected").dependsOn(doc)
@@ -165,7 +165,7 @@ class Settings(error: String => Unit) {
   val stylesheetfile = StringSetting    ("-stylesheetfile", "stylesheetfile", "File to change style of the generated documentation", "style.css").dependsOn(doc)
   val pagetop        = StringSetting    ("-top", "pagetop", "Include top text for each page", "").dependsOn(doc)
   val windowtitle    = StringSetting    ("-windowtitle", "windowtitle", "Specify window title of generated HTML documentation", "Scala 2").dependsOn(doc)
-
+*/
   /** A list of all settings */
   def allSettings: List[Setting] = allsettings.reverse
   /** Disable a setting */
@@ -252,9 +252,11 @@ class Settings(error: String => Unit) {
       (name startsWith "-X") && !(name eq "-X")
     def isPrivate: Boolean =
       (name == "-P") || ((name startsWith "-Y") && !(name eq "-Y"))
+
+/*
     def isDocOption: Boolean =
       !dependency.isEmpty && dependency.get._1 == doc
-
+*/
     // initialization
     allsettings = this :: allsettings
   }

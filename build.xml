@@ -500,7 +500,6 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       file="${locker.dir}/bin/${scaladoc.exec.name}"
       name="Scala doc generator"
       class="scala.tools.nsc.ScalaDoc"
-      toolflags="-Ydoc"
       version="${version.number}"
       copyright="${copyright.string}"
       javaFlags="${java.flags}"/>
@@ -697,7 +696,6 @@ BUILD QUICK-TEST LAYER
       file="${quick.dir}/bin/${scaladoc.exec.name}"
       name="Scala doc generator"
       class="scala.tools.nsc.ScalaDoc"
-      toolflags="-Ydoc"
       version="${version.number}"
       copyright="${copyright.string}"
       javaFlags="${java.flags}"/>
@@ -1271,7 +1269,6 @@ OPTIMIZE
       file="${optimised.dir}/bin/${scaladoc.exec.name}"
       name="Scala doc generator"
       class="scala.tools.nsc.ScalaDoc"
-      toolflags="-Ydoc"
       version="${version.number}"
       copyright="${copyright.string}"
       javaFlags="${java.flags}"/>
@@ -1462,7 +1459,6 @@ TEST
       file="${strap.dir}/bin/${scaladoc.exec.name}"
       name="Scala doc generator"
       class="scala.tools.nsc.ScalaDoc"
-      toolflags="-Ydoc"
       version="${version.number}"
       copyright="${copyright.string}"
       javaFlags="${java.flags}"/>

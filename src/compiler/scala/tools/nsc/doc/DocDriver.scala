@@ -14,6 +14,7 @@ package scala.tools.nsc.doc
 abstract class DocDriver {
  val global: Global
  import global._
+ def settings: doc.Settings
 
- def process(settings: Settings, units: Iterator[CompilationUnit]): Unit
+ def process(units: Iterator[CompilationUnit]): Unit
 }

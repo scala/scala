@@ -21,7 +21,7 @@ object Test {
   private def test1(tmpDir: File) {
     def testOptions(inFile: File, outDirName: String, opts: String*) {
       val outDir = createDir(tmpDir, outDirName)
-      val args = Array.concat(Array("-Ydoc", "-d", outDir.getPath, inFile.getPath), opts.toArray:Array[String])
+      val args = Array.concat(Array("-d", outDir.getPath, inFile.getPath), opts.toArray:Array[String])
       if (MainDoc.main0(args)) {
         for (name <- List("all-classes.html", "index.html")) {
           val outFile = new File(outDir, name)
@@ -91,7 +91,7 @@ object Foo2 {
       f
     }
     val outDir = createDir(tmpDir, "annots1")
-    val args = Array.concat(Array("-Ydoc", "-d", outDir.getPath, inFile.getPath))
+    val args = Array.concat(Array("-d", outDir.getPath, inFile.getPath))
     if (MainDoc.main0(args)) {
       for (name <- List("all-classes.html", "index.html")) {
         val outFile = new File(outDir, name)
@@ -112,11 +112,13 @@ object Foo2 {
     def error(msg: String) { Console.err.println(msg) }
     var reporter: ConsoleReporter = _
     def process(args: Array[String]) {
-      val settings = new Settings(error)
-      reporter = new ConsoleReporter(settings)
-      val command = new CompilerCommand(List.fromArray(args), settings, error, false)
+      val docSettings = new scala.tools.nsc.doc.Settings(error)
+      reporter = new ConsoleReporter(docSettings)
+      val command = new CompilerCommand(List.fromArray(args), docSettings, error, false)
       try {
-        object compiler extends Global(command.settings, reporter)
+        object compiler extends Global(command.settings, reporter) {
+	  override val onlyPresentation = true
+	}
         if (reporter.hasErrors) {
           reporter.flush()
           return
@@ -125,7 +127,7 @@ object Foo2 {
         run compile command.files
         object generator extends DefaultDocDriver {
           lazy val global: compiler.type = compiler
-          def settings = command.settings
+          lazy val settings = docSettings
         }
         generator process run.units
         reporter.printSummary()

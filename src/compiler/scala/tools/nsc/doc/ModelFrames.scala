@@ -18,7 +18,7 @@ import scala.xml.{NodeSeq, Text, Unparsed, Utility}
   */
 trait ModelFrames extends ModelExtractor {
   import DocUtil._
-  def settings: Settings
+  def settings: doc.Settings
 
   val SyntheticClasses = new scala.collection.mutable.HashSet[global.Symbol];
   {

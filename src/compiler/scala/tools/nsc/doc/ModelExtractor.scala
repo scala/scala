@@ -18,6 +18,7 @@ import compat.Platform.{EOL => LINE_SEPARATOR}
 trait ModelExtractor {
   val global: Global
   import global._
+  def settings: doc.Settings
 
   def assert(b: Boolean) {
     if (!b) throw new Error

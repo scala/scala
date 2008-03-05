@@ -31,9 +31,9 @@ object ScalaDoc {
   }
 
   def process(args: Array[String]) {
-    val settings = new Settings(error)
-    reporter = new ConsoleReporter(settings)
-    val command = new CompilerCommand(List.fromArray(args), settings, error, false)
+    val docSettings : doc.Settings = new doc.Settings(error)
+    reporter = new ConsoleReporter(docSettings)
+    val command = new CompilerCommand(List.fromArray(args), docSettings, error, false)
     if (command.settings.version.value)
       reporter.info(null, versionMsg, true)
     else {
@@ -44,7 +44,9 @@ object ScalaDoc {
             command.settings.assemrefs.value + File.pathSeparator + libpath
       }
       try {
-        object compiler extends Global(command.settings, reporter)
+        object compiler extends Global(command.settings, reporter) {
+	  override val onlyPresentation = true
+	}
         if (reporter.hasErrors) {
           reporter.flush()
           return
@@ -68,9 +70,9 @@ object ScalaDoc {
             run compile command.files
             val generator = new DefaultDocDriver {
               lazy val global: compiler.type = compiler
-              def settings = command.settings
+              lazy val settings = docSettings
 	    }
-            generator.process(command.settings, run.units)
+            generator.process(run.units)
             reporter.printSummary()
         }
       } catch {

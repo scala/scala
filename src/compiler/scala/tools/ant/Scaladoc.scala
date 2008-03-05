@@ -474,7 +474,7 @@ class Scaladoc extends MatchingTask {
 \*============================================================================*/
 
   /** Initializes settings and source files */
-  protected def initialize: Pair[Settings, List[File]] = {
+  protected def initialize: Pair[scala.tools.nsc.doc.Settings, List[File]] = {
     // Tests if all mandatory attributes are set and valid.
     if (origin.isEmpty) error("Attribute 'srcdir' is not set.")
     if (getOrigin.isEmpty) error("Attribute 'srcdir' is not set.")
@@ -524,28 +524,27 @@ class Scaladoc extends MatchingTask {
 
     // Builds-up the compilation settings for Scalac with the existing Ant
     // parameters.
-    val settings = new Settings(error)
-    settings.doc.value = true
-    settings.outdir.value = asString(destination.get)
+    val docSettings = new scala.tools.nsc.doc.Settings(error)
+    docSettings.outdir.value = asString(destination.get)
     if (!classpath.isEmpty)
-      settings.classpath.value = asString(getClasspath)
+      docSettings.classpath.value = asString(getClasspath)
     if (!sourcepath.isEmpty)
-      settings.sourcepath.value = asString(getSourcepath)
+      docSettings.sourcepath.value = asString(getSourcepath)
     /*else if (origin.get.size() > 0)
       settings.sourcepath.value = origin.get.list()(0)*/
     if (!bootclasspath.isEmpty)
-      settings.bootclasspath.value = asString(getBootclasspath)
-    if (!extdirs.isEmpty) settings.extdirs.value = asString(getExtdirs)
-    if (!encoding.isEmpty) settings.encoding.value = encoding.get
-    if (!windowtitle.isEmpty) settings.windowtitle.value = windowtitle.get
-    if (!doctitle.isEmpty) settings.doctitle.value = decodeEscapes(doctitle.get)
-    if (!stylesheetfile.isEmpty) settings.stylesheetfile.value = stylesheetfile.get
-    if (!pageheader.isEmpty) settings.pageheader.value = decodeEscapes(pageheader.get)
-    if (!pagefooter.isEmpty) settings.pagefooter.value = decodeEscapes(pagefooter.get)
-    if (!pagetop.isEmpty) settings.pagetop.value = decodeEscapes(pagetop.get)
-    if (!pagebottom.isEmpty) settings.pagebottom.value = decodeEscapes(pagebottom.get)
-    settings.deprecation.value = deprecation
-    settings.unchecked.value = unchecked
+      docSettings.bootclasspath.value = asString(getBootclasspath)
+    if (!extdirs.isEmpty) docSettings.extdirs.value = asString(getExtdirs)
+    if (!encoding.isEmpty) docSettings.encoding.value = encoding.get
+    if (!windowtitle.isEmpty) docSettings.windowtitle.value = windowtitle.get
+    if (!doctitle.isEmpty) docSettings.doctitle.value = decodeEscapes(doctitle.get)
+    if (!stylesheetfile.isEmpty) docSettings.stylesheetfile.value = stylesheetfile.get
+    if (!pageheader.isEmpty) docSettings.pageheader.value = decodeEscapes(pageheader.get)
+    if (!pagefooter.isEmpty) docSettings.pagefooter.value = decodeEscapes(pagefooter.get)
+    if (!pagetop.isEmpty) docSettings.pagetop.value = decodeEscapes(pagetop.get)
+    if (!pagebottom.isEmpty) docSettings.pagebottom.value = decodeEscapes(pagebottom.get)
+    docSettings.deprecation.value = deprecation
+    docSettings.unchecked.value = unchecked
     log("Scaladoc params = '" + addParams + "'", Project.MSG_DEBUG)
     var args =
       if (addParams.trim() == "") Nil
@@ -553,13 +552,13 @@ class Scaladoc extends MatchingTask {
     while (!args.isEmpty) {
       val argsBuf = args
       if (args.head startsWith "-") {
-        for (setting <- settings.allSettings)
-          args = setting.tryToSet(args);
+        for (docSetting <- docSettings.allSettings)
+          args = docSetting.tryToSet(args);
       } else error("Parameter '" + args.head + "' does not start with '-'.")
       if (argsBuf eq args)
         error("Parameter '" + args.head + "' is not recognised by Scaladoc.")
     }
-    Pair(settings, sourceFiles)
+    Pair(docSettings, sourceFiles)
   }
 
   /** Performs the compilation. */
@@ -568,13 +567,15 @@ class Scaladoc extends MatchingTask {
     val reporter = new ConsoleReporter(commandSettings)
 
     // Compiles the actual code
-    val compiler = new Global(commandSettings, reporter)
+    val compiler = new Global(commandSettings, reporter) {
+      override val onlyPresentation = true
+    }
     try {
       val run = new compiler.Run
       run.compile(sourceFiles.map (_.toString))
       object generator extends DefaultDocDriver {
-        val global: compiler.type = compiler
-        def settings = commandSettings
+        lazy val global: compiler.type = compiler
+        lazy val settings = commandSettings
       }
       generator.process(run.units)
       if (reporter.ERROR.count > 0)

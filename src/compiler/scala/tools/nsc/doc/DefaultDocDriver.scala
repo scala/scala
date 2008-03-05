@@ -31,10 +31,6 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
     def init {}
   }
 
-  def process(settings: Settings, units: Iterator[CompilationUnit]) {
-    process(units)
-  }
-
   def process(units: Iterator[CompilationUnit]) {
 
     assert(global.definitions != null)

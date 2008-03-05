@@ -35,9 +35,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
   /** A message explaining usage and options */
   def usageMsg: String = {
     settings.allSettings
-      .filter(setting =>
-              setting.isStandard &&
-              (settings.doc.value == setting.isDocOption))
+      .filter(_.isStandard)
       .map(setting =>
            format(setting.helpSyntax) + "  " + setting.helpDescription)
       .mkString("Usage: " + cmdName + " <options> <source files>\n" +
@@ -49,9 +47,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
   /** A message explaining usage and options */
   def xusageMsg: String = {
     settings.allSettings
-      .filter(setting =>
-              setting.isAdvanced &&
-              (settings.doc.value == setting.isDocOption))
+      .filter(_.isAdvanced)
       .map(setting =>
            format(setting.helpSyntax) + "  " + setting.helpDescription)
       .mkString("Possible advanced options include:\n  ",
@@ -62,9 +58,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
   /** A message explaining usage and options */
   def yusageMsg: String = {
     settings.allSettings
-      .filter(setting =>
-              setting.isPrivate &&
-              (settings.doc.value == setting.isDocOption))
+      .filter(_.isPrivate)
       .map(setting =>
            format(setting.helpSyntax) + "  " + setting.helpDescription)
       .mkString("Possible private options include:\n  ",
