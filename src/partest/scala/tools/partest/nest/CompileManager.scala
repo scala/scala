@@ -28,10 +28,10 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
   def newGlobal(settings: Settings, reporter: Reporter): Global =
     new Global(settings, reporter)
 
-  def newGlobal(settings: Settings, log: File): Global = {
+  def newGlobal(settings: Settings, logWriter: FileWriter): Global = {
     val rep = new ExtConsoleReporter(new Settings(x => ()),
                                      Console.in,
-                                     new PrintWriter(new FileWriter(log)))
+                                     new PrintWriter(logWriter))
     rep.shortname = true
     newGlobal(settings, rep)
   }
@@ -50,7 +50,8 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
 
   def compile(file: File, kind: String, log: File): Boolean = {
     val testSettings = newSettings
-    val global = newGlobal(testSettings, log)
+    val logWriter = new FileWriter(log)
+    val global = newGlobal(testSettings, logWriter)
     val testRep: ExtConsoleReporter = global.reporter.asInstanceOf[ExtConsoleReporter]
 
     val test: TestFile = kind match {
@@ -73,6 +74,8 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
       case e: Exception =>
         e.printStackTrace()
         false
+    } finally {
+      logWriter.close()
     }
     !testRep.hasErrors
   }
@@ -162,11 +165,11 @@ class CompileManager(val fileManager: FileManager) {
 
   /* This method returns true iff compilation succeeds.
    */
-  def shouldCompile(file: File, kind: String): Boolean = {
+  def shouldCompile(file: File, kind: String, log: File): Boolean = {
     createSeparateCompiler()
 
     try {
-      compiler.compile(file, kind)
+      compiler.compile(file, kind, log)
     } catch {
       case t: Throwable =>
         NestUI.verbose("while invoking compiler ("+file+"):")
@@ -187,12 +190,6 @@ class CompileManager(val fileManager: FileManager) {
     createSeparateCompiler()
 
     try {
-      // simulating compiler crash
-      /*if (file.getName().endsWith("bug752.scala")) {
-        NestUI.verbose("simulating compiler crash")
-        throw new java.lang.reflect.InvocationTargetException(new Throwable)
-      }*/
-
       !compiler.compile(file, kind, log)
     } catch {
       case t: Throwable =>

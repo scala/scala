@@ -13,17 +13,7 @@ import scala.tools.nsc.Settings
 class TestFile(kind: String, val file: File, val fileManager: FileManager) {
   val dir = file.getParentFile
   val dirpath = dir.getAbsolutePath
-
   val fileBase: String = basename(file.getName)
-
-  val logFile = new File(dir, fileBase + "-" + kind + ".log")
-  val checkFile = {
-    val chkFile = new File(dir, fileBase + ".check")
-    if (chkFile.isFile)
-      chkFile
-    else
-      new File(dir, fileBase + "-" + kind + ".check")
-  }
 
   // @mutates settings
   protected def baseSettings(settings: Settings) {
