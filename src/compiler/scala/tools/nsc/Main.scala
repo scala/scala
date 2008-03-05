@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -8,10 +8,8 @@ package scala.tools.nsc
 
 import java.io.File
 
-import scala.tools.nsc.doc.DefaultDocDriver
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.FakePos //{Position}
-
 
 /** The main class for NSC, a compiler for the programming
  *  language Scala.
@@ -84,13 +82,6 @@ object Main extends AnyRef with EvalLoop {
           } else {
             val run = new compiler.Run
             run compile command.files
-            if (command.settings.doc.value) {
-              val generator = new DefaultDocDriver {
-                lazy val global: compiler.type = compiler
-                def settings = command.settings
-              }
-              generator.process(command.settings, run.units)
-            }
             reporter.printSummary()
           }
         }

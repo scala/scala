@@ -1,6 +1,7 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+/* scaladoc, a documentation generator for Scala
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
+ * @author  Geoffrey Washburn
  */
 // $Id$
 
@@ -13,33 +14,20 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.FakePos //{Position}
 
 
-/** The main class for NSC, a compiler for the programming
- *  language Scala.
+/** The main class for scaladoc, a frontend for the Scala compiler
+ * that generates documentation from source files.
  */
-object ScalaDoc extends AnyRef with EvalLoop {
+object ScalaDoc {
 
-  val versionMsg = "Scala compiler " +
+  val versionMsg = "Scala documentation generator " +
     Properties.versionString + " -- " +
     Properties.copyrightString
-
-  val prompt = Properties.residentPromptString
 
   var reporter: ConsoleReporter = _
 
   def error(msg: String) {
     reporter.error(/*new Position */FakePos("scalac"),
                    msg + "\n  scalac -help  gives more information")
-  }
-
-  /* needed ?? */
-  //def errors() = reporter.errors
-
-  def resident(compiler: Global) {
-    loop { line =>
-      val args = List.fromString(line, ' ')
-      val command = new CompilerCommand(args, new Settings(error), error, true)
-      (new compiler.Run) compile command.files
-    }
   }
 
   def process(args: Array[String]) {
@@ -76,23 +64,14 @@ object ScalaDoc extends AnyRef with EvalLoop {
         else if (command.settings.showPhases.value)
           reporter.info(null, compiler.phaseDescriptions, true)
         else {
-          if (command.settings.resident.value)
-            resident(compiler)
-          else if (command.files.isEmpty) {
-              reporter.info(null, command.usageMsg, true)
-            reporter.info(null, compiler.pluginOptionsHelp, true)
-          } else {
             val run = new compiler.Run
             run compile command.files
-            if (command.settings.doc.value) {
-              val generator = new DefaultDocDriver {
-                lazy val global: compiler.type = compiler
-                def settings = command.settings
-              }
-              generator.process(command.settings, run.units)
-            }
+            val generator = new DefaultDocDriver {
+              lazy val global: compiler.type = compiler
+              def settings = command.settings
+	    }
+            generator.process(command.settings, run.units)
             reporter.printSummary()
-          }
         }
       } catch {
         case ex @ FatalError(msg) =>
