@@ -499,7 +499,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
     <lockertool
       file="${locker.dir}/bin/${scaladoc.exec.name}"
       name="Scala doc generator"
-      class="scala.tools.nsc.Main"
+      class="scala.tools.nsc.ScalaDoc"
       toolflags="-Ydoc"
       version="${version.number}"
       copyright="${copyright.string}"
@@ -696,7 +696,7 @@ BUILD QUICK-TEST LAYER
     <quicktool
       file="${quick.dir}/bin/${scaladoc.exec.name}"
       name="Scala doc generator"
-      class="scala.tools.nsc.Main"
+      class="scala.tools.nsc.ScalaDoc"
       toolflags="-Ydoc"
       version="${version.number}"
       copyright="${copyright.string}"
@@ -1270,7 +1270,7 @@ OPTIMIZE
     <straptool
       file="${optimised.dir}/bin/${scaladoc.exec.name}"
       name="Scala doc generator"
-      class="scala.tools.nsc.Main"
+      class="scala.tools.nsc.ScalaDoc"
       toolflags="-Ydoc"
       version="${version.number}"
       copyright="${copyright.string}"
@@ -1461,7 +1461,7 @@ TEST
     <straptool
       file="${strap.dir}/bin/${scaladoc.exec.name}"
       name="Scala doc generator"
-      class="scala.tools.nsc.Main"
+      class="scala.tools.nsc.ScalaDoc"
       toolflags="-Ydoc"
       version="${version.number}"
       copyright="${copyright.string}"
