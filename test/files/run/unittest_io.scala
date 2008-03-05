@@ -16,7 +16,7 @@ object Test extends TestConsoleMain {
       // a client
       val test = "{\"a\":\"\\u0022\"}"
       val Expected = ("a","\"")
-      assertTrue(util.parsing.json.JSON.parse(test) match {
+      assertTrue(scala.util.parsing.json.JSON.parse(test) match {
         case Some(List(Expected)) => true
         case z => Console.println(z); false
       })
