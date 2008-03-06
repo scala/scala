@@ -12,15 +12,15 @@ exec scsh -e main -s "$0" "$@"
 ;; SVN repository containing the Scala compiler.
 (define scala-svn-repository-dir
   "http://lampsvn.epfl.ch/svn-repos/scala/scala/trunk")
-(define sep-svn-repository-dir
+(define plugin-svn-repository-dir
   "http://lampsvn.epfl.ch/svn-repos/scala/plugin")
 
 ;; SVN module containing the compiler.
 (define scala-svn-module-name "scala")
-(define sep-svn-module-name "plugin")
+(define plugin-svn-module-name "plugin")
 
 ;; E-mail address to which the failure notification should be sent.
-(define notify-email "scala-reports@groupes.epfl.ch")
+(define notify-email "scala-reports@epfl.ch")
 ;;(define notify-email "stephane.micheloud@epfl.ch") ; DEBUG
 ;;(define notify-email "lex.spoon@epfl.ch") ; DEBUG
 ;;(define notify-email "gilles.dubochet@epfl.ch") ; DEBUG
