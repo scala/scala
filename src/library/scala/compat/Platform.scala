@@ -50,5 +50,12 @@ object Platform {
 
   def collectGarbage: Unit = System.gc()
 
+  /** The name of the default character set encoding as a string */
+  def defaultCharsetName: String = {
+    import java.io._
+    new OutputStreamWriter(new ByteArrayOutputStream).getEncoding()
+  }
+
+
 }
 
