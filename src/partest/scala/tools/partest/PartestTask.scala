@@ -27,6 +27,9 @@ class PartestTask extends Task {
   def addConfiguredRunTests(input: FileSet): Unit =
     runFiles = Some(input)
 
+  def addConfiguredResidentTests(input: FileSet): Unit =
+    residentFiles = Some(input)
+
   def setClasspath(input: Path): Unit =
     if (classpath.isEmpty)
       classpath = Some(input)
@@ -55,6 +58,7 @@ class PartestTask extends Task {
   private var posFiles: Option[FileSet] = None
   private var negFiles: Option[FileSet] = None
   private var runFiles: Option[FileSet] = None
+  private var residentFiles: Option[FileSet] = None
 
   private def getPosFiles: Array[File] =
     if (!posFiles.isEmpty) {
@@ -75,6 +79,14 @@ class PartestTask extends Task {
   private def getRunFiles: Array[File] =
     if (!runFiles.isEmpty) {
       val files = runFiles.get
+      (files.getDirectoryScanner(getProject).getIncludedFiles map { fs => new File(files.getDir(getProject), fs) })
+    }
+    else
+      Array()
+
+  private def getResidentFiles: Array[File] =
+    if (!residentFiles.isEmpty) {
+      val files = residentFiles.get
       (files.getDirectoryScanner(getProject).getIncludedFiles map { fs => new File(files.getDir(getProject), fs) })
     }
     else
@@ -157,7 +169,14 @@ class PartestTask extends Task {
       allFailures += failures
     }
 
-    if ((getPosFiles.size + getNegFiles.size + getRunFiles.size) == 0)
+    if (getResidentFiles.size > 0) {
+      log("Running resident compiler scenarii")
+      val (successes, failures) = runTestsForFiles(getResidentFiles, "res")
+      allSucesses += successes
+      allFailures += failures
+    }
+
+    if ((getPosFiles.size + getNegFiles.size + getRunFiles.size + getResidentFiles.size) == 0)
       log("There where no tests to run.")
     else if (allFailures == 0)
       log("Test suite finished with no failures.")

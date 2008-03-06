@@ -1,2 +1,2 @@
-files/res/bug743/ParserXXX.scala
-files/res/bug743/BracesXXX.scala
+bug743/ParserXXX.scala
+bug743/BracesXXX.scala

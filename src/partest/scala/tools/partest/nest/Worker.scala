@@ -272,9 +272,10 @@ class Worker(val fileManager: FileManager) extends Actor {
       case "pos" =>
         for (file <- files) {
           runInContext(file, kind, (logFile: File, outDir: File) => {
-            if (!compileMgr.shouldCompile(file, kind, logFile))
+            if (!compileMgr.shouldCompile(file, kind, logFile)) {
               NestUI.verbose("compilation of "+file+" failed\n")
               succeeded = false
+            }
           })
         }
       case "neg" =>
@@ -352,6 +353,7 @@ class Worker(val fileManager: FileManager) extends Actor {
             // create compiler
             val settings = new Settings(error)
             settings.sourcepath.value = sourcepath
+            settings.classpath.value = fileManager.CLASSPATH
             reporter = new ConsoleReporter(settings, Console.in, logConsoleWriter)
             val command = new CompilerCommand(argList, settings, error, false)
             object compiler extends Global(command.settings, reporter)
@@ -361,7 +363,7 @@ class Worker(val fileManager: FileManager) extends Actor {
 
             val resCompile = (line: String) => {
               NestUI.verbose("compiling "+line)
-              val cmdArgs = List.fromString(line, ' ')
+              val cmdArgs = List.fromString(line, ' ') map { fs => new File(dir, fs).getAbsolutePath }
               val sett = new Settings(error)
               sett.sourcepath.value = sourcepath
               val command = new CompilerCommand(cmdArgs, sett, error, true)
@@ -387,6 +389,23 @@ class Worker(val fileManager: FileManager) extends Actor {
 
             System.setOut(oldStdOut)
             System.setErr(oldStdErr)
+
+            val tempLogFile = new File(dir, ".temp.log")
+            val logFileReader = new BufferedReader(new FileReader(logFile))
+            val tempLogFilePrinter = new PrintWriter(tempLogFile)
+            val appender =
+              new StreamAppender(logFileReader, tempLogFilePrinter)
+            appender.runAndMap({ s => s.replaceAll(dir.getAbsolutePath.replace(File.separatorChar,'/')+File.separator, "") })
+            logFileReader.close()
+            tempLogFilePrinter.close()
+
+            val tempLogFileReader = new BufferedReader(new FileReader(tempLogFile))
+            val logFilePrinter = new PrintWriter(logFile)
+            (new StreamAppender(tempLogFileReader, logFilePrinter)).run
+            tempLogFileReader.close()
+            logFilePrinter.close()
+
+            tempLogFile.delete()
 
             diff = compareOutput(dir, fileBase, kind, logFile)
             if (!diff.equals("")) {

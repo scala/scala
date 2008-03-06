@@ -64,6 +64,7 @@ else
     val bin = new File(PREFIX, "bin")
 
     if (dists.isDirectory) {
+      NestUI.verbose("Running on DISTRIBUTION")
       latestFile        = prefixFile("dists/latest/bin")
       latestLibFile     = prefixFile("dists/latest/lib/scala-library.jar")
       latestActFile     = prefixFile("dists/latest/lib/scala-library.jar")
@@ -71,7 +72,17 @@ else
       latestPartestFile = prefixFile("dists/latest/lib/scala-partest.jar")
       latestFjbgFile    = prefixFile("lib/fjbg.jar") // starr
     }
+    else if (build.isDirectory && (new File(build, "quick/lib/scala-library.jar")).exists) {
+      NestUI.verbose("Running on SuperSABBUS QUICK")
+      latestFile        = prefixFile("build/quick/bin")
+      latestLibFile     = prefixFile("build/quick/lib/scala-library.jar")
+      latestActFile     = prefixFile("build/quick/lib/scala-library.jar")
+      latestCompFile    = prefixFile("build/quick/lib/scala-compiler.jar")
+      latestPartestFile = prefixFile("build/quick/lib/scala-partest.jar")
+      latestFjbgFile    = prefixFile("lib/fjbg.jar") // starr
+    }
     else if (build.isDirectory) {
+      NestUI.verbose("Running on SABBUS QUICK")
       latestFile        = prefixFile("build/quick/bin")
       latestLibFile     = prefixFile("build/quick/lib/library")
       latestActFile     = prefixFile("build/quick/lib/actors")
@@ -80,6 +91,7 @@ else
       latestFjbgFile    = prefixFile("lib/fjbg.jar") // starr
     }
     else if (bin.isDirectory) {
+      NestUI.verbose("Running on INSTALLED DIST")
       latestFile        = prefixFile("bin")
       latestLibFile     = prefixFile("lib/scala-library.jar")
       latestActFile     = prefixFile("lib/scala-library.jar")

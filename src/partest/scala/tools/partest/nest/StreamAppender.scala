@@ -74,11 +74,12 @@ object StreamAppender {
 }
 
 class StreamAppender(reader: BufferedReader, writer: PrintWriter) extends Runnable {
-  override def run() {
+  override def run() = runAndMap(identity)
+  def runAndMap(f:String=>String): Unit = {
     try {
       var line = reader.readLine()
       while (line != null) {
-        writer.println(line)
+        writer.println(f(line))
         line = reader.readLine()
       }
     } catch {
