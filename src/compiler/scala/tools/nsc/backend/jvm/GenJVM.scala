@@ -60,7 +60,7 @@ abstract class GenJVM extends SubComponent {
    */
   class BytecodeGenerator {
     val MIN_SWITCH_DENSITY = 0.7
-    val StringBufferClass = if (settings.target.value == "jvm-1.5") "java.lang.StringBuilder" else "java.lang.StringBuffer"
+    val StringBufferClass = "scala.StringBuilder"
     val BoxesRunTime = "scala.runtime.BoxesRunTime"
 
     val stringBufferType = new JObjectType(StringBufferClass)
