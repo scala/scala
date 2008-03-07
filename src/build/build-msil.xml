@@ -109,6 +109,7 @@ SETUP
            assemname="${msil.dir}/lib/predef" assemrefs="${lib.dir}"
            failonerror="false">
       <include name="scala/Predef.scala"/>
+      <include name="scala/Either.scala"/>
       <include name="scala/Option.scala"/>
       <include name="scala/Pair.scala"/>
       <include name="scala/Console.scala"/>
