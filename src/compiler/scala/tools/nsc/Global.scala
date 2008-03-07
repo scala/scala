@@ -444,9 +444,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     //Console.println("starting run: " + id)
     var currentUnit: CompilationUnit = _
     curRun = this
-    val firstPhase = syntaxAnalyzer.newPhase(NoPhase)
+    private val firstPhase = syntaxAnalyzer.newPhase(NoPhase)
     phase = firstPhase
-    definitions.init  // needs firstPhase and phase to be defined != NoPhase,
+    definitions.init  // needs phase to be defined != NoPhase,
                       // that's why it is placed here.
 
     /** Deprecation warnings occurred */
