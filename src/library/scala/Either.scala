@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Option.scala 13737 2008-01-18 19:15:23Z michelou $
+// $Id$
 
 package scala
 
