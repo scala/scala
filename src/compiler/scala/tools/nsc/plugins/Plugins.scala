@@ -142,6 +142,8 @@ trait Plugins { self: Global =>
     {
       descs match {
 	case Nil => assert(false); Nil
+        case hd::rest if "parser" == component.runsAfter =>
+          component :: hd :: rest
 	case hd::rest if hd.phaseName == component.runsAfter =>
 	  hd :: component :: rest
 	case hd :: rest =>
@@ -158,7 +160,8 @@ trait Plugins { self: Global =>
 
     while (!plugsLeft.isEmpty) {
       val nextPlug = plugsLeft.find(plug =>
-	descriptors.exists(d => d.phaseName == plug.runsAfter))
+        plug.runsAfter == "parser" ||
+        descriptors.exists(d => d.phaseName == plug.runsAfter))
       nextPlug match {
 	case None =>
 	  error("Failed to load some plugin phases:")
