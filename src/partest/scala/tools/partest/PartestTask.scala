@@ -50,6 +50,9 @@ class PartestTask extends Task {
   def setShowDiff(input: Boolean): Unit =
     showDiff = input
 
+  def setErrorOnFailed(input: Boolean): Unit =
+    errorOnFailed = input
+
   private var classpath: Option[Path] = None
   private var javacmd: Option[File] = None
   private var showDiff: Boolean = false
@@ -59,6 +62,7 @@ class PartestTask extends Task {
   private var negFiles: Option[FileSet] = None
   private var runFiles: Option[FileSet] = None
   private var residentFiles: Option[FileSet] = None
+  private var errorOnFailed: Boolean = false
 
   private def getPosFiles: Array[File] =
     if (!posFiles.isEmpty) {
@@ -180,8 +184,10 @@ class PartestTask extends Task {
       log("There where no tests to run.")
     else if (allFailures == 0)
       log("Test suite finished with no failures.")
+    else if (errorOnFailed)
+      error("Test suite finished with " + allFailures + " case" + (if (allFailures > 1) "s" else "") + " failing.")
     else
-      log("Test suite finished with " + allFailures + " case" + (if (allFailures > 0) "s" else "") + " failing.")
+      log("Test suite finished with " + allFailures + " case" + (if (allFailures > 1) "s" else "") + " failing.")
 
   }
 

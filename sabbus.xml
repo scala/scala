@@ -243,14 +243,12 @@ BUILD QUICK LAYER
   <!-- Build library -->
     <mkdir dir="${build-quick.dir}/classes/library"/>
     <javac
-      srcdir="${src.dir}/library"
+      srcdir="${src.dir}"
       destdir="${build-quick.dir}/classes/library"
-      classpath="${build-quick.dir}/classes/library"
-      includes="**/*.java"/>
-    <javac srcdir="${src.dir}/actors"
-      destdir="${build-quick.dir}/classes/library"
-      classpath="${build-quick.dir}/classes/library"
-      includes="**/*.java"/>
+      classpath="${build-quick.dir}/classes/library">
+      <include name="library/**/*.java"/>
+      <include name="actors/**/*.java"/>
+    </javac>
     <sabmake id="locker.lib.scalac"
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
@@ -354,12 +352,10 @@ BUILD STRAP LAYER
     <javac
       srcdir="${src.dir}/library"
       destdir="${build-strap.dir}/classes/library"
-      classpath="${build-strap.dir}/classes/library"
-      includes="**/*.java"/>
-    <javac srcdir="${src.dir}/actors"
-      destdir="${build-strap.dir}/classes/library"
-      classpath="${build-strap.dir}/classes/library"
-      includes="**/*.java"/>
+      classpath="${build-strap.dir}/classes/library">
+      <include name="library/**/*.java"/>
+      <include name="actors/**/*.java"/>
+    </javac>
     <sabmake id="quick.lib.scalac"
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="quick.classpath"
@@ -595,7 +591,7 @@ BOOTRAPING TEST AND TEST SUITE
 
   <target name="suite.test" depends="partest.load, pack.load">
     <taskdef resource="scala/tools/partest/antlib.xml" classpathref="pack.classpath"/>
-    <partest showlog="yes">
+    <partest showlog="yes" erroronfailed="yes">
       <classpath>
         <path refid="pack.classpath"/>
         <fileset dir="${test.dir}/files/lib" includes="*.jar"/>

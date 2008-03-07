@@ -446,14 +446,6 @@ sealed trait Either[+A, +B] {
     case Right(_) => None
   }
 }
-/**
- * The left side of the disjoin union, as opposed to the <code>Right</code> side.
- */
-final case class Left[+A, +B](a: A) extends Either[A, B]
-/**
- * The right side of the disjoin union, as opposed to the <code>Left</code> side.
- */
-final case class Right[+A, +B](b: B) extends Either[A, B]
 
 import Function.untupled
 
