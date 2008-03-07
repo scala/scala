@@ -392,7 +392,7 @@ class Worker(val fileManager: FileManager) extends Actor {
 
             val tempLogFile = new File(dir, ".temp.log")
             val logFileReader = new BufferedReader(new FileReader(logFile))
-            val tempLogFilePrinter = new PrintWriter(tempLogFile)
+            val tempLogFilePrinter = new PrintWriter(new FileWriter(tempLogFile))
             val appender =
               new StreamAppender(logFileReader, tempLogFilePrinter)
             appender.runAndMap({ s => s.replaceAll(dir.getAbsolutePath.replace(File.separatorChar,'/')+File.separator, "") })
