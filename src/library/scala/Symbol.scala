@@ -56,7 +56,7 @@ object Symbol {
    *  @return the unique reference to this string.
    */
   def apply(name: String): Symbol = internedSymbols.synchronized {
-    internedSymbols.get(name).map(_.get).getOrElse(None) match {
+    internedSymbols.get(name).flatMap(_.get) match {
     case Some(sym) => sym
     case _ =>
       val sym = new Symbol(name)
