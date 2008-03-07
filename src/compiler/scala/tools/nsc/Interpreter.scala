@@ -18,7 +18,7 @@ import scala.collection.mutable.{ListBuffer, HashSet, ArrayBuffer}
 import io.PlainFile
 import reporters.{ConsoleReporter, Reporter}
 import symtab.Flags
-import util.{SourceFile,BatchSourceFile,ClassPath}
+import util.{SourceFile,BatchSourceFile,ClassPath,NameTransformer}
 import nsc.{InterpreterResults=>IR}
 
 /** <p>
@@ -617,7 +617,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
           !(isGeneratedVarName(vname) &&
             req.typeOf(compiler.encode(vname)) == "Unit"))
       {
-        code.print(" + \"" + vname + ": " +
+        val prettyName = NameTransformer.decode(vname)
+        code.print(" + \"" + prettyName + ": " +
 	           string2code(req.typeOf(vname)) +
 	           " = \" + " +
                    " (if(" +
