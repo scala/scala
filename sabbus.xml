@@ -350,7 +350,7 @@ BUILD STRAP LAYER
   <!-- Build library -->
     <mkdir dir="${build-strap.dir}/classes/library"/>
     <javac
-      srcdir="${src.dir}/library"
+      srcdir="${src.dir}"
       destdir="${build-strap.dir}/classes/library"
       classpath="${build-strap.dir}/classes/library">
       <include name="library/**/*.java"/>
