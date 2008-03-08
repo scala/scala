@@ -1,4 +1,4 @@
-package util.matching
+package scala.util.matching
 
 import scala.collection.immutable._
 

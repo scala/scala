@@ -1,4 +1,4 @@
-package util.matching
+package scala.util.matching
 
 /** Only used by BitFields. This class is similar to ArrowAssoc.
  *  It defines the --> function that creates a pair if the

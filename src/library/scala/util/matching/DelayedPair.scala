@@ -1,4 +1,4 @@
-package util.matching
+package scala.util.matching
 
 /** A DelayedPair is similar to a pair, except that the second
  *  argument is delayed.

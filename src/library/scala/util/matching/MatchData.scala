@@ -1,4 +1,4 @@
-package util.matching
+package scala.util.matching
 
 /** This class provides methods to access
  *  the contents of capture groups.

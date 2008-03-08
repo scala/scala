@@ -1,4 +1,4 @@
-package util.matching
+package scala.util.matching
 
 /** This class provides methods for creating and using FixedBitFields.
  *  If you have variable size fields, see @see BitField.

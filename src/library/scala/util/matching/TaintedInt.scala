@@ -1,4 +1,4 @@
-package util.matching
+package scala.util.matching
 
 /** This is a wrapper around integer. Used only by BitFields,
  *  it makes it possible to differentiate fixed-size fields from

@@ -1,4 +1,4 @@
-package util.matching
+package scala.util.matching
 
 /** This class provides an implicit conversion that allows
  *  using the matching operator <code>=~</code> on strings.
