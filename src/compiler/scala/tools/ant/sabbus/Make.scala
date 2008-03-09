@@ -82,8 +82,7 @@ class Make extends Task {
   override def execute: Unit = {
     if (id.isEmpty) error("Mandatory attribute 'id' is not set.")
     if (compilerPath.isEmpty) error("Mandatory attribute 'compilerpath' is not set.")
-    if (destinationDir.isEmpty) error("Mandatory attribute 'destdir' is not set.")
-    val settings = new CompilerSettings
+    val settings = new Settings
     if (!destinationDir.isEmpty) settings.d = destinationDir.get
     if (!compilationPath.isEmpty) settings.classpath = compilationPath.get
     if (!sourcePath.isEmpty) settings.sourcepath = sourcePath.get

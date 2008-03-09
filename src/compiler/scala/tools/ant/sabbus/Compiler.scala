@@ -12,7 +12,7 @@ import java.io.File
 import java.net.URL
 import java.lang.reflect.InvocationTargetException
 
-class Compiler(classpath: Array[URL], val settings: CompilerSettings) {
+class Compiler(classpath: Array[URL], val settings: Settings) {
 
   private lazy val classLoader: ClassLoader =
     new java.net.URLClassLoader(classpath, null)
@@ -22,7 +22,9 @@ class Compiler(classpath: Array[URL], val settings: CompilerSettings) {
   private lazy val foreignCompiler: AnyRef =
     classLoader.loadClass(foreignCompilerName).newInstance.asInstanceOf[AnyRef]
 
-  foreignInvoke("args_$eq", Array(classOf[String]), Array(settings.toArgs))
+  private def settingsArray: Array[String] = settings.toArgs.toArray
+
+  foreignInvoke("args_$eq", Array(classOf[Array[String]]), Array(settingsArray))
 
   private def foreignInvoke(method: String, types: Array[Class[T] forSome { type T }] , args: Array[AnyRef]) =
     try {
@@ -34,6 +36,7 @@ class Compiler(classpath: Array[URL], val settings: CompilerSettings) {
 
   def compile(files: Array[File]): (Int, Int) = //(errors, warnings)
     try {
+      foreignInvoke("args_$eq", Array(classOf[Array[String]]), Array(settingsArray))
       val result =
         foreignInvoke("compile", Array(classOf[Array[File]]), Array(files)).asInstanceOf[Int]
       (result >> 16, result & 0x00FF)

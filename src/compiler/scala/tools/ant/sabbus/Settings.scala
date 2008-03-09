@@ -12,7 +12,8 @@ import java.io.File
 
 import org.apache.tools.ant.types.{Path, Reference}
 
-class CompilerSettings {
+@cloneable
+class Settings {
 
   private var gBf: Option[String] = None
   def g = gBf.get
@@ -58,22 +59,21 @@ class CompilerSettings {
   def more = moreBf.get
   def more_=(s: String): this.type = { moreBf = Some(s); this }
 
-  def toArgs: String = ("" +
-    (if (!gBf.isEmpty) "-g:" + g + " " else "") +
-    (if (uncheckedBf) "-unchecked " else "") +
-    (if (!classpathBf.isEmpty) "-classpath " + classpath + " " else "") +
-    (if (!sourcepathBf.isEmpty) "-sourcepath " + sourcepath + " " else "") +
-    (if (!bootclasspathBf.isEmpty) "-bootclasspath " + bootclasspath + " " else "") +
-    (if (!extdirsBf.isEmpty) "-extdirs " + extdirs + " " else "") +
-    (if (!dBf.isEmpty) "-d " + d + " " else "") +
-    (if (!encodingBf.isEmpty) "-encoding " + encoding + " " else "") +
-    (if (!targetBf.isEmpty) "-target:" + target + " " else "") +
-    (if (optimiseBf) "-optimise " else "") +
-    (if (!moreBf.isEmpty) more else "")
-  )
+  def toArgs: List[String] =
+    (if (!gBf.isEmpty) "-g:"+g :: Nil else Nil) :::
+    (if (uncheckedBf) "-unchecked" :: Nil else Nil) :::
+    (if (!classpathBf.isEmpty) "-classpath" :: classpath.toString :: Nil else Nil) :::
+    (if (!sourcepathBf.isEmpty) "-sourcepath" :: sourcepath.toString :: Nil else Nil) :::
+    (if (!bootclasspathBf.isEmpty) "-bootclasspath" :: bootclasspath.toString :: Nil else Nil) :::
+    (if (!extdirsBf.isEmpty) "-extdirs" :: extdirs.toString :: Nil else Nil) :::
+    (if (!dBf.isEmpty) "-d" :: d.getAbsolutePath :: Nil else Nil) :::
+    (if (!encodingBf.isEmpty) "-encoding" :: encoding :: Nil else Nil) :::
+    (if (!targetBf.isEmpty) "-target:"+target :: Nil else Nil) :::
+    (if (optimiseBf) "-optimise" :: Nil else Nil) :::
+    (if (!moreBf.isEmpty) List.fromString(more, ' ') else Nil)
 
   override def equals(that: Any): Boolean = that match {
-    case cs: CompilerSettings =>
+    case cs: Settings =>
       this.gBf == cs.gBf &&
       this.uncheckedBf == cs.uncheckedBf &&
       this.classpathBf == cs.classpathBf &&
@@ -85,6 +85,7 @@ class CompilerSettings {
       this.targetBf == cs.targetBf &&
       this.optimiseBf == cs.optimiseBf &&
       this.moreBf == cs.moreBf
+    case _ => false
   }
 
 }

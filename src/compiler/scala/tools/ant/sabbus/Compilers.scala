@@ -22,7 +22,7 @@ object Compilers extends collection.Map[String, Compiler] {
 
   def size = container.size
 
-  def make(id: String, classpath: Array[URL], settings: CompilerSettings): Compiler = {
+  def make(id: String, classpath: Array[URL], settings: Settings): Compiler = {
     val runtime = Runtime.getRuntime
     if (debug) println("Making compiler " + id)
     if (debug) println("  memory before: " + (runtime.freeMemory/1048576.).formatted("%10.2f") + " MB")

@@ -24,18 +24,24 @@ class Use extends MatchingTask {
     sourceDir = Some(input)
   }
 
+  def setDestdir(input: File): Unit = {
+    destinationDir = Some(input)
+  }
+
   def setFailOnError(input: Boolean): Unit = {
     failOnError = input
   }
 
   private var id: Option[String] = None
   private var sourceDir: Option[File] = None
+  private var destinationDir: Option[File] = None
   private var failOnError: Boolean = true
 
   override def execute(): Unit = {
     if (id.isEmpty) error("Mandatory attribute 'id' is not set.")
     if (sourceDir.isEmpty) error("Mandatory attribute 'srcdir' is not set.")
     val compiler = Compilers(id.get)
+    if (!destinationDir.isEmpty) compiler.settings.d = destinationDir.get
     val mapper = new GlobPatternMapper()
     mapper.setTo("*.class")
     mapper.setFrom("*.scala")
@@ -49,8 +55,6 @@ class Use extends MatchingTask {
     if (includedFiles.size > 0)
       try {
         log("Compiling " + includedFiles.size + " file" + (if (includedFiles.size > 1) "s" else "") + " to " + compiler.settings.d.getAbsolutePath)
-        //for (f <- includedFiles) log("   " + f.getAbsolutePath)
-          //log("Attributes are " + compiler.settings.toArgs)
         val (errors, warnings) = compiler.compile(includedFiles)
         if (errors > 0)
           error("Compilation failed with " + errors + " error" + (if (errors > 1) "s" else "") + ".")

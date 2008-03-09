@@ -89,13 +89,15 @@ INITIALISATION
              classpath="${ant-contrib.jar}"/>
   <!-- This is the start time for the distribution -->
     <tstamp prefix="time">
-      <format property="human" pattern="EEEE, d MMMM yyyy, HH:mm:ss (zz)"/>
+      <format property="human" pattern="d MMMM yyyy, HH:mm:ss"/>
       <format property="short" pattern="yyyyMMddHHmmss"/>
     </tstamp>
+  <!-- Find out whether we are running on Windows -->
+    <condition property="os.win">
+      <os family="windows"/>
+    </condition>
   <!-- Finding out SVN revision -->
-    <exec
-      executable="svn" vmlauncher="no"
-      errorproperty="svn.err" outputproperty="svn.out">
+    <exec executable="svn" vmlauncher="no" outputproperty="svn.out">
       <arg line=" info ${basedir}"/>
     </exec>
     <propertyregex
@@ -110,7 +112,7 @@ INITIALISATION
       value="${version.major}.${version.minor}.${version.patch}.r${svn.number}-b${time.short}"/>
   <!-- And print-out what we are building -->
     <echo level="info" message="Build number is '${version.number}'"/>
-    <echo level="info" message="Built ${time.human} from SVN revision ${svn.number}"/>
+    <echo level="info" message="Built ${time.human} from revision ${svn.number} with Java ${java.vm.version}"/>
   </target>
 
 <!-- ===========================================================================
@@ -176,7 +178,6 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
         <include name="**/*.css"/>
       </fileset>
     </copy>
-    <symlink link="${build-locker.dir}/classes/fjbg.jar" resource="${fjbg.jar}" overwrite="yes"/>
     <sabbreak id="starr.lib.scalac"/>
   <!-- Build compiler -->
     <mkdir dir="${build-locker.dir}/classes/compiler"/>
@@ -282,7 +283,6 @@ BUILD QUICK LAYER
         <include name="**/*.css"/>
       </fileset>
     </copy>
-    <symlink link="${build-quick.dir}/classes/fjbg.jar" resource="${fjbg.jar}" overwrite="yes"/>
     <sabbreak id="locker.lib.scalac"/>
   <!-- Build compiler -->
     <mkdir dir="${build-quick.dir}/classes/compiler"/>
@@ -389,7 +389,6 @@ BUILD STRAP LAYER
         <include name="**/*.css"/>
       </fileset>
     </copy>
-    <symlink link="${build-strap.dir}/classes/fjbg.jar" resource="${fjbg.jar}" overwrite="yes"/>
     <sabbreak id="quick.lib.scalac"/>
   <!-- Build compiler -->
     <mkdir dir="${build-strap.dir}/classes/compiler"/>
@@ -611,7 +610,8 @@ BOOTRAPING TEST AND TEST SUITE
 MAKE SABBUS JAR (to remove once sabbus is part of starr library)
 ============================================================================ -->
   
-  <target name="sabbus.build" depends="quick.load">
+  <target name="sabbus.build" depends="starr.load">
+    <taskdef resource="scala/tools/ant/antlib.xml" classpathref="starr.classpath"/>
     <mkdir dir="${build.dir}/sabbus"/>
     <scalac
       srcdir="${src.dir}/compiler/scala/tools/ant/sabbus/"
@@ -671,10 +671,13 @@ MAKE ACTUAL DISTRIBUTION
     <jar destfile="${dist.dir}/src/scala-compiler-src.jar">
       <fileset dir="${src.dir}/compiler"/>
     </jar>
+  </target>
+  
+  <target name="dist.latest" depends="dist.build" unless="os.win">
     <symlink link="${dists.dir}/latest" resource="${dist.dir}" overwrite="yes"/>
   </target>
   
-  <target name="dist.load" depends="stability.test, suite.test, dist.build"/>
+  <target name="dist.load" depends="stability.test, suite.test, dist.latest"/>
 
 <!-- ===========================================================================
 CLEAN

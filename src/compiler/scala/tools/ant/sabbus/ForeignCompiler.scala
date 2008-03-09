@@ -15,23 +15,22 @@ import scala.tools.nsc.reporters.ConsoleReporter
 
 class ForeignCompiler {
 
-  private var argsBuffer: String = null
-  def args: String = argsBuffer
-  def args_=(a: String): Unit = {
-    if (args != null) throw new Error("Argument must be set only once")
+  private var argsBuffer: Array[String] = null
+  def args: Array[String] = argsBuffer
+  def args_=(a: Array[String]): Unit = {
     argsBuffer = a
     nsc
   }
 
   private val error: (String => Nothing) = { msg => throw new Exception(msg) }
 
-  private def settings = new Settings(error)
+  private def settings = new scala.tools.nsc.Settings(error)
 
   private lazy val reporter = new ConsoleReporter(settings)
 
   private lazy val nsc: Global = {
     try {
-      val command = new CompilerCommand(List.fromString(args, ' '), settings, error, false)
+      val command = new CompilerCommand(args.toList, settings, error, false)
       new Global(command.settings, reporter)
     }
     catch {
