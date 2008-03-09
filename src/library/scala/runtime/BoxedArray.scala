@@ -99,9 +99,7 @@ abstract class BoxedArray extends Array.Array0[Any] {
   final override def ++[b >: Any](that: Iterable[b]): Array[b] = super.++(that).toArray
 
   final def zip[b](that: Array[b]): Array[Tuple2[Any,b]] = {
-    val len = length
-    if(len != that.length)
-      throw new Error("zipping arrays of different length")
+    val len = length min that.length
     val result = new Array[Tuple2[Any,b]](len)
     var i = 0
     while (i < len) {

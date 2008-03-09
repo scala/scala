@@ -336,6 +336,14 @@ object Test {
   }
 
   //##########################################################################
+  // Miscellaneous checks
+  def checkZip(): Unit = {
+    val zipped = Array("a", "b", "c").zip(Array(1, 2))
+    val expected = Array(("a",1), ("b",2))
+    check(zipped sameElements expected, zipped.toList, expected.toList)
+  }
+
+  //##########################################################################
   // Arrays
 
   val uarray: Array[Unit   ] = Array(u0, u1);
@@ -900,6 +908,10 @@ object Test {
     check_Tm(marray, 3, m0, mcheck)
 
     check_Tn(narray, 3, n0, ncheck)
+
+    //######################################################################
+
+    checkZip()
 
     //######################################################################
 
