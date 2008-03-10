@@ -12,7 +12,7 @@ import java.util.regex.{Pattern, Matcher}
  *  @param regex      A string representing a regular expression
  *  @param groupNames A mapping from names to indices in capture groups
  */
-class Regex(regex: String, private var groupNames: Map[String, Int]) {
+class Regex(val regex: String, private var groupNames: Map[String, Int]) {
   private def buildMap(res: Map[String, Int], groupNames: Seq[String], i: Int): Map[String, Int] =
     if (i > groupNames.size)
       res
@@ -41,8 +41,8 @@ class Regex(regex: String, private var groupNames: Map[String, Int]) {
     groupNames = buildMap(Map[String, Int](), groups, 1)
   }
 
-  /* Store the compiled pattern at instantiation time */
-  private val pattern = Pattern.compile(regex)
+  /* Stores the compiled pattern at instantiation time */
+  val pattern = Pattern.compile(regex)
 
   /* Builds a MatchData[String] from a Matcher */
   private def buildSeq(l: List[String], m: Matcher, i: Int): MatchData[String] =
@@ -153,6 +153,8 @@ class Regex(regex: String, private var groupNames: Map[String, Int]) {
     val m = pattern.matcher(target)
     m.matches()
   }
+
+  override def toString = """regex"""+".r"
 }
 
 /** Provides implicit conversions for regular expressions.

@@ -10,7 +10,8 @@
 
 package scala.util.parsing.combinator
 
-import java.util.regex._
+import java.util.regex.Pattern
+import scala.util.matching.Regex
 import scala.util.parsing.input.CharSequenceReader
 
 trait RegexParsers extends Parsers {
@@ -50,32 +51,19 @@ trait RegexParsers extends Parsers {
   }
 
   /** A parser that matches a regex string */
-  def regex(s: String): Parser[String] = new Parser[String] {
-    private val pattern = Pattern.compile(s)
+  implicit def regex(r: Regex): Parser[String] = new Parser[String] {
     def apply(in: Input) = {
       val source = in.source
       val offset = in.offset
       val start = handleWhiteSpace(source, offset)
-      val pm = pattern.matcher(source.subSequence(start, source.length))
+      val pm = r.pattern.matcher(source.subSequence(start, source.length))
       if (pm.lookingAt)
         Success(source.subSequence(start, start + pm.end).toString,
                 in.drop(start + pm.end - offset))
       else
-        Failure("string matching regex `"+s+"' expected", in.drop(start - offset))
+        Failure("string matching regex `"+r.regex+"' expected", in.drop(start - offset))
     }
   }
-
-  /** A helper class to turn strings into regexes */
-  class PreRegex(s: String) {
-    def r: Parser[String] = regex(s)
-  }
-
-  /** An implicit definition which lets you follow a string with `.r', turning
-   *  it into a regex parser. E.g.
-   *
-   *  """A\w*""".r   is a regex parser for identifiers starting with `A'.
-   */
-  implicit def mkPreRegex(s: String) = new PreRegex(s)
 
   /** Parse some prefix of character sequence `in' with parser `p' */
   def parse[T](p: Parser[T])(in: CharSequence): ParseResult[T] =

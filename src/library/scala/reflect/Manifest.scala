@@ -49,5 +49,7 @@ object Manifest {
   def intersectionType[T](parents: Manifest[_]*): Manifest[T] = null
 }
 
+/** A Manifest[T] is a descriptor for the type T.
+ */
 abstract class Manifest[T]
 

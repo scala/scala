@@ -728,7 +728,7 @@ trait Parsers {
 
   def mkList[T] = (_: ~[T, List[T]]) match { case x ~ xs => x :: xs }
   case class ~[+a, +b](_1: a, _2: b) {
-    override def toString = "("+ _1 +" ~ "+ _2 +")"
+    override def toString = "("+ _1 +"~"+ _2 +")"
   }
 
   /** A parser whose ~ combinator disallows back-tracking.
