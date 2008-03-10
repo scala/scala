@@ -81,10 +81,9 @@ trait Definitions {
     var DoubleClass: Symbol = _
 
     // remote classes
-    //lazy val ChannelClass = getClass("scala.distributed.Channel")
     //lazy val RemoteRefClass = getClass("scala.runtime.RemoteRef")
     //lazy val RemoteRefModule = getModule("scala.runtime.RemoteRef")
-    //lazy val RemoteObjectRefClass = getClass("scala.runtime.distributed.RemoteObjectRef")
+    //lazy val RemoteObjectRefClass = getClass("scala.runtime.remoting.RemoteObjectRef")
     //var RemoteRefClasses: HashMap[Symbol, Symbol] = _
 
     // the scala reference classes
@@ -818,7 +817,7 @@ trait Definitions {
 
       //RemoteRefClasses = new HashMap[Symbol, Symbol]
       //for (clazz <- refClass.values) {
-      //  RemoteRefClasses(clazz) = getClass("scala.runtime.distributed.Remote" + clazz.name)
+      //  RemoteRefClasses(clazz) = getClass("scala.runtime.remoting.Remote" + clazz.name)
       //}
       //RemoteRefClasses(ObjectRefClass) = RemoteObjectRefClass
     }

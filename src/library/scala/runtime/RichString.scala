@@ -77,7 +77,7 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
   /** return n times the current string
    */
   def * (n: Int): String = {
-    val buf = new StringBuffer
+    val buf = new StringBuilder
     for (i <- 0 until n) buf append self
     buf.toString
   }
