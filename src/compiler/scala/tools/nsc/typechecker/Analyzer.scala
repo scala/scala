@@ -16,8 +16,8 @@ trait Analyzer extends AnyRef
             with Variances
             with EtaExpansion
             with SyntheticMethods
-            with Unapplies {
-
+            with Unapplies
+{
   val global : Global
   import global._
 

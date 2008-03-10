@@ -74,6 +74,14 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
     new RichString(buf.toString)
   }
 
+  /** return n times the current string
+   */
+  def * (n: Int): String = {
+    val buf = new StringBuffer
+    for (i <- 0 until n) buf append self
+    buf.toString
+  }
+
   override def compare(other: String) = self compareTo other
 
   private def isLineBreak(c: Char) = c == LF || c == FF

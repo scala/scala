@@ -17,7 +17,13 @@ package scala.util.parsing.input
  */
 abstract class Reader[+T] {
 
-   /** Returns the first element of the stream
+  /** The source character sequence for this reader */
+  def source: CharSequence
+
+  /** The current index into source */
+  def offset: Int
+
+   /** Returns the first element of the reader
     */
   def first: T
 
@@ -29,12 +35,21 @@ abstract class Reader[+T] {
    */
   def rest: Reader[T]
 
-  /** The position of the first element in the stream
+  /** Returns an abstract reader consisting of all elements except the first
+   *  <code>n</code> elements.
+   */
+  def drop(n: Int): Reader[T] = {
+    var r: Reader[T] = this
+    var cnt = n
+    while (cnt > 0) r = r.rest
+    r
+  }
+
+  /** The position of the first element in the reader
    */
   def pos: Position
 
-  /** Whether there are any more elements in this reader besides the first.
-   * (i.e., whether calling `rest' will yield a `Reader' with more elements)
+  /** true iff there are no more elements in this reader
    */
   def atEnd: Boolean
 }

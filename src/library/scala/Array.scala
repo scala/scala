@@ -189,6 +189,14 @@ object Array {
      override def force : Array[A] = toArray
      override def drop( from: Int) = slice(from, length)
      override def take(until: Int) = slice(0, until)
+     override def dropWhile(p: A => Boolean) = {
+       val c = length + 1
+       drop((findIndexOf(!p(_)) + c) % c)
+     }
+     override def takeWhile(p: A => Boolean) = {
+       val c = length + 1
+       take((findIndexOf(!p(_)) + c) % c)
+     }
      override def slice(from0 : Int, until0 : Int) : Projection[A] = new RandomAccessSeq.MutableSlice[A] with Projection[A] {
        override def from = from0
        override def until = until0
@@ -214,6 +222,8 @@ object Array {
      override def slice(from : Int, until : Int) : Projection[A] = projection.slice(from, until)
      override def take(until : Int) : Projection[A] = projection.take(until)
      override def drop(from : Int) : Projection[A] = projection.drop(from)
+     override def dropWhile(p: A => Boolean) = projection.dropWhile(p)
+     override def takeWhile(p: A => Boolean) = projection.takeWhile(p)
      override def reverse = projection.reverse
      override def force = asInstanceOf[Array[A]]
    }
@@ -327,24 +337,6 @@ final class Array[A](_length: Int) extends Array.Array0[A] {
    *  @return the elements of this array satisfying <code>p</code>.
    */
   override def filter(p: A => Boolean): Array[A] = throw new Error()
-
-  /** Returns the longest prefix of this array whose elements satisfy
-   *  the predicate <code>p</code>.
-   *
-   *  @param p the test predicate.
-   *  @return  the longest prefix of this array whose elements satisfy
-   *           the predicate <code>p</code>.
-   */
-  override def takeWhile(p: A => Boolean): Array[A] = throw new Error()
-
-  /** Returns the longest suffix of this array whose first element
-   *  does not satisfy the predicate <code>p</code>.
-   *
-   *  @param p the test predicate.
-   *  @return  the longest suffix of the array whose first element
-   *           does not satisfy the predicate <code>p</code>.
-   */
-  override def dropWhile(p: A => Boolean): Array[A] = throw new Error()
 
   /** Returns an array consisting of all elements of this array followed
    *  by all elements of the argument iterable.

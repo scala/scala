@@ -32,6 +32,13 @@ object StreamReader {
 /** A character array reader reads a stream of characters (keeping track of
  *  their positions) from an array.
  *
+ *  NOTE:
+ *  StreamReaders do not really fulfill the new contract for readers, which
+ *  requires a `source' CharSequence representing the full input.
+ *  Instead source is treated line by line.
+ *  As a consequence, regex matching cannot extend beyond a single lines
+ *  when a StreamReader are used for input.
+ *
  * @param bin the underlying java.io.BufferedReader
  * @param sourceLine  the line at column `col' in the stream
  * @param line   the 1-based line number of the character returned by `first'
@@ -42,6 +49,9 @@ object StreamReader {
 sealed class StreamReader private (bin: BufferedReader, sourceLine: String, ln: Int, col: Int)
 extends Reader[Char] {
   import StreamReader._
+
+  def source: CharSequence = sourceLine
+  def offset: Int = col-1
 
   def first =
     if (sourceLine == null)

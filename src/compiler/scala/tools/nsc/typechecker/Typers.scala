@@ -2385,8 +2385,7 @@ trait Typers { self: Analyzer =>
             checkBounds(tree.pos, NoPrefix, NoSymbol, tparams, targs, "")
             if (fun.symbol == Predef_classOf) {
               checkClassType(args.head, true)
-              Literal(Constant(targs.head)) setPos tree.pos setType Predef_classOfType(targs.head)
-              // @M: targs.head.normalize is not necessary --> toTypeKind eventually normalizes the type
+              atPos(tree.pos) { gen.mkClassOf(targs.head) }
             } else {
               if (phase.id <= currentRun.typerPhase.id &&
                   fun.symbol == Any_isInstanceOf && !targs.isEmpty)
@@ -3475,11 +3474,59 @@ trait Typers { self: Analyzer =>
           List()
       }
 
+      def implicitManifest(pt: Type): Tree = pt match {
+        case TypeRef(_, ManifestClass, List(arg)) => manifestOfType(pos, arg)
+        case _ => EmptyTree
+      }
+
       var tree = searchImplicit(context.implicitss, true)
       if (tree == EmptyTree) tree = searchImplicit(implicitsOfType(pt), false)
+      if (tree == EmptyTree) tree = implicitManifest(pt)
       if (util.Statistics.enabled)
         impltime = impltime + currentTime - startTime
       tree
+    }
+
+    def manifestOfType(pos: Position, tp: Type): Tree = {
+      def mkManifest(name: String, args: Tree*): Tree =
+        if (args contains EmptyTree) EmptyTree
+        else
+          typed {
+            atPos(pos) {
+              val fn = TypeApply(
+                Select(gen.mkAttributedRef(ManifestModule), name),
+                List(TypeTree(tp)))
+              if (args.isEmpty) fn else Apply(fn, args.toList)
+            }
+          }
+      def findManifest(tp: Type): Tree =
+        inferImplicit(pos, appliedType(ManifestClass.typeConstructor, List(tp)), true)
+      tp.normalize match {
+        case ThisType(_) | SingleType(_, _) =>
+          mkManifest("singleType", gen.mkAttributedQualifier(tp))
+        case ConstantType(value) =>
+          findManifest(tp.deconst)
+        case TypeRef(pre, sym, args) =>
+          if (sym.isClass) {
+            val suffix = gen.mkClassOf(tp) :: (args map findManifest)
+            mkManifest(
+              "classType",
+              (if ((pre eq NoPrefix) || pre.typeSymbol.isStaticOwner) suffix
+               else findManifest(pre) :: suffix): _*)
+          } else if (sym.isTypeParameterOrSkolem) {
+            EmptyTree  // a manifest should have been found by normal searchImplicit
+          } else {
+            mkManifest(
+              "abstractType",
+              findManifest(pre) :: Literal(sym.name.toString) :: (args map findManifest): _*)
+          }
+        case RefinedType(parents, decls) =>
+          // refinement is not generated yet
+          if (parents.length == 1) findManifest(parents.head)
+          else mkManifest("intersectionType", parents map findManifest: _*)
+        case _ =>
+          EmptyTree
+      }
     }
 
     def applyImplicitArgs(tree: Tree): Tree = tree.tpe match {

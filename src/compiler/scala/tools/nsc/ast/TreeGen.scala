@@ -199,6 +199,9 @@ abstract class TreeGen {
   def mkAsInstanceOf(value: Tree, tpe: Type): Tree =
     mkAsInstanceOf(value, tpe, global.phase.erasedTypes)
 
+  def mkClassOf(tp: Type): Tree =
+    Literal(Constant(tp)) setType Predef_classOfType(tp)
+
   def mkCheckInit(tree: Tree): Tree = {
     var tpe = tree.tpe
     if (tpe == null && tree.hasSymbol) tpe = tree.symbol.tpe

@@ -29,31 +29,9 @@ object CharArrayReader {
  *
  * @author Martin Odersky, Adriaan Moors
  */
-class CharArrayReader(source: Array[Char], index: Int, line: Int, column: Int) extends Reader[Char] {
-  import CharArrayReader._
+class CharArrayReader(chars: Array[Char], index: Int)
+extends CharSequenceReader(new CharArraySequence(chars), index) {
 
-  /** Construct a <code>CharArrayReader</code> with its first element at
-   *  <code>source(0)</code> and position <code>(1,1)</code>.
-   */
-  def this(source: Array[Char]) = this(source, 0, 1, 1)
+  def this(chars: Array[Char]) = this(chars, 0)
 
-  private var i = index
-  if (i + 1 < source.length && source(i) == CR && source(i + 1) == '\n') i += 1
-
-  // see `first' in `Reader'
-  def first = if (i == source.length) EofCh else source(i)
-
-  // see `rest' in `Reader'
-  def rest: CharArrayReader = {
-    val ch = first
-    if (ch == EofCh) this
-    else if (ch == '\n') new CharArrayReader(source, i + 1, line + 1, 1)
-    else new CharArrayReader(source, i + 1, line, column + 1)
-  }
-
-  // see `pos' in `Reader'
-  def pos: Position = new CharArrayPosition(source, line, column)
-
-  // see `atEnd' in `Reader'
-  def atEnd = i == source.length
 }

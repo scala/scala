@@ -715,9 +715,14 @@ trait Parsers {
   def phrase[T](p: Parser[T]) = new Parser[T] {
     lastNoSuccess = null
     def apply(in: Input) = p(in) match {
-      case s @ Success(out, in1) if in1.atEnd => s
-      case s @ Success(out, in1) => Failure("end of input expected", in1)
-      case f : NoSuccess => lastNoSuccess
+      case s @ Success(out, in1) =>
+        if (in1.atEnd)
+          s
+        else if (lastNoSuccess == null || lastNoSuccess.next.pos < in1.pos)
+          Failure("end of input expected", in1)
+        else
+          lastNoSuccess
+      case _ => lastNoSuccess
     }
   }
 

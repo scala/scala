@@ -98,23 +98,23 @@ abstract class BoxedArray extends Array.Array0[Any] {
 
   final override def ++[b >: Any](that: Iterable[b]): Array[b] = super.++(that).toArray
 
-  final def zip[b](that: Array[b]): Array[Tuple2[Any,b]] = {
-    val len = length min that.length
-    val result = new Array[Tuple2[Any,b]](len)
+  final def zip[b](that: Array[b]): Array[(Any,b)] = {
+    val len = this.length min that.length
+    val result = new Array[(Any,b)](len)
     var i = 0
     while (i < len) {
-      result(i) = new Tuple2(this(i), that(i))
+      result(i) = (this(i), that(i))
       i += 1
     }
     result
   }
 
-  final def zipWithIndex: Array[Tuple2[Any,Int]] = {
+  final def zipWithIndex: Array[(Any,Int)] = {
     val len = length
-    val result = new Array[Tuple2[Any,Int]](len)
+    val result = new Array[(Any,Int)](len)
     var i = 0
     while (i < len) {
-      result(i) = new Tuple2(this(i), i)
+      result(i) = (this(i), i)
       i += 1
     }
     result
@@ -122,15 +122,6 @@ abstract class BoxedArray extends Array.Array0[Any] {
 
   /** Returns an array that contains all indices of this array */
   def indices: Array[Int] = Array.range(0, length)
-
-  override def takeWhile(p: Any => Boolean) = {
-    val c = length + 1
-    take((findIndexOf(!p(_)) + c) % c)
-  }
-  override def dropWhile(p: Any => Boolean) = {
-    val c = length + 1
-    drop((findIndexOf(!p(_)) + c) % c)
-  }
 
   final def deepToString() = deepMkString(stringPrefix + "(", ",", ")")
 

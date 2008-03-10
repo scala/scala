@@ -94,6 +94,8 @@ trait Definitions {
     lazy val ClassfileAnnotationClass: Symbol = getClass("scala.ClassfileAnnotation")
     lazy val StaticAnnotationClass: Symbol = getClass("scala.StaticAnnotation")
     lazy val TypeConstraintClass: Symbol = getClass("scala.TypeConstraint")
+    lazy val ManifestClass: Symbol = getClass("scala.reflect.Manifest")
+    lazy val ManifestModule: Symbol = getModule("scala.reflect.Manifest")
 
     var CodeClass: Symbol = _
     var CodeModule: Symbol = _
@@ -109,7 +111,6 @@ trait Definitions {
     lazy val SeqClass: Symbol = getClass("scala.Seq")
     lazy val RandomAccessSeqMutableClass: Symbol = getMember(getModule("scala.RandomAccessSeq"), nme.Mutable)
     def Seq_length = getMember(SeqClass, nme.length)
-
 
     lazy val ListClass: Symbol = getClass("scala.List")
       def List_isEmpty = getMember(ListClass, nme.isEmpty)
