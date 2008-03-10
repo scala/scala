@@ -400,7 +400,7 @@ class Worker(val fileManager: FileManager) extends Actor {
             tempLogFilePrinter.close()
 
             val tempLogFileReader = new BufferedReader(new FileReader(tempLogFile))
-            val logFilePrinter = new PrintWriter(logFile)
+            val logFilePrinter= new PrintWriter(new FileWriter(logFile), true)
             (new StreamAppender(tempLogFileReader, logFilePrinter)).run
             tempLogFileReader.close()
             logFilePrinter.close()
