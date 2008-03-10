@@ -7,14 +7,45 @@
 \*                                                                      */
 package scala.reflect
 
+
+/** A Manifest[T] is a descriptor for the type T.
+ *  The object `Manifest' defines factory methods for manifests which still need to be implemented.
+ *  Also still to be done are manifests for refinement types.
+ */
 object Manifest {
+
+  /** Manifest for the singleton type `value.type'
+   */
   def singleType[T](value: Any): Manifest[T] = null
+
+  /** Manifest for the class type `clazz', where `clazz' is
+   *  a top-level or static class
+   */
   def classType[T](clazz: Predef.Class[_]): Manifest[T] = null
+
+  /** Manifest for the class type `clazz[args]', where `clazz' is
+   *  a top-level or static class
+   */
   def classType[T](clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] = null
+
+  /** Manifest for the class type `prefix # clazz'
+   */
   def classType[T](prefix: Manifest[_], clazz: Predef.Class[_]): Manifest[T] = null
+
+  /** Manifest for the class type `prefix # clazz[args]'
+   */
   def classType[T](prefix: Manifest[_], clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] = null
+
+  /** Manifest for the abstract type `prefix # name'
+   */
   def abstractType[T](prefix: Manifest[_], name: String): Manifest[T] = null
+
+  /** Manifest for the abstract type `prefix # name[args]'
+   */
   def abstractType[T](prefix: Manifest[_], name: String, args: Manifest[_]*): Manifest[T] = null
+
+  /** Manifest for the intersection type `parents_0 with ... with parents_n'
+   */
   def intersectionType[T](parents: Manifest[_]*): Manifest[T] = null
 }
 
