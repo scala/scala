@@ -140,7 +140,7 @@ else
   val srcDir: File = {
     val src = new File(TESTROOT, "files")
     if (src.isDirectory)
-      src
+      src.getCanonicalFile
     else {
       val path = TESTROOT + File.separator + "files"
       NestUI.failure("Source directory \"" + path + "\" not found")

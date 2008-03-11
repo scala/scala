@@ -10,7 +10,7 @@ import java.io.{File, FileInputStream, FileOutputStream, PrintStream,
 
 import java.net.URL
 
-import scala.tools.nsc.ObjectRunner
+import scala.tools.nsc.{ObjectRunner, GenericRunnerCommand}
 
 import scala.actors.Actor
 import scala.actors.Actor._
@@ -100,22 +100,65 @@ class Worker(val fileManager: FileManager) extends Actor {
 
   /* Note: not yet used/tested. */
   def execTestObjectRunner(file: File, outDir: File, logFile: File) {
+    val consFM = new ConsoleFileManager
+    import consFM.{latestCompFile, latestLibFile, latestActFile,
+                   latestPartestFile, latestFjbgFile}
+
     val classpath: List[URL] =
       outDir.toURL ::
-      List(file.getParentFile.toURL) :::
+      //List(file.getParentFile.toURL) :::
+      List(latestCompFile.toURL, latestLibFile.toURL,
+           latestActFile.toURL, latestPartestFile.toURL,
+           latestFjbgFile.toURL) :::
       (List.fromString(CLASSPATH, File.pathSeparatorChar) map { x =>
         (new File(x)).toURL })
+    NestUI.verbose("ObjectRunner classpath: "+classpath)
+
     try {
-      NestUI.verbose("classpath: "+classpath)
-      val out = new FileOutputStream(logFile, true)
+      // configure input/output files
+      val logOut    = new FileOutputStream(logFile)
+      val logWriter = new PrintStream(logOut)
+
+      // grab global lock
+      fileManager.synchronized {
+
+        val oldStdOut = System.out
+        val oldStdErr = System.err
+        System.setOut(logWriter)
+        System.setErr(logWriter)
+
+        /*
+         " -Djava.library.path="+logFile.getParentFile.getAbsolutePath+
+         " -Dscalatest.output="+outDir.getAbsolutePath+
+         " -Dscalatest.lib="+LATEST_LIB+
+         " -Dscalatest.cwd="+outDir.getParent+
+         " -Djavacmd="+JAVACMD+
+         */
+
+        System.setProperty("java.library.path", logFile.getParentFile.getCanonicalFile.getAbsolutePath)
+        System.setProperty("scalatest.output", outDir.getCanonicalFile.getAbsolutePath)
+        System.setProperty("scalatest.lib", LATEST_LIB)
+        System.setProperty("scalatest.cwd", outDir.getParent)
+
+        ObjectRunner.run(classpath, "Test", List("jvm"))
+
+        logWriter.flush()
+        logWriter.close()
+
+        System.setOut(oldStdOut)
+        System.setErr(oldStdErr)
+      }
+
+      /*val out = new FileOutputStream(logFile, true)
       Console.withOut(new PrintStream(out)) {
         ObjectRunner.run(classpath, "Test", List("jvm"))
       }
       out.flush
-      out.close
+      out.close*/
     } catch {
       case e: Exception =>
         NestUI.verbose(e+" ("+file.getPath+")")
+        e.printStackTrace()
     }
   }
 
@@ -132,10 +175,12 @@ class Worker(val fileManager: FileManager) extends Actor {
     } else ""
     NestUI.verbose("JAVA_OPTS: "+argString)
 
+    def quote(path: String) = "\""+path+"\""
+
     val cmd =
       JAVACMD+
       " "+argString+
-      " -classpath "+outDir+File.pathSeparatorChar+CLASSPATH+
+      " -classpath "+outDir+File.pathSeparator+CLASSPATH+
       " -Djava.library.path="+logFile.getParentFile.getAbsolutePath+
       " -Dscalatest.output="+outDir.getAbsolutePath+
       " -Dscalatest.lib="+LATEST_LIB+
