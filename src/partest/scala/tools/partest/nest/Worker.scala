@@ -334,8 +334,10 @@ class Worker(val fileManager: FileManager) extends Actor {
             // run compiler in resident mode
             // $SCALAC -d "$os_dstbase".obj -Xresident -sourcepath . "$@"
 
+            try {
+
             val sourcedir  = logFile.getParentFile.getCanonicalFile
-            val sourcepath = sourcedir.getAbsolutePath+"/"
+            val sourcepath = sourcedir.getAbsolutePath+File.separator
             NestUI.verbose("sourcepath: "+sourcepath)
 
             val argString =
@@ -364,6 +366,7 @@ class Worker(val fileManager: FileManager) extends Actor {
             val resCompile = (line: String) => {
               NestUI.verbose("compiling "+line)
               val cmdArgs = List.fromString(line, ' ') map { fs => new File(dir, fs).getAbsolutePath }
+              NestUI.verbose("cmdArgs: "+cmdArgs)
               val sett = new Settings(error)
               sett.sourcepath.value = sourcepath
               val command = new CompilerCommand(cmdArgs, sett, error, true)
@@ -395,7 +398,21 @@ class Worker(val fileManager: FileManager) extends Actor {
             val tempLogFilePrinter = new PrintWriter(new FileWriter(tempLogFile))
             val appender =
               new StreamAppender(logFileReader, tempLogFilePrinter)
-            appender.runAndMap({ s => s.replaceAll(dir.getAbsolutePath.replace(File.separatorChar,'/')+File.separator, "") })
+
+	    // function that removes a given string from another string
+	    def removeFrom(line: String, path: String): String = {
+              // find `path` in `line`
+              val index = line.indexOf(path)
+              if (index != -1) {
+                line.substring(0, index) + line.substring(index + path.length, line.length)
+              } else line
+            }
+
+            appender.runAndMap({ s =>
+              val woPath = removeFrom(s, dir.getAbsolutePath/*.replace(File.separatorChar,'/')*/+File.separator)
+              // now replace single '\' with '/'
+              woPath.replace('\\', '/')
+            })
             logFileReader.close()
             tempLogFilePrinter.close()
 
@@ -411,6 +428,12 @@ class Worker(val fileManager: FileManager) extends Actor {
             if (!diff.equals("")) {
               NestUI.verbose("output differs from log file\n")
               succeeded = false
+            }
+
+            } catch {
+              case e: Exception =>
+	        e.printStackTrace()
+                succeeded = false
             }
 
             // delete log file only if test was successful
