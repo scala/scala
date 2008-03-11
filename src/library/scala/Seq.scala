@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -30,12 +30,12 @@ object Seq {
    */
   def unapplySeq[A](x: Seq[A]): Some[Seq[A]] = Some(x)
 
-  case class singleton[A](value : A) extends RandomAccessSeq[A] {
+  case class singleton[A](value: A) extends RandomAccessSeq[A] {
     override def length = 1
-    override def isDefinedAt(idx : Int) : Boolean = idx == 0
-    override def apply(idx : Int) = idx match {
-    case 0 => value
-    case _ => throw new Predef.IndexOutOfBoundsException
+    override def isDefinedAt(idx: Int): Boolean = idx == 0
+    override def apply(idx: Int) = idx match {
+      case 0 => value
+      case _ => throw new Predef.IndexOutOfBoundsException
     }
   }
 
@@ -44,24 +44,7 @@ object Seq {
    * @deprecated use <code>singleton</code> instead.
    */
   @deprecated def single[A](x: A) = singleton(x)
-/*
-  implicit def view[A <% Ordered[A]](xs: Seq[A]): Ordered[Seq[A]] =
-    new Ordered[Seq[A]] with Proxy {
-      def self: Any = xs;
-      def compare[B >: Seq[A] <% Ordered[B]](that: B): Int = that match {
-        case ys: Seq[A] =>
-          var res = 0;
-          val xsit = xs.elements;
-          val ysit = ys.elements;
-          while (xsit.hasNext && ysit.hasNext && (res == 0)) {
-            res = xsit.next compare ysit.next;
-          }
-          if (res != 0) res else if (xsit.hasNext) 1 else -1
-        case _ =>
-          -(that compare xs)
-      }
-    }
-*/
+
   trait Projection[+A] extends Seq[A] with Iterable.Projection[A]  {
     override def projection = this
     override def force : Seq[A] = toList
@@ -97,19 +80,20 @@ object Seq {
         throw new IndexOutOfBoundsException
       }
     }
-    override def append[B >: A](that: => Iterable[B]) : Projection[B] = that match {
-    case that : Seq[b] => new Projection[B] {
-        def length = Projection.this.length + that.length
-        def elements : Iterator[B] = Projection.this.elements ++ (that.elements:Iterator[B])
-        def apply(idx : Int) =
-          if (idx < Projection.this.length) Projection.this(idx)
-          else that(idx - Projection.this.length)
-      }
-    case that => (this ++ that).projection // sucks but no other option.
+    override def append[B >: A](that: => Iterable[B]): Projection[B] = that match {
+      case that: Seq[b] => new Projection[B] {
+          def length = Projection.this.length + that.length
+          def elements : Iterator[B] = Projection.this.elements ++ (that.elements:Iterator[B])
+          def apply(idx : Int) =
+            if (idx < Projection.this.length) Projection.this(idx)
+            else that(idx - Projection.this.length)
+        }
+      case that =>
+        (this ++ that).projection // sucks but no other option.
     }
 
     protected abstract class ComputeSize[B] extends Projection[B] {
-      def apply(idx : Int) : B = {
+      def apply(idx: Int): B = {
         var sz = 0
         val i = elements
         while (i.hasNext) {
@@ -119,7 +103,7 @@ object Seq {
         }
         throw new Predef.IndexOutOfBoundsException
       }
-      override def length = {
+      override def length: Int = {
         val i = elements
         var sz = 0
         while (i.hasNext) {
@@ -187,21 +171,38 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
    *  @throws Predef.UnsupportedOperationException if the list is empty.
    */
   def last: A = length match {
-  case 0 => throw new Predef.NoSuchElementException
-  case n => this(n - 1)
+    case 0 => throw new Predef.NoSuchElementException
+    case n => this(n - 1)
   }
-  /** Returns as an option the last element of this list or None if list is empty.
-   *
-   */
-  def lastOption : Option[A] = length match {
-  case 0 => None
-  case n => Some(this(n-1))
-  }
-  /** Returns as an option the first element of this list or None if list is empty.
-   *
-   */
-  def headOption : Option[A] = if (isEmpty) None else Some(apply(0))
 
+  /** Returns as an option the last element of this list or
+   *  <code>None</code> if list is empty.
+   *
+   *  @return the last element as an option.
+   */
+  def lastOption: Option[A] = length match {
+    case 0 => None
+    case n => Some(this(n-1))
+  }
+
+  /** Returns the first element of this list.
+   *
+   *  @return the first element of the list.
+   *  @throws Predef.UnsupportedOperationException if the list is empty.
+   */
+  def first: A =
+    if (isEmpty) throw new Predef.NoSuchElementException
+    else this(0)
+
+  /** Returns as an option the first element of this list or
+   *  <code>None</code> if list is empty.
+   *
+   *  @return the first element as an option.
+   */
+  def firstOption: Option[A] = if (isEmpty) None else Some(apply(0))
+
+  @deprecated
+  def headOption: Option[A] = firstOption
 
   /** Appends two iterable objects.
    */
@@ -228,15 +229,13 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
    *          this element.
    */
   def lastIndexOf[B >: A](elem: B): Int = {
-    var i = length;
-    var found = false;
+    var i = length
+    var found = false
     while (!found && (i > 0)) {
-      i = i - 1;
-      if (this(i) == elem) {
-        found = true;
-      }
+      i -= 1
+      if (this(i) == elem) found = true
     }
-    if (found) i else -1;
+    if (found) i else -1
   }
 
   /** Returns the sequence resulting from applying the given function
@@ -289,7 +288,7 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     val result = new scala.collection.mutable.ListBuffer[A]
     val i = elements
     while (m < n && i.hasNext) {
-      result += i.next; m = m + 1
+      result += i.next; m += 1
     }
     result.toList
   }
@@ -308,7 +307,7 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     val result = new ListBuffer[A]
     val i = elements
     while (m < n && i.hasNext) {
-      i.next; m = m + 1
+      i.next; m += 1
     }
     while (i.hasNext) result += i.next
     result.toList
@@ -322,7 +321,7 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     *  @throws IndexOutOfBoundsException if <code>from &lt; 0</code>
     *          or <code>length &lt; from + len<code>
     */
-  def slice(from : Int, until : Int) : Seq[A] = drop(from).take(until - from)
+  def slice(from: Int, until: Int): Seq[A] = drop(from).take(until - from)
 
   /** Returns the longest prefix of this sequence whose elements satisfy
    *  the predicate <code>p</code>.
@@ -375,24 +374,27 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     copyToArray(result, 0)
     result
   }
-  override def projection : Seq.Projection[A] = new Seq.Projection[A] {
-    override def force : Seq[A] = Seq.this
+
+  override def projection: Seq.Projection[A] = new Seq.Projection[A] {
+    override def force: Seq[A] = Seq.this
     def elements = Seq.this.elements
     def length = Seq.this.length
     def apply(idx : Int) = (Seq.this.apply(idx))
     override def stringPrefix = Seq.this.stringPrefix + "P"
   }
-  def equalsWith[B](that : Seq[B])(f : (A,B) => Boolean) : Boolean = {
+
+  def equalsWith[B](that: Seq[B])(f: (A,B) => Boolean): Boolean = {
     if (size != that.size) return false
     val i = elements
     val j = that.elements
     while (i.hasNext) if (!f(i.next, j.next)) return false
-    return true
+    true
   }
-  /** @returns true if this sequence start with that sequences
+
+  /** @return true if this sequence start with that sequences
    *  @see String.startsWith
    */
-  def startsWith[B](that : Seq[B]) : Boolean = {
+  def startsWith[B](that: Seq[B]): Boolean = {
     val i = elements
     val j = that.elements
     var result = true
@@ -400,10 +402,11 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
       result = i.next == j.next
     result && !j.hasNext
   }
-  /** @returns true if this sequence end with that sequence
+
+  /** @return true if this sequence end with that sequence
    *  @see String.endsWith
    */
-  def endsWith[B](that : Seq[B]) : Boolean = {
+  def endsWith[B](that: Seq[B]): Boolean = {
     val length = this.length
     val j = that.elements
     var i = 0
@@ -412,10 +415,12 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
       result = apply(length - i - 1) == j.next
     result && !j.hasNext
   }
-  /** @returns -1 if <code>that</code> not contained in this, otherwise the index where <code>that</code> is contained
+
+  /** @return -1 if <code>that</code> not contained in this, otherwise the
+   *  index where <code>that</code> is contained
    *  @see String.indexOf
    */
-  def indexOf[B >: A](that : Seq[B]) : Int = {
+  def indexOf[B >: A](that: Seq[B]): Int = {
     val i = this.elements
     var idx = 0
     var j = that.elements
@@ -431,8 +436,8 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     }
     jdx
   }
-   /** Is <code>that</code> a slice in this?
-    */
-  def containsSlice[B](that : Seq[B]) : Boolean = indexOf(that) != -1
-}
 
+  /** Is <code>that</code> a slice in this?
+   */
+  def containsSlice[B](that: Seq[B]): Boolean = indexOf(that) != -1
+}
