@@ -60,10 +60,10 @@ abstract class GenJVM extends SubComponent {
    */
   class BytecodeGenerator {
     val MIN_SWITCH_DENSITY = 0.7
-    val StringBufferClass = "scala.StringBuilder"
+    val StringBuilderClass = "scala.StringBuilder"
     val BoxesRunTime = "scala.runtime.BoxesRunTime"
 
-    val stringBufferType = new JObjectType(StringBufferClass)
+    val StringBuilderType = new JObjectType(StringBuilderClass)
     val toStringType = new JMethodType(JObjectType.JAVA_LANG_STRING, JType.EMPTY_ARRAY)
 
     // Scala attributes
@@ -1284,9 +1284,9 @@ abstract class GenJVM extends SubComponent {
           jcode.emitARRAYLENGTH()
 
         case StartConcat =>
-          jcode.emitNEW(StringBufferClass)
+          jcode.emitNEW(StringBuilderClass)
           jcode.emitDUP()
-          jcode.emitINVOKESPECIAL(StringBufferClass,
+          jcode.emitINVOKESPECIAL(StringBuilderClass,
                                   JMethod.INSTANCE_CONSTRUCTOR_NAME,
                                   JMethodType.ARGLESS_VOID_FUNCTION)
 
@@ -1295,12 +1295,12 @@ abstract class GenJVM extends SubComponent {
             case REFERENCE(_) | ARRAY(_)=> JObjectType.JAVA_LANG_OBJECT
             case _ => javaType(el)
           }
-          jcode.emitINVOKEVIRTUAL(StringBufferClass,
+          jcode.emitINVOKEVIRTUAL(StringBuilderClass,
                                   "append",
-                                  new JMethodType(stringBufferType,
+                                  new JMethodType(StringBuilderType,
                                   Array(jtype)))
         case EndConcat =>
-          jcode.emitINVOKEVIRTUAL(StringBufferClass,
+          jcode.emitINVOKEVIRTUAL(StringBuilderClass,
                                   "toString",
                                   toStringType)
 
