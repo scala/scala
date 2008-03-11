@@ -9,10 +9,12 @@ Float
 Double
 String
 Unit
+Class[Int]
 
 Some[Int]
 Some[Int]
 Some[Some[Int]]
+Some[List[Int]]
 None
 None
 
