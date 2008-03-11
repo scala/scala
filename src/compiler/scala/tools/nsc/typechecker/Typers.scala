@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -1464,7 +1464,7 @@ trait Typers { self: Analyzer =>
         }
 
         val vparams = List.mapConserve(fun.vparams)(typedValDef)
-//        for (val vparam <- vparams) {
+//        for (vparam <- vparams) {
 //          checkNoEscaping.locals(context.scope, WildcardType, vparam.tpt); ()
 //        }
         var body = typed(fun.body, respt)
@@ -2094,7 +2094,7 @@ trait Typers { self: Analyzer =>
     }
 
     protected def typedExistentialTypeTree(tree: ExistentialTypeTree): Tree = {
-      for (val wc <- tree.whereClauses)
+      for (wc <- tree.whereClauses)
         if (wc.symbol == NoSymbol) { namer.enterSym(wc); wc.symbol setFlag EXISTENTIAL }
         else context.scope enter wc.symbol
       val whereClauses1 = typedStats(tree.whereClauses, context.owner)
@@ -2473,7 +2473,7 @@ trait Typers { self: Analyzer =>
           silent(_.typed(fun, funMode(mode), funpt)) match {
             case fun1: Tree =>
               val fun2 = if (stableApplication) stabilizeFun(fun1, mode, pt) else fun1
-              if (util.Statistics.enabled) appcnt = appcnt + 1
+              if (util.Statistics.enabled) appcnt += 1
               val res =
                 if (phase.id <= currentRun.typerPhase.id &&
                     fun2.isInstanceOf[Select] &&
@@ -3369,7 +3369,7 @@ trait Typers { self: Analyzer =>
       val pt = normalize(pt0)
       val isView = pt0.isInstanceOf[MethodType]
 
-      if (util.Statistics.enabled) implcnt = implcnt + 1
+      if (util.Statistics.enabled) implcnt += 1
       val startTime = if (util.Statistics.enabled) currentTime else 0l
 
       val tc = newTyper(context.makeImplicit(reportAmbiguous))

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -29,7 +29,7 @@ trait Infer {
 
 /* -- Type parameter inference utility functions --------------------------- */
 
-  def assertNonCyclic(tvar: TypeVar) =
+  private def assertNonCyclic(tvar: TypeVar) =
     assert(tvar.constr.inst != tvar, tvar.origin)
 
   def isVarArgs(formals: List[Type]) =
@@ -66,7 +66,7 @@ trait Infer {
    *  @param tparam ...
    *  @return       ...
    */
-  def freshVar(tparam: Symbol): TypeVar =
+  private def freshVar(tparam: Symbol): TypeVar =
     new TypeVar(tparam.tpe, new TypeConstraint)  //@M TODO: might be affected by change to tpe in Symbol
 
   //todo: remove comments around following privates; right now they cause an IllegalAccess
@@ -112,7 +112,7 @@ trait Infer {
    *  @param tp ...
    *  @return   ...
    */
-  def isFullyDefined(tp: Type): Boolean = tp match {
+  private[typechecker] def isFullyDefined(tp: Type): Boolean = tp match {
     case WildcardType | NoType =>
       false
     case NoPrefix | ThisType(_) | ConstantType(_) =>
@@ -154,7 +154,7 @@ trait Infer {
 //      throw new DeferredNoInstance(() =>
 //        "no solution exists for constraints"+(tvars map boundsString))
     }
-    for (val tvar <- tvars)
+    for (tvar <- tvars)
       if (tvar.constr.inst == tvar)
         if (tvar.origin.typeSymbol.info eq ErrorType) {
           // this can happen if during solving a cyclic type paramater
@@ -404,7 +404,7 @@ trait Infer {
         true
     }
 
-    def isPlausiblySubType(tp1: Type, tp2: Type): Boolean = tp1.normalize match {
+    private def isPlausiblySubType(tp1: Type, tp2: Type): Boolean = tp1.normalize match {
       case TypeRef(_, sym1, _) =>
         !sym1.isClass || {
           tp2.normalize match {
@@ -571,7 +571,7 @@ trait Infer {
 //      res
     }
 
-    def followApply(tp: Type): Type = tp match {
+    private[typechecker] def followApply(tp: Type): Type = tp match {
       case PolyType(List(), restp) =>
         val restp1 = followApply(restp)
         if (restp1 eq restp) tp else restp1
@@ -598,8 +598,8 @@ trait Infer {
      *  @param pt          ...
      *  @return            ...
      */
-    def isApplicable(undetparams: List[Symbol], ftpe: Type,
-                     argtpes0: List[Type], pt: Type): Boolean =
+    private def isApplicable(undetparams: List[Symbol], ftpe: Type,
+                             argtpes0: List[Type], pt: Type): Boolean =
       ftpe match {
         case OverloadedType(pre, alts) =>
           alts exists (alt => isApplicable(undetparams, pre.memberType(alt), argtpes0, pt))
@@ -632,7 +632,7 @@ trait Infer {
           false
       }
 
-    def isApplicableSafe(undetparams: List[Symbol], ftpe: Type, argtpes0: List[Type], pt: Type): Boolean = {
+    private[typechecker] def isApplicableSafe(undetparams: List[Symbol], ftpe: Type, argtpes0: List[Type], pt: Type): Boolean = {
       val reportAmbiguousErrors = context.reportAmbiguousErrors
       context.reportAmbiguousErrors = false
       try {
@@ -680,9 +680,17 @@ trait Infer {
     def isStrictlyMoreSpecific(ftpe1: Type, ftpe2: Type): Boolean =
       ftpe1.isError || isMoreSpecific(ftpe1, ftpe2) &&
       (!isMoreSpecific(ftpe2, ftpe1) ||
-       !ftpe1.isInstanceOf[OverloadedType] && ftpe2.isInstanceOf[OverloadedType])
+       !ftpe1.isInstanceOf[OverloadedType] && ftpe2.isInstanceOf[OverloadedType] ||
+       phase.erasedTypes && covariantReturnOverride(ftpe1, ftpe2))
 
-    def isMoreSpecificValueType(tpe1: Type, tpe2: Type, undef1: List[Symbol], undef2: List[Symbol]): Boolean = (tpe1, tpe2) match {
+    private def covariantReturnOverride(ftpe1: Type, ftpe2: Type): Boolean = (ftpe1, ftpe2) match {
+      case (MethodType(_, rtpe1), MethodType(_, rtpe2)) =>
+        rtpe1 <:< rtpe2 || rtpe2.typeSymbol == ObjectClass
+      case _ =>
+        false
+    }
+
+    private def isMoreSpecificValueType(tpe1: Type, tpe2: Type, undef1: List[Symbol], undef2: List[Symbol]): Boolean = (tpe1, tpe2) match {
       case (PolyType(tparams1, rtpe1), _) =>
         isMoreSpecificValueType(rtpe1, tpe2, undef1 ::: tparams1, undef2)
       case (_, PolyType(tparams2, rtpe2)) =>
