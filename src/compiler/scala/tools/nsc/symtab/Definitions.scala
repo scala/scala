@@ -60,7 +60,7 @@ trait Definitions {
     var Delegate_scalaCallers: List[Symbol] = List()
     // Symbol -> (Symbol, Type): scalaCaller -> (scalaMethodSym, DelegateType)
     // var Delegate_scalaCallerInfos: HashMap[Symbol, (Symbol, Type)] = _
-    var Delegate_scalaCallerTargets: HashMap[Symbol, Symbol] = _
+    lazy val Delegate_scalaCallerTargets: HashMap[Symbol, Symbol] = new HashMap()
 
     // the scala value classes
     var UnitClass: Symbol = _
@@ -246,28 +246,19 @@ trait Definitions {
       }
 
     def isCorrespondingDelegate(delegateType: Type, functionType: Type): Boolean = {
-      var isCD: Boolean = false
-      if (DelegateClass != null && delegateType != null &&
-	  isSubType(delegateType, DelegateClass.tpe))
-	{
-	  val meth: Symbol = delegateType.member(nme.apply)
-	  meth.tpe match {
-	    case MethodType(delegateParams, delegateReturn) =>
-	      val delegateParamsO = delegateParams.map(pt => {if (pt == definitions.AnyClass.tpe) definitions.ObjectClass.tpe else pt})
-	      if (isFunctionType(functionType))
-		functionType.normalize match {
-		  case TypeRef(_, _, args) =>
-		    if (delegateParamsO == args.dropRight(1) &&
-		        delegateReturn == args.last)
-		      isCD = true;
-
-		  case _ => ()
-		}
-
-            case _ => ()
-          }
-        }
-      isCD
+      isSubType(delegateType, DelegateClass.tpe) &&
+      (delegateType.member(nme.apply).tpe match {
+	case MethodType(delegateParams, delegateReturn) =>
+	  isFunctionType(functionType) &&
+	  (functionType.normalize match {
+	    case TypeRef(_, _, args) =>
+	      (delegateParams.map(pt => {
+                if (pt == AnyClass.tpe) definitions.ObjectClass.tpe else pt})
+	       ::: List(delegateReturn)) == args
+	    case _ => false
+	  })
+        case _ => false
+      })
     }
 
     def seqType(arg: Type) =
@@ -806,9 +797,6 @@ trait Definitions {
         newMethod(StringClass, "replace", List(charType, charType), stringType);
         newMethod(StringClass, "toCharArray", List(),
                   appliedType(ArrayClass.typeConstructor, List(charType)));
-
-        // Delegate_scalaCallerInfos = new HashMap()
-        Delegate_scalaCallerTargets = new HashMap()
       }
 
       AnnotationDefaultAttr = newClass(RootClass,
