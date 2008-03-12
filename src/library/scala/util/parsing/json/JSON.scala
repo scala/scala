@@ -43,22 +43,17 @@ object JSON extends Parser {
    * A utility method to resolve a parsed JSON list into objects or
    * arrays. See the parse method for details.
    */
-  def resolveType(input: List[Any]): Any =
-    input match {
-      case jo: List[Any] =>
-        var objMap = Map[String, Any]()
+  def resolveType(input: List[Any]): Any = {
+    var objMap = Map[String, Any]()
 
-        if(jo.forall {
-          case (key: String, value : List[Any]) =>
-            objMap = objMap + key -> resolveType(value)
-            true
-          case _ => false
-        }) objMap
-        else {
-          jo
-        }
+    if(input.forall {
+      case (key: String, value : List[Any]) =>
+        objMap = objMap + key -> resolveType(value)
+        true
+      case _ => false
+    }) objMap
+    else
+      input
+  }
 
-      case _ @ elem =>
-        elem
-    }
 }
