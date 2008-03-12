@@ -14,7 +14,7 @@ class ConsoleFileManager extends FileManager {
 
   var CLASSPATH = System.getProperty("java.class.path", ".")
   NestUI.verbose("CLASSPATH: "+CLASSPATH)
-  val SCALAHOME = System.getProperty("scala.home", ".")
+  val SCALAHOME = System.getProperty("scala.home", "..")
   NestUI.verbose("SCALAHOME: "+SCALAHOME)
   var JAVACMD   = System.getProperty("scalatest.javacmd", "java")
   val PREFIX    = (new File(SCALAHOME)).getAbsolutePath
@@ -50,7 +50,7 @@ else
     }) map {file => file.getCanonicalFile.getAbsolutePath}).mkString(""+File.pathSeparator)
   }
   if (debug) {
-    println("CLASSPATH:")
+    println("CLASSPATH (" + this + "):")
     println(CLASSPATH)
   }
 

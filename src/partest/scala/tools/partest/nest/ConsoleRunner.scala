@@ -108,17 +108,12 @@ class ConsoleRunner extends DirectRunner {
       NestUI.outline("Source directory is : "+fileManager.srcDir.getAbsolutePath+"\n")
       NestUI.outline("Scala binaries in   : "+fileManager.BIN_DIR+"\n")
 
-      // obtain scalac version
-      val cmd = fileManager.SCALAC_CMD+" -version"
-      NestUI.verbose("running "+cmd)
-      val proc = Runtime.getRuntime.exec(cmd)
-      val in = proc.getInputStream
-      val err = proc.getErrorStream
-      val exitCode = proc.waitFor()
-      NestUI.verbose("exit code: "+exitCode)
-      val scalaVersion = StreamAppender.appendToString(in, err)
+      val scalaVersion = "Scala compiler "+
+        scala.tools.nsc.Properties.versionString+
+        " -- "+
+        scala.tools.nsc.Properties.copyrightString
 
-      NestUI.outline("Scala version is    : "+scalaVersion)
+      NestUI.outline("Scala version is    : "+scalaVersion+"\n")
       NestUI.outline("Scalac options are  : "+fileManager.SCALAC_OPTS+"\n")
 
       val vmBin  = System.getProperty("java.home", "")+File.separator+"bin"
