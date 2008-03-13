@@ -15,7 +15,7 @@ package scala.tools.partest.nest
  * class on the classpath (ideally).
  */
 class ReflectiveRunner {
-  // we might also use FileManager.CLASSPATH
+  // TODO: we might also use fileManager.CLASSPATH
   // to use the same classes as used by `scala` that
   // was used to start the runner.
 

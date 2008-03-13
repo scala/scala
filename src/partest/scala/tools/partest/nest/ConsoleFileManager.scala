@@ -14,12 +14,20 @@ class ConsoleFileManager extends FileManager {
 
   var CLASSPATH = System.getProperty("java.class.path", ".")
   NestUI.verbose("CLASSPATH: "+CLASSPATH)
-  val SCALAHOME = System.getProperty("scala.home", "..")
-  NestUI.verbose("SCALAHOME: "+SCALAHOME)
-  var JAVACMD   = System.getProperty("scalatest.javacmd", "java")
-  val PREFIX    = (new File(SCALAHOME)).getAbsolutePath
 
-  val debug: Boolean = System.getProperty("partest.debug", "false") equals "true"
+  var JAVACMD   = System.getProperty("scalatest.javacmd", "java")
+  val prefixFile = {
+    val cwd = System.getProperty("user.dir")
+    if (cwd != null)
+      (new File(cwd)).getCanonicalFile
+    else
+      error("user.dir property not set")
+  }
+  val PREFIX = prefixFile.getAbsolutePath
+
+  val debug: Boolean =
+    (System.getProperty("partest.debug", "false") equals "true") ||
+    (System.getProperty("scalatest.debug", "false") equals "true")
 
 /*
 if [ -d "$PREFIX/test" ]; then
@@ -29,18 +37,31 @@ elif [ -d "$PREFIX/misc/scala-test" ]; then
 else
     abort "Test directory not found";
 */
-  val TESTROOT = {
-    val test = new File(SCALAHOME, "test")
-    val scala_test = new File(SCALAHOME, "misc/scala-test")
+
+  val testRootFile = {
+    val testRootProp = System.getProperty("scalatest.root")
     val testroot =
-      if (test.isDirectory)
-        test
-      else if (scala_test.isDirectory)
-        scala_test
-      else
-        error("Test directory not found")
-    testroot.getAbsolutePath
+      if (testRootProp != null)
+        new File(testRootProp)
+      else {
+        // case 1: cwd is `test`
+        if (prefixFile.getName == "test" && (new File(prefixFile, "files")).exists)
+          prefixFile
+        else {
+        // case 2: cwd is `test/..`
+          val test = new File(prefixFile, "test")
+          val scalaTest = new File(new File(prefixFile, "misc"), "scala-test")
+          if (test.isDirectory)
+            test
+          else if (scalaTest.isDirectory)
+            scalaTest
+          else
+            error("Test directory not found")
+        }
+      }
+    testroot.getCanonicalFile
   }
+  val TESTROOT = testRootFile.getAbsolutePath
 
   CLASSPATH = CLASSPATH + File.pathSeparator + {
     val libs = new File(TESTROOT, "files/lib")
@@ -49,19 +70,17 @@ else
       def accept(dir: File, name: String) = name endsWith ".jar"
     }) map {file => file.getCanonicalFile.getAbsolutePath}).mkString(""+File.pathSeparator)
   }
-  if (debug) {
-    println("CLASSPATH (" + this + "):")
-    println(CLASSPATH)
-  }
 
   def findLatest() {
-    def prefixFile(relPath: String): File =
-      (new File(PREFIX, relPath)).getCanonicalFile
+    val testParent = testRootFile.getParentFile
 
-    NestUI.verbose("PREFIX: "+PREFIX)
-    val dists = new File(PREFIX, "dists")
-    val build = new File(PREFIX, "build")
-    val bin = new File(PREFIX, "bin")
+    def prefixFile(relPath: String): File =
+      (new File(testParent, relPath)).getCanonicalFile
+
+    NestUI.verbose("test parent: "+testParent)
+    val dists = new File(testParent, "dists")
+    val build = new File(testParent, "build")
+    val bin = new File(testParent, "bin")
 
     if (dists.isDirectory) {
       NestUI.verbose("Running on DISTRIBUTION")
