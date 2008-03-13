@@ -83,17 +83,21 @@ exec scsh -e main -s "$0" "$@"
           (with-cwd scala-svn-module-name
                     (start-section "Creating small Scala distribution")
                     (fail-if-error (run (ant pack)))
-                    (run (ant msil))
+                    (run (ant msil)))
+
+          (start-section "Checking out Plugin module")
+          (fail-if-error (run (svn co ,plugin-svn-repository-dir
+                                   ,plugin-svn-module-name)))
+
+          (with-cwd plugin-svn-module-name
+                    (start-section "Creating Scala Eclipse plugin")
+                    (fail-if-error (run (ant dist))))
+
+          (with-cwd scala-svn-module-name
                     (start-section "Testing Scala compiler")
                     (fail-if-error
                       (run (./test/scalatest --color=none
                                              --show-log))))
-          (start-section "Checking out Plugin module")
-          (fail-if-error (run (svn co ,plugin-svn-repository-dir
-                                   ,plugin-svn-module-name)))
-          (with-cwd plugin-svn-module-name
-                    (start-section "Creating Scala Eclipse plugin")
-                    (fail-if-error (run (ant dist))))
           #t
         )
       )
