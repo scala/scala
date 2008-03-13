@@ -20,7 +20,7 @@ PATH=$ANT_HOME/bin:$JAVA_HOME/bin:$MONO_HOME/bin:$ANDROID_HOME/tools:$KVEM_HOME/
 
 LD_LIBRARY_PATH=/lib:/usr/lib
 
-ANT_OPTS="-Xms1024M -Xmx1024M -XX:MaxPermSize=96M"
+ANT_OPTS="-Xms1024M -Xmx1024M -XX:MaxPermSize=128M"
 BUILD_DATE=`date +"%Y-%m-%d"`
 
 OUTPUT_DIR=~/scala-nightly-test/$JAVA_SDK
@@ -43,7 +43,7 @@ env PATH="$PATH" ANT_OPTS="$ANT_OPTS" JAVACMD="$JAVACMD" \
 
 # only build for Java 1.5 is made available on the page
 # http://www.scala-lang.org/downloads/distrib/files/nightly/
-[ "$JAVA_SDK"="java-1.5" ] || exit 0
+test "$JAVA_SDK" != "java-1.5" && exit 0
 
 if [ -d "$LATEST_DIR" ] && [ `ls "$LATEST_DIR"/*.zip 2>1 | wc -l` -gt 0 ]; then
     (rm -rf $NIGHTLY_DIR && mkdir $NIGHTLY_DIR)
