@@ -14,7 +14,8 @@ package scala.collection.mutable
 
 import Predef._
 
-/** The class <code>ListBuffer</code> ..
+/** A Buffer implementation back up by a list. It provides constant time
+ *  prepend and append. Most other operations are linear.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 15/03/2004
@@ -25,7 +26,8 @@ final class ListBuffer[A] extends Buffer[A] {
   private var last0: ::[A] = _
   private var exported: Boolean = false
 
-  /** Prepends a single element to this buffer.
+  /** Prepends a single element to this buffer. It takes constant
+   *  time.
    *
    *  @param x  the element to prepend.
    *  @return   this buffer.
@@ -40,7 +42,8 @@ final class ListBuffer[A] extends Buffer[A] {
 
 
 
-  /** Appends a single element to this buffer.
+  /** Appends a single element to this buffer. It takes constant
+   *  time.
    *
    *  @param x  the element to append.
    */
@@ -57,14 +60,17 @@ final class ListBuffer[A] extends Buffer[A] {
   }
 
   /** Removes a single element from the buffer and return
-   *  the identity of the buffer. Same as <code>this -= x; this</code>
+   *  the identity of the buffer. Same as <code>this -= x; this</code>. It
+   *  takes linear time (except removing the first element, which is done
+   *  in constant time).
    *
    *  @param x  the element to remove.
    *  @return   this buffer.
    */
   def - (x: A): Buffer[A] = { this -= x; this }
 
-  /** Remove a single element from this buffer.
+  /** Remove a single element from this buffer. It takes linear time
+   *  (except removing the first element, which is done  in constant time).
    *
    *  @param x  the element to remove.
    */
@@ -84,7 +90,8 @@ final class ListBuffer[A] extends Buffer[A] {
     }
   }
 
-  /** Converts this buffer to a list
+  /** Converts this buffer to a list. Takes constant time. The buffer is
+   *  copied lazily, the first time it is mutated.
    */
   override def toList: List[A] = {
     exported = !start.isEmpty
@@ -119,7 +126,7 @@ final class ListBuffer[A] extends Buffer[A] {
     }
   }
 
-  /** Returns the length of this buffer.
+  /** Returns the length of this buffer. It takes linear time.
    *
    *  @return the length of this buffer.
    */
@@ -129,7 +136,8 @@ final class ListBuffer[A] extends Buffer[A] {
   override def isEmpty = start.isEmpty
 
   /** Returns the n-th element of this list. This method
-   *  yields an error if the element does not exist.
+   *  yields an error if the element does not exist. Takes time
+   *  linear in the buffer size.
    *
    *  @param n  the position of the element to be returned.
    *  @return   the n-th element of this buffer.
@@ -143,7 +151,8 @@ final class ListBuffer[A] extends Buffer[A] {
   }
 
   /** Replaces element at index <code>n</code> with the new element
-   *  <code>newelem</code>.
+   *  <code>newelem</code>. Takes time linear in the buffer size. (except the first
+   *  element, which is updated in constant time).
    *
    *  @param n  the index of the element to replace.
    *  @param x  the new element.
@@ -211,7 +220,9 @@ final class ListBuffer[A] extends Buffer[A] {
     }
   }
 
-  /** Removes the element on a given index position.
+  /** Removes the element on a given index position. Takes time linear in
+   *  the buffer size (except for the first element, which is removed in constant
+   *  time).
    *
    *  @param  n  the index which refers to the element to delete.
    *  @return n  the element that was formerly at position <code>n</code>.

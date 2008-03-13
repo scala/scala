@@ -15,7 +15,9 @@ package scala.collection.mutable
 import Predef._
 
 /** An implementation of the <code>Buffer</code> class using an array to
- *  represent the assembled sequence internally.
+ *  represent the assembled sequence internally. Append, update and random
+ *  access take constant time (amortized time). Prepends and removes are
+ *  linear in the buffer size.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 15/03/2004
@@ -23,7 +25,7 @@ import Predef._
 @serializable
 class ArrayBuffer[A] extends RandomAccessSeq.Mutable[A] with Buffer[A] with ResizableArray[A] {
   /** Appends a single element to this buffer and returns
-   *  the identity of the buffer.
+   *  the identity of the buffer. It takes constant time.
    *
    *  @param elem  the element to append.
    */
@@ -62,7 +64,8 @@ class ArrayBuffer[A] extends RandomAccessSeq.Mutable[A] with Buffer[A] with Resi
   }
 
   /** Prepends a single element to this buffer and return
-   *  the identity of the buffer.
+   *  the identity of the buffer. It takes time linear in
+   *  the buffer size.
    *
    *  @param elem  the element to append.
    *  @return      the updated buffer.
@@ -75,7 +78,7 @@ class ArrayBuffer[A] extends RandomAccessSeq.Mutable[A] with Buffer[A] with Resi
     this
   }
 
-  /** Returns the i-th element of this ArrayBuffer.
+  /** Returns the i-th element of this ArrayBuffer. It takes constant time.
    *
    *  @param i  the specified index.
    *  @return   the i-th element.
@@ -117,7 +120,7 @@ class ArrayBuffer[A] extends RandomAccessSeq.Mutable[A] with Buffer[A] with Resi
   }
 
   /** Replace element at index <code>n</code> with the new element
-   *  <code>newelem</code>.
+   *  <code>newelem</code>. It takes constant time.
    *
    *  @param n       the index of the element to replace.
    *  @param newelem the new element.
@@ -133,7 +136,8 @@ class ArrayBuffer[A] extends RandomAccessSeq.Mutable[A] with Buffer[A] with Resi
     }
   }
 
-  /** Removes the element on a given index position.
+  /** Removes the element on a given index position. It takes time linear in
+   *  the buffer size.
    *
    *  @param n  the index which refers to the element to delete.
    *  @return   the updated array buffer.
