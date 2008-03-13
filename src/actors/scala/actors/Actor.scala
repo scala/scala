@@ -675,8 +675,12 @@ trait Actor extends OutputChannel[Any] {
    * Starts this actor.
    */
   def start(): Actor = synchronized {
-    // reset various flags
-    trapExit = false
+    // Reset various flags.
+    //
+    // Note that we do *not* reset `trapExit`. The reason is that
+    // users should be able to set the field in the constructor
+    // and before `act` is called.
+
     exitReason = 'normal
     exiting = false
     shouldExit = false
