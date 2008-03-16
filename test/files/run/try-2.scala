@@ -1,7 +1,7 @@
 /*
  * Test different variants of the try-catch block.
  *
- * $Id: $
+ * $Id$
  */
 
 
