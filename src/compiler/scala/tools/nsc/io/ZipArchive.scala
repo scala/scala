@@ -160,6 +160,11 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
     final override def path = ZipArchive.this.toString() + "(" + pathInArchive + ")"
     final def getArchive = ZipArchive.this.archive
     def pathInArchive = super.path
+    override def hashCode = super.hashCode + container.hashCode
+    override def equals(that : Any) = super.equals(that) && (that match {
+    case entry : Entry => container == entry.container
+    case _ => false
+    })
   }
 
   //########################################################################
