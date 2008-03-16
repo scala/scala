@@ -855,6 +855,19 @@ trait Symbols {
       info.baseClasses.tail.takeWhile(sc ne)
     }
 
+    /** The package containing this symbol, or NoSymbol if there
+     *  is not one. */
+    def enclosingPackage: Symbol =
+      if (this == NoSymbol) this else {
+        var packSym = this.owner
+        while ((packSym != NoSymbol)
+               && !packSym.isPackageClass)
+          packSym = packSym.owner
+        if (packSym != NoSymbol)
+          packSym = packSym.linkedModuleOfClass
+        packSym
+      }
+
     /** The top-level class containing this symbol */
     def toplevelClass: Symbol =
       if (owner.isPackageClass) {

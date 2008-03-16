@@ -17,6 +17,8 @@ import scala.xml._
  */
 abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToXML {
   import global._
+  import definitions.{AnyClass, AnyRefClass}
+
   object additions extends jcl.LinkedHashSet[Symbol]
   object additions0 extends ModelAdditions(global) {
     override def addition(sym: global.Symbol) = {
@@ -29,6 +31,44 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
       }
     }
     def init {}
+  }
+
+  /** Add all top-level entities in ModelAdditions to allClasses */
+  def addAdditionsToClasses() {
+    additions0.init
+    for (sym <- additions) {
+      val packSym = sym.enclosingPackage
+      if (packSym != NoSymbol) {
+        val pack = Package(packSym)
+        if (!(allClasses contains pack)) {
+          // don't emit an addition unless its package
+          // is already being scaladoced
+        } else {
+          val addition: Option[ClassOrObject] =
+            if (sym.isClass)
+              Some(new TopLevelClass(sym))
+            else if (sym.isModule)
+              Some(new TopLevelObject(sym))
+            else if (sym == definitions.AnyRefClass) {
+              // AnyRef is the only top-level type alias, so handle
+              // it specially instead of introducing general support for
+              // top-level aliases
+              Some(new TopLevelClass(sym))
+            }
+            else
+              None
+
+          addition match {
+            case None =>
+              //println("skipping: " + sym) //DEBUG
+            case Some(addition) =>
+              allClasses(pack) += addition
+          }
+        }
+      } else {
+        //println("no package found for: "+sym) //DEBUG
+      }
+    }
   }
 
   def process(units: Iterator[CompilationUnit]) {
@@ -62,12 +102,12 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
       }
     }
     units.foreach(unit => f(null, unit.body))
+    addAdditionsToClasses()
 
     for (p <- allClasses; d <- p._2) {
       symbols += d.sym
       for (pp <- d.sym.tpe.parents) subClasses(pp.typeSymbol) += d
     }
-    additions0.init
     copyResources
     val packages0 = sort(allClasses.keySet)
     new AllPackagesFrame     with Frame { def packages = packages0 }
@@ -120,29 +160,6 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
           def title =
             clazz0.kind + " " + clazz0.name + " in " + (clazz0.sym.owner.fullNameString('.'));
         }
-      }
-    }
-    for (sym <- additions) sym match {
-    case sym: ClassSymbol =>
-      val add = new TopLevelClass(sym)
-      new ClassContentFrame with Frame {
-        def clazz = add
-        def title =
-          add.kind + " " + add.name + " in package " + add.sym.owner.fullNameString('.')
-      }
-    case sym: TypeSymbol =>
-      val add = new TopLevelClass(sym)
-      new ClassContentFrame with Frame {
-        def clazz = add
-        def title =
-          add.kind + " " + add.name + " in package " + add.sym.owner.fullNameString('.')
-      }
-    case sym: ModuleSymbol =>
-      val add = new TopLevelObject(sym)
-      new ClassContentFrame with Frame {
-        def clazz = add
-        def title =
-          add.kind + " " + add.name + " in package " + add.sym.owner.fullNameString('.')
       }
     }
     new RootFrame with Frame
@@ -199,7 +216,8 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
   object roots extends jcl.LinkedHashMap[String,String];
   roots("classes") = "http://java.sun.com/j2se/1.5.0/docs/api";
   roots("rt") = roots("classes");
-  roots("scala-library") = "http://www.scala-lang.org/docu/files/api";
+  private val SCALA_API_ROOT = "http://www.scala-lang.org/docu/files/api/";
+  roots("scala-library") = SCALA_API_ROOT;
 
   private def keyFor(file: ZipFile): String = {
     var name = file.getName
@@ -213,8 +231,16 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
   // <code>{Text(string + " - ")}</code>;
   override def hasLink0(sym: Symbol): Boolean = {
     if (sym == NoSymbol) return false;
-    val ret = super.hasLink0(sym) && (additions.contains(sym) || symbols.contains(sym));
-    if (ret) return true;
+    if (sym == AnyRefClass) {
+      // AnyRefClass is a type alias, so the following logic
+      // does not work.  AnyClass should have a link in
+      // the same cases as AnyRefClass, so test it instead.
+      return hasLink(AnyClass)
+    }
+    if (super.hasLink0(sym) && symbols.contains(sym))
+      return true;
+    if (SyntheticClasses contains sym)
+      return true;
     if (sym.toplevelClass == NoSymbol) return false;
     val clazz = sym.toplevelClass.asInstanceOf[ClassSymbol];
     import scala.tools.nsc.io._;
@@ -254,8 +280,16 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
 
   override def rootFor(sym: Symbol): String = {
     assert(sym != NoSymbol)
+    if (sym == definitions.AnyRefClass) {
+      // AnyRefClass is a type alias, so the following logic
+      // does not work.  AnyClass should have the same root,
+      // so use it instead.
+      return rootFor(definitions.AnyClass)
+    }
     if (sym.toplevelClass == NoSymbol) return super.rootFor(sym)
     if (symbols.contains(sym.toplevelClass)) return super.rootFor(sym)
+    if (SyntheticClasses contains sym)
+      return SCALA_API_ROOT
     val clazz = sym.toplevelClass.asInstanceOf[ClassSymbol]
     import scala.tools.nsc.io._;
     clazz.classFile match {

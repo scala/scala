@@ -19,6 +19,7 @@ import scala.xml.{NodeSeq, Text, Unparsed, Utility}
 trait ModelFrames extends ModelExtractor {
   import DocUtil._
   def settings: doc.Settings
+  import global.definitions.{AnyClass, AnyRefClass}
 
   val SyntheticClasses = new scala.collection.mutable.HashSet[global.Symbol];
   {
@@ -110,12 +111,12 @@ trait ModelFrames extends ModelExtractor {
     import symtab.Flags
 
     def urlFor(sym: Symbol): String = sym match {
-      case sym : TypeSymbol if sym == definitions.AnyRefClass =>
-        urlFor0(sym, sym) + FILE_EXTENSION_HTML
       case psym : ModuleSymbol if psym.isPackage =>
         urlFor0(sym, sym) + FILE_EXTENSION_HTML
       case sym if !hasLink(sym) =>
         null
+      case sym if sym == AnyRefClass =>
+        urlFor0(sym, sym) + FILE_EXTENSION_HTML
       case msym: ModuleSymbol =>
         urlFor0(sym, sym) + FILE_EXTENSION_HTML
       case csym: ClassSymbol =>

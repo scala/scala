@@ -14,6 +14,7 @@ import scala.xml._
  */
 trait ModelToXML extends ModelExtractor {
   import global._
+  import definitions.AnyRefClass
   import DocUtil._
   // decode entity into XML.
   type Frame
@@ -36,7 +37,7 @@ trait ModelToXML extends ModelExtractor {
     val url = urlFor(entity)
     if (url == null) { // external link (handled by script.js)
       val (href, attr) =
-        if (entity.isClass)
+        if (entity.isClass || (entity==AnyRefClass))
           ("", entity.owner.fullNameString('/') + '/' + entity.nameString)
         else
           ("#" + entity.nameString, entity.owner.fullNameString('/'))
