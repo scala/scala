@@ -473,7 +473,7 @@ trait Symbols {
     /** Get type info associated with symbol at current phase, after
      *  ensuring that symbol is initialized (i.e. type is completed).
      */
-    def info: Type = {
+    def info: Type = try {
       var cnt = 0
       while (validTo == NoPeriod) {
         //if (settings.debug.value) System.out.println("completing " + this);//DEBUG
@@ -502,6 +502,10 @@ trait Symbols {
       }
       val result = rawInfo
       result
+    } catch {
+      case ex: CyclicReference =>
+        if (settings.debug.value) println("... trying to complete "+this)
+        throw ex
     }
 
     /** Set initial info. */
