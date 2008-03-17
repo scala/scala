@@ -21,11 +21,9 @@ import java.io.BufferedReader
  */
 object StreamReader {
   final val EofCh = '\032'
-  final val CR = '\015'
 
   def apply(in: java.io.Reader): StreamReader = {
-    val bin = new BufferedReader(in)
-    new StreamReader(bin, bin.readLine, 1, 1)
+    new StreamReader(new LazyCharSequence(in), 0, 1)
   }
 }
 
@@ -46,34 +44,31 @@ object StreamReader {
  *
  * @author Miles Sabin
  */
-sealed class StreamReader private (bin: BufferedReader, sourceLine: String, ln: Int, col: Int)
-extends Reader[Char] {
+sealed class StreamReader(source: CharSequence, offset: Int, lnum: Int) extends CharSequenceReader(source, offset) {
   import StreamReader._
 
-  def source: CharSequence = sourceLine
-  def offset: Int = col-1
+  override def rest: CharSequenceReader =
+    if (offset == source.length) this
+    else if (source(offset) == '\n') new StreamReader(source.subSequence(offset + 1), 0, lnum + 1)
+    else new StreamReader(source, offset + 1, lnum)
 
-  def first =
-    if (sourceLine == null)
-      EofCh
-    else if (col > sourceLine.length)
-      CR
+  private def nextEol = {
+    var i = offset
+    while (i < source.length && source(i) != '\n' && source(i) != EofCh) i += 1
+    i
+  }
+
+  override def drop(n: Int): StreamReader = {
+    val eolPos = nextEol
+    if (eolPos < offset + n && eolPos < source.length)
+      new StreamReader(source.subSequence(eolPos + 1), 0, lnum + 1).drop(offset + n - (eolPos + 1))
     else
-      sourceLine(col-1)
+      new StreamReader(source, offset + n, lnum)
+  }
 
-  def rest: StreamReader =
-    if (sourceLine == null)
-      this
-    else if (col > sourceLine.length)
-      new StreamReader(bin, bin.readLine, ln+1, 1)
-    else
-      new StreamReader(bin, sourceLine, ln, col+1)
-
-  def pos: Position = new Position {
-    	def line = ln
-      def column = col
-      def lineContents(lnum: Int) = sourceLine
-    }
-
-  def atEnd = (sourceLine == null)
+  override def pos: Position = new Position {
+    def line = lnum
+    def column = offset + 1
+    def lineContents = source.subSequence(0, nextEol).toString
+  }
 }

@@ -66,8 +66,8 @@ trait Scanners extends Parsers {
     }
     private def skip(in: Reader[Char]) = if (in.atEnd) in else in.rest
 
-    def source: CharSequence = in.source
-    def offset: Int = in.offset
+    override def source: CharSequence = in.source
+    override def offset: Int = in.offset
     def first = tok
     def rest = new Scanner(rest2)
     def pos = rest1.pos

@@ -73,7 +73,7 @@ object Predef {
 
   // errors and asserts -------------------------------------------------
 
-  def error(message: String): Nothing = throw new Error(message)
+  def error(message: String): Nothing = throw new RuntimeException(message)
 
   def exit: Nothing = exit(0)
 
@@ -324,6 +324,7 @@ object Predef {
   implicit def forceArrayProjection[A](x: Array.Projection[A]): Array[A] = x.force
   /** any random access character seq (including rich string can be converted into a string */
   implicit def forceRandomAccessCharSeq(x: runtime.RichString): String = x.mkString
+  implicit def lazyStreamToConsable[A](xs: => Stream[A]) = new runtime.StreamCons(xs)
 
   def currentThread = java.lang.Thread.currentThread()
 

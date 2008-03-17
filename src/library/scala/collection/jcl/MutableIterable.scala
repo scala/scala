@@ -91,7 +91,7 @@ trait MutableIterable[A] extends scala.Collection[A] {
       new MutableIterator[A] {
 	def next = i.next
 	def hasNext = i.hasNext
-	def remove : Unit = throw new Error
+	def remove : Unit = throw new NoSuchMethodException
       }
     }
     def size = size0;

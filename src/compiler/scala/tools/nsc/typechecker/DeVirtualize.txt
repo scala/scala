@@ -1,0 +1,56 @@
+ /*
+    class A {
+      class C[X, Y](x: X) <: { var y = x ; def f(z: Y): X }
+      class D[Y](z) extends C[Int, Y](f(z)) { override def f(z:Int) = 3 }
+    }
+    class B extends A {
+      class C[X, Y](x: X) <: { def g = 2 }
+    }
+  */
+
+  class A {
+    type C[X, Y] <: CT[X, Y]
+
+    trait CT { self: C => protected[this] val x: Int; val y = x; def f(z:Int) = z + 1 }
+
+    type D <: C with DT
+
+    trait DT extends { self: D => def f(z:Int) = z + 2 }
+
+    trait preDT extends { self: D => val z: Int; val x = f(z) }
+
+    def newC(x: Int): C
+    def newD(x: Int): D
+
+    //type C = CT
+    //type D = C with DT
+
+    class CC(_x:Int) extends { val x = _x } with CT
+
+    def newC(x:Int): C = new CC(x).asInstanceOf[C]
+
+    class DC(_z:Int) extends { val z = _z } with preDT with CT with DT {
+      override def f(z:Int) = super.f(z)
+    }
+
+    def newD(z:Int):D = new DC(z).asInstanceOf[D]
+  }
+
+  class B extends A {
+    type C <: CT with CT2
+
+    trait CT2 { self : C => def g = 2 }
+
+    //type C = CT with CT2
+    //type D = C with DT
+
+    class CC2(_x:Int) extends { val x = _x } with CT with CT2
+
+    def newC(x:Int): C = new CC2(x).asInstanceOf[C]
+
+    class DC2(_z:Int) extends { val z = _z } with preDT with CT with CT2
+      with DT { override def f(z:Int) = super.f(z) }
+
+    def newD(z:Int): D = new DC2(z).asInstanceOf[D]
+  }
+

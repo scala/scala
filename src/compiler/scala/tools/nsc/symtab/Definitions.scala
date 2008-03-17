@@ -229,7 +229,7 @@ trait Definitions {
     }).normalize
 
     /* </unapply> */
-    val MaxFunctionArity = 9
+    val MaxFunctionArity = 22
     val FunctionClass: Array[Symbol] = new Array(MaxFunctionArity + 1)
       def functionApply(n: Int) = getMember(FunctionClass(n), nme.apply)
       def functionType(formals: List[Type], restpe: Type) =

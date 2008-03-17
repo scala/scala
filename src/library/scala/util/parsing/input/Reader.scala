@@ -11,17 +11,22 @@
 
 package scala.util.parsing.input
 
+
 /** An interface for streams of values that have positions.
  *
  * @author Martin Odersky, Adriaan Moors
  */
 abstract class Reader[+T] {
 
-  /** The source character sequence for this reader */
-  def source: CharSequence
+  private[parsing] def source: CharSequence = this match {
+    case csr: CharSequenceReader => csr.source
+    case _ => throw new IllegalArgumentException("This kind of parser operates only on a CharSequenceReader")
+  }
 
-  /** The current index into source */
-  def offset: Int
+  private[parsing] def offset: Int = this match {
+    case csr: CharSequenceReader => csr.offset
+    case _ => throw new IllegalArgumentException("This kind of parser operates only on a CharSequenceReader")
+  }
 
    /** Returns the first element of the reader
     */
@@ -41,7 +46,9 @@ abstract class Reader[+T] {
   def drop(n: Int): Reader[T] = {
     var r: Reader[T] = this
     var cnt = n
-    while (cnt > 0) r = r.rest
+    while (cnt > 0) {
+      r = r.rest; cnt -= 1
+    }
     r
   }
 

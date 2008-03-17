@@ -26,10 +26,10 @@ class CharArrayPosition(val source: Array[Char], val line: Int, val column: Int)
   // TODO: this could be implemented more high-level:
   // return the string representation of the sub-array of source that starts
   // after the (lnum-1)'ed '\n' up to (but not including) the (lnum)'ed '\n'
-  protected def lineContents(lnum: Int) = {
+  protected def lineContents = {
     var i = 0
     var l = 1
-    while (i < source.length && l < lnum) {
+    while (i < source.length && l < line) {
       while (i < source.length && source(i) != '\n') i += 1
       i += 1
       l += 1

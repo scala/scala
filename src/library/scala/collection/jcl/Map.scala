@@ -94,7 +94,7 @@ trait Map[K,E] extends MutableIterable[Tuple2[K,E]] with scala.collection.mutabl
       new MutableIterator[(K,E)] {
         def next = i.next
         def hasNext = i.hasNext
-        def remove : Unit = throw new Error
+        def remove : Unit = throw new NoSuchMethodException
       }
     }
    override def removeKey(key : K) = {

@@ -16,18 +16,18 @@ package scala.util.parsing.input
  */
 object CharSequenceReader {
   final val EofCh = '\032'
-  final val CR = '\015'
 }
 
 /** A character array reader reads a stream of characters (keeping track of their positions)
  * from an array.
  *
  * @param source the source sequence
- * @param index  starting index.
+ * @param offset  starting offset.
  *
  * @author Martin Odersky
  */
-class CharSequenceReader(val source: CharSequence, index: Int) extends Reader[Char] {
+class CharSequenceReader(override val source: CharSequence,
+                         override val offset: Int) extends Reader[Char] {
   import CharSequenceReader._
 
   /** Construct a <code>CharSequenceReader</code> with its first element at
@@ -35,22 +35,10 @@ class CharSequenceReader(val source: CharSequence, index: Int) extends Reader[Ch
    */
   def this(source: CharSequence) = this(source, 0)
 
-  /** The effective offset into source
-   *  This is the same as index, except that CR characters at the end of a line
-   *  are always skipped.
-   */
-  lazy val offset: Int =
-    if (index + 1 < source.length &&
-        source.charAt(index) == CR && source.charAt(index + 1) == '\n')
-      index + 1
-    else
-      index
-
   /** Returns the first element of the reader, or EofCh if reader is at its end
    */
   def first =
-    if (offset == source.length) EofCh
-    else source.charAt(offset)
+    if (source.isDefinedAt(offset)) source(offset) else EofCh
 
   /** Returns a CharSequenceReader consisting of all elements except the first
    *
@@ -59,8 +47,8 @@ class CharSequenceReader(val source: CharSequence, index: Int) extends Reader[Ch
    *         the rest of input.
    */
   def rest: CharSequenceReader =
-    if (offset == source.length) this
-    else new CharSequenceReader(source, offset + 1)
+    if (source.isDefinedAt(offset)) new CharSequenceReader(source, offset + 1)
+    else this
 
   /** The position of the first element in the reader
    */
@@ -69,11 +57,11 @@ class CharSequenceReader(val source: CharSequence, index: Int) extends Reader[Ch
   /** true iff there are no more elements in this reader (except for trailing
    *  EofCh's)
    */
-  def atEnd = offset == source.length
+  def atEnd = !source.isDefinedAt(offset)
 
   /** Returns an abstract reader consisting of all elements except the first
    *  <code>n</code> elements.
    */
   override def drop(n: Int): CharSequenceReader =
-    new CharSequenceReader(source, (offset + n) min source.length)
+    new CharSequenceReader(source, offset + n)
 }

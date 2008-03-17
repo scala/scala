@@ -50,8 +50,8 @@ case class OffsetPosition(source: CharSequence, offset: Int) extends Position {
    * @param lnum a 1-based integer index into the `document'
    * @return the line at `lnum' (not including a newline)
    */
-  def lineContents(lnum: Int): String =
-    source.subSequence(index(lnum - 1), index(lnum)).toString
+  def lineContents: String =
+    source.subSequence(index(line - 1), index(line)).toString
 
   /** Returns a string representation of the `Position', of the form `line.column' */
   override def toString = line+"."+column

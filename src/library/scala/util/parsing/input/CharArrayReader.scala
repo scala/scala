@@ -16,7 +16,9 @@ package scala.util.parsing.input
  */
 object CharArrayReader {
   final val EofCh = '\032'
-  final val CR = '\015'
+
+  /** @deprecated  This should probably be LF instead? */
+  @deprecated final val CR = '\015'
 }
 
 /** A character array reader reads a stream of characters (keeping track of their positions)
@@ -30,7 +32,7 @@ object CharArrayReader {
  * @author Martin Odersky, Adriaan Moors
  */
 class CharArrayReader(chars: Array[Char], index: Int)
-extends CharSequenceReader(new CharArraySequence(chars), index) {
+extends CharSequenceReader(CharSequence.fromArray(chars), index) {
 
   def this(chars: Array[Char]) = this(chars, 0)
 

@@ -38,7 +38,7 @@ trait Position {
    * @param lnum a 1-based integer index into the `document'
    * @return the line at `lnum' (not including a newline)
    */
-  protected def lineContents(lnum: Int): String
+  protected def lineContents: String
 
   /** Returns a string representation of the `Position', of the form `line.column' */
   override def toString = ""+line+"."+column
@@ -53,7 +53,7 @@ trait Position {
    *<pre>    List(this, is, a, line, from, the, document)
    *                  ^</pre>
    */
-  def longString = lineContents(line)+"\n"+(" " * (column - 1))+"^"
+  def longString = lineContents+"\n"+(" " * (column - 1))+"^"
 
   /** Compare this position to another, by first comparing their line numbers,
    * and then -- if necessary -- using the columns to break a tie.

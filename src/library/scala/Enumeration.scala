@@ -310,7 +310,7 @@ abstract class Enumeration(initial: Int, names: String*) {
       }
     }
     def contains(value : Value) = (underlying & value.mask32) != 0
-    def |(  set :   Set32) = new Set32(underlying |   set.underlying)
+    def |(set : Set32) = new Set32(underlying | set.underlying)
     def |(value : Value) = new Set32(underlying | value.mask32)
     def &~(value : Value) = new Set32(underlying & (~value.mask32))
     def &(set : Set32) = new Set32(underlying & set.underlying)
