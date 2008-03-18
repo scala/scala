@@ -375,6 +375,13 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     result
   }
 
+  /**
+   *  Overridden for efficiency.
+   *
+   *  @return  the sequence itself
+   */
+  override def toSeq: Seq[A] = this
+
   override def projection: Seq.Projection[A] = new Seq.Projection[A] {
     override def force: Seq[A] = Seq.this
     def elements = Seq.this.elements

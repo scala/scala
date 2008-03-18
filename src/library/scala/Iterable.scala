@@ -408,13 +408,19 @@ trait Iterable[+A] {
   }
 
   /**
-   *  Create a fresh list with all the elements of this iterable object.
+   *  Returns a list containing all of the elements in this iterable object.
    *  @note Will not terminate for infinite-sized collections.
    */
   def toList: List[A] = elements.toList
 
   /**
-   *  Create a stream which contains all the elements of this iterable object.
+   *  Returns a sequence containing all of the elements in this iterable object.
+   *  @note Will not terminate for infinite-sized collections.
+   */
+  def toSeq: Seq[A] = toList
+
+  /**
+   *  Returns a stream containing all of the elements in this iterable object.
    *  @note consider using <code>projection</code> for lazy behavior.
    */
   def toStream: Stream[A] = Stream.fromIterator(elements)
