@@ -741,6 +741,7 @@ CLDC
         <not>
           <present targetdir="${src.dir}/cldc-library"/>
         </not>
+        <exclude name="**/*CharSequence.scala"/>
         <exclude name="**/jcl/**"/>
         <exclude name="**/ref/**"/>
         <exclude name="**/compat/**"/>
