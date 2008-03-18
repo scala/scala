@@ -46,17 +46,21 @@ env PATH="$PATH" ANT_OPTS="$ANT_OPTS" JAVACMD="$JAVACMD" \
 test "$JAVA_SDK" != "java-1.5" && exit 0
 
 if [ -d "$LATEST_DIR" ] && [ `ls "$LATEST_DIR"/*.zip 2>1 | wc -l` -gt 0 ]; then
+    sbp_script="s/\(scala[a-z\-]*[0-9]\+\.[0-9]\+\.[0-9]\+\).*\(\.sbp\)/\1-latest\2/g"
+    tgz_script="s/\(scala[a-z\-]*[0-9]\+\.[0-9]\+\.[0-9]\+\).*\(\.tgz\)/\1-latest\2/g"
+    zip_script="s/\(scala[a-z\-]*[0-9]\+\.[0-9]\+\.[0-9]\+\).*\(\.zip\)/\1-latest\2/g"
     (rm -rf $NIGHTLY_DIR && mkdir $NIGHTLY_DIR)
     (cd $LATEST_DIR && cp *.tgz *.zip *.md5 *.sbp *.advert $NIGHTLY_DIR)
     (cd $TARGET_DIR && cp log-scala2 $NIGHTLY_DIR)
     (cd $NIGHTLY_DIR && tar xzf scala-*[^sources].tgz)
-    (cd $NIGHTLY_DIR && for f in *.sbp; do ln -sf $f `echo $f | sed -e 's/\(scala[a-z\-]*[0-9]\+\.[0-9]\+\.[0-9]\+\).*\(\.sbp\)/\1-latest\2/g'`; done)
-    (cd $NIGHTLY_DIR && for f in *.tgz; do ln -sf $f `echo $f | sed -e 's/\(scala[a-z\-]*[0-9]\+\.[0-9]\+\.[0-9]\+\).*\(\.tgz\)/\1-latest\2/g'`; done)
-    (cd $NIGHTLY_DIR && for f in *.zip; do ln -sf $f `echo $f | sed -e 's/\(scala[a-z\-]*[0-9]\+\.[0-9]\+\.[0-9]\+\).*\(\.zip\)/\1-latest\2/g'`; done)
+    (cd $NIGHTLY_DIR && for f in *.sbp; do [ -h "$f" ] && continue; ln -sf $f `echo $f | sed -e "$sbp_script"`; done)
+    (cd $NIGHTLY_DIR && for f in *.tgz; do [ -h "$f" ] && continue; ln -sf $f `echo $f | sed -e "$tgz_script"`; done)
+    (cd $NIGHTLY_DIR && for f in *.zip; do [ -h "$f" ] && continue; ln -sf $f `echo $f | sed -e "$zip_script"`; done)
 fi
 if [ -d "$LATEST_PLUGIN_DIR" ]; then
+    latest_script="s/\(scala[a-z._]*[0-9]\+\.[0-9]\+\.[0-9]\+\).*\(\.zip\)/\1-latest\2/g"
     (cd $LATEST_PLUGIN_DIR && cp -r *.zip scala.update $NIGHTLY_DIR)
-    (cd $NIGHTLY_DIR && for f in *.zip; do ln -sf $f `echo $f | sed -e 's/\(scala[a-z._]*[0-9]\+\.[0-9]\+\.[0-9]\+\).*\(\.zip\)/\1-latest\2/g'`; done)
+    (cd $NIGHTLY_DIR && for f in *.zip; do [ -h "$f" ] && continue; ln -sf $f `echo $f | sed -e "$latest_script"`; done)
 fi
 #disabled
 #if [ -d "$BUILD_DIR/api-compiler" ] && [ -d "$NIGHTLY_DIR/scala/doc/scala" ]; then
