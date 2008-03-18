@@ -195,7 +195,7 @@ trait Namers { self: Analyzer =>
 
     def enterClassSymbol(tree : ClassDef): Symbol = {
       var c: Symbol = context.scope.lookup(tree.name);
-      if (!inIDE && c.isType && context.scope == c.owner.info.decls && !currentRun.compiles(c)) {
+      if (!inIDE && c.isType && c.owner.isPackageClass && context.scope == c.owner.info.decls && !currentRun.compiles(c)) {
         updatePosFlags(c, tree.pos, tree.mods.flags)
         setPrivateWithin(tree, c, tree.mods)
       } else {
