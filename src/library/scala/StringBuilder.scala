@@ -370,6 +370,12 @@ extends (Int => Char) with Proxy {
   def append(x: Long): StringBuilder =
     append(String.valueOf(x))
 
+  def append(x: Short): StringBuilder =
+    append(String.valueOf(x))
+
+  def append(x: Byte): StringBuilder =
+    append(String.valueOf(x))
+
   def append(x: Float): StringBuilder =
     append(String.valueOf(x))
 
