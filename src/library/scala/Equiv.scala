@@ -17,9 +17,8 @@ package scala
 
 trait Equiv[T] {
   /** Returns <code>true</code> iff <code>x</code> is equivalent to
-  /** <code>y</code>.  The implementation
-  /*  should be equivalence relation: reflexive, transitive,
-  /*  symmetric.
+   *  <code>y</code>.  The implementation should be equivalence
+   *  relation: reflexive, transitive, symmetric.
    */
   def equiv(x: T, y: T): Boolean
 }
