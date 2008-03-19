@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: ScalaObject.scala 10059 2007-02-20 16:37:44Z michelou $
+// $Id$
 
 
 package scala

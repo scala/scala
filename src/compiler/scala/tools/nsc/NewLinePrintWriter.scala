@@ -2,7 +2,7 @@
  * Copyright 2005-2008 LAMP/EPFL
  * @author Martin Odersky
  */
-// $Id: Interpreter.scala 14056 2008-02-18 22:42:13Z spoon $
+// $Id$
 
 package scala.tools.nsc
 import java.io.{Writer, PrintWriter}

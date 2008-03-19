@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: IterableProxy.scala 10572 2007-03-30 06:23:12Z mcdirmid $
+// $Id$
 
 
 package scala

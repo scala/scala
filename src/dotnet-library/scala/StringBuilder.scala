@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: StringBuilder.scala 14093 2008-02-21 16:55:26Z michelou $
+// $Id$
 
 
 package scala

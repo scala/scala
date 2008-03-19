@@ -2,7 +2,7 @@
  * Copyright 2007-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id: AnnotationInfos.scala 13367 2007-11-28 05:17:14Z spoon $
+// $Id$
 
 package scala.tools.nsc.symtab
 

@@ -6,11 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Either.scala 14320 2008-03-07 10:53:38Z washburn $
+// $Id$
 
 package scala
 
 /**
- * The right side of the disjoin union, as opposed to the <code>Left</code> side.
+ * The right side of the disjoint union, as opposed to the <code>Left</code> side.
  */
 final case class Right[+A, +B](b: B) extends Either[A, B]

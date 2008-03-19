@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: ScalaTool.scala 11911 2007-06-05 15:57:59Z odersky $
+// $Id$
 
 package scala.tools.ant
 

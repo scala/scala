@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Debug.scala 8192 2006-07-19 09:52:31Z dubochet $
+// $Id$
 
 package scala.actors
 

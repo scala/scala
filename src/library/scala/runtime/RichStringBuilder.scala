@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: RichString.scala 11110 2007-05-21 12:40:17Z mcdirmid $
+// $Id$
 
 
 package scala.runtime

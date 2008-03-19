@@ -1,3 +1,5 @@
+// $Id$
+
 package scala.xml
 
 import parsing.XhtmlEntities
