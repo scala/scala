@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |                                         **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -11,9 +11,9 @@
 
 package scala
 
-/** A class for totally ordered data.
+/** A trait for totally ordered data.
  *
- * Note that since version 2006-07-24 this class is no longer covariant in a.
+ * Note that since version 2006-07-24 this trait is no longer covariant in a.
  *
  * It is important that the equals method for an instance of
  * Ordered[A] be consistent with the compare method.  However,
