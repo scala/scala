@@ -1,25 +1,5 @@
-/*
- * $Log$
- * Revision 1.1  2003/10/13 16:00:03  michelou
- * - Java implementation of GNU diff (GPL licence)
- *
- * Revision 1.6  2003/03/06 22:51:32  stuart
- * Convert to CVS
- *
- * Revision 1.5  2002/07/19  19:14:40  stuart
- * fix reverseScript, make change ctor public, update docs
- *
- * Revision 1.4  2002/04/09  17:53:39  stuart
- * More flexible interface for diff() function.
- *
- * Revision 1.3  2000/03/03 21:58:03  stuart
- * move discard_confusing_lines and shift_boundaries to class file_data
- *
- * Revision 1.2  2000/03/02  16:37:38  stuart
- * Add GPL and copyright
- *
- */
-//package bmsi.util;
+// $Id$
+
 package scala.tools.partest.nest;
 
 import java.util.Hashtable;

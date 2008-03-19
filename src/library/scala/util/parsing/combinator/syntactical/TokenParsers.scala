@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: TokenParsers.scala 12242 2007-07-09 09:43:09Z michelou $
+// $Id$
 
 
 package scala.util.parsing.combinator.syntactical

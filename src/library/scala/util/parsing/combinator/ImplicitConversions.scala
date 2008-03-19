@@ -6,6 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
+// $Id$
+
 package scala.util.parsing.combinator
 
 /** This object contains implicit conversions that come in handy when using the `^^' combinator

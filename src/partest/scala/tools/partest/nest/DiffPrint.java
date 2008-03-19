@@ -1,25 +1,10 @@
-/* $Log$
- * Revision 1.1  2003/10/13 16:00:11  michelou
- * - Java implementation of GNU diff (GPL licence)
- *
- * Revision 1.4  2003/04/22  01:50:47  stuart
- * add Unified format diff
- *
- * Revision 1.3  2003/04/22  01:00:32  stuart
- * added context diff format
- *
- * Revision 1.2  2000/03/02  16:59:54  stuart
- * add GPL
- *
- */
+// $Id$
 
-//package bmsi.util;
 package scala.tools.partest.nest;
 
 import java.io.*;
 import java.util.Vector;
 import java.util.Date;
-//import bmsi.util.Diff;
 //import com.objectspace.jgl.predicates.UnaryPredicate;
 
 interface UnaryPredicate {

@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Parsers.scala 12357 2007-07-18 21:55:08Z moors $
+// $Id$
 
 package scala.util.parsing.combinator
 

@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Scanners.scala 12407 2007-07-25 02:33:18Z emir $
+// $Id$
 
 
 package scala.util.parsing.combinator.lexical

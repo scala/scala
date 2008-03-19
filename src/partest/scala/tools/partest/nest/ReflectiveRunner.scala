@@ -3,7 +3,7 @@
  * @author Philipp Haller
  */
 
-// $Id: $
+// $Id$
 
 package scala.tools.partest.nest
 

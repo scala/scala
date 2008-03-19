@@ -2,6 +2,8 @@
  * @author Philipp Haller
  */
 
+// $Id$
+
 package scala.tools.partest.nest
 
 import java.io.{File, FileInputStream, FileOutputStream, PrintStream,

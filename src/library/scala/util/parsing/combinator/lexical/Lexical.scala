@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Lexical.scala 12268 2007-07-11 13:45:53Z michelou $
+// $Id$
 
 
 package scala.util.parsing.combinator.lexical

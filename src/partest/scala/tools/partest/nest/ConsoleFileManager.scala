@@ -3,7 +3,7 @@
  * @author Philipp Haller
  */
 
-// $Id: FileManager.scala 14161 2008-02-27 19:45:27Z phaller $
+// $Id$
 
 package scala.tools.partest.nest
 
