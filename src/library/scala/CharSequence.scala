@@ -114,6 +114,17 @@ trait CharSequence extends java.lang.CharSequence with Seq[Char] {
    *  @return            The resulting string
    */
   def replaceFirst(regex: Regex, replacement: String): String = regex replaceFirstIn (this, replacement)
+
+  def toArray: Array[Char] = {
+    val len = length
+    val result = new Array[Char](len)
+    var i = 0
+    while (i < len) {
+      result(i) = charAt(i)
+      i += 1
+    }
+    result
+  }
 }
 
 /** The CharSequence object defines variance implementations of character sequences
@@ -149,6 +160,12 @@ object CharSequence {
 
     def subSequence(_start: Int, _end: Int) =
       new AsArray(source, start + _start, start + _end)
+
+    override def toArray: Array[Char] = {
+      val result = new Array[Char](length)
+      compat.Platform.arraycopy(source, start, result, 0, length)
+      result
+    }
 
     override def toString = new String(source, start, end - start)
   }

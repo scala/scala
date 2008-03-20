@@ -219,6 +219,12 @@ final class RichString(val self: String) extends Proxy with CharSequence with Ra
   def toLong: Long       = java.lang.Long.parseLong(self)
   def toFloat: Float     = java.lang.Float.parseFloat(self)
   def toDouble: Double   = java.lang.Double.parseDouble(self)
+
+  override def toArray: Array[Char] = {
+    val result = new Array[Char](length)
+    self.getChars(0, length, result, 0)
+    result
+  }
 }
 
 object RichString {
