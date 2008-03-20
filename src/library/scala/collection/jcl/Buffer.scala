@@ -209,6 +209,10 @@ trait Buffer[A] extends RandomAccessSeq.Mutable[A] with Ranged[Int,A] with Mutab
   */
 }
 object Buffer {
+  def apply[T](list : java.util.List[T]) = new BufferWrapper[T] {
+    val underlying = list
+  }
+
   trait Projection0[A] extends MutableSeq.Projection[A] with RandomAccessSeq.Projection[A] {
     override def projection : Projection0[A] = this
     override def elements : SeqIterator[Int,A] = new DefaultSeqIterator

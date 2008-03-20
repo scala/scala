@@ -16,6 +16,10 @@ object SortedSet {
     override def projection = this
     override def filter(p : A => Boolean) : Projection[A] = new Filter(p);
   }
+  def apply[T](set : java.util.SortedSet[T]) = new SortedSetWrapper[T] {
+    val underlying = set
+  }
+
 }
 
 /** Analogous to a Java sorted set.

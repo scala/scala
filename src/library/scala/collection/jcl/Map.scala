@@ -123,4 +123,7 @@ object Map {
     override def projection = this
     override def map[B](f : ((K,E)) => B) : MutableIterable.Projection[B] = super[MutableIterableProjection].map(f);
   }
+  def apply[T,E](map0 : java.util.Map[T,E]) = new MapWrapper[T,E] {
+    val underlying = map0
+  }
 }

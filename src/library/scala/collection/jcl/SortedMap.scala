@@ -14,6 +14,9 @@ object SortedMap {
   trait Projection[K,E] extends Map.Projection[K,E] with SortedMap[K,E] {
     override def projection = this
   }
+  def apply[T,E](map0 : java.util.SortedMap[T,E]) = new SortedMapWrapper[T,E] {
+    val underlying = map0
+  }
 }
 /** A map whose keys are sorted.
  *

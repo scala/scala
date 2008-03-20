@@ -66,4 +66,7 @@ object Set {
     override def filter(p : A => Boolean) : Projection[A] = new Filter(p);
     override def projection = this
   }
+  def apply[T](set : java.util.Set[T]) = new SetWrapper[T] {
+    val underlying = set
+  }
 }
