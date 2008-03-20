@@ -127,27 +127,39 @@ public class BoxesRunTime {
 /* UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING */
 
     public static boolean unboxToBoolean(Object b) {
-        return b == null ? false : ((Boolean)b).booleanValue();
+        if (b == null)
+          throw new ClassCastException("null is no Boolean value");
+        return ((Boolean)b).booleanValue();
     }
 
     public static char unboxToChar(Object c) {
-        return c == null ? 0 : ((Character)c).charValue();
+        if (c == null)
+          throw new ClassCastException("null is no Char value");
+        return ((Character)c).charValue();
     }
 
     public static byte unboxToByte(Object b) {
-        return b == null ? 0 : ((Byte)b).byteValue();
+        if (b == null)
+          throw new ClassCastException("null is no Byte value");
+        return ((Byte)b).byteValue();
     }
 
     public static short unboxToShort(Object s) {
-        return s == null ? 0 : ((Short)s).shortValue();
+        if (s == null)
+          throw new ClassCastException("null is no Short value");
+        return ((Short)s).shortValue();
     }
 
     public static int unboxToInt(Object i) {
-        return i == null ? 0 : ((Integer)i).intValue();
+        if (i == null)
+          throw new ClassCastException("null is no Int value");
+        return ((Integer)i).intValue();
     }
 
     public static long unboxToLong(Object l) {
-        return l == null ? 0 : ((Long)l).longValue();
+        if (l == null)
+          throw new ClassCastException("null is no Long value");
+        return ((Long)l).longValue();
     }
 
 /* COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON */
@@ -192,7 +204,7 @@ public class BoxesRunTime {
     }
 
     /** arg1 - arg2 */
-    public static Object substract(Object arg1, Object arg2) throws Error {
+    public static Object subtract(Object arg1, Object arg2) throws Error {
         throw new Error();
     }
 

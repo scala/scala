@@ -257,7 +257,7 @@ abstract class CleanUp extends Transform {
           case nme.ADD =>
             (definitions.getMember(definitions.BoxesRunTimeClass, newTermName("add")), testForNumber)
           case nme.SUB =>
-            (definitions.getMember(definitions.BoxesRunTimeClass, newTermName("substract")), testForNumber)
+            (definitions.getMember(definitions.BoxesRunTimeClass, newTermName("subtract")), testForNumber)
           case nme.MUL =>
             (definitions.getMember(definitions.BoxesRunTimeClass, newTermName("multiply")), testForNumber)
           case nme.DIV =>
