@@ -17,6 +17,7 @@ package scala.collection.mutable
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 19/09/2003
+ *  @deprecated Use <code>scala.collection.jcl.Set(jmap)</code> instead
  */
 @deprecated class JavaSetAdaptor[A](jset: java.util.Set[A]) extends Set[A] {
 

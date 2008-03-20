@@ -17,6 +17,7 @@ package scala.collection.mutable
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
+ *  @deprecated Use <code>scala.collection.jcl.Map(jmap)</code> instead
  */
 @deprecated class JavaMapAdaptor[A, B](jmap: java.util.Map[A, B]) extends Map[A, B] {
 
