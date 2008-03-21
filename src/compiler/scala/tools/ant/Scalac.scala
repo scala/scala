@@ -105,54 +105,54 @@ class Scalac extends MatchingTask {
   }
 
   /** The directories that contain source files to compile. */
-  private var origin: Option[Path] = None
+  protected var origin: Option[Path] = None
   /** The directory to put the compiled files in. */
-  private var destination: Option[File] = None
+  protected var destination: Option[File] = None
 
   /** The class path to use for this compilation. */
-  private var classpath: Option[Path] = None
+  protected var classpath: Option[Path] = None
   /** The source path to use for this compilation. */
-  private var sourcepath: Option[Path] = None
+  protected var sourcepath: Option[Path] = None
   /** The boot class path to use for this compilation. */
-  private var bootclasspath: Option[Path] = None
+  protected var bootclasspath: Option[Path] = None
   /** The external extensions path to use for this compilation. */
-  private var extdirs: Option[Path] = None
+  protected var extdirs: Option[Path] = None
 
   /** The character encoding of the files to compile. */
-  private var encoding: Option[String] = None
+  protected var encoding: Option[String] = None
 
   // the targetted backend
-  private var backend: Option[String] = None
+  protected var backend: Option[String] = None
 
   /** Whether to force compilation of all files or not. */
-  private var force: Boolean = false
+  protected var force: Boolean = false
   /** How much logging output to print. Either none (default),
     * verbose or debug. */
-  private var logging: Option[String] = None
+  protected var logging: Option[String] = None
   /** Which compilation phases should be logged during compilation. */
-  private var logPhase: List[String] = Nil
+  protected var logPhase: List[String] = Nil
 
   /** Instruct the compiler to generate debugging information */
-  private var debugInfo: Option[String] = None
+  protected var debugInfo: Option[String] = None
   /** Instruct the compiler to use additional parameters */
-  private var addParams: String = ""
+  protected var addParams: String = ""
   /** Instruct the compiler to generate deprecation information. */
-  private var deprecation: Option[Boolean] = None
+  protected var deprecation: Option[Boolean] = None
   /** Instruct the compiler to run optimizations. */
-  private var optimise: Option[Boolean] = None
+  protected var optimise: Option[Boolean] = None
   /** Instruct the compiler to generate unchecked information. */
-  private var unchecked: Option[Boolean] = None
+  protected var unchecked: Option[Boolean] = None
   /** Indicates whether compilation errors will fail the build; defaults to true. */
-  private var failonerror: Boolean = true
+  protected var failonerror: Boolean = true
 
   // Name of the output assembly (only relevant with -target:msil)
-  private var assemname: Option[String] = None
+  protected var assemname: Option[String] = None
   // List of assemblies referenced by the program (only relevant with -target:msil)
-  private var assemrefs: Option[String] = None
+  protected var assemrefs: Option[String] = None
 
   /** Whether the compiler is being debuged. Prints more information in case
    *  in case of failure. */
-  private var scalacDebugging: Boolean = false
+  protected var scalacDebugging: Boolean = false
 
 /*============================================================================*\
 **                             Properties setters                             **
@@ -351,42 +351,42 @@ class Scalac extends MatchingTask {
   /** Gets the value of the <code>classpath</code> attribute in a
    *  Scala-friendly form.
    *  @return The class path as a list of files. */
-  private def getClasspath: List[File] =
+  protected def getClasspath: List[File] =
     if (classpath.isEmpty) error("Member 'classpath' is empty.")
     else List.fromArray(classpath.get.list()).map(nameToFile)
 
   /** Gets the value of the <code>origin</code> attribute in a
    *  Scala-friendly form.
    *  @return The origin path as a list of files. */
-  private def getOrigin: List[File] =
+  protected def getOrigin: List[File] =
     if (origin.isEmpty) error("Member 'origin' is empty.")
     else List.fromArray(origin.get.list()).map(nameToFile)
 
   /** Gets the value of the <code>destination</code> attribute in a
    *  Scala-friendly form.
    *  @return The destination as a file. */
-  private def getDestination: File =
+  protected def getDestination: File =
     if (destination.isEmpty) error("Member 'destination' is empty.")
     else existing(getProject().resolveFile(destination.get.toString))
 
   /** Gets the value of the <code>sourcepath</code> attribute in a
    *  Scala-friendly form.
    *  @return The source path as a list of files. */
-  private def getSourcepath: List[File] =
+  protected def getSourcepath: List[File] =
     if (sourcepath.isEmpty) error("Member 'sourcepath' is empty.")
     else List.fromArray(sourcepath.get.list()).map(nameToFile)
 
   /** Gets the value of the <code>bootclasspath</code> attribute in a
    *  Scala-friendly form.
    *  @return The boot class path as a list of files. */
-  private def getBootclasspath: List[File] =
+  protected def getBootclasspath: List[File] =
     if (bootclasspath.isEmpty) error("Member 'bootclasspath' is empty.")
     else List.fromArray(bootclasspath.get.list()).map(nameToFile)
 
   /** Gets the value of the <code>extdirs</code> attribute in a
    *  Scala-friendly form.
    *  @return The extensions path as a list of files. */
-  private def getExtdirs: List[File] =
+  protected def getExtdirs: List[File] =
     if (extdirs.isEmpty) error("Member 'extdirs' is empty.")
     else List.fromArray(extdirs.get.list()).map(nameToFile)
 
@@ -405,21 +405,21 @@ class Scalac extends MatchingTask {
    *              will be resolved.
    *  @param name A relative or absolute path to the file as a string.
    *  @return     A file created from the name and the base file. */
-  private def nameToFile(base: File)(name: String): File =
+  protected def nameToFile(base: File)(name: String): File =
     existing(fileUtils.resolveFile(base, name))
 
   /** Transforms a string name into a file relative to the build root
    *  directory.
    *  @param name A relative or absolute path to the file as a string.
    *  @return     A file created from the name. */
-  private def nameToFile(name: String): File =
+  protected def nameToFile(name: String): File =
     existing(getProject().resolveFile(name))
 
   /** Tests if a file exists and prints a warning in case it doesn't. Always
    *  returns the file, even if it doesn't exist.
    *  @param file A file to test for existance.
    *  @return     The same file. */
-  private def existing(file: File): File = {
+  protected def existing(file: File): File = {
     if (!file.exists())
       log("Element '" + file.toString + "' does not exist.",
           Project.MSG_WARN)
@@ -429,20 +429,20 @@ class Scalac extends MatchingTask {
   /** Transforms a path into a Scalac-readable string.
    *  @param path A path to convert.
    *  @return     A string-representation of the path like <code>a.jar:b.jar</code>. */
-  private def asString(path: List[File]): String =
+  protected def asString(path: List[File]): String =
     path.map(asString).mkString(File.pathSeparator)
 
   /** Transforms a file into a Scalac-readable string.
    *  @param path A file to convert.
    *  @return     A string-representation of the file like <code>/x/k/a.scala</code>. */
-  private def asString(file: File): String =
+  protected def asString(file: File): String =
     file.getAbsolutePath()
 
   /** Generates a build error. Error location will be the current task in the
    *  ant file.
    *  @param message         A message describing the error.
    *  @throws BuildException A build error exception thrown in every case. */
-  private def error(message: String): Nothing =
+  protected def error(message: String): Nothing =
     throw new BuildException(message, getLocation())
 
 

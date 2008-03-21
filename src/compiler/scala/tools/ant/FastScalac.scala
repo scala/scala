@@ -97,8 +97,10 @@ class FastScalac extends Scalac {
 
       val args = (cmdOptions ::: (sourceFiles map (_.toString))).toArray
       try {
-        nsc.CompileClient.main0(args)
-      } catch {
+        if(nsc.CompileClient.main0(args) > 0 && failonerror)
+          error("Compile failed; see the compiler error output for details.")
+      }
+      catch {
         case exception: Throwable if (exception.getMessage ne null) =>
           exception.printStackTrace()
           error("Compile failed because of an internal compiler error (" +
