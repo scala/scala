@@ -3,7 +3,7 @@
 <project name="sabbus" default="build">
 
   <description>
-    I am SuperSABBUS for Scala core, the fast but simple version of SABBUS.
+    I am SuperSabbus for Scala core, the fast but simple version of Sabbus.
   </description>
 
 <!-- ===========================================================================
@@ -36,6 +36,20 @@ END-USER TARGETS
   
   <target name="distclean" depends="dists.clean"
     description="Removes all distributions. Binaries and documentation are untouched."/>
+  
+  <target name="newstarr"
+    description="Replaces the Starr compiler and library by one built from current sources and tests it.">
+    <antcall target="locker.clean"/>
+    <antcall target="starr.build"/>
+    <antcall target="locker.clean"/>
+    <antcall target="test"/>
+  </target>
+  
+  <target name="newlocker"
+    description="Replaces the Locker compiler and library by one built from current sources.">
+    <antcall target="locker.clean"/>
+    <antcall target="locker.build"/>
+  </target>
 
 <!-- ===========================================================================
 PROPERTIES
@@ -681,6 +695,24 @@ MAKE ACTUAL DISTRIBUTION
   </target>
   
   <target name="dist.load" depends="stability.test, suite.test, dist.latest"/>
+
+<!-- ===========================================================================
+MAKE NEW STARR
+============================================================================ -->
+  
+  <target name="starr.init" depends="pack.load"/>
+  
+  <target name="starr.build" depends="starr.init">
+    <delete file="${lib.starr.jar}"/>
+    <delete file="${comp.starr.jar}"/>
+    <delete file="${lib.dir}/scala-library-src.jar"/>
+    <copy file="${build-quick.dir}/lib/scala-library.jar" toFile="${lib.starr.jar}"/>
+    <copy file="${build-quick.dir}/lib/scala-compiler.jar" toFile="${comp.starr.jar}"/>
+    <jar destfile="${lib.dir}/scala-library-src.jar">
+      <fileset dir="${src.dir}/library"/>
+      <fileset dir="${src.dir}/actors"/>
+    </jar>
+  </target>
 
 <!-- ===========================================================================
 CLEAN
