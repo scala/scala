@@ -150,14 +150,6 @@ public class BoxesRunTime {
         return l == null ? 0 : ((Long)l).longValue();
     }
 
-    public static float unboxToFloat(Object f) {
-        return f == null ? 0.0f : ((Float)f).floatValue();
-    }
-
-    public static double unboxToDouble(Object d) {
-        return d == null ? 0.0d : ((Double)d).doubleValue();
-    }
-
     /*
     public static boolean unboxToBoolean(Object b) {
         if (b == null)
