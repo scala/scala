@@ -407,7 +407,7 @@ trait ParallelMatching  {
               }}
           val nrepFail = if (nrowsOther.isEmpty) None else Some(rep.make(scrutinee::rest.temp, nrowsOther))
           n match {
-            case 0  => //special case for unapply(), app.tpe is boolean
+            case 0  => // special case for unapply(), app.tpe is boolean
               val ntemps = scrutinee :: rest.temp
               val nrows  = column.zip(rest.row) map {
                 case (pat, Row(ps, subst, g, bx)) =>
@@ -420,7 +420,7 @@ trait ParallelMatching  {
                   }}
             (uacall, Nil, rep.make(ntemps, nrows), nrepFail)
 
-            case  1 => //special case for unapply(p), app.tpe is Option[T]
+            case  1 => // special case for unapply(p), app.tpe is Option[T]
               val vtpe = app.tpe.typeArgs(0)
               val vsym = newVarCapture(ua.pos, vtpe)
               val ntemps = vsym :: scrutinee :: rest.temp
@@ -464,6 +464,7 @@ trait ParallelMatching  {
                     case _ =>
                       Row(dummies:::     pat   ::ps, subst, g, bx)
                   }}
+
               (uacall, vdefs.toList, rep.make(ntemps, nrows), nrepFail)
           }}
     } /* def getTransition(...) */
@@ -527,7 +528,7 @@ trait ParallelMatching  {
           var vs        = new ListBuffer[Symbol]
           var ix = 0
 
-        //build new temps on which we will match subpatterns
+        // build new temps on which we will match subpatterns
 
         // if is right ignoring, don't want last one
           var ys = if (isRightIgnoring(av)) xs.take(xs.length-1) else xs;
@@ -625,7 +626,7 @@ trait ParallelMatching  {
 
       // todo: optimize if no guard, and no further tests
       val nsucc = rep.make(scrutinee :: rest.temp, nsuccRow)
-      val nfail = repWithoutHead(column,rest)
+      val nfail = repWithoutHead(column, rest)
       return (typed{ Equals(mkIdent(scrutinee) setType scrutinee.tpe, vlue) }, nsucc, fLabel, nfail)
     }
 
@@ -715,7 +716,7 @@ trait ParallelMatching  {
         val strippedPattern = strip2(pat)
         val patternType = strippedPattern.tpe
         sr = strippedPattern match {
-          case Literal(Constant(null)) if !(headPatternType =:= patternType) => //special case for constant null pattern
+          case Literal(Constant(null)) if !(headPatternType =:= patternType) => // special case for constant null pattern
             (ms,ss,(j,pat)::rs);
           case _ if objectPattern(pat) =>
             (EmptyTree::ms, (j,dummies)::ss, rs);                                 // matching an object
@@ -918,7 +919,7 @@ trait ParallelMatching  {
    *  the function takes care of binding
    */
   final def requestBody(bx:Int, subst:Binding)(implicit theOwner: Symbol): Tree = {
-    if (bx < 0) {// is shortcut
+    if (bx < 0) { // is shortcut
       val jlabel = shortCuts(-bx-1)
       val jump = Apply(mkIdent(jlabel), Nil)
       return jump
@@ -930,7 +931,7 @@ trait ParallelMatching  {
       val it = vss(bx).elements; while(it.hasNext) {
         val v = it.next
         val substv = subst(v)
-        if (substv ne null) {// might be bound elsewhere ( see `x @ unapply' )
+        if (substv ne null) { // might be bound elsewhere ( see `x @ unapply' )
           vrev   = v :: vrev
           argts += v.tpe
           vdefs  = typedValDef(v, substv)::vdefs
@@ -954,7 +955,7 @@ trait ParallelMatching  {
     var vs   = vss(bx).elements; while(vs.hasNext) {
       val v = vs.next
       val substv = subst(v)
-      assert(substv ne null, "subst is null") // if sharing takes place, then 'binding elsewhere' is not allowed
+      assert(substv ne null, "subst("+v+") is null"+cunit.toString) // if sharing takes place, then 'binding elsewhere' is not allowed
       args += substv
     }
     val label = labels(bx)
@@ -977,7 +978,7 @@ trait ParallelMatching  {
       val it = vss(bx).elements; while(it.hasNext) {
         val v = it.next
         val substv = subst(v)
-        if (substv ne null) {// might be bound elsewhere ( see `x @ unapply' )
+        if (substv ne null) { // might be bound elsewhere ( see `x @ unapply' )
           vdefs  += typedValDef(v, substv)
         }
       }
@@ -1011,12 +1012,12 @@ trait ParallelMatching  {
         var indexOfAlternative = -1
         var j = 0; while(opats ne Nil) {
           var opat = opats.head // original pattern
-          //DBG("opat = "+opat)
-          val (vars,strippedPat) = strip(opat)
+          val (vars, strippedPat) = strip(opat)
           val vs = vars.toList
           (strippedPat: @unchecked) match {
 
             case p @ Alternative(ps) =>
+              DBG("Alternative")
               if (indexOfAlternative == -1) {
                 unchanged = false
                 indexOfAlternative = j
@@ -1024,12 +1025,15 @@ trait ParallelMatching  {
               pats = opat :: pats
 
             case typat @ Typed(p,tpt) if strip2(p).isInstanceOf[UnApply]=>
-              pats = (if (temp(j).tpe <:< tpt.tpe) p else typat)::pats // what about the null-check?
+              DBG("Typed")
+              pats = (if (temp(j).tpe <:< tpt.tpe) makeBind(vs, p) else opat)::pats
 
             case Ident(nme.WILDCARD) | EmptyTree | _:Literal | _:Typed =>
+              DBG("Ident(_)|EmptyTree")
               pats = opat :: pats
 
             case o @ Ident(n) => // n != nme.WILDCARD
+              DBG("Ident")
               val tpe =
                 if (!o.symbol.isValue) {
                   singleType(o.tpe.prefix, o.symbol)
@@ -1046,6 +1050,7 @@ trait ParallelMatching  {
 
 
             case o @ Select(stor,_) =>
+              DBG("Select")
               val stpe =
                 if (!o.symbol.isValue) {
                   singleType(o.tpe.prefix, o.symbol)
@@ -1057,6 +1062,7 @@ trait ParallelMatching  {
               pats = q::pats
 
             case UnApply(Apply(TypeApply(sel @ Select(stor, nme.unapplySeq),List(tptArg)),_),ArrayValue(_,xs)::Nil) if (stor.symbol eq definitions.ListModule) =>
+              DBG("Unapply(...TypeApply...)")
               //@pre: is not right-ignoring (no star pattern)
               // no exhaustivity check, please
               temp(j).setFlag(symtab.Flags.TRANS_FLAG)
@@ -1072,6 +1078,7 @@ trait ParallelMatching  {
 
 
             case ua @ UnApply(Apply(fn, _), _) =>
+              DBG("Unapply(Apply())")
               fn.tpe match {
                 case MethodType(List(argtpe,_*),_) =>
                   val npat = (if (temp(j).tpe <:< argtpe) ua else Typed(ua,TypeTree(argtpe)).setType(argtpe))
@@ -1079,6 +1086,7 @@ trait ParallelMatching  {
               }
 
             case o @ Apply(fn, List()) if !isCaseClass(o.tpe) || /*see t301*/ !Apply_Value.unapply(o).isEmpty =>
+              DBG("Apply !isCaseClass")
               val stpe: Type = fn match {
                 case _ if (o.symbol.isModule) =>
                   singleType(o.tpe.prefix, o.symbol)
@@ -1108,18 +1116,22 @@ trait ParallelMatching  {
               pats = q::pats
 
             case Apply_Value(pre, sym) =>
+              DBG("Apply_Value")
               val tpe = typeRef(NoPrefix, definitions.EqualsPatternClass, singleType(pre, sym)::Nil)
               val q = makeBind(vs,Typed(EmptyTree, TypeTree(tpe)) setType tpe)
               pats = q :: pats
 
             case Apply_CaseClass_NoArgs(tpe) =>  // no-args case class pattern
+              DBG("Apply_CaseClass_NoArgs")
               val q = makeBind(vs, Typed(EmptyTree, TypeTree(tpe)) setType tpe)
               pats = q :: pats
 
             case Apply_CaseClass_WithArgs() =>  // case class pattern with args
+              DBG("Apply_CaseClass_WithArgs")
               pats = opat :: pats
 
             case ArrayValue(_,xs) =>
+              DBG("ArrayValue")
               pats = opat :: pats
 
           }
@@ -1127,13 +1139,18 @@ trait ParallelMatching  {
           j += 1
         }
         pats = pats.reverse
-        if (indexOfAlternative == -1)
-          List(Row(pats, subst, g, bx))
+        if (indexOfAlternative == -1) {
+          val res = List(Row(pats, subst, g, bx))
+          DBG("finished: result "+res)
+          res
+        }
         else {
           val prefix = pats.take( indexOfAlternative )
           val alts   = getAlternativeBranches(pats( indexOfAlternative ))
           val suffix = pats.drop(indexOfAlternative + 1)
-          alts map { p => Row(prefix ::: p :: suffix, subst, g, bx) }
+          val intermediary_result = alts map { p => Row(prefix ::: p :: suffix, subst, g, bx) }
+          DBG("not finished: intermediary_result = "+intermediary_result)
+          intermediary_result
         }
     }
     if (unchanged) {
@@ -1245,6 +1262,7 @@ trait ParallelMatching  {
          */
         if (bnd ne null) {    // all default patterns
           val rest = if (g eq EmptyTree) null else rep.make(temp, xs)
+          DBG("\n---\nmixture rule is = VariableRule")
           return VariableRule (bnd, g, rest, bx)
         }
 
@@ -1254,7 +1272,9 @@ trait ParallelMatching  {
         val column   = rpats.head :: (row.tail map { case Row(pats,_,_,_) => pats(px) })
         val restTemp =                                               temp.take(px) ::: temp.drop(px+1)
         val restRows = row map { case Row(pats, subst, g, bx) => Row(pats.take(px) ::: pats.drop(px+1), subst, g, bx) }
-        return MixtureRule(temps.head, column, rep.make(restTemp,restRows))
+        val mr = MixtureRule(temps.head, column, rep.make(restTemp,restRows))
+        DBG("\n---\nmixture rule is = "+mr.getClass.toString)
+        mr
     }
 
     // a fancy toString method for debugging
