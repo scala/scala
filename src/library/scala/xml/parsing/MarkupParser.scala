@@ -88,7 +88,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
     md
   }
 
-  /** &lt;? prolog ::= xml S
+  /** &lt;? prolog ::= xml S?
    *  // this is a bit more lenient than necessary...
    */
   def prolog(): Tuple3[Option[String], Option[String], Option[Boolean]] = {
@@ -101,7 +101,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
 
     var m = xmlProcInstr()
 
-    xSpace
+    xSpaceOpt
 
     m("version") match {
       case null  => ;
@@ -528,7 +528,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
                   case "lt"    => ts &+ '<'
                   case "gt"    => ts &+ '>'
                   case "amp"   => ts &+ '&'
-                  case "quote" => ts &+ '"'
+                  case "quot" => ts &+ '"'
                   case _ =>
                     /*
                      ts + handle.entityRef( tmppos, n ) ;
