@@ -357,6 +357,9 @@ extends (Int => Char) with Proxy {
     this
   }
 
+  def append(x: Byte): StringBuilder =
+    append(String.valueOf(x))
+
   def append(x: Char): StringBuilder = {
     val newCount = count + 1
     if (newCount > value.length) expandCapacity(newCount)
@@ -364,16 +367,13 @@ extends (Int => Char) with Proxy {
     this
   }
 
+  def append(x: Short): StringBuilder =
+    append(String.valueOf(x))
+
   def append(x: Int): StringBuilder =
     append(String.valueOf(x))
 
   def append(x: Long): StringBuilder =
-    append(String.valueOf(x))
-
-  def append(x: Short): StringBuilder =
-    append(String.valueOf(x))
-
-  def append(x: Byte): StringBuilder =
     append(String.valueOf(x))
 
   def append(x: Float): StringBuilder =
@@ -564,6 +564,22 @@ extends (Int => Char) with Proxy {
     insert(at, String.valueOf(x))
 
   /** <p>
+   *    Inserts the string representation of the <code>Byte</code> argument
+   *    into this sequence.
+   *  </p>
+   *  <p>
+   *    The offset argument must be greater than or equal to 0, and less than
+   *    or equal to the length of this sequence.
+   *  </p>
+   *
+   *  @param  at  the offset position.
+   *  @param  x   a <code>Byte</code> value.
+   *  @return     a reference to this object.
+   */
+  def insert(at: Int, x: Byte): StringBuilder =
+    insert(at, String.valueOf(x))
+
+  /** <p>
    *    Inserts the string representation of the <code>Char</code> argument
    *    into this sequence.
    *  </p>
@@ -586,6 +602,22 @@ extends (Int => Char) with Proxy {
     count = newCount
     this
   }
+
+  /** <p>
+   *    Inserts the string representation of the <code>Short</code> argument
+   *    into this sequence.
+   *  </p>
+   *  <p>
+   *    The offset argument must be greater than or equal to 0, and less than
+   *    or equal to the length of this sequence.
+   *  </p>
+   *
+   *  @param  at  the offset position.
+   *  @param  x   a <code>Short</code> value.
+   *  @return     a reference to this object.
+   */
+  def insert(at: Int, x: Short): StringBuilder =
+    insert(at, String.valueOf(x))
 
   /** <p>
    *    Inserts the string representation of the <code>Int</code> argument
