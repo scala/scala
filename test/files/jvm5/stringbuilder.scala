@@ -1,4 +1,4 @@
-/* $Id: $ */
+/* $Id$ */
 
 import testing.SUnit._
 
@@ -47,8 +47,8 @@ object Test2 extends TestCase("append") with Assert {
     val j0 = new java.lang.StringBuilder("abc") // Java 1.5+
     val s0 = new StringBuilder("abc")
 
-    j0 append true append 'a' append 9 append -1L append 1.2e-10f append -2.1e+100d
-    s0 append true append 'a' append 9 append -1L append 1.2e-10f append -2.1e+100d
+    j0 append true append (1.toByte) append 'a' append 9 append -1L append 1.2e-10f append -2.1e+100d
+    s0 append true append (1.toByte) append 'a' append 9 append -1L append 1.2e-10f append -2.1e+100d
     assertEquals("s0.toString equals j0.toString", true, s0.toString equals j0.toString)
 
     val j1 = new java.lang.StringBuilder // Java 1.5+
@@ -65,8 +65,8 @@ object Test3 extends TestCase("insert") with Assert {
     val j0 = new java.lang.StringBuilder("abc") // Java 1.5+
     val s0 = new StringBuilder("abc")
 
-    j0 insert (0, true) insert (0, 'a') insert (0, 9) insert (0, -1L)
-    s0 insert (0, true) insert (0, 'a') insert (0, 9) insert (0, -1L)
+    j0 insert (0, true) insert (0, 1.toByte) insert (0, 'a') insert (0, 88.toShort) insert (0, 9) insert (0, -1L)
+    s0 insert (0, true) insert (0, 1.toByte) insert (0, 'a') insert (0, 88.toShort) insert (0, 9) insert (0, -1L)
     //println("j0="+j0+", s0="+s0)//debug
     assertEquals("s0.toString equals j0.toString", true, s0.toString equals j0.toString)
 
