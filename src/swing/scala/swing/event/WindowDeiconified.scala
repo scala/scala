@@ -1,3 +1,3 @@
 package swing.event
 
-case class WindowDeiconified(window: Frame) extends WindowEvent;
+case class WindowDeiconified(override val source: Frame) extends WindowEvent(source)

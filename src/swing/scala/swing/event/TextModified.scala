@@ -1,3 +1,3 @@
 package swing.event
 
-case class TextModified(text: TextComponent) extends Event
+//case class TextModified(override val source: TextComponent) extends ContentModified(source)

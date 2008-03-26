@@ -1,8 +1,7 @@
-package swing.test;
+package swing.test
 
 import swing._
 import swing.event._
-import swing.layout._
 
 object SwingApp extends SimpleGUIApplication {
   def top = new MainFrame {
@@ -21,9 +20,8 @@ object SwingApp extends SimpleGUIApplication {
     object button extends Button {
       text = "I am a button"
     }
-    contents += new Panel(label, button) {
-      layout = column
-      border = new EmptyBorder(30, 30, 10, 30)
+    content = new GridPanel(GridPanel.Adapt,1)(label, button) {
+      border = EmptyBorder(5, 5, 5, 5)
     }
   }
 }

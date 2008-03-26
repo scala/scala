@@ -5,7 +5,7 @@ import javax.swing.event.{TableModelListener, TableModelEvent}
 import javax.swing._
 import event._
 
-class Spreadsheet(width: Int, height: Int) extends Component with SwingComponent with Publisher {
+/*class Spreadsheet(width: Int, height: Int) extends Component with SwingComponent with Publisher {
 
 
   def showGrid: Boolean = acomponent.table.getShowHorizontalLines && acomponent.table.getShowVerticalLines
@@ -97,4 +97,4 @@ class Spreadsheet(width: Int, height: Int) extends Component with SwingComponent
 
   def apply(pos: (Int, Int)) = data(pos._1, pos._2).userData
 
-}
+}*/

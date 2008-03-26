@@ -1,3 +1,3 @@
 package swing.event
 
-case class CellModified(col: Int, row: int, value: String) extends Event
+//case class CellModified(source: Table, col: Int, row: int, value: String) extends Event(source)

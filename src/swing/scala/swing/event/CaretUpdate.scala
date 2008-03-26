@@ -1,3 +1,3 @@
 package swing.event
 
-case class CaretUpdate(text: TextComponent) extends Event
+case class CaretUpdate(override val source: TextComponent) extends ComponentEvent(source)

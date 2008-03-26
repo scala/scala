@@ -1,0 +1,5 @@
+package swing
+
+trait UIElement {
+
+}

@@ -1,3 +1,3 @@
 package swing.event
 
-case class ButtonPressed(b: Button) extends Event
+case class ButtonPressed(override val source: Button) extends ComponentEvent(source)

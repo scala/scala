@@ -3,8 +3,8 @@ package swing
 import javax.swing._
 import event._
 
-class ComponentList(val jlist: JList) extends Container(jlist) with SwingComponent with Publisher {
-  def this() = this(new JList())
+class ComponentList(val jlist: JList) extends Container(jlist) with Publisher {
+  def this() = this(new JList)
   def this(elems: Seq[Object]) = this(new JList(elems.toArray))
 
   def fixedCellWidth = jlist.getFixedCellWidth

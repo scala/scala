@@ -1,10 +1,9 @@
-package swing;
+package swing
 
-import javax.swing._;
-import event._;
+import event._
 
-class MainFrame(jframe: JFrame) extends Frame(jframe) {
-  def this() = this(new JFrame("Untitled Frame"))
+class MainFrame(peer: javax.swing.JFrame) extends Frame(peer) {
+  def this() = this(new javax.swing.JFrame)
   reactions += {
     case WindowClosing(_) => System.exit(1)
   }

@@ -3,14 +3,11 @@ package swing
 import javax.swing._
 
 abstract class SimpleGUIApplication extends GUIApplication {
-
-  def top: Frame;
+  def top: Frame
 
   def main(args: Array[String]) = {
     SwingUtilities.invokeLater {
-      new Runnable() {
-        def run(): unit = { init(); top.pack.show }
-      }
+      new Runnable { def run() { init(); top.pack.show() } }
     }
   }
 

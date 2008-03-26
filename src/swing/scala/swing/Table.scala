@@ -17,7 +17,7 @@ object Table {
   }
 }
 
-class Table(val jtable: JTable) extends Container(jtable) with SwingComponent with Publisher {
+class Table(override val peer: JTable) extends Component with Publisher {
   import Table._
   def this() = this(new JTable())
   def this(numRows: Int, numColumns: Int) = this(new JTable(numRows, numColumns))
@@ -28,41 +28,43 @@ class Table(val jtable: JTable) extends Container(jtable) with SwingComponent wi
   def this(dm: TableModel, cm: TableColumnModel) = this(new JTable(dm, cm))
   def this(dm: TableModel, cm: TableColumnModel, sm: ListSelectionModel) = this(new JTable(dm, cm, sm))
 
-  def rowHeight = jtable.getRowHeight
-  def rowHeight_=(x: Int) = jtable.setRowHeight(x)
+  def rowHeight = peer.getRowHeight
+  def rowHeight_=(x: Int) = peer.setRowHeight(x)
 
-  def rowCount = jtable.getRowCount
+  def rowCount = peer.getRowCount
 
-  def model = jtable.getModel()
-  def model_=(x: TableModel) = jtable.setModel(x)
+  def model = peer.getModel()
+  def model_=(x: TableModel) = peer.setModel(x)
 
-  def autoResizeMode: AutoResizeMode.Value = AutoResizeMode(jtable.getAutoResizeMode)
-  def autoResizeMode_=(x: Table.AutoResizeMode.Value) = jtable.setAutoResizeMode(x.id)
+  def autoResizeMode: AutoResizeMode.Value = AutoResizeMode(peer.getAutoResizeMode)
+  def autoResizeMode_=(x: Table.AutoResizeMode.Value) = peer.setAutoResizeMode(x.id)
 
-  def showGrid = jtable.getShowHorizontalLines && jtable.getShowVerticalLines
-  def showGrid_=(grid: Boolean) = jtable.setShowGrid(grid)
+  def showGrid = peer.getShowHorizontalLines && peer.getShowVerticalLines
+  def showGrid_=(grid: Boolean) = peer.setShowGrid(grid)
 
-  def gridColor = new swing.Color(jtable.getGridColor)
-  def gridColor_=(color: swing.Color) = jtable.setGridColor(color)
+  def gridColor = new swing.Color(peer.getGridColor)
+  def gridColor_=(color: swing.Color) = peer.setGridColor(color)
 
-  private val initialRenderer = jtable.getDefaultRenderer(classOf[AnyRef])
+  private val initialRenderer = peer.getDefaultRenderer(classOf[AnyRef])
 
   protected def render(isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component =
-    new AWTComponentWrapper(
-        initialRenderer.getTableCellRendererComponent(jtable, jtable.getValueAt(row, column), isSelected, hasFocus, row, column))
+    new Component {
+      override lazy val peer = initialRenderer.getTableCellRendererComponent(Table.this.peer,
+                 Table.this.peer.getValueAt(row, column), isSelected, hasFocus, row, column).asInstanceOf[JComponent]
+    }
 
-  jtable.setDefaultRenderer(classOf[AnyRef], new TableCellRenderer {
-      def getTableCellRendererComponent(jtable: JTable, value: AnyRef, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int) =
-        render(isSelected, hasFocus, row, column).acomponent
+  peer.setDefaultRenderer(classOf[AnyRef], new TableCellRenderer {
+      def getTableCellRendererComponent(table: JTable, value: AnyRef, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int) =
+        render(isSelected, hasFocus, row, column).peer
     })
 
-  def apply(row: Int, column: Int) = jtable.getValueAt(row, column)
-  def update(row: Int, column: Int, value: AnyRef) = jtable.setValueAt(value, row, column)
+  def apply(row: Int, column: Int) = peer.getValueAt(row, column)
+  def update(row: Int, column: Int, value: AnyRef) = peer.setValueAt(value, row, column)
 
   def markUpdated(row: Int, column: Int) = update(row, column, apply(row, column))
 
   /*
-  jtable.addActionListener {
+  peer.addActionListener {
     new java.awt.event.ActionListener {
       def actionPerformed(e: java.awt.event.ActionEvent): unit =
         publish(ButtonPressed(Button.this))

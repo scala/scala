@@ -1,3 +1,3 @@
-package swing.event;
+package swing.event
 
-case class TableResized(table: Table) extends Event
+case class TableResized(override val source: Table) extends ComponentEvent(source)

@@ -1,10 +1,9 @@
-package swing;
+package swing
 
-import javax.swing._
-
-class EmptyBorder(_top: int, _left: int, _bottom: int, _right: int)
-extends border.EmptyBorder(_top, _left, _bottom, _right) {
-  def this() = this(0, 0, 0, 0)
+object EmptyBorder {
+  def apply(top: int, left: int, bottom: int, right: int) =
+    new javax.swing.border.EmptyBorder(top, left, bottom, right)
+  def apply() = new javax.swing.border.EmptyBorder(0, 0, 0, 0)
 }
 
 

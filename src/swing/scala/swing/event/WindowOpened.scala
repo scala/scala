@@ -1,3 +1,3 @@
 package swing.event
 
-case class WindowOpened(window: Frame) extends WindowEvent;
+case class WindowOpened(override val source: Frame) extends WindowEvent(source)

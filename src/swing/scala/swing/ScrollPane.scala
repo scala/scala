@@ -1,18 +1,14 @@
 package swing;
 
-import javax.swing._
-import javax.swing.table._
-import javax.swing.event._
-import event._
+import javax.swing.JScrollPane
 
-class ScrollPane(val jscrollpane: JScrollPane) extends Container(jscrollpane) with SwingComponent with Publisher {
-  def this() = this(new JScrollPane())
-  def this(contents: Component) = this(new JScrollPane(contents.acomponent))
+class ScrollPane(override val peer: JScrollPane) extends Container(peer) with Publisher {
+  def this() = this(new JScrollPane)
+  def this(contents: Component) = this(new JScrollPane(contents.peer))
 
   def rowHeaderView: Component = null
-  def rowHeaderView_=(c: Component) = jscrollpane.setRowHeaderView(c.acomponent)
-
+  def rowHeaderView_=(c: Component) = peer.setRowHeaderView(c.peer)
   def viewportView: Component = null
-  def viewportView_=(c: Component) = jscrollpane.setViewportView(c.acomponent)
+  def viewportView_=(c: Component) = peer.setViewportView(c.peer)
 
 }
