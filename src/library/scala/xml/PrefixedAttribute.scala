@@ -28,7 +28,7 @@ class PrefixedAttribute(val pre: String,
 
   /** same as this(key, Utility.parseAttributeValue(value), next) */
   def this(pre: String, key: String, value: String, next: MetaData) =
-    this(pre, key, Utility.parseAttributeValue(value), next)
+    this(pre, key, Text(value), next)
 
   /*
    // the problem here is the fact that we cannot remove the proper attribute from

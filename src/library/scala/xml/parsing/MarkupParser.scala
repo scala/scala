@@ -294,13 +294,13 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
 
         case Some(prefix)       =>
           val key = qname.substring(prefix.length+1, qname.length);
-          aMap = new PrefixedAttribute(prefix, key, value, aMap);
+          aMap = new PrefixedAttribute(prefix, key, Text(value), aMap);
 
         case _             =>
           if( qname == "xmlns" )
             scope = new NamespaceBinding(null, value, scope);
           else
-            aMap = new UnprefixedAttribute(qname, value, aMap);
+            aMap = new UnprefixedAttribute(qname, Text(value), aMap);
       }
 
       if ((ch != '/') && (ch != '>') && ('?' != ch))
@@ -1174,7 +1174,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
   def normalizeAttributeValue(attval: String): String = {
     val s: Seq[Char] = attval
     val it = s.elements
-    while(it.hasNext) {
+    while (it.hasNext) {
       it.next match {
         case ' '|'\t'|'\n'|'\r' =>
           cbuf.append(' ');
@@ -1191,12 +1191,13 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
               d = it.next
             } while(d != ';');
             nbuf.toString() match {
-              //case "lt"    => cbuf.append('<')
-              //case "gt"    => cbuf.append('>')
-              //case "amp"   => cbuf.append('&')
-              //case "quote" => cbuf.append('"')
+              case "lt"    => cbuf.append('<')
+              case "gt"    => cbuf.append('>')
+              case "amp"   => cbuf.append('&')
+              case "apos"  => cbuf.append('\'')
+              case "quot"  => cbuf.append('"')
+              case "quote" => cbuf.append('"')
               case name =>
-                //don't handle entityrefs for now
                 cbuf.append('&')
                 cbuf.append(name)
                 cbuf.append(';')

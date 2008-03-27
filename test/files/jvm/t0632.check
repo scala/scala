@@ -1,0 +1,12 @@
+<foo x="&amp;"></foo>
+<foo x="&amp;"></foo>
+<foo x="&amp;"></foo>
+<foo x="&amp;"></foo>
+<foo x="&amp;amp;"></foo>
+<foo x="&amp;amp;"></foo>
+<foo x="&amp;amp;"></foo>
+<foo x="&amp;amp;"></foo>
+<foo x="&amp;&amp;"></foo>
+<foo x="&amp;&amp;"></foo>
+<foo x="&amp;&amp;"></foo>
+<foo x="&amp;&amp;"></foo>

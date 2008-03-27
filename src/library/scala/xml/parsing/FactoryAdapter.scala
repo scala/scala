@@ -145,14 +145,14 @@ abstract class FactoryAdapter extends DefaultHandler() {
             case _ => new NamespaceBinding(key, value, scpe)
           }
         else
-          m = new PrefixedAttribute(pre, key, value, m)
+          m = new PrefixedAttribute(pre, key, Text(value), m)
       } else if ("xmlns" /*XML.xmlns*/ == qname)
         scpe = value.length() match {
           case 0 => new NamespaceBinding(null, null,  scpe)
           case _ => new NamespaceBinding(null, value, scpe)
         }
       else
-        m = new UnprefixedAttribute(qname, value, m)
+        m = new UnprefixedAttribute(qname, Text(value), m)
     }
     scopeStack.push(scpe)
     attribStack.push(m)
