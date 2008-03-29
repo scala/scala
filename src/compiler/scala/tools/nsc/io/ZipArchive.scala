@@ -125,8 +125,7 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
         val name = if (index < 0) path else path.substring(index + 1)
         val home = if (index < 0) "/"  else path.substring(0, index + 1)
         val parent: DirEntry = getDir(dirs, home)
-        if (!parent.entries.contains(name))
-          Console.println("XXX: " + this.toString() + " - " + home + "/" + name)
+        assert(!parent.entries.contains(path), this.toString() + " - " + path)
         parent.entries.update(name, new FileEntry(parent, name, path, entry))
       }
     }
