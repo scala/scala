@@ -1,0 +1,10 @@
+B.scala:2: error: illegal inheritance from sealed trait T
+  trait T1 extends A.T
+                     ^
+B.scala:3: error: illegal inheritance from sealed class C
+  trait T2 extends A.C
+                     ^
+B.scala:4: error: illegal inheritance from sealed class C
+  class C1 extends A.C
+                     ^
+three errors found
