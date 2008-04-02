@@ -122,11 +122,11 @@ object Stream {
    * @param step the increment value of the stream
    * @return the stream starting at value <code>start</code>.
    */
-  def range(start: Int, end: Int, step: Int): Stream[Int] = {
-    def loop(lo: Int): Stream[Int] =
-      if ((step <= 0 || lo < end) && (step >= 0 || lo > end)) cons(lo, loop(lo + step))
-      else empty
-    loop(start)
+  final def range(start: Int, end: Int, step: Int): Stream[Int] = {
+    if ((step <= 0 || start < end) && (step >= 0 || start > end))
+      cons(start, range(start + step, end, step))
+    else
+      empty
   }
 
   /**
@@ -276,15 +276,10 @@ trait Stream[+A] extends Seq.Projection[A] {
    *  @return the last element of the stream.
    *  @throws Predef.NoSuchElementException if the stream is empty.
    */
-  override def last: A =
+  override final def last: A =
     if (isEmpty) throw new NoSuchElementException("Stream.empty.last")
-    else {
-      def loop(s: Stream[A]): A = {
-        if (s.tail.isEmpty) s.head
-        else loop(s.tail)
-      }
-      loop(this)
-    }
+    else
+      if (tail.isEmpty) head else tail.last
 
   /** Returns the <code>n</code>-th element of this stream. The first element
    *  (head of the stream) is at position 0.
@@ -303,7 +298,7 @@ trait Stream[+A] extends Seq.Projection[A] {
    */
   override def take(n: Int): Stream[A] =
     if (isEmpty || n <= 0) Stream.empty
-    else Stream.cons(head, if (n == 1) Stream.empty else (tail take (n-1)))
+    else Stream.cons(head, if (n == 1) Stream.empty else (tail.take(n-1)))
 
   /** Returns the stream without its <code>n</code> first elements.
    *  If the stream has less than <code>n</code> elements, the empty stream is returned.
@@ -311,11 +306,9 @@ trait Stream[+A] extends Seq.Projection[A] {
    *  @param n the number of elements to drop.
    *  @return the stream without its <code>n</code> first elements.
    */
-  override def drop(n: Int): Stream[A] = {
-    def loop(s: Stream[A], n: Int): Stream[A] =
-      if (s.isEmpty || n <= 0) s
-      else loop(s.tail, n-1)
-    loop(this, n)
+  override final def drop(n: Int): Stream[A] = {
+    if (isEmpty || n <= 0) this
+    else tail.drop(n - 1)
   }
 
 
@@ -337,11 +330,9 @@ trait Stream[+A] extends Seq.Projection[A] {
    *  @return  the longest suffix of the stream whose first element
    *           does not satisfy the predicate <code>p</code>.
    */
-  override def dropWhile(p: A => Boolean): Stream[A] = {
-    def loop(s: Stream[A]): Stream[A] =
-      if (s.isEmpty || !p(s.head)) s
-      else loop(s.tail)
-    loop(this)
+  override final def dropWhile(p: A => Boolean): Stream[A] = {
+    if (isEmpty || !p(head)) this
+    else tail.dropWhile(p)
   }
 
   /** Returns the stream resulting from applying the given function <code>f</code> to each
@@ -359,12 +350,9 @@ trait Stream[+A] extends Seq.Projection[A] {
    *
    *  @param f the treatment to apply to each element.
    */
-  override def foreach(f: A => Unit) {
-    def loop(s: Stream[A]) {
-      if (s.isEmpty) {}
-      else { f(s.head); loop(s.tail) }
-    }
-    loop(this)
+  override final def foreach(f: A => Unit) {
+    if (isEmpty) {}
+    else { f(head); tail.foreach(f) }
   }
 
   /** Returns all the elements of this stream that satisfy the
@@ -373,12 +361,10 @@ trait Stream[+A] extends Seq.Projection[A] {
    *  @param p the predicate used to filter the stream.
    *  @return the elements of this stream satisfying <code>p</code>.
    */
-  override def filter(p: A => Boolean): Stream[A] = {
-    def loop(s: Stream[A]): Stream[A] =
-      if (s.isEmpty) s
-      else if (p(s.head)) Stream.cons(s.head, loop(s.tail))
-      else loop(s.tail)
-    loop(this)
+  override final def filter(p: A => Boolean): Stream[A] = {
+    if (isEmpty) this
+    else if (p(head)) Stream.cons(head, tail.filter(p))
+    else tail.filter(p)
   }
 
   /** Tests if the predicate <code>p</code> is satisfied by all elements
@@ -388,12 +374,10 @@ trait Stream[+A] extends Seq.Projection[A] {
    *  @return  <code>true</code> iff all elements of this stream satisfy the
    *           predicate <code>p</code>.
    */
-  override def forall(p: A => Boolean): Boolean = {
-    def loop(s: Stream[A]): Boolean =
-      if (s.isEmpty) true
-      else if (p(s.head)) loop(s.tail)
-      else false
-    loop(this)
+  override final def forall(p: A => Boolean): Boolean = {
+    if (isEmpty) true
+    else if (p(head)) tail.forall(p)
+    else false
   }
 
   /** Tests the existence in this stream of an element that satisfies the
@@ -403,12 +387,10 @@ trait Stream[+A] extends Seq.Projection[A] {
    *  @return  <code>true</code> iff there exists an element in this stream that
    *           satisfies the predicate <code>p</code>.
    */
-  override def exists(p: A => Boolean): Boolean = {
-    def loop(s: Stream[A]): Boolean =
-      if (s.isEmpty) false
-      else if (p(s.head)) true
-      else loop(s.tail)
-    loop(this)
+  override final def exists(p: A => Boolean): Boolean = {
+    if (isEmpty) false
+    else if (p(head)) true
+    else tail.exists(p)
   }
 
   /** Combines the elements of this stream together using the binary
@@ -419,11 +401,9 @@ trait Stream[+A] extends Seq.Projection[A] {
    *          a<sub>n</sub>)</code> if the stream is
    *          <code>[a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub>]</code>.
    */
-  override def foldLeft[B](z: B)(f: (B, A) => B): B = {
-    def loop(s: Stream[A], z: B): B =
-      if (s.isEmpty) z
-      else loop(s.tail, f(z, s.head))
-    loop(this, z)
+  override final def foldLeft[B](z: B)(f: (B, A) => B): B = {
+    if (isEmpty) z
+    else tail.foldLeft(f(z, head))(f)
   }
 
   /** Combines the elements of this stream together using the binary
@@ -469,11 +449,8 @@ trait Stream[+A] extends Seq.Projection[A] {
    *  @param  start starting index.
    *  @pre    the array must be large enough to hold all elements.
    */
-  override def copyToArray[B >: A](xs: Array[B], start: Int) {
-    def loop(s: Stream[A], start: Int) {
-      if (!s.isEmpty) { xs(start) = s.head; loop(s.tail, start + 1) }
-    }
-    loop(this, start)
+  override final def copyToArray[B >: A](xs: Array[B], start: Int) {
+    if (!isEmpty) { xs(start) = head; tail.copyToArray(xs, start + 1) }
   }
 
   /** Returns a stream formed from this stream and the specified stream
@@ -507,11 +484,8 @@ trait Stream[+A] extends Seq.Projection[A] {
    *  @param sep   The separator string printed between consecutive elements.
    */
   def print(sep: String) {
-    def loop(s: Stream[A]) {
-      if (s.isEmpty) Console.println("Stream.empty")
-      else { Console.print(s.head); Console.print(sep); loop(s.tail) }
-    }
-    loop(this)
+    if (isEmpty) Console.println("Stream.empty")
+    else { Console.print(head); Console.print(sep); tail.print(sep) }
   }
 
   /** Converts stream to string */

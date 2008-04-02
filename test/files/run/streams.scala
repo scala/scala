@@ -29,4 +29,18 @@ object Test extends Application {
   def powers(x: Int) = if ((x&(x-1)) == 0) Some(x) else None
   println(s3.flatMap(powers).reverse.head)
 
+  // large enough to generate StackOverflows (on most systems)
+  // unless the following methods are tail call optimized.
+  val size = 100000
+
+  // test tail recursive methods
+  println(Stream.from(1).take(size).last)
+  println(Stream.from(1).drop(size))
+  println(Stream.from(1).filter(_ > size).take(5))
+  println(Stream.from(1).take(size).forall(_ >= 0))
+  println(Stream.from(1).exists(_ > size))
+  Stream.from(1).take(size).foreach( x => () )
+  println(Stream.from(1).take(size).foldLeft(0)(_ + _))
+  val arr = new Array[Int](size)
+  Stream.from(1).take(size).copyToArray(arr, 0)
 }
