@@ -126,6 +126,14 @@ object Predef {
     def unapply[A, B, C](x: Tuple3[A, B, C]): Option[Tuple3[A, B, C]] = Some(x)
   }
 
+  class Ensuring[A](x: A) {
+    def ensuring(cond: Boolean): A = { assert(cond); x }
+    def ensuring(cond: Boolean, msg: Any): A = { assert(cond, msg); x }
+    def ensuring(cond: A => Boolean): A = { assert(cond(x)); x }
+    def ensuring(cond: A => Boolean, msg: Any): A = { assert(cond(x), msg); x }
+  }
+  implicit def any2Ensuring[A](x: A): Ensuring[A] = new Ensuring(x)
+
   class ArrowAssoc[A](x: A) {
     def -> [B](y: B): Tuple2[A, B] = Tuple2(x, y)
   }
@@ -182,14 +190,6 @@ object Predef {
   implicit def stringBuilderWrapper(x : StringBuilder) = new runtime.RichStringBuilder(x)
 
   implicit def any2stringadd(x: Any) = new runtime.StringAdd(x)
-
-  class Ensuring[A](x: A) {
-    def ensuring(cond: Boolean): A = { assert(cond); x }
-    def ensuring(cond: Boolean, msg: Any): A = { assert(cond, msg); x }
-    def ensuring(cond: A => Boolean): A = { assert(cond(x)); x }
-    def ensuring(cond: A => Boolean, msg: Any): A = { assert(cond(x), msg); x }
-  }
-  implicit def any2Ensuring[A](x: A): Ensuring[A] = new Ensuring(x)
 
   implicit def exceptionWrapper(exc: Throwable) = new runtime.RichException(exc)
 

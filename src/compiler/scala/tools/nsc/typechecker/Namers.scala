@@ -810,9 +810,9 @@ trait Namers { self: Analyzer =>
               clazz.tpe
 
             case DefDef(_, _, tparams, vparamss, tpt, rhs) =>
-              val result =
-                newNamer(context.makeNewScope(tree, sym)).methodSig(tparams, vparamss, tpt, rhs);
-              checkContractive(sym, result)
+              //val result =
+                newNamer(context.makeNewScope(tree, sym)).methodSig(tparams, vparamss, tpt, rhs)
+              //checkContractive(sym, result)
 
             case vdef @ ValDef(mods, _, tpt, rhs) =>
               val typer1 = typer.constrTyperIf(sym.hasFlag(PARAM | PRESUPER) && sym.owner.isConstructor)

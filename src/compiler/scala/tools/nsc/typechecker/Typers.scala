@@ -134,6 +134,8 @@ trait Typers { self: Analyzer =>
   private def argMode(fun: Tree, mode: Int) =
     if (treeInfo.isSelfOrSuperConstrCall(fun)) mode | SCCmode else mode
 
+  private var pendingImplicits: List[Type] = List()
+
   abstract class Typer(context0: Context) {
     import context0.unit
 
@@ -3294,18 +3296,56 @@ trait Typers { self: Analyzer =>
       case _ => tp.isError
     }
 
+    private def dominates(dtor: Type, dted: Type): Boolean = {
+      def simplify(tp: Type): Type = tp match {
+        case RefinedType(parents, defs) => intersectionType(parents, tp.typeSymbol.owner)
+        case AnnotatedType(attribs, tp, selfsym) => tp
+        case _ => tp
+      }
+      def sum(xs: List[Int]) = (0 /: xs)(_ + _)
+      def complexity(tp: Type): Int = tp match {
+        case SingleType(pre, sym) => complexity(pre) + 1
+        case TypeRef(pre, sym, args) => complexity(pre) + sum(args map complexity) + 1
+        case TypeBounds(lo, hi) =>  complexity(lo) + complexity(hi)
+        case ClassInfoType(parents, defs, clazz) => sum(parents map complexity) + 1
+        case MethodType(paramtypes, result) => sum(paramtypes map complexity) + complexity(result) + 1
+        case PolyType(tparams, result) => sum(tparams map (_.info) map complexity) + complexity(result) + 1
+        case ExistentialType(tparams, result) => sum(tparams map (_.info) map complexity) + complexity(result) + 1
+        case _ => 1
+      }
+      val dtor1 = simplify(dtor)
+      val dted1 = simplify(dted)
+      (dtor1.typeSymbol == dted1.typeSymbol) &&
+      (dtor1 =:= dted1 || complexity(dtor1) > complexity(dted1))
+    }
+
     /** Try to construct a typed tree from given implicit info with given
      *  expected type.
      *
      *  @param pos     Position for error reporting
      *  @param info    The given implicit info describing the implicit definition
-     *  @param pt      The expected type
+     *  @param pt0     The unnormalized expected type
+     *  @param pt      The normalized expected type
      *  @param isLocal Is implicit definition visible without prefix?
      *  @return        A typed tree if the implicit info can be made to conform
      *                 to <code>pt</code>, EmptyTree otherwise.
      *  @pre           <code>info.tpe</code> does not contain an error
      */
-    private def typedImplicit(pos: Position, info: ImplicitInfo, pt0: Type, pt: Type, isLocal: Boolean): Tree = {
+    private def typedImplicit(pos: Position, info: ImplicitInfo, pt0: Type, pt: Type, isLocal: Boolean): Tree =
+       pendingImplicits find (dominates(pt, _)) match {
+         case Some(pending) =>
+           context.error(pos, "diverging implicit expansion for type "+pending)
+           EmptyTree
+         case None =>
+           try {
+             pendingImplicits = pt :: pendingImplicits
+             typedImplicit0(pos, info, pt0, pt, isLocal)
+           } finally {
+             pendingImplicits = pendingImplicits.tail
+           }
+       }
+
+    private def typedImplicit0(pos: Position, info: ImplicitInfo, pt0: Type, pt: Type, isLocal: Boolean): Tree = {
       def isStable(tp: Type): Boolean = tp match {
         case TypeRef(pre, sym, _) => sym.isPackageClass || sym.isModuleClass && isStable(pre)
         case _ => tp.isStable

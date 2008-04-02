@@ -22,8 +22,8 @@ class Names {
   private final val HASH_SIZE  = 0x8000
   private final val HASH_MASK  = 0x7FFF
   private final val NAME_SIZE  = 0x20000
-  private final val MAX_LEN    = 255 // for longer names use a partial MD5 hash
-  private final val PREFIX_LEN = 128 // the length of the prefix to keep unhashed
+  private final val MAX_LEN    = 240 // for longer names use a partial MD5 hash
+  private final val PREFIX_LEN = 100 // the length of the prefix to keep unhashed
   private final val SUFFIX_LEN = 64  // the length of the suffix to keep unhashed
 
   final val nameDebug = false
