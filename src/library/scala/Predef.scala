@@ -89,17 +89,27 @@ object Predef {
 
   def assert(assertion: Boolean, message: Any) {
     if (!assertion)
-      throw new java.lang.AssertionError("assertion failed: " + message)
+      throw new java.lang.AssertionError("assertion failed: "+ message)
   }
 
   def assume(assumption: Boolean) {
     if (!assumption)
-      throw new IllegalArgumentException("assumption failed")
+      throw new java.lang.AssertionError("assumption failed")
   }
 
   def assume(assumption: Boolean, message: Any) {
     if (!assumption)
-      throw new IllegalArgumentException(message.toString)
+      throw new java.lang.AssertionError("assumptopm failed: "+ message)
+  }
+
+  def require(requirement: Boolean) {
+    if (!requirement)
+      throw new IllegalArgumentException("requirement failed")
+  }
+
+  def require(requirement: Boolean, message: Any) {
+    if (!requirement)
+      throw new IllegalArgumentException("requirement failed: "+ message)
   }
 
   // tupling ------------------------------------------------------------
@@ -172,6 +182,14 @@ object Predef {
   implicit def stringBuilderWrapper(x : StringBuilder) = new runtime.RichStringBuilder(x)
 
   implicit def any2stringadd(x: Any) = new runtime.StringAdd(x)
+
+  class Ensuring[A](x: A) {
+    def ensuring(cond: Boolean): A = { assert(cond); x }
+    def ensuring(cond: Boolean, msg: Any): A = { assert(cond, msg); x }
+    def ensuring(cond: A => Boolean): A = { assert(cond(x)); x }
+    def ensuring(cond: A => Boolean, msg: Any): A = { assert(cond(x), msg); x }
+  }
+  implicit def any2Ensuring[A](x: A): Ensuring[A] = new Ensuring(x)
 
   implicit def exceptionWrapper(exc: Throwable) = new runtime.RichException(exc)
 
