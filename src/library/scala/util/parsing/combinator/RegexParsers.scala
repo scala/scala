@@ -18,11 +18,11 @@ trait RegexParsers extends Parsers {
 
   type Elem = Char
 
-  var skipWhitespace = true
+  protected val whiteSpace = """\s+""".r
 
-  private val whiteSpace = """\s+""".r
+  def skipWhitespace = whiteSpace.toString.length > 0
 
-  private def handleWhiteSpace(source: CharSequence, offset: Int): Int =
+  protected def handleWhiteSpace(source: CharSequence, offset: Int): Int =
     if (skipWhitespace)
       (whiteSpace findPrefixMatchOf (source subSequence offset)) match {
         case Some(matched) => offset + matched.end

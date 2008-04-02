@@ -1,4 +1,4 @@
-package swing.test
+package scala.swing.test
 
 import swing._
 import swing.event._

@@ -1,4 +1,4 @@
-package swing;
+package scala.swing;
 
 trait Reactor {
   val reactions = new Reactions

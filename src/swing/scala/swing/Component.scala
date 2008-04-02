@@ -1,28 +1,13 @@
-package swing
+package scala.swing
 
-import java.awt.Font
-import javax.swing.border.Border
+import javax.swing._;
+import java.awt._;
 
-object Component {
-  val ClientKey = "scala.swingWrapper"
-  def wrapperFor[C<:Component](c: javax.swing.JComponent): C = c.getClientProperty(ClientKey).asInstanceOf[C]
-}
-
-abstract class Component extends UIElement with Showable.Swing with Reactor {
-  lazy val peer: javax.swing.JComponent = new javax.swing.JComponent {}
-  peer.putClientProperty(Component.ClientKey, this)
-
-  def minimumSize = peer.getMinimumSize
-  def minimumSize_=(x: Dimension) = peer.setMinimumSize(x.peer)
-  def maxiumumSize = peer.getMaximumSize
-  def maxiumumSize_=(x: Dimension) = peer.setMaximumSize(x.peer)
-  def preferredSize = peer.getPreferredSize
-  def preferredSize_=(x: Dimension) = peer.setPreferredSize(x.peer)
-
-  def xAlignment: Double = peer.getAlignmentX
-  def xAlignment_=(x: Double) = peer.setAlignmentX(x.toFloat)
-  def yAlignment: Double = peer.getAlignmentY
-  def yAlignment_=(x: Double) = peer.setAlignmentY(x.toFloat)
+abstract class Component
+extends Object
+with Reactor
+{
+  val acomponent: java.awt.Component
 
   def foreground: Color = new Color(peer.getForeground)
   def foreground_=(x: Color) = peer.setForeground(x)

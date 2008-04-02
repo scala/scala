@@ -18,6 +18,7 @@ package scala.io
 object UTF8Codec {
 
   final val UNI_REPLACEMENT_CHAR: Int = 0x0000FFFD
+
   /** convert a codepoint to utf-8 bytes
    * @author buraq
    * @param ch codepoint

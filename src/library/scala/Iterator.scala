@@ -235,6 +235,14 @@ trait Iterator[+A] {
   def drop(n: Int): Iterator[A] =
     if (n > 0 && hasNext) { next; drop(n - 1) } else this
 
+  /** A sub-iterator of <code>until - from elements
+   *  starting at index <code>from</code>
+   *
+   *  @param from   The index of the first element of the slice
+   *  @param until    The index of the element following the slice
+   */
+  def slice(from: Int, until: Int): Iterator[A] = drop(from).take(until - from)
+
   /** Returns a new iterator that maps all elements of this iterator
    *  to new elements using function <code>f</code>.
    */

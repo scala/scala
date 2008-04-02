@@ -1,4 +1,4 @@
-package swing
+package scala.swing
 
 import javax.swing._
 import java.awt._

@@ -237,7 +237,7 @@ private class Page(val num: Int) {
 
   /** The currently last page in the sequence; might change as more charcaters are appended */
   final def latest: Page = {
-    if (later.next != null) later = later.latest
+    if (later.next != null) later = later.next.latest
     later
   }
 

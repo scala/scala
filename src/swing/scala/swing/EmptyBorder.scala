@@ -1,4 +1,4 @@
-package swing
+package scala.swing
 
 object EmptyBorder {
   def apply(top: int, left: int, bottom: int, right: int) =

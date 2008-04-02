@@ -1,4 +1,4 @@
-package swing
+package scala.swing
 
 import scala.collection.mutable.HashSet
 import event.Event

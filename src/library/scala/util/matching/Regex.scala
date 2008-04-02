@@ -245,6 +245,8 @@ object Regex {
       matcher.group
     }
 
+    override def toString = super[Iterator].toString
+
     /** The index of the first matched character */
     def start: Int = matcher.start
 

@@ -27,6 +27,9 @@ object Function {
    */
   def chain[a](fs: Seq[a => a]): a => a = { x => (x /: fs) ((x, f) => f(x)) }
 
+  /** The constant function */
+  def const[T, U](x: T)(y: U): T = x
+
   /** Currying for functions of arity 2. This transforms a function
    *  of arity 2 into a a unary function returning another unary function.
    *

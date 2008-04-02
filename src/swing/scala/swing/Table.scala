@@ -1,4 +1,4 @@
-package swing
+package scala.swing
 
 import model.Matrix
 import javax.swing._

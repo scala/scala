@@ -1,4 +1,4 @@
-package swing
+package scala.swing
 
 import javax.swing.table.{AbstractTableModel, TableCellRenderer}
 import javax.swing.event.{TableModelListener, TableModelEvent}

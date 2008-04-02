@@ -1,4 +1,4 @@
-package swing
+package scala.swing
 
 object Dimension {
   def apply(w: Int, h: Int) = new Dimension {

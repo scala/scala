@@ -1,6 +1,4 @@
-package swing
-
-import scala.collection.mutable.Buffer
+package scala.swing
 
 abstract class Container(override val peer: javax.swing.JComponent) extends Component {
   def this() = this(new javax.swing.JComponent {})
