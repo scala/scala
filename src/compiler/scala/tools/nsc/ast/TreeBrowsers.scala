@@ -227,7 +227,13 @@ abstract class TreeBrowsers {
             str.append(buf.toString())
           }
           str.append("\nSymbol Attributes: \n").append(TreeInfo.symbolAttributes(t))
-          str.append("\nType: \n").append(if (t.tpe ne null) t.tpe.toString() else "")
+          str.append("\ntree.tpe: ")
+          if (t.tpe ne null) {
+            str.append(t.tpe.toString()).append("\n")
+            buf = new StringWriter()
+            TypePrinter.toDocument(t.tpe).format(getWidth() / getColumnWidth(), buf)
+            str.append(buf.toString())
+          }
       }
       setText(str.toString())
     }
