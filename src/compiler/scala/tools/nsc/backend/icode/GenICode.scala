@@ -400,6 +400,10 @@ abstract class GenICode extends SubComponent  {
           ctx.bb.close
           genLoad(rhs, ctx1, expectedType /*toTypeKind(tree.symbol.info.resultType)*/)
 
+        case ValDef(_, nme.THIS, _, _) =>
+          if (settings.debug.value) log("skipping trivial assign to _$this: " + tree)
+          ctx
+
         case ValDef(_, _, _, rhs) =>
           val sym = tree.symbol
           val local = ctx.method.addLocal(new Local(sym, toTypeKind(sym.info), false))
