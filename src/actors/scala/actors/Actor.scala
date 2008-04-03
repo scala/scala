@@ -285,7 +285,7 @@ object Actor {
  *   </li>
  * </ul>
  *
- * @version 0.9.10
+ * @version 0.9.12
  * @author Philipp Haller
  */
 @serializable
@@ -299,7 +299,6 @@ trait Actor extends OutputChannel[Any] {
 
   private val mailbox = new MessageQueue
   private var sessions: List[OutputChannel[Any]] = Nil
-  private var session1: Option[OutputChannel[Any]] = None
 
   /**
    * Sends <code>msg</code> to this actor (asynchronous) supplying
@@ -316,7 +315,7 @@ trait Actor extends OutputChannel[Any] {
       if (isSuspended)
         sessions = replyTo :: sessions
       else
-        session1 = Some(replyTo)
+        sessions = List(replyTo)
 
       waitingFor = waitingForNone
 
@@ -433,7 +432,7 @@ trait Actor extends OutputChannel[Any] {
         continuation = f
         isDetached = true
       } else {
-        session1 = Some(qel.session)
+        sessions = List(qel.session)
         scheduleActor(f, qel.msg)
       }
       throw new SuspendActorException
@@ -466,7 +465,7 @@ trait Actor extends OutputChannel[Any] {
         continuation = f
         isDetached = true
       } else {
-        session1 = Some(qel.session)
+        sessions = List(qel.session)
         scheduleActor(f, qel.msg)
       }
       throw new SuspendActorException
@@ -596,13 +595,7 @@ trait Actor extends OutputChannel[Any] {
     case x => x
   }
 
-  def sender: OutputChannel[Any] =
-    if (sessions.isEmpty) {
-      session1 match {
-        case None => null
-        case Some(s) => s
-      }
-    } else sessions.head
+  def sender: OutputChannel[Any] = sessions.head
 
   def receiver: Actor = this
 
