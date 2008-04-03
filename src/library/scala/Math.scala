@@ -175,14 +175,25 @@ object Math {
   def min(x: Float, y: Float): Float  = java.lang.Math.min(x, y)
   def min(x: Double, y: Double): Double = java.lang.Math.min(x, y)
 
+  def signum(x: Double): Double = x match { case 0 => 0
+                                            case _ if x < 0 => -1.0
+                                            case _ if x > 0 => 1.0 }
+  def signum(x: Float): Float = x match { case 0f => 0f
+                                          case _ if x < 0f => -1.0f
+                                          case _ if x > 0f => 1.0f }
+  def signum(x: Long): Long = x match { case 0l => 0l
+                                        case _ if x < 0l => -1l
+                                        case _ if x > 0l => 1l }
+  def signum(x: Int): Int = x match { case 0 => 0
+                                      case _ if x < 0 => -1
+                                      case _ if x > 0 => 1}
+
   // from Java 1.5
 //   def log10(x: Double): Double = java.lang.Math.log10(x)
 //   def cbrt(x: Double): Double = java.lang.Math.cbrt(x)
 
 //   def ulp(x: Double): Double = java.lang.Math.ulp(x)
 //   def ulp(x: Float): Float = java.lang.Math.ulp(x)
-//   def signum(x: Double): Double = java.lang.Math.signum(x)
-//   def signum(x: Float): Float = java.lang.Math.signum(x)
 //   def sinh(x: Double): Double = java.lang.Math.sinh(x)
 //   def cosh(x: Double): Double = java.lang.Math.cosh(x)
 //   def tanh(x: Double):Double = java.lang.Math.tanh(x)
