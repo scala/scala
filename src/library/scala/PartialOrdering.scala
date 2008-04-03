@@ -20,8 +20,8 @@ package scala
  * the <code>lteq</code> method of the <code>PartialOrdering</code> trait.
  * This relation must be:
  * <ul>
- * <li>an equivalence relation: if <code>equiv(x, y)</code> then <code>lteq(x, y)</code>,
- * for any <code>x</code> and <code>y</code> of type <code>T</code>.</li>
+ * <li>reflexive: <code>lteq(x, x) == true</code>, for any <code>x</code> of
+ * type <code>T</code>.</li>
  * <li>anti-symmetric: <code>lteq(x, y) == true</code> and <code>lteq(y, x) == true</code>
  * then <code>equiv(x, y)</code>, for any <code>x</code> and <code>y</code> of
  * type <code>T</code>.</li>

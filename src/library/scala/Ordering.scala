@@ -16,8 +16,8 @@ package scala
  * latter.
  *
  * A <a href="http://en.wikipedia.org/wiki/Total_order">total ordering</a>
- * is a binary relation on a type <code>T</code> that is also a partial
- * ordering on values of type <code>T</code>.  This relation is exposed as
+ * is a binary relation on a type <code>T</code> that is also an equivalence relation
+ * and partial ordering on values of type <code>T</code>.  This relation is exposed as
  * the <code>compare</code> method of the <code>Ordering</code> trait.
  * This relation must be:
  * <ul>
@@ -26,14 +26,8 @@ package scala
  * <li>(need a name): <code>compare(x, y) == z</code> and <code>compare(y, x) == w</code>
  * then <code>Math.signum(z) == -Math.signum(w)</code>, for any <code>x</code> and <code>y</code> of
  * type <code>T</code> and <code>z</code> and <code>w</code> of type <code>Int</code>.</li>
- * <li>upward transitive: if <code>compare(x, y) == z</code> and <code>lteq(y, w) == v</code>
- * and <code>Math.signum(z) >= 0</code> and <code>Math.signum(v) >= 0</code> then
- * <code>compare(x, w) == u</code> and <code>Math.signum(z + v) == Math.signum(u)</code>,
- * for any <code>x</code>, <code>y</code>,
- * and <code>w</code> of type <code>T</code> and <code>z</code>, <code>v</code>, and <code>u</code>
- * of type <code>Int</code>.</li>
- * <li>downward transitive: if <code>compare(x, y) == z</code> and <code>lteq(y, w) == v</code>
- * and <code>Math.signum(z) <= 0</code> and <code>Math.signum(v) <= 0</code> then
+ * <li>transitive: if <code>compare(x, y) == z</code> and <code>lteq(y, w) == v</code>
+ * and <code>Math.signum(z) &gt;= 0</code> and <code>Math.signum(v) &gt;= 0</code> then
  * <code>compare(x, w) == u</code> and <code>Math.signum(z + v) == Math.signum(u)</code>,
  * for any <code>x</code>, <code>y</code>,
  * and <code>w</code> of type <code>T</code> and <code>z</code>, <code>v</code>, and <code>u</code>
