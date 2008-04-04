@@ -369,7 +369,7 @@ trait Iterable[+A] {
    *          <code>a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub></code>.
    *  @throws Predef.UnsupportedOperationException if the iterable object is empty.
    */
-  def reduceLeft[B >: A](op: (B, B) => B): B = elements.reduceLeft(op)
+  def reduceLeft[B >: A](op: (B, A) => B): B = elements.reduceLeft(op)
 
 /** Combines the elements of this iterable object together using the binary
    *  operator <code>op</code>, from right to left
@@ -382,7 +382,7 @@ trait Iterable[+A] {
    *
    *  @throws Predef.UnsupportedOperationException if the iterator is empty.
    */
-  def reduceRight[B >: A](op: (B, B) => B): B = elements.reduceRight(op)
+  def reduceRight[B >: A](op: (A, B) => B): B = elements.reduceRight(op)
 
   /** Copy all elements to a given buffer
    *  @note Will not terminate for infinite-sized collections.

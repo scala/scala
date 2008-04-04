@@ -44,8 +44,8 @@ trait IterableProxy[+A] extends Iterable[A] with Proxy {
   override def foldRight[B](z: B)(op: (A, B) => B): B = (self foldRight z)(op)
   override def /:[B](z: B)(op: (B, A) => B): B = (z /: self)(op)
   override def :\[B](z: B)(op: (A, B) => B): B = (self :\ z)(op)
-  override def reduceLeft[B >: A](op: (B, B) => B): B = self reduceLeft op
-  override def reduceRight[B >: A](op: (B, B) => B): B = self reduceRight op
+  override def reduceLeft[B >: A](op: (B, A) => B): B = self reduceLeft op
+  override def reduceRight[B >: A](op: (A, B) => B): B = self reduceRight op
   override def sameElements[B >: A](that: Iterable[B]): Boolean = self sameElements that
   override def copyToBuffer[B >: A](dest: Buffer[B]): Unit = self copyToBuffer dest
   override def toList: List[A] = self.toList

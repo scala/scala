@@ -505,7 +505,7 @@ trait Iterator[+A] {
    *  @throws Predef.UnsupportedOperationException if the iterator is empty.
    */
   @throws(classOf[UnsupportedOperationException])
-  def reduceLeft[B >: A](op: (B, B) => B): B = {
+  def reduceLeft[B >: A](op: (B, A) => B): B = {
     if (hasNext) foldLeft[B](next)(op)
     else throw new UnsupportedOperationException("empty.reduceLeft")
   }
@@ -521,7 +521,7 @@ trait Iterator[+A] {
    *  @throws Predef.UnsupportedOperationException if the iterator is empty.
    */
   @throws(classOf[UnsupportedOperationException])
-  def reduceRight[B >: A](op: (B, B) => B): B = {
+  def reduceRight[B >: A](op: (A, B) => B): B = {
     if (!hasNext) throw new UnsupportedOperationException("empty.reduceRight")
     val x = next
     if (hasNext) op(x, reduceRight(op))
