@@ -618,14 +618,16 @@ BUILD DOCUMENTATION
     <stopwatch name="docs.timer"/>
     <mkdir dir="${build-docs.dir}"/>
     <scaladoc
-      srcdir="${src.dir}"
       destdir="${build-docs.dir}"
       windowtitle="Scala Library"
       doctitle="Scala ${version.number} API"
       classpathref="quick.classpath">
-      <include name="dbc/**/*.scala"/>
-      <include name="actors/**/*.scala"/>
-      <include name="library/**/*.scala"/>
+      <src>
+        <files includes="${src.dir}/dbc"/>
+        <files includes="${src.dir}/actors"/>
+        <files includes="${build-fusrcs.dir}"/>
+      </src>
+      <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/build.complete" verbose="no"/>
     <stopwatch name="docs.timer" action="total"/>
