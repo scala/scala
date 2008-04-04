@@ -81,6 +81,7 @@ PROPERTIES
 
   <!-- Sets location of build folders -->
   <property name="build.dir" value="${basedir}/build"/>
+  <property name="build-fusrcs.dir" value="${build.dir}/fusrcs"/>
   <property name="build-locker.dir" value="${build.dir}/locker"/>
   <property name="build-quick.dir" value="${build.dir}/quick"/>
   <property name="build-strap.dir" value="${build.dir}/strap"/>
@@ -130,10 +131,44 @@ INITIALISATION
   </target>
 
 <!-- ===========================================================================
+FUSION JVM 1.5 LIBRARY SOURCES
+============================================================================ -->
+
+  <target name="files" depends="init">
+    <!--
+    <union id="library.files">
+      <files includes="${src.dir}/library/jvm/jvm1.5/scala/**/*.scala"/>
+      <difference>
+        <files includes="${src.dir}/library/jvm/scala/**/*.scala"/>
+        <files includes="${src.dir}/library/jvm/jvm1.5/scala/**/*.scala"/>
+      </difference>
+      <difference>
+        <files includes="${src.dir}/library/scala/**/*.scala"/>
+        <files includes="${src.dir}/library/jvm/scala/**/*.scala"/>
+        <files includes="${src.dir}/library/jvm/jvm1.5/scala/**/*.scala"/>
+      </difference>
+    </union>
+    -->
+    <mkdir dir="${build-fusrcs.dir}/scala"/>
+    <sync toDir="${build-fusrcs.dir}/scala" failonerror="false">
+      <fileset dir="${src.dir}/library/jvm/jvm1.5/scala"/>
+      <difference>
+        <fileset dir="${src.dir}/library/jvm/scala"/>
+        <fileset dir="${src.dir}/library/jvm/jvm1.5/scala"/>
+      </difference>
+      <difference>
+        <fileset dir="${src.dir}/library/scala"/>
+        <fileset dir="${src.dir}/library/jvm/scala"/>
+        <fileset dir="${src.dir}/library/jvm/jvm1.5/scala"/>
+      </difference>
+    </sync>
+  </target>
+
+<!-- ===========================================================================
 LOAD STABLE REFERENCE (STARR) LAYER
 ============================================================================ -->
   
-  <target name="starr.load" depends="init">
+  <target name="starr.load" depends="files">
     <path id="starr.classpath">
       <pathelement location="${lib.starr.jar}"/>
       <pathelement location="${comp.starr.jar}"/>
@@ -159,22 +194,22 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
   <!-- Build library -->
     <mkdir dir="${build-locker.dir}/classes/library"/>
     <javac
-      srcdir="${src.dir}/library"
+      srcdir="${build-fusrcs.dir}/scala"
       destdir="${build-locker.dir}/classes/library"
       classpath="${build-locker.dir}/classes/library"
       includes="**/*.java"/>
     <sabmake id="starr.lib.scalac"
       destdir="${build-locker.dir}/classes/library"
       compilerpathref="starr.classpath"
-      srcpath="${src.dir}/library">
+      srcpath="${build-fusrcs.dir}">
       <compilationpath>
       	<pathelement location="${build-locker.dir}/classes/library"/>
       </compilationpath>
     </sabmake>
-    <sabuse id="starr.lib.scalac" srcdir="${src.dir}/library">
+    <sabuse id="starr.lib.scalac" srcdir="${build-fusrcs.dir}">
       <include name="scala/Predef.scala"/>
     </sabuse>
-    <sabuse id="starr.lib.scalac" srcdir="${src.dir}/library">
+    <sabuse id="starr.lib.scalac" srcdir="${build-fusrcs.dir}">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
       <exclude name="scala/dbc/**"/>
@@ -185,7 +220,7 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
       <entry key="copyright.string" value="${copyright.string}"/>
     </propertyfile>
     <copy todir="${build-locker.dir}/classes/library">
-      <fileset dir="${src.dir}/library">
+      <fileset dir="${build-fusrcs.dir}">
         <include name="**/*.tmpl"/>
         <include name="**/*.xml"/>
         <include name="**/*.js"/>
@@ -258,24 +293,27 @@ BUILD QUICK LAYER
   <!-- Build library -->
     <mkdir dir="${build-quick.dir}/classes/library"/>
     <javac
-      srcdir="${src.dir}"
+      srcdir="${build-fusrcs.dir}/scala"
       destdir="${build-quick.dir}/classes/library"
-      classpath="${build-quick.dir}/classes/library">
-      <include name="library/**/*.java"/>
-      <include name="actors/**/*.java"/>
-    </javac>
+      classpath="${build-quick.dir}/classes/library"
+      includes="**/*.java"/>
+    <javac
+      srcdir="${src.dir}/actors"
+      destdir="${build-quick.dir}/classes/library"
+      classpath="${build-quick.dir}/classes/library"
+      includes="**/*.java"/>
     <sabmake id="locker.lib.scalac"
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
-      srcpath="${src.dir}/library">
+      srcpath="${build-fusrcs.dir}">
       <compilationpath>
       	<pathelement location="${build-quick.dir}/classes/library"/>
       </compilationpath>
     </sabmake>
-    <sabuse id="locker.lib.scalac" srcdir="${src.dir}/library">
+    <sabuse id="locker.lib.scalac" srcdir="${build-fusrcs.dir}">
       <include name="scala/Predef.scala"/>
     </sabuse>
-    <sabuse id="locker.lib.scalac" srcdir="${src.dir}/library">
+    <sabuse id="locker.lib.scalac" srcdir="${build-fusrcs.dir}">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
     </sabuse>
@@ -290,7 +328,7 @@ BUILD QUICK LAYER
       <entry key="copyright.string" value="${copyright.string}"/>
     </propertyfile>
     <copy todir="${build-quick.dir}/classes/library">
-      <fileset dir="${src.dir}/library">
+      <fileset dir="${build-fusrcs.dir}">
         <include name="**/*.tmpl"/>
         <include name="**/*.xml"/>
         <include name="**/*.js"/>
@@ -364,24 +402,27 @@ BUILD STRAP LAYER
   <!-- Build library -->
     <mkdir dir="${build-strap.dir}/classes/library"/>
     <javac
-      srcdir="${src.dir}"
+      srcdir="${build-fusrcs.dir}/scala"
       destdir="${build-strap.dir}/classes/library"
-      classpath="${build-strap.dir}/classes/library">
-      <include name="library/**/*.java"/>
-      <include name="actors/**/*.java"/>
-    </javac>
+      classpath="${build-strap.dir}/classes/library"
+      includes="**/*.java"/>
+    <javac
+      srcdir="${src.dir}/actors"
+      destdir="${build-strap.dir}/classes/library"
+      classpath="${build-strap.dir}/classes/library"
+      includes="**/*.java"/>
     <sabmake id="quick.lib.scalac"
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="quick.classpath"
-      srcpath="${src.dir}/library">
+      srcpath="${build-fusrcs.dir}">
       <compilationpath>
       	<pathelement location="${build-strap.dir}/classes/library"/>
       </compilationpath>
     </sabmake>
-    <sabuse id="quick.lib.scalac" srcdir="${src.dir}/library">
+    <sabuse id="quick.lib.scalac" srcdir="${build-fusrcs.dir}">
       <include name="scala/Predef.scala"/>
     </sabuse>
-    <sabuse id="quick.lib.scalac" srcdir="${src.dir}/library">
+    <sabuse id="quick.lib.scalac" srcdir="${build-fusrcs.dir}">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
     </sabuse>
@@ -396,7 +437,7 @@ BUILD STRAP LAYER
       <entry key="copyright.string" value="${copyright.string}"/>
     </propertyfile>
     <copy todir="${build-strap.dir}/classes/library">
-      <fileset dir="${src.dir}/library">
+      <fileset dir="${build-fusrcs.dir}">
         <include name="**/*.tmpl"/>
         <include name="**/*.xml"/>
         <include name="**/*.js"/>
@@ -679,7 +720,7 @@ MAKE ACTUAL DISTRIBUTION
   <!-- Packages source -->
     <mkdir dir="${dist.dir}/src"/>
     <jar destfile="${dist.dir}/src/scala-library-src.jar">
-      <fileset dir="${src.dir}/library"/>
+      <fileset dir="${build-fusrcs.dir}"/>
       <fileset dir="${src.dir}/actors"/>
     </jar>
     <jar destfile="${dist.dir}/src/scala-dbc-src.jar">
@@ -709,7 +750,7 @@ MAKE NEW STARR
     <copy file="${build-quick.dir}/lib/scala-library.jar" toFile="${lib.starr.jar}"/>
     <copy file="${build-quick.dir}/lib/scala-compiler.jar" toFile="${comp.starr.jar}"/>
     <jar destfile="${lib.dir}/scala-library-src.jar">
-      <fileset dir="${src.dir}/library"/>
+      <fileset dir="${build-fusrcs.dir}"/>
       <fileset dir="${src.dir}/actors"/>
     </jar>
   </target>
@@ -718,8 +759,12 @@ MAKE NEW STARR
 CLEAN
 ============================================================================ -->
 
-  <target name="locker.clean" depends="quick.clean">
+  <target name="locker.clean" depends="fusrcs.clean">
     <delete dir="${build-locker.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+  </target>
+
+  <target name="fusrcs.clean" depends="quick.clean">
+    <delete dir="${build-fusrcs.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
   </target>
 
   <target name="quick.clean" depends="strap.clean, partest.clean">
