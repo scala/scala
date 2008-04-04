@@ -1,4 +1,5 @@
-bug696.scala:4: error: no implicit argument matching parameter type TypeUtil0.Type[Any] was found.
+bug696.scala:4: error: diverging implicit expansion for type TypeUtil0.Type[Any]
+starting with method WithType in object TypeUtil0
   as[Any](null);
   ^
 one error found

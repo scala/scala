@@ -97,8 +97,9 @@ trait Contexts { self: Analyzer =>
     private var _undetparams: List[Symbol] = List() // Undetermined type parameters,
                                                     // not inherited to child contexts
     var depth: Int = 0
-    var imports: List[ImportInfo] = List()
-
+    var imports: List[ImportInfo] = List()   // currently visible imports
+    var openImplicits: List[Type] = List()   // types for which implicit arguments
+                                             // are currently searched
     var prefix: Type = NoPrefix
     var inConstructorSuffix = false         // are we in a secondary constructor
                                             // after the this constructor call?
@@ -130,6 +131,7 @@ trait Contexts { self: Analyzer =>
       txt._undetparams = _undetparams
       txt.depth = depth
       txt.imports = imports
+      txt.openImplicits = openImplicits
       txt.prefix = prefix
       txt.inConstructorSuffix = inConstructorSuffix
       txt.returnsSeen = returnsSeen
@@ -169,15 +171,16 @@ trait Contexts { self: Analyzer =>
         val a8 = eq(depth, that.depth)
         val a9 = eq(imports, that.imports)
 
-        val a10 = eq(prefix, that.prefix)
-        val a11 = eq(inConstructorSuffix, that.inConstructorSuffix)
-        val a12 = eq(implicitsEnabled, that.implicitsEnabled)
-        val a13 = eq(checking, that.checking)
-        val a14 = eq(retyping, that.retyping)
-        val a15 = eq(savedTypeBounds, that.savedTypeBounds)
-        val a16 = eq(unit, that.unit)
-        val ret = a0 && a1 && a2 && a3 && a4 && a5 && a6 && a7 && a8 && a9 && a10 && a11 && a12 && a13 && a14 && a15 && a16
-        val a17 = {
+        val a10 = eq(openImplicits, that.openImplicits)
+        val a11 = eq(prefix, that.prefix)
+        val a12 = eq(inConstructorSuffix, that.inConstructorSuffix)
+        val a13 = eq(implicitsEnabled, that.implicitsEnabled)
+        val a14 = eq(checking, that.checking)
+        val a15 = eq(retyping, that.retyping)
+        val a16 = eq(savedTypeBounds, that.savedTypeBounds)
+        val a17 = eq(unit, that.unit)
+        val ret = a0 && a1 && a2 && a3 && a4 && a5 && a6 && a7 && a8 && a9 && a10 && a11 && a12 && a13 && a14 && a15 && a16 && a17
+        val a18 = {
           if (implicitsRunId > that.implicitsRunId) {
             that.implicitsRunId = NoRunId
             that.implicitsCache = null
@@ -189,7 +192,7 @@ trait Contexts { self: Analyzer =>
           implicitsCache == that.implicitsCache
         }
         if (ret) {
-          if (!a17) {
+          if (!a18) {
             //assert(this.implicitsCache == null || that.implicitsCache == null)
           }
         }
@@ -252,6 +255,7 @@ trait Contexts { self: Analyzer =>
       c.implicitsEnabled = this.implicitsEnabled
       c.checking = this.checking
       c.retyping = this.retyping
+      c.openImplicits = this.openImplicits
       c
     }
 

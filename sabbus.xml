@@ -92,7 +92,7 @@ PROPERTIES
   
   <property name="copyright.string" value="Copyright 2002-2008, LAMP/EPFL"/>
   
-  <property name="java.flags" value="-Xmx256M -Xms16M"/>
+  <property name="java.flags" value="-Xmx256M -Xms32M"/>
 
 <!-- ===========================================================================
 INITIALISATION

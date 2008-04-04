@@ -265,7 +265,7 @@ trait SyntheticMethods { self: Analyzer =>
                 stat.symbol.resetFlag(CASEACCESSOR)
               }
             }
-            if (!inIDE && clazz.info.nonPrivateDecl(nme.tag) == NoSymbol) ts += tagMethod
+            if (!inIDE && !clazz.hasFlag(INTERFACE) && clazz.info.nonPrivateDecl(nme.tag) == NoSymbol) ts += tagMethod
           }
           if (clazz.isModuleClass) {
             if (!hasOverridingImplementation(Object_toString)) ts += moduleToStringMethod

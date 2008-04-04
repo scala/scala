@@ -62,7 +62,7 @@ object Test extends Application {
      case _ =>
    }
 
-   def fooW(x : Counter[_] { def name : String }) = x match {
+   def fooW(x : Counter[T] { def name : String } forSome { type T }) = x match {
      case ctr: Counter[t] =>
        val c = ctr.newCounter
        println(ctr.name+" "+ctr.get(ctr.inc(ctr.inc(c))))

@@ -134,7 +134,7 @@ trait Typers { self: Analyzer =>
   private def argMode(fun: Tree, mode: Int) =
     if (treeInfo.isSelfOrSuperConstrCall(fun)) mode | SCCmode else mode
 
-  private var pendingImplicits: List[Type] = List()
+  private val DivergentImplicit = new Exception()
 
   abstract class Typer(context0: Context) {
     import context0.unit
@@ -3297,26 +3297,28 @@ trait Typers { self: Analyzer =>
     }
 
     private def dominates(dtor: Type, dted: Type): Boolean = {
-      def simplify(tp: Type): Type = tp match {
-        case RefinedType(parents, defs) => intersectionType(parents, tp.typeSymbol.owner)
-        case AnnotatedType(attribs, tp, selfsym) => tp
+      def core(tp: Type): Type = tp.normalize match {
+        case RefinedType(parents, defs) => intersectionType(parents map core, tp.typeSymbol.owner)
+        case AnnotatedType(attribs, tp, selfsym) => core(tp)
+        case ExistentialType(tparams, result) => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
+        case PolyType(tparams, result) => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
         case _ => tp
       }
       def sum(xs: List[Int]) = (0 /: xs)(_ + _)
       def complexity(tp: Type): Int = tp match {
         case SingleType(pre, sym) => complexity(pre) + 1
         case TypeRef(pre, sym, args) => complexity(pre) + sum(args map complexity) + 1
-        case TypeBounds(lo, hi) =>  complexity(lo) + complexity(hi)
-        case ClassInfoType(parents, defs, clazz) => sum(parents map complexity) + 1
-        case MethodType(paramtypes, result) => sum(paramtypes map complexity) + complexity(result) + 1
-        case PolyType(tparams, result) => sum(tparams map (_.info) map complexity) + complexity(result) + 1
-        case ExistentialType(tparams, result) => sum(tparams map (_.info) map complexity) + complexity(result) + 1
+        case RefinedType(parents, _) => sum(parents map complexity) + 1
         case _ => 1
       }
-      val dtor1 = simplify(dtor)
-      val dted1 = simplify(dted)
-      (dtor1.typeSymbol == dted1.typeSymbol) &&
-      (dtor1 =:= dted1 || complexity(dtor1) > complexity(dted1))
+      def overlaps(tp1: Type, tp2: Type): Boolean = (tp1, tp2) match {
+        case (RefinedType(parents, _), _) => parents exists (overlaps(_, tp2))
+        case (_, RefinedType(parents, _)) => parents exists (overlaps(tp1, _))
+        case _ => tp1.typeSymbol == tp2.typeSymbol
+      }
+      val dtor1 = core(dtor)
+      val dted1 = core(dted)
+      overlaps(dtor1, dted1) && (dtor1 =:= dted1 || complexity(dtor1) > complexity(dted1))
     }
 
     /** Try to construct a typed tree from given implicit info with given
@@ -3332,16 +3334,27 @@ trait Typers { self: Analyzer =>
      *  @pre           <code>info.tpe</code> does not contain an error
      */
     private def typedImplicit(pos: Position, info: ImplicitInfo, pt0: Type, pt: Type, isLocal: Boolean): Tree =
-       pendingImplicits find (dominates(pt, _)) match {
+       context.openImplicits find (dominates(pt, _)) match {
          case Some(pending) =>
-           context.error(pos, "diverging implicit expansion for type "+pending)
+           throw DivergentImplicit
            EmptyTree
          case None =>
            try {
-             pendingImplicits = pt :: pendingImplicits
+             context.openImplicits = pt :: context.openImplicits
              typedImplicit0(pos, info, pt0, pt, isLocal)
+           } catch {
+             case DivergentImplicit =>
+               if (context.openImplicits.tail.isEmpty) {
+                 if (!(pt.isErroneous))
+                   context.unit.error(
+                     pos, "diverging implicit expansion for type "+pt+"\nstarting with "+
+                     info.sym+info.sym.locationString)
+                 EmptyTree
+               } else {
+                 throw DivergentImplicit
+               }
            } finally {
-             pendingImplicits = pendingImplicits.tail
+             context.openImplicits = context.openImplicits.tail
            }
        }
 

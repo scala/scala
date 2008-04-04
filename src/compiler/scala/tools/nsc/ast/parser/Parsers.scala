@@ -191,8 +191,11 @@ trait Parsers extends NewScanners with MarkupParsers {
       val savedPlaceholderTypes = placeholderTypes
       placeholderTypes = List()
       var t = op
-      if (!placeholderTypes.isEmpty) t = ExistentialTypeTree(t, placeholderTypes.reverse)
-      placeholderTypes = savedPlaceholderTypes
+      if (!placeholderTypes.isEmpty && t.isInstanceOf[AppliedTypeTree]) {
+        t = ExistentialTypeTree(t, placeholderTypes.reverse)
+        placeholderTypes = List()
+      }
+      placeholderTypes = placeholderTypes ::: savedPlaceholderTypes
       t
     }
 
@@ -646,7 +649,7 @@ trait Parsers extends NewScanners with MarkupParsers {
     /** TypedOpt ::= [`:' Type]
     */
     def typedOpt(): Tree =
-      if (inToken == COLON) { inNextToken; placeholderTypeBoundary(typ()) }
+      if (inToken == COLON) { inNextToken; typ() }
       else TypeTree()
 
     /** RequiresTypedOpt ::= [requires AnnotType]
@@ -654,7 +657,7 @@ trait Parsers extends NewScanners with MarkupParsers {
     def requiresTypeOpt(): Tree =
       if (inToken == REQUIRES) {
         deprecationWarning(in.currentPos, "`requires T' has been deprecated; use `{ self: T => ...'  instead")
-        inNextToken; placeholderTypeBoundary(annotType(false))
+        inNextToken; annotType(false)
       } else TypeTree()
 
     /** Types ::= Type {`,' Type}
@@ -686,24 +689,26 @@ trait Parsers extends NewScanners with MarkupParsers {
      *  ExistentialClause ::= forSome `{' ExistentialDcl {semi ExistentialDcl}} `}'
      *  ExistentialDcl    ::= type TypeDcl | val ValDcl
      */
-    def typ(): Tree = {
+    def typ(): Tree = typ(false)
+
+    def typ(isPattern: Boolean): Tree = placeholderTypeBoundary {
       val t =
         if (inToken == LPAREN) {
           val pos = inSkipToken
           if (inToken == RPAREN) {
             inNextToken
-            atPos(accept(ARROW)) { makeFunctionTypeTree(List(), typ()) }
+            atPos(accept(ARROW)) { makeFunctionTypeTree(List(), typ(isPattern)) }
           /* Not more used
           } else if (inToken == ARROW) {
             inNextToken
-            val t0 = typ()
+            val t0 = typ(isPattern)
             accept(RPAREN)
-            atPos(accept(ARROW)) { makeByNameFunctionTypeTree(t0, typ()) }
+            atPos(accept(ARROW)) { makeByNameFunctionTypeTree(t0, typ(isPattern)) }
           */
           } else {
-            val ts = types(false, false, true)
+            val ts = types(isPattern, false, true)
             accept(RPAREN)
-            if (inToken == ARROW) atPos(inSkipToken) { makeFunctionTypeTree(ts, typ()) }
+            if (inToken == ARROW) atPos(inSkipToken) { makeFunctionTypeTree(ts, typ(isPattern)) }
             else {
               for (t <- ts) t match {
                 case AppliedTypeTree(Select(_, n), _)
@@ -711,15 +716,15 @@ trait Parsers extends NewScanners with MarkupParsers {
                   syntaxError(t.pos, "no by-name parameter type allowed here", false)
                 case _ =>
               }
-              infixTypeRest(pos, annotTypeRest(pos, false, makeTupleType(ts, true)), false, InfixMode.FirstOp)
+              infixTypeRest(pos, annotTypeRest(pos, isPattern, makeTupleType(ts, true)), false, InfixMode.FirstOp)
             }
           }
         } else {
-          infixType(false, InfixMode.FirstOp)
+          infixType(isPattern, InfixMode.FirstOp)
         }
       if (inToken == ARROW)
         atPos(inSkipToken) {
-          makeFunctionTypeTree(List(t), typ())
+          makeFunctionTypeTree(List(t), typ(isPattern))
         }
       else if (inToken == FORSOME)
         atPos(inSkipToken) {
@@ -739,8 +744,9 @@ trait Parsers extends NewScanners with MarkupParsers {
 
     /** InfixType ::= CompoundType {id [nl] CompoundType}
      */
-    def infixType(isPattern: Boolean, mode: InfixMode.Value): Tree =
+    def infixType(isPattern: Boolean, mode: InfixMode.Value): Tree = placeholderTypeBoundary {
       infixTypeRest(inCurrentPos, infixTypeFirst(isPattern), isPattern, mode)
+    }
 
     def infixTypeFirst(isPattern: Boolean) =
       if (inToken == LBRACE) scalaAnyRefConstr else annotType(isPattern)
@@ -790,7 +796,7 @@ trait Parsers extends NewScanners with MarkupParsers {
      *                     |  `(' Types [`,'] `)'
      *                     |  WildcardType
      */
-    def annotType(isPattern: Boolean): Tree = {
+    def annotType(isPattern: Boolean): Tree = placeholderTypeBoundary {
       val annots1 = annotations()
       if (!annots1.isEmpty)
 	deprecationWarning(
@@ -864,7 +870,7 @@ trait Parsers extends NewScanners with MarkupParsers {
             Bind(ident().toTypeName, EmptyTree)
           }
         else {
-          typ()
+          typ(true)
         }
       } else if (isFuncArg) {
         // copy-paste (with change) from def paramType
@@ -884,7 +890,7 @@ trait Parsers extends NewScanners with MarkupParsers {
           } else t
         }
       } else if (isTypeApply) {
-        placeholderTypeBoundary(typ())
+        typ()
       } else {
         typ()
       }
@@ -1045,8 +1051,7 @@ trait Parsers extends NewScanners with MarkupParsers {
               }
             } else if (annots.isEmpty || isTypeIntro) {
               t = atPos(pos) {
-                val tpt = placeholderTypeBoundary(
-                  if (location != Local) compoundType(false) else typ())
+                val tpt = if (location != Local) compoundType(false) else typ()
                 if (isWildcard(t))
                   (placeholderParams: @unchecked) match {
                     case (vd @ ValDef(mods, name, _, _)) :: rest =>
@@ -1072,10 +1077,11 @@ trait Parsers extends NewScanners with MarkupParsers {
           }
           stripParens(t)
       }
-      if (!placeholderParams.isEmpty)
-        if (isWildcard(res)) savedPlaceholderParams = placeholderParams ::: savedPlaceholderParams
-        else res = atPos(res.pos){Function(placeholderParams.reverse, res)}
-      placeholderParams = savedPlaceholderParams
+      if (!placeholderParams.isEmpty && !isWildcard(res)) {
+        res = atPos(res.pos){ Function(placeholderParams.reverse, res) }
+        placeholderParams = List()
+      }
+      placeholderParams = placeholderParams ::: savedPlaceholderParams
       res
     }
 
@@ -1356,7 +1362,7 @@ trait Parsers extends NewScanners with MarkupParsers {
         val p = pattern2(seqOK)
         p match {
           case Ident(name) if (treeInfo.isVarPattern(p) && inToken == COLON) =>
-            atPos(inSkipToken) { Typed(p, placeholderTypeBoundary(compoundType(true))) }
+            atPos(inSkipToken) { Typed(p, compoundType(true)) }
           case _ =>
             p
         }
@@ -1746,10 +1752,10 @@ trait Parsers extends NewScanners with MarkupParsers {
       if (inToken == ARROW)
         atPos(inSkipToken) {
           AppliedTypeTree(
-              scalaDot(nme.BYNAME_PARAM_CLASS_NAME.toTypeName), List(placeholderTypeBoundary(typ())))
+              scalaDot(nme.BYNAME_PARAM_CLASS_NAME.toTypeName), List(typ()))
         }
       else {
-        val t = placeholderTypeBoundary(typ())
+        val t = typ()
         if (isIdent && inName == STAR) {
           inNextToken
           atPos(t.pos) {
@@ -1789,7 +1795,7 @@ trait Parsers extends NewScanners with MarkupParsers {
         val param = atPos(pos) { TypeDef(mods, pname, tparams, typeBounds()) }
         if (inToken == VIEWBOUND && (implicitViewBuf ne null))
           implicitViewBuf += atPos(inSkipToken) {
-            makeFunctionTypeTree(List(Ident(pname)), placeholderTypeBoundary(typ()))
+            makeFunctionTypeTree(List(Ident(pname)), typ())
           }
         param
       }
@@ -1815,7 +1821,7 @@ trait Parsers extends NewScanners with MarkupParsers {
         bound(SUBTYPE, nme.Any))
 
     def bound(tok: Int, default: Name): Tree =
-      if (inToken == tok) { inNextToken; placeholderTypeBoundary(typ()) }
+      if (inToken == tok) { inNextToken; typ() }
       else scalaDot(default.toTypeName)
 
 //////// DEFS ////////////////////////////////////////////////////////////////
@@ -2125,7 +2131,7 @@ trait Parsers extends NewScanners with MarkupParsers {
         inToken match {
           case EQUALS =>
             inNextToken
-            TypeDef(mods, name, tparams, placeholderTypeBoundary(typ()))
+            TypeDef(mods, name, tparams, typ())
           case SUPERTYPE | SUBTYPE | SEMI | NEWLINE | NEWLINES | COMMA | RBRACE =>
             TypeDef(mods | Flags.DEFERRED, name, tparams, typeBounds())
           case _ =>
@@ -2222,14 +2228,14 @@ trait Parsers extends NewScanners with MarkupParsers {
      *  TraitParents       ::= AnnotType {with AnnotType}
      */
     def templateParents(isTrait: Boolean): (List[Tree], List[List[Tree]]) = {
-      val parents = new ListBuffer[Tree] + placeholderTypeBoundary(annotType(false))
+      val parents = new ListBuffer[Tree] + annotType(false)
       val argss = new ListBuffer[List[Tree]]
       if (inToken == LPAREN && !isTrait)
         do { argss += argumentExprs() } while (inToken == LPAREN)
       else argss += List()
       while (inToken == WITH) {
         inNextToken
-        parents += placeholderTypeBoundary(annotType(false))
+        parents += annotType(false)
       }
       (parents.toList, argss.toList)
     }
