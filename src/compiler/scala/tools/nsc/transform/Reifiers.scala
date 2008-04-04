@@ -250,6 +250,9 @@ trait Reifiers {
         reflect.This(reify(tree.symbol))
       case Block(stats, expr) =>
         reflect.Block(stats.map(reify), reify(expr))
+      case New(clazz) if (clazz.isType) =>
+	val reifiedSymbol = reify(clazz.symbol)
+	reflect.New(reflect.Ident(reifiedSymbol))
       case New(clazz) =>
         val reifiedClass = reify(clazz)
         reflect.New(reifiedClass)
