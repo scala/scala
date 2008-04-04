@@ -92,12 +92,13 @@ class Reaction extends Runnable {
       }
       case t: Throwable => {
         Debug.info(a+": caught "+t)
-        t.printStackTrace()
         Scheduler.unPendReaction(a)
         // links
         a.synchronized {
           if (!a.links.isEmpty)
             a.exitLinked(t)
+          else
+            t.printStackTrace()
         }
       }
     } finally {
