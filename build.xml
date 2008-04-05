@@ -55,6 +55,7 @@ PROPERTIES
 
   <!-- Sets location of build folders -->
   <property name="build.dir" value="${basedir}/build"/>
+  <property name="build-fusrcs.dir" value="${build.dir}/fusrcs"/>
   <property name="locker.dir" value="${build.dir}/locker"/>
   <property name="quick.dir" value="${build.dir}/quick"/>
   <property name="strap.dir" value="${build.dir}/strap"/>
@@ -63,6 +64,7 @@ PROPERTIES
   <property name="api-comp.dir" value="${build.dir}/api-compiler"/>
   <property name="tooldocs.dir" value="${build.dir}/tooldocs"/>
   <property name="examples.dir" value="${build.dir}/examples"/>
+  <property name="jvm14.dir" value="${build.dir}/jvm14"/>
   <property name="cldc.dir" value="${build.dir}/cldc"/>
   <property name="android.dir" value="${build.dir}/android"/>
   <property name="msil.dir" value="${build.dir}/msil"/>
@@ -114,6 +116,41 @@ ANT INITIALISATION
       </and></not></condition>
     </fail>
   </target>
+
+<!-- ===========================================================================
+FUSION JVM 1.5 LIBRARY SOURCES
+============================================================================ -->
+
+  <target name="fusion" depends="init">
+    <!--
+    <union id="library.files">
+      <files includes="${src.dir}/library/jvm/jvm1.5/scala/**/*.scala"/>
+      <difference>
+        <files includes="${src.dir}/library/jvm/scala/**/*.scala"/>
+        <files includes="${src.dir}/library/jvm/jvm1.5/scala/**/*.scala"/>
+      </difference>
+      <difference>
+        <files includes="${src.dir}/library/scala/**/*.scala"/>
+        <files includes="${src.dir}/library/jvm/scala/**/*.scala"/>
+        <files includes="${src.dir}/library/jvm/jvm1.5/scala/**/*.scala"/>
+      </difference>
+    </union>
+    -->
+    <mkdir dir="${build-fusrcs.dir}/scala"/>
+    <sync toDir="${build-fusrcs.dir}/scala" failonerror="false">
+      <fileset dir="${src.dir}/library/jvm/jvm1.5/scala"/>
+      <difference>
+        <fileset dir="${src.dir}/library/jvm/scala"/>
+        <fileset dir="${src.dir}/library/jvm/jvm1.5/scala"/>
+      </difference>
+      <difference>
+        <fileset dir="${src.dir}/library/scala"/>
+        <fileset dir="${src.dir}/library/jvm/scala"/>
+        <fileset dir="${src.dir}/library/jvm/jvm1.5/scala"/>
+      </difference>
+    </sync>
+  </target>
+
 
 <!-- ===========================================================================
 INITIALISATION
@@ -226,7 +263,7 @@ SETUP
     />
   </target>
 
-  <target name="setup" depends="init">
+  <target name="setup" depends="init,fusion">
   <!-- Creating class-pathes -->
     <if>
       <contains string="${java.version}" substring="1.4"/>
@@ -409,20 +446,20 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
     </then></if>
     <mkdir dir="${locker.dir}/lib/library"/>
     <javac
-      srcdir="${src.dir}/library"
+      srcdir="${build-fusrcs.dir}/scala"
       destdir="${locker.dir}/lib/library"
       source="1.4" target="1.4" deprecation="yes"
       classpath="${locker.dir}/lib/library"
       includes="**/*.java"/>
     <starr
-      srcdir="${src.dir}/library"
+      srcdir="${build-fusrcs.dir}"
       destdir="${locker.dir}/lib/library"
       addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes"
       classpath="${locker.dir}/lib/library"
       includes="scala/Predef.scala"/>
     <starr
-      srcdir="${src.dir}/library"
+      srcdir="${build-fusrcs.dir}"
       destdir="${locker.dir}/lib/library"
       addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes"
@@ -536,13 +573,13 @@ BUILD QUICK-TEST LAYER
   <!-- Build library -->
     <mkdir dir="${quick.dir}/lib/library"/>
     <javac
-      srcdir="${src.dir}/library"
+      srcdir="${build-fusrcs.dir}/scala"
       destdir="${quick.dir}/lib/library"
       source="1.4" target="1.4" deprecation="yes"
       classpath="${quick.dir}/lib/library"
       includes="**/*.java"/>
     <locker
-      srcdir="${src.dir}/library"
+      srcdir="${build-fusrcs.dir}"
       destdir="${quick.dir}/lib/library"
       addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes"
@@ -550,7 +587,7 @@ BUILD QUICK-TEST LAYER
       classpath="${quick.dir}/lib/library"
       includes="scala/Predef.scala"/>
     <locker
-      srcdir="${src.dir}/library"
+      srcdir="${build-fusrcs.dir}"
       destdir="${quick.dir}/lib/library"
       addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes"
