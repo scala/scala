@@ -563,25 +563,28 @@ MAKE MODEL DISTRIBUTION
       name="Scala code runner"
       class="scala.tools.nsc.MainGenericRunner"
       version="${version.number}"
+      copyright="${copyright.string}"
       javaFlags="${java.flags}"/>
     <scalatool
       file="${build-quick.dir}/bin/scalac"
       name="Scala compiler"
       class="scala.tools.nsc.Main"
       version="${version.number}"
+      copyright="${copyright.string}"
       javaFlags="${java.flags}"/>
     <scalatool
       file="${build-quick.dir}/bin/scaladoc"
       name="Scala doc generator"
-      class="scala.tools.nsc.Main"
-      toolflags="-Ydoc"
+      class="scala.tools.nsc.Scaladoc"
       version="${version.number}"
+      copyright="${copyright.string}"
       javaFlags="${java.flags}"/>
     <scalatool
       file="${build-quick.dir}/bin/fsc"
       name="Fast Scala compiler"
       class="scala.tools.nsc.CompileClient"
       version="${version.number}"
+      copyright="${copyright.string}"
       javaFlags="${java.flags}"/>
     <chmod perm="ugo+rx" file="${build-quick.dir}/bin/scala"/>
     <chmod perm="ugo+rx" file="${build-quick.dir}/bin/scalac"/>
