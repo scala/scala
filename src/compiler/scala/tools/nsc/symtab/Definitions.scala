@@ -328,8 +328,6 @@ trait Definitions {
       if (owner == NoSymbol) return NoSymbol
       val result = owner.info.nonPrivateMember(name)
       if (result == NoSymbol) {
-        Console.println(owner.infosString)
-        Console.println(owner.info.decls)
         throw new FatalError(owner.toString() + " does not have a member " + name)
       }
       result

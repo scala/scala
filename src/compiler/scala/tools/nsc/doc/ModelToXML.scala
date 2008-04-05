@@ -33,7 +33,7 @@ trait ModelToXML extends ModelExtractor {
       aref(url, entity.nameString)
   }
 */
-  def link(entity: Symbol)(implicit frame: Frame): NodeSeq = {
+  def link(entity: Symbol, label: String)(implicit frame: Frame): NodeSeq = {
     val url = urlFor(entity)
     if (url == null) { // external link (handled by script.js)
       val (href, attr) =
@@ -45,8 +45,11 @@ trait ModelToXML extends ModelExtractor {
       <a href={Utility.escape(href)} class={attr} target="contentFrame">{name}</a>;
     }
     else
-      aref(url, entity.nameString)
+      aref(url, label)
   }
+
+  def link(entity: Symbol)(implicit frame: Frame): NodeSeq =
+    link(entity, entity.nameString)
 
   def link(tpe: Type)(implicit frame: Frame): NodeSeq = {
     if (!tpe.typeArgs.isEmpty) {
@@ -129,7 +132,7 @@ trait ModelToXML extends ModelExtractor {
     }
   }
 
-  def longHeader(entity: Entity)(implicit from: Frame): NodeSeq = Group({
+  def longHeader(entity: Entity)(implicit frame: Frame): NodeSeq = Group({
     anchor(entity.sym) ++ <dl>
       <dt>
         {attrsFor(entity)}
@@ -142,7 +145,7 @@ trait ModelToXML extends ModelExtractor {
   } ++ {
     val cmnt = entity.decodeComment
     if (cmnt.isEmpty) NodeSeq.Empty
-    else longComment(cmnt.get)
+    else longComment(entity, cmnt.get)
   } ++ (entity match {
       case entity: ClassOrObject => classBody(entity)
       case _ => NodeSeq.Empty
@@ -163,7 +166,7 @@ trait ModelToXML extends ModelExtractor {
     }
   } ++ <hr/>);
 
-  def longComment(cmnt: Comment): NodeSeq = {
+  def longComment(entity: Entity, cmnt: Comment)(implicit frame: Frame): NodeSeq = {
     val attrs = <dl>{
       var seq: NodeSeq = NodeSeq.Empty
       cmnt.decodeAttributes.foreach{
@@ -173,7 +176,10 @@ trait ModelToXML extends ModelExtractor {
         case (option,body) => <dd>{
           if (option == null) NodeSeq.Empty;
           else decodeOption(tag, option);
-        }{parse(body)}</dd>
+        }{ tag match {
+             case "see" => resolveSee(entity.sym, body.trim)
+             case _ => parse(body)
+           }}</dd>
         }}
       };
       seq
@@ -182,6 +188,51 @@ trait ModelToXML extends ModelExtractor {
       <dl><dd>{parse(cmnt.body)}</dd></dl>
       {attrs}
     </xml:group>
+  }
+
+  /**
+   * Try to be smart about @see elements. If the body looks like a link, turn it into
+   * a link. If it can be resolved in the symbol table, turn it into a link to the referenced
+   * entity.
+   */
+  private def resolveSee(owner: Symbol, body: String)(implicit frame: Frame): NodeSeq = {
+    /** find a class either in the root package, in the current class or in the current package. */
+    def findClass(clsName: String): Symbol = {
+      try { definitions.getClass(clsName) } catch {
+        case f: FatalError =>
+          try { definitions.getMember(owner, clsName.toTypeName) } catch {
+            case f: FatalError =>
+              definitions.getMember(owner.enclosingPackage, clsName.toTypeName)
+          }
+      }
+    }
+
+    if (body.startsWith("http://")
+        || body.startsWith("https://")
+        || body.startsWith("www")) {
+      // a link
+      body.split(" ") match {
+        case Seq(href, txt, rest @ _*) =>
+          <a href={href}>{txt}{rest}</a>
+        case _ =>
+          <a href={body}>{body}</a>
+      }
+    } else try {
+      // treat it like a class or member reference
+      body.split("#") match {
+        case Seq(clazz, member) =>
+          val clazzSym = if (clazz.length == 0) owner.enclClass else findClass(clazz)
+          link(definitions.getMember(clazzSym, member), body)
+        case Seq(clazz, _*) =>
+          link(findClass(clazz), body)
+        case _ =>
+          parse(body)
+      }
+    } catch {
+      case f: FatalError =>
+        log("Error resolving @see: " + f.toString)
+        parse(body)
+    }
   }
 
   def classBody(entity: ClassOrObject)(implicit from: Frame): NodeSeq =

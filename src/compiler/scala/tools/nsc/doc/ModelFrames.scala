@@ -314,7 +314,6 @@ trait ModelFrames extends ModelExtractor {
       </xml:group>
     }
   }
-  def longComment(cmnt: Comment): NodeSeq
 
   val index =
     <frameset cols="25%, 75%">
