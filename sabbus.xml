@@ -134,7 +134,7 @@ INITIALISATION
 FUSION JVM 1.5 LIBRARY SOURCES
 ============================================================================ -->
 
-  <target name="files" depends="init">
+  <target name="fusion" depends="init">
     <!--
     <union id="library.files">
       <files includes="${src.dir}/library/jvm/jvm1.5/scala/**/*.scala"/>
@@ -168,7 +168,7 @@ FUSION JVM 1.5 LIBRARY SOURCES
 LOAD STABLE REFERENCE (STARR) LAYER
 ============================================================================ -->
   
-  <target name="starr.load" depends="files">
+  <target name="starr.load" depends="fusion">
     <path id="starr.classpath">
       <pathelement location="${lib.starr.jar}"/>
       <pathelement location="${comp.starr.jar}"/>
