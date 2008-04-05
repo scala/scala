@@ -575,7 +575,7 @@ MAKE MODEL DISTRIBUTION
     <scalatool
       file="${build-quick.dir}/bin/scaladoc"
       name="Scala doc generator"
-      class="scala.tools.nsc.Scaladoc"
+      class="scala.tools.nsc.ScalaDoc"
       version="${version.number}"
       copyright="${copyright.string}"
       javaFlags="${java.flags}"/>
