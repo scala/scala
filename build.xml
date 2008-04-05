@@ -771,8 +771,20 @@ CLDC
   <target name="cldc.sources"
           description="Create the source directory for the J2ME (CLDC) library"
   >
-    <mkdir dir="${cldc.dir}/src"/>
-
+    <mkdir dir="${cldc.dir}/src/scala"/>
+    <sync toDir="${cldc.dir}/src/scala" failonerror="false">
+      <fileset dir="${src.dir}/library/jvm/cldc/scala"/>
+      <difference>
+        <fileset dir="${src.dir}/library/jvm/scala"/>
+        <fileset dir="${src.dir}/library/jvm/cldc/scala"/>
+      </difference>
+      <difference>
+        <fileset dir="${src.dir}/library/scala"/>
+        <fileset dir="${src.dir}/library/jvm/scala"/>
+        <fileset dir="${src.dir}/library/jvm/cldc/scala"/>
+      </difference>
+    </sync>
+<!--
     <copy todir="${cldc.dir}/src">
       <fileset dir="${src.dir}/library" includes="**/*.scala, **/*.java">
         <not>
@@ -796,7 +808,7 @@ CLDC
         <include name="**/*.java"/>
       </fileset>
     </copy>
-
+-->
   </target>
 
   <target name="cldc.libraries"
@@ -935,8 +947,20 @@ ANDROID
   <target name="android.sources" depends="android.init"
           description="Create the source directory for Android library"
   >
-    <mkdir dir="${android.dir}/src"/>
-
+    <mkdir dir="${android.dir}/src/scala"/>
+    <sync toDir="${android.dir}/src/scala" failonerror="false">
+      <fileset dir="${src.dir}/library/jvm/cldc/scala"/>
+      <difference>
+        <fileset dir="${src.dir}/library/jvm/scala"/>
+        <fileset dir="${src.dir}/library/jvm/android/scala"/>
+      </difference>
+      <difference>
+        <fileset dir="${src.dir}/library/scala"/>
+        <fileset dir="${src.dir}/library/jvm/scala"/>
+        <fileset dir="${src.dir}/library/jvm/android/scala"/>
+      </difference>
+    </sync>
+<!--
     <copy todir="${android.dir}/src">
       <fileset dir="${src.dir}/library" 
                includes="**/*.scala, **/*.java"
@@ -953,6 +977,7 @@ ANDROID
         <include name="**/*.java"/>
       </fileset>
     </copy>
+-->
   </target>
 
   <target name="android.libraries"
@@ -1095,7 +1120,15 @@ MSIL
   </target>
 
   <target name="msil.sources" depends="msil.init">
-    <mkdir dir="${msil.dir}/src"/>
+    <mkdir dir="${msil.dir}/src/scala"/>
+    <sync toDir="${msil.dir}/src/scala" failonerror="false">
+      <fileset dir="${src.dir}/library/dotnet/scala"/>
+      <difference>
+        <fileset dir="${src.dir}/library/scala"/>
+        <fileset dir="${src.dir}/library/dotnet/scala"/>
+      </difference>
+    </sync>
+<!--
     <copy todir="${msil.dir}/src">
       <fileset dir="${src.dir}/library" includes="**/*.scala">
         <not>
@@ -1109,12 +1142,14 @@ MSIL
         <include name="**/*.scala"/>
       </fileset>
     </copy>
+-->
   </target>
 
   <target name="msil.libraries" depends="setup.quick, msil.sources">
     <quick srcdir="${msil.dir}/src" target="msil"
            assemname="${msil.dir}/predef" assemrefs="${lib.dir}"
            failonerror="false">
+<!--
       <include name="scala/Predef.scala"/>
       <include name="scala/Either.scala"/>
       <include name="scala/Option.scala"/>
@@ -1142,6 +1177,7 @@ MSIL
       <exclude name="scala/runtime/RichStringBuilder.scala"/>
       <exclude name="scala/collection/mutable/JavaMapAdaptor.scala"/>
       <exclude name="scala/collection/mutable/JavaSetAdaptor.scala"/>
+-->
     </quick>
 
     <exec
