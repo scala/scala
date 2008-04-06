@@ -284,34 +284,14 @@ abstract class FactoryAdapter extends DefaultHandler() {
     } catch {
       case e: Exception =>
         Console.err.println("error: Unable to instantiate parser")
-        exit(1)
+        throw e
     }
 
     // parse file
-    //try {
-      //Console.err.println("[parsing \"" + source + "\"]");
-      scopeStack.push(TopScope)
-      parser.parse(source, this)
-      scopeStack.pop
-    /*
-    } catch {
-      case ( e:SAXParseException ) => {
-        // ignore
-      }
-      case ( e:Exception ) => {
-        Console.err.println("error: Parse error occurred - " + e.getMessage());
-        if (e.isInstanceOf[ SAXException ]) {
-          (e.asInstanceOf[ SAXException ])
-	  .getException()
-	  .printStackTrace( System.err );
-        } else {
-          e.printStackTrace(System.err);
-       }
-      }
-    } // catch
-*/
-    //Console.err.println("[FactoryAdapter: total #elements = "+elemCount+"]");
-    rootElem
+    scopeStack.push(TopScope)
+    parser.parse(source, this)
+    scopeStack.pop
+    return rootElem
   } // loadXML
 
   /** loads XML from given file */
