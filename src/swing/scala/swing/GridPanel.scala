@@ -1,4 +1,4 @@
-package swing
+package scala.swing
 
 object GridPanel {
   val Adapt = 0

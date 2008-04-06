@@ -1,4 +1,4 @@
-package swing
+package scala.swing
 
 class BoxPanel(orientation: Orientation)(content0: Component*) extends IndexedPanel {
   override lazy val peer = {

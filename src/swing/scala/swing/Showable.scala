@@ -1,4 +1,4 @@
-package swing
+package scala.swing
 
 object Showable {
   trait Swing extends Showable {

@@ -1,4 +1,4 @@
-package scala.swing;
+package scala.swing
 
 import javax.swing.JScrollPane
 

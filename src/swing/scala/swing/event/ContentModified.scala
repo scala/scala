@@ -1,3 +1,3 @@
-package swing.event
+package scala.swing.event
 
 case class ContentModified(override val source: Component) extends ComponentEvent(source)

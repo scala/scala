@@ -1,4 +1,4 @@
-package swing
+package scala.swing
 
 import event._
 

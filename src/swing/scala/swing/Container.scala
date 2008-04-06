@@ -1,5 +1,8 @@
 package scala.swing
 
+import event._
+import scala.collection.mutable.Buffer
+
 abstract class Container(override val peer: javax.swing.JComponent) extends Component {
   def this() = this(new javax.swing.JComponent {})
   def content: Seq[Component] = new Content
@@ -31,5 +34,16 @@ abstract class Container(override val peer: javax.swing.JComponent) extends Comp
     def elements = peer.getComponents.projection.map(wrap(_)).elements
     def apply(n: Int) = wrap(peer.getComponent(n))
   }
+
+  peer.addContainerListener(new java.awt.event.ContainerListener {
+    def componentAdded(e: java.awt.event.ContainerEvent) {
+      publish(ComponentAdded(Container.this,
+                             Component.wrapperFor(e.getChild.asInstanceOf[javax.swing.JComponent])))
+    }
+    def componentRemoved(e: java.awt.event.ContainerEvent) {
+      publish(ComponentRemoved(Container.this,
+                               Component.wrapperFor(e.getChild.asInstanceOf[javax.swing.JComponent])))
+    }
+  })
 }
 
