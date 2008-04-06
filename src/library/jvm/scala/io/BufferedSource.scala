@@ -59,7 +59,10 @@ abstract class BufferedSource(byteChannel: ReadableByteChannel, decoder: Charset
   def fillBuffer() = {
     byteBuffer.compact()
     charBuffer.position(0)
-    byteChannel.read(byteBuffer) match {
+    int num_bytes = 0;
+    while (0 == num_bytes)
+      num_bytes = byteChannel.read(byteBuffer)
+    num_bytes match {
       case -1 =>
         endOfInput = true;
         byteBuffer.position(0)
