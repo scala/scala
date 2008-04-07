@@ -131,7 +131,7 @@ trait PatternNodes { self: transform.ExplicitOuter =>
 //  case Typed(nme.WILDCARD,_) => pattern.tpe <:< scrutinee.tpe
   }
 
-  final def DBG(x:String) { if(settings_debug) Console.println(x) }
+  final def DBG(x:String) { if (settings_debug) Console.println(x) }
 
   /** returns all variables that are binding the given pattern
    *  @param   x a pattern

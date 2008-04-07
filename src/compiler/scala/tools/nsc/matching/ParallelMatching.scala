@@ -802,8 +802,9 @@ trait ParallelMatching  {
       val (casted,srep,frep) = this.getTransition
       val condUntyped = condition(casted.tpe, this.scrutinee)
       var cond = rep.handleOuter(typed { condUntyped })
-      if (needsOuterTest(casted.tpe, this.scrutinee.tpe, theOwner)) // @todo merge into def condition
+      if (needsOuterTest(casted.tpe, this.scrutinee.tpe, theOwner)) {  // @todo merge into def condition
         cond = addOuterCondition(cond, casted.tpe, mkIdent(this.scrutinee), rep.handleOuter)
+      }
       val succ = repToTree(srep)
 
       val fail = if (frep.isEmpty) failTree else repToTree(frep.get)
@@ -1346,14 +1347,15 @@ trait ParallelMatching  {
     assert(scrutineeTree.tpe ne NoType)
     if (tpe.isInstanceOf[SingletonType] && !tpe.isInstanceOf[ConstantType]) {
       if (tpe.termSymbol.isModule) {// object
-        if (scrutineeTree.tpe <:< definitions.AnyRefClass.tpe)
-          Eq(gen.mkAttributedRef(tpe.termSymbol), scrutineeTree)             // object
-        else
+        //if (scrutineeTree.tpe <:< definitions.AnyRefClass.tpe)
+        //  Eq(gen.mkAttributedRef(tpe.termSymbol), scrutineeTree)             // object
+        //else
           Equals(gen.mkAttributedRef(tpe.termSymbol), scrutineeTree)         // object
       } else {
         val x =
-          if (tpe.prefix ne NoPrefix) gen.mkIsInstanceOf(scrutineeTree, tpe)
-          else Equals(gen.mkAttributedRef(tpe.termSymbol), scrutineeTree)
+          //if (tpe.prefix ne NoPrefix) gen.mkIsInstanceOf(scrutineeTree, tpe)
+          //else
+          Equals(gen.mkAttributedRef(tpe.termSymbol), scrutineeTree)
         typed { x }
       }
     } else if (tpe.isInstanceOf[ConstantType]) {
@@ -1364,8 +1366,9 @@ trait ParallelMatching  {
         Equals(scrutineeTree, Literal(value))             // constant
     } else if (scrutineeTree.tpe <:< tpe && tpe <:< definitions.AnyRefClass.tpe) {
       NotNull(scrutineeTree)
-    } else
+    } else {
       gen.mkIsInstanceOf(scrutineeTree, tpe)
+    }
   }
 
   /** adds a test comparing the dynamic outer to the static outer */
