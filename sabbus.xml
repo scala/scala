@@ -373,7 +373,7 @@ BUILD STRAP LAYER
     <sabmake id="quick.lib.scalac"
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="quick.classpath"
-      srcpath="${build-fusrcs.dir}">
+      srcpath="${src.dir}/library">
       <compilationpath>
       	<pathelement location="${build-strap.dir}/classes/library"/>
       </compilationpath>
