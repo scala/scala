@@ -333,15 +333,16 @@ trait ParallelMatching  {
     /*block*/{
       var xs = column
       var i  = 0;
-      var last = -1;
+//      var last = -1;
       while(xs ne Nil) { // forall
-        if (last != -1) {
-          cunit.error(xs.head.pos, "unreachable code")
-        }
+//        if (last != -1) {
+//          cunit.error(xs.head.pos, "unreachable code")
+//        }
         strip(xs.head) match {
           case (pvars, p @ Literal(Constant(c:Int)))  => sanity(p.pos,     c  , definedVars(xs.head)); insertTagIndexPair(c,i)
           case (pvars, p @ Literal(Constant(c:Char))) => sanity(p.pos, c.toInt, definedVars(xs.head)); insertTagIndexPair(c.toInt,i)
-          case (pvars, p )     if isDefaultPattern(p) => last = i; insertDefault(i,pvars)
+          case (pvars, p )     if isDefaultPattern(p) => insertDefault(i,pvars)
+//          case (pvars, p )     if isDefaultPattern(p) => last = i; insertDefault(i,pvars)
         }
         i += 1
         xs = xs.tail
