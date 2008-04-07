@@ -123,11 +123,12 @@ trait SyntheticMethods { self: Analyzer =>
 
     /** The equality method for case classes and modules:
      *   def equals(that: Any) =
-     *     (this eq that) ||
+     *     that.isInstanceOf[AnyRef] &&
+     *     ((this eq that.asInstanceOf[AnyRef]) ||
      *     (that match {
      *       case this.C(this.arg_1, ..., this.arg_n) => true
      *       case _ => false
-     *     })
+     *     }))
      */
     def equalsMethod: Tree = {
       val method = syntheticMethod(
@@ -173,11 +174,20 @@ trait SyntheticMethods { self: Analyzer =>
                   }
                 )
               }
-              Match(
-                that,
-                List(
-                  CaseDef(pat, guard, Literal(Constant(true))),
-                  CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))))
+              val isAnyRef = TypeApply(
+                    Select(that, Any_isInstanceOf),
+                    List(TypeTree(AnyRefClass.tpe)))
+              val cast = TypeApply(
+                    Select(that, Any_asInstanceOf),
+                    List(TypeTree(AnyRefClass.tpe)))
+              val eq_ = Apply(Select( This(clazz) , nme.eq), List(that setType AnyRefClass.tpe))
+              val match_ = Match(that, List(
+                    CaseDef(pat, guard, Literal(Constant(true))),
+                    CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))))
+              Apply(
+                    Select(isAnyRef, Boolean_and),
+                    List(Apply(Select(eq_, Boolean_or),
+                    List(match_))))
             }
           }
         )
