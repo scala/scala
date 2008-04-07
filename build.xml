@@ -899,22 +899,11 @@ ANDROID
           description="Create the source directory for Android library"
   >
     <mkdir dir="${android.dir}/src"/>
-
     <copy todir="${android.dir}/src">
-      <fileset dir="${src.dir}/library" 
-               includes="**/*.scala, **/*.java"
-               excludes="scala/reflect/ScalaBeanInfo.scala">
-        <not>
-          <present targetdir="${src.dir}/android-library"/>
-        </not>
-      </fileset>
-    </copy>
-
+      <fileset dir="${src.dir}/android-library" includes="**/*.scala, **/*.java"/>
+    </copy> 
     <copy todir="${android.dir}/src">
-      <fileset dir="${src.dir}/android-library">
-        <include name="**/*.scala"/>
-        <include name="**/*.java"/>
-      </fileset>
+      <fileset dir="${src.dir}/library" includes="**/*.scala, **/*.java" />
     </copy>
   </target>
 

@@ -1,0 +1,1 @@
+/* ScalaBeanInfo does not exist for the Android target */
