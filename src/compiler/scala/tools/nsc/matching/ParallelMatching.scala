@@ -396,8 +396,9 @@ trait ParallelMatching  {
             }
           }
           val ures = newVarCapture(ua.pos, app.tpe)
-          val n    = args.length
-          val uacall = typedValDef(ures, Apply(fn, mkIdent(scrutinee) :: appargs.tail))
+          val arg0 = mkIdent(scrutinee)
+          val rhs = Apply(fn, arg0 :: appargs.tail) setType ures.tpe
+          val uacall = typedValDef(ures, rhs)
 
           val nrowsOther = column.tail.zip(rest.row.tail) flatMap {
             case (pat, Row(ps, subst, g, bx)) =>
@@ -405,8 +406,11 @@ trait ParallelMatching  {
                 case sameUnapplyCall(_) => Nil
                 case _                  => List(Row(pat::ps, subst, g, bx))
               }}
-          val nrepFail = if (nrowsOther.isEmpty) None else Some(rep.make(scrutinee::rest.temp, nrowsOther))
-          n match {
+          val nrepFail = if (nrowsOther.isEmpty)
+                           None
+                         else
+                           Some(rep.make(scrutinee::rest.temp, nrowsOther))
+          args.length match {
             case 0  => // special case for unapply(), app.tpe is boolean
               val ntemps = scrutinee :: rest.temp
               val nrows  = column.zip(rest.row) map {
