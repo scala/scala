@@ -943,4 +943,11 @@ object StringBuilder {
     }
     -1
   }
+
+  implicit def toCharSequence(sb: StringBuilder): java.lang.CharSequence = new java.lang.CharSequence {
+    def length: Int = sb.length
+    def charAt(index: Int): Char = sb.charAt(index)
+    def subSequence(start: Int, end: Int): java.lang.CharSequence = sb.substring(start, end)
+    override def toString: String = sb.toString
+  }
 }

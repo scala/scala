@@ -1150,7 +1150,7 @@ trait Infer {
           val ptvars = ptparams map freshVar
           val pt1 = pt.instantiateTypeParams(ptparams, ptvars)
           if (!isPopulated(tp, pt1)) {
-            error(pos, "pattern type is incompatibe with expected type"+foundReqMsg(pattp, pt))
+            error(pos, "pattern type is incompatible with expected type"+foundReqMsg(pattp, pt))
             return pattp
           }
           ptvars foreach instantiateTypeVar
@@ -1169,7 +1169,7 @@ trait Infer {
         if (pat.tpe <:< pt1)
           ptvars foreach instantiateTypeVar
         else
-          error(pat.pos, "pattern type is incompatibe with expected type"+foundReqMsg(pat.tpe, pt))
+          error(pat.pos, "pattern type is incompatible with expected type"+foundReqMsg(pat.tpe, pt))
       }
 
     object toOrigin extends TypeMap {

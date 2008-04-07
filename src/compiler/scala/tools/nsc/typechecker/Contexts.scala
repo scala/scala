@@ -110,7 +110,8 @@ trait Contexts { self: Analyzer =>
     var checking = false
     var retyping = false
 
-    var savedTypeBounds: List[(Symbol, Type)] = List()
+    var savedTypeBounds: List[(Symbol, Type)] = List() // saved type bounds
+       // for type parameters which are narrowed in a GADT
 
     def intern0 : Context = {
       if (this eq NoContext) return this

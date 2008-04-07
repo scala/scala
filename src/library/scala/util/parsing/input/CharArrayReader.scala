@@ -32,7 +32,7 @@ object CharArrayReader {
  * @author Martin Odersky, Adriaan Moors
  */
 class CharArrayReader(chars: Array[Char], index: Int)
-extends CharSequenceReader(CharSequence.fromArray(chars), index) {
+extends CharSequenceReader(chars, index) {
 
   def this(chars: Array[Char]) = this(chars, 0)
 

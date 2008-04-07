@@ -1,4 +1,4 @@
-bug414.scala:5: error: pattern type is incompatibe with expected type;
+bug414.scala:5: error: pattern type is incompatible with expected type;
  found   : object Empty
  required: IntMap[a]
                 case Empty =>

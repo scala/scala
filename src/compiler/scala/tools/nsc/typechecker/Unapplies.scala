@@ -135,7 +135,7 @@ trait Unapplies { self: Analyzer =>
    */
   def caseModuleDef(cdef: ClassDef): ModuleDef = atPos(cdef.pos) {
     var parents = List(gen.scalaScalaObjectConstr)
-    if (cdef.tparams.isEmpty && constrParams(cdef).length == 1)
+    if (!(cdef.mods hasFlag ABSTRACT) && cdef.tparams.isEmpty && constrParams(cdef).length == 1)
       parents = gen.scalaFunctionConstr(constrParams(cdef).head map (_.tpt),
                                         Ident(cdef.name)) :: parents
     ModuleDef(

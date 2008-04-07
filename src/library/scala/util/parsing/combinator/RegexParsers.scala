@@ -13,6 +13,7 @@ package scala.util.parsing.combinator
 import java.util.regex.Pattern
 import scala.util.matching.Regex
 import scala.util.parsing.input._
+import scala.collection.immutable.PagedSeq
 
 trait RegexParsers extends Parsers {
 
@@ -22,9 +23,9 @@ trait RegexParsers extends Parsers {
 
   def skipWhitespace = whiteSpace.toString.length > 0
 
-  protected def handleWhiteSpace(source: CharSequence, offset: Int): Int =
+  protected def handleWhiteSpace(source: java.lang.CharSequence, offset: Int): Int =
     if (skipWhitespace)
-      (whiteSpace findPrefixMatchOf (source subSequence offset)) match {
+      (whiteSpace findPrefixMatchOf (source.subSequence(offset, source.length))) match {
         case Some(matched) => offset + matched.end
         case None => offset
       }
@@ -39,7 +40,7 @@ trait RegexParsers extends Parsers {
       val start = handleWhiteSpace(source, offset)
       var i = 0
       var j = start
-      while (i < s.length && source.isDefinedAt(j) && s.charAt(i) == source.charAt(j)) {
+      while (i < s.length && j < source.length && s.charAt(i) == source.charAt(j)) {
         i += 1
         j += 1
       }
@@ -56,7 +57,7 @@ trait RegexParsers extends Parsers {
       val source = in.source
       val offset = in.offset
       val start = handleWhiteSpace(source, offset)
-      (r findPrefixMatchOf (source subSequence start)) match {
+      (r findPrefixMatchOf (source.subSequence(start, source.length))) match {
         case Some(matched) =>
           Success(source.subSequence(start, start + matched.end).toString,
                   in.drop(start + matched.end - offset))
@@ -66,19 +67,27 @@ trait RegexParsers extends Parsers {
     }
   }
 
-  /** Parse some prefix of character sequence `in' with parser `p' */
-  def parse[T](p: Parser[T], in: CharSequence): ParseResult[T] =
-    p(new CharSequenceReader(in))
-
   /** Parse some prefix of reader `in' with parser `p' */
   def parse[T](p: Parser[T], in: Reader[Char]): ParseResult[T] =
     p(in)
 
-  /** Parse all of character sequence `in' with parser `p' */
-  def parseAll[T](p: Parser[T], in: CharSequence): ParseResult[T] =
-    parse(phrase(p), in)
+  /** Parse some prefix of character sequence `in' with parser `p' */
+  def parse[T](p: Parser[T], in: java.lang.CharSequence): ParseResult[T] =
+    p(new CharSequenceReader(in))
+
+  /** Parse some prefix of reader `in' with parser `p' */
+  def parse[T](p: Parser[T], in: java.io.Reader): ParseResult[T] =
+    p(new PagedSeqReader(PagedSeq.fromReader(in)))
 
   /** Parse all of reader `in' with parser `p' */
   def parseAll[T](p: Parser[T], in: Reader[Char]): ParseResult[T] =
+    parse(phrase(p), in)
+
+  /** Parse all of reader `in' with parser `p' */
+  def parseAll[T](p: Parser[T], in: java.io.Reader): ParseResult[T] =
+    parse(phrase(p), in)
+
+  /** Parse all of character sequence `in' with parser `p' */
+  def parseAll[T](p: Parser[T], in: java.lang.CharSequence): ParseResult[T] =
     parse(phrase(p), in)
 }

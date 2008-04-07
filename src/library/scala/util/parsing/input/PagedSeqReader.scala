@@ -6,15 +6,17 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: PagedSeqReader.scala 14416 2008-03-19 01:17:25Z mihaylov $
 
 package scala.util.parsing.input
+
+import scala.collection.immutable.PagedSeq
 
 /** An object encapsulating basic character constants
  *
  * @author Martin Odersky, Adriaan Moors
  */
-object CharSequenceReader {
+object PagedSeqReader {
   final val EofCh = '\032'
 }
 
@@ -26,28 +28,30 @@ object CharSequenceReader {
  *
  * @author Martin Odersky
  */
-class CharSequenceReader(override val source: java.lang.CharSequence,
-                         override val offset: Int) extends Reader[Char] {
-  import CharSequenceReader._
+class PagedSeqReader(seq: PagedSeq[Char],
+                     override val offset: Int) extends Reader[Char] {
+  import PagedSeqReader._
 
-  /** Construct a <code>CharSequenceReader</code> with its first element at
+  override lazy val source: java.lang.CharSequence = seq
+
+  /** Construct a <code>PagedSeqReader</code> with its first element at
    *  <code>source(0)</code> and position <code>(1,1)</code>.
    */
-  def this(source: java.lang.CharSequence) = this(source, 0)
+  def this(seq: PagedSeq[Char]) = this(seq, 0)
 
   /** Returns the first element of the reader, or EofCh if reader is at its end
    */
   def first =
-    if (offset < source.length) source.charAt(offset) else EofCh
+    if (seq.isDefinedAt(offset)) seq(offset) else EofCh
 
-  /** Returns a CharSequenceReader consisting of all elements except the first
+  /** Returns a PagedSeqReader consisting of all elements except the first
    *
    * @return If <code>atEnd</code> is <code>true</code>, the result will be
-   *         <code>this'; otherwise, it's a <code>CharSequenceReader</code> containing
+   *         <code>this'; otherwise, it's a <code>PagedSeqReader</code> containing
    *         the rest of input.
    */
-  def rest: CharSequenceReader =
-    if (offset < source.length) new CharSequenceReader(source, offset + 1)
+  def rest: PagedSeqReader =
+    if (seq.isDefinedAt(offset)) new PagedSeqReader(seq, offset + 1)
     else this
 
   /** The position of the first element in the reader
@@ -57,11 +61,11 @@ class CharSequenceReader(override val source: java.lang.CharSequence,
   /** true iff there are no more elements in this reader (except for trailing
    *  EofCh's)
    */
-  def atEnd = offset >= source.length
+  def atEnd = !seq.isDefinedAt(offset)
 
   /** Returns an abstract reader consisting of all elements except the first
    *  <code>n</code> elements.
    */
-  override def drop(n: Int): CharSequenceReader =
-    new CharSequenceReader(source, offset + n)
+  override def drop(n: Int): PagedSeqReader =
+    new PagedSeqReader(seq, offset + n)
 }

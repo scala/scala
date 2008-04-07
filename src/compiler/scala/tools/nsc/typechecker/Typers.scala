@@ -1449,10 +1449,22 @@ trait Typers { self: Analyzer =>
         errorTree(fun, "wrong number of parameters; expected = " + argpts.length)
       else {
         val vparamSyms = List.map2(fun.vparams, argpts) { (vparam, argpt) =>
-          if (vparam.tpt.isEmpty)
+          if (vparam.tpt.isEmpty) {
             vparam.tpt.tpe =
               if (isFullyDefined(argpt)) argpt
               else {
+                fun match {
+                  case etaExpansion(vparams, fn, args) if !codeExpected =>
+                    println("typing eta "+fn)
+                    silent(_.typed(fn, funMode(mode), pt)) match {
+                      case fn1: Tree =>
+                        val ftpe = normalize(fn1.tpe) baseType FunctionClass(fun.vparams.length)
+                        if (isFunctionType(ftpe) && isFullyDefined(ftpe))
+                          return typedFunction(fun, mode, ftpe)
+                      case _ =>
+                    }
+                  case _ =>
+                }
                 error(
                   vparam.pos,
                   "missing parameter type"+
@@ -1460,6 +1472,7 @@ trait Typers { self: Analyzer =>
                    else ""))
                 ErrorType
               }
+          }
           enterSym(context, vparam)
           if (context.retyping) context.scope enter vparam.symbol
           vparam.symbol
@@ -1593,6 +1606,31 @@ trait Typers { self: Analyzer =>
       }
     }
 
+    /** Does function need to be instantiated, because a missing parameter
+     *  in an argument closure overlaps with an uninstantiated formal?
+     */
+    def needsInstantiation(tparams: List[Symbol], formals: List[Type], args: List[Tree]) = {
+      def isLowerBounded(tparam: Symbol) = {
+        val losym = tparam.info.bounds.lo.typeSymbol
+        losym != AllClass && losym != AllRefClass
+      }
+      List.exists2(formals, args) {
+        case (formal, Function(vparams, _)) =>
+          (vparams exists (_.tpt.isEmpty)) &&
+          vparams.length <= MaxFunctionArity &&
+          (formal baseType FunctionClass(vparams.length) match {
+            case TypeRef(_, _, formalargs) =>
+              List.exists2(formalargs, vparams) ((formalarg, vparam) =>
+                vparam.tpt.isEmpty && (tparams exists (formalarg contains))) &&
+              (tparams forall isLowerBounded)
+            case _ =>
+              false
+          })
+        case _ =>
+          false
+      }
+    }
+
     /**
      *  @param tree ...
      *  @param fun0 ...
@@ -1604,12 +1642,19 @@ trait Typers { self: Analyzer =>
     def doTypedApply(tree: Tree, fun0: Tree, args: List[Tree], mode: Int, pt: Type): Tree = {
       var fun = fun0
       if (fun.hasSymbol && (fun.symbol hasFlag OVERLOADED)) {
-        // preadapt symbol to number of arguments given
-        val argtypes = args map (arg => AllClass.tpe)
+        // preadapt symbol to number and shape of arguments given
+        def shapeType(arg: Tree): Type = arg match {
+          case Function(vparams, body) =>
+            functionType(vparams map (vparam => AnyClass.tpe), shapeType(body))
+          case _ =>
+            AllClass.tpe
+        }
+        val argtypes = args map shapeType
         val pre = fun.symbol.tpe.prefix
         var sym = fun.symbol filter { alt =>
           isApplicableSafe(context.undetparams, followApply(pre.memberType(alt)), argtypes, pt)
         }
+        //println("narrowed to "+sym+":"+sym.info+"/"+argtypes)
         if (sym hasFlag OVERLOADED) {
           // eliminate functions that would result from tupling transforms
           val sym1 = sym filter (alt => hasExactlyNumParams(followApply(alt.tpe), argtypes.length))
@@ -1673,6 +1718,10 @@ trait Typers { self: Analyzer =>
                 atPos(tree.pos) { gen.mkNil setType restpe }
               } else
                 constfold(copy.Apply(tree, fun, args2).setType(ifPatternSkipFormals(restpe)))
+            } else if (needsInstantiation(tparams, formals, args1)) {
+              //println("needs inst "+fun+" "+tparams+"/"+(tparams map (_.info)))
+              inferExprInstance(fun, tparams, WildcardType)
+              doTypedApply(tree, fun, args1, mode, pt)
             } else {
               assert((mode & PATTERNmode) == 0); // this case cannot arise for patterns
               val lenientTargs = protoTypeArgs(tparams, formals, mt.resultApprox, pt)
@@ -3527,9 +3576,14 @@ trait Typers { self: Analyzer =>
           List()
       }
 
-      def implicitManifest(pt: Type): Tree = pt match {
-        case TypeRef(_, ManifestClass, List(arg)) => manifestOfType(pos, arg)
-        case _ => EmptyTree
+      def implicitManifest(pt: Type): Tree = {
+        // test below is designed so that ManifestClass need not be loaded
+        // (because it's not available everywhere)
+        if (pt.typeSymbol.fullNameString == "scala.reflect.Manifest")
+          pt match {
+            case TypeRef(_, ManifestClass, List(arg)) => manifestOfType(pos, arg)
+          }
+        else EmptyTree
       }
 
       var tree = searchImplicit(context.implicitss, true)

@@ -14,7 +14,7 @@ package scala.runtime
 import Predef._
 import scala.util.matching.Regex
 
-final class RichString(val self: String) extends Proxy with CharSequence with RandomAccessSeq[Char] with Ordered[String] {
+final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char] with Ordered[String] {
   import RichString._
   override def apply(n: Int) = self charAt n
   override def length = self.length
@@ -73,11 +73,6 @@ final class RichString(val self: String) extends Proxy with CharSequence with Ra
     }
     new RichString(buf.toString)
   }
-
-  def charAt(index: Int) = self.charAt(index)
-
-  def subSequence(start: Int, end: Int): CharSequence =
-    new RichString(self.substring(start, end))
 
   /** return n times the current string
    */
@@ -220,7 +215,7 @@ final class RichString(val self: String) extends Proxy with CharSequence with Ra
   def toFloat: Float     = java.lang.Float.parseFloat(self)
   def toDouble: Double   = java.lang.Double.parseDouble(self)
 
-  override def toArray: Array[Char] = {
+  def toArray: Array[Char] = {
     val result = new Array[Char](length)
     self.getChars(0, length, result, 0)
     result

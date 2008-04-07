@@ -18,15 +18,14 @@ package scala.util.parsing.input
  */
 abstract class Reader[+T] {
 
-  private[parsing] def source: CharSequence = this match {
-    case csr: CharSequenceReader => csr.source
-    case _ => throw new IllegalArgumentException("This kind of parser operates only on a CharSequenceReader")
-  }
+  /** If this is a reader over character sequences, the underlying char sequence
+   *  If not, throws a <code>NoSuchMethodError</code> exception.
+   */
+  def source: java.lang.CharSequence =
+    throw new NoSuchMethodError("not a char sequence reader")
 
-  private[parsing] def offset: Int = this match {
-    case csr: CharSequenceReader => csr.offset
-    case _ => throw new IllegalArgumentException("This kind of parser operates only on a CharSequenceReader")
-  }
+  def offset: Int =
+    throw new NoSuchMethodError("not a char sequence reader")
 
    /** Returns the first element of the reader
     */

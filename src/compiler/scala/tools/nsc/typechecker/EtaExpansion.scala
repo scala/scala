@@ -19,6 +19,19 @@ trait EtaExpansion { self: Analyzer =>
   import global._
   import posAssigner.atPos
 
+  object etaExpansion {
+    def unapply(tree: Tree): Option[(List[ValDef], Tree, List[Tree])] = tree match {
+      case Function(vparams, Apply(fn, args))
+      if (List.forall2(vparams, args) {
+        case (vparam, Ident(name)) => vparam.name == name
+        case _ => false
+      }) =>
+        Some((vparams, fn, args))
+      case _ =>
+        None
+    }
+  }
+
   /** <p>
    *    Expand partial function applications of type <code>type</code>.
    *  </p><pre>

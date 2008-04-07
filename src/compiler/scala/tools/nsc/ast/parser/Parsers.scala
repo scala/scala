@@ -2200,9 +2200,7 @@ trait Parsers extends NewScanners with MarkupParsers {
               template, template.parents, makeSelfDef(nme.WILDCARD, thistpe), template.body)
           } else syntaxError("`requires' cannot be combined with explicit self type", false)
         }
-        val mods1 = if (mods.hasFlag(Flags.TRAIT) &&
-                        (template.body forall treeInfo.isInterfaceMember))
-                      mods | Flags.INTERFACE
+        val mods1 = if (isInterface(mods, template.body)) mods | Flags.INTERFACE
                     else mods
         val result = ClassDef(mods1, name, tparams, template)
         implicitClassViews = savedViews
@@ -2271,6 +2269,9 @@ trait Parsers extends NewScanners with MarkupParsers {
       }
     }
 
+    def isInterface(mods: Modifiers, body: List[Tree]) =
+      (mods.hasFlag(Flags.TRAIT) && (body forall treeInfo.isInterfaceMember))
+
     /** ClassTemplateOpt ::= extends ClassTemplate | [[extends] TemplateBody]
      *  TraitTemplateOpt ::= extends TraitTemplate | [[extends] TemplateBody]
      */
@@ -2286,7 +2287,10 @@ trait Parsers extends NewScanners with MarkupParsers {
           (List(), List(List()), self, body)
         }
       var parents = parents0
-      if (name != nme.ScalaObject.toTypeName) parents = parents ::: List(scalaScalaObjectConstr)
+      if (name != nme.ScalaObject.toTypeName && !isInterface(mods, body))
+        parents = parents ::: List(scalaScalaObjectConstr)
+      if (parents.isEmpty)
+        parents = List(scalaAnyRefConstr)
       if (mods.hasFlag(Flags.CASE)) parents = parents ::: List(productConstr)
       val tree = Template(parents, self, constrMods, vparamss, argss, body)
       // @S: if nothing parsed, don't use next position!

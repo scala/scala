@@ -344,6 +344,12 @@ object Predef {
   implicit def forceRandomAccessCharSeq(x: runtime.RichString): String = x.mkString
   implicit def lazyStreamToConsable[A](xs: => Stream[A]) = new runtime.StreamCons(xs)
 
-  def currentThread = java.lang.Thread.currentThread()
+  implicit def seqToCharSequence(xs: RandomAccessSeq[Char]): CharSequence = new CharSequence {
+    def length: Int = xs.length
+    def charAt(index: Int): Char = xs(index)
+    def subSequence(start: Int, end: Int): CharSequence = seqToCharSequence(xs.slice(start, end))
+    override def toString: String = xs.mkString("")
+  }
 
+  def currentThread = java.lang.Thread.currentThread()
 }

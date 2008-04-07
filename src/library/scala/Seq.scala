@@ -313,8 +313,8 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     result.toList
   }
 
-   /** A sub-sequence of <code>len</code> elements
-    *  starting at index <code>from</code> (non-strict)
+   /** A sub-sequence starting at index <code>from</code>
+    *  and ending (non-inclusive) at index <code>until</code> (non-strict)
     *
     *  @param from   The index of the first element of the slice
     *  @param until    The index of the element following the slice
@@ -322,6 +322,14 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     *          or <code>length &lt; from + len<code>
     */
   def slice(from: Int, until: Int): Seq[A] = drop(from).take(until - from)
+
+   /** A sub-sequence starting at index <code>from</code>
+    *  and extending up to the length of the current sequence (non-strict)
+    *
+    *  @param from   The index of the first element of the slice
+    *  @throws IndexOutOfBoundsException if <code>from &lt; 0</code>
+    */
+  def slice(from: Int): Seq[A] = slice(from, length)
 
   /** Returns the longest prefix of this sequence whose elements satisfy
    *  the predicate <code>p</code>.
