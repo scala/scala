@@ -19,16 +19,16 @@ package scala
  */
 trait Product extends AnyRef {
 
-  /** for a case class <code>A(x_1,...,x_k))</code>, returns <code>x_(i+1)</code>
-   *  for <code>0 &lt;= i &lt; k</code>
+  /** for a product <code>A(x_1,...,x_k)</code>, returns <code>x_(n+1)</code>
+   *  for <code>0 &lt;= n &lt; k</code>
    *
-   *  @param  n the position of the n-th element
+   *  @param  n the index of the element to return
    *  @throws IndexOutOfBoundsException
-   *  @return  ...
+   *  @return  The element <code>n</code> elements after the first element
    */
   def productElement(n: Int): Any
 
-  /** return k for a product <code>A(x_1,...,x_k))</code>
+  /** return k for a product <code>A(x_1,...,x_k)</code>
    */
   def productArity: Int
 
