@@ -886,10 +886,8 @@ trait Symbols {
           !this.owner.isPackageClass ||
           (this.sourceFile eq null) ||
           (that.sourceFile eq null) ||
-          (this.sourceFile eq that.sourceFile)
-        if (!res) {
-          println("strange linked: "+this+" "+this.locationString+";"+this.sourceFile+"/"+that+that.locationString+";"+that.sourceFile+";"+that.moduleClass.sourceFile)
-        }
+          (this.sourceFile eq that.sourceFile) ||
+          (this.sourceFile == that.sourceFile)
         res
       }
 
