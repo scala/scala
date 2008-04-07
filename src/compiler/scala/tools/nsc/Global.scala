@@ -188,6 +188,16 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       new classPath0.Build(settings.classpath.value, settings.sourcepath.value,
                            settings.outdir.value, settings.bootclasspath.value,
                            settings.extdirs.value, settings.Xcodebase.value)
+  /* .NET's equivalent of a classpath */
+  lazy val assemrefs = {
+    import java.util.{StringTokenizer}
+    val set = new HashSet[File]
+    val assems = new StringTokenizer(settings.assemrefs.value, File.pathSeparator)
+    while (assems.hasMoreTokens())
+      set += new java.io.File(assems.nextToken())
+    set
+  }
+
 
   if (settings.verbose.value) {
     inform("[Classpath = " + classPath + "]")
@@ -597,11 +607,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         val unit = new CompilationUnit(getSourceFile(file))
         addUnit(unit)
         var localPhase = firstPhase.asInstanceOf[GlobalPhase]
-        while ((localPhase.id < globalPhase.id || localPhase.id <= namerPhase.id) && !reporter.hasErrors) {
+        while (localPhase != null && (localPhase.id < globalPhase.id || localPhase.id <= namerPhase.id) && !reporter.hasErrors) {
           val oldSource = reporter.getSource
           reporter.setSource(unit.source)
           atPhase(localPhase)(localPhase.applyPhase(unit))
-          localPhase = localPhase.next.asInstanceOf[GlobalPhase]
+          val newLocalPhase = localPhase.next.asInstanceOf[GlobalPhase]
+          localPhase = if (localPhase == newLocalPhase) null else newLocalPhase
           reporter.setSource(oldSource)
         }
         refreshProgress
