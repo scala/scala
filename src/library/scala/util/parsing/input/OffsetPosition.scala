@@ -18,7 +18,7 @@ import collection.mutable.ArrayBuffer
  *
  * @author Martin Odersky
  */
-case class OffsetPosition(source: CharSequence, offset: Int) extends Position {
+case class OffsetPosition(source: java.lang.CharSequence, offset: Int) extends Position {
 
   /** An index that contains all line starts, including first line, and eof */
   private lazy val index: Array[Int] = {

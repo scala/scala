@@ -50,12 +50,12 @@ class Regex(regex: String, groupNames: String*) {
 
   /** Return all matches of this regexp in given character sequence as an iterator
    */
-  def findAllIn(source: CharSequence) = new Regex.MatchIterator(source, this, groupNames)
+  def findAllIn(source: java.lang.CharSequence) = new Regex.MatchIterator(source, this, groupNames)
 
   /** Return optionally first matching string of this regexp in given character sequence,
    *  None if it does not exist.
    */
-  def findFirstIn(source: CharSequence): Option[String] = {
+  def findFirstIn(source: java.lang.CharSequence): Option[String] = {
     val m = pattern.matcher(source)
     if (m.find) Some(m.group) else None
   }
@@ -63,7 +63,7 @@ class Regex(regex: String, groupNames: String*) {
   /** Return optionally first match of this regexp in given character sequence,
    *  None if it does not exist.
    */
-  def findFirstMatchIn(source: CharSequence): Option[Match] = {
+  def findFirstMatchIn(source: java.lang.CharSequence): Option[Match] = {
     val m = pattern.matcher(source)
     if (m.find) Some(new Match(source, m, groupNames)) else None
   }
@@ -72,7 +72,7 @@ class Regex(regex: String, groupNames: String*) {
    *  given character sequence, or None if regexp matches no prefix
    *  of the character sequence.
    */
-  def findPrefixOf(source: CharSequence): Option[String] = {
+  def findPrefixOf(source: java.lang.CharSequence): Option[String] = {
     val m = pattern.matcher(source)
     if (m.lookingAt) Some(m.group) else None
   }
@@ -81,7 +81,7 @@ class Regex(regex: String, groupNames: String*) {
    *  given character sequence, or None if regexp matches no prefix
    *  of the character sequence.
    */
-  def findPrefixMatchOf(source: CharSequence): Option[Match] = {
+  def findPrefixMatchOf(source: java.lang.CharSequence): Option[Match] = {
     val m = pattern.matcher(source)
     if (m.lookingAt) Some(new Match(source, m, groupNames)) else None
   }
@@ -92,7 +92,7 @@ class Regex(regex: String, groupNames: String*) {
    *  @param replacement The string that will replace each match
    *  @return            The resulting string
    */
-  def replaceAllIn(target: CharSequence, replacement: String): String = {
+  def replaceAllIn(target: java.lang.CharSequence, replacement: String): String = {
     val m = pattern.matcher(target)
     m.replaceAll(replacement)
   }
@@ -103,7 +103,7 @@ class Regex(regex: String, groupNames: String*) {
    *  @param replacement The string that will replace the match
    *  @return            The resulting string
    */
-  def replaceFirstIn(target: CharSequence, replacement: String): String = {
+  def replaceFirstIn(target: java.lang.CharSequence, replacement: String): String = {
     val m = pattern.matcher(target)
     m.replaceFirst(replacement)
   }
@@ -127,7 +127,7 @@ object Regex {
   trait MatchData {
 
     /** The source from where the match originated */
-    val source: CharSequence
+    val source: java.lang.CharSequence
 
     /** The names of the groups, or some empty sequence if one defined */
     val groupNames: Seq[String]
@@ -157,16 +157,16 @@ object Regex {
     def subgroups: List[String] = (1 to groupCount).toList map group
 
     /** The char sequence before first character of match */
-    def before: CharSequence = source.subSequence(0, start)
+    def before: java.lang.CharSequence = source.subSequence(0, start)
 
     /** The char sequence before first character of match in group <code>i</code> */
-    def before(i: Int): CharSequence = source.subSequence(0, start(i))
+    def before(i: Int): java.lang.CharSequence = source.subSequence(0, start(i))
 
     /** Returns char sequence after last character of match */
-    def after: CharSequence = source.subSequence(end)
+    def after: java.lang.CharSequence = source.subSequence(end, source.length)
 
     /** The char sequence after last character of match in group <code>i</code> */
-    def after(i: Int): CharSequence = source.subSequence(end(i))
+    def after(i: Int): java.lang.CharSequence = source.subSequence(end(i), source.length)
 
     private lazy val nameToIndex: Map[String, Int] = Map() ++ ("" :: groupNames.toList).zipWithIndex
 
@@ -189,7 +189,7 @@ object Regex {
 
   /** A case class for a succesful match.
    */
-  class Match(val source: CharSequence,
+  class Match(val source: java.lang.CharSequence,
               matcher: Matcher,
               val groupNames: Seq[String]) extends MatchData {
 
@@ -226,7 +226,7 @@ object Regex {
 
   /** A class to step through a sequence of regex matches
    */
-  class MatchIterator(val source: CharSequence, val regex: Regex, val groupNames: Seq[String])
+  class MatchIterator(val source: java.lang.CharSequence, val regex: Regex, val groupNames: Seq[String])
   extends Iterator[String] with MatchData { self =>
 
     private val matcher = regex.pattern.matcher(source)
