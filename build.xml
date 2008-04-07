@@ -55,7 +55,6 @@ PROPERTIES
 
   <!-- Sets location of build folders -->
   <property name="build.dir" value="${basedir}/build"/>
-  <property name="build-fusrcs.dir" value="${build.dir}/fusrcs"/>
   <property name="locker.dir" value="${build.dir}/locker"/>
   <property name="quick.dir" value="${build.dir}/quick"/>
   <property name="strap.dir" value="${build.dir}/strap"/>
@@ -64,7 +63,6 @@ PROPERTIES
   <property name="api-comp.dir" value="${build.dir}/api-compiler"/>
   <property name="tooldocs.dir" value="${build.dir}/tooldocs"/>
   <property name="examples.dir" value="${build.dir}/examples"/>
-  <property name="jvm14.dir" value="${build.dir}/jvm14"/>
   <property name="cldc.dir" value="${build.dir}/cldc"/>
   <property name="android.dir" value="${build.dir}/android"/>
   <property name="msil.dir" value="${build.dir}/msil"/>
@@ -116,41 +114,6 @@ ANT INITIALISATION
       </and></not></condition>
     </fail>
   </target>
-
-<!-- ===========================================================================
-FUSION JVM 1.5 LIBRARY SOURCES
-============================================================================ -->
-
-  <target name="fusion" depends="init">
-    <!--
-    <union id="library.files">
-      <files includes="${src.dir}/library/jvm/jvm1.5/scala/**/*.scala"/>
-      <difference>
-        <files includes="${src.dir}/library/jvm/scala/**/*.scala"/>
-        <files includes="${src.dir}/library/jvm/jvm1.5/scala/**/*.scala"/>
-      </difference>
-      <difference>
-        <files includes="${src.dir}/library/scala/**/*.scala"/>
-        <files includes="${src.dir}/library/jvm/scala/**/*.scala"/>
-        <files includes="${src.dir}/library/jvm/jvm1.5/scala/**/*.scala"/>
-      </difference>
-    </union>
-    -->
-    <mkdir dir="${build-fusrcs.dir}/scala"/>
-    <sync toDir="${build-fusrcs.dir}/scala" failonerror="false">
-      <fileset dir="${src.dir}/library/jvm/jvm1.5/scala"/>
-      <difference>
-        <fileset dir="${src.dir}/library/jvm/scala"/>
-        <fileset dir="${src.dir}/library/jvm/jvm1.5/scala"/>
-      </difference>
-      <difference>
-        <fileset dir="${src.dir}/library/scala"/>
-        <fileset dir="${src.dir}/library/jvm/scala"/>
-        <fileset dir="${src.dir}/library/jvm/jvm1.5/scala"/>
-      </difference>
-    </sync>
-  </target>
-
 
 <!-- ===========================================================================
 INITIALISATION
@@ -263,7 +226,7 @@ SETUP
     />
   </target>
 
-  <target name="setup" depends="init,fusion">
+  <target name="setup" depends="init">
   <!-- Creating class-pathes -->
     <if>
       <contains string="${java.version}" substring="1.4"/>
@@ -446,20 +409,20 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
     </then></if>
     <mkdir dir="${locker.dir}/lib/library"/>
     <javac
-      srcdir="${build-fusrcs.dir}/scala"
+      srcdir="${src.dir}/library"
       destdir="${locker.dir}/lib/library"
       source="1.4" target="1.4" deprecation="yes"
       classpath="${locker.dir}/lib/library"
       includes="**/*.java"/>
     <starr
-      srcdir="${build-fusrcs.dir}"
+      srcdir="${src.dir}/library"
       destdir="${locker.dir}/lib/library"
       addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes"
       classpath="${locker.dir}/lib/library"
       includes="scala/Predef.scala"/>
     <starr
-      srcdir="${build-fusrcs.dir}"
+      srcdir="${src.dir}/library"
       destdir="${locker.dir}/lib/library"
       addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes"
@@ -573,13 +536,13 @@ BUILD QUICK-TEST LAYER
   <!-- Build library -->
     <mkdir dir="${quick.dir}/lib/library"/>
     <javac
-      srcdir="${build-fusrcs.dir}/scala"
+      srcdir="${src.dir}/library"
       destdir="${quick.dir}/lib/library"
       source="1.4" target="1.4" deprecation="yes"
       classpath="${quick.dir}/lib/library"
       includes="**/*.java"/>
     <locker
-      srcdir="${build-fusrcs.dir}"
+      srcdir="${src.dir}/library"
       destdir="${quick.dir}/lib/library"
       addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes"
@@ -587,7 +550,7 @@ BUILD QUICK-TEST LAYER
       classpath="${quick.dir}/lib/library"
       includes="scala/Predef.scala"/>
     <locker
-      srcdir="${build-fusrcs.dir}"
+      srcdir="${src.dir}/library"
       destdir="${quick.dir}/lib/library"
       addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes"
@@ -771,20 +734,8 @@ CLDC
   <target name="cldc.sources"
           description="Create the source directory for the J2ME (CLDC) library"
   >
-    <mkdir dir="${cldc.dir}/src/scala"/>
-    <sync toDir="${cldc.dir}/src/scala" failonerror="false">
-      <fileset dir="${src.dir}/library/jvm/cldc/scala"/>
-      <difference>
-        <fileset dir="${src.dir}/library/jvm/scala"/>
-        <fileset dir="${src.dir}/library/jvm/cldc/scala"/>
-      </difference>
-      <difference>
-        <fileset dir="${src.dir}/library/scala"/>
-        <fileset dir="${src.dir}/library/jvm/scala"/>
-        <fileset dir="${src.dir}/library/jvm/cldc/scala"/>
-      </difference>
-    </sync>
-<!--
+    <mkdir dir="${cldc.dir}/src"/>
+
     <copy todir="${cldc.dir}/src">
       <fileset dir="${src.dir}/library" includes="**/*.scala, **/*.java">
         <not>
@@ -808,7 +759,7 @@ CLDC
         <include name="**/*.java"/>
       </fileset>
     </copy>
--->
+
   </target>
 
   <target name="cldc.libraries"
@@ -947,20 +898,8 @@ ANDROID
   <target name="android.sources" depends="android.init"
           description="Create the source directory for Android library"
   >
-    <mkdir dir="${android.dir}/src/scala"/>
-    <sync toDir="${android.dir}/src/scala" failonerror="false">
-      <fileset dir="${src.dir}/library/jvm/cldc/scala"/>
-      <difference>
-        <fileset dir="${src.dir}/library/jvm/scala"/>
-        <fileset dir="${src.dir}/library/jvm/android/scala"/>
-      </difference>
-      <difference>
-        <fileset dir="${src.dir}/library/scala"/>
-        <fileset dir="${src.dir}/library/jvm/scala"/>
-        <fileset dir="${src.dir}/library/jvm/android/scala"/>
-      </difference>
-    </sync>
-<!--
+    <mkdir dir="${android.dir}/src"/>
+
     <copy todir="${android.dir}/src">
       <fileset dir="${src.dir}/library" 
                includes="**/*.scala, **/*.java"
@@ -977,7 +916,6 @@ ANDROID
         <include name="**/*.java"/>
       </fileset>
     </copy>
--->
   </target>
 
   <target name="android.libraries"
@@ -1120,15 +1058,7 @@ MSIL
   </target>
 
   <target name="msil.sources" depends="msil.init">
-    <mkdir dir="${msil.dir}/src/scala"/>
-    <sync toDir="${msil.dir}/src/scala" failonerror="false">
-      <fileset dir="${src.dir}/library/dotnet/scala"/>
-      <difference>
-        <fileset dir="${src.dir}/library/scala"/>
-        <fileset dir="${src.dir}/library/dotnet/scala"/>
-      </difference>
-    </sync>
-<!--
+    <mkdir dir="${msil.dir}/src"/>
     <copy todir="${msil.dir}/src">
       <fileset dir="${src.dir}/library" includes="**/*.scala">
         <not>
@@ -1142,14 +1072,12 @@ MSIL
         <include name="**/*.scala"/>
       </fileset>
     </copy>
--->
   </target>
 
   <target name="msil.libraries" depends="setup.quick, msil.sources">
     <quick srcdir="${msil.dir}/src" target="msil"
            assemname="${msil.dir}/predef" assemrefs="${lib.dir}"
            failonerror="false">
-<!--
       <include name="scala/Predef.scala"/>
       <include name="scala/Either.scala"/>
       <include name="scala/Option.scala"/>
@@ -1177,7 +1105,6 @@ MSIL
       <exclude name="scala/runtime/RichStringBuilder.scala"/>
       <exclude name="scala/collection/mutable/JavaMapAdaptor.scala"/>
       <exclude name="scala/collection/mutable/JavaSetAdaptor.scala"/>
--->
     </quick>
 
     <exec
