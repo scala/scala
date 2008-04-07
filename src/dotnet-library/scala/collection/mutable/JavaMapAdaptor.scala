@@ -1,0 +1,1 @@
+/* JavaMapAdaptor does not exist for the dotnet target */

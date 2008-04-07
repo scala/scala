@@ -1,0 +1,1 @@
+/* LinkedList does not exist for the dotnet target */

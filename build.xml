@@ -1049,17 +1049,10 @@ MSIL
   <target name="msil.sources" depends="msil.init">
     <mkdir dir="${msil.dir}/src"/>
     <copy todir="${msil.dir}/src">
-      <fileset dir="${src.dir}/library" includes="**/*.scala">
-        <not>
-          <present targetdir="${src.dir}/dotnet-library"/>
-        </not>
-        <exclude name="scala/collection/jcl/**/*.scala"/>
-      </fileset>
+      <fileset dir="${src.dir}/dotnet-library" includes="**/*.scala, **/*.cs" /> 
     </copy>
     <copy todir="${msil.dir}/src">
-      <fileset dir="${src.dir}/dotnet-library">
-        <include name="**/*.scala"/>
-      </fileset>
+      <fileset dir="${src.dir}/library" includes="**/*.scala" />
     </copy>
   </target>
 
@@ -1088,12 +1081,16 @@ MSIL
       <include name="scala/volatile.scala"/>
       <include name="scala/remote.scala"/>
       <include name="scala/throws.scala"/>
+      <include name="scala/BigInt.scala"/>
       <include name="scala/CountedIterator.scala"/>
       <include name="scala/collection/**/*.scala"/>
       <include name="scala/runtime/*.scala"/>
-      <exclude name="scala/runtime/RichStringBuilder.scala"/>
-      <exclude name="scala/collection/mutable/JavaMapAdaptor.scala"/>
-      <exclude name="scala/collection/mutable/JavaSetAdaptor.scala"/>
+      <include name="scala/concurrent/*.scala"/> 
+      <include name="scala/ref/*.scala"/> 
+      <include name="scala/reflect/*.scala"/> 
+      <include name="scala/testing/*.scala"/> 
+      <include name="scala/text/*.scala"/> 
+      <include name="scala/util/**/*.scala"/> 
     </quick>
 
     <exec

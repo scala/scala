@@ -1036,9 +1036,17 @@ sealed abstract class List[+A] extends Seq[A] {
    *          <code>a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub></code>.
    *  @throws Predef.UnsupportedOperationException if the list is empty.
    */
-  override def reduceLeft[B >: A](f: (B, B) => B): B = this match {
+  override def reduceLeft[B >: A](f: (B, A) => B): B = this match {
     case Nil => throw new UnsupportedOperationException("Nil.reduceLeft")
-    case x :: xs => ((xs: List[B]) foldLeft (x: B))(f)
+    case x :: Nil => x
+    case x0 :: x1 :: xs =>
+      var acc : B = f(x0, x1)
+      var these : List[A] = xs
+      while (!these.isEmpty) {
+        acc = f(acc, these.head)
+        these = these.tail
+      }
+      acc
   }
 
   /** Combines the elements of this list together using the binary
@@ -1051,7 +1059,7 @@ sealed abstract class List[+A] extends Seq[A] {
    *
    *  @throws Predef.UnsupportedOperationException if the list is empty.
    */
-  override def reduceRight[B >: A](f: (B, B) => B): B = this match {
+  override def reduceRight[B >: A](f: (A, B) => B): B = this match {
     case Nil => throw new UnsupportedOperationException("Nil.reduceRight")
     case x :: Nil => x: B
     case x :: xs => f(x, xs reduceRight f)
