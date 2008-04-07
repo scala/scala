@@ -63,7 +63,7 @@ PROPERTIES
   <property name="api-comp.dir" value="${build.dir}/api-compiler"/>
   <property name="tooldocs.dir" value="${build.dir}/tooldocs"/>
   <property name="examples.dir" value="${build.dir}/examples"/>
-  <property name="cldc.dir" value="${build.dir}/cldc"/>
+<!--  <property name="cldc.dir" value="${build.dir}/cldc"/> -->
   <property name="android.dir" value="${build.dir}/android"/>
   <property name="msil.dir" value="${build.dir}/msil"/>
   <property name="mono.dir" value="${src.dir}/mono"/>
@@ -727,7 +727,7 @@ BUILD QUICK-TEST LAYER
 <!-- ===========================================================================
 CLDC
 ============================================================================ -->
-
+<!--
   <property name="cldcapi.jar" value="${lib.dir}/cldcapi10.jar"/>
   <property name="midpapi.jar" value="${lib.dir}/midpapi10.jar"/>
 
@@ -767,7 +767,6 @@ CLDC
     description="Builds the Scala library for J2ME (CLDC)"
   >
     <mkdir dir="${cldc.dir}/lib/library"/>
-    <!-- javac versions > 1.4 do not support 1.1 target anymore -->
     <javac
       srcdir="${cldc.dir}/src"
       destdir="${cldc.dir}/lib/library"
@@ -855,7 +854,6 @@ CLDC
         <attribute name="Created-By" value="${version.number} (${vendor.name})"/>
       </manifest>
     </jar>
-    <!-- see http://java.sun.com/j2me/docs/uei_specs.pdf -->
     <jar
       destfile="${cldc.dir}/lib/scalaapi10.jar"
       basedir="${cldc.dir}/lib/preverified"
@@ -871,8 +869,8 @@ CLDC
   </target>
 
   <target name="cldc" depends="cldc.libraries">
-    <!-- exemples ? -->
   </target>
+-->
 
 <!-- ===========================================================================
 ANDROID
@@ -1849,7 +1847,7 @@ GENERATES A DISTRIBUTION
   </target>
 
   <!-- Create the SBaz packages -->
-  <target name="build.sbaz" depends="build.dist,msil,cldc,android">
+  <target name="build.sbaz" depends="build.dist,msil,android">
     <property name="sbaz.universe" value="http://www.scala-lang.org/downloads/packages"/>
     <mkdir dir="${dist.dir}"/>
   <!-- Create the Scala library package -->
@@ -1926,6 +1924,7 @@ GENERATES A DISTRIBUTION
       <libset dir="${quick.dir}/lib" includes="*.dll"/>
     </quicksbaz>
   <!-- Creates the CLDC package -->
+<!--
     <quicksbaz
       file="${dist.dir}/scala-cldc-${version.number}.sbp"
       adfile="${dist.dir}/scala-cldc-${version.number}.advert"
@@ -1935,6 +1934,7 @@ GENERATES A DISTRIBUTION
       link="${sbaz.universe}/scala-cldc-${version.number}.sbp">
       <libset dir="${cldc.dir}/lib" includes="*.jar"/>
     </quicksbaz>
+-->
   <!-- Creates the Android package -->
     <if><isset property="android.supported"/><then>
       <copy todir="${dist.current.dir}/doc/scala-android/examples">
@@ -2033,9 +2033,11 @@ CLEAN
     <remove dir="${msil.dir}"/>
   </target>
 
+<!--
   <target name="clean.cldc" depends="ant-init" description="Removes all CLDC build products">
     <remove dir="${cldc.dir}"/>
   </target>
+-->
 
   <target name="clean.all" depends="ant-init"
     description="Removes all build products and distributions">
