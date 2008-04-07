@@ -217,6 +217,17 @@ class Worker(val fileManager: FileManager) extends Actor {
     }
   }
 
+  def existsCheckFile(dir: File, fileBase: String, kind: String) = {
+    val checkFile = {
+      val chkFile = new File(dir, fileBase + ".check")
+      if (chkFile.isFile)
+        chkFile
+      else
+        new File(dir, fileBase + "-" + kind + ".check")
+    }
+    checkFile.exists && checkFile.canRead
+  }
+
   def compareOutput(dir: File, fileBase: String, kind: String, logFile: File): String = {
     // if check file exists, compare with log file
     val checkFile = {
@@ -228,6 +239,16 @@ class Worker(val fileManager: FileManager) extends Actor {
     }
     if (!checkFile.exists || !checkFile.canRead) ""
     else fileManager.compareFiles(logFile, checkFile)
+  }
+
+  def file2String(logFile: File) = {
+    val logReader = new BufferedReader(new FileReader(logFile))
+    val strWriter = new StringWriter
+    val logWriter = new PrintWriter(strWriter, true)
+    val logAppender = new StreamAppender(logReader, logWriter)
+    logAppender.run()
+    logReader.close()
+    strWriter.toString
   }
 
   /** Runs a list of tests.
@@ -333,7 +354,12 @@ class Worker(val fileManager: FileManager) extends Actor {
             } else { // compare log file to check file
               val fileBase = basename(file.getName)
               val dir      = file.getParentFile
-              diff = compareOutput(dir, fileBase, kind, logFile)
+              if (!existsCheckFile(dir, fileBase, kind)) {
+                // diff is contents of logFile
+                diff = file2String(logFile)
+              } else
+                diff = compareOutput(dir, fileBase, kind, logFile)
+
               if (!diff.equals("")) {
                 NestUI.verbose("output differs from log file\n")
                 succeeded = false
