@@ -54,7 +54,7 @@ trait SyntheticMethods { self: Analyzer =>
     def hasOverridingImplementation(meth: Symbol): Boolean = if (inIDE) true else {
       val sym = clazz.info.nonPrivateMember(meth.name)
       sym.alternatives exists { sym =>
-        sym != meth && !(sym hasFlag DEFERRED) && !(sym hasFlag SYNTHETIC) &&
+        sym != meth && !(sym hasFlag DEFERRED) && !(sym hasFlag (SYNTHETIC | SYNTHETICMETH)) &&
         (clazz.thisType.memberType(sym) matches clazz.thisType.memberType(meth))
       }
     }
@@ -63,10 +63,9 @@ trait SyntheticMethods { self: Analyzer =>
       newSyntheticMethod(name, flags | OVERRIDE, tpe)
 
     def newSyntheticMethod(name: Name, flags: Int, tpe: Type) = {
-      var method = clazz.newMethod(clazz.pos, name) setFlag ({
-        if (inIDE) flags | SYNTHETIC
-        else flags
-      }) setInfo tpe
+      var method = clazz.newMethod(clazz.pos, name)
+        .setFlag(flags | (if (inIDE) SYNTHETIC else SYNTHETICMETH))
+        .setInfo(tpe)
       method = clazz.info.decls.enter(method).asInstanceOf[TermSymbol]
       method
     }
@@ -78,18 +77,18 @@ trait SyntheticMethods { self: Analyzer =>
     }
     */
     def productPrefixMethod: Tree = {
-      val method = syntheticMethod(nme.productPrefix, FINAL, PolyType(List(), StringClass.tpe))
+      val method = syntheticMethod(nme.productPrefix, 0, PolyType(List(), StringClass.tpe))
       typer.typed(DefDef(method, vparamss => Literal(Constant(clazz.name.decode))))
     }
 
     def productArityMethod(nargs:Int ): Tree = {
-      val method = syntheticMethod(nme.productArity, FINAL, PolyType(List(), IntClass.tpe))
+      val method = syntheticMethod(nme.productArity, 0, PolyType(List(), IntClass.tpe))
       typer.typed(DefDef(method, vparamss => Literal(Constant(nargs))))
     }
 
     def productElementMethod(accs: List[Symbol]): Tree = {
       //val retTpe = lub(accs map (_.tpe.resultType))
-      val method = syntheticMethod(nme.productElement, FINAL, MethodType(List(IntClass.tpe), AnyClass.tpe/*retTpe*/))
+      val method = syntheticMethod(nme.productElement, 0, MethodType(List(IntClass.tpe), AnyClass.tpe/*retTpe*/))
       typer.typed(DefDef(method, vparamss => Match(Ident(vparamss.head.head), {
 	(for ((sym,i) <- accs.zipWithIndex) yield {
 	  CaseDef(Literal(Constant(i)),EmptyTree, Ident(sym))
@@ -106,7 +105,7 @@ trait SyntheticMethods { self: Analyzer =>
     }
 
     def tagMethod: Tree = {
-      val method = syntheticMethod(nme.tag, FINAL, MethodType(List(), IntClass.tpe))
+      val method = syntheticMethod(nme.tag, 0, MethodType(List(), IntClass.tpe))
       typer.typed(DefDef(method, vparamss => Literal(Constant(clazz.tag))))
     }
 

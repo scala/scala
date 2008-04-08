@@ -11,6 +11,8 @@ import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{Position, NoPosition, BatchSourceFile}
 import Flags._
 
+//todo: get rid of MONOMORPHIC flag
+
 trait Symbols {
   self: SymbolTable =>
   import definitions._

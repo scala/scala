@@ -58,7 +58,8 @@ object Flags extends Enumeration {
   final val PARAMACCESSOR = 0x20000000    // for value definitions: is an access method
                                           // for a final val parameter
                                           // for parameters: is a val parameter
-  final val MODULEVAR     = 0x40000000    // for term symbols: is the variable caching a module value
+  final val MODULEVAR     = 0x40000000    // for variables: is the variable caching a module value
+  final val SYNTHETICMETH = 0x40000000    // for methods: synthetic method, but without SYNTHETIC flag
   final val MONOMORPHIC   = 0x40000000    // for type symbols: does not have type parameters
   final val LAZY          = 0x80000000L   // symbol is a lazy val. can't have MUTABLE unless transformed by typer
 

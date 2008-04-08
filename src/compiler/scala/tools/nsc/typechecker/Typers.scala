@@ -972,9 +972,11 @@ trait Typers { self: Analyzer =>
             } else {
               error(parent.pos, psym+" needs to be a trait be mixed in")
             }
-          } else if (psym hasFlag FINAL) {
-            error(parent.pos, "illegal inheritance from final class")
-          } else if (psym.isSealed && !phase.erasedTypes) {
+          }
+          if (psym hasFlag FINAL) {
+            error(parent.pos, "illegal inheritance from final "+psym)
+          }
+          if (psym.isSealed && !phase.erasedTypes) {
             if (context.unit.source.file != psym.sourceFile)
               error(parent.pos, "illegal inheritance from sealed "+psym)
             else

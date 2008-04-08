@@ -534,3 +534,13 @@ object Either {
   def iif[A, B](cond: Boolean)(left: => A, right: => B) =
     if(cond) Right(right) else Left(left)
 }
+
+/**
+ * The left side of the disjoint union, as opposed to the <code>Right</code> side.
+ */
+final case class Left[+A, +B](a: A) extends Either[A, B]
+
+/**
+ * The right side of the disjoint union, as opposed to the <code>Left</code> side.
+ */
+final case class Right[+A, +B](b: B) extends Either[A, B]
