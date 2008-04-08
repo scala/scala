@@ -167,8 +167,8 @@ object Console {
    *  </p>
    *  <p>
    *    The interpretation of the formatting patterns is described in
-   *    <a href="" target="contentFrame" class="java/text/MessageFormat">
-   *    <code>java.text.MessageFormat</code></a>.
+   *    <a href="" target="contentFrame" class="java/util/Formatter">
+   *    <code>java.util.Formatter</code></a>.
    *  </p>
    *
    *  @param text the pattern for formatting the arguments.
@@ -182,10 +182,9 @@ object Console {
    *       target="contentFrame">Console.printf</a>.
    */
   def format(text: String, args: Any*): Unit =
-    out.print(
-      if (text eq null) "null"
-      else MessageFormat.format(text, textParams(args))
-    )
+      if (text eq null) "null" else
+      out.printf(text, args.asInstanceOf[scala.runtime.BoxedObjectArray].
+                            unbox(args.getClass).asInstanceOf[Array[Object]])
 
   /** Read a full line from the terminal.
    *
