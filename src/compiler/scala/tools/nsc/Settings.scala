@@ -66,7 +66,7 @@ class Settings(error: String => Unit) {
       val guessJar = new File(new File(new File(scalaHome), "lib"), "scala-library.jar")
       if (guessJar.isFile()) guessJar.getPath()
       else {
-        val guessDir = new File(new File(new File(scalaHome), "lib"), "library")
+        val guessDir = new File(new File(new File(scalaHome), "classes"), "library")
         if (guessDir.isDirectory()) guessDir.getPath() else null
       }
     } else null
