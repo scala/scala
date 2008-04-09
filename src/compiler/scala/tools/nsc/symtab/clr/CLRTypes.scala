@@ -209,9 +209,8 @@ abstract class CLRTypes {
 	  assemblies += assem
 	}
       }
-      assemrefs -= file
     }
-    assert(assemrefs.isEmpty, assemrefs.toString)
+    assemrefs.clear
   }
 
   //##########################################################################
@@ -219,7 +218,7 @@ abstract class CLRTypes {
 
   /** Find the position of the first type whose name starts with
    *  the given prefix; return the length of the types array if no match
-   *  is found so the result can be used to terminate loop conditions
+   *  is found so the result canbe used to terminate loop conditions
    */
   private def findFirst(prefix: String): Int = {
     var m = 0
