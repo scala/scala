@@ -515,7 +515,7 @@ trait Namers { self: Analyzer =>
           if (self.name != nme.WILDCARD) {
             clazz.typeOfThis = clazz.tpe
             self.symbol = clazz.thisSym
-          } else {
+          } else if (self ne emptyValDef) {
             self.symbol = clazz.newThisSym(self.pos) setInfo clazz.tpe
           }
         }

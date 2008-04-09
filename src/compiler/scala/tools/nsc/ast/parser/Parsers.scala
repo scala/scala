@@ -788,7 +788,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       }
     }
 
-    /** AnnotType        ::=  SimpleType Annotations
+    /** AnnotType        ::=  SimpleType {Annotation}
      *  SimpleType       ::=  SimpleType TypeArgs
      *                     |  SimpleType `#' Id
      *                     |  StableId
@@ -797,13 +797,6 @@ trait Parsers extends NewScanners with MarkupParsers {
      *                     |  WildcardType
      */
     def annotType(isPattern: Boolean): Tree = placeholderTypeBoundary {
-      val annots1 = annotations()
-      if (!annots1.isEmpty)
-	deprecationWarning(
-	  annots1.head.pos,
-	  "Type annotations should now follow the type")
-        // deprecated on August 13, 2007
-
       val pos = inCurrentPos
 
       val t: Tree = annotTypeRest(pos, isPattern,
@@ -821,10 +814,7 @@ trait Parsers extends NewScanners with MarkupParsers {
             case _ => convertToTypeId(r)
           }
         })
-
-      val annots2 = annotations()
-      val annots = annots1 ::: annots2
-      (t /: annots) (makeAnnotated)
+      (t /: annotations(false)) (makeAnnotated)
     }
 
     def annotTypeRest(pos: Int, isPattern: Boolean, t: Tree): Tree =
@@ -1038,8 +1028,8 @@ trait Parsers extends NewScanners with MarkupParsers {
           } else if (inToken == COLON) {
             t = stripParens(t)
             val pos = inSkipToken
-            val annots = annotations()
             if (inToken == USCORE) {
+              //todo: need to handle case where USCORE is a wildcard in a type
               val pos1 = inSkipToken
               if (isIdent && inName == nme.STAR) {
                 inNextToken
@@ -1049,7 +1039,9 @@ trait Parsers extends NewScanners with MarkupParsers {
               } else {
                 syntaxErrorOrIncomplete("`*' expected", true)
               }
-            } else if (annots.isEmpty || isTypeIntro) {
+            } else if (in.token == AT) {
+              t = (t /: annotations(false)) (makeAnnotated)
+            } else {
               t = atPos(pos) {
                 val tpt = if (location != Local) compoundType(false) else typ()
                 if (isWildcard(t))
@@ -1059,10 +1051,8 @@ trait Parsers extends NewScanners with MarkupParsers {
                   }
                 // this does not correspond to syntax, but is necessary to
                 // accept closures. We might restrict closures to be between {...} only!
-                Typed(t, (tpt /: annots) (makeAnnotated))
+                Typed(t, tpt)
               }
-            } else {
-              t = (t /: annots) (makeAnnotated)
             }
           } else if (inToken == MATCH) {
             t = atPos(inSkipToken) {
@@ -1280,6 +1270,8 @@ trait Parsers extends NewScanners with MarkupParsers {
      */
     def enumerators(): List[Enumerator] = {
       val newStyle = inToken != VAL // todo: deprecate old style
+      //if (!newStyle)
+      //  deprecationWarning(inCurrentPos, "for (val x <- ... ) has been deprecated; use for (x <- ... ) instead")
       val enums = new ListBuffer[Enumerator]
       generator(enums, false)
       while (isStatSep) {
@@ -1576,29 +1568,15 @@ trait Parsers extends NewScanners with MarkupParsers {
       loop(NoMods)
     }
 
-    /** Annotations   ::= {Annotation}
-     *  Annotation    ::= `@' AnnotationExpr [nl]
+    /** Annotations   ::= {Annotation [nl]}
+     *  Annotation    ::= `@' AnnotationExpr
      */
-    def annotations(): List[Annotation] = {
+    def annotations(skipNewLines: Boolean): List[Annotation] = {
       var annots = new ListBuffer[Annotation]
-      if (inToken == LBRACKET) {
-        deprecationWarning(in.currentPos, "The [attribute] syntax has been deprecated; use @annotation instead")
-        while (inToken == LBRACKET) {
-          inNextToken
-          annots += annotation()
-          while (inToken == COMMA) {
-            inNextToken
-            annots += annotation()
-          }
-          accept(RBRACKET)
-          newLineOpt()
-        }
-      } else {
-        while (inToken == AT) {
-          inNextToken
-          annots += annotation()
-          newLineOpt()
-        }
+      while (inToken == AT) {
+        inNextToken
+        annots += annotationExpr()
+        if (skipNewLines) newLineOpt()
       }
       annots.toList
     }
@@ -1617,10 +1595,10 @@ trait Parsers extends NewScanners with MarkupParsers {
       exps.toList
     }
 
-    /** Annotation ::= StableId [TypeArgs] [`(' [Exprs] `)'] [[nl] `{' {NameValuePair} `}']
+    /** AnnotationExpr ::= StableId [TypeArgs] [`(' [Exprs] `)'] [[nl] `{' {NameValuePair} `}']
      *  NameValuePair ::= val id `=' PrefixExpr
      */
-    def annotation(): Annotation = {
+    def annotationExpr(): Annotation = {
       def nameValuePair(): Tree = {
         var pos = inCurrentPos
         accept(VAL)
@@ -1654,11 +1632,11 @@ trait Parsers extends NewScanners with MarkupParsers {
     /** ParamClauses      ::= {ParamClause} [[nl] `(' implicit Params `)']
      *  ParamClause       ::= [nl] `(' [Params] ')'
      *  Params            ::= Param {`,' Param}
-     *  Param             ::= Annotations Id [`:' ParamType]
+     *  Param             ::= {Annotation} Id [`:' ParamType]
      *  ClassParamClauses ::= {ClassParamClause} [[nl] `(' implicit ClassParams `)']
      *  ClassParamClause  ::= [nl] `(' [ClassParams] ')'
      *  ClassParams       ::= ClassParam {`,' ClassParam}
-     *  ClassParam        ::= Annotations  [{Modifier} (`val' | `var')] Id [`:' ParamType]
+     *  ClassParam        ::= {Annotation}  [{Modifier} (`val' | `var')] Id [`:' ParamType]
      */
     def paramClauses(owner: Name, implicitViews: List[Tree], ofCaseClass: Boolean): List[List[ValDef]] = {
       var implicitmod = 0
@@ -1667,7 +1645,7 @@ trait Parsers extends NewScanners with MarkupParsers {
         var pos = inCurrentPos
 
         {
-          val annots = annotations()
+          val annots = annotations(false)
           var mods = Modifiers(Flags.PARAM)
           if (owner.isTypeName) {
             mods = modifiers() | Flags.PARAMACCESSOR
@@ -1945,7 +1923,7 @@ trait Parsers extends NewScanners with MarkupParsers {
     }
     /** IDE hook: for non-local defs or dcls with modifiers and annotations */
     def nonLocalDefOrDcl : List[Tree] = {
-      val annots = annotations()
+      val annots = annotations(true)
       defOrDcl(modifiers() withAnnotations annots)
     }
 
@@ -2142,7 +2120,7 @@ trait Parsers extends NewScanners with MarkupParsers {
 
     /** Hook for IDE, for top-level classes/objects */
     def topLevelTmplDef: Tree = {
-      val annots = annotations()
+      val annots = annotations(true)
       val mods = modifiers() withAnnotations annots
       tmplDef(mods)
     }
@@ -2170,7 +2148,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       }
     }
 
-    /** ClassDef ::= Id [TypeParamClause] Annotations
+    /** ClassDef ::= Id [TypeParamClause] {Annotation}
                      [AccessModifier] ClassParamClauses RequiresTypeOpt ClassTemplateOpt
      *  TraitDef ::= Id [TypeParamClause] RequiresTypeOpt TraitTemplateOpt
      */
@@ -2188,7 +2166,7 @@ trait Parsers extends NewScanners with MarkupParsers {
           syntaxError("traits cannot have type parameters with <% bounds", false)
           implicitClassViews = List()
         }
-        val constrAnnots = annotations()
+        val constrAnnots = annotations(false)
         val (constrMods, vparamss) =
           if (mods.hasFlag(Flags.TRAIT)) (Modifiers(Flags.TRAIT), List())
           else (accessModifierOpt(), paramClauses(name, implicitClassViews, mods.hasFlag(Flags.CASE)))
@@ -2444,7 +2422,7 @@ trait Parsers extends NewScanners with MarkupParsers {
 
     /** overridable IDE hook for local definitions of blockStatSeq */
     def localDef : List[Tree] = {
-      val annots = annotations()
+      val annots = annotations(true)
       val mods = localModifiers() withAnnotations annots
       if (!(mods hasFlag ~(Flags.IMPLICIT | Flags.LAZY))) defOrDcl(mods)
       else List(tmplDef(mods))

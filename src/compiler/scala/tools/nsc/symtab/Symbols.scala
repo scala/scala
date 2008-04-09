@@ -37,7 +37,6 @@ trait Symbols {
       coerceIntToPos(pos)
   }
   */
-
   /** The class for all symbols */
   abstract class Symbol(initOwner: Symbol, initPos: Position, initName: Name) {
 
@@ -1261,6 +1260,12 @@ trait Symbols {
   extends Symbol(initOwner, initPos, initName) {
     override def isTerm = true
 
+/*
+    val marker = initName.toString match {
+      case "forCLDC" => new MarkForCLDC
+      case _ => null
+    }
+*/
     privateWithin = NoSymbol
 
     protected var referenced: Symbol = NoSymbol
@@ -1591,4 +1596,17 @@ trait Symbols {
     override def toString() =
       "TypeHistory(" + phaseOf(validFrom)+":"+runId(validFrom) + "," + info + "," + prev + ")"
   }
+/*
+  var occs = 0
+
+class MarkForCLDC {
+  val atRun: Int = currentRunId
+  occs += 1
+  println("new "+getClass+" at "+atRun+" ("+occs+" total)")
+  override def finalize() {
+    occs -=1
+    println("drop "+getClass+" from "+atRun+" ("+occs+" total)")
+  }
+}
+*/
 }

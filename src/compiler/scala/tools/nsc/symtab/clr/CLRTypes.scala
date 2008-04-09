@@ -7,7 +7,8 @@
 package scala.tools.nsc.symtab.clr
 
 import java.io.File
-import java.util.{Arrays, Comparator, StringTokenizer}
+import java.util.{Comparator, StringTokenizer}
+import scala.util.Sorting
 
 import ch.epfl.lamp.compiler.msil._
 
@@ -116,16 +117,7 @@ abstract class CLRTypes {
       alltypes = Array.concat(alltypes, atypes)
     }
 
-    val typeNameComparator: Comparator[Any] =
-      new Comparator[Any]() {
-        def compare(o1: Any, o2: Any): Int = {
-          val t1 = o1.asInstanceOf[Type]
-          val t2 = o2.asInstanceOf[Type]
-          t1.FullName.compareTo(t2.FullName)
-        }
-      }
-
-    Arrays.sort(alltypes.asInstanceOf[Array[Object]], typeNameComparator)
+    Sorting.stableSort(alltypes, (t1: Type, t2: Type) => (t1.FullName compareTo t2.FullName) < 0)
     this.alltypes = alltypes
   }
   catch {

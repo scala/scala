@@ -842,7 +842,8 @@ trait Infer {
         else "invariant";
 
       def qualify(a0: Symbol, b0: Symbol): String = if (a0.toString != b0.toString) "" else {
-        assert((a0 ne b0) && (a0.owner ne b0.owner));
+        assert(a0 ne b0)
+        assert(a0.owner ne b0.owner)
         var a = a0; var b = b0
         while (a.owner.name == b.owner.name) { a = a.owner; b = b.owner}
         if (a.locationString ne "") " (" + a.locationString.trim + ")" else ""

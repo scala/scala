@@ -1670,8 +1670,15 @@ A type's typeSymbol should never be inspected directly.
     override def prefix = maybeRewrap(underlying.prefix)
     override def typeArgs = underlying.typeArgs map maybeRewrap
     override def paramTypes = underlying.paramTypes map maybeRewrap
-    override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) =
-      maybeRewrap(underlying.instantiateTypeParams(formals, actuals))
+    override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) = {
+//      maybeRewrap(underlying.instantiateTypeParams(formals, actuals))
+
+      val quantified1 = new SubstTypeMap(formals, actuals) mapOver quantified
+      val underlying1 = underlying.instantiateTypeParams(formals, actuals)
+      if ((quantified1 eq quantified) && (underlying1 eq underlying)) this
+      else existentialAbstraction(quantified1, underlying1.substSym(quantified, quantified1))
+
+    }
     override def baseType(clazz: Symbol) = maybeRewrap(underlying.baseType(clazz))
     override def closure = underlying.closure map maybeRewrap
     override def isHigherKinded = false

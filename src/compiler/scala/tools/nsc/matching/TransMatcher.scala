@@ -21,7 +21,7 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
 
   import collection.mutable.ListBuffer
 
-  var cunit: CompilationUnit = _
+  var cunit: CompilationUnit = _ // memory leak?
   def fresh = cunit.fresh
   var nPatterns = 0
   var resultType: Type = _
