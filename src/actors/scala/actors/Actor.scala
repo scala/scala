@@ -19,7 +19,7 @@ import scala.compat.Platform
  * <code>receive</code>, <code>react</code>, <code>reply</code>,
  * etc.
  *
- * @version 0.9.13
+ * @version 0.9.14
  * @author Philipp Haller
  */
 object Actor {
@@ -184,7 +184,7 @@ object Actor {
    *
    * @return the number of messages in <code>self</code>'s mailbox
    */
-  def pending: Int = self.pending
+  def mailboxSize: Int = self.mailboxSize
 
   private[actors] trait Body[a] {
     def andThen[b](other: => b): Unit
@@ -292,7 +292,7 @@ object Actor {
  *   </li>
  * </ul>
  *
- * @version 0.9.13
+ * @version 0.9.14
  * @author Philipp Haller
  */
 @serializable
@@ -312,7 +312,7 @@ trait Actor extends OutputChannel[Any] {
    *
    * @return the number of messages in this actor's mailbox
    */
-  def pending: Int = synchronized {
+  def mailboxSize: Int = synchronized {
     mailbox.size
   }
 
