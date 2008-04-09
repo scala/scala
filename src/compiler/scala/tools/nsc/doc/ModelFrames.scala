@@ -7,7 +7,7 @@
 package scala.tools.nsc.doc
 
 import java.io.{File, FileWriter}
-
+import util.NameTransformer
 import scala.collection.jcl
 import scala.compat.Platform.{EOL => LINE_SEPARATOR}
 import scala.xml.{NodeSeq, Text, Unparsed, Utility}
@@ -155,7 +155,7 @@ trait ModelFrames extends ModelExtractor {
     def urlFor0(sym: Symbol, orig: Symbol): String =
       (if (sym == NoSymbol) "XXX"
        else if (sym.owner.isPackageClass) rootFor(sym) + pkgPath(sym)
-       else urlFor0(decode(sym.owner), orig) + "." + Utility.escape(sym.nameString)
+       else urlFor0(decode(sym.owner), orig) + "." + NameTransformer.encode(Utility.escape(sym.nameString))
       ) +
       (sym match {
         case msym: ModuleSymbol =>
