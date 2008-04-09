@@ -146,12 +146,9 @@ scala> <console>:1: error: '=' expected but '=>' found.
        def x => y => z
                       ^
 
-scala> <console>:1: error: identifier expected but integer literal found.
+scala> <console>:1: error: expected start of definition
        [1,2,3]
-        ^
-<console>:1: error: ']' expected but eof found.
-       [1,2,3]
-              ^
+       ^
 
 scala> 
 scala> 
