@@ -89,6 +89,7 @@ PROPERTIES
   <property name="build-quick.dir" value="${build.dir}/quick"/>
   <property name="build-pack.dir" value="${build.dir}/pack"/>
   <property name="build-strap.dir" value="${build.dir}/strap"/>
+  <property name="build-four.dir" value="${build.dir}/four"/>
   <property name="build-docs.dir" value="${build.dir}/scaladoc"/>
   
   <property name="dists.dir" value="${basedir}/dists"/>
@@ -165,11 +166,13 @@ LOCAL REFERENCE BUILD (LOCKER)
       srcdir="${src.dir}/library"
       destdir="${build-locker.dir}/classes/library"
       classpath="${build-locker.dir}/classes/library"
-      includes="**/*.java"/>
+      includes="**/*.java"
+      target="1.5" source="1.5"/>
     <sabmake id="starr.lib.scalac"
       destdir="${build-locker.dir}/classes/library"
       compilerpathref="starr.classpath"
-      srcpath="${src.dir}/library">
+      srcpath="${src.dir}/library"
+      target="jvm-1.5">
       <compilationpath>
       	<pathelement location="${build-locker.dir}/classes/library"/>
       </compilationpath>
@@ -212,7 +215,8 @@ LOCAL REFERENCE BUILD (LOCKER)
     <sabmake id="starr.comp.scalac"
       destdir="${build-locker.dir}/classes/compiler"
       compilerpathref="starr.classpath"
-      srcpath="${src.dir}/compiler">
+      srcpath="${src.dir}/compiler"
+      target="jvm-1.5">
       <compilationpath>
       	<pathelement location="${build-locker.dir}/classes/library"/>
       	<pathelement location="${build-locker.dir}/classes/compiler"/>
@@ -279,16 +283,19 @@ QUICK BUILD (QUICK)
       srcdir="${src.dir}/library"
       destdir="${build-quick.dir}/classes/library"
       classpath="${build-quick.dir}/classes/library"
-      includes="**/*.java"/>
+      includes="**/*.java"
+      target="1.5" source="1.5"/>
     <javac
       srcdir="${src.dir}/actors"
       destdir="${build-quick.dir}/classes/library"
       classpath="${build-quick.dir}/classes/library"
-      includes="**/*.java"/>
+      includes="**/*.java"
+      target="1.5" source="1.5"/>
     <sabmake id="locker.lib.scalac"
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
-      srcpath="${src.dir}/library">
+      srcpath="${src.dir}/library"
+      target="jvm-1.5">
       <compilationpath>
       	<pathelement location="${build-quick.dir}/classes/library"/>
       </compilationpath>
@@ -296,17 +303,17 @@ QUICK BUILD (QUICK)
     <sabuse id="locker.lib.scalac" srcdir="${src.dir}/library">
       <include name="scala/Predef.scala"/>
     </sabuse>
-    <!-- -->
+    <!-- re-instantiate locker.lib.scalac because keeping the same instance will lead to some attributes missing -->
     <sabbreak id="locker.lib.scalac"/>
     <sabmake id="locker.lib.scalac"
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
-      srcpath="${src.dir}/library">
+      srcpath="${src.dir}/library"
+      target="jvm-1.5">
       <compilationpath>
       	<pathelement location="${build-quick.dir}/classes/library"/>
       </compilationpath>
     </sabmake>
-    <!-- -->
     <sabuse id="locker.lib.scalac" srcdir="${src.dir}/library">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
@@ -346,7 +353,8 @@ QUICK BUILD (QUICK)
     <sabmake id="locker.comp.scalac"
       destdir="${build-quick.dir}/classes/compiler"
       compilerpathref="locker.classpath"
-      srcpath="${src.dir}/compiler">
+      srcpath="${src.dir}/compiler"
+      target="jvm-1.5">
       <compilationpath>
       	<pathelement location="${build-quick.dir}/classes/library"/>
       	<pathelement location="${build-quick.dir}/classes/compiler"/>
@@ -387,7 +395,8 @@ QUICK BUILD (QUICK)
     <mkdir dir="${build-quick.dir}/classes/partest"/>
     <javac
       srcdir="${src.dir}/partest"
-      destdir="${build-quick.dir}/classes/partest">
+      destdir="${build-quick.dir}/classes/partest"
+      target="1.5" source="1.5">
       <classpath>
       	<pathelement location="${build-quick.dir}/classes/library"/>
       	<pathelement location="${build-quick.dir}/classes/compiler"/>
@@ -398,7 +407,8 @@ QUICK BUILD (QUICK)
     <sabmake id="locker.partest.scalac"
       destdir="${build-quick.dir}/classes/partest"
       compilerpathref="locker.classpath"
-      srcpath="${src.dir}/paartest">
+      srcpath="${src.dir}/paartest"
+      target="jvm-1.5">
       <compilationpath>
       	<pathelement location="${build-quick.dir}/classes/library"/>
       	<pathelement location="${build-quick.dir}/classes/compiler"/>
@@ -605,36 +615,42 @@ BOOTSTRAPPING BUILD (STRAP)
       srcdir="${src.dir}/library"
       destdir="${build-strap.dir}/classes/library"
       classpath="${build-strap.dir}/classes/library"
-      includes="**/*.java"/>
+      includes="**/*.java"
+      target="1.5" source="1.5"/>
     <javac
       srcdir="${src.dir}/actors"
       destdir="${build-strap.dir}/classes/library"
       classpath="${build-strap.dir}/classes/library"
-      includes="**/*.java"/>
+      includes="**/*.java"
+      target="1.5" source="1.5"/>
     <scalac
       srcdir="${src.dir}/library"
       destdir="${build-strap.dir}/classes/library"
       classpath="${build-strap.dir}/classes/library"
-      sourcepath="${src.dir}/library">
+      sourcepath="${src.dir}/library"
+      target="jvm-1.5">
       <include name="scala/Predef.scala"/>
     </scalac>
     <scalac
       srcdir="${src.dir}/library"
       destdir="${build-strap.dir}/classes/library"
-      classpath="${build-strap.dir}/classes/library">
+      classpath="${build-strap.dir}/classes/library"
+      target="jvm-1.5">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
     </scalac>
     <scalac
       srcdir="${src.dir}/actors"
       destdir="${build-strap.dir}/classes/library"
-      classpath="${build-strap.dir}/classes/library">
+      classpath="${build-strap.dir}/classes/library"
+      target="jvm-1.5">
       <include name="**/*.scala"/>
     </scalac>
     <scalac
       srcdir="${src.dir}/dbc"
       destdir="${build-strap.dir}/classes/library"
-      classpath="${build-strap.dir}/classes/library">
+      classpath="${build-strap.dir}/classes/library"
+      target="jvm-1.5">
       <include name="**/*.scala"/>
     </scalac>
     <propertyfile file="${build-strap.dir}/classes/library/library.properties">
@@ -664,7 +680,8 @@ BOOTSTRAPPING BUILD (STRAP)
     <mkdir dir="${build-strap.dir}/classes/compiler"/>
     <scalac
       srcdir="${src.dir}/compiler"
-      destdir="${build-strap.dir}/classes/compiler">
+      destdir="${build-strap.dir}/classes/compiler"
+      target="jvm-1.5">
       <include name="**/*.scala"/>
       <classpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
@@ -702,7 +719,8 @@ BOOTSTRAPPING BUILD (STRAP)
     <mkdir dir="${build-strap.dir}/classes/partest"/>
     <javac
       srcdir="${src.dir}/partest"
-      destdir="${build-strap.dir}/classes/partest">
+      destdir="${build-strap.dir}/classes/partest"
+      target="1.5" source="1.5">
       <classpath>
       	<pathelement location="${build-strap.dir}/classes/library"/>
       	<pathelement location="${build-strap.dir}/classes/compiler"/>
@@ -712,7 +730,8 @@ BOOTSTRAPPING BUILD (STRAP)
     </javac>
     <scalac
       srcdir="${src.dir}/partest"
-      destdir="${build-strap.dir}/classes/partest">
+      destdir="${build-strap.dir}/classes/partest"
+      target="jvm-1.5">
       <include name="**/*.scala"/>
       <classpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
@@ -804,6 +823,128 @@ DOCUMENTATION
 
   <target name="docs.clean">
     <delete dir="${build-docs.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+  </target>
+  
+<!-- ===========================================================================
+JAVA 1.4 LIBRARY AND COMPILER BUILD (FOUR)
+============================================================================ -->
+  
+  <target name="four.start" depends="pack.done"/>
+  
+  <target name="four.pre-lib" depends="four.start">
+    <uptodate property="four.lib.available" targetfile="${build-four.dir}/library.complete">
+      <srcfiles dir="${src.dir}">
+        <include name="library/**"/>
+        <include name="dbc/**"/>
+        <include name="actors/**"/>
+      </srcfiles>
+    </uptodate>
+  </target>
+
+  <target name="four.lib" depends="four.pre-lib" unless="four.lib.available">
+    <stopwatch name="four.lib.timer"/>
+    <mkdir dir="${build-four.dir}/classes/library"/>
+    <javac
+      srcdir="${src.dir}/library"
+      destdir="${build-four.dir}/classes/library"
+      classpath="${build-four.dir}/classes/library"
+      includes="**/*.java"
+      target="1.4" source="1.4"/>
+    <javac
+      srcdir="${src.dir}/actors"
+      destdir="${build-four.dir}/classes/library"
+      classpath="${build-four.dir}/classes/library"
+      includes="**/*.java"
+      target="1.4" source="1.4"/>
+    <scalac
+      srcdir="${src.dir}/library"
+      destdir="${build-four.dir}/classes/library"
+      classpath="${build-four.dir}/classes/library"
+      sourcepath="${src.dir}/library"
+      target="jvm-1.4">
+      <include name="scala/Predef.scala"/>
+    </scalac>
+    <scalac
+      srcdir="${src.dir}/library"
+      destdir="${build-four.dir}/classes/library"
+      classpath="${build-four.dir}/classes/library"
+      target="jvm-1.4">
+      <include name="**/*.scala"/>
+      <exclude name="scala/Predef.scala"/>
+    </scalac>
+    <scalac
+      srcdir="${src.dir}/actors"
+      destdir="${build-four.dir}/classes/library"
+      classpath="${build-four.dir}/classes/library"
+      target="jvm-1.4">
+      <include name="**/*.scala"/>
+    </scalac>
+    <scalac
+      srcdir="${src.dir}/dbc"
+      destdir="${build-four.dir}/classes/library"
+      classpath="${build-four.dir}/classes/library"
+      target="jvm-1.4">
+      <include name="**/*.scala"/>
+    </scalac>
+    <propertyfile file="${build-four.dir}/classes/library/library.properties">
+      <entry key="version.number" value="${version.number}"/>
+      <entry key="copyright.string" value="${copyright.string}"/>
+    </propertyfile>
+    <copy todir="${build-four.dir}/classes/library">
+      <fileset dir="${src.dir}/library">
+        <include name="**/*.tmpl"/>
+        <include name="**/*.xml"/>
+        <include name="**/*.js"/>
+        <include name="**/*.css"/>
+      </fileset>
+    </copy>
+    <touch file="${build-four.dir}/library.complete" verbose="no"/>
+    <stopwatch name="four.lib.timer" action="total"/>
+  </target>
+  
+  <target name="four.pre-comp" depends="four.lib">
+    <uptodate property="four.comp.available" targetfile="${build-four.dir}/compiler.complete">
+      <srcfiles dir="${src.dir}/compiler"/>
+    </uptodate>
+  </target>
+
+  <target name="four.comp" depends="four.pre-comp" unless="four.comp.available">
+    <stopwatch name="four.comp.timer"/>
+    <mkdir dir="${build-four.dir}/classes/compiler"/>
+    <scalac
+      srcdir="${src.dir}/compiler"
+      destdir="${build-four.dir}/classes/compiler"
+      target="jvm-1.4">
+      <include name="**/*.scala"/>
+      <classpath>
+        <pathelement location="${build-four.dir}/classes/library"/>
+        <pathelement location="${build-four.dir}/classes/compiler"/>
+        <pathelement location="${fjbg.jar}"/>
+        <pathelement location="${msil.jar}"/>
+        <pathelement location="${jline.jar}"/>
+        <pathelement location="${ant.jar}"/>
+      </classpath>
+    </scalac>
+    <propertyfile file="${build-four.dir}/classes/compiler/compiler.properties">
+      <entry key="version.number" value="${version.number}"/>
+      <entry key="copyright.string" value="${copyright.string}"/>
+    </propertyfile>
+    <copy todir="${build-four.dir}/classes/compiler">
+      <fileset dir="${src.dir}/compiler">
+        <include name="**/*.tmpl"/>
+        <include name="**/*.xml"/>
+        <include name="**/*.js"/>
+        <include name="**/*.css"/>
+      </fileset>
+    </copy>
+    <touch file="${build-four.dir}/compiler.complete" verbose="no"/>
+    <stopwatch name="four.comp.timer" action="total"/>
+  </target>
+  
+  <target name="four.done" depends="four.comp"/>
+
+  <target name="four.clean">
+    <delete dir="${build-four.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
   </target>
   
 <!-- ===========================================================================
@@ -961,7 +1102,8 @@ MAKE SABBUS JAR (to remove once sabbus is part of starr library)
     <mkdir dir="${build.dir}/sabbus"/>
     <scalac
       srcdir="${src.dir}/compiler/scala/tools/ant/sabbus/"
-      destdir="${build.dir}/sabbus">
+      destdir="${build.dir}/sabbus"
+      target="jvm-1.5">
       <include name="*.scala"/>
       <classpath>
       	<pathelement location="${lib.starr.jar}"/>
