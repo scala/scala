@@ -824,6 +824,21 @@ object Test extends TestConsoleMain {
     }
   }
 
+  object Ticket495bis { // compile-only
+    def signum(x: Int): Int =
+      x match {
+        case 0 => 0
+        case _ if x < 0 => -1
+        case _ if x > 0 => 1
+      }
+    def pair_m(x: Int, y: Int) =
+      (x,y) match {
+        case (_, 0)  => 0
+        case (-1, _) => -1
+        case (_, _)  => 1
+      }
+  }
+
   object Ticket522 { // compile-only
   class Term[X]
   object App {
