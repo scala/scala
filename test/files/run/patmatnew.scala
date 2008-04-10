@@ -53,7 +53,8 @@ object Test extends TestConsoleMain {
       Ticket2,
       Ticket11,
       Ticket37,
-      Ticket44
+      Ticket44,
+      Ticket346
     )
 
   class Foo(j:Int) {
@@ -824,6 +825,63 @@ object Test extends TestConsoleMain {
     }
   }
 
+// this test case checks nothing more than whether
+//   case N for object N is translated to a check scrutinee.equals(N)
+//  (or the other way round)... for a long time, we got away with
+//  scrutinee eq N, but those golden days are, apparently, over.
+  object Ticket346 extends TestCase("#346") {
+
+class L(val content: List[Int]) {
+
+    def isEmpty = content.isEmpty
+    def head = content.head
+    def tail = content.tail
+
+    override def equals(that: Any): Boolean = {
+        val result = that.isInstanceOf[N.type]
+        println("L("+content+").equals("+that+") returning "+result)
+        result
+    }
+}
+
+object N extends L(Nil) {
+
+    override def equals(that: Any): Boolean = {
+        val result = (that.isInstanceOf[L] && that.asInstanceOf[L].isEmpty)
+        //println("N.equals("+that+") returning "+result)
+        result
+    }
+}
+
+object C {
+
+    def unapply(xs: L): Option[(Int, L)] = {
+        if (xs.isEmpty)
+            { println("xs is empty"); None }
+        else
+            Some((xs.head, new L(xs.tail)))
+    }
+
+}
+
+
+    def empty(xs : L) : Boolean = xs match {
+        case N => true
+        case _ => false
+    }
+
+    def singleton(xs : L) : Boolean = xs match {
+        case C(_, N) => true
+        case _ => false
+    }
+
+override def runTest() {
+    assertTrue(empty( new L(Nil) ))
+    assertTrue(singleton( new L(List(1)) ))
+}
+
+}  // end Ticket346
+
   object Ticket495bis { // compile-only
     def signum(x: Int): Int =
       x match {
@@ -859,6 +917,18 @@ object Test extends TestConsoleMain {
     case App(arg, a) =>
   }
   } // end Ticket522
+
+
+  object Ticket710 {  // compile-only
+    def method: Unit = {
+      sealed case class Parent
+      case object Child extends Parent
+      val x: Parent = Child
+      x match {
+        case Child => ()
+      }
+    }
+   }
 }
 
 

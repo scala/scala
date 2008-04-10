@@ -1222,7 +1222,7 @@ trait ParallelMatching  {
             val res =
               isDefaultPattern(p) || p.isInstanceOf[UnApply] || p.isInstanceOf[ArrayValue] || {
                 val ptpe = patternType_wrtEquals(p.tpe)
-                val symtpe = if (sym.hasFlag(symtab.Flags.MODULE)) {
+                val symtpe = if (sym.hasFlag(symtab.Flags.MODULE) && (sym.linkedModuleOfClass ne NoSymbol)) {
                   singleType(sym.tpe.prefix, sym.linkedModuleOfClass) // e.g. None, Nil
                 } else sym.tpe
                 (ptpe.typeSymbol == sym) || (symtpe <:< ptpe) ||
@@ -1362,8 +1362,8 @@ trait ParallelMatching  {
           Equals(gen.mkAttributedRef(tpe.termSymbol), scrutineeTree)         // object
       } else {
         val x =
-          //if (tpe.prefix ne NoPrefix) gen.mkIsInstanceOf(scrutineeTree, tpe)
-          //else
+          if (tpe.prefix ne NoPrefix) gen.mkIsInstanceOf(scrutineeTree, tpe)
+          else
           Equals(gen.mkAttributedRef(tpe.termSymbol), scrutineeTree)
         typed { x }
       }
