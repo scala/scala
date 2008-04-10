@@ -86,13 +86,14 @@ class Names {
 
   private lazy val md5 = MessageDigest.getInstance("MD5")
 
-  private def toMD5(cs: Array[Char], offset: Int, len: Int): String = {
+  private def toMD5(s: String, prefixSuffixLen: Int) = {
+    val cs: Array[Char] = s.toCharArray
     val bytes = new Array[Byte](cs.length * 4)
     val len = UTF8Codec.encode(cs, 0, bytes, 0, cs.length)
     md5.update(bytes, 0, len)
     val hash = md5.digest()
     val sb = new StringBuilder
-    sb.append(cs, 0, PREFIX_LEN)
+    sb.append(cs, 0, prefixSuffixLen)
     sb.append("$$$$")
     for (i <- 0 until hash.length) {
       val b = hash(i)
@@ -100,8 +101,12 @@ class Names {
       sb.append((b & 0xF).toHexString)
     }
     sb.append("$$$$")
-    sb.append(cs, len - SUFFIX_LEN, SUFFIX_LEN)
+    sb.append(cs, len - prefixSuffixLen, prefixSuffixLen)
     sb.toString
+  }
+
+  def compactify(s: String, maxLen: Int): String = {
+    if (s.length <= maxLen) s else toMD5(s, maxLen / 4)
   }
 
   /** Create a term name from the characters in <code>cs[offset..offset+len-1]</code>.
@@ -111,18 +116,17 @@ class Names {
    *  @param len    ...
    *  @return       the created term name
    */
-  def newTermName(cs: Array[Char], offset: Int, len: Int): Name =
-    if (len <= MAX_LEN) {
-      val h = hashValue(cs, offset, len) & HASH_MASK
-      var n = termHashtable(h)
-      while ((n ne null) && (n.length != len || !equals(n.start, cs, offset, len)))
-        n = n.next;
-      if (n eq null) {
-        n = new TermName(nc, len, h)
-        enterChars(cs, offset, len)
-      }
-      n
-    } else newTermName(toMD5(cs, offset, len))
+  def newTermName(cs: Array[Char], offset: Int, len: Int): Name = {
+    val h = hashValue(cs, offset, len) & HASH_MASK
+    var n = termHashtable(h)
+    while ((n ne null) && (n.length != len || !equals(n.start, cs, offset, len)))
+    n = n.next;
+    if (n eq null) {
+      n = new TermName(nc, len, h)
+      enterChars(cs, offset, len)
+    }
+    n
+  }
 
   /** create a term name from string
    */

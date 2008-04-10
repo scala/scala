@@ -10,6 +10,8 @@ package scala.tools.nsc.io
 import java.io.{File, FileInputStream, IOException}
 
 object PlainFile {
+
+  final val MaxFileNameLength = 255
   /**
    * If the specified File exists, returns an abstract file backed
    * by it. Otherwise, returns null.

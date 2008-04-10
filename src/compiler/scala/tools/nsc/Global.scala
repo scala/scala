@@ -10,7 +10,7 @@ import java.io.{File, FileOutputStream, PrintWriter}
 import java.io.{IOException, FileNotFoundException}
 import java.nio.charset._
 import compat.Platform.currentTime
-import scala.tools.nsc.io.{SourceReader, AbstractFile}
+import scala.tools.nsc.io.{SourceReader, AbstractFile, PlainFile}
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.util.{ClassPath, SourceFile, BatchSourceFile}
 
@@ -689,7 +689,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       start = end + 1
       end = filename.indexOf('.', start)
     }
-    new File(outdir, filename.substring(start) + suffix)
+    new File(outdir, compactify(filename.substring(start), PlainFile.MaxFileNameLength - suffix.length) + suffix)
   }
 
   private def writeICode() {
