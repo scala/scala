@@ -484,31 +484,19 @@ BUILD LOCAL REFERENCE (LOCKER) LAYER
     <mkdir dir="${locker.dir}/bin"/>
     <lockertool
       file="${locker.dir}/bin/${scala.exec.name}"
-      version="${version.number}"
-      copyright="${copyright.string}"
-      name="Scala code runner"
       class="scala.tools.nsc.MainGenericRunner"
       javaFlags="${java.flags}"/>
     <lockertool
       file="${locker.dir}/bin/${scalac.exec.name}"
-      name="Scala compiler"
       class="scala.tools.nsc.Main"
-      version="${version.number}"
-      copyright="${copyright.string}"
       javaFlags="${java.flags}"/>
     <lockertool
       file="${locker.dir}/bin/${scaladoc.exec.name}"
-      name="Scala doc generator"
       class="scala.tools.nsc.ScalaDoc"
-      version="${version.number}"
-      copyright="${copyright.string}"
       javaFlags="${java.flags}"/>
     <lockertool
       file="${locker.dir}/bin/${fsc.exec.name}"
-      name="Fast Scala compiler"
       class="scala.tools.nsc.CompileClient"
-      version="${version.number}"
-      copyright="${copyright.string}"
       javaFlags="${java.flags}"/>
     <chmod perm="ugo+rx"
       file="${locker.dir}/bin/${scalac.exec.name}"/>
@@ -680,31 +668,20 @@ BUILD QUICK-TEST LAYER
     <mkdir dir="${quick.dir}/bin"/>
     <quicktool
       file="${quick.dir}/bin/${scala.exec.name}"
-      version="${version.number}"
-      copyright="${copyright.string}"
-      name="Scala code runner"
       class="scala.tools.nsc.MainGenericRunner"
       javaFlags="${java.flags}"/>
     <quicktool
       file="${quick.dir}/bin/${scalac.exec.name}"
-      name="Scala compiler"
       class="scala.tools.nsc.Main"
-      version="${version.number}"
-      copyright="${copyright.string}"
       javaFlags="${java.flags}"/>
     <quicktool
       file="${quick.dir}/bin/${scaladoc.exec.name}"
-      name="Scala doc generator"
       class="scala.tools.nsc.ScalaDoc"
-      version="${version.number}"
-      copyright="${copyright.string}"
       javaFlags="${java.flags}"/>
     <quicktool
       file="${quick.dir}/bin/${fsc.exec.name}"
-      name="Fast Scala compiler"
       class="scala.tools.nsc.CompileClient"
-      version="${version.number}"
-      copyright="${copyright.string}"/>
+      javaFlags="${java.flags}"/>
     <chmod perm="ugo+rx"
       file="${quick.dir}/bin/${scalac.exec.name}"/>
     <chmod perm="ugo+rx"
@@ -1238,31 +1215,19 @@ OPTIMIZE
     <mkdir dir="${optimised.dir}/bin"/>
     <straptool
       file="${optimised.dir}/bin/${scala.exec.name}"
-      version="${version.number}"
-      copyright="${copyright.string}"
-      name="Scala code runner"
       class="scala.tools.nsc.MainGenericRunner"
       javaFlags="${java.flags}"/>
     <straptool
       file="${optimised.dir}/bin/${scalac.exec.name}"
-      name="Scala compiler"
       class="scala.tools.nsc.Main"
-      version="${version.number}"
-      copyright="${copyright.string}"
       javaFlags="${java.flags}"/>
     <straptool
       file="${optimised.dir}/bin/${scaladoc.exec.name}"
-      name="Scala doc generator"
       class="scala.tools.nsc.ScalaDoc"
-      version="${version.number}"
-      copyright="${copyright.string}"
       javaFlags="${java.flags}"/>
     <straptool
       file="${optimised.dir}/bin/${fsc.exec.name}"
-      name="Fast Scala compiler"
-      class="scala.tools.nsc.CompileClient"
-      version="${version.number}"
-      copyright="${copyright.string}"/>
+      class="scala.tools.nsc.CompileClient"/>
     <chmod perm="ugo+rx"
       file="${optimised.dir}/bin/${scalac.exec.name}"/>
     <chmod perm="ugo+rx"
@@ -1428,31 +1393,19 @@ TEST
     <mkdir dir="${strap.dir}/bin"/>
     <straptool
       file="${strap.dir}/bin/${scala.exec.name}"
-      version="${version.number}"
-      copyright="${copyright.string}"
-      name="Scala code runner"
       class="scala.tools.nsc.MainGenericRunner"
       javaFlags="${java.flags}"/>
     <straptool
       file="${strap.dir}/bin/${scalac.exec.name}"
-      name="Scala compiler"
       class="scala.tools.nsc.Main"
-      version="${version.number}"
-      copyright="${copyright.string}"
       javaFlags="${java.flags}"/>
     <straptool
       file="${strap.dir}/bin/${scaladoc.exec.name}"
-      name="Scala doc generator"
       class="scala.tools.nsc.ScalaDoc"
-      version="${version.number}"
-      copyright="${copyright.string}"
       javaFlags="${java.flags}"/>
     <straptool
       file="${strap.dir}/bin/${fsc.exec.name}"
-      name="Fast Scala compiler"
-      class="scala.tools.nsc.CompileClient"
-      version="${version.number}"
-      copyright="${copyright.string}"/>
+      class="scala.tools.nsc.CompileClient"/>
     <chmod perm="ugo+rx"
       file="${strap.dir}/bin/${scalac.exec.name}"/>
     <chmod perm="ugo+rx"
