@@ -64,7 +64,7 @@ PROPERTIES
   <property name="tooldocs.dir" value="${build.dir}/tooldocs"/>
   <property name="examples.dir" value="${build.dir}/examples"/>
 <!--  <property name="cldc.dir" value="${build.dir}/cldc"/> -->
-  <property name="android.dir" value="${build.dir}/android"/>
+<!--  <property name="android.dir" value="${build.dir}/android"/> -->
   <property name="msil.dir" value="${build.dir}/msil"/>
   <property name="mono.dir" value="${src.dir}/mono"/>
 
@@ -876,122 +876,7 @@ CLDC
 ANDROID
 ============================================================================ -->
 
-  <target name="android.init">
-    <!-- Sets location of Android installation -->
-    <condition property="android.home" value="${unix.android.home}">
-      <and><os family="unix"/><isset property="unix.android.home"/></and>
-    </condition>
-    <condition property="android.home" value="${win.android.home}">
-      <and><os family="windows"/><isset property="win.android.home"/></and>
-    </condition>
-    <property name="android.home" value="${env.ANDROID_HOME}"/>
-
-    <fail message="Android home is not set or could not find android.jar in ${android.home}">
-      <condition><not>
-        <available file="${android.home}/android.jar"/>
-      </not></condition>
-    </fail>
-  </target>
-
-  <target name="android.sources" depends="android.init"
-          description="Create the source directory for Android library"
-  >
-    <mkdir dir="${android.dir}/src"/>
-    <copy todir="${android.dir}/src">
-      <fileset dir="${src.dir}/android-library" includes="**/*.scala, **/*.java"/>
-    </copy> 
-    <copy todir="${android.dir}/src">
-      <fileset dir="${src.dir}/library" includes="**/*.scala, **/*.java" />
-    </copy>
-  </target>
-
-  <target name="android.libraries"
-          depends="setup.quick, android.sources"
-          description="Builds the Scala library for Android">
-    <mkdir dir="${android.dir}/lib/library"/>
-    <javac
-      srcdir="${android.dir}/src"
-      destdir="${android.dir}/lib/library"
-      deprecation="${jc.deprecation}"
-    >
-      <bootclasspath>
-        <pathelement location="${android.home}/android.jar}"/>
-      </bootclasspath>
-      <include name="**/*.java"/>
-    </javac>
-
-    <quick
-      srcdir="${android.dir}/src"
-      destdir="${android.dir}/lib/library"
-      deprecation="yes" unchecked="yes"
-      addparams="${nsc.params}"
-      extdirs=""
-      scalacdebugging="${nsc.log-files}"
-    >
-      <bootclasspath>
-        <pathelement location="${android.home}/android.jar"/>
-      </bootclasspath>
-      <include name="scala/Predef.scala"/>
-    </quick>
-
-    <quick
-      srcdir="${android.dir}/src"
-      destdir="${android.dir}/lib/library"
-      deprecation="yes" unchecked="yes"
-      extdirs=""
-      addparams="${nsc.params}"
-      scalacdebugging="${nsc.log-files}"
-    >
-      <bootclasspath>
-        <pathelement location="${android.home}/android.jar"/>
-      </bootclasspath>
-      <classpath>
-        <pathelement location="${android.dir}"/>
-      </classpath>
-      <include name="**/*.scala"/>
-      <exclude name="scala/Predef.scala"/>
-      <excludesfile name="${nsc.excludes}" if="excludes.avail"/>
-    </quick>
-  </target>
-
-  <target name="android.build" depends="android.libraries"
-          description="Convert this project's .class files into .dex files">
-     <property name="dx.jar" value="${android.home}/tools/lib/dx.jar"/>
-     <java jar="${dx.jar}" fork="true" failonerror="true">
-      <jvmarg value="-Djava.ext.dirs=${android.home}${file.separator}tools${file.separator}lib"/>
-      <jvmarg value="-Xmx384M"/>
-      <arg value="--dex"/>
-      <arg value="--output=${android.dir}/lib/scala.dex"/>
-      <arg value="--locals=full"/>
-      <arg value="--positions=lines"/>
-      <arg value="--no-optimize"/>  <!-- workaround for M5-RC14 bug -->
-      <arg value="${android.dir}/lib/library"/>
-    </java>
-    <jar
-      destfile="${android.dir}/lib/scala-dex.jar"
-      basedir="${android.dir}/lib"
-      includes="scala.dex"
-    />
-    <jar
-      destfile="${android.dir}/lib/scala-android.jar"
-      basedir="${android.dir}/lib/library"
-      includes="scala/**/*.class"
-    />
-  </target>
-
-  <target name="android" depends="init">
-    <condition property="android.supported">
-      <and>
-        <not><contains string="${java.version}" substring="1.4"/></not>
-        <contains string="${java.vendor}" substring="Sun"/>
-      </and>
-    </condition>
-    <if><isset property="android.supported"/><then>
-      <antcall target="android.build"/>
-    </then><else>
-      <echo message="The Android library build requires Sun Java 1.5 or newer"/>
-    </else></if>
-  </target>
+<!-- use subversion / trac to get it back... -->
 
 <!-- ===========================================================================
 MSIL
@@ -1847,7 +1732,7 @@ GENERATES A DISTRIBUTION
   </target>
 
   <!-- Create the SBaz packages -->
-  <target name="build.sbaz" depends="build.dist,msil,android">
+  <target name="build.sbaz" depends="build.dist,msil">
     <property name="sbaz.universe" value="http://www.scala-lang.org/downloads/packages"/>
     <mkdir dir="${dist.dir}"/>
   <!-- Create the Scala library package -->
@@ -1936,7 +1821,7 @@ GENERATES A DISTRIBUTION
     </quicksbaz>
 -->
   <!-- Creates the Android package -->
-    <if><isset property="android.supported"/><then>
+<!--    <if><isset property="android.supported"/><then>
       <copy todir="${dist.current.dir}/doc/scala-android/examples">
         <fileset dir="${docs.dir}/android-examples">
           <exclude name="**/R.java"/>
@@ -1952,7 +1837,7 @@ GENERATES A DISTRIBUTION
         <libset dir="${android.dir}/lib" includes="*.jar"/>
         <docset dir="${dist.current.dir}/doc/scala-android" includes="**"/>
       </quicksbaz>
-    </then></if>
+    </then></if> -->
   </target>
 
   <target name="build.archive" depends="build.dist">
