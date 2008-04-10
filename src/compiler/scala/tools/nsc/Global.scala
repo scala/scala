@@ -689,7 +689,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       start = end + 1
       end = filename.indexOf('.', start)
     }
-    new File(outdir, compactify(filename.substring(start), PlainFile.MaxFileNameLength - suffix.length) + suffix)
+    new File(outdir, filename.substring(start) + suffix)
   }
 
   private def writeICode() {
