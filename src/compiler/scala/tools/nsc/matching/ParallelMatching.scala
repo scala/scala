@@ -1362,8 +1362,8 @@ trait ParallelMatching  {
           Equals(gen.mkAttributedRef(tpe.termSymbol), scrutineeTree)         // object
       } else {
         val x =
-          //if (tpe.prefix ne NoPrefix) gen.mkIsInstanceOf(scrutineeTree, tpe)
-          //else
+          if (tpe.prefix ne NoPrefix) gen.mkIsInstanceOf(scrutineeTree, tpe)
+          else
           Equals(gen.mkAttributedRef(tpe.termSymbol), scrutineeTree)
         typed { x }
       }
