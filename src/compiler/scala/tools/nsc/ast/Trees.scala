@@ -335,12 +335,13 @@ trait Trees {
   /** Construct class definition with given class symbol, value parameters,
    *  supercall arguments and template body.
    *
-   *  @param sym       the class symbol
-   *  @param vparamss  the value parameters -- if they have symbols they
-   *                   should be owned by `sym'
-   *  @param argss     the supercall arguments
-   *  @param body      the template statements without primary constructor
-   *                   and value parameter fields.
+   *  @param sym        the class symbol
+   *  @param constrMods the modifiers for the class constructor, i.e. as in `class C private (...)'
+   *  @param vparamss   the value parameters -- if they have symbols they
+   *                    should be owned by `sym'
+   *  @param argss      the supercall arguments
+   *  @param body       the template statements without primary constructor
+   *                    and value parameter fields.
    *  @return          ...
    */
   def ClassDef(sym: Symbol, constrMods: Modifiers, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree]): ClassDef =

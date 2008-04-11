@@ -101,9 +101,6 @@ object Flags extends Enumeration {
   final val notOVERRIDE   = (OVERRIDE: Long) << AntiShift
   final val notMETHOD     = (METHOD: Long) << AntiShift
 
-  final val STATICMODULE  = lateMODULE
-  final val STATICMEMBER  = notOVERRIDE
-
 
   // masks
   /** This flags can be set when class or module symbol is first created. */

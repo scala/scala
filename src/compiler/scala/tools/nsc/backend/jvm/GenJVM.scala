@@ -454,7 +454,7 @@ abstract class GenJVM extends SubComponent {
     }
 
     def isTopLevelModule(sym: Symbol): Boolean =
-      atPhase (currentRun.refchecksPhase) {
+      atPhase (currentRun.picklerPhase.next) {
         sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass
       }
 
@@ -628,7 +628,7 @@ abstract class GenJVM extends SubComponent {
                                            clasz.cunit.source.toString)
       for (val m <- clasz.symbol.tpe.nonPrivateMembers;
            m.owner != definitions.ObjectClass && !m.hasFlag(Flags.PROTECTED) &&
-           m.isMethod && !m.hasFlag(Flags.CASE) && !m.isConstructor && !isStaticSymbol(m) &&
+           m.isMethod && !m.hasFlag(Flags.CASE) && !m.isConstructor && !m.isStaticMember &&
            !definitions.ObjectClass.info.nonPrivateMembers.exists(_.name == m.name))
       {
         val paramJavaTypes = m.tpe.paramTypes map (t => toTypeKind(t));
@@ -1379,7 +1379,7 @@ abstract class GenJVM extends SubComponent {
      */
     def computeLocalVarsIndex(m: IMethod) {
       var idx = 1
-      if (isStaticSymbol(m.symbol))
+      if (m.symbol.isStaticMember)
         idx = 0;
 
       for (l <- m.locals) {
@@ -1467,16 +1467,13 @@ abstract class GenJVM extends SubComponent {
       jf = jf | (if ((sym hasFlag Flags.FINAL)
                        && !sym.enclClass.hasFlag(Flags.INTERFACE)
                        && !sym.isClassConstructor) ACC_FINAL else 0)
-      jf = jf | (if (isStaticSymbol(sym)) ACC_STATIC else 0)
+      jf = jf | (if (sym.isStaticMember) ACC_STATIC else 0)
       if (settings.target.value == "jvm-1.5")
         jf = jf | (if (sym hasFlag Flags.BRIDGE) ACC_BRIDGE else 0)
       if (sym.isClass && !sym.hasFlag(Flags.INTERFACE))
         jf = jf | ACC_SUPER
       jf
     }
-
-    def isStaticSymbol(s: Symbol): Boolean =
-      s.hasFlag(Flags.STATIC) || s.hasFlag(Flags.STATICMEMBER) || s.owner.isImplClass;
 
     /** Calls to methods in 'sym' need invokeinterface? */
     def needsInterfaceCall(sym: Symbol): Boolean =

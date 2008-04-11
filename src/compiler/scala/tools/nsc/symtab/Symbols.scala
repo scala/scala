@@ -311,6 +311,10 @@ trait Symbols {
     final def isStatic: Boolean =
       hasFlag(STATIC) || isRoot || owner.isStaticOwner
 
+    /** Is this symbol a static member of its class? (i.e. needs to be implemented as a Java static?) */
+    final def isStaticMember: Boolean =
+      hasFlag(STATIC) || owner.isImplClass
+
     /** Does this symbol denote a class that defines static symbols? */
     final def isStaticOwner: Boolean =
       isPackageClass || isModuleClass && isStatic
@@ -984,6 +988,15 @@ trait Symbols {
               if s != NoSymbol } yield s
       else List()
 
+    /** The virtual classes overridden by this virtual class (including `clazz' itself)
+     *  Classes appear in linearization order (with superclasses before subclasses)
+     */
+    final def overriddenVirtuals: List[Symbol] =
+      this.owner.info.baseClasses
+        .map(_.info.decl(name))
+        .filter(_.isVirtualClass)
+        .reverse
+
     /** The symbol accessed by a super in the definition of this symbol when
      *  seen from class `base'. This symbol is always concrete.
      *  pre: `this.owner' is in the base class sequence of `base'.
@@ -1331,7 +1344,7 @@ trait Symbols {
           rawowner != NoSymbol && !rawowner.isPackageClass) {
         if (flatname == nme.EMPTY) {
           assert(rawowner.isClass)
-          flatname = newTermName(rawowner.name.toString() + "$" + rawname)
+          flatname = newTermName(compactify(rawowner.name.toString() + "$" + rawname))
         }
         flatname
       } else rawname
@@ -1481,7 +1494,7 @@ trait Symbols {
       if (phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass) {
         if (flatname == nme.EMPTY) {
           assert(rawowner.isClass)
-          flatname = newTypeName(rawowner.name.toString() + "$" + rawname)
+          flatname = newTypeName(compactify(rawowner.name.toString() + "$" + rawname))
         }
         flatname
       } else rawname

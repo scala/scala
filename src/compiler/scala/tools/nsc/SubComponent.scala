@@ -24,6 +24,18 @@ abstract class SubComponent {
   /** The phase factory */
   def newPhase(prev: Phase): Phase
 
+  private var ownPhaseCache: Phase = _
+  private var ownPhaseRunId = global.NoRunId
+
+  /** The phase corresponding to this subcomponent in the current compiler run */
+  def ownPhase: Phase = {
+    if (ownPhaseRunId != global.currentRunId) {
+      ownPhaseCache = global.currentRun.phaseNamed(phaseName)
+      ownPhaseRunId = global.currentRunId
+    }
+    ownPhaseCache
+  }
+
   /** The phase defined by this subcomponent. Can be called only after phase is installed by newPhase. */
 //  lazy val ownPhase: Phase = global.currentRun.phaseNamed(phaseName)
 

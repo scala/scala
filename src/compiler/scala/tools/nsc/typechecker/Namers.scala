@@ -524,11 +524,20 @@ trait Namers { self: Analyzer =>
           self.symbol = context.scope enter self.symbol
         }
       }
-      val parents = typer.parentTypes(templ) map checkParent
+      var parents = typer.parentTypes(templ) map checkParent
       enterSelf(templ.self)
       val decls = newClassScope(clazz)
       val templateNamer = newNamer(context.make(templ, clazz, decls))
         .enterSyms(templ.body)
+      // make subclasses of virtual classes virtual as well
+      if (parents exists (_.typeSymbol.isVirtualClass))
+        clazz setFlag DEFERRED
+      // add overridden virtuals to parents
+      if (clazz.isVirtualClass)
+        parents = parents ::: (clazz.overriddenVirtuals map (
+          TypeRef(clazz.thisType, _, clazz.typeParams map (_.tpe))))
+      // add apply and unapply methods to companion objects of case classes,
+      // unless they exist already
       caseClassOfModuleClass get clazz match {
         case Some(cdef) =>
           addApplyUnapply(cdef, templateNamer)

@@ -2250,13 +2250,15 @@ trait Parsers extends NewScanners with MarkupParsers {
     def isInterface(mods: Modifiers, body: List[Tree]) =
       (mods.hasFlag(Flags.TRAIT) && (body forall treeInfo.isInterfaceMember))
 
-    /** ClassTemplateOpt ::= extends ClassTemplate | [[extends] TemplateBody]
-     *  TraitTemplateOpt ::= extends TraitTemplate | [[extends] TemplateBody]
+    /** ClassTemplateOpt ::= Extends ClassTemplate | [[Extends] TemplateBody]
+     *  TraitTemplateOpt ::= Extends TraitTemplate | [[Extends] TemplateBody]
+     *  Extends          ::= extends | `<:'
      */
-    def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]]): Template = {
+    def templateOpt(mods0: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]]): Template = {
+      val mods = if (inToken == SUBTYPE) mods0 | ABSTRACT else mods0
       val pos = inCurrentPos;
       val (parents0, argss, self, body) =
-        if (inToken == EXTENDS) {
+        if (inToken == EXTENDS || inToken == SUBTYPE) {
           inNextToken
           template(mods hasFlag Flags.TRAIT)
         } else {

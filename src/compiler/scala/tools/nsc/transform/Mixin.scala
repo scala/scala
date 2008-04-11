@@ -88,12 +88,12 @@ abstract class Mixin extends InfoTransform {
 
   /** Returns the symbol that is accessed by a super-accessor in a mixin composition.
    *
-   *  @param base       The class in mwhich everything is mixed together
+   *  @param base       The class in which everything is mixed together
    *  @param member     The symbol statically referred to by the superaccessor in the trait
    *  @param mixinClass The mixin class that produced the superaccessor
    */
   private def rebindSuper(base: Symbol, member: Symbol, mixinClass: Symbol): Symbol =
-    atPhase(currentRun.refchecksPhase) {
+    atPhase(currentRun.picklerPhase.next) {
       var bcs = base.info.baseClasses.dropWhile(mixinClass !=).tail
       var sym: Symbol = NoSymbol
       if (settings.debug.value)

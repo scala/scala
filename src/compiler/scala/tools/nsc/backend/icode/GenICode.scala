@@ -161,7 +161,7 @@ abstract class GenICode extends SubComponent  {
 
       tree match {
         case Assign(lhs @ Select(_, _), rhs) =>
-          if (isStaticSymbol(lhs.symbol)) {
+          if (lhs.symbol.isStaticMember) {
             val ctx1 = genLoad(rhs, ctx, toTypeKind(lhs.symbol.info))
             ctx1.bb.emit(STORE_FIELD(lhs.symbol, true), tree.pos)
             ctx1
@@ -809,9 +809,9 @@ abstract class GenICode extends SubComponent  {
             ctx1
           } else {  // normal method call
             if (settings.debug.value)
-              log("Gen CALL_METHOD with sym: " + sym + " isStaticSymbol: " + isStaticSymbol(sym));
+              log("Gen CALL_METHOD with sym: " + sym + " isStaticSymbol: " + sym.isStaticMember);
             var invokeStyle =
-              if (isStaticSymbol(sym))
+              if (sym.isStaticMember)
                 Static(false)
               else if (sym.hasFlag(Flags.PRIVATE) || sym.isClassConstructor)
                 Static(true)
@@ -883,7 +883,7 @@ abstract class GenICode extends SubComponent  {
             assert(!tree.symbol.isPackageClass, "Cannot use package as value: " + tree)
             ctx.bb.emit(LOAD_MODULE(sym), tree.pos);
             ctx
-          } else if (isStaticSymbol(sym)) {
+          } else if (sym.isStaticMember) {
             ctx.bb.emit(LOAD_FIELD(sym, true), tree.pos)
             ctx
           } else {
@@ -1056,10 +1056,6 @@ abstract class GenICode extends SubComponent  {
         case _ =>
           abort("Unknown qualifier " + tree)
       }
-
-    /** Is this symbol static in the Java sense? */
-    def isStaticSymbol(s: Symbol): Boolean =
-      s.hasFlag(Flags.STATIC) || s.hasFlag(Flags.STATICMEMBER) || s.owner.isImplClass
 
     /**
      * Generate code that loads args into label parameters.

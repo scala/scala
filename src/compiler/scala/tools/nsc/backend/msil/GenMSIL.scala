@@ -1800,7 +1800,7 @@ abstract class GenMSIL extends SubComponent {
     def computeLocalVarsIndex(m: IMethod) {
       val params = m.params
       var idx = 1
-      if (isStaticSymbol(m.symbol))
+      if (m.symbol.isStaticMember)
         idx = 0
 
       for (l <- params) {
@@ -1884,7 +1884,7 @@ abstract class GenMSIL extends SubComponent {
          else MethodAttributes.Public)
 
       if (!sym.isClassConstructor) {
-        if (isStaticSymbol(sym))
+        if (sym.isStaticMember)
           mf = mf | FieldAttributes.Static
         else {
           mf = mf | MethodAttributes.Virtual
@@ -1907,7 +1907,7 @@ abstract class GenMSIL extends SubComponent {
       if (sym hasFlag Flags.FINAL)
         mf = mf | FieldAttributes.InitOnly
 
-      if (isStaticSymbol(sym))
+      if (sym.isStaticMember)
         mf = mf | FieldAttributes.Static
 
       // TRANSIENT: "not nerialized", VOLATILE: doesn't exist on .net
@@ -1921,11 +1921,6 @@ abstract class GenMSIL extends SubComponent {
 
       mf.toShort
     }
-
-
-    def isStaticSymbol(s: Symbol): Boolean =
-      s.hasFlag(Flags.STATIC) || s.hasFlag(Flags.STATICMEMBER) || s.owner.isImplClass
-
 
     ////////////////////// builders, types ///////////////////////
 
@@ -2202,7 +2197,7 @@ abstract class GenMSIL extends SubComponent {
 
       for (m <- sym.tpe.nonPrivateMembers
            if m.owner != definitions.ObjectClass && !m.hasFlag(Flags.PROTECTED) &&
-           m.isMethod && !m.isClassConstructor && !isStaticSymbol(m) && !m.hasFlag(Flags.CASE))
+           m.isMethod && !m.isClassConstructor && !m.isStaticMember && !m.hasFlag(Flags.CASE))
         {
           if (settings.debug.value)
             log("   Mirroring method: " + m)

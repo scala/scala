@@ -220,8 +220,7 @@ trait Members { self: ICodes =>
       native
     );
 
-    def isStatic: Boolean =
-      symbol.hasFlag(Flags.STATIC) || symbol.hasFlag(Flags.STATICMEMBER) || symbol.owner.isImplClass;
+    def isStatic: Boolean = symbol.isStaticMember
 
     override def toString() = symbol.fullNameString
 
