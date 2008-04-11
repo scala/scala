@@ -489,8 +489,11 @@ trait StdNames {
     final val Code          = nme.NOSYMBOL
   }
 
-  val sn: SymbolNames =
-    if (forMSIL) new MSILNames
+  private var sn0 : SymbolNames = _
+  def sn: SymbolNames = {
+    if (sn0 == null) sn0 = if (forMSIL) new MSILNames
     else if (forCLDC) new CLDCNames
     else new J2SENames
+    sn0
+  }
 }

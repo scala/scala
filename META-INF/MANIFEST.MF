@@ -5,6 +5,8 @@ Bundle-SymbolicName: scala;singleton:=true
 Bundle-Version: 2.6.1.B1
 Eclipse-LazyStart: true
 Bundle-ClassPath: lib/fjbg.jar,
+ lib/msil.jar,
+ lib/,
  build/quick/lib/library/,
  build/quick/lib/actors/,
  build/quick/lib/dbc/,
