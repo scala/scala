@@ -3,9 +3,7 @@
 <project name="sabbus" default="build">
 
   <description>
-    SuperSabbus for Scala core, builds the scala library and compiler. It can also package it as a simple distribution,
-    tests it for stable bootstrapping and against the Scala test suite. Use PackSabbus to package it for different install
-    management tools such as Sbaz.
+    SuperSabbus for Scala core, builds the scala library and compiler. It can also package it as a simple distribution, tests it for stable bootstrapping and against the Scala test suite. Use PackSabbus to package it for different install management tools such as Sbaz.
   </description>
 
 <!-- ===========================================================================
@@ -71,8 +69,7 @@ PROPERTIES
   <property name="test.dir" value="${basedir}/test"/>
 
   <!-- Loads custom properties definitions -->
-  <property name="properties.file" value="${basedir}/build.properties"/>
-  <property file="${properties.file}"/>
+  <property file="${basedir}/build.properties"/>
 
   <!-- Sets location of pre-compiled libraries -->
   <property name="lib.starr.jar" value="${lib.dir}/scala-library.jar"/>
@@ -89,7 +86,6 @@ PROPERTIES
   <property name="build-quick.dir" value="${build.dir}/quick"/>
   <property name="build-pack.dir" value="${build.dir}/pack"/>
   <property name="build-strap.dir" value="${build.dir}/strap"/>
-  <property name="build-four.dir" value="${build.dir}/four"/>
   <property name="build-docs.dir" value="${build.dir}/scaladoc"/>
   
   <property name="dists.dir" value="${basedir}/dists"/>
@@ -433,22 +429,17 @@ QUICK BUILD (QUICK)
     <condition property="quick.bin.available">
       <isset property="quick.comp.available"/>
     </condition>
+  </target>
+
+  <target name="quick.bin" depends="quick.pre-bin" unless="quick.bin.available">
     <path id="quick.bin.classpath">
     	<pathelement location="${build-quick.dir}/classes/library"/>
     	<pathelement location="${build-quick.dir}/classes/compiler"/>
       <pathelement location="${fjbg.jar}"/>
       <pathelement location="${jline.jar}"/>
     </path>
-  </target>
-
-  <target name="quick.bin" depends="quick.pre-bin" unless="quick.bin.available">
+    <taskdef name="quick-bin" classname="scala.tools.ant.ScalaTool" classpathref="quick.bin.classpath"/>
     <mkdir dir="${build-quick.dir}/bin"/>
-    <taskdef name="quick-bin" classname="scala.tools.ant.ScalaTool">
-      <classpath>
-      	<pathelement location="${build-quick.dir}/classes/library"/>
-      	<pathelement location="${build-quick.dir}/classes/compiler"/>
-      </classpath>
-    </taskdef>
     <quick-bin
       file="${build-quick.dir}/bin/scala"
       class="scala.tools.nsc.MainGenericRunner"
@@ -544,15 +535,15 @@ PACKED QUICK BUILD (PACK)
       property="pack.bin.available"
       srcfile="${build-pack.dir}/lib/scala-compiler.jar"
       targetfile="${build-pack.dir}/bin.complete"/>
+  </target>
+
+  <target name="pack.bin" depends="pack.pre-bin" unless="pack.bin.available">
     <taskdef name="pack-bin" classname="scala.tools.ant.ScalaTool">
       <classpath>
       	<pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
       	<pathelement location="${build-pack.dir}/lib/scala-compiler.jar"/>
       </classpath>
     </taskdef>
-  </target>
-
-  <target name="pack.bin" depends="pack.pre-bin" unless="pack.bin.available">
     <mkdir dir="${build-pack.dir}/bin"/>
     <pack-bin
       file="${build-pack.dir}/bin/scala"
@@ -759,15 +750,7 @@ BOOTSTRAPPING BUILD (STRAP)
 DOCUMENTATION
 ============================================================================ -->
   
-  <target name="docs.start" depends="pack.done">
-    <uptodate property="docs.available" targetfile="${build-docs.dir}/build.complete">
-      <srcfiles dir="${src.dir}">
-        <include name="library/**"/>
-        <include name="dbc/**"/>
-        <include name="actors/**"/>
-      </srcfiles>
-    </uptodate>
-  </target>
+  <target name="docs.start" depends="pack.done"/>
   
   <target name="docs.pre-lib" depends="docs.start">
     <uptodate property="docs.lib.available" targetfile="${build-docs.dir}/library.complete">
@@ -794,7 +777,7 @@ DOCUMENTATION
       </src>
       <include name="**/*.scala"/>
     </scaladoc>
-    <touch file="${build-docs.dir}/lib.complete" verbose="no"/>
+    <touch file="${build-docs.dir}/library.complete" verbose="no"/>
     <stopwatch name="docs.lib.timer" action="total"/>
   </target>
   
@@ -815,7 +798,7 @@ DOCUMENTATION
       srcdir="${src.dir}/compiler">
       <include name="**/*.scala"/>
     </scaladoc>
-    <touch file="${build-docs.dir}/comp.complete" verbose="no"/>
+    <touch file="${build-docs.dir}/compiler.complete" verbose="no"/>
     <stopwatch name="docs.comp.timer" action="total"/>
   </target>
   
@@ -823,128 +806,6 @@ DOCUMENTATION
 
   <target name="docs.clean">
     <delete dir="${build-docs.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
-  </target>
-  
-<!-- ===========================================================================
-JAVA 1.4 LIBRARY AND COMPILER BUILD (FOUR)
-============================================================================ -->
-  
-  <target name="four.start" depends="pack.done"/>
-  
-  <target name="four.pre-lib" depends="four.start">
-    <uptodate property="four.lib.available" targetfile="${build-four.dir}/library.complete">
-      <srcfiles dir="${src.dir}">
-        <include name="library/**"/>
-        <include name="dbc/**"/>
-        <include name="actors/**"/>
-      </srcfiles>
-    </uptodate>
-  </target>
-
-  <target name="four.lib" depends="four.pre-lib" unless="four.lib.available">
-    <stopwatch name="four.lib.timer"/>
-    <mkdir dir="${build-four.dir}/classes/library"/>
-    <javac
-      srcdir="${src.dir}/library"
-      destdir="${build-four.dir}/classes/library"
-      classpath="${build-four.dir}/classes/library"
-      includes="**/*.java"
-      target="1.4" source="1.4"/>
-    <javac
-      srcdir="${src.dir}/actors"
-      destdir="${build-four.dir}/classes/library"
-      classpath="${build-four.dir}/classes/library"
-      includes="**/*.java"
-      target="1.4" source="1.4"/>
-    <scalac
-      srcdir="${src.dir}/library"
-      destdir="${build-four.dir}/classes/library"
-      classpath="${build-four.dir}/classes/library"
-      sourcepath="${src.dir}/library"
-      target="jvm-1.4">
-      <include name="scala/Predef.scala"/>
-    </scalac>
-    <scalac
-      srcdir="${src.dir}/library"
-      destdir="${build-four.dir}/classes/library"
-      classpath="${build-four.dir}/classes/library"
-      target="jvm-1.4">
-      <include name="**/*.scala"/>
-      <exclude name="scala/Predef.scala"/>
-    </scalac>
-    <scalac
-      srcdir="${src.dir}/actors"
-      destdir="${build-four.dir}/classes/library"
-      classpath="${build-four.dir}/classes/library"
-      target="jvm-1.4">
-      <include name="**/*.scala"/>
-    </scalac>
-    <scalac
-      srcdir="${src.dir}/dbc"
-      destdir="${build-four.dir}/classes/library"
-      classpath="${build-four.dir}/classes/library"
-      target="jvm-1.4">
-      <include name="**/*.scala"/>
-    </scalac>
-    <propertyfile file="${build-four.dir}/classes/library/library.properties">
-      <entry key="version.number" value="${version.number}"/>
-      <entry key="copyright.string" value="${copyright.string}"/>
-    </propertyfile>
-    <copy todir="${build-four.dir}/classes/library">
-      <fileset dir="${src.dir}/library">
-        <include name="**/*.tmpl"/>
-        <include name="**/*.xml"/>
-        <include name="**/*.js"/>
-        <include name="**/*.css"/>
-      </fileset>
-    </copy>
-    <touch file="${build-four.dir}/library.complete" verbose="no"/>
-    <stopwatch name="four.lib.timer" action="total"/>
-  </target>
-  
-  <target name="four.pre-comp" depends="four.lib">
-    <uptodate property="four.comp.available" targetfile="${build-four.dir}/compiler.complete">
-      <srcfiles dir="${src.dir}/compiler"/>
-    </uptodate>
-  </target>
-
-  <target name="four.comp" depends="four.pre-comp" unless="four.comp.available">
-    <stopwatch name="four.comp.timer"/>
-    <mkdir dir="${build-four.dir}/classes/compiler"/>
-    <scalac
-      srcdir="${src.dir}/compiler"
-      destdir="${build-four.dir}/classes/compiler"
-      target="jvm-1.4">
-      <include name="**/*.scala"/>
-      <classpath>
-        <pathelement location="${build-four.dir}/classes/library"/>
-        <pathelement location="${build-four.dir}/classes/compiler"/>
-        <pathelement location="${fjbg.jar}"/>
-        <pathelement location="${msil.jar}"/>
-        <pathelement location="${jline.jar}"/>
-        <pathelement location="${ant.jar}"/>
-      </classpath>
-    </scalac>
-    <propertyfile file="${build-four.dir}/classes/compiler/compiler.properties">
-      <entry key="version.number" value="${version.number}"/>
-      <entry key="copyright.string" value="${copyright.string}"/>
-    </propertyfile>
-    <copy todir="${build-four.dir}/classes/compiler">
-      <fileset dir="${src.dir}/compiler">
-        <include name="**/*.tmpl"/>
-        <include name="**/*.xml"/>
-        <include name="**/*.js"/>
-        <include name="**/*.css"/>
-      </fileset>
-    </copy>
-    <touch file="${build-four.dir}/compiler.complete" verbose="no"/>
-    <stopwatch name="four.comp.timer" action="total"/>
-  </target>
-  
-  <target name="four.done" depends="four.comp"/>
-
-  <target name="four.clean">
-    <delete dir="${build-four.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
   </target>
   
 <!-- ===========================================================================
@@ -1070,6 +931,26 @@ STABLE REFERENCE (STARR)
   </target>
   
   <target name="starr.done" depends="starr.src"/>
+
+<!-- ===========================================================================
+FORWARDED TARGETS FOR JVM 1.4 BUILD
+============================================================================ -->
+  
+  <target name="four" depends="pack.done">
+    <ant antfile="${src.dir}/build/four.xml" target="four-pack.done" inheritall="yes" inheritrefs="yes"/>
+  </target>
+  
+  <target name="fourtest" depends="pack.done">
+    <ant antfile="${src.dir}/build/four.xml" target="four-test.done" inheritall="yes" inheritrefs="yes"/>
+  </target>
+  
+  <target name="fourdist" depends="pack.done">
+    <ant antfile="${src.dir}/build/four.xml" target="four-all.done" inheritall="yes" inheritrefs="yes"/>
+  </target>
+  
+  <target name="fourclean">
+    <ant antfile="${src.dir}/build/four.xml" target="four-all.clean" inheritall="yes" inheritrefs="yes"/>
+  </target>
 
 <!-- ===========================================================================
 MISCELLANEOUS
