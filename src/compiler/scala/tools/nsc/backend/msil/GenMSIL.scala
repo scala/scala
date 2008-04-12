@@ -204,7 +204,6 @@ abstract class GenMSIL extends SubComponent {
       mapType(definitions.LongClass, MLONG)
       mapType(definitions.FloatClass, MFLOAT)
       mapType(definitions.DoubleClass, MDOUBLE)
-
     }
 
     var clasz: IClass = _
@@ -255,8 +254,6 @@ abstract class GenMSIL extends SubComponent {
       mmodule = massembly.DefineDynamicModule(moduleName,
                                               new File(outDir, moduleName).getAbsolutePath())
       assert (mmodule != null)
-      initMappings()
-
     }
 
 
