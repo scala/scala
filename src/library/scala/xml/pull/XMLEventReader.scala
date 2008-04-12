@@ -58,7 +58,7 @@ class XMLEventReader extends Iterator[XMLEvent] {
       wait()
     }
     continue = true
-    notifyAll
+    notify()
   }
   def getAndClearEvent: XMLEvent = synchronized {
     while (xmlEvent eq null) {
@@ -72,10 +72,14 @@ class XMLEventReader extends Iterator[XMLEvent] {
     xmlEvent = e
   }
 
-  def doNotify() = synchronized {
+  def doNotify(): NodeSeq = synchronized {
     XMLEventReader.this.continue = false
-    notifyAll()
-    while (!XMLEventReader.this.continue) wait();
+    notify()
+    while (!XMLEventReader.this.continue) {
+      try { wait() } catch {
+       case _: java.lang.InterruptedException => /* ignore */
+	  }
+	}
     NodeSeq.Empty
   }
 
@@ -89,38 +93,47 @@ class XMLEventReader extends Iterator[XMLEvent] {
 
   def hasNext = true
 
+  // After calling stop, one must call initialize to be able to get new events.
+  def stop = {
+    continue = true;
+    parserThread.interrupt();
+    parserThread = null;
+  }
+
   var parserThread: Thread = null
 
   class Parser extends MarkupHandler with MarkupParser with ExternalSources with Runnable {
 
     val preserveWS = true
     val input = XMLEventReader.this.getSource
+	// document must contain one element - avoid spurious syntax error
+    final val ignore_node = <ignore/>
 
     override def elemStart(pos: Int, pre: String, label: String, attrs: MetaData, scope: NamespaceBinding) {
-      setEvent(ElemStart(pre, label, attrs, scope)); doNotify
+      setEvent(EvElemStart(pre, label, attrs, scope)); doNotify
     }
 
     override def elemEnd(pos: Int, pre: String, label: String) {
-      setEvent(ElemEnd(pre, label)); doNotify
+      setEvent(EvElemEnd(pre, label)); doNotify
     }
 
     final def elem(pos: Int, pre: String, label: String, attrs: MetaData, pscope: NamespaceBinding, nodes: NodeSeq): NodeSeq =
-      NodeSeq.Empty
+      ignore_node
 
     def procInstr(pos: Int, target: String, txt: String): NodeSeq = {
-      setEvent(ElemStart(null, "comm", null, null)); doNotify
+      setEvent(EvProcInstr(target, txt)); doNotify
     }
 
     def comment(pos: Int, txt: String): NodeSeq = {
-      setEvent(ElemStart(null, "comm", null, null)); doNotify
+      setEvent(EvComment(txt)); doNotify
     }
 
     def entityRef(pos: Int, n: String): NodeSeq = {
-      setEvent(ElemStart(null, "eref", null, null)); doNotify
+      setEvent(EvEntityRef(n)); doNotify
     }
 
     def text(pos: Int, txt:String): NodeSeq = {
-      setEvent(ElemStart(null, "tex", null, null)); doNotify
+      setEvent(EvText(txt)); doNotify
     }
 
     override def run() {
