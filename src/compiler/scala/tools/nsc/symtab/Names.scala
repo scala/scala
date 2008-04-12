@@ -87,7 +87,7 @@ class Names {
   private lazy val md5 = MessageDigest.getInstance("MD5")
 
   private def toMD5(s: String, prefixSuffixLen: Int) = {
-	println("COMPACTIFY "+s)
+//  println("COMPACTIFY "+s)
     val cs: Array[Char] = s.toCharArray
     val bytes = new Array[Byte](cs.length * 4)
     val len = UTF8Codec.encode(cs, 0, bytes, 0, cs.length)
