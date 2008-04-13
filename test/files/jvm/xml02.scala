@@ -5,11 +5,11 @@ object Test extends TestConsoleMain {
   import scala.xml.{NodeSeq, Utility}
   import NodeSeq.view
 
-  val ax = <hello foo="bar">
+  val ax = <hello foo="bar" x:foo="baz" xmlns:x="the namespace from outer space">
              <world/>
            </hello>
 
-  val cx = <z:hello foo="bar" xmlns:z="z">
+  val cx = <z:hello foo="bar" xmlns:z="z" x:foo="baz" xmlns:x="the namespace from outer space">
              crazy text world
            </z:hello>
 
@@ -22,8 +22,35 @@ object Test extends TestConsoleMain {
       assertTrue("@two",       ax \ "@foo" == xml.Text("bar"))    // dto.
       assertTrue("@three",     bx \ "@foo" == "bar&x")            // dto.
       assertTrue  ("@four", (bx \ "@foo") sameElements List(xml.Text("bar&x")))
-      //assertTrue("@four", (bx \ "@foo") sameElements List(xml.Text("bar"),xml.EntityRef("amp"),xml.Text("x")))
       assertEquals("@five",  "<hello foo=\"bar&amp;x\"></hello>", bx.toString)
+    }
+  }
+
+  object XmlEy extends TestCase("attributes with namespace") with Assert {
+    override def runTest = {
+      val z = ax \ "@{the namespace from outer space}foo"
+      assertTrue("@six",   ax \ "@{the namespace from outer space}foo" == "baz")
+      assertTrue("@eight", cx \ "@{the namespace from outer space}foo" == "baz")
+
+      try {
+        ax \ "@"
+        assertTrue("wrong1", false)
+      } catch {
+        case _: IllegalArgumentException =>
+      }
+      try {
+        ax \ "@{"
+        assertTrue("wrong2", false)
+      } catch {
+        case _: IllegalArgumentException =>
+      }
+      try {
+        ax \ "@{}"
+        assertTrue("wrong3", false)
+      } catch {
+        case _: IllegalArgumentException =>
+      }
+
     }
   }
 
@@ -44,6 +71,7 @@ object Test extends TestConsoleMain {
   }
   def suite = new TestSuite(
     XmlEx,
+    XmlEy,
     XmlPat,
     DodgyNamespace
   )

@@ -50,7 +50,14 @@ abstract class NodeSeq extends Seq[Node] {
 
   /** Projection function. Similar to XPath, use <code>this \ "foo"</code>
    *  to get a list of all elements of this sequence that are labelled with
-   *  <code>"foo"</code>. Use <code>\ "_"</code> as a wildcard.
+   *  <code>"foo"</code>. Use <code>\ "_"</code> as a wildcard. Use
+   *  <code>ns \ "@foo"</code> to get the unprefixed attribute "foo".
+   *  Use <code>ns \ "@{uri}foo"</code> to get the prefixed attribute
+   *  "pre:foo" whose prefix "pre" is resolved to the namespace "uri".
+   *  For attribute projections, the resulting NodeSeq attribute values are
+   *  wrapped in a Group.
+   *  There is no support for searching a prefixed attribute by
+   *  its literal prefix.
    *  The document order is preserved.
    *
    *  @param that ...
@@ -72,11 +79,27 @@ abstract class NodeSeq extends Seq[Node] {
       NodeSeq.fromSeq(zs.reverse)
 
     case _ if (that.charAt(0) == '@') && (this.length == 1) =>
-      val k = that.substring(1)
-      val y = this(0)
-      y.attribute(k) match {
-	case Some(x) => Group(x)
-        case _       => NodeSeq.Empty
+      if (that.length() == 1)
+        throw new IllegalArgumentException(that)
+      if (that.charAt(1) == '{') {
+        val i = that.indexOf('}')
+        if (i == -1)
+          throw new IllegalArgumentException(that)
+        val (uri, key) = (that.substring(2,i), that.substring(i+1, that.length()))
+        if (uri == "" || key == "")
+          throw new IllegalArgumentException(that)
+        val y = this(0)
+        y.attribute(uri, key) match {
+          case Some(x) => Group(x)
+          case _       => NodeSeq.Empty
+        }
+      } else {
+        val k = that.substring(1)
+        val y = this(0)
+        y.attribute(k) match {
+          case Some(x) => Group(x)
+          case _       => NodeSeq.Empty
+        }
       }
 
     case _   =>
@@ -96,7 +119,14 @@ abstract class NodeSeq extends Seq[Node] {
 
   /** projection function. Similar to XPath, use <code>this \\ 'foo</code>
    *  to get a list of all elements of this sequence that are labelled with
-   *  <code>"foo"</code>. Use <code>\\ "_"</code> as a wildcard.
+   *  <code>"foo"</code>. Use <code>\\ "_"</code> as a wildcard.  Use
+   *  <code>ns \\ "@foo"</code> to get the unprefixed attribute "foo".
+   *  Use <code>ns \\ "@{uri}foo"</code> to get each prefixed attribute
+   *  "pre:foo" whose prefix "pre" is resolved to the namespace "uri".
+   *  For attribute projections, the resulting NodeSeq attribute values are
+   *  wrapped in a Group.
+   *  There is no support for searching a prefixed attribute by
+   *  its literal prefix.
    *  The document order is preserved.
    *
    *  @param that ...
