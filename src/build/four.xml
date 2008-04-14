@@ -299,6 +299,10 @@ DISTRIBUTION
     </jar>
   </target>
   
+  <target name="four-dist.latest" depends="four-dist.src" unless="os.win">
+    <symlink link="${dists.dir}/latest-jvm4" resource="${four-dist.dir}" overwrite="yes"/>
+  </target>
+  
   <target name="four-dist.done" depends="four-dist.src"/>
 
 <!-- ===========================================================================

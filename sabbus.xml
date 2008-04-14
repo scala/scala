@@ -78,7 +78,6 @@ PROPERTIES
   <property name="msil.jar" value="${lib.dir}/msil.jar"/>
   <property name="jline.jar" value="${lib.dir}/jline.jar"/>
   <property name="ant.jar" value="${ant.home}/lib/ant.jar"/>
-  <property name="ant-contrib.jar" value="${lib.dir}/ant-contrib.jar"/>
 
   <!-- Sets location of build folders -->
   <property name="build.dir" value="${basedir}/build"/>
@@ -100,8 +99,7 @@ INITIALISATION
 
   <target name="init">
   <!-- Setting-up Ant contrib tasks -->
-    <taskdef resource="net/sf/antcontrib/antlib.xml"
-             classpath="${ant-contrib.jar}"/>
+    <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant-contrib.jars"/>
   <!-- This is the start time for the distribution -->
     <tstamp prefix="time">
       <format property="human" pattern="d MMMM yyyy, HH:mm:ss"/>
@@ -944,7 +942,7 @@ FORWARDED TARGETS FOR JVM 1.4 BUILD
     <ant antfile="${src.dir}/build/four.xml" target="four-test.done" inheritall="yes" inheritrefs="yes"/>
   </target>
   
-  <target name="fourdist" depends="pack.done">
+  <target name="fourdist" depends="all.done">
     <ant antfile="${src.dir}/build/four.xml" target="four-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
   
