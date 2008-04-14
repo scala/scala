@@ -1,9 +1,7 @@
 @@echo off
 
 rem ##########################################################################
-rem # @name@ @version@
-rem ##########################################################################
-rem # @copyright@
+rem # Copyright 2002-2008, LAMP/EPFL
 rem #
 rem # This is free software; see the distribution for copying conditions.
 rem # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
@@ -34,38 +32,28 @@ rem We use the value of the JAVA_OPTS environment variable if defined
 set _JAVA_OPTS=%JAVA_OPTS%
 if "%_JAVA_OPTS%"=="" set _JAVA_OPTS=@javaflags@
 
-set _EXTENSION_CLASSPATH=@extclasspath@
-if "%_EXTENSION_CLASSPATH%"=="" (
+set _TOOL_CLASSPATH=@extclasspath@
+if "%_TOOL_CLASSPATH%"=="" (
   for %%f in ("%_SCALA_HOME%\lib\*") do call :add_cpath "%%f"
   if "%OS%"=="Windows_NT" (
     for /d %%f in ("%_SCALA_HOME%\lib\*") do call :add_cpath "%%f"
   )
 )
 
-set _BOOT_CLASSPATH=@bootclasspath@
-if "%_BOOT_CLASSPATH%"=="" (
-  if exist "%_SCALA_HOME%\lib\scala-library.jar" (
-    set _BOOT_CLASSPATH=%_SCALA_HOME%\lib\scala-library.jar
-  )
-  if exist "%_SCALA_HOME%\lib\library" (
-    set _BOOT_CLASSPATH=%_SCALA_HOME%\lib\library
-  )
-)
-
 set _PROPS=-Dscala.home="%_SCALA_HOME%" -Denv.classpath="%CLASSPATH%" -Denv.emacs="%EMACS%" @properties@
 
-rem echo %_JAVACMD% -Xbootclasspath/a:"%_BOOT_CLASSPATH%" %_JAVA_OPTS% %_PROPS% -cp "%_EXTENSION_CLASSPATH%" @class@ @toolflags@ %_ARGS%
-%_JAVACMD% -Xbootclasspath/a:"%_BOOT_CLASSPATH%" %_JAVA_OPTS% %_PROPS% -cp "%_EXTENSION_CLASSPATH%" @class@ @toolflags@ %_ARGS%
+rem echo %_JAVACMD% %_JAVA_OPTS% %_PROPS% -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %_ARGS%
+%_JAVACMD% %_JAVA_OPTS% %_PROPS% -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %_ARGS%
 goto end
 
 rem ##########################################################################
 rem # subroutines
 
 :add_cpath
-  if "%_EXTENSION_CLASSPATH%"=="" (
-    set _EXTENSION_CLASSPATH=%~1
+  if "%_TOOL_CLASSPATH%"=="" (
+    set _TOOL_CLASSPATH=%~1
   ) else (
-    set _EXTENSION_CLASSPATH=%_EXTENSION_CLASSPATH%;%~1
+    set _TOOL_CLASSPATH=%_TOOL_CLASSPATH%;%~1
   )
 goto :eof
 
