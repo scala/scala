@@ -2973,7 +2973,7 @@ trait Typers { self: Analyzer =>
 
         case DocDef(comment, defn) =>
           val ret = typed(defn, mode, pt)
-          if (comments ne null) comments(defn.symbol) = comment
+          if ((comments ne null) && (defn.symbol ne null) && (defn.symbol ne NoSymbol)) comments(defn.symbol) = comment
           ret
 
 	case Annotation(constr, elements) =>
