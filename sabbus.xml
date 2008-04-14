@@ -914,7 +914,7 @@ STABLE REFERENCE (STARR)
   </target>
   
   <target name="starr.lib" depends="starr.clean">
-    <copy file="${build-quick.dir}/lib/scala-library.jar" toFile="${lib.starr.jar}"/>
+    <copy file="${build-pack.dir}/lib/scala-library.jar" toFile="${lib.starr.jar}"/>
   </target>
   
   <target name="starr.comp" depends="starr.lib">
