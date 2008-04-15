@@ -543,7 +543,7 @@ BUILD QUICK-TEST LAYER
       addparams="${nsc.params}" target="${nsc.target}"
       deprecation="yes" unchecked="yes"
       scalacdebugging="${nsc.log-files}"
-	  classpath="${quick.dir}/lib/library">
+      classpath="${quick.dir}/lib/library">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
       <exclude name="scala/dbc/**"/>
@@ -1024,10 +1024,10 @@ MSIL
   <target name="msil.sources" depends="msil.init">
     <mkdir dir="${msil.dir}/src"/>
     <copy todir="${msil.dir}/src">
-      <fileset dir="${src.dir}/dotnet-library" includes="**/*.scala, **/*.cs" /> 
+      <fileset dir="${src.dir}/dotnet-library" includes="**/*.scala, **/*.cs"/> 
     </copy>
     <copy todir="${msil.dir}/src">
-      <fileset dir="${src.dir}/library" includes="**/*.scala" />
+      <fileset dir="${src.dir}/library" includes="**/*.scala"/>
     </copy>
   </target>
 
@@ -1227,7 +1227,8 @@ OPTIMIZE
       javaFlags="${java.flags}"/>
     <straptool
       file="${optimised.dir}/bin/${fsc.exec.name}"
-      class="scala.tools.nsc.CompileClient"/>
+      class="scala.tools.nsc.CompileClient"
+      javaFlags="${java.flags}"/>
     <chmod perm="ugo+rx"
       file="${optimised.dir}/bin/${scalac.exec.name}"/>
     <chmod perm="ugo+rx"
@@ -1405,7 +1406,8 @@ TEST
       javaFlags="${java.flags}"/>
     <straptool
       file="${strap.dir}/bin/${fsc.exec.name}"
-      class="scala.tools.nsc.CompileClient"/>
+      class="scala.tools.nsc.CompileClient"
+      javaFlags="${java.flags}"/>
     <chmod perm="ugo+rx"
       file="${strap.dir}/bin/${scalac.exec.name}"/>
     <chmod perm="ugo+rx"
