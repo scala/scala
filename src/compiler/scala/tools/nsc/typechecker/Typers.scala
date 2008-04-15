@@ -2364,14 +2364,29 @@ trait Typers { self: Analyzer =>
             .setOriginal(tpt1) /* .setPos(tpt1.pos) */
             .setType(appliedType(tpt1.tpe, context.undetparams map (_.tpe)))
         }
+        def narrowRhs(tp: Type) = {
+          var sym = context.tree.symbol
+          if (sym != null && sym != NoSymbol && sym.owner.isClass && sym.getter(sym.owner) != NoSymbol)
+            sym = sym.getter(sym.owner)
+          context.tree match {
+            case ValDef(_, _, _, Apply(Select(`tree`, _), _)) if (sym.isStable) =>
+//              println("narrowing...")
+              val pre = if (sym.owner.isClass) sym.owner.thisType else NoPrefix
+              intersectionType(List(tp, singleType(pre, sym)))
+            case _ =>
+//              println("no narrow: "+sym+" "+sym.isStable+" "+context.tree+"//"+tree)
+              tp
+          }
+        }
         if (tpt1.tpe.typeSymbol.isAbstractType || (tpt1.tpe.typeSymbol hasFlag ABSTRACT))
           error(tree.pos, tpt1.tpe.typeSymbol + " is abstract; cannot be instantiated")
         else if (tpt1.tpe.typeSymbol.initialize.thisSym != tpt1.tpe.typeSymbol &&
-                 !(tpt1.tpe <:< tpt1.tpe.typeOfThis) &&
-                 !phase.erasedTypes)
+                 !(narrowRhs(tpt1.tpe) <:< tpt1.tpe.typeOfThis) &&
+                 !phase.erasedTypes) {
           error(tree.pos, tpt1.tpe.typeSymbol +
                 " cannot be instantiated because it does not conform to its self-type "+
                 tpt1.tpe.typeOfThis)
+        }
         copy.New(tree, tpt1).setType(tpt1.tpe)
       }
 
