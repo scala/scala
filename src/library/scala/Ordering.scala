@@ -23,10 +23,10 @@ package scala
  * <ul>
  * <li>reflexive: <code>compare(x, x) == 0</code>, for any <code>x</code> of
  * type <code>T</code>.</li>
- * <li>(need a name): <code>compare(x, y) == z</code> and <code>compare(y, x) == w</code>
+ * <li>symmetry: <code>compare(x, y) == z</code> and <code>compare(y, x) == w</code>
  * then <code>Math.signum(z) == -Math.signum(w)</code>, for any <code>x</code> and <code>y</code> of
  * type <code>T</code> and <code>z</code> and <code>w</code> of type <code>Int</code>.</li>
- * <li>transitive: if <code>compare(x, y) == z</code> and <code>lteq(y, w) == v</code>
+ * <li>transitive: if <code>compare(x, y) == z</code> and <code>compare(y, w) == v</code>
  * and <code>Math.signum(z) &gt;= 0</code> and <code>Math.signum(v) &gt;= 0</code> then
  * <code>compare(x, w) == u</code> and <code>Math.signum(z + v) == Math.signum(u)</code>,
  * for any <code>x</code>, <code>y</code>,
@@ -35,7 +35,7 @@ package scala
  * </ul>
  *
  * @author Geoffrey Washburn
- * @version 0.9, 2008-04-03
+ * @version 0.9.5, 2008-04-15
  */
 
 trait Ordering[T] extends PartialOrdering[T] {
