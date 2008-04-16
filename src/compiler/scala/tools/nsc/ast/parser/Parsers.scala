@@ -2255,7 +2255,7 @@ trait Parsers extends NewScanners with MarkupParsers {
      *  Extends          ::= extends | `<:'
      */
     def templateOpt(mods0: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]]): Template = {
-      val mods = if (inToken == SUBTYPE) mods0 | DEFERRED else mods0
+      val mods = if (inToken == SUBTYPE) mods0 | Flags.DEFERRED else mods0
       val pos = inCurrentPos;
       val (parents0, argss, self, body) =
         if (inToken == EXTENDS || inToken == SUBTYPE) {
