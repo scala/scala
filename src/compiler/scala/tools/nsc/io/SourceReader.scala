@@ -11,9 +11,10 @@ import java.io.{File, FileInputStream, InputStream, IOException}
 import java.nio.{ByteBuffer, CharBuffer}
 import java.nio.channels.{FileChannel, ReadableByteChannel, Channels}
 import java.nio.charset.{CharsetDecoder, CoderResult}
+import scala.tools.nsc.reporters._
 
 /** This class implements methods to read and decode source files. */
-class SourceReader(decoder: CharsetDecoder) {
+class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
 
   import SourceReader.{decode, flush}
 
@@ -27,8 +28,9 @@ class SourceReader(decoder: CharsetDecoder) {
   private var chars: CharBuffer = CharBuffer.allocate(0x4000)
 
   private def reportEncodingError(filename:String) = {
-    Console println "IO error while decoding "+filename+" with "+decoder.charset();
-    Console println "Please try specifying another one using the -encoding option"
+    reporter.error(nsc.util.NoPosition,
+                   "IO error while decoding "+filename+" with "+decoder.charset()+"\n"+
+                   "Please try specifying another one using the -encoding option")
   }
 
   //########################################################################
