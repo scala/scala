@@ -12,7 +12,7 @@
 package scala
 
 import java.io.{BufferedReader, InputStream, InputStreamReader,
-                OutputStream, PrintStream, Reader}
+                IOException, OutputStream, PrintStream, Reader}
 import java.text.MessageFormat
 
 import scala.util.DynamicVariable
@@ -186,13 +186,15 @@ object Console {
       out.printf(text, args.asInstanceOf[scala.runtime.BoxedObjectArray].
                             unbox(args.getClass).asInstanceOf[Array[Object]])
 
-  /** Read a full line from the terminal.
+  /** Read a full line from the terminal.  Returns null if the end of the
+   * input stream has been reached.
    *
    *  @return the string read from the terminal.
    */
   def readLine(): String = in.readLine()
 
-  /** Print a formatted text and read a full line from the terminal
+  /** Print a formatted text and read a full line from the terminal.
+   * Returns null if the end of the input stream has been reached.
    *
    *  @param text the format of the text to print out.
    *  @param args the parameters used to instantiate the format.
