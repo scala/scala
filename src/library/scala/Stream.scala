@@ -424,16 +424,19 @@ trait Stream[+A] extends Seq.Projection[A] {
    *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
    *           this stream is <code>[a<sub>0</sub>, ..., a<sub>n</sub>]</code>.
    */
-  override def flatMap[B](f: A => Iterable[B]): Stream[B] =
-    if (isEmpty) Stream.empty
+  override def flatMap[B](f: A => Iterable[B]): Stream[B] = {
+    // optimization: drop A's for which f yields no B
+    val fstream = dropWhile(a => f(a) isEmpty)
+    if (fstream isEmpty) Stream.empty
     else {
-      val s: Stream[B] = f(head) match {
+      val s: Stream[B] = f(fstream.head) match {
         case x: Stream[_] => x
         case y: List[_]   => y.toStream
         case z            => z.toList.toStream
       }
-      s append (tail flatMap f)
+      s append (fstream.tail flatMap f)
     }
+  }
 
   override def toStream = this
 
