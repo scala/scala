@@ -91,7 +91,6 @@ JAVA 1.4 LIBRARY AND COMPILER BUILD (FOUR)
         <include name="**/*.css"/>
       </fileset>
     </copy>
-    <touch file="${build-four.dir}/library.complete" verbose="no"/>
     <stopwatch name="four.lib.timer" action="total"/>
   </target>
 
@@ -124,11 +123,44 @@ JAVA 1.4 LIBRARY AND COMPILER BUILD (FOUR)
         <include name="**/*.css"/>
       </fileset>
     </copy>
-    <touch file="${build-four.dir}/compiler.complete" verbose="no"/>
     <stopwatch name="four.comp.timer" action="total"/>
   </target>
+    
+  <target name="four.partest" depends="four.comp">
+    <stopwatch name="four.partest.timer"/>
+    <mkdir dir="${build-four.dir}/classes/partest"/>
+    <javac
+      srcdir="${src.dir}/partest"
+      destdir="${build-four.dir}/classes/partest"
+      target="1.4" source="1.4">
+      <classpath>
+      	<pathelement location="${build-four.dir}/classes/library"/>
+      	<pathelement location="${build-four.dir}/classes/compiler"/>
+      	<pathelement location="${build-four.dir}/classes/partest"/>
+      </classpath>
+      <include name="**/*.java"/>
+    </javac>
+    <scalac
+      srcdir="${src.dir}/partest"
+      destdir="${build-four.dir}/classes/partest"
+      target="jvm-1.4">
+      <include name="**/*.scala"/>
+      <classpath>
+        <pathelement location="${build-four.dir}/classes/library"/>
+        <pathelement location="${build-four.dir}/classes/compiler"/>
+        <pathelement location="${build-four.dir}/classes/partest"/>
+        <pathelement location="${ant.jar}"/>
+      </classpath>
+    </scalac>
+    <copy todir="${build-four.dir}/classes/partest">
+      <fileset dir="${src.dir}/partest">
+        <include name="**/*.xml"/>
+      </fileset>
+    </copy>
+    <stopwatch name="four.partest.timer" action="total"/>
+  </target>
   
-  <target name="four.done" depends="four.comp"/>
+  <target name="four.done" depends="four.partests"/>
 
   <target name="four.clean" depends="four-pack.clean">
     <delete dir="${build-four.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
@@ -164,7 +196,14 @@ PACKED FOUR BUILD (FOUR-PACK)
     </jar>
   </target>
 
-  <target name="four-pack.bin" depends="four-pack.comp">
+  <target name="four-pack.partest" depends="four-pack.comp">
+    <mkdir dir="${build-four-pack.dir}/lib"/>
+    <jar destfile="${build-four-pack.dir}/lib/scala-partest.jar">
+      <fileset dir="${build-four.dir}/classes/partest"/>
+    </jar>
+  </target>
+
+  <target name="four-pack.bin" depends="four-pack.partest">
     <taskdef name="four-pack-bin" classname="scala.tools.ant.ScalaTool">
       <classpath>
       	<pathelement location="${build-four-pack.dir}/lib/scala-library.jar"/>
@@ -192,7 +231,6 @@ PACKED FOUR BUILD (FOUR-PACK)
     <chmod perm="ugo+rx" file="${build-four-pack.dir}/bin/scalac"/>
     <chmod perm="ugo+rx" file="${build-four-pack.dir}/bin/scaladoc"/>
     <chmod perm="ugo+rx" file="${build-four-pack.dir}/bin/fsc"/>
-    <touch file="${build-four-pack.dir}/bin.complete" verbose="no"/>
   </target>
   
   <target name="four-pack.done" depends="four-pack.bin"/>
@@ -222,7 +260,6 @@ DOCUMENTATION
       </src>
       <include name="**/*.scala"/>
     </scaladoc>
-    <touch file="${build-four-docs.dir}/lib.complete" verbose="no"/>
     <stopwatch name="four-docs.lib.timer" action="total"/>
   </target>
   
