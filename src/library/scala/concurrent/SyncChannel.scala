@@ -24,7 +24,7 @@ class SyncChannel[A] {
   private var pendingWrites = List[(A, SyncVar[Boolean])]()
   private var pendingReads  = List[SyncVar[A]]()
 
-  def write(data: A) = {
+  def write(data: A) {
     // create write request
     val writeReq = new SyncVar[Boolean]
 
