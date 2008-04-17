@@ -942,7 +942,6 @@ trait Namers { self: Analyzer =>
       checkNoConflict(PRIVATE, PROTECTED)
       checkNoConflict(PRIVATE, OVERRIDE)
       checkNoConflict(DEFERRED, FINAL)
-      checkNoConflict(DEFERRED, CASE) // case classes cannot be virtual
     }
   }
 
