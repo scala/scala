@@ -2171,15 +2171,16 @@ trait Parsers extends NewScanners with MarkupParsers {
           if (mods.hasFlag(Flags.TRAIT)) (Modifiers(Flags.TRAIT), List())
           else (accessModifierOpt(), paramClauses(name, implicitClassViews, mods.hasFlag(Flags.CASE)))
         val thistpe = requiresTypeOpt()
-        var template = templateOpt(mods, name, constrMods withAnnotations constrAnnots, vparamss)
+        var mods1 = mods
+        if (inToken == SUBTYPE) mods1 |= DEFERRED
+        var template = templateOpt(mods1, name, constrMods withAnnotations constrAnnots, vparamss)
         if (!thistpe.isEmpty) {
           if (template.self.isEmpty) {
             template = copy.Template(
               template, template.parents, makeSelfDef(nme.WILDCARD, thistpe), template.body)
           } else syntaxError("`requires' cannot be combined with explicit self type", false)
         }
-        val mods1 = if (isInterface(mods, template.body)) mods | Flags.INTERFACE
-                    else mods
+        if (isInterface(mods1, template.body)) mods1 |= Flags.INTERFACE
         val result = ClassDef(mods1, name, tparams, template)
         implicitClassViews = savedViews
         result
@@ -2194,8 +2195,10 @@ trait Parsers extends NewScanners with MarkupParsers {
       val name = ident().toTermName
       if (name != nme.ERROR) pos = namePos
       atPos(pos) {
-        val template = templateOpt(mods, name, NoMods, List())
-        ModuleDef(mods, name, template)
+        var mods1 = mods
+        if (inToken == SUBTYPE) mods1 |= DEFERRED
+        val template = templateOpt(mods1, name, NoMods, List())
+        ModuleDef(mods1, name, template)
       }
     }
 
@@ -2254,8 +2257,7 @@ trait Parsers extends NewScanners with MarkupParsers {
      *  TraitTemplateOpt ::= Extends TraitTemplate | [[Extends] TemplateBody]
      *  Extends          ::= extends | `<:'
      */
-    def templateOpt(mods0: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]]): Template = {
-      val mods = if (inToken == SUBTYPE) mods0 | Flags.DEFERRED else mods0
+    def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]]): Template = {
       val pos = inCurrentPos;
       val (parents0, argss, self, body) =
         if (inToken == EXTENDS || inToken == SUBTYPE) {
