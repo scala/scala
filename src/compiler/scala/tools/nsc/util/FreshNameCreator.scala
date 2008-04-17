@@ -9,7 +9,7 @@ package scala.tools.nsc.util
 import scala.collection.mutable.HashMap
 
 trait FreshNameCreator {
-  def newName(prefix : String) : String
+  @deprecated def newName(prefix : String) : String
   def newName() : String
   def newName(pos : util.Position, prefix : String) : String
 }
