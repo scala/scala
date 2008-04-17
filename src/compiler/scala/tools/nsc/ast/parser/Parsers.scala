@@ -2172,7 +2172,7 @@ trait Parsers extends NewScanners with MarkupParsers {
           else (accessModifierOpt(), paramClauses(name, implicitClassViews, mods.hasFlag(Flags.CASE)))
         val thistpe = requiresTypeOpt()
         var mods1 = mods
-        if (inToken == SUBTYPE) mods1 |= DEFERRED
+        if (inToken == SUBTYPE) mods1 = mods | Flags.DEFERRED
         var template = templateOpt(mods1, name, constrMods withAnnotations constrAnnots, vparamss)
         if (!thistpe.isEmpty) {
           if (template.self.isEmpty) {
@@ -2196,7 +2196,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       if (name != nme.ERROR) pos = namePos
       atPos(pos) {
         var mods1 = mods
-        if (inToken == SUBTYPE) mods1 |= DEFERRED
+        if (inToken == SUBTYPE) mods1 = mods | Flags.DEFERRED
         val template = templateOpt(mods1, name, NoMods, List())
         ModuleDef(mods1, name, template)
       }
