@@ -533,9 +533,10 @@ trait Namers { self: Analyzer =>
       if (parents exists (_.typeSymbol.isVirtualClass))
         clazz setFlag DEFERRED
       // add overridden virtuals to parents
-      if (clazz.isVirtualClass)
-        parents = parents ::: (clazz.overriddenVirtuals map (
-          TypeRef(clazz.thisType, _, clazz.typeParams map (_.tpe))))
+      if (clazz.isVirtualClass) {
+        parents = parents ::: ((clazz.overriddenVirtuals.filter(_ != clazz)) map (
+            sym => TypeRef(sym.owner.thisType, sym, clazz.typeParams map (_.tpe))))
+      }
       // add apply and unapply methods to companion objects of case classes,
       // unless they exist already
       caseClassOfModuleClass get clazz match {
