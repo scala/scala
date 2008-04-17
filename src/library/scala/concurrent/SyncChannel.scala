@@ -11,34 +11,67 @@
 
 package scala.concurrent
 
-/** The class <code>SyncChannel</code> ...
+/** A <code>SyncChannel</code> allows one to exchange data
+ *  synchronously between a reader and a writer thread.
+ *  The writer thread is blocked until the data to be written
+ *  has been read by a corresponding reader thread.
  *
- *  @author  Martin Odersky
- *  @version 1.0, 10/03/2003
+ *  @author  Philipp Haller
+ *  @version 2.0, 04/17/2008
  */
-class SyncChannel[a] {
-  private var data: a = _
-  private var reading = false
-  private var writing = false
+class SyncChannel[A] {
 
-  def await(cond: => Boolean) = while (!cond) wait()
+  private var pendingWrites = List[(A, SyncVar[Boolean])]()
+  private var pendingReads  = List[SyncVar[A]]()
 
-  def write(x: a) = synchronized {
-    await(!writing)
-    data = x
-    writing = true
-    if (reading) notifyAll()
-    else await(reading)
+  def write(data: A) {
+    // create write request
+    val writeReq = new SyncVar[Boolean]
+
+    this.synchronized {
+      // check whether there is a reader waiting
+      if (!pendingReads.isEmpty) {
+        val readReq  = pendingReads.head
+        pendingReads = pendingReads.tail
+
+        // let reader continue
+        readReq set data
+
+        // resolve write request
+        writeReq set true
+      }
+      else {
+        // enqueue write request
+        pendingWrites = pendingWrites ::: List((data, writeReq))
+      }
+    }
+
+    writeReq.get
   }
 
-  def read: a = synchronized {
-    await(!reading)
-    reading = true
-    await(writing)
-    val x = data
-    writing = false
-    reading = false
-    notifyAll()
-    x
+  def read: A = {
+    // create read request
+    val readReq = new SyncVar[A]
+
+    this.synchronized {
+      // check whether there is a writer waiting
+      if (!pendingWrites.isEmpty) {
+        // read data
+        val (data, writeReq) = pendingWrites.head
+        pendingWrites = pendingWrites.tail
+
+        // let writer continue
+        writeReq set true
+
+        // resolve read request
+        readReq set data
+      }
+      else {
+        // enqueue read request
+        pendingReads = pendingReads ::: List(readReq)
+      }
+    }
+
+    readReq.get
   }
 }
