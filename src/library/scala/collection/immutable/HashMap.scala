@@ -85,12 +85,13 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
   override def size: Int = synchronized {
     var m = this
     var cnt = 0
-    var s = tableSize
+    var s = 0
     while (m.later != null) {
-      s = s - m.deltaSize
+      s -= m.deltaSize
       cnt += 1
       m = m.later
     }
+    s += m.tableSize
     if (cnt > logLimit) makeCopy(m)
     s
   }
