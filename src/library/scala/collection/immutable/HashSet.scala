@@ -74,12 +74,13 @@ class HashSet[A] extends Set[A] with mutable.FlatHashTable[A] {
   override def size: Int = synchronized {
     var m = this
     var cnt = 0
-    var s = tableSize
+    var s = 0
     while (m.later != null) {
       if (m.deleted) s += 1 else s -= 1
       cnt += 1
       m = m.later
     }
+    s += tableSize
     if (cnt > logLimit) makeCopy(m)
     s
   }
