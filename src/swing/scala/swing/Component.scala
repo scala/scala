@@ -2,7 +2,7 @@ package scala.swing
 
 import event._
 import geometry._
-import java.awt.Font
+
 import java.awt.event._
 import javax.swing.JComponent
 import javax.swing.border.Border
@@ -23,20 +23,18 @@ abstract class Component extends UIElement with Showable.Swing with Publisher {
   def preferredSize = peer.getPreferredSize
   def preferredSize_=(x: Dimension) = peer.setPreferredSize(x.peer)
 
-  def xAlignment: Double = peer.getAlignmentX
-  def xAlignment_=(x: Double) = peer.setAlignmentX(x.toFloat)
-  def yAlignment: Double = peer.getAlignmentY
-  def yAlignment_=(y: Double) = peer.setAlignmentY(y.toFloat)
+  /**
+   * Used by certain layout managers, e.g., BoxLayout or OverlayLayout to
+   * align components relative to each other.
+   */
+  def xLayoutAlignment: Double = peer.getAlignmentX
+  def xLayoutAlignment_=(x: Double) = peer.setAlignmentX(x.toFloat)
+  def yLayoutAlignment: Double = peer.getAlignmentY
+  def yLayoutAlignment_=(y: Double) = peer.setAlignmentY(y.toFloat)
 
-  def foreground: Color = new Color(peer.getForeground)
-  def foreground_=(c: Color) = peer.setForeground(c)
-  def background: Color = new Color(peer.getBackground)
-  def background_=(c: Color) = peer.setBackground(c)
   def border: Border = peer.getBorder
   def border_=(b: Border) { peer.setBorder(b) }
 
-  def font: Font = peer.getFont
-  def font_=(f: Font) = peer.setFont(f)
   def opaque: Boolean = peer.isOpaque
   def opaque_=(b: Boolean) = peer.setOpaque(b)
 

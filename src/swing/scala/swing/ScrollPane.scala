@@ -10,5 +10,4 @@ class ScrollPane(override val peer: JScrollPane) extends Component with Publishe
   def rowHeaderView_=(c: Component) = peer.setRowHeaderView(c.peer)
   def viewportView: Component = null
   def viewportView_=(c: Component) = peer.setViewportView(c.peer)
-
 }

@@ -3,6 +3,7 @@ package scala.swing
 import geometry._
 import scala.collection.mutable.Buffer
 import javax.swing.{JTabbedPane, JComponent}
+import java.awt.Color
 
 
 object TabbedPane {
@@ -31,9 +32,9 @@ class TabbedPane(override val peer: JTabbedPane) extends Component with Publishe
     def enabled_=(b: Boolean) { peer.setEnabledAt(index, b) }
     def mnemonic: Int = peer.getMnemonicAt(index)
     def mnemonic_=(k: Int) = peer.setMnemonicAt(index, k)
-    def foreground: Color = new Color(peer.getForegroundAt(index))
+    def foreground: Color = peer.getForegroundAt(index)
     def foreground_=(c: Color) = peer.setForegroundAt(index, c)
-    def background: Color = new Color(peer.getBackgroundAt(index))
+    def background: Color = peer.getBackgroundAt(index)
     def background_=(c: Color) = peer.setBackgroundAt(index, c)
     def bounds: Rectangle = Rectangle.wrap(peer.getBoundsAt(index))
 

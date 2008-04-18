@@ -5,8 +5,10 @@ import model.Matrix
 import javax.swing._
 import javax.swing.table._
 import javax.swing.event._
+import java.awt.Color
 import event._
 import scala.collection.mutable.Set
+
 
 object Table {
   object AutoResizeMode extends Enumeration {
@@ -55,8 +57,8 @@ class Table(override val peer: JTable) extends Component with Scrollable with Pu
   def showGrid = peer.getShowHorizontalLines && peer.getShowVerticalLines
   def showGrid_=(grid: Boolean) = peer.setShowGrid(grid)
 
-  def gridColor = new swing.Color(peer.getGridColor)
-  def gridColor_=(color: swing.Color) = peer.setGridColor(color)
+  def gridColor = peer.getGridColor
+  def gridColor_=(color: Color) = peer.setGridColor(color)
 
   def preferredViewportSize_=(dim: Dimension) = peer.setPreferredScrollableViewportSize(dim.peer)
   def fillsViewportHeight: Boolean = peer.getFillsViewportHeight

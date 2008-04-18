@@ -7,7 +7,7 @@ class Frame(val peer: JFrame) extends UIElement with RootPanel with Showable.Swi
   def this() = this(new JFrame)
   def title: String = peer.getTitle
   def title_=(s: String) = peer.setTitle(s)
-  content = new Component {}
+  content = new Component { opaque = false }
 
   override def content_=(c: Component) {
     super.content_=(c)

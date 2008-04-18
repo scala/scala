@@ -8,7 +8,7 @@ object MenuDemo extends SimpleGUIApplication {
     title = "Menu Demo"
     menuBar = new MenuBar
 
-    implicit def action2MenuItem(a: Action): MenuItem = new MenuItem(a)
+    import Views._
 
     val menu = new Menu("A Menu")
     menu.contents += new MenuItem("An item")
