@@ -13,37 +13,49 @@ package scala.reflect
 
 import Predef._
 
+/** This type is required by the compiler and <b>should not be used in client code</b>. */
 abstract class Type
 
+/** This type is required by the compiler and <b>should not be used in client code</b>. */
 case object NoPrefix extends Type
+/** This type is required by the compiler and <b>should not be used in client code</b>. */
 case object NoType extends Type
 
-/** fullname */
+/** This type is required by the compiler and <b>should not be used in client code</b>.
+  * fullname */
 case class NamedType(fullname: String) extends Type
 
-/** pre # sym */
+/** This type is required by the compiler and <b>should not be used in client code</b>.
+  * pre # sym */
 case class PrefixedType(pre: Type, sym: Symbol) extends Type
 
-/** pre.type # sym == pre.sym */
+/** This type is required by the compiler and <b>should not be used in client code</b>.
+  * pre.type # sym == pre.sym */
 case class SingleType(pre: Type, sym: Symbol) extends Type
 
-/** clazz.this */
+/** This type is required by the compiler and <b>should not be used in client code</b>.
+  * clazz.this */
 case class ThisType(clazz: Symbol) extends Type
 
-/** clazz.super[superClazz] */
-/** <code>tpe[args1, ..., argsn]</code> */
+/** This type is required by the compiler and <b>should not be used in client code</b>.
+  * clazz.super[superClazz]
+  * <code>tpe[args1, ..., argsn]</code> */
 case class AppliedType(tpe: Type, args: List[Type]) extends Type
 
-/** [a &lt;: lo &gt;: hi] */
+/** This type is required by the compiler and <b>should not be used in client code</b>.
+  * [a &lt;: lo &gt;: hi] */
 case class TypeBounds(lo: Type, hi: Type) extends Type
 
-/** <code>(formals1 ... formalsn) restpe</code> */
+/** This type is required by the compiler and <b>should not be used in client code</b>.
+  * <code>(formals1 ... formalsn) restpe</code> */
 case class MethodType(formals: List[Type], restpe: Type) extends Type
 
-/**  */
+
+/** This type is required by the compiler and <b>should not be used in client code</b>. */
 case class PolyType(typeParams: List[Symbol], typeBounds: List[(Type, Type)], resultType: Type) extends Type
 
-/**  */
+
+/** This type is required by the compiler and <b>should not be used in client code</b>. */
 class ImplicitMethodType(formals: List[Type], restpe: Type)
 extends MethodType(formals, restpe)
 

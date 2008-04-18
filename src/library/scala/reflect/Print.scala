@@ -11,6 +11,7 @@
 
 package scala.reflect
 
+/** This type is required by the compiler and <b>should not be used in client code</b>. */
 object Print extends Function1[Any, String] {
 
   def apply(any: Any): String = any match {

@@ -8,10 +8,11 @@
 package scala.reflect
 
 
-/** A Manifest[T] is a descriptor for the type T.
- *  The object `Manifest' defines factory methods for manifests which still need to be implemented.
- *  Also still to be done are manifests for refinement types.
- */
+/** This type is required by the compiler and <b>should not be used in client code</b>.
+  * A Manifest[T] is a descriptor for the type T.
+  *  The object `Manifest' defines factory methods for manifests which still need to be implemented.
+  *  Also still to be done are manifests for refinement types.
+  */
 object Manifest {
 
   /** Manifest for the singleton type `value.type'
@@ -49,7 +50,7 @@ object Manifest {
   def intersectionType[T](parents: Manifest[_]*): Manifest[T] = null
 }
 
-/** A Manifest[T] is a descriptor for the type T.
- */
+/** This type is required by the compiler and <b>should not be used in client code</b>.
+  * A Manifest[T] is a descriptor for the type T. */
 abstract class Manifest[T]
 

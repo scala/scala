@@ -769,11 +769,22 @@ DOCUMENTATION
       doctitle="Scala ${version.number} API"
       classpathref="pack.classpath">
       <src>
-        <files includes="${src.dir}/dbc"/>
         <files includes="${src.dir}/actors"/>
-        <files includes="${src.dir}/library"/>
+        <files includes="${src.dir}/library/scala"/>
       </src>
       <include name="**/*.scala"/>
+      <exclude name="reflect/Code.scala"/>
+      <exclude name="reflect/Manifest.scala"/>
+      <exclude name="reflect/Print.scala"/>
+      <exclude name="reflect/Symbol.scala"/>
+      <exclude name="reflect/Tree.scala"/>
+      <exclude name="reflect/Type.scala"/>
+      <exclude name="reflect/TypedCode.scala"/>
+      <exclude name="runtime/*Array.scala"/>
+      <exclude name="runtime/*$.scala"/>
+      <exclude name="runtime/ScalaRunTime.scala"/>
+      <exclude name="runtime/StreamCons.scala"/>
+      <exclude name="runtime/StringAdd.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/library.complete" verbose="no"/>
     <stopwatch name="docs.lib.timer" action="total"/>
