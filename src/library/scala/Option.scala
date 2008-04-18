@@ -112,6 +112,20 @@ sealed abstract class Option[+A] extends Product {
    */
   def toList: List[A] =
     if (isEmpty) List() else List(this.get)
+
+  /** An <code>Either</code> that is a <code>Left</code> with the given argument
+   * <code>left</code> if this is empty, or a <code>Right</code> if this is nonempty with the
+   * option's value.
+   */
+  def toRight[X](left: => X) =
+    if (isEmpty) Left(left) else Right(this.get)
+
+  /** An <code>Either</code> that is a <code>Right</code> with the given argument
+   * <code>right</code> if this is empty, or a <code>Left</code> if this is nonempty with the
+   * option's value.
+   */
+  def toLeft[X](right: => X) =
+    if (isEmpty) Right(right) else Left(this.get)
 }
 
 /** Class <code>Some[A]</code> represents existing values of type
