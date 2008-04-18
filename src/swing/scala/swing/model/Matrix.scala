@@ -1,6 +1,6 @@
 package scala.swing.model
 
-trait Matrix[A]extends Function2[Int, Int, A] {
+trait Matrix[A] extends Function2[Int, Int, A] {
 
   val width: Int
   val height: Int

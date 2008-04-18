@@ -8,20 +8,20 @@ object CelsiusConverter2 extends SimpleGUIApplication {
     title = "Convert Celsius / Fahrenheit"
     object Celsius extends TextField { columns = 5 }
     object Fahrenheit extends TextField { columns = 5 }
-    content = new FlowPanel(Horizontal)(Celsius, new Label(" Celsius  =  "),
-                                        Fahrenheit, new Label(" Fahrenheit")) {
+    content = new FlowPanel {
+      contents.append(Celsius, new Label(" Celsius  =  "), Fahrenheit, new Label(" Fahrenheit"))
       border = EmptyBorder(15, 10, 10, 10)
     }
     listenTo(Fahrenheit.contentModified, Celsius.contentModified)
     reactions += {
       case ContentModified(Fahrenheit) =>
-        val f = Integer.parseInt(Fahrenheit.text)
+        val f = Integer.parseInt(Fahrenheit.contents)
         val c = (f - 32) * 5 / 9
-        Celsius.text = c.toString
+        Celsius.contents = c.toString
       case ContentModified(Celsius) =>
-        val c = Integer.parseInt(Celsius.text)
+        val c = Integer.parseInt(Celsius.contents)
         val f = c * 9 / 5 + 32
-        Fahrenheit.text = f.toString
+        Fahrenheit.contents = f.toString
     }
   }
 }

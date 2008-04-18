@@ -1,6 +1,7 @@
 package scala.swing
 
 import event._
+import geometry._
 import java.awt.Font
 import java.awt.event._
 import javax.swing.JComponent
@@ -10,7 +11,6 @@ object Component {
   val ClientKey = "scala.swingWrapper"
   def wrapperFor[C<:Component](c: javax.swing.JComponent): C = c.getClientProperty(ClientKey).asInstanceOf[C]
 }
-
 
 abstract class Component extends UIElement with Showable.Swing with Publisher {
   lazy val peer: javax.swing.JComponent = new javax.swing.JComponent {}
@@ -26,19 +26,22 @@ abstract class Component extends UIElement with Showable.Swing with Publisher {
   def xAlignment: Double = peer.getAlignmentX
   def xAlignment_=(x: Double) = peer.setAlignmentX(x.toFloat)
   def yAlignment: Double = peer.getAlignmentY
-  def yAlignment_=(x: Double) = peer.setAlignmentY(x.toFloat)
+  def yAlignment_=(y: Double) = peer.setAlignmentY(y.toFloat)
 
   def foreground: Color = new Color(peer.getForeground)
-  def foreground_=(x: Color) = peer.setForeground(x)
+  def foreground_=(c: Color) = peer.setForeground(c)
   def background: Color = new Color(peer.getBackground)
-  def background_=(x: Color) = peer.setBackground(x)
+  def background_=(c: Color) = peer.setBackground(c)
   def border: Border = peer.getBorder
-  def border_=(x: Border) { peer.setBorder(x) }
+  def border_=(b: Border) { peer.setBorder(b) }
 
   def font: Font = peer.getFont
-  def font_=(x: Font) = peer.setFont(x)
+  def font_=(f: Font) = peer.setFont(f)
   def opaque: Boolean = peer.isOpaque
-  def opaque_=(x: Boolean) = peer.setOpaque(x)
+  def opaque_=(b: Boolean) = peer.setOpaque(b)
+
+  def enabled: Boolean = peer.isEnabled
+  def enabled_=(b: Boolean) = peer.setEnabled(b)
 
   def tooltip: String = peer.getToolTipText
   def tooltip_=(t: String) = peer.setToolTipText(t)

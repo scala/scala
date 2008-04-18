@@ -3,11 +3,8 @@ package scala.swing
 import event._
 import Swing._
 
-class Slider(override val peer: javax.swing.JSlider) extends Component with EditorComponent {
+class Slider(override val peer: javax.swing.JSlider) extends Component with Orientable with EditorComponent {
   def this() = this(new javax.swing.JSlider)
-
-  def orientation: Orientation = Orientation.wrap(peer.getOrientation)
-  def orientation_=(o: Orientation) { peer.setOrientation(o.peer) }
 
   def min: Int = peer.getMinimum
   def min_=(v: Int) { peer.setMinimum(v) }

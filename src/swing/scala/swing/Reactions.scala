@@ -21,7 +21,8 @@ class Reactions {
     def sendTo(ps: List[Reaction]): Unit = ps match {
       case Nil =>
       case p :: ps =>
-        if (p isDefinedAt e) p(e) else sendTo(ps)
+        if (p isDefinedAt e) p(e)
+        /*else*/ sendTo(ps)
     }
     sendTo(parts)
   }

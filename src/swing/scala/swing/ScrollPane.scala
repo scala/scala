@@ -2,7 +2,7 @@ package scala.swing
 
 import javax.swing.JScrollPane
 
-class ScrollPane(override val peer: JScrollPane) extends Container(peer) with Publisher {
+class ScrollPane(override val peer: JScrollPane) extends Component with Publisher {
   def this() = this(new JScrollPane)
   def this(contents: Component) = this(new JScrollPane(contents.peer))
 

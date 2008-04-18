@@ -14,7 +14,7 @@ object CelsiusConverter extends SimpleGUIApplication {
       text = "Celsius"
       border = EmptyBorder(5, 5, 5, 5)
     }
-    object convertButton extends Button {
+    object convertButton extends PushButton {
       icon = new javax.swing.ImageIcon("c:\\workspace\\gui\\images\\convert.gif")
       border = EmptyBorder(5, 5, 5, 5)
     }
@@ -23,13 +23,14 @@ object CelsiusConverter extends SimpleGUIApplication {
       border = EmptyBorder(5, 5, 5, 5)
       listenTo(convertButton, tempCelsius)
       reactions += {
-        case ButtonPressed(_) | ContentModified(_) =>
-          val c = Integer.parseInt(tempCelsius.text)
+        case ButtonClicked(_) | ContentModified(_) =>
+          val c = Integer.parseInt(tempCelsius.contents)
           val f = c * 9 / 5 + 32
           text = "<html><font color = red>"+f+"</font> Fahrenheit</html>"
       }
     }
-    content = new GridPanel(2,2)(tempCelsius, celsiusLabel, convertButton, fahrenheitLabel) {
+    content = new GridPanel(2,2) {
+      contents.append(tempCelsius, celsiusLabel, convertButton, fahrenheitLabel)
       border = EmptyBorder(10, 10, 10, 10)
     }
   }

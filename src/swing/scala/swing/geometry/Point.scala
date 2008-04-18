@@ -1,4 +1,4 @@
-package scala.swing
+package scala.swing.geometry
 
 object Point {
   def apply(p: java.awt.Point) = new Point(p.getX, p.getY)
