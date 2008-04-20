@@ -1322,8 +1322,13 @@ trait Symbols {
 
     def setLazyAccessor(sym: Symbol): TermSymbol = {
       // @S: in IDE setLazyAccessor can be called multiple times on same sym
-      assert(hasFlag(LAZY) && (referenced == NoSymbol || referenced == sym), this)
-      referenced = sym
+      if (inIDE && referenced != NoSymbol && referenced != sym) {
+        // do nothing
+        recycle(referenced)
+      } else {
+        assert(hasFlag(LAZY) && (referenced == NoSymbol || referenced == sym), this)
+        referenced = sym
+      }
       this
     }
 

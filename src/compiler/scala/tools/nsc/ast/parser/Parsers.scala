@@ -2440,8 +2440,11 @@ trait Parsers extends NewScanners with MarkupParsers {
      *                 |
      */
     def blockStatSeq(stats: ListBuffer[Tree]): List[Tree] = checkNoEscapingPlaceholders {
-      var last = false
-      while ((inToken != RBRACE) && (inToken != EOF) && (inToken != CASE) && !last) {
+      var keepGoing = true
+      var hasError = false
+      while ((inToken != RBRACE) && (inToken != EOF) && (inToken != CASE) && keepGoing) {
+        var hasError0 = hasError
+        hasError = false
         if (inToken == IMPORT) {
           stats ++= importClause()
           acceptStatSep()
@@ -2458,6 +2461,7 @@ trait Parsers extends NewScanners with MarkupParsers {
           inNextToken
         } else {
           syntaxErrorOrIncomplete("illegal start of statement", true)
+          if (hasError0) keepGoing = false else hasError = true
         }
       }
       stats.toList

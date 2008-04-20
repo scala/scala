@@ -46,6 +46,7 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
       read(c)
     } catch {
       case e:Exception =>
+        if (true) e.printStackTrace
         reportEncodingError(file.toString())
         new Array[Char](0)
     } finally {
