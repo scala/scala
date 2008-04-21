@@ -163,7 +163,7 @@ trait Symbols {
     final def newAnonymousFunctionClass(pos: Position) = {
       val anonfun = newClass(pos, nme.ANON_FUN_NAME.toTypeName)
       def firstNonSynOwner(chain: List[Symbol]): Symbol = (chain: @unchecked) match {
-        case o :: os => if (o != this && !(o hasFlag SYNTHETIC)) o else firstNonSynOwner(os)
+        case o :: os => if (o != this && !(o hasFlag SYNTHETIC) && o.isClass) o else firstNonSynOwner(os)
       }
       val ownerSerial = firstNonSynOwner(ownerChain) hasAttribute SerializableAttr
       if (ownerSerial)
