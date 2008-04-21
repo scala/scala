@@ -45,12 +45,12 @@ abstract class Action(title0: String) {
   /**
    * None if large icon and small icon are not equal.
    */
-  def icon: Option[Icon] = smallIcon //if(largeIcon == smallIcon) largeIcon else None
-  def icon_=(i: Option[Icon]) { /*largeIcon = i;*/ smallIcon = i }
-  // 1.6: def largeIcon: Option[Icon] = toOption(peer.getValue(javax.swing.Action.LARGE_ICON_KEY))
-  // def largeIcon_=(i: Option[Icon]) { peer.putValue(javax.swing.Action.LARGE_ICON_KEY, toNull(i)) }
-  def smallIcon: Option[Icon] = toOption(peer.getValue(javax.swing.Action.SMALL_ICON))
-  def smallIcon_=(i: Option[Icon]) { peer.putValue(javax.swing.Action.SMALL_ICON, toNull(i)) }
+  def icon: Icon = smallIcon //if(largeIcon == smallIcon) largeIcon else None
+  def icon_=(i: Icon) { /*largeIcon = i;*/ smallIcon = i }
+  // 1.6: def largeIcon: Icon = toNoIcon(peer.getValue(javax.swing.Action.LARGE_ICON_KEY).asInstanceOf[Icon])
+  // def largeIcon_=(i: Icon) { peer.putValue(javax.swing.Action.LARGE_ICON_KEY, toNullIcon(i)) }
+  def smallIcon: Icon = toNoIcon(peer.getValue(javax.swing.Action.SMALL_ICON).asInstanceOf[Icon])
+  def smallIcon_=(i: Icon) { peer.putValue(javax.swing.Action.SMALL_ICON, toNullIcon(i)) }
 
   /**
    * For all components.

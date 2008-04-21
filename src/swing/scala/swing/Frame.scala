@@ -17,6 +17,9 @@ class Frame(override val peer: JFrame) extends UIElement with RootPanel with Pub
   }
   def defaultButton: Option[PushButton] =
     Swing.toOption(peer.getRootPane.getDefaultButton).map(Component.wrapperFor(_))
+  def defaultButton_=(b: PushButton) {
+    peer.getRootPane.setDefaultButton(b.peer)
+  }
   def defaultButton_=(b: Option[PushButton]) {
     peer.getRootPane.setDefaultButton(Swing.toNull(b.map(_.peer)))
   }

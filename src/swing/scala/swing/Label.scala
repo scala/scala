@@ -13,8 +13,8 @@ class Label(override val peer: JLabel) extends Component(peer) {
   /**
    * The alignment of the label's contents relative to its bounding box.
    */
-  def xAlignment: XAlignment.Value = XAlignment(peer.getHorizontalAlignment)
-  def xAlignment_=(x: XAlignment.Value) = peer.setHorizontalAlignment(x.id)
-  def yAlignment: YAlignment.Value = YAlignment(peer.getVerticalAlignment)
-  def yAlignment_=(x: YAlignment.Value) = peer.setVerticalAlignment(x.id)
+  def xAlignment: Alignment.Value = Alignment(peer.getHorizontalAlignment)
+  def xAlignment_=(x: Alignment.Value) = peer.setHorizontalAlignment(x.id)
+  def yAlignment: Alignment.Value = Alignment(peer.getVerticalAlignment)
+  def yAlignment_=(x: Alignment.Value) = peer.setVerticalAlignment(x.id)
 }
