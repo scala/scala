@@ -3,7 +3,6 @@ package scala.swing.test
 import java.awt.Dimension
 import swing._
 import swing.event._
-import swing.geometry._
 
 object TableSelection extends SimpleGUIApplication {
   val model = Array[Array[AnyRef]](Array[AnyRef]("Mary", "Campione", "Snowboarding", new java.lang.Integer(5), new java.lang.Boolean(false)),
