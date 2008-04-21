@@ -1692,7 +1692,7 @@ abstract class GenICode extends SubComponent  {
           case t @ Apply(fun, args) if (t.symbol.isLabel && !boundLabels(t.symbol)) =>
             if (!labels.isDefinedAt(t.symbol)) {
               val oldLabel = t.symbol
-              val sym = method.newLabel(oldLabel.pos, unit.fresh.newName(oldLabel.name.toString))
+              val sym = method.newLabel(oldLabel.pos, unit.fresh.newName(oldLabel.pos, oldLabel.name.toString))
               sym.setInfo(oldLabel.tpe)
               labels(oldLabel) = sym
             }
@@ -1701,7 +1701,7 @@ abstract class GenICode extends SubComponent  {
             tree
 
           case t @ LabelDef(name, params, rhs) =>
-            val name1 = unit.fresh.newName(name.toString)
+            val name1 = unit.fresh.newName(t.pos, name.toString)
             if (!labels.isDefinedAt(t.symbol)) {
               val oldLabel = t.symbol
               val sym = method.newLabel(oldLabel.pos, name1)
@@ -1935,7 +1935,7 @@ abstract class GenICode extends SubComponent  {
 
       /** Make a fresh local variable. It ensures the 'name' is unique. */
       def makeLocal(pos: Position, tpe: Type, name: String): Local = {
-        val sym = method.symbol.newVariable(pos, unit.fresh.newName(name))
+        val sym = method.symbol.newVariable(pos, unit.fresh.newName(pos, name))
           .setInfo(tpe)
           .setFlag(Flags.SYNTHETIC)
         this.method.addLocal(new Local(sym, toTypeKind(tpe), false))

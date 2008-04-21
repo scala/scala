@@ -300,7 +300,7 @@ abstract class TreeGen {
       if (treeInfo.isPureExpr(expr)) {
         exprs1 += (() => expr)
       } else {
-        val temp = owner.newValue(expr.pos, unit.fresh.newName())
+        val temp = owner.newValue(expr.pos, unit.fresh.newName(expr.pos))
           .setFlag(SYNTHETIC).setInfo(expr.tpe)
         vdefs += ValDef(temp, expr)
         exprs1 += (() => Ident(temp) setType expr.tpe)

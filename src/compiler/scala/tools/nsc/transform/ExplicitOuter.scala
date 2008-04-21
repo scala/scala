@@ -393,7 +393,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
 
         case mch @ Match(selector, cases) => // <----- transmatch hook
           val tid = if (settings.debug.value) {
-            val q = unit.fresh.newName("tidmark")
+            val q = unit.fresh.newName(mch.pos, "tidmark")
             Console.println("transforming patmat with tidmark "+q+" ncases = "+cases.length)
             q
           } else null
@@ -417,7 +417,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
 
           def makeGuardDef(vs:SymList, guard:Tree) = {
             import symtab.Flags._
-            val gdname = cunit.fresh.newName("gd")
+            val gdname = cunit.fresh.newName(guard.pos, "gd")
             val fmls = new ListBuffer[Type]
             val method = currentOwner.newMethod(mch.pos, gdname) setFlag (SYNTHETIC)
             var vs1 = vs; while (vs1 ne Nil) {

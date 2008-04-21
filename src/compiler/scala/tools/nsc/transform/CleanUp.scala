@@ -56,7 +56,7 @@ abstract class CleanUp extends Transform {
         val forName = getMember(ClassClass.linkedModuleOfClass, nme.forName)
         val owner = currentOwner.enclClass
 
-        val cvar = owner.newVariable(pos, unit.fresh.newName("class$Cache"))
+        val cvar = owner.newVariable(pos, unit.fresh.newName(pos, "class$Cache"))
           .setFlag(PRIVATE | STATIC | MUTABLE | SYNTHETIC).setInfo(ClassClass.tpe)
         owner.info.decls.enter(cvar)
         val cdef =
@@ -66,7 +66,7 @@ abstract class CleanUp extends Transform {
             }
           }
 
-        val meth = owner.newMethod(pos, unit.fresh.newName("class$Method"))
+        val meth = owner.newMethod(pos, unit.fresh.newName(pos, "class$Method"))
           .setFlag(PRIVATE | STATIC | SYNTHETIC).setInfo(MethodType(List(), ClassClass.tpe))
         owner.info.decls.enter(meth)
         val mdef =
@@ -98,7 +98,7 @@ abstract class CleanUp extends Transform {
         case None =>
           val owner = currentOwner.enclClass
 
-          val rmvar = owner.newVariable(pos, unit.fresh.newName("reflMethod$Cache"))
+          val rmvar = owner.newVariable(pos, unit.fresh.newName(pos, "reflMethod$Cache"))
             .setFlag(PRIVATE | STATIC | MUTABLE | SYNTHETIC)
             .setInfo(MethodClass.tpe)
           owner.info.decls.enter(rmvar)
@@ -109,7 +109,7 @@ abstract class CleanUp extends Transform {
               }
             }
 
-          val rmcvar = owner.newVariable(pos, unit.fresh.newName("reflClass$Cache"))
+          val rmcvar = owner.newVariable(pos, unit.fresh.newName(pos, "reflClass$Cache"))
             .setFlag(PRIVATE | STATIC | MUTABLE | SYNTHETIC)
             .setInfo(ClassClass.tpe)
           owner.info.decls.enter(rmcvar)
@@ -120,7 +120,7 @@ abstract class CleanUp extends Transform {
               }
             }
 
-          val rmmeth = owner.newMethod(pos, unit.fresh.newName("reflMethod$Method"))
+          val rmmeth = owner.newMethod(pos, unit.fresh.newName(pos, "reflMethod$Method"))
             .setFlag(STATIC | SYNTHETIC)
             .setInfo(MethodType(List(ClassClass.tpe), MethodClass.tpe))
           owner.info.decls.enter(rmmeth)
@@ -329,7 +329,7 @@ abstract class CleanUp extends Transform {
                 gen.mkAttributedRef(BoxedUnit_UNIT)
               )
             else if (resType.typeSymbol == ArrayClass) {
-              val sym = currentOwner.newValue(tree.pos, newTermName(unit.fresh.newName)) setInfo ObjectClass.tpe
+              val sym = currentOwner.newValue(tree.pos, newTermName(unit.fresh.newName(tree.pos))) setInfo ObjectClass.tpe
               Block(
                 List(ValDef(sym, tree)),
                 If(
@@ -361,7 +361,7 @@ abstract class CleanUp extends Transform {
           (params zip paramTypes) map { case (param, paramType) =>
             localTyper.typed {
               if (paramType.typeSymbol == ArrayClass) {
-                val sym = currentOwner.newValue(tree.pos, newTermName(unit.fresh.newName)) setInfo ObjectClass.tpe
+                val sym = currentOwner.newValue(tree.pos, newTermName(unit.fresh.newName(tree.pos))) setInfo ObjectClass.tpe
                 val arrayType = {
                   assert(paramType.typeArgs.length == 1)
                   paramType.typeArgs(0).normalize
@@ -410,7 +410,7 @@ abstract class CleanUp extends Transform {
 
         def callAsMethod(paramTypes: List[Type], resType: Type): Tree = localTyper.typed {
           val invokeExc =
-            currentOwner.newValue(tree.pos, newTermName(unit.fresh.newName)) setInfo InvocationTargetExceptionClass.tpe
+            currentOwner.newValue(tree.pos, newTermName(unit.fresh.newName(tree.pos))) setInfo InvocationTargetExceptionClass.tpe
           Try(
             Apply(
               Select(
@@ -545,7 +545,7 @@ abstract class CleanUp extends Transform {
       case theTry @ Try(block, catches, finalizer)
         if theTry.tpe.typeSymbol != definitions.UnitClass && theTry.tpe.typeSymbol != definitions.AllClass =>
         val tpe = theTry.tpe.widen
-        val tempVar = currentOwner.newValue(theTry.pos, unit.fresh.newName("exceptionResult"))
+        val tempVar = currentOwner.newValue(theTry.pos, unit.fresh.newName(theTry.pos, "exceptionResult"))
           .setInfo(tpe).setFlag(Flags.MUTABLE)
 
         val newBlock = super.transform(Block(Nil, Assign(Ident(tempVar), transform(block))))

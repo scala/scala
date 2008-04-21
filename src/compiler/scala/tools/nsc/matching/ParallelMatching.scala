@@ -633,7 +633,7 @@ trait ParallelMatching  {
       assert(vlue.tpe ne null, "value tpe is null")
       val vs = strip1(column.head)
       val nsuccFst = rest.row.head match { case Row(pats,bnd,g,b) => Row(EmptyTree::pats, bnd.add(vs.elements, scrutinee),g,b) }
-      val fLabel = theOwner.newLabel(scrutinee.pos, cunit.fresh.newName("failCont%")) // warning, untyped
+      val fLabel = theOwner.newLabel(scrutinee.pos, cunit.fresh.newName(scrutinee.pos, "failCont%")) // warning, untyped
       val sx     = rep.shortCut(fLabel) // register shortcut
       val nsuccRow = nsuccFst :: Row(getDummies( 1 /*scrutinee*/ + rest.temp.length), NoBinding, EmptyTree, sx) :: Nil
 
@@ -1342,7 +1342,7 @@ trait ParallelMatching  {
   }
 
   final def newVar(pos: Position, tpe: Type)(implicit theOwner: Symbol): Symbol =
-    newVar(pos, cunit.fresh.newName("temp"), tpe) setFlag symtab.Flags.SYNTHETIC
+    newVar(pos, cunit.fresh.newName(pos, "temp"), tpe) setFlag symtab.Flags.SYNTHETIC
 
   /** returns the condition in "if (cond) k1 else k2"
    */

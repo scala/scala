@@ -204,7 +204,7 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
             var as = args
             while(as ne Nil) {
               val ti = as.head
-              val v = newVar(ti.pos, cunit.fresh.newName("tp"), selector.tpe.typeArgs(i))
+              val v = newVar(ti.pos, cunit.fresh.newName(ti.pos, "tp"), selector.tpe.typeArgs(i))
               if (!doCheckExhaustive)
                 v.setFlag(symtab.Flags.TRANS_FLAG)
               vds  += typedValDef(v, ti)

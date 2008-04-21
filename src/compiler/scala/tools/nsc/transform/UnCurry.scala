@@ -169,7 +169,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
     private def nonLocalReturnKey(meth: Symbol) = nonLocalReturnKeys.get(meth) match {
       case Some(k) => k
       case None =>
-        val k = meth.newValue(meth.pos, unit.fresh.newName("nonLocalReturnKey"))
+        val k = meth.newValue(meth.pos, unit.fresh.newName(meth.pos, "nonLocalReturnKey"))
           .setFlag(SYNTHETIC).setInfo(ObjectClass.tpe)
         nonLocalReturnKeys(meth) = k
         k
@@ -403,7 +403,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
       def liftTree(tree: Tree) = {
         if (settings.debug.value)
           log("lifting tree at: " + (tree.pos))
-        val sym = currentOwner.newMethod(tree.pos, unit.fresh.newName("liftedTree"))
+        val sym = currentOwner.newMethod(tree.pos, unit.fresh.newName(tree.pos, "liftedTree"))
         sym.setInfo(MethodType(List(), tree.tpe))
         new ChangeOwnerTraverser(currentOwner, sym).traverse(tree)
         localTyper.typed {
@@ -547,7 +547,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         case Try(body, catches, finalizer) =>
           if (catches forall treeInfo.isCatchCase) tree
           else {
-            val exname = unit.fresh.newName("ex$")
+            val exname = unit.fresh.newName(tree.pos, "ex$")
             val cases =
               if ((catches exists treeInfo.isDefaultCase) || (catches.last match {  // bq: handle try { } catch { ... case ex:Throwable => ...}
                     case CaseDef(Typed(Ident(nme.WILDCARD), tpt), EmptyTree, _) if (tpt.tpe =:= ThrowableClass.tpe) =>
