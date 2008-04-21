@@ -1,11 +1,11 @@
 package scala.swing
 
-class BoxPanel(orientation: Orientation)(content0: Component*) extends IndexedPanel {
-  override lazy val peer = {
+/**
+ * @see javax.swing.BoxLayout
+ */
+class BoxPanel(orientation: Orientation.Value) extends Panel ({
     val p = new javax.swing.JPanel
-    val l = new javax.swing.BoxLayout(p, orientation.peer)
+    val l = new javax.swing.BoxLayout(p, orientation.id)
     p.setLayout(l)
     p
-  }
-  content ++ content0
-}
+  }) with SequentialContainer.Wrapper

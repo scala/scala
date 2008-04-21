@@ -1,5 +1,7 @@
 package scala.swing.event
 
+import java.awt.Point
+
 class MouseEvent(source: Component, point: Point, modifiers: Int) extends ComponentEvent(source)
 
 class MouseButtonEvent(source: Component, point: Point, modifiers: Int,

@@ -1,0 +1,108 @@
+package scala.swing
+
+import event._
+import scala.collection.mutable.Buffer
+import javax.swing.{JTabbedPane, JComponent}
+import java.awt.{Color, Rectangle}
+
+
+object TabbedPane {
+  object Layout extends Enumeration {
+    val Wrap = Value(JTabbedPane.WRAP_TAB_LAYOUT)
+    val Scroll = Value(JTabbedPane.SCROLL_TAB_LAYOUT)
+  }
+
+  class Page protected(title0: String, content0: Component, tip0: String, index0: Int) extends Proxy {
+    def self = content0
+
+    def this(title0: String, content0: Component, tip0: String) =
+      this(title0, content0, tip0, 0)
+    def this(title0: String, content0: Component) =
+      this(title0, content0, "")
+    content = content0 // first add component, *then* set other things
+    title = title0
+    tip = tip0
+
+    protected[TabbedPane] var parent: TabbedPane = null
+
+    protected var _title = title0
+    def title: String = _title//parent.peer.getTitleAt(index)
+    def title_=(t: String) { _title = title0; if (parent != null) parent.peer.setTitleAt(index, t) }
+    protected var _content = content0
+    def content: Component = _content//Component.wrapperFor(peer.getComponentAt(index).asInstanceOf[JComponent])
+    def content_=(c: Component) { _content = c; if (parent != null) parent.peer.setComponentAt(index, c.peer) }
+    protected var _tip = tip0
+    def tip: String = _tip//peer.getToolTipTextAt(index)
+    def tip_=(t: String) { _tip = t; if (parent != null) parent.peer.setToolTipTextAt(index, t) }
+    protected var _enabled = true
+    def enabled: Boolean = _enabled//peer.isEnabledAt(index)
+    def enabled_=(b: Boolean) { _enabled = b; if (parent != null) parent.peer.setEnabledAt(index, b) }
+    protected var _mnemonic = -1
+    def mnemonic: Int = _mnemonic//peer.getMnemonicAt(index)
+    def mnemonic_=(k: Int) { _mnemonic = k; if (parent != null) parent.peer.setMnemonicAt(index, k)}
+    protected var _foreground: Color = null
+    def foreground: Color = _foreground//peer.getForegroundAt(index)
+    def foreground_=(c: Color) { _foreground = c; if (parent != null) parent.peer.setForegroundAt(index, c)}
+    protected var _background: Color = null
+    def background: Color = _background //peer.getBackgroundAt(index)
+    def background_=(c: Color) { _background = c; if (parent != null) parent.peer.setBackgroundAt(index, c)}
+    def bounds: Rectangle = parent.peer.getBoundsAt(index)
+
+    // TODO: icon, disabledIcon
+
+    def index = _index
+    protected[TabbedPane] var _index: Int = index0
+  }
+}
+
+/**
+ * @see javax.swing.JTabbedPane
+ */
+class TabbedPane(override val peer: JTabbedPane) extends Component(peer) with Publisher {
+  import TabbedPane._
+
+  def this() = this(new JTabbedPane)
+
+  object pages extends BufferWrapper[Page] {
+    def runCount: Int = peer.getTabRunCount
+
+    def remove(n: Int): Page = {
+      val t = apply(n)
+      peer.removeTabAt(n)
+      t.parent = null
+      for(i <- n to length) apply(i)._index -= 1
+      t
+    }
+    protected def insertAt(n: Int, t: Page) {
+      for(i <- n to length) apply(i)._index += 1
+      t.parent = TabbedPane.this
+      peer.insertTab(t.title, null, t.content.peer, t.tip, n)
+    }
+
+    def +=(t: Page) { t.parent = TabbedPane.this; peer.addTab(t.title, null, t.content.peer, t.tip) }
+    def length = peer.getTabCount
+    def apply(n: Int) = new Page(peer.getTitleAt(n),
+                                Component.wrapperFor(peer.getComponentAt(n).asInstanceOf[javax.swing.JComponent]),
+                                peer.getToolTipTextAt(n))
+  }
+
+  def tabLayoutPolicy: Layout.Value = Layout(peer.getTabLayoutPolicy)
+  def tabLayoutPolicy_=(p: Layout.Value) { peer.setTabLayoutPolicy(p.id) }
+
+  def tabPlacement: EdgePosition.Value = EdgePosition(peer.getTabPlacement)
+  def tabPlacement(b: EdgePosition.Value) { peer.setTabPlacement(b.id) }
+
+  object selection extends Publisher {
+    def page: Page = pages(index)
+    def page_=(p: Page) { index = p.index }
+
+    def index: Int = peer.getSelectedIndex
+    def index_=(n: Int) { peer.setSelectedIndex(n) }
+
+    peer.addChangeListener(new javax.swing.event.ChangeListener {
+      def stateChanged(e: javax.swing.event.ChangeEvent) {
+        publish(SelectionChanged(TabbedPane.this))
+      }
+    })
+  }
+}

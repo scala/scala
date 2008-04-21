@@ -5,31 +5,55 @@ import javax.swing.text._
 import javax.swing.event._
 import event._
 
-class TextComponent(override val peer: JTextComponent) extends Component with EditorComponent with Publisher {
-  def text: String = peer.getText
-  def text_=(x: String) = peer.setText(x)
-
-  val caret = new Caret(peer.getCaret)
-
-  def content: String = peer.getText
-  def content_=(v: String) { peer.setText(v) }
-
-  peer.addCaretListener {
-    new CaretListener {
-      def caretUpdate(e: CaretEvent) { publish(CaretUpdate(TextComponent.this)) }
-    }
+object TextComponent {
+  trait HasColumns extends TextComponent {
+    def columns: Int
+    def columns_=(n: Int)
   }
+  trait HasRows extends TextComponent {
+    def rows: Int
+    def rows_=(n: Int)
+  }
+}
 
-  lazy val contentModified = liveContentModified
+/**
+ * @see javax.swing.JTextComponent
+ */
+class TextComponent(override val peer: JTextComponent) extends Component(peer) with Publisher {
+  def text: String = peer.getText
+  def text_=(t: String) = peer.setText(t)
 
-  protected def liveContentModified = new Publisher {
-    peer.getDocument.addDocumentListener {
-      new DocumentListener {
-        override def changedUpdate(e:DocumentEvent) { publish(ContentModified(TextComponent.this)) }
-        override def insertUpdate(e:DocumentEvent) { publish(ContentModified(TextComponent.this)) }
-        override def removeUpdate(e:DocumentEvent) { publish(ContentModified(TextComponent.this)) }
+  class Caret extends Publisher {
+    def dot: Int = peer.getCaret.getDot
+    def dot_=(n: Int) { peer.getCaret.setDot(n) }
+    def mark: Int = peer.getCaret.getMark
+    def moveDot(n: Int) { peer.getCaret.moveDot(n) }
+    def visible: Boolean = peer.getCaret.isVisible
+    def visible_=(b: Boolean) { peer.getCaret.setVisible(b) }
+    def selectionVisible: Boolean = peer.getCaret.isSelectionVisible
+    def selectionVisible_=(b: Boolean) { peer.getCaret.setSelectionVisible(b) }
+    def blinkRate: Int = peer.getCaret.getBlinkRate
+    def blinkRate_=(n: Int) { peer.getCaret.setBlinkRate(n) }
+
+    peer.addCaretListener {
+      new CaretListener {
+        def caretUpdate(e: CaretEvent) { publish(CaretUpdate(TextComponent.this)) }
       }
     }
   }
+
+  object caret extends Caret
+
+  def editable: Boolean = peer.isEditable
+  def editable_=(x: Boolean) = peer.setEditable(x)
+  def cut() { peer.cut() }
+  def copy() { peer.copy() }
+  def selected: String = peer.getSelectedText
+
+  peer.getDocument.addDocumentListener(new DocumentListener {
+    def changedUpdate(e:DocumentEvent) { publish(ValueChanged(TextComponent.this, true)) }
+    def insertUpdate(e:DocumentEvent) { publish(ValueChanged(TextComponent.this, true)) }
+    def removeUpdate(e:DocumentEvent) { publish(ValueChanged(TextComponent.this, true)) }
+  })
 }
 

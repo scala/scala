@@ -2,11 +2,11 @@ package scala.swing
 
 import event._
 
-class ProgressBar(override val peer: javax.swing.JProgressBar) extends Component {
+/**
+ * @see javax.swing.JProgressBar
+ */
+class ProgressBar(override val peer: javax.swing.JProgressBar) extends Component(peer) with Orientable {
   def this() = this(new javax.swing.JProgressBar)
-
-  def orientation: Orientation = Orientation.wrap(peer.getOrientation)
-  def orientation_=(o: Orientation) { peer.setOrientation(o.peer) }
 
   def min: Int = peer.getMinimum
   def min_=(v: Int) { peer.setMinimum(v) }

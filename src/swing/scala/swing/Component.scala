@@ -1,7 +1,8 @@
 package scala.swing
 
 import event._
-import java.awt.Font
+
+import java.awt.{Dimension, Point}
 import java.awt.event._
 import javax.swing.JComponent
 import javax.swing.border.Border
@@ -11,34 +12,37 @@ object Component {
   def wrapperFor[C<:Component](c: javax.swing.JComponent): C = c.getClientProperty(ClientKey).asInstanceOf[C]
 }
 
-
-abstract class Component extends UIElement with Showable.Swing with Publisher {
-  lazy val peer: javax.swing.JComponent = new javax.swing.JComponent {}
+/**
+ * @see javax.swing.JComponent
+ */
+abstract class Component(override val peer: javax.swing.JComponent) extends UIElement with Publisher {
+  def this() = this(new javax.swing.JComponent{})
   peer.putClientProperty(Component.ClientKey, this)
 
   def minimumSize = peer.getMinimumSize
-  def minimumSize_=(x: Dimension) = peer.setMinimumSize(x.peer)
+  def minimumSize_=(x: Dimension) = peer.setMinimumSize(x)
   def maxiumumSize = peer.getMaximumSize
-  def maxiumumSize_=(x: Dimension) = peer.setMaximumSize(x.peer)
+  def maxiumumSize_=(x: Dimension) = peer.setMaximumSize(x)
   def preferredSize = peer.getPreferredSize
-  def preferredSize_=(x: Dimension) = peer.setPreferredSize(x.peer)
+  def preferredSize_=(x: Dimension) = peer.setPreferredSize(x)
 
-  def xAlignment: Double = peer.getAlignmentX
-  def xAlignment_=(x: Double) = peer.setAlignmentX(x.toFloat)
-  def yAlignment: Double = peer.getAlignmentY
-  def yAlignment_=(x: Double) = peer.setAlignmentY(x.toFloat)
+  /**
+   * Used by certain layout managers, e.g., BoxLayout or OverlayLayout to
+   * align components relative to each other.
+   */
+  def xLayoutAlignment: Double = peer.getAlignmentX
+  def xLayoutAlignment_=(x: Double) = peer.setAlignmentX(x.toFloat)
+  def yLayoutAlignment: Double = peer.getAlignmentY
+  def yLayoutAlignment_=(y: Double) = peer.setAlignmentY(y.toFloat)
 
-  def foreground: Color = new Color(peer.getForeground)
-  def foreground_=(x: Color) = peer.setForeground(x)
-  def background: Color = new Color(peer.getBackground)
-  def background_=(x: Color) = peer.setBackground(x)
   def border: Border = peer.getBorder
-  def border_=(x: Border) { peer.setBorder(x) }
+  def border_=(b: Border) { peer.setBorder(b) }
 
-  def font: Font = peer.getFont
-  def font_=(x: Font) = peer.setFont(x)
   def opaque: Boolean = peer.isOpaque
-  def opaque_=(x: Boolean) = peer.setOpaque(x)
+  def opaque_=(b: Boolean) = peer.setOpaque(b)
+
+  def enabled: Boolean = peer.isEnabled
+  def enabled_=(b: Boolean) = peer.setEnabled(b)
 
   def tooltip: String = peer.getToolTipText
   def tooltip_=(t: String) = peer.setToolTipText(t)
@@ -97,15 +101,15 @@ abstract class Component extends UIElement with Showable.Swing with Publisher {
         def mouseExited(e: java.awt.event.MouseEvent) { }
         def mouseClicked(e: java.awt.event.MouseEvent) {
           publish(MouseClicked(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                               Point(e.getPoint), e.getModifiers, e.getClickCount, e.isPopupTrigger))
+                               e.getPoint, e.getModifiers, e.getClickCount, e.isPopupTrigger))
         }
         def mousePressed(e: java.awt.event.MouseEvent) {
           publish(MousePressed(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                               Point(e.getPoint), e.getModifiers, e.getClickCount, e.isPopupTrigger))
+                               e.getPoint, e.getModifiers, e.getClickCount, e.isPopupTrigger))
         }
         def mouseReleased(e: java.awt.event.MouseEvent) {
           publish(MouseReleased(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                                Point(e.getPoint), e.getModifiers, e.getClickCount, e.isPopupTrigger))
+                                e.getPoint, e.getModifiers, e.getClickCount, e.isPopupTrigger))
         }
       })
     }
@@ -113,11 +117,11 @@ abstract class Component extends UIElement with Showable.Swing with Publisher {
       peer.addMouseListener(new MouseListener {
         def mouseEntered(e: java.awt.event.MouseEvent) {
           publish(MouseEntered(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                               Point(e.getPoint), e.getModifiers))
+                               e.getPoint, e.getModifiers))
         }
         def mouseExited(e: java.awt.event.MouseEvent) {
           publish(MouseExited(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                              Point(e.getPoint), e.getModifiers))
+                              e.getPoint, e.getModifiers))
         }
         def mouseClicked(e: java.awt.event.MouseEvent) {}
         def mousePressed(e: java.awt.event.MouseEvent) { }
@@ -126,11 +130,11 @@ abstract class Component extends UIElement with Showable.Swing with Publisher {
       peer.addMouseMotionListener(new MouseMotionListener {
         def mouseMoved(e: java.awt.event.MouseEvent) {
           publish(MouseMoved(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                             Point(e.getPoint), e.getModifiers))
+                             e.getPoint, e.getModifiers))
         }
         def mouseDragged(e: java.awt.event.MouseEvent) {
           publish(MouseDragged(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                               Point(e.getPoint), e.getModifiers))
+                               e.getPoint, e.getModifiers))
         }
       })
     }
@@ -138,7 +142,7 @@ abstract class Component extends UIElement with Showable.Swing with Publisher {
       peer.addMouseWheelListener(new MouseWheelListener {
         def mouseWheelMoved(e: java.awt.event.MouseWheelEvent) {
           publish(MouseWheelMoved(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                             Point(e.getPoint), e.getModifiers, e.getWheelRotation)) }
+                             e.getPoint, e.getModifiers, e.getWheelRotation)) }
       })
     }
   }
@@ -162,6 +166,8 @@ abstract class Component extends UIElement with Showable.Swing with Publisher {
       }
     }
   })
+
+  def revalidate() { peer.revalidate() }
 
   override def toString = "scala.swing wrapper " + peer.toString
 }

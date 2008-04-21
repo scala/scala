@@ -3,13 +3,13 @@ package scala.swing
 import javax.swing._
 import event._
 
-class ComponentList(val jlist: JList) extends Container(jlist) with Publisher {
+class ComponentList(override val peer: JList) extends Component(peer) with SequentialContainer.Wrapper with Publisher {
   def this() = this(new JList)
   def this(elems: Seq[Object]) = this(new JList(elems.toArray))
 
-  def fixedCellWidth = jlist.getFixedCellWidth
-  def fixedCellWidth_=(x: Int) = jlist.setFixedCellWidth(x)
+  def fixedCellWidth = peer.getFixedCellWidth
+  def fixedCellWidth_=(x: Int) = peer.setFixedCellWidth(x)
 
-  def fixedCellHeight = jlist.getFixedCellHeight
-  def fixedCellHeight_=(x: Int) = jlist.setFixedCellHeight(x)
+  def fixedCellHeight = peer.getFixedCellHeight
+  def fixedCellHeight_=(x: Int) = peer.setFixedCellHeight(x)
 }

@@ -1,7 +1,6 @@
 package scala.swing
 
-abstract class Panel extends Container {
-  override lazy val peer: javax.swing.JPanel = new javax.swing.JPanel
-
-  def layout: java.awt.LayoutManager = peer.getLayout
-}
+/**
+ * @see javax.swing.JPanel
+ */
+abstract class Panel(override val peer: javax.swing.JPanel) extends Component(peer) with Container.Wrapper

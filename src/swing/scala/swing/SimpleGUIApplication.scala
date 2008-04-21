@@ -7,9 +7,7 @@ abstract class SimpleGUIApplication extends GUIApplication {
 
   def main(args: Array[String]) = {
     SwingUtilities.invokeLater {
-      new Runnable { def run() { init(); top.pack.show() } }
+      new Runnable { def run() { init(); top.pack(); top.visible = true } }
     }
   }
-
-  implicit def string2label(s: String): Label = new Label(s)
 }

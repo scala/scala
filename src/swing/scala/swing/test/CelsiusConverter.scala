@@ -8,29 +8,30 @@ import event._
 object CelsiusConverter extends SimpleGUIApplication {
   def top = new MainFrame {
     title = "Convert Celsius to Fahrenheit"
-    defaultButton = convertButton
+    defaultButton = Some(convertButton)
     object tempCelsius extends TextField
     object celsiusLabel extends Label {
       text = "Celsius"
-      border = EmptyBorder(5, 5, 5, 5)
+      border = Border.Empty(5, 5, 5, 5)
     }
-    object convertButton extends Button {
-      icon = new javax.swing.ImageIcon("c:\\workspace\\gui\\images\\convert.gif")
-      border = EmptyBorder(5, 5, 5, 5)
+    object convertButton extends PushButton {
+      text = "Convert"//new javax.swing.ImageIcon("c:\\workspace\\gui\\images\\convert.gif")
+      //border = Border.Empty(5, 5, 5, 5)
     }
     object fahrenheitLabel extends Label {
       text = "Fahrenheit     "
-      border = EmptyBorder(5, 5, 5, 5)
+      border = Border.Empty(5, 5, 5, 5)
       listenTo(convertButton, tempCelsius)
       reactions += {
-        case ButtonPressed(_) | ContentModified(_) =>
+        case ButtonClicked(_) | ValueChanged(_,false) =>
           val c = Integer.parseInt(tempCelsius.text)
           val f = c * 9 / 5 + 32
           text = "<html><font color = red>"+f+"</font> Fahrenheit</html>"
       }
     }
-    content = new GridPanel(2,2)(tempCelsius, celsiusLabel, convertButton, fahrenheitLabel) {
-      border = EmptyBorder(10, 10, 10, 10)
+    contents = new GridPanel(2,2) {
+      contents.append(tempCelsius, celsiusLabel, convertButton, fahrenheitLabel)
+      border = Border.Empty(10, 10, 10, 10)
     }
   }
 }
