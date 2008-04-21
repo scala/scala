@@ -71,6 +71,8 @@ object Futures {
    * </p>
    */
   def awaitAll(timeout: Long, fts: Future[Any]*): List[Option[Any]] = {
+    TimerThread.requestTimeout(Actor.self, null, timeout)
+
     var resultsMap: collection.mutable.Map[Int, Option[Any]] = new collection.mutable.HashMap[Int, Option[Any]]
 
     var cnt = 0
@@ -111,7 +113,7 @@ object Futures {
           }
         }
       }
-      Actor.receiveWithin(timeout)(reaction)
+      Actor.receive(reaction)
     }
 
     awaitWith(partFuns)
