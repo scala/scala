@@ -4,9 +4,12 @@ object GridPanel {
   val Adapt = 0
 }
 
-class GridPanel(rows0: Int, cols0: Int) extends Panel with IndexedContainer {
-  override lazy val layoutManager = new java.awt.GridLayout(rows0, cols0)
-  override lazy val peer = new javax.swing.JPanel(layoutManager)
+/**
+ * @see java.awt.GridLayout
+ */
+class GridPanel(override val peer: javax.swing.JPanel) extends Panel(peer) with SequentialContainer.Wrapper {
+  def this(rows0: Int, cols0: Int) = this(new javax.swing.JPanel(new java.awt.GridLayout(rows0, cols0)))
+  private def layoutManager = peer.getLayout.asInstanceOf[java.awt.GridLayout]
 
   def rows: Int = layoutManager.getRows
   def rows_=(n: Int) { layoutManager.setRows(n) }

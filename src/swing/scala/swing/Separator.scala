@@ -5,6 +5,6 @@ import javax.swing._
 /**
  * @see javax.swing.JSeparator
  */
-class Separator extends Component with Oriented {
-  override lazy val peer = new JSeparator
+class Separator(override val peer: JSeparator) extends Component(peer) with Oriented {
+  def this() = this(new JSeparator)
 }

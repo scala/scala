@@ -4,9 +4,11 @@ import swing._
 
 object HelloWorld extends GUIApplication {
   def main(args: Array[String]) = run {
-    new Frame {
+    val frame = new Frame {
       title = "HelloWorldSwing"
-      content = new Label("Hello World")
-    }.pack.show
+      contents = new Label("Hello World")
+    }
+    frame.pack()
+    frame.visible = true
   }
 }

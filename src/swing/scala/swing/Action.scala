@@ -12,8 +12,12 @@ object Action {
     def action: Action
     def action_=(a: Action)
 
-    def hideActionText: Boolean
-    def hideActionText_=(b: Boolean)
+    //1.6: def hideActionText: Boolean
+    //def hideActionText_=(b: Boolean)
+  }
+
+  def apply(title: String)(block: =>Unit) = new Action(title) {
+    def apply() { block }
   }
 }
 
@@ -41,10 +45,10 @@ abstract class Action(title0: String) {
   /**
    * None if large icon and small icon are not equal.
    */
-  def icon: Option[Icon] = if(largeIcon == smallIcon) largeIcon else None
-  def icon_=(i: Option[Icon]) { largeIcon = i; smallIcon = i }
-  def largeIcon: Option[Icon] = toOption(peer.getValue(javax.swing.Action.LARGE_ICON_KEY))
-  def largeIcon_=(i: Option[Icon]) { peer.putValue(javax.swing.Action.LARGE_ICON_KEY, toNull(i)) }
+  def icon: Option[Icon] = smallIcon //if(largeIcon == smallIcon) largeIcon else None
+  def icon_=(i: Option[Icon]) { /*largeIcon = i;*/ smallIcon = i }
+  // 1.6: def largeIcon: Option[Icon] = toOption(peer.getValue(javax.swing.Action.LARGE_ICON_KEY))
+  // def largeIcon_=(i: Option[Icon]) { peer.putValue(javax.swing.Action.LARGE_ICON_KEY, toNull(i)) }
   def smallIcon: Option[Icon] = toOption(peer.getValue(javax.swing.Action.SMALL_ICON))
   def smallIcon_=(i: Option[Icon]) { peer.putValue(javax.swing.Action.SMALL_ICON, toNull(i)) }
 
@@ -73,14 +77,15 @@ abstract class Action(title0: String) {
                              java.awt.event.KeyEvent.VK_UNDEFINED)
   def mnemonic_=(m: Int) { peer.putValue(javax.swing.Action.MNEMONIC_KEY, m) }
 
-  /**
+  /*/**
    * Indicates which character of the title should be underlined to indicate the mnemonic key.
    * Ignored if out of bounds of the title string. Default: -1, i.e., ignored.
    * For all buttons and thus menu items.
    */
-  def mnemonicIndex: Int =
-    ifNull(peer.getValue(javax.swing.Action.DISPLAYED_MNEMONIC_INDEX_KEY), -1)
-  def mnemonicIndex_=(n: Int) { peer.putValue(javax.swing.Action.DISPLAYED_MNEMONIC_INDEX_KEY, n) }
+   1.6: def mnemonicIndex: Int =
+   ifNull(peer.getValue(javax.swing.Action.DISPLAYED_MNEMONIC_INDEX_KEY), -1)
+   def mnemonicIndex_=(n: Int) { peer.putValue(javax.swing.Action.DISPLAYED_MNEMONIC_INDEX_KEY, n) }
+  */
 
   /**
    * For menus.
@@ -97,14 +102,14 @@ abstract class Action(title0: String) {
   def enabled: Boolean = peer.isEnabled
   def enabled_=(b: Boolean) { peer.setEnabled(b) }
 
-  /**
+  /*/**
    * Only honored if not <code>None</code>. For various buttons.
    */
-  def selected: Option[Boolean] = toOption(peer.getValue(javax.swing.Action.SELECTED_KEY))
-  def selected_=(b: Option[Boolean]) {
-    peer.putValue(javax.swing.Action.SELECTED_KEY,
-                  if (b == None) null else new java.lang.Boolean(b.get))
-  }
+   1.6: def selected: Option[Boolean] = toOption(peer.getValue(javax.swing.Action.SELECTED_KEY))
+   def selected_=(b: Option[Boolean]) {
+   peer.putValue(javax.swing.Action.SELECTED_KEY,
+                 if (b == None) null else new java.lang.Boolean(b.get))
+  }*/
 
   def apply()
 }

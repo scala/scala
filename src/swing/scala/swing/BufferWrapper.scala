@@ -5,7 +5,7 @@ import scala.collection.mutable.Buffer
 /**
  * Default partial implementation for buffer adapters.
  */
-protected[swing] abstract class BufferAdapter[A] extends Buffer[A] { outer =>
+protected[swing] abstract class BufferWrapper[A] extends Buffer[A] { outer =>
   def clear { for (i <- 0 to length) remove(0) }
   def update(n: Int, a: A) {
     remove(0)

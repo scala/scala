@@ -1,20 +1,26 @@
 package scala.swing
 
-import javax.swing.JFrame
+import javax.swing._
 import event._
 
-class Frame(val peer: JFrame) extends UIElement with RootPanel with Showable.Swing with Publisher {
+/**
+ * @see javax.swing.JFrame
+ */
+class Frame(override val peer: JFrame) extends UIElement with RootPanel with Publisher {
   def this() = this(new JFrame)
   def title: String = peer.getTitle
   def title_=(s: String) = peer.setTitle(s)
-  content = new Component { opaque = false }
 
-  override def content_=(c: Component) {
-    super.content_=(c)
+  override def contents_=(c: Component) {
+    super.contents_=(c)
     peer.pack() // pack also validates, which is generally required after an add
   }
-  def defaultButton: PushButton = Component.wrapperFor(peer.getRootPane.getDefaultButton)
-  def defaultButton_=(b: PushButton) { peer.getRootPane.setDefaultButton(b.peer) }
+  def defaultButton: Option[PushButton] =
+    Swing.toOption(peer.getRootPane.getDefaultButton).map(Component.wrapperFor(_))
+  def defaultButton_=(b: Option[PushButton]) {
+    peer.getRootPane.setDefaultButton(Swing.toNull(b.map(_.peer)))
+  }
+
   def pack(): this.type = { peer.pack(); this }
 
   def menuBar: MenuBar = Component.wrapperFor(peer.getJMenuBar)

@@ -20,9 +20,9 @@ object SwingApp extends SimpleGUIApplication {
     object button extends PushButton {
       text = "I am a button"
     }
-    content = new GridPanel(GridPanel.Adapt,1) {
+    contents = new GridPanel(GridPanel.Adapt,1) {
       contents.append(label, button)
-      border = EmptyBorder(5, 5, 5, 5)
+      border = Border.Empty(5, 5, 5, 5)
     }
   }
 }

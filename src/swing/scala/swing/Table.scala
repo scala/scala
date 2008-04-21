@@ -1,11 +1,10 @@
 package scala.swing
 
-import geometry._
 import model.Matrix
 import javax.swing._
 import javax.swing.table._
 import javax.swing.event._
-import java.awt.Color
+import java.awt.{Dimension, Color}
 import event._
 import scala.collection.mutable.Set
 
@@ -30,7 +29,10 @@ object Table {
   }
 }
 
-class Table(override val peer: JTable) extends Component with Scrollable with Publisher {
+/**
+ * @see javax.swing.JTable
+ */
+class Table(override val peer: JTable) extends Component(peer) with Scrollable with Publisher {
   import Table._
   def this() = this(new JTable())
   def this(numRows: Int, numColumns: Int) = this(new JTable(numRows, numColumns))
@@ -60,9 +62,9 @@ class Table(override val peer: JTable) extends Component with Scrollable with Pu
   def gridColor = peer.getGridColor
   def gridColor_=(color: Color) = peer.setGridColor(color)
 
-  def preferredViewportSize_=(dim: Dimension) = peer.setPreferredScrollableViewportSize(dim.peer)
-  def fillsViewportHeight: Boolean = peer.getFillsViewportHeight
-  def fillsViewportHeight_=(b: Boolean) = peer.setFillsViewportHeight(b)
+  def preferredViewportSize_=(dim: Dimension) = peer.setPreferredScrollableViewportSize(dim)
+  //1.6: def fillsViewportHeight: Boolean = peer.getFillsViewportHeight
+  //def fillsViewportHeight_=(b: Boolean) = peer.setFillsViewportHeight(b)
 
   // TODO: could be a sorted set
   protected abstract class SelectionSet[A](a: =>Seq[A]) extends Set[A] {
@@ -125,13 +127,13 @@ class Table(override val peer: JTable) extends Component with Scrollable with Pu
     }
 
     peer.getColumnModel.getSelectionModel.addListSelectionListener(new ListSelectionListener {
-      def valueChanged(e: ListSelectionEvent) {
-        publish(ColumnsSelected(Table.this, e.getValueIsAdjusting, e.getFirstIndex to e.getLastIndex))
+      def valueChanged(e: javax.swing.event.ListSelectionEvent) {
+        publish(ColumnsSelected(Table.this, e.getFirstIndex to e.getLastIndex, e.getValueIsAdjusting))
       }
     })
     peer.getSelectionModel.addListSelectionListener(new ListSelectionListener {
-      def valueChanged(e: ListSelectionEvent) {
-        publish(RowsSelected(Table.this, e.getValueIsAdjusting, e.getFirstIndex to e.getLastIndex))
+      def valueChanged(e: javax.swing.event.ListSelectionEvent) {
+        publish(RowsSelected(Table.this, e.getFirstIndex to e.getLastIndex, e.getValueIsAdjusting))
       }
     })
   }

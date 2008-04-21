@@ -12,10 +12,13 @@ object FlowPanel {
   }
 }
 
-class FlowPanel(alignment: FlowPanel.Alignment.Value) extends Panel with IndexedContainer {
+/**
+ * @see java.awt.FlowLayout
+ */
+class FlowPanel(override val peer: javax.swing.JPanel) extends Panel(peer) with SequentialContainer.Wrapper {
+  def this(alignment: FlowPanel.Alignment.Value) = this(new javax.swing.JPanel(new java.awt.FlowLayout(alignment.id)))
   def this() = this(FlowPanel.Alignment.Center)
-  override lazy val layoutManager = new java.awt.FlowLayout(alignment.id)
-  override lazy val peer = new javax.swing.JPanel(layoutManager)
+  private def layoutManager = peer.getLayout.asInstanceOf[java.awt.FlowLayout]
 
   def vGap: Int = layoutManager.getVgap
   def vGap_=(n: Int) { layoutManager.setVgap(n) }

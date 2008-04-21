@@ -2,6 +2,7 @@ package scala.swing
 
 import java.awt.{Insets, GridBagConstraints}
 
+
 object GridBagPanel {
   object Fill extends Enumeration {
     val None = Value(GridBagConstraints.NONE)
@@ -31,11 +32,15 @@ object GridBagPanel {
   }
 }
 
-class GridBagPanel extends Panel with LayoutContainer {
+/**
+ * @see java.awt.GridBagLayout
+ */
+class GridBagPanel(override val peer: javax.swing.JPanel) extends Panel(peer) with LayoutContainer {
   import GridBagPanel._
 
-  override lazy val layoutManager = new java.awt.GridBagLayout
-  override lazy val peer = new javax.swing.JPanel(layoutManager)
+  def this() = this(new javax.swing.JPanel(new java.awt.GridBagLayout))
+
+  private def layoutManager = peer.getLayout.asInstanceOf[java.awt.GridBagLayout]
 
   class Constraints(val peer: GridBagConstraints) extends Proxy {
     def self = peer

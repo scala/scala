@@ -1,8 +1,8 @@
 package scala.swing
 
 import event._
-import geometry._
 
+import java.awt.{Dimension, Point}
 import java.awt.event._
 import javax.swing.JComponent
 import javax.swing.border.Border
@@ -12,16 +12,19 @@ object Component {
   def wrapperFor[C<:Component](c: javax.swing.JComponent): C = c.getClientProperty(ClientKey).asInstanceOf[C]
 }
 
-abstract class Component extends UIElement with Showable.Swing with Publisher {
-  lazy val peer: javax.swing.JComponent = new javax.swing.JComponent {}
+/**
+ * @see javax.swing.JComponent
+ */
+abstract class Component(override val peer: javax.swing.JComponent) extends UIElement with Publisher {
+  def this() = this(new javax.swing.JComponent{})
   peer.putClientProperty(Component.ClientKey, this)
 
   def minimumSize = peer.getMinimumSize
-  def minimumSize_=(x: Dimension) = peer.setMinimumSize(x.peer)
+  def minimumSize_=(x: Dimension) = peer.setMinimumSize(x)
   def maxiumumSize = peer.getMaximumSize
-  def maxiumumSize_=(x: Dimension) = peer.setMaximumSize(x.peer)
+  def maxiumumSize_=(x: Dimension) = peer.setMaximumSize(x)
   def preferredSize = peer.getPreferredSize
-  def preferredSize_=(x: Dimension) = peer.setPreferredSize(x.peer)
+  def preferredSize_=(x: Dimension) = peer.setPreferredSize(x)
 
   /**
    * Used by certain layout managers, e.g., BoxLayout or OverlayLayout to
@@ -98,15 +101,15 @@ abstract class Component extends UIElement with Showable.Swing with Publisher {
         def mouseExited(e: java.awt.event.MouseEvent) { }
         def mouseClicked(e: java.awt.event.MouseEvent) {
           publish(MouseClicked(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                               Point(e.getPoint), e.getModifiers, e.getClickCount, e.isPopupTrigger))
+                               e.getPoint, e.getModifiers, e.getClickCount, e.isPopupTrigger))
         }
         def mousePressed(e: java.awt.event.MouseEvent) {
           publish(MousePressed(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                               Point(e.getPoint), e.getModifiers, e.getClickCount, e.isPopupTrigger))
+                               e.getPoint, e.getModifiers, e.getClickCount, e.isPopupTrigger))
         }
         def mouseReleased(e: java.awt.event.MouseEvent) {
           publish(MouseReleased(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                                Point(e.getPoint), e.getModifiers, e.getClickCount, e.isPopupTrigger))
+                                e.getPoint, e.getModifiers, e.getClickCount, e.isPopupTrigger))
         }
       })
     }
@@ -114,11 +117,11 @@ abstract class Component extends UIElement with Showable.Swing with Publisher {
       peer.addMouseListener(new MouseListener {
         def mouseEntered(e: java.awt.event.MouseEvent) {
           publish(MouseEntered(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                               Point(e.getPoint), e.getModifiers))
+                               e.getPoint, e.getModifiers))
         }
         def mouseExited(e: java.awt.event.MouseEvent) {
           publish(MouseExited(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                              Point(e.getPoint), e.getModifiers))
+                              e.getPoint, e.getModifiers))
         }
         def mouseClicked(e: java.awt.event.MouseEvent) {}
         def mousePressed(e: java.awt.event.MouseEvent) { }
@@ -127,11 +130,11 @@ abstract class Component extends UIElement with Showable.Swing with Publisher {
       peer.addMouseMotionListener(new MouseMotionListener {
         def mouseMoved(e: java.awt.event.MouseEvent) {
           publish(MouseMoved(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                             Point(e.getPoint), e.getModifiers))
+                             e.getPoint, e.getModifiers))
         }
         def mouseDragged(e: java.awt.event.MouseEvent) {
           publish(MouseDragged(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                               Point(e.getPoint), e.getModifiers))
+                               e.getPoint, e.getModifiers))
         }
       })
     }
@@ -139,7 +142,7 @@ abstract class Component extends UIElement with Showable.Swing with Publisher {
       peer.addMouseWheelListener(new MouseWheelListener {
         def mouseWheelMoved(e: java.awt.event.MouseWheelEvent) {
           publish(MouseWheelMoved(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                             Point(e.getPoint), e.getModifiers, e.getWheelRotation)) }
+                             e.getPoint, e.getModifiers, e.getWheelRotation)) }
       })
     }
   }
@@ -163,6 +166,8 @@ abstract class Component extends UIElement with Showable.Swing with Publisher {
       }
     }
   })
+
+  def revalidate() { peer.revalidate() }
 
   override def toString = "scala.swing wrapper " + peer.toString
 }

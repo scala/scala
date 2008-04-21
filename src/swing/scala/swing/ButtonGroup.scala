@@ -4,8 +4,10 @@ import javax.swing.{AbstractButton => JAbstractButton,Icon}
 import event._
 import scala.collection._
 
-
-class ButtonMutex(initialButtons: Button*) {
+/**
+ * @see javax.swing.ButtonGroup
+ */
+class ButtonGroup(initialButtons: Button*) {
   val peer: javax.swing.ButtonGroup = new javax.swing.ButtonGroup
 
   val buttons: mutable.Set[Button] = new mutable.Set[Button] {
@@ -21,7 +23,7 @@ class ButtonMutex(initialButtons: Button*) {
   }
   buttons ++= initialButtons
 
-  def deselectAll() { peer.clearSelection }
-  def selected: Option[Selectable] = buttons.find(_.selected)
-  def select(b: Selectable) { b.selected = true }
+  //1.6: def deselectAll() { peer.clearSelection }
+  def selected: Option[Button] = buttons.find(_.selected)
+  def select(b: Button) { peer.setSelected(b.peer.getModel, true) }
 }

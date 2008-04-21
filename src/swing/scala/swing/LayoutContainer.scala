@@ -3,7 +3,11 @@ package scala.swing
 import javax.swing.JComponent
 import scala.collection.mutable.Map
 
-trait LayoutContainer extends Container {
+/**
+ * A container that associates layout constraints with its children.
+ * See GridBagPanel for an example.
+ */
+trait LayoutContainer extends Container.Wrapper {
   type Constraints <: { def peer: AnyRef }
   protected def constraintsFor(c: Component): Constraints
   def layout: Map[Component, Constraints] = new Map[Component, Constraints] {

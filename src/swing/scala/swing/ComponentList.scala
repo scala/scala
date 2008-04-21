@@ -3,7 +3,7 @@ package scala.swing
 import javax.swing._
 import event._
 
-class ComponentList(override val peer: JList) extends Component with Container with Publisher {
+class ComponentList(override val peer: JList) extends Component(peer) with SequentialContainer.Wrapper with Publisher {
   def this() = this(new JList)
   def this(elems: Seq[Object]) = this(new JList(elems.toArray))
 

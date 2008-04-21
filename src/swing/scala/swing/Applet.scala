@@ -3,10 +3,12 @@ package scala.swing
 import javax.swing.JApplet
 
 /**
- * Clients should implement the ui field. See the SimpleApplet demo for a sample.
+ * Clients should implement the ui field. See the SimpleApplet demo for an example.
  *
  * Note: Applet extends JApplet to satisfy Java's applet loading mechanism.
  * The usual component wrapping scheme doesn't work here.
+ *
+ * @see javax.swing.JApplet
  */
 abstract class Applet extends JApplet { outer =>
   val ui: UI
@@ -17,8 +19,8 @@ abstract class Applet extends JApplet { outer =>
 
   abstract class UI extends RootPanel {
     def peer = outer
-    override def content_=(c: Component) {
-      super.content_=(c)
+    override def contents_=(c: Component) {
+      super.contents_=(c)
       peer.validate()
     }
 

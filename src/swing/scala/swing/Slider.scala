@@ -3,7 +3,10 @@ package scala.swing
 import event._
 import Swing._
 
-class Slider(override val peer: javax.swing.JSlider) extends Component with Orientable with EditorComponent {
+/**
+ * @see javax.swing.JSlider
+ */
+class Slider(override val peer: javax.swing.JSlider) extends Component(peer) with Orientable with Publisher {
   def this() = this(new javax.swing.JSlider)
 
   def min: Int = peer.getMinimum
@@ -38,7 +41,9 @@ class Slider(override val peer: javax.swing.JSlider) extends Component with Orie
     peer.setLabelTable(table)
   }
 
-  lazy val contentModified = new Publisher {
-    peer.addChangeListener { ChangeListener( e => publish(ContentModified(Slider.this))) }
-  }
+  peer.addChangeListener(new javax.swing.event.ChangeListener {
+    def stateChanged(e: javax.swing.event.ChangeEvent) {
+      publish(ValueChanged(Slider.this, peer.getValueIsAdjusting))
+    }
+  })
 }

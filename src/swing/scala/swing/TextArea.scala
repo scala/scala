@@ -4,6 +4,9 @@ import javax.swing._
 import java.awt.event._
 import event._
 
+/**
+ * @see javax.swing.JTextArea
+ */
 class TextArea(override val peer: JTextArea) extends TextComponent(peer) with TextComponent.HasColumns with TextComponent.HasRows {
   def this(text: String, rows: Int, columns: int) = this(new JTextArea(text, rows, columns))
   def this(text: String) = this(new JTextArea(text))

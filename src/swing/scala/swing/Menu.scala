@@ -3,8 +3,11 @@ package scala.swing
 import scala.collection.mutable._
 import javax.swing._
 
-class MenuBar extends IndexedContainer {
-  override lazy val peer = new JMenuBar
+/**
+ * @see javax.swing.JMenuBar
+ */
+class MenuBar(override val peer: JMenuBar) extends Component(peer) with SequentialContainer.Wrapper {
+  def this() = this(new JMenuBar)
 
   def menus: Seq[Menu] = contents.filter(_.isInstanceOf[Menu]).map(_.asInstanceOf[Menu])
 
@@ -19,22 +22,33 @@ class MenuBar extends IndexedContainer {
   def subElements: Seq[MenuElement] = peer.getSubElements.map(Component.wrapperFor(_))
 }*/
 
-class MenuItem(val title: String) extends Button {
+/**
+ * @see javax.swing.JMenuItem
+ */
+class MenuItem(override val peer: JMenuItem) extends Button(peer) {
+  def this(title: String) = this(new JMenuItem(title))
   def this(a: Action) = {
     this("")
     action = a
   }
-  override lazy val peer = new JMenuItem(title)
 }
 
-class Menu(title: String) extends MenuItem(title) with IndexedContainer { self: Menu =>
-  override lazy val peer = new JMenu(title)
+/**
+ * @see javax.swing.JMenu
+ */
+class Menu(override val peer: JMenu) extends MenuItem(peer) with SequentialContainer.Wrapper { self: Menu =>
+  def this(title: String) = this(new JMenu(title))
 }
 
-class RadioMenuItem(title: String) extends MenuItem(title) {
-  override lazy val peer = new JRadioButtonMenuItem(title)
+/**
+ * @see javax.swing.JRadioButtonMenuItem
+ */
+class RadioMenuItem(override val peer: JRadioButtonMenuItem) extends MenuItem(peer) {
+  def this(title: String) = this(new JRadioButtonMenuItem(title))
 }
-
-class CheckMenuItem(title: String) extends MenuItem(title) {
-  override lazy val peer = new JCheckBoxMenuItem(title)
+/**
+ * @see javax.swing.JCheckBoxMenuItem
+ */
+class CheckMenuItem(override val peer: JCheckBoxMenuItem) extends MenuItem(peer) {
+  def this(title: String) = this(new JCheckBoxMenuItem(title))
 }

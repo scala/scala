@@ -1,6 +1,6 @@
 package scala.swing.event
 
-import geometry._
+import java.awt.Point
 
 class MouseEvent(source: Component, point: Point, modifiers: Int) extends ComponentEvent(source)
 

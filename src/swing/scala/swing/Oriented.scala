@@ -5,9 +5,5 @@ trait Oriented {
     def getOrientation(): Int
     def setOrientation(n: Int)
   }
-  def orientation: Orientation = Orientation.wrap(peer.getOrientation)
-}
-
-trait Orientable extends Oriented {
-  def orientation_=(o: Orientation) { peer.setOrientation(o.peer) }
+  def orientation: Orientation.Value = Orientation(peer.getOrientation)
 }

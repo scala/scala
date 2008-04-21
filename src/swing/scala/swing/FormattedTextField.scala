@@ -1,9 +1,12 @@
-package scala.swing;
+package scala.swing
 
 import javax.swing._
 import java.awt.event._
 import event._
 
-class FormattedTextField(val jftextfield: JFormattedTextField) extends TextComponent(jftextfield) {
-  def this(format: java.text.Format) = this(new JFormattedTextField(format));
+/**
+ * @see javax.swing.JFormattedTextField
+ */
+class FormattedTextField(override val peer: JFormattedTextField) extends TextComponent(peer) {
+  def this(format: java.text.Format) = this(new JFormattedTextField(format))
 }
