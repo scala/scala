@@ -78,7 +78,6 @@ PROPERTIES
   <property name="msil.jar" value="${lib.dir}/msil.jar"/>
   <property name="jline.jar" value="${lib.dir}/jline.jar"/>
   <property name="ant.jar" value="${ant.home}/lib/ant.jar"/>
-  <property name="ant-contrib.jar" value="${lib.dir}/ant-contrib.jar"/>
 
   <!-- Sets location of build folders -->
   <property name="build.dir" value="${basedir}/build"/>
@@ -100,8 +99,7 @@ INITIALISATION
 
   <target name="init">
   <!-- Setting-up Ant contrib tasks -->
-    <taskdef resource="net/sf/antcontrib/antlib.xml"
-             classpath="${ant-contrib.jar}"/>
+    <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant-contrib.jar"/>
   <!-- This is the start time for the distribution -->
     <tstamp prefix="time">
       <format property="human" pattern="d MMMM yyyy, HH:mm:ss"/>
@@ -771,11 +769,22 @@ DOCUMENTATION
       doctitle="Scala ${version.number} API"
       classpathref="pack.classpath">
       <src>
-        <files includes="${src.dir}/dbc"/>
         <files includes="${src.dir}/actors"/>
-        <files includes="${src.dir}/library"/>
+        <files includes="${src.dir}/library/scala"/>
       </src>
       <include name="**/*.scala"/>
+      <exclude name="reflect/Code.scala"/>
+      <exclude name="reflect/Manifest.scala"/>
+      <exclude name="reflect/Print.scala"/>
+      <exclude name="reflect/Symbol.scala"/>
+      <exclude name="reflect/Tree.scala"/>
+      <exclude name="reflect/Type.scala"/>
+      <exclude name="reflect/TypedCode.scala"/>
+      <exclude name="runtime/*Array.scala"/>
+      <exclude name="runtime/*$.scala"/>
+      <exclude name="runtime/ScalaRunTime.scala"/>
+      <exclude name="runtime/StreamCons.scala"/>
+      <exclude name="runtime/StringAdd.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/library.complete" verbose="no"/>
     <stopwatch name="docs.lib.timer" action="total"/>
@@ -944,7 +953,7 @@ FORWARDED TARGETS FOR JVM 1.4 BUILD
     <ant antfile="${src.dir}/build/four.xml" target="four-test.done" inheritall="yes" inheritrefs="yes"/>
   </target>
   
-  <target name="fourdist" depends="pack.done">
+  <target name="fourdist" depends="all.done">
     <ant antfile="${src.dir}/build/four.xml" target="four-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
   

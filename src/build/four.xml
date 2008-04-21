@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="sabbus-four">
+
+  <description>
+    SuperSabbus extension for the Scala library and compiler targeted for the JVM 1.4. THIS FILE IS NOT STAND-ALONE AND SHOULD ONLY BE USED THROUGH ENTRY POINTS IN SUPERSABBUS.
+  </description>
+  
+  <!-- TODO: Use a 1.4 Java standard library to compile against, instead of that of the JVM running the script. -->
+  <!-- TODO: Use a 1.4 Java standard library to run partests. Add a bootclasspath option to partest to allow that. -->
+  
+<!-- ===========================================================================
+PROPERTIES
+============================================================================ -->
+  
+  <property name="build-four.dir" value="${build.dir}/four"/>
+  <property name="build-four-src.dir" value="${build.dir}/four-src"/>
+  <property name="build-four-pack.dir" value="${build.dir}/four-pack"/>
+  <property name="build-four-docs.dir" value="${build.dir}/four-docs"/>
+  
+<!-- ===========================================================================
+JAVA 1.4 LIBRARY AND COMPILER BUILD (FOUR)
+============================================================================ -->
+  
+  <target name="four.start"/>
+  
+  <target name="four.src" depends="four.start">
+    <mkdir dir="${build-four-src.dir}"/>
+    <sync todir="${build-four-src.dir}">
+      <fileset dir="${src.dir}/library"/>
+    </sync>
+    <copy todir="${build-four-src.dir}">
+      <fileset dir="${src.dir}/jvm14-library"/>
+    </copy>
+  </target>
+
+  <target name="four.lib" depends="four.src">
+    <stopwatch name="four.lib.timer"/>
+    <mkdir dir="${build-four.dir}/classes/library"/>
+    <javac
+      srcdir="${build-four-src.dir}"
+      destdir="${build-four.dir}/classes/library"
+      classpath="${build-four.dir}/classes/library"
+      includes="**/*.java"
+      target="1.4" source="1.4"/>
+    <javac
+      srcdir="${src.dir}/actors"
+      destdir="${build-four.dir}/classes/library"
+      classpath="${build-four.dir}/classes/library"
+      includes="**/*.java"
+      target="1.4" source="1.4"/>
+    <scalac
+      srcdir="${build-four-src.dir}"
+      destdir="${build-four.dir}/classes/library"
+      classpath="${build-four.dir}/classes/library"
+      sourcepath="${build-four-src.dir}"
+      target="jvm-1.4">
+      <include name="scala/Predef.scala"/>
+    </scalac>
+    <scalac
+      srcdir="${build-four-src.dir}"
+      destdir="${build-four.dir}/classes/library"
+      classpath="${build-four.dir}/classes/library"
+      target="jvm-1.4">
+      <include name="**/*.scala"/>
+      <exclude name="scala/Predef.scala"/>
+    </scalac>
+    <scalac
+      srcdir="${src.dir}/actors"
+      destdir="${build-four.dir}/classes/library"
+      classpath="${build-four.dir}/classes/library"
+      target="jvm-1.4">
+      <include name="**/*.scala"/>
+    </scalac>
+    <scalac
+      srcdir="${src.dir}/dbc"
+      destdir="${build-four.dir}/classes/library"
+      classpath="${build-four.dir}/classes/library"
+      target="jvm-1.4">
+      <include name="**/*.scala"/>
+    </scalac>
+    <propertyfile file="${build-four.dir}/classes/library/library.properties">
+      <entry key="version.number" value="${version.number}"/>
+      <entry key="copyright.string" value="${copyright.string}"/>
+    </propertyfile>
+    <copy todir="${build-four.dir}/classes/library">
+      <fileset dir="${build-four-src.dir}">
+        <include name="**/*.tmpl"/>
+        <include name="**/*.xml"/>
+        <include name="**/*.js"/>
+        <include name="**/*.css"/>
+      </fileset>
+    </copy>
+    <stopwatch name="four.lib.timer" action="total"/>
+  </target>
+
+  <target name="four.comp" depends="four.lib">
+    <stopwatch name="four.comp.timer"/>
+    <mkdir dir="${build-four.dir}/classes/compiler"/>
+    <scalac
+      srcdir="${src.dir}/compiler"
+      destdir="${build-four.dir}/classes/compiler"
+      target="jvm-1.4">
+      <include name="**/*.scala"/>
+      <classpath>
+        <pathelement location="${build-four.dir}/classes/library"/>
+        <pathelement location="${build-four.dir}/classes/compiler"/>
+        <pathelement location="${fjbg.jar}"/>
+        <pathelement location="${msil.jar}"/>
+        <pathelement location="${jline.jar}"/>
+        <pathelement location="${ant.jar}"/>
+      </classpath>
+    </scalac>
+    <propertyfile file="${build-four.dir}/classes/compiler/compiler.properties">
+      <entry key="version.number" value="${version.number}"/>
+      <entry key="copyright.string" value="${copyright.string}"/>
+    </propertyfile>
+    <copy todir="${build-four.dir}/classes/compiler">
+      <fileset dir="${src.dir}/compiler">
+        <include name="**/*.tmpl"/>
+        <include name="**/*.xml"/>
+        <include name="**/*.js"/>
+        <include name="**/*.css"/>
+      </fileset>
+    </copy>
+    <stopwatch name="four.comp.timer" action="total"/>
+  </target>
+    
+  <target name="four.partest" depends="four.comp">
+    <stopwatch name="four.partest.timer"/>
+    <mkdir dir="${build-four.dir}/classes/partest"/>
+    <javac
+      srcdir="${src.dir}/partest"
+      destdir="${build-four.dir}/classes/partest"
+      target="1.4" source="1.4">
+      <classpath>
+      	<pathelement location="${build-four.dir}/classes/library"/>
+      	<pathelement location="${build-four.dir}/classes/compiler"/>
+      	<pathelement location="${build-four.dir}/classes/partest"/>
+      </classpath>
+      <include name="**/*.java"/>
+    </javac>
+    <scalac
+      srcdir="${src.dir}/partest"
+      destdir="${build-four.dir}/classes/partest"
+      target="jvm-1.4">
+      <include name="**/*.scala"/>
+      <classpath>
+        <pathelement location="${build-four.dir}/classes/library"/>
+        <pathelement location="${build-four.dir}/classes/compiler"/>
+        <pathelement location="${build-four.dir}/classes/partest"/>
+        <pathelement location="${ant.jar}"/>
+      </classpath>
+    </scalac>
+    <copy todir="${build-four.dir}/classes/partest">
+      <fileset dir="${src.dir}/partest">
+        <include name="**/*.xml"/>
+      </fileset>
+    </copy>
+    <stopwatch name="four.partest.timer" action="total"/>
+  </target>
+  
+  <target name="four.done" depends="four.partests"/>
+
+  <target name="four.clean" depends="four-pack.clean">
+    <delete dir="${build-four.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+    <delete dir="${build-four-src.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+  </target>
+
+<!-- ===========================================================================
+PACKED FOUR BUILD (FOUR-PACK)
+============================================================================ -->
+  
+  <target name="four-pack.start" depends="four.done"/>
+
+  <target name="four-pack.lib" depends="four-pack.start">
+    <mkdir dir="${build-four-pack.dir}/lib"/>
+    <jar destfile="${build-four-pack.dir}/lib/scala-library.jar">
+      <fileset dir="${build-four.dir}/classes/library">
+        <exclude name="scala/dbc/**"/>
+      </fileset>
+    </jar>
+    <jar destfile="${build-four-pack.dir}/lib/scala-dbc.jar">
+      <fileset dir="${build-four.dir}/classes/library">
+        <include name="scala/dbc/**"/>
+      </fileset>
+    </jar>
+  </target>
+
+  <target name="four-pack.comp" depends="four-pack.lib">
+    <mkdir dir="${build-four-pack.dir}/lib"/>
+    <jar destfile="${build-four-pack.dir}/lib/scala-compiler.jar">
+      <fileset dir="${build-four.dir}/classes/compiler"/>
+      <zipfileset src="${fjbg.jar}"/>
+      <zipfileset src="${msil.jar}"/>
+    </jar>
+  </target>
+
+  <target name="four-pack.partest" depends="four-pack.comp">
+    <mkdir dir="${build-four-pack.dir}/lib"/>
+    <jar destfile="${build-four-pack.dir}/lib/scala-partest.jar">
+      <fileset dir="${build-four.dir}/classes/partest"/>
+    </jar>
+  </target>
+
+  <target name="four-pack.bin" depends="four-pack.partest">
+    <taskdef name="four-pack-bin" classname="scala.tools.ant.ScalaTool">
+      <classpath>
+      	<pathelement location="${build-four-pack.dir}/lib/scala-library.jar"/>
+      	<pathelement location="${build-four-pack.dir}/lib/scala-compiler.jar"/>
+      </classpath>
+    </taskdef>
+    <mkdir dir="${build-four-pack.dir}/bin"/>
+    <four-pack-bin
+      file="${build-four-pack.dir}/bin/scala"
+      class="scala.tools.nsc.MainGenericRunner"
+      javaFlags="${java.flags}"/>
+    <four-pack-bin
+      file="${build-four-pack.dir}/bin/scalac"
+      class="scala.tools.nsc.Main"
+      javaFlags="${java.flags}"/>
+    <four-pack-bin
+      file="${build-four-pack.dir}/bin/scaladoc"
+      class="scala.tools.nsc.ScalaDoc"
+      javaFlags="${java.flags}"/>
+    <four-pack-bin
+      file="${build-four-pack.dir}/bin/fsc"
+      class="scala.tools.nsc.CompileClient"
+      javaFlags="${java.flags}"/>
+    <chmod perm="ugo+rx" file="${build-four-pack.dir}/bin/scala"/>
+    <chmod perm="ugo+rx" file="${build-four-pack.dir}/bin/scalac"/>
+    <chmod perm="ugo+rx" file="${build-four-pack.dir}/bin/scaladoc"/>
+    <chmod perm="ugo+rx" file="${build-four-pack.dir}/bin/fsc"/>
+  </target>
+  
+  <target name="four-pack.done" depends="four-pack.bin"/>
+
+  <target name="four-pack.clean">
+    <delete dir="${build-four-pack.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+  </target>
+
+<!-- ===========================================================================
+DOCUMENTATION
+============================================================================ -->
+  
+  <target name="four-docs.start" depends="four-pack.done"/>
+
+  <target name="four-docs.lib" depends="four-docs.start">
+    <stopwatch name="four-docs.lib.timer"/>
+    <mkdir dir="${build-four-docs.dir}/library"/>
+    <scaladoc
+      destdir="${build-four-docs.dir}/library"
+      windowtitle="Scala Library for JVM 1.4"
+      doctitle="Scala ${version.number} API"
+      classpathref="pack.classpath">
+      <src>
+        <files includes="${src.dir}/dbc"/>
+        <files includes="${src.dir}/actors"/>
+        <files includes="${build-four-src.dir}"/>
+      </src>
+      <include name="**/*.scala"/>
+    </scaladoc>
+    <stopwatch name="four-docs.lib.timer" action="total"/>
+  </target>
+  
+  <target name="four-docs.done" depends="four-docs.lib"/>
+
+  <target name="four-docs.clean">
+    <delete dir="${build-four-docs.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+  </target>
+  
+<!-- ===========================================================================
+BOOTRAPING TEST AND TEST SUITE
+============================================================================ -->
+
+  <target name="four-test.suite" depends="four-pack.done">
+    <partest showlog="yes" erroronfailed="no">
+      <classpath>
+        <pathelement location="${build-four-pack.dir}/lib/scala-library.jar"/>
+        <pathelement location="${build-four-pack.dir}/lib/scala-compiler.jar"/>
+        <fileset dir="${test.dir}/files/lib" includes="*.jar"/>
+      </classpath>
+      <postests dir="${test.dir}/files/pos" includes="*.scala"/>
+      <negtests dir="${test.dir}/files/neg" includes="*.scala"/>
+      <runtests dir="${test.dir}/files">
+        <include name="run/**/*.scala"/>
+        <include name="jvm/**/*.scala"/>
+      </runtests>
+      <residenttests dir="${test.dir}/files/res" includes="*.res"/>
+    </partest>
+  </target>
+  
+  <target name="four-test.done" depends="four-test.suite"/>
+
+<!-- ===========================================================================
+DISTRIBUTION
+============================================================================ -->
+  
+  <target name="four-dist.start" depends="four-pack.done, four-docs.done">
+    <property name="four-dist.dir" value="${dists.dir}/scala-jvm4-${version.number}"/>
+  </target>
+    
+  <target name="four-dist.base" depends="four-dist.start">
+    <mkdir dir="${four-dist.dir}/lib"/>
+    <copy toDir="${four-dist.dir}/lib">
+      <fileset dir="${build-four-pack.dir}/lib"/>
+    </copy>
+    <mkdir dir="${four-dist.dir}/bin"/>
+    <copy toDir="${four-dist.dir}/bin">
+      <fileset dir="${build-four-pack.dir}/bin"/>
+    </copy>
+    <chmod perm="ugo+rx" file="${four-dist.dir}/bin/scala"/>
+    <chmod perm="ugo+rx" file="${four-dist.dir}/bin/scalac"/>
+    <chmod perm="ugo+rx" file="${four-dist.dir}/bin/scaladoc"/>
+    <chmod perm="ugo+rx" file="${four-dist.dir}/bin/fsc"/>
+  </target>
+    
+  <target name="four-dist.doc" depends="four-dist.base">
+    <mkdir dir="${four-dist.dir}/doc/api"/>
+    <copy toDir="${four-dist.dir}/doc/api">
+      <fileset dir="${build-four-docs.dir}/library"/>
+    </copy>
+  </target>
+    
+  <target name="four-dist.src" depends="four-dist.doc">
+    <mkdir dir="${four-dist.dir}/src"/>
+    <jar destfile="${four-dist.dir}/src/scala-library-src.jar">
+      <fileset dir="${build-four-src.dir}"/>
+      <fileset dir="${src.dir}/actors"/>
+    </jar>
+    <jar destfile="${four-dist.dir}/src/scala-dbc-src.jar">
+      <fileset dir="${src.dir}/dbc"/>
+    </jar>
+    <jar destfile="${four-dist.dir}/src/scala-compiler-src.jar">
+      <fileset dir="${src.dir}/compiler"/>
+    </jar>
+  </target>
+  
+  <target name="four-dist.latest" depends="four-dist.src" unless="os.win">
+    <symlink link="${dists.dir}/latest-jvm4" resource="${four-dist.dir}" overwrite="yes"/>
+  </target>
+  
+  <target name="four-dist.done" depends="four-dist.src"/>
+
+<!-- ===========================================================================
+TEST AND DISTRIBUTION BUNDLE (ALL)
+============================================================================ -->
+  
+  <target name="four-all.done" depends="four-dist.done, four-test.done"/>
+  
+  <target name="four-all.clean" depends="four-docs.clean, four.clean"/>
+
+<!-- ===========================================================================
+MISCELLANEOUS
+============================================================================ -->
+  
+  <target name="graph.init">
+    <echo message="${basedir}/lib/ant/vizant.jar"/>
+    <taskdef name="vizant" classname="vizant.Vizant" classpath="${basedir}/../../lib/ant/vizant.jar"/>
+  </target>
+  
+  <target name="graph.four" depends="graph.init">
+    <vizant antfile="${ant.file}" outfile="${ant.project.name}.dot"/>
+  </target>
+  
+</project>
