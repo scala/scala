@@ -1,6 +1,5 @@
 package scala.swing
 
-import model.Matrix
 import javax.swing._
 import javax.swing.table._
 import javax.swing.event._
