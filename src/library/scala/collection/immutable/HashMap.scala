@@ -28,7 +28,11 @@ object HashMap {
   def apply[A, B](elems: (A, B)*) = empty[A, B] ++ elems
 }
 
-/** This class implements immutable maps using a hash table.
+/** This class implements immutable maps/sets using a hash table.
+  * It is optimized for sequential accesses where the last updated table is accessed most often.
+  * It supports with reasonable efficiency accesses to previous versions of the table by keeping
+  * a change log that's regularly compacted.
+  * It needs to synchronize most methods, so it is less suitable for highly concurrent accesses.
   *
   *  @author  Martin Odersky
   *  @version 2.0, 19/01/2007

@@ -184,6 +184,43 @@ object Array {
     a
   }
 
+  /** Create an array containing the values of a given function <code>f</code>
+   *  over given range <code>[0..n)</code>
+   */
+  def fromFunction[A](f: Int => A)(n: Int): Array[A] = {
+    val a = new Array[A](n)
+    var i = 0
+    while (i < n) {
+      a(i) = f(i)
+      i += 1
+    }
+    a
+  }
+
+  /** Create an array containing the values of a given function <code>f</code>
+   *  over given range <code>[0..n1, 0..n2)</code>
+   */
+  def fromFunction[A](f: (Int, Int) => A)(n1: Int, n2: Int): Array[Array[A]] =
+    fromFunction(i => fromFunction(f(i, _))(n2))(n1)
+
+  /** Create an array containing the values of a given function <code>f</code>
+   *  over given range <code>[0..n1, 0..n2, 0..n3)</code>
+   */
+  def fromFunction[A](f: (Int, Int, Int) => A)(n1: Int, n2: Int, n3: Int): Array[Array[Array[A]]] =
+    fromFunction(i => fromFunction(f(i, _, _))(n2, n3))(n1)
+
+  /** Create an array containing the values of a given function <code>f</code>
+   *  over given range <code>[0..n1, 0..n2, 0..n3, 0..n4)</code>
+   */
+  def fromFunction[A](f: (Int, Int, Int, Int) => A)(n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[A]]]] =
+    fromFunction(i => fromFunction(f(i, _, _, _))(n2, n3, n4))(n1)
+
+  /** Create an array containing the values of a given function <code>f</code>
+   *  over given range <code>[0..n1, 0..n2, 0..n3, 0..n4, 0..n5)</code>
+   */
+  def fromFunction[A](f: (Int, Int, Int, Int, Int) => A)(n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[A]]]]] =
+    fromFunction(i => fromFunction(f(i, _, _, _, _))(n2, n3, n4, n5))(n1)
+
  /** This method is called as a result of a pattern match { case Array(...) => } or val Array(...) = ....
    *
    *  @param x the selector value
