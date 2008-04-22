@@ -340,6 +340,7 @@ trait StdNames {
     val unapplySeq = newTermName("unapplySeq")
     val unbind = newTermName("unbind")
     val unbox = newTermName("unbox")
+    val unreferenced = newTermName("unreferenced")
     val update = newTermName("update")
     val value = newTermName("value")
     val view_ = newTermName("view")

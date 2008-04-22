@@ -80,12 +80,6 @@ trait Definitions {
     var FloatClass: Symbol = _
     var DoubleClass: Symbol = _
 
-    // remote classes
-    //lazy val RemoteRefClass = getClass("scala.runtime.RemoteRef")
-    //lazy val RemoteRefModule = getModule("scala.runtime.RemoteRef")
-    //lazy val RemoteObjectRefClass = getClass("scala.runtime.remoting.RemoteObjectRef")
-    //var RemoteRefClasses: HashMap[Symbol, Symbol] = _
-
     // the scala reference classes
     lazy val ScalaObjectClass: Symbol = getClass("scala.ScalaObject")
       def ScalaObjectClass_tag = getMember(ScalaObjectClass, nme.tag)
@@ -196,8 +190,8 @@ trait Definitions {
 
     lazy val OptionClass: Symbol = getClass("scala.Option")
 
-    lazy val SomeClass : Symbol = getClass("scala.Some")
-    lazy val NoneClass : Symbol = getModule("scala.None")
+    lazy val SomeClass: Symbol = getClass("scala.Some")
+    lazy val NoneClass: Symbol = getModule("scala.None")
 
     def isOptionType(tp: Type) = tp.normalize match {
       case TypeRef(_, sym, List(_)) if sym == OptionClass => true
@@ -693,7 +687,7 @@ trait Definitions {
 
       EqualsPatternClass = newClass(ScalaPackageClass, nme.EQUALS_PATTERN_NAME, List());
       {
-        val tparam = newTypeParam(EqualsPatternClass, 0);
+        val tparam = newTypeParam(EqualsPatternClass, 0)
         EqualsPatternClass.setInfo(
           PolyType(
             List(tparam),
@@ -764,49 +758,43 @@ trait Definitions {
         val stringParam = List(stringType)
 
         // additional methods of Object
-        newMethod(ObjectClass, "clone", List(), AnyRefClass.typeConstructor);
-        newMethod(ObjectClass, "wait", List(), unitType);
-        newMethod(ObjectClass, "wait", List(longType), unitType);
-        newMethod(ObjectClass, "wait", List(longType, intType), unitType);
-        newMethod(ObjectClass, "notify", List(), unitType);
-        newMethod(ObjectClass, "notifyAll", List(), unitType);
+        newMethod(ObjectClass, "clone", List(), AnyRefClass.typeConstructor)
+        newMethod(ObjectClass, "wait", List(), unitType)
+        newMethod(ObjectClass, "wait", List(longType), unitType)
+        newMethod(ObjectClass, "wait", List(longType, intType), unitType)
+        newMethod(ObjectClass, "notify", List(), unitType)
+        newMethod(ObjectClass, "notifyAll", List(), unitType)
 
         // additional methods of String
-        newMethod(StringClass, "length", List(), intType);
-        newMethod(StringClass, "compareTo", stringParam, intType);
-        newMethod(StringClass, "charAt", intParam, charType);
-        newMethod(StringClass, "concat", stringParam, stringType);
-        newMethod(StringClass, "indexOf", intParam, intType);
-        newMethod(StringClass, "indexOf", List(intType, intType), intType);
-        newMethod(StringClass, "indexOf", stringParam, intType);
-        newMethod(StringClass, "indexOf", List(stringType, intType), intType);
-        newMethod(StringClass, "lastIndexOf", intParam, intType);
-        newMethod(StringClass, "lastIndexOf", List(intType, intType), intType);
-        newMethod(StringClass, "lastIndexOf", stringParam, intType);
-        newMethod(StringClass, "lastIndexOf", List(stringType, intType), intType);
-        newMethod(StringClass, "toLowerCase", List(), stringType);
-        newMethod(StringClass, "toUpperCase", List(), stringType);
-        newMethod(StringClass, "startsWith", stringParam, booltype);
-        newMethod(StringClass, "endsWith", stringParam, booltype);
-        newMethod(StringClass, "substring", intParam, stringType);
-        newMethod(StringClass, "substring", List(intType, intType), stringType);
-        newMethod(StringClass, "trim", List(), stringType);
-        newMethod(StringClass, "intern", List(), stringType);
-        newMethod(StringClass, "replace", List(charType, charType), stringType);
+        newMethod(StringClass, "length", List(), intType)
+        newMethod(StringClass, "compareTo", stringParam, intType)
+        newMethod(StringClass, "charAt", intParam, charType)
+        newMethod(StringClass, "concat", stringParam, stringType)
+        newMethod(StringClass, "indexOf", intParam, intType)
+        newMethod(StringClass, "indexOf", List(intType, intType), intType)
+        newMethod(StringClass, "indexOf", stringParam, intType)
+        newMethod(StringClass, "indexOf", List(stringType, intType), intType)
+        newMethod(StringClass, "lastIndexOf", intParam, intType)
+        newMethod(StringClass, "lastIndexOf", List(intType, intType), intType)
+        newMethod(StringClass, "lastIndexOf", stringParam, intType)
+        newMethod(StringClass, "lastIndexOf", List(stringType, intType), intType)
+        newMethod(StringClass, "toLowerCase", List(), stringType)
+        newMethod(StringClass, "toUpperCase", List(), stringType)
+        newMethod(StringClass, "startsWith", stringParam, booltype)
+        newMethod(StringClass, "endsWith", stringParam, booltype)
+        newMethod(StringClass, "substring", intParam, stringType)
+        newMethod(StringClass, "substring", List(intType, intType), stringType)
+        newMethod(StringClass, "trim", List(), stringType)
+        newMethod(StringClass, "intern", List(), stringType)
+        newMethod(StringClass, "replace", List(charType, charType), stringType)
         newMethod(StringClass, "toCharArray", List(),
-                  appliedType(ArrayClass.typeConstructor, List(charType)));
+                  appliedType(ArrayClass.typeConstructor, List(charType)))
       }
 
       AnnotationDefaultAttr = newClass(RootClass,
                                        nme.AnnotationDefaultATTR,
                                        List(AnnotationClass.typeConstructor))
-
-      //RemoteRefClasses = new HashMap[Symbol, Symbol]
-      //for (clazz <- refClass.values) {
-      //  RemoteRefClasses(clazz) = getClass("scala.runtime.remoting.Remote" + clazz.name)
-      //}
-      //RemoteRefClasses(ObjectRefClass) = RemoteObjectRefClass
-    }
+    } //init
 
     var nbScalaCallers: Int = 0
     def newScalaCaller(delegateType: Type): Symbol = {
