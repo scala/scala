@@ -36,6 +36,11 @@ object genprod {
   def functionClassname(i: Int) = "Function"+i
   def functionFilename(i: Int) = functionClassname(i)+".scala"
 
+  def join(sep: String, xs: Seq[String]): String =
+      if (xs.length == 0) ""
+      else xs.drop(1).foldLeft(xs.first) { (acc, x) => acc + sep + x }
+
+
   def targs(i: Int) =
     for (j <- List.range(1, i+1)) yield "T" + j
 
@@ -155,12 +160,15 @@ trait {functionClassname(i)}{__typeArgs__} extends AnyRef {{
    */
   def andThen[A](g: R => A): T1 => A = { x => g(apply(x)) }
 """
-    case 2 => """
-  /** f(x,y) == (f.uncurry)(x)(y)
+    case _ if i > 1 => """
+  /** f(""" + join(",", (1 to i).map(i => "x" + i)) + """)  == (f.curry)""" +  join("", (1 to i).map(i => "(x" + i + ")")) + """
    */
-  def uncurry: T1 => T2 => R = { (x:T1) => (y:T2) => apply(x,y) }
+  def curry: """ + join(" => ", (1 to i).map(i => "T" + i)) + """ => R = { """ +
+  join(" => ", (1 to i).map(i => "(x" + i + ": T" + i + ")")) + """ => apply(""" + join(",", (1 to i).map(i => "x" + i)) + """) }
 """
-    case _ => ""
+    case _ => """
+"""
+
   }
   def descriptiveComment(i: Int) = i match {
     case 0 => """<p>
