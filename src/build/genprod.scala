@@ -160,7 +160,7 @@ trait {functionClassname(i)}{__typeArgs__} extends AnyRef {{
    */
   def andThen[A](g: R => A): T1 => A = { x => g(apply(x)) }
 """
-    case _ if (i > 1) && (i < 17) => """
+    case _ if (i > 1) && (i < 9) => """
   /** f(""" + join(",", (1 to i).map(i => "x" + i)) + """)  == (f.curry)""" +  join("", (1 to i).map(i => "(x" + i + ")")) + """
    */
   def curry: """ + join(" => ", (1 to i).map(i => "T" + i)) + """ => R = { """ +
