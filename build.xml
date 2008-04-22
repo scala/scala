@@ -1035,6 +1035,9 @@ MSIL
     <quick srcdir="${msil.dir}/src" target="msil"
            assemname="${msil.dir}/predef" assemrefs="${lib.dir}"
            failonerror="false">
+      <include name="**/*.scala"/>
+      <exclude name="scala/ScalaObject.scala"/>   
+      <!--  
       <include name="scala/Predef.scala"/>
       <include name="scala/Either.scala"/>
       <include name="scala/Option.scala"/>
@@ -1064,7 +1067,7 @@ MSIL
       <include name="scala/ref/*.scala"/> 
       <include name="scala/reflect/*.scala"/> 
       <include name="scala/testing/*.scala"/> 
-      <include name="scala/text/*.scala"/> 
+      <include name="scala/text/*.scala"/> -->
     </quick>
 
     <exec
