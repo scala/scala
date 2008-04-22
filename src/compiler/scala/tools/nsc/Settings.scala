@@ -85,12 +85,12 @@ class Settings(error: String => Unit) {
   val verbose       = BooleanSetting    ("-verbose", "Output messages about what the compiler is doing").hideToIDE
   val deprecation   = BooleanSetting    ("-deprecation", "Output source locations where deprecated APIs are used").hideToIDE
   val unchecked     = BooleanSetting    ("-unchecked", "Enable detailed unchecked warnings").hideToIDE
-  val classpath     = new StringSetting ("-classpath", "path", "Specify where to find user class files", classpathDefault) { override val abbreviation = "-cp" }
-  val sourcepath    = StringSetting     ("-sourcepath", "path", "Specify where to find input source files", "")
-  val bootclasspath = StringSetting     ("-bootclasspath", "path", "Override location of bootstrap class files", bootclasspathDefault)
-  val extdirs       = StringSetting     ("-extdirs", "dirs", "Override location of installed extensions", extdirsDefault)
-  val outdir        = StringSetting     ("-d", "directory", "Specify where to place generated class files", ".")
-  val encoding      = StringSetting     ("-encoding", "encoding", "Specify character encoding used by source files", Properties.encodingString)
+  val classpath     = (new StringSetting ("-classpath", "path", "Specify where to find user class files", classpathDefault) { override val abbreviation = "-cp" }).hideToIDE
+  val sourcepath    = StringSetting     ("-sourcepath", "path", "Specify where to find input source files", "").hideToIDE
+  val bootclasspath = StringSetting     ("-bootclasspath", "path", "Override location of bootstrap class files", bootclasspathDefault).hideToIDE
+  val extdirs       = StringSetting     ("-extdirs", "dirs", "Override location of installed extensions", extdirsDefault).hideToIDE
+  val outdir        = StringSetting     ("-d", "directory", "Specify where to place generated class files", ".").hideToIDE
+  val encoding      = StringSetting     ("-encoding", "encoding", "Specify character encoding used by source files", Properties.encodingString).hideToIDE
   val target        = ChoiceSetting     ("-target", "Specify for which target object files should be built", List("jvm-1.5", "jvm-1.4", "msil", "cldc"), "jvm-1.5")
   val printLate     = BooleanSetting    ("-print", "Print program with all Scala-specific features removed").hideToIDE
   val XO            = BooleanSetting    ("-optimise", "Generates faster bytecode by applying optimisations to the program")
@@ -100,8 +100,8 @@ class Settings(error: String => Unit) {
   val help          = BooleanSetting    ("-help", "Print a synopsis of standard options").hideToIDE
   val Xhelp         = BooleanSetting    ("-X", "Print a synopsis of advanced options").hideToIDE
 
-  val assemname     = StringSetting     ("-Xassem", "file", "Name of the output assembly (only relevant with -target:msil)", "").dependsOn(target, "msil")
-  val assemrefs     = StringSetting     ("-Xassem-path", "path", "List of assemblies referenced by the program (only relevant with -target:msil)", ".").dependsOn(target, "msil")
+  val assemname     = StringSetting     ("-Xassem", "file", "Name of the output assembly (only relevant with -target:msil)", "").dependsOn(target, "msil").hideToIDE
+  val assemrefs     = StringSetting     ("-Xassem-path", "path", "List of assemblies referenced by the program (only relevant with -target:msil)", ".").dependsOn(target, "msil").hideToIDE
   val keepMsilFiles = BooleanSetting    ("-Xkeep-msil-files", "Keep .msil files after calling ilasm").dependsOn(target, "msil").hideToIDE
   val Xchecknull    = BooleanSetting    ("-Xcheck-null", "Emit warning on selection of nullable reference")
   val noassertions  = BooleanSetting    ("-Xdisable-assertions", "Generate no assertions and assumptions")
@@ -120,16 +120,16 @@ class Settings(error: String => Unit) {
   val printtypes    = BooleanSetting    ("-Xprint-types", "Print tree types (debugging option)").hideToIDE
   val prompt        = BooleanSetting    ("-Xprompt", "Display a prompt after each error (debugging option)").hideToIDE
   val resident      = BooleanSetting    ("-Xresident", "Compiler stays resident, files to compile are read from standard input").hideToIDE
-  val Xshowcls      = StringSetting     ("-Xshow-class", "class", "Show class info", "")
-  val Xshowobj      = StringSetting     ("-Xshow-object", "object", "Show object info", "")
+  val Xshowcls      = StringSetting     ("-Xshow-class", "class", "Show class info", "").hideToIDE
+  val Xshowobj      = StringSetting     ("-Xshow-object", "object", "Show object info", "").hideToIDE
   val showPhases    = BooleanSetting    ("-Xshow-phases", "Print a synopsis of compiler phases").hideToIDE
-  val sourceReader  = StringSetting     ("-Xsource-reader", "classname", "Specify a custom method for reading source files", "scala.tools.nsc.io.SourceReader")
+  val sourceReader  = StringSetting     ("-Xsource-reader", "classname", "Specify a custom method for reading source files", "scala.tools.nsc.io.SourceReader").hideToIDE
 
   val Yhelp         = BooleanSetting    ("-Y", "Print a synopsis of private options").hideToIDE
   val browse        = PhasesSetting     ("-Ybrowse", "Browse the abstract syntax tree after")
   val check         = PhasesSetting     ("-Ycheck", "Check the tree at start of")
   val Xcloselim     = BooleanSetting    ("-Yclosure-elim", "Perform closure elimination")
-  val Xcodebase     = StringSetting     ("-Ycodebase", "codebase", "Specify the URL containing the Scala libraries", "")
+  val Xcodebase     = StringSetting     ("-Ycodebase", "codebase", "Specify the URL containing the Scala libraries", "").hideToIDE
   val debug         = BooleanSetting    ("-Ydebug", "Output debugging messages").hideToIDE
   val Xdce          = BooleanSetting    ("-Ydead-code", "Perform dead code elimination")
   val Xdetach       = BooleanSetting    ("-Ydetach", "Perform detaching of remote closures")
@@ -141,32 +141,6 @@ class Settings(error: String => Unit) {
   val noimports     = BooleanSetting    ("-Yno-imports", "Compile without any implicit imports")
   val nopredefs     = BooleanSetting    ("-Yno-predefs", "Compile without any implicit predefined values")
   val script        = StringSetting     ("-Xscript", "object", "Compile as a script, wrapping the code into object.main()", "").hideToIDE
-  val Xshowtrees    = BooleanSetting    ("-Yshow-trees", "Show detailed trees when used in connection with -print:phase").hideToIDE
-  val skip          = PhasesSetting     ("-Yskip", "Skip")
-  val Xsqueeze      = ChoiceSetting     ("-Ysqueeze", "if on, creates compact code in matching", List("on","on","off"), "on")
-  val statistics    = BooleanSetting    ("-Ystatistics", "Print compiler statistics").hideToIDE
-  val stop          = PhasesSetting     ("-Ystop", "Stop after phase")
-  val Xwarndeadcode = BooleanSetting    ("-Ywarn-dead-code", "Emit warnings for dead code")
-
-  val Xcasetags     = ChoiceSetting("-Ycasetags", "test integer tags for case classes", List("on","off"),
-                                     /*default*/"off")
-
-  val selfInAnnots = BooleanSetting    ("-Yself-in-annots", "Include a \"self\" identifier inside of annotations")
-/*
-  /** scaladoc specific options */
-  val memberaccess   = ChoiceSetting    ("-access", "Show only public, protected/public (default) or all classes and members",
-                                         List("public", "protected", "private"), "protected").dependsOn(doc)
-  val pagebottom     = StringSetting    ("-bottom", "pagebottom", "Include bottom text for each page", "").dependsOn(doc)
-  val doccharset     = StringSetting    ("-charset", "doccharset", "Charset for cross-platform viewing of generated documentation.", "").dependsOn(doc)
-  val doctitle       = StringSetting    ("-doctitle", "doctitle", "Include title for the overview page", "Scala 2<br/>API Specification").dependsOn(doc)
-  val pagefooter     = StringSetting    ("-footer", "pagefooter", "Include footer text for each page", "").dependsOn(doc)
-  val pageheader     = StringSetting    ("-header", "pageheader", "Include header text for each page", "").dependsOn(doc)
-  val linksource     = BooleanSetting   ("-linksource", "Generate source in HTML").hideToIDE.dependsOn(doc)
-  val nocomment      = BooleanSetting   ("-nocomment", "Suppress description and tags, generate only declarations.").hideToIDE.dependsOn(doc)
-  val stylesheetfile = StringSetting    ("-stylesheetfile", "stylesheetfile", "File to change style of the generated documentation", "style.css").dependsOn(doc)
-  val pagetop        = StringSetting    ("-top", "pagetop", "Include top text for each page", "").dependsOn(doc)
-  val windowtitle    = StringSetting    ("-windowtitle", "windowtitle", "Specify window title of generated HTML documentation", "Scala 2").dependsOn(doc)
-*/
   /** A list of all settings */
   def allSettings: List[Setting] = allsettings.reverse
   /** Disable a setting */
@@ -286,7 +260,6 @@ class Settings(error: String => Unit) {
   /** A setting represented by a string, (`default' unless set) */
   case class StringSetting(name: String, arg: String, descr: String, default: String)
   extends Setting(descr) {
-    hideToIDE
     def abbreviation: String = null
 
     protected var v: String = default
