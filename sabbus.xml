@@ -91,6 +91,7 @@ PROPERTIES
   
   <property name="copyright.string" value="Copyright 2002-2008, LAMP/EPFL"/>
   
+  <!-- These are NOT the flags used to run SuperSabbus -->
   <property name="java.flags" value="-Xmx256M -Xms32M"/>
 
 <!-- ===========================================================================
@@ -511,6 +512,7 @@ PACKED QUICK BUILD (PACK)
       <fileset dir="${build-quick.dir}/classes/compiler"/>
       <zipfileset src="${fjbg.jar}"/>
       <zipfileset src="${msil.jar}"/>
+      <zipfileset src="${jline.jar}"/>
     </jar>
   </target>
   
@@ -872,13 +874,27 @@ DISTRIBUTION
   </target>
     
   <target name="dist.doc" depends="dist.base">
-    <mkdir dir="${dist.dir}/doc/api"/>
-    <copy toDir="${dist.dir}/doc/api">
+    <mkdir dir="${dist.dir}/doc/scala"/>
+    <copy file="${docs.dir}/LICENSE" toDir="${dist.dir}/doc/scala"/>
+    <copy file="${docs.dir}/README" toDir="${dist.dir}/doc/scala"/>
+    <mkdir dir="${dist.dir}/doc/scala/api"/>
+    <copy toDir="${dist.dir}/doc/scala/api">
       <fileset dir="${build-docs.dir}/library"/>
+    </copy>
+    <mkdir dir="${dist.dir}/doc/scala/examples"/>
+    <copy toDir="${dist.dir}/doc/scala/examples">
+      <fileset dir="${docs.dir}/examples"/>
     </copy>
   </target>
     
-  <target name="dist.src" depends="dist.doc">
+  <target name="dist.man" depends="dist.doc">
+    <mkdir dir="${dist.dir}/man"/>
+    <copy toDir="${dist.dir}/man">
+      <fileset dir="${docs.dir}/man"/>
+    </copy>
+  </target>
+    
+  <target name="dist.src" depends="dist.man">
     <mkdir dir="${dist.dir}/src"/>
     <jar destfile="${dist.dir}/src/scala-library-src.jar">
       <fileset dir="${src.dir}/library"/>
@@ -953,12 +969,24 @@ FORWARDED TARGETS FOR JVM 1.4 BUILD
     <ant antfile="${src.dir}/build/four.xml" target="four-test.done" inheritall="yes" inheritrefs="yes"/>
   </target>
   
-  <target name="fourdist" depends="all.done">
+  <target name="fourdist" depends="pack.done">
     <ant antfile="${src.dir}/build/four.xml" target="four-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
   
   <target name="fourclean">
     <ant antfile="${src.dir}/build/four.xml" target="four-all.clean" inheritall="yes" inheritrefs="yes"/>
+  </target>
+
+<!-- ===========================================================================
+FORWARDED TARGETS FOR PACKAGING
+============================================================================ -->
+  
+  <target name="distpack" depends="dist.done">
+    <ant antfile="${src.dir}/build/pack.xml" target="pack-all.done" inheritall="yes" inheritrefs="yes"/>
+  </target>
+  
+  <target name="fourdistpack" depends="fourdist">
+    <ant antfile="${src.dir}/build/pack.xml" target="fourpack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
 
 <!-- ===========================================================================

@@ -160,7 +160,7 @@ JAVA 1.4 LIBRARY AND COMPILER BUILD (FOUR)
     <stopwatch name="four.partest.timer" action="total"/>
   </target>
   
-  <target name="four.done" depends="four.partests"/>
+  <target name="four.done" depends="four.partest"/>
 
   <target name="four.clean" depends="four-pack.clean">
     <delete dir="${build-four.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
