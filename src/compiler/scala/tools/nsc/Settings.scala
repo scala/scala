@@ -141,6 +141,20 @@ class Settings(error: String => Unit) {
   val noimports     = BooleanSetting    ("-Yno-imports", "Compile without any implicit imports")
   val nopredefs     = BooleanSetting    ("-Yno-predefs", "Compile without any implicit predefined values")
   val script        = StringSetting     ("-Xscript", "object", "Compile as a script, wrapping the code into object.main()", "").hideToIDE
+
+  val Xshowtrees    = BooleanSetting    ("-Yshow-trees", "Show detailed trees when used in connection with -print:phase").hideToIDE
+  val skip          = PhasesSetting     ("-Yskip", "Skip")
+  val Xsqueeze      = ChoiceSetting     ("-Ysqueeze", "if on, creates compact code in matching", List("on","on","off"), "on")
+  val statistics    = BooleanSetting    ("-Ystatistics", "Print compiler statistics").hideToIDE
+  val stop          = PhasesSetting     ("-Ystop", "Stop after phase")
+  val Xwarndeadcode = BooleanSetting    ("-Ywarn-dead-code", "Emit warnings for dead code")
+
+  val Xcasetags     = ChoiceSetting("-Ycasetags", "test integer tags for case classes", List("on","off"),
+                                     /*default*/"off")
+
+  val selfInAnnots = BooleanSetting    ("-Yself-in-annots", "Include a \"self\" identifier inside of annotations")
+
+
   /** A list of all settings */
   def allSettings: List[Setting] = allsettings.reverse
   /** Disable a setting */
