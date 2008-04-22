@@ -102,6 +102,7 @@ class Settings(error: String => Unit) {
 
   val assemname     = StringSetting     ("-Xassem", "file", "Name of the output assembly (only relevant with -target:msil)", "").dependsOn(target, "msil")
   val assemrefs     = StringSetting     ("-Xassem-path", "path", "List of assemblies referenced by the program (only relevant with -target:msil)", ".").dependsOn(target, "msil")
+  val keepMsilFiles = BooleanSetting    ("-Xkeep-msil-files", "Keep .msil files after calling ilasm").dependsOn(target, "msil").hideToIDE
   val Xchecknull    = BooleanSetting    ("-Xcheck-null", "Emit warning on selection of nullable reference")
   val noassertions  = BooleanSetting    ("-Xdisable-assertions", "Generate no assertions and assumptions")
   val Xexperimental = BooleanSetting    ("-Xexperimental", "Enable experimental extensions")

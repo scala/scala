@@ -1002,7 +1002,13 @@ MSIL
       <condition><not><isset property="ilasm.cmd"/></not></condition>
     </fail>
     <!-- Sets ilasm arguments (either Windows or Unix) -->
-    <property name="ilasm.infile" value="${msil.dir}/predef.msil"/>
+    <!-- property name="ilasm.infile" value="${msil.dir}/predef.msil" -->
+    <path id="ilasm.infiles">
+      <fileset dir="${msil.dir}" includes="*.msil"/>
+    </path>
+    <pathconvert property="ilasm.infile" pathsep=" ">
+      <path refid="ilasm.infiles" />
+    </pathconvert>
     <property name="ilasm.outfile" value="${msil.dir}/predef.dll"/>
     <if>
       <isset property="os.win"/>
@@ -1032,8 +1038,8 @@ MSIL
   </target>
 
   <target name="msil.libraries" depends="setup.quick, msil.sources">
-    <quick srcdir="${msil.dir}/src" target="msil"
-           assemname="${msil.dir}/predef" assemrefs="${lib.dir}"
+      <quick srcdir="${msil.dir}/src" destdir="${msil.dir}" target="msil"
+           assemname="predef" assemrefs="${lib.dir}"
            failonerror="false">
       <include name="**/*.scala"/>
       <exclude name="scala/ScalaObject.scala"/>   
@@ -1069,7 +1075,6 @@ MSIL
       <include name="scala/testing/*.scala"/> 
       <include name="scala/text/*.scala"/> -->
     </quick>
-
     <exec
       executable="${ilasm.cmd}" vmlauncher="no">
       <!--

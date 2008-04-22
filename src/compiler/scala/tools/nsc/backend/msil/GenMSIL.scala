@@ -51,7 +51,6 @@ abstract class GenMSIL extends SubComponent {
       classes.values foreach codeGenerator.createTypeBuilder
       classes.values foreach codeGenerator.createClassMembers
 
-
       try {
         classes.values foreach codeGenerator.genClass
       } finally {
@@ -217,12 +216,13 @@ abstract class GenMSIL extends SubComponent {
     var assemName: String = _
     var firstSourceName = ""
     var outDir: File = _
+    var moduleName: String = _
 
     def initAssembly() {
 
       assemName = settings.assemname.value
-      if (assemName == "") {
 
+      if (assemName == "") {
         if (entryPoint != null) {
           assemName = msilName(entryPoint.enclClass)
           // remove the $ at the end (from module-name)
@@ -238,18 +238,16 @@ abstract class GenMSIL extends SubComponent {
         if (assemName.endsWith(".il"))
           assemName = assemName.substring(0, assemName.length()-3)
         val f: File = new File(assemName)
-        outDir = f.getParentFile()
         assemName = f.getName()
       }
-      if (outDir == null)
-        outDir = new File(".")
 
+      outDir = new File(settings.outdir.value)
 
       val assemblyName = new AssemblyName()
       assemblyName.Name = assemName
       massembly = AssemblyBuilder.DefineDynamicAssembly(assemblyName)
 
-      val moduleName = assemName + (if (entryPoint == null) ".dll" else ".exe")
+      moduleName = assemName + (if (entryPoint == null) ".dll" else ".exe")
       // filename here: .dll or .exe (in both parameters), second: give absolute-path
       mmodule = massembly.DefineDynamicModule(moduleName,
                                               new File(outDir, moduleName).getAbsolutePath())
@@ -450,18 +448,22 @@ abstract class GenMSIL extends SubComponent {
         code.Emit(OpCodes.Ret)
       }
       createTypes()
-      val filename = new File(outDir, assemName + ".msil").getPath()
       if (settings.debug.value)
-        log("Output file name: " + filename)
+        log("Output path: " + outDir.getPath)
       try {
-        massembly.Save(filename)
+        massembly.Save(outDir.getPath)
         val ilasm = Properties.msilILasm
         if (ilasm != "") {
-          val cmd = ilasm + " " + filename
+          val generatedFiles = List.fromArray(massembly.GetGeneratedFiles)
+          val cmd = ilasm + " " + (if(entryPoint == null) "/dll" else "/exe") + " /output:" + moduleName + " " + generatedFiles.mkString(" ")
           if (settings.debug.value)
             log("Executing command: " + cmd)
           try {
-            Runtime.getRuntime().exec(cmd)
+            val p = Runtime.getRuntime().exec(cmd)
+            p.waitFor() // wait until ilasm is done
+            if(!settings.keepMsilFiles.value) {
+              generatedFiles.foreach(f => new File(f).delete())
+            }
           } catch {
             case _ =>
               Console.println("Cannot run command: " + cmd)
@@ -469,7 +471,7 @@ abstract class GenMSIL extends SubComponent {
           }
         }
       } catch {
-        case _: Error => abort("Could not save file " + filename)
+        case _: Error => abort("Could not save files in " + outDir.getPath)
       }
     }
 
