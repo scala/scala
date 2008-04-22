@@ -19,8 +19,24 @@ object Test {
     (new ji.Inner).m;
 
     (new p.b.OuterObj.Inner).m
+    cloneable.MainClone.run
   }
 }
+
+package cloneable {
+object MainClone {
+  trait Foo extends Cloneable {
+    def copy : Foo = clone.asInstanceOf[Foo]
+    override def toString = "Foo"
+  }
+  def run : Unit = {
+    val foo = new Foo {}
+    Console.println(foo.copy)
+  }
+}
+
+}
+
 
 package p {
   package a {
