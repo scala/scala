@@ -70,8 +70,11 @@ object Actor {
   }
 
   /**
-   * <p>This function is used for the definition of actors.</p>
-   * <p>The following example demonstrates its usage:</p><pre>
+   * <p>This is a factory method for creating actors.</p>
+   *
+   * <p>The following example demonstrates its usage:</p>
+   *
+   * <pre>
    * import scala.actors.Actor._
    * ...
    * val a = actor {
@@ -88,6 +91,39 @@ object Actor {
     }
     actor.start()
     actor
+  }
+
+  /**
+   * <p>
+   * This is a factory method for creating actors whose
+   * body is defined using a <code>Responder</code>.
+   * </p>
+   *
+   * <p>The following example demonstrates its usage:</p>
+   *
+   * <pre>
+   * import scala.actors.Actor._
+   * import Responder.exec
+   * ...
+   * val a = reactor {
+   *   for {
+   *     res <- b !! MyRequest;
+   *     if exec(println("result: "+res))
+   *   } yield {}
+   * }
+   * </pre>
+   *
+   * @param  body  the <code>Responder</code> to be executed by the newly created actor
+   * @return       the newly created actor. Note that it is automatically started.
+   */
+  def reactor(body: => Responder[Unit]): Actor = {
+    val a = new Actor {
+      def act() {
+        Responder.run(body)
+      }
+    }
+    a.start()
+    a
   }
 
   /**
@@ -185,6 +221,28 @@ object Actor {
    * @return the number of messages in <code>self</code>'s mailbox
    */
   def mailboxSize: Int = self.mailboxSize
+
+  /**
+   * <p>
+   * Converts a synchronous event-based operation into
+   * an asynchronous <code>Responder</code>.
+   * </p>
+   *
+   * <p>The following example demonstrates its usage:</p>
+   *
+   * <pre>
+   * val adder = reactor {
+   *   for {
+   *     _ <- async(react) { case Add(a, b) => reply(a+b) }
+   *   } yield {}
+   * }
+   * </pre>
+   */
+  def async(fun: PartialFunction[Any, Unit] => Nothing):
+    PartialFunction[Any, Unit] => Responder[Any] =
+      (caseBlock: PartialFunction[Any, Unit]) => new Responder[Any] {
+        def respond(k: Any => Unit) = fun(caseBlock andThen k)
+      }
 
   private[actors] trait Body[a] {
     def andThen[b](other: => b): Unit
@@ -292,7 +350,7 @@ object Actor {
  *   </li>
  * </ul>
  *
- * @version 0.9.14
+ * @version 0.9.15
  * @author Philipp Haller
  */
 @serializable
@@ -556,6 +614,11 @@ trait Actor extends OutputChannel[Any] {
         else ch.receive {
           case any => value = Some(any); any
         }
+      def respond(k: Any => Unit): Unit =
+ 	if (isSet) k(value.get)
+ 	else ch.react {
+ 	  case any => value = Some(any); k(any)
+ 	}
       def isSet = value match {
         case None => ch.receiveWithin(0) {
           case TIMEOUT => false
@@ -578,10 +641,15 @@ trait Actor extends OutputChannel[Any] {
     send(msg, ftch)
     new Future[A](ftch) {
       def apply() =
-        if (isSet) value.get
+        if (isSet) value.get.asInstanceOf[A]
         else ch.receive {
-          case any => value = Some(f(any)); value.get
+          case any => value = Some(f(any)); value.get.asInstanceOf[A]
         }
+      def respond(k: A => Unit): Unit =
+ 	if (isSet) k(value.get.asInstanceOf[A])
+ 	else ch.react {
+ 	  case any => value = Some(f(any)); k(value.get.asInstanceOf[A])
+ 	}
       def isSet = value match {
         case None => ch.receiveWithin(0) {
           case TIMEOUT => false

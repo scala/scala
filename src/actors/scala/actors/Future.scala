@@ -12,9 +12,10 @@ package scala.actors
 
 /**
  * <p>
- *   A Future is a function of arity 0 that returns a value of type Any.
- *   Applying a future blocks the current actor until its value
- *   is available.
+ *   A <code>Future[T]</code> is a function of arity 0 that
+ *   returns a value of type <code>T</code>.
+ *   Applying a future blocks the current actor (<code>self</code>)
+ *   until the future's value is available.
  * </p>
  * <p>
  *   A future can be queried to find out whether its value
@@ -22,10 +23,10 @@ package scala.actors
  * </p>
  *
  * @author Philipp Haller
- * @version 0.9.8
+ * @version 0.9.15
  */
-abstract class Future[T](val ch: InputChannel[Any]) extends Function0[T] {
-  protected var value: Option[T] = None
+abstract class Future[+T](val ch: InputChannel[Any]) extends Responder[T] with Function0[T] {
+  protected var value: Option[Any] = None
   def isSet: Boolean
 }
 
