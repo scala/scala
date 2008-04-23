@@ -209,8 +209,9 @@ abstract class ReachingDefinitions {
         if (prod > d) {
           res = (bb, i) :: res
           n   = n - (prod - d)
-          if (bb(i) != LOAD_EXCEPTION)
+          if (instrs(i) != LOAD_EXCEPTION()) {
             d = instrs(i).consumed
+          }
         } else {
           d -= prod
           d += instrs(i).consumed

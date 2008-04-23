@@ -34,9 +34,19 @@ abstract class CopyPropagation {
   case class Record(cls: Symbol, bindings: Map[Symbol, Value]) extends Value {
     override def isRecord = true
   }
+  /** The value of some location in memory. */
   case class Deref(l: Location) extends Value
+
+  /** The boxed value of some location. */
   case class Boxed(l: Location) extends Value
+
+  /** The constant value c. */
+  case class Const(c: Constant) extends Value
+
+  /** Unknown. */
   case object Unknown extends Value
+
+  /** The bottom record. */
   object AllRecords extends Record(NoSymbol, new HashMap[Symbol, Value])
 
   /** The lattice for this analysis.   */
@@ -101,13 +111,16 @@ abstract class CopyPropagation {
 
         var target: Value = r.bindings(f);
         target match {
-          case Deref(LocalVar(sym)) => getBinding(sym)
+          case Deref(LocalVar(l)) => getBinding(l)
           case _ => target
         }
       }
 
-      /** Return a local which contains the same value as this field, if any. */
-      def getLocalForField(r: Record, f: Symbol): Option[Value] = {
+      /** Return a local which contains the same value as this field, if any.
+       * If the field holds a reference to a local, the returned value is the
+       * binding of that local.
+       */
+      def getFieldValue(r: Record, f: Symbol): Option[Value] = {
         assert(r.bindings.isDefinedAt(f),
             "Record " + r + " does not contain a field " + f);
 
@@ -115,6 +128,7 @@ abstract class CopyPropagation {
         target match {
           case Deref(LocalVar(l)) => Some(Deref(LocalVar(getAlias(l))))
           case Deref(This)    => Some(target)
+          case Const(k) => Some(target)
           case _  => None
         }
       }
@@ -224,7 +238,7 @@ abstract class CopyPropagation {
 
         case CONSTANT(k) =>
           if (k.tag != UnitTag)
-            out.stack = Unknown :: out.stack;
+            out.stack = Const(k) :: out.stack;
 
         case LOAD_ARRAY_ITEM(_) =>
           out.stack = (Unknown :: out.stack.drop(2))
@@ -286,6 +300,7 @@ abstract class CopyPropagation {
           }
 
         case CALL_PRIMITIVE(primitive) =>
+          // TODO: model primitives
           out.stack = Unknown :: out.stack.drop(i.consumed)
 
         case CALL_METHOD(method, style) => style match {
@@ -336,9 +351,6 @@ abstract class CopyPropagation {
           val v1 =
             kind match {
               case REFERENCE(cls) =>
-/*                if (isClosureClass(cls))
-                  Record(cls, new HashMap[Symbol, Value])
-                else Unknown */
                 Record(cls, new HashMap[Symbol, Value])
               // bq: changed from _ to null, otherwise would be unreachable
               case null =>
@@ -492,8 +504,8 @@ abstract class CopyPropagation {
       // the arguments on the stack. It should be the same!
       for ((p, i) <- paramAccessors.zipWithIndex) {
 //        assert(p.tpe == ctor.tpe.paramTypes(i), "In: " + ctor.fullNameString + " having: " + (paramAccessors map (_.tpe))+ " vs. " + ctor.tpe.paramTypes)
-	if (p.tpe == ctor.tpe.paramTypes(i))
-	  bindings += (p -> values.head);
+        if (p.tpe == ctor.tpe.paramTypes(i))
+          bindings += (p -> values.head);
         values = values.tail;
       }
 

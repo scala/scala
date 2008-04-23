@@ -122,10 +122,10 @@ abstract class ClosureElimination extends SubComponent {
             case LOAD_FIELD(f, false) if accessible(f, m.symbol) =>
               info.stack(0) match {
                 case r @ Record(cls, bindings) if bindings.isDefinedAt(f) =>
-                  info.getLocalForField(r, f) match {
-                    case Some(local) =>
+                  info.getFieldValue(r, f) match {
+                    case Some(v) =>
                       bb.replaceInstruction(i,
-                          DROP(REFERENCE(cls)) :: valueToInstruction(local) :: Nil);
+                          DROP(REFERENCE(cls)) :: valueToInstruction(v) :: Nil);
                       log("Replaced " + i + " with " + info.getBinding(r, f));
                     case None => ();
                   }
@@ -133,10 +133,10 @@ abstract class ClosureElimination extends SubComponent {
                 case Deref(LocalVar(l)) =>
                   info.getBinding(l) match {
                     case r @ Record(cls, bindings) if bindings.isDefinedAt(f) =>
-                      info.getLocalForField(r, f) match {
-                        case Some(local) =>
+                      info.getFieldValue(r, f) match {
+                        case Some(v) =>
                           bb.replaceInstruction(i,
-                              DROP(REFERENCE(cls)) :: valueToInstruction(local) :: Nil);
+                              DROP(REFERENCE(cls)) :: valueToInstruction(v) :: Nil);
                           log("Replaced " + i + " with " + info.getBinding(r, f));
                         case None => ();
                       }
@@ -181,7 +181,8 @@ abstract class ClosureElimination extends SubComponent {
     def valueToInstruction(v: Value): Instruction = (v: @unchecked) match {
       case Deref(LocalVar(v)) =>
         LOAD_LOCAL(v)
-
+      case Const(k) =>
+        CONSTANT(k)
       case Deref(This) =>
         THIS(definitions.ObjectClass)
     }
