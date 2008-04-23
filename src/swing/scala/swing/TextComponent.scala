@@ -19,7 +19,8 @@ object TextComponent {
 /**
  * @see javax.swing.JTextComponent
  */
-class TextComponent(override val peer: JTextComponent) extends Component(peer) with Publisher {
+class TextComponent extends Component with Publisher {
+  override lazy val peer: JTextComponent = new JTextComponent {}
   def text: String = peer.getText
   def text_=(t: String) = peer.setText(t)
 

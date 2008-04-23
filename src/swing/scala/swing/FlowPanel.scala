@@ -15,8 +15,8 @@ object FlowPanel {
 /**
  * @see java.awt.FlowLayout
  */
-class FlowPanel(override val peer: javax.swing.JPanel) extends Panel(peer) with SequentialContainer.Wrapper {
-  def this(alignment: FlowPanel.Alignment.Value) = this(new javax.swing.JPanel(new java.awt.FlowLayout(alignment.id)))
+class FlowPanel(alignment: FlowPanel.Alignment.Value) extends Panel with SequentialContainer.Wrapper {
+  override lazy val peer: javax.swing.JPanel = new javax.swing.JPanel(new java.awt.FlowLayout(alignment.id))
   def this() = this(FlowPanel.Alignment.Center)
   private def layoutManager = peer.getLayout.asInstanceOf[java.awt.FlowLayout]
 

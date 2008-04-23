@@ -35,10 +35,9 @@ object GridBagPanel {
 /**
  * @see java.awt.GridBagLayout
  */
-class GridBagPanel(override val peer: javax.swing.JPanel) extends Panel(peer) with LayoutContainer {
+class GridBagPanel extends Panel with LayoutContainer {
+  override lazy val peer = new javax.swing.JPanel(new java.awt.GridBagLayout)
   import GridBagPanel._
-
-  def this() = this(new javax.swing.JPanel(new java.awt.GridBagLayout))
 
   private def layoutManager = peer.getLayout.asInstanceOf[java.awt.GridBagLayout]
 

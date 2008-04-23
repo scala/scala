@@ -15,8 +15,8 @@ object Component {
 /**
  * @see javax.swing.JComponent
  */
-abstract class Component(override val peer: javax.swing.JComponent) extends UIElement with Publisher {
-  def this() = this(new javax.swing.JComponent{})
+abstract class Component extends UIElement with Publisher {
+  override lazy val peer: javax.swing.JComponent = new javax.swing.JComponent{}
   peer.putClientProperty(Component.ClientKey, this)
 
   def minimumSize = peer.getMinimumSize

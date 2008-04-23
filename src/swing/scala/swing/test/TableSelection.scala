@@ -5,14 +5,20 @@ import swing._
 import swing.event._
 
 object TableSelection extends SimpleGUIApplication {
-  val model = Array[Array[AnyRef]](Array[AnyRef]("Mary", "Campione", "Snowboarding", new java.lang.Integer(5), new java.lang.Boolean(false)),
+  val model = Array(List("Mary", "Campione", "Snowboarding", 5, false).toArray,
+            List("Alison", "Huml", "Rowing", 5, false).toArray,
+            List("Kathy", "Walrath", "Knitting", 5, false).toArray,
+            List("Sharon", "Zakhour", "Speed reading", 5, false).toArray,
+            List("Philip", "Milne", "Pool", 5, false).toArray)
+
+            /*Array[Array[AnyRef]](Array[AnyRef]("Mary", "Campione", "Snowboarding", new java.lang.Integer(5), new java.lang.Boolean(false)),
             Array[AnyRef]("Alison", "Huml", "Rowing", new java.lang.Integer(5), new java.lang.Boolean(false)),
             Array[AnyRef]("Kathy", "Walrath", "Knitting", new java.lang.Integer(5), new java.lang.Boolean(false)),
             Array[AnyRef]("Sharon", "Zakhour", "Speed reading", new java.lang.Integer(5), new java.lang.Boolean(false)),
-            Array[AnyRef]("Philip", "Milne", "Pool", new java.lang.Integer(5), new java.lang.Boolean(false)))
+            Array[AnyRef]("Philip", "Milne", "Pool", new java.lang.Integer(5), new java.lang.Boolean(false)))*/
 
   val ui = new BoxPanel(Orientation.Vertical) {
-      val table = new Table(model, Array[AnyRef]("First Name", "Last Name", "Sport", "# of Years", "Vegetarian"))
+      val table = new Table(model, Array("First Name", "Last Name", "Sport", "# of Years", "Vegetarian"))
       listenTo()
       table.preferredViewportSize = new Dimension(500, 70)
       //1.6:table.fillsViewportHeight = true

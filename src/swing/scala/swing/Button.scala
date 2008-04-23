@@ -6,7 +6,9 @@ import event._
 /**
  * @see javax.swing.AbstractButton
  */
-abstract class Button(override val peer: JAbstractButton) extends Component(peer) with Action.Trigger with Publisher {
+abstract class Button extends Component with Action.Trigger with Publisher {
+  override lazy val peer: JAbstractButton = new JAbstractButton {}
+
   def text: String = peer.getText
   def text_=(s: String) = peer.setText(s)
   def icon: Icon = peer.getIcon

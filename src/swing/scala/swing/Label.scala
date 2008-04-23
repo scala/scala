@@ -5,8 +5,8 @@ import javax.swing._
 /**
  * @see javax.swing.JLabel
  */
-class Label(override val peer: JLabel) extends Component(peer) {
-  def this(txt: String) = this(new JLabel(txt))
+class Label(text0: String) extends Component {
+  override lazy val peer: JLabel = new JLabel(text0)
   def this() = this("")
   def text: String = peer.getText()
   def text_=(s: String) = peer.setText(s)

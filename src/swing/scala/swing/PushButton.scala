@@ -6,8 +6,8 @@ import event._
 /**
  * @see javax.swing.JButton
  */
-class PushButton(override val peer: JButton) extends Button(peer) with Publisher {
-  def this(txt: String) = this(new JButton(txt))
+class PushButton(text0: String) extends Button with Publisher {
+  override lazy val peer: JButton = new JButton(text0)
   def this() = this("")
   def this(a: Action) = {
     this("")

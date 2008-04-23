@@ -7,6 +7,6 @@ import event._
 /**
  * @see javax.swing.JFormattedTextField
  */
-class FormattedTextField(override val peer: JFormattedTextField) extends TextComponent(peer) {
-  def this(format: java.text.Format) = this(new JFormattedTextField(format))
+class FormattedTextField(format: java.text.Format) extends TextComponent {
+  override lazy val peer: JFormattedTextField = new JFormattedTextField(format)
 }

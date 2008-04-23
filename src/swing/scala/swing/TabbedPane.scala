@@ -58,10 +58,9 @@ object TabbedPane {
 /**
  * @see javax.swing.JTabbedPane
  */
-class TabbedPane(override val peer: JTabbedPane) extends Component(peer) with Publisher {
+class TabbedPane extends Component with Publisher {
+  override lazy val peer: JTabbedPane = new JTabbedPane
   import TabbedPane._
-
-  def this() = this(new JTabbedPane)
 
   object pages extends BufferWrapper[Page] {
     def runCount: Int = peer.getTabRunCount
@@ -89,8 +88,12 @@ class TabbedPane(override val peer: JTabbedPane) extends Component(peer) with Pu
   def tabLayoutPolicy: Layout.Value = Layout(peer.getTabLayoutPolicy)
   def tabLayoutPolicy_=(p: Layout.Value) { peer.setTabLayoutPolicy(p.id) }
 
-  def tabPlacement: EdgePosition.Value = EdgePosition(peer.getTabPlacement)
-  def tabPlacement(b: EdgePosition.Value) { peer.setTabPlacement(b.id) }
+
+  def tabPlacement: Alignment.Value = Alignment(peer.getTabPlacement)
+  /**
+   * Possible values are Left, Right, Top, Bottom.
+   */
+  def tabPlacement(b: Alignment.Value) { peer.setTabPlacement(b.id) }
 
   object selection extends Publisher {
     def page: Page = pages(index)

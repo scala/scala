@@ -7,11 +7,11 @@ import event._
 /**
  * @see javax.swing.JTextField
  */
-class TextField(override val peer: JTextField) extends TextComponent(peer) with TextComponent.HasColumns {
-  def this(text: String, columns: int) = this(new JTextField(text, columns))
-  def this(text: String) = this(new JTextField(text))
-  def this(columns: int) = this(new JTextField(columns))
-  def this() = this(new JTextField())
+class TextField(text0: String, columns0: Int) extends TextComponent with TextComponent.HasColumns {
+  override lazy val peer: JTextField = new JTextField(text0, columns0)
+  def this(text: String) = this(text, 0)
+  def this(columns: Int) = this("", columns)
+  def this() = this("")
 
   def columns: Int = peer.getColumns
   def columns_=(n: Int) = peer.setColumns(n)

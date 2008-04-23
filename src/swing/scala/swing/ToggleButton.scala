@@ -6,7 +6,7 @@ import event._
 /**
  * @see javax.swing.JToggleButton
  */
-class ToggleButton(override val peer: JToggleButton) extends Button(peer) {
-  def this(txt: String) = this(new JToggleButton(txt))
-  def this() = this(new JToggleButton)
+class ToggleButton(text0: String) extends Button {
+  override lazy val peer: JToggleButton = new JToggleButton(text0)
+  def this() = this("")
 }

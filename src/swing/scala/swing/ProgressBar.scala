@@ -5,8 +5,8 @@ import event._
 /**
  * @see javax.swing.JProgressBar
  */
-class ProgressBar(override val peer: javax.swing.JProgressBar) extends Component(peer) with Orientable {
-  def this() = this(new javax.swing.JProgressBar)
+class ProgressBar extends Component with Orientable {
+  override lazy val peer: javax.swing.JProgressBar = new javax.swing.JProgressBar
 
   def min: Int = peer.getMinimum
   def min_=(v: Int) { peer.setMinimum(v) }

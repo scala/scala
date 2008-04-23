@@ -5,7 +5,7 @@ import javax.swing._
 /**
  * @see javax.swing.JRadioButton
  */
-class RadioButton(override val peer: JRadioButton) extends ToggleButton(peer) {
-  def this(text: String) = this(new JRadioButton(text))
-  def this() = this(new JRadioButton)
+class RadioButton(text0: String) extends ToggleButton {
+  override lazy val peer: JRadioButton = new JRadioButton(text0)
+  def this() = this("")
 }

@@ -7,8 +7,9 @@ object GridPanel {
 /**
  * @see java.awt.GridLayout
  */
-class GridPanel(override val peer: javax.swing.JPanel) extends Panel(peer) with SequentialContainer.Wrapper {
-  def this(rows0: Int, cols0: Int) = this(new javax.swing.JPanel(new java.awt.GridLayout(rows0, cols0)))
+class GridPanel(rows0: Int, cols0: Int) extends Panel with SequentialContainer.Wrapper {
+  override lazy val peer = new javax.swing.JPanel(new java.awt.GridLayout(rows0, cols0))
+
   private def layoutManager = peer.getLayout.asInstanceOf[java.awt.GridLayout]
 
   def rows: Int = layoutManager.getRows

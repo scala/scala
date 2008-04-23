@@ -5,10 +5,12 @@ import javax.swing.JScrollPane
 /**
  * @see javax.swing.JScrollPane
  */
-class ScrollPane(override val peer: JScrollPane) extends Component(peer) with Container {
-  def this() = this(new JScrollPane)
-  def this(contents: Component) = this(new JScrollPane(contents.peer))
-
+class ScrollPane extends Component with Container {
+  override lazy val peer: JScrollPane = new JScrollPane
+  def this(c: Component) = {
+    this()
+    viewportView = c
+  }
   def contents: Seq[Component] =
     List(Component.wrapperFor(peer.getViewport.getView.asInstanceOf[javax.swing.JComponent]))
   def contents_=(c: Component) { peer.setViewportView(c.peer) }

@@ -6,8 +6,8 @@ import event._
 /**
  * @see javax.swing.JFrame
  */
-class Frame(override val peer: JFrame) extends UIElement with RootPanel with Publisher {
-  def this() = this(new JFrame)
+class Frame extends UIElement with RootPanel with Publisher {
+  override lazy val peer: JFrame = new JFrame
   def title: String = peer.getTitle
   def title_=(s: String) = peer.setTitle(s)
 

@@ -7,7 +7,6 @@ import java.awt.{Dimension, Color}
 import event._
 import scala.collection.mutable.Set
 
-
 object Table {
   object AutoResizeMode extends Enumeration {
     import JTable._
@@ -31,16 +30,30 @@ object Table {
 /**
  * @see javax.swing.JTable
  */
-class Table(override val peer: JTable) extends Component(peer) with Scrollable with Publisher {
+class Table extends Component with Scrollable with Publisher {
+  override lazy val peer: JTable = new JTable {
+    override def getCellRenderer(r: Int, c: Int) = new TableCellRenderer {
+      def getTableCellRendererComponent(table: JTable, value: AnyRef, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int) =
+        renderer(isSelected, hasFocus, row, column).peer
+    }
+    override def getCellEditor(r: Int, c: Int) = editor(r, c)
+  }
   import Table._
-  def this() = this(new JTable())
-  def this(numRows: Int, numColumns: Int) = this(new JTable(numRows, numColumns))
-  def this(rowData: Array[Array[AnyRef]], columnNames: Array[AnyRef]) = this(new JTable(rowData, columnNames))
-  //todo: create constructor with List[List[Any]]
 
-  def this(dm: TableModel) = this(new JTable(dm))
-  def this(dm: TableModel, cm: TableColumnModel) = this(new JTable(dm, cm))
-  def this(dm: TableModel, cm: TableColumnModel, sm: ListSelectionModel) = this(new JTable(dm, cm, sm))
+  def this(rowData: Array[Array[Any]], columnNames: Seq[Any]) = {
+    this()
+    peer.setModel(new AbstractTableModel {
+            override def getColumnName(column: Int) = columnNames(column).toString
+            def getRowCount() = rowData.length
+            def getColumnCount() = columnNames.length
+            def getValueAt(row: Int, col: Int): AnyRef = rowData(row)(col).asInstanceOf[AnyRef]
+            override def isCellEditable(row: Int, column: Int) = true
+            override def setValueAt(value: Any, row: Int, col: Int) {
+                rowData(row)(col) = value
+                fireTableCellUpdated(row, col)
+            }
+        })
+    }
 
   protected def scrollablePeer = peer
 
@@ -144,30 +157,23 @@ class Table(override val peer: JTable) extends Component(peer) with Scrollable w
   /**
    * Supplies a renderer component for a given cell.
    */
-  protected def render(isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component =
+  def renderer(isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component =
     new Component {
-      override lazy val peer = initialRenderer.getTableCellRendererComponent(Table.this.peer,
-                 Table.this.peer.getValueAt(row, column), isSelected, hasFocus, row, column).asInstanceOf[JComponent]
+      override lazy val peer = {
+        val v = Table.this.peer.getValueAt(row, column)
+        Table.this.peer.getDefaultRenderer(v.getClass).getTableCellRendererComponent(Table.this.peer,
+                 v, isSelected, hasFocus, row, column).asInstanceOf[JComponent]
+      }
     }
 
-  peer.setDefaultRenderer(classOf[AnyRef], new TableCellRenderer {
-    def getTableCellRendererComponent(tabBlockIle: JTable, value: AnyRef, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int) =
-      render(isSelected, hasFocus, row, column).peer
-  })
+  protected def editor(row: Int, column: Int) =
+    Table.this.peer.getDefaultEditor(Table.this.peer.getValueAt(row, column).getClass)
 
   def apply(row: Int, column: Int) = peer.getValueAt(row, column)
-  def update(row: Int, column: Int, value: AnyRef) = peer.setValueAt(value, row, column)
+  def update(row: Int, column: Int, value: Any) = peer.setValueAt(value, row, column)
 
   def markUpdated(row: Int, column: Int) = update(row, column, apply(row, column))
 
-  /*
-  peer.addActionListener {
-    new java.awt.event.ActionListener {
-      def actionPerformed(e: java.awt.event.ActionEvent): unit =
-        publish(ButtonPressed(Button.this))
-    }
-  }
-*/
   model.addTableModelListener(new TableModelListener {
     def tableChanged(event: TableModelEvent) = publish(
       if (event.getType == TableModelEvent.UPDATE)

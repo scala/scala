@@ -6,8 +6,8 @@ import javax.swing._
 /**
  * @see javax.swing.JMenuBar
  */
-class MenuBar(override val peer: JMenuBar) extends Component(peer) with SequentialContainer.Wrapper {
-  def this() = this(new JMenuBar)
+class MenuBar extends Component with SequentialContainer.Wrapper {
+  override lazy val peer: JMenuBar = new JMenuBar
 
   def menus: Seq[Menu] = contents.filter(_.isInstanceOf[Menu]).map(_.asInstanceOf[Menu])
 
@@ -25,8 +25,8 @@ class MenuBar(override val peer: JMenuBar) extends Component(peer) with Sequenti
 /**
  * @see javax.swing.JMenuItem
  */
-class MenuItem(override val peer: JMenuItem) extends Button(peer) {
-  def this(title: String) = this(new JMenuItem(title))
+class MenuItem(title0: String) extends Button {
+  override lazy val peer: JMenuItem = new JMenuItem(title0)
   def this(a: Action) = {
     this("")
     action = a
@@ -36,19 +36,19 @@ class MenuItem(override val peer: JMenuItem) extends Button(peer) {
 /**
  * @see javax.swing.JMenu
  */
-class Menu(override val peer: JMenu) extends MenuItem(peer) with SequentialContainer.Wrapper { self: Menu =>
-  def this(title: String) = this(new JMenu(title))
+class Menu(title0: String) extends MenuItem(title0) with SequentialContainer.Wrapper { self: Menu =>
+  override lazy val peer: JMenu = new JMenu(title0)
 }
 
 /**
  * @see javax.swing.JRadioButtonMenuItem
  */
-class RadioMenuItem(override val peer: JRadioButtonMenuItem) extends MenuItem(peer) {
-  def this(title: String) = this(new JRadioButtonMenuItem(title))
+class RadioMenuItem(title0: String) extends MenuItem(title0) {
+  override lazy val peer: JRadioButtonMenuItem = new JRadioButtonMenuItem(title0)
 }
 /**
  * @see javax.swing.JCheckBoxMenuItem
  */
-class CheckMenuItem(override val peer: JCheckBoxMenuItem) extends MenuItem(peer) {
-  def this(title: String) = this(new JCheckBoxMenuItem(title))
+class CheckMenuItem(title0: String) extends MenuItem(title0) {
+  override lazy val peer: JCheckBoxMenuItem = new JCheckBoxMenuItem(title0)
 }

@@ -6,8 +6,8 @@ import Swing._
 /**
  * @see javax.swing.JSlider
  */
-class Slider(override val peer: javax.swing.JSlider) extends Component(peer) with Orientable with Publisher {
-  def this() = this(new javax.swing.JSlider)
+class Slider extends Component with Orientable with Publisher {
+  override lazy val peer: javax.swing.JSlider = new javax.swing.JSlider
 
   def min: Int = peer.getMinimum
   def min_=(v: Int) { peer.setMinimum(v) }
