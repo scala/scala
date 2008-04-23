@@ -142,7 +142,7 @@ package scala
  *  &lt;/p&gt;
  *  {descriptiveComment(i)}
  */
-trait {functionClassname(i)}{__typeArgs__} extends AnyRef {{
+trait {functionClassname(i)}{__typeArgs__} extends AnyRef {{ self =>
   def apply({__funArgs__}): R
   override def toString() = "&lt;function>"
   {moreMethods(i)}
@@ -160,12 +160,16 @@ trait {functionClassname(i)}{__typeArgs__} extends AnyRef {{
    */
   def andThen[A](g: R => A): T1 => A = { x => g(apply(x)) }
 """
-    case _ if (i > 1) && (i < 9) => """
+    case _ if (i > 1) => """
   /** f(""" + join(",", (1 to i).map(i => "x" + i)) + """)  == (f.curry)""" +  join("", (1 to i).map(i => "(x" + i + ")")) + """
    */
-  def curry: """ + join(" => ", (1 to i).map(i => "T" + i)) + """ => R = { """ +
-  join(" => ", (1 to i).map(i => "(x" + i + ": T" + i + ")")) + """ => apply(""" + join(",", (1 to i).map(i => "x" + i)) + """) }
-"""
+  def curry: """ + join(" => ", (1 to i).map(i => "T" + i)) + """ => R = {
+""" +
+  (if (i < 5) {
+    "      " + join(" => ", (1 to i).map(i => "(x" + i + ": T" + i + ")")) + """ => apply(""" + join(",", (1 to i).map(i => "x" + i)) + ")\n  }"
+  } else {
+    """      (x1: T1) => ((""" + join(", ", (2 to i).map(i => "x" + i + ": T" + i)) + """) => self.apply(""" + join(",", (1 to i).map(i => "x" + i)) + ")).curry\n  }"
+  })
     case _ => """
 """
 
