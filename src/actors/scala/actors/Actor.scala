@@ -350,7 +350,7 @@ object Actor {
  *   </li>
  * </ul>
  *
- * @version 0.9.15
+ * @version 0.9.16
  * @author Philipp Haller
  */
 @serializable

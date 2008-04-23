@@ -23,7 +23,7 @@ package scala.actors
  * </p>
  *
  * @author Philipp Haller
- * @version 0.9.15
+ * @version 0.9.16
  */
 abstract class Future[+T](val ch: InputChannel[Any]) extends Responder[T] with Function0[T] {
   protected var value: Option[Any] = None
