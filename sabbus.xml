@@ -46,9 +46,15 @@ END-USER TARGETS
     <antcall target="test.done"/>
   </target>
   
-  <target name="newlocker"
+  <target name="freshlocker"
     description="Replaces the Locker compiler and library by one built from current sources.">
     <antcall target="locker.clean"/>
+    <antcall target="locker.done"/>
+  </target>
+  
+  <target name="newlocker"
+    description="Unlocks the Locker compiler and library and lets them be updated by Scalac.">
+    <antcall target="locker.unlock"/>
     <antcall target="locker.done"/>
   </target>
   
@@ -253,6 +259,11 @@ LOCAL REFERENCE BUILD (LOCKER)
   
   <target name="locker.clean" depends="quick.clean">
     <delete dir="${build-locker.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+  </target>
+  
+  <target name="locker.unlock" depends="quick.clean">
+    <delete file="${build-locker.dir}/library.complete"/>
+    <delete file="${build-locker.dir}/compiler.complete"/>
   </target>
 
 <!-- ===========================================================================
