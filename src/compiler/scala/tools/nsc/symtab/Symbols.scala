@@ -1171,6 +1171,7 @@ trait Symbols {
      *  Never adds id.
      */
     final def fullNameString(separator: Char): String = {
+      if (this == NoSymbol) return "<NoSymbol>"
       assert(owner != NoSymbol, this)
       var str =
         if (owner.isRoot ||
