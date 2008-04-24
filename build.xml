@@ -1002,26 +1002,19 @@ MSIL
       <condition><not><isset property="ilasm.cmd"/></not></condition>
     </fail>
     <!-- Sets ilasm arguments (either Windows or Unix) -->
-    <!-- property name="ilasm.infile" value="${msil.dir}/predef.msil" -->
-    <path id="ilasm.infiles">
-      <fileset dir="${msil.dir}" includes="*.msil"/>
-    </path>
-    <pathconvert property="ilasm.infile" pathsep=" ">
-      <path refid="ilasm.infiles" />
-    </pathconvert>
     <property name="ilasm.outfile" value="${msil.dir}/predef.dll"/>
     <if>
       <isset property="os.win"/>
       <then>
         <property
           name="ilasm.args"
-          value="/quiet /dll /output=${ilasm.outfile} ${ilasm.infile}"
+          value="/quiet /dll /output=${ilasm.outfile}"
         />
       </then>
       <else>
         <property
           name="ilasm.args"
-          value="/dll /output:${ilasm.outfile} ${ilasm.infile}"
+          value="/dll /output:${ilasm.outfile}"
         />
       </else>
     </if>
@@ -1075,12 +1068,15 @@ MSIL
       <include name="scala/testing/*.scala"/> 
       <include name="scala/text/*.scala"/> -->
     </quick>
+    <pathconvert property="ilasm.infile" pathsep=" ">
+      <fileset dir="${msil.dir}" includes="*.msil"/>
+    </pathconvert>
     <exec
       executable="${ilasm.cmd}" vmlauncher="no">
       <!--
       errorproperty="ilasm.err" outputproperty="ilasm.out">
       -->
-      <arg line="${ilasm.args}"/>
+      <arg line="${ilasm.args} ${ilasm.infile}"/>
     </exec>
   </target>
 
