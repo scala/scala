@@ -16,12 +16,12 @@ sealed trait Either[+A, +B] {
   /**
    * Projects this <code>Either</code> as a <code>Left</code>.
    */
-  lazy val left = Either.LeftProjection(this)
+  def left = Either.LeftProjection(this)
 
   /**
    * Projects this <code>Either</code> as a <code>Right</code>.
    */
-  lazy val right = Either.RightProjection(this)
+  def right = Either.RightProjection(this)
 
   /**
    * Deconstruction of the <code>Either</code> type (in contrast to pattern matching).
@@ -34,7 +34,7 @@ sealed trait Either[+A, +B] {
   /**
    * If this is a <code>Left</code>, then return the left value in <code>Right</code> or vice versa.
    */
-  lazy val swap = this match {
+  def swap = this match {
     case Left(a) => Right(a)
     case Right(b) => Left(b)
   }
@@ -84,7 +84,7 @@ object Either {
      *
      * @throws Predef.NoSuchElementException if the option is empty.
      */
-    lazy val get = e match {
+    def get = e match {
       case Left(a) => a
       case Right(_) =>  throw new NoSuchElementException("Either.left.value on Right")
     }
@@ -157,7 +157,7 @@ object Either {
      * Returns a <code>Seq</code> containing the <code>Left</code> value if it exists or an empty
      * <code>Seq</code> if this is a <code>Right</code>.
      */
-    lazy val toSeq = e match {
+    def toSeq = e match {
       case Left(a) => Seq.singleton(a)
       case Right(_) => Seq.empty
     }
@@ -166,7 +166,7 @@ object Either {
      * Returns a <code>Some</code> containing the <code>Left</code> value if it exists or a
      * <code>None</code> if this is a <code>Right</code>.
      */
-    lazy val toOption = e match {
+    def toOption = e match {
       case Left(a) => Some(a)
       case Right(_) => None
     }
@@ -185,7 +185,7 @@ object Either {
      *
      * @throws Predef.NoSuchElementException if the projection is <code>Left</code>.
      */
-    lazy val get = e match {
+    def get = e match {
       case Left(_) =>  throw new NoSuchElementException("Either.right.value on Left")
       case Right(a) => a
     }
@@ -258,7 +258,7 @@ object Either {
      * Returns a <code>Seq</code> containing the <code>Right</code> value if it exists or an empty
      * <code>Seq</code> if this is a <code>Left</code>.
      */
-    lazy val toSeq = e match {
+    def toSeq = e match {
       case Left(_) => Seq.empty
       case Right(b) => Seq.singleton(b)
     }
@@ -267,7 +267,7 @@ object Either {
      * Returns a <code>Some</code> containing the <code>Right</code> value if it exists or a
      * <code>None</code> if this is a <code>Left</code>.
      */
-    lazy val toOption = e match {
+    def toOption = e match {
       case Left(_) => None
       case Right(b) => Some(b)
     }
