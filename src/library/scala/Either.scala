@@ -12,7 +12,7 @@ package scala
  * @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  * @version 1.0, 11/10/2008
  */
-sealed trait Either[+A, +B] {
+sealed abstract class Either[+A, +B] {
   /**
    * Projects this <code>Either</code> as a <code>Left</code>.
    */
@@ -42,18 +42,12 @@ sealed trait Either[+A, +B] {
   /**
    * Returns <code>true</code> if this is a <code>Left</code>, <code>false</code> otherwise.
    */
-  lazy val isLeft = this match {
-    case Left(_) => true
-    case Right(_) => false
-  }
+  def isLeft = false  // Default here, overriden in Left
 
   /**
    * Returns <code>true</code> if this is a <code>Right</code>, <code>false</code> otherwise.
    */
-  lazy val isRight = this match {
-    case Left(_) => false
-    case Right(_) => true
-  }
+  def isRight = false // Default here, overriden in Right.
 }
 /**
  * The left side of the disjoint union, as opposed to the <code>Right</code> side.
@@ -61,14 +55,14 @@ sealed trait Either[+A, +B] {
  * @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  * @version 1.0, 11/10/2008
  */
-final case class Left[+A, +B](a: A) extends Either[A, B]
+final case class Left[+A, +B](a: A) extends Either[A, B] { override def isLeft = true }
 /**
  * The right side of the disjoint union, as opposed to the <code>Left</code> side.
  *
  * @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  * @version 1.0, 11/10/2008
  */
-final case class Right[+A, +B](b: B) extends Either[A, B]
+final case class Right[+A, +B](b: B) extends Either[A, B] { override def isRight = true }
 
 object Either {
   /**
