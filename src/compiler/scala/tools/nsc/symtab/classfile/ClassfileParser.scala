@@ -50,13 +50,13 @@ abstract class ClassfileParser {
 
   def parse(file: AbstractFile, root: Symbol) = try {
     def handleError(e: Exception) = {
-      if (settings.debug.value) e.printStackTrace() //debug
+      /*if (settings.debug.value)*/ e.printStackTrace() //debug
       throw new IOException("class file '" + in.file + "' is broken\n(" + {
         if (e.getMessage() != null) e.getMessage()
         else e.getClass.toString
       } + ")")
     }
-    assert(!busy)
+    assert(!busy, "internal error: illegal class file dependency")
     busy = true
     /*root match {
       case cs: ClassSymbol =>
