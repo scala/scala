@@ -51,20 +51,19 @@ SETUP
       <condition><not><isset property="ilasm.cmd"/></not></condition>
     </fail>
     <!-- Sets ilasm arguments (either Windows or Unix) -->
-    <property name="ilasm.infile" value="${msil.dir}/lib/predef.msil"/>
     <property name="ilasm.outfile" value="${msil.dir}/lib/predef.dll"/>
     <if>
       <isset property="os.win"/>
       <then>
         <property
           name="ilasm.args"
-          value="/quiet /dll /output=${ilasm.outfile} ${ilasm.infile}"
+          value="/quiet /dll /output=${ilasm.outfile}"
         />
       </then>
       <else>
         <property
           name="ilasm.args"
-          value="/dll /output:${ilasm.outfile} ${ilasm.infile}"
+          value="/dll /output:${ilasm.outfile}"
         />
       </else>
     </if>
@@ -106,32 +105,15 @@ SETUP
       classpathref="quick.classpath"/>
     <mkdir dir="${msil.dir}/lib"/>
     <quick srcdir="${msil.dir}/src" usepredefs="no" target="msil"
-           assemname="${msil.dir}/lib/predef" assemrefs="${lib.dir}"
+           assemname="predef" assemrefs="${lib.dir}"
            failonerror="false">
-      <include name="scala/Predef.scala"/>
-      <include name="scala/Either.scala"/>
-      <include name="scala/Option.scala"/>
-      <include name="scala/Pair.scala"/>
-      <include name="scala/Console.scala"/>
-      <include name="scala/Application.scala"/>
-      <include name="scala/ByNameFunction.scala"/>
-      <include name="scala/Stream.scala"/>
-      <include name="scala/*Annotation.scala"/>
-      <include name="scala/Function*.scala"/>
-      <include name="scala/Tuple*.scala"/>
-      <include name="scala/Product*.scala"/>
-      <include name="scala/cloneable.scala"/>
-      <include name="scala/deprecated.scala"/>
-      <include name="scala/native.scala"/>
-      <include name="scala/serializable.scala"/>
-      <include name="scala/transient.scala"/>
-      <include name="scala/volatile.scala"/>
-      <include name="scala/remote.scala"/>
-      <include name="scala/runtime/*.scala"/>
-      <include name="scala/collection/mutable/HashMap.scala"/>
-      <exclude name="scala/runtime/RichStringBuilder.scala"/>
+      <include name="**/*.scala"/>
+      <exclude name="scala/ScalaObject.scala"/>
     </quick>
-    <exec executable="${ilasm.cmd}" vmlauncher="no">
+    <pathconvert property="ilasm.infiles" pathsep=" ">
+      <fileset dir="${msil.dir}" includes="*.msil"/>
+    </pathconvert>
+    <exec executable="${ilasm.cmd} {$ilasm.infiles}" vmlauncher="no">
       <arg line="${ilasm.args}"/>
     </exec>
   </target>
