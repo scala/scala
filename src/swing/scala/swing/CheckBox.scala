@@ -3,6 +3,8 @@ package scala.swing
 import javax.swing._
 
 /**
+ * Two state button that can be either be checked or not.
+ *
  * @see javax.swing.JCheckBox
  */
 class CheckBox(text: String) extends ToggleButton {

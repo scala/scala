@@ -5,6 +5,8 @@ import java.awt.event._
 import event._
 
 /**
+ * A text component that allows single line text input and display.
+ *
  * @see javax.swing.JTextField
  */
 class TextField(text0: String, columns0: Int) extends TextComponent with TextComponent.HasColumns {

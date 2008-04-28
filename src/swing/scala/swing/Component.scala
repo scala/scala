@@ -8,11 +8,18 @@ import javax.swing.JComponent
 import javax.swing.border.Border
 
 object Component {
-  val ClientKey = "scala.swingWrapper"
-  def wrapperFor[C<:Component](c: javax.swing.JComponent): C = c.getClientProperty(ClientKey).asInstanceOf[C]
+  private val ClientKey = "scala.swingWrapper"
+
+  /**
+   * Returns the wrapper for a given peer.
+   */
+  protected[swing] def wrapperFor[C<:Component](c: javax.swing.JComponent): C =
+    c.getClientProperty(ClientKey).asInstanceOf[C]
 }
 
 /**
+ * Base class for all UI elements that can be displayed in a window.
+ *
  * @see javax.swing.JComponent
  */
 abstract class Component extends UIElement with Publisher {
@@ -94,7 +101,14 @@ abstract class Component extends UIElement with Publisher {
     }
   })
 
+  /**
+   * Contains publishers for various mouse events. They are subdivided for
+   * efficiency reasons.
+   */
   object Mouse {
+    /**
+     * Publishes clicks, presses and releases.
+     */
     val clicks: Publisher = new Publisher {
       peer.addMouseListener(new MouseListener {
         def mouseEntered(e: java.awt.event.MouseEvent) { }
@@ -113,6 +127,9 @@ abstract class Component extends UIElement with Publisher {
         }
       })
     }
+    /**
+     * Publishes enters, exits, moves, and drags.
+     */
     val moves: Publisher = new Publisher {
       peer.addMouseListener(new MouseListener {
         def mouseEntered(e: java.awt.event.MouseEvent) {
@@ -138,6 +155,9 @@ abstract class Component extends UIElement with Publisher {
         }
       })
     }
+    /**
+     * Publishes mouse wheel moves.
+     */
     val wheel: Publisher = new Publisher {
       peer.addMouseWheelListener(new MouseWheelListener {
         def mouseWheelMoved(e: java.awt.event.MouseWheelEvent) {

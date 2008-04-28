@@ -3,6 +3,8 @@ package scala.swing
 import javax.swing._
 
 /**
+ * A label component.
+ *
  * @see javax.swing.JLabel
  */
 class Label(text0: String) extends Component {

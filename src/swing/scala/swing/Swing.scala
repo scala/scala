@@ -4,6 +4,9 @@ import java.awt.Dimension
 import javax.swing._
 import javax.swing.event._
 
+/**
+ * Helpers for this package.
+ */
 object Swing {
   protected[swing] def ifNull[A](o: Object, a: A): A = if(o eq null) a else o.asInstanceOf[A]
   protected[swing] def toOption[A](o: Object): Option[A] = if(o eq null) None else Some(o.asInstanceOf[A])

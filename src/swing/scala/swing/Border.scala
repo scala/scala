@@ -5,6 +5,8 @@ import javax.swing.{Icon, BorderFactory}
 import javax.swing.border._
 
 /**
+ * Helper object for creating <code>java.awt.Border</code>s more conveniently.
+ *
  * @see javax.swing.BorderFactory
  */
 object Border {

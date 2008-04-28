@@ -4,6 +4,8 @@ import javax.swing._
 import event._
 
 /**
+ * A decorated window.
+ *
  * @see javax.swing.JFrame
  */
 class Frame extends UIElement with RootPanel with Publisher {

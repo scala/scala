@@ -35,6 +35,10 @@ object Container {
   }
 }
 
+/**
+ * A UI element that can contain <code>Component</code>s, such as windows,
+ * panels, and menus.
+ */
 trait Container extends UIElement {
   def contents: Seq[Component]
 }

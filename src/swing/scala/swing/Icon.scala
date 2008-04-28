@@ -2,7 +2,14 @@ package scala.swing
 
 import javax.swing._
 
+/**
+ * Helper object for icons.
+ */
 object Icon {
+  /**
+   * The empty icon. Use this icon instead of <code>null</code> to indicate
+   * that you don't want an icon.
+   */
   case object Empty extends Icon {
     def getIconHeight: Int = 0
     def getIconWidth: Int = 0

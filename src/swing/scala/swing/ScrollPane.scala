@@ -3,6 +3,9 @@ package scala.swing
 import javax.swing.JScrollPane
 
 /**
+ * Can have at most a single child that is put inside a canvas that can be
+ * scrolled.
+ *
  * @see javax.swing.JScrollPane
  */
 class ScrollPane extends Component with Container {
@@ -18,6 +21,7 @@ class ScrollPane extends Component with Container {
   def rowHeaderView: Option[Component] = Swing.toOption(peer.getRowHeader.getView).map(Component.wrapperFor(_))
   def rowHeaderView_=(c: Component) = peer.setRowHeaderView(c.peer)
   def rowHeaderView_=(c: Option[Component]) = peer.setRowHeaderView(Swing.toNull(c.map(_.peer)))
+
   def viewportView: Option[Component] = Swing.toOption(peer.getViewport.getView).map(Component.wrapperFor(_))
   def viewportView_=(c: Component) = peer.setViewportView(c.peer)
   def viewportView_=(c: Option[Component]) = peer.setViewportView(Swing.toNull(c.map(_.peer)))

@@ -11,12 +11,6 @@ object TableSelection extends SimpleGUIApplication {
             List("Sharon", "Zakhour", "Speed reading", 5, false).toArray,
             List("Philip", "Milne", "Pool", 5, false).toArray)
 
-            /*Array[Array[AnyRef]](Array[AnyRef]("Mary", "Campione", "Snowboarding", new java.lang.Integer(5), new java.lang.Boolean(false)),
-            Array[AnyRef]("Alison", "Huml", "Rowing", new java.lang.Integer(5), new java.lang.Boolean(false)),
-            Array[AnyRef]("Kathy", "Walrath", "Knitting", new java.lang.Integer(5), new java.lang.Boolean(false)),
-            Array[AnyRef]("Sharon", "Zakhour", "Speed reading", new java.lang.Integer(5), new java.lang.Boolean(false)),
-            Array[AnyRef]("Philip", "Milne", "Pool", new java.lang.Integer(5), new java.lang.Boolean(false)))*/
-
   val ui = new BoxPanel(Orientation.Vertical) {
       val table = new Table(model, Array("First Name", "Last Name", "Sport", "# of Years", "Vegetarian"))
       listenTo()
@@ -93,10 +87,10 @@ object TableSelection extends SimpleGUIApplication {
         case ButtonClicked(`cellSelection`) =>
           if (cellSelection.selected)
             table.selection.elementMode = Table.ElementMode.Cell
-        case RowsSelected(_, range, false) =>
+        case TableRowsSelected(_, range, false) =>
           output.append("Rows selected, changes: " + range + "\n")
           outputSelection()
-        case ColumnsSelected(_, range, false) =>
+        case TableColumnsSelected(_, range, false) =>
           output.append("Columns selected, changes " + range + "\n")
           outputSelection()
       }

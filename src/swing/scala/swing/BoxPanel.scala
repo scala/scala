@@ -1,6 +1,9 @@
 package scala.swing
 
 /**
+ * A panel that lays out its contents one after the other,
+ * either horizontally or vertically.
+ *
  * @see javax.swing.BoxLayout
  */
 class BoxPanel(orientation: Orientation.Value) extends Panel with SequentialContainer.Wrapper {

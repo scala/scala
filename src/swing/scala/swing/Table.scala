@@ -78,16 +78,16 @@ class Table extends Component with Scrollable with Publisher {
   //1.6: def fillsViewportHeight: Boolean = peer.getFillsViewportHeight
   //def fillsViewportHeight_=(b: Boolean) = peer.setFillsViewportHeight(b)
 
-  // TODO: could be a sorted set
-  protected abstract class SelectionSet[A](a: =>Seq[A]) extends Set[A] {
-    def -=(n: A)
-    def +=(n: A)
-    def contains(n: A) = a.contains(n)
-    def size = a.length
-    def elements = a.elements
-  }
+  object selection extends Publisher {
+    // TODO: could be a sorted set
+    protected abstract class SelectionSet[A](a: =>Seq[A]) extends scala.collection.mutable.Set[A] {
+      def -=(n: A)
+      def +=(n: A)
+      def contains(n: A) = a.contains(n)
+      def size = a.length
+      def elements = a.elements
+    }
 
-  class Selection extends Publisher {
     object rows extends SelectionSet(peer.getSelectedRows) {
       def -=(n: Int) { peer.removeRowSelectionInterval(n,n) }
       def +=(n: Int) { peer.addRowSelectionInterval(n,n) }
@@ -140,17 +140,15 @@ class Table extends Component with Scrollable with Publisher {
 
     peer.getColumnModel.getSelectionModel.addListSelectionListener(new ListSelectionListener {
       def valueChanged(e: javax.swing.event.ListSelectionEvent) {
-        publish(ColumnsSelected(Table.this, e.getFirstIndex to e.getLastIndex, e.getValueIsAdjusting))
+        publish(TableColumnsSelected(Table.this, e.getFirstIndex to e.getLastIndex, e.getValueIsAdjusting))
       }
     })
     peer.getSelectionModel.addListSelectionListener(new ListSelectionListener {
       def valueChanged(e: javax.swing.event.ListSelectionEvent) {
-        publish(RowsSelected(Table.this, e.getFirstIndex to e.getLastIndex, e.getValueIsAdjusting))
+        publish(TableRowsSelected(Table.this, e.getFirstIndex to e.getLastIndex, e.getValueIsAdjusting))
       }
     })
   }
-
-  val selection: Selection = new Selection
 
   private val initialRenderer = peer.getDefaultRenderer(classOf[AnyRef])
 
@@ -175,11 +173,18 @@ class Table extends Component with Scrollable with Publisher {
   def markUpdated(row: Int, column: Int) = update(row, column, apply(row, column))
 
   model.addTableModelListener(new TableModelListener {
-    def tableChanged(event: TableModelEvent) = publish(
-      if (event.getType == TableModelEvent.UPDATE)
-        TableChanged(Table.this, event.getFirstRow, event.getLastRow, event.getColumn)
-      else
-    	TableResized(Table.this)
+    def tableChanged(e: TableModelEvent) = publish(
+      e.getType match {
+        case TableModelEvent.UPDATE =>
+          if (e.getLastRow == Math.MAX_INT)
+            TableChanged(Table.this)
+          else
+            TableUpdated(Table.this, e.getFirstRow to e.getLastRow, e.getColumn)
+        case TableModelEvent.INSERT =>
+          TableRowsAdded(Table.this, e.getFirstRow to e.getLastRow)
+        case TableModelEvent.DELETE =>
+          TableRowsRemoved(Table.this, e.getFirstRow to e.getLastRow)
+      }
     )
   })
 }

@@ -9,6 +9,9 @@ object SequentialContainer {
   }
 }
 
+/**
+ * A container that contains children in a certain order.
+ */
 trait SequentialContainer extends Container {
   override def contents: Buffer[Component]
   def contents_=(c: Component*)

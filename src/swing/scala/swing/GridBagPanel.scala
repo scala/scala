@@ -33,6 +33,9 @@ object GridBagPanel {
 }
 
 /**
+ * A panel that lays out its children in a grid. Layout details can be
+ * given for each cell of the grid.
+ *
  * @see java.awt.GridBagLayout
  */
 class GridBagPanel extends Panel with LayoutContainer {
@@ -40,6 +43,13 @@ class GridBagPanel extends Panel with LayoutContainer {
   import GridBagPanel._
 
   private def layoutManager = peer.getLayout.asInstanceOf[java.awt.GridBagLayout]
+
+  implicit def pair2Constraints(p: (Int, Int)): Constraints = {
+    val c = new Constraints
+    c.gridx = p._1
+    c.gridy = p._2
+    c
+  }
 
   class Constraints(val peer: GridBagConstraints) extends Proxy {
     def self = peer
@@ -58,6 +68,11 @@ class GridBagPanel extends Panel with LayoutContainer {
     def gridx_=(x: Int) { peer.gridx = x }
     def gridy: Int = peer.gridy
     def gridy_=(y: Int) { peer.gridy = y }
+    def grid: (Int, Int) = (gridx, gridy)
+    def grid_=(c: (Int, Int)) = {
+      gridx = c._1
+      gridy = c._2
+    }
 
     def gridwidth: Int = peer.gridwidth
     def gridwidth_=(w: Int) { peer.gridwidth = w }
@@ -79,6 +94,9 @@ class GridBagPanel extends Panel with LayoutContainer {
     def ipady_=(y: Int) { peer.ipady = y }
   }
 
-  def constraintsFor(comp: Component) =
+  protected def constraintsFor(comp: Component) =
     new Constraints(layoutManager.getConstraints(comp.peer))
+
+  protected def areValid(c: Constraints): (Boolean, String) = (true, "")
+  protected def add(c: Component, l: Constraints) { peer.add(c.peer, l.peer) }
 }

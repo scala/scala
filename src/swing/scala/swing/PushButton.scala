@@ -4,6 +4,8 @@ import javax.swing._
 import event._
 
 /**
+ * A button that can be pushed, usually to perfrom some action.
+ *
  * @see javax.swing.JButton
  */
 class PushButton(text0: String) extends Button with Publisher {

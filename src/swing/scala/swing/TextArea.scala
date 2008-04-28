@@ -5,6 +5,8 @@ import java.awt.event._
 import event._
 
 /**
+ * A text component that allows multiline text input and display.
+ *
  * @see javax.swing.JTextArea
  */
 class TextArea(text0: String, rows0: Int, columns0: int) extends TextComponent with TextComponent.HasColumns with TextComponent.HasRows {

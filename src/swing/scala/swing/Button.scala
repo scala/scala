@@ -4,6 +4,9 @@ import javax.swing.{AbstractButton => JAbstractButton,Icon}
 import event._
 
 /**
+ * Base class of all button-like widgets, such as push buttons,
+ * check boxes, and radio buttons.
+ *
  * @see javax.swing.AbstractButton
  */
 abstract class Button extends Component with Action.Trigger with Publisher {

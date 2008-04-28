@@ -30,6 +30,8 @@ object UIDemo extends SimpleGUIApplication {
     menuBar.contents += menu
     menuBar.contents += new Menu("Empty Menu")
 
+    var reactLive = false
+
     contents = new BoxPanel(Orientation.Vertical) {
       val tabs = new TabbedPane {
         import TabbedPane._
@@ -45,15 +47,21 @@ object UIDemo extends SimpleGUIApplication {
           }
           contents += new BoxPanel(Orientation.Vertical) {
             border = Compound(Titled(Etched, "Check Boxes"), Empty(5,5,5,10))
-            val a = new CheckBox("Paint Labels")
-    		val b = new CheckBox("Paint Ticks")
-    		val c = new CheckBox("Snap To Ticks")
-    		contents.append(a,b,c)
-    		listenTo(a,b,c)
+            val paintLabels = new CheckBox("Paint Labels")
+    		val paintTicks = new CheckBox("Paint Ticks")
+    		val snapTicks = new CheckBox("Snap To Ticks")
+    		val live = new CheckBox("Live")
+    		contents.append(paintLabels, paintTicks, snapTicks, live)
+    		listenTo(paintLabels, paintTicks, snapTicks, live)
     		reactions += {
-    		  case ButtonClicked(`a`) => slider.paintLabels = a.selected
-    		  case ButtonClicked(`b`) => slider.paintTicks = b.selected
-    		  case ButtonClicked(`c`) => slider.snapToTicks = c.selected
+    		  case ButtonClicked(`paintLabels`) =>
+    		    slider.paintLabels = paintLabels.selected
+    		  case ButtonClicked(`paintTicks`) =>
+    		    slider.paintTicks = paintTicks.selected
+    		  case ButtonClicked(`snapTicks`) =>
+    		    slider.snapToTicks = snapTicks.selected
+    		  case ButtonClicked(`live`) =>
+    		    reactLive = live.selected
     		}
           }
         }
@@ -61,6 +69,7 @@ object UIDemo extends SimpleGUIApplication {
         pages += new Page("GridBag", GridBagDemo.ui)
         pages += new Page("Converter", CelsiusConverter2.ui)
         pages += new Page("Tables", TableSelection.ui)
+        pages += new Page("Dialogs", Dialogs.ui)
       }
       contents += tabs
 
@@ -75,7 +84,8 @@ object UIDemo extends SimpleGUIApplication {
       listenTo(slider)
       listenTo(tabs.selection)
       reactions += {
-        case ValueChanged(`slider`, false) => tabs.selection.index = slider.value
+        case ValueChanged(`slider`, live) =>
+          if(!live || live == reactLive) tabs.selection.index = slider.value
         case SelectionChanged(`tabs`) => slider.value = tabs.selection.index
       }
     }

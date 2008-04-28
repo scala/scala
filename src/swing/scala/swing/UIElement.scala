@@ -3,7 +3,7 @@ package scala.swing
 import java.awt.{Color, Cursor, Font}
 
 /**
- * The root of all user interface elements.
+ * The base trait of all user interface elements.
  */
 trait UIElement {
   def peer: java.awt.Component

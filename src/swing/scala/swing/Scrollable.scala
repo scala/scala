@@ -3,6 +3,9 @@ package scala.swing
 import java.awt.Rectangle
 
 /**
+ * A component that specially suitable for being placed inside a
+ * <code>ScrollPane</code>.
+ *
  * @see javax.swing.Scrollable
  */
 trait Scrollable extends Component {

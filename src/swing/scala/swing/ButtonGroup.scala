@@ -5,6 +5,9 @@ import event._
 import scala.collection._
 
 /**
+ * A button mutex. At most one of its associated buttons is selected
+ * at a time.
+ *
  * @see javax.swing.ButtonGroup
  */
 class ButtonGroup(initialButtons: Button*) {

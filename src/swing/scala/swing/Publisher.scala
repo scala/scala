@@ -3,6 +3,9 @@ package scala.swing
 import scala.collection.mutable.HashSet
 import event.Event
 
+/**
+ * Notifies subscribed observers when a event is published.
+ */
 trait Publisher extends Reactor {
   protected var listeners = new HashSet[Reactions]
 

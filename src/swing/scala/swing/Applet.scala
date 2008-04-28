@@ -5,8 +5,9 @@ import javax.swing.JApplet
 /**
  * Clients should implement the ui field. See the SimpleApplet demo for an example.
  *
- * Note: Applet extends JApplet to satisfy Java's applet loading mechanism.
- * The usual component wrapping scheme doesn't work here.
+ * Note: <code>Applet</code> extends <code>javax.swing.JApplet</code> to satisfy
+ * Java's applet loading mechanism. The usual component wrapping scheme doesn't
+ * work here.
  *
  * @see javax.swing.JApplet
  */

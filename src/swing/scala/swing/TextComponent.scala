@@ -17,6 +17,8 @@ object TextComponent {
 }
 
 /**
+ * A component that allows some kind of text input and display.
+ *
  * @see javax.swing.JTextComponent
  */
 class TextComponent extends Component with Publisher {
