@@ -4,10 +4,27 @@ abstract class TableEvent(override val source: Table) extends ComponentEvent(sou
 
 abstract class TableChange(override val source: Table) extends TableEvent(source)
 
+/**
+ * The most general table change. The table might have changed completely,
+ * i.e., comlumns might have been reordered, rows added or removed, etc.
+ * No other event indicates that the structure might have changed.
+ */
+case class TableStructureChanged(override val source: Table) extends TableChange(source)
+/**
+ * The table structure, i.e., the column order, names, and types stay the same,
+ * but anything else might have changed.
+ */
 case class TableChanged(override val source: Table) extends TableChange(source)
+/**
+ * The size of the table stays the same, but the given range of rows might
+ * have changed but only in the given column. A value of -1 for the column
+ * denotes all columns.
+ */
 case class TableUpdated(override val source: Table, range: Range, column: Int)
            extends TableChange(source)
-
+/**
+ * Any change that caused the table to change it's size
+ */
 case class TableResized(override val source: Table) extends TableChange(source)
 case class TableRowsAdded(override val source: Table, range: Range) extends TableResized(source)
 case class TableRowsRemoved(override val source: Table, range: Range) extends TableResized(source)

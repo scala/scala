@@ -43,17 +43,21 @@ class Table extends Component with Scrollable with Publisher {
   def this(rowData: Array[Array[Any]], columnNames: Seq[Any]) = {
     this()
     peer.setModel(new AbstractTableModel {
-            override def getColumnName(column: Int) = columnNames(column).toString
-            def getRowCount() = rowData.length
-            def getColumnCount() = columnNames.length
-            def getValueAt(row: Int, col: Int): AnyRef = rowData(row)(col).asInstanceOf[AnyRef]
-            override def isCellEditable(row: Int, column: Int) = true
-            override def setValueAt(value: Any, row: Int, col: Int) {
-                rowData(row)(col) = value
-                fireTableCellUpdated(row, col)
-            }
-        })
-    }
+      override def getColumnName(column: Int) = columnNames(column).toString
+      def getRowCount() = rowData.length
+      def getColumnCount() = columnNames.length
+      def getValueAt(row: Int, col: Int): AnyRef = rowData(row)(col).asInstanceOf[AnyRef]
+      override def isCellEditable(row: Int, column: Int) = true
+      override def setValueAt(value: Any, row: Int, col: Int) {
+        rowData(row)(col) = value
+        fireTableCellUpdated(row, col)
+      }
+    })
+  }
+  def this(rows: Int, columns: Int) = {
+    this()
+    peer.setModel(new DefaultTableModel(rows, columns))
+  }
 
   protected def scrollablePeer = peer
 
@@ -164,6 +168,7 @@ class Table extends Component with Scrollable with Publisher {
       }
     }
 
+  // TODO: a public API for setting editors
   protected def editor(row: Int, column: Int) =
     Table.this.peer.getDefaultEditor(Table.this.peer.getValueAt(row, column).getClass)
 
@@ -176,8 +181,10 @@ class Table extends Component with Scrollable with Publisher {
     def tableChanged(e: TableModelEvent) = publish(
       e.getType match {
         case TableModelEvent.UPDATE =>
-          if (e.getLastRow == Math.MAX_INT)
+          if (e.getFirstRow == 0 && e.getLastRow == Math.MAX_INT && e.getColumn == TableModelEvent.ALL_COLUMNS)
             TableChanged(Table.this)
+          else if (e.getFirstRow == TableModelEvent.HEADER_ROW)
+            TableStructureChanged(Table.this)
           else
             TableUpdated(Table.this, e.getFirstRow to e.getLastRow, e.getColumn)
         case TableModelEvent.INSERT =>

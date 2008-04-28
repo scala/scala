@@ -20,8 +20,8 @@ object SwingApp extends SimpleGUIApplication {
     object button extends PushButton {
       text = "I am a button"
     }
-    contents = new GridPanel(GridPanel.Adapt,1) {
-      contents.append(label, button)
+    contents = new FlowPanel {
+      contents.append(button, label)
       border = Border.Empty(5, 5, 5, 5)
     }
   }
