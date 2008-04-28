@@ -22,6 +22,7 @@ import Predef._
  *  @author Stephane Micheloud
  *  @version 1.0
  */
+@serializable
 @SerialVersionUID(0 - 8525408645367278351L)
 final class StringBuilder(initCapacity: Int, private val initValue: String)
 extends (Int => Char) with Proxy {
