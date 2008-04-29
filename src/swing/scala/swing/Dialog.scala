@@ -36,12 +36,11 @@ object Dialog {
 
   def showOptions(parent: Component, message: String, title: String,
      optionType: Options.Value, messageType: Message.Value, icon: Icon,
-     entries: Seq[Any], initialEntry: Int): Either[Result.Closed.type, Int] = {
+     entries: Seq[Any], initialEntry: Int): Result.Value = {
        val r = JOptionPane.showOptionDialog(parent.peer, message, title,
                                    optionType.id, messageType.id, Icon.wrap(icon),
                                    entries.map(_.asInstanceOf[AnyRef]).toArray, entries(initialEntry))
-       if (r == JOptionPane.CLOSED_OPTION) Left[Result.Closed.type, Int](Result.Closed)
-       else Right[Result.Closed.type, Int](r)
+       Result(r)
      }
 
   def showInput[A](parent: Component, message: String, title: String,
