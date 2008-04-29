@@ -15,4 +15,7 @@ object Icon {
     def getIconWidth: Int = 0
     def paintIcon(c: java.awt.Component, g: java.awt.Graphics, x: Int, y: Int) {}
   }
+
+  def unwrap(icon: Icon): Icon = if (icon == null) Empty else icon
+  def wrap(icon: Icon): Icon = if (icon == Empty) null else icon
 }

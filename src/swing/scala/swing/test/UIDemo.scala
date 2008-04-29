@@ -70,6 +70,21 @@ object UIDemo extends SimpleGUIApplication {
         pages += new Page("Converter", CelsiusConverter2.ui)
         pages += new Page("Tables", TableSelection.ui)
         pages += new Page("Dialogs", Dialogs.ui)
+
+        val password = new FlowPanel {
+          contents += new Label("Enter your secret password here ")
+          val field = new PasswordField(10)
+
+          contents += field
+          val label = new Label(field.text)
+          contents += label
+          listenTo(field)
+          reactions += {
+            case ValueChanged(`field`, false) => label.text = field.password.mkString
+          }
+        }
+
+        pages += new Page("Password", password)
       }
       contents += tabs
 

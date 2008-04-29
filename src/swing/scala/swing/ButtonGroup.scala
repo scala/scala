@@ -3,6 +3,7 @@ package scala.swing
 import javax.swing.{AbstractButton => JAbstractButton,Icon}
 import event._
 import scala.collection._
+import scala.collection.mutable.Buffer
 
 /**
  * A button mutex. At most one of its associated buttons is selected
