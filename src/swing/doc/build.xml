@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="swing" default="build">
+
+  <property name="scala.home" value="${user.home}/apps/scala-recent"/>
+
+  <property file="swing/swing.version.properties"/>
+  <property name="version" value="${version.major}.${version.minor}"/>
+	
+  <taskdef
+      resource="scala/tools/ant/antlib.xml">
+    <classpath>
+      <pathelement location="${scala.home}/lib/scala-compiler.jar"/>
+      <pathelement location="${scala.home}/lib/scala-library.jar"/>
+      <pathelement location="${scala.home}/lib/junit.jar"/>
+    </classpath>
+  </taskdef>
+
+
+  <target name="build">
+    <mkdir dir="build/build.main"/>
+    <scalac srcdir="swing"
+            destdir="build/build.main">
+      <classpath>
+        <pathelement location="${scala.home}/lib/scala-library.jar"/>
+        <pathelement location="${scala.home}/lib/scala-compiler.jar"/>
+      </classpath>
+      <include name="**/*.scala"/>
+    </scalac>
+
+    <jar destfile="build/scala-swing.jar">
+    	<fileset dir="build/build.main"/>
+    	<fileset file="swing.version.properties"/>
+    </jar>
+    <jar destfile="build/scala-swing-src.jar"
+      basedir="swing"
+      includes="**/*.scala"
+    />
+  </target>
+	
+  <!--<target name="build.tests" depends="build">
+    <mkdir dir="build/build.tests"/>
+    <scalac srcdir="tests" destdir="build/build.tests">
+        <classpath>
+          <pathelement location="${scala.home}/lib/scala-library.jar"/>
+          <pathelement location="${scala.home}/lib/scala-compiler.jar"/>
+          <pathelement location="${scala.home}/lib/junit.jar"/>
+          <pathelement location="build/swing.jar"/>
+        </classpath>
+    </scalac>
+  	
+    <jar destfile="build/swing-tests.jar" basedir="build/build.tests"/>
+  </target>-->
+
+  <target name="dist" depends="build">
+    <mkdir dir="build"/>
+    <sbaz file="build/scala-swing-${version}.sbp"
+          adfile="build/scala-swing-${version}.advert"
+          name="scala-swing"
+          version="${version}"
+	  depends="scala"
+          desc="A Scala Swing library"
+	  link="http://scala.epfl.ch/downloads/packages/scala-swing-${version}.sbp">
+      <libset dir="build" includes="scala-swing.jar"/>
+      <libset dir="build" includes="scala-swing-tests.jar"/>
+      <srcset dir="build" includes="scala-swing-src.jar"/>
+      <docset dir="swing/doc" includes="Manual.txt"/>
+    </sbaz>
+  </target>
+
+  <target name="install" depends="dist">
+    <exec executable="sbaz">
+      <arg line="-v install -f build/scala-swing-${version}.sbp"/>
+    </exec>
+  </target>
+
+  <target name="clean">
+    <delete dir="build"
+            includeemptydirs="yes"
+            quiet="yes"
+            failonerror="no"/>
+  </target>
+</project>
