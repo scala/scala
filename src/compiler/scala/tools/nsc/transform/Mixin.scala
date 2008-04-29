@@ -44,7 +44,7 @@ abstract class Mixin extends InfoTransform {
   private def isImplementedStatically(sym: Symbol) =
     sym.owner.isImplClass && sym.isMethod &&
     (!sym.isModule || sym.hasFlag(PRIVATE | LIFTED)) &&
-    (!(sym hasFlag (ACCESSOR | SUPERACCESSOR | PROTACCESSOR)) || sym.hasFlag(LAZY))
+    (!(sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.hasFlag(LAZY))
 
   /** A member of a trait is static only if it belongs only to the
    *  implementation class, not the interface, and it is implemented
@@ -266,8 +266,7 @@ abstract class Mixin extends InfoTransform {
             assert(member1.alias != NoSymbol, member1)
             val alias1 = rebindSuper(clazz, member.alias, mixinClass)
             member1.asInstanceOf[TermSymbol] setAlias alias1
-          } else if (member hasFlag PROTACCESSOR) {
-            addMember(clazz, member.cloneSymbol(clazz)) setPos clazz.pos
+
           } else if (member.isMethod && member.isModule && !(member hasFlag (LIFTED | BRIDGE))) {
             // mixin objects: todo what happens with abstract objects?
             addMember(clazz, member.cloneSymbol(clazz))
@@ -525,49 +524,6 @@ abstract class Mixin extends InfoTransform {
           stat
       }
 
-      /**
-       * Complete the given abstract method to be a protected accessor. It
-       * assumes the accessed symbol is in the 'alias' field of the method's
-       * symbol.
-       *
-       * If the accessed symbol comes from Java, and the access happens
-       * in a trait method, it ignores the receiver parameter and uses 'this' instead.
-       * This is because of the rules for protected access in Java, which prevent an
-       * access from a subclass if the static type of the receiver is not a subtype
-       * of the class where the access happens. For traits, the access always happens
-       * in a class that cannot fulfill this requirement (an error for this case is
-       * issued in 'SuperAccessors', so we are safe assuming 'this' here).
-       */
-      def completeProtectedAccessor(stat: Tree) = stat match {
-        case DefDef(mods, name, tparams, List(vparams), tpt, EmptyTree)
-          if stat.symbol.hasFlag(PROTACCESSOR) =>
-          val sym = stat.symbol
-          assert(sym.alias != NoSymbol, sym)
-          log("Adding protected accessor for " + sym)
-          sym.resetFlag(lateDEFERRED)
-
-          val obj = vparams.head.symbol // receiver
-          val receiver = if (sym.alias.hasFlag(JAVA) && sym.hasFlag(MIXEDIN)) This(clazz) else Ident(obj)
-          val selection = Select(receiver, sym.alias)
-          val rhs0 =
-            if (sym.alias.isMethod)
-              Apply(selection, vparams.tail.map(v => Ident(v.symbol)))
-            else
-              selection // a Java field
-          val rhs1 = localTyper.typed(atPos(stat.pos)(rhs0), stat.symbol.tpe.resultType)
-          val rhs2 = atPhase(currentRun.mixinPhase)(transform(rhs1))
-          copy.DefDef(stat, mods, name, tparams, List(vparams), tpt, rhs2)
-        case _ =>
-          stat
-      }
-
-      /** Complete either a super accessor or a protected accessor. */
-      def completeAbstractAccessors(stat: Tree) =
-        if (stat.symbol.hasFlag(SUPERACCESSOR))
-          completeSuperAccessor(stat)
-        else
-          completeProtectedAccessor(stat)
-
       import lazyVals._
 
       /** return a 'lazified' version of rhs.
@@ -700,8 +656,8 @@ abstract class Mixin extends InfoTransform {
             } else if (!sym.isMethod) {
               // add fields
               addDef(position(sym), ValDef(sym))
-            } else if (sym hasFlag (SUPERACCESSOR | PROTACCESSOR)) {
-              // add superaccessors/protected accessors
+            } else if (sym hasFlag SUPERACCESSOR) {
+              // add superaccessors
               addDefDef(sym, vparams => EmptyTree)
             } else {
               // add forwarders
@@ -713,8 +669,7 @@ abstract class Mixin extends InfoTransform {
         }
       }
       stats1 = add(stats1, newDefs.toList)
-      if (!clazz.isTrait)
-        stats1 = stats1 map completeAbstractAccessors
+      if (!clazz.isTrait) stats1 = stats1 map completeSuperAccessor
       stats1
     }
 

@@ -199,13 +199,6 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       case Select(qual, name) =>
         val sym = tree.symbol
         if (needsProtectedAccessor(sym, tree.pos)) {
-          if (currentOwner.enclClass.isTrait
-              && sym.hasFlag(JAVA)
-              && !qual.isInstanceOf[This])
-            unit.error(tree.pos,
-                       "Implementation restriction: Cannot access Java protected member inside a trait,"
-                       + " when the qualifier is not 'this'.")
-
           if (settings.debug.value) log("Adding protected accessor for tree: " + tree);
           transform(makeAccessor(tree.asInstanceOf[Select], List(EmptyTree)))
         } else
@@ -276,8 +269,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       val hasArgs = sym.tpe.paramTypes != Nil
       val memberType = sym.tpe // transform(sym.tpe)
 
-      // if the result type depends on the 'this' type of an enclosing class, the accessor
-      // has to take a singleton type, otherwise it takes the type of this
+      // if the result type depends on the this type of an enclosing class, the accessor
+      // has to take an object of exactly this type, otherwise it's more general
       val objType = if (isThisType(memberType.finalResultType)) clazz.thisType else clazz.typeOfThis
       val accType = memberType match {
         case PolyType(tparams, restpe) =>
@@ -289,12 +282,19 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
       var protAcc = clazz.info.decl(accName).suchThat(_.tpe == accType)
       if (protAcc == NoSymbol) {
-        protAcc = clazz.newMethod(tree.pos, accName)
-            .setInfo(accType)
-            .setFlag(SYNTHETIC | PROTACCESSOR | lateDEFERRED)
-            .setAlias(sym)
+        protAcc = clazz.newMethod(tree.pos, nme.protName(sym.originalName)).setInfo(accType)
         clazz.info.decls.enter(protAcc);
-        accDefBuf(clazz) += typers(clazz).typed(DefDef(protAcc, vparamss => EmptyTree))
+        val code = DefDef(protAcc, vparamss => {
+          val obj = vparamss.head.head // receiver
+          vparamss.tail.zip(allParamTypes(sym.tpe)).foldLeft(Select(Ident(obj), sym): Tree) (
+              (fun, pvparams) => {
+                Apply(fun, (List.map2(pvparams._1, pvparams._2) { (v, origTpe) => makeArg(v, obj, origTpe) } ))
+              })
+        })
+
+        if (settings.debug.value)
+          log(code)
+        accDefBuf(clazz) += typers(clazz).typed(code)
       }
       var res: Tree = atPos(tree.pos) {
         if (targs.head == EmptyTree)
@@ -304,7 +304,6 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       }
       if (settings.debug.value)
         log("Replaced " + tree + " with " + res)
-
       if (hasArgs) typer.typedOperator(res) else typer.typed(res)
     }
 
@@ -389,23 +388,21 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
      * classes, this has to be signaled as error.
      */
     private def needsProtectedAccessor(sym: Symbol, pos: Position): Boolean = {
-      val accNeeded = /* settings.debug.value && */
+      val res = /* settings.debug.value && */
       ((sym hasFlag PROTECTED)
-       && (!validCurrentOwner
-             || !(currentOwner.enclClass.thisSym isSubClass sym.owner)
-             || currentOwner.enclClass.isTrait)
+       && (!validCurrentOwner || !(currentOwner.enclClass.thisSym isSubClass sym.owner))
        && (enclPackage(sym.owner) != enclPackage(currentOwner))
        && (enclPackage(sym.owner) == enclPackage(sym.accessBoundary(sym.owner))))
 
-      if (accNeeded) {
+      if (res) {
         val host = hostForAccessorOf(sym, currentOwner.enclClass)
         if (host.thisSym != host) {
           if (host.thisSym.tpe.typeSymbol.hasFlag(JAVA))
             unit.error(pos, "Implementation restriction: " + currentOwner.enclClass + " accesses protected "
                             + sym + " from self type " + host.thisSym.tpe)
           false
-        } else accNeeded
-      } else accNeeded
+        } else res
+      } else res
     }
 
     /** Return the enclosing package of the given symbol. */

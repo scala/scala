@@ -306,7 +306,7 @@ trait Symbols {
     final def isImplOnly: Boolean =
       hasFlag(PRIVATE) ||
       (owner.isImplClass || owner.isTrait) &&
-      ((hasFlag(notPRIVATE | LIFTED) && !hasFlag(ACCESSOR | SUPERACCESSOR | PROTACCESSOR | MODULE) || isConstructor) ||
+      ((hasFlag(notPRIVATE | LIFTED) && !hasFlag(ACCESSOR | SUPERACCESSOR | MODULE) || isConstructor) ||
        (hasFlag(LIFTED) && isModule && isMethod))
 
     /** Is this symbol a module variable ? */
@@ -1296,14 +1296,14 @@ trait Symbols {
     }
 
     override def alias: Symbol =
-      if (hasFlag(SUPERACCESSOR | PARAMACCESSOR | MIXEDIN | PROTACCESSOR)) initialize.referenced
+      if (hasFlag(SUPERACCESSOR | PARAMACCESSOR | MIXEDIN)) initialize.referenced
       else NoSymbol
 
     def setAlias(alias: Symbol): TermSymbol = {
       assert(alias != NoSymbol, this)
       assert(!(alias hasFlag OVERLOADED), alias)
 
-      assert(hasFlag(SUPERACCESSOR | PARAMACCESSOR | MIXEDIN | PROTACCESSOR), this)
+      assert(hasFlag(SUPERACCESSOR | PARAMACCESSOR | MIXEDIN), this)
       referenced = alias
       this
     }

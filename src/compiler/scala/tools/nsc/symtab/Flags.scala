@@ -61,7 +61,6 @@ object Flags extends Enumeration {
   final val MODULEVAR     = 0x40000000    // for variables: is the variable caching a module value
   final val SYNTHETICMETH = 0x40000000    // for methods: synthetic method, but without SYNTHETIC flag
   final val MONOMORPHIC   = 0x40000000    // for type symbols: does not have type parameters
-  final val PROTACCESSOR  = 0x40000000    // for methods: a protected accessor
   final val LAZY          = 0x80000000L   // symbol is a lazy val. can't have MUTABLE unless transformed by typer
 
   final val IS_ERROR      = 0x100000000L  // symbol is an error symbol
