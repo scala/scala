@@ -55,8 +55,9 @@ object Scalatest {
   private val outputdir = System.getProperty("scalatest.output", "inner-jvm.obj")
   private val scalalib  = System.getProperty("scalatest.lib", "")
   private val classpath = outputdir + File.pathSeparator + scalalib
-  private val javacmd   = System.getProperty("javacmd", "java")
-  private val javac     = javacmd + "c"
+  private val javahome  = System.getProperty("java.home")
+  private val javacmd   = javahome + File.separator + "bin" + File.separator + "java"
+  private val javac     = javahome + File.separator + "bin" + File.separator + "javac"
 
   def javac(src: String, fname: String) {
     val tmpfilename = outputdir + File.separator + fname
