@@ -55,6 +55,9 @@ class PartestTask extends Task {
   def setErrorOnFailed(input: Boolean): Unit =
     errorOnFailed = input
 
+  def setJavaCmd(input: File): Unit =
+    javacmd = Some(input)
+
   private var classpath: Option[Path] = None
   private var javacmd: Option[File] = None
   private var showDiff: Boolean = false
