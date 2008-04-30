@@ -75,7 +75,7 @@ object Predef {
 
   def error(message: String): Nothing = throw new RuntimeException(message)
 
-  def exit: Nothing = exit(0)
+  def exit(): Nothing = exit(0)
 
   def exit(status: Int): Nothing = {
     java.lang.System.exit(status)
