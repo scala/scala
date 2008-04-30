@@ -222,7 +222,7 @@ abstract class UnPickler {
           }
           sym.setFlag(flags.toLong & PickledFlags)
           sym.privateWithin = privateWithin
-          if (readIndex != end) assert(sym hasFlag (SUPERACCESSOR | PARAMACCESSOR | PROTACCESSOR), sym)
+          if (readIndex != end) assert(sym hasFlag (SUPERACCESSOR | PARAMACCESSOR), sym)
           if (sym hasFlag SUPERACCESSOR) assert(readIndex != end)
           sym.setInfo(
             if (readIndex != end) new LazyTypeRefAndAlias(inforef, readNat())
