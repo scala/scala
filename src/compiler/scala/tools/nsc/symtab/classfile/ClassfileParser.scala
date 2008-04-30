@@ -50,7 +50,8 @@ abstract class ClassfileParser {
 
   def parse(file: AbstractFile, root: Symbol) = try {
     def handleError(e: Exception) = {
-      /*if (settings.debug.value)*/ e.printStackTrace() //debug
+      if (e.isInstanceOf[AssertionError] || settings.debug.value)
+        e.printStackTrace()
       throw new IOException("class file '" + in.file + "' is broken\n(" + {
         if (e.getMessage() != null) e.getMessage()
         else e.getClass.toString
@@ -422,7 +423,8 @@ abstract class ClassfileParser {
         sawPrivateConstructor = true
       in.skip(2); skipAttributes()
     } else {
-      if ((jflags & JAVA_ACC_BRIDGE) != 0) sflags = sflags | BRIDGE //PRIVATE
+      if ((jflags & JAVA_ACC_BRIDGE) != 0 && global.settings.target.value == "jvm-1.5")
+        sflags |= BRIDGE
       if ((sflags & PRIVATE) != 0 && global.settings.XO.value) {
         in.skip(4); skipAttributes()
       } else {

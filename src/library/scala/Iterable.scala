@@ -462,13 +462,14 @@ trait Iterable[+A] {
     buf.toString
   }
 
-
-
   /** Write all elements of this string into given string builder.
    *
    *  @note Will not terminate for infinite-sized collections.
-   *  @param buf ...
-   *  @return    ...
+   *  @param buf the StringBuilder to which elements are appended
+   *  @param start starting string.
+   *  @param sep separator string.
+   *  @param end ending string.
+   *  @return the <code>buf</code> StringBuilder object
    */
   def addString(buf: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
     buf.append(start)
@@ -480,7 +481,23 @@ trait Iterable[+A] {
     buf.append(end)
   }
 
+  /** Write all elements of this string into given string builder.
+   *
+   *  @note Will not terminate for infinite-sized collections.
+   *  @param buf the StringBuilder to which elements are appended
+   *  @param sep separator string.
+   *  @return the <code>buf</code> StringBuilder object
+   */
   def addString(buf: StringBuilder, sep: String): StringBuilder = addString(buf, "", sep, "")
+
+  /** Write all elements of this string into given string builder, with no separator string
+   *  between elements.
+   *  @note Will not terminate for infinite-sized collections.
+   *  @param buf the StringBuilder to which elements are appended
+   *  @return the <code>buf</code> StringBuilder object
+   */
+  def addString(buf: StringBuilder): StringBuilder = addString(buf, "", "", "")
+
 
   /** Fills the given array <code>xs</code> with the elements of
    *  this sequence starting at position <code>start</code>.

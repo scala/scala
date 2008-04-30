@@ -1287,7 +1287,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       enums.toList
     }
 
-    /** Generator ::= val Pattern1 `<-' Expr [Guard]
+    /** Generator ::= Pattern1 (`<-' | '=') Expr [Guard]
      */
     def generator(enums: ListBuffer[Enumerator], eqOK: Boolean) {
       if (inToken == VAL) inNextToken

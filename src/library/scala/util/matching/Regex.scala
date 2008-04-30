@@ -203,9 +203,9 @@ object Regex {
     def groupCount = matcher.groupCount
 
     private lazy val starts: Array[Int] =
-      ((1 to groupCount) map matcher.start).toArray
+      ((0 to groupCount) map matcher.start).toArray
     private lazy val ends: Array[Int] =
-      ((1 to groupCount) map matcher.end).toArray
+      ((0 to groupCount) map matcher.end).toArray
 
     /** The index of the first matched character in group <code>i</code> */
     def start(i: Int) = starts(i)
