@@ -152,10 +152,13 @@ class ModelAdditions(val global: Global) {
      addition(sym)
      comments(sym) = """
        <p>
-         Class <code>""" + sym.name + """ </code> belongs to the value
+         Class <code>""" + sym.name + """</code> belongs to the value
          classes whose instances are not represented as objects by the
-         underlying host system. All value classes inherit from class
-         <a href="AnyVal.html"><code>AnyVal</code></a>.
+         underlying host system.  There is an implicit conversion from
+         instances of <code>""" + sym.name + """</code> to instances of
+         <a href="runtime/Rich""" + sym.name + """.html"><code>runtime.Rich""" + sym.name + """</code></a> which
+         provides useful non-primitive operations.  All value classes inherit
+         from class <a href="AnyVal.html"><code>AnyVal</code></a>.
        </p>
        <p>
          Values <code>""" + maxValue + """</code> and <code>""" + minValue + """</code>
