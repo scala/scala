@@ -1160,8 +1160,8 @@ trait Symbols {
       var s = simpleName.decode
       if (s endsWith nme.LOCAL_SUFFIX)
         s = s.substring(0, s.length - nme.LOCAL_SUFFIX.length)
-      if (s endsWith ".type")
-	s = s.substring(0, s.length - ".type".length)
+//      if (s endsWith ".type")
+//	s = s.substring(0, s.length - ".type".length)
       s + idString
     }
 
