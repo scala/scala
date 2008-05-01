@@ -256,6 +256,8 @@ trait Parsers extends NewScanners with MarkupParsers {
         syntaxError(inCurrentPos, msg, skipIt)
     }
     // unused.
+    /* Commented out because the comment says it is unused.
+       Probably eliminate eventually.  GAW 2008.05.01
     def mismatch(expected: Int, found: Int) {
       val posToReport = this.posToReport
       val msg =
@@ -267,6 +269,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       else
         syntaxError(posToReport, msg, true)
     }
+    */
 
     /** Consume one token of the specified type, or
       * signal an error if it is not there.
