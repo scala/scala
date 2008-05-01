@@ -764,7 +764,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
     /** Code to access a variable with the specified name */
     def fullPath(vname: String): String =
-      objectName + accessPath + "." + vname
+      objectName + accessPath + ".`" + vname + "`"
 
     /** Code to access a variable with the specified name */
     def fullPath(vname: Name): String = fullPath(vname.toString)
