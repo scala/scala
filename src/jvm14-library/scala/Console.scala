@@ -187,11 +187,16 @@ object Console {
       else MessageFormat.format(text, textParams(args))
     )
 
-  /** Read a full line from the terminal.
+  /** Read a full line from the terminal.  Throws EOFException if the end of the
+   * input stream has been reached.
    *
-   *  @return the string read from the terminal.
+   * @return the string read from the terminal.
+   * @throws java.io.EOFException
    */
-  def readLine(): String = in.readLine()
+  def readLine(): String = {
+      val s = in.readLine()
+      if (s == null) throw new java.io.EOFException("Console has reached end of input") else s
+  }
 
   /** Print a formatted text and read a full line from the terminal
    *
