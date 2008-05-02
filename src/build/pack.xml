@@ -87,8 +87,25 @@ MAIN DISTRIBUTION SBAZ
       <srcset dir="${dist.dir}/src" includes="scala-compiler-src.jar"/>
     </sbaz>
   </target>
+
+  <target name="pack-sbaz.test" depends="pack-sbaz.comp">
+    <sbaz
+      file="${dists.dir}/sbaz/scala-test-${version.number}.sbp"
+      adfile="${dists.dir}/sbaz/scala-test-${version.number}.advert"
+      name="scala-test"
+      version="${version.number}"
+      desc="The Scala test package contains everything needed to test Scala."
+      link="${sbaz.universe}/scala-test-${version.number}.sbp">
+      <binset dir="${basedir}/test"
+        includes="clitest,diff/diff.*,diff/lib*.dll,scalatest,scalatest.bat,partest"/>
+      <miscset dir="${basedir}/test"
+        includes="files/**/*.args,files/**/*.check,files/**/*.jar,files/**/*.java,files/**/*.scala,files/cli/**/*.check.*,files/jvm/*.so,files/shootout/*.javaopts,files/shootout/*.runner,files/shootout/*.txt"/>
+        <!-- <srcset dir="${dist.dir}/src" includes="scala-partest-src.jar"/> -->
+      <libset dir="${dist.dir}/lib" includes="scala-partest.jar"/>
+    </sbaz>
+  </target>
   
-  <target name="pack-sbaz.doc" depends="pack-sbaz.comp">
+  <target name="pack-sbaz.doc" depends="pack-sbaz.test">
     <sbaz
       file="${dists.dir}/sbaz/scala-devel-docs-${version.number}.sbp"
       adfile="${dists.dir}/sbaz/scala-devel-docs-${version.number}.advert"
