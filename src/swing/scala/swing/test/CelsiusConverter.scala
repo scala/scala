@@ -14,7 +14,7 @@ object CelsiusConverter extends SimpleGUIApplication {
       text = "Celsius"
       border = Border.Empty(5, 5, 5, 5)
     }
-    object convertButton extends PushButton {
+    object convertButton extends Button {
       text = "Convert"//new javax.swing.ImageIcon("c:\\workspace\\gui\\images\\convert.gif")
       //border = Border.Empty(5, 5, 5, 5)
     }

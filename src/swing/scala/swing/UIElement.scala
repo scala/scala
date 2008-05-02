@@ -1,6 +1,6 @@
 package scala.swing
 
-import java.awt.{Color, Cursor, Font}
+import java.awt.{Color, Cursor, Font, Dimension}
 
 /**
  * The base trait of all user interface elements.
@@ -19,6 +19,8 @@ trait UIElement {
   def location = peer.getLocation
   def bounds = peer.getBounds
   def size = peer.getSize
+  def size_=(dim: Dimension) = peer.setSize(dim)
+  def size_=(xy: (Int, Int)) = peer.setSize(new Dimension(xy._1, xy._2))
   def locale = peer.getLocale
   def toolkit = peer.getToolkit
 

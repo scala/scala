@@ -17,12 +17,12 @@ class Frame extends UIElement with RootPanel with Publisher {
     super.contents_=(c)
     peer.pack() // pack also validates, which is generally required after an add
   }
-  def defaultButton: Option[PushButton] =
+  def defaultButton: Option[Button] =
     Swing.toOption(peer.getRootPane.getDefaultButton).map(Component.wrapperFor(_))
-  def defaultButton_=(b: PushButton) {
+  def defaultButton_=(b: Button) {
     peer.getRootPane.setDefaultButton(b.peer)
   }
-  def defaultButton_=(b: Option[PushButton]) {
+  def defaultButton_=(b: Option[Button]) {
     peer.getRootPane.setDefaultButton(Swing.toNull(b.map(_.peer)))
   }
 

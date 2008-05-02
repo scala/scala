@@ -17,17 +17,17 @@ object Dialogs extends SimpleGUIApplication {
       c.grid = (1,1)
 
       val chooser = new FileChooser
-      layout(new PushButton(Action("Open") {
+      layout(new Button(Action("Open") {
         chooser.showOpenDialog(grid)
       })) = c
 
       c.grid = (1,2)
-      layout(new PushButton(Action("Save") {
+      layout(new Button(Action("Save") {
         chooser.showSaveDialog(grid)
       })) = c
 
       c.grid = (1,3)
-      layout(new PushButton(Action("Custom") {
+      layout(new Button(Action("Custom") {
         chooser.showDialog(grid, buttonText.text)
       })) = c
 
@@ -54,7 +54,7 @@ object Dialogs extends SimpleGUIApplication {
         contents ++= radios
       }
       layout(buttons) = Position.North
-      layout(new PushButton(Action("Show It!") {
+      layout(new Button(Action("Show It!") {
         import Dialog._
         mutex.selected.get match {
           case `ok` =>
@@ -111,7 +111,7 @@ object Dialogs extends SimpleGUIApplication {
         contents ++= radios
       }
       layout(buttons) = Position.North
-      layout(new PushButton(Action("Show It!") {
+      layout(new Button(Action("Show It!") {
         import Dialog._
         mutex.selected.get match {
           case `pick` =>

@@ -25,7 +25,7 @@ class MenuBar extends Component with SequentialContainer.Wrapper {
 /**
  * @see javax.swing.JMenuItem
  */
-class MenuItem(title0: String) extends Button {
+class MenuItem(title0: String) extends AbstractButton {
   override lazy val peer: JMenuItem = new JMenuItem(title0)
   def this(a: Action) = {
     this("")

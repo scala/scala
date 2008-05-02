@@ -5,7 +5,7 @@ import event._
 class SimpleApplet extends Applet {
   object ui extends UI with Reactor {
     def init() = {
-      val button = new PushButton("Press here!")
+      val button = new Button("Press here!")
       val text = new TextArea("Java Version: " +
                 System.getProperty("java.version")+"\n")
       listenTo(button)

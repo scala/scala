@@ -17,7 +17,7 @@ object SwingApp extends SimpleGUIApplication {
           text = prefix + numclicks
       }
     }
-    object button extends PushButton {
+    object button extends Button
       text = "I am a button"
     }
     contents = new FlowPanel {

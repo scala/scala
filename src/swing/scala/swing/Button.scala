@@ -9,7 +9,7 @@ import event._
  *
  * @see javax.swing.AbstractButton
  */
-abstract class Button extends Component with Action.Trigger with Publisher {
+abstract class AbstractButton extends Component with Action.Trigger with Publisher {
   override lazy val peer: JAbstractButton = new JAbstractButton {}
 
   def text: String = peer.getText
@@ -26,7 +26,7 @@ abstract class Button extends Component with Action.Trigger with Publisher {
 
   peer.addActionListener(new java.awt.event.ActionListener {
     def actionPerformed(e: java.awt.event.ActionEvent) {
-      publish(ButtonClicked(Button.this))
+      publish(ButtonClicked(AbstractButton.this))
     }
   })
 
