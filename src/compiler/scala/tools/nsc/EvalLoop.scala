@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -12,10 +12,15 @@ trait EvalLoop {
 
   def loop(action: (String) => Unit) {
     Console.print(prompt)
-    val line = Console.readLine
-    if ((line ne null) && line.length() > 0) {
-      action(line)
-      loop(action)
+    try {
+      val line = Console.readLine
+      if (line.length() > 0) {
+        action(line)
+        loop(action)
+      }
+    }
+    catch {
+      case _: java.io.EOFException => //nop
     }
   }
 
