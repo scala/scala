@@ -43,7 +43,7 @@ trait HashTable[A] extends AnyRef {
 
   /** The initial threshold
    */
-  protected val initialThreshold: Int = newThreshold(initialSize)
+  protected def initialThreshold: Int = newThreshold(initialSize)
 
   /** The actual hash table.
    */

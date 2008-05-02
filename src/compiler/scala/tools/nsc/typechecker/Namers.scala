@@ -569,7 +569,10 @@ trait Namers { self: Analyzer =>
         } else {
           enterValueParams(meth, vparamss)
         }
-      if (tpt.isEmpty && meth.name == nme.CONSTRUCTOR) tpt.tpe = context.enclClass.owner.tpe
+      if (tpt.isEmpty && meth.name == nme.CONSTRUCTOR) {
+        tpt.tpe = context.enclClass.owner.tpe
+        tpt setPos meth.pos
+      }
 
       if (onlyPresentation)
         methodArgumentNames(meth) = vparamss.map(_.map(_.symbol));
@@ -673,6 +676,7 @@ trait Namers { self: Analyzer =>
             for (vparam <- vparams) {
               if (vparam.tpt.isEmpty) {
                 vparam.tpt.tpe = pfs.head
+                vparam.tpt setPos vparam.pos
                 vparam.symbol setInfo pfs.head
               }
               pfs = pfs.tail
@@ -705,9 +709,10 @@ trait Namers { self: Analyzer =>
         if (tpt.isEmpty) {
           val pt = resultPt.substSym(tparamSyms, tparams map (_.symbol))
           tpt.tpe = widenIfNotFinal(meth, typer.computeType(rhs, pt), pt)
+          tpt setPos meth.pos
           tpt.tpe
         } else typer.typedType(tpt).tpe)
-     }
+    }
 
     /** If `sym' is an implicit value, check that its type signature `tp' is contractive.
      *  This means: The type of every implicit parameter is properly contained
@@ -840,6 +845,7 @@ trait Namers { self: Analyzer =>
                     sym,
                     newTyper(typer1.context.make(vdef, sym)).computeType(rhs, WildcardType),
                     WildcardType)
+                  tpt setPos vdef.pos
                   tpt.tpe
                 }
               } else typer1.typedType(tpt).tpe
@@ -947,6 +953,7 @@ trait Namers { self: Analyzer =>
       checkNoConflict(FINAL, SEALED)
       checkNoConflict(PRIVATE, PROTECTED)
       checkNoConflict(PRIVATE, OVERRIDE)
+      //checkNoConflict(PRIVATE, FINAL) // can't do this because FINAL also means compile-time constant
       checkNoConflict(DEFERRED, FINAL)
     }
   }

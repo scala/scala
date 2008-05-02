@@ -423,7 +423,7 @@ abstract class ClassfileParser {
         sawPrivateConstructor = true
       in.skip(2); skipAttributes()
     } else {
-      if ((jflags & JAVA_ACC_BRIDGE) != 0 && global.settings.target.value == "jvm-1.5")
+      if ((jflags & JAVA_ACC_BRIDGE) != 0)
         sflags |= BRIDGE
       if ((sflags & PRIVATE) != 0 && global.settings.XO.value) {
         in.skip(4); skipAttributes()

@@ -249,8 +249,20 @@ abstract class RefChecks extends InfoTransform {
              else clazz.toString() + " needs to be abstract") + ", since " + msg);
           clazz.setFlag(ABSTRACT)
         }
+        // Find a concrete Java method that overrides `sym' under the erasure model.
+        // Bridge symbols qualify.
+        // Used as a fall back if no overriding symbol of a Java abstract method can be found
+        def javaErasedOverridingSym(sym: Symbol): Symbol =
+          clazz.tpe.findMember(sym.name, PRIVATE, 0, false).filter(other =>
+            !other.isDeferred &&
+            (other hasFlag JAVA) && {
+              val tp1 = erasure.erasure(clazz.thisType.memberType(sym))
+              val tp2 = erasure.erasure(clazz.thisType.memberType(other))
+              atPhase(currentRun.erasurePhase.next)(tp1 matches tp2)
+            })
         for (val member <- clazz.tpe.nonPrivateMembers)
-          if (member.isDeferred && !(clazz hasFlag ABSTRACT)) {
+          if (member.isDeferred && !(clazz hasFlag ABSTRACT) &&
+              !((member hasFlag JAVA) && javaErasedOverridingSym(member) != NoSymbol)) {
             abstractClassError(
               false, infoString(member) + " is not defined" + analyzer.varNotice(member))
           } else if ((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz)) {
@@ -263,6 +275,12 @@ abstract class RefChecks extends InfoTransform {
           }
         // 3. Check that concrete classes do not have deferred definitions
         // that are not implemented in a subclass.
+        // Note that this is not the same as (2); In a situation like
+        //
+        // class C { def m: Int = 0}
+        // class D extends C { def m: Int }
+        //
+        // (3) is violated but not (2).
         def checkNoAbstractDecls(bc: Symbol) {
           for (val decl <- bc.info.decls.elements) {
             if (decl.isDeferred) {
