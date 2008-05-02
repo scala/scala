@@ -17,7 +17,11 @@
 ** Balanced Trees. These have no storage overhead compared to plain
 ** unbalanced binary trees, and their performance is in general better
 ** than AVL trees.
-*
+**
+** NOTE: This code was until 2007-04-01 under a GPL license. The author has
+** given permission to remove that license, so that now this code is under
+** the general license for the Scala libraries. I include his mail at the
+** bottom of this file for reference.
 */
 
 package scala.collection.immutable
@@ -387,3 +391,50 @@ private case class GBNode[A <% Ordered[A],B](key: A,
   override def hashCode() =
     value.hashCode() + smaller.hashCode() + bigger.hashCode()
 }
+
+/* Here is the e-mail where the Author agreed to the change in license.
+
+from	Erik Stenman <happi.stenman@gmail.com>
+to	martin odersky <martin.odersky@epfl.ch>,
+date	Tue, Apr 29, 2008 at 3:31 PM
+subject	Re: test
+mailed-by	chara.epfl.ch
+signed-by	gmail.com
+
+Hi Martin,
+
+I am fine with that change, and since I don't have a scala distribution handy,
+I am also fine with you doing the change yourself. Is that OK?
+
+Sorry for my dead home address, I'll add an English response to it at some time.
+
+I am doing fine, and my family is also doing fine.
+Hope all is well with you too.
+
+Cheers,
+Erik
+- Hide quoted text -
+
+On Tue, Apr 29, 2008 at 3:13 PM, martin odersky <martin.odersky@epfl.ch> wrote:
+
+    Hi Erik,
+
+    I tried to send mail to happi@home.se, but got a response n swedish. I
+    was sort of guessing from the response that it contained an
+    alternative e-mail address and tried to send it there.
+
+    Anyway,  I hope things are going well with you!
+
+    There was some discussion recently about the license of Tree.scala in
+    package collection.immutable. It's GPL, whereas the rest of the Scala
+    library is BSD. It seems this poses problems with Scala being packaged
+    with Fedora. Would it be OK with you to change the license to the
+    general one of Scala libraries? You could simply remove the references
+    to the GPL
+    license in the code and send it back to me if that's OK with you. On
+    the other hand, if there's a problem we'll try something else instead.
+
+    All the best
+
+     -- Martin
+*/
