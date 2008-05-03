@@ -39,7 +39,7 @@ function get_api_root(key) {
   return root;
 }
 
-var scala_src_root = 'http://lampsvn.epfl.ch/trac/scala/browser/scala/tags/R_2_7_1_RC2/';
+var scala_src_root = 'http://lampsvn.epfl.ch/trac/scala/browser/scala/tags/R_2_7_1_final/';
 var lib_src_root = scala_src_root + 'src/library/';
 var comp_src_root = scala_src_root + 'src/compiler/';
 var actors_src_root = scala_src_root + 'src/actors/';
