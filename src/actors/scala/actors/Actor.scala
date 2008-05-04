@@ -475,11 +475,21 @@ trait Actor extends OutputChannel[Any] {
 
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
       if (null eq qel) {
-        waitingFor = f.isDefinedAt
-        TimerThread.requestTimeout(this, f, msec)
-        timeoutPending = true
-        continuation = f
-        isDetached = true
+        if (msec == 0) {
+          if (f.isDefinedAt(TIMEOUT)) {
+            sessions = List(Actor.self)
+            scheduleActor(f, TIMEOUT)
+          }
+          else
+            error("unhandled timeout")
+        }
+        else {
+          waitingFor = f.isDefinedAt
+          TimerThread.requestTimeout(this, f, msec)
+          timeoutPending = true
+          continuation = f
+          isDetached = true
+        }
       } else {
         sessions = List(qel.session)
         scheduleActor(f, qel.msg)
