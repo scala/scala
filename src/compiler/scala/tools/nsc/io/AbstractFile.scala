@@ -7,7 +7,7 @@
 
 package scala.tools.nsc.io
 
-import java.io.{File, IOException, InputStream}
+import java.io.{File, FileOutputStream, IOException, InputStream, OutputStream}
 import java.net.URL
 
 import scala.collection.mutable.ArrayBuffer
@@ -117,6 +117,9 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   /** returns an input stream so the file can be read */
   def input: InputStream
 
+  /** Returns an output stream for writing the file */
+  def output: OutputStream
+
   /** size of this file if it is a concrete file. */
   def size: Option[Int] = None
 
@@ -185,6 +188,38 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
       start = index + 1
     }
     file
+  }
+
+  /**
+   * Get the file in this directory with the given name,
+   * creating an empty file if it does not already existing.
+   */
+  def fileNamed(name: String): AbstractFile = {
+    assert(isDirectory)
+    val existing = lookupName(name, false)
+    if (existing == null) {
+      val newFile = new File(file, name)
+      newFile.createNewFile()
+      new PlainFile(newFile)
+    } else {
+      existing
+    }
+  }
+
+  /**
+   * Get the subdirectory with a given name, creating it if it
+   * does not already exist.
+   */
+  def subdirectoryNamed(name: String): AbstractFile = {
+    assert (isDirectory)
+    val existing = lookupName(name, true)
+    if (existing == null) {
+      val dir = new File(file, name)
+      dir.mkdir()
+      new PlainFile(dir)
+    } else {
+      existing
+    }
   }
 
   /** Returns the path of this abstract file. */

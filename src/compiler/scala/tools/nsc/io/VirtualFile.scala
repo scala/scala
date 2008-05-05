@@ -7,9 +7,10 @@
 
 package scala.tools.nsc.io
 
-import java.io.{File, InputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream,
+                File, InputStream, OutputStream}
 
-/** This class implements an empty abstract regular file.
+/** This class implements an in-memory file.
  *
  *  @author  Philippe Altherr
  *  @version 1.0, 23/03/2004
@@ -36,6 +37,11 @@ class VirtualFile(val name: String, _path: String) extends AbstractFile {
   case _ => false
   }
 
+
+  //########################################################################
+  // Private data
+  private var content = new Array[Byte](0)
+
   //########################################################################
   // Public Methods
 
@@ -44,7 +50,18 @@ class VirtualFile(val name: String, _path: String) extends AbstractFile {
   /** Returns null. */
   final def file: File = null
 
-  def input : InputStream = throw new Error("not supported");
+  override def size: Option[Int] = Some(content.size)
+
+  def input : InputStream = new ByteArrayInputStream(content);
+
+  override def output: OutputStream = {
+    new ByteArrayOutputStream() {
+      override def close() {
+        super.close()
+        content = toByteArray()
+      }
+    }
+  }
 
   def container : AbstractFile = throw new Error("not supported")
 

@@ -238,6 +238,8 @@ final class URLZipArchive(url: URL) extends AbstractFile {
 
   def input: InputStream = url.openStream()
 
+  def output = throw new Error("unsupported")
+
   override def elements: Iterator[AbstractFile] = {
     if (root eq null) load()
     root.elements

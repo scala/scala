@@ -7,11 +7,12 @@
 
 package scala.tools.nsc.backend.jvm
 
-import java.io.File
+import java.io.{DataOutputStream, File, OutputStream}
 import java.nio.ByteBuffer
 
 import scala.collection.immutable.{Set, ListSet}
 import scala.collection.mutable.{Map, HashMap, HashSet}
+import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.util.{Position, NoPosition}
 
@@ -28,6 +29,12 @@ abstract class GenJVM extends SubComponent {
   import icodes.opcodes._
 
   val phaseName = "jvm"
+
+  /**
+   * Directory where output will be written.  By default it
+   * is the directory specified by Settings.outdir.
+   */
+  var outputDir: AbstractFile = AbstractFile.getDirectory(settings.outdir.value)
 
   /** Create a new phase */
   override def newPhase(p: Phase) = new JvmPhase(p)
@@ -124,9 +131,9 @@ abstract class GenJVM extends SubComponent {
         addScalaAttr(if (isTopLevelModule(sym)) sym.sourceModule else sym);
       addInnerClasses
 
-      val outfile = getFile(jclass, ".class")
+      val outfile = new DataOutputStream(getFile(jclass, ".class"))
       jclass.writeTo(outfile)
-      val file = scala.tools.nsc.io.AbstractFile.getFile(outfile)
+      outfile.close()
       informProgress("wrote " + outfile)
     }
 
@@ -273,9 +280,9 @@ abstract class GenJVM extends SubComponent {
       jcode.emitRETURN()
 
       // write the bean information class file.
-      val outfile = getFile(beanInfoClass, ".class")
+      val outfile = new DataOutputStream(getFile(beanInfoClass, ".class"))
       beanInfoClass.writeTo(outfile)
-      val file = scala.tools.nsc.io.AbstractFile.getFile(outfile)
+      outfile.close()
       informProgress("wrote BeanInfo " + outfile)
     }
 
@@ -1513,9 +1520,14 @@ abstract class GenJVM extends SubComponent {
       res
     }
 
-    def getFile(cls: JClass, suffix: String): String = {
-      val path = cls.getName().replace('.', File.separatorChar)
-      settings.outdir.value + File.separatorChar + path + suffix
+    def getFile(cls: JClass, suffix: String): OutputStream = {
+      var dir: AbstractFile = outputDir
+      val pathParts = cls.getName().split("[./]").toList
+      for (part <- pathParts.init) {
+        dir = dir.subdirectoryNamed(part)
+      }
+      val file = dir.fileNamed(pathParts.last + suffix)
+      file.output
     }
 
     /** Emit a Local variable table for debugging purposes.

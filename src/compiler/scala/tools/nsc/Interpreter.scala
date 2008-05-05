@@ -15,11 +15,12 @@ import scala.collection.mutable
 import scala.collection.mutable.{ListBuffer, HashSet, ArrayBuffer}
 
 //import ast.parser.SyntaxAnalyzer
-import io.PlainFile
+import io.{PlainFile, VirtualDirectory}
 import reporters.{ConsoleReporter, Reporter}
 import symtab.Flags
 import util.{SourceFile,BatchSourceFile,ClassPath,NameTransformer}
 import nsc.{InterpreterResults=>IR}
+import scala.tools.nsc.interpreter._
 
 /** <p>
  *    An interpreter for Scala code.
@@ -68,6 +69,9 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     this.settings.target.value = "jvm-1.4"
   }
 
+  /** directory to save .class files to */
+  val virtualDirectory = new VirtualDirectory("(memory)", None)
+
   /** the compiler to compile expressions with */
   val compiler: scala.tools.nsc.Global = newCompiler(settings, reporter)
 
@@ -109,14 +113,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   /** interpreter settings */
   val isettings = new InterpreterSettings
 
-  /** directory to save .class files to */
-  val classfilePath = File.createTempFile("scalaint", "")
-  classfilePath.delete  // the file is created as a file; make it a directory
-  classfilePath.mkdirs
-
-  /* set up the compiler's output directory */
-  settings.outdir.value = classfilePath.getPath
-
   object reporter extends ConsoleReporter(settings, null, out) {
     //override def printMessage(msg: String) { out.println(clean(msg)) }
     override def printMessage(msg: String) { out.print(clean(msg) + "\n"); out.flush() }
@@ -124,8 +120,11 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   /** Instantiate a compiler.  Subclasses can override this to
    *  change the compiler class used by this interpreter. */
-  protected def newCompiler(settings: Settings, reporter: Reporter) =
-    new scala.tools.nsc.Global(settings, reporter)
+  protected def newCompiler(settings: Settings, reporter: Reporter) = {
+    val comp = new scala.tools.nsc.Global(settings, reporter)
+    comp.genJVM.outputDir = virtualDirectory
+    comp
+  }
 
 
   /** the compiler's classpath, as URL's */
@@ -133,7 +132,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     ClassPath.expandPath(compiler.settings.classpath.value).
       map(s => new File(s).toURL)
 
-  /** class loader used to load compiled code */
   /* A single class loader is used for all commands interpreted by this Interpreter.
      It would also be possible to create a new class loader for each command
      to interpret.  The advantages of the current approach are:
@@ -147,12 +145,16 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
          shadow the old ones, and old code objects refer to the old
          definitions.
   */
-  private val classLoader =
-    if (parentClassLoader eq null)
-      new URLClassLoader((classfilePath.toURL :: compilerClasspath).toArray)
-    else
-      new URLClassLoader((classfilePath.toURL :: compilerClasspath).toArray,
-                          parentClassLoader)
+  /** class loader used to load compiled code */
+  private val classLoader = {
+    val parent =
+      if (parentClassLoader == null)
+        new URLClassLoader(compilerClasspath.toArray)
+      else
+         new URLClassLoader(compilerClasspath.toArray,
+                            parentClassLoader)
+    new AbstractFileClassLoader(virtualDirectory, parent)
+  }
 
   /** Set the current Java "context" class loader to this
     * interpreter's class loader */
@@ -548,19 +550,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   /** <p>
    *    This instance is no longer needed, so release any resources
-   *    it is using.
-   *  </p>
-   *  <p>
-   *    Specifically, this deletes the temporary directory used for holding
-   *    class files for this instance.  This cannot safely be done after
-   *    each command is executed because of Java's demand loading.
-   *  </p>
-   *  <p>
-   *    Also, this flushes the reporter's output.
+   *    it is using.  The reporter's output gets flushed.
    *  </p>
    */
   def close() {
-    Interpreter.deleteRecursively(classfilePath)
     reporter.flush()
   }
 
