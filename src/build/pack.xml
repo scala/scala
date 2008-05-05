@@ -147,15 +147,17 @@ JAVA FOUR DISTRIBUTION PACKAGING
   
   <target name="fourpack-archives.tar" depends="fourpack-archives.start">
     <tar destfile="${dists.dir}/archives/scala-jvm4-${version.number}.tgz" compression="gzip">
-      <tarfileset dir="${four-dist.dir}" prefix="scala-jvm4-${version.number}" includes="bin/**" mode="755"/>
-      <tarfileset dir="${four-dist.dir}" prefix="scala-jvm4-${version.number}" excludes="bin/**"/>
+      <tarfileset dir="${dists.dir}/scala-jvm4-${version.number}" prefix="scala-jvm4-${version.number}"
+        includes="bin/**" mode="755"/>
+      <tarfileset dir="${dists.dir}/scala-jvm4-${version.number}" prefix="scala-jvm4-${version.number}"
+        excludes="bin/**"/>
     </tar>
     <checksum file="${dists.dir}/archives/scala-jvm4-${version.number}.tgz" fileext=".md5"/>
   </target>
   
   <target name="fourpack-archives.zip" depends="fourpack-archives.tar">
     <zip destfile="${dists.dir}/archives/scala-jvm4-${version.number}.zip">
-      <zipfileset prefix="scala-jvm4-${version.number}" dir="${dist.dir}"/>
+      <zipfileset dir="${dists.dir}/scala-jvm4-${version.number}" prefix="scala-jvm4-${version.number}"/>
     </zip>
     <checksum file="${dists.dir}/archives/scala-jvm4-${version.number}.zip" fileext=".md5"/>
   </target>
