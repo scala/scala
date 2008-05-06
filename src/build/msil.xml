@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- $Id: $ -->
 
-<project name="scala-msil" basedir="../.." default="build">
+<project name="sabbus-msil">
+
+<description>
+    SuperSabbus extension for the MSIL library targeted for the dotnet framework. THIS FILE IS NOT STAND-ALONE AND SHOULD ONLY BE USED THROUGH ENTRY POINTS IN SUPERSABBUS.
+  </description>
 
 <!-- ===========================================================================
 PROPERTIES
@@ -12,7 +15,7 @@ PROPERTIES
   <property name="mono.dir" value="${src.dir}/mono"/>
 
   <!-- Loads custom properties definitions -->
-  <property file="${scripts.dir}/scripts/build-msil.properties"/>
+  <property file="${src.dir}/build/msil.properties"/>
 
   <!-- Sets location of build folders -->
   <property name="build.dir" value="${basedir}/build"/>
@@ -20,7 +23,7 @@ PROPERTIES
   <property name="dist.dir" value="${basedir}/dists"/>
 
 <!-- ===========================================================================
-SETUP
+MSIL BUILD
 ============================================================================ -->
 
   <target name="msil.init" depends="init">
@@ -77,43 +80,26 @@ SETUP
   <target name="msil.sources" depends="msil.init">
     <mkdir dir="${msil.dir}/src"/>
     <copy todir="${msil.dir}/src">
-      <fileset dir="${src.dir}/library" includes="**/*.scala">
-        <not>
-          <present targetdir="${src.dir}/dotnet-library"/>
-        </not>
-        <exclude name="scala/collection/jcl/**/*.scala"/>
-      </fileset>
+      <fileset dir="${src.dir}/dotnet-library" includes="**/*.scala, **/*.cs"/> 
     </copy>
     <copy todir="${msil.dir}/src">
-      <fileset dir="${src.dir}/dotnet-library">
-        <include name="**/*.scala"/>
-      </fileset>
+      <fileset dir="${src.dir}/library" includes="**/*.scala"/>
     </copy>
   </target>
 
   <target name="msil.libraries" depends="msil.sources">
-    <antcall target="build.quick"/>
-    <property name="quick.dir" value="${build.dir}/quick"/>
-    <path id="quick.classpath">
-      <pathelement location="${quick.dir}/lib/library"/>
-      <pathelement location="${quick.dir}/lib/compiler"/>
-      <pathelement location="${fjbg.jar}"/>
-      <pathelement location="${msil.jar}"/>
-    </path>
-    <taskdef
-      name="quick" classname="scala.tools.ant.Scalac"
-      classpathref="quick.classpath"/>
     <mkdir dir="${msil.dir}/lib"/>
-    <quick srcdir="${msil.dir}/src" usepredefs="no" target="msil"
+    <scalac srcdir="${msil.dir}/src" destdir="${msil.dir}" target="msil"
            assemname="predef" assemrefs="${lib.dir}"
            failonerror="false">
       <include name="**/*.scala"/>
       <exclude name="scala/ScalaObject.scala"/>
-    </quick>
+    </scalac>
     <pathconvert property="ilasm.infiles" pathsep=" ">
       <fileset dir="${msil.dir}" includes="*.msil"/>
     </pathconvert>
-    <exec executable="${ilasm.cmd} {$ilasm.infiles}" vmlauncher="no">
+    <echo>${ilasm.cmd} ${ilasm.infiles}</echo>
+    <exec executable="${ilasm.cmd} ${ilasm.infiles}" vmlauncher="no">
       <arg line="${ilasm.args}"/>
     </exec>
   </target>
@@ -142,18 +128,31 @@ SETUP
       </filterset>
     </copy>
     <chmod perm="ugo+rx" dir="${msil.dir}/bin" includes="*-net*"/>
-    <jar destfile="${msil.dir}/lib/${comp.jar.name}">
-      <fileset dir="${quick.dir}/lib/compiler"/>
-      <zipfileset src="${fjbg.jar}"/>
-      <zipfileset src="${msil.jar}"/>
-    </jar>
-    <jar destfile="${msil.dir}/lib/${lib.jar.name}">
-      <fileset dir="${strap.dir}/lib/library"/>
-      <fileset dir="${strap.dir}/lib/actors"/>
-    </jar>
+        <if><isset property="os.win"/>
+      <then>
+        <copy todir="${quick.dir}/lib">
+          <fileset dir="${msil.dir}" includes="*.dll"/>
+          <fileset dir="${lib.dir}" includes="*.dll"/>
+        </copy>
+      </then>
+      <else>
+        <symlink
+          link="${quick.dir}/lib/predef.dll"
+          resource="${msil.dir}/predef.dll"
+          overwrite="yes" failonerror="no"/>
+        <symlink
+          link="${quick.dir}/lib/scalaruntime.dll"
+          resource="${lib.dir}/scalaruntime.dll"
+          overwrite="yes" failonerror="no"/>
+        <symlink
+          link="${quick.dir}/lib/mscorlib.dll"
+          resource="${lib.dir}/mscorlib.dll"
+          overwrite="yes" failonerror="no"/>
+      </else>
+    </if>
   </target>
 
-  <target name="msil.dist" depends="msil.build">
+  <!--<target name="msil.dist" depends="msil.build">
     <antcall target="binaries"/>
     <property name="dist.current.dir" value="${dist.dir}/scala-msil-${version.number}"/>
     <mkdir dir="${dist.current.dir}"/>
@@ -167,7 +166,7 @@ SETUP
     <copy todir="${dist.current.dir}/lib">
       <fileset dir="${dist.dir}/latest/lib" includes="scala*.jar"/>
     </copy>
-    <!-- Recreate the 'latest' link to point to this distribution -->
+    <! Recreate the 'latest' link to point to this distribution 
     <if><isset property="os.win"/>
       <then>
         <copy todir="${dist.dir}/latest-msil">
@@ -181,7 +180,7 @@ SETUP
           overwrite="yes" failonerror="no"/>
       </else>
     </if>
-  </target>
+  </target>-->
 
 <!-- ===========================================================================
 CLEAN
