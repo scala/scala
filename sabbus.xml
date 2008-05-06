@@ -993,11 +993,11 @@ FORWARDED TARGETS FOR MSIL BUILD
 ============================================================================ -->
   
   <target name="msil" depends="pack.done">
-    <ant antfile="${src.dir}/build/build-msil.xml" target="msil.build" inheritall="yes" inheritrefs="yes"/>
+    <ant antfile="${src.dir}/build/msil.xml" target="msil.build" inheritall="yes" inheritrefs="yes"/>
   </target>
   
   <target name="msilclean">
-    <ant antfile="${src.dir}/build/build-msil.xml" target="msil.clean" inheritall="yes" inheritrefs="yes"/>
+    <ant antfile="${src.dir}/build/msil.xml" target="msil.clean" inheritall="yes" inheritrefs="yes"/>
   </target>
 
 <!-- ===========================================================================
