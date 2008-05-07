@@ -48,9 +48,9 @@ if [ -z "$EXT_CLASSPATH" ] ; then
                 EXT_CLASSPATH="$EXT_CLASSPATH:$ext"
             fi
         done
-    elif [ -d "$SCALA_HOME/build/quick/lib/partest" ] ; then
-        for lib in `echo "partest library compiler actors fjbg.jar"`; do
-            ext="$SCALA_HOME/build/quick/lib/$lib"
+    elif [ -f "$SCALA_HOME/build/pack/lib/scala-partest.jar" ] ; then
+        for lib in `echo "partest library compiler"`; do
+            ext="$SCALA_HOME/build/pack/lib/scala-$lib.jar"
             if [ -z "$EXT_CLASSPATH" ] ; then
                 EXT_CLASSPATH="$ext"
             else

@@ -104,7 +104,7 @@ MAIN DISTRIBUTION SBAZ
       desc="The Scala test package contains everything needed to test Scala."
       link="${sbaz.universe}/scala-test-${version.number}.sbp">
       <binset dir="${basedir}/test"
-        includes="clitest,diff/diff.*,diff/lib*.dll,scalatest,scalatest.bat,partest"/>
+        includes="clitest,diff/diff.*,diff/lib*.dll,scalatest,scalatest.bat,partest,partest.bat"/>
       <miscset dir="${basedir}/test"
         includes="files/**/*.args,files/**/*.check,files/**/*.jar,files/**/*.java,files/**/*.scala,files/cli/**/*.check.*,files/jvm/*.so,files/shootout/*.javaopts,files/shootout/*.runner,files/shootout/*.txt"/>
         <!-- <srcset dir="${dist.dir}/src" includes="scala-partest-src.jar"/> -->

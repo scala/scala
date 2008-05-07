@@ -104,14 +104,13 @@ class Worker(val fileManager: FileManager) extends Actor {
   def execTestObjectRunner(file: File, outDir: File, logFile: File) {
     val consFM = new ConsoleFileManager
     import consFM.{latestCompFile, latestLibFile, latestActFile,
-                   latestPartestFile, latestFjbgFile}
+                   latestPartestFile}
 
     val classpath: List[URL] =
       outDir.toURL ::
       //List(file.getParentFile.toURL) :::
       List(latestCompFile.toURL, latestLibFile.toURL,
-           latestActFile.toURL, latestPartestFile.toURL,
-           latestFjbgFile.toURL) :::
+           latestActFile.toURL, latestPartestFile.toURL) :::
       (List.fromString(CLASSPATH, File.pathSeparatorChar) map { x =>
         (new File(x)).toURL })
     NestUI.verbose("ObjectRunner classpath: "+classpath)

@@ -45,10 +45,10 @@ if "%_EXTENSION_CLASSPATH%"=="" (
     if "%OS%"=="Windows_NT" (
       for /d %%f in ("%_SCALA_HOME%\lib\*") do call :add_cpath "%%f"
     )
-  ) else if exist "%_SCALA_HOME%\build\quick\lib\partest" (
-    for %%f in ("%_SCALA_HOME%\build\quick\lib\*") do call :add_cpath "%%f"
+  ) else if exist "%_SCALA_HOME%\build\pack\lib\scala-partest.jar" (
+    for %%f in ("%_SCALA_HOME%\build\pack\lib\*") do call :add_cpath "%%f"
     if "%OS%"=="Windows_NT" (
-      for /d %%f in ("%_SCALA_HOME%\build\quick\lib\*") do call :add_cpath "%%f"
+      for /d %%f in ("%_SCALA_HOME%\build\pack\lib\*") do call :add_cpath "%%f"
     )  
   )
 )

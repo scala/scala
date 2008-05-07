@@ -74,13 +74,19 @@ else
   def findLatest() {
     val testParent = testRootFile.getParentFile
 
-    def prefixFile(relPath: String): File =
-      (new File(testParent, relPath)).getCanonicalFile
+    def prefixFileWith(parent: File, relPath: String): File = {
+      (new File(parent, relPath)).getCanonicalFile
+    }
+
+    def prefixFile(relPath: String): File = {
+      prefixFileWith(testParent, relPath)
+    }
 
     NestUI.verbose("test parent: "+testParent)
     val dists = new File(testParent, "dists")
     val build = new File(testParent, "build")
-    val bin = new File(testParent, "bin")
+    // in case of an installed dist, testRootFile is one level deeper
+    val bin = new File(testParent.getParentFile, "bin")
 
     if (dists.isDirectory) {
       NestUI.verbose("Running on DISTRIBUTION")
@@ -89,7 +95,6 @@ else
       latestActFile     = prefixFile("dists/latest/lib/scala-library.jar")
       latestCompFile    = prefixFile("dists/latest/lib/scala-compiler.jar")
       latestPartestFile = prefixFile("dists/latest/lib/scala-partest.jar")
-      latestFjbgFile    = prefixFile("lib/fjbg.jar") // starr
     }
     else if (build.isDirectory && (new File(build, "pack/lib/scala-library.jar")).exists) {
       NestUI.verbose("Running on SuperSABBUS PACK")
@@ -98,7 +103,6 @@ else
       latestActFile     = prefixFile("build/pack/lib/scala-library.jar")
       latestCompFile    = prefixFile("build/pack/lib/scala-compiler.jar")
       latestPartestFile = prefixFile("build/pack/lib/scala-partest.jar")
-      latestFjbgFile    = prefixFile("lib/fjbg.jar") // starr
     }
     else if (build.isDirectory) {
       NestUI.verbose("Running on SABBUS QUICK")
@@ -107,15 +111,15 @@ else
       latestActFile     = prefixFile("build/quick/lib/actors")
       latestCompFile    = prefixFile("build/quick/lib/compiler")
       latestPartestFile = prefixFile("build/quick/lib/partest")
-      latestFjbgFile    = prefixFile("lib/fjbg.jar") // starr
     }
     else if (bin.isDirectory) {
       NestUI.verbose("Running on INSTALLED DIST")
-      latestFile        = prefixFile("bin")
-      latestLibFile     = prefixFile("lib/scala-library.jar")
-      latestActFile     = prefixFile("lib/scala-library.jar")
-      latestCompFile    = prefixFile("lib/scala-compiler.jar")
-      latestPartestFile = prefixFile("lib/scala-partest.jar")
+      val p = testParent.getParentFile
+      latestFile        = prefixFileWith(p, "bin")
+      latestLibFile     = prefixFileWith(p, "lib/scala-library.jar")
+      latestActFile     = prefixFileWith(p, "lib/scala-library.jar")
+      latestCompFile    = prefixFileWith(p, "lib/scala-compiler.jar")
+      latestPartestFile = prefixFileWith(p, "lib/scala-partest.jar")
     }
     else
       error("Scala binaries could not be found")
@@ -152,7 +156,6 @@ else
   var latestActFile: File = _
   var latestCompFile: File = _
   var latestPartestFile: File = _
-  var latestFjbgFile: File = _
   // initialize above fields
   findLatest()
 

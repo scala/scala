@@ -22,11 +22,10 @@ class ReflectiveRunner {
   val fileManager = new ConsoleFileManager
 
   import fileManager.{latestCompFile, latestLibFile, latestActFile,
-                      latestPartestFile, latestFjbgFile}
+                      latestPartestFile}
 
   val sepUrls = Array(latestCompFile.toURL, latestLibFile.toURL,
-                      latestActFile.toURL, latestPartestFile.toURL,
-                      latestFjbgFile.toURL)
+                      latestActFile.toURL, latestPartestFile.toURL)
   val sepLoader = new java.net.URLClassLoader(sepUrls, null)
 
   if (fileManager.debug) {
