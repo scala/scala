@@ -21,6 +21,7 @@ PROPERTIES
   <property name="build.dir" value="${basedir}/build"/>
   <property name="msil.dir" value="${build.dir}/msil"/>
   <property name="dist.dir" value="${basedir}/dists"/>
+  <taskdef resource="org/apache/ant/dotnet/antlib.xml" classpath="${lib-ant.dir}/ant-dotnet-1.0.jar"/>
 
 <!-- ===========================================================================
 MSIL BUILD
@@ -28,7 +29,7 @@ MSIL BUILD
 
   <target name="msil.init" depends="init">
     <!-- Sets ilasm command (either Microsoft .NET Framework or Mono) -->
-    <condition property="ilasm.cmd" value="${dotnet.home}/ilasm.exe">
+   <!-- <condition property="ilasm.cmd" value="${dotnet.home}/ilasm.exe">
       <and>
         <os family="windows"/><isset property="dotnet.home"/>
         <available file="${dotnet.home}/ilasm.exe"/>
@@ -52,7 +53,7 @@ MSIL BUILD
     </condition>
     <fail message="Command 'ilasm' not found">
       <condition><not><isset property="ilasm.cmd"/></not></condition>
-    </fail>
+    </fail>-->
     <!-- Sets ilasm arguments (either Windows or Unix) -->
     <property name="ilasm.outfile" value="${msil.dir}/lib/predef.dll"/>
     <if>
@@ -89,19 +90,21 @@ MSIL BUILD
 
   <target name="msil.libraries" depends="msil.sources">
     <mkdir dir="${msil.dir}/lib"/>
-    <scalac srcdir="${msil.dir}/src" destdir="${msil.dir}" target="msil"
+    <mkdir dir="${msil.dir}/il"/>
+    <scalac srcdir="${msil.dir}/src" destdir="${msil.dir}/il" target="msil"
            assemname="predef" assemrefs="${lib.dir}"
            failonerror="false">
       <include name="**/*.scala"/>
       <exclude name="scala/ScalaObject.scala"/>
     </scalac>
+    <ilasm srcdir="${msil.dir}/il" includes="*.msil" outputfile="${msil.dir}/lib/predef.dll"/> 
+   <!-- 
     <pathconvert property="ilasm.infiles" pathsep=" ">
       <fileset dir="${msil.dir}" includes="*.msil"/>
     </pathconvert>
-    <echo>${ilasm.cmd} ${ilasm.infiles}</echo>
     <exec executable="${ilasm.cmd} ${ilasm.infiles}" vmlauncher="no">
       <arg line="${ilasm.args}"/>
-    </exec>
+    </exec> -->
   </target>
 
   <target name="msil.build" depends="msil.libraries">
