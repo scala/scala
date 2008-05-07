@@ -91,13 +91,13 @@ else
       latestPartestFile = prefixFile("dists/latest/lib/scala-partest.jar")
       latestFjbgFile    = prefixFile("lib/fjbg.jar") // starr
     }
-    else if (build.isDirectory && (new File(build, "quick/lib/scala-library.jar")).exists) {
-      NestUI.verbose("Running on SuperSABBUS QUICK")
-      latestFile        = prefixFile("build/quick/bin")
-      latestLibFile     = prefixFile("build/quick/lib/scala-library.jar")
-      latestActFile     = prefixFile("build/quick/lib/scala-library.jar")
-      latestCompFile    = prefixFile("build/quick/lib/scala-compiler.jar")
-      latestPartestFile = prefixFile("build/quick/lib/scala-partest.jar")
+    else if (build.isDirectory && (new File(build, "pack/lib/scala-library.jar")).exists) {
+      NestUI.verbose("Running on SuperSABBUS PACK")
+      latestFile        = prefixFile("build/pack/bin")
+      latestLibFile     = prefixFile("build/pack/lib/scala-library.jar")
+      latestActFile     = prefixFile("build/pack/lib/scala-library.jar")
+      latestCompFile    = prefixFile("build/pack/lib/scala-compiler.jar")
+      latestPartestFile = prefixFile("build/pack/lib/scala-partest.jar")
       latestFjbgFile    = prefixFile("lib/fjbg.jar") // starr
     }
     else if (build.isDirectory) {
