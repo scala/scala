@@ -19,29 +19,38 @@ class ReflectiveRunner {
   // to use the same classes as used by `scala` that
   // was used to start the runner.
 
-  val fileManager = new ConsoleFileManager
-
-  import fileManager.{latestCompFile, latestLibFile, latestActFile,
-                      latestPartestFile}
-
-  val sepUrls = Array(latestCompFile.toURL, latestLibFile.toURL,
-                      latestActFile.toURL, latestPartestFile.toURL)
-  val sepLoader = new java.net.URLClassLoader(sepUrls, null)
-
-  if (fileManager.debug) {
-    println("Loading classes from:")
-    sepUrls foreach { url => println(url) }
-  }
-
-  val sepRunnerClass =
-    sepLoader.loadClass("scala.tools.partest.nest.ConsoleRunner")
-  val sepRunner = sepRunnerClass.newInstance()
-
-  val stringClass = Class.forName("java.lang.String")
-  val sepMainMethod =
-    sepRunnerClass.getMethod("main", Array(stringClass))
-
   def main(args: String) {
+    val argList = List.fromArray(args.split("\\s"))
+
+    // find out which build to test
+    val fileManager =
+      if (argList contains "--pack")
+        new ConsoleFileManager("build/pack")
+      else if (argList contains "--four")
+        new ConsoleFileManager("build/four-pack", "-target:jvm-1.4")
+      else // auto detection
+        new ConsoleFileManager
+
+    import fileManager.{latestCompFile, latestLibFile, latestActFile,
+                        latestPartestFile}
+
+    val sepUrls = Array(latestCompFile.toURL, latestLibFile.toURL,
+                        latestActFile.toURL, latestPartestFile.toURL)
+    val sepLoader = new java.net.URLClassLoader(sepUrls, null)
+
+    if (fileManager.debug) {
+      println("Loading classes from:")
+      sepUrls foreach { url => println(url) }
+    }
+
+    val sepRunnerClass =
+      sepLoader.loadClass("scala.tools.partest.nest.ConsoleRunner")
+    val sepRunner = sepRunnerClass.newInstance()
+
+    val stringClass = Class.forName("java.lang.String")
+    val sepMainMethod =
+      sepRunnerClass.getMethod("main", Array(stringClass))
+
     val cargs: Array[AnyRef] = Array(args)
     sepMainMethod.invoke(sepRunner, cargs)
   }

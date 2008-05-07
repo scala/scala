@@ -15,7 +15,7 @@ import scala.actors.Actor._
 
 class ConsoleRunner extends DirectRunner {
 
-  val fileManager: ConsoleFileManager = new ConsoleFileManager
+  var fileManager: ConsoleFileManager = _
 
   private val version = System.getProperty("java.version", "")
   private val isJava5 = version matches "1.[5|6|7].*"
@@ -53,15 +53,20 @@ class ConsoleRunner extends DirectRunner {
 
   def main(argstr: String) {
     // tokenize args
-    var args: List[String] = List()
-    val st = new StringTokenizer(argstr)
-    while (st.hasMoreTokens) {
-      args = args ::: List(st.nextToken())
-    }
+    var args = List.fromArray(argstr.split("\\s"))
 
     if (args.length == 0)
       NestUI.usage()
     else {
+      // create a file manager
+      fileManager =
+        if (args contains "--pack")
+          new ConsoleFileManager("build/pack")
+        else if (args contains "--four")
+          new ConsoleFileManager("build/four-pack", "-target:jvm-1.4")
+        else // auto detection
+          new ConsoleFileManager
+
       if (!args.exists(denotesTestSet(_)) && !args.exists(_.endsWith(".scala"))) runAll = true
       for (arg <- args) {
         arg match {

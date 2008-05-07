@@ -7,7 +7,7 @@
 
 package scala.tools.partest.nest
 
-import scala.tools.nsc.{Global, Settings}
+import scala.tools.nsc.{Global, Settings, CompilerCommand}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 
 import java.io.{File, BufferedReader, PrintWriter, FileWriter, StringWriter}
@@ -51,7 +51,9 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
   def compile(file: File, kind: String, log: File): Boolean = {
     val testSettings = newSettings
     val logWriter = new FileWriter(log)
-    val global = newGlobal(testSettings, logWriter)
+    val args = List.fromArray(fileManager.SCALAC_OPTS.split("\\s"))
+    val command = new CompilerCommand(args, testSettings, x => {}, false)
+    val global = newGlobal(command.settings, logWriter)
     val testRep: ExtConsoleReporter = global.reporter.asInstanceOf[ExtConsoleReporter]
 
     val test: TestFile = kind match {
@@ -83,7 +85,9 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
   def compile(file: File, kind: String): Boolean = {
     val testSettings = newSettings
     val testRep = newReporter(testSettings)
-    val global = newGlobal(testSettings, testRep)
+    val args = List.fromArray(fileManager.SCALAC_OPTS.split("\\s"))
+    val command = new CompilerCommand(args, testSettings, x => {}, false)
+    val global = newGlobal(command.settings, testRep)
 
     val test: TestFile = kind match {
       case "pos"      => PosTestFile(file, fileManager)
