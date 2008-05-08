@@ -6,6 +6,12 @@
     SuperSabbus extension for the MSIL library targeted for the dotnet framework. THIS FILE IS NOT STAND-ALONE AND SHOULD ONLY BE USED THROUGH ENTRY POINTS IN SUPERSABBUS.
   </description>
 
+  <!-- TODO: run test suite (or at least a part of it) on .NET -->
+  <!-- TODO: generate sbaz package scala-msil -->
+  <!-- TODO: test / make it work on Windows (use <ilasm/> task) -->
+  <!-- TODO: (?) generate the runner scripts with scala.tools.ant.ScalaTool -->
+  <!-- TODO: generate scaladoc of .NET library -->
+
 <!-- ===========================================================================
 PROPERTIES
 ============================================================================ -->
