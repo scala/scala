@@ -2,7 +2,7 @@
 
 <project name="sabbus-msil">
 
-<description>
+  <description>
     SuperSabbus extension for the MSIL library targeted for the dotnet framework. THIS FILE IS NOT STAND-ALONE AND SHOULD ONLY BE USED THROUGH ENTRY POINTS IN SUPERSABBUS.
   </description>
 
@@ -10,26 +10,34 @@
 PROPERTIES
 ============================================================================ -->
 
-  <import file="build-jvm15.xml"/>
-
-  <property name="mono.dir" value="${src.dir}/mono"/>
+  <!-- contains the scala-net / scalac-net commands -->
+  <property name="src-mono.dir" value="${src.dir}/mono"/>
 
   <!-- Loads custom properties definitions -->
   <property file="${src.dir}/build/msil.properties"/>
 
   <!-- Sets location of build folders -->
-  <property name="build.dir" value="${basedir}/build"/>
-  <property name="msil.dir" value="${build.dir}/msil"/>
-  <property name="dist.dir" value="${basedir}/dists"/>
-  <taskdef resource="org/apache/ant/dotnet/antlib.xml" classpath="${lib-ant.dir}/ant-dotnet-1.0.jar"/>
+  <property name="build-msil.dir" value="${build.dir}/msil"/>
+  <property name="build-msil-src.dir" value="${build.dir}/msil-src"/>
+  <property name="build-msil-pack.dir" value="${build.dir}/msil-pack"/>
+
 
 <!-- ===========================================================================
-MSIL BUILD
+INITIALISATION
 ============================================================================ -->
+  <target name="msil.init">
+    <!-- define the "ilasm" task (and others). they are in fact already there from
+         antlib.xml, but in a deprecated version. -->
+    <!-- <taskdef resource="org/apache/ant/dotnet/antlib.xml"
+             classpath="${lib-ant.dir}/ant-dotnet-1.0.jar"/> -->
 
-  <target name="msil.init" depends="init">
-    <!-- Sets ilasm command (either Microsoft .NET Framework or Mono) -->
-   <!-- <condition property="ilasm.cmd" value="${dotnet.home}/ilasm.exe">
+    <!-- Sets ilasm command. Search in
+           - dotnet.home/ilasm.exe
+           - unix.mono.home/ilasm
+           - win.mono.home/lib/mono/2.0/ilasm.exe
+           - path
+         (the ".home"s can be set in msil.properties) -->
+    <condition property="ilasm.cmd" value="${dotnet.home}/ilasm.exe">
       <and>
         <os family="windows"/><isset property="dotnet.home"/>
         <available file="${dotnet.home}/ilasm.exe"/>
@@ -47,70 +55,98 @@ MSIL BUILD
         <available file="${win.mono.home}/lib/mono/2.0/ilasm.exe"/>
       </and>
     </condition>
-    <echo level="verbose" message="Found: ${ilasm.cmd}"/>
     <condition property="ilasm.cmd" value="ilasm">
       <and><available file="ilasm" filepath="${env.PATH}"/></and>
     </condition>
+    <echo level="verbose" message="Found: ${ilasm.cmd}"/>
     <fail message="Command 'ilasm' not found">
       <condition><not><isset property="ilasm.cmd"/></not></condition>
-    </fail>-->
+    </fail>
+
     <!-- Sets ilasm arguments (either Windows or Unix) -->
-    <property name="ilasm.outfile" value="${msil.dir}/lib/predef.dll"/>
     <if>
       <isset property="os.win"/>
       <then>
         <property
           name="ilasm.args"
-          value="/quiet /dll /output=${ilasm.outfile}"
+          value="/quiet /dll /output="
         />
       </then>
       <else>
         <property
           name="ilasm.args"
-          value="/dll /output:${ilasm.outfile}"
+          value="/dll /output:"
         />
       </else>
     </if>
-    <property file="${number.file}"/>
-    <property
-      name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}.r${svn.number}-b${time.short}"/>
-    <echo level="verbose" message="${version.number}"/>
   </target>
 
-  <target name="msil.sources" depends="msil.init">
-    <mkdir dir="${msil.dir}/src"/>
-    <copy todir="${msil.dir}/src">
-      <fileset dir="${src.dir}/dotnet-library" includes="**/*.scala, **/*.cs"/> 
-    </copy>
-    <copy todir="${msil.dir}/src">
-      <fileset dir="${src.dir}/library" includes="**/*.scala"/>
+
+<!-- ===========================================================================
+MSIL BUILD
+============================================================================ -->
+
+  <target name="msil.start" depends="msil.init"/>
+
+  <target name="msil.src" depends="msil.start">
+    <mkdir dir="${build-msil-src.dir}"/>
+    <sync todir="${build-msil-src.dir}">
+      <fileset dir="${src.dir}/library"/>
+    </sync>
+    <copy todir="${build-msil-src.dir}" overwrite="true">
+      <fileset dir="${src.dir}/dotnet-library"/>
     </copy>
   </target>
 
-  <target name="msil.libraries" depends="msil.sources">
-    <mkdir dir="${msil.dir}/lib"/>
-    <mkdir dir="${msil.dir}/il"/>
-    <scalac srcdir="${msil.dir}/src" destdir="${msil.dir}/il" target="msil"
-           assemname="predef" assemrefs="${lib.dir}"
-           failonerror="false">
+  <target name="msil.lib" depends="msil.src">
+    <stopwatch name="msil.lib.timer"/>
+    <mkdir dir="${build-msil.dir}/library"/>
+    <!-- <ilasm srcdir="${msil.dir}/il" includes="*.msil" outputfile="${msil.dir}/lib/predef.dll"/> -->
+
+    <scalac
+        srcdir="${build-msil-src.dir}"
+        destdir="${build-msil.dir}/library"
+        target="msil"
+        assemname="predef" assemrefs="${lib.dir}"
+        failonerror="false">
       <include name="**/*.scala"/>
       <exclude name="scala/ScalaObject.scala"/>
     </scalac>
-    <ilasm srcdir="${msil.dir}/il" includes="*.msil" outputfile="${msil.dir}/lib/predef.dll"/> 
-   <!-- 
-    <pathconvert property="ilasm.infiles" pathsep=" ">
-      <fileset dir="${msil.dir}" includes="*.msil"/>
-    </pathconvert>
-    <exec executable="${ilasm.cmd} ${ilasm.infiles}" vmlauncher="no">
-      <arg line="${ilasm.args}"/>
-    </exec> -->
+    <stopwatch name="four.lib.timer" action="total"/>
   </target>
 
-  <target name="msil.build" depends="msil.libraries">
-    <copy todir="${msil.dir}/bin">
+  <target name="msil.done" depends="msil.lib"/>
+
+  <target name="msil.clean" depends="msil-pack.clean">
+    <delete dir="${build-msil.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+    <delete dir="${build-msil-src.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+  </target>
+
+<!-- ===========================================================================
+PACKED MSIL BUILD (MSIL-PACK)
+============================================================================ -->
+
+  <target name="msil-pack.start" depends="msil.done"/>
+
+  <target name="msil-pack.lib" depends="msil-pack.start">
+    <mkdir dir="${build-msil-pack.dir}/lib"/>
+    <pathconvert property="ilasm.infiles" pathsep=" ">
+      <fileset dir="${build-msil.dir}/library" includes="*.msil"/>
+    </pathconvert>
+    <property name="msil-pack-lib.file" value="${build-msil-pack.dir}/lib/predef.dll"/>
+    <!-- spawn="true" will prevent the ilasm command from printing anything to
+         the console. remove for debugging -->
+    <exec executable="${ilasm.cmd}"
+          vmlauncher="no" spawn="true">
+      <arg line="${ilasm.args}${msil-pack-lib.file}  ${ilasm.infiles}"/>
+    </exec>
+  </target>
+
+  <target name="msil-pack.bin" depends="msil-pack.lib">
+    <mkdir dir="${build-msil-pack.dir}/bin"/>
+    <copy todir="${build-msil-pack.dir}/bin">
       <fileset
-        dir="${mono.dir}/bin"
+        dir="${src-mono.dir}/bin"
         includes="scala-net*"
       />
       <filterset>
@@ -119,9 +155,9 @@ MSIL BUILD
         <filter token="NAME" value="Scala code runner"/>
       </filterset>
     </copy>
-    <copy todir="${msil.dir}/bin">
+    <copy todir="${build-msil-pack.dir}/bin">
       <fileset
-        dir="${mono.dir}/bin"
+        dir="${src-mono.dir}/bin"
         includes="scalac-net*"
       />
       <filterset>
@@ -130,30 +166,51 @@ MSIL BUILD
         <filter token="NAME" value="Scala compiler"/>
       </filterset>
     </copy>
-    <chmod perm="ugo+rx" dir="${msil.dir}/bin" includes="*-net*"/>
-        <if><isset property="os.win"/>
+    <chmod perm="ugo+rx" dir="${build-msil-pack.dir}/bin" includes="*-net*"/>
+
+    <if>
+      <isset property="os.win"/>
       <then>
-        <copy todir="${quick.dir}/lib">
-          <fileset dir="${msil.dir}" includes="*.dll"/>
-          <fileset dir="${lib.dir}" includes="*.dll"/>
+        <copy todir="${build-msil-pack.dir}/lib">
+          <fileset
+              dir="${lib.dir}"
+              includes="mscorlib.dll scalaruntime.dll"/>
+          <fileset
+              dir="${build-pack.dir}/lib"
+              includes="scala-compiler.jar scala-library.jar"/>
         </copy>
       </then>
       <else>
         <symlink
-          link="${quick.dir}/lib/predef.dll"
-          resource="${msil.dir}/predef.dll"
-          overwrite="yes" failonerror="no"/>
+            link="${build-msil-pack.dir}/lib/mscorlib.dll"
+            resource="${lib.dir}/mscorlib.dll"
+            overwrite="yes"/>
         <symlink
-          link="${quick.dir}/lib/scalaruntime.dll"
-          resource="${lib.dir}/scalaruntime.dll"
-          overwrite="yes" failonerror="no"/>
+            link="${build-msil-pack.dir}/lib/scalaruntime.dll"
+            resource="${lib.dir}/scalaruntime.dll"
+            overwrite="yes"/>
         <symlink
-          link="${quick.dir}/lib/mscorlib.dll"
-          resource="${lib.dir}/mscorlib.dll"
-          overwrite="yes" failonerror="no"/>
+            link="${build-msil-pack.dir}/lib/scala-compiler.jar"
+            resource="${build-pack.dir}/lib/scala-compiler.jar"
+            overwrite="yes"/>
+        <symlink
+            link="${build-msil-pack.dir}/lib/scala-library.jar"
+            resource="${build-pack.dir}/lib/scala-library.jar"
+            overwrite="yes"/>
       </else>
     </if>
   </target>
+
+  <target name="msil-pack.done" depends="msil-pack.bin"/>
+
+  <target name="msil-pack.clean">
+    <delete dir="${build-msil-pack.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+  </target>
+
+
+<!-- ===========================================================================
+DISTRIBUTION
+============================================================================ -->
 
   <!--<target name="msil.dist" depends="msil.build">
     <antcall target="binaries"/>
@@ -184,17 +241,5 @@ MSIL BUILD
       </else>
     </if>
   </target>-->
-
-<!-- ===========================================================================
-CLEAN
-============================================================================ -->
-
-  <target name="msil.clean" depends="ant-init">
-    <remove dir="${build.dir}/msil"/>
-    <delete includeemptydirs="true" quiet="yes" failonerror="no">
-      <fileset dir="@{dist.dir}" includes="**/scala-msil*"/>
-    </delete>
-    <delete file="${dist.dir}/latest-msil" quiet="yes" failonerror="no"/>
-  </target>
 
 </project>
