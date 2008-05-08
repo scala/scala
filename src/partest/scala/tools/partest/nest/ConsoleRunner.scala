@@ -9,7 +9,6 @@ package scala.tools.partest.nest
 
 import java.io.{File, PrintStream, FileOutputStream, BufferedReader,
                 InputStreamReader, StringWriter, PrintWriter}
-import java.util.StringTokenizer
 
 import scala.actors.Actor._
 
@@ -52,19 +51,21 @@ class ConsoleRunner extends DirectRunner {
     }
 
   def main(argstr: String) {
-    // tokenize args
-    var args = List.fromArray(argstr.split("\\s"))
+    // tokenize args. filter: "".split("\\s") yields Array("")
+    var args = List.fromArray(argstr.split("\\s")).remove(_ == "")
 
     if (args.length == 0)
       NestUI.usage()
     else {
       // create a file manager
       fileManager =
-        if (args contains "--pack")
+        if (args contains "--pack") {
+          args = args.remove(_ == "--pack") // will create a result file '--pack' otherwise
           new ConsoleFileManager("build/pack")
-        else if (args contains "--four")
+        } else if (args contains "--four") {
+          args = args.remove(_ == "--four")
           new ConsoleFileManager("build/four-pack", "-target:jvm-1.4")
-        else // auto detection
+        } else // auto detection, see ConsoleFileManager.findLatest
           new ConsoleFileManager
 
       if (!args.exists(denotesTestSet(_)) && !args.exists(_.endsWith(".scala"))) runAll = true

@@ -63,7 +63,9 @@ object NestUI {
 
   def usage() {
     println("Usage: NestRunner [<options>] [<testfile> ..] [<resfile>]")
-    println("version Mar13")
+    println("  <testfile>: list of files ending in '.scala'")
+    println("  <resfile>: a file not ending in '.scala'")
+    println("  <options>:")
     println("    --all          run all tests")
     println("    --pos          next files test a compilation success")
     println("    --neg          next files test a compilation failure")
@@ -73,9 +75,12 @@ object NestUI {
     println("    --res          next files test the resident compiler")
     println("    --shootout     next files are shootout tests")
     println("    --script       next files test the script runner")
+    println("    --pack         pick compiler / library in build/pack, and run all tests")
+    println("    --four         pick compiler / library in build/four-pack, and run all tests")
     println("    --verbose      display progress information")
     //println("    --version      display version information")
     println
+    println("version Mar13")
     println("Send bugs to <scala@listes.epfl.ch>")
     exit(1)
   }
