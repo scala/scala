@@ -290,11 +290,14 @@ DOCUMENTATION
   </target>
   
 <!-- ===========================================================================
-BOOTRAPING TEST AND TEST SUITE
+TEST SUITE WHEN RUN ON JVM 1.5
+================================================================================
+This tests how a compiler, library and tests that where targeted for JVM 1.4
+work on a JVM 1.5.
 ============================================================================ -->
 
   <target name="four-test.suite" depends="four-pack.done">
-    <partest showlog="yes" erroronfailed="no" scalacopts="-target:jvm-1.4">
+    <partest showlog="yes" erroronfailed="no" scalacopts="-target:jvm-1.4" javacmd="${java.home}/bin/java">
       <classpath>
         <pathelement location="${build-four-pack.dir}/lib/scala-library.jar"/>
         <pathelement location="${build-four-pack.dir}/lib/scala-compiler.jar"/>
@@ -311,6 +314,42 @@ BOOTRAPING TEST AND TEST SUITE
   </target>
   
   <target name="four-test.done" depends="four-test.suite"/>
+  
+<!-- ===========================================================================
+TEST SUITE WHEN RUN ON JVM 1.4 (standalone)
+================================================================================
+This tests how a compiler, library and tests that where targeted for JVM 1.4
+work on a JVM 1.4.
+============================================================================ -->
+  
+  <target name="fourfour-test.start">
+    <path id="four-pack.classpath">
+      <pathelement location="${build-four-pack.dir}/lib/scala-library.jar"/>
+      <pathelement location="${build-four-pack.dir}/lib/scala-compiler.jar"/>
+      <pathelement location="${build-four-pack.dir}/lib/scala-partest.jar"/>
+      <pathelement location="${ant.jar}"/>
+    </path>
+    <taskdef resource="scala/tools/partest/antlib.xml" classpathref="four-pack.classpath"/>
+  </target>
+
+  <target name="fourfour-test.suite" depends="fourfour-test.start">
+    <partest showlog="yes" erroronfailed="no" scalacopts="-target:jvm-1.4" javacmd="${java.home}/bin/java">
+      <classpath>
+        <pathelement location="${build-four-pack.dir}/lib/scala-library.jar"/>
+        <pathelement location="${build-four-pack.dir}/lib/scala-compiler.jar"/>
+        <fileset dir="${test.dir}/files/lib" includes="*.jar"/>
+      </classpath>
+      <postests dir="${test.dir}/files/pos" includes="*.scala"/>
+      <negtests dir="${test.dir}/files/neg" includes="*.scala"/>
+      <runtests dir="${test.dir}/files">
+        <include name="run/**/*.scala"/>
+        <include name="jvm/**/*.scala"/>
+      </runtests>
+      <residenttests dir="${test.dir}/files/res" includes="*.res"/>
+    </partest>
+  </target>
+  
+  <target name="fourfour-test.done" depends="fourfour-test.suite"/>
 
 <!-- ===========================================================================
 DISTRIBUTION

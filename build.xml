@@ -35,6 +35,9 @@ END-USER TARGETS
     <antcall target="all.done"/>
   </target>
   
+  <target name="fastdist" depends="dist.done"
+    description="Makes a new distribution without testing it or removing partially build elements"/>
+  
   <target name="distclean" depends="dist.clean"
     description="Removes all distributions. Binaries and documentation are untouched."/>
   
@@ -992,8 +995,7 @@ FORWARDED TARGETS FOR JVM 1.4 BUILD
 FORWARDED TARGETS FOR MSIL BUILD
 ============================================================================ -->
 
-  <target name="msil" depends="pack.done"
-          description="Builds the Scala-MSIL package. Executables are in 'build/msil-pack/bin'.">
+  <target name="msil" depends="pack.done">
     <ant antfile="${src.dir}/build/msil.xml" target="msil-pack.done" inheritall="yes" inheritrefs="yes"/>
   </target>
 
@@ -1036,6 +1038,10 @@ FORWARDED TARGETS FOR NIGHTLY BUILDS
   <target name="fournightly" depends="pack.done">
     <ant antfile="${src.dir}/build/four.xml" target="four-all.done" inheritall="yes" inheritrefs="yes"/>
     <ant antfile="${src.dir}/build/pack.xml" target="fourpack-all.done" inheritall="yes" inheritrefs="yes"/>
+  </target>
+  
+  <target name="fourfournightly">
+    <ant antfile="${src.dir}/build/four.xml" target="fourfour-test.done"/>
   </target>
 
   <target name="msilnightly" depends="pack.done">
