@@ -274,7 +274,7 @@ BOOTRAPING TEST AND TEST SUITE
 ============================================================================ -->
 
   <target name="four-test.suite" depends="four-pack.done">
-    <partest showlog="yes" erroronfailed="no">
+    <partest showlog="yes" erroronfailed="no" scalacopts="-target:jvm-1.4">
       <classpath>
         <pathelement location="${build-four-pack.dir}/lib/scala-library.jar"/>
         <pathelement location="${build-four-pack.dir}/lib/scala-compiler.jar"/>

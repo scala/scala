@@ -58,6 +58,9 @@ class PartestTask extends Task {
   def setJavaCmd(input: File): Unit =
     javacmd = Some(input)
 
+  def setScalacOpts(opts: String): Unit =
+    scalacOpts = Some(opts)
+
   private var classpath: Option[Path] = None
   private var javacmd: Option[File] = None
   private var showDiff: Boolean = false
@@ -68,6 +71,7 @@ class PartestTask extends Task {
   private var runFiles: Option[FileSet] = None
   private var residentFiles: Option[FileSet] = None
   private var errorOnFailed: Boolean = false
+  private var scalacOpts: Option[String] = None
 
   private def getPosFiles: Array[File] =
     if (!posFiles.isEmpty) {
@@ -111,7 +115,7 @@ class PartestTask extends Task {
       (classpath.get.list map { fs => new File(fs) }) find { f =>
         f.getName match {
           case "scala-library.jar" => true
-          case "lib" if (f.getParentFile.getName == "library") => true
+          case "classes" if (f.getParentFile.getName == "library") => true
           case _ => false
         }
       }
@@ -153,6 +157,8 @@ class PartestTask extends Task {
       setFileManagerStringProperty("JAVACMD", javacmd.get.getAbsolutePath)
     setFileManagerStringProperty("CLASSPATH", classpath.get.list.mkString(File.pathSeparator))
     setFileManagerStringProperty("LATEST_LIB", scalaLibrary.get.getAbsolutePath)
+    if (!scalacOpts.isEmpty)
+      setFileManagerStringProperty("SCALAC_OPTS", scalacOpts.get)
 
     var allSucesses: int = 0
     var allFailures: int = 0
