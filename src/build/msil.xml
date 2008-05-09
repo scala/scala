@@ -6,11 +6,12 @@
     SuperSabbus extension for the MSIL library targeted for the dotnet framework. THIS FILE IS NOT STAND-ALONE AND SHOULD ONLY BE USED THROUGH ENTRY POINTS IN SUPERSABBUS.
   </description>
 
-  <!-- TODO: run test suite (or at least a part of it) on .NET -->
-  <!-- TODO: generate sbaz package scala-msil -->
   <!-- TODO: test / make it work on Windows (use <ilasm/> task) -->
-  <!-- TODO: (?) generate the runner scripts with scala.tools.ant.ScalaTool -->
+  <!-- TODO: for separate compilation: make sure only files that have been changed
+             since last run are re-compiled -->
+  <!-- TODO: run test suite (or at least a part of it) on .NET -->
   <!-- TODO: generate scaladoc of .NET library -->
+  <!-- TODO: (?) generate the runner scripts with scala.tools.ant.ScalaTool -->
 
 <!-- ===========================================================================
 PROPERTIES
@@ -95,13 +96,33 @@ MSIL BUILD
   <target name="msil.start" depends="msil.init"/>
 
   <target name="msil.src" depends="msil.start">
+    <!-- simple sync & copy overwrite is not very nice, because overwritten files
+         will then have a new timestamp, and be recompiled -->
     <mkdir dir="${build-msil-src.dir}"/>
-    <sync todir="${build-msil-src.dir}">
-      <fileset dir="${src.dir}/library"/>
-    </sync>
     <copy todir="${build-msil-src.dir}" overwrite="true">
-      <fileset dir="${src.dir}/dotnet-library"/>
+      <fileset dir="${src.dir}/library">
+        <and>
+          <present present="srconly" targetdir="${src.dir}/dotnet-library"/>
+          <different targetdir="${build-msil-src.dir}" ignoreFileTimes="true"/>
+        </and>
+      </fileset>
+      <fileset dir="${src.dir}/dotnet-library">
+        <different targetdir="${build-msil-src.dir}" ignoreFileTimes="true"/>
+      </fileset>
     </copy>
+    <delete verbose="true">
+      <difference>
+        <fileset dir="${build-msil-src.dir}"/>
+        <union>
+          <fileset dir="${build-msil-src.dir}">
+            <present targetdir="${src.dir}/dotnet-library"/>
+          </fileset>
+          <fileset dir="${build-msil-src.dir}">
+            <present targetdir="${src.dir}/library"/>
+          </fileset>
+        </union>
+      </difference>
+    </delete>
   </target>
 
   <target name="msil.lib" depends="msil.src">
@@ -113,8 +134,7 @@ MSIL BUILD
         srcdir="${build-msil-src.dir}"
         destdir="${build-msil.dir}/library"
         target="msil"
-        assemname="predef" assemrefs="${lib.dir}"
-        failonerror="false">
+        assemname="predef" assemrefs="${lib.dir}">
       <include name="**/*.scala"/>
       <exclude name="scala/ScalaObject.scala"/>
     </scalac>

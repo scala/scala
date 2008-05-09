@@ -1015,11 +1015,13 @@ FORWARDED TARGETS FOR PACKAGING
     <ant antfile="${src.dir}/build/pack.xml" target="pack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
   
-  <target name="fourdistpack" depends="fourdist">
+  <target name="fourdistpack" depends="pack.done">
+    <ant antfile="${src.dir}/build/four.xml" target="four-dist.done" inheritall="yes" inheritrefs="yes"/>
     <ant antfile="${src.dir}/build/pack.xml" target="fourpack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
 
-  <target name="msildistpack" depends="msildist">
+  <target name="msildistpack" depends="pack.done">
+    <ant antfile="${src.dir}/build/msil.xml" target="msil-dist.done" inheritall="yes" inheritrefs="yes"/>
     <ant antfile="${src.dir}/build/pack.xml" target="msilpack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
 
