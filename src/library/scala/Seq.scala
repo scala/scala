@@ -213,6 +213,9 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     buf.readOnly
   }
 
+  def +[B >: A](e: B): Seq[B] =
+    this ++ Seq.single(e)
+
   /** Is this partial function defined for the index <code>x</code>?
    *
    *  @param x ..

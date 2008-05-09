@@ -72,7 +72,7 @@ class Queue[+A](elem: A*) extends Seq[A] {
    *
    *  @param  elem        the element to insert
    */
-  def +[B >: A](elem: B) = mkQueue(elem :: in, out)
+  override def +[B >: A](elem: B) = mkQueue(elem :: in, out)
 
   /** Returns a new queue with all all elements provided by
    *  an <code>Iterable</code> object added at the end of

@@ -489,7 +489,7 @@ sealed abstract class List[+A] extends Seq[A] {
    *  @param x the element to append.
    *  @return  the list with <code>x</code> added at the end.
    */
-  def +[B >: A](x: B): List[B] =
+  override def +[B >: A](x: B): List[B] =
     if (isEmpty) List(x)
     else {
       val buf = new ListBuffer[B]
