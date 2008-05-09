@@ -57,11 +57,18 @@ class Range(val start: Int, val end: Int, val step: Int) extends RandomAccessSeq
   }
 
   /** a <code>Seq.contains</code>, not a <code>Iterator.contains</code>! */
-  def contains(x: Int): Boolean =
+  def contains(x: Int): Boolean = {
+    inInterval(x) && (((x - start) % step) == 0)
+  }
+
+  /** Is the argument inside the interval defined by `start' and `end'?
+   *  Returns true if `x' is inside [start, end).
+   */
+  protected def inInterval(x: Int): Boolean =
     if (step > 0)
-      x >= start && x < end && (((x - start) % step) == 0)
+      (x >= start && x < end)
     else
-      x <= start && x > end && (((x - end) % step) == 0)
+      (x <= start && x > end)
 
   def inclusive = new Range.Inclusive(start,end,step)
 }
@@ -71,5 +78,12 @@ object Range {
     override def apply(idx: Int): Int = super.apply(idx)
     override protected def last(base: Int, step: Int): Int = 1
     override def by(step: Int): Range = new Inclusive(start, end, step)
+
+    /** Returns true if x is inside the interval [start, end]. */
+    override protected def inInterval(x: Int) =
+      if (step > 0)
+        (x >= start && x <= end)
+      else
+        (x <= start && x >= end)
   }
 }
