@@ -172,7 +172,8 @@ PACKED MSIL BUILD (MSIL-PACK)
         <filter token="NAME" value="Scala compiler"/>
       </filterset>
     </copy>
-    <chmod perm="ugo+rx" dir="${build-msil-pack.dir}/bin" includes="*-net*"/>
+    <chmod perm="ugo+rx" dir="${build-msil-pack.dir}/bin"
+           includes="scala*-net*" excludes="*.bat"/>
 
     <if>
       <isset property="os.win"/>
@@ -180,10 +181,10 @@ PACKED MSIL BUILD (MSIL-PACK)
         <copy todir="${build-msil-pack.dir}/lib">
           <fileset
               dir="${lib.dir}"
-              includes="mscorlib.dll scalaruntime.dll"/>
+              includes="mscorlib.dll,scalaruntime.dll"/>
           <fileset
               dir="${build-pack.dir}/lib"
-              includes="scala-compiler.jar scala-library.jar"/>
+              includes="scala-compiler.jar,scala-library.jar"/>
         </copy>
       </then>
       <else>
@@ -218,34 +219,25 @@ PACKED MSIL BUILD (MSIL-PACK)
 DISTRIBUTION
 ============================================================================ -->
 
-  <!--<target name="msil.dist" depends="msil.build">
-    <antcall target="binaries"/>
-    <property name="dist.current.dir" value="${dist.dir}/scala-msil-${version.number}"/>
-    <mkdir dir="${dist.current.dir}"/>
-    <copy todir="${dist.current.dir}">
-      <fileset dir="${msil.dir}" includes="bin/**,lib/**"/>
+  <target name="msil-dist.start" depends="msil-pack.done"/>
+
+  <target name="msil-dist.lib" depends="msil-dist.start">
+    <!-- ${dist.dir} is set by the main build script -->
+    <copy toDir="${dist.dir}/lib">
+      <fileset dir="${build-msil-pack.dir}/lib"
+               includes="*.dll"/>
     </copy>
-    <chmod perm="ugo+rx" dir="${dist.current.dir}/bin" includes="*-net*"/>
-    <copy todir="${dist.current.dir}/lib">
-      <fileset dir="${lib.dir}" includes="*.dll"/>
+  </target>
+
+  <target name="msil-dist.bin" depends="msil-dist.lib">
+    <copy toDir="${dist.dir}/bin">
+      <fileset dir="${build-msil-pack.dir}/bin"
+               includes="scala*-net*"/>
     </copy>
-    <copy todir="${dist.current.dir}/lib">
-      <fileset dir="${dist.dir}/latest/lib" includes="scala*.jar"/>
-    </copy>
-    <! Recreate the 'latest' link to point to this distribution 
-    <if><isset property="os.win"/>
-      <then>
-        <copy todir="${dist.dir}/latest-msil">
-          <fileset dir="${dist.current.dir}"/>
-        </copy>
-      </then>
-      <else>
-        <symlink
-          link="${dist.dir}/latest-mono"
-          resource="${dist.current.dir}"
-          overwrite="yes" failonerror="no"/>
-      </else>
-    </if>
-  </target>-->
+    <chmod perm="ugo+rx" dir="${dist.dir}/bin"
+           includes="scala*-net*" excludes="*.bat"/>
+  </target>
+
+  <target name="msil-dist.done" depends="msil-dist.bin"/>
 
 </project>

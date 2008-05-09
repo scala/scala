@@ -904,7 +904,7 @@ DISTRIBUTION
       <fileset dir="${docs.dir}/man"/>
     </copy>
   </target>
-    
+
   <target name="dist.src" depends="dist.man">
     <mkdir dir="${dist.dir}/src"/>
     <jar destfile="${dist.dir}/src/scala-library-src.jar">
@@ -930,11 +930,24 @@ DISTRIBUTION
   </target>
 
 <!-- ===========================================================================
+DEPENDENCIES DISTRIBUTIONS
+============================================================================ -->
+
+  <target name="dist-deps.start" depends="dist.done"/>
+
+  <target name="dist-deps.msil" depends="dist-deps.start">
+    <ant antfile="${src.dir}/build/msil.xml" target="msil-dist.done"
+         inheritall="yes" inheritrefs="yes"/>
+  </target>
+
+  <target name="dist-deps.done" depends="dist-deps.msil"/>
+
+<!-- ===========================================================================
 TEST AND DISTRIBUTION BUNDLE (ALL)
 ============================================================================ -->
-  
-  <target name="all.done" depends="dist.done, test.done"/>
-  
+
+  <target name="all.done" depends="dist-deps.done, test.done"/>
+
   <target name="all.clean" depends="locker.clean, docs.clean, dist.clean"/>
 
 <!-- ===========================================================================
@@ -991,11 +1004,14 @@ FORWARDED TARGETS FOR JVM 1.4 BUILD
 <!-- ===========================================================================
 FORWARDED TARGETS FOR MSIL BUILD
 ============================================================================ -->
-  
-  <target name="msil" depends="pack.done">
+
+  <target name="msil" depends="msil-pack.done"
+          description="Builds the Scala-MSIL package. Executables are in 'build/msil-pack/bin'."/>
+
+  <target name="msil-pack.done" depends="pack.done">
     <ant antfile="${src.dir}/build/msil.xml" target="msil-pack.done" inheritall="yes" inheritrefs="yes"/>
   </target>
-  
+
   <target name="msilclean">
     <ant antfile="${src.dir}/build/msil.xml" target="msil.clean" inheritall="yes" inheritrefs="yes"/>
   </target>
@@ -1004,7 +1020,7 @@ FORWARDED TARGETS FOR MSIL BUILD
 FORWARDED TARGETS FOR PACKAGING
 ============================================================================ -->
   
-  <target name="distpack" depends="dist.done">
+  <target name="distpack" depends="dist-deps.done">
     <ant antfile="${src.dir}/build/pack.xml" target="pack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
   
