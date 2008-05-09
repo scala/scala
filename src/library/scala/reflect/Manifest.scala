@@ -22,7 +22,7 @@ package scala.reflect
   *   these operators should be on the unerased type.
   * </p>
   */
-trait Manifest[T] {
+@serializable trait Manifest[T] {
 
   /** A class representing the type U to which T would be erased. Note
     * that there is no subtyping relationship between T and U. */
