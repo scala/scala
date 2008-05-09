@@ -946,7 +946,7 @@ DEPENDENCIES DISTRIBUTIONS
 TEST AND DISTRIBUTION BUNDLE (ALL)
 ============================================================================ -->
 
-  <target name="all.done" depends="dist-deps.done, test.done"/>
+  <target name="all.done" depends="dist.done, test.done"/>
 
   <target name="all.clean" depends="locker.clean, docs.clean, dist.clean"/>
 
@@ -1020,7 +1020,7 @@ FORWARDED TARGETS FOR MSIL BUILD
 FORWARDED TARGETS FOR PACKAGING
 ============================================================================ -->
   
-  <target name="distpack" depends="dist-deps.done">
+  <target name="distpack" depends="dist.done">
     <ant antfile="${src.dir}/build/pack.xml" target="pack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
   
