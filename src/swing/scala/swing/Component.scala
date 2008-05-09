@@ -28,8 +28,8 @@ abstract class Component extends UIElement with Publisher {
 
   def minimumSize = peer.getMinimumSize
   def minimumSize_=(x: Dimension) = peer.setMinimumSize(x)
-  def maxiumumSize = peer.getMaximumSize
-  def maxiumumSize_=(x: Dimension) = peer.setMaximumSize(x)
+  def maximumSize = peer.getMaximumSize
+  def maximumSize_=(x: Dimension) = peer.setMaximumSize(x)
   def preferredSize = peer.getPreferredSize
   def preferredSize_=(x: Dimension) = peer.setPreferredSize(x)
 
