@@ -118,7 +118,7 @@ MSIL BUILD
       <include name="**/*.scala"/>
       <exclude name="scala/ScalaObject.scala"/>
     </scalac>
-    <stopwatch name="four.lib.timer" action="total"/>
+    <stopwatch name="msil.lib.timer" action="total"/>
   </target>
 
   <target name="msil.done" depends="msil.lib"/>
@@ -214,30 +214,65 @@ PACKED MSIL BUILD (MSIL-PACK)
     <delete dir="${build-msil-pack.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
   </target>
 
+<!-- ===========================================================================
+DOCUMENTATION
+============================================================================ -->
+
+  <!-- see four.xml for template -->
+  <target name="msil-docs.done"/>
+
+  <target name="msil-docs.clean"/>
+
+<!-- ===========================================================================
+BOOTRAPING TEST AND TEST SUITE
+============================================================================ -->
+
+  <!-- see four.xml for template -->
+  <target name="msil-test.done"/>
+
 
 <!-- ===========================================================================
 DISTRIBUTION
 ============================================================================ -->
 
-  <target name="msil-dist.start" depends="msil-pack.done"/>
+  <target name="msil-dist.start" depends="msil-pack.done">
+    <property name="msil-dist.dir" value="${dists.dir}/scala-msil-${version.number}"/>
+  </target>
 
   <target name="msil-dist.lib" depends="msil-dist.start">
-    <!-- ${dist.dir} is set by the main build script -->
-    <copy toDir="${dist.dir}/lib">
+    <mkdir dir="${msil-dist.dir}/lib"/>
+    <copy toDir="${msil-dist.dir}/lib">
       <fileset dir="${build-msil-pack.dir}/lib"
                includes="*.dll"/>
+      <fileset dir="${build-msil-pack.dir}/lib"
+               includes="scala-compiler.jar,scala-library.jar"/>
     </copy>
   </target>
 
   <target name="msil-dist.bin" depends="msil-dist.lib">
-    <copy toDir="${dist.dir}/bin">
+    <mkdir dir="${msil-dist.dir}/bin"/>
+    <copy toDir="${msil-dist.dir}/bin">
       <fileset dir="${build-msil-pack.dir}/bin"
                includes="scala*-net*"/>
     </copy>
-    <chmod perm="ugo+rx" dir="${dist.dir}/bin"
+    <chmod perm="ugo+rx" dir="${msil-dist.dir}/bin"
            includes="scala*-net*" excludes="*.bat"/>
   </target>
 
-  <target name="msil-dist.done" depends="msil-dist.bin"/>
+  <target name="msil-dist.latest" depends="msil-dist.bin" unless="os.win">
+    <symlink link="${dists.dir}/latest-msil" resource="${msil-dist.dir}" overwrite="yes"/>
+  </target>
+
+  <target name="msil-dist.done" depends="msil-dist.latest"/>
+
+<!-- ===========================================================================
+TEST AND DISTRIBUTION BUNDLE (ALL)
+============================================================================ -->
+
+  <target name="msil-all.done" depends="msil-dist.done, msil-test.done"/>
+
+  <target name="msil-all.clean" depends="msil-docs.clean, msil.clean"/>
 
 </project>
+
+

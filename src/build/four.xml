@@ -340,7 +340,7 @@ DISTRIBUTION
     <symlink link="${dists.dir}/latest-jvm4" resource="${four-dist.dir}" overwrite="yes"/>
   </target>
   
-  <target name="four-dist.done" depends="four-dist.src"/>
+  <target name="four-dist.done" depends="four-dist.latest"/>
 
 <!-- ===========================================================================
 TEST AND DISTRIBUTION BUNDLE (ALL)

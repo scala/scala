@@ -930,19 +930,6 @@ DISTRIBUTION
   </target>
 
 <!-- ===========================================================================
-DEPENDENCIES DISTRIBUTIONS
-============================================================================ -->
-
-  <target name="dist-deps.start" depends="dist.done"/>
-
-  <target name="dist-deps.msil" depends="dist-deps.start">
-    <ant antfile="${src.dir}/build/msil.xml" target="msil-dist.done"
-         inheritall="yes" inheritrefs="yes"/>
-  </target>
-
-  <target name="dist-deps.done" depends="dist-deps.msil"/>
-
-<!-- ===========================================================================
 TEST AND DISTRIBUTION BUNDLE (ALL)
 ============================================================================ -->
 
@@ -1005,15 +992,19 @@ FORWARDED TARGETS FOR JVM 1.4 BUILD
 FORWARDED TARGETS FOR MSIL BUILD
 ============================================================================ -->
 
-  <target name="msil" depends="msil-pack.done"
-          description="Builds the Scala-MSIL package. Executables are in 'build/msil-pack/bin'."/>
-
-  <target name="msil-pack.done" depends="pack.done">
+  <target name="msil" depends="pack.done"
+          description="Builds the Scala-MSIL package. Executables are in 'build/msil-pack/bin'.">
     <ant antfile="${src.dir}/build/msil.xml" target="msil-pack.done" inheritall="yes" inheritrefs="yes"/>
   </target>
 
+  <target name="msiltest"/>
+
+  <target name="msildist" depends="pack.done">
+    <ant antfile="${src.dir}/build/msil.xml" target="msil-all.done" inheritall="yes" inheritrefs="yes"/>
+  </target>
+
   <target name="msilclean">
-    <ant antfile="${src.dir}/build/msil.xml" target="msil.clean" inheritall="yes" inheritrefs="yes"/>
+    <ant antfile="${src.dir}/build/msil.xml" target="msil-all.clean" inheritall="yes" inheritrefs="yes"/>
   </target>
 
 <!-- ===========================================================================
@@ -1028,6 +1019,10 @@ FORWARDED TARGETS FOR PACKAGING
     <ant antfile="${src.dir}/build/pack.xml" target="fourpack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
 
+  <target name="msildistpack" depends="msildist">
+    <ant antfile="${src.dir}/build/pack.xml" target="msilpack-all.done" inheritall="yes" inheritrefs="yes"/>
+  </target>
+
 <!-- ===========================================================================
 FORWARDED TARGETS FOR NIGHTLY BUILDS
 ============================================================================ -->
@@ -1040,8 +1035,11 @@ FORWARDED TARGETS FOR NIGHTLY BUILDS
     <ant antfile="${src.dir}/build/four.xml" target="four-all.done" inheritall="yes" inheritrefs="yes"/>
     <ant antfile="${src.dir}/build/pack.xml" target="fourpack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
-  
-  <target name="msilnightly"/>
+
+  <target name="msilnightly" depends="pack.done">
+    <ant antfile="${src.dir}/build/four.xml" target="msil-all.done" inheritall="yes" inheritrefs="yes"/>
+    <ant antfile="${src.dir}/build/pack.xml" target="msilpack-all.done" inheritall="yes" inheritrefs="yes"/>
+  </target>
 
 <!-- ===========================================================================
 MISCELLANEOUS
