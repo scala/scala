@@ -117,7 +117,7 @@ INITIALISATION
       <os family="windows"/>
     </condition>
   <!-- Finding out SVN revision -->
-    <exec executable="svn" vmlauncher="no" outputproperty="svn.out">
+    <exec executable="svn" outputproperty="svn.out">
       <arg line=" info ${basedir}"/>
     </exec>
     <propertyregex
