@@ -168,7 +168,7 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
   /** Returns the last element of this list.
    *
    *  @return the last element of the list.
-   *  @throws Predef.UnsupportedOperationException if the list is empty.
+   *  @throws Predef.NoSuchElementException if the list is empty.
    */
   def last: A = length match {
     case 0 => throw new Predef.NoSuchElementException
