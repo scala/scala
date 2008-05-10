@@ -1045,7 +1045,7 @@ FORWARDED TARGETS FOR NIGHTLY BUILDS
   </target>
 
   <target name="msilnightly" depends="pack.done">
-    <ant antfile="${src.dir}/build/four.xml" target="msil-all.done" inheritall="yes" inheritrefs="yes"/>
+    <ant antfile="${src.dir}/build/msil.xml" target="msil-all.done" inheritall="yes" inheritrefs="yes"/>
     <ant antfile="${src.dir}/build/pack.xml" target="msilpack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
 
