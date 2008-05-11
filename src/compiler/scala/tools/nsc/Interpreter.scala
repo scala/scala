@@ -8,7 +8,7 @@ package scala.tools.nsc
 
 import java.io.{File, PrintWriter, StringWriter, Writer}
 import java.lang.{Class, ClassLoader}
-import java.net.{URL, URLClassLoader}
+import java.net.{MalformedURLException, URL, URLClassLoader}
 
 import scala.collection.immutable.ListSet
 import scala.collection.mutable
@@ -26,10 +26,13 @@ import scala.tools.nsc.interpreter._
  *    An interpreter for Scala code.
  *  </p>
  *  <p>
- *    The main public entry points are <code>compile()</code> and
- *    <code>interpret()</code>. The <code>compile()</code> method loads a
+ *    The main public entry points are <code>compile()</code>,
+ *    <code>interpret()</code>, and <code>bind()</code>.
+ *    The <code>compile()</code> method loads a
  *    complete Scala file.  The <code>interpret()</code> method executes one
- *    line of Scala code at the request of the user.
+ *    line of Scala code at the request of the user.  The <code>bind()</code>
+ *    method binds an object to a variable that can then be used by later
+ *    interpreted code.
  *  </p>
  *  <p>
  *    The overall approach is based on compiling the requested code and then
@@ -111,7 +114,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   /** interpreter settings */
-  val isettings = new InterpreterSettings
+  lazy val isettings = new InterpreterSettings
 
   object reporter extends ConsoleReporter(settings, null, out) {
     //override def printMessage(msg: String) { out.println(clean(msg)) }
@@ -128,9 +131,16 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
 
   /** the compiler's classpath, as URL's */
-  val compilerClasspath: List[URL] =
-    ClassPath.expandPath(compiler.settings.classpath.value).
-      map(s => new File(s).toURL)
+  val compilerClasspath: List[URL] = {
+    val classpathPart =
+      (ClassPath.expandPath(compiler.settings.classpath.value).
+         map(s => new File(s).toURL))
+    def parseURL(s: String): Option[URL] =
+      try { Some(new URL(s)) }
+      catch { case _:MalformedURLException => None }
+    val codebasePart = (compiler.settings.Xcodebase.value.split(" ")).toList.flatMap(parseURL)
+    classpathPart ::: codebasePart
+  }
 
   /* A single class loader is used for all commands interpreted by this Interpreter.
      It would also be possible to create a new class loader for each command
