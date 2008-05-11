@@ -205,6 +205,9 @@ trait RandomAccessSeq[+A] extends Seq[A] {
       buf.readOnly
   }
 
+  override def +[B >: A](e: B): RandomAccessSeq[B] =
+    this ++ Seq.single(e)
+
   override def toStream : Stream[A] = new Stream.Definite[A] {
     override def isEmpty = RandomAccessSeq.this.isEmpty
     override def head = RandomAccessSeq.this.apply(0)
