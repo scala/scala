@@ -282,10 +282,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
-  object devirtualize extends DeVirtualize {
-    val global: Global.this.type = Global.this
-  }
-
   object refchecks extends RefChecks {
     val global: Global.this.type = Global.this
   }
@@ -396,7 +392,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     analyzer.typerFactory: SubComponent, // consistency check after refchecks would fail.
     superAccessors,  // add super accessors
     pickler,         // serialize symbol tables
-    devirtualize,    // expand virtual classes
     refchecks       // perform reference and override checking, translate nested objects
   ) ::: (
     if (forJVM) List(liftcode) else List()  // generate reified trees
