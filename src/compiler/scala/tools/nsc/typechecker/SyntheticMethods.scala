@@ -160,7 +160,7 @@ trait SyntheticMethods { self: Analyzer =>
                   guards += Apply(
                     Select(
                       Ident(name),
-                      if (isVarArg) nme.sameElements else nme.EQEQ),
+                      if (isVarArg) nme.sameElements else nme.EQ),
                     List(Ident(acc)))
                   Bind(name,
                        if (isVarArg) Star(Ident(nme.WILDCARD))

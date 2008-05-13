@@ -74,7 +74,7 @@ trait Definitions {
     var IntClass: Symbol = _
       def Int_Or  = definitions.getMember(definitions.IntClass, nme.OR)
       def Int_And = definitions.getMember(definitions.IntClass, nme.AND)
-      def Int_==  = definitions.getMember(definitions.IntClass, nme.EQEQ)
+      def Int_==  = definitions.getMember(definitions.IntClass, nme.EQ)
 
     var LongClass: Symbol = _
     var FloatClass: Symbol = _

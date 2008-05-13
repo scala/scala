@@ -3371,11 +3371,17 @@ trait Typers { self: Analyzer =>
         case _ => tp
       }
       def sum(xs: List[Int]) = (0 /: xs)(_ + _)
-      def complexity(tp: Type): Int = tp match {
-        case SingleType(pre, sym) => complexity(pre) + 1
-        case TypeRef(pre, sym, args) => complexity(pre) + sum(args map complexity) + 1
-        case RefinedType(parents, _) => sum(parents map complexity) + 1
-        case _ => 1
+      def complexity(tp: Type): Int = tp.normalize match {
+        case NoPrefix =>
+          0
+        case SingleType(pre, sym) =>
+          if (sym.isPackage) 0 else complexity(tp.widen)
+        case TypeRef(pre, sym, args) =>
+          complexity(pre) + sum(args map complexity) + 1
+        case RefinedType(parents, _) =>
+          sum(parents map complexity) + 1
+        case _ =>
+          1
       }
       def overlaps(tp1: Type, tp2: Type): Boolean = (tp1, tp2) match {
         case (RefinedType(parents, _), _) => parents exists (overlaps(_, tp2))

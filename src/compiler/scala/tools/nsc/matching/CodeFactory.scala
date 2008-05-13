@@ -177,7 +177,7 @@ trait CodeFactory {
   }
 
   final def Equals(left: Tree, right: Tree): Tree =
-    Apply(Select(left, nme.EQEQ), List(right))
+    Apply(Select(left, nme.EQ), List(right))
 
   final def Eq(left: Tree, right: Tree): Tree =
     Apply(Select(left, nme.eq), List(right))

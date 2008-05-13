@@ -97,7 +97,7 @@ trait StdNames {
     def isSetterName(name: Name) = name.endsWith(SETTER_SUFFIX)
     def isLocalDummyName(name: Name) = name.startsWith(LOCALDUMMY_PREFIX)
     def isOpAssignmentName(name: Name) =
-      name.endsWith(nme.EQL) && name != nme.EQEQ && !name.endsWith(nme.USCOREEQL)
+      name.endsWith(nme.EQL) && name != nme.EQ && !name.endsWith(nme.USCOREEQL)
 
     /** If `name' is an expandedName, the original name. Otherwise `name' itself.
      *  @see Symbol.expandedName
@@ -193,7 +193,6 @@ trait StdNames {
     val PLUS = encode("+")
     val PLUSPLUS = encode("++")
     val TILDE = encode("~")
-    val EQEQ = encode("==")
     val BANG = encode("!")
     val BANGEQ = encode("!=")
     val BARBAR = encode("||")
