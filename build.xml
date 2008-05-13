@@ -886,8 +886,12 @@ DISTRIBUTION
     <chmod perm="ugo+rx" file="${dist.dir}/bin/scaladoc"/>
     <chmod perm="ugo+rx" file="${dist.dir}/bin/fsc"/>
   </target>
-    
-  <target name="dist.doc" depends="dist.base">
+
+  <target name="dist.latest" depends="dist.base" unless="os.win">
+    <symlink link="${dists.dir}/latest" resource="${dist.dir}" overwrite="yes"/>
+  </target>
+
+  <target name="dist.doc" depends="dist.latest">
     <mkdir dir="${dist.dir}/doc/scala"/>
     <copy file="${docs.dir}/LICENSE" toDir="${dist.dir}/doc/scala"/>
     <copy file="${docs.dir}/README" toDir="${dist.dir}/doc/scala"/>
@@ -922,11 +926,7 @@ DISTRIBUTION
     </jar>
   </target>
   
-  <target name="dist.latest" depends="dist.src" unless="os.win">
-    <symlink link="${dists.dir}/latest" resource="${dist.dir}" overwrite="yes"/>
-  </target>
-  
-  <target name="dist.done" depends="dist.latest"/>
+  <target name="dist.done" depends="dist.src"/>
 
   <target name="dist.clean">
     <delete dir="${dists.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
