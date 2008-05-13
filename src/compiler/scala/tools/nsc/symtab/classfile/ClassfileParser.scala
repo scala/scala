@@ -522,7 +522,7 @@ abstract class ClassfileParser {
           var tpe = processClassType(classSym.tpe)
           while (sig(index) == '.') {
             accept('.')
-            val name = subName(c => c == ';' || c == '.').toTypeName
+            val name = subName(c => c == ';' || c == '<' || c == '.').toTypeName
             val clazz = tpe.member(name)
             assert(clazz.isAliasType, tpe)
             tpe = processClassType(clazz.tpe)
