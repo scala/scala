@@ -219,7 +219,7 @@ trait Iterator[+A] {
    *  @return  the new iterator
    */
   @throws(classOf[NoSuchElementException])
-  def take(n: Int) = new Iterator[A] {
+  def take(n: Int): Iterator[A] = new Iterator[A] {
     var remaining = n
     def hasNext = remaining > 0 && Iterator.this.hasNext
     def next(): A =

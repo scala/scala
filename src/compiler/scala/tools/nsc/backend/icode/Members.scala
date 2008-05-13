@@ -168,6 +168,7 @@ trait Members { self: ICodes =>
     var returnType: TypeKind = _
 
     var recursive: Boolean = false
+    var callsInlineMethods: Boolean = false
 
     /** local variables and method parameters */
     var locals: List[Local] = Nil

@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src/compiler"/>
-	<classpathentry kind="lib" path="build/quick/lib/compiler/"/>
+	<classpathentry kind="lib" path="lib/ant/ant-contrib.jar"/>
+	<classpathentry kind="lib" path="lib/ant/vizant.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/fjbg.jar"/>
 	<classpathentry kind="lib" path="lib/msil.jar"/>
-	<classpathentry kind="lib" path="lib/ant-contrib.jar"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
-	<classpathentry exported="true" kind="lib" path="build/quick/lib/library" sourcepath="src/library"/>
 	<classpathentry kind="lib" path="lib/jline.jar"/>
-	<classpathentry kind="output" path="build/quick/lib/compiler"/>
+	<classpathentry kind="lib" path="lib/sabbus.jar"/>
+	<classpathentry kind="lib" path="lib/scala-library.jar"/>
+	<classpathentry kind="lib" path="lib/scala-compiler.jar"/>
+	<classpathentry kind="lib" path="/usr/share/ant/lib/ant.jar"/>
+	<classpathentry kind="output" path="build/quick/classes/compiler"/>
 </classpath>
