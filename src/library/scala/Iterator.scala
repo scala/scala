@@ -664,6 +664,15 @@ trait Iterator[+A] {
    */
   def mkString(sep: String): String = this.mkString("", sep, "")
 
+  /** Returns a string representation of this iterable object. The string
+   *  representations of elements (w.r.t. the method <code>toString()</code>)
+   *  are separated by a comma.
+   *
+   *  @return a string representation of this iterable object.
+   */
+  def mkString: String =
+    mkString(", ")
+
   /** Write all elements of this string into given string builder.
    *
    *  @param buf   ...
