@@ -131,13 +131,10 @@ sealed abstract class Option[+A] extends Product {
 /** Class <code>Some[A]</code> represents existing values of type
  *  <code>A</code>.
  *
- *  The argument may not be null.
- *
  *  @author  Martin Odersky
  *  @version 1.0, 16/07/2003
  */
 final case class Some[+A](x: A) extends Option[A] {
-  assert (x != null)
   def isEmpty = false
   def get = x
 }
