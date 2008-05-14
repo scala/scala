@@ -1272,6 +1272,14 @@ sealed abstract class List[+A] extends Seq[A] {
   def - [B >: A](x: B): List[B] =
     this -- List(x)
 
+  /** Concatenate the elements of this list. The elements of this list
+   *  should be a <code>Iterables</code>.
+   *
+   *  Note: The compiler might not be able to infer the type parameter.
+   *
+   *  @param f    An implicit conversion to an <code>Iterable</code> instance.
+   *  @return     The concatenation of all elements of iterables in this list.
+   */
   def flatten[B](implicit f : A => Iterable[B]) : List[B] = {
     val buf = new ListBuffer[B]
     foreach(f(_).foreach(buf += _))
