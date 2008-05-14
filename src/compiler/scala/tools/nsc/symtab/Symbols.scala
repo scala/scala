@@ -259,6 +259,12 @@ trait Symbols {
       name.toString.startsWith(nme.INTERPRETER_LINE_PREFIX) &&
       name.toString.endsWith(nme.INTERPRETER_WRAPPER_SUFFIX)
 
+    /** Is this symbol an accessor method for outer? */
+    final def isOuterAccessor = {
+      hasFlag(STABLE | SYNTHETIC) &&
+      originalName == nme.OUTER
+    }
+
     /** Does this symbol denote a stable value? */
     final def isStable =
       isTerm && !hasFlag(MUTABLE) && (!hasFlag(METHOD | BYNAMEPARAM) || hasFlag(STABLE))

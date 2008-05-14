@@ -14,12 +14,13 @@ import scala.tools.nsc.util._
  */
 abstract class Reporter {
   object severity extends Enumeration
-  abstract class Severity extends severity.Value {
+  class Severity(_id: Int) extends severity.Value {
     var count: Int = 0
+    def id = _id
   }
-  object INFO    extends Severity { def id = 0 }
-  object WARNING extends Severity { def id = 1 }
-  object ERROR   extends Severity { def id = 2 }
+  val INFO = new Severity(0)
+  val WARNING = new Severity(1)
+  val ERROR = new Severity(2)
 
   def reset: Unit = {
     INFO.count = 0
@@ -27,7 +28,6 @@ abstract class Reporter {
     WARNING.count = 0
     cancelled = false
   }
-
 
   var cancelled: Boolean = false
   def hasErrors: Boolean = ERROR.count != 0 || cancelled

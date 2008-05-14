@@ -123,9 +123,10 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
         val restpe = if (clazz.isTrait) clazz.outerClass.tpe else clazz.outerClass.thisType
         decls1 enter clazz.newOuterAccessor(clazz.pos).setInfo(MethodType(List(), restpe))
         if (hasOuterField(clazz)) { //2
+          val access = if (clazz.isFinal) PRIVATE | LOCAL else PROTECTED
           decls1 enter (
             clazz.newValue(clazz.pos, nme.getterToLocal(nme.OUTER))
-            setFlag (SYNTHETIC | PROTECTED | PARAMACCESSOR)
+            setFlag (SYNTHETIC | PARAMACCESSOR | access)
             setInfo clazz.outerClass.thisType)
         }
       }
@@ -168,9 +169,25 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
 
     /** Select and apply outer accessor from 'base'
      *  The result is typed but not positioned.
+     *  If the outer access is from current class and current class is final
+     *  take outer field instead of accessor
      */
     private def outerSelect(base: Tree): Tree = {
-      val path = Apply(Select(base, outerAccessor(base.tpe.typeSymbol.toInterface)), List())
+      val outerAcc = outerAccessor(base.tpe.typeSymbol.toInterface)
+      val currentClass = this.currentClass //todo: !!! if this line is removed, we get a build failure that protected$currentClass need an override modifier
+      // outerFld is the $outer field of the current class, if the reference can
+      // use it (i.e. reference is allowed to be of the form this.$outer),
+      // otherwise it is NoSymbol
+      val outerFld =
+        if (outerAcc.owner == currentClass &&
+            base.tpe =:= currentClass.thisType &&
+            outerAcc.owner.isFinal)
+          outerField(currentClass).suchThat(_.owner == currentClass)
+        else
+          NoSymbol
+      val path =
+        if (outerFld != NoSymbol) Select(base, outerFld)
+        else Apply(Select(base, outerAcc), List())
       localTyper.typed(path)
     }
 
@@ -278,8 +295,8 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
     /** The definition tree of the outer accessor of current class
      */
     def outerFieldDef: Tree = {
-      val outerF = outerField(currentClass)
-      ValDef(outerF, EmptyTree)
+      val outerFld = outerField(currentClass)
+      ValDef(outerFld, EmptyTree)
     }
 
     /** The definition tree of the outer accessor of current class

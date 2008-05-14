@@ -173,26 +173,43 @@ abstract class Constructors extends Transform {
           constrStatBuf += intoConstructor(impl.symbol, stat)
       }
 
-      val accessed = new TreeSet[Symbol]((x, y) => x isLess y)
+      val accessedSyms = new TreeSet[Symbol]((x, y) => x isLess y)
 
+	  /** list of outer accessor symbols and their bodies */
+      var outerAccessors: List[(Symbol, Tree)] = List()
+
+      /** Is symbol known to be accessed outside of the primary constructor,
+       *  or is it a symbol whose definition cannot be omitted anyway? */
       def isAccessed(sym: Symbol) =
         sym.owner != clazz ||
-        !(sym hasFlag PARAMACCESSOR) ||
-        !sym.isPrivateLocal ||
-        (accessed contains sym)
+        !((sym hasFlag PARAMACCESSOR) && sym.isPrivateLocal ||
+          sym.isOuterAccessor && sym.owner == clazz && sym.owner.isFinal && sym.allOverriddenSymbols.isEmpty) ||
+        (accessedSyms contains sym)
 
       val accessTraverser = new Traverser {
         override def traverse(tree: Tree) = {
           tree match {
+            case DefDef(_, _, _, _, _, body)
+            if (tree.symbol.isOuterAccessor && tree.symbol.owner == clazz && clazz.isFinal) =>
+              outerAccessors ::= (tree.symbol, body)
             case Select(_, _) =>
-              if (!isAccessed(tree.symbol)) accessed addEntry tree.symbol
+              if (!isAccessed(tree.symbol)) accessedSyms addEntry tree.symbol
+              super.traverse(tree)
             case _ =>
+              super.traverse(tree)
           }
-          super.traverse(tree)
         }
       }
 
+	  // first traverse all definitions except outeraccesors
+	  // (outeraccessors are avoided in accessTraverser)
       for (stat <- defBuf.elements) accessTraverser.traverse(stat)
+
+      // then traverse all bodies of outeraccessors which are accessed themselves
+      // note: this relies on the fact that an outer accessor never calls another
+      // outer accessor in the same class.
+      for ((accSym, accBody) <- outerAccessors)
+        if (isAccessed(accSym)) accessTraverser.traverse(accBody)
 
       val paramInits = for (acc <- paramAccessors if isAccessed(acc))
                        yield copyParam(acc, parameter(acc))

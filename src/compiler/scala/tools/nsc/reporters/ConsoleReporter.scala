@@ -17,6 +17,9 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
   /** Whether a short file name should be displayed before errors */
   var shortname: Boolean = false
 
+  /** maximal number of error messages to be printed */
+  final val ERROR_LIMIT = 100
+
   private def label(severity: Severity): String = severity match {
     case ERROR   => "error"
     case WARNING => "warning"
@@ -103,7 +106,8 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
 
   def display(pos: Position, msg: String, severity: Severity) {
     severity.count += 1
-    print(pos, msg, severity)
+    if (severity != ERROR || severity.count <= ERROR_LIMIT)
+      print(pos, msg, severity)
   }
 
   def displayPrompt: Unit = try {
