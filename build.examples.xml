@@ -32,7 +32,7 @@ PROPERTIES
   <property name="fjbg.name"          value="fjbg.jar"/>
   <property name="fjbg.jar"           value="${lib.dir}/${fjbg.name}"/>
   <property name="ant.jar"            value="${ant.home}/lib/ant.jar"/>
-  <property name="ant-contrib.jar"    value="${lib.dir}/ant-contrib.jar"/>
+  <property name="ant-contrib.jar"    value="${lib.dir}/ant/ant-contrib.jar"/>
   <!-- -->
   <property name="build.dir"          value="${basedir}/build"/>
   <property name="build.examples.dir" value="${build.dir}/examples"/>

@@ -4,7 +4,7 @@
 	<classpathentry kind="lib" path="build/quick/lib/compiler/"/>
 	<classpathentry kind="lib" path="lib/fjbg.jar"/>
 	<classpathentry kind="lib" path="lib/msil.jar"/>
-	<classpathentry kind="lib" path="lib/ant-contrib.jar"/>
+	<classpathentry kind="lib" path="lib/ant/ant-contrib.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry exported="true" kind="lib" path="build/quick/lib/library" sourcepath="src/library"/>

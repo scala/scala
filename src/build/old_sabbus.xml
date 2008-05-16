@@ -51,7 +51,7 @@ PROPERTIES
   <property name="msil.jar" value="${lib.dir}/msil.jar"/>
   <property name="ant.jar" value="${ant.home}/lib/ant.jar"/>
   <property name="jline.jar" value="${lib.dir}/jline.jar"/>
-  <property name="ant-contrib.jar" value="${lib.dir}/ant-contrib.jar"/>
+  <property name="ant-contrib.jar" value="${lib.dir}/ant/ant-contrib.jar"/>
 
   <!-- Sets location of build folders -->
   <property name="build.dir" value="${basedir}/build"/>
