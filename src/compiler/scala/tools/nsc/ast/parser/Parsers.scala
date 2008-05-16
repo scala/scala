@@ -1590,20 +1590,6 @@ trait Parsers extends NewScanners with MarkupParsers {
       annots.toList
     }
 
-    /** TypeAttributes     ::= {`[' Exprs `]'}
-     *
-     * Type attributes may be arbitrary expressions.
-     */
-    def typeAttributes(): List[Tree] = {
-      val exps = new ListBuffer[Tree]
-      while(inToken == LBRACKET) {
-        accept(LBRACKET)
-        exps ++= exprs()
-        accept(RBRACKET)
-      }
-      exps.toList
-    }
-
     /** AnnotationExpr ::= StableId [TypeArgs] [`(' [Exprs] `)'] [[nl] `{' {NameValuePair} `}']
      *  NameValuePair ::= val id `=' PrefixExpr
      */
