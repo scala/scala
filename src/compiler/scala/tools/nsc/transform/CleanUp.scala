@@ -528,7 +528,8 @@ abstract class CleanUp extends Transform {
         val tpe = c.typeValue
         atPos(tree.pos) {
           localTyper.typed {
-            if (isValueClass(tpe.typeSymbol) && !forCLDC)
+            if ((isValueClass(tpe.typeSymbol) || tpe.typeSymbol == definitions.UnitClass)
+                && !forCLDC)
               Select(gen.mkAttributedRef(javaBoxClassModule(tpe.typeSymbol)), "TYPE")
             else if (settings.target.value != "jvm-1.5" && !forMSIL)
               Apply(

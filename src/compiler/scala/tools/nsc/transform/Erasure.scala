@@ -875,6 +875,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           case Match(selector, cases) =>
             Match(Typed(selector, TypeTree(selector.tpe)), cases)
 
+          case Literal(ct) if ct.tag == ClassTag
+                           && ct.typeValue.typeSymbol != definitions.UnitClass =>
+            copy.Literal(tree, Constant(erasure(ct.typeValue)))
+
           case _ =>
             tree
         }
