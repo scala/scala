@@ -513,7 +513,25 @@ PACKED QUICK BUILD (PACK)
     </jar>
   </target>
   
-  <target name="pack.pre-comp" depends="pack.lib">
+  <target name="pack.pre-libsrc" depends="pack.start">
+    <uptodate
+      property="pack.libsrc.available"
+      targetfile="${build-pack.dir}/lib/scala-library-src.jar"
+      srcfile="${build-quick.dir}/librarysrc.complete"/>
+  </target>
+
+	<target name="pack.libsrc" depends="pack.pre-libsrc">
+    <mkdir dir="${build-pack.dir}/src"/>
+    <jar destfile="${build-pack.dir}/src/scala-library-src.jar">
+      <fileset dir="${src.dir}/library"/>
+      <fileset dir="${src.dir}/actors"/>
+    </jar>
+    <jar destfile="${build-pack.dir}/src/scala-dbc-src.jar">
+      <fileset dir="${src.dir}/dbc"/>
+    </jar>
+  </target>
+
+	<target name="pack.pre-comp" depends="pack.lib">
     <uptodate
       property="pack.comp.available"
       targetfile="${build-pack.dir}/lib/scala-compiler.jar"
@@ -521,8 +539,13 @@ PACKED QUICK BUILD (PACK)
   </target>
 
   <target name="pack.comp" depends="pack.pre-comp" unless="pack.comp.available">
-    <mkdir dir="${build-pack.dir}/lib"/>
-    <jar destfile="${build-pack.dir}/lib/scala-compiler.jar">
+    <mkdir dir="${build-pack.dir}/META-INF"/>
+    <copy file="META-INF/MANIFEST.MF" toDir="${build-pack.dir}/META-INF"/>
+    <manifest file="${build-pack.dir}/META-INF/MANIFEST.MF" mode="update">
+      <attribute name="Bundle-Version" value="${version.number}"/>
+    </manifest>
+  	<mkdir dir="${build-pack.dir}/lib"/>
+    <jar destfile="${build-pack.dir}/lib/scala-compiler.jar" manifest="${build-pack.dir}/META-INF/MANIFEST.MF">
       <fileset dir="${build-quick.dir}/classes/compiler"/>
       <zipfileset src="${fjbg.jar}"/>
       <zipfileset src="${msil.jar}"/>
@@ -596,6 +619,12 @@ PACKED QUICK BUILD (PACK)
   <target name="pack.clean" depends="strap.clean">
     <delete dir="${build-pack.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
   </target>
+
+<!-- ===========================================================================
+PACKED QUICK BUILD FOR ECLIPSE PLUGIN DEVELOPMENT (PLUGIN)
+============================================================================ -->
+
+  <target name="plugin.quick" depends="pack.lib, pack.libsrc"/>
 
 <!-- ===========================================================================
 BOOTSTRAPPING BUILD (STRAP)

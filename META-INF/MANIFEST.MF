@@ -1,52 +1,16 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Scala Distribution
-Bundle-SymbolicName: scala;singleton:=true
-Bundle-Version: 2.6.1.B1
+Bundle-SymbolicName: scala.tools.nsc;singleton:=true
+Bundle-Version: 2.7.1.final
 Eclipse-LazyStart: true
-Bundle-ClassPath: lib/fjbg.jar,
- lib/msil.jar,
- lib/,
- build/quick/lib/library/,
- build/quick/lib/actors/,
- build/quick/lib/dbc/,
- build/quick/lib/compiler/
-Export-Package: ch.epfl.lamp.fjbg,
- scala,
- scala.collection,
- scala.collection.jcl,
- scala.collection.immutable,
- scala.collection.mutable,
- scala.compat,
- scala.concurrent,
- scala.io,
- scala.mobile,
- scala.ref,
- scala.reflect,
- scala.runtime,
- scala.testing,
- scala.text,
- scala.util,
- scala.util.automata,
- scala.util.grammar,
- scala.util.logging,
- scala.util.parsing,
- scala.util.parsing.ast,
- scala.util.parsing.combinator,
- scala.util.parsing.combinator.lexical,
- scala.util.parsing.combinator.syntactical,
- scala.util.parsing.combinator.testing,
- scala.util.parsing.input,
- scala.util.parsing.json,
- scala.util.parsing.syntax,
- scala.util.regexp,
- scala.xml,
- scala.xml.dtd,
- scala.xml.factory,
- scala.xml.parsing,
- scala.xml.path,
- scala.xml.pull,
- scala.xml.transform,
+Bundle-ClassPath: 
+ .,
+ bin,
+ lib/fjbg.jar,
+ lib/jline.jar,
+ lib/msil.jar
+Export-Package: 
  scala.tools.nsc,
  scala.tools.nsc.util,
  scala.tools.nsc.io,
@@ -55,4 +19,6 @@ Export-Package: ch.epfl.lamp.fjbg,
  scala.tools.nsc.ast,
  scala.tools.nsc.ast.parser,
  scala.tools.nsc.reporters
-Require-Bundle: org.apache.ant
+Require-Bundle: 
+ org.apache.ant,
+ scala.library
