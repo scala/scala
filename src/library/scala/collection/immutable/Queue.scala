@@ -70,9 +70,34 @@ class Queue[+A](elem: A*) extends Seq[A] {
   /** Creates a new queue with element added at the end
    *  of the old queue.
    *
+   *  @deprecated Use the method <code>enqueue</code> from now on.
+   *
    *  @param  elem        the element to insert
    */
-  override def +[B >: A](elem: B) = mkQueue(elem :: in, out)
+  @deprecated def +[B >: A](elem: B) = mkQueue(elem :: in, out)
+
+  /** Creates a new queue with element added at the end
+   *  of the old queue.
+   *
+   *  @param  elem        the element to insert
+   */
+  def enqueue[B >: A](elem: B) = mkQueue(elem :: in, out)
+
+  /** Returns a new queue with all all elements provided by
+   *  an <code>Iterable</code> object added at the end of
+   *  the queue.
+   *  The elements are prepended in the order they
+   *  are given out by the iterator.
+   *
+   *  @deprecated Use the method <code>enqueue</code> from now on.
+   *
+   *  @param  iter        an iterable object
+   */
+  @deprecated def +[B >: A](iter: Iterable[B]) = {
+    var q: List[B] = in
+    iter.elements.foreach(e => q = e :: q)
+    mkQueue(q, out)
+  }
 
   /** Returns a new queue with all all elements provided by
    *  an <code>Iterable</code> object added at the end of
@@ -82,7 +107,7 @@ class Queue[+A](elem: A*) extends Seq[A] {
    *
    *  @param  iter        an iterable object
    */
-  def +[B >: A](iter: Iterable[B]) = {
+  def enqueue[B >: A](iter: Iterable[B]) = {
     var q: List[B] = in
     iter.elements.foreach(e => q = e :: q)
     mkQueue(q, out)

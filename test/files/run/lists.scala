@@ -93,7 +93,7 @@ object Test2 extends TestCase("t0468") with Assert {
     val xs1 = List(1, 2, 3)
     val xs2 = List(0)
 
-    val ys1 = xs1 + 4
+    val ys1 = xs1 ::: List(4)
     assertEquals("check_+", List(1, 2, 3, 4), ys1)
 
     val ys2 = ys1 - 4
