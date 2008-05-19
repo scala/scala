@@ -237,9 +237,12 @@ trait Stream[+A] extends Seq.Projection[A] {
     len
   }
 
-  /** returns length - l without calling length
+  /** Returns
+   *   - (length - l) if l >= length
+   *   - 1 otherwise
+   *  This method does not call Stream.length.
    */
-  override def lengthCompare(l: Int) = {
+  final override def lengthCompare(l: Int) = {
     if (isEmpty) 0 - l
     else if (l <= 0) 1
     else tail.lengthCompare(l - 1)
