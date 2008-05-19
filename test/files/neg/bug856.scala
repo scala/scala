@@ -1,6 +1,6 @@
-trait Complex extends Product2[double,double]
+trait Complex extends Product2[Double,Double]
 
-class ComplexRect(val _1:double, _2:double) extends Complex {
+class ComplexRect(val _1:Double, _2:Double) extends Complex {
   override def toString = "ComplexRect("+_1+","+_2+")"
 }
 

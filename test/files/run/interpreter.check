@@ -5,9 +5,9 @@ scala>
 scala> 
 scala> res0: Int = 7
 
-scala>      |      |      |      | gcd: (int,int)int
+scala>      |      |      |      | gcd: (Int,Int)Int
 
-scala> five: int = 5
+scala> five: Int = 5
 
 scala> x: Int = 1
 
@@ -46,7 +46,7 @@ scala>
 scala> 
 scala> import bar._
 
-scala> m: int = 3
+scala> m: Int = 3
 
 scala> 
 scala> 

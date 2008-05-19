@@ -6,7 +6,7 @@ object Test {
   val testCodeString = <code>
 // basics
 3+4
-def gcd(x: int, y: int): int = {{
+def gcd(x: Int, y: Int): Int = {{
           if (x == 0) y
           else if (y == 0) x
           else gcd(y%x, x)
@@ -23,8 +23,8 @@ val (x,y) = (2,3)
 println("hello")
 
 // implicit conversions
-case class Foo(n: int)
-case class Bar(n: int)
+case class Foo(n: Int)
+case class Bar(n: Int)
 implicit def foo2bar(foo: Foo) = Bar(foo.n)
 val bar: Bar = Foo(3)
 

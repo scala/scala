@@ -1,10 +1,10 @@
 forward.scala:6: error: forward reference extends over definition of value x
-    def f: int = x;
+    def f: Int = x;
                  ^
 forward.scala:10: error: forward reference extends over definition of value x
-    def f: int = g;
+    def f: Int = g;
                  ^
 forward.scala:15: error: forward reference extends over definition of variable x
-    def f: int = g;
+    def f: Int = g;
                  ^
 three errors found

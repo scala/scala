@@ -1,24 +1,24 @@
 object Test {
-  def f: int = x;
-  val x: int = f;
+  def f: Int = x;
+  val x: Int = f;
 
   {
-    def f: int = x;
-    val x: int = f;
+    def f: Int = x;
+    val x: Int = f;
   }
   {
-    def f: int = g;
-    val x: int = f;
-    def g: int = x;
+    def f: Int = g;
+    val x: Int = f;
+    def g: Int = x;
   }
   {
-    def f: int = g;
-    var x: int = f;
-    def g: int = x;
+    def f: Int = g;
+    var x: Int = f;
+    def g: Int = x;
   }
   {
-    def f: int = g;
+    def f: Int = g;
     Console.println("foo");
-    def g: int = f;
+    def g: Int = f;
   }
 }

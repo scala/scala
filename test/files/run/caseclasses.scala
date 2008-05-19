@@ -1,4 +1,4 @@
-case class Foo(x: int)(y: int)
+case class Foo(x: Int)(y: Int)
 
 case class Bar
 
