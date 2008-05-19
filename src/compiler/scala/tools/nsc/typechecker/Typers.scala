@@ -496,7 +496,7 @@ trait Typers { self: Analyzer =>
       if (tree.tpe.isError) tree
       else if ((mode & (PATTERNmode | FUNmode)) == PATTERNmode && tree.isTerm) { // (1)
         checkStable(tree)
-      } else if ((mode & (EXPRmode | QUALmode)) == EXPRmode && !sym.isValue) { // (2)
+      } else if ((mode & (EXPRmode | QUALmode)) == EXPRmode && !sym.isValue && !phase.erasedTypes) { // (2)
         errorTree(tree, sym+" is not a value")
       } else {
         if (sym.isStable && pre.isStable && tree.tpe.typeSymbol != ByNameParamClass &&

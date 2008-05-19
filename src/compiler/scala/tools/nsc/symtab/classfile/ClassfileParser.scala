@@ -758,6 +758,7 @@ abstract class ClassfileParser {
           if ((jflags & JAVA_ACC_STATIC) != 0) {
             val innerVal = staticModule.newValue(NoPosition, pool.getName(nameIndex).toTermName)
               .setInfo(pool.getClassSymbol(innerIndex).linkedModuleOfClass.moduleClass.thisType)
+              .setFlag(JAVA | MODULE)
             staticDefs.enter(innerVal)
           }
         }
