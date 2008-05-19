@@ -621,7 +621,7 @@ trait Definitions {
         case _ => tp
       }
       def flatNameString(sym: Symbol, separator: Char): String =
-        if (sym.owner.isPackageClass) sym.fullNameString('.')
+        if (sym.owner.isPackageClass) sym.fullNameString('.') + (if (sym.isModuleClass) "$" else "")
         else flatNameString(sym.owner, separator) + "$" + sym.simpleName;
       def signature1(etp: Type): String = {
         if (etp.typeSymbol == ArrayClass) "[" + signature1(erasure(etp.normalize.typeArgs.head))
