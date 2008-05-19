@@ -248,7 +248,8 @@ abstract class LambdaLift extends InfoTransform {
           if (sym.isAnonymousFunction && sym.owner.isMethod)
             sym.name.toString() + "$" + sym.owner.name.toString() + "$"
           else sym.name.toString() + "$"
-        sym.name = unit.fresh.newName(sym.pos, base)
+        val fresh = unit.fresh.newName(sym.pos, base)
+        sym.name = if (sym.name.isTypeName) fresh.toTypeName else fresh
         if (settings.debug.value) log("renamed: " + sym.name)
       }
 
