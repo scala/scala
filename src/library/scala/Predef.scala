@@ -25,15 +25,15 @@ object Predef {
 
   // aliases ------------------------------------------------------------
 
-  type byte    = scala.Byte
-  type short   = scala.Short
-  type char    = scala.Char
-  type int     = scala.Int
-  type long    = scala.Long
-  type float   = scala.Float
-  type double  = scala.Double
-  type boolean = scala.Boolean
-  type unit    = scala.Unit
+  @deprecated type byte    = scala.Byte
+  @deprecated type short   = scala.Short
+  @deprecated type char    = scala.Char
+  @deprecated type int     = scala.Int
+  @deprecated type long    = scala.Long
+  @deprecated type float   = scala.Float
+  @deprecated type double  = scala.Double
+  @deprecated type boolean = scala.Boolean
+  @deprecated type unit    = scala.Unit
 
   /** @deprecated use <code>java.lang.Integer</code> instead */
   @deprecated type Integer = java.lang.Integer

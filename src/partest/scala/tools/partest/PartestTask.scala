@@ -160,8 +160,8 @@ class PartestTask extends Task {
     if (!scalacOpts.isEmpty)
       setFileManagerStringProperty("SCALAC_OPTS", scalacOpts.get)
 
-    var allSucesses: int = 0
-    var allFailures: int = 0
+    var allSucesses: Int = 0
+    var allFailures: Int = 0
 
     if (getPosFiles.size > 0) {
       log("Compiling files that are expected to build")

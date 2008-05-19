@@ -71,7 +71,7 @@ class Worker(val fileManager: FileManager) extends Actor {
     NestUI.normal("[...]"+name+List.toString(List.make(totalWidth-name.length, ' ')), printer)
   }
 
-  def printInfoEnd(success: boolean, printer: PrintWriter) {
+  def printInfoEnd(success: Boolean, printer: PrintWriter) {
     NestUI.normal("[", printer)
     if (success) NestUI.success("  OK  ", printer)
     else NestUI.failure("FAILED", printer)
