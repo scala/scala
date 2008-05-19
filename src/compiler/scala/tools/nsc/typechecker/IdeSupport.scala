@@ -35,7 +35,8 @@ trait IdeSupport extends Analyzer {
         override def underlying = tpe
         override def complete(sym0 : Symbol) : Unit = {
           if (sym ne sym0) {
-            logError(sym + " "+sym.id + " vs. " + sym0.id + " we have a problem!", null)
+            logError("DUPLICATE: " + sym.fullNameString + " "+sym.id + " vs. " + sym0.id, null)
+            toComplete -= sym0
           }
           toComplete -= sym
           val pos = sym0.pos match {

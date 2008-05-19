@@ -152,7 +152,7 @@ trait Namers { self: Analyzer =>
           if (guess != null) prev = guess
           while (prev != null && (!prev.sym.hasRawInfo || !prev.sym.rawInfo.isComplete ||
                  (prev.sym.sourceFile == null && sym.getClass == prev.sym.getClass))) {
-            if (prev.sym.rawInfo.isComplete) {
+            if (!prev.sym.hasRawInfo ||  prev.sym.rawInfo.isComplete) {
               Console.println("DITCHING: " + prev.sym)
             }
             context.scope unlink prev.sym
@@ -161,7 +161,7 @@ trait Namers { self: Analyzer =>
           val sym0 = context.scope enter sym
           if (sym0 ne sym) {
             assert(true)
-            Console.println("WEIRD: " + sym0)
+            Console.println("WEIRD: " + sym0 + " vs. " + sym + " " + sym0.id + " " + sym.id + " " + sym.sourceFile + " " + sym0.sourceFile)
           }
           if (prev != null && (sym0 ne prev.sym) && conflict(sym0,prev.sym)) {
             doubleDefError(sym0.pos, prev.sym)

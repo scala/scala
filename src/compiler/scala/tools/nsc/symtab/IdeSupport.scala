@@ -93,9 +93,10 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
         val name = sym.name.toTermName
         e = scope.lookupEntry(name)
         while (e != null && !e.sym.hasFlag(MODULE)) e = scope.lookupNextEntry(e)
-        assert(e != null)
-        list += e.sym
-        scope unlink e.sym
+        if (e != null) {
+          list += e.sym
+          scope unlink e.sym
+        } else Console.println("XXX: module " + name + " does not exist anymore")
         //Console.println("RS-UNLINK: " + factory)
       }
       // if def is abstract, will only unlink its name
@@ -108,10 +109,12 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
         }
       } else if (sym.hasGetter) {
         e = scope lookupEntry nme.getterName(sym.name)
-        while (e != null && !e.sym.isGetter) e = scope lookupNextEntry e
+        while (e != null && !e.sym.isGetter && e.sym.accessed != sym) {
+          e = scope lookupNextEntry e
+        }
         if (e != null) {
           val getter = e.sym
-          assert(getter.accessed == sym && !getter.isSetter)
+          assert(e.sym.accessed == sym && !e.sym.isSetter)
           list += getter
           scope unlink getter
           //Console.println("RS-UNLINK: " + getter)
@@ -181,7 +184,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
       scope0.invalidate(sym.name)
     }}
     reuseMap.clear
-    tracedTypes.foreach{case (sym,oldType) =>
+    tracedTypes.toList.foreach{case (sym,oldType) =>
       if (sym.rawInfo != NoType && !sym.rawInfo.isComplete) {
         Console.println("XXX uncompleted: " + sym)
       }
