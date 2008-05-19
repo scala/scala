@@ -671,7 +671,7 @@ trait Iterator[+A] {
    *  @return a string representation of this iterable object.
    */
   def mkString: String =
-    mkString(", ")
+    mkString("")
 
   /** Write all elements of this string into given string builder.
    *
