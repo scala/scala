@@ -461,9 +461,6 @@ abstract class GenMSIL extends SubComponent {
           try {
             val p = Runtime.getRuntime().exec(cmd)
             p.waitFor() // wait until ilasm is done
-            if(!settings.keepMsilFiles.value) {
-              generatedFiles.foreach(f => new File(f).delete())
-            }
           } catch {
             case _ =>
               Console.println("Cannot run command: " + cmd)
