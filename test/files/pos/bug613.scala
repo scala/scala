@@ -1,7 +1,7 @@
 class Outer extends Application {
-  val y: int = 1
+  val y: Int = 1
   abstract class C {
-    val x: int
+    val x: Int
   }
   val foo = new C {
     class I {
@@ -13,5 +13,5 @@ class Outer extends Application {
 
 object Test extends Application {
   val o = new Outer
-  Console.println(o.foo.x)
+  println(o.foo.x)
 }

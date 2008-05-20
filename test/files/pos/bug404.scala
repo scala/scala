@@ -1,12 +1,12 @@
 trait AbsIterator {
-  type T;
-  def next: T;
+  type T
+  def next: T
 }
 class StringIterator extends AbsIterator {
-  type T = char;
-  def next = 'a';
+  type T = Char
+  def next = 'a'
 }
 trait SyncIterator extends AbsIterator {
-  abstract override def next: T = super.next;
+  abstract override def next: T = super.next
 }
-class I extends StringIterator with SyncIterator;
+class I extends StringIterator with SyncIterator
