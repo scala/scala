@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -11,9 +11,10 @@
 
 package scala
 
-
-import Predef._
-
+/** The object <code>Math</code> contains methods for performing basic numeric
+ *  operations such as the elementary exponential, logarithm, square root, and
+ *  trigonometric functions.
+ */
 object Math {
 
   /** The smallest possible value for <a href="Byte.html" target="_self">scala.Byte</a>. */
@@ -117,14 +118,25 @@ object Math {
   def min(x: Float, y: Float): Float  = System.Math.Min(x, y)
   def min(x: Double, y: Double): Double = System.Math.Min(x, y)
 
+  def signum(x: Double): Double = x match { case 0 => 0
+                                            case y if y < 0 => -1.0
+                                            case y if y > 0 => 1.0 }
+  def signum(x: Float): Float = x match { case 0f => 0f
+                                          case y if y < 0f => -1.0f
+                                          case y if y > 0f => 1.0f }
+  def signum(x: Long): Long = x match { case 0l => 0l
+                                        case y if y < 0l => -1l
+                                        case y if y > 0l => 1l }
+  def signum(x: Int): Int = x match { case 0 => 0
+                                      case y if y < 0 => -1
+                                      case y if y > 0 => 1}
+
   // from Java 1.5
 //   def log10(x: Double): Double = java.lang.Math.log10(x)
 //   def cbrt(x: Double): Double = java.lang.Math.cbrt(x)
 
 //   def ulp(x: Double): Double = java.lang.Math.ulp(x)
 //   def ulp(x: Float): Float = java.lang.Math.ulp(x)
-//   def signum(x: Double): Double = java.lang.Math.signum(x)
-//   def signum(x: Float): Float = java.lang.Math.signum(x)
 //   def sinh(x: Double): Double = java.lang.Math.sinh(x)
 //   def cosh(x: Double): Double = java.lang.Math.cosh(x)
 //   def tanh(x: Double):Double = java.lang.Math.tanh(x)

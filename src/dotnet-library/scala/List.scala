@@ -145,10 +145,10 @@ object List {
     b.toList
   }
 
-  /** Transforms a list of pair into a pair of lists.
+  /** Transforms a list of pairs into a pair of lists.
    *
    *  @param xs the list of pairs to unzip
-   *  @return a pair of lists: the first list in the pair contains the list
+   *  @return a pair of lists.
    */
   def unzip[A,B](xs: List[(A,B)]): (List[A], List[B]) = {
     val b1 = new ListBuffer[A]
@@ -161,6 +161,45 @@ object List {
     }
     (b1.toList, b2.toList)
   }
+
+  /** Transforms an iterable of pairs into a pair of lists.
+   *
+   *  @param xs the iterable of pairs to unzip
+   *  @return a pair of lists.
+   */
+  def unzip[A,B](xs: Iterable[(A,B)]): (List[A], List[B]) =
+      xs.foldRight[(List[A], List[B])]((Nil, Nil)) {
+        case ((x, y), (xs, ys)) => (x :: xs, y :: ys)
+      }
+
+  /**
+   * Returns the <code>Left</code> values in the given <code>Iterable</code> of <code>Either</code>s.
+   */
+  def lefts[A, B](es: Iterable[Either[A, B]]) =
+    es.foldRight[List[A]](Nil)((e, as) => e match {
+      case Left(a) => a :: as
+      case Right(_) => as
+    })
+
+  /**
+   * Returns the <code>Right</code> values in the given<code>Iterable</code> of  <code>Either</code>s.
+   */
+  def rights[A, B](es: Iterable[Either[A, B]]) =
+    es.foldRight[List[B]](Nil)((e, bs) => e match {
+      case Left(_) => bs
+      case Right(b) => b :: bs
+    })
+
+  /** Transforms an Iterable of Eithers into a pair of lists.
+   *
+   *  @param xs the iterable of Eithers to separate
+   *  @return a pair of lists.
+   */
+  def separate[A,B](es: Iterable[Either[A,B]]): (List[A], List[B]) =
+      es.foldRight[(List[A], List[B])]((Nil, Nil)) {
+      case (Left(a), (lefts, rights)) => (a :: lefts, rights)
+      case (Right(b), (lefts, rights)) => (lefts, b :: rights)
+    }
 
   /** Converts an iterator to a list.
    *
@@ -1063,7 +1102,7 @@ sealed abstract class List[+A] extends Seq[A] {
    */
   override def reduceRight[B >: A](f: (A, B) => B): B = this match {
     case Nil => throw new UnsupportedOperationException("Nil.reduceRight")
-    case x :: Nil => x: B
+    case x :: Nil => x
     case x :: xs => f(x, xs reduceRight f)
   }
 
@@ -1235,6 +1274,14 @@ sealed abstract class List[+A] extends Seq[A] {
   def - [B >: A](x: B): List[B] =
     this -- List(x)
 
+  /** Concatenate the elements of this list. The elements of this list
+   *  should be a <code>Iterables</code>.
+   *
+   *  Note: The compiler might not be able to infer the type parameter.
+   *
+   *  @param f    An implicit conversion to an <code>Iterable</code> instance.
+   *  @return     The concatenation of all elements of iterables in this list.
+   */
   def flatten[B](implicit f : A => Iterable[B]) : List[B] = {
     val buf = new ListBuffer[B]
     foreach(f(_).foreach(buf += _))

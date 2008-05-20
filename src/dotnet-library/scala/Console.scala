@@ -101,9 +101,8 @@ object Console {
    *
    *  @param obj the object to print.
    */
-  def print(obj: Any): Unit = {
-    out.Write(if (null == obj) "null" else obj.toString());
-  }
+  def print(obj: Any): Unit =
+    out.Write(if (null == obj) "null" else obj.toString())
 
   /** Flush the output stream. This function is required when partial
    *  output (i.e. output not terminated by a new line character) has
@@ -122,21 +121,17 @@ object Console {
   def println(x: Any): Unit = out.WriteLine(x)
 
   /** <p>
-   *    Format and print out some text (in a fashion similar to printf in C or
-   *    <code>printf</code> in Java 6).
+   *    Prints its arguments as a formatted string, based on a string
+   *    pattern (in a fashion similar to printf in C).
    *  </p>
    *  <p>
-   *    The format of the text to print is specified by the parameter
-   *    <code>text</code>. The arguments that are inserted into specific
-   *    locations in <code>text</code> are provided with parameter
-   *    <code>args</code>. See class <a href="" target="contentFrame"
-   *    class="java/text/MessageFormat"><code>java.text.MessageFormat</code></a>
-   *    for a full specification of the <a href="#syntax" target="contentFrame"
-   *    class="java/util/Formatter">format syntax</a>.
+   *    The interpretation of the formatting patterns is described in
+   *    <a href="" target="contentFrame" class="java/util/Formatter">
+   *    <code>java.util.Formatter</code></a>.
    *  </p>
    *
-   *  @param text the format of the text to print out.
-   *  @param args the parameters used to instantiate the format.
+   *  @param text the pattern for formatting the arguments.
+   *  @param args the arguments used to instantiating the pattern.
    *  @throws java.lang.IllegalArgumentException
    */
   def printf(text: String, args: Any*) { format(text, args: _*) }
@@ -149,13 +144,19 @@ object Console {
     if (text eq null) out.Write("null")
     else out.Write(text, args.toArray)
 
-  /** Read a full line from the terminal.
+  /** Read a full line from the terminal.  Throws System.IO.EndOfStreamException if the end of the
+   * input stream has been reached.
    *
-   *  @return the string read from the terminal.
+   * @return the string read from the terminal.
+   * @throws System.IO.EndOfStreamException
    */
-  def readLine(): String = in.ReadLine();
+  def readLine(): String = {
+	val s = in.ReadLine()
+	if (s == null) throw new System.IO.EndOfStreamException("Console has reached end of input") else s
+  }
 
-  /** Print a formatted text and read a full line from the terminal
+  /** Print a formatted text and read a full line from the terminal.
+   * Returns null if the end of the input stream has been reached.
    *
    *  @param text the format of the text to print out.
    *  @param args the parameters used to instantiate the format.
@@ -185,7 +186,7 @@ object Console {
 
   /** Read a short value from the terminal.
    */
-  def readShort(): Short = readLine.toShort
+  def readShort(): Short = readLine().toShort
 
   /** Read a char value from the terminal.
    */
@@ -273,26 +274,35 @@ object Console {
 //     res
 //   }
 
-//   private def textParams(s: Seq[Any]): Array[AnyRef] = {
-//     val res = new Array[AnyRef](s.length);
-//     var i: Int = 0;
-//     val iter = s.elements;
-//     while (iter.hasNext) {
-//       res(i) = iter.next match {
-//         case x: Boolean => new java.lang.Boolean(x)
-//         case x: Byte => new java.lang.Byte(x)
-//         case x: Short => new java.lang.Short(x)
-//         case x: Char => new java.lang.Character(x)
-//         case x: Int => new java.lang.Integer(x)
-//         case x: Long => new java.lang.Long(x)
-//         case x: Float => new java.lang.Float(x)
-//         case x: Double => new java.lang.Double(x)
-//         case x: Unit => "()"
-//         case x: AnyRef => x
-//       }
-//       i = i + 1
-//     }
-//     res
-//   }
-
+//  private def textParams(s: Seq[Any]): Array[AnyRef] = {
+//    val res = new Array[AnyRef](s.length)
+//    var i: Int = 0
+//    val iter = s.elements
+//    while (iter.hasNext) {
+//      res(i) = iter.next match {
+//        case x: Boolean => java.lang.Boolean.valueOf(x)
+//        /** Should use java.lang.Byte.valueOf(Byte), but only available
+//         * in Java 1.5 and above. */
+//        case x: Byte    => new java.lang.Byte(x)
+//        /** Should use java.lang.Short.valueOf(Short), but only available
+//         * in Java 1.5 and above. */
+//        case x: Short   => new java.lang.Short(x)
+//        /** Should use java.lang.Character.valueOf(Char), but only available
+//         * in Java 1.5 and above. */
+//        case x: Char    => new java.lang.Character(x)
+//        /** Should use java.lang.Integer.valueOf(Int), but only available
+//         * in Java 1.5 and above. */
+//        case x: Int     => new java.lang.Integer(x)
+//        /** Should use java.lang.Long.valueOf(Long), but only available
+//         * in Java 1.5 and above. */
+//        case x: Long    => new java.lang.Long(x)
+//        case x: Float   => new java.lang.Float(x)
+//        case x: Double  => new java.lang.Double(x)
+//        case x: Unit    => "()"
+//        case x: AnyRef  => x
+//      }
+//      i += 1
+//    }
+//    res
+//  }
 }

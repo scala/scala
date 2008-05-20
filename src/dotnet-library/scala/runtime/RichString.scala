@@ -11,10 +11,10 @@
 
 package scala.runtime
 
-
 import Predef._
 
 final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char] with Ordered[String] {
+  import RichString._
   override def apply(n: Int) = self charAt n
   override def length = self.length
   override def toString = self
@@ -73,12 +73,15 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
     new RichString(buf.toString)
   }
 
-  override def compare(other: String) = self compareTo other
+  /** return n times the current string
+   */
+  def * (n: Int): String = {
+    val buf = new StringBuilder
+    for (i <- 0 until n) buf append self
+    buf.toString
+  }
 
-  private final val LF: Char = 0x0A
-  private final val FF: Char = 0x0C
-  private final val CR: Char = 0x0D
-  private final val SU: Char = 0x1A
+  override def compare(other: String) = self compareTo other
 
   private def isLineBreak(c: Char) = c == LF || c == FF
 
@@ -193,4 +196,24 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
   def toFloat: Float     = System.Single.Parse(self)
   def toDouble: Double   = System.Double.Parse(self)
 
+  def toArray: Array[Char] = {
+	self.ToCharArray()
+  }
+}
+
+object RichString {
+  // just statics for rich string.
+  private final val LF: Char = 0x0A
+  private final val FF: Char = 0x0C
+  private final val CR: Char = 0x0D
+  private final val SU: Char = 0x1A
+
+  private def parseBoolean(s: String): Boolean =
+    if (s != null) s.toLowerCase match {
+      case "true" => true
+      case "false" => false
+      case _ => throw new System.FormatException("For input string: \""+s+"\"")
+    }
+    else
+      throw new System.FormatException("For input string: \"null\"")
 }

@@ -268,6 +268,22 @@ extends (Int => Char) with Proxy {
     }
 
   /** <p>
+   *    Appends the string representation of the <code>Char</code> sequence
+   *    argument to this sequence.
+   *  </p>
+   *  <p>
+   *    The characters of the sequence argument are appended, in order,
+   *    to the contents of this sequence. The length of this sequence
+   *    increases by the length of the argument.
+   *  </p>
+   *
+   *  @param  x  the characters to be appended.
+   *  @return    a reference to this object.
+   */
+  def append(x: Seq[Char]): StringBuilder =
+    append(x.toArray, 0, x.length)
+
+  /** <p>
    *    Appends the string representation of the <code>Char</code> array
    *    argument to this sequence.
    *  </p>
@@ -346,6 +362,9 @@ extends (Int => Char) with Proxy {
     value(count) = x; count += 1
     this
   }
+
+  def append(x: Short): StringBuilder =
+    append(System.Convert.ToString(x))
 
   def append(x: Int): StringBuilder =
     append(System.Convert.ToString(x))
@@ -493,6 +512,17 @@ extends (Int => Char) with Proxy {
     this
   }
 
+  /** Inserts the string representation of the <code>Char</code> sequence
+   *  argument into this sequence.
+   *
+   *  @param  at  the offset position.
+   *  @param  x   a character sequence.
+   *  @return     a reference to this object.
+   *  @throws StringIndexOutOfBoundsException  if the offset is invalid.
+   */
+  def insert(at: Int, x: Seq[Char]): StringBuilder =
+    insert(at, x.toArray)
+
   /** Inserts the string representation of the <code>Char</code> array
    *  argument into this sequence.
    *
@@ -513,9 +543,36 @@ extends (Int => Char) with Proxy {
     this
   }
 
+  /** <p>
+   *    Inserts the string representation of the <code>Boolean</code> argument
+   *    into this sequence.
+   *  </p>
+   *  <p>
+   *    The offset argument must be greater than or equal to 0, and less than
+   *    or equal to the length of this sequence.
+   *  </p>
+   *
+   *  @param  at  the offset position.
+   *  @param  x   a <code>Boolean</code> value.
+   *  @return     a reference to this object.
+   */
   def insert(at: Int, x: Boolean): StringBuilder =
     insert(at, System.Convert.ToString(x))
 
+
+  /** <p>
+   *    Inserts the string representation of the <code>Char</code> argument
+   *    into this sequence.
+   *  </p>
+   *  <p>
+   *    The offset argument must be greater than or equal to 0, and less than
+   *    or equal to the length of this sequence.
+   *  </p>
+   *
+   *  @param  at  the offset position.
+   *  @param  x   a <code>Char</code> value.
+   *  @return     a reference to this object.
+   */
   def insert(at: Int, x: Char): StringBuilder = {
     if (at < 0 || at > count)
       throw new StringIndexOutOfBoundsException//(at)
@@ -527,25 +584,97 @@ extends (Int => Char) with Proxy {
     this
   }
 
+  /** <p>
+   *    Inserts the string representation of the <code>Short</code> argument
+   *    into this sequence.
+   *  </p>
+   *  <p>
+   *    The offset argument must be greater than or equal to 0, and less than
+   *    or equal to the length of this sequence.
+   *  </p>
+   *
+   *  @param  at  the offset position.
+   *  @param  x   a <code>Short</code> value.
+   *  @return     a reference to this object.
+   */
+  def insert(at: Int, x: Short): StringBuilder =
+    insert(at, System.Convert.ToString(x))
+
+  /** <p>
+   *    Inserts the string representation of the <code>Int</code> argument
+   *    into this sequence.
+   *  </p>
+   *  <p>
+   *    The offset argument must be greater than or equal to 0, and less than
+   *    or equal to the length of this sequence.
+   *  </p>
+   *
+   *  @param  at  the offset position.
+   *  @param  x   a <code>Int</code> value.
+   *  @return     a reference to this object.
+   */
   def insert(at: Int, x: Int): StringBuilder =
     insert(at, System.Convert.ToString(x))
 
+  /** <p>
+   *    Inserts the string representation of the <code>Long</code> argument
+   *    into this sequence.
+   *  </p>
+   *  <p>
+   *    The offset argument must be greater than or equal to 0, and less than
+   *    or equal to the length of this sequence.
+   *  </p>
+   *
+   *  @param  at  the offset position.
+   *  @param  x   a <code>Long</code> value.
+   *  @return     a reference to this object.
+   */
   def insert(at: Int, x: Long): StringBuilder =
     insert(at, System.Convert.ToString(x))
 
+  /** <p>
+   *    Inserts the string representation of the <code>Float</code> argument
+   *    into this sequence.
+   *  </p>
+   *  <p>
+   *    The offset argument must be greater than or equal to 0, and less than
+   *    or equal to the length of this sequence.
+   *  </p>
+   *
+   *  @param  at  the offset position.
+   *  @param  x   a <code>Float</code> value.
+   *  @return     a reference to this object.
+   */
   def insert(at: Int, x: Float): StringBuilder =
     insert(at, System.Convert.ToString(x))
 
+  /** <p>
+   *    Inserts the string representation of the <code>Double</code> argument
+   *    into this sequence.
+   *  </p>
+   *  <p>
+   *    The offset argument must be greater than or equal to 0, and less than
+   *    or equal to the length of this sequence.
+   *  </p>
+   *
+   *  @param  at  the offset position.
+   *  @param  x   a <code>Double</code> value.
+   *  @return     a reference to this object.
+   */
   def insert(at: Int, x: Double): StringBuilder =
     insert(at, System.Convert.ToString(x))
 
-  /** Returns the index within this string of the first occurrence of the
-   *  specified substring. The integer returned is the smallest value
-   *  <i>k</i> such that:
+  /** <p>
+   *    Returns the index within this string of the first occurrence of the
+   *    specified substring. The integer returned is the smallest value
+   *    <i>k</i> such that:
+   *  </p>
    *  <blockquote><pre>
-   *  this.toString().startsWith(str, <i>k</i>)
-   *  </pre></blockquote>
-   *  is <code>true</code>.
+   *  this.toString().startsWith(str, <i>k</i>)</pre>
+   *  </blockquote>
+   *  <p>
+   *    is <code>true</code>.
+   *  </p>
    *
    *  @param  str  any string.
    *  @return      if the string argument occurs as a substring within this
@@ -556,17 +685,38 @@ extends (Int => Char) with Proxy {
    */
   def indexOf(str: String): Int = indexOf(str, 0)
 
+  /** <p>
+   *    Returns the index within this string of the first occurrence of the
+   *    specified substring, starting at the specified index. The integer
+   *    returned is the smallest value <code>k</code> for which:
+   *  </p><pre>
+   *    k >= Math.min(fromIndex, str.length()) &&
+   *                   this.toString().startsWith(str, k)</pre>
+   *  <p>
+   *    If no such value of <code>k</code> exists, then <code>-1</code>
+   *    is returned.
+   *  </p>
+   *
+   *  @param str        the substring for which to search.
+   *  @param fromIndex  the index from which to start the search.
+   *  @return           the index within this string of the first occurrence
+   *                    of the specified substring, starting at the specified index.
+   */
   def indexOf(str: String, fromIndex: Int): Int =
     StringBuilder.indexOf(value, 0, count, str.ToCharArray, 0, str.length(), fromIndex)
 
-  /** Returns the index within this string of the rightmost occurrence
-   *  of the specified substring.  The rightmost empty string "" is
-   *  considered to occur at the index value <code>this.length()</code>.
-   *  The returned index is the largest value <i>k</i> such that
+  /** <p>
+   *    Returns the index within this string of the rightmost occurrence
+   *    of the specified substring.  The rightmost empty string "" is
+   *    considered to occur at the index value <code>this.length()</code>.
+   *    The returned index is the largest value <i>k</i> such that
+   *  </p>
    *  <blockquote><pre>
-   *  this.toString().startsWith(str, k)
-   *  </pre></blockquote>
-   *  is true.
+   *  this.toString().startsWith(str, k)</pre>
+   *  </blockquote>
+   *  <p>
+   *    is true.
+   *  </p>
    *
    * @param  str  the substring to search for.
    * @return      if the string argument occurs one or more times as a substring
@@ -577,6 +727,23 @@ extends (Int => Char) with Proxy {
    */
   def lastIndexOf(str: String): Int = lastIndexOf(str, count)
 
+  /** <p>
+   *    Returns the index within this string of the last occurrence of the
+   *    specified substring. The integer returned is the largest value
+   *    <code>k</code> such that:
+   *  </p><pre>
+   *    k <= Math.min(fromIndex, str.length()) &&
+   *                   this.toString().startsWith(str, k)</pre>
+   *  <p>
+   *    If no such value of <code>k</code> exists, then <code>-1</code>
+   *    is returned.
+   *  </p>
+   *
+   *  @param  str        the substring to search for.
+   *  @param  fromIndex  the index to start the search from.
+   *  @return            the index within this sequence of the last occurrence
+   *                     of the specified substring.
+   */
   def lastIndexOf(str: String, fromIndex: Int): Int =
     StringBuilder.lastIndexOf(value, 0, count, str.ToCharArray, 0, str.length(), fromIndex)
 
@@ -598,14 +765,34 @@ extends (Int => Char) with Proxy {
    *  @return  a reference to this object.
    */
   def reverse(): StringBuilder = {
+    var hasSurrogate = false
     val n = count - 1
     var j = (n-1) >> 1
     while (j >= 0) {
       val temp = value(j)
       val temp2 = value(n - j)
+      if (!hasSurrogate)
+        hasSurrogate =
+          (temp >= StringBuilder.MIN_SURROGATE && temp <= StringBuilder.MAX_SURROGATE) ||
+       	  (temp2 >= StringBuilder.MIN_SURROGATE && temp2 <= StringBuilder.MAX_SURROGATE)
       value(j) = temp2
       value(n - j) = temp
       j -= 1
+    }
+    if (hasSurrogate) {
+      // Reverse back all valid surrogate pairs
+      var i = 0
+      while (i < count - 1) {
+        val c2 = value(i)
+	if (StringBuilder.isLowSurrogate(c2)) {
+          val c1 = value(i + 1)
+          if (StringBuilder.isHighSurrogate(c1)) {
+            value(i) = c1; i += 1
+            value(i) = c2
+          }
+        }
+        i += 1
+      }
     }
     this
   }
@@ -625,6 +812,23 @@ extends (Int => Char) with Proxy {
 
 
 object StringBuilder {
+
+  private val MIN_HIGH_SURROGATE = '\uD800'
+  private val MAX_HIGH_SURROGATE = '\uDBFF'
+
+  private val MIN_LOW_SURROGATE = '\uDC00'
+  private val MAX_LOW_SURROGATE = '\uDFFF'
+
+  // constants <code>java.langCharacter.MIN-/MAX_SURROGATE</code> exist since 1.5
+  private val MIN_SURROGATE = MIN_HIGH_SURROGATE
+  private val MAX_SURROGATE = MAX_LOW_SURROGATE
+
+  // methods <code>java.langCharacter.isLow-/isHighSurrogate</code> exist since 1.5
+  private def isLowSurrogate(ch: Char): Boolean =
+    MIN_LOW_SURROGATE <= ch && ch <= MAX_LOW_SURROGATE
+
+  private def isHighSurrogate(ch: Char): Boolean =
+    MIN_HIGH_SURROGATE <= ch && ch <= MAX_HIGH_SURROGATE
 
   // method <code>java.util.Arrays.copyOf</code> exists since 1.6
   private def copyOf(src: Array[Char], newLength: Int): Array[Char] = {

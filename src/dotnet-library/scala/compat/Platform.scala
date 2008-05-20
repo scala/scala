@@ -61,4 +61,3 @@ object Platform {
   def collectGarbage { System.GC.Collect() }
 
 }
-
