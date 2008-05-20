@@ -3,11 +3,10 @@ class HelloWorld {
 
     object TypeBool;
 
-    trait Fct
-    {
-      def g(x : int) = TypeBool // breaks.
+    trait Fct {
+      def g(x : Int) = TypeBool // breaks.
 
-      //    def g(x : int) = 3 // fine.
+      //    def g(x : Int) = 3 // fine.
     }
 
     ()

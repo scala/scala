@@ -1,8 +1,8 @@
 object m {
 
-  val xs: List[int] = Nil;
-  def f(i: int) = 0;
-  val v = xs map f;
+  val xs: List[Int] = Nil
+  def f(i: Int) = 0
+  val v = xs map f
 
   def m() = {}
 }
