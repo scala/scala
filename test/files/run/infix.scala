@@ -1,5 +1,5 @@
-case class op(x: op, y: int, z: int) {
-  def op(y: int, z: int) = new op(this, y, z)
+case class op(x: op, y: Int, z: Int) {
+  def op(y: Int, z: Int) = new op(this, y, z)
 }
 
 object Test extends Application {
