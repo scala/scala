@@ -1,6 +1,6 @@
-abstract class MapLocation(ID:int) {
+abstract class MapLocation(ID: Int) {
   abstract class Message
-  case class ReceivePlayer(id: int) extends Message
+  case class ReceivePlayer(id: Int) extends Message
 
   def foo(p: Message) {
     p match {

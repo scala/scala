@@ -1,5 +1,5 @@
 class Test {
-  case class Foo(x: int, private var y: int)
+  case class Foo(x: Int, private var y: Int)
 }
 
 object Test {

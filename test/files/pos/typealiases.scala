@@ -2,9 +2,9 @@ package foo
 
 trait Test[T] {
   type Check[T] = Array[T] => Unit;
-  type MyPair[S] = Pair[T, S]
+  type MyPair[S] = (T, S)
 
-  val pair1: Pair[T, Int]
+  val pair1: (T, Int)
   val pair: MyPair[Int] = pair1
 
   def check(xs: Array[T], c: Check[T]) = c(xs)
@@ -16,5 +16,5 @@ object main extends Test[Int] {
 
   implicit def topair(x: Int): Pair[Int, Int] = (x,x)
   val pair2: MyPair[Int] = 1
-  val x: short = 1
+  val x: Short = 1
 }

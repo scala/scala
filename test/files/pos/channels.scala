@@ -12,8 +12,8 @@ object Bang {
 
 */
 object Test extends Application {
-  object IC extends Channel[int]
-  def f[b](x: ![b]): int = x match {
+  object IC extends Channel[Int]
+  def f[b](x: ![b]): Int = x match {
     case send: ![c] =>
       send.chan match {
         case IC => send.data
@@ -22,8 +22,8 @@ object Test extends Application {
 }
 
 object Test2 extends Application {
-  object IC extends Channel[Set[int]]
-  def f[b](s: ![b]): Set[int] = s match {
+  object IC extends Channel[Set[Int]]
+  def f[b](s: ![b]): Set[Int] = s match {
     case IC ! x => x
   }
 }
