@@ -164,7 +164,7 @@ class BigDecimal(val bigDecimal: BigDec) extends java.lang.Number {
   /** Division of BigDecimals
    */
   def /  (that: BigDecimal): BigDecimal =
-   new BigDecimal(this.bigDecimal.divide(that.bigDecimal, this.scale - that.scale))
+   new BigDecimal(this.bigDecimal.divide(that.bigDecimal))
 
   /** Returns the minimum of this and that
    */
