@@ -11,7 +11,7 @@ object Test extends Application {
     Console.println("x = " + x + "; y = " + y + "; z = " + z);
   }
 
-  sef params = (2, "xxx", 3.14159)  // (*****)
+  def params = (2, "xxx", 3.14159)  // (*****)
 
   tupled(func _)(params) // call the function with all the params at once
   func(2, "xxx", 3.14159) // the same call
