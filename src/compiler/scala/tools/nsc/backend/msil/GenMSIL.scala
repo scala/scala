@@ -448,10 +448,11 @@ abstract class GenMSIL extends SubComponent {
         code.Emit(OpCodes.Ret)
       }
       createTypes()
+      val filename = new File(outDir, assemName + ".msil").getPath()
       if (settings.debug.value)
-        log("Output path: " + outDir.getPath)
+        log("Output path: " + filename)
       try {
-        massembly.Save(outDir.getPath)
+        massembly.Save(filename)
         val ilasm = Properties.msilILasm
         if (ilasm != "") {
           val generatedFiles = List.fromArray(massembly.GetGeneratedFiles)
@@ -468,7 +469,7 @@ abstract class GenMSIL extends SubComponent {
           }
         }
       } catch {
-        case _: Error => abort("Could not save files in " + outDir.getPath)
+        case _: Error => abort("Could not save .msil files in " + outDir.getPath)
       }
     }
 
