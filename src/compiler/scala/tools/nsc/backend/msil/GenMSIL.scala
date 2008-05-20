@@ -245,7 +245,7 @@ abstract class GenMSIL extends SubComponent {
 
       val assemblyName = new AssemblyName()
       assemblyName.Name = assemName
-      massembly = AssemblyBuilder.DefineDynamicAssembly(assemblyName)
+      massembly = AssemblyBuilderFactory.DefineDynamicAssembly(assemblyName)
 
       moduleName = assemName + (if (entryPoint == null) ".dll" else ".exe")
       // filename here: .dll or .exe (in both parameters), second: give absolute-path
