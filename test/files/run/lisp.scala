@@ -8,15 +8,15 @@
 
 class LispTokenizer(s: String) extends Iterator[String] {
   private var i = 0;
-  private def isDelimiter(ch: Char) = ch <= ' ' || ch == '(' || ch == ')';
+  private def isDelimiter(ch: Char) = ch <= ' ' || ch == '(' || ch == ')'
   def hasNext: Boolean = {
-    while (i < s.length() && s.charAt(i) <= ' ') { i = i + 1 }
+    while (i < s.length() && s.charAt(i) <= ' ') i += 1
     i < s.length()
   }
   def next: String =
     if (hasNext) {
       val start = i
-      if (isDelimiter(s charAt i)) i = i + 1
+      if (isDelimiter(s charAt i)) i += 1
       else
         do i = i + 1
         while (!isDelimiter(s charAt i))
@@ -28,14 +28,14 @@ class LispTokenizer(s: String) extends Iterator[String] {
 // Lisp Interface
 
 trait Lisp {
-  type Data;
+  type Data
 
-  def string2lisp(s: String): Data;
-  def lisp2string(s: Data): String;
+  def string2lisp(s: String): Data
+  def lisp2string(s: Data): String
 
-  def evaluate(d: Data): Data;
-  // !!! def evaluate(s: String): Data = evaluate(string2lisp(s));
-  def evaluate(s: String): Data;
+  def evaluate(d: Data): Data
+  // !!! def evaluate(s: String): Data = evaluate(string2lisp(s))
+  def evaluate(s: String): Data
 }
 
 //############################################################################
@@ -43,7 +43,7 @@ trait Lisp {
 
 object LispCaseClasses extends Lisp {
 
-  import List.range;
+  import List.range
 
   trait Data {
     def elemsToString(): String = toString();
@@ -98,9 +98,9 @@ object LispCaseClasses extends Lisp {
    x6: Data, x7: Data, x8: Data, x9: Data): Data =
     CONS(x0, list(x1, x2, x3, x4, x5, x6, x7, x8, x9));
 
-  var curexp: Data = null;
-  var trace: Boolean = false;
-  var indent: Int = 0;
+  var curexp: Data = null
+  var trace: Boolean = false
+  var indent: Int = 0
 
   def lispError[a](msg: String): a =
     error("error: " + msg + "\n" + curexp);
@@ -146,14 +146,14 @@ object LispCaseClasses extends Lisp {
     val prevexp = curexp;
     curexp = x;
     if (trace) {
-      for (val x <- range(1, indent)) Console.print(" ");
+      for (x <- range(1, indent)) Console.print(" ");
       Console.println("===> " + x);
       indent = indent + 1;
     }
     val result = eval1(x, env);
     if (trace) {
       indent = indent - 1;
-      for (val x <- range(1, indent)) Console.print(" ");
+      for (x <- range(1, indent)) Console.print(" ");
       Console.println("<=== " + result);
     }
     curexp = prevexp;
@@ -267,8 +267,8 @@ object LispAny extends Lisp {
   case class Lambda(f: List[Data] => Data);
 
   var curexp: Data = null;
-  var trace: boolean = false;
-  var indent: int = 0;
+  var trace: Boolean = false;
+  var indent: Int = 0;
 
   def lispError[a](msg: String): a =
     error("error: " + msg + "\n" + curexp);
@@ -291,8 +291,8 @@ object LispAny extends Lisp {
     case _ => lispError("malformed list: " + x)
   }
 
-  def asInt(x: Data): int = x match {
-    case y: int => y
+  def asInt(x: Data): Int = x match {
+    case y: Int => y
     case _ => lispError("not an integer: " + x)
   }
 
@@ -301,8 +301,7 @@ object LispAny extends Lisp {
     case _ => lispError("not a string: " + x)
   }
 
-  def asBoolean(x: Data): boolean =
-    if (x == 0) false else true;
+  def asBoolean(x: Data): Boolean = x != 0
 
   def normalize(x: Data): Data = x match {
     case 'and :: x :: y :: Nil =>
@@ -327,13 +326,13 @@ object LispAny extends Lisp {
     val prevexp = curexp;
     curexp = x;
     if (trace) {
-      for (val x <- range(1, indent)) Console.print(" ");
+      for (x <- range(1, indent)) Console.print(" ");
       Console.println("===> " + x);
-      indent = indent + 1;
+      indent += 1;
     }
     val result = eval1(x, env);
     if (trace) {
-      indent = indent - 1;
+      indent -= 1;
       for (val x <- range(1, indent)) Console.print(" ");
       Console.println("<=== " + result);
     }
@@ -358,7 +357,7 @@ object LispAny extends Lisp {
       apply(eval(y, env), z map (x => eval(x, env)))
     case Lambda(_) => x
     case y: String => x
-    case y: int => x
+    case y: Int => x
     case y => lispError("illegal term")
   }
 
@@ -404,14 +403,14 @@ object LispAny extends Lisp {
     .extend("=", Lambda{
       case List(arg1, arg2) => if(arg1 == arg2) 1 else 0})
     .extend("+", Lambda{
-      case List(arg1: int, arg2: int) => arg1 + arg2
+      case List(arg1: Int, arg2: Int) => arg1 + arg2
       case List(arg1: String, arg2: String) => arg1 + arg2})
     .extend("-", Lambda{
-      case List(arg1: int, arg2: int) => arg1 - arg2})
+      case List(arg1: Int, arg2: Int) => arg1 - arg2})
     .extend("*", Lambda{
-      case List(arg1: int, arg2: int) => arg1 * arg2})
+      case List(arg1: Int, arg2: Int) => arg1 * arg2})
     .extend("/", Lambda{
-      case List(arg1: int, arg2: int) => arg1 / arg2})
+      case List(arg1: Int, arg2: Int) => arg1 / arg2})
     .extend("nil", Nil)
     .extend("cons", Lambda{
       case List(arg1, arg2) => arg1 :: asList(arg2)})
@@ -510,7 +509,7 @@ class LispUser(lisp: Lisp) {
 // Main
 
 object Test {
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]) {
     new LispUser(LispCaseClasses).run;
     new LispUser(LispAny).run;
     ()

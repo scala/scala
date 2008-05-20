@@ -2,14 +2,12 @@
 
 object Test {
 
-def fac(n: Int): Int = if (n < 2) 1 else fac(n - 1) * n;
+  def fac(n: Int): Int = if (n < 2) 1 else fac(n - 1) * n;
 
-// Fibonacci
+  // Fibonacci
+  def fib(n: Int): Int = if (n < 2) 1 else fib(n - 1) + fib(n - 2);
 
-
-def fib(n: Int): Int = if (n < 2) 1 else fib(n - 1) + fib(n - 2);
-
-def show_fib(n: Int): Int = {
+  def show_fib(n: Int): Int = {
     Console.print("### fib(");
     Console.print(n);
     Console.print(") = ");
@@ -19,34 +17,34 @@ def show_fib(n: Int): Int = {
     Console.println;
     Console.flush;
     v
-}
+  }
 
-def id[X](x: X): X = x;
+  def id[X](x: X): X = x;
 
-def apply[X](f: X => X, x: X): X = f(x);
+  def apply[X](f: X => X, x: X): X = f(x);
 
-def id_obj(x: AnyRef): AnyRef = x;
+  def id_obj(x: AnyRef): AnyRef = x;
 
-def apply_obj(f: AnyRef => AnyRef, x: AnyRef): AnyRef = f(x);
+  def apply_obj(f: AnyRef => AnyRef, x: AnyRef): AnyRef = f(x);
 
-def id_any(x: scala.Any): scala.Any = x;
+  def id_any(x: scala.Any): scala.Any = x;
 
-def apply_any(f: scala.Any => scala.Any, x: scala.Any): scala.Any = f(x);
+  def apply_any(f: scala.Any => scala.Any, x: scala.Any): scala.Any = f(x);
 
-def id_int(x: Int): Int = x;
+  def id_int(x: Int): Int = x;
 
-def apply_int(f: Int => Int, x: Int): Int = f(x);
+  def apply_int(f: Int => Int, x: Int): Int = f(x);
 
-class MyClass() {
+  class MyClass() {
     override def toString() = "=== MyClass::toString ===";
     def test() = Console.println("=== MyClass::test ===");
-}
+  }
 
-class MySubclass() extends MyClass() {
+  class MySubclass() extends MyClass() {
     override def toString() = "=== MySubclass::toString ===";
-}
+  }
 
-def foobar = {
+  def foobar = {
     42;
     42l;
     23.5f;
@@ -107,9 +105,9 @@ def foobar = {
 
     Console.println(apply_any(id_any, "identity").toString());
     Console.println;
-};
+  };
 
-foobar;
+  foobar;
 
 //############################################################################
 
@@ -218,7 +216,7 @@ Console.println;
 
   case class Bar();
 
-  case class Foo(i:int, j:char, c:Bar) ;
+  case class Foo(i: Int, j: Char, c: Bar) ;
 
   Console.println(
     true // Foo(3,'a',Bar()).caseElement( -1 ) == null // throws Exception now
@@ -231,8 +229,7 @@ Console.println;
 
 //############################################################################
 
-  def main(args: Array[String]): Unit = {
-    ()
+  def main(args: Array[String]) {
   }
 
 //############################################################################

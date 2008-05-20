@@ -1,6 +1,6 @@
 object A {
   object B {
-    implicit def int2string(x: int) = "["+x.toString+"]"
+    implicit def int2string(x: Int) = "["+x.toString+"]"
   }
 }
 

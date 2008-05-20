@@ -1,11 +1,11 @@
-package scala.concurrent;
+package scala.concurrent
 
-class AbortException extends RuntimeException;
+class AbortException extends RuntimeException
 
 object Transaction {
   private var cnt = 0L
-  def nextId: long = synchronized {
-    cnt = cnt + 1; cnt
+  def nextId: Long = synchronized {
+    cnt += 1; cnt
   }
 
   // Transaction status constants
@@ -20,9 +20,9 @@ object Transaction {
 }
 
 class Transaction {
-  var status: int = _
+  var status: Int = _
 
-  var id: long = _  // only for real transactions
+  var id: Long = _  // only for real transactions
 
   var head: Transaction = this
   var next: Transaction = null
@@ -54,10 +54,10 @@ class Transaction {
 trait Transactional {
 
   /** create a new snapshot */
-  def checkPoint(): unit
+  def checkPoint(): Unit
 
   /** copy back snapshot */
-  def rollBack(): unit
+  def rollBack(): Unit
 
   var readers: Transaction
   var writer: Transaction
@@ -71,7 +71,7 @@ trait Transactional {
       null
     }
 
-  def getter(thisTrans: Transaction): unit = {
+  def getter(thisTrans: Transaction) {
     if (writer == thisTrans) return
     var r = readers
     while (r != null && r.head.status != Transaction.Running) { r = r.next; readers = r }
@@ -91,7 +91,7 @@ trait Transactional {
     }
   }
 
-  def setter(thisTrans: Transaction): unit = {
+  def setter(thisTrans: Transaction) {
     if (writer == thisTrans) return
     synchronized {
       val w = currentWriter()
