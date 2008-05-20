@@ -150,7 +150,7 @@ class Settings(error: String => Unit) {
 
   val Xcasetags     = ChoiceSetting("-Ycasetags", "test integer tags for case classes", List("on","off"),
                                      /*default*/"off")
-
+  val XnoVarargsConversion = BooleanSetting("-Xno-varargs-conversion", "disable varags conversion")
   val selfInAnnots = BooleanSetting    ("-Yself-in-annots", "Include a \"self\" identifier inside of annotations")
 
 

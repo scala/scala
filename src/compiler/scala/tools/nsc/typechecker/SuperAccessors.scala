@@ -217,7 +217,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           super.transform(tree)
 
       case Apply(fn, args) =>
-        assert(fn.tpe != null)
+        assert(fn.tpe != null, tree)
         copy.Apply(tree, transform(fn), transformArgs(args, fn.tpe.paramTypes))
       case Function(vparams, body) =>
         withInvalidOwner {

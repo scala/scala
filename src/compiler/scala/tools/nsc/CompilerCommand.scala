@@ -20,7 +20,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
   val cmdName = "scalac"
 
   /** The file extension of files that the compiler can process */
-  def fileEnding = Properties.fileEndingString //todo: lazy val
+  lazy val fileEnding = Properties.fileEndingString
 
   private val helpSyntaxColumnWidth: Int =
     Iterable.max(settings.allSettings map (_.helpSyntax.length))
@@ -92,10 +92,11 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
             ok = false
           }
         }
-      } else if ((settings.script.value != "") || args.head.endsWith(fileEnding)) {
+      } else if ((settings.script.value != "") ||
+                 (fileEnding.split("\\|") exists (args.head.endsWith(_)))) {
         fs = args.head :: fs
         args = args.tail
-      } else if (args.head.length == 0) {//quick fix
+      } else if (args.head.length == 0) {//quick fix [martin: for what?]
         args = args.tail
       } else {
         error("don't know what to do with " + args.head)

@@ -131,9 +131,10 @@ abstract class GenJVM extends SubComponent {
         addScalaAttr(if (isTopLevelModule(sym)) sym.sourceModule else sym);
       addInnerClasses
 
-      val outfile = new DataOutputStream(getFile(jclass, ".class"))
-      jclass.writeTo(outfile)
-      outfile.close()
+      val outfile = getFile(jclass, ".class")
+      val outstream = new DataOutputStream(outfile.output)
+      jclass.writeTo(outstream)
+      outstream.close()
       informProgress("wrote " + outfile)
     }
 
@@ -280,9 +281,10 @@ abstract class GenJVM extends SubComponent {
       jcode.emitRETURN()
 
       // write the bean information class file.
-      val outfile = new DataOutputStream(getFile(beanInfoClass, ".class"))
-      beanInfoClass.writeTo(outfile)
-      outfile.close()
+      val outfile = getFile(beanInfoClass, ".class")
+      val outstream = new DataOutputStream(outfile.output)
+      beanInfoClass.writeTo(outstream)
+      outstream.close()
       informProgress("wrote BeanInfo " + outfile)
     }
 
@@ -1520,14 +1522,13 @@ abstract class GenJVM extends SubComponent {
       res
     }
 
-    def getFile(cls: JClass, suffix: String): OutputStream = {
+    def getFile(cls: JClass, suffix: String): AbstractFile = {
       var dir: AbstractFile = outputDir
       val pathParts = cls.getName().split("[./]").toList
       for (part <- pathParts.init) {
         dir = dir.subdirectoryNamed(part)
       }
-      val file = dir.fileNamed(pathParts.last + suffix)
-      file.output
+      dir.fileNamed(pathParts.last + suffix)
     }
 
     /** Emit a Local variable table for debugging purposes.

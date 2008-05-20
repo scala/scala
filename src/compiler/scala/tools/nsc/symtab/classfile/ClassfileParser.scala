@@ -440,9 +440,25 @@ abstract class ClassfileParser {
           .newMethod(NoPosition, name).setFlag(sflags).setInfo(info)
         setPrivateWithin(sym, jflags)
         parseAttributes(sym, info)
+        if ((jflags & JAVA_ACC_VARARGS) != 0) {
+          sym.setInfo(arrayToRepeated(sym.info))
+        }
         getScope(jflags).enter(sym)
       }
     }
+  }
+
+  /** Convert repeated parameters to arrays if they occur as part of a Java method
+   */
+  private def arrayToRepeated(tp: Type): Type = tp match {
+    case MethodType(formals, rtpe) =>
+      assert(formals.last.typeSymbol == definitions.ArrayClass)
+      MethodType(
+        formals.init :::
+        List(appliedType(definitions.RepeatedParamClass.typeConstructor, List(formals.last.typeArgs.head))),
+        rtpe)
+    case PolyType(tparams, rtpe) =>
+      PolyType(tparams, arrayToRepeated(rtpe))
   }
 
   private def sigToType(sym: Symbol, sig: Name): Type = {

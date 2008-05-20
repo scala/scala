@@ -45,7 +45,7 @@ object Properties {
   }
 
   val fileEndingString: String = {
-    val defaultString = ".scala"
+    val defaultString = ".scala|.java"
     props.getProperty("file.ending", defaultString)
   }
 

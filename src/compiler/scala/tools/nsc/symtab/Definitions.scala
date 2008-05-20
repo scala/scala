@@ -794,6 +794,11 @@ trait Definitions {
       AnnotationDefaultAttr = newClass(RootClass,
                                        nme.AnnotationDefaultATTR,
                                        List(AnnotationClass.typeConstructor))
+      // This attribute needs a constructor so that modifiers in parsed
+      // Java code make sense
+      AnnotationDefaultAttr.info.decls.enter(
+        AnnotationDefaultAttr.newConstructor(NoPosition)
+          .setInfo(MethodType(List(), AnnotationDefaultAttr.tpe)))
     } //init
 
     var nbScalaCallers: Int = 0

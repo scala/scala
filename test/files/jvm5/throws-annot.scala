@@ -27,7 +27,7 @@ object TestThrows {
   }
 
   def checkMethod(cls: Class[_], name: String) {
-    val method = cls.getMethod(name, Array())
+    val method = cls.getMethod(name)
     println(name + " throws: " + method.getExceptionTypes.mkString("", ", ", ""))
     println(name + " annotations: " + method.getDeclaredAnnotations.mkString("", ", ", ""))
   }

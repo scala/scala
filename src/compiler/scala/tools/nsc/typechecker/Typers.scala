@@ -127,12 +127,20 @@ trait Typers { self: Analyzer =>
    */
   val HKmode        = 0x4000 // @M: could also use POLYmode | TAPPmode
 
+  /** The mode <code>JAVACALLmode</code> is set when we are typing a call to a Java method
+   *  needed temporarily for vararg conversions
+   *  !!!VARARG-CONVERSION!!!
+   */
+  val JAVACALLmode  = 0x8000
+
   private val stickyModes: Int  = EXPRmode | PATTERNmode | TYPEmode | ALTmode
 
   private def funMode(mode: Int) = mode & (stickyModes | SCCmode) | FUNmode | POLYmode
 
   private def argMode(fun: Tree, mode: Int) =
-    if (treeInfo.isSelfOrSuperConstrCall(fun)) mode | SCCmode else mode
+    if (treeInfo.isSelfOrSuperConstrCall(fun)) mode | SCCmode
+    else if (fun.symbol hasFlag JAVA) mode | JAVACALLmode // !!!VARARG-CONVERSION!!!
+    else mode
 
   private val DivergentImplicit = new Exception()
 
@@ -1599,8 +1607,31 @@ trait Typers { self: Analyzer =>
         val prefix =
           List.map2(args take nonVarCount, adaptedFormals take nonVarCount) ((arg, formal) =>
             typedArg(arg, mode, 0, formal))
+
+        // if array is passed into java vararg and formal's element is not an array,
+        // convert it to vararg by adding : _*
+        // this is a gross hack to enable vararg transition; remove it as soon as possible.
+        // !!!VARARG-CONVERSION!!!
+        def hasArrayElement(tpe: Type) =
+          tpe.typeArgs.length == 1 && tpe.typeArgs.head.typeSymbol == ArrayClass
+        var args0 = args
+        if ((mode & JAVACALLmode) != 0 &&
+            (args.length == originalFormals.length) &&
+            !hasArrayElement(adaptedFormals(nonVarCount)) &&
+            !settings.XnoVarargsConversion.value) {
+              val lastarg = typedArg(args(nonVarCount), mode, REGPATmode, WildcardType)
+              if (lastarg.tpe.typeSymbol == ArrayClass || lastarg.tpe.typeSymbol == AllRefClass) {
+                unit.warning(
+                  lastarg.pos,
+                  "I'm seeing an array passed into a Java vararg.\n"+
+                  "I assume that the elements of this array should be passed as individual arguments to the vararg.\n"+
+                  "Therefore I wrap the array in a `: _*', to mark it as a vararg argument.\n"+
+                  "If that's not what you want, compile this file with option -Xno-varargs-conversion.")
+                args0 = args.init ::: List(atPos(lastarg.pos) { Typed(lastarg, Ident(nme.WILDCARD_STAR.toTypeName)) })
+              }
+            }
         val suffix =
-          List.map2(args drop nonVarCount, adaptedFormals drop nonVarCount) ((arg, formal) =>
+          List.map2(args0 drop nonVarCount, adaptedFormals drop nonVarCount) ((arg, formal) =>
             typedArg(arg, mode, REGPATmode, formal))
         prefix ::: suffix
       } else {

@@ -94,13 +94,31 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
     }
   }
 
+  /** Convert repeated parameters to arrays if they occur as part of a Java method
+   */
+  private def repeatedToArray(tp: Type): Type = tp match {
+    case MethodType(formals, rtpe)
+    if (!formals.isEmpty && formals.last.typeSymbol == RepeatedParamClass) =>
+      MethodType(formals.init :::
+                 List(appliedType(ArrayClass.typeConstructor, List(formals.last.typeArgs.head))),
+                 rtpe)
+    case PolyType(tparams, rtpe) =>
+      val rtpe1 = repeatedToArray(rtpe)
+      if (rtpe1 eq rtpe) tp
+      else PolyType(tparams, rtpe1)
+    case _ =>
+      tp
+  }
+
   /** - return symbol's transformed type,
    *  - if symbol is a def parameter with transformed type T, return () => T
    *
    * @MAT: starting with this phase, the info of every symbol will be normalized
    */
   def transformInfo(sym: Symbol, tp: Type): Type =
-    if (sym.isType) uncurryType(tp) else uncurry(tp)
+    if (sym.isType) uncurryType(tp)
+    else if (sym.isMethod && sym.hasFlag(JAVA)) uncurry(repeatedToArray(tp))
+    else uncurry(tp)
 
   /** Traverse tree omitting local method definitions.
    *  If a `return' is encountered, set `returnFound' to true.

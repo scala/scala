@@ -4,7 +4,7 @@ object Test1 {
     def foo: Unit = ()
   }
   def run {
-    val method = classOf[Foo].getMethod("foo", Array())
+    val method = classOf[Foo].getMethod("foo")
     method.getExceptionTypes foreach println
   }
 }
@@ -18,7 +18,7 @@ object Test2 {
     def read() = in.read()
   }
   def run {
-    val method = classOf[Reader].getMethod("read", Array())
+    val method = classOf[Reader].getMethod("read")
     method.getExceptionTypes foreach println
   }
 }
@@ -41,7 +41,7 @@ object Test3 {
     def foo: Unit = ()
   }
   def run {
-    val method = classOf[Foo].getMethod("foo", Array())
+    val method = classOf[Foo].getMethod("foo")
     val annotation = method.getAnnotation(classOf[Deprecated])
     println(annotation)
   }
@@ -133,12 +133,12 @@ object Test5 {
     private var count: Integer = 0
 
     private val getter =
-      getClass().getMethod("getCount", Array[java.lang.Class[T] forSome { type T }]())
+      getClass().getMethod("getCount")
     private val setter =
-      getClass().getMethod("setCount", Array(classOf[Integer]))
+      getClass().getMethod("setCount", classOf[Integer])
 
-    def get = getter.invoke(this, Array()).asInstanceOf[Integer].intValue
-    def set(n: Int) = setter.invoke(this, Array(new Integer(n)))
+    def get = getter.invoke(this).asInstanceOf[Integer].intValue
+    def set(n: Int) = setter.invoke(this, new Integer(n))
   }
   def run {
     val count = new Count

@@ -413,10 +413,10 @@ trait Trees {
   case class DefDef(mods: Modifiers, name: Name, tparams: List[TypeDef],
                     vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree)
        extends ValOrDefDef {
-    assert(tpt.isType)
+    assert(tpt.isType, tpt)
     //assert(kindingIrrelevant(tpt.tpe) || !tpt.tpe.isHigherKinded, tpt.tpe) //@M a method definition should never be typed with a higher-kinded type (values must be classified by types with kind *)
     //tpt.kindStar=true //@M turn on consistency checking in Tree
-    assert(rhs.isTerm)
+    assert(rhs.isTerm, rhs)
   }
 
   def DefDef(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef =

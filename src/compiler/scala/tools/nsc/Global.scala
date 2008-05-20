@@ -249,12 +249,17 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     private val isFlat = prev.name == "flatten" || prev.flatClasses
     override def flatClasses: Boolean = isFlat
 
+	/** Is current phase cancelled on this unit? */
+    def cancelled(unit: CompilationUnit) =
+      reporter.cancelled ||
+      unit.isJava && this.id > currentRun.namerPhase.id
+
     final def applyPhase(unit: CompilationUnit) {
       if (settings.debug.value) inform("[running phase " + name + " on " + unit + "]")
       val unit0 = currentRun.currentUnit
       currentRun.currentUnit = unit
       reporter.setSource(unit.source)
-      if (!reporter.cancelled) apply(unit)
+      if (!cancelled(unit)) apply(unit)
       currentRun.advanceUnit
       assert(currentRun.currentUnit == unit)
       currentRun.currentUnit = unit0
@@ -489,9 +494,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       unitc += 1
       refreshProgress
     }
-    private def refreshProgress = if (fileset.size > 0)
-      progress((phasec * fileset.size) + unitc,
-               (phaseDescriptors.length+1) * fileset.size)
+    private def refreshProgress =
+      if (fileset.size > 0)
+        progress((phasec * fileset.size) + unitc,
+                 (phaseDescriptors.length+1) * fileset.size)
 
     def phaseNamed(name: String): Phase = {
       var p: Phase = firstPhase

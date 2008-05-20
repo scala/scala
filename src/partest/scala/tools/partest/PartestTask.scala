@@ -128,7 +128,7 @@ class PartestTask extends Task {
     val antRunner: AnyRef =
       classloader.loadClass("scala.tools.partest.nest.AntRunner").newInstance().asInstanceOf[AnyRef]
     val antFileManager: AnyRef =
-      antRunner.getClass.getMethod("fileManager", Array()).invoke(antRunner, Array())
+      antRunner.getClass.getMethod("fileManager", Array[Class[_]]()).invoke(antRunner, Array[Object]())
 
     val runMethod =
       antRunner.getClass.getMethod("reflectiveRunTestsForFiles", Array(classOf[Array[File]], classOf[String]))

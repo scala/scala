@@ -9,10 +9,15 @@ package scala.tools.nsc.util
 import scala.tools.nsc.util.SourceFile.{LF, FF, CR, SU}
 
 class CharArrayReader(buf: RandomAccessSeq[Char], start: Int, /* startline: int, startcol: int, */
-                      decodeUni: Boolean, error: String => Unit) extends Iterator[Char] {
+                      decodeUni: Boolean, error: String => Unit) extends Iterator[Char] with Cloneable {
 
   def this(buf: RandomAccessSeq[Char], decodeUni: Boolean, error: String => Unit) =
     this(buf, 0, /* 1, 1, */ decodeUni, error)
+
+  /** produce a duplicate of this char array reader which starts reading
+    *  at current position, independent of what happens to original reader
+	*/
+  def dup: CharArrayReader = clone().asInstanceOf[CharArrayReader]
 
   /** layout constant
    */
