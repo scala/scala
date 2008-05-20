@@ -460,8 +460,7 @@ abstract class GenMSIL extends SubComponent {
           if (settings.debug.value)
             log("Executing command: " + cmd)
           try {
-            val p = Runtime.getRuntime().exec(cmd)
-            p.waitFor() // wait until ilasm is done
+            Runtime.getRuntime().exec(cmd)
           } catch {
             case _ =>
               Console.println("Cannot run command: " + cmd)
