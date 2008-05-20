@@ -58,4 +58,4 @@ fi
 # Reminder: substitution ${JAVA_OPTS:=-Xmx256M -Xms16M} DO NOT work on Solaris
 [ -n "$JAVA_OPTS" ] || JAVA_OPTS="@javaflags@"
 
-${JAVACMD:=java} $JAVA_OPTS -cp "$TOOL_CLASSPATH" -Dscala.home="$SCALA_HOME" -Denv.classpath="$CLASSPATH" -Denv.emacs="$EMACS" @properties@ @class@ @toolflags@ "$@@"
+exec ${JAVACMD:=java} $JAVA_OPTS -cp "$TOOL_CLASSPATH" -Dscala.home="$SCALA_HOME" -Denv.classpath="$CLASSPATH" -Denv.emacs="$EMACS" @properties@ @class@ @toolflags@ "$@@"
