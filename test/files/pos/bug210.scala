@@ -1,8 +1,8 @@
 trait Lang1 {
   trait Exp;
-  trait Visitor { def f(left: Exp): unit; }
+  trait Visitor { def f(left: Exp): Unit }
   class Eval1 extends Visitor { self: Visitor =>
-    def f(left: Exp) = ();
+    def f(left: Exp) = ()
   }
 }
 
@@ -11,7 +11,7 @@ trait Lang2 extends Lang1 {
 }
 /*
 object Main with Application {
-  val lang2 = new Lang2 {};
-  val eval = new lang2.Eval2;
+  val lang2 = new Lang2 {}
+  val eval = new lang2.Eval2
 }
 */

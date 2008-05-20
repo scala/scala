@@ -1,7 +1,7 @@
 package test
 
 trait Ordered[a] {
-  def < (x: a): boolean
+  def < (x: a): Boolean
 }
 
 object O {
@@ -32,11 +32,11 @@ abstract class Tree[+a <% Ordered[a]] {
 object Test {
   import O.view
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]) {
     var t: Tree[String] = Empty
-    for (val s <- args) {
+    for (s <- args) {
       t = t insert s
     }
-    Console.println(t.elements)
+    println(t.elements)
   }
 }
