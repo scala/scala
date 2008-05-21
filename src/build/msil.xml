@@ -164,7 +164,8 @@ PACKED MSIL BUILD (MSIL-PACK)
     <!-- spawn="true" will prevent the ilasm command from printing anything to
          the console. remove for debugging -->
     <exec executable="${ilasm.cmd}"
-          vmlauncher="no" spawn="true">
+          vmlauncher="no">
+      <!--  spawn="true" -->
       <arg line="${ilasm.args}${msil-pack-lib.file}  ${ilasm.infiles}"/>
     </exec>
   </target>
