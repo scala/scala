@@ -99,7 +99,7 @@ trait StdNames {
     def isOpAssignmentName(name: Name) =
       name(name.length - 1) == '=' &&
       isOperatorCharacter(name(0)) &&
-      name != EQraw && name != NEraw && name != LEraw && name != GEraw
+      name(0) != '=' && name != NEraw && name != LEraw && name != GEraw
 
     def isOperatorCharacter(c: Char) = c match {
       case '~' | '!' | '@' | '#' | '%' |

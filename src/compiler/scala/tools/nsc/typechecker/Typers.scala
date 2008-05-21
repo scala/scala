@@ -3482,7 +3482,10 @@ trait Typers { self: Analyzer =>
         }
         try {
           // if (!isLocal) tree setSymbol info.sym
-          val isView = (pt0 ne pt)
+          val isView = pt0 match {
+            case MethodType(_, _) | PolyType(_, _) => true
+            case _ => false
+          }
           val tree1 =
             if (isView)
               typed1(Apply(tree, List(Ident("<argument>") setType pt0.paramTypes.head)), EXPRmode, pt0.resultType)
