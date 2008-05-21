@@ -397,9 +397,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     analyzer.typerFactory: SubComponent, // consistency check after refchecks would fail.
     superAccessors,  // add super accessors
     pickler,         // serialize symbol tables
-    refchecks       // perform reference and override checking, translate nested objects
+    refchecks        // perform reference and override checking, translate nested objects
   ) ::: (
-    if (forJVM) List(liftcode) else List()  // generate reified trees
+    if (forJVM) List(liftcode) else List() // generate reified trees
   ) ::: List(
     uncurry,         // uncurry, translate function values to anonymous classes
     tailCalls,       // replace tail calls by jumps
@@ -409,8 +409,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     lazyVals,
     lambdaLift,      // move nested functions to top level
 //    detach,
-    constructors,    // move field definitions into constructors
-    flatten,         // get rid of inner classes
+    constructors     // move field definitions into constructors
+  ) ::: (
+    if (forMSIL) List() else List(flatten) // get rid of inner classes
+  ) ::: List(
     mixer,           // do mixin composition
     cleanup,         // some platform-specific cleanups
 

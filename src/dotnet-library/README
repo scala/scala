@@ -1,5 +1,5 @@
 INFO: The dotnet-library tree has been synchronized with
-revision 12880 of src/library on $Date$.
+revision 15115 of src/library on $Date$.
 
 IMPORTANT:
 Never, never, never, ever add/remove/edit files in the dotnet-library
@@ -13,11 +13,11 @@ of the tree. Or from the second line of this document. But you should
 always check to see if it is consistent with svn log messages.
 
 
-koko:~/scala/src/dotnet-library>svn log -r 12367
+lamppc26:trunk luc$ svn log -r 15115 
 ------------------------------------------------------------------------
-r12367 | mihaylov | 2007-07-19 23:11:21 +0200 (Thu, 19 Jul 2007) | 1 line
+r15115 | rytz | 2008-05-20 16:57:39 +0200 (Tue, 20 May 2008) | 1 line
 
-Synced dotnet-library/ with rev 12365
+Synced src/dotnet-library with rev 15086 of src/library
 ------------------------------------------------------------------------
 
 

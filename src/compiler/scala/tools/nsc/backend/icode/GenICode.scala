@@ -82,12 +82,13 @@ abstract class GenICode extends SubComponent  {
 
       case ClassDef(mods, name, _, impl) =>
         log("Generating class: " + tree.symbol.fullNameString)
+        val outerClass = ctx.clazz
         ctx setClass (new IClass(tree.symbol) setCompilationUnit unit)
         addClassFields(ctx, tree.symbol);
         classes += (tree.symbol -> ctx.clazz)
         unit.icode += ctx.clazz
-          gen(impl, ctx)
-        ctx setClass null
+        gen(impl, ctx)
+        ctx setClass outerClass
 
       // !! modules should be eliminated by refcheck... or not?
       case ModuleDef(mods, name, impl) =>

@@ -359,7 +359,7 @@ abstract class Mixin extends InfoTransform {
     private var enclInterface: Symbol = _
 
     /** The first transform; called in a pre-order traversal at phase mixin
-     *  (that is, every node is processed before its children.
+     *  (that is, every node is processed before its children).
      *  What transform does:
      *   - For every non-trait class, add all mixed in members to the class info.
      *   - For every trait, add all late interface members to the class info
@@ -635,7 +635,7 @@ abstract class Mixin extends InfoTransform {
                         mkLazyDef(clazz, Apply(staticRef(initializer(sym)), List(gen.mkAttributedThis(clazz))), Literal(()), offset)
                       else {
                         val assign = atPos(sym.pos) {
-                          Assign(Select(This(sym.accessed.owner), sym.accessed) /*gen.mkAttributedRef(sym.accessed)*/,
+                          Assign(Select(This(sym.accessed.owner), sym.accessed) /*gen.mkAttributedRef(sym.accessed)*/ ,
                               Apply(staticRef(initializer(sym)), gen.mkAttributedThis(clazz) :: Nil))
                         }
                         mkLazyDef(clazz, assign, Select(This(clazz), sym.accessed), offset)
@@ -805,8 +805,13 @@ abstract class Mixin extends InfoTransform {
      */
     override def transform(tree: Tree): Tree = {
       try { //debug
+	val outerTyper = localTyper
         val tree1 = super.transform(preTransform(tree))
-        atPhase(phase.next)(postTransform(tree1))
+        val res = atPhase(phase.next)(postTransform(tree1))
+        // needed when not flattening inner classes. parts after an
+        // inner class will otherwise be typechecked with a wrong scope
+        localTyper = outerTyper
+	res
       } catch {
         case ex: Throwable =>
           if (settings.debug.value) Console.println("exception when traversing " + tree)
