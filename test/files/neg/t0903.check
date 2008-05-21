@@ -1,0 +1,7 @@
+t0903.scala:3: error: reassignment to val
+  x += 1
+    ^
+t0903.scala:4: error: reassignment to val
+  x = 2
+    ^
+two errors found

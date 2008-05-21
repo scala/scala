@@ -97,7 +97,19 @@ trait StdNames {
     def isSetterName(name: Name) = name.endsWith(SETTER_SUFFIX)
     def isLocalDummyName(name: Name) = name.startsWith(LOCALDUMMY_PREFIX)
     def isOpAssignmentName(name: Name) =
-      name.endsWith(nme.EQL) && name != nme.EQ && !name.endsWith(nme.USCOREEQL)
+      name(name.length - 1) == '=' &&
+      isOperatorCharacter(name(0)) &&
+      name != EQraw && name != NEraw && name != LEraw && name != GEraw
+
+    def isOperatorCharacter(c: Char) = c match {
+      case '~' | '!' | '@' | '#' | '%' |
+           '^' | '*' | '+' | '-' | '<' |
+           '>' | '?' | ':' | '=' | '&' |
+           '|' | '\\'| '/' => true
+      case _ =>
+        val chtp = Character.getType(c)
+        chtp == Character.MATH_SYMBOL || chtp == Character.OTHER_SYMBOL
+      }
 
     /** If `name' is an expandedName, the original name. Otherwise `name' itself.
      *  @see Symbol.expandedName
@@ -372,6 +384,12 @@ trait StdNames {
     val UNARY_+ = encode("unary_+")
     val UNARY_- = encode("unary_-")
     val UNARY_! = encode("unary_!")
+
+    // unencoded comparisons
+    val EQraw = newTermName("==")
+    val NEraw = newTermName("!=")
+    val LEraw = newTermName("<=")
+    val GEraw = newTermName(">=")
 
     // value-conversion methods
     val toByte = newTermName("toByte")

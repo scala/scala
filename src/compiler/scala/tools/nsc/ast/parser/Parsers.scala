@@ -446,15 +446,11 @@ trait Parsers extends NewScanners with MarkupParsers {
       if (operator eq nme.ERROR) -1
       else {
         val firstCh = operator(0)
-        if (operator(operator.length - 1) == '=' &&
-            firstCh != '<' &&
-            firstCh != '>' &&
-            firstCh != '=' &&
-            firstCh != '!')
-          0
-        else if (((firstCh >= 'A') && (firstCh <= 'Z')) ||
+        if (((firstCh >= 'A') && (firstCh <= 'Z')) ||
             ((firstCh >= 'a') && (firstCh <= 'z')))
           1
+        else if (nme.isOpAssignmentName(operator))
+          0
         else
           firstCh match {
             case '|'             => 2

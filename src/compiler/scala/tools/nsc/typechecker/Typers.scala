@@ -2595,12 +2595,13 @@ trait Typers { self: Analyzer =>
             case ex: TypeError =>
               fun match {
                 case Select(qual, name)
-                if (mode & PATTERNmode) == 0 && nme.isOpAssignmentName(name) =>
+                if (mode & PATTERNmode) == 0 && nme.isOpAssignmentName(name.decode) =>
                   val qual1 = typedQualifier(qual)
                   if (treeInfo.isVariableOrGetter(qual1)) {
                     convertToAssignment(fun, qual1, name, args, ex)
                   } else {
-                    reportTypeError(fun.pos, ex)
+                    if (qual1.symbol.isValue) error(tree.pos, "reassignment to val")
+                    else reportTypeError(fun.pos, ex)
                     setError(tree)
                   }
                 case _ =>

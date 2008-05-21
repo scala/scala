@@ -65,7 +65,7 @@ object Predef {
 
   type Function[-A, +B] = Function1[A, B]
 
-  type Map[A, B] = collection.immutable.Map[A, B]
+  type Map[A, +B] = collection.immutable.Map[A, B]
   type Set[A] = collection.immutable.Set[A]
 
   val Map = collection.immutable.Map
