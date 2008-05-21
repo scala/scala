@@ -2383,7 +2383,10 @@ trait Parsers extends NewScanners with MarkupParsers {
               }
           }
           inNextToken
-        } else stats += first
+        } else {
+          stats += first
+          if (in.token != RBRACE && in.token != EOF/* !isStatSep(in.token)*/) acceptStatSep()
+        }
       }
       while (inToken != RBRACE && inToken != EOF) {
         if (inToken == IMPORT) {

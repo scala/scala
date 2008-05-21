@@ -40,8 +40,10 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     private var accDefs: List[(Symbol, ListBuffer[Tree])] = List()
     private val typer = analyzer.newTyper(analyzer.rootContext(unit))
 
-    private def accDefBuf(clazz: Symbol) =
-      accDefs.dropWhile(_._1 != clazz).head._2
+    private def accDefBuf(clazz: Symbol) = accDefs find (_._1 == clazz) match {
+      case Some((_, buf)) => buf
+      case None => throw new AssertionError("no acc def buf for "+clazz)
+    }
 /*
     private def transformArgs(args: List[Tree], formals: List[Type]) = {
       if (!formals.isEmpty && formals.last.symbol == definitions.ByNameParamClass)
