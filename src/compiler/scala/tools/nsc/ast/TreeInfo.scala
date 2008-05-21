@@ -106,9 +106,9 @@ abstract class TreeInfo {
     case Select(qual, _) =>
       tree.symbol.isVariable ||
       (mayBeVarGetter(tree.symbol) &&
-       tree.symbol.owner.info.decl(nme.getterToSetter(tree.symbol.name)) != NoSymbol)
+       tree.symbol.owner.info.member(nme.getterToSetter(tree.symbol.name)) != NoSymbol)
     case Apply(Select(qual, nme.apply), _) =>
-      qual.tpe.decl(nme.update) != NoSymbol
+      qual.tpe.member(nme.update) != NoSymbol
     case _ =>
       false
   }
