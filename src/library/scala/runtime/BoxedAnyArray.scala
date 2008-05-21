@@ -24,6 +24,50 @@ import compat.Platform
 @serializable
 final class BoxedAnyArray(val length: Int) extends BoxedArray {
 
+  def this(dim1: Int, dim2: Int) = {
+    this(dim1);
+    initializeWith(i => new BoxedAnyArray(dim2))
+  }
+
+  def this(dim1: Int, dim2: Int, dim3: Int) = {
+    this(dim1);
+    initializeWith(i => new BoxedAnyArray(dim2, dim3))
+  }
+
+  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int) = {
+    this(dim1);
+    initializeWith(i => new BoxedAnyArray(dim2, dim3, dim4))
+  }
+
+  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int) = {
+    this(dim1);
+    initializeWith(i => new BoxedAnyArray(dim2, dim3, dim4, dim5))
+  }
+
+  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int) = {
+    this(dim1);
+    initializeWith(i => new BoxedAnyArray(dim2, dim3, dim4, dim5, dim6))
+  }
+
+  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int) = {
+    this(dim1);
+    initializeWith(i => new BoxedAnyArray(dim2, dim3, dim4, dim5, dim6, dim7))
+  }
+
+  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int) = {
+    this(dim1);
+    initializeWith(i => new BoxedAnyArray(dim2, dim3, dim4, dim5, dim6, dim7, dim8))
+  }
+
+  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int, dim9: Int) = {
+    this(dim1);
+    initializeWith(i => new BoxedAnyArray(dim2, dim3, dim4, dim5, dim6, dim7, dim8, dim9))
+  }
+
+  private def initializeWith(elem: Int => Any) = {
+    for (i <- 0 until length) update(i, elem(i))
+  }
+
   private var boxed = new Array[AnyRef](length)
   private val hash = boxed.hashCode()
   private var unboxed: AnyRef = null
