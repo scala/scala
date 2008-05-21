@@ -587,6 +587,9 @@ abstract class ClassfileParser {
       }
       accept('>')
     }
+    val ownTypeParams = newTParams.toList
+    if (!ownTypeParams.isEmpty)
+      sym.setInfo(new TypeParamsType(ownTypeParams))
     val tpe =
       if ((sym eq null) || !sym.isClass)
         sig2type(tparams)
@@ -598,9 +601,12 @@ abstract class ClassfileParser {
         }
         ClassInfoType(parents.toList, instanceDefs, sym)
       }
-    polyType(newTParams.toList, tpe)
-  } // polySigToType
+    polyType(ownTypeParams, tpe)
+  } // sigToType
 
+  class TypeParamsType(override val typeParams: List[Symbol]) extends LazyType {
+    override def complete(sym: Symbol) { throw new AssertionError("cyclic type dereferencing") }
+  }
 
   def parseAttributes(sym: Symbol, symtype: Type) {
     def convertTo(c: Constant, pt: Type): Constant = {
