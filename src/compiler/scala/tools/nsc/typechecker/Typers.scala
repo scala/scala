@@ -810,7 +810,8 @@ trait Typers { self: Analyzer =>
                 }
                 if (coercion != EmptyTree) {
                   if (settings.debug.value) log("inferred view from "+tree.tpe+" to "+pt+" = "+coercion+":"+coercion.tpe)
-                  return typed(Apply(coercion, List(tree)) setPos tree.pos, mode, pt)
+                  return newTyper(context.makeImplicit(context.reportAmbiguousErrors)).typed(
+                      Apply(coercion, List(tree)) setPos tree.pos, mode, pt)
                 }
               }
             }
