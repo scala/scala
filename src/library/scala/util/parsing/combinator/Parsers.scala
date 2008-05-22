@@ -230,9 +230,27 @@ trait Parsers {
      */
     def ~ [U](p: => Parser[U]): Parser[~[T, U]] = (for(a <- this; b <- p) yield new ~(a,b)).named("~")
 
+    /** A parser combinator for sequential composition which keeps only the right result
+     *
+     * <p> `p ~> q' succeeds if `p' succeeds and `q' succeeds on the input
+     *           left over by `p'.</p>
+     *
+     * @param q a parser that will be executed after `p' (this parser) succeeds
+     * @return a `Parser' that -- on success -- returns the result of `q'.
+     */
     def ~> [U](p: => Parser[U]): Parser[U] = (for(a <- this; b <- p) yield b).named("~>")
-    def <~ [U](p: => Parser[U]): Parser[T] = (for(a <- this; b <- p) yield a).named("<~")
 
+    /** A parser combinator for sequential composition which keeps only the left result
+     *
+     * <p> `p &lt;~ q' succeeds if `p' succeeds and `q' succeeds on the input
+     *           left over by `p'.</p>
+     *
+     * <b>Note:</b> &lt;~ has lower operator precedence than ~ or ~>.
+     *
+     * @param q a parser that will be executed after `p' (this parser) succeeds
+     * @return a `Parser' that -- on success -- returns the result of `p'.
+     */
+    def <~ [U](p: => Parser[U]): Parser[T] = (for(a <- this; b <- p) yield a).named("<~")
 
      /* not really useful: V cannot be inferred because Parser is covariant in first type parameter (V is always trivially Nothing)
     def ~~ [U, V](q: => Parser[U])(implicit combine: (T, U) => V): Parser[V] = new Parser[V] {

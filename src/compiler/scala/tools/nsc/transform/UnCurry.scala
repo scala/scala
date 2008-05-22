@@ -446,11 +446,14 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
             if (tree.symbol.isClassConstructor) {
               atOwner(tree.symbol) {
                 val rhs1 = (rhs: @unchecked) match {
-                  case Block(stat :: stats, expr) =>
-                    copy.Block(
-                      rhs,
-                      withInConstructorFlag(INCONSTRUCTOR) { transform(stat) } :: transformTrees(stats),
-                      transform(expr));
+                  case Block(stats, expr) =>
+                    def transformInConstructor(stat: Tree) =
+                      withInConstructorFlag(INCONSTRUCTOR) { transform(stat) }
+                    val presupers = treeInfo.preSuperFields(stats) map transformInConstructor
+                    val rest = stats drop presupers.length
+                    val supercalls = rest take 1 map transformInConstructor
+                    val others = rest drop 1 map transform
+                    copy.Block(rhs, presupers ::: supercalls ::: others, transform(expr))
                 }
                 copy.DefDef(
                   tree, mods, name, transformTypeDefs(tparams),
