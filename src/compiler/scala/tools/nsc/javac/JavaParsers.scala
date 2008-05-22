@@ -655,12 +655,12 @@ trait JavaParsers extends JavaScanners {
           in.nextToken
           repsep(typ, COMMA)
         } else {
-          List()
+          List(javaLangObject)
         }
       val (statics, body) = typeBody(INTERFACE)
       addCompanionObject(statics, atPos(pos) {
         ClassDef(mods | Flags.TRAIT | Flags.INTERFACE | Flags.ABSTRACT,
-                 name, tparams,
+                 name, tparams, javaLangObject
                  makeTemplate(parents, body))
       })
     }
