@@ -219,7 +219,7 @@ abstract class DeadCodeElimination extends SubComponent {
       val compensations: mutable.Map[(BasicBlock, Int), List[Instruction]] = new mutable.HashMap
 
       for (bb <- m.code.blocks.toList) {
-        assert(bb.isClosed, "Open block in computeCompensations")
+        assert(bb.closed, "Open block in computeCompensations")
         for ((i, idx) <- bb.toList.zipWithIndex) {
           if (!useful(bb)(idx)) {
             for ((consumedType, depth) <- i.consumedTypes.reverse.zipWithIndex) {

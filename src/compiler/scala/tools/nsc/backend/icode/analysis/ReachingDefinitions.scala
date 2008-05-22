@@ -196,7 +196,7 @@ abstract class ReachingDefinitions {
      *  value found below the topmost element of the stack.
      */
     def findDefs(bb: BasicBlock, idx: Int, m: Int, depth: Int): List[(BasicBlock, Int)] = if (idx > 0) {
-      assert(bb.isClosed)
+      assert(bb.closed)
       var instrs = bb.getArray
       var res: List[(BasicBlock, Int)] = Nil
       var i = idx

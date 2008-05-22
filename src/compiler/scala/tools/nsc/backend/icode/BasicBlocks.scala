@@ -20,27 +20,53 @@ trait BasicBlocks {
   /** This class represents a basic block. Each
    *  basic block contains a list of instructions that are
    *  either executed all, or none. No jumps
-   *  to/from the "middle" of the basic block are allowed.
+   *  to/from the "middle" of the basic block are allowed (modulo exceptions).
    */
-  class BasicBlock (theLabel: Int, val method: IMethod)
+  class BasicBlock(val label: Int, val method: IMethod)
         extends AnyRef
-        with ProgramPoint[BasicBlock] {
+        with ProgramPoint[BasicBlock]
+        with Seq[Instruction] {
+
+    import BBFlags._
 
     def code = method.code
 
-    /** The label of the block */
-    val label = theLabel
+    /** Flags of this basic block. */
+    private var flags: Int = 0
+
+    /** Does this block have the given flag? */
+    def hasFlag(flag: Int): Boolean = (flags & flag) != 0
+
+    /** Set the given flag. */
+    def setFlag(flag: Int): Unit = flags |= flag
+    def resetFlag(flag: Int) {
+      flags &= ~flag
+    }
+
+    /** Is this block closed? */
+    def closed: Boolean = hasFlag(CLOSED)
+    def closed_=(b: Boolean) = if (b) setFlag(CLOSED) else resetFlag(CLOSED)
 
     /** When set, the <code>emit</code> methods will be ignored. */
-    var ignore: Boolean = false
-
-    var preds: List[BasicBlock] = null
+    def ignore: Boolean = hasFlag(IGNORING)
+    def ignore_=(b: Boolean) = if (b) setFlag(IGNORING) else resetFlag(IGNORING)
 
     /** Is this block the head of a while? */
-    var loopHeader = false
+    def loopHeader = hasFlag(LOOP_HEADER)
+    def loopHeader_=(b: Boolean) =
+      if (b) setFlag(LOOP_HEADER) else resetFlag(LOOP_HEADER)
 
     /** Is this block the start block of an exception handler? */
-    var exceptionHandlerHeader = false
+    def exceptionHandlerHeader = hasFlag(EX_HEADER)
+    def exceptionHandlerHeader_=(b: Boolean) =
+      if (b) setFlag(EX_HEADER) else resetFlag(EX_HEADER)
+
+    /** Has this basic block been modified since the last call to 'toList'? */
+    private def touched = hasFlag(TOUCHED)
+    private def touched_=(b: Boolean) = if (b) setFlag(TOUCHED) else resetFlag(TOUCHED)
+
+    /** Cached predecessors. */
+    var preds: List[BasicBlock] = null
 
     /** Local variables that are in scope at entry of this basic block. Used
      *  for debugging information.
@@ -54,16 +80,17 @@ trait BasicBlocks {
 
     private var _lastInstruction: Instruction = null
 
-    private var closed: Boolean = false
-
     private var instrs: Array[Instruction] = _
-    private var touched = false
 
-    def toList: List[Instruction] = {
+    override def toList: List[Instruction] = {
       if (closed && touched)
         instructionList = List.fromArray(instrs)
       instructionList
     }
+
+    /** Return an iterator over the instructions in this basic block. */
+    def elements: Iterator[Instruction] =
+      if (closed) instrs.elements else instructionList.elements
 
     /** return the underlying array of instructions */
     def getArray: Array[Instruction] = {
@@ -95,7 +122,7 @@ trait BasicBlocks {
 //    override def hashCode() = label;
 
     /** Apply a function to all the instructions of the block. */
-    def traverse(f: Instruction => Unit) = {
+    override def foreach(f: Instruction => Unit) = {
       if (!closed) {
         dump
         global.abort("Traversing an open block!: " + label)
@@ -103,20 +130,9 @@ trait BasicBlocks {
       instrs foreach f
     }
 
-    def traverseBackwards(f: Instruction => Unit) = {
-      var i = instrs.length - 1
-      while (i >= 0) {
-        f(instrs(i))
-        i -= 1
-      }
-    }
-
     /** The number of instructions in this basic block so far. */
-    def size: Int =
-      if (isClosed)
-        instrs.length
-      else
-        instructionList.length
+    def length: Int =
+      if (closed) instrs.length else instructionList.length
 
     /** Return the index of the instruction which produced the value
      *  consumed by the given instruction.
@@ -138,10 +154,7 @@ trait BasicBlocks {
 
     /** Return the n-th instruction. */
     def apply(n: Int): Instruction =
-      if (closed)
-        instrs(n)
-      else
-        instructionList.reverse(n)
+      if (closed) instrs(n) else instructionList.reverse(n)
 
     ///////////////////// Substitutions ///////////////////////
 
@@ -345,7 +358,7 @@ trait BasicBlocks {
       preds  = null
     }
 
-    def isEmpty: Boolean = instructionList.isEmpty
+    override def isEmpty: Boolean = instructionList.isEmpty
 
     /** Enter ignore mode: new 'emit'ted instructions will not be
      *  added to this basic block. It makes the generation of THROW
@@ -372,15 +385,13 @@ trait BasicBlocks {
         instructionList.last
 
     /** Convert the list to an array */
-    def toInstructionArray(l: List[Instruction]): Array[Instruction] = {
+    private def toInstructionArray(l: List[Instruction]): Array[Instruction] = {
       var array = new Array[Instruction](l.length)
       var i: Int = 0
 
       l foreach (x => { array(i) = x; i += 1 })
       array
     }
-
-    def isClosed = closed
 
     def successors : List[BasicBlock] = if (isEmpty) Nil else {
       var res = lastInstruction match {
@@ -391,7 +402,7 @@ trait BasicBlocks {
         case RETURN(_) => Nil
         case THROW() => Nil
         case _ =>
-          if (isClosed) {
+          if (closed) {
             dump
             global.abort("The last instruction is not a control flow instruction: " + lastInstruction)
           }
@@ -441,4 +452,21 @@ trait BasicBlocks {
     override def toString(): String = "" + label
   }
 
+}
+
+object BBFlags {
+  /** This block is a loop header (was translated from a while). */
+  final val LOOP_HEADER = 0x00000001
+
+  /** Ignoring mode: emit instructions are dropped. */
+  final val IGNORING    = 0x00000002
+
+  /** This block is the header of an exception handler. */
+  final val EX_HEADER   = 0x00000004
+
+  /** This block is closed. No new instructions can be added. */
+  final val CLOSED      = 0x00000008
+
+  /** This block has been changed, chached results are recomputed. */
+  final val TOUCHED     = 0x00000010
 }

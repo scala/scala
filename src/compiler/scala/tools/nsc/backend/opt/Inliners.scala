@@ -233,7 +233,7 @@ abstract class Inliners extends SubComponent {
        // duplicate the other blocks in the callee
        linearizer.linearize(callee).foreach { bb =>
          var info = a.in(bb);
-         bb traverse { i =>
+         for (i <- bb) {
            i match {
              case RETURN(kind) => kind match {
                  case UNIT =>

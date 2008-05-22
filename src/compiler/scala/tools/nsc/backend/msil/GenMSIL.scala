@@ -1217,7 +1217,7 @@ abstract class GenMSIL extends SubComponent {
 
       var lastLineNr: Int = 0
 
-      b traverse ( instr => {
+      for (instr <- b) {
 
         needAdditionalRet = false
 
@@ -1606,7 +1606,7 @@ abstract class GenMSIL extends SubComponent {
             ()
         }
 
-      }) // end b traverse instr => { .. }
+      } // end for (instr <- b) { .. }
 
       lastBlock = b // this way, saveResult knows lastBlock
 

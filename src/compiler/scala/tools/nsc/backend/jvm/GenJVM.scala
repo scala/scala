@@ -777,7 +777,7 @@ abstract class GenJVM extends SubComponent {
       var crtPC = 0
       varsInBlock.clear
 
-      b traverse ( instr => {
+      for (instr <- b) {
         class CompilationError(msg: String) extends Error {
           override def toString: String = {
             msg +
@@ -1133,8 +1133,7 @@ abstract class GenJVM extends SubComponent {
           lastMappedPC = crtPC
           lastLineNr   = crtLine
         }
-
-      }); // b.traverse
+      }
 
       // local vars that survived this basic block
       for (val lv <- varsInBlock) {

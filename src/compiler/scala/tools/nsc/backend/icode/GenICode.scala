@@ -798,7 +798,7 @@ abstract class GenICode extends SubComponent  {
                 })), EmptyTree);
               if (settings.debug.value)
                 log("synchronized block end with block " + ctx1.bb +
-                    " closed=" + ctx1.bb.isClosed);
+                    " closed=" + ctx1.bb.closed);
               ctx1.exitSynchronized(monitor)
             } else if (scalaPrimitives.isCoercion(code)) {
               ctx1 = genLoad(receiver, ctx1, toTypeKind(receiver.tpe))

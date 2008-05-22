@@ -683,7 +683,7 @@ abstract class ICodeReader extends ClassfileParser {
 //        Console.println("> " + pc + ": " + instr);
         if (jmpTargets contains pc) {
           otherBlock = blocks(pc)
-          if (!bb.isClosed && otherBlock != bb) {
+          if (!bb.closed && otherBlock != bb) {
             bb.emit(JUMP(otherBlock))
             bb.close
 //            Console.println("\t> closing bb: " + bb)
