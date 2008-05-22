@@ -309,10 +309,10 @@ trait JavaScanners {
 
     def nextToken {
       if (next.token == EMPTY) {
-        print("[")
+        //print("[")
         val t = fetchToken()
-        print(this)
-        print("]")
+        //print(this)
+        //print("]")
         t
       } else {
         this copyFrom next

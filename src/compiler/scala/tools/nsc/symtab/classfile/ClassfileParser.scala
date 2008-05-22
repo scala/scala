@@ -469,10 +469,6 @@ abstract class ClassfileParser {
       assert(sig(index) == ch)
       index += 1
     }
-    def objToAny(tp: Type): Type =
-      if (!global.phase.erasedTypes && tp.typeSymbol == definitions.ObjectClass)
-        definitions.AnyClass.tpe
-      else tp
     def subName(isDelimiter: Char => Boolean): Name = {
       val start = index
       while (!isDelimiter(sig(index))) { index += 1 }

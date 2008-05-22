@@ -424,7 +424,7 @@ trait JavaParsers extends JavaScanners {
 
     def typeParam(): TypeDef =
       atPos(in.currentPos) {
-        val name = ident()
+        val name = ident().toTypeName
         val hi =
           if (in.token == EXTENDS) {
             in.nextToken
@@ -432,7 +432,8 @@ trait JavaParsers extends JavaScanners {
           } else {
             scalaDot(nme.Any.toTypeName)
           }
-        TypeDef(Modifiers(Flags.JAVA), name, List(), TypeBoundsTree(scalaDot(nme.Nothing.toTypeName), hi))
+        TypeDef(Modifiers(Flags.JAVA | Flags.DEFERRED | Flags.PARAM), name, List(),
+                TypeBoundsTree(scalaDot(nme.Nothing.toTypeName), hi))
       }
 
     def bound(): Tree =

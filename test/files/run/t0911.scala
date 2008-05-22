@@ -4,6 +4,6 @@ class IP extends {
   val baz = "bar";
 } with Foo(() => baz);
 
-object Main extends Application{
+object Test extends Application{
   (new IP).bar();
 }

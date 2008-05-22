@@ -3564,7 +3564,7 @@ A type's typeSymbol should never be inspected directly.
          sym2.isClass && (sym2 isNonBottomSubClass ObjectClass) && (!(tp2.normalize.typeSymbol isNonBottomSubClass NotNullClass)))
       case (MethodType(pts1, res1), MethodType(pts2, res2)) =>
         (pts1.length == pts2.length &&
-         matchingParams(pts1, pts2, tp2.isInstanceOf[JavaMethodType]) &&
+         matchingParams(pts1, pts2, tp1.isInstanceOf[JavaMethodType], tp2.isInstanceOf[JavaMethodType]) &&
          (res1 <:< res2) &&
          tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
       case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
@@ -3679,7 +3679,7 @@ A type's typeSymbol should never be inspected directly.
   /** A function implementing `tp1' matches `tp2' */
   private def matchesType(tp1: Type, tp2: Type, alwaysMatchSimple: Boolean): Boolean = (tp1, tp2) match {
     case (MethodType(pts1, res1), MethodType(pts2, res2)) =>
-      matchingParams(pts1, pts2, tp2.isInstanceOf[JavaMethodType]) &&
+      matchingParams(pts1, pts2, tp1.isInstanceOf[JavaMethodType], tp2.isInstanceOf[JavaMethodType]) &&
       matchesType(res1, res2, alwaysMatchSimple) &&
       tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType]
     case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
@@ -3702,11 +3702,12 @@ A type's typeSymbol should never be inspected directly.
   }
 
   /** Are `tps1' and `tps2' lists of pairwise equivalent types? */
-  private def matchingParams(tps1: List[Type], tps2: List[Type], tps2isJava: Boolean): Boolean = (
+  private def matchingParams(tps1: List[Type], tps2: List[Type], tps1isJava: Boolean, tps2isJava: Boolean): Boolean =
     tps1.length == tps2.length &&
     List.forall2(tps1, tps2)((tp1, tp2) =>
-      (tp1 =:= tp2) || tps2isJava & tp1.typeSymbol == ObjectClass && tp2.typeSymbol == AnyClass)
-  );
+      (tp1 =:= tp2) ||
+      tps1isJava && tp2.typeSymbol == ObjectClass && tp1.typeSymbol == AnyClass ||
+      tps2isJava && tp1.typeSymbol == ObjectClass && tp2.typeSymbol == AnyClass)
 
   /** Prepend type `tp' to closure `cl'.
    *
@@ -4317,4 +4318,8 @@ A type's typeSymbol should never be inspected directly.
     val s = checkMalformedSwitch
     try { checkMalformedSwitch = false; op } finally { checkMalformedSwitch = s }
   }
+
+  def objToAny(tp: Type): Type =
+    if (!phase.erasedTypes && tp.typeSymbol == ObjectClass) AnyClass.tpe
+    else tp
 }

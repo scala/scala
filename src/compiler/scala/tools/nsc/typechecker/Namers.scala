@@ -380,7 +380,7 @@ trait Namers { self: Analyzer =>
           case TypeDef(mods, name, tparams, _) =>
             var flags: Long = mods.flags
             if ((flags & PARAM) != 0) flags |= DEFERRED
-            var sym =new TypeSymbol(owner, tree.pos, name).setFlag(flags)
+            var sym = new TypeSymbol(owner, tree.pos, name).setFlag(flags)
             setPrivateWithin(tree, sym, mods)
             tree.symbol = enterInScope(sym)
             finishWith(tparams)
@@ -640,10 +640,12 @@ trait Namers { self: Analyzer =>
       }
 
       def makeMethodType(vparams: List[Symbol], restpe: Type) = {
-        val formals = vparams map (_.tpe)
+        val formals = vparams map (vparam =>
+          if (meth hasFlag JAVA) objToAny(vparam.tpe) else vparam.tpe)
         val restpe1 = convertToDeBruijn(vparams, 1)(restpe)
         if (!vparams.isEmpty && vparams.head.hasFlag(IMPLICIT))
           ImplicitMethodType(formals, restpe1)
+        else if (meth hasFlag JAVA) JavaMethodType(formals, restpe1)
         else MethodType(formals, restpe1)
       }
 
@@ -757,7 +759,10 @@ trait Namers { self: Analyzer =>
       val tp = typer.typedType(rhs).tpe match {
         case TypeBounds(lt, rt) if (lt.isError || rt.isError) =>
           TypeBounds(AllClass.tpe, AnyClass.tpe)
-        case tp => tp
+        case tp @ TypeBounds(lt, rt) if (tpsym hasFlag JAVA) =>
+          TypeBounds(lt, objToAny(rt))
+        case tp =>
+          tp
       }
 
       def verifyOverriding(other: Symbol): Boolean = {

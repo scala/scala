@@ -186,7 +186,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       case Select(sup @ Super(_, mix), name) =>
         val sym = tree.symbol
         if (sym.isValue && !sym.isMethod || sym.hasFlag(ACCESSOR)) {
-          unit.error(tree.pos, "super may be not be used on "+sym)
+          unit.error(tree.pos, "super may be not be used on "+
+                     (if (sym.hasFlag(ACCESSOR)) sym.accessed else sym))
         }
         transformSuperSelect(tree)
 
