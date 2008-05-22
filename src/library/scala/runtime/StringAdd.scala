@@ -23,7 +23,7 @@ object StringAdd {
 }
 final class StringAdd(self: Any) {
 
-  def +(other: String) = self.toString + other
+  def +(other: Any) = String.valueOf(self) + other
 
   /** Returns string formatted according to given <code>format</code> string.
    *  Format strings are as for <code>String.format</code>
