@@ -210,7 +210,7 @@ class Worker(val fileManager: FileManager) extends Actor {
       val reader = new BufferedReader(new FileReader(logFile))
       val swriter = new StringWriter
       val pwriter = new PrintWriter(swriter, true)
-      val appender = new StreamAppender(reader, writer)
+      val appender = new StreamAppender(reader, pwriter)
       appender.run()
       log = swriter.toString
     }
@@ -236,7 +236,14 @@ class Worker(val fileManager: FileManager) extends Actor {
       else
         new File(dir, fileBase + "-" + kind + ".check")
     }
-    if (!checkFile.exists || !checkFile.canRead) ""
+    if (!checkFile.exists || !checkFile.canRead) {
+      val reader = new BufferedReader(new FileReader(logFile))
+      val swriter = new StringWriter
+      val pwriter = new PrintWriter(swriter, true)
+      val appender = new StreamAppender(reader, pwriter)
+      appender.run()
+      swriter.toString
+    }
     else fileManager.compareFiles(logFile, checkFile)
   }
 

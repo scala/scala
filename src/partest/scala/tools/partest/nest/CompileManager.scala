@@ -200,7 +200,8 @@ class CompileManager(val fileManager: FileManager) {
         NestUI.verbose("while invoking compiler ("+file+"):")
         NestUI.verbose("caught "+t)
         t.printStackTrace
-        t.getCause.printStackTrace
+        if (t.getCause != null)
+          t.getCause.printStackTrace
         false
     }
   }
