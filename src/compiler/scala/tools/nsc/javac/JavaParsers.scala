@@ -660,7 +660,7 @@ trait JavaParsers extends JavaScanners {
       val (statics, body) = typeBody(INTERFACE)
       addCompanionObject(statics, atPos(pos) {
         ClassDef(mods | Flags.TRAIT | Flags.INTERFACE | Flags.ABSTRACT,
-                 name, tparams, javaLangObject
+                 name, tparams,
                  makeTemplate(parents, body))
       })
     }
