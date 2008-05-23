@@ -167,7 +167,6 @@ trait JavaParsers extends JavaScanners {
           case _ =>
         }
       } while (in.token != EOF && (nparens > 0 || nbraces > 0))
-      println("Skipped: "+in)
     }
 
     def skipTo(tokens: Int*) {

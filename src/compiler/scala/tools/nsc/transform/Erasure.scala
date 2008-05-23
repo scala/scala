@@ -171,8 +171,14 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             MethodType(List(erasure(index), tvar), erasedTypeRef(UnitClass))
         }
       else erasure(tp)
-    } else
-      transformMixinInfo(erasure(tp));
+    } else {
+      val erased =
+        if (sym.isGetter && sym.tpe.isInstanceOf[MethodType])
+          erasure mapOver sym.tpe // for getters, unlike for normal methods, always convert Unit to BoxedUnit.
+        else
+          erasure(tp)
+      transformMixinInfo(erased)
+    }
 
   val deconstMap = new TypeMap {
    def apply(tp: Type): Type = tp match {
@@ -887,7 +893,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             tree1 setType erasure(tree1.tpe)
           case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
             val result = super.transform(tree1) setType null
-            tpt.tpe = erasure(tree.symbol.tpe).resultType
+            tpt.tpe = transformInfo(tree.symbol, tree.symbol.tpe).resultType
             result
           case _ =>
             case class MyError(count : Int, ex : AssertionError) extends Error(ex.getMessage)
