@@ -705,7 +705,7 @@ abstract class RefChecks extends InfoTransform {
         result
       }
 
-      /** If symbol is deprecated and is not contained in a depreceated definition,
+      /** If symbol is deprecated and is not contained in a deprecated definition,
        *  issue a deprecated warning
        */
       def checkDeprecated(sym: Symbol, pos: Position) {

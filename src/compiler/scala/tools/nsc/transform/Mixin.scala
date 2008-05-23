@@ -772,7 +772,7 @@ abstract class Mixin extends InfoTransform {
         case Select(Super(_, _), name) =>
           tree
 
-        case Select(qual, name) if sym.owner.isImplClass && !isStaticOnly(sym) =>
+        case Select(qual, name) if sym.owner.isImplClass && !isStaticOnly(sym) && enclInterface != null =>
           // refer to fields in some implementation class via an abstract
           // getter in the interface.
           if (sym.isMethod)
