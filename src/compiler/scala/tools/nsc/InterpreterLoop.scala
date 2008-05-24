@@ -65,12 +65,6 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     }
   }
 
-  /* As soon as the Eclipse plugin no longer needs it, delete uglinessxxx,
-   * parentClassLoader0, and the parentClassLoader method in Interpreter
-   */
-  var uglinessxxx: ClassLoader = _
-  def parentClassLoader0: ClassLoader = uglinessxxx
-
   /** Create a new interpreter.  Close the old one, if there
     * is one. */
   def createInterpreter() {
@@ -291,8 +285,6 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
           else
             InteractiveReader.createDefault()
       }
-
-    uglinessxxx = classOf[InterpreterLoop].getClassLoader
 
     createInterpreter()
 
