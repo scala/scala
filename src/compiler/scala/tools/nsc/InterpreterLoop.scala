@@ -70,9 +70,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
   def createInterpreter() {
     //closeInterpreter()
 
-    interpreter = new Interpreter(settings, out) {
-      override protected def parentClassLoader = parentClassLoader0
-    }
+    interpreter = new Interpreter(settings, out)
     interpreter.setContextClassLoader()
   }
 
