@@ -238,6 +238,28 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     if (found) i else -1
   }
 
+  /** Returns index of the first element satisying a predicate, or -1.
+   *
+   *  @note may not terminate for infinite-sized collections.
+   *  @param  p the predicate
+   *  @return   the index of the first element satisfying <code>p</code>,
+   *            or -1 if such an element does not exist
+   */
+  override def findIndexOf(p: A => Boolean): Int =
+    elements.findIndexOf(p)
+
+  /** Returns the index of the first occurence of the specified
+   *  object in this iterable object.
+   *
+   *  @note may not terminate for infinite-sized collections.
+   *  @param  elem  element to search for.
+   *  @return the index in this sequence of the first occurence of the
+   *          specified element, or -1 if the sequence does not contain
+   *          this element.
+   */
+  override def indexOf[B >: A](elem: B): Int =
+    elements.indexOf(elem)
+
   /** Returns the sequence resulting from applying the given function
    *  <code>f</code> to each element of this sequence.
    *

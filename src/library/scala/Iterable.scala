@@ -291,17 +291,10 @@ trait Iterable[+A] {
    *  @param  p the predicate
    *  @return   the index of the first element satisfying <code>p</code>,
    *            or -1 if such an element does not exist
+   *  @deprecated  Method is pushed to <code>Seq</code>, will be removed from <code>Iterable</code>.
    */
-  def findIndexOf(p: A => Boolean): Int = {
-    val it = elements
-    var i = 0
-    while (it.hasNext)
-      if (p(it.next))
-        return i
-      else
-        i = i + 1
-    return -1
-  }
+  @deprecated def findIndexOf(p: A => Boolean): Int =
+    elements.findIndexOf(p)
 
   /** Returns the index of the first occurence of the specified
    *  object in this iterable object.
@@ -311,20 +304,10 @@ trait Iterable[+A] {
    *  @return the index in this sequence of the first occurence of the
    *          specified element, or -1 if the sequence does not contain
    *          this element.
+   *  @deprecated  Method is pushed to <code>Seq</code>, will be removed from <code>Iterable</code>.
    */
-  def indexOf[B >: A](elem: B): Int = {
-    val it = elements
-    var i = 0
-    var found = false
-    while (!found && it.hasNext) {
-      if (it.next == elem) {
-        found = true
-      } else {
-        i = i + 1
-      }
-    }
-    if (found) i else -1
-  }
+  @deprecated def indexOf[B >: A](elem: B): Int =
+    elements.indexOf(elem)
 
   /** Combines the elements of this iterable object together using the binary
    *  function <code>f</code>, from left to right, and starting with
