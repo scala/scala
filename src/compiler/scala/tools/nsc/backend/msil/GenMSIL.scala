@@ -9,6 +9,7 @@ package scala.tools.nsc.backend.msil
 
 import java.io.File
 import java.nio.{ByteBuffer, ByteOrder}
+import java.io.IOException
 
 import scala.collection.mutable.{Map, HashMap, HashSet, Stack}
 import scala.tools.nsc.symtab._
@@ -468,7 +469,7 @@ abstract class GenMSIL extends SubComponent {
           }
         }
       } catch {
-        case _: Error => abort("Could not save .msil files in " + outDir.getPath)
+        case e:IOException => abort("Could not write to " + filename + ": " + e.getMessage())
       }
     }
 
@@ -1854,7 +1855,11 @@ abstract class GenMSIL extends SubComponent {
     def msilTypeFlags(sym: Symbol): Int = {
       var mf: Int = TypeAttributes.AutoLayout | TypeAttributes.AnsiClass
 
-      mf = mf | (if (sym hasFlag Flags.PRIVATE) TypeAttributes.NotPublic else TypeAttributes.Public)
+      if(sym.isNestedClass) {
+        mf = mf | (if (sym hasFlag Flags.PRIVATE) TypeAttributes.NestedPrivate else TypeAttributes.NestedPublic)
+      } else {
+        mf = mf | (if (sym hasFlag Flags.PRIVATE) TypeAttributes.NotPublic else TypeAttributes.Public)
+      }
       mf = mf | (if (sym hasFlag Flags.ABSTRACT) TypeAttributes.Abstract else 0)
       mf = mf | (if (sym.isTrait && !sym.isImplClass) TypeAttributes.Interface else TypeAttributes.Class)
       mf = mf | (if (sym isFinal) TypeAttributes.Sealed else 0)
