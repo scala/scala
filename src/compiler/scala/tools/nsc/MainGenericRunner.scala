@@ -78,14 +78,17 @@ object MainGenericRunner {
     }
 
 
-    if (settings.help.value ||settings.Xhelp.value) {
+    if (settings.help.value || settings.Xhelp.value || settings.Yhelp.value) {
       if (command.settings.help.value) {
-	println(command.usageMsg)
-	println(sampleCompiler.pluginOptionsHelp)
+        println(command.usageMsg)
+        println(sampleCompiler.pluginOptionsHelp)
       }
 
       if (settings.Xhelp.value)
-	println(command.xusageMsg)
+        println(command.xusageMsg)
+
+      if (settings.Yhelp.value)
+        println(command.yusageMsg)
 
       return
     }
