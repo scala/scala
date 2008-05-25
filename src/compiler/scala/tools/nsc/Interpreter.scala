@@ -172,9 +172,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     Thread.currentThread.setContextClassLoader(classLoader)
   }
 
-  /** XXX Let's get rid of this.  I believe the Eclipse plugin is
-    * the only user of it, so this should be doable.  */
-  protected def parentClassLoader: ClassLoader = null
+  protected def parentClassLoader: ClassLoader = this.getClass.getClassLoader()
 
   /** the previous requests this interpreter has processed */
   private val prevRequests = new ArrayBuffer[Request]()
