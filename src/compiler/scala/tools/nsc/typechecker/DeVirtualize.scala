@@ -69,10 +69,10 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
    */
   object devirtualizeMap extends TypeMap {
     def apply(tp: Type): Type = {
-      println("devirtualizeMap on " + tp)
+//      println("devirtualizeMap on " + tp)
       mapOver(tp) match {
       case tp1 @ ClassInfoType(parents, decls, clazz) if containsVirtuals(clazz) =>
-        println(clazz + " contains virtuals")
+//        println(clazz + " contains virtuals")
         transformOwnerInfo(clazz) // we might need to do this in two phases: enter/resolve
         val ds = decls.toList
         val decls1 = newScope(ds)
@@ -80,7 +80,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
           if (m.isVirtualClass) devirtualize(m, decls1)
         for (m <- classesInNeedOfFactories(clazz))
           addFactory(m, clazz, decls1)
-        println("Built ourselves a " + ClassInfoType(parents, decls1, clazz))
+//        println("Built ourselves a " + ClassInfoType(parents, decls1, clazz))
         ClassInfoType(parents, decls1, clazz)
       case tp1 @ ThisType(clazz) if clazz.isVirtualClass =>
         ThisType(workerTrait(clazz))
@@ -126,10 +126,10 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
 
   /** The abstract type corresponding to a virtual class. */
   protected def abstractType(clazz: Symbol): Symbol = atPhase(ownPhase.next) {
-    println("Looking up the abstract type for " + clazz)
+//    println("Looking up the abstract type for " + clazz)
     val tsym = clazz.owner.info.member(clazz.name)
     assert(tsym.isAbstractType, clazz)
-    println("Found " + tsym)
+//    println("Found " + tsym)
     tsym
   }
 
@@ -249,7 +249,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
    *  @param  scope    The scope into which factory is entered
    */
   def addFactory(clazz: Symbol, owner: Symbol, scope: Scope) {
-    println("Adding a factory to " + clazz.owner + "." + clazz)
+//    println("Adding a factory to " + clazz.owner + "." + clazz)
     val pos = if (clazz.owner == owner) clazz.pos else owner.pos
     val factory = owner.newMethod(pos, factoryName(clazz.name))
       .setFlag(clazz.flags & factoryFlagMask)
@@ -310,7 +310,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
      *  to template body `stats'
      */
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
-      println("QUX!")
+//      println("QUX!")
       val stats1 = stats flatMap transformStat map transform
       val newDefs = new ListBuffer[Tree]
       if (currentOwner.isClass && containsVirtuals(currentOwner)) {
@@ -373,28 +373,28 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
      *  abstract type and worker traits.
      */
     protected def transformStat(tree: Tree): List[Tree] = {
-      println("QUZZ!")
+//      println("QUZZ!")
       tree match {
       case ClassDef(mods, name, tparams, templ @ Template(parents, self, body)) if (tree.symbol.isVirtualClass) =>
-      println("QUXX!")
+//      println("QUXX!")
         val clazz = tree.symbol
-      println("QUXY!")
+//      println("QUXY!")
         val absTypeSym = abstractType(clazz)
-      println("QUXY2!")
+//      println("QUXY2!")
         val workerTraitSym = workerTrait(clazz)
-      println("QUXY3!")
+//      println("QUXY3!")
         val abstypeDef = TypeDef(abstractType(clazz))
-      println("QUXY4!")
+//      println("QUXY4!")
         val workerTraitDef = ClassDef(
           workerTraitSym,
           Modifiers(0),
           List(List()),
           List(List()),
           body)
-      println("QUXY5!")
+//      println("QUXY5!")
         new ChangeOwnerTraverser(clazz, workerTraitSym)(
           new ChangeOwnerTraverser(templ.symbol, workerTraitDef.impl.symbol)(workerTraitDef.impl))
-      println("QUXY6!")
+//      println("QUXY6!")
         List(abstypeDef, workerTraitDef) map localTyper.typed
       case _ =>
         List(tree)
@@ -402,12 +402,12 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
     }
 
     override def transform(tree: Tree): Tree = {
-      println("FOOB!")
+//      println("FOOB!")
       tree match {
         // Replace references to VC.this and VC.super where VC is a virtual class
         // with VC$trait.this and VC$trait.super
         case This(_) | Super(_, _) if tree.symbol.isVirtualClass =>
-      println("BARB!")
+//      println("BARB!")
           tree setSymbol workerTrait(tree.symbol)
 
         // Replace a new VC().init() where VC is a virtual class with new$VC
@@ -424,7 +424,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
           }
 
         case _ =>
-      println("BAZ!")
+//      println("BAZ!")
           super.transform(tree)
       }
     } setType devirtualizeMap(tree.tpe)

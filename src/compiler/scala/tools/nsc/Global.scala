@@ -291,6 +291,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
+  object devirtualize extends DeVirtualize {
+    val global: Global.this.type = Global.this
+  }
+
   object liftcode extends LiftCode {
     val global: Global.this.type = Global.this
   }
@@ -396,7 +400,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     analyzer.namerFactory: SubComponent, // note: types are there because otherwise
     analyzer.typerFactory: SubComponent, // consistency check after refchecks would fail.
     superAccessors,  // add super accessors
-    pickler,         // serialize symbol tables
+    pickler         // serialize symbol tables
+  ) ::: (
+    // Desugar virtual classes
+    if (settings.Xexperimental.value) List(devirtualize) else List()
+  ) ::: List(
     refchecks        // perform reference and override checking, translate nested objects
   ) ::: (
     if (forJVM) List(liftcode) else List() // generate reified trees

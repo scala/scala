@@ -2163,7 +2163,9 @@ trait Parsers extends NewScanners with MarkupParsers {
           else (accessModifierOpt(), paramClauses(name, implicitClassViews, mods.hasFlag(Flags.CASE)))
         val thistpe = requiresTypeOpt()
         var mods1 = mods
-        if (inToken == SUBTYPE) mods1 = mods | Flags.DEFERRED
+        if (settings.Xexperimental.value) {
+          if (inToken == SUBTYPE) mods1 = mods | Flags.DEFERRED
+	}
         var template = templateOpt(mods1, name, constrMods withAnnotations constrAnnots, vparamss)
         if (!thistpe.isEmpty) {
           if (template.self.isEmpty) {
