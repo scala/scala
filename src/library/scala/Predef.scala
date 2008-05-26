@@ -99,7 +99,7 @@ object Predef {
 
   def assume(assumption: Boolean, message: Any) {
     if (!assumption)
-      throw new java.lang.AssertionError("assumptopm failed: "+ message)
+      throw new java.lang.AssertionError("assumption failed: "+ message)
   }
 
   def require(requirement: Boolean) {

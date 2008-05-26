@@ -94,7 +94,7 @@ object Predef {
 
   def assume(assumption: Boolean, message: Any) {
     if (!assumption)
-      throw new System.Security.SecurityException("assumptopm failed: "+ message)
+      throw new System.Security.SecurityException("assumption failed: "+ message)
   }
 
   def require(requirement: Boolean) {
