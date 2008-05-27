@@ -36,7 +36,13 @@ object Stream {
   trait Definite[+A] extends Stream[A] with Function0[Stream[A]] {
      override def hasDefiniteSize = true
      override def apply = this
-     override def toString = super[Stream].toString
+
+    /** Converts stream to string. Redefined here as
+     *  super[Stream].toString does not pass because of an implementation
+     *  restriction (super[C] cannot be called when C is a class).
+     */
+    override def toString =
+      "Stream(" + addDefinedElems(new StringBuilder(), "") + ")"
    }
 
   /** The empty stream */
@@ -209,7 +215,7 @@ object Stream {
  * @author Martin Odersky, Matthias Zenger
  * @version 1.1 08/08/03
  */
-trait Stream[+A] extends Seq.Projection[A] {
+abstract class Stream[+A] extends Seq.Projection[A] {
 
   /** is this stream empty? */
   override def isEmpty: Boolean
