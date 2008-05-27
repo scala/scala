@@ -238,10 +238,10 @@ object Actor {
    * }
    * </pre>
    */
-  def async(fun: PartialFunction[Any, Unit] => Nothing):
-    PartialFunction[Any, Unit] => Responder[Any] =
-      (caseBlock: PartialFunction[Any, Unit]) => new Responder[Any] {
-        def respond(k: Any => Unit) = fun(caseBlock andThen k)
+  def async[A, B](fun: PartialFunction[A, Unit] => Nothing):
+    PartialFunction[A, B] => Responder[B] =
+      (caseBlock: PartialFunction[A, B]) => new Responder[B] {
+        def respond(k: B => Unit) = fun(caseBlock andThen k)
       }
 
   private[actors] trait Body[a] {
