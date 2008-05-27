@@ -13,7 +13,7 @@ package scala
 
 
 import Predef._
-import collection.mutable.{Buffer, ListBuffer}
+import collection.mutable.{Buffer, ListBuffer, ArrayBuffer}
 
 /** The <code>Iterator</code> object provides various functions for
  *  creating specialized iterators.
@@ -676,6 +676,16 @@ trait Iterator[+A] {
     val res = new ListBuffer[A]
     while (hasNext) res += next
     res.toList
+  }
+
+  /** Collect elements into a seq.
+   *
+   * @return  a seq which enumerates all elements of this iterator.
+   */
+  def collect: Seq[A] = {
+    val buffer = new ArrayBuffer[A]
+    this copyToBuffer buffer
+    buffer.readOnly
   }
 
   /** Returns a string representation of the elements in this iterator. The resulting string
