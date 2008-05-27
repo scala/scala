@@ -523,12 +523,8 @@ sealed abstract class List[+A] extends Seq[A] {
 
   /** Appends two list objects.
    */
-  override def ++[B >: A](that: Iterable[B]): List[B] = {
-    val buf = new ListBuffer[B]
-    this copyToBuffer buf
-    that copyToBuffer buf
-    buf.toList
-  }
+  override def ++[B >: A](that: Iterable[B]): List[B] =
+    this ::: that.toList
 
   /** Reverse the given prefix and append the current list to that.
    *  This function is equivalent to an application of <code>reverse</code>
