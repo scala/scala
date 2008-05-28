@@ -49,9 +49,9 @@ class ReflectiveRunner {
 
     val stringClass = Class.forName("java.lang.String")
     val sepMainMethod =
-      sepRunnerClass.getMethod("main", Array(stringClass))
+      sepRunnerClass.getMethod("main", Array(stringClass): _*)
 
     val cargs: Array[AnyRef] = Array(args)
-    sepMainMethod.invoke(sepRunner, cargs)
+    sepMainMethod.invoke(sepRunner, cargs: _*)
   }
 }

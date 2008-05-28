@@ -128,26 +128,26 @@ class PartestTask extends Task {
     val antRunner: AnyRef =
       classloader.loadClass("scala.tools.partest.nest.AntRunner").newInstance().asInstanceOf[AnyRef]
     val antFileManager: AnyRef =
-      antRunner.getClass.getMethod("fileManager", Array[Class[_]]()).invoke(antRunner, Array[Object]())
+      antRunner.getClass.getMethod("fileManager", Array[Class[_]](): _*).invoke(antRunner, Array[Object](): _*)
 
     val runMethod =
-      antRunner.getClass.getMethod("reflectiveRunTestsForFiles", Array(classOf[Array[File]], classOf[String]))
+      antRunner.getClass.getMethod("reflectiveRunTestsForFiles", Array(classOf[Array[File]], classOf[String]): _*)
 
     def runTestsForFiles(kindFiles: Array[File], kind: String): (Int, Int) = {
-      val result = runMethod.invoke(antRunner, Array(kindFiles, kind)).asInstanceOf[Int]
+      val result = runMethod.invoke(antRunner, Array(kindFiles, kind): _*).asInstanceOf[Int]
       (result >> 16, result & 0x00FF)
     }
 
     def setFileManagerBooleanProperty(name: String, value: Boolean) = {
       val setMethod =
-        antFileManager.getClass.getMethod(name+"_$eq", Array(classOf[Boolean]))
-      setMethod.invoke(antFileManager, Array(java.lang.Boolean.valueOf(value)))
+        antFileManager.getClass.getMethod(name+"_$eq", Array(classOf[Boolean]): _*)
+      setMethod.invoke(antFileManager, Array(java.lang.Boolean.valueOf(value)): _*)
     }
 
     def setFileManagerStringProperty(name: String, value: String) = {
       val setMethod =
-        antFileManager.getClass.getMethod(name+"_$eq", Array(classOf[String]))
-      setMethod.invoke(antFileManager, Array(value))
+        antFileManager.getClass.getMethod(name+"_$eq", Array(classOf[String]): _*)
+      setMethod.invoke(antFileManager, Array(value): _*)
     }
 
     setFileManagerBooleanProperty("showDiff", showDiff)

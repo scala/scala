@@ -85,6 +85,7 @@ else
       def accept(dir: File, name: String) = name endsWith ".jar"
     }) map {file => file.getCanonicalFile.getAbsolutePath}).mkString(""+File.pathSeparator)
   }
+  println(CLASSPATH)
 
   def findLatest() {
     val testParent = testRootFile.getParentFile
