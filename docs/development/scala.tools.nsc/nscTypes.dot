@@ -9,24 +9,34 @@ digraph SQLTypes {
 
   Type
 
+  SimpleTypeProxy [label = "{SimpleTypeProxy|(trait)}"]
   SimpleTypeProxy -> Type
 
+  RewrappingTypeProxy [label = "{RewrappingTypeProxy|(trait)}"]
   RewrappingTypeProxy -> SimpleTypeProxy
 
   SubType -> Type
 
+  NotNullType [label = "{NotNullType|underlying: Type}"]
   NotNullType -> SubType
+  NotNullType -> RewrappingTypeProxy
 
   SingletonType -> SubType
+  SingletonType -> SimpleTypeProxy
 
+  ErrorType [label = "{ErrorType|(object)}"]
   ErrorType -> Type
 
+  WildcardType [label = "{WildcardType|(object)}"]
   WildcardType -> Type
 
+  BoundedWildcardType [label = "{BoundedWildcardType|bounds: TypeBounds}"]
   BoundedWildcardType -> Type
 
+  NoType [label = "{NoType|(object)}"]
   NoType -> Type
 
+  NoPrefix [label = "{NoPrefix|(object)}"]
   NoPrefix -> Type
 
   DeBruijnIndex -> Type
@@ -72,6 +82,9 @@ digraph SQLTypes {
   PolyType[label = "{PolyType|typeParams: List[Symbol]\nresultType: Type}"]
   PolyType -> Type
 
+  OverloadedType[label = "{OverloadedType|quantified: List[Symbol]\nunderlying: Type}"]
+  ExistentialType -> RewrappingTypeProxy
+
   OverloadedType[label = "{OverloadedType|pre: Type\nalternatives: List[Symbol]}"]
   OverloadedType -> Type
 
@@ -80,6 +93,9 @@ digraph SQLTypes {
 
   TypeVar[label = "{TypeVar|origin: Type\nconstr: TypeConstraint}"]
   TypeVar -> Type
+
+  AnnotatedType[label = "{AnnotatedType|attributes: List[AnnotationInfo]\nunderlying: Type\nselfsym: Symbol}"]
+  AnnotatedType -> RewrappingTypeProxy
 
   LazyType -> Type
 
