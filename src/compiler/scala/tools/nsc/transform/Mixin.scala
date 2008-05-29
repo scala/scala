@@ -501,7 +501,7 @@ abstract class Mixin extends InfoTransform {
       }
 
       /** If `stat' is a superaccessor, complete it by adding a right-hand side.
-       *  (Note: superaccessors are always abstract until this point.
+       *  Note: superaccessors are always abstract until this point.
        *   The method to call in a superaccessor is stored in the accessor symbol's alias field.
        *  The rhs is:
        *    super.A(xs)  where A is the super accessor's alias and xs are its formal parameters.

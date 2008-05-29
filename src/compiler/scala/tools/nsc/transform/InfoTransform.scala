@@ -25,6 +25,7 @@ abstract class InfoTransform extends Transform {
 
   class Phase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
     if (infoTransformers.nextFrom(id).pid != id) {
+      // this phase is not yet in the infoTransformers
       val infoTransformer = new InfoTransformer {
         val pid = id
         val changesBaseClasses = InfoTransform.this.changesBaseClasses

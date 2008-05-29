@@ -31,6 +31,10 @@ trait InfoTransformers {
       }
     }
 
+    /** The InfoTransformer whose (pid == from).
+     *  If no such exists, the InfoTransformer with the next
+     *  higher pid.
+     */
     def nextFrom(from: Phase#Id): InfoTransformer =
       if (from == this.pid) this
       else if (from < this.pid)
