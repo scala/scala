@@ -140,7 +140,13 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
    */
   def length: Int
 
-  /** Returns length - l. This method is used by matching streams against right-ignoring (...,_*) patterns.
+  /** Result of comparing <code>length</code> with operand <code>l</code>.
+   *  returns <code>x</code> where
+   *  <code>x &lt; 0</code>    iff    <code>this.length &lt; l</code>
+   *  <code>x == 0</code>   iff    <code>this.length == l</code>
+   *  <code>x &gt; 0</code>    iff    <code>this.length &gt; that</code>.
+   *
+   *  This method is used by matching streams against right-ignoring (...,_*) patterns.
    *  Lazy sequences should override this method if length forces evaluation of the stream.
    */
   def lengthCompare(l: Int): Int = length - l

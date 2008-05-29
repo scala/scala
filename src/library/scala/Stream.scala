@@ -243,10 +243,16 @@ abstract class Stream[+A] extends Seq.Projection[A] {
     len
   }
 
-  /** Returns
-   *   - (length - l) if l >= length
-   *   - 1 otherwise
-   *  This method does not call Stream.length.
+  /** Result of comparing <code>length</code> with operand <code>l</code>.
+   *  returns <code>x</code> where
+   *  <code>x &lt; 0</code>    iff    <code>this.length &lt; l</code>
+   *  <code>x == 0</code>   iff    <code>this.length == l</code>
+   *  <code>x &gt; 0</code>    iff    <code>this.length &gt; that</code>.
+   *
+   *  This method is used by matching streams against right-ignoring (...,_*) patterns.
+   *
+   *  This method does not call <code>Stream.length</code>, it works for <code>O(l)</code>,
+   *  not for <code>O(length)</code> and does not force full Stream evaluation.
    */
   final override def lengthCompare(l: Int) = {
     if (isEmpty) 0 - l
