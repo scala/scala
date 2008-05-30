@@ -248,8 +248,8 @@ abstract class Mixin extends InfoTransform {
                     // member is a constant; only getter is needed
                     ;
                   case MethodType(List(), TypeRef(_, tpeSym, _))
-                    if member.hasFlag(LAZY) && tpeSym == definitions.UnitClass =>
-                    // member is a lazy value of type unit. No field needed
+                    if tpeSym == definitions.UnitClass =>
+                    // member is a value of type unit. No field needed
                     ;
                   case _ =>
                     // otherwise mixin a field as well
@@ -642,10 +642,17 @@ abstract class Mixin extends InfoTransform {
                       }
                       offset += 1
                       rhs1
-                    } else
+                    } else if (sym.getter(sym.owner).tpe.resultType.typeSymbol == definitions.UnitClass) {
+                      Literal(())
+                    } else {
                       Select(This(clazz), sym.accessed)
+                    }
                 }
-                if (sym.isSetter) Assign(accessedRef, Ident(vparams.head))
+                if (sym.isSetter)
+                  accessedRef match {
+                    case Literal(_) => accessedRef
+                    case _ => Assign(accessedRef, Ident(vparams.head))
+                  }
                 else gen.mkCheckInit(accessedRef)
               })
             } else if (sym.isModule && !(sym hasFlag LIFTED | BRIDGE)) {

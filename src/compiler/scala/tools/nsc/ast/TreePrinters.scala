@@ -139,9 +139,9 @@ abstract class TreePrinters {
         case ClassDef(mods, name, tparams, impl) =>
           printAnnotations(tree)
           printModifiers(tree, mods)
-          print((if (mods hasFlag TRAIT) "trait " else "class ") + symName(tree, name))
+          print((if (mods.isTrait) "trait " else "class ") + symName(tree, name))
           printTypeParams(tparams)
-          print(" extends "); print(impl)
+          print(if (mods hasFlag DEFERRED) " <: " else " extends "); print(impl) // (part of DEVIRTUALIZE)
 
         case PackageDef(packaged, stats) =>
           printAnnotations(tree)
@@ -379,6 +379,9 @@ abstract class TreePrinters {
       printRaw(
         if (tree.isDef && tree.symbol != NoSymbol && tree.symbol.isInitialized) {
           tree match {
+            case ClassDef(_, _, _, impl @ Template(ps, trees.emptyValDef, body))
+            if (tree.symbol.thisSym != tree.symbol) =>
+              ClassDef(tree.symbol, Template(ps, ValDef(tree.symbol.thisSym), body))
             case ClassDef(_, _, _, impl)           => ClassDef(tree.symbol, impl)
             case ModuleDef(_, _, impl)             => ModuleDef(tree.symbol, impl)
             case ValDef(_, _, _, rhs)              => ValDef(tree.symbol, rhs)

@@ -106,7 +106,7 @@ trait Unapplies { self: Analyzer =>
     if (tparams.isEmpty) tycon else AppliedTypeTree(tycon, tparams map (x => Ident(x.name)))
   }
 
-  private def constrParams(cdef: ClassDef): List[List[ValDef]] = {
+  private def constrParamss(cdef: ClassDef): List[List[ValDef]] = {
     val constr = treeInfo.firstConstructor(cdef.impl.body)
     (constr: @unchecked) match {
       case DefDef(_, _, _, vparamss, _, _) => vparamss map (_ map copyUntyped[ValDef])
@@ -135,8 +135,8 @@ trait Unapplies { self: Analyzer =>
    */
   def caseModuleDef(cdef: ClassDef): ModuleDef = atPos(cdef.pos) {
     var parents = List(gen.scalaScalaObjectConstr)
-    if (!(cdef.mods hasFlag ABSTRACT) && cdef.tparams.isEmpty && constrParams(cdef).length == 1)
-      parents = gen.scalaFunctionConstr(constrParams(cdef).head map (_.tpt),
+    if (!(cdef.mods hasFlag ABSTRACT) && cdef.tparams.isEmpty && constrParamss(cdef).length == 1)
+      parents = gen.scalaFunctionConstr(constrParamss(cdef).head map (_.tpt),
                                         Ident(cdef.name)) :: parents
     ModuleDef(
       Modifiers(cdef.mods.flags & AccessFlags | SYNTHETIC, cdef.mods.privateWithin),
@@ -148,20 +148,15 @@ trait Unapplies { self: Analyzer =>
    */
   def caseModuleApplyMeth(cdef: ClassDef): DefDef = {
     val tparams = cdef.tparams map copyUntyped[TypeDef]
-    def paramToArg(param: ValDef) = {
-      val id = Ident(param.name)
-      if (treeInfo.isRepeatedParamType(param.tpt)) Typed(id, Ident(nme.WILDCARD_STAR.toTypeName))
-      else id
-    }
-    val cparams = constrParams(cdef)
+    val cparamss = constrParamss(cdef)
     atPos(cdef.pos) {
       DefDef(
         Modifiers(SYNTHETIC | CASE),
         nme.apply,
         tparams,
-        cparams,
+        cparamss,
         classType(cdef, tparams),
-        New(classType(cdef, tparams), cparams map (_ map paramToArg)))
+        New(classType(cdef, tparams), cparamss map (_ map gen.paramToArg)))
     }
   }
 
@@ -170,7 +165,7 @@ trait Unapplies { self: Analyzer =>
   def caseModuleUnapplyMeth(cdef: ClassDef): DefDef = {
     val tparams = cdef.tparams map copyUntyped[TypeDef]
     val unapplyParamName = newTermName("x$0")
-    val hasVarArg = constrParams(cdef) match {
+    val hasVarArg = constrParamss(cdef) match {
       case (cps @ (_ :: _)) :: _ => treeInfo.isRepeatedParamType(cps.last.tpt)
       case _ => false
     }

@@ -21,6 +21,9 @@ abstract class SubComponent {
   /** New flags defined by the phase which are not valid before */
   def phaseNewFlags: Long = 0
 
+  /** New flags defined by the phase which are not valid until immediately after it */
+  def phaseNextFlags: Long = 0
+
   /** The phase factory */
   def newPhase(prev: Phase): Phase
 
@@ -43,5 +46,6 @@ abstract class SubComponent {
   abstract class StdPhase(prev: Phase) extends global.GlobalPhase(prev) {
     def name = phaseName
     override def newFlags = phaseNewFlags
+    override def nextFlags = phaseNextFlags
   }
 }

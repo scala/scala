@@ -22,18 +22,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
   val phaseName: String = "devirtualize"
 
   /** The phase might set the following new flags: */
-  override def phaseNewFlags: Long = notOVERRIDE | notFINAL
-  //
-  // todo: this does not work yet: for some unknown reason the backend
-  // generates unverifiable code when notOVERRIDE is set for any phase whatsoever
-  // (I tried to set it later at phase Mixin, with same effect.
-  // One gets error messages like the following:
-  //
-  // /home/odersky/scala/sabbus.xml:37: The following error occurred while executing this line:
-  // /home/odersky/scala/sabbus.xml:456: Could not create type quick-bin due to java.lang.VerifyError: (class: scala/Option, method: productPrefix signature: ()Ljava/lang/String;) Illegal local variable number
-  //
-  // we need to fix this before notOVERRIDE can be turned on here.
-
+  override def phaseNextFlags: Long = notDEFERRED | notOVERRIDE | notFINAL | lateABSTRACT
 
   def newTransformer(unit: CompilationUnit): DeVirtualizeTransformer =
     new DeVirtualizeTransformer(unit)
@@ -41,7 +30,14 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
   /** The class does not change base-classes of existing classes */
   override def changesBaseClasses = false
 
-  def transformInfo(sym: Symbol, tp: Type): Type = devirtualizeMap(tp)
+  def transformInfo(sym: Symbol, tp: Type): Type =
+    if (sym.isThisSym && sym.owner.isVirtualClass) {
+      val clazz = sym.owner
+      intersectionType(
+        List(
+          appliedType(abstractType(clazz).typeConstructor, clazz.typeParams map (_.tpe)),
+          clazz.tpe))
+    } else devirtualizeMap(tp)
 
   /* todo:
      handle constructor arguments
@@ -51,15 +47,31 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
 
   /** Do the following transformations everywhere in a type:
    *
-   *  1. If a class defines virtual classes VC, add abstract types VA,
-   *     worker traits VT and factories VF instead (@see devirtualize).
-   *  2. For all virtual member classes VC which
-   *     are not abstract and which are or inherit from a virtual class defined in current class
-   *     add a factory (@see addFactory)
-   *  3. Convert VC.this where VC is a virtual class to WT.this where WT is the worker trait for VC
-   *     (@see workerTrait)
-   *  4. Convert TypeRef's to VC where VC is a virtual class to TypeRef's to AT, where AT
-   *     is the abstract type corresponding to VC.
+   * 1. Replace a virtual class
+   *
+   *  attrs mods class VC[Ts] <: Ps { decls }
+   *
+   * by the following symbols
+   *
+   *  attrs mods1 type VC[Ts] <: dvm(Ps) with VC$trait[Ts]
+   *  attrs mods2 trait VC$trait[Ts] extends AnyRef with ScalaObject {
+   *    this: VC[Ts] with VC$trait[Ts] => decls1
+   *  }
+   *
+   * The class symbol VC becomes the symbol of the workertrait.
+   *
+   *  dvm    is the devirtalization mapping which converts refs to
+   *         virtual classes to refs to their abstract types (@see devirtualize)
+   *  mods1  are the modifiers inherited to abstract types
+   *  mods2  are the modifiers inherited to worker traits
+   *  decls1 is decls but members that have an override modifier
+   *         lose it and any final modifier as well.
+   *
+   * 2. For all virtual member classes VC which
+   *    are not abstract and which are or inherit from a virtual class defined in current class
+   *    add a factory (@see mkFactory)
+   * 3. Convert TypeRef's to VC where VC is a virtual class to TypeRef's to AT, where AT
+   *    is the abstract type corresponding to VC.
    *
    *  Note: If a class inherits vc's from two different paths, a vc in the
    *  inheriting class has to be created beforehand. This is done in phase ??? (NOT YET DONE!)
@@ -68,27 +80,40 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
    *  isVirtualClass returns true for them also.
    */
   object devirtualizeMap extends TypeMap {
-    def apply(tp: Type): Type = {
-//      println("devirtualizeMap on " + tp)
-      mapOver(tp) match {
-      case tp1 @ ClassInfoType(parents, decls, clazz) if containsVirtuals(clazz) =>
-//        println(clazz + " contains virtuals")
-        transformOwnerInfo(clazz) // we might need to do this in two phases: enter/resolve
-        val ds = decls.toList
-        val decls1 = newScope(ds)
-        for (m <- ds)
-          if (m.isVirtualClass) devirtualize(m, decls1)
-        for (m <- classesInNeedOfFactories(clazz))
-          addFactory(m, clazz, decls1)
-//        println("Built ourselves a " + ClassInfoType(parents, decls1, clazz))
-        ClassInfoType(parents, decls1, clazz)
-      case tp1 @ ThisType(clazz) if clazz.isVirtualClass =>
-        ThisType(workerTrait(clazz))
+    def apply(tp: Type): Type = mapOver(tp) match {
+      case tp1 @ ClassInfoType(parents, decls0, clazz) =>
+        var decls = decls0
+        def enter(sym: Symbol) = // at next phase because names of worker traits change
+          atPhase(ownPhase.next) { decls.enter(sym) }
+        if (containsVirtuals(clazz)) {
+          decls = newScope
+          for (m <- decls0.toList) {
+            if (m.isVirtualClass) {
+              m.setFlag(notDEFERRED | notFINAL | lateABSTRACT)
+              enter(mkAbstractType(m))
+            }
+            enter(m)
+          }
+          for (m <- classesInNeedOfFactories(clazz))
+            enter(mkFactory(m, clazz))
+        }
+        if (clazz.isVirtualClass) {
+          println("virtual class: "+clazz+clazz.locationString)
+          transformOwnerInfo(clazz)
+          // remove OVERRIDE from all workertrait members,
+          for (val m <- decls.toList) {
+            if (m hasFlag OVERRIDE) m setFlag (notOVERRIDE | notFINAL)
+          }
+          if (clazz.thisSym == clazz) clazz.typeOfThis = clazz.thisType
+            // ... to give a hook on which we can hang selftype transformers
+          ClassInfoType(List(ObjectClass.tpe, ScalaObjectClass.tpe), decls, clazz)
+        } else {
+          ClassInfoType(parents map this, decls, clazz)
+        }
       case tp1 @ TypeRef(pre, clazz, args) if clazz.isVirtualClass =>
         TypeRef(pre, abstractType(clazz), args)
       case tp1 =>
         tp1
-      }
     }
   }
 
@@ -96,9 +121,10 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
   protected def transformOwnerInfo(clazz: Symbol) { atPhase(ownPhase.next) { clazz.owner.info } }
 
   /** Names of derived classes and factories */
-  protected def workerTraitName(clazzName: Name) = newTypeName(clazzName+"$trait")
-  protected def concreteClassName(clazzName: Name) = newTypeName(clazzName+"$fix")
-  protected def factoryName(clazzName: Name) = newTermName("new$"+clazzName)
+  protected def concreteClassName(clazz: Symbol) =
+    atPhase(ownPhase) { newTypeName(clazz.name+"$fix") }
+  protected def factoryName(clazz: Symbol) =
+    atPhase(ownPhase) { newTermName("new$"+clazz.name) }
 
   /** Does `clazz' contaion virtual classes? */
   protected def containsVirtuals(clazz: Symbol) = clazz.info.decls.toList exists (_.isVirtualClass)
@@ -116,40 +142,27 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
    *  }
    */
   protected def classesInNeedOfFactories(clazz: Symbol) = atPhase(ownPhase) {
-    def isDefinedVirtual(c: Symbol) = c.isVirtualClass && c.owner == clazz
-    val buf = new ListBuffer[Symbol]
-    for (m <- clazz.info.members)
-      if (m.isVirtualClass && !(m hasFlag ABSTRACT) && (m.info.baseClasses exists isDefinedVirtual))
-        buf += m
-    buf.toList
+    def isOverriddenVirtual(c: Symbol) =
+      c.isVirtualClass && clazz.info.decl(c.name).isVirtualClass
+    val xs = clazz.info.members.toList filter (x => x.isVirtualClass && !x.hasFlag(ABSTRACT))
+    for (m <- clazz.info.members.toList;
+         if (m.isVirtualClass && !(m hasFlag ABSTRACT) &&
+             (m.info.baseClasses exists isOverriddenVirtual))) yield m
   }
 
   /** The abstract type corresponding to a virtual class. */
-  protected def abstractType(clazz: Symbol): Symbol = atPhase(ownPhase.next) {
-//    println("Looking up the abstract type for " + clazz)
-    val tsym = clazz.owner.info.member(clazz.name)
-    assert(tsym.isAbstractType, clazz)
-//    println("Found " + tsym)
-    tsym
-  }
-
-  /** The worker trait corresponding to a virtual class. */
-  protected def workerTrait(clazz: Symbol) = atPhase(ownPhase.next) {
-    val tsym = clazz.owner.info.member(workerTraitName(clazz.name))
-    assert(tsym.isTrait, clazz)
-    tsym
+  protected def abstractType(clazz: Symbol): Symbol =  atPhase(ownPhase.next) {
+    val abstpe = clazz.owner.info.decl(atPhase(ownPhase) { clazz.name })
+    assert(abstpe.isAbstractType)
+    abstpe
   }
 
   /** The factory corresponding to a virtual class. */
-  protected def factory(clazz: Symbol) = atPhase(ownPhase.next) {
-    assert(!(clazz hasFlag ABSTRACT), clazz)
-    val fsym = clazz.owner.info.member(factoryName(clazz.name))
+  protected def factory(clazz: Symbol, owner: Symbol) = atPhase(ownPhase.next) {
+    val fsym = owner.info.member(factoryName(clazz))
     assert(fsym.isMethod, clazz)
     fsym
   }
-
-  /** The flags that a worker trait can inherit from its virtual class */
-  protected val traitFlagMask = AccessFlags
 
   /** The flags that an abstract type can inherit from its virtual class */
   protected val absTypeFlagMask = AccessFlags | DEFERRED
@@ -162,69 +175,54 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
   protected def mkPolyType(tparams: List[Symbol], tp: Type) =
     if (tparams.isEmpty) tp else PolyType(tparams, tp)
 
-  /** Set info of `dst' to `tp', potentially wrapped by copies of any type
-   *  parameters of symbol `from' */
-  def setPolyInfo(dst: Symbol, from: Symbol, tp: Type) = {
-    val tparams = cloneSymbols(from.typeParams, dst)
-    dst setInfo mkPolyType(tparams, tp substSym (from.typeParams, tparams))
+  /** A lazy type to complete `sym', which is is generated for virtual class
+   *  `clazz'.
+   *  The info of the symbol is computed by method `getInfo'.
+   *  It is wrapped in copies of the type parameters of `clazz'.
+   */
+  abstract class PolyTypeCompleter(sym: Symbol, clazz: Symbol) extends LazyType {
+    def getInfo: Type
+    override val typeParams = cloneSymbols(clazz.typeParams, sym)
+    override def complete(sym: Symbol) {
+      sym.setInfo(
+        mkPolyType(typeParams, getInfo.substSym(clazz.typeParams, typeParams)))
+    }
   }
 
-  /** Replace a virtual class
-   *
-   *  attrs mods class VC[Ts] <: Ps { decls }
-   *
-   * by the following symbols
-   *
-   *  attrs mods1 type VC[Ts] <: dvm(Ps) with VC$trait[Ts]
-   *  attrs mods2 trait VC$trait[Ts] extends AnyRef with ScalaObject {
-   *    this: VC[Ts] with VC$trait[Ts] => decls1
-   *  }
-   *
-   * where
-   *
-   *  dvm    is the devirtalization mapping which converts refs to
-   *         virtual classes to refs to their abstract types (@see devirtualize)
-   *  mods1  are the modifiers inherited to abstract types
-   *  mods2  are the modifiers inherited to worker traits
-   *  decls1 is decls but members that have an override modifier
-   *         lose it and any final modifier as well.
-   */
-  protected def devirtualize(clazz: Symbol, scope: Scope) {
-    scope.unlink(clazz)
+  protected def wasVirtualClass(sym: Symbol) = {
+    sym.isVirtualClass || {
+      sym.info
+      sym hasFlag notDEFERRED
+    }
+  }
 
+  protected def addOverriddenVirtuals(clazz: Symbol) = {
+    (clazz.allOverriddenSymbols filter wasVirtualClass) ::: List(clazz)
+  }
+
+  protected def addOverriddenVirtuals(tpe: Type) = tpe match {
+    case TypeRef(pre, sym, args) =>
+      { for (vc <- sym.allOverriddenSymbols if wasVirtualClass(vc))
+        yield typeRef(pre, vc, args) }.reverse ::: List(tpe)
+  }
+
+  protected def mkAbstractType(clazz: Symbol): Symbol = {
     val cabstype = clazz.owner.newAbstractType(clazz.pos, clazz.name)
-      .setFlag(clazz.flags & absTypeFlagMask)
+      .setFlag(clazz.flags & absTypeFlagMask | SYNTHETIC)
       .setAttributes(clazz.attributes)
-    scope.enter(cabstype)
-
-    cabstype setInfo new LazyType {
-      override val typeParams = cloneSymbols(clazz.typeParams, cabstype)
-      override def complete(sym: Symbol) {
-        def parentTypeRef(tp: Type) =
-          devirtualizeMap(tp.substSym(clazz.typeParams, typeParams))
-        val parents = (clazz.info.parents map parentTypeRef) :::
-          List(appliedType(workerTrait(clazz).typeConstructor, typeParams map (_.tpe)))
-        sym.setInfo(
-          mkPolyType(typeParams, mkTypeBounds(AllClass.tpe, intersectionType(parents))))
+    atPhase(ownPhase.next) {
+      cabstype setInfo new PolyTypeCompleter(cabstype, clazz) {
+        def getInfo = {
+          val parents1 = clazz.info.parents map {
+            p => devirtualizeMap(p.substSym(clazz.typeParams, typeParams))
+          }
+          val parents2 = addOverriddenVirtuals(clazz) map {
+            c => typeRef(clazz.owner.thisType, c, typeParams map (_.tpe))
+          }
+          mkTypeBounds(AllClass.tpe, intersectionType(parents1 ::: parents2))
+        }
       }
     }
-
-    val wtrait = clazz.owner.newClass(clazz.pos, workerTraitName(clazz.name))
-      .setFlag(clazz.flags & traitFlagMask | TRAIT)
-      .setAttributes(clazz.attributes)
-    scope.enter(wtrait)
-
-    // remove OVERRIDE from all workertrait members
-    val decls1 = clazz.info.decls.toList
-    for (val m <- decls1)
-      if (m hasFlag OVERRIDE) m setFlag (notOVERRIDE | notFINAL)
-
-    setPolyInfo(
-      wtrait, clazz,
-      ClassInfoType(List(ObjectClass.tpe, ScalaObjectClass.tpe), newScope(decls1), wtrait))
-    wtrait.typeOfThis = intersectionType(List(
-      appliedType(cabstype.typeConstructor, wtrait.typeParams map (_.tpe)),
-      wtrait.tpe))
   }
 
   /* Add a factory symbol for a virtual class
@@ -242,47 +240,59 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
    * where
    *
    *  mods3  are the modifiers inherited to factories
-   *  v2w is maps every virtual class to its workertrait and leaves other types alone.
+   *  v2w maps every virtual class to its workertrait and leaves other types alone.
    *
    *  @param  clazz    The virtual class for which factory is added
    *  @param  owner    The owner for which factory is added as a member
    *  @param  scope    The scope into which factory is entered
    */
-  def addFactory(clazz: Symbol, owner: Symbol, scope: Scope) {
-//    println("Adding a factory to " + clazz.owner + "." + clazz)
+  def mkFactory(clazz: Symbol, owner: Symbol): Symbol = {
     val pos = if (clazz.owner == owner) clazz.pos else owner.pos
-    val factory = owner.newMethod(pos, factoryName(clazz.name))
-      .setFlag(clazz.flags & factoryFlagMask)
+    val factory = owner.newMethod(pos, factoryName(clazz))
+      .setFlag(clazz.flags & factoryFlagMask | SYNTHETIC)
       .setAttributes(clazz.attributes)
-    scope.enter(factory)
-    // val cabstype = abstractType(clazz)
-//    setPolyInfo(factory, cabstype, MethodType(List(/*todo: handle constructor parameters*/),
-//                                              cabstype.tpe))
+    factory setInfo new PolyTypeCompleter(factory, clazz) {
+      def getInfo = {
+        MethodType(List(/*todo: handle constructor parameters*/),
+                   owner.thisType.memberType(abstractType(clazz)))
+      }
+    }
     factory
   }
 
-  /** The concrete class symbol VC$fix in the factory symbol (@see addFactory)
+  def removeDuplicates(ts: List[Type]): List[Type] = ts match {
+    case List() => List()
+    case t :: ts1 => t :: removeDuplicates(ts1 filter (_.typeSymbol != t.typeSymbol))
+  }
+
+  /** The concrete class symbol VC$fix in the factory symbol (@see mkFactory)
    *  @param clazz    the virtual class
    *  @param factory  the factory which returns an instance of this class
    */
-  protected def concreteClassSym(clazz: Symbol, factory: Symbol) = {
-    val cclazz = factory.newClass(clazz.pos, concreteClassName(clazz.name))
-      .setFlag(FINAL)
+  protected def mkConcreteClass(clazz: Symbol, factory: Symbol) = {
+    val cclazz = factory.newClass(clazz.pos, concreteClassName(clazz))
+      .setFlag(FINAL | SYNTHETIC)
       .setAttributes(clazz.attributes)
 
     cclazz setInfo new LazyType {
       override def complete(sym: Symbol) {
-        def v2w(bc: Symbol): Type = {
-          val btp = clazz.info baseType bc
-          if (bc.isVirtualClass)
-            (btp: @unchecked) match {
-              case TypeRef(pre, _, args) =>
-                TypeRef(pre, workerTrait(bc), args)
-            }
-          else btp
-        }.substSym(clazz.typeParams, factory.typeParams)
-        val parents = clazz.info.baseClasses.reverse map v2w
-        sym setInfo ClassInfoType(parents, newScope, cclazz)
+        val parents1 = atPhase(ownPhase) {
+          var superclazz = clazz
+          do {
+            superclazz = superclazz.info.parents.head.typeSymbol
+          } while (wasVirtualClass(superclazz))
+          val bcs = superclazz :: (clazz.info.baseClasses takeWhile (superclazz != )).reverse
+          println("MKConcrete1 "+cclazz+factory.locationString+" "+bcs+" from "+clazz+clazz.locationString)
+          println("MKConcrete2 "+cclazz+factory.locationString+" "+(bcs map factory.owner.thisType.memberType))
+          bcs map factory.owner.thisType.memberType
+        }
+        atPhase(ownPhase.next) {
+          println("MKConcrete3 "+cclazz+" "+parents1)
+          val parents2 =
+            removeDuplicates(parents1.flatMap(addOverriddenVirtuals))
+            .map(_.substSym(clazz.typeParams, factory.typeParams))
+          sym setInfo ClassInfoType(parents2, newScope, cclazz)
+        }
       }
     }
 
@@ -293,7 +303,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
    *
    *  1. Add trees for abstract types (@see devirtualize),
    *     worker traits (@see devirtualize)
-   *     and factories (@see addFactory)
+   *     and factories (@see mkFactory)
    *
    *  2. Replace a new VC().init(...) where VC is a virtual class with new$VC(...)
    *
@@ -306,22 +316,20 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
   class DeVirtualizeTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     // all code is executed at phase ownPhase.next
 
-    /** Add trees for abstract types, worker traits, and factories (@see addFactory)
+    /** Add trees for abstract types, worker traits, and factories (@see mkFactory)
      *  to template body `stats'
      */
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
-//      println("QUX!")
       val stats1 = stats flatMap transformStat map transform
-      val newDefs = new ListBuffer[Tree]
-      if (currentOwner.isClass && containsVirtuals(currentOwner)) {
-        for (m <- classesInNeedOfFactories(currentOwner))
-          newDefs += factoryDef(m)
+      val fclasses = atPhase(ownPhase) {
+        if (currentOwner.isClass && containsVirtuals(currentOwner)) classesInNeedOfFactories(currentOwner)
+        else List()
       }
-      if (newDefs.isEmpty) stats1
-      else stats1 ::: newDefs.toList
+      val newDefs = fclasses map factoryDef
+      if (newDefs.isEmpty) stats1 else stats1 ::: newDefs
     }
 
-    /** The factory definition for virtual class `clazz' (@see addFactory)
+    /** The factory definition for virtual class `clazz' (@see mkFactory)
      *  For a virtual class
      *
      *  attrs mods class VC[Ts] <: Ps { decls }
@@ -333,7 +341,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
      *    class VC$fix extends _VC$trait's[Ts] with VC$trait[Ts] {
      *      override-bridges
      *    }
-     *    new VC$fix
+     *    new VC$fix.asInstanceOf[VC[Ts]]
      *  }
      *
      * where
@@ -344,16 +352,29 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
      *                   //todo: not sure what happens with abstract override?
      */
     def factoryDef(clazz: Symbol): Tree = {
-      val factorySym = factory(clazz)
-      val cclazzSym = concreteClassSym(clazz, factorySym)
+      val factorySym = factory(clazz, currentOwner)
+      val cclazzSym = mkConcreteClass(clazz, factorySym)
       val overrideBridges =
-        for (m <- workerTrait(clazz).info.decls.toList if m hasFlag notOVERRIDE)
+        for (m <- clazz.info.decls.toList if m hasFlag notOVERRIDE)
         yield overrideBridge(m, cclazzSym)
       val cclazzDef = ClassDef(cclazzSym, Modifiers(0), List(List()), List(List()), overrideBridges)
+      val abstpeSym = abstractType(clazz)
       val factoryExpr = atPos(factorySym.pos) {
-        Block(List(cclazzDef), New(TypeTree(cclazzSym.tpe), List(List())))
+        Block(
+          List(cclazzDef),
+          TypeApply(
+            Select(
+              New(TypeTree(cclazzSym.tpe), List(List())),
+              Any_asInstanceOf),
+             List(
+               TypeTree(
+                 currentOwner.thisType.memberType(abstpeSym)
+                 .substSym(abstpeSym.typeParams, factorySym.typeParams)))))
       }
-      DefDef(factorySym, vparamss => factoryExpr)
+      println("factory def "+DefDef(factorySym, vparamss => factoryExpr)+" "+phase)
+      localTyper.typed {
+        DefDef(factorySym, vparamss => factoryExpr)
+      }
     }
 
     /** Create an override bridge for method `meth' in concrete class `cclazz'.
@@ -365,55 +386,37 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
       val bridge = meth.cloneSymbol(cclazz)
         .resetFlag(notOVERRIDE | notFINAL)
       val superRef: Tree = Select(Super(cclazz, nme.EMPTY.toTypeName), meth)
-      DefDef(bridge, vparamss => (superRef /: vparamss)((fn, vparams) =>
-        Apply(fn, vparams map (param => Ident(param) setPos param.pos))))
+      DefDef(bridge, vparamss => gen.mkForwarder(superRef, vparamss))
     }
 
     /** Replace definitions of virtual classes by definitions of corresponding
      *  abstract type and worker traits.
+     *  Eliminate constructors of former virtual classes because these are now traits.
      */
-    protected def transformStat(tree: Tree): List[Tree] = {
-//      println("QUZZ!")
-      tree match {
-      case ClassDef(mods, name, tparams, templ @ Template(parents, self, body)) if (tree.symbol.isVirtualClass) =>
-//      println("QUXX!")
+    protected def transformStat(tree: Tree): List[Tree] = tree match {
+      case ClassDef(mods, name, tparams, templ @ Template(parents, self, body))
+      if (wasVirtualClass(tree.symbol)) =>
         val clazz = tree.symbol
-//      println("QUXY!")
         val absTypeSym = abstractType(clazz)
-//      println("QUXY2!")
-        val workerTraitSym = workerTrait(clazz)
-//      println("QUXY3!")
         val abstypeDef = TypeDef(abstractType(clazz))
-//      println("QUXY4!")
-        val workerTraitDef = ClassDef(
-          workerTraitSym,
-          Modifiers(0),
-          List(List()),
-          List(List()),
-          body)
-//      println("QUXY5!")
-        new ChangeOwnerTraverser(clazz, workerTraitSym)(
-          new ChangeOwnerTraverser(templ.symbol, workerTraitDef.impl.symbol)(workerTraitDef.impl))
-//      println("QUXY6!")
-        List(abstypeDef, workerTraitDef) map localTyper.typed
+//        println("abstypeDef = "+abstypeDef)
+        List(localTyper.typed(abstypeDef), tree)
+      case DefDef(_, nme.CONSTRUCTOR, _, _, _, _)
+      if (wasVirtualClass(tree.symbol.owner)) =>
+        List()
       case _ =>
         List(tree)
-      }
     }
 
     override def transform(tree: Tree): Tree = {
-//      println("FOOB!")
       tree match {
-        // Replace references to VC.this and VC.super where VC is a virtual class
-        // with VC$trait.this and VC$trait.super
-        case This(_) | Super(_, _) if tree.symbol.isVirtualClass =>
-//      println("BARB!")
-          tree setSymbol workerTrait(tree.symbol)
-
         // Replace a new VC().init() where VC is a virtual class with new$VC
-        case Select(New(tpt), name) if (tree.symbol.isConstructor && tree.symbol.owner.isVirtualClass) =>
+        case Select(New(tpt), name) if (tree.symbol.isConstructor && wasVirtualClass(tree.symbol.owner)) =>
           val clazz = tpt.tpe.typeSymbol
-          val fn = gen.mkAttributedRef(factory(clazz))
+          val fn =
+            Select(
+              gen.mkAttributedQualifier(tpt.tpe.prefix),
+              factory(clazz, clazz.owner).name)
           val targs = tpt.tpe.typeArgs
           atPos(tree.pos) {
             localTyper.typed {
@@ -424,7 +427,6 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
           }
 
         case _ =>
-//      println("BAZ!")
           super.transform(tree)
       }
     } setType devirtualizeMap(tree.tpe)

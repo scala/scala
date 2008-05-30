@@ -991,7 +991,10 @@ trait Typers { self: Analyzer =>
             else
               psym addChild context.owner
           }
-          if (!(selfType <:< parent.tpe.typeOfThis) && !phase.erasedTypes) { //@M .typeOfThis seems necessary
+          if (!(selfType <:< parent.tpe.typeOfThis) &&
+              !phase.erasedTypes &&
+              !(context.owner hasFlag SYNTHETIC)) // don't do this check for synthetic concrete classes for virtuals (part of DEVIRTUALIZE)
+          {
             //Console.println(context.owner);//DEBUG
             //Console.println(context.owner.unsafeTypeParams);//DEBUG
             //Console.println(List.fromArray(context.owner.info.closure));//DEBUG
@@ -1628,7 +1631,7 @@ trait Typers { self: Analyzer =>
                   "I assume that the elements of this array should be passed as individual arguments to the vararg.\n"+
                   "Therefore I wrap the array in a `: _*', to mark it as a vararg argument.\n"+
                   "If that's not what you want, compile this file with option -Xno-varargs-conversion.")
-                args0 = args.init ::: List(atPos(lastarg.pos) { Typed(lastarg, Ident(nme.WILDCARD_STAR.toTypeName)) })
+                args0 = args.init ::: List(gen.wildcardStar(args.last))
               }
             }
         val suffix =

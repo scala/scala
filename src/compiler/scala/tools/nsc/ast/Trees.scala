@@ -58,7 +58,7 @@ trait Trees {
     def isCase      = hasFlag(CASE     )
     def isSealed    = hasFlag(SEALED   )
     def isFinal     = hasFlag(FINAL    )
-    def isTrait     = hasFlag(TRAIT    )
+    def isTrait     = hasFlag(TRAIT | notDEFERRED) // (part of DEVIRTUALIZE)
     def isImplicit  = hasFlag(IMPLICIT )
     def isPublic    = !isPrivate && !isProtected
     def hasFlag(flag: Long) = (flag & flags) != 0
@@ -326,6 +326,7 @@ trait Trees {
    */
   def ClassDef(sym: Symbol, impl: Template): ClassDef =
     posAssigner.atPos(sym.pos) {
+      var flags = sym.flags
       ClassDef(Modifiers(sym.flags),
                sym.name,
                sym.typeParams map TypeDef,
@@ -549,7 +550,7 @@ trait Trees {
       }
     }
     val constrs =
-      if (constrMods hasFlag TRAIT) {
+      if (constrMods.isTrait) {
         if (body forall treeInfo.isInterfaceMember) List()
         else List(
           DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, List(), List(List()), TypeTree(), Block(lvdefs, Literal(()))))

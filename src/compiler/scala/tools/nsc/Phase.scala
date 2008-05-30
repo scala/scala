@@ -14,9 +14,14 @@ abstract class Phase(val prev: Phase) {
 
   val id: Id = if (prev eq null) 0 else prev.id + 1
 
+  /** New flags visible after this phase has completed */
+  def nextFlags: Long = 0l
+
+  /** New flags visible once this phase has started */
   def newFlags: Long = 0l
+
   private var fmask: Long =
-    if (prev eq null) Flags.InitialFlags else prev.flagMask | newFlags
+    if (prev eq null) Flags.InitialFlags else prev.flagMask | prev.nextFlags | newFlags
   def flagMask: Long = fmask
 
   private var nx: Phase = this

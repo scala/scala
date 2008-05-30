@@ -248,6 +248,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     override def erasedTypes: Boolean = isErased
     private val isFlat = prev.name == "flatten" || prev.flatClasses
     override def flatClasses: Boolean = isFlat
+    private val isDevirtualized = prev.name == "devirtualize" || prev.devirtualized
+    override def devirtualized: Boolean = isDevirtualized  // (part of DEVIRTUALIZE)
 
 	/** Is current phase cancelled on this unit? */
     def cancelled(unit: CompilationUnit) =

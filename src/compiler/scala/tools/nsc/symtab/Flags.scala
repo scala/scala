@@ -87,6 +87,7 @@ object Flags extends Enumeration {
 
   // late flags (set by a transformer phase)
   final val latePRIVATE   = (PRIVATE: Long) << LateShift
+  final val lateABSTRACT  = (ABSTRACT: Long) << LateShift
   final val lateDEFERRED  = (DEFERRED: Long) << LateShift
   final val lateINTERFACE = (INTERFACE: Long) << LateShift
   final val lateMODULE    = (MODULE: Long) << LateShift

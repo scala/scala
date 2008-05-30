@@ -93,6 +93,9 @@ abstract class RefChecks extends InfoTransform {
 
       val self = clazz.thisType
 
+      def isAbstractTypeForVirtual(sym: Symbol) = // (part of DEVIRTUALIZE)
+        sym.isAbstractType && sym.hasFlag(SYNTHETIC)
+
       def infoString(sym: Symbol) = {
         val sym1 = analyzer.underlying(sym)
         sym1.toString() +
@@ -173,7 +176,7 @@ abstract class RefChecks extends InfoTransform {
           overrideAccessError()
         } else if (other hasFlag FINAL) { // (1.2)
           overrideError("cannot override final member");
-        } else if (!other.isDeferred && !(member hasFlag (OVERRIDE | ABSOVERRIDE))) { // (1.3)
+        } else if (!other.isDeferred && !(member hasFlag (OVERRIDE | ABSOVERRIDE | SYNTHETIC))) { // (1.3), SYNTHETIC because of DEVIRTUALIZE
           overrideError("needs `override' modifier");
         } else if ((other hasFlag ABSOVERRIDE) && other.isIncompleteIn(clazz) && !(member hasFlag ABSOVERRIDE)) {
           overrideError("needs `abstract override' modifiers")
@@ -262,6 +265,7 @@ abstract class RefChecks extends InfoTransform {
             })
         for (val member <- clazz.tpe.nonPrivateMembers)
           if (member.isDeferred && !(clazz hasFlag ABSTRACT) &&
+              !isAbstractTypeForVirtual(member) &&
               !((member hasFlag JAVA) && javaErasedOverridingSym(member) != NoSymbol)) {
             abstractClassError(
               false, infoString(member) + " is not defined" + analyzer.varNotice(member))
@@ -283,7 +287,7 @@ abstract class RefChecks extends InfoTransform {
         // (3) is violated but not (2).
         def checkNoAbstractDecls(bc: Symbol) {
           for (val decl <- bc.info.decls.elements) {
-            if (decl.isDeferred) {
+            if (decl.isDeferred && !isAbstractTypeForVirtual(decl)) {
               val impl = decl.matchingSymbol(clazz.thisType)
               if (impl == NoSymbol || (decl.owner isSubClass impl.owner)) {
                 abstractClassError(false, "there is a deferred declaration of "+infoString(decl)+
