@@ -404,27 +404,27 @@ abstract class TreeBrowsers {
       case ClassDef(mods, name, tparams, impl) => {
         var children: List[Tree] = List()
         children = tparams ::: children
-        impl :: children
+        mods.annotations ::: impl :: children
       }
 
       case PackageDef(name, stats) =>
         stats
 
       case ModuleDef(mods, name, impl) =>
-        List(impl)
+        mods.annotations ::: List(impl)
 
       case ValDef(mods, name, tpe, rhs) =>
-        List(tpe, rhs)
+        mods.annotations ::: List(tpe, rhs)
 
       case DefDef(mods, name, tparams, vparams, tpe, rhs) => {
         var children: List[Tree] = List()
         children = tparams ::: children
         children = List.flatten(vparams) ::: children
-        tpe :: rhs :: children
+        mods.annotations ::: tpe :: rhs :: children
       }
 
       case TypeDef(mods, name, tparams, rhs) =>
-        rhs :: tparams // @M: was List(rhs, lobound)
+        mods.annotations ::: rhs :: tparams // @M: was List(rhs, lobound)
 
       case Import(expr, selectors) => {
         var children: List[Tree] = List(expr)
@@ -570,7 +570,7 @@ abstract class TreeBrowsers {
       val s = t.symbol
       var att = ""
 
-      if (s ne null) {
+      if ((s ne null) && (s != NoSymbol)) {
         var str = flagsToString(s.flags)
         if (s.isStaticMember) str = str + " isStatic ";
         str
@@ -684,8 +684,14 @@ abstract class TreeBrowsers {
       case global.analyzer.ImportType(expr) =>
         "ImportType(" + expr.toString + ")"
 
+
+      case SuperType(thistpe, supertpe) =>
+        Document.group(
+          Document.nest(4, "SuperType(" :/:
+                        toDocument(thistpe) :/: ", " :/:
+                        toDocument(supertpe) ::")"))
       case _ =>
-        throw new Error("Unknown case: " + t.toString())
+        throw new Error("Unknown case: " + t.toString() +", "+ t.getClass)
     }
   }
 
