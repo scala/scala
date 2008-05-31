@@ -658,8 +658,10 @@ abstract class ClassfileParser {
             if ((sourceFile0 ne null) && (clazz.sourceFile eq null)) {
               clazz.sourceFile = sourceFile0
             }
-            if (!inIDE || staticModule.moduleClass != NoSymbol)
+            // XXX: removing only in IDE test. Also needs to be tested in the build compiler.
+            if (staticModule.moduleClass != NoSymbol) {
               staticModule.moduleClass.sourceFile = clazz.sourceFile
+            }
           }
         case nme.AnnotationDefaultATTR =>
           sym.attributes =
