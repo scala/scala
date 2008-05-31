@@ -261,11 +261,13 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
 
   trait HasClients {
     def record(client : ScopeClient, name : Name) : Unit
-    def invalidate(name : Name) : Unit
+    def record(client : Function1[PersistentScope,Unit]) : Unit
+    def invalidate(from : PersistentScope, name : Name) : Unit
   }
 
   trait ReallyHasClients extends HasClients {
     private var clients : Map = null
+    private var anyClients : LinkedHashSet[Function1[PersistentScope,Unit]] = null
     private class Map extends LinkedHashMap[Int,LinkedHashSet[ScopeClient]] {
       override def default(hash : Int) = {
         val set = new LinkedHashSet[ScopeClient]
@@ -277,9 +279,21 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
         if (clients eq null) clients = new Map
         clients(name.start)
       })
-    override def invalidate(name : Name) : Unit = if (clients ne null) clients.removeKey(name.start) match {
-    case Some(clients) => clients.foreach(_.changed)
-    case None =>
+    def record(client : Function1[PersistentScope,Unit]) = {
+      if (anyClients == null) anyClients = new LinkedHashSet[Function1[PersistentScope,Unit]]
+      anyClients += client
+    }
+
+    override def invalidate(from : PersistentScope, name : Name) : Unit = {
+      if (clients ne null) clients.removeKey(name.start) match {
+      case Some(clients) => clients.foreach(_.changed)
+      case None =>
+      }
+      if (anyClients != null) {
+        var c = anyClients
+        anyClients = null
+        c.foreach(_.apply(from))
+      }
     }
   }
 
@@ -287,7 +301,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
   class PersistentScope(val key : AnyRef, val owner : HasClients) extends HookedScope(null) {
     override def record(client : ScopeClient, name : Name) =
       owner.record(client, name)
-    override def invalidate(name : Name) : Unit = owner.invalidate(name)
+    override def invalidate(name : Name) : Unit = owner.invalidate(this,name)
     override def enter(symbol : Symbol) : Symbol = {
       if (currentClient.makeNoChanges) { // might have unpickles.
         return if (lookupEntry(symbol.name) == null)

@@ -809,6 +809,7 @@ trait Trees {
        extends TypTree
 
   trait StubTree extends Tree {
+    def underlying : AnyRef
     override def equalsStructure0(that: Tree)(f : (Tree,Tree) => Boolean): Boolean = this eq that
   }
 /* A standard pattern match
