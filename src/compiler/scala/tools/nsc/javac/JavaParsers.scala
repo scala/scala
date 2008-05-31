@@ -548,11 +548,42 @@ trait JavaParsers extends JavaScanners {
       }
     }
 
+    /** Parse a sequence of field declarations, separated by commas.
+     *  This one is tricky because a comma might also appear in an
+     *  initializer. Since we don't parse initializers we don't know
+     *  what the comma signifies.
+     *  We solve this with a second list buffer `maybe' which contains
+     *  potential variable definitions.
+     *  Once we have reached the end of the statement, we know whether
+     *  these potential definitions are real or not.
+     */
     def fieldDecls(pos: Position, mods: Modifiers, tpt: Tree, name: Name): List[Tree] = {
       val buf = new ListBuffer[Tree] + varDecl(pos, mods, tpt, name)
+      val maybe = new ListBuffer[Tree] // potential variable definitions.
       while (in.token == COMMA) {
         in.nextToken
-        buf += varDecl(in.currentPos, mods, tpt.duplicate, ident())
+        if (in.token == IDENTIFIER) { // if there's an ident after the comma ...
+          val name = ident()
+          in.nextToken
+          if (in.token == ASSIGN) { // ... followed by an `=', we know it's a real variable definition
+            buf ++= maybe
+            buf += varDecl(in.currentPos, mods, tpt.duplicate, name)
+            maybe.clear()
+          } else if (in.token == COMMA) { // ... if there's a comma after the ident, it could be a real vardef or not.
+            maybe += varDecl(in.currentPos, mods, tpt.duplicate, name)
+          } else { // ... if there's something else we were still in the initializer of the
+                   // previous var def; skip to next comma or semicolon.
+            skipTo(COMMA, SEMI)
+            maybe.clear()
+          }
+        } else { // ... if there's no ident following the comma we were still in the initializer of the
+                 // previous var def; skip to next comma or semicolon.
+          skipTo(COMMA, SEMI)
+          maybe.clear()
+        }
+      }
+      if (in.token == SEMI) {
+        buf ++= maybe // every potential vardef that survived until here is real.
       }
       buf.toList
     }
