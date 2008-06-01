@@ -145,7 +145,7 @@ trait Namers { self: Analyzer =>
     def enterInScope(sym: Symbol): Symbol = {
       // allow for overloaded methods
       if (!(sym.isSourceMethod && sym.owner.isClass && !sym.owner.isPackageClass)) {
-        var prev = context.scope.lookupEntry(sym.name);
+        var prev = context.scope.lookupEntryWithContext(sym.name)(context.owner);
         if ((prev ne null) && inIDE) {
           var guess = prev
           while ((guess ne null) && (guess.sym ne sym)) guess = context.scope.lookupNextEntry(guess)
@@ -179,7 +179,7 @@ trait Namers { self: Analyzer =>
     def enterPackageSymbol(pos: Position, name: Name): Symbol = {
       val cscope = if (context.owner == EmptyPackageClass) RootClass.info.decls
                    else context.scope
-      val p: Symbol = cscope.lookup(name)
+      val p: Symbol = cscope.lookupWithContext(name)(context.owner)
       if (p.isPackage && cscope == p.owner.info.decls) {
         p
       } else {
@@ -194,7 +194,7 @@ trait Namers { self: Analyzer =>
     }
 
     def enterClassSymbol(tree : ClassDef): Symbol = {
-      var c: Symbol = context.scope.lookup(tree.name);
+      var c: Symbol = context.scope.lookupWithContext(tree.name)(context.owner);
       if (!inIDE && c.isType && c.owner.isPackageClass && context.scope == c.owner.info.decls && !currentRun.compiles(c)) {
         updatePosFlags(c, tree.pos, tree.mods.flags)
         setPrivateWithin(tree, c, tree.mods)
@@ -224,7 +224,7 @@ trait Namers { self: Analyzer =>
      *  or a class definition */
     def enterModuleSymbol(tree : ModuleDef): Symbol = {
       // .pos, mods.flags | MODULE | FINAL, name
-      var m: Symbol = context.scope.lookup(tree.name)
+      var m: Symbol = context.scope.lookupWithContext(tree.name)(context.owner)
       val moduleFlags = tree.mods.flags | MODULE | FINAL
       if (!inIDE && m.isModule && !m.isPackage && inCurrentScope(m) &&
           (!currentRun.compiles(m) || (m hasFlag SYNTHETIC))) {
@@ -313,8 +313,8 @@ trait Namers { self: Analyzer =>
             tree.symbol = enterClassSymbol(tree)
             finishWith(tparams)
             if ((mods.flags & CASE) != 0) {
-              var m: Symbol = context.scope.lookup(tree.name.toTermName).filter(! _.isSourceMethod)
-              if (!(m.isModule && inCurrentScope(m) && currentRun.compiles(m))) {
+              var m: Symbol = context.scope.lookupWithContext(tree.name.toTermName)(context.owner).filter(! _.isSourceMethod)
+              if (!(m.isModule && inCurrentScope(m) && (inIDE || currentRun.compiles(m)))) {
                 m = enterSyntheticSym(caseModuleDef(tree))
               }
               caseClassOfModuleClass(m.moduleClass) = tree
@@ -544,7 +544,7 @@ trait Namers { self: Analyzer =>
       }
       // add apply and unapply methods to companion objects of case classes,
       // unless they exist already
-      caseClassOfModuleClass get clazz match {
+      Namers.this.caseClassOfModuleClass get clazz match {
         case Some(cdef) =>
           addApplyUnapply(cdef, templateNamer)
           caseClassOfModuleClass -= clazz
@@ -867,7 +867,7 @@ trait Namers { self: Analyzer =>
                 if (!tree.symbol.hasFlag(SYNTHETIC) &&
                     !((expr1.symbol ne null) && expr1.symbol.isInterpreterWrapper) &&
                     base.member(from) != NoSymbol) {
-                  val e = context.scope.lookupEntry(to)
+                  val e = context.scope.lookupEntryWithContext(to)(context.owner)
                   def warnRedundant(sym: Symbol) =
                     context.unit.warning(pos, "imported `"+to+
                                          "' is permanently hidden by definition of "+sym+

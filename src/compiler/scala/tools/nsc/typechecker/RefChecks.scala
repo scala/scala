@@ -256,7 +256,7 @@ abstract class RefChecks extends InfoTransform {
         // Bridge symbols qualify.
         // Used as a fall back if no overriding symbol of a Java abstract method can be found
         def javaErasedOverridingSym(sym: Symbol): Symbol =
-          clazz.tpe.findMember(sym.name, PRIVATE, 0, false).filter(other =>
+          clazz.tpe.findMember(sym.name, PRIVATE, 0, false)(NoSymbol).filter(other =>
             !other.isDeferred &&
             (other hasFlag JAVA) && {
               val tp1 = erasure.erasure(clazz.thisType.memberType(sym))

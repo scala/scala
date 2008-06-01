@@ -94,10 +94,25 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
         e = scope.lookupEntry(name)
         while (e != null && !e.sym.hasFlag(MODULE)) e = scope.lookupNextEntry(e)
         if (e != null) {
-          list += e.sym
-          scope unlink e.sym
-        } else Console.println("XXX: module " + name + " does not exist anymore")
-        //Console.println("RS-UNLINK: " + factory)
+          // try to find apply method.
+          e.sym.moduleClass.rawInfo match {
+          case ClassInfoType(_,decls : PersistentScope,_) =>
+            val list = reuseMap.get(decls) match {
+            case Some(list) => list
+            case None =>
+              val list = new jcl.LinkedList[Symbol]
+              reuseMap(decls) = list; list
+            }
+            decls.toList.foreach{ae=>
+              if (ae.hasFlag(CASE) && ae.hasFlag(SYNTHETIC))  {
+                list += ae
+                decls unlink ae
+              }
+            }
+          case eee =>
+            assert(eee != null)
+          }
+        }
       }
       // if def is abstract, will only unlink its name
       if (sym.isGetter) {
@@ -128,6 +143,12 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
             //Console.println("RS-UNLINK: " + setter)
           }
         }
+      } else if (sym.hasFlag(Flags.LAZY)) {
+        val getter = sym.lazyAccessor
+        if (getter != NoSymbol) {
+          list += getter
+          scope unlink getter
+        }
       }
       //Console.println("RS-UNLINK: " + sym)
       list += sym
@@ -137,17 +158,24 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
   private def reuse(scope : PersistentScope) : PersistentScope = {
     if (currentClient.makeNoChanges) return scope
     val buf = new jcl.LinkedList[Symbol]
-    buf addAll scope.toList
-    buf.foreach(sym => assert(!sym.isPackage))
-    scope.clear
+    scope.toList.foreach{sym =>
+      if (sym.hasFlag(Flags.CASE) && sym.hasFlag(Flags.SYNTHETIC)) {
+        assert(sym != null)
+      } else {
+        buf add sym
+        scope unlink sym
+      }
+    }
     if (!buf.isEmpty) {
       assert(true)
-      reuseMap(scope) = buf
+      reuseMap.get(scope) match {
+      case Some(buf0) => buf.foreach(buf0.+=)
+      case None => reuseMap(scope) = buf
+      }
     }
     scope
   }
 
-  // TODO: implement a good compile late for the IDE.
   def reloadSource(file : AbstractFile) = {
     assert(true)
     if (!currentClient.makeNoChanges) topDefs.removeKey(file) match {
@@ -180,7 +208,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
     case sym =>
       // note that we didn't unlink them
       val scope0 = scope
-      Console.println("RECYCLE: " + sym + ":" + sym.id + " in " + sym.owner + " " + scope0 + " " + scope0.key);
+      Console.println("RECYCLE: " + sym + ":" + sym.id + " in " + sym.owner); // + " " + scope0 + " " + scope0.key);
       scope0.invalidate(sym.name)
     }}
     reuseMap.clear
@@ -540,6 +568,16 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
     object owner extends ReallyHasClients
     new PersistentScope(null, owner)
   }
+  import scala.collection.jcl
+  override def newPackageScope(depends0 : PackageScopeDependMap) : PackageScope = {
+    object owner extends ReallyHasClients
+    object myPackageScope extends PersistentScope(null, owner) with PackageScope {
+      val depends = depends0
+    }
+    myPackageScope
+  }
+
+
   override def newTempScope : Scope = new TemporaryScope
   private class TemporaryScope extends HookedScope(null) {
     override def hashCode = toList.map(_.hashCode).foldLeft(0)(_ + _)

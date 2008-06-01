@@ -28,6 +28,8 @@ trait IdeSupport extends Global with symtab.IdeSupport {
     import global._
     protected override def completeClassfile(root : global.Symbol, loader : ClassfileLoader)(f : => Unit) : Unit =
       global.normalCompile(f)
+    override def computeDepends(from : PackageLoader) : global.PackageScopeDependMap = IdeSupport.this.computeDepends(from.asInstanceOf[IdeSupport.this.loaders.PackageLoader])
   }
+  def computeDepends(from : loaders.PackageLoader) : PackageScopeDependMap = null
   override lazy val loaders = loaders1
 }

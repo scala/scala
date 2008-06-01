@@ -189,15 +189,24 @@ trait IdeSupport extends Analyzer {
           if (sym != tree.symbol) {
             assert(true)
             assert(true)
-            Console.println("SCREWED: " + sym + " " + sym.id + " vs. " + tree.symbol.id)
+            Console.println("BAD: " + sym + " " + sym.id + " vs. " + tree.symbol.id)
           }
           import symtab.Flags._
           val set = reuseMap.get(namer.context.scope.asInstanceOf[PersistentScope])
-          if (set.isDefined && sym.isClass && sym.hasFlag(CASE)) {
+          if (sym.isClass && sym.hasFlag(CASE)) {
+            // case class, re-add apply unapply methods to module scope
             val name = sym.name.toTermName
-            val factory = set.get.find(_.name == name).get
-            val sym0 = namer.enterInScope(factory)
-            assert(sym0 == factory)
+            var e = namer.context.scope.lookupEntry(name)
+            while (e != null && !e.sym.hasFlag(MODULE)) e = namer.context.scope.lookupNextEntry(e)
+            if (e != null) e.sym.rawInfo match {
+            case ClassInfoType(_,decls: PersistentScope,_) =>
+              val set = reuseMap.get(decls)
+              set.foreach(_.foreach{sym=>
+                if (sym.hasFlag(CASE) && sym.hasFlag(SYNTHETIC))
+                  decls enter sym
+              })
+            case _ =>
+            }
           }
           // could be getter or local, then we need to re-add getter/setter
           if (sym.isGetter && set.isDefined)
@@ -222,6 +231,11 @@ trait IdeSupport extends Analyzer {
               val setter0 = namer.enterInScope(setter)
               assert(setter0 == setter)
             }
+          } else if (sym.hasFlag(symtab.Flags.LAZY) && sym.lazyAccessor != NoSymbol) {
+              if (set.get.find(sym0 => sym0 == sym.lazyAccessor).isDefined) {
+                assert(true)
+                namer.enterInScope(sym.lazyAccessor)
+              }
           }
         }
       case _ =>
@@ -260,6 +274,19 @@ trait IdeSupport extends Analyzer {
       } catch {
         case te : TypeError => typeError(te.getMessage)
       })
+      use.foreach{tree=>
+        if (tree.symbol.isClass && tree.symbol.hasFlag(symtab.Flags.CASE) && tree.symbol.owner.rawInfo.isComplete) {
+          var e = tree.symbol.owner.info.decls.lookupEntry(tree.symbol.name.toTermName)
+          if (e != null) e.sym.pos match {
+          case pos : TrackedPosition if pos.owner != null =>
+            assert(true)
+            pos.owner.dirtyTyped
+            pos.owner.doTyper
+          case _ =>
+          }
+          ()
+        }
+      }
       if (makeNoChanges) {}
       else if (hasTypeErrors && lastSymbol != null && lastSymbol != NoSymbol && use.last.symbol != lastSymbol) {
         if (use.last.symbol != null && use.last.symbol != NoSymbol) {

@@ -330,6 +330,7 @@ trait Infer {
                     (if (sym.isClassConstructor) context.enclClass.owner else pre.widen) +
                     explanation)
 
+        val topClass = context.owner.toplevelClass
         if (context.unit != null)
           context.unit.depends += sym.toplevelClass
 

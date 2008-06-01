@@ -42,6 +42,17 @@ trait Scopes {
    */
   def newScope(initElems: ScopeEntry): Scope = new NormalScope(initElems)
   final def newScope: Scope = newScope(null: ScopeEntry)
+  trait PackageScopeDependMap {
+    def createDepend(from : Symbol, name : Name) : Unit
+  }
+
+  def newPackageScope(depends0 : PackageScopeDependMap) : PackageScope = {
+    object MyPackageScope extends NormalScope(null : ScopeEntry) with PackageScope {
+      val depends = depends0
+    }
+    MyPackageScope
+  }
+
   def newTempScope = newScope(null : ScopeEntry)
   class ScopeKind(name : String) { override def toString = name }
   def allocateScopeKind(name : String) = new ScopeKind(name)
@@ -78,6 +89,22 @@ trait Scopes {
   def newLocalDummy(clazz : Symbol, pos : util.Position) = clazz.newLocalDummy(pos)
 
   private class NormalScope(initElems: ScopeEntry) extends Scope(initElems)
+
+  trait PackageScope extends Scope {
+    val depends : PackageScopeDependMap
+    override def lookupEntryWithContext(name : Name)(from : Symbol) = {
+      if (from != NoSymbol && depends != null) {
+        depends.createDepend(from,name)
+      }
+      super.lookupEntryWithContext(name)(from)
+    }
+    override def lookupWithContext(name : Name)(from : Symbol) = {
+      if (from != NoSymbol && depends != null) {
+        depends.createDepend(from,name)
+      }
+      super.lookupWithContext(name)(from)
+    }
+  }
 
   abstract class Scope(initElems: ScopeEntry)  {
 
@@ -265,6 +292,10 @@ trait Scopes {
       val e = lookupEntry(name)
       if (e eq null) NoSymbol else e.sym
     }
+    /** Can lookup symbols and trace who the client is.
+     */
+    def lookupEntryWithContext(name : Name)(from : Symbol) : ScopeEntry = lookupEntry(name)
+    def lookupWithContext(name : Name)(from : Symbol) : Symbol = lookup(name)
 
     /** lookup a symbol entry matching given name.
      *

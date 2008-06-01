@@ -221,7 +221,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     getSourceFile(ret.sourceFile)
   }
 
-  val loaders = new SymbolLoaders {
+  val loaders : SymbolLoaders { val global : Global.this.type } = new SymbolLoaders {
     lazy val global: Global.this.type = Global.this
   }
 
@@ -229,7 +229,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     if (forMSIL) new loaders.NamespaceLoader(classPath.root)
     else new loaders.PackageLoader(classPath.root /* getRoot() */)
 
-// Phases ------------------------------------------------------------
+// Phases ------------------------------------------------------------}
 
   var globalPhase: Phase = NoPhase
 
@@ -611,7 +611,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         }
       }
       for ((sym, file) <- symSource.elements) resetPackageClass(sym.owner)
-      //units foreach (.clear())
       informTime("total", startTime)
     }
 

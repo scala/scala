@@ -205,7 +205,7 @@ abstract class Mixin extends InfoTransform {
             val imember = member.overriddenSymbol(iface)
             //Console.println("mixin member "+member+":"+member.tpe+member.locationString+" "+imember+" "+imember.overridingSymbol(clazz)+" to "+clazz+" with scope "+clazz.info.decls)//DEBUG
             if (imember.overridingSymbol(clazz) == NoSymbol &&
-                clazz.info.findMember(member.name, 0, lateDEFERRED, false).alternatives.contains(imember)) {
+                clazz.info.findMember(member.name, 0, lateDEFERRED, false)(NoSymbol).alternatives.contains(imember)) {
                   val member1 = addMember(
                     clazz,
                     member.cloneSymbol(clazz) setPos clazz.pos resetFlag (DEFERRED | lateDEFERRED))
@@ -590,7 +590,7 @@ abstract class Mixin extends InfoTransform {
 
       /** Complete lazy field accessors. Applies only to classes, for it's own (non inherited) lazy fields. */
       def lazifyOwnFields(clazz: Symbol, stats: List[Tree]): List[Tree] = {
-        var offset = clazz.info.findMember(nme.ANYNAME, 0, METHOD | LAZY, false).alternatives.filter(_.owner != clazz).length
+        var offset = clazz.info.findMember(nme.ANYNAME, 0, METHOD | LAZY, false)(NoSymbol).alternatives.filter(_.owner != clazz).length
         val stats1 = for (stat <- stats; sym = stat.symbol) yield stat match {
           case DefDef(mods, name, tp, vp, tpt, rhs)
             if sym.hasFlag(LAZY) && rhs != EmptyTree && !clazz.isImplClass =>
@@ -609,7 +609,7 @@ abstract class Mixin extends InfoTransform {
 
 
       // the number of inherited lazy fields that are not mixed in
-      offset = (clazz.info.findMember(nme.ANYNAME, 0, METHOD | LAZY, false)
+      offset = (clazz.info.findMember(nme.ANYNAME, 0, METHOD | LAZY, false)(NoSymbol)
                 .alternatives filter { f => f.owner != clazz || !f.hasFlag(MIXEDIN)}).length
       // begin addNewDefs
       var stats1 = lazifyOwnFields(clazz, stats)

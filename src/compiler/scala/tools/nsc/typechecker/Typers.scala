@@ -400,7 +400,7 @@ trait Typers { self: Analyzer =>
               o = o.owner
             if (o == sym.owner) addHidden(sym)
           } else if (sym.owner.isTerm && !sym.isTypeParameterOrSkolem) {
-            var e = scope.lookupEntry(sym.name)
+            var e = scope.lookupEntryWithContext(sym.name)(context.owner)
             var found = false
             while (!found && (e ne null) && e.owner == scope) {
               if (e.sym == sym) {
@@ -556,12 +556,12 @@ trait Typers { self: Analyzer =>
     }
 
     /** The member with given name of given qualifier tree */
-    def member(qual: Tree, name: Name) = qual.tpe match {
+    def member(qual: Tree, name: Name)(from : Symbol) = qual.tpe match {
       case ThisType(clazz) if (context.enclClass.owner.hasTransOwner(clazz)) =>
         qual.tpe.member(name)
       case _  =>
         if (phase.next.erasedTypes) qual.tpe.member(name)
-        else qual.tpe.nonLocalMember(name)
+        else qual.tpe.nonLocalMember(name)(from)
     }
 
     def silent(op: Typer => Tree): AnyRef /* in fact, TypeError or Tree */ = try {
@@ -673,7 +673,7 @@ trait Typers { self: Analyzer =>
         }
       case _ =>
         def applyPossible = {
-          def applyMeth = member(adaptToName(tree, nme.apply), nme.apply)
+          def applyMeth = member(adaptToName(tree, nme.apply), nme.apply)(context.owner)
           if ((mode & TAPPmode) != 0)
             tree.tpe.typeParams.isEmpty && applyMeth.filter(! _.tpe.typeParams.isEmpty) != NoSymbol
           else
@@ -857,7 +857,7 @@ trait Typers { self: Analyzer =>
     }
 
     def adaptToName(qual: Tree, name: Name) =
-      if (member(qual, name) != NoSymbol) qual
+      if (member(qual, name)(context.owner) != NoSymbol) qual
       else adaptToMember(qual, name, WildcardType)
 
     private def typePrimaryConstrBody(clazz : Symbol, cbody: Tree, tparams: List[Symbol], enclTparams: List[Symbol], vparamss: List[List[ValDef]]): Tree = {
@@ -1979,7 +1979,7 @@ trait Typers { self: Analyzer =>
             }
             val nvPairs = annot.elements map {
               case vd @ ValDef(_, name, _, rhs) => {
-                val sym = attrScope.lookup(name);
+                val sym = attrScope.lookupWithContext(name)(context.owner);
                 if (sym == NoSymbol) {
                   error(vd.pos, "unknown attribute element name: " + name)
                 } else if (!names.contains(sym)) {
@@ -2737,8 +2737,8 @@ trait Typers { self: Analyzer =>
             }
             tree.symbol
           } else {
-            if (!inIDE) member(qual, name)
-            else verifyAndPrioritize(_ filter (alt => context.isAccessible(alt, qual.tpe, qual.isInstanceOf[Super])))(pt)(member(qual,name))
+            if (!inIDE) member(qual, name)(context.owner)
+            else verifyAndPrioritize(_ filter (alt => context.isAccessible(alt, qual.tpe, qual.isInstanceOf[Super])))(pt)(member(qual,name)(context.owner))
           }
         if (sym == NoSymbol && name != nme.CONSTRUCTOR && (mode & EXPRmode) != 0) {
           val qual1 = adaptToName(qual, name)
@@ -2781,7 +2781,7 @@ trait Typers { self: Analyzer =>
         var cx = context
         while (cx != NoContext) {
           val pre = cx.enclClass.prefix
-          val defEntry = cx.scope.lookupEntry(name)
+          val defEntry = cx.scope.lookupEntryWithContext(name)(context.owner)
           if ((defEntry ne null) && defEntry.sym.exists) return true
           cx = cx.enclClass
           if ((pre.member(name) filter (
@@ -2828,8 +2828,8 @@ trait Typers { self: Analyzer =>
 
           while (defSym == NoSymbol && cx != NoContext) {
             pre = cx.enclClass.prefix
-            defEntry = if (!inIDE) cx.scope.lookupEntry(name)
-                       else verifyAndPrioritize(sym => sym)(pt)(cx.scope.lookupEntry(name))
+            defEntry = if (!inIDE) cx.scope.lookupEntryWithContext(name)(context.owner)
+                       else verifyAndPrioritize(sym => sym)(pt)(cx.scope.lookupEntryWithContext(name)(context.owner))
             if ((defEntry ne null) && qualifies(defEntry.sym)) {
               defSym = defEntry.sym
             } else if (inIDE) { // IDE: cannot rely on linked scopes.

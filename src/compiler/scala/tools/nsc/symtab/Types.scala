@@ -353,29 +353,29 @@ trait Types {
      *  Members appear in linearization order of their owners.
      *  Members with the same owner appear in reverse order of their declarations.
      */
-    def members: List[Symbol] = findMember(nme.ANYNAME, 0, 0, false).alternatives
+    def members: List[Symbol] = findMember(nme.ANYNAME, 0, 0, false)(NoSymbol).alternatives
 
     /** A list of all non-private members of this type (defined or inherited) */
     def nonPrivateMembers: List[Symbol] =
-      findMember(nme.ANYNAME, PRIVATE | BRIDGE, 0, false).alternatives
+      findMember(nme.ANYNAME, PRIVATE | BRIDGE, 0, false)(NoSymbol).alternatives
 
     /** A list of all implicit symbols of this type  (defined or inherited) */
     def implicitMembers: List[Symbol] =
-      findMember(nme.ANYNAME, BRIDGE, IMPLICIT, false).alternatives
+      findMember(nme.ANYNAME, BRIDGE, IMPLICIT, false)(NoSymbol).alternatives
 
     /** The member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
-    def member(name: Name): Symbol = findMember(name, BRIDGE, 0, false)
+    def member(name: Name): Symbol = findMember(name, BRIDGE, 0, false)(NoSymbol)
 
     /** The non-private member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
     def nonPrivateMember(name: Name): Symbol =
-      findMember(name, PRIVATE | BRIDGE, 0, false)
+      findMember(name, PRIVATE | BRIDGE, 0, false)(NoSymbol)
 
     /** The non-local member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
-    def nonLocalMember(name: Name): Symbol =
-      findMember(name, LOCAL | BRIDGE, 0, false)
+    def nonLocalMember(name: Name)(from : Symbol): Symbol =
+      findMember(name, LOCAL | BRIDGE, 0, false)(from)
 
     /** The least type instance of given class which is a supertype
      *  of this type */
@@ -628,7 +628,7 @@ trait Types {
      *  @return              ...
      */
     //TODO: use narrow only for modules? (correct? efficiency gain?)
-    def findMember(name: Name, excludedFlags: Int, requiredFlags: Long, stableOnly: Boolean): Symbol = {
+    def findMember(name: Name, excludedFlags: Int, requiredFlags: Long, stableOnly: Boolean)(from:Symbol): Symbol = {
       if (inIDE) trackTypeIDE(typeSymbol)
       if (util.Statistics.enabled) findMemberCount += 1
       val startTime = if (util.Statistics.enabled) currentTime else 0l
@@ -648,7 +648,7 @@ trait Types {
         while (!bcs.isEmpty) {
           val decls = bcs.head.info.decls
           var entry =
-            if (name == nme.ANYNAME) decls.elems else decls lookupEntry name
+            if (name == nme.ANYNAME) decls.elems else decls.lookupEntryWithContext(name)(from)
           while (entry ne null) {
             val sym = entry.sym
             if (sym.getFlag(requiredFlags) == requiredFlags) {
@@ -676,7 +676,7 @@ trait Types {
                     members = newThrowAwayScope(List(member, sym))
                   }
                 } else {
-                  var prevEntry = members lookupEntry sym.name
+                  var prevEntry = members.lookupEntryWithContext(sym.name)(from)
                   while ((prevEntry ne null) &&
                          !(prevEntry.sym == sym ||
                            prevEntry.sym.owner != sym.owner &&
@@ -824,7 +824,7 @@ trait Types {
     override def isError: Boolean = true
     override def decls: Scope = new ErrorScope(NoSymbol)
     override def findMember(name: Name, excludedFlags: Int,
-                            requiredFlags: Long, stableOnly: Boolean): Symbol = {
+                            requiredFlags: Long, stableOnly: Boolean)(from : Symbol): Symbol = {
       var sym = decls lookup name
       if (sym == NoSymbol) {
         sym = NoSymbol.newErrorSymbol(name)
@@ -1290,8 +1290,10 @@ trait Types {
     override def kind = "ClassInfoType"
   }
 
-  class PackageClassInfoType(decls: Scope, clazz: Symbol, val loader : LazyType)
-  extends ClassInfoType(List(), decls, clazz)
+  class PackageClassInfoType(decls: Scope, clazz: Symbol, val lazyLoader : LazyType)
+  extends ClassInfoType(List(), decls, clazz) {
+    def reset = clazz.setInfo(lazyLoader)
+  }
 
   /** A class representing a constant type.
    *
@@ -3068,7 +3070,7 @@ A type's typeSymbol should never be inspected directly.
       } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.owner.isPackageClass) {
         sym
       } else {
-        var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)
+        var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)(NoSymbol)
 /*
         if (rebind0 == NoSymbol && (sym hasFlag EXPANDEDNAME)) {
           // problem is that symbols with expanded names might be in the wrong hash bucket
