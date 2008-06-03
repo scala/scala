@@ -25,7 +25,7 @@ import Predef._
 @serializable
 @SerialVersionUID(0 - 8525408645367278351L)
 final class StringBuilder(initCapacity: Int, private val initValue: String)
-extends (Int => Char) with Proxy {
+      extends (Int => Char) {
   if (initCapacity < 0) throw new IllegalArgumentException
   if (initValue eq null) throw new NullPointerException
 
@@ -52,8 +52,6 @@ extends (Int => Char) with Proxy {
   def this(str: String) = this(16, str)
 
   append(initValue)
-
-  def self = this
 
   def toArray: Array[Char] = value
 
