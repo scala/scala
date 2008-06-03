@@ -42,6 +42,8 @@ abstract class LazyVals extends Transform {
     /** Perform the following transformations:
      *  - for a lazy accessor inside a method, make it check the initialization bitmap
      *  - for all methods, add enough int vars to allow one flag per lazy local value
+     *  - blocks in template bodies behave almost like methods. A single bitmaps section is
+     *      added in the first block, for all lazy values defined in such blocks.
      *  - remove ACCESSOR flags: accessors in traits are not statically implemented,
      *    but moved to the host class. local lazy values should be statically implemented.
      */
@@ -50,17 +52,30 @@ abstract class LazyVals extends Transform {
       tree match {
         case DefDef(mods, name, tparams, vparams, tpt, rhs) =>
           val res = if (!sym.owner.isClass && sym.hasFlag(LAZY)) {
-            val idx = lazyVals(sym.enclMethod)
-            val rhs1 = mkLazyDef(sym.enclMethod, super.transform(rhs), idx)
+            val enclosingDummyOrMethod = if (sym.owner.isLocalDummy) sym.owner else sym.enclMethod
+            val idx = lazyVals(enclosingDummyOrMethod)
+            val rhs1 = mkLazyDef(enclosingDummyOrMethod, super.transform(rhs), idx)
             lazyVals(sym.owner) = idx + 1
             sym.resetFlag(LAZY | ACCESSOR)
             rhs1
           } else
             super.transform(rhs)
-          val bmps = bitmaps(sym) map { b => ValDef(b, Literal(Constant(0))) }
-          val tmp = addBitmapDefs(sym, res, bmps)
           copy.DefDef(tree, mods, name, tparams, vparams, tpt,
-                      typed(addBitmapDefs(sym, res, bmps)))
+                      typed(addBitmapDefs(sym, res)))
+
+        case Template(parents, self, body) =>
+          val body1 = super.transformTrees(body)
+          var added = false
+          val stats =
+            for (stat <- body1) yield stat match {
+              case Block(_, _) if !added =>
+                added = true
+                typed(addBitmapDefs(sym, stat))
+              case _ =>
+                stat
+            }
+          copy.Template(tree, parents, self, stats)
+
 
         case _ => super.transform(tree)
       }
@@ -72,7 +87,8 @@ abstract class LazyVals extends Transform {
      *  iteration has the lazy values un-initialized. Otherwise add them
      *  at the very beginning of the method.
      */
-    private def addBitmapDefs(methSym: Symbol, rhs: Tree, bmps: List[Tree]): Tree = {
+    private def addBitmapDefs(methSym: Symbol, rhs: Tree): Tree = {
+      val bmps = bitmaps(methSym) map { b => ValDef(b, Literal(Constant(0))) }
       if (bmps.isEmpty) rhs else rhs match {
         case Block(assign, l @ LabelDef(name, params, rhs1))
           if (name.toString.equals("_" + methSym.name)

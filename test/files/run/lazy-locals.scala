@@ -133,11 +133,26 @@ object Test extends Application {
     ()
   }
 
+  {
+    lazy val inCtor = "I am initialized when the constructor is run"
+    inCtor
+  }
+
+  class CtorBlock {
+    {
+      lazy val inCtor = {
+        println("I am initialized when the constructor is run")
+        42
+      }
+      inCtor
+    }
+  }
+
   println(testLazy)
   testLazy32
   testLazy33
   println(testLazyRec(5))
   println(testLazyRecMany(5))
   testRecVal
-
+  new CtorBlock
 }
