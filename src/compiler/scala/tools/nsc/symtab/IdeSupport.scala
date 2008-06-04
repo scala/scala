@@ -88,32 +88,6 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
       }
       assert(!sym.isPackage)
       import symtab.Flags._
-      if (sym.isClass && sym.hasFlag(CASE)) {
-        // grab the case factory
-        val name = sym.name.toTermName
-        e = scope.lookupEntry(name)
-        while (e != null && !e.sym.hasFlag(MODULE)) e = scope.lookupNextEntry(e)
-        if (e != null) {
-          // try to find apply method.
-          e.sym.moduleClass.rawInfo match {
-          case ClassInfoType(_,decls : PersistentScope,_) =>
-            val list = reuseMap.get(decls) match {
-            case Some(list) => list
-            case None =>
-              val list = new jcl.LinkedList[Symbol]
-              reuseMap(decls) = list; list
-            }
-            decls.toList.foreach{ae=>
-              if (ae.hasFlag(CASE) && ae.hasFlag(SYNTHETIC))  {
-                list += ae
-                decls unlink ae
-              }
-            }
-          case eee =>
-            assert(eee != null)
-          }
-        }
-      }
       // if def is abstract, will only unlink its name
       if (sym.isGetter) {
         val setter = scope lookup nme.getterToSetter(sym.name)
@@ -159,7 +133,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
     if (currentClient.makeNoChanges) return scope
     val buf = new jcl.LinkedList[Symbol]
     scope.toList.foreach{sym =>
-      if (sym.hasFlag(Flags.CASE) && sym.hasFlag(Flags.SYNTHETIC)) {
+      if (false && sym.hasFlag(Flags.CASE) && sym.hasFlag(Flags.SYNTHETIC)) {
         assert(sym != null)
       } else {
         buf add sym
@@ -402,7 +376,8 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
           finish(existing)
         }
         else if ({
-          (symbol.pos,existing.pos) match {
+          if (existing.hasFlag(symtab.Flags.SYNTHETIC) && existing.name == symbol.name) true
+          else (symbol.pos,existing.pos) match {
           case (apos : TrackedPosition, bpos : TrackedPosition) => apos == bpos
           case (apos : OffsetPosition , bpos : OffsetPosition) => apos == bpos
           case _ => existing.name == symbol.name
@@ -466,8 +441,8 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
     }
     // because module var shares space with monomorphic.
     if (existing.isModuleVar != symbol.isModuleVar) return NotCompatible
-    if ((existing.flags|LOCKED|INTERFACE|MONOMORPHIC|DEFERRED|ABSTRACT|PRIVATE|PROTECTED|FINAL|SEALED|CASE) !=
-        (symbol.  flags|LOCKED|INTERFACE|MONOMORPHIC|DEFERRED|ABSTRACT|PRIVATE|PROTECTED|FINAL|SEALED|CASE)) {
+    if ((existing.flags|LOCKED|INTERFACE|MONOMORPHIC|DEFERRED|ABSTRACT|PRIVATE|PROTECTED|FINAL|SEALED|CASE|SYNTHETIC) !=
+        (symbol.  flags|LOCKED|INTERFACE|MONOMORPHIC|DEFERRED|ABSTRACT|PRIVATE|PROTECTED|FINAL|SEALED|CASE|SYNTHETIC)) {
       return NotCompatible
     }
     if (((existing.flags&(MONOMORPHIC|INTERFACE)) != 0) ||

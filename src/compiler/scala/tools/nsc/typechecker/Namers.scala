@@ -43,7 +43,7 @@ trait Namers { self: Analyzer =>
   private class NormalNamer(context : Context) extends Namer(context)
   def newNamer(context : Context) : Namer = new NormalNamer(context)
 
-  private val caseClassOfModuleClass = new HashMap[Symbol, ClassDef]
+  private[typechecker] val caseClassOfModuleClass = new HashMap[Symbol, ClassDef]
 
   def resetNamer() {
     caseClassOfModuleClass.clear
@@ -226,8 +226,8 @@ trait Namers { self: Analyzer =>
       // .pos, mods.flags | MODULE | FINAL, name
       var m: Symbol = context.scope.lookupWithContext(tree.name)(context.owner)
       val moduleFlags = tree.mods.flags | MODULE | FINAL
-      if (!inIDE && m.isModule && !m.isPackage && inCurrentScope(m) &&
-          (!currentRun.compiles(m) || (m hasFlag SYNTHETIC))) {
+      if (m.isModule && !m.isPackage && inCurrentScope(m) &&
+          ((!inIDE && !currentRun.compiles(m)) || (m hasFlag SYNTHETIC))) {
         updatePosFlags(m, tree.pos, moduleFlags)
         setPrivateWithin(tree, m, tree.mods)
         context.unit.synthetics -= m
@@ -546,8 +546,18 @@ trait Namers { self: Analyzer =>
       // unless they exist already
       Namers.this.caseClassOfModuleClass get clazz match {
         case Some(cdef) =>
-          addApplyUnapply(cdef, templateNamer)
-          caseClassOfModuleClass -= clazz
+          val go = if (inIDE) { // garbage collect in the presentaiton compiler.
+            assert(cdef.symbol != null && cdef.symbol != NoSymbol)
+            if (!cdef.symbol.isClass || !cdef.symbol.hasFlag(CASE) || cdef.symbol.rawInfo == NoType) false
+            else true
+          } else true
+          if (go)
+            addApplyUnapply(cdef, templateNamer)
+          if (!go || !inIDE) caseClassOfModuleClass -= clazz
+          if (!go) {
+            val rem = clazz.linkedModuleOfClass
+            assert(rem != NoSymbol)
+          }
         case None =>
       }
       ClassInfoType(parents, decls, clazz)

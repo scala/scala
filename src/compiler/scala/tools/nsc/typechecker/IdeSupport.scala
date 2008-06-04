@@ -75,7 +75,7 @@ trait IdeSupport extends Analyzer {
           }
 
           //if (!hadTypeErrors && pos.owner != null && pos.owner.hasTypeErrors) pos.owner.dirtyTyped
-          if (pos.owner != null && pos.owner.hasTypeErrors) {
+          if (pos.owner != null && pos.owner.hasTypeErrors && (!sym0.rawInfo.isComplete || sym0.info == NoType || sym0.info == ErrorType)) {
             // go back to original type.
             val oldType = oldTypeFor(sym0)
             if (oldType != NoType)
@@ -178,6 +178,7 @@ trait IdeSupport extends Analyzer {
         dirtyTyped
       }
       val lastSymbol = this.lastSymbol
+
       def fakeUpdate(trees : List[Tree]) : Symbol = { trees.foreach{
       case tree : DefTree if (tree.symbol != NoSymbol && tree.symbol != null) =>
         // becareful, the symbol could have been rentered!
@@ -193,21 +194,6 @@ trait IdeSupport extends Analyzer {
           }
           import symtab.Flags._
           val set = reuseMap.get(namer.context.scope.asInstanceOf[PersistentScope])
-          if (sym.isClass && sym.hasFlag(CASE)) {
-            // case class, re-add apply unapply methods to module scope
-            val name = sym.name.toTermName
-            var e = namer.context.scope.lookupEntry(name)
-            while (e != null && !e.sym.hasFlag(MODULE)) e = namer.context.scope.lookupNextEntry(e)
-            if (e != null) e.sym.rawInfo match {
-            case ClassInfoType(_,decls: PersistentScope,_) =>
-              val set = reuseMap.get(decls)
-              set.foreach(_.foreach{sym=>
-                if (sym.hasFlag(CASE) && sym.hasFlag(SYNTHETIC))
-                  decls enter sym
-              })
-            case _ =>
-            }
-          }
           // could be getter or local, then we need to re-add getter/setter
           if (sym.isGetter && set.isDefined)
             set.get.find(sym0 => sym0.name == nme.getterToSetter(sym.name) && sym0.isSetter) match {
@@ -240,6 +226,18 @@ trait IdeSupport extends Analyzer {
         }
       case _ =>
       }; if (trees.isEmpty) NoSymbol else trees.last.symbol }
+      import symtab.Flags._
+      if (!typeIsDirty) lastTyped.foreach{
+      case tree :DefTree if tree.symbol != null && tree.symbol != NoSymbol && tree.symbol.isClass && tree.symbol.hasFlag(CASE) =>
+        var e = namer.context.scope.lookupEntry(tree.symbol.name.toTermName)
+        while (e != null && !e.sym.hasFlag(MODULE)) e = namer.context.scope.lookupNextEntry(e)
+        Console.println("CHECKING: " + e + " " + (if (e != null) caseClassOfModuleClass.contains(e.sym.moduleClass)))
+        if (e == null) dirtyTyped
+        // we don't clear caseClassOfModuleClass unless we have to.
+        else if (!caseClassOfModuleClass.contains(e.sym.moduleClass)) dirtyTyped
+      case tree : DefTree if tree.symbol != null && tree.symbol != NoSymbol =>
+      case _ =>
+      }
 
       if (makeNoChanges) {}
       else if (!typeIsDirty && !lastTyped.isEmpty)
@@ -265,23 +263,19 @@ trait IdeSupport extends Analyzer {
       }
       activate(try {
         use.foreach{tree =>
-          if (tree.isInstanceOf[DefTree]) {
-            assert(true)
-            //Console.println("RENAME: " + tree)
-          }
           namer.enterSym(tree)
         }
       } catch {
         case te : TypeError => typeError(te.getMessage)
       })
-      use.foreach{tree=>
+      if (!makeNoChanges) use.foreach{tree=>
         if (tree.symbol.isClass && tree.symbol.hasFlag(symtab.Flags.CASE) && tree.symbol.owner.rawInfo.isComplete) {
           var e = tree.symbol.owner.info.decls.lookupEntry(tree.symbol.name.toTermName)
-          if (e != null) e.sym.pos match {
-          case pos : TrackedPosition if pos.owner != null =>
+          assert(e != null) // should have been entered already.
+          e.sym.pos match { // retype the object if its in the scope.
+          case pos : TrackedPosition if pos.owner != null && pos.owner != MemoizedTree.this =>
             assert(true)
-            pos.owner.dirtyTyped
-            pos.owner.doTyper
+            pos.owner.dirtyTyped // hope this works!
           case _ =>
           }
           ()
