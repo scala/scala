@@ -85,6 +85,24 @@ object Test extends AnyRef with Application {
     Console.println(result);
   }
 
+  // ticket #981
+  def try6 {
+   class SekwencjaArray {
+    def get = null
+   }
+
+   var sekw : SekwencjaArray =
+     try {
+       null
+     } catch {
+       case _ => null
+     }
+
+    new AnyRef {
+      def getValueAt(row:Int, col:Int) = sekw.get
+    }
+  }
+
 /*
   def finally1 = {
     Console.print("1 + 1 = ");
@@ -104,6 +122,7 @@ object Test extends AnyRef with Application {
   try3;
   try4;
   try5;
+  try6;
   Console.println;
   new A();
   ()

@@ -146,6 +146,11 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
     private val byNameArgs = new HashSet[Tree]
     private val noApply = new HashSet[Tree]
 
+    override def transformUnit(unit: CompilationUnit) {
+      freeMutableVars.clear
+      freeLocalsTraverser(unit.body)
+      unit.body = transform(unit.body)
+    }
     override def transform(tree: Tree): Tree = try { //debug
       postTransform(mainTransform(tree))
     } catch {
@@ -464,9 +469,14 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
             }
           }
 
-        case ValDef(_, _, _, rhs)
-          if (!tree.symbol.owner.isSourceMethod) =>
+        case ValDef(_, _, _, rhs) =>
+          val sym = tree.symbol
+          // a local variable that is mutable and free somewhere later should be lifted
+          // as lambda lifting (coming later) will wrap 'rhs' in an Ref object.
+          if (!sym.owner.isSourceMethod || (sym.isVariable && freeMutableVars(sym)))
             withNeedLift(true) { super.transform(tree) }
+          else
+            super.transform(tree)
 /*
         case Apply(Select(Block(List(), Function(vparams, body)), nme.apply), args) =>
           // perform beta-reduction; this helps keep view applications small
@@ -615,6 +625,27 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         case _ =>
           if (tree.isType) TypeTree(tree.tpe) setPos tree.pos else tree
       }
+    }
+  }
+
+  import collection.mutable
+  /** Set of mutable local variables that are free in some inner method. */
+  private val freeMutableVars: mutable.Set[Symbol] = new mutable.HashSet
+
+  private val freeLocalsTraverser = new Traverser {
+    var currentMethod: Symbol = NoSymbol
+    override def traverse(tree: Tree) = tree match {
+      case DefDef(_, _, _, _, _, _) =>
+        val lastMethod = currentMethod
+        currentMethod = tree.symbol
+        super.traverse(tree)
+        currentMethod = lastMethod
+      case Ident(_) =>
+        val sym = tree.symbol
+        if (sym.isVariable && sym.owner.isMethod && sym.owner != currentMethod)
+          freeMutableVars += sym
+      case _ =>
+        super.traverse(tree)
     }
   }
 }
