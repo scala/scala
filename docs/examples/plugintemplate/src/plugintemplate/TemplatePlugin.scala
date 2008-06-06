@@ -20,5 +20,34 @@ class TemplatePlugin(val global: Global) extends Plugin {
    *
    *  @todo Adapt to the plugin being implemented
    */
-  val components=List(new TemplateComponent(global))
+  val components = TemplatePlugin.components(global)
+  val runsAfter = "refchecks"
+
+  /* TODO: include annotationChecker
+  import global._
+
+  println("adding annotationchecker...")
+  addAnnotationChecker(new AnnotationChecker {
+    def annotationsConform(tpe1: Type, tpe2: Type): Boolean = {
+      println("checking: "+ tpe1 +" <: "+ tpe2)
+      true
+    }
+
+    override def addAnnotations(tree: Tree, tpe: Type): Type = {
+      //println("adding annot to "+ tree.symbol)
+      tpe
+    }
+  })
+  */
+}
+
+object TemplatePlugin {
+  /** Yields the list of Components to be executed in this plugin
+   *
+   *  @todo: Adapt to specific implementation.
+   */
+  def components(global: Global) =
+    List(new TemplateComponent(global),
+         new TemplateTransformComponent(global),
+         new TemplateInfoTransformComponent(global))
 }

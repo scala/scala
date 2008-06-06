@@ -13,7 +13,7 @@ package scala.tools.nsc.transform
  *    A transform contains a compiler phase which applies a tree transformer.
  *  </p>
  */
-abstract class InfoTransform extends Transform {
+trait InfoTransform extends Transform {
   import global.{Symbol, Type, InfoTransformer, infoTransformers}
 
   def transformInfo(sym: Symbol, tpe: Type): Type

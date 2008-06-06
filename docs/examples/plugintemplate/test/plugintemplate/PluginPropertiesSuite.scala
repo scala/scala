@@ -1,4 +1,4 @@
-package plugintemplate.examples
+package plugintemplate
 
 import org.scalatest.Suite
 

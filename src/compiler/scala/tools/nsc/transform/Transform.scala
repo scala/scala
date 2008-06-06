@@ -16,7 +16,7 @@ package scala.tools.nsc.transform
  *  @author Martin Odersky
  *  @version 1.0
  */
-abstract class Transform extends SubComponent {
+trait Transform extends SubComponent {
 
   /** The transformer factory */
   protected def newTransformer(unit: global.CompilationUnit): global.Transformer

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project name="plugintemplate" default="build">
+<project name="plugintemplate" default="pack">
   <!-- Edit the file plugin.properties to set
    - scala.home
    - plugin.name

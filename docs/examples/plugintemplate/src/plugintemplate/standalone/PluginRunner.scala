@@ -5,26 +5,39 @@ import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 
 /** This class is a compiler that will be used for running
  *  the plugin in standalone mode.
- *
- *  @todo Adapt to specific plugin.
  */
 class PluginRunner(settings: Settings, reporter: Reporter)
 extends Global(settings, reporter) {
   def this(settings: Settings) = this(settings, new ConsoleReporter(settings))
 
-  /** The plugin component that should will executed.
-   *
-   *  @todo Adapt to specific plugin. It is possible to add multiple
-   *  plugin components to run.
-   */
-  val pluginComponent = new TemplateComponent(this)
+  /* TODO: include AnnotationChecker
+  println("adding annotationchecker...")
+  addAnnotationChecker(new AnnotationChecker {
+    def annotationsConform(tpe1: Type, tpe2: Type): Boolean = {
+      def getAnnTpe(t: Type) = t match {
+        case AnnotatedType(attrs, underlying, selfsym) =>
+          attrs match {
+            case x :: xs => Some(x.atp)
+            case _ => None
+          }
+        case _ => None
+      }
+      val ta1 = getAnnTpe(tpe1)
+      val ta2 = getAnnTpe(tpe2)
+      ta1 == ta2
+    }
+
+    override def addAnnotations(tree: Tree, tpe: Type): Type = {
+      //println("adding annot to "+ tree.symbol)
+      tpe
+    }
+  })
+  */
 
   override def phaseDescriptors: List[SubComponent] = List(
     analyzer.namerFactory,
     analyzer.typerFactory,
     superAccessors,
     pickler,
-    refchecks,
-    pluginComponent
-  )
+    refchecks) ::: TemplatePlugin.components(this)
 }
