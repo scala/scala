@@ -57,6 +57,14 @@ class Stack[+A] extends Seq[A] {
    */
   def push[B >: A](elem: B): Stack[B] = new Node(elem)
 
+  /** Push a sequence of elements onto the stack. The last element
+   *  of the sequence will be on top of the new stack.
+   *
+   *  @param   elems      the element sequence.
+   *  @return the stack with the new elements on top.
+   */
+  def push[B >: A](elems: B*): Stack[B] = this + elems
+
   /** Push all elements provided by the given iterable object onto
    *  the stack. The last element returned by the iterable object
    *  will be on top of the new stack.
@@ -77,15 +85,28 @@ class Stack[+A] extends Seq[A] {
    *  @return the stack with the new elements on top.
    */
   def push[B >: A](elems: Iterable[B]): Stack[B] =
+    this ++ elems
+
+  /** Push all elements provided by the given iterator object onto
+   *  the stack. The last element returned by the iterable object
+   *  will be on top of the new stack.
+   *
+   *  @param   elems      the iterator object.
+   *  @return the stack with the new elements on top.
+   *  @deprecated
+   */
+  def ++[B >: A](elems: Iterator[B]): Stack[B] =
     elems.foldLeft(this: Stack[B]){ (stack, elem) => stack + elem }
 
-  /** Push a sequence of elements onto the stack. The last element
-   *  of the sequence will be on top of the new stack.
+  /** Push all elements provided by the given iterable object onto
+   *  the stack. The last element returned by the iterable object
+   *  will be on top of the new stack.
    *
-   *  @param   elems      the element sequence.
+   *  @param   elems      the iterable object.
    *  @return the stack with the new elements on top.
    */
-  def push[B >: A](elems: B*): Stack[B] = this + elems
+  override def ++[B >: A](elems: Iterable[B]): Stack[B] =
+    this ++ elems.elements
 
   /** Returns the top element of the stack. An error is signaled if
    *  there is no element on the stack.
@@ -100,13 +121,17 @@ class Stack[+A] extends Seq[A] {
    */
   def pop: Stack[A] = throw new NoSuchElementException("no element on stack")
 
-  /** Returns the n-th element of this stack. The top element has index
-   *  0, elements below are indexed with increasing numbers.
+  /** Returns the n-th element of this stack. The bottom element has index
+   *  0, elements above are indexed with increasing numbers.
    *
    *  @param   n      the index number.
    *  @return the n-th element on the stack.
    */
-  def apply(n: Int): A = throw new NoSuchElementException("no element on stack")
+  def apply(n: Int): A = reverse.reverseApply(n)
+
+  private def reverseApply(n: Int): A =
+    if (n > 0) pop.reverseApply(n - 1)
+    else top
 
   /** Returns an iterator over all elements on the stack. The iterator
    *  issues elements in the reversed order they were inserted into the
@@ -114,12 +139,27 @@ class Stack[+A] extends Seq[A] {
    *
    *  @return an iterator over all stack elements.
    */
-  override def elements: Iterator[A] = new Iterator[A] {
+  override def elements: Iterator[A] = reverse.reverseElements
+
+  private def reverseElements: Iterator[A] = new Iterator[A] {
     var that: Stack[A] = Stack.this;
     def hasNext = !that.isEmpty;
     def next =
       if (!hasNext) throw new NoSuchElementException("next on empty iterator")
       else { val res = that.top; that = that.pop; res }
+  }
+
+  /** A stack consisting of all elements of this stack in reverse order.
+   */
+  override def reverse: Stack[A] = {
+    // copy-paste from List.reverse
+    var result: Stack[A] = Stack.Empty
+    var these = this
+    while (!these.isEmpty) {
+      result = result push List(these.top) // see #978
+      these = these.pop
+    }
+    result
   }
 
   /** Compares this stack with the given object.
@@ -150,7 +190,6 @@ class Stack[+A] extends Seq[A] {
     override def length: Int = Stack.this.length + 1
     override def top: B = elem
     override def pop: Stack[B] = Stack.this
-    override def apply(n: Int): B = if (n > 0) Stack.this(n - 1) else elem
     override def hashCode(): Int = elem.hashCode() + Stack.this.hashCode()
   }
 

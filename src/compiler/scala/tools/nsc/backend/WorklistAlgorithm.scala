@@ -8,7 +8,7 @@
 package scala.tools.nsc.backend
 
 import scala.tools.nsc.ast._
-import scala.collection.mutable.MutableList
+import scala.collection.mutable.Stack
 
 /**
  * Simple implementation of a worklist algorithm. A processing
@@ -26,7 +26,7 @@ import scala.collection.mutable.MutableList
  */
 trait WorklistAlgorithm {
   type Elem
-  type WList <: MutableList[Elem]
+  type WList = Stack[Elem]
 
   val worklist: WList
 

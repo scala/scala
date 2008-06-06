@@ -27,7 +27,6 @@ trait Linearizers { self: ICodes =>
    */
   class NormalLinearizer extends Linearizer with WorklistAlgorithm {
     type Elem = BasicBlock;
-    type WList = Stack[Elem];
 
     val worklist: WList = new Stack();
 

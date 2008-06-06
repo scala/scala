@@ -44,8 +44,8 @@ x = Queue(a,b,c)
 y = Queue(a,b,c)
 x equals y: true - y equals x: true
 
-x = Stack(c, b, a)
-y = Stack(c, b, a)
+x = Stack(a, b, c)
+y = Stack(a, b, c)
 x equals y: true - y equals x: true
 
 x = Map(42 -> FortyTwo)

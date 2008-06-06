@@ -19,19 +19,26 @@ package scala.collection.mutable
  *  @version 1.1, 03/05/2004
  */
 @serializable @cloneable
-class Stack[A] extends MutableList[A] with CloneableCollection {
+class Stack[A] extends Seq[A] with CloneableCollection {
+  private var stack: immutable.Stack[A] = immutable.Stack.Empty
 
   /** Checks if the stack is empty.
    *
    *  @return true, iff there is no element on the stack
    */
-  override def isEmpty: Boolean = (first0 eq null)
+  override def isEmpty: Boolean = stack.isEmpty
+
+  override def length = stack.length
+
+  override def apply(index: Int) = stack(index)
 
   /** Pushes a single element on top of the stack.
    *
    *  @param  elem        the element to push onto the stack
    */
-  def +=(elem: A): Unit = prependElem(elem)
+  def +=(elem: A) {
+    this push elem
+  }
 
   /** Pushes all elements provided by an <code>Iterable</code> object
    *  on top of the stack. The elements are pushed in the order they
@@ -39,7 +46,7 @@ class Stack[A] extends MutableList[A] with CloneableCollection {
    *
    *  @param  iter        an iterable object
    */
-  def ++=(iter: Iterable[A]): Unit = this ++= iter.elements
+  def ++=(iter: Iterable[A]): Unit = stack = stack ++ iter
 
   /** Pushes all elements provided by an iterator
    *  on top of the stack. The elements are pushed in the order they
@@ -47,7 +54,7 @@ class Stack[A] extends MutableList[A] with CloneableCollection {
    *
    *  @param  iter        an iterator
    */
-  def ++=(it: Iterator[A]): Unit = it foreach { e => prependElem(e) }
+  def ++=(it: Iterator[A]): Unit = stack = stack ++ it
 
   /** Pushes a sequence of elements on top of the stack. The first element
    *  is pushed first, etc.
@@ -64,28 +71,24 @@ class Stack[A] extends MutableList[A] with CloneableCollection {
    *  @return the top element
    */
   def top: A =
-    if (first0 eq null) throw new NoSuchElementException("stack empty")
-    else first0.elem
+    stack.top
 
   /** Removes the top element from the stack.
    *
    *  @throws Predef.NoSuchElementException
    *  @return the top element
    */
-  def pop(): A =
-    if (first0 ne null) {
-      val res = first0.elem
-      first0 = first0.next
-      len = len - 1;
-      res
-    } else
-      throw new NoSuchElementException("stack empty")
+  def pop(): A = {
+    val res = stack.top
+    stack = stack.pop
+    res
+  }
 
   /**
    * Removes all elements from the stack. After this operation completed,
    * the stack will be empty.
    */
-  def clear(): Unit = reset
+  def clear(): Unit = stack = immutable.Stack.Empty
 
   /** Returns an iterator over all elements on the stack. This iterator
    *  is stable with respect to state changes in the stack object; i.e.
@@ -95,13 +98,13 @@ class Stack[A] extends MutableList[A] with CloneableCollection {
    *
    *  @return an iterator over all stack elements.
    */
-  override def elements: Iterator[A] = toList.elements
+  override def elements: Iterator[A] = stack.elements
 
   /** Creates a list of all stack elements in FIFO order.
    *
    *  @return the created list.
    */
-  override def toList: List[A] = super[MutableList].toList.reverse
+  override def toList: List[A] = stack.toList
 
   /** Checks if two stacks are structurally identical.
    *
@@ -109,9 +112,7 @@ class Stack[A] extends MutableList[A] with CloneableCollection {
    */
   override def equals(obj: Any): Boolean = obj match {
     case that: Stack[_] =>
-      (this.elements zip that.elements) forall {
-        case (thiselem, thatelem) => thiselem == thatelem
-      }
+      this.stack == that.stack
     case _ =>
       false
   }
