@@ -17,11 +17,7 @@ import collection.mutable.ArrayBuffer
 object Seq {
 
   /** The empty sequence */
-  val empty : Seq[Nothing] = new RandomAccessSeq[Nothing] {
-    def length = 0
-    def apply(i: Int): Nothing = throw new NoSuchElementException("empty sequence")
-    override def elements = Iterator.empty
-  }
+  val empty : Seq[Nothing] = RandomAccessSeq.empty
 
   /** This method is called in a pattern match { case Seq(...) => }.
    *
