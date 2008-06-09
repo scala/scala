@@ -95,7 +95,7 @@ PROPERTIES
   <property name="build-pack.dir" value="${build.dir}/pack"/>
   <property name="build-strap.dir" value="${build.dir}/strap"/>
   <property name="build-docs.dir" value="${build.dir}/scaladoc"/>
-  
+
   <property name="dists.dir" value="${basedir}/dists"/>
   
   <property name="copyright.string" value="Copyright 2002-2008, LAMP/EPFL"/>
@@ -416,7 +416,7 @@ QUICK BUILD (QUICK)
     <sabmake id="locker.partest.scalac"
       destdir="${build-quick.dir}/classes/partest"
       compilerpathref="locker.classpath"
-      srcpath="${src.dir}/paartest"
+      srcpath="${src.dir}/partest"
       target="jvm-1.5">
       <compilationpath>
       	<pathelement location="${build-quick.dir}/classes/library"/>
@@ -512,26 +512,8 @@ PACKED QUICK BUILD (PACK)
       </fileset>
     </jar>
   </target>
-  
-  <target name="pack.pre-libsrc" depends="pack.start">
-    <uptodate
-      property="pack.libsrc.available"
-      targetfile="${build-pack.dir}/lib/scala-library-src.jar"
-      srcfile="${build-quick.dir}/librarysrc.complete"/>
-  </target>
 
-	<target name="pack.libsrc" depends="pack.pre-libsrc">
-    <mkdir dir="${build-pack.dir}/src"/>
-    <jar destfile="${build-pack.dir}/src/scala-library-src.jar">
-      <fileset dir="${src.dir}/library"/>
-      <fileset dir="${src.dir}/actors"/>
-    </jar>
-    <jar destfile="${build-pack.dir}/src/scala-dbc-src.jar">
-      <fileset dir="${src.dir}/dbc"/>
-    </jar>
-  </target>
-
-	<target name="pack.pre-comp" depends="pack.lib">
+  <target name="pack.pre-comp" depends="pack.lib">
     <uptodate
       property="pack.comp.available"
       targetfile="${build-pack.dir}/lib/scala-compiler.jar"
@@ -621,8 +603,26 @@ PACKED QUICK BUILD (PACK)
   </target>
 
 <!-- ===========================================================================
-PACKED QUICK BUILD FOR ECLIPSE PLUGIN DEVELOPMENT (PLUGIN)
+PACKED QUICK BUILD FOR ECLIPSE PLUGINDEVELOPMENT (PLUGIN)
 ============================================================================ -->
+
+  <target name="pack.pre-libsrc" depends="pack.start">
+    <uptodate
+      property="pack.libsrc.available"
+      targetfile="${build-pack.dir}/lib/scala-library-src.jar"
+      srcfile="${build-quick.dir}/librarysrc.complete"/>
+  </target>
+
+  <target name="pack.libsrc" depends="pack.pre-libsrc">
+    <mkdir dir="${build-pack.dir}/src"/>
+    <jar destfile="${build-pack.dir}/src/scala-library-src.jar">
+      <fileset dir="${src.dir}/library"/>
+      <fileset dir="${src.dir}/actors"/>
+    </jar>
+    <jar destfile="${build-pack.dir}/src/scala-dbc-src.jar">
+      <fileset dir="${src.dir}/dbc"/>
+    </jar>
+  </target>
 
   <target name="plugin.quick" depends="pack.lib, pack.libsrc"/>
 
@@ -834,8 +834,48 @@ DOCUMENTATION
     <touch file="${build-docs.dir}/library.complete" verbose="no"/>
     <stopwatch name="docs.lib.timer" action="total"/>
   </target>
-  
-  <target name="docs.pre-comp" depends="docs.lib">
+
+  <target name="docs.pre-man" depends="docs.lib">
+    <uptodate property="docs.man.available" targetfile="${build-docs.dir}/manual.complete">
+      <srcfiles dir="${src.dir}/manual"/>
+    </uptodate>
+  </target>
+
+  <target name="docs.manmaker" depends="docs.pre-man" unless="docs.man.available">
+    <mkdir dir="${build.dir}/manmaker/classes"/>
+    <scalac
+      destdir="${build.dir}/manmaker/classes"
+      classpathref="pack.classpath"
+      srcdir="${src.dir}/manual"
+      includes="**/*.scala"/>
+    <path id="manual.classpath">
+      <pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
+      <pathelement location="${build.dir}/manmaker/classes"/>
+    </path>
+  </target>
+
+  <target name="docs.man" depends="docs.manmaker" unless="docs.man.available">
+    <mkdir dir="${build-docs.dir}/manual/man/man1"/>
+    <mkdir dir="${build-docs.dir}/manual/html"/>
+    <taskdef name="genman"
+             classname="scala.tools.docutil.ManMaker"
+             classpathref="manual.classpath"/>
+    <genman command="fsc, sbaz, scala, scalac, scaladoc, scalap"
+            htmlout="${build-docs.dir}/manual/html"
+            manout="${build-docs.dir}/manual/man"/>
+    <fixcrlf srcdir="${build-docs.dir}/manual" eol="unix" includes="**/*.1"/>
+    <copy todir="${build-docs.dir}/manual/html">
+      <fileset dir="${src.dir}/manual/scala/tools/docutil/resources">
+        <include name="**/*.html"/>
+        <include name="**/*.css"/>
+        <include name="**/*.gif"/>
+        <include name="**/*.png"/>
+      </fileset>
+    </copy>
+    <touch file="${build-docs.dir}/manual.complete" verbose="no"/>
+  </target>
+
+  <target name="docs.pre-comp" depends="docs.man">
     <uptodate property="docs.comp.available" targetfile="${build-docs.dir}/compiler.complete">
       <srcfiles dir="${src.dir}/compiler"/>
     </uptodate>
@@ -856,10 +896,11 @@ DOCUMENTATION
     <stopwatch name="docs.comp.timer" action="total"/>
   </target>
   
-  <target name="docs.done" depends="docs.lib"/>
+  <target name="docs.done" depends="docs.man"/>
 
   <target name="docs.clean">
     <delete dir="${build-docs.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+    <delete dir="${build.dir}/manmaker" includeemptydirs="yes" quiet="yes" failonerror="no"/>
   </target>
   
 <!-- ===========================================================================
@@ -932,12 +973,16 @@ DISTRIBUTION
     <copy toDir="${dist.dir}/doc/scala/examples">
       <fileset dir="${docs.dir}/examples"/>
     </copy>
+    <mkdir dir="${dist.dir}/doc/scala/tools"/>
+    <copy toDir="${dist.dir}/doc/scala/tools">
+      <fileset dir="${build-docs.dir}/manual/html"/>
+    </copy>
   </target>
     
   <target name="dist.man" depends="dist.doc">
     <mkdir dir="${dist.dir}/man"/>
     <copy toDir="${dist.dir}/man">
-      <fileset dir="${docs.dir}/man"/>
+      <fileset dir="${build-docs.dir}/manual/man"/>
     </copy>
   </target>
 

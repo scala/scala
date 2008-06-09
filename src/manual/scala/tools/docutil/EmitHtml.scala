@@ -356,4 +356,9 @@ object EmitHtml {
         exit(1)
     }
   }
+
+  def emitHtml(classname: String, outStream: java.io.OutputStream) {
+    out.setOut(outStream)
+    main(Array(classname))
+  }
 }

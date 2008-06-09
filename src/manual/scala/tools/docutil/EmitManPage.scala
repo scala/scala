@@ -177,4 +177,8 @@ object EmitManPage {
         exit(1)
     }
 
+  def emitManPage(classname: String, outStream: java.io.OutputStream) {
+    out.setOut(outStream)
+    main(Array(classname))
+  }
 }
