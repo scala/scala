@@ -143,10 +143,10 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
       }
     val ltable = last.table
     val s = ltable.length
-    table = new Array[Entry](s)
+    table = new Array[mutable.HashEntry[A, Entry]](s)
     var i = 0
     while (i < s) {
-      table(i) = copy(ltable(i))
+      table(i) = copy(ltable(i).asInstanceOf[Entry])
       i += 1
     }
     tableSize = last.tableSize

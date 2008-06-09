@@ -47,7 +47,7 @@ trait HashTable[A] extends AnyRef {
 
   /** The actual hash table.
    */
-  protected var table: Array[Entry] =
+  protected var table: Array[HashEntry[A, Entry]] =
     if (initialSize == 0) null else new Array(initialSize)
 
   /** The number of mappings contained in this hash table.
@@ -64,14 +64,14 @@ trait HashTable[A] extends AnyRef {
 
   protected def findEntry(key: A): Entry = {
     val h = index(elemHashCode(key))
-    var e = table(h)
+    var e = table(h).asInstanceOf[Entry]
     while (e != null && !elemEquals(e.key, key)) e = e.next
     e
   }
 
   protected def addEntry(e: Entry) {
     val h = index(elemHashCode(e.key))
-    e.next = table(h)
+    e.next = table(h).asInstanceOf[Entry]
     table(h) = e
     tableSize = tableSize + 1
     if (tableSize > threshold)
@@ -80,7 +80,7 @@ trait HashTable[A] extends AnyRef {
 
   protected def removeEntry(key: A) : Option[Entry] = {
     val h = index(elemHashCode(key))
-    var e = table(h)
+    var e = table(h).asInstanceOf[Entry]
     if (e != null) {
       if (elemEquals(e.key, key)) {
         table(h) = e.next
@@ -105,7 +105,7 @@ trait HashTable[A] extends AnyRef {
   protected def entries: Iterator[Entry] = new Iterator[Entry] {
     val iterTable = table
     var idx = table.length - 1
-    var es = iterTable(idx)
+    var es = iterTable(idx).asInstanceOf[Entry]
     scan()
     def hasNext = es != null
     def next = {
@@ -117,7 +117,7 @@ trait HashTable[A] extends AnyRef {
     def scan() {
       while (es == null && idx > 0) {
         idx = idx - 1
-        es = iterTable(idx)
+        es = iterTable(idx).asInstanceOf[Entry]
       }
     }
   }
@@ -140,7 +140,7 @@ trait HashTable[A] extends AnyRef {
       while (e != null) {
         val h = index(elemHashCode(e.key))
         val e1 = e.next
-        e.next = table(h)
+        e.next = table(h).asInstanceOf[Entry]
         table(h) = e
         e = e1
       }
