@@ -1987,7 +1987,7 @@ trait Typers { self: Analyzer =>
                 } else {
                   names -= sym
                   val annArg =
-                    annotArg(
+                    annotArg( // also checks that rhs is constant
                       typed(rhs, EXPRmode, sym.tpe.resultType))
                   (sym.name, annArg)
                 }

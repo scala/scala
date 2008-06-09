@@ -33,6 +33,14 @@ trait AnnotationInfos {
 
       case Typed(t, _) => tree2cons(t)
 
+      case Annotation(constr, elements) =>
+/*        val annotInfo = typer.tpyedAnnotation(tree)
+        if (annotInfo isConstant)
+          Some(new AnnotationConstant(annotInfo))
+        else */
+          println("getting annotation: "+ tree)
+          None
+
       case tree =>
         //println("could not convert: " + tree);
         None
@@ -56,9 +64,25 @@ trait AnnotationInfos {
    *  and it includes a compile-time constant for the tree if possible.
    */
   class AnnotationArgument(val intTree: Tree) {
-    def this(cons: Constant) = this(
-      Literal(cons).setType(cons.tpe))
 
+    /** This constructor is also used to create an AnnotationArgument
+     *  containing a ArrayConstant, when an array of constants is seen
+     *  in a parsed classfile (ClassfileParser.parseTaggedConstant).
+     *  I.E. for Arrays of constants, intTree looks like:
+     *  <ul>
+     *   <li> Apply(ArrayModule_apply, members) if the AnnotationArgument
+     *        is part of an Annotation in Scala source </li>
+     *   <li> Literal(ArrayConstant(constants, tpe)) if the the argument
+     *        was created when parsing a java annotation in a classfile</li>
+     *  </ul>
+     */
+    def this(cons: Constant) {
+      this(
+      Literal(cons).setType(cons.tpe))
+      println("AnnotationArgument constructor with constant: "+ cons)
+    }
+
+    //def this(annTree: Annotation, annConst: AnnotationConstant)
 
     @deprecated
     lazy val tree = {

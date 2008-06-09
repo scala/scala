@@ -362,6 +362,9 @@ abstract class GenJVM extends SubComponent {
           val arr = const.arrayValue
           buf.putShort(arr.length.toShort)
           for (val elem <- arr) emitElement(elem)
+        case AnnotationTag =>
+          // TODO: implement
+          ()
       }
 
       var nattr = 0

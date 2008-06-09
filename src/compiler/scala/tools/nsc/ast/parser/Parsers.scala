@@ -1595,7 +1595,12 @@ trait Parsers extends NewScanners with MarkupParsers {
         accept(VAL)
         val aname = ident()
         accept(EQUALS)
-        val rhs = stripParens(prefixExpr())
+        val rhs =
+          if (inToken == AT) {
+            inNextToken
+            annotationExpr()
+          } else
+            stripParens(prefixExpr())
         atPos(pos) { ValDef(NoMods, aname, TypeTree(), rhs) }
       }
       val pos = inCurrentPos

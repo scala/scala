@@ -603,30 +603,6 @@ PACKED QUICK BUILD (PACK)
   </target>
 
 <!-- ===========================================================================
-PACKED QUICK BUILD FOR ECLIPSE PLUGINDEVELOPMENT (PLUGIN)
-============================================================================ -->
-
-  <target name="pack.pre-libsrc" depends="pack.start">
-    <uptodate
-      property="pack.libsrc.available"
-      targetfile="${build-pack.dir}/lib/scala-library-src.jar"
-      srcfile="${build-quick.dir}/librarysrc.complete"/>
-  </target>
-
-  <target name="pack.libsrc" depends="pack.pre-libsrc">
-    <mkdir dir="${build-pack.dir}/src"/>
-    <jar destfile="${build-pack.dir}/src/scala-library-src.jar">
-      <fileset dir="${src.dir}/library"/>
-      <fileset dir="${src.dir}/actors"/>
-    </jar>
-    <jar destfile="${build-pack.dir}/src/scala-dbc-src.jar">
-      <fileset dir="${src.dir}/dbc"/>
-    </jar>
-  </target>
-
-  <target name="plugin.quick" depends="pack.lib, pack.libsrc"/>
-
-<!-- ===========================================================================
 BOOTSTRAPPING BUILD (STRAP)
 ============================================================================ -->
   

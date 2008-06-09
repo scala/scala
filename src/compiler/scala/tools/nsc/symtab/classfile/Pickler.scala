@@ -138,6 +138,7 @@ abstract class Pickler extends SubComponent {
             putChildren(sym, children.sort((x, y) => x isLess y))
           }
           for (attr <- sym.attributes.reverse) {
+            println("put annot? "+ attr +", "+ (attr.atp.typeSymbol isNonBottomSubClass definitions.StaticAnnotationClass))
             if (attr.atp.typeSymbol isNonBottomSubClass definitions.StaticAnnotationClass)
               putAnnotation(sym, attr)
           }
@@ -290,6 +291,7 @@ abstract class Pickler extends SubComponent {
 	  putTrees(args)
 
 	case ArrayValue(elemtpt, trees) =>
+          println("putting array value: "+ trees)
 	  putTree(elemtpt)
 	  putTrees(trees)
 
@@ -397,17 +399,19 @@ abstract class Pickler extends SubComponent {
     private def putMods(mods: Modifiers) = if (putEntry(mods)) {
       val Modifiers(flags, privateWithin, annotations) = mods
       putEntry(privateWithin)
+      println("putting annotation trees: "+ annotations)
       putTrees(annotations)
     }
 
     /** Store a constant in map <code>index</code> along with
      *  anything it references.
      */
-    private def putConstant(c: Constant) =
+    private def putConstant(c: Constant) = {
       if (putEntry(c)) {
         if (c.tag == StringTag) putEntry(newTermName(c.stringValue))
         else if (c.tag == ClassTag) putEntry(c.typeValue)
       }
+    }
 
     private def putChildren(sym: Symbol, children: List[Symbol]) {
       assert(putEntry((sym, children)))
@@ -415,6 +419,7 @@ abstract class Pickler extends SubComponent {
     }
 
     private def putAnnotation(sym: Symbol, annot: AnnotationInfo) {
+      println("putting annotation: "+ annot)
       assert(putEntry((sym, annot)))
       val AnnotationInfo(atp, args, assocs) = annot
       putType(atp)
@@ -432,10 +437,11 @@ abstract class Pickler extends SubComponent {
     }
 
     private def putAnnotationArg(arg: AnnotationArgument) {
+      println("putting annotation arg: "+ arg)
       if (putEntry(arg)) {
         arg.constant match {
-	  case Some(c) => putConstant(c)
-	  case _ => putTree(arg.intTree)
+	  case Some(c) => println(" const: "+ c); putConstant(c)
+	  case _ => println(" tree: "+ arg.intTree); putTree(arg.intTree)
 	}
       }
     }
@@ -534,6 +540,7 @@ abstract class Pickler extends SubComponent {
         case DeBruijnIndex(l, i) =>
           writeNat(l); writeNat(i); DEBRUIJNINDEXtpe
         case c @ Constant(_) =>
+          println("putting constant with tag: "+ c.tag)
           if (c.tag == BooleanTag) writeLong(if (c.booleanValue) 1 else 0)
           else if (ByteTag <= c.tag && c.tag <= LongTag) writeLong(c.longValue)
           else if (c.tag == FloatTag) writeLong(Float.floatToIntBits(c.floatValue))
@@ -729,6 +736,7 @@ abstract class Pickler extends SubComponent {
 	  TREE
 
 	case tree@ArrayValue(elemtpt, trees) =>
+          println("arrayValue tree: "+ trees)
 	  writeNat(ARRAYVALUEtree)
 	  writeRef(tree.tpe)
 	  writeRef(elemtpt)
@@ -929,6 +937,7 @@ abstract class Pickler extends SubComponent {
           ANNOTINFO
 
 	case arg:AnnotationArgument =>
+          println("writing AnnotationArgument: "+ arg)
 	  arg.constant match {
 	    case Some(c) => writeBody(c)
 	    case None => writeBody(arg.intTree)

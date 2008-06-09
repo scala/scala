@@ -34,6 +34,10 @@ extends Global(settings, reporter) {
   })
   */
 
+  /** The phases to be run.
+   *
+   *  @todo: Adapt to specific plugin implementation
+   */
   override def phaseDescriptors: List[SubComponent] = List(
     analyzer.namerFactory,
     analyzer.typerFactory,
