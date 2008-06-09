@@ -271,8 +271,7 @@ trait IdeSupport extends Analyzer {
       if (!makeNoChanges) use.foreach{tree=>
         if (tree.symbol.isClass && tree.symbol.hasFlag(symtab.Flags.CASE) && tree.symbol.owner.rawInfo.isComplete) {
           var e = tree.symbol.owner.info.decls.lookupEntry(tree.symbol.name.toTermName)
-          assert(e != null) // should have been entered already.
-          e.sym.pos match { // retype the object if its in the scope.
+          if (e != null) e.sym.pos match { // retype the object if its in the scope.
           case pos : TrackedPosition if pos.owner != null && pos.owner != MemoizedTree.this =>
             assert(true)
             pos.owner.dirtyTyped // hope this works!
