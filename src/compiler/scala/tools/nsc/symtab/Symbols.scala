@@ -573,7 +573,6 @@ trait Symbols {
             if (validTo < curPeriod) {
               var itr = infoTransformers.nextFrom(phaseId(validTo))
               infoTransformers = itr; // caching optimization
-              //println("running info transformer: "+ itr)
               while (itr.pid != NoPhase.id && itr.pid < current.id) {
                 phase = phaseWithId(itr.pid)
                 val info1 = itr.transform(this, infos.info)

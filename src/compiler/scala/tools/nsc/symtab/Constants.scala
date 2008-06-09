@@ -51,7 +51,6 @@ trait Constants {
       else if (value.isInstanceOf[Type]) ClassTag
       else if (value.isInstanceOf[Symbol]) EnumTag
       else if (value.isInstanceOf[Array[Constant]]) ArrayTag
-      else if (value.isInstanceOf[AnnotationInfo]) AnnotationTag
       else if (value == null) NullTag
       else throw new Error("bad constant value: " + value)
 
@@ -69,9 +68,7 @@ trait Constants {
       case NullTag    => AllRefClass.tpe
       case ClassTag   => Predef_classOfType(value.asInstanceOf[Type])
       case EnumTag    => symbolValue.owner.linkedClassOfClass.tpe
-      // ArrayTag not required; method tpe is overwritten in ArrayConstant
-      case AnnotationTag => annotationInfoValue.atp
-      //AnnotationClass.tpe  // what should it be?
+      case AnnotationTag => AnnotationClass.tpe  // what should it be?
     }
 
     /** We need the equals method to take account of tags as well as values.
@@ -225,9 +222,6 @@ trait Constants {
 
     def symbolValue: Symbol = value.asInstanceOf[Symbol]
 
-    def annotationInfoValue: AnnotationInfo =
-      throw new Error("value " + value + " is not an array")
-
     def arrayValue: Array[Constant] =
       throw new Error("value " + value + " is not an array")
 
@@ -241,8 +235,10 @@ trait Constants {
     override def toString() = arrayValue.mkString("Constant(", "," , ")")
   }
 
-  class AnnotationConstant(override val annotationInfoValue: AnnotationInfo)
-  extends Constant(annotationInfoValue) {
-    assert(annotationInfoValue.isConstant, annotationInfoValue)
+  /** A place-holder for annotation constants.  The contents of
+   *  the constant are not read. */
+  class AnnotationConstant()
+  extends Constant(null) {
+    override val tag = AnnotationTag
   }
 }

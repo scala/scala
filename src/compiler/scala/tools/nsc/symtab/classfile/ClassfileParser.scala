@@ -663,16 +663,10 @@ abstract class ClassfileParser {
               staticModule.moduleClass.sourceFile = clazz.sourceFile
             }
           }
-        // Methods of a java annotation class wear this annotation when they
-        // provide a default value. The actual value does not need to be known
-        // in order to compile other classes
         case nme.AnnotationDefaultATTR =>
           sym.attributes =
             AnnotationInfo(definitions.AnnotationDefaultAttr.tpe, List(), List()) :: sym.attributes
           in.skip(attrLen)
-        // Java annotatinos present in classfiles (when the java annotation class is
-        // itself annotated with @Renention(RetentionPolicy.RUNTIME) or .CLASS) are
-        // stored in a "RuntimeVisibleAnnotation" (i.e. nme.RuntimeAnnotationATTR)
         case nme.RuntimeAnnotationATTR =>
           parseAnnotations(attrLen)
           if (settings.debug.value)
@@ -710,8 +704,8 @@ abstract class ClassfileParser {
           new ArrayConstant(arr.toArray,
               appliedType(definitions.ArrayClass.typeConstructor, List(arr(0).tpe)))
 	case ANNOTATION_TAG =>
-	  val info = parseAnnotation(index)
-	  new AnnotationConstant(info)
+	  parseAnnotation(index)  // skip it
+	  new AnnotationConstant()
       }
     }
 
@@ -719,7 +713,7 @@ abstract class ClassfileParser {
      *  throw an exception.  If it contains a nested annotation,
      *  return None.
      */
-    def parseAnnotation(attrNameIndex: Char): /* Option[ */ AnnotationInfo /*]*/ = {
+    def parseAnnotation(attrNameIndex: Char): Option[AnnotationInfo] = {
       val attrType = pool.getType(attrNameIndex)
       val nargs = in.nextChar
       val nvpairs = new ListBuffer[(Name,AnnotationArgument)]
@@ -728,16 +722,16 @@ abstract class ClassfileParser {
       for (i <- 0 until nargs) {
         val name = pool.getName(in.nextChar)
 	val argConst = parseTaggedConstant
-	//if (argConst.tag == AnnotationTag)
-	  //nestedAnnot = true
-	//else
+	if (argConst.tag == AnnotationTag)
+	  nestedAnnot = true
+	else
           nvpairs += ((name, new AnnotationArgument(argConst)))
       }
 
-      //if (nestedAnnot)
-        //None
-      //else
-	AnnotationInfo(attrType, List(), nvpairs.toList)
+      if (nestedAnnot)
+	None
+      else
+	Some(AnnotationInfo(attrType, List(), nvpairs.toList))
     }
 
     /** Parse a sequence of annotations and attach them to the
@@ -746,7 +740,7 @@ abstract class ClassfileParser {
     def parseAnnotations(len: Int) {
       val nAttr = in.nextChar
       for (n <- 0 until nAttr)
-/*	parseAnnotation(in.nextChar) match {
+	parseAnnotation(in.nextChar) match {
 	  case None =>
 	    if (settings.debug.value)
               global.inform("dropping annotation on " +
@@ -754,8 +748,7 @@ abstract class ClassfileParser {
 			    " that has a nested annotation")
 	  case Some(annot) =>
             sym.attributes = annot :: sym.attributes
-	}*/
-        sym.attributes = parseAnnotation(in.nextChar) :: sym.attributes
+	}
     }
 
     def makeInnerAlias(outer: Symbol, name: Name, iclazz: Symbol, scope: Scope): Symbol = {
