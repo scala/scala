@@ -15,10 +15,12 @@ import collection.mutable.ArrayBuffer
 object RandomAccessSeq {
 
   /** The empty sequence */
-  val empty : RandomAccessSeq[Nothing] = new RandomAccessSeq[Nothing] {
+  val empty : RandomAccessSeq[Nothing] = new RandomAccessSeq.Projection[Nothing] {
     def length = 0
     def apply(i: Int): Nothing = throw new NoSuchElementException("empty sequence")
     override def elements = Iterator.empty
+    override def projection = this
+    override def force = this
   }
 
   trait Projection[+A] extends Seq.Projection[A] with RandomAccessSeq[A] {
