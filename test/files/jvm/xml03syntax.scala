@@ -41,9 +41,9 @@ object Test extends AnyRef with Assert {
 
     assertEquals(handle[Boolean](xd), true)
 
-    val xe = <hello>{ 5:short }</hello>
+    val xe = <hello>{ 5:Short }</hello>
 
-    assertEquals(handle[Short](xe), 5:short)
+    assertEquals(handle[Short](xe), 5:Short)
 
     val xf = <hello>{ val x = 27; x }</hello>
 

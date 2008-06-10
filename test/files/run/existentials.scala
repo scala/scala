@@ -29,7 +29,7 @@ case class C[T](x: T)
 object LUB {
   def x = C(1)
   def y = C("abc")
-  var coinflip: boolean = _
+  var coinflip: Boolean = _
   def z = if (coinflip) x else y
   def zz: C[_1] forSome { type _1 >: Int with java.lang.String } = z
   def zzs: C[_ >: Int with java.lang.String] = z
