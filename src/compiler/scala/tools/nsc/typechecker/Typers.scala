@@ -1469,7 +1469,6 @@ trait Typers { self: Analyzer =>
               else {
                 fun match {
                   case etaExpansion(vparams, fn, args) if !codeExpected =>
-                    println("typing eta "+fn)
                     silent(_.typed(fn, funMode(mode), pt)) match {
                       case fn1: Tree =>
                         val ftpe = normalize(fn1.tpe) baseType FunctionClass(fun.vparams.length)
