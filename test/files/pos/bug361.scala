@@ -1,18 +1,18 @@
 // $Id$
 
-class Bug361Global extends Bug361Trees;
+class Bug361Global extends Bug361Trees
 
 abstract class Bug361Trees { self: Bug361Global =>
 
   abstract class Tree {
-    var pos: int = 0;
+    var pos: Int = 0
   }
 
   object posAssigner {
-    def atPos[T <: Tree](pos: int, tree: T): T = {
+    def atPos[T <: Tree](pos: Int, tree: T): T = {
       tree.pos = pos; tree
     }
   }
 
-  def atPos[T <: Tree](pos: int)(tree: T): T = posAssigner.atPos(pos, tree);
+  def atPos[T <: Tree](pos: Int)(tree: T): T = posAssigner.atPos(pos, tree)
 }

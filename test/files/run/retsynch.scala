@@ -1,6 +1,6 @@
 object Test {
-  def abs(x:int): int = synchronized {
-    if(x > 0)
+  def abs(x: Int): Int = synchronized {
+    if (x > 0)
       return x
     return -x
   }

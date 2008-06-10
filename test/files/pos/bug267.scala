@@ -1,4 +1,4 @@
-package expAbstractData;
+package expAbstractData
 
 /** A base class consisting of
  *   - a root trait (i.e. abstract class) `Exp' with an `eval' function
@@ -6,29 +6,29 @@ package expAbstractData;
  *   - a concrete instance class `Num' of `Exp' for numeric literals
  */
 trait Base {
-  type exp <: Exp;
+  type exp <: Exp
 
   trait Exp {
-    def eval: int
+    def eval: Int
   }
-  class Num(v: int) extends Exp { self: exp =>
-    val value = v;
+  class Num(v: Int) extends Exp { self: exp =>
+    val value = v
     def eval = value
   }
 }
 
 object testBase extends Application with Base {
-  type exp = Exp;
+  type exp = Exp
   val term = new Num(2);
-  Console.println(term.eval);
+  Console.println(term.eval)
 }
 
 /** Data extension: An extension of `Base' with `Plus' expressions
  */
 trait BasePlus extends Base {
   class Plus(l: exp, r: exp) extends Exp { self: exp =>
-    val left = l;
-    val right = r;
+    val left = l
+    val right = r
     def eval = left.eval + right.eval
   }
 }
@@ -36,13 +36,13 @@ trait BasePlus extends Base {
 /** Operation extension: An extension of `Base' with 'show' methods.
  */
 trait Show extends Base {
-  type exp <: Exp1;
+  type exp <: Exp1
 
   trait Exp1 extends Exp {
-    def show: String;
+    def show: String
   }
-  class Num1(v: int) extends Num(v) with Exp1 { self: exp with Num1 =>
-    def show = value.toString();
+  class Num1(v: Int) extends Num(v) with Exp1 { self: exp with Num1 =>
+    def show = value.toString()
   }
 }
 

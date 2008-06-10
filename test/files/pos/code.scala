@@ -1,3 +1,3 @@
 class Test {
-  val fun: reflect.Code[int => int] = x => x + 1;
+  val fun: reflect.Code[Int => Int] = x => x + 1;
 }

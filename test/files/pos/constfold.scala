@@ -1,6 +1,6 @@
 object A {
   val x = 2;
-  val y = x.asInstanceOf[byte];
+  val y = x.asInstanceOf[Byte];
   val z = 1.0 / 2;
   val s = "z is " + z;
 }

@@ -15,37 +15,37 @@ object Test {
     def \u03b1\u03b1(that: GGG) = i + that.i
   }
 
-  def check_success[a](name: String, closure: => a, expected: a): Unit = {
-    Console.print("test " + name)
+  def check_success[a](name: String, closure: => a, expected: a) {
+    print("test " + name)
     try {
       val actual: a = closure
       if (actual == expected) {
-        Console.print(" was successful");
+        print(" was successful");
       } else {
-        Console.print(" failed: expected "+ expected +", found "+ actual);
+        print(" failed: expected "+ expected +", found "+ actual);
       }
     } catch {
       case exception: Throwable => {
-        Console.print(" raised exception " + exception);
+        print(" raised exception " + exception);
       }
     }
-    Console.println;
+    println
   }
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]) {
     // char
     check_success("'\\u0024' == '$'", '\u0024', '$')
     check_success("'\\u005f' == '_'", '\u005f', '_')
-    check_success("65.asInstanceOf[char] == 'A'", 65.asInstanceOf[char], 'A')
+    check_success("65.asInstanceOf[Char] == 'A'", 65.asInstanceOf[Char], 'A')
     check_success("\"\\141\\142\" == \"ab\"", "\141\142", "ab")
     check_success("\"\\0x61\\0x62\".trim() == \"x61\\0x62\"", "\0x61\0x62".substring(1), "x61\0x62")
 
-    Console.println
+    println
 
     // boolean
     check_success("(65 : Byte) == 'A'", (65: Byte) == 'A', true) // contrib #176
 
-    Console.println
+    println
 
     // int
     check_success("01 == 1", 01, 1)
@@ -78,12 +78,12 @@ object Test {
     check_success("0x80000000 == -2147483648", 0x80000000, -2147483648)
     check_success("0xffffffff == -1", 0xffffffff, -1)
 
-    Console.println
+    println
 
     // long
     check_success("1l == 1L", 1l, 1L)
     check_success("1L == 1l", 1L, 1l)
-    check_success("1.asInstanceOf[long] == 1l", 1.asInstanceOf[long], 1l)
+    check_success("1.asInstanceOf[Long] == 1l", 1.asInstanceOf[Long], 1l)
 
     check_success("0777777777777777777777L == 9223372036854775807L",
       0777777777777777777777L, 9223372036854775807L)
@@ -99,7 +99,7 @@ object Test {
     check_success("0xffffffffffffffffL == -1L",
       0xffffffffffffffffL, -1L)
 
-    Console.println
+    println
 
     // see JLS at address:
     // http://java.sun.com/docs/books/jls/second_edition/html/lexical.doc.html#230798
@@ -112,10 +112,10 @@ object Test {
     check_success("3.14f == 3.14f", 3.14f, 3.14f)
     check_success("6.022e23f == 6.022e23f", 6.022e23f, 6.022e23f)
     check_success("09f == 9.0f", 09f, 9.0f)
-    check_success("1.asInstanceOf[float] == 1.0", 1.asInstanceOf[float], 1.0f)
-    check_success("1l.asInstanceOf[float] == 1.0", 1l.asInstanceOf[float], 1.0f)
+    check_success("1.asInstanceOf[Float] == 1.0", 1.asInstanceOf[Float], 1.0f)
+    check_success("1l.asInstanceOf[Float] == 1.0", 1l.asInstanceOf[Float], 1.0f)
 
-    Console.println
+    println
 
     // double
     check_success("1e1 == 10.0", 1e1, 10.0)
@@ -127,10 +127,10 @@ object Test {
     check_success("3.14 == 3.14", 3.14, 3.14)
     check_success("1e-9d == 1.0e-9", 1e-9d, 1.0e-9)
     check_success("1e137 == 1.0e137", 1e137, 1.0e137)
-    check_success("1.asInstanceOf[double] == 1.0", 1.asInstanceOf[double], 1.0)
-    check_success("1l.asInstanceOf[double] == 1.0", 1l.asInstanceOf[double], 1.0)
+    check_success("1.asInstanceOf[Double] == 1.0", 1.asInstanceOf[Double], 1.0)
+    check_success("1l.asInstanceOf[Double] == 1.0", 1l.asInstanceOf[Double], 1.0)
 
-    Console.println
+    println
     check_success("\"\".length()", "\u001a".length(), 1)
 
     val ggg = GGG(1) \u03b1\u03b1 GGG(2)

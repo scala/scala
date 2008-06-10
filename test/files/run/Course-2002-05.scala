@@ -4,7 +4,7 @@
 // $Id$
 
 object M0 {
-  def partition[a](xs: List[a], pred: a => boolean): Pair[List[a], List[a]] = {
+  def partition[a](xs: List[a], pred: a => Boolean): Pair[List[a], List[a]] = {
     if (xs.isEmpty)
       Pair(List(),List())
     else {
@@ -16,7 +16,7 @@ object M0 {
     }
   }
 
-  def quicksort[a] (less : (a,a) => boolean) (xs : List[a]) : List[a] = {
+  def quicksort[a] (less : (a,a) => Boolean) (xs : List[a]) : List[a] = {
     if (xs.isEmpty)
       xs
     else {
@@ -27,22 +27,22 @@ object M0 {
   }
 
   def test = {
-    Console.println(partition[int](List(1,2,3,4,5,6,7,8), (x => x < 0)));
-    Console.println(partition[int](List(1,2,3,4,5,6,7,8), (x => x < 5)));
-    Console.println(partition[int](List(1,2,3,4,5,6,7,8), (x => x < 9)));
+    Console.println(partition[Int](List(1,2,3,4,5,6,7,8), (x => x < 0)));
+    Console.println(partition[Int](List(1,2,3,4,5,6,7,8), (x => x < 5)));
+    Console.println(partition[Int](List(1,2,3,4,5,6,7,8), (x => x < 9)));
     Console.println;
 
-    Console.println(partition[int](List(8,7,6,5,4,3,2,1), (x => x < 0)));
-    Console.println(partition[int](List(8,7,6,5,4,3,2,1), (x => x < 5)));
-    Console.println(partition[int](List(8,7,6,5,4,3,2,1), (x => x < 9)));
+    Console.println(partition[Int](List(8,7,6,5,4,3,2,1), (x => x < 0)));
+    Console.println(partition[Int](List(8,7,6,5,4,3,2,1), (x => x < 5)));
+    Console.println(partition[Int](List(8,7,6,5,4,3,2,1), (x => x < 9)));
     Console.println;
 
-    Console.println(partition[int](List(7,2,1,5,4,3,8,6), (x => x < 0)));
-    Console.println(partition[int](List(7,2,1,5,4,3,8,6), (x => x < 5)));
-    Console.println(partition[int](List(7,2,1,5,4,3,8,6), (x => x < 9)));
+    Console.println(partition[Int](List(7,2,1,5,4,3,8,6), (x => x < 0)));
+    Console.println(partition[Int](List(7,2,1,5,4,3,8,6), (x => x < 5)));
+    Console.println(partition[Int](List(7,2,1,5,4,3,8,6), (x => x < 9)));
     Console.println;
 
-    Console.println(quicksort[int]((x,y) => x < y)(List(7,2,1,5,4,3,8,6)));
+    Console.println(quicksort[Int]((x,y) => x < y)(List(7,2,1,5,4,3,8,6)));
     Console.println;
   }
 }
@@ -50,13 +50,13 @@ object M0 {
 //############################################################################
 
 object M1 {
-  def partition[a](xs: List[a], pred: a => boolean): Pair[List[a], List[a]] = {
+  def partition[a](xs: List[a], pred: a => Boolean): Pair[List[a], List[a]] = {
     xs.foldRight[Pair[List[a], List[a]]](Pair(List(), List())) {
       (x, p) => if (pred (x)) Pair(x :: p._1, p._2) else Pair(p._1, x :: p._2)
     }
   }
 
-  def quicksort[a] (less : (a,a) => boolean) (xs : List[a]) : List[a] = {
+  def quicksort[a] (less : (a,a) => Boolean) (xs : List[a]) : List[a] = {
     if (xs.isEmpty)
       xs
     else {
@@ -67,22 +67,22 @@ object M1 {
   }
 
   def test = {
-    Console.println(partition[int](List(1,2,3,4,5,6,7,8), (x => x < 0)));
-    Console.println(partition[int](List(1,2,3,4,5,6,7,8), (x => x < 5)));
-    Console.println(partition[int](List(1,2,3,4,5,6,7,8), (x => x < 9)));
+    Console.println(partition[Int](List(1,2,3,4,5,6,7,8), (x => x < 0)));
+    Console.println(partition[Int](List(1,2,3,4,5,6,7,8), (x => x < 5)));
+    Console.println(partition[Int](List(1,2,3,4,5,6,7,8), (x => x < 9)));
     Console.println;
 
-    Console.println(partition[int](List(8,7,6,5,4,3,2,1), (x => x < 0)));
-    Console.println(partition[int](List(8,7,6,5,4,3,2,1), (x => x < 5)));
-    Console.println(partition[int](List(8,7,6,5,4,3,2,1), (x => x < 9)));
+    Console.println(partition[Int](List(8,7,6,5,4,3,2,1), (x => x < 0)));
+    Console.println(partition[Int](List(8,7,6,5,4,3,2,1), (x => x < 5)));
+    Console.println(partition[Int](List(8,7,6,5,4,3,2,1), (x => x < 9)));
     Console.println;
 
-    Console.println(partition[int](List(7,2,1,5,4,3,8,6), (x => x < 0)));
-    Console.println(partition[int](List(7,2,1,5,4,3,8,6), (x => x < 5)));
-    Console.println(partition[int](List(7,2,1,5,4,3,8,6), (x => x < 9)));
+    Console.println(partition[Int](List(7,2,1,5,4,3,8,6), (x => x < 0)));
+    Console.println(partition[Int](List(7,2,1,5,4,3,8,6), (x => x < 5)));
+    Console.println(partition[Int](List(7,2,1,5,4,3,8,6), (x => x < 9)));
     Console.println;
 
-    Console.println(quicksort[int]((x,y) => x < y)(List(7,2,1,5,4,3,8,6)));
+    Console.println(quicksort[Int]((x,y) => x < y)(List(7,2,1,5,4,3,8,6)));
     Console.println;
   }
 }
@@ -91,7 +91,7 @@ object M1 {
 
 object M2 {
 
-  def powerset[a] (s : List[a]) : List[List[a]] = {
+  def powerset[a] (s: List[a]): List[List[a]] = {
     if (s.isEmpty)
       List(List())
     else {
@@ -115,20 +115,20 @@ object M2 {
 
 object M3 {
 
-  def abs(x: int) = if (x < 0) 0 - x else x;
+  def abs(x: Int) = if (x < 0) 0 - x else x;
 
   def range(lo: Int, hi: Int): List[Int] =
     if (lo > hi) List()
     else lo :: range(lo + 1, hi);
 
-  type Placement = List[Pair[int,int]];
+  type Placement = List[(Int, Int)];
 
-  def queens(n: int): List[Placement] = {
-    def placeQueens(row: int): List[Placement] = {
+  def queens(n: Int): List[Placement] = {
+    def placeQueens(row: Int): List[Placement] = {
       if (row == 0)
         List(List())
       else {
-        def isSafe(column: int, placement: Placement): boolean =
+        def isSafe(column: Int, placement: Placement): Boolean =
           placement forall {
             pos => (pos._2 != column &&
               abs(pos._2 - column) != row - pos._1)
@@ -145,7 +145,7 @@ object M3 {
     placeQueens(n)
   }
 
-  def test = {
+  def test {
     Console.println("queens(1) = " + queens(1));
     Console.println("queens(2) = " + queens(2));
     Console.println("queens(3) = " + queens(3));
@@ -158,7 +158,7 @@ object M3 {
 
 object M4 {
 
-  def abs(x: int) = if (x < 0) 0 - x else x;
+  def abs(x: Int) = if (x < 0) 0 - x else x;
 
   def range(lo: Int, hi: Int): List[Int] =
     if (lo > hi) List()
@@ -190,7 +190,7 @@ object M4 {
     placeQueens(n);
   }
 
-  def test = {
+  def test {
     Console.println("queens(1) = " + queens(1));
     Console.println("queens(2) = " + queens(2));
     Console.println("queens(3) = " + queens(3));
@@ -202,7 +202,7 @@ object M4 {
 //############################################################################
 
 object Test {
-  def main(args: Array[String]): unit = {
+  def main(args: Array[String]) {
     M0.test;
     M1.test;
     M2.test;
