@@ -76,10 +76,12 @@ PROPERTIES
   <property name="lib-ant.dir" value="${lib.dir}/ant"/>
   <property name="src.dir" value="${basedir}/src"/>
   <property name="test.dir" value="${basedir}/test"/>
-
+	
   <!-- Loads custom properties definitions -->
   <property file="${basedir}/build.properties"/>
 
+  <!-- Additional command line arguments for scalac. They are added to all build targets -->
+  <property name="scalac.args" value=""/>
   <!-- Sets location of pre-compiled libraries -->
   <property name="lib.starr.jar" value="${lib.dir}/scala-library.jar"/>
   <property name="comp.starr.jar" value="${lib.dir}/scala-compiler.jar"/>
@@ -176,7 +178,8 @@ LOCAL REFERENCE BUILD (LOCKER)
       destdir="${build-locker.dir}/classes/library"
       compilerpathref="starr.classpath"
       srcpath="${src.dir}/library"
-      target="jvm-1.5">
+      target="jvm-1.5"
+      params="${scalac.args}">
       <compilationpath>
       	<pathelement location="${build-locker.dir}/classes/library"/>
       </compilationpath>
@@ -220,7 +223,8 @@ LOCAL REFERENCE BUILD (LOCKER)
       destdir="${build-locker.dir}/classes/compiler"
       compilerpathref="starr.classpath"
       srcpath="${src.dir}/compiler"
-      target="jvm-1.5">
+      target="jvm-1.5"
+      params="${scalac.args}">
       <compilationpath>
       	<pathelement location="${build-locker.dir}/classes/library"/>
       	<pathelement location="${build-locker.dir}/classes/compiler"/>
@@ -304,7 +308,8 @@ QUICK BUILD (QUICK)
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
       srcpath="${src.dir}/library"
-      target="jvm-1.5">
+      target="jvm-1.5"
+      params="${scalac.args}">
       <compilationpath>
       	<pathelement location="${build-quick.dir}/classes/library"/>
       </compilationpath>
@@ -318,7 +323,8 @@ QUICK BUILD (QUICK)
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
       srcpath="${src.dir}/library"
-      target="jvm-1.5">
+      target="jvm-1.5"
+      params="${scalac.args}">
       <compilationpath>
       	<pathelement location="${build-quick.dir}/classes/library"/>
       </compilationpath>
@@ -363,7 +369,8 @@ QUICK BUILD (QUICK)
       destdir="${build-quick.dir}/classes/compiler"
       compilerpathref="locker.classpath"
       srcpath="${src.dir}/compiler"
-      target="jvm-1.5">
+      target="jvm-1.5"
+      params="${scalac.args}">
       <compilationpath>
       	<pathelement location="${build-quick.dir}/classes/library"/>
       	<pathelement location="${build-quick.dir}/classes/compiler"/>
@@ -417,7 +424,8 @@ QUICK BUILD (QUICK)
       destdir="${build-quick.dir}/classes/partest"
       compilerpathref="locker.classpath"
       srcpath="${src.dir}/partest"
-      target="jvm-1.5">
+      target="jvm-1.5"
+      params="${scalac.args}">
       <compilationpath>
       	<pathelement location="${build-quick.dir}/classes/library"/>
       	<pathelement location="${build-quick.dir}/classes/compiler"/>
@@ -638,14 +646,16 @@ BOOTSTRAPPING BUILD (STRAP)
       destdir="${build-strap.dir}/classes/library"
       classpath="${build-strap.dir}/classes/library"
       sourcepath="${src.dir}/library"
-      target="jvm-1.5">
+      target="jvm-1.5"
+      addparams="${scalac.args}">
       <include name="scala/Predef.scala"/>
     </scalac>
     <scalac
       srcdir="${src.dir}/library"
       destdir="${build-strap.dir}/classes/library"
       classpath="${build-strap.dir}/classes/library"
-      target="jvm-1.5">
+      target="jvm-1.5"
+      addparams="${scalac.args}">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
     </scalac>
@@ -653,14 +663,16 @@ BOOTSTRAPPING BUILD (STRAP)
       srcdir="${src.dir}/actors"
       destdir="${build-strap.dir}/classes/library"
       classpath="${build-strap.dir}/classes/library"
-      target="jvm-1.5">
+      target="jvm-1.5"
+      addparams="${scalac.args}">
       <include name="**/*.scala"/>
     </scalac>
     <scalac
       srcdir="${src.dir}/dbc"
       destdir="${build-strap.dir}/classes/library"
       classpath="${build-strap.dir}/classes/library"
-      target="jvm-1.5">
+      target="jvm-1.5"
+      addparams="${scalac.args}">
       <include name="**/*.scala"/>
     </scalac>
     <propertyfile file="${build-strap.dir}/classes/library/library.properties">
@@ -691,7 +703,8 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalac
       srcdir="${src.dir}/compiler"
       destdir="${build-strap.dir}/classes/compiler"
-      target="jvm-1.5">
+      target="jvm-1.5"
+      addparams="${scalac.args}">
       <include name="**/*.scala"/>
       <classpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
@@ -741,7 +754,8 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalac
       srcdir="${src.dir}/partest"
       destdir="${build-strap.dir}/classes/partest"
-      target="jvm-1.5">
+      target="jvm-1.5"
+      addparams="${scalac.args}">
       <include name="**/*.scala"/>
       <classpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
