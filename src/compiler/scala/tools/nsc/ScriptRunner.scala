@@ -165,13 +165,14 @@ object ScriptRunner {
     (packageDecl +
      "object " + objName + " {\n" +
      "  def main(argv: Array[String]): Unit = {\n" +
-     "  val args = argv;\n")
+     "  val args = argv;\n" +
+     "  new AnyRef {\n")
   }
 
   /** Code that is added to the end of a script file to make
    *  it a complete Scala compilation unit.
    */
-  val endCode = "\n} }\n"
+  val endCode = "\n} \n} }\n"
 
 
   /** Wrap a script file into a runnable object named
@@ -195,7 +196,7 @@ object ScriptRunner {
           bsf.length)
 //          f.length.asInstanceOf[Int])
     }
-    val end = new BatchSourceFile("<script trailer>", "\n} }\n".toCharArray)
+    val end = new BatchSourceFile("<script trailer>", endCode.toCharArray)
 
     new CompoundSourceFile(preamble, middle, end)
   }
