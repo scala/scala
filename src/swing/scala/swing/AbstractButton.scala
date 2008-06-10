@@ -1,0 +1,81 @@
+package scala.swing
+
+import java.awt.Dimension
+import javax.swing.{AbstractButton => JAbstractButton, Icon}
+import event._
+
+/**
+ * Base class of all button-like widgets, such as push buttons,
+ * check boxes, and radio buttons.
+ *
+ * @see javax.swing.AbstractButton
+ */
+abstract class AbstractButton extends Component with Action.Trigger with Publisher {
+  override lazy val peer: JAbstractButton = new JAbstractButton {}
+
+  def text: String = peer.getText
+  def text_=(s: String) = peer.setText(s)
+
+  def icon: Icon = peer.getIcon
+  def icon_=(i: Icon) = peer.setIcon(i)
+  def pressedIcon: Icon = peer.getPressedIcon
+  def pressedIcon_=(i: Icon) = peer.setPressedIcon(i)
+  def selectedIcon: Icon = peer.getSelectedIcon
+  def selectedIcon_=(i: Icon) = peer.setSelectedIcon(i)
+  def disabledIcon: Icon = peer.getDisabledIcon
+  def disabledIcon_=(i: Icon) = peer.setDisabledIcon(i)
+  def disabledSelectedIcon: Icon = peer.getDisabledSelectedIcon
+  def disabledSelectedIcon_=(i: Icon) = peer.setDisabledSelectedIcon(i)
+  def rolloverIcon: Icon = peer.getRolloverIcon
+  def rolloverIcon_=(b: Icon) = peer.setRolloverIcon(b)
+  def rolloverSelectedIcon: Icon = peer.getRolloverSelectedIcon
+  def rolloverSelectedIcon_=(b: Icon) = peer.setRolloverSelectedIcon(b)
+
+  private var _action: Action = Action.NoAction
+  def action: Action = _action
+  def action_=(a: Action) { _action = a; peer.setAction(a.peer) }
+
+  //1.6: def hideActionText: Boolean = peer.getHideActionText
+  //def hideActionText_=(b: Boolean) = peer.setHideActionText(b)
+
+  peer.addActionListener(new java.awt.event.ActionListener {
+    def actionPerformed(e: java.awt.event.ActionEvent) {
+      publish(ButtonClicked(AbstractButton.this))
+    }
+  })
+
+  def selected: Boolean = peer.isSelected
+  def selected_=(b: Boolean) = peer.setSelected(b)
+
+  def contentAreaFilled: Boolean = peer.isContentAreaFilled()
+  def contentAreaFilled_=(b: Boolean) { peer.setContentAreaFilled(true) }
+
+  def borderPainted: Boolean = peer.isBorderPainted
+  def borderPainted_=(b: Boolean) { peer.setBorderPainted(b) }
+  def focusPainted: Boolean = peer.isFocusPainted
+  def focusPainted_=(b: Boolean) { peer.setFocusPainted(b) }
+
+  def rolloverEnabled: Boolean = peer.isRolloverEnabled
+  def rolloverEnabled_=(b: Boolean) = peer.setRolloverEnabled(b)
+
+  def verticalTextPosition: Alignment.Value = Alignment(peer.getVerticalTextPosition)
+  def verticalTextPosition_=(a: Alignment.Value) { peer.setVerticalTextPosition(a.id) }
+  def verticalAlignment: Alignment.Value = Alignment(peer.getVerticalAlignment)
+  def verticalAlignment_=(a: Alignment.Value) { peer.setVerticalAlignment(a.id) }
+
+  def horizontalTextPosition: Alignment.Value = Alignment(peer.getHorizontalTextPosition)
+  def horizontalTextPosition_=(a: Alignment.Value) { peer.setHorizontalTextPosition(a.id) }
+  def horizontalAlignment: Alignment.Value = Alignment(peer.getHorizontalAlignment)
+  def horizontalAlignment_=(a: Alignment.Value) { peer.setHorizontalAlignment(a.id) }
+
+  def iconTextGap: Int = peer.getIconTextGap
+  def iconTextGap_=(x: Int) { peer.setIconTextGap(x) }
+
+  def mnemonic: Key.Value = Key(peer.getMnemonic)
+  def mnemonic_=(k: Key.Value) { peer.setMnemonic(k.id) }
+  def displayedMnemonicIndex: Int = peer.getDisplayedMnemonicIndex
+  def displayedMnemonicIndex_=(n: Int) { peer.setDisplayedMnemonicIndex(n) }
+
+  def multiClickThreshold: Long = peer.getMultiClickThreshhold
+  def multiClickThreshold_=(n: Long) { peer.setMultiClickThreshhold(n) }
+}

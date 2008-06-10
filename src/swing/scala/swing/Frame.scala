@@ -26,6 +26,8 @@ class Frame extends UIElement with RootPanel with Publisher {
     peer.getRootPane.setDefaultButton(Swing.toNull(b.map(_.peer)))
   }
 
+  def dispose() { peer.dispose() }
+
   def pack(): this.type = { peer.pack(); this }
 
   def menuBar: MenuBar = Component.wrapperFor(peer.getJMenuBar)

@@ -26,13 +26,6 @@ abstract class Component extends UIElement with Publisher {
   override lazy val peer: javax.swing.JComponent = new javax.swing.JComponent{}
   peer.putClientProperty(Component.ClientKey, this)
 
-  def minimumSize = peer.getMinimumSize
-  def minimumSize_=(x: Dimension) = peer.setMinimumSize(x)
-  def maximumSize = peer.getMaximumSize
-  def maximumSize_=(x: Dimension) = peer.setMaximumSize(x)
-  def preferredSize = peer.getPreferredSize
-  def preferredSize_=(x: Dimension) = peer.setPreferredSize(x)
-
   /**
    * Used by certain layout managers, e.g., BoxLayout or OverlayLayout to
    * align components relative to each other.

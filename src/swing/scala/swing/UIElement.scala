@@ -12,6 +12,13 @@ trait UIElement {
   def background: Color = peer.getBackground
   def background_=(c: Color) = peer.setBackground(c)
 
+  def minimumSize = peer.getMinimumSize
+  def minimumSize_=(x: Dimension) = peer.setMinimumSize(x)
+  def maximumSize = peer.getMaximumSize
+  def maximumSize_=(x: Dimension) = peer.setMaximumSize(x)
+  def preferredSize = peer.getPreferredSize
+  def preferredSize_=(x: Dimension) = peer.setPreferredSize(x)
+
   def font: Font = peer.getFont
   def font_=(f: Font) = peer.setFont(f)
 

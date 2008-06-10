@@ -34,9 +34,10 @@ class Table extends Component with Scrollable with Publisher {
   override lazy val peer: JTable = new JTable {
     override def getCellRenderer(r: Int, c: Int) = new TableCellRenderer {
       def getTableCellRendererComponent(table: JTable, value: AnyRef, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int) =
-        renderer(isSelected, hasFocus, row, column).peer
+        Table.this.renderer(isSelected, hasFocus, row, column).peer
     }
     override def getCellEditor(r: Int, c: Int) = editor(r, c)
+    override def getValueAt(r: Int, c: Int) = Table.this.apply(r,c)
   }
   import Table._
 
@@ -56,7 +57,11 @@ class Table extends Component with Scrollable with Publisher {
   }
   def this(rows: Int, columns: Int) = {
     this()
-    peer.setModel(new DefaultTableModel(rows, columns))
+    model = new DefaultTableModel(rows, columns) {
+      override def setValueAt(value: Any, row: Int, col: Int) {
+        super.setValueAt(value, row, col)
+      }
+    }
   }
 
   protected def scrollablePeer = peer
@@ -67,7 +72,10 @@ class Table extends Component with Scrollable with Publisher {
   def rowCount = peer.getRowCount
 
   def model = peer.getModel()
-  def model_=(x: TableModel) = peer.setModel(x)
+  def model_=(x: TableModel) = {
+    peer.setModel(x)
+    model.addTableModelListener(modelListener)
+  }
 
   def autoResizeMode: AutoResizeMode.Value = AutoResizeMode(peer.getAutoResizeMode)
   def autoResizeMode_=(x: Table.AutoResizeMode.Value) = peer.setAutoResizeMode(x.id)
@@ -163,21 +171,29 @@ class Table extends Component with Scrollable with Publisher {
     new Component {
       override lazy val peer = {
         val v = Table.this.peer.getValueAt(row, column)
-        Table.this.peer.getDefaultRenderer(v.getClass).getTableCellRendererComponent(Table.this.peer,
+        if (v != null)
+          Table.this.peer.getDefaultRenderer(v.getClass).getTableCellRendererComponent(Table.this.peer,
+                 v, isSelected, hasFocus, row, column).asInstanceOf[JComponent]
+        else Table.this.peer.getDefaultRenderer(classOf[Object]).getTableCellRendererComponent(Table.this.peer,
                  v, isSelected, hasFocus, row, column).asInstanceOf[JComponent]
       }
     }
 
   // TODO: a public API for setting editors
-  protected def editor(row: Int, column: Int) =
-    Table.this.peer.getDefaultEditor(Table.this.peer.getValueAt(row, column).getClass)
+  protected def editor(row: Int, column: Int) = {
+    val v = Table.this.peer.getValueAt(row, column)
+    if (v != null)
+      Table.this.peer.getDefaultEditor(v.getClass)
+    else
+      Table.this.peer.getDefaultEditor(classOf[Object])
+  }
 
-  def apply(row: Int, column: Int) = peer.getValueAt(row, column)
-  def update(row: Int, column: Int, value: Any) = peer.setValueAt(value, row, column)
+  def apply(row: Int, column: Int) = model.getValueAt(row, column)
+  def update(row: Int, column: Int, value: Any) = model.setValueAt(value, row, column)
 
   def markUpdated(row: Int, column: Int) = update(row, column, apply(row, column))
 
-  model.addTableModelListener(new TableModelListener {
+  protected val modelListener = new TableModelListener {
     def tableChanged(e: TableModelEvent) = publish(
       e.getType match {
         case TableModelEvent.UPDATE =>
@@ -193,5 +209,6 @@ class Table extends Component with Scrollable with Publisher {
           TableRowsRemoved(Table.this, e.getFirstRow to e.getLastRow)
       }
     )
-  })
+  }
+  model.addTableModelListener(modelListener)
 }
