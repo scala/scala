@@ -272,7 +272,7 @@ object Bug226Test {
 
   def id[a](xs: Array[a]): Array[a] = xs;
 
-  def test(args: Array[String]): Unit = {
+  def test(args: Array[String]) {
     var xs = new Array[Int](1);
     class X { xs };
     xs = id(xs);
@@ -295,7 +295,7 @@ object Bug233Test {
 // Bug 250
 
 object Bug250Test {
-  def test(args: Array[String]): Unit = {
+  def test(args: Array[String]) {
     if (true) null;
     ()
   }
@@ -316,7 +316,7 @@ object Bug257Test {
     f2(x);
   }
 
-  def test(args: Array[String]): Unit = {
+  def test(args: Array[String]) {
     f(sayhello())(sayhi())
   }
 }
@@ -333,16 +333,16 @@ abstract class Bug266AFoo {
 
 object Bug266ATest extends Bug266AFoo {
   type T = String;
-  class I1 extends I0 { def f(x: String): Unit = { Console.println("hello"); ();} }
+  class I1 extends I0 { def f(x: String) { Console.println("hello") } }
   def test(args: Array[String]): Unit = { new I1; () }
 }
 
 // version - B
 
 abstract class Bug266BA {
-  type t;
+  type t
   abstract class P {
-    def f(x: t): unit;
+    def f(x: t): Unit
   }
 }
 
@@ -352,9 +352,9 @@ abstract class Bug266BA1 extends Bug266BA {
 }
 
 trait Bug266BB extends Bug266BA {
-  type t = int;
+  type t = Int;
   class P1 extends Bug266BB.this.P {
-    def f(x: int): unit = Console.println(x + 1);
+    def f(x: Int) { Console.println(x + 1) }
   }
   def mkP = new P1;
   val in = 3;
@@ -368,7 +368,7 @@ object Bug266BTest {
 // main
 
 object Bug266Test {
-  def test(args: Array[String]): Unit = {
+  def test(args: Array[String]) {
     Bug266ATest.test(args);
     Bug266BTest.test(args);
   }
@@ -378,8 +378,8 @@ object Bug266Test {
 // Bug 316
 
 class Bug316MyIterator extends Iterator[Int] {
-    def hasNext = false;
-    def next = 42;
+  def hasNext = false
+  def next = 42
 }
 
 object Bug316Test {
@@ -391,7 +391,7 @@ object Bug316Test {
 // Bug 328
 
 object Bug328Test {
-  def test0(f: Function1[Int,String]): Unit = ();
+  def test0(f: Function1[Int,String]) {}
   def test(args: Array[String]): Unit = test0(args);
 }
 
@@ -430,7 +430,7 @@ object Bug399Test {
     (new G).f
   }
 
-  def test(args: Array[String]): Unit = {
+  def test(args: Array[String]) {
     Console.println(f("a"));
   }
 }
@@ -439,24 +439,23 @@ object Bug399Test {
 // Main
 
 object Test  {
-  var errors: Int = 0;
-  def test(bug: Int, test: => Unit): Unit = {
-    Console.println("<<< bug " + bug);
+  var errors: Int = 0
+  def test(bug: Int, test: => Unit) {
+    Console.println("<<< bug " + bug)
     try {
       test;
     } catch {
-      case exception => {
+      case exception =>
         val curr: String = currentThread.toString();
         Console.print("Exception in thread \"" + curr + "\" " + exception);
         Console.println;
-        errors = errors + 1;
-      }
+        errors += 1
     }
-    Console.println(">>> bug " + bug);
-    Console.println;
+    Console.println(">>> bug " + bug)
+    Console.println
   }
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]) {
 
     test( 98, Bug98Test.test(args));
     test(120, Bug120Test.test(args));

@@ -195,7 +195,7 @@ class Code(clazz: java.lang.Class[_]) {
   private def applyFun(methName: String, args: Array[JObject],
                        argTypes: Array[Class[T] forSome { type T }]): JObject = {
     try {
-      val method = clazz.getMethod(methName, argTypes: _*)
+      val method = clazz.getMethod(methName, argTypes)
       var obj: JObject = null
       if (! Modifier.isStatic(method.getModifiers())) {
         if (instance eq null) {
@@ -205,7 +205,7 @@ class Code(clazz: java.lang.Class[_]) {
             val cs = clazz.getConstructors()
 //Console.println("cs.length=" + cs.length);
             if (cs.length > 0) {
-              cs(0).newInstance(Array(""): _*).asInstanceOf[AnyRef]
+              cs(0).newInstance(Array("")).asInstanceOf[AnyRef]
             } else {
               error("class " + clazz.getName() + " has no public constructor")
               null
@@ -214,15 +214,15 @@ class Code(clazz: java.lang.Class[_]) {
         }
         obj = instance
       }
-      val result = method.invoke(obj, args: _*)
+      val result = method.invoke(obj, args)
       if (result eq null) ().asInstanceOf[JObject] else result
     }
     catch {
       case me: NoSuchMethodException =>
         if (isConstructorName(methName)) {
           try {
-            val cstr = clazz.getConstructor(argTypes: _*)
-            instance = cstr.newInstance(args: _*).asInstanceOf[AnyRef]
+            val cstr = clazz.getConstructor(argTypes)
+            instance = cstr.newInstance(args).asInstanceOf[AnyRef]
             instance
           }
           catch {
@@ -244,4 +244,3 @@ class Code(clazz: java.lang.Class[_]) {
     }
 
 }
-

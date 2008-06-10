@@ -5,7 +5,7 @@ trait D {
 }
 
 trait E extends D {
-  def f(): unit = {
+  def f(): Unit = {
     val y = "yyyy should appear twice"
     object yyyy {
       val x1 = get_xxxx

@@ -1,19 +1,15 @@
 object Test extends Application {
 
   def foo() = {
-    def f: int = 1
+    def f: Int = 1
     val x = f _
     x
   }
 
-  def bar(g: => int) = {
+  def bar(g: => Int) = {
     g _
   }
 
   Console.println((bar{ Console.println("g called"); 42 })())
   Console.println(foo()())
-
 }
-
-
-
