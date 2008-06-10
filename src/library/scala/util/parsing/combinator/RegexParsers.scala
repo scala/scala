@@ -62,7 +62,7 @@ trait RegexParsers extends Parsers {
           Success(source.subSequence(start, start + matched.end).toString,
                   in.drop(start + matched.end - offset))
         case None =>
-          Failure("string matching regex `+r+' expected but `"+in.first+"' found", in.drop(start - offset))
+          Failure("string matching regex `"+r+"' expected but `"+in.first+"' found", in.drop(start - offset))
       }
     }
   }
