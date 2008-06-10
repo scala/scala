@@ -385,6 +385,9 @@ trait Scanners {
               case '\u21D2' =>
                 in.next; token = ARROW
                 return
+              case '\u2190' =>
+                in.next; token = LARROW
+                return
               case 'A' | 'B' | 'C' | 'D' | 'E' |
                    'F' | 'G' | 'H' | 'I' | 'J' |
                    'K' | 'L' | 'M' | 'N' | 'O' |

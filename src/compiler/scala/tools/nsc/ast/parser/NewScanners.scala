@@ -323,6 +323,7 @@ trait NewScanners {
       case ']' => (RBRACKET)
       case SU => EOF
       case '\u21D2' => (ARROW)
+      case '\u2190' => (LARROW)
       case '<' =>
         if (oldXmlOk && (in.head match {
         case ('!' | '?') => true

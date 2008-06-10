@@ -136,6 +136,7 @@ object Predef {
 
   class ArrowAssoc[A](x: A) {
     def -> [B](y: B): Tuple2[A, B] = Tuple2(x, y)
+    def →[B](y: B): Tuple2[A, B] = ->(y)
   }
   implicit def any2ArrowAssoc[A](x: A): ArrowAssoc[A] = new ArrowAssoc(x)
 
