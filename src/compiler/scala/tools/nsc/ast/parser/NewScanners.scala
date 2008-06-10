@@ -455,6 +455,7 @@ trait NewScanners {
         }
       case '`' =>
         in.scratch setLength 0
+        if (in.head == '`') in.error(offset, "empty quoted identifier")
         while (in.head match {
         case '`' => in.next; false
         case CR | LF | FF | SU | EOF =>
