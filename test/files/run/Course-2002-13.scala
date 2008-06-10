@@ -13,7 +13,7 @@ class Tokenizer(s: String, delimiters: String) extends Iterator[String] {
     i < delimiters.length()
   }
 
-  def hasNext: boolean = {
+  def hasNext: Boolean = {
     while (i < s.length() && s.charAt(i) <= ' ') { i = i + 1 }
     i < s.length()
   }

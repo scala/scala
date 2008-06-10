@@ -16,7 +16,7 @@ class MailBox {
   }
 
   private abstract class Receiver {
-    def isDefined(msg: Any): boolean;
+    def isDefined(msg: Any): Boolean;
     var msg: Any = null;
   }
 
@@ -25,7 +25,7 @@ class MailBox {
   private val receivers = new LinkedList[Receiver];
   private var lastReceiver = receivers;
 
-  def send(msg: Any): unit = synchronized {
+  def send(msg: Any): Unit = synchronized {
     var r = receivers;
     var r1 = r.next;
     while (r1 != null && !r1.elem.isDefined(msg)) {
@@ -59,7 +59,7 @@ class MailBox {
     f(msg)
   }
 
-  def receiveWithin[a](msec: long)(f: PartialFunction[Any, a]): a = {
+  def receiveWithin[a](msec: Long)(f: PartialFunction[Any, a]): a = {
     val msg: Any = synchronized {
       var s = sent;
       var s1 = s.next;

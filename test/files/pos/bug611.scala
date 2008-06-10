@@ -6,8 +6,8 @@ abstract class Field {
   var internalValue: FieldType;
 }
 
-case class IntField(value: int) extends Field {
-  type FieldType = int;
+case class IntField(value: Int) extends Field {
+  type FieldType = Int;
 
   var internalValue: FieldType = value;
 }

@@ -9,13 +9,13 @@
 object Test extends Application {
 
   object Twice {
-    def apply(x: int) = x * 2
-    def unapply(x: int): Option[Tuple1[int]] =
+    def apply(x: Int) = x * 2
+    def unapply(x: Int): Option[Tuple1[int]] =
       if (x % 2 == 0) Some(Tuple1(x / 2))
       else None
   }
 
-  def test(x: int) = x match {
+  def test(x: Int) = x match {
     case Twice(y) => "x is two times "+y
     case _ => "x is odd"
   }

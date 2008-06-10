@@ -1,11 +1,12 @@
 object Test extends Application {
-  class QSRichIterable[A](self:Iterable[A]) {
-     def filterMap[R](f: PartialFunction[A,R]) =
-       self filter (f.isDefinedAt) map f
+
+  class QSRichIterable[A](self: Iterable[A]) {
+    def filterMap[R](f: PartialFunction[A,R]) =
+      self filter (f.isDefinedAt) map f
   }
 
   object Un {
-     def unapply(i:int): Option[int] = Some(i)
+    def unapply(i: Int): Option[Int] = Some(i)
   }
 
   val richIter = new QSRichIterable(List(0, 1, 2, 3, 4))

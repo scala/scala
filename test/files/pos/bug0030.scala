@@ -1,9 +1,9 @@
 trait A {
-  def f(x: int): unit;
-  def f(x: String): unit;
+  def f(x: Int): Unit;
+  def f(x: String): Unit;
 }
 
 class B extends A {
-  def f(x: int): unit = ();
-  def f(x: String): unit = ();
+  def f(x: Int): Unit = ();
+  def f(x: String): Unit = ();
 }
