@@ -76,13 +76,14 @@ PROPERTIES
   <property name="lib-ant.dir" value="${lib.dir}/ant"/>
   <property name="src.dir" value="${basedir}/src"/>
   <property name="test.dir" value="${basedir}/test"/>
-	
+
   <!-- Loads custom properties definitions -->
   <property file="${basedir}/build.properties"/>
 
   <!-- Additional command line arguments for scalac. They are added to all build targets -->
   <property name="scalac.args" value=""/>
   <property name="javac.args" value=""/>
+
   <!-- Sets location of pre-compiled libraries -->
   <property name="lib.starr.jar" value="${lib.dir}/scala-library.jar"/>
   <property name="comp.starr.jar" value="${lib.dir}/scala-compiler.jar"/>
@@ -176,7 +177,7 @@ LOCAL REFERENCE BUILD (LOCKER)
       includes="**/*.java"
       target="1.5" source="1.5">
     	<compilerarg line="${javac.args}"/>
-  	</javac>
+    </javac>
     <sabmake id="starr.lib.scalac"
       destdir="${build-locker.dir}/classes/library"
       compilerpathref="starr.classpath"
@@ -644,7 +645,7 @@ BOOTSTRAPPING BUILD (STRAP)
       includes="**/*.java"
       target="1.5" source="1.5">
       <compilerarg line="${javac.args}"/>
-     </javac>
+    </javac>
     <javac
       srcdir="${src.dir}/actors"
       destdir="${build-strap.dir}/classes/library"
@@ -652,7 +653,7 @@ BOOTSTRAPPING BUILD (STRAP)
       includes="**/*.java"
       target="1.5" source="1.5">
       <compilerarg line="${javac.args}"/>
-     </javac>
+    </javac>
     <scalac
       srcdir="${src.dir}/library"
       destdir="${build-strap.dir}/classes/library"
