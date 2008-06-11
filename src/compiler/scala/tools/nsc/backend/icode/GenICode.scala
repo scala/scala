@@ -1053,7 +1053,7 @@ abstract class GenICode extends SubComponent  {
     private def genLoadQualifier(tree: Tree, ctx: Context): Context =
       tree match {
         case Select(qualifier, _) =>
-          genLoad(qualifier, ctx, ANY_REF_CLASS) // !!
+          genLoad(qualifier, ctx, toTypeKind(qualifier.tpe))
         case _ =>
           abort("Unknown qualifier " + tree)
       }

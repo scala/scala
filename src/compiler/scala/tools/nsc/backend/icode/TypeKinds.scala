@@ -412,7 +412,11 @@ trait TypeKinds { self: ICodes =>
 
   /** Return the TypeKind of the given type */
   def toTypeKind(t: Type): TypeKind = t.normalize match {
-    case ThisType(sym) => REFERENCE(sym)
+    case ThisType(sym) =>
+      if (sym == definitions.ArrayClass)
+        AnyRefReference
+      else
+        REFERENCE(sym)
 
     case SingleType(pre, sym) =>
       primitiveTypeMap get sym match {
@@ -426,17 +430,7 @@ trait TypeKinds { self: ICodes =>
     case TypeRef(_, sym, args) =>
       primitiveTypeMap get sym match {
         case Some(k) => k
-        case None    =>
-          if (sym == definitions.ArrayClass)
-            ARRAY(toTypeKind(args.head))
-          else {
-            if (sym.isClass)
-              REFERENCE(sym)
-            else {
-              assert(sym.isType, sym) // it must be compiling Array[a]
-              AnyRefReference
-            }
-          }
+        case None    => arrayOrClassType(sym, args)
       }
 
     case ClassInfoType(_, _, sym) =>
@@ -457,6 +451,19 @@ trait TypeKinds { self: ICodes =>
 
     case _ =>
       abort("Unknown type: " + t)
+  }
+
+  /** Return the type kind of a class, possibly an array type.
+   */
+  private def arrayOrClassType(sym: Symbol, targs: List[Type]): TypeKind = {
+    if (sym == definitions.ArrayClass)
+      ARRAY(toTypeKind(targs.head))
+    else if (sym.isClass)
+        REFERENCE(sym)
+    else {
+      assert(sym.isType, sym) // it must be compiling Array[a]
+      AnyRefReference
+    }
   }
 
   /** A map from scala primitive Types to ICode TypeKinds */
