@@ -3398,9 +3398,16 @@ A type's typeSymbol should never be inspected directly.
       case (RefinedType(parents1, ref1), RefinedType(parents2, ref2)) =>
         def isSubScope(s1: Scope, s2: Scope): Boolean = s2.toList.forall {
           sym2 =>
-            val sym1 = s1.lookup(sym2.name)
-            sym1 != NoSymbol &&
-            sym1.info =:= sym2.info.substThis(sym2.owner, sym1.owner.thisType)
+            var e1 = s1.lookupEntry(sym2.name)
+            (e1 ne null) && {
+              val substSym = sym2.info.substThis(sym2.owner, e1.sym.owner.thisType)
+              var isEqual = e1.sym.info =:= substSym
+              while (!isEqual && (e1 ne null)) {
+                e1 = s1.lookupNextEntry(e1)
+                isEqual = e1.sym.info =:= substSym
+              }
+              isEqual
+            }
         }
         //Console.println("is same? " + tp1 + " " + tp2 + " " + tp1.typeSymbol.owner + " " + tp2.typeSymbol.owner)//DEBUG
         isSameTypes(parents1, parents2) && isSubScope(ref1, ref2) && isSubScope(ref2, ref1)
