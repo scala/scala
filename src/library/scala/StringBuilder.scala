@@ -15,8 +15,8 @@ import Predef._
 
 /** <p>
  *    A mutable sequence of characters.  This class provides an API compatible
- *    with <code>java.lang.StringBuilder</code>, but with no guarantee of
- *    synchronization.
+ *    with <a class="java/lang/StringBuilder" href="" target="_top">
+ *    <code>java.lang.StringBuilder</code></a>.
  *  </p>
  *
  *  @author Stephane Micheloud
