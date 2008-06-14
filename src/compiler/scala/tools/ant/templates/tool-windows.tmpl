@@ -26,6 +26,13 @@ if "%OS%"=="Windows_NT" (
 
 rem We use the value of the JAVACMD environment variable if defined
 set _JAVACMD=%JAVACMD%
+
+if "%_JAVACMD%" == "" (
+  if not %JAVA_HOME% == "" (
+    if exist %JAVA_HOME%\bin\java.exe set _JAVACMD="%JAVA_HOME%\bin\java.exe"
+  )
+)
+
 if "%_JAVACMD%"=="" set _JAVACMD=java
 
 rem We use the value of the JAVA_OPTS environment variable if defined

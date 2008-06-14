@@ -113,6 +113,10 @@ object fsc extends Command {
         "as part of the environment variable; spaces, quotation marks, " &
         "etc., will be passed directly to the shell for expansion."),
       Definition(
+        MBold("JAVA_HOME"),
+        "Specify JDK/JRE home directory. This directory is used to locate " &
+        "the " & MBold("java") & " command unless " & MBold("JAVACMD") & " variable set."),
+      Definition(
         MBold("JAVA_OPTS"),
         SeqPara(
           "Specify the options to be passed to the " & MBold("java") &
