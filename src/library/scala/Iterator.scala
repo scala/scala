@@ -62,7 +62,7 @@ object Iterator {
       private var i = start
       val end = if (start + length < xs.length) start + length else xs.length
       override def hasNext: Boolean = i < end
-      def next: a =
+      def next(): a =
         if (hasNext) { val x = xs(i) ; i += 1 ; x }
         else throw new NoSuchElementException("next on empty iterator")
 
@@ -189,7 +189,7 @@ object Iterator {
   def from(start: Int, step: Int => Int): Iterator[Int] = new Iterator[Int] {
     private var i = start
     override def hasNext: Boolean = true
-    def next: Int = { val j = i; i = step(i); j }
+    def next(): Int = { val j = i; i = step(i); j }
   }
 }
 
@@ -582,7 +582,7 @@ trait Iterator[+A] {
     private var cnt = -1
     def count = cnt
     def hasNext: Boolean = Iterator.this.hasNext
-    def next: A = { cnt += 1; Iterator.this.next }
+    def next(): A = { cnt += 1; Iterator.this.next }
   }
 
   /** Creates two new iterators that both iterate over the same elements
@@ -599,7 +599,7 @@ trait Iterator[+A] {
         ((this == ahead) && Iterator.this.hasNext) ||
         ((this != ahead) && (!xs.isEmpty || !ys.isEmpty || Iterator.this.hasNext))
       )
-      def next: A = Iterator.this.synchronized {
+      def next(): A = Iterator.this.synchronized {
         if (this == ahead) {
           val e = Iterator.this.next
           xs = e :: xs; e
