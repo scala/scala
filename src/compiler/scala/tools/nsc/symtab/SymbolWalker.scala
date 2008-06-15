@@ -180,7 +180,7 @@ trait SymbolWalker {
           f(dup)
         } else f(tree.ref)
       case tree : CompoundTypeTree =>
-        if (tree.tpe.typeSymbol.isRefinementClass) tree.tpe.typeSymbol.info match {
+        if (tree.tpe != null && tree.tpe.typeSymbol != null && tree.tpe.typeSymbol.isRefinementClass) tree.tpe.typeSymbol.info match {
         case tpe : RefinedType =>
           tpe.parents.zip(tree.templ.parents).foreach{
           case (tpe,tree) =>
