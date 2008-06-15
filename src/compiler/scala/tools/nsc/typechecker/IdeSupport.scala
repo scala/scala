@@ -355,7 +355,7 @@ trait IdeSupport extends Analyzer {
   trait StubTree extends global.StubTree {
     def underlying : MemoizedTree
     override var symbol : Symbol = NoSymbol
-    override def duplicate : this.type = throw new Error("not supported")
+    override def duplicate : this.type = this //throw new Error("not supported")
     override def isType = underlying.kind.isType
     override def isTerm = underlying.kind.isTerm
     override def isDef = underlying.kind.isDef
