@@ -148,11 +148,10 @@ trait Typers { self: Analyzer =>
     import context0.unit
 
     val infer = new Inferencer(context0) {
-      override def isCoercible(tp: Type, pt: Type): Boolean = (
+      override def isCoercible(tp: Type, pt: Type): Boolean =
         tp.isError || pt.isError ||
         context0.implicitsEnabled && // this condition prevents chains of views
         inferView(NoPosition, tp, pt, false) != EmptyTree
-      )
     }
 
     /**
@@ -1470,7 +1469,10 @@ trait Typers { self: Analyzer =>
                 fun match {
                   case etaExpansion(vparams, fn, args) if !codeExpected =>
                     silent(_.typed(fn, funMode(mode), pt)) match {
-                      case fn1: Tree =>
+                      case fn1: Tree if context.undetparams.isEmpty =>
+                        // if context,undetparams is not empty, the function was polymorphic,
+                        // so we need the missing arguments to infer its type. See #871
+                        //println("typing eta "+fun+":"+fn1.tpe+"/"+context.undetparams)
                         val ftpe = normalize(fn1.tpe) baseType FunctionClass(fun.vparams.length)
                         if (isFunctionType(ftpe) && isFullyDefined(ftpe))
                           return typedFunction(fun, mode, ftpe)

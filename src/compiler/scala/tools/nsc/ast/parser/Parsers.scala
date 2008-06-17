@@ -394,10 +394,15 @@ trait Parsers extends NewScanners with MarkupParsers {
     */
     def convertToParam(tree: Tree): ValDef =
       atPos(tree.pos) {
+        def removeAsPlaceholder(name: Name) {
+          placeholderParams = placeholderParams filter (_.name != name)
+        }
         tree match {
           case Ident(name) =>
+            removeAsPlaceholder(name)
             ValDef(Modifiers(Flags.PARAM), name, TypeTree(), EmptyTree)
           case Typed(tree @ Ident(name), tpe) if (tpe.isType) => // get the ident!
+            removeAsPlaceholder(name)
             ValDef(Modifiers(Flags.PARAM), name, tpe, EmptyTree).setPos(tree.pos)
           case _ =>
             syntaxError(tree.pos, "not a legal formal parameter", false)
@@ -919,7 +924,7 @@ trait Parsers extends NewScanners with MarkupParsers {
     }
 
 
-    /** Expr       ::= (Bindings | Id)  `=>' Expr
+    /** Expr       ::= (Bindings | Id | `_')  `=>' Expr
      *               | Expr1
      *  ResultExpr ::= (Bindings | Id `:' CompoundType) `=>' Block
      *               | Expr1
@@ -935,7 +940,7 @@ trait Parsers extends NewScanners with MarkupParsers {
      *               | PostfixExpr Ascription
      *               | PostfixExpr match `{' CaseClauses `}'
      *  Bindings   ::= `(' [Binding {`,' Binding}] `)'
-     *  Binding    ::= Id [`:' Type]
+     *  Binding    ::= (Id | `_') [`:' Type]
      *  Ascription ::= `:' CompoundType
      *               | `:' Annotation {Annotation}
      *               | `:' `_' `*'
@@ -957,7 +962,6 @@ trait Parsers extends NewScanners with MarkupParsers {
       var res = inToken match {
         case IF =>
           val pos = inSkipToken
-
           val cond = surround(LPAREN,RPAREN)(expr(),Literal(true))
           newLinesOpt()
           val thenp = expr()
@@ -2162,10 +2166,7 @@ trait Parsers extends NewScanners with MarkupParsers {
           if (mods.hasFlag(Flags.TRAIT)) (Modifiers(Flags.TRAIT), List())
           else (accessModifierOpt(), paramClauses(name, implicitClassViews, mods.hasFlag(Flags.CASE)))
         val thistpe = requiresTypeOpt()
-        var mods1 = mods
-        if (settings.Xexperimental.value) {
-          if (inToken == SUBTYPE) mods1 = mods | Flags.DEFERRED
-	}
+        var mods1 = if (inToken == SUBTYPE) mods | Flags.DEFERRED else mods
         var template = templateOpt(mods1, name, constrMods withAnnotations constrAnnots, vparamss)
         if (!thistpe.isEmpty) {
           if (template.self.isEmpty) {
@@ -2188,8 +2189,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       val name = ident().toTermName
       if (name != nme.ERROR) pos = namePos
       atPos(pos) {
-        var mods1 = mods
-        if (inToken == SUBTYPE) mods1 = mods | Flags.DEFERRED
+        val mods1 = if (inToken == SUBTYPE) mods | Flags.DEFERRED else mods
         val template = templateOpt(mods1, name, NoMods, List())
         ModuleDef(mods1, name, template)
       }
@@ -2254,7 +2254,7 @@ trait Parsers extends NewScanners with MarkupParsers {
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]]): Template = {
       val pos = inCurrentPos;
       val (parents0, argss, self, body) =
-        if (inToken == EXTENDS || inToken == SUBTYPE) {
+        if (inToken == EXTENDS || settings.Xexperimental.value && (mods hasFlag TRAIT) && inToken == SUBTYPE) {
           inNextToken
           template(mods hasFlag Flags.TRAIT)
         } else {

@@ -275,8 +275,8 @@ trait Symbols {
     def isVirtualClass =
       hasFlag(DEFERRED) && isClass
 
-    def isVirtualSubClass =
-      info.baseClasses exists (_.isVirtualClass)
+    def isVirtualTrait =
+      hasFlag(DEFERRED) && isTrait
 
     /** Is this symbol a public */
     final def isPublic: Boolean =
@@ -999,14 +999,16 @@ trait Symbols {
               if s != NoSymbol } yield s
       else List()
 
-    /** The virtual classes overridden by this virtual class (including `clazz' itself)
+    /** The virtual classes overridden by this virtual class (excluding `clazz' itself)
      *  Classes appear in linearization order (with superclasses before subclasses)
      */
     final def overriddenVirtuals: List[Symbol] =
-      this.owner.info.baseClasses
-        .map(_.info.decl(name))
-        .filter(_.isVirtualClass)
-        .reverse
+      if (isVirtualTrait && hasFlag(OVERRIDE))
+        this.owner.info.baseClasses.tail
+          .map(_.info.decl(name))
+          .filter(_.isVirtualTrait)
+          .reverse
+      else List()
 
     /** The symbol accessed by a super in the definition of this symbol when
      *  seen from class `base'. This symbol is always concrete.

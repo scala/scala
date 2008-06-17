@@ -1276,8 +1276,15 @@ sealed abstract class List[+A] extends Seq[A] {
    *  @return     this list without the elements of the given object
    *              <code>x</code>.
    */
-  def - [B >: A](x: B): List[B] =
-    this -- List(x)
+  def - [B >: A](x: B): List[B] = {
+    val b = new ListBuffer[B]
+    var these = this
+    while (!these.isEmpty) {
+      if (these.head != x) b += these.head
+      these = these.tail
+    }
+    b.toList
+  }
 
   /** Concatenate the elements of this list. The elements of this list
    *  should be a <code>Iterables</code>.

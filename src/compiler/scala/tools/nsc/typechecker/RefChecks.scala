@@ -62,6 +62,7 @@ abstract class RefChecks extends InfoTransform {
 
     var localTyper: analyzer.Typer = typer;
     var currentApplication: Tree = EmptyTree
+    var inPattern: Boolean = false
 
 // Override checking ------------------------------------------------------------
 
@@ -768,17 +769,18 @@ abstract class RefChecks extends InfoTransform {
           checkAllOverrides(currentOwner)
 
         case TypeTree() =>
-          new TypeTraverser {
-            def traverse(tp: Type): TypeTraverser = tp match {
-              case TypeRef(pre, sym, args) =>
-                checkDeprecated(sym, tree.pos)
-                if (!tp.isHigherKinded) checkBounds(pre, sym.owner, sym.typeParams, args)
-                this
-              case _ =>
-                this
-            }
-          } traverse tree.tpe
-
+          if (!inPattern) {
+            new TypeTraverser {
+              def traverse(tp: Type): TypeTraverser = tp match {
+                case TypeRef(pre, sym, args) =>
+                  checkDeprecated(sym, tree.pos)
+                  if (!tp.isHigherKinded) checkBounds(pre, sym.owner, sym.typeParams, args)
+                  this
+                case _ =>
+                  this
+              }
+            } traverse tree.tpe
+          }
         case TypeApply(fn, args) =>
           checkBounds(NoPrefix, NoSymbol, fn.tpe.typeParams, args map (_.tpe))
           if (sym.isSourceMethod && sym.hasFlag(CASE)) result = toConstructor(tree.pos, tree.tpe)
@@ -842,7 +844,15 @@ abstract class RefChecks extends InfoTransform {
           }
         case _ =>
       }
-      result = super.transform(result)
+      result = result match {
+        case CaseDef(pat, guard, body) =>
+          inPattern = true
+          val pat1 = transform(pat)
+          inPattern = false
+          copy.CaseDef(tree, pat1, transform(guard), transform(body))
+        case _ =>
+          super.transform(result)
+      }
       result match {
         case ClassDef(_, _, _, _)
            | TypeDef(_, _, _, _) =>

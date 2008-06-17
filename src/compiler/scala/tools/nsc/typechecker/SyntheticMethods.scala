@@ -120,7 +120,28 @@ trait SyntheticMethods { self: Analyzer =>
         Apply(gen.mkAttributedRef(target), This(clazz) :: (vparamss.head map Ident))))
     }
 
-    /** The equality method for case classes and modules:
+    def equalsSym =
+      syntheticMethod(nme.equals_, 0, MethodType(List(AnyClass.tpe), BooleanClass.tpe))
+
+    /** The equality method for case modules:
+     *   def equals(that: Any) = this eq that
+     */
+    def equalsModuleMethod: Tree = {
+      val method = equalsSym
+      val methodDef =
+        DefDef(method, vparamss =>
+          Apply(
+            Select(This(clazz), Object_eq),
+            List(
+              TypeApply(
+                Select(
+                  Ident(vparamss.head.head),
+                  Any_asInstanceOf),
+                List(TypeTree(AnyRefClass.tpe))))))
+      localTyper.typed(methodDef)
+    }
+
+    /** The equality method for case classes:
      *   def equals(that: Any) =
      *     that.isInstanceOf[AnyRef] &&
      *     ((this eq that.asInstanceOf[AnyRef]) ||
@@ -129,9 +150,8 @@ trait SyntheticMethods { self: Analyzer =>
      *       case _ => false
      *     }))
      */
-    def equalsMethod: Tree = {
-      val method = syntheticMethod(
-        nme.equals_, 0, MethodType(List(AnyClass.tpe), BooleanClass.tpe))
+    def equalsClassMethod: Tree = {
+      val method = equalsSym
       val methodDef =
         DefDef(
           method,
@@ -278,10 +298,14 @@ trait SyntheticMethods { self: Analyzer =>
           }
           if (clazz.isModuleClass) {
             if (!hasOverridingImplementation(Object_toString)) ts += moduleToStringMethod
+            // if there's a synthetic method in a parent case class, override its equality
+            // with eq (see #883)
+            val otherEquals = clazz.info.nonPrivateMember(Object_equals.name)
+            if (otherEquals.owner != clazz && (otherEquals hasFlag SYNTHETICMETH)) ts += equalsModuleMethod
           } else {
             if (!hasOverridingImplementation(Object_hashCode)) ts += forwardingMethod(nme.hashCode_)
             if (!hasOverridingImplementation(Object_toString)) ts += forwardingMethod(nme.toString_)
-            if (!hasOverridingImplementation(Object_equals)) ts += equalsMethod
+            if (!hasOverridingImplementation(Object_equals)) ts += equalsClassMethod
           }
 
           if (!hasOverridingImplementation(Product_productPrefix)) ts += productPrefixMethod

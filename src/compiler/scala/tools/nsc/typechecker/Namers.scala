@@ -347,7 +347,7 @@ trait Namers { self: Analyzer =>
                 setInfo(setter)(namerOf(setter).setterTypeCompleter(tree))
               }
               tree.symbol =
-                if ((mods.flags & DEFERRED) == 0) { // not deferred
+                if ((mods.flags & DEFERRED) == 0) {
                   var vsym =
                     if (!context.owner.isClass) {
                       assert((mods.flags & LAZY) != 0) // if not a field, it has to be a lazy val
@@ -534,14 +534,36 @@ trait Namers { self: Analyzer =>
       val decls = newClassScope(clazz)
       val templateNamer = newNamer(context.make(templ, clazz, decls))
         .enterSyms(templ.body)
-      // make subclasses of virtual classes virtual as well
-      if (parents exists (_.typeSymbol.isVirtualClass))
-        clazz setFlag DEFERRED
-      // add overridden virtuals to parents
-      if (clazz.isVirtualClass) {
-        parents = parents ::: ((clazz.overriddenVirtuals.filter(_ != clazz)) map (
-            sym => TypeRef(sym.owner.thisType, sym, clazz.typeParams map (_.tpe))))
+
+      /* add overridden virtuals to parents
+      val overridden = clazz.overriddenVirtuals
+      if (!overridden.isEmpty)
+        parents = parents ::: ( overridden map (
+          sym => TypeRef(clazz.owner.thisType, sym, clazz.typeParams map (_.tpe))))
+      println("Parents of "+clazz+":"+parents)
+
+      // check that virtual classses are only defined as members of templates
+      if (clazz.isVirtualClass && !clazz.owner.isClass)
+        context.error(
+          clazz.pos,
+          "virtual traits and their subclasses must be defined as members of some other class")
+
+      // make subclasses of virtual classes virtual as well; check that
+      // they are defined in same scope.
+      val virtualParents = parents map (_.typeSymbol) filter (_.isVirtualClass)
+      virtualParents find {
+        vp => !(clazz.owner.isClass && (clazz.owner isSubClass vp.owner))
+      } match {
+        case Some(vp) =>
+          context.error(
+            clazz.pos,
+            "subclass of virtual "+vp+
+            " needs to be defined at same level,\nas member of "+vp.owner)
+        case None =>
+          if (!virtualParents.isEmpty) clazz setFlag DEFERRED // make it virtual
       }
+	  */
+
       // add apply and unapply methods to companion objects of case classes,
       // unless they exist already
       Namers.this.caseClassOfModuleClass get clazz match {

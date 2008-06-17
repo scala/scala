@@ -19,6 +19,7 @@ class JLineReader extends InteractiveReader {
     }
     val r = new jline.ConsoleReader()
     r.setHistory(history)
+    r.setBellEnabled(false)
     r
   }
   def readLine(prompt: String) = consoleReader.readLine(prompt)

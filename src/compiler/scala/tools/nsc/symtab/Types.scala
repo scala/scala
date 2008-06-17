@@ -1911,6 +1911,7 @@ A type's typeSymbol should never be inspected directly.
   }
 
   def refinementOfClass(clazz: Symbol, parents: List[Type], decls: Scope) = {
+    assert(!parents.isEmpty)
     class RefinementOfClass extends RefinedType(parents, decls) {
       override def typeSymbol: Symbol = clazz
     }
@@ -3934,6 +3935,12 @@ A type's typeSymbol should never be inspected directly.
   /** Eliminate from list of types all elements which are a subtype
    *  of some other element of the list. */
   private def elimSub(ts: List[Type]): List[Type] = {
+    def elimAnonymousClass(t: Type) = t match {
+      case TypeRef(pre, clazz, List()) if clazz.isAnonymousClass =>
+        clazz.classBound.asSeenFrom(pre, clazz.owner)
+      case _ =>
+        t
+    }
     def elimSub0(ts: List[Type]): List[Type] = ts match {
       case List() => List()
       case t :: ts1 =>
@@ -3943,21 +3950,26 @@ A type's typeSymbol should never be inspected directly.
     val ts0 = elimSub0(ts)
     if (ts0.length <= 1) ts0
     else {
-      val ts1 = List.mapConserve(ts0)(_.underlying)
+      val ts1 = List.mapConserve(ts0)(t => elimAnonymousClass(t.underlying))
       if (ts1 eq ts0) ts0
       else elimSub(ts1)
     }
   }
 
-  private def stripExistentials(ts: List[Type]): (List[Type], List[Symbol]) = {
+  private def stripExistentialsAndTypeVars(ts: List[Type]): (List[Type], List[Symbol]) = {
     val quantified = ts flatMap {
       case ExistentialType(qs, _) => qs
       case t => List()
     }
-    val strippedTypes = List.mapConserve(ts) {
-      case ExistentialType(_, res) => res
+    def stripType(tp: Type) = tp match {
+      case ExistentialType(_, res) =>
+        res
+      case TypeVar(_, constr) =>
+        if ((constr.inst ne null) && (constr.inst ne NoType)) constr.inst
+        else throw new Error("trying to do lub/glb of typevar "+tp)
       case t => t
     }
+    val strippedTypes = List.mapConserve(ts)(stripType)
     (strippedTypes, quantified)
   }
 
@@ -3979,7 +3991,7 @@ A type's typeSymbol should never be inspected directly.
         assert(false)
         mkTypeBounds(glb(ts map (_.bounds.lo), depth), lub(ts map (_.bounds.hi), depth))
       case ts0 =>
-        val (ts, tparams) = stripExistentials(ts0)
+        val (ts, tparams) = stripExistentialsAndTypeVars(ts0)
         val closures: List[Array[Type]] = ts map (_.closure)
         val lubBaseTypes: Array[Type] = lubArray(closures, depth)
         val lubParents = spanningTypes(List.fromArray(lubBaseTypes))
@@ -4069,7 +4081,7 @@ A type's typeSymbol should never be inspected directly.
         mkTypeBounds(lub(ts map (_.bounds.lo), depth), glb(ts map (_.bounds.hi), depth))
       case ts0 =>
         try {
-          val (ts, tparams) = stripExistentials(ts0)
+          val (ts, tparams) = stripExistentialsAndTypeVars(ts0)
           val glbOwner = commonOwner(ts)
           def refinedToParents(t: Type): List[Type] = t match {
             case RefinedType(ps, _) => ps flatMap refinedToParents

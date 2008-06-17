@@ -757,6 +757,9 @@ trait Infer {
           kindErrors.toList.mkString("\n", ", ", ""))
       else if (!isWithinBounds(pre, owner, tparams, targs)) {
         if (!(targs exists (_.isErroneous)) && !(tparams exists (_.isErroneous))) {
+          //val bounds = instantiatedBounds(pre, owner, tparams, targs)//DEBUG
+          //println("bounds = "+bounds+", targs = "+targs+", targclasses = "+(targs map (_.getClass))+", parents = "+(targs map (_.parents)))
+          //println(List.map2(bounds, targs)((bound, targ) => bound containsType targ))
           error(pos,
                 prefix + "type arguments " + targs.mkString("[", ",", "]") +
                 " do not conform to " + tparams.head.owner + "'s type parameter bounds " +
@@ -1041,7 +1044,23 @@ trait Infer {
       } else { if (settings.debug.value) Console.println("not fuly defined: " + pt); instError }
     }
 
-    def instantiateTypeVar(tvar: TypeVar) = {
+    def instBounds(tvar: TypeVar): (Type, Type) = {
+      val tparam = tvar.origin.typeSymbol
+      val instType = toOrigin(tvar.constr.inst)
+      val (loBounds, hiBounds) =
+        if (instType != NoType && isFullyDefined(instType)) (List(instType), List(instType))
+        else (tvar.constr.lobounds, tvar.constr.hibounds)
+      val lo = lub(tparam.info.bounds.lo :: loBounds map toOrigin)
+      val hi = glb(tparam.info.bounds.hi :: hiBounds map toOrigin)
+      (lo, hi)
+    }
+
+    def isInstantiatable(tvar: TypeVar) = {
+      val (lo, hi) = instBounds(tvar)
+      lo <:< hi
+    }
+
+    def instantiateTypeVar(tvar: TypeVar) {
       val tparam = tvar.origin.typeSymbol
       if (false &&
           tvar.constr.inst != NoType &&
@@ -1052,20 +1071,17 @@ trait Infer {
         tparam resetFlag DEFERRED
         if (settings.debug.value) log("new alias of " + tparam + " = " + tparam.info)
       } else {
-        val instType = toOrigin(tvar.constr.inst)
-        val (loBounds, hiBounds) =
-          if (instType != NoType && isFullyDefined(instType)) (List(instType), List(instType))
-          else (tvar.constr.lobounds, tvar.constr.hibounds)
-        val lo = lub(tparam.info.bounds.lo :: loBounds map toOrigin)
-        val hi = glb(tparam.info.bounds.hi :: hiBounds map toOrigin)
-        if (!(lo <:< hi)) {
-          if (settings.debug.value) log("inconsistent: "+tparam+" "+lo+" "+hi)
-        } else if (!((lo <:< tparam.info.bounds.lo) && (tparam.info.bounds.hi <:< hi))) {
-          context.nextEnclosing(_.tree.isInstanceOf[CaseDef]).pushTypeBounds(tparam)
-          tparam setInfo mkTypeBounds(lo, hi)
-          if (settings.debug.value) log("new bounds of " + tparam + " = " + tparam.info)
+        val (lo, hi) = instBounds(tvar)
+        if (lo <:< hi) {
+          if (!((lo <:< tparam.info.bounds.lo) && (tparam.info.bounds.hi <:< hi))) {
+            context.nextEnclosing(_.tree.isInstanceOf[CaseDef]).pushTypeBounds(tparam)
+            tparam setInfo mkTypeBounds(lo, hi)
+            if (settings.debug.value) log("new bounds of " + tparam + " = " + tparam.info)
+          } else {
+            if (settings.debug.value) log("redundant: "+tparam+" "+tparam.info+"/"+lo+" "+hi)
+          }
         } else {
-          if (settings.debug.value) log("redundant: "+tparam+" "+tparam.info+"/"+lo+" "+hi)
+          if (settings.debug.value) log("inconsistent: "+tparam+" "+lo+" "+hi)
         }
       }
     }
@@ -1144,14 +1160,14 @@ trait Infer {
         if (settings.debug.value) log("free type params (1) = " + tpparams)
         var tvars = tpparams map freshVar
         var tp = pattp.instantiateTypeParams(tpparams, tvars)
-        if (!(tp <:< pt)) {
+        if (!((tp <:< pt) && (tvars forall isInstantiatable))) {
           tvars = tpparams map freshVar
           tp = pattp.instantiateTypeParams(tpparams, tvars)
           val ptparams = freeTypeParamsOfTerms.collect(pt)
           if (settings.debug.value) log("free type params (2) = " + ptparams)
           val ptvars = ptparams map freshVar
           val pt1 = pt.instantiateTypeParams(ptparams, ptvars)
-          if (!isPopulated(tp, pt1)) {
+          if (!(isPopulated(tp, pt1) && (tvars forall isInstantiatable) && (ptvars forall isInstantiatable))) {
             error(pos, "pattern type is incompatible with expected type"+foundReqMsg(pattp, pt))
             return pattp
           }
