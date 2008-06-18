@@ -2977,8 +2977,9 @@ trait Typers { self: Analyzer =>
               case Bind(_, _) =>
                 if (arg.symbol.isAbstractType)
                   arg.symbol setInfo // XXX, feedback. don't trackSymInfo here!
-                  TypeBounds(lub(List(arg.symbol.info.bounds.lo, tparam.info.bounds.lo)),
-                             glb(List(arg.symbol.info.bounds.hi, tparam.info.bounds.hi)))
+                    TypeBounds(
+                      lub(List(arg.symbol.info.bounds.lo, tparam.info.bounds.lo.subst(tparams, argtypes))),
+                      glb(List(arg.symbol.info.bounds.hi, tparam.info.bounds.hi.subst(tparams, argtypes))))
               case _ =>
             }}
             TypeTree(owntype) setOriginal(tree) // setPos tree.pos

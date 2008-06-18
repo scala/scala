@@ -1055,9 +1055,16 @@ trait Infer {
       (lo, hi)
     }
 
-    def isInstantiatable(tvar: TypeVar) = {
-      val (lo, hi) = instBounds(tvar)
-      lo <:< hi
+    def isInstantiatable(tvars: List[TypeVar]) = {
+      def cloneTypeVar(tv: TypeVar) = {
+        val tv1 = TypeVar(tv.origin, new TypeConstraint(tv.constr.lobounds, tv.constr.hibounds))
+        tv1.constr.inst = tv.constr.inst
+        tv1
+      }
+      val tvars1 = tvars map cloneTypeVar
+      // Note: right now it's not clear that solving is complete, or how it can be made complete!
+      // So we should come back to this and investigate.
+      solve(tvars1, tvars1 map (_.origin.typeSymbol), tvars1 map (x => COVARIANT), false)
     }
 
     def instantiateTypeVar(tvar: TypeVar) {
@@ -1160,14 +1167,17 @@ trait Infer {
         if (settings.debug.value) log("free type params (1) = " + tpparams)
         var tvars = tpparams map freshVar
         var tp = pattp.instantiateTypeParams(tpparams, tvars)
-        if (!((tp <:< pt) && (tvars forall isInstantiatable))) {
+        if (!((tp <:< pt) && isInstantiatable(tvars))) {
           tvars = tpparams map freshVar
           tp = pattp.instantiateTypeParams(tpparams, tvars)
           val ptparams = freeTypeParamsOfTerms.collect(pt)
           if (settings.debug.value) log("free type params (2) = " + ptparams)
           val ptvars = ptparams map freshVar
           val pt1 = pt.instantiateTypeParams(ptparams, ptvars)
-          if (!(isPopulated(tp, pt1) && (tvars forall isInstantiatable) && (ptvars forall isInstantiatable))) {
+          if (!(isPopulated(tp, pt1) && isInstantiatable(tvars ::: ptvars))) {
+            //println(tpparams)
+            //println(tvars map instBounds)
+            //println(ptvars map instBounds)
             error(pos, "pattern type is incompatible with expected type"+foundReqMsg(pattp, pt))
             return pattp
           }

@@ -3759,7 +3759,6 @@ A type's typeSymbol should never be inspected directly.
    *  @param variances  The variances of type parameters; need to reverse
    *                    solution direction for all contravariant variables.
    *  @param upper      When `true' search for max solution else min.
-   *  @throws NoInstance
    */
   def solve(tvars: List[TypeVar], tparams: List[Symbol],
             variances: List[Int], upper: Boolean): Boolean = {
