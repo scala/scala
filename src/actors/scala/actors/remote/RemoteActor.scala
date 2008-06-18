@@ -69,6 +69,7 @@ object RemoteActor {
 
   def createKernelOnPort(port: Int): NetKernel = {
     val serv = TcpService(port, cl)
+    Debug.info("created service at "+serv.node)
     val kern = serv.kernel
     val s = Actor.self
     kernels += Pair(s, kern)

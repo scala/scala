@@ -122,7 +122,12 @@ class TcpService(port: Int, cl: ClassLoader) extends Thread with Service {
 
   def terminate() {
     shouldTerminate = true
-    new Socket(internalNode.address, internalNode.port)
+    try {
+      new Socket(internalNode.address, internalNode.port)
+    } catch {
+      case ce: java.net.ConnectException =>
+        Debug.info(this+": caught "+ce)
+    }
   }
 
   private var shouldTerminate = false
