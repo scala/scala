@@ -142,23 +142,25 @@ trait Namers { self: Analyzer =>
       if (context.owner.isClass) context.owner == m.owner
       else context.scope == m.owner.info.decls
 
-    def enterInScope(sym: Symbol): Symbol = {
+    def enterInScope(sym: Symbol): Symbol = enterInScope(sym, context.scope)
+
+    def enterInScope(sym: Symbol, scope: Scope): Symbol = {
       // allow for overloaded methods
       if (!(sym.isSourceMethod && sym.owner.isClass && !sym.owner.isPackageClass)) {
-        var prev = context.scope.lookupEntryWithContext(sym.name)(context.owner);
+        var prev = scope.lookupEntryWithContext(sym.name)(context.owner);
         if ((prev ne null) && inIDE) {
           var guess = prev
-          while ((guess ne null) && (guess.sym ne sym)) guess = context.scope.lookupNextEntry(guess)
+          while ((guess ne null) && (guess.sym ne sym)) guess = scope.lookupNextEntry(guess)
           if (guess != null) prev = guess
           while (prev != null && (!prev.sym.hasRawInfo || !prev.sym.rawInfo.isComplete ||
                  (prev.sym.sourceFile == null && sym.getClass == prev.sym.getClass))) {
             if (!prev.sym.hasRawInfo ||  prev.sym.rawInfo.isComplete) {
               Console.println("DITCHING: " + prev.sym)
             }
-            context.scope unlink prev.sym
-            prev = context.scope.lookupNextEntry(prev)
+            scope unlink prev.sym
+            prev = scope.lookupNextEntry(prev)
           }
-          val sym0 = context.scope enter sym
+          val sym0 = scope enter sym
           if (sym0 ne sym) {
             assert(true)
             Console.println("WEIRD: " + sym0 + " vs. " + sym + " " + sym0.id + " " + sym.id + " " + sym.sourceFile + " " + sym0.sourceFile)
@@ -167,13 +169,13 @@ trait Namers { self: Analyzer =>
             doubleDefError(sym0.pos, prev.sym)
           }
           sym0
-        } else if ((prev ne null) && prev.owner == context.scope && conflict(sym, prev.sym)) {
+        } else if ((prev ne null) && prev.owner == scope && conflict(sym, prev.sym)) {
            doubleDefError(sym.pos, prev.sym)
            sym setInfo ErrorType // don't do this in IDE for stability
-           context.scope unlink prev.sym // let them co-exist...
-           context.scope enter sym
-        } else context.scope enter sym
-      } else context.scope enter sym
+           scope unlink prev.sym // let them co-exist...
+           scope enter sym
+        } else scope enter sym
+      } else scope enter sym
     }
 
     def enterPackageSymbol(pos: Position, name: Name): Symbol = {
@@ -189,7 +191,7 @@ trait Namers { self: Analyzer =>
         if (inIDE) assert(!pkg.moduleClass.hasRawInfo || !pkg.moduleClass.rawInfo.isComplete)
         pkg.moduleClass.setInfo(new PackageClassInfoType(newScope, pkg.moduleClass, null))
         pkg.setInfo(pkg.moduleClass.tpe)
-        enterInScope(pkg)
+        enterInScope(pkg, cscope)
       }
     }
 
