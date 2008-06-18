@@ -1484,10 +1484,12 @@ abstract class GenJVM extends SubComponent {
     }
 
     /** Calls to methods in 'sym' need invokeinterface? */
-    def needsInterfaceCall(sym: Symbol): Boolean =
+    def needsInterfaceCall(sym: Symbol): Boolean = {
+      sym.info // needed so that the type is up to date (erasure may add lateINTERFACE to traits)
       sym.hasFlag(Flags.INTERFACE) ||
       (sym.hasFlag(Flags.JAVA) &&
        sym.isNonBottomSubClass(definitions.ClassfileAnnotationClass))
+    }
 
 
     def javaType(t: TypeKind): JType = (t: @unchecked) match {
