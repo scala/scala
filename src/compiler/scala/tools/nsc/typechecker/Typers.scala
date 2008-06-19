@@ -3408,6 +3408,10 @@ trait Typers { self: Analyzer =>
         case PolyType(tparams, result) => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
         case _ => tp
       }
+      def stripped(tp: Type): Type = {
+        val tparams = freeTypeParamsOfTerms.collect(tp)
+        tp.subst(tparams, tparams map (t => WildcardType))
+      }
       def sum(xs: List[Int]) = (0 /: xs)(_ + _)
       def complexity(tp: Type): Int = tp.normalize match {
         case NoPrefix =>
@@ -3426,8 +3430,8 @@ trait Typers { self: Analyzer =>
         case (_, RefinedType(parents, _)) => parents exists (overlaps(tp1, _))
         case _ => tp1.typeSymbol == tp2.typeSymbol
       }
-      val dtor1 = core(dtor)
-      val dted1 = core(dted)
+      val dtor1 = stripped(core(dtor))
+      val dted1 = stripped(core(dted))
       overlaps(dtor1, dted1) && (dtor1 =:= dted1 || complexity(dtor1) > complexity(dted1))
     }
 
