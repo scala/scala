@@ -1247,6 +1247,13 @@ trait Infer {
         sym.isAbstractType && sym.owner.isTerm
     }
 
+    /** A traverser to collect type parameters referred to in a type
+     */
+    object freeTypeParametersNoSkolems extends SymCollector {
+      protected def includeCondition(sym: Symbol): Boolean =
+        sym.isTypeParameter && sym.owner.isTerm
+    }
+
     object typeRefs extends SymCollector {
       protected def includeCondition(sym: Symbol): Boolean = true
     }

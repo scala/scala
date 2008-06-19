@@ -3409,7 +3409,7 @@ trait Typers { self: Analyzer =>
         case _ => tp
       }
       def stripped(tp: Type): Type = {
-        val tparams = freeTypeParamsOfTerms.collect(tp)
+        val tparams = freeTypeParametersNoSkolems.collect(tp)
         tp.subst(tparams, tparams map (t => WildcardType))
       }
       def sum(xs: List[Int]) = (0 /: xs)(_ + _)
