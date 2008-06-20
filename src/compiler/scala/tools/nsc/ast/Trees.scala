@@ -31,14 +31,15 @@ trait Trees {
 
   // sub-components --------------------------------------------------
 
-  object treePrinters extends TreePrinters {
+  object treePrinters extends {
     val trees: Trees.this.type = Trees.this
-  }
+  } with TreePrinters
+
   val treePrinter = treePrinters.create()
 
-  object treeInfo extends TreeInfo {
+  object treeInfo extends {
     val trees: Trees.this.type = Trees.this
-  }
+  } with TreeInfo
 
   val copy = new LazyTreeCopier()
 

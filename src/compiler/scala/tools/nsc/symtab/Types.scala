@@ -98,9 +98,10 @@ trait Types {
    */
   var intersectionWitness = new HashMap[List[Type], Type]
 
-  private object gen extends TreeGen {
+  private object gen extends {
     val global : Types.this.type = Types.this
-  }
+  } with TreeGen
+
   import gen._
 
   // @M toString that is safe during debugging (does not normalize, ...)
