@@ -47,8 +47,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   //def this() = this(new Settings, new ConsoleReporter)
 
   // sub-components --------------------------------------------------
-  object nodePrinters extends NodePrinters {
+
+  object nodePrinters extends {
     val global: Global.this.type = Global.this
+  } with NodePrinters {
     infolevel = InfoLevel.Verbose
   }
   val nodeToString = nodePrinters.nodeToString

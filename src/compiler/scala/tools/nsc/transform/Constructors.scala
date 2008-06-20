@@ -107,7 +107,10 @@ abstract class Constructors extends Transform {
       // Should tree be moved in front of super constructor call?
       def canBeMoved(tree: Tree) = tree match {
         //todo: eliminate thisRefSeen
-        case ValDef(mods, _, _, _) => (mods hasFlag PRESUPER | PARAMACCESSOR) || !thisRefSeen
+        case ValDef(mods, _, _, _) =>
+//          if (!(mods hasFlag PRESUPER | PARAMACCESSOR) && !thisRefSeen)
+//            println("not moving forward in "+clazz+": "+tree)
+          (mods hasFlag PRESUPER | PARAMACCESSOR)// || !thisRefSeen
         case _ => false
       }
 
