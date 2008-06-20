@@ -26,22 +26,22 @@ package scala.collection.mutable
 class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with CloneableCollection {
   size0 = size0 + 1 // we do not use array(0)
 
-  protected def fixUp(as: Array[A], m: Int): Unit = {
+  protected def fixUp(as: Array[AnyRef], m: Int): Unit = {
     var k: Int = m
-    while ((k > 1) && (as(k / 2) < as(k))) {
+    while ((k > 1) && (as(k / 2).asInstanceOf[A] < as(k).asInstanceOf[A])) {
       swap(k, k / 2)
       k = k / 2
     }
   }
 
-  protected def fixDown(as: Array[A], m: Int, n: Int): Unit = {
+  protected def fixDown(as: Array[AnyRef], m: Int, n: Int): Unit = {
     var k: Int = m
     var loop: Boolean = true
     while (loop && (n >= 2 * k)) {
       var j = 2 * k
-      if ((j < n) && (as(j) < as(j + 1)))
+      if ((j < n) && (as(j).asInstanceOf[A] < as(j + 1).asInstanceOf[A]))
         j = j + 1;
-      if (!(as(k) < as(j)))
+      if (!(as(k).asInstanceOf[A] < as(j).asInstanceOf[A]))
         loop = false
       else {
         val h = as(k)
@@ -64,7 +64,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with CloneableCol
    */
   def +=(elem: A): Unit = {
     ensureSize(size0+1)
-    array(size0) = elem
+    array(size0) = elem.asInstanceOf[AnyRef]
     fixUp(array, size0)
     size0 = size0 + 1
   }
@@ -114,7 +114,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with CloneableCol
       size0 = size0 - 1
       swap(1, size0)
       fixDown(array, 1, size0 - 1)
-      array(size0)
+      array(size0).asInstanceOf[A]
     } else
       throw new NoSuchElementException("no element to remove from heap")
 
@@ -123,7 +123,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with CloneableCol
    *
    *  @return   the element with the highest priority.
    */
-  def max: A = if (size0 > 1) array(1) else throw new NoSuchElementException("queue is empty")
+  def max: A = if (size0 > 1) array(1).asInstanceOf[A] else throw new NoSuchElementException("queue is empty")
 
   /** Removes all elements from the queue. After this operation is completed,
    *  the queue will be empty.
@@ -136,12 +136,12 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with CloneableCol
    *  @return  an iterator over all elements sorted in descending order.
    */
   override def elements: Iterator[A] = new Iterator[A] {
-    val as: Array[A] = new Array[A](size0)
+    val as: Array[AnyRef] = new Array[AnyRef](size0)
     Array.copy(array, 0, as, 0, size0)
     var i = size0 - 1
     def hasNext: Boolean = i > 0
     def next(): A = {
-      val res = as(1)
+      val res = as(1).asInstanceOf[A]
       as(1) = as(i)
       i = i - 1
       fixDown(as, 1, i)

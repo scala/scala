@@ -23,7 +23,7 @@ import Predef._
 trait ResizableArray[A] extends RandomAccessSeq[A] {
 
   protected def initialSize: Int = 16
-  protected var array: Array[A] = new Array[A](initialSize)
+  protected var array: Array[AnyRef] = new Array[AnyRef](initialSize)
   private var size1: Int = 0
   protected def size0: Int = size1
   protected def size0_=(sz: Int) { size1 = sz }
@@ -35,7 +35,7 @@ trait ResizableArray[A] extends RandomAccessSeq[A] {
    */
   def length: Int = size0
 
-  def apply(i: Int) = array(i)
+  def apply(i: Int) = array(i).asInstanceOf[A]
 
   /** remove elements of this array at indices after <code>sz</code>
    */
@@ -58,7 +58,7 @@ trait ResizableArray[A] extends RandomAccessSeq[A] {
    *  @param   The buffer to which elements are copied
    */
   override def copyToBuffer[B >: A](dest: Buffer[B]) {
-    dest.++=(array.asInstanceOf[Array[B]], 0, size0)
+    dest.++=(runtime.ScalaRunTime.boxArray(array).asInstanceOf[Array[B]], 0, size0)
   }
 
   /** Returns a new iterator over all elements of this resizable array.
@@ -66,7 +66,7 @@ trait ResizableArray[A] extends RandomAccessSeq[A] {
   override def elements: Iterator[A] = new Iterator[A] {
     var i = 0
     def hasNext: Boolean = i < size0
-    def next(): A = { i = i + 1; array(i - 1) }
+    def next(): A = { i = i + 1; array(i - 1).asInstanceOf[A] }
   }
 
   //##########################################################################
@@ -77,7 +77,7 @@ trait ResizableArray[A] extends RandomAccessSeq[A] {
       var newsize = array.length * 2
       while (n > newsize)
         newsize = newsize * 2
-      val newar: Array[A] = new Array(newsize)
+      val newar: Array[AnyRef] = new Array(newsize)
       Array.copy(array, 0, newar, 0, size0)
       array = newar
     }

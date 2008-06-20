@@ -31,7 +31,7 @@ class ArrayBuffer[A] extends RandomAccessSeq.Mutable[A] with Buffer[A] with Resi
    */
   def +=(elem: A) {
     ensureSize(size0 + 1)
-    array(size0) = elem
+    array(size0) = elem.asInstanceOf[AnyRef]
     size0 += 1
   }
 
@@ -73,7 +73,7 @@ class ArrayBuffer[A] extends RandomAccessSeq.Mutable[A] with Buffer[A] with Resi
   def +:(elem: A): Buffer[A] = {
     ensureSize(size0 + 1)
     copy(0, 1, size0)
-    array(0) = elem
+    array(0) = elem.asInstanceOf[AnyRef]
     size0 += 1
     this
   }
@@ -88,7 +88,7 @@ class ArrayBuffer[A] extends RandomAccessSeq.Mutable[A] with Buffer[A] with Resi
     if ((i < 0) || (i >= size0))
       throw new IndexOutOfBoundsException(i.toString())
     else
-      array(i)
+      array(i).asInstanceOf[A]
   }
 
   /** Prepends a number of elements provided by an iterable object
@@ -115,7 +115,7 @@ class ArrayBuffer[A] extends RandomAccessSeq.Mutable[A] with Buffer[A] with Resi
     val len = xs.length
     ensureSize(size0 + len)
     copy(n, n + len, size0 - n)
-    xs.copyToArray(array, n)
+    xs.copyToArray(array.asInstanceOf[Array[Any]], n)
     size0 += len
   }
 
@@ -130,8 +130,8 @@ class ArrayBuffer[A] extends RandomAccessSeq.Mutable[A] with Buffer[A] with Resi
     if ((n < 0) || (n >= size0))
       throw new IndexOutOfBoundsException("cannot update element at " + n)
     else {
-      val res = array(n)
-      array(n) = newelem
+      val res = array(n).asInstanceOf[A]
+      array(n) = newelem.asInstanceOf[AnyRef]
       res
     }
   }
@@ -146,7 +146,7 @@ class ArrayBuffer[A] extends RandomAccessSeq.Mutable[A] with Buffer[A] with Resi
   def remove(n: Int): A = {
     if ((n < 0) || (n >= size0))
       throw new IndexOutOfBoundsException("cannot remove element at " + n);
-    val res = array(n)
+    val res = array(n).asInstanceOf[A]
     copy(n + 1, n, size0 - n - 1)
     size0 -= 1
     res
