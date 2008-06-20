@@ -10,6 +10,9 @@ import scala.collection.mutable.ListBuffer
 import symtab.Flags._
 import util.TreeSet
 
+/** This phase converts classes with parameters into Java-like classes with
+ *  fields, which are assigned to from constructors.
+ */
 abstract class Constructors extends Transform {
   import global._
   import definitions._
@@ -24,12 +27,14 @@ abstract class Constructors extends Transform {
   class ConstructorTransformer extends Transformer {
 
     def transformClassTemplate(impl: Template): Template = {
-      val clazz = impl.symbol.owner
-      val stats = impl.body
+      val clazz = impl.symbol.owner  // the transformed class
+      val stats = impl.body          // the transformed template body
       val localTyper = typer.atOwner(impl, clazz)
-      var constr: DefDef = null
-      var constrParams: List[Symbol] = null
-      var constrBody: Block = null
+
+      var constr: DefDef = null      // The primary constructor
+      var constrParams: List[Symbol] = null // ... and its parameters
+      var constrBody: Block = null   // ... and its body
+
       // decompose primary constructor into the three entities above.
       for (stat <- stats) {
         stat match {
@@ -44,11 +49,15 @@ abstract class Constructors extends Transform {
       }
       assert((constr ne null) && (constrBody ne null), impl)
 
+      // The parameter accessor fields which are members of the class
       val paramAccessors = clazz.constrParamAccessors
 
+      // The constructor parameter corresponding to an accessor
       def parameter(acc: Symbol): Symbol =
         parameterNamed(nme.getterName(acc.originalName))
 
+      // The constructor parameter with given name. This means the parameter
+      // has given name, or starts with given name, and continues with a `$' afterwards.
       def parameterNamed(name: Name): Symbol = {
         def matchesName(param: Symbol) =
           param.name == name ||
@@ -60,9 +69,12 @@ abstract class Constructors extends Transform {
 
       var thisRefSeen: Boolean = false
 
+      // A transformer for expressions that go into the constructor
       val intoConstructorTransformer = new Transformer {
         override def transform(tree: Tree): Tree = tree match {
           case Apply(Select(This(_), _), List()) =>
+            // references to parameter accessor methods of own class become references to parameters
+            // outer accessors become references to $outer parameter
             if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz)
               gen.mkAttributedIdent(parameter(tree.symbol.accessed)) setPos tree.pos
             else if (tree.symbol.outerSource == clazz && !clazz.isImplClass)
@@ -71,6 +83,7 @@ abstract class Constructors extends Transform {
               super.transform(tree)
           case Select(This(_), _)
           if ((tree.symbol hasFlag PARAMACCESSOR) && !tree.symbol.isSetter && tree.symbol.owner == clazz) =>
+            // references to parameter accessor field of own class become references to parameters
             gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos
           case Select(_, _) =>
             thisRefSeen = true
@@ -86,62 +99,76 @@ abstract class Constructors extends Transform {
         }
       }
 
+      // Move tree into constructor, take care of changing owner from `oldowner' to constructor symbol
       def intoConstructor(oldowner: Symbol, tree: Tree) =
         intoConstructorTransformer.transform(
           new ChangeOwnerTraverser(oldowner, constr.symbol)(tree))
 
+      // Should tree be moved in front of super constructor call?
       def canBeMoved(tree: Tree) = tree match {
         //todo: eliminate thisRefSeen
         case ValDef(mods, _, _, _) => (mods hasFlag PRESUPER | PARAMACCESSOR) || !thisRefSeen
         case _ => false
       }
 
+      // Create an assignment to class field `to' with rhs `from'
       def mkAssign(to: Symbol, from: Tree): Tree =
-        atPos(to.pos) {
-          localTyper.typed {
+        localTyper.typed {
+          atPos(to.pos) {
             Assign(Select(This(clazz), to), from)
           }
         }
 
+      // Create code to copy parameter to parameter accessor field.
+      // If parameter is $outer, check that it is not null.
       def copyParam(to: Symbol, from: Symbol): Tree = {
         var result = mkAssign(to, Ident(from))
         if (from.name == nme.OUTER)
           result =
             atPos(to.pos) {
               localTyper.typed {
-                If(Apply(Select(Ident(from), nme.eq), List(Literal(Constant(null)))),
-                   Throw(New(TypeTree(NullPointerExceptionClass.tpe), List(List()))),
-                   result);
+                If(
+                  Apply(
+                    Select(Ident(from), nme.eq),
+                    List(Literal(Constant(null)))),
+                  Throw(New(TypeTree(NullPointerExceptionClass.tpe), List(List()))),
+                  result)
               }
             }
         result
       }
 
+      // The list of definitions that go into class
       val defBuf = new ListBuffer[Tree]
+
+      // The list of statements that go into constructor after superclass constructor call
       val constrStatBuf = new ListBuffer[Tree]
+
+      // The list of statements that go into constructor before superclass constructor call
       val constrPrefixBuf = new ListBuffer[Tree]
+
+      // The early initialized field definitions of the class (these are the class members)
       val presupers = treeInfo.preSuperFields(stats)
+
+      // generate code to copy pre-initialized fields
       for (stat <- constrBody.stats) {
         constrStatBuf += stat
         stat match {
           case ValDef(mods, name, _, _) if (mods hasFlag PRESUPER) =>
-            constrStatBuf +=
-              localTyper.typed {
-                atPos(stat.pos) {
-                  val fields = presupers filter (
-                    vdef => nme.localToGetter(vdef.name) == name)
-                  assert(fields.length == 1)
-                  Assign(
-                    gen.mkAttributedRef(clazz.thisType, fields.head.symbol),
-                    Ident(stat.symbol))
-                }
-              }
+            // stat is the constructor-local definition of the field value
+            val fields = presupers filter (
+              vdef => nme.localToGetter(vdef.name) == name)
+            assert(fields.length == 1)
+            constrStatBuf += mkAssign(fields.head.symbol, Ident(stat.symbol))
           case _ =>
         }
       }
 
+      // Triage all template definitions to go into defBuf, constrStatBuf, or constrPrefixBuf.
       for (stat <- stats) stat match {
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+          // methods with constant result type get literals as their body
+          // all methods except the primary constructor go into template
           stat.symbol.tpe match {
             case MethodType(List(), tp @ ConstantType(c)) =>
               defBuf += copy.DefDef(
@@ -151,39 +178,50 @@ abstract class Constructors extends Transform {
               if (!stat.symbol.isPrimaryConstructor) defBuf += stat
           }
         case ValDef(mods, name, tpt, rhs) =>
+          // val defs with constant right-hand sides are eliminated.
+          // for all other val defs, an empty valdef goes into the template and
+          // the initializer goes as an assignment into th constructor
+          // if the val def is an early initialized or a parameter accessor, it goes
+          // before the superclass constructor call, otherwise it goes after.
           if (!stat.symbol.tpe.isInstanceOf[ConstantType]) {
-           try {
             if (rhs != EmptyTree && !stat.symbol.hasFlag(LAZY)) {
               val rhs1 = intoConstructor(stat.symbol, rhs);
               (if (canBeMoved(stat)) constrPrefixBuf else constrStatBuf) += mkAssign(
                 stat.symbol, rhs1)
             }
             defBuf += copy.ValDef(stat, mods, name, tpt, EmptyTree)
-           } catch {
-             case ex: Throwable =>
-               println("error when transforming "+stat+" in "+stats)
-               throw ex
-           }
           }
         case ClassDef(_, _, _, _) =>
+          // classes are treated recursively, and left in the template
           defBuf += (new ConstructorTransformer).transform(stat)
         case _ =>
+          // all other statements go into the constructor
           constrStatBuf += intoConstructor(impl.symbol, stat)
       }
 
+      // ----------- avoid making fields for symbols that are not accessed --------------
+
+      // A sorted set of symbols that are known to be accessed outside the primary constructor.
       val accessedSyms = new TreeSet[Symbol]((x, y) => x isLess y)
 
-	  /** list of outer accessor symbols and their bodies */
+      // a list of outer accessor symbols and their bodies
       var outerAccessors: List[(Symbol, Tree)] = List()
 
-      /** Is symbol known to be accessed outside of the primary constructor,
-       *  or is it a symbol whose definition cannot be omitted anyway? */
-      def isAccessed(sym: Symbol) =
-        sym.owner != clazz ||
-        !((sym hasFlag PARAMACCESSOR) && sym.isPrivateLocal ||
-          sym.isOuterAccessor && sym.owner == clazz && sym.owner.isFinal && sym.allOverriddenSymbols.isEmpty) ||
-        (accessedSyms contains sym)
+      // Could symbol's definition be omitted, provided it is not accessed?
+      // This is the case if the symbol is defined in the current class, and
+      // ( the symbol is an object private parameter accessor field, or
+      //   the symbol is an outer accessor of a final class which does not override another outer accesser. )
+      def maybeOmittable(sym: Symbol) =
+        (sym.owner == clazz &&
+         ((sym hasFlag PARAMACCESSOR) && sym.isPrivateLocal ||
+          sym.isOuterAccessor && sym.owner.isFinal && sym.allOverriddenSymbols.isEmpty))
 
+      // Is symbol known to be accessed outside of the primary constructor,
+      // or is it a symbol whose definition cannot be omitted anyway?
+      def mustbeKept(sym: Symbol) =
+        !maybeOmittable(sym) || (accessedSyms contains sym)
+
+      // A traverser to set accessedSyms and outerAccessors
       val accessTraverser = new Traverser {
         override def traverse(tree: Tree) = {
           tree match {
@@ -191,7 +229,7 @@ abstract class Constructors extends Transform {
             if (tree.symbol.isOuterAccessor && tree.symbol.owner == clazz && clazz.isFinal) =>
               outerAccessors ::= (tree.symbol, body)
             case Select(_, _) =>
-              if (!isAccessed(tree.symbol)) accessedSyms addEntry tree.symbol
+              if (!mustbeKept(tree.symbol)) accessedSyms addEntry tree.symbol
               super.traverse(tree)
             case _ =>
               super.traverse(tree)
@@ -199,19 +237,21 @@ abstract class Constructors extends Transform {
         }
       }
 
-	  // first traverse all definitions except outeraccesors
-	  // (outeraccessors are avoided in accessTraverser)
+      // first traverse all definitions except outeraccesors
+      // (outeraccessors are avoided in accessTraverser)
       for (stat <- defBuf.elements) accessTraverser.traverse(stat)
 
       // then traverse all bodies of outeraccessors which are accessed themselves
       // note: this relies on the fact that an outer accessor never calls another
       // outer accessor in the same class.
       for ((accSym, accBody) <- outerAccessors)
-        if (isAccessed(accSym)) accessTraverser.traverse(accBody)
+        if (mustbeKept(accSym)) accessTraverser.traverse(accBody)
 
-      val paramInits = for (acc <- paramAccessors if isAccessed(acc))
+      // Initialize all parameters fields that must be kept.
+      val paramInits = for (acc <- paramAccessors if mustbeKept(acc))
                        yield copyParam(acc, parameter(acc))
 
+      // Assemble final constructor
       defBuf += copy.DefDef(
         constr, constr.mods, constr.name, constr.tparams, constr.vparamss, constr.tpt,
         copy.Block(
@@ -219,12 +259,14 @@ abstract class Constructors extends Transform {
           paramInits ::: constrPrefixBuf.toList ::: constrStatBuf.toList,
           constrBody.expr));
 
+      // Unlink all fields that can be dropped from class scope
       for (sym <- clazz.info.decls.toList)
-        if (!isAccessed(sym)) clazz.info.decls unlink sym
+        if (!mustbeKept(sym)) clazz.info.decls unlink sym
 
+      // Eliminate all field definitions that can be dropped from template
       copy.Template(impl, impl.parents, impl.self,
-                    defBuf.toList filter (stat => isAccessed(stat.symbol)))
-    }
+                    defBuf.toList filter (stat => mustbeKept(stat.symbol)))
+    } // transformClassTemplate
 
     override def transform(tree: Tree): Tree =
       tree match {

@@ -6,13 +6,13 @@ class Outer {
     val x = 10;
   }
 
-  class X extends AnyRef with M1 {
+  class X extends {
     /* The constructor of X should set this.$outer to the outer instance
      * *before* calling the super constructors. This is tested by
      * mixin M1, which tries to access global from the enclosing class.
      */
-    val outer = Outer.this;
-  }
+    val outer = Outer.this
+  } with AnyRef with M1
 
   trait M1 { self: X =>
     Console.println(global.x);

@@ -117,7 +117,7 @@ object Foo2 {
       val command = new CompilerCommand(List.fromArray(args), docSettings, error, false)
       try {
         object compiler extends Global(command.settings, reporter) {
-	  override val onlyPresentation = true
+	  override def onlyPresentation = true
 	}
         if (reporter.hasErrors) {
           reporter.flush()
