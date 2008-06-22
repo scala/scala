@@ -27,9 +27,9 @@ if "%OS%"=="Windows_NT" (
 rem We use the value of the JAVACMD environment variable if defined
 set _JAVACMD=%JAVACMD%
 
-if "%_JAVACMD%" == "" (
-  if not %JAVA_HOME% == "" (
-    if exist %JAVA_HOME%\bin\java.exe set _JAVACMD="%JAVA_HOME%\bin\java.exe"
+if "%_JAVACMD%"=="" (
+  if not "%JAVA_HOME%"=="" (
+    if exist "%JAVA_HOME%\bin\java.exe" set _JAVACMD=%JAVA_HOME%\bin\java.exe
   )
 )
 
@@ -49,8 +49,8 @@ if "%_TOOL_CLASSPATH%"=="" (
 
 set _PROPS=-Dscala.home="%_SCALA_HOME%" -Denv.classpath="%CLASSPATH%" -Denv.emacs="%EMACS%" @properties@
 
-rem echo %_JAVACMD% %_JAVA_OPTS% %_PROPS% -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %_ARGS%
-%_JAVACMD% %_JAVA_OPTS% %_PROPS% -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %_ARGS%
+rem echo "%_JAVACMD%" %_JAVA_OPTS% %_PROPS% -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %_ARGS%
+"%_JAVACMD%" %_JAVA_OPTS% %_PROPS% -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %_ARGS%
 goto end
 
 rem ##########################################################################
