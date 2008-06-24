@@ -568,7 +568,7 @@ class Scaladoc extends MatchingTask {
 
     // Compiles the actual code
     val compiler = new Global(commandSettings, reporter) {
-      override val onlyPresentation = true
+      override def onlyPresentation = true
     }
     try {
       val run = new compiler.Run
