@@ -54,14 +54,14 @@ object parseFromURL {
 </pre>
  */
 class ConstructingParser(inp: Source, presWS:Boolean)
-extends  ConstructingHandler
-with     ExternalSources
-with     MarkupParser  {
+extends { val input = inp }
+with ConstructingHandler
+with ExternalSources
+with MarkupParser  {
 
   // default impl. of Logged
   override def log(msg: String): Unit = {}
 
   val preserveWS = presWS
-  val input = inp
 }
 
