@@ -8,8 +8,6 @@ package scala.tools.nsc
 
 import java.io.{BufferedReader, File, InputStreamReader, PrintWriter}
 
-import scala.tools.util.StringOps
-
 /** The client part of the fsc offline compiler.  Instead of compiling
  *  things itself, it send requests to a CompileServer.
  */
@@ -39,12 +37,12 @@ class StandardCompileClient {
   val fileEnding = Properties.fileEndingString
 
   protected def normalize(args: Array[String]): (String, String) = {
-    var i = 0
+     var i = 0
     val vmArgs = new StringBuilder
     var serverAdr = ""
     while (i < args.length) {
       val arg = args(i)
-      if (arg endsWith fileEnding) {
+      if (fileEnding split ("\\|") exists (arg endsWith _)) {
         args(i) = absFileName(arg)
       } else if (arg startsWith "-J") {
         //see http://java.sun.com/j2se/1.5.0/docs/tooldocs/solaris/javac.html#J

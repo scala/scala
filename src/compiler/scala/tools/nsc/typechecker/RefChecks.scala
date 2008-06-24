@@ -186,9 +186,12 @@ abstract class RefChecks extends InfoTransform {
           overrideError("cannot override a mutable variable")
         } else if (other.isStable && !member.isStable) { // (1.4)
           overrideError("needs to be an immutable value")
-//        } else if (other.isStable && !other.isDeferred && other.owner.isTrait && (member hasFlag OVERRIDE)) {
-//          overrideError("cannot override a value or variable definition in a trait " +
-//                        "\n (this is an implementation restriction)")
+        } else if (member.isValue && (member hasFlag LAZY) &&
+                   other.isValue && !other.isSourceMethod && !other.isDeferred && !(other hasFlag LAZY)) {
+          overrideError("cannot override a concrete non-lazy value")
+        } else if (other.isValue && (other hasFlag LAZY) && !other.isSourceMethod && !other.isDeferred &&
+                   member.isValue && !(member hasFlag LAZY)) {
+          overrideError("must be declared lazy to override a concrete lazy value")
         } else {
           if (other.isAliasType) {
             //if (!member.typeParams.isEmpty) // (1.5)  @MAT

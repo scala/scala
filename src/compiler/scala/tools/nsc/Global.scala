@@ -225,9 +225,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     getSourceFile(ret.sourceFile)
   }
 
-  val loaders : SymbolLoaders { val global : Global.this.type } = new SymbolLoaders {//change?
-    lazy val global: Global.this.type = Global.this
-  }
+  lazy val loaders : SymbolLoaders { val global : Global.this.type } = new {
+    val global: Global.this.type = Global.this
+  } with SymbolLoaders
 
   def rootLoader: LazyType =
     if (forMSIL) new loaders.NamespaceLoader(classPath.root)

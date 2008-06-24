@@ -23,8 +23,9 @@ trait IdeSupport extends Global with symtab.IdeSupport {
     normalCompile(run.compileSources(source :: Nil))
     run.units.find(unit => unit.source == source)
   }
-  object loaders1 extends scala.tools.nsc.symtab.SymbolLoaders {
-    lazy val global : IdeSupport.this.type = IdeSupport.this
+  object loaders1 extends {
+    val global : IdeSupport.this.type = IdeSupport.this
+  } with scala.tools.nsc.symtab.SymbolLoaders {
     import global._
     protected override def completeClassfile(root : global.Symbol, loader : ClassfileLoader)(f : => Unit) : Unit =
       global.normalCompile(f)

@@ -331,7 +331,8 @@ trait Typers { self: Analyzer =>
     }
 
     def checkRegPatOK(pos: Position, mode: Int) =
-      if ((mode & REGPATmode) == 0)
+      if ((mode & REGPATmode) == 0 &&
+          phase.id <= currentRun.typerPhase.id) // fixes t1059
         error(pos, "no regular expression pattern allowed here\n"+
               "(regular expression patterns are only allowed in arguments to *-parameters)")
 

@@ -50,6 +50,8 @@ extends CompilerCommand(allargs, settings, error, false)
     }
   }
 
+  processArguments()
+
   override def usageMsg = {
     cmdName + " [ <option> ]... [<torun> <arguments>]\n" +
     "\n" +
