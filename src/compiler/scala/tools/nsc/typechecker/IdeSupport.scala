@@ -120,7 +120,13 @@ trait IdeSupport extends Analyzer {
       if (tree.tpe == null)
         tree.tpe = tree.underlying.updateTyper(this, mode, pt)
       tree
-    case tree => super.typed1(tree, mode, pt)
+    case tree =>
+      try {
+        super.typed1(tree, mode, pt)
+      } catch {
+        case e : TypeError => throw e
+        case e : Error => global.check(false, "tree: " + tree + " " + e); throw e
+      }
     }
   }
   private val toComplete = new scala.collection.jcl.LinkedHashSet[Symbol]

@@ -173,6 +173,14 @@ trait SymbolWalker {
           }
         }
         f(tree.tpt); fs(tree.args)
+
+      case tree : ExistentialTypeTree=>
+        if (tree.tpt.tpe == null) {
+          tree.tpt.tpe = tree.tpe
+        }
+
+        f(tree.tpt)
+        fs(tree.whereClauses)
       case tree : SingletonTypeTree =>
         if (tree.ref.tpe == null) {
           val dup = tree.ref.duplicate
@@ -224,7 +232,20 @@ trait SymbolWalker {
       case tree : Throw      => f(tree.expr);
       case tree : Try        => f(tree.block); fs(tree.catches); f(tree.finalizer);
       case tree : Alternative => fs(tree.trees);
-      case tree : TypeDef => f(tree.rhs); fs(tree.tparams)
+      case tree : TypeDef =>
+        assert(true)
+        (tree.tpe,sym) match {
+          case (null,sym : TypeSymbol) if (sym.rawInfo.isComplete) =>
+            if (tree.tparams.isEmpty) {
+              if (tree.rhs.tpe == null) tree.rhs.tpe = sym.info
+              f(tree.rhs)
+            } else {
+              val tree0 = AppliedTypeTree(tree.rhs, tree.tparams)
+              tree0.tpe = sym.info
+              f(tree0)
+            }
+          case _ => f(tree.rhs); fs(tree.tparams)
+        }
       case tree : DocDef     => f(tree.definition);
       case tree: Import => f(tree.expr)
       case _ =>

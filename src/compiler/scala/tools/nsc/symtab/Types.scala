@@ -62,6 +62,7 @@ trait Types {
   self: SymbolTable =>
   import definitions._
 
+
   //statistics
   var singletonClosureCount = 0
   var compoundClosureCount = 0
@@ -250,7 +251,7 @@ trait Types {
      */
     def narrow: Type =
       if (phase.erasedTypes) this
-      else refinedType(List(this), commonOwner(this), EmptyScope).narrow
+      else refinedType(List(this), commonOwner(this), EmptyScope, commonOwner(this).pos).narrow
 
     /** For a TypeBounds type, itself;
      *  for a reference denoting an abstract type, its bounds,
@@ -1920,14 +1921,17 @@ A type's typeSymbol should never be inspected directly.
   }
 
   /** the canonical creator for a refined type with a given scope */
-  def refinedType(parents: List[Type], owner: Symbol, decls: Scope): Type = {
+  def refinedType(parents: List[Type], owner: Symbol, decls: Scope, pos : Position): Type = {
     if (phase.erasedTypes)
       if (parents.isEmpty) ObjectClass.tpe else parents.head
     else {
-      val clazz = recycle(owner.newRefinementClass(if (inIDE) owner.pos else NoPosition))
-      val result = refinementOfClass(clazz, parents, decls)
-      clazz.setInfo(result)
-      result
+      val clazz = recycle(owner.newRefinementClass(if (inIDE) pos else NoPosition))
+      if (!inIDE || !parents.isEmpty) {
+        val result = refinementOfClass(clazz, parents, decls)
+        clazz.setInfo(result)
+        result
+      } else clazz.info
+      //result
     }
   }
 
@@ -1938,7 +1942,7 @@ A type's typeSymbol should never be inspected directly.
    *  @return        ...
    */
   def refinedType(parents: List[Type], owner: Symbol): Type =
-    refinedType(parents, owner, newTempScope)
+    refinedType(parents, owner, newTempScope, owner.pos)
 
   def copyRefinedType(original: RefinedType, parents: List[Type], decls: Scope) =
     if ((parents eq original.parents) && (decls eq original.decls)) original
@@ -3135,7 +3139,7 @@ A type's typeSymbol should never be inspected directly.
       case RefinedType(parents, decls) =>
         val parents1 = List.mapConserve(parents)(this)
         if (parents1 eq parents) tp
-        else refinedType(parents1, tp.typeSymbol.owner, decls)
+        else refinedType(parents1, tp.typeSymbol.owner, decls, tp.typeSymbol.owner.pos)
       case SuperType(_, _) => mapOver(tp)
       case TypeBounds(_, _) => mapOver(tp)
       case MethodType(_, _) => mapOver(tp)

@@ -429,8 +429,16 @@ trait Namers { self: Analyzer =>
       validate(sym)
     }
 
-    def moduleClassTypeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
-      tree.symbol.info // sets moduleClass info as a side effect.
+    def moduleClassTypeCompleter(tree: Tree) = {
+      mkTypeCompleter(tree) { sym =>
+        val moduleSymbol = tree.symbol
+        assert(moduleSymbol.moduleClass == sym)
+        if (inIDE && moduleSymbol.rawInfo.isComplete) {
+          // reset!
+        }
+        moduleSymbol.info // sets moduleClass info as a side effect.
+        //assert(sym.rawInfo.isComplete)
+      }
     }
 
     def getterTypeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
@@ -598,7 +606,7 @@ trait Namers { self: Analyzer =>
       var vparamSymss =
         if (inIDE && meth.isPrimaryConstructor) {
           // @S: because they have already been entered this way....
-          assert(true)
+
           enterValueParams(meth.owner.owner, vparamss)
         } else {
           enterValueParams(meth, vparamss)
@@ -608,7 +616,7 @@ trait Namers { self: Analyzer =>
         tpt setPos meth.pos
       }
 
-      if (onlyPresentation)
+      if (onlyPresentation && methodArgumentNames != null)
         methodArgumentNames(meth) = vparamss.map(_.map(_.symbol));
 
       def convertToDeBruijn(vparams: List[Symbol], level: Int): TypeMap = new TypeMap {

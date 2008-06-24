@@ -2942,7 +2942,8 @@ trait Typers { self: Analyzer =>
         if (parents1 exists (_.tpe.isError)) tree setType ErrorType
         else {
           val decls = scopeFor(tree, CompoundTreeScopeKind)
-          val self = refinedType(parents1 map (_.tpe), context.enclClass.owner, decls)
+          //Console.println("Owner: " + context.enclClass.owner + " " + context.enclClass.owner.id)
+          val self = refinedType(parents1 map (_.tpe), context.enclClass.owner, decls, templ.pos)
           newTyper(context.make(templ, self.typeSymbol, decls)).typedRefinement(templ.body)
           tree setType self
         }

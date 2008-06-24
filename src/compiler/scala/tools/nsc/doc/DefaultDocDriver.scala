@@ -19,8 +19,8 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
   import global._
   import definitions.{AnyClass, AnyRefClass}
 
-  object additions extends jcl.LinkedHashSet[Symbol]
-  object additions0 extends ModelAdditions(global) {
+  val additions = new jcl.LinkedHashSet[Symbol]
+  val additions0 = new ModelAdditions(global) {
     override def addition(sym: global.Symbol) = {
       super.addition(sym)
       sym match {

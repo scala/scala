@@ -13,6 +13,10 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
     def verifyAndPrioritize[T](verify : Symbol => Symbol)(pt : Type)(f : => T) : T = f
     def makeNoChanges : Boolean = false
   }
+  def check(condition : Boolean, msg : => String) = {
+    assert(condition)
+    condition
+  }
 
   override def inIDE = true
   import CompatibleResult._
@@ -72,21 +76,21 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
     var delete = List[Symbol]()
     while (e != null && e.sym != sym) {
       if (false && !e.sym.rawInfo.isComplete) {
-        assert(true)
+
         delete = e.sym :: delete
       }
       e = scope.lookupNextEntry(e)
     }
     delete.foreach(scope.unlink)
     if (e != null && e.sym == sym) {
-      assert(true)
+
       val list = reuseMap.get(scope) match {
       case Some(list) => list
       case None =>
         val list = new jcl.LinkedList[Symbol]
         reuseMap(scope) = list; list
       }
-      assert(!sym.isPackage)
+      check(!sym.isPackage, "" +sym)
       import symtab.Flags._
       // if def is abstract, will only unlink its name
       if (sym.isGetter) {
@@ -101,16 +105,16 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
         while (e != null && !e.sym.isGetter && e.sym.accessed != sym) {
           e = scope lookupNextEntry e
         }
-        if (e != null) {
+        if (e != null && check(e.sym.accessed == sym, "accessed" + e.sym.accessed +" vs. " + sym) && check(!e.sym.isSetter, "setter: " + e.sym)) {
           val getter = e.sym
-          assert(e.sym.accessed == sym && !e.sym.isSetter)
+          check(e.sym.accessed == sym && !e.sym.isSetter, e.sym.toString)
           list += getter
           scope unlink getter
           //Console.println("RS-UNLINK: " + getter)
           e = scope lookupEntry nme.getterToSetter(getter.name)
           while (e != null && !e.sym.isSetter) e = scope lookupNextEntry e
           if (e != null) {
-            assert(getter.accessed == sym)
+            check(getter.accessed == sym, "" + getter + " vs. " + sym)
             val setter = e.sym
             list += setter
             scope unlink setter
@@ -134,14 +138,14 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
     val buf = new jcl.LinkedList[Symbol]
     scope.toList.foreach{sym =>
       if (false && sym.hasFlag(Flags.CASE) && sym.hasFlag(Flags.SYNTHETIC)) {
-        assert(sym != null)
+        check(sym != null, "")
       } else {
         buf add sym
         scope unlink sym
       }
     }
     if (!buf.isEmpty) {
-      assert(true)
+
       reuseMap.get(scope) match {
       case Some(buf0) => buf.foreach(buf0.+=)
       case None => reuseMap(scope) = buf
@@ -151,7 +155,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
   }
 
   def reloadSource(file : AbstractFile) = {
-    assert(true)
+
     if (!currentClient.makeNoChanges) topDefs.removeKey(file) match {
   case None =>
   case Some(symbols) => symbols.foreach{sym =>
@@ -159,12 +163,11 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
       case scope : PersistentScope => reuse(scope, (sym))
       }
       if (sym.isModuleClass) {
-        assert(sym.name.isTypeName)
-        if (sym.hasRawInfo)
+        if (check(sym.name.isTypeName,"") && sym.hasRawInfo)
           if (sym.linkedModuleOfClass != NoSymbol) f(sym.linkedModuleOfClass)
       } else {
-        assert(sym.name.isTypeName)
-        f(sym)
+        if (check(sym.name.isTypeName, ""))
+          f(sym)
       }
     }
   }
@@ -199,7 +202,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
       case None =>
       })
       if (resetType) {
-        assert(true)
+
         sym.setInfo(oldType) // restore old good type.
       }
     }
@@ -312,12 +315,10 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
       }
       def finish(symbol : Symbol) = {
         if (symbol.isTypeSkolem) {
-          assert(true)
-          assert(true)
+
         }
         if (symbol.owner.isPackageClass && !symbol.isPackageClass && symbol.sourceFile != null) {
-          assert(true)
-          assert(true)
+
           topDefs(symbol.sourceFile) += (symbol match {
             case symbol : ClassSymbol => symbol
             case symbol : ModuleSymbol => symbol.moduleClass.asInstanceOf[ClassSymbol]
@@ -325,13 +326,20 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
         }
         super.enter(symbol)
       }
-      def nuke(existing: Symbol, other : Symbol) : Unit = {
+      def nuke(existing: Symbol) : Unit = {
         if (existing.isMonomorphicType) existing.resetFlag(Flags.MONOMORPHIC)
         assert(!existing.isPackage)
         existing.attributes = Nil // reset attributes, we don't look at these.
-        existing.setInfo(if (other.hasRawInfo) other.rawInfo else NoType)
-        if (existing.isModule && existing.moduleClass != NoSymbol)
-          nuke(existing.moduleClass,symbol.moduleClass)
+        if (existing.isModuleClass) {
+          //Console.println("NUKE_N: " + existing + " " + existing.id)
+        } else {
+          existing.setInfo(if (symbol.hasRawInfo) symbol.rawInfo else NoType)
+        }
+        if (existing.isModule && existing.moduleClass != NoSymbol){
+          //Console.println("NUKE_0: " + existing + " " + existing.id)
+          //Console.println("NUKE_1: " + existing.moduleClass + " " + existing.moduleClass.id)
+          existing.moduleClass.setInfo(if (symbol.moduleClass.hasRawInfo) symbol.moduleClass.rawInfo else NoType)
+        }
       }
 
       def reuse(existing : Symbol) : Symbol = {
@@ -340,10 +348,9 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
           tracedTypes(existing) = existing.info
         }
         record(existing)
-        nuke(existing,symbol)
+        nuke(existing)
         if (existing.pos == NoPosition) {
-          assert(true)
-          assert(true)
+
         }
 
         finish(existing)
@@ -360,7 +367,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
           if (code.isInstanceOf[Updated]) {
             invalidate(existing.name)
           }
-          nuke(existing,symbol)
+          nuke(existing)
           return (existing)
         }
       }
@@ -371,7 +378,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
       while (i.hasNext) {
         var existing = i.next
         if (existing == symbol) return {
-          assert(true)
+
           i.remove
           finish(existing)
         }
@@ -383,25 +390,25 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
           case _ => existing.name == symbol.name
           }
         }) {
-          assert(existing != NoSymbol)
-          val oldName = existing.name
-          compatible(existing, symbol) match {
-          case NotCompatible =>
-            assert(true)
-            assert(true)
-          case code@GoResult(existing0) =>
-            i.remove
-            existing = existing0
-            if (code.isInstanceOf[Updated]) {
-              invalidate(oldName)
-              invalidate(existing.name)
+          if (check(existing != NoSymbol,"")) {
+            val oldName = existing.name
+            compatible(existing, symbol) match {
+              case NotCompatible =>
+
+              case code@GoResult(existing0) =>
+                i.remove
+                existing = existing0
+                if (code.isInstanceOf[Updated]) {
+                  invalidate(oldName)
+                  invalidate(existing.name)
+                }
+                return (reuse(existing))
             }
-            return (reuse(existing))
           }
         }
       }
       if (true) {
-        assert(true)
+
         //Console.println("NEW SYMBOL: " + symbol + ":" + symbol.id + " @ " + symbol.owner + " " + key);
       }
       invalidate(symbol.name)
@@ -447,8 +454,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
     }
     if (((existing.flags&(MONOMORPHIC|INTERFACE)) != 0) ||
         ((symbol  .flags&(MONOMORPHIC|INTERFACE)) != 0)) {
-      assert(true)
-      assert(true)
+
     }
     val ret = (existing.owner == symbol.owner || {
       existing.owner.name == symbol.owner.name && // why????
@@ -489,7 +495,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
     case Some(scope) => scope
     case None =>
       val scope = new PersistentScope(kind,this)
-      assert(scope.key == kind)
+      check(scope.key == kind, ""+scope.key + " " + scope.toString)
       scopes = (scope) :: scopes
       scope
     }
@@ -507,10 +513,10 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
   override def newClassScope(clazz : Symbol) = {
     newDefScope0({
       if (clazz.isModuleClass && !clazz.isPackageClass) {
-        assert(true)
+
         clazz
       } else if (clazz.isModule && !clazz.isPackage) {
-        assert(true)
+
         clazz.moduleClass
       } else clazz
     }, ClassKind)
@@ -600,7 +606,11 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
   }
   // mostly intellisense hacks.
   override def verifyAndPrioritize[T](verify : Symbol => Symbol)(pt : Type)(f : => T) : T = {
+    try {
     currentClient.verifyAndPrioritize(verify)(pt)(f)
+    } catch {case e : Error=>
+      throw e
+    }
   }
   override def compare(sym : Symbol, name : Name) = {
     val client = currentClient
