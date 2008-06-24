@@ -177,8 +177,8 @@ trait ModelFrames extends ModelExtractor {
   protected def rootFor(sym: global.Symbol) = ""
 
   abstract class AllPackagesFrame extends Frame {
-    override val path  = "modules"
-    override val title = "List of all packages"
+    override lazy val path  = "modules"
+    override lazy val title = "List of all packages"
     def packages: Iterable[Package]
     override def body: NodeSeq =
       (<div>
@@ -193,8 +193,8 @@ trait ModelFrames extends ModelExtractor {
       </ul>);
   }
   abstract class PackagesContentFrame extends Frame {
-    val path  = "root-content"
-    val title = "All Packages"
+    lazy val path  = "root-content"
+    lazy val title = "All Packages"
     def packages : Iterable[Package]
     //def modules: TreeMap[String, ModuleClassSymbol]
     def body: NodeSeq =
