@@ -34,8 +34,8 @@ object DocUtil {
    // def label = "#PCDATA"
   //}
 
-  def br(nodes: NodeSeq): NodeSeq = nodes ++ <br/>
-  def hr(nodes: NodeSeq): NodeSeq = nodes ++ <hr/>
+  def br(nodes: NodeSeq): NodeSeq = nodes ++ (<br/>)
+  def hr(nodes: NodeSeq): NodeSeq = nodes ++ (<hr/>)
 
   trait UrlContext {
     def relative: String
@@ -51,35 +51,35 @@ object DocUtil {
 
       val t0 = Text(text)
       if (target ne null)
-        <a href={href} target={target}>{t0}</a>;
+        (<a href={href} target={target}>{t0}</a>);
       else
-        <a href={href}>{t0}</a>;
+        (<a href={href}>{t0}</a>);
     }
 
     val encoding = Properties.encodingString
     val generator = System.getProperty("doc.generator", "scaladoc (" + Properties.versionString + ")")
     val header =
-      <meta http-equiv="content-type" content={"text/html; charset=" + encoding}/>
+      (<meta http-equiv="content-type" content={"text/html; charset=" + encoding}/>
       <meta name="generator" content={generator}/>
       <link rel="stylesheet" type="text/css" href={ relative + "style.css"}/>
-      <script type="text/javascript" src={relative + "script.js"}></script>;
+      <script type="text/javascript" src={relative + "script.js"}></script>);
 
     def body0(hasBody: Boolean, nodes: NodeSeq): NodeSeq =
-      if (!hasBody) nodes else <body onload="init()">{nodes}</body>;
+      if (!hasBody) nodes else (<body onload="init()">{nodes}</body>);
 
     val dtype = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">"
 
     def page(title: String, body: NodeSeq, hasBody: Boolean): NodeSeq =
-      <html>
-        <head><title>{Text(title)}</title>
+      (<html>
+        <head><title>{Text(if (title eq null) "null title" else title)}</title>
         {header}
         </head>
         {body0(hasBody, body)}
-      </html>
+      </html>)
   } // UrlContext
 
   def div0(title: String): NodeSeq =
-    <div class="doctitle-larger">{Text(title)}</div>;
+    (<div class="doctitle-larger">{Text(title)}</div>);
 
   def merge[T](ts0: TreeSet[T], ts1: TreeSet[T]): TreeSet[T] = {
     var ts = ts0

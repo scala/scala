@@ -19,8 +19,8 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
   import global._
   import definitions.{AnyClass, AnyRefClass}
 
-  val additions = new jcl.LinkedHashSet[Symbol]
-  val additions0 = new ModelAdditions(global) {
+  lazy val additions = new jcl.LinkedHashSet[Symbol]
+  lazy val additions0 = new ModelAdditions(global) {
     override def addition(sym: global.Symbol) = {
       super.addition(sym)
       sym match {
@@ -109,7 +109,7 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
       for (pp <- d.sym.tpe.parents) subClasses(pp.typeSymbol) += d
     }
     copyResources
-    val packages0 = sort(allClasses.keySet)
+    lazy val packages0 = sort(allClasses.keySet)
     new AllPackagesFrame     with Frame { def packages = packages0 }
     new PackagesContentFrame with Frame { def packages = packages0 }
     new NavigationFrame      with Frame { }
@@ -178,12 +178,12 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
   override def classBody(entity: ClassOrObject)(implicit from: Frame): NodeSeq =
     (subClasses.get(entity.sym) match {
     case Some(symbols) =>
-      <dl>
+      (<dl>
       <dt style="margin:10px 0 0 20px;"><b>Direct Known Subclasses:</b></dt>
       <dd>{symbols.mkXML("",", ","")(cls => {
         aref(urlFor(cls.sym), cls.path.map(_.name).mkString("",".",""));
       })}</dd>
-      </dl><hr/>;
+      </dl><hr/>);
     case None =>
       NodeSeq.Empty
     })++super.classBody(entity);
@@ -208,7 +208,7 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
       val href = path + sym.fullNameString('/') +
       (if (sym.isModule || sym.isModuleClass) NAME_SUFFIX_OBJECT else "") +
         "#" + s
-      <a href={href}>{option}</a> ++ {Text(" - ")};
+      (<a href={href}>{option}</a>) ++ {Text(" - ")};
     case _ =>
       super.decodeOption(tag,option)
   }
@@ -258,7 +258,7 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
     frame.aref(href, "_self", label)
 
   protected def anchor(entity: Symbol)(implicit frame: Frame): NodeSeq =
-    <a name={Text(frame.docName(entity))}></a>
+    (<a name={Text(frame.docName(entity))}></a>)
 
   object symbols extends jcl.LinkedHashSet[Symbol]
 
