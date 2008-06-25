@@ -14,6 +14,15 @@ import collection.mutable.ArrayBuffer
 
 object RandomAccessSeq {
 
+  /** Create read only sequence of specified elements */
+  def apply[A](xs: A*): RandomAccessSeq[A] =
+    if (xs.isEmpty) empty
+    else {
+      val buffer = new ArrayBuffer[A]
+      xs copyToBuffer buffer
+      buffer.readOnly
+    }
+
   /** The empty sequence */
   val empty : RandomAccessSeq[Nothing] = new RandomAccessSeq.Projection[Nothing] {
     def length = 0

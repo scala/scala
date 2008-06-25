@@ -26,6 +26,9 @@ object Seq {
    */
   def unapplySeq[A](x: Seq[A]): Some[Seq[A]] = Some(x)
 
+  /** Create read only sequence of specified elements */
+  def apply[A](xs: A*): Seq[A] = RandomAccessSeq(xs: _*)
+
   case class singleton[A](value: A) extends RandomAccessSeq[A] {
     override def length = 1
     override def isDefinedAt(idx: Int): Boolean = idx == 0
