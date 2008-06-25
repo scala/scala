@@ -1,0 +1,7 @@
+t0503.scala:1: error: expected class or object definition
+val x = new { } with { }
+^
+t0503.scala:3: error: expected class or object definition
+val y = new { } with A
+^
+two errors found
