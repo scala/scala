@@ -90,7 +90,7 @@ trait BasicBlocks {
 
     /** Return an iterator over the instructions in this basic block. */
     def elements: Iterator[Instruction] =
-      if (closed) instrs.elements else instructionList.elements
+      if (closed) instrs.elements else instructionList.reverse.elements
 
     /** return the underlying array of instructions */
     def getArray: Array[Instruction] = {

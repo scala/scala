@@ -7,7 +7,7 @@
 
 package scala.tools.nsc.backend.icode.analysis
 
-import scala.collection.mutable.{Map, HashMap}
+import scala.collection.{mutable, immutable}
 
 /** A data-flow analysis on types, that works on <code>ICode</code>.
  *
@@ -59,7 +59,7 @@ abstract class TypeFlowAnalysis {
   }
 
   /** A map which returns the bottom type for unfound elements */
-  class VarBinding extends  HashMap[icodes.Local, icodes.TypeKind] {
+  class VarBinding extends mutable.HashMap[icodes.Local, icodes.TypeKind] {
     override def get(l: icodes.Local) = super.get(l) match {
       case Some(t) => Some(t)
       case None    => Some(typeLattice.bottom)
@@ -101,6 +101,8 @@ abstract class TypeFlowAnalysis {
     }
   }
 
+  val timer = new Timer
+
   class MethodTFA extends DataFlowAnalysis[typeFlowLattice.type] {
     import icodes._
     import icodes.opcodes._
@@ -135,12 +137,13 @@ abstract class TypeFlowAnalysis {
       else reinit {
         for (b <- m.code.blocks; if !in.isDefinedAt(b)) {
           for (p <- b.predecessors) {
-            worklist += p
-            if (out.isDefinedAt(p))
+            if (out.isDefinedAt(p)) {
               in(b) = out(p)
-            else
+              worklist += p
+            }
+/*            else
               in(b)  = typeFlowLattice.bottom
-          }
+*/          }
           out(b) = typeFlowLattice.bottom
         }
         for (exh <- m.exh; if !in.isDefinedAt(exh.startBlock)) {
@@ -156,18 +159,215 @@ abstract class TypeFlowAnalysis {
     }
 
     def run = {
+      timer.start
       forwardAnalysis(blockTransfer)
+      timer.stop
       if (settings.debug.value) {
         linearizer.linearize(method).foreach(b => if (b != method.code.startBlock)
           assert(visited.contains(b),
             "Block " + b + " in " + this.method + " has input equal to bottom -- not visited? .." + visited));
       }
+      println("iterations: " + iterations + " for " + method.code.blocks.size)
     }
 
     def blockTransfer(b: BasicBlock, in: lattice.Elem): lattice.Elem = {
-      b.toList.foldLeft(in)(interpret)
+      b.foldLeft(in)(interpret)
     }
 
+    /** The flow function of a given basic block. */
+    var flowFun: immutable.Map[BasicBlock, TransferFunction] = new immutable.HashMap
+
+    /** Fill flowFun with a transfer function per basic block. */
+/*    private def buildFlowFunctions(blocks: List[BasicBlock]) {
+      def transfer(b: BasicBlock): TransferFunction = {
+        var gens: List[Gen] = Nil
+        var consumed: Int = 0
+        val stack = new SimulatedStack
+
+        for (instr <- b) instr match {
+        case THIS(clasz) =>
+          stack push toTypeKind(clasz.tpe)
+
+        case CONSTANT(const) =>
+          stack push toTypeKind(const.tpe)
+
+        case LOAD_ARRAY_ITEM(kind) =>
+          stack.pop2
+          stack.push(kind)
+
+        case LOAD_LOCAL(local) =>
+          val t = bindings(local)
+          stack push (if (t == typeLattice.bottom) local.kind  else t)
+
+        case LOAD_FIELD(field, isStatic) =>
+          if (!isStatic)
+            stack.pop
+          stack push toTypeKind(field.tpe)
+
+        case LOAD_MODULE(module) =>
+          stack push toTypeKind(module.tpe)
+
+        case STORE_ARRAY_ITEM(kind) =>
+          stack.pop3
+
+        case STORE_LOCAL(local) =>
+          val t = stack.pop
+          bindings += (local -> t)
+
+        case STORE_THIS(_) =>
+          stack.pop
+
+        case STORE_FIELD(field, isStatic) =>
+          if (isStatic)
+            stack.pop
+          else
+            stack.pop2
+
+        case CALL_PRIMITIVE(primitive) =>
+          primitive match {
+            case Negation(kind) =>
+              stack.pop; stack.push(kind)
+            case Test(_, kind, zero) =>
+              stack.pop
+              if (!zero) stack.pop
+              stack push BOOL;
+            case Comparison(_, _) =>
+              stack.pop2
+              stack push INT
+
+            case Arithmetic(op, kind) =>
+              stack.pop
+              if (op != NOT)
+                stack.pop
+              val k = kind match {
+                case BYTE | SHORT | CHAR => INT
+                case _ => kind
+              }
+              stack push k
+
+            case Logical(op, kind) =>
+              stack.pop2
+              stack push kind
+
+            case Shift(op, kind) =>
+              stack.pop2
+              stack push kind
+
+            case Conversion(src, dst) =>
+              stack.pop
+              stack push dst
+
+            case ArrayLength(kind) =>
+              stack.pop
+              stack push INT
+
+            case StartConcat =>
+              stack.push(ConcatClass)
+
+            case EndConcat =>
+              stack.pop
+              stack.push(STRING)
+
+            case StringConcat(el) =>
+              stack.pop2
+              stack push ConcatClass
+          }
+
+        case CALL_METHOD(method, style) => style match {
+          case Dynamic =>
+            stack.pop(1 + method.info.paramTypes.length)
+            stack.push(toTypeKind(method.info.resultType))
+
+          case Static(onInstance) =>
+            if (onInstance) {
+              stack.pop(1 + method.info.paramTypes.length)
+              if (!method.isConstructor)
+                stack.push(toTypeKind(method.info.resultType));
+            } else {
+              stack.pop(method.info.paramTypes.length)
+              stack.push(toTypeKind(method.info.resultType))
+            }
+
+          case SuperCall(mix) =>
+            stack.pop(1 + method.info.paramTypes.length)
+            stack.push(toTypeKind(method.info.resultType))
+        }
+
+        case BOX(kind) =>
+          stack.pop
+          stack.push(BOXED(kind))
+
+        case UNBOX(kind) =>
+          stack.pop
+          stack.push(kind)
+
+        case NEW(kind) =>
+          stack.push(kind)
+
+        case CREATE_ARRAY(elem, dims) =>
+          stack.pop(dims)
+          stack.push(ARRAY(elem))
+
+        case IS_INSTANCE(tpe) =>
+          stack.pop
+          stack.push(BOOL)
+
+        case CHECK_CAST(tpe) =>
+          stack.pop
+          stack.push(tpe)
+
+        case SWITCH(tags, labels) =>
+          stack.pop
+
+        case JUMP(whereto) =>
+          ()
+
+        case CJUMP(success, failure, cond, kind) =>
+          stack.pop2
+
+        case CZJUMP(success, failure, cond, kind) =>
+          stack.pop
+
+        case RETURN(kind) =>
+          if (kind != UNIT)
+            stack.pop;
+
+        case THROW() =>
+          stack.pop
+
+        case DROP(kind) =>
+          stack.pop
+
+        case DUP(kind) =>
+          stack.push(stack.head)
+
+        case MONITOR_ENTER() =>
+          stack.pop
+
+        case MONITOR_EXIT() =>
+          stack.pop
+
+        case SCOPE_ENTER(_) | SCOPE_EXIT(_) =>
+          ()
+
+        case LOAD_EXCEPTION() =>
+          stack.pop(stack.length)
+          stack.push(typeLattice.Object)
+
+        case _ =>
+          dump
+          abort("Unknown instruction: " + i)
+
+        }
+
+        new TransferFunction(consumed, gens)
+      }
+
+      for (val b <- blocks) {
+        flowFun = flowFun + (b -> transfer(b))
+      }
+    }
+*/
     /** Abstract interpretation for one instruction. */
     def interpret(in: typeFlowLattice.Elem, i: Instruction): typeFlowLattice.Elem = {
       val out = lattice.IState(new VarBinding(in.vars), new TypeStack(in.stack))
@@ -357,5 +557,99 @@ abstract class TypeFlowAnalysis {
       }
       out
     } // interpret
+
+
+    class SimulatedStack {
+      private var types: List[InferredType] = Nil
+      private var depth = 0
+
+      /** Remove and return the topmost element on the stack. If the
+       *  stack is empty, return a reference to a negative index on the
+       *  stack, meaning it refers to elements pushed by a predecessor block.
+       */
+      def pop: InferredType = types match {
+        case head :: rest =>
+          types = rest
+          head
+        case _ =>
+          depth -= 1
+          TypeOfStackPos(depth)
+      }
+
+      def pop2: (InferredType, InferredType) = {
+        (pop, pop)
+      }
+
+      def push(t: InferredType) {
+        depth += 1
+        types += t
+      }
+
+      def push(k: TypeKind): Unit = push(Const(k))
+    }
+
+	abstract class InferredType {
+      /** Return the type kind pointed by this inferred type. */
+      def getKind(in: lattice.Elem): icodes.TypeKind = this match {
+        case Const(k) =>
+          k
+        case TypeOfVar(l: icodes.Local) =>
+          if (in.vars.isDefinedAt(l)) in.vars(l) else l.kind
+        case TypeOfStackPos(n: Int) =>
+          assert(in.stack.length >= n)
+          in.stack(n)
+      }
+    }
+	/** A type that does not depend on input to the transfer function. */
+	case class Const(t: icodes.TypeKind) extends InferredType
+	/** The type of a given local variable. */
+	case class TypeOfVar(l: icodes.Local) extends InferredType
+	/** The type found at a stack position. */
+	case class TypeOfStackPos(n: Int) extends InferredType
+
+	abstract class Gen
+	case class Bind(l: icodes.Local, t: InferredType) extends Gen
+	case class Push(t: InferredType) extends Gen
+
+    /** A flow transfer function of a basic block. */
+	class TransferFunction(consumed: Int, gens: List[Gen]) extends (lattice.Elem => lattice.Elem) {
+	  def apply(in: lattice.Elem): lattice.Elem = {
+        val out = lattice.IState(new VarBinding(in.vars), new TypeStack(in.stack))
+        val bindings = out.vars
+        val stack = out.stack
+
+        out.stack.pop(consumed)
+        for (val g <- gens) g match {
+          case Bind(l, t) =>
+            out.vars += (l -> t.getKind(in))
+          case Push(t) =>
+            stack.push(t.getKind(in))
+        }
+        out
+      }
+	}
+  }
+
+  class Timer {
+    var millis = 0L
+
+    private var lastStart = 0L
+
+    def reset {
+      millis = 0L
+    }
+
+    def start {
+      lastStart = System.currentTimeMillis
+    }
+
+    /** Stop the timer and return the number of milliseconds since the last
+     * call to start. The 'millis' field is increased by the elapsed time.
+     */
+    def stop: Long = {
+      val elapsed = System.currentTimeMillis - lastStart
+      millis += elapsed
+      elapsed
+    }
   }
 }

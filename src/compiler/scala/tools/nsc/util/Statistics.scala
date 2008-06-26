@@ -40,5 +40,6 @@ abstract class Statistics {
     inform("#norm other: " + analyzer.normO)
     inform("#subtype  : " + subtypeCount)
     inform("ms subtype: " + subtypeMillis)
+    inform("ms type-flow-analysis: " + analysis.timer.millis)
   }
 }

@@ -66,6 +66,8 @@ trait TypeStacks { self: ICodes =>
       prefix
     }
 
+    def apply(n: Int): TypeKind = types(n)
+
     /**
      * A TypeStack aggress with another one if they have the same
      * length and each type kind agrees position-wise. Two

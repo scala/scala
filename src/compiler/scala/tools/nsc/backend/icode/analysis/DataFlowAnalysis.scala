@@ -24,7 +24,7 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
   val visited: HashSet[P] = new HashSet
 
   /** collect statistics? */
-  var stat = false
+  var stat = true
 
   /** the number of times we iterated before reaching a fixpoint. */
   var iterations = 0
