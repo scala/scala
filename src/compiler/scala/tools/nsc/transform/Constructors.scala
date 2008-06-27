@@ -108,11 +108,13 @@ abstract class Constructors extends Transform {
       def canBeMoved(tree: Tree) = tree match {
         //todo: eliminate thisRefSeen
         case ValDef(mods, _, _, _) =>
+/*
           if (!(mods hasFlag PRESUPER | PARAMACCESSOR) && !thisRefSeen &&
               { val g = tree.symbol.getter(tree.symbol.owner);
                 g != NoSymbol && !g.allOverriddenSymbols.isEmpty
               })
             unit.warning(tree.pos, "the semantics of this definition will change; the initialization will no longer be executed before the superclass is called")
+*/
           (mods hasFlag PRESUPER | PARAMACCESSOR) || !thisRefSeen
         case _ => false
       }
