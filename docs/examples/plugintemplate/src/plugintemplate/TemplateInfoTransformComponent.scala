@@ -28,17 +28,23 @@ class TemplateInfoTransformComponent(val global: Global) extends PluginComponent
    */
   val phaseName = "plugintemplateinfotransform"
 
-  def transformInfo(sym: Symbol, tp: Type): Type = infoTransformer(tp)
+  def transformInfo(sym: Symbol, tp: Type): Type = infoTransformer.mapOver(tp)
 
   def newTransformer(unit: CompilationUnit) = new TemplateTransformer
 
-  /** The type transformation applied by this component
+  /** The type transformation applied by this component. The trait InfoTransform
+   *  will create an instance of InfoTransformer applying this TypeMap. The type
+   *  map will be applied when computing a symbol's type in all phases
+   *  <em>after</em> "plugintemplateinfotransform".
    *
    *  @todo Implement.
    */
   private val infoTransformer = new TypeMap {
     def apply(tp: Type): Type = tp match {
-      case _ => tp
+      case MethodType(pts, rt) =>
+          println("methodType (_, _, ..) => "+ rt)
+          tp
+      case _ => mapOver(tp)
     }
   }
 
@@ -53,6 +59,9 @@ class TemplateInfoTransformComponent(val global: Global) extends PluginComponent
      *  visited before its children.
      */
     def preTransform(tree: Tree): Tree = tree match {
+      case ValDef(_, name, _, _) =>
+        println("pre-info-transforming valdef "+ name)
+        tree
       case _ => tree
     }
 

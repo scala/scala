@@ -45,6 +45,9 @@ class TemplateTransformComponent(val global: Global) extends PluginComponent
      *  visited after its children.
      */
     def postTransform(tree: Tree): Tree = tree match {
+      case New(tpt) =>
+          println("post-transforming new "+ tpt)
+          tree
       case _ => tree
     }
 

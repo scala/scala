@@ -34,6 +34,32 @@ in the Java Build Path: Right-Click the project and select "Properties".
 Then go to "Java Build Path" -> "Libraries" and add the jar file
 "eclipse/plugins/ch.epfl.lamp.sdt.core[..]/lib/scala-compiler.jar".
 
+Traverse, Transform, Check
+--------------------------
+There are several pre-defined components that can be used to code
+the behavior of a plugin:
+- TemplateTraverseComponent: a template for tree traversers. Used
+  to analyze and collect data about compiler trees.
+  -> implement the "check" method
+
+- TemplateTransformComponent: a template for tree transformers.
+  -> implement "preTransform" and / or "postTransform"
+
+- TemplateInfoTransformComponent: also a tree transformer, which
+  additionally is an InfoTransformer. Allows changing the type
+  of some symbols for later phases.
+  -> implement "preTransform" and / or "postTransform", and the
+     "apply" method of the "infoTransformer".
+
+- TemplateAnnotationChecker: a plugin for the typechecker, useful
+  for pluggable type systems. Computes the subtyping between two
+  annotated types, and allows providing inferred type information.
+  -> implement "annotationsConform" and optionally "addAnnotations"
+
+- TemplateComponent: the most general component. Can do anything it
+  likes with the CompilationUnits.
+  -> implement the "run" method
+
 Ant tasks
 ---------
 "build.xml" defines Ant tasks for building, testing and packing a

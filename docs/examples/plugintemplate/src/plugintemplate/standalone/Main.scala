@@ -4,6 +4,11 @@ import scala.tools.nsc.CompilerCommand
 import scala.tools.nsc.Settings
 
 /** An object for running the plugin as standalone application.
+ *
+ *  @todo: print, parse and apply plugin options !!!
+ *  ideally re-use the TemplatePlugin (-> runsAfter, optionsHelp,
+ *  processOptions, components, annotationChecker) instead of
+ *  duplicating it here and in PluginRunner.
  */
 object Main {
   def main(args: Array[String]) {
