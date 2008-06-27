@@ -21,7 +21,7 @@ package scala
  */
 trait SeqProxy[+A] extends Seq[A] with IterableProxy[A] {
 
-  def self: Seq[A]
+  override def self: Seq[A]
 
   override def apply(i: Int): A = self(i)
   override def length: Int = self.length

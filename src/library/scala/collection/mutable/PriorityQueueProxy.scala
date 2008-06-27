@@ -20,7 +20,7 @@ package scala.collection.mutable
  *  @version 1.0, 03/05/2004
  */
 abstract class PriorityQueueProxy[A <% Ordered[A]] extends PriorityQueue[A]
-         with SeqProxy[A]
+         with RandomAccessSeqProxy[A]
 {
 
   def self: PriorityQueue[A]
@@ -89,10 +89,6 @@ abstract class PriorityQueueProxy[A <% Ordered[A]] extends PriorityQueue[A]
   /** Returns a regular queue containing the same elements.
    */
   override def toQueue: Queue[A] = self.toQueue
-
-  override def take(until : Int) = self take until
-  override def drop(from : Int) = self drop from
-  override def slice(from : Int, until : Int) = self.slice(from, until)
 
   /** This method clones the priority queue.
    *

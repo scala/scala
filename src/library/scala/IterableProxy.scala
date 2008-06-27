@@ -23,7 +23,7 @@ import scala.collection.mutable.Buffer
  */
 trait IterableProxy[+A] extends Iterable[A] with Proxy {
 
-  def self: Iterable[A]
+  override def self: Iterable[A]
   override def elements: Iterator[A] = self.elements
   @deprecated
   override def concat [B >: A](that: Iterable[B]): Collection[B] = self concat that
