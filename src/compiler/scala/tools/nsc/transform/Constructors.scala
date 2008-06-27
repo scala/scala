@@ -22,9 +22,9 @@ abstract class Constructors extends Transform {
   val phaseName: String = "constructors"
 
   protected def newTransformer(unit: CompilationUnit): Transformer =
-    new ConstructorTransformer
+    new ConstructorTransformer(unit)
 
-  class ConstructorTransformer extends Transformer {
+  class ConstructorTransformer(unit: CompilationUnit) extends Transformer {
 
     def transformClassTemplate(impl: Template): Template = {
       val clazz = impl.symbol.owner  // the transformed class
@@ -108,9 +108,12 @@ abstract class Constructors extends Transform {
       def canBeMoved(tree: Tree) = tree match {
         //todo: eliminate thisRefSeen
         case ValDef(mods, _, _, _) =>
-//          if (!(mods hasFlag PRESUPER | PARAMACCESSOR) && !thisRefSeen)
-//            println("not moving forward in "+clazz+": "+tree)
-          (mods hasFlag PRESUPER | PARAMACCESSOR)// || !thisRefSeen
+          if (!(mods hasFlag PRESUPER | PARAMACCESSOR) && !thisRefSeen &&
+              { val g = tree.symbol.getter(tree.symbol.owner);
+                g != NoSymbol && !g.allOverriddenSymbols.isEmpty
+              })
+            unit.warning(tree.pos, "the semantics of this definition will change; the initialization will no longer be executed before the superclass is called")
+          (mods hasFlag PRESUPER | PARAMACCESSOR) || !thisRefSeen
         case _ => false
       }
 
@@ -196,7 +199,7 @@ abstract class Constructors extends Transform {
           }
         case ClassDef(_, _, _, _) =>
           // classes are treated recursively, and left in the template
-          defBuf += (new ConstructorTransformer).transform(stat)
+          defBuf += new ConstructorTransformer(unit).transform(stat)
         case _ =>
           // all other statements go into the constructor
           constrStatBuf += intoConstructor(impl.symbol, stat)
@@ -278,7 +281,5 @@ abstract class Constructors extends Transform {
         case _ =>
           super.transform(tree)
       }
-
   } // ConstructorTransformer
-
 }
