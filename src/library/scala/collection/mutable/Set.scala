@@ -57,8 +57,8 @@ trait Set[A] extends collection.Set[A] with Scriptable[Message[A]] with Cloneabl
 
   /** Add two or more elements to this set.
    *  @param    elem1 the first element.
-   *  @param    kv2 the second element.
-   *  @param    kvs the remaining elements.
+   *  @param    elem2 the second element.
+   *  @param    elems the remaining elements.
    */
   def += (elem1: A, elem2: A, elems: A*) { this += elem1; this += elem2; this ++= elems }
 
