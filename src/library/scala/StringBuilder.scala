@@ -244,7 +244,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
     if (len > 0) {
       val newCount = count + len
       if (newCount > value.length) expandCapacity(newCount)
-      compat.Platform.arraycopy(str.toCharArray, 0, value, count, len)
+      str.getChars(0, len, value, count)
       count = newCount
     }
     this
@@ -431,7 +431,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
     if (newCount > value.length) expandCapacity(newCount)
 
     compat.Platform.arraycopy(value, end, value, start + len, count - end)
-    compat.Platform.arraycopy(str.toCharArray, 0, value, start, len)
+    str.getChars(0, len, value, start)
     count = newCount
     this
   }
@@ -510,7 +510,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
     val newCount = count + len
     if (newCount > value.length) expandCapacity(newCount)
     compat.Platform.arraycopy(value, at, value, at + len, count - at)
-    compat.Platform.arraycopy(str.toCharArray, 0, value, at, len)
+    str.getChars(0, len, value, at)
     count = newCount
     this
   }
