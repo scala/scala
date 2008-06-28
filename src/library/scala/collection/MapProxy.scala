@@ -20,18 +20,26 @@ package scala.collection
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
  */
-trait MapProxy[A, +B] extends Map[A, B] with IterableProxy[(A, B)] {
+trait MapProxy[A, +B] extends Map[A, B] with CollectionProxy[(A, B)] {
 
-  def self: Map[A, B]
+  override def self: Map[A, B]
 
-  override def size: Int = self.size
-  override def get(key: A): Option[B] = self.get(key)
-  override def isEmpty: Boolean = self.isEmpty
-  override def apply(key: A): B = self.apply(key)
-  override def contains(key: A): Boolean = self.contains(key)
+  override def size = self.size
+  override def get(key: A) = self.get(key)
+  override def getOrElse[B2 >: B](key: A, default: => B2) = self.getOrElse(key, default)
+
+  override def isEmpty = self.isEmpty
+  override def apply(key: A) = self.apply(key)
+  override def contains(key: A) = self.contains(key)
   override def isDefinedAt(key: A) = self.isDefinedAt(key)
-  override def keys: Iterator[A] = self.keys
-  override def keySet: Set[A] = self.keySet
-  override def values: Iterator[B] = self.values
-  override def default(key: A): B = self.default(key)
+  override def keys = self.keys
+  override def keySet = self.keySet
+  override def values = self.values
+  override def equals(that: Any) = self equals that
+  override def hashCode() = self.hashCode()
+  override def toString() = self.toString()
+  override def default(key: A) = self.default(key)
+  override def projection = self.projection
+  override def filterKeys(p: A => Boolean) = self filterKeys p
+  override def mapElements[C](f: B => C) = self mapElements f
 }

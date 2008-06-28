@@ -20,12 +20,16 @@ package scala
 trait RandomAccessSeqProxy[+A] extends RandomAccessSeq[A] with SeqProxy[A] {
   override def self: RandomAccessSeq[A]
 
+  override def projection = self.projection
+
   override def drop(from: Int): RandomAccessSeq[A] = self.drop(from)
   override def take(until: Int): RandomAccessSeq[A] = self.take(until)
   override def slice(from: Int, until: Int) : RandomAccessSeq[A] = self.slice(from, until)
+  override def reverse = self.reverse
   override def partition(p: A => Boolean): (RandomAccessSeq[A], RandomAccessSeq[A]) =
     self.partition(p)
-  // XXX: def patch, reverse, should not return projection
+  override def patch[B >: A](from0: Int, patch0: RandomAccessSeq[B], replaced0: Int) =
+    self.patch(from0, patch0, replaced0)
   override def ++[B >: A](that: Iterable[B]): RandomAccessSeq[B] = self ++ that
   override def toStream: Stream[A] = self.toStream
 }
