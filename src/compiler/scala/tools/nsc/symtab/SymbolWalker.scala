@@ -171,6 +171,11 @@ trait SymbolWalker {
               arg.tpe = tpe
             }
           }
+          if (tree.tpt.tpe == null) {
+            assert(true)
+            tree.tpt.tpe = tree.tpe
+          }
+
         }
         f(tree.tpt); fs(tree.args)
 

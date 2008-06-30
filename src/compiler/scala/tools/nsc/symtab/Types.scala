@@ -492,6 +492,12 @@ trait Types {
           else isSubType(this, that)));
       if (util.Statistics.enabled)
         subtypeMillis = subtypeMillis + currentTime - startTime
+      if (!result && this.isInstanceOf[ExistentialType]) {
+        Console.println("XXX: " + this + " " + that)
+        assert(true)
+        assert(true)
+      }
+
       result
     }
 

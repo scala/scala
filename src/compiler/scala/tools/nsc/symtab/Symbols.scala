@@ -493,6 +493,7 @@ trait Symbols {
       var cnt = 0
       while (validTo == NoPeriod) {
         //if (settings.debug.value) System.out.println("completing " + this);//DEBUG
+        if (inIDE && (infos eq null)) return ErrorType
         assert(infos ne null, this.name)
         assert(infos.prev eq null, this.name)
         val tp = infos.info

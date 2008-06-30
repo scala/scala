@@ -28,7 +28,11 @@ trait IdeSupport extends Analyzer {
       assert(!sym.hasRawInfo || sym.rawInfo == NoType) // type information has already been reset.
       if (currentClient.makeNoChanges) {
         sym.setInfo(tpe)
-        sym.info  // force completion.
+        try {
+          sym.info  // force completion.
+        } catch {
+          case e =>
+        }
         return sym
       }
       object tpe0 extends LazyType with SimpleTypeProxy {
