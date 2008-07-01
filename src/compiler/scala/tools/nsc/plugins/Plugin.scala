@@ -146,7 +146,7 @@ object Plugin {
    *  the compiler it is to be used in.
    */
   def instantiate(clazz: AnyClass, global: Global): Plugin = {
-    val constructor = clazz.getConstructor(Array(classOf[Global]))
-    constructor.newInstance(Array(global)).asInstanceOf[Plugin]
+    val constructor = clazz.getConstructor(classOf[Global])
+    constructor.newInstance(global).asInstanceOf[Plugin]
   }
 }

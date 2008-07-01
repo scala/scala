@@ -17,8 +17,7 @@ import Predef._
 object StringAdd {
   // Needed for the format hack. Can be removed once we drop 1.4
   lazy val formatMethod: java.lang.reflect.Method = {
-    val paramTypes = Array[Class[T] forSome { type T }](classOf[String], classOf[Array[Object]])
-    classOf[String].getDeclaredMethod("format", paramTypes)
+    classOf[String].getDeclaredMethod("format", classOf[String], classOf[Array[Object]])
   }
 }
 final class StringAdd(self: Any) {
@@ -32,10 +31,9 @@ final class StringAdd(self: Any) {
    */
   def formatted(format: String): String = {
     // This should be:
-    // String.format(format, Array(self.asInstanceOf[Object]))
+    // String.format(format, self.asInstanceOf[Object])
     // However, the line above does not compile on Java 1.4 because String.format exists only in 1.5
     // Therefore, we do the following hack:
-    val args = Array(self.asInstanceOf[Object])
-    StringAdd.formatMethod.invoke(null, Array[Object](format, args)).asInstanceOf[String]
+    StringAdd.formatMethod.invoke(null, format, self.asInstanceOf[Object]).asInstanceOf[String]
   }
 }

@@ -173,8 +173,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       }
     try {
       val clazz = Class.forName(settings.sourceReader.value)
-      val ccon  = clazz.getConstructor(Array[Class[T] forSome { type T }](classOf[java.nio.charset.CharsetDecoder], classOf[Reporter]))
-      ccon.newInstance(Array[AnyRef] (charset.newDecoder(), reporter)).asInstanceOf[SourceReader];
+      val ccon  = clazz.getConstructor(classOf[java.nio.charset.CharsetDecoder], classOf[Reporter])
+      ccon.newInstance(charset.newDecoder(), reporter).asInstanceOf[SourceReader];
       //new SourceReader(charset.newDecoder())
     } catch {
       case e =>

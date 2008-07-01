@@ -550,7 +550,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     var argsHolder: Array[Any] = null // this roundabout approach is to try and
                                       // make sure the value is boxed
     argsHolder = List(value).toArray
-    setterMethod.invoke(null, argsHolder.asInstanceOf[Array[AnyRef]])
+    setterMethod.invoke(null, argsHolder.asInstanceOf[Array[AnyRef]] : _*)
 
     interpret("val " + name + " = " + binderName + ".value")
   }
@@ -888,9 +888,9 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       val interpreterResultObject: Class[_] =
         Class.forName(resultObjectName, true, classLoader)
       val resultValMethod: java.lang.reflect.Method =
-        interpreterResultObject.getMethod("result", null)
+        interpreterResultObject.getMethod("result")
       try {
-        (resultValMethod.invoke(interpreterResultObject, null).toString(),
+        (resultValMethod.invoke(interpreterResultObject).toString(),
              true)
       } catch {
         case e =>

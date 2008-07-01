@@ -184,7 +184,7 @@ object Console {
   def format(text: String, args: Any*): Unit =
       if (text eq null) "null" else
       out.printf(text, args.asInstanceOf[scala.runtime.BoxedObjectArray].
-                            unbox(args.getClass).asInstanceOf[Array[Object]])
+                            unbox(args.getClass).asInstanceOf[Array[Object]] : _*)
 
   /** Read a full line from the terminal.  Returns <code>null</code> if the end of the
    * input stream has been reached.

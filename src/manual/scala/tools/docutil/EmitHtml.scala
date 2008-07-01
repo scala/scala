@@ -342,12 +342,11 @@ object EmitHtml {
       System.err.println("usage: EmitHtml <classname>")
       exit(1)
     }
-    type AnyClass = Class[_]
     try {
       val cl = this.getClass.getClassLoader()
       val clasz = cl.loadClass(args(0))
-      val meth = clasz.getDeclaredMethod("manpage", Array[AnyClass]())
-      val doc = meth.invoke(null, Array[Object]()).asInstanceOf[Document]
+      val meth = clasz.getDeclaredMethod("manpage")
+      val doc = meth.invoke(null).asInstanceOf[Document]
       emitDocument(doc)
     } catch {
       case ex: Exception =>
