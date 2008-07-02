@@ -1041,7 +1041,6 @@ trait Typers { self: Analyzer =>
       val typedMods = typedModifiers(cdef.mods)
       val clazz = cdef.symbol;
       if (inIDE && clazz == NoSymbol) {
-        assert(true)
         throw new TypeError("type signature typing failed")
       }
       assert(clazz != NoSymbol)
@@ -2378,7 +2377,6 @@ trait Typers { self: Analyzer =>
           val DefDef(_, _, _, _, restpt, _) = enclMethod.tree
           var restpt0 = restpt
           if (inIDE && (restpt0.tpe eq null)) {
-            assert(true)
             restpt0 = typed(restpt0, TYPEmode, WildcardType)
           }
           if (restpt0.tpe eq null) {

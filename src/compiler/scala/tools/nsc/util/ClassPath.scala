@@ -276,7 +276,6 @@ class ClassPath(onlyPresentation: Boolean) {
       if (sourceFile0 ne null) {
         val file00 = sourceFile0.lookupPath("src", true)
         if ((file00 ne null) && file00.isDirectory) {
-          assert(true)
           sourceFile0 = file00
         }
       }

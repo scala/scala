@@ -162,7 +162,6 @@ trait Namers { self: Analyzer =>
           }
           val sym0 = scope enter sym
           if (sym0 ne sym) {
-            assert(true)
             Console.println("WEIRD: " + sym0 + " vs. " + sym + " " + sym0.id + " " + sym.id + " " + sym.sourceFile + " " + sym0.sourceFile)
           }
           if (prev != null && (sym0 ne prev.sym) && conflict(sym0,prev.sym)) {

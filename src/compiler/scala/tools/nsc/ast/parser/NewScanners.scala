@@ -135,7 +135,6 @@ trait NewScanners {
       case LPAREN => RPAREN
       case LBRACKET => RBRACKET
       case CASE =>
-        assert(true)
         ARROW
       case RBRACE =>
         while (!sepRegions.isEmpty && sepRegions.head != RBRACE)
@@ -147,7 +146,6 @@ trait NewScanners {
         sepRegions = sepRegions.tail
         EMPTY
       case ARROW =>
-        assert(true)
         EMPTY
       case code @ (RPAREN|RBRACKET) =>
         if (!sepRegions.isEmpty && sepRegions.head == code)
@@ -171,7 +169,6 @@ trait NewScanners {
         fillNext
         (current.code,next.code) match {
         case (CASE,OBJECT) =>
-          assert(true)
           current.code = CASEOBJECT; next.code = EMPTY
         case (CASE, CLASS) => current.code = CASECLASS ; next.code = EMPTY
         case (SEMI, ELSE ) => currentIsNext

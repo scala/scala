@@ -53,7 +53,6 @@ class CharArrayReader(buf: RandomAccessSeq[Char], start: Int, /* startline: int,
 
   def hasNext: Boolean = if (bp < buf.length) true
   else {
-    assert(true)
     false
   }
 

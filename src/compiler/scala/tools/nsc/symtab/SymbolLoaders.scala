@@ -55,7 +55,6 @@ abstract class SymbolLoaders {
           assert(root.rawInfo == this)
           if (clazz != NoSymbol && !clazz.rawInfo.isInstanceOf[SymbolLoader]) {
             // bail
-            assert(true)
             root.setInfo(ErrorType)
             Console.println("ditch " + root)
             return
@@ -64,14 +63,12 @@ abstract class SymbolLoaders {
           val module = root.linkedModuleOfClass
           assert(root.rawInfo == this)
           if (module != NoSymbol && !module.rawInfo.isInstanceOf[SymbolLoader]) {
-            assert(true)
             root.setInfo(ErrorType)
             Console.println("ditch " + root)
             return
           }
         } else {
           assert(root.isModule)
-          assert(true)
         }
       }
       try {

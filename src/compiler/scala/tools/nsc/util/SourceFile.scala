@@ -113,7 +113,6 @@ class BatchSourceFile(val file : AbstractFile, _content : Array[Char]) extends S
     def find(toFind: Int, isIndex: Boolean): Int = {
       if (toFind == 0) return 0
       if (!isIndex && (toFind >= content.length)) {
-        assert(true)
         throw new Error(toFind + " not valid offset in " +
                         file.name + ":" + content.length)
       }

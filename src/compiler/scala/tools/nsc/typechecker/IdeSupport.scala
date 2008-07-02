@@ -56,7 +56,6 @@ trait IdeSupport extends Analyzer {
               }
               if (pause) {
                 assert(true)
-                assert(true)
               }
             case _=>
           }
@@ -198,8 +197,6 @@ trait IdeSupport extends Analyzer {
           //Console.println("FK-ENTER: " + tree.symbol)
           val sym = namer.enterInScope(tree.symbol)
           if (sym != tree.symbol) {
-            assert(true)
-            assert(true)
             Console.println("BAD: " + sym + " " + sym.id + " vs. " + tree.symbol.id)
           }
           import symtab.Flags._
@@ -229,7 +226,6 @@ trait IdeSupport extends Analyzer {
             }
           } else if (sym.hasFlag(symtab.Flags.LAZY) && sym.lazyAccessor != NoSymbol) {
               if (set.get.find(sym0 => sym0 == sym.lazyAccessor).isDefined) {
-                assert(true)
                 namer.enterInScope(sym.lazyAccessor)
               }
           }
@@ -256,7 +252,6 @@ trait IdeSupport extends Analyzer {
       val use = useTrees
       if (makeNoChanges) {}
       else if (use.isEmpty || use.last.symbol != NoSymbol) {
-        assert(true)
         return fakeUpdate(use) // already named
       }
 
@@ -283,7 +278,6 @@ trait IdeSupport extends Analyzer {
           var e = tree.symbol.owner.info.decls.lookupEntry(tree.symbol.name.toTermName)
           if (e != null) e.sym.pos match { // retype the object if its in the scope.
           case pos : TrackedPosition if pos.owner != null && pos.owner != MemoizedTree.this =>
-            assert(true)
             pos.owner.dirtyTyped // hope this works!
           case _ =>
           }
@@ -302,13 +296,11 @@ trait IdeSupport extends Analyzer {
       }
       if (lastSymbol != NoSymbol && lastSymbol != use.last.symbol) {
         assert(true)
-        assert(true)
       }
       use.last.symbol
     }
     def doTyper = if (typerTxt ne NoContext) updateTyper(newTyper(typerTxt), mode, pt)
     def updateTyper(typer : Typer, mode : Int, pt : Type) : Type = {
-      assert(true)
 
       val typerTxt = intern(typer.context)
       val makeNoChanges = currentClient.makeNoChanges
@@ -323,8 +315,6 @@ trait IdeSupport extends Analyzer {
       else if (typeIsDirty && shouldBeTyped && typerTxt != NoContext) {
 
       } else if (lastType == null) {
-        assert(true)
-        assert(true)
         return NoType
       } else return lastType
       var use = useTrees
@@ -333,7 +323,6 @@ trait IdeSupport extends Analyzer {
       if (use.last.symbol == NoSymbol && namerTxt != NoContext)
         updateNamer(newNamer(namerTxt))
       if (makeNoChanges) {
-        assert(true)
         assert(true)
       }
       activate(try {
@@ -349,14 +338,12 @@ trait IdeSupport extends Analyzer {
         // the type changed in a good way.
         typeChanged
       }
-      assert(true)
       if (!makeNoChanges && (use.length != lastTyped.length || !use.zip(lastTyped).forall{
         case (t0,t1) => t0.equalsStructure0(t1){
         case (t0:StubTree,t1:StubTree) if t0.underlying == t0.underlying || true => true
         case _ => false
         }
       })) {
-        assert(true)
         highlightChanged
       }
       if (use.last.tpe == null) ErrorType else use.last.tpe
