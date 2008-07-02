@@ -38,7 +38,7 @@ package scala.actors.remote
  *  }
  *  </pre>
  *
- * @version 0.9.10
+ * @version 0.9.17
  * @author Philipp Haller
  */
 object RemoteActor {
@@ -120,9 +120,12 @@ object RemoteActor {
    * Returns (a proxy for) the actor registered under
    * <code>name</code> on <code>node</code>.
    */
-  def select(node: Node, sym: Symbol): Actor = synchronized {
+  def select(node: Node, sym: Symbol): OutputChannel[Any] = synchronized {
     selfKernel.getOrCreateProxy(node, sym)
   }
+
+  def someKernel: NetKernel =
+    kernels.values.next
 }
 
 

@@ -35,7 +35,7 @@ case class ! [a](ch: Channel[a], msg: a)
  * actors. Only the actor creating an instance of a
  * <code>Channel</code> may receive from it.
  *
- * @version 0.9.9
+ * @version 0.9.17
  * @author Philipp Haller
  */
 class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
@@ -59,6 +59,17 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    */
   def !(msg: Msg) {
     recv ! scala.actors.!(this, msg)
+  }
+
+  /**
+   * Sends a message to this <code>Channel</code>
+   * (asynchronous) supplying explicit reply destination.
+   *
+   * @param  msg     the message to send
+   * @param  replyTo the reply destination
+   */
+  def send(msg: Msg, replyTo: OutputChannel[Any]) {
+    recv.send(scala.actors.!(this, msg), replyTo)
   }
 
   /**
