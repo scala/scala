@@ -193,9 +193,15 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
       if (sym.rawInfo != NoType && !sym.rawInfo.isComplete) {
         Console.println("XXX uncompleted: " + sym)
       }
-      val resetType = sym.info == NoType || hasError(sym.info)
-      if (!resetType && !compareTypes(sym.info, oldType,Nil)(sym => tracedTypes.get(sym) match {
-      case None => sym.info
+      val syminfo = try {
+        sym.info
+      } catch {
+        case e => check(false, ""+e); NoType
+      }
+
+      val resetType = syminfo == NoType || hasError(syminfo)
+      if (!resetType && !compareTypes(syminfo, oldType,Nil)(sym => tracedTypes.get(sym) match {
+      case None => syminfo
       case Some(oldType) => oldType
       })) (trackedTypes.removeKey(sym) match {
       case Some(set) => set.foreach(_.changed)
