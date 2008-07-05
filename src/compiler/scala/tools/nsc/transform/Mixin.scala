@@ -185,7 +185,7 @@ abstract class Mixin extends InfoTransform {
    *      - for every super accessor in T, add an implementation of that accessor
    *      - for every module in T, add a module
    */
-  def addMixedinMembers(clazz: Symbol) {
+  def addMixedinMembers(clazz: Symbol, unit : CompilationUnit) {
     if (!(clazz hasFlag JAVA) && (treatedClassInfos get clazz) != Some(clazz.info)) {
       treatedClassInfos(clazz) = clazz.info
 
@@ -193,7 +193,7 @@ abstract class Mixin extends InfoTransform {
       assert(!clazz.info.parents.isEmpty, clazz)
 
       // first complete the superclass with mixed in members
-      addMixedinMembers(clazz.superClass)
+      addMixedinMembers(clazz.superClass,unit)
 
       //Console.println("adding members of " + clazz.info.baseClasses.tail.takeWhile(superclazz !=) + " to " + clazz);//DEBUG
 
@@ -278,6 +278,8 @@ abstract class Mixin extends InfoTransform {
 
       for (val mc <- clazz.mixinClasses)
         if (mc hasFlag lateINTERFACE) {
+          // @SEAN: adding trait tracking so we don't have to recompile transitive closures
+          unit.depends += mc
           addLateInterfaceMembers(mc)
           mixinTraitMembers(mc)
           mixinImplClassMembers(implClass(mc), mc)
@@ -337,9 +339,9 @@ abstract class Mixin extends InfoTransform {
 // --------- term transformation -----------------------------------------------
 
   protected def newTransformer(unit: CompilationUnit): Transformer =
-    new MixinTransformer
+    new MixinTransformer(unit)
 
-  class MixinTransformer extends Transformer {
+  class MixinTransformer(unit : CompilationUnit) extends Transformer {
 
     /** Within a static implementation method: the parameter referring to the
      *  current object undefined evrywhere else.
@@ -378,7 +380,7 @@ abstract class Mixin extends InfoTransform {
         case Template(parents, self, body) =>
           localTyper = erasure.newTyper(rootContext.make(tree, currentOwner))
           atPhase(phase.next)(currentOwner.owner.info)//todo: needed?
-          if (!currentOwner.isTrait) addMixedinMembers(currentOwner)
+          if (!currentOwner.isTrait) addMixedinMembers(currentOwner,unit)
           else if (currentOwner hasFlag lateINTERFACE) addLateInterfaceMembers(currentOwner)
           tree
         case DefDef(mods, name, tparams, List(vparams), tpt, rhs) if currentOwner.isImplClass =>
