@@ -197,7 +197,8 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
         out.println("That command requires a filename to be specified.")
         return ()
       }
-      val filename = command.substring(spaceIdx).trim
+      val name = command.substring(spaceIdx).trim
+      val filename = if(name.toLowerCase endsWith ".scala") name else (name + ".scala")
       if (! new File(filename).exists) {
         out.println("That file does not exist")
         return ()
