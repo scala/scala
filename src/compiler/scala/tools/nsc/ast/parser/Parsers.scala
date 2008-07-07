@@ -112,7 +112,7 @@ trait Parsers extends NewScanners with MarkupParsers {
     protected def posToReport: Int = in.currentPos
 
     protected implicit def i2p(offset : Int) : Position
-    private implicit def p2i(pos : Position) = pos.offset.get
+    //private implicit def p2i(pos : Position) = pos.offset.get
 
     private def inToken = in.token
     private def inSkipToken = in.skipToken
@@ -231,6 +231,10 @@ trait Parsers extends NewScanners with MarkupParsers {
     def warning(pos : Int, msg : String) : Unit
     def incompleteInputError(msg: String) : Unit
     def deprecationWarning(pos : Int, msg : String) : Unit
+    private def syntaxError(pos : Position, msg : String, skipIt : Boolean) : Unit = pos.offset match {
+      case None => syntaxError(msg,skipIt)
+      case Some(offset) => syntaxError(offset, msg, skipIt)
+    }
     def syntaxError(pos: Int, msg: String) : Unit
     def syntaxError(msg: String, skipIt: Boolean) {
       syntaxError(inCurrentPos, msg, skipIt)
@@ -2226,7 +2230,7 @@ trait Parsers extends NewScanners with MarkupParsers {
             case vdef @ ValDef(mods, name, tpt, rhs) if !(mods hasFlag Flags.DEFERRED) =>
               List(copy.ValDef(vdef, mods | Flags.PRESUPER, name, tpt, rhs))
             case stat if !stat.isEmpty =>
-              syntaxError(stat.pos, "only concrete field definitions allowed in early object initialization section", false)
+                syntaxError(stat.pos, "only concrete field definitions allowed in early object initialization section", false)
               List()
             case _ => List()
           }
