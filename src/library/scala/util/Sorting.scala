@@ -515,7 +515,7 @@ object Sorting {
       var k, t_lo = lo
       var t_hi = mid + 1
       while (k <= hi) {
-        if ((t_lo <= mid) && ((t_hi > hi) || (f(a(t_lo), a(t_hi))))) {
+        if ((t_lo <= mid) && ((t_hi > hi) || (!f(a(t_hi), a(t_lo))))) {
           scratch(k) = a(t_lo)
           t_lo += 1
         } else {
