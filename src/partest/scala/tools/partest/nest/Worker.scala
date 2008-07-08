@@ -14,7 +14,7 @@ import java.net.URL
 
 import scala.tools.nsc.{ObjectRunner, GenericRunnerCommand}
 
-import scala.actors.Actor
+import scala.actors.{Actor, Exit, TIMEOUT}
 import scala.actors.Actor._
 
 case class RunTests(kind: String, files: List[File])
@@ -456,7 +456,28 @@ class Worker(val fileManager: FileManager) extends Actor {
               logWriter.print(prompt)
               val line = resReader.readLine()
               if ((line ne null) && line.length() > 0) {
-                action(line)
+                val parent = self
+                self.trapExit = true
+                val child = link {
+                  action(line)
+                }
+
+                receiveWithin(fileManager.timeout.toLong) {
+                  case TIMEOUT =>
+                    NestUI.verbose("action timed out")
+                    false
+                  case Exit(from, reason) if from == child => reason match {
+                    case 'normal => // do nothing
+                    case t: Throwable =>
+                      NestUI.verbose("while invoking compiler:")
+                      NestUI.verbose("caught "+t)
+                      t.printStackTrace
+                      if (t.getCause != null)
+                        t.getCause.printStackTrace
+                      false
+                  }
+                }
+
                 loop(action)
               }
             }

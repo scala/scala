@@ -61,6 +61,9 @@ class PartestTask extends Task {
   def setScalacOpts(opts: String): Unit =
     scalacOpts = Some(opts)
 
+  def setTimeout(delay: String): Unit =
+    timeout = Some(delay)
+
   private var classpath: Option[Path] = None
   private var javacmd: Option[File] = None
   private var showDiff: Boolean = false
@@ -72,6 +75,7 @@ class PartestTask extends Task {
   private var residentFiles: Option[FileSet] = None
   private var errorOnFailed: Boolean = false
   private var scalacOpts: Option[String] = None
+  private var timeout: Option[String] = None
 
   private def getPosFiles: Array[File] =
     if (!posFiles.isEmpty) {
@@ -159,6 +163,8 @@ class PartestTask extends Task {
     setFileManagerStringProperty("LATEST_LIB", scalaLibrary.get.getAbsolutePath)
     if (!scalacOpts.isEmpty)
       setFileManagerStringProperty("SCALAC_OPTS", scalacOpts.get)
+    if (!timeout.isEmpty)
+      setFileManagerStringProperty("timeout", timeout.get)
 
     var allSucesses: Int = 0
     var allFailures: Int = 0

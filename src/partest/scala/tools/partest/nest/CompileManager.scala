@@ -158,6 +158,10 @@ class ReflectiveCompiler(val fileManager: ConsoleFileManager) extends SimpleComp
 }
 
 class CompileManager(val fileManager: FileManager) {
+
+  import scala.actors.Actor._
+  import scala.actors.{Actor, Exit, TIMEOUT}
+
   var compiler: SimpleCompiler = new /*ReflectiveCompiler*/ DirectCompiler(fileManager)
 
   var numSeparateCompilers = 1
@@ -166,43 +170,51 @@ class CompileManager(val fileManager: FileManager) {
     compiler = new /*ReflectiveCompiler*/ DirectCompiler(fileManager)
   }
 
-  /* This method returns true iff compilation succeeds.
-   */
-  def shouldCompile(file: File, kind: String, log: File): Boolean = {
+  def withTimeout(file: File)(thunk: => Boolean): Boolean = {
     createSeparateCompiler()
 
-    try {
-      compiler.compile(file, kind, log)
-    } catch {
-      case t: Throwable =>
-        NestUI.verbose("while invoking compiler ("+file+"):")
-        NestUI.verbose("caught "+t)
-        t.printStackTrace
-        if (t.getCause != null)
-          t.getCause.printStackTrace
+    val parent = self
+    self.trapExit = true
+    val child = link {
+      parent ! (self, thunk)
+    }
+
+    receiveWithin(fileManager.timeout.toLong) {
+      case TIMEOUT =>
+        NestUI.verbose("action timed out")
         false
+      case Exit(from, reason) if from == child =>
+        val From = from
+        reason match {
+          case 'normal =>
+            receive {
+              case (From, result: Boolean) => result
+            }
+          case t: Throwable =>
+            NestUI.verbose("while invoking compiler ("+file+"):")
+            NestUI.verbose("caught "+t)
+            t.printStackTrace
+            if (t.getCause != null)
+              t.getCause.printStackTrace
+            false
+        }
     }
   }
 
+  /* This method returns true iff compilation succeeds.
+   */
+  def shouldCompile(file: File, kind: String, log: File): Boolean =
+    withTimeout(file) {
+      compiler.compile(file, kind, log)
+    }
+
   /* This method returns true iff compilation fails
-   * _and_ the compiler does _not_ crash.
+   * _and_ the compiler does _not_ crash or loop.
    *
    * If the compiler crashes, this method returns false.
    */
-  def shouldFailCompile(file: File, kind: String, log: File): Boolean = {
-    // always create new separate compiler
-    createSeparateCompiler()
-
-    try {
+  def shouldFailCompile(file: File, kind: String, log: File): Boolean =
+    withTimeout(file) {
       !compiler.compile(file, kind, log)
-    } catch {
-      case t: Throwable =>
-        NestUI.verbose("while invoking compiler ("+file+"):")
-        NestUI.verbose("caught "+t)
-        t.printStackTrace
-        if (t.getCause != null)
-          t.getCause.printStackTrace
-        false
     }
-  }
 }
