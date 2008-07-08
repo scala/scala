@@ -921,7 +921,7 @@ BOOTRAPING TEST AND TEST SUITE
 
   <target name="test.suite" depends="pack.done">
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
-             timeout="300000">
+             timeout="600000">
       <classpath>
         <path refid="pack.classpath"/>
         <fileset dir="${test.dir}/files/lib" includes="*.jar"/>
