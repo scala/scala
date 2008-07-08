@@ -197,13 +197,14 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
         out.println("That command requires a filename to be specified.")
         return ()
       }
-      val name = command.substring(spaceIdx).trim
-      val filename = if(name.toLowerCase endsWith ".scala") name else (name + ".scala")
-      if (! new File(filename).exists) {
+      val filename = command.substring(spaceIdx).trim
+      if (new File(filename).exists)
+	action(filename)
+      else if (new File(filename + ".scala").exists)
+	action(filename + ".scala")
+      else {
         out.println("That file does not exist")
-        return ()
       }
-      action(filename)
     }
 
     val helpRegexp    = ":h(e(l(p)?)?)?"
