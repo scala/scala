@@ -407,7 +407,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
           new CompilationUnit(
             new BatchSourceFile("<console>", code.toCharArray()))
         val scanner = new compiler.syntaxAnalyzer.UnitParser(unit);
-        val xxx = scanner.templateStatSeq;
+        val xxx = scanner.templateStatSeq(false);
         (xxx._2)
       }
       val (trees) = simpleParse(line)
