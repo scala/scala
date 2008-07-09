@@ -1925,7 +1925,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       val annots = annotations(true)
       defOrDcl(modifiers() withAnnotations annots)
     }
-
+    /** not hooked by the IDE, will not undergo stubbing. Used for early initialization blocks. */
     def preNonLocalDefOrDcl : List[Tree] = {
       val annots = annotations(true)
       defOrDcl(modifiers() withAnnotations annots)
@@ -2290,6 +2290,7 @@ trait Parsers extends NewScanners with MarkupParsers {
 ////////// TEMPLATES ////////////////////////////////////////////////////////////
 
     /** TemplateBody ::= [nl] `{' TemplateStatSeq `}'
+     * @param isPre specifies whether in early initializer (true) or not (false)
      */
     def templateBody(isPre : Boolean) = {
       accept(LBRACE)
@@ -2373,6 +2374,7 @@ trait Parsers extends NewScanners with MarkupParsers {
      *                     | Expr1
      *                     | super ArgumentExprs {ArgumentExprs}
      *                     |
+     * @param isPre specifies whether in early initializer (true) or not (false)
      */
     def templateStatSeq(isPre : Boolean) = checkNoEscapingPlaceholders {
       var self: ValDef = emptyValDef
@@ -2402,7 +2404,7 @@ trait Parsers extends NewScanners with MarkupParsers {
         } else if (isExprIntro) {
           stats += statement(InTemplate)
         } else if (isDefIntro || isModifier || inToken == LBRACKET /*todo: remove */ || inToken == AT) {
-          if (isPre)
+          if (isPre) // @S: avoid caching by calling a different method that does the same thing (except in the IDE)
             stats ++= joinComment(preNonLocalDefOrDcl)
           else stats ++= joinComment(nonLocalDefOrDcl)
         } else if (!isStatSep) {
