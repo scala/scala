@@ -483,7 +483,7 @@ trait JavaParsers extends JavaScanners {
     def termDecl(mods: Modifiers, parentToken: Int): List[Tree] = {
       val inInterface = parentToken == INTERFACE || parentToken == AT
       var mods1 = mods
-      if (mods hasFlag Flags.ABSTRACT) mods1 = mods &~ Flags.ABSTRACT | Flags.DEFERRED
+      if ((mods hasFlag Flags.ABSTRACT) || inInterface) mods1 = mods &~ Flags.ABSTRACT | Flags.DEFERRED
       val tparams = if (in.token == LT) typeParams() else List()
       val isVoid = in.token == VOID
       var rtpt =

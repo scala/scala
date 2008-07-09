@@ -203,6 +203,13 @@ abstract class TreeInfo {
     case _ => false
   }
 
+  /** Is this argument node of the form <expr> : _* ?
+   */
+  def isWildcardStarArg(tree: Tree): Boolean = tree match {
+    case Typed(expr, Ident(name)) => name == nme.WILDCARD_STAR.toTypeName
+    case _ => false
+  }
+
   /** Is this pattern node a catch-all (wildcard or variable) pattern? */
   def isDefaultCase(cdef: CaseDef) = cdef match {
     case CaseDef(Ident(nme.WILDCARD), EmptyTree, _) => true

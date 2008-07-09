@@ -442,7 +442,7 @@ object List {
  *  @author  Martin Odersky and others
  *  @version 1.0, 16/07/2003
  */
-sealed abstract class List[+A] extends Seq[A] {
+sealed abstract class List[+A] extends Seq[A] with Product {
 
   /** Returns true if the list does not contain any elements.
    *  @return <code>true</code>, iff the list is empty.

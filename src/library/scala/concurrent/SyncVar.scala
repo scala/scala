@@ -52,7 +52,7 @@ class SyncVar[A] {
   /**
    *  @deprecated Will be removed in 2.8. SyncVar should not allow exception by design.
    */
-  def setWithCatch(x: => A) = synchronized {
+  @deprecated def setWithCatch(x: => A) = synchronized {
     try {
       this set x
     } catch {

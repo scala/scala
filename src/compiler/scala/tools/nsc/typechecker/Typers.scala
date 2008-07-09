@@ -1625,13 +1625,15 @@ trait Typers { self: Analyzer =>
             !hasArrayElement(adaptedFormals(nonVarCount)) &&
             !settings.XnoVarargsConversion.value) {
               val lastarg = typedArg(args(nonVarCount), mode, REGPATmode, WildcardType)
-              if (lastarg.tpe.typeSymbol == ArrayClass || lastarg.tpe.typeSymbol == AllRefClass) {
-                unit.warning(
-                  lastarg.pos,
-                  "I'm seeing an array passed into a Java vararg.\n"+
-                  "I assume that the elements of this array should be passed as individual arguments to the vararg.\n"+
-                  "Therefore I wrap the array in a `: _*', to mark it as a vararg argument.\n"+
-                  "If that's not what you want, compile this file with option -Xno-varargs-conversion.")
+              if ((lastarg.tpe.typeSymbol == ArrayClass || lastarg.tpe.typeSymbol == AllRefClass) &&
+                  !treeInfo.isWildcardStarArg(lastarg)) {
+                if (lastarg.tpe.typeSymbol == ArrayClass)
+                  unit.warning(
+                    lastarg.pos,
+                    "I'm seeing an array passed into a Java vararg.\n"+
+                    "I assume that the elements of this array should be passed as individual arguments to the vararg.\n"+
+                    "Therefore I wrap the array in a `: _*', to mark it as a vararg argument.\n"+
+                    "If that's not what you want, compile this file with option -Xno-varargs-conversion.")
                 args0 = args.init ::: List(gen.wildcardStar(args.last))
               }
             }
@@ -2062,6 +2064,7 @@ trait Typers { self: Analyzer =>
       override def hashCode: Int = sym.hashCode * 41 + tp.hashCode
     }
 
+    /** convert skolems to existentials */
     def packedType(tree: Tree, owner: Symbol): Type = {
       def defines(tree: Tree, sym: Symbol) =
         sym.isExistentialSkolem && sym.unpackLocation == tree ||
@@ -3117,23 +3120,24 @@ trait Typers { self: Analyzer =>
         case Typed(expr, Function(List(), EmptyTree)) =>
           typedEta(checkDead(typed1(expr, mode, pt)))
 
-        case Typed(expr, tpt @ Ident(name)) if (name == nme.WILDCARD_STAR.toTypeName) =>
-          val expr1 = typed(expr, mode & stickyModes, seqType(pt))
-          expr1.tpe.baseType(SeqClass) match {
-            case TypeRef(_, _, List(elemtp)) =>
-              copy.Typed(tree, expr1, tpt setType elemtp) setType elemtp
-            case _ =>
-              setError(tree)
-          }
-
         case Typed(expr, tpt) =>
-          val tpt1 = typedType(tpt)
-          val expr1 = typed(expr, mode & stickyModes, tpt1.tpe.deconst)
-          val owntype =
-            if ((mode & PATTERNmode) != 0) inferTypedPattern(tpt1.pos, tpt1.tpe, pt)
-            else tpt1.tpe
-          //Console.println(typed pattern: "+tree+":"+", tp = "+tpt1.tpe+", pt = "+pt+" ==> "+owntype)//DEBUG
-          copy.Typed(tree, expr1, tpt1) setType owntype
+          if (treeInfo.isWildcardStarArg(tree)) {
+            val expr1 = typed(expr, mode & stickyModes, seqType(pt))
+            expr1.tpe.baseType(SeqClass) match {
+              case TypeRef(_, _, List(elemtp)) =>
+                copy.Typed(tree, expr1, tpt setType elemtp) setType elemtp
+              case _ =>
+                setError(tree)
+            }
+          } else {
+            val tpt1 = typedType(tpt)
+            val expr1 = typed(expr, mode & stickyModes, tpt1.tpe.deconst)
+            val owntype =
+              if ((mode & PATTERNmode) != 0) inferTypedPattern(tpt1.pos, tpt1.tpe, pt)
+              else tpt1.tpe
+            //Console.println(typed pattern: "+tree+":"+", tp = "+tpt1.tpe+", pt = "+pt+" ==> "+owntype)//DEBUG
+            copy.Typed(tree, expr1, tpt1) setType owntype
+          }
 
         case TypeApply(fun, args) =>
           // @M: kind-arity checking is done here and in adapt, full kind-checking is in checkKindBounds (in Infer)

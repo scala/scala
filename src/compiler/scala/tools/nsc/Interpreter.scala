@@ -550,7 +550,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     var argsHolder: Array[Any] = null // this roundabout approach is to try and
                                       // make sure the value is boxed
     argsHolder = List(value).toArray
-    setterMethod.invoke(null, argsHolder.asInstanceOf[Array[AnyRef]] : _*)
+    setterMethod.invoke(null, argsHolder.asInstanceOf[Array[AnyRef]]: _*)
 
     interpret("val " + name + " = " + binderName + ".value")
   }
