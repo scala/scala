@@ -195,10 +195,14 @@ abstract class GenJVM extends SubComponent {
             log("No mirror class for module with linked class: " +
                 c.symbol.fullNameString)
         }
-      } else if (c.symbol.linkedModuleOfClass != NoSymbol && !c.symbol.hasFlag(Flags.INTERFACE)) {
+      } /*
+	    disabling for now because it breaks compiler. Try:
+        fsc symtab/Types.scala -- you'll get 9 errors in phase GenJVM that
+        class files are not found.
+        else if (c.symbol.linkedModuleOfClass != NoSymbol && !c.symbol.hasFlag(Flags.INTERFACE)) {
         log("Adding forwarders to existing class " + c.symbol + " found in module " + c.symbol.linkedModuleOfClass)
         addForwarders(jclass, c.symbol.linkedModuleOfClass.moduleClass)
-      }
+      } */
 
       clasz.fields foreach genField
       clasz.methods foreach genMethod
