@@ -21,6 +21,7 @@ object NameTransformer {
     code2op(c) = new OpCodes(op, code, code2op(c))
   }
 
+  /* Note: decoding assumes opcodes are only ever lowercase. */
   enterOp('~', "$tilde")
   enterOp('=', "$eq")
   enterOp('<', "$less")
@@ -57,6 +58,16 @@ object NameTransformer {
           buf.append(name.substring(0, i))
         }
         buf.append(op2code(c))
+      /* Handle glyphs that are not valid Java/JVM identifiers */
+      } else if (!Character.isJavaLetterOrDigit(c)) {
+	if (buf eq null) {
+	  buf = new StringBuilder()
+	  buf.append(name.substring(0, i))
+	}
+        /* Annoying hack to format a hexadeciaml number with leading
+           zeros -- there does not appear to be any function pre-Java
+           1.5 to do this. */
+	buf.append("$u" + Integer.toHexString(c + 0x10000).substring(1).toUpperCase)
       } else if (buf ne null) {
         buf.append(c)
       }
@@ -79,6 +90,7 @@ object NameTransformer {
     var i = 0
     while (i < len) {
       var ops: OpCodes = null
+      var unicode = false
       val c = name charAt i
       if (c == '$' && i + 2 < len) {
         val ch1 = name.charAt(i+1)
@@ -95,12 +107,38 @@ object NameTransformer {
               buf.append(ops.op)
               i += ops.code.length()
             }
-          }
+          /* Handle the decoding of Unicode glyphs that are
+	     not valid Java/JVM identifiers */
+          } else if (ch1 == 'u' &&
+		     (Character.isDigit(ch2)) ||
+		     ('A' <= ch2 && ch2 <= 'F')) {
+              /* Skip past "$u", next four should be hexadecimal */
+	      val hex = name.substring(i+2, i+6)
+	      try {
+	        val str = Integer.parseInt(hex, 16).toChar
+		if (buf eq null) {
+                  buf = new StringBuilder()
+		  buf.append(name.substring(0, i))
+		}
+		buf.append(str)
+                /* 2 for "$u", 4 for hexadecimal number */
+		i += 6
+		unicode = true
+	      } catch {
+		case _:NumberFormatException =>
+		  /* <code>hex</code> did not decode to a hexadecimal number, so
+		   do nothing. */
+              }
+	  }
         }
       }
-      if (ops eq null) {
-        if (buf ne null) buf.append(c)
-        i += 1
+      /* If we didn't see an opcode or encoded Unicode glyph, and the
+        buffer is non-empty, write the current character and advance
+         one */
+      if ((ops eq null) && !unicode) {
+	if (buf ne null)
+          buf.append(c)
+	i += 1
       }
     }
     //System.out.println("= " + (if (buf == null) name else buf.toString()));//DEBUG
