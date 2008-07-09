@@ -67,12 +67,12 @@ object ObjectRunner {
       case None => throw new ClassNotFoundException(objectName)
     }
 
-    val method = clsToRun.getMethod("main", List(classOf[Array[String]]).toArray)
+    val method = clsToRun.getMethod("main", classOf[Array[String]])
     if ((method.getModifiers & Modifier.STATIC) == 0)
       throw new NoSuchMethodException(objectName + ".main is not static")
 
     withContextClassLoader(loader) {
-      method.invoke(null, List(arguments.toArray).toArray)
+      method.invoke(null, List(arguments.toArray).toArray: _*)
     }
   }
 }
