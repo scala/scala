@@ -170,6 +170,8 @@ class CompileManager(val fileManager: FileManager) {
     compiler = new /*ReflectiveCompiler*/ DirectCompiler(fileManager)
   }
 
+  val delay = fileManager.timeout.toLong
+
   def withTimeout(file: File)(thunk: => Boolean): Boolean = {
     createSeparateCompiler()
 
@@ -179,9 +181,9 @@ class CompileManager(val fileManager: FileManager) {
       parent ! (self, thunk)
     }
 
-    receiveWithin(fileManager.timeout.toLong) {
+    receiveWithin(delay) {
       case TIMEOUT =>
-        NestUI.verbose("action timed out")
+        println("compilation timed out")
         false
       case Exit(from, reason) if from == child =>
         val From = from
