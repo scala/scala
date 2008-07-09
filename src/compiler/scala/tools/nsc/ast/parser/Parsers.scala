@@ -1926,6 +1926,12 @@ trait Parsers extends NewScanners with MarkupParsers {
       defOrDcl(modifiers() withAnnotations annots)
     }
 
+    def preNonLocalDefOrDcl : List[Tree] = {
+      val annots = annotations(true)
+      defOrDcl(modifiers() withAnnotations annots)
+    }
+
+
     /** PatDef ::= Pattern2 {`,' Pattern2} [`:' Type] `=' Expr
      *  ValDcl ::= Id {`,' Id} `:' Type
      *  VarDef ::= PatDef | Id {`,' Id} `:' Type `=' `_'
@@ -2224,7 +2230,8 @@ trait Parsers extends NewScanners with MarkupParsers {
     def template(isTrait: Boolean): (List[Tree], List[List[Tree]], ValDef, List[Tree]) = {
       newLineOptWhenFollowedBy(LBRACE)
       if (inToken == LBRACE) {
-        val (self, body) = templateBody()
+        // @S: pre template body cannot stub like post body can!
+        val (self, body) = templateBody(true)
         if (inToken == WITH && self.isEmpty) {
           val vdefs: List[ValDef] = body flatMap {
             case vdef @ ValDef(mods, name, tpt, rhs) if !(mods hasFlag Flags.DEFERRED) =>
@@ -2284,17 +2291,16 @@ trait Parsers extends NewScanners with MarkupParsers {
 
     /** TemplateBody ::= [nl] `{' TemplateStatSeq `}'
      */
-    def templateBody() = {
+    def templateBody(isPre : Boolean) = {
       accept(LBRACE)
-      val result @ (self, stats) = templateStatSeq()
+      val result @ (self, stats) = templateStatSeq(isPre)
       accept(RBRACE)
       if (stats.isEmpty) (self, List(EmptyTree)) else result
     }
-
     def templateBodyOpt(traitParentSeen: Boolean): (ValDef, List[Tree]) = {
       newLineOptWhenFollowedBy(LBRACE)
       if (inToken == LBRACE) {
-        templateBody()
+        templateBody(false)
       } else {
         if (inToken == LPAREN)
           syntaxError((if (traitParentSeen) "parents of traits" else "traits or objects")+
@@ -2368,7 +2374,7 @@ trait Parsers extends NewScanners with MarkupParsers {
      *                     | super ArgumentExprs {ArgumentExprs}
      *                     |
      */
-    def templateStatSeq() = checkNoEscapingPlaceholders {
+    def templateStatSeq(isPre : Boolean) = checkNoEscapingPlaceholders {
       var self: ValDef = emptyValDef
       val stats = new ListBuffer[Tree]
       if (isExprIntro) {
@@ -2396,7 +2402,9 @@ trait Parsers extends NewScanners with MarkupParsers {
         } else if (isExprIntro) {
           stats += statement(InTemplate)
         } else if (isDefIntro || isModifier || inToken == LBRACKET /*todo: remove */ || inToken == AT) {
-          stats ++= joinComment(nonLocalDefOrDcl)
+          if (isPre)
+            stats ++= joinComment(preNonLocalDefOrDcl)
+          else stats ++= joinComment(nonLocalDefOrDcl)
         } else if (!isStatSep) {
           syntaxErrorOrIncomplete("illegal start of definition", true)
         }
