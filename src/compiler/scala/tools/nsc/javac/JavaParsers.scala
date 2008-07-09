@@ -714,7 +714,7 @@ trait JavaParsers extends JavaScanners {
         } else if (in.token == SEMI) {
           in.nextToken
         } else {
-          (if (mods hasFlag STATIC) statics else members) ++= memberDecl(mods, parentToken)
+          (if (mods hasFlag Flags.STATIC) statics else members) ++= memberDecl(mods, parentToken)
         }
       }
       (statics.toList, members.toList)
