@@ -1082,7 +1082,8 @@ trait Types {
           while (j < clSize) {
             closureCache(j) match {
               case RefinedType(parents, decls) =>
-                if (!decls.isEmpty) assert(false, "computing closure of "+this+":"+this.isInstanceOf[RefinedType])
+                // can't assert decls.isEmpty; see t0764
+                //if (!decls.isEmpty) assert(false, "computing closure of "+this+":"+this.isInstanceOf[RefinedType]+"/"+closureCache(j))
                 //Console.println("compute closure of "+this+" => glb("+parents+")")
                 closureCache(j) = mergePrefixAndArgs(parents, -1, maxClosureDepth(parents) + LubGlbMargin) match {
                   case Some(tp0) => tp0

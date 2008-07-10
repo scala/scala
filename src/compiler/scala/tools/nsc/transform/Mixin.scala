@@ -355,11 +355,6 @@ abstract class Mixin extends InfoTransform {
     /** The typer */
     private var localTyper: erasure.Typer = _
 
-    /** Within a static implementation method: the interface type corresponding
-     *  to the implementation module; undefined evrywhere else.
-     */
-    private var enclInterface: Symbol = _
-
     /** The first transform; called in a pre-order traversal at phase mixin
      *  (that is, every node is processed before its children).
      *  What transform does:
@@ -389,7 +384,6 @@ abstract class Mixin extends InfoTransform {
             self = sym.newValue(sym.pos, nme.SELF)
               .setFlag(PARAM)
               .setInfo(toInterface(currentOwner.typeOfThis));
-            enclInterface = currentOwner.toInterface
             val selfdef = ValDef(self) setType NoType
             copy.DefDef(tree, mods, name, tparams, List(selfdef :: vparams), tpt, rhs)
           } else {
@@ -781,13 +775,15 @@ abstract class Mixin extends InfoTransform {
         case Select(Super(_, _), name) =>
           tree
 
-        case Select(qual, name) if sym.owner.isImplClass && !isStaticOnly(sym) && enclInterface != null =>
+        case Select(qual, name) if sym.owner.isImplClass && !isStaticOnly(sym) =>
           // refer to fields in some implementation class via an abstract
           // getter in the interface.
+
           if (sym.isMethod)
             assert(false, "no method allowed here: " + sym + sym.isImplOnly +
                           " " + flagsToString(sym.flags))
-          val getter = sym.getter(enclInterface)
+          val iface = toInterface(sym.owner.tpe).typeSymbol
+          val getter = sym.getter(iface)
           assert(getter != NoSymbol)
           localTyper.typed {
             atPos(tree.pos) {
@@ -800,7 +796,7 @@ abstract class Mixin extends InfoTransform {
           // setter in the interface.
           localTyper.typed {
             atPos(tree.pos) {
-              Apply(Select(qual, lhs.symbol.setter(enclInterface)) setPos lhs.pos, List(rhs))
+              Apply(Select(qual, lhs.symbol.setter(toInterface(lhs.symbol.owner.tpe).typeSymbol)) setPos lhs.pos, List(rhs))
             }
           }
         case _ =>
