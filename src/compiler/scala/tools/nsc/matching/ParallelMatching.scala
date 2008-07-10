@@ -34,6 +34,7 @@ trait ParallelMatching  {
   // used as argument to `EqualsPatternClass'
   case class PseudoType(o: Tree) extends SimpleTypeProxy {
     override def underlying: Type = o.tpe
+    override def safeToString: String = "PseudoType("+o+")"
   }
 
   /** picks which rewrite rule to apply

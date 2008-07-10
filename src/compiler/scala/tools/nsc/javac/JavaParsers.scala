@@ -707,13 +707,14 @@ trait JavaParsers extends JavaScanners {
       val statics = new ListBuffer[Tree]
       val members = new ListBuffer[Tree]
       while (in.token != RBRACE && in.token != EOF) {
-        val mods = modifiers(inInterface)
+        var mods = modifiers(inInterface)
         if (in.token == LBRACE) {
           skipAhead() // skip init block, we just assume we have seen only static
           accept(RBRACE)
         } else if (in.token == SEMI) {
           in.nextToken
         } else {
+          if (in.token == ENUM) mods |= Flags.STATIC
           (if (mods hasFlag Flags.STATIC) statics else members) ++= memberDecl(mods, parentToken)
         }
       }

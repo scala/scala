@@ -636,6 +636,7 @@ trait Contexts { self: Analyzer =>
     case _ => false
     }
     override def hashCode = if (inIDE) expr.hashCodeStructure else expr.hashCode
+    override def safeToString = "ImportType("+expr+")"
   }
   protected def intern(txt : Context) = txt
 

@@ -251,7 +251,10 @@ trait Types {
      */
     def narrow: Type =
       if (phase.erasedTypes) this
-      else refinedType(List(this), commonOwner(this), EmptyScope, commonOwner(this).pos).narrow
+      else {
+        val cowner = commonOwner(this)
+        refinedType(List(this), cowner, EmptyScope, cowner.pos).narrow
+      }
 
     /** For a TypeBounds type, itself;
      *  for a reference denoting an abstract type, its bounds,
@@ -592,6 +595,20 @@ trait Types {
       else str
     }
 
+    /** A test whether a type contains any unification type variables */
+    def isGround: Boolean = this match {
+      case TypeVar(_, constr) =>
+        constr.inst != NoType && constr.inst.isGround
+      case TypeRef(pre, sym, args) =>
+        sym.isPackageClass || pre.isGround && (args forall (_.isGround))
+      case SingleType(pre, sym) =>
+        sym.isPackageClass || pre.isGround
+      case ThisType(_) | NoPrefix | WildcardType | NoType | ErrorType | ConstantType(_) =>
+        true
+      case _ =>
+        typeVarToOriginMap(this) eq this
+    }
+
     /** Is this type completed (i.e. not a lazy type)?
      */
     def isComplete: Boolean = true
@@ -623,14 +640,23 @@ trait Types {
     }
 
     /**
-     *  @param name          ...
-     *  @param excludedFlags ...
-     *  @param requiredFlags ...
-     *  @param stableOnly    ...
-     *  @return              ...
+     *  Find member(s) in this type. If several members matching criteria are found, they are
+     *  returned in an OverloadedSymbol
+     *
+     *  @param name           The member's name, where nme.ANYNAME means `unspecified'
+     *  @param excludedFlags  Returned members do not have these flags
+     *  @param requiredFlags  Returned members do have these flags
+     *  @param stableOnly     If set, return only members that are types or stable values
+     *  @param from           ??
      */
     //TODO: use narrow only for modules? (correct? efficiency gain?)
     def findMember(name: Name, excludedFlags: Int, requiredFlags: Long, stableOnly: Boolean)(from:Symbol): Symbol = {
+      // if this type contains type variables, get rid of them;
+      // without this, the matchesType call would lead to type variables on both sides
+      // of a subtyping/equality judgement, which can lead to recursive types being constructed.
+      // See (t0851) for a situation where this happens.
+      if (!this.isGround)
+        return typeVarToOriginMap(this).findMember(name, excludedFlags, requiredFlags, stableOnly)(from)
       if (inIDE) trackTypeIDE(typeSymbol)
       if (util.Statistics.enabled) findMemberCount += 1
       val startTime = if (util.Statistics.enabled) currentTime else 0l
@@ -762,7 +788,23 @@ trait Types {
 
     /** The kind of this type; used for debugging */
     def kind: String = "unknown type of class "+getClass()
+
+    override def toString: String =
+      if (tostringRecursions >= maxTostringRecursions)
+        "..."
+      else
+        try {
+          tostringRecursions += 1
+          safeToString
+        } finally {
+          tostringRecursions -= 1
+        }
+
+    def safeToString: String = super.toString
   }
+
+  private final val maxTostringRecursions = 50
+  private var tostringRecursions = 0
 
 // Subclasses ------------------------------------------------------------
 
@@ -794,7 +836,7 @@ trait Types {
     override def isNotNull: Boolean = true
     override def notNull = this
     override def deconst: Type = underlying //todo: needed?
-    override def toString: String = underlying.toString + " with NotNull"
+    override def safeToString: String = underlying.toString + " with NotNull"
     override def kind = "NotNullType"
   }
 
@@ -810,7 +852,7 @@ trait Types {
       if (util.Statistics.enabled) singletonClosureCount += 1
       addClosure(this, underlying.closure)
     }
-    override def toString: String = prefixString + "type"
+    override def safeToString: String = prefixString + "type"
 /*
     override def typeOfThis: Type = typeSymbol.typeOfThis
     override def bounds: TypeBounds = mkTypeBounds(this, this)
@@ -835,7 +877,7 @@ trait Types {
       sym
     }
     override def baseType(clazz: Symbol): Type = this
-    override def toString: String = "<error>"
+    override def safeToString: String = "<error>"
     override def narrow: Type = this
     // override def isNullable: Boolean = true
     override def kind = "ErrorType"
@@ -843,20 +885,20 @@ trait Types {
 
   /** An object representing an unknown type */
   case object WildcardType extends Type {
-    override def toString: String = "?"
+    override def safeToString: String = "?"
     // override def isNullable: Boolean = true
     override def kind = "WildcardType"
   }
 
   case class BoundedWildcardType(override val bounds: TypeBounds) extends Type {
-    override def toString: String = "?" + bounds
+    override def safeToString: String = "?" + bounds
     override def kind = "BoundedWildcardType"
   }
 
   /** An object representing a non-existing type */
   case object NoType extends Type {
     override def isTrivial: Boolean = true
-    override def toString: String = "<notype>"
+    override def safeToString: String = "<notype>"
     // override def isNullable: Boolean = true
     override def kind = "NoType"
   }
@@ -866,7 +908,7 @@ trait Types {
     override def isTrivial: Boolean = true
     override def isStable: Boolean = true
     override def prefixString = ""
-    override def toString: String = "<noprefix>"
+    override def safeToString: String = "<noprefix>"
     // override def isNullable: Boolean = true
     override def kind = "NoPrefixType"
   }
@@ -885,7 +927,7 @@ trait Types {
       else if (sym.isAnonymousClass || sym.isRefinementClass) "this."
       else if (sym.isModuleClass) sym.fullNameString + "."
       else sym.nameString + ".this."
-    override def toString: String =
+    override def safeToString: String =
       if (sym.isRoot) "<root>"
       else if (sym.isEmptyPackageClass) "<empty>"
       else super.toString
@@ -896,7 +938,7 @@ trait Types {
   case class DeBruijnIndex(level: Int, paramId: Int) extends Type {
     override def isTrivial = true
     override def isStable = true
-    override def toString = "<param "+level+"."+paramId+">"
+    override def safeToString = "<param "+level+"."+paramId+">"
     override def kind = "DeBruijnIndex"
   }
 
@@ -966,9 +1008,12 @@ trait Types {
     def supertype = hi
     override val isTrivial: Boolean = lo.isTrivial && hi.isTrivial
     override def bounds: TypeBounds = this
-    def containsType(that: Type) = that <:< this || lo <:< that && that <:< hi;
+    def containsType(that: Type) = that match {
+      case TypeBounds(_, _) => that <:< this
+      case _ => lo <:< that && that <:< hi
+    }
     // override def isNullable: Boolean = AllRefClass.tpe <:< lo;
-    override def toString = ">: " + lo + " <: " + hi
+    override def safeToString = ">: " + lo + " <: " + hi
     override def kind = "TypeBoundsType"
   }
 
@@ -1138,7 +1183,7 @@ trait Types {
     // override def isNullable: Boolean =
     // parents forall (p => p.isNullable && !p.typeSymbol.isAbstractType);
 
-    override def toString: String =
+    override def safeToString: String =
       parents.mkString("", " with ", "") +
       (if (settings.debug.value || parents.isEmpty || (decls.elems ne null))
         decls.mkString("{", "; ", "}") else "")
@@ -1307,7 +1352,7 @@ trait Types {
     override def isTrivial: Boolean = true
     override def isNotNull = value.value != null
     override def deconst: Type = underlying
-    override def toString: String =
+    override def safeToString: String =
       underlying.toString + "(" + value.escapedStringValue + ")"
     // override def isNullable: Boolean = value.value eq null
     // override def isNonNull: Boolean = value.value ne null
@@ -1516,7 +1561,7 @@ A type's typeSymbol should never be inspected directly.
 
     // override def isNullable: Boolean = sym.info.isNullable
 
-    override def toString: String = {
+    override def safeToString: String = {
       if (!settings.debug.value) {
         if (sym == RepeatedParamClass && !args.isEmpty)
           return args(0).toString + "*"
@@ -1595,9 +1640,10 @@ A type's typeSymbol should never be inspected directly.
       params.mkString(paramPrefix, ",", ")")+res
     }
 
-    override def toString: String =
+    override def safeToString: String =
       if (resultType.isDependent) dependentToString(0)
       else paramTypes.mkString(paramPrefix, ",", ")") + resultType
+
     override def kind = "MethodType"
   }
 
@@ -1649,7 +1695,7 @@ A type's typeSymbol should never be inspected directly.
 
     override def isHigherKinded = !typeParams.isEmpty
 
-    override def toString: String =
+    override def safeToString: String =
       (if (typeParams.isEmpty) "=> "
        else (typeParams map (_.defString) mkString ("[", ",", "]")))+resultType
 
@@ -1702,7 +1748,7 @@ A type's typeSymbol should never be inspected directly.
       underlying.substSym(quantified, skolems)
     }
 
-    override def toString: String = {
+    override def safeToString: String = {
       val str =
         underlying+(quantified map (_.existentialToString) mkString(" forSome { ", "; ", " }"))
       if (settings.explaintypes.value) "("+str+")" else str
@@ -1730,7 +1776,7 @@ A type's typeSymbol should never be inspected directly.
    */
   case class OverloadedType(pre: Type, alternatives: List[Symbol]) extends Type {
     override def prefix: Type = pre
-    override def toString =
+    override def safeToString =
       (alternatives map pre.memberType).mkString("", " <and> ", "")
     override def kind = "OverloadedType"
   }
@@ -1740,7 +1786,7 @@ A type's typeSymbol should never be inspected directly.
    *  Not used after phase `typer'.
    */
   case class AntiPolyType(pre: Type, targs: List[Type]) extends Type {
-    override def toString =
+    override def safeToString =
       pre.toString + targs.mkString("(with type arguments ", ",", ")");
     override def memberType(sym: Symbol) = pre.memberType(sym) match {
       case PolyType(tparams, restp) => restp.subst(tparams, targs)
@@ -1749,10 +1795,14 @@ A type's typeSymbol should never be inspected directly.
     override def kind = "AntiPolyType"
   }
 
+  //private var tidCount = 0  //DEBUG
+
   /** A class representing a type variable
    *  Not used after phase `typer'.
    */
   case class TypeVar(origin: Type, constr0: TypeConstraint) extends Type {
+
+    // var tid = { tidCount += 1; tidCount } //DEBUG
 
     /** The constraint associated with the variable */
     var constr = constr0
@@ -1760,12 +1810,25 @@ A type's typeSymbol should never be inspected directly.
     /** The variable's skolemizatuon level */
     val level = skolemizationLevel
 
+    def setInst(tp: Type) {
+      assert(!(tp containsTp this), this)
+      constr.inst = tp
+    }
+
+    def tryInstantiate(tp: Type): Boolean =
+      if (constr.lobounds.forall(_ <:< tp) && constr.hibounds.forall(tp <:< _)) {
+        setInst(tp)
+        true
+      } else false
+
     override def typeSymbol = origin.typeSymbol
-    override def toString: String =
+    override def safeToString: String = {
+      def varString = "?"+(if (settings.explaintypes.value) level else "")+origin// +"#"+tid //DEBUG
       if (constr.inst eq null) "<null " + origin + ">"
-      else if (constr.inst eq NoType)
-        "?"+(if (settings.explaintypes.value) level else "")+origin
-      else constr.inst.toString;
+      else if (settings.debug.value) varString+constr.toString
+      else if (constr.inst eq NoType) varString
+      else constr.inst.toString
+    }
     override def isStable = origin.isStable
     override def kind = "TypeVar"
   }
@@ -1791,7 +1854,7 @@ A type's typeSymbol should never be inspected directly.
 
     override protected def rewrap(tp: Type) = AnnotatedType(attributes, tp, selfsym)
 
-    override def toString: String = {
+    override def safeToString: String = {
       val attString =
         if (attributes.isEmpty)
           ""
@@ -1840,7 +1903,7 @@ A type's typeSymbol should never be inspected directly.
   abstract class LazyType extends Type {
     override def isComplete: Boolean = false
     override def complete(sym: Symbol)
-    override def toString = "<?>"
+    override def safeToString = "<?>"
     override def kind = "LazyType"
   }
 
@@ -2203,11 +2266,6 @@ A type's typeSymbol should never be inspected directly.
       tc.inst = inst
       tc
     }
-
-    def instantiate(tp: Type): Boolean =
-      if (lobounds.forall(_ <:< tp) && hibounds.forall(tp <:< _)) {
-        inst = tp; true
-      } else false
 
     override def toString =
       lobounds.mkString("[ _>:(", ",", ") ") +
@@ -2943,6 +3001,15 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
+  /** A map to convert every occurrence of a type variable to a
+      wildcard type */
+  object typeVarToOriginMap extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case TypeVar(origin, _) => origin
+      case _ => mapOver(tp)
+    }
+  }
+
   /** A map to implement the `contains' method */
   class ContainsTraverser(sym: Symbol) extends TypeTraverser {
     var result = false
@@ -3438,10 +3505,10 @@ A type's typeSymbol should never be inspected directly.
         bounds containsType tp1
       case (tv1 @ TypeVar(_, constr1), _) =>
         if (constr1.inst != NoType) constr1.inst =:= tp2
-        else isRelatable(tv1, tp2) && (constr1 instantiate wildcardToTypeVarMap(tp2))
+        else isRelatable(tv1, tp2) && (tv1 tryInstantiate wildcardToTypeVarMap(tp2))
       case (_, tv2 @ TypeVar(_, constr2)) =>
         if (constr2.inst != NoType) tp1 =:= constr2.inst
-        else isRelatable(tv2, tp1) && (constr2 instantiate wildcardToTypeVarMap(tp1))
+        else isRelatable(tv2, tp1) && (tv2 tryInstantiate wildcardToTypeVarMap(tp1))
       case (AnnotatedType(_,_,_), _) =>
         annotationsConform(tp1, tp2) && annotationsConform(tp2, tp1) && tp1.withoutAttributes =:= tp2.withoutAttributes
       case (_, AnnotatedType(_,_,_)) =>
@@ -3805,7 +3872,7 @@ A type's typeSymbol should never be inspected directly.
           }
         }
         tvar.constr.inst = NoType // necessary because hibounds/lobounds may contain tvar
-        tvar.constr.inst = if (up) glb(tvar.constr.hibounds) else lub(tvar.constr.lobounds)
+        tvar setInst (if (up) glb(tvar.constr.hibounds) else lub(tvar.constr.lobounds))
         //Console.println("solving "+tvar+" "+up+" "+(if (up) (tvar.constr.hibounds) else tvar.constr.lobounds)+((if (up) (tvar.constr.hibounds) else tvar.constr.lobounds) map (_.widen))+" = "+tvar.constr.inst)//DEBUG"
       }
     }

@@ -477,16 +477,16 @@ trait Infer {
         if (tvar.constr.inst != NoType) {
           instantiate(tvar.constr.inst)
         } else if ((variance & COVARIANT) != 0 && !tvar.constr.hibounds.isEmpty) {
-          tvar.constr.inst = glb(tvar.constr.hibounds)
+          tvar setInst glb(tvar.constr.hibounds)
           assertNonCyclic(tvar)//debug
           instantiate(tvar.constr.inst)
         } else if ((variance & CONTRAVARIANT) != 0 && !tvar.constr.lobounds.isEmpty) {
-          tvar.constr.inst = lub(tvar.constr.lobounds)
+          tvar setInst lub(tvar.constr.lobounds)
           assertNonCyclic(tvar)//debug
           instantiate(tvar.constr.inst)
         } else if (!tvar.constr.hibounds.isEmpty && !tvar.constr.lobounds.isEmpty &&
                    glb(tvar.constr.hibounds) <:< lub(tvar.constr.lobounds)) {
-          tvar.constr.inst = glb(tvar.constr.hibounds)
+          tvar setInst glb(tvar.constr.hibounds)
           assertNonCyclic(tvar)//debug
           instantiate(tvar.constr.inst)
         } else {
