@@ -70,6 +70,7 @@ object UIDemo extends SimpleGUIApplication {
         pages += new Page("Converter", CelsiusConverter2.ui)
         pages += new Page("Tables", TableSelection.ui)
         pages += new Page("Dialogs", Dialogs.ui)
+        pages += new Page("Combo Boxes", ComboBoxes.ui)
 
         val password = new FlowPanel {
           contents += new Label("Enter your secret password here ")
@@ -105,5 +106,7 @@ object UIDemo extends SimpleGUIApplication {
       }
     }
   }
+  //val keys = javax.swing.UIManager.getDefaults().keys
+  //while(keys.hasMoreElements) println(keys.nextElement)
 }
 

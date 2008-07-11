@@ -1,41 +1,44 @@
 package scala.swing
 
 import event.Event
+import scala.collection.mutable.{Buffer, ListBuffer}
 
-class Reactions {
+object Reactions {
+  import scala.ref._
+
+  class Impl extends Reactions {
+    private val parts: Buffer[Reaction] = new ListBuffer[Reaction]
+    def isDefinedAt(e: Event) = parts.exists(_ isDefinedAt e)
+    def += (r: Reaction) = { parts += r }
+    def -= (r: Reaction) { parts -= r }
+    def apply(e: Event) {
+      for (p <- parts) if (p isDefinedAt e) p(e)
+    }
+  }
+
+  type Reaction = PartialFunction[Event, Unit]
+
   /**
-   * Convenience type alias.
+   * A Reaction implementing this trait is strongly referenced in the reaction list
    */
-  type Reaction = PartialFunction[Event, unit]
+  trait StronglyReferenced // TODO: implement in Publisher
 
-  private var parts: List[Reaction] = List()
+  class Wrapper(listener: Any)(r: Reaction) extends Reaction with StronglyReferenced with Proxy {
+    def self = listener
+    def isDefinedAt(e: Event) = r.isDefinedAt(e)
+    def apply(e: Event) { r(e) }
+  }
+}
 
+
+abstract class Reactions extends Reactions.Reaction {
   /**
    * Add a reaction.
    */
-  def += (r: Reaction) = { parts = r :: parts }
+  def += (r: Reactions.Reaction)
 
   /**
    * Remove the given reaction.
    */
-  def -= (r: Reaction) = {
-    def withoutR(xs: List[Reaction]): List[Reaction] =
-      if (xs.isEmpty) xs
-      else if (xs.head == r) xs.tail
-      else xs.head :: withoutR(xs.tail)
-    parts = withoutR(parts)
-  }
-
-  /**
-   * Pass the given event to registered reactions.
-   */
-  def send(e: Event) = {
-    def sendTo(ps: List[Reaction]): Unit = ps match {
-      case Nil =>
-      case p :: ps =>
-        if (p isDefinedAt e) p(e)
-        /*else*/ sendTo(ps) // no overwrite semantics
-    }
-    sendTo(parts)
-  }
+  def -= (r: Reactions.Reaction)
 }

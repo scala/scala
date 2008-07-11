@@ -25,7 +25,7 @@ object BorderPanel {
 class BorderPanel extends Panel with LayoutContainer {
   import BorderPanel._
   def layoutManager = peer.getLayout.asInstanceOf[BorderLayout]
-  override lazy val peer = new javax.swing.JPanel(new BorderLayout)
+  override lazy val peer = new javax.swing.JPanel(new BorderLayout) with SuperMixin
 
   type Constraints = Position.Value
 

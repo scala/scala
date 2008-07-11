@@ -25,19 +25,75 @@ object Table {
   object ElementMode extends Enumeration {
     val Row, Column, Cell, None = Value
   }
+
+  abstract class Renderer[-A] {
+    def peer: TableCellRenderer = new TableCellRenderer {
+      def getTableCellRendererComponent(table: JTable, value: AnyRef, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int) = {
+        componentFor(table match {
+          case t: JTableMixin => t.tableWrapper
+          case _ => assert(false); null
+        }, isSelected, hasFocus, value.asInstanceOf[A], row, column).peer
+      }
+    }
+    def componentFor(table: Table, isSelected: Boolean, hasFocus: Boolean, a: A, row: Int, column: Int): Component
+  }
+
+  abstract class DefaultRenderer[-A, C<:Component](val component: C) extends Renderer[A] {
+    // The renderer component is responsible for painting selection
+    // backgrounds. Hence, make sure it is opaque to let it draw
+    // the background.
+    component.opaque = true
+
+    /**
+     * Standard preconfiguration that is commonly done for any component.
+     */
+    def preConfigure(table: Table, isSelected: Boolean, hasFocus: Boolean, a: A, row: Int, column: Int) {
+      if (isSelected) {
+        component.background = table.selectionBackground
+        component.foreground = table.selectionForeground
+      } else {
+        component.background = table.background
+        component.foreground = table.foreground
+      }
+    }
+    /**
+     * Configuration that is specific to the component and this renderer.
+     */
+    def configure(table: Table, isSelected: Boolean, hasFocus: Boolean, a: A, row: Int, column: Int)
+
+    /**
+     * Configures the component before returning it.
+     */
+    def componentFor(table: Table, isSelected: Boolean, hasFocus: Boolean, a: A, row: Int, column: Int): Component = {
+      preConfigure(table, isSelected, hasFocus, a, row, column)
+      configure(table, isSelected, hasFocus, a, row, column)
+      component
+    }
+  }
+
+  class LabelRenderer[A](convert: A => (Icon, String)) extends DefaultRenderer[A, Label](new Label) {
+    def configure(table: Table, isSelected: Boolean, hasFocus: Boolean, a: A, row: Int, column: Int) {
+      val (icon, text) = convert(a)
+      component.icon = icon
+      component.text = text
+    }
+  }
+
+  private[swing] trait JTableMixin { def tableWrapper: Table }
 }
 
 /**
  * @see javax.swing.JTable
  */
 class Table extends Component with Scrollable with Publisher {
-  override lazy val peer: JTable = new JTable {
+  override lazy val peer: JTable = new JTable with Table.JTableMixin {
+    def tableWrapper = Table.this
     override def getCellRenderer(r: Int, c: Int) = new TableCellRenderer {
       def getTableCellRendererComponent(table: JTable, value: AnyRef, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int) =
         Table.this.renderer(isSelected, hasFocus, row, column).peer
     }
     override def getCellEditor(r: Int, c: Int) = editor(r, c)
-    override def getValueAt(r: Int, c: Int) = Table.this.apply(r,c)
+    override def getValueAt(r: Int, c: Int) = Table.this.apply(r,c).asInstanceOf[AnyRef]
   }
   import Table._
 
@@ -188,10 +244,25 @@ class Table extends Component with Scrollable with Publisher {
       Table.this.peer.getDefaultEditor(classOf[Object])
   }
 
-  def apply(row: Int, column: Int) = model.getValueAt(row, column)
-  def update(row: Int, column: Int, value: Any) = model.setValueAt(value, row, column)
+  /**
+   * Get the current value of the given cell.
+   */
+  def apply(row: Int, column: Int): Any = model.getValueAt(row, column)
 
-  def markUpdated(row: Int, column: Int) = update(row, column, apply(row, column))
+  /**
+   * Change the value of the given cell.
+   */
+  def update(row: Int, column: Int, value: Any) { model.setValueAt(value, row, column) }
+
+  /**
+   * Visually update the given cell.
+   */
+  def updateCell(row: Int, column: Int) = update(row, column, apply(row, column))
+
+  def selectionForeground: Color = peer.getSelectionForeground
+  def selectionForeground_=(c: Color) = peer.setSelectionForeground(c)
+  def selectionBackground: Color = peer.getSelectionBackground
+  def selectionBackground_=(c: Color) = peer.setSelectionBackground(c)
 
   protected val modelListener = new TableModelListener {
     def tableChanged(e: TableModelEvent) = publish(

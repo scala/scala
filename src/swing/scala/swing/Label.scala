@@ -10,8 +10,10 @@ import javax.swing._
 class Label(text0: String) extends Component {
   override lazy val peer: JLabel = new JLabel(text0)
   def this() = this("")
-  def text: String = peer.getText()
+  def text: String = peer.getText
   def text_=(s: String) = peer.setText(s)
+  def icon: Icon = peer.getIcon
+  def icon_=(i: Icon) = peer.setIcon(i)
   /**
    * The alignment of the label's contents relative to its bounding box.
    */

@@ -1,9 +1,21 @@
 package scala.swing
 
 import javax.swing.{KeyStroke, Icon}
+import java.awt.event.ActionListener
 
 object Action {
   case object NoAction extends Action("") { def apply() {} }
+
+  object Trigger {
+    abstract trait Wrapper extends Component with Action.Trigger {
+      self: Component {
+        def peer: javax.swing.JComponent {
+          def addActionListener(a: ActionListener)
+          def removeActionListener(a: ActionListener)
+        }
+      } =>
+    }
+  }
 
   /**
    * Anything that triggers an action.

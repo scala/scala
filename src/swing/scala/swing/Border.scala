@@ -11,6 +11,8 @@ import javax.swing.border._
  */
 object Border {
   def Empty = BorderFactory.createEmptyBorder()
+  def Empty(weight: Int) =
+    BorderFactory.createEmptyBorder(weight, weight, weight, weight)
   def Empty(top: Int, left: Int, bottom: Int, right: Int) =
     BorderFactory.createEmptyBorder(top, left, bottom, right)
 

@@ -11,7 +11,7 @@ import event._
  * @see javax.swing.AbstractButton
  */
 abstract class AbstractButton extends Component with Action.Trigger with Publisher {
-  override lazy val peer: JAbstractButton = new JAbstractButton {}
+  override lazy val peer: JAbstractButton = new JAbstractButton with SuperMixin {}
 
   def text: String = peer.getText
   def text_=(s: String) = peer.setText(s)
@@ -38,10 +38,8 @@ abstract class AbstractButton extends Component with Action.Trigger with Publish
   //1.6: def hideActionText: Boolean = peer.getHideActionText
   //def hideActionText_=(b: Boolean) = peer.setHideActionText(b)
 
-  peer.addActionListener(new java.awt.event.ActionListener {
-    def actionPerformed(e: java.awt.event.ActionEvent) {
-      publish(ButtonClicked(AbstractButton.this))
-    }
+  peer.addActionListener(Swing.ActionListener { e =>
+    publish(ButtonClicked(AbstractButton.this))
   })
 
   def selected: Boolean = peer.isSelected

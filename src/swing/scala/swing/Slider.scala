@@ -33,9 +33,9 @@ class Slider extends Component with Orientable with Publisher {
   def majorTickSpacing: Int = peer.getMajorTickSpacing
   def majorTickSpacing_=(v: Int) { peer.setMajorTickSpacing(v) }
 
-  def labels: collection.Map[Int, Label] =
-    new collection.jcl.MapWrapper[Int, Label] { def underlying = peer.getLabelTable.asInstanceOf[java.util.Hashtable[Int, Label]] }
-  def labels_=(l: collection.Map[Int, Label]) {
+  def labels: scala.collection.Map[Int, Label] =
+    new scala.collection.jcl.MapWrapper[Int, Label] { def underlying = peer.getLabelTable.asInstanceOf[java.util.Hashtable[Int, Label]] }
+  def labels_=(l: scala.collection.Map[Int, Label]) {
     val table = new java.util.Hashtable[Any, Any]
     for ((k,v) <- l) table.put(k, v)
     peer.setLabelTable(table)

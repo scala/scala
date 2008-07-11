@@ -1,7 +1,7 @@
 package scala.swing
 
 trait Reactor {
-  val reactions = new Reactions
+  val reactions = new Reactions.Impl
   /**
    * Listen to the given publisher as long as <code>deafTo</code> isn't called for
    * them.

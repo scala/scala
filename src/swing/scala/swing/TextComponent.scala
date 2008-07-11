@@ -22,7 +22,7 @@ object TextComponent {
  * @see javax.swing.JTextComponent
  */
 class TextComponent extends Component with Publisher {
-  override lazy val peer: JTextComponent = new JTextComponent {}
+  override lazy val peer: JTextComponent = new JTextComponent with SuperMixin {}
   def text: String = peer.getText
   def text_=(t: String) = peer.setText(t)
 
@@ -52,6 +52,8 @@ class TextComponent extends Component with Publisher {
   def cut() { peer.cut() }
   def copy() { peer.copy() }
   def selected: String = peer.getSelectedText
+
+  def selectAll() { peer.selectAll() }
 
   peer.getDocument.addDocumentListener(new DocumentListener {
     def changedUpdate(e:DocumentEvent) { publish(ValueChanged(TextComponent.this, true)) }

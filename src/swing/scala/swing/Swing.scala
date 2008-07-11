@@ -1,6 +1,7 @@
 package scala.swing
 
 import java.awt.Dimension
+import java.awt.event._
 import javax.swing._
 import javax.swing.event._
 
@@ -19,6 +20,9 @@ object Swing {
   }
   def ChangeListener(f: ChangeEvent => Unit) = new ChangeListener {
     def stateChanged(e: ChangeEvent) { f(e) }
+  }
+  def ActionListener(f: ActionEvent => Unit) = new ActionListener {
+    def actionPerformed(e: ActionEvent) { f(e) }
   }
 
   def Box(min: Dimension, pref: Dimension, max: Dimension) = new Component {

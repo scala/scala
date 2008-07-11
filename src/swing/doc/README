@@ -30,3 +30,7 @@ The library comprises three main packages:
   scala.swing.test
     A set of demos.
     
+
+Notes:
+
+Visual appearance of combo boxes using the GTK LaF is broken on JDKs < 1.7b30.

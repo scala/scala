@@ -12,9 +12,15 @@ object TableSelection extends SimpleGUIApplication {
             List("Philip", "Milne", "Pool", 5, false).toArray)
 
   val ui = new BoxPanel(Orientation.Vertical) {
-      val table = new Table(model, Array("First Name", "Last Name", "Sport", "# of Years", "Vegetarian"))
-      listenTo()
-      table.preferredViewportSize = new Dimension(500, 70)
+      val table = new Table(model, Array("First Name", "Last Name", "Sport", "# of Years", "Vegetarian")) {
+        preferredViewportSize = new Dimension(500, 70)
+        val l = new Table.LabelRenderer[String](a => (null,a))
+        override def renderer(isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component =
+         TableSelection.model(row)(column) match {
+           case s: String => l.componentFor(this, isSelected, hasFocus, s, row, column)
+           case _ => super.renderer(isSelected, hasFocus, row, column)
+         }
+      }
       //1.6:table.fillsViewportHeight = true
       listenTo(table.selection)
 
