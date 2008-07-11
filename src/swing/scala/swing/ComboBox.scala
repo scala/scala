@@ -99,7 +99,6 @@ object ComboBox {
       })
     }
 
-
     override lazy val comboBoxPeer: javax.swing.ComboBoxEditor = new DelegatedEditor(comboBox.peer.getEditor)
 
     def component = Component.wrap(comboBoxPeer.getEditorComponent.asInstanceOf[JComponent])
@@ -123,7 +122,7 @@ object ComboBox {
     }
   }
 
-  def newMutableModel[A, Self](items: Seq[A] with scala.collection.mutable.Publisher[scala.collection.mutable.Message[A], Self]): ComboBoxModel = {
+  /*def newMutableModel[A, Self](items: Seq[A] with scala.collection.mutable.Publisher[scala.collection.mutable.Message[A], Self]): ComboBoxModel = {
     new AbstractListModel with ComboBoxModel {
       private var selected = items(0)
       def getSelectedItem: AnyRef = selected.asInstanceOf[AnyRef]
@@ -133,7 +132,7 @@ object ComboBox {
     }
   }
 
-  /*def newConstantModel[A](items: Seq[A]): ComboBoxModel = items match {
+  def newConstantModel[A](items: Seq[A]): ComboBoxModel = items match {
     case items: Seq[A] with scala.collection.mutable.Publisher[scala.collection.mutable.Message[A], Self] => newMutableModel
     case _ => newConstantModel(items)
   }*/
@@ -186,6 +185,11 @@ class ComboBox[A](items: Seq[A]) extends Component with Publisher {
   */
   def editable: Boolean = peer.isEditable
 
+  /**
+   * Makes this combo box editable. In order to do, this combo needs an
+   * editor which is supplied by the implicit argument. For default
+   * editors, see ComboBox companion object.
+   */
   def makeEditable()(implicit editor: ComboBox[A] => ComboBox.Editor[A]) {
     peer.setEditable(true)
     peer.setEditor(editor(this).comboBoxPeer)
