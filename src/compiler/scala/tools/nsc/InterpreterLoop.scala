@@ -198,13 +198,11 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
         return ()
       }
       val filename = command.substring(spaceIdx).trim
-      if (new File(filename).exists)
-	action(filename)
-      else if (new File(filename + ".scala").exists)
-	action(filename + ".scala")
-      else {
+      if (! new File(filename).exists) {
         out.println("That file does not exist")
+        return ()
       }
+      action(filename)
     }
 
     val helpRegexp    = ":h(e(l(p)?)?)?"
