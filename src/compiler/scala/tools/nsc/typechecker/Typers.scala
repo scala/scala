@@ -1903,13 +1903,13 @@ trait Typers { self: Analyzer =>
       }
     }
 
-    def typedAnnotation(annot: Annotation): AnnotationInfo =
-      typedAnnotation(annot, EXPRmode)
+    def typedAnnotation(annot: Annotation, owner: Symbol): AnnotationInfo =
+      typedAnnotation(annot, owner, EXPRmode)
 
-    def typedAnnotation(annot: Annotation, mode: Int): AnnotationInfo =
-      typedAnnotation(annot, NoSymbol, mode)
+    def typedAnnotation(annot: Annotation, owner: Symbol, mode: Int): AnnotationInfo =
+      typedAnnotation(annot, owner, mode, NoSymbol)
 
-    def typedAnnotation(annot: Annotation, selfsym: Symbol, mode: Int): AnnotationInfo = {
+    def typedAnnotation(annot: Annotation, owner: Symbol, mode: Int, selfsym: Symbol): AnnotationInfo = {
       var attrError: Boolean = false
       def error(pos: Position, msg: String): Null = {
         context.error(pos, msg)
@@ -1921,17 +1921,20 @@ trait Typers { self: Analyzer =>
       }
 
       val typedConstr =
-	if (selfsym == NoSymbol)
-	  typed(annot.constr, mode, AnnotationClass.tpe)
-	else {
-	  // Since a selfsym is supplied, the annotation should have
-	  // an extra "self" identifier in scope for type checking.
-	  // This is implemented by wrapping the rhs
-	  // in a function like "self => rhs" during type checking,
-	  // and then stripping the "self =>" and substituting
+        if (selfsym == NoSymbol) {
+          // why a new typer: definitions inside the annotation's constructor argument
+          // should not have the annotated's owner as owner.
+          val typer1 = newTyper(context.makeNewScope(annot.constr, owner)(TypedScopeKind))
+          typer1.typed(annot.constr, mode, AnnotationClass.tpe)
+        } else {
+          // Since a selfsym is supplied, the annotation should have
+          // an extra "self" identifier in scope for type checking.
+          // This is implemented by wrapping the rhs
+          // in a function like "self => rhs" during type checking,
+          // and then stripping the "self =>" and substituting
           // in the supplied selfsym.
-	  val funcparm = ValDef(NoMods, nme.self, TypeTree(selfsym.info), EmptyTree)
-	  val func = Function(List(funcparm), annot.constr.duplicate)
+          val funcparm = ValDef(NoMods, nme.self, TypeTree(selfsym.info), EmptyTree)
+          val func = Function(List(funcparm), annot.constr.duplicate)
                                          // The .duplicate of annot.constr
                                          // deals with problems that
                                          // accur if this annotation is
@@ -1941,18 +1944,18 @@ trait Typers { self: Analyzer =>
                                          // ident's within annot.constr
                                          // will retain the old symbol
                                          // from the previous typing.
-	  val fun1clazz = FunctionClass(1)
-	  val funcType = typeRef(fun1clazz.tpe.prefix,
-				 fun1clazz,
-				 List(selfsym.info, AnnotationClass.tpe))
+          val fun1clazz = FunctionClass(1)
+          val funcType = typeRef(fun1clazz.tpe.prefix,
+                                 fun1clazz,
+                                 List(selfsym.info, AnnotationClass.tpe))
 
-	  typed(func, mode, funcType) match {
-	    case t @ Function(List(arg), rhs) =>
-	      val subs =
-		new TreeSymSubstituter(List(arg.symbol),List(selfsym))
+          typed(func, mode, funcType) match {
+            case t @ Function(List(arg), rhs) =>
+              val subs =
+                new TreeSymSubstituter(List(arg.symbol),List(selfsym))
               subs(rhs)
-	  }
-	}
+          }
+        }
 
       typedConstr match {
         case t @ Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
@@ -2218,12 +2221,12 @@ trait Typers { self: Analyzer =>
         val annotMode = mode & ~TYPEmode | EXPRmode
 
         if (arg1.isType) {
-	  val selfsym =
-	    if (!settings.selfInAnnots.value)
-	      NoSymbol
-	    else
-	      arg1.tpe.selfsym match {
-		case NoSymbol =>
+          val selfsym =
+            if (!settings.selfInAnnots.value)
+              NoSymbol
+            else
+              arg1.tpe.selfsym match {
+                case NoSymbol =>
                   /* Implementation limitation: Currently this
                    * can cause cyclical reference errors even
                    * when the self symbol is not referenced at all.
@@ -2236,32 +2239,34 @@ trait Typers { self: Analyzer =>
                    *
                    * (Note: -Yself-in-annots must be on to see the problem)
                    **/
-		  val sym =
-		    newLocalDummy(context.owner, annot.pos)
-		      .newValue(annot.pos, nme.self)
-		  sym.setInfo(arg1.tpe.withoutAttributes)
-		  sym
-		case sym => sym
-	      }
+                  val sym =
+                    newLocalDummy(context.owner, annot.pos)
+                      .newValue(annot.pos, nme.self)
+                  sym.setInfo(arg1.tpe.withoutAttributes)
+                  sym
+                case sym => sym
+              }
 
-          val ainfo = typedAnnotation(annot, selfsym, annotMode)
-	  val atype0 = arg1.tpe.withAttribute(ainfo)
-	  val atype =
-	    if ((selfsym != NoSymbol) && (ainfo.refsSymbol(selfsym)))
-	      atype0.withSelfsym(selfsym)
-	    else
-	      atype0 // do not record selfsym if
-		     // this annotation did not need it
+          // use the annotation context's owner as parent for symbols defined
+          // inside a type annotation
+          val ainfo = typedAnnotation(annot, context.owner, annotMode, selfsym)
+          val atype0 = arg1.tpe.withAttribute(ainfo)
+          val atype =
+            if ((selfsym != NoSymbol) && (ainfo.refsSymbol(selfsym)))
+              atype0.withSelfsym(selfsym)
+            else
+              atype0 // do not record selfsym if
+                     // this annotation did not need it
 
           if (ainfo.isErroneous)
-	    arg1  // simply drop erroneous annotations
-	  else
-	    TypeTree(atype) setOriginal tree
+            arg1  // simply drop erroneous annotations
+          else
+            TypeTree(atype) setOriginal tree
         } else {
           def annotTypeTree(ainfo: AnnotationInfo): Tree =
             TypeTree(arg1.tpe.withAttribute(ainfo)) setOriginal tree
 
-          val annotInfo = typedAnnotation(annot, annotMode)
+          val annotInfo = typedAnnotation(annot, context.owner, annotMode)
 
           arg1 match {
             case _: DefTree =>

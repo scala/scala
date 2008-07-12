@@ -853,7 +853,7 @@ trait Namers { self: Analyzer =>
         case defn: MemberDef =>
           val ainfos = for {
             annot <- defn.mods.annotations
-            val ainfo = typer.typedAnnotation(annot)
+            val ainfo = typer.typedAnnotation(annot, tree.symbol)
             if !ainfo.atp.isError && annot != null
           } yield ainfo
           if (!ainfos.isEmpty) {
