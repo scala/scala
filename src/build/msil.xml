@@ -158,7 +158,7 @@ PACKED MSIL BUILD (MSIL-PACK)
   <target name="msil-pack.lib" depends="msil-pack.start">
     <mkdir dir="${build-msil-pack.dir}/lib"/>
     <pathconvert property="ilasm.infiles" pathsep=" ">
-      <fileset dir="${build-msil.dir}/library" includes="*.msil"/>
+      <fileset dir="${build-msil.dir}/library" includes="**/*.msil"/>
     </pathconvert>
     <property name="msil-pack-lib.file" value="${build-msil-pack.dir}/lib/predef.dll"/>
     <!-- spawn="true" will prevent the ilasm command from printing anything to
@@ -166,7 +166,7 @@ PACKED MSIL BUILD (MSIL-PACK)
     <exec executable="${ilasm.cmd}"
           vmlauncher="no">
       <!--  spawn="true" -->
-      <arg line="${ilasm.args}${msil-pack-lib.file}  ${ilasm.infiles}"/>
+      <arg line="${ilasm.args}${msil-pack-lib.file} ${ilasm.infiles}"/>
     </exec>
   </target>
 

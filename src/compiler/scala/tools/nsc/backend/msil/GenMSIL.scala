@@ -7,9 +7,8 @@
 
 package scala.tools.nsc.backend.msil
 
-import java.io.File
+import java.io.{File, IOException}
 import java.nio.{ByteBuffer, ByteOrder}
-import java.io.IOException
 
 import scala.collection.mutable.{Map, HashMap, HashSet, Stack}
 import scala.tools.nsc.symtab._
@@ -217,6 +216,7 @@ abstract class GenMSIL extends SubComponent {
     var assemName: String = _
     var firstSourceName = ""
     var outDir: File = _
+    var srcPath: File = _
     var moduleName: String = _
 
     def initAssembly() {
@@ -243,6 +243,8 @@ abstract class GenMSIL extends SubComponent {
       }
 
       outDir = new File(settings.outdir.value)
+
+      srcPath = new File(settings.sourcepath.value)
 
       val assemblyName = new AssemblyName()
       assemblyName.Name = assemName
@@ -449,11 +451,11 @@ abstract class GenMSIL extends SubComponent {
         code.Emit(OpCodes.Ret)
       }
       createTypes()
-      val filename = new File(outDir, assemName + ".msil").getPath()
+      val filename = outDir.getPath()
       if (settings.debug.value)
         log("Output path: " + filename)
       try {
-        massembly.Save(filename)
+        massembly.Save(filename, srcPath.getPath())
         val ilasm = Properties.msilILasm
         if (ilasm != "") {
           val generatedFiles = List.fromArray(massembly.GetGeneratedFiles)
@@ -475,9 +477,14 @@ abstract class GenMSIL extends SubComponent {
 
     private def createTypes() {
       for (sym <- classes.keys) {
+        val iclass   = classes(sym)
+        val tBuilder = types(sym.asInstanceOf[clrTypes.global.Symbol]).asInstanceOf[TypeBuilder]
+
         if (settings.debug.value)
-          log("Calling CreatType for " +  sym + ", " + types(sym.asInstanceOf[clrTypes.global.Symbol]))
-        types(sym.asInstanceOf[clrTypes.global.Symbol]).asInstanceOf[TypeBuilder].CreateType()
+          log("Calling CreatType for " + sym + ", " + tBuilder.toString)
+
+        tBuilder.CreateType()
+        tBuilder.setSourceFilepath(iclass.cunit.source.file.path)
       }
     }
 
@@ -2210,6 +2217,8 @@ abstract class GenMSIL extends SubComponent {
                                                  MOBJECT,
                                                  MsilType.EmptyTypes)
 
+      val iclass = classes(sym)
+
       for (m <- sym.tpe.nonPrivateMembers
            if m.owner != definitions.ObjectClass && !m.hasFlag(Flags.PROTECTED) &&
            m.isMethod && !m.isClassConstructor && !m.isStaticMember && !m.hasFlag(Flags.CASE))
@@ -2245,6 +2254,7 @@ abstract class GenMSIL extends SubComponent {
       addSymtabAttribute(sym.sourceModule, mirrorTypeBuilder)
 
       mirrorTypeBuilder.CreateType()
+      mirrorTypeBuilder.setSourceFilepath(iclass.cunit.source.file.path)
     }
 
 
