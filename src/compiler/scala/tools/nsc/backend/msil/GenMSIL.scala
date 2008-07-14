@@ -456,20 +456,6 @@ abstract class GenMSIL extends SubComponent {
         log("Output path: " + filename)
       try {
         massembly.Save(filename, srcPath.getPath())
-        val ilasm = Properties.msilILasm
-        if (ilasm != "") {
-          val generatedFiles = List.fromArray(massembly.GetGeneratedFiles)
-          val cmd = ilasm + " " + (if(entryPoint == null) "/dll" else "/exe") + " /output:" + moduleName + " " + generatedFiles.mkString(" ")
-          if (settings.debug.value)
-            log("Executing command: " + cmd)
-          try {
-            Runtime.getRuntime().exec(cmd)
-          } catch {
-            case _ =>
-              Console.println("Cannot run command: " + cmd)
-              exit(1)
-          }
-        }
       } catch {
         case e:IOException => abort("Could not write to " + filename + ": " + e.getMessage())
       }
