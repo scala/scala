@@ -6,12 +6,10 @@ import Swing._
 /**
  * @see javax.swing.JSplitPane
  */
-class SplitPane(o: Orientation.Value) extends Component with Container with Orientable {
-  override lazy val peer: javax.swing.JSplitPane = new javax.swing.JSplitPane(o.id)
+class SplitPane(o: Orientation.Value, left: Component, right: Component) extends Component with Container with Orientable {
+  override lazy val peer: javax.swing.JSplitPane = new javax.swing.JSplitPane(o.id, left.peer, right.peer)
+  def this(o: Orientation.Value) = this(Orientation.Horizontal, new Component {}, new Component {})
   def this() = this(Orientation.Horizontal)
-
-  leftComponent = new Component {}
-  rightComponent = new Component {}
 
   def contents: Seq[Component] = List(leftComponent, rightComponent)
   def contents_=(left: Component, right: Component) {
@@ -31,6 +29,12 @@ class SplitPane(o: Orientation.Value) extends Component with Container with Orie
 
   def dividerLocation: Int = peer.getDividerLocation
   def dividerLocation_=(n: Int) { peer.setDividerLocation(n) }
+
+  /*def proportionalDividerLocation: Double =
+    if (orientation == Orientation.Vertical) dividerLocation / (size.height - dividerSize)
+    else dividerLocation / (size.width - dividerSize)*/
+  def dividerLocation_=(f: Double) { peer.setDividerLocation(f) }
+
   def dividerSize: Int = peer.getDividerSize
   def dividerSize_=(n: Int) { peer.setDividerSize(n) }
   def resizeWeight: Double = peer.getResizeWeight

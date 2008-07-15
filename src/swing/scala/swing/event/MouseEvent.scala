@@ -2,9 +2,9 @@ package scala.swing.event
 
 import java.awt.Point
 
-class MouseEvent(source: Component, point: Point, modifiers: Int) extends ComponentEvent(source)
+class MouseEvent(val source: Component, point: Point, modifiers: Int) extends ComponentEvent
 
-class MouseButtonEvent(source: Component, point: Point, modifiers: Int,
+class MouseButtonEvent(override val source: Component, point: Point, modifiers: Int,
                      clicks: Int, triggersPopup: Boolean)
       extends MouseEvent(source, point, modifiers)
 case class MouseClicked(override val source: Component, point: Point, modifiers: Int,

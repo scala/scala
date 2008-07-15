@@ -82,7 +82,6 @@ object ComboBox {
       val verifier = new javax.swing.InputVerifier {
         // TODO: should chain with potentially existing verifier in editor
         def verify(c: JComponent) = try {
-          println(c)
           value = string2A(c.asInstanceOf[JTextField].getText)
           true
   	    }
@@ -155,11 +154,11 @@ class ComboBox[A](items: Seq[A]) extends Component with Publisher {
 
   object selection extends Publisher {
     def index: Int = peer.getSelectedIndex
+    def index_=(n: Int) { peer.setSelectedIndex(n) }
     def item: A = peer.getSelectedItem.asInstanceOf[A]
+    def item_=(a: A) { peer.setSelectedItem(a) }
 
-    println("created")
     peer.addActionListener(Swing.ActionListener { e =>
-      println("action")
       publish(event.SelectionChanged(ComboBox.this))
     })
   }

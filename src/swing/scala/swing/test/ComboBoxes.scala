@@ -56,8 +56,8 @@ object ComboBoxes extends SimpleGUIApplication {
                      new ImageIcon(resourceFromUserDirectory("swing/images/banana.jpg").toURL))
 
     val iconBox = new ComboBox(icons) {
-      renderer = new ListView.DefaultRenderer[Icon, Label](new Label) {
-        def configure(list: ListView[_<:Icon], isSelected: Boolean, hasFocus: Boolean, icon: Icon, index: Int) {
+      renderer = new ListView.AbstractRenderer[Icon, Label](new Label) {
+        def configure(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, icon: Icon, index: Int) {
   	      component.icon = icon
           component.xAlignment = Alignment.Center
           if(isSelected) {

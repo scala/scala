@@ -1,3 +1,5 @@
 package scala.swing.event
 
-abstract class UIEvent(val source: UIElement) extends Event
+trait UIEvent extends Event {
+  val source: UIElement
+}

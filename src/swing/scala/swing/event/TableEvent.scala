@@ -1,6 +1,6 @@
 package scala.swing.event
 
-abstract class TableEvent(override val source: Table) extends ComponentEvent(source)
+abstract class TableEvent(override val source: Table) extends ComponentEvent
 
 abstract class TableChange(override val source: Table) extends TableEvent(source)
 

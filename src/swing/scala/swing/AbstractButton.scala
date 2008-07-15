@@ -45,8 +45,8 @@ abstract class AbstractButton extends Component with Action.Trigger with Publish
   def selected: Boolean = peer.isSelected
   def selected_=(b: Boolean) = peer.setSelected(b)
 
-  def contentAreaFilled: Boolean = peer.isContentAreaFilled()
-  def contentAreaFilled_=(b: Boolean) { peer.setContentAreaFilled(true) }
+  def contentAreaFilled: Boolean = peer.isContentAreaFilled
+  def contentAreaFilled_=(b: Boolean) { peer.setContentAreaFilled(b) }
 
   def borderPainted: Boolean = peer.isBorderPainted
   def borderPainted_=(b: Boolean) { peer.setBorderPainted(b) }

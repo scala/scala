@@ -12,18 +12,18 @@ object TabbedPane {
     val Scroll = Value(JTabbedPane.SCROLL_TAB_LAYOUT)
   }
 
-  class Page protected(title0: String, content0: Component, tip0: String, index0: Int) extends Proxy {
+  class Page protected[TabbedPane](parent0: TabbedPane, title0: String, content0: Component, tip0: String) extends Proxy {
     def self = content0
 
     def this(title0: String, content0: Component, tip0: String) =
-      this(title0, content0, tip0, 0)
+      this(null, title0, content0, tip0)
     def this(title0: String, content0: Component) =
       this(title0, content0, "")
     content = content0 // first add component, *then* set other things
     title = title0
     tip = tip0
 
-    protected[TabbedPane] var parent: TabbedPane = null
+    protected[TabbedPane] var parent: TabbedPane = parent0
 
     protected var _title = title0
     def title: String = _title//parent.peer.getTitleAt(index)
@@ -50,8 +50,8 @@ object TabbedPane {
 
     // TODO: icon, disabledIcon
 
-    def index = _index
-    protected[TabbedPane] var _index: Int = index0
+    def index = if(parent != null) parent.peer.indexOfTab(title) else 0//_index
+    //protected[TabbedPane] var _index: Int = index0
   }
 }
 
@@ -69,18 +69,18 @@ class TabbedPane extends Component with Publisher {
       val t = apply(n)
       peer.removeTabAt(n)
       t.parent = null
-      for(i <- n to length) apply(i)._index -= 1
+      //for(i <- n to length) apply(i)._index -= 1
       t
     }
     protected def insertAt(n: Int, t: Page) {
-      for(i <- n to length) apply(i)._index += 1
+      //for(i <- n to length) apply(i)._index += 1
       t.parent = TabbedPane.this
       peer.insertTab(t.title, null, t.content.peer, t.tip, n)
     }
 
     def +=(t: Page) { t.parent = TabbedPane.this; peer.addTab(t.title, null, t.content.peer, t.tip) }
     def length = peer.getTabCount
-    def apply(n: Int) = new Page(peer.getTitleAt(n),
+    def apply(n: Int) = new Page(TabbedPane.this, peer.getTitleAt(n),
                                 Component.wrapperFor(peer.getComponentAt(n).asInstanceOf[javax.swing.JComponent]),
                                 peer.getToolTipTextAt(n))
   }

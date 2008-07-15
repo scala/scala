@@ -11,8 +11,8 @@ object Component {
   private val ClientKey = "scala.swingWrapper"
 
   /**
-   * Returns the wrapper for a given peer.
-   * Fails if there is no wrapper for the given component.
+   * Returns the wrapper for a given peer, null if there is no wrapper
+   * for the given component.
    */
   protected[swing] def wrapperFor[C<:Component](c: javax.swing.JComponent): C =
     c.getClientProperty(ClientKey).asInstanceOf[C]
@@ -20,7 +20,7 @@ object Component {
   /**
    * Wraps a given Java Swing Component into a new wrapper.
    */
-  def wrap[A](c: JComponent) = new Component {
+  def wrap(c: JComponent): Component = new Component {
     override lazy val peer = c
   }
 }

@@ -5,8 +5,9 @@ import java.awt.{Color, Cursor, Font, Dimension}
 /**
  * The base trait of all user interface elements.
  */
-trait UIElement {
+trait UIElement extends Proxy {
   def peer: java.awt.Component
+  def self = peer
   def foreground: Color = peer.getForeground
   def foreground_=(c: Color) = peer.setForeground(c)
   def background: Color = peer.getBackground

@@ -1,3 +1,5 @@
+package scala.swing.test
+
 import swing._, swing.event._
 
 object MyApp extends SimpleGUIApplication {

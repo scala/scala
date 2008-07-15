@@ -1,3 +1,3 @@
 package scala.swing.event
 
-abstract class WindowEvent(source: Frame) extends UIEvent(source)
+abstract class WindowEvent(override val source: Frame) extends UIEvent

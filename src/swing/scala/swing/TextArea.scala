@@ -9,10 +9,10 @@ import event._
  *
  * @see javax.swing.JTextArea
  */
-class TextArea(text0: String, rows0: Int, columns0: int) extends TextComponent with TextComponent.HasColumns with TextComponent.HasRows {
+class TextArea(text0: String, rows0: Int, columns0: Int) extends TextComponent with TextComponent.HasColumns with TextComponent.HasRows {
   override lazy val peer: JTextArea = new JTextArea(text0, rows0, columns0)
   def this(text: String) = this(text, 0, 0)
-  def this(rows: Int, columns: int) = this("", rows, columns)
+  def this(rows: Int, columns: Int) = this("", rows, columns)
   def this() = this("", 0, 0)
 
   // TODO: we could make contents StringBuilder-like

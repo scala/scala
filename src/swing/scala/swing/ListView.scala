@@ -20,19 +20,28 @@ object ListView {
     def wrap[A](r: ListCellRenderer): Renderer[A] = new Wrapped[A](r)
 
   	class Wrapped[A](override val peer: ListCellRenderer) extends Renderer[A] {
-  	  def componentFor(list: ListView[_<:A], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int) = {
+  	  def componentFor(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int) = {
         Component.wrap(peer.getListCellRendererComponent(list.peer, a, index, isSelected, hasFocus).asInstanceOf[JComponent])
       }
   	}
+
+    def apply[A,B](f: A => B)(implicit renderer: Renderer[B]): Renderer[A] = new Renderer[A] {
+      def componentFor(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int): Component =
+        renderer.componentFor(list, isSelected, hasFocus, f(a), index)
+    }
   }
+
+  /*def Renderer[A,B](f: A => B)(implicit renderer: Renderer[B]): Renderer[A] = new Renderer[A] {
+    def componentFor(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int): Component =
+      renderer.componentFor(list, isSelected, hasFocus, f(a), index)
+  }*/
 
   abstract class Renderer[-A] {
     def peer: ListCellRenderer = new ListCellRenderer {
-      def getListCellRendererComponent(list: JList, a: Any, index: Int, isSelected: Boolean, hasFocus: Boolean) = {
+      def getListCellRendererComponent(list: JList, a: Any, index: Int, isSelected: Boolean, hasFocus: Boolean) =
         componentFor(ListView.wrap[A](list), isSelected, hasFocus, a.asInstanceOf[A], index).peer
-      }
     }
-    def componentFor(list: ListView[_<:A], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int): Component
+    def componentFor(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int): Component
   }
 
   /**
@@ -41,7 +50,7 @@ object ListView {
    * components type so clients can easily use component specific attributes
    * during configuration.
    */
-  abstract class DefaultRenderer[-A, C<:Component](protected val component: C) extends Renderer[A] {
+  abstract class AbstractRenderer[-A, C<:Component](protected val component: C) extends Renderer[A] {
     // The renderer component is responsible for painting selection
     // backgrounds. Hence, make sure it is opaque to let it draw
     // the background.
@@ -50,7 +59,7 @@ object ListView {
     /**
      * Standard preconfiguration that is commonly done for any component.
      */
-    def preConfigure(list: ListView[_<:A], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int) {
+    def preConfigure(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int) {
       if (isSelected) {
         component.background = list.selectionBackground
         component.foreground = list.selectionForeground
@@ -62,15 +71,24 @@ object ListView {
     /**
      * Configuration that is specific to the component and this renderer.
      */
-    def configure(list: ListView[_<:A], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int)
+    def configure(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int)
 
     /**
      * Configures the component before returning it.
      */
-    def componentFor(list: ListView[_<:A], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int): Component = {
+    def componentFor(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int): Component = {
       preConfigure(list, isSelected, hasFocus, a, index)
       configure(list, isSelected, hasFocus, a, index)
       component
+    }
+  }
+
+  implicit object GenericRenderer extends Renderer[Any] {
+    override lazy val peer: ListCellRenderer = new DefaultListCellRenderer
+    def componentFor(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, a: Any, index: Int): Component = {
+      val c = peer.getListCellRendererComponent(list.peer, a, index, isSelected, hasFocus).asInstanceOf[JComponent]
+      val w = Component.wrapperFor[Component](c)
+      if (w eq null) Component.wrap(c) else w
     }
   }
 }
@@ -88,11 +106,34 @@ class ListView[A] extends Component {
 
   def this(items: Seq[A]) = {
     this()
+    listData = items
+  }
+
+  protected class ModelWrapper(val items: Seq[A]) extends AbstractListModel {
+    def getElementAt(n: Int) = items(n).asInstanceOf[AnyRef]
+    def getSize = items.size
+  }
+
+  def listData: Seq[A] = peer.getModel match {
+    case model: ModelWrapper => model.items
+    case model @ _ => new Seq[A] {
+     def length = model.getSize
+     def elements = new Iterator[A] {
+       var idx = 0
+       def next = { idx += 1; apply(idx-1) }
+       def hasNext = idx < length
+     }
+     def apply(n: Int) = model.getElementAt(n).asInstanceOf[A]
+    }
+  }
+
+  def listData_=(items: Seq[A]) {
     peer.setModel(new AbstractListModel {
       def getElementAt(n: Int) = items(n).asInstanceOf[AnyRef]
       def getSize = items.size
   	})
   }
+
 
   object selection extends Publisher {
     protected abstract class Indices[A](a: =>Seq[A]) extends scala.collection.mutable.Set[A] {
@@ -110,9 +151,10 @@ class ListView[A] extends Component {
       def leadIndex: Int = peer.getSelectionModel.getLeadSelectionIndex
       def anchorIndex: Int = peer.getSelectionModel.getAnchorSelectionIndex
     }
+    def selectIndices(ind: Int*) = peer.setSelectedIndices(ind.toArray)
 
     object items extends SeqProxy[A] {
-      def self = peer.getSelectedValues.projection.map(_.asInstanceOf[A])
+      def self = peer.getSelectedValues.map(_.asInstanceOf[A])
       def leadIndex: Int = peer.getSelectionModel.getLeadSelectionIndex
       def anchorIndex: Int = peer.getSelectionModel.getAnchorSelectionIndex
     }
@@ -122,10 +164,13 @@ class ListView[A] extends Component {
 
     peer.getSelectionModel.addListSelectionListener(new ListSelectionListener {
       def valueChanged(e: javax.swing.event.ListSelectionEvent) {
-        publish(ElementSelected(ListView.this, e.getFirstIndex to e.getLastIndex, e.getValueIsAdjusting))
+        publish(ListSelectionChanged(ListView.this, e.getFirstIndex to e.getLastIndex, e.getValueIsAdjusting))
       }
     })
   }
+
+  def renderer: ListView.Renderer[A] = ListView.Renderer.wrap(peer.getCellRenderer)
+  def renderer_=(r: ListView.Renderer[A]) { peer.setCellRenderer(r.peer) }
 
   def fixedCellWidth = peer.getFixedCellWidth
   def fixedCellWidth_=(x: Int) = peer.setFixedCellWidth(x)

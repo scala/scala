@@ -9,7 +9,7 @@ object Container {
     def contents: Seq[Component] = _contents
 
     protected class Content extends BufferWrapper[Component] {
-      def wrap(c: java.awt.Component) = Component.wrapperFor(c.asInstanceOf[javax.swing.JComponent])
+      def wrap(c: java.awt.Component): Component = Component.wrapperFor(c.asInstanceOf[javax.swing.JComponent])
       override def clear { peer.removeAll() }
       def remove(n: Int): Component = {
         val c = peer.getComponent(n)

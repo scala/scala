@@ -33,6 +33,8 @@ class Frame extends UIElement with RootPanel with Publisher {
   def menuBar: MenuBar = Component.wrapperFor(peer.getJMenuBar)
   def menuBar_=(m: MenuBar) = peer.setJMenuBar(m.peer)
 
+  def setLocationRelativeTo(c: UIElement) { peer.setLocationRelativeTo(c.peer) }
+
   peer.addWindowListener(new java.awt.event.WindowListener {
     def windowActivated(e: java.awt.event.WindowEvent) { publish(WindowActivated(Frame.this)) }
     def windowClosed(e: java.awt.event.WindowEvent) { publish(WindowClosed(Frame.this)) }

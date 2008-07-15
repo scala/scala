@@ -38,7 +38,7 @@ object Table {
     def componentFor(table: Table, isSelected: Boolean, hasFocus: Boolean, a: A, row: Int, column: Int): Component
   }
 
-  abstract class DefaultRenderer[-A, C<:Component](val component: C) extends Renderer[A] {
+  abstract class AbstractRenderer[-A, C<:Component](val component: C) extends Renderer[A] {
     // The renderer component is responsible for painting selection
     // backgrounds. Hence, make sure it is opaque to let it draw
     // the background.
@@ -71,7 +71,7 @@ object Table {
     }
   }
 
-  class LabelRenderer[A](convert: A => (Icon, String)) extends DefaultRenderer[A, Label](new Label) {
+  class LabelRenderer[A](convert: A => (Icon, String)) extends AbstractRenderer[A, Label](new Label) {
     def configure(table: Table, isSelected: Boolean, hasFocus: Boolean, a: A, row: Int, column: Int) {
       val (icon, text) = convert(a)
       component.icon = icon

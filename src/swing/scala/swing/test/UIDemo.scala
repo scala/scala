@@ -2,8 +2,12 @@ package scala.swing.test
 
 import swing._
 import event._
+import Swing._
 
 object UIDemo extends SimpleGUIApplication {
+  //new java.awt.Font("Bitstream Vera Sans", java.awt.Font.PLAIN, 16).
+  //javax.swing.UIManager.getLookAndFeelDefaults().put("defaultFont", new java.awt.Font("Bitstream Vera Sans", java.awt.Font.PLAIN, 16))
+
   def top = new MainFrame {
     title = "UIElement Test"
 
@@ -32,7 +36,8 @@ object UIDemo extends SimpleGUIApplication {
 
     var reactLive = false
 
-    contents = new BoxPanel(Orientation.Vertical) {
+    contents = new BorderPanel {
+      import BorderPanel.Position._
       val tabs = new TabbedPane {
         import TabbedPane._
         val buttons = new FlowPanel {
@@ -71,6 +76,9 @@ object UIDemo extends SimpleGUIApplication {
         pages += new Page("Tables", TableSelection.ui)
         pages += new Page("Dialogs", Dialogs.ui)
         pages += new Page("Combo Boxes", ComboBoxes.ui)
+        pages += new Page("Split Panes", new SplitPane(Orientation.Vertical, new Button("Hello"), new Button("World")) {
+                            continuousLayout = true
+                          })
 
         val password = new FlowPanel {
           contents += new Label("Enter your secret password here ")
@@ -87,7 +95,18 @@ object UIDemo extends SimpleGUIApplication {
 
         pages += new Page("Password", password)
       }
-      contents += tabs
+
+      val list = new ListView(tabs.pages) {
+        selection.selectIndices(0)
+        selection.intervalMode = ListView.IntervalMode.Single
+        import ListView._
+        renderer = ListView.Renderer(_.title)
+      }
+      val center = new SplitPane(Orientation.Vertical, new ScrollPane(list), tabs) {
+        oneTouchExpandable = true
+        continuousLayout = true
+      }
+      layout(center) = Center
 
       object slider extends Slider {
         min = 0
@@ -95,14 +114,20 @@ object UIDemo extends SimpleGUIApplication {
         max = tabs.pages.size-1
         majorTickSpacing = 1
       }
-      contents += slider
+      layout(slider) = South
 
       listenTo(slider)
       listenTo(tabs.selection)
+      listenTo(list.selection)
       reactions += {
         case ValueChanged(`slider`, live) =>
           if(!live || live == reactLive) tabs.selection.index = slider.value
-        case SelectionChanged(`tabs`) => slider.value = tabs.selection.index
+        case SelectionChanged(`tabs`) =>
+          slider.value = tabs.selection.index
+          list.selection.selectIndices(tabs.selection.index)
+        case SelectionChanged(`list`) =>
+          if (list.selection.items.size == 1)
+            tabs.selection.page = list.selection.items(0)
       }
     }
   }
