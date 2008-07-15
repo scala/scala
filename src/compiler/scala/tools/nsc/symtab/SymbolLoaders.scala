@@ -168,7 +168,7 @@ abstract class SymbolLoaders {
 
       val classes  = new HashMap[String, global.classPath0.Context]
       val packages = new HashMap[String, global.classPath0.Context]
-      for (dir <- directory.entries) if (dir.location ne null) {
+      for (dir <- directory.entries) if ((dir.location ne null) && (!inIDE || dir.location.isDirectory)) {
         for (file <- dir.location) {
           if (file.isDirectory && directory.validPackage(file.name) && !packages.isDefinedAt(file.name))
             packages(file.name) = directory.find(file.name, true);

@@ -102,7 +102,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
         }
       } else if (sym.hasGetter) {
         e = scope lookupEntry nme.getterName(sym.name)
-        while (e != null && !e.sym.isGetter && e.sym.accessed != sym) {
+        while (e != null && !e.sym.isGetter && (!e.sym.hasFlag(ACCESSOR) || e.sym.accessed != sym)) {
           e = scope lookupNextEntry e
         }
         if (e != null && check(e.sym.accessed == sym, "accessed" + e.sym.accessed +" vs. " + sym) && check(!e.sym.isSetter, "setter: " + e.sym)) {
@@ -414,6 +414,11 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
         }
       }
       if (true) {
+        if (symbol.isInstanceOf[TypeSymbol] && symbol.name.toString == "B") {
+          assert(true)
+          assert(true)
+        }
+
 
         //Console.println("NEW SYMBOL: " + symbol + ":" + symbol.id + " @ " + symbol.owner + " " + key);
       }
