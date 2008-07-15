@@ -267,7 +267,7 @@ trait BasicBlocks {
     /** Remove the last instruction of this basic block. It is
      *  fast for an open block, but slower when the block is closed.
      */
-    def removeLastInstruction: Unit = {
+    def removeLastInstruction {
       if (closed)
         removeInstructionsAt(size)
       else {
@@ -280,7 +280,7 @@ trait BasicBlocks {
      *
      *  @param map ...
      */
-    def subst(map: Map[Instruction, Instruction]): Unit =
+    def subst(map: Map[Instruction, Instruction]) {
       if (!closed) substOnList(map) else {
         var i = 0
         while (i < instrs.length) {
@@ -288,9 +288,10 @@ trait BasicBlocks {
             case Some(instr) => touched = replaceInstruction(i, instr)
             case None => ()
           }
-          i = i + 1
+          i += 1
         }
       }
+    }
 
     private def substOnList(map: Map[Instruction, Instruction]) {
       def subst(l: List[Instruction]): List[Instruction] = l match {
@@ -311,18 +312,19 @@ trait BasicBlocks {
     /** Add a new instruction at the end of the block,
      *  using the same source position as the last emitted instruction
      */
-    def emit(instr: Instruction): Unit =
+    def emit(instr: Instruction) {
       if (!instructionList.isEmpty)
         emit(instr, instructionList.head.pos)
       else
         emit(instr, NoPosition)
+    }
 
-    def emit(instr: Instruction, pos: Position) = {
+    def emit(instr: Instruction, pos: Position) {
       if (closed) {
         print()
         Console.println("trying to emit: " + instr)
       }
-      assert (!closed || ignore, "BasicBlock closed")
+      assert(!closed || ignore, "BasicBlock closed")
 
       if (!ignore) {
         touched = true
@@ -337,22 +339,21 @@ trait BasicBlocks {
     }
 
     /** Close the block */
-    def close = {
-       assert(instructionList.length > 0,
-              "Empty block.")
+    def close {
+      assert(instructionList.length > 0, "Empty block.")
       closed = true
       instructionList = instructionList.reverse
       instrs = toInstructionArray(instructionList)
     }
 
-    def open = {
+    def open {
       assert(closed)
       closed = false
       ignore = false
       instructionList = instructionList.reverse  // prepare for appending to the head
     }
 
-    def clear: Unit = {
+    def clear {
       instructionList = Nil
       instrs = null
       preds  = null
@@ -366,7 +367,7 @@ trait BasicBlocks {
      */
     def enterIgnoreMode = ignore = true
 
-    def exitIgnoreMode = {
+    def exitIgnoreMode {
       assert(ignore, "Exit ignore mode when not in ignore mode.")
       ignore = false
     }
