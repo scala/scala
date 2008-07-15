@@ -413,15 +413,6 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
           }
         }
       }
-      if (true) {
-        if (symbol.isInstanceOf[TypeSymbol] && symbol.name.toString == "B") {
-          assert(true)
-          assert(true)
-        }
-
-
-        //Console.println("NEW SYMBOL: " + symbol + ":" + symbol.id + " @ " + symbol.owner + " " + key);
-      }
       invalidate(symbol.name)
       return finish(symbol)
     }
