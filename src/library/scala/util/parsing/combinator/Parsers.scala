@@ -596,13 +596,17 @@ trait Parsers {
 
     // assert(res.isInstanceOf[NoSuccess])
 
-    if (!xs.isEmpty) {
-      // the next parser should start parsing where p failed,
-      // since `!p(in).successful', the next input to be consumed is `in'
-      Success(xs.toList, in)  // TODO: I don't think in == res.next holds
-    }
-    else {
-      Failure(res.asInstanceOf[NoSuccess].msg, in0)
+    res match {
+      case e: Error => e
+      case _  =>
+        if (!xs.isEmpty) {
+          // the next parser should start parsing where p failed,
+          // since `!p(in).successful', the next input to be consumed is `in'
+          Success(xs.toList, in)  // TODO: I don't think in == res.next holds
+        }
+        else {
+          Failure(res.asInstanceOf[NoSuccess].msg, in0)
+        }
     }
   }
 
