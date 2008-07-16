@@ -15,10 +15,10 @@ object TableSelection extends SimpleGUIApplication {
       val table = new Table(model, Array("First Name", "Last Name", "Sport", "# of Years", "Vegetarian")) {
         preferredViewportSize = new Dimension(500, 70)
         val l = new Table.LabelRenderer[String](a => (null,a))
-        override def renderer(isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component =
+        override def rendererComponent(isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component =
          TableSelection.model(row)(column) match {
            case s: String => l.componentFor(this, isSelected, hasFocus, s, row, column)
-           case _ => super.renderer(isSelected, hasFocus, row, column)
+           case _ => super.rendererComponent(isSelected, hasFocus, row, column)
          }
       }
       //1.6:table.fillsViewportHeight = true

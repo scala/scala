@@ -90,7 +90,7 @@ class Table extends Component with Scrollable with Publisher {
     def tableWrapper = Table.this
     override def getCellRenderer(r: Int, c: Int) = new TableCellRenderer {
       def getTableCellRendererComponent(table: JTable, value: AnyRef, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int) =
-        Table.this.renderer(isSelected, hasFocus, row, column).peer
+        Table.this.rendererComponent(isSelected, hasFocus, row, column).peer
     }
     override def getCellEditor(r: Int, c: Int) = editor(r, c)
     override def getValueAt(r: Int, c: Int) = Table.this.apply(r,c).asInstanceOf[AnyRef]
@@ -223,7 +223,7 @@ class Table extends Component with Scrollable with Publisher {
   /**
    * Supplies a renderer component for a given cell.
    */
-  def renderer(isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component =
+  protected def rendererComponent(isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component =
     new Component {
       override lazy val peer = {
         val v = Table.this.peer.getValueAt(row, column)
