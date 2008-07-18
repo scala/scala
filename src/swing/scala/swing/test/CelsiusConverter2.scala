@@ -5,9 +5,10 @@ import event._
 
 object CelsiusConverter2 extends SimpleGUIApplication {
   val ui = new FlowPanel {
-   	object Celsius extends TextField { columns = 5 }
-    object Fahrenheit extends TextField { columns = 5 }
-    contents.append(Celsius, new Label(" Celsius  =  "), Fahrenheit, new Label(" Fahrenheit"))
+   	val Celsius = new TextField { columns = 5 }
+    val Fahrenheit = new TextField { columns = 5 }
+    contents.append(Celsius, new Label(" Celsius  =  "),
+                    Fahrenheit, new Label(" Fahrenheit"))
     border = Border.Empty(15, 10, 10, 10)
 
     listenTo(Fahrenheit, Celsius)

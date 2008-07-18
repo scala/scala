@@ -5,9 +5,6 @@ import event._
 import Swing._
 
 object UIDemo extends SimpleGUIApplication {
-  //new java.awt.Font("Bitstream Vera Sans", java.awt.Font.PLAIN, 16).
-  //javax.swing.UIManager.getLookAndFeelDefaults().put("defaultFont", new java.awt.Font("Bitstream Vera Sans", java.awt.Font.PLAIN, 16))
-
   def top = new MainFrame {
     title = "UIElement Test"
 
@@ -66,6 +63,7 @@ object UIDemo extends SimpleGUIApplication {
     		  case ButtonClicked(`snapTicks`) =>
     		    slider.snapToTicks = snapTicks.selected
     		  case ButtonClicked(`live`) =>
+    		    println("")
     		    reactLive = live.selected
     		}
           }
@@ -131,7 +129,5 @@ object UIDemo extends SimpleGUIApplication {
       }
     }
   }
-  //val keys = javax.swing.UIManager.getDefaults().keys
-  //while(keys.hasMoreElements) println(keys.nextElement)
 }
 

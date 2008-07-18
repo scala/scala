@@ -9,16 +9,16 @@ object CelsiusConverter extends SimpleGUIApplication {
   def top = new MainFrame {
     title = "Convert Celsius to Fahrenheit"
     defaultButton = Some(convertButton)
-    object tempCelsius extends TextField
-    object celsiusLabel extends Label {
+    val tempCelsius = new TextField
+    val celsiusLabel = new Label {
       text = "Celsius"
       border = Border.Empty(5, 5, 5, 5)
     }
-    object convertButton extends Button {
+    val convertButton = new Button {
       text = "Convert"//new javax.swing.ImageIcon("c:\\workspace\\gui\\images\\convert.gif")
       //border = Border.Empty(5, 5, 5, 5)
     }
-    object fahrenheitLabel extends Label {
+    val fahrenheitLabel = new Label {
       text = "Fahrenheit     "
       border = Border.Empty(5, 5, 5, 5)
       listenTo(convertButton, tempCelsius)

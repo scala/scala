@@ -12,8 +12,8 @@ object Swing {
   protected[swing] def ifNull[A](o: Object, a: A): A = if(o eq null) a else o.asInstanceOf[A]
   protected[swing] def toOption[A](o: Object): Option[A] = if(o eq null) None else Some(o.asInstanceOf[A])
   protected[swing] def toNull[A>:Null<:AnyRef](a: Option[A]): A = if(a == None) null else a.get
-  protected[swing] def toNoIcon(i: Icon): Icon = if(i == null) Icon.Empty else i
-  protected[swing] def toNullIcon(i: Icon): Icon = if(i == Icon.Empty) null else i
+  protected[swing] def toNoIcon(i: Icon): Icon = if(i == null) swing.Icon.Empty else i
+  protected[swing] def toNullIcon(i: Icon): Icon = if(i == swing.Icon.Empty) null else i
 
   implicit def block2Runnable(block: =>Unit): Runnable = new Runnable {
     override def run = block
@@ -46,4 +46,8 @@ object Swing {
   def VStrut(height: Int) = new Component {
     override lazy val peer = javax.swing.Box.createVerticalStrut(height).asInstanceOf[JComponent]
   }
+
+  def Icon(image: java.awt.Image) = new javax.swing.ImageIcon(image)
+  def Icon(filename: String) = new javax.swing.ImageIcon(filename)
+  def Icon(url: java.net.URL) = new javax.swing.ImageIcon(url)
 }

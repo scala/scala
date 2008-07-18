@@ -178,6 +178,9 @@ class ListView[A] extends Component {
   def fixedCellHeight = peer.getFixedCellHeight
   def fixedCellHeight_=(x: Int) = peer.setFixedCellHeight(x)
 
+  def prototypeCellValue: A = peer.getPrototypeCellValue.asInstanceOf[A]
+  def prototypeCellValue_=(a: A) { peer.setPrototypeCellValue(a) }
+
   def selectionForeground: Color = peer.getSelectionForeground
   def selectionForeground_=(c: Color) = peer.setSelectionForeground(c)
   def selectionBackground: Color = peer.getSelectionBackground
