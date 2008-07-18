@@ -527,7 +527,7 @@ abstract class GenJVM extends SubComponent {
                                                          new Array[Byte](0)))
       }
 
-      addRemoteException(m.symbol)
+      addRemoteException(jmethod, m.symbol)
 
       if (!jmethod.isAbstract() && !method.native) {
         jcode = jmethod.getCode().asInstanceOf[JExtendedCode]
@@ -567,7 +567,7 @@ abstract class GenJVM extends SubComponent {
       addParamAnnotations(m.params.map(_.sym.attributes))
     }
 
-    private def addRemoteException(meth: Symbol) {
+    private def addRemoteException(jmethod: JMethod, meth: Symbol) {
       if (remoteClass ||
           (meth.hasAttribute(RemoteAttr)
            && jmethod.isPublic()
@@ -687,7 +687,7 @@ abstract class GenJVM extends SubComponent {
         mirrorCode.emitINVOKEVIRTUAL(moduleName, mirrorMethod.getName(), mirrorMethod.getType().asInstanceOf[JMethodType])
         mirrorCode.emitRETURN(mirrorMethod.getReturnType())
 
-        addRemoteException(m)
+        addRemoteException(mirrorMethod, m)
         val (throws, others) = splitAnnotations(m.attributes, ThrowsAttr)
         addExceptionsAttribute(mirrorMethod, throws)
         addAnnotations(mirrorMethod, others)
