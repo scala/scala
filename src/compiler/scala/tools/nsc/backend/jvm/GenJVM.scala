@@ -232,17 +232,17 @@ abstract class GenJVM extends SubComponent {
 
       var fieldList = List[String]()
       for (f <- clasz.fields if f.symbol.hasGetter;
-	   val g = f.symbol.getter(c.symbol);
-	   val s = f.symbol.setter(c.symbol);
-	   if g.isPublic)
-	fieldList = javaName(f.symbol) :: javaName(g) :: (if (s != NoSymbol) javaName(s) else null) :: fieldList
+	         val g = f.symbol.getter(c.symbol);
+	         val s = f.symbol.setter(c.symbol);
+	         if g.isPublic)
+        fieldList = javaName(f.symbol) :: javaName(g) :: (if (s != NoSymbol) javaName(s) else null) :: fieldList
       val methodList =
-	for (m <- clasz.methods
-	    if !m.symbol.isConstructor &&
-	       m.symbol.isPublic &&
-	       !(m.symbol.name startsWith "$") &&
-	       !m.symbol.isGetter &&
-	       !m.symbol.isSetter) yield javaName(m.symbol)
+	     for (m <- clasz.methods
+	         if !m.symbol.isConstructor &&
+	         m.symbol.isPublic &&
+	         !(m.symbol.name startsWith "$") &&
+	         !m.symbol.isGetter &&
+	         !m.symbol.isSetter) yield javaName(m.symbol)
 
       val constructor = beanInfoClass.addNewMethod(JAccessFlags.ACC_PUBLIC, "<init>", JType.VOID, javaTypes(Nil), javaNames(Nil))
       jcode = constructor.getCode().asInstanceOf[JExtendedCode]
@@ -251,17 +251,17 @@ abstract class GenJVM extends SubComponent {
       val conType = new JMethodType(JType.VOID, Array(javaType(definitions.ClassClass), stringArrayKind, stringArrayKind))
 
       def push(lst:Seq[String]) {
-	var fi = 0
-	for (f <- lst) {
-	  jcode.emitDUP()
-	  jcode.emitPUSH(fi)
-	  if (f != null)
-	    jcode.emitPUSH(f)
-	  else
-	    jcode.emitACONST_NULL()
-	  jcode.emitASTORE(strKind)
-	  fi += 1
-	}
+	      var fi = 0
+	      for (f <- lst) {
+    	    jcode.emitDUP()
+	        jcode.emitPUSH(fi)
+    	    if (f != null)
+	          jcode.emitPUSH(f)
+	        else
+	          jcode.emitACONST_NULL()
+	        jcode.emitASTORE(strKind)
+	        fi += 1
+	      }
       }
 
       jcode.emitALOAD_0()
@@ -376,7 +376,7 @@ abstract class GenJVM extends SubComponent {
       for (attrib@AnnotationInfo(typ, consts, nvPairs) <- attributes;
            if shouldEmitAttribute(attrib))
       {
-	nattr += 1
+        nattr += 1
         val jtype = javaType(typ)
         buf.putShort(cpool.addUtf8(jtype.getSignature()).toShort)
         assert(consts.length <= 1, consts.toString)
