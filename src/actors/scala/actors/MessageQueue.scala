@@ -30,7 +30,7 @@ class MessageQueueElement {
  * library. Classes in this package are supposed to be the only
  * clients of this class.
  *
- * @version 0.9.8
+ * @version 0.9.9
  * @author Philipp Haller
  */
 @serializable
@@ -65,6 +65,87 @@ class MessageQueue {
       last.next = el
       last = el
     }
+  }
+
+  def foldLeft[B](z: B)(f: (B, Any) => B): B = {
+    var acc = z
+    var curr = first
+    while (curr != null) {
+      acc = f(acc, curr.msg)
+      curr = curr.next
+    }
+    acc
+  }
+
+  /** Returns the n-th msg that satisfies the predicate
+   *  without removing it.
+   */
+  def get(n: Int)(p: Any => Boolean): Option[Any] = {
+    var pos = 0
+    val msg = if (null eq last) None
+    else {
+      // test first element
+      if (n == 0 && p(first.msg))
+        Some(first.msg)
+      else {
+        var curr = first
+        while(curr.next != null) {
+          curr = curr.next
+          if (p(curr.msg)) {
+            pos += 1
+            if (pos == n)
+              return Some(curr.msg)
+          }
+        }
+        None
+      }
+    }
+    msg
+  }
+
+  /** Removes the n-th msg that satisfies the predicate.
+   */
+  def remove(n: Int)(p: Any => Boolean): Option[(Any, OutputChannel[Any])] = {
+    var pos = 0
+    val msg = if (null eq last) None
+    else {
+      // test first element
+      if (n == 0 && p(first.msg)) {
+        val tmp = first
+        // remove first element
+        first = first.next
+
+        // might have to update last
+        if (tmp eq last) {
+          last = null
+        }
+
+        Some((tmp.msg, tmp.session))
+      } else {
+        var curr = first
+        var prev = curr
+        while(curr.next != null) {
+          prev = curr
+          curr = curr.next
+          if (p(curr.msg)) {
+            pos += 1
+            if (pos == n) {
+              // remove curr
+              prev.next = curr.next
+
+              // might have to update last
+              if (curr eq last) {
+                last = prev
+              }
+
+              return Some((curr.msg, curr.session))
+            }
+          }
+        }
+        None
+      }
+    }
+    msg
   }
 
   def extractFirst(p: Any => Boolean): MessageQueueElement = {

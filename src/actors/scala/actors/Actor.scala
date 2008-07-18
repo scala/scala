@@ -362,7 +362,7 @@ trait Actor extends OutputChannel[Any] {
   private var waitingFor: Any => Boolean = waitingForNone
   private var isSuspended = false
 
-  private val mailbox = new MessageQueue
+  protected val mailbox = new MessageQueue
   private var sessions: List[OutputChannel[Any]] = Nil
 
   /**
