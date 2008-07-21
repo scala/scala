@@ -62,6 +62,27 @@ trait BaseTypeSeqs {
     def exists(p: Type => Boolean): Boolean = elems exists p
 //      (0 until length) exists (i => p(this(i)))
 
+    def normalize(parents: List[Type]) {
+      var j = 0
+      while (j < elems.length) {
+        elems(j) match {
+          case RefinedType(variants, decls) =>
+            // can't assert decls.isEmpty; see t0764
+            //if (!decls.isEmpty) assert(false, "computing closure of "+this+":"+this.isInstanceOf[RefinedType]+"/"+closureCache(j))
+            //Console.println("compute closure of "+this+" => glb("+variants+")")
+            elems(j) = mergePrefixAndArgs(variants, -1, maxBaseTypeSeqDepth(variants) + LubGlbMargin) match {
+              case Some(tp0) => tp0
+              case None => throw new TypeError(
+                "the type intersection "+(parents mkString " with ")+" is malformed"+
+                "\n --- because ---"+
+                "\n no common type instance of base types "+(variants mkString ", and ")+" exists.")
+            }
+          case _ =>
+        }
+        j += 1
+      }
+    }
+
     lazy val maxDepth: Int = {
       var d = 0
       for (i <- 0 until length) d = Math.max(d, self.maxDepth(this(i)))
@@ -80,17 +101,17 @@ trait BaseTypeSeqs {
   def baseTypeSingletonSeq(tp: Type): BaseTypeSeq = new BaseTypeSeq(Array(tp))
 
   /** Create the base type sequence of a compound type wuth given tp.parents */
-  def compoundBaseTypeSeq(tp: CompoundType): BaseTypeSeq = {
-    //Console.println("computing baseTypeSeq of " + tsym.tpe + " " + tp.parents)//DEBUG
+  def compoundBaseTypeSeq(tsym: Symbol, parents: List[Type]): BaseTypeSeq = {
+//    Console.println("computing baseTypeSeq of " + tsym.tpe + " " + parents)//DEBUG
     val buf = new ListBuffer[Type]
-    buf += tp.typeSymbol.tpe
+    buf += tsym.tpe
     var btsSize = 1
-    val nparents = tp.parents.length
+    val nparents = parents.length
     if (nparents != 0) {
       val pbtss = new Array[BaseTypeSeq](nparents)
       val index = new Array[Int](nparents)
       var i = 0
-      for (p <- tp.parents) {
+      for (p <- parents) {
         pbtss(i) =
           if (p.baseTypeSeq eq undetBaseTypeSeq) AnyClass.info.baseTypeSeq
           else p.baseTypeSeq
@@ -127,8 +148,10 @@ trait BaseTypeSeqs {
     }
     val elems = new Array[Type](btsSize)
     buf.copyToArray(elems, 0)
-    //Console.println("baseTypeSeqCache of " + tsym.tpe + " = " + arr.toString)//DEBUG
-    tp.baseTypeSeqCache = new BaseTypeSeq(elems)
+//    Console.println("computed baseTypeSeq of " + tsym.tpe + " " + parents + ": "+elems.toString)//DEBUG
+    new BaseTypeSeq(elems)
+  }
+/*
     var j = 0
     while (j < btsSize) {
       elems(j) match {
@@ -139,7 +162,7 @@ trait BaseTypeSeqs {
           elems(j) = mergePrefixAndArgs(variants, -1, maxBaseTypeSeqDepth(variants) + LubGlbMargin) match {
             case Some(tp0) => tp0
             case None => throw new TypeError(
-              "the type intersection "+(tp.parents mkString " with ")+" is malformed"+
+              "the type intersection "+(parents mkString " with ")+" is malformed"+
               "\n --- because ---"+
               "\n no common type instance of base types "+(variants mkString ", and ")+" exists.")
           }
@@ -147,6 +170,7 @@ trait BaseTypeSeqs {
       }
       j += 1
     }
-    tp.baseTypeSeqCache // todo: needed, or can be unit?
+    tp.baseTypeSeqCache
   }
+*/
 }

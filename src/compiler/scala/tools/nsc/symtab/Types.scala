@@ -121,7 +121,7 @@ trait Types {
   }
 
   /** A proxy for a type (identified by field `underlying') that forwards most
-   *  operations to it (for exceptions, see WrappingProxy, which forwards even more operations.
+   *  operations to it (for exceptions, see WrappingProxy, which forwards even more operations).
    *  every operation that is overridden for some kind of types should be forwarded.
    */
   trait SimpleTypeProxy extends Type {
@@ -1035,7 +1035,10 @@ trait Types {
           if (util.Statistics.enabled)
             compoundBaseTypeSeqCount += 1
           baseTypeSeqCache = undetBaseTypeSeq
-          baseTypeSeqCache = memo(compoundBaseTypeSeq(this))(_.baseTypeSeq updateHead typeSymbol.tpe)
+          baseTypeSeqCache = memo(compoundBaseTypeSeq(typeSymbol, parents))(_.baseTypeSeq updateHead typeSymbol.tpe)
+//          println("normalizing baseTypeSeq of "+typeSymbol+"/"+parents+": "+baseTypeSeqCache)//DEBUG
+          baseTypeSeqCache.normalize(parents)
+//          println("normalized baseTypeSeq of "+typeSymbol+"/"+parents+": "+baseTypeSeqCache)//DEBUG
         }
         //Console.println("baseTypeSeq(" + typeSymbol + ") = " + List.fromArray(baseTypeSeqCache));//DEBUG
       }
@@ -1468,7 +1471,6 @@ A type's typeSymbol should never be inspected directly.
             else sym.info.baseTypeSeq map transform
 
         }
-      }
       }
       if (baseTypeSeqCache == undetBaseTypeSeq)
         throw new TypeError("illegal cyclic inheritance involving " + sym)
