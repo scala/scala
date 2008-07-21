@@ -15,6 +15,7 @@ abstract class SymbolTable extends Names
                               with Scopes
                               with Definitions
                               with Constants
+                              with BaseTypeSeqs
                               with InfoTransformers
                               with StdNames
                               with AnnotationInfos

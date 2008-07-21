@@ -94,8 +94,11 @@ abstract class RefChecks extends InfoTransform {
 
       val self = clazz.thisType
 
-      def isAbstractTypeForVirtual(sym: Symbol) = // (part of DEVIRTUALIZE)
-        sym.isAbstractType && sym.hasFlag(SYNTHETIC)
+      def isAbstractTypeWithoutFBound(sym: Symbol) = // (part of DEVIRTUALIZE)
+        sym.isAbstractType && !isFBounded(sym)
+
+      def isFBounded(tsym: Symbol) =
+        tsym.info.baseTypeSeq exists (_ contains tsym)
 
       def infoString(sym: Symbol) = {
         val sym1 = analyzer.underlying(sym)
@@ -269,7 +272,7 @@ abstract class RefChecks extends InfoTransform {
             })
         for (val member <- clazz.tpe.nonPrivateMembers)
           if (member.isDeferred && !(clazz hasFlag ABSTRACT) &&
-              !isAbstractTypeForVirtual(member) &&
+              !isAbstractTypeWithoutFBound(member) &&
               !((member hasFlag JAVA) && javaErasedOverridingSym(member) != NoSymbol)) {
             abstractClassError(
               false, infoString(member) + " is not defined" + analyzer.varNotice(member))
@@ -291,7 +294,7 @@ abstract class RefChecks extends InfoTransform {
         // (3) is violated but not (2).
         def checkNoAbstractDecls(bc: Symbol) {
           for (val decl <- bc.info.decls.elements) {
-            if (decl.isDeferred && !isAbstractTypeForVirtual(decl)) {
+            if (decl.isDeferred && !isAbstractTypeWithoutFBound(decl)) {
               val impl = decl.matchingSymbol(clazz.thisType)
               if (impl == NoSymbol || (decl.owner isSubClass impl.owner)) {
                 abstractClassError(false, "there is a deferred declaration of "+infoString(decl)+
@@ -331,13 +334,13 @@ abstract class RefChecks extends InfoTransform {
      *  </ol>
      */
     private def validateBaseTypes(clazz: Symbol) {
-      val seenTypes = new Array[Type](clazz.info.closure.length)
+      val seenTypes = new Array[Type](clazz.info.baseTypeSeq.length)
 
       /** validate all base types of a class in reverse linear order. */
       def validateType(tp: Type) {
         val baseClass = tp.typeSymbol
         if (baseClass.isClass) {
-          val index = clazz.info.closurePos(baseClass)
+          val index = clazz.info.baseTypeIndex(baseClass)
           if (index >= 0) {
             if (seenTypes(index) ne null) {
               if (!(seenTypes(index) <:< tp)) {
@@ -352,7 +355,7 @@ abstract class RefChecks extends InfoTransform {
                 if (!clazz.owner.isPackageClass)
                   unit.error(clazz.pos, "inner classes cannot be classfile annotations")
             }
-            tp.parents foreach validateType
+            tp.parents.reverse foreach validateType
           }
         }
       }
@@ -689,7 +692,14 @@ abstract class RefChecks extends InfoTransform {
       def checkBounds(pre: Type, owner: Symbol, tparams: List[Symbol], argtps: List[Type]): Unit = try {
         typer.infer.checkBounds(tree.pos, pre, owner, tparams, argtps, "");
       } catch {
-        case ex: TypeError => unit.error(tree.pos, ex.getMessage());
+        case ex: TypeError =>
+          unit.error(tree.pos, ex.getMessage());
+          if (settings.explaintypes.value) {
+            val bounds = tparams map (tp => tp.info.instantiateTypeParams(tparams, argtps).bounds)
+            List.map2(argtps, bounds)((targ, bound) => explainTypes(bound.lo, targ))
+            List.map2(argtps, bounds)((targ, bound) => explainTypes(targ, bound.hi))
+            ()
+          }
       }
 
       def isIrrefutable(pat: Tree, seltpe: Type): Boolean = {

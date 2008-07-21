@@ -246,11 +246,13 @@ trait Infer {
          "\n required: " + req + existentialContext(req)
       }
 
-    def typeErrorMsg(found: Type, req: Type) =
+    def typeErrorMsg(found: Type, req: Type) = {
+      //println(found.baseTypeSeq)
       "type mismatch" + foundReqMsg(found, req) +
       (if ((found.resultApprox ne found) && isWeaklyCompatible(found.resultApprox, req))
         "\n possible cause: missing arguments for method or constructor"
        else "")
+    }
 
     def error(pos: Position, msg: String) {
       context.error(pos, msg)
@@ -548,8 +550,6 @@ trait Infer {
       List.map2(argtpes, formals) {(argtpe, formal) =>
         if (!isCompatible(argtpe.deconst.instantiateTypeParams(tparams, tvars),
                           formal.instantiateTypeParams(tparams, tvars))) {
-          if (settings.explaintypes.value)
-            explainTypes(argtpe.deconst.instantiateTypeParams(tparams, tvars), formal.instantiateTypeParams(tparams, tvars))
           throw new DeferredNoInstance(() =>
             "argument expression's type is not compatible with formal parameter type" +
             foundReqMsg(argtpe.deconst.instantiateTypeParams(tparams, tvars), formal.instantiateTypeParams(tparams, tvars)))
@@ -764,12 +764,12 @@ trait Infer {
                 prefix + "type arguments " + targs.mkString("[", ",", "]") +
                 " do not conform to " + tparams.head.owner + "'s type parameter bounds " +
                 (tparams map (_.defString)).mkString("[", ",", "]"))
-        }
-        if (settings.explaintypes.value) {
-          val bounds = tparams map (tp => tp.info.instantiateTypeParams(tparams, targs).bounds)
-          List.map2(targs, bounds)((targ, bound) => explainTypes(bound.lo, targ))
-          List.map2(targs, bounds)((targ, bound) => explainTypes(targ, bound.hi))
-          ()
+          if (settings.explaintypes.value) {
+            val bounds = tparams map (tp => tp.info.instantiateTypeParams(tparams, targs).bounds)
+            List.map2(targs, bounds)((targ, bound) => explainTypes(bound.lo, targ))
+            List.map2(targs, bounds)((targ, bound) => explainTypes(targ, bound.hi))
+            ()
+          }
         }
       }
     }

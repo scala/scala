@@ -713,15 +713,15 @@ trait Symbols {
 
     /** A total ordering between symbols that refines the class
      *  inheritance graph (i.e. subclass.isLess(superclass) always holds).
-     *  the ordering is given by: (isType, -|closure| for type symbols, id)
+     *  the ordering is given by: (_.isType, -_.baseTypeSeq.length) for type symbols, followed by `id'.
      */
     final def isLess(that: Symbol): Boolean = {
-      def closureLength(sym: Symbol) =
-        if (sym.isAbstractType) 1 + sym.info.bounds.hi.closure.length
-        else sym.info.closure.length
+      def baseTypeSeqLength(sym: Symbol) =
+        if (sym.isAbstractType) 1 + sym.info.bounds.hi.baseTypeSeq.length
+        else sym.info.baseTypeSeq.length
       if (this.isType)
         (that.isType &&
-         { val diff = closureLength(this) - closureLength(that)
+         { val diff = baseTypeSeqLength(this) - baseTypeSeqLength(that)
            diff > 0 || diff == 0 && this.id < that.id })
       else
         that.isType || this.id < that.id
@@ -737,7 +737,7 @@ trait Symbols {
     /** Is this class symbol a subclass of that symbol? */
     final def isNonBottomSubClass(that: Symbol): Boolean =
       this == that || this.isError || that.isError ||
-      info.closurePos(that) >= 0
+      info.baseTypeIndex(that) >= 0
 
     final def isSubClass(that: Symbol): Boolean = {
       isNonBottomSubClass(that) ||

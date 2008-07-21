@@ -2937,7 +2937,7 @@ trait Typers { self: Analyzer =>
             Ident(defSym.name) setType tree1.tpe setSymbol defSym setPos tree.pos
           } else tree1
         } else {
-          var tree1 = if (qual == EmptyTree) tree
+          val tree1 = if (qual == EmptyTree) tree
                       else atPos(tree.pos)(Select(qual, name))
                     // atPos necessary because qualifier might come from startContext
           stabilize(checkAccessible(tree1, defSym, pre, qual), pre, mode, pt)

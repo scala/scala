@@ -11,6 +11,7 @@ import scala.collection.mutable.{ListBuffer, HashMap}
 import scala.compat.Platform.currentTime
 import scala.tools.nsc.ast.TreeGen
 import scala.tools.nsc.util.{HashSet, Position, NoPosition}
+import scala.collection.jcl.WeakHashMap
 import Flags._
 
 /* A standard type pattern match:
@@ -64,9 +65,9 @@ trait Types {
 
 
   //statistics
-  var singletonClosureCount = 0
-  var compoundClosureCount = 0
-  var typerefClosureCount = 0
+  var singletonBaseTypeSeqCount = 0
+  var compoundBaseTypeSeqCount = 0
+  var typerefBaseTypeSeqCount = 0
   var findMemberCount = 0
   var noMemberCount = 0
   var multMemberCount = 0
@@ -77,7 +78,7 @@ trait Types {
   private var explainSwitch = false
   private var checkMalformedSwitch = false // todo: it's now always false. Remove all code that depends on this switch.
 
-  private final val LubGlbMargin = 0
+  final val LubGlbMargin = 0
   private final val LogPendingSubTypesThreshold = 50
   private final val LogPendingBaseTypesThreshold = 50
 
@@ -93,11 +94,11 @@ trait Types {
   var undoLog: UndoLog = List()
 
   /** A map from lists to compound types that have the given list as parents.
-   *  This is used to avoid duplication in the computation of closure and baseClasses.
+   *  This is used to avoid duplication in the computation of base type sequences and baseClasses.
    *  It makes use of the fact that these two operations depend only on the parents,
    *  not on the refinement.
    */
-  var intersectionWitness = new HashMap[List[Type], Type]
+  var intersectionWitness = new WeakHashMap[List[Type], Type]
 
   private object gen extends {
     val global : Types.this.type = Types.this
@@ -151,8 +152,8 @@ trait Types {
     override def prefix = underlying.prefix
     override def decls = underlying.decls
     override def baseType(clazz: Symbol) = underlying.baseType(clazz)
-    override def closure = underlying.closure
-    override def closureDepth = underlying.closureDepth
+    override def baseTypeSeq = underlying.baseTypeSeq
+    override def baseTypeSeqDepth = underlying.baseTypeSeqDepth
     override def baseClasses = underlying.baseClasses
   }
 
@@ -545,28 +546,28 @@ trait Types {
      *
      *  Sorting is with respect to Symbol.isLess() on type symbols.
      */
-    def closure: Array[Type] = Array(this)
+    def baseTypeSeq: BaseTypeSeq = baseTypeSingletonSeq(this)
 
-    /** The maximum depth (@see maxDepth) of each type in the closure of this type. */
-    def closureDepth: Int = 1
+    /** The maximum depth (@see maxDepth) of each type in the BaseTypeSeq of this type. */
+    def baseTypeSeqDepth: Int = 1
 
     def baseClasses: List[Symbol] = List()
 
     /**
      *  @param sym the class symbol
-     *  @return    the index of given class symbol in the closure of this type,
+     *  @return    the index of given class symbol in the BaseTypeSeq of this type,
      *             or -1 if no base type with given class symbol exists.
      */
-    def closurePos(sym: Symbol): Int = {
-      val cl = closure
+    def baseTypeIndex(sym: Symbol): Int = {
+      val bts = baseTypeSeq
       var lo = 0
-      var hi = cl.length - 1
+      var hi = bts.length - 1
       while (lo <= hi) {
         val mid = (lo + hi) / 2
-        val clsym = cl(mid).typeSymbol
-        if (sym == clsym) return mid
-        else if (sym isLess clsym) hi = mid - 1
-        else if (clsym isLess sym) lo = mid + 1
+        val btssym = bts.typeSymbol(mid)
+        if (sym == btssym) return mid
+        else if (sym isLess btssym) hi = mid - 1
+        else if (btssym isLess sym) lo = mid + 1
         else throw new Error()
       }
       -1
@@ -820,8 +821,8 @@ trait Types {
     override def parents: List[Type] = supertype.parents
     override def decls: Scope = supertype.decls
     override def baseType(clazz: Symbol): Type = supertype.baseType(clazz)
-    override def closure: Array[Type] = supertype.closure
-    override def closureDepth: Int = supertype.closureDepth
+    override def baseTypeSeq: BaseTypeSeq = supertype.baseTypeSeq
+    override def baseTypeSeqDepth: Int = supertype.baseTypeSeqDepth
     override def baseClasses: List[Symbol] = {
       val supertype = this.supertype
       if (inIDE && supertype == null) Nil
@@ -848,9 +849,9 @@ trait Types {
     override def isTrivial = false
     override def isStable = true
     override def widen: Type = underlying.widen
-    override def closure: Array[Type] = {
-      if (util.Statistics.enabled) singletonClosureCount += 1
-      addClosure(this, underlying.closure)
+    override def baseTypeSeq: BaseTypeSeq = {
+      if (util.Statistics.enabled) singletonBaseTypeSeqCount += 1
+      underlying.baseTypeSeq prepend this
     }
     override def safeToString: String = prefixString + "type"
 /*
@@ -1021,103 +1022,29 @@ trait Types {
    */
   abstract class CompoundType extends Type {
 
-    private var closureCache: Array[Type] = _
-    private var closurePeriod = NoPeriod
+    var baseTypeSeqCache: BaseTypeSeq = _
+    private var baseTypeSeqPeriod = NoPeriod
     private var baseClassesCache: List[Symbol] = _
     private var baseClassesPeriod = NoPeriod
-    private var closureDepthCache: Int = _
 
-    override def closure: Array[Type] = {
-      def computeClosure: Array[Type] =
-        try {
-          if (util.Statistics.enabled)
-            compoundClosureCount += 1
-          //Console.println("computing closure of " + typeSymbol.tpe + " " + parents)//DEBUG
-          val buf = new ListBuffer[Type]
-          buf += typeSymbol.tpe
-          var clSize = 1
-          val nparents = parents.length
-          if (nparents != 0) {
-            val pclosure = new Array[Array[Type]](nparents)
-            val index = new Array[Int](nparents)
-            var i = 0
-            for (p <- parents) {
-              pclosure(i) = if (p.closure eq null) AnyClass.info.closure // cyclic reference
-                            else p.closure
-              index(i) = 0
-              i += 1
-            }
-            def nextBaseType(i: Int): Type = {
-              val j = index(i)
-              val pci = pclosure(i)
-              if (j < pci.length) pci(j) else AnyClass.tpe
-            }
-            var minSym: Symbol = NoSymbol
-            while (minSym != AnyClass) {
-              minSym = nextBaseType(0).typeSymbol
-              i = 1
-              while (i < nparents) {
-                if (nextBaseType(i).typeSymbol isLess minSym)
-                  minSym = nextBaseType(i).typeSymbol
-                i += 1
-              }
-              var minTypes: List[Type] = List()
-              i = 0
-              while (i < nparents) {
-                val tp = nextBaseType(i)
-                if (tp.typeSymbol == minSym) {
-                  if (!(minTypes exists (tp =:=))) minTypes = tp :: minTypes;
-                  index(i) = index(i) + 1
-                }
-                i += 1
-              }
-              buf += intersectionType(minTypes)
-              clSize += 1
-            }
-          }
-          closureCache = new Array[Type](clSize)
-          buf.copyToArray(closureCache, 0)
-          //Console.println("closureCache of " + typeSymbol.tpe + " = " + List.fromArray(closureCache))//DEBUG
-          var j = 0
-          while (j < clSize) {
-            closureCache(j) match {
-              case RefinedType(parents, decls) =>
-                // can't assert decls.isEmpty; see t0764
-                //if (!decls.isEmpty) assert(false, "computing closure of "+this+":"+this.isInstanceOf[RefinedType]+"/"+closureCache(j))
-                //Console.println("compute closure of "+this+" => glb("+parents+")")
-                closureCache(j) = mergePrefixAndArgs(parents, -1, maxClosureDepth(parents) + LubGlbMargin) match {
-                  case Some(tp0) => tp0
-                  case None => throw new MalformedClosure(parents)
-                }
-                assert(!closureCache(j).isInstanceOf[RefinedType], closureCache(j))
-              case _ =>
-            }
-            j += 1
-          }
-          //Console.println("closure of " + typeSymbol.tpe + " = " + List.fromArray(closureCache))//DEBUG
-          closureCache
-        } catch {
-          case ex: MalformedClosure =>
-            throw new MalformedType(
-              "the type intersection " + this + " is malformed" +
-              "\n --- because ---\n" + ex.getMessage())
-        }
-      val period = closurePeriod;
+    override def baseTypeSeq: BaseTypeSeq = {
+      val period = baseTypeSeqPeriod;
       if (period != currentPeriod) { // no caching in IDE
-        closurePeriod = currentPeriod
+        baseTypeSeqPeriod = currentPeriod
         if (!isValidForBaseClasses(period)) {
-          closureCache = null
-          closureCache = memo[Array[Type], Type](computeClosure, modifyClosure(typeSymbol.tpe))
-          closureDepthCache = maxDepth(closureCache)
+          if (util.Statistics.enabled)
+            compoundBaseTypeSeqCount += 1
+          baseTypeSeqCache = undetBaseTypeSeq
+          baseTypeSeqCache = memo(compoundBaseTypeSeq(this))(_.baseTypeSeq updateHead typeSymbol.tpe)
         }
-        //Console.println("closure(" + typeSymbol + ") = " + List.fromArray(closureCache));//DEBUG
+        //Console.println("baseTypeSeq(" + typeSymbol + ") = " + List.fromArray(baseTypeSeqCache));//DEBUG
       }
-      if (closureCache eq null)
-        throw new TypeError("illegal cyclic reference involving " + typeSymbol)
-      closureCache
+      if (baseTypeSeqCache eq undetBaseTypeSeq)
+        throw new TypeError("illegal cyclic inheritance involving " + typeSymbol)
+      baseTypeSeqCache
     }
 
-    override def closureDepth: Int = { closure; closureDepthCache }
+    override def baseTypeSeqDepth: Int = baseTypeSeq.maxDepth
 
     override def baseClasses: List[Symbol] = {
       if (inIDE) trackTypeIDE(typeSymbol)
@@ -1131,7 +1058,7 @@ trait Types {
           val sbcs = superclazz.baseClasses
           var bcs = sbcs
           def isNew(clazz: Symbol): Boolean = (
-            superclazz.closurePos(clazz) < 0 &&
+            superclazz.baseTypeIndex(clazz) < 0 &&
             { var p = bcs;
               while ((p ne sbcs) && (p.head != clazz)) p = p.tail;
               p eq sbcs
@@ -1146,13 +1073,13 @@ trait Types {
             mixins = mixins.tail
           }
           typeSymbol :: bcs
-        }
+         }
       val period = baseClassesPeriod
       if (period != currentPeriod) {
         baseClassesPeriod = currentPeriod
         if (!isValidForBaseClasses(period)) {
           baseClassesCache = null
-          baseClassesCache = memo[List[Symbol], Symbol](computeBaseClasses, x => typeSymbol :: x.baseClasses.tail)
+          baseClassesCache = memo(computeBaseClasses)(typeSymbol :: _.baseClasses.tail)
         }
       }
       if (baseClassesCache eq null)
@@ -1160,7 +1087,7 @@ trait Types {
       baseClassesCache
     }
 
-    def memo[A <: Seq[B], B](op1: => A, op2: Type => A) = intersectionWitness get parents match {
+    def memo[A](op1: => A)(op2: Type => A) = intersectionWitness get parents match {
       case Some(w) =>
         if (w eq this) op1 else op2(w)
       case None =>
@@ -1170,8 +1097,8 @@ trait Types {
 
     override def baseType(sym: Symbol): Type = {
       if (inIDE) { trackTypeIDE(sym); trackTypeIDE(typeSymbol); }
-      val index = closurePos(sym)
-      if (index >= 0) closure(index) else NoType
+      val index = baseTypeIndex(sym)
+      if (index >= 0) baseTypeSeq(index) else NoType
     }
 
     override def narrow: Type = {
@@ -1197,6 +1124,7 @@ trait Types {
    */
   case class RefinedType(override val parents: List[Type],
                          override val decls: Scope) extends CompoundType {
+    def isHigherkinded = !parents.isEmpty && (parents forall (_.isHigherKinded)) // MO to AM: please check
     override def kind = "RefinedType"
   }
 
@@ -1377,9 +1305,8 @@ trait Types {
 
     private var parentsCache: List[Type] = _
     private var parentsPeriod = NoPeriod
-    private var closureCache: Array[Type] = _
-    private var closurePeriod = NoPeriod
-    private var closureDepthCache: Int = _
+    private var baseTypeSeqCache: BaseTypeSeq = _
+    private var baseTypeSeqPeriod = NoPeriod
 
     override def isStable: Boolean = {
       sym == SingletonClass ||
@@ -1408,16 +1335,6 @@ trait Types {
 
     def thisInfo     = if (sym.isTypeMember) transformInfo(sym.info) else sym.info
     def relativeInfo = if (sym.isTypeMember) transformInfo(pre.memberInfo(sym)) else pre.memberInfo(sym)
-
-    def transform(cl: Array[Type]): Array[Type] = {
-      val cl1 = new Array[Type](cl.length)
-      var i = 0
-      while (i < cl.length) {
-        cl1(i) = transform(cl(i))
-        i += 1
-      }
-      cl1
-    }
 
     override def typeSymbol = if (sym.isAliasType) normalize.typeSymbol else sym
     override def termSymbol = if (sym.isAliasType) normalize.termSymbol else super.termSymbol
@@ -1538,25 +1455,27 @@ A type's typeSymbol should never be inspected directly.
           basetypeRecursions -= 1
         }
 
-    override def closure: Array[Type] = {
-      val period = closurePeriod
+    override def baseTypeSeq: BaseTypeSeq = {
+      val period = baseTypeSeqPeriod
       if (period != currentPeriod) {
-        closurePeriod = currentPeriod
+        baseTypeSeqPeriod = currentPeriod
         if (!isValidForBaseClasses(period)) {
           if (util.Statistics.enabled)
-            typerefClosureCount += 1
-          closureCache =
-            if (sym.isAbstractType) addClosure(this, transform(bounds.hi).closure)
-            else transform(sym.info.closure)
-          closureDepthCache = maxDepth(closureCache)
+            typerefBaseTypeSeqCount += 1
+          baseTypeSeqCache = undetBaseTypeSeq
+          baseTypeSeqCache =
+            if (sym.isAbstractType) transform(bounds.hi).baseTypeSeq prepend this
+            else sym.info.baseTypeSeq map transform
+
         }
       }
-      if (closureCache eq null)
-        throw new TypeError("illegal cyclic reference involving " + sym)
-      closureCache
+      }
+      if (baseTypeSeqCache == undetBaseTypeSeq)
+        throw new TypeError("illegal cyclic inheritance involving " + sym)
+      baseTypeSeqCache
     }
 
-    override def closureDepth: Int = { closure; closureDepthCache }
+    override def baseTypeSeqDepth: Int = baseTypeSeq.maxDepth
 
     override def baseClasses: List[Symbol] = thisInfo.baseClasses
 
@@ -1674,8 +1593,8 @@ A type's typeSymbol should never be inspected directly.
     override def typeSymbol: Symbol = resultType.typeSymbol
     override def boundSyms: List[Symbol] = typeParams
     override def prefix: Type = resultType.prefix
-    override def closure: Array[Type] = resultType.closure
-    override def closureDepth: Int = resultType.closureDepth
+    override def baseTypeSeq: BaseTypeSeq = resultType.baseTypeSeq
+    override def baseTypeSeqDepth: Int = resultType.baseTypeSeqDepth
     override def baseClasses: List[Symbol] = resultType.baseClasses
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
     override def narrow: Type = resultType.narrow
@@ -1731,7 +1650,7 @@ A type's typeSymbol should never be inspected directly.
 
     }
     override def baseType(clazz: Symbol) = maybeRewrap(underlying.baseType(clazz))
-    override def closure = underlying.closure map maybeRewrap
+    override def baseTypeSeq = underlying.baseTypeSeq map maybeRewrap
     override def isHigherKinded = false
 
     override def skolemizeExistential(owner: Symbol, origin: AnyRef) = {
@@ -1886,12 +1805,12 @@ A type's typeSymbol should never be inspected directly.
        }
     }
 
-    /** Return the closure of tp, dropping the annotations, unless the closure of tp
+    /** Return the base type sequence of tp, dropping the annotations, unless the base type sequence of tp
       * is precisely tp itself. */
-    override def closure: Array[Type] = {
-       val oftp = underlying.closure
+    override def baseTypeSeq: BaseTypeSeq = {
+       val oftp = underlying.baseTypeSeq
        if ((oftp.length == 1) && (oftp(0) eq underlying))
-         Array(this)
+         baseTypeSingletonSeq(this)
        else
          oftp
      }
@@ -2011,7 +1930,8 @@ A type's typeSymbol should never be inspected directly.
   def copyRefinedType(original: RefinedType, parents: List[Type], decls: Scope) =
     if ((parents eq original.parents) && (decls eq original.decls)) original
     else {
-      val result = refinedType(parents, original.typeSymbol.owner)
+      val owner = if (original.typeSymbol == NoSymbol) NoSymbol else original.typeSymbol.owner
+      val result = refinedType(parents, owner)
       val syms1 = decls.toList
       for (sym <- syms1)
         result.decls.enter(sym.cloneSymbol(result.typeSymbol))
@@ -2120,6 +2040,7 @@ A type's typeSymbol should never be inspected directly.
       case ExistentialType(tparams, restpe) => ExistentialType(tparams, appliedType(restpe, args))
       case ErrorType => tycon
       case st: SingletonType => appliedType(st.widen, args) // @M TODO: what to do? see bug1
+      case RefinedType(parents, decls) => RefinedType(parents map (appliedType(_, args)), decls) // MO to AM: please check
       case _ => throw new Error(debugString(tycon))
     }
 
@@ -2641,7 +2562,7 @@ A type's typeSymbol should never be inspected directly.
 
     /** Return pre.baseType(clazz), or if that's NoType and clazz is a refinement, pre itself.
      *  See bug397.scala for an example where the second alternative is needed.
-     *  The problem is that when forming the closure of an abstract type,
+     *  The problem is that when forming the base type sequence of an abstract type,
      *  any refinements in the base type list might be regenerated, and thus acquire
      *  new class symbols. However, since refinements always have non-interesting prefixes
      *  it looks OK to me to just take the prefix directly. */
@@ -3238,10 +3159,10 @@ A type's typeSymbol should never be inspected directly.
     "_"+nextid
   }
 
-  /** The maximum depth of all types in the closures of each of the types `tps' */
-  final def maxClosureDepth(tps: Seq[Type]): Int = {
+  /** The maximum depth of all types in the base type sequences of each of the types `tps' */
+  final def maxBaseTypeSeqDepth(tps: Seq[Type]): Int = {
     var d = 0
-    for (tp <- tps) d = max(d, tp.closureDepth)
+    for (tp <- tps) d = max(d, tp.baseTypeSeqDepth)
     d
   }
 
@@ -3338,7 +3259,7 @@ A type's typeSymbol should never be inspected directly.
     if (tp1.typeSymbol.isClass && tp1.typeSymbol.hasFlag(FINAL))
       tp1 <:< tp2 || isNumericValueClass(tp1.typeSymbol) && isNumericValueClass(tp2.typeSymbol)
     else tp1.baseClasses forall (bc =>
-      tp2.closurePos(bc) < 0 || isConsistent(tp1.baseType(bc), tp2.baseType(bc)))
+      tp2.baseTypeIndex(bc) < 0 || isConsistent(tp1.baseType(bc), tp2.baseType(bc)))
   }
 
   /** Does a pattern of type `patType' need an outer test when executed against
@@ -3790,27 +3711,6 @@ A type's typeSymbol should never be inspected directly.
       tps1isJava && tp2.typeSymbol == ObjectClass && tp1.typeSymbol == AnyClass ||
       tps2isJava && tp1.typeSymbol == ObjectClass && tp2.typeSymbol == AnyClass)
 
-  /** Prepend type `tp' to closure `cl'.
-   *
-   *  @param tp ...
-   *  @param cl ...
-   *  @return   ...
-   */
-  private def addClosure(tp: Type, cl: Array[Type]): Array[Type] = {
-    val cl1 = new Array[Type](cl.length + 1)
-    cl1(0) = tp
-    Array.copy(cl, 0, cl1, 1, cl.length)
-    cl1
-  }
-
-  private def modifyClosure(tp: Type)(other: Type): Array[Type] = {
-    val cl = other.closure
-    val cl1 = new Array[Type](cl.length)
-    cl1(0) = tp
-    Array.copy(cl, 1, cl1, 1, cl.length-1)
-    cl1
-  }
-
   /** like map2, but returns list `xs' itself - instead of a copy - if function
    *  `f' maps all elements to themselves.
    */
@@ -3906,48 +3806,12 @@ A type's typeSymbol should never be inspected directly.
 
 // Lubs and Glbs ---------------------------------------------------------
 
-  /** The greatest sorted upwards closed lower bound of a list of lists of
-   *  types relative to the following ordering &lt;= between lists of types:
+  /** The least sorted upwards closed upper bound of a non-empty list
+   *  of lists of types relative to the following ordering &lt;= between lists of types:
    *
    *    xs &lt;= ys   iff   forall y in ys exists x in xs such that x &lt;: y
    *
-   *  @See closure  for a definition of sorted and upwards closed.
-   */
-  private def glbList(tss: List[List[Type]], depth: Int): List[Type] = {
-    val tss1 = tss filter (ts => !ts.isEmpty)
-    if (tss1.isEmpty) List()
-    else if (tss1.tail.isEmpty) tss.head
-    else {
-      val ts0 = tss1 map (_.head)
-      val sym = minSym(ts0)
-      val ts1 = elimSuper(ts0 filter (_.typeSymbol == sym))
-      mergePrefixAndArgs(ts1, -1, depth) match {
-        case Some(tp0) =>
-          tp0 :: glbList(tss1 map (ts => if (ts.head.typeSymbol == sym) ts.tail else ts), depth)
-        case None =>
-          throw new MalformedClosure(ts1)
-      }
-    }
-  }
-
-  /** The greatest sorted upwards closed lower bound of a list of closures.
-   *
-   *  @See glbList for more explanations.
-   */
-  private def glbArray(tss: List[Array[Type]], depth: Int): Array[Type] = {
-    val tss1 = tss map { ts: Array[Type] => List.fromArray(ts) }
-    val glbs = glbList(tss1, depth)
-    val result = new Array[Type](glbs.length)
-    var i = 0
-    for (x <- glbs.elements) { result(i) = x; i += 1 }
-    result
-    // Array(glbs: _*);
-  }
-
-  /** The least sorted upwards closed upper bound of a non-empty list
-   *  of lists of types.
-   *
-   *  @See glbList for more explanations.
+   *  @See baseTypeSeq  for a definition of sorted and upwards closed.
    */
   private def lubList(tss: List[List[Type]], depth: Int): List[Type] =
     if (tss.tail.isEmpty) tss.head
@@ -3961,23 +3825,8 @@ A type's typeSymbol should never be inspected directly.
         lubList(tss map (ts => if (ts.head.typeSymbol == sym) ts.tail else ts), depth)
     }
 
-  /** The least sorted upwards closed upper bound of a non-empty list
-   *  of closures.
-   *
-   *  @See lubList for more explanations.
-   */
-  private def lubArray(tss: List[Array[Type]], depth: Int): Array[Type] = {
-    var lubs = lubList(tss map { ts: Array[Type] => List.fromArray(ts) }, depth)
-    var arr = new Array[Type](lubs.length)
-    var i = 0
-    while (i < arr.length) {
-      arr(i) = lubs.head
-      i += 1
-      lubs = lubs.tail
-    }
-    arr
-    // todo: replace by Array(lubs: _* )
-  }
+  private def lubBaseTypeSeq(tss: List[BaseTypeSeq], depth: Int): List[Type] =
+    lubList(tss map (_.toList), depth)
 
   /** The minimal symbol (wrt Symbol.isLess) of a list of types */
   private def minSym(tps: List[Type]): Symbol =
@@ -3985,7 +3834,7 @@ A type's typeSymbol should never be inspected directly.
       (sym1, tp2) => if (tp2.typeSymbol isLess sym1) tp2.typeSymbol else sym1
     }
 
-  /** A minimal type list which has a given array of types as its closure */
+  /** A minimal type list which has a given list of types as its base type sequence */
   def spanningTypes(ts: List[Type]): List[Type] = ts match {
     case List() => List()
     case first :: rest =>
@@ -4043,7 +3892,7 @@ A type's typeSymbol should never be inspected directly.
     (strippedTypes, quantified)
   }
 
-  def lub(ts: List[Type]): Type = lub(ts, maxClosureDepth(ts) + LubGlbMargin)
+  def lub(ts: List[Type]): Type = lub(ts, maxBaseTypeSeqDepth(ts) + LubGlbMargin)
 
   /** The least upper bound wrt &lt;:&lt; of a list of types */
   def lub(ts: List[Type], depth: Int): Type = {
@@ -4062,9 +3911,9 @@ A type's typeSymbol should never be inspected directly.
         mkTypeBounds(glb(ts map (_.bounds.lo), depth), lub(ts map (_.bounds.hi), depth))
       case ts0 =>
         val (ts, tparams) = stripExistentialsAndTypeVars(ts0)
-        val closures: List[Array[Type]] = ts map (_.closure)
-        val lubBaseTypes: Array[Type] = lubArray(closures, depth)
-        val lubParents = spanningTypes(List.fromArray(lubBaseTypes))
+        val bts: List[BaseTypeSeq] = ts map (_.baseTypeSeq)
+        val lubBaseTypes: List[Type] = lubBaseTypeSeq(bts, depth)
+        val lubParents = spanningTypes(lubBaseTypes)
         val lubOwner = commonOwner(ts)
         val lubBase = intersectionType(lubParents, lubOwner)
         val lubType =
@@ -4115,7 +3964,7 @@ A type's typeSymbol should never be inspected directly.
             }
             if (lubRefined.decls.isEmpty) lubBase
             else {
-//            println("refined lub of "+ts+"/"+narrowts+" is "+lubRefined+", baseclasses = "+(ts map (_.closure) map (_.toList)))
+//            println("refined lub of "+ts+"/"+narrowts+" is "+lubRefined+", baseclasses = "+(ts map (_.baseTypeSeq) map (_.toList)))
               lubRefined
             }
           }
@@ -4133,7 +3982,9 @@ A type's typeSymbol should never be inspected directly.
     if (ts forall (_.isNotNull)) res.notNull else res
   }
 
-  def glb(ts: List[Type]): Type = glb(ts, maxClosureDepth(ts) + LubGlbMargin)
+  val GlbFailure = new Throwable
+
+  def glb(ts: List[Type]): Type = glb(ts, maxBaseTypeSeqDepth(ts) + LubGlbMargin)
 
   /** The greatest lower bound wrt &lt;:&lt; of a list of types */
   private def glb(ts: List[Type], depth: Int): Type = {
@@ -4184,7 +4035,7 @@ A type's typeSymbol should never be inspected directly.
                       val lo = lub(bnds map (_.bounds.lo), depth-1)
                       val hi = glb(bnds map (_.bounds.hi), depth-1)
                       if (lo <:< hi) mkTypeBounds(lo, hi)
-                      else throw new MalformedClosure(bnds)
+                      else throw GlbFailure
                     }
                     val symbounds = symtypes filter isTypeBound
                     var result: Type =
@@ -4193,7 +4044,7 @@ A type's typeSymbol should never be inspected directly.
                       else glbBounds(symbounds)
                     for (t <- symtypes if !isTypeBound(t))
                       if (result.bounds containsType t) result = t
-                      else throw new MalformedClosure(symtypes);
+                      else throw GlbFailure
                     result
                   })
               }
@@ -4208,7 +4059,7 @@ A type's typeSymbol should never be inspected directly.
             }
           existentialAbstraction(tparams, glbType)
         } catch {
-          case _: MalformedClosure =>
+          case GlbFailure =>
             if (ts forall (t => AllRefClass.tpe <:< t)) AllRefClass.tpe
             else AllClass.tpe
         }
@@ -4251,7 +4102,7 @@ A type's typeSymbol should never be inspected directly.
    *  Return `Some(x)' if the computation succeeds with result `x'.
    *  Return `None' if the computuation fails.
    */
-  private def mergePrefixAndArgs(tps: List[Type], variance: Int, depth: Int): Option[Type] = tps match {
+  def mergePrefixAndArgs(tps: List[Type], variance: Int, depth: Int): Option[Type] = tps match {
     case List(tp) =>
       Some(tp)
     case TypeRef(_, sym, _) :: rest =>
@@ -4366,11 +4217,6 @@ A type's typeSymbol should never be inspected directly.
   class MalformedType(msg: String) extends TypeError(msg) {
     def this(pre: Type, tp: String) = this("malformed type: " + pre + "#" + tp)
   }
-
-  /** An exception signalling a malformed closure */
-  class MalformedClosure(ts: List[Type])
-       extends TypeError("no common type instance of base types " +
-                         ts.mkString("", " and ", "") + " exists")
 
   /** An exception signalling a variance annotation/usage conflict */
   class VarianceError(msg: String) extends TypeError(msg)

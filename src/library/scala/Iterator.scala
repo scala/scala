@@ -191,6 +191,22 @@ object Iterator {
     override def hasNext: Boolean = true
     def next(): Int = { val j = i; i = step(i); j }
   }
+
+  /** Create an iterator that is the concantenation of all iterators
+   *  returned by a given iterator of iterators.
+   *   @param its   The iterator which returns on each call to next
+   *                a new iterator whose elements are to be concatenated to the result.
+   */
+  def flatten[T](its: Iterator[Iterator[T]]): Iterator[T] = new Iterator[T] {
+    private var it = its.next
+    def hasNext: Boolean = {
+      while (!it.hasNext && its.hasNext) it = its.next
+      it.hasNext
+    }
+    def next(): T =
+      if (hasNext) it.next
+      else empty.next()
+  }
 }
 
 /** Iterators are data structures that allow to iterate over a sequence
