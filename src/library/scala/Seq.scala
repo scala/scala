@@ -355,8 +355,9 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     *
     *  @param from   The index of the first element of the slice
     *  @throws IndexOutOfBoundsException if <code>from &lt; 0</code>
+    *  @deprecated Use <code>drop(n: Int): Seq[A]</code> instead.
     */
-  def slice(from: Int): Seq[A] = slice(from, length)
+ @deprecated def slice(from: Int): Seq[A] = slice(from, length)
 
   /** Returns the longest prefix of this sequence whose elements satisfy
    *  the predicate <code>p</code>.
