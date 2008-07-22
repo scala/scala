@@ -1832,9 +1832,9 @@ abstract class GenMSIL extends SubComponent {
       // Flags.JAVA: "symbol was not defined by a scala-class" (java, or .net-class)
 
       if (sym == definitions.NothingClass)
-        return "scala.All$"
+        return "scala.runtime.Nothing$"
       else if (sym == definitions.NullClass)
-        return "scala.AllRef$"
+        return "scala.runtime.Null$"
 
       (if (sym.isClass || (sym.isModule && !sym.isMethod))
         sym.fullNameString
