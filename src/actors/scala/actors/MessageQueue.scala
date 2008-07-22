@@ -81,71 +81,79 @@ class MessageQueue {
    *  without removing it.
    */
   def get(n: Int)(p: Any => Boolean): Option[Any] = {
+    var found: Option[Any] = None
     var pos = 0
-    val msg = if (null eq last) None
-    else {
-      // test first element
-      if (n == 0 && p(first.msg))
-        Some(first.msg)
-      else {
-        var curr = first
-        while(curr.next != null) {
-          curr = curr.next
-          if (p(curr.msg)) {
-            pos += 1
-            if (pos == n)
-              return Some(curr.msg)
-          }
+
+    def test(msg: Any): Boolean =
+      if (p(msg)) {
+        if (pos == n)
+          true
+        else {
+          pos += 1
+          false
         }
-        None
+      } else
+        false
+
+    if (last == null) None
+    else if (test(first.msg))
+      Some(first.msg)
+    else {
+      var curr = first
+      while(curr.next != null && found.isEmpty) {
+        curr = curr.next
+        if (test(curr.msg))
+          found = Some(curr.msg)
       }
+      found
     }
-    msg
   }
 
   /** Removes the n-th msg that satisfies the predicate.
    */
   def remove(n: Int)(p: Any => Boolean): Option[(Any, OutputChannel[Any])] = {
+    var found: Option[(Any, OutputChannel[Any])] = None
     var pos = 0
-    val msg = if (null eq last) None
-    else {
-      // test first element
-      if (n == 0 && p(first.msg)) {
-        val tmp = first
-        // remove first element
-        first = first.next
 
-        // might have to update last
-        if (tmp eq last) {
-          last = null
+    def test(msg: Any): Boolean =
+      if (p(msg)) {
+        if (pos == n)
+          true
+        else {
+          pos += 1
+          false
         }
+      } else
+        false
 
-        Some((tmp.msg, tmp.session))
-      } else {
-        var curr = first
-        var prev = curr
-        while(curr.next != null) {
-          prev = curr
-          curr = curr.next
-          if (p(curr.msg)) {
-            pos += 1
-            if (pos == n) {
-              // remove curr
-              prev.next = curr.next
-
-              // might have to update last
-              if (curr eq last) {
-                last = prev
-              }
-
-              return Some((curr.msg, curr.session))
-            }
-          }
-        }
-        None
+    if (last == null) None
+    else if (test(first.msg)) {
+      val tmp = first
+      // remove first element
+      first = first.next
+      // might have to update last
+      if (tmp eq last) {
+        last = null
       }
+      Some((tmp.msg, tmp.session))
+    } else {
+      var curr = first
+      var prev = curr
+      while(curr.next != null && found.isEmpty) {
+        prev = curr
+        curr = curr.next
+        if (test(curr.msg)) {
+          // remove curr
+          prev.next = curr.next
+          // might have to update last
+          if (curr eq last) {
+            last = prev
+          }
+          found = Some((curr.msg, curr.session))
+        }
+      }
+      found
     }
-    msg
   }
 
   def extractFirst(p: Any => Boolean): MessageQueueElement = {
