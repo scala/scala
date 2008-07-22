@@ -691,11 +691,11 @@ trait Symbols {
      */
     def existentialBound: Type =
       if (this.isClass)
-         polyType(this.typeParams, mkTypeBounds(AllClass.tpe, this.classBound))
+         polyType(this.typeParams, mkTypeBounds(NothingClass.tpe, this.classBound))
       else if (this.isAbstractType)
          this.info
       else if (this.isTerm)
-         mkTypeBounds(AllClass.tpe, intersectionType(List(this.tpe, SingletonClass.tpe)))
+         mkTypeBounds(NothingClass.tpe, intersectionType(List(this.tpe, SingletonClass.tpe)))
       else
         throw new Error("unexpected alias type: "+this)
 
@@ -741,10 +741,10 @@ trait Symbols {
 
     final def isSubClass(that: Symbol): Boolean = {
       isNonBottomSubClass(that) ||
-      this == AllClass ||
-      this == AllRefClass &&
+      this == NothingClass ||
+      this == NullClass &&
       (that == AnyClass ||
-       that != AllClass && (that isSubClass AnyRefClass))
+       that != NothingClass && (that isSubClass AnyRefClass))
     }
 
 // Overloaded Alternatives ---------------------------------------------------------
@@ -1231,7 +1231,7 @@ trait Symbols {
         typeParamsString + {
           tp.resultType match {
             case TypeBounds(lo, hi) =>
-              (if (lo.typeSymbol == AllClass) "" else " >: " + lo) +
+              (if (lo.typeSymbol == NothingClass) "" else " >: " + lo) +
               (if (hi.typeSymbol == AnyClass) "" else " <: " + hi)
             case rtp =>
               "<: " + rtp

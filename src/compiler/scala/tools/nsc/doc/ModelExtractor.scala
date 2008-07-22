@@ -130,7 +130,7 @@ trait ModelExtractor {
     def resultType: Option[Type] = None
     def parents: Iterable[Type] = Nil
     def lo: Option[Type] = sym.info match {
-      case TypeBounds(lo, hi) if decode(lo.typeSymbol) != definitions.AllClass => Some(lo)
+      case TypeBounds(lo, hi) if decode(lo.typeSymbol) != definitions.NothingClass => Some(lo)
       case _ => None
     }
     def hi: Option[Type] = sym.info match {

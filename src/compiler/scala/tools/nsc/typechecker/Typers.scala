@@ -695,7 +695,7 @@ trait Typers { self: Analyzer =>
                     // (e.g., m[Int] --> tree.tpe.symbol.typeParams.length == 1, tree.tpe.typeParams.length == 0!)
                      tree.tpe.typeParams.length != pt.typeParams.length &&
                      !(tree.tpe.typeSymbol==AnyClass ||
-                       tree.tpe.typeSymbol==AllClass ||
+                       tree.tpe.typeSymbol==NothingClass ||
                        pt == WildcardType )) {
               // Check that the actual kind arity (tree.symbol.typeParams.length) conforms to the expected
               // kind-arity (pt.typeParams.length). Full checks are done in checkKindBounds in Infer.
@@ -848,7 +848,7 @@ trait Typers { self: Analyzer =>
       if (qual.isTerm &&
           ((qual.symbol eq null) || !qual.symbol.isTerm || qual.symbol.isValue) &&
           phase.id <= currentRun.typerPhase.id && !qtpe.isError && !tp.isError &&
-          qtpe.typeSymbol != AllRefClass && qtpe.typeSymbol != AllClass && qtpe != WildcardType) {
+          qtpe.typeSymbol != NullClass && qtpe.typeSymbol != NothingClass && qtpe != WildcardType) {
         val coercion = inferView(qual.pos, qtpe, name, tp, true)
         if (coercion != EmptyTree)
           typedQualifier(atPos(qual.pos)(Apply(coercion, List(qual))))
@@ -1328,7 +1328,7 @@ trait Typers { self: Analyzer =>
       if (meth.isPrimaryConstructor && meth.isClassConstructor &&
           phase.id <= currentRun.typerPhase.id && !reporter.hasErrors)
         computeParamAliases(meth.owner, vparamss1, rhs1)
-      if (tpt1.tpe.typeSymbol != AllClass && !context.returnsSeen) rhs1 = checkDead(rhs1)
+      if (tpt1.tpe.typeSymbol != NothingClass && !context.returnsSeen) rhs1 = checkDead(rhs1)
 
       if (meth.owner.isRefinementClass && meth.allOverriddenSymbols.isEmpty)
         for (vparams <- ddef.vparamss; vparam <- vparams)
@@ -1625,7 +1625,7 @@ trait Typers { self: Analyzer =>
             !hasArrayElement(adaptedFormals(nonVarCount)) &&
             !settings.XnoVarargsConversion.value) {
               val lastarg = typedArg(args(nonVarCount), mode, REGPATmode, WildcardType)
-              if ((lastarg.tpe.typeSymbol == ArrayClass || lastarg.tpe.typeSymbol == AllRefClass) &&
+              if ((lastarg.tpe.typeSymbol == ArrayClass || lastarg.tpe.typeSymbol == NullClass) &&
                   !treeInfo.isWildcardStarArg(lastarg)) {
                 if (lastarg.tpe.typeSymbol == ArrayClass)
                   unit.warning(
@@ -1652,7 +1652,7 @@ trait Typers { self: Analyzer =>
     def needsInstantiation(tparams: List[Symbol], formals: List[Type], args: List[Tree]) = {
       def isLowerBounded(tparam: Symbol) = {
         val losym = tparam.info.bounds.lo.typeSymbol
-        losym != AllClass && losym != AllRefClass
+        losym != NothingClass && losym != NullClass
       }
       List.exists2(formals, args) {
         case (formal, Function(vparams, _)) =>
@@ -1687,7 +1687,7 @@ trait Typers { self: Analyzer =>
           case Function(vparams, body) =>
             functionType(vparams map (vparam => AnyClass.tpe), shapeType(body))
           case _ =>
-            AllClass.tpe
+            NothingClass.tpe
         }
         val argtypes = args map shapeType
         val pre = fun.symbol.tpe.prefix
@@ -2293,7 +2293,7 @@ trait Typers { self: Analyzer =>
                 context.owner.newAliasType(tree.pos, name) setInfo pt
               else
                 context.owner.newAbstractType(tree.pos, name) setInfo
-                  mkTypeBounds(AllClass.tpe, AnyClass.tpe)
+                  mkTypeBounds(NothingClass.tpe, AnyClass.tpe)
           val rawInfo = vble.rawInfo
           vble = if (vble.name == nme.WILDCARD.toTypeName) context.scope.enter(vble)
                  else namer.enterInScope(vble)
@@ -2393,7 +2393,7 @@ trait Typers { self: Analyzer =>
           } else {
             context.enclMethod.returnsSeen = true
             val expr1: Tree = typed(expr, restpt0.tpe)
-            copy.Return(tree, checkDead(expr1)) setSymbol enclMethod.owner setType AllClass.tpe
+            copy.Return(tree, checkDead(expr1)) setSymbol enclMethod.owner setType NothingClass.tpe
           }
         }
       }
@@ -3117,7 +3117,7 @@ trait Typers { self: Analyzer =>
 
         case Throw(expr) =>
           val expr1 = typed(expr, ThrowableClass.tpe)
-          copy.Throw(tree, expr1) setType AllClass.tpe
+          copy.Throw(tree, expr1) setType NothingClass.tpe
 
         case New(tpt: Tree) =>
           typedNew(tpt)

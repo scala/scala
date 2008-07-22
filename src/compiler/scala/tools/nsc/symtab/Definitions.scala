@@ -41,8 +41,8 @@ trait Definitions {
 
     lazy val anyrefparam = List(AnyRefClass.typeConstructor)
 
-    var AllRefClass: Symbol = _
-    var AllClass: Symbol = _
+    var NullClass: Symbol = _
+    var NothingClass: Symbol = _
     var SingletonClass: Symbol = _
 
     lazy val ClassClass: Symbol = getClass(sn.Class)
@@ -391,7 +391,7 @@ trait Definitions {
 
     private def newTypeParam(owner: Symbol, index: Int): Symbol =
       owner.newTypeParameter(NoPosition, "T" + index)
-        .setInfo(mkTypeBounds(AllClass.typeConstructor, AnyClass.typeConstructor))
+        .setInfo(mkTypeBounds(NothingClass.typeConstructor, AnyClass.typeConstructor))
 
     val boxedClass = new HashMap[Symbol, Symbol]
     val unboxMethod = new HashMap[Symbol, Symbol] // Type -> Method
@@ -652,10 +652,10 @@ trait Definitions {
       AnyRefClass =
         newAlias(ScalaPackageClass, nme.AnyRef, ObjectClass.typeConstructor)
 
-      AllRefClass = newClass(ScalaPackageClass, nme.Null, anyrefparam)
+      NullClass = newClass(ScalaPackageClass, nme.Null, anyrefparam)
         .setFlag(ABSTRACT | TRAIT | FINAL)
 
-      AllClass = newClass(ScalaPackageClass, nme.Nothing, anyparam)
+      NothingClass = newClass(ScalaPackageClass, nme.Nothing, anyparam)
         .setFlag(ABSTRACT | TRAIT | FINAL)
 
       SingletonClass = newClass(ScalaPackageClass, nme.Singleton, anyparam)
@@ -746,7 +746,7 @@ trait Definitions {
       String_+ = newMethod(
         StringClass, "+", anyparam, StringClass.typeConstructor) setFlag FINAL
 
-      PatternWildcard = NoSymbol.newValue(NoPosition, "_").setInfo(AllClass.typeConstructor)
+      PatternWildcard = NoSymbol.newValue(NoPosition, "_").setInfo(NothingClass.typeConstructor)
 
       if (forMSIL) {
         val intType = IntClass.typeConstructor

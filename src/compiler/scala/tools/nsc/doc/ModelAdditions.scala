@@ -15,12 +15,10 @@ class ModelAdditions(val global: Global) {
   import definitions._
   def addition(sym: global.Symbol) {}
 
-  addition(AllClass);
-  comments(AllClass) = """
+  addition(NothingClass);
+  comments(NothingClass) = """
     <p>
-      Class <code>Nothing</code> (previously named <code>All</code> in
-      <a href="http://scala-lang.org" target="_top">Scala</a> 2.2.0 and
-      older versions) is - together with class <a href="Null.html">
+      Class <code>Nothing</code> is - together with class <a href="Null.html">
       <code>Null</code></a> - at the bottom of the
       <a href="http://scala-lang.org" target="_top">Scala</a> type
       hierarchy.
@@ -40,12 +38,10 @@ class ModelAdditions(val global: Global) {
       any element type <code>T</code>.
     </p>"""
 
-   addition(AllRefClass);
-   comments(AllRefClass) = """
+   addition(NullClass);
+   comments(NullClass) = """
      <p>
-       Class <code>Null</code> (previously named <code>AllRef</code> in
-       <a href="http://scala-lang.org" target="_top">Scala</a> 2.2.0 and
-       older versions) is - together with class <a href="Nothing.html">
+       Class <code>Null</code> is - together with class <a href="Nothing.html">
        <code>Nothing</code> - at the bottom of the
        <a href="http://scala-lang.org" target="_top">Scala</a> type
        hierarchy.

@@ -508,7 +508,7 @@ trait Infer {
     /** Return inferred type arguments, given type parameters, formal parameters,
     *  argument types, result type and expected result type.
     *  If this is not possible, throw a <code>NoInstance</code> exception.
-    *  Undetermined type arguments are represented by `definitions.AllClass.tpe'.
+    *  Undetermined type arguments are represented by `definitions.NothingClass.tpe'.
     *  No check that inferred parameters conform to their bounds is made here.
     *
     *  @param   tparams         the type parameters of the method
@@ -559,7 +559,7 @@ trait Infer {
       val targs = solvedTypes(tvars, tparams, tparams map varianceInTypes(formals), false)
 //      val res =
       List.map2(tparams, targs) {(tparam, targ) =>
-        if (targ.typeSymbol == AllClass && (varianceInType(restpe)(tparam) & COVARIANT) == 0) {
+        if (targ.typeSymbol == NothingClass && (varianceInType(restpe)(tparam) & COVARIANT) == 0) {
           uninstantiated += tparam
           tparam.tpe  //@M TODO: might be affected by change to tpe in Symbol
         } else if (targ.typeSymbol == RepeatedParamClass) {
@@ -804,7 +804,7 @@ trait Infer {
         val hkparams = param.typeParams
 
         if(hkargs.length != hkparams.length) {
-          if(arg == AnyClass || arg == AllClass) (Nil, Nil, Nil) // Any and Nothing are kind-overloaded
+          if(arg == AnyClass || arg == NothingClass) (Nil, Nil, Nil) // Any and Nothing are kind-overloaded
           else (List((arg, param)), Nil, Nil)
         } else {
           val _arityMismatches = new ListBuffer[(Symbol, Symbol)]
@@ -1113,7 +1113,7 @@ trait Infer {
               patternWarning(tp, "abstract type ")
             else if (sym.isAliasType)
               check(tp.normalize, bound)
-            else if (sym == AllClass || sym == AllRefClass)
+            else if (sym == NothingClass || sym == NullClass)
               error(pos, "this type cannot be used in a type pattern")
             else
               for (arg <- args) {
@@ -1259,7 +1259,7 @@ trait Infer {
     }
 
     def checkDead(tree: Tree): Tree = {
-      if (settings.Xwarndeadcode.value && tree.tpe.typeSymbol == AllClass)
+      if (settings.Xwarndeadcode.value && tree.tpe.typeSymbol == NothingClass)
         context.warning (tree.pos, "dead code following this construct")
       tree
     }

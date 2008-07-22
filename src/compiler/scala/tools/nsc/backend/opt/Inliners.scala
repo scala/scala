@@ -439,8 +439,8 @@ abstract class Inliners extends SubComponent {
     private def lookupImpl(meth: Symbol, clazz: Symbol): Symbol = {
       //println("\t\tlooking up " + meth + " in " + clazz.fullNameString + " meth.owner = " + meth.owner)
       if (meth.owner == clazz
-          || clazz == definitions.AllRefClass
-          || clazz == definitions.AllClass) meth
+          || clazz == definitions.NullClass
+          || clazz == definitions.NothingClass) meth
       else {
         val implementingMethod = meth.overridingSymbol(clazz)
         if (implementingMethod != NoSymbol)

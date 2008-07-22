@@ -954,7 +954,7 @@ trait ParallelMatching  {
       }
       val body  = targets(bx)
       // @bug: typer is not able to digest a body of type Nothing being assigned result type Unit
-      val tpe = if (body.tpe.typeSymbol eq definitions.AllClass) body.tpe else resultType
+      val tpe = if (body.tpe.typeSymbol eq definitions.NothingClass) body.tpe else resultType
       val label = theOwner.newLabel(body.pos, "body%"+bx).setInfo(new MethodType(argts.toList, tpe))
       labels(bx) = label
 

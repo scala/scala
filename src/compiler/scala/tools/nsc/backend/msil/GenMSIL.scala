@@ -137,11 +137,11 @@ abstract class GenMSIL extends SubComponent {
     private def initMappings() {
       mapType(definitions.AnyClass, MOBJECT)
       mapType(definitions.AnyRefClass, MOBJECT)
-      //mapType(definitions.AllRefClass, clrTypes.getType("scala.AllRef$"))
-      //mapType(definitions.AllClass, clrTypes.getType("scala.All$"))
+      //mapType(definitions.NullClass, clrTypes.getType("scala.AllRef$"))
+      //mapType(definitions.NothingClass, clrTypes.getType("scala.All$"))
       // FIXME: for some reason the upper two lines map to null
-      mapType(definitions.AllRefClass, EXCEPTION)
-      mapType(definitions.AllClass, EXCEPTION)
+      mapType(definitions.NullClass, EXCEPTION)
+      mapType(definitions.NothingClass, EXCEPTION)
 
       val jEmpty = new Array[Type](0)
       val jString1 = Array(JSTRING.tpe)
@@ -1831,9 +1831,9 @@ abstract class GenMSIL extends SubComponent {
                                !sym.hasFlag(Flags.JAVA)) "$" else ""
       // Flags.JAVA: "symbol was not defined by a scala-class" (java, or .net-class)
 
-      if (sym == definitions.AllClass)
+      if (sym == definitions.NothingClass)
         return "scala.All$"
-      else if (sym == definitions.AllRefClass)
+      else if (sym == definitions.NullClass)
         return "scala.AllRef$"
 
       (if (sym.isClass || (sym.isModule && !sym.isMethod))

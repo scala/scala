@@ -65,8 +65,8 @@ abstract class Checkers {
     val emptyStack = new TypeStack()
 
     val STRING        = REFERENCE(definitions.StringClass)
-    val SCALA_ALL     = REFERENCE(definitions.AllClass)
-    val SCALA_ALL_REF = REFERENCE(definitions.AllRefClass)
+    val SCALA_ALL     = REFERENCE(definitions.NothingClass)
+    val SCALA_ALL_REF = REFERENCE(definitions.NullClass)
 //    val CASE_CLASS    = REFERENCE(definitions.getClass("scala.CaseClass"))
 
     def checkICodes: Unit = {

@@ -496,11 +496,11 @@ abstract class ClassfileParser {
                   case variance @ ('+' | '-' | '*') =>
                     index += 1
                     val bounds = variance match {
-                      case '+' => mkTypeBounds(definitions.AllClass.tpe,
+                      case '+' => mkTypeBounds(definitions.NothingClass.tpe,
                                                sig2type(tparams))
                       case '-' => mkTypeBounds(sig2type(tparams),
                                                definitions.AnyClass.tpe)
-                      case '*' => mkTypeBounds(definitions.AllClass.tpe,
+                      case '*' => mkTypeBounds(definitions.NothingClass.tpe,
                                                definitions.AnyClass.tpe)
                     }
                     val newtparam = makeExistential("?"+i, sym, bounds)
@@ -574,7 +574,7 @@ abstract class ClassfileParser {
           if (sig(index) != ':') // guard against empty class bound
             ts += objToAny(sig2type(tparams))
         }
-        s.setInfo(mkTypeBounds(definitions.AllClass.tpe,
+        s.setInfo(mkTypeBounds(definitions.NothingClass.tpe,
                                intersectionType(ts.toList, sym)))
         newTParams += s
       }

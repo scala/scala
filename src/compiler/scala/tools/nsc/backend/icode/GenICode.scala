@@ -40,8 +40,8 @@ abstract class GenICode extends SubComponent  {
     // this depends on the backend! should be changed.
     val ANY_REF_CLASS = REFERENCE(definitions.ObjectClass)
 
-    val SCALA_ALL    = REFERENCE(definitions.AllClass)
-    val SCALA_ALLREF = REFERENCE(definitions.AllRefClass)
+    val SCALA_ALL    = REFERENCE(definitions.NothingClass)
+    val SCALA_ALLREF = REFERENCE(definitions.NullClass)
     val THROWABLE    = REFERENCE(definitions.ThrowableClass)
 
     val BoxesRunTime_equals =

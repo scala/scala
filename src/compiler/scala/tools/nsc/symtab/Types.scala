@@ -1013,7 +1013,7 @@ trait Types {
       case TypeBounds(_, _) => that <:< this
       case _ => lo <:< that && that <:< hi
     }
-    // override def isNullable: Boolean = AllRefClass.tpe <:< lo;
+    // override def isNullable: Boolean = NullClass.tpe <:< lo;
     override def safeToString = ">: " + lo + " <: " + hi
     override def kind = "TypeBoundsType"
   }
@@ -1263,7 +1263,7 @@ trait Types {
 
     // override def isNullable: Boolean =
     // symbol == AnyClass ||
-    // symbol != AllClass && (symbol isSubClass ObjectClass) && !(symbol isSubClass NonNullClass);
+    // symbol != NothingClass && (symbol isSubClass ObjectClass) && !(symbol isSubClass NonNullClass);
 
     // override def isNonNull: Boolean = symbol == NonNullClass || super.isNonNull;
     override def kind = "ClassInfoType"
@@ -1320,7 +1320,7 @@ trait Types {
       pre.isTrivial && !sym.isTypeParameter && args.forall(_.isTrivial)
 
     override def isNotNull =
-      sym.isModuleClass || sym == AllClass || isValueClass(sym) || super.isNotNull
+      sym.isModuleClass || sym == NothingClass || isValueClass(sym) || super.isNotNull
 
     // @M: propagate actual type params (args) to `tp', by replacing formal type parameters with actual ones
     def transform(tp: Type): Type = {
@@ -2094,7 +2094,7 @@ A type's typeSymbol should never be inspected directly.
             case TypeRef(pre, sym, args) if (variance != 0) && (occurCount isDefinedAt sym) =>
               val repl = if (variance == 1) dropSingletonType(tp1.bounds.hi) else tp1.bounds.lo
               //println("eliminate "+sym+"/"+repl+"/"+occurCount(sym)+"/"+(tparams exists (repl.contains)))//DEBUG
-              if (repl.typeSymbol != AllClass && repl.typeSymbol != AllRefClass &&
+              if (repl.typeSymbol != NothingClass && repl.typeSymbol != NullClass &&
                   occurCount(sym) == 1 && !(tparams exists (repl.contains)))
 		repl
               else tp1
@@ -2553,7 +2553,7 @@ A type's typeSymbol should never be inspected directly.
       capturedPre get clazz match {
         case None =>
           val qvar = makeFreshExistential(".type", clazz,
-            mkTypeBounds(AllClass.tpe, intersectionType(List(pre, SingletonClass.tpe))))
+            mkTypeBounds(NothingClass.tpe, intersectionType(List(pre, SingletonClass.tpe))))
           capturedPre += (clazz -> qvar)
           capturedParams = qvar :: capturedParams
           qvar
@@ -2830,7 +2830,7 @@ A type's typeSymbol should never be inspected directly.
 
     private def boundFor(actualIdx: Int) =
       mkTypeBounds(
-	AllClass.tpe,
+	NothingClass.tpe,
 	intersectionType(List(actuals(actualIdx), SingletonClass.tpe)))
 
     /* Return the type symbol for referencing a parameter index
@@ -3561,10 +3561,10 @@ A type's typeSymbol should never be inspected directly.
          sym2.isClass &&
          ({ val base = tp1 baseType sym2; !(base eq tp1) && (base <:< tp2) })
          ||
-         sym1 == AllClass
+         sym1 == NothingClass
          ||
          // Console.println("last chance " + sym1 + " " + sym2 + " " + sym2.isClass + " " (sym2 isSubClass ObjectClass))
-         sym1 == AllRefClass &&
+         sym1 == NullClass &&
          sym2.isClass && (sym2 isNonBottomSubClass ObjectClass) && (!(tp2.normalize.typeSymbol isNonBottomSubClass NotNullClass)))
       case (MethodType(pts1, res1), MethodType(pts2, res2)) =>
         (pts1.length == pts2.length &&
@@ -3593,7 +3593,7 @@ A type's typeSymbol should never be inspected directly.
         if (constr1.inst != NoType) constr1.inst <:< tp2
         else isRelatable(tv1, tp2) && { constr1.hibounds = tp2 :: constr1.hibounds; true }
       case (_, _)  if (tp1.isHigherKinded || tp2.isHigherKinded) =>
-        (tp1.typeSymbol == AllClass
+        (tp1.typeSymbol == NothingClass
          ||
          tp2.typeSymbol == AnyClass // @M Any and Nothing are super-type resp. subtype of every well-kinded type
          || // @M! normalize reduces higher-kinded case to PolyType's
@@ -3609,7 +3609,7 @@ A type's typeSymbol should never be inspected directly.
       case (_, RefinedType(parents2, ref2)) =>
         (parents2 forall (tp2 => tp1 <:< tp2 || tp2.typeSymbol == NotNullClass && tp1.isNotNull)) &&
         (ref2.toList forall tp1.specializes) &&
-        (!parents2.exists(_.typeSymbol.isAbstractType) || tp1.typeSymbol != AllRefClass)
+        (!parents2.exists(_.typeSymbol.isAbstractType) || tp1.typeSymbol != NullClass)
       case (ExistentialType(_, _), _) =>
         try {
           skolemizationLevel += 1
@@ -3638,9 +3638,9 @@ A type's typeSymbol should never be inspected directly.
 
       case (TypeRef(pre1, sym1, args1), _) =>
         if (inIDE) trackTypeIDE(sym1)
-        (sym1 == AllClass && tp2 <:< AnyClass.tpe
+        (sym1 == NothingClass && tp2 <:< AnyClass.tpe
          ||
-         sym1 == AllRefClass && tp2.isInstanceOf[SingletonType] && (tp1 <:< tp2.widen))
+         sym1 == NullClass && tp2.isInstanceOf[SingletonType] && (tp1 <:< tp2.widen))
       case _ =>
         false
     }) || {
@@ -3663,8 +3663,8 @@ A type's typeSymbol should never be inspected directly.
    *  refinement type, otherwise we might return false negatives.
    */
   def specializesSym(tp: Type, sym: Symbol): Boolean =
-    tp.typeSymbol == AllClass ||
-    tp.typeSymbol == AllRefClass && (sym.owner isSubClass ObjectClass) ||
+    tp.typeSymbol == NothingClass ||
+    tp.typeSymbol == NullClass && (sym.owner isSubClass ObjectClass) ||
     (tp.nonPrivateMember(sym.name).alternatives exists
       (alt => sym == alt || specializesSym(tp.narrow, alt, sym.owner.thisType, sym)))
 
@@ -3764,7 +3764,7 @@ A type's typeSymbol should never be inspected directly.
                 tvar.constr.hibounds =
                   tparam2.tpe.instantiateTypeParams(tparams, tvars) :: tvar.constr.hibounds
           } else {
-            if (bound.typeSymbol != AllClass && bound.typeSymbol != tparam) {
+            if (bound.typeSymbol != NothingClass && bound.typeSymbol != tparam) {
               tvar.constr.lobounds =
                 bound.instantiateTypeParams(tparams, tvars) :: tvar.constr.lobounds
             }
@@ -3899,7 +3899,7 @@ A type's typeSymbol should never be inspected directly.
   /** The least upper bound wrt &lt;:&lt; of a list of types */
   def lub(ts: List[Type], depth: Int): Type = {
     def lub0(ts0: List[Type]): Type = elimSub(ts0) match {
-      case List() => AllClass.tpe
+      case List() => NothingClass.tpe
       case List(t) => t
       case ts @ PolyType(tparams, _) :: _ =>
         PolyType(
@@ -4042,7 +4042,7 @@ A type's typeSymbol should never be inspected directly.
                     val symbounds = symtypes filter isTypeBound
                     var result: Type =
                       if (symbounds.isEmpty)
-                        mkTypeBounds(AllClass.tpe, AnyClass.tpe)
+                        mkTypeBounds(NothingClass.tpe, AnyClass.tpe)
                       else glbBounds(symbounds)
                     for (t <- symtypes if !isTypeBound(t))
                       if (result.bounds containsType t) result = t
@@ -4062,8 +4062,8 @@ A type's typeSymbol should never be inspected directly.
           existentialAbstraction(tparams, glbType)
         } catch {
           case GlbFailure =>
-            if (ts forall (t => AllRefClass.tpe <:< t)) AllRefClass.tpe
-            else AllClass.tpe
+            if (ts forall (t => NullClass.tpe <:< t)) NullClass.tpe
+            else NothingClass.tpe
         }
     }
     if (settings.debug.value) {
@@ -4116,7 +4116,7 @@ A type's typeSymbol should never be inspected directly.
         (tparam, as) =>
           if (depth == 0)
             if (tparam.variance == variance) AnyClass.tpe
-            else if (tparam.variance == -variance) AllClass.tpe
+            else if (tparam.variance == -variance) NothingClass.tpe
             else NoType
           else
             if (tparam.variance == variance) lub(as, depth-1)

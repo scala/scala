@@ -72,7 +72,7 @@ abstract class MetaParser{
     nextToken()
     val lo =
       if (token == ">") { nextToken(); parseType() }
-      else definitions.AllClass.tpe
+      else definitions.NothingClass.tpe
     val hi =
       if (token == "<") { nextToken(); parseType() }
       else definitions.AnyClass.tpe

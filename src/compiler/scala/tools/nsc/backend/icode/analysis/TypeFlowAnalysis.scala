@@ -23,7 +23,7 @@ abstract class TypeFlowAnalysis {
     type Elem = icodes.TypeKind
 
     val Object = icodes.REFERENCE(global.definitions.ObjectClass)
-    val All    = icodes.REFERENCE(global.definitions.AllClass)
+    val All    = icodes.REFERENCE(global.definitions.NothingClass)
 
     def top    = Object
     def bottom = All

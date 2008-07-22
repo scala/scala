@@ -112,8 +112,8 @@ trait TypeKinds { self: ICodes =>
         (b.isReferenceType || b.isArrayType))
       toTypeKind(lub0(a.toType, b.toType))
     else if (a == b) a
-    else if (a == REFERENCE(definitions.AllClass)) b
-    else if (b == REFERENCE(definitions.AllClass)) a
+    else if (a == REFERENCE(definitions.NothingClass)) b
+    else if (b == REFERENCE(definitions.NothingClass)) a
     else (a, b) match {
       case (BOXED(a1), BOXED(b1)) => if (a1 == b1) a else REFERENCE(definitions.AnyRefClass)
       case (BOXED(_), REFERENCE(_)) | (REFERENCE(_), BOXED(_)) => REFERENCE(definitions.AnyRefClass)
@@ -129,7 +129,7 @@ trait TypeKinds { self: ICodes =>
   case object UNIT extends TypeKind {
     def maxType(other: TypeKind): TypeKind = other match {
       case UNIT => UNIT
-      case REFERENCE(a) if a == definitions.AllClass => UNIT
+      case REFERENCE(a) if a == definitions.NothingClass => UNIT
       case _ => abort("Uncomparable type kinds: UNIT with " + other)
     }
   }
@@ -138,7 +138,7 @@ trait TypeKinds { self: ICodes =>
   case object BOOL extends TypeKind {
     override def maxType(other: TypeKind): TypeKind = other match {
       case BOOL => BOOL
-      case REFERENCE(a) if a == definitions.AllClass => BOOL
+      case REFERENCE(a) if a == definitions.NothingClass => BOOL
       case _ => abort("Uncomparable type kinds: BOOL with " + other)
     }
   }
@@ -148,7 +148,7 @@ trait TypeKinds { self: ICodes =>
     override def maxType(other: TypeKind): TypeKind =
       other match {
         case BYTE | SHORT | CHAR | INT | LONG | FLOAT | DOUBLE => other
-        case REFERENCE(a) if a == definitions.AllClass => BYTE
+        case REFERENCE(a) if a == definitions.NothingClass => BYTE
         case _ => abort("Uncomparable type kinds: BYTE with " + other)
       }
   }
@@ -158,7 +158,7 @@ trait TypeKinds { self: ICodes =>
     override def maxType(other: TypeKind): TypeKind =
       other match {
         case BYTE | SHORT | CHAR => SHORT
-        case REFERENCE(a) if a == definitions.AllClass => SHORT
+        case REFERENCE(a) if a == definitions.NothingClass => SHORT
         case INT | LONG | FLOAT | DOUBLE => other
         case _ => abort("Uncomparable type kinds: SHORT with " + other)
       }
@@ -169,7 +169,7 @@ trait TypeKinds { self: ICodes =>
     override def maxType(other: TypeKind): TypeKind =
       other match {
         case BYTE | SHORT | CHAR => CHAR
-        case REFERENCE(a) if a == definitions.AllClass => CHAR
+        case REFERENCE(a) if a == definitions.NothingClass => CHAR
         case INT | LONG | FLOAT | DOUBLE => other
         case _ => abort("Uncomparable type kinds: CHAR with " + other)
       }
@@ -181,7 +181,7 @@ trait TypeKinds { self: ICodes =>
     override def maxType(other: TypeKind): TypeKind =
       other match {
         case BYTE | SHORT | CHAR | INT => INT
-        case REFERENCE(a) if a == definitions.AllClass => INT
+        case REFERENCE(a) if a == definitions.NothingClass => INT
         case LONG | FLOAT | DOUBLE => other
         case _ => abort("Uncomparable type kinds: INT with " + other)
       }
@@ -192,7 +192,7 @@ trait TypeKinds { self: ICodes =>
     override def maxType(other: TypeKind): TypeKind =
       other match {
         case BYTE | SHORT | CHAR | INT | LONG => LONG
-        case REFERENCE(a) if a == definitions.AllClass => LONG
+        case REFERENCE(a) if a == definitions.NothingClass => LONG
         case FLOAT | DOUBLE => DOUBLE
         case _ => abort("Uncomparable type kinds: LONG with " + other)
       }
@@ -202,7 +202,7 @@ trait TypeKinds { self: ICodes =>
   case object FLOAT extends TypeKind {
     override def maxType(other: TypeKind): TypeKind = other match {
       case BYTE | SHORT | CHAR | INT | LONG | FLOAT => FLOAT
-        case REFERENCE(a) if a == definitions.AllClass => FLOAT
+        case REFERENCE(a) if a == definitions.NothingClass => FLOAT
       case DOUBLE => DOUBLE
       case _ => abort("Uncomparable type kinds: FLOAT with " + other)
     }
@@ -213,7 +213,7 @@ trait TypeKinds { self: ICodes =>
     override def maxType(other: TypeKind): TypeKind =
       if (other.isNumericType)
         DOUBLE
-      else if (other == REFERENCE(definitions.AllClass)) DOUBLE
+      else if (other == REFERENCE(definitions.NothingClass)) DOUBLE
       else abort("Uncomparable type kinds: DOUBLE with " + other)
   }
 
@@ -255,13 +255,13 @@ trait TypeKinds { self: ICodes =>
 
     /** Checks subtyping relationship. */
     override def <:<(other: TypeKind): Boolean =
-      if (cls == definitions.AllClass)
+      if (cls == definitions.NothingClass)
         true
       else other match {
         case REFERENCE(cls2) =>
           cls.tpe <:< cls2.tpe
         case ARRAY(_) =>
-          cls == definitions.AllRefClass
+          cls == definitions.NullClass
         case _ => false
       }
 

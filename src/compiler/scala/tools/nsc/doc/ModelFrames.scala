@@ -26,7 +26,7 @@ trait ModelFrames extends ModelExtractor {
     import global.definitions._
     global.definitions.init
     SyntheticClasses ++= List(
-      AllClass, AllRefClass, AnyClass, AnyRefClass, AnyValClass,
+      NothingClass, NullClass, AnyClass, AnyRefClass, AnyValClass,
       //value classes
       BooleanClass, ByteClass, CharClass, IntClass, LongClass, ShortClass, UnitClass)
 

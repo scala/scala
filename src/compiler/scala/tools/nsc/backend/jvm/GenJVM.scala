@@ -1460,9 +1460,9 @@ abstract class GenJVM extends SubComponent {
                         !sym.isImplClass &&
                         !sym.hasFlag(Flags.JAVA)) "$" else "";
 
-      if (sym == definitions.AllClass)
+      if (sym == definitions.NothingClass)
         return "scala.runtime.Nothing$"
-      else if (sym == definitions.AllRefClass)
+      else if (sym == definitions.NullClass)
         return "scala.runtime.Null$"
 
       if (sym.isClass && !sym.rawowner.isPackageClass)

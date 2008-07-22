@@ -252,7 +252,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
           val parents2 = addOverriddenVirtuals(clazz) map {
             c => typeRef(clazz.owner.thisType, c, typeParams map (_.tpe))
           }
-          mkTypeBounds(AllClass.tpe, intersectionType(parents1 ::: parents2))
+          mkTypeBounds(NothingClass.tpe, intersectionType(parents1 ::: parents2))
         }
       }
     }

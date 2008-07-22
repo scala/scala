@@ -292,7 +292,7 @@ trait JavaParsers extends JavaScanners {
         if (in.token == QMARK) {
           val pos = in.currentPos
           in.nextToken
-          var lo: Tree = TypeTree(AllClass.tpe)
+          var lo: Tree = TypeTree(NothingClass.tpe)
           var hi: Tree = TypeTree(AnyClass.tpe)
           if (in.token == EXTENDS) {
             in.nextToken

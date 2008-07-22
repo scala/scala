@@ -65,7 +65,7 @@ trait Constants {
       case FloatTag   => FloatClass.tpe
       case DoubleTag  => DoubleClass.tpe
       case StringTag  => StringClass.tpe
-      case NullTag    => AllRefClass.tpe
+      case NullTag    => NullClass.tpe
       case ClassTag   => Predef_classOfType(value.asInstanceOf[Type])
       case EnumTag    => symbolValue.owner.linkedClassOfClass.tpe
       case AnnotationTag => AnnotationClass.tpe  // what should it be?

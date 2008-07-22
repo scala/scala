@@ -187,9 +187,9 @@ abstract class ICodeReader extends ClassfileParser {
 
   override def classNameToSymbol(name: Name) = {
     val sym = if (name == nothingName)
-      definitions.AllClass
+      definitions.NothingClass
     else if (name == nullName)
-      definitions.AllRefClass
+      definitions.NullClass
     else if (name.endsWith("$class")) {
       val iface = definitions.getClass(name.subName(0, name.length - "$class".length))
       log("forcing " + iface)

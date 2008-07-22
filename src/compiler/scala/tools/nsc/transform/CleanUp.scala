@@ -544,7 +544,7 @@ abstract class CleanUp extends Transform {
        * store their result in a local variable. The catch blocks are adjusted as well.
        * The try tree is subsituted by a block whose result expression is read of that variable. */
       case theTry @ Try(block, catches, finalizer)
-        if theTry.tpe.typeSymbol != definitions.UnitClass && theTry.tpe.typeSymbol != definitions.AllClass =>
+        if theTry.tpe.typeSymbol != definitions.UnitClass && theTry.tpe.typeSymbol != definitions.NothingClass =>
         val tpe = theTry.tpe.widen
         val tempVar = currentOwner.newValue(theTry.pos, unit.fresh.newName(theTry.pos, "exceptionResult"))
           .setInfo(tpe).setFlag(Flags.MUTABLE)
