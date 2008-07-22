@@ -32,7 +32,24 @@ trait BaseTypeSeqs {
     def length: Int = elems.length
 
     /** The type at i'th position in this sequence; lazy types are returned evaluated. */
-    def apply(i: Int): Type = elems(i)
+    def apply(i: Int): Type = elems(i) /*
+match {
+      case RefinedType(variants, decls) =>
+        // can't assert decls.isEmpty; see t0764
+        //if (!decls.isEmpty) assert(false, "computing closure of "+this+":"+this.isInstanceOf[RefinedType]+"/"+closureCache(j))
+        //Console.println("compute closure of "+this+" => glb("+variants+")")
+        mergePrefixAndArgs(variants, -1, maxBaseTypeSeqDepth(variants) + LubGlbMargin) match {
+          case Some(tp0) =>
+            elems(i) = tp0
+            tp0
+          case None => throw new TypeError(
+            "the type intersection "+(parents mkString " with ")+" is malformed"+
+            "\n --- because ---"+
+            "\n no common type instance of base types "+(variants mkString ", and ")+" exists.")
+        }
+      case tp =>
+        tp
+    }*/
 
     /** The type symbol of the type at i'th position in this sequence;
      *  no evaluation needed.
@@ -63,6 +80,7 @@ trait BaseTypeSeqs {
 //      (0 until length) exists (i => p(this(i)))
 
     def normalize(parents: List[Type]) {
+/*
       var j = 0
       while (j < elems.length) {
         elems(j) match {
@@ -81,6 +99,7 @@ trait BaseTypeSeqs {
         }
         j += 1
       }
+*/
     }
 
     lazy val maxDepth: Int = {
@@ -101,7 +120,9 @@ trait BaseTypeSeqs {
   def baseTypeSingletonSeq(tp: Type): BaseTypeSeq = new BaseTypeSeq(Array(tp))
 
   /** Create the base type sequence of a compound type wuth given tp.parents */
-  def compoundBaseTypeSeq(tsym: Symbol, parents: List[Type]): BaseTypeSeq = {
+  def compoundBaseTypeSeq(tp: CompoundType): BaseTypeSeq = {
+    val tsym = tp.typeSymbol
+    val parents = tp.parents
 //    Console.println("computing baseTypeSeq of " + tsym.tpe + " " + parents)//DEBUG
     val buf = new ListBuffer[Type]
     buf += tsym.tpe
@@ -149,9 +170,7 @@ trait BaseTypeSeqs {
     val elems = new Array[Type](btsSize)
     buf.copyToArray(elems, 0)
 //    Console.println("computed baseTypeSeq of " + tsym.tpe + " " + parents + ": "+elems.toString)//DEBUG
-    new BaseTypeSeq(elems)
-  }
-/*
+    tp.baseTypeSeqCache = new BaseTypeSeq(elems)
     var j = 0
     while (j < btsSize) {
       elems(j) match {
@@ -172,5 +191,4 @@ trait BaseTypeSeqs {
     }
     tp.baseTypeSeqCache
   }
-*/
 }
