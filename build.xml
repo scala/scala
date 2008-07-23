@@ -962,9 +962,18 @@ DISTRIBUTION
     <chmod perm="ugo+rx" file="${dist.dir}/bin/fsc"/>
   </target>
 
-  <target name="dist.latest" depends="dist.base" unless="os.win">
+  <target name="dist.latest.unix" depends="dist.base" unless="os.win">
     <symlink link="${dists.dir}/latest" resource="${dist.dir}" overwrite="yes"/>
   </target>
+
+  <target name="dist.latest.win" depends="dist.base" if="os.win">
+    <copy todir="${dists.dir}">
+      <fileset dir="${dist.dir}"/>
+    </copy>
+  </target>
+
+  <target name="dist.latest"
+  depends="dist.latest.unix,dist.latest.win"/>
 
   <target name="dist.doc" depends="dist.latest">
     <mkdir dir="${dist.dir}/doc/scala"/>
