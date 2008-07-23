@@ -1147,6 +1147,9 @@ trait Typers { self: Analyzer =>
     /**
      *  @param templ    ...
      *  @param parents1 ...
+     *    <li> <!-- 2 -->
+     *      Check that inner classes do not inherit from Annotation
+     *    </li>
      *  @return         ...
      */
     def typedTemplate(templ: Template, parents1: List[Tree]): Template = {
@@ -1167,6 +1170,8 @@ trait Typers { self: Analyzer =>
       assert(clazz.info.decls != EmptyScope)
       enterSyms(context.outer.make(templ, clazz, clazz.info.decls), templ.body)
       validateParentClasses(parents1, selfType)
+      if ((clazz isSubClass ClassfileAnnotationClass) && !clazz.owner.isPackageClass)
+        unit.error(clazz.pos, "inner classes cannot be classfile annotations")
       if (!phase.erasedTypes && !clazz.info.resultType.isError) // @S: prevent crash for duplicated type members
         checkFinitary(clazz.info.resultType.asInstanceOf[ClassInfoType])
       val body =

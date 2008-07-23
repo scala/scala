@@ -1127,7 +1127,34 @@ trait Types {
    */
   case class RefinedType(override val parents: List[Type],
                          override val decls: Scope) extends CompoundType {
-    def isHigherkinded = !parents.isEmpty && (parents forall (_.isHigherKinded)) // MO to AM: please check
+
+    override def isHigherKinded =
+      !parents.isEmpty && (parents forall (_.isHigherKinded)) // @MO to AM: please check this class!
+
+    override def typeParams =
+      if (isHigherKinded) parents.head.typeParams
+      else super.typeParams
+
+    private def higherKindedArgs =
+      typeParams map (_.typeConstructor)
+
+	/* MO to AM: This is probably not correct
+     * If they are several higher-kinded parents with different bounds we need
+	 * to take the intersection of their bounds
+     */
+    override def normalize =
+      if (isHigherKinded)
+        PolyType(
+          typeParams,
+          refinementOfClass(
+            typeSymbol,
+            parents map {
+              case TypeRef(pre, sym, List()) => TypeRef(pre, sym, higherKindedArgs)
+              case p => p
+            },
+            decls))
+      else super.normalize
+
     override def kind = "RefinedType"
   }
 
@@ -1423,7 +1450,7 @@ A type's typeSymbol should never be inspected directly.
 		// @M: initialize needed (see test/files/pos/ticket0137.scala)
         PolyType(typeParams, typeRef(pre, sym.initialize, higherKindedArgs))
       } else if (sym.isRefinementClass) {
-        sym.info
+        sym.info.normalize // @MO to AM: OK?
       } else {
         super.normalize
       }
@@ -4230,7 +4257,7 @@ A type's typeSymbol should never be inspected directly.
    *  `arg2' and print trace of computation.
    */
   private def explain[T](op: String, p: (Type, T) => Boolean, tp1: Type, arg2: T): Boolean = {
-    Console.println(indent + tp1 + " " + op + " " + arg2 + "?")
+    Console.println(indent + tp1 + " " + op + " " + arg2 + "?" /* + "("+tp1.getClass+","+arg2.asInstanceOf[AnyRef].getClass+")"*/)
     indent = indent + "  "
     val result = p(tp1, arg2)
     indent = indent.substring(0, indent.length() - 2)

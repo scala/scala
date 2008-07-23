@@ -328,38 +328,41 @@ abstract class RefChecks extends InfoTransform {
      *      Check that later type instances in the base-type sequence
      *      are subtypes of earlier type instances of the same mixin.
      *    </li>
-     *    <li> <!-- 2 -->
-     *      Check that inner classes do not inherit from Annotation
-     *    </li>
      *  </ol>
      */
     private def validateBaseTypes(clazz: Symbol) {
-      val seenTypes = new Array[Type](clazz.info.baseTypeSeq.length)
+      val seenTypes = new Array[List[Type]](clazz.info.baseTypeSeq.length)
+      for (i <- 0 until seenTypes.length) seenTypes(i) = Nil
 
       /** validate all base types of a class in reverse linear order. */
-      def validateType(tp: Type) {
+      def register(tp: Type) {
+//        if (clazz.fullNameString.endsWith("Collection.Projection"))
+//            println("validate base type "+tp)
         val baseClass = tp.typeSymbol
         if (baseClass.isClass) {
           val index = clazz.info.baseTypeIndex(baseClass)
           if (index >= 0) {
-            if (seenTypes(index) ne null) {
-              if (!(seenTypes(index) <:< tp)) {
-                unit.error(clazz.pos, "illegal inheritance;\n " + clazz +
-                           " inherits different type instances of " + baseClass +
-                           ":\n" + tp + " and " + seenTypes(index));
-              }
-            } else {
-              seenTypes(index) = tp
-              // check that inner classes do not inherit from Annotation
-              if (baseClass == ClassfileAnnotationClass)
-                if (!clazz.owner.isPackageClass)
-                  unit.error(clazz.pos, "inner classes cannot be classfile annotations")
-            }
-            tp.parents.reverse foreach validateType
+            if (seenTypes(index) forall (tp1 => !(tp1 <:< tp)))
+              seenTypes(index) =
+                tp :: (seenTypes(index) filter (tp1 => !(tp <:< tp1)))
           }
         }
+        tp.parents foreach register
       }
-      validateType(clazz.tpe)
+      register(clazz.tpe)
+      for (i <- 0 until seenTypes.length) {
+        val baseClass = clazz.info.baseTypeSeq(i).typeSymbol
+        seenTypes(i) match {
+          case List() =>
+            println("??? base "+baseClass+" not found in basetypes of "+clazz)
+          case List(_) =>
+            ;// OK
+          case tp1 :: tp2 :: _ =>
+            unit.error(clazz.pos, "illegal inheritance;\n " + clazz +
+                       " inherits different type instances of " + baseClass +
+                       ":\n" + tp1 + " and " + tp2);
+        }
+      }
     }
 
   // Variance Checking --------------------------------------------------------

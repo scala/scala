@@ -26,35 +26,48 @@ trait BaseTypeSeqs {
   self: SymbolTable =>
   import definitions._
 
-  class BaseTypeSeq(elems: Array[Type]) {
+  class BaseTypeSeq(parents: List[Type], elems: Array[Type]) {
 
     /** The number of types in the sequence */
     def length: Int = elems.length
 
     /** The type at i'th position in this sequence; lazy types are returned evaluated. */
-    def apply(i: Int): Type = elems(i) /*
-match {
-      case RefinedType(variants, decls) =>
+    def apply(i: Int): Type = elems(i) match {
+      case NoType =>
+        elems(i) = AnyClass.tpe
+        throw CyclicInheritance
+      case rtp @ RefinedType(variants, decls) =>
         // can't assert decls.isEmpty; see t0764
         //if (!decls.isEmpty) assert(false, "computing closure of "+this+":"+this.isInstanceOf[RefinedType]+"/"+closureCache(j))
         //Console.println("compute closure of "+this+" => glb("+variants+")")
-        mergePrefixAndArgs(variants, -1, maxBaseTypeSeqDepth(variants) + LubGlbMargin) match {
-          case Some(tp0) =>
-            elems(i) = tp0
-            tp0
-          case None => throw new TypeError(
-            "the type intersection "+(parents mkString " with ")+" is malformed"+
-            "\n --- because ---"+
-            "\n no common type instance of base types "+(variants mkString ", and ")+" exists.")
+        elems(i) = NoType
+        try {
+          mergePrefixAndArgs(variants, -1, maxBaseTypeSeqDepth(variants) + LubGlbMargin) match {
+            case Some(tp0) =>
+              elems(i) = tp0
+              tp0
+            case None =>
+              typeError(
+                "no common type instance of base types "+(variants mkString ", and ")+" exists.")
+          }
+        } catch {
+          case CyclicInheritance =>
+            typeError(
+              "computing the common type instance of base types "+(variants mkString ", and ")+" leads to a cycle.")
         }
       case tp =>
         tp
-    }*/
+    }
+
+    def rawElem(i: Int) = elems(i)
 
     /** The type symbol of the type at i'th position in this sequence;
      *  no evaluation needed.
      */
-    def typeSymbol(i: Int): Symbol = elems(i).typeSymbol
+    def typeSymbol(i: Int): Symbol = elems(i) match {
+      case RefinedType(v :: vs, _) => v.typeSymbol
+      case tp => tp.typeSymbol
+    }
 
     /** Return all evaluated types in this sequence as a list */
     def toList: List[Type] = elems.toList
@@ -63,7 +76,7 @@ match {
       val arr = new Array[Type](elems.length + offset)
       Array.copy(elems, 0, arr, offset, elems.length)
       arr(0) = head
-      new BaseTypeSeq(arr)
+      new BaseTypeSeq(parents, arr)
     }
 
     /** Compute new base type sequence with `tp' prepended to this sequence */
@@ -74,12 +87,12 @@ match {
 
     /** Compute new base type sequence where every element is mapped
      *  with function `f'. Lazy types are mapped but not evaluated */
-    def map(f: Type => Type): BaseTypeSeq = new BaseTypeSeq(elems map f)
+    def map(f: Type => Type): BaseTypeSeq = new BaseTypeSeq(parents, elems map f)
 
     def exists(p: Type => Boolean): Boolean = elems exists p
 //      (0 until length) exists (i => p(this(i)))
 
-    def normalize(parents: List[Type]) {
+    def normalize(parents: List[Type]) {}
 /*
       var j = 0
       while (j < elems.length) {
@@ -99,28 +112,32 @@ match {
         }
         j += 1
       }
-*/
     }
-
+*/
     lazy val maxDepth: Int = {
       var d = 0
-      for (i <- 0 until length) d = Math.max(d, self.maxDepth(this(i)))
+      for (i <- 0 until length) d = Math.max(d, self.maxDepth(elems(i)))
       d
     }
 
     override def toString = elems.mkString("BTS(", ",", ")")
+
+    private def typeError(msg: String): Nothing =
+      throw new TypeError(
+        "the type intersection "+(parents mkString " with ")+" is malformed"+
+        "\n --- because ---\n"+msg)
   }
 
   /** A merker object for a base type sequence that's no yet computed.
    *  used to catch inheritance cycles
    */
-  val undetBaseTypeSeq: BaseTypeSeq = new BaseTypeSeq(Array())
+  val undetBaseTypeSeq: BaseTypeSeq = new BaseTypeSeq(List(), Array())
 
   /** Create a base type sequence consisting of a single type */
-  def baseTypeSingletonSeq(tp: Type): BaseTypeSeq = new BaseTypeSeq(Array(tp))
+  def baseTypeSingletonSeq(tp: Type): BaseTypeSeq = new BaseTypeSeq(List(), Array(tp))
 
   /** Create the base type sequence of a compound type wuth given tp.parents */
-  def compoundBaseTypeSeq(tp: CompoundType): BaseTypeSeq = {
+  def compoundBaseTypeSeq(tp: Type/*tsym: Symbol, parents: List[Type]*/): BaseTypeSeq = {
     val tsym = tp.typeSymbol
     val parents = tp.parents
 //    Console.println("computing baseTypeSeq of " + tsym.tpe + " " + parents)//DEBUG
@@ -139,26 +156,37 @@ match {
         index(i) = 0
         i += 1
       }
-      def nextBaseType(i: Int): Type = {
+      def nextTypeSymbol(i: Int): Symbol = {
         val j = index(i)
         val pbts = pbtss(i)
-        if (j < pbts.length) pbts(j) else AnyClass.tpe
+        if (j < pbts.length) pbts.typeSymbol(j) else AnyClass
+      }
+      def nextRawElem(i: Int): Type = {
+        val j = index(i)
+        val pbts = pbtss(i)
+        if (j < pbts.length) pbts.rawElem(j) else AnyClass.tpe
       }
       var minSym: Symbol = NoSymbol
       while (minSym != AnyClass) {
-        minSym = nextBaseType(0).typeSymbol
+        minSym = nextTypeSymbol(0)
         i = 1
         while (i < nparents) {
-          if (nextBaseType(i).typeSymbol isLess minSym)
-            minSym = nextBaseType(i).typeSymbol
+          val nextSym = nextTypeSymbol(i)
+          if (nextSym isLess minSym)
+            minSym = nextSym
           i += 1
         }
         var minTypes: List[Type] = List()
         i = 0
         while (i < nparents) {
-          val tp = nextBaseType(i)
-          if (tp.typeSymbol == minSym) {
-            if (!(minTypes exists (tp =:=))) minTypes = tp :: minTypes;
+          if (nextTypeSymbol(i) == minSym) {
+            nextRawElem(i) match {
+              case RefinedType(variants, decls) =>
+                for (tp <- variants)
+                  if (!(minTypes exists (tp =:=))) minTypes = tp :: minTypes
+              case tp =>
+                if (!(minTypes exists (tp =:=))) minTypes = tp :: minTypes
+            }
             index(i) = index(i) + 1
           }
           i += 1
@@ -170,25 +198,8 @@ match {
     val elems = new Array[Type](btsSize)
     buf.copyToArray(elems, 0)
 //    Console.println("computed baseTypeSeq of " + tsym.tpe + " " + parents + ": "+elems.toString)//DEBUG
-    tp.baseTypeSeqCache = new BaseTypeSeq(elems)
-    var j = 0
-    while (j < btsSize) {
-      elems(j) match {
-        case RefinedType(variants, decls) =>
-          // can't assert decls.isEmpty; see t0764
-          //if (!decls.isEmpty) assert(false, "computing closure of "+this+":"+this.isInstanceOf[RefinedType]+"/"+closureCache(j))
-          //Console.println("compute closure of "+this+" => glb("+variants+")")
-          elems(j) = mergePrefixAndArgs(variants, -1, maxBaseTypeSeqDepth(variants) + LubGlbMargin) match {
-            case Some(tp0) => tp0
-            case None => throw new TypeError(
-              "the type intersection "+(parents mkString " with ")+" is malformed"+
-              "\n --- because ---"+
-              "\n no common type instance of base types "+(variants mkString ", and ")+" exists.")
-          }
-        case _ =>
-      }
-      j += 1
-    }
-    tp.baseTypeSeqCache
+    new BaseTypeSeq(parents, elems)
   }
+
+  val CyclicInheritance = new Throwable
 }
