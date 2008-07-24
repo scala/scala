@@ -561,6 +561,34 @@ abstract class CleanUp extends Transform {
         val res = Block(List(ValDef(tempVar, EmptyTree), newTry), Ident(tempVar))
         localTyper.typed(res)
 
+      /* Adds @serializable annotation to anonymous function classes
+       * which do not have references to classes
+       * which are not marked @serializable.
+       */
+      case cdef @ ClassDef(mods, name, tparams, impl) =>
+        val sym = cdef.symbol
+        // is this an anonymous function class?
+        if (sym.hasFlag(SYNTHETIC) && sym.name.toString.contains("anonfun")) {
+          // check whether all of its field members are of serializable type
+          val serializable =
+            sym.info.members forall { m =>
+              m.isMethod || {
+                val typeSym = m.info.typeSymbol
+                // Value types are assumed to be serializable,
+                // reference types must be marked as such.
+                isValueType(typeSym) ||
+                typeSym.hasAttribute(SerializableAttr)
+              }
+            }
+
+          if (serializable)
+            sym.attributes =
+              AnnotationInfo(definitions.SerializableAttr.tpe, List(), List()) :: sym.attributes
+
+          copy.ClassDef(tree, mods, name, transformTypeDefs(tparams), transformTemplate(impl))
+        } else
+          super.transform(tree)
+
       case _ =>
         super.transform(tree)
     }
