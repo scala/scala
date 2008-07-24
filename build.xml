@@ -967,13 +967,12 @@ DISTRIBUTION
   </target>
 
   <target name="dist.latest.win" depends="dist.base" if="os.win">
-    <copy todir="${dists.dir}">
+    <copy todir="${dists.dir}/latest">
       <fileset dir="${dist.dir}"/>
     </copy>
   </target>
 
-  <target name="dist.latest"
-  depends="dist.latest.unix,dist.latest.win"/>
+  <target name="dist.latest" depends="dist.latest.unix,dist.latest.win"/>
 
   <target name="dist.doc" depends="dist.latest">
     <mkdir dir="${dist.dir}/doc/scala"/>
