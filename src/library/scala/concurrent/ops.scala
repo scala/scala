@@ -52,7 +52,7 @@ object ops {
    *  @param  p    the expression to execute.
    *  @return      the new thread.
    */
-  def spawn(name: String)(p: => Unit): Thread = {
+  def spawnNamed(name: String)(p: => Unit): Thread = {
     val t = new Thread(name) { override def run() = p }
     t.start()
     t
