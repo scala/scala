@@ -175,16 +175,17 @@ object Console {
    *  @param args the arguments used to instantiating the pattern.
    *  @throws java.lang.IllegalArgumentException
    */
-  def printf(text: String, args: Any*) { format(text, args: _*) }
+  def printf(text: String, args: Any*) { out.print(text format (args : _*)) }
 
   /**
    *  @see <a href="#printf(java.lang.String,scala.Any*)"
    *       target="contentFrame">Console.printf</a>.
+   *  @deprecated For console output, use <code>Console.printf</code>.  For <code>String</code> formatting,
+   *              <code>RichString</code>'s <code>format</code> method.
    */
-  def format(text: String, args: Any*): Unit =
-      if (text eq null) "null" else
-      out.printf(text, args.asInstanceOf[scala.runtime.BoxedObjectArray].
-                            unbox(args.getClass).asInstanceOf[Array[Object]] : _*)
+  @deprecated def format(text: String, args: Any*) {
+      if (text eq null) out.printf("null") else (out.print(text format (args : _*)))
+  }
 
   /** Read a full line from the terminal.  Returns <code>null</code> if the end of the
    * input stream has been reached.

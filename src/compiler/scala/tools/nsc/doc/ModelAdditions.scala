@@ -68,32 +68,32 @@ class ModelAdditions(val global: Global) {
        <a href="AnyVal.html"><code>AnyVal</code></a>.
      </p>"""
 
-  addition(Object_isInstanceOf);
-  comments(Object_isInstanceOf) = """
+  addition(Any_==);
+  comments(Any_==) = """
     <p>
-      The method <code>isInstanceOf</code> is the pendant of the Java
-      operator <code>instanceof</code>.
+    <code> o1 == o2</code> is the same as <code>o1.equals(o2)</code>.
     </p>
-    @see <ul><li>Java Language Specification (2<sup>nd</sup> Ed.):
-         <a href="http://java.sun.com/docs/books/jls/second_edition/html/expressions.doc.html#80289"
-         target="_top">Operator <code>instanceof</code></a>.</li></ul>
     """
 
-   addition(Object_synchronized);
-   comments(Object_synchronized) = """
-     <p>
-       To make your programs thread-safe, you must first identify what
-       data will be shared across threads. If you are writing data that
-       may be read later by another thread, or reading data that may
-       have been written by another thread, then that data is shared,
-       and you must synchronize when accessing it.
-     </p>
-     @see <ul><li>The Java Tutorials:
-         <a href="http://java.sun.com/docs/books/tutorial/essential/concurrency/sync.html"
-         target="_top">Synchronization</a>.</li>
-         <li> IBM developerWorks:
-         <a href="http://www-128.ibm.com/developerworks/java/library/j-threads1.html"
-         target="_top">Synchronization is not the enemy</a>.</li></ul>
+  addition(Any_!=);
+  comments(Any_!=) = """
+    <p>
+    <code> o1 != o2</code> is the same as <code>!(o1.equals(o2))</code>.
+    </p>
+    """
+
+  addition(Any_toString);
+  comments(Any_toString) = """
+    <p>
+    Returns a string representation of the object.
+    </p>
+    """
+
+  addition(Any_hashCode);
+  comments(Any_hashCode) = """
+    <p>
+    Returns a hash code value for the object.
+    </p>
     """
 
    addition(AnyRefClass);
