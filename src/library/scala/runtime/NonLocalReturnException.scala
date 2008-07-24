@@ -14,4 +14,10 @@ package scala.runtime
 
 import Predef.RuntimeException
 
-class NonLocalReturnException[T](val key: AnyRef, val value: T) extends RuntimeException
+class NonLocalReturnException[T](val key: AnyRef, val value: T) extends RuntimeException {
+  /*
+   * For efficiency reasons we do not fill in
+   * the execution stack trace.
+   */
+  override def fillInStackTrace(): Throwable = this
+}
