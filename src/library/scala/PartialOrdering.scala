@@ -11,7 +11,7 @@
 package scala
 
 /** A trait for representing partial orderings.  It is important to
- * distinguish between a type that has a partial order and a represnetation
+ * distinguish between a type that has a partial order and a representation
  * of partial ordering on some type.  This trait is for representing the latter.
  *
  * A <a href="http://en.wikipedia.org/wiki/Partial_order">partial ordering</a>

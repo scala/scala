@@ -11,7 +11,7 @@
 package scala
 
 /** A trait for representing total orderings.  It is important to
- * distinguish between a type that has a total order and a represnetation
+ * distinguish between a type that has a total order and a representation
  * of total  ordering on some type.  This trait is for representing the
  * latter.
  *
