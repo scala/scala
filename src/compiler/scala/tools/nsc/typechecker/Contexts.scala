@@ -337,14 +337,14 @@ trait Contexts { self: Analyzer =>
 
     def error(pos: Position, err: Error) {
       val msg = err.getMessage()
-      if (reportGeneralErrors)
+      if (reportGeneralErrors || inIDE)
         unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
       else
         throw err
     }
 
     def error(pos: Position, msg: String) {
-      if (reportGeneralErrors)
+      if (reportGeneralErrors || inIDE)
         unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
       else
         throw new TypeError(pos, msg)

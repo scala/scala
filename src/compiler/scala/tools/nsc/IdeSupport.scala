@@ -16,12 +16,18 @@ trait IdeSupport extends Global with symtab.IdeSupport {
 
 
   // load a source file without us caring about adapt.
-  def loadSource(file : AbstractFile) = {
+  def loadSource(file : AbstractFile) : Option[CompilationUnit] = {
     val run = new IdeRun
     reloadSource(file)
     val source = getSourceFile(file)
-    normalCompile(run.compileSources(source :: Nil))
-    run.units.find(unit => unit.source == source)
+    try {
+      normalCompile(run.compileSources(source :: Nil))
+      run.units.find(unit => unit.source == source)
+    } catch {
+      case e =>
+        logError("error in presentation normal compile ", e)
+        None
+    }
   }
   object loaders1 extends {
     val global : IdeSupport.this.type = IdeSupport.this
