@@ -388,7 +388,6 @@ trait Iterator[+A] {
   /** Return an iterator that pairs each element of this iterator
    *  with its index, counting from 0.
    *
-   *  @param start the index of the first element.
    *  @return      an iterator yielding <code>{a<sub>0</sub>,0},
    *               {a<sub>1</sub>,1}...</code> where <code>a<sub>i</sub></code>
    *               are the elements from this iterator.

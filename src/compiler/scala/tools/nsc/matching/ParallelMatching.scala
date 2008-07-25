@@ -1156,7 +1156,7 @@ trait ParallelMatching  {
         pats = pats.reverse
         if (indexOfAlternative == -1) {
           val res = List(Row(pats, subst, g, bx))
-          DBG("finished: result "+res)
+          DBG("finished: result "/*+res*/)
           res
         }
         else {
@@ -1164,7 +1164,7 @@ trait ParallelMatching  {
           val alts   = getAlternativeBranches(pats( indexOfAlternative ))
           val suffix = pats.drop(indexOfAlternative + 1)
           val intermediary_result = alts map { p => Row(prefix ::: p :: suffix, subst, g, bx) }
-          DBG("not finished: intermediary_result = "+intermediary_result)
+          DBG("not finished: intermediary_result = "/*+intermediary_result*/)
           intermediary_result
         }
     }
@@ -1288,7 +1288,7 @@ trait ParallelMatching  {
         val restTemp =                                               temp.take(px) ::: temp.drop(px+1)
         val restRows = row map { case Row(pats, subst, g, bx) => Row(pats.take(px) ::: pats.drop(px+1), subst, g, bx) }
         val mr = MixtureRule(temps.head, column, rep.make(restTemp,restRows))
-        DBG("\n---\nmixture rule is = "+mr.getClass.toString)
+        DBG("\n---\nmixture rule is = "/*+mr.getClass.toString*/)
         mr
     }
 

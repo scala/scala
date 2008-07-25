@@ -207,11 +207,7 @@ trait Types {
     def isNotNull: Boolean = false
 
     /** Does this depend on an enclosing method parameter? */
-    def isDependent: Boolean = {
-      IsDependentTraverser.result = false
-      IsDependentTraverser.traverse(this)
-      IsDependentTraverser.result
-    }
+    def isDependent: Boolean = IsDependentCollector.collect(this)
 
     /** The term symbol associated with the type
       * Note that the symbol of the normalized type is returned (@see normalize)
@@ -329,11 +325,7 @@ trait Types {
     def isError: Boolean = typeSymbol.isError || termSymbol.isError
 
     /** Is this type produced as a repair for an error? */
-    def isErroneous: Boolean = {
-      ErroneousTraverser.result = false
-      ErroneousTraverser.traverse(this)
-      ErroneousTraverser.result
-    }
+    def isErroneous: Boolean = ErroneousCollector.collect(this)
 
     /** Does this type denote a reference type which can be null? */
     // def isNullable: Boolean = false
@@ -461,16 +453,12 @@ trait Types {
       new SubstSuperMap(from, to) apply this
 
     /** Returns all parts of this type which satisfy predicate `p' */
-    def filter(p: Type => Boolean): List[Type] = {
-      new FilterTypeTraverser(p).traverse(this).hits.toList
-    }
+    def filter(p: Type => Boolean): List[Type] = new FilterTypeCollector(p).collect(this).toList
 
     /** Returns optionally first type (in a preorder traversal) which satisfies predicate `p',
      *  or None if none exists.
      */
-    def find(p: Type => Boolean): Option[Type] = {
-      new FindTypeTraverser(p).traverse(this).result
-    }
+    def find(p: Type => Boolean): Option[Type] = new FindTypeCollector(p).collect(this)
 
     /** Apply `f' to each part of this type */
     def foreach(f: Type => Unit) { new ForEachTypeTraverser(f).traverse(this) }
@@ -479,12 +467,10 @@ trait Types {
     def exists(p: Type => Boolean): Boolean = !find(p).isEmpty
 
     /** Does this type contain a reference to this symbol? */
-    def contains(sym: Symbol): Boolean =
-      new ContainsTraverser(sym).traverse(this).result
+    def contains(sym: Symbol): Boolean = new ContainsCollector(sym).collect(this)
 
     /** Does this type contain a reference to this type */
-    def containsTp(tp: Type): Boolean =
-      new ContainsTypeTraverser(tp).traverse(this).result
+    def containsTp(tp: Type): Boolean = new ContainsTypeCollector(tp).collect(this)
 
     /** Is this type a subtype of that type? */
     def <:<(that: Type): Boolean = {
@@ -2488,8 +2474,17 @@ A type's typeSymbol should never be inspected directly.
   }
 
   abstract class TypeTraverser extends TypeMap {
-    def traverse(tp: Type): TypeTraverser //todo: return Unit instead?
+    def traverse(tp: Type): Unit
     def apply(tp: Type): Type = { traverse(tp); tp }
+  }
+
+  abstract class TypeCollector[T](initial: T) extends TypeTraverser {
+    var result: T = _
+    def collect(tp: Type) = {
+      result = initial
+      traverse(tp)
+      result
+    }
   }
 
   private val emptySymMap = scala.collection.immutable.Map[Symbol, Symbol]()
@@ -2962,10 +2957,8 @@ A type's typeSymbol should never be inspected directly.
   }
 
   /** A map to implement the `contains' method */
-  class ContainsTraverser(sym: Symbol) extends TypeTraverser {
-    var result = false
-
-    def traverse(tp: Type): ContainsTraverser = {
+  class ContainsCollector(sym: Symbol) extends TypeCollector(false) {
+    def traverse(tp: Type) {
       if (!result) {
         tp.normalize match {
           case TypeRef(_, sym1, _) if (sym == sym1) => result = true
@@ -2973,7 +2966,6 @@ A type's typeSymbol should never be inspected directly.
           case _ => mapOver(tp)
         }
       }
-      this
     }
 
     override def mapOver(arg: Tree) = {
@@ -2986,16 +2978,13 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
-
   /** A map to implement the `contains' method */
-  class ContainsTypeTraverser(t: Type) extends TypeTraverser {
-    var result = false
-    def traverse(tp: Type): ContainsTypeTraverser = {
+  class ContainsTypeCollector(t: Type) extends TypeCollector(false) {
+    def traverse(tp: Type) {
       if (!result) {
         if (tp eq t) result = true
         else mapOver(tp)
       }
-      this
     }
     override def mapOver(arg: Tree) = {
       for (t <- arg) {
@@ -3006,55 +2995,46 @@ A type's typeSymbol should never be inspected directly.
   }
 
   /** A map to implement the `filter' method */
-  class FilterTypeTraverser(p: Type => Boolean) extends TypeTraverser {
-    val hits = new ListBuffer[Type]
-    def traverse(tp: Type): FilterTypeTraverser = {
-      if (p(tp)) hits += tp
+  class FilterTypeCollector(p: Type => Boolean) extends TypeCollector(new ListBuffer[Type]) {
+    def traverse(tp: Type) {
+      if (p(tp)) result += tp
       mapOver(tp)
-      this
     }
   }
 
   class ForEachTypeTraverser(f: Type => Unit) extends TypeTraverser {
-    def traverse(tp: Type): TypeTraverser = {
+    def traverse(tp: Type) {
       f(tp)
       mapOver(tp)
-      this
     }
   }
 
   /** A map to implement the `filter' method */
-  class FindTypeTraverser(p: Type => Boolean) extends TypeTraverser {
-    var result: Option[Type] = None
-    def traverse(tp: Type): FindTypeTraverser = {
+  class FindTypeCollector(p: Type => Boolean) extends TypeCollector[Option[Type]](None) {
+    def traverse(tp: Type) {
       if (result.isEmpty) {
         if (p(tp)) result = Some(tp)
         mapOver(tp)
       }
-      this
     }
   }
 
   /** A map to implement the `contains' method */
-  object ErroneousTraverser extends TypeTraverser {
-    var result: Boolean = _
-    def traverse(tp: Type): TypeTraverser = {
+  object ErroneousCollector extends TypeCollector(false) {
+    def traverse(tp: Type) {
       if (!result) {
         result = tp.isError
         mapOver(tp)
       }
-      this
     }
   }
 
-  object IsDependentTraverser extends TypeTraverser {
-    var result: Boolean = _
-    def traverse(tp: Type): TypeTraverser = {
+  object IsDependentCollector extends TypeCollector(false) {
+    def traverse(tp: Type) {
       tp match {
         case DeBruijnIndex(_, _) => result = true
         case _ => if (!result) mapOver(tp)
       }
-      this
     }
   }
 

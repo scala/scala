@@ -787,13 +787,13 @@ abstract class RefChecks extends InfoTransform {
         case TypeTree() =>
           if (!inPattern) {
             new TypeTraverser {
-              def traverse(tp: Type): TypeTraverser = tp match {
-                case TypeRef(pre, sym, args) =>
-                  checkDeprecated(sym, tree.pos)
-                  if (!tp.isHigherKinded) checkBounds(pre, sym.owner, sym.typeParams, args)
-                  this
-                case _ =>
-                  this
+              def traverse(tp: Type) {
+                tp match {
+                  case TypeRef(pre, sym, args) =>
+                    checkDeprecated(sym, tree.pos)
+                    if (!tp.isHigherKinded) checkBounds(pre, sym.owner, sym.typeParams, args)
+                  case _ =>
+                }
               }
             } traverse tree.tpe
           }

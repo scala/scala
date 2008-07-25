@@ -207,6 +207,7 @@ abstract class GenJVM extends SubComponent {
       clasz.fields foreach genField
       clasz.methods foreach genMethod
 
+      addGenericSignature(jclass, c.symbol)
       addAnnotations(jclass, c.symbol.attributes)
 
       emitClass(jclass, c.symbol)
@@ -396,6 +397,20 @@ abstract class GenJVM extends SubComponent {
       nattr
     }
 
+    def addGenericSignature(jmember: JMember, sym: Symbol, tp: Type) {
+      if (settings.target.value == "jvm-1.5" && erasure.needsJavaSig(tp)) {
+        val sig = erasure.javaSig(tp)
+        if (settings.verbose.value) println("add generic sig "+sym+":"+tp+" ==> "+sig)
+        val buf = ByteBuffer.allocate(2)
+        buf.putShort(jmember.getConstantPool().addUtf8(sig).toShort)
+        addAttribute(jmember, nme.SignatureATTR, buf)
+      }
+    }
+
+    def addGenericSignature(jmember: JMember, sym: Symbol) {
+      addGenericSignature(jmember, sym, atPhase(currentRun.erasurePhase)(sym.info))
+    }
+
     def addAnnotations(jmember: JMember, attributes: List[AnnotationInfo]) {
       val toEmit = attributes.filter(shouldEmitAttribute(_))
 
@@ -494,7 +509,7 @@ abstract class GenJVM extends SubComponent {
         jclass.addNewField(flags | attributes,
                            javaName(f.symbol),
                            javaType(f.symbol.tpe));
-
+      addGenericSignature(jfield, f.symbol)
       addAnnotations(jfield, f.symbol.attributes)
     }
 
@@ -561,6 +576,7 @@ abstract class GenJVM extends SubComponent {
           genLocalVariableTable(m);
       }
 
+      addGenericSignature(jmethod, m.symbol)
       val (excs, others) = splitAnnotations(m.symbol.attributes, ThrowsAttr)
       addExceptionsAttribute(jmethod, excs)
       addAnnotations(jmethod, others)
@@ -688,6 +704,8 @@ abstract class GenJVM extends SubComponent {
         mirrorCode.emitRETURN(mirrorMethod.getReturnType())
 
         addRemoteException(mirrorMethod, m)
+        //todo: how add signature for mirror method?
+        //addGenericSignature(mirrorMethod, /*which type?*/)
         val (throws, others) = splitAnnotations(m.attributes, ThrowsAttr)
         addExceptionsAttribute(mirrorMethod, throws)
         addAnnotations(mirrorMethod, others)

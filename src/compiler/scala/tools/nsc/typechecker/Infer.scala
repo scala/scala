@@ -1207,29 +1207,16 @@ trait Infer {
       }
     }
 
-    abstract class SymCollector extends TypeTraverser {
-      private var result: List[Symbol] = _
+    abstract class SymCollector extends TypeCollector(List[Symbol]()) {
       protected def includeCondition(sym: Symbol): Boolean
 
-      override def traverse(tp: Type): TypeTraverser = {
+      def traverse(tp: Type) {
         tp.normalize match {
           case TypeRef(_, sym, _) =>
             if (includeCondition(sym) && !result.contains(sym)) result = sym :: result
           case _ =>
         }
         mapOver(tp)
-        this
-      }
-
-      /** Collect all abstract type symbols referred to by type <code>tp</code>.
-       *
-       *  @param tp ...
-       *  @return   ...
-       */
-      def collect(tp: Type): List[Symbol] = {
-        result = List()
-        traverse(tp)
-        result
       }
     }
 

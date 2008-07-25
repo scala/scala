@@ -757,43 +757,6 @@ trait Namers { self: Analyzer =>
         } else typer.typedType(tpt).tpe)
     }
 
-    /** If `sym' is an implicit value, check that its type signature `tp' is contractive.
-     *  This means: The type of every implicit parameter is properly contained
-     *  in the type that is obtained by removing all implicit parameters and converting
-     *  the rest to a function type.
-     *  If the check succeeds return `tp' itself, otherwise `ErrorType'.
-     */
-    private def checkContractive(sym: Symbol, tp: Type): Type = {
-      /* The type signature without implicit parameters converted to function type */
-      def provided(tp: Type): Type = tp match {
-        case PolyType(_, restpe) => provided(restpe)
-        case mt: ImplicitMethodType => mt.resultType
-        case MethodType(formals, restpe) => functionType(formals, provided(restpe))
-        case _ => tp
-      }
-      /* The types of all implicit parameters */
-      def required(tp: Type): List[Type] = tp match {
-        case PolyType(_, restpe) => required(restpe)
-        case mt: ImplicitMethodType => mt.paramTypes
-        case MethodType(formals, restpe) => required(restpe)
-        case _ => List()
-      }
-      var result = tp;
-      if (sym hasFlag IMPLICIT) {
-        val p = provided(tp);
-        //Console.println("check contractive: "+sym+" "+p+"/"+required(tp))
-        for (r <- required(tp)) {
-          if (!isContainedIn(r, p) || (r =:= p)) {
-            context.error(sym.pos, "implicit " + sym + " is not contractive," +
-                          "\n because the implicit parameter type " + r +
-                          "\n is not strictly contained in the signature " + p);
-            result = ErrorType;
-          }
-        }
-      }
-      result
-    }
-
     //@M! an abstract type definition (abstract type member/type parameter) may take type parameters, which are in scope in its bounds
     private def typeDefSig(tpsym: Symbol, tparams: List[TypeDef], rhs: Tree) = {
       val tparamSyms = typer.reenterTypeParams(tparams) //@M make tparams available in scope (just for this abstypedef)
@@ -878,7 +841,6 @@ trait Namers { self: Analyzer =>
             case DefDef(_, _, tparams, vparamss, tpt, rhs) =>
               //val result =
                 newNamer(context.makeNewScope(tree, sym)).methodSig(tparams, vparamss, tpt, rhs)
-              //checkContractive(sym, result)
 
             case vdef @ ValDef(mods, _, tpt, rhs) =>
               val typer1 = typer.constrTyperIf(sym.hasFlag(PARAM | PRESUPER) && sym.owner.isConstructor)
@@ -1003,48 +965,6 @@ trait Namers { self: Analyzer =>
       checkNoConflict(PRIVATE, OVERRIDE)
       //checkNoConflict(PRIVATE, FINAL) // can't do this because FINAL also means compile-time constant
       checkNoConflict(DEFERRED, FINAL)
-    }
-  }
-
-  /* Is type `tp1' properly contained in type `tp2'? */
-  def isContainedIn(tp1: Type, tp2: Type) = {
-    //Console.println("is " + tp1 + " contained in " + tp2 + "?");//DEBUG
-    new ContainsTraverser(tp1).traverse(tp2).result
-  }
-
-  /* Type `elemtp' is contained in type `tp' is one of the following holds:
-   *  - elemtp is the same as some proper part of tp
-   *  - tp is a function type and elemtp is not
-   *  - tp and elemtp are function types, and arity of tp is greater than arity of elemtp
-   *  - tp and elemtp are both parameterized types with same type constructor and prefix,
-   *    and each type argument of elemtp is contained in the corresponding type argument of tp.
-   */
-  private class ContainsTraverser(elemtp: Type) extends TypeTraverser {
-    var nested = false
-    var result = false
-    def traverse(tp: Type): ContainsTraverser = {
-      if (!result) {
-        if (elemtp =:= tp)
-          result = nested
-        else if (isFunctionType(tp) &&
-                 (!isFunctionType(elemtp) || tp.normalize.typeArgs.length > elemtp.normalize.typeArgs.length))
-          result = true
-        else (tp, elemtp) match {
-          case (TypeRef(pre, sym, args), TypeRef(elempre, elemsym, elemargs)) =>
-            if ((sym == elemsym) && (pre =:= elempre) && (args.length == elemargs.length))
-              result = List.forall2(elemargs, args) (isContainedIn)
-          case _ =>
-        }
-      }
-      if (!result) {
-        tp match {
-          case SingleType(_, _) => nested = true
-          case TypeRef(_, _, _) => nested = true
-          case _ =>
-        }
-        mapOver(tp)
-      }
-      this
     }
   }
 

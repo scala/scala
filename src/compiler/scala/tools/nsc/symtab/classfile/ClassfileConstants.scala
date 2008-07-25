@@ -89,6 +89,7 @@ object ClassfileConstants {
   final val CLASS_TAG  = 'c'
   final val ARRAY_TAG  = '['
   final val VOID_TAG   = 'V'
+  final val TVAR_TAG   = 'T'
   final val ANNOTATION_TAG = '@'
 
   // tags describing the type of newarray
