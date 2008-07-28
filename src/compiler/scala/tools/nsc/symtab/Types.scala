@@ -1315,9 +1315,10 @@ trait Types {
    *  @param args ...
    */
   case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type {
-    assert(!checkMalformedSwitch || !sym.isAbstractType || pre.isStable || pre.isError)
-    assert(!pre.isInstanceOf[ClassInfoType], this)
-    assert(!(sym hasFlag (PARAM | EXISTENTIAL)) || pre == NoPrefix, this)
+//    assert(!checkMalformedSwitch || !sym.isAbstractType || pre.isStable || pre.isError)
+//    assert(!pre.isInstanceOf[ClassInfoType], this)
+//    assert(!(sym hasFlag (PARAM | EXISTENTIAL)) || pre == NoPrefix, this)
+//    assert(args.isEmpty || !sym.info.typeParams.isEmpty, this)
 
     private var parentsCache: List[Type] = _
     private var parentsPeriod = NoPeriod

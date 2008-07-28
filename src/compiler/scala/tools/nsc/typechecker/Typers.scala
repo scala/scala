@@ -3297,7 +3297,7 @@ trait Typers { self: Analyzer =>
           case _ => tp
         }
         var tree1 = if (tree.tpe ne null) tree else typed1(tree, mode, dropExistential(pt))
-//        Console.println("typed "+tree1+":"+tree1.tpe+", "+context.undetparams);//DEBUG
+//        Console.println("typed "+tree1+":"+tree1.tpe+", "+context.undetparams+", pt = "+pt);//DEBUG
 
         tree1.tpe = addAnnotations(tree1, tree1.tpe)
 

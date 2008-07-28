@@ -607,9 +607,14 @@ trait JavaParsers extends JavaScanners {
                   makeTemplate(List(javaLangObject()), statics))
       }
 
+    def importCompanionObject(cdef: ClassDef): Tree =
+      atPos(cdef.pos) {
+        Import(Ident(cdef.name.toTermName), List((nme.WILDCARD, null)))
+      }
+
     def addCompanionObject(statics: List[Tree], cdef: ClassDef): List[Tree] =
       if (statics.isEmpty) List(cdef)
-      else List(cdef, makeCompanionObject(cdef, statics))
+      else List(makeCompanionObject(cdef, statics), importCompanionObject(cdef), cdef)
 
     def importDecl(): List[Tree] = {
       accept(IMPORT)
