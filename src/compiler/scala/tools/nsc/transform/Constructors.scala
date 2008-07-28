@@ -187,11 +187,15 @@ abstract class Constructors extends Transform {
         case ValDef(mods, name, tpt, rhs) =>
           // val defs with constant right-hand sides are eliminated.
           // for all other val defs, an empty valdef goes into the template and
-          // the initializer goes as an assignment into th constructor
+          // the initializer goes as an assignment into the constructor
           // if the val def is an early initialized or a parameter accessor, it goes
           // before the superclass constructor call, otherwise it goes after.
+          // Lazy vals don't get the assignment in the constructor. Fields initialized
+          // to default values are not eliminated until the mixin phase, when
+          // checked initializers are added
           if (!stat.symbol.tpe.isInstanceOf[ConstantType]) {
-            if (rhs != EmptyTree && !stat.symbol.hasFlag(LAZY)) {
+            if ((rhs != EmptyTree || !stat.symbol.originalName.startsWith(nme.OUTER))
+                && !stat.symbol.hasFlag(LAZY)) {
               val rhs1 = intoConstructor(stat.symbol, rhs);
               (if (canBeMoved(stat)) constrPrefixBuf else constrStatBuf) += mkAssign(
                 stat.symbol, rhs1)

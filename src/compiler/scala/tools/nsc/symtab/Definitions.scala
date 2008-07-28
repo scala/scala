@@ -75,6 +75,7 @@ trait Definitions {
       def Int_Or  = definitions.getMember(definitions.IntClass, nme.OR)
       def Int_And = definitions.getMember(definitions.IntClass, nme.AND)
       def Int_==  = definitions.getMember(definitions.IntClass, nme.EQ)
+      def Int_!=  = definitions.getMember(definitions.IntClass, nme.NE)
 
     var LongClass: Symbol = _
     var FloatClass: Symbol = _
@@ -126,6 +127,7 @@ trait Definitions {
       def Predef_error    = getMember(PredefModule, nme.error)
     lazy val ConsoleModule: Symbol = getModule("scala.Console")
     lazy val MatchErrorClass: Symbol = getClass("scala.MatchError")
+    lazy val UninitializedErrorClass: Symbol = getClass("scala.UninitializedFieldError")
     //var MatchErrorModule: Symbol = _
     //  def MatchError_fail = getMember(MatchErrorModule, nme.fail)
     //  def MatchError_report = getMember(MatchErrorModule, nme.report)

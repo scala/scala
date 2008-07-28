@@ -1,0 +1,35 @@
+checked.scala:42: warning: the semantics of this definition has changed;
+the initialization is no longer be executed before the superclass is called
+  val x = 1
+      ^
+checked.scala:19: warning: the semantics of this definition has changed;
+the initialization is no longer be executed before the superclass is called
+  val t1 = 1
+      ^
+checked.scala:20: warning: the semantics of this definition has changed;
+the initialization is no longer be executed before the superclass is called
+  var t2 = 2
+      ^
+checked.scala:53: warning: the semantics of this definition has changed;
+the initialization is no longer be executed before the superclass is called
+  val x = 1
+      ^
+checked.scala:54: warning: the semantics of this definition has changed;
+the initialization is no longer be executed before the superclass is called
+  val y = 2
+      ^
+5 warnings found
+sum = 12
+[OK] Cought UFE: Uninitialized field: checked.scala: 42
+2
+[OK] Cought UFE: Uninitialized field: checked.scala: 73
+x = 10
+y = 11
+lz1 = 1
+lz2 = 2
+[OK]: 24
+x = 10
+y = 11
+lz1 = 1
+lz2 = 2
+[OK]: 24
