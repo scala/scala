@@ -1,0 +1,4 @@
+t0842.scala:1: error: A.this.type does not take type parameters
+trait A[T] { def m: this.type[T] = this }
+                        ^
+one error found

@@ -90,10 +90,15 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           apply(restpe)
         case ExistentialType(tparams, restpe) =>
           apply(restpe)
-        case MethodType(formals, restpe) =>
+        case mt @ MethodType(formals, restpe) =>
           MethodType(
             formals map apply,
-            if (restpe.typeSymbol == UnitClass) erasedTypeRef(UnitClass) else apply(restpe))
+            if (restpe.typeSymbol == UnitClass)
+              erasedTypeRef(UnitClass)
+            else if (settings.Xexperimental.value)
+              apply(mt.resultType(formals)) // this gets rid of DeBruijnTypes
+            else
+              apply(restpe))
         case RefinedType(parents, decls) =>
           if (parents.isEmpty) erasedTypeRef(ObjectClass)
           else apply(parents.head)

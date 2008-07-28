@@ -400,7 +400,7 @@ abstract class GenJVM extends SubComponent {
     def addGenericSignature(jmember: JMember, sym: Symbol, tp: Type) {
       if (settings.target.value == "jvm-1.5" && erasure.needsJavaSig(tp)) {
         val sig = erasure.javaSig(tp)
-        if (settings.verbose.value) println("add generic sig "+sym+":"+tp+" ==> "+sig)
+        if (settings.debug.value && settings.verbose.value) println("add generic sig "+sym+":"+tp+" ==> "+sig)
         val buf = ByteBuffer.allocate(2)
         buf.putShort(jmember.getConstantPool().addUtf8(sig).toShort)
         addAttribute(jmember, nme.SignatureATTR, buf)

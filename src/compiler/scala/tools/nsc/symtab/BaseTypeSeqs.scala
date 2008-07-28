@@ -87,7 +87,17 @@ trait BaseTypeSeqs {
 
     /** Compute new base type sequence where every element is mapped
      *  with function `f'. Lazy types are mapped but not evaluated */
-    def map(f: Type => Type): BaseTypeSeq = new BaseTypeSeq(parents, elems map f)
+    def map(f: Type => Type): BaseTypeSeq = {
+	  // inlined `elems map f' for performance
+      val len = length
+      var arr = new Array[Type](len)
+      var i = 0
+      while (i < len) {
+        arr(i) = f(elems(i))
+        i += 1
+      }
+      new BaseTypeSeq(parents, arr)
+    }
 
     def exists(p: Type => Boolean): Boolean = elems exists p
 //      (0 until length) exists (i => p(this(i)))

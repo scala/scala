@@ -132,41 +132,61 @@ object Regex {
     /** The names of the groups, or some empty sequence if one defined */
     val groupNames: Seq[String]
 
-    /** The index of the first matched character */
-    def start: Int
-
-    /** The index of the first matched character in group <code>i</code> */
-    def start(i: Int): Int
-
-    /** The index of the last matched character */
-    def end: Int
-
-    /** The number of subgroups */
+    /** The number of subgroups in the pattern (not all of these need to match!) */
     def groupCount: Int
 
-    /** The index following the last matched character in group <code>i</code> */
+    /** The index of the first matched character, or -1 if nothing was matched */
+    def start: Int
+
+    /** The index of the first matched character in group <code>i</code>,
+     *  or -1 if nothing was matched for that group */
+    def start(i: Int): Int
+
+    /** The index of the last matched character, or -1 if nothing was matched */
+    def end: Int
+
+    /** The index following the last matched character in group <code>i</code>,
+     *  or -1 if nothing was matched for that group */
     def end(i: Int): Int
 
-    /** The matched string */
-    def matched: String = source.subSequence(start, end).toString
+    /** The matched string,
+     *  of <code>null</code> if nothing was matched */
+    def matched: String =
+      if (start >= 0) source.subSequence(start, end).toString
+      else null
 
-    /** The matched string in group <code>i</code> */
-    def group(i: Int): String = source.subSequence(start(i), end(i)).toString
+    /** The matched string in group <code>i</code>,
+     *  or <code>null</code> if nothing was matched */
+    def group(i: Int): String =
+      if (start(i) >= 0) source.subSequence(start(i), end(i)).toString
+      else null
 
     /** All matched subgroups, i.e. not including group(0) */
     def subgroups: List[String] = (1 to groupCount).toList map group
 
-    /** The char sequence before first character of match */
-    def before: java.lang.CharSequence = source.subSequence(0, start)
+    /** The char sequence before first character of match,
+     *  or <code>null</code> if nothing was matched */
+    def before: java.lang.CharSequence =
+      if (start >= 0) source.subSequence(0, start)
+      else null
 
-    /** The char sequence before first character of match in group <code>i</code> */
-    def before(i: Int): java.lang.CharSequence = source.subSequence(0, start(i))
+    /** The char sequence before first character of match in group <code>i</code>,
+     *  or <code>null</code> if nothing was matched for that group  */
+    def before(i: Int): java.lang.CharSequence =
+      if (start(i) >= 0) source.subSequence(0, start(i))
+      else null
 
-    /** Returns char sequence after last character of match */
-    def after: java.lang.CharSequence = source.subSequence(end, source.length)
+    /** Returns char sequence after last character of match,
+     *  or <code>null</code> if nothing was matched */
+    def after: java.lang.CharSequence =
+      if (end >= 0) source.subSequence(end, source.length)
+      else null
 
-    /** The char sequence after last character of match in group <code>i</code> */
-    def after(i: Int): java.lang.CharSequence = source.subSequence(end(i), source.length)
+    /** The char sequence after last character of match in group <code>i</code>,
+     *  or <code>null</code> if nothing was matched for that group  */
+    def after(i: Int): java.lang.CharSequence =
+      if (end(i) >= 0) source.subSequence(end(i), source.length)
+      else null
 
     private lazy val nameToIndex: Map[String, Int] = Map() ++ ("" :: groupNames.toList).zipWithIndex
 

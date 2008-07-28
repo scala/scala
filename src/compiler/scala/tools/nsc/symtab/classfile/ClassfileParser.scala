@@ -707,29 +707,31 @@ abstract class ClassfileParser {
     }
 
     /** Parse and return a single annotation.  If it is malformed,
-     *  throw an exception.  If it contains a nested annotation,
-     *  return None.
+     *  or it contains a nested annotation, return None.
      */
-    def parseAnnotation(attrNameIndex: Char): Option[AnnotationInfo] = {
-      val attrType = pool.getType(attrNameIndex)
-      val nargs = in.nextChar
-      val nvpairs = new ListBuffer[(Name,AnnotationArgument)]
-      var nestedAnnot = false  // if a nested annotation is seen,
-                               // then skip this annotation
-      for (i <- 0 until nargs) {
-        val name = pool.getName(in.nextChar)
-	val argConst = parseTaggedConstant
-	if (argConst.tag == AnnotationTag)
-	  nestedAnnot = true
-	else
-          nvpairs += ((name, new AnnotationArgument(argConst)))
-      }
+    def parseAnnotation(attrNameIndex: Char): Option[AnnotationInfo] =
+      try {
+        val attrType = pool.getType(attrNameIndex)
+        val nargs = in.nextChar
+        val nvpairs = new ListBuffer[(Name,AnnotationArgument)]
+        var nestedAnnot = false  // if a nested annotation is seen,
+                                 // then skip this annotation
+        for (i <- 0 until nargs) {
+          val name = pool.getName(in.nextChar)
+          val argConst = parseTaggedConstant
+          if (argConst.tag == AnnotationTag)
+            nestedAnnot = true
+          else
+            nvpairs += ((name, new AnnotationArgument(argConst)))
+        }
 
-      if (nestedAnnot)
-	None
-      else
-	Some(AnnotationInfo(attrType, List(), nvpairs.toList))
-    }
+        if (nestedAnnot)
+          None
+        else
+          Some(AnnotationInfo(attrType, List(), nvpairs.toList))
+      } catch {
+        case ex: Throwable => None // ignore malformed annotations ==> t1135
+      }
 
     /** Parse a sequence of annotations and attach them to the
      *  current symbol sym.

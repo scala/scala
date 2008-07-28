@@ -2963,10 +2963,10 @@ trait Typers { self: Analyzer =>
 
       def typedAppliedTypeTree(tpt: Tree, args: List[Tree]) = {
         val tpt1 = typed1(tpt, mode | FUNmode | TAPPmode, WildcardType)
-        // @S: shouldn't be necessary now, fixed a problem with SimpleTypeProxy not relaying typeParams calls.
-        // if (inIDE) tpt1.symbol.info // @S: seems like typeParams call doesn't force completion of symbol type in IDE.
         if (tpt1.tpe.isError) {
           setError(tree)
+        } else if (!tpt1.hasSymbol) {
+          errorTree(tree, tpt1.tpe+" does not take type parameters")
         } else {
           val tparams = tpt1.symbol.typeParams
           if (tparams.length == args.length) {
@@ -3280,7 +3280,7 @@ trait Typers { self: Analyzer =>
           tree.tpe = null
           if (tree.hasSymbol) tree.symbol = NoSymbol
         }
-        //Console.println("typing "+tree+", "+context.undetparams);//DEBUG
+//        Console.println("typing "+tree+", "+context.undetparams);//DEBUG
         def dropExistential(tp: Type): Type = tp match {
           case ExistentialType(tparams, tpe) =>
             if (settings.debug.value) println("drop ex "+tree+" "+tp)
@@ -3291,14 +3291,13 @@ trait Typers { self: Analyzer =>
             if (tp1 eq tp0) tp else tp1
           case _ => tp
         }
-//      Console.println("typing "+tree+" at "+tree.pos);//DEBUG
         var tree1 = if (tree.tpe ne null) tree else typed1(tree, mode, dropExistential(pt))
-//      Console.println("typed "+tree1+":"+tree1.tpe+", "+context.undetparams);//DEBUG
+//        Console.println("typed "+tree1+":"+tree1.tpe+", "+context.undetparams);//DEBUG
 
         tree1.tpe = addAnnotations(tree1, tree1.tpe)
 
         val result = if (tree1.isEmpty || (inIDE && tree1.tpe == null)) tree1 else adapt(tree1, mode, pt)
-//      Console.println("adapted "+tree1+":"+tree1.tpe+" to "+pt+", "+context.undetparams);//DEBUG
+//        Console.println("adapted "+tree1+":"+tree1.tpe+" to "+pt+", "+context.undetparams);//DEBUG
 //      if ((mode & TYPEmode) != 0) println("type: "+tree1+" has type "+tree1.tpe)
         result
       } catch {

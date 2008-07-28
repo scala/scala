@@ -181,14 +181,20 @@ trait StdNames {
     val WILDCARD = newTermName("_")
     val WILDCARD_STAR = newTermName("_*")
     val COMPOUND_NAME = newTermName("<ct>")
+
     val ANON_CLASS_NAME = newTermName("$anon")
+    val ANON_CLASS_NAME_tn = ANON_CLASS_NAME.toTypeName
     val ANON_FUN_NAME = newTermName("$anonfun")
+    val ANON_FUN_NAME_tn = ANON_FUN_NAME.toTypeName
     val REFINE_CLASS_NAME = newTermName("<refinement>")
+    val REFINE_CLASS_NAME_tn = REFINE_CLASS_NAME.toTypeName
     val EMPTY_PACKAGE_NAME = newTermName("<empty>")
+    val EMPTY_PACKAGE_NAME_tn = EMPTY_PACKAGE_NAME.toTypeName
     val IMPORT = newTermName("<import>")
     val ZERO = newTermName("<zero>")
     val STAR = newTermName("*")
     val ROOT = newTermName("<root>")
+    val ROOT_tn = ROOT.toTypeName
     val ROOTPKG = newTermName("_root_")
     val REPEATED_PARAM_CLASS_NAME = newTermName("<repeated>")
     val BYNAME_PARAM_CLASS_NAME = newTermName("<byname>")
@@ -336,6 +342,7 @@ trait StdNames {
     val runtime = newTermName("runtime")
     val sameElements = newTermName("sameElements")
     val scala_ = newTermName("scala")
+    val scala_tn = scala_.toTypeName
     val self = newTermName("self")
     val synchronized_ = newTermName("synchronized")
     val tag = newTermName("$tag")

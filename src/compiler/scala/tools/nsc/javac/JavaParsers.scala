@@ -564,8 +564,7 @@ trait JavaParsers extends JavaScanners {
         in.nextToken
         if (in.token == IDENTIFIER) { // if there's an ident after the comma ...
           val name = ident()
-          in.nextToken
-          if (in.token == ASSIGN) { // ... followed by an `=', we know it's a real variable definition
+          if (in.token == ASSIGN || in.token == SEMI) { // ... followed by a `=' or `;', we know it's a real variable definition
             buf ++= maybe
             buf += varDecl(in.currentPos, mods, tpt.duplicate, name)
             maybe.clear()
