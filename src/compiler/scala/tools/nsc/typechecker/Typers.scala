@@ -2384,7 +2384,10 @@ trait Typers { self: Analyzer =>
 
       def typedReturn(expr: Tree) = {
         val enclMethod = context.enclMethod
-        if (enclMethod == NoContext || enclMethod.owner.isConstructor) {
+        if (enclMethod == NoContext ||
+            enclMethod.owner.isConstructor ||
+            context.enclClass.enclMethod == enclMethod // i.e., we are in a constructor of a local class
+            ) {
           errorTree(tree, "return outside method definition")
         } else {
           val DefDef(_, _, _, _, restpt, _) = enclMethod.tree
@@ -2701,7 +2704,9 @@ trait Typers { self: Analyzer =>
           }
           val owntype =
             if (mix.isEmpty) {
-              if ((mode & SUPERCONSTRmode) != 0) clazz.info.parents.head
+              if ((mode & SUPERCONSTRmode) != 0)
+                if (clazz.info.parents.isEmpty) AnyRefClass.tpe // can happen due to cyclic references ==> #1036
+                else clazz.info.parents.head
               else intersectionType(clazz.info.parents)
             } else {
               findMixinSuper(clazz.info)

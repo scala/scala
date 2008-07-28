@@ -135,12 +135,16 @@ trait Namers { self: Analyzer =>
     private def doubleDefError(pos: Position, sym: Symbol) {
       context.error(pos,
         sym.name.toString() + " is already defined as " +
+        (if (sym.hasFlag(SYNTHETIC))
+          "(compiler-generated) "+ (if (sym.isModule) "case class companion " else "")
+         else "") +
         (if (sym.hasFlag(CASE)) "case class " + sym.name else sym.toString()))
     }
 
-    private def inCurrentScope(m: Symbol) =
+    private def inCurrentScope(m: Symbol): Boolean = {
       if (context.owner.isClass) context.owner == m.owner
-      else context.scope == m.owner.info.decls
+      else m.owner.isClass && context.scope == m.owner.info.decls
+    }
 
     def enterInScope(sym: Symbol): Symbol = enterInScope(sym, context.scope)
 

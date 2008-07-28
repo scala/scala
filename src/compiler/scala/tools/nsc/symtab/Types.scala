@@ -3080,8 +3080,10 @@ A type's typeSymbol should never be inspected directly.
         if (!corresponds(sym.owner, rebind0.owner)) {
           if (settings.debug.value) Console.println("ADAPT1 pre = "+pre+", sym = "+sym+sym.locationString+", rebind = "+rebind0+rebind0.locationString)
           val bcs = pre.baseClasses.dropWhile(bc => !corresponds(bc, sym.owner));
-          assert(!bcs.isEmpty)
-          rebind0 = pre.baseType(bcs.head).member(sym.name)
+          if (bcs.isEmpty)
+            assert(pre.typeSymbol.isRefinementClass, pre) // if pre is a refinementclass it might be a structural type => OK to leave it in.
+          else
+            rebind0 = pre.baseType(bcs.head).member(sym.name)
           if (settings.debug.value) Console.println("ADAPT2 pre = "+pre+", bcs.head = "+bcs.head+", sym = "+sym+sym.locationString+", rebind = "+rebind0+(if (rebind0 == NoSymbol) "" else rebind0.locationString))
         }
         val rebind = rebind0.suchThat(sym => sym.isType || sym.isStable)
