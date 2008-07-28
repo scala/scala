@@ -590,7 +590,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       ivt.traverseTrees(List(member))
       ivt.importVars.toList
     }
-    val boundNames: List[Name] = Nil
+    def boundNames: List[Name] = Nil
     def valAndVarNames: List[Name] = Nil
     def defNames: List[Name] = Nil
     val importsWildcard = false
@@ -609,7 +609,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private class GenericHandler(member: Tree) extends MemberHandler(member)
 
   private class ValHandler(member: ValDef) extends MemberHandler(member) {
-    override val boundNames = List(member.name)
+    override lazy val boundNames = List(member.name)
     override def valAndVarNames = boundNames
 
     override def resultExtractionCode(req: Request, code: PrintWriter) {
@@ -635,7 +635,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   private class DefHandler(defDef: DefDef) extends MemberHandler(defDef) {
-    override val boundNames = List(defDef.name)
+    override lazy val boundNames = List(defDef.name)
     override def defNames = boundNames
 
     override def resultExtractionCode(req: Request, code: PrintWriter) {
@@ -666,7 +666,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   private class ModuleHandler(module: ModuleDef) extends MemberHandler(module) {
-    override val boundNames = List(module.name)
+    override lazy val boundNames = List(module.name)
 
     override def resultExtractionCode(req: Request, code: PrintWriter) {
       code.println(" + \"defined module " +
@@ -678,7 +678,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private class ClassHandler(classdef: ClassDef)
   extends MemberHandler(classdef)
   {
-    override val boundNames =
+    override lazy val boundNames =
       List(classdef.name) :::
       (if (classdef.mods.hasFlag(Flags.CASE))
          List(classdef.name.toTermName)
@@ -703,7 +703,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private class TypeAliasHandler(typeDef: TypeDef)
   extends MemberHandler(typeDef)
   {
-    override val boundNames =
+    override lazy val boundNames =
       if (typeDef.mods.isPublic && compiler.treeInfo.isAliasTypeDef(typeDef))
         List(typeDef.name)
       else

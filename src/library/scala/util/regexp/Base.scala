@@ -53,11 +53,11 @@ abstract class Base {
   }
 
   case class Star(r: _regexpT) extends RegExp {
-    final val isNullable = true
+    final lazy val isNullable = true
   }
 
   case object Eps extends RegExp {
-    final val isNullable = true
+    final lazy val isNullable = true
     override def toString() = "Eps"
   }
 

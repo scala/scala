@@ -45,12 +45,12 @@ abstract class WordExp extends Base {
   type _labelT <: Label
 
   case class Letter(a: _labelT) extends RegExp {
-    final val isNullable = false
+    final lazy val isNullable = false
     var pos = -1
   }
 
   case class Wildcard() extends RegExp {
-    final val isNullable = false
+    final lazy val isNullable = false
     var pos = -1
   }
 }

@@ -105,7 +105,7 @@ class XMLEventReader extends Iterator[XMLEvent] {
   class Parser extends MarkupHandler with MarkupParser with ExternalSources with Runnable {
 
     val preserveWS = true
-    val input = XMLEventReader.this.getSource
+    lazy val input = XMLEventReader.this.getSource
 	// document must contain one element - avoid spurious syntax error
     final val ignore_node = <ignore/>
 

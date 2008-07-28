@@ -35,7 +35,7 @@ trait Trees {
     val trees: Trees.this.type = Trees.this
   } with TreePrinters
 
-  val treePrinter = treePrinters.create()
+  lazy val treePrinter = treePrinters.create()
 
   object treeInfo extends {
     val trees: Trees.this.type = Trees.this
