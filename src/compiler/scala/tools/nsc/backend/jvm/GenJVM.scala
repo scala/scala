@@ -400,9 +400,10 @@ abstract class GenJVM extends SubComponent {
     def addGenericSignature(jmember: JMember, sym: Symbol, tp: Type) {
       if (settings.target.value == "jvm-1.5" && erasure.needsJavaSig(tp)) {
         val sig = erasure.javaSig(tp)
-        if (settings.debug.value && settings.verbose.value) println("add generic sig "+sym+":"+tp+" ==> "+sig)
+        val index = jmember.getConstantPool().addUtf8(sig).toShort
+        if (settings.debug.value && settings.verbose.value) println("add generic sig "+sym+":"+tp+" ==> "+sig+" @ "+index)
         val buf = ByteBuffer.allocate(2)
-        buf.putShort(jmember.getConstantPool().addUtf8(sig).toShort)
+        buf.putShort(index)
         addAttribute(jmember, nme.SignatureATTR, buf)
       }
     }
@@ -441,7 +442,7 @@ abstract class GenJVM extends SubComponent {
     }
 
     def addAttribute(jmember: JMember, name: Name, buf: ByteBuffer) {
-      if (buf.position() <= 2)
+      if (buf.position() < 2)
         return
 
       val length = buf.position();
