@@ -7,7 +7,7 @@
 
 package scala.tools.partest.nest
 
-import java.io.File
+import java.io.{File, BufferedReader, FileReader}
 import scala.tools.nsc.Settings
 
 class TestFile(kind: String, val file: File, val fileManager: FileManager) {
@@ -23,6 +23,15 @@ class TestFile(kind: String, val file: File, val fileManager: FileManager) {
       if (!outDir.exists)
         outDir.mkdir()
       outDir.toString
+    }
+
+    // add additional flags found in 'testname.flags'
+    val flagsFile = new File(dir, fileBase + ".flags")
+    if (flagsFile.exists) {
+      val reader = new BufferedReader(new java.io.FileReader(flagsFile))
+      val flags = reader.readLine
+      if (flags ne null)
+        settings.parseParams(flags, error)
     }
   }
 

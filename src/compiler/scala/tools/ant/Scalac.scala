@@ -545,19 +545,7 @@ class Scalac extends MatchingTask {
     if (!assemrefs.isEmpty) settings.assemrefs.value = assemrefs.get
 
     log("Scalac params = '" + addParams + "'", Project.MSG_DEBUG)
-    var args =
-      if (addParams.trim() == "") Nil
-      else List.fromArray(addParams.trim().split(" ")).map(_.trim())
-    while (!args.isEmpty) {
-      val argsBuf = args
-      if (args.head startsWith "-") {
-        for (setting <- settings.allSettings)
-          args = setting.tryToSet(args);
-      }
-      else error("Parameter '" + args.head + "' does not start with '-'.")
-      if (argsBuf eq args)
-        error("Parameter '" + args.head + "' is not recognised by Scalac.")
-    }
+    settings.parseParams(addParams, error)
     (settings, sourceFiles)
   }
 

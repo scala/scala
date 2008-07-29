@@ -191,6 +191,23 @@ class Settings(error: String => Unit) {
     ok
   }
 
+  /** Try to add additional command line parameters. */
+  def parseParams(line: String, error: String => Nothing) {
+    var args =
+      if (line.trim() == "") Nil
+      else List.fromArray(line.trim().split(" ")).map(_.trim())
+    while (!args.isEmpty) {
+      val argsBuf = args
+      if (args.head startsWith "-") {
+        for (setting <- allSettings)
+          args = setting.tryToSet(args);
+      }
+      else error("Parameter '" + args.head + "' does not start with '-'.")
+      if (argsBuf eq args)
+        error("Parameter '" + args.head + "' is not recognised by Scalac.")
+    }
+  }
+
   /** A base class for settings of all types.
    *  Subclasses each define a `value' field of the appropriate type.
    */
