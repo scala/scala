@@ -1,0 +1,4 @@
+t1033.scala:5: error: return outside method definition
+      return 10
+      ^
+one error found

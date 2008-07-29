@@ -110,8 +110,6 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             else if (clazz == ArrayClass) List(erasedTypeRef(ObjectClass))
             else removeDoubleObject(parents map this),
             decls, clazz)
-        case WildcardType =>
-          AnyRefClass.tpe
         case _ =>
           mapOver(tp)
       }
@@ -143,7 +141,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     }
   }
 
-  def needsJavaSig(tp: Type) = NeedsSigCollector.collect(tp)
+  private def needsJavaSig(tp: Type) = NeedsSigCollector.collect(tp)
 
   private lazy val tagOfClass = new HashMap[Symbol,Char] + (
     ByteClass -> BYTE_TAG,
@@ -157,16 +155,14 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     UnitClass -> VOID_TAG
   )
 
-  def javaSig(sym: Symbol): Option[String] =
-    if (needsJavaSig(sym.info)) {
-      Some(javaSig(sym.info))
-    } else {
-      None
-    }
+  def javaSig(sym: Symbol): Option[String] = atPhase(currentRun.erasurePhase) {
+    if (needsJavaSig(sym.info)) Some(javaSig(sym.info))
+    else None
+  }
 
-  def javaSig(tp: Type): String = javaSig(List(), tp)
+  private def javaSig(tp: Type): String = javaSig(List(), tp)
 
-  def javaSig(tparams: List[Symbol], tp0: Type): String = {
+  private def javaSig(tparams: List[Symbol], tp0: Type): String = {
     val tp = tp0.normalize
     tp match {
       case st: SubType =>
@@ -189,6 +185,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           ARRAY_TAG.toString+(args map javaSig).mkString
         else if (sym.isTypeParameterOrSkolem)
           TVAR_TAG.toString+sym.name+";"
+        else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass)
+          javaSig(ObjectClass.tpe)
+        else if (sym == UnitClass)
+          javaSig(BoxedUnitClass.tpe)
         else if (isValueClass(sym))
           tagOfClass(sym).toString
         else if (sym.isClass)
@@ -218,7 +218,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         def paramSig(tsym: Symbol) = tsym.name+boundSig(hiBounds(tsym.info.bounds))
         "<"+(tparams map paramSig).mkString+">"+javaSig(restpe)
       case MethodType(formals, restpe) =>
-        "("+(formals map javaSig).mkString+")"+javaSig(restpe)
+        "("+(formals map javaSig).mkString+")"+
+        (if (restpe.typeSymbol == UnitClass) VOID_TAG.toString else javaSig(restpe))
       case RefinedType(parents, decls) if (!parents.isEmpty) =>
         javaSig(parents.head)
       case ClassInfoType(parents, _, _) =>

@@ -1,5 +1,6 @@
 package test;
 class Test extends T {
-    Object y = bar("abc");
+    Inner i = new Inner();
     String x = foo("abc");
+    String y = i.bar("abc");
 }

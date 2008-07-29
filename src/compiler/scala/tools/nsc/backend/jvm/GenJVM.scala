@@ -397,19 +397,21 @@ abstract class GenJVM extends SubComponent {
       nattr
     }
 
-    def addGenericSignature(jmember: JMember, sym: Symbol, tp: Type) {
-      if (settings.target.value == "jvm-1.5" && erasure.needsJavaSig(tp)) {
-        val sig = erasure.javaSig(tp)
-        val index = jmember.getConstantPool().addUtf8(sig).toShort
-        if (settings.debug.value && settings.verbose.value) println("add generic sig "+sym+":"+tp+" ==> "+sig+" @ "+index)
-        val buf = ByteBuffer.allocate(2)
-        buf.putShort(index)
-        addAttribute(jmember, nme.SignatureATTR, buf)
-      }
-    }
-
     def addGenericSignature(jmember: JMember, sym: Symbol) {
-      addGenericSignature(jmember, sym, atPhase(currentRun.erasurePhase)(sym.info))
+      if (!sym.hasFlag(Flags.PRIVATE | Flags.EXPANDEDNAME | Flags.SYNTHETIC) && settings.target.value == "jvm-1.5") {
+        erasure.javaSig(sym) match {
+          case Some(sig) =>
+            val index = jmember.getConstantPool().addUtf8(sig).toShort
+            if (settings.debug.value && settings.verbose.value)
+              atPhase(currentRun.erasurePhase) {
+                println("add generic sig "+sym+":"+sym.info+" ==> "+sig+" @ "+index)
+              }
+            val buf = ByteBuffer.allocate(2)
+            buf.putShort(index)
+            addAttribute(jmember, nme.SignatureATTR, buf)
+          case None =>
+        }
+      }
     }
 
     def addAnnotations(jmember: JMember, attributes: List[AnnotationInfo]) {
