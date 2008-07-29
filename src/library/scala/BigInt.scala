@@ -1,12 +1,13 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2008, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
 
 // $Id$
+
 
 package scala
 
@@ -60,7 +61,7 @@ object BigInt {
   /** Constructs a randomly generated positive BigInt that is probably prime,
    *  with the specified bitLength.
    */
-  def apply(bitlength: Int, certaInty: Int, rnd: Random): BigInt =
+  def apply(bitlength: Int, certaInty: Int, rnd: scala.util.Random): BigInt =
     new BigInt(new BigInteger(bitlength, certaInty, rnd.self))
 
   /** Constructs a randomly generated BigInt, uniformly distributed over the
@@ -70,7 +71,7 @@ object BigInt {
    *  @param rnd     ...
    *  @return        ...
    */
-  def apply(numbits: Int, rnd: Random): BigInt =
+  def apply(numbits: Int, rnd: scala.util.Random): BigInt =
     new BigInt(new BigInteger(numbits, rnd.self))
 
   /** Translates the decimal String representation of a BigInt into a BigInt.
@@ -90,7 +91,7 @@ object BigInt {
 
   /** Returns a positive BigInt that is probably prime, with the specified bitLength.
    */
-  def probablePrime(bitLength: Int, rnd: Random): BigInt =
+  def probablePrime(bitLength: Int, rnd: scala.util.Random): BigInt =
     new BigInt(BigInteger.probablePrime(bitLength, rnd.self))
 
   /** Implicit conversion from <code>int</code> to <code>BigInt</code>.

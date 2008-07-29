@@ -582,10 +582,10 @@ abstract class TypeFlowAnalysis {
 
       def push(t: InferredType) {
         depth += 1
-        types += t
+        types = types ::: List(t)
       }
 
-      def push(k: TypeKind): Unit = push(Const(k))
+      def push(k: TypeKind) { push(Const(k)) }
     }
 
 	abstract class InferredType {
