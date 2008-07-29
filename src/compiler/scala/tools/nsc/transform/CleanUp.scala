@@ -577,7 +577,8 @@ abstract class CleanUp extends Transform {
                 // Value types are assumed to be serializable,
                 // reference types must be marked as such.
                 isValueType(typeSym) ||
-                typeSym.hasAttribute(SerializableAttr)
+                typeSym.hasAttribute(SerializableAttr) ||
+                (m.info.baseClasses exists { bc => bc hasAttribute SerializableAttr })
               }
             }
 
