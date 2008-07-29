@@ -6,17 +6,15 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: $
 
 
-package scala
+package scala.util
 
 /**
  *  @author Stephane Micheloud
  *
- *  Use class <code>scala.util.Random</code> instead.
  */
-@deprecated
 class Random(val self: java.util.Random) {
 
   /** Creates a new random number generator using a single long seed. */
