@@ -282,9 +282,14 @@ trait Definitions {
     var Object_synchronized: Symbol = _
     var Object_isInstanceOf: Symbol = _
     var Object_asInstanceOf: Symbol = _
-    def Object_equals   = getMember(ObjectClass, nme.equals_)
-    def Object_hashCode = getMember(ObjectClass, nme.hashCode_)
-    def Object_toString = getMember(ObjectClass, nme.toString_)
+    def Object_getClass  = getMember(ObjectClass, nme.getClass_)
+    def Object_clone     = getMember(ObjectClass, nme.clone_)
+    def Object_finalize  = getMember(ObjectClass, nme.finalize_)
+    def Object_notify    = getMember(ObjectClass, nme.notify_)
+    def Object_notifyAll = getMember(ObjectClass, nme.notifyAll_)
+    def Object_equals    = getMember(ObjectClass, nme.equals_)
+    def Object_hashCode  = getMember(ObjectClass, nme.hashCode_)
+    def Object_toString  = getMember(ObjectClass, nme.toString_)
 
     var String_+           : Symbol = _
 

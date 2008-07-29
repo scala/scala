@@ -349,6 +349,7 @@ trait StdNames {
     val tail = newTermName("tail")
     val toList = newTermName("toList")
     val toString_ = newTermName("toString")
+    val clone_ = newTermName("clone")
     val that = newTermName("that")
     val that1 = newTermName("that1")
     val this_ = newTermName("this")
