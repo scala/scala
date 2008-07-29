@@ -2,7 +2,7 @@
 ##############################################################################
 #                      __                                                    #
 #      ________ ___   / /  ___     Scala Tools Launch Script                 #
-#     / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL                  #
+#     / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL                  #
 #   __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/                    #
 #  /____/\___/_/ |_/____/_/ | |                                              #
 #                           |/                                               #
@@ -405,8 +405,9 @@ test_run_shootout() {
     $SCALAC -d "$os_dstbase".obj -cp "$ext_classpath" "$@" "$testfile" &&
     scala_lib=`get_os_filename "$SCALA_LIB"` &&
     classpath=`get_os_pathlist "$os_dstbase".obj:$CLASSPATH:$ext_classpath` &&
+    src_dir=`get_os_filename "$srcdir"` &&
     env JAVACMD="$JAVACMD" JAVA_OPTS="$javaopts" \
-        $SCALA -Dscalatest.cwd="$srcdir" -Dscalatest.output=$os_dstbase.obj \
+        $SCALA -Dscalatest.cwd="$src_dir" -Dscalatest.output=$os_dstbase.obj \
                -Dscalatest.lib=$scala_lib -classpath "$classpath" Test &&
     rm -rf "$dstbase".obj;
 }
