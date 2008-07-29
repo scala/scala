@@ -114,7 +114,7 @@ abstract class Constructors extends Transform {
                  g != NoSymbol && !g.allOverriddenSymbols.isEmpty
                })
               unit.warning(tree.pos, "the semantics of this definition has changed;\nthe initialization is no longer be executed before the superclass is called")
-          (mods hasFlag PRESUPER | PARAMACCESSOR) || !thisRefSeen && !settings.Xexperimental.value
+          (mods hasFlag PRESUPER | PARAMACCESSOR) || !thisRefSeen && (!settings.future.value && !settings.checkInit.value)
         case _ => false
       }
 

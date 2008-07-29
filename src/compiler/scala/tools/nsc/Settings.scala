@@ -125,6 +125,7 @@ class Settings(error: String => Unit) {
   val showPhases    = BooleanSetting    ("-Xshow-phases", "Print a synopsis of compiler phases").hideToIDE
   val sourceReader  = StringSetting     ("-Xsource-reader", "classname", "Specify a custom method for reading source files", "scala.tools.nsc.io.SourceReader").hideToIDE
 // val migrate2_7_2  = BooleanSetting    ("-Xmigrate-to-2.7.2", "Issue warning messages to help in migration to 2.7.2")
+  val future        = BooleanSetting    ("-Xfuture", "Turn on future language features")
 
   val Yhelp         = BooleanSetting    ("-Y", "Print a synopsis of private options").hideToIDE
   val browse        = PhasesSetting     ("-Ybrowse", "Browse the abstract syntax tree after")
