@@ -568,7 +568,8 @@ abstract class CleanUp extends Transform {
       case cdef @ ClassDef(mods, name, tparams, impl) =>
         val sym = cdef.symbol
         // is this an anonymous function class?
-        if (sym.hasFlag(SYNTHETIC) && sym.name.toString.contains("anonfun")) {
+        if (sym.hasFlag(SYNTHETIC) && sym.name.toString.contains("anonfun") &&
+            settings.target.value == "jvm-1.5") {
           // check whether all of its field members are of serializable type
           val serializable =
             sym.info.members forall { m =>
