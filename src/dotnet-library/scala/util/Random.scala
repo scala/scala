@@ -6,17 +6,14 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: Random.scala 14498 2008-04-04 12:12:27Z washburn $
 
 
-package scala
+package scala.util
 
 /**
  *  @author Stephane Micheloud
- *
- *  Use class <code>scala.util.Random</code> instead.
  */
-@deprecated
 class Random(self0: System.Random) {
   private var rnd = self0 // see setSeed(seed)
   def self = rnd
