@@ -233,12 +233,12 @@ object Actor {
    * <pre>
    * val adder = reactor {
    *   for {
-   *     _ <- async(react) { case Add(a, b) => reply(a+b) }
+   *     _ <- respondOn(react) { case Add(a, b) => reply(a+b) }
    *   } yield {}
    * }
    * </pre>
    */
-  def async[A, B](fun: PartialFunction[A, Unit] => Nothing):
+  def respondOn[A, B](fun: PartialFunction[A, Unit] => Nothing):
     PartialFunction[A, B] => Responder[B] =
       (caseBlock: PartialFunction[A, B]) => new Responder[B] {
         def respond(k: B => Unit) = fun(caseBlock andThen k)
