@@ -194,8 +194,6 @@ LOCAL REFERENCE BUILD (LOCKER)
     <sabuse id="starr.lib.scalac" srcdir="${src.dir}/library">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
-      <exclude name="scala/dbc/**"/>
-      <exclude name="scala/actors/**"/>
     </sabuse>
     <propertyfile file="${build-locker.dir}/classes/library/library.properties">
       <entry key="version.number" value="${version.number}"/>
@@ -289,6 +287,7 @@ QUICK BUILD (QUICK)
         <include name="library/**"/>
         <include name="dbc/**"/>
         <include name="actors/**"/>
+        <include name="swing/**"/>
       </srcfiles>
     </uptodate>
   </target>
@@ -345,6 +344,9 @@ QUICK BUILD (QUICK)
       <include name="**/*.scala"/>
     </sabuse>
     <sabuse id="locker.lib.scalac" srcdir="${src.dir}/dbc">
+      <include name="**/*.scala"/>
+    </sabuse>
+    <sabuse id="locker.lib.scalac" srcdir="${src.dir}/swing">
       <include name="**/*.scala"/>
     </sabuse>
     <propertyfile file="${build-quick.dir}/classes/library/library.properties">
@@ -521,11 +523,20 @@ PACKED QUICK BUILD (PACK)
     <jar destfile="${build-pack.dir}/lib/scala-library.jar">
       <fileset dir="${build-quick.dir}/classes/library">
         <exclude name="scala/dbc/**"/>
+        <exclude name="scala/swing/**"/>
       </fileset>
     </jar>
     <jar destfile="${build-pack.dir}/lib/scala-dbc.jar">
       <fileset dir="${build-quick.dir}/classes/library">
         <include name="scala/dbc/**"/>
+      </fileset>
+    </jar>
+    <jar destfile="${build-pack.dir}/lib/scala-swing.jar">
+      <fileset dir="${build-quick.dir}/classes/library">
+        <include name="scala/swing/**"/>
+      </fileset>
+      <fileset dir="${src.dir}/swing">
+        <include name="scala/swing/test/images/**"/>
       </fileset>
     </jar>
   </target>
@@ -631,6 +642,7 @@ BOOTSTRAPPING BUILD (STRAP)
         <include name="library/**"/>
         <include name="dbc/**"/>
         <include name="actors/**"/>
+        <include name="swing/**"/>
       </srcfiles>
     </uptodate>
   </target>
@@ -682,6 +694,14 @@ BOOTSTRAPPING BUILD (STRAP)
     </scalac>
     <scalac
       srcdir="${src.dir}/dbc"
+      destdir="${build-strap.dir}/classes/library"
+      classpath="${build-strap.dir}/classes/library"
+      target="jvm-1.5"
+      addparams="${scalac.args}">
+      <include name="**/*.scala"/>
+    </scalac>
+    <scalac
+      srcdir="${src.dir}/swing"
       destdir="${build-strap.dir}/classes/library"
       classpath="${build-strap.dir}/classes/library"
       target="jvm-1.5"
@@ -805,6 +825,7 @@ DOCUMENTATION
         <include name="library/**"/>
         <include name="dbc/**"/>
         <include name="actors/**"/>
+        <include name="swing/**"/>
       </srcfiles>
     </uptodate>
   </target>
@@ -1007,6 +1028,9 @@ DISTRIBUTION
     </jar>
     <jar destfile="${dist.dir}/src/scala-dbc-src.jar">
       <fileset dir="${src.dir}/dbc"/>
+    </jar>
+    <jar destfile="${dist.dir}/src/scala-swing-src.jar">
+      <fileset dir="${src.dir}/swing"/>
     </jar>
     <jar destfile="${dist.dir}/src/scala-compiler-src.jar">
       <fileset dir="${src.dir}/compiler"/>
