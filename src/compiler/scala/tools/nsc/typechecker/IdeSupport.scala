@@ -274,7 +274,11 @@ trait IdeSupport extends Analyzer {
         case te : TypeError => typeError(te.getMessage)
       })
       if (!makeNoChanges) use.foreach{tree=>
-        if (tree.symbol.isClass && tree.symbol.hasFlag(symtab.Flags.CASE) && tree.symbol.owner.rawInfo.isComplete) {
+        if (tree.symbol != null &&
+            tree.symbol.isClass &&
+            tree.symbol.hasFlag(symtab.Flags.CASE) &&
+            tree.symbol.owner != null &&
+            tree.symbol.owner.rawInfo.isComplete) {
           var e = tree.symbol.owner.info.decls.lookupEntry(tree.symbol.name.toTermName)
           if (e != null) e.sym.pos match { // retype the object if its in the scope.
           case pos : TrackedPosition if pos.owner != null && pos.owner != MemoizedTree.this =>
@@ -299,9 +303,12 @@ trait IdeSupport extends Analyzer {
       }
       use.last.symbol
     }
-    def doTyper = if (typerTxt ne NoContext) updateTyper(newTyper(typerTxt), mode, pt)
+    def doTyper = try {
+      if (typerTxt ne NoContext) updateTyper(newTyper(typerTxt), mode, pt)
+    } catch {
+      case e => logError("doTyper crash", e)
+    }
     def updateTyper(typer : Typer, mode : Int, pt : Type) : Type = {
-
       val typerTxt = intern(typer.context)
       val makeNoChanges = currentClient.makeNoChanges
       if (!makeNoChanges && ((this.typerTxt ne typerTxt) || (this.pt != pt) || (this.mode != mode))) {
