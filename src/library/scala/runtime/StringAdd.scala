@@ -14,12 +14,6 @@ package scala.runtime
 
 import Predef._
 
-object StringAdd {
-  // Needed for the format hack. Can be removed once we drop 1.4
-  lazy val formatMethod: java.lang.reflect.Method = {
-    classOf[String].getDeclaredMethod("format", classOf[String], classOf[Array[Object]])
-  }
-}
 final class StringAdd(self: Any) {
 
   def +(other: String) = String.valueOf(self) + other
@@ -29,11 +23,5 @@ final class StringAdd(self: Any) {
    *  (@see java.lang.String.format).
    *  Only works on Java 1.5 or higher!
    */
-  def formatted(format: String): String = {
-    // This should be:
-    // String.format(format, self.asInstanceOf[Object])
-    // However, the line above does not compile on Java 1.4 because String.format exists only in 1.5
-    // Therefore, we do the following hack:
-    StringAdd.formatMethod.invoke(null, format, self.asInstanceOf[Object]).asInstanceOf[String]
-  }
+  def formatted(fmtstr: String): String = fmtstr format self
 }
