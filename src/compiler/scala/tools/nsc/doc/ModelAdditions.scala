@@ -82,15 +82,15 @@ class ModelAdditions(val global: Global) {
     relation</a>:
       <ul>
       <li>It is reflexive: for any instance <code>x</code> of type <code>Any</code>,
-      <code>x.eq(x)</code> should return <code>true</code>.</li>
+      <code>x.equals(x)</code> should return <code>true</code>.</li>
       <li>It is symmetric: for any instances <code>x</code> and <code>y</code> of type
-      <code>Any</code>, <code>x.eq(y)</code> should return <code>true</code> if and only
-      if <code>y.eq(x)</code> returns <code>true</code>.</li>
+      <code>Any</code>, <code>x.equals(y)</code> should return <code>true</code> if and only
+      if <code>y.equals(x)</code> returns <code>true</code>.</li>
       <li>It is transitive: for any instances
       <code>x</code>, <code>y</code>, and <code>z</code> of type <code>AnyRef</code>
-      if <code>x.eq(y)</code> returns <code>true</code> and
-      <code>y.eq(z)</code> returns
-      <code>true</code>, then <code>x.eq(z)</code> should return <code>true</code>.</li>
+      if <code>x.equals(y)</code> returns <code>true</code> and
+      <code>y.equals(z)</code> returns
+      <code>true</code>, then <code>x.equals(z)</code> should return <code>true</code>.</li>
     </ul>
     </p>
 
@@ -110,7 +110,7 @@ class ModelAdditions(val global: Global) {
 
   addition(Any_==);
   comments(Any_==) = """
-    <code> o == arg0</code> is the same as <code>o.equals(arg0)</code>.
+    <code>o == arg0</code> is the same as <code>o.equals(arg0)</code>.
     <p>
     @param arg0 the object to compare against this object for equality.
     @return <code>true</code> if the receiver object is equivalent to the argument; <code>false</code> otherwise.
@@ -119,7 +119,7 @@ class ModelAdditions(val global: Global) {
 
   addition(Any_!=);
   comments(Any_!=) = """
-    <code> o != arg0</code> is the same as <code>!(o.equals(arg0))</code>.
+    <code>o != arg0</code> is the same as <code>!(o == (arg0))</code>.
     <p>
     @param arg0 the object to compare against this object for dis-equality.
     @return <code>false</code> if the receiver object is equivalent to the argument; <code>true</code> otherwise.
@@ -204,9 +204,18 @@ class ModelAdditions(val global: Global) {
        <em>reference types</em>.
      </p>"""
 
+  addition(Object_==);
+  comments(Object_==) = """
+    <code>o == arg0</code> is the same as <code>if (o eq null) arg0 eq null else o.equals(arg0)</code>.
+    <p>
+    @param arg0 the object to compare against this object for equality.
+    @return <code>true</code> if the receiver object is equivalent to the argument; <code>false</code> otherwise.
+    </p>
+    """
+
   addition(Object_ne);
   comments(Object_ne) = """
-    <code> o.ne(arg0)</code> is the same as <code>!(o.ne(arg0))</code>.
+    <code>o.ne(arg0)</code> is the same as <code>!(o.eq(arg0))</code>.
     <p>
     @param arg0 the object to compare against this object for reference dis-equality.
     @return <code>false</code> if the argument is not a reference to the receiver object; <code>true</code> otherwise.
