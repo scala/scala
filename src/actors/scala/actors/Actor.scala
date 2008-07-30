@@ -354,7 +354,7 @@ object Actor {
  * @author Philipp Haller
  */
 @serializable
-trait Actor extends OutputChannel[Any] {
+trait Actor extends AbstractActor {
 
   private var received: Option[Any] = None
 
@@ -792,7 +792,7 @@ trait Actor extends OutputChannel[Any] {
     throw new KillActorException
   }
 
-  private[actors] var links: List[Actor] = Nil
+  private[actors] var links: List[AbstractActor] = Nil
 
   /**
    * Links <code>self</code> to actor <code>to</code>.
@@ -800,7 +800,7 @@ trait Actor extends OutputChannel[Any] {
    * @param to ...
    * @return   ...
    */
-  def link(to: Actor): Actor = {
+  def link(to: AbstractActor): AbstractActor = {
     assert(Actor.self == this, "link called on actor different from self")
     links = to :: links
     to.linkTo(this)
@@ -819,26 +819,25 @@ trait Actor extends OutputChannel[Any] {
     actor
   }
 
-  private[actors] def linkTo(to: Actor) = synchronized {
+  private[actors] def linkTo(to: AbstractActor) = synchronized {
     links = to :: links
   }
 
   /**
    * Unlinks <code>self</code> from actor <code>from</code>.
    */
-  def unlink(from: Actor) {
+  def unlink(from: AbstractActor) {
     assert(Actor.self == this, "unlink called on actor different from self")
     links = links.remove(from.==)
     from.unlinkFrom(this)
   }
 
-  private[actors] def unlinkFrom(from: Actor) = synchronized {
+  private[actors] def unlinkFrom(from: AbstractActor) = synchronized {
     links = links.remove(from.==)
   }
 
   var trapExit = false
   private[actors] var exitReason: AnyRef = 'normal
-  private[actors] var exiting = false
   private[actors] var shouldExit = false
 
   /**
@@ -879,7 +878,7 @@ trait Actor extends OutputChannel[Any] {
     // remove this from links
     links = links.remove(this.==)
     // exit linked processes
-    links.foreach((linked: Actor) => {
+    links.foreach((linked: AbstractActor) => {
       unlink(linked)
       if (!linked.exiting)
         linked.exit(this, exitReason)
@@ -893,7 +892,7 @@ trait Actor extends OutputChannel[Any] {
   }
 
   // Assume !this.exiting
-  private[actors] def exit(from: Actor, reason: AnyRef) {
+  private[actors] def exit(from: AbstractActor, reason: AnyRef) {
     if (trapExit) {
       this ! Exit(from, reason)
     }
@@ -932,7 +931,7 @@ trait Actor extends OutputChannel[Any] {
 case object TIMEOUT
 
 
-case class Exit(from: Actor, reason: AnyRef)
+case class Exit(from: AbstractActor, reason: AnyRef)
 
 /** <p>
  *    This class is used to manage control flow of actor

@@ -36,6 +36,7 @@ object TcpService {
         val service = new TcpService(port, cl)
         ports += Pair(port, service)
         service.start()
+        Debug.info("created service at "+service.node)
         service
     }
 

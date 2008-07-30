@@ -17,7 +17,7 @@ import scala.collection.mutable.HashMap
  * @author Philipp Haller
  */
 @serializable
-class Proxy(node: Node, name: Symbol, @transient var kernel: NetKernel) extends OutputChannel[Any] {
+class Proxy(node: Node, name: Symbol, @transient var kernel: NetKernel) extends AbstractActor {
   import java.io.{IOException, ObjectOutputStream, ObjectInputStream}
 
   @transient
@@ -26,20 +26,18 @@ class Proxy(node: Node, name: Symbol, @transient var kernel: NetKernel) extends 
 
   @throws(classOf[IOException])
   private def writeObject(out: ObjectOutputStream) {
-    Debug.info("Serializing "+this)
     out.defaultWriteObject()
   }
 
   @throws(classOf[ClassNotFoundException]) @throws(classOf[IOException])
   private def readObject(in: ObjectInputStream) {
-    Debug.info("Deserializing "+this)
     in.defaultReadObject()
     setupKernel()
     startDelegate()
   }
 
   private def startDelegate() {
-    del = new DelegateActor(node, name, kernel)
+    del = new DelegateActor(this, node, name, kernel)
     del.start()
   }
 
@@ -49,41 +47,77 @@ class Proxy(node: Node, name: Symbol, @transient var kernel: NetKernel) extends 
   }
 
   def !(msg: Any): Unit =
-    del.send(msg, Actor.self)
+    del ! msg
 
   def send(msg: Any, replyCh: OutputChannel[Any]): Unit =
     del.send(msg, replyCh)
 
   def forward(msg: Any): Unit =
-    del.send(msg, Actor.sender)
+    del.forward(msg)
 
   def receiver: Actor =
     del
 
+  def !?(msg: Any): Any =
+    del !? msg
+
+  def !?(msec: Long, msg: Any): Option[Any] =
+    del !? (msec, msg)
+
   def !!(msg: Any): Future[Any] =
     del !! msg
+
+  def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] =
+    del !! (msg, f)
+
+  def linkTo(to: AbstractActor): Unit =
+    del ! LinkTo(to)
+
+  def unlinkFrom(from: AbstractActor): Unit =
+    del ! UnlinkFrom(from)
+
+  def exit(from: AbstractActor, reason: AnyRef): Unit =
+    del ! Exit(from, reason)
 
   override def toString() =
     name+"@"+node
 }
 
+case class LinkTo(to: AbstractActor)
+case class UnlinkFrom(from: AbstractActor)
+
 /**
  * @version 0.9.17
  * @author Philipp Haller
  */
-private[remote] class DelegateActor(node: Node, name: Symbol, kernel: NetKernel) extends Actor {
+private[remote] class DelegateActor(creator: Proxy, node: Node, name: Symbol, kernel: NetKernel) extends Actor {
   var channelMap = new HashMap[Symbol, OutputChannel[Any]]
   var sessionMap = new HashMap[Channel[Any], Symbol]
 
   def act() {
-    Debug.info(this+": waiting to process commands")
     Actor.loop {
       react {
+        case cmd@LinkTo(to) =>
+          kernel.linkTo(node, name, to)
+
+        case cmd@UnlinkFrom(from) =>
+          kernel.unlinkFrom(node, name, from)
+
+        case cmd@Exit(from, reason) =>
+          kernel.exit(node, name, from, reason)
+
+        case cmd@LocalLinkTo(to) =>
+          to.linkTo(creator)
+
+        case cmd@LocalUnlinkFrom(from) =>
+          from.unlinkFrom(creator)
+
+        case cmd@LocalExit(to, reason) =>
+          to.exit(creator, reason)
+
         // Request from remote proxy.
         // `this` is local proxy.
         case cmd@SendTo(out, msg, session) =>
-          Debug.info(this+": processing "+cmd)
-
           // is this an active session?
           channelMap.get(session) match {
             case None =>
@@ -107,7 +141,6 @@ private[remote] class DelegateActor(node: Node, name: Symbol, kernel: NetKernel)
           }
 
         case cmd@Terminate =>
-          Debug.info(this+": processing "+cmd)
           exit()
 
         // local proxy receives response to

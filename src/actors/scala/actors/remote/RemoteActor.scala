@@ -69,7 +69,6 @@ object RemoteActor {
 
   def createKernelOnPort(port: Int): NetKernel = {
     val serv = TcpService(port, cl)
-    Debug.info("created service at "+serv.node)
     val kern = serv.kernel
     val s = Actor.self
     kernels += Pair(s, kern)
@@ -97,8 +96,7 @@ object RemoteActor {
   def register(name: Symbol, a: Actor): Unit = synchronized {
     val kernel = kernels.get(Actor.self) match {
       case None =>
-        val serv = new TcpService(TcpService.generatePort, cl)
-        serv.start()
+        val serv = TcpService(TcpService.generatePort, cl)
         kernels += Pair(Actor.self, serv.kernel)
         serv.kernel
       case Some(k) =>
@@ -120,7 +118,7 @@ object RemoteActor {
    * Returns (a proxy for) the actor registered under
    * <code>name</code> on <code>node</code>.
    */
-  def select(node: Node, sym: Symbol): OutputChannel[Any] = synchronized {
+  def select(node: Node, sym: Symbol): AbstractActor = synchronized {
     selfKernel.getOrCreateProxy(node, sym)
   }
 
