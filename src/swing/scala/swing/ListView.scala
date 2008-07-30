@@ -131,9 +131,8 @@ class ListView[A] extends Component {
     peer.setModel(new AbstractListModel {
       def getElementAt(n: Int) = items(n).asInstanceOf[AnyRef]
       def getSize = items.size
-  	})
+    })
   }
-
 
   object selection extends Publisher {
     protected abstract class Indices[A](a: =>Seq[A]) extends scala.collection.mutable.Set[A] {

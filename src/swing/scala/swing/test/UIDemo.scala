@@ -63,7 +63,6 @@ object UIDemo extends SimpleGUIApplication {
     		  case ButtonClicked(`snapTicks`) =>
     		    slider.snapToTicks = snapTicks.selected
     		  case ButtonClicked(`live`) =>
-    		    println("")
     		    reactLive = live.selected
     		}
           }

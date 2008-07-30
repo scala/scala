@@ -50,10 +50,17 @@ object ComboBoxes extends SimpleGUIApplication {
       }
     }
 
-    val icons = List(new ImageIcon(resourceFromUserDirectory("swing/images/margarita1.jpg").toURL),
-                     new ImageIcon(resourceFromUserDirectory("swing/images/margarita2.jpg").toURL),
-                     new ImageIcon(resourceFromUserDirectory("swing/images/rose.jpg").toURL),
-                     new ImageIcon(resourceFromUserDirectory("swing/images/banana.jpg").toURL))
+
+    val icons = try {
+      List(new ImageIcon(resourceFromClassloader("images/margarita1.jpg")),
+           new ImageIcon(resourceFromClassloader("images/margarita2.jpg")),
+           new ImageIcon(resourceFromClassloader("images/rose.jpg")),
+           new ImageIcon(resourceFromClassloader("images/banana.jpg")))
+    } catch {
+      case _ =>
+        println("Couldn't load images for combo box")
+        List(scala.swing.Icon.Empty)
+    }
 
     val iconBox = new ComboBox(icons) {
       renderer = new ListView.AbstractRenderer[Icon, Label](new Label) {
