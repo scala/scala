@@ -312,6 +312,16 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
   private def isSeqClass(sym: Symbol) =
     (SeqClass isNonBottomSubClass sym) && (sym != ObjectClass)
 
+  /** The symbol which is called by a bridge;
+   *  @pre phase > erasure
+   */
+  def bridgedSym(bridge: Symbol) =
+    bridge.owner.info.nonPrivateDecl(bridge.name) suchThat {
+      sym => !(sym hasFlag BRIDGE) &&
+             matchesType(sym.tpe, bridge.tpe, true) &&
+             sym.tpe.resultType <:< bridge.tpe.resultType
+    }
+
 // -------- boxing/unboxing --------------------------------------------------------
 
   override def newTyper(context: Context) = new Eraser(context)

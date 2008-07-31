@@ -114,6 +114,20 @@ abstract class Mixin extends InfoTransform {
 
 // --------- type transformation -----------------------------------------------
 
+  def isConcreteAccessor(member: Symbol) =
+    (member hasFlag ACCESSOR) &&
+    (!(member hasFlag DEFERRED) || (member hasFlag lateDEFERRED))
+
+  /** Is member overridden (either directly or via a bridge) in base class sequence `bcs'? */
+  def isOverriddenAccessor(member: Symbol, bcs: List[Symbol]): Boolean = atPhase(ownPhase) {
+    def hasOverridingAccessor(clazz: Symbol) = {
+      clazz.info.nonPrivateDecl(member.name).alternatives.exists(
+        sym => isConcreteAccessor(sym) && matchesType(sym.tpe, member.tpe, true))
+    }
+    bcs.head != member.owner &&
+    (hasOverridingAccessor(bcs.head) || isOverriddenAccessor(member, bcs.tail))
+  }
+
   /** Add given member to given class, and mark member as mixed-in.
    */
   def addMember(clazz: Symbol, member: Symbol): Symbol = {
@@ -121,6 +135,9 @@ abstract class Mixin extends InfoTransform {
     clazz.info.decls enter member
     member setFlag MIXEDIN
   }
+
+  def needsExpandedSetterName(field: Symbol) =
+    settings.Xexperimental.value && !field.hasFlag(LAZY | MUTABLE)
 
   /** Add getters and setters for all non-module fields of an implementation
    *  class to its interface unless they are already present. This is done
@@ -144,10 +161,14 @@ abstract class Mixin extends InfoTransform {
 
       /** Create a new setter. Setters are never private or local. They are
        *  always accessors and deferred. */
-      def newSetter(field: Symbol): Symbol =
-        clazz.newMethod(field.pos, nme.getterToSetter(nme.getterName(field.name)))
+      def newSetter(field: Symbol): Symbol = {
+        val setterName = nme.getterToSetter(nme.getterName(field.name))
+        val setter = clazz.newMethod(field.pos, setterName)
           .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | lateDEFERRED)
           .setInfo(MethodType(List(field.info), UnitClass.tpe))
+        if (needsExpandedSetterName(field)) setter.name = clazz.expandedSetterName(setter.name)
+        setter
+      }
 
       clazz.info // make sure info is up to date, so that implClass is set.
       val impl = implClass(clazz)
@@ -162,7 +183,7 @@ abstract class Mixin extends InfoTransform {
           val getter = member.getter(clazz)
           if (getter == NoSymbol) addMember(clazz, newGetter(member))
           if (!member.tpe.isInstanceOf[ConstantType] && !member.hasFlag(LAZY)) {
-            val setter = member.setter(clazz)
+            val setter = member.setter(clazz, needsExpandedSetterName(member))
             if (setter == NoSymbol) addMember(clazz, newSetter(member))
           }
         }
@@ -221,14 +242,9 @@ abstract class Mixin extends InfoTransform {
        */
       def mixinTraitMembers(mixinClass: Symbol) {
         // For all members of a trait's interface do:
-        def isConcreteAccessor(member: Symbol) =
-          (member hasFlag ACCESSOR) &&
-          (!(member hasFlag DEFERRED) || (member hasFlag lateDEFERRED))
-        def isOverridden(member: Symbol) =
-          isConcreteAccessor(member.overridingSymbol(clazz))
         for (val member <- mixinClass.info.decls.toList) {
           if (isConcreteAccessor(member)) {
-            if (isOverridden(member)) {
+            if (isOverriddenAccessor(member, clazz.info.baseClasses)) {
               if (settings.debug.value) println("!!! is overridden val: "+member)
             } else {
               // mixin field accessors
@@ -791,7 +807,17 @@ abstract class Mixin extends InfoTransform {
                     }
                 }
                 if (sym.isSetter) {
-                  accessedRef match {
+                  val isOverriddenSetter =
+                    settings.Xexperimental.value && nme.isTraitSetterName(sym.name) && {
+                      sym.allOverriddenSymbols match {
+                        case other :: _ =>
+                          isOverriddenAccessor(other.getter(other.owner), clazz.info.baseClasses)
+                        case _ =>
+                          false
+                      }
+                    }
+                  if (isOverriddenSetter) Literal(())
+                  else accessedRef match {
                     case Literal(_) => accessedRef
                     case _ =>
                       val init = Assign(accessedRef, Ident(vparams.head))
@@ -950,7 +976,13 @@ abstract class Mixin extends InfoTransform {
           // setter in the interface.
           localTyper.typed {
             atPos(tree.pos) {
-              Apply(Select(qual, lhs.symbol.setter(toInterface(lhs.symbol.owner.tpe).typeSymbol)) setPos lhs.pos, List(rhs))
+              Apply(
+                Select(
+                  qual,
+                  lhs.symbol.setter(
+                    toInterface(lhs.symbol.owner.tpe).typeSymbol,
+                    needsExpandedSetterName(lhs.symbol))) setPos lhs.pos,
+                List(rhs))
             }
           }
         case _ =>

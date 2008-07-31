@@ -45,7 +45,7 @@ trait Symbols {
     var rawflags: Long = 0
     private var rawpos = initPos
     val id = { ids += 1; ids }
-//    assert(id != 5413, initName+"/"+initOwner)
+//    assert(id != 7498, initName+"/"+initOwner)
 
     var validTo: Period = NoPeriod
 
@@ -987,11 +987,11 @@ trait Symbols {
 
     /** The symbol overridden by this symbol in given class `ofclazz' */
     final def overriddenSymbol(ofclazz: Symbol): Symbol =
-      matchingSymbol(ofclazz, owner.thisType)
+      if (isClassConstructor) NoSymbol else matchingSymbol(ofclazz, owner.thisType)
 
     /** The symbol overriding this symbol in given subclass `ofclazz' */
     final def overridingSymbol(ofclazz: Symbol): Symbol =
-      matchingSymbol(ofclazz, ofclazz.thisType)
+      if (isClassConstructor) NoSymbol else matchingSymbol(ofclazz, ofclazz.thisType)
 
     final def allOverriddenSymbols: List[Symbol] =
       if (owner.isClass && !owner.info.baseClasses.isEmpty)
@@ -1035,8 +1035,13 @@ trait Symbols {
     }
 
     /** The setter of this value or getter definition, or NoSymbol if none exists */
-    final def setter(base: Symbol): Symbol =
-      base.info.decl(nme.getterToSetter(nme.getterName(name))) filter (_.hasFlag(ACCESSOR))
+    final def setter(base: Symbol): Symbol = setter(base, false)
+
+    final def setter(base: Symbol, hasExpandedName: Boolean): Symbol = {
+      var sname = nme.getterToSetter(nme.getterName(name))
+      if (hasExpandedName) sname = base.expandedSetterName(sname)
+      base.info.decl(sname) filter (_.hasFlag(ACCESSOR))
+    }
 
     /** The case module corresponding to this case class
      *  @pre case class is a member of some other class or package
@@ -1086,6 +1091,9 @@ trait Symbols {
         if (isType) name = name.toTypeName
       }
     }
+
+    def expandedSetterName(simpleSetterName: Name): Name =
+      newTermName(fullNameString('$') + nme.TRAIT_SETTER_SEPARATOR_STRING + simpleSetterName)
 
     /** The expanded name of `name' relative to this class as base
      */
@@ -1206,7 +1214,7 @@ trait Symbols {
                      if (isClassConstructor) owner.simpleName.decode+idString else nameString))
 
     /** String representation of location. */
-    final def locationString: String =
+    def locationString: String =
       if (owner.isClass &&
           ((!owner.isAnonymousClass &&
             !owner.isRefinementClass &&
@@ -1592,6 +1600,7 @@ trait Symbols {
       this
     }
     override def defString: String = toString
+    override def locationString: String = ""
     override def enclClass: Symbol = this
     override def toplevelClass: Symbol = this
     override def enclMethod: Symbol = this

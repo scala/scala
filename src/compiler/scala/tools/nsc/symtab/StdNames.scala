@@ -71,6 +71,7 @@ trait StdNames {
     val LOCALDUMMY_PREFIX_STRING = "<local "
     val SUPER_PREFIX_STRING = "super$"
     val EXPAND_SEPARATOR_STRING = "$$"
+    val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
     val TUPLE_FIELD_PREFIX_STRING = "_"
     val CHECK_IF_REFUTABLE_STRING = "check$ifrefutable$"
 
@@ -96,6 +97,7 @@ trait StdNames {
     def isLocalName(name: Name) = name.endsWith(LOCAL_SUFFIX)
     def isSetterName(name: Name) = name.endsWith(SETTER_SUFFIX)
     def isLocalDummyName(name: Name) = name.startsWith(LOCALDUMMY_PREFIX)
+    def isTraitSetterName(name: Name) = isSetterName(name) && name.pos(TRAIT_SETTER_SEPARATOR_STRING) < name.length
     def isOpAssignmentName(name: Name) =
       name(name.length - 1) == '=' &&
       isOperatorCharacter(name(0)) &&
@@ -111,7 +113,8 @@ trait StdNames {
         chtp == Character.MATH_SYMBOL || chtp == Character.OTHER_SYMBOL
       }
 
-    /** If `name' is an expandedName, the original name. Otherwise `name' itself.
+    /** If `name' is an expandedName name, the original name.
+     *  Otherwise `name' itself.
      *  @see Symbol.expandedName
      */
     def originalName(name: Name): Name = {
@@ -139,7 +142,11 @@ trait StdNames {
     }
 
     def setterToGetter(name: Name): Name = {
-      name.subName(0, name.length - SETTER_SUFFIX.length)
+      val p = name.pos(TRAIT_SETTER_SEPARATOR_STRING)
+      if (p < name.length)
+        setterToGetter(name.subName(p + TRAIT_SETTER_SEPARATOR_STRING.length, name.length))
+      else
+        name.subName(0, name.length - SETTER_SUFFIX.length)
     }
 
     def getterName(name: Name): Name =
