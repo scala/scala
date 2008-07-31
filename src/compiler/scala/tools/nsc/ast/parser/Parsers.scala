@@ -1952,6 +1952,7 @@ trait Parsers extends NewScanners with MarkupParsers {
           if (!tp.isEmpty && newmods.hasFlag(Flags.MUTABLE) &&
               (lhs.toList forall (_.isInstanceOf[Ident])) && inToken == USCORE) {
             inNextToken
+            newmods = newmods | Flags.DEFAULTINIT
             EmptyTree
           } else {
             expr()

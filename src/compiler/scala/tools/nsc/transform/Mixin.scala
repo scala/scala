@@ -628,9 +628,6 @@ abstract class Mixin extends InfoTransform {
         localTyper.typed(atPos(pos)(Block(List(result), retVal)))
       }
 
-      /** Fields that are initialized to their default value. They don't need a checked accessor. */
-      val initToDefault = new mutable.HashSet[Symbol]
-
       /** Complete lazy field accessors. Applies only to classes, for it's own (non inherited) lazy fields.
        *  If 'checkinit' is enabled, getters that check for the initialized bit are generated, and
        *  the class constructor is changed to set the initialized bits.
@@ -659,7 +656,7 @@ abstract class Mixin extends InfoTransform {
               }
               copy.DefDef(stat, mods, name, tp, vp, tpt, rhs1)
 
-          case DefDef(mods, name, tp, vp, tpt, rhs) if sym.isClassConstructor =>
+          case DefDef(mods, name, tp, vp, tpt, rhs) if sym.isConstructor =>
             copy.DefDef(stat, mods, name, tp, vp, tpt, addInitBits(clazz, rhs))
 
           case _ => stat
@@ -671,7 +668,7 @@ abstract class Mixin extends InfoTransform {
       def needsInitFlag(sym: Symbol) = {
         val res = (settings.checkInit.value
            && sym.isGetter
-           && !initToDefault(sym)
+           && !sym.isInitializedToDefault
            && !sym.hasFlag(PARAMACCESSOR)
            && !sym.accessed.hasFlag(PRESUPER)
            && !sym.isOuterAccessor)
@@ -679,7 +676,7 @@ abstract class Mixin extends InfoTransform {
         if (settings.debug.value) {
           println("needsInitFlag(" + sym.fullNameString + "): " + res)
           println("\tsym.isGetter: " + sym.isGetter)
-          println("\t!initToDefault(sym): " + !initToDefault(sym))
+          println("\t!isInitializedToDefault: " + !sym.isInitializedToDefault + sym.hasFlag(DEFAULTINIT) + sym.hasFlag(ACCESSOR) + sym.isTerm)
           println("\t!sym.hasFlag(PARAMACCESSOR): " + !sym.hasFlag(PARAMACCESSOR))
           //println("\t!sym.accessed.hasFlag(PRESUPER): " + !sym.accessed.hasFlag(PRESUPER))
           println("\t!sym.isOuterAccessor: " + !sym.isOuterAccessor)
@@ -706,7 +703,9 @@ abstract class Mixin extends InfoTransform {
                 } else {
                   List(stat)
                 }
-
+              case Apply(setter @ Select(Ident(self), _), List(EmptyTree)) if setter.symbol.isSetter =>
+                // remove initialization for default values
+                List()
               case _ => List(stat)
             }
             }
@@ -750,23 +749,6 @@ abstract class Mixin extends InfoTransform {
           fields += 1
         }
       }
-
-      // Look for fields that are initialized to the default value
-      // They won't get init fields.
-      new Traverser {
-        override def traverse(tree: Tree): Unit = tree match {
-          case DefDef(mods, name, tparams, vparamss, tpt, rhs) if tree.symbol.isClassConstructor =>
-            val Block(stats, _) = rhs
-            for (s <- stats) s match {
-              case Assign(f @ Select(This(_), _), EmptyTree) =>
-                val getter = clazz.info.decl(nme.getterName(f.symbol.name))
-                if (getter != NoSymbol)
-                  initToDefault += getter
-              case _ => ()
-            }
-          case _ => super.traverse(tree)
-        }
-      }.traverseTrees(stats)
 
       buildFieldPositions(clazz)
       // begin addNewDefs
@@ -826,7 +808,7 @@ abstract class Mixin extends InfoTransform {
                       } else
                         init
                   }
-                } else if (!sym.hasFlag(LAZY) && settings.checkInit.value) {
+                } else if (!sym.hasFlag(LAZY) && needsInitFlag(sym)) {
                   mkCheckedAccessor(clazz,  accessedRef, fieldOffset(sym), sym.pos)
                 } else
                   gen.mkCheckInit(accessedRef)

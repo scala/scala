@@ -37,6 +37,7 @@ object Flags extends Enumeration {
   final val BYNAMEPARAM   = 0x00010000    // parameter is by name
   final val CONTRAVARIANT = 0x00020000    // symbol is a contravariant type variable
   final val LABEL         = 0x00020000    // method symbol is a label. Set by TailCall
+  final val DEFAULTINIT   = 0x00020000    // field is initialized to the default value (used by checkinit)
   final val INCONSTRUCTOR = 0x00020000    // class symbol is defined in this/superclass
                                           // constructor.
   final val ABSOVERRIDE   = 0x00040000    // combination of abstract & override
@@ -189,7 +190,7 @@ object Flags extends Enumeration {
       case DEPRECATED    => "<deprecated>"
 
       case COVARIANT     => "<covariant/captured/byname>"
-      case CONTRAVARIANT => "<contravariant/label/inconstr>"
+      case CONTRAVARIANT => "<contravariant/label/inconstr/defaultinit>"
       case ABSOVERRIDE   => "abstract override"
       case LOCAL         => "<local>"
 

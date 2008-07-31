@@ -190,12 +190,9 @@ abstract class Constructors extends Transform {
           // the initializer goes as an assignment into the constructor
           // if the val def is an early initialized or a parameter accessor, it goes
           // before the superclass constructor call, otherwise it goes after.
-          // Lazy vals don't get the assignment in the constructor. Fields initialized
-          // to default values are not eliminated until the mixin phase, when
-          // checked initializers are added
+          // Lazy vals don't get the assignment in the constructor.
           if (!stat.symbol.tpe.isInstanceOf[ConstantType]) {
-            if ((rhs != EmptyTree || !stat.symbol.originalName.startsWith(nme.OUTER))
-                && !stat.symbol.hasFlag(LAZY)) {
+            if (rhs != EmptyTree && !stat.symbol.hasFlag(LAZY)) {
               val rhs1 = intoConstructor(stat.symbol, rhs);
               (if (canBeMoved(stat)) constrPrefixBuf else constrStatBuf) += mkAssign(
                 stat.symbol, rhs1)

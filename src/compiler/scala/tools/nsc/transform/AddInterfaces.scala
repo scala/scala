@@ -58,7 +58,7 @@ abstract class AddInterfaces extends InfoTransform {
   private def isInterfaceMember(sym: Symbol): Boolean = {
     sym.isType ||
     { sym.info; // to set lateMETHOD flag if necessary
-      sym.isMethod && !(sym hasFlag (PRIVATE | BRIDGE | LABEL)) &&
+      sym.isMethod && !sym.isLabel && !(sym hasFlag (PRIVATE | BRIDGE)) &&
       !sym.isConstructor && !sym.isImplOnly
     }
   }

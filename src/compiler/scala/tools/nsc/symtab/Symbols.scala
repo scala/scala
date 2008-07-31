@@ -203,7 +203,8 @@ trait Symbols {
     final def isLocalDummy = isTerm && nme.isLocalDummyName(name)
     final def isMethod = isTerm && hasFlag(METHOD)
     final def isSourceMethod = isTerm && (flags & (METHOD | STABLE)) == METHOD
-    final def isLabel = isTerm && hasFlag(LABEL)
+    final def isLabel = isMethod && !hasFlag(ACCESSOR) && hasFlag(LABEL)
+    final def isInitializedToDefault = !isType && (getFlag(DEFAULTINIT | ACCESSOR) == (DEFAULTINIT | ACCESSOR))
     final def isClassConstructor = isTerm && (name == nme.CONSTRUCTOR)
     final def isMixinConstructor = isTerm && (name == nme.MIXIN_CONSTRUCTOR)
     final def isConstructor = isTerm && (name == nme.CONSTRUCTOR) || (name == nme.MIXIN_CONSTRUCTOR)
