@@ -32,6 +32,12 @@ class PartestTask extends Task {
   def addConfiguredResidentTests(input: FileSet): Unit =
     residentFiles = Some(input)
 
+  def addConfiguredScriptTests(input: FileSet): Unit =
+    scriptFiles = Some(input)
+
+  def addConfiguredShootoutTests(input: FileSet): Unit =
+    shootoutFiles = Some(input)
+
   def setClasspath(input: Path): Unit =
     if (classpath.isEmpty)
       classpath = Some(input)
@@ -73,6 +79,8 @@ class PartestTask extends Task {
   private var negFiles: Option[FileSet] = None
   private var runFiles: Option[FileSet] = None
   private var residentFiles: Option[FileSet] = None
+  private var scriptFiles: Option[FileSet] = None
+  private var shootoutFiles: Option[FileSet] = None
   private var errorOnFailed: Boolean = false
   private var scalacOpts: Option[String] = None
   private var timeout: Option[String] = None
@@ -109,6 +117,21 @@ class PartestTask extends Task {
     else
       Array()
 
+  private def getScriptFiles: Array[File] =
+    if (!scriptFiles.isEmpty) {
+      val files = scriptFiles.get
+      (files.getDirectoryScanner(getProject).getIncludedFiles map { fs => new File(files.getDir(getProject), fs) })
+    }
+    else
+      Array()
+
+  private def getShootoutFiles: Array[File] =
+    if (!shootoutFiles.isEmpty) {
+      val files = shootoutFiles.get
+      (files.getDirectoryScanner(getProject).getIncludedFiles map { fs => new File(files.getDir(getProject), fs) })
+    }
+    else
+      Array()
 
   override def execute(): Unit = {
 
@@ -197,7 +220,21 @@ class PartestTask extends Task {
       allFailures += failures
     }
 
-    if ((getPosFiles.size + getNegFiles.size + getRunFiles.size + getResidentFiles.size) == 0)
+    if (getScriptFiles.size > 0) {
+      log("Running script files")
+      val (successes, failures) = runTestsForFiles(getScriptFiles, "script")
+      allSucesses += successes
+      allFailures += failures
+    }
+
+    if (getShootoutFiles.size > 0) {
+      log("Running shootout tests")
+      val (successes, failures) = runTestsForFiles(getShootoutFiles, "shootout")
+      allSucesses += successes
+      allFailures += failures
+    }
+
+    if ((getPosFiles.size + getNegFiles.size + getRunFiles.size + getResidentFiles.size + getScriptFiles.size + getShootoutFiles.size) == 0)
       log("There where no tests to run.")
     else if (allFailures == 0)
       log("Test suite finished with no failures.")

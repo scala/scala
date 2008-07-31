@@ -955,6 +955,7 @@ BOOTRAPING TEST AND TEST SUITE
         <include name="jvm5/**/*.scala"/>
       </runtests>
       <residenttests dir="${test.dir}/files/res" includes="*.res"/>
+      <scripttests dir="${test.dir}/files/script" includes="*.scala"/>
     </partest>
   </target>
   
