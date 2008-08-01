@@ -147,7 +147,7 @@ class Queue[+A](elem: A*) extends Seq[A] {
 
   /** Returns a string representation of this queue.
    */
-  override def toString() = mkString("Queue(", ",", ")")
+  override def toString() = mkString("Queue(", ", ", ")")
 
   /** Compares two queues for equality by comparing
    *  each element in the queues.
