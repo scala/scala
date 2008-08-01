@@ -80,8 +80,8 @@ object NestUI {
     println("    --verbose      display progress information")
     //println("    --version      display version information")
     println
-    println("version Mar13")
-    println("Send bugs to <scala@listes.epfl.ch>")
+    println("version 0.9.1")
+    println("maintained by Philipp Haller (EPFL)")
     exit(1)
   }
 

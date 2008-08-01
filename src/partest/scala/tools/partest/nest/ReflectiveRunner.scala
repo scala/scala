@@ -14,7 +14,7 @@ package scala.tools.partest.nest
  * the main NestRunner can be started merely by putting its
  * class on the classpath (ideally).
  */
-class ReflectiveRunner {
+class ReflectiveRunner extends RunnerUtils {
   // TODO: we might also use fileManager.CLASSPATH
   // to use the same classes as used by `scala` that
   // was used to start the runner.
@@ -23,19 +23,31 @@ class ReflectiveRunner {
     val argList = List.fromArray(args.split("\\s"))
 
     // find out which build to test
+    val buildPath = searchPath("--buildpath", argList)
+    val classPath = searchPath("--classpath", argList)
     val fileManager =
-      if (argList contains "--pack")
+      if (!buildPath.isEmpty)
+        new ConsoleFileManager(buildPath.get)
+      else if (!classPath.isEmpty)
+        new ConsoleFileManager(classPath.get, true)
+      else if (argList contains "--pack")
         new ConsoleFileManager("build/pack")
       else if (argList contains "--four")
-        new ConsoleFileManager("build/four-pack", "-target:jvm-1.4")
+        new ConsoleFileManager("build/four-pack", false, "-target:jvm-1.4")
       else // auto detection
         new ConsoleFileManager
 
     import fileManager.{latestCompFile, latestLibFile, latestActFile,
-                        latestPartestFile}
+                        latestPartestFile, latestFjbgFile}
 
-    val sepUrls = Array(latestCompFile.toURL, latestLibFile.toURL,
-                        latestActFile.toURL, latestPartestFile.toURL)
+    val sepUrls = if (!classPath.isEmpty)
+      Array(latestCompFile.toURL, latestLibFile.toURL,
+            latestActFile.toURL, latestPartestFile.toURL,
+            latestFjbgFile.toURL)
+    else
+      Array(latestCompFile.toURL, latestLibFile.toURL,
+            latestActFile.toURL, latestPartestFile.toURL)
+
     val sepLoader = new java.net.URLClassLoader(sepUrls, null)
 
     if (fileManager.debug) {
@@ -43,15 +55,23 @@ class ReflectiveRunner {
       sepUrls foreach { url => println(url) }
     }
 
-    val sepRunnerClass =
-      sepLoader.loadClass("scala.tools.partest.nest.ConsoleRunner")
-    val sepRunner = sepRunnerClass.newInstance()
+    try {
+      val sepRunnerClass =
+        sepLoader.loadClass("scala.tools.partest.nest.ConsoleRunner")
 
-    val stringClass = Class.forName("java.lang.String")
-    val sepMainMethod =
-      sepRunnerClass.getMethod("main", Array(stringClass): _*)
+      val sepRunner = sepRunnerClass.newInstance()
 
-    val cargs: Array[AnyRef] = Array(args)
-    sepMainMethod.invoke(sepRunner, cargs: _*)
+      val stringClass = Class.forName("java.lang.String")
+      val sepMainMethod =
+        sepRunnerClass.getMethod("main", Array(stringClass): _*)
+
+      val cargs: Array[AnyRef] = Array(args)
+      sepMainMethod.invoke(sepRunner, cargs: _*)
+    } catch {
+      case cnfe: ClassNotFoundException =>
+        cnfe.printStackTrace()
+        NestUI.failure("scala.tools.partest.nest.ConsoleRunner could not be loaded from: \n")
+        sepUrls foreach { url => NestUI.failure(url+"\n") }
+    }
   }
 }

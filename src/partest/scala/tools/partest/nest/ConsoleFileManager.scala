@@ -13,21 +13,29 @@ import java.net.URI
 class ConsoleFileManager extends FileManager {
 
   var testBuild = System.getProperty("scalatest.build")
+  var testClasses: Option[String] = None
 
   val debug: Boolean =
     (System.getProperty("partest.debug", "false") equals "true") ||
     (System.getProperty("scalatest.debug", "false") equals "true")
 
-  def this(build: String) = {
+  def this(buildPath: String, rawClasses: Boolean) = {
     this()
-    testBuild = build
+    if (rawClasses)
+      testClasses = Some(buildPath)
+    else
+      testBuild = buildPath
     // re-run because initialization of default
     // constructor must be updated
     findLatest()
   }
 
-  def this(build: String, moreOpts: String) = {
-    this(build)
+  def this(buildPath: String) = {
+    this(buildPath, false)
+  }
+
+  def this(buildPath: String, rawClasses: Boolean, moreOpts: String) = {
+    this(buildPath, rawClasses)
     SCALAC_OPTS = SCALAC_OPTS+" "+moreOpts
   }
 
@@ -85,21 +93,29 @@ else
       def accept(dir: File, name: String) = name endsWith ".jar"
     }) map {file => file.getCanonicalFile.getAbsolutePath}).mkString(""+File.pathSeparator)
   }
-  println(CLASSPATH)
 
   def findLatest() {
     val testParent = testRootFile.getParentFile
     NestUI.verbose("test parent: "+testParent)
 
-    def prefixFileWith(parent: File, relPath: String): File = {
+    def prefixFileWith(parent: File, relPath: String): File =
       (new File(parent, relPath)).getCanonicalFile
-    }
 
-    def prefixFile(relPath: String): File = {
+    def prefixFile(relPath: String): File =
       prefixFileWith(testParent, relPath)
-    }
 
-    if (testBuild != null) {
+    if (!testClasses.isEmpty) {
+      testClassesFile = (new File(testClasses.get)).getCanonicalFile
+      NestUI.verbose("Running with classes in "+testClassesFile)
+      latestFile        = prefixFileWith(testClassesFile.getParentFile, "bin")
+      latestLibFile     = prefixFileWith(testClassesFile, "library")
+      latestActFile     = prefixFileWith(testClassesFile, "library")
+      latestCompFile    = prefixFileWith(testClassesFile, "compiler")
+      latestPartestFile = prefixFileWith(testClassesFile, "partest")
+      latestFjbgFile    = prefixFile("lib/fjbg.jar")
+    }
+    else if (testBuild != null) {
+      testBuildFile = prefixFile(testBuild)
       NestUI.verbose("Running on "+testBuild)
       latestFile        = prefixFile(testBuild+"/bin")
       latestLibFile     = prefixFile(testBuild+"/lib/scala-library.jar")
@@ -179,6 +195,9 @@ else
   var latestActFile: File = _
   var latestCompFile: File = _
   var latestPartestFile: File = _
+  var latestFjbgFile: File = _
+  var testBuildFile: File = _
+  var testClassesFile: File = _
   // initialize above fields
   findLatest()
 

@@ -12,7 +12,7 @@ import java.io.{File, PrintStream, FileOutputStream, BufferedReader,
 
 import scala.actors.Actor._
 
-class ConsoleRunner extends DirectRunner {
+class ConsoleRunner extends DirectRunner with RunnerUtils {
 
   var fileManager: ConsoleFileManager = _
 
@@ -57,14 +57,22 @@ class ConsoleRunner extends DirectRunner {
     if (args.length == 0)
       NestUI.usage()
     else {
-      // create a file manager
+      // find out which build to test
+      val (buildPath, args1) = searchAndRemovePath("--buildpath", args)
+      val (classPath, args2) = searchAndRemovePath("--classpath", args1)
+      args = args2
+
       fileManager =
-        if (args contains "--pack") {
+        if (!buildPath.isEmpty)
+          new ConsoleFileManager(buildPath.get)
+        else if (!classPath.isEmpty)
+          new ConsoleFileManager(classPath.get, true)
+        else if (args contains "--pack") {
           args = args.remove(_ == "--pack") // will create a result file '--pack' otherwise
           new ConsoleFileManager("build/pack")
         } else if (args contains "--four") {
           args = args.remove(_ == "--four")
-          new ConsoleFileManager("build/four-pack", "-target:jvm-1.4")
+          new ConsoleFileManager("build/four-pack", false, "-target:jvm-1.4")
         } else // auto detection, see ConsoleFileManager.findLatest
           new ConsoleFileManager
 
@@ -111,25 +119,32 @@ class ConsoleRunner extends DirectRunner {
         }
       }
 
-      NestUI.outline("Source directory is : "+fileManager.srcDir.getAbsolutePath+"\n")
-      NestUI.outline("Scala binaries in   : "+fileManager.BIN_DIR+"\n")
+      val dir =
+        if (!fileManager.testClasses.isEmpty)
+          fileManager.testClassesFile
+        else if (fileManager.testBuild != null)
+          fileManager.testBuildFile
+        else
+          fileManager.latestCompFile.getParentFile.getParentFile.getCanonicalFile
+      NestUI.outline("Scala compiler classes in: "+dir+"\n")
 
       val scalaVersion = "Scala compiler "+
         scala.tools.nsc.Properties.versionString+
         " -- "+
         scala.tools.nsc.Properties.copyrightString
 
-      NestUI.outline("Scala version is    : "+scalaVersion+"\n")
-      NestUI.outline("Scalac options are  : "+fileManager.SCALAC_OPTS+"\n")
+      NestUI.outline("Scala version is:          "+scalaVersion+"\n")
+      NestUI.outline("Scalac options are:        "+fileManager.SCALAC_OPTS+"\n")
 
       val vmBin  = System.getProperty("java.home", "")+File.separator+"bin"
       val vmName = System.getProperty("java.vm.name", "")+" (build "+
                    System.getProperty("java.vm.version", "")+", "+
                    System.getProperty("java.vm.info", "")+")"
       val vmOpts = System.getProperty("scalatest.java_options", "?")
-      NestUI.outline("Java binaries in    : "+vmBin+"\n")
-      NestUI.outline("Java runtime is     : "+vmName+"\n")
-      NestUI.outline("Java options are    : "+vmOpts+"\n")
+      NestUI.outline("Java binaries in:          "+vmBin+"\n")
+      NestUI.outline("Java runtime is:           "+vmName+"\n")
+      NestUI.outline("Java options are:          "+vmOpts+"\n")
+      NestUI.outline("Source directory is:       "+fileManager.srcDir.getAbsolutePath+"\n")
 
       val start = System.currentTimeMillis
 
