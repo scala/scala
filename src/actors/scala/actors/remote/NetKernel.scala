@@ -14,14 +14,11 @@ import scala.collection.mutable.{HashMap, HashSet}
 import scala.actors.Actor.loop
 
 case class NamedSend(senderLoc: Locator, receiverLoc: Locator, data: Array[Byte], session: Symbol)
-case class RemoteLinkTo(senderLoc: Locator, receiverLoc: Locator)
-case class RemoteUnlinkFrom(senderLoc: Locator, receiverLoc: Locator)
-case class RemoteExit(senderLoc: Locator, receiverLoc: Locator, reason: AnyRef)
+
+case class RemoteApply0(senderLoc: Locator, receiverLoc: Locator, rfun: Function2[AbstractActor, Proxy, Unit])
+case class LocalApply0(rfun: Function2[AbstractActor, Proxy, Unit], a: AbstractActor)
 
 case class  SendTo(a: OutputChannel[Any], msg: Any, session: Symbol)
-case class  LocalLinkTo(a: AbstractActor)
-case class  LocalUnlinkFrom(a: AbstractActor)
-case class  LocalExit(from: AbstractActor, reason: AnyRef)
 case object Terminate
 
 case class Locator(node: Node, name: Symbol)
@@ -75,22 +72,10 @@ class NetKernel(service: Service) {
     namedSend(senderLoc, receiverLoc, msg, session)
   }
 
-  def linkTo(node: Node, name: Symbol, from: AbstractActor) {
+  def remoteApply(node: Node, name: Symbol, from: OutputChannel[Any], rfun: Function2[AbstractActor, Proxy, Unit]) {
     val senderLoc = Locator(service.node, getOrCreateName(from))
     val receiverLoc = Locator(node, name)
-    sendToNode(receiverLoc.node, RemoteLinkTo(senderLoc, receiverLoc))
-  }
-
-  def unlinkFrom(node: Node, name: Symbol, from: AbstractActor) {
-    val senderLoc = Locator(service.node, getOrCreateName(from))
-    val receiverLoc = Locator(node, name)
-    sendToNode(receiverLoc.node, RemoteUnlinkFrom(senderLoc, receiverLoc))
-  }
-
-  def exit(node: Node, name: Symbol, from: AbstractActor, reason: AnyRef) {
-    val senderLoc = Locator(service.node, getOrCreateName(from))
-    val receiverLoc = Locator(node, name)
-    sendToNode(receiverLoc.node, RemoteExit(senderLoc, receiverLoc, reason))
+    sendToNode(receiverLoc.node, RemoteApply0(senderLoc, receiverLoc, rfun))
   }
 
   def createProxy(node: Node, sym: Symbol): Proxy = {
@@ -121,36 +106,12 @@ class NetKernel(service: Service) {
 
   def processMsg(senderNode: Node, msg: AnyRef): Unit = synchronized {
     msg match {
-      case cmd@RemoteExit(senderLoc, receiverLoc, reason) =>
+      case cmd@RemoteApply0(senderLoc, receiverLoc, rfun) =>
         Debug.info(this+": processing "+cmd)
         actors.get(receiverLoc.name) match {
           case Some(a) =>
             val senderProxy = getOrCreateProxy(senderLoc.node, senderLoc.name)
-            senderProxy.send(LocalExit(a.asInstanceOf[Actor], reason), null)
-
-          case None =>
-            // message is lost
-            Debug.info(this+": lost message")
-        }
-
-      case cmd@RemoteUnlinkFrom(senderLoc, receiverLoc) =>
-        Debug.info(this+": processing "+cmd)
-        actors.get(receiverLoc.name) match {
-          case Some(a) =>
-            val senderProxy = getOrCreateProxy(senderLoc.node, senderLoc.name)
-            senderProxy.send(LocalUnlinkFrom(a.asInstanceOf[AbstractActor]), null)
-
-          case None =>
-            // message is lost
-            Debug.info(this+": lost message")
-        }
-
-      case cmd@RemoteLinkTo(senderLoc, receiverLoc) =>
-        Debug.info(this+": processing "+cmd)
-        actors.get(receiverLoc.name) match {
-          case Some(a) =>
-            val senderProxy = getOrCreateProxy(senderLoc.node, senderLoc.name)
-            senderProxy.send(LocalLinkTo(a.asInstanceOf[AbstractActor]), null)
+            senderProxy.send(LocalApply0(rfun, a.asInstanceOf[AbstractActor]), null)
 
           case None =>
             // message is lost

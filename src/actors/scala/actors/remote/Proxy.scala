@@ -71,20 +71,22 @@ class Proxy(node: Node, name: Symbol, @transient var kernel: NetKernel) extends 
     del !! (msg, f)
 
   def linkTo(to: AbstractActor): Unit =
-    del ! LinkTo(to)
+    del ! Apply0((target: AbstractActor, creator: Proxy) =>
+      target.linkTo(creator))
 
   def unlinkFrom(from: AbstractActor): Unit =
-    del ! UnlinkFrom(from)
+    del ! Apply0((target: AbstractActor, creator: Proxy) =>
+      target.unlinkFrom(creator))
 
   def exit(from: AbstractActor, reason: AnyRef): Unit =
-    del ! Exit(from, reason)
+    del ! Apply0((target: AbstractActor, creator: Proxy) =>
+      target.exit(creator, reason))
 
   override def toString() =
     name+"@"+node
 }
 
-case class LinkTo(to: AbstractActor)
-case class UnlinkFrom(from: AbstractActor)
+case class Apply0(rfun: Function2[AbstractActor, Proxy, Unit])
 
 /**
  * @version 0.9.17
@@ -97,23 +99,11 @@ private[remote] class DelegateActor(creator: Proxy, node: Node, name: Symbol, ke
   def act() {
     Actor.loop {
       react {
-        case cmd@LinkTo(to) =>
-          kernel.linkTo(node, name, to)
+        case cmd@Apply0(rfun) =>
+          kernel.remoteApply(node, name, sender, rfun)
 
-        case cmd@UnlinkFrom(from) =>
-          kernel.unlinkFrom(node, name, from)
-
-        case cmd@Exit(from, reason) =>
-          kernel.exit(node, name, from, reason)
-
-        case cmd@LocalLinkTo(to) =>
-          to.linkTo(creator)
-
-        case cmd@LocalUnlinkFrom(from) =>
-          from.unlinkFrom(creator)
-
-        case cmd@LocalExit(to, reason) =>
-          to.exit(creator, reason)
+        case cmd@LocalApply0(rfun, target) =>
+          rfun(target, creator)
 
         // Request from remote proxy.
         // `this` is local proxy.
