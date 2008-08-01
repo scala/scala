@@ -28,6 +28,8 @@ trait Typers { self: Analyzer =>
   import definitions._
   import posAssigner.atPos
 
+  private final val printTypings = false
+
   var appcnt = 0
   var idcnt = 0
   var selcnt = 0
@@ -2319,6 +2321,10 @@ trait Typers { self: Analyzer =>
               error(tree.pos, "illegal variable in pattern alternative")
             vble = namer.enterInScope(vble)
           }
+          vble.setInfo(new LazyType {
+            // forces a cyclic reference error when dereferenced. See #1049
+            override def complete(sym: Symbol) { sym.info }
+          })
           val body1 = typed(body, mode, pt)
           trackSetInfo(vble)(
             if (treeInfo.isSequenceValued(body)) seqType(body1.tpe)
@@ -3285,7 +3291,7 @@ trait Typers { self: Analyzer =>
           tree.tpe = null
           if (tree.hasSymbol) tree.symbol = NoSymbol
         }
-//        Console.println("typing "+tree+", "+context.undetparams);//DEBUG
+        if (printTypings) println("typing "+tree+", "+context.undetparams);//DEBUG
         def dropExistential(tp: Type): Type = tp match {
           case ExistentialType(tparams, tpe) =>
             if (settings.debug.value) println("drop ex "+tree+" "+tp)
@@ -3297,12 +3303,12 @@ trait Typers { self: Analyzer =>
           case _ => tp
         }
         var tree1 = if (tree.tpe ne null) tree else typed1(tree, mode, dropExistential(pt))
-//        Console.println("typed "+tree1+":"+tree1.tpe+", "+context.undetparams+", pt = "+pt);//DEBUG
+        if (printTypings) println("typed "+tree1+":"+tree1.tpe+", "+context.undetparams+", pt = "+pt);//DEBUG
 
         tree1.tpe = addAnnotations(tree1, tree1.tpe)
 
         val result = if (tree1.isEmpty || (inIDE && tree1.tpe == null)) tree1 else adapt(tree1, mode, pt)
-//        Console.println("adapted "+tree1+":"+tree1.tpe+" to "+pt+", "+context.undetparams);//DEBUG
+        if (printTypings) println("adapted "+tree1+":"+tree1.tpe+" to "+pt+", "+context.undetparams);//DEBUG
 //      if ((mode & TYPEmode) != 0) println("type: "+tree1+" has type "+tree1.tpe)
         result
       } catch {

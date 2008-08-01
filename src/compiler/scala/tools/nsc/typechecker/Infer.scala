@@ -143,12 +143,12 @@ trait Infer {
    *  @throws NoInstance
    */
   private def solvedTypes(tvars: List[TypeVar], tparams: List[Symbol],
-                          variances: List[Int], upper: Boolean): List[Type] = {
+                          variances: List[Int], upper: Boolean, depth: Int): List[Type] = {
     def boundsString(tvar: TypeVar) =
       "\n  "+
       ((tvar.constr.lobounds map (_ + " <: " + tvar.origin.typeSymbol.name)) :::
        (tvar.constr.hibounds map (tvar.origin.typeSymbol.name + " <: " + _)) mkString ", ")
-    if (!solve(tvars, tparams, variances, upper)) {
+    if (!solve(tvars, tparams, variances, upper, depth)) {
 //    no panic, it's good enough to just guess a solution, we'll find out
 //    later whether it works.
 //      throw new DeferredNoInstance(() =>
@@ -448,7 +448,8 @@ trait Infer {
       val tvars = tparams map freshVar
       if (isCompatible(restpe.instantiateTypeParams(tparams, tvars), pt)) {
         try {
-          solvedTypes(tvars, tparams, tparams map varianceInType(restpe), false)
+          solvedTypes(tvars, tparams, tparams map varianceInType(restpe),
+                      false, lubDepth(List(restpe, pt)))
         } catch {
           case ex: NoInstance => null
         }
@@ -535,7 +536,7 @@ trait Infer {
       // check first whether type variables can be fully defined from
       // expected result type.
       if (!isWeaklyCompatible(restpe.instantiateTypeParams(tparams, tvars), pt)) {
-//      just wait and instantiate form the arguments.
+//      just wait and instantiate from the arguments.
 //      that way, we can try to apply an implicit conversion afterwards.
 //      This case could happen if restpe is not fully defined, so that
 //      search for an implicit from it to pt fails because of an ambiguity.
@@ -556,7 +557,8 @@ trait Infer {
         }
         ()
       }
-      val targs = solvedTypes(tvars, tparams, tparams map varianceInTypes(formals), false)
+      val targs = solvedTypes(tvars, tparams, tparams map varianceInTypes(formals),
+                              false, lubDepth(formals) max lubDepth(argtpes))
 //      val res =
       List.map2(tparams, targs) {(tparam, targ) =>
         if (targ.typeSymbol == NothingClass && (varianceInType(restpe)(tparam) & COVARIANT) == 0) {
@@ -1007,7 +1009,8 @@ trait Infer {
        */
       def computeArgs =
         try {
-          val targs = solvedTypes(tvars, undetparams, undetparams map varianceInType(restpe), true)
+          val targs = solvedTypes(tvars, undetparams, undetparams map varianceInType(restpe),
+                                  true, lubDepth(List(restpe, pt)))
 //          checkBounds(tree.pos, NoPrefix, NoSymbol, undetparams, targs, "inferred ")
 //          no checkBounds here. If we enable it, test bug602 fails.
           new TreeTypeSubstituter(undetparams, targs).traverse(tree)

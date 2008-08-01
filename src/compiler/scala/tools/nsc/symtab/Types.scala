@@ -78,7 +78,6 @@ trait Types {
   private var explainSwitch = false
   private var checkMalformedSwitch = false // todo: it's now always false. Remove all code that depends on this switch.
 
-  final val LubGlbMargin = 0
   private final val LogPendingSubTypesThreshold = 50
   private final val LogPendingBaseTypesThreshold = 50
 
@@ -87,6 +86,8 @@ trait Types {
 
   /** Decrement depth unless it is a don't care */
   private final def decr(depth: Int) = if (depth == AnyDepth) AnyDepth else depth - 1
+
+  private final val printLubs = false
 
   /** The current skolemization level, needed for the algorithms
    *  in isSameType, isSubType that do constraint solving under a prefix
@@ -3168,44 +3169,22 @@ A type's typeSymbol should never be inspected directly.
 
 // Helper Methods  -------------------------------------------------------------
 
-  import Math.max
-
   private var nextid = 0
   private def freshName() = {
     nextid += 1
     "_"+nextid
   }
 
-  /** The maximum depth of all types in the base type sequences of each of the types `tps' */
-  final def maxBaseTypeSeqDepth(tps: Seq[Type]): Int = {
-    var d = 0
-    for (tp <- tps) d = max(d, tp.baseTypeSeqDepth)
-    d
-  }
+  final val LubGlbMargin = 0
 
-  /** The maximum depth of all types `tps' */
-  final def maxDepth(tps: Seq[Type]): Int = {
+  /** The maximum allowable depth of lubs or glbs over types `ts'
+    * This is the maximum depth of all types in the base type sequences
+    * of each of the types `ts', plus LubGlbMargin
+    */
+  def lubDepth(ts: List[Type]) = {
     var d = 0
-    for (tp <- tps) d = max(d, maxDepth(tp))
-    d
-  }
-
-  /** The maximum depth of type `tp' */
-  final def maxDepth(tp: Type): Int = tp match {
-    case TypeRef(pre, sym, args) =>
-      max(maxDepth(pre), maxDepth(args) + 1)
-    case RefinedType(parents, decls) =>
-      max(maxDepth(parents), maxDepth(decls.toList.map(_.info)) + 1)
-    case TypeBounds(lo, hi) =>
-      max(maxDepth(lo), maxDepth(hi))
-    case MethodType(paramtypes, result) =>
-      maxDepth(result)
-    case PolyType(tparams, result) =>
-      max(maxDepth(result), maxDepth(tparams map (_.info)) + 1)
-    case ExistentialType(tparams, result) =>
-      max(maxDepth(result), maxDepth(tparams map (_.info)) + 1)
-    case _ =>
-      1
+    for (tp <- ts) d = Math.max(d, tp.baseTypeSeqDepth)
+    d + LubGlbMargin
   }
 
   final def isValid(period: Period): Boolean =
@@ -3634,16 +3613,8 @@ A type's typeSymbol should never be inspected directly.
         } finally {
           skolemizationLevel -= 1
         }
-      case (RefinedType(parents1, ref1), _: ExistentialType)
-      if (parents1 exists (_.isInstanceOf[ExistentialType])) =>
-        try {
-          skolemizationLevel += 1
-          RefinedType(parents1 map (_.skolemizeExistential(NoSymbol, null)), ref1) <:< tp2
-        } finally {
-          skolemizationLevel -= 1
-        }
-      case (_, et: ExistentialType) =>
-        et.withTypeVars(tp1 <:< _, depth)
+      case (_, et: ExistentialType) if et.withTypeVars(tp1 <:< _, depth) =>
+        true
       case (RefinedType(parents1, ref1), _) =>
         parents1 exists (_ <:< tp2)
 
@@ -3954,7 +3925,7 @@ A type's typeSymbol should never be inspected directly.
     (strippedTypes, quantified)
   }
 
-  def lub(ts: List[Type]): Type = lub(ts, maxBaseTypeSeqDepth(ts) + LubGlbMargin)
+  def lub(ts: List[Type]): Type = lub(ts, lubDepth(ts))
 
   /** The least upper bound wrt &lt;:&lt; of a list of types */
   def lub(ts: List[Type], depth: Int): Type = {
@@ -4032,22 +4003,22 @@ A type's typeSymbol should never be inspected directly.
           }
         existentialAbstraction(tparams, lubType)
     }
-//    if (settings.debug.value) {
-//      println(indent + "lub of " + ts + " at depth "+depth)//debug
-//      indent = indent + "  "
-//      assert(indent.length <= 100)
-//    }
+    if (printLubs) {
+      println(indent + "lub of " + ts + " at depth "+depth)//debug
+      indent = indent + "  "
+      assert(indent.length <= 100)
+    }
     val res = if (depth < 0) AnyClass.tpe else lub0(ts)
-//    if (settings.debug.value) {
-//      indent = indent.substring(0, indent.length() - 2)
-//      println(indent + "lub of " + ts + " is " + res)//debug
-//    }
+    if (printLubs) {
+      indent = indent.substring(0, indent.length() - 2)
+      println(indent + "lub of " + ts + " is " + res)//debug
+    }
     if (ts forall (_.isNotNull)) res.notNull else res
   }
 
   val GlbFailure = new Throwable
 
-  def glb(ts: List[Type]): Type = glb(ts, maxBaseTypeSeqDepth(ts) + LubGlbMargin)
+  def glb(ts: List[Type]): Type = glb(ts, lubDepth(ts))
 
   /** The greatest lower bound wrt &lt;:&lt; of a list of types */
   private def glb(ts: List[Type], depth: Int): Type = {
@@ -4127,15 +4098,15 @@ A type's typeSymbol should never be inspected directly.
             else NothingClass.tpe
         }
     }
-//    if (settings.debug.value) {
-//      log(indent + "glb of " + ts + " at depth "+depth)//debug
-//      indent = indent + "  "
-//    }
+    if (settings.debug.value) {
+      println(indent + "glb of " + ts + " at depth "+depth)//debug
+      indent = indent + "  "
+    }
     val res = if (depth < 0) NothingClass.tpe else glb0(ts)
-//    if (settings.debug.value) {
-//      indent = indent.substring(0, indent.length() - 2)
-//      log(indent + "glb of " + ts + " is " + res)//debug
-//    }
+    if (settings.debug.value) {
+      indent = indent.substring(0, indent.length() - 2)
+      log(indent + "glb of " + ts + " is " + res)//debug
+    }
     if (ts exists (_.isNotNull)) res.notNull else res
   }
 
