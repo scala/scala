@@ -1,0 +1,3 @@
+open build/Common
+
+.SUBDIRS: .
