@@ -135,9 +135,17 @@ trait Typers { self: Analyzer =>
    */
   val JAVACALLmode  = 0x8000
 
+  /** The mode <code>TYPEPATmode</code> is set when we are typing a type in a pattern
+   */
+  val TYPEPATmode   = 0x10000
+
   private val stickyModes: Int  = EXPRmode | PATTERNmode | TYPEmode | ALTmode
 
   private def funMode(mode: Int) = mode & (stickyModes | SCCmode) | FUNmode | POLYmode
+
+  private def typeMode(mode: Int) =
+    if ((mode & (PATTERNmode | TYPEPATmode)) != 0) TYPEmode | TYPEPATmode
+    else TYPEmode
 
   private def argMode(fun: Tree, mode: Int) =
     if (treeInfo.isSelfOrSuperConstrCall(fun)) mode | SCCmode
@@ -1201,10 +1209,9 @@ trait Typers { self: Analyzer =>
       val typer1 = constrTyperIf(sym.hasFlag(PARAM) && sym.owner.isConstructor)
       val typedMods = typedModifiers(vdef.mods)
 
-      var tpt1 = checkNoEscaping.privates(sym, typer1.typedType({
+      var tpt1 = checkNoEscaping.privates(sym, typer1.typedType(
         if (inIDE) vdef.tpt.duplicate // avoids wrong context sticking
-        else vdef.tpt
-      }))
+        else vdef.tpt))
       checkNonCyclic(vdef, tpt1)
       val rhs1 =
         if (vdef.rhs.isEmpty) {
@@ -1429,7 +1436,8 @@ trait Typers { self: Analyzer =>
     def typedCases(tree: Tree, cases: List[CaseDef], pattp0: Type, pt: Type): List[CaseDef] = {
       var pattp = pattp0
       List.mapConserve(cases) ( cdef =>
-          newTyper(context.makeNewScope(cdef, context.owner)(TypedCasesScopeKind)).typedCase(cdef, pattp, pt))
+        newTyper(context.makeNewScope(cdef, context.owner)(TypedCasesScopeKind))
+          .typedCase(cdef, pattp, pt))
 /* not yet!
         cdef.pat match {
           case Literal(Constant(null)) =>
@@ -2195,12 +2203,12 @@ trait Typers { self: Analyzer =>
       packSymbols(localSyms.toList ::: localInstances.values.toList, substLocals(normalizedTpe))
     }
 
-    protected def typedExistentialTypeTree(tree: ExistentialTypeTree): Tree = {
+    protected def typedExistentialTypeTree(tree: ExistentialTypeTree, mode: Int): Tree = {
       for (wc <- tree.whereClauses)
         if (wc.symbol == NoSymbol) { namer.enterSym(wc); wc.symbol setFlag EXISTENTIAL }
         else context.scope enter wc.symbol
       val whereClauses1 = typedStats(tree.whereClauses, context.owner)
-      val tpt1 = typedType(tree.tpt)
+      val tpt1 = typedType(tree.tpt, mode)
       val (typeParams, tpe) = existentialTransform(tree.whereClauses map (_.symbol), tpt1.tpe)
       //println(tpe + ": " + tpe.getClass )
       TypeTree(ExistentialType(typeParams, tpe)) setOriginal tree
@@ -2321,10 +2329,6 @@ trait Typers { self: Analyzer =>
               error(tree.pos, "illegal variable in pattern alternative")
             vble = namer.enterInScope(vble)
           }
-          vble.setInfo(new LazyType {
-            // forces a cyclic reference error when dereferenced. See #1049
-            override def complete(sym: Symbol) { sym.info }
-          })
           val body1 = typed(body, mode, pt)
           trackSetInfo(vble)(
             if (treeInfo.isSequenceValued(body)) seqType(body1.tpe)
@@ -2334,7 +2338,7 @@ trait Typers { self: Analyzer =>
       }
 
       def typedArrayValue(elemtpt: Tree, elems: List[Tree]) = {
-        val elemtpt1 = typedType(elemtpt)
+        val elemtpt1 = typedType(elemtpt, mode)
         val elems1 = List.mapConserve(elems)(elem => typed(elem, mode, elemtpt1.tpe))
         copy.ArrayValue(tree, elemtpt1, elems1)
           .setType(
@@ -2494,7 +2498,7 @@ trait Typers { self: Analyzer =>
             // as we don't know which alternative to choose... here we do
             map2Conserve(args, tparams) {
               //@M! the polytype denotes the expected kind
-              (arg, tparam) => typedHigherKindedType(arg, polyType(tparam.typeParams, AnyClass.tpe))
+              (arg, tparam) => typedHigherKindedType(arg, mode, polyType(tparam.typeParams, AnyClass.tpe))
             }
           } else // @M: there's probably something wrong when args.length != tparams.length... (triggered by bug #320)
            // Martin, I'm using fake trees, because, if you use args or arg.map(typedType),
@@ -2846,9 +2850,11 @@ trait Typers { self: Analyzer =>
           var defEntry: ScopeEntry = null // the scope entry of defSym, if defined in a local scope
 
           var cx = context
-          if ((mode & PATTERNmode) != 0)
+          if ((mode & (PATTERNmode | TYPEPATmode)) != 0) {
+            // println("ignoring scope: "+name+" "+cx.scope+" "+cx.outer.scope)
             // ignore current variable scope in patterns to enforce linearity
             cx = cx.outer
+          }
 
           while (defSym == NoSymbol && cx != NoContext) {
             pre = cx.enclClass.prefix
@@ -2961,7 +2967,7 @@ trait Typers { self: Analyzer =>
       }
 
       def typedCompoundTypeTree(templ: Template) = {
-        val parents1 = List.mapConserve(templ.parents)(typedType)
+        val parents1 = List.mapConserve(templ.parents)(typedType(_, mode))
         if (parents1 exists (_.tpe.isError)) tree setType ErrorType
         else {
           val decls = scopeFor(tree, CompoundTreeScopeKind)
@@ -2984,11 +2990,11 @@ trait Typers { self: Analyzer =>
           // @M: kind-arity checking is done here and in adapt, full kind-checking is in checkKindBounds (in Infer)
             val args1 =
               if(!tpt1.symbol.rawInfo.isComplete)
-                List.mapConserve(args){(x: Tree) => typedHigherKindedType(x)}
+                List.mapConserve(args){(x: Tree) => typedHigherKindedType(x, mode)}
                 // if symbol hasn't been fully loaded, can't check kind-arity
               else map2Conserve(args, tparams) {
                 (arg, tparam) =>
-                  typedHigherKindedType(arg, polyType(tparam.typeParams, AnyClass.tpe))
+                  typedHigherKindedType(arg, mode, polyType(tparam.typeParams, AnyClass.tpe))
                   //@M! the polytype denotes the expected kind
               }
             val argtypes = args1 map (_.tpe)
@@ -3151,7 +3157,7 @@ trait Typers { self: Analyzer =>
                 setError(tree)
             }
           } else {
-            val tpt1 = typedType(tpt)
+            val tpt1 = typedType(tpt, mode)
             val expr1 = typed(expr, mode & stickyModes, tpt1.tpe.deconst)
             val owntype =
               if ((mode & PATTERNmode) != 0) inferTypedPattern(tpt1.pos, tpt1.tpe, pt)
@@ -3182,7 +3188,7 @@ trait Typers { self: Analyzer =>
           // @M maybe the well-kindedness check should be done when checking the type arguments conform to the type parameters' bounds?
           val args1 = if(args.length == tparams.length) map2Conserve(args, tparams) {
                         //@M! the polytype denotes the expected kind
-                        (arg, tparam) => typedHigherKindedType(arg, polyType(tparam.typeParams, AnyClass.tpe))
+                        (arg, tparam) => typedHigherKindedType(arg, mode, polyType(tparam.typeParams, AnyClass.tpe))
                       } else {
                       //@M  this branch is correctly hit for an overloaded polymorphic type. It also has to handle erroneous cases.
                       // Until the right alternative for an overloaded method is known, be very liberal,
@@ -3190,7 +3196,7 @@ trait Typers { self: Analyzer =>
                       // in the then-branch above. (see pos/tcpoly_overloaded.scala)
                       // this assert is too strict: be tolerant for errors like trait A { def foo[m[x], g]=error(""); def x[g] = foo[g/*ERR: missing argument type*/] }
                       //assert(fun1.symbol.info.isInstanceOf[OverloadedType] || fun1.symbol.isError) //, (fun1.symbol,fun1.symbol.info,fun1.symbol.info.getClass,args,tparams))
-                        List.mapConserve(args)(typedHigherKindedType)
+                        List.mapConserve(args)(typedHigherKindedType(_, mode))
                       }
 
           //@M TODO: context.undetparams = undets_fun ?
@@ -3214,13 +3220,14 @@ trait Typers { self: Analyzer =>
           typedThis(qual)
 
         case Select(qual @ Super(_, _), nme.CONSTRUCTOR) =>
-          val qual1 = typed(qual, EXPRmode | QUALmode | POLYmode | SUPERCONSTRmode, WildcardType)
+          val qual1 =
+            typed(qual, EXPRmode | QUALmode | POLYmode | SUPERCONSTRmode, WildcardType)
           // the qualifier type of a supercall constructor is its first parent class
           typedSelect(qual1, nme.CONSTRUCTOR)
 
         case Select(qual, name) =>
           if (util.Statistics.enabled) selcnt += 1
-          var qual1 = checkDead(typedQualifier(qual))
+          var qual1 = checkDead(typedQualifier(qual, mode))
           if (name.isTypeName) qual1 = checkStable(qual1)
           val tree1 = typedSelect(qual1, name)
           if (qual1.symbol == RootPackage) copy.Ident(tree1, name)
@@ -3240,16 +3247,17 @@ trait Typers { self: Analyzer =>
             else mkConstantType(value))
 
         case SingletonTypeTree(ref) =>
-          val ref1 = checkStable(typed(ref, EXPRmode | QUALmode, AnyRefClass.tpe))
+          val ref1 = checkStable(
+            typed(ref, EXPRmode | QUALmode | (mode & TYPEPATmode), AnyRefClass.tpe))
           tree setType ref1.tpe.resultType
 
         case SelectFromTypeTree(qual, selector) =>
 /* maybe need to do this:
-          val res = typedSelect(typedType(qual), selector)
+          val res = typedSelect(typedType(qual, mode), selector)
           tree setType res.tpe setSymbol res.symbol
           res
 */
-          typedSelect(typedType(qual), selector)
+          typedSelect(typedType(qual, mode), selector)
 
         case CompoundTypeTree(templ) =>
           typedCompoundTypeTree(templ)
@@ -3258,12 +3266,12 @@ trait Typers { self: Analyzer =>
           typedAppliedTypeTree(tpt, args)
 
         case TypeBoundsTree(lo, hi) =>
-          val lo1 = typedType(lo)
-          val hi1 = typedType(hi)
+          val lo1 = typedType(lo, mode)
+          val hi1 = typedType(hi, mode)
           copy.TypeBoundsTree(tree, lo1, hi1) setType mkTypeBounds(lo1.tpe, hi1.tpe)
 
         case etpt @ ExistentialTypeTree(_, _) =>
-          newTyper(context.makeNewScope(tree, context.owner)).typedExistentialTypeTree(etpt)
+          newTyper(context.makeNewScope(tree, context.owner)).typedExistentialTypeTree(etpt, mode)
 
         case TypeTree() =>
           // we should get here only when something before failed
@@ -3291,7 +3299,7 @@ trait Typers { self: Analyzer =>
           tree.tpe = null
           if (tree.hasSymbol) tree.symbol = NoSymbol
         }
-        if (printTypings) println("typing "+tree+", "+context.undetparams);//DEBUG
+        if (printTypings) println("typing "+tree+", "+context.undetparams+(mode & TYPEPATmode));//DEBUG
         def dropExistential(tp: Type): Type = tp match {
           case ExistentialType(tparams, tpe) =>
             if (settings.debug.value) println("drop ex "+tree+" "+tp)
@@ -3358,8 +3366,10 @@ trait Typers { self: Analyzer =>
      *  @param tree ...
      *  @return     ...
      */
-    def typedQualifier(tree: Tree): Tree =
-      typed(tree, EXPRmode | QUALmode | POLYmode, WildcardType)
+    def typedQualifier(tree: Tree, mode: Int): Tree =
+      typed(tree, EXPRmode | QUALmode | POLYmode | mode & TYPEPATmode, WildcardType)
+
+    def typedQualifier(tree: Tree): Tree = typedQualifier(tree, NOmode)
 
     /** Types function part of an application */
     def typedOperator(tree: Tree): Tree =
@@ -3370,26 +3380,33 @@ trait Typers { self: Analyzer =>
       typed(tree, PATTERNmode, pt)
 
     /** Types a (fully parameterized) type tree */
-    def typedType(tree: Tree): Tree =
-      typed(tree, TYPEmode, WildcardType)
+    def typedType(tree: Tree, mode: Int): Tree =
+      typed(tree, typeMode(mode), WildcardType)
+
+    /** Types a (fully parameterized) type tree */
+    def typedType(tree: Tree): Tree = typedType(tree, NOmode)
 
     /** Types a higher-kinded type tree -- pt denotes the expected kind*/
-    def typedHigherKindedType(tree: Tree, pt: Type): Tree =
-      if(pt.typeParams.isEmpty) typedType(tree) // kind is known and it's *
-      else typed(tree, HKmode, pt)
+    def typedHigherKindedType(tree: Tree, mode: Int, pt: Type): Tree =
+      if (pt.typeParams.isEmpty) typedType(tree, mode) // kind is known and it's *
+      else typed(tree, HKmode, pt)//!!!
 
-    def typedHigherKindedType(tree: Tree): Tree =
+    def typedHigherKindedType(tree: Tree, mode: Int): Tree =
       typed(tree, HKmode, WildcardType)
 
+    def typedHigherKindedType(tree: Tree): Tree = typedHigherKindedType(tree, NOmode)
+
     /** Types a type constructor tree used in a new or supertype */
-    def typedTypeConstructor(tree: Tree): Tree = {
-      val result = typed(tree, TYPEmode | FUNmode, WildcardType)
+    def typedTypeConstructor(tree: Tree, mode: Int): Tree = {
+      val result = typed(tree, typeMode(mode) | FUNmode, WildcardType)
       val restpe = result.tpe.normalize
       if (!phase.erasedTypes && restpe.isInstanceOf[TypeRef] && !restpe.prefix.isStable) {
         error(tree.pos, restpe.prefix+" is not a legal prefix for a constructor")
       }
       result setType restpe // @M: normalization is done during erasure
     }
+
+    def typedTypeConstructor(tree: Tree): Tree = typedTypeConstructor(tree, NOmode)
 
     def computeType(tree: Tree, pt: Type): Type = {
       val tree1 = typed(tree, pt)
