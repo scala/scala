@@ -1,0 +1,65 @@
+# If you aren't running on a LAMP system, you need to make sure you 
+# have JAVA_HOME and JAVACMD set correctly
+JAVA_HOME = $(getenv JAVA_HOME,  /home/linuxsoft/apps/java-1.6/)
+JAVACMD = $(getenv JAVACMD, /home/linuxsoft/apps/java-1.6/bin/java)
+
+
+JAVAC = $(JAVA_HOME)$(DIRSEP)bin$(DIRSEP)javac
+
+COMMON_CLASSPATH = $(addprefix .$(DIRSEP)lib$(DIRSEP), jline.jar msil.jar fjbg.jar)
+
+BOOT_CLASSPATH = $(array $(addprefix .$(DIRSEP)lib$(DIRSEP), scala-library.jar scala-compiler.jar) $(COMMON_CLASSPATH))
+DIST_CLASSPATH = $(array $(addprefix .$(DIRSEP)build$(DIRSEP)boot$(DIRSEP), compiler library) $(COMMON_CLASSPATH))
+TEST_CLASSPATH = $(array $(addprefix .$(DIRSEP)build$(DIRSEP)dist$(DIRSEP), compiler library partest) $(COMMON_CLASSPATH))
+
+JAVA_OPTS = -Xms1024M -Xmx1024M -XX:MaxPermSize=256M
+
+.PHONY : boot dist clean test
+
+.DEFAULT : test
+
+cond-mkdir(dir) =
+  if $(not $(file-exists $(dir)))
+    # println(Creating directory $(dir))
+    mkdir(-p $(dir))
+
+scalac(classpath, outdir, args) =
+  # println(scalac compiling $(string $(args)))
+  $(JAVACMD) -cp $(concat $(PATHSEP), $(classpath)) $(JAVA_OPTS) scala.tools.nsc.Main -d $(outdir) $(args)
+
+partest(classpath) =
+  # println(testing)
+  $(JAVACMD) -cp $(concat $(PATHSEP), $(classpath)) $(JAVA_OPTS) \
+    scala.tools.partest.nest.NestRunner --classpath .$(DIRSEP)build$(DIRSEP)dist --show-diff --pos --neg --run --jvm --jvm5 --res --shootout
+
+javac(classpath, outdir, args) =
+  # println(javac compiling $(string $(args)))
+  $(JAVAC) -cp $(concat $(PATHSEP), $(classpath)) -d $(outdir) $(args)
+
+buildscala(classpath, outdir) =
+  cond-mkdir($(outdir)/compiler)
+  scalac($(classpath), $(outdir)$(DIRSEP)compiler, \
+    $(find ./src/compiler/scala/tools/nsc -name *.scala) $(find ./src/compiler/scala/tools/util -name *.scala))
+  cond-mkdir($(outdir)/library)
+  javac($(classpath), $(outdir)$(DIRSEP)library, $(find ./src/library -name *.java) $(find ./src/actors -name *.java))
+  scalac($(classpath), $(outdir)$(DIRSEP)library, $(find ./src/library -name *.scala) $(find ./src/actors -name *.scala))
+  cond-mkdir($(outdir)/partest)
+  # Need to copy over script.js and style.css for scaladoc to find them
+  cp($(addprefix ./src/compiler/scala/tools/nsc/doc/,script.js style.css) $(outdir)/compiler/scala/tools/nsc/doc)
+
+clean :
+  $(rm -rf ./build)
+
+boot :
+  buildscala($(BOOT_CLASSPATH), .$(DIRSEP)build$(DIRSEP)boot)
+
+dist : boot 
+  buildscala($(DIST_CLASSPATH), .$(DIRSEP)build$(DIRSEP)dist)
+  # Build partest 
+  javac($(DIST_CLASSPATH), .$(DIRSEP)build$(DIRSEP)dist$(DIRSEP)partest, \
+    $(find ./src/partest/scala -name *.java))
+  scalac($(DIST_CLASSPATH), .$(DIRSEP)build$(DIRSEP)dist$(DIRSEP)partest, \
+    $(filter-out %PartestTask.scala %AntRunner.scala, $(find ./src/partest/scala -name *.scala)))
+
+test : dist
+  partest($(TEST_CLASSPATH))
