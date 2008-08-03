@@ -712,13 +712,18 @@ class Worker(val fileManager: FileManager) extends Actor {
   }
 
   def showLog(logFile: File) {
-    val logReader = new BufferedReader(new FileReader(logFile))
-    val strWriter = new StringWriter
-    val logWriter = new PrintWriter(strWriter, true)
-    val logAppender = new StreamAppender(logReader, logWriter)
-    logAppender.run()
-    logReader.close()
-    val log = strWriter.toString
-    NestUI.normal(log)
+    try {
+      val logReader = new BufferedReader(new FileReader(logFile))
+      val strWriter = new StringWriter
+      val logWriter = new PrintWriter(strWriter, true)
+      val logAppender = new StreamAppender(logReader, logWriter)
+      logAppender.run()
+      logReader.close()
+      val log = strWriter.toString
+      NestUI.normal(log)
+    } catch {
+      case fnfe: java.io.FileNotFoundException =>
+        NestUI.failure("Couldn't open log file \""+logFile+"\".")
+    }
   }
 }
