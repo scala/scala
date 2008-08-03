@@ -12,7 +12,7 @@ JAVA_OPTS = -Xms1024M -Xmx1024M -XX:MaxPermSize=256M
 ######################################################################
 
 # The current copyright string
-COPYRIGHT_STRING = "Copyright 2002-2008, LAMP/EPFL"
+COPYRIGHT_STRING = Copyright 2002-2008, LAMP/EPFL
 # Need to generate this correctly
 VERSION_NUMBER = 2.7.2
 
@@ -70,9 +70,9 @@ idem-mkdir(dir) =
 propfile(file) =
   handle = $(fopen $(file), w)
   # Need to correctly generated date/time
-  fprint($(handle), "# Generated at some time")
-  fprint($(handle), "copyright.string="$(COPYRIGHT_STRING))
-  fprint($(handle), "version.number="$(VERSION_NUMBER))
+  fprint($(handle), \# Generated at some time)
+  fprint($(handle), copyright.string=$(COPYRIGHT_STRING))
+  fprint($(handle), version.number=$(VERSION_NUMBER))
   close($(handle))
 
 # Compile the Scala files in the sequence args with the specified
@@ -108,7 +108,7 @@ buildscala(classpath, outdir) =
   # Need to copy over script.js and style.css for scaladoc to find them
   cp($(addprefix ./src/compiler/scala/tools/nsc/doc/,script.js style.css) \
     $(outdir)$(DIRSEP)classes$(DIRSEP)compiler$(DIRSEP)scala$(DIRSEP)tools$(DIRSEP)nsc$(DIRSEP)doc)
-  propfile($(outdir)$(DIRSEP)classes$(DIRSEP)compiler$(DIRSEP)library.properties)
+  propfile($(outdir)$(DIRSEP)classes$(DIRSEP)library$(DIRSEP)library.properties)
   # For compatibility with the old ant script we'll create some flags
   touch($(outdir)$(DIRSEP)library.complete)
   # touch($(outdir)$(DIRSEP)all.complete)
