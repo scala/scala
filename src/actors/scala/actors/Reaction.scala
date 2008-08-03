@@ -85,14 +85,14 @@ class Reaction extends Runnable {
     catch {
       case eae: ExitActorException => {
         //Debug.info(a+": exiting...")
-        Scheduler.unPendReaction(a)
+        ActorGC.terminated(a)
       }
       case _: SuspendActorException => {
         // do nothing (continuation is already saved)
       }
       case t: Throwable => {
         Debug.info(a+": caught "+t)
-        Scheduler.unPendReaction(a)
+        ActorGC.terminated(a)
         // links
         a.synchronized {
           if (!a.links.isEmpty)

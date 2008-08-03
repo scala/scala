@@ -26,12 +26,11 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
  * @author Philipp Haller
  */
 object Scheduler {
-  private var sched: IScheduler =
-    {
-      var s: IScheduler = new FJTaskScheduler2
-      s.start()
-      s
-    }
+  private var sched: IScheduler = {
+    var s: IScheduler = new FJTaskScheduler2
+    s.start()
+    s
+  }
 
   def impl = sched
   def impl_= (scheduler: IScheduler) = {
@@ -44,14 +43,17 @@ object Scheduler {
 
   def snapshot(): Unit = {
     tasks = sched.snapshot()
-    pendingCount = sched.asInstanceOf[FJTaskScheduler2].getPendingCount
+    pendingCount = ActorGC.getPendingCount
     sched.shutdown()
   }
 
+  /* Creates an instance of class <code>FJTaskScheduler2</code>
+   * and submits <code>tasks</code> for execution.
+   */
   def restart(): Unit = synchronized {
     sched = {
       var s: IScheduler = new FJTaskScheduler2
-      s.asInstanceOf[FJTaskScheduler2].setPendingCount(pendingCount)
+      ActorGC.setPendingCount(pendingCount)
       s.start()
       s
     }
@@ -62,6 +64,10 @@ object Scheduler {
     tasks = null
   }
 
+  /* The following two methods (<code>start</code> and
+   * <code>execute</code>) are called from within
+   * <code>Actor</code> to submit tasks for execution.
+   */
   def start(task: Runnable) = sched.start(task)
 
   def execute(task: Runnable) = {
@@ -76,29 +82,12 @@ object Scheduler {
     } else sched.execute(task)
   }
 
+  /* This method is used to notify the scheduler
+   * of library activity by the argument Actor.
+   *
+   * It is only called from within <code>Actor</code>.
+   */
   def tick(a: Actor) = sched.tick(a)
-  def terminated(a: Actor) = sched.terminated(a)
-  def pendReaction: Unit = sched.pendReaction
-
-  private val termHandlers = new HashMap[Actor, () => Unit]
-  def onTerminate(a: Actor)(f: => Unit) {
-    termHandlers += (a -> (() => f))
-  }
-
-  def unPendReaction(a: Actor) = synchronized {
-    // execute registered termination handler (if any)
-    termHandlers.get(a) match {
-      case Some(handler) =>
-        handler()
-        // remove mapping
-        termHandlers -= a
-      case None =>
-        // do nothing
-    }
-
-    // notify scheduler
-    sched.unPendReaction
-  }
 
   def shutdown() = sched.shutdown()
 
@@ -123,9 +112,6 @@ trait IScheduler {
 
   def getTask(worker: WorkerThread): Runnable
   def tick(a: Actor): Unit
-  def terminated(a: Actor): Unit
-  def pendReaction: Unit
-  def unPendReaction: Unit
 
   def snapshot(): LinkedQueue
   def shutdown(): Unit
@@ -179,9 +165,6 @@ class SingleThreadedScheduler extends IScheduler {
 
   def getTask(worker: WorkerThread): Runnable = null
   def tick(a: Actor) {}
-  def terminated(a: Actor) {}
-  def pendReaction {}
-  def unPendReaction {}
 
   def shutdown() {}
   def snapshot(): LinkedQueue = { null }

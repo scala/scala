@@ -278,7 +278,7 @@ object Actor {
    * @param  to the actor to link to
    * @return
    */
-  def link(to: Actor): Actor = self.link(to)
+  def link(to: AbstractActor): AbstractActor = self.link(to)
 
   /**
    * Links <code>self</code> to actor defined by <code>body</code>.
