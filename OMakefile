@@ -70,9 +70,9 @@ idem-mkdir(dir) =
 propfile(file) =
   handle = $(fopen $(file), w)
   # Need to correctly generated date/time
-  fprint($(handle), \# Generated at some time)
-  fprint($(handle), copyright.string=$(COPYRIGHT_STRING))
-  fprint($(handle), version.number=$(VERSION_NUMBER))
+  fprint($(handle), \# Generated at some time\n)
+  fprint($(handle), copyright.string=$(COPYRIGHT_STRING)\n)
+  fprint($(handle), version.number=$(VERSION_NUMBER)\n)
   close($(handle))
 
 # Compile the Scala files in the sequence args with the specified
