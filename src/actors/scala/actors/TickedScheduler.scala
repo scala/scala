@@ -20,10 +20,16 @@ import scala.compat.Platform
  * <p>This scheduler uses a thread pool to execute tasks that are generated
  * by the execution of actors.</p>
  *
- * @version 0.9.8
+ * Use class <code>FJTaskScheduler2</code> instead.
+ *
+ * @version 0.9.18
  * @author Philipp Haller
  */
-class TickedScheduler extends Thread with IScheduler {
+@deprecated
+class TickedScheduler extends Thread with WorkerThreadScheduler {
+  // as long as this thread runs, JVM should not exit
+  setDaemon(false)
+
   private val tasks = new Queue[Runnable]
 
   // Worker threads
@@ -35,22 +41,7 @@ class TickedScheduler extends Thread with IScheduler {
 
   private var lastActivity = Platform.currentTime
 
-  private var pendingReactions = 0
-  def pendReaction: Unit = synchronized {
-    pendingReactions += 1
-  }
-  def unPendReaction: Unit = synchronized {
-    pendingReactions -= 1
-  }
-
   def printActorDump {}
-
-  def start(task: Runnable): Unit = synchronized {
-    pendingReactions += 1
-    execute(task)
-  }
-
-  def terminated(a: Actor) {}
 
   private var TICK_FREQ = 5
   private var CHECK_FREQ = 50
@@ -83,6 +74,8 @@ class TickedScheduler extends Thread with IScheduler {
               if (terminating) throw new QuitException
           }
 
+          ActorGC.gc()
+
           if (tasks.length > 0) {
             // check if we need more threads
             if (Platform.currentTime - lastActivity >= TICK_FREQ) {
@@ -97,9 +90,11 @@ class TickedScheduler extends Thread with IScheduler {
             }
           } // tasks.length > 0
           else {
-            if (pendingReactions == 0) {
+            if (ActorGC.allTerminated) {
               // if all worker threads idle terminate
               if (workers.length == idle.length) {
+                Debug.info(this+": initiating shutdown...")
+
                 val idleThreads = idle.elements
                 while (idleThreads.hasNext) {
                   val worker = idleThreads.next
@@ -135,7 +130,10 @@ class TickedScheduler extends Thread with IScheduler {
     }
   }
 
-  def snapshot(): LinkedQueue = null
+  def execute(fun: => Unit): Unit =
+    execute(new Runnable {
+      def run() { fun }
+    })
 
   /**
    *  @param worker the worker thread executing tasks

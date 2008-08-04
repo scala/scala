@@ -19,7 +19,7 @@ import scala.compat.Platform
  * <code>receive</code>, <code>react</code>, <code>reply</code>,
  * etc.
  *
- * @version 0.9.14
+ * @version 0.9.18
  * @author Philipp Haller
  */
 object Actor {
@@ -350,7 +350,7 @@ object Actor {
  *   </li>
  * </ul>
  *
- * @version 0.9.16
+ * @version 0.9.18
  * @author Philipp Haller
  */
 @serializable
@@ -364,6 +364,9 @@ trait Actor extends AbstractActor {
 
   protected val mailbox = new MessageQueue
   private var sessions: List[OutputChannel[Any]] = Nil
+
+  protected val scheduler: IScheduler =
+    Scheduler
 
   /**
    * Returns the number of messages in this actor's mailbox
@@ -401,7 +404,7 @@ trait Actor extends AbstractActor {
       if (isSuspended)
         resumeActor()
       else // assert continuation != null
-        Scheduler.execute(new Reaction(this, continuation, msg))
+        scheduler.execute(new Reaction(this, continuation, msg))
     } else {
       mailbox.append(msg, replyTo)
     }
@@ -708,11 +711,11 @@ trait Actor extends AbstractActor {
       val task = new Reaction(this,
                               if (f eq null) continuation else f,
                               msg)
-      Scheduler execute task
+      scheduler execute task
     }
 
   private def tick(): Unit =
-    Scheduler tick this
+    scheduler tick this
 
   private[actors] var kill: () => Unit = () => {}
 
@@ -772,7 +775,11 @@ trait Actor extends AbstractActor {
     exiting = false
     shouldExit = false
 
-    Scheduler start new Reaction(this)
+    scheduler execute {
+      ActorGC.newActor(Actor.this)
+      (new Reaction(Actor.this)).run()
+    }
+
     this
   }
 
