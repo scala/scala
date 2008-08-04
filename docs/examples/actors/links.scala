@@ -17,7 +17,7 @@ object links extends Application {
     else top(p(n-1), n)
 
   def top(a: Actor, n: Int): Actor = actor {
-    println("starting actor " + n + " (" + Thread.currentThread() + ")")
+    println("starting actor " + n + " (" + self + ")")
     self.trapExit = true
     link(a)
     loop {
@@ -34,7 +34,7 @@ object links extends Application {
   }
 
   def top1(): Actor = actor {
-    println("starting last actor"  + " (" + Thread.currentThread() + ")")
+    println("starting last actor"  + " (" + self + ")")
     receive {
       case Stop =>
         println("Last actor now exiting")

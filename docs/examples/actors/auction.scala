@@ -69,7 +69,7 @@ class AuctionActor(seller: Actor, minBid: Int, closing: Date) extends Actor {
 
 object auction {
 
-  val random = new Random
+  val random = new scala.util.Random
 
   val minBid = 100
   val closing = new Date(new Date().getTime() + 4000)

@@ -64,8 +64,8 @@ abstract class Producer[T] {
 object producers extends Application {
 
   class Tree(val left: Tree, val elem: Int, val right: Tree)
-  def node(left: Tree, elem: int, right: Tree): Tree = new Tree(left, elem, right)
-  def node(elem: int): Tree = node(null, elem, null)
+  def node(left: Tree, elem: Int, right: Tree): Tree = new Tree(left, elem, right)
+  def node(elem: Int): Tree = node(null, elem, null)
 
   def tree = node(node(node(3), 4, node(6)), 8, node(node(9), 10, node(11)))
 
