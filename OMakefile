@@ -3,7 +3,7 @@
 # If you aren't running on a LAMP system, you need to make sure you 
 # have JAVA_HOME and JAVACMD (and optionally JAVAC) set correctly.
 JAVA_HOME = $(getenv JAVA_HOME,  /home/linuxsoft/apps/java-1.6/)
-JAVACMD = $(getenv JAVACMD, /home/linuxsoft/apps/java-1.6/bin/java)
+JAVACMD = $(getenv JAVACMD, $(JAVA_HOME)$(DIRSEP)bin$(DIRSEP)/java)
 JAVAC = $(getenv JAVAC, $(JAVA_HOME)$(DIRSEP)bin$(DIRSEP)javac)
 
 # Default options for the JVM
@@ -117,7 +117,7 @@ buildscala(classpath, outdir) =
 partest(classpath) =
   # println(testing)
   $(JAVACMD) -cp $(topath $(classpath)) $(JAVA_OPTS) \
-    $(PARTEST_CLASS) --show-diff $(PARTEST_ARGS)
+    $(PARTEST_CLASS) --classpath $(QUICK_CLASS_DIR) --show-diff $(PARTEST_ARGS)
 
 ######################################################################
 
