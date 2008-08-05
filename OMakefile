@@ -5,9 +5,13 @@
 JAVA_HOME = $(getenv JAVA_HOME,  /home/linuxsoft/apps/java-1.6/)
 JAVACMD = $(getenv JAVACMD, $(JAVA_HOME)$(DIRSEP)bin$(DIRSEP)/java)
 JAVAC = $(getenv JAVAC, $(JAVA_HOME)$(DIRSEP)bin$(DIRSEP)javac)
+JAVAP = $(JAVA_HOME)$(DIRSEP)bin$(DIRSEP)javap
 
 # Default options for the JVM
 JAVA_OPTS = -Xms1024M -Xmx1024M -XX:MaxPermSize=256M
+
+DIFF=diff
+DIFF_OPTS=-r
 
 ######################################################################
 
@@ -26,6 +30,9 @@ LOCKER_CLASS_DIR = $(LOCKER_DIR)$(DIRSEP)classes
 # The directory where the quick files are kept
 QUICK_DIR = $(BUILD_DIR)$(DIRSEP)quick
 QUICK_CLASS_DIR = $(QUICK_DIR)$(DIRSEP)classes
+# The directory where the strap files are kept
+STRAP_DIR = $(BUILD_DIR)$(DIRSEP)strap
+STRAP_CLASS_DIR = $(STRAP_DIR)$(DIRSEP)classes
 
 # Scala compiler class
 SCALAC_CLASS = scala.tools.nsc.Main
@@ -46,6 +53,7 @@ STARR_CLASSPATH = $(array $(addprefix $(LIB_DIR)$(DIRSEP), scala-library.jar sca
 #println($(string $(STARR_CLASSPATH)))
 LOCKER_CLASSPATH = $(array $(addprefix $(LOCKER_CLASS_DIR)$(DIRSEP), compiler library) $(COMMON_CLASSPATH))
 QUICK_CLASSPATH = $(array $(addprefix $(QUICK_CLASS_DIR)$(DIRSEP), compiler library partest) $(COMMON_CLASSPATH))
+STRAP_CLASSPATH = $(array $(addprefix $(STRAP_CLASS_DIR)$(DIRSEP), compiler library partest) $(COMMON_CLASSPATH))
 
 ######################################################################
 
@@ -65,6 +73,14 @@ idem-mkdir(dir) =
   if $(not $(file-exists $(dir)))
     # println(Creating directory $(dir))
     mkdir(-p $(dir))
+
+# compare two classes using javap 
+javap-diff(cpath1, cpath2, cls) =
+  tmp1 = $(tmpfile javap1, .txt)
+  tmp2 = $(tmpfile javap2, .txt)
+  $(JAVAP) -classpath $(cpath1) -private $(cls) > $(tmp1)
+  $(JAVAP) -classpath $(cpath2) -private $(cls) > $(tmp2)
+  ($(DIFF) $(tmp1) $(tmp2)) || echo $(cls) is different in $(cpath1) and $(cpath2)
 
 # Write a property file
 propfile(file) =
@@ -124,7 +140,7 @@ partest(classpath) =
 # Specify those targets that are "phony", as in, they do not
 # correspond to actual files that will be created.
 
-.PHONY : locker quick partest test clean all.clean locker.clean
+.PHONY : locker quick partest test clean all.clean locker.clean strap stability
 
 # Specify the default target
 .DEFAULT : test
@@ -150,6 +166,13 @@ locker $(LOCKER_DIR) :
 
 quick $(QUICK_DIR) : $(LOCKER_DIR)
   buildscala($(LOCKER_CLASSPATH), $(QUICK_DIR))
+
+strap $(STRAP_DIR) : $(QUICK_DIR)
+  buildscala($(QUICK_CLASSPATH), $(STRAP_DIR))
+
+test.stability : $(STRAP_DIR)
+#  javap-diff($(QUICK_CLASS_DIR)/library, $(STRAP_CLASS_DIR)/library, "scala.swing.Key")
+  $(DIFF) $(DIFF_OPTS) $(QUICK_CLASS_DIR) $(STRAP_CLASS_DIR)
 
 partest : quick
   idem-mkdir($(QUICK_CLASS_DIR)$(DIRSEP)partest)
