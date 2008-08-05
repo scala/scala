@@ -22,6 +22,8 @@ import PickleFormat._
 abstract class Pickler extends SubComponent {
   import global._
 
+  private final val showSig = false
+
   val phaseName = "pickler"
 
   def newPhase(prev: Phase): StdPhase = new PicklePhase(prev)
@@ -943,14 +945,126 @@ abstract class Pickler extends SubComponent {
       patchNat(startpos + 1, writeIndex - (startpos + 2))
     }
 
+    /** Print entry for diagnostics */
+    private def printEntry(entry: AnyRef) {
+      def printRef(ref: AnyRef) {
+        print(index(ref)+
+              (if (ref.isInstanceOf[Name]) "("+ref+") " else " "))
+      }
+      def printRefs(refs: List[AnyRef]) { refs foreach printRef }
+      def printSymInfo(sym: Symbol) {
+        var posOffset = 0
+        printRef(sym.name)
+        printRef(normalizedOwner(sym))
+        print(flagsToString(sym.flags & PickledFlags)+" ")
+        if (sym.privateWithin != NoSymbol) printRef(sym.privateWithin)
+        printRef(sym.info)
+      }
+      def printBody(entry: AnyRef) = entry match {
+        case name: Name =>
+          print((if (name.isTermName) "TERMname " else "TYPEname ")+name)
+        case NoSymbol =>
+          print("NONEsym")
+        case sym: Symbol if !isLocal(sym) =>
+          if (sym.isModuleClass) {
+            print("EXTMODCLASSref "); printRef(sym.name.toTermName)
+          } else {
+            print("EXTref "); printRef(sym.name)
+          }
+          if (!sym.owner.isRoot) printRef(sym.owner)
+        case sym: ClassSymbol =>
+          print("CLASSsym ")
+          printSymInfo(sym)
+          if (sym.thisSym.tpe != sym.tpe) printRef(sym.typeOfThis)
+        case sym: TypeSymbol =>
+          print(if (sym.isAbstractType) "TYPEsym " else "ALIASsym ")
+          printSymInfo(sym)
+        case sym: TermSymbol =>
+          print(if (sym.isModule) "MODULEsym " else "VALsym ")
+          printSymInfo(sym)
+          if (sym.alias != NoSymbol) printRef(sym.alias)
+        case NoType =>
+          print("NOtpe")
+        case NoPrefix =>
+          print("NOPREFIXtpe")
+        case ThisType(sym) =>
+          print("THIStpe "); printRef(sym)
+        case SingleType(pre, sym) =>
+          print("SINGLEtpe "); printRef(pre); printRef(sym);
+        case ConstantType(value) =>
+          print("CONSTANTtpe "); printRef(value);
+        case TypeRef(pre, sym, args) =>
+          print("TYPEREFtpe "); printRef(pre); printRef(sym); printRefs(args);
+        case TypeBounds(lo, hi) =>
+          print("TYPEBOUNDStpe "); printRef(lo); printRef(hi);
+        case tp @ RefinedType(parents, decls) =>
+          print("REFINEDtpe "); printRef(tp.typeSymbol); printRefs(parents);
+        case ClassInfoType(parents, decls, clazz) =>
+          print("CLASSINFOtpe "); printRef(clazz); printRefs(parents);
+        case MethodType(formals, restpe) =>
+          print(if (entry.isInstanceOf[ImplicitMethodType]) "IMPLICITMETHODtpe " else "METHODtpe ");
+          printRef(restpe); printRefs(formals)
+        case PolyType(tparams, restpe) =>
+          print("POLYtpe "); printRef(restpe); printRefs(tparams);
+        case ExistentialType(tparams, restpe) =>
+          print("EXISTENTIALtpe "); printRef(restpe); printRefs(tparams);
+        case DeBruijnIndex(l, i) =>
+          print("DEBRUIJNINDEXtpe "); print(l+" "+i)
+        case c @ Constant(_) =>
+          print("LITERAL ")
+          if (c.tag == BooleanTag) print("Boolean "+(if (c.booleanValue) 1 else 0))
+          else if (c.tag == ByteTag) print("Byte "+c.longValue)
+          else if (c.tag == ShortTag) print("Short "+c.longValue)
+          else if (c.tag == CharTag) print("Char "+c.longValue)
+          else if (c.tag == IntTag) print("Int "+c.longValue)
+          else if (c.tag == LongTag) print("Long "+c.longValue)
+          else if (c.tag == FloatTag) print("Float "+c.floatValue)
+          else if (c.tag == DoubleTag) print("Double "+c.doubleValue)
+          else if (c.tag == StringTag) { print("String "); printRef(newTermName(c.stringValue)) }
+          else if (c.tag == ClassTag) { print("Class "); printRef(c.typeValue) }
+        case AnnotatedType(attribs, tp, selfsym) =>
+	  if (settings.selfInAnnots.value) {
+            print("ANNOTATEDWSELFtpe ")
+	    printRef(tp)
+	    printRef(selfsym)
+	    printRefs(attribs)
+	  } else {
+            print("ANNOTATEDtpe ")
+            printRef(tp)
+            printRefs(attribs)
+	  }
+        case (target: Symbol, attr @ AnnotationInfo(atp, args, assocs)) =>
+          print("ATTRIBUTE ")
+          printRef(target)
+          printRef(atp)
+          for (c <- args) printRef(c)
+          for ((name, c) <- assocs) { printRef(name); printRef(c) }
+        case (target: Symbol, children: List[_]) =>
+          print("CHILDREN ")
+          printRef(target)
+          for (c <- children) printRef(c.asInstanceOf[Symbol])
+        case _ =>
+          throw new FatalError("bad entry: " + entry + " " + entry.getClass)
+      }
+      printBody(entry); println()
+    }
+
     /** Write byte array */
     def finish {
       assert(writeIndex == 0)
       writeNat(MajorVersion)
       writeNat(MinorVersion)
       writeNat(ep)
-      if (settings.debug.value) log("" + ep + " entries")//debug
-      for (i <- 0 until ep) writeEntry(entries(i))
+      if (showSig) {
+        println("Pickled info for "+rootName+" V"+MajorVersion+"."+MinorVersion)
+      }
+      for (i <- 0 until ep) {
+        if (showSig) {
+          print((i formatted "%3d: ")+(writeIndex formatted "%5d: "))
+          printEntry(entries(i))
+        }
+        writeEntry(entries(i))
+      }
       if (settings.Xshowcls.value == rootName.toString) {
         readIndex = 0
         ShowPickled.printFile(this, Console.out)

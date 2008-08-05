@@ -1691,7 +1691,25 @@ A type's typeSymbol should never be inspected directly.
       underlying.substSym(quantified, skolems)
     }
 
+    private def wildcardArgsString(available: Set[Symbol], args: List[Type]): List[String] = args match {
+      case TypeRef(_, sym, _) :: args1 if (quantified contains sym) =>
+        ("_"+sym.infoString(sym.info)) :: wildcardArgsString(available - sym, args1)
+      case arg :: args1 if !(quantified exists (arg contains _)) =>
+        arg.toString :: wildcardArgsString(available, args1)
+      case _ =>
+        List()
+    }
+
     override def safeToString: String = {
+      if (!(quantified exists (_.isSingletonExistential)) && !settings.debug.value)
+        // try to represent with wildcards first
+        underlying match {
+          case TypeRef(pre, sym, args) if (!args.isEmpty) =>
+            val wargs = wildcardArgsString(Predef.Set()++quantified, args)
+            if (wargs.length == args.length)
+              return TypeRef(pre, sym, List()).toString+wargs.mkString("[", ", ", "]")
+          case _ =>
+        }
       var ustr = underlying.toString
       underlying match {
         case MethodType(_, _) | PolyType(_, _) => ustr = "("+ustr+")"

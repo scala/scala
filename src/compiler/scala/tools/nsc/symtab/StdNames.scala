@@ -291,6 +291,7 @@ trait StdNames {
     val coerce = newTermName("coerce")
     val defaultValue = newTermName("defaultValue")
     val detach = newTermName("detach")
+    val dottype = newTermName(".type")
     val drop = newTermName("drop")
     val dummy = newTermName("$dummy")
     val elem = newTermName("elem")

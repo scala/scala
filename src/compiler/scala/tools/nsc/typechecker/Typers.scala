@@ -1647,7 +1647,7 @@ trait Typers { self: Analyzer =>
                     lastarg.pos,
                     "I'm seeing an array passed into a Java vararg.\n"+
                     "I assume that the elements of this array should be passed as individual arguments to the vararg.\n"+
-                    "Therefore I wrap the array in a `: _*', to mark it as a vararg argument.\n"+
+                    "Therefore I follow the array with a `: _*', to mark it as a vararg argument.\n"+
                     "If that's not what you want, compile this file with option -Xno-varargs-conversion.")
                 args0 = args.init ::: List(gen.wildcardStar(args.last))
               }
@@ -2028,6 +2028,9 @@ trait Typers { self: Analyzer =>
       }
     }
 
+    def isRawParameter(sym: Symbol) = // is it a type parameter leaked by a raw type?
+      sym.isTypeParameter && sym.owner.hasFlag(JAVA)
+
     /** Given a set `rawSyms' of term- and type-symbols, and a type `tp'.
      *  produce a set of fresh type parameters and a type so that it can be
      *  abstracted to an existential type.
@@ -2048,8 +2051,8 @@ trait Typers { self: Analyzer =>
       val typeParams: List[Symbol] = rawSyms map { sym =>
         val name = if (sym.isType) sym.name else newTypeName(sym.name+".type")
         val bound = sym.existentialBound
-        val quantified: Symbol =
-	  recycle(sym.owner.newAbstractType(sym.pos, name))
+        val sowner = if (isRawParameter(sym)) context.owner else sym.owner
+        val quantified: Symbol = recycle(sowner.newAbstractType(sym.pos, name))
         trackSetInfo(quantified setFlag EXISTENTIAL)(bound.cloneInfo(quantified))
       }
       val typeParamTypes = typeParams map (_.tpe) // don't trackSetInfo here, since type already set!
@@ -2101,7 +2104,7 @@ trait Typers { self: Analyzer =>
       def isLocal(sym: Symbol): Boolean =
         if (sym == NoSymbol) false
         else if (owner == NoSymbol) tree exists (defines(_, sym))
-        else containsDef(owner, sym)
+        else containsDef(owner, sym) || isRawParameter(sym)
       def containsLocal(tp: Type): Boolean =
         tp exists (t => isLocal(t.typeSymbol) || isLocal(t.termSymbol))
       val normalizeLocals = new TypeMap {
@@ -2673,6 +2676,8 @@ trait Typers { self: Analyzer =>
            case Ident(_) =>
              mkAssign(qual)
         }
+        typed1(tree1, mode, pt)
+/*
         if (settings.debug.value) log("retry assign: "+tree1)
         silent(_.typed1(tree1, mode, pt)) match {
           case t: Tree =>
@@ -2681,6 +2686,7 @@ trait Typers { self: Analyzer =>
             reportTypeError(tree.pos, ex)
             setError(tree)
         }
+*/
       }
 
       def typedSuper(qual: Name, mix: Name) = {

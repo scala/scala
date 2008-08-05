@@ -1280,14 +1280,15 @@ trait Symbols {
     private def compose(ss: List[String]): String =
       ss.filter("" !=).mkString("", " ", "")
 
+    def isSingletonExistential: Boolean =
+      (name endsWith nme.dottype) && (info.bounds.hi.typeSymbol isSubClass SingletonClass)
+
     /** String representation of existentially bound variable */
-    def existentialToString = {
-      val tname = name.toString
-      if ((tname endsWith ".type") && (info.bounds.hi.typeSymbol isSubClass SingletonClass) &&
-          !settings.debug.value)
-        "val "+tname.substring(0, tname.length - 5)+": "+dropSingletonType(info.bounds.hi)
+    def existentialToString =
+      if (isSingletonExistential && !settings.debug.value)
+        "val "+name.subName(0, name.length - nme.dottype.length)+": "+
+        dropSingletonType(info.bounds.hi)
       else defString
-    }
   }
 
   /** A class for term symbols */
