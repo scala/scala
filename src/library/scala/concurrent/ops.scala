@@ -32,30 +32,13 @@ object ops {
     }
   }
 
-  /** Creates and starts a new thread that executes
-   *  a given expression.
+  /** Evaluates an expression asynchronously.
    *
-   *  @param  p the expression to execute.
-   *  @return   the new thread.
+   *  @param  p the expression to evaluate
    */
-  def spawn(p: => Unit): Thread = {
+  def spawn(p: => Unit) = {
     val t = new Thread() { override def run() = p }
     t.start()
-    t
-  }
-
-  /** Creates and starts a new thread that
-   *  has the specified <code>name</code> as its name,
-   *  and executes a given expression.
-   *
-   *  @param  name the name of the new thread.
-   *  @param  p    the expression to execute.
-   *  @return      the new thread.
-   */
-  def spawnNamed(name: String)(p: => Unit): Thread = {
-    val t = new Thread(name) { override def run() = p }
-    t.start()
-    t
   }
 
   /**
