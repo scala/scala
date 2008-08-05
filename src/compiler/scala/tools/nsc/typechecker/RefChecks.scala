@@ -100,15 +100,19 @@ abstract class RefChecks extends InfoTransform {
       def isFBounded(tsym: Symbol) =
         tsym.info.baseTypeSeq exists (_ contains tsym)
 
-      def infoString(sym: Symbol) = {
+      def infoString(sym: Symbol) = infoString0(sym, sym.owner != clazz)
+      def infoStringWithLocation(sym: Symbol) = infoString0(sym, true)
+
+      def infoString0(sym: Symbol, showLocation: Boolean) = {
         val sym1 = analyzer.underlying(sym)
         sym1.toString() +
-        (if (sym1.owner == clazz) ""
-         else (sym1.locationString +
-               (if (sym1.isAliasType) ", which equals "+self.memberInfo(sym1)
-                else if (sym1.isAbstractType) " with bounds "+self.memberInfo(sym1)
-                else if (sym1.isTerm) " of type "+self.memberInfo(sym1)
-                else "")))
+        (if (showLocation)
+          sym1.locationString +
+          (if (sym1.isAliasType) ", which equals "+self.memberInfo(sym1)
+           else if (sym1.isAbstractType) " with bounds "+self.memberInfo(sym1)
+           else if (sym1.isTerm) " of type "+self.memberInfo(sym1)
+           else "")
+         else "")
       }
 
       def overridesType(tp1: Type, tp2: Type): Boolean = (tp1.normalize, tp2.normalize) match {
@@ -130,8 +134,14 @@ abstract class RefChecks extends InfoTransform {
 
         def overrideError(msg: String) {
           if (other.tpe != ErrorType && member.tpe != ErrorType)
-            unit.error(pos, "error overriding " + infoString(other) +
-                       ";\n " + infoString(member) + " " + msg);
+            unit.error(pos, "error overriding " + infoStringWithLocation(other) +
+                       ";\n " + infoString(member) + " " + msg +
+                       (if ((other.owner isSubClass member.owner) &&
+                            other.isDeferred && !member.isDeferred)
+                          ";\n (Note that "+infoStringWithLocation(other)+" is abstract,"+
+                          "\n  and is therefore overridden by concrete "+
+                          infoStringWithLocation(member)+")"
+                        else ""))
         }
 
         def overrideTypeError() {
