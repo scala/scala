@@ -1,9 +1,10 @@
 package scala.swing.test
 
-import swing._, swing.event._
+import swing._
+import swing.event._
 
-object MyApp extends SimpleGUIApplication {
-  def top = new Frame {
+object ButtonApp extends SimpleGUIApplication {
+  def top = new MainFrame {
     title = "My Frame"
     contents = new GridPanel(2, 2) {
       hGap = 3

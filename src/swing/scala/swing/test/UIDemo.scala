@@ -10,7 +10,6 @@ object UIDemo extends SimpleGUIApplication {
 
     menuBar = new MenuBar
 
-    import Views._
     import Border._
 
     val menu = new Menu("A Menu")
