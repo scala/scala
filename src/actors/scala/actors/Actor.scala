@@ -365,7 +365,7 @@ trait Actor extends AbstractActor {
   protected val mailbox = new MessageQueue
   private var sessions: List[OutputChannel[Any]] = Nil
 
-  protected val scheduler: IScheduler =
+  protected def scheduler: IScheduler =
     Scheduler
 
   /**
