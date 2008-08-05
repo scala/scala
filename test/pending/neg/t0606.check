@@ -1,4 +1,0 @@
-t0606.scala:5: error: private value db escapes its defining scope as part of type Foo.this.db.Info
-  val info = new db.Info
-      ^
-one error found
