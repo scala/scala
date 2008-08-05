@@ -99,15 +99,17 @@ trait JavaParsers extends JavaScanners {
 
     // --------- tree building -----------------------------
 
+    def rootId(name: Name) =
+      Select(Ident(nme.ROOTPKG), name)
+
     def scalaDot(name: Name): Tree =
-      Select(Ident(nme.scala_) setSymbol ScalaPackage, name)
+      Select(rootId(nme.scala_) setSymbol ScalaPackage, name)
+
+    def javaDot(name: Name): Tree =
+      Select(rootId(nme.java), name)
 
     def javaLangDot(name: Name): Tree =
-      Select(
-        Select(
-          Select(Ident(nme.ROOTPKG), nme.java),
-          nme.lang),
-        name)
+      Select(javaDot(nme.lang), name)
 
     def javaLangObject(): Tree = javaLangDot(nme.Object.toTypeName)
 
@@ -233,6 +235,8 @@ trait JavaParsers extends JavaScanners {
         Ident(name.toTypeName).setPos(tree.pos)
       case Select(qual, name) =>
         Select(qual, name.toTypeName).setPos(tree.pos)
+      case AppliedTypeTree(_, _) | ExistentialTypeTree(_, _) =>
+        tree
       case _ =>
         syntaxError(tree.pos, "identifier expected", false)
         errorTypeTree
@@ -315,11 +319,14 @@ trait JavaParsers extends JavaScanners {
         }
       if (in.token == LT) {
         in.nextToken
+        val t1 = convertToTypeId(t)
         val args = repsep(typeArg, COMMA)
         acceptClosingAngle()
-        val t1: Tree = AppliedTypeTree(t, args)
-        if (wildcards.isEmpty) t1
-        else ExistentialTypeTree(t1, wildcards.toList)
+        atPos(t1.pos) {
+          val t2: Tree = AppliedTypeTree(t1, args)
+          if (wildcards.isEmpty) t2
+          else ExistentialTypeTree(t2, wildcards.toList)
+        }
       } else t
     }
 
@@ -521,9 +528,7 @@ trait JavaParsers extends JavaScanners {
                 val annot =
                   atPos(pos) {
                     Annotation(
-                      New(
-                        Select(Ident(nme.ROOTPKG), nme.AnnotationDefaultATTR.toTypeName),
-                        List(List())),
+                      New(rootId(nme.AnnotationDefaultATTR.toTypeName), List(List())),
                       List())
                   }
                 mods1 = Modifiers(mods1.flags, mods1.privateWithin, annot :: mods1.annotations)
@@ -837,7 +842,8 @@ trait JavaParsers extends JavaScanners {
         case Ident(name) => name.toTypeName
         case Select(_, name) => name.toTypeName
       }
-      val buf = new ListBuffer[Tree]
+      val importJavaLang = Import(javaDot(nme.lang), List((nme.WILDCARD, null)))
+      val buf = new ListBuffer[Tree]+importJavaLang
       while (in.token == IMPORT)
         buf ++= importDecl()
       while (in.token != EOF && in.token != RBRACE) {
