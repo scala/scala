@@ -75,7 +75,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     } catch {
       case e: Exception =>
         e.printStackTrace()
-        false
+        return false
     } finally {
       logWriter.close()
     }
@@ -108,7 +108,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     } catch {
       case e: Exception =>
         e.printStackTrace()
-        false
+        return false
     }
     !testRep.hasErrors
   }
