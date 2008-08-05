@@ -71,19 +71,43 @@ class Proxy(node: Node, name: Symbol, @transient var kernel: NetKernel) extends 
     del !! (msg, f)
 
   def linkTo(to: AbstractActor): Unit =
-    del ! Apply0((target: AbstractActor, creator: Proxy) =>
-      target.linkTo(creator))
+    del ! Apply0(new LinkToFun)
 
   def unlinkFrom(from: AbstractActor): Unit =
-    del ! Apply0((target: AbstractActor, creator: Proxy) =>
-      target.unlinkFrom(creator))
+    del ! Apply0(new UnlinkFromFun)
 
   def exit(from: AbstractActor, reason: AnyRef): Unit =
-    del ! Apply0((target: AbstractActor, creator: Proxy) =>
-      target.exit(creator, reason))
+    del ! Apply0(new ExitFun(reason))
 
   override def toString() =
     name+"@"+node
+}
+
+@serializable
+class LinkToFun extends Function2[AbstractActor, Proxy, Unit] {
+  def apply(target: AbstractActor, creator: Proxy) {
+    target.linkTo(creator)
+  }
+  override def toString =
+    "<LinkToFun>"
+}
+
+@serializable
+class UnlinkFromFun extends Function2[AbstractActor, Proxy, Unit] {
+  def apply(target: AbstractActor, creator: Proxy) {
+    target.unlinkFrom(creator)
+  }
+  override def toString =
+    "<UnlinkFromFun>"
+}
+
+@serializable
+class ExitFun(reason: AnyRef) extends Function2[AbstractActor, Proxy, Unit] {
+  def apply(target: AbstractActor, creator: Proxy) {
+    target.exit(creator, reason)
+  }
+  override def toString =
+    "<ExitFun>("+reason.toString+")"
 }
 
 case class Apply0(rfun: Function2[AbstractActor, Proxy, Unit])

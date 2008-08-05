@@ -11,7 +11,6 @@
 package scala.actors.remote
 
 import scala.collection.mutable.{HashMap, HashSet}
-import scala.actors.Actor.loop
 
 case class NamedSend(senderLoc: Locator, receiverLoc: Locator, data: Array[Byte], session: Symbol)
 
