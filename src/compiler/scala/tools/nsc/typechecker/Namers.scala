@@ -334,12 +334,13 @@ trait Namers { self: Analyzer =>
               tree.symbol = enterInScope(owner.newValue(tree.pos, name)
                 .setFlag(mods.flags))
               finish
-            }
-            else if (context.owner.isClass && (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL)
-                || (mods.flags & LAZY) != 0) {
+            } else if (context.owner.isClass && (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL)
+                       || (mods.flags & LAZY) != 0) {
               val accflags: Long = ACCESSOR |
                 (if ((mods.flags & MUTABLE) != 0) mods.flags & ~MUTABLE & ~PRESUPER
                  else mods.flags & ~PRESUPER | STABLE)
+              if (nme.isSetterName(name))
+                context.error(tree.pos, "Names of vals or vars may not end in `_='")
               var getter = owner.newMethod(tree.pos, name).setFlag(accflags)
               setPrivateWithin(tree, getter, mods)
               getter = enterInScope(getter).asInstanceOf[TermSymbol]

@@ -132,12 +132,10 @@ trait StdNames {
     }
 
     def getterToLocal(name: Name): Name = {
-      assert(!isLocalName(name) && !isSetterName(name))//debug
       newTermName(name.toString() + LOCAL_SUFFIX)
     }
 
     def getterToSetter(name: Name): Name = {
-      assert(!isLocalName(name) && !isSetterName(name))//debug
       newTermName(name.toString() + SETTER_SUFFIX)
     }
 

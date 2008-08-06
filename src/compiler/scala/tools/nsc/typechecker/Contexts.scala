@@ -122,11 +122,11 @@ trait Contexts { self: Analyzer =>
       txt.scope = scope
       assert(outer ne this) // stupid
       txt.outer = outer // already interned
-      def f(what : Context) =
+      def fix(what : Context) =
         if (what eq this) txt
         else what
-      txt.enclClass = f(enclClass)
-      txt.enclMethod = f(enclMethod)
+      txt.enclClass = fix(enclClass)
+      txt.enclMethod = fix(enclMethod)
       txt.implicitsEnabled = implicitsEnabled
       txt.variance = variance
       txt._undetparams = _undetparams
@@ -161,12 +161,12 @@ trait Contexts { self: Analyzer =>
         }
         val a1 = eq(owner, that.owner)
         val a2 = eq(scope, that.scope)
-        def f(txt0 : Context, txt1 : Context) =
+        def fix(txt0 : Context, txt1 : Context) =
           ((this eq txt0) && (that eq txt1)) || (txt0 eq txt1)
 
-        val a3 = f(outer, that.outer)
-        val a4 = f(enclClass, that.enclClass)
-        val a5 = f(enclMethod, that.enclMethod)
+        val a3 = fix(outer, that.outer)
+        val a4 = fix(enclClass, that.enclClass)
+        val a5 = fix(enclMethod, that.enclMethod)
         val a6 = eq(variance, that.variance)
         val a7 = eq(_undetparams, that._undetparams)
         val a8 = eq(depth, that.depth)
@@ -462,7 +462,7 @@ trait Contexts { self: Analyzer =>
          (superAccess ||
           (pre.widen.typeSymbol.isNonBottomSubClass(sym.owner) &&
            (isSubClassOfEnclosing(pre.widen.typeSymbol) || phase.erasedTypes))))
-        // note: phase.erasedTypes disables last test, because fater addinterfaces
+        // note: phase.erasedTypes disables last test, because after addinterfaces
         // implementation classes are not in the superclass chain. If we enable the
         // test, bug780 fails.
       }
@@ -496,7 +496,7 @@ trait Contexts { self: Analyzer =>
       implicitsCache = null
       if (outer != null && outer != this) outer.resetCache
     }
-    private def collectImplicits(syms: List[Symbol], pre: Type): List[ImplicitInfo] =
+    private def collectImplicits(syms: List[Symbol], pre: Type): List[ImplicitInfo] = {
       for (sym <- syms if sym.hasFlag(IMPLICIT) && isAccessible(sym, pre, false))
       yield new ImplicitInfo(sym.name, pre, sym)
 
@@ -534,7 +534,11 @@ trait Contexts { self: Analyzer =>
             if (settings.debug.value)
               log("collect member implicits " + owner + ", implicit members = " +
                   owner.thisType.implicitMembers)//debug
-            collectImplicits(owner.thisType.implicitMembers, owner.thisType)
+            val savedEnclClass = enclClass
+            this.enclClass = this
+            val res = collectImplicits(owner.thisType.implicitMembers, owner.thisType)
+            this.enclClass = savedEnclClass
+            res
           } else if (scope != nextOuter.scope && !owner.isPackageClass) {
             if (settings.debug.value)
               log("collect local implicits " + scope.toList)//debug
