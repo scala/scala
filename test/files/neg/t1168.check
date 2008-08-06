@@ -1,0 +1,4 @@
+t1168.scala:6: error: Names of vals or vars may not end in `_='
+  val r_= = 4
+      ^
+one error found

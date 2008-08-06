@@ -496,7 +496,7 @@ trait Contexts { self: Analyzer =>
       implicitsCache = null
       if (outer != null && outer != this) outer.resetCache
     }
-    private def collectImplicits(syms: List[Symbol], pre: Type): List[ImplicitInfo] = {
+    private def collectImplicits(syms: List[Symbol], pre: Type): List[ImplicitInfo] =
       for (sym <- syms if sym.hasFlag(IMPLICIT) && isAccessible(sym, pre, false))
       yield new ImplicitInfo(sym.name, pre, sym)
 
