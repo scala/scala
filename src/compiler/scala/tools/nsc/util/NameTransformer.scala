@@ -107,29 +107,29 @@ object NameTransformer {
               buf.append(ops.op)
               i += ops.code.length()
             }
-          /* Handle the decoding of Unicode glyphs that are
-	     not valid Java/JVM identifiers */
+            /* Handle the decoding of Unicode glyphs that are
+             * not valid Java/JVM identifiers */
           } else if (ch1 == 'u' &&
-		     (Character.isDigit(ch2)) ||
-		     ('A' <= ch2 && ch2 <= 'F')) {
-              /* Skip past "$u", next four should be hexadecimal */
-	      val hex = name.substring(i+2, i+6)
-	      try {
-	        val str = Integer.parseInt(hex, 16).toChar
-		if (buf eq null) {
-                  buf = new StringBuilder()
-		  buf.append(name.substring(0, i))
-		}
-		buf.append(str)
-                /* 2 for "$u", 4 for hexadecimal number */
-		i += 6
-		unicode = true
-	      } catch {
-		case _:NumberFormatException =>
-		  /* <code>hex</code> did not decode to a hexadecimal number, so
-		   do nothing. */
+                       (Character.isDigit(ch2)) ||
+                       ('A' <= ch2 && ch2 <= 'F')) {
+            /* Skip past "$u", next four should be hexadecimal */
+            val hex = name.substring(i+2, if (i+6 <= len) i+6 else len)
+            try {
+              val str = Integer.parseInt(hex, 16).toChar
+              if (buf eq null) {
+                buf = new StringBuilder()
+                buf.append(name.substring(0, i))
               }
-	  }
+              buf.append(str)
+              /* 2 for "$u", 4 for hexadecimal number */
+              i += 6
+              unicode = true
+            } catch {
+              case _:NumberFormatException =>
+                /* <code>hex</code> did not decode to a hexadecimal number, so
+                 * do nothing. */
+            }
+                       }
         }
       }
       /* If we didn't see an opcode or encoded Unicode glyph, and the
