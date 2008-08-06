@@ -7,7 +7,17 @@ private[immutable] object IntMapUtils{
   def unsignedCompare(i : Int, j : Int) = (i < j) ^ (i < 0) ^ (j < 0)
   def shorter(m1 : Int, m2 : Int) = unsignedCompare(m2, m1)
   def complement(i : Int) = (-1) ^ i;
-  def branchMask(i : Int, j : Int) = java.lang.Integer.highestOneBit(i ^ j);
+  def highestOneBit(j : Int) = {
+    var i = j;
+    i |= (i >>  1);
+    i |= (i >>  2);
+    i |= (i >>  4);
+    i |= (i >>  8);
+    i |= (i >> 16);
+    i - (i >>> 1);
+  }
+
+  def branchMask(i : Int, j : Int) = highestOneBit(i ^ j);
 
   def join[T](p1 : Int, t1 : IntMap[T], p2 : Int, t2 : IntMap[T]) : IntMap[T] = {
     val m = branchMask(p1, p2);
