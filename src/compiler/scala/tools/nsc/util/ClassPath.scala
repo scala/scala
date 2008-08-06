@@ -192,20 +192,13 @@ class ClassPath(onlyPresentation: Boolean) {
 
     def classFile = if (!isSourceFile) entries.head.location else null
 
-    {
-      val sourcePath0 = sourcePath
-      if (sourcePath0 ne null) {
-        if (!sourcePath0.isDirectory) {
-          Console.err.println(""+sourcePath0 + " should be a directory")
-          assert(false)
-        }
-      }
-    }
-
     def sourcePath =
       if (!isSourceFile && !entries.isEmpty && (entries.head.source ne null)) {
         val ret = entries.head.source.location
-        ret
+        if ((ret ne null) && !ret.isDirectory) {
+          Console.err.println("source path " + ret + " is not a directory")
+          null
+        } else ret
       }
       else null
 
