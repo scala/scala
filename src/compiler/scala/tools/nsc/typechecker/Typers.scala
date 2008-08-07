@@ -3033,7 +3033,7 @@ trait Typers { self: Analyzer =>
       // begin typed1
       implicit val scopeKind = TypedScopeKind
       val sym: Symbol = tree.symbol
-      if (sym ne null) sym.initialize
+      if ((sym ne null) && (sym ne NoSymbol)) sym.initialize
       //if (settings.debug.value && tree.isDef) log("typing definition of "+sym);//DEBUG
       tree match {
         case PackageDef(name, stats) =>
@@ -3631,7 +3631,38 @@ trait Typers { self: Analyzer =>
           (info1 != NoImplicitInfo) &&
           isStrictlyMoreSpecific(info1.tpe, info2.tpe)
         val shadowed = new HashSet[Name](8)
+        def hasExplicitResultType(tree: Tree) = tree match {
+          case ValDef(_, _, tpt, _) => !tpt.isEmpty
+          case DefDef(_, _, _, _, tpt, _) => !tpt.isEmpty
+          case _ => false
+        }
+        /** Should implicit definition symbol `sym' be considered for applicability testing?
+         *  This is the case if one of the following holds:
+         *   - the symbol's type is initialized
+         *   - the symbol comes from a classfile
+         *   - the symbol comes from a different sourcefile than the current one
+         *   - the symbol's definition comes before, and does not contain the closest enclosing definition,
+         *   - the symbol's definition is a val, var, or def with an explicit result type
+         *  The aim of this method is to prevent premature cyclic reference errors
+         *  by computing the types of only those implicitis for which one of these
+         *  conditions is true.
+         */
+        def isValid(sym: Symbol) = {
+          sym.isInitialized ||
+          sym.sourceFile == null ||
+          (sym.sourceFile ne context.unit.source.file) || {
+            sym.rawInfo match {
+              case tc: TypeCompleter => hasExplicitResultType(tc.tree)
+              case PolyType(_, tc: TypeCompleter) => hasExplicitResultType(tc.tree)
+              case _ => true
+            }
+          } || {
+            sym.pos.offset.getOrElse(0) < context.owner.pos.offset.getOrElse(Integer.MAX_VALUE) &&
+            !(context.owner.ownerChain contains sym)
+          }
+        }
         def isApplicable(info: ImplicitInfo): Boolean =
+          isValid(info.sym) &&
           !containsError(info.tpe) &&
           !(isLocal && shadowed.contains(info.name)) &&
           (!isView || info.sym != Predef_identity) &&
