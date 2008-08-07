@@ -3548,7 +3548,7 @@ A type's typeSymbol should never be inspected directly.
       case (SingleType(_, _), ThisType(_))      => tp1 =:= tp2
       case (SingleType(_, _), SingleType(_, _)) => tp1 =:= tp2
       case (ConstantType(_), ConstantType(_))   => tp1 =:= tp2
-      case (TypeRef(pre1, sym1:TypeSkolem, args1), TypeRef(pre2, sym2:TypeSkolem, args2))
+      case (TypeRef(pre1, sym1: TypeSkolem, args1), TypeRef(pre2, sym2: TypeSkolem, args2))
       if (inIDE && args1 == args2 && pre1 == pre2 && sym1.deSkolemize == sym2.deSkolemize) => true
       case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2))
       if !(tp1.isHigherKinded || tp2.isHigherKinded) =>
@@ -3654,7 +3654,9 @@ A type's typeSymbol should never be inspected directly.
         if (inIDE) trackTypeIDE(sym1)
         (sym1 == NothingClass && tp2 <:< AnyClass.tpe
          ||
-         sym1 == NullClass && tp2.isInstanceOf[SingletonType] && (tp1 <:< tp2.widen))
+         sym1 == NullClass && tp2.isInstanceOf[SingletonType] && (tp1 <:< tp2.widen)
+         ||
+         sym1.isAbstractType && (tp1.bounds.hi <:< tp2))
       case _ =>
         false
     }) || {

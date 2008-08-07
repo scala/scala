@@ -414,19 +414,22 @@ abstract class ClassfileParser {
   def parseMethod() {
     val jflags = in.nextChar
     var sflags = transFlags(jflags)
+    var dropIt = false
     if ((jflags & JAVA_ACC_PRIVATE) != 0 && !global.settings.XO.value) {
       val name = pool.getName(in.nextChar)
       if (name == nme.CONSTRUCTOR)
         sawPrivateConstructor = true
       in.skip(2); skipAttributes()
     } else {
-      if ((jflags & JAVA_ACC_BRIDGE) != 0)
-        sflags |= BRIDGE
+      if ((jflags & JAVA_ACC_BRIDGE) != 0) {
+        if (global.settings.target.value == "jvm-1.5") sflags |= BRIDGE
+        else dropIt = true
+      }
       if ((sflags & PRIVATE) != 0 && global.settings.XO.value) {
         in.skip(4); skipAttributes()
       } else {
         val name = pool.getName(in.nextChar)
-        var info = pool.getType(in.nextChar)
+        var  info = pool.getType(in.nextChar)
         if (name == nme.CONSTRUCTOR)
           info match {
             case MethodType(formals, restpe) =>
@@ -440,7 +443,7 @@ abstract class ClassfileParser {
         if ((jflags & JAVA_ACC_VARARGS) != 0) {
           sym.setInfo(arrayToRepeated(sym.info))
         }
-        getScope(jflags).enter(sym)
+        if (!dropIt) getScope(jflags).enter(sym)
       }
     }
   }

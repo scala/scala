@@ -100,3 +100,7 @@ object Test extends Application {
    val fooW = new FooW
    new fooW.Line
 }
+
+trait FooBar[ A <: Option[_]] { def foo: A }
+trait SubFooBar[B <: Option[_]] extends FooBar[B]
+

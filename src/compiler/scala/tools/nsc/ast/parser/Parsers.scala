@@ -1408,11 +1408,11 @@ trait Parsers extends NewScanners with MarkupParsers {
       var top = simplePattern(seqOK)
       if (seqOK && isIdent) {
         if (inName == STAR)
-          return atPos(inSkipToken)(Star(top))
+          return atPos(inSkipToken)(Star(stripParens(top)))
         else if (inName == PLUS)
-          return atPos(inSkipToken)(makePlus(top))
+          return atPos(inSkipToken)(makePlus(stripParens(top)))
         else if (inName == OPT)
-          return atPos(inSkipToken)(makeOpt(top))
+          return atPos(inSkipToken)(makeOpt(stripParens(top)))
       }
       while (isIdent && inName != BAR) {
         top = reduceStack(
