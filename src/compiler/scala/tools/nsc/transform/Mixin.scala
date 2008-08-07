@@ -252,7 +252,7 @@ abstract class Mixin extends InfoTransform {
                 clazz,
                 member.cloneSymbol(clazz)
                   setPos clazz.pos
-                  setFlag FINAL resetFlag (DEFERRED | lateDEFERRED))
+                  resetFlag (DEFERRED | lateDEFERRED))
               if (member.hasFlag(LAZY)) {
                 var init = implClass(mixinClass).info.decl(member.name)
                 assert(init != NoSymbol, "Could not find initializer for " + member.name)
