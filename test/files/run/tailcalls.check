@@ -39,7 +39,6 @@ test c.c.c.c.f was successful
 test TailCall.f1 was successful
 test TailCall.f2 was successful
 test TailCall.f3 was successful
-test TailCall.f4 was successful
 test TailCall.g1 was successful
 test TailCall.g2 was successful
 test TailCall.g3 was successful
@@ -51,5 +50,4 @@ test NonTailCall.f2 was successful
 test TailCall.b1 was successful
 test TailCall.b2 was successful
 test FancyTailCalls.tcTryLocal was successful
-test FancyTailCalls.tcTryCatch was successful
 test FancyTailCalls.differentInstance was successful
