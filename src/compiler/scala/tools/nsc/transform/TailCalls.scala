@@ -236,7 +236,7 @@ abstract class TailCalls extends Transform
 
         case Return(expr) => super.transform(tree)
         case Try(block, catches, finalizer) =>
-           // no calls inside try are in tail position, but keep recursing for more nested functions
+           // no calls inside a try are in tail position, but keep recursing for nested functions
           copy.Try(tree, transform(block, mkContext(ctx, false)),
                    transformTrees(catches, mkContext(ctx, false)).asInstanceOf[List[CaseDef]],
                    transform(finalizer, mkContext(ctx, false)))
@@ -252,7 +252,12 @@ abstract class TailCalls extends Transform
                isSameTypes(ctx.tparams, targs map (_.tpe.typeSymbol)) &&
                isRecursiveCall(fun)) {
             fun match {
-              case Select(receiver, _) => if (!forMSIL) rewriteTailCall(fun, receiver :: transformTrees(vargs, mkContext(ctx, false))) else defaultTree
+              case Select(receiver, _) =>
+                // make sure the type of 'this' doesn't change through this recursive call
+                if (!forMSIL && (receiver.tpe.widen == ctx.currentMethod.enclClass.typeOfThis))
+                  rewriteTailCall(fun, receiver :: transformTrees(vargs, mkContext(ctx, false)))
+                else
+                  defaultTree
               case _ => rewriteTailCall(fun, This(currentClass) :: transformTrees(vargs, mkContext(ctx, false)))
             }
           } else
@@ -271,7 +276,11 @@ abstract class TailCalls extends Transform
               ctx.tailPos &&
               isRecursiveCall(fun)) {
             fun match {
-              case Select(receiver, _) => if (!forMSIL) rewriteTailCall(fun, receiver :: transformTrees(args, mkContext(ctx, false))) else defaultTree
+              case Select(receiver, _) =>
+                if (!forMSIL)
+                  rewriteTailCall(fun, receiver :: transformTrees(args, mkContext(ctx, false)))
+                else
+                  defaultTree
               case _ => rewriteTailCall(fun, This(currentClass) :: transformTrees(args, mkContext(ctx, false)))
             }
           } else
@@ -303,8 +312,9 @@ abstract class TailCalls extends Transform
                       (fun.pos))
       ctx.accessed = true
       //println("fun: " + fun + " args: " + args)
-      typed(atPos(fun.pos)(
-        Apply(Ident(ctx.label), args)))
+      val t = atPos(fun.pos)(Apply(Ident(ctx.label), args))
+      //println(t)
+      typed(t)
     }
 
     private def isSameTypes(ts1: List[Symbol], ts2: List[Symbol]): Boolean = {
