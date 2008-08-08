@@ -493,7 +493,8 @@ abstract class GenICode extends SubComponent  {
           ctx1.cleanups = oldcleanups
 
           if (saved) ctx1.bb.emit(LOAD_LOCAL(tmp))
-          ctx1.bb.emit(RETURN(returnedKind), tree.pos)
+          adapt(returnedKind, ctx.method.returnType, ctx, tree.pos)
+          ctx1.bb.emit(RETURN(ctx.method.returnType), tree.pos)
           ctx1.bb.enterIgnoreMode
           generatedType = expectedType
           ctx1
@@ -1015,25 +1016,24 @@ abstract class GenICode extends SubComponent  {
 
       // emit conversion
       if (generatedType != expectedType)
-        adapt(generatedType, expectedType, resCtx, tree);
+        adapt(generatedType, expectedType, resCtx, tree.pos);
 
       resCtx
     }
 
-    private def adapt(from: TypeKind, to: TypeKind, ctx: Context, tree: Tree): Unit = {
+    private def adapt(from: TypeKind, to: TypeKind, ctx: Context, pos: Position): Unit = {
       if (!(from <:< to) && !(from == SCALA_ALLREF && to == SCALA_ALL)) {
         to match {
           case UNIT =>
-            ctx.bb.emit(DROP(from), tree.pos)
+            ctx.bb.emit(DROP(from), pos)
             if (settings.debug.value)
               log("Dropped an " + from);
 
           case _ =>
           if (settings.debug.value)
-            assert(from != UNIT, "Can't convert from UNIT to " + to +
-                   tree + " at: " + (tree.pos))
+            assert(from != UNIT, "Can't convert from UNIT to " + to + " at: " + pos)
             assert(!from.isReferenceType && !to.isReferenceType, "type error: can't convert from " + from + " to " + to +" in unit "+this.unit)
-            ctx.bb.emit(CALL_PRIMITIVE(Conversion(from, to)), tree.pos);
+            ctx.bb.emit(CALL_PRIMITIVE(Conversion(from, to)), pos);
         }
       } else if (from == SCALA_ALL) {
         ctx.bb.emit(DROP(from))
