@@ -1944,7 +1944,6 @@ A type's typeSymbol should never be inspected directly.
   }
 
   def refinementOfClass(clazz: Symbol, parents: List[Type], decls: Scope) = {
-    assert(!parents.isEmpty)
     class RefinementOfClass extends RefinedType(parents, decls) {
       override def typeSymbol: Symbol = clazz
     }
