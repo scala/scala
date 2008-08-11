@@ -27,6 +27,17 @@ class Parser extends StdTokenParsers with ImplicitConversions {
   lexical.reserved ++= List("true", "false", "null")
   lexical.delimiters ++= List("{", "}", "[", "]", ":", ",")
 
+  /** Type signature for functions that can parse numeric literals */
+  type NumericParser = String => Any
+
+  // Global default number parsing function
+  protected var defaultNumberParser : NumericParser = {_.toDouble}
+
+  // Per-thread default number parsing function
+  protected val numberParser = new ThreadLocal[NumericParser]() {
+    override def initialValue() = defaultNumberParser
+  }
+
   // Define the grammar
   def root       = jsonObj | jsonArray
   def jsonObj    = "{" ~> repsep(objEntry, ",") <~ "}"
@@ -34,6 +45,6 @@ class Parser extends StdTokenParsers with ImplicitConversions {
   def objEntry   = stringVal ~ (":" ~> value) ^^ { case x ~ y => (x, y) }
   def value: Parser[Any] = (jsonObj | jsonArray | number | "true" ^^^ true | "false" ^^^ false | "null" ^^^ null | stringVal)
   def stringVal  = accept("string", { case lexical.StringLit(n) => n} )
-  def number     = accept("number", { case lexical.NumericLit(n) => n.toDouble} )
+  def number     = accept("number", { case lexical.NumericLit(n) => numberParser.get.apply(n)} )
 }
 

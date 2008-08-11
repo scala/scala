@@ -12,7 +12,21 @@
 package scala.util.parsing.json
 
 /**
- * This object provides a simple interface to the JSON parser class.
+ * This object provides a simple interface to the JSON parser class. The default conversion
+ * for numerics is into a double. If you wish to override this behavior at the global level,
+ * you can set the globalNumberParser property to your own (String => Any) function. If you only
+ * want to override at the per-thread level then you can set the perThreadNumberParser property to your
+ * function. For example:
+ *
+ * <pre>
+ * val myConversionFunc = {input : String => BigDecimal(input)}
+ *
+ * // Global override
+ * JSON.globalNumberParser = myConversionFunc
+ *
+ * // Per-thread override
+ * JSON.perThreadNumberParser = myConversionFunc
+ * </pre>
  *
  *  @author Derek Chen-Becker <"java"+@+"chen-becker"+"."+"org">
  */
@@ -66,4 +80,16 @@ object JSON extends Parser {
       input
   }
 
+  /**
+   * The global (VM) default function for converting a string to a numeric value.
+   */
+  def globalNumberParser_=(f: NumericParser) { defaultNumberParser = f }
+  def globalNumberParser : NumericParser = defaultNumberParser
+
+  /**
+   * Defines the function used to convert a numeric string literal into a numeric format on a per-thread
+   * basis. Use globalNumberParser for a global override
+   */
+   def perThreadNumberParser_=(f : NumericParser) { numberParser.set(f) }
+   def perThreadNumberParser : NumericParser = numberParser.get()
 }
