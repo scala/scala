@@ -112,7 +112,7 @@ class BatchSourceFile(val file : AbstractFile, _content : Array[Char]) extends S
 
     def find(toFind: Int, isIndex: Boolean): Int = {
       if (toFind == 0) return 0
-      if (!isIndex && (toFind >= content.length)) {
+      if (!isIndex && (toFind > content.length)) {
         throw new Error(toFind + " not valid offset in " +
                         file.name + ":" + content.length)
       }
@@ -128,7 +128,7 @@ class BatchSourceFile(val file : AbstractFile, _content : Array[Char]) extends S
         if (isBackward && offset <= 0)
           throw new Error(offset + " " + index + " " + toFind + " " + isIndex);
         offset = offset + increment
-        if (!isBackward) assert(offset < content.length);
+        if (!isBackward) assert(offset <= content.length);
 
         if (isLineBreak(offset + (if (isBackward) 0 else -1))) {
           index = index + increment
@@ -141,7 +141,6 @@ class BatchSourceFile(val file : AbstractFile, _content : Array[Char]) extends S
   }
   def offsetToLine(offset: Int): Int = line.find(offset, false)
   def lineToOffset(index : Int): Int = line.find(index , true)
-
 }
 
 

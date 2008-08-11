@@ -692,8 +692,10 @@ trait Typers { self: Analyzer =>
         if (tree.isType) {
           if ((mode & FUNmode) != 0) {
             tree
-          } else if (tree.hasSymbol && !tree.symbol.typeParams.isEmpty && (mode & HKmode) == 0) { // (7)
-            // @M When not typing a higher-kinded type ((mode & HKmode) == 0), types must be of kind *,
+          } else if (tree.hasSymbol && !tree.symbol.typeParams.isEmpty && (mode & HKmode) == 0 &&
+                     !(tree.symbol.hasFlag(JAVA) && context.unit.isJava)) { // (7)
+            // @M When not typing a higher-kinded type ((mode & HKmode) == 0)
+            // or raw type (tree.symbol.hasFlag(JAVA) && context.unit.isJava), types must be of kind *,
             // and thus parameterised types must be applied to their type arguments
             // @M TODO: why do kind-* tree's have symbols, while higher-kinded ones don't?
             errorTree(tree, tree.symbol+" takes type parameters")
