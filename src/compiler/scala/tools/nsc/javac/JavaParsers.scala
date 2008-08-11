@@ -847,8 +847,7 @@ trait JavaParsers extends JavaScanners {
         case Ident(name) => name.toTypeName
         case Select(_, name) => name.toTypeName
       }
-      val importJavaLang = Import(javaDot(nme.lang), List((nme.WILDCARD, null)))
-      val buf = new ListBuffer[Tree]+importJavaLang
+      val buf = new ListBuffer[Tree]
       while (in.token == IMPORT)
         buf ++= importDecl()
       while (in.token != EOF && in.token != RBRACE) {

@@ -42,10 +42,12 @@ trait Contexts { self: Analyzer =>
     if (!settings.noimports.value) {
       assert(isDefinitionsInitialized)
       imps += JavaLangPackage
-      assert(ScalaPackage ne null, "Scala package is null")
-      imps += ScalaPackage
-      if (!(treeInfo.isPredefUnit(unit.body) || treeInfo.containsLeadingPredefImport(List(unit.body))))
-        imps += PredefModule
+      if (!unit.isJava) {
+        assert(ScalaPackage ne null, "Scala package is null")
+        imps += ScalaPackage
+        if (!(treeInfo.isPredefUnit(unit.body) || treeInfo.containsLeadingPredefImport(List(unit.body))))
+          imps += PredefModule
+      }
     }
     imps.toList
   }
