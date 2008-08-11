@@ -307,7 +307,7 @@ trait JavaParsers extends JavaScanners {
           }
           val tdef = atPos(pos) {
             TypeDef(
-              Modifiers(Flags.JAVA),
+              Modifiers(Flags.JAVA | Flags.DEFERRED),
               newTypeName("_$"+ (wildcards.length + 1)),
               List(),
               TypeBoundsTree(lo, hi))
