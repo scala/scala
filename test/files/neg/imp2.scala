@@ -1,5 +1,5 @@
 abstract class C {
-  val f: int
+  val f: Int
 }
 
 object A extends C {

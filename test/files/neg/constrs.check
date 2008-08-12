@@ -1,8 +1,8 @@
 constrs.scala:6: error: type T is not a member of object test
-    def this(y: int)(z: int)(t: this.T) = { this(this.u + y + z); Console.println(x) }
+    def this(y: Int)(z: Int)(t: this.T) = { this(this.u + y + z); Console.println(x) }
                                      ^
 constrs.scala:6: error: value u is not a member of object test
-    def this(y: int)(z: int)(t: this.T) = { this(this.u + y + z); Console.println(x) }
+    def this(y: Int)(z: Int)(t: this.T) = { this(this.u + y + z); Console.println(x) }
                                                       ^
 constrs.scala:10: error: called constructor's definition must precede calling constructor's definition
     def this() = this("abc")

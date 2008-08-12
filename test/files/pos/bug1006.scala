@@ -10,6 +10,6 @@ def test() {
     def myVal: T1 = value
   }
 
-  Console.println(new B[int](23).myVal)
+  Console.println(new B[Int](23).myVal)
 }
 }

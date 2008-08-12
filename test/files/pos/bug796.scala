@@ -10,7 +10,7 @@ object Test extends Application {
 
   object Twice {
     def apply(x: Int) = x * 2
-    def unapply(x: Int): Option[Tuple1[int]] =
+    def unapply(x: Int): Option[Tuple1[Int]] =
       if (x % 2 == 0) Some(Tuple1(x / 2))
       else None
   }

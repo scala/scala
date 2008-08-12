@@ -3,6 +3,6 @@ object Test {
     case List(x) | List() => Console.println(x)
   }
   List(2) match {
-    case List(_: int) | List() => Console.println()
+    case List(_: Int) | List() => Console.println()
   }
 }
