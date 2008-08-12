@@ -127,15 +127,15 @@ abstract class Component extends UIElement with Publisher {
         def mouseExited(e: java.awt.event.MouseEvent) { }
         def mouseClicked(e: java.awt.event.MouseEvent) {
           publish(MouseClicked(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                               e.getPoint, e.getModifiers, e.getClickCount, e.isPopupTrigger))
+                               e.getPoint, e.getModifiersEx, e.getClickCount, e.isPopupTrigger)(e.getWhen))
         }
         def mousePressed(e: java.awt.event.MouseEvent) {
           publish(MousePressed(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                               e.getPoint, e.getModifiers, e.getClickCount, e.isPopupTrigger))
+                               e.getPoint, e.getModifiersEx, e.getClickCount, e.isPopupTrigger)(e.getWhen))
         }
         def mouseReleased(e: java.awt.event.MouseEvent) {
           publish(MouseReleased(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                                e.getPoint, e.getModifiers, e.getClickCount, e.isPopupTrigger))
+                                e.getPoint, e.getModifiersEx, e.getClickCount, e.isPopupTrigger)(e.getWhen))
         }
       })
     }
@@ -146,11 +146,11 @@ abstract class Component extends UIElement with Publisher {
       peer.addMouseListener(new MouseListener {
         def mouseEntered(e: java.awt.event.MouseEvent) {
           publish(MouseEntered(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                               e.getPoint, e.getModifiers))
+                               e.getPoint, e.getModifiersEx)(e.getWhen))
         }
         def mouseExited(e: java.awt.event.MouseEvent) {
           publish(MouseExited(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                              e.getPoint, e.getModifiers))
+                              e.getPoint, e.getModifiersEx)(e.getWhen))
         }
         def mouseClicked(e: java.awt.event.MouseEvent) {}
         def mousePressed(e: java.awt.event.MouseEvent) { }
@@ -159,11 +159,11 @@ abstract class Component extends UIElement with Publisher {
       peer.addMouseMotionListener(new MouseMotionListener {
         def mouseMoved(e: java.awt.event.MouseEvent) {
           publish(MouseMoved(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                             e.getPoint, e.getModifiers))
+                             e.getPoint, e.getModifiersEx)(e.getWhen))
         }
         def mouseDragged(e: java.awt.event.MouseEvent) {
           publish(MouseDragged(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                               e.getPoint, e.getModifiers))
+                               e.getPoint, e.getModifiersEx)(e.getWhen))
         }
       })
     }
@@ -174,7 +174,7 @@ abstract class Component extends UIElement with Publisher {
       peer.addMouseWheelListener(new MouseWheelListener {
         def mouseWheelMoved(e: java.awt.event.MouseWheelEvent) {
           publish(MouseWheelMoved(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                             e.getPoint, e.getModifiers, e.getWheelRotation)) }
+                             e.getPoint, e.getModifiersEx, e.getWheelRotation)(e.getWhen)) }
       })
     }
   }

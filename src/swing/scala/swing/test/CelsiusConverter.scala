@@ -8,11 +8,10 @@ import event._
 object CelsiusConverter extends SimpleGUIApplication {
   def top = new MainFrame {
     title = "Convert Celsius to Fahrenheit"
-    defaultButton = Some(convertButton)
     val tempCelsius = new TextField
     val celsiusLabel = new Label {
       text = "Celsius"
-      border = Border.Empty(5, 5, 5, 5)
+      border = Swing.EmptyBorder(5, 5, 5, 5)
     }
     val convertButton = new Button {
       text = "Convert"//new javax.swing.ImageIcon("c:\\workspace\\gui\\images\\convert.gif")
@@ -20,19 +19,25 @@ object CelsiusConverter extends SimpleGUIApplication {
     }
     val fahrenheitLabel = new Label {
       text = "Fahrenheit     "
-      border = Border.Empty(5, 5, 5, 5)
+      border = Swing.EmptyBorder(5, 5, 5, 5)
       listenTo(convertButton, tempCelsius)
+
+      def convert() {
+        val c = Integer.parseInt(tempCelsius.text)
+        val f = c * 9 / 5 + 32
+        text = "<html><font color = red>"+f+"</font> Fahrenheit</html>"
+      }
+
       reactions += {
-        case ButtonClicked(_) | ValueChanged(_,false) =>
-          val c = Integer.parseInt(tempCelsius.text)
-          val f = c * 9 / 5 + 32
-          text = "<html><font color = red>"+f+"</font> Fahrenheit</html>"
+        case ButtonClicked(_) => convert()
+        case v @ ValueChanged(_) if v.committed => convert()
       }
     }
     contents = new GridPanel(2,2) {
       contents.append(tempCelsius, celsiusLabel, convertButton, fahrenheitLabel)
-      border = Border.Empty(10, 10, 10, 10)
+      border = Swing.EmptyBorder(10, 10, 10, 10)
     }
+    defaultButton = Some(convertButton)
   }
 }
 

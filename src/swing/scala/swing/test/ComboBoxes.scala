@@ -59,7 +59,7 @@ object ComboBoxes extends SimpleGUIApplication {
     } catch {
       case _ =>
         println("Couldn't load images for combo box")
-        List(scala.swing.Icon.Empty)
+        List(Swing.EmptyIcon)
     }
 
     val iconBox = new ComboBox(icons) {
@@ -68,9 +68,9 @@ object ComboBoxes extends SimpleGUIApplication {
   	      component.icon = icon
           component.xAlignment = Alignment.Center
           if(isSelected) {
-            component.border = Border.Line(list.selectionBackground, 3)
+            component.border = Swing.LineBorder(list.selectionBackground, 3)
           } else {
-            component.border = Border.Empty(3)
+            component.border = Swing.EmptyBorder(3)
           }
         }
       }

@@ -10,8 +10,6 @@ object UIDemo extends SimpleGUIApplication {
 
     menuBar = new MenuBar
 
-    import Border._
-
     val menu = new Menu("A Menu")
     menu.contents += new MenuItem("An item")
     menu.contents += new MenuItem(Action("An action item") {
@@ -32,14 +30,16 @@ object UIDemo extends SimpleGUIApplication {
 
     var reactLive = false
 
+    import Swing._
+
     contents = new BorderPanel {
       import BorderPanel.Position._
       val tabs = new TabbedPane {
         import TabbedPane._
         val buttons = new FlowPanel {
-          border = Empty(5,5,5,5)
+          border = Swing.EmptyBorder(5,5,5,5)
           contents += new BoxPanel(Orientation.Vertical) {
-            border = Compound(Titled(Etched, "Radio Buttons"), Empty(5,5,5,10))
+            border = CompoundBorder(TitledBorder(EtchedBorder, "Radio Buttons"), EmptyBorder(5,5,5,10))
             val a = new RadioButton("Green Vegetables")
     		val b = new RadioButton("Red Meat")
     		val c = new RadioButton("White Tofu")
@@ -47,7 +47,7 @@ object UIDemo extends SimpleGUIApplication {
     		contents ++= mutex.buttons
           }
           contents += new BoxPanel(Orientation.Vertical) {
-            border = Compound(Titled(Etched, "Check Boxes"), Empty(5,5,5,10))
+            border = CompoundBorder(TitledBorder(EtchedBorder, "Check Boxes"), EmptyBorder(5,5,5,10))
             val paintLabels = new CheckBox("Paint Labels")
     		val paintTicks = new CheckBox("Paint Ticks")
     		val snapTicks = new CheckBox("Snap To Ticks")
@@ -85,7 +85,7 @@ object UIDemo extends SimpleGUIApplication {
           contents += label
           listenTo(field)
           reactions += {
-            case ValueChanged(`field`, false) => label.text = field.password.mkString
+            case v @ ValueChanged(`field`) if v.committed => label.text = field.password.mkString
           }
         }
 
@@ -116,8 +116,8 @@ object UIDemo extends SimpleGUIApplication {
       listenTo(tabs.selection)
       listenTo(list.selection)
       reactions += {
-        case ValueChanged(`slider`, live) =>
-          if(!live || live == reactLive) tabs.selection.index = slider.value
+        case v @ ValueChanged(`slider`) =>
+          if(v.committed || reactLive) tabs.selection.index = slider.value
         case SelectionChanged(`tabs`) =>
           slider.value = tabs.selection.index
           list.selection.selectIndices(tabs.selection.index)

@@ -9,15 +9,15 @@ object CelsiusConverter2 extends SimpleGUIApplication {
     val Fahrenheit = new TextField { columns = 5 }
     contents.append(Celsius, new Label(" Celsius  =  "),
                     Fahrenheit, new Label(" Fahrenheit"))
-    border = Border.Empty(15, 10, 10, 10)
+    border = Swing.EmptyBorder(15, 10, 10, 10)
 
     listenTo(Fahrenheit, Celsius)
     reactions += {
-      case ValueChanged(Fahrenheit, false) =>
+      case v @ ValueChanged(Fahrenheit) if v.committed =>
         val f = Integer.parseInt(Fahrenheit.text)
         val c = (f - 32) * 5 / 9
         Celsius.text = c.toString
-      case ValueChanged(Celsius, false) =>
+      case v @ ValueChanged(Celsius) if v.committed =>
         val c = Integer.parseInt(Celsius.text)
         val f = c * 9 / 5 + 32
         Fahrenheit.text = f.toString

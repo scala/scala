@@ -43,7 +43,7 @@ class Slider extends Component with Orientable with Publisher {
 
   peer.addChangeListener(new javax.swing.event.ChangeListener {
     def stateChanged(e: javax.swing.event.ChangeEvent) {
-      publish(ValueChanged(Slider.this, peer.getValueIsAdjusting))
+      publish(ValueChanged(Slider.this)(peer.getValueIsAdjusting))
     }
   })
 }

@@ -1,4 +1,4 @@
-scala.swing
+scala.swing BETA
 
 This is a UI library that will wrap most of Java Swing for Scala in a straightforward manner. 
 The widget class hierarchy loosely resembles that of Java Swing. The main differences are:
@@ -33,6 +33,7 @@ The library comprises three main packages:
 
 Notes:
 
-Visual appearance of combo boxes using the GTK LaF is broken on JDKs < 1.7b30.
+Visual appearance of combo boxes using the GTK LaF is broken on JDKs < 1.7b30. 
+This is a Java Swing problem.
 
 To download the latest version, go to http://lamp.epfl.ch/~imaier or use sbaz.
