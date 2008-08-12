@@ -900,7 +900,28 @@ DOCUMENTATION
     <touch file="${build-docs.dir}/manual.complete" verbose="no"/>
   </target>
 
-  <target name="docs.pre-comp" depends="docs.man">
+  <target name="docs.pre-swing" depends="docs.man">
+    <uptodate property="docs.swing.available" targetfile="${build-docs.dir}/swing.complete">
+      <srcfiles dir="${src.dir}/swing"/>
+    </uptodate>
+  </target>
+
+  <target name="docs.swing" depends="docs.pre-swing" unless="docs.swing.available">
+    <stopwatch name="docs.swing.timer"/>
+    <mkdir dir="${build-docs.dir}/swing"/>
+    <scaladoc
+      destdir="${build-docs.dir}/swing"
+      windowtitle="Scala Swing Library"
+      doctitle="Scala Swing ${version.number} API"
+      classpathref="pack.classpath"
+      srcdir="${src.dir}/swing">
+      <include name="**/*.scala"/>
+    </scaladoc>
+    <touch file="${build-docs.dir}/swing.complete" verbose="no"/>
+    <stopwatch name="docs.swing.timer" action="total"/>
+  </target>
+
+  <target name="docs.pre-comp" depends="docs.swing">
     <uptodate property="docs.comp.available" targetfile="${build-docs.dir}/compiler.complete">
       <srcfiles dir="${src.dir}/compiler"/>
     </uptodate>
@@ -920,8 +941,8 @@ DOCUMENTATION
     <touch file="${build-docs.dir}/compiler.complete" verbose="no"/>
     <stopwatch name="docs.comp.timer" action="total"/>
   </target>
-  
-  <target name="docs.done" depends="docs.man"/>
+
+  <target name="docs.done" depends="docs.swing"/>
 
   <target name="docs.clean">
     <delete dir="${build-docs.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
@@ -1011,6 +1032,12 @@ DISTRIBUTION
     <mkdir dir="${dist.dir}/doc/scala/tools"/>
     <copy toDir="${dist.dir}/doc/scala/tools">
       <fileset dir="${build-docs.dir}/manual/html"/>
+    </copy>
+    <mkdir dir="${dist.dir}/doc/scala/swing"/>
+    <copy file="${src.dir}/swing/doc/README" toDir="${dist.dir}/doc/scala/swing"/>
+    <mkdir dir="${dist.dir}/doc/scala/swing/api"/>
+    <copy toDir="${dist.dir}/doc/scala/swing/api">
+      <fileset dir="${build-docs.dir}/swing"/>
     </copy>
   </target>
     
@@ -1138,6 +1165,8 @@ FORWARDED TARGETS FOR PACKAGING
     <ant antfile="${src.dir}/build/msil.xml" target="msil-dist.done" inheritall="yes" inheritrefs="yes"/>
     <ant antfile="${src.dir}/build/pack.xml" target="msilpack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
+
+  <target name="alldistpack" depends="distpack, fourdistpack, msildistpack"/>
 
 <!-- ===========================================================================
 FORWARDED TARGETS FOR NIGHTLY BUILDS

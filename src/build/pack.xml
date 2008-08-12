@@ -122,7 +122,7 @@ MAIN DISTRIBUTION SBAZ
       version="${version.number}"
       desc="The Scala developer documentation. This contains all developer documentation."
       link="${sbaz.universe}/scala-devel-docs-${version.number}.sbp">
-      <docset dir="${dist.dir}/doc"/>
+      <docset dir="${dist.dir}/doc/scala"/>
     </sbaz>
   </target>
 
@@ -149,20 +149,20 @@ JAVA FOUR DISTRIBUTION PACKAGING
   </target>
   
   <target name="fourpack-archives.tar" depends="fourpack-archives.start">
-    <tar destfile="${dists.dir}/archives/scala-jvm4-${version.number}.tgz" compression="gzip">
-      <tarfileset dir="${dists.dir}/scala-jvm4-${version.number}" prefix="scala-jvm4-${version.number}"
+    <tar destfile="${dists.dir}/archives/scala-${version.number}-jvm4.tgz" compression="gzip">
+      <tarfileset dir="${dists.dir}/scala-jvm4-${version.number}" prefix="scala-${version.number}-jvm4"
         includes="bin/**" mode="755"/>
-      <tarfileset dir="${dists.dir}/scala-jvm4-${version.number}" prefix="scala-jvm4-${version.number}"
+      <tarfileset dir="${dists.dir}/scala-jvm4-${version.number}" prefix="scala-${version.number}-jvm4"
         excludes="bin/**"/>
     </tar>
-    <checksum file="${dists.dir}/archives/scala-jvm4-${version.number}.tgz" fileext=".md5"/>
+    <checksum file="${dists.dir}/archives/scala-${version.number}-jvm4.tgz" fileext=".md5"/>
   </target>
   
   <target name="fourpack-archives.zip" depends="fourpack-archives.tar">
-    <zip destfile="${dists.dir}/archives/scala-jvm4-${version.number}.zip">
-      <zipfileset dir="${dists.dir}/scala-jvm4-${version.number}" prefix="scala-jvm4-${version.number}"/>
+    <zip destfile="${dists.dir}/archives/scala-${version.number}-jvm4.zip">
+      <zipfileset dir="${dists.dir}/scala-jvm4-${version.number}" prefix="scala-${version.number}-jvm4"/>
     </zip>
-    <checksum file="${dists.dir}/archives/scala-jvm4-${version.number}.zip" fileext=".md5"/>
+    <checksum file="${dists.dir}/archives/scala-${version.number}-jvm4.zip" fileext=".md5"/>
   </target>
   
   <target name="fourpack-archives.done" depends="fourpack-archives.zip"/>
@@ -178,22 +178,22 @@ MSIL DISTRIBUTION PACKAGING
   </target>
 
   <target name="msilpack-archives.tar" depends="msilpack-archives.start">
-    <tar destfile="${dists.dir}/archives/scala-msil-${version.number}.tgz" compression="gzip">
-      <tarfileset dir="${dists.dir}/scala-msil-${version.number}" prefix="scala-msil-${version.number}"
+    <tar destfile="${dists.dir}/archives/scala-${version.number}-msil.tgz" compression="gzip">
+      <tarfileset dir="${dists.dir}/scala-msil-${version.number}" prefix="scala-${version.number}-msil"
         includes="bin/**" mode="755"/>
       <!-- Inlcude only dll's. Using scala-msil depends on having a scala distribution -->
-      <tarfileset dir="${dists.dir}/scala-msil-${version.number}" prefix="scala-msil-${version.number}"
+      <tarfileset dir="${dists.dir}/scala-msil-${version.number}" prefix="scala-${version.number}-msil"
         includes="lib/*.dll"/>
     </tar>
-    <checksum file="${dists.dir}/archives/scala-msil-${version.number}.tgz" fileext=".md5"/>
+    <checksum file="${dists.dir}/archives/scala-${version.number}-msil.tgz" fileext=".md5"/>
   </target>
 
   <target name="msilpack-archives.zip" depends="msilpack-archives.tar">
-    <zip destfile="${dists.dir}/archives/scala-msil-${version.number}.zip">
-      <zipfileset dir="${dists.dir}/scala-msil-${version.number}" prefix="scala-msil-${version.number}"
+    <zip destfile="${dists.dir}/archives/scala-${version.number}-msil.zip">
+      <zipfileset dir="${dists.dir}/scala-msil-${version.number}" prefix="scala-${version.number}-msil"
         includes="bin/**,lib/*.dll"/>
     </zip>
-    <checksum file="${dists.dir}/archives/scala-msil-${version.number}.zip" fileext=".md5"/>
+    <checksum file="${dists.dir}/archives/scala-${version.number}-msil.zip" fileext=".md5"/>
   </target>
   
   <target name="msilpack-archives.done" depends="msilpack-archives.zip"/>
