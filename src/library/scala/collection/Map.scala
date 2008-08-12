@@ -156,7 +156,7 @@ trait Map[A, +B] extends PartialFunction[A, B] with Collection[(A, B)] {
    *  @return    a string showing all mappings
    */
   override def toString() =
-    elements.toList.map(kv => kv._1 + " -> " + kv._2).mkString("Map(", ", ", ")")
+    elements.toList.map(kv => kv._1 + " -> " + kv._2).mkString(stringPrefix + "(", ", ", ")")
 
   /** The default value for the map, returned when a key is not found
    *  The method implemented here yields an error,
