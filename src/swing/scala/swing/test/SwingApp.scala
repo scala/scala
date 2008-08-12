@@ -22,7 +22,7 @@ object SwingApp extends SimpleGUIApplication {
     }
     contents = new FlowPanel {
       contents.append(button, label)
-      border = Border.Empty(5, 5, 5, 5)
+      border = Swing.EmptyBorder(5, 5, 5, 5)
     }
   }
 }

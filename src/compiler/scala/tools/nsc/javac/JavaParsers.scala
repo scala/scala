@@ -35,7 +35,7 @@ trait JavaParsers extends JavaScanners {
     protected def posToReport: Int = in.p2g(in.currentPos)
     protected def freshName(pos : Position, prefix : String): Name
     protected implicit def i2p(offset : Int) : Position
-    private implicit def p2i(pos : Position) = pos.offset.getOrElse(-1)
+    private implicit def p2i(pos : Position): Int = pos.offset.getOrElse(-1)
 
     /** The simple name of the package of the currently parsed file */
     private var thisPackageName: Name = nme.EMPTY
@@ -307,7 +307,7 @@ trait JavaParsers extends JavaScanners {
           }
           val tdef = atPos(pos) {
             TypeDef(
-              Modifiers(Flags.JAVA),
+              Modifiers(Flags.JAVA | Flags.DEFERRED),
               newTypeName("_$"+ (wildcards.length + 1)),
               List(),
               TypeBoundsTree(lo, hi))
@@ -489,8 +489,6 @@ trait JavaParsers extends JavaScanners {
 
     def termDecl(mods: Modifiers, parentToken: Int): List[Tree] = {
       val inInterface = parentToken == INTERFACE || parentToken == AT
-      var mods1 = mods
-      if ((mods hasFlag Flags.ABSTRACT) || inInterface) mods1 = mods &~ Flags.ABSTRACT | Flags.DEFERRED
       val tparams = if (in.token == LT) typeParams() else List()
       val isVoid = in.token == VOID
       var rtpt =
@@ -509,10 +507,12 @@ trait JavaParsers extends JavaScanners {
         optThrows()
         List {
           atPos(pos) {
-            DefDef(mods1, nme.CONSTRUCTOR, tparams, List(vparams), TypeTree(), methodBody())
+            DefDef(mods, nme.CONSTRUCTOR, tparams, List(vparams), TypeTree(), methodBody())
           }
         }
       } else {
+        var mods1 = mods
+        if (mods hasFlag Flags.ABSTRACT) mods1 = mods &~ Flags.ABSTRACT | Flags.DEFERRED
         pos = in.currentPos
         val name = ident()
         if (in.token == LPAREN) {
@@ -540,6 +540,7 @@ trait JavaParsers extends JavaScanners {
                 EmptyTree
               }
             }
+          if (inInterface) mods1 |= Flags.DEFERRED
           List {
             atPos(pos) {
               DefDef(mods1, name, tparams, List(vparams), rtpt, body)
@@ -723,8 +724,12 @@ trait JavaParsers extends JavaScanners {
         } else if (in.token == SEMI) {
           in.nextToken
         } else {
-          if (in.token == ENUM) mods |= Flags.STATIC
-          (if (mods hasFlag Flags.STATIC) statics else members) ++= memberDecl(mods, parentToken)
+          if (in.token == ENUM || in.token == INTERFACE) mods |= Flags.STATIC
+          val decls = memberDecl(mods, parentToken)
+          (if ((mods hasFlag Flags.STATIC) || inInterface && !(decls exists (_.isInstanceOf[DefDef])))
+             statics
+           else
+             members) ++= decls
         }
       }
       (statics.toList, members.toList)
@@ -842,8 +847,7 @@ trait JavaParsers extends JavaScanners {
         case Ident(name) => name.toTypeName
         case Select(_, name) => name.toTypeName
       }
-      val importJavaLang = Import(javaDot(nme.lang), List((nme.WILDCARD, null)))
-      val buf = new ListBuffer[Tree]+importJavaLang
+      val buf = new ListBuffer[Tree]
       while (in.token == IMPORT)
         buf ++= importDecl()
       while (in.token != EOF && in.token != RBRACE) {

@@ -56,9 +56,9 @@ class TextComponent extends Component with Publisher {
   def selectAll() { peer.selectAll() }
 
   peer.getDocument.addDocumentListener(new DocumentListener {
-    def changedUpdate(e:DocumentEvent) { publish(ValueChanged(TextComponent.this, true)) }
-    def insertUpdate(e:DocumentEvent) { publish(ValueChanged(TextComponent.this, true)) }
-    def removeUpdate(e:DocumentEvent) { publish(ValueChanged(TextComponent.this, true)) }
+    def changedUpdate(e:DocumentEvent) { publish(ValueChanged(TextComponent.this)(true)) }
+    def insertUpdate(e:DocumentEvent) { publish(ValueChanged(TextComponent.this)(true)) }
+    def removeUpdate(e:DocumentEvent) { publish(ValueChanged(TextComponent.this)(true)) }
   })
 }
 

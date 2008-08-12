@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: Parser.scala 15746 2008-08-11 17:33:54Z dchenbecker $
 
 
 package scala.util.parsing.json
@@ -45,6 +45,6 @@ class Parser extends StdTokenParsers with ImplicitConversions {
   def objEntry   = stringVal ~ (":" ~> value) ^^ { case x ~ y => (x, y) }
   def value: Parser[Any] = (jsonObj | jsonArray | number | "true" ^^^ true | "false" ^^^ false | "null" ^^^ null | stringVal)
   def stringVal  = accept("string", { case lexical.StringLit(n) => n} )
-  def number     = accept("number", { case lexical.NumericLit(n) => numberParser.get.apply(n)} )
+  def number     = accept("number", { case lexical.NumericLit(n) => numberParser.get.asInstanceOf[NumericParser].apply(n)} ) // cast for jvm 1.4
 }
 

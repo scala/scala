@@ -29,7 +29,7 @@ case class TableResized(override val source: Table) extends TableChange(source)
 case class TableRowsAdded(override val source: Table, range: Range) extends TableResized(source)
 case class TableRowsRemoved(override val source: Table, range: Range) extends TableResized(source)
 
-case class TableColumnsSelected(override val source: Table, range: Range, live: Boolean)
-           extends TableEvent(source) with LiveEvent with ListSelectionEvent
-case class TableRowsSelected(override val source: Table, range: Range, live: Boolean)
-           extends TableEvent(source) with LiveEvent with ListSelectionEvent
+case class TableColumnsSelected(override val source: Table, range: Range, adjusting: Boolean)
+           extends TableEvent(source) with AdjustingEvent with ListSelectionEvent
+case class TableRowsSelected(override val source: Table, range: Range, adjusting: Boolean)
+           extends TableEvent(source) with AdjustingEvent with ListSelectionEvent

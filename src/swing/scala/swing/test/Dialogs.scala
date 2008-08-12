@@ -38,7 +38,7 @@ object Dialogs extends SimpleGUIApplication {
       c.ipadx = 50
       layout(buttonText) = c
 
-      border = Border.Empty(5, 5, 5, 5)
+      border = Swing.EmptyBorder(5, 5, 5, 5)
     })
     pages += new Page("Simple Modal Dialogs", new BorderPanel {
       import BorderPanel._
@@ -74,7 +74,7 @@ object Dialogs extends SimpleGUIApplication {
                         "Would you like some green eggs to go with that ham?",
                         "A Silly Question",
                         Options.YesNo, Message.Question,
-                        Icon.Empty, options, 2) match {
+                        Swing.EmptyIcon, options, 2) match {
               case Result.Yes => label.text = "You're kidding!"
               case Result.No => label.text = "I don't like them, either."
               case _ => label.text = "Come on -- 'fess up!"
@@ -87,7 +87,7 @@ object Dialogs extends SimpleGUIApplication {
                         "Would you like some green eggs to go with that ham?",
                         "A Silly Question",
                         Options.YesNoCancel, Message.Question,
-                        Icon.Empty, options, 2) match {
+                        Swing.EmptyIcon, options, 2) match {
               case Result.Yes => label.text = "Here you go: green eggs and ham!"
               case Result.No => label.text = "OK, just the ham, then."
               case Result.Cancel => label.text = "Well, I'm certainly not going to eat them!"
@@ -120,7 +120,7 @@ object Dialogs extends SimpleGUIApplication {
                       "Complete the sentence:\n"
                       + "\"Green eggs and...\"",
                       "Customized Dialog",
-                      Message.Plain, Icon.Empty,
+                      Message.Plain, Swing.EmptyIcon,
                       possibilities, "ham")
 
                     //If a string was returned, say so.
@@ -133,7 +133,7 @@ object Dialogs extends SimpleGUIApplication {
                       "Complete the sentence:\n"
                       + "\"Green eggs and...\"",
                       "Customized Dialog",
-                      Message.Plain, Icon.Empty,
+                      Message.Plain, Swing.EmptyIcon,
                       Nil, "ham")
 
                     //If a string was returned, say so.

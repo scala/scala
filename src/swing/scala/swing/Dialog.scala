@@ -28,7 +28,7 @@ object Dialog {
   def showConfirmation(parent: Component, message: String, title: String,
      optionType: Options.Value, messageType: Message.Value, icon: Icon): Result.Value =
      Result(JOptionPane.showConfirmDialog(parent.peer, message, title,
-                                   optionType.id, messageType.id, Icon.wrap(icon)))
+                                   optionType.id, messageType.id, Swing.wrapIcon(icon)))
   def showConfirmation(parent: Component, message: String, title: String,
      optionType: Options.Value): Result.Value =
      Result(JOptionPane.showConfirmDialog(parent.peer, message, title,
@@ -38,7 +38,7 @@ object Dialog {
      optionType: Options.Value, messageType: Message.Value, icon: Icon,
      entries: Seq[Any], initialEntry: Int): Result.Value = {
        val r = JOptionPane.showOptionDialog(parent.peer, message, title,
-                                   optionType.id, messageType.id, Icon.wrap(icon),
+                                   optionType.id, messageType.id, Swing.wrapIcon(icon),
                                    entries.map(_.asInstanceOf[AnyRef]).toArray, entries(initialEntry))
        Result(r)
      }
@@ -49,14 +49,14 @@ object Dialog {
        val e = if (entries.isEmpty) null
                else entries.map(_.asInstanceOf[AnyRef]).toArray
        val r = JOptionPane.showInputDialog(parent.peer, message, title,
-       		                               messageType.id, Icon.wrap(icon),
+       		                               messageType.id, Swing.wrapIcon(icon),
        		                               e, initialEntry)
        Swing.toOption(r)
   }
   def showMessage(parent: Component, message: String, title: String,
      messageType: Message.Value, icon: Icon) {
      JOptionPane.showMessageDialog(parent.peer, message, title,
-                                   messageType.id, Icon.wrap(icon))
+                                   messageType.id, Swing.wrapIcon(icon))
   }
 
   def showMessage(parent: Component, message: String) {

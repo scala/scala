@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: JSON.scala 15746 2008-08-11 17:33:54Z dchenbecker $
 
 
 package scala.util.parsing.json
@@ -91,5 +91,5 @@ object JSON extends Parser {
    * basis. Use globalNumberParser for a global override
    */
    def perThreadNumberParser_=(f : NumericParser) { numberParser.set(f) }
-   def perThreadNumberParser : NumericParser = numberParser.get()
+   def perThreadNumberParser : NumericParser = numberParser.get().asInstanceOf[NumericParser] // cast for jvm 1.4
 }
