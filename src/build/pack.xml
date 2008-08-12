@@ -122,7 +122,7 @@ MAIN DISTRIBUTION SBAZ
       version="${version.number}"
       desc="The Scala developer documentation. This contains all developer documentation."
       link="${sbaz.universe}/scala-devel-docs-${version.number}.sbp">
-      <docset dir="${dist.dir}/doc/scala"/>
+      <docset dir="${dist.dir}/doc/scala-devel-docs"/>
     </sbaz>
   </target>
 

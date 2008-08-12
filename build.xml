@@ -1018,25 +1018,25 @@ DISTRIBUTION
   <target name="dist.latest" depends="dist.latest.unix,dist.latest.win"/>
 
   <target name="dist.doc" depends="dist.latest">
-    <mkdir dir="${dist.dir}/doc/scala"/>
-    <copy file="${docs.dir}/LICENSE" toDir="${dist.dir}/doc/scala"/>
-    <copy file="${docs.dir}/README" toDir="${dist.dir}/doc/scala"/>
-    <mkdir dir="${dist.dir}/doc/scala/api"/>
-    <copy toDir="${dist.dir}/doc/scala/api">
+    <mkdir dir="${dist.dir}/doc/scala-devel-docs"/>
+    <copy file="${docs.dir}/LICENSE" toDir="${dist.dir}/doc/scala-devel-docs"/>
+    <copy file="${docs.dir}/README" toDir="${dist.dir}/doc/scala-devel-docs"/>
+    <mkdir dir="${dist.dir}/doc/scala-devel-docs/api"/>
+    <copy toDir="${dist.dir}/doc/scala-devel-docs/api">
       <fileset dir="${build-docs.dir}/library"/>
     </copy>
-    <mkdir dir="${dist.dir}/doc/scala/examples"/>
-    <copy toDir="${dist.dir}/doc/scala/examples">
+    <mkdir dir="${dist.dir}/doc/scala-devel-docs/examples"/>
+    <copy toDir="${dist.dir}/doc/scala-devel-docs/examples">
       <fileset dir="${docs.dir}/examples"/>
     </copy>
-    <mkdir dir="${dist.dir}/doc/scala/tools"/>
-    <copy toDir="${dist.dir}/doc/scala/tools">
+    <mkdir dir="${dist.dir}/doc/scala-devel-docs/tools"/>
+    <copy toDir="${dist.dir}/doc/scala-devel-docs/tools">
       <fileset dir="${build-docs.dir}/manual/html"/>
     </copy>
-    <mkdir dir="${dist.dir}/doc/scala/swing"/>
-    <copy file="${src.dir}/swing/doc/README" toDir="${dist.dir}/doc/scala/swing"/>
-    <mkdir dir="${dist.dir}/doc/scala/swing/api"/>
-    <copy toDir="${dist.dir}/doc/scala/swing/api">
+    <mkdir dir="${dist.dir}/doc/scala-devel-docs/swing"/>
+    <copy file="${src.dir}/swing/doc/README" toDir="${dist.dir}/doc/scala-devel-docs/swing"/>
+    <mkdir dir="${dist.dir}/doc/scala-devel-docs/swing/api"/>
+    <copy toDir="${dist.dir}/doc/scala-devel-docs/swing/api">
       <fileset dir="${build-docs.dir}/swing"/>
     </copy>
   </target>
