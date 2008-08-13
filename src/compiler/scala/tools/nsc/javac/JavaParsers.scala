@@ -547,6 +547,7 @@ trait JavaParsers extends JavaScanners {
             }
           }
         } else {
+          if (inInterface) mods1 |= Flags.FINAL
           val result = fieldDecls(pos, mods1, rtpt, name)
           accept(SEMI)
           result
