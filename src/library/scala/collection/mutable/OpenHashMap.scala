@@ -32,6 +32,7 @@ import OpenHashMap.Entry;
  * codes is not unneccessarily penalised. In particular, mappings of consecutive integer
  * keys should work without significant performance loss.
  *
+ * @author David MacIver
  */
 class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutable.Map[Key, Value]{
   def this() = this(8);
