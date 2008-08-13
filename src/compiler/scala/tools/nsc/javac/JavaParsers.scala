@@ -345,6 +345,7 @@ trait JavaParsers extends JavaScanners {
       val pos = in.currentPos
       var t = typ()
       if (in.token == LPAREN) { skipAhead(); accept(RPAREN) }
+      else if (in.token == LBRACE) { skipAhead(); accept(RBRACE) }
     }
 /*
     def annotationArg() = {
@@ -468,7 +469,7 @@ trait JavaParsers extends JavaScanners {
       if (in.token == DOTDOTDOT) {
         in.nextToken
         t = atPos(t.pos) {
-          AppliedTypeTree(TypeTree(RepeatedParamClass.typeConstructor), List(t))
+          AppliedTypeTree(scalaDot(nme.REPEATED_PARAM_CLASS_NAME.toTypeName), List(t))
         }
       }
      varDecl(in.currentPos, Modifiers(Flags.JAVA | Flags.PARAM), t, ident())
