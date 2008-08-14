@@ -29,11 +29,11 @@ class TextField(text0: String, columns0: Int) extends TextComponent with TextCom
   def columns_=(n: Int) = peer.setColumns(n)
 
   peer.addActionListener(Swing.ActionListener { e =>
-    publish(ValueChanged(TextField.this)(false))
+    publish(EditDone(TextField.this))
   })
 
   peer.addFocusListener(new FocusAdapter {
-    override def focusLost(e: java.awt.event.FocusEvent) { ValueChanged(TextField.this)(true) }
+    override def focusLost(e: java.awt.event.FocusEvent) { EditDone(TextField.this) }
   })
 
   def verifier: String => Boolean = s => peer.getInputVerifier.verify(peer)

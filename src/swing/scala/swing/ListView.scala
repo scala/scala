@@ -166,6 +166,8 @@ class ListView[A] extends Component {
         publish(ListSelectionChanged(ListView.this, e.getFirstIndex to e.getLastIndex, e.getValueIsAdjusting))
       }
     })
+
+    def adjusting = peer.getSelectionModel.getValueIsAdjusting
   }
 
   def renderer: ListView.Renderer[A] = ListView.Renderer.wrap(peer.getCellRenderer)

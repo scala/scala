@@ -13,11 +13,11 @@ object CelsiusConverter2 extends SimpleGUIApplication {
 
     listenTo(Fahrenheit, Celsius)
     reactions += {
-      case v @ ValueChanged(Fahrenheit) if v.committed =>
+      case EditDone(Fahrenheit) =>
         val f = Integer.parseInt(Fahrenheit.text)
         val c = (f - 32) * 5 / 9
         Celsius.text = c.toString
-      case v @ ValueChanged(Celsius) if v.committed =>
+      case EditDone(Celsius) =>
         val c = Integer.parseInt(Celsius.text)
         val f = c * 9 / 5 + 32
         Fahrenheit.text = f.toString

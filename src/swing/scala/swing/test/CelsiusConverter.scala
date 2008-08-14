@@ -29,15 +29,14 @@ object CelsiusConverter extends SimpleGUIApplication {
       }
 
       reactions += {
-        case ButtonClicked(_) => convert()
-        case v @ ValueChanged(_) if v.committed => convert()
+        case ButtonClicked(_) | EditDone(_) => convert()
       }
     }
     contents = new GridPanel(2,2) {
       contents.append(tempCelsius, celsiusLabel, convertButton, fahrenheitLabel)
       border = Swing.EmptyBorder(10, 10, 10, 10)
     }
-    defaultButton = Some(convertButton)
+    //defaultButton = Some(convertButton)
   }
 }
 
