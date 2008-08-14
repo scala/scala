@@ -1166,7 +1166,9 @@ FORWARDED TARGETS FOR PACKAGING
     <ant antfile="${src.dir}/build/pack.xml" target="msilpack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
 
+  <!-- Used by the scala-installer script -->
   <target name="alldistpack" depends="distpack, fourdistpack, msildistpack"/>
+  <target name="allallclean" depends="all.clean, fourclean, msilclean"/>
 
 <!-- ===========================================================================
 FORWARDED TARGETS FOR NIGHTLY BUILDS
