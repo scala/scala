@@ -363,7 +363,7 @@ abstract class UnPickler {
         while (readIndex != end) {
           val argref = readNat()
           if (isNameEntry(argref))
-            assocs += (at(argref, readName), readAnnotationArgRef)
+            assocs += ((at(argref, readName), readAnnotationArgRef))
           else
             args += at(argref, readAnnotationArg)
         }

@@ -652,7 +652,7 @@ abstract class ICodeReader extends ClassfileParser {
     var containsNEW  = false
 
     def emit(i: Instruction) {
-      instrs += (pc, i)
+      instrs += ((pc, i))
       if (i.isInstanceOf[DupX])
         containsDUPX = true
       if (i.isInstanceOf[opcodes.NEW])

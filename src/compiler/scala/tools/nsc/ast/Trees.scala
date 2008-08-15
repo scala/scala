@@ -1628,7 +1628,7 @@ trait Trees {
   }
 
   object posAssigner extends Traverser {
-    private var pos: Position = _
+    var pos: Position = _
     override def traverse(t: Tree) {
       if (t != EmptyTree && t.pos == NoPosition) {
         t.setPos(pos)

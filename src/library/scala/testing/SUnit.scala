@@ -116,7 +116,7 @@ object SUnit {
     val buf = new ArrayBuffer[(Test, Throwable)]()
 
     def addFailure(test: Test, t: Throwable) {
-      buf += (test, t)
+      buf += ((test, t))
     }
 
     def failureCount() =

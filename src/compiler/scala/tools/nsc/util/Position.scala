@@ -90,3 +90,8 @@ case class OffsetPosition(source0: SourceFile, offset0: Int) extends Position {
   }
   override def hashCode = offset0 + source0.file.hashCode
 }
+
+/** new for position ranges */
+class RangePosition(source0: SourceFile, offset0: Int, start: Int, end: Int)
+extends OffsetPosition(source0, offset0)
+

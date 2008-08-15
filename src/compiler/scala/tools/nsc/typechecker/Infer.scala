@@ -299,7 +299,7 @@ trait Infer {
         explainName(sym1)
         explainName(sym2)
         if (sym1.owner == sym2.owner && !inIDE) sym2.name = newTypeName("(some other)"+sym2.name)
-        patches += (sym1, sym2, name)
+        patches += ((sym1, sym2, name))
       }
 
       val result = op

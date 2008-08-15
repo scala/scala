@@ -37,15 +37,17 @@ trait Buffer[A] extends AnyRef
 
   /** Append a two or more elements to this buffer.
    *
+   *  enable this for 2.8.0!
+   *
    *  @param elem1 the first element to append.
    *  @param elem2 the second element to append.
    *  @param elems the remaining elements to append.
-   */
   def +=(elem1: A, elem2: A, elems: A*): Unit = {
     this += elem1
     this += elem2
     this ++= elems
   }
+   */
 
   /** Append a single element to this buffer and return
    *  the identity of the buffer.
@@ -57,12 +59,14 @@ trait Buffer[A] extends AnyRef
   /** Append two or more elements to this buffer and return
    *  the identity of the buffer.
    *
+   *  enable this for 2.8.0!
+   *
    *  @param elem1 the first element to append.
    *  @param elem2 the second element to append.
    *  @param elems the remaining elements to append.
-   */
   def +(elem1: A, elem2: A, elems: A*): Buffer[A] =
     this + elem1 + elem2 ++ elems
+   */
 
   /** Prepend a single element to this buffer and return
    *  the identity of the buffer.

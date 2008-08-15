@@ -1158,7 +1158,7 @@ sealed abstract class List[+A] extends Seq[A] with Product {
     var these = this
     var those = that
     while (!these.isEmpty && !those.isEmpty) {
-      b += (these.head, those.head)
+      b += ((these.head, those.head))
       these = these.tail
       those = those.tail
     }
@@ -1177,7 +1177,7 @@ sealed abstract class List[+A] extends Seq[A] with Product {
     var idx = 0
 
     while(!these.isEmpty) {
-      b += (these.head, idx)
+      b += ((these.head, idx))
       these = these.tail
       idx += 1
     }
@@ -1209,16 +1209,16 @@ sealed abstract class List[+A] extends Seq[A] with Product {
     var these = this
     var those = that
     while (!these.isEmpty && !those.isEmpty) {
-      b += (these.head, those.head)
+      b += ((these.head, those.head))
       these = these.tail
       those = those.tail
     }
     while (!these.isEmpty) {
-      b += (these.head, thatElem)
+      b += ((these.head, thatElem))
       these = these.tail
     }
     while (!those.isEmpty) {
-      b += (thisElem, those.head)
+      b += ((thisElem, those.head))
       those = those.tail
     }
     b.toList
