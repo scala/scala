@@ -104,3 +104,7 @@ object Test extends Application {
 trait FooBar[ A <: Option[_]] { def foo: A }
 trait SubFooBar[B <: Option[_]] extends FooBar[B]
 
+  var pc: List[Product with (Counter[T] forSome { type T })] = List()
+  def f() = pc
+  pc = f()
+}

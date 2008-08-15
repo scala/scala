@@ -499,6 +499,8 @@ trait Trees {
    */
   case class Import(expr: Tree, selectors: List[(Name, Name)])
        extends SymTree
+    // The symbol of an Import is an import symbol @see Symbol.newImport
+    // It's used primarily as a marker to check thta the import has been typechecked.
 
   /** Annotation application (constructor arguments + name-value pairs) */
   case class Annotation(constr: Tree, elements: List[Tree])
@@ -515,13 +517,23 @@ trait Trees {
     override def isType = definition.isType
   }
 
-  /** Instantiation template
+  /** Instantiation template of a class or trait
    *
    *  @param parents
    *  @param body
    */
   case class Template(parents: List[Tree], self: ValDef, body: List[Tree])
        extends SymTree {
+    // the symbol of a template is a local dummy. @see Symbol.newLocalDummy
+    // the owner of the local dummy is the enclosing trait or class.
+    // the local dummy is itself the owner of any local blocks
+    // For example:
+    //
+    // class C {
+    //   def foo // owner is C
+    //   {
+    //      def bar  // owner is local dummy
+    //   }
     // System.err.println("TEMPLATE: " + parents)
   }
 
@@ -621,6 +633,8 @@ trait Trees {
   /** Anonymous function, eliminated by analyzer */
   case class Function(vparams: List[ValDef], body: Tree)
        extends TermTree with SymTree
+    // The symbol of a Function is a synthetic value of name nme.ANON_FUN_NAME
+    // It is the owner of the function's parameters.
 
   /** Assignment */
   case class Assign(lhs: Tree, rhs: Tree)
@@ -652,6 +666,7 @@ trait Trees {
   /** Return expression */
   case class Return(expr: Tree)
        extends TermTree with SymTree
+    // The symbol of a Return node is the enclosing method.
 
   case class Try(block: Tree, catches: List[CaseDef], finalizer: Tree)
        extends TermTree
@@ -671,6 +686,8 @@ trait Trees {
   }
 
   /** Factory method for object creation <code>&lt;new tpt(args_1)...(args_n)&gt;</code>.
+   *  A New(t, as) is expanded to:
+   *    (new t).<init>(as)
    *
    *  @param tpt   ...
    *  @param argss ...
@@ -686,6 +703,8 @@ trait Trees {
   case class Typed(expr: Tree, tpt: Tree)
        extends TermTree
 
+  // Martin to Sean: Should GenericApply/TypeApply/Apply not be SymTree's? After all,
+  // ApplyDynamic is a SymTree.
   abstract class GenericApply extends TermTree {
     val fun: Tree
     val args: List[Tree]
@@ -713,20 +732,25 @@ trait Trees {
    */
   case class ApplyDynamic(qual: Tree, args: List[Tree])
        extends TermTree with SymTree
+    // The symbol of an ApplyDynamic is the function symbol of `qual', or NoSymbol, if there is none.
 
   /** Super reference */
   case class Super(qual: Name, mix: Name)
        extends TermTree with SymTree
+    // The symbol of a Super is the class _from_ which the super reference is made.
+    // For instance in C.super(...), it would be C.
 
   def Super(sym: Symbol, mix: Name): Tree = Super(sym.name, mix) setSymbol sym
 
   /** Self reference */
   case class This(qual: Name)
         extends TermTree with SymTree
+    // The symbol of a This is the class to which the this refers.
+    // For instance in C.this, it would be C.
 
   def This(sym: Symbol): Tree = This(sym.name) setSymbol sym
 
-  /** Designator */
+  /** Designator <qualifier> . <selector> */
   case class Select(qualifier: Tree, selector: Name)
        extends SymTree {
     override def isTerm = selector.isTermName
@@ -736,7 +760,7 @@ trait Trees {
   def Select(qualifier: Tree, sym: Symbol): Select =
     Select(qualifier, sym.name) setSymbol sym
 
-  /** Identifier */
+  /** Identifier <name> */
   case class Ident(name: Name)
        extends SymTree {
     override def isTerm = name.isTermName
@@ -788,15 +812,15 @@ trait Trees {
   case class SingletonTypeTree(ref: Tree)
         extends TypTree
 
-  /** Type selection, eliminated by RefCheck */
+  /** Type selection <qualifier> # <selector>, eliminated by RefCheck */
   case class SelectFromTypeTree(qualifier: Tree, selector: Name)
        extends TypTree with SymTree
 
-  /** Intersection type, eliminated by RefCheck */
+  /** Intersection type <parent1> with ... with <parentN> { <decls> }, eliminated by RefCheck */
   case class CompoundTypeTree(templ: Template)
        extends TypTree
 
-  /** Applied type, eliminated by RefCheck */
+  /** Applied type <tpt> [ <args> ], eliminated by RefCheck */
   case class AppliedTypeTree(tpt: Tree, args: List[Tree])
        extends TypTree {
     override def symbol: Symbol = tpt.symbol
@@ -813,6 +837,7 @@ trait Trees {
     def underlying : AnyRef
     override def equalsStructure0(that: Tree)(f : (Tree,Tree) => Boolean): Boolean = this eq that
   }
+
 /* A standard pattern match
   case EmptyTree =>
   case PackageDef(name, stats) =>
@@ -1603,7 +1628,7 @@ trait Trees {
   }
 
   object posAssigner extends Traverser {
-    var pos: Position = _
+    private var pos: Position = _
     override def traverse(t: Tree) {
       if (t != EmptyTree && t.pos == NoPosition) {
         t.setPos(pos)

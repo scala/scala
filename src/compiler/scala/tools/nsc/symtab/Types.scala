@@ -426,8 +426,8 @@ trait Types {
           }
 */
         case tp =>
-//          if (sym.name.toString == "c") print(this + ".memberType(" + sym +":" + sym.tpe +")" + sym.ownerChain);//debug
           val res = tp.asSeenFrom(this, sym.owner)
+//          if (sym.name.toString == "emitSWITCH") println(this + ".memberType(" + sym +":" + sym.tpe +")" + sym.ownerChain + " = " + res);//debug
           res
       }
     }

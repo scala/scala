@@ -182,7 +182,7 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
       }
 
       implicit val rep = new RepFactory(handleOuter)
-//      try {
+      try {
         val tmps = new ListBuffer[Symbol]
         val vds  = new ListBuffer[Tree]
         var root:Symbol = newVar(selector.pos, selector.tpe)
@@ -238,9 +238,9 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
         dfatree = rep.cleanup(dfatree)
         resetTrav.traverse(dfatree)
         dfatree
-//      } catch {
-//        case e => e.printStackTrace(); throw new FatalError(e.getMessage())
-//      }
+      } catch {
+        case ex: FatalError => ex.printStackTrace(); throw ex
+      }
     }
   }
 
