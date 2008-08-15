@@ -128,7 +128,7 @@ object Flags extends Enumeration {
   final val PickledFlags: Long  = 0xFFFFFFFFL
 
   /** Module flags inherited by their module-class */
-  final val ModuleToClassFlags: Long = AccessFlags | MODULE | PACKAGE | CASE | SYNTHETIC
+  final val ModuleToClassFlags: Long = AccessFlags | MODULE | PACKAGE | CASE | SYNTHETIC | JAVA
 
   private def listToString(ss: List[String]): String =
     ss.filter("" !=).mkString("", " ", "")
