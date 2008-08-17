@@ -73,7 +73,7 @@ trait CompilationUnits { self: Global =>
       }
 
     /** Is this about a .java source file? */
-    def isJava = source.file.name.endsWith(".java")
+    lazy val isJava = source.file.name.endsWith(".java")
 
     override def toString() = source.toString()
 

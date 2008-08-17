@@ -1540,7 +1540,7 @@ trait Typers { self: Analyzer =>
       stats1
     }
 
-    def typedImport(imp : Import) : Import = imp;
+    def typedImport(imp : Import) : Import = imp
 
     def typedStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
 

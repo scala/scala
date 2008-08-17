@@ -208,7 +208,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           case tp => List(tp)
         }
         def boundSig(bounds: List[Type]) = {
-          val classBound = bounds find (t => t.typeSymbol.isClass && !t.typeSymbol.isTrait) match {
+          def isClassBound(t: Type) = t.typeSymbol.isClass || t.typeSymbol.isAbstractType
+          val classBound = bounds find isClassBound match {
             case Some(t) => javaSig(t)
             case None => ""
           }
