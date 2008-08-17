@@ -503,7 +503,6 @@ abstract class ClassfileParser {
   private def sigToType(sym: Symbol, sig: Name): Type = {
     var index = 0
     val end = sig.length
-    val newTParams = new ListBuffer[Symbol]()
     def accept(ch: Char) {
       assert(sig(index) == ch)
       index += 1
@@ -513,7 +512,7 @@ abstract class ClassfileParser {
       while (!isDelimiter(sig(index))) { index += 1 }
       sig.subName(start, index)
     }
-    def sig2type(tparams: Map[Name,Symbol]): Type = {
+    def sig2type(tparams: Map[Name,Symbol], skiptvs: Boolean): Type = {
       val tag = sig(index); index += 1
       tag match {
         case BYTE_TAG   => definitions.ByteClass.tpe
@@ -545,8 +544,8 @@ abstract class ClassfileParser {
                       index += 1
                       val bounds = variance match {
                         case '+' => mkTypeBounds(definitions.NothingClass.tpe,
-                                                 sig2type(tparams))
-                        case '-' => mkTypeBounds(sig2type(tparams),
+                                                 sig2type(tparams, skiptvs))
+                        case '-' => mkTypeBounds(sig2type(tparams, skiptvs),
                                                  definitions.AnyClass.tpe)
                         case '*' => mkTypeBounds(definitions.NothingClass.tpe,
                                                  definitions.AnyClass.tpe)
@@ -556,7 +555,7 @@ abstract class ClassfileParser {
                       xs += newtparam.tpe
                       i += 1
                     case _ =>
-                      xs += sig2type(tparams)
+                      xs += sig2type(tparams, skiptvs)
                   }
                 }
                 accept('>')
@@ -584,50 +583,61 @@ abstract class ClassfileParser {
             accept('.')
             val name = subName(c => c == ';' || c == '<' || c == '.').toTypeName
             val clazz = tpe.member(name)
-            //assert(clazz.isAliasType, tpe)
             tpe = processClassType(processInner(clazz.tpe))
           }
           accept(';')
           tpe
         case ARRAY_TAG =>
           while ('0' <= sig(index) && sig(index) <= '9') index += 1
-          appliedType(definitions.ArrayClass.tpe, List(sig2type(tparams)))
+          appliedType(definitions.ArrayClass.tpe, List(sig2type(tparams, skiptvs)))
         case '(' =>
           val paramtypes = new ListBuffer[Type]()
           while (sig(index) != ')') {
-            paramtypes += objToAny(sig2type(tparams))
+            paramtypes += objToAny(sig2type(tparams, skiptvs))
           }
           index += 1
           val restype = if (sym != null && sym.isConstructor) {
             accept('V')
             clazz.tpe
           } else
-            sig2type(tparams)
+            sig2type(tparams, skiptvs)
           JavaMethodType(paramtypes.toList, restype)
         case 'T' =>
           val n = subName(';'.==).toTypeName
           index += 1
-          tparams(n).typeConstructor
+          if (skiptvs) definitions.AnyClass.tpe
+          else tparams(n).typeConstructor
       }
-    } // sig2type
+    } // sig2type(tparams, skiptvs)
+
+    def sig2typeBounds(tparams: Map[Name, Symbol], skiptvs: Boolean): Type = {
+      val ts = new ListBuffer[Type]
+      while (sig(index) == ':') {
+        index += 1
+        if (sig(index) != ':') // guard against empty class bound
+          ts += objToAny(sig2type(tparams, skiptvs))
+      }
+      mkTypeBounds(definitions.NothingClass.tpe, intersectionType(ts.toList, sym))
+    }
 
     var tparams = classTParams
+    val newTParams = new ListBuffer[Symbol]()
     if (sig(index) == '<') {
       assert(sym != null)
       index += 1
+      val start = index
       while (sig(index) != '>') {
         val tpname = subName(':'.==).toTypeName
         val s = sym.newTypeParameter(NoPosition, tpname)
         tparams = tparams + (tpname -> s)
-        val ts = new ListBuffer[Type]
-        while (sig(index) == ':') {
-          index += 1
-          if (sig(index) != ':') // guard against empty class bound
-            ts += objToAny(sig2type(tparams))
-        }
-        s.setInfo(mkTypeBounds(definitions.NothingClass.tpe,
-                               intersectionType(ts.toList, sym)))
+        sig2typeBounds(tparams, true)
         newTParams += s
+      }
+      index = start
+      while (sig(index) != '>') {
+        val tpname = subName(':'.==).toTypeName
+        val s = tparams(tpname)
+        s.setInfo(sig2typeBounds(tparams, false))
       }
       accept('>')
     }
@@ -636,12 +646,12 @@ abstract class ClassfileParser {
       sym.setInfo(new TypeParamsType(ownTypeParams))
     val tpe =
       if ((sym eq null) || !sym.isClass)
-        sig2type(tparams)
+        sig2type(tparams, false)
       else {
         classTParams = tparams
         val parents = new ListBuffer[Type]()
         while (index < end) {
-          parents += sig2type(tparams)  // here the variance doesnt'matter
+          parents += sig2type(tparams, false)  // here the variance doesnt'matter
         }
         ClassInfoType(parents.toList, instanceDefs, sym)
       }
