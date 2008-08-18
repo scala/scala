@@ -408,7 +408,7 @@ abstract class Pickler extends SubComponent {
     private def putConstant(c: Constant) =
       if (putEntry(c)) {
         if (c.tag == StringTag) putEntry(newTermName(c.stringValue))
-        else if (c.tag == ClassTag) putEntry(c.typeValue)
+        else if (c.tag == ClassTag) putType(c.typeValue)
       }
 
     private def putChildren(sym: Symbol, children: List[Symbol]) {
