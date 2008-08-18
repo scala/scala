@@ -364,6 +364,7 @@ abstract class ClassfileParser {
     }
 
     addEnclosingTParams(clazz)
+    parseInnerClasses()
     val superType = if (isAnnotation) { in.nextChar; definitions.AnnotationClass.tpe }
                     else pool.getSuperClass(in.nextChar).tpe
     val ifaceCount = in.nextChar
@@ -376,6 +377,7 @@ abstract class ClassfileParser {
     val classInfo = ClassInfoType(parents, instanceDefs, clazz)
     val staticInfo = ClassInfoType(List(), staticDefs, statics)
 
+    enterOwnInnerClasses
     val curbp = in.bp
     skipMembers() // fields
     skipMembers() // methods
@@ -672,7 +674,6 @@ abstract class ClassfileParser {
     def parseAttribute() {
       val attrName = pool.getName(in.nextChar)
       val attrLen = in.nextInt
-      val oldpb = in.bp
       attrName match {
         case nme.SignatureATTR =>
           if (global.settings.target.value == "jvm-1.5") {
@@ -698,8 +699,6 @@ abstract class ClassfileParser {
           val c1 = convertTo(c, symtype)
           if (c1 ne null) sym.setInfo(mkConstantType(c1))
           else println("failure to convert " + c + " to " + symtype); //debug
-        case nme.InnerClassesATTR =>
-          if (!isScala) parseInnerClasses() else in.skip(attrLen)
         case nme.ScalaSignatureATTR =>
           unpickler.unpickle(in.buf, in.bp, clazz, staticModule, in.file.toString())
           in.skip(attrLen)
@@ -800,58 +799,76 @@ abstract class ClassfileParser {
     def parseAnnotations(len: Int) {
       val nAttr = in.nextChar
       for (n <- 0 until nAttr)
-	parseAnnotation(in.nextChar) match {
-	  case None =>
-	    if (settings.debug.value)
+        parseAnnotation(in.nextChar) match {
+          case None =>
+            if (settings.debug.value)
               global.inform("dropping annotation on " +
-			    sym +
-			    " that has a nested annotation")
-	  case Some(annot) =>
+                              sym + " that has a nested annotation")
+          case Some(annot) =>
             sym.attributes = annot :: sym.attributes
-	}
-    }
-
-    def makeInnerAlias(outer: Symbol, name: Name, iclazz: Symbol, scope: Scope): Symbol = {
-      var innerAlias = scope.lookup(name)
-      if (!innerAlias.isAliasType) {
-        innerAlias = outer.newAliasType(NoPosition, name).setFlag(JAVA)
-          .setInfo(new LazyAliasType(iclazz))
-        scope.enter(innerAlias)
-      }
-      innerAlias
-    }
-
-    def parseInnerClasses() {
-      def enterClassAndModule(name: Name, completer: global.loaders.SymbolLoader, jflags: Int): Symbol = {
-        val innerClass = getOwner(jflags).newClass(NoPosition, name.toTypeName).setInfo(completer)
-        val innerModule = getOwner(jflags).newModule(NoPosition, name).setInfo(completer)
-        innerClass.moduleClass.setInfo(global.loaders.moduleClassLoader)
-
-        getScope(jflags).enter(innerClass)
-        getScope(jflags).enter(innerModule)
-      }
-
-      for (i <- 0 until in.nextChar) {
-        val innerIndex = in.nextChar
-        val outerIndex = in.nextChar
-        val nameIndex = in.nextChar
-        val jflags = in.nextChar
-        if (innerIndex != 0 && outerIndex != 0 && nameIndex != 0) {
-          val entry = InnerClassEntry(innerIndex, outerIndex, nameIndex, jflags)
-          innerClasses += (pool.getClassName(innerIndex) -> entry)
-
-          // create a new class member for immediate inner classes
-          if (entry.outerName == externalName) {
-            val file = global.classPath.lookupPath(entry.externalName.replace('.', '/').toString, false)
-            enterClassAndModule(entry.originalName, new global.loaders.ClassfileLoader(file, null, null), jflags)
-          }
         }
-      }
     }
 
     // begin parseAttributes
     val attrCount = in.nextChar
     for (i <- 0 until attrCount) parseAttribute()
+  }
+
+  /** Enter own inner classes in the right scope. It needs the scopes to be set up,
+   *  and implicitly current class' superclasses.
+   */
+  private def enterOwnInnerClasses {
+    def enterClassAndModule(name: Name, completer: global.loaders.SymbolLoader, jflags: Int): Symbol = {
+      val sflags = transFlags(jflags)
+      val innerClass = getOwner(jflags).newClass(NoPosition, name.toTypeName).setInfo(completer).setFlag(sflags)
+      val innerModule = getOwner(jflags).newModule(NoPosition, name).setInfo(completer).setFlag(sflags)
+      innerClass.moduleClass.setInfo(global.loaders.moduleClassLoader)
+
+      getScope(jflags).enter(innerClass)
+      getScope(jflags).enter(innerModule)
+    }
+
+    for (entry <- innerClasses.values) {
+      // create a new class member for immediate inner classes
+      if (entry.outerName == externalName) {
+        val file = global.classPath.lookupPath(entry.externalName.replace('.', '/').toString, false)
+        enterClassAndModule(entry.originalName, new global.loaders.ClassfileLoader(file, null, null), entry.jflags)
+      }
+    }
+  }
+
+  /** Parse inner classes. Expects in.bp to point to the superclass entry. Restores the
+   *  old bp.
+   */
+  def parseInnerClasses() {
+    val oldbp = in.bp
+    skipSuperclasses()
+    skipMembers() // fields
+    skipMembers() // methods
+    val attrs = in.nextChar
+    for (i <- 0 until attrs) {
+      val attrName = pool.getName(in.nextChar)
+      val attrLen = in.nextInt
+      attrName match {
+        case nme.ScalaSignatureATTR =>
+          isScala = true
+          in.skip(attrLen)
+        case nme.InnerClassesATTR if !isScala =>
+          for (i <- 0 until in.nextChar) {
+            val innerIndex = in.nextChar
+            val outerIndex = in.nextChar
+            val nameIndex = in.nextChar
+            val jflags = in.nextChar
+            if (innerIndex != 0 && outerIndex != 0 && nameIndex != 0) {
+              val entry = InnerClassEntry(innerIndex, outerIndex, nameIndex, jflags)
+              innerClasses += (pool.getClassName(innerIndex) -> entry)
+            }
+          }
+        case _ =>
+          in.skip(attrLen)
+      }
+    }
+    in.bp = oldbp
   }
 
   /** An entry in the InnerClasses attribute of this class file. */
@@ -942,6 +959,12 @@ abstract class ClassfileParser {
     for (i <- 0 until memberCount) {
       in.skip(6); skipAttributes()
     }
+  }
+
+  def skipSuperclasses() {
+    in.skip(2) // superclass
+    val ifaces = in.nextChar
+    in.skip(2 * ifaces)
   }
 
   protected def getOwner(flags: Int): Symbol =

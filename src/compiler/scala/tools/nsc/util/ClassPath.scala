@@ -232,9 +232,12 @@ class ClassPath(onlyPresentation: Boolean) {
     }
 
     /**
-     *  @param path  ...
-     *  @param isDir ...
-     *  @return      ...
+     *  Lookup the given path in this classpath. Returns null if not found.
+     *  Does not work with absolute paths (starting with '/').
+     *
+     *  @param path  Path to look up (if isDir is false, '.class' is appended!).
+     *  @param isDir Whether to look for a directory or a file
+     *  @return      The abstract file or null if path was not found
      */
     def lookupPath(path: String, isDir: Boolean): AbstractFile = {
       val ctx = root.find(path, isDir)
