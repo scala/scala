@@ -11,4 +11,4 @@
 
 package scala
 
-class volatile extends StaticAnnotation
+class volatile extends Annotation
