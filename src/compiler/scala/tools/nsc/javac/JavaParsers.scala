@@ -488,8 +488,10 @@ trait JavaParsers extends JavaScanners {
       blankExpr
     }
 
+    def definesInterface(token: Int) = token == INTERFACE || token == AT
+
     def termDecl(mods: Modifiers, parentToken: Int): List[Tree] = {
-      val inInterface = parentToken == INTERFACE || parentToken == AT
+      val inInterface = definesInterface(parentToken)
       val tparams = if (in.token == LT) typeParams() else List()
       val isVoid = in.token == VOID
       var rtpt =
@@ -548,7 +550,7 @@ trait JavaParsers extends JavaScanners {
             }
           }
         } else {
-          if (inInterface) mods1 |= Flags.FINAL
+          if (inInterface) mods1 |= Flags.FINAL | Flags.STATIC
           val result = fieldDecls(pos, mods1, rtpt, name)
           accept(SEMI)
           result
@@ -605,8 +607,10 @@ trait JavaParsers extends JavaScanners {
     }
 
     def memberDecl(mods: Modifiers, parentToken: Int): List[Tree] = in.token match {
-      case CLASS | ENUM | INTERFACE | AT => typeDecl(mods)
-      case _ => termDecl(mods, parentToken)
+      case CLASS | ENUM | INTERFACE | AT =>
+        typeDecl(if (definesInterface(parentToken)) mods | Flags.STATIC else mods)
+      case _ =>
+        termDecl(mods, parentToken)
     }
 
     def makeCompanionObject(cdef: ClassDef, statics: List[Tree]): Tree =
@@ -715,7 +719,7 @@ trait JavaParsers extends JavaScanners {
     }
 
     def typeBodyDecls(parentToken: Int): (List[Tree], List[Tree]) = {
-      val inInterface = parentToken == INTERFACE || parentToken == AT
+      val inInterface = definesInterface(parentToken)
       val statics = new ListBuffer[Tree]
       val members = new ListBuffer[Tree]
       while (in.token != RBRACE && in.token != EOF) {
@@ -726,7 +730,7 @@ trait JavaParsers extends JavaScanners {
         } else if (in.token == SEMI) {
           in.nextToken
         } else {
-          if (in.token == ENUM || in.token == INTERFACE) mods |= Flags.STATIC
+          if (in.token == ENUM || definesInterface(in.token)) mods |= Flags.STATIC
           val decls = memberDecl(mods, parentToken)
           (if ((mods hasFlag Flags.STATIC) || inInterface && !(decls exists (_.isInstanceOf[DefDef])))
              statics
@@ -786,12 +790,12 @@ trait JavaParsers extends JavaScanners {
         }
       val predefs = List(
         DefDef(
-          Modifiers(Flags.JAVA), newTermName("values"), List(),
+          Modifiers(Flags.JAVA | Flags.STATIC), newTermName("values"), List(),
           List(List()),
           arrayOf(enumType),
           blankExpr),
         DefDef(
-          Modifiers(Flags.JAVA), newTermName("valueOf"), List(),
+          Modifiers(Flags.JAVA | Flags.STATIC), newTermName("valueOf"), List(),
           List(List(makeParam(newTermName("x"), TypeTree(StringClass.tpe)))),
           enumType,
           blankExpr))
@@ -818,7 +822,7 @@ trait JavaParsers extends JavaScanners {
           skipAhead()
           accept(RBRACE)
         }
-        ValDef(Modifiers(Flags.JAVA), name, enumType, blankExpr)
+        ValDef(Modifiers(Flags.JAVA | Flags.STATIC), name, enumType, blankExpr)
       }
     }
 
