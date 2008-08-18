@@ -6,7 +6,7 @@
 
 package scala.tools.nsc.reporters
 
-import scala.collection.mutable.HashSet
+import scala.collection.mutable.HashMap
 import scala.tools.nsc.Settings
 import scala.tools.nsc.util.Position
 
@@ -14,7 +14,7 @@ import scala.tools.nsc.util.Position
  * This reporter implements filtering.
  */
 abstract class AbstractReporter extends Reporter {
-  private val positions = new HashSet[Position]()
+  private val positions = new HashMap[Position, Severity]
 
   override def reset = {
     super.reset
@@ -31,13 +31,13 @@ abstract class AbstractReporter extends Reporter {
       case INFO    =>
         if (force || settings.verbose.value) display(pos, msg, severity)
       case WARNING =>
-        val hidden = testAndLog(pos)
+        val hidden = testAndLog(pos, severity)
         if (!settings.nowarnings.value) {
 	  if (!hidden || settings.prompt.value) display(pos, msg, severity)
 	  if (settings.prompt.value) displayPrompt
         }
       case ERROR =>
-        val hidden = testAndLog(pos)
+        val hidden = testAndLog(pos, severity)
         if (!hidden || settings.prompt.value) display(pos, msg, severity)
         if (settings.prompt.value) displayPrompt
     }
@@ -48,11 +48,11 @@ abstract class AbstractReporter extends Reporter {
    *  @param pos ...
    *  @return    <code>true</code> if <code>pos</code> was already logged.
    */
-  private def testAndLog(pos: Position): Boolean = {
+  private def testAndLog(pos: Position, severity: Severity): Boolean = {
     if (pos eq null) return false
     if (pos.offset.isEmpty) return false
-    if (positions contains pos) return true
-    positions += pos
+    if ((positions contains pos) && positions(pos) >= severity) return true
+    positions += (pos -> severity)
     false
   }
 

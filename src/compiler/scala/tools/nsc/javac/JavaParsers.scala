@@ -32,7 +32,7 @@ trait JavaParsers extends JavaScanners {
   abstract class JavaParser {
 
     val in: JavaScanner
-    protected def posToReport: Int = in.p2g(in.currentPos)
+    protected def posToReport: Int = in.currentPos
     protected def freshName(pos : Position, prefix : String): Name
     protected implicit def i2p(offset : Int) : Position
     private implicit def p2i(pos : Position): Int = pos.offset.getOrElse(-1)

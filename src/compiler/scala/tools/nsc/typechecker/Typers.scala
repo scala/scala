@@ -3648,6 +3648,7 @@ trait Typers { self: Analyzer =>
         def comesBefore(sym: Symbol, owner: Symbol) =
           sym.pos.offset.getOrElse(0) < owner.pos.offset.getOrElse(Integer.MAX_VALUE) &&
           !(owner.ownerChain contains sym)
+
         /** Should implicit definition symbol `sym' be considered for applicability testing?
          *  This is the case if one of the following holds:
          *   - the symbol's type is initialized
@@ -3666,19 +3667,27 @@ trait Typers { self: Analyzer =>
           hasExplicitResultType(sym) ||
           comesBefore(sym, context.owner)
         }
+        val lateImpls = new ListBuffer[Symbol]
         def isApplicable(info: ImplicitInfo): Boolean =
-          (true /* for now */ || isValid(info.sym)) &&
           !containsError(info.tpe) &&
           !(isLocal && shadowed.contains(info.name)) &&
           (!isView || info.sym != Predef_identity) &&
           tc.typedImplicit(pos, info, pt0, pt, isLocal) != EmptyTree
-        def applicableInfos(is: List[ImplicitInfo]) = {
-          val result = is filter isApplicable
+        def applicableInfos(is: List[ImplicitInfo]): List[ImplicitInfo] = {
+          val applicable = new ListBuffer[ImplicitInfo]
+          for (i <- is)
+            if (!isValid(i.sym)) lateImpls += i.sym
+            else if (isApplicable(i)) applicable += i
           if (isLocal)
             for (i <- is) shadowed addEntry i.name
-          result
+          applicable.toList
         }
-        val applicable = List.flatten(implicitInfoss map applicableInfos)
+        val applicable = implicitInfoss flatMap applicableInfos
+        if (applicable.isEmpty && !lateImpls.isEmpty) {
+          infer.setAddendum(pos, () =>
+            "\n Note: implicit "+lateImpls.first+" is not applicable here"+
+            "\n because it comes after the application point and it lacks an explicit result type")
+        }
         val best = (NoImplicitInfo /: applicable) ((best, alt) => if (improves(alt, best)) alt else best)
         if (best == NoImplicitInfo) EmptyTree
         else {
