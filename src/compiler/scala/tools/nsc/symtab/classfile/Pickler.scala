@@ -408,7 +408,7 @@ abstract class Pickler extends SubComponent {
     private def putConstant(c: Constant) =
       if (putEntry(c)) {
         if (c.tag == StringTag) putEntry(newTermName(c.stringValue))
-        else if (c.tag == ClassTag) putEntry(c.typeValue)
+        else if (c.tag == ClassTag) putType(c.typeValue)
       }
 
     private def putChildren(sym: Symbol, children: List[Symbol]) {
@@ -939,6 +939,8 @@ abstract class Pickler extends SubComponent {
         case _ =>
           throw new FatalError("bad entry: " + entry + " " + entry.getClass)
       }
+
+      // begin writeEntry
       val startpos = writeIndex
       writeByte(0); writeByte(0)
       patchNat(startpos, writeBody(entry))

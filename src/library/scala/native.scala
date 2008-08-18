@@ -21,4 +21,4 @@ package scala
  *   but it is type checked when present.
  * </p>
  */
-class native extends Annotation {}
+class native extends StaticAnnotation {}
