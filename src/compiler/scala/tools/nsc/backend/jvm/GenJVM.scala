@@ -586,13 +586,23 @@ abstract class GenJVM extends SubComponent {
     }
 
     private def addRemoteException(jmethod: JMethod, meth: Symbol) {
+      def isRemoteThrows(ainfo: AnnotationInfo) = ainfo match {
+        case AnnotationInfo(tp, List(arg), _) if tp.typeSymbol == ThrowsAttr =>
+          arg.intTree match {
+            case Literal(Constant(tpe: Type)) if tpe.typeSymbol == RemoteException.typeSymbol => true
+            case _ => false
+          }
+        case _ => false
+      }
+
       if (remoteClass ||
           (meth.hasAttribute(RemoteAttr)
            && jmethod.isPublic()
            && !forCLDC)) {
           val ainfo = AnnotationInfo(ThrowsAttr.tpe, List(new AnnotationArgument(Constant(RemoteException))), List())
-          if (!meth.attributes.contains(ainfo))
+          if (!meth.attributes.exists(isRemoteThrows)) {
             meth.attributes = ainfo :: meth.attributes;
+          }
         }
     }
 
