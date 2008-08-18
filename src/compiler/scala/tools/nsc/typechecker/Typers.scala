@@ -3633,11 +3633,21 @@ trait Typers { self: Analyzer =>
           (info1 != NoImplicitInfo) &&
           isStrictlyMoreSpecific(info1.tpe, info2.tpe)
         val shadowed = new HashSet[Name](8)
-        def hasExplicitResultType(tree: Tree) = tree match {
-          case ValDef(_, _, tpt, _) => !tpt.isEmpty
-          case DefDef(_, _, _, _, tpt, _) => !tpt.isEmpty
-          case _ => false
+        def hasExplicitResultType(sym: Symbol) = {
+          def hasExplicitRT(tree: Tree) = tree match {
+            case ValDef(_, _, tpt, _) => !tpt.isEmpty
+            case DefDef(_, _, _, _, tpt, _) => !tpt.isEmpty
+            case _ => false
+          }
+          sym.rawInfo match {
+            case tc: TypeCompleter => hasExplicitRT(tc.tree)
+            case PolyType(_, tc: TypeCompleter) => hasExplicitRT(tc.tree)
+            case _ => true
+          }
         }
+        def comesBefore(sym: Symbol, owner: Symbol) =
+          sym.pos.offset.getOrElse(0) < owner.pos.offset.getOrElse(Integer.MAX_VALUE) &&
+          !(owner.ownerChain contains sym)
         /** Should implicit definition symbol `sym' be considered for applicability testing?
          *  This is the case if one of the following holds:
          *   - the symbol's type is initialized
@@ -3652,19 +3662,12 @@ trait Typers { self: Analyzer =>
         def isValid(sym: Symbol) = {
           sym.isInitialized ||
           sym.sourceFile == null ||
-          (sym.sourceFile ne context.unit.source.file) || {
-            sym.rawInfo match {
-              case tc: TypeCompleter => hasExplicitResultType(tc.tree)
-              case PolyType(_, tc: TypeCompleter) => hasExplicitResultType(tc.tree)
-              case _ => true
-            }
-          } || {
-            sym.pos.offset.getOrElse(0) < context.owner.pos.offset.getOrElse(Integer.MAX_VALUE) &&
-            !(context.owner.ownerChain contains sym)
-          }
+          (sym.sourceFile ne context.unit.source.file) ||
+          hasExplicitResultType(sym) ||
+          comesBefore(sym, context.owner)
         }
         def isApplicable(info: ImplicitInfo): Boolean =
-          isValid(info.sym) &&
+          (true /* for now */ || isValid(info.sym)) &&
           !containsError(info.tpe) &&
           !(isLocal && shadowed.contains(info.name)) &&
           (!isView || info.sym != Predef_identity) &&
@@ -3684,9 +3687,9 @@ trait Typers { self: Analyzer =>
           for (alt <- applicable)
             if (alt.sym.owner != best.sym.owner && isSubClassOrObject(alt.sym.owner, best.sym.owner)) {
               ambiguousImplicitError(best, alt,
-                             "most specific definition is:",
-                             "yet alternative definition  ",
-                             "is defined in a subclass.\n Both definitions ")
+                                     "most specific definition is:",
+                                     "yet alternative definition  ",
+                                     "is defined in a subclass.\n Both definitions ")
             }
           tc.typedImplicit(pos, best, pt0, pt, isLocal)
         }
