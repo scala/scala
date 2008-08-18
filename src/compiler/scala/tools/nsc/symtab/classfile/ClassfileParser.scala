@@ -350,8 +350,7 @@ abstract class ClassfileParser {
   def parseClass() {
     val jflags = in.nextChar
     val isAnnotation = (jflags & JAVA_ACC_ANNOTATION) != 0
-    var sflags = transFlags(jflags)
-    if ((sflags & DEFERRED) != 0) sflags = sflags & ~DEFERRED | ABSTRACT
+    var sflags = transFlags(jflags, true)
     var nameIdx = in.nextChar
     externalName = pool.getClassName(nameIdx)
     val c = pool.getClassSymbol(nameIdx)
@@ -439,7 +438,7 @@ abstract class ClassfileParser {
 
   def parseField() {
     val jflags = in.nextChar
-    var sflags = transFlags(jflags)
+    var sflags = transFlags(jflags, false)
     if ((sflags & FINAL) == 0) sflags = sflags | MUTABLE
     if ((sflags & PRIVATE) != 0 && !global.settings.XO.value) {
       in.skip(4); skipAttributes()
@@ -457,7 +456,7 @@ abstract class ClassfileParser {
 
   def parseMethod() {
     val jflags = in.nextChar
-    var sflags = transFlags(jflags)
+    var sflags = transFlags(jflags, false)
     if ((jflags & JAVA_ACC_PRIVATE) != 0 && !global.settings.XO.value) {
       val name = pool.getName(in.nextChar)
       if (name == nme.CONSTRUCTOR)
@@ -819,7 +818,8 @@ abstract class ClassfileParser {
    */
   private def enterOwnInnerClasses {
     def enterClassAndModule(name: Name, completer: global.loaders.SymbolLoader, jflags: Int): Symbol = {
-      val sflags = transFlags(jflags)
+      var sflags = transFlags(jflags, true)
+
       val innerClass = getOwner(jflags).newClass(NoPosition, name.toTypeName).setInfo(completer).setFlag(sflags)
       val innerModule = getOwner(jflags).newModule(NoPosition, name).setInfo(completer).setFlag(sflags)
       innerClass.moduleClass.setInfo(global.loaders.moduleClassLoader)
@@ -973,7 +973,7 @@ abstract class ClassfileParser {
   protected def getScope(flags: Int): Scope =
     if ((flags & JAVA_ACC_STATIC) != 0) staticDefs else instanceDefs
 
-  protected def transFlags(flags: Int): Long = {
+  protected def transFlags(flags: Int, isClass: Boolean): Long = {
     var res = 0l
     if ((flags & JAVA_ACC_PRIVATE) != 0)
       res = res | PRIVATE
@@ -990,6 +990,9 @@ abstract class ClassfileParser {
       res = res | SYNTHETIC
     if ((flags & JAVA_ACC_STATIC) != 0)
       res = res | STATIC
+    if (isClass && ((res & DEFERRED) != 0))
+        res = res & ~DEFERRED | ABSTRACT
+
     res | JAVA
   }
 
