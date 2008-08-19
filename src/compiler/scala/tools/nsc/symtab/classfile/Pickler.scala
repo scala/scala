@@ -417,11 +417,14 @@ abstract class Pickler extends SubComponent {
     }
 
     private def putAnnotation(sym: Symbol, annot: AnnotationInfo) {
-      assert(putEntry((sym, annot)))
-      val AnnotationInfo(atp, args, assocs) = annot
-      putType(atp)
-      args foreach putAnnotationArg
-      for ((name, c) <- assocs) { putEntry(name); putAnnotationArg(c) }
+      // if an annotation with the same arguments is applied to the
+      // same symbol multiple times, it's only pickled once.
+      if (putEntry((sym, annot))) {
+        val AnnotationInfo(atp, args, assocs) = annot
+        putType(atp)
+        args foreach putAnnotationArg
+        for ((name, c) <- assocs) { putEntry(name); putAnnotationArg(c) }
+      }
     }
 
     private def putAnnotation(annot: AnnotationInfo) {

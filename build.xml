@@ -104,8 +104,11 @@ PROPERTIES
   
   <property name="copyright.string" value="Copyright 2002-2008, LAMP/EPFL"/>
   
-  <!-- These are NOT the flags used to run SuperSabbus -->
+  <!-- These are NOT the flags used to run SuperSabbus, but the ones written
+       into the script runners created with scala.tools.ant.ScalaTool -->
   <property name="java.flags" value="-Xmx256M -Xms32M"/>
+
+  <property name="scalacfork.maxmemory" value="512m"/>
 
 <!-- ===========================================================================
 INITIALISATION
@@ -144,7 +147,6 @@ INITIALISATION
     <path id="starr.classpath">
       <pathelement location="${lib.starr.jar}"/>
       <pathelement location="${comp.starr.jar}"/>
-      <pathelement location="${lib.dir}/sabbus.jar"/>
       <pathelement location="${fjbg.jar}"/>
       <pathelement location="${ant.jar}"/>
     </path>
@@ -176,25 +178,33 @@ LOCAL REFERENCE BUILD (LOCKER)
       classpath="${build-locker.dir}/classes/library"
       includes="**/*.java"
       target="1.5" source="1.5">
-    	<compilerarg line="${javac.args}"/>
+        <compilerarg line="${javac.args}"/>
     </javac>
-    <sabmake id="starr.lib.scalac"
+    <scalacfork
       destdir="${build-locker.dir}/classes/library"
       compilerpathref="starr.classpath"
       srcpath="${src.dir}/library"
-      target="jvm-1.5"
-      params="${scalac.args}">
-      <compilationpath>
-      	<pathelement location="${build-locker.dir}/classes/library"/>
-      </compilationpath>
-    </sabmake>
-    <sabuse id="starr.lib.scalac" srcdir="${src.dir}/library">
+      params="${scalac.args}"
+      srcdir="${src.dir}/library"
+      maxmemory="${scalacfork.maxmemory}">
       <include name="scala/Predef.scala"/>
-    </sabuse>
-    <sabuse id="starr.lib.scalac" srcdir="${src.dir}/library">
+      <compilationpath>
+        <pathelement location="${build-locker.dir}/classes/library"/>
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
+      destdir="${build-locker.dir}/classes/library"
+      compilerpathref="starr.classpath"
+      srcpath="${src.dir}/library"
+      params="${scalac.args}"
+      srcdir="${src.dir}/library"
+      maxmemory="${scalacfork.maxmemory}">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
-    </sabuse>
+      <compilationpath>
+        <pathelement location="${build-locker.dir}/classes/library"/>
+      </compilationpath>
+    </scalacfork>
     <propertyfile file="${build-locker.dir}/classes/library/library.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
@@ -207,7 +217,6 @@ LOCAL REFERENCE BUILD (LOCKER)
         <include name="**/*.css"/>
       </fileset>
     </copy>
-    <sabbreak id="starr.lib.scalac"/>
     <touch file="${build-locker.dir}/library.complete" verbose="no"/>
     <stopwatch name="locker.lib.timer" action="total"/>
   </target>
@@ -221,12 +230,14 @@ LOCAL REFERENCE BUILD (LOCKER)
   <target name="locker.comp" depends="locker.pre-comp" if="locker.comp.needed">
     <stopwatch name="locker.comp.timer"/>
     <mkdir dir="${build-locker.dir}/classes/compiler"/>
-    <sabmake id="starr.comp.scalac"
+    <scalacfork
       destdir="${build-locker.dir}/classes/compiler"
       compilerpathref="starr.classpath"
       srcpath="${src.dir}/compiler"
-      target="jvm-1.5"
-      params="${scalac.args}">
+      params="${scalac.args}"
+      srcdir="${src.dir}/compiler"
+      maxmemory="${scalacfork.maxmemory}">
+      <include name="**/*.scala"/>
       <compilationpath>
       	<pathelement location="${build-locker.dir}/classes/library"/>
       	<pathelement location="${build-locker.dir}/classes/compiler"/>
@@ -235,10 +246,7 @@ LOCAL REFERENCE BUILD (LOCKER)
         <pathelement location="${jline.jar}"/>
         <pathelement location="${ant.jar}"/>
       </compilationpath>
-    </sabmake>
-    <sabuse id="starr.comp.scalac" srcdir="${src.dir}/compiler">
-      <include name="**/*.scala"/>
-    </sabuse>
+    </scalacfork>
     <propertyfile file="${build-locker.dir}/classes/compiler/compiler.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
@@ -251,7 +259,6 @@ LOCAL REFERENCE BUILD (LOCKER)
         <include name="**/*.css"/>
       </fileset>
     </copy>
-    <sabbreak id="starr.comp.scalac"/>
     <touch file="${build-locker.dir}/compiler.complete" verbose="no"/>
     <stopwatch name="locker.comp.timer" action="total"/>
   </target>
@@ -311,44 +318,67 @@ QUICK BUILD (QUICK)
       target="1.5" source="1.5">
       <compilerarg line="${javac.args}"/>
     </javac>
-    <sabmake id="locker.lib.scalac"
+    <scalacfork
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
       srcpath="${src.dir}/library"
-      target="jvm-1.5"
-      params="${scalac.args}">
-      <compilationpath>
-      	<pathelement location="${build-quick.dir}/classes/library"/>
-      </compilationpath>
-    </sabmake>
-    <sabuse id="locker.lib.scalac" srcdir="${src.dir}/library">
+      params="${scalac.args}"
+      srcdir="${src.dir}/library"
+      maxmemory="${scalacfork.maxmemory}">
       <include name="scala/Predef.scala"/>
-    </sabuse>
-    <!-- re-instantiate locker.lib.scalac because keeping the same instance will lead to some attributes missing -->
-    <sabbreak id="locker.lib.scalac"/>
-    <sabmake id="locker.lib.scalac"
-      destdir="${build-quick.dir}/classes/library"
-      compilerpathref="locker.classpath"
-      srcpath="${src.dir}/library"
-      target="jvm-1.5"
-      params="${scalac.args}">
       <compilationpath>
       	<pathelement location="${build-quick.dir}/classes/library"/>
       </compilationpath>
-    </sabmake>
-    <sabuse id="locker.lib.scalac" srcdir="${src.dir}/library">
+    </scalacfork>
+    <scalacfork
+      destdir="${build-quick.dir}/classes/library"
+      compilerpathref="locker.classpath"
+      srcpath="${src.dir}/library"
+      params="${scalac.args}"
+      srcdir="${src.dir}/library"
+      maxmemory="${scalacfork.maxmemory}">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
-    </sabuse>
-    <sabuse id="locker.lib.scalac" srcdir="${src.dir}/actors">
+      <compilationpath>
+      	<pathelement location="${build-quick.dir}/classes/library"/>
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
+      destdir="${build-quick.dir}/classes/library"
+      compilerpathref="locker.classpath"
+      srcpath="${src.dir}/library"
+      params="${scalac.args}"
+      srcdir="${src.dir}/actors"
+      maxmemory="${scalacfork.maxmemory}">
       <include name="**/*.scala"/>
-    </sabuse>
-    <sabuse id="locker.lib.scalac" srcdir="${src.dir}/dbc">
+      <compilationpath>
+      	<pathelement location="${build-quick.dir}/classes/library"/>
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
+      destdir="${build-quick.dir}/classes/library"
+      compilerpathref="locker.classpath"
+      srcpath="${src.dir}/library"
+      params="${scalac.args}"
+      srcdir="${src.dir}/dbc"
+      maxmemory="${scalacfork.maxmemory}">
       <include name="**/*.scala"/>
-    </sabuse>
-    <sabuse id="locker.lib.scalac" srcdir="${src.dir}/swing">
+      <compilationpath>
+      	<pathelement location="${build-quick.dir}/classes/library"/>
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
+      destdir="${build-quick.dir}/classes/library"
+      compilerpathref="locker.classpath"
+      srcpath="${src.dir}/library"
+      params="${scalac.args}"
+      srcdir="${src.dir}/swing"
+      maxmemory="${scalacfork.maxmemory}">
       <include name="**/*.scala"/>
-    </sabuse>
+      <compilationpath>
+      	<pathelement location="${build-quick.dir}/classes/library"/>
+      </compilationpath>
+    </scalacfork>
     <propertyfile file="${build-quick.dir}/classes/library/library.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
@@ -361,7 +391,6 @@ QUICK BUILD (QUICK)
         <include name="**/*.css"/>
       </fileset>
     </copy>
-    <sabbreak id="locker.lib.scalac"/>
     <touch file="${build-quick.dir}/library.complete" verbose="no"/>
     <stopwatch name="quick.lib.timer" action="total"/>
   </target>
@@ -375,12 +404,14 @@ QUICK BUILD (QUICK)
   <target name="quick.comp" depends="quick.pre-comp" unless="quick.comp.available">
     <stopwatch name="quick.comp.timer"/>
     <mkdir dir="${build-quick.dir}/classes/compiler"/>
-    <sabmake id="locker.comp.scalac"
+    <scalacfork
       destdir="${build-quick.dir}/classes/compiler"
       compilerpathref="locker.classpath"
       srcpath="${src.dir}/compiler"
-      target="jvm-1.5"
-      params="${scalac.args}">
+      params="${scalac.args}"
+      srcdir="${src.dir}/compiler"
+      maxmemory="${scalacfork.maxmemory}">
+      <include name="**/*.scala"/>
       <compilationpath>
       	<pathelement location="${build-quick.dir}/classes/library"/>
       	<pathelement location="${build-quick.dir}/classes/compiler"/>
@@ -389,10 +420,7 @@ QUICK BUILD (QUICK)
         <pathelement location="${jline.jar}"/>
         <pathelement location="${ant.jar}"/>
       </compilationpath>
-    </sabmake>
-    <sabuse id="locker.comp.scalac" srcdir="${src.dir}/compiler">
-      <include name="**/*.scala"/>
-    </sabuse>
+    </scalacfork>
     <propertyfile file="${build-quick.dir}/classes/compiler/compiler.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
@@ -405,7 +433,6 @@ QUICK BUILD (QUICK)
         <include name="**/*.css"/>
       </fileset>
     </copy>
-    <sabbreak id="locker.comp.scalac"/>
     <touch file="${build-quick.dir}/compiler.complete" verbose="no"/>
     <stopwatch name="quick.comp.timer" action="total"/>
   </target>
@@ -431,28 +458,26 @@ QUICK BUILD (QUICK)
       <include name="**/*.java"/>
       <compilerarg line="${javac.args}"/>
     </javac>
-    <sabmake id="locker.partest.scalac"
+    <scalacfork
       destdir="${build-quick.dir}/classes/partest"
       compilerpathref="locker.classpath"
       srcpath="${src.dir}/partest"
-      target="jvm-1.5"
-      params="${scalac.args}">
+      params="${scalac.args}"
+      srcdir="${src.dir}/partest"
+      maxmemory="${scalacfork.maxmemory}">
+      <include name="**/*.scala"/>
       <compilationpath>
       	<pathelement location="${build-quick.dir}/classes/library"/>
       	<pathelement location="${build-quick.dir}/classes/compiler"/>
       	<pathelement location="${build-quick.dir}/classes/partest"/>
         <pathelement location="${ant.jar}"/>
       </compilationpath>
-    </sabmake>
-    <sabuse id="locker.partest.scalac" srcdir="${src.dir}/partest">
-      <include name="**/*.scala"/>
-    </sabuse>
+    </scalacfork>
     <copy todir="${build-quick.dir}/classes/partest">
       <fileset dir="${src.dir}/partest">
         <include name="**/*.xml"/>
       </fileset>
     </copy>
-    <sabbreak id="locker.partest.scalac"/>
     <touch file="${build-quick.dir}/partest.complete" verbose="no"/>
     <stopwatch name="quick.partest.timer" action="total"/>
   </target>
@@ -1211,35 +1236,4 @@ MISCELLANEOUS
   <target name="graph.sabbus" depends="graph.init">
     <vizant antfile="${ant.file}" outfile="${ant.project.name}.dot"/>
   </target>
-
-<!-- ===========================================================================
-MAKE SABBUS JAR (to remove once sabbus is part of starr library)
-============================================================================ -->
-  
-  <target name="sabbus.start" depends="init"/>
-  
-  <target name="sabbus.build" depends="sabbus.start">
-    <taskdef resource="scala/tools/ant/antlib.xml" classpathref="starr.classpath"/>
-    <mkdir dir="${build.dir}/sabbus"/>
-    <scalac
-      srcdir="${src.dir}/compiler/scala/tools/ant/sabbus/"
-      destdir="${build.dir}/sabbus"
-      target="jvm-1.5">
-      <include name="*.scala"/>
-      <classpath>
-      	<pathelement location="${lib.starr.jar}"/>
-      	<pathelement location="${comp.starr.jar}"/>
-      	<pathelement location="${ant.jar}"/>
-      </classpath>
-    </scalac>
-    <copy
-      file="${src.dir}/compiler/scala/tools/ant/sabbus/antlib.xml"
-      todir="${build.dir}/sabbus/scala/tools/ant/sabbus"/>
-    <jar
-      destfile="${lib.dir}/sabbus.jar"
-      basedir="${build.dir}/sabbus"/>
-  </target>
-  
-  <target name="sabbus.done" depends="sabbus.build"/>
-  
 </project>

@@ -30,4 +30,4 @@ package scala.reflect
  *    you should use the normal Scala access and assignment.
  *  </p>
  */
-class BeanProperty extends Annotation
+class BeanProperty extends StaticAnnotation

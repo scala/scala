@@ -5,4 +5,6 @@
              classname="scala.tools.ant.sabbus.Use"/>
     <taskdef name="sabbreak"
              classname="scala.tools.ant.sabbus.Break"/>
+    <taskdef name="scalacfork"
+             classname="scala.tools.ant.sabbus.ScalacFork"/>
 </antlib>

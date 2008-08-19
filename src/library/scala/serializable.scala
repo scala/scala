@@ -15,4 +15,4 @@ package scala
 /**
  * An annotation that designates the class to which it is applied as serializable
  */
-class serializable extends Annotation {}
+class serializable extends StaticAnnotation {}
