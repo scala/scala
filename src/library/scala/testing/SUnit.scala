@@ -44,8 +44,13 @@ import scala.collection.mutable.ArrayBuffer
  *   a <code>main</code> method, for convenience.
  * </p>
  *
+ * @deprecated SUnit will be removed in 2.8.0. There are several free and
+ * sophisticated testing frameworks for Scala available, examples are
+ * "ScalaTest", "ScalaCheck" or "Specs".
+ *
  * @author Burak Emir
  */
+@deprecated
 object SUnit {
 
   /** <p>
