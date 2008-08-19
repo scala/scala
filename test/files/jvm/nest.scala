@@ -15,3 +15,10 @@ object Test extends Application {
   Console.println(nest.best.rest.test.inc(2))
   Console.println(nest.best.rest.x)
 }
+
+// bug #695
+object ForceParse extends OuterTParams[AnyRef] {
+  // Force import of HarderToParse<A>.InnerClass,
+  // which has confusing method signature.
+  var field: InnerClass = null
+}
