@@ -673,13 +673,15 @@ abstract class GenJVM extends SubComponent {
 
       /** Should method `m' get a forwarder in the mirror class? */
       def shouldForward(m: Symbol): Boolean =
-        (m.owner != definitions.ObjectClass
-         && m.isMethod
-         && !m.hasFlag(Flags.CASE | Flags.PROTECTED)
-         && !m.isConstructor
-         && !m.isStaticMember
-         && !conflictsIn(definitions.ObjectClass, m.name)
-         && !conflictsIn(module.linkedClassOfModule, m.name))
+        atPhase(currentRun.picklerPhase) (
+          m.owner != definitions.ObjectClass
+          && m.isMethod
+          && !m.hasFlag(Flags.CASE | Flags.PROTECTED)
+          && !m.isConstructor
+          && !m.isStaticMember
+          && !(m.owner == definitions.AnyClass)
+          && !conflictsIn(definitions.ObjectClass, m.name)
+          && !conflictsIn(module.linkedClassOfModule, m.name))
 
       import JAccessFlags._
       assert(module.isModuleClass)
@@ -689,7 +691,7 @@ abstract class GenJVM extends SubComponent {
       val moduleName = javaName(module) // + "$"
       val mirrorName = moduleName.substring(0, moduleName.length() - 1)
 
-      for (m <- module.tpe.nonPrivateMembers; if shouldForward(m)) {
+      for (m <- atPhase(currentRun.picklerPhase)(module.tpe.nonPrivateMembers); if shouldForward(m)) {
         val paramJavaTypes = m.tpe.paramTypes map toTypeKind
         val paramNames: Array[String] = new Array[String](paramJavaTypes.length);
         for (val i <- 0.until(paramJavaTypes.length))
@@ -722,6 +724,7 @@ abstract class GenJVM extends SubComponent {
         addExceptionsAttribute(mirrorMethod, throws)
         addAnnotations(mirrorMethod, others)
       }
+
     }
 
     /** Dump a mirror class for a top-level module. A mirror class is a class containing
