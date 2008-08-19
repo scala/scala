@@ -335,9 +335,9 @@ abstract class ClassfileParser {
 
     innerClasses.get(name) match {
       case Some(entry) =>
-        //println("found inner class " + name)
+        println("found inner class " + name)
         val res = innerClasses.classSymbol(entry.externalName)
-        //println("\trouted to: " + res)
+        println("\trouted to: " + res)
         res
       case None =>
         //if (name.toString.contains("$")) println("No inner class: " + name + innerClasses + " while parsing " + in.file.name)
@@ -907,9 +907,10 @@ abstract class ClassfileParser {
         innerClasses.get(externalName) match {
           case Some(entry) =>
             val sym = classSymbol(entry.outerName)
+            println("found " + sym + " and looking for " + innerName)
             if (static) {
               val s = sym.linkedModuleOfClass.info.member(innerName.toTypeName)
-              assert(s ne NoSymbol, sym + " members: " + sym.info.members)
+              assert(s ne NoSymbol, sym)
               s
             } else
               sym.info.member(innerName.toTypeName)
