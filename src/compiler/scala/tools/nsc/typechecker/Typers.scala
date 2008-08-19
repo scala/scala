@@ -2634,8 +2634,10 @@ trait Typers { self: Analyzer =>
                   if (treeInfo.isVariableOrGetter(qual1)) {
                     convertToAssignment(fun, qual1, name, args, ex)
                   } else {
-                    if (qual1.symbol.isValue) error(tree.pos, "reassignment to val")
-                    else reportTypeError(fun.pos, ex)
+		    if ((qual1.symbol ne null) && qual1.symbol.isValue)
+		      error(tree.pos, "reassignment to val")
+		    else
+                      reportTypeError(fun.pos, ex)
                     setError(tree)
                   }
                 case _ =>
