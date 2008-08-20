@@ -92,10 +92,9 @@ abstract class GenJVM extends SubComponent {
 
     var clasz: IClass = _
     var method: IMethod = _
-    var code: Code = _
     var jclass: JClass = _
     var jmethod: JMethod = _
-    var jcode: JExtendedCode = _
+//    var jcode: JExtendedCode = _
 
     var innerClasses: Set[Symbol] = ListSet.empty // referenced inner classes
 
@@ -246,7 +245,7 @@ abstract class GenJVM extends SubComponent {
 	         !m.symbol.isSetter) yield javaName(m.symbol)
 
       val constructor = beanInfoClass.addNewMethod(JAccessFlags.ACC_PUBLIC, "<init>", JType.VOID, javaTypes(Nil), javaNames(Nil))
-      jcode = constructor.getCode().asInstanceOf[JExtendedCode]
+      val jcode = constructor.getCode().asInstanceOf[JExtendedCode]
       val strKind = new JObjectType(javaName(definitions.StringClass))
       val stringArrayKind = new JArrayType(strKind)
       val conType = new JMethodType(JType.VOID, Array(javaType(definitions.ClassClass), stringArrayKind, stringArrayKind))
@@ -548,7 +547,7 @@ abstract class GenJVM extends SubComponent {
       addRemoteException(jmethod, m.symbol)
 
       if (!jmethod.isAbstract() && !method.native) {
-        jcode = jmethod.getCode().asInstanceOf[JExtendedCode]
+        val jcode = jmethod.getCode().asInstanceOf[JExtendedCode]
 
         // add a fake local for debugging purpuses
         if (emitVars && isClosureApply(method.symbol)) {
@@ -576,7 +575,7 @@ abstract class GenJVM extends SubComponent {
 
         genCode(m)
         if (emitVars)
-          genLocalVariableTable(m);
+          genLocalVariableTable(m, jcode);
       }
 
       addGenericSignature(jmethod, m.symbol)
@@ -587,13 +586,23 @@ abstract class GenJVM extends SubComponent {
     }
 
     private def addRemoteException(jmethod: JMethod, meth: Symbol) {
+      def isRemoteThrows(ainfo: AnnotationInfo) = ainfo match {
+        case AnnotationInfo(tp, List(arg), _) if tp.typeSymbol == ThrowsAttr =>
+          arg.intTree match {
+            case Literal(Constant(tpe: Type)) if tpe.typeSymbol == RemoteException.typeSymbol => true
+            case _ => false
+          }
+        case _ => false
+      }
+
       if (remoteClass ||
           (meth.hasAttribute(RemoteAttr)
            && jmethod.isPublic()
            && !forCLDC)) {
           val ainfo = AnnotationInfo(ThrowsAttr.tpe, List(new AnnotationArgument(Constant(RemoteException))), List())
-          if (!meth.attributes.contains(ainfo))
+          if (!meth.attributes.exists(isRemoteThrows)) {
             meth.attributes = ainfo :: meth.attributes;
+          }
         }
     }
 
@@ -664,13 +673,15 @@ abstract class GenJVM extends SubComponent {
 
       /** Should method `m' get a forwarder in the mirror class? */
       def shouldForward(m: Symbol): Boolean =
-        (m.owner != definitions.ObjectClass
-         && m.isMethod
-         && !m.hasFlag(Flags.CASE | Flags.PROTECTED)
-         && !m.isConstructor
-         && !m.isStaticMember
-         && !conflictsIn(definitions.ObjectClass, m.name)
-         && !conflictsIn(module.linkedClassOfModule, m.name))
+        atPhase(currentRun.picklerPhase) (
+          m.owner != definitions.ObjectClass
+          && m.isMethod
+          && !m.hasFlag(Flags.CASE | Flags.PROTECTED)
+          && !m.isConstructor
+          && !m.isStaticMember
+          && !(m.owner == definitions.AnyClass)
+          && !conflictsIn(definitions.ObjectClass, m.name)
+          && !conflictsIn(module.linkedClassOfModule, m.name))
 
       import JAccessFlags._
       assert(module.isModuleClass)
@@ -680,7 +691,7 @@ abstract class GenJVM extends SubComponent {
       val moduleName = javaName(module) // + "$"
       val mirrorName = moduleName.substring(0, moduleName.length() - 1)
 
-      for (m <- module.tpe.nonPrivateMembers; if shouldForward(m)) {
+      for (m <- atPhase(currentRun.picklerPhase)(module.tpe.nonPrivateMembers); if shouldForward(m)) {
         val paramJavaTypes = m.tpe.paramTypes map toTypeKind
         val paramNames: Array[String] = new Array[String](paramJavaTypes.length);
         for (val i <- 0.until(paramJavaTypes.length))
@@ -713,6 +724,7 @@ abstract class GenJVM extends SubComponent {
         addExceptionsAttribute(mirrorMethod, throws)
         addAnnotations(mirrorMethod, others)
       }
+
     }
 
     /** Dump a mirror class for a top-level module. A mirror class is a class containing
@@ -740,19 +752,22 @@ abstract class GenJVM extends SubComponent {
      *  @param m ...
      */
     def genCode(m: IMethod) {
-      labels.clear
+      val jcode = jmethod.getCode.asInstanceOf[JExtendedCode]
+
+      def makeLabels(bs: List[BasicBlock]) = {
+        if (settings.debug.value)
+          log("Making labels for: " + method);
+        HashMap.empty ++ bs.zip(bs map (b => jcode.newLabel))
+      }
+
       isModuleInitialized = false
 
-      code = m.code
       linearization = linearizer.linearize(m)
-      makeLabels(linearization)
-      genBlocks(linearization)
+      val labels = makeLabels(linearization)
+      /** local variables whose scope appears in this block. */
+      var varsInBlock: collection.mutable.Set[Local] = new HashSet
 
-      if (this.method.exh != Nil)
-        genExceptionHandlers;
-    }
-
-    var nextBlock: BasicBlock = _
+      var nextBlock: BasicBlock = linearization.head
 
     def genBlocks(l: List[BasicBlock]): Unit = l match {
       case Nil => ()
@@ -822,9 +837,6 @@ abstract class GenJVM extends SubComponent {
         }
       }
     }
-
-    /** local variables whose scope appears in this block. */
-    var varsInBlock: collection.mutable.Set[Local] = new HashSet
 
     def genBlock(b: BasicBlock) {
       labels(b).anchorToNext()
@@ -1031,14 +1043,19 @@ abstract class GenJVM extends SubComponent {
               i = i + 1
               caze = caze.tail
             }
-            val branchArray = new Array[JCode$Label](tagArray.length)
+            val branchArray = jcode.newLabels(tagArray.length)
+            i = 0
+            while (i < branchArray.length) {
+              branchArray(i) = labels(branches(i))
+              i += 1
+            }
             if (settings.debug.value)
               log("Emitting SWITHCH:\ntags: " + tags + "\nbranches: " + branches);
             jcode.emitSWITCH(tagArray,
-                             { (branches map labels dropRight 1).copyToArray(branchArray, 0);
-                              branchArray },
+                             branchArray,
                              labels(branches.last),
                              MIN_SWITCH_DENSITY);
+            ()
 
           case JUMP(whereto) =>
             if (nextBlock != whereto)
@@ -1202,6 +1219,7 @@ abstract class GenJVM extends SubComponent {
         lv.ranges = (labels(b).getAnchor(), jcode.getPC()) :: lv.ranges
       }
     }
+
 
     /**
      *  @param primitive ...
@@ -1376,9 +1394,70 @@ abstract class GenJVM extends SubComponent {
       }
     }
 
+      // genCode starts here
+      genBlocks(linearization)
+
+      if (this.method.exh != Nil)
+        genExceptionHandlers;
+    }
+
+
+    /** Emit a Local variable table for debugging purposes.
+     *  Synthetic locals are skipped. All variables are method-scoped.
+     */
+    private def genLocalVariableTable(m: IMethod, jcode: JCode) {
+        var vars = m.locals.filter(l => !l.sym.hasFlag(Flags.SYNTHETIC))
+
+        if (vars.length == 0) return
+
+        val pool = jclass.getConstantPool()
+        val pc = jcode.getPC()
+        var anonCounter = 0
+        var entries = 0
+        vars.foreach { lv =>
+          lv.ranges = mergeEntries(lv.ranges.reverse);
+          entries += lv.ranges.length
+        }
+        if (!jmethod.isStatic()) entries += 1
+
+        val lvTab = ByteBuffer.allocate(2 + 10 * entries)
+        def emitEntry(name: String, signature: String, idx: Short, start: Short, end: Short) {
+          lvTab.putShort(start)
+          lvTab.putShort(end)
+          lvTab.putShort(pool.addUtf8(name).asInstanceOf[Short])
+          lvTab.putShort(pool.addUtf8(signature).asInstanceOf[Short])
+          lvTab.putShort(idx)
+        }
+
+        lvTab.putShort(entries.asInstanceOf[Short])
+
+        if (!jmethod.isStatic()) {
+          emitEntry("this", jclass.getType().getSignature(), 0, 0.asInstanceOf[Short], pc.asInstanceOf[Short])
+        }
+
+        for (lv <- vars) {
+            val name = if (javaName(lv.sym) eq null) {
+              anonCounter += 1
+              "<anon" + anonCounter + ">"
+            } else javaName(lv.sym)
+
+            val index = indexOf(lv).asInstanceOf[Short]
+            val tpe   = javaType(lv.kind).getSignature()
+            for ((start, end) <- lv.ranges) {
+              emitEntry(name, tpe, index, start.asInstanceOf[Short], (end - start).asInstanceOf[Short])
+            }
+        }
+        val attr =
+            fjbgContext.JOtherAttribute(jclass,
+                                        jmethod,
+                                        "LocalVariableTable",
+                                        lvTab.array())
+        jcode.addAttribute(attr)
+    }
+
+
     /** For each basic block, the first PC address following it. */
     val endPC: HashMap[BasicBlock, Int] = new HashMap()
-    val labels: HashMap[BasicBlock, JCode$Label] = new HashMap()
     val conds: HashMap[TestOp, Int] = new HashMap()
 
     conds += (EQ -> JExtendedCode.COND_EQ)
@@ -1410,13 +1489,6 @@ abstract class GenJVM extends SubComponent {
     classLiteral += (LONG   -> new JObjectType("java.lang.Long"))
     classLiteral += (FLOAT  -> new JObjectType("java.lang.Float"))
     classLiteral += (DOUBLE -> new JObjectType("java.lang.Double"))
-
-    def makeLabels(bs: List[BasicBlock]) {
-      //labels.clear
-      if (settings.debug.value)
-        log("Making labels for: " + method);
-      bs foreach (bb => labels += (bb -> jcode.newLabel()) )
-    }
 
 
     ////////////////////// local vars ///////////////////////
@@ -1591,58 +1663,6 @@ abstract class GenJVM extends SubComponent {
       dir.fileNamed(pathParts.last + suffix)
     }
 
-    /** Emit a Local variable table for debugging purposes.
-     *  Synthetic locals are skipped. All variables are method-scoped.
-     */
-    private def genLocalVariableTable(m: IMethod) {
-        var vars = m.locals.filter(l => !l.sym.hasFlag(Flags.SYNTHETIC))
-
-        if (vars.length == 0) return
-
-        val pool = jclass.getConstantPool()
-        val pc = jcode.getPC()
-        var anonCounter = 0
-        var entries = 0
-        vars.foreach { lv =>
-          lv.ranges = mergeEntries(lv.ranges.reverse);
-          entries += lv.ranges.length
-        }
-        if (!jmethod.isStatic()) entries += 1
-
-        val lvTab = ByteBuffer.allocate(2 + 10 * entries)
-        def emitEntry(name: String, signature: String, idx: Short, start: Short, end: Short) {
-          lvTab.putShort(start)
-          lvTab.putShort(end)
-          lvTab.putShort(pool.addUtf8(name).asInstanceOf[Short])
-          lvTab.putShort(pool.addUtf8(signature).asInstanceOf[Short])
-          lvTab.putShort(idx)
-        }
-
-        lvTab.putShort(entries.asInstanceOf[Short])
-
-        if (!jmethod.isStatic()) {
-          emitEntry("this", jclass.getType().getSignature(), 0, 0.asInstanceOf[Short], pc.asInstanceOf[Short])
-        }
-
-        for (lv <- vars) {
-            val name = if (javaName(lv.sym) eq null) {
-              anonCounter += 1
-              "<anon" + anonCounter + ">"
-            } else javaName(lv.sym)
-
-            val index = indexOf(lv).asInstanceOf[Short]
-            val tpe   = javaType(lv.kind).getSignature()
-            for ((start, end) <- lv.ranges) {
-              emitEntry(name, tpe, index, start.asInstanceOf[Short], (end - start).asInstanceOf[Short])
-            }
-        }
-        val attr =
-            fjbgContext.JOtherAttribute(jclass,
-                                        jmethod,
-                                        "LocalVariableTable",
-                                        lvTab.array())
-        jcode.addAttribute(attr)
-    }
 
 
     /** Merge adjacent ranges. */

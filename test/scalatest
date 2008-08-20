@@ -626,6 +626,15 @@ PREFIX=`cd "$PREFIX"; pwd`;
 ##############################################################################
 # Invocation of $SCRIPT
 
+# Print deprecation warning
+echo "######################################################################"
+echo "## DEPRECATION WARNING                                              ##"
+echo "######################################################################"
+echo "## The 'scalatest' runner script has been deprecated. Please use    ##"
+echo "## 'partest' instead.                                               ##"
+echo "######################################################################"
+echo ""
+
 NORUN="false";
 SHOWLOG="false";
 SHOWDIFF="false";

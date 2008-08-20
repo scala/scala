@@ -156,79 +156,80 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
   )
 
   def javaSig(sym: Symbol): Option[String] = atPhase(currentRun.erasurePhase) {
-    if (needsJavaSig(sym.info)) Some(javaSig(sym.info))
-    else None
-  }
 
-  private def javaSig(tp: Type): String = javaSig(List(), tp)
+    def jsig(tp: Type): String = jsig2(List(), tp)
 
-  private def javaSig(tparams: List[Symbol], tp0: Type): String = {
-    val tp = tp0.normalize
-    tp match {
-      case st: SubType =>
-        javaSig(tparams, st.supertype)
-      case ExistentialType(tparams, tpe) =>
-        javaSig(tparams, tpe)
-      case TypeRef(pre, sym, args) =>
-        def argSig(tp: Type) =
-          if (tparams contains tp.typeSymbol) {
-            val bounds = tp.typeSymbol.info.bounds
-            if (!(AnyRefClass.tpe <:< bounds.hi)) "+"+javaSig(bounds.hi)
-            else if (!(bounds.lo <:< NullClass.tpe)) "-"+javaSig(bounds.lo)
-            else "*"
-          } else javaSig(tp)
-        def classSig: String =
-          "L"+atPhase(currentRun.icodePhase)(sym.fullNameString).replace('.', '/')
-        def classSigSuffix: String =
-          "."+atPhase(currentRun.icodePhase)(sym.name)
-        if (sym == ArrayClass)
-          ARRAY_TAG.toString+(args map javaSig).mkString
-        else if (sym.isTypeParameterOrSkolem)
-          TVAR_TAG.toString+sym.name+";"
-        else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass)
-          javaSig(ObjectClass.tpe)
-        else if (sym == UnitClass)
-          javaSig(BoxedUnitClass.tpe)
-        else if (isValueClass(sym))
-          tagOfClass(sym).toString
-        else if (sym.isClass)
-          {
-            if (needsJavaSig(pre)) {
-              val s = javaSig(pre)
-              if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + classSigSuffix
-              else classSig
-            } else classSig
-          } + {
-            if (args.isEmpty) "" else "<"+(args map argSig).mkString+">"
-          } + ";"
-        else javaSig(erasure(tp))
-      case PolyType(tparams, restpe) =>
-        def hiBounds(bounds: TypeBounds): List[Type] = bounds.hi.normalize match {
-          case RefinedType(parents, _) => parents map normalize
-          case tp => List(tp)
-        }
-        def boundSig(bounds: List[Type]) = {
-          val classBound = bounds find (t => t.typeSymbol.isClass && !t.typeSymbol.isTrait) match {
-            case Some(t) => javaSig(t)
-            case None => ""
+    def jsig2(tparams: List[Symbol], tp0: Type): String = {
+      val tp = tp0.normalize
+      tp match {
+        case st: SubType =>
+          jsig2(tparams, st.supertype)
+        case ExistentialType(tparams, tpe) =>
+          jsig2(tparams, tpe)
+        case TypeRef(pre, sym, args) =>
+          def argSig(tp: Type) =
+            if (tparams contains tp.typeSymbol) {
+              val bounds = tp.typeSymbol.info.bounds
+              if (!(AnyRefClass.tpe <:< bounds.hi)) "+"+jsig(bounds.hi)
+              else if (!(bounds.lo <:< NullClass.tpe)) "-"+jsig(bounds.lo)
+              else "*"
+            } else jsig(tp)
+          def classSig: String =
+            "L"+atPhase(currentRun.icodePhase)(sym.fullNameString).replace('.', '/')
+          def classSigSuffix: String =
+            "."+atPhase(currentRun.icodePhase)(sym.name)
+          if (sym == ArrayClass)
+            ARRAY_TAG.toString+(args map jsig).mkString
+          else if (sym.isTypeParameterOrSkolem)
+            TVAR_TAG.toString+sym.name+";"
+          else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass)
+            jsig(ObjectClass.tpe)
+          else if (sym == UnitClass)
+            jsig(BoxedUnitClass.tpe)
+          else if (isValueClass(sym))
+            tagOfClass(sym).toString
+          else if (sym.isClass)
+            {
+              if (needsJavaSig(pre)) {
+                val s = jsig(pre)
+                if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + classSigSuffix
+                else classSig
+              } else classSig
+            } + {
+              if (args.isEmpty) "" else "<"+(args map argSig).mkString+">"
+            } + ";"
+          else jsig(erasure(tp))
+        case PolyType(tparams, restpe) =>
+          def hiBounds(bounds: TypeBounds): List[Type] = bounds.hi.normalize match {
+            case RefinedType(parents, _) => parents map normalize
+            case tp => List(tp)
           }
-          ":"+classBound+(for (t <- bounds if t.typeSymbol.isTrait) yield ":"+javaSig(t)).mkString
-        }
-        assert(!tparams.isEmpty)
-        def paramSig(tsym: Symbol) = tsym.name+boundSig(hiBounds(tsym.info.bounds))
-        "<"+(tparams map paramSig).mkString+">"+javaSig(restpe)
-      case MethodType(formals, restpe) =>
-        "("+(formals map javaSig).mkString+")"+
-        (if (restpe.typeSymbol == UnitClass) VOID_TAG.toString else javaSig(restpe))
-      case RefinedType(parents, decls) if (!parents.isEmpty) =>
-        javaSig(parents.head)
-      case ClassInfoType(parents, _, _) =>
-        (parents map javaSig).mkString
-      case AnnotatedType(_, atp, _) =>
-        javaSig(atp)
-      case _ =>
-        javaSig(erasure(tp))
+          def boundSig(bounds: List[Type]) = {
+            def isClassBound(t: Type) = t.typeSymbol.isClass || t.typeSymbol.isAbstractType
+            val classBound = bounds find isClassBound match {
+              case Some(t) => jsig(t)
+              case None => ""
+            }
+            ":"+classBound+(for (t <- bounds if t.typeSymbol.isTrait) yield ":"+jsig(t)).mkString
+          }
+          assert(!tparams.isEmpty)
+          def paramSig(tsym: Symbol) = tsym.name+boundSig(hiBounds(tsym.info.bounds))
+          "<"+(tparams map paramSig).mkString+">"+jsig(restpe)
+        case MethodType(formals, restpe) =>
+          "("+(formals map jsig).mkString+")"+
+          (if (restpe.typeSymbol == UnitClass || sym.isConstructor) VOID_TAG.toString else jsig(restpe))
+        case RefinedType(parents, decls) if (!parents.isEmpty) =>
+          jsig(parents.head)
+        case ClassInfoType(parents, _, _) =>
+          (parents map jsig).mkString
+        case AnnotatedType(_, atp, _) =>
+          jsig(atp)
+        case _ =>
+          jsig(erasure(tp))
+      }
     }
+    if (needsJavaSig(sym.info)) Some(jsig(sym.info))
+    else None
   }
 
   /** Type reference after erasure */

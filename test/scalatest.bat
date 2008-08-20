@@ -12,6 +12,14 @@ rem We adopt the following conventions:
 rem - System/user environment variables start with a letter
 rem - Local batch variables start with an underscore ('_')
 
+echo ######################################################################
+echo ## DEPRECATION WARNING                                              ##
+echo ######################################################################
+echo ## The 'scalatest' runner script has been deprecated. Please use    ##
+echo ## 'partest' instead.                                               ##
+echo ######################################################################
+echo.
+
 if "%OS%"=="Windows_NT" (
   @setlocal
   call :set_home

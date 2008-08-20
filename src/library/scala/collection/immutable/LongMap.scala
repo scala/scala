@@ -1,5 +1,8 @@
 package scala.collection.immutable;
 
+/**
+ * @author David MacIver
+ */
 private[immutable] object LongMapUtils{
   def zero(i : Long, mask : Long) = (i & mask) == 0;
   def mask(i : Long, mask : Long) = i & (complement(mask - 1) ^ mask)

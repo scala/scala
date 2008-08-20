@@ -17,6 +17,8 @@ private object Utils{
 /**
  * Simple stack class backed by an array. Should be significantly faster
  * than the standard mutable stack.
+ *
+ * @author David MacIver
  */
 class ArrayStack[T] private(private var table : Array[AnyRef],
                             private var index : Int) extends Collection[T]{

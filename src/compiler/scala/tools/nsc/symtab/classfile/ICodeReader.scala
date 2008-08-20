@@ -76,7 +76,7 @@ abstract class ICodeReader extends ClassfileParser {
   override def parseClass() {
     val jflags = in.nextChar
     val isAttribute = (jflags & JAVA_ACC_ANNOTATION) != 0
-    var sflags = transFlags(jflags)
+    var sflags = transFlags(jflags, true)
     if ((sflags & DEFERRED) != 0) sflags = sflags & ~DEFERRED | ABSTRACT
     val c = pool.getClassSymbol(in.nextChar)
 //    if (c != clazz)
@@ -652,7 +652,7 @@ abstract class ICodeReader extends ClassfileParser {
     var containsNEW  = false
 
     def emit(i: Instruction) {
-      instrs += (pc, i)
+      instrs += ((pc, i))
       if (i.isInstanceOf[DupX])
         containsDUPX = true
       if (i.isInstanceOf[opcodes.NEW])

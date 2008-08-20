@@ -583,6 +583,7 @@ trait Contexts { self: Analyzer =>
     /** The prefix expression */
     def qual: Tree = tree.symbol.info match {
       case ImportType(expr) => expr
+      case ErrorType => tree
       case _ => throw new FatalError("symbol " + tree.symbol + " has bad type: " + tree.symbol.info);//debug
     }
 

@@ -1540,7 +1540,7 @@ trait Typers { self: Analyzer =>
       stats1
     }
 
-    def typedImport(imp : Import) : Import = imp;
+    def typedImport(imp : Import) : Import = imp
 
     def typedStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
 
@@ -2634,8 +2634,10 @@ trait Typers { self: Analyzer =>
                   if (treeInfo.isVariableOrGetter(qual1)) {
                     convertToAssignment(fun, qual1, name, args, ex)
                   } else {
-                    if (qual1.symbol.isValue) error(tree.pos, "reassignment to val")
-                    else reportTypeError(fun.pos, ex)
+		    if ((qual1.symbol ne null) && qual1.symbol.isValue)
+		      error(tree.pos, "reassignment to val")
+		    else
+                      reportTypeError(fun.pos, ex)
                     setError(tree)
                   }
                 case _ =>
@@ -3633,11 +3635,22 @@ trait Typers { self: Analyzer =>
           (info1 != NoImplicitInfo) &&
           isStrictlyMoreSpecific(info1.tpe, info2.tpe)
         val shadowed = new HashSet[Name](8)
-        def hasExplicitResultType(tree: Tree) = tree match {
-          case ValDef(_, _, tpt, _) => !tpt.isEmpty
-          case DefDef(_, _, _, _, tpt, _) => !tpt.isEmpty
-          case _ => false
+        def hasExplicitResultType(sym: Symbol) = {
+          def hasExplicitRT(tree: Tree) = tree match {
+            case ValDef(_, _, tpt, _) => !tpt.isEmpty
+            case DefDef(_, _, _, _, tpt, _) => !tpt.isEmpty
+            case _ => false
+          }
+          sym.rawInfo match {
+            case tc: TypeCompleter => hasExplicitRT(tc.tree)
+            case PolyType(_, tc: TypeCompleter) => hasExplicitRT(tc.tree)
+            case _ => true
+          }
         }
+        def comesBefore(sym: Symbol, owner: Symbol) =
+          sym.pos.offset.getOrElse(0) < owner.pos.offset.getOrElse(Integer.MAX_VALUE) &&
+          !(owner.ownerChain contains sym)
+
         /** Should implicit definition symbol `sym' be considered for applicability testing?
          *  This is the case if one of the following holds:
          *   - the symbol's type is initialized
@@ -3652,30 +3665,31 @@ trait Typers { self: Analyzer =>
         def isValid(sym: Symbol) = {
           sym.isInitialized ||
           sym.sourceFile == null ||
-          (sym.sourceFile ne context.unit.source.file) || {
-            sym.rawInfo match {
-              case tc: TypeCompleter => hasExplicitResultType(tc.tree)
-              case PolyType(_, tc: TypeCompleter) => hasExplicitResultType(tc.tree)
-              case _ => true
-            }
-          } || {
-            sym.pos.offset.getOrElse(0) < context.owner.pos.offset.getOrElse(Integer.MAX_VALUE) &&
-            !(context.owner.ownerChain contains sym)
-          }
+          (sym.sourceFile ne context.unit.source.file) ||
+          hasExplicitResultType(sym) ||
+          comesBefore(sym, context.owner)
         }
+        val lateImpls = new ListBuffer[Symbol]
         def isApplicable(info: ImplicitInfo): Boolean =
-          isValid(info.sym) &&
           !containsError(info.tpe) &&
           !(isLocal && shadowed.contains(info.name)) &&
           (!isView || info.sym != Predef_identity) &&
           tc.typedImplicit(pos, info, pt0, pt, isLocal) != EmptyTree
-        def applicableInfos(is: List[ImplicitInfo]) = {
-          val result = is filter isApplicable
+        def applicableInfos(is: List[ImplicitInfo]): List[ImplicitInfo] = {
+          val applicable = new ListBuffer[ImplicitInfo]
+          for (i <- is)
+            if (!isValid(i.sym)) lateImpls += i.sym
+            else if (isApplicable(i)) applicable += i
           if (isLocal)
             for (i <- is) shadowed addEntry i.name
-          result
+          applicable.toList
         }
-        val applicable = List.flatten(implicitInfoss map applicableInfos)
+        val applicable = implicitInfoss flatMap applicableInfos
+        if (applicable.isEmpty && !lateImpls.isEmpty) {
+          infer.setAddendum(pos, () =>
+            "\n Note: implicit "+lateImpls.first+" is not applicable here"+
+            "\n because it comes after the application point and it lacks an explicit result type")
+        }
         val best = (NoImplicitInfo /: applicable) ((best, alt) => if (improves(alt, best)) alt else best)
         if (best == NoImplicitInfo) EmptyTree
         else {
@@ -3684,9 +3698,9 @@ trait Typers { self: Analyzer =>
           for (alt <- applicable)
             if (alt.sym.owner != best.sym.owner && isSubClassOrObject(alt.sym.owner, best.sym.owner)) {
               ambiguousImplicitError(best, alt,
-                             "most specific definition is:",
-                             "yet alternative definition  ",
-                             "is defined in a subclass.\n Both definitions ")
+                                     "most specific definition is:",
+                                     "yet alternative definition  ",
+                                     "is defined in a subclass.\n Both definitions ")
             }
           tc.typedImplicit(pos, best, pt0, pt, isLocal)
         }

@@ -21,7 +21,8 @@ MAIN DISTRIBUTION PACKAGING
   </target>
   
   <target name="pack-archives.tar" depends="pack-archives.start">
-    <tar destfile="${dists.dir}/archives/scala-${version.number}.tgz" compression="gzip">
+    <tar destfile="${dists.dir}/archives/scala-${version.number}.tgz"
+         compression="gzip" longfile="gnu">
       <tarfileset dir="${dist.dir}" prefix="scala-${version.number}" includes="bin/**" mode="755"/>
       <tarfileset dir="${dist.dir}" prefix="scala-${version.number}" excludes="bin/**"/>
     </tar>
@@ -36,14 +37,16 @@ MAIN DISTRIBUTION PACKAGING
   </target>
 
   <target name="pack-api.tar" depends="pack-archives.zip">
-    <tar destfile="${dists.dir}/archives/scala-${version.number}-api.tgz" compression="gzip">
-      <tarfileset dir="${dist.dir}/doc/scala/api" prefix="scala-${version.number}-api"/>
+    <tar destfile="${dists.dir}/archives/scala-${version.number}-api.tgz"
+         compression="gzip" longfile="gnu">
+      <tarfileset dir="${dist.dir}/doc/scala-devel-docs/api" prefix="scala-${version.number}-api"/>
     </tar>
     <checksum file="${dists.dir}/archives/scala-${version.number}-api.tgz" fileext=".md5"/>
   </target>
   
   <target name="pack-archives.src" depends="pack-api.tar">
-    <tar destfile="${dists.dir}/archives/scala-${version.number}-sources.tgz" compression="gzip">
+    <tar destfile="${dists.dir}/archives/scala-${version.number}-sources.tgz"
+         compression="gzip" longfile="gnu">
       <tarfileset dir="${basedir}">
         <exclude name="build/**"/>
         <exclude name="debian/**"/>
@@ -106,9 +109,9 @@ MAIN DISTRIBUTION SBAZ
       desc="The Scala test package contains everything needed to test Scala."
       link="${sbaz.universe}/scala-test-${version.number}.sbp">
       <binset dir="${basedir}/test"
-        includes="clitest,diff/diff.*,diff/lib*.dll,scalatest,scalatest.bat,partest,partest.bat"/>
+        includes="clitest,diff/diff.*,diff/lib*.dll,partest,partest.bat"/>
       <miscset dir="${basedir}/test"
-        includes="files/**/*.args,files/**/*.check,files/**/*.jar,files/**/*.java,files/**/*.scala,files/cli/**/*.check.*,files/jvm/*.so,files/shootout/*.javaopts,files/shootout/*.runner,files/shootout/*.txt"/>
+        includes="files/**/*.args,files/**/*.check,files/**/*.jar,files/**/*.java,files/**/*.scala,files/**/*.flags,files/cli/**/*.check.*,files/jvm/*.so,files/shootout/*.javaopts,files/shootout/*.runner,files/shootout/*.txt"/>
         <!-- <srcset dir="${dist.dir}/src" includes="scala-partest-src.jar"/> -->
       <libset dir="${dist.dir}/lib" includes="scala-partest.jar"/>
     </sbaz>
@@ -122,7 +125,7 @@ MAIN DISTRIBUTION SBAZ
       version="${version.number}"
       desc="The Scala developer documentation. This contains all developer documentation."
       link="${sbaz.universe}/scala-devel-docs-${version.number}.sbp">
-      <docset dir="${dist.dir}/doc/scala"/>
+      <docset dir="${dist.dir}/doc/scala-devel-docs"/>
     </sbaz>
   </target>
 
@@ -149,7 +152,8 @@ JAVA FOUR DISTRIBUTION PACKAGING
   </target>
   
   <target name="fourpack-archives.tar" depends="fourpack-archives.start">
-    <tar destfile="${dists.dir}/archives/scala-${version.number}-jvm4.tgz" compression="gzip">
+    <tar destfile="${dists.dir}/archives/scala-${version.number}-jvm4.tgz"
+         compression="gzip" longfile="gnu">
       <tarfileset dir="${dists.dir}/scala-jvm4-${version.number}" prefix="scala-${version.number}-jvm4"
         includes="bin/**" mode="755"/>
       <tarfileset dir="${dists.dir}/scala-jvm4-${version.number}" prefix="scala-${version.number}-jvm4"
@@ -178,7 +182,8 @@ MSIL DISTRIBUTION PACKAGING
   </target>
 
   <target name="msilpack-archives.tar" depends="msilpack-archives.start">
-    <tar destfile="${dists.dir}/archives/scala-${version.number}-msil.tgz" compression="gzip">
+    <tar destfile="${dists.dir}/archives/scala-${version.number}-msil.tgz"
+         compression="gzip" longfile="gnu">
       <tarfileset dir="${dists.dir}/scala-msil-${version.number}" prefix="scala-${version.number}-msil"
         includes="bin/**" mode="755"/>
       <!-- Inlcude only dll's. Using scala-msil depends on having a scala distribution -->

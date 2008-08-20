@@ -76,7 +76,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   object analysis extends {
     val global: Global.this.type = Global.this
-  } with  TypeFlowAnalysis
+  } with TypeFlowAnalysis
 
   object copyPropagation extends {
     val global: Global.this.type = Global.this

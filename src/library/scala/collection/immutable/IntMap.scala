@@ -1,5 +1,8 @@
 package scala.collection.immutable;
 
+/**
+ * @author David MacIver
+ */
 private[immutable] object IntMapUtils{
   def zero(i : Int, mask : Int) = (i & mask) == 0;
   def mask(i : Int, mask : Int) = i & (complement(mask - 1) ^ mask)

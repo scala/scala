@@ -330,12 +330,16 @@ trait Namers { self: Analyzer =>
             finish
 
           case ValDef(mods, name, tp, rhs) =>
-            if (name.endsWith(nme.OUTER, nme.OUTER.length)) { // SM
+            if ((!context.owner.isClass ||
+                 (mods.flags & (PRIVATE | LOCAL)) == (PRIVATE | LOCAL) ||
+                 name.endsWith(nme.OUTER, nme.OUTER.length) ||
+                 context.unit.isJava) &&
+                (mods.flags & LAZY) == 0) {
               tree.symbol = enterInScope(owner.newValue(tree.pos, name)
                 .setFlag(mods.flags))
               finish
-            } else if (context.owner.isClass && (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL)
-                       || (mods.flags & LAZY) != 0) {
+            } else {
+              // add getter and possibly also setter
               val accflags: Long = ACCESSOR |
                 (if ((mods.flags & MUTABLE) != 0) mods.flags & ~MUTABLE & ~PRESUPER
                  else mods.flags & ~PRESUPER | STABLE)
@@ -367,11 +371,7 @@ trait Namers { self: Analyzer =>
                   if ((mods.flags & LAZY) != 0)
                     vsym.setLazyAccessor(getter)
                   vsym
-                } else getter;
-            } else {
-              tree.symbol = enterInScope(owner.newValue(tree.pos, name)
-                .setFlag(mods.flags))
-              finish
+                } else getter
             }
           case DefDef(mods, nme.CONSTRUCTOR, tparams, _, _, _) =>
             var sym = owner.newConstructor(tree.pos).setFlag(mods.flags | owner.getFlag(ConstrFlags))

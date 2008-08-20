@@ -1,6 +1,15 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2008, David MacIver              **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id: $
 package scala.collection.immutable;
 
-object TreeHashMap{
+object TreeHashMap {
   private[TreeHashMap] val _empty = new TreeHashMap[Any, Nothing](IntMap.empty[Nothing]);
   def empty[Key, Value] : TreeHashMap[Key, Value] = _empty.asInstanceOf[TreeHashMap[Key, Value]];
 
@@ -21,6 +30,8 @@ object TreeHashMap{
  *
  * Performancewise, get and update seem to be somewhat slower than with a traditional hash map, but bulk operations
  * such as filter, foreach and transform appear to get something of a speedup.
+ *
+ * @author David MacIver
  */
 class TreeHashMap[Key, +Value] private (private val underlying : IntMap[AssocMap[Key, Value]]) extends scala.collection.immutable.Map[Key, Value]{
   def elements : Iterator[(Key, Value)] = new Iterator[(Key, Value)]{
@@ -104,6 +115,7 @@ class TreeHashMap[Key, +Value] private (private val underlying : IntMap[AssocMap
       case Some(table) => {
         val newtable = table - key;
         if (table eq newtable) this;
+        else if (newtable.isEmpty) TreeHashMap(underlying - h)
         else TreeHashMap(underlying.update(h, newtable));
       }
     }

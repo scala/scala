@@ -408,7 +408,7 @@ abstract class Pickler extends SubComponent {
     private def putConstant(c: Constant) =
       if (putEntry(c)) {
         if (c.tag == StringTag) putEntry(newTermName(c.stringValue))
-        else if (c.tag == ClassTag) putEntry(c.typeValue)
+        else if (c.tag == ClassTag) putType(c.typeValue)
       }
 
     private def putChildren(sym: Symbol, children: List[Symbol]) {
@@ -417,11 +417,14 @@ abstract class Pickler extends SubComponent {
     }
 
     private def putAnnotation(sym: Symbol, annot: AnnotationInfo) {
-      assert(putEntry((sym, annot)))
-      val AnnotationInfo(atp, args, assocs) = annot
-      putType(atp)
-      args foreach putAnnotationArg
-      for ((name, c) <- assocs) { putEntry(name); putAnnotationArg(c) }
+      // if an annotation with the same arguments is applied to the
+      // same symbol multiple times, it's only pickled once.
+      if (putEntry((sym, annot))) {
+        val AnnotationInfo(atp, args, assocs) = annot
+        putType(atp)
+        args foreach putAnnotationArg
+        for ((name, c) <- assocs) { putEntry(name); putAnnotationArg(c) }
+      }
     }
 
     private def putAnnotation(annot: AnnotationInfo) {
@@ -939,6 +942,8 @@ abstract class Pickler extends SubComponent {
         case _ =>
           throw new FatalError("bad entry: " + entry + " " + entry.getClass)
       }
+
+      // begin writeEntry
       val startpos = writeIndex
       writeByte(0); writeByte(0)
       patchNat(startpos, writeBody(entry))

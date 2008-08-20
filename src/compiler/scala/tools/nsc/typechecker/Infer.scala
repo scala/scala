@@ -197,6 +197,14 @@ trait Infer {
 
     /* -- Error Messages --------------------------------------------------- */
 
+    private var addendumPos: Position = NoPosition
+    private var addendum: () => String = _
+
+    def setAddendum(pos: Position, msg: () => String) = {
+      addendumPos = pos
+      addendum = msg
+    }
+
     def setError[T <: Tree](tree: T): T = {
       if (tree.hasSymbol)
         if (context.reportGeneralErrors) {
@@ -265,7 +273,10 @@ trait Infer {
 
     def typeError(pos: Position, found: Type, req: Type) {
       if (!found.isErroneous && !req.isErroneous) {
-        error(pos, typeErrorMsg(found, req))
+        error(pos,
+              typeErrorMsg(found, req)+
+              (if (pos != NoPosition && pos == addendumPos) addendum()
+               else ""))
         if (settings.explaintypes.value) explainTypes(found, req)
       }
     }
@@ -299,7 +310,7 @@ trait Infer {
         explainName(sym1)
         explainName(sym2)
         if (sym1.owner == sym2.owner && !inIDE) sym2.name = newTypeName("(some other)"+sym2.name)
-        patches += (sym1, sym2, name)
+        patches += ((sym1, sym2, name))
       }
 
       val result = op

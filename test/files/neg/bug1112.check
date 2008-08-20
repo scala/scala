@@ -1,4 +1,4 @@
-bug1112.scala:12: error: wrong number of arguments for method call: (int)(=> () => unit)unit
+bug1112.scala:12: error: wrong number of arguments for method call: (Int)(=> () => Unit)Unit
     call(0,() => System.out.println("here we are"))
     ^
 one error found

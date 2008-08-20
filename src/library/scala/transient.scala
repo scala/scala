@@ -11,4 +11,4 @@
 
 package scala
 
-class transient extends Annotation
+class transient extends StaticAnnotation

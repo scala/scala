@@ -17,4 +17,4 @@ package scala
  * @see Method <a href="ScalaObject.html#$tag()">$tag</a> in trait
  *      <a href="ScalaObject.html">scala.ScalaObject</a>.
  */
-class remote extends Annotation {}
+class remote extends StaticAnnotation {}

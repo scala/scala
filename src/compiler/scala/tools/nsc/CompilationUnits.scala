@@ -44,19 +44,11 @@ trait CompilationUnits { self: Global =>
      */
     val icode: HashSet[icodes.IClass] = new HashSet
 
-    val errorPositions = new HashSet[Position]
-
     def error(pos: Position, msg: String) =
-      if (inIDE || !(errorPositions contains pos)) {
-        if (!inIDE) errorPositions += pos
-        reporter.error((pos), msg)
-      }
+      reporter.error(pos, msg)
 
     def warning(pos: Position, msg: String) =
-      if (inIDE || !(errorPositions contains pos)) {
-        if (!inIDE) errorPositions += pos
-        reporter.warning((pos), msg)
-      }
+      reporter.warning(pos, msg)
 
     def deprecationWarning(pos: Position, msg: String) =
       if (settings.deprecation.value) warning(pos, msg)
@@ -67,13 +59,10 @@ trait CompilationUnits { self: Global =>
       else currentRun.uncheckedWarnings = true
 
     def incompleteInputError(pos: Position, msg:String) =
-      if (inIDE || !(errorPositions contains pos)) {
-        if (!inIDE) errorPositions += pos
-        reporter.incompleteInputError((pos), msg)
-      }
+      reporter.incompleteInputError(pos, msg)
 
     /** Is this about a .java source file? */
-    def isJava = source.file.name.endsWith(".java")
+    lazy val isJava = source.file.name.endsWith(".java")
 
     override def toString() = source.toString()
 
@@ -81,7 +70,6 @@ trait CompilationUnits { self: Global =>
       fresh = null
       body = null
       depends.clear
-      errorPositions.clear
       defined.clear
     }
   }

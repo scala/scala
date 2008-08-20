@@ -1,9 +1,12 @@
 package scala.swing
 
 import event._
-import Swing._
 
 /**
+ *
+ * Fires a ValueChanged event whenever the slider's value changes and
+ * when the knob is released.
+ *
  * @see javax.swing.JSlider
  */
 class Slider extends Component with Orientable with Publisher {
@@ -33,6 +36,8 @@ class Slider extends Component with Orientable with Publisher {
   def majorTickSpacing: Int = peer.getMajorTickSpacing
   def majorTickSpacing_=(v: Int) { peer.setMajorTickSpacing(v) }
 
+  def adjusting = peer.getValueIsAdjusting
+
   def labels: scala.collection.Map[Int, Label] =
     new scala.collection.jcl.MapWrapper[Int, Label] { def underlying = peer.getLabelTable.asInstanceOf[java.util.Hashtable[Int, Label]] }
   def labels_=(l: scala.collection.Map[Int, Label]) {
@@ -43,7 +48,7 @@ class Slider extends Component with Orientable with Publisher {
 
   peer.addChangeListener(new javax.swing.event.ChangeListener {
     def stateChanged(e: javax.swing.event.ChangeEvent) {
-      publish(ValueChanged(Slider.this)(peer.getValueIsAdjusting))
+      publish(ValueChanged(Slider.this))
     }
   })
 }

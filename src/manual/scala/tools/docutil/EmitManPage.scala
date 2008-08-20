@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author Stephane Micheloud
  * Adapted from Lex Spoon's sbaz manual
  */
@@ -19,12 +19,12 @@ object EmitManPage {
   def escape(text: String) =
     text.replaceAll("-", "\\-")
 
-  def emitSection(section: Section, depth: int) {
+  def emitSection(section: Section, depth: Int) {
     def emitPara(text: AbstractText) {
       emitText(text)
       out.println("\n.IP")
     }
-    def emitText(text: AbstractText): Unit =
+    def emitText(text: AbstractText) {
       text match {
         case seq:SeqText =>
           seq.components.foreach(emitText)
@@ -82,8 +82,9 @@ object EmitManPage {
         case _ =>
           error("unknown text node: " + text)
       }
+    }
 
-    def emitParagraph(para: Paragraph): Unit =
+    def emitParagraph(para: Paragraph) {
       para match {
         case TextParagraph(text) =>
           out.println(".PP")
@@ -130,6 +131,7 @@ object EmitManPage {
         case _ =>
           error("unknown paragraph node: " + para)
       }
+    }
 
     out.println(".\\\"")
     out.println(".\\\" ############################## " + section.title + " ###############################")
@@ -162,7 +164,7 @@ object EmitManPage {
     doc.sections.foreach(s => emitSection(s, 1))
   }
 
-  def main(args: Array[String]) =
+  def main(args: Array[String]) {
     try {
       val cl = this.getClass.getClassLoader()
       val clasz = cl.loadClass(args(0))
@@ -175,6 +177,7 @@ object EmitManPage {
         System.err.println("Error in EmitManPage")
         exit(1)
     }
+  }
 
   def emitManPage(classname: String, outStream: java.io.OutputStream) {
     out.setOut(outStream)

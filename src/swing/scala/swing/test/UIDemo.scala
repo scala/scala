@@ -85,7 +85,7 @@ object UIDemo extends SimpleGUIApplication {
           contents += label
           listenTo(field)
           reactions += {
-            case v @ ValueChanged(`field`) if v.committed => label.text = field.password.mkString
+            case EditDone(`field`) => label.text = field.password.mkString
           }
         }
 
@@ -116,8 +116,8 @@ object UIDemo extends SimpleGUIApplication {
       listenTo(tabs.selection)
       listenTo(list.selection)
       reactions += {
-        case v @ ValueChanged(`slider`) =>
-          if(v.committed || reactLive) tabs.selection.index = slider.value
+        case ValueChanged(`slider`) =>
+          if(!slider.adjusting || reactLive) tabs.selection.index = slider.value
         case SelectionChanged(`tabs`) =>
           slider.value = tabs.selection.index
           list.selection.selectIndices(tabs.selection.index)

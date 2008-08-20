@@ -24,7 +24,7 @@ object Flags extends Enumeration {
   final val DEFERRED      = 0x00000100    // was `abstract' for members
   final val METHOD        = 0x00000200    // a method
   final val MODULE        = 0x00000400    // symbol is module or class implementing a module
-  final val INTERFACE     = 0x00000800    // symbol is an interface
+  final val INTERFACE     = 0x00000800    // symbol is an interface (i.e. a trait which defines only abstract methods)
 
   final val MUTABLE       = 0x00001000    // symbol is a mutable variable.
   final val PARAM         = 0x00002000    // symbol is a (value or type) parameter to a method
@@ -128,7 +128,7 @@ object Flags extends Enumeration {
   final val PickledFlags: Long  = 0xFFFFFFFFL
 
   /** Module flags inherited by their module-class */
-  final val ModuleToClassFlags: Long = AccessFlags | MODULE | PACKAGE | CASE | SYNTHETIC
+  final val ModuleToClassFlags: Long = AccessFlags | MODULE | PACKAGE | CASE | SYNTHETIC | JAVA
 
   private def listToString(ss: List[String]): String =
     ss.filter("" !=).mkString("", " ", "")
