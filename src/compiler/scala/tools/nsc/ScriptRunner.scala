@@ -249,7 +249,7 @@ object ScriptRunner {
 
     var fromServer = in.readLine()
     while (fromServer ne null) {
-      Console.println(fromServer)
+      Console.err.println(fromServer)
       if (CompileSocket.errorPattern.matcher(fromServer).matches)
         compok = false
 
@@ -356,7 +356,7 @@ object ScriptRunner {
   {
     def fileToURL(f: File): Option[URL] =
       try { Some(f.toURL) }
-    catch { case e => Console.println(e); None }
+    catch { case e => Console.err.println(e); None }
 
     def paths(str: String, expandStar: Boolean): List[URL] =
       for (
@@ -392,7 +392,7 @@ object ScriptRunner {
   {
     val f = new File(scriptFile)
     if (!f.isFile) {
-      Console.println("no such file: " + scriptFile)
+      Console.err.println("no such file: " + scriptFile)
       return
     }
 
