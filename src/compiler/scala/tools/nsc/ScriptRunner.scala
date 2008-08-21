@@ -249,7 +249,7 @@ object ScriptRunner {
 
     var fromServer = in.readLine()
     while (fromServer ne null) {
-      Console.println(fromServer)
+      Console.err.println(fromServer)
       if (CompileSocket.errorPattern.matcher(fromServer).matches)
         compok = false
 
