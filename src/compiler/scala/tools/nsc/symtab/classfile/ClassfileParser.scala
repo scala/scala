@@ -354,7 +354,7 @@ abstract class ClassfileParser {
     var nameIdx = in.nextChar
     externalName = pool.getClassName(nameIdx)
     val c = pool.getClassSymbol(nameIdx)
-    if (c != clazz && !c.nameString.contains("$")) {
+    if (c != clazz && c.nameString.indexOf("$") < 0) {
       if ((clazz eq NoSymbol) && (c ne NoSymbol)) { // XXX: needed for build compiler, so can't protect with inIDE
         clazz = c
       } else if (inIDE) {
