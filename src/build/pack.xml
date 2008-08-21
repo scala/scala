@@ -47,7 +47,8 @@ MAIN DISTRIBUTION PACKAGING
   <target name="pack-archives.src" depends="pack-api.tar">
     <tar destfile="${dists.dir}/archives/scala-${version.number}-sources.tgz"
          compression="gzip" longfile="gnu">
-      <tarfileset dir="${basedir}">
+      <tarfileset dir="${basedir}" prefix="scala-${version.number}-sources">
+        <exclude name="bin/**"/>
         <exclude name="build/**"/>
         <exclude name="debian/**"/>
         <exclude name="dists/**"/>
