@@ -78,8 +78,8 @@ MAIN DISTRIBUTION SBAZ
       version="${version.number}"
       desc="The Scala library. This is the minimal requirement to run any Scala program."
       link="${sbaz.universe}/scala-library-${version.number}.sbp">
-      <libset dir="${dist.dir}/lib" includes="scala-library.jar,scala-dbc.jar"/>
-      <srcset dir="${dist.dir}/src" includes="scala-library-src.jar,scala-dbc-src.jar"/>
+      <libset dir="${dist.dir}/lib" includes="scala-library.jar,scala-dbc.jar,scala-swing.jar"/>
+      <srcset dir="${dist.dir}/src" includes="scala-library-src.jar,scala-dbc-src.jar,scala-swing-src.jar"/>
     </sbaz>
   </target>
   
