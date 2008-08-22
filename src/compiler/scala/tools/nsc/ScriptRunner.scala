@@ -47,6 +47,9 @@ object ScriptRunner {
   /** Default name to use for the wrapped script */
   val defaultScriptMain = "Main"
 
+  /** Exception used internally */
+  case class ScriptException(msg: String) extends Exception
+
   /** Pick a main object name from the specified settings */
   def scriptMain(settings: Settings) =
     if (settings.script.value == "")
@@ -133,7 +136,7 @@ object ScriptRunner {
       (Pattern.compile("^(::)?!#.*(\\r|\\n|\\r\\n)", Pattern.MULTILINE)
               .matcher(fileContents))
     if (! matcher.find)
-      throw new Error("script file does not close its header with !# or ::!#")
+      throw ScriptException("script file does not close its header with !# or ::!#")
 
     return matcher.end
   }
@@ -282,11 +285,11 @@ object ScriptRunner {
       settings.target.value = "jvm-1.4"
     }
 
-    /** Compiles the script file, and returns two things:
+    /** Compiles the script file, and returns
       * the directory with the compiled class files,
-      * and a flag for whether the compilation succeeded.
+      * if the compilation succeeded.
       */
-    def compile: (File, Boolean) = {
+    def compile: Option[File] = {
       val compiledPath = File.createTempFile("scalascript", "")
       compiledPath.delete  // the file is created as a file; make it a directory
       compiledPath.mkdirs
@@ -301,16 +304,21 @@ object ScriptRunner {
         val reporter = new ConsoleReporter(settings)
         val compiler = newGlobal(settings, reporter)
         val cr = new compiler.Run
-	val wrapped =
-	  wrappedScript(
-	    scriptMain(settings),
-	    scriptFile,
-	    compiler.getSourceFile _)
-        cr.compileSources(List(wrapped))
-        (compiledPath, !reporter.hasErrors)
+	  val wrapped =
+	    wrappedScript(
+	      scriptMain(settings),
+	      scriptFile,
+	      compiler.getSourceFile _)
+          cr.compileSources(List(wrapped))
+          if (!reporter.hasErrors)
+	    Some(compiledPath)
+	  else
+	    None
       } else {
-        val compok = compileWithDaemon(settings, scriptFile)
-        (compiledPath, compok)
+        if (compileWithDaemon(settings, scriptFile))
+          Some(compiledPath)
+	else
+	  None
       }
     }
 
@@ -326,25 +334,26 @@ object ScriptRunner {
       } else {
         // The pre-compiled jar is old.  Recompile the script.
         jarFile.delete
-        val (compiledPath, compok) = compile
 
-        if (compok) {
-          tryMakeJar(jarFile, compiledPath)
-          if (jarOK) {
-            deleteRecursively(compiledPath)  // may as well do it now
-            handler(jarFile.getAbsolutePath)
-          } else {
-            // jar failed; run directly from the class files
-            handler(compiledPath.getPath)
-          }
+        compile match {
+          case Some(compiledPath) =>
+            tryMakeJar(jarFile, compiledPath)
+            if (jarOK) {
+	      deleteRecursively(compiledPath)  // may as well do it now
+	      handler(jarFile.getAbsolutePath)
+            } else {
+	      // jar failed; run directly from the class files
+	      handler(compiledPath.getPath)
+            }
+	  case None => ()
         }
       }
     } else {
       // don't use a cache jar at all--just use the class files
-      val (compiledPath, compok) = compile
-
-      if (compok)
-        handler(compiledPath.getPath)
+      compile match {
+	case Some(compiledPath) => handler(compiledPath.getPath)
+	case None => ()
+      }
     }
   }
 
@@ -396,8 +405,13 @@ object ScriptRunner {
       return
     }
 
-    withCompiledScript(settings, scriptFile){compiledLocation =>
-      runCompiled(settings, compiledLocation, scriptArgs)
+    try {
+      withCompiledScript(settings, scriptFile){compiledLocation =>
+	runCompiled(settings, compiledLocation, scriptArgs)
+      }
+    } catch {
+      case ScriptException(msg) => Console.err.println(msg)
+      case e => throw e
     }
   }
 
@@ -416,10 +430,16 @@ object ScriptRunner {
       str.close()
     }
 
-    withCompiledScript(settings, scriptFile.getPath){compiledLocation =>
-      scriptFile.delete()
-      runCompiled(settings, compiledLocation, scriptArgs)
+    try {
+      withCompiledScript(settings, scriptFile.getPath){compiledLocation =>
+        scriptFile.delete()
+        runCompiled(settings, compiledLocation, scriptArgs)
+      }
+    } catch {
+      case ScriptException(msg) => Console.err.println(msg)
+      case e => throw e
     }
+
     scriptFile.delete()  // in case there was a compilation error
   }
 }

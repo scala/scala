@@ -662,6 +662,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
             getSourceFile)
         compileSources(sources)
       } catch {
+	case ScriptRunner.ScriptException(msg) => error(msg)
         case ex: IOException => error(ex.getMessage())
       }
     }
