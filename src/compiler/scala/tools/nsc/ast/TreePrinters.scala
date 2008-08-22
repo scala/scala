@@ -183,15 +183,25 @@ abstract class TreePrinters {
           print(symName(tree, name)); printRow(params, "(", ",", ")"); printBlock(rhs)
 
         case Import(expr, selectors) =>
+          // Is this selector remapping a name (i.e, {name1 => name2})
+          def isNotRemap(s: (Name, Name)) : Boolean = (s._1 == nme.WILDCARD || s._1 == s._2)
           def selectorToString(s: (Name, Name)): String =
-            if (s._1 == nme.WILDCARD || s._1 == s._2) s._1.toString()
-            else s._1.toString() + "=>" + s._2.toString()
+              if (isNotRemap(s)) s._1.toString else s._1.toString + "=>" + s._2.toString
+
           print("import "); print(expr)
 	  print(".")
-          selectors.map(selectorToString) match {
-            case List(one) => print(one)
-            case many => print(many.mkString("{", ", ", "}"))
-          }
+          selectors match {
+            case List(s) =>
+              // If there is just one selector and it is not remapping a name, no braces are needed
+	      if (isNotRemap(s)) {
+		print(selectorToString(s))
+	      } else {
+		print("{"); print(selectorToString(s)); print("}")
+	      }
+              // If there is more than one selector braces are always needed
+	    case many =>
+              print(many.map(selectorToString).mkString("{", ", ", "}"))
+	  }
 
         case DocDef(comment, definition) =>
           print(comment); println; print(definition)
