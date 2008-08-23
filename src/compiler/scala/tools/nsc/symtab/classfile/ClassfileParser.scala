@@ -675,7 +675,7 @@ abstract class ClassfileParser {
       val attrLen = in.nextInt
       attrName match {
         case nme.SignatureATTR =>
-          if (global.settings.target.value == "jvm-1.5") {
+          if (!isScala && global.settings.target.value == "jvm-1.5") {
             val sig = pool.getExternalName(in.nextChar)
             val newType = sigToType(sym, sig)
             sym.setInfo(newType)

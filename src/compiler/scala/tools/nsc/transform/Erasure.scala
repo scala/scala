@@ -157,15 +157,15 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 
   def javaSig(sym: Symbol): Option[String] = atPhase(currentRun.erasurePhase) {
 
-    def jsig(tp: Type): String = jsig2(List(), tp)
+    def jsig(tp: Type): String = jsig2(false, List(), tp)
 
-    def jsig2(tparams: List[Symbol], tp0: Type): String = {
+    def jsig2(toplevel: Boolean, tparams: List[Symbol], tp0: Type): String = {
       val tp = tp0.normalize
       tp match {
         case st: SubType =>
-          jsig2(tparams, st.supertype)
+          jsig2(toplevel, tparams, st.supertype)
         case ExistentialType(tparams, tpe) =>
-          jsig2(tparams, tpe)
+          jsig2(toplevel, tparams, tpe)
         case TypeRef(pre, sym, args) =>
           def argSig(tp: Type) =
             if (tparams contains tp.typeSymbol) {
@@ -214,7 +214,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           }
           assert(!tparams.isEmpty)
           def paramSig(tsym: Symbol) = tsym.name+boundSig(hiBounds(tsym.info.bounds))
-          "<"+(tparams map paramSig).mkString+">"+jsig(restpe)
+          (if (toplevel) "<"+(tparams map paramSig).mkString+">" else "")+jsig(restpe)
         case MethodType(formals, restpe) =>
           "("+(formals map jsig).mkString+")"+
           (if (restpe.typeSymbol == UnitClass || sym.isConstructor) VOID_TAG.toString else jsig(restpe))
@@ -228,7 +228,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           jsig(erasure(tp))
       }
     }
-    if (needsJavaSig(sym.info)) Some(jsig(sym.info))
+    if (needsJavaSig(sym.info)) Some(jsig2(true, List(), sym.info))
     else None
   }
 
