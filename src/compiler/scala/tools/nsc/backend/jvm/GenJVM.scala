@@ -471,8 +471,8 @@ abstract class GenJVM extends SubComponent {
         for (innerSym <- innerClasses.toList.sort(_.name.length < _.name.length)) {
           var outerName = javaName(innerSym.rawowner)
           // remove the trailing '$'
-          if (outerName.endsWith("$"))
-            outerName = outerName.substring(0, outerName.length - 1)
+          //if (outerName.endsWith("$"))
+            //outerName = outerName.substring(0, outerName.length - 1)
 
           innerClassesAttr.addEntry(javaName(innerSym),
               outerName,
@@ -1558,8 +1558,9 @@ abstract class GenJVM extends SubComponent {
       else if (sym == definitions.NullClass)
         return "scala.runtime.Null$"
 
-      if (sym.isClass && !sym.rawowner.isPackageClass)
+      if (sym.isClass && !sym.rawowner.isPackageClass && !sym.isModuleClass) {
         innerClasses = innerClasses + sym;
+      }
 
       (if (sym.isClass || (sym.isModule && !sym.isMethod))
         sym.fullNameString('/')
