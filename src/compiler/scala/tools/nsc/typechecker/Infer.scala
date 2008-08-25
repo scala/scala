@@ -459,7 +459,16 @@ trait Infer {
       val tvars = tparams map freshVar
       if (isCompatible(restpe.instantiateTypeParams(tparams, tvars), pt)) {
         try {
-          solvedTypes(tvars, tparams, tparams map varianceInType(restpe),
+          // If the restpe is an implicit method, and the expected type is fully defined
+          // optimze type varianbles wrt to the implicit formals only; ignore the result type.
+          // See test pos/jesper.scala
+          val varianceType = restpe match {
+            case mt: ImplicitMethodType if isFullyDefined(pt) =>
+              MethodType(mt.paramTypes, AnyClass.tpe)
+            case _ =>
+              restpe
+          }
+          solvedTypes(tvars, tparams, tparams map varianceInType(varianceType),
                       false, lubDepth(List(restpe, pt)))
         } catch {
           case ex: NoInstance => null
@@ -922,10 +931,12 @@ trait Infer {
      */
     def inferExprInstance(tree: Tree, undetparams: List[Symbol], pt: Type) {
       if (inferInfo)
-        println("infer expr instance "+tree+"\n"+
+        println("infer expr instance "+tree+":"+tree.tpe+"\n"+
                 "  undetparams = "+undetparams+"\n"+
                 "  pt = "+pt)
       substExpr(tree, undetparams, exprTypeArgs(undetparams, tree.tpe, pt), pt)
+      if (inferInfo)
+        println("inferred expr instance "+tree)
     }
 
     /** Substitite free type variables `undetparams' of polymorphic argument
