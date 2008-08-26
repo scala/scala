@@ -351,6 +351,8 @@ trait Iterator[+A] {
    *  all elements of the result satisfy the predicate <code>p</code>.
    *  The order of the elements is preserved.
    *
+   *  The behavior of <code>this</code> iterator is undefined after this method invocation.
+   *
    *  @param p the predicate used to filter the iterator.
    *  @return  the longest prefix of this iterator satisfying <code>p</code>.
    */
@@ -358,6 +360,8 @@ trait Iterator[+A] {
 
   /** Skips longest sequence of elements of this iterator which satisfy given
    *  predicate <code>p</code>, and returns an iterator of the remaining elements.
+   *
+   *  The behavior of <code>this</code> iterator is undefined after this method invocation.
    *
    *  @param p the predicate used to skip elements.
    *  @return  an iterator consisting of the remaining elements
