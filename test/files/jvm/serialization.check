@@ -51,6 +51,8 @@ x10 equals y10: true - y10 equals x10: true
 
 x9 eq x10: false - x10 eq x9: false
 x9 equals x10: false - x10 equals x9: false
+x9 eq y10: false - y10 eq x9: false
+x9 equals y10: false - y10 equals x9: false
 
 x = List((buffers,20), (layers,2), (title,3))
 y = List((buffers,20), (layers,2), (title,3))
