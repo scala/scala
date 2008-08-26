@@ -831,7 +831,9 @@ abstract class ClassfileParser {
     for (entry <- innerClasses.values) {
       // create a new class member for immediate inner classes
       if (entry.outerName == externalName) {
-        val file = global.classPath.lookupPath(entry.externalName.replace('.', '/').toString, false)
+        val file = global.classPath.lookupPath(
+	    entry.externalName.replace('.', java.io.File.separatorChar).toString, false)
+        assert(file ne null, entry.externalName)
         enterClassAndModule(entry.originalName, new global.loaders.ClassfileLoader(file, null, null), entry.jflags)
       }
     }
