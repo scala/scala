@@ -1,7 +1,7 @@
 //############################################################################
 // Serialization
 //############################################################################
-// $Id: serialization.scala 12990 2007-10-03 16:52:05Z michelou $
+// $Id: serialization.scala 15934 2008-08-26 12:10:05Z michelou $
 
 import java.lang.System
 
@@ -41,25 +41,47 @@ object Test1_scala {
   private def arrayToString[A](arr: Array[A]): String =
     List.fromArray(arr).mkString("Array[",",","]")
 
-  private def arrayEquals[A, B](a1: Array[A], a2: Array[B]) =
-     (a1.length == a2.length) &&
-     (Iterator.range(0, a1.length) forall { i => a1(i) == a2(i) })
+  private def arrayEquals[A, B](a1: Array[A], a2: Array[B]): Boolean =
+    (a1.length == a2.length) &&
+    (Iterator.range(0, a1.length) forall { i => a1(i) == a2(i) })
 
+  @serializable
+  object WeekDay extends Enumeration {
+    type WeekDay = Value
+    val Monday, Tuesday, Wednesday, Thusday, Friday, Saturday, Sunday = Value
+  }
+  import WeekDay._, BigDecimal._, RoundingMode._
+
+  val x0 = List(1, 2, 3)
   val x1 = Nil
   val x2 = None
   val x3 = Array(1, 2, 3)
   val x4 = { x: Int => 2 * x }
   val x5 = 'hello
   val x6 = ("BannerLimit", 12345)
+  val x7 = BigDecimal.RoundingMode
+  val x8 = WeekDay
+  val x9 = ROUND_UP
+  val x10 = Monday
 
   try {
+    val y0: List[Int]          = Serialize.read(Serialize.write(x0))
     val y1: List[Nothing]      = Serialize.read(Serialize.write(x1))
     val y2: Option[Nothing]    = Serialize.read(Serialize.write(x2))
     val y3: Array[Int]         = Serialize.read(Serialize.write(x3))
     val y4: Function[Int, Int] = Serialize.read(Serialize.write(x4))
     val y5: Symbol             = Serialize.read(Serialize.write(x5))
     val y6: (String, Int)      = Serialize.read(Serialize.write(x6))
+    val y7: RoundingMode.type  = Serialize.read(Serialize.write(x7))
+    val y8: WeekDay.type       = Serialize.read(Serialize.write(x8))
+    val y9: RoundingMode       = Serialize.read(Serialize.write(x9))
+    val y10: WeekDay           = Serialize.read(Serialize.write(x10))
 
+    println("x0 = " + x0)
+    println("y0 = " + y0)
+    println("x0 eq y0: " + (x0 eq y0) + " - y0 eq x0: " + (y0 eq x0))
+    println("x0 equals y0: " + (x0 equals y0) + " - y0 equals x0: " + (y0 equals x0))
+    println()
     println("x1 = " + x1)
     println("y1 = " + y1)
     println("x1 eq y1: " + (x1 eq y1) + " - y1 eq x1: " + (y1 eq x1))
@@ -85,6 +107,29 @@ object Test1_scala {
     println("y6 = " + y6)
     println("x6 eq y6: " + (x6 eq y6) + " - y6 eq x6: " + (y6 eq x6))
     println("x6 equals y6: " + (x6 equals y6) + " - y6 equals x6: " + (y6 equals x6))
+    println()
+    println("x7 = " + x7)
+    println("y7 = " + y7)
+    println("x7 eq y7: " + (x7 eq y7) + " - y7 eq x7: " + (y7 eq x7))
+    println("x7 equals y7: " + (x7 equals y7) + " - y7 equals x7: " + (y7 equals x7))
+    println()
+    println("x8 = " + x8)
+    println("y8 = " + y8)
+    println("x8 eq y8: " + (x8 eq y8) + " - y8 eq x8: " + (y8 eq x8))
+    println("x8 equals y8: " + (x8 equals y8) + " - y8 equals x8: " + (y8 equals x8))
+    println()
+    println("x9 = " + x9)
+    println("y9 = " + y9)
+    println("x9 eq y9: " + (x9 eq y9) + " - y9 eq x9: " + (y9 eq x9))
+    println("x9 equals y9: " + (x9 equals y9) + " - y9 equals x9: " + (y9 equals x9))
+    println()
+    println("x10 = " + x10)
+    println("y10 = " + y10)
+    println("x10 eq y10: " + (x10 eq y10) + " - y10 eq x10: " + (y10 eq x10))
+    println("x10 equals y10: " + (x10 equals y10) + " - y10 equals x10: " + (y10 equals x10))
+    println()
+    println("x9 eq x10: " + (x9 eq x10) + " - x10 eq x9: " + (x10 eq x9))
+    println("x9 equals x10: " + (x9 equals x10) + " - x10 equals x9: " + (x10 equals x9))
     println()
   }
   catch {
