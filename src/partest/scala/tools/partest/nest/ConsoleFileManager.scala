@@ -219,19 +219,27 @@ else
 
   var testFiles: List[File] = List()
 
-  def getFiles(kind: String, doCheck: Boolean, ending: String): List[File] = {
-    val filter = new FilenameFilter {
-      def accept(dir: File, name: String): Boolean = name endsWith ending
-    }
+  def getFiles(kind: String, doCheck: Boolean, filter: Option[(String, Boolean)]): List[File] = {
     val dir = new File(srcDir, kind)
     NestUI.verbose("look in "+dir+" for tests")
     if (dir.isDirectory) {
       if (!testFiles.isEmpty) {
         val dirpath = dir.getAbsolutePath
         testFiles filter { _.getParentFile.getAbsolutePath == dirpath }
-      } else if (doCheck)
-        dir.listFiles(filter).toList
-        else // skip
+      } else if (doCheck) filter match {
+        case Some((ending, enableDirs)) =>
+          val filter = new FilenameFilter {
+            def accept(dir: File, name: String) =
+              name.endsWith(ending) ||
+              (enableDirs && (name != ".svn") && (new File(dir, name)).isDirectory)
+          }
+          dir.listFiles(filter).toList
+        case None =>
+          val filter = new FilenameFilter {
+            def accept(dir: File, name: String) = name != ".svn"
+          }
+          dir.listFiles(filter).toList
+      } else // skip
           Nil
     } else {
       NestUI.failure("Directory \"" + dir.getPath + "\" not found")
@@ -240,6 +248,6 @@ else
   }
 
   def getFiles(kind: String, doCheck: Boolean): List[File] =
-    getFiles(kind, doCheck, ".scala")
+    getFiles(kind, doCheck, Some((".scala", false)))
 
 }

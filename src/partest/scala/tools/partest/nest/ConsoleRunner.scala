@@ -179,7 +179,9 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
   def runTests(kind: String, check: Boolean, msg: String): (Int, Int) = {
     if (check) {
       val kindFiles = if (kind == "res") //TODO: is there a nicer way?
-        fileManager.getFiles(kind, check, ".res")
+        fileManager.getFiles(kind, check, Some((".res", false)))
+      else if (kind == "pos")
+        fileManager.getFiles(kind, check, Some((".scala", true)))
       else
         fileManager.getFiles(kind, check)
       if (!kindFiles.isEmpty) {
