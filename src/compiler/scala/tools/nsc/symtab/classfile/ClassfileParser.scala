@@ -380,7 +380,6 @@ abstract class ClassfileParser {
     val curbp = in.bp
     skipMembers() // fields
     skipMembers() // methods
-    parseAttributes(clazz, classInfo)
     if (!isScala) {
       clazz.setFlag(sflags)
       setPrivateWithin(clazz, jflags)
@@ -392,6 +391,9 @@ abstract class ClassfileParser {
       staticModule.setInfo(statics.tpe)
       staticModule.setFlag(JAVA)
       staticModule.moduleClass.setFlag(JAVA)
+      // attributes now depend on having infos set already
+      parseAttributes(clazz, classInfo)
+
       in.bp = curbp
       val fieldCount = in.nextChar
       for (i <- 0 until fieldCount) parseField()
@@ -420,7 +422,8 @@ abstract class ClassfileParser {
             }
           }
         }
-    }
+    } else
+      parseAttributes(clazz, classInfo)
   }
 
   /** Add type parameters of enclosing classes */
@@ -675,7 +678,7 @@ abstract class ClassfileParser {
       val attrLen = in.nextInt
       attrName match {
         case nme.SignatureATTR =>
-          if (global.settings.target.value == "jvm-1.5") {
+          if (!isScala && global.settings.target.value == "jvm-1.5") {
             val sig = pool.getExternalName(in.nextChar)
             val newType = sigToType(sym, sig)
             sym.setInfo(newType)
@@ -789,6 +792,7 @@ abstract class ClassfileParser {
         else
           Some(AnnotationInfo(attrType, List(), nvpairs.toList))
       } catch {
+        case f: FatalError => throw f // don't eat fatal errors, they mean a class was not found
         case ex: Throwable => None // ignore malformed annotations ==> t1135
       }
 
@@ -831,7 +835,9 @@ abstract class ClassfileParser {
     for (entry <- innerClasses.values) {
       // create a new class member for immediate inner classes
       if (entry.outerName == externalName) {
-        val file = global.classPath.lookupPath(entry.externalName.replace('.', '/').toString, false)
+        val file = global.classPath.lookupPath(
+          entry.externalName.replace('.', java.io.File.separatorChar).toString, false)
+        assert(file ne null, entry.externalName)
         enterClassAndModule(entry.originalName, new global.loaders.ClassfileLoader(file, null, null), entry.jflags)
       }
     }
@@ -850,6 +856,13 @@ abstract class ClassfileParser {
       val attrName = pool.getName(in.nextChar)
       val attrLen = in.nextInt
       attrName match {
+        case nme.SignatureATTR =>
+          if (!isScala && global.settings.target.value == "jvm-1.5")
+            hasMeta = true
+          in.skip(attrLen)
+        case nme.JacoMetaATTR =>
+          this.hasMeta = true
+          in.skip(attrLen)
         case nme.ScalaSignatureATTR =>
           isScala = true
           in.skip(attrLen)
