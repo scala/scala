@@ -1437,7 +1437,7 @@ A type's typeSymbol should never be inspected directly.
           val xform = transform(sym.info.resultType)
           assert(xform ne this, this)
           xform.normalize // cycles have been checked in typeRef
-        } else  PolyType(typeParams, transform(sym.info.resultType).normalize)  // eta-expand
+        } else PolyType(typeParams, transform(sym.info.resultType).normalize)  // eta-expand
         // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
       } else if (isHigherKinded) {
         // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
@@ -3576,9 +3576,15 @@ A type's typeSymbol should never be inspected directly.
          ||
          sym1 == NothingClass
          ||
-         // Console.println("last chance " + sym1 + " " + sym2 + " " + sym2.isClass + " " (sym2 isSubClass ObjectClass))
+         //{ Console.println("last chance " + sym1 + " " + sym2 + " " + sym2.isClass + " " + (sym2 isSubClass ObjectClass)); true } &&
          sym1 == NullClass &&
-         sym2.isClass && (sym2 isNonBottomSubClass ObjectClass) && (!(tp2.normalize.typeSymbol isNonBottomSubClass NotNullClass)))
+         sym2.isClass && (sym2 isNonBottomSubClass ObjectClass) && (!(tp2.normalize.typeSymbol isNonBottomSubClass NotNullClass))
+         ||
+         {
+           val tp1n = normalizePlus(tp1)
+           val tp2n = normalizePlus(tp2)
+           ((tp1n ne tp1) || (tp2n ne tp2)) && isSubType(tp1n, tp2n, depth)
+         })
       case (MethodType(pts1, res1), MethodType(pts2, res2)) =>
         (pts1.length == pts2.length &&
          matchingParams(pts1, pts2, tp1.isInstanceOf[JavaMethodType], tp2.isInstanceOf[JavaMethodType]) &&
@@ -3620,9 +3626,9 @@ A type's typeSymbol should never be inspected directly.
       if (sym2 == SingletonClass && tp1.isStable) =>
         true
       case (_, RefinedType(parents2, ref2)) =>
-        (parents2 forall (tp2 => tp1 <:< tp2 || tp2.typeSymbol == NotNullClass && tp1.isNotNull)) &&
+        (parents2 forall (tp2 => tp1 <:< tp2)) &&
         (ref2.toList forall tp1.specializes) &&
-        (!parents2.exists(_.typeSymbol.isAbstractType) || tp1.typeSymbol != NullClass)
+        (tp1.typeSymbol != NullClass || !parents2.exists(_.typeSymbol.isAbstractType))
       case (ExistentialType(_, _), _) =>
         try {
           skolemizationLevel += 1
@@ -4291,14 +4297,20 @@ A type's typeSymbol should never be inspected directly.
 
   /** If option `explaintypes' is set, print a subtype trace for
    *  `found <:< required'.
-   *
-   *  @param found    ...
-   *  @param required ...
    */
   def explainTypes(found: Type, required: Type) {
     if (settings.explaintypes.value) withTypesExplained(found <:< required)
   }
 
+  /** If option `explaintypes' is set, print a subtype trace for
+   *  `op(found, required)'.
+   */
+  def explainTypes(op: (Type, Type) => Any, found: Type, required: Type) {
+    if (settings.explaintypes.value) withTypesExplained(op(found, required))
+  }
+
+  /** Execute `op' while printing a trace of the operations on types executed.
+   */
   def withTypesExplained[A](op: => A): A = {
     val s = explainSwitch
     try { explainSwitch = true; op } finally { explainSwitch = s }

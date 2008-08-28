@@ -122,7 +122,10 @@ abstract class Mixin extends InfoTransform {
   def isOverriddenAccessor(member: Symbol, bcs: List[Symbol]): Boolean = atPhase(ownPhase) {
     def hasOverridingAccessor(clazz: Symbol) = {
       clazz.info.nonPrivateDecl(member.name).alternatives.exists(
-        sym => isConcreteAccessor(sym) && matchesType(sym.tpe, member.tpe, true))
+        sym =>
+          isConcreteAccessor(sym) &&
+          !sym.hasFlag(MIXEDIN) &&
+          matchesType(sym.tpe, member.tpe, true))
     }
     bcs.head != member.owner &&
     (hasOverridingAccessor(bcs.head) || isOverriddenAccessor(member, bcs.tail))

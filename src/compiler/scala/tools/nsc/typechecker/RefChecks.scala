@@ -218,9 +218,10 @@ abstract class RefChecks extends InfoTransform {
             //if (!member.typeParams.isEmpty) // (1.7)  @MAT
             //  overrideError("may not be parameterized");
             var memberTp = self.memberType(member)
-
-            if (!(self.memberInfo(other).bounds containsType memberTp)) { // (1.7.1) {
+            val otherTp = self.memberInfo(other)
+            if (!(otherTp.bounds containsType memberTp)) { // (1.7.1) {
               overrideTypeError(); // todo: do an explaintypes with bounds here
+              explainTypes(_.bounds containsType _, otherTp, memberTp)
             }
 
             // check overriding (abstract type --> abstract type or abstract type --> concrete type member (a type alias))

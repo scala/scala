@@ -421,14 +421,14 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     explicitOuter,   // replace C.this by explicit outer pointers, eliminate pattern matching
 //    checkDefined,
     erasure,         // erase generic types to Java 1.4 types, add interfaces for traits
-    lazyVals,
+    lazyVals,        // transforms local lazy vals into vars and initialized bits
     lambdaLift,      // move nested functions to top level
 //    detach,
     constructors     // move field definitions into constructors
   ) ::: (
     if (forMSIL) List() else List(flatten) // get rid of inner classes
   ) ::: List(
-    mixer,           // do mixin composition
+    mixer,           // do mixin composition, translate lazy fields
     cleanup,         // some platform-specific cleanups
 
     genicode,        // generate portable intermediate code
