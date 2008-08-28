@@ -3,7 +3,7 @@
 # If you aren't running on a LAMP system, you need to make sure you 
 # have JAVA_HOME and JAVACMD (and optionally JAVAC) set correctly.
 JAVA_HOME = $(getenv JAVA_HOME,  /home/linuxsoft/apps/java-1.6/)
-JAVACMD = $(getenv JAVACMD, $(JAVA_HOME)$(DIRSEP)bin$(DIRSEP)/java)
+JAVACMD = $(getenv JAVACMD, $(JAVA_HOME)$(DIRSEP)bin$(DIRSEP)java)
 JAVAC = $(getenv JAVAC, $(JAVA_HOME)$(DIRSEP)bin$(DIRSEP)javac)
 JAVAP = $(JAVA_HOME)$(DIRSEP)bin$(DIRSEP)javap
 
