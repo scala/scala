@@ -35,6 +35,26 @@ class Range(val start: Int, val end: Int, val step: Int) extends RandomAccessSeq
    */
   def by(step: Int): Range = new Range(start, end, step)
 
+  override def foreach(f: Int => Unit) {
+    if (step > 0) {
+      var i = this.start
+      val until = if (inInterval(end)) end + 1 else end
+
+      while (i < until) {
+        f(i)
+        i += step
+      }
+    } else {
+      var i = this.start
+      val until = if (inInterval(end)) end - 1 else end
+
+      while (i > until) {
+        f(i)
+        i += step
+      }
+    }
+  }
+
   lazy val length: Int = {
     if (start < end && this.step < 0) 0
     else if (start > end && this.step > 0) 0
