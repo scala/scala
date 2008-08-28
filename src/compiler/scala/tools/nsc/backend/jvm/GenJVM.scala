@@ -188,12 +188,9 @@ abstract class GenJVM extends SubComponent {
         addStaticInit(jclass)
 
         if (isTopLevelModule(c.symbol)) {
-          if (c.symbol.linkedClassOfModule == NoSymbol) {
-            if (c.symbol.owner.info.member(c.symbol.name.toTypeName) != NoSymbol)
-              println("Class with same name as " + c.symbol + " is defined in a different compilation unit")
-            else
-              dumpMirrorClass(c.symbol, c.cunit.source.toString);
-          } else
+          if (c.symbol.linkedClassOfModule == NoSymbol)
+            dumpMirrorClass(c.symbol, c.cunit.source.toString);
+          else
             log("No mirror class for module with linked class: " +
                 c.symbol.fullNameString)
         }
