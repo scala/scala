@@ -288,7 +288,7 @@ abstract class Inliners extends SubComponent {
         if (m.code ne null) {
           if (settings.debug.value)
             log("Analyzing " + m + " count " + count);
-          tfa.reinit(m)
+          tfa.init(m)
           tfa.run
           for (bb <- linearizer.linearize(m)) {
             var info = tfa.in(bb);
