@@ -172,10 +172,6 @@ class Worker(val fileManager: FileManager) extends Actor {
     val cmd = "javac"+
       " -d "+outDir.getAbsolutePath+
       " -classpath "+outDir+File.pathSeparator+CLASSPATH+
-      " -Djava.library.path="+output.getParentFile.getAbsolutePath+
-      " -Dscalatest.output="+outDir.getAbsolutePath+
-      " -Dscalatest.lib="+LATEST_LIB+
-      " -Dscalatest.cwd="+outDir.getParent+
       " "+files.mkString(" ")
 
     runCommand(cmd, output)
@@ -185,6 +181,7 @@ class Worker(val fileManager: FileManager) extends Actor {
    *  error out to <code>output</code> file.
    */
   def runCommand(command: String, output: File) {
+    NestUI.verbose("running command:\n"+command)
     val proc = Runtime.getRuntime.exec(command)
     val in = proc.getInputStream
     val err = proc.getErrorStream
@@ -347,12 +344,36 @@ class Worker(val fileManager: FileManager) extends Actor {
       }
     }
 
+    def compileFilesIn(dir: File, kind: String, logFile: File, outDir: File) {
+      val testFiles = dir.listFiles.toList
+      // 1. compile all '.java' files using javac
+      val javaFiles = testFiles.filter(_.getName.endsWith(".java"))
+      if (!javaFiles.isEmpty)
+        javac(outDir, javaFiles, logFile)
+      // 2. compile all '.scala' files together
+      val scalaFiles = testFiles.filter(_.getName.endsWith(".scala"))
+      if (!compileMgr.shouldCompile(outDir, scalaFiles, kind, logFile)) {
+        NestUI.verbose("compilation of "+scalaFiles+" failed\n")
+        succeeded = false
+      } else
+        // 3. compile each '.scala' file separately
+        scalaFiles foreach { scalaFile =>
+          if (!compileMgr.shouldCompile(outDir, List(scalaFile), kind, logFile)) {
+            NestUI.verbose("compilation of "+scalaFile+" failed\n")
+            succeeded = false
+          }
+        }
+    }
+
     def runJvmTest(file: File, kind: String) {
       runInContext(file, kind, (logFile: File, outDir: File) => {
-        if (!compileMgr.shouldCompile(List(file), kind, logFile)) {
+        if (file.isDirectory) {
+          compileFilesIn(file, kind, logFile, outDir)
+        } else if (!compileMgr.shouldCompile(List(file), kind, logFile)) {
           NestUI.verbose("compilation of "+file+" failed\n")
           succeeded = false
-        } else { // run test
+        }
+        if (succeeded) { // run test
           val fileBase = basename(file.getName)
           val dir      = file.getParentFile
 
@@ -378,24 +399,7 @@ class Worker(val fileManager: FileManager) extends Actor {
       case "pos" => for (file <- files)
         runInContext(file, kind, (logFile: File, outDir: File) => {
           if (file.isDirectory) {
-            val testFiles = file.listFiles.toList
-            // 1. compile all '.java' files using javac
-            val javaFiles = testFiles.filter(_.getName.endsWith(".java"))
-            if (!javaFiles.isEmpty)
-              javac(outDir, javaFiles, logFile)
-            // 2. compile all '.scala' files together
-            val scalaFiles = testFiles.filter(_.getName.endsWith(".scala"))
-            if (!compileMgr.shouldCompile(outDir, scalaFiles, kind, logFile)) {
-              NestUI.verbose("compilation of "+scalaFiles+" failed\n")
-              succeeded = false
-            }
-            // 3. compile each '.scala' file separately
-            scalaFiles foreach { scalaFile =>
-              if (!compileMgr.shouldCompile(outDir, List(scalaFile), kind, logFile)) {
-                NestUI.verbose("compilation of "+scalaFile+" failed\n")
-                succeeded = false
-              }
-            }
+            compileFilesIn(file, kind, logFile, outDir)
           } else if (!compileMgr.shouldCompile(List(file), kind, logFile)) {
             NestUI.verbose("compilation of "+file+" failed\n")
             succeeded = false

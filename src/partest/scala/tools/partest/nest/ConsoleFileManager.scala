@@ -231,7 +231,8 @@ else
           val filter = new FilenameFilter {
             def accept(dir: File, name: String) =
               name.endsWith(ending) ||
-              (enableDirs && (name != ".svn") && (new File(dir, name)).isDirectory)
+              (enableDirs && (name != ".svn") && (!name.endsWith(".obj")) &&
+              (new File(dir, name)).isDirectory)
           }
           dir.listFiles(filter).toList
         case None =>
