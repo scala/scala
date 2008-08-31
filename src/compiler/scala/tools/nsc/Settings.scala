@@ -269,6 +269,60 @@ class Settings(error: String => Unit) {
     allsettings = this :: allsettings
   }
 
+  /** A setting represented by a positive integer */
+  case class IntSetting(name: String, descr: String, default: Int, min: Option[Int], max: Option[Int]) extends Setting(descr) {
+    // Validate that min and max are consistent
+    (min, max) match { case (Some(i), Some(j)) => assert (i <= j)
+		       case _ => () }
+
+    // Helper to validate an input
+    def valid(k: Int): Boolean =
+      (min, max) match { case (Some(i), Some(j)) => (i <= k) && (k <= j)
+			 case (Some(i), None) => (i <= k)
+			 case (None, Some(j)) => (k <= j)
+			 case _ => true }
+
+    // Helper to generate a textual explaination of valid inputs
+    def validText: String =
+      (min, max) match { case (Some(i), Some(j)) => "must be between "+i+" and "+j
+			 case (Some(i), None) => "must be greater than or equal to "+i
+			 case (None, Some(j)) => "must be less than or equal to "+j
+			 case _ => throw new Error("this should never be used") }
+
+    // Ensure that the default value is actually valid
+    assert(valid(default))
+
+    protected var v: Int = default
+
+    def value: Int = this.v
+    def value_=(s: Int) {
+      if(!valid(s)) error("invalid setting for -"+name+" "+validText)
+      setByUser = true;
+      this.v = s
+    }
+
+    def tryToSet(args: List[String]): List[String] = args match {
+      case n :: rest if (name == n) =>
+        if (rest.isEmpty) {
+          error("missing argument")
+          args
+        } else {
+          value = rest.head.toInt
+          rest.tail
+        }
+      case _ => args
+    }
+
+    def unparse: List[String] =
+      if (value == default) Nil else List(name, value.toString)
+
+    override def equals(that: Any) = that match {
+      case is:IntSetting => this.name == is.name && this.value == is.value
+      case _ => false
+    }
+  }
+
+
   /** A setting represented by a boolean flag (false, unless set) */
   case class BooleanSetting(name: String, descr: String) extends Setting(descr) {
     protected var v: Boolean = false
