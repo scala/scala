@@ -161,6 +161,8 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
   case Some(symbols) => symbols.foreach{sym =>
       def f(sym : Symbol) = sym.owner.info.decls match {
       case scope : PersistentScope => reuse(scope, (sym))
+        case scope =>
+          check(false, scope + " is not persistent")
       }
       if (sym.isModuleClass) {
         if (check(sym.name.isTypeName,"") && sym.hasRawInfo)
