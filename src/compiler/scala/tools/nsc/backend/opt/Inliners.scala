@@ -363,7 +363,7 @@ abstract class Inliners extends SubComponent {
       m.normalize
     } catch {
       case e =>
-        Console.println("############# Cought exception: " + e + " #################");
+        Console.println("############# Caught exception: " + e + " #################");
         Console.println("\nMethod: " + m +
                         "\nMethod owner: " + m.symbol.owner);
         e.printStackTrace();

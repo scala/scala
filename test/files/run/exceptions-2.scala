@@ -110,7 +110,7 @@ object Test {
     }
   } catch {
     case npe: NullPointerException =>
-      Console.println("Cought an NPE");
+      Console.println("Caught an NPE");
   }
 
   def withValue1: Unit = {

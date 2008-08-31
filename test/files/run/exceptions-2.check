@@ -17,7 +17,7 @@ method2:
 10
 Exception occurred
 method3:
-Cought an NPE
+Caught an NPE
 tryFinallyTry:
 Silently ignore exception in finally
 valInFinally:

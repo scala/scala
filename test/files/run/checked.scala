@@ -97,7 +97,7 @@ object Test extends Application {
     println("[FAIL]: No UFE thrown")
   } catch {
     case UninitializedFieldError(msg) =>
-      println("[OK] Cought UFE: " + msg)
+      println("[OK] Caught UFE: " + msg)
   }
 
 
