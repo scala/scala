@@ -294,9 +294,11 @@ class Settings(error: String => Unit) {
 
     protected var v: Int = default
 
+    def errorMsg = error("invalid setting for -"+name+" "+validText)
+
     def value: Int = this.v
     def value_=(s: Int) {
-      if(!valid(s)) error("invalid setting for -"+name+" "+validText)
+      if(!valid(s)) errorMsg
       setByUser = true;
       this.v = s
     }
@@ -307,7 +309,11 @@ class Settings(error: String => Unit) {
           error("missing argument")
           args
         } else {
-          value = rest.head.toInt
+	  try {
+            value = rest.head.toInt
+	  } catch {
+            case (e: java.lang.NumberFormatException) => errorMsg
+	  }
           rest.tail
         }
       case _ => args
