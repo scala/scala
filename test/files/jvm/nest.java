@@ -14,4 +14,25 @@ public class nest {
             }
         }
     }
+
+
+    String name = "Outer name";
+
+    public class Inn {
+        int x;
+
+        public Inn(int x) {
+            this.x = x;
+        }
+
+        public void doSomething() {
+            System.out.println("Inn " + name + " x: " + x);
+        }
+    }
+
+    protected class ProtInn {
+        public void doSomething() {
+            System.out.println("ProtInn " + name);
+        }
+    }
 }

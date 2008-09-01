@@ -477,7 +477,15 @@ abstract class ClassfileParser {
           info match {
             case MethodType(formals, restpe) =>
               assert(restpe.typeSymbol == definitions.UnitClass)
-              info = MethodType(formals, clazz.tpe)
+              // if this is a non-static inner class, remove the explicit outer parameter
+              val newFormals = innerClasses.get(externalName) match {
+                case Some(entry) if (entry.jflags & JAVA_ACC_STATIC) == 0 =>
+                  assert(formals.head.typeSymbol == clazz.owner, formals.head.typeSymbol + ": " + clazz.owner)
+                  formals.tail
+                case _ =>
+                  formals
+              }
+              info = MethodType(newFormals, clazz.tpe)
           }
         val sym = getOwner(jflags)
           .newMethod(NoPosition, name).setFlag(sflags).setInfo(info)
