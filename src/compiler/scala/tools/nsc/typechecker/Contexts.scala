@@ -346,7 +346,7 @@ trait Contexts { self: Analyzer =>
     }
 
     def error(pos: Position, msg: String) {
-      if (reportGeneralErrors || inIDE)
+      if (reportGeneralErrors)
         unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
       else
         throw new TypeError(pos, msg)
