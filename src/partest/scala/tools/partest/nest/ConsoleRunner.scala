@@ -10,8 +10,6 @@ package scala.tools.partest.nest
 import java.io.{File, PrintStream, FileOutputStream, BufferedReader,
                 InputStreamReader, StringWriter, PrintWriter}
 
-import scala.actors.Actor._
-
 class ConsoleRunner extends DirectRunner with RunnerUtils {
 
   var fileManager: ConsoleFileManager = _
@@ -180,8 +178,6 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
     if (check) {
       val kindFiles = if (kind == "res") //TODO: is there a nicer way?
         fileManager.getFiles(kind, check, Some((".res", false)))
-      else if (kind == "pos" || kind == "jvm")
-        fileManager.getFiles(kind, check, Some((".scala", true)))
       else
         fileManager.getFiles(kind, check)
       if (!kindFiles.isEmpty) {

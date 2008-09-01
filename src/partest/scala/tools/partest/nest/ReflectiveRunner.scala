@@ -40,13 +40,9 @@ class ReflectiveRunner extends RunnerUtils {
     import fileManager.{latestCompFile, latestLibFile, latestActFile,
                         latestPartestFile, latestFjbgFile}
 
-    val sepUrls = if (!classPath.isEmpty)
-      Array(latestCompFile.toURL, latestLibFile.toURL,
-            latestActFile.toURL, latestPartestFile.toURL,
-            latestFjbgFile.toURL)
-    else
-      Array(latestCompFile.toURL, latestLibFile.toURL,
-            latestActFile.toURL, latestPartestFile.toURL)
+    val sepUrls = Array(latestCompFile.toURL, latestLibFile.toURL,
+                        latestActFile.toURL, latestPartestFile.toURL,
+                        latestFjbgFile.toURL)
 
     val sepLoader = new java.net.URLClassLoader(sepUrls, null)
 
