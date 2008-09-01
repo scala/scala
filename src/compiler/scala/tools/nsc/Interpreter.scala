@@ -625,11 +625,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
                    " (if(" +
 	           req.fullPath(vname) +
                    ".asInstanceOf[AnyRef] != null) " +
-                   " ((if(" +
+                   " { val tmp = " +
 	           req.fullPath(vname) +
-	           ".toString().contains('\\n')) " +
-                   " \"\\n\" else \"\") + " +
-                   req.fullPath(vname) + ".toString() + \"\\n\") else \"null\\n\") ")
+		   ".toString(); " +
+                   " (if(tmp.contains('\\n')) \"\\n\" else \"\") + tmp + \"\\n\"} else \"null\\n\") ")
       }
     }
   }
