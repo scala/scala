@@ -29,8 +29,6 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
   private var runAll = false
 
   private var testFiles: List[File] = List()
-  private val con = new PrintStream(Console.out)
-  private var out = con
 
   private val errors =
     Integer.parseInt(System.getProperty("scalatest.errors", "0"))
@@ -74,7 +72,10 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
         } else // auto detection, see ConsoleFileManager.findLatest
           new ConsoleFileManager
 
-      if (!args.exists(denotesTestSet(_)) && !args.exists(_.endsWith(".scala"))) runAll = true
+      if (!args.exists(denotesTestSet(_)) &&
+          !args.exists(_.endsWith(".scala")) &&
+          !args.exists(_.endsWith(".res"))) runAll = true
+
       for (arg <- args) {
         arg match {
           case "--all"          => runAll = true
@@ -95,7 +96,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
           case "--version"      => //todo: printVersion
           case "--ansi"         => NestUI.initialize(NestUI.MANY)
           case _ =>
-            if (arg endsWith ".scala") {
+            if (arg.endsWith(".scala") || arg.endsWith(".res")) {
               val file = new File(arg)
               if (file.isFile) {
                 NestUI.verbose("adding test file "+file)
@@ -104,16 +105,10 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
                 NestUI.failure("File \"" + arg + "\" not found\n")
                 System.exit(1)
               }
-            } else if (out eq con) {
-              val file = new File(arg)
-              if (file.isFile || file.createNewFile)
-                out = new PrintStream(new FileOutputStream(file))
-              else {
-                NestUI.failure("Result file \"" + arg + "\" not found\n")
-                System.exit(1)
-              }
-            } else
+            } else {
+              NestUI.failure("Invalid option \""+arg+"\"\n")
               NestUI.usage()
+            }
         }
       }
 
