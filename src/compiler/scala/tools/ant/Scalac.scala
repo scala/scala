@@ -50,7 +50,10 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *    <li>deprecation,</li>
  *    <li>optimise,</li>
  *    <li>unchecked,</li>
- *    <li>failonerror.</li>
+ *    <li>failonerror,</li>
+ *    <li>scalacdebugging,</li>
+ *    <li>assemname,</li>
+ *    <li>assemrefs.</li>
  *  </ul>
  *  <p>
  *    It also takes the following parameters as nested elements:
@@ -150,8 +153,8 @@ class Scalac extends MatchingTask {
   // List of assemblies referenced by the program (only relevant with -target:msil)
   protected var assemrefs: Option[String] = None
 
-  /** Whether the compiler is being debuged. Prints more information in case
-   *  in case of failure. */
+  /** Prints out the files being compiled by the scalac ant task
+   *  (not only the number of files). */
   protected var scalacDebugging: Boolean = false
 
 /*============================================================================*\
@@ -336,7 +339,9 @@ class Scalac extends MatchingTask {
    *  @param input The value for <code>force</code>. */
   def setFailonerror(input: Boolean) { failonerror = input }
 
-  /** Set the <code>scalacdebugging</code> info attribute.
+  /** Set the <code>scalacdebugging</code> info attribute. If set to
+   *  <code>true</code>, the scalac ant task will print out the filenames
+   *  being compiled.
    *  @param input The specified flag */
   def setScalacdebugging(input: Boolean) { scalacDebugging = input }
 
