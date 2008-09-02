@@ -43,7 +43,28 @@ END-USER TARGETS
   
   <target name="newstarr"
     description="Replaces the Starr compiler and library by one built from current sources and tests it.">
+    <fail message="This target is not available on Windows. Use 'ant newstarrwin' instead.">
+      <condition>
+        <os family="windows"/>
+      </condition>
+    </fail>
     <antcall target="locker.clean"/>
+    <antcall target="pack.done"/>
+    <antcall target="starr.done"/>
+    <antcall target="locker.clean"/>
+    <antcall target="test.done"/>
+  </target>
+
+  <!-- Ant on Windows is not able to delete jar files that are referenced in any <path>.
+       See ticket 1290 on trac. -->
+  <target name="newstarrwin"
+	  description="Creates a new Starr on Windows. Manually execute 'ant locker.clean build' first!">
+    <fail message="This target is only available on Windows. Use 'ant newstarr' instead.">
+      <condition>
+        <not><os family="windows"/></not>
+      </condition>
+    </fail>
+    <echo message="CAUTION: Make sure to execute 'ant locker.clean build' prior to calling 'newstarrwin'."/>
     <antcall target="starr.done"/>
     <antcall target="locker.clean"/>
     <antcall target="test.done"/>
@@ -1107,32 +1128,47 @@ TEST AND DISTRIBUTION BUNDLE (ALL)
 <!-- ===========================================================================
 STABLE REFERENCE (STARR)
 ============================================================================ -->
-  
-  <target name="starr.start" depends="pack.done"/>
-  
-  <target name="starr.clean" depends="locker.clean, starr.start">
-    <delete file="${lib.starr.jar}"/>
-    <delete file="${comp.starr.jar}"/>
-    <delete file="${lib.dir}/scala-library-src.jar"/>
+<!-- Does not use any properties other than ${basedir}, so that it can
+     run without 'init' (when using 'newstarrwin') -->
+
+  <target name="starr.start">
+    <fail message="Library in build/pack not available">
+      <condition><not><and>
+        <available file="${basedir}/build/pack/lib/scala-library.jar"/>
+      </and></not></condition>
+    </fail>
+    <fail message="Compiler in build/quick not available">
+      <condition><not><and>
+        <available file="${basedir}/build/quick/classes/compiler"/>
+        <available file="${basedir}/build/quick/compiler.complete"/>
+      </and></not></condition>
+    </fail>
   </target>
-  
+
+  <target name="starr.clean" depends="starr.start">
+    <delete file="${basedir}/lib/scala-library.jar"/>
+    <delete file="${basedir}/lib/scala-compiler.jar"/>
+    <delete file="${basedir}/lib/scala-library-src.jar"/>
+  </target>
+
   <target name="starr.lib" depends="starr.clean">
-    <copy file="${build-pack.dir}/lib/scala-library.jar" toFile="${lib.starr.jar}"/>
+    <copy file="${basedir}/build/pack/lib/scala-library.jar"
+          toFile="${basedir}/lib/scala-library.jar"/>
   </target>
-  
+
   <target name="starr.comp" depends="starr.lib">
-    <jar destfile="${comp.starr.jar}">
-      <fileset dir="${build-quick.dir}/classes/compiler"/>
+    <jar destfile="${basedir}/lib/scala-compiler.jar">
+      <fileset dir="${basedir}/build/quick/classes/compiler"/>
     </jar>
   </target>
-  
+
   <target name="starr.src" depends="starr.comp">
-    <jar destfile="${lib.dir}/scala-library-src.jar">
-      <fileset dir="${src.dir}/library"/>
-      <fileset dir="${src.dir}/actors"/>
+    <jar destfile="${basedir}/lib/scala-library-src.jar">
+      <fileset dir="${basedir}/src/library"/>
+      <fileset dir="${basedir}/src/actors"/>
     </jar>
   </target>
-  
+
   <target name="starr.done" depends="starr.src"/>
 
 <!-- ===========================================================================
