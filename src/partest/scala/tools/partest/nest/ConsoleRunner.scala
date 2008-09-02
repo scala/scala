@@ -46,6 +46,12 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
       case _            => false
     }
 
+  def denotesTestFile(arg: String) =
+    arg.endsWith(".scala") || arg.endsWith(".res")
+
+  def denotesTestDir(arg: String) =
+    (new File(arg)).isDirectory
+
   def main(argstr: String) {
     // tokenize args. filter: "".split("\\s") yields Array("")
     var args = List.fromArray(argstr.split("\\s")).remove(_ == "")
@@ -73,8 +79,9 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
           new ConsoleFileManager
 
       if (!args.exists(denotesTestSet(_)) &&
-          !args.exists(_.endsWith(".scala")) &&
-          !args.exists(_.endsWith(".res"))) runAll = true
+          !args.exists(denotesTestFile(_)) &&
+          !args.exists(denotesTestDir(_)))
+        runAll = true
 
       for (arg <- args) {
         arg match {
@@ -96,9 +103,9 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
           case "--version"      => //todo: printVersion
           case "--ansi"         => NestUI.initialize(NestUI.MANY)
           case _ =>
-            if (arg.endsWith(".scala") || arg.endsWith(".res")) {
+            if (denotesTestFile(arg) || denotesTestDir(arg)) {
               val file = new File(arg)
-              if (file.isFile) {
+              if (file.exists) {
                 NestUI.verbose("adding test file "+file)
                 testFiles = file :: testFiles
               } else {

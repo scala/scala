@@ -258,11 +258,6 @@ else
     }
   }
 
-  private def basename(name: String): String = {
-    val inx = name.lastIndexOf(".")
-    if (inx < 0) name else name.substring(0, inx)
-  }
-
   var testFiles: List[File] = List()
 
   def getFiles(kind: String, doCheck: Boolean, filter: Option[(String, Boolean)]): List[File] = {

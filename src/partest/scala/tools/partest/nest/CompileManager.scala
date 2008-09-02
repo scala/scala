@@ -7,10 +7,10 @@
 
 package scala.tools.partest.nest
 
-import scala.tools.nsc.{Global, Settings, CompilerCommand}
+import scala.tools.nsc.{Global, Settings, CompilerCommand, FatalError}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 
-import java.io.{File, BufferedReader, PrintWriter, FileWriter, StringWriter}
+import java.io.{File, BufferedReader, PrintWriter, FileReader, FileWriter, StringWriter}
 
 class ExtConsoleReporter(override val settings: Settings, reader: BufferedReader, var writer: PrintWriter) extends ConsoleReporter(settings, reader, writer) {
   def this(settings: Settings) = {
@@ -51,7 +51,23 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
   def compile(out: Option[File], files: List[File], kind: String, log: File): Boolean = {
     val testSettings = newSettings
     val logWriter = new FileWriter(log)
-    val args = List.fromArray(fileManager.SCALAC_OPTS.split("\\s"))
+
+    // check whether there is a ".flags" file
+    val testBase = {
+      val logBase = fileManager.basename(log.getName)
+      logBase.substring(0, logBase.length-4)
+    }
+    val argsFile = new File(log.getParentFile, testBase+".flags")
+    val argString = if (argsFile.exists) {
+      val fileReader = new FileReader(argsFile)
+      val reader = new BufferedReader(fileReader)
+      val options = reader.readLine()
+      reader.close()
+      options
+    } else ""
+    val allOpts = fileManager.SCALAC_OPTS+" "+argString
+    NestUI.verbose("scalac options: "+allOpts)
+    val args = List.fromArray(allOpts.split("\\s"))
     val command = new CompilerCommand(args, testSettings, x => {}, false)
     val global = newGlobal(command.settings, logWriter)
     val testRep: ExtConsoleReporter = global.reporter.asInstanceOf[ExtConsoleReporter]
@@ -82,6 +98,9 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
       testRep.writer.flush
       testRep.writer.close
     } catch {
+      case FatalError(msg) =>
+        logWriter.write("FatalError: "+msg)
+        return false
       case e: Exception =>
         e.printStackTrace()
         return false

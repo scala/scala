@@ -352,7 +352,7 @@ class Worker(val fileManager: FileManager) extends Actor {
         javac(outDir, javaFiles, logFile)
       // 2. compile all '.scala' files together
       val scalaFiles = testFiles.filter(_.getName.endsWith(".scala"))
-      if (!compileMgr.shouldCompile(outDir, scalaFiles, kind, logFile)) {
+      if (!scalaFiles.isEmpty && !compileMgr.shouldCompile(outDir, scalaFiles, kind, logFile)) {
         NestUI.verbose("compilation of "+scalaFiles+" failed\n")
         succeeded = false
       } else

@@ -12,6 +12,11 @@ import java.net.URI
 
 trait FileManager {
 
+  def basename(name: String): String = {
+    val inx = name.lastIndexOf(".")
+    if (inx < 0) name else name.substring(0, inx)
+  }
+
   def deleteRecursive(dir: File) {
     if (dir.isDirectory) {
       for (file <- dir.list) deleteRecursive(new File(dir, file))
