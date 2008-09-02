@@ -50,7 +50,10 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *    <li>deprecation,</li>
  *    <li>optimise,</li>
  *    <li>unchecked,</li>
- *    <li>failonerror.</li>
+ *    <li>failonerror,</li>
+ *    <li>scalacdebugging,</li>
+ *    <li>assemname,</li>
+ *    <li>assemrefs.</li>
  *  </ul>
  *  <p>
  *    It also takes the following parameters as nested elements:
@@ -150,8 +153,8 @@ class Scalac extends MatchingTask {
   // List of assemblies referenced by the program (only relevant with -target:msil)
   protected var assemrefs: Option[String] = None
 
-  /** Whether the compiler is being debuged. Prints more information in case
-   *  in case of failure. */
+  /** Prints out the files being compiled by the scalac ant task
+   *  (not only the number of files). */
   protected var scalacDebugging: Boolean = false
 
 /*============================================================================*\
@@ -336,7 +339,9 @@ class Scalac extends MatchingTask {
    *  @param input The value for <code>force</code>. */
   def setFailonerror(input: Boolean) { failonerror = input }
 
-  /** Set the <code>scalacdebugging</code> info attribute.
+  /** Set the <code>scalacdebugging</code> info attribute. If set to
+   *  <code>true</code>, the scalac ant task will print out the filenames
+   *  being compiled.
    *  @param input The specified flag */
   def setScalacdebugging(input: Boolean) { scalacDebugging = input }
 
@@ -450,7 +455,6 @@ class Scalac extends MatchingTask {
 **                      Hooks for variants of Scala                           **
 \*============================================================================*/
 
-  protected val sourceEnding = ".scala"
   protected def newSettings(error: String=>Unit): Settings =
     new Settings(error)
   protected def newGlobal(settings: Settings, reporter: Reporter) =
@@ -462,7 +466,7 @@ class Scalac extends MatchingTask {
 \*============================================================================*/
 
   /** Initializes settings and source files */
-  protected def initialize: (Settings, List[File]) = {
+  protected def initialize: (Settings, List[File], Boolean) = {
     // Tests if all mandatory attributes are set and valid.
     if (origin.isEmpty) error("Attribute 'srcdir' is not set.")
     if (getOrigin.isEmpty) error("Attribute 'srcdir' is not set.")
@@ -472,7 +476,9 @@ class Scalac extends MatchingTask {
 
     val mapper = new GlobPatternMapper()
     mapper.setTo("*.class")
-    mapper.setFrom("*" + sourceEnding)
+    mapper.setFrom("*.scala")
+
+    var javaOnly = true
 
     // Scans source directories to build up a compile lists.
     // If force is false, only files were the .class file in destination is
@@ -480,14 +486,16 @@ class Scalac extends MatchingTask {
     val sourceFiles: List[File] =
       for {
         val originDir <- getOrigin
-        val originFile <- {
-          var includedFiles =
-            getDirectoryScanner(originDir).getIncludedFiles()
+        val originFiles <- {
+          val includedFiles = getDirectoryScanner(originDir).getIncludedFiles()
+          var scalaFiles = includedFiles.filter(_.endsWith(".scala"))
+          val javaFiles = includedFiles.filter(_.endsWith(".java"))
           if (!force) {
-            includedFiles = new SourceFileScanner(this).
-              restrict(includedFiles, originDir, destination.get, mapper)
+            scalaFiles = new SourceFileScanner(this).
+              restrict(scalaFiles, originDir, destination.get, mapper)
           }
-          val list = List.fromArray(includedFiles)
+          javaOnly = javaOnly && (scalaFiles.length == 0)
+          val list = scalaFiles.toList ::: javaFiles.toList
           if (scalacDebugging && list.length > 0)
             log(
               list.mkString(
@@ -499,19 +507,21 @@ class Scalac extends MatchingTask {
             )
           else if (list.length > 0)
             log(
-              "Compiling " + list.length + " source file" +
-              (if (list.length > 1) "s" else "") +
-              (" to " + getDestination.toString)
+              "Compiling " + (
+                if (javaFiles.length > 0)
+                  (scalaFiles.length +" scala and "+ javaFiles.length +" java source files")
+                else
+                  (list.length +" source file"+ (if (list.length > 1) "s" else ""))
+              ) +" to "+ getDestination.toString
             )
           else
             log("No files selected for compilation", Project.MSG_VERBOSE)
-
           list
         }
       }
       yield {
-        log(originFile, Project.MSG_DEBUG)
-        nameToFile(originDir)(originFile)
+        log(originFiles, Project.MSG_DEBUG)
+        nameToFile(originDir)(originFiles)
       }
 
     // Builds-up the compilation settings for Scalac with the existing Ant
@@ -546,13 +556,13 @@ class Scalac extends MatchingTask {
 
     log("Scalac params = '" + addParams + "'", Project.MSG_DEBUG)
     settings.parseParams(addParams, error)
-    (settings, sourceFiles)
+    (settings, sourceFiles, javaOnly)
   }
 
   /** Performs the compilation. */
   override def execute() {
-    val (settings, sourceFiles) = initialize
-    if (sourceFiles.isEmpty) {
+    val (settings, sourceFiles, javaOnly) = initialize
+    if (sourceFiles.isEmpty || javaOnly) {
       return
     }
 

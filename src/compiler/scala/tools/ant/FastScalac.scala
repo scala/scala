@@ -69,9 +69,9 @@ class FastScalac extends Scalac {
 
   /** Performs the compilation. */
   override def execute() = {
-    val Pair(settings, sourceFiles) = initialize
+    val (settings, sourceFiles, javaOnly) = initialize
 
-    if (!sourceFiles.isEmpty) {
+    if (!sourceFiles.isEmpty && !javaOnly) {
       def trim(xs: List[String]) = xs filter (x => x.length > 0)
       val reset = settings.BooleanSetting("-reset", "Reset compile server caches")
       val shutdown = settings.BooleanSetting("-shutdown", "Shutdown compile server")
