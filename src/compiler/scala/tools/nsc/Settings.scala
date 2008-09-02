@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -46,10 +46,10 @@ class Settings(error: String => Unit) {
       ""
     else
       new File(
-	new File(
-	  new File(Properties.scalaHome, "misc"),
-	  "scala-devel"),
-	"plugins").getAbsolutePath
+        new File(
+          new File(Properties.scalaHome, "misc"),
+          "scala-devel"),
+        "plugins").getAbsolutePath
 
   private def alternatePath(p1: String, p2: => String) =
     if (p1 ne null) p1 else p2
@@ -58,7 +58,6 @@ class Settings(error: String => Unit) {
      if ((p1 ne null) && (p2 ne null)) p1 + File.pathSeparator + p2
      else if (p1 ne null) p1
      else p2
-
 
   private def guessedScalaBootClassPath = {
     val scalaHome = Properties.scalaHome
@@ -272,33 +271,39 @@ class Settings(error: String => Unit) {
   /** A setting represented by a positive integer */
   case class IntSetting(name: String, descr: String, default: Int, min: Option[Int], max: Option[Int]) extends Setting(descr) {
     // Validate that min and max are consistent
-    (min, max) match { case (Some(i), Some(j)) => assert (i <= j)
-		       case _ => () }
+    (min, max) match {
+      case (Some(i), Some(j)) => assert(i <= j)
+      case _ => ()
+    }
 
     // Helper to validate an input
-    def valid(k: Int): Boolean =
-      (min, max) match { case (Some(i), Some(j)) => (i <= k) && (k <= j)
-			 case (Some(i), None) => (i <= k)
-			 case (None, Some(j)) => (k <= j)
-			 case _ => true }
+    private def isInputValid(k: Int): Boolean =
+      (min, max) match {
+        case (Some(i), Some(j)) => (i <= k) && (k <= j)
+        case (Some(i), None) => (i <= k)
+        case (None, Some(j)) => (k <= j)
+        case _ => true
+      }
 
     // Helper to generate a textual explaination of valid inputs
-    def validText: String =
-      (min, max) match { case (Some(i), Some(j)) => "must be between "+i+" and "+j
-			 case (Some(i), None) => "must be greater than or equal to "+i
-			 case (None, Some(j)) => "must be less than or equal to "+j
-			 case _ => throw new Error("this should never be used") }
+    private def getValidText: String =
+      (min, max) match {
+        case (Some(i), Some(j)) => "must be between "+i+" and "+j
+        case (Some(i), None) => "must be greater than or equal to "+i
+        case (None, Some(j)) => "must be less than or equal to "+j
+        case _ => throw new Error("this should never be used")
+      }
 
     // Ensure that the default value is actually valid
-    assert(valid(default))
+    assert(isInputValid(default))
 
     protected var v: Int = default
 
-    def errorMsg = error("invalid setting for -"+name+" "+validText)
+    def errorMsg = error("invalid setting for -"+name+" "+getValidText)
 
     def value: Int = this.v
     def value_=(s: Int) {
-      if(!valid(s)) errorMsg
+      if (!isInputValid(s)) errorMsg
       setByUser = true;
       this.v = s
     }
@@ -309,11 +314,11 @@ class Settings(error: String => Unit) {
           error("missing argument")
           args
         } else {
-	  try {
+          try {
             value = rest.head.toInt
-	  } catch {
-            case (e: java.lang.NumberFormatException) => errorMsg
-	  }
+        } catch {
+            case e: java.lang.NumberFormatException => errorMsg
+        }
           rest.tail
         }
       case _ => args
@@ -326,8 +331,8 @@ class Settings(error: String => Unit) {
       case is:IntSetting => this.name == is.name && this.value == is.value
       case _ => false
     }
-  }
 
+  }
 
   /** A setting represented by a boolean flag (false, unless set) */
   case class BooleanSetting(name: String, descr: String) extends Setting(descr) {
