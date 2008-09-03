@@ -586,12 +586,17 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
         if (settings.browse contains globalPhase.name) treeBrowser.browse(units)
         informTime(globalPhase.description, startTime)
-        globalPhase = globalPhase.next
-        if (settings.check contains globalPhase.name) {
-          phase = globalPhase
-          if (globalPhase.id >= icodePhase.id) icodeChecker.checkICodes
-          else checker.checkTrees
+        if ((settings.check contains globalPhase.name) ||
+	    (settings.check contains "all")) {
+          if (globalPhase.checkable) {
+            phase = globalPhase
+            if (globalPhase.id >= icodePhase.id) icodeChecker.checkICodes
+            else checker.checkTrees
+	  } else if (!(settings.check contains "all")) {
+            warning("It is not possible to check the result of the "+globalPhase.name+" phase")
+	  }
         }
+        globalPhase = globalPhase.next
         if (settings.statistics.value) statistics.print(phase)
         advancePhase
       }

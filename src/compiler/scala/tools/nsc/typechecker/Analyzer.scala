@@ -25,6 +25,7 @@ trait Analyzer extends AnyRef
     val global: Analyzer.this.global.type = Analyzer.this.global
     val phaseName = "namer"
     def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
+      override val checkable = false
       def apply(unit: CompilationUnit) {
         newNamer(rootContext(unit)).enterSym(unit.body)
       }

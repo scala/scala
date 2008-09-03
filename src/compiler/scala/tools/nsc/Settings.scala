@@ -128,7 +128,7 @@ class Settings(error: String => Unit) {
 
   val Yhelp         = BooleanSetting    ("-Y", "Print a synopsis of private options").hideToIDE
   val browse        = PhasesSetting     ("-Ybrowse", "Browse the abstract syntax tree after")
-  val check         = PhasesSetting     ("-Ycheck", "Check the tree at start of")
+  val check         = PhasesSetting     ("-Ycheck", "Check the tree at the end of the given phase. Specify \"all\" to check all checkable phases")
   val Xcloselim     = BooleanSetting    ("-Yclosure-elim", "Perform closure elimination")
   val Xcodebase     = StringSetting     ("-Ycodebase", "codebase", "Specify the URL containing the Scala libraries", "").hideToIDE
   val debug         = BooleanSetting    ("-Ydebug", "Output debugging messages").hideToIDE

@@ -524,4 +524,11 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
       atPhase(phase.next) { super.transformUnit(unit) }
     }
   }
+
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase =
+    new Phase(prev)
+
+  class Phase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+    override val checkable = false
+  }
 }

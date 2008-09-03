@@ -16,7 +16,8 @@ abstract class TreeCheckers extends Analyzer {
   val tpeOfTree = new scala.collection.mutable.HashMap[Tree, Type]
 
   def checkTrees {
-    Console.println("[consistency check at start of phase " + phase + "]")
+    if (settings.verbose.value)
+      Console.println("[consistency check at end of phase " + phase + "]")
     for (unit <- currentRun.units) check(unit)
   }
 

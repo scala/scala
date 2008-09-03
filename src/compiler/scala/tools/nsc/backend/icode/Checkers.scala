@@ -70,7 +70,7 @@ abstract class Checkers {
 //    val CASE_CLASS    = REFERENCE(definitions.getClass("scala.CaseClass"))
 
     def checkICodes: Unit = {
-      Console.println("[[consistency check at beginning of phase " + globalPhase.name + "]]")
+      Console.println("[[consistency check at end of phase " + globalPhase.name + "]]")
       classes.values foreach check
     }
 
