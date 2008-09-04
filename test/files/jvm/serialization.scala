@@ -35,7 +35,6 @@ object Serialize {
 //############################################################################
 // Test classes in package "scala"
 
-@serializable
 object Test1_scala {
 
   private def arrayToString[A](arr: Array[A]): String =
