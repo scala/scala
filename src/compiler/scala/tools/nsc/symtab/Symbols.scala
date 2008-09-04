@@ -268,7 +268,7 @@ trait Symbols {
 
     /** Does this symbol denote a stable value? */
     final def isStable =
-      isTerm && !hasFlag(MUTABLE) && (!hasFlag(METHOD | BYNAMEPARAM) || hasFlag(STABLE))
+      isTerm && !hasFlag(MUTABLE) && (!hasFlag(METHOD | BYNAMEPARAM) || hasFlag(STABLE)) && !tpe.isVolatile
 
     def isDeferred =
       hasFlag(DEFERRED) && !isClass

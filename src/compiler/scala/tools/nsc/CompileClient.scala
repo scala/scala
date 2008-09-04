@@ -93,26 +93,30 @@ class StandardCompileClient {
     }
     val socket = if (serverAdr == "") compileSocket.getOrCreateSocket(vmArgs, !shutdown)
                  else compileSocket.getSocket(serverAdr)
-    if (shutdown && (socket==null)) {
-      Console.println("[No compilation server running.]")
-      return 0
-    }
-    val out = new PrintWriter(socket.getOutputStream(), true)
-    val in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
-    out.println(compileSocket.getPassword(socket.getPort()))
-    out.println(args.mkString("", "\0", ""))
     var sawerror = false
-    var fromServer = in.readLine()
-    while (fromServer ne null) {
-      if (compileSocket.errorPattern.matcher(fromServer).matches)
+    if (socket == 0) {
+      if (shutdown) {
+        Console.println("[No compilation server running.]")
+      } else {
+        Console.println("Compilation failed.")
         sawerror = true
-      Console.println(fromServer)
-      fromServer = in.readLine()
+      }
+    } else {
+      val out = new PrintWriter(socket.getOutputStream(), true)
+      val in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
+      out.println(compileSocket.getPassword(socket.getPort()))
+      out.println(args.mkString("", "\0", ""))
+      var fromServer = in.readLine()
+      while (fromServer ne null) {
+        if (compileSocket.errorPattern.matcher(fromServer).matches)
+          sawerror = true
+        Console.println(fromServer)
+        fromServer = in.readLine()
+      }
+      in.close()
+      out.close()
+      socket.close()
     }
-    in.close()
-    out.close()
-    socket.close()
-
     if (sawerror) 1 else 0
   }
 

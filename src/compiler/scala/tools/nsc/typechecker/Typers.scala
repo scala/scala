@@ -253,7 +253,32 @@ trait Typers { self: Analyzer =>
      */
     def checkStable(tree: Tree): Tree =
       if (treeInfo.isPureExpr(tree)) tree
-      else errorTree(tree, "stable identifier required, but " + tree + " found.")
+      else errorTree(
+        tree,
+        "stable identifier required, but "+tree+" found."+
+        (if (isStableExceptVolatile(tree)) {
+          val tpe = tree.symbol.tpe match {
+            case PolyType(_, rtpe) => rtpe
+            case t => t
+          }
+          "\n Note that "+tree.symbol+" is not stable because its type, "+tree.tpe+", is volatile."
+         } else ""))
+
+    /** Would tree be a stable (i.e. a pure expression) if the type
+     *  of its symbol was not volatile?
+     */
+    private def isStableExceptVolatile(tree: Tree) = {
+      tree.hasSymbol && tree.symbol != NoSymbol && tree.tpe.isVolatile &&
+      { val savedTpe = tree.symbol.info
+        val savedSTABLE = tree.symbol getFlag STABLE
+        tree.symbol setInfo AnyRefClass.tpe
+        tree.symbol setFlag STABLE
+       val result = treeInfo.isPureExpr(tree)
+        tree.symbol setInfo savedTpe
+        tree.symbol setFlag savedSTABLE
+        result
+      }
+    }
 
     /** Check that `tpt' refers to a non-refinement class type */
     def checkClassType(tpt: Tree, existentialOK: Boolean) {
@@ -671,7 +696,9 @@ trait Typers { self: Analyzer =>
             (pt <:< functionType(mt.paramTypes map (t => WildcardType), WildcardType)))*/ { // (4.2)
           if (settings.debug.value) log("eta-expanding "+tree+":"+tree.tpe+" to "+pt)
           checkParamsConvertible(tree.pos, tree.tpe)
-          typed(etaExpand(context.unit, tree), mode, pt)
+          val tree1 = etaExpand(context.unit, tree)
+//          println("eta "+tree+" ---> "+tree1+":"+tree1.tpe)
+          typed(tree1, mode, pt)
         } else if (!meth.isConstructor && mt.paramTypes.isEmpty) { // (4.3)
           adapt(typed(Apply(tree, List()) setPos tree.pos), mode, pt)
         } else if (context.implicitsEnabled) {
@@ -2430,17 +2457,18 @@ trait Typers { self: Analyzer =>
             .setOriginal(tpt1) /* .setPos(tpt1.pos) */
             .setType(appliedType(tpt1.tpe, context.undetparams map (_.tpe)))
         }
+        /** If current tree <tree> appears in <val x(: T)? = <tree>>
+         *  return `tp with x.type' else return `tp'.
+         */
         def narrowRhs(tp: Type) = {
           var sym = context.tree.symbol
           if (sym != null && sym != NoSymbol && sym.owner.isClass && sym.getter(sym.owner) != NoSymbol)
             sym = sym.getter(sym.owner)
           context.tree match {
-            case ValDef(_, _, _, Apply(Select(`tree`, _), _)) if (sym.isStable) =>
-//              println("narrowing...")
+            case ValDef(mods, _, _, Apply(Select(`tree`, _), _)) if !(mods hasFlag MUTABLE) =>
               val pre = if (sym.owner.isClass) sym.owner.thisType else NoPrefix
               intersectionType(List(tp, singleType(pre, sym)))
             case _ =>
-//              println("no narrow: "+sym+" "+sym.isStable+" "+context.tree+"//"+tree)
               tp
           }
         }

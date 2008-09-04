@@ -1703,6 +1703,9 @@ trait Parsers extends NewScanners with MarkupParsers {
       val vds = new ListBuffer[List[ValDef]]
       val pos = inCurrentPos
       newLineOptWhenFollowedBy(LPAREN)
+      if (ofCaseClass && inToken != LPAREN)
+        deprecationWarning(in.currentPos, "case classes without a parameter list have been deprecated;\n"+
+                           "use either case objects or case classes with `()' as parameter list.")
       while (implicitmod == 0 && inToken == LPAREN) {
         inNextToken
         vds += paramClause()

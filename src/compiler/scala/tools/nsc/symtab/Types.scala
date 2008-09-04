@@ -143,6 +143,7 @@ trait Types {
     override def isError = underlying.isError
     override def isErroneous = underlying.isErroneous
     override def isStable: Boolean = underlying.isStable
+    override def isVolatile = underlying.isVolatile
     override def finalResultType = underlying.finalResultType
     override def paramSectionCount = underlying.paramSectionCount
     override def paramTypes = underlying.paramTypes
@@ -209,6 +210,14 @@ trait Types {
 
     /** Does this type denote a stable reference (i.e. singleton type)? */
     def isStable: Boolean = false
+
+    /** Is this type dangerous (i.e. it might contain conflicting
+     *  type information when empty, so that it can be constructed
+     *  so that type unsoundness results.) A dangerous type has an underlying
+     *  type of the form T_1 with T_n { decls }, where one of the
+     *  T_i (i > 1) is an abstract type.
+     */
+    def isVolatile: Boolean = false
 
     /** Is this type guaranteed not to have `null' as a value? */
     def isNotNull: Boolean = false
@@ -840,7 +849,8 @@ trait Types {
   abstract class SingletonType extends SubType with SimpleTypeProxy {
     def supertype = underlying
     override def isTrivial = false
-    override def isStable = true
+    override def isStable = !underlying.isVolatile
+    override def isVolatile = underlying.isVolatile
     override def widen: Type = underlying.widen
     override def baseTypeSeq: BaseTypeSeq = {
       if (util.Statistics.enabled) singletonBaseTypeSeqCount += 1
@@ -934,6 +944,7 @@ trait Types {
     override def isStable = true
     override def safeToString = "<param "+level+"."+paramId+">"
     override def kind = "DeBruijnIndex"
+    // todo: this should be a subtype, which forwards to underlying
   }
 
   /** A class for singleton types of the form &lt;prefix&gt;.&lt;sym.name&gt;.type.
@@ -1148,6 +1159,11 @@ trait Types {
             decls))
       else super.normalize
 
+    override def isVolatile =
+      !parents.isEmpty &&
+      (!parents.tail.isEmpty || !decls.isEmpty) &&
+      (parents exists (_.typeSymbol.isAbstractType))
+
     override def kind = "RefinedType"
   }
 
@@ -1337,6 +1353,10 @@ trait Types {
       sym.isAbstractType && (sym.info.bounds.hi.typeSymbol isSubClass SingletonClass)
     }
 
+    override def isVolatile: Boolean = {
+      sym.isAbstractType && transform(sym.info.bounds.hi).isVolatile ||
+      sym.isAliasType && sym.info.normalize.isVolatile
+    }
     override val isTrivial: Boolean =
       pre.isTrivial && !sym.isTypeParameter && args.forall(_.isTrivial)
 
@@ -1621,6 +1641,7 @@ A type's typeSymbol should never be inspected directly.
     override def baseClasses: List[Symbol] = resultType.baseClasses
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
     override def narrow: Type = resultType.narrow
+    override def isVolatile = resultType.isVolatile
 
     override def deconst =
       if (inIDE) PolyType(typeParams, resultType.deconst)
@@ -1798,6 +1819,7 @@ A type's typeSymbol should never be inspected directly.
       else constr.inst.toString
     }
     override def isStable = origin.isStable
+    override def isVolatile = origin.isVolatile
     override def kind = "TypeVar"
   }
 
@@ -3627,8 +3649,10 @@ A type's typeSymbol should never be inspected directly.
         true
       case (_, RefinedType(parents2, ref2)) =>
         (parents2 forall (tp2 => tp1 <:< tp2)) &&
-        (ref2.toList forall tp1.specializes) &&
+        (ref2.toList forall tp1.specializes) /* &&
+ removed, replaced by stricter condition on stable values.
         (tp1.typeSymbol != NullClass || !parents2.exists(_.typeSymbol.isAbstractType))
+*/
       case (ExistentialType(_, _), _) =>
         try {
           skolemizationLevel += 1
