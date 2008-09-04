@@ -43,6 +43,7 @@ abstract class ICodeReader extends ClassfileParser {
   def readClass(cls: Symbol): (IClass, IClass) = {
     var classFile: AbstractFile = null;
     var sym = cls
+    sym.info // ensure accurate type information
     isScalaModule = cls.isModule && !cls.hasFlag(JAVA)
     log("Reading class: " + cls + " isScalaModule?: " + isScalaModule)
     val name = cls.fullNameString(java.io.File.separatorChar) + (if (sym.hasFlag(MODULE)) "$" else "")
@@ -81,6 +82,7 @@ abstract class ICodeReader extends ClassfileParser {
     val c = pool.getClassSymbol(in.nextChar)
 //    if (c != clazz)
 //      throw new IOException("class file '" + in.file + "' contains " + c + "instead of " + clazz)
+    parseInnerClasses()
 
     in.skip(2)               // super class
     in.skip(2 * in.nextChar) // interfaces

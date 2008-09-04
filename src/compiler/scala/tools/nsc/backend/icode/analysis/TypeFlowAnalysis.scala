@@ -167,7 +167,7 @@ abstract class TypeFlowAnalysis {
           assert(visited.contains(b),
             "Block " + b + " in " + this.method + " has input equal to bottom -- not visited? .." + visited));
       }
-      println("iterations: " + iterations + " for " + method.code.blocks.size)
+      //println("iterations: " + iterations + " for " + method.code.blocks.size)
     }
 
     def blockTransfer(b: BasicBlock, in: lattice.Elem): lattice.Elem = {
