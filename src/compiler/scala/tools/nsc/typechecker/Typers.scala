@@ -3290,11 +3290,8 @@ trait Typers { self: Analyzer =>
           tree setType ref1.tpe.resultType
 
         case SelectFromTypeTree(qual, selector) =>
-/* maybe need to do this:
-          val res = typedSelect(typedType(qual, mode), selector)
-          tree setType res.tpe setSymbol res.symbol
-          res
-*/
+          val qual1 = typedType(qual, mode)
+          if (qual1.tpe.isVolatile) error(tree.pos, "illegal type selection from volatile type "+qual.tpe)
           typedSelect(typedType(qual, mode), selector)
 
         case CompoundTypeTree(templ) =>

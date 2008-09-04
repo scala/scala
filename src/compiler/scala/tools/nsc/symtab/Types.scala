@@ -1159,10 +1159,12 @@ trait Types {
             decls))
       else super.normalize
 
-    override def isVolatile =
+    override def isVolatile = false // for now; this should really be:
+    /*
       !parents.isEmpty &&
       (!parents.tail.isEmpty || !decls.isEmpty) &&
       (parents exists (_.typeSymbol.isAbstractType))
+*/
 
     override def kind = "RefinedType"
   }
@@ -2588,6 +2590,12 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
+  def singletonBounds(hi: Type) = {
+    if (hi.isVolatile)
+      throw new MalformedType("cannot abstract over singleton with volatile type "+hi)
+    mkTypeBounds(NothingClass.tpe, intersectionType(List(hi, SingletonClass.tpe)))
+  }
+
   /** A map to compute the asSeenFrom method  */
   class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap {
     override val dropNonConstraintAnnotations = true
@@ -2628,8 +2636,7 @@ A type's typeSymbol should never be inspected directly.
     def stabilize(pre: Type, clazz: Symbol): Type = {
       capturedPre get clazz match {
         case None =>
-          val qvar = makeFreshExistential(".type", clazz,
-            mkTypeBounds(NothingClass.tpe, intersectionType(List(pre, SingletonClass.tpe))))
+          val qvar = makeFreshExistential(".type", clazz, singletonBounds(pre))
           capturedPre += (clazz -> qvar)
           capturedParams = qvar :: capturedParams
           qvar
@@ -2904,11 +2911,6 @@ A type's typeSymbol should never be inspected directly.
     private var existSyms = immutable.Map.empty[Int, Symbol]
     def existentialsNeeded: List[Symbol] = existSyms.values.toList
 
-    private def boundFor(actualIdx: Int) =
-      mkTypeBounds(
-	NothingClass.tpe,
-	intersectionType(List(actuals(actualIdx), SingletonClass.tpe)))
-
     /* Return the type symbol for referencing a parameter index
      * inside the existential quantifier.  */
     def existSymFor(actualIdx: Int, oldSym: Symbol) =
@@ -2916,11 +2918,10 @@ A type's typeSymbol should never be inspected directly.
 	existSyms(actualIdx)
       else {
 	val symowner = oldSym.owner // what should be used??
-        val bound = boundFor(actualIdx)
+        val bound = singletonBounds(actuals(actualIdx))
 
         val sym =
-	  symowner.newAbstractType(
-	    oldSym.pos, oldSym.name+".type")
+	  symowner.newAbstractType(oldSym.pos, oldSym.name+".type")
 
 	sym.setInfo(bound)
         sym.setFlag(oldSym.flags)
