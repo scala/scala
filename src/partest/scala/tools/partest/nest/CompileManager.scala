@@ -20,7 +20,6 @@ class ExtConsoleReporter(override val settings: Settings, reader: BufferedReader
 }
 
 abstract class SimpleCompiler {
-  def compile(file: File, kind: String): Boolean
   def compile(out: Option[File], files: List[File], kind: String, log: File): Boolean
 }
 
@@ -93,50 +92,21 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     val toCompile = files.map(_.getPath)
     try {
       NestUI.verbose("compiling "+toCompile)
-      (new global.Run) compile toCompile
+      try {
+        (new global.Run) compile toCompile
+      } catch {
+        case FatalError(msg) =>
+          testRep.error(null, "fatal error: " + msg)
+      }
       testRep.printSummary
       testRep.writer.flush
       testRep.writer.close
     } catch {
-      case FatalError(msg) =>
-        logWriter.write("FatalError: "+msg)
-        return false
       case e: Exception =>
         e.printStackTrace()
         return false
     } finally {
       logWriter.close()
-    }
-    !testRep.hasErrors
-  }
-
-  def compile(file: File, kind: String): Boolean = {
-    val testSettings = newSettings
-    val testRep = newReporter(testSettings)
-    val args = List.fromArray(fileManager.SCALAC_OPTS.split("\\s"))
-    val command = new CompilerCommand(args, testSettings, x => {}, false)
-    val global = newGlobal(command.settings, testRep)
-
-    val test: TestFile = kind match {
-      case "pos"      => PosTestFile(file, fileManager, true)
-      case "neg"      => NegTestFile(file, fileManager, true)
-      case "run"      => RunTestFile(file, fileManager, true)
-      case "jvm"      => JvmTestFile(file, fileManager, true)
-      case "jvm5"     => Jvm5TestFile(file, fileManager, true)
-      case "shootout" => ShootoutTestFile(file, fileManager, true)
-    }
-    test.defineSettings(testSettings)
-
-    val toCompile = List(file.getPath)
-    try {
-      (new global.Run) compile toCompile
-      testRep.printSummary
-      testRep.writer.flush
-      testRep.writer.close
-    } catch {
-      case e: Exception =>
-        e.printStackTrace()
-        return false
     }
     !testRep.hasErrors
   }
@@ -161,17 +131,6 @@ class ReflectiveCompiler(val fileManager: ConsoleFileManager) extends SimpleComp
     sepCompilerClass.getMethod("compile", Array(fileClass, stringClass): _*)
   val sepCompileMethod2 =
     sepCompilerClass.getMethod("compile", Array(fileClass, stringClass, fileClass): _*)
-
-  /* This method throws java.lang.reflect.InvocationTargetException
-   * if the compiler crashes.
-   * This exception is handled in the shouldCompile and shouldFailCompile
-   * methods of class CompileManager.
-   */
-  def compile(file: File, kind: String): Boolean = {
-    val fileArgs: Array[AnyRef] = Array(file, kind)
-    val res = sepCompileMethod.invoke(sepCompiler, fileArgs: _*).asInstanceOf[java.lang.Boolean]
-    res.booleanValue()
-  }
 
   /* This method throws java.lang.reflect.InvocationTargetException
    * if the compiler crashes.
