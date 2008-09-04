@@ -254,4 +254,15 @@ class CompileManager(val fileManager: FileManager) {
     withTimeout(files) {
       !compiler.compile(None, files, kind, log)
     }
+
+  /* This method returns true iff compilation fails
+   * _and_ the compiler does _not_ crash or loop.
+   *
+   * If the compiler crashes, this method returns false.
+   */
+  def shouldFailCompile(out: File, files: List[File], kind: String, log: File): Boolean =
+    withTimeout(files) {
+      !compiler.compile(Some(out), files, kind, log)
+    }
+
 }
