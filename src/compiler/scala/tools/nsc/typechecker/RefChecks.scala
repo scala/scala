@@ -774,6 +774,8 @@ abstract class RefChecks extends InfoTransform {
           false
       }
 
+      def isCaseApply(sym : Symbol) = sym.isSourceMethod && sym.hasFlag(CASE) && sym.name == nme.apply
+
       val savedLocalTyper = localTyper
       val savedCurrentApplication = currentApplication
       val sym = tree.symbol
@@ -810,7 +812,7 @@ abstract class RefChecks extends InfoTransform {
           }
         case TypeApply(fn, args) =>
           checkBounds(NoPrefix, NoSymbol, fn.tpe.typeParams, args map (_.tpe))
-          if (sym.isSourceMethod && sym.hasFlag(CASE)) result = toConstructor(tree.pos, tree.tpe)
+          if (isCaseApply(sym)) result = toConstructor(tree.pos, tree.tpe)
 
         case Apply(
           Select(qual, nme.filter),
@@ -842,7 +844,7 @@ abstract class RefChecks extends InfoTransform {
               "(such annotations are only allowed in arguments to *-parameters)")
 
         case Ident(name) =>
-          if (sym.isSourceMethod && sym.hasFlag(CASE))
+          if (isCaseApply(sym))
             result = toConstructor(tree.pos, tree.tpe)
           else if (name != nme.WILDCARD && name != nme.WILDCARD_STAR.toTypeName) {
             assert(sym != NoSymbol, tree)//debug
@@ -860,7 +862,7 @@ abstract class RefChecks extends InfoTransform {
             }
             if (!hidden) escapedPrivateLocals += sym
           }
-          if (sym.isSourceMethod && sym.hasFlag(CASE))
+          if (isCaseApply(sym))
             result = toConstructor(tree.pos, tree.tpe)
           else qual match {
             case Super(qualifier, mix) =>
