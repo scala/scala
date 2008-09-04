@@ -18,6 +18,7 @@ import java.math.{BigDecimal => BigDec}
  */
 object BigDecimal {
 
+  @serializable
   object RoundingMode extends Enumeration {
     type RoundingMode = Value
     val ROUND_UP, ROUND_DOWN, ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP,

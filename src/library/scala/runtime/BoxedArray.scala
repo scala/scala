@@ -42,11 +42,12 @@ abstract class BoxedArray extends Array.Array0[Any] {
 
   override def isDefinedAt(x: Int): Boolean = 0 <= x && x < length
 
-  override def elements = new Iterator[Any] {
+  @serializable protected class AnyIterator extends Iterator[Any] {
     var index = 0
     def hasNext: Boolean = index < length
     def next(): Any = { val i = index; index = i + 1; apply(i) }
   }
+  override def elements = new AnyIterator
 
   /** The underlying array value
    */
