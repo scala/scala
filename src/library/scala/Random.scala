@@ -14,7 +14,7 @@ package scala
 /**
  *  @author Stephane Micheloud
  *
- *  Use class <code>scala.util.Random</code> instead.
+ *  @deprecated Use class <code>scala.util.Random</code> instead.
  */
 @deprecated
 class Random(val self: java.util.Random) {
