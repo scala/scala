@@ -126,6 +126,8 @@ abstract class GenJVM extends SubComponent {
           currentRun.symData -= sym.linkedSym
           //System.out.println("Generated ScalaSig Attr for " + sym)//debug
         case _ =>
+          val markerAttr = fjbgContext.JOtherAttribute(jclass, jclass, nme.ScalaATTR.toString, new Array[Byte](0), 0)
+          jclass.addAttribute(markerAttr)
           log("Could not find pickle information for " + sym)
       }
       if (!(jclass.getName().endsWith("$") && sym.isModuleClass))

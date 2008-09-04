@@ -36,6 +36,7 @@ abstract class ClassfileParser {
   protected var staticDefs: Scope = _       // the scope of all static definitions
   protected var pool: ConstantPool = _      // the classfile's constant pool
   protected var isScala: Boolean = _        // does class file describe a scala class?
+  protected var isScalaRaw: Boolean = _     // this class file is a scala class with no pickled info
   protected var hasMeta: Boolean = _        // does class file contain jaco meta attribute?s
   protected var busy: Boolean = false       // lock to detect recursive reads
   private var   externalName: Name = _      // JVM name of the current class
@@ -354,7 +355,7 @@ abstract class ClassfileParser {
     var nameIdx = in.nextChar
     externalName = pool.getClassName(nameIdx)
     val c = pool.getClassSymbol(nameIdx)
-    if (c != clazz && c.nameString.indexOf("$") < 0) {
+    if (c != clazz && externalName.toString.indexOf("$") < 0) {
       if ((clazz eq NoSymbol) && (c ne NoSymbol)) { // XXX: needed for build compiler, so can't protect with inIDE
         clazz = c
       } else if (inIDE) {
@@ -479,7 +480,7 @@ abstract class ClassfileParser {
               assert(restpe.typeSymbol == definitions.UnitClass)
               // if this is a non-static inner class, remove the explicit outer parameter
               val newFormals = innerClasses.get(externalName) match {
-                case Some(entry) if (entry.jflags & JAVA_ACC_STATIC) == 0 =>
+                case Some(entry) if !isScalaRaw && (entry.jflags & JAVA_ACC_STATIC) == 0 =>
                   assert(formals.head.typeSymbol == clazz.owner, formals.head.typeSymbol + ": " + clazz.owner)
                   formals.tail
                 case _ =>
@@ -686,7 +687,7 @@ abstract class ClassfileParser {
       val attrLen = in.nextInt
       attrName match {
         case nme.SignatureATTR =>
-          if (!isScala && global.settings.target.value == "jvm-1.5") {
+          if (!isScala && !isScalaRaw && global.settings.target.value == "jvm-1.5") {
             val sig = pool.getExternalName(in.nextChar)
             val newType = sigToType(sym, sig)
             sym.setInfo(newType)
@@ -713,6 +714,8 @@ abstract class ClassfileParser {
           unpickler.unpickle(in.buf, in.bp, clazz, staticModule, in.file.toString())
           in.skip(attrLen)
           this.isScala = true
+        case nme.ScalaATTR =>
+          isScalaRaw = true
         case nme.JacoMetaATTR =>
           val meta = pool.getName(in.nextChar).toString().trim()
           metaParser.parse(meta, sym, symtype)
@@ -874,6 +877,8 @@ abstract class ClassfileParser {
         case nme.ScalaSignatureATTR =>
           isScala = true
           in.skip(attrLen)
+        case nme.ScalaATTR =>
+          isScalaRaw = true
         case nme.InnerClassesATTR if !isScala =>
           for (i <- 0 until in.nextChar) {
             val innerIndex = in.nextChar

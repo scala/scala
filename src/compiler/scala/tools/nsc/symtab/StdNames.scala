@@ -432,6 +432,7 @@ trait StdNames {
     val RuntimeAnnotationATTR = newTermName("RuntimeVisibleAnnotations")
     val ClassfileAnnotationATTR = newTermName("RuntimeInvisibleAnnotations")
     val RuntimeParamAnnotationATTR = newTermName("RuntimeVisibleParameterAnnotations")
+    val ScalaATTR = newTermName("Scala")
   }
 
   def encode(str: String): Name = newTermName(NameTransformer.encode(str))
