@@ -17,7 +17,7 @@ abstract class TreeCheckers extends Analyzer {
 
   def checkTrees {
     if (settings.verbose.value)
-      Console.println("[consistency check at end of phase " + phase + "]")
+      Console.println("[consistency check at the beginning of phase " + phase + "]")
     for (unit <- currentRun.units) check(unit)
   }
 

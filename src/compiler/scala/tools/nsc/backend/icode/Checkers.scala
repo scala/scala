@@ -71,7 +71,7 @@ abstract class Checkers {
 
     def checkICodes: Unit = {
       if (settings.verbose.value)
-	Console.println("[[consistency check at end of phase " + globalPhase.name + "]]")
+	Console.println("[[consistency check at the beginning of phase " + globalPhase.name + "]]")
       classes.values foreach check
     }
 
