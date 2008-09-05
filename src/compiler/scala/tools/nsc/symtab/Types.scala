@@ -1180,15 +1180,20 @@ trait Types {
       def contributesAbstractMembers(p: Type) =
         p.deferredMembers exists isVisible
 
-      parents dropWhile (! _.typeSymbol.isAbstractType) match {
+      ((parents exists (_.isVolatile)) ||
+       (parents dropWhile (! _.typeSymbol.isAbstractType) match {
         case ps @ (_ :: ps1) =>
           (ps ne parents) ||
           (ps1 exists contributesAbstractMembers) ||
           (decls.elements exists (m => m.isDeferred && isVisible(m)))
         case _ =>
           false
-      }
+       })) &&
+      !(typeSymbol isNonBottomSubClass StableClass) // escape hatch!
     }
+
+    override def isStable =
+      (parents exists (_.isStable)) && !isVolatile
 
     override def kind = "RefinedType"
   }
@@ -1376,13 +1381,15 @@ trait Types {
 
     override def isStable: Boolean = {
       sym == SingletonClass ||
-      sym.isAbstractType && (sym.info.bounds.hi.typeSymbol isSubClass SingletonClass)
+      sym == StableClass ||
+      sym.isAliasType && normalize.isStable ||
+      sym.isAbstractType && bounds.hi.isStable
     }
 
-    override def isVolatile: Boolean = {
-      sym.isAbstractType && transform(sym.info.bounds.hi).isVolatile ||
-      sym.isAliasType && sym.info.normalize.isVolatile
-    }
+    override def isVolatile: Boolean =
+      sym.isAliasType && normalize.isVolatile ||
+      sym.isAbstractType && bounds.hi.isVolatile
+
     override val isTrivial: Boolean =
       pre.isTrivial && !sym.isTypeParameter && args.forall(_.isTrivial)
 
@@ -1421,7 +1428,7 @@ A type's typeSymbol should never be inspected directly.
 */
 
     override def bounds: TypeBounds =
-      if (sym.isAbstractType) transform(thisInfo.bounds).asInstanceOf[TypeBounds]
+      if (sym.isAbstractType) transform(thisInfo.bounds).asInstanceOf[TypeBounds] // ??? seems to be doing asSeenFrom twice
       else super.bounds
 
     override def parents: List[Type] = {

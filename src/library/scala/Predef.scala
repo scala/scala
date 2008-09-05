@@ -114,6 +114,8 @@ object Predef {
 
   // tupling ------------------------------------------------------------
 
+  def uncheckedStable[A](x: A): A with $Stable$ = x.asInstanceOf[A with $Stable$]
+
   type Pair[+A, +B] = Tuple2[A, B]
   object Pair {
     def apply[A, B](x: A, y: B) = Tuple2(x, y)
