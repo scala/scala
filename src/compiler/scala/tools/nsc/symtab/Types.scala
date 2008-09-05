@@ -1166,8 +1166,9 @@ trait Types {
       else super.normalize
 
     /** A refined type P1 with ... with Pn { decls } is volatile if
-     *  one of the parent types Pi is an abstract type, and either decls
-     *  or a following parent Pj, j > i, contributes an abstract member.
+     *  one of the parent types Pi is an abstract type, and
+     *  either i > 1, or decls or a following parent Pj, j > 1, contributes
+     *  an abstract member.
      *  A type contributes an abstract member if it has an abstract member which
      *  is also a member of the whole refined type. A scope `decls' contributes
      *  an abstract member if it has an abstract definition which is also
@@ -1180,8 +1181,9 @@ trait Types {
         p.deferredMembers exists isVisible
 
       parents dropWhile (! _.typeSymbol.isAbstractType) match {
-        case _ :: ps =>
-          (ps exists contributesAbstractMembers) ||
+        case ps @ (_ :: ps1) =>
+          (ps ne parents) ||
+          (ps1 exists contributesAbstractMembers) ||
           (decls.elements exists (m => m.isDeferred && isVisible(m)))
         case _ =>
           false
