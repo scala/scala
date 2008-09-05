@@ -147,10 +147,10 @@ INITIALISATION
     <condition property="os.win">
       <os family="windows"/>
     </condition>
-  <!-- Finding out SVN revision 
+  <!-- Finding out SVN revision -->
     <exec executable="svn" outputproperty="svn.out">
       <arg line=" info ${basedir}"/>
-    </exec> -->
+    </exec>
     <propertyregex
       property="svn.number" input="${svn.out}" select="\1"
       regexp="Revision: ([0-9]+)"
@@ -603,9 +603,10 @@ PACKED QUICK BUILD (PACK)
   	<mkdir dir="${build-pack.dir}/lib"/>
     <jar destfile="${build-pack.dir}/lib/scala-compiler.jar" manifest="${build-pack.dir}/META-INF/MANIFEST.MF">
       <fileset dir="${build-quick.dir}/classes/compiler"/>
-      <zipfileset src="${fjbg.jar}"/>
-      <zipfileset src="${msil.jar}"/>
-      <zipfileset src="${jline.jar}"/>
+      <!-- filemode / dirmode: see trac ticket #1294 -->
+      <zipfileset dirmode="755" filemode="644" src="${fjbg.jar}"/>
+      <zipfileset dirmode="755" filemode="644" src="${msil.jar}"/>
+      <zipfileset dirmode="755" filemode="644" src="${jline.jar}"/>
     </jar>
   </target>
   
