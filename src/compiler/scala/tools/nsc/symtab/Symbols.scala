@@ -1641,7 +1641,6 @@ trait Symbols {
     override def setInfo(info: Type): this.type = {
       infos = TypeHistory(1, NoType, null)
       unlock()
-//    rawflags = rawflags & ~ LOCKED
       validTo = currentPeriod
       this
     }
