@@ -2051,11 +2051,11 @@ A type's typeSymbol should never be inspected directly.
     if (sym1.isAliasType && sym1.info.typeParams.length == args.length) {
       // note: we require that object is initialized,
       // that's why we use info.typeParams instead of typeParams.
-      if (sym1.hasFlag(LOCKED))
+      sym1.lock {
         throw new TypeError("illegal cyclic reference involving " + sym1)
-      sym1.setFlag(LOCKED)
-        transform(sym1.info) // check there are no cycles
-      sym1.resetFlag(LOCKED)
+      }
+      transform(sym1.info) // check there are no cycles
+      sym1.unlock()
 
       rawTypeRef(pre, sym1, args) // don't expand type alias (cycles checked above)
     } else {

@@ -141,6 +141,7 @@ class Settings(error: String => Unit) {
   val logAll        = BooleanSetting    ("-Ylog-all", "Log all operations").hideToIDE
   val noimports     = BooleanSetting    ("-Yno-imports", "Compile without any implicit imports")
   val nopredefs     = BooleanSetting    ("-Yno-predefs", "Compile without any implicit predefined values")
+  val Yrecursion    = IntSetting        ("-Yrecursion", "Recursion depth used when locking symbols", 0, Some(0), None)
   val script        = StringSetting     ("-Xscript", "object", "Compile as a script, wrapping the code into object.main()", "").hideToIDE
 
   val Xshowtrees    = BooleanSetting    ("-Yshow-trees", "Show detailed trees when used in connection with -print:phase").hideToIDE

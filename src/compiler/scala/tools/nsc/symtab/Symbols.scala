@@ -7,6 +7,7 @@
 package scala.tools.nsc.symtab
 
 import scala.collection.mutable.ListBuffer
+import scala.collection.immutable.Map
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{Position, NoPosition, BatchSourceFile}
 import Flags._
@@ -26,6 +27,11 @@ trait Symbols {
 
   val emptySymbolArray = new Array[Symbol](0)
   val emptySymbolSet = Set.empty[Symbol]
+
+
+  /** Used to keep track of the recursion depth on locked symbols */
+  private var recursionTable = Map.empty[Symbol, Int]
+
 /*
   type Position;
   def NoPos : Position;
@@ -180,6 +186,44 @@ trait Symbols {
     }
     final def newErrorSymbol(name: Name): Symbol =
       if (name.isTypeName) newErrorClass(name) else newErrorValue(name)
+
+// Locking and unlocking ------------------------------------------------------
+
+  // True if the symbol is unlocked.
+  // True if the symbol is locked but still below the allowed recursion depth.
+  // False otherwise
+  def lockOK: Boolean = {
+    ((rawflags & LOCKED) == 0) ||
+    ((settings.Yrecursion.value != 0) &&
+     (recursionTable get this match {
+       case Some(n) => (n <= settings.Yrecursion.value)
+       case None => true }))
+  }
+
+  // Lock a symbol, using the handler if the recursion depth becomes too great.
+  def lock(handler: => Unit) = {
+    if ((rawflags & LOCKED) != 0) {
+      if (settings.Yrecursion.value != 0) {
+        recursionTable get this match {
+          case Some(n) =>
+            if (n > settings.Yrecursion.value) {
+	      handler
+	    } else {
+              recursionTable += (this -> (n + 1))
+	    }
+          case None =>
+            recursionTable += (this -> 1)
+        }
+      } else { handler }
+    } else { rawflags |= LOCKED }
+  }
+
+  // Unlock a symbol
+  def unlock() = {
+    rawflags = rawflags & ~LOCKED
+    if (settings.Yrecursion.value != 0)
+      recursionTable -= this
+  }
 
 // Tests ----------------------------------------------------------------------
 
@@ -499,17 +543,16 @@ trait Symbols {
         assert(infos.prev eq null, this.name)
         val tp = infos.info
         //if (settings.debug.value) System.out.println("completing " + this.rawname + tp.getClass());//debug
-        if ((rawflags & LOCKED) != 0) {
+	lock {
           setInfo(ErrorType)
           throw CyclicReference(this, tp)
         }
-        rawflags = rawflags | LOCKED
         val current = phase
         try {
           phase = phaseOf(infos.validFrom)
           tp.complete(this)
           // if (settings.debug.value && runId(validTo) == currentRunId) System.out.println("completed " + this/* + ":" + info*/);//DEBUG
-          rawflags = rawflags & ~LOCKED
+	  unlock()
         } finally {
           phase = current
         }
@@ -531,10 +574,10 @@ trait Symbols {
       assert(info ne null)
       infos = TypeHistory(currentPeriod, info, null)
       if (info.isComplete) {
-        rawflags = rawflags & ~LOCKED
+	  unlock()
         validTo = currentPeriod
       } else {
-        rawflags = rawflags & ~LOCKED
+	  unlock()
         validTo = NoPeriod
       }
       this
@@ -1597,7 +1640,8 @@ trait Symbols {
     privateWithin = this
     override def setInfo(info: Type): this.type = {
       infos = TypeHistory(1, NoType, null)
-      rawflags = rawflags & ~ LOCKED
+      unlock()
+//    rawflags = rawflags & ~ LOCKED
       validTo = currentPeriod
       this
     }

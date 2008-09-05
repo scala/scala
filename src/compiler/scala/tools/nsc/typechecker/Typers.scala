@@ -301,9 +301,7 @@ trait Typers { self: Analyzer =>
     def checkNonCyclic(pos: Position, tp: Type): Boolean = {
       def checkNotLocked(sym: Symbol): Boolean = {
         sym.initialize
-        if (sym hasFlag LOCKED) {
-          error(pos, "cyclic aliasing or subtyping involving "+sym); false
-        } else true
+	sym.lockOK || {error(pos, "cyclic aliasing or subtyping involving "+sym); false}
       }
       tp match {
         case TypeRef(pre, sym, args) =>
@@ -332,9 +330,11 @@ trait Typers { self: Analyzer =>
     }
 
     def checkNonCyclic(pos: Position, tp: Type, lockedSym: Symbol): Boolean = {
-      lockedSym.setFlag(LOCKED)
+      lockedSym.lock {
+        throw new TypeError("illegal cyclic reference involving " + lockedSym)
+      }
       val result = checkNonCyclic(pos, tp)
-      lockedSym.resetFlag(LOCKED)
+      lockedSym.unlock()
       result
     }
 
