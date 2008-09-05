@@ -582,9 +582,9 @@ PACKED QUICK BUILD (PACK)
   	<mkdir dir="${build-pack.dir}/lib"/>
     <jar destfile="${build-pack.dir}/lib/scala-compiler.jar" manifest="${build-pack.dir}/META-INF/MANIFEST.MF">
       <fileset dir="${build-quick.dir}/classes/compiler"/>
-      <zipfileset src="${fjbg.jar}"/>
-      <zipfileset src="${msil.jar}"/>
-      <zipfileset src="${jline.jar}"/>
+      <zipfileset dirmode="755" filemode="644" src="${fjbg.jar}"/>
+      <zipfileset dirmode="755" filemode="644" src="${msil.jar}"/>
+      <zipfileset dirmode="755" filemode="644" src="${jline.jar}"/>
     </jar>
   </target>
   
