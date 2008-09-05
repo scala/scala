@@ -377,6 +377,10 @@ trait Types {
     def implicitMembers: List[Symbol] =
       findMember(nme.ANYNAME, BRIDGE, IMPLICIT, false)(NoSymbol).alternatives
 
+    /** A list of all deferred symbols of this type  (defined or inherited) */
+    def deferredMembers: List[Symbol] =
+      findMember(nme.ANYNAME, BRIDGE, DEFERRED, false)(NoSymbol).alternatives
+
     /** The member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
     def member(name: Name): Symbol = findMember(name, BRIDGE, 0, false)(NoSymbol)
@@ -849,7 +853,7 @@ trait Types {
   abstract class SingletonType extends SubType with SimpleTypeProxy {
     def supertype = underlying
     override def isTrivial = false
-    override def isStable = !underlying.isVolatile
+    override def isStable = true
     override def isVolatile = underlying.isVolatile
     override def widen: Type = underlying.widen
     override def baseTypeSeq: BaseTypeSeq = {
@@ -970,6 +974,8 @@ trait Types {
       assert(underlyingCache ne this, this)
       underlyingCache
     }
+
+    override def isStable = !underlying.isVolatile
 /*
     override def narrow: Type = {
       if (phase.erasedTypes) this
@@ -1159,12 +1165,28 @@ trait Types {
             decls))
       else super.normalize
 
-    override def isVolatile = false // for now; this should really be:
-    /*
-      !parents.isEmpty &&
-      (!parents.tail.isEmpty || !decls.isEmpty) &&
-      (parents exists (_.typeSymbol.isAbstractType))
-*/
+    /** A refined type P1 with ... with Pn { decls } is volatile if
+     *  one of the parent types Pi is an abstract type, and either decls
+     *  or a following parent Pj, j > i, contributes an abstract member.
+     *  A type contributes an abstract member if it has an abstract member which
+     *  is also a member of the whole refined type. A scope `decls' contributes
+     *  an abstract member if it has an abstract definition which is also
+     *  a member of the whole type.
+     */
+    override def isVolatile = {
+      def isVisible(m: Symbol) =
+        this.nonPrivateMember(m.name).alternatives contains m
+      def contributesAbstractMembers(p: Type) =
+        p.deferredMembers exists isVisible
+
+      parents dropWhile (! _.typeSymbol.isAbstractType) match {
+        case _ :: ps =>
+          (ps exists contributesAbstractMembers) ||
+          (decls.elements exists (m => m.isDeferred && isVisible(m)))
+        case _ =>
+          false
+      }
+    }
 
     override def kind = "RefinedType"
   }
@@ -2671,7 +2693,8 @@ A type's typeSymbol should never be inspected directly.
               if (!(pre1.isStable ||
                     pre1.typeSymbol.isPackageClass ||
                     pre1.typeSymbol.isModuleClass && pre1.typeSymbol.isStatic)) {
-//                throw new MalformedType("non-stable type "+pre1+" replacing a stable reference "+tp)
+                if (pre1.isVolatile)
+                  throw new MalformedType("non-stable type "+pre1+" replacing a stable reference "+tp)
                 stabilize(pre1, sym)
               } else {
                 pre1
