@@ -127,9 +127,10 @@ INITIALISATION
       <os family="windows"/>
     </condition>
   <!-- Finding out SVN revision -->
-    <exec executable="svn" outputproperty="svn.out">
+    <exec executable="svn" outputproperty="svn.out"
+      failifexecutionfails="false">
       <arg line=" info ${basedir}"/>
-    </exec> 
+    </exec>
     <propertyregex
       property="svn.number" input="${svn.out}" select="\1"
       regexp="Revision: ([0-9]+)"
