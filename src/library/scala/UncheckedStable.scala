@@ -7,6 +7,6 @@
 \*                                                                      */
 package scala
 
-/** A marker trait for things that are not allowed to be null
+/** A marker class for types that are assumed to be stable
  */
-trait NotNull {}
+abstract final class UncheckedStable {}

@@ -1189,7 +1189,7 @@ trait Types {
         case _ =>
           false
        })) &&
-      !(typeSymbol isNonBottomSubClass StableClass) // escape hatch!
+      !(typeSymbol isNonBottomSubClass UncheckedStableClass) // escape hatch!
     }
 
     override def isStable =
@@ -1381,7 +1381,7 @@ trait Types {
 
     override def isStable: Boolean = {
       sym == SingletonClass ||
-      sym == StableClass ||
+      sym == UncheckedStableClass ||
       sym.isAliasType && normalize.isStable ||
       sym.isAbstractType && bounds.hi.isStable
     }

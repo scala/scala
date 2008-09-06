@@ -81,7 +81,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           if (sym == ArrayClass)
             if (isGeneric(tp)) erasedTypeRef(BoxedArrayClass)
             else typeRef(apply(pre), sym, args map this)
-          else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass || sym == StableClass) erasedTypeRef(ObjectClass)
+          else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass) erasedTypeRef(ObjectClass)
           else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
           else if (sym.isClass)
             typeRef(apply(if (sym.owner.isClass) sym.owner.tpe else pre), sym, List())

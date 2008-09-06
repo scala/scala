@@ -44,7 +44,7 @@ trait Definitions {
     var NullClass: Symbol = _
     var NothingClass: Symbol = _
     var SingletonClass: Symbol = _
-    lazy val StableClass = getClass("scala.$Stable$") // todo internalize, need a new starr first
+    lazy val UncheckedStableClass = getClass("scala.UncheckedStable")
 
     lazy val ClassClass: Symbol = getClass(sn.Class)
     lazy val StringClass: Symbol = getClass(sn.String)
@@ -668,9 +668,6 @@ trait Definitions {
 
       SingletonClass = newClass(ScalaPackageClass, nme.Singleton, any)
         .setFlag(ABSTRACT | TRAIT | FINAL)
-
-//      StableClass = newClass(ScalaPackageClass, nme._Stable_, any)
-//        .setFlag(ABSTRACT | TRAIT | FINAL)
 
       UnitClass =
         newClass(ScalaPackageClass, nme.Unit, List(AnyValClass.typeConstructor))

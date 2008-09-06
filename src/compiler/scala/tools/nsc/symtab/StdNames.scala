@@ -256,7 +256,6 @@ trait StdNames {
     val Seq = newTermName("Seq")
     val Short = newTermName("Short")
     val Singleton = newTermName("Singleton")
-    val _Stable_ = newTermName("$Stable$")
     val Some = newTermName("Some")
     val SourceFile = newTermName("SourceFile")
     val String = newTermName("String")
