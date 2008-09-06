@@ -975,7 +975,6 @@ trait Types {
       underlyingCache
     }
 
-    override def isStable = !underlying.isVolatile
 /*
     override def narrow: Type = {
       if (phase.erasedTypes) this
@@ -1180,20 +1179,16 @@ trait Types {
       def contributesAbstractMembers(p: Type) =
         p.deferredMembers exists isVisible
 
-      ((parents exists (_.isVolatile)) ||
-       (parents dropWhile (! _.typeSymbol.isAbstractType) match {
+      (parents exists (_.isVolatile)) ||
+      (parents dropWhile (! _.typeSymbol.isAbstractType) match {
         case ps @ (_ :: ps1) =>
           (ps ne parents) ||
           (ps1 exists contributesAbstractMembers) ||
           (decls.elements exists (m => m.isDeferred && isVisible(m)))
         case _ =>
           false
-       })) &&
-      !(typeSymbol isNonBottomSubClass UncheckedStableClass) // escape hatch!
+       })
     }
-
-    override def isStable =
-      (parents exists (_.isStable)) && !isVolatile
 
     override def kind = "RefinedType"
   }
@@ -1381,9 +1376,8 @@ trait Types {
 
     override def isStable: Boolean = {
       sym == SingletonClass ||
-      sym == UncheckedStableClass ||
       sym.isAliasType && normalize.isStable ||
-      sym.isAbstractType && bounds.hi.isStable
+      sym.isAbstractType && (bounds.hi.typeSymbol isSubClass SingletonClass)
     }
 
     override def isVolatile: Boolean =
@@ -2622,8 +2616,6 @@ A type's typeSymbol should never be inspected directly.
   }
 
   def singletonBounds(hi: Type) = {
-    if (hi.isVolatile)
-      throw new MalformedType("cannot abstract over singleton with volatile type "+hi)
     mkTypeBounds(NothingClass.tpe, intersectionType(List(hi, SingletonClass.tpe)))
   }
 
@@ -2702,8 +2694,6 @@ A type's typeSymbol should never be inspected directly.
               if (!(pre1.isStable ||
                     pre1.typeSymbol.isPackageClass ||
                     pre1.typeSymbol.isModuleClass && pre1.typeSymbol.isStatic)) {
-                if (pre1.isVolatile)
-                  throw new MalformedType("non-stable type "+pre1+" replacing a stable reference "+tp)
                 stabilize(pre1, sym)
               } else {
                 pre1

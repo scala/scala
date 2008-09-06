@@ -7,7 +7,7 @@
 \*                                                                      */
 package scala
 
-/** A marker thread for types that are assumed to be stable
- *  todo: internalize in Definitions
+/** An annotation for values that are assumed to be stable even though their
+ *  types are volatile.
  */
-trait _$Stable {}
+final class uncheckedStable extends StaticAnnotation {}

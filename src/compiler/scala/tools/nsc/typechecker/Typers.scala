@@ -2240,6 +2240,9 @@ trait Typers { self: Analyzer =>
         if (wc.symbol == NoSymbol) { namer.enterSym(wc); wc.symbol setFlag EXISTENTIAL }
         else context.scope enter wc.symbol
       val whereClauses1 = typedStats(tree.whereClauses, context.owner)
+      for (vd @ ValDef(_, _, _, _) <- tree.whereClauses)
+        if (vd.symbol.tpe.isVolatile)
+          error(vd.pos, "illegal abstraction from value with volatile type "+vd.symbol.tpe)
       val tpt1 = typedType(tree.tpt, mode)
       val (typeParams, tpe) = existentialTransform(tree.whereClauses map (_.symbol), tpt1.tpe)
       //println(tpe + ": " + tpe.getClass )
@@ -3424,7 +3427,7 @@ trait Typers { self: Analyzer =>
     /** Types a higher-kinded type tree -- pt denotes the expected kind*/
     def typedHigherKindedType(tree: Tree, mode: Int, pt: Type): Tree =
       if (pt.typeParams.isEmpty) typedType(tree, mode) // kind is known and it's *
-      else typed(tree, HKmode, pt)//!!!
+      else typed(tree, HKmode, pt)
 
     def typedHigherKindedType(tree: Tree, mode: Int): Tree =
       typed(tree, HKmode, WildcardType)
