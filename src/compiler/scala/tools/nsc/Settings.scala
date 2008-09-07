@@ -141,18 +141,18 @@ class Settings(error: String => Unit) {
   val logAll        = BooleanSetting    ("-Ylog-all", "Log all operations").hideToIDE
   val noimports     = BooleanSetting    ("-Yno-imports", "Compile without any implicit imports")
   val nopredefs     = BooleanSetting    ("-Yno-predefs", "Compile without any implicit predefined values")
-  val Yrecursion    = IntSetting        ("-Yrecursion", "Recursion depth used when locking symbols", 0, Some(0), None)
+  val Yrecursion    = IntSetting        ("-Yrecursion", "Recursion depth used when locking symbols", 0, Some(0), None).hideToIDE
   val script        = StringSetting     ("-Xscript", "object", "Compile as a script, wrapping the code into object.main()", "").hideToIDE
 
   val Xshowtrees    = BooleanSetting    ("-Yshow-trees", "Show detailed trees when used in connection with -print:phase").hideToIDE
   val skip          = PhasesSetting     ("-Yskip", "Skip")
-  val Xsqueeze      = ChoiceSetting     ("-Ysqueeze", "if on, creates compact code in matching", List("on","on","off"), "on")
+  val Xsqueeze      = ChoiceSetting     ("-Ysqueeze", "if on, creates compact code in matching", List("on","on","off"), "on").hideToIDE
   val statistics    = BooleanSetting    ("-Ystatistics", "Print compiler statistics").hideToIDE
   val stop          = PhasesSetting     ("-Ystop", "Stop after phase")
   val Xwarndeadcode = BooleanSetting    ("-Ywarn-dead-code", "Emit warnings for dead code")
 
   val Xcasetags     = ChoiceSetting("-Ycasetags", "test integer tags for case classes", List("on","off"),
-                                     /*default*/"off")
+                                     /*default*/"off").hideToIDE
   val XnoVarargsConversion = BooleanSetting("-Xno-varargs-conversion", "disable varags conversion")
   val selfInAnnots = BooleanSetting    ("-Yself-in-annots", "Include a \"self\" identifier inside of annotations")
 
