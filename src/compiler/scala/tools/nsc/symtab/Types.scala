@@ -3959,7 +3959,6 @@ A type's typeSymbol should never be inspected directly.
       case ts @ MethodType(pts, _) :: rest =>
         MethodType(pts, lub0(matchingRestypes(ts, pts)))
       case ts @ TypeBounds(_, _) :: rest =>
-        assert(false)
         mkTypeBounds(glb(ts map (_.bounds.lo), depth), lub(ts map (_.bounds.hi), depth))
       case ts0 =>
         val (ts, tparams) = stripExistentialsAndTypeVars(ts0)
