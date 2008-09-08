@@ -434,17 +434,38 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     true
   }
 
-  /** @return true if this sequence start with that sequences
-   *  @see String.startsWith
+  /**
+   * Checks whether the argument sequence is contained at the
+   * specified index within the receiver object.
+   *
+   * If the both the receiver object, <code>this</code> and
+   * the argument, <code>that</code> are infinite sequences
+   * this method may not terminate.
+   *
+   * @return true if <code>that</code> is contained in
+   * <code>this</code>, at the specified index, otherwise false
+   *
+   * @see String.startsWith
    */
-  def startsWith[B](that: Seq[B]): Boolean = {
-    val i = elements
+  def startsWith[B](that: Seq[B], offset: Int): Boolean = {
+    val i = elements.drop(offset)
     val j = that.elements
     var result = true
     while (j.hasNext && i.hasNext && result)
       result = i.next == j.next
     result && !j.hasNext
   }
+
+  /**
+   * Check whether the receiver object starts with the argument sequence.
+   *
+   * @return true if <code>that</code> is a prefix of <code>this</code>,
+   * otherwise false
+   *
+   * @see Seq.startsWith
+   */
+  def startsWith[B](that: Seq[B]): Boolean = startsWith(that, 0)
+
 
   /** @return true if this sequence end with that sequence
    *  @see String.endsWith
@@ -459,25 +480,36 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     result && !j.hasNext
   }
 
-  /** @return -1 if <code>that</code> not contained in this, otherwise the
-   *  index where <code>that</code> is contained
-   *  @see String.indexOf
+  /**
+   * Searches for the argument sequence in the receiver object, returning
+   * the smallest index where a match occurs.
+   *
+   * If the receiver object, <code>this</code>, is an infinite sequence
+   * this method will not terminate if there is no match.  Similarly, if
+   * the both the receiver object and the argument, <code>that</code> are
+   * infinite sequences this method will not terminate.
+   *
+   * Because both the receiver object and the argument can both potentially
+   * be an infinite sequences, we do not attempt to use an optimized
+   * searching algorithm.  Therefore, the running time will be proportional
+   * to the length of the receiver object and the argument.  Subclasses and
+   * traits can potentially provide an optimized implementation.
+   *
+   * @return -1 if <code>that</code> not contained in <code>this</code>,
+   * otherwise the smallest index where <code>that</code> is found.
+   *
+   * @see String.indexOf
    */
   def indexOf[B >: A](that: Seq[B]): Int = {
-    val i = this.elements
-    var idx = 0
-    var j = that.elements
-    var jdx = -1
-    while (i.hasNext && j.hasNext) {
-      idx = idx + 1
-      if (i.next != j.next) {
-        j = that.elements
-        jdx = -1
-      } else if (jdx == -1) {
-        jdx = idx - 1
-      }
+    val e = this.elements
+    // Offset into e
+    var i = 0
+    if (that.isEmpty) return 0
+    while (e.hasNext) {
+      if (this.startsWith(that, i)) return i
+      e.next; i += 1
     }
-    jdx
+    -1
   }
 
   /** Is <code>that</code> a slice in this?
