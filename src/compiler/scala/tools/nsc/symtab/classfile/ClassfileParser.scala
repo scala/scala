@@ -950,7 +950,7 @@ abstract class ClassfileParser {
           val clazz = innerSymbol(entry.externalName, entry.originalName, (entry.jflags & JAVA_ACC_STATIC) != 0)
           clazz
         case None =>
-          definitions.getClass(externalName)
+          classNameToSymbol(externalName)
       }
     }
   }
