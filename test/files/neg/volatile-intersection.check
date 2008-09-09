@@ -1,0 +1,4 @@
+volatile-intersection.scala:8: error: illegal type selection from volatile type C.this.D with C.this.U
+    val y: (D with U)#T = new B { }
+                      ^
+one error found
