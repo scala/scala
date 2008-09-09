@@ -53,6 +53,7 @@ trait FileManager {
 
   var CLASSPATH: String
   var LATEST_LIB: String
+  var LIB_DIR: String = ""
 
   var showDiff = false
   var showLog = false

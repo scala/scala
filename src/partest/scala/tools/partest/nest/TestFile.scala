@@ -71,6 +71,13 @@ case class RunTestFile(override val file: File, override val fileManager: FileMa
   }
 }
 
+case class ScalaCheckTestFile(override val file: File, override val fileManager: FileManager, createOutDir: Boolean) extends TestFile("scalacheck", file, fileManager, createOutDir) {
+  override def defineSettings(settings: Settings) {
+    baseSettings(settings)
+    settings.classpath.value = fileManager.CLASSPATH
+  }
+}
+
 case class JvmTestFile(override val file: File, override val fileManager: FileManager, createOutDir: Boolean) extends TestFile("jvm", file, fileManager, createOutDir) {
   override def defineSettings(settings: Settings) {
     baseSettings(settings)

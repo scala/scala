@@ -86,6 +86,8 @@ else
   }
   val TESTROOT = testRootFile.getAbsolutePath
 
+  LIB_DIR = (new File(testRootFile.getParentFile, "lib")).getCanonicalFile.getAbsolutePath
+
   CLASSPATH = CLASSPATH + File.pathSeparator + {
     val libs = new File(TESTROOT, "files/lib")
     // add all jars in libs

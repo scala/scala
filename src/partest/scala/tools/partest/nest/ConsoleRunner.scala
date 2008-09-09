@@ -25,6 +25,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
   private var resCheck = false
   private var shootoutCheck = false
   private var scriptCheck = false
+  private var scalacheckCheck = false
 
   private var runAll = false
 
@@ -43,6 +44,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
       case "--res"      => true
       case "--shootout" => true
       case "--script"   => true
+      case "--scalacheck"   => true
       case _            => false
     }
 
@@ -95,6 +97,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
           case "--res"          => resCheck = true
           case "--shootout"     => shootoutCheck = true
           case "--script"       => scriptCheck = true
+          case "--scalacheck"   => scalacheckCheck = true
 
           case "--verbose"      => NestUI._verbose = true
           case "--show-diff"    => fileManager.showDiff = true
@@ -216,6 +219,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
           else short match {
             case "sho" => "shootout"
             case "scr" => "script"
+            case "sca" => "scalacheck"
           }
         }
       }
@@ -240,6 +244,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
       resCheck = true
       shootoutCheck = true
       scriptCheck = true
+      scalacheckCheck = true
     }
     val results = List(runTestsFiles,
                        runTests("pos", posCheck, "Testing compiler (on files whose compilation should succeed)"),
@@ -249,7 +254,8 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
                        runTests("jvm5", jvm5Check, "Testing JVM backend"),
                        runTests("res", resCheck, "Testing resident compiler"),
                        runTests("shootout", shootoutCheck, "Testing shootout tests"),
-                       runTests("script", scriptCheck, "Testing script tests"))
+                       runTests("script", scriptCheck, "Testing script tests"),
+                       runTests("scalacheck", scalacheckCheck, "Testing ScalaCheck tests"))
     results reduceLeft { (p: (Int, Int), q: (Int, Int)) =>
       (p._1+q._1, p._2+q._2) }
   }

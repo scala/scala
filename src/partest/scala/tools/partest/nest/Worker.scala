@@ -410,6 +410,43 @@ class Worker(val fileManager: FileManager) extends Actor {
     }
 
     kind match {
+      case "scalacheck" => for (file <- files)
+        runInContext(file, kind, (logFile: File, outDir: File) => {
+          if (file.isDirectory) {
+            compileFilesIn(file, kind, logFile, outDir)
+          } else if (!compileMgr.shouldCompile(List(file), kind, logFile)) {
+            NestUI.verbose("compilation of "+file+" failed\n")
+            succeeded = false
+          }
+          if (succeeded) {
+            NestUI.verbose("compilation of "+file+" succeeded\n")
+
+            val libs = new File(fileManager.LIB_DIR)
+            val urls = List((new File(libs, "ScalaCheck.jar")).toURL,
+                            (new File(libs, "ScalaCheckHelper.jar")).toURL)
+            val outURL = outDir.getCanonicalFile.toURL
+            val urlArr = (outURL :: urls).toArray
+            NestUI.verbose("loading classes from:")
+            urlArr foreach {url => NestUI.verbose(url.toString)}
+            val loader = new java.net.URLClassLoader(urlArr, fileManager.getClass.getClassLoader)
+
+            (try {
+              Some(Class.forName("ScalaCheckHelper", true, loader))
+            } catch {
+              case se: SecurityException => None
+              case cnfe: ClassNotFoundException => None
+            }) match {
+              case None =>
+                NestUI.verbose("cannot find ScalaCheckHelper class")
+                succeeded = false
+              case Some(clazz) =>
+                val method = clazz.getMethod("passed", Array(classOf[File], classOf[Array[URL]]): _*)
+                val res = method.invoke(null, Array(logFile, urlArr): _*).asInstanceOf[String]
+                NestUI.verbose("ScalaCheck result: "+res)
+                succeeded = res.equals("ok")
+            }
+          }
+        })
       case "pos" => for (file <- files)
         runInContext(file, kind, (logFile: File, outDir: File) => {
           if (file.isDirectory) {

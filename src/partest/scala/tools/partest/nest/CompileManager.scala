@@ -78,6 +78,8 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
       case "jvm"      => JvmTestFile(files(0), fileManager, out.isEmpty)
       case "jvm5"     => Jvm5TestFile(files(0), fileManager, out.isEmpty)
       case "shootout" => ShootoutTestFile(files(0), fileManager, out.isEmpty)
+      case "scalacheck" =>
+        ScalaCheckTestFile(files(0), fileManager, out.isEmpty)
     }
     test.defineSettings(testSettings)
     out match {
