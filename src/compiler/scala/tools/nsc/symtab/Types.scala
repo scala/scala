@@ -3583,9 +3583,9 @@ A type's typeSymbol should never be inspected directly.
       case (_, WildcardType) => true
 
       case (NoType, _)   => false
-      case (NoPrefix, _) => tp2.typeSymbol.isPackageClass
+      case (NoPrefix, _) => tp2 == NoPrefix || tp2.typeSymbol.isPackageClass
       case (_, NoType)   => false
-      case (_, NoPrefix) => tp1.typeSymbol.isPackageClass
+      case (_, NoPrefix) => tp1 == NoPrefix || tp1.typeSymbol.isPackageClass
 
       case (ThisType(_), ThisType(_))           => tp1 =:= tp2
       case (ThisType(_), SingleType(_, _))      => tp1 =:= tp2
@@ -3967,7 +3967,6 @@ A type's typeSymbol should never be inspected directly.
     def elimSub0(ts: List[Type]): List[Type] = ts match {
       case List() => List()
       case t :: ts1 =>
-        assert(depth != AnyDepth)
         val rest = elimSub0(ts1 filter (t1 => !isSubType(t1, t, decr(depth))))
         if (rest exists (t1 => isSubType(t, t1, decr(depth)))) rest else t :: rest
     }
@@ -4012,7 +4011,6 @@ A type's typeSymbol should never be inspected directly.
       case ts @ MethodType(pts, _) :: rest =>
         MethodType(pts, lub0(matchingRestypes(ts, pts)))
       case ts @ TypeBounds(_, _) :: rest =>
-        assert(false)
         mkTypeBounds(glb(ts map (_.bounds.lo), depth), lub(ts map (_.bounds.hi), depth))
       case ts0 =>
         val (ts, tparams) = stripExistentialsAndTypeVars(ts0)
@@ -4090,6 +4088,15 @@ A type's typeSymbol should never be inspected directly.
 
   val GlbFailure = new Throwable
 
+  /** A global counter for glb calls in the `specializes' query connected to the `addMembers'
+   *  call in `glb'. There's a possible inifinite recursion when `specializes' calls
+   *  memberType, which calls baseTypeSeq, which calls mergePrefixAndArgs, which calls glb.
+   *  The counter breaks this recursion after two calls.
+   *  If the recursion is broken, no member is added to the glb.
+   */
+  private var globalGlbDepth = 0
+  private final val globalGlbLimit = 2
+
   def glb(ts: List[Type]): Type = glb(ts, lubDepth(ts))
 
   /** The greatest lower bound wrt &lt;:&lt; of a list of types */
@@ -4113,6 +4120,12 @@ A type's typeSymbol should never be inspected directly.
           def refinedToParents(t: Type): List[Type] = t match {
             case RefinedType(ps, _) => ps flatMap refinedToParents
             case _ => List(t)
+          }
+          def refinedToDecls(t: Type): List[Scope] = t match {
+            case RefinedType(ps, decls) =>
+              val dss = ps flatMap refinedToDecls
+              if (decls.isEmpty) dss else decls :: dss
+            case _ => List()
           }
           val ts1 = ts flatMap refinedToParents
           val glbBase = intersectionType(ts1, glbOwner)
@@ -4154,13 +4167,20 @@ A type's typeSymbol should never be inspected directly.
                     result
                   })
               }
-              for (t <- ts; val sym <- t.nonPrivateMembers)
-                if (!sym.isClass && !sym.isConstructor && !(glbThisType specializes sym))
-                  try {
-                    addMember(glbThisType, glbRefined, glbsym(sym))
-                  } catch {
-                    case ex: NoCommonType =>
-                  }
+              if (globalGlbDepth < globalGlbLimit)
+                try {
+                  globalGlbDepth += 1
+                  val dss = ts flatMap refinedToDecls
+                  for (ds <- dss; val sym <- ds.elements)
+                    if (globalGlbDepth < globalGlbLimit && !(glbThisType specializes sym))
+                      try {
+                        addMember(glbThisType, glbRefined, glbsym(sym))
+                      } catch {
+                        case ex: NoCommonType =>
+                      }
+                } finally {
+                  globalGlbDepth -= 1
+                }
               if (glbRefined.decls.isEmpty) glbBase else glbRefined
             }
           existentialAbstraction(tparams, glbType)
