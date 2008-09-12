@@ -76,7 +76,6 @@ abstract class LazyVals extends Transform {
             }
           copy.Template(tree, parents, self, stats)
 
-
         case _ => super.transform(tree)
       }
     }

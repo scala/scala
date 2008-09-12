@@ -890,7 +890,7 @@ abstract class GenJVM extends SubComponent {
                 val sym = const.symbolValue
                 jcode.emitGETSTATIC(javaName(sym.owner),
                                     javaName(sym),
-                                    javaType(const.tpe))
+                                    javaType(sym.tpe.underlying))
               case _          => abort("Unknown constant value: " + const);
             }
 
