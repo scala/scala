@@ -1991,7 +1991,12 @@ A type's typeSymbol should never be inspected directly.
 
   /** the canonical creator for a constant type */
   def mkConstantType(value: Constant): ConstantType = {
-    class UniqueConstantType extends ConstantType(value) with UniqueType
+    class UniqueConstantType extends ConstantType(value) with UniqueType {
+      /** Save the type of 'value'. For Java enums, it depends on finding the linked class,
+       *  which might not be found after 'flatten'. */
+      private lazy val _tpe: Type = value.tpe
+      override def underlying: Type = _tpe
+    }
     unique(new UniqueConstantType)
   }
 

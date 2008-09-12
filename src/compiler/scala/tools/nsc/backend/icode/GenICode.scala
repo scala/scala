@@ -929,7 +929,7 @@ abstract class GenICode extends SubComponent  {
               generatedType = SCALA_ALLREF
             case _ =>
               ctx.bb.emit(CONSTANT(value), tree.pos);
-              generatedType = toTypeKind(value.tpe)
+              generatedType = toTypeKind(tree.tpe.underlying)
           }
           ctx
 

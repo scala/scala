@@ -354,7 +354,7 @@ abstract class ClassfileParser {
     var sflags = transFlags(jflags, true)
     var nameIdx = in.nextChar
     externalName = pool.getClassName(nameIdx)
-    val c = pool.getClassSymbol(nameIdx)
+    val c = if (externalName.toString.indexOf('$') < 0) pool.getClassSymbol(nameIdx) else clazz
     if (c != clazz && externalName.toString.indexOf("$") < 0) {
       if ((clazz eq NoSymbol) && (c ne NoSymbol)) { // XXX: needed for build compiler, so can't protect with inIDE
         clazz = c
@@ -832,7 +832,12 @@ abstract class ClassfileParser {
    *  and implicitly current class' superclasses.
    */
   private def enterOwnInnerClasses {
-    def enterClassAndModule(name: Name, completer: global.loaders.SymbolLoader, jflags: Int): Symbol = {
+    def className(name: Name): Name = {
+      name.subName(name.lastPos('.') + 1, name.length)
+    }
+
+    def enterClassAndModule(entry: InnerClassEntry, completer: global.loaders.SymbolLoader, jflags: Int) {
+      val name = entry.originalName
       var sflags = transFlags(jflags, true)
 
       val innerClass = getOwner(jflags).newClass(NoPosition, name.toTypeName).setInfo(completer).setFlag(sflags)
@@ -841,6 +846,18 @@ abstract class ClassfileParser {
 
       getScope(jflags).enter(innerClass)
       getScope(jflags).enter(innerModule)
+
+      val decls = innerClass.enclosingPackage.info.decls
+      val e = decls.lookupEntry(className(entry.externalName))
+      if (e ne null) {
+        //println("removing " + e)
+        decls.unlink(e)
+      }
+      val e1 = decls.lookupEntry(className(entry.externalName).toTypeName)
+      if (e1 ne null) {
+        //println("removing " + e1)
+        decls.unlink(e1)
+      }
     }
 
     for (entry <- innerClasses.values) {
@@ -849,7 +866,7 @@ abstract class ClassfileParser {
         val file = global.classPath.lookupPath(
           entry.externalName.replace('.', java.io.File.separatorChar).toString, false)
         assert(file ne null, entry.externalName)
-        enterClassAndModule(entry.originalName, new global.loaders.ClassfileLoader(file, null, null), entry.jflags)
+        enterClassAndModule(entry, new global.loaders.ClassfileLoader(file, null, null), entry.jflags)
       }
     }
   }
