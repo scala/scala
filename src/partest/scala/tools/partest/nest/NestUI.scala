@@ -86,9 +86,12 @@ object NestUI {
     println("    --failed     run only those tests that failed during the last run")
     println("    --verbose    show progress information")
     println("    --buildpath  set (relative) path to build jars")
+    println("                 ex.: --buildpath build/pack")
     println("    --classpath  set (absolute) path to build classes")
+    println("    --srcpath    set (relative) path to test source files")
+    println("                 ex.: --srcpath pending")
     println
-    println("version 0.9.1")
+    println("version 0.9.2")
     println("maintained by Philipp Haller (EPFL)")
     exit(1)
   }

@@ -86,10 +86,31 @@ else
   }
   val TESTROOT = testRootFile.getAbsolutePath
 
+  var srcDirName: String = ""
+
+  val srcDir: File = {
+    val srcDirProp = System.getProperty("partest.srcdir")
+    val src =
+      if (srcDirProp != null) {
+        srcDirName = srcDirProp
+        new File(testRootFile, srcDirName)
+      } else {
+        srcDirName = "files"
+        new File(testRootFile, srcDirName)
+      }
+    if (src.isDirectory)
+      src.getCanonicalFile
+    else {
+      val path = TESTROOT + File.separator + "files"
+      NestUI.failure("Source directory \"" + path + "\" not found")
+      exit(1)
+    }
+  }
+
   LIB_DIR = (new File(testRootFile.getParentFile, "lib")).getCanonicalFile.getAbsolutePath
 
   CLASSPATH = CLASSPATH + File.pathSeparator + {
-    val libs = new File(TESTROOT, "files/lib")
+    val libs = new File(srcDir, "lib")
     // add all jars in libs
     (libs.listFiles(new FilenameFilter {
       def accept(dir: File, name: String) = name endsWith ".jar"
@@ -248,17 +269,6 @@ else
   var testClassesFile: File = _
   // initialize above fields
   findLatest()
-
-  val srcDir: File = {
-    val src = new File(TESTROOT, "files")
-    if (src.isDirectory)
-      src.getCanonicalFile
-    else {
-      val path = TESTROOT + File.separator + "files"
-      NestUI.failure("Source directory \"" + path + "\" not found")
-      exit(1)
-    }
-  }
 
   var testFiles: List[File] = List()
 

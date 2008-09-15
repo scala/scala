@@ -64,7 +64,11 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
       // find out which build to test
       val (buildPath, args1) = searchAndRemovePath("--buildpath", args)
       val (classPath, args2) = searchAndRemovePath("--classpath", args1)
-      args = args2
+      val (srcPath, args3) = searchAndRemovePath("--srcpath", args2)
+      args = args3
+
+      if (!srcPath.isEmpty)
+        System.setProperty("partest.srcdir", srcPath.get)
 
       fileManager =
         if (!buildPath.isEmpty)
@@ -204,14 +208,15 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
 
       def kindOf(f: File): String = {
         val firstName = absName(f)
-        val filesPos = firstName.indexOf("files")
+        val len = fileManager.srcDirName.length
+        val filesPos = firstName.indexOf(fileManager.srcDirName)
         if (filesPos == -1) {
           NestUI.failure("invalid test file: "+firstName+"\n")
           Predef.exit(1)
         } else {
-          val k = firstName.substring(filesPos+6, filesPos+6+3)
+          val k = firstName.substring(filesPos+len+1, filesPos+len+1+3)
           val short = if (k == "jvm") {
-            if (firstName.substring(filesPos+6, filesPos+6+4) == "jvm5") "jvm5"
+            if (firstName.substring(filesPos+len+1, filesPos+len+1+4) == "jvm5") "jvm5"
             else k
           } else k
           val shortKinds = List("pos", "neg", "run", "jvm", "jvm5", "res")

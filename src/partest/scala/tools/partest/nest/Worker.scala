@@ -346,17 +346,15 @@ class Worker(val fileManager: FileManager) extends Actor {
 
     def compileFilesIn(dir: File, kind: String, logFile: File, outDir: File) {
       val testFiles = dir.listFiles.toList
-      // 1. compile all '.java' files using javac
       val javaFiles = testFiles.filter(_.getName.endsWith(".java"))
-      if (!javaFiles.isEmpty)
-        javac(outDir, javaFiles, logFile)
-      // 2. compile all '.scala' files together
       val scalaFiles = testFiles.filter(_.getName.endsWith(".scala"))
-      if (!scalaFiles.isEmpty && !compileMgr.shouldCompile(outDir, scalaFiles, kind, logFile)) {
+      if (!(scalaFiles.isEmpty && javaFiles.isEmpty) &&
+          !compileMgr.shouldCompile(outDir, javaFiles ::: scalaFiles, kind, logFile)) {
         NestUI.verbose("compilation of "+scalaFiles+" failed\n")
         succeeded = false
       } else
-        // 3. compile each '.scala' file separately
+        if (!javaFiles.isEmpty)
+          javac(outDir, javaFiles, logFile)
         scalaFiles foreach { scalaFile =>
           if (!compileMgr.shouldCompile(outDir, List(scalaFile), kind, logFile)) {
             NestUI.verbose("compilation of "+scalaFile+" failed\n")
@@ -367,13 +365,10 @@ class Worker(val fileManager: FileManager) extends Actor {
 
     def failCompileFilesIn(dir: File, kind: String, logFile: File, outDir: File) {
       val testFiles = dir.listFiles.toList
-      // 1. compile all '.java' files using javac
       val javaFiles = testFiles.filter(_.getName.endsWith(".java"))
-      if (!javaFiles.isEmpty)
-        javac(outDir, javaFiles, logFile)
-      // 2. compile all '.scala' files together
       val scalaFiles = testFiles.filter(_.getName.endsWith(".scala"))
-      if (!scalaFiles.isEmpty && !compileMgr.shouldFailCompile(outDir, scalaFiles, kind, logFile)) {
+      if (!(scalaFiles.isEmpty && javaFiles.isEmpty) &&
+          !compileMgr.shouldFailCompile(outDir, javaFiles ::: scalaFiles, kind, logFile)) {
         NestUI.verbose("compilation of "+scalaFiles+" failed\n")
         succeeded = false
       }
