@@ -336,9 +336,9 @@ abstract class ClassfileParser {
 
     innerClasses.get(name) match {
       case Some(entry) =>
-//        println("found inner class " + name)
+        //println("found inner class " + name)
         val res = innerClasses.classSymbol(entry.externalName)
-//        println("\trouted to: " + res)
+        //println("\trouted to: " + res)
         res
       case None =>
         //if (name.toString.contains("$")) println("No inner class: " + name + innerClasses + " while parsing " + in.file.name)
@@ -847,16 +847,20 @@ abstract class ClassfileParser {
       getScope(jflags).enter(innerClass)
       getScope(jflags).enter(innerModule)
 
-      val decls = innerClass.enclosingPackage.info.decls
-      val e = decls.lookupEntry(className(entry.externalName))
-      if (e ne null) {
-        //println("removing " + e)
-        decls.unlink(e)
-      }
-      val e1 = decls.lookupEntry(className(entry.externalName).toTypeName)
-      if (e1 ne null) {
-        //println("removing " + e1)
-        decls.unlink(e1)
+      // the 1.4 library misses entries in the InnerClasses attributes (see HashMap$Entry in LinkedHashMap)
+      // TODO: remove this test when we drop support for 1.4
+      if (settings.target.value != "jvm-1.4") {
+        val decls = innerClass.enclosingPackage.info.decls
+        val e = decls.lookupEntry(className(entry.externalName))
+        if (e ne null) {
+          //println("removing " + e)
+          decls.unlink(e)
+        }
+        val e1 = decls.lookupEntry(className(entry.externalName).toTypeName)
+        if (e1 ne null) {
+          //println("removing " + e1)
+          decls.unlink(e1)
+        }
       }
     }
 
@@ -897,7 +901,8 @@ abstract class ClassfileParser {
         case nme.ScalaATTR =>
           isScalaRaw = true
         case nme.InnerClassesATTR if !isScala =>
-          for (i <- 0 until in.nextChar) {
+          val entries = in.nextChar.toInt
+          for (i <- 0 until entries) {
             val innerIndex = in.nextChar
             val outerIndex = in.nextChar
             val nameIndex = in.nextChar
