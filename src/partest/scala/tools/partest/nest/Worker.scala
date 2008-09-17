@@ -215,6 +215,7 @@ class Worker(val fileManager: FileManager) extends Actor {
     val cmd =
       JAVACMD+
       " "+argString+
+      " "+JAVA_OPTS+
       " -classpath "+outDir+File.pathSeparator+CLASSPATH+
       " -Djava.library.path="+logFile.getParentFile.getAbsolutePath+
       " -Dscalatest.output="+outDir.getAbsolutePath+

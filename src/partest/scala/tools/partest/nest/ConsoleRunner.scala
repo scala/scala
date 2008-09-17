@@ -147,7 +147,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
       val vmName = System.getProperty("java.vm.name", "")+" (build "+
                    System.getProperty("java.vm.version", "")+", "+
                    System.getProperty("java.vm.info", "")+")"
-      val vmOpts = System.getProperty("scalatest.java_options", "?")
+      val vmOpts = fileManager.JAVA_OPTS
       NestUI.outline("Java binaries in:          "+vmBin+"\n")
       NestUI.outline("Java runtime is:           "+vmName+"\n")
       NestUI.outline("Java options are:          "+vmOpts+"\n")
