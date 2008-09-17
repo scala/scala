@@ -126,7 +126,7 @@ abstract class GenJVM extends SubComponent {
           currentRun.symData -= sym.linkedSym
           //System.out.println("Generated ScalaSig Attr for " + sym)//debug
         case _ =>
-          val markerAttr = fjbgContext.JOtherAttribute(jclass, jclass, nme.ScalaATTR.toString, new Array[Byte](0), 0)
+          val markerAttr = getMarkerAttr(jclass)
           jclass.addAttribute(markerAttr)
           log("Could not find pickle information for " + sym)
       }
@@ -140,6 +140,9 @@ abstract class GenJVM extends SubComponent {
       outstream.close()
       informProgress("wrote " + outfile)
     }
+
+    private def getMarkerAttr(jclass: JClass): JOtherAttribute =
+      fjbgContext.JOtherAttribute(jclass, jclass, nme.ScalaATTR.toString, new Array[Byte](0), 0)
 
     var serialVUID: Option[Long] = None
     var remoteClass: Boolean = false
@@ -184,6 +187,9 @@ abstract class GenJVM extends SubComponent {
                                   javaName(parents(0).typeSymbol),
                                   ifaces,
                                   c.cunit.source.toString)
+      if (jclass.getName.endsWith("$"))
+        jclass.addAttribute(getMarkerAttr(jclass))
+
       if (isStaticModule(c.symbol) || serialVUID != None) {
         if (isStaticModule(c.symbol))
             addModuleInstanceField;
