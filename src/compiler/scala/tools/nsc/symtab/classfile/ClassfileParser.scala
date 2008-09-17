@@ -303,7 +303,7 @@ abstract class ClassfileParser {
           case CONSTANT_DOUBLE =>
             Constant(in.getDouble(start + 1))
           case CONSTANT_CLASS =>
-            getClassSymbol(index)
+            getClassOrArrayType(index).typeSymbol
           case _ =>
             errorBadTag(start)
         }
@@ -377,7 +377,8 @@ abstract class ClassfileParser {
     val classInfo = ClassInfoType(parents, instanceDefs, clazz)
     val staticInfo = ClassInfoType(List(), staticDefs, statics)
 
-    enterOwnInnerClasses
+    if (!isScala && !isScalaRaw)
+      enterOwnInnerClasses
     val curbp = in.bp
     skipMembers() // fields
     skipMembers() // methods
