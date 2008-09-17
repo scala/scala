@@ -323,6 +323,7 @@ work on a JVM 1.4.
 ============================================================================ -->
   
   <target name="fourfour-test.start">
+    <echo level="info" message="Java version is ${java.vm.version}"/>
     <path id="four-pack.classpath">
       <pathelement location="${build-four-pack.dir}/lib/scala-library.jar"/>
       <pathelement location="${build-four-pack.dir}/lib/scala-compiler.jar"/>
