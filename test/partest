@@ -74,4 +74,4 @@ fi
 [ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx256M -Xms16M"
 [ -n "$SCALAC_OPTS" ] || SCALAC_OPTS="-deprecation"
 
-${JAVACMD:=java} $JAVA_OPTS -cp "$EXT_CLASSPATH" -Dscala.home="${SCALA_HOME}" -Dscalatest.javacmd="${JAVACMD}" -Dscalatest.java_options="${JAVA_OPTS}" -Dscalatest.scalac_options="${SCALAC_OPTS}" scala.tools.partest.nest.NestRunner  "$@"
+${JAVACMD:=java} $JAVA_OPTS -cp "$EXT_CLASSPATH" -Dscala.home="${SCALA_HOME}" -Dscalatest.javacmd="${JAVACMD}" -Dscalatest.java_opts="${JAVA_OPTS}" -Dscalatest.scalac_opts="${SCALAC_OPTS}" scala.tools.partest.nest.NestRunner  "$@"
