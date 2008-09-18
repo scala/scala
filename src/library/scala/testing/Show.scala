@@ -30,22 +30,31 @@ trait Show {
    */
   def test[A](f: Symbol, args: A*): String = {
     val args1 = args map (_.asInstanceOf[AnyRef])
-    getClass.getMethods.toList filter (_.getName == f.name) match {
-      case List(meth) =>
-        f.name+"("+(args mkString ",")+")  gives  "+
-        {
-          try {
-            meth.invoke(this, args1: _*)
-          } catch {
-            case ex: IllegalAccessException => ex
-            case ex: IllegalArgumentException => ex
-            case ex: java.lang.reflect.InvocationTargetException => ex
-          }
+    def testMethod(meth: java.lang.reflect.Method): String =
+      f.name+"("+(args mkString ",")+")  gives  "+
+      {
+        try {
+          meth.invoke(this, args1: _*)
+        } catch {
+          case ex: IllegalAccessException => ex
+          case ex: IllegalArgumentException => ex
+          case ex: java.lang.reflect.InvocationTargetException => ex
         }
+      }
+    getClass.getMethods.toList filter (_.getName == f.name) match {
       case List() =>
         f.name+" is not defined"
-      case _ =>
-        "cannot disambiguate between multiple implementations of "+f.name
+      case List(m) =>
+        testMethod(m)
+      case ms => // multiple methods, disambiguate by number of arguments
+        ms filter (_.getParameterTypes.length == args.length) match {
+          case List() =>
+            testMethod(ms.head) // go ahead anyway, to get an exception
+          case List(m) =>
+            testMethod(m)
+          case ms =>
+            "cannot disambiguate between multiple implementations of "+f.name
+        }
     }
   }
 }
