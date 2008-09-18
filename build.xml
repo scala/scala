@@ -164,7 +164,7 @@ INITIALISATION
       value="${version.major}.${version.minor}.${version.patch}.r${svn.number}-b${time.short}"/>
   <!-- And print-out what we are building -->
     <echo level="info" message="Build number is '${version.number}'"/>
-    <echo level="info" message="Built ${time.human} from revision ${svn.number} with Java ${java.vm.version}"/>
+    <echo level="info" message="Built ${time.human} from revision ${svn.number} with ${java.vm.name} ${java.version}"/>
   <!-- Define tasks that can be run with Starr -->
     <path id="starr.classpath">
       <pathelement location="${lib.starr.jar}"/>
