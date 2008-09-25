@@ -22,6 +22,7 @@ import ch.epfl.lamp.fjbg._
  *
  *  @author  Iulian Dragos
  *  @version 1.0
+ *
  */
 abstract class GenJVM extends SubComponent {
   import global._
@@ -726,8 +727,7 @@ abstract class GenJVM extends SubComponent {
         mirrorCode.emitRETURN(mirrorMethod.getReturnType())
 
         addRemoteException(mirrorMethod, m)
-        //todo: how add signature for mirror method?
-        //addGenericSignature(mirrorMethod, /*which type?*/)
+        addGenericSignature(mirrorMethod, m)
         val (throws, others) = splitAnnotations(m.attributes, ThrowsAttr)
         addExceptionsAttribute(mirrorMethod, throws)
         addAnnotations(mirrorMethod, others)
