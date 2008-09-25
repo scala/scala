@@ -53,7 +53,6 @@ MAIN DISTRIBUTION PACKAGING
         <exclude name="debian/**"/>
         <exclude name="dists/**"/>
         <exclude name="logs/**"/>
-        <exclude name="META-INF/**"/>
         <exclude name="sandbox/**"/>
       </tarfileset>
     </tar>
