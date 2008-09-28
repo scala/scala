@@ -256,7 +256,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
 
 // ------ Transforming anonymous functions and by-name-arguments ----------------
 
-    /** Undo eta expansion for parameterless and nullaray methods */
+    /** Undo eta expansion for parameterless and nullary methods */
     def deEta(fun: Function): Tree = fun match {
       case Function(List(), Apply(expr, List())) if treeInfo.isPureExpr(expr) =>
         if (expr.hasSymbol && expr.symbol.hasFlag(LAZY))
@@ -316,6 +316,16 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         def applyMethodDef(body: Tree) =
           DefDef(Modifiers(FINAL), nme.apply, List(), List(fun.vparams), TypeTree(restpe), body)
             .setSymbol(applyMethod)
+/*
+        def toStringMethodDefs = fun match {
+          case etaExpansion(_, fn, _) if (fn.hasSymbol) =>
+            List(
+              DefDef(Modifiers(FINAL | OVERRIDE), nme.toString_, List(), List(List()), TypeTree(StringClass.tpe),
+                     Literal(fn.symbol.name)))
+          case _ =>
+            List()
+        }
+*/
         def mkUnchecked(tree: Tree) = tree match {
           case Match(selector, cases) =>
             atPos(tree.pos) {
@@ -326,7 +336,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           case _ =>
             tree
         }
-        val members =
+        val members = {
           if (fun.tpe.typeSymbol == PartialFunctionClass) {
             val isDefinedAtMethod = anonClass.newMethod(fun.pos, nme.isDefinedAt)
               .setFlag(FINAL).setInfo(MethodType(formals, BooleanClass.tpe))
@@ -350,6 +360,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           } else {
             List(applyMethodDef(fun.body))
           }
+        } /* ::: toStringMethodDefs */
         localTyper.typed {
           atPos(fun.pos) {
             Block(

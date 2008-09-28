@@ -3414,6 +3414,17 @@ A type's typeSymbol should never be inspected directly.
     case _ => tp.normalize
   }
 
+  /*
+  todo: change to:
+  def normalizePlus(tp: Type) = tp match {
+    case TypeRef(pre, sym, List()) =>
+      if (!sym.isInitialized) sym.rawInfo.load(sym)
+      if (sym.hasFlag(JAVA) && !sym.typeParams.isEmpty) rawToExistential(tp)
+      else tp.normalize
+    case _ => tp.normalize
+  }
+  */
+
   private def isSameType0(tp1: Type, tp2: Type): Boolean =
     ((tp1, tp2) match {
       case (ErrorType, _) => true

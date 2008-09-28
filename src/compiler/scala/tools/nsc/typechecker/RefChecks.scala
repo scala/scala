@@ -372,6 +372,8 @@ abstract class RefChecks extends InfoTransform {
             unit.error(clazz.pos, "illegal inheritance;\n " + clazz +
                        " inherits different type instances of " + baseClass +
                        ":\n" + tp1 + " and " + tp2);
+            explainTypes(tp1, tp2)
+            explainTypes(tp2, tp1)
         }
       }
     }

@@ -301,6 +301,8 @@ abstract class TreeGen {
   def mkForwarder(target: Tree, vparamss: List[List[Symbol]]) =
     (target /: vparamss)((fn, vparams) => Apply(fn, vparams map paramToArg))
 
+  /** Used in situations where you need to access value of an expression several times
+   */
   def evalOnce(expr: Tree, owner: Symbol, unit: CompilationUnit)(within: (() => Tree) => Tree): Tree =
     if (treeInfo.isPureExpr(expr)) {
       within(() => expr);

@@ -764,8 +764,7 @@ abstract class ClassfileParser {
           val t = pool.getType(index)
           val n = pool.getName(in.nextChar)
           val s = t.typeSymbol.linkedModuleOfClass.info.decls.lookup(n)
-          //assert (s != NoSymbol, "while processing " + in.file + ": " + t + "." + n + ": " + t.decls)
-          assert(s != NoSymbol, t) // avoid string concatenation!
+          assert(s != NoSymbol, t)
           Constant(s)
         case ARRAY_TAG  =>
           val arr = new ArrayBuffer[Constant]()

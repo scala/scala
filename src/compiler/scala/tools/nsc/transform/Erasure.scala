@@ -177,7 +177,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           def classSig: String =
             "L"+atPhase(currentRun.icodePhase)(sym.fullNameString).replace('.', '/')
           def classSigSuffix: String =
-            "."+atPhase(currentRun.icodePhase)(sym.name)
+            "."+sym.name
           if (sym == ArrayClass)
             ARRAY_TAG.toString+(args map jsig).mkString
           else if (sym.isTypeParameterOrSkolem)
@@ -228,7 +228,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           jsig(erasure(tp))
       }
     }
-    if (needsJavaSig(sym.info)) Some(jsig2(true, List(), sym.info))
+    if (needsJavaSig(sym.info)) {
+      //println("Java sig of "+sym+" is "+jsig2(true, List(), sym.info))//DEBUG
+      Some(jsig2(true, List(), sym.info))
+    }
     else None
   }
 
