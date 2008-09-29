@@ -72,7 +72,10 @@ object Futures {
    * </p>
    */
   def awaitAll(timeout: Long, fts: Future[Any]*): List[Option[Any]] = {
-    TimerThread.requestTimeout(Actor.self, null, timeout)
+    val thisActor = Actor.self
+    Actor.timer.schedule(new java.util.TimerTask {
+      def run() { thisActor ! TIMEOUT }
+    }, timeout)
 
     var resultsMap: collection.mutable.Map[Int, Option[Any]] = new collection.mutable.HashMap[Int, Option[Any]]
 

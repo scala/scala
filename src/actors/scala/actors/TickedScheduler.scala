@@ -102,7 +102,7 @@ class TickedScheduler extends Thread with WorkerThreadScheduler {
                   worker.interrupt()
                 }
                 // terminate timer thread
-                TimerThread.shutdown()
+                Actor.timer.cancel()
                 throw new QuitException
               }
             }
@@ -170,6 +170,6 @@ class TickedScheduler extends Thread with WorkerThreadScheduler {
       worker.interrupt()
     }
     // terminate timer thread
-    TimerThread.shutdown()
+    Actor.timer.cancel()
   }
 }
