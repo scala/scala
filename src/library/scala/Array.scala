@@ -41,42 +41,41 @@ object Array {
         dest match {
           case xs: runtime.BoxedArray =>
             xs.copyFrom(src, srcPos, destPos, length)
-          case _ => {
-            def fillDest[T](da:Array[T],sa:Int=>T) = {
-	      var d=destPos
-	      for (s <- srcPos to srcPos+length-1) {
-		da(d)=sa(s); d=d+1
-	      }
-	    }
-	    if (dest.isInstanceOf[Array[Any]]) {
-              def fill(sa:Int=>Any)=fillDest(dest.asInstanceOf[Array[Any]],sa)
-	      src match {
-		case sa:Array[Int] => fill(s=>Int.box(sa(s)))
-		case sa:Array[Long] => fill(s=>Long.box(sa(s)))
-		case sa:Array[Char] => fill(s=>Char.box(sa(s)))
-		case sa:Array[Boolean] => fill(s=>Boolean.box(sa(s)))
-		case sa:Array[Byte] => fill(s=>Byte.box(sa(s)))
-		case sa:Array[Short] => fill(s=>Short.box(sa(s)))
-		case sa:Array[Double] => fill(s=>Double.box(sa(s)))
-		case sa:Array[Float] => fill(s=>Float.box(sa(s)))
-		case _ => arraycopy(src, srcPos, dest, destPos, length)
-	      }
-	    } else if (dest.isInstanceOf[Array[AnyVal]]) {
-              def fill(sa:Int=>AnyVal)=fillDest(dest.asInstanceOf[Array[AnyVal]],sa)
-	      src match {
-		case sa:Array[Int] => fill(sa(_))
-		case sa:Array[Long] => fill(sa(_))
-		case sa:Array[Char] => fill(sa(_))
-		case sa:Array[Boolean] => fill(sa(_))
-		case sa:Array[Byte] => fill(sa(_))
-		case sa:Array[Short] => fill(sa(_))
-		case sa:Array[Double] => fill(sa(_))
-		case sa:Array[Float] => fill(sa(_))
-		case _ => arraycopy(src, srcPos, dest, destPos, length)
-	      }
-	    } else
-	      arraycopy(src, srcPos, dest, destPos, length)
-	  }
+          case _ =>
+            def fillDest[T](da: Array[T], sa: Int=>T) {
+              var d = destPos
+              for (s <- srcPos to srcPos+length-1) {
+                da(d) = sa(s); d += 1
+              }
+            }
+            if (dest.isInstanceOf[Array[Any]]) {
+              def fill(sa: Int=>Any) = fillDest(dest.asInstanceOf[Array[Any]], sa)
+              src match {
+                case sa:Array[Int]     => fill(s=>Int.box(sa(s)))
+                case sa:Array[Long]    => fill(s=>Long.box(sa(s)))
+                case sa:Array[Char]    => fill(s=>Char.box(sa(s)))
+                case sa:Array[Boolean] => fill(s=>Boolean.box(sa(s)))
+                case sa:Array[Byte]    => fill(s=>Byte.box(sa(s)))
+                case sa:Array[Short]   => fill(s=>Short.box(sa(s)))
+                case sa:Array[Double]  => fill(s=>Double.box(sa(s)))
+                case sa:Array[Float]   => fill(s=>Float.box(sa(s)))
+                case _ => arraycopy(src, srcPos, dest, destPos, length)
+              }
+            } else if (dest.isInstanceOf[Array[AnyVal]]) {
+              def fill(sa: Int=>AnyVal) = fillDest(dest.asInstanceOf[Array[AnyVal]], sa)
+              src match {
+                case sa:Array[Int]     => fill(sa(_))
+                case sa:Array[Long]    => fill(sa(_))
+                case sa:Array[Char]    => fill(sa(_))
+                case sa:Array[Boolean] => fill(sa(_))
+                case sa:Array[Byte]    => fill(sa(_))
+                case sa:Array[Short]   => fill(sa(_))
+                case sa:Array[Double]  => fill(sa(_))
+                case sa:Array[Float]   => fill(sa(_))
+                case _ => arraycopy(src, srcPos, dest, destPos, length)
+              }
+            } else
+              arraycopy(src, srcPos, dest, destPos, length)
         }
     }
   }
