@@ -425,7 +425,7 @@ trait TypeKinds { self: ICodes =>
       }
 
     case ConstantType(value) =>
-      toTypeKind(value.tpe)
+      toTypeKind(t.underlying)
 
     case TypeRef(_, sym, args) =>
       primitiveTypeMap get sym match {
