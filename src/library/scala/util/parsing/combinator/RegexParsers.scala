@@ -67,6 +67,9 @@ trait RegexParsers extends Parsers {
     }
   }
 
+  override def phrase[T](p: Parser[T]): Parser[T] =
+    super.phrase(p <~ opt("""\z""".r))
+
   /** Parse some prefix of reader `in' with parser `p' */
   def parse[T](p: Parser[T], in: Reader[Char]): ParseResult[T] =
     p(in)
