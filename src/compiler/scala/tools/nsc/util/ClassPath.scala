@@ -42,7 +42,7 @@ object ClassPath {
   /** Split path using platform-dependent path separator */
   def splitPath(path: String): List[String] = {
     val strtok = new StringTokenizer(path, File.pathSeparator)
-    val buf = new ListBuffer[String]
+    val buf = new collection.mutable.ListBuffer[String]
     while (strtok.hasMoreTokens()) {
       buf + strtok.nextToken()
     }

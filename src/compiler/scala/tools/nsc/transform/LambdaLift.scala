@@ -8,8 +8,7 @@ package scala.tools.nsc.transform
 
 import symtab._
 import Flags._
-import util.TreeSet
-import scala.collection.mutable.{HashMap, ListBuffer}
+import scala.collection.mutable.{HashSet, HashMap, ListBuffer}
 import scala.tools.nsc.util.{Position, NoPosition}
 
 abstract class LambdaLift extends InfoTransform {
@@ -62,9 +61,9 @@ abstract class LambdaLift extends InfoTransform {
     /** Buffers for lifted out classes and methods */
     private val liftedDefs = new HashMap[Symbol, ListBuffer[Tree]]
 
-    private type SymSet = TreeSet[Symbol]
+    private type SymSet = HashSet[Symbol]
 
-    private def newSymSet = new TreeSet[Symbol]((x, y) => x.isLess(y))
+    private def newSymSet = new HashSet[Symbol]
 
     private def symSet(f: HashMap[Symbol, SymSet], sym: Symbol): SymSet = f.get(sym) match {
       case Some(ss) => ss

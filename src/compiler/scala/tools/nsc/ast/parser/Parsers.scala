@@ -8,7 +8,8 @@
 
 package scala.tools.nsc.ast.parser
 
-import scala.tools.nsc.util.{ListBuffer, Position, OffsetPosition, NoPosition, BatchSourceFile}
+import scala.collection.mutable.ListBuffer
+import scala.tools.nsc.util.{Position, OffsetPosition, NoPosition, BatchSourceFile}
 import symtab.Flags
 import Tokens._
 

@@ -10,8 +10,8 @@ import symtab._
 import Flags._
 import symtab.Flags._
 import scala.collection.immutable.ListMap
-import scala.collection.mutable.{HashMap, ListBuffer}
-import scala.tools.nsc.util.{FreshNameCreator, TreeSet}
+import scala.collection.mutable.{HashSet, HashMap, ListBuffer}
+import scala.tools.nsc.util.{FreshNameCreator}
 
 /** Translate expressions of the form reflect.Code.lift(exp)
  *  to the lifted "reflect trees" representation of exp.
