@@ -157,7 +157,7 @@ trait Contexts { self: Analyzer =>
         assert(inIDE)
         def eq[T](x : T, y : T) = x == y
         val a0 = {
-          if (tree ne null) tree.setType(null)
+          if ((tree ne null) && (tree ne EmptyTree)) tree.setType(null)
           if ((tree eq null) || (that.tree eq null)) tree == that.tree else
             tree equalsStructure that.tree;
         }
