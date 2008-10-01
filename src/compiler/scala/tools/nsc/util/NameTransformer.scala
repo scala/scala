@@ -111,8 +111,8 @@ object NameTransformer {
              * not valid Java/JVM identifiers */
           } else if ((len - i) >= 6 && // Check that there are enough characters left
 	             ch1 == 'u' &&
-                     (Character.isDigit(ch2)) ||
-		     ('A' <= ch2 && ch2 <= 'F')) {
+                     ((Character.isDigit(ch2)) ||
+		     ('A' <= ch2 && ch2 <= 'F'))) {
             /* Skip past "$u", next four should be hexadecimal */
             val hex = name.substring(i+2, i+6)
             try {
