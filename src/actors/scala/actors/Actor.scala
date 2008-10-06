@@ -13,6 +13,8 @@ package scala.actors
 import scala.collection.mutable.{HashSet, Queue}
 import scala.compat.Platform
 
+import java.util.{Timer, TimerTask}
+
 /**
  * The <code>Actor</code> object provides functions for the definition of
  * actors, as well as actor operations, such as
@@ -25,6 +27,8 @@ import scala.compat.Platform
 object Actor {
 
   private[actors] val tl = new ThreadLocal[Actor]
+
+  private[actors] var timer = new Timer
 
   /**
    * Returns the currently executing actor. Should be used instead
@@ -396,9 +400,9 @@ trait Actor extends AbstractActor {
 
       waitingFor = waitingForNone
 
-      if (timeoutPending) {
-        timeoutPending = false
-        TimerThread.trashRequest(this)
+      if (!onTimeout.isEmpty) {
+        onTimeout.get.cancel()
+        onTimeout = None
       }
 
       if (isSuspended)
@@ -546,8 +550,13 @@ trait Actor extends AbstractActor {
         }
         else {
           waitingFor = f.isDefinedAt
-          TimerThread.requestTimeout(this, f, msec)
-          timeoutPending = true
+
+          val thisActor = this
+          onTimeout = Some(new TimerTask {
+            def run() { thisActor ! TIMEOUT }
+          })
+          Actor.timer.schedule(onTimeout.get, msec)
+
           continuation = f
           isDetached = true
         }
@@ -697,7 +706,7 @@ trait Actor extends AbstractActor {
   def receiver: Actor = this
 
   private var continuation: PartialFunction[Any, Unit] = null
-  private var timeoutPending = false
+  private var onTimeout: Option[TimerTask] = None
   // accessed in Reaction
   private[actors] var isDetached = false
   private var isWaiting = false

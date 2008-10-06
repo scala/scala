@@ -122,7 +122,7 @@ class FJTaskScheduler2 extends Thread with IScheduler {
                   // and FJTaskRunner threads have daemon status.
 
                   // terminate timer thread
-                  TimerThread.shutdown()
+                  Actor.timer.cancel()
                   throw new QuitException
                 }
               }
@@ -161,7 +161,7 @@ class FJTaskScheduler2 extends Thread with IScheduler {
   def shutdown(): Unit = synchronized {
     terminating = true
     // terminate timer thread
-    TimerThread.shutdown()
+    Actor.timer.cancel()
   }
 
   def snapshot(): LinkedQueue = {
