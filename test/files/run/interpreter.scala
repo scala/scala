@@ -22,6 +22,12 @@ trait PointlessTrait
 val (x,y) = (2,3)
 println("hello")
 
+// ambiguous toString problem from #547
+val atom = new scala.xml.Atom()
+// overriding toString problem from #1404
+class S(override val toString : String)
+val fish = new S("fish")
+
 // implicit conversions
 case class Foo(n: Int)
 case class Bar(n: Int)
