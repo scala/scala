@@ -627,7 +627,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
                    ".asInstanceOf[AnyRef] != null) " +
                    " { val tmp = " +
 	           req.fullPath(vname) +
-		   ".toString(); " +
+                   // Cast to Any to avoid ambiguity in choice of toString
+		   ".asInstanceOf[Any].toString(); " +
                    " (if(tmp.contains('\\n')) \"\\n\" else \"\") + tmp + \"\\n\"} else \"null\\n\") ")
       }
     }
