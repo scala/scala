@@ -70,7 +70,7 @@ class BatchSourceFile(val file : AbstractFile, _content : Array[Char]) extends S
        compiler.syntaxAnalyzer.isIdentifierPart(content(i)))) i = i + 1
 
     assert(i > offset)
-    if (i <= content.length)
+    if (i <= content.length && offset >= 0)
       Some(new String(content, offset, i - offset))
     else None
   case _ => super.identifier(pos, compiler)
