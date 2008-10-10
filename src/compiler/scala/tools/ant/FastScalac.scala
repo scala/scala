@@ -49,11 +49,7 @@ class FastScalac extends Scalac {
    *  @param input The value for <code>server</code>.
    */
   def setServer(input: String): Unit = {
-    def isHostNameValid(host: String): Boolean =
-      try { val _ = java.net.InetAddress.getByName(host); true }
-      catch { case _ => false }
-    if (isHostNameValid(input)) serverAddr = Some(input)
-    else error("Unknown server '" + input + "'")
+    serverAddr = Some(input)
   }
 
   /** Sets the <code>shutdown</code> attribute. Used by Ant.
