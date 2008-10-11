@@ -6,8 +6,9 @@
 
 package scala.tools.nsc.transform
 
-import scala.collection.mutable.{HashSet, ListBuffer}
+import scala.collection.mutable.ListBuffer
 import symtab.Flags._
+import util.TreeSet
 
 /** This phase converts classes with parameters into Java-like classes with
  *  fields, which are assigned to from constructors.
@@ -209,7 +210,7 @@ abstract class Constructors extends Transform {
       // ----------- avoid making fields for symbols that are not accessed --------------
 
       // A sorted set of symbols that are known to be accessed outside the primary constructor.
-      val accessedSyms = new HashSet[Symbol]
+      val accessedSyms = new TreeSet[Symbol]((x, y) => x isLess y)
 
       // a list of outer accessor symbols and their bodies
       var outerAccessors: List[(Symbol, Tree)] = List()

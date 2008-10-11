@@ -6,8 +6,9 @@
 
 package scala.tools.nsc.transform
 
-import collection.mutable.{HashSet, HashMap}
+import collection.mutable.HashMap
 import symtab.Flags._
+import util.HashSet
 
 /** This abstract class ...
  *
@@ -98,8 +99,7 @@ abstract class OverridingPairs {
       intersectionContainsElementLeq(subParents(index1), subParents(index2), minindex)
     }
 
-    private val visited =
-      new HashSet[ScopeEntry] { override def initialSize = 256 }
+    private val visited = new HashSet[ScopeEntry](256)
     private var curEntry = decls.elems
     private var nextEntry = curEntry
 
