@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 
 <project name="sabbus" default="build">
 
@@ -920,7 +920,8 @@ DOCUMENTATION
       destdir="${build.dir}/manmaker/classes"
       classpathref="pack.classpath"
       srcdir="${src.dir}/manual"
-      includes="**/*.scala"/>
+      includes="**/*.scala"
+      addparams="${scalac.args}"/>
     <path id="manual.classpath">
       <pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
       <pathelement location="${build.dir}/manmaker/classes"/>
@@ -930,13 +931,18 @@ DOCUMENTATION
   <target name="docs.man" depends="docs.manmaker" unless="docs.man.available">
     <mkdir dir="${build-docs.dir}/manual/man/man1"/>
     <mkdir dir="${build-docs.dir}/manual/html"/>
+    <mkdir dir="${build-docs.dir}/manual/genman/man1"/>
     <taskdef name="genman"
              classname="scala.tools.docutil.ManMaker"
              classpathref="manual.classpath"/>
     <genman command="fsc, sbaz, scala, scalac, scaladoc"
             htmlout="${build-docs.dir}/manual/html"
-            manout="${build-docs.dir}/manual/man"/>
-    <fixcrlf srcdir="${build-docs.dir}/manual" eol="unix" includes="**/*.1"/>
+            manout="${build-docs.dir}/manual/genman"/>
+    <!-- On Windows source and target files can't be the same ! -->
+    <fixcrlf
+      srcdir="${build-docs.dir}/manual/genman"
+      destdir="${build-docs.dir}/manual/man"
+      eol="unix" includes="**/*.1"/>
     <copy todir="${build-docs.dir}/manual/html">
       <fileset dir="${src.dir}/manual/scala/tools/docutil/resources">
         <include name="**/*.html"/>
