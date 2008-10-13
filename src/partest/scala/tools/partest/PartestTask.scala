@@ -85,13 +85,25 @@ class PartestTask extends Task {
   private var scalacOpts: Option[String] = None
   private var timeout: Option[String] = None
 
-  private def getPosFiles: Array[File] =
-    if (!posFiles.isEmpty) {
-      val files = posFiles.get
-      (files.getDirectoryScanner(getProject).getIncludedFiles map { fs => new File(files.getDir(getProject), fs) })
+  private def getFilesAndDirs(fileSet: Option[FileSet]): Array[File] =
+    if (!fileSet.isEmpty) {
+      val files = fileSet.get
+      val dir = files.getDir(getProject)
+      val fileTests = (files.getDirectoryScanner(getProject).getIncludedFiles map { fs =>
+        new File(dir, fs) })
+      val dirTests = dir.listFiles(new java.io.FileFilter {
+        def accept(file: File) =
+          file.isDirectory &&
+          (!file.getName().equals(".svn")) &&
+          (!file.getName().endsWith(".obj"))
+      })
+      (dirTests ++ fileTests).toArray
     }
     else
       Array()
+
+  private def getPosFiles: Array[File] =
+    getFilesAndDirs(posFiles)
 
   private def getNegFiles: Array[File] =
     if (!negFiles.isEmpty) {
