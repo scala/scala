@@ -136,11 +136,11 @@ abstract class ICodeReader extends ClassfileParser {
     import ch.epfl.lamp.fjbg.JAccessFlags._
 
     var res = 0L
-    if ((flags & ACC_PRIVATE) == 1) res |= Flags.PRIVATE
-    if ((flags & ACC_PROTECTED) == 1) res |= Flags.PROTECTED
-    if ((flags & ACC_FINAL) == 1) res |= Flags.FINAL
-    if ((flags & ACC_ABSTRACT) == 1) res |= Flags.DEFERRED
-    if ((flags & ACC_SYNTHETIC) == 1) res |= Flags.SYNTHETIC
+    if ((flags & ACC_PRIVATE) != 0) res |= Flags.PRIVATE
+    if ((flags & ACC_PROTECTED) != 0) res |= Flags.PROTECTED
+    if ((flags & ACC_FINAL) != 0) res |= Flags.FINAL
+    if ((flags & ACC_ABSTRACT) != 0) res |= Flags.DEFERRED
+    if ((flags & ACC_SYNTHETIC) != 0) res |= Flags.SYNTHETIC
 
     res
   }
