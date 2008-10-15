@@ -94,7 +94,7 @@ class StandardCompileClient {
     val socket = if (serverAdr == "") compileSocket.getOrCreateSocket(vmArgs, !shutdown)
                  else compileSocket.getSocket(serverAdr)
     var sawerror = false
-    if (socket == 0) {
+    if (socket eq null) {
       if (shutdown) {
         Console.println("[No compilation server running.]")
       } else {
