@@ -174,13 +174,16 @@ class Worker(val fileManager: FileManager) extends Actor {
       " -classpath "+outDir+File.pathSeparator+CLASSPATH+
       " "+files.mkString(" ")
 
-    runCommand(cmd, output)
+    val exitCode = runCommand(cmd, output)
+    if (exitCode != 0) {
+      NestUI.failure("Running \"javac\" failed with exit code: "+exitCode+"\n")
+    }
   }
 
   /** Runs <code>command</code> redirecting standard out and
    *  error out to <code>output</code> file.
    */
-  def runCommand(command: String, output: File) {
+  def runCommand(command: String, output: File): Int = {
     NestUI.verbose("running command:\n"+command)
     val proc = Runtime.getRuntime.exec(command)
     val in = proc.getInputStream
@@ -195,6 +198,11 @@ class Worker(val fileManager: FileManager) extends Actor {
     inApp.run()
     async.join()
     writer.close()
+    try {
+      proc.exitValue()
+    } catch {
+      case e: IllegalThreadStateException => 1
+    }
   }
 
   def execTest(outDir: File, logFile: File, fileBase: String) {
@@ -322,7 +330,9 @@ class Worker(val fileManager: FileManager) extends Actor {
           script(logFile, outDir)
         } catch {
           case e: Exception =>
-            e.printStackTrace
+            val writer = new PrintWriter(new FileWriter(logFile), true)
+            e.printStackTrace(writer)
+            writer.close()
             succeeded = false
         }
 
