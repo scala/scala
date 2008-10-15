@@ -205,9 +205,9 @@ class CompileSocket {
       } else {
         val port = if(create) getPort(vmArgs) else pollPort()
         if(port < 0) return null
-        val hostName = InetAddress.getLocalHost().getHostName()
+        val hostAdr = InetAddress.getLocalHost()
         try {
-          val result = new Socket(hostName, port)
+          val result = new Socket(hostAdr, port)
           info("[Connected to compilation daemon at port " + port + "]")
           result
         } catch {
