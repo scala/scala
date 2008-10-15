@@ -60,24 +60,13 @@ object Main extends AnyRef with EvalLoop {
           return
         }
 
-        if (command.settings.help.value || command.settings.Xhelp.value || command.settings.Yhelp.value) {
-          if (command.settings.help.value) {
-              reporter.info(null, command.usageMsg, true)
-            reporter.info(null, compiler.pluginOptionsHelp, true)
-          }
-          if (command.settings.Xhelp.value)
-            reporter.info(null, command.xusageMsg, true)
-          if (command.settings.Yhelp.value)
-            reporter.info(null, command.yusageMsg, true)
-        } else if (command.settings.showPlugins.value)
-          reporter.info(null, compiler.pluginDescriptions, true)
-        else if (command.settings.showPhases.value)
-          reporter.info(null, compiler.phaseDescriptions, true)
-        else {
+        if (command.shouldStopWithInfo) {
+          reporter.info(null, command.getInfoMessage(compiler), true)
+        } else {
           if (command.settings.resident.value)
             resident(compiler)
           else if (command.files.isEmpty) {
-              reporter.info(null, command.usageMsg, true)
+            reporter.info(null, command.usageMsg, true)
             reporter.info(null, compiler.pluginOptionsHelp, true)
           } else {
             val run = new compiler.Run

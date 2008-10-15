@@ -114,13 +114,10 @@ class StandardCompileServer extends SocketServer {
           override def displayPrompt = ()
         }
 
-        if (command.settings.version.value)
-          reporter.info(null, versionMsg, true)
-        else if (command.settings.help.value || command.settings.Xhelp.value) {
-          if (command.settings.help.value) reporter.info(null, command.usageMsg, true)
-          if (command.settings.Xhelp.value) reporter.info(null, command.xusageMsg, true)
-        }
-        else if (command.files.isEmpty)
+        if (command.shouldStopWithInfo) {
+          reporter.info(null,
+            command.getInfoMessage(newGlobal(command.settings, reporter)), true)
+        } else if (command.files.isEmpty)
           reporter.info(null, command.usageMsg, true)
         else {
           try {
