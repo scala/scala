@@ -47,13 +47,13 @@ abstract class SocketServer {
   }
 
   def run() {
+    val serverSocket = try {
+      new ServerSocket(port)
+    } catch {
+      case e: IOException =>
+        fatal("Could not listen on port: " + port + "; exiting.")
+    }
     while (!shutDown) {
-      val serverSocket = try {
-        new ServerSocket(port)
-      } catch {
-        case e: IOException =>
-          fatal("Could not listen on port: " + port + "; exiting.")
-      }
       val clientSocket = try {
         serverSocket.accept()
       } catch {
@@ -73,8 +73,8 @@ abstract class SocketServer {
       out.close()
       in.close()
       clientSocket.close()
-      serverSocket.close()
     }
+    serverSocket.close()
   }
 
 }
