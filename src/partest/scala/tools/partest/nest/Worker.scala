@@ -201,7 +201,7 @@ class Worker(val fileManager: FileManager) extends Actor {
     try {
       proc.exitValue()
     } catch {
-      case e: IllegalThreadStateException => 1
+      case e: IllegalThreadStateException => 0
     }
   }
 
