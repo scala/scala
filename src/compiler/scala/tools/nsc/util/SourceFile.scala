@@ -61,13 +61,14 @@ class BatchSourceFile(val file : AbstractFile, _content : Array[Char]) extends S
 
   val content = _content // don't sweat it...
   override val length = content.length
+
   override def identifier(pos : Position, compiler : scala.tools.nsc.Global) = pos match {
-  case OffsetPosition(source,offset) if source == this =>
-    import java.lang.Character
-    var i = offset + 1
-    while (i < content.length &&
-      (compiler.syntaxAnalyzer.isOperatorPart(content(i)) ||
-       compiler.syntaxAnalyzer.isIdentifierPart(content(i)))) i = i + 1
+    case OffsetPosition(source,offset) if source == this =>
+      import java.lang.Character
+      var i = offset + 1
+      while (i < content.length &&
+             (compiler.syntaxAnalyzer.isOperatorPart(content(i)) ||
+              compiler.syntaxAnalyzer.isIdentifierPart(content(i)))) i = i + 1
 
     assert(i > offset)
     if (i <= content.length && offset >= 0)
@@ -75,8 +76,6 @@ class BatchSourceFile(val file : AbstractFile, _content : Array[Char]) extends S
     else None
   case _ => super.identifier(pos, compiler)
   }
-
-
 
   def isLineBreak(idx: Int) =
     if (idx >= content.length) false

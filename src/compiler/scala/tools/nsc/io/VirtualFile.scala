@@ -50,7 +50,7 @@ class VirtualFile(val name: String, _path: String) extends AbstractFile {
   /** Returns null. */
   final def file: File = null
 
-  override def size: Option[Int] = Some(content.size)
+  override def sizeOption: Option[Int] = Some(content.size)
 
   def input : InputStream = new ByteArrayInputStream(content);
 

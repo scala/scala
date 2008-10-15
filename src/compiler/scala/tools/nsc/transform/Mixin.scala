@@ -960,6 +960,10 @@ abstract class Mixin extends InfoTransform {
           // assign to fields in some implementation class via an abstract
           // setter in the interface.
           localTyper.typed {
+            // println(lhs.symbol)
+            // println(lhs.symbol.owner.info.decls)
+            // println(needsExpandedSetterName(lhs.symbol))
+            // util.trace("generating tree: ") {
             atPos(tree.pos) {
               Apply(
                 Select(
@@ -969,7 +973,7 @@ abstract class Mixin extends InfoTransform {
                     needsExpandedSetterName(lhs.symbol))) setPos lhs.pos,
                 List(rhs))
             }
-          }
+          } //}
         case _ =>
           tree
       }

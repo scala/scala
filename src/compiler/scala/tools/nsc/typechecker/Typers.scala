@@ -2140,7 +2140,11 @@ trait Typers { self: Analyzer =>
         def apply(tp: Type): Type = tp match {
           case TypeRef(pre, sym, args) =>
             if (sym.isAliasType && containsLocal(tp)) apply(tp.normalize)
-            else mapOver(tp)
+            else {
+              if (pre.isVolatile)
+                context.error(tree.pos, "Inferred type "+tree.tpe+" contains type selection from volatile type "+pre)
+              mapOver(tp)
+            }
           case _ =>
             mapOver(tp)
         }

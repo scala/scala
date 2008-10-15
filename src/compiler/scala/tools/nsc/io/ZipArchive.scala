@@ -206,7 +206,7 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
     def archive = ZipArchive.this.archive
     override def lastModified: Long = entry.getTime()
     override def input = archive.getInputStream(entry)
-    override def size = Some(entry.getSize().toInt)
+    override def sizeOption = Some(entry.getSize().toInt)
   }
 }
 
@@ -337,6 +337,6 @@ final class URLZipArchive(url: URL) extends AbstractFile {
         extends Entry(name, path) {
     override def lastModified: Long = entry.getTime()
     override def input = in
-    override def size = Some(entry.getSize().toInt)
+    override def sizeOption = Some(entry.getSize().toInt)
   }
 }
