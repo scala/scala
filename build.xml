@@ -867,6 +867,7 @@ DOCUMENTATION
       <src>
         <files includes="${src.dir}/actors"/>
         <files includes="${src.dir}/library/scala"/>
+        <files includes="${src.dir}/swing"/>
       </src>
       <include name="**/*.scala"/>
       <exclude name="reflect/Code.scala"/>
@@ -926,28 +927,7 @@ DOCUMENTATION
     <touch file="${build-docs.dir}/manual.complete" verbose="no"/>
   </target>
 
-  <target name="docs.pre-swing" depends="docs.man">
-    <uptodate property="docs.swing.available" targetfile="${build-docs.dir}/swing.complete">
-      <srcfiles dir="${src.dir}/swing"/>
-    </uptodate>
-  </target>
-
-  <target name="docs.swing" depends="docs.pre-swing" unless="docs.swing.available">
-    <stopwatch name="docs.swing.timer"/>
-    <mkdir dir="${build-docs.dir}/swing"/>
-    <scaladoc
-      destdir="${build-docs.dir}/swing"
-      windowtitle="Scala Swing Library"
-      doctitle="Scala Swing ${version.number} API"
-      classpathref="pack.classpath"
-      srcdir="${src.dir}/swing">
-      <include name="**/*.scala"/>
-    </scaladoc>
-    <touch file="${build-docs.dir}/swing.complete" verbose="no"/>
-    <stopwatch name="docs.swing.timer" action="total"/>
-  </target>
-
-  <target name="docs.pre-comp" depends="docs.swing">
+  <target name="docs.pre-comp" depends="docs.man">
     <uptodate property="docs.comp.available" targetfile="${build-docs.dir}/compiler.complete">
       <srcfiles dir="${src.dir}/compiler"/>
     </uptodate>
@@ -968,7 +948,7 @@ DOCUMENTATION
     <stopwatch name="docs.comp.timer" action="total"/>
   </target>
 
-  <target name="docs.done" depends="docs.swing"/>
+  <target name="docs.done" depends="docs.man"/>
 
   <target name="docs.clean">
     <delete dir="${build-docs.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
@@ -1059,12 +1039,8 @@ DISTRIBUTION
     <copy toDir="${dist.dir}/doc/scala-devel-docs/tools">
       <fileset dir="${build-docs.dir}/manual/html"/>
     </copy>
-    <mkdir dir="${dist.dir}/doc/scala-devel-docs/swing"/>
-    <copy file="${src.dir}/swing/doc/README" toDir="${dist.dir}/doc/scala-devel-docs/swing"/>
-    <mkdir dir="${dist.dir}/doc/scala-devel-docs/swing/api"/>
-    <copy toDir="${dist.dir}/doc/scala-devel-docs/swing/api">
-      <fileset dir="${build-docs.dir}/swing"/>
-    </copy>
+    <copy file="${src.dir}/swing/doc/README"
+          toFile="${dist.dir}/doc/scala-devel-docs/README.scala-swing"/>
   </target>
     
   <target name="dist.man" depends="dist.doc">
