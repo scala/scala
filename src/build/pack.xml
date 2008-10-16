@@ -36,15 +36,15 @@ MAIN DISTRIBUTION PACKAGING
     <checksum file="${dists.dir}/archives/scala-${version.number}.zip" fileext=".md5"/>
   </target>
 
-  <target name="pack-api.tar" depends="pack-archives.zip">
-    <tar destfile="${dists.dir}/archives/scala-${version.number}-api.tgz"
+  <target name="pack-devel-docs.tar" depends="pack-archives.zip">
+    <tar destfile="${dists.dir}/archives/scala-${version.number}-devel-docs.tgz"
          compression="gzip" longfile="gnu">
-      <tarfileset dir="${dist.dir}/doc/scala-devel-docs/api" prefix="scala-${version.number}-api"/>
+      <tarfileset dir="${dist.dir}/doc/scala-devel-docs" prefix="scala-${version.number}-devel-docs"/>
     </tar>
-    <checksum file="${dists.dir}/archives/scala-${version.number}-api.tgz" fileext=".md5"/>
+    <checksum file="${dists.dir}/archives/scala-${version.number}-devel-docs.tgz" fileext=".md5"/>
   </target>
   
-  <target name="pack-archives.src" depends="pack-api.tar">
+  <target name="pack-archives.src" depends="pack-devel-docs.tar">
     <tar destfile="${dists.dir}/archives/scala-${version.number}-sources.tgz"
          compression="gzip" longfile="gnu">
       <tarfileset dir="${basedir}" prefix="scala-${version.number}-sources">
