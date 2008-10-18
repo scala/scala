@@ -124,7 +124,7 @@ abstract class BoxedArray extends Array.Array0[Any] {
   /** Returns an array that contains all indices of this array */
   def indices: Array[Int] = Array.range(0, length)
 
-  final def deepToString() = deepMkString(stringPrefix + "(", ",", ")")
+  final def deepToString() = deepMkString(stringPrefix + "(", ", ", ")")
 
   final def deepMkString(start: String, sep: String, end: String): String = {
     def _deepToString(x: Any) = x match {

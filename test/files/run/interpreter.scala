@@ -25,11 +25,14 @@ println("hello")
 // ambiguous toString problem from #547
 val atom = new scala.xml.Atom()
 // overriding toString problem from #1404
-// commented out because the fix had to be reverted for arrays
-//class S(override val toString : String)
-//val fish = new S("fish")
+class S(override val toString : String)
+val fish = new S("fish")
 // Test that arrays pretty print nicely.
 val arr = Array("What's", "up", "doc?")
+// Test that arrays pretty print nicely, even when we give them type Any
+val arrInt : Any = Array(1,2,3)
+// Test that nested arrays are pretty-printed correctly
+val arrArrInt : Any = Array(Array(1, 2), Array(3, 4))
 
 // implicit conversions
 case class Foo(n: Int)

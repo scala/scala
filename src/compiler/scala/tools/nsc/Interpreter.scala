@@ -622,13 +622,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
         code.print(" + \"" + prettyName + ": " +
 	           string2code(req.typeOf(vname)) +
 	           " = \" + " +
-                   " (if(" +
+                   " { val tmp = scala.runtime.ScalaRunTime.stringOf(" +
 	           req.fullPath(vname) +
-                   ".asInstanceOf[AnyRef] != null) " +
-                   " { val tmp = " +
-	           req.fullPath(vname) +
-		   ".toString(); " +
-                   " (if(tmp.contains('\\n')) \"\\n\" else \"\") + tmp + \"\\n\"} else \"null\\n\") ")
+		   "); " +
+                   " (if(tmp.contains('\\n')) \"\\n\" else \"\") + tmp + \"\\n\"} ")
       }
     }
   }
