@@ -37,9 +37,11 @@ scala>
 scala> atom: scala.xml.Atom[Unit] = ()
 
 scala> 
-scala> defined class S
-
-scala> fish: S = fish
+scala> 
+scala> 
+scala> 
+scala> 
+scala> arr: Array[java.lang.String] = Array(What's, up, doc?)
 
 scala> 
 scala> 
