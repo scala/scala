@@ -113,12 +113,6 @@ class Queue[+A](elem: A*) extends Seq[A] {
     mkQueue(q, out)
   }
 
-  /** Returns a new queue with all elements added.
-   *
-   *  @param  elems       the elements to add.
-   */
-  def enqueue [B >: A](elems: B*) = this + elems
-
   /** Returns a tuple with the first element in the queue,
    *  and a new queue with this element removed.
    *
