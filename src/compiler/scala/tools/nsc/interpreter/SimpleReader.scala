@@ -16,7 +16,7 @@ class SimpleReader(
 extends InteractiveReader {
   def this() = this(Console.in, new PrintWriter(Console.out), true)
 
-  def readLine(prompt: String) = {
+  def readOneLine(prompt: String) = {
     if (interactive) {
       out.print(prompt)
       out.flush()

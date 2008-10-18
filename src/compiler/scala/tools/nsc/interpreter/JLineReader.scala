@@ -22,7 +22,7 @@ class JLineReader extends InteractiveReader {
     r.setBellEnabled(false)
     r
   }
-  def readLine(prompt: String) = consoleReader.readLine(prompt)
+  def readOneLine(prompt: String) = consoleReader.readLine(prompt)
   val interactive = true
 }
 
