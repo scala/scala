@@ -63,17 +63,17 @@ class BatchSourceFile(val file : AbstractFile, _content : Array[Char]) extends S
   override val length = content.length
 
   override def identifier(pos : Position, compiler : scala.tools.nsc.Global) = pos match {
-    case OffsetPosition(source,offset) if source == this =>
+    case OffsetPosition(source,offset) if source == this && offset != -1 =>
       import java.lang.Character
       var i = offset + 1
       while (i < content.length &&
              (compiler.syntaxAnalyzer.isOperatorPart(content(i)) ||
               compiler.syntaxAnalyzer.isIdentifierPart(content(i)))) i = i + 1
 
-    assert(i > offset)
-    if (i <= content.length && offset >= 0)
-      Some(new String(content, offset, i - offset))
-    else None
+      assert(i > offset)
+      if (i <= content.length && offset >= 0)
+        Some(new String(content, offset, i - offset))
+      else None
   case _ => super.identifier(pos, compiler)
   }
 
