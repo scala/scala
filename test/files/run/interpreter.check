@@ -42,6 +42,15 @@ scala> defined class S
 scala> fish: S = fish
 
 scala> 
+scala> arr: Array[java.lang.String] = Array(What's, up, doc?)
+
+scala> 
+scala> arrInt: Any = Array(1, 2, 3)
+
+scala> 
+scala> arrArrInt: Any = Array(Array(1, 2), Array(3, 4))
+
+scala> 
 scala> 
 scala> defined class Foo
 

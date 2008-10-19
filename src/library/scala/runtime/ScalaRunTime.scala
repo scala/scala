@@ -144,4 +144,23 @@ object ScalaRunTime {
     case x: Array[AnyRef] => new BoxedObjectArray(x)
     case x: BoxedArray => x
   }
+
+  /** Given any Scala value, convert it to a String.
+   *
+   * The primary motivation for this method is to provide a means for
+   * correctly obtaining a String representation of a value, while
+   * avoiding the pitfalls of naïvely calling toString on said value.
+   * In particular, it addresses the fact that (a) toString cannot be
+   * called on null and (b) depending on the apparent type of an
+   * array, toString may or may not print it in a human-readable form.
+   *
+   * @param arg the value to stringify
+   * @return a string representation of <code>arg</code>
+   *
+   */
+  def stringOf(arg : Any): String = arg match {
+    case null => "null"
+    case (arg : AnyRef) if isArray(arg) => boxArray(arg).deepToString
+    case arg => arg.toString
+  }
 }
