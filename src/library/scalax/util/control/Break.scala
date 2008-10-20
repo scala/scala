@@ -1,4 +1,4 @@
-package scala.util.control
+package scalax.util.control
 
 object Break {
   private class BreakException extends RuntimeException
