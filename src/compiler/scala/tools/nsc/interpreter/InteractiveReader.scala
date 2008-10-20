@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author Stepan Koltsov
  */
 // $Id$
@@ -28,22 +28,21 @@ trait InteractiveReader {
 }
 
 
-
 object InteractiveReader {
   // hacks necessary for OSX jvm suspension because read calls are not restarted after SIGTSTP
-  val vendor = { val v = System.getProperty("java.vendor") ; if (v == null) "" else v }
+  val vendor = System.getProperty("java.vendor", "")
   val msgEINTR = "Interrupted system call"
 
-  /** Create an interactive reader.  Uses JLine if the
+  /** Create an interactive reader.  Uses <code>JLineReader</code> if the
    *  library is available, but otherwise uses a
-   *  SimpleReader. */
-   def createDefault(): InteractiveReader = {
-     try {
-       new JLineReader
-     } catch {
-       case e =>
-         //out.println("jline is not available: " + e) //debug
-  new SimpleReader()
-     }
-   }
+   *  <code>SimpleReaderi</code>. */
+  def createDefault(): InteractiveReader =
+    try {
+      new JLineReader
+    } catch {
+      case e =>
+        //out.println("jline is not available: " + e) //debug
+        new SimpleReader()
+    }
 }
+
