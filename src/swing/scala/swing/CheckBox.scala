@@ -10,4 +10,7 @@ import javax.swing._
 class CheckBox(text: String) extends ToggleButton {
   override lazy val peer: JCheckBox = new JCheckBox(text) with SuperMixin
   def this() = this("")
+
+  def borderPaintedFlat: Boolean = peer.isBorderPaintedFlat
+  def borderPaintedFlat_=(flat: Boolean) { peer.setBorderPaintedFlat(flat) }
 }

@@ -35,12 +35,22 @@ abstract class Component extends UIElement with Publisher {
   var initP: JComponent = null
   peer.putClientProperty(Component.ClientKey, this)
 
-  trait SuperMixin extends JComponent {
+  /**
+   * This trait is used to redirect certain calls from the peer to the wrapper
+   * and back. Useful to expose methods that can be customized by overriding.
+   */
+  protected trait SuperMixin extends JComponent {
     override def paintComponent(g: java.awt.Graphics) {
       Component.this.paintComponent(g)
     }
     def __super__paintComponent(g: java.awt.Graphics) {
       super.paintComponent(g)
+    }
+    override def paint(g: java.awt.Graphics) {
+      Component.this.paint(g)
+    }
+    def __super__paint(g: java.awt.Graphics) {
+      super.paint(g)
     }
   }
 
@@ -203,9 +213,19 @@ abstract class Component extends UIElement with Publisher {
 
   def requestFocus() { peer.requestFocus() }
 
+  /**
+   * For custom painting, users should usually override this method.
+   */
   protected def paintComponent(g: java.awt.Graphics) {
     peer match {
       case peer: SuperMixin => peer.__super__paintComponent(g)
+      case _ => // it's a wrapper created on the fly
+    }
+  }
+
+  protected def paint(g: java.awt.Graphics) {
+    peer match {
+      case peer: SuperMixin => peer.__super__paint(g)
       case _ => // it's a wrapper created on the fly
     }
   }
