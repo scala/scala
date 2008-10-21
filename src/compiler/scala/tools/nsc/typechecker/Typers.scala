@@ -2560,10 +2560,16 @@ trait Typers { self: Analyzer =>
                   fun.symbol == Any_isInstanceOf && !targs.isEmpty)
                 checkCheckable(tree.pos, targs.head, "")
               val resultpe0 = restpe.instantiateTypeParams(tparams, targs)
+              //println("instantiating type params "+restpe+" "+tparams+" "+targs+" = "+resultpe0)
               //@M TODO -- probably ok
               //@M example why asSeenFrom is necessary: class Foo[a] { def foo[m[x]]: m[a] } (new Foo[Int]).foo[List] : List[Int]
               //@M however, asSeenFrom widens a singleton type, thus cannot use it for those types
-              val resultpe = if (resultpe0.isInstanceOf[SingletonType]) resultpe0 else resultpe0.asSeenFrom(prefixType(fun), fun.symbol.owner)
+              // Martin to Adriaan: This is a mess in need of cleanup. For now I have simply speacial treated HK types, bit this is still wrong.
+              val resultpe =
+                if (resultpe0.isInstanceOf[SingletonType] || !targs.exists(_.isHigherKinded))
+                  resultpe0
+                else
+                  resultpe0.asSeenFrom(prefixType(fun), fun.symbol.owner)
               copy.TypeApply(tree, fun, args) setType resultpe
             }
           } else {
