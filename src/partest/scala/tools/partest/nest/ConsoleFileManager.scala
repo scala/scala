@@ -43,6 +43,8 @@ class ConsoleFileManager extends FileManager {
   NestUI.verbose("CLASSPATH: "+CLASSPATH)
 
   var JAVACMD   = System.getProperty("scalatest.javacmd", "java")
+  var JAVAC_CMD = System.getProperty("scalatest.javac_cmd", "javac")
+
   val prefixFile = {
     val cwd = System.getProperty("user.dir")
     if (cwd != null)

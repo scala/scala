@@ -64,6 +64,9 @@ class PartestTask extends Task {
   def setJavaCmd(input: File): Unit =
     javacmd = Some(input)
 
+  def setJavacCmd(input: File): Unit =
+    javaccmd = Some(input)
+
   def setScalacOpts(opts: String): Unit =
     scalacOpts = Some(opts)
 
@@ -72,6 +75,7 @@ class PartestTask extends Task {
 
   private var classpath: Option[Path] = None
   private var javacmd: Option[File] = None
+  private var javaccmd: Option[File] = None
   private var showDiff: Boolean = false
   private var showLog: Boolean = false
   private var runFailed: Boolean = false
@@ -194,6 +198,8 @@ class PartestTask extends Task {
     setFileManagerBooleanProperty("failed", runFailed)
     if (!javacmd.isEmpty)
       setFileManagerStringProperty("JAVACMD", javacmd.get.getAbsolutePath)
+    if (!javaccmd.isEmpty)
+      setFileManagerStringProperty("JAVAC_CMD", javaccmd.get.getAbsolutePath)
     setFileManagerStringProperty("CLASSPATH", classpath.get.list.mkString(File.pathSeparator))
     setFileManagerStringProperty("LATEST_LIB", scalaLibrary.get.getAbsolutePath)
     if (!scalacOpts.isEmpty)

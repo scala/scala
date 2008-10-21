@@ -167,16 +167,12 @@ class Worker(val fileManager: FileManager) extends Actor {
 
   def javac(outDir: File, files: List[File], output: File) {
     // compile using command-line javac compiler
-    val javaHome = System.getenv("JAVA_HOME")
-    NestUI.verbose("JAVA_HOME: "+javaHome)
-    val javacCmd = if (javaHome == null) {
-      // assume the compiler is in the PATH
+    val javacCmd = if ((fileManager.JAVAC_CMD.indexOf("${env.JAVA_HOME}") != -1) ||
+                       fileManager.JAVAC_CMD.equals("/bin/javac") ||
+                       fileManager.JAVAC_CMD.equals("\\bin\\javac"))
       "javac"
-    } else {
-      // otherwise use the location suggested by JAVA_HOME
-      val sep = File.separator
-      javaHome + sep + "bin" + sep + "javac"
-    }
+    else
+      fileManager.JAVAC_CMD
 
     val cmd = javacCmd+
       " -d "+outDir.getAbsolutePath+

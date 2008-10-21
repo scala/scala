@@ -131,6 +131,8 @@ PROPERTIES
 
   <property name="scalacfork.maxmemory" value="512m"/>
 
+  <property name="javac.cmd" value="${env.JAVA_HOME}/bin/javac"/>
+
 <!-- ===========================================================================
 INITIALISATION
 ============================================================================ -->
@@ -997,7 +999,7 @@ BOOTRAPING TEST AND TEST SUITE
 
   <target name="test.suite" depends="pack.done">
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
-             timeout="1200000">
+             timeout="1200000" javaccmd="${javac.cmd}">
       <classpath>
         <path refid="pack.classpath"/>
         <fileset dir="${test.dir}/files/lib" includes="*.jar"/>

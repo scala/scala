@@ -50,6 +50,7 @@ trait FileManager {
 
 
   var JAVACMD: String
+  var JAVAC_CMD: String
 
   var CLASSPATH: String
   var LATEST_LIB: String
