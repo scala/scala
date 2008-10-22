@@ -10,6 +10,9 @@ object Test {
   def c: Int @ann(x) = 1
   def d: String @ann({val z = 0; z - 1}) = "2"
 
+  //bug #1214
+  val y = new (Integer @ann(0))(2)
+
   import scala.reflect.BeanProperty
 
   // bug #637

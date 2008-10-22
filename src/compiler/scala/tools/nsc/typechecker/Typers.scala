@@ -287,6 +287,7 @@ trait Typers { self: Analyzer =>
         case ErrorType => ;
         case PolyType(_, restpe) => check(restpe)
         case ExistentialType(_, restpe) if existentialOK => check(restpe)
+        case AnnotatedType(_, underlying, _) => check(underlying)
         case t => error(tpt.pos, "class type required but "+t+" found")
       }
       check(tpt.tpe)
