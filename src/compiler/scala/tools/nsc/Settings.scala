@@ -15,33 +15,33 @@ class Settings(error: String => Unit) {
 
   private var allsettings: List[Setting] = List()
 
-  private def getProperty(name: String): String =
+  protected def getProperty(name: String): String =
     if (System.getProperty(name) != "")
       System.getProperty(name)
     else null
 
-  private val classpathDefault =
+  protected val classpathDefault =
     if (System.getProperty("env.classpath") ne null)
       alternatePath(
         getProperty("env.classpath"),
         ".")
     else getProperty("java.class.path")
 
-  private val bootclasspathDefault =
+  protected val bootclasspathDefault =
     alternatePath(
       concatPath(
         getProperty("sun.boot.class.path"),
         guessedScalaBootClassPath),
       "")
 
-  private val extdirsDefault =
+  protected val extdirsDefault =
     alternatePath(
       concatPath(
         getProperty("java.ext.dirs"),
         guessedScalaExtDirs),
       "")
 
-  private val pluginsDirDefault =
+  protected val pluginsDirDefault =
     if (Properties.scalaHome == null)
       ""
     else
@@ -51,10 +51,10 @@ class Settings(error: String => Unit) {
 	  "scala-devel"),
 	"plugins").getAbsolutePath
 
-  private def alternatePath(p1: String, p2: => String) =
+  protected def alternatePath(p1: String, p2: => String) =
     if (p1 ne null) p1 else p2
 
-  private def concatPath(p1: String, p2: String) =
+  protected def concatPath(p1: String, p2: String) =
      if ((p1 ne null) && (p2 ne null)) p1 + File.pathSeparator + p2
      else if (p1 ne null) p1
      else p2
