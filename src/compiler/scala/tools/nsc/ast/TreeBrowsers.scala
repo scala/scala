@@ -333,7 +333,7 @@ abstract class TreeBrowsers {
         ("Apply", EMPTY)
 
       case ApplyDynamic(qual, args) =>
-        ("Apply", EMPTY)
+        ("ApplyDynamic", EMPTY)
 
       case Super(qualif, mix) =>
         ("Super", qualif.toString() + ", mix: " + mix.toString())

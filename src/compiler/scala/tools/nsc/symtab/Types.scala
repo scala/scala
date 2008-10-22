@@ -2425,6 +2425,8 @@ A type's typeSymbol should never be inspected directly.
         // throw new Error("mapOver inapplicable for " + tp);
     }
 
+    /** Calls mapOver for the args, but with inverted variance for
+     *  contravariant arguments */
     def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
       map2Conserve(args, tparams) { (arg, tparam) =>
         val v = variance

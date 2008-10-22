@@ -455,6 +455,10 @@ class Scalac extends MatchingTask {
 **                      Hooks for variants of Scala                           **
 \*============================================================================*/
 
+  protected def binaryEnding = backend match {
+    case Some("msil") => ".msil"
+    case _ => ".class"
+  }
   protected def newSettings(error: String=>Unit): Settings =
     new Settings(error)
   protected def newGlobal(settings: Settings, reporter: Reporter) =
@@ -474,8 +478,10 @@ class Scalac extends MatchingTask {
       error("Attribute 'destdir' does not refer to an existing directory.")
     if (destination.isEmpty) destination = Some(getOrigin.head)
 
+    // TODO msil: map packages (will be in filename for .msil files). Use
+    // RegexppatternMapper (?)
     val mapper = new GlobPatternMapper()
-    mapper.setTo("*.class")
+    mapper.setTo("*" + binaryEnding)
     mapper.setFrom("*.scala")
 
     var javaOnly = true
