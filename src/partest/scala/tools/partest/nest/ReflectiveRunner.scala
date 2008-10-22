@@ -56,6 +56,17 @@ class ReflectiveRunner extends RunnerUtils {
     }
 
     try {
+      val newClasspath = sepUrls.mkString(java.io.File.pathSeparator)
+      System.setProperty("java.class.path", newClasspath)
+      System.setProperty("env.classpath", newClasspath)
+      System.setProperty("scala.home", "")
+      if (fileManager.debug) {
+ 	println("java.class.path: "+System.getProperty("java.class.path"))
+ 	println("env.classpath: "+System.getProperty("env.classpath"))
+ 	println("sun.boot.class.path: "+System.getProperty("sun.boot.class.path"))
+ 	println("java.ext.dirs: "+System.getProperty("java.ext.dirs"))
+      }
+
       val sepRunnerClass =
         sepLoader.loadClass("scala.tools.partest.nest.ConsoleRunner")
 
