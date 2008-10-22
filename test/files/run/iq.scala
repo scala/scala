@@ -18,7 +18,7 @@ object iq {
 
     /* Test infix enqueing. */
     //val q2 = q + 42 + 0  // deprecated
-    val q2 = q.enqueue(42, 0)
+    val q2 = q.enqueue(42).enqueue(0)
 
     /* Test is empty and dequeue.
      * Expected: Head: 42
@@ -35,7 +35,7 @@ object iq {
       }
 
     /* Test sequence enqueing. */
-    val q5: Queue[Any] = q4.enqueue(1,2,3,4,5,6,7,8,9)
+    val q5: Queue[Any] = q4.enqueue(List(1,2,3,4,5,6,7,8,9))
     /* Test toString.
      * Expected: Head: q5: Queue(0,1,2,3,4,5,6,7,8,9)
      */
@@ -45,7 +45,7 @@ object iq {
      */
     Console.println("q5[5]: " + q5(5))
 
-    val q5c: Queue[Int] = Queue.Empty.enqueue(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+    val q5c: Queue[Int] = Queue.Empty.enqueue(List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9))
 
     /* Testing ==
      *  Expected: q5 == q9: true
@@ -57,7 +57,7 @@ object iq {
     val (_, q6) = q5.dequeue
     val (_, q7) = q6.dequeue
     //val q8 = q7 + 10 + 11  //deprecated
-    val q8 = q7.enqueue(10, 11)
+    val q8 = q7.enqueue(10).enqueue(11)
     /* Test dequeu
      * Expected: q8: Queue(2,3,4,5,6,7,8,9,10,11)
      */
