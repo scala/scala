@@ -194,7 +194,6 @@ abstract class LambdaLift extends InfoTransform {
         tree match {
           case ClassDef(_, _, _, _) =>
             liftedDefs(tree.symbol) = new ListBuffer
-//            println("new lb for: "+ tree.symbol)
             if (sym.isLocal) renamable addEntry sym
           case DefDef(_, _, _, _, _, _) =>
             if (sym.isLocal) {
@@ -406,7 +405,6 @@ abstract class LambdaLift extends InfoTransform {
           val result = copy.ClassDef(
             stat, mods, name, tparams, copy.Template(impl, parents, self, body ::: lifted))
           liftedDefs -= stat.symbol
-//          println("removed: "+ stat.symbol)
           result
         case _ =>
           stat

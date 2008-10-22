@@ -1353,36 +1353,30 @@ trait Trees {
         }
       case ClassDef(mods, name, tparams, impl) =>
         atOwner(tree.symbol) {
-          copy.ClassDef(tree, transformModifiers(mods), name,
-                        transformTypeDefs(tparams), transformTemplate(impl))
+          copy.ClassDef(tree, mods, name, transformTypeDefs(tparams), transformTemplate(impl))
         }
       case ModuleDef(mods, name, impl) =>
         atOwner(tree.symbol.moduleClass) {
-          copy.ModuleDef(tree, transformModifiers(mods), name,
-                         transformTemplate(impl))
+          copy.ModuleDef(tree, mods, name, transformTemplate(impl))
         }
       case ValDef(mods, name, tpt, rhs) =>
         atOwner(tree.symbol) {
-          copy.ValDef(tree, transformModifiers(mods), name,
-                      transform(tpt), transform(rhs))
+          copy.ValDef(tree, mods, name, transform(tpt), transform(rhs))
         }
       case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
         atOwner(tree.symbol) {
           copy.DefDef(
-            tree, transformModifiers(mods), name,transformTypeDefs(tparams),
-            transformValDefss(vparamss), transform(tpt), transform(rhs))
+            tree, mods, name, transformTypeDefs(tparams), transformValDefss(vparamss), transform(tpt), transform(rhs))
         }
       case TypeDef(mods, name, tparams, rhs) =>
         atOwner(tree.symbol) {
-          copy.TypeDef(tree, transformModifiers(mods), name,
-                       transformTypeDefs(tparams), transform(rhs))
+          copy.TypeDef(tree, mods, name, transformTypeDefs(tparams), transform(rhs))
         }
       case LabelDef(name, params, rhs) =>
         copy.LabelDef(tree, name, transformIdents(params), transform(rhs)) //bq: Martin, once, atOwner(...) works, also change `LamdaLifter.proxy'
       case Import(expr, selectors) =>
         copy.Import(tree, transform(expr), selectors)
       case Annotation(constr, elements) =>
-//        println("transforming annotation: "+ this +"("+constr.getClass+")")
         copy.Annotation(tree, transform(constr), transformTrees(elements))
       case DocDef(comment, definition) =>
         copy.DocDef(tree, comment, transform(definition))
@@ -1482,9 +1476,6 @@ trait Trees {
       List.mapConserve(stats)(stat =>
         if (exprOwner != currentOwner && stat.isTerm) atOwner(exprOwner)(transform(stat))
         else transform(stat)) filter (EmptyTree !=)
-    def transformModifiers(mods: Modifiers): Modifiers = mods /*
-      Modifiers(mods.flags, mods.privateWithin,
-                mods.annotations.map(transform(_).asInstanceOf[Annotation])) */
     def transformUnit(unit: CompilationUnit) { unit.body = transform(unit.body) }
 
     def atOwner[A](owner: Symbol)(trans: => A): A = {
@@ -1507,35 +1498,29 @@ trait Trees {
         }
       case ClassDef(mods, name, tparams, impl) =>
         atOwner(tree.symbol) {
-          traverseTrees(mods.annotations)
-          traverseTrees(tparams); traverse(impl)
+          traverseTrees(mods.annotations); traverseTrees(tparams); traverse(impl)
         }
       case ModuleDef(mods, name, impl) =>
         atOwner(tree.symbol.moduleClass) {
-          traverseTrees(mods.annotations);
-          traverse(impl)
+          traverseTrees(mods.annotations); traverse(impl)
         }
       case ValDef(mods, name, tpt, rhs) =>
         atOwner(tree.symbol) {
-          traverseTrees(mods.annotations);
-          traverse(tpt); traverse(rhs)
+          traverseTrees(mods.annotations); traverse(tpt); traverse(rhs)
         }
       case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
         atOwner(tree.symbol) {
-          traverseTrees(mods.annotations);
-          traverseTrees(tparams); traverseTreess(vparamss); traverse(tpt); traverse(rhs)
+          traverseTrees(mods.annotations); traverseTrees(tparams); traverseTreess(vparamss); traverse(tpt); traverse(rhs)
         }
       case TypeDef(mods, name, tparams, rhs) =>
         atOwner(tree.symbol) {
-          traverseTrees(mods.annotations);
-          traverseTrees(tparams); traverse(rhs)
+          traverseTrees(mods.annotations); traverseTrees(tparams); traverse(rhs)
         }
       case LabelDef(name, params, rhs) =>
         traverseTrees(params); traverse(rhs)
       case Import(expr, selectors) =>
         traverse(expr)
       case Annotation(constr, elements) =>
-//        println("traversing annotation: "+ this +"("+constr.getClass+")")
         traverse(constr); traverseTrees(elements)
       case Annotated(annot, arg) =>
         traverse(annot); traverse(arg)

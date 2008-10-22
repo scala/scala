@@ -484,8 +484,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           val sym = tree.symbol
           // a local variable that is mutable and free somewhere later should be lifted
           // as lambda lifting (coming later) will wrap 'rhs' in an Ref object.
-          if (sym != NoSymbol && (!sym.owner.isSourceMethod ||
-                                  (sym.isVariable && freeMutableVars(sym))))
+          if (!sym.owner.isSourceMethod || (sym.isVariable && freeMutableVars(sym)))
             withNeedLift(true) { super.transform(tree) }
           else
             super.transform(tree)
