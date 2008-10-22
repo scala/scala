@@ -9,4 +9,14 @@ object Test {
 
   def c: Int @ann(x) = 1
   def d: String @ann({val z = 0; z - 1}) = "2"
+
+  import scala.reflect.BeanProperty
+
+  // bug #637
+  trait S { def getField(): Int }
+  class O extends S { @BeanProperty val field = 0 }
+
+  // bug #1070
+  trait T { @BeanProperty var field = 1 }
 }
+
