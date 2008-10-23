@@ -33,17 +33,26 @@ object MainGenericRunner {
       if (scalaHome eq null)
         ""
       else {
-        val libdir = new File(new File(scalaHome), "lib")
-        if (!libdir.exists || libdir.isFile)
-          return classpath
-
-        val filesInLib = libdir.listFiles
-        val jarsInLib =
-          filesInLib.filter(f =>
-            f.isFile && f.getName.endsWith(".jar"))
-
-        jarsInLib.mkString("", File.pathSeparator, "")
-      }
+        def listDir(name:String):Array[File] = {
+          val libdir = new File(new File(scalaHome), name)
+          if (!libdir.exists || libdir.isFile)
+            Array()
+          else
+            libdir.listFiles
+        }
+        {
+          val filesInLib = listDir("lib")
+          val jarsInLib =
+            filesInLib.filter(f =>
+              f.isFile && f.getName.endsWith(".jar"))
+          jarsInLib.toList
+        } ::: {
+          val filesInClasses = listDir("classes")
+          val dirsInClasses =
+            filesInClasses.filter(f => f.isDirectory)
+          dirsInClasses.toList
+        }
+      }.mkString("", File.pathSeparator, "")
 
     if (classpath == "")
       extraClassPath + File.pathSeparator + "."
@@ -77,30 +86,8 @@ object MainGenericRunner {
       return
     }
 
-
-    if (settings.help.value || settings.Xhelp.value || settings.Yhelp.value) {
-      if (command.settings.help.value) {
-        println(command.usageMsg)
-        println(sampleCompiler.pluginOptionsHelp)
-      }
-
-      if (settings.Xhelp.value)
-        println(command.xusageMsg)
-
-      if (settings.Yhelp.value)
-        println(command.yusageMsg)
-
-      return
-    }
-
-
-    if (settings.showPhases.value) {
-      println(sampleCompiler.phaseDescriptions)
-      return
-    }
-
-    if (settings.showPlugins.value) {
-      println(sampleCompiler.pluginDescriptions)
+    if (command.shouldStopWithInfo) {
+      Console.println(command.getInfoMessage(sampleCompiler))
       return
     }
 
