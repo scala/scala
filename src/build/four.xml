@@ -298,7 +298,7 @@ work on a JVM 1.5.
 
   <target name="four-test.suite" depends="four-pack.done">
     <partest showlog="yes" erroronfailed="yes" scalacopts="-target:jvm-1.4"
-	     javacmd="${java.home}/bin/java -Xmx1024M">
+	     javacmd="${java.home}/bin/java -Xmx1024M" javaccmd="${javac.cmd}">
       <classpath>
         <pathelement location="${build-four-pack.dir}/lib/scala-library.jar"/>
         <pathelement location="${build-four-pack.dir}/lib/scala-compiler.jar"/>
@@ -336,7 +336,7 @@ work on a JVM 1.4.
 
   <target name="fourfour-test.suite" depends="fourfour-test.start">
     <partest showlog="yes" erroronfailed="yes" scalacopts="-target:jvm-1.4"
-	     javacmd="${java.home}/bin/java -Xmx1024M">
+	     javacmd="${java.home}/bin/java -Xmx1024M" javaccmd="${javac.cmd}">
       <classpath>
         <pathelement location="${build-four-pack.dir}/lib/scala-library.jar"/>
         <pathelement location="${build-four-pack.dir}/lib/scala-compiler.jar"/>
