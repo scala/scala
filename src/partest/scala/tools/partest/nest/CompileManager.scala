@@ -24,9 +24,10 @@ abstract class SimpleCompiler {
   def compile(file: File, kind: String, log: File): Boolean
 }
 
-class TestSettings extends {
+class TestSettings(fileMan: FileManager) extends {
   override val bootclasspathDefault =
-    System.getProperty("sun.boot.class.path", "")
+    System.getProperty("sun.boot.class.path", "") + File.pathSeparator +
+    fileMan.LATEST_LIB
   override val extdirsDefault =
     System.getProperty("java.ext.dirs", "")
 } with Settings(x => ())
@@ -36,7 +37,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     new Global(settings, reporter)
 
   def newGlobal(settings: Settings, logWriter: FileWriter): Global = {
-    val rep = new ExtConsoleReporter(new TestSettings,
+    val rep = new ExtConsoleReporter(new TestSettings(fileManager),
                                      Console.in,
                                      new PrintWriter(logWriter))
     rep.shortname = true
@@ -44,7 +45,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
   }
 
   def newSettings = {
-    val settings = new TestSettings
+    val settings = new TestSettings(fileManager)
     settings.deprecation.value = true
     settings.nowarnings.value = false
     settings.encoding.value = "iso-8859-1"
