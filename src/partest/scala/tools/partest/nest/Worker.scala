@@ -223,6 +223,9 @@ class Worker(val fileManager: FileManager) extends Actor {
     } else ""
     NestUI.verbose("JAVA_OPTS: "+argString)
 
+    val cp = System.getProperty("java.class.path", ".")
+    NestUI.verbose("java.class.path: "+cp)
+
     def quote(path: String) = "\""+path+"\""
 
     val cmd =
