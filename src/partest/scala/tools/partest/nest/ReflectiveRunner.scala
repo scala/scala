@@ -56,7 +56,14 @@ class ReflectiveRunner extends RunnerUtils {
     }
 
     try {
-      val newClasspath = sepUrls.mkString(java.io.File.pathSeparator)
+      val paths = if (!classPath.isEmpty)
+        Array(latestCompFile.getPath, latestLibFile.getPath,
+              latestActFile.getPath, latestPartestFile.getPath,
+              latestFjbgFile.getPath)
+      else
+        Array(latestCompFile.getPath, latestLibFile.getPath,
+              latestActFile.getPath, latestPartestFile.getPath)
+      val newClasspath = paths.mkString(java.io.File.pathSeparator)
       System.setProperty("java.class.path", newClasspath)
       System.setProperty("env.classpath", newClasspath)
       System.setProperty("scala.home", "")
