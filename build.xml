@@ -81,6 +81,11 @@ END-USER TARGETS
     <antcall target="locker.unlock"/>
     <antcall target="locker.done"/>
   </target>
+
+  <target name="optimised"
+          description="Build the compiler and standard library using optimisations, running 'quick'">
+    <antcall target="optimised.comp"/>
+  </target>
   
 <!-- ===========================================================================
 PROPERTIES
@@ -117,6 +122,7 @@ PROPERTIES
   <property name="build.dir" value="${basedir}/build"/>
   <property name="build-locker.dir" value="${build.dir}/locker"/>
   <property name="build-quick.dir" value="${build.dir}/quick"/>
+  <property name="build-optimised.dir" value="${build.dir}/optimised"/>
   <property name="build-pack.dir" value="${build.dir}/pack"/>
   <property name="build-strap.dir" value="${build.dir}/strap"/>
   <property name="build-docs.dir" value="${build.dir}/scaladoc"/>
@@ -548,7 +554,16 @@ QUICK BUILD (QUICK)
     <touch file="${build-quick.dir}/bin.complete" verbose="no"/>
   </target>
   
-  <target name="quick.done" depends="quick.bin"/>
+  <target name="quick.done" depends="quick.bin">
+    <touch file="${build-quick.dir}/all.complete" verbose="no"/>
+    <path id="quick.classpath">
+      <pathelement location="${build-quick.dir}/classes/library"/>
+      <pathelement location="${build-quick.dir}/classes/compiler"/>
+      <pathelement location="${fjbg.jar}"/>
+      <pathelement location="${ant.jar}"/>
+    </path>
+  </target>
+
   
   <target name="quick.clean" depends="pack.clean">
     <delete dir="${build-quick.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
@@ -861,6 +876,166 @@ BOOTSTRAPPING BUILD (STRAP)
 
   <target name="strap.clean">
     <delete dir="${build-strap.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+  </target>
+
+
+<!-- ===========================================================================
+OPTIMISED COMPILER
+============================================================================ -->
+
+  <target name="optimised.start" depends="quick.done"/>
+  
+  <target name="optimised.pre-lib" depends="optimised.start">
+    <uptodate property="optimised.lib.available" targetfile="${build-optimised.dir}/library.complete">
+      <srcfiles dir="${src.dir}">
+        <include name="library/**"/>
+        <include name="dbc/**"/>
+        <include name="actors/**"/>
+        <include name="swing/**"/>
+      </srcfiles>
+    </uptodate>
+  </target>
+
+  <target name="optimised.lib" depends="optimised.pre-lib" unless="optimised.lib.available">
+    <stopwatch name="optimised.lib.timer"/>
+    <mkdir dir="${build-optimised.dir}/classes/library"/>
+    <javac
+      srcdir="${src.dir}/library"
+      destdir="${build-optimised.dir}/classes/library"
+      classpath="${build-optimised.dir}/classes/library"
+      includes="**/*.java"
+      target="1.5" source="1.5">
+      <compilerarg line="${javac.args}"/> 
+    </javac>
+    <javac
+      srcdir="${src.dir}/actors"
+      destdir="${build-optimised.dir}/classes/library"
+      classpath="${build-optimised.dir}/classes/library"
+      includes="**/*.java"
+      target="1.5" source="1.5">
+      <compilerarg line="${javac.args}"/>
+    </javac>
+    <scalacfork
+      destdir="${build-optimised.dir}/classes/library"
+      compilerpathref="quick.classpath"
+      srcpath="${src.dir}/library"
+      params="-optimise ${scalac.args}"
+      srcdir="${src.dir}/library"
+      maxmemory="${scalacfork.maxmemory}">
+      <include name="scala/Predef.scala"/>
+      <compilationpath>
+      	<pathelement location="${build-optimised.dir}/classes/library"/>
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
+      destdir="${build-optimised.dir}/classes/library"
+      compilerpathref="quick.classpath"
+      srcpath="${src.dir}/library"
+      params="-optimise ${scalac.args}"
+      srcdir="${src.dir}/library"
+      maxmemory="${scalacfork.maxmemory}">
+      <include name="**/*.scala"/>
+      <exclude name="scala/Predef.scala"/>
+      <compilationpath>
+      	<pathelement location="${build-optimised.dir}/classes/library"/>
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
+      destdir="${build-optimised.dir}/classes/library"
+      compilerpathref="quick.classpath"
+      srcpath="${src.dir}/library"
+      params="-optimise ${scalac.args}"
+      srcdir="${src.dir}/actors"
+      maxmemory="${scalacfork.maxmemory}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+      	<pathelement location="${build-optimised.dir}/classes/library"/>
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
+      destdir="${build-optimised.dir}/classes/library"
+      compilerpathref="quick.classpath"
+      srcpath="${src.dir}/library"
+      params="-optimise ${scalac.args}"
+      srcdir="${src.dir}/dbc"
+      maxmemory="${scalacfork.maxmemory}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+      	<pathelement location="${build-optimised.dir}/classes/library"/>
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
+      destdir="${build-optimised.dir}/classes/library"
+      compilerpathref="quick.classpath"
+      srcpath="${src.dir}/library"
+      params="-optimise ${scalac.args}"
+      srcdir="${src.dir}/swing"
+      maxmemory="${scalacfork.maxmemory}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+      	<pathelement location="${build-optimised.dir}/classes/library"/>
+      </compilationpath>
+    </scalacfork>
+    <propertyfile file="${build-optimised.dir}/classes/library/library.properties">
+      <entry key="version.number" value="${version.number}"/>
+      <entry key="copyright.string" value="${copyright.string}"/>
+    </propertyfile>
+    <copy todir="${build-optimised.dir}/classes/library">
+      <fileset dir="${src.dir}/library">
+        <include name="**/*.tmpl"/>
+        <include name="**/*.xml"/>
+        <include name="**/*.js"/>
+        <include name="**/*.css"/>
+      </fileset>
+    </copy>
+    <touch file="${build-optimised.dir}/library.complete" verbose="no"/>
+    <stopwatch name="optimised.lib.timer" action="total"/>
+  </target>
+  
+  <target name="optimised.pre-comp" depends="optimised.lib">
+    <uptodate property="optimised.comp.available" targetfile="${build-opimised.dir}/compiler.complete">
+      <srcfiles dir="${src.dir}/compiler"/>
+    </uptodate>
+  </target>
+
+  <target name="optimised.comp" depends="optimised.pre-comp" unless="optimised.comp.available">
+    <stopwatch name="optimised.comp.timer"/>
+    <mkdir dir="${build-optimised.dir}/classes/compiler"/>
+    <scalacfork
+      destdir="${build-optimised.dir}/classes/compiler"
+      compilerpathref="quick.classpath"
+      srcpath="${src.dir}/compiler"
+      params="-optimise ${scalac.args}"
+      srcdir="${src.dir}/compiler"
+      maxmemory="${scalacfork.maxmemory}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+      	<pathelement location="${build-optimised.dir}/classes/library"/>
+      	<pathelement location="${build-optimised.dir}/classes/compiler"/>
+        <pathelement location="${fjbg.jar}"/>
+        <pathelement location="${msil.jar}"/>
+        <pathelement location="${jline.jar}"/>
+        <pathelement location="${ant.jar}"/>
+      </compilationpath>
+    </scalacfork>
+    <propertyfile file="${build-optimised.dir}/classes/compiler/compiler.properties">
+      <entry key="version.number" value="${version.number}"/>
+      <entry key="copyright.string" value="${copyright.string}"/>
+    </propertyfile>
+    <copy todir="${build-optimised.dir}/classes/compiler">
+      <fileset dir="${src.dir}/compiler">
+        <include name="**/*.tmpl"/>
+        <include name="**/*.xml"/>
+        <include name="**/*.js"/>
+        <include name="**/*.css"/>
+      </fileset>
+    </copy>
+    <touch file="${build-optimised.dir}/compiler.complete" verbose="no"/>
+    <stopwatch name="optimised.comp.timer" action="total"/>
+  </target>
+
+  <target name="optimised.clean">
+    <delete dir="${build-optimised.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
   </target>
 
 <!-- ===========================================================================
