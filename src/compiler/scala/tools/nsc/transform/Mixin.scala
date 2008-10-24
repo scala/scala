@@ -677,12 +677,12 @@ abstract class Mixin extends InfoTransform {
            && !sym.isOuterAccessor)
 
         if (settings.debug.value) {
-          println("needsInitFlag(" + sym.fullNameString + "): " + res)
-          println("\tsym.isGetter: " + sym.isGetter)
-          println("\t!isInitializedToDefault: " + !sym.isInitializedToDefault + sym.hasFlag(DEFAULTINIT) + sym.hasFlag(ACCESSOR) + sym.isTerm)
-          println("\t!sym.hasFlag(PARAMACCESSOR): " + !sym.hasFlag(PARAMACCESSOR))
+          log("needsInitFlag(" + sym.fullNameString + "): " + res)
+          log("\tsym.isGetter: " + sym.isGetter)
+          log("\t!isInitializedToDefault: " + !sym.isInitializedToDefault + sym.hasFlag(DEFAULTINIT) + sym.hasFlag(ACCESSOR) + sym.isTerm)
+          log("\t!sym.hasFlag(PARAMACCESSOR): " + !sym.hasFlag(PARAMACCESSOR))
           //println("\t!sym.accessed.hasFlag(PRESUPER): " + !sym.accessed.hasFlag(PRESUPER))
-          println("\t!sym.isOuterAccessor: " + !sym.isOuterAccessor)
+          log("\t!sym.isOuterAccessor: " + !sym.isOuterAccessor)
         }
 
         res

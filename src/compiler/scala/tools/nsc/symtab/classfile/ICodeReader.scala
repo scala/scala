@@ -51,13 +51,11 @@ abstract class ICodeReader extends ClassfileParser {
     if (entry ne null) {
       classFile = entry.classFile
 //      if (isScalaModule)
-        //sym = cls.linkedClassOfModule
+//        sym = cls.linkedClassOfModule
       assert(classFile ne null, "No classfile for " + cls)
 
 //    for (s <- cls.info.members)
 //      Console.println("" + s + ": " + s.tpe)
-      this.instanceCode = new IClass(sym)
-      this.staticCode   = new IClass(sym.linkedClassOfClass)
       parse(classFile, sym)
     } else
       log("Could not find: " + cls)
@@ -75,13 +73,14 @@ abstract class ICodeReader extends ClassfileParser {
   }
 
   override def parseClass() {
+    this.instanceCode = new IClass(clazz)
+    this.staticCode   = new IClass(staticModule)
     val jflags = in.nextChar
     val isAttribute = (jflags & JAVA_ACC_ANNOTATION) != 0
     var sflags = transFlags(jflags, true)
     if ((sflags & DEFERRED) != 0) sflags = sflags & ~DEFERRED | ABSTRACT
     val c = pool.getClassSymbol(in.nextChar)
-//    if (c != clazz)
-//      throw new IOException("class file '" + in.file + "' contains " + c + "instead of " + clazz)
+
     parseInnerClasses()
 
     in.skip(2)               // super class
@@ -643,7 +642,8 @@ abstract class ICodeReader extends ClassfileParser {
    *  There are two possible classes, the static part and the instance part.
    */
   def getCode(flags: Int): IClass =
-    if ((flags & JAVA_ACC_STATIC) != 0) staticCode else instanceCode
+    if (isScalaModule) staticCode
+    else if ((flags & JAVA_ACC_STATIC) != 0) staticCode else instanceCode
 
   class LinearCode {
     var instrs: ListBuffer[(Int, Instruction)] = new ListBuffer
