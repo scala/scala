@@ -708,16 +708,13 @@ trait ParallelMatching  {
     }
 
     /** returns true if pattern tests an object */
-    final def objectPattern(pat:Tree): Boolean = try {
+    final def objectPattern(pat:Tree): Boolean = {
       (pat.symbol ne null) &&
       (pat.symbol != NoSymbol) &&
       pat.symbol.tpe.prefix.isStable &&
       headPatternType =:= singleType(pat.symbol.tpe.prefix, pat.symbol)
-    } catch {
-      case e =>
-        Console.println("object pattern test throws "+e.getMessage())
-        throw e
     }
+
     /*init block*/ {
       var sr = (moreSpecific,subsumed,remaining)
       var j = 0; var pats = column; while(pats ne Nil) {
@@ -819,24 +816,19 @@ trait ParallelMatching  {
       val cfa  = if (!isCaseHead) Nil else casted.caseFieldAccessors
       val caseTemps = (if (!srep.temp.isEmpty && srep.temp.head == casted) srep.temp.tail else srep.temp).zip(cfa)
 
-      try{
-        var vdefs     = caseTemps map {
-          p =>
-            val tmp = p._1;
-            val accessorMethod = p._2
-            val untypedAccess = Apply(Select(mkIdent(casted), accessorMethod),List())
-            val typedAccess = typed { untypedAccess }
-            typedValDef(tmp, typedAccess)
-        }
+      var vdefs = caseTemps map {
+        p =>
+          val tmp = p._1;
+          val accessorMethod = p._2
+          val untypedAccess = Apply(Select(mkIdent(casted), accessorMethod),List())
+          val typedAccess = typed { untypedAccess }
+          typedValDef(tmp, typedAccess)
+      }
 
       if (casted ne this.scrutinee)
         vdefs = ValDef(casted, gen.mkAsInstanceOf(mkIdent(this.scrutinee), casted.tpe)) :: vdefs
 
       return typed { If(cond, squeezedBlock(vdefs, succ), fail) }
-      } catch {
-        case e =>
-          throw new FatalError("EXCEPTION:"+e.getMessage())
-      }
     }
   }
 
