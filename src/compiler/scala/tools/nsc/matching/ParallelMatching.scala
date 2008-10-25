@@ -44,16 +44,11 @@ trait ParallelMatching  {
 
     def isSimpleSwitch: Boolean = {
       (isSameType(scrutinee.tpe.widen, definitions.IntClass.tpe) ||
-       isSameType(scrutinee.tpe.widen, definitions.CharClass.tpe)) && {
-         var xs = column; while(!xs.isEmpty) { // forall
-           val h = xs.head
-           if (strip2(h).isInstanceOf[Literal] || isDefaultPattern(h))
-             xs = xs.tail
-           else
-             return false
-         }
-         return true
-       }}
+       isSameType(scrutinee.tpe.widen, definitions.CharClass.tpe)) &&
+        column.init.forall(h => strip2(h).isInstanceOf[Literal]) && {
+          val last = column.last;
+          last.isInstanceOf[Literal] || isDefaultPattern(last);
+        }}
 
     // an unapply for which we don't need a type test
     def isUnapplyHead(): Boolean = column.head match {
@@ -321,6 +316,7 @@ trait ParallelMatching  {
     private def sanity(pos:Position, tag: Int, pvars:List[Symbol]) {
       varMap = (tag,pvars)::varMap
     }
+
     //lazy
     private def bindVars(Tag:Int, orig: Binding): Binding  = {
       def myBindVars(rest:List[(Int,List[Symbol])], bnd: Binding): Binding  = rest match {
