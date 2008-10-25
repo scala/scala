@@ -43,11 +43,20 @@ trait ParallelMatching  {
   def MixtureRule(scrutinee: Symbol, column: List[Tree], rest: Rep)(implicit rep: RepFactory): RuleApplication = {
 
     def isSimpleSwitch: Boolean = {
+      val simpleSwitchCandidate = (tree : Tree) => strip2(tree) match {
+        case Literal(const : Constant) if isNumeric(const.tag) =>
+          const.tag match {
+            case FloatTag | DoubleTag | LongTag => false;
+            case _ => true;
+          }
+        case _ => false;
+      }
+
       (isSameType(scrutinee.tpe.widen, definitions.IntClass.tpe) ||
        isSameType(scrutinee.tpe.widen, definitions.CharClass.tpe)) &&
-        column.init.forall(h => strip2(h).isInstanceOf[Literal]) && {
+        column.init.forall(simpleSwitchCandidate) && {
           val last = column.last;
-          last.isInstanceOf[Literal] || isDefaultPattern(last);
+          simpleSwitchCandidate(last) || isDefaultPattern(last);
         }}
 
     // an unapply for which we don't need a type test
@@ -327,11 +336,11 @@ trait ParallelMatching  {
       myBindVars(varMap, orig)
     }
 
-    /*block*/{
+    {
       var xs = column
       var i  = 0;
       var last = -1;
-      while(xs ne Nil) { // forall
+      while(xs ne Nil) {
         if (last != -1) {
           cunit.error(xs.head.pos, "unreachable code")
         }
@@ -348,7 +357,7 @@ trait ParallelMatching  {
         i += 1
         xs = xs.tail
       }
-    }/*end block*/
+    }
 
     final def tree(implicit theOwner: Symbol, failTree: Tree): Tree = {
       val (branches, defaultV, defaultRepOpt) = this.getTransition // tag body pairs
