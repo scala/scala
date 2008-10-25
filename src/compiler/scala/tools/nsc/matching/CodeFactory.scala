@@ -43,8 +43,7 @@ trait CodeFactory {
       if(t.tpe <:< v.tpe) mkIdent(t)
       else if(v.tpe <:< t.tpe) typed{gen.mkAsInstanceOf(mkIdent(t),v.tpe)} // refinement
       else {
-        //Console.println("internal error, types don't match: pattern variable "+v+":"+v.tpe+" temp "+t+":"+t.tpe)
-        error("internal error, types don't match: pattern variable "+v+":"+v.tpe+" temp "+t+":"+t.tpe)
+        cunit.error(v.pos, "internal error, types don't match: pattern variable "+v+":"+v.tpe+" temp "+t+":"+t.tpe)
         typed{gen.mkAsInstanceOf(mkIdent(t), v.tpe)} // refinement
       }
     })::targetParams(n)
