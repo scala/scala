@@ -157,16 +157,12 @@ trait ParallelMatching  {
     protected var defaults: List[Int]    = Nil
     var defaultV: collection.immutable.Set[Symbol] = emptySymbolSet
 
-    var theDefaultRows: List[Row] = null
-    def getDefaultRows: List[Row] = {
-      if (theDefaultRows ne null)
-        return theDefaultRows
+    lazy val defaultRows: List[Row] = {
       var res:List[Row] = Nil
       var ds = defaults; while(ds ne Nil) {
         res = grabRow(ds.head) :: res
         ds = ds.tail
       }
-      theDefaultRows = res
       res
     }
 
@@ -195,7 +191,6 @@ trait ParallelMatching  {
 
     /** inserts row indices using in to list of tagindexpairs*/
     protected def tagIndicesToReps(implicit theOwner: Symbol) = {
-      val defaultRows = getDefaultRows
       var trs: List[(Int,Rep)] = Nil
       var old = tagIndexPairs
       while (tagIndexPairs ne null) { // collect all with same tag
@@ -212,7 +207,7 @@ trait ParallelMatching  {
       trs
     }
 
-    protected def defaultsToRep(implicit theOwner: Symbol) = rep.make(rest.temp, getDefaultRows)
+    protected def defaultsToRep(implicit theOwner: Symbol) = rep.make(rest.temp, defaultRows)
 
     protected def insertTagIndexPair(tag: Int, index: Int) { tagIndexPairs = TagIndexPair.insert(tagIndexPairs, tag, index) }
 
@@ -302,12 +297,8 @@ trait ParallelMatching  {
 
     protected override def haveDefault: Boolean = !defaultIndexSet.isEmpty
 
-    override def getDefaultRows: List[Row] = {
-      if (theDefaultRows eq null)
-        theDefaultRows = defaultIndexSet.filter(defaultIndexSet(_)).toList.reverseMap(grabRow)
-
-      theDefaultRows
-    }
+    override lazy val defaultRows: List[Row] =
+        defaultIndexSet.filter(defaultIndexSet(_)).toList.reverseMap(grabRow)
 
     var varMap: List[(Int,List[Symbol])] = Nil
 
