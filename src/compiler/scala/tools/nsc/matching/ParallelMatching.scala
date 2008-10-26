@@ -82,26 +82,23 @@ trait ParallelMatching  {
           false
       }
     }
-    if (isEqualsPattern(column.head.tpe)) {
-      return new MixEquals(scrutinee, column, rest)
+
+    if (isEqualsPattern(column.head.tpe))
+      new MixEquals(scrutinee, column, rest)
+    else if (column.head.isInstanceOf[ArrayValue]) {
+      if (isRightIgnoring(column.head.asInstanceOf[ArrayValue]))
+        new MixSequenceStar(scrutinee, column, rest)
+      else
+        new MixSequence(scrutinee, column, rest)
     }
-    if (column.head.isInstanceOf[ArrayValue]) {
-      val av = column.head.asInstanceOf[ArrayValue]
-      return if (!isRightIgnoring(av))
-               new MixSequence(scrutinee, column, rest)
-             else
-               new MixSequenceStar(scrutinee, column, rest)
-    }
-    if (isSimpleSwitch) {
-      return new MixLiterals(scrutinee, column, rest)
-    }
-    if (settings_casetags && (column.length > 1) && isFlatCases(column)) {
-      return new MixCases(scrutinee, column, rest)
-    }
-    if (isUnapplyHead()) {
-      return new MixUnapply(scrutinee, column, rest)
-    }
-    return new MixTypes(scrutinee, column, rest)
+    else if (isSimpleSwitch)
+      new MixLiterals(scrutinee, column, rest)
+    else if (settings_casetags && (column.length > 1) && isFlatCases(column))
+      new MixCases(scrutinee, column, rest)
+    else if (isUnapplyHead())
+      new MixUnapply(scrutinee, column, rest)
+    else
+      new MixTypes(scrutinee, column, rest)
   }
 
   sealed abstract class RuleApplication(rep: RepFactory) {
@@ -157,14 +154,8 @@ trait ParallelMatching  {
     protected var defaults: List[Int]    = Nil
     var defaultV: collection.immutable.Set[Symbol] = emptySymbolSet
 
-    lazy val defaultRows: List[Row] = {
-      var res:List[Row] = Nil
-      var ds = defaults; while(ds ne Nil) {
-        res = grabRow(ds.head) :: res
-        ds = ds.tail
-      }
-      res
-    }
+    lazy val defaultRows: List[Row] =
+      defaults.reverseMap(grabRow);
 
     // sorted e.g. case _ => 7,5,1
     protected def insertDefault(tag: Int,vs:Set[Symbol]) {
@@ -934,10 +925,10 @@ trait ParallelMatching  {
       val label = theOwner.newLabel(body.pos, "body%"+bx).setInfo(new MethodType(argts.toList, tpe))
       labels(bx) = label
 
-      if (body.isInstanceOf[Throw] || body.isInstanceOf[Literal]) {
-        return squeezedBlock(vdefs.reverse, body.duplicate setType tpe)
+      return body match {
+        case _: Throw | _: Literal => squeezedBlock(vdefs.reverse, body.duplicate setType tpe)
+        case _ => squeezedBlock(vdefs, LabelDef(label, vrev.reverse, body setType tpe))
       }
-      return squeezedBlock(vdefs, LabelDef(label, vrev.reverse, body setType tpe))
     }
 
     // jump
@@ -963,6 +954,7 @@ trait ParallelMatching  {
           }
         }
     }
+
     val body = targets(bx)
     if (body.isInstanceOf[Throw] || body.isInstanceOf[Literal]) {
       val vdefs = new ListBuffer[Tree]
@@ -973,11 +965,10 @@ trait ParallelMatching  {
           vdefs  += typedValDef(v, substv)
         }
       }
-      return squeezedBlock(vdefs.toList, body.duplicate setType resultType)
+      squeezedBlock(vdefs.toList, body.duplicate setType resultType)
+    } else {
+      Apply(mkIdent(label),args.toList)
     }
-
-
-    return Apply(mkIdent(label),args.toList)
   }
 
   /** the injection here handles alternatives and unapply type tests */
@@ -1144,12 +1135,9 @@ trait ParallelMatching  {
           intermediary_result
         }
     }
-    if (unchanged) {
-      val ri = RepImpl(temp,row).init
-      ri
-    } else {
-      this.make(temp,row) // recursive call
-    }
+
+    if (unchanged) RepImpl(temp,row).init
+    else this.make(temp,row) // recursive call
   }
 }
 
