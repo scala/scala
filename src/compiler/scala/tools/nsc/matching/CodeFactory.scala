@@ -8,8 +8,7 @@ package scala.tools.nsc.matching
 
 import scala.tools.nsc.util.Position
 
-/** contains many helper methods that build trees...some of these currently
- *  unused, since were for regexp matching.
+/** Helper methods that build trees for pattern matching.
  *
  *  @author Burak Emir
  */
@@ -40,10 +39,6 @@ trait CodeFactory {
     case NoBinding => Nil;
     case Binding(v,t,n) => ValDef(v, typed(mkIdent(t)))::targetParams(n)
   }
-
-  final def pairType(left: Type, right: Type) =
-    appliedType(definitions.TupleClass(2).typeConstructor,
-                List(left,right))
 
   /** returns A for T <: Sequence[ A ]
    */
