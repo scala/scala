@@ -217,17 +217,11 @@ trait ParallelMatching  {
   class MixCases(val scrutinee:Symbol, val column:List[Tree], val rest:Rep)(implicit rep:RepFactory) extends CaseRuleApplication(rep) {
 
     /** insert row indices into list of tagindexpairs */
-    {
-      var xs = column; var i  = 0; while(xs ne Nil) { // forall
-        val p = strip2(xs.head)
-        if (isDefaultPattern(p))
-          insertDefault(i, strip1(xs.head))
-        else
-          insertTagIndexPair(getCaseTag(p.tpe), i)
-        i += 1
-        xs = xs.tail
-      }
-    }
+    for ((x, i) <- column.zipWithIndex; val p = strip2(x))
+      if (isDefaultPattern(p))
+        insertDefault(i, strip1(x))
+      else
+        insertTagIndexPair(getCaseTag(p.tpe), i)
 
     override def grabTemps = scrutinee::rest.temp
 
