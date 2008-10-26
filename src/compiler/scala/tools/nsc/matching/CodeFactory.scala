@@ -71,7 +71,7 @@ trait CodeFactory {
   final def seqElement(sel:Tree, ix: Int) =
     typed { Apply(Select(sel, sel.tpe.member(nme.apply)), List(Literal(Constant(ix)))) }
 
-  /** for tree of sequence type, returns boolean tree that has length i */
+  /** for tree of sequence type, returns boolean tree testing that the sequence has length i */
   final def seqHasLength(sel: Tree, ntpe: Type, i: Int) =
     typed(
       Equals(

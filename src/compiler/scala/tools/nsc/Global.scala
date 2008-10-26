@@ -23,7 +23,6 @@ import plugins.Plugins
 import ast._
 import ast.parser._
 import typechecker._
-//import matching.TransMatcher
 import transform._
 import backend.icode.{ICodes, GenICode, Checkers}
 import backend.ScalaPrimitives
@@ -312,10 +311,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   object tailCalls extends {
     val global: Global.this.type = Global.this
   } with TailCalls
-
-  //object transMatcher extends {
-  //  val global: Global.this.type = Global.this
-  //} with TransMatcher
 
 //  object checkDefined extends {
 //    val global: Global.this.type = Global.this

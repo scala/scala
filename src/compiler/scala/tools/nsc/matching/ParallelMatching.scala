@@ -599,7 +599,7 @@ trait ParallelMatching  {
     }
   }
 
-  /** handle sequence pattern and ArrayValue (but not star patterns)
+  /** handle sequence pattern and ArrayValue with star patterns
    */
   final class MixSequenceStar(scrutinee:Symbol, column:List[Tree], rest:Rep)(implicit rep:RepFactory) extends MixSequence(scrutinee,column,rest) {
     // in principle, we could optimize more, but variable binding gets complicated (@todo use finite state methods instead)

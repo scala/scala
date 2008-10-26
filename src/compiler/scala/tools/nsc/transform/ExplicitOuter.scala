@@ -482,9 +482,6 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           }
 
           ExplicitOuter.this.resultType = tree.tpe
-          //Console.println("TransMatcher currentOwner ="+currentOwner+")")
-          //Console.println("TransMatcher selector.tpe ="+selector.tpe+")")
-          //Console.println("TransMatcher resultType ="+resultType+")")
 
           //println("handle pattern = "+nselector+"/"+ncases.toList+"/"+currentOwner+"/"+tree.tpe)
           val t_untyped = handlePattern(nselector, ncases.toList, checkExhaustive, currentOwner, transform)
