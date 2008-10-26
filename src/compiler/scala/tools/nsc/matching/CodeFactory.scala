@@ -48,7 +48,6 @@ trait CodeFactory {
   /** returns A for T <: Sequence[ A ]
    */
   final def getElemType_Sequence(tpe: Type): Type = {
-    //System.err.println("getElemType_Sequence("+tpe.widen()+")")
     val tpe1 = tpe.widen.baseType(definitions.SeqClass)
 
     if (tpe1 == NoType)
@@ -66,8 +65,7 @@ trait CodeFactory {
 
   /** for tree of sequence type, returns tree that drops first i elements */
   final def seqDrop(sel:Tree, ix: Int) = if (ix == 0) sel else
-    typed { Apply(Select(Select(sel, nme.toList), nme.drop),
-                  List(Literal(Constant(ix)))) }
+    typed { Select(Apply(Select(sel, nme.drop), List(Literal(Constant(ix)))), nme.toSeq) }
 
   /** for tree of sequence type, returns tree that drops first i elements */
   final def seqElement(sel:Tree, ix: Int) =

@@ -354,6 +354,7 @@ trait StdNames {
     val tag = newTermName("$tag")
     val tail = newTermName("tail")
     val toList = newTermName("toList")
+    val toSeq = newTermName("toSeq")
     val toString_ = newTermName("toString")
     val clone_ = newTermName("clone")
     val that = newTermName("that")
