@@ -25,7 +25,6 @@ trait CodeFactory {
   final def mkIdent(sym:Symbol) = Ident(sym) setType sym.tpe
 
   final def typedValDef(x:Symbol, rhs:Tree) = {
-    //Console.println("1"+x.tpe)
     x.tpe match {
       case WildcardType => rhs.setType(null); val rhs1 = typed(rhs); x setInfo rhs1.tpe; typed{ValDef(x, rhs)}
       case _ => typed{ValDef(x, typed(rhs, x.tpe))}
@@ -33,9 +32,6 @@ trait CodeFactory {
   }
 
   final def mk_(tpe:Type) = Ident(nme.WILDCARD) setType tpe
-
-  final def targetLabel(owner: Symbol, pos: Position, name:String, argtpes:List[Type], resultTpe: Type) =
-    owner.newLabel(pos, name).setInfo(new MethodType(argtpes, resultTpe))
 
   /**
    * Convert a pattern binding into a list of value definitions.
@@ -45,20 +41,9 @@ trait CodeFactory {
     case Binding(v,t,n) => ValDef(v, typed(mkIdent(t)))::targetParams(n)
   }
 
-  /** returns  `List[ Tuple2[ scala.Int, <elemType> ] ]' */
-  final def SeqTraceType(elemType: Type): Type =
-    appliedType(definitions.ListClass.typeConstructor,
-                List(pairType(definitions.IntClass.info,
-                              elemType)))
-
   final def pairType(left: Type, right: Type) =
     appliedType(definitions.TupleClass(2).typeConstructor,
                 List(left,right))
-
-  /**  returns `Iterator[ elemType ]' */
-  final def _seqIterType(elemType: Type): Type =
-    appliedType(definitions.IteratorClass.typeConstructor,
-                List(elemType))
 
   /** returns A for T <: Sequence[ A ]
    */
@@ -77,37 +62,6 @@ trait CodeFactory {
       Literal(Constant(true))
     else                                          // is Option[_]
       Not(Select(mkIdent(vsym), nme.isEmpty))
-  }
-
-  /** returns code `<seqObj>.elements' */
-  final def newIterator(seqObj: Tree): Tree =
-    Apply(Select(seqObj, newTermName("elements")), List())
-
-  /** `it.next()'     */
-  final def _next(iter: Tree) =
-    Apply(Select(iter, definitions.Iterator_next), List())
-
-  /** `it.hasNext()'  */
-  final def _hasNext(iter: Tree) =
-    Apply(Select(iter, definitions.Iterator_hasNext), List())
-
-  /** `!it.hasCur()'  */
-  final def _not_hasNext(iter: Tree) =
-    Apply(Select(_hasNext(iter), definitions.Boolean_not), List())
-
-  /** `trace.isEmpty' */
-  final def isEmpty( iter: Tree  ):  Tree =
-    Apply(Select(iter, definitions.List_isEmpty), List())
-
-  /** `arg.head' */
-  final def SeqList_head(arg: Tree) =
-    Apply(Select(arg, definitions.List_head), List())
-
-  final def Negate(tree: Tree) = tree match {
-    case Literal(Constant(value:Boolean))=>
-      Literal(Constant(!value))
-    case _ =>
-      Apply(Select(tree, definitions.Boolean_not), List());
   }
 
   /** for tree of sequence type, returns tree that drops first i elements */
@@ -153,24 +107,6 @@ trait CodeFactory {
       }
   }
 
-  /*protected*/final def Or(left: Tree, right: Tree): Tree = {
-    left match {
-/*
-      case If(cond: Tree, thenp: Tree, Literal(Constant(false))) =>  // little opt, frequent special case
-        If(cond, thenp, right)
-*/
-      case Literal(Constant(value: Boolean))=>
-	if(value) left else right
-      case _ =>
-        right match {
-          case Literal(Constant(false)) =>
-	    left
-          case _ =>
-            Apply(Select(left, definitions.Boolean_or), List(right));
-        }
-    }
-  }
-
   final def Equals(left: Tree, right: Tree): Tree =
     Apply(Select(left, nme.EQ), List(right))
 
@@ -195,15 +131,9 @@ trait CodeFactory {
       Apply(Select(tree, nme.ne), List(Literal(Constant(null))))
     }
 
-  final def IsNull(tree:Tree) =
-    typed {
-      Apply(Select(tree, nme.eq), List(Literal(Constant(null))))
-    }
-
     // statistics
     var nremoved = 0
     var nsubstituted = 0
-    var nstatic = 0
 
   final def squeezedBlock(vds: List[Tree], exp: Tree)(implicit theOwner: Symbol): Tree =
     if (settings_squeeze)
@@ -268,7 +198,7 @@ trait CodeFactory {
       //Console.println("hello, ref count = "+rt.nref+"/"+rt.nsafeRef)
         rt.nref match {
           case 0 =>
-            nremoved = nremoved + 1
+            nremoved += 1
             exp1
           case 1 if rt.nsafeRef == 1 =>
             nsubstituted += 1
