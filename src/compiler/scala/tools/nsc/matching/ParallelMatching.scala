@@ -303,19 +303,10 @@ trait ParallelMatching  {
     protected override def haveDefault: Boolean = !defaultIndexSet.isEmpty
 
     override def getDefaultRows: List[Row] = {
-      if (theDefaultRows ne null)
-        return theDefaultRows
+      if (theDefaultRows eq null)
+        theDefaultRows = defaultIndexSet.filter(defaultIndexSet(_)).toList.reverseMap(grabRow)
 
-      var ix = defaultIndexSet.capacity;
-      var res:List[Row] = Nil
-      while((ix >= 0) && !defaultIndexSet(ix)) { ix = ix - 1 }
-      while(ix >= 0) {
-        res = grabRow(ix) :: res
-        ix = ix - 1
-        while((ix >= 0) && !defaultIndexSet(ix)) { ix = ix - 1 }
-      }
-      theDefaultRows = res
-      res
+      theDefaultRows
     }
 
     var varMap: List[(Int,List[Symbol])] = Nil
