@@ -37,16 +37,12 @@ trait CodeFactory {
   final def targetLabel(owner: Symbol, pos: Position, name:String, argtpes:List[Type], resultTpe: Type) =
     owner.newLabel(pos, name).setInfo(new MethodType(argtpes, resultTpe))
 
-  final def targetParams(subst:Binding):List[ValDef] = if(subst eq NoBinding) Nil else subst match {
-    case Binding(v,t,n) => ValDef(v, {
-      //v.setFlag(symtab.Flags.TRANS_FLAG);
-      if(t.tpe <:< v.tpe) mkIdent(t)
-      else if(v.tpe <:< t.tpe) typed{gen.mkAsInstanceOf(mkIdent(t),v.tpe)} // refinement
-      else {
-        cunit.error(v.pos, "internal error, types don't match: pattern variable "+v+":"+v.tpe+" temp "+t+":"+t.tpe)
-        typed{gen.mkAsInstanceOf(mkIdent(t), v.tpe)} // refinement
-      }
-    })::targetParams(n)
+  /**
+   * Convert a pattern binding into a list of value definitions.
+   */
+  final def targetParams(subst:Binding):List[ValDef] = subst match {
+    case NoBinding => Nil;
+    case Binding(v,t,n) => ValDef(v, typed(mkIdent(t)))::targetParams(n)
   }
 
   /** returns  `List[ Tuple2[ scala.Int, <elemType> ] ]' */
