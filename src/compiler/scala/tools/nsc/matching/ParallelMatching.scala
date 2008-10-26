@@ -8,7 +8,7 @@
 package scala.tools.nsc.matching
 
 import scala.tools.nsc.util.Position
-import collection.mutable.ListBuffer
+import collection.mutable.{ListBuffer, BitSet}
 
 /** Translation of match expressions.
  *
@@ -173,6 +173,11 @@ trait ParallelMatching  {
     // sorted e.g. case _ => 7,5,1
     protected def insertDefault(tag: Int,vs:Set[Symbol]) {
       defaultV = defaultV ++ vs
+      def insertSorted(tag: Int, xs:List[Int]):List[Int] = xs match {
+        case y::ys if y > tag => y::insertSorted(tag, ys)
+        case ys               => tag :: ys
+      }
+
       defaults = insertSorted(tag, defaults)
     }
     protected def haveDefault: Boolean = !defaults.isEmpty
@@ -288,36 +293,29 @@ trait ParallelMatching  {
    */
   class MixLiterals(val scrutinee:Symbol, val column:List[Tree], val rest:Rep)(implicit rep:RepFactory) extends CaseRuleApplication(rep) {
 
-    private var defaultIndexSet: Set64 = if (column.length < 64) new Set64 else null
+    private var defaultIndexSet = new BitSet(column.length)
 
-    override def insertDefault(tag: Int, vs: Set[Symbol]): Unit =
-      if (defaultIndexSet eq null) super.insertDefault(tag,vs)
-      else {
-        defaultIndexSet |= tag
-        defaultV = defaultV ++ vs
-      }
+    override def insertDefault(tag: Int, vs: Set[Symbol]) {
+      defaultIndexSet += tag
+      defaultV = defaultV ++ vs
+    }
 
-    protected override def haveDefault: Boolean =
-      if (defaultIndexSet eq null) super.haveDefault else (defaultIndexSet.underlying != 0)
+    protected override def haveDefault: Boolean = !defaultIndexSet.isEmpty
 
     override def getDefaultRows: List[Row] = {
       if (theDefaultRows ne null)
         return theDefaultRows
 
-      if (defaultIndexSet eq null)
-        super.getDefaultRows
-      else {
-        var ix = 63
-        var res:List[Row] = Nil
-        while((ix >= 0) && !defaultIndexSet.contains(ix)) { ix = ix - 1 }
-        while(ix >= 0) {
-          res = grabRow(ix) :: res
-          ix = ix - 1
-          while((ix >= 0) && !defaultIndexSet.contains(ix)) { ix = ix - 1 }
-        }
-        theDefaultRows = res
-        res
+      var ix = defaultIndexSet.capacity;
+      var res:List[Row] = Nil
+      while((ix >= 0) && !defaultIndexSet(ix)) { ix = ix - 1 }
+      while(ix >= 0) {
+        res = grabRow(ix) :: res
+        ix = ix - 1
+        while((ix >= 0) && !defaultIndexSet(ix)) { ix = ix - 1 }
       }
+      theDefaultRows = res
+      res
     }
 
     var varMap: List[(Int,List[Symbol])] = Nil
@@ -867,8 +865,7 @@ trait ParallelMatching  {
   var vss: List[SymList] = _
   var labels:  Array[Symbol] = new Array[Symbol](4)
   var targets: List[Tree] = _
-  var reached64: Set64 = _
-  var reached: List[Int] = Nil
+  var reached : BitSet = _;
   var shortCuts: List[Symbol] = Nil;
 
   final def make(temp:List[Symbol], row:List[Row], targets: List[Tree], vss:List[SymList])(implicit theOwner: Symbol): Rep = {
@@ -877,7 +874,7 @@ trait ParallelMatching  {
     if (targets.length > labels.length)
       this.labels    = new Array[Symbol](targets.length)
     this.vss       = vss
-    this.reached64 = if (targets.length < 64) new Set64 else null
+    this.reached = new BitSet(targets.length);
     return make(temp, row)
   }
 
@@ -914,13 +911,13 @@ trait ParallelMatching  {
   final def cleanup() {
     var i = targets.length;
     while (i>0) { i-=1; labels(i) = null; };
-    reached = Nil
+    reached = null;
     shortCuts = Nil
   }
   final def isReached(bx:Int)   = { labels(bx) ne null }
-  final def markReachedTwice(bx:Int) = if (reached64 ne null) { reached64 |= bx } else { reached = insertSorted(bx, reached) }
+  final def markReachedTwice(bx:Int) { reached += bx }
   /** @pre bx < 0 || labelIndex(bx) != -1 */
-  final def isReachedTwice(bx:Int) = (bx < 0) || (if (reached64 ne null) { reached64 contains bx } else { findSorted(bx,reached) })
+  final def isReachedTwice(bx:Int) = (bx < 0) || reached(bx)
   /* @returns bx such that labels(bx) eq label, -1 if no such bx exists */
   final def labelIndex(label:Symbol): Int = {
     var bx = 0; while((bx < labels.length) && (labels(bx) ne label)) { bx += 1 }

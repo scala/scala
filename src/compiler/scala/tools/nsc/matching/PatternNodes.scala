@@ -96,20 +96,6 @@ trait PatternNodes { self: transform.ExplicitOuter =>
       case _                      => None
     }
   }
-/*
-  object ArrayValueFixed {
-    def unapply(x:Tree):Option[List[Tree]] = x match {
-      case ArrayValue(_,xs) => if(isDefaultPattern(xs.last)) Some(xs) else None
-    }
-  }
-  object ArrayValueStar {
-    def unapply(x:Tree): Option[(List[Tree],Tree)] = x match {
-      case ArrayValue(_,xs) =>
-        val ys = xs.drop(xs.length-1)
-        val p = xs.last
-        if(!isDefaultPattern(p)) Some(ys,p) else None
-    }
-  }*/
 
   /* equality checks for named constant patterns like "Foo()" are encoded as "_:<equals>[Foo().type]"
    * and later compiled to "if(Foo() == scrutinee) ...". This method extracts type information from
@@ -121,6 +107,7 @@ trait PatternNodes { self: transform.ExplicitOuter =>
       arg
     case x => x
   }
+
   /** returns if pattern can be considered a no-op test ??for expected type?? */
   final def isDefaultPattern(pattern:Tree): Boolean = pattern match {
     case Bind(_, p)            => isDefaultPattern(p)
@@ -192,19 +179,6 @@ trait PatternNodes { self: transform.ExplicitOuter =>
     }
     definedVars1(x);
     vs.toList
-  }
-
-  // insert in sorted list, larger items first
-  final def insertSorted(tag: Int, xs:List[Int]):List[Int] = xs match {
-    case y::ys if y > tag => y::insertSorted(tag, ys)
-    case ys               => tag :: ys
-  }
-
-  // find taag in sorted list
-  final def findSorted(Tag: Int, xs:List[Int]): Boolean = xs match {
-    case Tag::_             => true
-    case   y::ys if y > Tag => findSorted(Tag,ys)
-    case _                  => false
   }
 
   /** pvar: the symbol of the pattern variable
