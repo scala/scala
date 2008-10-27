@@ -7,8 +7,9 @@
 
 package scala.tools.nsc.matching
 
-import scala.tools.nsc.util.Position
+import util.Position
 import collection.mutable.{ListBuffer, BitSet}
+import collection.immutable.IntMap
 
 /** Translation of match expressions.
  *
@@ -161,40 +162,27 @@ trait ParallelMatching  {
 
       defaults = insertSorted(tag, defaults)
     }
-    protected def haveDefault: Boolean = !defaults.isEmpty
 
-    var tagIndexPairs: TagIndexPair = null
+    protected def haveDefault: Boolean = !defaults.isEmpty
+    protected var tagIndices = IntMap.empty[List[Int]]
 
     protected def grabTemps: List[Symbol] = rest.temp
     protected def grabRow(index:Int): Row = rest.row(index) match {
       case r @ Row(pats, s, g, bx) => if (defaultV.isEmpty) r else {
         val vs = strip1(column(index))  // get vars
-        val nbindings = s.add(vs.elements,scrutinee)
+        val nbindings = s.add(vs.elements, scrutinee)
         Row(pats, nbindings, g, bx)
       }
     }
 
-    /** inserts row indices using in to list of tagindexpairs*/
-    protected def tagIndicesToReps(implicit theOwner: Symbol) = {
-      var trs: List[(Int,Rep)] = Nil
-      var old = tagIndexPairs
-      while (tagIndexPairs ne null) { // collect all with same tag
-        val tag = tagIndexPairs.tag
-        var tagRows = this.grabRow(tagIndexPairs.index)::Nil
-        tagIndexPairs = tagIndexPairs.next
-        while ((tagIndexPairs ne null) && tagIndexPairs.tag == tag) {
-          tagRows = this.grabRow(tagIndexPairs.index)::tagRows
-          tagIndexPairs = tagIndexPairs.next
-        }
-        trs = (tag, rep.make(this.grabTemps, tagRows ::: defaultRows)) :: trs
-      }
-      tagIndexPairs = old
-      trs
-    }
+    /** inserts row indices using in to list of tagIndices */
+    protected def tagIndicesToReps(implicit theOwner: Symbol) : List[(Int, Rep)] =
+      tagIndices map { case (k, v) => (k, rep.make(grabTemps, v.reverseMap(grabRow) ::: defaultRows)) } toList
 
     protected def defaultsToRep(implicit theOwner: Symbol) = rep.make(rest.temp, defaultRows)
 
-    protected def insertTagIndexPair(tag: Int, index: Int) { tagIndexPairs = TagIndexPair.insert(tagIndexPairs, tag, index) }
+    protected def insertTagIndexPair(tag: Int, index: Int) =
+      tagIndices = tagIndices.update(tag, index :: tagIndices.getOrElse(tag, Nil))
 
     /** returns
      *  @return list of continuations,
@@ -210,7 +198,7 @@ trait ParallelMatching  {
   **/
   class MixCases(val scrutinee:Symbol, val column:List[Tree], val rest:Rep)(implicit rep:RepFactory) extends CaseRuleApplication(rep) {
 
-    /** insert row indices into list of tagindexpairs */
+    /** insert row indices into list of tagIndices */
     for ((x, i) <- column.zipWithIndex; val p = strip2(x))
       if (isDefaultPattern(p))
         insertDefault(i, strip1(x))
@@ -219,10 +207,13 @@ trait ParallelMatching  {
 
     override def grabTemps = scrutinee::rest.temp
 
-    override def grabRow(index:Int) = rest.row(tagIndexPairs.index) match {
-      case Row(pats, s, g, bx) =>
-        val nbindings = s.add(strip1(column(index)).elements, scrutinee)
-        Row(column(tagIndexPairs.index)::pats, nbindings, g, bx)
+    override def grabRow(index: Int) = {
+      val firstValue = tagIndices(tagIndices.firstKey).head
+      rest.row(firstValue) match {
+        case Row(pats, s, g, bx) =>
+          val nbindings = s.add(strip1(column(index)).elements, scrutinee)
+          Row(column(firstValue)::pats, nbindings, g, bx)
+      }
     }
 
     final def tree(implicit theOwner: Symbol, failTree: Tree): Tree = {
@@ -234,7 +225,7 @@ trait ParallelMatching  {
           CaseDef(Literal(tag),
                   EmptyTree,
                   {
-                    val pat  = this.column(this.tagIndexPairs.find(tag));
+                    val pat  = this.column(tagIndices(tag).head);
                     val ptpe = pat.tpe
                     if (this.scrutinee.tpe.typeSymbol.hasFlag(Flags.SEALED) && strip2(pat).isInstanceOf[Apply]) {
                       //cast
