@@ -70,17 +70,12 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
         case CaseDef(Ident(nme.WILDCARD),_,_) => true  ;
         case _ => false
       }}) =>
-        var i = 0
-        var as = args
-        while(as ne Nil) {
-          val ti = as.head
+        for ((ti, i) <- args.zipWithIndex){
           val v = newVar(ti.pos, cunit.fresh.newName(ti.pos, "tp"), selector.tpe.typeArgs(i))
           if (!doCheckExhaustive)
             v.setFlag(symtab.Flags.TRANS_FLAG)
           vds  += typedValDef(v, ti)
           tmps += v
-          i = i + 1
-          as = as.tail
         }
       theFailTree = ThrowMatchError(selector.pos, copy.Apply(app, fn, tmps.toList map mkIdent))
       case _ =>
@@ -97,12 +92,10 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
     val mch  = typed{ repToTree(irep)}
     var dfatree = typed{Block(vds.toList, mch)}
     // cannot use squeezedBlock because of side-effects, see t275
-    var bx = 0; var cs = cases; while(cs ne Nil) {
+    for ((cs, bx) <- cases.zipWithIndex){
       if (!rep.isReached(bx)) {
-        cunit.error(cs.head.asInstanceOf[CaseDef].body.pos, "unreachable code")
+        cunit.error(cs.body.pos, "unreachable code")
       }
-      cs = cs.tail
-      bx += 1
     }
     dfatree = rep.cleanup(dfatree)
     resetTrav.traverse(dfatree)

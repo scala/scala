@@ -597,14 +597,7 @@ trait ParallelMatching  {
       val fail = typed { repToTree(frep) }
       fLabel setInfo (new MethodType(Nil, fail.tpe))
       val succ = repToTree(srep)
-      try {
-        typed{ If(cond2, succ, LabelDef(fLabel, Nil, fail)) }
-      } catch {
-        case e =>
-          Console.println("failed to type-check If")
-          Console.println("cond2: "+cond2)
-          throw e
-      }
+      typed{ If(cond2, succ, LabelDef(fLabel, Nil, fail)) }
     }
   }
 

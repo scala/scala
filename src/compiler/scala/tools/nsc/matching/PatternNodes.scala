@@ -29,34 +29,22 @@ trait PatternNodes { self: transform.ExplicitOuter =>
 
   /** sorted, null-terminated list of (int,int) pairs */
   class TagIndexPair(val tag: Int, val index: Int, val next: TagIndexPair) {
-
     def find(tag: Int): Int =
       if (this.tag == tag) index
       else next.find(tag) // assumes argument can always be found
-
   }
 
   // --- misc methods
 
-  private val dummy1 = EmptyTree :: Nil
-  private val dummy2 = EmptyTree :: dummy1
-  private val dummy3 = EmptyTree :: dummy2
-  private val dummy4 = EmptyTree :: dummy3
-  private val dummy5 = EmptyTree :: dummy4
-  private val dummy6 = EmptyTree :: dummy5
-  private val dummy7 = EmptyTree :: dummy6
-
-  final def getDummies(i:Int): List[Tree] = i match {
-    case 0 => Nil
-    case 1 => dummy1
-    case 2 => dummy2
-    case 3 => dummy3
-    case 4 => dummy4
-    case 5 => dummy5
-    case 6 => dummy6
-    case 7 => dummy7
-    case n => EmptyTree::getDummies(i-1)
+  private val dummies = new Array[List[Tree]](8);
+  dummies(0) = Nil;
+  for (i <- 1 until dummies.length){
+    dummies(i) = EmptyTree :: dummies(i - 1);
   }
+
+  final def getDummies(i:Int): List[Tree] =
+    if (i < dummies.length) dummies(i);
+    else EmptyTree::getDummies(i-1)
 
   def makeBind(vs:SymList, pat:Tree): Tree =
     if(vs eq Nil) pat else Bind(vs.head, makeBind(vs.tail, pat)) setType pat.tpe
