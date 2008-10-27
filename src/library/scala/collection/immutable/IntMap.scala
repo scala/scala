@@ -369,5 +369,24 @@ sealed abstract class IntMap[+T] extends scala.collection.immutable.Map[Int, T]{
     case (that : IntMap[_]) => this.unionWith[S](that.asInstanceOf[IntMap[S]], (key, x, y) => y);
     case that => that.foldLeft(this : IntMap[S])({case (m, (x, y)) => m.update(x, y)});
   }
+
+
+  /**
+   * The entry with the lowest key value considered in unsigned order.
+   */
+  final def firstKey : Int = this match {
+    case Bin(_, _, l, r) => l.firstKey;
+    case Tip(k, v) => k;
+    case Nil => error("Empty set")
+  }
+
+  /**
+   * The entry with the highest key value considered in unsigned order.
+   */
+  final def lastKey : Int = this match {
+    case Bin(_, _, l, r) => r.lastKey;
+    case Tip(k, v) => k;
+    case Nil => error("Empty set")
+  }
 }
 
