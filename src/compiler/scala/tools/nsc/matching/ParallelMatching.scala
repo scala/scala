@@ -109,9 +109,7 @@ trait ParallelMatching  {
 
     // used in MixEquals and MixSequence
     final protected def repWithoutHead(col: List[Tree],rest: Rep)(implicit theOwner: Symbol): Rep = {
-      val nfailrow = List.map2(col.tail, rest.row.tail)((p, r) => r match {
-        case Row(pats, binds, g, bx) => Row(p::pats, binds, g, bx);
-      });
+      val nfailrow = List.map2(col.tail, rest.row.tail)((p, r) => r.insert(p))
       rep.make(scrutinee::rest.temp, nfailrow)
     }
 
@@ -167,11 +165,11 @@ trait ParallelMatching  {
     protected var tagIndices = IntMap.empty[List[Int]]
 
     protected def grabTemps: List[Symbol] = rest.temp
-    protected def grabRow(index:Int): Row = rest.row(index) match {
-      case r @ Row(pats, s, g, bx) => if (defaultV.isEmpty) r else {
+    protected def grabRow(index: Int): Row = {
+      val r @ Row(_,s,_,_) = rest.row(index)
+      if (defaultV.isEmpty) r else {
         val vs = strip1(column(index))  // get vars
-        val nbindings = s.add(vs.elements, scrutinee)
-        Row(pats, nbindings, g, bx)
+        r.insert2(Nil, s.add(vs.elements, scrutinee))
       }
     }
 
@@ -209,11 +207,10 @@ trait ParallelMatching  {
 
     override def grabRow(index: Int) = {
       val firstValue = tagIndices(tagIndices.firstKey).head
-      rest.row(firstValue) match {
-        case Row(pats, s, g, bx) =>
-          val nbindings = s.add(strip1(column(index)).elements, scrutinee)
-          Row(column(firstValue)::pats, nbindings, g, bx)
-      }
+      val r @ Row(_,s,_,_) = rest.row(firstValue)
+      val nbindings = s.add(strip1(column(index)).elements, scrutinee)
+
+      r.insert2(List(column(firstValue)), nbindings)
     }
 
     final def tree(implicit theOwner: Symbol, failTree: Tree): Tree = {
@@ -296,7 +293,7 @@ trait ParallelMatching  {
       val (branches, defaultV, defaultRepOpt) = this.getTransition // tag body pairs
       val cases = branches map {
         case (tag, r) =>
-          val r2 = rep.make(r.temp, r.row map { case Row(pat, bnd, g, bx) => Row(pat, bindVars(tag, bnd), g, bx) })
+          val r2 = rep.make(r.temp, r.row.map(x => x.insert2(Nil, bindVars(tag, x.subst))))
           val t2 = repToTree(r2)
           CaseDef(Literal(tag), EmptyTree, t2)
       }
@@ -348,11 +345,10 @@ trait ParallelMatching  {
           val uacall = typedValDef(ures, rhs)
 
           val nrowsOther = column.tail.zip(rest.row.tail) flatMap {
-            case (pat, Row(ps, subst, g, bx)) =>
-              strip2(pat) match {
-                case sameUnapplyCall(_) => Nil
-                case _                  => List(Row(pat::ps, subst, g, bx))
-              }}
+            case (pat, r) => strip2(pat) match {
+              case sameUnapplyCall(_) => Nil
+              case _                  => List(r.insert(pat))
+            }}
           val nrepFail = if (nrowsOther.isEmpty)
                            None
                          else
@@ -361,14 +357,12 @@ trait ParallelMatching  {
             case 0  => // special case for unapply(), app.tpe is boolean
               val ntemps = scrutinee :: rest.temp
               val nrows  = column.zip(rest.row) map {
-                case (pat, Row(ps, subst, g, bx)) =>
-                  strip2(pat) match {
-                    case sameUnapplyCall(args) =>
-                      val nsubst = subst.add(strip1(pat).elements, scrutinee)
-                      Row(EmptyTree::ps, nsubst, g, bx)
-                    case _ =>
-                      Row(     pat ::ps, subst, g, bx)
-                  }}
+                case (pat, r) => strip2(pat) match {
+                  case sameUnapplyCall(args) =>
+                    r.insert2(List(EmptyTree), r.subst.add(strip1(pat).elements, scrutinee))
+                  case _ =>
+                    r.insert(pat)
+                }}
             (uacall, Nil, rep.make(ntemps, nrows), nrepFail)
 
             case  1 => // special case for unapply(p), app.tpe is Option[T]
@@ -376,47 +370,42 @@ trait ParallelMatching  {
               val vsym = newVarCapture(ua.pos, vtpe)
               val ntemps = vsym :: scrutinee :: rest.temp
               val nrows = column.zip(rest.row) map {
-                case (pat, Row(ps, subst, g, bx)) =>
-                  strip2(pat) match {
-                    case sameUnapplyCall(args) =>
-                      val nsubst = subst.add(strip1(pat).elements, scrutinee)
-                      Row(args(0)   :: EmptyTree :: ps, nsubst, g, bx)
-                    case _ =>
-                      Row(EmptyTree ::  pat      :: ps, subst, g, bx)
-                  }}
+                case (pat, r: Row) => strip2(pat) match {
+                  case sameUnapplyCall(args) =>
+                    val nsubst = r.subst.add(strip1(pat).elements, scrutinee)
+                    r.insert2(List(args(0), EmptyTree), nsubst)
+                  case _ =>
+                    r.insert(List(EmptyTree, pat))
+                }}
               val vdef = typedValDef(vsym, Select(mkIdent(ures), nme.get))
               (uacall, List(vdef), rep.make(ntemps, nrows), nrepFail)
 
             case _ => // app.tpe is Option[? <: ProductN[T1,...,Tn]]
               val uresGet = newVarCapture(ua.pos, app.tpe.typeArgs(0))
-              val vdefs = new ListBuffer[Tree]
-              vdefs += typedValDef(uresGet, Select(mkIdent(ures), nme.get))
-              var ts = definitions.getProductArgs(uresGet.tpe).get
-              var i = 1;
-              val vsyms = new ListBuffer[Symbol]
-              while(ts ne Nil) {
-                val vtpe = ts.head
-                val vchild = newVarCapture(ua.pos, vtpe)
-                val accSym = definitions.productProj(uresGet, i)
-                val rhs = typed(Apply(Select(mkIdent(uresGet), accSym), List()))
-                vdefs += typedValDef(vchild, rhs)
-                vsyms += vchild
-                ts = ts.tail
-                i += 1
-              }
-              val ntemps  = vsyms.toList ::: scrutinee :: rest.temp
-              val dummies = getDummies(i - 1)
-              val nrows = column.zip(rest.row) map {
-                case (pat, Row(ps, subst, g, bx)) =>
-                  strip2(pat) match {
-                    case sameUnapplyCall(args) =>
-                      val nsubst = subst.add(strip1(pat).elements, scrutinee)
-                      Row(   args::: EmptyTree ::ps, nsubst, g, bx)
-                    case _ =>
-                      Row(dummies:::     pat   ::ps, subst, g, bx)
-                  }}
+              val vdefHead = typedValDef(uresGet, Select(mkIdent(ures), nme.get))
+              val ts = definitions.getProductArgs(uresGet.tpe).get
 
-              (uacall, vdefs.toList, rep.make(ntemps, nrows), nrepFail)
+              val (vdefs: List[Tree], vsyms: List[Symbol]) = List.unzip(
+                for ((vtpe, i) <- ts.zip((1 to ts.size).toList)) yield {
+                  val vchild = newVarCapture(ua.pos, vtpe)
+                  val accSym = definitions.productProj(uresGet, i)
+                  val rhs = typed(Apply(Select(mkIdent(uresGet), accSym), Nil))
+
+                  (typedValDef(vchild, rhs), vchild)
+                })
+
+              val ntemps  = vsyms ::: scrutinee :: rest.temp
+              val dummies = getDummies(ts.size)
+              val nrows = column.zip(rest.row) map {
+                case (pat, r: Row) => strip2(pat) match {
+                  case sameUnapplyCall(args) =>
+                    val nsubst = r.subst.add(strip1(pat).elements, scrutinee)
+                    r.insert2(args ::: List(EmptyTree), nsubst)
+                  case _ =>
+                    r.insert(dummies ::: List(pat))
+                }}
+
+              (uacall, vdefHead :: vdefs, rep.make(ntemps, nrows), nrepFail)
           }}
     } /* def getTransition(...) */
 
@@ -483,14 +472,11 @@ trait ParallelMatching  {
       val nrows = new ListBuffer[Row]
       val frows = new ListBuffer[Row]
 
-      for ((c, Row(pats,subst,g,b)) <- column.zip(rest.row)) {
-        def add(hs: Tree*) : Row = Row(hs.toList ::: pats, subst, g, b)
-
+      for ((c, row) <- column.zip(rest.row))
         getSubPatterns(ys.size, c) match {
-          case Some(ps) => nrows += add(ps:_*) ; if (isDefaultPattern(c) || subsumes(c, av)) frows += add(c)
-          case None => frows += add(c)
+          case Some(ps) => nrows += row.insert(ps) ; if (isDefaultPattern(c) || subsumes(c, av)) frows += row.insert(c)
+          case None => frows += row.insert(c)
         }
-      }
 
       val succRep = makeSuccRep(vs, tail, nrows.toList)
       val failRep = rep.make(scrutinee :: rest.temp, frows.toList)
@@ -551,7 +537,7 @@ trait ParallelMatching  {
       }
       assert(vlue.tpe ne null, "value tpe is null")
       val vs = strip1(column.head)
-      val nsuccFst = rest.row.head match { case Row(pats,bnd,g,b) => Row(EmptyTree::pats, bnd.add(vs.elements, scrutinee),g,b) }
+      val nsuccFst = rest.row.head match { case r: Row => r.insert2(List(EmptyTree), r.subst.add(vs.elements, scrutinee)) }
       val fLabel = theOwner.newLabel(scrutinee.pos, cunit.fresh.newName(scrutinee.pos, "failCont%")) // warning, untyped
       val sx     = rep.shortCut(fLabel) // register shortcut
       val nsuccRow = nsuccFst :: Row(getDummies( 1 /*scrutinee*/ + rest.temp.length), NoBinding, EmptyTree, sx) :: Nil
@@ -697,20 +683,18 @@ trait ParallelMatching  {
         }
         ntemps = ntemps ::: rest.temp
         val ntriples = subtests map {
-          case (j,pats) =>
-            val (vs,thePat) = strip(column(j))
-            val Row(opats, osubst, og, bx) = rest.row(j)
-            val nsubst = osubst.add(vs.elements, casted)
-            Row(pats ::: opats, nsubst, og, bx)
+          case (j, pats) =>
+            val (vs, thePat) = strip(column(j))
+            val r = rest.row(j)
+            val nsubst = r.subst.add(vs.elements, casted)
+            r.insert2(pats, nsubst)
         }
         rep.make(ntemps, ntriples)
       }
       // fails      => transition to translate(remaining)
       val nmatrixFail: Option[Rep] = {
         val ntemps   = scrutinee :: rest.temp
-        val ntriples = remaining map {
-          case (j, pat) => val r = rest.row(j);  Row(pat :: r.pat, r.subst, r.guard, r.bx)
-        }
+        val ntriples = remaining map { case (j, pat) => rest.row(j).insert(pat) }
         if (ntriples.isEmpty) None else Some(rep.make(ntemps, ntriples))
       }
       (casted, nmatrix, nmatrixFail)
@@ -753,7 +737,12 @@ trait ParallelMatching  {
     r.applyRule.tree
   }
 
-  case class Row(pat:List[Tree], subst:Binding, guard:Tree, bx:Int)
+  case class Row(pat:List[Tree], subst:Binding, guard:Tree, bx:Int) {
+    def insert(h: Tree) = Row(h :: pat, subst, guard, bx)                   // prepends supplied tree
+    def insert(hs: List[Tree]) = Row(hs ::: pat, subst, guard, bx)
+    def insert2(hs: List[Tree], b: Binding) = Row(hs ::: pat, b, guard, bx) // prepends and substitutes
+    def replace(hs: List[Tree]) = Row(hs, subst, guard, bx)                 // replaces pattern list
+  }
 
   object Rep {
     type RepType = Product2[List[Symbol], List[Row]]
@@ -1056,18 +1045,12 @@ trait ParallelMatching  {
           j += 1
         }
         pats = pats.reverse
-        if (indexOfAlternative == -1) {
-          val res = List(Row(pats, subst, g, bx))
-          DBG("finished: result "/*+res*/)
-          res
-        }
+        if (indexOfAlternative == -1) List(xx.replace(pats))
         else {
           val prefix = pats.take( indexOfAlternative )
           val alts   = getAlternativeBranches(pats( indexOfAlternative ))
           val suffix = pats.drop(indexOfAlternative + 1)
-          val intermediary_result = alts map { p => Row(prefix ::: p :: suffix, subst, g, bx) }
-          DBG("not finished: intermediary_result = "/*+intermediary_result*/)
-          intermediary_result
+          alts map { p => xx.replace(prefix ::: p :: suffix) }
         }
     }
 
@@ -1185,8 +1168,8 @@ trait ParallelMatching  {
         // cut out column px that contains the non-default pattern
         val column   = rpats.head :: (row.tail map { case Row(pats,_,_,_) => pats(px) })
         val restTemp =                                               temp.take(px) ::: temp.drop(px+1)
-        val restRows = row map { case Row(pats, subst, g, bx) => Row(pats.take(px) ::: pats.drop(px+1), subst, g, bx) }
-        val mr = MixtureRule(temps.head, column, rep.make(restTemp,restRows))
+        val restRows = row map { r => r.replace(r.pat.take(px) ::: r.pat.drop(px+1)) }
+        val mr = MixtureRule(temps.head, column, rep.make(restTemp, restRows))
         DBG("\n---\nmixture rule is = "/*+mr.getClass.toString*/)
         mr
     }
