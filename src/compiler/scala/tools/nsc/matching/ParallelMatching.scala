@@ -236,7 +236,7 @@ trait ParallelMatching  {
                   {
                     val pat  = this.column(this.tagIndexPairs.find(tag));
                     val ptpe = pat.tpe
-                    if (this.scrutinee.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED) && strip2(pat).isInstanceOf[Apply]) {
+                    if (this.scrutinee.tpe.typeSymbol.hasFlag(Flags.SEALED) && strip2(pat).isInstanceOf[Apply]) {
                       //cast
                       val vtmp = newVar(pat.pos, ptpe)
                       squeezedBlock(
@@ -248,7 +248,7 @@ trait ParallelMatching  {
                 )}
 
       // make first case a default case.
-      if (this.scrutinee.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED) && defaultV.isEmpty) {
+      if (this.scrutinee.tpe.typeSymbol.hasFlag(Flags.SEALED) && defaultV.isEmpty) {
         ndefault = cases.head.body
         cases = cases.tail
       }
@@ -309,18 +309,17 @@ trait ParallelMatching  {
           val t2 = repToTree(r2)
           CaseDef(Literal(tag), EmptyTree, t2)
       }
-      var ndefault = if (defaultRepOpt.isEmpty) failTree else repToTree(defaultRepOpt.get)
-      if (cases.length == 1) {
-        val CaseDef(lit,_,body) = cases.head
-        If(Equals(mkIdent(this.scrutinee),lit), body, ndefault)
-      } else {
-        val defCase = CaseDef(mk_(definitions.IntClass.tpe), EmptyTree, ndefault)
 
+      lazy val ndefault = defaultRepOpt.map(repToTree) getOrElse failTree
+      lazy val defCase = CaseDef(mk_(definitions.IntClass.tpe), EmptyTree, ndefault)
 
-        return if (isSameType(this.scrutinee.tpe.widen, definitions.CharClass.tpe))
-                  Match(Select(mkIdent(this.scrutinee), nme.toInt), cases ::: defCase :: Nil)
-               else
-                  Match(mkIdent(this.scrutinee), cases ::: defCase :: Nil)
+      cases match {
+        case CaseDef(lit,_,body) :: Nil =>
+          If(Equals(mkIdent(this.scrutinee),lit), body, ndefault)
+        case _ if isSameType(this.scrutinee.tpe.widen, definitions.CharClass.tpe) =>
+          Match(Select(mkIdent(this.scrutinee), nme.toInt), cases ::: List(defCase))
+        case _ =>
+          Match(mkIdent(this.scrutinee), cases ::: List(defCase))
       }
     }
   }
@@ -331,8 +330,8 @@ trait ParallelMatching  {
 
     def newVarCapture(pos:Position,tpe:Type)(implicit theOwner:Symbol) = {
       val v = newVar(pos,tpe)
-      if (scrutinee.hasFlag(symtab.Flags.TRANS_FLAG))
-        v.setFlag(symtab.Flags.TRANS_FLAG) // propagate "unchecked"
+      if (scrutinee.hasFlag(Flags.TRANS_FLAG))
+        v.setFlag(Flags.TRANS_FLAG) // propagate "unchecked"
       v
     }
 
@@ -472,7 +471,6 @@ trait ParallelMatching  {
     }
     // context (to be used in IF), success and failure Rep
     def getTransition(implicit theOwner: Symbol): (Tree => Tree => Tree, Rep, Rep) = {
-
       assert(isSubType(scrutinee.tpe, column.head.tpe), "problem "+scrutinee.tpe+" not <: "+column.head.tpe)
 
       val treeAsSeq =
@@ -481,53 +479,35 @@ trait ParallelMatching  {
         else
           mkIdent(scrutinee)
 
-      column.head match {
-        case av @ ArrayValue(_, xs) =>
+      val av @ ArrayValue(_, xs) = column.head
+      val ys = if (isRightIgnoring(av)) xs.init else xs
+      val vs = ys map(y => newVar(strip2(y).pos, elementType))
 
-          var childpats = new ListBuffer[Tree]
-          var bindings  = new ListBuffer[Tree]
-          var vs        = new ListBuffer[Symbol]
-          var ix = 0
+      lazy val tail = newVar(scrutinee.pos, sequenceType)
+      lazy val lastBinding = if (ys.size > 0) seqDrop(treeAsSeq.duplicate, ys.size) else mkIdent(scrutinee)
+      val bindings =
+        (vs.zipWithIndex map { case (v, i) => typedValDef(v, seqElement(treeAsSeq.duplicate, i)) }) :::
+        List(typedValDef(tail, lastBinding))
 
-        // build new temps on which we will match subpatterns
+      val nrows = new ListBuffer[Row]
+      val frows = new ListBuffer[Row]
 
-        // if is right ignoring, don't want last one
-          var ys = if (isRightIgnoring(av)) xs.init else xs;
-          while(ys ne Nil) {
-            val p = strip2(ys.head)
-            childpats += p
-            val temp = newVar(p.pos, elementType)
-            vs += temp
-            bindings += typedValDef(temp, seqElement(treeAsSeq.duplicate, ix))
-            ix += 1
-            ys = ys.tail
-          }
-          val tail = newVar(scrutinee.pos, sequenceType)
-          bindings += typedValDef(tail, {if (ix > 0) seqDrop(treeAsSeq.duplicate, ix) else mkIdent(scrutinee)})
+      for ((c, Row(pats,subst,g,b)) <- column.zip(rest.row)) {
+        def add(hs: Tree*) : Row = Row(hs.toList ::: pats, subst, g, b)
 
-
-          val nrows = new ListBuffer[Row]
-          val frows = new ListBuffer[Row]
-          var cs = column; var rw = rest.row; while (cs ne Nil)  {
-            (getSubPatterns(ix, cs.head),rw.head) match {
-              case (Some(ps), Row(pats,subst,g,b)) =>
-                nrows += Row(     ps ::: pats, subst, g, b)
-                if (isDefaultPattern(cs.head) || subsumes(cs.head, av))
-                  frows += Row( cs.head :: pats, subst, g, b)
-              case (  None , Row(pats,subst,g,b) ) =>
-                frows += Row( cs.head :: pats, subst, g, b)
-            }
-            cs = cs.tail
-            rw = rw.tail
-          }
-
-          val succRep = makeSuccRep(vs.toList, tail, nrows.toList)
-          val failRep = rep.make(          scrutinee :: rest.temp, frows.toList)
-          // fixed length
-          val cond = getCond(treeAsSeq, xs.length)
-          return ({thenp:Tree => {elsep:Tree =>
-            If(cond, squeezedBlock(bindings.toList, thenp), elsep)}}, succRep, failRep)
+        getSubPatterns(ys.size, c) match {
+          case Some(ps) => nrows += add(ps:_*) ; if (isDefaultPattern(c) || subsumes(c, av)) frows += add(c)
+          case None => frows += add(c)
+        }
       }
+
+      val succRep = makeSuccRep(vs, tail, nrows.toList)
+      val failRep = rep.make(scrutinee :: rest.temp, frows.toList)
+
+      // fixed length
+      val cond = getCond(treeAsSeq, xs.length)
+      return ({thenp:Tree => {elsep:Tree =>
+        If(cond, squeezedBlock(bindings, thenp), elsep)}}, succRep, failRep)
     }
 
     // lengthArg is exact length
@@ -610,7 +590,7 @@ trait ParallelMatching  {
     var subsumed:  List[(Int,List[Tree])] = Nil  // row index and subpatterns
     var remaining: List[(Int,Tree)] = Nil  // row index and pattern
 
-    val isExhaustive = !scrutinee.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED) || {
+    val isExhaustive = !scrutinee.tpe.typeSymbol.hasFlag(Flags.SEALED) || {
       val tpes = column.map {x => x.tpe.typeSymbol}
       scrutinee.tpe.typeSymbol.children.forall { sym => tpes.contains(sym) }
     }
@@ -706,15 +686,15 @@ trait ParallelMatching  {
     /** returns casted symbol, success matrix and optionally fail matrix for type test on the top of this column */
     final def getTransition(implicit theOwner: Symbol): (Symbol, Rep, Option[Rep]) = {
       casted = if (scrutinee.tpe =:= headPatternType) scrutinee else newVar(scrutinee.pos, headPatternType)
-      if (scrutinee.hasFlag(symtab.Flags.TRANS_FLAG))
-        casted.setFlag(symtab.Flags.TRANS_FLAG)
+      if (scrutinee.hasFlag(Flags.TRANS_FLAG))
+        casted.setFlag(Flags.TRANS_FLAG)
       // succeeding => transition to translate(subsumed) (taking into account more specific)
       val nmatrix = {
         var ntemps  = if (!isCaseHead) Nil else casted.caseFieldAccessors map {
           meth =>
             val ctemp = newVar(scrutinee.pos, casted.tpe.memberType(meth).resultType)
-            if (scrutinee.hasFlag(symtab.Flags.TRANS_FLAG))
-              ctemp.setFlag(symtab.Flags.TRANS_FLAG)
+            if (scrutinee.hasFlag(Flags.TRANS_FLAG))
+              ctemp.setFlag(Flags.TRANS_FLAG)
             ctemp
         } // (***) flag needed later
         var subtests = subsumed
@@ -1011,7 +991,7 @@ trait ParallelMatching  {
               DBG("Unapply(...TypeApply...)")
               //@pre: is not right-ignoring (no star pattern)
               // no exhaustivity check, please
-              temp(j).setFlag(symtab.Flags.TRANS_FLAG)
+              temp(j).setFlag(Flags.TRANS_FLAG)
               val listType = typeRef(mkThisType(definitions.ScalaPackage), definitions.ListClass, List(tptArg.tpe))
               val nmlzdPat = normalizedListPattern(xs, tptArg.tpe)
               pats = makeBind(vs, nmlzdPat) :: pats
@@ -1114,18 +1094,18 @@ trait ParallelMatching  {
     final def init: this.type = {
       temp.zipWithIndex.foreach {
       case (sym,i) =>
-        if (sym.hasFlag(symtab.Flags.MUTABLE) &&  // indicates that have not yet checked exhaustivity
-            !sym.hasFlag(symtab.Flags.TRANS_FLAG) &&  // indicates @unchecked
-            sym.tpe.typeSymbol.hasFlag(symtab.Flags.SEALED)) {
+        if (sym.hasFlag(Flags.MUTABLE) &&  // indicates that have not yet checked exhaustivity
+            !sym.hasFlag(Flags.TRANS_FLAG) &&  // indicates @unchecked
+            sym.tpe.typeSymbol.hasFlag(Flags.SEALED)) {
 
-              sym.resetFlag(symtab.Flags.MUTABLE)
+              sym.resetFlag(Flags.MUTABLE)
               sealedCols = i::sealedCols
               // this should enumerate all cases... however, also the superclass is taken if it is not abstract
               def candidates(tpesym: Symbol): SymSet =
-                if (!tpesym.hasFlag(symtab.Flags.SEALED)) emptySymbolSet else
+                if (!tpesym.hasFlag(Flags.SEALED)) emptySymbolSet else
                   tpesym.children.flatMap { x =>
                     val z = candidates(x)
-                    if (x.hasFlag(symtab.Flags.ABSTRACT)) z else z + x
+                    if (x.hasFlag(Flags.ABSTRACT)) z else z + x
                   }
               val cases = candidates(sym.tpe.typeSymbol)
               sealedComb = cases::sealedComb
@@ -1151,7 +1131,7 @@ trait ParallelMatching  {
             val res =
               isDefaultPattern(p) || p.isInstanceOf[UnApply] || p.isInstanceOf[ArrayValue] || {
                 val ptpe = patternType_wrtEquals(p.tpe)
-                val symtpe = if (sym.hasFlag(symtab.Flags.MODULE) && (sym.linkedModuleOfClass ne NoSymbol)) {
+                val symtpe = if (sym.hasFlag(Flags.MODULE) && (sym.linkedModuleOfClass ne NoSymbol)) {
                   singleType(sym.tpe.prefix, sym.linkedModuleOfClass) // e.g. None, Nil
                 } else sym.tpe
                 (ptpe.typeSymbol == sym) || (symtpe <:< ptpe) ||
@@ -1271,7 +1251,7 @@ trait ParallelMatching  {
   }
 
   final def newVar(pos: Position, tpe: Type)(implicit theOwner: Symbol): Symbol =
-    newVar(pos, cunit.fresh.newName(pos, "temp"), tpe) setFlag symtab.Flags.SYNTHETIC
+    newVar(pos, cunit.fresh.newName(pos, "temp"), tpe) setFlag Flags.SYNTHETIC
 
   /** returns the condition in "if (cond) k1 else k2"
    */
