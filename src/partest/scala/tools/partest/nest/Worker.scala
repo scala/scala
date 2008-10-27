@@ -165,7 +165,7 @@ class Worker(val fileManager: FileManager) extends Actor {
     }
   }
 
-  def javac(outDir: File, files: List[File], output: File) {
+  def javac(outDir: File, files: List[File], output: File): Boolean = {
     // compile using command-line javac compiler
     val javacCmd = if ((fileManager.JAVAC_CMD.indexOf("${env.JAVA_HOME}") != -1) ||
                        fileManager.JAVAC_CMD.equals("/bin/javac") ||
@@ -179,17 +179,25 @@ class Worker(val fileManager: FileManager) extends Actor {
       " -classpath "+outDir+File.pathSeparator+CLASSPATH+
       " "+files.mkString(" ")
 
-    try {
+    val (success, msg) = try {
       val exitCode = runCommand(cmd, output)
-      if (exitCode != 0) {
-        NestUI.failure("Running \"javac\" failed with exit code: "+
-                       exitCode+"\n"+cmd+"\n")
-      }
+      NestUI.verbose("javac returned exit code: "+exitCode)
+      if (exitCode != 0)
+        (false, "Running \"javac\" failed with exit code: "+exitCode+"\n"+cmd+"\n")
+      else
+        (true, "")
     } catch {
       case e: Exception =>
-        NestUI.failure("Running \"javac\" failed: "+
-                       "\n"+cmd+"\n")
+        val swriter = new StringWriter
+        e.printStackTrace(new PrintWriter(swriter))
+        (false, "Running \"javac\" failed:\n"+cmd+"\n"+swriter.toString+"\n")
     }
+    if (!success) {
+      val writer = new PrintWriter(new FileWriter(output, true), true)
+      writer.print(msg)
+      writer.close()
+    }
+    success
   }
 
   /** Runs <code>command</code> redirecting standard out and
@@ -379,12 +387,15 @@ class Worker(val fileManager: FileManager) extends Actor {
         NestUI.verbose("compilation of "+scalaFiles+" failed\n")
         succeeded = false
       } else
-        if (!javaFiles.isEmpty)
-          javac(outDir, javaFiles, logFile)
-        scalaFiles foreach { scalaFile =>
-          if (!compileMgr.shouldCompile(outDir, List(scalaFile), kind, logFile)) {
-            NestUI.verbose("compilation of "+scalaFile+" failed\n")
-            succeeded = false
+        if (!javaFiles.isEmpty) {
+          succeeded = javac(outDir, javaFiles, logFile)
+          if (succeeded) {
+            scalaFiles foreach { scalaFile =>
+              if (!compileMgr.shouldCompile(outDir, List(scalaFile), kind, logFile)) {
+                NestUI.verbose("compilation of "+scalaFile+" failed\n")
+                succeeded = false
+              }
+            }
           }
         }
     }
