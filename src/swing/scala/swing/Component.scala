@@ -124,7 +124,7 @@ abstract class Component extends UIElement with Publisher {
   })
 
   /**
-   * Contains publishers for various mouse events. They are subdivided for
+   * Contains publishers for various mouse events. They are separated for
    * efficiency reasons.
    */
   object Mouse {

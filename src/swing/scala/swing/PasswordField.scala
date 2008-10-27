@@ -5,6 +5,8 @@ import java.awt.event._
 import event._
 
 /**
+ * A password field, that displays a replacement character for each character in the password.
+ *
  * @see javax.swing.JPasswordField
  */
 class PasswordField(text0: String, columns0: Int) extends TextField(text0, columns0) {

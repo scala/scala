@@ -21,7 +21,7 @@ object Reactions {
   /**
    * A Reaction implementing this trait is strongly referenced in the reaction list
    */
-  trait StronglyReferenced // TODO: implement in Publisher
+  trait StronglyReferenced
 
   class Wrapper(listener: Any)(r: Reaction) extends Reaction with StronglyReferenced with Proxy {
     def self = listener
@@ -30,7 +30,9 @@ object Reactions {
   }
 }
 
-
+/**
+ * Used by reactors to let clients register custom event reactions.
+ */
 abstract class Reactions extends Reactions.Reaction {
   /**
    * Add a reaction.

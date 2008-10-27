@@ -7,7 +7,8 @@ import javax.swing.filechooser._
 object FileChooser {
   /**
    * The result of a file dialog. The precise meaning of the <code>Approve</code>
-   * result depends on the specific dialog kind.
+   * result depends on the specific dialog type. Could be "save" or "open" for
+   * example.
    */
   object Result extends Enumeration {
     val Cancel = Value(JFileChooser.CANCEL_OPTION)

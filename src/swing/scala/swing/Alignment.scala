@@ -5,6 +5,8 @@ import javax.swing.SwingConstants._
 /**
  * Horizontal and vertical alignments. We sacrifice a bit of type-safety
  * for simplicity here.
+ *
+ * @see javax.swing.SwingConstants
  */
 object Alignment extends Enumeration {
   val Left = Value(LEFT)

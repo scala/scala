@@ -4,26 +4,35 @@ import scala.collection.mutable._
 import event.Event
 
 /**
- * Notifies subscribed observers when a event is published.
+ * Notifies registered reactions when an event is published. Publishers are also
+ * reactors and listen to themselves per default as a convenience.
+ *
+ * In order to reduce memory leaks, reactions are weakly referenced by default,
+ * unless they implement <code>Reactions.StronglyReferenced</code>. This way,
+ * the lifetime of reactions are more easily bound to the registering object,
+ * which are reactors in common client code and hold strong references to their
+ * reactions. As a result, reactors can be garbage collected even though they
+ * still have reactions registered at some publisher, but usually not vice versa
+ * since reactors (strongly) reference publishers they are interested in.
  */
 trait Publisher extends Reactor {
   import Reactions._
-  // TODO: optionally weak references
-  protected var listeners = new RefSet[Reaction] {
+
+  protected val listeners = new RefSet[Reaction] {
     import scala.ref._
     val underlying = new HashSet[Reference[Reaction]]
     protected def Ref(a: Reaction) = a match {
-      case a: StronglyReferenced => new StrongReference[Reaction](a) with super.Ref[Reaction] {
-        type _$1 = Reaction // FIXME: what's going on here?
-      }
-      case _ => new WeakReference[Reaction](a, referenceQueue) with super.Ref[Reaction] {
-        type _$1 = Reaction // FIXME: what's going on here?
-      }
+      case a: StronglyReferenced => new StrongReference[Reaction](a) with super.Ref[Reaction]
+      case _ => new WeakReference[Reaction](a, referenceQueue) with super.Ref[Reaction]
     }
   }
 
   def subscribe(listener: Reaction) { listeners += listener }
   def unsubscribe(listener: Reaction) { listeners -= listener }
+
+  /**
+   * Notify all registered reactions.
+   */
   def publish(e: Event) { for (val l <- listeners) l(e) }
 
   listenTo(this)

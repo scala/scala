@@ -3,7 +3,11 @@ package scala.swing
 import java.awt.{Color, Cursor, Font, Dimension}
 
 /**
- * The base trait of all user interface elements.
+ * The base trait of all user interface elements. Subclasses can be divided
+ * into two groups, top-level elements such as windows and dialogs, and
+ * <code>Component</code>s.
+ *
+ * @see java.awt.Component
  */
 trait UIElement extends Proxy {
   def peer: java.awt.Component

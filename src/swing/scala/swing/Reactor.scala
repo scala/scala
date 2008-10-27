@@ -1,7 +1,13 @@
 package scala.swing
 
+/**
+ * The counterpart to publishers. Listens to events from registered publishers.
+ */
 trait Reactor {
-  val reactions = new Reactions.Impl
+  /**
+   * All reactions of this reactor.
+   */
+  val reactions: Reactions = new Reactions.Impl
   /**
    * Listen to the given publisher as long as <code>deafTo</code> isn't called for
    * them.

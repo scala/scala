@@ -26,6 +26,11 @@ object Table {
     val Row, Column, Cell, None = Value
   }
 
+  /**
+   * A table item renderer.
+   *
+   * @see javax.swing.table.TableCellRenderer
+   */
   abstract class Renderer[-A] {
     def peer: TableCellRenderer = new TableCellRenderer {
       def getTableCellRendererComponent(table: JTable, value: AnyRef, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int) = {
@@ -83,6 +88,8 @@ object Table {
 }
 
 /**
+ * Displays a matrix of items.
+ *
  * @see javax.swing.JTable
  */
 class Table extends Component with Scrollable with Publisher {

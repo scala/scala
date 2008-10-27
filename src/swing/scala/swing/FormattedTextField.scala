@@ -5,6 +5,9 @@ import java.awt.event._
 import event._
 
 object FormattedTextField {
+  /**
+   * The behavior of a formatted text field when it loses its focus.
+   */
   object FocusLostBehavior extends Enumeration {
     val Commit = Value(JFormattedTextField.COMMIT)
     val CommitOrRevert = Value(JFormattedTextField.COMMIT_OR_REVERT)
@@ -14,6 +17,8 @@ object FormattedTextField {
 }
 
 /**
+ * A text field with formatted input.
+ *
  * @see javax.swing.JFormattedTextField
  */
 class FormattedTextField(format: java.text.Format) extends TextComponent {

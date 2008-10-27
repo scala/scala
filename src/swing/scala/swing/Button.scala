@@ -4,7 +4,7 @@ import javax.swing._
 import event._
 
 /**
- * A button that can be pushed, usually to perfrom some action.
+ * A button that can be clicked, usually to perform some action.
  *
  * @see javax.swing.JButton
  */

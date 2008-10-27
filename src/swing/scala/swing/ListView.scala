@@ -6,6 +6,9 @@ import event._
 import java.awt.Color
 
 object ListView {
+  /**
+   * The supported modes of user selections.
+   */
   object IntervalMode extends Enumeration {
     val Single = Value(ListSelectionModel.SINGLE_SELECTION)
     val SingleInterval = Value(ListSelectionModel.SINGLE_INTERVAL_SELECTION)
@@ -19,23 +22,43 @@ object ListView {
   object Renderer {
     def wrap[A](r: ListCellRenderer): Renderer[A] = new Wrapped[A](r)
 
+    /**
+     * Wrapper for <code>javax.swing.ListCellRenderer<code>s
+     */
   	class Wrapped[A](override val peer: ListCellRenderer) extends Renderer[A] {
   	  def componentFor(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int) = {
         Component.wrap(peer.getListCellRendererComponent(list.peer, a, index, isSelected, hasFocus).asInstanceOf[JComponent])
       }
   	}
 
+    /**
+     * Returns a renderer for items of type <code>A</code>. The given function
+     * converts items of type <code>A</code> to items of type <code>B</code>
+     * for which a renderer is implicitly given. This allows chaining of
+     * renderers, e.g.:
+     *
+     * <code>
+     * case class Person(name: String, email: String)
+     * val persons = List(Person("John", "j.doe@a.com"), Person("Mary", "m.jane@b.com"))
+     * new ListView(persons) {
+     *   renderer = ListView.Renderer(_.name)
+     * }
+     * </code>
+     */
     def apply[A,B](f: A => B)(implicit renderer: Renderer[B]): Renderer[A] = new Renderer[A] {
       def componentFor(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int): Component =
         renderer.componentFor(list, isSelected, hasFocus, f(a), index)
     }
   }
 
-  /*def Renderer[A,B](f: A => B)(implicit renderer: Renderer[B]): Renderer[A] = new Renderer[A] {
-    def componentFor(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int): Component =
-      renderer.componentFor(list, isSelected, hasFocus, f(a), index)
-  }*/
-
+  /**
+   * Item renderer for a list view. This is contravariant on the type of the
+   * items, so a more general renderer can be used in place of a more specific
+   * one. For instance, an <code>Any</code> renderer can be used for a list view
+   * of strings.
+   *
+   * @see javax.swing.ListCellRenderer
+   */
   abstract class Renderer[-A] {
     def peer: ListCellRenderer = new ListCellRenderer {
       def getListCellRendererComponent(list: JList, a: Any, index: Int, isSelected: Boolean, hasFocus: Boolean) =
@@ -47,7 +70,7 @@ object ListView {
   /**
    * A default renderer that maintains a single component for item rendering
    * and preconfigures it to sensible defaults. It is polymorphic on the
-   * components type so clients can easily use component specific attributes
+   * component's type so clients can easily use component specific attributes
    * during configuration.
    */
   abstract class AbstractRenderer[-A, C<:Component](protected val component: C) extends Renderer[A] {
@@ -58,6 +81,8 @@ object ListView {
 
     /**
      * Standard preconfiguration that is commonly done for any component.
+     * This includes foreground and background colors, as well as colors
+     * of item selections.
      */
     def preConfigure(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int) {
       if (isSelected) {
@@ -83,6 +108,11 @@ object ListView {
     }
   }
 
+  /**
+   * A generic renderer that uses Swing's built-in renderers. If there is no
+   * specific renderer for a type, this renderer falls back to a renderer
+   * that renders the string returned from an item's <code>toString</code>.
+   */
   implicit object GenericRenderer extends Renderer[Any] {
     override lazy val peer: ListCellRenderer = new DefaultListCellRenderer
     def componentFor(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, a: Any, index: Int): Component = {
@@ -94,8 +124,10 @@ object ListView {
 }
 
 /**
- * A component that displays its elements in a list. Named
- * <code>ListView</code> to avoid a clash with the frequently used
+ * A component that displays a number of elements in a list. A list view does
+ * not support inline editing of items. If you need it, use a table view instead.
+ *
+ * Named <code>ListView</code> to avoid a clash with the frequently used
  * <code>scala.List</code>
  *
  * @see javax.swing.JList
@@ -134,6 +166,9 @@ class ListView[A] extends Component {
     })
   }
 
+  /**
+   * The current item selection.
+   */
   object selection extends Publisher {
     protected abstract class Indices[A](a: =>Seq[A]) extends scala.collection.mutable.Set[A] {
       def -=(n: A)
@@ -143,6 +178,9 @@ class ListView[A] extends Component {
       def elements = a.elements
     }
 
+    /**
+     * The indices of the currently selected items.
+     */
     object indices extends Indices(peer.getSelectedIndices) {
       def -=(n: Int) { peer.removeSelectionInterval(n,n) }
       def +=(n: Int) { peer.addSelectionInterval(n,n) }
@@ -152,6 +190,9 @@ class ListView[A] extends Component {
     }
     def selectIndices(ind: Int*) = peer.setSelectedIndices(ind.toArray)
 
+    /**
+     * The currently selected items.
+     */
     object items extends SeqProxy[A] {
       def self = peer.getSelectedValues.map(_.asInstanceOf[A])
       def leadIndex: Int = peer.getSelectionModel.getLeadSelectionIndex

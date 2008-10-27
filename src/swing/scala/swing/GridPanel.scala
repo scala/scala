@@ -6,6 +6,7 @@ object GridPanel {
 
 /**
  * A panel that lays out its contents in a uniform grid.
+ *
  * @see java.awt.GridLayout
  */
 class GridPanel(rows0: Int, cols0: Int) extends Panel with SequentialContainer.Wrapper {

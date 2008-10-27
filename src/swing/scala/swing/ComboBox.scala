@@ -9,7 +9,7 @@ object ComboBox {
   /**
    * An editor for a combo box. Let's you edit the currently selected item.
    * It is highly recommended to use the BuiltInEditor class. For anything
-   * else, one cannot guarantee that it integrated nicely into the current
+   * else, one cannot guarantee that it integrates nicely with the current
    * LookAndFeel.
    *
    * Publishes action events.
@@ -138,14 +138,8 @@ object ComboBox {
 }
 
 /**
- * Has built-in default editor and renderer that cannot be exposed.
- * They are set by the look and feel (LaF). Unfortunately, this design in
- * inherently broken, since custom editors will almost always look
- * differently. The border of the built-in text field editor, e.g., is drawn
- * by the LaF. In a custom text field editor we have no way to mirror that.
- *
- * This combo box has to be initialized with a valid selected value.
- * Otherwise it will fail.
+ * Let's the user make a selection from a list of predefined items. Visually,
+ * this is implemented as a button-like component with a pull-down menu.
  *
  * @see javax.swing.JComboBox
  */
@@ -165,15 +159,15 @@ class ComboBox[A](items: Seq[A]) extends Component with Publisher {
 
   /**
    * Sets the renderer for this combo box's items. Index -1 is
-   * passed to the renderer for the selected item (not in the popup menu).
+   * passed to the renderer for the selected item (not in the pull-down menu).
    *
-   * The underlying combo box renders all items in a ListView (both, in
-   * the pulldown menu as well as in the box itself), hence the
-   * ListView.Renderer.
+   * The underlying combo box renders all items in a <code>ListView</code>
+   * (both, in the pull-down menu as well as in the box itself), hence the
+   * <code>ListView.Renderer</code>.
    *
    * Note that the UI peer of a combo box usually changes the colors
-   * of the component to its own defaults _after_ the renderer has configured it.
-   * That's Swing's principle of most suprise.
+   * of the component to its own defaults _after_ the renderer has been
+   * configured. That's Swing's principle of most suprise.
    */
   def renderer: ListView.Renderer[A] = ListView.Renderer.wrap(peer.getRenderer)
   def renderer_=(r: ListView.Renderer[A]) { peer.setRenderer(r.peer) }
@@ -185,7 +179,7 @@ class ComboBox[A](items: Seq[A]) extends Component with Publisher {
   def editable: Boolean = peer.isEditable
 
   /**
-   * Makes this combo box editable. In order to do, this combo needs an
+   * Makes this combo box editable. In order to do so, this combo needs an
    * editor which is supplied by the implicit argument. For default
    * editors, see ComboBox companion object.
    */

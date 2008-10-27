@@ -3,8 +3,8 @@ package scala.swing
 import javax.swing.JScrollPane
 
 /**
- * Can have at most a single child that is put inside a canvas that can be
- * scrolled.
+ * Can have at most a single child component. It display it inside a canvas (the viewport)
+ * that can be scrolled.
  *
  * @see javax.swing.JScrollPane
  */
@@ -16,8 +16,19 @@ class ScrollPane extends Component with Container {
   }
   def contents: Seq[Component] =
     List(Component.wrapperFor(peer.getViewport.getView.asInstanceOf[javax.swing.JComponent]))
+
+  /**
+   * Sets the single child.
+   */
   def contents_=(c: Component) { peer.setViewportView(c.peer) }
 
+  /**
+   * The component being displayed in this pane's row header.
+   *
+   * If you want to create a row header for lists or tables, you probably
+   * want to let the row header be a list view with the same row height as
+   * the viewport component.
+   */
   def rowHeaderView: Option[Component] = Swing.toOption(peer.getRowHeader.getView).map(Component.wrapperFor(_))
   def rowHeaderView_=(c: Component) = peer.setRowHeaderView(c.peer)
   def rowHeaderView_=(c: Option[Component]) = peer.setRowHeaderView(Swing.toNull(c.map(_.peer)))

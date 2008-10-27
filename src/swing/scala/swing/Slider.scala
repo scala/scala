@@ -3,6 +3,8 @@ package scala.swing
 import event._
 
 /**
+ * Lets users select a value from a given range. Visually, this is represented
+ * as a draggable knob on a horizontal or vertical bar.
  *
  * Fires a ValueChanged event whenever the slider's value changes and
  * when the knob is released.

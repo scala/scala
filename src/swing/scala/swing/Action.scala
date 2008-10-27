@@ -34,10 +34,12 @@ object Action {
 }
 
 /**
+ * An abstract action to be performed in reaction to user input.
+ *
  * Not every action component will honor every property of its action.
  * An action itself can generally be configured so that certain properties
  * should be ignored and instead taken from the component directly. In the
- * end, it is up to a component, which property it uses in which way.
+ * end, it is up to a component which property it uses in which way.
  *
  * @see javax.swing.Action
  */

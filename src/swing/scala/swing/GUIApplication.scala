@@ -11,6 +11,9 @@ class GUIApplication {
     //JFrame.setDefaultLookAndFeelDecorated(defaultLookAndFeelDecorated)
   }
 
+  /**
+   * Initializes the framework and runs the given program.
+   */
   def run(prog: => Unit): Unit =
     SwingUtilities.invokeLater {
       new Runnable() {

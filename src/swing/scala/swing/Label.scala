@@ -4,7 +4,7 @@ import javax.swing._
 import scala.swing.Swing._
 
 /**
- * A label component.
+ * A label component that display either a text, an icon, or both.
  *
  * @see javax.swing.JLabel
  */
