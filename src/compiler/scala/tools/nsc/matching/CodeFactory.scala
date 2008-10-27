@@ -124,9 +124,9 @@ trait CodeFactory {
       Apply(Select(tree, nme.ne), List(Literal(Constant(null))))
     }
 
-    // statistics
-    var nremoved = 0
-    var nsubstituted = 0
+  // statistics
+  var nremoved = 0
+  var nsubstituted = 0
 
   final def squeezedBlock(vds: List[Tree], exp: Tree)(implicit theOwner: Symbol): Tree =
     if (settings_squeeze)
@@ -145,9 +145,7 @@ trait CodeFactory {
           nref += 1
           if(sym.owner == currentOwner)  { // oldOwner should match currentOwner
             nsafeRef += 1
-          } /*else if(nref == 1) {
-            Console.println("sym owner: "+sym.owner+" but currentOwner = "+currentOwner)
-          }*/
+          }
         case LabelDef(_,args,rhs) =>
           var args1 = args; while(args1 ne Nil) {
             if(args1.head.symbol eq sym) {
@@ -184,11 +182,9 @@ trait CodeFactory {
         // recurse
         val exp1 = squeezedBlock(rest, exp)
 
-        //Console.println("squeezedBlock for valdef "+vd)
         val sym = vd.symbol
         val rt = new RefTraverser(sym)
         rt.atOwner (theOwner) (rt.traverse(exp1))
-      //Console.println("hello, ref count = "+rt.nref+"/"+rt.nsafeRef)
         rt.nref match {
           case 0 =>
             nremoved += 1
@@ -208,48 +204,6 @@ trait CodeFactory {
           case exp2              => Block(x::Nil,  exp2)
         }
     }
-  }
-
-  final def debugStrings(tps:List[Type]):String = tps.foldLeft("[")({ (x:String,y:Type) => x+","+debugString(y) })+"]"
-
-  final def debugString(tp:Type):String = tp match {
-    case ErrorType => "ErrorType"
-    // internal: error
-    case WildcardType => "WildcardType"
-    // internal: unknown
-    case NoType => "NoType"
-    case NoPrefix => "NoPrefix"
-    case ThisType(sym) => "ThisType("+sym.toString+")"
-    // sym.this.type
-    case SingleType(pre, sym) => "SingleType("+debugString(pre)+","+sym+")"
-    // pre.sym.type
-    case ConstantType(value) => "ConstantType("+value+")"
-    // int(2)
-    case TypeRef(pre, sym, args) => "TypeRef("+debugString(pre)+","+sym.getClass()+"(=="+sym+")"+","+ debugStrings(args)+")"
-    // pre.sym[targs]
-    case RefinedType(parents, defs) => "RefinedType("+debugStrings(parents)+","+defs+")"
-    // parent1 with ... with parentn { defs }
-    case AnnotatedType(attribs, tp, selfsym) => "AnnotatedType("+attribs+","+ debugString(tp)+","+ selfsym+")"
-    // tp @attribs
-    case p:Product => tp.getClass.toString+"(=="+tp.toString+")"+runtime.ScalaRunTime._toString(p)
-
-    case _ => tp.getClass.toString+"(=="+tp.toString+")"
-    /*
-     // the following are non-value types; you cannot write them down in Scala source.
-
-     case TypeBounds(lo, hi) =>
-     // >: lo <: hi
-     case ClassInfoType(parents, defs, clazz) =>
-     // same as RefinedType except as body of class
-     case MethodType(paramtypes, result) =>
-     // (paramtypes)result
-     case PolyType(tparams, result) =>
-     // [tparams]result where result is a MethodType or ClassInfoType
-     // or
-     // []T  for a eval-by-name type
-     case ExistentialType(tparams, result) =>
-     // exists[tparams]result
-     */
   }
 }
 
