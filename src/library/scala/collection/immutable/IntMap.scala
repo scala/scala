@@ -225,7 +225,7 @@ sealed abstract class IntMap[+T] extends scala.collection.immutable.Map[Int, T]{
   final override def getOrElse[S >: T](key : Int, default : =>S) : S = this match {
     case IntMap.Nil => default;
     case IntMap.Tip(key2, value) => if (key == key2) value else default;
-    case IntMap.Bin(prefix, mask, left, right) => if (zero(key, mask)) left(key) else right(key);
+    case IntMap.Bin(prefix, mask, left, right) => if (zero(key, mask)) left.getOrElse(key, default) else right.getOrElse(key, default);
   }
 
   final override def apply(key : Int) : T = this match {
