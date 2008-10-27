@@ -179,9 +179,16 @@ class Worker(val fileManager: FileManager) extends Actor {
       " -classpath "+outDir+File.pathSeparator+CLASSPATH+
       " "+files.mkString(" ")
 
-    val exitCode = runCommand(cmd, output)
-    if (exitCode != 0) {
-      NestUI.failure("Running \"javac\" failed with exit code: "+exitCode+"\n")
+    try {
+      val exitCode = runCommand(cmd, output)
+      if (exitCode != 0) {
+        NestUI.failure("Running \"javac\" failed with exit code: "+
+                       exitCode+"\n"+cmd+"\n")
+      }
+    } catch {
+      case e: Exception =>
+        NestUI.failure("Running \"javac\" failed: "+
+                       "\n"+cmd+"\n")
     }
   }
 
