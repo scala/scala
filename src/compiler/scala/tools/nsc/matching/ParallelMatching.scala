@@ -144,24 +144,19 @@ trait ParallelMatching  {
     def rest:Rep
 
     // e.g. (1,1) (1,3) (42,2) for column {case ..1.. => ;; case ..42..=> ;; case ..1.. => }
-    protected var defaults: List[Int]    = Nil
     var defaultV: collection.immutable.Set[Symbol] = emptySymbolSet
+    var defaultIndexSet = new BitSet(column.length)
 
-    lazy val defaultRows: List[Row] =
-      defaults.reverseMap(grabRow);
-
-    // sorted e.g. case _ => 7,5,1
-    protected def insertDefault(tag: Int,vs:Set[Symbol]) {
+    def insertDefault(tag: Int, vs: Set[Symbol]) {
+      defaultIndexSet += tag
       defaultV = defaultV ++ vs
-      def insertSorted(tag: Int, xs:List[Int]):List[Int] = xs match {
-        case y::ys if y > tag => y::insertSorted(tag, ys)
-        case ys               => tag :: ys
-      }
-
-      defaults = insertSorted(tag, defaults)
     }
 
-    protected def haveDefault: Boolean = !defaults.isEmpty
+    def haveDefault: Boolean = !defaultIndexSet.isEmpty
+
+    lazy val defaultRows: List[Row] =
+      defaultIndexSet.toList.reverseMap(grabRow);
+
     protected var tagIndices = IntMap.empty[List[Int]]
 
     protected def grabTemps: List[Symbol] = rest.temp
@@ -254,19 +249,6 @@ trait ParallelMatching  {
   /** mixture rule for literals
    */
   class MixLiterals(val scrutinee:Symbol, val column:List[Tree], val rest:Rep)(implicit rep:RepFactory) extends CaseRuleApplication(rep) {
-
-    private var defaultIndexSet = new BitSet(column.length)
-
-    override def insertDefault(tag: Int, vs: Set[Symbol]) {
-      defaultIndexSet += tag
-      defaultV = defaultV ++ vs
-    }
-
-    protected override def haveDefault: Boolean = !defaultIndexSet.isEmpty
-
-    override lazy val defaultRows: List[Row] =
-        defaultIndexSet.filter(defaultIndexSet(_)).toList.reverseMap(grabRow)
-
     var varMap: List[(Int,List[Symbol])] = Nil
 
     private def sanity(pos:Position, tag: Int, pvars:List[Symbol]) {
@@ -1170,7 +1152,7 @@ trait ParallelMatching  {
         val restTemp =                                               temp.take(px) ::: temp.drop(px+1)
         val restRows = row map { r => r.replace(r.pat.take(px) ::: r.pat.drop(px+1)) }
         val mr = MixtureRule(temps.head, column, rep.make(restTemp, restRows))
-        DBG("\n---\nmixture rule is = "/*+mr.getClass.toString*/)
+        DBG("\n---\nmixture rule is = " + mr.getClass.toString)
         mr
     }
 
