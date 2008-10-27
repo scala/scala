@@ -56,6 +56,8 @@ trait ParallelMatching  {
        isSameType(scrutinee.tpe.widen, definitions.CharClass.tpe)) &&
         column.init.forall(simpleSwitchCandidate) && {
           val last = column.last;
+          // TODO: This needs to also allow the case that the last is a compatible
+          // type pattern.
           simpleSwitchCandidate(last) || isDefaultPattern(last);
         }}
 
@@ -106,18 +108,10 @@ trait ParallelMatching  {
 
     // used in MixEquals and MixSequence
     final protected def repWithoutHead(col: List[Tree],rest: Rep)(implicit theOwner: Symbol): Rep = {
-      var fcol  = col.tail
-      var frow  = rest.row.tail
-      val nfailrow = new ListBuffer[Row]
-      while(fcol ne Nil) {
-        val p = fcol.head
-        frow.head match {
-          case Row(pats, binds, g, bx) => nfailrow += Row(p::pats, binds, g, bx)
-        }
-        fcol = fcol.tail
-        frow = frow.tail
-      }
-      rep.make(scrutinee::rest.temp, nfailrow.toList)
+      val nfailrow = List.map2(col.tail, rest.row.tail)((p, r) => r match {
+        case Row(pats, binds, g, bx) => Row(p::pats, binds, g, bx);
+      });
+      rep.make(scrutinee::rest.temp, nfailrow)
     }
 
     /** translate outcome of the rule application into code (possible involving recursive application of rewriting) */
@@ -498,7 +492,7 @@ trait ParallelMatching  {
         // build new temps on which we will match subpatterns
 
         // if is right ignoring, don't want last one
-          var ys = if (isRightIgnoring(av)) xs.take(xs.length-1) else xs;
+          var ys = if (isRightIgnoring(av)) xs.init else xs;
           while(ys ne Nil) {
             val p = strip2(ys.head)
             childpats += p
