@@ -991,8 +991,8 @@ abstract class GenMSIL extends SubComponent {
             })
 
             // shorter try-catch-finally last (the ones contained in another)
-            affectedHandlers = affectedHandlers.sort({(h1, h2) => h1.covered.length > h2.covered.length})
-            affectedHandlers = affectedHandlers.filter(h => {h.covered.length == affectedHandlers(0).covered.length})
+            affectedHandlers = affectedHandlers.sort({(h1, h2) => h1.covered.size > h2.covered.size})
+            affectedHandlers = affectedHandlers.filter(h => {h.covered.size == affectedHandlers(0).covered.size})
             untreatedHandlers = untreatedHandlers -- affectedHandlers
 
             // more than one catch produces more than one exh, but we only need one
@@ -1018,7 +1018,7 @@ abstract class GenMSIL extends SubComponent {
                   val excBlock = currentBlock.addExceptionBlock(singleAffectedHandler)
                   exceptionBlock = Some(excBlock)
 
-                  val (tryBlocks, newBlock) = adaptBlocks(blocksToPut.intersect(singleAffectedHandler.covered), singleAffectedHandler)
+                  val (tryBlocks, newBlock) = adaptBlocks(blocksToPut.intersect(singleAffectedHandler.covered.toList), singleAffectedHandler)
 
                   newBlock match {
                     case Some(block) =>
@@ -1068,7 +1068,7 @@ abstract class GenMSIL extends SubComponent {
       // some blocks may have been removed by linearization
       untreatedHandlers.foreach(h => {
         h.blocks = h.blocks.intersect(blocksToPut)
-        h.covered = h.covered.intersect(blocksToPut)
+        h.covered = h.covered.intersect(collection.immutable.HashSet.empty ++ blocksToPut)
         if (h.finalizer != null && h.finalizer != NoFinalizer)
           h.finalizer.blocks = h.finalizer.blocks.intersect(blocksToPut)
       })

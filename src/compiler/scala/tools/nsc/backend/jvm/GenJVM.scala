@@ -817,7 +817,7 @@ abstract class GenJVM extends SubComponent {
               start = labels(b).getAnchor()
               end   = endPC(b)
             }
-            covered = covered remove b.==
+            covered = covered - b
           }
         });
 
