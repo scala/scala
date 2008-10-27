@@ -301,27 +301,10 @@ trait ParallelMatching  {
       myBindVars(varMap, orig)
     }
 
-    {
-      var xs = column
-      var i  = 0;
-      var last = -1;
-      while(xs ne Nil) {
-        if (last != -1) {
-          cunit.error(xs.head.pos, "unreachable code")
-        }
-        strip(xs.head) match {
-          case (pvars, p @ Literal(Constant(c:Int)))  => sanity(p.pos,     c  , definedVars(xs.head)); insertTagIndexPair(c,i)
-          case (pvars, p @ Literal(Constant(c:Char))) => sanity(p.pos, c.toInt, definedVars(xs.head)); insertTagIndexPair(c.toInt,i)
-          case (pvars, p )     if isDefaultPattern(p) => insertDefault(i,pvars)
-          case (pvars, p )     if isDefaultPattern(p) =>
-            if (rest.row(i).guard == EmptyTree) {
-              last = i;
-            }
-            insertDefault(i,pvars)
-        }
-        i += 1
-        xs = xs.tail
-      }
+    for ((x, i) <- column.zipWithIndex) strip(x) match {
+      case (pvars, p @ Literal(Constant(c:Int)))  => sanity(p.pos,     c  , definedVars(x)); insertTagIndexPair(c,i)
+      case (pvars, p @ Literal(Constant(c:Char))) => sanity(p.pos, c.toInt, definedVars(x)); insertTagIndexPair(c.toInt,i)
+      case (pvars, p )     if isDefaultPattern(p) => insertDefault(i,pvars)
     }
 
     final def tree(implicit theOwner: Symbol, failTree: Tree): Tree = {
