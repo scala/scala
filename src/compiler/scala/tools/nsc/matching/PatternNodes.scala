@@ -152,13 +152,10 @@ trait PatternNodes { self: transform.ExplicitOuter =>
    *  temp: the temp variable that holds the actual value
    *  next: next binding
    */
-  case class Binding(pvar:Symbol, temp:Symbol, next: Binding) extends Function1[Symbol, Ident]{
-    def add(vs:Iterator[Symbol], temp:Symbol): Binding = {
-      var b = this; while(vs.hasNext){
-        b = Binding(vs.next, temp, b)
-      }
-      return b
-    }
+  case class Binding(pvar:Symbol, temp:Symbol, private val next: Binding) extends Function1[Symbol, Ident]{
+    def add(vs : Iterable[Symbol], temp : Symbol): Binding =
+      vs.foldLeft(this)((x, y) => Binding(y, temp, x))
+
     /** this is just to produce debug output, ListBuffer needs an equals method?! */
     override def equals(x:Any) = {
       x match {

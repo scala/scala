@@ -164,7 +164,7 @@ trait ParallelMatching  {
       val r @ Row(_,s,_,_) = rest.row(index)
       if (defaultV.isEmpty) r else {
         val vs = strip1(column(index))  // get vars
-        r.insert2(Nil, s.add(vs.elements, scrutinee))
+        r.insert2(Nil, s.add(vs, scrutinee))
       }
     }
 
@@ -203,7 +203,7 @@ trait ParallelMatching  {
     override def grabRow(index: Int) = {
       val firstValue = tagIndices(tagIndices.firstKey).head
       val r @ Row(_,s,_,_) = rest.row(firstValue)
-      val nbindings = s.add(strip1(column(index)).elements, scrutinee)
+      val nbindings = s.add(strip1(column(index)), scrutinee)
 
       r.insert2(List(column(firstValue)), nbindings)
     }
@@ -259,7 +259,7 @@ trait ParallelMatching  {
     private def bindVars(Tag:Int, orig: Binding): Binding  = {
       def myBindVars(rest:List[(Int,List[Symbol])], bnd: Binding): Binding  = rest match {
         case Nil => bnd
-        case (Tag,vs)::xs => myBindVars(xs, bnd.add(vs.elements, scrutinee))
+        case (Tag,vs)::xs => myBindVars(xs, bnd.add(vs, scrutinee))
         case (_,  vs)::xs => myBindVars(xs, bnd)
       }
       myBindVars(varMap, orig)
@@ -341,7 +341,7 @@ trait ParallelMatching  {
               val nrows  = column.zip(rest.row) map {
                 case (pat, r) => strip2(pat) match {
                   case sameUnapplyCall(args) =>
-                    r.insert2(List(EmptyTree), r.subst.add(strip1(pat).elements, scrutinee))
+                    r.insert2(List(EmptyTree), r.subst.add(strip1(pat), scrutinee))
                   case _ =>
                     r.insert(pat)
                 }}
@@ -354,7 +354,7 @@ trait ParallelMatching  {
               val nrows = column.zip(rest.row) map {
                 case (pat, r: Row) => strip2(pat) match {
                   case sameUnapplyCall(args) =>
-                    val nsubst = r.subst.add(strip1(pat).elements, scrutinee)
+                    val nsubst = r.subst.add(strip1(pat), scrutinee)
                     r.insert2(List(args(0), EmptyTree), nsubst)
                   case _ =>
                     r.insert(List(EmptyTree, pat))
@@ -381,7 +381,7 @@ trait ParallelMatching  {
               val nrows = column.zip(rest.row) map {
                 case (pat, r: Row) => strip2(pat) match {
                   case sameUnapplyCall(args) =>
-                    val nsubst = r.subst.add(strip1(pat).elements, scrutinee)
+                    val nsubst = r.subst.add(strip1(pat), scrutinee)
                     r.insert2(args ::: List(EmptyTree), nsubst)
                   case _ =>
                     r.insert(dummies ::: List(pat))
@@ -519,7 +519,7 @@ trait ParallelMatching  {
       }
       assert(vlue.tpe ne null, "value tpe is null")
       val vs = strip1(column.head)
-      val nsuccFst = rest.row.head match { case r: Row => r.insert2(List(EmptyTree), r.subst.add(vs.elements, scrutinee)) }
+      val nsuccFst = rest.row.head match { case r: Row => r.insert2(List(EmptyTree), r.subst.add(vs, scrutinee)) }
       val fLabel = theOwner.newLabel(scrutinee.pos, cunit.fresh.newName(scrutinee.pos, "failCont%")) // warning, untyped
       val sx     = rep.shortCut(fLabel) // register shortcut
       val nsuccRow = nsuccFst :: Row(getDummies( 1 /*scrutinee*/ + rest.temp.length), NoBinding, EmptyTree, sx) :: Nil
@@ -600,9 +600,8 @@ trait ParallelMatching  {
 
     /*init block*/ {
       var sr = (moreSpecific,subsumed,remaining)
-      var j = 0; var pats = column; while(pats ne Nil) {
+      for ((pat, j) <- column.zipWithIndex){
         val (ms,ss,rs) = sr // more specific, more general(subsuming current), remaining patterns
-        val pat = pats.head
         val strippedPattern = strip2(pat)
         val patternType = strippedPattern.tpe
         sr = strippedPattern match {
@@ -629,8 +628,6 @@ trait ParallelMatching  {
           case _ =>
             (ms,ss,(j,pat)::rs)
         }
-        j += 1
-        pats = pats.tail
       }
       this.moreSpecific = sr._1.reverse
       this.subsumed     = sr._2.reverse
@@ -668,7 +665,7 @@ trait ParallelMatching  {
           case (j, pats) =>
             val (vs, thePat) = strip(column(j))
             val r = rest.row(j)
-            val nsubst = r.subst.add(vs.elements, casted)
+            val nsubst = r.subst.add(vs, casted)
             r.insert2(pats, nsubst)
         }
         rep.make(ntemps, ntriples)
@@ -1110,7 +1107,7 @@ trait ParallelMatching  {
         var px = 0; var rpats = pats; var bnd = subst; var temps = temp; while((bnd ne null) && (rpats ne Nil)) {
           val (vs,p) = strip(rpats.head);
           if (!isDefaultPattern(p)) { /*break*/ bnd = null; } else {
-            bnd = bnd.add(vs.elements,temps.head)
+            bnd = bnd.add(vs,temps.head)
             rpats = rpats.tail
             temps = temps.tail
             px += 1 // pattern index
