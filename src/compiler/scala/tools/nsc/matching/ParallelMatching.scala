@@ -1104,32 +1104,29 @@ trait ParallelMatching  {
       case Nil =>
         ErrorRule()
       case Row(pats, subst, g, bx)::xs =>
-        var px = 0; var rpats = pats; var bnd = subst; var temps = temp; while((bnd ne null) && (rpats ne Nil)) {
+        var bnd = subst;
+        var px = 0; var rpats = pats; var bnd = subst; var temps = temp; while(rpats ne Nil){
           val (vs,p) = strip(rpats.head);
-          if (!isDefaultPattern(p)) { /*break*/ bnd = null; } else {
+          if (!isDefaultPattern(p)) {
+            // Row( _  ... _ p_1i  ...  p_1n   g_m  b_m ) :: rows
+            // cut out column px that contains the non-default pattern
+            val column   = rpats.head :: (row.tail map { case Row(pats,_,_,_) => pats(px) })
+            val restTemp =                                               temp.take(px) ::: temp.drop(px+1)
+            val restRows = row map { r => r.replace(r.pat.take(px) ::: r.pat.drop(px+1)) }
+            val mr = MixtureRule(temps.head, column, rep.make(restTemp, restRows))
+            DBG("\n---\nmixture rule is = " + mr.getClass.toString)
+            return mr
+          } else {
             bnd = bnd.add(vs,temps.head)
             rpats = rpats.tail
             temps = temps.tail
             px += 1 // pattern index
           }
         }
-        /*    Row(   _   ...   _     g_1  b_1 ) :: rows     it's all default patterns
-         */
-        if (bnd ne null) {    // all default patterns
-          val rest = if (g eq EmptyTree) null else rep.make(temp, xs)
-          DBG("\n---\nmixture rule is = VariableRule")
-          return VariableRule (bnd, g, rest, bx)
-        }
-
-      /*    Row( _  ... _ p_1i  ...  p_1n   g_m  b_m ) :: rows
-       */
-        // cut out column px that contains the non-default pattern
-        val column   = rpats.head :: (row.tail map { case Row(pats,_,_,_) => pats(px) })
-        val restTemp =                                               temp.take(px) ::: temp.drop(px+1)
-        val restRows = row map { r => r.replace(r.pat.take(px) ::: r.pat.drop(px+1)) }
-        val mr = MixtureRule(temps.head, column, rep.make(restTemp, restRows))
-        DBG("\n---\nmixture rule is = " + mr.getClass.toString)
-        mr
+        //Row(   _   ...   _     g_1  b_1 ) :: rows     it's all default patterns
+        val rest = if (g eq EmptyTree) null else rep.make(temp, xs)
+        DBG("\n---\nmixture rule is = VariableRule")
+        VariableRule (bnd, g, rest, bx)
     }
 
     // a fancy toString method for debugging
@@ -1146,8 +1143,8 @@ trait ParallelMatching  {
         sb.append('\n')
       }
       sb.toString
-    } /* def toString */
-  } /* class Rep */
+    }
+  }
 
   /** creates initial clause matrix
    */
