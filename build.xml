@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 
 <project name="sabbus" default="build">
 
@@ -58,7 +58,7 @@ END-USER TARGETS
   <!-- Ant on Windows is not able to delete jar files that are referenced in any <path>.
        See ticket 1290 on trac. -->
   <target name="newstarrwin"
-	  description="Creates a new Starr on Windows. Manually execute 'ant locker.clean build' first!">
+          description="Creates a new Starr on Windows. Manually execute 'ant locker.clean build' first!">
     <fail message="This target is only available on Windows. Use 'ant newstarr' instead.">
       <condition>
         <not><os family="windows"/></not>
@@ -269,8 +269,8 @@ LOCAL REFERENCE BUILD (LOCKER)
       maxmemory="${scalacfork.maxmemory}">
       <include name="**/*.scala"/>
       <compilationpath>
-      	<pathelement location="${build-locker.dir}/classes/library"/>
-      	<pathelement location="${build-locker.dir}/classes/compiler"/>
+        <pathelement location="${build-locker.dir}/classes/library"/>
+        <pathelement location="${build-locker.dir}/classes/compiler"/>
         <pathelement location="${fjbg.jar}"/>
         <pathelement location="${msil.jar}"/>
         <pathelement location="${jline.jar}"/>
@@ -357,7 +357,7 @@ QUICK BUILD (QUICK)
       maxmemory="${scalacfork.maxmemory}">
       <include name="scala/Predef.scala"/>
       <compilationpath>
-      	<pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/library"/>
       </compilationpath>
     </scalacfork>
     <scalacfork
@@ -370,7 +370,7 @@ QUICK BUILD (QUICK)
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
       <compilationpath>
-      	<pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/library"/>
       </compilationpath>
     </scalacfork>
     <scalacfork
@@ -382,7 +382,7 @@ QUICK BUILD (QUICK)
       maxmemory="${scalacfork.maxmemory}">
       <include name="**/*.scala"/>
       <compilationpath>
-      	<pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/library"/>
       </compilationpath>
     </scalacfork>
     <scalacfork
@@ -394,7 +394,7 @@ QUICK BUILD (QUICK)
       maxmemory="${scalacfork.maxmemory}">
       <include name="**/*.scala"/>
       <compilationpath>
-      	<pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/library"/>
       </compilationpath>
     </scalacfork>
     <scalacfork
@@ -406,7 +406,7 @@ QUICK BUILD (QUICK)
       maxmemory="${scalacfork.maxmemory}">
       <include name="**/*.scala"/>
       <compilationpath>
-      	<pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/library"/>
       </compilationpath>
     </scalacfork>
     <propertyfile file="${build-quick.dir}/classes/library/library.properties">
@@ -443,8 +443,8 @@ QUICK BUILD (QUICK)
       maxmemory="${scalacfork.maxmemory}">
       <include name="**/*.scala"/>
       <compilationpath>
-      	<pathelement location="${build-quick.dir}/classes/library"/>
-      	<pathelement location="${build-quick.dir}/classes/compiler"/>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/compiler"/>
         <pathelement location="${fjbg.jar}"/>
         <pathelement location="${msil.jar}"/>
         <pathelement location="${jline.jar}"/>
@@ -481,9 +481,9 @@ QUICK BUILD (QUICK)
       destdir="${build-quick.dir}/classes/partest"
       target="1.5" source="1.5">
       <classpath>
-      	<pathelement location="${build-quick.dir}/classes/library"/>
-      	<pathelement location="${build-quick.dir}/classes/compiler"/>
-      	<pathelement location="${build-quick.dir}/classes/partest"/>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/compiler"/>
+        <pathelement location="${build-quick.dir}/classes/partest"/>
       </classpath>
       <include name="**/*.java"/>
       <compilerarg line="${javac.args}"/>
@@ -497,9 +497,9 @@ QUICK BUILD (QUICK)
       maxmemory="${scalacfork.maxmemory}">
       <include name="**/*.scala"/>
       <compilationpath>
-      	<pathelement location="${build-quick.dir}/classes/library"/>
-      	<pathelement location="${build-quick.dir}/classes/compiler"/>
-      	<pathelement location="${build-quick.dir}/classes/partest"/>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/compiler"/>
+        <pathelement location="${build-quick.dir}/classes/partest"/>
         <pathelement location="${ant.jar}"/>
       </compilationpath>
     </scalacfork>
@@ -520,8 +520,8 @@ QUICK BUILD (QUICK)
 
   <target name="quick.bin" depends="quick.pre-bin" unless="quick.bin.available">
     <path id="quick.bin.classpath">
-    	<pathelement location="${build-quick.dir}/classes/library"/>
-    	<pathelement location="${build-quick.dir}/classes/compiler"/>
+      <pathelement location="${build-quick.dir}/classes/library"/>
+      <pathelement location="${build-quick.dir}/classes/compiler"/>
       <pathelement location="${fjbg.jar}"/>
       <pathelement location="${jline.jar}"/>
     </path>
@@ -553,7 +553,7 @@ QUICK BUILD (QUICK)
     <chmod perm="ugo+rx" file="${build-quick.dir}/bin/fsc"/>
     <touch file="${build-quick.dir}/bin.complete" verbose="no"/>
   </target>
-  
+
   <target name="quick.done" depends="quick.bin">
     <touch file="${build-quick.dir}/all.complete" verbose="no"/>
     <path id="quick.classpath">
@@ -564,7 +564,6 @@ QUICK BUILD (QUICK)
     </path>
   </target>
 
-  
   <target name="quick.clean" depends="pack.clean">
     <delete dir="${build-quick.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
   </target>
@@ -618,7 +617,7 @@ PACKED QUICK BUILD (PACK)
     <manifest file="${build-pack.dir}/META-INF/MANIFEST.MF" mode="update">
       <attribute name="Bundle-Version" value="${version.number}"/>
     </manifest>
-  	<mkdir dir="${build-pack.dir}/lib"/>
+    <mkdir dir="${build-pack.dir}/lib"/>
     <jar destfile="${build-pack.dir}/lib/scala-compiler.jar" manifest="${build-pack.dir}/META-INF/MANIFEST.MF">
       <fileset dir="${build-quick.dir}/classes/compiler"/>
       <!-- filemode / dirmode: see trac ticket #1294 -->
@@ -652,8 +651,8 @@ PACKED QUICK BUILD (PACK)
   <target name="pack.bin" depends="pack.pre-bin" unless="pack.bin.available">
     <taskdef name="pack-bin" classname="scala.tools.ant.ScalaTool">
       <classpath>
-      	<pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
-      	<pathelement location="${build-pack.dir}/lib/scala-compiler.jar"/>
+        <pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
+        <pathelement location="${build-pack.dir}/lib/scala-compiler.jar"/>
       </classpath>
     </taskdef>
     <mkdir dir="${build-pack.dir}/bin"/>
@@ -843,9 +842,9 @@ BOOTSTRAPPING BUILD (STRAP)
       destdir="${build-strap.dir}/classes/partest"
       target="1.5" source="1.5">
       <classpath>
-      	<pathelement location="${build-strap.dir}/classes/library"/>
-      	<pathelement location="${build-strap.dir}/classes/compiler"/>
-      	<pathelement location="${build-strap.dir}/classes/partest"/>
+        <pathelement location="${build-strap.dir}/classes/library"/>
+        <pathelement location="${build-strap.dir}/classes/compiler"/>
+        <pathelement location="${build-strap.dir}/classes/partest"/>
       </classpath>
       <include name="**/*.java"/>
       <compilerarg line="${javac.args}"/>
@@ -877,7 +876,6 @@ BOOTSTRAPPING BUILD (STRAP)
   <target name="strap.clean">
     <delete dir="${build-strap.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
   </target>
-
 
 <!-- ===========================================================================
 OPTIMISED COMPILER
@@ -924,7 +922,7 @@ OPTIMISED COMPILER
       maxmemory="${scalacfork.maxmemory}">
       <include name="scala/Predef.scala"/>
       <compilationpath>
-      	<pathelement location="${build-optimised.dir}/classes/library"/>
+        <pathelement location="${build-optimised.dir}/classes/library"/>
       </compilationpath>
     </scalacfork>
     <scalacfork
@@ -937,7 +935,7 @@ OPTIMISED COMPILER
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
       <compilationpath>
-      	<pathelement location="${build-optimised.dir}/classes/library"/>
+        <pathelement location="${build-optimised.dir}/classes/library"/>
       </compilationpath>
     </scalacfork>
     <scalacfork
@@ -949,7 +947,7 @@ OPTIMISED COMPILER
       maxmemory="${scalacfork.maxmemory}">
       <include name="**/*.scala"/>
       <compilationpath>
-      	<pathelement location="${build-optimised.dir}/classes/library"/>
+        <pathelement location="${build-optimised.dir}/classes/library"/>
       </compilationpath>
     </scalacfork>
     <scalacfork
@@ -961,7 +959,7 @@ OPTIMISED COMPILER
       maxmemory="${scalacfork.maxmemory}">
       <include name="**/*.scala"/>
       <compilationpath>
-      	<pathelement location="${build-optimised.dir}/classes/library"/>
+        <pathelement location="${build-optimised.dir}/classes/library"/>
       </compilationpath>
     </scalacfork>
     <scalacfork
@@ -973,7 +971,7 @@ OPTIMISED COMPILER
       maxmemory="${scalacfork.maxmemory}">
       <include name="**/*.scala"/>
       <compilationpath>
-      	<pathelement location="${build-optimised.dir}/classes/library"/>
+        <pathelement location="${build-optimised.dir}/classes/library"/>
       </compilationpath>
     </scalacfork>
     <propertyfile file="${build-optimised.dir}/classes/library/library.properties">
@@ -1010,8 +1008,8 @@ OPTIMISED COMPILER
       maxmemory="${scalacfork.maxmemory}">
       <include name="**/*.scala"/>
       <compilationpath>
-      	<pathelement location="${build-optimised.dir}/classes/library"/>
-      	<pathelement location="${build-optimised.dir}/classes/compiler"/>
+        <pathelement location="${build-optimised.dir}/classes/library"/>
+        <pathelement location="${build-optimised.dir}/classes/compiler"/>
         <pathelement location="${fjbg.jar}"/>
         <pathelement location="${msil.jar}"/>
         <pathelement location="${jline.jar}"/>
@@ -1339,19 +1337,19 @@ FORWARDED TARGETS FOR JVM 1.4 BUILD
   <target name="four" depends="pack.done">
     <ant antfile="${src.dir}/build/four.xml" target="four-pack.done" inheritall="yes" inheritrefs="yes"/>
   </target>
-  
+
   <target name="fourtest" depends="pack.done">
     <ant antfile="${src.dir}/build/four.xml" target="four-test.done" inheritall="yes" inheritrefs="yes"/>
   </target>
-  
+
   <target name="fourdist" depends="pack.done">
     <ant antfile="${src.dir}/build/four.xml" target="four-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
-  
+
   <target name="fourclean">
     <ant antfile="${src.dir}/build/four.xml" target="four-all.clean" inheritall="yes" inheritrefs="yes"/>
   </target>
-  
+
 <!-- ===========================================================================
 FORWARDED TARGETS FOR MSIL BUILD
 ============================================================================ -->
@@ -1395,16 +1393,16 @@ FORWARDED TARGETS FOR PACKAGING
 <!-- ===========================================================================
 FORWARDED TARGETS FOR NIGHTLY BUILDS
 ============================================================================ -->
-  
+
   <target name="nightly" depends="all.done">
     <ant antfile="${src.dir}/build/pack.xml" target="pack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
-  
+
   <target name="fournightly" depends="pack.done">
     <ant antfile="${src.dir}/build/four.xml" target="four-all.done" inheritall="yes" inheritrefs="yes"/>
     <ant antfile="${src.dir}/build/pack.xml" target="fourpack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
-  
+
   <target name="fourfournightly">
     <ant antfile="${src.dir}/build/four.xml" target="fourfour-test.done"/>
   </target>
@@ -1417,19 +1415,19 @@ FORWARDED TARGETS FOR NIGHTLY BUILDS
 <!-- ===========================================================================
 MISCELLANEOUS
 ============================================================================ -->
-  
+
   <target name="graph.init">
     <taskdef name="vizant" classname="vizant.Vizant" classpath="${lib-ant.dir}/vizant.jar"/>
   </target>
-  
+
   <target name="graph.clean" depends="graph.init">
     <vizant antfile="${ant.file}" outfile="${ant.project.name}.dot" from="starr.clean"/>
   </target>
-  
+
   <target name="graph.all" depends="graph.init">
     <vizant antfile="${ant.file}" outfile="${ant.project.name}.dot" from="all.done"/>
   </target>
-  
+
   <target name="graph.sabbus" depends="graph.init">
     <vizant antfile="${ant.file}" outfile="${ant.project.name}.dot"/>
   </target>
