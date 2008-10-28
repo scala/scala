@@ -132,7 +132,7 @@ abstract class GenJVM extends SubComponent {
       }
       if (!(jclass.getName().endsWith("$") && sym.isModuleClass))
         addScalaAttr(if (isTopLevelModule(sym)) sym.sourceModule else sym);
-      addInnerClasses
+      addInnerClasses(jclass)
 
       val outfile = getFile(jclass, ".class")
       val outstream = new DataOutputStream(outfile.output)
@@ -405,7 +405,7 @@ abstract class GenJVM extends SubComponent {
     }
 
     def addGenericSignature(jmember: JMember, sym: Symbol) {
-      if (!sym.hasFlag(Flags.PRIVATE | Flags.EXPANDEDNAME | Flags.SYNTHETIC) && settings.target.value == "jvm-1.5") {
+      if (settings.target.value == "jvm-1.5") {
         erasure.javaSig(sym) match {
           case Some(sig) =>
             val index = jmember.getConstantPool().addUtf8(sig).toShort
@@ -465,11 +465,14 @@ abstract class GenJVM extends SubComponent {
       jmember.addAttribute(attr)
     }
 
-    def addInnerClasses {
+    def addInnerClasses(jclass: JClass) {
+      def addOwnInnerClasses(cls: Symbol) {
+        for (sym <- cls.info.decls.elements if sym.isClass)
+          innerClasses = innerClasses + sym;
+      }
       // add inner classes which might not have been referenced yet
       atPhase(currentRun.erasurePhase) {
-        for (sym <- clasz.symbol.info.decls.elements if sym.isClass)
-          innerClasses = innerClasses + sym;
+        addOwnInnerClasses(clasz.symbol)
       }
 
       if (!innerClasses.isEmpty) {
@@ -479,13 +482,16 @@ abstract class GenJVM extends SubComponent {
         for (innerSym <- innerClasses.toList.sort(_.name.length < _.name.length)) {
           var outerName = javaName(innerSym.rawowner)
           // remove the trailing '$'
-          //if (outerName.endsWith("$"))
-            //outerName = outerName.substring(0, outerName.length - 1)
+          if (outerName.endsWith("$"))
+            outerName = outerName.substring(0, outerName.length - 1)
+          var flags = javaFlags(innerSym)
+          if (innerSym.rawowner.hasFlag(Flags.MODULE))
+            flags |= JAccessFlags.ACC_STATIC
 
           innerClassesAttr.addEntry(javaName(innerSym),
               outerName,
               innerSym.rawname.toString,
-              javaFlags(innerSym));
+              flags);
         }
       }
     }
@@ -811,7 +817,7 @@ abstract class GenJVM extends SubComponent {
               start = labels(b).getAnchor()
               end   = endPC(b)
             }
-            covered = covered remove b.==
+            covered = covered - b
           }
         });
 

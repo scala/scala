@@ -269,7 +269,7 @@ trait Members { self: ICodes =>
             succ.toList foreach { i => bb.emit(i, i.pos) }
             code.removeBlock(succ)
             nextBlock -= bb
-            exh foreach { e => e.covered = e.covered.remove { b1 => b1 == succ } }
+            exh foreach { e => e.covered = e.covered - succ }
           } while (nextBlock.isDefinedAt(succ))
           bb.close
         } else

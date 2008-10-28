@@ -365,10 +365,17 @@ trait Definitions {
     private def newCovariantPolyClass(owner: Symbol, name: Name, parent: Symbol => Type): Symbol = {
       val clazz = newClass(owner, name, List())
       val tparam = newTypeParam(clazz, 0) setFlag COVARIANT
+      val p = parent(tparam)
+/*      p.typeSymbol.initialize
+      println(p.typeSymbol + " flags: " + Flags.flagsToString(p.typeSymbol.flags))
+      val parents = /*if (p.typeSymbol.isTrait)
+        List(definitions.AnyRefClass.tpe, p)
+                    else*/ List(p)
+      println("creating " + name + " with parents " + parents) */
       clazz.setInfo(
         PolyType(
           List(tparam),
-          ClassInfoType(List(parent(tparam)), newClassScope(clazz), clazz)))
+          ClassInfoType(List(p), newClassScope(clazz), clazz)))
     }
 
     private def newAlias(owner: Symbol, name: Name, alias: Type): Symbol = {

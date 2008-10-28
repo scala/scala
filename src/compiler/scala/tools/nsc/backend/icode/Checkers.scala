@@ -67,10 +67,11 @@ abstract class Checkers {
     val STRING        = REFERENCE(definitions.StringClass)
     val SCALA_ALL     = REFERENCE(definitions.NothingClass)
     val SCALA_ALL_REF = REFERENCE(definitions.NullClass)
-//    val CASE_CLASS    = REFERENCE(definitions.getClass("scala.CaseClass"))
+    val THROWABLE     = REFERENCE(definitions.ThrowableClass)
 
     def checkICodes: Unit = {
-      Console.println("[[consistency check at beginning of phase " + globalPhase.name + "]]")
+      if (settings.verbose.value)
+      println("[[consistency check at the beginning of phase " + globalPhase.name + "]]")
       classes.values foreach check
     }
 
@@ -553,6 +554,12 @@ abstract class Checkers {
             checkStack(1)
             stack.pop
             stack.push(kind)
+
+          case LOAD_EXCEPTION() =>
+            stack.push(THROWABLE)
+
+          case SCOPE_ENTER(_) | SCOPE_EXIT(_) =>
+            ()
 
           case _ =>
             abort("Unknown instruction: " + instr)

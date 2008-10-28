@@ -204,7 +204,11 @@ abstract class ClassfileParser {
             in.buf(start) != CONSTANT_METHODREF &&
             in.buf(start) != CONSTANT_INTFMETHODREF) errorBadTag(start)
         val ownerTpe = getClassOrArrayType(in.getChar(start + 1))
+        if (settings.debug.value)
+          log("getMemberSymbol(static: " + static + "): owner type: " + ownerTpe + " " + ownerTpe.typeSymbol.originalName)
         val (name, tpe) = getNameAndType(in.getChar(start + 3), ownerTpe)
+        if (settings.debug.value)
+          log("getMemberSymbol: name and tpe: " + name + ": " + tpe)
         if (name == nme.MODULE_INSTANCE_FIELD) {
           val index = in.getChar(start + 1)
           val name = getExternalName(in.getChar(starts(index) + 1))
@@ -377,8 +381,10 @@ abstract class ClassfileParser {
     val classInfo = ClassInfoType(parents, instanceDefs, clazz)
     val staticInfo = ClassInfoType(List(), staticDefs, statics)
 
-    if (!isScala && !isScalaRaw)
+    if (!isScala && !isScalaRaw) {
+      //println("Entering inner classes for " + clazz)
       enterOwnInnerClasses
+    }
     val curbp = in.bp
     skipMembers() // fields
     skipMembers() // methods
@@ -386,7 +392,7 @@ abstract class ClassfileParser {
       clazz.setFlag(sflags)
       setPrivateWithin(clazz, jflags)
       setPrivateWithin(staticModule, jflags)
-      if (!hasMeta) {
+      if (!hasMeta || isScalaRaw) {
         clazz.setInfo(classInfo)
       }
       statics.setInfo(staticInfo)

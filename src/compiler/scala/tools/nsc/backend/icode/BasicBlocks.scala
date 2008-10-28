@@ -412,7 +412,23 @@ trait BasicBlocks {
       method.exh.foreach { e: ExceptionHandler =>
         if (e.covers(this)) res = e.startBlock :: res
       }
-      res
+      res ++ exceptionalSucc(this, res)
+    }
+
+    /** Return a list of successors for 'b' that come from exception handlers
+     *  covering b's (non-exceptional) successors. These exception handlers
+     *  might not cover 'b' itself. This situation corresponds to an
+     *  exception being thrown as the first thing of one of b's successors.
+     */
+    private def exceptionalSucc(b: BasicBlock, succs: List[BasicBlock]): List[BasicBlock] = {
+      def findSucc(s: BasicBlock): List[BasicBlock] = {
+        val ss = method.exh flatMap { h =>
+          if (h.covers(s)) List(h.startBlock) else Nil
+        }
+        ss ++ (ss flatMap findSucc)
+      }
+
+      succs.flatMap(findSucc).removeDuplicates
     }
 
     /** Returns the precessors of this block, in the current 'code' chunk.
@@ -468,6 +484,6 @@ object BBFlags {
   /** This block is closed. No new instructions can be added. */
   final val CLOSED      = 0x00000008
 
-  /** This block has been changed, chached results are recomputed. */
+  /** This block has been changed, cached results are recomputed. */
   final val TOUCHED     = 0x00000010
 }
