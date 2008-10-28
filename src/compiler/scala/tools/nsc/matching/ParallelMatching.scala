@@ -809,71 +809,54 @@ trait ParallelMatching  {
   final def requestBody(bx:Int, subst:Binding)(implicit theOwner: Symbol): Tree = {
     if (bx < 0) { // is shortcut
       val jlabel = shortCuts(-bx-1)
-      val jump = Apply(mkIdent(jlabel), Nil)
-      return jump
+      return Apply(mkIdent(jlabel), Nil)
     }
     if (!isReached(bx)) { // first time this bx is requested
-      val argts = new ListBuffer[Type] // types of
-      var vrev: List[Symbol] = Nil
-      var vdefs:List[Tree] = Nil
-      val it = vss(bx).elements; while(it.hasNext) {
-        val v = it.next
-        val substv = subst(v)
-        if (substv ne null) { // might be bound elsewhere ( see `x @ unapply' )
-          vrev   = v :: vrev
-          argts += v.tpe
-          vdefs  = typedValDef(v, substv)::vdefs
-        }
-      }
+      // might be bound elsewhere ( see `x @ unapply' ) <-- this comment refers to null check
+      val allVs =
+        for (v <- vss(bx) ; val substv = subst(v) ; if substv ne null) yield
+          (v, v.tpe, typedValDef(v, substv))
+
+      val vsyms : List[Symbol] = allVs.map(_._1)
+      val argts : List[Type]   = allVs.map(_._2)
+      val vdefs : List[Tree]   = allVs.map(_._3)
+
       val body  = targets(bx)
       // @bug: typer is not able to digest a body of type Nothing being assigned result type Unit
       val tpe = if (body.tpe.typeSymbol eq definitions.NothingClass) body.tpe else resultType
-      val label = theOwner.newLabel(body.pos, "body%"+bx).setInfo(new MethodType(argts.toList, tpe))
+      val label = theOwner.newLabel(body.pos, "body%"+bx).setInfo(new MethodType(argts, tpe))
       labels(bx) = label
 
       return body match {
-        case _: Throw | _: Literal => squeezedBlock(vdefs.reverse, body.duplicate setType tpe)
-        case _ => squeezedBlock(vdefs, LabelDef(label, vrev.reverse, body setType tpe))
+        case _: Throw | _: Literal => squeezedBlock(vdefs, body.duplicate setType tpe)
+        case _ => squeezedBlock(vdefs.reverse, LabelDef(label, vsyms, body setType tpe))
       }
     }
 
-    // jump
-    markReachedTwice(bx) // if some bx is not reached twice, its LabelDef
-    val args = new ListBuffer[Ident] // is replaced with body itself
-    var vs   = vss(bx).elements; while(vs.hasNext) {
-      val v = vs.next
-      val substv = subst(v)
-      assert(substv ne null, "subst("+v+") is null"+cunit.toString) // if sharing takes place, then 'binding elsewhere' is not allowed
-      args += substv
-    }
+    // if some bx is not reached twice, its LabelDef is replaced with body itself
+    markReachedTwice(bx)
+    val args : List[Ident] = vss(bx).map(subst)
     val label = labels(bx)
-    label.tpe match {
-      case MethodType(fmls,_) =>
-        if (fmls.length != args.length) { // sanity check
-          cunit.error(targets(bx).pos, "consistency problem in target generation ! I have args "+args+" and need to jump to a label with fmls "+fmls)
-          throw FatalError("consistency problem")
-        }
-        for((f,a) <- fmls.zip(args.toList)) {
-          if (!(a.tpe <:< f)) {
-            cunit.error(targets(bx).pos, "consistency problem ! "+a.tpe+" "+f)
-            throw FatalError("consistency problem")
-          }
-        }
+    val body = targets(bx)
+    val MethodType(fmls, _) = label.tpe
+
+    // sanity checks
+    if (fmls.length != args.length) {
+      cunit.error(body.pos, "consistency problem in target generation ! I have args "+
+        args+" and need to jump to a label with fmls "+fmls)
+      throw FatalError("consistency problem")
+    }
+    fmls.zip(args).find(x => !(x._2.tpe <:< x._1)) match {
+      case Some(Tuple2(f, a)) => cunit.error(body.pos, "consistency problem ! "+a.tpe+" "+f) ; throw FatalError("consistency problem")
+      case None =>
     }
 
-    val body = targets(bx)
-    if (body.isInstanceOf[Throw] || body.isInstanceOf[Literal]) {
-      val vdefs = new ListBuffer[Tree]
-      val it = vss(bx).elements; while(it.hasNext) {
-        val v = it.next
-        val substv = subst(v)
-        if (substv ne null) { // might be bound elsewhere ( see `x @ unapply' )
-          vdefs  += typedValDef(v, substv)
-        }
-      }
-      squeezedBlock(vdefs.toList, body.duplicate setType resultType)
-    } else {
-      Apply(mkIdent(label),args.toList)
+    body match {
+      case _: Throw | _: Literal =>       // might be bound elsewhere (see `x @ unapply')
+        val vdefs = for (v <- vss(bx) ; val substv = subst(v) ; if substv ne null) yield typedValDef(v, substv)
+        squeezedBlock(vdefs, body.duplicate setType resultType)
+      case _ =>
+        Apply(mkIdent(label),args)
     }
   }
 
@@ -892,14 +875,12 @@ trait ParallelMatching  {
             case b @ Bind(n,p)   => get_BIND({ x:Tree => pctx(copy.Bind(b, n, x) setType x.tpe) }, p)
             case Alternative(ps) => ps map pctx
           }
-          get_BIND({x=>x}, p)
+          get_BIND(x => x, p)
         }
-        val Row(opatso, subst, g, bx) = xx
-        var opats = opatso
+        val Row(opats, subst, g, bx) = xx
         var pats:List[Tree] = Nil
         var indexOfAlternative = -1
-        var j = 0; while(opats ne Nil) {
-          var opat = opats.head // original pattern
+        for((opat, j) <- opats.zipWithIndex){
           val (vars, strippedPat) = strip(opat)
           val vs = vars.toList
           (strippedPat: @unchecked) match {
@@ -1023,8 +1004,6 @@ trait ParallelMatching  {
               pats = opat :: pats
 
           }
-          opats = opats.tail
-          j += 1
         }
         pats = pats.reverse
         if (indexOfAlternative == -1) List(xx.replace(pats))

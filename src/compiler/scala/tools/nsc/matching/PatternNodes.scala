@@ -15,8 +15,6 @@ trait PatternNodes { self: transform.ExplicitOuter =>
 
   import global._
 
-  // --- misc methods
-
   private val dummies = new Array[List[Tree]](8);
   dummies(0) = Nil;
   for (i <- 1 until dummies.length){
@@ -154,7 +152,7 @@ trait PatternNodes { self: transform.ExplicitOuter =>
    *  temp: the temp variable that holds the actual value
    *  next: next binding
    */
-  case class Binding(pvar:Symbol, temp:Symbol, next: Binding) {
+  case class Binding(pvar:Symbol, temp:Symbol, next: Binding) extends Function1[Symbol, Ident]{
     def add(vs:Iterator[Symbol], temp:Symbol): Binding = {
       var b = this; while(vs.hasNext){
         b = Binding(vs.next, temp, b)
@@ -168,10 +166,8 @@ trait PatternNodes { self: transform.ExplicitOuter =>
         case Binding(pv2,tmp2,next2) => (pvar eq pv2) && (temp eq tmp2) && (next==next2)
       }
     }
-    def apply(v:Symbol): Ident = {
-      //Console.println(this.toString()+" apply ("+v+"), eq?"+(v eq pvar))
+    def apply(v:Symbol): Ident =
       if(v eq pvar) {Ident(temp).setType(v.tpe)} else next(v)
-    }
   }
   object NoBinding extends Binding(null,null,null) {
     override def apply(v:Symbol) = null // not found, means bound elsewhere (x @ unapply-call)
