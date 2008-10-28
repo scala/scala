@@ -473,6 +473,7 @@ abstract class GenJVM extends SubComponent {
       // add inner classes which might not have been referenced yet
       atPhase(currentRun.erasurePhase) {
         addOwnInnerClasses(clasz.symbol)
+        addOwnInnerClasses(clasz.symbol.linkedClassOfClass)
       }
 
       if (!innerClasses.isEmpty) {
