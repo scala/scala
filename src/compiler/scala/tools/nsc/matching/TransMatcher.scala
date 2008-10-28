@@ -57,7 +57,7 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
     val vds  = new ListBuffer[Tree]
     var root:Symbol = newVar(selector.pos, selector.tpe)
     if (!doCheckExhaustive)
-      root.setFlag(symtab.Flags.TRANS_FLAG)
+      root.setFlag(Flags.TRANS_FLAG)
 
     var vdef:Tree        = typed{ValDef(root, selector)}
     var theFailTree:Tree = ThrowMatchError(selector.pos, mkIdent(root))
@@ -73,7 +73,7 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
         for ((ti, i) <- args.zipWithIndex){
           val v = newVar(ti.pos, cunit.fresh.newName(ti.pos, "tp"), selector.tpe.typeArgs(i))
           if (!doCheckExhaustive)
-            v.setFlag(symtab.Flags.TRANS_FLAG)
+            v.setFlag(Flags.TRANS_FLAG)
           vds  += typedValDef(v, ti)
           tmps += v
         }
@@ -104,11 +104,10 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
 
   object resetTrav extends Traverser {
     override def traverse(x: Tree): Unit = x match {
-      case vd @ ValDef(_, _, _, _) =>
-        if (vd.symbol hasFlag symtab.Flags.SYNTHETIC) {
-          vd.symbol resetFlag symtab.Flags.TRANS_FLAG
-          vd.symbol resetFlag symtab.Flags.MUTABLE
-        }
+      case (vd: ValDef) => if (vd.symbol hasFlag Flags.SYNTHETIC) {
+        vd.symbol resetFlag Flags.TRANS_FLAG
+        vd.symbol resetFlag Flags.MUTABLE
+      }
       case _ =>
         super.traverse(x)
     }

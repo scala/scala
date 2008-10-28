@@ -1104,7 +1104,6 @@ trait ParallelMatching  {
       case Nil =>
         ErrorRule()
       case Row(pats, subst, g, bx)::xs =>
-        var bnd = subst;
         var px = 0; var rpats = pats; var bnd = subst; var temps = temp; while(rpats ne Nil){
           val (vs,p) = strip(rpats.head);
           if (!isDefaultPattern(p)) {

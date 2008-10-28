@@ -126,26 +126,24 @@ trait PatternNodes { self: transform.ExplicitOuter =>
   final def getCaseTag(x:Type): Int = { x.typeSymbol.tag }
 
   final def definedVars(x:Tree): SymList = {
-    var vs = new collection.mutable.ListBuffer[Symbol]
-    def definedVars1(x:Tree): Unit = x match {
-      case Alternative(bs) => ; // must not have any variables
+    // I commented out the no-op cases, but left them in case the order is somehow significant -- paulp
+    def definedVars1(x:Tree): SymList = x match {
+      // case Alternative(bs) => ; // must not have any variables
       case Apply(_, args)  => definedVars2(args)
-      case b @ Bind(_,p)   => vs += b.symbol; definedVars1(p)
-      case Ident(_)        => ;
-      case Literal(_)      => ;
-      case Select(_,_)     => ;
+      case b @ Bind(_,p)   => b.symbol :: definedVars1(p)
+      // case Ident(_)        => ;
+      // case Literal(_)      => ;
+      // case Select(_,_)     => ;
       case Typed(p,_)      => definedVars1(p) //otherwise x @ (_:T)
       case UnApply(_,args) => definedVars2(args)
-
       // regexp specific
       case ArrayValue(_,xs)=> definedVars2(xs)
-      case Star(p)         => ; // must not have variables
+      // case Star(p)         => ; // must not have variables
+      case _                  => Nil
     }
-    def definedVars2(args:List[Tree]): Unit = {
-      var xs = args; while(xs ne Nil) { definedVars1(xs.head); xs = xs.tail };
-    }
-    definedVars1(x);
-    vs.toList
+    def definedVars2(args: List[Tree]): SymList = args.flatMap(definedVars1)
+
+    definedVars1(x)
   }
 
   /** pvar: the symbol of the pattern variable
