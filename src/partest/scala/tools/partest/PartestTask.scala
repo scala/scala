@@ -23,6 +23,9 @@ class PartestTask extends Task {
   def addConfiguredPosTests(input: FileSet): Unit =
     posFiles = Some(input)
 
+  def addConfiguredPos5Tests(input: FileSet): Unit =
+    pos5Files = Some(input)
+
   def addConfiguredNegTests(input: FileSet): Unit =
     negFiles = Some(input)
 
@@ -80,6 +83,7 @@ class PartestTask extends Task {
   private var showLog: Boolean = false
   private var runFailed: Boolean = false
   private var posFiles: Option[FileSet] = None
+  private var pos5Files: Option[FileSet] = None
   private var negFiles: Option[FileSet] = None
   private var runFiles: Option[FileSet] = None
   private var residentFiles: Option[FileSet] = None
@@ -108,6 +112,9 @@ class PartestTask extends Task {
 
   private def getPosFiles: Array[File] =
     getFilesAndDirs(posFiles)
+
+  private def getPos5Files: Array[File] =
+    getFilesAndDirs(pos5Files)
 
   private def getNegFiles: Array[File] =
     if (!negFiles.isEmpty) {
@@ -213,6 +220,13 @@ class PartestTask extends Task {
     if (getPosFiles.size > 0) {
       log("Compiling files that are expected to build")
       val (successes, failures) = runTestsForFiles(getPosFiles, "pos")
+      allSucesses += successes
+      allFailures += failures
+    }
+
+    if (getPos5Files.size > 0) {
+      log("Compiling files that are expected to build")
+      val (successes, failures) = runTestsForFiles(getPos5Files, "pos")
       allSucesses += successes
       allFailures += failures
     }
