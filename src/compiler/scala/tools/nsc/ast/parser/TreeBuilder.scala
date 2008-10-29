@@ -147,7 +147,7 @@ abstract class TreeBuilder {
       val x = nme.ANON_CLASS_NAME.toTypeName
       Block(
         List(ClassDef(
-          Modifiers(FINAL | SYNTHETIC), x, List(),
+          Modifiers(FINAL), x, List(),
           Template(parents, self, NoMods, List(List()), argss, stats))),
         New(Ident(x), List(List())))
     }
