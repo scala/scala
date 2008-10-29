@@ -9,10 +9,16 @@ package scala.tools.nsc.util
 import scala.tools.nsc.io.{AbstractFile, VirtualFile}
 
 object SourceFile {
-  val LF: Char = 0x0A
-  val FF: Char = 0x0C
-  val CR: Char = 0x0D
-  val SU: Char = 0x1A
+  // Be very careful touching these.
+  // Apparently trivial changes to the way you write these constants
+  // will cause Scanners.scala to go from a nice efficient switch to
+  // a ghastly nested if statement which will bring the type checker
+  // to its knees. See ticket #1456
+  final val LF = '\u000A'
+  final val FF = '\u000C'
+  final val CR = '\u000D'
+  final val SU = '\u001A'
+
   def isLineBreak(c: Int) = c match {
   case LF|FF|CR|SU => true
   case _ => false
