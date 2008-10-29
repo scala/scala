@@ -18,7 +18,7 @@ object Action {
   }
 
   /**
-   * Anything that triggers an action.
+   * Something that triggers an action.
    */
   trait Trigger {
     def action: Action

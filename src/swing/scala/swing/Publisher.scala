@@ -8,11 +8,11 @@ import event.Event
  * reactors and listen to themselves per default as a convenience.
  *
  * In order to reduce memory leaks, reactions are weakly referenced by default,
- * unless they implement <code>Reactions.StronglyReferenced</code>. This way,
+ * unless they implement <code>Reactions.StronglyReferenced</code>. That way,
  * the lifetime of reactions are more easily bound to the registering object,
  * which are reactors in common client code and hold strong references to their
  * reactions. As a result, reactors can be garbage collected even though they
- * still have reactions registered at some publisher, but usually not vice versa
+ * still have reactions registered at some publisher, but not vice versa
  * since reactors (strongly) reference publishers they are interested in.
  */
 trait Publisher extends Reactor {

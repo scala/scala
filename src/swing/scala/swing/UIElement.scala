@@ -3,8 +3,8 @@ package scala.swing
 import java.awt.{Color, Cursor, Font, Dimension}
 
 /**
- * The base trait of all user interface elements. Subclasses can be divided
- * into two groups, top-level elements such as windows and dialogs, and
+ * The base trait of all user interface elements. Subclasses belong to one
+ * of two groups: top-level elements such as windows and dialogs, or
  * <code>Component</code>s.
  *
  * @see java.awt.Component

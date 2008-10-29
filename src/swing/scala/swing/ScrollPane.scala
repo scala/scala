@@ -3,7 +3,7 @@ package scala.swing
 import javax.swing.JScrollPane
 
 /**
- * Can have at most a single child component. It display it inside a canvas (the viewport)
+ * Can have at most a single child component, which will be put inside a canvas (the viewport)
  * that can be scrolled.
  *
  * @see javax.swing.JScrollPane
