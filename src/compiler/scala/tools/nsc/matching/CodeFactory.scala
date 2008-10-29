@@ -15,18 +15,18 @@ import scala.tools.nsc.util.Position
 trait CodeFactory {
   self: transform.ExplicitOuter with PatternNodes =>
 
-  import global._
+  import global.{typer => _, _}
+  import analyzer.Typer;
 
   import definitions._             // standard classes and methods
-  import typer.typed               // methods to type trees
   import posAssigner.atPos         // for filling in tree positions
 
   final def mkIdent(sym:Symbol) = Ident(sym) setType sym.tpe
 
-  final def typedValDef(x:Symbol, rhs:Tree) = {
+  final def typedValDef(x:Symbol, rhs:Tree)(implicit typer : Typer) = {
     x.tpe match {
-      case WildcardType => rhs.setType(null); val rhs1 = typed(rhs); x setInfo rhs1.tpe; typed{ValDef(x, rhs)}
-      case _ => typed{ValDef(x, typed(rhs, x.tpe))}
+      case WildcardType => rhs.setType(null); val rhs1 = typer.typed(rhs); x setInfo rhs1.tpe; typer.typed{ValDef(x, rhs)}
+      case _ => typer.typed{ValDef(x, typer.typed(rhs, x.tpe))}
     }
   }
 
@@ -35,9 +35,9 @@ trait CodeFactory {
   /**
    * Convert a pattern binding into a list of value definitions.
    */
-  final def targetParams(subst:Binding):List[ValDef] = subst match {
+  final def targetParams(subst:Binding)(implicit typer : Typer):List[ValDef] = subst match {
     case NoBinding => Nil;
-    case Binding(v,t,n) => ValDef(v, typed(mkIdent(t)))::targetParams(n)
+    case Binding(v,t,n) => ValDef(v, typer.typed(mkIdent(t)))::targetParams(n)
   }
 
   /** returns A for T <: Sequence[ A ]
@@ -59,16 +59,16 @@ trait CodeFactory {
   }
 
   /** for tree of sequence type, returns tree that drops first i elements */
-  final def seqDrop(sel:Tree, ix: Int) = if (ix == 0) sel else
-    typed { Select(Apply(Select(sel, nme.drop), List(Literal(Constant(ix)))), nme.toSeq) }
+  final def seqDrop(sel:Tree, ix: Int)(implicit typer : Typer) = if (ix == 0) sel else
+    typer.typed { Select(Apply(Select(sel, nme.drop), List(Literal(Constant(ix)))), nme.toSeq) }
 
   /** for tree of sequence type, returns tree that drops first i elements */
-  final def seqElement(sel:Tree, ix: Int) =
-    typed { Apply(Select(sel, sel.tpe.member(nme.apply)), List(Literal(Constant(ix)))) }
+  final def seqElement(sel:Tree, ix: Int)(implicit typer : Typer) =
+    typer.typed { Apply(Select(sel, sel.tpe.member(nme.apply)), List(Literal(Constant(ix)))) }
 
   /** for tree of sequence type, returns boolean tree testing that the sequence has length i */
-  final def seqHasLength(sel: Tree, ntpe: Type, i: Int) =
-    typed(
+  final def seqHasLength(sel: Tree, ntpe: Type, i: Int)(implicit typer : Typer) =
+    typer.typed(
       Equals(
         Apply(Select(sel, ntpe.member(nme.lengthCompare)), List(Literal(Constant(i)))),
         Literal(Constant(0))
@@ -77,10 +77,10 @@ trait CodeFactory {
 
   /** for tree of sequence type sel, returns boolean tree testing that length >= i
    */
-  final def seqLongerThan(sel:Tree, tpe:Type, i:Int) =
+  final def seqLongerThan(sel:Tree, tpe:Type, i:Int)(implicit typer : Typer) =
     GreaterThanOrEquals(
-      typed(Apply(Select(sel, tpe.member(nme.lengthCompare)), List(Literal(Constant(i))))),
-      typed(Literal(Constant(0))))
+      typer.typed(Apply(Select(sel, tpe.member(nme.lengthCompare)), List(Literal(Constant(i))))),
+      typer.typed(Literal(Constant(0))))
       //defs.Seq_length instead of tpe.member ?
 
   final def Not(arg:Tree) = arg match {
@@ -119,8 +119,8 @@ trait CodeFactory {
           ))))
     }
 
-  final def NotNull(tree:Tree) =
-    typed {
+  final def NotNull(tree:Tree)(implicit typer : Typer) =
+    typer.typed {
       Apply(Select(tree, nme.ne), List(Literal(Constant(null))))
     }
 

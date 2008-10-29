@@ -483,30 +483,15 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
 
           ExplicitOuter.this.resultType = tree.tpe
 
-          //println("handle pattern = "+nselector+"/"+ncases.toList+"/"+currentOwner+"/"+tree.tpe)
-          val t_untyped = handlePattern(nselector, ncases.toList, checkExhaustive, currentOwner, transform)
-          //println("t_untyped = "+t_untyped)
-	  try {
-            //Console.println("t_untyped "+t_untyped.toString())
-            val t = atPos(tree.pos) { localTyper.typed(t_untyped, resultType) }
-            //println("t_typed = "+t)
+          val t = atPos(tree.pos) {
+            val t_untyped = handlePattern(nselector, ncases.toList, checkExhaustive, currentOwner, transform)(localTyper)
+            localTyper.typed(t_untyped, resultType)
+          }
 
-            //t = transform(t)
-            //val t         = atPos(tree.pos) { typed(t_untyped, resultType) }
-            //val t         = atPos(tree.pos) { typed(t_untyped) }
-            //Console.println("t typed "+t.toString())
-            if (settings.debug.value)
-              Console.println("finished translation of " + tid)
+          if (settings.debug.value)
+            Console.println("finished translation of " + tid)
 
-            if(nguard.isEmpty) {t} else Block(nguard.toList, t) setType t.tpe
-	  } catch {
-	    case e =>
-	      e.printStackTrace()
-	      //treeBrowser.browse(Seq.single(unit).elements)
-	      Console.println("[died while typechecking the translated pattern match:]")
-	      Console.println(t_untyped)
-	    null
-	  }
+          if(nguard.isEmpty) {t} else Block(nguard.toList, t) setType t.tpe
         case _ =>
           val x = super.transform(tree)
 

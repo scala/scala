@@ -13,11 +13,11 @@ package scala.tools.nsc.matching
  */
 trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with ParallelMatching with CodeFactory =>
 
-  import global._
+  import global.{typer => _, _}
+  import analyzer.Typer;
   import definitions._
   import posAssigner.atPos
   import symtab.Flags
-  import typer.typed
 
   import collection.mutable.ListBuffer
 
@@ -44,7 +44,7 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
 
   /** handles all translation of pattern matching
    */
-  def handlePattern(selector: Tree, cases: List[CaseDef], doCheckExhaustive: Boolean, owner: Symbol, handleOuter: Tree => Tree): Tree = {
+  def handlePattern(selector: Tree, cases: List[CaseDef], doCheckExhaustive: Boolean, owner: Symbol, handleOuter: Tree => Tree)(implicit typer : Typer): Tree = {
     implicit val theOwner = owner
     if (settings_debug) {
       Console.println("****")
@@ -59,7 +59,7 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
     if (!doCheckExhaustive)
       root.setFlag(Flags.TRANS_FLAG)
 
-    var vdef:Tree        = typed{ValDef(root, selector)}
+    var vdef:Tree        = typer.typed{ValDef(root, selector)}
     var theFailTree:Tree = ThrowMatchError(selector.pos, mkIdent(root))
 
     if (definitions.isTupleType(selector.tpe)) selector match {
@@ -89,8 +89,8 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
 
     implicit val fail: Tree = theFailTree
 
-    val mch  = typed{ repToTree(irep)}
-    var dfatree = typed{Block(vds.toList, mch)}
+    val mch  = typer.typed{ repToTree(irep)}
+    var dfatree = typer.typed{Block(vds.toList, mch)}
     // cannot use squeezedBlock because of side-effects, see t275
     for ((cs, bx) <- cases.zipWithIndex){
       if (!rep.isReached(bx)) {
