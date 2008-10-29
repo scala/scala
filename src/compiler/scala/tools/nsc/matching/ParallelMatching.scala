@@ -360,7 +360,8 @@ trait ParallelMatching  {
                   case _ =>
                     r.insert(List(EmptyTree, pat))
                 }}
-              val vdef = typedValDef(vsym, Select(mkIdent(ures), nme.get))
+
+              val vdef = typedValDef(vsym, Apply(Select(mkIdent(ures), nme.get), List()))
               (uacall, List(vdef), rep.make(ntemps, nrows), nrepFail)
 
             case _ => // app.tpe is Option[? <: ProductN[T1,...,Tn]]
