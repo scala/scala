@@ -406,7 +406,7 @@ abstract class GenJVM extends SubComponent {
     }
 
     def addGenericSignature(jmember: JMember, sym: Symbol) {
-      if (settings.target.value == "jvm-1.5") {
+      if (!sym.hasFlag(Flags.PRIVATE | Flags.EXPANDEDNAME | Flags.SYNTHETIC) && settings.target.value == "jvm-1.5") {
         erasure.javaSig(sym) match {
           case Some(sig) =>
             val index = jmember.getConstantPool().addUtf8(sig).toShort
