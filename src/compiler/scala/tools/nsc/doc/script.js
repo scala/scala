@@ -31,6 +31,7 @@ function get_api_root(key) {
   root = null;
   if      (key.indexOf("ch/epfl/lamp/fjbg/") == 0) { root = fjbg_api_root; }
   else if (key.indexOf("java/"             ) == 0) { root = java_api_root; }
+  else if (key.indexOf("javax/"            ) == 0) { root = java_api_root; }
   else if (key.indexOf("javax/servlet/"    ) == 0) { root = javax_servlet_api_root; }
   else if (key.indexOf("scala/"            ) == 0) { root = scala_api_root; }
   else if (key.indexOf("org/apache/tools/" ) == 0) { root = ant_api_root; }
@@ -39,7 +40,7 @@ function get_api_root(key) {
   return root;
 }
 
-var scala_src_root = 'http://lampsvn.epfl.ch/trac/scala/browser/scala/tags/R_2_7_2_RC4/';
+var scala_src_root = 'http://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/';
 var lib_src_root = scala_src_root + 'src/library/';
 var comp_src_root = scala_src_root + 'src/compiler/';
 var actors_src_root = scala_src_root + 'src/actors/';
