@@ -3,8 +3,8 @@ package scala.swing
 import event._
 
 /**
- * A frame that can be used for main application windows. Quits the
- * application on close.
+ * A frame that can be used for main application windows. Shuts down the
+ * framework and quits the application when closed.
  */
 class MainFrame extends Frame {
   reactions += {

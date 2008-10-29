@@ -3,6 +3,9 @@ package scala.swing
 import java.awt.BorderLayout
 
 object BorderPanel {
+  /**
+   * The position of a component in a <code>BorderPanel</code>
+   */
   object Position extends Enumeration {
     val North = Value(BorderLayout.NORTH)
     val South = Value(BorderLayout.SOUTH)
@@ -20,6 +23,10 @@ object BorderPanel {
 }
 
 /**
+ * A container that arranges its children around a central component that
+ * takes most of the space. The other children are placed on one of four
+ * borders: north, east, south, west.
+ *
  * @see javax.swing.BorderLayout
  */
 class BorderPanel extends Panel with LayoutContainer {
@@ -34,6 +41,4 @@ class BorderPanel extends Panel with LayoutContainer {
 
   protected def areValid(c: Constraints): (Boolean, String) = (true, "")
   protected def add(c: Component, l: Constraints) { peer.add(c.peer, l.toString) }
-
-
 }

@@ -2,6 +2,10 @@ package scala.swing
 
 import javax.swing._
 
+/**
+ * Extend this class for most simple UI applications. Clients need to implement the
+ * <code>top</code> method. Framework intialization is done by this class.
+ */
 abstract class SimpleGUIApplication extends GUIApplication {
   def top: Frame
 

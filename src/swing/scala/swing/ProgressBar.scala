@@ -3,6 +3,10 @@ package scala.swing
 import event._
 
 /**
+ * A bar indicating progress of some action. Can be in indeterminate mode,
+ * in which it indicates that the action is in progress (usually by some
+ * animation) but does not indicate the amount of work done or to be done.
+ *
  * @see javax.swing.JProgressBar
  */
 class ProgressBar extends Component with Orientable {

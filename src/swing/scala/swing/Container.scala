@@ -4,6 +4,9 @@ import event._
 import scala.collection.mutable.Buffer
 
 object Container {
+  /**
+   * Utility trait for wrapping containers.
+   */
   trait Wrapper extends Component with Container {
     protected val _contents = new Content
     def contents: Seq[Component] = _contents

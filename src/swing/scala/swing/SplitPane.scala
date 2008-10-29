@@ -4,6 +4,10 @@ import event._
 import Swing._
 
 /**
+ * A container with exactly two children. Arranges them side by side, either
+ * horizontally or vertically. Displays a draggable divider component between
+ * them that lets the user adjust the size ratio of the children.
+ *
  * @see javax.swing.JSplitPane
  */
 class SplitPane(o: Orientation.Value, left: Component, right: Component) extends Component with Container with Orientable {

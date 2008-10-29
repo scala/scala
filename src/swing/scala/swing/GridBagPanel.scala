@@ -33,7 +33,7 @@ object GridBagPanel {
 }
 
 /**
- * A panel that lays out its children in a grid. Layout details can be
+ * A panel that arranges its children in a grid. Layout details can be
  * given for each cell of the grid.
  *
  * @see java.awt.GridBagLayout
@@ -44,6 +44,10 @@ class GridBagPanel extends Panel with LayoutContainer {
 
   private def layoutManager = peer.getLayout.asInstanceOf[java.awt.GridBagLayout]
 
+  /**
+   * Convenient conversion from xy-coords given as pairs to
+   * grid bag constraints.
+   */
   implicit def pair2Constraints(p: (Int, Int)): Constraints = {
     val c = new Constraints
     c.gridx = p._1

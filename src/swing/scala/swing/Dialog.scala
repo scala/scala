@@ -2,7 +2,15 @@ package scala.swing
 
 import javax.swing.{Icon, JOptionPane}
 
+/**
+ * Simple predefined dialogs.
+ *
+ * @see javax.swing.JOptionPane
+ */
 object Dialog {
+  /**
+   * The message type of a dialog.
+   */
   object Message extends Enumeration {
     val Error = Value(JOptionPane.ERROR_MESSAGE)
     val Info = Value(JOptionPane.INFORMATION_MESSAGE)
@@ -10,12 +18,20 @@ object Dialog {
     val Question = Value(JOptionPane.QUESTION_MESSAGE)
     val Plain = Value(JOptionPane.PLAIN_MESSAGE)
   }
+
+  /**
+   * The possible answers a user can select.
+   */
   object Options extends Enumeration {
     val Default = Value(JOptionPane.DEFAULT_OPTION)
     val YesNo = Value(JOptionPane.YES_NO_OPTION)
     val YesNoCancel = Value(JOptionPane.YES_NO_CANCEL_OPTION)
     val OkCancel = Value(JOptionPane.OK_CANCEL_OPTION)
   }
+
+  /**
+   * The selected result of dialog.
+   */
   object Result extends Enumeration {
     val Yes = Value(JOptionPane.YES_OPTION)
     val Ok = Yes

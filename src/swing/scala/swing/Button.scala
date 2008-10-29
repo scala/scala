@@ -4,7 +4,7 @@ import javax.swing._
 import event._
 
 /**
- * A button that can be pushed, usually to perfrom some action.
+ * A button that can be clicked, usually to perform some action.
  *
  * @see javax.swing.JButton
  */
@@ -15,4 +15,9 @@ class Button(text0: String) extends AbstractButton with Publisher {
     this("")
     action = a
   }
+
+  def defaultButton: Boolean = peer.isDefaultButton
+
+  def defaultCapable: Boolean = peer.isDefaultCapable
+  def defaultCapable_=(capable: Boolean) { peer.setDefaultCapable(capable) }
 }

@@ -56,6 +56,10 @@ object TabbedPane {
 }
 
 /**
+ * Displays the contents of one of several pages at a time. For each page a tab is
+ * visible at all times. The user can click on one of these tabs to move the
+ * corresponding page to the front.
+ *
  * @see javax.swing.JTabbedPane
  */
 class TabbedPane extends Component with Publisher {
@@ -95,6 +99,9 @@ class TabbedPane extends Component with Publisher {
    */
   def tabPlacement(b: Alignment.Value) { peer.setTabPlacement(b.id) }
 
+  /**
+   * The current page selection
+   */
   object selection extends Publisher {
     def page: Page = pages(index)
     def page_=(p: Page) { index = p.index }

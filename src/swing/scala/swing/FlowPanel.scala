@@ -13,7 +13,7 @@ object FlowPanel {
 }
 
 /**
- * A panel that lays out its contents horizontally, one after the other.
+ * A panel that arranges its contents horizontally, one after the other.
  * If they don't fit, this panel will try to insert line breaks.
  *
  * @see java.awt.FlowLayout

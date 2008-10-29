@@ -4,7 +4,8 @@ import javax.swing._
 import event._
 
 /**
- * A two state button with a push button like UI. Usually used in tool bars.
+ * A two state button with a push button like user interface.
+ * Usually used in tool bars.
  *
  * @see javax.swing.JToggleButton
  */

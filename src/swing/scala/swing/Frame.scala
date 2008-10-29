@@ -4,7 +4,7 @@ import javax.swing._
 import event._
 
 /**
- * A decorated window.
+ * A window with decoration such as a title, border, and action buttons.
  *
  * @see javax.swing.JFrame
  */

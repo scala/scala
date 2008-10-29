@@ -3,6 +3,8 @@ package scala.swing
 import event._
 
 /**
+ * Lets users select a value from a given range. Visually, this is represented
+ * as a draggable knob on a horizontal or vertical bar.
  *
  * Fires a ValueChanged event whenever the slider's value changes and
  * when the knob is released.
@@ -39,7 +41,9 @@ class Slider extends Component with Orientable with Publisher {
   def adjusting = peer.getValueIsAdjusting
 
   def labels: scala.collection.Map[Int, Label] =
-    new scala.collection.jcl.MapWrapper[Int, Label] { def underlying = peer.getLabelTable.asInstanceOf[java.util.Hashtable[Int, Label]] }
+    new scala.collection.jcl.MapWrapper[Int, Label] {
+      def underlying = peer.getLabelTable.asInstanceOf[java.util.Hashtable[Int, Label]]
+    }
   def labels_=(l: scala.collection.Map[Int, Label]) {
     val table = new java.util.Hashtable[Any, Any]
     for ((k,v) <- l) table.put(k, v)
