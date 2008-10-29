@@ -361,12 +361,12 @@ trait ParallelMatching  {
                     r.insert(List(EmptyTree, pat))
                 }}
 
-              val vdef = typedValDef(vsym, Apply(Select(mkIdent(ures), nme.get), List()))
+              val vdef = typedValDef(vsym, Get(mkIdent(ures)))
               (uacall, List(vdef), rep.make(ntemps, nrows), nrepFail)
 
             case _ => // app.tpe is Option[? <: ProductN[T1,...,Tn]]
               val uresGet = newVarCapture(ua.pos, app.tpe.typeArgs(0))
-              val vdefHead = typedValDef(uresGet, Select(mkIdent(ures), nme.get))
+              val vdefHead = typedValDef(uresGet, Get(mkIdent(ures)))
               val ts = definitions.getProductArgs(uresGet.tpe).get
 
               val (vdefs: List[Tree], vsyms: List[Symbol]) = List.unzip(

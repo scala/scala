@@ -124,6 +124,9 @@ trait CodeFactory {
       Apply(Select(tree, nme.ne), List(Literal(Constant(null))))
     }
 
+  final def Get(tree : Tree)
+      = Apply(Select(tree, nme.get), List())
+
   // statistics
   var nremoved = 0
   var nsubstituted = 0
