@@ -226,7 +226,7 @@ sealed abstract class LongMap[+T] extends scala.collection.immutable.Map[Long, T
   final override def getOrElse[S >: T](key : Long, default : =>S) : S = this match {
     case LongMap.Nil => default;
     case LongMap.Tip(key2, value) => if (key == key2) value else default;
-    case LongMap.Bin(prefix, mask, left, right) => if (zero(key, mask)) left(key) else right(key);
+    case LongMap.Bin(prefix, mask, left, right) => if (zero(key, mask)) left.getOrElse(key, default) else right.getOrElse(key, default);
   }
 
   final override def apply(key : Long) : T = this match {
