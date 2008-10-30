@@ -731,90 +731,90 @@ trait ParallelMatching  {
       if (x.isInstanceOf[rep.RepImpl]) Some(x.asInstanceOf[RepType]) else None
   }
   class RepFactory(val handleOuter: Tree => Tree)(implicit val typer : Typer) {
-  case class RepImpl(val temp:List[Symbol], val row:List[Row]) extends Rep with Rep.RepType {
-    (row.find { case Row(pats, _, _, _) => temp.length != pats.length }) match {
-      case Some(row) => assert(false, "temp == "+temp+" row.pats == "+row.pat);
-      case _ =>
-    }
-    def _1 = temp
-    def _2 = row
-  }
-
-  var vss: List[SymList] = _
-  var labels:  Array[Symbol] = new Array[Symbol](4)
-  var targets: List[Tree] = _
-  var reached : BitSet = _;
-  var shortCuts: List[Symbol] = Nil;
-
-  final def make(temp:List[Symbol], row:List[Row], targets: List[Tree], vss:List[SymList])(implicit theOwner: Symbol): Rep = {
-    // ensured that labels(i) eq null for all i, cleanup() has to be called after translation
-    this.targets   = targets
-    if (targets.length > labels.length)
-      this.labels    = new Array[Symbol](targets.length)
-    this.vss       = vss
-    this.reached = new BitSet(targets.length);
-    return make(temp, row)
-  }
-
-  final def shortCut(theLabel:Symbol): Int = {
-    this.shortCuts = shortCuts:::theLabel::Nil;
-    return -shortCuts.length
-  }
-
-  final def cleanup(tree: Tree)(implicit theOwner: Symbol): Tree = {
-    object lxtt extends Transformer {
-      override def transform(tree:Tree): Tree = tree match {
-        case blck @ Block(vdefs, ld @ LabelDef(name,params,body)) =>
-          val bx = labelIndex(ld.symbol)
-          if ((bx >= 0) && !isReachedTwice(bx)) {
-            squeezedBlock(vdefs,body)
-          }
-          else
-            blck
-
-        case If(cond, Literal(Constant(true)), Literal(Constant(false))) =>
-          super.transform(cond)
-        case If(cond1, If(cond2, thenp, elsep1), elsep2) if (elsep1 equalsStructure elsep2) =>
-          super.transform(If(And(cond1,cond2), thenp, elsep1))
-        case If(cond1, If(cond2, thenp, Apply(jmp,List())), ld:LabelDef) if (jmp.symbol eq ld.symbol) =>
-          super.transform(If(And(cond1,cond2), thenp, ld))
-
-        case t => super.transform(t)
+    case class RepImpl(val temp:List[Symbol], val row:List[Row]) extends Rep with Rep.RepType {
+      (row.find { case Row(pats, _, _, _) => temp.length != pats.length }) match {
+        case Some(row) => assert(false, "temp == "+temp+" row.pats == "+row.pat);
+        case _ =>
       }
+      def _1 = temp
+      def _2 = row
     }
-    val res = lxtt.transform(tree)
-    cleanup()
-    res
-  }
-  final def cleanup() {
-    var i = targets.length;
-    while (i>0) { i-=1; labels(i) = null; };
-    reached = null;
-    shortCuts = Nil
-  }
-  final def isReached(bx:Int)   = { labels(bx) ne null }
-  final def markReachedTwice(bx:Int) { reached += bx }
-  /** @pre bx < 0 || labelIndex(bx) != -1 */
-  final def isReachedTwice(bx:Int) = (bx < 0) || reached(bx)
-  /* @returns bx such that labels(bx) eq label, -1 if no such bx exists */
-  final def labelIndex(label:Symbol): Int = {
-    var bx = 0; while((bx < labels.length) && (labels(bx) ne label)) { bx += 1 }
-    if (bx >= targets.length) bx = -1
-    return bx
-  }
-  /** first time bx is requested, a LabelDef is returned. next time, a jump.
-   *  the function takes care of binding
-   */
-  final def requestBody(bx:Int, subst:Binding)(implicit theOwner: Symbol): Tree = {
-    if (bx < 0) { // is shortcut
-      val jlabel = shortCuts(-bx-1)
-      return Apply(mkIdent(jlabel), Nil)
+
+    var vss: List[SymList] = _
+    var labels:  Array[Symbol] = new Array[Symbol](4)
+    var targets: List[Tree] = _
+    var reached : BitSet = _;
+    var shortCuts: List[Symbol] = Nil;
+
+    final def make(temp:List[Symbol], row:List[Row], targets: List[Tree], vss:List[SymList])(implicit theOwner: Symbol): Rep = {
+      // ensured that labels(i) eq null for all i, cleanup() has to be called after translation
+      this.targets   = targets
+      if (targets.length > labels.length)
+        this.labels    = new Array[Symbol](targets.length)
+      this.vss       = vss
+      this.reached = new BitSet(targets.length);
+      return make(temp, row)
     }
-    if (!isReached(bx)) { // first time this bx is requested
-      // might be bound elsewhere ( see `x @ unapply' ) <-- this comment refers to null check
-      val allVs =
-        for (v <- vss(bx) ; val substv = subst(v) ; if substv ne null) yield
-          (v, v.tpe, typedValDef(v, substv))
+
+    final def shortCut(theLabel:Symbol): Int = {
+      this.shortCuts = shortCuts:::theLabel::Nil;
+      return -shortCuts.length
+    }
+
+    final def cleanup(tree: Tree)(implicit theOwner: Symbol): Tree = {
+      object lxtt extends Transformer {
+        override def transform(tree:Tree): Tree = tree match {
+          case blck @ Block(vdefs, ld @ LabelDef(name,params,body)) =>
+            val bx = labelIndex(ld.symbol)
+            if ((bx >= 0) && !isReachedTwice(bx)) {
+              squeezedBlock(vdefs,body)
+            }
+            else
+              blck
+
+          case If(cond, Literal(Constant(true)), Literal(Constant(false))) =>
+            super.transform(cond)
+          case If(cond1, If(cond2, thenp, elsep1), elsep2) if (elsep1 equalsStructure elsep2) =>
+            super.transform(If(And(cond1,cond2), thenp, elsep1))
+          case If(cond1, If(cond2, thenp, Apply(jmp,List())), ld:LabelDef) if (jmp.symbol eq ld.symbol) =>
+            super.transform(If(And(cond1,cond2), thenp, ld))
+
+          case t => super.transform(t)
+        }
+      }
+      val res = lxtt.transform(tree)
+      cleanup()
+      res
+    }
+    final def cleanup() {
+      var i = targets.length;
+      while (i>0) { i-=1; labels(i) = null; };
+      reached = null;
+      shortCuts = Nil
+    }
+    final def isReached(bx:Int)   = { labels(bx) ne null }
+    final def markReachedTwice(bx:Int) { reached += bx }
+    /** @pre bx < 0 || labelIndex(bx) != -1 */
+    final def isReachedTwice(bx:Int) = (bx < 0) || reached(bx)
+    /* @returns bx such that labels(bx) eq label, -1 if no such bx exists */
+    final def labelIndex(label:Symbol): Int = {
+      var bx = 0; while((bx < labels.length) && (labels(bx) ne label)) { bx += 1 }
+      if (bx >= targets.length) bx = -1
+      return bx
+    }
+    /** first time bx is requested, a LabelDef is returned. next time, a jump.
+     *  the function takes care of binding
+     */
+    final def requestBody(bx:Int, subst:Binding)(implicit theOwner: Symbol): Tree = {
+      if (bx < 0) { // is shortcut
+        val jlabel = shortCuts(-bx-1)
+        return Apply(mkIdent(jlabel), Nil)
+      }
+      if (!isReached(bx)) { // first time this bx is requested
+        // might be bound elsewhere ( see `x @ unapply' ) <-- this comment refers to null check
+        val allVs =
+          for (v <- vss(bx) ; val substv = subst(v) ; if substv ne null) yield
+            (v, v.tpe, typedValDef(v, substv))
 
       val vsyms : List[Symbol] = allVs.map(_._1)
       val argts : List[Type]   = allVs.map(_._2)
@@ -1012,12 +1012,12 @@ trait ParallelMatching  {
           val suffix = pats.drop(indexOfAlternative + 1)
           alts map { p => xx.replace(prefix ::: p :: suffix) }
         }
-    }
+      }
 
-    if (unchanged) RepImpl(temp,row).init
-    else this.make(temp,row) // recursive call
+      if (unchanged) RepImpl(temp,row).init
+      else this.make(temp,row) // recursive call
+    }
   }
-}
 
   abstract class Rep {
     val temp:List[Symbol]
