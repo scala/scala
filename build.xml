@@ -135,7 +135,9 @@ PROPERTIES
        into the script runners created with scala.tools.ant.ScalaTool -->
   <property name="java.flags" value="-Xmx256M -Xms32M"/>
 
-  <property name="scalacfork.maxmemory" value="512m"/>
+  <property
+      name="scalacfork.jvmargs"
+      value="-Xms512M -Xmx512M -Xss1M -XX:MaxPermSize=128M"/>
 
   <property name="javac.cmd" value="${env.JAVA_HOME}/bin/javac"/>
 
@@ -216,7 +218,7 @@ LOCAL REFERENCE BUILD (LOCKER)
       srcpath="${src.dir}/library"
       params="${scalac.args}"
       srcdir="${src.dir}/library"
-      maxmemory="${scalacfork.maxmemory}">
+      jvmargs="${scalacfork.jvmargs}">
       <include name="scala/Predef.scala"/>
       <compilationpath>
         <pathelement location="${build-locker.dir}/classes/library"/>
@@ -228,7 +230,7 @@ LOCAL REFERENCE BUILD (LOCKER)
       srcpath="${src.dir}/library"
       params="${scalac.args}"
       srcdir="${src.dir}/library"
-      maxmemory="${scalacfork.maxmemory}">
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
       <compilationpath>
@@ -266,7 +268,7 @@ LOCAL REFERENCE BUILD (LOCKER)
       srcpath="${src.dir}/compiler"
       params="${scalac.args}"
       srcdir="${src.dir}/compiler"
-      maxmemory="${scalacfork.maxmemory}">
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-locker.dir}/classes/library"/>
@@ -354,7 +356,7 @@ QUICK BUILD (QUICK)
       srcpath="${src.dir}/library"
       params="${scalac.args}"
       srcdir="${src.dir}/library"
-      maxmemory="${scalacfork.maxmemory}">
+      jvmargs="${scalacfork.jvmargs}">
       <include name="scala/Predef.scala"/>
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
@@ -366,7 +368,7 @@ QUICK BUILD (QUICK)
       srcpath="${src.dir}/library"
       params="${scalac.args}"
       srcdir="${src.dir}/library"
-      maxmemory="${scalacfork.maxmemory}">
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
       <compilationpath>
@@ -379,7 +381,7 @@ QUICK BUILD (QUICK)
       srcpath="${src.dir}/library"
       params="${scalac.args}"
       srcdir="${src.dir}/actors"
-      maxmemory="${scalacfork.maxmemory}">
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
@@ -391,7 +393,7 @@ QUICK BUILD (QUICK)
       srcpath="${src.dir}/library"
       params="${scalac.args}"
       srcdir="${src.dir}/dbc"
-      maxmemory="${scalacfork.maxmemory}">
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
@@ -403,7 +405,7 @@ QUICK BUILD (QUICK)
       srcpath="${src.dir}/library"
       params="${scalac.args}"
       srcdir="${src.dir}/swing"
-      maxmemory="${scalacfork.maxmemory}">
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
@@ -440,7 +442,7 @@ QUICK BUILD (QUICK)
       srcpath="${src.dir}/compiler"
       params="${scalac.args}"
       srcdir="${src.dir}/compiler"
-      maxmemory="${scalacfork.maxmemory}">
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
@@ -494,7 +496,7 @@ QUICK BUILD (QUICK)
       srcpath="${src.dir}/partest"
       params="${scalac.args}"
       srcdir="${src.dir}/partest"
-      maxmemory="${scalacfork.maxmemory}">
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
@@ -918,7 +920,7 @@ OPTIMISED COMPILER
       srcpath="${src.dir}/library"
       params="-optimise ${scalac.args}"
       srcdir="${src.dir}/library"
-      maxmemory="${scalacfork.maxmemory}">
+      jvmargs="${scalacfork.jvmargs}">
       <include name="scala/Predef.scala"/>
       <compilationpath>
         <pathelement location="${build-optimised.dir}/classes/library"/>
@@ -930,7 +932,7 @@ OPTIMISED COMPILER
       srcpath="${src.dir}/library"
       params="-optimise ${scalac.args}"
       srcdir="${src.dir}/library"
-      maxmemory="${scalacfork.maxmemory}">
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
       <compilationpath>
@@ -943,7 +945,7 @@ OPTIMISED COMPILER
       srcpath="${src.dir}/library"
       params="-optimise ${scalac.args}"
       srcdir="${src.dir}/actors"
-      maxmemory="${scalacfork.maxmemory}">
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-optimised.dir}/classes/library"/>
@@ -955,7 +957,7 @@ OPTIMISED COMPILER
       srcpath="${src.dir}/library"
       params="-optimise ${scalac.args}"
       srcdir="${src.dir}/dbc"
-      maxmemory="${scalacfork.maxmemory}">
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-optimised.dir}/classes/library"/>
@@ -967,7 +969,7 @@ OPTIMISED COMPILER
       srcpath="${src.dir}/library"
       params="-optimise ${scalac.args}"
       srcdir="${src.dir}/swing"
-      maxmemory="${scalacfork.maxmemory}">
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-optimised.dir}/classes/library"/>
@@ -1004,7 +1006,7 @@ OPTIMISED COMPILER
       srcpath="${src.dir}/compiler"
       params="-optimise ${scalac.args}"
       srcdir="${src.dir}/compiler"
-      maxmemory="${scalacfork.maxmemory}">
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-optimised.dir}/classes/library"/>

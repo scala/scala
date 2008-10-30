@@ -18,14 +18,14 @@ class ScalacFork extends MatchingTask with TaskArgs {
     timeout = Some(input)
   }
 
-  def setMaxMemory(input: String): Unit = {
-    maxmemory = Some(input)
+  def setJvmArgs(input: String): Unit = {
+    jvmArgs = Some(input)
   }
 
   private var sourceDir: Option[File] = None
   private var failOnError: Boolean = true
   private var timeout: Option[Long] = None
-  private var maxmemory: Option[String] = None
+  private var jvmArgs: Option[String] = None
 
   override def execute() {
     if (compilerPath.isEmpty) error("Mandatory attribute 'compilerpath' is not set.")
@@ -57,10 +57,11 @@ class ScalacFork extends MatchingTask with TaskArgs {
 
       val java = new Java(this) // set this as owner
       java.setFork(true)
+      // using 'setLine' creates multiple arguments out of a space-separated string
+      if (!jvmArgs.isEmpty) java.createJvmarg().setLine(jvmArgs.get)
       java.setClasspath(compilerPath.get)
       java.setClassname("scala.tools.nsc.Main")
       if (!timeout.isEmpty) java.setTimeout(timeout.get)
-      if (!maxmemory.isEmpty) java.setMaxmemory(maxmemory.get)
       for (arg <- settings.toArgs)
         java.createArg().setValue(arg)
       for (file <- includedFiles)
