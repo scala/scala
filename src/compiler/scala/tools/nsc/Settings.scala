@@ -150,6 +150,7 @@ class Settings(error: String => Unit) {
   val statistics    = BooleanSetting    ("-Ystatistics", "Print compiler statistics").hideToIDE
   val stop          = PhasesSetting     ("-Ystop", "Stop after phase")
   val Xwarndeadcode = BooleanSetting    ("-Ywarn-dead-code", "Emit warnings for dead code")
+  val Ynogenericsig = BooleanSetting    ("-Yno-generic-signatures", "Suppress generation of generic signatures for Java")
 
   val Xcasetags     = ChoiceSetting("-Ycasetags", "test integer tags for case classes", List("on","off"),
                                      /*default*/"off").hideToIDE

@@ -141,7 +141,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     }
   }
 
-  private def needsJavaSig(tp: Type) = NeedsSigCollector.collect(tp)
+  private def needsJavaSig(tp: Type) = !settings.Ynogenericsig.value && NeedsSigCollector.collect(tp)
 
   private lazy val tagOfClass = new HashMap[Symbol,Char] + (
     ByteClass -> BYTE_TAG,
@@ -173,7 +173,14 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               if (!(AnyRefClass.tpe <:< bounds.hi)) "+"+jsig(bounds.hi)
               else if (!(bounds.lo <:< NullClass.tpe)) "-"+jsig(bounds.lo)
               else "*"
-            } else jsig(tp)
+            } else if (tp.typeSymbol == UnitClass) {
+              jsig(ObjectClass.tpe)
+            } else {
+              boxedClass get tp.typeSymbol match {
+                case Some(boxed) => jsig(boxed.tpe)
+                case None => jsig(tp)
+              }
+            }
           def classSig: String =
             "L"+atPhase(currentRun.icodePhase)(sym.fullNameString).replace('.', '/')
           def classSigSuffix: String =
@@ -205,12 +212,12 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             case tp => List(tp)
           }
           def boundSig(bounds: List[Type]) = {
-            def isClassBound(t: Type) = t.typeSymbol.isClass || t.typeSymbol.isAbstractType
+            def isClassBound(t: Type) = !t.typeSymbol.isTrait
             val classBound = bounds find isClassBound match {
               case Some(t) => jsig(t)
               case None => ""
             }
-            ":"+classBound+(for (t <- bounds if t.typeSymbol.isTrait) yield ":"+jsig(t)).mkString
+            ":"+classBound+(for (t <- bounds if !isClassBound(t)) yield ":"+jsig(t)).mkString
           }
           assert(!tparams.isEmpty)
           def paramSig(tsym: Symbol) = tsym.name+boundSig(hiBounds(tsym.info.bounds))
@@ -229,7 +236,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       }
     }
     if (needsJavaSig(sym.info)) {
-      //println("Java sig of "+sym+" is "+jsig2(true, List(), sym.info))//DEBUG
+      //println("Java sig of "+sym+":"+sym.tpe+" is "+jsig2(true, List(), sym.info))//DEBUG
       Some(jsig2(true, List(), sym.info))
     }
     else None
