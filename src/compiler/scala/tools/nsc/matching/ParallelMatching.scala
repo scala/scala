@@ -86,22 +86,15 @@ trait ParallelMatching  {
       }
     }
 
-    if (isEqualsPattern(column.head.tpe))
-      new MixEquals(scrutinee, column, rest)
-    else if (column.head.isInstanceOf[ArrayValue]) {
-      if (isRightIgnoring(column.head.asInstanceOf[ArrayValue]))
-        new MixSequenceStar(scrutinee, column, rest)
-      else
-        new MixSequence(scrutinee, column, rest)
+    column.head match {
+      case x if isEqualsPattern(x.tpe) => new MixEquals(scrutinee, column, rest);
+      case (x : ArrayValue) => if (isRightIgnoring(x)) new MixSequenceStar(scrutinee, column, rest)
+                               else new MixSequence(scrutinee, column, rest);
+      case _ if isSimpleSwitch => new MixLiterals(scrutinee, column, rest)
+      case _ if (settings_casetags && (column.length > 1) && isFlatCases(column)) => new MixCases(scrutinee, column, rest)
+      case _ if isUnapplyHead() => new MixUnapply(scrutinee, column, rest)
+      case _ => new MixTypes(scrutinee, column, rest)
     }
-    else if (isSimpleSwitch)
-      new MixLiterals(scrutinee, column, rest)
-    else if (settings_casetags && (column.length > 1) && isFlatCases(column))
-      new MixCases(scrutinee, column, rest)
-    else if (isUnapplyHead())
-      new MixUnapply(scrutinee, column, rest)
-    else
-      new MixTypes(scrutinee, column, rest)
   }
 
   sealed abstract class RuleApplication(rep: RepFactory) {
