@@ -84,7 +84,7 @@ END-USER TARGETS
 
   <target name="optimised"
           description="Build the compiler and standard library using optimisations, running 'quick'">
-    <antcall target="optimised.comp"/>
+    <antcall target="optimised.bin"/>
   </target>
   
 <!-- ===========================================================================
@@ -555,7 +555,6 @@ QUICK BUILD (QUICK)
   </target>
 
   <target name="quick.done" depends="quick.bin">
-    <touch file="${build-quick.dir}/all.complete" verbose="no"/>
     <path id="quick.classpath">
       <pathelement location="${build-quick.dir}/classes/library"/>
       <pathelement location="${build-quick.dir}/classes/compiler"/>
@@ -1031,6 +1030,96 @@ OPTIMISED COMPILER
     <touch file="${build-optimised.dir}/compiler.complete" verbose="no"/>
     <stopwatch name="optimised.comp.timer" action="total"/>
   </target>
+
+  <target name="optimised.pre-partest" depends="optimised.comp">
+    <uptodate property="optimised.partest.available" targetfile="${build-optimised.dir}/partest.complete">
+      <srcfiles dir="${src.dir}/partest"/>
+    </uptodate>
+  </target>
+    
+  <target name="optimised.partest" depends="optimised.pre-partest" unless="optimised.partest.available">
+    <stopwatch name="optimised.partest.timer"/>
+    <mkdir dir="${build-optimised.dir}/classes/partest"/>
+    <javac
+      srcdir="${src.dir}/partest"
+      destdir="${build-optimised.dir}/classes/partest"
+      target="1.5" source="1.5">
+      <classpath>
+      	<pathelement location="${build-optimised.dir}/classes/library"/>
+      	<pathelement location="${build-optimised.dir}/classes/compiler"/>
+      	<pathelement location="${build-optimised.dir}/classes/partest"/>
+      </classpath>
+      <include name="**/*.java"/>
+      <compilerarg line="${javac.args}"/>
+    </javac>
+    <scalacfork
+      destdir="${build-optimised.dir}/classes/partest"
+      compilerpathref="locker.classpath"
+      srcpath="${src.dir}/partest"
+      params="${scalac.args}"
+      srcdir="${src.dir}/partest"
+      maxmemory="${scalacfork.maxmemory}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+      	<pathelement location="${build-optimised.dir}/classes/library"/>
+      	<pathelement location="${build-optimised.dir}/classes/compiler"/>
+      	<pathelement location="${build-optimised.dir}/classes/partest"/>
+        <pathelement location="${ant.jar}"/>
+      </compilationpath>
+    </scalacfork>
+    <copy todir="${build-optimised.dir}/classes/partest">
+      <fileset dir="${src.dir}/partest">
+        <include name="**/*.xml"/>
+      </fileset>
+    </copy>
+    <touch file="${build-optimised.dir}/partest.complete" verbose="no"/>
+    <stopwatch name="optimised.partest.timer" action="total"/>
+  </target>
+
+
+  <target name="optimised.pre-bin" depends="optimised.partest">
+    <condition property="optimised.bin.available">
+      <isset property="optimised.comp.available"/>
+    </condition>
+  </target>
+
+  <target name="optimised.bin" depends="optimised.pre-bin" unless="optimised.bin.available">
+    <path id="optimised.bin.classpath">
+    	<pathelement location="${build-optimised.dir}/classes/library"/>
+    	<pathelement location="${build-optimised.dir}/classes/compiler"/>
+      <pathelement location="${fjbg.jar}"/>
+      <pathelement location="${jline.jar}"/>
+    </path>
+    <taskdef name="optimised-bin" classname="scala.tools.ant.ScalaTool" classpathref="optimised.bin.classpath"/>
+    <mkdir dir="${build-optimised.dir}/bin"/>
+    <optimised-bin
+      file="${build-optimised.dir}/bin/scala"
+      class="scala.tools.nsc.MainGenericRunner"
+      javaFlags="${java.flags}"
+      classpathref="optimised.bin.classpath"/>
+    <optimised-bin
+      file="${build-optimised.dir}/bin/scalac"
+      class="scala.tools.nsc.Main"
+      javaFlags="${java.flags}"
+      classpathref="optimised.bin.classpath"/>
+    <optimised-bin
+      file="${build-optimised.dir}/bin/scaladoc"
+      class="scala.tools.nsc.ScalaDoc"
+      javaFlags="${java.flags}"
+      classpathref="optimised.bin.classpath"/>
+    <optimised-bin
+      file="${build-optimised.dir}/bin/fsc"
+      class="scala.tools.nsc.CompileClient"
+      javaFlags="${java.flags}"
+      classpathref="optimised.bin.classpath"/>
+    <chmod perm="ugo+rx" file="${build-optimised.dir}/bin/scala"/>
+    <chmod perm="ugo+rx" file="${build-optimised.dir}/bin/scalac"/>
+    <chmod perm="ugo+rx" file="${build-optimised.dir}/bin/scaladoc"/>
+    <chmod perm="ugo+rx" file="${build-optimised.dir}/bin/fsc"/>
+    <touch file="${build-optimised.dir}/bin.complete" verbose="no"/>
+  </target>
+
+  <target name="optimised.done" depends="optimised.bin"/>
 
   <target name="optimised.clean">
     <delete dir="${build-optimised.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
