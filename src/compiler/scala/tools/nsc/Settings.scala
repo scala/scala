@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -46,10 +46,10 @@ class Settings(error: String => Unit) {
       ""
     else
       new File(
-	new File(
-	  new File(Properties.scalaHome, "misc"),
-	  "scala-devel"),
-	"plugins").getAbsolutePath
+        new File(
+          new File(Properties.scalaHome, "misc"),
+          "scala-devel"),
+        "plugins").getAbsolutePath
 
   protected def alternatePath(p1: String, p2: => String) =
     if (p1 ne null) p1 else p2
@@ -58,7 +58,6 @@ class Settings(error: String => Unit) {
      if ((p1 ne null) && (p2 ne null)) p1 + File.pathSeparator + p2
      else if (p1 ne null) p1
      else p2
-
 
   private def guessedScalaBootClassPath = {
     val scalaHome = Properties.scalaHome
@@ -129,7 +128,7 @@ class Settings(error: String => Unit) {
 
   val Yhelp         = BooleanSetting    ("-Y", "Print a synopsis of private options").hideToIDE
   val browse        = PhasesSetting     ("-Ybrowse", "Browse the abstract syntax tree after")
-  val check         = PhasesSetting     ("-Ycheck", "Check the tree at start of")
+  val check         = PhasesSetting     ("-Ycheck", "Check the tree at the end of the given phase. Specify \"all\" to check all checkable phases")
   val Xcloselim     = BooleanSetting    ("-Yclosure-elim", "Perform closure elimination")
   val Xcodebase     = StringSetting     ("-Ycodebase", "codebase", "Specify the URL containing the Scala libraries", "").hideToIDE
   val debug         = BooleanSetting    ("-Ydebug", "Output debugging messages").hideToIDE
@@ -142,17 +141,19 @@ class Settings(error: String => Unit) {
   val logAll        = BooleanSetting    ("-Ylog-all", "Log all operations").hideToIDE
   val noimports     = BooleanSetting    ("-Yno-imports", "Compile without any implicit imports")
   val nopredefs     = BooleanSetting    ("-Yno-predefs", "Compile without any implicit predefined values")
+  val Yrecursion    = IntSetting        ("-Yrecursion", "Recursion depth used when locking symbols", 0, Some(0), None).hideToIDE
   val script        = StringSetting     ("-Xscript", "object", "Compile as a script, wrapping the code into object.main()", "").hideToIDE
 
   val Xshowtrees    = BooleanSetting    ("-Yshow-trees", "Show detailed trees when used in connection with -print:phase").hideToIDE
   val skip          = PhasesSetting     ("-Yskip", "Skip")
-  val Xsqueeze      = ChoiceSetting     ("-Ysqueeze", "if on, creates compact code in matching", List("on","on","off"), "on")
+  val Xsqueeze      = ChoiceSetting     ("-Ysqueeze", "if on, creates compact code in matching", List("on","on","off"), "on").hideToIDE
   val statistics    = BooleanSetting    ("-Ystatistics", "Print compiler statistics").hideToIDE
   val stop          = PhasesSetting     ("-Ystop", "Stop after phase")
   val Xwarndeadcode = BooleanSetting    ("-Ywarn-dead-code", "Emit warnings for dead code")
+  val Ynogenericsig = BooleanSetting    ("-Yno-generic-signatures", "Suppress generation of generic signatures for Java")
 
   val Xcasetags     = ChoiceSetting("-Ycasetags", "test integer tags for case classes", List("on","off"),
-                                     /*default*/"off")
+                                     /*default*/"off").hideToIDE
   val XnoVarargsConversion = BooleanSetting("-Xno-varargs-conversion", "disable varags conversion")
   val selfInAnnots = BooleanSetting    ("-Yself-in-annots", "Include a \"self\" identifier inside of annotations")
 
@@ -267,6 +268,72 @@ class Settings(error: String => Unit) {
 */
     // initialization
     allsettings = this :: allsettings
+  }
+
+  /** A setting represented by a positive integer */
+  case class IntSetting(name: String, descr: String, default: Int, min: Option[Int], max: Option[Int]) extends Setting(descr) {
+    // Validate that min and max are consistent
+    (min, max) match {
+      case (Some(i), Some(j)) => assert(i <= j)
+      case _ => ()
+    }
+
+    // Helper to validate an input
+    private def isInputValid(k: Int): Boolean =
+      (min, max) match {
+        case (Some(i), Some(j)) => (i <= k) && (k <= j)
+        case (Some(i), None) => (i <= k)
+        case (None, Some(j)) => (k <= j)
+        case _ => true
+      }
+
+    // Helper to generate a textual explaination of valid inputs
+    private def getValidText: String =
+      (min, max) match {
+        case (Some(i), Some(j)) => "must be between "+i+" and "+j
+        case (Some(i), None) => "must be greater than or equal to "+i
+        case (None, Some(j)) => "must be less than or equal to "+j
+        case _ => throw new Error("this should never be used")
+      }
+
+    // Ensure that the default value is actually valid
+    assert(isInputValid(default))
+
+    protected var v: Int = default
+
+    def errorMsg = error("invalid setting for -"+name+" "+getValidText)
+
+    def value: Int = this.v
+    def value_=(s: Int) {
+      if (!isInputValid(s)) errorMsg
+      setByUser = true;
+      this.v = s
+    }
+
+    def tryToSet(args: List[String]): List[String] = args match {
+      case n :: rest if (name == n) =>
+        if (rest.isEmpty) {
+          error("missing argument")
+          args
+        } else {
+          try {
+            value = rest.head.toInt
+        } catch {
+            case e: java.lang.NumberFormatException => errorMsg
+        }
+          rest.tail
+        }
+      case _ => args
+    }
+
+    def unparse: List[String] =
+      if (value == default) Nil else List(name, value.toString)
+
+    override def equals(that: Any) = that match {
+      case is:IntSetting => this.name == is.name && this.value == is.value
+      case _ => false
+    }
+
   }
 
   /** A setting represented by a boolean flag (false, unless set) */
