@@ -47,7 +47,8 @@ abstract class DeadCodeElimination extends SubComponent {
     def analyzeClass(cls: IClass) {
       cls.methods.foreach { m =>
         this.method = m
-        dieCodeDie(m)
+//        analyzeMethod(m);
+	dieCodeDie(m)
       }
     }
 
@@ -259,13 +260,11 @@ abstract class DeadCodeElimination extends SubComponent {
       abort("could not find init in: " + method)
     }
 
-    lazy val RuntimePackage = definitions.getModule("scala.runtime")
     /** Is 'sym' a side-effecting method? TODO: proper analysis.  */
     private def isSideEffecting(sym: Symbol): Boolean = {
-      !((sym.isGetter && !sym.hasFlag(Flags.LAZY))
+      !((sym.isGetter && !sym.hasFlag(Flags.LAZY)) // for testing only
        || (sym.isConstructor
-           && !(sym.owner == method.symbol.owner && method.symbol.isConstructor) // a call to another constructor
-           && sym.owner.owner == RuntimePackage.moduleClass)
+           && sym.owner.owner == definitions.getModule("scala.runtime").moduleClass)
        || (sym.isConstructor && inliner.isClosureClass(sym.owner))
 /*       || definitions.isBox(sym)
        || definitions.isUnbox(sym)*/)
