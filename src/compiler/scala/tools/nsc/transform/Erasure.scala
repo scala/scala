@@ -155,9 +155,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     UnitClass -> VOID_TAG
   )
 
-  def javaSig(sym: Symbol): Option[String] =
-    if (!needsJavaSig(sym.info)) None
-    else atPhase(currentRun.erasurePhase) {
+  def javaSig(sym: Symbol): Option[String] = atPhase(currentRun.erasurePhase) {
 
     def jsig(tp: Type): String = jsig2(false, List(), tp)
 
@@ -234,13 +232,23 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         case AnnotatedType(_, atp, _) =>
           jsig(atp)
         case _ =>
-          jsig(erasure(tp))
+          val etp = erasure(tp)
+          if (etp eq tp) throw new UnknownSig
+          else jsig(etp)
       }
     }
-
-    //println("Java sig of "+sym+":"+sym.tpe+" is "+jsig2(true, List(), sym.info))//DEBUG
-    Some(jsig2(true, List(), sym.info))
+    if (needsJavaSig(sym.info)) {
+      try {
+        //println("Java sig of "+sym+" is "+jsig2(true, List(), sym.info))//DEBUG
+        Some(jsig2(true, List(), sym.info))
+      } catch {
+        case ex: UnknownSig => None
+      }
+    }
+    else None
   }
+
+  class UnknownSig extends Exception
 
   /** Type reference after erasure */
   def erasedTypeRef(sym: Symbol): Type =
