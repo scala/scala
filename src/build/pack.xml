@@ -142,7 +142,61 @@ MAIN DISTRIBUTION SBAZ
 
   
   <target name="pack-sbaz.done" depends="pack-sbaz.all"/>
-  
+
+  <target name="pack-maven.start">
+    <mkdir dir="${dists.dir}/maven/${version.number}"/>
+  </target>
+
+  <target name="pack-maven.libs" depends="pack-maven.start">
+    <macrodef name="mvn-copy-lib">
+      <attribute name="mvn.artifact.name"/>
+      <sequential>
+        <mkdir dir="${dists.dir}/maven/${version.number}/@{mvn.artifact.name}"/>
+        <copy todir="${dists.dir}/maven/${version.number}/@{mvn.artifact.name}">
+          <fileset dir="${dist.dir}/lib/">
+            <filename name="@{mvn.artifact.name}.jar"/>
+          </fileset>
+          <fileset dir="${src.dir}/build/maven/">
+            <filename name="@{mvn.artifact.name}-pom.xml"/>
+          </fileset>
+          <fileset dir="${dist.dir}/src/">
+            <filename name="@{mvn.artifact.name}-src.jar"/>
+          </fileset>
+        </copy>
+      </sequential>
+    </macrodef>
+    <mvn-copy-lib mvn.artifact.name="scala-library"/>
+    <mvn-copy-lib mvn.artifact.name="scala-compiler"/>
+    <mvn-copy-lib mvn.artifact.name="scala-dbc"/>
+    <mvn-copy-lib mvn.artifact.name="scala-swing"/>
+  </target>
+
+  <target name="pack-maven.docs" depends="pack-maven.libs">
+    <jar destfile="${dists.dir}/maven/${version.number}/scala-library/scala-library-docs.jar"
+         basedir="${build-docs.dir}/library">
+      <include name="**/*"/>
+    </jar>
+    <!-- scala-swing api is included in main library api
+    <jar destfile="${dists.dir}/maven/${version.number}/scala-swing/scala-swing-docs.jar"
+         basedir="${build-docs.dir}/swing">
+      <include name="**/*"/>
+    </jar>
+    -->
+  </target>
+
+  <target name="pack-maven.scripts" depends="pack-maven.docs">
+    <copy todir="${dists.dir}/maven/${version.number}"
+          file="${lib-ant.dir}/maven-ant-tasks-2.0.9.jar"/>
+    <copyfile dest="${dists.dir}/maven/${version.number}/build.xml"
+              src="${src.dir}/build/maven/maven-deploy.xml"/>
+    <!-- export properties for use when deploying -->
+    <property name="maven.snapshot.version.number"
+              value="${version.major}.${version.minor}.${version.patch}-SNAPSHOT"/>
+    <echoproperties destfile="${dists.dir}/maven/${version.number}/build.properties"/>
+  </target>
+
+  <target name="pack-maven.done" depends="pack-maven.scripts"/>
+
 <!-- ===========================================================================
 JAVA FOUR DISTRIBUTION PACKAGING
 ============================================================================ -->
@@ -228,9 +282,9 @@ MSIL DISTRIBUTION PACKAGING
 <!-- ===========================================================================
 MISCELLANEOUS
 ============================================================================ -->
-  
-  <target name="pack-all.done" depends="pack-archives.done, pack-sbaz.done"/>
-  
+
+  <target name="pack-all.done" depends="pack-archives.done, pack-sbaz.done, pack-maven.done"/>
+
   <target name="fourpack-all.done" depends="fourpack-archives.done"/>
 
   <target name="msilpack-all.done" depends="msilpack-archives.done, msilpack-sbaz.done"/>
@@ -238,7 +292,7 @@ MISCELLANEOUS
 <!-- ===========================================================================
 MISCELLANEOUS
 ============================================================================ -->
-  
+
   <target name="graph.init">
     <echo message="${basedir}/lib/ant/vizant.jar"/>
     <taskdef name="vizant" classname="vizant.Vizant" classpath="${basedir}/../../lib/ant/vizant.jar"/>

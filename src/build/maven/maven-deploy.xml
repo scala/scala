@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="sabbus-maven-deploy" xmlns:artifact="urn:maven-artifact-ant">
+
+  <description>
+    SuperSabbus extension for deploying a distribution to Maven. THIS FILE IS MEANT TO BE RUN STANDALONE IN THE MAVEN "distpack" DIRECTORY
+  </description>
+  <target name="init.properties">
+    <!-- Pull in properties from build -->
+    <property file="build.properties" />
+    <!-- Initialize specific properties -->
+    <property name="remote.snapshot.repository" value="http://scala-tools.org:8081/nexus/content/repositories/snapshots" />
+    <property name="remote.release.repository" value="http://scala-tools.org:8081/nexus/content/repositories/releases" />
+    <property name="local.snapshot.repository" value="${user.home}/.m2/repository" />
+    <property name="local.release.repository" value="${user.home}/.m2/repository" />
+    <property name="repository.credentials.id" value="scala-tools.org" />
+
+    <echo>Using server[${repository.credentials.id}] for maven repository credentials.  
+       Please make sure that your ~/.m2/settings.xml has the needed username/password for this server id
+     </echo>
+  </target>
+
+  <target name="init.maven" depends="init.properties">
+
+    <!-- Add our maven ant tasks -->
+    <path id="maven-ant-tasks.classpath" path="maven-ant-tasks-2.0.9.jar" />
+    <typedef resource="org/apache/maven/artifact/ant/antlib.xml" uri="urn:maven-artifact-ant" classpathref="maven-ant-tasks.classpath" />
+    <!-- simplify fixing pom versions -->
+    <macrodef name="make-pom">
+      <attribute name="name" />
+      <attribute name="version" />
+      <sequential>
+        <copy file="@{name}/@{name}-pom.xml" tofile="@{name}/@{name}-pom-fixed.xml" overwrite="true">
+          <filterset>
+            <filter token="VERSION" value="@{version}" />
+            <filter token="RELEASE_REPOSITORY" value="${remote.release.repository}" />
+            <filter token="SNAPSHOT_REPOSITORY" value="${remote.snapshot.repository}" />
+          </filterset>
+        </copy>
+        <artifact:pom id="@{name}.pom" file="@{name}/@{name}-pom-fixed.xml" />
+      </sequential>
+    </macrodef>
+    <!-- Simply attaching documentation -->
+    <macrodef name="attach-doc">
+      <attribute name="name" />
+      <sequential>
+        <artifact:attach type="jar" file="@{name}/@{name}-docs.jar" classifier="javadoc" />
+      </sequential>
+    </macrodef>
+  </target>
+  <!-- macros for local deployment -->
+  <target name="deploy.local.init" depends="init.maven">
+    <!-- Deploy single artifact locally -->
+    <macrodef name="deploy-local">
+      <attribute name="name" />
+      <attribute name="version" />
+      <attribute name="repository" />
+      <element name="extra-attachments" optional="yes" />
+      <sequential>
+        <make-pom name="@{name}" version="@{version}" />
+        <artifact:install file="@{name}/@{name}.jar">
+          <artifact:pom refid="@{name}.pom" />
+          <artifact:localRepository path="@{repository}" id="${repository.credentials.id}" />
+          <artifact:attach type="jar" file="@{name}/@{name}-src.jar" classifier="sources" />
+          <extra-attachments />
+        </artifact:install>
+      </sequential>
+    </macrodef>
+
+    <!-- Deploy all artifacts locally -->
+    <macrodef name="deploy-local-all">
+      <attribute name="repository" />
+      <attribute name="version" />
+      <sequential>
+        <deploy-local name="scala-library" version="@{version}" repository="@{repository}">
+          <extra-attachments>
+            <artifact:attach type="jar" file="scala-library/scala-library-docs.jar" classifier="javadoc" />
+          </extra-attachments>
+        </deploy-local>
+        <deploy-local name="scala-compiler" version="@{version}" repository="@{repository}" />
+        <deploy-local name="scala-dbc" version="@{version}" repository="@{repository}" />
+        <deploy-local name="scala-swing" version="@{version}" repository="@{repository}"/>
+        <!-- scala swing api is included in main library api
+          <extra-attachments>
+            <artifact:attach type="jar" file="scala-swing/scala-swing-docs.jar" classifier="javadoc" />
+          </extra-attachments>
+        </deploy-local>
+        -->
+      </sequential>
+    </macrodef>
+  </target>
+  
+  <!-- macros for remote deployment -->
+  <target name="deploy.remote.init" depends="init.maven">
+    <!-- Deploy single artifact locally -->
+    <macrodef name="deploy-remote">
+      <attribute name="name" />
+      <attribute name="repository" />
+      <attribute name="version" />
+      <element name="extra-attachments" optional="yes" />
+      <sequential>
+        <make-pom name="@{name}" version="@{version}" />
+        <artifact:deploy file="@{name}/@{name}.jar">
+          <artifact:pom refid="@{name}.pom" />
+          <artifact:remoteRepository url="@{repository}" id="${repository.credentials.id}" />
+          <artifact:attach type="jar" file="@{name}/@{name}-src.jar" classifier="sources" />
+          <extra-attachments />
+        </artifact:deploy>
+      </sequential>
+    </macrodef>
+
+    <!-- Deploy all artifacts locally -->
+    <macrodef name="deploy-remote-all">
+      <attribute name="repository" />
+      <attribute name="version" />
+      <sequential>
+        <deploy-remote name="scala-library" version="@{version}" repository="@{repository}">
+          <extra-attachments>
+            <artifact:attach type="jar" file="scala-library/scala-library-docs.jar" classifier="javadoc" />
+          </extra-attachments>
+        </deploy-remote>
+        <deploy-remote name="scala-compiler" version="@{version}" repository="@{repository}" />
+        <deploy-remote name="scala-dbc" version="@{version}" repository="@{repository}" />
+        <deploy-remote name="scala-swing" version="@{version}" repository="@{repository}"/>
+        <!-- scala swing api is included in main library api
+          <extra-attachments>
+            <artifact:attach type="jar" file="scala-swing/scala-swing-docs.jar" classifier="javadoc" />
+          </extra-attachments>
+        </deploy-remote>
+        -->
+      </sequential>
+    </macrodef>
+  </target>
+
+  <!-- Local Targets -->
+  <target name="deploy.snapshot.local" depends="deploy.local.init" description="Deploys the bundled snapshot of the Scala Lanaguage to a local maven repository">
+    <deploy-local-all version="${maven.snapshot.version.number}" repository="${local.snapshot.repository}" />
+  </target>
+
+  <target name="deploy.release.local" depends="deploy.local.init" description="Deploys the bundled files as a release into the local Maven repository">
+    <deploy-local-all version="${version.number}" repository="${local.release.repository}" />
+  </target>
+
+  <!-- Remote Targets -->
+  <target name="deploy.snapshot" depends="deploy.remote.init" description="Deploys the bundled files as a snapshot into the desired remote Maven repository">
+      <deploy-remote-all version="${maven.snapshot.version.number}" repository="${remote.snapshot.repository}" />
+  </target>
+
+  <target name="deploy.release" depends="deploy.remote.init" description="Deploys the bundled files as a release into the desired remote Maven repository">
+    <deploy-remote-all version="${version.number}" repository="${remote.release.repository}" />
+  </target>
+</project>
