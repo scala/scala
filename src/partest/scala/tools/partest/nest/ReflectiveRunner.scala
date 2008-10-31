@@ -40,13 +40,9 @@ class ReflectiveRunner extends RunnerUtils {
     import fileManager.{latestCompFile, latestLibFile, latestActFile,
                         latestPartestFile, latestFjbgFile}
 
-    val sepUrls = if (!classPath.isEmpty)
-      Array(latestCompFile.toURL, latestLibFile.toURL,
-            latestActFile.toURL, latestPartestFile.toURL,
-            latestFjbgFile.toURL)
-    else
-      Array(latestCompFile.toURL, latestLibFile.toURL,
-            latestActFile.toURL, latestPartestFile.toURL)
+    val sepUrls = Array(latestCompFile.toURL, latestLibFile.toURL,
+                        latestActFile.toURL, latestPartestFile.toURL,
+                        latestFjbgFile.toURL)
 
     val sepLoader = new java.net.URLClassLoader(sepUrls, null)
 
@@ -68,10 +64,10 @@ class ReflectiveRunner extends RunnerUtils {
       System.setProperty("env.classpath", newClasspath)
       System.setProperty("scala.home", "")
       if (fileManager.debug) {
- 	println("java.class.path: "+System.getProperty("java.class.path"))
- 	println("env.classpath: "+System.getProperty("env.classpath"))
- 	println("sun.boot.class.path: "+System.getProperty("sun.boot.class.path"))
- 	println("java.ext.dirs: "+System.getProperty("java.ext.dirs"))
+        println("java.class.path: "+System.getProperty("java.class.path"))
+        println("env.classpath: "+System.getProperty("env.classpath"))
+        println("sun.boot.class.path: "+System.getProperty("sun.boot.class.path"))
+        println("java.ext.dirs: "+System.getProperty("java.ext.dirs"))
       }
 
       val sepRunnerClass =

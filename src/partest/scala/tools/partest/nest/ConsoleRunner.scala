@@ -10,8 +10,6 @@ package scala.tools.partest.nest
 import java.io.{File, PrintStream, FileOutputStream, BufferedReader,
                 InputStreamReader, StringWriter, PrintWriter}
 
-import scala.actors.Actor._
-
 class ConsoleRunner extends DirectRunner with RunnerUtils {
 
   var fileManager: ConsoleFileManager = _
@@ -27,12 +25,11 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
   private var resCheck = false
   private var shootoutCheck = false
   private var scriptCheck = false
+  private var scalacheckCheck = false
 
   private var runAll = false
 
   private var testFiles: List[File] = List()
-  private val con = new PrintStream(Console.out)
-  private var out = con
 
   private val errors =
     Integer.parseInt(System.getProperty("scalatest.errors", "0"))
@@ -47,8 +44,15 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
       case "--res"      => true
       case "--shootout" => true
       case "--script"   => true
+      case "--scalacheck"   => true
       case _            => false
     }
+
+  def denotesTestFile(arg: String) =
+    arg.endsWith(".scala") || arg.endsWith(".res")
+
+  def denotesTestDir(arg: String) =
+    (new File(arg)).isDirectory
 
   def main(argstr: String) {
     // tokenize args. filter: "".split("\\s") yields Array("")
@@ -60,7 +64,11 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
       // find out which build to test
       val (buildPath, args1) = searchAndRemovePath("--buildpath", args)
       val (classPath, args2) = searchAndRemovePath("--classpath", args1)
-      args = args2
+      val (srcPath, args3) = searchAndRemovePath("--srcpath", args2)
+      args = args3
+
+      if (!srcPath.isEmpty)
+        System.setProperty("partest.srcdir", srcPath.get)
 
       fileManager =
         if (!buildPath.isEmpty)
@@ -76,7 +84,11 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
         } else // auto detection, see ConsoleFileManager.findLatest
           new ConsoleFileManager
 
-      if (!args.exists(denotesTestSet(_)) && !args.exists(_.endsWith(".scala"))) runAll = true
+      if (!args.exists(denotesTestSet(_)) &&
+          !args.exists(denotesTestFile(_)) &&
+          !args.exists(denotesTestDir(_)))
+        runAll = true
+
       for (arg <- args) {
         arg match {
           case "--all"          => runAll = true
@@ -89,6 +101,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
           case "--res"          => resCheck = true
           case "--shootout"     => shootoutCheck = true
           case "--script"       => scriptCheck = true
+          case "--scalacheck"   => scalacheckCheck = true
 
           case "--verbose"      => NestUI._verbose = true
           case "--show-diff"    => fileManager.showDiff = true
@@ -97,25 +110,19 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
           case "--version"      => //todo: printVersion
           case "--ansi"         => NestUI.initialize(NestUI.MANY)
           case _ =>
-            if (arg endsWith ".scala") {
+            if (denotesTestFile(arg) || denotesTestDir(arg)) {
               val file = new File(arg)
-              if (file.isFile) {
+              if (file.exists) {
                 NestUI.verbose("adding test file "+file)
                 testFiles = file :: testFiles
               } else {
                 NestUI.failure("File \"" + arg + "\" not found\n")
                 System.exit(1)
               }
-            } else if (out eq con) {
-              val file = new File(arg)
-              if (file.isFile || file.createNewFile)
-                out = new PrintStream(new FileOutputStream(file))
-              else {
-                NestUI.failure("Result file \"" + arg + "\" not found\n")
-                System.exit(1)
-              }
-            } else
+            } else {
+              NestUI.failure("Invalid option \""+arg+"\"\n")
               NestUI.usage()
+            }
         }
       }
 
@@ -140,7 +147,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
       val vmName = System.getProperty("java.vm.name", "")+" (build "+
                    System.getProperty("java.vm.version", "")+", "+
                    System.getProperty("java.vm.info", "")+")"
-      val vmOpts = System.getProperty("scalatest.java_options", "?")
+      val vmOpts = fileManager.JAVA_OPTS
       NestUI.outline("Java binaries in:          "+vmBin+"\n")
       NestUI.outline("Java runtime is:           "+vmName+"\n")
       NestUI.outline("Java options are:          "+vmOpts+"\n")
@@ -179,7 +186,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
   def runTests(kind: String, check: Boolean, msg: String): (Int, Int) = {
     if (check) {
       val kindFiles = if (kind == "res") //TODO: is there a nicer way?
-        fileManager.getFiles(kind, check, ".res")
+        fileManager.getFiles(kind, check, Some((".res", false)))
       else
         fileManager.getFiles(kind, check)
       if (!kindFiles.isEmpty) {
@@ -201,14 +208,15 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
 
       def kindOf(f: File): String = {
         val firstName = absName(f)
-        val filesPos = firstName.indexOf("files")
+        val len = fileManager.srcDirName.length
+        val filesPos = firstName.indexOf(fileManager.srcDirName)
         if (filesPos == -1) {
           NestUI.failure("invalid test file: "+firstName+"\n")
           Predef.exit(1)
         } else {
-          val k = firstName.substring(filesPos+6, filesPos+6+3)
+          val k = firstName.substring(filesPos+len+1, filesPos+len+1+3)
           val short = if (k == "jvm") {
-            if (firstName.substring(filesPos+6, filesPos+6+4) == "jvm5") "jvm5"
+            if (firstName.substring(filesPos+len+1, filesPos+len+1+4) == "jvm5") "jvm5"
             else k
           } else k
           val shortKinds = List("pos", "neg", "run", "jvm", "jvm5", "res")
@@ -216,6 +224,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
           else short match {
             case "sho" => "shootout"
             case "scr" => "script"
+            case "sca" => "scalacheck"
           }
         }
       }
@@ -240,6 +249,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
       resCheck = true
       shootoutCheck = true
       scriptCheck = true
+      scalacheckCheck = true
     }
     val results = List(runTestsFiles,
                        runTests("pos", posCheck, "Testing compiler (on files whose compilation should succeed)"),
@@ -249,7 +259,8 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
                        runTests("jvm5", jvm5Check, "Testing JVM backend"),
                        runTests("res", resCheck, "Testing resident compiler"),
                        runTests("shootout", shootoutCheck, "Testing shootout tests"),
-                       runTests("script", scriptCheck, "Testing script tests"))
+                       runTests("script", scriptCheck, "Testing script tests"),
+                       runTests("scalacheck", scalacheckCheck, "Testing ScalaCheck tests"))
     results reduceLeft { (p: (Int, Int), q: (Int, Int)) =>
       (p._1+q._1, p._2+q._2) }
   }

@@ -12,6 +12,11 @@ import java.net.URI
 
 trait FileManager {
 
+  def basename(name: String): String = {
+    val inx = name.lastIndexOf(".")
+    if (inx < 0) name else name.substring(0, inx)
+  }
+
   def deleteRecursive(dir: File) {
     if (dir.isDirectory) {
       for (file <- dir.list) deleteRecursive(new File(dir, file))
@@ -45,15 +50,18 @@ trait FileManager {
 
 
   var JAVACMD: String
+  var JAVAC_CMD: String
 
   var CLASSPATH: String
   var LATEST_LIB: String
+  var LIB_DIR: String = ""
 
   var showDiff = false
   var showLog = false
   var failed = false
 
   var SCALAC_OPTS = System.getProperty("scalatest.scalac_opts", "-deprecation")
+  var JAVA_OPTS   = System.getProperty("scalatest.java_opts", "")
 
   var timeout = "1200000"
 }

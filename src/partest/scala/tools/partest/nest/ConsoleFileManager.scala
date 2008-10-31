@@ -43,6 +43,8 @@ class ConsoleFileManager extends FileManager {
   NestUI.verbose("CLASSPATH: "+CLASSPATH)
 
   var JAVACMD   = System.getProperty("scalatest.javacmd", "java")
+  var JAVAC_CMD = System.getProperty("scalatest.javac_cmd", "javac")
+
   val prefixFile = {
     val cwd = System.getProperty("user.dir")
     if (cwd != null)
@@ -86,8 +88,31 @@ else
   }
   val TESTROOT = testRootFile.getAbsolutePath
 
+  var srcDirName: String = ""
+
+  val srcDir: File = {
+    val srcDirProp = System.getProperty("partest.srcdir")
+    val src =
+      if (srcDirProp != null) {
+        srcDirName = srcDirProp
+        new File(testRootFile, srcDirName)
+      } else {
+        srcDirName = "files"
+        new File(testRootFile, srcDirName)
+      }
+    if (src.isDirectory)
+      src.getCanonicalFile
+    else {
+      val path = TESTROOT + File.separator + "files"
+      NestUI.failure("Source directory \"" + path + "\" not found")
+      exit(1)
+    }
+  }
+
+  LIB_DIR = (new File(testRootFile.getParentFile, "lib")).getCanonicalFile.getAbsolutePath
+
   CLASSPATH = CLASSPATH + File.pathSeparator + {
-    val libs = new File(TESTROOT, "files/lib")
+    val libs = new File(srcDir, "lib")
     // add all jars in libs
     (libs.listFiles(new FilenameFilter {
       def accept(dir: File, name: String) = name endsWith ".jar"
@@ -123,37 +148,17 @@ else
       latestCompFile    = prefixFile(testBuild+"/lib/scala-compiler.jar")
       latestPartestFile = prefixFile(testBuild+"/lib/scala-partest.jar")
     } else {
-      val dists = new File(testParent, "dists")
-      val build = new File(testParent, "build")
-      // in case of an installed dist, testRootFile is one level deeper
-      val bin = new File(testParent.getParentFile, "bin")
-
-      if (dists.isDirectory) {
-        NestUI.verbose("Running on DISTRIBUTION")
-        latestFile        = prefixFile("dists/latest/bin")
-        latestLibFile     = prefixFile("dists/latest/lib/scala-library.jar")
-        latestActFile     = prefixFile("dists/latest/lib/scala-library.jar")
-        latestCompFile    = prefixFile("dists/latest/lib/scala-compiler.jar")
-        latestPartestFile = prefixFile("dists/latest/lib/scala-partest.jar")
-      }
-      else if (build.isDirectory && (new File(build, "pack/lib/scala-library.jar")).exists) {
-        NestUI.verbose("Running on SuperSABBUS PACK")
-        latestFile        = prefixFile("build/pack/bin")
-        latestLibFile     = prefixFile("build/pack/lib/scala-library.jar")
-        latestActFile     = prefixFile("build/pack/lib/scala-library.jar")
-        latestCompFile    = prefixFile("build/pack/lib/scala-compiler.jar")
-        latestPartestFile = prefixFile("build/pack/lib/scala-partest.jar")
-      }
-      else if (build.isDirectory) {
-        NestUI.verbose("Running on SABBUS QUICK")
+      def setupQuick() {
+        NestUI.verbose("Running build/quick")
         latestFile        = prefixFile("build/quick/bin")
-        latestLibFile     = prefixFile("build/quick/lib/library")
-        latestActFile     = prefixFile("build/quick/lib/actors")
-        latestCompFile    = prefixFile("build/quick/lib/compiler")
-        latestPartestFile = prefixFile("build/quick/lib/partest")
+        latestLibFile     = prefixFile("build/quick/classes/library")
+        latestActFile     = prefixFile("build/quick/classes/library")
+        latestCompFile    = prefixFile("build/quick/classes/compiler")
+        latestPartestFile = prefixFile("build/quick/classes/partest")
       }
-      else if (bin.isDirectory) {
-        NestUI.verbose("Running on INSTALLED DIST")
+
+      def setupInst() {
+        NestUI.verbose("Running dist (installed)")
         val p = testParent.getParentFile
         latestFile        = prefixFileWith(p, "bin")
         latestLibFile     = prefixFileWith(p, "lib/scala-library.jar")
@@ -161,8 +166,74 @@ else
         latestCompFile    = prefixFileWith(p, "lib/scala-compiler.jar")
         latestPartestFile = prefixFileWith(p, "lib/scala-partest.jar")
       }
-      else
-        error("Scala binaries could not be found")
+
+      def setupDist() {
+        NestUI.verbose("Running dists/latest")
+        latestFile        = prefixFile("dists/latest/bin")
+        latestLibFile     = prefixFile("dists/latest/lib/scala-library.jar")
+        latestActFile     = prefixFile("dists/latest/lib/scala-library.jar")
+        latestCompFile    = prefixFile("dists/latest/lib/scala-compiler.jar")
+        latestPartestFile = prefixFile("dists/latest/lib/scala-partest.jar")
+      }
+
+      def setupPack() {
+        NestUI.verbose("Running build/pack")
+        latestFile        = prefixFile("build/pack/bin")
+        latestLibFile     = prefixFile("build/pack/lib/scala-library.jar")
+        latestActFile     = prefixFile("build/pack/lib/scala-library.jar")
+        latestCompFile    = prefixFile("build/pack/lib/scala-compiler.jar")
+        latestPartestFile = prefixFile("build/pack/lib/scala-partest.jar")
+      }
+
+      def max(a: Long, b: Long) = if (a > b) a else b
+
+      val dists = new File(testParent, "dists")
+      val build = new File(testParent, "build")
+      // in case of an installed dist, testRootFile is one level deeper
+      val bin = new File(testParent.getParentFile, "bin")
+
+      // detect most recent build
+      val quickTime =
+        max(prefixFile("build/quick/classes/compiler/compiler.properties").lastModified,
+            prefixFile("build/quick/classes/library/library.properties").lastModified)
+      val packTime =
+        max(prefixFile("build/pack/lib/scala-compiler.jar").lastModified,
+            prefixFile("build/pack/lib/scala-library.jar").lastModified)
+      val distTime =
+        max(prefixFile("dists/latest/lib/scala-compiler.jar").lastModified,
+            prefixFile("dists/latest/lib/scala-library.jar").lastModified)
+      val instTime = {
+        val p = testParent.getParentFile
+        max(prefixFileWith(p, "lib/scala-compiler.jar").lastModified,
+            prefixFileWith(p, "lib/scala-library.jar").lastModified)
+      }
+
+      if (quickTime > packTime) {   // pack ruled out
+        if (quickTime > distTime) { // dist ruled out
+          if (quickTime > instTime) // inst ruled out
+            setupQuick()
+          else
+            setupInst()
+        } else {                    // quick ruled out
+          if (distTime > instTime)  // inst ruled out
+            setupDist()
+          else
+            setupInst()
+        }
+      } else {                      // quick ruled out
+        if (packTime > distTime) {  // dist ruled out
+          if (packTime > instTime)  // inst ruled out
+            setupPack()
+          else
+            setupInst()
+        } else {                    // pack ruled out
+          if (distTime > instTime)  // inst ruled out
+            setupDist()
+          else
+            setupInst()
+        }
+      }
+      latestFjbgFile = prefixFile("lib/fjbg.jar")
     }
 
     BIN_DIR = latestFile.getAbsolutePath
@@ -201,37 +272,30 @@ else
   // initialize above fields
   findLatest()
 
-  val srcDir: File = {
-    val src = new File(TESTROOT, "files")
-    if (src.isDirectory)
-      src.getCanonicalFile
-    else {
-      val path = TESTROOT + File.separator + "files"
-      NestUI.failure("Source directory \"" + path + "\" not found")
-      exit(1)
-    }
-  }
-
-  private def basename(name: String): String = {
-    val inx = name.lastIndexOf(".")
-    if (inx < 0) name else name.substring(0, inx)
-  }
-
   var testFiles: List[File] = List()
 
-  def getFiles(kind: String, doCheck: Boolean, ending: String): List[File] = {
-    val filter = new FilenameFilter {
-      def accept(dir: File, name: String): Boolean = name endsWith ending
-    }
+  def getFiles(kind: String, doCheck: Boolean, filter: Option[(String, Boolean)]): List[File] = {
     val dir = new File(srcDir, kind)
     NestUI.verbose("look in "+dir+" for tests")
     if (dir.isDirectory) {
       if (!testFiles.isEmpty) {
         val dirpath = dir.getAbsolutePath
         testFiles filter { _.getParentFile.getAbsolutePath == dirpath }
-      } else if (doCheck)
-        dir.listFiles(filter).toList
-        else // skip
+      } else if (doCheck) filter match {
+        case Some((ending, enableDirs)) =>
+          val filter = new FilenameFilter {
+            def accept(dir: File, name: String) =
+              name.endsWith(ending) ||
+              (enableDirs && (name != ".svn") && (!name.endsWith(".obj")) &&
+              (new File(dir, name)).isDirectory)
+          }
+          dir.listFiles(filter).toList
+        case None =>
+          val filter = new FilenameFilter {
+            def accept(dir: File, name: String) = name != ".svn"
+          }
+          dir.listFiles(filter).toList
+      } else // skip
           Nil
     } else {
       NestUI.failure("Directory \"" + dir.getPath + "\" not found")
@@ -240,6 +304,6 @@ else
   }
 
   def getFiles(kind: String, doCheck: Boolean): List[File] =
-    getFiles(kind, doCheck, ".scala")
+    getFiles(kind, doCheck, Some((".scala", true)))
 
 }

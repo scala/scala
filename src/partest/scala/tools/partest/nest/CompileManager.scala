@@ -7,10 +7,10 @@
 
 package scala.tools.partest.nest
 
-import scala.tools.nsc.{Global, Settings, CompilerCommand}
+import scala.tools.nsc.{Global, Settings, CompilerCommand, FatalError}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 
-import java.io.{File, BufferedReader, PrintWriter, FileWriter, StringWriter}
+import java.io.{File, BufferedReader, PrintWriter, FileReader, FileWriter, StringWriter}
 
 class ExtConsoleReporter(override val settings: Settings, reader: BufferedReader, var writer: PrintWriter) extends ConsoleReporter(settings, reader, writer) {
   def this(settings: Settings) = {
@@ -20,8 +20,7 @@ class ExtConsoleReporter(override val settings: Settings, reader: BufferedReader
 }
 
 abstract class SimpleCompiler {
-  def compile(file: File, kind: String): Boolean
-  def compile(file: File, kind: String, log: File): Boolean
+  def compile(out: Option[File], files: List[File], kind: String, log: File): Boolean
 }
 
 class TestSettings(fileMan: FileManager) extends {
@@ -56,27 +55,59 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
                                                            Console.in,
                                                            new PrintWriter(new StringWriter))
 
-  def compile(file: File, kind: String, log: File): Boolean = {
+  def compile(out: Option[File], files: List[File], kind: String, log: File): Boolean = {
     val testSettings = newSettings
     val logWriter = new FileWriter(log)
-    val args = List.fromArray(fileManager.SCALAC_OPTS.split("\\s"))
+
+    // check whether there is a ".flags" file
+    val testBase = {
+      val logBase = fileManager.basename(log.getName)
+      logBase.substring(0, logBase.length-4)
+    }
+    val argsFile = new File(log.getParentFile, testBase+".flags")
+    val argString = if (argsFile.exists) {
+      val fileReader = new FileReader(argsFile)
+      val reader = new BufferedReader(fileReader)
+      val options = reader.readLine()
+      reader.close()
+      options
+    } else ""
+    val allOpts = fileManager.SCALAC_OPTS+" "+argString
+    NestUI.verbose("scalac options: "+allOpts)
+    val args = List.fromArray(allOpts.split("\\s"))
     val command = new CompilerCommand(args, testSettings, x => {}, false)
     val global = newGlobal(command.settings, logWriter)
     val testRep: ExtConsoleReporter = global.reporter.asInstanceOf[ExtConsoleReporter]
 
     val test: TestFile = kind match {
-      case "pos"      => PosTestFile(file, fileManager)
-      case "neg"      => NegTestFile(file, fileManager)
-      case "run"      => RunTestFile(file, fileManager)
-      case "jvm"      => JvmTestFile(file, fileManager)
-      case "jvm5"     => Jvm5TestFile(file, fileManager)
-      case "shootout" => ShootoutTestFile(file, fileManager)
+      case "pos"      => PosTestFile(files(0), fileManager, out.isEmpty)
+      case "neg"      => NegTestFile(files(0), fileManager, out.isEmpty)
+      case "run"      => RunTestFile(files(0), fileManager, out.isEmpty)
+      case "jvm"      => JvmTestFile(files(0), fileManager, out.isEmpty)
+      case "jvm5"     => Jvm5TestFile(files(0), fileManager, out.isEmpty)
+      case "shootout" => ShootoutTestFile(files(0), fileManager, out.isEmpty)
+      case "scalacheck" =>
+        ScalaCheckTestFile(files(0), fileManager, out.isEmpty)
     }
     test.defineSettings(testSettings)
+    out match {
+      case Some(outDir) =>
+        testSettings.outdir.value = outDir.getAbsolutePath
+        testSettings.classpath.value = testSettings.classpath.value+
+          File.pathSeparator+outDir.getAbsolutePath
+      case None =>
+        // do nothing
+    }
 
-    val toCompile = List(file.getPath)
+    val toCompile = files.map(_.getPath)
     try {
-      (new global.Run) compile toCompile
+      NestUI.verbose("compiling "+toCompile)
+      try {
+        (new global.Run) compile toCompile
+      } catch {
+        case FatalError(msg) =>
+          testRep.error(null, "fatal error: " + msg)
+      }
       testRep.printSummary
       testRep.writer.flush
       testRep.writer.close
@@ -90,6 +121,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     !testRep.hasErrors
   }
 
+/*
   def compile(file: File, kind: String): Boolean = {
     val testSettings = newSettings
     val testRep = newReporter(testSettings)
@@ -119,7 +151,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
         return false
     }
     !testRep.hasErrors
-  }
+  }*/
 }
 
 class ReflectiveCompiler(val fileManager: ConsoleFileManager) extends SimpleCompiler {
@@ -147,19 +179,8 @@ class ReflectiveCompiler(val fileManager: ConsoleFileManager) extends SimpleComp
    * This exception is handled in the shouldCompile and shouldFailCompile
    * methods of class CompileManager.
    */
-  def compile(file: File, kind: String): Boolean = {
-    val fileArgs: Array[AnyRef] = Array(file, kind)
-    val res = sepCompileMethod.invoke(sepCompiler, fileArgs: _*).asInstanceOf[java.lang.Boolean]
-    res.booleanValue()
-  }
-
-  /* This method throws java.lang.reflect.InvocationTargetException
-   * if the compiler crashes.
-   * This exception is handled in the shouldCompile and shouldFailCompile
-   * methods of class CompileManager.
-   */
-  def compile(file: File, kind: String, log: File): Boolean = {
-    val fileArgs: Array[AnyRef] = Array(file, kind, log)
+  def compile(out: Option[File], files: List[File], kind: String, log: File): Boolean = {
+    val fileArgs: Array[AnyRef] = Array(out, files, kind, log)
     val res = sepCompileMethod2.invoke(sepCompiler, fileArgs: _*).asInstanceOf[java.lang.Boolean]
     res.booleanValue()
   }
@@ -180,7 +201,7 @@ class CompileManager(val fileManager: FileManager) {
 
   val delay = fileManager.timeout.toLong
 
-  def withTimeout(file: File)(thunk: => Boolean): Boolean = {
+  def withTimeout(files: List[File])(thunk: => Boolean): Boolean = {
     createSeparateCompiler()
 
     val parent = self
@@ -201,7 +222,7 @@ class CompileManager(val fileManager: FileManager) {
               case (From, result: Boolean) => result
             }
           case t: Throwable =>
-            NestUI.verbose("while invoking compiler ("+file+"):")
+            NestUI.verbose("while invoking compiler ("+files+"):")
             NestUI.verbose("caught "+t)
             t.printStackTrace
             if (t.getCause != null)
@@ -213,9 +234,16 @@ class CompileManager(val fileManager: FileManager) {
 
   /* This method returns true iff compilation succeeds.
    */
-  def shouldCompile(file: File, kind: String, log: File): Boolean =
-    withTimeout(file) {
-      compiler.compile(file, kind, log)
+  def shouldCompile(files: List[File], kind: String, log: File): Boolean =
+    withTimeout(files) {
+      compiler.compile(None, files, kind, log)
+    }
+
+  /* This method returns true iff compilation succeeds.
+   */
+  def shouldCompile(out: File, files: List[File], kind: String, log: File): Boolean =
+    withTimeout(files) {
+      compiler.compile(Some(out), files, kind, log)
     }
 
   /* This method returns true iff compilation fails
@@ -223,8 +251,19 @@ class CompileManager(val fileManager: FileManager) {
    *
    * If the compiler crashes, this method returns false.
    */
-  def shouldFailCompile(file: File, kind: String, log: File): Boolean =
-    withTimeout(file) {
-      !compiler.compile(file, kind, log)
+  def shouldFailCompile(files: List[File], kind: String, log: File): Boolean =
+    withTimeout(files) {
+      !compiler.compile(None, files, kind, log)
     }
+
+  /* This method returns true iff compilation fails
+   * _and_ the compiler does _not_ crash or loop.
+   *
+   * If the compiler crashes, this method returns false.
+   */
+  def shouldFailCompile(out: File, files: List[File], kind: String, log: File): Boolean =
+    withTimeout(files) {
+      !compiler.compile(Some(out), files, kind, log)
+    }
+
 }

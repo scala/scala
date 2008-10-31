@@ -23,6 +23,9 @@ class PartestTask extends Task {
   def addConfiguredPosTests(input: FileSet): Unit =
     posFiles = Some(input)
 
+  def addConfiguredPos5Tests(input: FileSet): Unit =
+    pos5Files = Some(input)
+
   def addConfiguredNegTests(input: FileSet): Unit =
     negFiles = Some(input)
 
@@ -64,6 +67,9 @@ class PartestTask extends Task {
   def setJavaCmd(input: File): Unit =
     javacmd = Some(input)
 
+  def setJavacCmd(input: File): Unit =
+    javaccmd = Some(input)
+
   def setScalacOpts(opts: String): Unit =
     scalacOpts = Some(opts)
 
@@ -72,10 +78,12 @@ class PartestTask extends Task {
 
   private var classpath: Option[Path] = None
   private var javacmd: Option[File] = None
+  private var javaccmd: Option[File] = None
   private var showDiff: Boolean = false
   private var showLog: Boolean = false
   private var runFailed: Boolean = false
   private var posFiles: Option[FileSet] = None
+  private var pos5Files: Option[FileSet] = None
   private var negFiles: Option[FileSet] = None
   private var runFiles: Option[FileSet] = None
   private var residentFiles: Option[FileSet] = None
@@ -85,13 +93,28 @@ class PartestTask extends Task {
   private var scalacOpts: Option[String] = None
   private var timeout: Option[String] = None
 
-  private def getPosFiles: Array[File] =
-    if (!posFiles.isEmpty) {
-      val files = posFiles.get
-      (files.getDirectoryScanner(getProject).getIncludedFiles map { fs => new File(files.getDir(getProject), fs) })
+  private def getFilesAndDirs(fileSet: Option[FileSet]): Array[File] =
+    if (!fileSet.isEmpty) {
+      val files = fileSet.get
+      val dir = files.getDir(getProject)
+      val fileTests = (files.getDirectoryScanner(getProject).getIncludedFiles map { fs =>
+        new File(dir, fs) })
+      val dirTests = dir.listFiles(new java.io.FileFilter {
+        def accept(file: File) =
+          file.isDirectory &&
+          (!file.getName().equals(".svn")) &&
+          (!file.getName().endsWith(".obj"))
+      })
+      (dirTests ++ fileTests).toArray
     }
     else
       Array()
+
+  private def getPosFiles: Array[File] =
+    getFilesAndDirs(posFiles)
+
+  private def getPos5Files: Array[File] =
+    getFilesAndDirs(pos5Files)
 
   private def getNegFiles: Array[File] =
     if (!negFiles.isEmpty) {
@@ -182,6 +205,8 @@ class PartestTask extends Task {
     setFileManagerBooleanProperty("failed", runFailed)
     if (!javacmd.isEmpty)
       setFileManagerStringProperty("JAVACMD", javacmd.get.getAbsolutePath)
+    if (!javaccmd.isEmpty)
+      setFileManagerStringProperty("JAVAC_CMD", javaccmd.get.getAbsolutePath)
     setFileManagerStringProperty("CLASSPATH", classpath.get.list.mkString(File.pathSeparator))
     setFileManagerStringProperty("LATEST_LIB", scalaLibrary.get.getAbsolutePath)
     if (!scalacOpts.isEmpty)
@@ -195,6 +220,13 @@ class PartestTask extends Task {
     if (getPosFiles.size > 0) {
       log("Compiling files that are expected to build")
       val (successes, failures) = runTestsForFiles(getPosFiles, "pos")
+      allSucesses += successes
+      allFailures += failures
+    }
+
+    if (getPos5Files.size > 0) {
+      log("Compiling files that are expected to build")
+      val (successes, failures) = runTestsForFiles(getPos5Files, "pos")
       allSucesses += successes
       allFailures += failures
     }
