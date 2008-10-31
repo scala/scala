@@ -974,9 +974,10 @@ BOOTRAPING TEST AND TEST SUITE
         <path refid="pack.classpath"/>
         <fileset dir="${test.dir}/files/lib" includes="*.jar"/>
       </classpath>
-      <postests dir="${test.dir}/files/pos" includes="*.scala"/>
-      <negtests dir="${test.dir}/files/neg" includes="*.scala"/>
-      <runtests dir="${test.dir}/files">
+      <postests  dir="${test.dir}/files/pos" includes="*.scala"/>
+      <pos5tests dir="${test.dir}/files/pos5" includes="*.scala"/>
+      <negtests  dir="${test.dir}/files/neg" includes="*.scala"/>
+      <runtests  dir="${test.dir}/files">
         <include name="run/**/*.scala"/>
         <include name="jvm/**/*.scala"/>
         <include name="jvm5/**/*.scala"/>
