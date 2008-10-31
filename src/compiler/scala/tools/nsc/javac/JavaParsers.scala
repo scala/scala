@@ -278,6 +278,7 @@ trait JavaParsers extends JavaScanners {
 
     def typ(): Tree =
       optArrayBrackets {
+        if (in.token == FINAL) in.nextToken
         if (in.token == IDENTIFIER) {
           var t = typeArgs(atPos(in.currentPos)(Ident(ident())))
           while (in.token == DOT) {
@@ -616,7 +617,7 @@ trait JavaParsers extends JavaScanners {
     def makeCompanionObject(cdef: ClassDef, statics: List[Tree]): Tree =
       atPos(cdef.pos) {
         ModuleDef(cdef.mods & (Flags.AccessFlags | Flags.JAVA), cdef.name.toTermName,
-                  makeTemplate(List(javaLangObject()), statics))
+                  makeTemplate(List(), statics))
       }
 
     def importCompanionObject(cdef: ClassDef): Tree =
