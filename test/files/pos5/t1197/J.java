@@ -1,0 +1,2 @@
+class J { interface K { } }
+

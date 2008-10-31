@@ -1,0 +1,1 @@
+class S { new J }
