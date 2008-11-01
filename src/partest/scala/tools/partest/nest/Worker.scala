@@ -774,6 +774,7 @@ class Worker(val fileManager: FileManager) extends Actor {
         }
       }
       case "script" => {
+        val osName = System.getProperty("os.name", "")
         for (file <- files) {
           // when option "--failed" is provided
           // execute test only if log file is present
@@ -800,7 +801,14 @@ class Worker(val fileManager: FileManager) extends Actor {
             } else ""
 
             try {
-              val proc = Runtime.getRuntime.exec(file.getAbsolutePath+argString)
+              val cmdString =
+                if (osName startsWith "Windows") {
+                  val batchFile = new File(file.getParentFile, fileBase+".bat")
+                  NestUI.verbose("batchFile: "+batchFile)
+                  batchFile.getAbsolutePath
+                }
+                else file.getAbsolutePath
+              val proc = Runtime.getRuntime.exec(cmdString+argString)
               val in = proc.getInputStream
               val err = proc.getErrorStream
               val writer = new PrintWriter(new FileWriter(logFile), true)

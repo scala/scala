@@ -16,7 +16,7 @@ set STDOUT=NUL
 if %DEBUG%==1 set STDOUT=CON
 
 set CLASS_NAME=Test$
-set CLASS_DIR=natives-jvm
+set CLASS_DIR=.
 
 set OBJ_NAME=natives
 set LIB_NAME=natives-32
