@@ -12,41 +12,41 @@ import java.io.{File, PrintStream, FileOutputStream, BufferedReader,
 
 class ConsoleRunner extends DirectRunner with RunnerUtils {
 
+  case class TestSet(loc: String,
+                     filter: Option[(String, Boolean)],
+                     kind: String,
+                     msg: String)
+
+  val testSets = {
+    val fileFilter = Some((".scala", true))
+    List(
+      TestSet("pos", fileFilter, "pos",
+              "Testing compiler (on files whose compilation should succeed)"),
+      TestSet("pos5", fileFilter, "pos",
+              "Testing compiler (on files whose compilation should succeed on 1.5 JVM)"),
+      TestSet("neg",  fileFilter, "neg",
+              "Testing compiler (on files whose compilation should fail)"),
+      TestSet("run",  fileFilter, "run", "Testing JVM backend"),
+      TestSet("jvm",  fileFilter, "jvm", "Testing JVM backend"),
+      TestSet("jvm5", fileFilter, "jvm5", "Testing JVM backend"),
+      TestSet("res",  Some((".res", false)), "res",
+              "Testing resident compiler"),
+      TestSet("shootout", fileFilter, "shootout", "Testing shootout tests"),
+      TestSet("script", fileFilter, "script", "Testing script tests"),
+      TestSet("scalacheck", fileFilter, "scalacheck", "Testing ScalaCheck tests"))
+  }
+
   var fileManager: ConsoleFileManager = _
 
   private val version = System.getProperty("java.version", "")
   private val isJava5 = version matches "1.[5|6|7].*"
-
-  private var posCheck = false
-  private var negCheck = false
-  private var runCheck = false
-  private var jvmCheck = false
-  private var jvm5Check = false
-  private var resCheck = false
-  private var shootoutCheck = false
-  private var scriptCheck = false
-  private var scalacheckCheck = false
-
   private var runAll = false
-
   private var testFiles: List[File] = List()
-
   private val errors =
     Integer.parseInt(System.getProperty("scalatest.errors", "0"))
 
   def denotesTestSet(arg: String) =
-    arg match {
-      case "--pos"      => true
-      case "--neg"      => true
-      case "--run"      => true
-      case "--jvm"      => true
-      case "--jvm5"     => true
-      case "--res"      => true
-      case "--shootout" => true
-      case "--script"   => true
-      case "--scalacheck"   => true
-      case _            => false
-    }
+    testSets exists { set => arg == "--" + set.loc }
 
   def denotesTestFile(arg: String) =
     arg.endsWith(".scala") || arg.endsWith(".res")
@@ -89,42 +89,38 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
           !args.exists(denotesTestDir(_)))
         runAll = true
 
+      var enabled = List[TestSet]()
+
       for (arg <- args) {
-        arg match {
-          case "--all"          => runAll = true
-
-          case "--pos"          => posCheck = true
-          case "--neg"          => negCheck = true
-          case "--run"          => runCheck = true
-          case "--jvm"          => jvmCheck = true
-          case "--jvm5"         => jvm5Check = true
-          case "--res"          => resCheck = true
-          case "--shootout"     => shootoutCheck = true
-          case "--script"       => scriptCheck = true
-          case "--scalacheck"   => scalacheckCheck = true
-
-          case "--verbose"      => NestUI._verbose = true
-          case "--show-diff"    => fileManager.showDiff = true
-          case "--show-log"     => fileManager.showLog = true
-          case "--failed"       => fileManager.failed = true
-          case "--version"      => //todo: printVersion
-          case "--ansi"         => NestUI.initialize(NestUI.MANY)
-          case _ =>
-            if (denotesTestFile(arg) || denotesTestDir(arg)) {
-              val file = new File(arg)
-              if (file.exists) {
-                NestUI.verbose("adding test file "+file)
-                testFiles = file :: testFiles
+        (testSets find { set => arg == "--" + set.loc }) match {
+          case Some(set) => enabled = set :: enabled
+          case None      => arg match {
+            case "--all"          => runAll = true
+            case "--verbose"      => NestUI._verbose = true
+            case "--show-diff"    => fileManager.showDiff = true
+            case "--show-log"     => fileManager.showLog = true
+            case "--failed"       => fileManager.failed = true
+            case "--version"      => //todo: printVersion
+            case "--ansi"         => NestUI.initialize(NestUI.MANY)
+            case _ =>
+              if (denotesTestFile(arg) || denotesTestDir(arg)) {
+                val file = new File(arg)
+                if (file.exists) {
+                  NestUI.verbose("adding test file "+file)
+                  testFiles = file :: testFiles
+                } else {
+                  NestUI.failure("File \"" + arg + "\" not found\n")
+                  System.exit(1)
+                }
               } else {
-                NestUI.failure("File \"" + arg + "\" not found\n")
-                System.exit(1)
+                NestUI.failure("Invalid option \""+arg+"\"\n")
+                NestUI.usage()
               }
-            } else {
-              NestUI.failure("Invalid option \""+arg+"\"\n")
-              NestUI.usage()
-            }
+          }
         }
       }
+      NestUI.verbose("enabled test sets: "+enabled)
+      NestUI.verbose("runAll: "+runAll)
 
       val dir =
         if (!fileManager.testClasses.isEmpty)
@@ -155,7 +151,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
 
       val start = System.currentTimeMillis
 
-      val (successes, failures) = testCheckAll()
+      val (successes, failures) = testCheckAll(enabled)
 
       val end = System.currentTimeMillis
       val total = successes + failures
@@ -183,26 +179,22 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
     }
   }
 
-  def runTests(kind: String, check: Boolean, msg: String): (Int, Int) = {
-    if (check) {
-      val kindFiles = if (kind == "res") //TODO: is there a nicer way?
-        fileManager.getFiles(kind, check, Some((".res", false)))
-      else
-        fileManager.getFiles(kind, check)
-      if (!kindFiles.isEmpty) {
-        NestUI.outline("\n"+msg+"\n")
-        runTestsForFiles(kindFiles, kind)
-      } else {
-        NestUI.failure("test dir empty\n")
-        (0, 0)
-      }
-    } else (0, 0)
+  def runTests(testSet: TestSet): (Int, Int) = {
+    val TestSet(loc, filter, kind, msg) = testSet
+    val files = fileManager.getFiles(loc, true, filter)
+    if (!files.isEmpty) {
+      NestUI.outline("\n"+msg+"\n")
+      runTestsForFiles(files, kind)
+    } else {
+      NestUI.failure("test dir empty\n")
+      (0, 0)
+    }
   }
 
   /**
    * @return (success count, failure count)
    */
-  def testCheckAll(): (Int, Int) = {
+  def testCheckAll(enabledSets: List[TestSet]): (Int, Int) = {
     def runTestsFiles = if (!testFiles.isEmpty) {
       def absName(f: File): String = f.getAbsoluteFile.getCanonicalPath
 
@@ -240,27 +232,12 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
       }
     } else (0, 0)
 
-    if (runAll) { // run all tests
-      posCheck = true
-      negCheck = true
-      runCheck = true
-      jvmCheck = true
-      jvm5Check = true
-      resCheck = true
-      shootoutCheck = true
-      scriptCheck = true
-      scalacheckCheck = true
-    }
-    val results = List(runTestsFiles,
-                       runTests("pos", posCheck, "Testing compiler (on files whose compilation should succeed)"),
-                       runTests("neg", negCheck, "Testing compiler (on files whose compilation should fail)"),
-                       runTests("run", runCheck, "Testing JVM backend"),
-                       runTests("jvm", jvmCheck, "Testing JVM backend"),
-                       runTests("jvm5", jvm5Check, "Testing JVM backend"),
-                       runTests("res", resCheck, "Testing resident compiler"),
-                       runTests("shootout", shootoutCheck, "Testing shootout tests"),
-                       runTests("script", scriptCheck, "Testing script tests"),
-                       runTests("scalacheck", scalacheckCheck, "Testing ScalaCheck tests"))
+    val runSets =
+      if (runAll) testSets // run all test sets
+      else enabledSets
+    NestUI.verbose("run sets: "+runSets)
+
+    val results = List(runTestsFiles) ::: (runSets map runTests)
     results reduceLeft { (p: (Int, Int), q: (Int, Int)) =>
       (p._1+q._1, p._2+q._2) }
   }
