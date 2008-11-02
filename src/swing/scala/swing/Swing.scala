@@ -2,7 +2,7 @@ package scala.swing
 
 import java.awt.event._
 import javax.swing.event._
-import java.awt.{Color, Dimension}
+import java.awt.{Color, Dimension, Point}
 import javax.swing.border._
 import javax.swing.{JComponent, Icon, BorderFactory}
 
@@ -16,6 +16,12 @@ object Swing {
   protected[swing] def toNoIcon(i: Icon): Icon = if(i == null) EmptyIcon else i
   protected[swing] def toNullIcon(i: Icon): Icon = if(i == EmptyIcon) null else i
 
+  implicit def pair2Dimension(p: (Int, Int)): Dimension = new Dimension(p._1, p._2)
+  implicit def pair2Point(p: (Int, Int)): Point = new Point(p._1, p._2)
+
+  /**
+   * Allows one to use blocks as runnables.
+   */
   implicit def block2Runnable(block: =>Unit): Runnable = new Runnable {
     override def run = block
   }

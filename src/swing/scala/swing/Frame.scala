@@ -1,5 +1,6 @@
 package scala.swing
 
+import java.awt.{Image, Point}
 import javax.swing._
 import event._
 
@@ -34,6 +35,10 @@ class Frame extends UIElement with RootPanel with Publisher {
   def menuBar_=(m: MenuBar) = peer.setJMenuBar(m.peer)
 
   def setLocationRelativeTo(c: UIElement) { peer.setLocationRelativeTo(c.peer) }
+  def location_=(p: Point) { peer.setLocation(p) }
+
+  def iconImage: Image = peer.getIconImage
+  def iconImage_=(i: Image) { peer.setIconImage(i) }
 
   peer.addWindowListener(new java.awt.event.WindowListener {
     def windowActivated(e: java.awt.event.WindowEvent) { publish(WindowActivated(Frame.this)) }
