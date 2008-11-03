@@ -12,21 +12,14 @@ import scala.tools.nsc.util.{Position, NoPosition}
  *  @author Burak Emir
  */
 trait PatternNodes { self: transform.ExplicitOuter =>
-
   import global._
+  import symtab.Flags
+  final def DBG(x: => String)   = if (settings.debug.value) Console.println(x)
 
-  private val dummies = new Array[List[Tree]](8);
-  dummies(0) = Nil;
-  for (i <- 1 until dummies.length){
-    dummies(i) = EmptyTree :: dummies(i - 1);
-  }
-
-  final def getDummies(i:Int): List[Tree] =
-    if (i < dummies.length) dummies(i);
-    else EmptyTree::getDummies(i-1)
+  final def getDummies(i: Int): List[Tree] = List.make(i, EmptyTree)
 
   def makeBind(vs:SymList, pat:Tree): Tree =
-    if(vs eq Nil) pat else Bind(vs.head, makeBind(vs.tail, pat)) setType pat.tpe
+    if (vs eq Nil) pat else Bind(vs.head, makeBind(vs.tail, pat)) setType pat.tpe
 
   def normalizedListPattern(pats:List[Tree], tptArg:Type): Tree = pats match {
     case Nil   => gen.mkAttributedRef(definitions.NilModule)
@@ -67,7 +60,7 @@ trait PatternNodes { self: transform.ExplicitOuter =>
   /* equality checks for named constant patterns like "Foo()" are encoded as "_:<equals>[Foo().type]"
    * and later compiled to "if(Foo() == scrutinee) ...". This method extracts type information from
    * such an encoded type, which is used in optimization. If the argument is not an encoded equals
-   *  test, it is returned as is.
+   * test, it is returned as is.
    */
   def patternType_wrtEquals(pattpe:Type) = pattpe match {
     case TypeRef(_,sym,arg::Nil) if sym eq definitions.EqualsPatternClass =>
@@ -76,7 +69,7 @@ trait PatternNodes { self: transform.ExplicitOuter =>
   }
 
   /** returns if pattern can be considered a no-op test ??for expected type?? */
-  final def isDefaultPattern(pattern:Tree): Boolean = pattern match {
+  final def isDefaultPattern(pattern: Tree): Boolean = pattern match {
     case Bind(_, p)            => isDefaultPattern(p)
     case EmptyTree             => true // dummy
     case Ident(nme.WILDCARD)   => true
@@ -85,15 +78,13 @@ trait PatternNodes { self: transform.ExplicitOuter =>
 //  case Typed(nme.WILDCARD,_) => pattern.tpe <:< scrutinee.tpe
   }
 
-  final def DBG(x : =>String) { if (settings_debug) Console.println(x) }
-
   /** returns all variables that are binding the given pattern
    *  @param   x a pattern
    *  @return  vs variables bound, p pattern proper
    */
   final def strip(x: Tree): (Set[Symbol], Tree) = x match {
     case b @ Bind(_,pat) => val (vs, p) = strip(pat); (vs + b.symbol, p)
-    case z               => (emptySymbolSet,z)
+    case z               => (emptySymbolSet, z)
   }
 
   final def strip1(x: Tree): Set[Symbol] = x match { // same as strip(x)._1
@@ -104,46 +95,39 @@ trait PatternNodes { self: transform.ExplicitOuter =>
     case     Bind(_,pat) => strip2(pat)
     case z               => z
   }
+  object StrippedPat {
+    def unapply(x: Tree): Option[Tree] = Some(strip2(x))
+  }
 
-  final def isCaseClass(tpe: Type): Boolean =
-    tpe match {
-      case TypeRef(_, sym, _) =>
-        if(!sym.isAliasType)
-          sym.hasFlag(symtab.Flags.CASE)
-        else
-          tpe.normalize.typeSymbol.hasFlag(symtab.Flags.CASE)
-      case _ => false
-    }
+  final def isCaseClass(tpe: Type): Boolean = tpe match {
+    case TypeRef(_, sym, _) =>
+      if (sym.isAliasType) tpe.normalize.typeSymbol hasFlag Flags.CASE
+      else sym hasFlag Flags.CASE
+    case _ => false
+  }
 
-  final def isEqualsPattern(tpe: Type): Boolean =
-    tpe match {
-      case TypeRef(_, sym, _) => sym eq definitions.EqualsPatternClass
-      case _                  => false
-    }
+  final def isEqualsPattern(tpe: Type): Boolean = tpe match {
+    case TypeRef(_, sym, _) => sym eq definitions.EqualsPatternClass
+    case _                  => false
+  }
 
 
   //  this method obtains tag method in a defensive way
   final def getCaseTag(x:Type): Int = { x.typeSymbol.tag }
 
-  final def definedVars(x:Tree): SymList = {
-    // I commented out the no-op cases, but left them in case the order is somehow significant -- paulp
-    def definedVars1(x:Tree): SymList = x match {
-      // case Alternative(bs) => ; // must not have any variables
-      case Apply(_, args)  => definedVars2(args)
-      case b @ Bind(_,p)   => b.symbol :: definedVars1(p)
-      // case Ident(_)        => ;
-      // case Literal(_)      => ;
-      // case Select(_,_)     => ;
-      case Typed(p,_)      => definedVars1(p) //otherwise x @ (_:T)
-      case UnApply(_,args) => definedVars2(args)
-      // regexp specific
-      case ArrayValue(_,xs)=> definedVars2(xs)
-      // case Star(p)         => ; // must not have variables
+  final def definedVars(x: Tree): SymList = {
+    implicit def listToStream[T](xs: List[T]): Stream[T] = xs.toStream
+    def definedVars1(x: Tree): Stream[Symbol] = x match {
+      case Apply(_, args)     => definedVars2(args)
+      case b @ Bind(_,p)      => Stream.cons(b.symbol, definedVars1(p))
+      case Typed(p,_)         => definedVars1(p)    // otherwise x @ (_:T)
+      case UnApply(_,args)    => definedVars2(args)
+      case ArrayValue(_,xs)   => definedVars2(xs)
       case _                  => Nil
     }
-    def definedVars2(args: List[Tree]): SymList = args.flatMap(definedVars1)
+    def definedVars2(args: Stream[Tree]): Stream[Symbol] = args flatMap definedVars1
 
-    definedVars1(x)
+    definedVars1(x).reverse.toList
   }
 
   /** pvar: the symbol of the pattern variable
@@ -161,16 +145,16 @@ trait PatternNodes { self: transform.ExplicitOuter =>
         case Binding(pv2,tmp2,next2) => (pvar eq pv2) && (temp eq tmp2) && (next==next2)
       }
     }
-    def apply(v:Symbol): Ident =
-      if(v eq pvar) {Ident(temp).setType(v.tpe)} else next(v)
+    def apply(v:Symbol): Ident = {
+      if (v eq pvar) Ident(temp).setType(v.tpe) else next(v)
+    }
   }
-  object NoBinding extends Binding(null,null,null) {
+
+  object NoBinding extends Binding(null, null, null) {
     override def apply(v:Symbol) = null // not found, means bound elsewhere (x @ unapply-call)
     override def toString = "."
     override def equals(x:Any) = x.isInstanceOf[Binding] && (x.asInstanceOf[Binding] eq this)
   }
-
-  // misc methods END ---
 
   type SymSet  = collection.immutable.Set[Symbol]
   type SymList = List[Symbol]
