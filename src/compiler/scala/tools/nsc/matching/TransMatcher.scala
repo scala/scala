@@ -23,7 +23,6 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
 
   // cache these
   final val settings_debug       = settings.debug.value
-  final val settings_squeeze     = settings.Xsqueeze.value == "on"
 
   // check special case Seq(p1,...,pk,_*)
   protected def isRightIgnoring(p: ArrayValue): Boolean = {
@@ -82,7 +81,6 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
     val mch                 = typer.typed(repToTree(irep))
     var dfatree             = typer.typed(Block(vds, mch))
 
-    // cannot use squeezedBlock because of side-effects, see t275
     for ((cs, bx) <- cases.zipWithIndex)
       if (!rep.isReached(bx)) cunit.error(cs.body.pos, "unreachable code")
 

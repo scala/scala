@@ -132,7 +132,7 @@ trait ParallelMatching  {
       val typedElse = repToTree(guardedRest)
       val typedIf = typer.typed { If(guard.duplicate, body, typedElse) }
 
-      typer.typed { squeezedBlock(vdefs, typedIf) }
+      typer.typed { Block(vdefs, typedIf) }
     }
   }
 
@@ -309,7 +309,7 @@ trait ParallelMatching  {
           typer.typed{ mkIdent(uacall.symbol) }
         else
           emptynessCheck(uacall.symbol)
-      typer.typed { squeezedBlock(List(rep.handleOuter(uacall)), If(cond,squeezedBlock(vdefs,succ),fail)) }
+      typer.typed { Block(List(rep.handleOuter(uacall)), If(cond,Block(vdefs,succ),fail)) }
     }
   }
 
@@ -372,7 +372,7 @@ trait ParallelMatching  {
       // fixed length
       val cond = getCond(treeAsSeq, xs.length)
       return ({thenp:Tree => {elsep:Tree =>
-        If(cond, squeezedBlock(bindings, thenp), elsep)}}, succRep, failRep)
+        If(cond, Block(bindings, thenp), elsep)}}, succRep, failRep)
     }
 
     // lengthArg is exact length
@@ -588,7 +588,7 @@ trait ParallelMatching  {
       if (casted ne this.scrutinee)
         vdefs = ValDef(casted, gen.mkAsInstanceOf(mkIdent(this.scrutinee), casted.tpe)) :: vdefs
 
-      return typer.typed( If(cond, squeezedBlock(vdefs, succ), fail) )
+      return typer.typed( If(cond, Block(vdefs, succ), fail) )
     }
   }
 
@@ -646,7 +646,7 @@ trait ParallelMatching  {
         override def transform(tree:Tree): Tree = tree match {
           case blck @ Block(vdefs, ld @ LabelDef(name,params,body)) =>
             val bx = labelIndex(ld.symbol)
-            if (bx >= 0 && !isReachedTwice(bx)) squeezedBlock(vdefs,body)
+            if (bx >= 0 && !isReachedTwice(bx)) Block(vdefs,body)
             else blck
 
           case If(cond, Literal(Constant(true)), Literal(Constant(false))) =>
@@ -698,8 +698,8 @@ trait ParallelMatching  {
         labels(bx) = label
 
         return body match {
-          case _: Throw | _: Literal => squeezedBlock(vdefs, body.duplicate setType tpe)
-          case _ => squeezedBlock(vdefs.reverse, LabelDef(label, vsyms, body setType tpe))
+          case _: Throw | _: Literal => Block(vdefs, body.duplicate setType tpe)
+          case _ => Block(vdefs.reverse, LabelDef(label, vsyms, body setType tpe))
         }
       }
 
@@ -724,7 +724,7 @@ trait ParallelMatching  {
       body match {
         case _: Throw | _: Literal =>       // might be bound elsewhere (see `x @ unapply')
           val vdefs = for (v <- vss(bx) ; val substv = subst(v) ; if substv ne null) yield typedValDef(v, substv)
-          squeezedBlock(vdefs, body.duplicate setType resultType)
+          Block(vdefs, body.duplicate setType resultType)
         case _ =>
           Apply(mkIdent(label),args)
       }

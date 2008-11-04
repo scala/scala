@@ -73,7 +73,7 @@ trait CodeFactory {
         Apply(Select(sel, ntpe.member(nme.lengthCompare)), List(Literal(Constant(i)))),
         Literal(Constant(0))
       )
-    )/*defs.Seq_length ?*/
+    )
 
   /** for tree of sequence type sel, returns boolean tree testing that length >= i
    */
@@ -81,25 +81,12 @@ trait CodeFactory {
     GreaterThanOrEquals(
       typer.typed(Apply(Select(sel, tpe.member(nme.lengthCompare)), List(Literal(Constant(i))))),
       typer.typed(Literal(Constant(0))))
-      //defs.Seq_length instead of tpe.member ?
 
-  final def Not(arg:Tree) = arg match {
-    case Literal(Constant(true))  => Literal(Constant(false))
-    case Literal(Constant(false)) => Literal(Constant(true))
-    case t                        => Select(arg, definitions.Boolean_not)
-  }
+  final def Not(arg:Tree) =
+    Select(arg, definitions.Boolean_not)
 
-  def And(left: Tree, right: Tree): Tree = left match {
-    case Literal(Constant(value: Boolean)) =>
-      if (value) right else left
-    case _ =>
-      right match {
-        case Literal(Constant(true)) =>
-	  left
-        case _ =>
-          Apply(Select(left, definitions.Boolean_and), List(right))
-      }
-  }
+  def And(left: Tree, right: Tree): Tree =
+    Apply(Select(left, definitions.Boolean_and), List(right))
 
   final def Equals(left: Tree, right: Tree): Tree =
     Apply(Select(left, nme.EQ), List(right))
@@ -128,86 +115,4 @@ trait CodeFactory {
   final def Get(tree : Tree)
       = Apply(Select(tree, nme.get), List())
 
-  // statistics
-  var nremoved = 0
-  var nsubstituted = 0
-
-  final def squeezedBlock(vds: List[Tree], exp: Tree)(implicit theOwner: Symbol): Tree =
-    if (settings_squeeze)
-      squeezedBlock1(vds, exp)
-    else
-      Block(vds,exp)
-
-  final def squeezedBlock1(vds: List[Tree], exp: Tree)(implicit theOwner: Symbol): Tree = {
-    val tpe = exp.tpe
-
-    class RefTraverser(sym: Symbol) extends Traverser {
-      var nref = 0
-      var nsafeRef = 0
-      override def traverse(tree: Tree) = tree match {
-        case t:Ident if t.symbol eq sym =>
-          nref += 1
-          if(sym.owner == currentOwner)  { // oldOwner should match currentOwner
-            nsafeRef += 1
-          }
-        case LabelDef(_,args,rhs) =>
-          var args1 = args; while(args1 ne Nil) {
-            if(args1.head.symbol eq sym) {
-              nref += 2   // will abort traversal, cannot substitute this one
-              args1 = Nil // break
-            } else {
-              args1 = args1.tail
-            }
-          }
-          traverse(rhs)
-        case t if nref > 1 =>
-          // abort, no story to tell
-        case t =>
-          super.traverse(t)
-      }
-    }
-
-    class Subst(sym: Symbol, rhs: Tree) extends Transformer {
-      var stop = false
-      override def transform(tree: Tree) = tree match {
-        case t:Ident if t.symbol == sym =>
-          stop = true
-          rhs
-        case t if stop =>
-          t
-        case t =>
-          super.transform(t)
-      }
-    }
-    vds match {
-      case Nil =>
-        exp
-      case (vd:ValDef) :: rest =>
-        // recurse
-        val exp1 = squeezedBlock(rest, exp)
-
-        val sym = vd.symbol
-        val rt = new RefTraverser(sym)
-        rt.atOwner (theOwner) (rt.traverse(exp1))
-        rt.nref match {
-          case 0 =>
-            nremoved += 1
-            exp1
-          case 1 if rt.nsafeRef == 1 =>
-            nsubstituted += 1
-            new Subst(sym, vd.rhs).transform(exp1)
-          case _ =>
-            exp1 match {
-              case Block(vds2, exp2) => Block(vd::vds2, exp2)
-              case exp2              => Block(vd::Nil,  exp2)
-            }
-        }
-      case x::xs =>
-        squeezedBlock(xs, exp) match {
-          case Block(vds2, exp2) => Block(x::vds2, exp2)
-          case exp2              => Block(x::Nil,  exp2)
-        }
-    }
-  }
 }
-
