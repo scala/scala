@@ -24,7 +24,6 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
   // cache these
   final val settings_debug       = settings.debug.value
   final val settings_squeeze     = settings.Xsqueeze.value == "on"
-  final val settings_casetags    = settings.Xcasetags.value == "on"
 
   // check special case Seq(p1,...,pk,_*)
   protected def isRightIgnoring(p: ArrayValue): Boolean = {

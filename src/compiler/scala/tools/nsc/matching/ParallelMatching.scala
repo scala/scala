@@ -97,7 +97,6 @@ trait ParallelMatching  {
       case (x : ArrayValue) => if (isRightIgnoring(x)) new MixSequenceStar(scrutinee, column, rest)
                                else new MixSequence(scrutinee, column, rest);
       case _ if isSimpleSwitch => new MixLiterals(scrutinee, column, rest)
-      case _ if settings_casetags && (column.length > 1) && isFlatCases(column) => new MixCases(scrutinee, column, rest)
       case _ if isUnapplyHead() => new MixUnapply(scrutinee, column, rest)
       case _ => new MixTypes(scrutinee, column, rest)
     }
@@ -181,61 +180,6 @@ trait ParallelMatching  {
      **/
     def getTransition(implicit theOwner: Symbol): (List[(Int,Rep)], Set[Symbol], Option[Rep]) =
       (tagIndicesToReps, defaultV, if (haveDefault) Some(defaultsToRep) else None)
-  }
-
-  /** mixture rule for flat case class (using tags)
-   *  this rule gets translated to a switch of _.$tag()
-  **/
-  class MixCases(val scrutinee:Symbol, val column:List[Tree], val rest:Rep)(implicit rep:RepFactory) extends CaseRuleApplication(rep) {
-
-    /** insert row indices into list of tagIndices */
-    for ((x, i) <- column.zipWithIndex; val p = strip2(x))
-      if (isDefaultPattern(p))
-        insertDefault(i, strip1(x))
-      else
-        insertTagIndexPair(p.tpe.typeSymbol.tag, i)
-
-    override def grabTemps = scrutinee::rest.temp
-
-    override def grabRow(index: Int) = {
-      val firstValue = tagIndices(tagIndices.firstKey).head
-      val r @ Row(_,s,_,_) = rest.row(firstValue)
-      val nbindings = s.add(strip1(column(index)), scrutinee)
-
-      r.insert2(List(column(firstValue)), nbindings)
-    }
-
-    final def tree(implicit theOwner: Symbol, failTree: Tree): Tree = {
-      val (branches, defaultV, defaultRep) = getTransition   // tag body pairs
-      val isSealed = scrutinee.tpe.typeSymbol hasFlag Flags.SEALED
-      val cases: List[CaseDef] = for ((tag, r) <- branches) yield {
-        val pat  = column(tagIndices(tag).head)
-        val t2 = strip2(pat) match {
-          case _: Apply if isSealed =>
-            val vtmp = newVar(pat.pos, pat.tpe)
-            squeezedBlock(
-              List(typedValDef(vtmp, gen.mkAsInstanceOf(mkIdent(this.scrutinee), pat.tpe))),
-              repToTree(rep.make(vtmp :: r.temp.tail, r.row))
-            )
-          case _ => repToTree(r)
-        }
-
-        CaseDef(Literal(tag), EmptyTree, t2)
-      }
-
-      // make first case a default case.
-      lazy val ndefault: Tree     = defaultRep.map(repToTree) getOrElse failTree
-      lazy val  defCase: CaseDef  = CaseDef(mk_(definitions.IntClass.tpe), EmptyTree, ndefault)
-      val (first, rest) =
-        if (isSealed && defaultV.isEmpty) (cases.head.body, cases.tail)
-        else (ndefault, cases)
-
-      rest match {
-        case Nil                        => ndefault
-        case CaseDef(lit,_,body) :: Nil => If(Equals(Select(mkIdent(this.scrutinee), nme.tag), lit), body, ndefault)
-        case _                          => Match(Select(mkIdent(this.scrutinee), nme.tag), cases ::: List(defCase))
-      }
-    }
   }
 
   /** mixture rule for literals

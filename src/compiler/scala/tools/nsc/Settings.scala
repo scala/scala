@@ -152,8 +152,6 @@ class Settings(error: String => Unit) {
   val Xwarndeadcode = BooleanSetting    ("-Ywarn-dead-code", "Emit warnings for dead code")
   val Ynogenericsig = BooleanSetting    ("-Yno-generic-signatures", "Suppress generation of generic signatures for Java")
 
-  val Xcasetags     = ChoiceSetting("-Ycasetags", "test integer tags for case classes", List("on","off"),
-                                     /*default*/"off").hideToIDE
   val XnoVarargsConversion = BooleanSetting("-Xno-varargs-conversion", "disable varags conversion")
   val selfInAnnots = BooleanSetting    ("-Yself-in-annots", "Include a \"self\" identifier inside of annotations")
 
