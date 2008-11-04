@@ -146,6 +146,7 @@ class Settings(error: String => Unit) {
 
   val Xshowtrees    = BooleanSetting    ("-Yshow-trees", "Show detailed trees when used in connection with -print:phase").hideToIDE
   val skip          = PhasesSetting     ("-Yskip", "Skip")
+  val Xsqueeze      = ChoiceSetting     ("-Ysqueeze", "if on, creates compact code in matching", List("on","on","off"), "on").hideToIDE
   val statistics    = BooleanSetting    ("-Ystatistics", "Print compiler statistics").hideToIDE
   val stop          = PhasesSetting     ("-Ystop", "Stop after phase")
   val Xwarndeadcode = BooleanSetting    ("-Ywarn-dead-code", "Emit warnings for dead code")
