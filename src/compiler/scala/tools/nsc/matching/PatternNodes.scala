@@ -18,7 +18,7 @@ trait PatternNodes { self: transform.ExplicitOuter =>
 
   final def getDummies(i: Int): List[Tree] = List.make(i, EmptyTree)
 
-  def makeBind(vs:SymList, pat:Tree): Tree =
+  def makeBind(vs:List[Symbol], pat:Tree): Tree =
     if (vs eq Nil) pat else Bind(vs.head, makeBind(vs.tail, pat)) setType pat.tpe
 
   def normalizedListPattern(pats:List[Tree], tptArg:Type): Tree = pats match {
@@ -87,35 +87,18 @@ trait PatternNodes { self: transform.ExplicitOuter =>
     case z               => (emptySymbolSet, z)
   }
 
-  final def strip1(x: Tree): Set[Symbol] = x match { // same as strip(x)._1
-    case b @ Bind(_,pat) => strip1(pat) + b.symbol
-    case z               => emptySymbolSet
-  }
-  final def strip2(x: Tree): Tree = x match {        // same as strip(x)._2
-    case     Bind(_,pat) => strip2(pat)
-    case z               => z
-  }
-  object StrippedPat {
-    def unapply(x: Tree): Option[Tree] = Some(strip2(x))
-  }
+  final def strip1(x: Tree): Set[Symbol] = strip(x)._1
+  final def strip2(x: Tree): Tree = strip(x)._2;
 
-  final def isCaseClass(tpe: Type): Boolean = tpe match {
-    case TypeRef(_, sym, _) =>
-      if (sym.isAliasType) tpe.normalize.typeSymbol hasFlag Flags.CASE
-      else sym hasFlag Flags.CASE
-    case _ => false
-  }
+  final def isCaseClass(tpe: Type): Boolean =
+    tpe.typeSymbol hasFlag Flags.CASE
 
   final def isEqualsPattern(tpe: Type): Boolean = tpe match {
     case TypeRef(_, sym, _) => sym eq definitions.EqualsPatternClass
     case _                  => false
   }
 
-
-  //  this method obtains tag method in a defensive way
-  final def getCaseTag(x:Type): Int = { x.typeSymbol.tag }
-
-  final def definedVars(x: Tree): SymList = {
+  final def definedVars(x: Tree): List[Symbol] = {
     implicit def listToStream[T](xs: List[T]): Stream[T] = xs.toStream
     def definedVars1(x: Tree): Stream[Symbol] = x match {
       case Apply(_, args)     => definedVars2(args)
@@ -155,8 +138,4 @@ trait PatternNodes { self: transform.ExplicitOuter =>
     override def toString = "."
     override def equals(x:Any) = x.isInstanceOf[Binding] && (x.asInstanceOf[Binding] eq this)
   }
-
-  type SymSet  = collection.immutable.Set[Symbol]
-  type SymList = List[Symbol]
-
 }

@@ -8,6 +8,7 @@
 package scala.tools.nsc.matching
 
 import util.Position
+import collection._
 import collection.mutable.BitSet
 import collection.immutable.IntMap
 import MatchUtil.ListPlus._
@@ -192,7 +193,7 @@ trait ParallelMatching  {
       if (isDefaultPattern(p))
         insertDefault(i, strip1(x))
       else
-        insertTagIndexPair(getCaseTag(p.tpe), i)
+        insertTagIndexPair(p.tpe.typeSymbol.tag, i)
 
     override def grabTemps = scrutinee::rest.temp
 
@@ -296,8 +297,6 @@ trait ParallelMatching  {
       propagateFlag(scrutinee, v, Flags.TRANS_FLAG) // propagate "unchecked"
       v
     }
-
-    private def bindToScrutinee(x: Symbol) = typedValDef(x, mkIdent(scrutinee)) // XXX this is dead code
 
     /** returns (unapply-call, success-rep, optional fail-rep*/
     final def getTransition(implicit theOwner: Symbol): (Tree, List[Tree], Rep, Option[Rep]) = {
@@ -677,13 +676,13 @@ trait ParallelMatching  {
       def _2 = row
     }
 
-    var vss: List[SymList] = _
+    var vss: List[List[Symbol]] = _
     var labels: Array[Symbol] = new Array[Symbol](4)
     var targets: List[Tree] = _
     var reached: BitSet = _
     var shortCuts: List[Symbol] = Nil
 
-    final def make(temp:List[Symbol], row:List[Row], targets: List[Tree], vss:List[SymList])(implicit theOwner: Symbol): Rep = {
+    final def make(temp:List[Symbol], row:List[Row], targets: List[Tree], vss:List[List[Symbol]])(implicit theOwner: Symbol): Rep = {
       // ensured that labels(i) eq null for all i, cleanup() has to be called after translation
       this.targets      = targets
       if (targets.length > labels.length)
@@ -909,7 +908,7 @@ trait ParallelMatching  {
     val  row: List[Row]
 
     final def init: this.type = {
-      val setsToCombine: List[(Int, SymSet)] =
+      val setsToCombine: List[(Int, immutable.Set[Symbol])] =
         for {
           (sym, i) <- temp.zipWithIndex
           if sym hasFlag Flags.MUTABLE          // indicates that have not yet checked exhaustivity
@@ -918,7 +917,7 @@ trait ParallelMatching  {
         } yield {
           sym resetFlag Flags.MUTABLE
           // this should enumerate all cases... however, also the superclass is taken if it is not abstract
-          def candidates(tpesym: Symbol): SymSet = {
+          def candidates(tpesym: Symbol): immutable.Set[Symbol] = {
             def countCandidates(x: Symbol) = if (x hasFlag Flags.ABSTRACT) candidates(x) else candidates(x) + x
             if (tpesym hasFlag Flags.SEALED) tpesym.children.flatMap(countCandidates)
             else emptySymbolSet
@@ -1025,7 +1024,7 @@ trait ParallelMatching  {
    */
   final def initRep(roots: List[Symbol], cases: List[Tree], rep: RepFactory)(implicit theOwner: Symbol) = {
     // communicate whether exhaustiveness-checking is enabled via some flag
-    val (rows, targets, vss): (List[Option[Row]], List[Tree], List[SymList]) = unzip3(
+    val (rows, targets, vss): (List[Option[Row]], List[Tree], List[List[Symbol]]) = unzip3(
       for ((CaseDef(pat, g, b), bx) <- cases.zipWithIndex) yield {  // stash away pvars and bodies for later
         def rowForPat: Option[Row] = pat match {
           case _ if roots.length <= 1 => Some(Row(List(pat), NoBinding, g, bx))

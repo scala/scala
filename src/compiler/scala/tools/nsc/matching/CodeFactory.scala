@@ -88,7 +88,8 @@ trait CodeFactory {
     case Literal(Constant(false)) => Literal(Constant(true))
     case t                        => Select(arg, definitions.Boolean_not)
   }
-  /*protected*/ def And(left: Tree, right: Tree): Tree = left match {
+
+  def And(left: Tree, right: Tree): Tree = left match {
     case Literal(Constant(value: Boolean)) =>
       if (value) right else left
     case _ =>
