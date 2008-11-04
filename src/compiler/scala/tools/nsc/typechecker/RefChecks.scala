@@ -198,7 +198,7 @@ abstract class RefChecks extends InfoTransform {
                    (other hasFlag ACCESSOR) && other.accessed.isVariable && !other.accessed.hasFlag(LAZY)) {
           overrideError("cannot override a mutable variable")
         } else if (other.isStable && !member.isStable) { // (1.4)
-          overrideError("needs to be stable")
+          overrideError("is not stable")
         } else if (member.isValue && (member hasFlag LAZY) &&
                    other.isValue && !other.isSourceMethod && !other.isDeferred && !(other hasFlag LAZY)) {
           overrideError("cannot override a concrete non-lazy value")
