@@ -72,7 +72,7 @@ abstract class RefChecks extends InfoTransform {
      *    1.1. M must have the same or stronger access privileges as O.
      *    1.2. O must not be final.
      *    1.3. O is deferred, or M has `override' modifier.
-     *    1.4. If O is an immutable value, then so is M.
+     *    1.4. If O is stable, then so is M.
      *     // @M: LIFTED 1.5. Neither M nor O are a parameterized type alias
      *    1.6. If O is a type alias, then M is an alias of O.
      *    1.7. If O is an abstract type then
@@ -198,7 +198,7 @@ abstract class RefChecks extends InfoTransform {
                    (other hasFlag ACCESSOR) && other.accessed.isVariable && !other.accessed.hasFlag(LAZY)) {
           overrideError("cannot override a mutable variable")
         } else if (other.isStable && !member.isStable) { // (1.4)
-          overrideError("needs to be an immutable value")
+          overrideError("needs to be stable")
         } else if (member.isValue && (member hasFlag LAZY) &&
                    other.isValue && !other.isSourceMethod && !other.isDeferred && !(other hasFlag LAZY)) {
           overrideError("cannot override a concrete non-lazy value")
