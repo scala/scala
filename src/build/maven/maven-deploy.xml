@@ -14,8 +14,9 @@
     <property name="local.snapshot.repository" value="${user.home}/.m2/repository" />
     <property name="local.release.repository" value="${user.home}/.m2/repository" />
     <property name="repository.credentials.id" value="scala-tools.org" />
+    <property name="settings.file" value="${user.home}/.m2/settings.xml" />
 
-    <echo>Using server[${repository.credentials.id}] for maven repository credentials.  
+    <echo>Using server[${repository.credentials.id}] for maven repository credentials.
        Please make sure that your ~/.m2/settings.xml has the needed username/password for this server id
      </echo>
   </target>
@@ -89,7 +90,7 @@
       </sequential>
     </macrodef>
   </target>
-  
+
   <!-- macros for remote deployment -->
   <target name="deploy.remote.init" depends="init.maven">
     <!-- Deploy single artifact locally -->
@@ -100,7 +101,7 @@
       <element name="extra-attachments" optional="yes" />
       <sequential>
         <make-pom name="@{name}" version="@{version}" />
-        <artifact:deploy file="@{name}/@{name}.jar">
+        <artifact:deploy file="@{name}/@{name}.jar" settingsFile="${settings.file}">
           <artifact:pom refid="@{name}.pom" />
           <artifact:remoteRepository url="@{repository}" id="${repository.credentials.id}" />
           <artifact:attach type="jar" file="@{name}/@{name}-src.jar" classifier="sources" />
