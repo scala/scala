@@ -18,7 +18,7 @@ package scala.concurrent
  * @author  Vincent Cremet
  * @version 1.0, 17/10/2003
  */
-object jolib {
+@deprecated object jolib {
 
   type Pattern = List[Signal]
 
