@@ -604,22 +604,7 @@ trait ParallelMatching  {
     def replace(hs: List[Tree]) = Row(hs, subst, guard, bx)                 // replaces pattern list
   }
 
-  object Rep {
-    type RepType = Product2[List[Symbol], List[Row]]
-    final def unapply(x:Rep)(implicit rep:RepFactory): Option[RepType] =
-      if (x.isInstanceOf[rep.RepImpl]) Some(x.asInstanceOf[RepType]) else None
-  }
-
   class RepFactory(val handleOuter: Tree => Tree)(implicit val typer : Typer) {
-    case class RepImpl(val temp:List[Symbol], val row:List[Row]) extends Rep with Rep.RepType {
-      (row.find { case Row(pats, _, _, _) => temp.length != pats.length }) match {
-        case Some(row) => assert(false, "temp == "+temp+" row.pats == "+row.pat);
-        case _ =>
-      }
-      def _1 = temp
-      def _2 = row
-    }
-
     var vss: List[List[Symbol]] = _
     var labels: Array[Symbol] = new Array[Symbol](4)
     var targets: List[Tree] = _
@@ -842,85 +827,78 @@ trait ParallelMatching  {
         }
       }
 
-      if (unchanged) RepImpl(temp, row).init
-      else this.make(temp, row) // recursive call
+      // if (unchanged) RepImpl(temp, row).init
+      if (unchanged) Rep(temp, row).init else make(temp, row) // recursive call
     }
   }
 
-  abstract class Rep {
-    val temp: List[Symbol]
-    val  row: List[Row]
+  case class Rep(val temp: List[Symbol], val row: List[Row]) {
+    private def setsToCombine: List[(Int, immutable.Set[Symbol])] = for {
+      (sym, i) <- temp.zipWithIndex
+      if sym hasFlag Flags.MUTABLE          // indicates that have not yet checked exhaustivity
+      if !(sym hasFlag Flags.TRANS_FLAG)    // indicates @unchecked
+      if sym.tpe.typeSymbol hasFlag Flags.SEALED
+    } yield {
+      sym resetFlag Flags.MUTABLE
+      // this should enumerate all cases... however, also the superclass is taken if it is not abstract
+      def candidates(tpesym: Symbol): immutable.Set[Symbol] = {
+        def countCandidates(x: Symbol) = if (x hasFlag Flags.ABSTRACT) candidates(x) else candidates(x) + x
+        if (tpesym hasFlag Flags.SEALED) tpesym.children.flatMap(countCandidates)
+        else emptySymbolSet
+      }
+      (i, candidates(sym.tpe.typeSymbol))
+    } // .reverse ? XXX
 
-    final def init: this.type = {
-      val setsToCombine: List[(Int, immutable.Set[Symbol])] =
-        for {
-          (sym, i) <- temp.zipWithIndex
-          if sym hasFlag Flags.MUTABLE          // indicates that have not yet checked exhaustivity
-          if !(sym hasFlag Flags.TRANS_FLAG)    // indicates @unchecked
-          if sym.tpe.typeSymbol hasFlag Flags.SEALED
-        } yield {
-          sym resetFlag Flags.MUTABLE
-          // this should enumerate all cases... however, also the superclass is taken if it is not abstract
-          def candidates(tpesym: Symbol): immutable.Set[Symbol] = {
-            def countCandidates(x: Symbol) = if (x hasFlag Flags.ABSTRACT) candidates(x) else candidates(x) + x
-            if (tpesym hasFlag Flags.SEALED) tpesym.children.flatMap(countCandidates)
-            else emptySymbolSet
+    // computes cartesian product, keeps indices available
+    private def combine(colcom: List[(Int, Set[Symbol])]): List[List[(Int, Symbol)]] = colcom match {
+      case Nil => Nil
+      case (i,syms)::Nil => syms.toList.map { sym => List((i,sym)) }
+      case (i,syms)::cs  => for (s <- syms.toList; rest <- combine(cs)) yield (i,s) :: rest
+    }
+
+    /** returns true if pattern vector pats covers a type symbols "combination"
+     *  @param pats pattern vector
+     *  @param comb pairs of (column index, type symbol)
+     */
+    private def covers(pats: List[Tree], comb: List[(Int, Symbol)]) = {
+      val results = for ((i, sym) <- comb ; val p = strip2(pats(i))) yield p match {
+        case _ if isDefaultPattern(p)   => true
+        case _: UnApply | _: ArrayValue => true
+        case _ =>
+          val ptpe = patternType_wrtEquals(p.tpe)
+          val symtpe =
+            if ((sym hasFlag Flags.MODULE) && (sym.linkedModuleOfClass ne NoSymbol))
+              singleType(sym.tpe.prefix, sym.linkedModuleOfClass)   // e.g. None, Nil
+            else sym.tpe
+
+          (ptpe.typeSymbol == sym) ||
+          (symtpe <:< ptpe) ||
+          (symtpe.parents.exists(_.typeSymbol eq ptpe.typeSymbol)) || // e.g. Some[Int] <: Option[&b]
+          (ptpe.prefix.memberType(sym) <:< ptpe)  // outer, see combinator.lexical.Scanner
+      }
+      results.forall(_ == true)
+    }
+
+    private def comboCovers(combo: List[(Int, Symbol)]) = row exists { r => (r.guard eq EmptyTree) && covers(r.pat, combo) }
+
+    def init: this.type = {
+      combine(setsToCombine) match {
+        case allcomb if (!(allcomb forall comboCovers)) =>  // not exhaustive
+          def mkMissingStr(xs: List[(Int, Symbol)], i: Int) = xs.find(_._1 == i) match {
+            case None => pad("*")
+            case Some(pair) => pad(pair._2.name.toString)
           }
-          (i, candidates(sym.tpe.typeSymbol))
-        } // .reverse ? XXX
 
-      if (setsToCombine.isEmpty) return this
+          val missingCombos =
+            (for (open <- allcomb ; if row.forall(r => !covers(r.pat, open))) yield
+              "missing combination " +
+                (for (i <- 0 until temp.length) yield
+                  mkMissingStr(open, i)).mkString + "\n").mkString
 
-      //  computes cartesian product, keeps indices available
-      def combine(colcom: List[(Int, Set[Symbol])]): List[List[(Int, Symbol)]] = colcom match {
-        case Nil => Nil
-        case (i,syms)::Nil => syms.toList.map { sym => List((i,sym)) }
-        case (i,syms)::cs  => for (s <- syms.toList; rest <- combine(cs)) yield (i,s) :: rest
+          cunit.warning(temp.head.pos, "match is not exhaustive!\n" + missingCombos)
+        case _ =>
       }
-
-      val allcomb = combine(setsToCombine)
-
-      /** returns true if pattern vector pats covers a type symbols "combination"
-       *  @param pats pattern vector
-       *  @param comb pairs of (column index, type symbol)
-       */
-      def covers(pats: List[Tree], comb: List[(Int, Symbol)]) = {
-        val results = for ((i, sym) <- comb ; val p = strip2(pats(i))) yield p match {
-          case _ if isDefaultPattern(p)   => true
-          case _: UnApply | _: ArrayValue => true
-          case _ =>
-            val ptpe = patternType_wrtEquals(p.tpe)
-            val symtpe =
-              if ((sym hasFlag Flags.MODULE) && (sym.linkedModuleOfClass ne NoSymbol))
-                singleType(sym.tpe.prefix, sym.linkedModuleOfClass)   // e.g. None, Nil
-              else sym.tpe
-
-            (ptpe.typeSymbol == sym) ||
-            (symtpe <:< ptpe) ||
-            (symtpe.parents.exists(_.typeSymbol eq ptpe.typeSymbol)) || // e.g. Some[Int] <: Option[&b]
-            (ptpe.prefix.memberType(sym) <:< ptpe)  // outer, see combinator.lexical.Scanner
-        }
-        results.forall(_ == true)
-      }
-
-      def comboCovers(combo: List[(Int, Symbol)]) = row exists { r => (r.guard eq EmptyTree) && covers(r.pat, combo) }
-
-      if (!(allcomb forall comboCovers)) {
-        def mkMissingStr(xs: List[(Int, Symbol)], i: Int) = xs.find(_._1 == i) match {
-          case None => pad("*")
-          case Some(pair) => pad(pair._2.name.toString)
-        }
-
-        val missingCombos =
-          (for (open <- allcomb ; if row.forall(r => !covers(r.pat, open))) yield
-            "missing combination " +
-              (for (i <- 0 until temp.length) yield
-                mkMissingStr(open, i)).mkString + "\n").mkString
-
-        cunit.warning(temp.head.pos, "match is not exhaustive!\n" + missingCombos)
-      }
-
-      return this
+      this
     }
 
     /*   internal representation is (temp:List[Symbol], row:List[Row])
