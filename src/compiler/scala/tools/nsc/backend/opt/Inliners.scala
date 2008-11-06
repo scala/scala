@@ -149,6 +149,9 @@ abstract class Inliners extends SubComponent {
            case THIS(clasz) =>
              LOAD_LOCAL(inlinedThis);
 
+           case STORE_THIS(_) =>
+             STORE_LOCAL(inlinedThis)
+
            case JUMP(whereto) =>
              JUMP(inlinedBlock(whereto));
 

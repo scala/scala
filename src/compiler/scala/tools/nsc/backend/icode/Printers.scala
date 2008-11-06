@@ -81,7 +81,7 @@ trait Printers { self: ICodes =>
 
     def printMethod(m: IMethod): Unit = {
       print("def "); print(m.symbol.name);
-      print("("); printList(printParam)(m.params.reverse, ", "); print(")");
+      print("("); printList(printParam)(m.params, ", "); print(")");
       print(": "); print(m.symbol.info.resultType);
 
       if (!m.isDeferred) {

@@ -499,12 +499,29 @@ abstract class CopyPropagation {
       var values = in.stack.take(1 + ctor.info.paramTypes.length).reverse.drop(1);
       val bindings = new HashMap[Symbol, Value];
 
-      if (settings.debug.value) log("getBindings for: " + ctor)
+      if (settings.debug.value) log("getBindings for: " + ctor + " acc: " + paramAccessors)
+
+      var paramTypes = ctor.tpe.paramTypes
+      val diff = paramTypes.length - paramAccessors.length
+      diff match {
+        case 0 => ()
+        case 1 if ctor.tpe.paramTypes.head == ctor.owner.rawowner.tpe =>
+          // it's an unused outer
+          log("considering unused outer at position 0 in " + ctor.tpe.paramTypes)
+          paramTypes = paramTypes.tail
+          values = values.tail
+        case _ =>
+          log("giving up on " + ctor + "(diff: " + diff + ")")
+          return bindings
+      }
+
       // this relies on having the same order in paramAccessors and
       // the arguments on the stack. It should be the same!
       for ((p, i) <- paramAccessors.zipWithIndex) {
-//        assert(p.tpe == ctor.tpe.paramTypes(i), "In: " + ctor.fullNameString + " having: " + (paramAccessors map (_.tpe))+ " vs. " + ctor.tpe.paramTypes)
-        if (p.tpe == ctor.tpe.paramTypes(i))
+//        assert(p.tpe == paramTypes(i), "In: " + ctor.fullNameString
+//               + " having acc: " + (paramAccessors map (_.tpe))+ " vs. params" + paramTypes
+//               + "\n\t failed at pos " + i + " with " + p.tpe + " == " + paramTypes(i))
+        if (p.tpe == paramTypes(i))
           bindings += (p -> values.head);
         values = values.tail;
       }
