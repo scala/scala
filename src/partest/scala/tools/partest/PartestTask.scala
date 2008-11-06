@@ -172,7 +172,7 @@ class PartestTask extends Task {
       (classpath.get.list map { fs => new File(fs) }) find { f =>
         f.getName match {
           case "scala-library.jar" => true
-          case "classes" if (f.getParentFile.getName == "library") => true
+          case "library" if (f.getParentFile.getName == "classes") => true
           case _ => false
         }
       }
