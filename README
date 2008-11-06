@@ -143,8 +143,45 @@ Part IV. Common use-cases
   Removes all build files (including locker) and all distributions.
 
 Part V. Contributing to Scala
---------------------------------------------------------------------------------                            
+--------------------------------------------------------------------------------
 
-If you wish to contribute, you need to directly take contact with the Scala
-team. You will find email addresses for everyone currently working on the
-project at http://scala.epfl.ch/community/
+If you wish to contribute, you can find all of the necessary information on
+the official Scala website: www.scala-lang.org. Specifically, you can
+subscribe to the Scala mailing lists, read all of the available documentation,
+and browse the live SVN repository. You can contact the Scala team by sending
+us a message on one of the mailing lists, or by using the available
+contact form.
+
+In detail:
+
+- Scala website (links to everything else):
+  http://www.scala-lang.org
+
+- Scala documentation:
+  http://www.scala-lang.org/node/197
+
+- Scala mailing lists:
+  http://www.scala-lang.org/node/199
+
+- Scala Trac bug and issue tracker:
+  https://lampsvn.epfl.ch/trac/scala
+
+- Scala live SVN source tree:
+  http://www.scala-lang.org/node/213
+
+- Building Scala from the source code:
+  http://www.scala-lang.org/node/217
+
+- Contact form:
+  http://www.scala-lang.org/node/188
+
+
+If you are interested in contributing code, we ask you to complete and submit
+to us the Scala Contributor License Agreement, which allows us to ensure that
+all code submitted to the project is original and unencumbered by copyrights.
+The form is available at:
+http://www.scala-lang.org/sites/default/files/contributor_agreement.pdf
+
+Thank you!
+The Scala Team
+
