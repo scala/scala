@@ -1321,19 +1321,7 @@ DISTRIBUTION
     <chmod perm="ugo+rx" file="${dist.dir}/bin/fsc"/>
   </target>
 
-  <target name="dist.latest.unix" depends="dist.base" unless="os.win">
-    <symlink link="${dists.dir}/latest" resource="${dist.dir}" overwrite="yes"/>
-  </target>
-
-  <target name="dist.latest.win" depends="dist.base" if="os.win">
-    <copy todir="${dists.dir}/latest">
-      <fileset dir="${dist.dir}"/>
-    </copy>
-  </target>
-
-  <target name="dist.latest" depends="dist.latest.unix,dist.latest.win"/>
-
-  <target name="dist.doc" depends="dist.latest">
+  <target name="dist.doc" depends="dist.base">
     <mkdir dir="${dist.dir}/doc/scala-devel-docs"/>
     <copy file="${docs.dir}/LICENSE" toDir="${dist.dir}/doc/scala-devel-docs"/>
     <copy file="${docs.dir}/README" toDir="${dist.dir}/doc/scala-devel-docs"/>
@@ -1376,8 +1364,20 @@ DISTRIBUTION
       <fileset dir="${src.dir}/compiler"/>
     </jar>
   </target>
+
+  <target name="dist.latest.unix" depends="dist.src" unless="os.win">
+    <symlink link="${dists.dir}/latest" resource="${dist.dir}" overwrite="yes"/>
+  </target>
+
+  <target name="dist.latest.win" depends="dist.src" if="os.win">
+    <copy todir="${dists.dir}/latest">
+      <fileset dir="${dist.dir}"/>
+    </copy>
+  </target>
+
+  <target name="dist.latest" depends="dist.latest.unix,dist.latest.win"/>
   
-  <target name="dist.done" depends="dist.src"/>
+  <target name="dist.done" depends="dist.latest"/>
 
   <target name="dist.clean">
     <delete dir="${dists.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
