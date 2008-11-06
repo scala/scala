@@ -1,11 +1,11 @@
 ================================================================================
-                              THE SCALA REPOSITRY
+                              THE SCALA REPOSITORY
                            Structure and build system
 ================================================================================
 
 This document describes the Scala core (core library and compiler) repository
 and how to build it. For information about Scala as a languages, you can visit
-the web site http://scala.epfl.ch/
+the web site http://www.scala-lang.org/
 
 Part I. The repository layout
 --------------------------------------------------------------------------------                            
@@ -146,11 +146,12 @@ Part V. Contributing to Scala
 --------------------------------------------------------------------------------
 
 If you wish to contribute, you can find all of the necessary information on
-the official Scala website: www.scala-lang.org. Specifically, you can
-subscribe to the Scala mailing lists, read all of the available documentation,
-and browse the live SVN repository. You can contact the Scala team by sending
-us a message on one of the mailing lists, or by using the available
-contact form.
+the official Scala website: www.scala-lang.org.
+
+Specifically, you can subscribe to the Scala mailing lists, read all of the
+available documentation, and browse the live SVN repository. You can contact
+the Scala team by sending us a message on one of the mailing lists, or by using
+the available contact form.
 
 In detail:
 
