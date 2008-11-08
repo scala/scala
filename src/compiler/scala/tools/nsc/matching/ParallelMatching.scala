@@ -221,7 +221,7 @@ trait ParallelMatching  {
       cases match {
         case CaseDef(lit,_,body) :: Nil =>
           If(Equals(mkIdent(this.scrutinee),lit), body, ndefault)
-        case _ if isSameType(this.scrutinee.tpe.widen, definitions.CharClass.tpe) =>
+        case _ if isSameType(this.scrutinee.tpe.widen, definitions.CharClass.tpe) =>  // coerce chars to ints
           Match(Select(mkIdent(this.scrutinee), nme.toInt), cases ::: List(defCase))
         case _ =>
           Match(mkIdent(this.scrutinee), cases ::: List(defCase))
@@ -331,15 +331,21 @@ trait ParallelMatching  {
     }
 
     protected def makeSuccRep(vs:List[Symbol], tail:Symbol, nrows:List[Row])(implicit theOwner: Symbol) =
-      rep.make(vs ::: tail :: rest.temp, nrows.toList)
+      rep.make(vs ::: tail :: rest.temp, nrows)
 
-    /** returns true if x is more general than y */
-    protected def subsumes(x:Tree, y:Tree): Boolean = (x,y) match {
-      case (av @ ArrayValue(_,xs), bv @ ArrayValue(_,ys)) =>
-        isRightIgnoring(av) && !isRightIgnoring(bv) && xs.length == ys.length+1                   // see (*)
-      case _ =>
-        false
-    }
+    /** True if x must be checked even if y failed to match after passing its length test
+      * (the conditional supplied by getCond)
+      */
+    protected def mustCheck(x:Tree, y:Tree): Boolean =
+      isDefaultPattern(x) || ((x, y) match {
+        case (av @ ArrayValue(_,xs), bv @ ArrayValue(_,ys)) =>
+          // if they are both right-ignoring, x must be more general if it has fewer literals - bug #889
+          if (isRightIgnoring(av) && isRightIgnoring(bv) && xs.length < ys.length) true
+          // otherwise, x is more general only if it is y plus a star
+          else isRightIgnoring(av) && !isRightIgnoring(bv) && xs.length == ys.length+1                   // see (*)
+        case _ =>
+          false
+      })
     // context (to be used in IF), success and failure Rep
     def getTransition(implicit theOwner: Symbol): (Tree => Tree => Tree, Rep, Rep) = {
       assert(isSubType(scrutinee.tpe, column.head.tpe), "problem "+scrutinee.tpe+" not <: "+column.head.tpe)
@@ -362,7 +368,7 @@ trait ParallelMatching  {
 
       val (nrows, frows)/* : (List[Option[Row]], List[Option[Row]]) */ = List.unzip(
         for ((c, row) <- column.zip(rest.row)) yield getSubPatterns(ys.size, c) match {
-          case Some(ps) => (Some(row.insert(ps)), if (isDefaultPattern(c) || subsumes(c, av)) Some(row.insert(c)) else None)
+          case Some(ps) => (Some(row.insert(ps)), if (mustCheck(c, av)) Some(row.insert(c)) else None)
           case None     => (None, Some(row.insert(c)))
         })
 
