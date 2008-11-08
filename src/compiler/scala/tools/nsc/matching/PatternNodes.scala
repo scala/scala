@@ -23,8 +23,9 @@ trait PatternNodes { self: transform.ExplicitOuter =>
 
   def normalizedListPattern(pats:List[Tree], tptArg:Type): Tree = pats match {
     case Nil   => gen.mkAttributedRef(definitions.NilModule)
-    case sp::xs if strip2(sp).isInstanceOf[Star] =>
-      makeBind(definedVars(sp), Ident(nme.WILDCARD) setType sp.tpe)
+    case (sp @ Strip(_, _: Star)) :: xs => makeBind(definedVars(sp), Ident(nme.WILDCARD) setType sp.tpe)
+    // case sp::xs if strip2(sp).isInstanceOf[Star] =>
+    //   makeBind(definedVars(sp), Ident(nme.WILDCARD) setType sp.tpe)
     case x::xs =>
       var resType: Type = null;
       val consType: Type = definitions.ConsClass.primaryConstructor.tpe match {
@@ -89,6 +90,10 @@ trait PatternNodes { self: transform.ExplicitOuter =>
 
   final def strip1(x: Tree): Set[Symbol] = strip(x)._1
   final def strip2(x: Tree): Tree = strip(x)._2;
+
+  object Strip {
+    def unapply(x: Tree): Option[(Set[Symbol], Tree)] = Some(strip(x))
+  }
 
   final def isCaseClass(tpe: Type): Boolean =
     tpe.typeSymbol hasFlag Flags.CASE

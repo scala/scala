@@ -20,17 +20,54 @@ trait CodeFactory {
 
   import definitions._             // standard classes and methods
   import posAssigner.atPos         // for filling in tree positions
+  import Code._
 
-  final def mkIdent(sym:Symbol) = Ident(sym) setType sym.tpe
+  /** Methods to simplify code generation
+   */
+  object Code {
+    // function application
+    def fn(lhs: Tree, op:   Name, args: Tree*)  = Apply(Select(lhs, op), args.toList)
+    def fn(lhs: Tree, op: Symbol, args: Tree*)  = Apply(Select(lhs, op), args.toList)
 
-  final def typedValDef(x:Symbol, rhs:Tree)(implicit typer : Typer) = {
-    x.tpe match {
-      case WildcardType => rhs.setType(null); val rhs1 = typer.typed(rhs); x setInfo rhs1.tpe; typer.typed{ValDef(x, rhs)}
-      case _ => typer.typed{ValDef(x, typer.typed(rhs, x.tpe))}
+    val AND   = definitions.Boolean_and
+    val NOT   = definitions.Boolean_not
+    val SEQ   = definitions.SeqClass
+    val SOME  = definitions.SomeClass
+    val TRUE  = Const(true)
+    val FALSE = Const(false)
+    val NULL  = Const(null)
+
+    // I am guessing implicits and object creation are prohibitively expensive in the
+    // compiler to achieve syntax improvement, but if someone wanted to add methods such
+    // as these to Tree directly, it would enable much more readable code generation.
+    // Combinators would be even better, but also too expensive (?)
+    //
+    // class RichTree(t: Tree) {
+    //   def ===(rhs: Tree) = Equals(t, rhs)
+    //   def GTE(rhs: Tree) = GreaterThanOrEquals(t, rhs)
+    // }
+    // implicit def enrichTree(t: Tree) = new RichTree(t)
+
+    object Const {
+      def apply(x: Any) = Literal(Constant(x))
+      def unapply(x: Any) = x match {
+        case Literal(Constant(value)) => Some(value)
+        case _ => None
+      }
     }
   }
 
-  final def mk_(tpe:Type) = Ident(nme.WILDCARD) setType tpe
+  final def typedValDef(x: Symbol, rhs: Tree)(implicit typer: Typer) = x.tpe match {
+    case WildcardType =>
+      rhs setType null
+      x setInfo typer.typed(rhs).tpe
+      typer.typed(ValDef(x, rhs))
+    case _ =>
+      typer.typed(ValDef(x, typer.typed(rhs, x.tpe)))
+  }
+
+  final def mkIdent(sym: Symbol)  = Ident(sym) setType sym.tpe
+  final def mk_(tpe: Type)        = Ident(nme.WILDCARD) setType tpe
 
   /**
    * Convert a pattern binding into a list of value definitions.
@@ -43,90 +80,60 @@ trait CodeFactory {
   /** returns A for T <: Sequence[ A ]
    */
   final def getElemType_Sequence(tpe: Type): Type = {
-    val tpe1 = tpe.widen.baseType(definitions.SeqClass)
-
+    val tpe1 = tpe.widen.baseType(SEQ)
     if (tpe1 == NoType)
       Predef.error("arg " + tpe + " not subtype of Seq[A]")
 
     tpe1.typeArgs(0)
   }
 
-  final def emptynessCheck(vsym: Symbol) = {
-    if (vsym.tpe.typeSymbol == definitions.SomeClass)  // is Some[_]
-      Literal(Constant(true))
-    else                                          // is Option[_]
-      Not(Select(mkIdent(vsym), nme.isEmpty))
-  }
+  // Option fullness check
+  final def nonEmptinessCheck(vsym: Symbol) =
+    if (vsym.tpe.typeSymbol == SOME) TRUE           // is Some[_]
+    else Not(Select(mkIdent(vsym), nme.isEmpty))    // is Option[_]
 
   /** for tree of sequence type, returns tree that drops first i elements */
-  final def seqDrop(sel:Tree, ix: Int)(implicit typer : Typer) = if (ix == 0) sel else
-    typer.typed { Select(Apply(Select(sel, nme.drop), List(Literal(Constant(ix)))), nme.toSeq) }
+  final def seqDrop(sel:Tree, ix: Int)(implicit typer : Typer) =
+    if (ix == 0) sel else
+    typer.typed(Select(fn(sel, nme.drop, Const(ix)), nme.toSeq))
 
-  /** for tree of sequence type, returns tree that drops first i elements */
+  /** for tree of sequence type, returns tree that represents element at index i */
   final def seqElement(sel:Tree, ix: Int)(implicit typer : Typer) =
-    typer.typed { Apply(Select(sel, sel.tpe.member(nme.apply)), List(Literal(Constant(ix)))) }
+    typer.typed(fn(sel, sel.tpe.member(nme.apply), Const(ix)))
 
   /** for tree of sequence type, returns boolean tree testing that the sequence has length i */
   final def seqHasLength(sel: Tree, ntpe: Type, i: Int)(implicit typer : Typer) =
-    typer.typed(
-      Equals(
-        Apply(Select(sel, ntpe.member(nme.lengthCompare)), List(Literal(Constant(i)))),
-        Literal(Constant(0))
-      )
-    )/*defs.Seq_length ?*/
+    typer.typed( Equals(fn(sel, ntpe.member(nme.lengthCompare), Const(i)), Const(0)) )     // defs.Seq_length ?
 
   /** for tree of sequence type sel, returns boolean tree testing that length >= i
    */
-  final def seqLongerThan(sel:Tree, tpe:Type, i:Int)(implicit typer : Typer) =
-    GreaterThanOrEquals(
-      typer.typed(Apply(Select(sel, tpe.member(nme.lengthCompare)), List(Literal(Constant(i))))),
-      typer.typed(Literal(Constant(0))))
-      //defs.Seq_length instead of tpe.member ?
-
-  final def Not(arg:Tree) = arg match {
-    case Literal(Constant(true))  => Literal(Constant(false))
-    case Literal(Constant(false)) => Literal(Constant(true))
-    case t                        => Select(arg, definitions.Boolean_not)
+  final def seqLongerThan(sel:Tree, tpe:Type, i:Int)(implicit typer : Typer) = {
+    val cmp = fn(sel, tpe.member(nme.lengthCompare), Const(i))
+    GTE(typer.typed(cmp), typer.typed(Const(0)))  // defs.Seq_length instead of tpe.member?
   }
 
-  def And(left: Tree, right: Tree): Tree = left match {
-    case Literal(Constant(value: Boolean)) =>
-      if (value) right else left
-    case _ =>
-      right match {
-        case Literal(Constant(true)) =>
-	  left
-        case _ =>
-          Apply(Select(left, definitions.Boolean_and), List(right))
-      }
+  final def Equals  (left: Tree, right: Tree): Tree = fn(left, nme.EQ, right)
+  final def Eq      (left: Tree, right: Tree): Tree = fn(left, nme.eq, right)
+  final def GTE     (left: Tree, right: Tree): Tree = fn(left, nme.GE, right) // >=
+
+  final def Not(arg: Tree) = arg match {
+    case TRUE   => FALSE
+    case FALSE  => TRUE
+    case t      => Select(arg, NOT)
   }
 
-  final def Equals(left: Tree, right: Tree): Tree =
-    Apply(Select(left, nme.EQ), List(right))
+  final def And(left: Tree, right: Tree): Tree = (left, right) match {
+    case (Const(value: Boolean), _) => if (value) right else left
+    case (_, TRUE)                  => left
+    case _                          => fn(left, AND, right)
+  }
 
-  final def Eq(left: Tree, right: Tree): Tree =
-    Apply(Select(left, nme.eq), List(right))
+  final def ThrowMatchError(pos: Position, obj: Tree) = atPos(pos) {
+    Throw( New(TypeTree(MatchErrorClass.tpe), List(List(obj))) )
+  }
 
-  final def GreaterThanOrEquals(left: Tree, right: Tree): Tree =
-    Apply(Select(left, nme.GE), List(right))
-
-  final def ThrowMatchError(pos: Position, obj: Tree) =
-    atPos(pos) {
-      Throw(
-        New(
-          TypeTree(definitions.MatchErrorClass.tpe),
-          List(List(
-            obj
-          ))))
-    }
-
-  final def NotNull(tree:Tree)(implicit typer : Typer) =
-    typer.typed {
-      Apply(Select(tree, nme.ne), List(Literal(Constant(null))))
-    }
-
-  final def Get(tree : Tree)
-      = Apply(Select(tree, nme.get), List())
+  final def NotNull(tree: Tree)(implicit typer : Typer) = typer.typed(fn(tree, nme.ne, NULL))
+  final def Get(tree: Tree) = fn(tree, nme.get)
 
   // statistics
   var nremoved = 0

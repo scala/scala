@@ -308,7 +308,7 @@ trait ParallelMatching  {
         if (uacall.symbol.tpe.typeSymbol eq definitions.BooleanClass)
           typer.typed{ mkIdent(uacall.symbol) }
         else
-          emptynessCheck(uacall.symbol)
+          nonEmptinessCheck(uacall.symbol)
       typer.typed { squeezedBlock(List(rep.handleOuter(uacall)), If(cond,squeezedBlock(vdefs,succ),fail)) }
     }
   }
