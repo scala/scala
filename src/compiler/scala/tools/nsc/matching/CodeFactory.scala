@@ -37,17 +37,6 @@ trait CodeFactory {
     val FALSE = Const(false)
     val NULL  = Const(null)
 
-    // I am guessing implicits and object creation are prohibitively expensive in the
-    // compiler to achieve syntax improvement, but if someone wanted to add methods such
-    // as these to Tree directly, it would enable much more readable code generation.
-    // Combinators would be even better, but also too expensive (?)
-    //
-    // class RichTree(t: Tree) {
-    //   def ===(rhs: Tree) = Equals(t, rhs)
-    //   def GTE(rhs: Tree) = GreaterThanOrEquals(t, rhs)
-    // }
-    // implicit def enrichTree(t: Tree) = new RichTree(t)
-
     object Const {
       def apply(x: Any) = Literal(Constant(x))
       def unapply(x: Any) = x match {
@@ -68,14 +57,6 @@ trait CodeFactory {
 
   final def mkIdent(sym: Symbol)  = Ident(sym) setType sym.tpe
   final def mk_(tpe: Type)        = Ident(nme.WILDCARD) setType tpe
-
-  /**
-   * Convert a pattern binding into a list of value definitions.
-   */
-  final def targetParams(subst:Binding)(implicit typer : Typer):List[ValDef] = subst match {
-    case NoBinding => Nil;
-    case Binding(v,t,n) => ValDef(v, typer.typed(mkIdent(t)))::targetParams(n)
-  }
 
   /** returns A for T <: Sequence[ A ]
    */

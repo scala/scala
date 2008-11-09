@@ -122,13 +122,13 @@ trait ParallelMatching  {
   }
 
   /**  {case ... if guard => bx} else {guardedRest} */
-  case class VariableRule(subst:Binding, guard: Tree, guardedRest:Rep, bx: Int)(implicit rep:RepFactory) extends RuleApplication(rep) {
+  case class VariableRule(subst: Bindings, guard: Tree, guardedRest: Rep, bx: Int)(implicit rep:RepFactory) extends RuleApplication(rep) {
     def scrutinee: Symbol = impossible
     final def tree(implicit theOwner: Symbol, failTree: Tree): Tree = {
       val body = typer.typed { rep.requestBody(bx, subst) }
       if (guard eq EmptyTree)
         return body
-      val vdefs = targetParams(subst)
+      val vdefs = subst.targetParams
       val typedElse = repToTree(guardedRest)
       val typedIf = typer.typed { If(guard.duplicate, body, typedElse) }
 
@@ -192,8 +192,8 @@ trait ParallelMatching  {
     }
 
     //lazy
-    private def bindVars(Tag:Int, orig: Binding): Binding  = {
-      def myBindVars(rest:List[(Int,List[Symbol])], bnd: Binding): Binding  = rest match {
+    private def bindVars(Tag: Int, orig: Bindings): Bindings  = {
+      def myBindVars(rest:List[(Int,List[Symbol])], bnd: Bindings): Bindings  = rest match {
         case Nil => bnd
         case (Tag,vs)::xs => myBindVars(xs, bnd.add(vs, scrutinee))
         case (_,  vs)::xs => myBindVars(xs, bnd)
@@ -587,10 +587,10 @@ trait ParallelMatching  {
   final def repToTree(r: Rep)(implicit theOwner: Symbol, failTree: Tree, rep: RepFactory): Tree =
     r.applyRule.tree
 
-  case class Row(pat:List[Tree], subst: Binding, guard: Tree, bx: Int) {
+  case class Row(pat: List[Tree], subst: Bindings, guard: Tree, bx: Int) {
     def insert(h: Tree) = Row(h :: pat, subst, guard, bx)                   // prepends supplied tree
     def insert(hs: List[Tree]) = Row(hs ::: pat, subst, guard, bx)
-    def insert2(hs: List[Tree], b: Binding) = Row(hs ::: pat, b, guard, bx) // prepends and substitutes
+    def insert2(hs: List[Tree], b: Bindings) = Row(hs ::: pat, b, guard, bx) // prepends and substitutes
     def replace(hs: List[Tree]) = Row(hs, subst, guard, bx)                 // replaces pattern list
   }
 
@@ -654,7 +654,7 @@ trait ParallelMatching  {
     /** first time bx is requested, a LabelDef is returned. next time, a jump.
      *  the function takes care of binding
      */
-    final def requestBody(bx:Int, subst:Binding)(implicit theOwner: Symbol): Tree = {
+    final def requestBody(bx: Int, subst: Bindings)(implicit theOwner: Symbol): Tree = {
       if (bx < 0) { // is shortcut
         val jlabel = shortCuts(-bx-1)
         return Apply(mkIdent(jlabel), Nil)
@@ -662,7 +662,7 @@ trait ParallelMatching  {
       if (!isReached(bx)) { // first time this bx is requested
         // might be bound elsewhere ( see `x @ unapply' ) <-- this comment refers to null check
         val (vsyms, argts, vdefs) : (List[Symbol], List[Type], List[Tree]) = unzip3(
-          for (v <- vss(bx) ; val substv = subst(v) ; if substv ne null) yield
+          for (v <- vss(bx) ; substv <- subst(v)) yield
             (v, v.tpe, typedValDef(v, substv))
         )
 
@@ -680,7 +680,7 @@ trait ParallelMatching  {
 
       // if some bx is not reached twice, its LabelDef is replaced with body itself
       markReachedTwice(bx)
-      val args: List[Ident] = vss(bx).map(subst)
+      val args: List[Ident] = vss(bx).flatMap(subst(_))
       val label = labels(bx)
       val body = targets(bx)
       val MethodType(fmls, _) = label.tpe
@@ -698,7 +698,7 @@ trait ParallelMatching  {
 
       body match {
         case _: Throw | _: Literal =>       // might be bound elsewhere (see `x @ unapply')
-          val vdefs = for (v <- vss(bx) ; val substv = subst(v) ; if substv ne null) yield typedValDef(v, substv)
+          val vdefs = for (v <- vss(bx) ; substv <- subst(v)) yield typedValDef(v, substv)
           squeezedBlock(vdefs, body.duplicate setType resultType)
         case _ =>
           Apply(mkIdent(label),args)

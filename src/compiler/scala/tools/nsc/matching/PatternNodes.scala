@@ -12,8 +12,10 @@ import scala.tools.nsc.util.{Position, NoPosition}
  *  @author Burak Emir
  */
 trait PatternNodes { self: transform.ExplicitOuter =>
-  import global._
+  import global.{typer => _, _}
+  import analyzer.Typer;
   import symtab.Flags
+
   final def DBG(x: => String)   = if (settings.debug.value) Console.println(x)
 
   final def getDummies(i: Int): List[Tree] = List.make(i, EmptyTree)
@@ -115,27 +117,24 @@ trait PatternNodes { self: transform.ExplicitOuter =>
 
   /** pvar: the symbol of the pattern variable
    *  temp: the temp variable that holds the actual value
-   *  next: next binding
    */
-  case class Binding(pvar:Symbol, temp:Symbol, private val next: Binding) extends Function1[Symbol, Ident]{
-    def add(vs : Iterable[Symbol], temp : Symbol): Binding =
-      vs.foldLeft(this)((x, y) => Binding(y, temp, x))
+  case class Binding(pvar: Symbol, temp: Symbol)
 
-    /** this is just to produce debug output, ListBuffer needs an equals method?! */
-    override def equals(x:Any) = {
-      x match {
-        case NoBinding               => false
-        case Binding(pv2,tmp2,next2) => (pvar eq pv2) && (temp eq tmp2) && (next==next2)
-      }
+  case class Bindings(bindings: Binding*) extends Function1[Symbol, Option[Ident]] {
+    def add(vs: Iterable[Symbol], temp: Symbol): Bindings =
+      Bindings(vs.toList.map(Binding(_, temp)) ++ bindings : _*)
+
+    def apply(v: Symbol): Option[Ident] = bindings.find(_.pvar eq v) match {
+      case Some(b)  => Some(Ident(b.temp) setType v.tpe)
+      case None     => None // abort("Symbol " + v + " has no binding in " + bindings)
     }
-    def apply(v:Symbol): Ident = {
-      if (v eq pvar) Ident(temp).setType(v.tpe) else next(v)
-    }
+
+    /**
+     * The corresponding list of value definitions.
+     */
+    final def targetParams(implicit typer: Typer): List[ValDef] =
+      bindings.toList.map{ case Binding(v, t) => ValDef(v, typer.typed(mkIdent(t))) }
   }
 
-  object NoBinding extends Binding(null, null, null) {
-    override def apply(v:Symbol) = null // not found, means bound elsewhere (x @ unapply-call)
-    override def toString = "."
-    override def equals(x:Any) = x.isInstanceOf[Binding] && (x.asInstanceOf[Binding] eq this)
-  }
+  val NoBinding: Bindings = Bindings()
 }
