@@ -10,7 +10,8 @@ object MatchUtil
 {
   import collection.mutable.ListBuffer
 
-  def impossible: Nothing = throw new RuntimeException("this never happens")
+  def impossible:           Nothing = abort("this never happens")
+  def abort(msg: String):   Nothing = throw new RuntimeException(msg)
 
   object Implicits {
     implicit def listPlusOps[T](xs: List[T]) = new ListPlus(xs)

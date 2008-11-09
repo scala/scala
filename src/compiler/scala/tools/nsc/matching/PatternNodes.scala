@@ -22,10 +22,8 @@ trait PatternNodes { self: transform.ExplicitOuter =>
     if (vs eq Nil) pat else Bind(vs.head, makeBind(vs.tail, pat)) setType pat.tpe
 
   def normalizedListPattern(pats:List[Tree], tptArg:Type): Tree = pats match {
-    case Nil   => gen.mkAttributedRef(definitions.NilModule)
-    case (sp @ Strip(_, _: Star)) :: xs => makeBind(definedVars(sp), Ident(nme.WILDCARD) setType sp.tpe)
-    // case sp::xs if strip2(sp).isInstanceOf[Star] =>
-    //   makeBind(definedVars(sp), Ident(nme.WILDCARD) setType sp.tpe)
+    case Nil   => gen.mkNil
+    case (sp @ Strip(_, _: Star)) :: xs => makeBind(definedVars(sp), mk_(sp.tpe))
     case x::xs =>
       var resType: Type = null;
       val consType: Type = definitions.ConsClass.primaryConstructor.tpe match {
@@ -35,7 +33,7 @@ trait PatternNodes { self: transform.ExplicitOuter =>
 
           MethodType(List(tptArg, listType), resType)
       }
-      Apply(TypeTree(consType),List(x,normalizedListPattern(xs,tptArg))).setType(resType)
+      Apply(TypeTree(consType), List(x,normalizedListPattern(xs,tptArg))) setType resType
   }
 
   object Apply_Value {
@@ -50,11 +48,11 @@ trait PatternNodes { self: transform.ExplicitOuter =>
   }
 
   object __UnApply {
-    def unapply(x:Tree) = strip(x) match {
-      case (vs, UnApply(Apply(fn, _), args)) =>
+    def unapply(x: Tree) = x match {
+      case Strip(vs, UnApply(Apply(fn, _), args)) =>
         val argtpe = fn.tpe.asInstanceOf[MethodType].paramTypes.head
-        Some(Tuple3(vs,argtpe,args))
-      case _                      => None
+        Some((vs, argtpe, args))
+      case _ => None
     }
   }
 
@@ -64,9 +62,8 @@ trait PatternNodes { self: transform.ExplicitOuter =>
    * test, it is returned as is.
    */
   def patternType_wrtEquals(pattpe:Type) = pattpe match {
-    case TypeRef(_,sym,arg::Nil) if sym eq definitions.EqualsPatternClass =>
-      arg
-    case x => x
+    case TypeRef(_, sym, arg::Nil) if sym eq definitions.EqualsPatternClass => arg
+    case _                                                                  => pattpe
   }
 
   /** returns if pattern can be considered a no-op test ??for expected type?? */
@@ -85,15 +82,13 @@ trait PatternNodes { self: transform.ExplicitOuter =>
    */
   final def strip(x: Tree): (Set[Symbol], Tree) = x match {
     case b @ Bind(_,pat) => val (vs, p) = strip(pat); (vs + b.symbol, p)
-    case z               => (emptySymbolSet, z)
+    case _               => (emptySymbolSet, x)
   }
-
   final def strip1(x: Tree): Set[Symbol] = strip(x)._1
   final def strip2(x: Tree): Tree = strip(x)._2;
 
-  object Strip {
-    def unapply(x: Tree): Option[(Set[Symbol], Tree)] = Some(strip(x))
-  }
+  object Strip  { def unapply(x: Tree): Option[(Set[Symbol], Tree)] = Some(strip(x))  }
+  object Strip2 { def unapply(x: Tree): Option[Tree]                = Some(strip2(x)) }
 
   final def isCaseClass(tpe: Type): Boolean =
     tpe.typeSymbol hasFlag Flags.CASE

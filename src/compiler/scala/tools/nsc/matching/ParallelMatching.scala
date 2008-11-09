@@ -58,8 +58,8 @@ trait ParallelMatching  {
         case _ => false;
       }
 
-      (isSameType(scrutinee.tpe.widen, definitions.IntClass.tpe) ||
-       isSameType(scrutinee.tpe.widen, definitions.CharClass.tpe)) &&
+      ((scrutinee.tpe.widen =:= definitions.IntClass.tpe) ||
+       (scrutinee.tpe.widen =:= definitions.CharClass.tpe)) &&
         column.init.forall(simpleSwitchCandidate) && {
           val last = column.last;
           // TODO: This needs to also allow the case that the last is a compatible
@@ -234,7 +234,7 @@ trait ParallelMatching  {
   class MixUnapply(val scrutinee: Symbol, val column: List[Tree], val rest: Rep)(implicit rep: RepFactory)
   extends RuleApplication(rep) {
     val (vs, unapp) = strip(column.head)
-    lazy val ua @ UnApply(app @ Apply(fn, appargs), args) = unapp
+    lazy val ua @ UnApply(app @ Apply(fxn, appargs), args) = unapp
 
     def newVarCapture(pos:Position,tpe:Type)(implicit theOwner:Symbol) = {
       val v = newVar(pos,tpe)
@@ -246,19 +246,19 @@ trait ParallelMatching  {
     final def getTransition(implicit theOwner: Symbol): (Tree, List[Tree], Rep, Option[Rep]) = {
       object sameUnapplyCall {
         def unapply(t: Tree) = t match {
-          case UnApply(Apply(fn1,_), differentArgs) if (fn.symbol == fn1.symbol) && fn.equalsStructure(fn1) =>
+          case UnApply(Apply(fn1,_), differentArgs) if (fxn.symbol == fn1.symbol) && fxn.equalsStructure(fn1) =>
             Some(differentArgs)
           case _ =>
             None
         }
       }
       val ures = newVarCapture(ua.pos, app.tpe)
-      val rhs = Apply(fn, mkIdent(scrutinee) :: appargs.tail) setType ures.tpe
+      val rhs = Apply(fxn, mkIdent(scrutinee) :: appargs.tail) setType ures.tpe
       val uacall = typedValDef(ures, rhs)
-      val zipped = column.zip(rest.row)
-      val nrowsOther = zipped.tail.flatMap { case (pat, r) =>
-        strip2(pat) match { case sameUnapplyCall(_) => Nil ; case _ => List(r.insert(pat)) }
-      }
+      val zipped = column zip rest.row
+      val nrowsOther = zipped.tail flatMap
+        { case (Strip2(sameUnapplyCall(_)), _) => Nil ; case (pat, r) => List(r.insert(pat)) }
+
       val nrepFail =
         if (nrowsOther.isEmpty) None
         else Some(rep.make(scrutinee::rest.temp, nrowsOther))
@@ -267,8 +267,8 @@ trait ParallelMatching  {
         (uacall, vdefs, rep.make(ntemps ::: scrutinee :: rest.temp, nrows), nrepFail)
 
       def mkNewRows(sameFilter: (List[Tree]) => List[Tree], defaultTrees: List[Tree]) =
-        for ((pat, r) <- zipped) yield strip2(pat) match {
-          case sameUnapplyCall(args)  => r.insert2(sameFilter(args) ::: List(EmptyTree), r.subst.add(strip1(pat), scrutinee))
+        for ((pat @ Strip(vs, p), r) <- zipped) yield p match {
+          case sameUnapplyCall(args)  => r.insert2(sameFilter(args) ::: List(EmptyTree), r.subst.add(vs, scrutinee))
           case _                      => r.insert(defaultTrees ::: List(pat))
         }
 
@@ -292,7 +292,7 @@ trait ParallelMatching  {
             for ((vtpe, i) <- ts.zip((1 to ts.size).toList)) yield {
               val vchild = newVarCapture(ua.pos, vtpe)
               val accSym = definitions.productProj(uresGet, i)
-              val rhs = typer.typed(Apply(Select(mkIdent(uresGet), accSym), Nil))
+              val rhs = typer.typed(Code.fn(mkIdent(uresGet), accSym))
 
               (typedValDef(vchild, rhs), vchild)
             })
@@ -350,12 +350,7 @@ trait ParallelMatching  {
     def getTransition(implicit theOwner: Symbol): (Tree => Tree => Tree, Rep, Rep) = {
       assert(isSubType(scrutinee.tpe, column.head.tpe), "problem "+scrutinee.tpe+" not <: "+column.head.tpe)
 
-      val treeAsSeq =
-        if (!isSubType(scrutinee.tpe, column.head.tpe))
-          typer.typed(gen.mkAsInstanceOf(mkIdent(scrutinee), column.head.tpe, true))
-        else
-          mkIdent(scrutinee)
-
+      val treeAsSeq = mkIdent(scrutinee)          // scrutinee.tpe <:< column.head.tpe confirmed by assertion
       val av @ ArrayValue(_, xs) = column.head
       val ys = if (isRightIgnoring(av)) xs.init else xs
       val vs = ys map(y => newVar(strip2(y).pos, elementType))
@@ -398,7 +393,7 @@ trait ParallelMatching  {
     // in principle, we could optimize more, but variable binding gets complicated (@todo use finite state methods instead)
     override def getSubPatterns(minlen:Int, x:Tree) = x match {
       case av @ ArrayValue(_,xs) if (!isRightIgnoring(av) && xs.length   == minlen) =>  // Seq(p1,...,pN)
-        Some(xs ::: gen.mkAttributedRef(definitions.NilModule)  :: EmptyTree :: Nil)
+        Some(xs ::: gen.mkNil :: EmptyTree :: Nil)
       case av @ ArrayValue(_,xs) if ( isRightIgnoring(av) && xs.length-1 == minlen) =>  // Seq(p1,...,pN,_*)
         Some(                                   removeStar(xs) ::: EmptyTree :: Nil)
       case av @ ArrayValue(_,xs) if ( isRightIgnoring(av) && xs.length-1  < minlen) =>  // Seq(p1..,pJ,_*)   J < N
@@ -422,7 +417,6 @@ trait ParallelMatching  {
   class MixEquals(val scrutinee: Symbol, val column: List[Tree], val rest: Rep)(implicit rep: RepFactory) extends RuleApplication(rep) {
     /** condition (to be used in IF), success and failure Rep */
     final def getTransition(implicit theOwner: Symbol): (Tree, Rep, Symbol, Rep) = {
-      val nmatrix = rest
       val vlue = (column.head.tpe: @unchecked) match {
         case TypeRef(_,_,List(SingleType(pre,sym))) => gen.mkAttributedRef(pre,sym)
         case TypeRef(_,_,List(PseudoType(o)))       => o.duplicate
@@ -438,7 +432,7 @@ trait ParallelMatching  {
       val nsucc = rep.make(scrutinee :: rest.temp, nsuccRow)
       val nfail = repWithoutHead(column, rest)
 
-      (typer.typed(Equals(mkIdent(scrutinee) setType scrutinee.tpe, vlue)), nsucc, fLabel, nfail)
+      (typer.typed(Equals(mkIdent(scrutinee), vlue)), nsucc, fLabel, nfail)
     }
 
     final def tree(implicit theOwner: Symbol, failTree: Tree) = {
@@ -446,20 +440,14 @@ trait ParallelMatching  {
       val cond2 = typer.typed( rep.handleOuter(cond) )
       val fail = typer.typed( repToTree(frep) )
       fLabel setInfo MethodType(Nil, fail.tpe)
-      val succ = repToTree(srep)
-      typer.typed( If(cond2, succ, LabelDef(fLabel, Nil, fail)) )
+
+      typer.typed( If(cond2, repToTree(srep), LabelDef(fLabel, Nil, fail)) )
     }
   }
 
   /** mixture rule for type tests
   **/
   class MixTypes(val scrutinee: Symbol, val column: List[Tree], val rest: Rep)(implicit rep: RepFactory) extends RuleApplication(rep) {
-    // TODO: this flag is never examined
-    val isExhaustive = !scrutinee.tpe.typeSymbol.hasFlag(Flags.SEALED) || {
-      val tpes = column.map(x => x.tpe.typeSymbol)
-      scrutinee.tpe.typeSymbol.children.forall(sym => tpes.contains(sym))
-    }
-
     private val headPatternType     = strip2(column.head) match {
       case p @ (_:Ident | _:Select) => singleType(p.symbol.tpe.prefix, p.symbol) //should be singleton object
       case __UnApply(_,argtpe,_)    => argtpe
@@ -573,11 +561,7 @@ trait ParallelMatching  {
 
     final def tree(implicit theOwner: Symbol, failTree: Tree): Tree = {
       val (casted, srep, frep) = this.getTransition
-      val condUntyped = condition(casted.tpe, this.scrutinee)
-      var cond = rep.handleOuter(typer.typed { condUntyped })
-      if (needsOuterTest(casted.tpe, this.scrutinee.tpe, theOwner)) {  // @todo merge into def condition
-        cond = addOuterCondition(cond, casted.tpe, mkIdent(this.scrutinee), rep.handleOuter)
-      }
+      val cond = condition(casted.tpe, this.scrutinee)
       val succ = repToTree(srep)
       val fail = frep.map(repToTree) getOrElse failTree
 
@@ -586,7 +570,7 @@ trait ParallelMatching  {
       val caseTemps = (if (!srep.temp.isEmpty && srep.temp.head == casted) srep.temp.tail else srep.temp).zip(cfa)
 
       var vdefs = for ((tmp, accessorMethod) <- caseTemps) yield {
-        val untypedAccess = Apply(Select(mkIdent(casted), accessorMethod), Nil)
+        val untypedAccess = Code.fn(mkIdent(casted), accessorMethod)
         val typedAccess = typer.typed(untypedAccess)
         typedValDef(tmp, typedAccess)
       }
@@ -737,7 +721,7 @@ trait ParallelMatching  {
         (strippedPat: @unchecked) match {
           case p @ Alternative(ps) =>
             DBG("Alternative") ; opat
-          case typat @ Typed(p, tpt) if strip2(p).isInstanceOf[UnApply]=>
+          case typat @ Typed(p @ Strip2(_: UnApply), tpt) =>
             DBG("Typed")
             if (temp(j).tpe <:< tpt.tpe) makeBind(vs, p) else opat
 
@@ -746,15 +730,12 @@ trait ParallelMatching  {
           case o @ Ident(n) => // n != nme.WILDCARD
             DBG("Ident")
             val tpe = equalsCheck(o)
-            val p = Ident(nme.WILDCARD) setType tpe
-            val q = Typed(p, TypeTree(tpe)) setType tpe
-            makeBind(vs, q) setType tpe
+            makeBind(vs, Typed(mk_(tpe), TypeTree(tpe)) setType tpe)
 
           case o @ Select(stor,_) =>
             DBG("Select")
             val stpe = equalsCheck(o)
-            val p = Ident(nme.WILDCARD) setType stpe
-            makeBind(vs, Typed(p, TypeTree(stpe)) setType stpe) setType stpe
+            makeBind(vs, Typed(mk_(stpe), TypeTree(stpe)) setType stpe)
 
           case UnApply(Apply(TypeApply(sel @ Select(stor, nme.unapplySeq), List(tptArg)),_),ArrayValue(_,xs)::Nil)
           if (stor.symbol eq definitions.ListModule) =>
@@ -773,7 +754,7 @@ trait ParallelMatching  {
           case ua @ UnApply(Apply(fn, _), _) =>
             DBG("Unapply(Apply())")
             val MethodType(List(argtpe, _*), _) = fn.tpe
-            val npat = if (temp(j).tpe <:< argtpe) ua else Typed(ua, TypeTree(argtpe)).setType(argtpe)
+            val npat = if (temp(j).tpe <:< argtpe) ua else Typed(ua, TypeTree(argtpe)) setType argtpe
             makeBind(vs, npat) setType argtpe
 
           case o @ Apply(fn, Nil) if !isCaseClass(o.tpe) || /*see t301*/ !Apply_Value.unapply(o).isEmpty =>
@@ -789,8 +770,7 @@ trait ParallelMatching  {
               case o: Ident => equalsCheck(o)
             }
             val ttst = typeRef(NoPrefix, definitions.EqualsPatternClass, List(stpe))
-            val p = Ident(nme.WILDCARD) setType ttst
-            makeBind(vs, Typed(p, TypeTree(stpe)) setType ttst)
+            makeBind(vs, Typed(mk_(ttst), TypeTree(stpe)) setType ttst)
 
           case Apply_Value(pre, sym) =>
             DBG("Apply_Value")
@@ -824,7 +804,7 @@ trait ParallelMatching  {
         val Row(opats, subst, g, bx) = xx
         val indexOfAlternative = opats.findIndexOf(isAlternative)
         if (indexOfAlternative != -1) unchanged = false
-        val pats: List[Tree] = opats.zipWithIndex.map { case (opat, j) => classifyPat(opat, j) }
+        val pats: List[Tree] = List.map2(opats, opats.indices)(classifyPat)
 
         if (indexOfAlternative == -1) List(xx.replace(pats))
         else {
@@ -833,7 +813,6 @@ trait ParallelMatching  {
         }
       }
 
-      // if (unchanged) RepImpl(temp, row).init
       if (unchanged) Rep(temp, row).init else make(temp, row) // recursive call
     }
   }
@@ -980,51 +959,45 @@ trait ParallelMatching  {
 
   /** returns the condition in "if (cond) k1 else k2"
    */
-  final def condition(tpe: Type, scrut: Symbol)(implicit typer : Typer): Tree = {
+  final def condition(tpe: Type, scrut: Symbol)(implicit typer: Typer, theOwner: Symbol, rep: RepFactory): Tree = {
     assert(scrut ne NoSymbol)
-    condition(tpe, mkIdent(scrut))
+    val cond = rep.handleOuter(typer.typed(condition(tpe, mkIdent(scrut))))
+
+    if (!needsOuterTest(tpe, scrut.tpe, theOwner)) cond
+    else addOuterCondition(cond, tpe, mkIdent(scrut), rep.handleOuter)
   }
 
   final def condition(tpe: Type, scrutineeTree: Tree)(implicit typer : Typer): Tree = {
     assert((tpe ne NoType) && (scrutineeTree.tpe ne NoType))
+    lazy val equalsRef      = Equals(gen.mkAttributedRef(tpe.termSymbol), scrutineeTree)
+    lazy val isInst         = gen.mkIsInstanceOf(scrutineeTree, tpe)
+    def isAnyRef(t: Type)   = t <:< definitions.AnyRefClass.tpe
 
     tpe match {
       case _: SingletonType if !tpe.isInstanceOf[ConstantType] =>
-        lazy val equalsRef = Equals(gen.mkAttributedRef(tpe.termSymbol), scrutineeTree)
-        if (tpe.termSymbol.isModule) equalsRef      // object
-        else if (tpe.prefix ne NoPrefix) typer.typed(gen.mkIsInstanceOf(scrutineeTree, tpe))
-        else typer.typed(equalsRef)
-
+        if (tpe.termSymbol.isModule)                                equalsRef             // object
+        else if (tpe.prefix ne NoPrefix)                            typer.typed(isInst)
+        else                                                        typer.typed(equalsRef)
       case ct: ConstantType => ct.value match {     // constant
-          case v @ Constant(null) if scrutineeTree.tpe <:< definitions.AnyRefClass.tpe => Eq(scrutineeTree, Literal(v))
-          case v => Equals(scrutineeTree, Literal(v))
+          case v @ Constant(null) if isAnyRef(scrutineeTree.tpe)  => Eq(scrutineeTree, Literal(v))
+          case v                                                  => Equals(scrutineeTree, Literal(v))
         }
-      case _ if scrutineeTree.tpe <:< tpe && tpe <:< definitions.AnyRefClass.tpe =>
-        NotNull(scrutineeTree)
-      case _ =>
-        gen.mkIsInstanceOf(scrutineeTree, tpe)
+      case _ if scrutineeTree.tpe <:< tpe && isAnyRef(tpe)        => NotNull(scrutineeTree)
+      case _                                                      => gen.mkIsInstanceOf(scrutineeTree, tpe)
     }
   }
 
   /** adds a test comparing the dynamic outer to the static outer */
   final def addOuterCondition(cond:Tree, tpe2test: Type, scrutinee: Tree, handleOuter: Tree=>Tree) = {
-    val TypeRef(prefix,_,_) = tpe2test
-    assert(prefix ne NoPrefix)
-    var theRef = prefix match {
-      case ThisType(clazz) => gen.mkAttributedThis(clazz)
-      case _               => gen.mkAttributedRef(prefix.prefix, prefix.termSymbol)
+    val theRef = handleOuter(tpe2test match {
+      case TypeRef(NoPrefix, _, _)          => abort("assertion failed: NoPrefix")
+      case TypeRef(ThisType(clazz), _, _)   => gen.mkAttributedThis(clazz)
+      case TypeRef(prefix, _, _)            => gen.mkAttributedRef(prefix.prefix, prefix.termSymbol)
+    })
+
+    outerAccessor(tpe2test.typeSymbol) match {
+      case NoSymbol => if (settings.debug.value) cunit.warning(scrutinee.pos, "no outer acc for "+tpe2test.typeSymbol) ; cond
+      case outerAcc => And(cond, Eq(Code.fn(gen.mkAsInstanceOf(scrutinee, tpe2test, true), outerAcc), theRef))
     }
-    // needs explicitouter treatment
-    theRef = handleOuter(theRef)
-
-    val outerAcc = outerAccessor(tpe2test.typeSymbol)
-    if (outerAcc == NoSymbol) {
-      if (settings.debug.value) cunit.warning(scrutinee.pos, "no outer acc for "+tpe2test.typeSymbol)
-      cond
-    } else
-      And(cond,
-          Eq(Apply(Select(
-            gen.mkAsInstanceOf(scrutinee, tpe2test, true), outerAcc), Nil), theRef))
   }
-
 }
