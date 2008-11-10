@@ -1903,6 +1903,15 @@ A type's typeSymbol should never be inspected directly.
        }
     }
 
+    // ** Replace formal type parameter symbols with actual type arguments. * /
+    override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) = {
+      val attributes1 = attributes.map(info => AnnotationInfo(info.atp.instantiateTypeParams(
+          formals, actuals), info.args, info.assocs))
+      val underlying1 = underlying.instantiateTypeParams(formals, actuals)
+      if ((attributes1 eq attributes) && (underlying1 eq underlying)) this
+      else AnnotatedType(attributes1, underlying1, selfsym)
+    }
+
     /** Return the base type sequence of tp, dropping the annotations, unless the base type sequence of tp
       * is precisely tp itself. */
     override def baseTypeSeq: BaseTypeSeq = {

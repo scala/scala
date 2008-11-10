@@ -64,6 +64,18 @@ trait Variances {
     v
   }
 
+  /** Compute variance of type parameter `tparam' in all type annotations `attribs'. */
+  def varianceInAttribs(attribs: List[AnnotationInfo])(tparam: Symbol): Int = {
+    (VARIANCES /: attribs) ((v, attrib) => v & varianceInAttrib(attrib)(tparam))
+  }
+
+  /** Compute variance of type parameter `tparam' in type annotation `attrib'. */
+  def varianceInAttrib(attrib: AnnotationInfo)(tparam: Symbol): Int = {
+    varianceInType(attrib.atp)(tparam)
+  }
+
+
+
   /** Compute variance of type parameter <code>tparam</code> in type <code>tp</code>. */
   def varianceInType(tp: Type)(tparam: Symbol): Int = tp match {
     case ErrorType | WildcardType | NoType | NoPrefix | ThisType(_) | ConstantType(_) =>
@@ -84,6 +96,6 @@ trait Variances {
     case ExistentialType(tparams, restpe) =>
       varianceInSyms(tparams)(tparam) & varianceInType(restpe)(tparam)
     case AnnotatedType(attribs, tp, _) =>
-      varianceInType(tp)(tparam)
+      varianceInAttribs(attribs)(tparam) & varianceInType(tp)(tparam)
   }
 }
