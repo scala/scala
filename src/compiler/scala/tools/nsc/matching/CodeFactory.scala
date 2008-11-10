@@ -97,17 +97,11 @@ trait CodeFactory {
   final def Eq      (left: Tree, right: Tree): Tree = fn(left, nme.eq, right)
   final def GTE     (left: Tree, right: Tree): Tree = fn(left, nme.GE, right) // >=
 
-  final def Not(arg: Tree) = arg match {
-    case TRUE   => FALSE
-    case FALSE  => TRUE
-    case t      => Select(arg, NOT)
-  }
+  final def Not(arg: Tree) =
+    Select(arg, NOT)
 
-  final def And(left: Tree, right: Tree): Tree = (left, right) match {
-    case (Const(value: Boolean), _) => if (value) right else left
-    case (_, TRUE)                  => left
-    case _                          => fn(left, AND, right)
-  }
+  final def And(left: Tree, right: Tree): Tree =
+    fn(left, AND, right)
 
   final def ThrowMatchError(pos: Position, obj: Tree) = atPos(pos) {
     Throw( New(TypeTree(MatchErrorClass.tpe), List(List(obj))) )

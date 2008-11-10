@@ -133,7 +133,9 @@ trait PatternNodes { self: transform.ExplicitOuter =>
      * The corresponding list of value definitions.
      */
     final def targetParams(implicit typer: Typer): List[ValDef] =
-      bindings.toList.map{ case Binding(v, t) => ValDef(v, typer.typed(mkIdent(t))) }
+      bindings.toList.map{ case Binding(v, t) => ValDef(v,
+        typer.typed{if(t.tpe <:< v.tpe) mkIdent(t)
+                    else gen.mkAsInstanceOf(mkIdent(t), v.tpe)})}
   }
 
   val NoBinding: Bindings = Bindings()
