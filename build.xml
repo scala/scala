@@ -1038,7 +1038,7 @@ OPTIMISED COMPILER
       <srcfiles dir="${src.dir}/partest"/>
     </uptodate>
   </target>
-    
+
   <target name="optimised.partest" depends="optimised.pre-partest" unless="optimised.partest.available">
     <stopwatch name="optimised.partest.timer"/>
     <mkdir dir="${build-optimised.dir}/classes/partest"/>
@@ -1047,9 +1047,9 @@ OPTIMISED COMPILER
       destdir="${build-optimised.dir}/classes/partest"
       target="1.5" source="1.5">
       <classpath>
-      	<pathelement location="${build-optimised.dir}/classes/library"/>
-      	<pathelement location="${build-optimised.dir}/classes/compiler"/>
-      	<pathelement location="${build-optimised.dir}/classes/partest"/>
+        <pathelement location="${build-optimised.dir}/classes/library"/>
+        <pathelement location="${build-optimised.dir}/classes/compiler"/>
+        <pathelement location="${build-optimised.dir}/classes/partest"/>
       </classpath>
       <include name="**/*.java"/>
       <compilerarg line="${javac.args}"/>
@@ -1063,9 +1063,9 @@ OPTIMISED COMPILER
       maxmemory="${scalacfork.maxmemory}">
       <include name="**/*.scala"/>
       <compilationpath>
-      	<pathelement location="${build-optimised.dir}/classes/library"/>
-      	<pathelement location="${build-optimised.dir}/classes/compiler"/>
-      	<pathelement location="${build-optimised.dir}/classes/partest"/>
+        <pathelement location="${build-optimised.dir}/classes/library"/>
+        <pathelement location="${build-optimised.dir}/classes/compiler"/>
+        <pathelement location="${build-optimised.dir}/classes/partest"/>
         <pathelement location="${ant.jar}"/>
       </compilationpath>
     </scalacfork>
@@ -1078,7 +1078,6 @@ OPTIMISED COMPILER
     <stopwatch name="optimised.partest.timer" action="total"/>
   </target>
 
-
   <target name="optimised.pre-bin" depends="optimised.partest">
     <condition property="optimised.bin.available">
       <isset property="optimised.comp.available"/>
@@ -1087,8 +1086,8 @@ OPTIMISED COMPILER
 
   <target name="optimised.bin" depends="optimised.pre-bin" unless="optimised.bin.available">
     <path id="optimised.bin.classpath">
-    	<pathelement location="${build-optimised.dir}/classes/library"/>
-    	<pathelement location="${build-optimised.dir}/classes/compiler"/>
+      <pathelement location="${build-optimised.dir}/classes/library"/>
+      <pathelement location="${build-optimised.dir}/classes/compiler"/>
       <pathelement location="${fjbg.jar}"/>
       <pathelement location="${jline.jar}"/>
     </path>
@@ -1248,11 +1247,11 @@ DOCUMENTATION
     <delete dir="${build-docs.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
     <delete dir="${build.dir}/manmaker" includeemptydirs="yes" quiet="yes" failonerror="no"/>
   </target>
-  
+
 <!-- ===========================================================================
 BOOTRAPING TEST AND TEST SUITE
 ============================================================================ -->
-  
+
   <target name="test.stability" depends="strap.done">
     <same dir="${build-quick.dir}" todir="${build-strap.dir}" failondifferent="no">
       <exclude name="**/*.properties"/>
@@ -1340,7 +1339,7 @@ DISTRIBUTION
     <copy file="${src.dir}/swing/doc/README"
           toFile="${dist.dir}/doc/scala-devel-docs/README.scala-swing"/>
   </target>
-    
+
   <target name="dist.man" depends="dist.doc">
     <mkdir dir="${dist.dir}/man"/>
     <copy toDir="${dist.dir}/man">
@@ -1376,7 +1375,7 @@ DISTRIBUTION
   </target>
 
   <target name="dist.latest" depends="dist.latest.unix,dist.latest.win"/>
-  
+
   <target name="dist.done" depends="dist.latest"/>
 
   <target name="dist.clean">
