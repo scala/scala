@@ -21,6 +21,7 @@ missing combination             Gp
     def ma4(x:Deep) = x match { // missing cases: Gu, Gp
                       ^
 patmatexhaust.scala:53: warning: match is not exhaustive!
+missing combination             Gp
 
     def ma5(x:Deep) = x match { // Gp
                       ^

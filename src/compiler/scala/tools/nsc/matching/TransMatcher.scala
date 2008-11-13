@@ -45,6 +45,7 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
 
     implicit val theOwner = owner
     implicit val rep = new RepFactory(handleOuter)
+    val flags = if (doCheckExhaustive) Nil else List(Flags.TRANS_FLAG)
 
     def caseIsOk(c: CaseDef) = c match {
       case CaseDef(_: Apply, _, _)            => true
@@ -57,8 +58,9 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
       val Apply(fn, args) = app
       val (tmps, vds) = List.unzip(
         for ((ti, i) <- args.zipWithIndex) yield {
-          val v = newVar(ti.pos, cunit.fresh.newName(ti.pos, "tp"), selector.tpe.typeArgs(i))
-          if (!doCheckExhaustive) v setFlag Flags.TRANS_FLAG
+          // These type parameter vars were not being set as synthetic.
+          // Temporarily noted on the off chance it was intentional.
+          val v = newVar(ti.pos, cunit.fresh.newName(ti.pos, "tp"), selector.tpe.typeArgs(i), flags)
           (v, typedValDef(v, ti))
         }
       )
@@ -69,9 +71,7 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
     val (tmps, vds, theFailTree) = selector match {
       case app @ Apply(fn, _) if isTupleType(selector.tpe) && doApply(fn) => processApply(app)
       case _ =>
-        val root: Symbol      = newVar(selector.pos, selector.tpe)
-        if (!doCheckExhaustive)
-          root setFlag Flags.TRANS_FLAG
+        val root: Symbol      = newVar(selector.pos, selector.tpe, flags)
         val vdef: Tree        = typer.typed(ValDef(root, selector))
         val failTree: Tree    = ThrowMatchError(selector.pos, mkIdent(root))
         (List(root), List(vdef), failTree)
