@@ -1057,7 +1057,9 @@ trait Parsers extends NewScanners with MarkupParsers {
               t = (t /: annotations(false)) (makeAnnotated)
             } else {
               t = atPos(pos) {
-                val tpt = if (location != Local) compoundType(false) else typ()
+                val tpt =
+                  if (location != Local) infixType(false, InfixMode.FirstOp)
+                  else typ()
                 if (isWildcard(t))
                   (placeholderParams: @unchecked) match {
                     case (vd @ ValDef(mods, name, _, _)) :: rest =>
@@ -2272,7 +2274,7 @@ trait Parsers extends NewScanners with MarkupParsers {
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]]): Template = {
       val pos = inCurrentPos;
       val (parents0, argss, self, body) =
-        if (inToken == EXTENDS || settings.Xexperimental.value && (mods hasFlag TRAIT) && inToken == SUBTYPE) {
+        if (inToken == EXTENDS || settings.Xexperimental.value && (mods hasFlag Flags.TRAIT) && inToken == SUBTYPE) {
           inNextToken
           template(mods hasFlag Flags.TRAIT)
         } else {
