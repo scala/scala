@@ -36,7 +36,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     new Global(settings, reporter)
 
   def newGlobal(settings: Settings, logWriter: FileWriter): Global = {
-    val rep = new ExtConsoleReporter(new TestSettings(fileManager),
+    val rep = new ExtConsoleReporter(settings,
                                      Console.in,
                                      new PrintWriter(logWriter))
     rep.shortname = true
@@ -89,11 +89,11 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
       case "scalacheck" =>
         ScalaCheckTestFile(files(0), fileManager, out.isEmpty)
     }
-    test.defineSettings(testSettings)
+    test.defineSettings(command.settings)
     out match {
       case Some(outDir) =>
-        testSettings.outdir.value = outDir.getAbsolutePath
-        testSettings.classpath.value = testSettings.classpath.value+
+        command.settings.outdir.value = outDir.getAbsolutePath
+        command.settings.classpath.value = command.settings.classpath.value+
           File.pathSeparator+outDir.getAbsolutePath
       case None =>
         // do nothing
