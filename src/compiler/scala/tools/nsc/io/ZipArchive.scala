@@ -118,8 +118,9 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
              this.toString() + " - " + path);
       if (entry.isDirectory()) {
         val dir: DirEntry = getDir(dirs, path)
-        assert(dir.entry eq null, this.toString() + " - " + path)
-        dir.entry = entry
+        // this assertion causes an unnecessary bomb if a directory is twice listed in the jar
+        // assert(dir.entry eq null, this.toString() + " - " + path)
+        if (dir.entry eq null) dir.entry = entry
       } else {
         val index = path.lastIndexOf('/')
         val name = if (index < 0) path else path.substring(index + 1)
