@@ -131,7 +131,7 @@ abstract class BoxedArray extends Array.Array0[Any] {
       case a: AnyRef if ScalaRunTime.isArray(a) =>
         ScalaRunTime.boxArray(a).deepMkString(start, sep, end)
       case _ =>
-        x.toString
+        ScalaRunTime.stringOf(x)
     }
     val buf = new StringBuilder()
     buf.append(start)
