@@ -248,7 +248,7 @@ trait ParallelMatching  {
     }
 
     def haveDefault: Boolean          = !defaultIndexSet.isEmpty
-    lazy val defaultRows: List[Row]   = defaultIndexSet.toList reverseMap grabRow
+    def defaultRows: List[Row]   = defaultIndexSet.toList reverseMap grabRow
 
     protected var tagIndices = IntMap.empty[List[Int]]
     protected def grabRow(index: Int): Row = {
