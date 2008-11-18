@@ -18,4 +18,4 @@ package scala.runtime
  * signatures, it is erased to this one.
  */
 
-sealed abstract class Nothing$
+sealed abstract class Nothing$ extends Throwable

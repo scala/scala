@@ -1036,9 +1036,7 @@ abstract class GenICode extends SubComponent  {
             ctx.bb.emit(CALL_PRIMITIVE(Conversion(from, to)), pos);
         }
       } else if (from == SCALA_ALL) {
-        ctx.bb.emit(DROP(from))
-        ctx.bb.emit(getZeroOf(ctx.method.returnType))
-        ctx.bb.emit(RETURN(ctx.method.returnType))
+        ctx.bb.emit(THROW())
         ctx.bb.enterIgnoreMode
       } else if (from == SCALA_ALLREF) {
         ctx.bb.emit(DROP(from))
