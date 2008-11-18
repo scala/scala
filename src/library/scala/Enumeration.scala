@@ -130,6 +130,21 @@ abstract class Enumeration(initial: Int, names: String*) {
 
   override def toString(): String = updateCache.mkString("{", ", ", "}")
 
+  /** Returns a Value from this Enumeration whose name matches
+   * the argument <var>s</var>.
+   * You must pass a String* set of names to the constructor,
+   * or initialize each Enumeration with Value(String),
+   * for valueOf to work.
+   * @param s an enumeration name
+   * @return <tt>Some(Value)</tt> if an enumeration's name matches <var>s</var>,
+   * else <tt>None</tt>
+   */
+  def valueOf(s:String) = {
+    var v: Option[Value] = None
+    for( e <- elements ) if (s == e.toString()) v = Some(e)
+    v
+  }
+
   /** Creates a fresh value, part of this enumeration. */
   protected final def Value: Value =
     new Val(nextId, if (nextName.hasNext) nextName.next else null)
