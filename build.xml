@@ -19,6 +19,9 @@ END-USER TARGETS
   <target name="test" depends="test.done"
     description="Runs test suite and bootstrapping test on Scala compiler and library."/>
   
+  <target name="optimised.test" depends="optimised.test.done"
+    description="Runs test suite and bootstrapping test on the optimised Scala compiler and library."/>
+
   <target name="docs" depends="docs.done"
     description="Builds documentation for the Scala library. Scaladoc is in 'build/scaladoc/library'."/>
   
@@ -1120,7 +1123,15 @@ OPTIMISED COMPILER
     <touch file="${build-optimised.dir}/bin.complete" verbose="no"/>
   </target>
 
-  <target name="optimised.done" depends="optimised.bin"/>
+  <target name="optimised.done" depends="optimised.bin">
+    <path id="optimised.classpath">
+      <pathelement location="${build-optimised.dir}/classes/library"/>
+      <pathelement location="${build-optimised.dir}/classes/compiler"/>
+      <pathelement location="${build-optimised.dir}/classes/partest"/>
+      <pathelement location="${fjbg.jar}"/>
+      <pathelement location="${ant.jar}"/>
+    </path>
+  </target>
 
   <target name="optimised.clean">
     <delete dir="${build-optimised.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
@@ -1296,6 +1307,30 @@ BOOTRAPING TEST AND TEST SUITE
   </target>
   
   <target name="test.done" depends="test.suite, test.stability"/>
+
+  <target name="optimised.test.suite" depends="optimised.done">
+    <taskdef resource="scala/tools/partest/antlib.xml" classpathref="optimised.classpath"/>
+    <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
+             timeout="1200000" javaccmd="${javac.cmd}">
+      <classpath>
+        <path refid="optimised.classpath"/>
+        <fileset dir="${test.dir}/files/lib" includes="*.jar"/>
+      </classpath>
+      <postests  dir="${test.dir}/files/pos" includes="*.scala"/>
+      <pos5tests dir="${test.dir}/files/pos5" includes="*.scala"/>
+      <negtests  dir="${test.dir}/files/neg" includes="*.scala"/>
+      <runtests  dir="${test.dir}/files">
+        <include name="run/**/*.scala"/>
+        <include name="jvm/**/*.scala"/>
+        <include name="jvm5/**/*.scala"/>
+      </runtests>
+      <residenttests dir="${test.dir}/files/res" includes="*.res"/>
+      <!-- <scripttests dir="${test.dir}/files/script" includes="*.scala"/> -->
+    </partest>
+  </target>
+
+
+  <target name="optimised.test.done" depends="optimised.test.suite"/>
 
 <!-- ===========================================================================
 DISTRIBUTION
