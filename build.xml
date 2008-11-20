@@ -1062,7 +1062,8 @@ OPTIMISED COMPILER
       compilerpathref="locker.classpath"
       srcpath="${src.dir}/partest"
       params="${scalac.args}"
-      srcdir="${src.dir}/partest">
+      srcdir="${src.dir}/partest"
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-optimised.dir}/classes/library"/>
