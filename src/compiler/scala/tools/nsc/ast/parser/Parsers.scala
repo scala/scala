@@ -2503,7 +2503,7 @@ trait Parsers extends NewScanners with MarkupParsers {
 
     /** CompilationUnit ::= [package QualId semi] TopStatSeq
      */
-    def compilationUnit(): Tree = {
+    def compilationUnit(): Tree = checkNoEscapingPlaceholders {
       var pos = inCurrentPos;
       {
         val ts = new ListBuffer[Tree]
@@ -2528,8 +2528,6 @@ trait Parsers extends NewScanners with MarkupParsers {
         } else {
           ts ++= topStatSeq()
         }
-        assert(placeholderParams.isEmpty)
-        assert(placeholderTypes.isEmpty)
         val stats = ts.toList
         val usePos = if (stats.isEmpty || stats.head.pos == NoPosition) i2p(pos) else stats.head.pos
         atPos(usePos) { stats match {

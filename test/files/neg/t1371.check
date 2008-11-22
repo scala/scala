@@ -1,0 +1,4 @@
+t1371.scala:1: error: unbound wildcard type
+trait A[T <: (_)]
+              ^
+one error found
