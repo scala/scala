@@ -253,6 +253,7 @@ class Worker(val fileManager: FileManager) extends Actor {
       " -Dscalatest.lib="+LATEST_LIB+
       " -Dscalatest.cwd="+outDir.getParent+
       " -Djavacmd="+JAVACMD+
+      " -Duser.language=en -Duser.country=US"+
       " scala.tools.nsc.MainGenericRunner"+
       " Test jvm"
     NestUI.verbose(cmd)
