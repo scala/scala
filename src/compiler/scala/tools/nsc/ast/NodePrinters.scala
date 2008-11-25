@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2009 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -41,7 +41,7 @@ abstract class NodePrinters {
           if (comma) buf.append(",")
           buf.append(EOL)
         }
-        def annotationInfoToString(attr: AnnotationInfo) = {
+        def annotationInfoToString(attr: AnnotationInfo): String = {
           val str = new StringBuilder
           str.append(attr.atp.toString())
           if (!attr.args.isEmpty)
@@ -123,7 +123,7 @@ abstract class NodePrinters {
           (if (buf.length() > 2) buf.substring(3)
           else "0") + ", // flags=" + flagsToString(sym.flags) + attrs
         }
-        def nodeinfo(tree: Tree) =
+        def nodeinfo(tree: Tree): String =
           if (infolevel == InfoLevel.Quiet) ""
           else {
             val buf = new StringBuilder(" // sym=" + tree.symbol)
@@ -155,7 +155,7 @@ abstract class NodePrinters {
             }
             buf.toString
           }
-        def nodeinfo2(tree: Tree) =
+        def nodeinfo2(tree: Tree): String =
           (if (comma) "," else "") + nodeinfo(tree)
         tree match {
           case AppliedTypeTree(tpt, args) =>
@@ -200,13 +200,13 @@ abstract class NodePrinters {
           case Block(stats, expr) =>
             println("Block(" + nodeinfo(tree))
             if (stats.isEmpty)
-              println("  List() // no statement")
+              println("  List(), // no statement")
             else {
               val n = stats.length
               println("  List( // " + n + " statement(s)")
               for (i <- 0 until n)
                 traverse(stats(i), level + 2, i < n-1)
-              println("  )")
+              println("  ),")
             }
             traverse(expr, level + 1, false)
             printcln(")")
@@ -273,7 +273,9 @@ abstract class NodePrinters {
             printcln("Super(\"" + qual + "\", \"" + mix + "\")" + nodeinfo2(tree))
           case Template(parents, self, body) =>
             println("Template(" + nodeinfo(tree))
-            println("  " + parents.map(p => if (p.tpe ne null) p.tpe.typeSymbol else "null-" + p) + ", // parents")
+            println("  " + parents.map(p =>
+                if (p.tpe ne null) p.tpe.typeSymbol else "null-" + p
+              ) + ", // parents")
             traverse(self, level + 1, true)
             if (body.isEmpty)
               println("  List() // no body")
