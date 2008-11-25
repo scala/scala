@@ -44,7 +44,7 @@ trait Definitions {
     var NullClass: Symbol = _
     var NothingClass: Symbol = _
     var SingletonClass: Symbol = _
-    lazy val uncheckedStableClass = getClass("scala.uncheckedStable") // todo: move to annotation.unchecked
+    lazy val uncheckedStableClass = getClass("scala.annotation.unchecked.uncheckedStable")
     lazy val uncheckedVarianceClass = getClass("scala.annotation.unchecked.uncheckedVariance")
 
     lazy val ClassClass: Symbol = getClass(sn.Class)

@@ -976,6 +976,7 @@ trait Types {
       underlyingCache
     }
 
+    override def isVolatile : Boolean = underlying.isVolatile && (!sym.isStable)
 /*
     override def narrow: Type = {
       if (phase.erasedTypes) this

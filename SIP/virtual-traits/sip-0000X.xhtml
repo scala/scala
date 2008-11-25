@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Virtual Traits for Scala</title>
+  <meta name="sip" content="0000X"/>
+  <meta name="author" content="Anders Bach Nielsen"/>
+  <meta name="version" content="0"/>
+  <meta name="type" content="standards"/>
+  <meta name="status" content="submission"/>
+  <meta name="created" content="2008-08-21"/>
+  <meta name="updated" content="2008-11-24"/>
+  <meta name="scala-version" content="2.8.0.final-"/>
+  <meta name="owner-contact" content="mailto:andersbach.nielsen@epfl.ch"/>
+  <!-- <meta name="discussion" content="[URI]"/> -->
+  <!-- <link rel="auxiliary" href="[URI]" type="[mime type]"/> -->
+  <!-- <link rel="replaces" href="[URI]" type="application/xhtml+xml"/> -->
+  <link rel="depends-on" href="PATH-TO-TRAIT-PARAMETERS-SIP" type="application/xhtml+xml"/>
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="http://lampsvn.epfl.ch/svn-repos/scala/sip/trunk/sip.css" type="text/css"/>
+</head>
+<body>
+  <a name="top"></a>
+  <h1>Virtual Traits for Scala</h1>
+
+  <h2>Abstract</h2>
+
+  <p>This document describes the design, integration and implementation
+  of Virtual Traits (VT) into the Scala language. Virtual traits in
+  Scala are modeled after the BETA [<a
+  href="#madsen93:_objec_orien_progr_beta_progr_languag">1</a>] and
+  gbeta [<a href="#ernst99b">3</a>] notion of virtual classes [<a
+  href="#Mads89a">2</a>, <a href="#1111062">4</a>]. </p>
+
+  <h2>Contents</h2>
+
+  <ul>
+    <li><a href="#motivation">Motivation</a>
+    <ul>
+      <li><a href="#goals">Goals</a></li>
+      <li><a href="#usecases">Use cases</a></li>
+      <li><a href="#usecasedetail">Use cases in detail</a></li>
+      <li><a href="#futuregoals">Future goals that extend beyond this proposal</a></li>
+    </ul>
+    </li>
+    <li><a href="#languagespec">Language specification changes</a></li>
+    <li><a href="#implementation">Implementation</a></li>
+    <li><a href="#references">References</a></li>
+  </ul>
+
+
+  <a name="motivation"></a>
+  <h2>Motivation</h2>
+
+  <p>The Scala language already has abstract type members that behave
+  like the types of virtual classes, however this is only for
+  types. Scala supports both classes and traits, where traits act as
+  mixins that can be composed together to create classes. The reason
+  why there are both classes and traits, is to support the
+  interoperability with Java which has only classes and for this
+  reason classes are treated specially in the compiler.</p>
+  
+  <p>Using abstract type members and a complicated rewriting scheme it
+  is possible to create virtual classes manually, but there are
+  several typing issues which will be covered later. We will in this
+  proposal show the extensions to the Scala language specification to
+  include virtual traits, the rewriting scheme for translating virtual
+  trait programs into regular Scala programs and discuss the
+  implementation of this in the Scala compiler.</p>
+
+  <p>This proposal builds upon the parametrized traits.</p>
+
+  <a name="goals"></a>
+  <h3>Goals</h3>
+  
+  <ul>
+    <li>Present the additions and changes to the Scala Language
+    Specification to cover Virtual Traits.</li>
+    <li>Show in detail the rewriting scheme used in the translation of
+    Scala programs with virtual traits to programs in Scala
+    proper.</li>
+    <li>Present a sample implementation in the Scala compiler.</li>
+  </ul>
+
+
+  <a name="usecases"></a>
+  <h3>Use cases</h3>
+  
+  <ol>
+    <li><a href="#usecase1">Initial binding of virtual trait</a></li>
+    <li><a href="#usecase2">Further binding of a virtual trait</a></li>
+    <li><a href="#usecase3">Final binding of a virtual trait</a></li>
+    <li><a href="#usecase4">Diamond inheritance involving virtual traits</a></li>
+    <li><a href="#usecase5">Virtual traits with nested virtual traits</a></li>
+  </ol>
+
+  <a name="usecasedetail"></a>
+  <h3>Use cases in detail</h3>
+
+  <a name="usecase1"></a>
+  <h4>(1) Initial binding of virtual trait</h4>
+
+  <p></p>
+
+  <pre>
+    <b>trait</b> A &lt;: { ... }
+    <b>trait</b> B &lt;: A { ... }
+    <b>trait</b> C &lt;: Foo <b>with</b> B { ... }
+  </pre>
+
+  <a name="usecase2"></a>
+  <h4>(2) Further binding of a virtual trait</h4>
+
+  <p></p>
+
+  <pre>
+    <b>override trait</b> A &lt;: { ... }
+    <b>override trait</b> B &lt;: { ... }
+    <b>override trait</b> C &lt;: Bar { ... }
+  </pre>
+
+  <a name="usecase3"></a>
+  <h4>(3) Final binding of a virtual trait</h4>
+
+  <p></p>
+
+  <pre>
+    <b>override trait</b> A
+    <b>override trait</b> B { ... }
+    <b>override trait</b> C <b>extends</b> Baz { ... }
+  </pre>
+
+  <a name="usecase4"></a>
+  <h4>(4) Diamond inheritance involving virtual traits</h4>
+
+  <p></p>
+
+  <pre>
+ <b>trait</b> A {
+   <b>trait</b> V &lt;: { ... }
+ }
+ <b>trait</b> B <b>extends</b> A {
+   <b>override trait</b> V &lt;: { ... }
+ }
+ <b>trait</b> C <b>extends</b> A {
+   <b>override trait</b> V &lt;: { ... }
+ }
+ <b>trait</b> D <b>extends</b> B <b>with</b> C {
+   <b>override trait</b> V &lt;: { ... }
+ }  
+  </pre>
+
+  <a name="usecase5"></a>
+  <h4>(5) Virtual traits with nested virtual traits</h4>
+
+  <p></p>
+
+  <pre>
+ <b>trait</b> A {
+   <b>trait</b> V &lt;: {
+     <b>trait</b> W &lt;: { ... }
+   }
+ }
+ <b>trait</b> B <b>extends</b> A {
+   <b>override trait</b> V &lt;: {
+     <b>override trait</b> W &lt;: { ... }
+   }
+ }
+  </pre>
+
+  <a name="futuregoals"></a>
+  <h3>Future goals that extend beyond this proposal</h3>
+
+  <ul>
+    <li>Having virtual classes, these would have to be converted from
+    classes to traits and so</li>
+  </ul>
+
+  <a name="languagespec"></a>
+  <h2>Language specification changes</h2>
+  
+  This section will cover the changes to the Scala language, both the
+  syntactic and sematic changes that are nessesary to make virtual
+  traits work under Scala.
+
+  <p>
+    Normal declaration of a trait in Scala.
+  </p>
+  <pre>
+    trait Foo { ... }
+  </pre>
+
+  <pre>
+    TmplDef ::= ['case'] 'class' ClassDef
+          | ['case'] 'object' ObjectDef
+          | ['override'] 'trait' TraitDef
+
+TraitDef ::= id [TypeParamClause] TraitTemplateOpt
+
+TraitTemplateOpt ::= TraitExtends TraitTemplate
+                   | [['extends'] TemplateBody ]
+                   | '&lt;:' TemplateBody
+
+TraitExtends ::= 'extends' | '&lt;:'
+
+
+---------- FLAGS -------------
+
+TRAIT + DEFERED + ! OVERRIDE =&gt; Initial binding
+TRAIT + DEFERED + OVERRIDE   =&gt; Further binding
+TRAIT + ! DEFERED + OVERRIDE =&gt; Final binding
+
+classes that extend virtuals are marked with a VIRTUALSUBCLASS
+
+  </pre>
+
+  <h3>Syntactic</h3>
+
+  From the virtual class litterateur there is a distinction between
+  the initial binding and the further binding of a virtual class. To
+  have the same expressiveness in Scala this is the way to declare a
+  initial binding of a virtual trait.
+  <pre>
+  trait Bar &lt;: { ... }
+  </pre>
+  To be able to tell the difference between a initial and a further
+  binding of a trait on the syntactical level, further bindings are
+  written as.
+  <pre>
+  override trait Bar &lt;: { ... }
+  </pre>
+
+  <h3>Semantic</h3>
+
+
+  <a name="implementation"></a>
+  <h2>Implementation</h2>
+
+  
+
+  <a name="references"></a>
+  <h2>References</h2>
+
+  <table>
+    <tr valign="top">
+      <td align="right">
+	[<a name="madsen93:_objec_orien_progr_beta_progr_languag">1</a>]
+      </td>
+      <td>
+	Ole&nbsp;Lehrmann Madsen, Kristen Nygaard, and Birger M&oslash;ller-Pedersen.
+	<em>Object-Oriented Programming in The Beta Programming Language</em>.
+	Addison-Wesley, 1993.
+	[&nbsp;<a href="sip-0000X-1.xhtml#madsen93:_objec_orien_progr_beta_progr_languag">bib</a>&nbsp;]
+      </td>
+    </tr>
+
+    <tr valign="top">
+      <td align="right">
+	[<a name="Mads89a">2</a>]
+      </td>
+      <td>
+	Ole&nbsp;Lehrmann Madsen and Birger M&oslash;ller-Pedersen.
+	Virtual classes: A powerful mechanism in object-oriented
+	programming.
+	In <em>Proceedings OOPSLA'89, ACM SIGPLAN Notices</em>, volume 24,
+	10, pages 397-406, October 1989.
+	[&nbsp;<a href="sip-0000X-1.xhtml#Mads89a">bib</a>&nbsp;]
+      </td>
+    </tr>
+    
+    <tr valign="top">
+      <td align="right">
+	[<a name="ernst99b">3</a>]
+      </td>
+      <td>
+	Erik Ernst.
+	<em>gbeta - a Language with Virtual Attributes, Block Structure,
+	and Propagating, Dynamic Inheritance</em>.
+	PhD thesis, Department of Computer Science, University of Aarhus,
+	&Aring;rhus, Denmark, 1999.
+	[&nbsp;<a href="sip-0000X-1.xhtml#ernst99b">bib</a>&nbsp;]
+      </td>
+    </tr>
+
+    <tr valign="top">
+      <td align="right">
+	[<a name="1111062">4</a>]
+      </td>
+      <td>
+	Erik Ernst, Klaus Ostermann, and William&nbsp;R. Cook.
+	A virtual class calculus.
+	In <em>POPL '06: Conference record of the 33rd ACM SIGPLAN-SIGACT
+	symposium on Principles of programming languages</em>, pages 270-282, New York,
+	NY, USA, 2006. ACM Press.
+	[&nbsp;<a href="sip-0000X-1.xhtml#1111062">bib</a>&nbsp;]
+      </td>
+    </tr>
+
+    <tr valign="top">
+      <td align="right">
+	[<a name="Erns01a">5</a>]
+      </td>
+      <td>
+	Erik Ernst.
+	Family polymorphism.
+	In J.&nbsp;L. Knudsen, editor, <em>ECOOP 2001</em>, number 2072 in LNCS,
+	pages 303-326. Springer Verlag, 2001.
+	[&nbsp;<a href="sip-0000X-1.xhtml#Erns01a">bib</a>&nbsp;]
+      </td>
+    </tr>
+    
+    <tr valign="top">
+      <td align="right">
+	[<a name="EE99">6</a>]
+      </td>
+      <td>
+	Erik Ernst.
+	Propagating class and method combination.
+	In Rachid Guerraoui, editor, <em>Proceedings ECOOP'99</em>, LNCS 1628,
+	pages 67-91, Lisboa, Portugal, June 1999. Springer-Verlag.
+	[&nbsp;<a href="sip-0000X-1.xhtml#EE99">bib</a>&nbsp;]
+      </td>
+    </tr>
+    
+    <tr valign="top">
+      <td align="right">
+	[<a name="aracic06:_overv_of_caesarj">7</a>]
+      </td>
+      <td>
+	Ivica Aracic, Vaidas Gasiunas, Mira Mezini, and Klaus Ostermann.
+	An overview of caesarj.
+	In <em>Transactions on Aspect-Oriented Software Development I</em>,
+	volume 3880/2006 of <em>Lecture Notes in Computer Science</em>, pages 135-173.
+	Springer Berlin / Heidelberg, 2006.
+	[&nbsp;<a href="sip-0000X-1.xhtml#aracic06:_overv_of_caesarj">bib</a>&nbsp;]
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

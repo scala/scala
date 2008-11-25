@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -935,6 +935,7 @@ trait Namers { self: Analyzer =>
               Flags.flagsToString(flag1) + " and " + Flags.flagsToString(flag2) +
               " for: " + sym + Flags.flagsToString(sym.rawflags));
       }
+
       if (sym.hasFlag(IMPLICIT) && !sym.isTerm)
         context.error(sym.pos, "`implicit' modifier can be used only for values, variables and methods")
       if (sym.hasFlag(IMPLICIT) && sym.owner.isPackageClass && !inIDE)
@@ -942,7 +943,7 @@ trait Namers { self: Analyzer =>
       if (sym.hasFlag(ABSTRACT) && !sym.isClass)
         context.error(sym.pos, "`abstract' modifier can be used only for classes; " +
           "\nit should be omitted for abstract members")
-      if (sym.hasFlag(OVERRIDE | ABSOVERRIDE) && sym.isClass)
+      if (sym.hasFlag(OVERRIDE | ABSOVERRIDE) && !sym.hasFlag(TRAIT) && sym.isClass)
         context.error(sym.pos, "`override' modifier not allowed for classes")
       if (sym.hasFlag(OVERRIDE | ABSOVERRIDE) && sym.isConstructor)
         context.error(sym.pos, "`override' modifier not allowed for constructors")
@@ -964,11 +965,12 @@ trait Namers { self: Analyzer =>
             sym.resetFlag(DEFERRED)
         }
       }
+
       checkNoConflict(DEFERRED, PRIVATE)
       checkNoConflict(FINAL, SEALED)
       checkNoConflict(PRIVATE, PROTECTED)
       checkNoConflict(PRIVATE, OVERRIDE)
-      //checkNoConflict(PRIVATE, FINAL) // can't do this because FINAL also means compile-time constant
+      /* checkNoConflict(PRIVATE, FINAL) // can't do this because FINAL also means compile-time constant */
       checkNoConflict(DEFERRED, FINAL)
     }
   }

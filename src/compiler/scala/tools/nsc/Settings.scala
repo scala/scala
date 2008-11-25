@@ -155,6 +155,7 @@ class Settings(error: String => Unit) {
   val XnoVarargsConversion = BooleanSetting("-Xno-varargs-conversion", "disable varags conversion")
   val selfInAnnots = BooleanSetting    ("-Yself-in-annots", "Include a \"self\" identifier inside of annotations")
 
+  val suppressVTWarn = BooleanSetting    ("-Ysuppress-vt-typer-warnings", "Suppress warnings from the typer when testing the virtual class encoding, NOT FOR FINAL!")
 
   /** A list of all settings */
   def allSettings: List[Setting] = allsettings.reverse

@@ -1033,7 +1033,8 @@ trait Typers { self: Analyzer =>
           }
           if (!(selfType <:< parent.tpe.typeOfThis) &&
               !phase.erasedTypes &&
-              !(context.owner hasFlag SYNTHETIC)) // don't do this check for synthetic concrete classes for virtuals (part of DEVIRTUALIZE)
+              !(context.owner hasFlag SYNTHETIC) && // don't do this check for synthetic concrete classes for virtuals (part of DEVIRTUALIZE)
+	      !(settings.suppressVTWarn.value))
           {
             //Console.println(context.owner);//DEBUG
             //Console.println(context.owner.unsafeTypeParams);//DEBUG
@@ -3344,7 +3345,7 @@ trait Typers { self: Analyzer =>
           tree.tpe = null
           if (tree.hasSymbol) tree.symbol = NoSymbol
         }
-        if (printTypings) println("typing "+tree+", "+context.undetparams+(mode & TYPEPATmode));//DEBUG
+        if (printTypings) println("typing "+tree+", "+context.undetparams+(mode & TYPEPATmode)); //DEBUG
         def dropExistential(tp: Type): Type = tp match {
           case ExistentialType(tparams, tpe) =>
             if (settings.debug.value) println("drop ex "+tree+" "+tp)
@@ -3356,12 +3357,12 @@ trait Typers { self: Analyzer =>
           case _ => tp
         }
         var tree1 = if (tree.tpe ne null) tree else typed1(tree, mode, dropExistential(pt))
-        if (printTypings) println("typed "+tree1+":"+tree1.tpe+", "+context.undetparams+", pt = "+pt);//DEBUG
+        if (printTypings) println("typed "+tree1+":"+tree1.tpe+", "+context.undetparams+", pt = "+pt); //DEBUG
 
         tree1.tpe = addAnnotations(tree1, tree1.tpe)
 
         val result = if (tree1.isEmpty || (inIDE && tree1.tpe == null)) tree1 else adapt(tree1, mode, pt)
-        if (printTypings) println("adapted "+tree1+":"+tree1.tpe+" to "+pt+", "+context.undetparams);//DEBUG
+        if (printTypings) println("adapted "+tree1+":"+tree1.tpe+" to "+pt+", "+context.undetparams); //DEBUG
 //      if ((mode & TYPEmode) != 0) println("type: "+tree1+" has type "+tree1.tpe)
         result
       } catch {

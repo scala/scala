@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -84,9 +84,9 @@ object ShowPickled extends Names {
     def printSymInfo() {
       printNameRef()
       printSymbolRef()
-      val flags = buf.readNat()
-      out.print(" " + toHexString(flags) +
-                "[" + Flags.flagsToString(flags) + "] ")
+      val pflags = buf.readNat()
+      out.print(" " + toHexString(pflags) +
+                "[" + Flags.flagsToString(Flags.pickledToRawFlags(pflags)) + "] ")
       printTypeRef()
     }
 

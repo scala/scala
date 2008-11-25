@@ -182,7 +182,7 @@ abstract class UnPickler {
           }
           val name = readNameRef()
           val owner = readSymbolRef()
-          val flags = readNat()
+          val flags = pickledToRawFlags(readNat())
           var privateWithin: Symbol = NoSymbol
           var inforef = readNat()
           if (isSymbolRef(inforef)) {
@@ -701,9 +701,10 @@ abstract class UnPickler {
       if (tag != MODIFIERS)
 	errorBadSignature("expected a modifiers tag (" + tag + ")")
       val end = readNat() + readIndex
-      val flagsHi = readNat()
-      val flagsLo = readNat()
-      val flags = (flagsHi.toLong << 32) + flagsLo
+      val pflagsHi = readNat()
+      val pflagsLo = readNat()
+      val pflags = (pflagsHi.toLong << 32) + pflagsLo
+      val flags = pickledToRawFlags(pflags)
       val privateWithin = readNameRef()
       val annotations = until(end, readAnnotationTreeRef)
       Modifiers(flags, privateWithin, annotations)

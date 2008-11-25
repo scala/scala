@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -470,7 +470,7 @@ abstract class Pickler extends SubComponent {
       var posOffset = 0
       writeRef(sym.name)
       writeRef(normalizedOwner(sym))
-      writeNat((sym.flags & PickledFlags).asInstanceOf[Int])
+      writeNat((rawFlagsToPickled(sym.flags & PickledFlags)).asInstanceOf[Int])
       if (sym.privateWithin != NoSymbol) writeRef(sym.privateWithin)
       writeRef(sym.info)
       posOffset
@@ -917,8 +917,9 @@ abstract class Pickler extends SubComponent {
 
 
 	case Modifiers(flags, privateWithin, annotations) =>
-	  writeNat((flags >> 32).toInt)
-	  writeNat((flags & 0xFFFFFFFF).toInt)
+          val pflags = rawFlagsToPickled(flags)
+	  writeNat((pflags >> 32).toInt)
+	  writeNat((pflags & 0xFFFFFFFF).toInt)
 	  writeRef(privateWithin)
           writeRefs(annotations)
 	  MODIFIERS

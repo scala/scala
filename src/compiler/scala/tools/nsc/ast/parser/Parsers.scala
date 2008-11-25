@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2007 LAMP/EPFL
+ * Copyright 2005-2008 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -150,7 +150,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       t
     }
 
-/////////// PLACEHOLDERS ///////////////////////////////////////////////////////
+/* -------- PLACEHOLDERS ------------------------------------------- */
 
     /** The implicit parameters introduced by `_' in the current expression.
      *  Parameters appear in reverse order
@@ -200,7 +200,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       t
     }
 
-/////// ERROR HANDLING //////////////////////////////////////////////////////
+/* -------- ERROR HANDLING ------------------------------------------- */
 
     protected def skip() {
       var nparens = 0
@@ -326,7 +326,7 @@ trait Parsers extends NewScanners with MarkupParsers {
     def errorTermTree = Literal(Constant(null)).setPos((inCurrentPos))
     def errorPatternTree = Ident(nme.WILDCARD).setPos((inCurrentPos))
 
-/////// TOKEN CLASSES //////////////////////////////////////////////////////
+/* -------- TOKEN CLASSES ------------------------------------------- */
 
     def isModifier: Boolean = inToken match {
       case ABSTRACT | FINAL | SEALED | PRIVATE | PROTECTED | OVERRIDE | IMPLICIT | LAZY => true
@@ -374,7 +374,7 @@ trait Parsers extends NewScanners with MarkupParsers {
     def isStatSep: Boolean = isStatSep(inToken)
 
 
-/////// COMMENT AND ATTRIBUTE COLLECTION //////////////////////////////////////
+/* -------- COMMENT AND ATTRIBUTE COLLECTION ------------------------------------------- */
 
     /** Join the comment associated with a definition
     */
@@ -384,7 +384,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       else trees
     }
 
-/////// TREE CONSTRUCTION ////////////////////////////////////////////////////
+/* -------- TREE CONSTRUCTION ------------------------------------------- */
 
     /** Convert tree to formal parameter list
     */
@@ -448,7 +448,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       Function(List(makeSyntheticParam(pname)), insertParam(tree))
     }
 
-/////// OPERAND/OPERATOR STACK /////////////////////////////////////////////////
+/* -------- OPERAND/OPERATOR STACK ------------------------------------------- */
 
     var opstack: List[OpInfo] = Nil
 
@@ -499,7 +499,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       top
     }
 
-/////// IDENTIFIERS AND LITERALS ////////////////////////////////////////////////////////////
+/* -------- IDENTIFIERS AND LITERALS ------------------------------------------- */
 
 
     def ident(): Name =
@@ -659,7 +659,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       if (inToken == NEWLINE && p(inNextTokenCode)) newLineOpt()
     }
 
-//////// TYPES ///////////////////////////////////////////////////////////////
+/* -------- TYPES ------------------------------------------- */
 
     /** TypedOpt ::= [`:' Type]
     */
@@ -900,7 +900,7 @@ trait Parsers extends NewScanners with MarkupParsers {
         typ()
       }
 
-//////// EXPRESSIONS ////////////////////////////////////////////////////////
+/* -------- EXPRESSIONS ------------------------------------------- */
 
     /** EqualsExpr ::= `=' Expr
      */
@@ -1317,7 +1317,7 @@ trait Parsers extends NewScanners with MarkupParsers {
     }
     //def p2i(pos : ScanPosition) : Int;
 
-//////// PATTERNS ////////////////////////////////////////////////////////////
+/* -------- PATTERNS ------------------------------------------- */
 
     /**   Patterns ::= Pattern { `,' Pattern }
      *    SeqPatterns ::= SeqPattern { `,' SeqPattern }
@@ -1493,7 +1493,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       ps
     }
 
-////////// MODIFIERS and ANNOTATIONS /////////////////////////////////////////////////
+/* -------- MODIFIERS and ANNOTATIONS ------------------------------------------- */
 
     private def normalize(mods: Modifiers): Modifiers =
       if ((mods hasFlag Flags.PRIVATE) && mods.privateWithin != nme.EMPTY.toTypeName)
@@ -1629,7 +1629,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       Annotation(constr, nameValuePairs) setPos pos
     }
 
-//////// PARAMETERS //////////////////////////////////////////////////////////
+/* -------- PARAMETERS ------------------------------------------- */
 
     /** ParamClauses      ::= {ParamClause} [[nl] `(' implicit Params `)']
      *  ParamClause       ::= [nl] `(' [Params] ')'
@@ -1807,7 +1807,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       if (inToken == tok) { inNextToken; typ() }
       else scalaDot(default.toTypeName)
 
-//////// DEFS ////////////////////////////////////////////////////////////////
+/* -------- DEFS ------------------------------------------- */
 
 
     /** Import  ::= import ImportExpr {`,' ImportExpr}
@@ -2141,7 +2141,7 @@ trait Parsers extends NewScanners with MarkupParsers {
 
     /**  TmplDef ::= [case] class ClassDef
      *            |  [case] object ObjectDef
-     *            |  trait TraitDef
+     *            |  [override] trait TraitDef
      */
     def tmplDef(mods: Modifiers): Tree = {
       if (mods.hasFlag(Flags.LAZY)) syntaxError("classes cannot be lazy", false)
@@ -2185,7 +2185,8 @@ trait Parsers extends NewScanners with MarkupParsers {
           if (mods.hasFlag(Flags.TRAIT)) (Modifiers(Flags.TRAIT), List())
           else (accessModifierOpt(), paramClauses(name, implicitClassViews, mods.hasFlag(Flags.CASE)))
         val thistpe = requiresTypeOpt()
-        var mods1 = if (inToken == SUBTYPE) mods | Flags.DEFERRED else mods
+        var mods1 = if (mods.hasFlag( Flags.TRAIT )) if (inToken == SUBTYPE) mods | Flags.DEFERRED else mods
+		    else if (inToken == SUBTYPE) { syntaxError("classes are not allowed to be virtual", false); mods } else mods
         var template = templateOpt(mods1, name, constrMods withAnnotations constrAnnots, vparamss)
         if (!thistpe.isEmpty) {
           if (template.self.isEmpty) {
@@ -2267,9 +2268,9 @@ trait Parsers extends NewScanners with MarkupParsers {
     def isInterface(mods: Modifiers, body: List[Tree]) =
       (mods.hasFlag(Flags.TRAIT) && (body forall treeInfo.isInterfaceMember))
 
-    /** ClassTemplateOpt ::= Extends ClassTemplate | [[Extends] TemplateBody]
-     *  TraitTemplateOpt ::= Extends TraitTemplate | [[Extends] TemplateBody]
-     *  Extends          ::= extends | `<:'
+    /** ClassTemplateOpt ::= 'extends' ClassTemplate | [['extends'] TemplateBody]
+     *  TraitTemplateOpt ::= TraitExtends TraitTemplate | [['extends'] TemplateBody] | '<:' TemplateBody
+     *  TraitExtends     ::= 'extends' | `<:'
      */
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]]): Template = {
       val pos = inCurrentPos;
@@ -2277,7 +2278,10 @@ trait Parsers extends NewScanners with MarkupParsers {
         if (inToken == EXTENDS || settings.Xexperimental.value && (mods hasFlag Flags.TRAIT) && inToken == SUBTYPE) {
           inNextToken
           template(mods hasFlag Flags.TRAIT)
-        } else {
+        } else if ((inToken == SUBTYPE) && (mods hasFlag Flags.TRAIT)) {
+	  inNextToken
+          template(true)
+	} else {
           newLineOptWhenFollowedBy(LBRACE)
           val (self, body) = templateBodyOpt(false)
           (List(), List(List()), self, body)
@@ -2296,7 +2300,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       // if (pos == inCurrentPos || inIDE) tree else atPos(pos) {tree}
     }
 
-////////// TEMPLATES ////////////////////////////////////////////////////////////
+/* -------- TEMPLATES ------------------------------------------- */
 
     /** TemplateBody ::= [nl] `{' TemplateStatSeq `}'
      * @param isPre specifies whether in early initializer (true) or not (false)
@@ -2328,7 +2332,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       body
     }
 
-/////// STATSEQS //////////////////////////////////////////////////////////////
+/* -------- STATSEQS ------------------------------------------- */
 
     /** Packaging ::= package QualId [nl] `{' TopStatSeq `}'
      */

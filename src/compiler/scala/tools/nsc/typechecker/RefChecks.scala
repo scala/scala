@@ -134,7 +134,7 @@ abstract class RefChecks extends InfoTransform {
 
         def overrideError(msg: String) {
           if (other.tpe != ErrorType && member.tpe != ErrorType)
-            unit.error(pos, "error overriding " + infoStringWithLocation(other) +
+            unit.error(pos, "overriding " + infoStringWithLocation(other) +
                        ";\n " + infoString(member) + " " + msg +
                        (if ((other.owner isSubClass member.owner) &&
                             other.isDeferred && !member.isDeferred)
@@ -146,7 +146,7 @@ abstract class RefChecks extends InfoTransform {
 
         def overrideTypeError() {
           if (other.tpe != ErrorType && member.tpe != ErrorType) {
-            overrideError("has incompatible type "+analyzer.underlying(member).tpe.normalize)
+            overrideError("has incompatible type")
           }
         }
 
@@ -455,8 +455,9 @@ abstract class RefChecks extends InfoTransform {
           case ExistentialType(tparams, result) =>
             validateVariances(tparams map (_.info), variance)
             validateVariance(result, variance)
-          case AnnotatedType(attribs, tp, selfsym) =>
-            validateVariance(tp, variance)
+          case AnnotatedType(annots, tp, selfsym) =>
+            if (!(annots exists (_.atp.typeSymbol.isNonBottomSubClass(uncheckedVarianceClass))))
+              validateVariance(tp, variance)
         }
 
         def validateVariances(tps: List[Type], variance: Int) {
