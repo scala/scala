@@ -59,7 +59,7 @@ abstract class BufferedSource(byteChannel: ReadableByteChannel, decoder: Charset
 
   def fillBuffer() = {
     byteBuffer.compact()
-    charBuffer.position(0)
+    charBuffer.compact()
     var num_bytes = byteChannel.read(byteBuffer)
     while (0 == num_bytes) {
       Thread.sleep(1);  // wait 1 ms for new data
