@@ -257,7 +257,18 @@ class CompileSocket {
     }
 
   def getPassword(port: Int): String = {
-    val f = new BufferedReader(new FileReader(portFile(port)))
+    val ff=portFile(port)
+    val f = new BufferedReader(new FileReader(ff))
+    // allow some time for the server to start up
+    var retry=50
+    while (ff.length()==0 && retry>0) {
+      Thread.sleep(100)
+      retry-=1
+    }
+    if (ff.length()==0) {
+      ff.delete()
+      fatal("Unable to establish connection to server.")
+    }
     val result = f.readLine()
     f.close()
     result
