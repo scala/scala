@@ -194,6 +194,15 @@ object FancyTailCalls {
   val f2 = new FancyTailCalls
 }
 
+object PolyObject extends Application {
+  def tramp[A](x: Int): Int =
+    if (x > 0)
+      tramp[A](x - 1)
+    else
+      0
+}
+
+
 class FancyTailCalls {
 
   def tcTryLocal(x: Int, v: Int): Int = {
@@ -370,7 +379,9 @@ object Test {
     val FancyTailCalls = new FancyTailCalls;
     check_success("FancyTailCalls.tcTryLocal",   FancyTailCalls.tcTryLocal(max, max), max)
     check_success("FancyTailCalls.differentInstance",   FancyTailCalls.differentInstance(max, 42), 42)
+    check_success("PolyObject.tramp", PolyObject.tramp[Int](max), 0)
   }
+
 }
 
 //############################################################################
