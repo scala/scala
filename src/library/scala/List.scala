@@ -1289,7 +1289,13 @@ sealed abstract class List[+A] extends Seq[A] with Product {
   /** Concatenate the elements of this list. The elements of this list
    *  should be a <code>Iterables</code>.
    *
-   *  Note: The compiler might not be able to infer the type parameter.
+   *  Note: The compiler might not be able to infer the type parameter,
+   *        so it is recommended to provide an explicit type argument.
+   *
+   *  Example:
+   *    <code>List(List(1, 3), List(2)).flatten[Int]</code>
+   *    returns
+   *    <code>List(1, 3, 2)</code>
    *
    *  @param f    An implicit conversion to an <code>Iterable</code> instance.
    *  @return     The concatenation of all elements of iterables in this list.
