@@ -50,7 +50,9 @@ trait Symbols {
     var rawname = initName
     var rawflags: Long = 0
     private var rawpos = initPos
-    val id = { ids += 1; ids }
+
+    val id = { ids += 1; ids } // identity displayed when -uniqid
+
 //    assert(id != 7498, initName+"/"+initOwner)
 
     var validTo: Period = NoPeriod
@@ -101,6 +103,7 @@ trait Symbols {
     }
 
     var privateWithin: Symbol = _
+      // set when symbol has a modifier of the form private[X], NoSymbol otherwise.
 
 // Creators -------------------------------------------------------------------
 
@@ -110,6 +113,7 @@ trait Symbols {
       newValue(pos, name).setFlag(MUTABLE)
     final def newValueParameter(pos: Position, name: Name) =
       newValue(pos, name).setFlag(PARAM)
+    /** Create local dummy for template (owner of local blocks) */
     final def newLocalDummy(pos: Position) =
       newValue(pos, nme.LOCAL(this)).setInfo(NoType)
     final def newMethod(pos: Position, name: Name) =
@@ -135,11 +139,31 @@ trait Symbols {
       newValue(pos, nme.this_).setFlag(SYNTHETIC)
     final def newImport(pos: Position) =
       newValue(pos, nme.IMPORT)
+
+    /** @param pre   type relative to which alternatives are seen.
+     *  for instance:
+     *  class C[T] {
+     *    def m(x: T): T
+     *    def m'(): T
+     *  }
+     *  val v: C[Int]
+     *
+     *  Then v.m  has symbol TermSymbol(flags = {OVERLOADED},
+     *                                  tpe = OverloadedType(C[Int], List(m, m')))
+     *  You recover the type of m doing a
+     *
+     *    m.tpe.asSeenFrom(pre, C)   (generally, owner of m, which is C here).
+     *
+     *  or:
+     *
+     *    pre.memberType(m)
+     */
     final def newOverloaded(pre: Type, alternatives: List[Symbol]): Symbol =
       newValue(alternatives.head.pos, alternatives.head.name)
       .setFlag(OVERLOADED)
       .setInfo(OverloadedType(pre, alternatives))
 
+    /** for explicit outer phase */
     final def newOuterAccessor(pos: Position) = {
       val sym = newMethod(pos, nme.OUTER)
       sym setFlag (STABLE | SYNTHETIC)
@@ -151,21 +175,40 @@ trait Symbols {
 
     final def newErrorValue(name: Name) =
       newValue(pos, name).setFlag(SYNTHETIC | IS_ERROR).setInfo(ErrorType)
+
+    /** Symbol of a type definition  type T = ...
+     */
     final def newAliasType(pos: Position, name: Name) =
       new TypeSymbol(this, pos, name)
+
+    /** Symbol of an abstract type  type T >: ... <: ...
+     */
     final def newAbstractType(pos: Position, name: Name) =
       new TypeSymbol(this, pos, name).setFlag(DEFERRED)
+
+    /** Symbol of a type parameter
+     */
     final def newTypeParameter(pos: Position, name: Name) =
       newAbstractType(pos, name).setFlag(PARAM)
+
+    /** Type skolems are type parameters ``seen from the inside''
+     *  Given a class C[T]
+     *  Then the class has a TypeParameter with name `T' in its typeParams list
+     *  While type checking the class, there's a local copy of `T' which is a TypeSkolem
+     */
     final def newTypeSkolem: Symbol =
       new TypeSkolem(owner, pos, name, this)
         .setFlag(flags)
+
     final def newClass(pos: Position, name: Name) =
       new ClassSymbol(this, pos, name)
+
     final def newModuleClass(pos: Position, name: Name) =
       new ModuleClassSymbol(this, pos, name)
+
     final def newAnonymousClass(pos: Position) =
       newClass(pos, nme.ANON_CLASS_NAME.toTypeName)
+
     final def newAnonymousFunctionClass(pos: Position) = {
       val anonfun = newClass(pos, nme.ANON_FUN_NAME.toTypeName)
       def firstNonSynOwner(chain: List[Symbol]): Symbol = (chain: @unchecked) match {
@@ -177,13 +220,19 @@ trait Symbols {
           AnnotationInfo(definitions.SerializableAttr.tpe, List(), List()) :: anonfun.attributes
       anonfun
     }
+
+    /** Refinement types P { val x: String; type T <: Number }
+     *  also have symbols, they are refinementClasses
+     */
     final def newRefinementClass(pos: Position) =
       newClass(pos, nme.REFINE_CLASS_NAME.toTypeName)
+
     final def newErrorClass(name: Name) = {
       val clazz = newClass(pos, name).setFlag(SYNTHETIC | IS_ERROR)
       clazz.setInfo(ClassInfoType(List(), new ErrorScope(this), clazz))
       clazz
     }
+
     final def newErrorSymbol(name: Name): Symbol =
       if (name.isTypeName) newErrorClass(name) else newErrorValue(name)
 
@@ -230,23 +279,31 @@ trait Symbols {
     def isTerm   = false         //to be overridden
     def isType   = false         //to be overridden
     def isClass  = false         //to be overridden
-    def isTypeMember = false     //to be overridden
+    def isTypeMember = false     //to be overridden  todo: rename, it's something
+                                 // whose definition starts with `type', i.e. a type
+                                 // which is not a class.
     def isAliasType = false      //to be overridden
     def isAbstractType = false   //to be overridden
     def isSkolem = false         //to be overridden
 
+    /** Term symbols with the exception of static parts of Java classes and packages */
     final def isValue = isTerm && !(isModule && hasFlag(PACKAGE | JAVA))
+
     final def isVariable  = isTerm && hasFlag(MUTABLE) && !isMethod
+
+    // interesting only for lambda lift. Captured variables are accessed from inner lambdas.
     final def isCapturedVariable  = isVariable && hasFlag(CAPTURED)
 
     final def isGetter = isTerm && hasFlag(ACCESSOR) && !nme.isSetterName(name)
     final def isSetter = isTerm && hasFlag(ACCESSOR) && nme.isSetterName(name)
        //todo: make independent of name, as this can be forged.
+
     final def hasGetter = isTerm && nme.isLocalName(name)
+
     final def isValueParameter = isTerm && hasFlag(PARAM)
     final def isLocalDummy = isTerm && nme.isLocalDummyName(name)
     final def isMethod = isTerm && hasFlag(METHOD)
-    final def isSourceMethod = isTerm && (flags & (METHOD | STABLE)) == METHOD
+    final def isSourceMethod = isTerm && (flags & (METHOD | STABLE)) == METHOD // ???
     final def isLabel = isMethod && !hasFlag(ACCESSOR) && hasFlag(LABEL)
     final def isInitializedToDefault = !isType && (getFlag(DEFAULTINIT | ACCESSOR) == (DEFAULTINIT | ACCESSOR))
     final def isClassConstructor = isTerm && (name == nme.CONSTRUCTOR)
@@ -263,10 +320,15 @@ trait Symbols {
     final def isTypeParameterOrSkolem = isType && hasFlag(PARAM)
     final def isTypeSkolem            = isSkolem && hasFlag(PARAM)
     final def isTypeParameter         = isTypeParameterOrSkolem && !isSkolem
+    // a type symbol bound by an existential type, for instance the T in
+    // List[T] forSome { type T }
     final def isExistential           = isType && hasFlag(EXISTENTIAL)
     final def isExistentialSkolem     = isSkolem && hasFlag(EXISTENTIAL)
     final def isExistentialQuantified = isExistential && !isSkolem
+
+    // class C extends D( { class E { ... } ... } ). Here, E is a class local to a constructor
     final def isClassLocalToConstructor = isClass && hasFlag(INCONSTRUCTOR)
+
     final def isAnonymousClass = isClass && (originalName startsWith nme.ANON_CLASS_NAME)
       // startsWith necessary because name may grow when lifted and also because of anonymous function classes
     def isAnonymousFunction = hasFlag(SYNTHETIC) && (originalName startsWith nme.ANON_FUN_NAME)
@@ -466,6 +528,7 @@ trait Symbols {
 
     def ownerChain: List[Symbol] = this :: owner.ownerChain
 
+    // same as ownerChain contains sym, but more efficient
     def hasTransOwner(sym: Symbol) = {
       var o = this
       while ((o ne sym) && (o ne NoSymbol)) o = o.owner
@@ -576,13 +639,8 @@ trait Symbols {
     def setInfo(info: Type): this.type = {
       assert(info ne null)
       infos = TypeHistory(currentPeriod, info, null)
-      if (info.isComplete) {
-	  unlock()
-        validTo = currentPeriod
-      } else {
-	  unlock()
-        validTo = NoPeriod
-      }
+      unlock()
+      validTo = if (info.isComplete) currentPeriod else NoPeriod
       this
     }
 
@@ -642,6 +700,7 @@ trait Symbols {
       infos.info
     }
 
+    // adapt to new run in fsc.
     private def adaptInfos(infos: TypeHistory): TypeHistory =
       if (infos == null || runId(infos.validFrom) == currentRunId) {
         infos
@@ -706,7 +765,11 @@ trait Symbols {
       attributes.filter(_.atp.typeSymbol.isNonBottomSubClass(clazz))
 
     /** The least proper supertype of a class; includes all parent types
-     *  and refinement where needed
+     *  and refinement where needed. You need to compute that in a situation like this:
+     *  {
+     *    class C extends P { ... }
+     *    new C
+     *  }
      */
     def classBound: Type = {
       val tp = refinedType(info.parents, owner)
@@ -869,18 +932,19 @@ trait Symbols {
 
     /** If symbol is a class, the type <code>this.type</code> in this class,
      * otherwise <code>NoPrefix</code>.
+     * We always have: thisType <:< typeOfThis
      */
     def thisType: Type = NoPrefix
 
     /** Return every accessor of a primary constructor parameter in this case class
-      */
+     */
     final def caseFieldAccessors: List[Symbol] =
       info.decls.toList filter (sym => !(sym hasFlag PRIVATE) && sym.hasFlag(CASEACCESSOR))
 
     final def constrParamAccessors: List[Symbol] =
       info.decls.toList filter (sym => !sym.isMethod && sym.hasFlag(PARAMACCESSOR))
 
-    /** The symbol accessed by this accessor function.
+    /** The symbol accessed by this accessor (getter or setter) function.
      */
     final def accessed: Symbol = {
       assert(hasFlag(ACCESSOR))
@@ -900,7 +964,8 @@ trait Symbols {
       else owner.outerClass
 
     /** For a paramaccessor: a superclass paramaccessor for which this symbol
-     *  is an alias, NoSymbol for all others */
+     *  is an alias, NoSymbol for all others
+     */
     def alias: Symbol = NoSymbol
 
     /** For a lazy value, it's lazy accessor. NoSymbol for all others */
@@ -956,7 +1021,7 @@ trait Symbols {
       }
 
     /** The class with the same name in the same package as this module or
-     *  case class factory
+     *  case class factory. A better name would be companionClassOfModule.
      */
     final def linkedClassOfModule: Symbol = {
       if (this != NoSymbol)
@@ -965,7 +1030,7 @@ trait Symbols {
     }
 
     /** The module or case class factory with the same name in the same
-     *  package as this class.
+     *  package as this class. A better name would be companionModuleOfClass.
      */
     final def linkedModuleOfClass: Symbol =
       if (this.isClass && !this.isAnonymousClass && !this.isRefinementClass) {
@@ -983,6 +1048,12 @@ trait Symbols {
 
     /** For a module class its linked class, for a plain class
      *  the module class of its linked module.
+     *  For instance:
+     *    object Foo
+     *    class Foo
+     *
+     *  Then object Foo has a `moduleClass' (invisible to the user, the backend calls it Foo$
+     *  linkedClassOFClass goes from class Foo$ to class Foo, and back.
      */
     final def linkedClassOfClass: Symbol =
       if (isModuleClass) linkedClassOfModule else linkedModuleOfClass.moduleClass
@@ -1446,6 +1517,15 @@ trait Symbols {
     override def isAbstractType = isDeferred
     override def isAliasType = !isDeferred
 
+    /** Let's say you have a type definition
+     *
+     *    type T <: Number
+     *
+     *  and tsym is the symbol corresponding to T. Then
+     *
+     *    tsym.info = TypeBounds(Nothing, Number)
+     *    tsym.tpe  = TypeRef(NoPrefix, T, List())
+     */
     override def tpe: Type = {
       if (tpeCache eq NoType) throw CyclicReference(this, typeConstructor)
       if (tpePeriod != currentPeriod) {
@@ -1591,6 +1671,8 @@ trait Symbols {
     /** A symbol carrying the self type of the class as its type */
     override def thisSym: Symbol = thissym
 
+    /** the self type of an object foo is foo.type, not class<foo>.this.type
+     */
     override def typeOfThis: Type =
       if (getFlag(MODULE | IMPLCLASS) == MODULE && owner != NoSymbol)
         singleType(owner.thisType, sourceModule)

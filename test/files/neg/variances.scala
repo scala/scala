@@ -58,4 +58,16 @@ object Covariant {
     val x : java.lang.Character = test.a.getA
     Console.println("XXX " + x)
   }
+
+  abstract class T[+A] {
+    val x: T[A] {
+      val m: A => A
+    }
+  }
+  object ST extends T[String] {
+    val x: T[String] { val m: String => String } = ST
+    val m: String => String = (_.substring(1))
+  }
+  val t: T[Any] = ST
+  t.x.m(new Object)
 }

@@ -772,12 +772,12 @@ trait Infer {
       //@M TODO: errors for getters & setters are reported separately
       val kindErrors = checkKindBounds(tparams, targs, pre, owner)
 
-      if(!kindErrors.isEmpty)
+      if(!kindErrors.isEmpty) {
         error(pos,
-          prefix + "the kinds of the type arguments " + targs.mkString("(", ",", ")") +
+          prefix + "kinds of the type arguments " + targs.mkString("(", ",", ")") +
           " do not conform to the expected kinds of the type parameters "+ tparams.mkString("(", ",", ")") + tparams.head.locationString+ "." +
           kindErrors.toList.mkString("\n", ", ", ""))
-      else if (!isWithinBounds(pre, owner, tparams, targs)) {
+      } else if (!isWithinBounds(pre, owner, tparams, targs)) {
         if (!(targs exists (_.isErroneous)) && !(tparams exists (_.isErroneous))) {
           //val bounds = instantiatedBounds(pre, owner, tparams, targs)//DEBUG
           //println("bounds = "+bounds+", targs = "+targs+", targclasses = "+(targs map (_.getClass))+", parents = "+(targs map (_.parents)))
@@ -876,7 +876,7 @@ trait Infer {
       }
 
       val errors = new ListBuffer[String]
-      (tparams zip targs).foreach{ case (tparam, targ) if(targ.isHigherKinded || !tparam.typeParams.isEmpty) => //println("check: "+(tparam, targ))
+      (tparams zip targs).foreach{ case (tparam, targ) if (targ.isHigherKinded || !tparam.typeParams.isEmpty) => //println("check: "+(tparam, targ))
         val (arityMismatches, varianceMismatches, stricterBounds) =
           checkKindBoundsHK(targ.typeParams, targ.typeSymbolDirect, tparam, tparam.owner) // NOTE: *not* targ.typeSymbol, which normalizes
             // NOTE 2: must use the typeParams of the type targ, not the typeParams of the symbol of targ!!

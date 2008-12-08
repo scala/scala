@@ -398,7 +398,7 @@ trait JavaParsers extends JavaScanners {
             in.nextToken
           case PROTECTED =>
             flags |= Flags.PROTECTED
-            privateWithin = thisPackageName
+            //privateWithin = thisPackageName
             in.nextToken
           case PRIVATE =>
             flags |= Flags.PRIVATE

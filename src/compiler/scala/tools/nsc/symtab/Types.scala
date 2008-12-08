@@ -1828,6 +1828,8 @@ A type's typeSymbol should never be inspected directly.
     /** The variable's skolemizatuon level */
     val level = skolemizationLevel
 
+    override def isHigherKinded = origin.isHigherKinded
+
     def setInst(tp: Type) {
 //      assert(!(tp containsTp this), this)
       constr.inst = tp
@@ -2153,6 +2155,7 @@ A type's typeSymbol should never be inspected directly.
       case ErrorType => tycon
       case st: SingletonType => appliedType(st.widen, args) // @M TODO: what to do? see bug1
       case RefinedType(parents, decls) => RefinedType(parents map (appliedType(_, args)), decls) // MO to AM: please check
+      case TypeBounds(lo, hi) => TypeBounds(appliedType(lo, args), appliedType(hi, args))
       case _ => throw new Error(debugString(tycon))
     }
 
@@ -2302,8 +2305,9 @@ A type's typeSymbol should never be inspected directly.
     }
 
     override def toString =
-      lobounds.mkString("[ _>:(", ",", ") ") +
-      hibounds.mkString("| _<:(", ",", ") ] _= ") + inst
+      (lobounds map (_.safeToString)).mkString("[ _>:(", ",", ") ") +
+      (hibounds map (_.safeToString)).mkString("| _<:(", ",", ") ] _= ") +
+      inst.safeToString
   }
 
   /** A prototype for mapping a function over all possible types

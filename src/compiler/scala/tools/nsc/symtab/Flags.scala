@@ -42,7 +42,7 @@ object Flags extends Enumeration {
   final val INCONSTRUCTOR = 0x00020000    // class symbol is defined in this/superclass
                                           // constructor.
   final val ABSOVERRIDE   = 0x00040000    // combination of abstract & override
-  final val LOCAL         = 0x00080000    // symbol is local to current class.
+  final val LOCAL         = 0x00080000    // symbol is local to current class (i.e. private[this] or protected[this]
                                           // pre: PRIVATE or PROTECTED are also set
   final val JAVA          = 0x00100000    // symbol was defined by a Java class
   final val SYNTHETIC     = 0x00200000    // symbol is compiler-generated
@@ -54,7 +54,7 @@ object Flags extends Enumeration {
   final val CASEACCESSOR  = 0x01000000    // symbol is a case parameter (or its accessor)
   final val TRAIT         = 0x02000000    // symbol is a trait
   final val BRIDGE        = 0x04000000    // function is a bridge method. Set by Erasure
-  final val ACCESSOR      = 0x08000000    // a value or variable accessor
+  final val ACCESSOR      = 0x08000000    // a value or variable accessor (getter or setter)
 
   final val SUPERACCESSOR = 0x10000000    // a super accessor
   final val PARAMACCESSOR = 0x20000000    // for value definitions: is an access method

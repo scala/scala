@@ -10,6 +10,7 @@ import symtab.Flags._
 import collection.mutable.{HashSet, HashMap}
 import transform.InfoTransform
 import scala.tools.nsc.util.{Position, NoPosition}
+import scala.collection.mutable.ListBuffer
 
 /** <p>
  *    Post-attribution checking and transformation.
@@ -92,6 +93,21 @@ abstract class RefChecks extends InfoTransform {
      */
     private def checkAllOverrides(clazz: Symbol) {
 
+      case class MixinOverrideError(member: Symbol, msg: String)
+
+      var mixinOverrideErrors = new ListBuffer[MixinOverrideError]()
+
+      def printMixinOverrideErrors() {
+        mixinOverrideErrors.toList match {
+          case List() =>
+          case List(MixinOverrideError(_, msg)) =>
+            unit.error(clazz.pos, msg)
+          case MixinOverrideError(member, msg) :: others =>
+            unit.error(clazz.pos, msg+";\n other members with override errors are: "+
+                       (others.map(_.member.name).filter(member.name != _).removeDuplicates mkString ", "))
+        }
+      }
+
       val self = clazz.thisType
 
       def isAbstractTypeWithoutFBound(sym: Symbol) = // (part of DEVIRTUALIZE)
@@ -130,18 +146,19 @@ abstract class RefChecks extends InfoTransform {
        *  <code>member</code> are met.
        */
       def checkOverride(clazz: Symbol, member: Symbol, other: Symbol) {
-        val pos = if (member.owner == clazz) member.pos else clazz.pos
 
         def overrideError(msg: String) {
-          if (other.tpe != ErrorType && member.tpe != ErrorType)
-            unit.error(pos, "overriding " + infoStringWithLocation(other) +
-                       ";\n " + infoString(member) + " " + msg +
-                       (if ((other.owner isSubClass member.owner) &&
-                            other.isDeferred && !member.isDeferred)
-                          ";\n (Note that "+infoStringWithLocation(other)+" is abstract,"+
-                          "\n  and is therefore overridden by concrete "+
-                          infoStringWithLocation(member)+")"
-                        else ""))
+          if (other.tpe != ErrorType && member.tpe != ErrorType) {
+            val fullmsg =
+              "overriding "+infoStringWithLocation(other)+";\n "+
+              infoString(member)+" "+msg+
+              (if ((other.owner isSubClass member.owner) && other.isDeferred && !member.isDeferred)
+                ";\n (Note that "+infoStringWithLocation(other)+" is abstract,"+
+               "\n  and is therefore overridden by concrete "+infoStringWithLocation(member)+")"
+               else "")
+            if (member.owner == clazz) unit.error(member.pos, fullmsg)
+            else mixinOverrideErrors += new MixinOverrideError(member, fullmsg)
+          }
         }
 
         def overrideTypeError() {
@@ -198,7 +215,7 @@ abstract class RefChecks extends InfoTransform {
                    (other hasFlag ACCESSOR) && other.accessed.isVariable && !other.accessed.hasFlag(LAZY)) {
           overrideError("cannot override a mutable variable")
         } else if (other.isStable && !member.isStable) { // (1.4)
-          overrideError("is not stable")
+          overrideError("needs to be a stable, immutable value")
         } else if (member.isValue && (member hasFlag LAZY) &&
                    other.isValue && !other.isSourceMethod && !other.isDeferred && !(other hasFlag LAZY)) {
           overrideError("cannot override a concrete non-lazy value")
@@ -219,7 +236,7 @@ abstract class RefChecks extends InfoTransform {
             //  overrideError("may not be parameterized");
             var memberTp = self.memberType(member)
             val otherTp = self.memberInfo(other)
-            if (!(otherTp.bounds containsType memberTp)) { // (1.7.1) {
+            if (!(otherTp.bounds containsType memberTp)) { // (1.7.1)
               overrideTypeError(); // todo: do an explaintypes with bounds here
               explainTypes(_.bounds containsType _, otherTp, memberTp)
             }
@@ -261,6 +278,8 @@ abstract class RefChecks extends InfoTransform {
 
         opc.next
       }
+      printMixinOverrideErrors()
+
       // 2. Check that only abstract classes have deferred members
       if (clazz.isClass && !clazz.isTrait) {
         def abstractClassError(mustBeMixin: Boolean, msg: String) {
@@ -430,10 +449,14 @@ abstract class RefChecks extends InfoTransform {
               val v = relativeVariance(sym);
               if (v != AnyVariance && sym.variance != v * variance) {
                 //Console.println("relativeVariance(" + base + "," + sym + ") = " + v);//DEBUG
+                def tpString(tp: Type) = tp match {
+                  case ClassInfoType(parents, _, clazz) => "supertype "+intersectionType(parents, clazz.owner)
+                  case _ => "type "+tp
+                }
                 unit.error(base.pos,
                            varianceString(sym.variance) + " " + sym +
                            " occurs in " + varianceString(v * variance) +
-                           " position in type " + base.info + " of " + base);
+                           " position in " + tpString(base.info) + " of " + base);
               }
             }
             validateVariance(pre, variance)

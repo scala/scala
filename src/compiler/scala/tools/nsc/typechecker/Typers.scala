@@ -2841,7 +2841,8 @@ trait Typers { self: Analyzer =>
             case SelectFromTypeTree(_, _) => copy.SelectFromTypeTree(tree, qual, name)
           }
           val result = stabilize(checkAccessible(tree1, sym, qual.tpe, qual), qual.tpe, mode, pt)
-          if (!global.phase.erasedTypes && settings.Xchecknull.value &&
+          if (phase.id <= currentRun.typerPhase.id &&
+              settings.Xchecknull.value &&
               !sym.isConstructor &&
               !(qual.tpe <:< NotNullClass.tpe) && !qual.tpe.isNotNull)
             unit.warning(tree.pos, "potential null pointer dereference: "+tree)
@@ -3336,7 +3337,19 @@ trait Typers { self: Analyzer =>
      *  @param pt   ...
      *  @return     ...
      */
-    def typed(tree: Tree, mode: Int, pt: Type): Tree =
+    def typed(tree: Tree, mode: Int, pt: Type): Tree = {
+
+      def dropExistential(tp: Type): Type = tp match {
+        case ExistentialType(tparams, tpe) =>
+          if (settings.debug.value) println("drop ex "+tree+" "+tp)
+          new SubstWildcardMap(tparams).apply(tp)
+        case TypeRef(_, sym, _) if sym.isAliasType =>
+          val tp0 = tp.normalize
+          val tp1 = dropExistential(tp0)
+          if (tp1 eq tp0) tp else tp1
+        case _ => tp
+      }
+
       try {
         if (settings.debug.value)
           assert(pt ne null, tree)//debug
@@ -3346,16 +3359,7 @@ trait Typers { self: Analyzer =>
           if (tree.hasSymbol) tree.symbol = NoSymbol
         }
         if (printTypings) println("typing "+tree+", "+context.undetparams+(mode & TYPEPATmode)); //DEBUG
-        def dropExistential(tp: Type): Type = tp match {
-          case ExistentialType(tparams, tpe) =>
-            if (settings.debug.value) println("drop ex "+tree+" "+tp)
-            new SubstWildcardMap(tparams).apply(tp)
-          case TypeRef(_, sym, _) if sym.isAliasType =>
-            val tp0 = tp.normalize
-            val tp1 = dropExistential(tp0)
-            if (tp1 eq tp0) tp else tp1
-          case _ => tp
-        }
+
         var tree1 = if (tree.tpe ne null) tree else typed1(tree, mode, dropExistential(pt))
         if (printTypings) println("typed "+tree1+":"+tree1.tpe+", "+context.undetparams+", pt = "+pt); //DEBUG
 
@@ -3380,6 +3384,7 @@ trait Typers { self: Analyzer =>
             logError("AT: " + (tree.pos).dbgString, ex);
           throw(ex)
       }
+    }
 
     def atOwner(owner: Symbol): Typer =
       newTyper(context.make(context.tree, owner))

@@ -23,7 +23,7 @@ import Predef._
 trait ResizableArray[A] extends RandomAccessSeq[A] {
 
   protected def initialSize: Int = 16
-  protected var array: Array[AnyRef] = new Array[AnyRef](initialSize)
+  protected var array: Array[AnyRef] = new Array[AnyRef](initialSize min 1)
   private var size1: Int = 0
   protected def size0: Int = size1
   protected def size0_=(sz: Int) { size1 = sz }
