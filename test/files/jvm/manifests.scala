@@ -1,7 +1,7 @@
 object Test extends Application {
   Test1
   Test2
-  Test3
+  //Test3  // Java 1.5+ only
 }
 
 class Foo[T](x: T)

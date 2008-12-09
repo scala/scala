@@ -55,5 +55,3 @@ List(List(1), List(2))=List(List(1), List(2))
 
 Array(Array(1), Array(2))=Array(Array(1), Array(2))
 
-x=char, m=scala.reflect.Manifest[char]
-
