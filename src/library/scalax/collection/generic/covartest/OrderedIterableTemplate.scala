@@ -13,5 +13,11 @@ package scalax.collection.generic.covartest
 
 import OrderedIterable._
 
+/** Ordered iterables are iterables where the `elements` method always returns elements in the same
+ *  order (namely the order in which elements were appended to the iterable). In particular, one has
+ *  for every two ordered iterables `xs` and `ys`:
+ *
+ *  `(xs ++ ys).elements = xs.elements ++ ys.elements
+ */
 trait OrderedIterableTemplate[+CC[+B] <: OrderedIterableTemplate[CC, B] with OrderedIterable[B], +A]
   extends IterableTemplate[CC, A]

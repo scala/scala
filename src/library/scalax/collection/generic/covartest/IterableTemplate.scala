@@ -12,7 +12,7 @@
 package scalax.collection.generic.covartest
 
 import scalax.collection.mutable.{Buffer, ArrayBuffer, ListBuffer}
-import scalax.collection.immutable.{List, Nil, ::}
+import scalax.collection.immutable.{List, Nil, ::, Stream}
 import util.control.Break._
 import Iterable._
 
@@ -411,7 +411,7 @@ b   *  @param thatElem element <code>thatElem</code> is used to fill up the
    *  Returns a sequence containing all of the elements in this iterable object.
    *  @note Will not terminate for infinite-sized collections.
    */
-  def toSequence: Sequence[A] = toList.asInstanceOf[Sequence[A]] // !!!
+  def toSequence: Sequence[A] = toList
 
   /** @deprecated use toSequence instead
    */

@@ -7,5 +7,5 @@ trait SequenceFactory[CC[A] <: Sequence[A]] extends IterableFactory[CC] {
    *  @param x the selector value
    *  @return  sequence wrapped in an option, if this is a Sequence, otherwise none
    */
-  def unapplySequence[A](x: CC[A]): Some[CC[A]] = Some(x)
+  def unapplySeq[A](x: CC[A]): Some[CC[A]] = Some(x)
 }

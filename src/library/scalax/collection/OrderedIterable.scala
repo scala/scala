@@ -12,6 +12,7 @@
 package scalax.collection
 
 import generic._
+import immutable.Nil
 
 /** An ordered collection is a collection with a fixed sequence of elements
  *  which corresponds to append order. In particular, it holds that
@@ -36,6 +37,6 @@ trait OrderedIterable[+A] extends Iterable[A] with covariant.OrderedIterableTemp
  */
 object OrderedIterable extends covariant.IterableFactory[OrderedIterable] {
 
-  val empty: OrderedIterable[Nothing] = null // !!!
+  val empty: OrderedIterable[Nothing] = Nil
 
 }

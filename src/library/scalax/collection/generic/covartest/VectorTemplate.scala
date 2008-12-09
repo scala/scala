@@ -208,7 +208,7 @@ self =>
     b.result
   }
 
-  override def reversedElements = new Iterator[A] {
+  override def reversedElements: Iterator[A] = new Iterator[A] {
     var i = length
     def hasNext: Boolean = 0 < i
     def next: A =

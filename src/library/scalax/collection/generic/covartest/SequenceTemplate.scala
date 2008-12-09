@@ -324,7 +324,7 @@ self /*: CC[A]*/ =>
    *
    *  @return  the sequence itself
    */
-  override def toSequence: Sequence[A] = this.asInstanceOf[Null] // !!!
+  override def toSequence: Sequence[A] = thisCC
 
   def indices: Range = 0 until length
 

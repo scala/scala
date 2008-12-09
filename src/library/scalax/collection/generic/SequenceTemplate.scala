@@ -53,13 +53,6 @@ self /*: CC[A]*/ =>
    */
   def isDefinedAt(x: Int): Boolean = (x >= 0) && (x < length)
 
-  /** Returns index of the first element satisying a predicate, or -1, if none exists.
-   *
-   *  @note may not terminate for infinite-sized collections.
-   *  @param  p the predicate
-   */
-  def indexWhere(p: A => Boolean): Int = indexWhere(p, 0)
-
   /** Returns length of longest segment starting from a start index `from`
    *  such that every element of the segment satisfies predicate `p`.
    *  @note may not terminate for infinite-sized collections.
@@ -84,6 +77,13 @@ self /*: CC[A]*/ =>
    *  @param  p the predicate
    */
   def prefixLength(p: A => Boolean) = segmentLength(p, 0)
+
+  /** Returns index of the first element satisfying a predicate, or -1, if none exists.
+   *
+   *  @note may not terminate for infinite-sized collections.
+   *  @param  p the predicate
+   */
+  def indexWhere(p: A => Boolean): Int = indexWhere(p, 0)
 
   /** Returns index of the first element starting from a start index
    *  satisying a predicate, or -1, if none exists.
@@ -303,10 +303,8 @@ self /*: CC[A]*/ =>
     b.result
   }
 
-  /** Returns a sequence of given length containing the elements of this sequence followed by zero
-   *  or more occurrences of given elements. If this sequence is already at least as long as given
-   *  length, it is returned directly. Otherwise, a new sequence is created consisting of the elements
-   *  of this sequence followed by enough occurrences of the given elements to reach the given length.
+  /** Returns a new sequence of given length containing the elements of this sequence followed by zero
+   *  or more occurrences of given elements.
    */
   def padTo[B >: A](len: Int, elem: B): CC[B] = {
     var diff = len - length
@@ -324,7 +322,7 @@ self /*: CC[A]*/ =>
    *
    *  @return  the sequence itself
    */
-  override def toSequence: Sequence[A] = this.asInstanceOf[Null] // !!!
+  override def toSequence: Sequence[A] = thisCC
 
   def indices: Range = 0 until length
 

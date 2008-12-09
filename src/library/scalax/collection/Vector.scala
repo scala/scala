@@ -11,11 +11,12 @@
 package scalax.collection
 
 import generic._
+import mutable.ArrayBuffer
 
 trait Vector[+A] extends Sequence[A] with covariant.VectorTemplate[Vector, A]
 
 object Vector extends covariant.SequenceFactory[Vector] {
 
   /** The empty sequence */
-  val empty : Vector[Nothing] = null // !!!
+  val empty : Vector[Nothing] = null // !!! todo: insert good immutable vector implementation here.
 }

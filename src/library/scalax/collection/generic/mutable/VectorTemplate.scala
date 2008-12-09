@@ -44,7 +44,7 @@ self =>
    */
   override def view(from: Int, until: Int): VectorView[CC, A] = view.slice(from, until)
 
-  def readOnly: Sequence[A] = new collection./*immutable.*/Vector[A] { //!!!
+  def readOnly: Sequence[A] = new collection.immutable.Vector[A] { //!!!
     def length = self.length
     def apply(idx : Int) = self.apply(idx)
     def newBuilder[B]: Builder[CC, B] = self.newBuilder[B]

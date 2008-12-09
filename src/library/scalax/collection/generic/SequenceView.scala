@@ -69,7 +69,7 @@ self =>
 
   class Patched[/*+*/B >: A](from: Int, patch: Sequence[B], replaced: Int) extends Transformed[B] {
     val plen = patch.length
-    override def elements: Iterator[B] = self.elements patch (from, patch.asInstanceOf[Null], replaced) // !!!
+    override def elements: Iterator[B] = self.elements patch (from, patch, replaced)
     override def length: Int = self.length + plen - replaced
     override def apply(idx: Int): B =
       if (idx < from) self.apply(idx)
@@ -101,7 +101,7 @@ self =>
   override def zip[B](that: Iterable[B]): SequenceView[UC, (A, B)] =
     new Zipped(that.toSequence).asCC
   override def zipWithIndex: SequenceView[UC, (A, Int)] =
-    zip((0 until length).asInstanceOf[Null]) // !!!
+    zip((0 until length).asInstanceOf[Null]) // !@!
     /*
   override def zipAll[B, A1 >: A, B1 >: B](that: Iterable[B], thisElem: A1, thatElem: B1): SequenceView[UC, (A1, B1)] = {
     val that1 = that.toSequence

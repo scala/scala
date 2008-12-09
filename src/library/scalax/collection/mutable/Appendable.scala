@@ -33,7 +33,7 @@ trait Appendable[A] {
   def +=(elem1: A, elem2: A, elems: A*) {
     this += elem1
     this += elem2
-    this ++= elems.asInstanceOf[Iterable[A]] // !!!
+    this ++= elems.asInstanceOf[Iterable[A]] // !@!
   }
 
   /** Appends a number of elements provided by an iterator
@@ -64,7 +64,7 @@ trait Appendable[A] {
    *  @param elems the remaining elements to append.
    */
   def +(elem1: A, elem2: A, elems: A*): this.type =
-    this + elem1 + elem2 ++ elems.asInstanceOf[Iterable[A]] // !!!
+    this + elem1 + elem2 ++ elems.asInstanceOf[Iterable[A]] // !@!
 
   /** Appends a number of elements provided by an iterable object
    *  via its <code>elements</code> method. The identity of the

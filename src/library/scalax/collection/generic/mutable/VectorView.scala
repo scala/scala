@@ -75,7 +75,7 @@ self =>
     new Zipped(toVector(that)).asCC
 
   override def zipWithIndex: VectorView[UC, (A, Int)] =
-    zip((0 until length).asInstanceOf[Null]) // !!!
+    zip((0 until length).asInstanceOf[Null]) // !@!
   override def take(n: Int): VectorView[UC, A] =
     slice(0, n)
   override def drop(n: Int): VectorView[UC, A] =

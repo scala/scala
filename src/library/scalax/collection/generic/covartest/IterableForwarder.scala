@@ -9,7 +9,7 @@
 // $Id: IterableProxy.scala 15458 2008-06-28 20:23:22Z stepancheg $
 
 
-package scalax.collection.generic
+package scalax.collection.generic.covartest
 
 import collection.mutable.Buffer
 import collection.immutable.{List, Stream}

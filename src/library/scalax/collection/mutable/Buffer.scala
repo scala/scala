@@ -124,7 +124,7 @@ trait Buffer[A] extends Vector[A] with VectorTemplate[Buffer, A] with Appendable
    *  @param elem  the element to prepend.
    */
   def +:(elem1: A, elem2: A, elems: A*): this.type =
-    elem1 +: elem2 +: (elems.asInstanceOf[Iterable[A]]) ++: this // !!!
+    elem1 +: elem2 +: (elems.asInstanceOf[Iterable[A]]) ++: this // !@!
 
   /** Prepends a number of elements provided by an iterable object
    *  via its <code>elements</code> method. The identity of the
@@ -146,7 +146,7 @@ trait Buffer[A] extends Vector[A] with VectorTemplate[Buffer, A] with Appendable
    *
    *  @param elems  the elements to append.
    */
-  def append(elems: A*) { this ++= elems.asInstanceOf[Iterable[A]] } // !!!
+  def append(elems: A*) { this ++= elems.asInstanceOf[Iterable[A]] } // !@!
 
   /** Appends a number of elements provided by an iterable object
    *  via its <code>elements</code> method.
@@ -159,7 +159,7 @@ trait Buffer[A] extends Vector[A] with VectorTemplate[Buffer, A] with Appendable
    *
    *  @param elem  the element to prepend.
    */
-  def prepend(elems: A*) { elems.asInstanceOf[Iterable[A]] ++: this } // !!!
+  def prepend(elems: A*) { elems.asInstanceOf[Iterable[A]] ++: this } // !@!
 
   /** Prepends a number of elements provided by an iterable object
    *  via its <code>elements</code> method. The identity of the
@@ -184,7 +184,7 @@ trait Buffer[A] extends Vector[A] with VectorTemplate[Buffer, A] with Appendable
    *  @param n      the index where a new element will be inserted.
    *  @param elems  the new elements to insert.
    */
-  def insert(n: Int, elems: A*) { insertAll(n, elems.asInstanceOf[Iterable[A]]) } // !!!
+  def insert(n: Int, elems: A*) { insertAll(n, elems.asInstanceOf[Iterable[A]]) } // !@!
 
   /** Removes the first <code>n</code> elements.
    *

@@ -65,6 +65,43 @@ final case class Left[+A, +B](a: A) extends Either[A, B] { override def isLeft =
 final case class Right[+A, +B](b: B) extends Either[A, B] { override def isRight = true }
 
 object Either {
+
+  /**
+   * Returns the <code>Left</code> values in the given <code>Iterable</code> of <code>Either</code>s.
+   *
+   * @deprecated use `for (Left(a) <- es) yield a`
+   *
+   */
+  def lefts[A, B](es: Iterable[Either[A, B]]) =
+    es.foldRight[List[A]](Nil)((e, as) => e match {
+      case Left(a) => a :: as
+      case Right(_) => as
+    })
+
+  /**
+   * Returns the <code>Right</code> values in the given<code>Iterable</code> of  <code>Either</code>s.
+   *
+   * @deprecated use `for (Right(a) <- es) yield a`
+   */
+  def rights[A, B](es: Iterable[Either[A, B]]) =
+    es.foldRight[List[B]](Nil)((e, bs) => e match {
+      case Left(_) => bs
+      case Right(b) => b :: bs
+    })
+
+  /** Transforms an Iterable of Eithers into a pair of lists.
+   *
+   *  @param xs the iterable of Eithers to separate
+   *  @return a pair of lists.
+   *
+   *  @deprecated  use `for ((Left(l), Right(r)) <- es partition isLeft) yield (l, r)`
+   */
+  def separate[A,B](es: Iterable[Either[A,B]]): (List[A], List[B]) =
+      es.foldRight[(List[A], List[B])]((Nil, Nil)) {
+      case (Left(a), (lefts, rights)) => (a :: lefts, rights)
+      case (Right(b), (lefts, rights)) => (lefts, b :: rights)
+    }
+
   /**
    * Projects an <code>Either</code> into a <code>Left</code>.
    *

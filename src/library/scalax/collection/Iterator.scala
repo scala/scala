@@ -12,7 +12,7 @@
 package scalax.collection
 
 import mutable.{Buffer, ArrayBuffer, ListBuffer}
-import immutable.{List, Nil, ::}
+import immutable.{List, Nil, ::, Stream}
 
 /** The <code>Iterator</code> object provides various functions for
  *  creating specialized iterators.
@@ -28,7 +28,20 @@ object Iterator {
     def next(): Nothing = throw new NoSuchElementException("next on empty iterator")
   }
 
-  def apply[A](args: A*): Iterator[A] = args.asInstanceOf[Iterable[A]].elements // !!!
+  /**
+   *  @param x the element
+   *  @return  the iterator with one single element
+   *  @note  Equivalent, but more efficient than Iterator(x)
+   */
+  def single[A](x: A) = new Iterator[A] {
+    private var hasnext = true
+    def hasNext: Boolean = hasnext
+    def next(): A =
+      if (hasnext) { hasnext = false; x }
+      else empty.next()
+  }
+
+  def apply[A](args: A*): Iterator[A] = args.asInstanceOf[Iterable[A]].elements // !@!
 
   /** Concatenate all the argument iterators into a single iterator.
    *
@@ -36,7 +49,7 @@ object Iterator {
    *  @return the concatenation of all the lists
    */
   def concat[A](xss: Iterator[A]*): Iterator[A] =
-    xss.asInstanceOf[Iterable[Iterator[A]]].elements.flatten // !!!
+    xss.asInstanceOf[Iterable[Iterator[A]]].elements.flatten // !@!
 
   /** An iterator that returns the same element a number of times
    *  @param   len  The number of elements returned
@@ -152,31 +165,13 @@ object Iterator {
      */
     def flatten: Iterator[A] = new Iterator[A] {
       private var it = its.next
-      def hasNext: Boolean = {
-        while (!it.hasNext && its.hasNext) it = its.next
-        it.hasNext
-      }
-      def next(): A =
-        if (hasNext) it.next
-        else empty.next()
+      def hasNext: Boolean = if (it.hasNext) { it = its.next; hasNext } else false
+      def next(): A = if (hasNext) it.next else empty.next()
     }
   }
 
   implicit def iteratorIteratorWrapper[A](its: Iterator[Iterator[A]]): IteratorIteratorOps[A] =
     new IteratorIteratorOps[A](its)
-
-  /**
-   *  @param x the element
-   *  @return  the iterator with one single element
-   *  @deprecated  use Iterator(x) instead
-   */
-  @deprecated def single[a](x: a) = new Iterator[a] {
-    private var hasnext = true
-    def hasNext: Boolean = hasnext
-    def next(): a =
-      if (hasnext) { hasnext = false; x }
-      else empty.next()
-  }
 
   /** @deprecated  use `xs.elements` instead
    */
@@ -198,7 +193,7 @@ object Iterator {
    *  @deprecated  use `xs.slice(start, start + length).elements` instead
    */
   @deprecated def fromArray[a](xs: Array[a], start: Int, length: Int): Iterator[a] =
-    xs.slice(start, start + length).elements.asInstanceOf[Iterator[a]] // !!!
+    xs.slice(start, start + length).elements.asInstanceOf[Iterator[a]] // !@!
 
   /**
    *  @param str the given string
@@ -206,7 +201,7 @@ object Iterator {
    *  @deprecated replaced by <code>str.elements</code>
    */
   @deprecated def fromString(str: String): Iterator[Char] =
-    str.elements.asInstanceOf[Iterator[Char]] // !!!
+    str.elements.asInstanceOf[Iterator[Char]] // !@!
 
   /**
    *  @param n the product arity
@@ -889,7 +884,7 @@ self =>
   def toSequence: Sequence[A] = {
     val buffer = new ArrayBuffer[A]
     this copyToBuffer buffer
-    null // !!! should be: buffer.readOnly
+    buffer.readOnly
   }
 
   /** Collect elements into a seq.

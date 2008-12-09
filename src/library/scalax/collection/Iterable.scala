@@ -12,6 +12,7 @@
 package scalax.collection
 
 import generic._
+import collection.immutable.{List, Nil, ::}
 
 /** Collection classes mixing in this class provide a method
  *  <code>elements</code> which returns an iterator over all the
@@ -43,9 +44,9 @@ trait Iterable[+A] extends covariant.IterableTemplate[Iterable, A] { self =>
 object Iterable extends covariant.IterableFactory[Iterable] {
 
   /** The empty iterable */
-  val empty: Iterable[Nothing] = null // !!!
+  val empty: Iterable[Nothing] = Nil
 
-  class OrderedIterableOps[A](seq: Iterable[A], cmp: Ordering[A]) {
+  class ComparableIterableOps[A](seq: Iterable[A], cmp: Ordering[A]) {
     def min: A = {
       require(!seq.isEmpty, "min(<empty>)")
       var acc = seq.elements.next
@@ -75,16 +76,32 @@ object Iterable extends covariant.IterableFactory[Iterable] {
     }
   }
 
-  class IterableIterableOps[C[+B] <: Iterable[B], A](self: C[Iterable[A]]) {
+  class IterableIterableOps[C[+B] <: Iterable[B] with covariant.IterableTemplate[C, B], A](self: C[C[A]]) {
     def flatten: C[A] = {
-      val b = self.newBuilder[A].asInstanceOf[Builder[C, A]]
+      val b: Builder[C, A] = self.newBuilder[A]
       for (xs <- self)
         b ++= xs
       b.result
     }
+
+    def transpose: C[C[A]] = {
+      val bs: Array[Builder[C, A]] = self.head.map(_ => self.newBuilder[A]).toArray
+      for (xs <- self) {
+        var i = 0
+        for (x <- xs) {
+          bs(i) += x
+          i += 1
+        }
+      }
+      type CC[B] = C[C[B]]
+      val bb = self.newBuilder[C[A]]
+      for (b <- bs) bb += b.result
+      bb.result
+    }
   }
 
-  class PairCollectionOps[C[+B] <: Iterable[B], A1, A2](self: C[(A1, A2)]) {
+
+  class PairIterableOps[C[+B] <: Iterable[B], A1, A2](self: C[(A1, A2)]) {
     def unzip: (C[A1], C[A2]) = {
       val as = self.newBuilder[A1].asInstanceOf[Builder[C, A1]]
       val bs = self.newBuilder[A2].asInstanceOf[Builder[C, A2]]
@@ -96,14 +113,14 @@ object Iterable extends covariant.IterableFactory[Iterable] {
     }
   }
 
-  implicit def orderedIterableWrapper[A](seq: Iterable[A])(implicit cmp: Ordering[A]) =
-    new OrderedIterableOps(seq, cmp)
+  implicit def comparableIterableWrapper[A](seq: Iterable[A])(implicit cmp: Ordering[A]) =
+    new ComparableIterableOps(seq, cmp)
   implicit def numericIterableWrapper[A](seq: Iterable[A])(implicit num: Numeric[A]) =
     new NumericIterableOps(seq, num)
-  implicit def iterableIterableWrapper[C[+B] <: Iterable[B], A](seq: C[Iterable[A]]) =
+  implicit def iterableIterableWrapper[C[+B] <: Iterable[B] with covariant.IterableTemplate[C, B], A](seq: C[C[A]]) =
     new IterableIterableOps[C, A](seq)
-  implicit def pairCollectionWrapper[C[+B] <: Iterable[B], A1, A2](seq: C[(A1, A2)]) =
-    new PairCollectionOps[C, A1, A2](seq)
+  implicit def pairIterableWrapper[C[+B] <: Iterable[B], A1, A2](seq: C[(A1, A2)]) =
+    new PairIterableOps[C, A1, A2](seq)
 
   type View[+UC[+B] <: Sequence[B], +A] = covariant.IterableView[UC, A]
 

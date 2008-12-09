@@ -12,6 +12,7 @@
 package scalax.collection
 
 import generic._
+import immutable.Nil
 
 /** Class <code>Sequence[A]</code> represents finite sequences of elements
  *  of type <code>A</code>.
@@ -25,7 +26,7 @@ trait Sequence[+A] extends OrderedIterable[A] with SizedIterable[A] with covaria
 object Sequence extends covariant.SequenceFactory[Sequence] {
 
   /** The empty sequence */
-  val empty : Sequence[Nothing] = null // !!!
+  val empty : Sequence[Nothing] = immutable.Nil
 
   type View[+UC[+B] <: Sequence[B], +A] = covariant.SequenceView[UC, A]
 

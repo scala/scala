@@ -55,7 +55,7 @@ trait ResizableArray[A] extends Vector[A] {
    *  @param   The buffer to which elements are copied
    */
   override def copyToBuffer[B >: A](dest: Buffer[B]) {
-    dest ++= array.asInstanceOf[Iterable[A]] // !!!
+    dest ++= array.asInstanceOf[Iterable[A]] // !@!
   }
 
   override def foreach(f: A => Unit) {

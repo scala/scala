@@ -186,6 +186,7 @@ object Predef {
   implicit def doubleWrapper(x: Double) = new runtime.RichDouble(x)
 
   implicit def booleanWrapper(x: Boolean)  = new runtime.RichBoolean(x)
+  implicit def unitWrapper(x: Boolean)  = new runtime.RichUnit
 
   implicit def stringWrapper(x: String) = new runtime.RichString(x)
   implicit def stringBuilderWrapper(x : StringBuilder): runtime.RichStringBuilder = new runtime.RichStringBuilder(x)

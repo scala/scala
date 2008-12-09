@@ -15,6 +15,6 @@ trait Vector[A] extends collection.Vector[A] with generic.mutable.VectorTemplate
 object Vector extends generic.nonvariant.SequenceFactory[Vector] {
 
   /** The empty iterable */
-  def apply[A](args: A*): Vector[A] = null // !!!
+  def apply[A](args: A*): Vector[A] = new ArrayBuffer[A] ++ args.asInstanceOf[Iterable[A]] // !@!
 
 }
