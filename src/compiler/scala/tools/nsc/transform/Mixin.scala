@@ -140,7 +140,8 @@ abstract class Mixin extends InfoTransform {
   }
 
   def needsExpandedSetterName(field: Symbol) =
-    settings.Xexperimental.value && !field.hasFlag(LAZY | MUTABLE)
+    !(field hasFlag LAZY) &&
+    (if (field.isMethod) (field hasFlag STABLE) else !(field hasFlag MUTABLE))
 
   /** Add getters and setters for all non-module fields of an implementation
    *  class to its interface unless they are already present. This is done
@@ -157,19 +158,26 @@ abstract class Mixin extends InfoTransform {
 
       /** Create a new getter. Getters are never private or local. They are
        *  always accessors and deferred. */
-      def newGetter(field: Symbol): Symbol =
+      def newGetter(field: Symbol): Symbol = {
+        //println("creating new getter for "+field+field.locationString+(field hasFlag MUTABLE))
         clazz.newMethod(field.pos, nme.getterName(field.name))
-          .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | lateDEFERRED)
+          .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | lateDEFERRED |
+                     (if (field hasFlag MUTABLE) 0 else STABLE))
           .setInfo(MethodType(List(), field.info))
+      }
 
       /** Create a new setter. Setters are never private or local. They are
        *  always accessors and deferred. */
       def newSetter(field: Symbol): Symbol = {
+        //println("creating new setter for "+field+field.locationString+(field hasFlag MUTABLE))
         val setterName = nme.getterToSetter(nme.getterName(field.name))
         val setter = clazz.newMethod(field.pos, setterName)
           .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | lateDEFERRED)
           .setInfo(MethodType(List(field.info), UnitClass.tpe))
-        if (needsExpandedSetterName(field)) setter.name = clazz.expandedSetterName(setter.name)
+        if (needsExpandedSetterName(field)) {
+          //println("creating expanded setter from "+field)
+          setter.name = clazz.expandedSetterName(setter.name)
+        }
         setter
       }
 
@@ -793,7 +801,7 @@ abstract class Mixin extends InfoTransform {
                 }
                 if (sym.isSetter) {
                   val isOverriddenSetter =
-                    settings.Xexperimental.value && nme.isTraitSetterName(sym.name) && {
+                    nme.isTraitSetterName(sym.name) && {
                       sym.allOverriddenSymbols match {
                         case other :: _ =>
                           isOverriddenAccessor(other.getter(other.owner), clazz.info.baseClasses)
@@ -960,10 +968,14 @@ abstract class Mixin extends InfoTransform {
           // assign to fields in some implementation class via an abstract
           // setter in the interface.
           localTyper.typed {
-            // println(lhs.symbol)
-            // println(lhs.symbol.owner.info.decls)
-            // println(needsExpandedSetterName(lhs.symbol))
-            // util.trace("generating tree: ") {
+/*
+            println(lhs.symbol)
+            println(lhs.symbol.owner.info.decls)
+            println(needsExpandedSetterName(lhs.symbol))
+            println(toInterface(lhs.symbol.owner.tpe).typeSymbol)
+            println(toInterface(lhs.symbol.owner.tpe).typeSymbol.info.decls)
+            util.trace("generating tree: ") {
+*/
             atPos(tree.pos) {
               Apply(
                 Select(
@@ -973,7 +985,8 @@ abstract class Mixin extends InfoTransform {
                     needsExpandedSetterName(lhs.symbol))) setPos lhs.pos,
                 List(rhs))
             }
-          } //}
+//          }
+          }
         case _ =>
           tree
       }
