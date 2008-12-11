@@ -973,6 +973,11 @@ abstract class GenJVM extends SubComponent {
               else javaName(call.hostClass)
 
             style match {
+              case InvokeDynamic =>
+                jcode.emitINVOKEINTERFACE("java.dyn.Dynamic",
+                                          javaName(method),
+                                          javaType(method).asInstanceOf[JMethodType])
+
               case Dynamic =>
                 if (needsInterfaceCall(method.owner))
                   jcode.emitINVOKEINTERFACE(owner,
