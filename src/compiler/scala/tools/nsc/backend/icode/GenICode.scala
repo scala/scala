@@ -844,6 +844,12 @@ abstract class GenICode extends SubComponent  {
             ctx1
           }
 
+        case ApplyDynamic(qual, args) =>
+          val ctx1 = genLoad(qual, ctx, ANY_REF_CLASS)
+          genLoadArguments(args, tree.symbol.info.paramTypes, ctx1)
+          ctx1.bb.emit(CALL_METHOD(tree.symbol, InvokeDynamic), tree.pos)
+          ctx1
+
         case This(qual) =>
           assert(tree.symbol == ctx.clazz.symbol || tree.symbol.isModuleClass,
                  "Trying to access the this of another class: " +

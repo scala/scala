@@ -121,6 +121,7 @@ trait Members { self: ICodes =>
     var fields: List[IField] = Nil
     var methods: List[IMethod] = Nil
     var cunit: CompilationUnit = _
+    var bootstrapClass: Option[String] = None
 
     def addField(f: IField): this.type = {
       fields = f :: fields;

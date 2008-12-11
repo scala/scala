@@ -630,7 +630,11 @@ trait Opcodes { self: ICodes =>
       }
     }
 
+    /** Virtual calls */
     case object Dynamic extends InvokeStyle
+
+    /** InvokeDynamic a la JSR 292 (experimental). */
+    case object InvokeDynamic extends InvokeStyle
 
     /**
      * Special invoke. Static(true) is used for calls to private
