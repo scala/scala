@@ -11,6 +11,7 @@
 package scala.actors
 
 import java.lang.ref.{WeakReference, ReferenceQueue}
+import java.util.WeakHashMap
 
 import scala.collection.mutable.HashMap
 
@@ -20,13 +21,11 @@ object ActorGC {
   private val termHandlers = new HashMap[Actor, () => Unit]
 
   private val refQ = new ReferenceQueue[Actor]
-  private var storedRefs: List[WeakReference[Actor]] = List()
+  private val refMap = new WeakHashMap[WeakReference[Actor], AnyRef]
 
   def newActor(a: Actor) = synchronized {
     val wr = new WeakReference[Actor](a, refQ)
-    //Debug.info("created "+wr+" pointing to "+a)
-    storedRefs = wr :: storedRefs
-
+    refMap.put(wr, null)
     pendingReactions += 1
   }
 
