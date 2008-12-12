@@ -24,9 +24,9 @@ abstract class CleanUp extends Transform {
 
   class CleanUpTransformer(unit: CompilationUnit) extends Transformer {
 
-    private val MethodClass = if (forCLDC || forMSIL) null
-                              else definitions.getClass("java.lang.reflect.Method")
     private val newDefs = new ListBuffer[Tree]
+    private val newInits = new ListBuffer[Tree]
+
     private val classConstantMeth = new HashMap[String, Symbol]
 
     // a map from the symbols of the Scala primitive types to the symbols
@@ -85,90 +85,6 @@ abstract class CleanUp extends Transform {
         meth
     }
 
-    private val existingReflectiveMethodCache = new HashMap[(String, List[Type]), Symbol]
-
-    /* Transforms a list of types into a list of trees representing these types
-     * as java.lang.Class instances. */
-    private def paramTypeClasses(paramTypes: List[Type]): List[Tree] =
-      paramTypes map { pt => Literal(Constant(pt)) }
-
-    private def reflectiveMethodCache(pos: Position, method: String, paramTypes: List[Type]): Symbol =
-      existingReflectiveMethodCache.get((method, paramTypes)) match {
-        case Some(cache) => cache
-        case None =>
-          val owner = currentOwner.enclClass
-
-          val rmvar = owner.newVariable(pos, unit.fresh.newName(pos, "reflMethod$Cache"))
-            .setFlag(PRIVATE | STATIC | MUTABLE | SYNTHETIC)
-            .setInfo(MethodClass.tpe)
-          owner.info.decls.enter(rmvar)
-          val rmdef =
-            localTyper.typed {
-              atPos(pos) {
-                ValDef(rmvar, Literal(Constant(null)))
-              }
-            }
-
-          val rmcvar = owner.newVariable(pos, unit.fresh.newName(pos, "reflClass$Cache"))
-            .setFlag(PRIVATE | STATIC | MUTABLE | SYNTHETIC)
-            .setInfo(ClassClass.tpe)
-          owner.info.decls.enter(rmcvar)
-          val rmcdef =
-            localTyper.typed {
-              atPos(pos) {
-                ValDef(rmcvar, Literal(Constant(null)))
-              }
-            }
-
-          val rmmeth = owner.newMethod(pos, unit.fresh.newName(pos, "reflMethod$Method"))
-            .setFlag(STATIC | SYNTHETIC)
-            .setInfo(MethodType(List(ClassClass.tpe), MethodClass.tpe))
-          owner.info.decls.enter(rmmeth)
-          val rmmdef =
-            localTyper.typed {
-              atPos(pos) {
-                DefDef(rmmeth, { vparamss =>
-                  val callClass = vparamss(0)(0)
-                  Block(
-                    List(
-                      If(
-                        gen.mkOr(
-                          Apply(Select(Select(This(owner), rmvar), nme.eq), List(Literal(Constant(null)))),
-                          Apply(Select(Select(This(owner), rmcvar), nme.ne), List(gen.mkAttributedRef(callClass)))
-                        ),
-                        Block(
-                          List(
-                            Assign(
-                              Select(This(owner), rmvar),
-                              Apply(
-                                Select(
-                                  gen.mkAttributedRef(callClass),
-                                  ClassClass.tpe.member(nme.getMethod_)
-                                ),
-                                List(
-                                  Literal(Constant(method)),
-                                  ArrayValue(TypeTree(ClassClass.tpe), paramTypeClasses(paramTypes))
-                                )
-                              )
-                            ),
-                            Assign(Select(This(owner), rmcvar), gen.mkAttributedRef(callClass))
-                          ),
-                          Literal(Constant(()))
-                        ),
-                        EmptyTree
-                      )
-                    ),
-                    Select(This(owner), rmvar)
-                  )
-                })
-              }
-            }
-
-          newDefs.append(transform(rmdef), transform(rmcdef), transform(rmmdef));
-          existingReflectiveMethodCache.update((method, paramTypes), rmmeth)
-          rmmeth
-      }
-
     override def transformUnit(unit: CompilationUnit) =
       unit.body = transform(unit.body)
 
@@ -182,7 +98,7 @@ abstract class CleanUp extends Transform {
       /* Transforms dynamic calls (i.e. calls to methods that are undefined
        * in the erased type space) to -- dynamically -- unsafe calls using
        * reflection. This is used for structural sub-typing of refinement
-       * types.
+       * types, but may be used for other dynamic calls in the future.
        * For 'a.f(b)' it will generate something like:
        * 'a.getClass().
        * '  getMethod("f", Array(classOf[b.type])).
@@ -198,11 +114,11 @@ abstract class CleanUp extends Transform {
        *   that an argument tree typed as AnyVal has already been extended
        *   with the necessary boxing calls. This implies that passed
        *   arguments might not be strictly compatible with the method's
-       *   parameter types (a boxed integeer while int is expected).
+       *   parameter types (a boxed integer while int is expected).
        * - The expected return type is an AnyRef, even when the method's
        *   return type is an AnyVal. This means that the tree containing the
        *   call has already been extended with the necessary unboxing calls
-       *   (or keeps the boxed type).
+       *   (or is happy with the boxed type).
        * - The type-checker has prevented dynamic applies on methods which
        *   parameter's erased types are not statically known at the call site.
        *   This is necessary to allow dispatching the call to the correct
@@ -212,6 +128,245 @@ abstract class CleanUp extends Transform {
        *   type variable. */
       case ad@ApplyDynamic(qual, params) =>
         assert(ad.symbol.isPublic)
+
+        /* ### CREATING THE METHOD CACHE ### */
+
+        def addStaticVariableToClass(forName: String, forType: Type, forInit: Tree): Symbol = {
+          val varSym = currentClass.newVariable(ad.pos, unit.fresh.newName(ad.pos, forName))
+            .setFlag(PRIVATE | STATIC | MUTABLE | SYNTHETIC)
+            .setInfo(forType)
+          currentClass.info.decls.enter(varSym)
+          val varDef =
+            localTyper.typed {
+              atPos(ad.pos) {
+                ValDef(varSym, forInit)
+              }
+            }
+          newDefs.append(transform(varDef))
+          val varInit =
+            localTyper.typed {
+              atPos(ad.pos) {
+                Assign(gen.mkAttributedRef(varSym), forInit)
+              }
+            }
+          newInits.append(transform(varInit))
+          varSym
+        }
+
+        def addStaticMethodToClass(forName: String, forArgsTypes: List[Type], forResultType: Type)
+                                  (forBody: Pair[Symbol, List[Symbol]] => Tree): Symbol = {
+          val methSym = currentClass.newMethod(ad.pos, unit.fresh.newName(ad.pos, forName))
+            .setFlag(STATIC | SYNTHETIC)
+            .setInfo(MethodType(forArgsTypes, forResultType))
+          currentClass.info.decls.enter(methSym)
+          val methDef =
+            localTyper.typed {
+              atPos(ad.pos) {
+                DefDef(methSym, { vparamss => forBody(Pair(methSym, vparamss(0))) })
+              }
+            }
+          newDefs.append(transform(methDef))
+          methSym
+        }
+
+        def fromTypesToClassArrayLiteral(paramTypes: List[Type]): Tree =
+          ArrayValue(TypeTree(ClassClass.tpe), paramTypes map { pt => Literal(Constant(pt)) })
+
+        def theTypeClassArray =
+          TypeRef(ArrayClass.tpe.prefix, ArrayClass, List(ClassClass.tpe))
+
+        /* ... */
+        def reflectiveMethodCache(method: String, paramTypes: List[Type]): Symbol = {
+
+          settings.refinementMethodDispatch.value match {
+
+            case "no-cache" =>
+
+              /* Implementation of the cache is as follows for method "def xyz(a: A, b: B)":
+
+                var reflParams$Cache: Array[Class[_]] = Array[JClass](classOf[A], classOf[B])
+
+                def reflMethod$Method(forReceiver: JClass[_]): JMethod =
+                  forReceiver.getMethod("xyz", reflParams$Cache)
+
+              */
+
+              val reflParamsCacheSym: Symbol =
+                addStaticVariableToClass("reflParams$Cache", theTypeClassArray, fromTypesToClassArrayLiteral(paramTypes))
+
+              val reflMethodSym: Symbol =
+                addStaticMethodToClass("reflMethod$Method", List(ClassClass.tpe), MethodClass.tpe)
+                  { case Pair(reflMethodSym, List(forReceiverSym)) =>
+                    Apply(
+                      Select(gen.mkAttributedRef(forReceiverSym), Class_getMethod),
+                      List(
+                        Literal(Constant(method)),
+                        gen.mkAttributedRef(reflParamsCacheSym)
+                      )
+                    )
+                  }
+
+              reflMethodSym
+
+            case "mono-cache" =>
+
+              /* Implementation of the cache is as follows for method "def xyz(a: A, b: B)":
+
+                var reflParams$Cache: Array[Class[_]] = Array[JClass](classOf[A], classOf[B])
+
+                var reflMethod$Cache: JMethod = null
+
+                var reflClass$Cache: JClass[_] = null
+
+                def reflMethod$Method(forReceiver: JClass[_]): JMethod = {
+                  if (reflClass$Cache != forReceiver) {
+                    reflMethod$Cache = forReceiver.getMethod("xyz", reflParams$Cache)
+                    reflClass$Cache = forReceiver
+                  }
+                  reflMethod$Cache
+                }
+
+              */
+
+              val reflParamsCacheSym: Symbol =
+                addStaticVariableToClass("reflParams$Cache", theTypeClassArray, fromTypesToClassArrayLiteral(paramTypes))
+
+              val reflMethodCacheSym: Symbol =
+                addStaticVariableToClass("reflMethod$Cache", MethodClass.tpe, Literal(Constant(null)))
+
+              val reflClassCacheSym: Symbol =
+                addStaticVariableToClass("reflClass$Cache", ClassClass.tpe, Literal(Constant(null)))
+
+
+              val reflMethodSym: Symbol =
+                addStaticMethodToClass("reflMethod$Method", List(ClassClass.tpe), MethodClass.tpe)
+                  { case Pair(reflMethodSym, List(forReceiverSym)) =>
+                    Block(
+                      List(
+                        If(Apply(Select(gen.mkAttributedRef(reflClassCacheSym), nme.ne), List(gen.mkAttributedRef(forReceiverSym))),
+                          Block(
+                            List(
+                              Assign(
+                                gen.mkAttributedRef(reflMethodCacheSym),
+                                Apply(
+                                  Select(
+                                    gen.mkAttributedRef(forReceiverSym),
+                                    ClassClass.tpe.member(nme.getMethod_)
+                                  ),
+                                  List(
+                                    Literal(Constant(method)),
+                                    gen.mkAttributedRef(reflParamsCacheSym)
+                                  )
+                                )
+                              ),
+                              Assign(gen.mkAttributedRef(reflClassCacheSym), gen.mkAttributedRef(forReceiverSym))
+                            ),
+                            Literal(Constant(()))
+                          ),
+                          EmptyTree
+                        )
+                      ),
+                      gen.mkAttributedRef(reflMethodCacheSym)
+                    )
+                  }
+
+              reflMethodSym
+
+            case "poly-cache" =>
+
+              /* Implementation of the cache is as follows for method "def xyz(a: A, b: B)":
+
+                var reflParams$Cache: Array[Class[_]] = Array[JClass](classOf[A], classOf[B])
+
+                var reflPoly$Cache: scala.runtime.MethodCache = new EmptyMethodCache()
+
+                def reflMethod$Method(forReceiver: JClass[_]): JMethod = {
+                  var method: JMethod = reflPoly$Cache.find(forReceiver)
+                  if (method == null) {
+                    method = forReceiver.getMethod("xyz", reflParams$Cache)
+                    reflPoly$Cache = reflPoly$Cache.add(forReceiver, method)
+                  }
+                  // At that point, method is always non-null: getMethod will have previously
+                  // returned by throwing an exception if it can't find the method. Obviously,
+                  // CleanUp should not generate dynamic calls that are unsound.
+                  method
+                }
+
+              */
+
+              val reflParamsCacheSym: Symbol =
+                addStaticVariableToClass("reflParams$Cache", theTypeClassArray, fromTypesToClassArrayLiteral(paramTypes))
+
+              val reflPolyCacheSym: Symbol =
+                addStaticVariableToClass("reflPoly$Cache", MethodCacheClass.tpe, New(TypeTree(EmptyMethodCacheClass.tpe), List(Nil)))
+
+              val reflMethodSym: Symbol =
+                addStaticMethodToClass("reflMethod$Method", List(ClassClass.tpe), MethodClass.tpe)
+                  { case Pair(reflMethodSym, List(forReceiverSym)) =>
+                    val methodSym = reflMethodSym.newVariable(ad.pos, newTermName(unit.fresh.newName(ad.pos, "method"))) setInfo MethodClass.tpe
+                    Block(
+                      List(
+                        ValDef(
+                          methodSym,
+                          Apply(
+                            Select(gen.mkAttributedRef(reflPolyCacheSym), methodCache_find),
+                            List(gen.mkAttributedRef(forReceiverSym))
+                          )
+                        ),
+                        If(
+                          Apply(Select(gen.mkAttributedRef(methodSym), Object_eq), List(Literal(Constant(null)))),
+                          Block(
+                            List(
+                              Assign(gen.mkAttributedRef(methodSym),
+                                Apply(
+                                  Select(gen.mkAttributedRef(forReceiverSym), Class_getMethod),
+                                  List(
+                                    Literal(Constant(method)),
+                                    gen.mkAttributedRef(reflParamsCacheSym)
+                                  )
+                                )
+                              ),
+                              Assign(
+                                gen.mkAttributedRef(reflPolyCacheSym),
+                                Apply(
+                                  Select(gen.mkAttributedRef(reflPolyCacheSym), methodCache_add),
+                                  List(gen.mkAttributedRef(forReceiverSym), gen.mkAttributedRef(methodSym))
+                                )
+                              )
+                            ),
+                            Literal(Constant(()))
+                          ),
+                          EmptyTree
+                        )
+                      ),
+                      gen.mkAttributedRef(methodSym)
+                    )
+                  }
+
+              reflMethodSym
+
+          }
+        }
+
+        /* ### HANDLING METHODS NORMALLY COMPILED TO OPERATORS ### */
+
+        def mayRequirePrimitiveReplacement: Boolean = {
+
+          def isBoxed(sym: Symbol): Boolean =
+            if (forCLDC) {
+              (sym isNonBottomSubClass ByteClass) ||
+              (sym isNonBottomSubClass ShortClass) ||
+              (sym isNonBottomSubClass CharClass) ||
+              (sym isNonBottomSubClass IntClass) ||
+              (sym isNonBottomSubClass LongClass)
+            }
+            else ((sym isNonBottomSubClass BoxedNumberClass) ||
+              (!forMSIL && (sym isNonBottomSubClass BoxedCharacterClass)))
+
+          val sym = qual.tpe.typeSymbol
+          (sym == definitions.ObjectClass) || isBoxed(sym)
+
+        }
 
         val testForNumber: Tree =
           gen.mkOr(
@@ -311,6 +466,8 @@ abstract class CleanUp extends Transform {
             (definitions.getMember(definitions.BoxesRunTimeClass, newTermName("toDouble")), testForNumber)
         }
 
+        /* ### BOXING PARAMS & UNBOXING RESULTS ### */
+
         /* Transforms the result of a reflective call (always an AnyRef) to
          * the actual result value (an AnyRef too). The transformation
          * depends on the method's static return type.
@@ -329,7 +486,7 @@ abstract class CleanUp extends Transform {
                 gen.mkAttributedRef(BoxedUnit_UNIT)
               )
             else if (resType.typeSymbol == ArrayClass) {
-              val sym = currentOwner.newValue(tree.pos, newTermName(unit.fresh.newName(tree.pos))) setInfo ObjectClass.tpe
+              val sym = currentOwner.newValue(ad.pos, newTermName(unit.fresh.newName(ad.pos))) setInfo ObjectClass.tpe
               Block(
                 List(ValDef(sym, tree)),
                 If(
@@ -361,7 +518,7 @@ abstract class CleanUp extends Transform {
           (params zip paramTypes) map { case (param, paramType) =>
             localTyper.typed {
               if (paramType.typeSymbol == ArrayClass) {
-                val sym = currentOwner.newValue(tree.pos, newTermName(unit.fresh.newName(tree.pos))) setInfo ObjectClass.tpe
+                val sym = currentOwner.newValue(ad.pos, newTermName(unit.fresh.newName(ad.pos))) setInfo ObjectClass.tpe
                 val arrayType = {
                   assert(paramType.typeArgs.length == 1)
                   paramType.typeArgs(0).normalize
@@ -393,6 +550,8 @@ abstract class CleanUp extends Transform {
             }
           }
 
+        /* ### CALLING THE APPLY -> one for operators (see above), one for normal methods ### */
+
         def callAsOperator(paramTypes: List[Type], resType: Type): Tree = localTyper.typed {
           if (getPrimitiveReplacementForStructuralCall isDefinedAt ad.symbol.name) {
             val (operator, test) = getPrimitiveReplacementForStructuralCall(ad.symbol.name)
@@ -410,12 +569,12 @@ abstract class CleanUp extends Transform {
 
         def callAsMethod(paramTypes: List[Type], resType: Type): Tree = localTyper.typed {
           val invokeExc =
-            currentOwner.newValue(tree.pos, newTermName(unit.fresh.newName(tree.pos))) setInfo InvocationTargetExceptionClass.tpe
+            currentOwner.newValue(ad.pos, newTermName(unit.fresh.newName(ad.pos))) setInfo InvocationTargetExceptionClass.tpe
           Try(
             Apply(
               Select(
                 Apply(
-                  gen.mkAttributedRef(reflectiveMethodCache(tree.pos, ad.symbol.name.toString, paramTypes)),
+                  gen.mkAttributedRef(reflectiveMethodCache(ad.symbol.name.toString, paramTypes)),
                   List(Apply(Select(qual, ObjectClass.tpe.member(nme.getClass_)), Nil))
                 ),
                 MethodClass.tpe.member(nme.invoke_)
@@ -434,23 +593,7 @@ abstract class CleanUp extends Transform {
           )
         }
 
-        def mayRequirePrimitiveReplacement: Boolean = {
-
-          def isBoxed(sym: Symbol): Boolean =
-            if (forCLDC) {
-              (sym isNonBottomSubClass ByteClass) ||
-              (sym isNonBottomSubClass ShortClass) ||
-              (sym isNonBottomSubClass CharClass) ||
-              (sym isNonBottomSubClass IntClass) ||
-              (sym isNonBottomSubClass LongClass)
-            }
-            else ((sym isNonBottomSubClass BoxedNumberClass) ||
-              (!forMSIL && (sym isNonBottomSubClass BoxedCharacterClass)))
-
-          val sym = qual.tpe.typeSymbol
-          (sym == definitions.ObjectClass) || isBoxed(sym)
-
-        }
+        /* ### BODY OF THE TRANSFORMATION -> remember we're in case ad@ApplyDynamic(qual, params) ### */
 
         /* This creates the tree that does the reflective call (see general comment
          * on the apply-dynamic tree for its format). This tree is simply composed
@@ -476,7 +619,7 @@ abstract class CleanUp extends Transform {
         val t: Tree = ad.symbol.tpe match {
           case MethodType(paramTypes, resType) =>
             assert(params.length == paramTypes.length)
-            atPos(tree.pos)(localTyper.typed {
+            atPos(ad.pos)(localTyper.typed {
               fixResult(if (isValueClass(resType.typeSymbol)) boxedClass(resType.typeSymbol).tpe else resType) {
                 if (mayRequirePrimitiveReplacement)
                   callAsOperator(paramTypes, resType)
@@ -512,15 +655,40 @@ abstract class CleanUp extends Transform {
          * clean-up transformation are to be applied on it. */
         transform(t)
 
-      /* end of dynamic call transformer. */
+        /* ### END OF DYNAMIC APPLY TRANSFORM ### */
 
+      /* Some cleanup transformations add members to templates (classes, traits, etc).
+       * When inside a template (i.e. the body of one of its members), two maps
+       * (newDefs and newInits) are available in the tree transformer. Any mapping from
+       * a symbol to a MemberDef (DefDef, ValDef, etc.) that is in newDefs once the
+       * transformation of the template is finished will be added as a member to the
+       * template. Any mapping from a symbol to a tree that is in newInits, will be added
+       * as a statement of the form "symbol = tree" to the beginning of the default
+       * constructor. */
       case Template(parents, self, body) =>
-        localTyper = typer.atOwner(tree, currentOwner)
+        localTyper = typer.atOwner(tree, currentClass)
         if (!forMSIL) {
           classConstantMeth.clear
           newDefs.clear
-          val body1 = transformTrees(body)
-          copy.Template(tree, parents, self, newDefs.toList ::: body1)
+          newInits.clear
+          var newBody =
+            transformTrees(body)
+          val firstConstructor =
+            treeInfo.firstConstructor(newBody)
+          newBody =
+            transformTrees(newDefs.toList) ::: (
+              for (member <- newBody) yield member match {
+                case thePrimaryConstructor@DefDef(mods, name, tparams, vparamss, tpt, rhs) if (thePrimaryConstructor == firstConstructor) =>
+                  val newRhs = rhs match {
+                    case theRhs@Block(stats, expr) =>
+                      copy.Block(theRhs, transformTrees(newInits.toList) ::: stats, expr)
+                  }
+                  copy.DefDef(thePrimaryConstructor, mods, name, tparams, vparamss, tpt, newRhs)
+                case notThePrimaryConstructor =>
+                  notThePrimaryConstructor
+              }
+            )
+            copy.Template(tree, parents, self, newBody)
         }
         else super.transform(tree)
 

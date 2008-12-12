@@ -48,6 +48,7 @@ trait Definitions {
     lazy val uncheckedVarianceClass = getClass("scala.annotation.unchecked.uncheckedVariance")
 
     lazy val ClassClass: Symbol = getClass(sn.Class)
+      def Class_getMethod = getMember(ClassClass, nme.getMethod_)
     lazy val StringClass: Symbol = getClass(sn.String)
     lazy val ThrowableClass: Symbol = getClass(sn.Throwable)
     lazy val NullPointerExceptionClass: Symbol = getClass(sn.NPException)
@@ -119,6 +120,11 @@ trait Definitions {
     lazy val ArrayModule: Symbol = getModule("scala.Array")
       def ArrayModule_apply = getMember(ArrayModule, nme.apply)
     lazy val SerializableClass: Symbol = getClass(sn.Serializable)
+    lazy val MethodClass: Symbol = getClass(sn.MethodAsObject)
+    lazy val MethodCacheClass: Symbol = getClass("scala.runtime.MethodCache")
+      def methodCache_find = getMember(MethodCacheClass, nme.find_)
+      def methodCache_add = getMember(MethodCacheClass, nme.add_)
+    lazy val EmptyMethodCacheClass: Symbol = getClass("scala.runtime.EmptyMethodCache")
     lazy val PredefModule: Symbol = getModule("scala.Predef")
       def Predef_classOf = getMember(PredefModule, nme.classOf)
       def Predef_classOfType(classType: Type): Type =

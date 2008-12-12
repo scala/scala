@@ -1,0 +1,68 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http:///               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id: ScalaRunTime.scala 16292 2008-10-18 21:32:45Z washburn $
+
+
+package scala.runtime
+
+
+import Predef._
+import java.lang.reflect.{ Method => JMethod }
+import java.lang.{ Class => JClass }
+
+/** An element of a polymorphic object cache.
+  * This class is refered to by the CleanUp phase. Each PolyMethodCache chain
+  * must only relate to one method as PolyMethodCache does not identify
+  * the method name and argument types. In practice, one variable will be
+  * generated per call point, and will uniquely relate to the method called
+  * at that point, making the method name and argument types irrelevant. **/
+/* TODO: if performance is acceptable, PolyMethodCache should be made generic on the method type */
+sealed abstract class MethodCache {
+  /** Searches for a cached method in the MethodCache chain that
+  * is compatible with receiver class "forReceiver". If none is cached,
+  * "null" is returned. If "null is returned", find's caller should look-
+  * up the right method using whichever means it prefers, and add it to
+  * the cache for later use. */
+  def find(forReceiver: JClass[_]): JMethod
+  def add(forReceiver: JClass[_], forMethod: JMethod): MethodCache
+}
+
+final class EmptyMethodCache extends MethodCache {
+
+  def find(forReceiver: JClass[_]): JMethod = null
+
+  def add(forReceiver: JClass[_], forMethod: JMethod): MethodCache =
+    new PolyMethodCache(this, forReceiver, forMethod, 1)
+
+}
+
+final class MegaMethodCache(forName: String, forParameterTypes: Array[JClass[_]]) extends MethodCache {
+
+  def find(forReceiver: JClass[_]): JMethod =
+    forReceiver.getMethod(forName, forParameterTypes:_*)
+
+  def add(forReceiver: JClass[_], forMethod: JMethod): MethodCache = this
+
+}
+
+final class PolyMethodCache(next: MethodCache, receiver: JClass[_], method: JMethod, complexity: Int) extends MethodCache {
+
+  def find(forReceiver: JClass[_]): JMethod =
+    if (forReceiver == receiver)
+      method
+    else
+      next.find(forReceiver) // tail call is optimised, confirm with -Ylog:tailcalls
+
+  def add(forReceiver: JClass[_], forMethod: JMethod): MethodCache =
+    if (complexity < 160) // TODO: come up with a more realistic number
+      new PolyMethodCache(this, forReceiver, forMethod, complexity + 1)
+    else
+      new MegaMethodCache(forMethod.getName, forMethod.getParameterTypes)
+
+}
