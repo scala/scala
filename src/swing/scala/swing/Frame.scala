@@ -35,6 +35,7 @@ class Frame extends UIElement with RootPanel with Publisher {
   def menuBar_=(m: MenuBar) = peer.setJMenuBar(m.peer)
 
   def setLocationRelativeTo(c: UIElement) { peer.setLocationRelativeTo(c.peer) }
+  def centerOnScreen() { peer.setLocationRelativeTo(null) }
   def location_=(p: Point) { peer.setLocation(p) }
 
   def iconImage: Image = peer.getIconImage

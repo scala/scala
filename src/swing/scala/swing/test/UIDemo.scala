@@ -38,6 +38,7 @@ object UIDemo extends SimpleGUIApplication {
         import TabbedPane._
         val buttons = new FlowPanel {
           border = Swing.EmptyBorder(5,5,5,5)
+
           contents += new BoxPanel(Orientation.Vertical) {
             border = CompoundBorder(TitledBorder(EtchedBorder, "Radio Buttons"), EmptyBorder(5,5,5,10))
             val a = new RadioButton("Green Vegetables")
@@ -65,6 +66,11 @@ object UIDemo extends SimpleGUIApplication {
     		    reactLive = live.selected
     		}
           }
+          contents += new Button("Center Frame") {
+            reactions += {
+              case ButtonClicked(_) => centerOnScreen()
+            }
+          }
         }
         pages += new Page("Buttons", buttons)
         pages += new Page("GridBag", GridBagDemo.ui)
@@ -79,7 +85,6 @@ object UIDemo extends SimpleGUIApplication {
         val password = new FlowPanel {
           contents += new Label("Enter your secret password here ")
           val field = new PasswordField(10)
-
           contents += field
           val label = new Label(field.text)
           contents += label
