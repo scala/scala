@@ -818,7 +818,9 @@ trait Actor extends AbstractActor {
    */
   def link(to: AbstractActor): AbstractActor = {
     assert(Actor.self == this, "link called on actor different from self")
-    links = to :: links
+    synchronized {
+      links = to :: links
+    }
     to.linkTo(this)
     to
   }
@@ -844,7 +846,9 @@ trait Actor extends AbstractActor {
    */
   def unlink(from: AbstractActor) {
     assert(Actor.self == this, "unlink called on actor different from self")
-    links = links.remove(from.==)
+    synchronized {
+      links = links.remove(from.==)
+    }
     from.unlinkFrom(this)
   }
 
@@ -892,9 +896,9 @@ trait Actor extends AbstractActor {
   private[actors] def exitLinked() {
     exiting = true
     // remove this from links
-    links = links.remove(this.==)
+    val mylinks = links.remove(this.==)
     // exit linked processes
-    links.foreach((linked: AbstractActor) => {
+    mylinks.foreach((linked: AbstractActor) => {
       unlink(linked)
       if (!linked.exiting)
         linked.exit(this, exitReason)
