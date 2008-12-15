@@ -10,10 +10,10 @@
 
 package scala.actors
 
-import java.lang.ref.{WeakReference, ReferenceQueue}
+import java.lang.ref.{Reference, WeakReference, ReferenceQueue}
 import java.util.WeakHashMap
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.{HashMap, HashSet}
 
 object ActorGC {
 
@@ -21,11 +21,11 @@ object ActorGC {
   private val termHandlers = new HashMap[Actor, () => Unit]
 
   private val refQ = new ReferenceQueue[Actor]
-  private val refMap = new WeakHashMap[WeakReference[Actor], AnyRef]
+  private val refSet = new HashSet[Reference[t] forSome { type t <: Actor }]
 
   def newActor(a: Actor) = synchronized {
     val wr = new WeakReference[Actor](a, refQ)
-    refMap.put(wr, null)
+    refSet += wr
     pendingReactions += 1
   }
 
@@ -35,11 +35,16 @@ object ActorGC {
       val wr = refQ.poll
       if (wr != null) {
         pendingReactions -= 1
+        refSet -= wr
         // continue draining
         drainRefQ()
       }
     }
     drainRefQ()
+  }
+
+  def status() {
+    println("ActorGC: size of refSet: "+refSet.size)
   }
 
   def allTerminated: Boolean = synchronized {
