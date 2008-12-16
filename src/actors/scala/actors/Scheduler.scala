@@ -91,11 +91,6 @@ object Scheduler extends IScheduler {
       sched execute { fun }
   }
 
-  /* This method is used to notify the scheduler
-   * of library activity by the argument Actor.
-   */
-  def tick(a: Actor) = sched tick a
-
   def shutdown() = sched.shutdown()
 
   def onLockup(handler: () => Unit) = sched.onLockup(handler)
@@ -130,13 +125,6 @@ trait IScheduler {
    */
   def execute(task: Runnable): Unit
 
-  /** Notifies the scheduler about activity of the
-   *  executing actor.
-   *
-   *  @param  a  the active actor
-   */
-  def tick(a: Actor): Unit
-
   /** Shuts down the scheduler.
    */
   def shutdown(): Unit
@@ -149,15 +137,6 @@ trait IScheduler {
     override def run(): Unit = {}
     override def toString() = "QUIT_TASK"
   }
-}
-
-
-trait WorkerThreadScheduler extends IScheduler {
-  /**
-   *  @param  worker the worker thread executing tasks
-   *  @return        the task to be executed
-   */
-  def getTask(worker: WorkerThread): Runnable
 }
 
 
@@ -178,8 +157,6 @@ class SingleThreadedScheduler extends IScheduler {
     execute(new Runnable {
       def run() { fun }
     })
-
-  def tick(a: Actor) {}
 
   def shutdown() {}
 
@@ -202,101 +179,4 @@ private[actors] class QuitException extends Throwable {
    the execution stack trace.
    */
   override def fillInStackTrace(): Throwable = this
-}
-
-
-/**
- * <p>
- *   The class <code>WorkerThread</code> is used by schedulers to execute
- *   actor tasks on multiple threads.
- * </p>
- * <p>
- *   !!ACHTUNG: If you change this, make sure you understand the following
- *   proof of deadlock-freedom!!
- * </p>
- * <p>
- *   We proof that there is no deadlock between the scheduler and
- *   any worker thread possible. For this, note that the scheduler
- *   only acquires the lock of a worker thread by calling
- *   <code>execute</code>.  This method is only called when the worker thread
- *   is in the idle queue of the scheduler. On the other hand, a
- *   worker thread only acquires the lock of the scheduler when it
- *   calls <code>getTask</code>. At the only callsite of <code>getTask</code>,
- *   the worker thread holds its own lock.
- * </p>
- * <p>
- *   Thus, deadlock can only occur when a worker thread calls
- *   <code>getTask</code> while it is in the idle queue of the scheduler,
- *   because then the scheduler might call (at any time!) <code>execute</code>
- *   which tries to acquire the lock of the worker thread. In such
- *   a situation the worker thread would be waiting to acquire the
- *   lock of the scheduler and vice versa.
- * </p>
- * <p>
- *   Therefore, to prove deadlock-freedom, it suffices to ensure
- *   that a worker thread will never call <code>getTask</code> when
- *   it is in the idle queue of the scheduler.
- * </p>
- * <p>
- *   A worker thread enters the idle queue of the scheduler when
- *   <code>getTask</code> returns <code>null</code>. Then it will also stay
- *   in the while-loop W (<code>while (task eq null)</code>) until
- *   <code>task</code> becomes non-null. The only way this can happen is
- *   through a call of <code>execute</code> by the scheduler. Before every
- *   call of <code>execute</code> the worker thread is removed from the idle
- *   queue of the scheduler. Only then--after executing its task--
- *   the worker thread may call <code>getTask</code>. However, the scheduler
- *   is unable to call <code>execute</code> as the worker thread is not in
- *   the idle queue any more. In fact, the scheduler made sure
- *   that this is the case even _before_ calling <code>execute</code> and
- *   thus releasing the worker thread from the while-loop W. Thus,
- *   the property holds for every possible interleaving of thread
- *   execution. QED
- * </p>
- *
- * @version 0.9.18
- * @author Philipp Haller
- */
-class WorkerThread(sched: WorkerThreadScheduler) extends Thread {
-  private var task: Runnable = null
-  private[actors] var running = true
-
-  def execute(r: Runnable) = synchronized {
-    task = r
-    notify()
-  }
-
-  override def run(): Unit =
-    try {
-      while (running) {
-        if (task ne null) {
-          try {
-            task.run()
-          } catch {
-            case consumed: InterruptedException =>
-              if (!running) throw new QuitException
-          }
-        }
-        this.synchronized {
-          task = sched getTask this
-
-          while (task eq null) {
-            try {
-              wait()
-            } catch {
-              case consumed: InterruptedException =>
-                if (!running) throw new QuitException
-            }
-          }
-
-          if (task == sched.QUIT_TASK) {
-            running = false
-          }
-        }
-      }
-    } catch {
-      case consumed: QuitException =>
-        // allow thread to quit
-    }
-
 }

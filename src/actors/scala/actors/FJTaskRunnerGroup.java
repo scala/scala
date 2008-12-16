@@ -122,7 +122,7 @@ package scala.actors;
 public class FJTaskRunnerGroup implements IFJTaskRunnerGroup {
 
   /** The threads in this group **/
-    protected /*final*/ FJTaskRunner[] threads;
+    /*protected*/ /*final*/ FJTaskRunner[] threads;
 
   /** Group-wide queue for tasks entered via execute() **/
     /*protected*/ final LinkedQueue entryQueue = new LinkedQueue();

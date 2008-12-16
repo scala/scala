@@ -389,7 +389,6 @@ trait Actor extends AbstractActor {
    * @param  replyTo  the reply destination
    */
   def send(msg: Any, replyTo: OutputChannel[Any]) = synchronized {
-    tick()
     if (waitingFor(msg)) {
       received = Some(msg)
 
@@ -424,7 +423,6 @@ trait Actor extends AbstractActor {
     assert(Actor.self == this, "receive from channel belonging to other actor")
     if (shouldExit) exit() // links
     this.synchronized {
-      tick()
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
       if (null eq qel) {
         waitingFor = f.isDefinedAt
@@ -454,7 +452,6 @@ trait Actor extends AbstractActor {
     assert(Actor.self == this, "receive from channel belonging to other actor")
     if (shouldExit) exit() // links
     this.synchronized {
-      tick()
       // first, remove spurious TIMEOUT message from mailbox if any
       val spurious = mailbox.extractFirst((m: Any) => m == TIMEOUT)
 
@@ -506,7 +503,6 @@ trait Actor extends AbstractActor {
     assert(Actor.self == this, "react on channel belonging to other actor")
     if (shouldExit) exit() // links
     this.synchronized {
-      tick()
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
       if (null eq qel) {
         waitingFor = f.isDefinedAt
@@ -534,7 +530,6 @@ trait Actor extends AbstractActor {
     assert(Actor.self == this, "react on channel belonging to other actor")
     if (shouldExit) exit() // links
     this.synchronized {
-      tick()
       // first, remove spurious TIMEOUT message from mailbox if any
       val spurious = mailbox.extractFirst((m: Any) => m == TIMEOUT)
 
@@ -722,9 +717,6 @@ trait Actor extends AbstractActor {
                               msg)
       scheduler execute task
     }
-
-  private def tick(): Unit =
-    scheduler tick this
 
   private[actors] var kill: () => Unit = () => {}
 

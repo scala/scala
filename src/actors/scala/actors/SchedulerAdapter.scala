@@ -27,14 +27,6 @@ trait SchedulerAdapter extends IScheduler {
   def execute(task: Runnable): Unit =
     execute { task.run() }
 
-  /** Notifies the scheduler about activity of the
-   *  executing actor.
-   *
-   *  @param  a  the active actor
-   */
-  def tick(a: Actor): Unit =
-    Scheduler tick a
-
   /** Shuts down the scheduler.
    */
   def shutdown(): Unit =
