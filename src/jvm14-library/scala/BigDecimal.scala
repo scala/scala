@@ -162,7 +162,9 @@ class BigDecimal(val bigDecimal: BigDec) extends java.lang.Number {
   def *  (that: BigDecimal): BigDecimal =
     new BigDecimal(this.bigDecimal.multiply(that.bigDecimal))
 
-  /** Division of BigDecimals. Default rounding mode is <code>ROUND_HALF_UP</code>.
+  /** Division of BigDecimals. Default rounding mode is <code>ROUND_HALF_UP</code>
+   *  (same value as <code>MathContext.DEFAULT_ROUNDINGMODE</code> (private)
+   *  in Java 1.5 or newer).
    */
   def /  (that: BigDecimal): BigDecimal =
     new BigDecimal(this.bigDecimal.divide(that.bigDecimal, BigDec.ROUND_HALF_UP))
