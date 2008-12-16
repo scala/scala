@@ -52,6 +52,31 @@ JAVA 1.4 LIBRARY AND COMPILER BUILD (FOUR)
         </union>
       </difference>
     </delete>
+    <mkdir dir="${build-four-src.dir}-actors"/>
+    <copy todir="${build-four-src.dir}-actors" overwrite="true">
+      <fileset dir="${src.dir}/actors">
+        <and>
+          <present present="srconly" targetdir="${src.dir}/jvm14-actors"/>
+          <different targetdir="${build-four-src.dir}-actors" ignoreFileTimes="true"/>
+        </and>
+      </fileset>
+      <fileset dir="${src.dir}/jvm14-actors">
+        <different targetdir="${build-four-src.dir}-actors" ignoreFileTimes="true"/>
+      </fileset>
+    </copy>
+    <delete verbose="true">
+      <difference>
+        <fileset dir="${build-four-src.dir}-actors"/>
+        <union>
+          <fileset dir="${build-four-src.dir}-actors">
+            <present targetdir="${src.dir}/jvm14-actors"/>
+          </fileset>
+          <fileset dir="${build-four-src.dir}-actors">
+            <present targetdir="${src.dir}/actors"/>
+          </fileset>
+        </union>
+      </difference>
+    </delete>
   </target>
 
   <target name="four.lib" depends="four.src">
@@ -64,7 +89,7 @@ JAVA 1.4 LIBRARY AND COMPILER BUILD (FOUR)
       includes="**/*.java"
       target="1.4" source="1.4"/>
     <javac
-      srcdir="${src.dir}/actors"
+      srcdir="${build-four-src.dir}-actors"
       destdir="${build-four.dir}/classes/library"
       classpath="${build-four.dir}/classes/library"
       includes="**/*.java"
@@ -86,7 +111,7 @@ JAVA 1.4 LIBRARY AND COMPILER BUILD (FOUR)
       <exclude name="scala/Predef.scala"/>
     </scalac>
     <scalac
-      srcdir="${src.dir}/actors"
+      srcdir="${build-four-src.dir}-actors"
       destdir="${build-four.dir}/classes/library"
       classpath="${build-four.dir}/classes/library"
       target="jvm-1.4">
@@ -275,7 +300,7 @@ DOCUMENTATION
       classpathref="pack.classpath">
       <src>
         <files includes="${src.dir}/dbc"/>
-        <files includes="${src.dir}/actors"/>
+        <files includes="${build-four-src.dir}-actors"/>
         <files includes="${build-four-src.dir}"/>
       </src>
       <include name="**/*.scala"/>
@@ -388,7 +413,7 @@ DISTRIBUTION
     <mkdir dir="${four-dist.dir}/src"/>
     <jar destfile="${four-dist.dir}/src/scala-library-src.jar">
       <fileset dir="${build-four-src.dir}"/>
-      <fileset dir="${src.dir}/actors"/>
+      <fileset dir="${build-four-src.dir}-actors"/>
     </jar>
     <jar destfile="${four-dist.dir}/src/scala-dbc-src.jar">
       <fileset dir="${src.dir}/dbc"/>
