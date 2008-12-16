@@ -13,6 +13,7 @@ package scala.actors
 import compat.Platform
 
 import java.lang.{Runnable, Thread, InterruptedException, System, Runtime}
+import java.lang.Thread.State
 
 import scala.collection.Set
 import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, HashSet}
@@ -20,7 +21,7 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
 /**
  * FJTaskScheduler2
  *
- * @version 0.9.18
+ * @version 0.9.20
  * @author Philipp Haller
  */
 class FJTaskScheduler2 extends Thread with IScheduler {
@@ -68,13 +69,10 @@ class FJTaskScheduler2 extends Thread with IScheduler {
   private var terminating = false
   private var suspending = false
 
-  private var lastActivity = Platform.currentTime
-
   private var submittedTasks = 0
 
   def printActorDump {}
 
-  private val TICK_FREQ = 50
   private val CHECK_FREQ = 100
 
   def onLockup(handler: () => Unit) =
@@ -86,6 +84,12 @@ class FJTaskScheduler2 extends Thread with IScheduler {
   }
 
   private var lockupHandler: () => Unit = null
+
+  private def allWorkersBlocked: Boolean =
+    executor.threads.forall(t => {
+      val s = t.getState()
+      s == State.BLOCKED || s == State.WAITING || s == State.TIMED_WAITING
+    })
 
   override def run() {
     try {
@@ -103,12 +107,11 @@ class FJTaskScheduler2 extends Thread with IScheduler {
             ActorGC.gc()
 
             // check if we need more threads
-            if (Platform.currentTime - lastActivity >= TICK_FREQ
-                && coreSize < maxSize
+            if (coreSize < maxSize
+                && allWorkersBlocked
                 && executor.checkPoolSize()) {
                   //Debug.info(this+": increasing thread pool size")
                   coreSize += 1
-                  lastActivity = Platform.currentTime
                 }
             else {
               if (ActorGC.allTerminated) {
@@ -152,9 +155,7 @@ class FJTaskScheduler2 extends Thread with IScheduler {
   /**
    *  @param  a the actor
    */
-  def tick(a: Actor) {
-    lastActivity = Platform.currentTime
-  }
+  def tick(a: Actor) {}
 
   /** Shuts down all idle worker threads.
    */
