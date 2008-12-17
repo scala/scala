@@ -149,11 +149,17 @@ class FJTaskScheduler2 extends Thread with IScheduler {
       def run() { fun }
     })
 
+  private var tickCnt = 0
+
   /**
    *  @param  a the actor
    */
-  def tick(a: Actor) {
-    lastActivity = Platform.currentTime
+  def tick(a: Actor) = synchronized {
+    if (tickCnt == 100) {
+      tickCnt = 0
+      lastActivity = Platform.currentTime
+    } else
+      tickCnt += 1
   }
 
   /** Shuts down all idle worker threads.

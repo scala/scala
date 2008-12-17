@@ -723,14 +723,8 @@ trait Actor extends AbstractActor {
       scheduler execute task
     }
 
-  private var tickCnt = 0
-
   private def tick(): Unit =
-    if (tickCnt == 100) {
-      tickCnt = 0
-      scheduler tick this
-    } else
-      tickCnt += 1
+    scheduler tick this
 
   private[actors] var kill: () => Unit = () => {}
 
