@@ -1468,7 +1468,7 @@ abstract class GenMSIL extends SubComponent {
 
               if (doEmit) {
                 val methodInfo: MethodInfo = getMethod(msym)
-                style match {
+                (style: @unchecked) match {
                   case SuperCall(_) =>
                     mcode.Emit(OpCodes.Call, methodInfo)
                   case Dynamic =>

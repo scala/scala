@@ -422,7 +422,7 @@ abstract class Checkers {
 
          case CALL_METHOD(method, style) =>
            style match {
-             case Dynamic =>
+             case Dynamic | InvokeDynamic =>
                checkStack(1 + method.info.paramTypes.length)
                checkMethodArgs(method)
                checkMethod(stack.pop, method)

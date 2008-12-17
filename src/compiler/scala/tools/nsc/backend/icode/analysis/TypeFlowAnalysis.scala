@@ -470,7 +470,7 @@ abstract class TypeFlowAnalysis {
           }
 
         case CALL_METHOD(method, style) => style match {
-          case Dynamic =>
+          case Dynamic | InvokeDynamic =>
             stack.pop(1 + method.info.paramTypes.length)
             stack.push(toTypeKind(method.info.resultType))
 
