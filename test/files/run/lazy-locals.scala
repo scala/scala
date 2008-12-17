@@ -133,6 +133,11 @@ object Test extends Application {
     ()
   }
 
+  def testReturnInLazyVal: Boolean = {
+    lazy val go = { return false }
+    go
+  }
+
   {
     lazy val inCtor = "I am initialized when the constructor is run"
     inCtor
@@ -155,4 +160,5 @@ object Test extends Application {
   println(testLazyRecMany(5))
   testRecVal
   new CtorBlock
+  println(testReturnInLazyVal)
 }

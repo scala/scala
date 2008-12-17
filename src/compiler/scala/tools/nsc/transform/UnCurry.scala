@@ -628,7 +628,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           applyUnary(tree)
         case TypeApply(_, _) =>
           applyUnary(tree)
-        case Return(expr) if (tree.symbol != currentOwner.enclMethod) =>
+        case Return(expr) if (tree.symbol != currentOwner.enclMethod || currentOwner.hasFlag(LAZY)) =>
           if (settings.debug.value) log("non local return in "+tree.symbol+" from "+currentOwner.enclMethod)
           atPos(tree.pos)(nonLocalReturnThrow(expr, tree.symbol))
         case TypeTree() =>
