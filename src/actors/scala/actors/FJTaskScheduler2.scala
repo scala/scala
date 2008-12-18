@@ -73,13 +73,13 @@ class FJTaskScheduler2 extends Thread with IScheduler {
 
   private var coreSize = initCoreSize
 
+  Debug.info(this+": corePoolSize = "+coreSize+", maxPoolSize = "+maxSize)
+
   private val executor =
     new FJTaskRunnerGroup(coreSize)
 
   private var terminating = false
   private var suspending = false
-
-  private var lastActivity = Platform.currentTime
 
   private var submittedTasks = 0
 
@@ -98,6 +98,12 @@ class FJTaskScheduler2 extends Thread with IScheduler {
 
   private var lockupHandler: () => Unit = null
 
+  private def allWorkersBlocked: Boolean =
+    executor.threads.forall(t => {
+      val s = t.getState()
+      s == Thread.State.BLOCKED || s == Thread.State.WAITING || s == Thread.State.TIMED_WAITING
+    })
+
   override def run() {
     try {
       while (!terminating) {
@@ -114,12 +120,11 @@ class FJTaskScheduler2 extends Thread with IScheduler {
             ActorGC.gc()
 
             // check if we need more threads
-            if (Platform.currentTime - lastActivity >= TICK_FREQ
-                && coreSize < maxSize
+            if (coreSize < maxSize
+                && allWorkersBlocked
                 && executor.checkPoolSize()) {
                   //Debug.info(this+": increasing thread pool size")
                   coreSize += 1
-                  lastActivity = Platform.currentTime
                 }
             else {
               if (ActorGC.allTerminated) {
@@ -160,18 +165,10 @@ class FJTaskScheduler2 extends Thread with IScheduler {
       def run() { fun }
     })
 
-  private var tickCnt = 0
-
   /**
    *  @param  a the actor
    */
-  def tick(a: Actor) = synchronized {
-    if (tickCnt == timeFreq) {
-      tickCnt = 0
-      lastActivity = Platform.currentTime
-    } else
-      tickCnt += 1
-  }
+  def tick(a: Actor) = {}
 
   /** Shuts down all idle worker threads.
    */
