@@ -159,7 +159,11 @@ class CompileManager(val fileManager: FileManager) {
   import scala.actors.Actor._
   import scala.actors.{Actor, Exit, TIMEOUT}
 
+  import java.util.{Timer, TimerTask}
+
   var compiler: SimpleCompiler = new /*ReflectiveCompiler*/ DirectCompiler(fileManager)
+
+  val timer = new Timer
 
   var numSeparateCompilers = 1
   def createSeparateCompiler() = {
@@ -173,7 +177,7 @@ class CompileManager(val fileManager: FileManager) {
     createSeparateCompiler()
 
     val parent = self
-    self.trapExit = true
+    /*self.trapExit = true
     val child = link {
       parent ! (self, thunk)
     }
@@ -197,6 +201,35 @@ class CompileManager(val fileManager: FileManager) {
               t.getCause.printStackTrace
             false
         }
+    }*/
+
+    val ontimeout = new TimerTask {
+      def run() {
+        parent ! 'timeout
+      }
+    }
+    timer.schedule(ontimeout, delay)
+
+    actor {
+      val result = try {
+        thunk
+      } catch {
+        case t: Throwable =>
+          NestUI.verbose("while invoking compiler ("+files+"):")
+          NestUI.verbose("caught "+t)
+          t.printStackTrace
+          if (t.getCause != null)
+            t.getCause.printStackTrace
+          false
+      }
+      parent ! result
+    }
+    receive {
+      case 'timeout =>
+        println("compilation timed out")
+        false
+      case r: Boolean =>
+        r
     }
   }
 

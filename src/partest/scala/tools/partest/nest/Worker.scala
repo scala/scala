@@ -856,6 +856,7 @@ class Worker(val fileManager: FileManager) extends Actor {
     }
     NestUI.verbose("finished testing "+kind+" with "+errors+" errors")
     NestUI.verbose("created "+compileMgr.numSeparateCompilers+" separate compilers")
+    compileMgr.timer.cancel()
     (files.length-errors, errors)
   }
 

@@ -63,5 +63,5 @@ trait FileManager {
   var SCALAC_OPTS = System.getProperty("scalatest.scalac_opts", "-deprecation")
   var JAVA_OPTS   = System.getProperty("scalatest.java_opts", "")
 
-  var timeout = "1200000"
+  var timeout = "2400000"
 }
