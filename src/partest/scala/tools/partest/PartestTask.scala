@@ -79,6 +79,9 @@ class PartestTask extends Task {
   def setTimeout(delay: String): Unit =
     timeout = Some(delay)
 
+  def setDebug(input: Boolean): Unit =
+    debug = input
+
   private var classpath: Option[Path] = None
   private var javacmd: Option[File] = None
   private var javaccmd: Option[File] = None
@@ -96,6 +99,7 @@ class PartestTask extends Task {
   private var errorOnFailed: Boolean = false
   private var scalacOpts: Option[String] = None
   private var timeout: Option[String] = None
+  private var debug = false
 
   private def getFilesAndDirs(fileSet: Option[FileSet]): Array[File] =
     if (!fileSet.isEmpty) {
@@ -164,6 +168,8 @@ class PartestTask extends Task {
       Array()
 
   override def execute(): Unit = {
+    if (debug)
+      System.setProperty("partest.debug", "true")
 
     if (classpath.isEmpty)
       error("Mandatory attribute 'classpath' is not set.")
