@@ -45,6 +45,13 @@ class FJTaskScheduler2 extends Thread with IScheduler {
       case ace: java.security.AccessControlException =>
         null
     }
+  val timeFreqProp =
+    try {
+      System.getProperty("actors.timeFreq")
+    } catch {
+      case ace: java.security.AccessControlException =>
+        null
+    }
 
   val initCoreSize =
     if (null ne coreProp) Integer.parseInt(coreProp)
@@ -59,6 +66,10 @@ class FJTaskScheduler2 extends Thread with IScheduler {
   val maxSize =
     if (null ne maxProp) Integer.parseInt(maxProp)
     else 256
+
+  val timeFreq =
+    if (null ne timeFreqProp) Integer.parseInt(timeFreqProp)
+    else 10
 
   private var coreSize = initCoreSize
 
@@ -155,7 +166,7 @@ class FJTaskScheduler2 extends Thread with IScheduler {
    *  @param  a the actor
    */
   def tick(a: Actor) = synchronized {
-    if (tickCnt == 100) {
+    if (tickCnt == timeFreq) {
       tickCnt = 0
       lastActivity = Platform.currentTime
     } else
