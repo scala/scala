@@ -458,9 +458,10 @@ trait Actor extends AbstractActor {
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
       if (null eq qel) {
         if (msec == 0) {
-          if (f.isDefinedAt(TIMEOUT))
-            return f(TIMEOUT)
-          else
+          if (f.isDefinedAt(TIMEOUT)) {
+            received = Some(TIMEOUT)
+            sessions = this :: sessions
+          } else
             error("unhandled timeout")
         }
         else {
@@ -470,10 +471,8 @@ trait Actor extends AbstractActor {
           suspendActorFor(msec)
           if (received.isEmpty) {
             if (f.isDefinedAt(TIMEOUT)) {
-              waitingFor = waitingForNone
-              isSuspended = false
-              val result = f(TIMEOUT)
-              return result
+              received = Some(TIMEOUT)
+              sessions = this :: sessions
             }
             else
               error("unhandled timeout")
@@ -537,7 +536,7 @@ trait Actor extends AbstractActor {
       if (null eq qel) {
         if (msec == 0) {
           if (f.isDefinedAt(TIMEOUT)) {
-            sessions = List(Actor.self)
+            sessions = List(this)
             scheduleActor(f, TIMEOUT)
           }
           else
@@ -548,7 +547,7 @@ trait Actor extends AbstractActor {
 
           val thisActor = this
           onTimeout = Some(new TimerTask {
-            def run() { thisActor ! TIMEOUT }
+            def run() { thisActor.send(TIMEOUT, thisActor) }
           })
           Actor.timer.schedule(onTimeout.get, msec)
 
