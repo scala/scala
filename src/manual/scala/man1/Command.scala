@@ -47,7 +47,7 @@ trait Command {
 
   def bugs = Section("REPORTING BUGS",
 
-    "Report bugs to " & Mono("<scala@listes.epfl.ch>") & ".")
+    "Report bugs to " & Mono("http://lampsvn.epfl.ch/trac/scala") & ".")
 
   //private val df = new java.text.SimpleDateFormat("MMM d, yyyy")
   //private val rightNow = new java.util.Date()
