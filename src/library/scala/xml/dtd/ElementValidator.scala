@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2006, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2009, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://www.scala-lang.org/           **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -9,39 +9,38 @@
 // $Id$
 
 
-package scala.xml.dtd;
+package scala.xml.dtd
 
 
-import ContentModel.ElemName ;
-import scala.util.automata._ ;
+import ContentModel.ElemName
+import scala.util.automata._
 
 /** validate children and/or attributes of an element
  *  exceptions are created but not thrown.
  */
 class ElementValidator() extends Function1[Node,Boolean] {
 
-  var exc: List[ValidationException] = Nil;
+  var exc: List[ValidationException] = Nil
 
-  protected var contentModel: ContentModel           = _;
-  protected var dfa:          DetWordAutom[ElemName] = _;
-  protected var adecls:       List[AttrDecl]         = _;
+  protected var contentModel: ContentModel           = _
+  protected var dfa:          DetWordAutom[ElemName] = _
+  protected var adecls:       List[AttrDecl]         = _
 
   /** set content model, enabling element validation */
   def setContentModel(cm:ContentModel) = {
     contentModel = cm; cm match {
-      case ELEMENTS( r ) =>
-        val nfa = ContentModel.Translator.automatonFrom(r, 1);
-        dfa = new SubsetConstruction(nfa).determinize;
+      case ELEMENTS(r) =>
+        val nfa = ContentModel.Translator.automatonFrom(r, 1)
+        dfa = new SubsetConstruction(nfa).determinize
       case _ =>
-        dfa = null;
+        dfa = null
     }
   }
 
-  def getContentModel = contentModel;
+  def getContentModel = contentModel
 
   /** set meta data, enabling attribute validation */
-  def setMetaData(adecls: List[AttrDecl]) =
-    this.adecls = adecls;
+  def setMetaData(adecls: List[AttrDecl]) { this.adecls = adecls }
 
   def getIterator(nodes: Seq[Node], skipPCDATA: Boolean): Iterator[ElemName] =
     nodes.toList
@@ -65,8 +64,6 @@ class ElementValidator() extends Function1[Node,Boolean] {
   /** check attributes, return true if md corresponds to attribute declarations in adecls.
    */
   def check(md: MetaData): Boolean = {
-    //Console.println("checking md = "+md);
-    //Console.println("adecls = "+adecls);
     //@todo other exceptions
     import MakeValidationException._;
     val len: Int = exc.length;
@@ -83,9 +80,8 @@ class ElementValidator() extends Function1[Node,Boolean] {
       attr
     }
     val it = md.elements; while(it.hasNext) {
-      val attr = it.next;
-      //Console.println("attr:"+attr);
-      j = 0;
+      val attr = it.next
+      j = 0
       find(attr.key) match {
 
         case null =>
@@ -100,10 +96,11 @@ class ElementValidator() extends Function1[Node,Boolean] {
 
       }
     }
-    //Console.println("so far:"+(exc.length == len));
 
-    //val missing = ok.toSet( false ); FIXME: it doesn't seem to be used anywhere
-    j  = 0; var kt = adecls.elements; while(kt.hasNext) {
+    //val missing = ok.toSet(false); FIXME: it doesn't seem to be used anywhere
+    j = 0
+    var kt = adecls.elements
+    while (kt.hasNext) {
       kt.next match {
         case AttrDecl(key, tpe, REQUIRED) if !ok(j) =>
           exc = fromMissingAttribute( key, tpe ) :: exc;
@@ -112,27 +109,28 @@ class ElementValidator() extends Function1[Node,Boolean] {
           j = j + 1;
       }
     }
-    //Console.println("finish:"+(exc.length == len));
-    (exc.length == len) //- true if no new exception
+    exc.length == len //- true if no new exception
   }
 
   /** check children, return true if conform to content model
    *  @pre contentModel != null
    */
   def check(nodes: Seq[Node]): Boolean = contentModel match {
+    case ANY =>
+      true
 
-    case ANY         => true ;
+    case EMPTY =>
+      !getIterator(nodes, false).hasNext
 
-    case EMPTY       => !getIterator(nodes, false).hasNext
-
-    case PCDATA      => !getIterator(nodes, true).hasNext;
+    case PCDATA =>
+      !getIterator(nodes, true).hasNext
 
     case MIXED(ContentModel.Alt(branches @ _*))  => //@todo
-      val j = exc.length;
-      def find(Key: String): Boolean =  {
-        var res = false;
-        val jt = branches.elements;
-        while(jt.hasNext && !res)
+      val j = exc.length
+      def find(Key: String): Boolean = {
+        var res = false
+        val jt = branches.elements
+        while (jt.hasNext && !res)
           jt.next match { // !!! check for match translation problem
             case ContentModel.Letter(ElemName(Key)) => res = true;
             case _                                  =>
@@ -142,7 +140,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
 
       var it = getIterator(nodes, true); while(it.hasNext) {
         var label = it.next.name;
-        if(!find(label)) {
+        if (!find(label)) {
           exc = MakeValidationException.fromUndefinedElement(label) :: exc;
         }
       }
@@ -150,16 +148,14 @@ class ElementValidator() extends Function1[Node,Boolean] {
       (exc.length == j) //- true if no new exception
 
     case _:ELEMENTS =>
-      var q = 0;
-      val it = getIterator(nodes, false);
-      //Console.println("it empty from the start? "+(!it.hasNext));
-      while( it.hasNext ) {
-        val e = it.next;
+      var q = 0
+      val it = getIterator(nodes, false)
+      while (it.hasNext) {
+        val e = it.next
         dfa.delta(q).get(e) match {
-          case Some(p) => q = p;
+          case Some(p) => q = p
           case _       => throw ValidationException("element "+e+" not allowed here")
         }
-        //Console.println("q now " + q);
       }
       dfa.isFinal(q) //- true if arrived in final state
   }
