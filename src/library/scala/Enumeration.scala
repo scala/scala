@@ -345,7 +345,7 @@ abstract class Enumeration(initial: Int, names: String*) {
   /** create an empty 32 bit enumeration set */
   def Set32 = new Set32
 
-  /** create a bit enumeration set according ot underlying */
+  /** create a bit enumeration set according to underlying */
   def Set32(underlying: Int) = new Set32(underlying)
 
   /** An enumeration bit set that can handle enumeration values with ids up
@@ -366,7 +366,7 @@ abstract class Enumeration(initial: Int, names: String*) {
   /** create an empty 64 bit enumeration set */
   def Set64 = new Set64
 
-  /** create a bit enumeration set according ot underlying */
+  /** create a bit enumeration set according to underlying */
   def Set64(underlying: Long) = new Set64(underlying)
 
   /** used to reverse engineer bit locations from pre-defined bit masks */

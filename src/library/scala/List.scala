@@ -538,7 +538,7 @@ sealed abstract class List[+A] extends Seq[A] with Product {
   /** Reverse the given prefix and append the current list to that.
    *  This function is equivalent to an application of <code>reverse</code>
    *  on the prefix followed by a call to <code>:::</code>, but more
-   *  efficient (and tail recursive).
+   *  efficient.
    *
    *  @param prefix the prefix to reverse and then prepend
    *  @return       the concatenation of the reversed prefix and the current list.
