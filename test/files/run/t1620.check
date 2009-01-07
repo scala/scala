@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE foo PUBLIC "-//Foo Corp//DTD 1.0//EN" "foo.dtd">
+<foo></foo>
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE foo PUBLIC "-//Foo Corp//DTD 1.0//EN">
+<foo></foo>
