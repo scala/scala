@@ -20,5 +20,5 @@ trait JavaTokenParsers extends RegexParsers {
   def stringLiteral: Parser[String] =
     ("\""+"""([^"\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*"""+"\"").r
   def floatingPointNumber: Parser[String] =
-    """-?(\d+(\.\d*)?|\d*\.\d+)[eEfFdD]?([+-]?\d+)?""".r
+    """-?(\d+(\.\d*)?|\d*\.\d+)([eE][+-]?\d+)?[fFdD]?""".r
 }
