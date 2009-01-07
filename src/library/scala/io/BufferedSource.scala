@@ -65,18 +65,11 @@ abstract class BufferedSource(byteChannel: ReadableByteChannel, decoder: Charset
       Thread.sleep(1);  // wait 1 ms for new data
       num_bytes = byteChannel.read(byteBuffer)
     }
-    num_bytes match {
-      case -1 =>
-        endOfInput = true;
-        byteBuffer.position(0)
-        decoder.decode(byteBuffer, charBuffer, true)
-        decoder.flush(charBuffer)
-      case num_bytes =>
-        endOfInput = false
-        byteBuffer.flip()
-        decoder.decode(byteBuffer, charBuffer, false)
-        charBuffer.flip()
-    }
+    endOfInput = (num_bytes == -1)
+    byteBuffer.flip()
+    decoder.decode(byteBuffer, charBuffer, endOfInput)
+    if (endOfInput) decoder.flush(charBuffer)
+    charBuffer.flip()
   }
   override val iter = new Iterator[Char] {
     var buf_char = {
