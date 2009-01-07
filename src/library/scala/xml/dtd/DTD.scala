@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2009, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -33,10 +33,6 @@ abstract class DTD {
 
   var decls: List[Decl] = Nil
 
-  //def getElemDecl(elem:String): ElemDecl
-
-  //def getAttribDecl(elem: String, attr: String): AttrDecl
-
   override def toString() = {
     val sb = new StringBuilder("DTD [\n")
     if (null != externalID)
@@ -45,16 +41,5 @@ abstract class DTD {
       sb.append(d.toString()).append('\n')
     sb.append("]").toString()
   }
-
-  /*
-  def initializeEntities() = {
-    for (x <- decls) x match {
-      case y @ ParsedEntityDecl(name, _)      => ent.update(name, y);
-      case y @ UnparsedEntityDecl(name, _, _) => ent.update(name, y);
-      case y @ ParameterEntityDecl(name, _)   => ent.update(name, y);
-      case _ =>
-    }
-  }
-  */
 
 }

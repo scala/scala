@@ -1,6 +1,6 @@
 /*                     __                                               *\
  **     ________ ___   / /  ___     Scala API                            **
- **    / __/ __// _ | / /  / _ |    (c) 2003-2008, LAMP/EPFL             **
+ **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
  **  __\ \/ /__/ __ |/ /__/ __ |    http://www.scala-lang.org/           **
  ** /____/\___/_/ |_/____/_/ | |                                         **
  **                          |/                                          **
@@ -12,7 +12,7 @@
 package scala.xml.dtd
 
 
-abstract class Decl;
+abstract class Decl
 
 abstract class MarkupDecl extends Decl {
   def toString(sb: StringBuilder): StringBuilder
@@ -20,10 +20,8 @@ abstract class MarkupDecl extends Decl {
 
 /** an element declaration
  */
-case class ElemDecl(name: String, contentModel: ContentModel) extends MarkupDecl with DtdTypeSymbol {
-
-  //def mixed  = ; // to do
-
+case class ElemDecl(name: String, contentModel: ContentModel)
+extends MarkupDecl with DtdTypeSymbol {
   override def toString(sb: StringBuilder): StringBuilder = {
     sb
     .append("<!ELEMENT ")
@@ -33,11 +31,10 @@ case class ElemDecl(name: String, contentModel: ContentModel) extends MarkupDecl
     ContentModel.toString(contentModel, sb);
     sb.append('>');
   }
+}
 
-} // ElemDecl
-
-case class AttListDecl(name: String, attrs:List[AttrDecl]) extends MarkupDecl with DtdTypeSymbol {
-
+case class AttListDecl(name: String, attrs:List[AttrDecl])
+extends MarkupDecl with DtdTypeSymbol {
   override def toString(sb: StringBuilder): StringBuilder = {
     sb
     .append("<!ATTLIST ")
@@ -52,26 +49,24 @@ case class AttListDecl(name: String, attrs:List[AttrDecl]) extends MarkupDecl wi
  *  directly.
  */
 case class AttrDecl(name: String, tpe: String, default: DefaultDecl) {
-
   override def toString(): String =
     toString(new StringBuilder()).toString();
 
- def toString(sb: StringBuilder): StringBuilder = {
-    sb.append("  ").append( name ).append(' ').append( tpe ).append(' ');
+  def toString(sb: StringBuilder): StringBuilder = {
+    sb.append("  ").append(name).append(' ').append(tpe).append(' ');
     default.toString(sb)
   }
 
 }
 
 /** an entity declaration */
-abstract class EntityDecl extends MarkupDecl;
+abstract class EntityDecl extends MarkupDecl
 
 /** a parsed general entity declaration */
 case class ParsedEntityDecl(name: String, entdef: EntityDef) extends EntityDecl {
-
   override def toString(sb: StringBuilder): StringBuilder = {
     sb.append("<!ENTITY ").append( name ).append(' ');
-    entdef.toString(sb).append('>');
+    entdef.toString(sb).append('>')
   }
 }
 
@@ -79,7 +74,7 @@ case class ParsedEntityDecl(name: String, entdef: EntityDef) extends EntityDecl 
 case class ParameterEntityDecl(name: String, entdef: EntityDef) extends EntityDecl {
   override def toString(sb: StringBuilder): StringBuilder = {
     sb.append("<!ENTITY % ").append( name ).append(' ');
-    entdef.toString(sb).append('>');
+    entdef.toString(sb).append('>')
   }
 }
 
@@ -94,7 +89,7 @@ case class UnparsedEntityDecl( name:String, extID:ExternalID, notation:String ) 
 case class NotationDecl( name:String, extID:ExternalID ) extends MarkupDecl {
   override def toString(sb: StringBuilder): StringBuilder = {
     sb.append("<!NOTATION ").append( name ).append(' ');
-    extID.toString(sb);
+    extID.toString(sb)
   }
 }
 
@@ -161,7 +156,7 @@ case object IMPLIED extends DefaultDecl {
   override def toString(sb: StringBuilder) = sb.append("#IMPLIED")
 }
 
-case class DEFAULT(fixed: Boolean, attValue:String) extends DefaultDecl {
+case class DEFAULT(fixed: Boolean, attValue: String) extends DefaultDecl {
   override def toString(): String =
     toString(new StringBuilder()).toString();
 

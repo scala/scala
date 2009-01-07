@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -31,13 +31,13 @@ object Utility extends AnyRef with parsing.TokenTests {
    *
    *  precondition: node is not a text node (it might be trimmed)
    */
-
-  def trim(x:Node): Node = x match {
-    case Elem(pre,lab,md,scp,child@_*) =>
-      Elem(pre,lab,md,scp, (child flatMap trimProper):_*)
+  def trim(x: Node): Node = x match {
+    case Elem(pre, lab, md, scp, child@_*) =>
+      Elem(pre, lab, md, scp, (child flatMap trimProper):_*)
   }
 
-  /** trim a child of an element. Attribute values and Atom nodes that are not Text nodes are unaffected
+  /** trim a child of an element. <code>Attribute</code> values and
+   *  <code>Atom</code> nodes that are not <code>Text</code> nodes are unaffected.
    */
   def trimProper(x:Node): Seq[Node] = x match {
     case Elem(pre,lab,md,scp,child@_*) =>
@@ -301,7 +301,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    */
   def publicLiteralToString(s: String): String = {
     val sb = new StringBuilder()
-    systemLiteralToString(sb, s)
+    publicLiteralToString(sb, s)
     sb.toString()
   }
 
@@ -312,6 +312,12 @@ object Utility extends AnyRef with parsing.TokenTests {
    */
   def publicLiteralToString(sb: StringBuilder, s: String): StringBuilder = {
     sb.append("PUBLIC \"").append(s).append('"')
+  }
+
+  def appendQuoted(s: String): String = {
+    val sb = new StringBuilder()
+    appendQuoted(s, sb)
+    sb.toString()
   }
 
   /**
@@ -442,7 +448,7 @@ object Utility extends AnyRef with parsing.TokenTests {
       else
         nb += x
     }
-    return nb
+    nb
   }
 
   /**
@@ -459,7 +465,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @param reportSyntaxError ...
    * @return                  ...
    */
-  def parseCharRef(ch: () => Char, nextch: () => Unit, reportSyntaxError:(String) => Unit): String = {
+  def parseCharRef(ch: () => Char, nextch: () => Unit, reportSyntaxError: String => Unit): String = {
     val hex  = (ch() == 'x') && { nextch(); true }
     val base = if (hex) 16 else 10
     var i = 0
@@ -479,7 +485,7 @@ object Utility extends AnyRef with parsing.TokenTests {
       }
       nextch()
     }
-    new String(io.UTF8Codec.encode(i),"utf8")
+    new String(io.UTF8Codec.encode(i), "utf8")
   }
 
 }

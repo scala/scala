@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2007, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2009, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -19,13 +19,8 @@ object ContentModel extends WordExp {
   type _regexpT = RegExp
 
   object Translator extends WordBerrySethi {
-
     override val lang: ContentModel.this.type = ContentModel.this
-    import lang._
-    //val re  = Sequ(Star(Letter(IntConst( 3 ))))
-    //val aut = automatonFrom(re, 7)
   }
-
 
   case class ElemName(name: String) extends Label {
     override def toString() = "ElemName(\""+name+"\")"
@@ -134,14 +129,14 @@ sealed abstract class DFAContentModel extends ContentModel {
   private var _dfa: DetWordAutom[ContentModel.ElemName] = null
 
   def dfa = {
-    if(null == _dfa) {
+    if (null == _dfa) {
       val nfa = ContentModel.Translator.automatonFrom(r, 1);
       _dfa = new SubsetConstruction(nfa).determinize;
     }
     _dfa
   }
 }
-case class MIXED(r:ContentModel.RegExp) extends DFAContentModel {
+case class MIXED(r: ContentModel.RegExp) extends DFAContentModel {
   import ContentModel.{Alt, Eps, RegExp}
   /*
   def getIterator(ns:NodeSeq) = new Iterator[String] {
@@ -165,11 +160,8 @@ Console.println("ns = "+ns);
   }
   */
   override def toString(sb: StringBuilder): StringBuilder =  {
-    sb.append("(#PCDATA|");
-    //r match {
-    //  case Alt(Eps, rs@_*) => ContentModel.toString(Alt(rs:_*):RegExp, sb);
-    //}
-	ContentModel.toString(Alt(r.asInstanceOf[Alt].rs.toList.drop(1):_*):RegExp, sb);
+    sb.append("(#PCDATA|")
+    ContentModel.toString(Alt(r.asInstanceOf[Alt].rs.toList.drop(1):_*):RegExp, sb);
     sb.append(")*");
   }
 }

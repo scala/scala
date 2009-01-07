@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2008, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2009, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -17,10 +17,8 @@ package scala.xml.dtd
  */
 class Scanner extends Tokens with parsing.TokenTests {
 
-  //                                                   zzz   constants   zzz
   final val ENDCH = '\u0000'
 
-  //                                                      zzz   fields   zzz
   var token:Int = END
   var value:String = _
 
@@ -29,7 +27,6 @@ class Scanner extends Tokens with parsing.TokenTests {
 
   /** initializes the scanner on input s */
   final def initScanner(s: String) {
-    //Console.println("[scanner init on \""+s+"\"]");
     value = ""
     it = (s).elements
     token = 1+END
@@ -39,11 +36,8 @@ class Scanner extends Tokens with parsing.TokenTests {
 
   /** scans the next token */
   final def nextToken {
-    if (token != END) token = readToken;
-    //Console.println("["+token2string( token )+"]");
+    if (token != END) token = readToken
   }
-
-  //                                            zzz    scanner methods   zzz
 
   // todo: see XML specification... probably isLetter,isDigit is fine
   final def isIdentChar = ( ('a' <= c && c <= 'z')
@@ -56,15 +50,9 @@ class Scanner extends Tokens with parsing.TokenTests {
   }
 
   final def accS(ds: Seq[Char]) {
-    val jt = ds.elements; while (jt.hasNext) { acc(jt.next) }
+    val jt = ds.elements
+    while (jt.hasNext) { acc(jt.next) }
   }
-
-  /*
-  final def isSpace = c match {
-    case  '\u0020' | '\u0009' | '\u000D' | '\u000A' => true
-    case _ => false;
-  }
-  */
 
   final def readToken: Int =
     if (isSpace(c)) {
