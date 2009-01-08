@@ -93,7 +93,8 @@ class ArrayBuffer[A] extends Buffer[A] with Builder[ArrayBuffer, A] with Resizab
   /** Removes the element on a given index position. It takes time linear in
    *  the buffer size.
    *
-   *  @param n  the index which refers to the element to delete.
+   *  @param n  the index which refers to the first element to delete.
+   *  @param count   the number of elemenets to delete
    *  @return   the updated array buffer.
    *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */

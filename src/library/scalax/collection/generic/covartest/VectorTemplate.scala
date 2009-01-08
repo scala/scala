@@ -34,7 +34,7 @@ self =>
         x
       } else Iterator.empty.next
     def head =
-      self(i)
+      if (i < end) self(i) else Iterator.empty.next
     /** drop is overridden to enable fast searching in the middle of random access sequences */
     override def drop(n: Int): Iterator[A] =
       if (n > 0) new Elements(start + n, end) else this

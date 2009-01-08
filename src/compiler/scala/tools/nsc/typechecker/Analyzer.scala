@@ -38,7 +38,12 @@ trait Analyzer extends AnyRef
     def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
       if (!inIDE) resetTyper()
       def apply(unit: CompilationUnit) {
-        unit.body = newTyper(rootContext(unit)).typed(unit.body)
+        try {
+          unit.body = newTyper(rootContext(unit)).typed(unit.body)
+          for (workItem <- unit.toCheck) workItem()
+        } finally {
+          unit.toCheck.clear()
+        }
       }
     }
   }

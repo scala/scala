@@ -1556,17 +1556,19 @@ trait Typers { self: Analyzer =>
       }
     }
 
-    def typedRefinement(stats: List[Tree]): List[Tree] = {
+    def typedRefinement(stats: List[Tree]) {
       namer.enterSyms(stats)
-      val stats1 = typedStats(stats, NoSymbol)
-      for (stat <- stats1 if stat.isDef) {
-        val member = stat.symbol
-        if (!(context.owner.info.baseClasses.tail forall
-            (bc => member.matchingSymbol(bc, context.owner.thisType) == NoSymbol))) {
-          member setFlag OVERRIDE
+      // need to delay rest of typedRefinement to avoid cyclic reference errors
+      unit.toCheck += { () =>
+        val stats1 = typedStats(stats, NoSymbol)
+        for (stat <- stats1 if stat.isDef) {
+          val member = stat.symbol
+          if (!(context.owner.info.baseClasses.tail forall
+                (bc => member.matchingSymbol(bc, context.owner.thisType) == NoSymbol))) {
+                  member setFlag OVERRIDE
+                }
         }
       }
-      stats1
     }
 
     def typedImport(imp : Import) : Import = imp

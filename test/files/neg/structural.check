@@ -1,6 +1,9 @@
 structural.scala:3: error: illegal dependent method type
   def f(x: { type D; def m: D }) = x.m
         ^
+structural.scala:19: error: illegal dependent method type
+    def f9[C <: AnyRef](x: AnyRef{ type D <: AnyRef; def m[E >: Null <: AnyRef](x: AnyRef): D }) = x.m[Tata](()) //suceed
+                        ^
 structural.scala:10: error: Parameter type in structural refinement may not refer to abstract type defined outside that same refinement
     def f1[C <: AnyRef](x: AnyRef{ type D <: AnyRef; def m[E >: Null <: AnyRef](x: A): AnyRef; val x: A }) = x.m[Tata](x.x) //fail
                                                                                    ^
@@ -10,9 +13,6 @@ structural.scala:11: error: Parameter type in structural refinement may not refe
 structural.scala:12: error: Parameter type in structural refinement may not refer to abstract type defined outside that same refinement
     def f3[C <: AnyRef](x: AnyRef{ type D <: AnyRef; def m[E >: Null <: AnyRef](x: C): AnyRef; val x: C }) = x.m[Tata](x.x) //fail
                                                                                    ^
-structural.scala:19: error: illegal dependent method type
-    def f9[C <: AnyRef](x: AnyRef{ type D <: AnyRef; def m[E >: Null <: AnyRef](x: AnyRef): D }) = x.m[Tata](()) //suceed
-                        ^
 structural.scala:42: error: Parameter type in structural refinement may not refer to abstract type defined outside that same refinement
   type Summable[T] = { def +(v : T) : T }
                                  ^
