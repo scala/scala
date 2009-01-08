@@ -90,7 +90,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
         runAll = true
 
       var enabled = List[TestSet]()
-
+      var readTimeout = false
       for (arg <- args) {
         (testSets find { set => arg == "--" + set.loc }) match {
           case Some(set) => enabled = set :: enabled
@@ -102,6 +102,10 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
             case "--failed"       => fileManager.failed = true
             case "--version"      => //todo: printVersion
             case "--ansi"         => NestUI.initialize(NestUI.MANY)
+            case "--timeout"      => readTimeout = true
+            case s: String if readTimeout =>
+              fileManager.timeout = s
+              readTimeout = false
             case _ =>
               if (denotesTestFile(arg) || denotesTestDir(arg)) {
                 val file = new File(arg)

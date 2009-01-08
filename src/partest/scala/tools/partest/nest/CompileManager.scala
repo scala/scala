@@ -155,10 +155,6 @@ class ReflectiveCompiler(val fileManager: ConsoleFileManager) extends SimpleComp
 }
 
 class CompileManager(val fileManager: FileManager) {
-
-  import scala.actors.Actor._
-  import scala.actors.{Actor, Exit, TIMEOUT}
-
   var compiler: SimpleCompiler = new /*ReflectiveCompiler*/ DirectCompiler(fileManager)
 
   var numSeparateCompilers = 1
@@ -167,71 +163,37 @@ class CompileManager(val fileManager: FileManager) {
     compiler = new /*ReflectiveCompiler*/ DirectCompiler(fileManager)
   }
 
-  val delay = fileManager.timeout.toLong
-
-  def withTimeout(files: List[File])(thunk: => Boolean): Boolean = {
+  /* This method returns true iff compilation succeeds.
+   */
+  def shouldCompile(files: List[File], kind: String, log: File): Boolean = {
     createSeparateCompiler()
-
-    val parent = self
-    self.trapExit = true
-    val child = link {
-      parent ! (self, thunk)
-    }
-
-    receiveWithin(delay) {
-      case TIMEOUT =>
-        println("compilation timed out")
-        false
-      case Exit(from, reason) if from == child =>
-        val From = from
-        reason match {
-          case 'normal =>
-            receive {
-              case (From, result: Boolean) => result
-            }
-          case t: Throwable =>
-            NestUI.verbose("while invoking compiler ("+files+"):")
-            NestUI.verbose("caught "+t)
-            t.printStackTrace
-            if (t.getCause != null)
-              t.getCause.printStackTrace
-            false
-        }
-    }
+    compiler.compile(None, files, kind, log)
   }
 
   /* This method returns true iff compilation succeeds.
    */
-  def shouldCompile(files: List[File], kind: String, log: File): Boolean =
-    withTimeout(files) {
-      compiler.compile(None, files, kind, log)
-    }
-
-  /* This method returns true iff compilation succeeds.
-   */
-  def shouldCompile(out: File, files: List[File], kind: String, log: File): Boolean =
-    withTimeout(files) {
-      compiler.compile(Some(out), files, kind, log)
-    }
+  def shouldCompile(out: File, files: List[File], kind: String, log: File): Boolean = {
+    createSeparateCompiler()
+    compiler.compile(Some(out), files, kind, log)
+  }
 
   /* This method returns true iff compilation fails
    * _and_ the compiler does _not_ crash or loop.
    *
    * If the compiler crashes, this method returns false.
    */
-  def shouldFailCompile(files: List[File], kind: String, log: File): Boolean =
-    withTimeout(files) {
-      !compiler.compile(None, files, kind, log)
-    }
+  def shouldFailCompile(files: List[File], kind: String, log: File): Boolean = {
+    createSeparateCompiler()
+    !compiler.compile(None, files, kind, log)
+  }
 
   /* This method returns true iff compilation fails
    * _and_ the compiler does _not_ crash or loop.
    *
    * If the compiler crashes, this method returns false.
    */
-  def shouldFailCompile(out: File, files: List[File], kind: String, log: File): Boolean =
-    withTimeout(files) {
-      !compiler.compile(Some(out), files, kind, log)
-    }
-
+  def shouldFailCompile(out: File, files: List[File], kind: String, log: File): Boolean = {
+    createSeparateCompiler()
+    !compiler.compile(Some(out), files, kind, log)
+  }
 }
