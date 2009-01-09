@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2008, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2009, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -39,7 +39,7 @@ object Properties {
   }
 
   val copyrightString: String = {
-    val defaultString = "(c) 2002-2008 LAMP/EPFL"
+    val defaultString = "(c) 2002-2009 LAMP/EPFL"
     props.getProperty("copyright.string", defaultString)
   }
 

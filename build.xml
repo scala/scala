@@ -132,7 +132,7 @@ PROPERTIES
 
   <property name="dists.dir" value="${basedir}/dists"/>
   
-  <property name="copyright.string" value="Copyright 2002-2008, LAMP/EPFL"/>
+  <property name="copyright.string" value="Copyright 2002-2009, LAMP/EPFL"/>
   
   <!-- These are NOT the flags used to run SuperSabbus, but the ones written
        into the script runners created with scala.tools.ant.ScalaTool -->
