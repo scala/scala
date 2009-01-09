@@ -1,7 +1,7 @@
 @echo off
 
 rem ##########################################################################
-rem # Copyright 2002-2008 LAMP/EPFL
+rem # Copyright 2002-2009 LAMP/EPFL
 rem #
 rem # This is free software; see the distribution for copying conditions.
 rem # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
@@ -161,7 +161,7 @@ rem # NB. goto/call commands use only the first 8 characters of a label
   goto :eof
 
 :prt_version
-  echo Scala test suite 0.9.3 -- (c) 2002-2008 LAMP/EPFL
+  echo Scala test suite 0.9.3 -- (c) 2002-2009 LAMP/EPFL
   goto :eof
 
 :prt_status

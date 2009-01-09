@@ -31,7 +31,7 @@ PROPERTIES
 
   <!-- Defines the product being built -->
   <property name="vendor.name" value="LAMP/EPFL"/>
-  <property name="copyright.string" value="(c) 2002-2008 ${vendor.name}"/>
+  <property name="copyright.string" value="(c) 2002-2009 ${vendor.name}"/>
   <property name="java.flags" value="-Xmx768M -Xms16M"/>
   <property name="number.file" value="${basedir}/build.number"/>
 

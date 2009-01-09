@@ -16,7 +16,7 @@ DIFF_OPTS=-r
 ######################################################################
 
 # The current copyright string
-COPYRIGHT_STRING = Copyright 2002-2008, LAMP/EPFL
+COPYRIGHT_STRING = Copyright 2002-2009, LAMP/EPFL
 # Need to generate this correctly
 VERSION_NUMBER = 2.7.2
 
