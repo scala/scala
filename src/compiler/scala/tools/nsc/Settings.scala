@@ -98,6 +98,7 @@ class Settings(error: String => Unit) {
   val version       = BooleanSetting    ("-version", "Print product version and exit").hideToIDE
   val help          = BooleanSetting    ("-help", "Print a synopsis of standard options").hideToIDE
   val Xhelp         = BooleanSetting    ("-X", "Print a synopsis of advanced options").hideToIDE
+  val argfiles      = BooleanSetting    ("@<file>", "A text file containing compiler arguments (options and source files)") // only for the help message
 
   val assemname     = StringSetting     ("-Xassem", "file", "Name of the output assembly (only relevant with -target:msil)", "").dependsOn(target, "msil").hideToIDE
   val assemrefs     = StringSetting     ("-Xassem-path", "path", "List of assemblies referenced by the program (only relevant with -target:msil)", ".").dependsOn(target, "msil").hideToIDE
