@@ -99,8 +99,8 @@ trait IdeSupport extends Analyzer {
   }
   override def newTyper(txt : Context) : Typer = new Typer(txt)
   class Typer(context : Context) extends super.Typer(context) {
-    override def qualifyingClassContext(tree: Tree, qual: Name): Context = {
-      if (qual.isEmpty) super.qualifyingClassContext(tree, qual)
+    override def qualifyingClassContext(tree: Tree, qual: Name, packageOK: Boolean): Context = {
+      if (qual.isEmpty) super.qualifyingClassContext(tree, qual, packageOK)
       else {
         var c = context.enclClass
         val client = currentClient

@@ -55,10 +55,9 @@ trait Namers { self: Analyzer =>
 
     def setPrivateWithin[Sym <: Symbol](tree: Tree, sym: Sym, mods: Modifiers): Sym = {
       if (!mods.privateWithin.isEmpty)
-        sym.privateWithin = typer.qualifyingClassContext(tree, mods.privateWithin).owner
+        sym.privateWithin = typer.qualifyingClassContext(tree, mods.privateWithin, true).owner
       sym
     }
-
 
     def inConstructorFlag: Long =
       if (context.owner.isConstructor && !context.inConstructorSuffix || context.owner.isEarly) INCONSTRUCTOR

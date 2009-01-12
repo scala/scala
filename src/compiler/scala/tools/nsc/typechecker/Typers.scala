@@ -484,17 +484,17 @@ trait Typers { self: Analyzer =>
      *  @param qual ...
      *  @return     ...
      */
-    def qualifyingClassContext(tree: Tree, qual: Name): Context = {
-      if (qual.isEmpty) {
-        if (context.enclClass.owner.isPackageClass)
-          error(tree.pos, tree+" can be used only in a class, object, or template")
-        context.enclClass
-      } else {
-        var c = context.enclClass
+    def qualifyingClassContext(tree: Tree, qual: Name, packageOK: Boolean): Context = {
+      var c = context.enclClass
+      if (!qual.isEmpty) {
         while (c != NoContext && c.owner.name != qual) c = c.outer.enclClass
-        if (c == NoContext) error(tree.pos, qual+" is not an enclosing class")
-        c
       }
+      if (c == NoContext || !(packageOK || c.enclClass.tree.isInstanceOf[Template]))
+	  error(
+	    tree.pos,
+	    if (qual.isEmpty) tree+" can be used only in a class, object, or template"
+	    else qual+" is not an enclosing class")
+      c
     }
 
     /** The typer for an expression, depending on where we are. If we are before a superclass
@@ -2739,7 +2739,7 @@ trait Typers { self: Analyzer =>
           if (tree.symbol != NoSymbol) {
             (tree.symbol, tree.symbol.thisType)
           } else {
-            val clazzContext = qualifyingClassContext(tree, qual)
+            val clazzContext = qualifyingClassContext(tree, qual, false)
             (clazzContext.owner, clazzContext.prefix)
           }
         if (clazz == NoSymbol) setError(tree)
@@ -2781,7 +2781,7 @@ trait Typers { self: Analyzer =>
           if (tree.symbol != NoSymbol) {
             (tree.symbol, tree.symbol.thisType)
           } else {
-            val clazzContext = qualifyingClassContext(tree, qual)
+            val clazzContext = qualifyingClassContext(tree, qual, false)
             (clazzContext.owner, clazzContext.prefix)
           }
         if (clazz == NoSymbol) setError(tree)

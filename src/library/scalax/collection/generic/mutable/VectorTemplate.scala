@@ -18,7 +18,7 @@ import collection.mutable.Vector._
  *  @author Martin Odersky
  *  @version 2.8
  */
-trait VectorTemplate[+CC[B] <: VectorTemplate[CC, B] with Vector[B], A] extends nonvariant.VectorTemplate[CC, A] {
+trait VectorTemplate[+CC[B] <: VectorTemplate[CC, B] with Vector[B], A] extends generic.VectorTemplate[CC, A] {
 self =>
 
   def update(idx: Int, elem: A)

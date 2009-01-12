@@ -2336,9 +2336,7 @@ trait Parsers extends NewScanners with MarkupParsers {
 
     /** Packaging ::= package QualId [nl] `{' TopStatSeq `}'
      */
-    def packaging(): Tree = {
-
-      val pkgPos = accept(PACKAGE)
+    def packaging(pkgPos: Int): Tree = {
       val pkg = qualId()
       val pos = if (pkg.pos != NoPosition) pkg.pos else i2p(pkgPos)
       atPos(pos) {
@@ -2353,6 +2351,7 @@ trait Parsers extends NewScanners with MarkupParsers {
     /** TopStatSeq ::= TopStat {semi TopStat}
      *  TopStat ::= Annotations Modifiers TmplDef
      *            | Packaging
+     *            | package object objectDef
      *            | Import
      *            |
      */
@@ -2360,7 +2359,9 @@ trait Parsers extends NewScanners with MarkupParsers {
       val stats = new ListBuffer[Tree]
       while (inToken != RBRACE && inToken != EOF) {
         if (inToken == PACKAGE) {
-          stats += packaging()
+	  val pkgPos = accept(PACKAGE)
+	  stats += (if (inToken == OBJECT) objectDef(Modifiers(Flags.PACKAGE))
+		    else packaging(pkgPos))
         } else if (inToken == IMPORT) {
           stats ++= importClause()
           // XXX: IDE hook this all.
@@ -2516,19 +2517,27 @@ trait Parsers extends NewScanners with MarkupParsers {
         while (inToken == SEMI) inNextToken
         if (inToken == PACKAGE) {
           inNextToken
-          val pkg = qualId()
-          newLineOptWhenFollowedBy(LBRACE)
-          if (inToken == EOF) {
-            ts += makePackaging(pkg, List())
-          } else if (isStatSep) {
-            inNextToken
-            ts += makePackaging(pkg, topStatSeq())
-          } else {
-            accept(LBRACE)
-            ts += makePackaging(pkg, topStatSeq())
-            accept(RBRACE)
-            ts ++= topStatSeq()
-          }
+	  if (in.token == OBJECT) {
+	    ts += objectDef(Modifiers(Flags.PACKAGE))
+	    if (inToken != EOF) {
+	      acceptStatSep()
+	      ts ++= topStatSeq()
+	    }
+	  } else {
+            val pkg = qualId()
+            newLineOptWhenFollowedBy(LBRACE)
+            if (inToken == EOF) {
+              ts += makePackaging(pkg, List())
+            } else if (isStatSep) {
+              inNextToken
+              ts += makePackaging(pkg, topStatSeq())
+            } else {
+              accept(LBRACE)
+              ts += makePackaging(pkg, topStatSeq())
+              accept(RBRACE)
+              ts ++= topStatSeq()
+            }
+	  }
         } else {
           ts ++= topStatSeq()
         }
