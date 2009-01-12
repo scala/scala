@@ -12,7 +12,7 @@ package scalax.collection.mutable
 
 trait Vector[A] extends collection.Vector[A] with generic.mutable.VectorTemplate[Vector, A]
 
-object Vector extends generic.nonvariant.SequenceFactory[Vector] {
+object Vector extends generic.SequenceFactory[Vector] {
 
   /** The empty iterable */
   def apply[A](args: A*): Vector[A] = new ArrayBuffer[A] ++ args.asInstanceOf[Iterable[A]] // !@!
