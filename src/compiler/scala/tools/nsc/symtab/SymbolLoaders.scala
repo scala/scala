@@ -118,13 +118,16 @@ abstract class SymbolLoaders {
     protected def newPackageLoader(dir: global.classPath0.Context): PackageLoader =
       new PackageLoader(dir)
 
-    protected def checkSource(name: String, source: AbstractFile): Boolean = true
+    protected def checkSource(name: String, source: AbstractFile): Boolean = source ne null
 
     var root: Symbol = _
 
     def enterPackage(name: String, completer: SymbolLoader) {
-      if (inIDE && root.info.decls.lookup(newTermName(name)) != NoSymbol) {
-        return // refresh
+      val preExisting = root.info.decls.lookup(newTermName(name))
+      if (preExisting != NoSymbol) {
+        if (inIDE) return
+        else throw new TypeError(
+          root+" contains object and package with same name: "+name+"\none of them needs to be removed from classpath")
       }
       val pkg = root.newPackage(NoPosition, newTermName(name))
       pkg.moduleClass.setInfo(completer)
@@ -158,44 +161,41 @@ abstract class SymbolLoaders {
       assert(root.isPackageClass, root)
       this.root = root
       root.setInfo(new PackageClassInfoType(scope, root, this))
-      refresh
+      refresh()
     }
-    def refresh = {
+    def refresh() {
       /** Is the given name a valid input file base name? */
       def isValid(name: String): Boolean =
-        name.length() > 0 && !name.endsWith("$class") && (/*settings.XO.value*/true ||
-          (name.indexOf("$anon") == -1));
+        name.length() > 0 && !name.endsWith("$class")
+          (/*settings.XO.value*/true || name.indexOf("$anon") == -1)
 
       val classes  = new HashMap[String, global.classPath0.Context]
       val packages = new HashMap[String, global.classPath0.Context]
+
+      def recordClass(file: AbstractFile, extension: String, classOK: global.classPath0.Context => Boolean) {
+        if (!file.isDirectory && file.name.endsWith(extension)) {
+          val name = file.name.substring(0, file.name.length - extension.length)
+	  if (isValid(name) && !classes.isDefinedAt(name)) {
+            val clazz = directory.find(name, false)
+            if ((clazz ne null) && classOK(clazz)) classes(name) = clazz
+	  }
+	}
+      }
+
       for (dir <- directory.entries) if ((dir.location ne null) && (!inIDE || dir.location.isDirectory)) {
         for (file <- dir.location) {
           if (file.isDirectory && directory.validPackage(file.name) && !packages.isDefinedAt(file.name))
             packages(file.name) = directory.find(file.name, true);
-          else if (!global.forMSIL && !file.isDirectory && file.name.endsWith(".class")) {
-            val name = file.name.substring(0, file.name.length() - (".class").length());
-            if (isValid(name) && !classes.isDefinedAt(name)) {
-              val clazz = directory.find(name, false)
-              if (clazz ne null) classes(name) = clazz
-            }
-          }
+          else if (!global.forMSIL)
+            recordClass(file, ".class", source => true)
         }
       }
       for (dir <- directory.entries) if (dir.source ne null) {
         for (file <- dir.source.location) {
           if (file.isDirectory && directory.validPackage(file.name) && !packages.isDefinedAt(file.name))
             packages(file.name) = directory.find(file.name, true)
-          else if (dir.source.compile && !file.isDirectory && file.name.endsWith(".scala")) {
-            val name = file.name.substring(0, file.name.length() - (".scala").length())
-            if (isValid(name) && !classes.isDefinedAt(name)) {
-              val source = directory.find(name, false)
-              if ((source ne null) && (source.sourceFile ne null))
-                if (checkSource(name, source.sourceFile))
-                  classes(name) = source
-                else if (settings.debug.value)
-                  Console.println("Skipping source file " + source.sourceFile)
-            }
-          }
+          else if (dir.source.compile)
+            recordClass(file, ".scala", source => checkSource(name, source.sourceFile))
         }
       }
 
@@ -209,8 +209,20 @@ abstract class SymbolLoaders {
         }
         enterClassAndModule(name, loader)
       }
+
+      // packages second
       for ((name, file) <- packages.elements)
         enterPackage(name, newPackageLoader(file))
+
+      // if there's a $member object, enter its members as well.
+      val membersModule = root.info.decl(nme.PACKAGEkw)
+      if (membersModule.isModule) {
+	for (member <- membersModule.info.decls.elements) {
+	  // todo: handle overlapping definitions in some way: mark as errors
+	  // or treat as abstractions.
+	  root.info.decls.enter(member)
+	}
+      }
     }
   }
 
@@ -230,8 +242,12 @@ abstract class SymbolLoaders {
     def namespace: String = if (root.isRoot) "" else root.fullNameString
 
     // TODO: Add check whether the source is newer than the assembly
-    override protected def checkSource(name: String, source: AbstractFile): Boolean =
-      !types.contains(name)
+    override protected def checkSource(name: String, source: AbstractFile): Boolean = {
+      val result = (source ne null) && !types.contains(name)
+      if (!result && settings.debug.value)
+        Console.println("Skipping source file " + source)
+      result
+    }
 
     override protected def doComplete(root: Symbol) {
       clrTypes.collectMembers(root, types, namespaces)

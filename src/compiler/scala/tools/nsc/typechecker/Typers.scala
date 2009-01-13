@@ -524,13 +524,40 @@ trait Typers { self: Analyzer =>
        (mode & QUALmode) != 0 && !tree.symbol.isConstant ||
        pt.typeSymbol.isAbstractType && pt.bounds.lo.isStable && !(tree.tpe <:< pt)))
 
-    /** <p>
-     *    Post-process an identifier or selection node, performing the following:
-     *  </p>
-     *  <ol>
-     *  <!--(1)--><li>Check that non-function pattern expressions are stable</li>
-     *  <!--(2)--><li>Check that packages and static modules are not used as values</li>
-     *  <!--(3)--><li>Turn tree type into stable type if possible and required by context.</li>
+    /** Make symbol accessible. This means:
+     *  If symbol refers to package object, insert `.package` as second to last selector.
+     *  Call checkAccessible, which sets symbol's attributes.
+     */
+    private def makeAccessible(tree: Tree, sym: Symbol, pre: Type, site: Tree): Tree =
+      if (isInPackageObject(sym, pre.typeSymbol)) {
+        val qual = typedQualifier {
+          tree match {
+            case Ident(_) => Ident(nme.PACKAGEkw)
+            case Select(qual, _) => Select(qual, nme.PACKAGEkw)
+            case SelectFromTypeTree(qual, _) => Select(qual, nme.PACKAGEkw)
+          }
+        }
+        val tree1 = tree match {
+          case Ident(name) => Select(qual, name)
+          case Select(_, name) => Select(qual, name)
+          case SelectFromTypeTree(_, name) => SelectFromTypeTree(qual, name)
+        }
+        val tree2 = checkAccessible(tree1, sym, qual.tpe, qual)
+        tree2
+      } else {
+        checkAccessible(tree, sym, pre, site)
+      }
+
+    private def isInPackageObject(sym: Symbol, pkg: Symbol) =
+      pkg.isPackageClass &&
+      sym.owner.isModuleClass &&
+      sym.owner.name.toTermName == nme.PACKAGEkw &&
+      sym.owner.owner == pkg
+
+    /** Post-process an identifier or selection node, performing the following:
+     *  1. Check that non-function pattern expressions are stable
+     *  2. Check that packages and static modules are not used as values
+     *  3. Turn tree type into stable type if possible and required by context.
      *  </ol>
      */
     private def stabilize(tree: Tree, pre: Type, mode: Int, pt: Type): Tree = {
@@ -2842,7 +2869,7 @@ trait Typers { self: Analyzer =>
             case Select(_, _) => copy.Select(tree, qual, name)
             case SelectFromTypeTree(_, _) => copy.SelectFromTypeTree(tree, qual, name)
           }
-          val result = stabilize(checkAccessible(tree1, sym, qual.tpe, qual), qual.tpe, mode, pt)
+          val result = stabilize(makeAccessible(tree1, sym, qual.tpe, qual), qual.tpe, mode, pt)
           if (phase.id <= currentRun.typerPhase.id &&
               settings.Xchecknull.value &&
               !sym.isConstructor &&
@@ -3014,7 +3041,7 @@ trait Typers { self: Analyzer =>
           val tree1 = if (qual == EmptyTree) tree
                       else atPos(tree.pos)(Select(qual, name))
                     // atPos necessary because qualifier might come from startContext
-          stabilize(checkAccessible(tree1, defSym, pre, qual), pre, mode, pt)
+          stabilize(makeAccessible(tree1, defSym, pre, qual), pre, mode, pt)
         }
       }
 

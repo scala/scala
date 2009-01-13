@@ -11,7 +11,7 @@
 
 package scalax.collection.generic
 
-import util.control.Break._
+import util.control.Breaks._
 import scalax.collection.immutable.{List, Nil, ::}
 
 import Sequence._

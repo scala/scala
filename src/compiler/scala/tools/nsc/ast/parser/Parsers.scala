@@ -2360,8 +2360,11 @@ trait Parsers extends NewScanners with MarkupParsers {
       while (inToken != RBRACE && inToken != EOF) {
         if (inToken == PACKAGE) {
 	  val pkgPos = accept(PACKAGE)
-	  stats += (if (inToken == OBJECT) objectDef(Modifiers(Flags.PACKAGE))
-		    else packaging(pkgPos))
+	  stats += {
+	    if (inToken == OBJECT)
+	      atPos(pkgPos) { makePackageObject(objectDef(NoMods)) }
+	    else packaging(pkgPos)
+	  }
         } else if (inToken == IMPORT) {
           stats ++= importClause()
           // XXX: IDE hook this all.
@@ -2516,9 +2519,9 @@ trait Parsers extends NewScanners with MarkupParsers {
         // @S: just eat them (doesn't really change the grammar)
         while (inToken == SEMI) inNextToken
         if (inToken == PACKAGE) {
-          inNextToken
+          pos = inSkipToken
 	  if (in.token == OBJECT) {
-	    ts += objectDef(Modifiers(Flags.PACKAGE))
+	    ts += makePackageObject(objectDef(NoMods))
 	    if (inToken != EOF) {
 	      acceptStatSep()
 	      ts ++= topStatSeq()

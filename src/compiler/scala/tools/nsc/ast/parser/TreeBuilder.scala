@@ -453,5 +453,11 @@ abstract class TreeBuilder {
       makePackaging(qual, List(PackageDef(name, stats).setPos(pkg.pos)))
   }
 
+  /** Create a tree representing a package object */
+  def makePackageObject(objDef: ModuleDef): PackageDef = objDef match {
+    case ModuleDef(mods, name, impl) =>
+      makePackaging(Ident(name), List(ModuleDef(mods, nme.PACKAGEkw, impl)))
+  }
+
   case class Parens(args: List[Tree]) extends Tree
 }

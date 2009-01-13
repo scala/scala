@@ -181,13 +181,13 @@ trait Namers { self: Analyzer =>
     }
 
     def enterPackageSymbol(pos: Position, name: Name): Symbol = {
-      val cscope = if (context.owner == EmptyPackageClass) RootClass.info.decls
-                   else context.scope
+      val (cscope, cowner) =
+        if (context.owner == EmptyPackageClass) (RootClass.info.decls, RootClass)
+        else (context.scope, context.owner)
       val p: Symbol = cscope.lookupWithContext(name)(context.owner)
       if (p.isPackage && cscope == p.owner.info.decls) {
         p
       } else {
-        val cowner = if (context.owner == EmptyPackageClass) RootClass else context.owner
         val pkg = cowner.newPackage(pos, name)
         // IDE: newScope should be ok because packages are never destroyed.
         if (inIDE) assert(!pkg.moduleClass.hasRawInfo || !pkg.moduleClass.rawInfo.isComplete)
@@ -286,7 +286,7 @@ trait Namers { self: Analyzer =>
     def deSkolemize: TypeMap = new DeSkolemizeMap(applicableTypeParams(context.owner))
     // should be special path for IDE but maybe not....
 
-    def enterSym(tree: Tree): Context = {
+    def enterSym(tree: Tree): Context = try {
 
       def finishWith(tparams: List[TypeDef]) {
         val sym = tree.symbol
@@ -399,6 +399,11 @@ trait Namers { self: Analyzer =>
         }
       }
       this.context
+    } catch {
+      case ex: TypeError =>
+        //Console.println("caught " + ex + " in enterSym")//DEBUG
+        typer.reportTypeError(tree.pos, ex)
+        this.context
     }
 
     def enterSyntheticSym(tree: Tree): Symbol = {

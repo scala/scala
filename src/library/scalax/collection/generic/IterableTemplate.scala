@@ -13,7 +13,7 @@ package scalax.collection.generic
 
 import scalax.collection.mutable.{Buffer, ArrayBuffer, ListBuffer}
 import scalax.collection.immutable.{List, Nil, ::, Stream}
-import util.control.Break._
+import util.control.Breaks._
 import Iterable._
 
 /** Collection classes mixing in this class provide a method
