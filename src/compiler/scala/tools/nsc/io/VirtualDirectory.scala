@@ -59,6 +59,7 @@ extends AbstractFile {
     val existing = lookupName(name, true)
     if (existing == null) {
       val dir = new VirtualDirectory(name, Some(this))
+      files(name) = dir
       dir
     } else {
       existing
