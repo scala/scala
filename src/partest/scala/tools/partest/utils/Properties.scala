@@ -38,7 +38,7 @@ object Properties {
   }
 
   val copyrightString: String = {
-    val defaultString = "(c) 2002-2007 LAMP/EPFL"
+    val defaultString = "(c) 2002-2009 LAMP/EPFL"
     props.getProperty("copyright.string", defaultString)
   }
 

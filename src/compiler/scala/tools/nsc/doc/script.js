@@ -1,6 +1,6 @@
 <!--
 // NSC -- new Scala compiler
-// Copyright 2005-2007 LAMP/EPFL
+// Copyright 2005-2009 LAMP/EPFL
 // @author  Stephane Micheloud
 
 // $Id$
