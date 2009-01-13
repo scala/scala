@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2004-2007 LAMP/EPFL
+ * Copyright 2004-2009 LAMP/EPFL
  */
 
 // $Id$
