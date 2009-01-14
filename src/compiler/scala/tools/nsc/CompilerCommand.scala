@@ -107,7 +107,15 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
     var args = arguments
 
     while (!args.isEmpty && ok) {
-      if (args.head startsWith "-") {
+      if (args.head startsWith "@") {
+        try {
+          args = util.ArgumentsExpander.expandArg(args.head) ::: args.tail
+        } catch {
+          case ex: java.io.IOException =>
+            error(ex.getMessage())
+            ok = false
+        }
+      } else if (args.head startsWith "-") {
 	if (interactive) {
           error("no options can be given in interactive mode")
           ok = false
