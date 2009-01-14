@@ -49,6 +49,8 @@ abstract class CleanUp extends Transform {
 
     private var localTyper: analyzer.Typer = null
 
+    private val serialIFace = definitions.getClass("java.io.Serializable")
+
     private def classConstantMethod(pos: Position, sig: String): Symbol = classConstantMeth.get(sig) match {
       case Some(meth) =>
         meth
@@ -747,7 +749,7 @@ abstract class CleanUp extends Transform {
                 // reference types must be marked as such.
                 isValueType(typeSym) ||
                 typeSym.hasAttribute(SerializableAttr) ||
-                (m.info.baseClasses exists { bc => bc hasAttribute SerializableAttr })
+                (m.info.baseClasses exists { bc => (bc hasAttribute SerializableAttr) || (bc == serialIFace) })
               }
             }
 
