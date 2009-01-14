@@ -1298,8 +1298,8 @@ BOOTRAPING TEST AND TEST SUITE
       <negtests  dir="${test.dir}/files/neg" includes="*.scala"/>
       <runtests  dir="${test.dir}/files">
         <include name="run/**/*.scala"/>
-        <include name="jvm/**/*.scala"/>
       </runtests>
+      <jvmtests dir="${test.dir}/files/jvm" includes="*.scala"/>
       <jvm5tests dir="${test.dir}/files/jvm5" includes="*.scala"/>
       <residenttests dir="${test.dir}/files/res" includes="*.res"/>
       <!-- <scripttests dir="${test.dir}/files/script" includes="*.scala"/> -->
@@ -1321,8 +1321,8 @@ BOOTRAPING TEST AND TEST SUITE
       <negtests  dir="${test.dir}/files/neg" includes="*.scala"/>
       <runtests  dir="${test.dir}/files">
         <include name="run/**/*.scala"/>
-        <include name="jvm/**/*.scala"/>
       </runtests>
+      <jvmtests dir="${test.dir}/files/jvm" includes="*.scala"/>
       <jvm5tests dir="${test.dir}/files/jvm5" includes="*.scala"/>
       <residenttests dir="${test.dir}/files/res" includes="*.res"/>
       <!-- <scripttests dir="${test.dir}/files/script" includes="*.scala"/> -->

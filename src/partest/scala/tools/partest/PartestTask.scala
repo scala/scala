@@ -32,6 +32,9 @@ class PartestTask extends Task {
   def addConfiguredRunTests(input: FileSet): Unit =
     runFiles = Some(input)
 
+  def addConfiguredJvmTests(input: FileSet): Unit =
+    jvmFiles = Some(input)
+
   def addConfiguredJvm5Tests(input: FileSet): Unit =
     jvm5Files = Some(input)
 
@@ -92,6 +95,7 @@ class PartestTask extends Task {
   private var pos5Files: Option[FileSet] = None
   private var negFiles: Option[FileSet] = None
   private var runFiles: Option[FileSet] = None
+  private var jvmFiles: Option[FileSet] = None
   private var jvm5Files: Option[FileSet] = None
   private var residentFiles: Option[FileSet] = None
   private var scriptFiles: Option[FileSet] = None
@@ -139,6 +143,9 @@ class PartestTask extends Task {
     }
     else
       Array()
+
+  private def getJvmFiles: Array[File] =
+    getFilesAndDirs(jvmFiles)
 
   private def getJvm5Files: Array[File] =
     getFilesAndDirs(jvm5Files)
@@ -254,6 +261,13 @@ class PartestTask extends Task {
     if (getRunFiles.size > 0) {
       log("Compiling and running files")
       val (successes, failures) = runTestsForFiles(getRunFiles, "run")
+      allSucesses += successes
+      allFailures += failures
+    }
+
+    if (getJvmFiles.size > 0) {
+      log("Compiling and running files")
+      val (successes, failures) = runTestsForFiles(getJvmFiles, "jvm")
       allSucesses += successes
       allFailures += failures
     }

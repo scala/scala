@@ -308,8 +308,8 @@ work on a JVM 1.5.
       <negtests dir="${test.dir}/files/neg" includes="*.scala"/>
       <runtests dir="${test.dir}/files">
         <include name="run/**/*.scala"/>
-        <include name="jvm/**/*.scala"/>
       </runtests>
+      <jvmtests dir="${test.dir}/files/jvm" includes="*.scala"/>
       <residenttests dir="${test.dir}/files/res" includes="*.res"/>
     </partest>
   </target>
@@ -346,8 +346,8 @@ work on a JVM 1.4.
       <negtests dir="${test.dir}/files/neg" includes="*.scala"/>
       <runtests dir="${test.dir}/files">
         <include name="run/**/*.scala"/>
-        <include name="jvm/**/*.scala"/>
       </runtests>
+      <jvmtests dir="${test.dir}/files/jvm" includes="*.scala"/>
       <residenttests dir="${test.dir}/files/res" includes="*.res"/>
     </partest>
   </target>
