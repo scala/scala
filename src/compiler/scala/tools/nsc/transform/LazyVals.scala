@@ -52,7 +52,8 @@ abstract class LazyVals extends Transform {
       tree match {
         case DefDef(mods, name, tparams, vparams, tpt, rhs) =>
           val res = if (!sym.owner.isClass && sym.hasFlag(LAZY)) {
-            val enclosingDummyOrMethod = if (sym.owner.isLocalDummy) sym.owner else sym.enclMethod
+            val enclosingDummyOrMethod =
+              if (sym.enclMethod == NoSymbol) sym.owner else sym.enclMethod
             val idx = lazyVals(enclosingDummyOrMethod)
             val rhs1 = mkLazyDef(enclosingDummyOrMethod, super.transform(rhs), idx)
             lazyVals(sym.owner) = idx + 1
@@ -71,6 +72,8 @@ abstract class LazyVals extends Transform {
               case Block(_, _) if !added =>
                 added = true
                 typed(addBitmapDefs(sym, stat))
+              case ValDef(mods, name, tpt, b @ Block(_, _)) =>
+                typed(copy.ValDef(stat, mods, name, tpt, addBitmapDefs(stat.symbol, b)))
               case _ =>
                 stat
             }
