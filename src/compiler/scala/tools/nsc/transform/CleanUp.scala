@@ -561,35 +561,18 @@ abstract class CleanUp extends Transform {
         val res = Block(List(ValDef(tempVar, EmptyTree), newTry), Ident(tempVar))
         localTyper.typed(res)
 
-      /* Adds @serializable annotation to anonymous function classes
-       * which do not have references to classes
-       * which are not marked @serializable.
-       */
+      /* Adds @serializable annotation to anonymous function classes */
       case cdef @ ClassDef(mods, name, tparams, impl) =>
-        val sym = cdef.symbol
-        // is this an anonymous function class?
-        if (!sym.hasAttribute(SerializableAttr) && sym.hasFlag(SYNTHETIC) &&
-            (sym.name.toString.indexOf("anonfun") != -1)) {
-          // check whether all of its field members are of serializable type
-          val serializable =
-            sym.info.members forall { m =>
-              m.isMethod || {
-                val typeSym = m.info.typeSymbol
-                // Value types are assumed to be serializable,
-                // reference types must be marked as such.
-                isValueType(typeSym) ||
-                typeSym.hasAttribute(SerializableAttr) ||
-                (m.info.baseClasses exists { bc => bc hasAttribute SerializableAttr })
-              }
-            }
-
-          if (serializable)
+        if (settings.target.value == "jvm-1.4" || settings.target.value == "jvm-1.5") {
+          val sym = cdef.symbol
+          // is this an anonymous function class?
+          if (sym.hasFlag(SYNTHETIC) && (sym.name.toString.indexOf("anonfun") != -1) &&
+              !sym.hasAttribute(SerializableAttr) &&
+              sym.isSerializable)
             sym.attributes =
               AnnotationInfo(definitions.SerializableAttr.tpe, List(), List()) :: sym.attributes
-
-          super.transform(tree)
-        } else
-          super.transform(tree)
+        }
+        super.transform(tree)
 
       case _ =>
         super.transform(tree)

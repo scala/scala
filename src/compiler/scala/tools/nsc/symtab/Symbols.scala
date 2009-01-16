@@ -166,17 +166,8 @@ trait Symbols {
       new ModuleClassSymbol(this, pos, name)
     final def newAnonymousClass(pos: Position) =
       newClass(pos, nme.ANON_CLASS_NAME.toTypeName)
-    final def newAnonymousFunctionClass(pos: Position) = {
-      val anonfun = newClass(pos, nme.ANON_FUN_NAME.toTypeName)
-      def firstNonSynOwner(chain: List[Symbol]): Symbol = (chain: @unchecked) match {
-        case o :: os => if (o != this && !(o hasFlag SYNTHETIC) && o.isClass) o else firstNonSynOwner(os)
-      }
-      val ownerSerial = firstNonSynOwner(ownerChain) hasAttribute SerializableAttr
-      if (ownerSerial)
-        anonfun.attributes =
-          AnnotationInfo(definitions.SerializableAttr.tpe, List(), List()) :: anonfun.attributes
-      anonfun
-    }
+    final def newAnonymousFunctionClass(pos: Position) =
+      newClass(pos, nme.ANON_FUN_NAME.toTypeName)
     final def newRefinementClass(pos: Position) =
       newClass(pos, nme.REFINE_CLASS_NAME.toTypeName)
     final def newErrorClass(name: Name) = {
@@ -458,6 +449,14 @@ trait Symbols {
       if (isCovariant) 1
       else if (isContravariant) -1
       else 0
+
+    def isSerializable: Boolean = isMethod || {
+      val typeSym = info.typeSymbol
+      isValueType(typeSym) ||
+      typeSym.hasAttribute(SerializableAttr) ||
+      (info.baseClasses exists { bc => (bc hasAttribute SerializableAttr) || (bc == SerializableClass) }) ||
+      (isClass && info.members.forall(_.isSerializable))
+    }
 
 // Flags, owner, and name attributes --------------------------------------------------------------
 
