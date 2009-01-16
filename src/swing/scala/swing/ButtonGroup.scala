@@ -21,7 +21,7 @@ class ButtonGroup(initialButtons: AbstractButton*) {
     def size = peer.getButtonCount
     def elements: Iterator[AbstractButton] = new Iterator[AbstractButton] {
       val enum = peer.getElements
-      def next = Component.wrapperFor[AbstractButton](enum.nextElement)
+      def next = Component.wrapperFor[AbstractButton](enum.nextElement.asInstanceOf[javax.swing.JComponent])
       def hasNext = enum.hasMoreElements
     }
   }

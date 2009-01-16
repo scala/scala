@@ -124,6 +124,13 @@ JAVA 1.4 LIBRARY AND COMPILER BUILD (FOUR)
       target="jvm-1.4">
       <include name="**/*.scala"/>
     </scalac>
+    <scalac
+      srcdir="${src.dir}/swing"
+      destdir="${build-four.dir}/classes/library"
+      classpath="${build-four.dir}/classes/library"
+      target="jvm-1.4">
+      <include name="**/*.scala"/>
+    </scalac>
     <propertyfile file="${build-four.dir}/classes/library/library.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
@@ -223,11 +230,17 @@ PACKED FOUR BUILD (FOUR-PACK)
     <jar destfile="${build-four-pack.dir}/lib/scala-library.jar">
       <fileset dir="${build-four.dir}/classes/library">
         <exclude name="scala/dbc/**"/>
+        <exclude name="scala/swing/**"/>
       </fileset>
     </jar>
     <jar destfile="${build-four-pack.dir}/lib/scala-dbc.jar">
       <fileset dir="${build-four.dir}/classes/library">
         <include name="scala/dbc/**"/>
+      </fileset>
+    </jar>
+    <jar destfile="${build-four-pack.dir}/lib/scala-swing.jar">
+      <fileset dir="${build-four.dir}/classes/library">
+        <include name="scala/swing/**"/>
       </fileset>
     </jar>
   </target>
@@ -300,6 +313,7 @@ DOCUMENTATION
       classpathref="pack.classpath">
       <src>
         <files includes="${src.dir}/dbc"/>
+        <files includes="${src.dir}/swing"/>
         <files includes="${build-four-src.dir}-actors"/>
         <files includes="${build-four-src.dir}"/>
       </src>
@@ -417,6 +431,9 @@ DISTRIBUTION
     </jar>
     <jar destfile="${four-dist.dir}/src/scala-dbc-src.jar">
       <fileset dir="${src.dir}/dbc"/>
+    </jar>
+    <jar destfile="${four-dist.dir}/src/scala-swing-src.jar">
+      <fileset dir="${src.dir}/swing"/>
     </jar>
     <jar destfile="${four-dist.dir}/src/scala-compiler-src.jar">
       <fileset dir="${src.dir}/compiler"/>
