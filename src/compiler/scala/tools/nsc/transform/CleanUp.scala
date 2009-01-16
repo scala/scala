@@ -49,8 +49,6 @@ abstract class CleanUp extends Transform {
 
     private var localTyper: analyzer.Typer = null
 
-    private val serialIFace = definitions.getClass("java.io.Serializable")
-
     private def classConstantMethod(pos: Position, sig: String): Symbol = classConstantMeth.get(sig) match {
       case Some(meth) =>
         meth
