@@ -5,6 +5,29 @@
 	<artifactId>scala-swing</artifactId>
 	<packaging>jar</packaging>
 	<version>@VERSION@</version>
+	<url>http://www.scala-lang.org/</url>
+   <inceptionYear>2002</inceptionYear>
+   <organization>
+      <name>LAMP/EPFL</name>
+      <url>http://lamp.epfl.ch/</url>
+   </organization>
+   <licenses>
+      <license>
+         <name>BSD-like</name>
+         <url>http://www.scala-lang.org/downloads/license.html
+         </url>
+         <distribution>repo</distribution>
+      </license>
+   </licenses>
+   <scm>
+      <connection>scm:svn:http://lampsvn.epfl.ch/svn-repos/scala/scala/trunk</connection>
+      <url>https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk</url>
+   </scm>
+   <issueManagement>
+      <system>trac</system>
+      <url>http://lampsvn.epfl.ch/trac/scala
+      </url>
+   </issueManagement>	
 	<dependencies>
 		<dependency>
 			<groupId>org.scala-lang</groupId>
