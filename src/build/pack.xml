@@ -79,6 +79,9 @@ MAIN DISTRIBUTION SBAZ
       link="${sbaz.universe}/scala-library-${version.number}.sbp">
       <libset dir="${dist.dir}/lib" includes="scala-library.jar,scala-dbc.jar,scala-swing.jar"/>
       <srcset dir="${dist.dir}/src" includes="scala-library-src.jar,scala-dbc-src.jar,scala-swing-src.jar"/>
+      <looseset destination="doc">
+        <fileset dir="${dist.dir}/doc" includes="LICENSE,README"/>
+      </looseset>
     </sbaz>
   </target>
   

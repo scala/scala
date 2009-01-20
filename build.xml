@@ -1357,8 +1357,8 @@ DISTRIBUTION
 
   <target name="dist.doc" depends="dist.base">
     <mkdir dir="${dist.dir}/doc/scala-devel-docs"/>
-    <copy file="${docs.dir}/LICENSE" toDir="${dist.dir}/doc/scala-devel-docs"/>
-    <copy file="${docs.dir}/README" toDir="${dist.dir}/doc/scala-devel-docs"/>
+    <copy file="${docs.dir}/LICENSE" toDir="${dist.dir}/doc"/>
+    <copy file="${docs.dir}/README" toDir="${dist.dir}/doc"/>
     <mkdir dir="${dist.dir}/doc/scala-devel-docs/api"/>
     <copy toDir="${dist.dir}/doc/scala-devel-docs/api">
       <fileset dir="${build-docs.dir}/library"/>
