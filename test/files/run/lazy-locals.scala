@@ -153,6 +153,14 @@ object Test extends Application {
     }
   }
 
+  // ticket #1589, should not crash
+  class Test {
+    val x = {
+      lazy val t = "abc";
+      t
+    }
+  }
+
   println(testLazy)
   testLazy32
   testLazy33
