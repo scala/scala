@@ -550,8 +550,13 @@ trait Actor extends AbstractActor {
           onTimeout = Some(new TimerTask {
             def run() { thisActor ! TIMEOUT }
           })
-          Actor.timer.schedule(onTimeout.get, msec)
-
+          try {
+            Actor.timer.schedule(onTimeout.get, msec)
+          } catch {
+            case ise: IllegalStateException =>
+              Actor.timer = new Timer
+              Actor.timer.schedule(onTimeout.get, msec)
+          }
           continuation = f
           isDetached = true
         }
