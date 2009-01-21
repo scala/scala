@@ -87,7 +87,7 @@ object ScalaRunTime {
     var i = 0
     while (i < arr) {
       val elem = x.productElement(i)
-      code = code * 41 + (if (elem eq null) 0 else elem.hashCode())
+      code = code * 41 + (if (elem == null) 0 else elem.hashCode())
       i += 1
     }
     code
