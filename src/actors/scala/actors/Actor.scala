@@ -781,7 +781,7 @@ trait Actor extends AbstractActor {
     shouldExit = false
 
     scheduler execute {
-      ActorGC.newActor(Actor.this)
+      scheduler.actorGC.newActor(Actor.this)
       (new Reaction(Actor.this)).run()
     }
 
@@ -923,6 +923,13 @@ trait Actor extends AbstractActor {
       }
   }
 
+  private[actors] def terminated() {
+    scheduler.actorGC.terminated(this)
+  }
+
+  private[actors] def onTerminate(f: => Unit) {
+    scheduler.actorGC.onTerminate(this) { f }
+  }
 }
 
 

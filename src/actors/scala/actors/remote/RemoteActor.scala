@@ -73,7 +73,7 @@ object RemoteActor {
     val s = Actor.self
     kernels += Pair(s, kern)
 
-    ActorGC.onTerminate(s) {
+    s.onTerminate {
       Debug.info("alive actor "+s+" terminated")
       // remove mapping for `s`
       kernels -= s

@@ -47,7 +47,7 @@ object Scheduler extends IScheduler {
     if (sched.isInstanceOf[FJTaskScheduler2]) {
       val fjts = sched.asInstanceOf[FJTaskScheduler2]
       tasks = fjts.snapshot()
-      pendingCount = ActorGC.getPendingCount
+      pendingCount = actorGC.getPendingCount
       fjts.shutdown()
     } else
       error("snapshot operation not supported.")
@@ -58,7 +58,7 @@ object Scheduler extends IScheduler {
   def restart(): Unit = synchronized {
     sched = {
       val s = new FJTaskScheduler2
-      ActorGC.setPendingCount(pendingCount)
+      actorGC.setPendingCount(pendingCount)
       s.start()
       s
     }
@@ -92,6 +92,12 @@ object Scheduler extends IScheduler {
   }
 
   def shutdown() = sched.shutdown()
+
+  /** The <code>ActorGC</code> instance that keeps track of the
+   *  live actor objects that are managed by <code>this</code>
+   *  scheduler.
+   */
+  def actorGC: ActorGC = sched.actorGC
 
   def onLockup(handler: () => Unit) = sched.onLockup(handler)
   def onLockup(millis: Int)(handler: () => Unit) = sched.onLockup(millis)(handler)
@@ -129,6 +135,12 @@ trait IScheduler {
    */
   def shutdown(): Unit
 
+  /** The <code>ActorGC</code> instance that keeps track of the
+   *  live actor objects that are managed by <code>this</code>
+   *  <code>IScheduler</code> instance.
+   */
+  def actorGC: ActorGC
+
   def onLockup(handler: () => Unit): Unit
   def onLockup(millis: Int)(handler: () => Unit): Unit
   def printActorDump: Unit
@@ -159,6 +171,12 @@ class SingleThreadedScheduler extends IScheduler {
     })
 
   def shutdown() {}
+
+  /** The <code>ActorGC</code> instance that keeps track of the
+   *  live actor objects that are managed by <code>this</code>
+   *  scheduler.
+   */
+  val actorGC: ActorGC = new ActorGC
 
   def onLockup(handler: () => Unit) {}
   def onLockup(millis: Int)(handler: () => Unit) {}

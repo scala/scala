@@ -13,7 +13,7 @@ package scala.actors
  *
  *  Providing an implementation for the
  *  <code>execute(f: => Unit)</code> method is sufficient to
- *  obtain a concrete <code>IScheduler</code> class.
+ *  obtain a concrete class that extends <code>IScheduler</code>.
  *
  *  @version 0.9.18
  *  @author Philipp Haller
@@ -31,6 +31,12 @@ trait SchedulerAdapter extends IScheduler {
    */
   def shutdown(): Unit =
     Scheduler.shutdown()
+
+  /** The <code>ActorGC</code> instance that keeps track of the
+   *  live actor objects that are managed by <code>this</code>
+   *  scheduler.
+   */
+  val actorGC: ActorGC = new ActorGC
 
   def onLockup(handler: () => Unit) {}
 

@@ -66,6 +66,12 @@ class FJTaskScheduler2 extends Thread with IScheduler {
   private val executor =
     new FJTaskRunnerGroup(coreSize)
 
+  /** The <code>ActorGC</code> instance that keeps track of the
+   *  live actor objects that are managed by <code>this</code>
+   *  scheduler.
+   */
+  val actorGC = new ActorGC
+
   private var terminating = false
   private var suspending = false
 
@@ -104,7 +110,7 @@ class FJTaskScheduler2 extends Thread with IScheduler {
 
           if (!suspending) {
 
-            ActorGC.gc()
+            actorGC.gc()
 
             // check if we need more threads
             if (coreSize < maxSize
@@ -114,7 +120,7 @@ class FJTaskScheduler2 extends Thread with IScheduler {
                   coreSize += 1
                 }
             else {
-              if (ActorGC.allTerminated) {
+              if (actorGC.allTerminated) {
                 // if all worker threads idle terminate
                 if (executor.getActiveCount() == 0) {
                   Debug.info(this+": initiating shutdown...")

@@ -11,11 +11,10 @@
 package scala.actors
 
 import java.lang.ref.{Reference, WeakReference, ReferenceQueue}
-import java.util.WeakHashMap
 
 import scala.collection.mutable.{HashMap, HashSet}
 
-object ActorGC {
+class ActorGC {
 
   private var pendingReactions = 0
   private val termHandlers = new HashMap[Actor, () => Unit]
@@ -44,7 +43,7 @@ object ActorGC {
   }
 
   def status() {
-    println("ActorGC: size of refSet: "+refSet.size)
+    println(this+": size of refSet: "+refSet.size)
   }
 
   def allTerminated: Boolean = synchronized {
