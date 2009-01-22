@@ -1,12 +1,14 @@
 package scalax.rules.scalasig
 
 import _root_.scala.Symbol
+import java.io.{PrintStream, ByteArrayOutputStream}
 import util.StringUtil
-import java.io.PrintStream
 import java.util.regex.Pattern
 
 class ScalaSigPrinter(stream: PrintStream) {
   import stream._
+
+  val CONSTRUCTOR_NAME = "<init>"
 
   case class TypeFlags(printRep: Boolean)
 
@@ -17,8 +19,14 @@ class ScalaSigPrinter(stream: PrintStream) {
       def indent() {for (i <- 1 to level) print("  ")}
 
       symbol match {
-        case o: ObjectSymbol => indent; printObject(level, o)
-        case c: ClassSymbol if !refinementClass(c) && !c.isModule => indent; printClass(level, c)
+        case o: ObjectSymbol => indent; {
+          if (!isCaseClassObject(o)) {
+            printObject(level, o)
+          }
+        }
+        case c: ClassSymbol if !refinementClass(c) && !c.isModule => indent; {
+          printClass(level, c)
+        }
         case m: MethodSymbol => printMethod(level, m, indent)
         case a: AliasSymbol => indent; printAlias(level, a)
         case t: TypeSymbol => ()
@@ -26,6 +34,20 @@ class ScalaSigPrinter(stream: PrintStream) {
       }
     }
   }
+
+  def isCaseClassObject(o: ObjectSymbol): Boolean = {
+    val TypeRefType(prefix, classSymbol: ClassSymbol, typeArgs) = o.infoType
+    o.isFinal && (classSymbol.children.find(_.isCase) match {
+      case Some(_) => true
+      case None => false
+    })
+  }
+
+  def underCaseClass(m: MethodSymbol) = m.parent match {
+    case Some(c: ClassSymbol) => c.isCase
+    case _ => false
+  }
+
 
   def printChildren(level: Int, symbol: Symbol) {
     for (child <- symbol.children) printSymbol(level + 1, child)
@@ -55,9 +77,15 @@ class ScalaSigPrinter(stream: PrintStream) {
 
   def printClass(level: Int, c: ClassSymbol) {
     printModifiers(c)
+    val defaultConstructor = if (c.isCase) getPrinterByConstructor(c) else ""
     if (c.isTrait) print("trait ") else print("class ")
     print(processName(c.name))
-    printType(c)
+    val it = c.infoType
+    val classType = it match {
+      case PolyType(typeRef, symbols) => PolyTypeWithCons(typeRef, symbols, defaultConstructor)
+      case _ => it
+    }
+    printType(classType)
     print(" {")
     //Print class selftype
     c.selfType match {
@@ -67,6 +95,22 @@ class ScalaSigPrinter(stream: PrintStream) {
     print("\n")
     printChildren(level, c)
     printWithIndent(level, "}\n")
+  }
+
+  def getPrinterByConstructor(c: ClassSymbol) = {
+    c.children.find{
+      case m : MethodSymbol if m.name == CONSTRUCTOR_NAME => true
+      case _ => false
+    } match {
+      case Some(m: MethodSymbol) => {
+        val baos = new ByteArrayOutputStream
+        val stream = new PrintStream(baos)
+        val printer = new ScalaSigPrinter(stream)
+        printer.printMethodType(m.infoType, false)
+        baos.toString
+      }
+      case None => ""
+    }
   }
 
   def printObject(level: Int, o: ObjectSymbol) {
@@ -118,6 +162,7 @@ class ScalaSigPrinter(stream: PrintStream) {
 
   def printMethod(level: Int, m: MethodSymbol, indent : () => Unit): Unit = {
     val n = m.name
+    if (underCaseClass(m) && n == CONSTRUCTOR_NAME) return
     if (m.isAccessor && n.endsWith("_$eq")) return
     indent()
     printModifiers(m)
@@ -129,7 +174,7 @@ class ScalaSigPrinter(stream: PrintStream) {
       print("def ")
     }
     n match {
-      case "<init>" => {
+      case CONSTRUCTOR_NAME => {
         print("this")
         printMethodType(m.infoType, false)
         print(" = { /* compiled code */ }")
@@ -138,7 +183,7 @@ class ScalaSigPrinter(stream: PrintStream) {
         val nn = processName(name)
         print(nn)
         printMethodType(m.infoType, true)
-        if (!m.isAbstract) { // Print body for non-abstract metods
+        if (!m.isDeferred) { // Print body only for non-abstract metods
           print(" = { /* compiled code */ }")
         }
       }
@@ -229,6 +274,7 @@ class ScalaSigPrinter(stream: PrintStream) {
     case MethodType(resultType, _) => toString(resultType, sep)
 
     case PolyType(typeRef, symbols) => typeParamString(symbols) + toString(typeRef, sep)
+    case PolyTypeWithCons(typeRef, symbols, cons) => typeParamString(symbols) + cons + toString(typeRef, sep)
     case AnnotatedType(typeRef, attribTreeRefs) => toString(typeRef, sep)
     case AnnotatedWithSelfType(typeRef, symbol, attribTreeRefs) => toString(typeRef, sep)
     //case DeBruijnIndexType(typeLevel, typeIndex) =>
