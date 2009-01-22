@@ -19,10 +19,9 @@ class ScalaSigPrinter(stream: PrintStream) {
       def indent() {for (i <- 1 to level) print("  ")}
 
       symbol match {
-        case o: ObjectSymbol => indent; {
-          if (!isCaseClassObject(o)) {
-            printObject(level, o)
-          }
+        case o: ObjectSymbol => if (!isCaseClassObject(o)) {
+          indent
+          printObject(level, o)
         }
         case c: ClassSymbol if !refinementClass(c) && !c.isModule => indent; {
           printClass(level, c)
@@ -37,7 +36,7 @@ class ScalaSigPrinter(stream: PrintStream) {
 
   def isCaseClassObject(o: ObjectSymbol): Boolean = {
     val TypeRefType(prefix, classSymbol: ClassSymbol, typeArgs) = o.infoType
-    o.isFinal && (classSymbol.children.find(_.isCase) match {
+    o.isFinal && (classSymbol.children.find(x => x.isCase && x.isInstanceOf[MethodSymbol]) match {
       case Some(_) => true
       case None => false
     })
