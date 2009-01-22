@@ -8,9 +8,7 @@
 
 // $Id$
 
-
 package scala.actors
-
 
 import java.lang.Thread
 
@@ -21,7 +19,7 @@ import java.lang.Thread
  * @version 0.9.8
  * @author Philipp Haller
  */
-private[actors] class ActorProxy(t: Thread) extends Actor {
+private[actors] class ActorProxy(t: Thread, override final val scheduler: IScheduler) extends Actor {
 
   def act() {}
 

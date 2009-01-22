@@ -37,13 +37,21 @@ object Actor {
    *
    * @return returns the currently executing actor.
    */
-  def self: Actor = {
-    var a = tl.get.asInstanceOf[Actor]
-    if (null eq a) {
-      a = new ActorProxy(currentThread)
-      tl.set(a)
-    }
-    a
+  def self: Actor = self(Scheduler)
+
+  private[actors] def self(sched: IScheduler): Actor = {
+    val s = tl.get
+    if (s eq null) {
+      val r = new ActorProxy(currentThread, sched)
+      tl.set(r)
+      r
+    } else
+      s
+  }
+
+  private def parentScheduler: IScheduler = {
+    val s = tl.get
+    if (s eq null) Scheduler else s.scheduler
   }
 
   /**
@@ -55,9 +63,9 @@ object Actor {
    * even if its <code>ActorProxy</code> has died for some reason.
    */
   def resetProxy {
-    val a = tl.get.asInstanceOf[Actor]
+    val a = tl.get
     if ((null ne a) && a.isInstanceOf[ActorProxy])
-      tl.set(new ActorProxy(currentThread))
+      tl.set(new ActorProxy(currentThread, parentScheduler))
   }
 
   /**
@@ -90,11 +98,12 @@ object Actor {
    * @return       the newly created actor. Note that it is automatically started.
    */
   def actor(body: => Unit): Actor = {
-    val actor = new Actor {
+    val a = new Actor {
       def act() = body
+      override final val scheduler: IScheduler = parentScheduler
     }
-    actor.start()
-    actor
+    a.start()
+    a
   }
 
   /**
@@ -125,6 +134,7 @@ object Actor {
       def act() {
         Responder.run(body)
       }
+      override final val scheduler: IScheduler = parentScheduler
     }
     a.start()
     a
@@ -369,7 +379,7 @@ trait Actor extends AbstractActor {
   protected val mailbox = new MessageQueue
   private var sessions: List[OutputChannel[Any]] = Nil
 
-  protected def scheduler: IScheduler =
+  protected[actors] def scheduler: IScheduler =
     Scheduler
 
   /**
@@ -579,7 +589,7 @@ trait Actor extends AbstractActor {
    * Sends <code>msg</code> to this actor (asynchronous).
    */
   def !(msg: Any) {
-    send(msg, Actor.self)
+    send(msg, Actor.self(scheduler))
   }
 
   /**
@@ -597,7 +607,7 @@ trait Actor extends AbstractActor {
    * @return     the reply
    */
   def !?(msg: Any): Any = {
-    val replyCh = Actor.self.freshReplyChannel
+    val replyCh = Actor.self(scheduler).freshReplyChannel
     send(msg, replyCh)
     replyCh.receive {
       case x => x
@@ -614,7 +624,7 @@ trait Actor extends AbstractActor {
    *              <code>Some(x)</code> where <code>x</code> is the reply
    */
   def !?(msec: Long, msg: Any): Option[Any] = {
-    val replyCh = Actor.self.freshReplyChannel
+    val replyCh = Actor.self(scheduler).freshReplyChannel
     send(msg, replyCh)
     replyCh.receiveWithin(msec) {
       case TIMEOUT => None
@@ -627,7 +637,7 @@ trait Actor extends AbstractActor {
    * returns a future representing the reply value.
    */
   def !!(msg: Any): Future[Any] = {
-    val ftch = new Channel[Any](Actor.self)
+    val ftch = new Channel[Any](Actor.self(scheduler))
     send(msg, ftch)
     new Future[Any](ftch) {
       def apply() =
@@ -658,7 +668,7 @@ trait Actor extends AbstractActor {
    * precise type for the reply value.
    */
   def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] = {
-    val ftch = new Channel[Any](Actor.self)
+    val ftch = new Channel[Any](Actor.self(scheduler))
     send(msg, ftch)
     new Future[A](ftch) {
       def apply() =
@@ -789,7 +799,7 @@ trait Actor extends AbstractActor {
   }
 
   private def seq[a, b](first: => a, next: => b): Unit = {
-    val s = Actor.self
+    val s = Actor.self(scheduler)
     val killNext = s.kill
     s.kill = () => {
       s.kill = killNext
@@ -825,12 +835,14 @@ trait Actor extends AbstractActor {
    * Links <code>self</code> to actor defined by <code>body</code>.
    */
   def link(body: => Unit): Actor = {
-    val actor = new Actor {
+    assert(Actor.self == this, "link called on actor different from self")
+    val a = new Actor {
       def act() = body
+      override final val scheduler: IScheduler = Actor.this.scheduler
     }
-    link(actor)
-    actor.start()
-    actor
+    link(a)
+    a.start()
+    a
   }
 
   private[actors] def linkTo(to: AbstractActor) = synchronized {
