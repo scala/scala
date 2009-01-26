@@ -10,7 +10,7 @@
 //
 // -----------------------------------------------------------------------------
 
-package scalax.rules
+package scala.tools.scalap.scalax.rules
 
 /** A Rule is a function from some input to a Result.  The result may be:
   * <ul>

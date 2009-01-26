@@ -1,4 +1,4 @@
-package scalax.rules
+package scala.tools.scalap.scalax.rules
 
 trait Arrows extends UnitFunctors  {
   type Arr[-A, +B] <: Arrow[A, B]

@@ -10,7 +10,7 @@
 //
 // -----------------------------------------------------------------------------
 
-package scalax.rules
+package scala.tools.scalap.scalax.rules
 
 import scala.collection.mutable.HashMap
 

@@ -1,4 +1,4 @@
-package scalax.rules.scalasig
+package scala.tools.scalap.scalax.rules.scalasig
 
 import _root_.scala.Symbol
 import java.io.{PrintStream, ByteArrayOutputStream}

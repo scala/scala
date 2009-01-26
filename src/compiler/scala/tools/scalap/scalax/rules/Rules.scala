@@ -10,7 +10,7 @@
 //
 // -----------------------------------------------------------------------------
 
-package scalax.rules
+package scala.tools.scalap.scalax.rules
 
 trait Name {
   def name : String

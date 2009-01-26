@@ -10,7 +10,7 @@
 //
 // -----------------------------------------------------------------------------
 
-package scalax.rules
+package scala.tools.scalap.scalax.rules
 
 /**
  * A workaround for the difficulties of dealing with

@@ -10,7 +10,7 @@
 //
 // -----------------------------------------------------------------------------
 
-package scalax.rules
+package scala.tools.scalap.scalax.rules
 
 trait Monad[+A] extends Functor[A] {
   type M[+A] <: Monad[A]

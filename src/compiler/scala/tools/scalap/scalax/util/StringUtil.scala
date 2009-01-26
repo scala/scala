@@ -1,4 +1,4 @@
-package scalax.util
+package scala.tools.scalap.scalax.util
 
 import java.beans.Introspector
 
