@@ -18,11 +18,11 @@ package scala.util.logging
  *  @author  Burak Emir
  *  @version 1.0
  */
-trait ConsoleLogger {
+trait ConsoleLogger extends Logged {
 
   /** logs argument to Console using <code>Console.println</code>
    *
    *  @param msg ...
    */
-  def log(msg: String): Unit = Console.println(msg)
+  override def log(msg: String): Unit = Console.println(msg)
 }

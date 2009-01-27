@@ -16,7 +16,7 @@ package scala.util.logging
  *    support for logging. For instance, the developer of a library writes
  *  </p>
  *  <pre>
- *    <b>class</b> MyClass <b>with</b> Logged { /* do stuff, call log */ }
+ *    <b>class</b> MyClass <b>extends</b> Logged { /* do stuff, call log */ }
  *  </pre>
  *  <p>
  *    The user of the library instantiates:
