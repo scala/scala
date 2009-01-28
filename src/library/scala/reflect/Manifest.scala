@@ -23,7 +23,7 @@ package scala.reflect
   * </p>
   */
 @serializable
-trait Manifest[T] {
+trait Manifest[T] extends OptManifest[T] {
 
   /** A class representing the type U to which T would be erased. Note
     * that there is no subtyping relationship between T and U. */
