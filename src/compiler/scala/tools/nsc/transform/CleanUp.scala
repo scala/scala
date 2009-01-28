@@ -126,8 +126,9 @@ abstract class CleanUp extends Transform {
        *   this limitation only arises when the called method is defined as a
        *   refinement, where the refinement defines a parameter based on a
        *   type variable. */
-      case ad@ApplyDynamic(qual, params) =>
+      case ad@ApplyDynamic(qual0, params) =>
         assert(ad.symbol.isPublic)
+        var qual: Tree = qual0
 
         /* ### CREATING THE METHOD CACHE ### */
 
@@ -620,12 +621,17 @@ abstract class CleanUp extends Transform {
           case MethodType(paramTypes, resType) =>
             assert(params.length == paramTypes.length)
             atPos(ad.pos)(localTyper.typed {
-              fixResult(if (isValueClass(resType.typeSymbol)) boxedClass(resType.typeSymbol).tpe else resType) {
-                if (mayRequirePrimitiveReplacement)
-                  callAsOperator(paramTypes, resType)
-                else
-                  callAsMethod(paramTypes, resType)
-              }
+              val sym = currentOwner.newValue(ad.pos, newTermName(unit.fresh.newName("qual"))) setInfo qual0.tpe
+              qual = gen.mkAttributedRef(sym)
+              Block(
+                List(ValDef(sym, qual0)),
+                fixResult(if (isValueClass(resType.typeSymbol)) boxedClass(resType.typeSymbol).tpe else resType) {
+                  if (mayRequirePrimitiveReplacement)
+                    callAsOperator(paramTypes, resType)
+                  else
+                    callAsMethod(paramTypes, resType)
+                }
+              )
             })
         }
 

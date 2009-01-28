@@ -77,9 +77,9 @@ abstract class TreeGen {
         mkAttributedThis(sym)
       } else if (sym.isType) {
         assert(termSym != NoSymbol)
-	mkAttributedIdent(termSym) setType tpe
+        mkAttributedIdent(termSym) setType tpe
       } else {
-	mkAttributedRef(pre, sym)
+        mkAttributedRef(pre, sym)
       }
 
     case ConstantType(value) =>

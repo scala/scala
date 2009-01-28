@@ -175,11 +175,11 @@ abstract class SymbolLoaders {
       def recordClass(file: AbstractFile, extension: String, classOK: global.classPath0.Context => Boolean) {
         if (!file.isDirectory && file.name.endsWith(extension)) {
           val name = file.name.substring(0, file.name.length - extension.length)
-	  if (isValid(name) && !classes.isDefinedAt(name)) {
+          if (isValid(name) && !classes.isDefinedAt(name)) {
             val clazz = directory.find(name, false)
             if ((clazz ne null) && classOK(clazz)) classes(name) = clazz
-	  }
-	}
+          }
+        }
       }
 
       for (dir <- directory.entries) if ((dir.location ne null) && (!inIDE || dir.location.isDirectory)) {
@@ -217,11 +217,11 @@ abstract class SymbolLoaders {
       // if there's a $member object, enter its members as well.
       val membersModule = root.info.decl(nme.PACKAGEkw)
       if (membersModule.isModule) {
-	for (member <- membersModule.info.decls.elements) {
-	  // todo: handle overlapping definitions in some way: mark as errors
-	  // or treat as abstractions.
-	  root.info.decls.enter(member)
-	}
+        for (member <- membersModule.info.decls.elements) {
+          // todo: handle overlapping definitions in some way: mark as errors
+          // or treat as abstractions.
+          root.info.decls.enter(member)
+        }
       }
     }
   }
