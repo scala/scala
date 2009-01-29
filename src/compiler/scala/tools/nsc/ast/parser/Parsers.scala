@@ -970,9 +970,8 @@ trait Parsers extends NewScanners with MarkupParsers {
           val cond = surround(LPAREN,RPAREN)(expr(),Literal(true))
           newLinesOpt()
           val thenp = expr()
-          val elsep =
-            if (inToken == ELSE) { inNextToken; expr() }
-            else EmptyTree
+          val elsep = if (inToken == ELSE) { inNextToken; expr() }
+		      else Literal(())
           atPos(pos) { If(cond, thenp, elsep) }
         case TRY =>
           atPos(inSkipToken) {

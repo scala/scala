@@ -72,7 +72,10 @@ trait ResizableArray[A] extends Vector[A] {
    */
   def reduceToSize(sz: Int) {
     require(sz <= size0)
-    size0 = sz
+    while (size0 > sz) {
+      size0 -= 1
+      array(size0) = null
+    }
   }
 
   /** ensure that the internal array has at n cells */

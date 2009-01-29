@@ -23,9 +23,7 @@ package scalax.collection.mutable
 @serializable
 class ArrayBuffer[A] extends Buffer[A] with Builder[ArrayBuffer, A] with ResizableArray[A] {
 
-  def clear() {
-    size0 = 0
-  }
+  def clear() { reduceToSize(0) }
 
   /** Appends a single element to this buffer and returns
    *  the identity of the buffer. It takes constant time.
@@ -45,7 +43,14 @@ class ArrayBuffer[A] extends Buffer[A] with Builder[ArrayBuffer, A] with Resizab
    *  @param iter  the iterable object.
    *  @return      the updated buffer.
    */
-  override def ++=(iter: Iterable[A]) { iter copyToBuffer this }
+  override def ++=(iter: Iterable[A]) = iter match {
+    case v: Vector[A] =>
+      val n = v.length
+      ensureSize(size0 + n)
+      v.copyToArray(array.asInstanceOf[Array[Any]], n)
+    case _ =>
+      super.++=(iter)
+  }
 
   /** Prepends a single element to this buffer and return
    *  the identity of the buffer. It takes time linear in
