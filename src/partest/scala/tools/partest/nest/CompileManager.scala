@@ -115,6 +115,9 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
       case e: Exception =>
         e.printStackTrace()
         return false
+      case err: Error =>
+        err.printStackTrace()
+        return false
     } finally {
       logWriter.close()
     }

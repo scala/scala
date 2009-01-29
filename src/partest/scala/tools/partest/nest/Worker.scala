@@ -862,7 +862,7 @@ class Worker(val fileManager: FileManager) extends Actor {
             t.printStackTrace
             if (t.getCause != null)
               t.getCause.printStackTrace
-            null
+            LogContext(null, None)
         }
         parent ! result
       }
