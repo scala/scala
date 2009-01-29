@@ -22,8 +22,9 @@ import compat.Platform
  * @author Martin Odersky
  */
 @serializable
-final class BoxedAnyArray(val length: Int) extends BoxedArray {
+final class BoxedAnyArray[A](val length: Int) extends BoxedArray[A] {
 
+/*
   def this(dim1: Int, dim2: Int) = {
     this(dim1);
     initializeWith(i => new BoxedAnyArray(dim2))
@@ -67,15 +68,16 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
   private def initializeWith(elem: Int => Any) = {
     for (i <- 0 until length) update(i, elem(i))
   }
+*/
 
   private var boxed = new Array[AnyRef](length)
   private val hash = boxed.hashCode()
   private var unboxed: AnyRef = null
   private var elemClass: Class[_] = null
 
-  def apply(index: Int): Any = synchronized {
+  def apply(index: Int): A = synchronized {
     if (unboxed eq null)
-      boxed(index);
+      boxed(index)
     else if (elemClass eq classOf[Int])
       Int.box(unboxed.asInstanceOf[Array[Int]](index))
     else if (elemClass eq classOf[Double])
@@ -94,9 +96,9 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
       Boolean.box(unboxed.asInstanceOf[Array[Boolean]](index))
     else
       unboxed.asInstanceOf[Array[AnyRef]](index)
-  }
+  }.asInstanceOf[A]
 
-  def update(index: Int, _elem: Any): Unit = synchronized {
+  def update(index: Int, _elem: A): Unit = synchronized {
     val elem = _elem.asInstanceOf[AnyRef]
     if (unboxed eq null)
       boxed(index) = elem
@@ -207,7 +209,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
           var i = 0
           while (i < length) {
             boxed(i) match {
-              case ba: BoxedArray => boxed(i) = ba.unbox(elemClass.getComponentType())
+              case ba: BoxedArray[_] => boxed(i) = ba.unbox(elemClass.getComponentType())
               case _ =>
             }
             i += 1
@@ -220,10 +222,9 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
     unboxed
   }
 
-  override def equals(other: Any): Boolean = (
-    other.isInstanceOf[BoxedAnyArray] && (this eq (other.asInstanceOf[BoxedAnyArray])) ||
+  override def equals(other: Any): Boolean =
+    other.isInstanceOf[BoxedAnyArray[_]] && (this eq (other.asInstanceOf[BoxedAnyArray[_]])) ||
     (if (unboxed eq null) boxed == other else unboxed == other)
-  )
 
   override def hashCode(): Int = hash
 
@@ -235,14 +236,14 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
   private def adapt(other: AnyRef): AnyRef =
     if (this.unboxed eq null)
       other match {
-        case that: BoxedAnyArray =>
+        case that: BoxedAnyArray[_] =>
           if (that.unboxed eq null) {
             that.boxed
           } else {
             if (ScalaRunTime.isValueClass(that.elemClass)) unbox(that.elemClass);
             that.unboxed
           }
-        case that: BoxedArray =>
+        case that: BoxedArray[_] =>
           adapt(that.value)
         case that: Array[Int] =>
           unbox(ScalaRunTime.IntTag); that
@@ -265,11 +266,11 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
       }
     else
       other match {
-        case that: BoxedAnyArray =>
+        case that: BoxedAnyArray[_] =>
           if (that.unboxed ne null) that.unboxed
           else if (ScalaRunTime.isValueClass(this.elemClass)) that.unbox(this.elemClass)
           else that.boxed
-        case that: BoxedArray =>
+        case that: BoxedArray[_] =>
           adapt(that.value)
         case _ =>
           other
@@ -291,7 +292,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
     result
   }
 
-  final override def filter(p: Any => Boolean): BoxedArray = {
+  final override def filter(p: A => Boolean): BoxedArray[A] = {
     val include = new Array[Boolean](length)
     var len = 0
     var i = 0
@@ -299,7 +300,7 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
       if (p(this(i))) { include(i) = true; len += 1 }
       i += 1
     }
-    val result = new BoxedAnyArray(len)
+    val result = new BoxedAnyArray[A](len)
     len = 0
     i = 0
     while (len < result.length) {
@@ -308,8 +309,8 @@ final class BoxedAnyArray(val length: Int) extends BoxedArray {
     }
     result
   }
-  override protected def newArray(length : Int, elements : Iterator[Any]) = {
-    val result = new BoxedAnyArray(length)
+  override protected def newArray(length : Int, elements : Iterator[A]) = {
+    val result = new BoxedAnyArray[A](length)
     var i = 0
     while (elements.hasNext) {
       result(i) = elements.next

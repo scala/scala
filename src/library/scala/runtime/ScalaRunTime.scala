@@ -28,7 +28,7 @@ object ScalaRunTime {
   val DoubleTag = ".Double"
   val BooleanTag = ".Boolean"
 
-  def isArray(x: AnyRef): Boolean = (x != null && x.getClass.isArray) || (x != null && x.isInstanceOf[BoxedArray])
+  def isArray(x: AnyRef): Boolean = (x != null && x.getClass.isArray) || (x != null && x.isInstanceOf[BoxedArray[_]])
   def isValueTag(tag: String) = tag.charAt(0) == '.'
   def isValueClass(clazz: Class[_]) = clazz.isPrimitive()
 
@@ -127,13 +127,13 @@ object ScalaRunTime {
 
   def Seq[a](xs: a*): Seq[a] = null // interpreted specially by new backend.
 
-  def arrayValue(x: BoxedArray, elemTag: String): AnyRef =
+  def arrayValue[A](x: BoxedArray[A], elemTag: String): AnyRef =
     if (x eq null) null else x.unbox(elemTag)
 
-  def arrayValue(x: BoxedArray, elemClass: Class[_]): AnyRef =
+  def arrayValue[A](x: BoxedArray[A], elemClass: Class[_]): AnyRef =
     if (x eq null) null else x.unbox(elemClass)
 
-  def boxArray(value: AnyRef): BoxedArray = value match {
+  def boxArray(value: AnyRef): BoxedArray[_] = value match {
     case x: Array[Byte] => new BoxedByteArray(x)
     case x: Array[Short] => new BoxedShortArray(x)
     case x: Array[Char] => new BoxedCharArray(x)
@@ -143,7 +143,7 @@ object ScalaRunTime {
     case x: Array[Double] => new BoxedDoubleArray(x)
     case x: Array[Boolean] => new BoxedBooleanArray(x)
     case x: Array[AnyRef] => new BoxedObjectArray(x)
-    case x: BoxedArray => x
+    case x: BoxedArray[_] => x
   }
 
   /** Given any Scala value, convert it to a String.

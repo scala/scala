@@ -37,7 +37,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
    *    <li>For every other singleton type, the erasure of its supertype.</li>
    *    <li>
    *      For a typeref <code>scala.Array+[T]</code> where <code>T</code> is
-   *      an abstract type, <code>scala.runtime.BoxedArray</code>.
+   *      an abstract type, <code>scala.runtime.BoxedArray[T]</code>.
    *    </li>
    *    <li>
    *   - For a typeref scala.Array+[T] where T is not an abstract type, scala.Array+[|T|].
@@ -592,8 +592,14 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       tree match {
         case Apply(Select(New(tpt), name), args) if (tpt.tpe.typeSymbol == BoxedArrayClass) =>
           assert(name == nme.CONSTRUCTOR);
+          val translated =
+            if (args.length >= 2) {
+              Select(gen.mkAttributedRef(ArrayModule), nme.withDims)
+            } else {
+              Select(New(TypeTree(BoxedAnyArrayClass.tpe)), name)
+            }
           atPos(tree.pos) {
-            Typed(Apply(Select(New(TypeTree(BoxedAnyArrayClass.tpe)), name), args), tpt)
+            Typed(Apply(translated, args), tpt)
           }
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
         if ((tree.symbol == Any_asInstanceOf || tree.symbol == Any_asInstanceOfErased)) =>

@@ -35,11 +35,11 @@ object Array {
    */
   def copy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int) {
     src match {
-      case xs: runtime.BoxedArray =>
+      case xs: runtime.BoxedArray[_] =>
         xs.copyTo(srcPos, dest, destPos, length)
       case _ =>
         dest match {
-          case xs: runtime.BoxedArray =>
+          case xs: runtime.BoxedArray[_] =>
             xs.copyFrom(src, srcPos, destPos, length)
           case _ =>
             def fillDest[T](da: Array[T], sa: Int=>T) {
@@ -253,6 +253,18 @@ object Array {
    */
   def fromFunction[A](f: (Int, Int, Int, Int, Int) => A)(n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[A]]]]] =
     fromFunction(i => fromFunction(f(i, _, _, _, _))(n2, n3, n4, n5))(n1)
+
+  /** Create array with given dimensions */
+  def withDims[A](n1: Int): Array[A] =
+    new Array[A](n1)
+  def withDims[A](n1: Int, n2: Int): Array[Array[A]] =
+    fromFunction(_ => withDims[A](n2))(n1)
+  def withDims[A](n1: Int, n2: Int, n3: Int): Array[Array[Array[A]]] =
+    fromFunction(_ => withDims[A](n2, n3))(n1)
+  def withDims[A](n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[A]]]] =
+    fromFunction(_ => withDims[A](n2, n3, n4))(n1)
+  def withDims[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[A]]]]] =
+    fromFunction(_ => withDims[A](n2, n3, n4, n5))(n1)
 
  /** This method is called as a result of a pattern match { case Array(...) => } or val Array(...) = ....
    *

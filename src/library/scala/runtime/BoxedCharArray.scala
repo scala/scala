@@ -15,25 +15,24 @@ package scala.runtime
 import Predef._
 
 @serializable
-final class BoxedCharArray(val value: Array[Char]) extends BoxedArray {
+final class BoxedCharArray(val value: Array[Char]) extends BoxedArray[Char] {
 
   def length: Int = value.length
 
-  def apply(index: Int): Any = Char.box(value(index))
+  def apply(index: Int): Char = value(index)
 
-  def update(index: Int, elem: Any) {
-    value(index) = Char.unbox(elem.asInstanceOf[AnyRef])
+  def update(index: Int, elem: Char) {
+    value(index) = elem
   }
 
   def unbox(elemTag: String): AnyRef = value
   def unbox(elemClass: Class[_]): AnyRef = value
 
-  override def equals(other: Any) = (
+  override def equals(other: Any) =
     value == other ||
     other.isInstanceOf[BoxedCharArray] && value == other.asInstanceOf[BoxedCharArray].value
-  );
 
-  override def hashCode(): Int = value.hashCode();
+  override def hashCode(): Int = value.hashCode()
 
   def subArray(start: Int, end: Int): Array[Char] = {
     val result = new Array[Char](end - start)
@@ -41,7 +40,7 @@ final class BoxedCharArray(val value: Array[Char]) extends BoxedArray {
     result
   }
 
-  final override def filter(p: Any => Boolean): BoxedArray = {
+  final override def filter(p: Char => Boolean): BoxedArray[Char] = {
     val include = new Array[Boolean](value.length)
     var len = 0
     var i = 0
@@ -58,9 +57,11 @@ final class BoxedCharArray(val value: Array[Char]) extends BoxedArray {
     }
     new BoxedCharArray(result)
   }
-  override protected def newArray(length : Int, elements : Iterator[Any]) = {
+  override protected def newArray(length : Int, elements : Iterator[Char]) = {
     val result = new Array[Char](length)
     elements.map(_.asInstanceOf[Char]).copyToArray(result, 0)
     new BoxedCharArray(result)
   }
+
+
 }

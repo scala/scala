@@ -93,6 +93,8 @@ trait Definitions {
     lazy val TypeConstraintClass: Symbol = getClass("scala.TypeConstraint")
     lazy val ManifestClass: Symbol = getClass("scala.reflect.Manifest")
     lazy val ManifestModule: Symbol = getModule("scala.reflect.Manifest")
+    lazy val OptManifestClass: Symbol = getClass("scala.reflect.OptManifest")
+    lazy val NoManifest: Symbol = getModule("scala.reflect.NoManifest")
 
     var CodeClass: Symbol = _
     var CodeModule: Symbol = _

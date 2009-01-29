@@ -16,14 +16,14 @@ import Predef._
 import compat.Platform.createArray
 
 @serializable
-final class BoxedObjectArray(val value: Array[AnyRef]) extends BoxedArray {
+final class BoxedObjectArray[A <: AnyRef](val value: Array[AnyRef]) extends BoxedArray[A] {
 
   def length: Int = value.length
 
-  def apply(index: Int): Any = value(index)
+  def apply(index: Int): A = value(index).asInstanceOf[A]
 
-  def update(index: Int, elem: Any) {
-    value(index) = elem.asInstanceOf[AnyRef]
+  def update(index: Int, elem: A) {
+    value(index) = elem
   }
 
   def unbox(elemTag: String): AnyRef = value
@@ -31,7 +31,7 @@ final class BoxedObjectArray(val value: Array[AnyRef]) extends BoxedArray {
 
   override def equals(other: Any): Boolean =
     value == other ||
-    other.isInstanceOf[BoxedObjectArray] && value == other.asInstanceOf[BoxedObjectArray].value
+    other.isInstanceOf[BoxedObjectArray[_]] && value == other.asInstanceOf[BoxedObjectArray[_]].value
 
   override def hashCode(): Int = value.hashCode()
 
@@ -45,12 +45,12 @@ final class BoxedObjectArray(val value: Array[AnyRef]) extends BoxedArray {
     result
   }
 
-  final override def filter(p: Any => Boolean): BoxedArray = {
+  final override def filter(p: A => Boolean): BoxedArray[A] = {
     val include = new Array[Boolean](value.length)
     var len = 0
     var i = 0
     while (i < value.length) {
-      if (p(value(i))) { include(i) = true; len += 1 }
+      if (p(value(i).asInstanceOf[A])) { include(i) = true; len += 1 }
       i += 1
     }
     val result = create(len)
@@ -60,13 +60,13 @@ final class BoxedObjectArray(val value: Array[AnyRef]) extends BoxedArray {
       if (include(i)) { result(len) = value(i); len += 1 }
       i += 1
     }
-    new BoxedObjectArray(result)
+    new BoxedObjectArray[A](result)
   }
 
-  override protected def newArray(length: Int, elements: Iterator[Any]) = {
+  override protected def newArray(length: Int, elements: Iterator[A]) = {
     val result = create(length)
-    elements.map(_.asInstanceOf[AnyRef]).copyToArray(result, 0)
-    new BoxedObjectArray(result)
+    elements.map(_.asInstanceOf[A]).copyToArray(result, 0)
+    new BoxedObjectArray[A](result)
   }
 }
 

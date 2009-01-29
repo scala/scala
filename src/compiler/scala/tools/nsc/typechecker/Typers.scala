@@ -2452,7 +2452,7 @@ trait Typers { self: Analyzer =>
 
       def typedIf(cond: Tree, thenp: Tree, elsep: Tree) = {
         val cond1 = checkDead(typed(cond, BooleanClass.tpe))
-        if (elsep.isEmpty) {
+        if (elsep.isEmpty) { // in the future, should be unecessary
           val thenp1 = typed(thenp, UnitClass.tpe)
           copy.If(tree, cond1, thenp1, elsep) setType UnitClass.tpe
         } else {
@@ -3406,12 +3406,15 @@ trait Typers { self: Analyzer =>
           reportTypeError(tree.pos, ex)
           setError(tree)
         case ex: Exception =>
-//          if (settings.debug.value) // @M causes cyclic reference error
-//            Console.println("exception when typing "+tree+", pt = "+pt)
+          if (settings.debug.value) // @M causes cyclic reference error
+            Console.println("exception when typing "+tree+", pt = "+pt)
           if ((context ne null) && (context.unit ne null) &&
               (context.unit.source ne null) && (tree ne null))
             logError("AT: " + (tree.pos).dbgString, ex);
           throw(ex)
+        case ex: java.lang.Error =>
+          Console.println("exception when typing "+tree+", pt = "+pt)
+          throw ex
       }
     }
 
@@ -3808,14 +3811,16 @@ trait Typers { self: Analyzer =>
           List()
       }
 
-      def implicitManifest(pt: Type): Tree = {
-        // test below is designed so that ManifestClass need not be loaded
-        // (because it's not available everywhere)
-        if (pt.typeSymbol.fullNameString == "scala.reflect.Manifest")
-          pt match {
-            case TypeRef(_, ManifestClass, List(arg)) => manifestOfType(pos, arg)
-          }
-        else EmptyTree
+      def implicitManifest(pt: Type): Tree = pt match {
+        case TypeRef(_, ManifestClass, List(arg)) =>
+          manifestOfType(pos, arg)
+        case TypeRef(_, OptManifestClass, List(arg)) =>
+          val tree1 = manifestOfType(pos, arg)
+          if (tree1 == EmptyTree) gen.mkAttributedRef(NoManifest) else tree1
+        case TypeRef(_, tsym, _) if (tsym.isAbstractType) =>
+          implicitManifest(pt.bounds.lo)
+        case _ =>
+          EmptyTree
       }
 
       var tree = searchImplicit(context.implicitss, true)
@@ -3827,7 +3832,9 @@ trait Typers { self: Analyzer =>
     }
 
     /** Creates a tree that calls the relevant factory method in object
-      * reflect.Manifest for type 'tp'. An EmptyTree is returned if  */
+      * reflect.Manifest for type 'tp'. An EmptyTree is returned if
+      * no manifest is found
+      */
     def manifestOfType(pos: Position, tp: Type): Tree = {
 
       /** Creates a tree that calls the factory method called constructor in object reflect.Manifest */

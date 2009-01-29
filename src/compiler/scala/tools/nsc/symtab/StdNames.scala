@@ -374,6 +374,7 @@ trait StdNames {
     val value = newTermName("value")
     val view_ = newTermName("view")
     val wait_ = newTermName("wait")
+    val withDims = newTermName("withDims")
     val xml = newTermName("xml")
     val zip = newTermName("zip")
 

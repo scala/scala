@@ -239,7 +239,7 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
   def format(args : Any*) : String = {
     val m =  classOf[String].getDeclaredMethod("format", classOf[String], classOf[Array[Object]])
     m.invoke(null, self,
-	     args.asInstanceOf[scala.runtime.BoxedObjectArray].
+	     args.asInstanceOf[scala.runtime.BoxedObjectArray[_]].
              unbox(args.getClass).asInstanceOf[Array[Object]]).asInstanceOf[String]
   }
 }

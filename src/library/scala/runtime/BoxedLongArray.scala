@@ -15,14 +15,14 @@ package scala.runtime
 import Predef._
 
 @serializable
-final class BoxedLongArray(val value: Array[Long]) extends BoxedArray {
+final class BoxedLongArray(val value: Array[Long]) extends BoxedArray[Long] {
 
   def length: Int = value.length
 
-  def apply(index: Int): Any = Long.box(value(index))
+  def apply(index: Int): Long = value(index)
 
-  def update(index: Int, elem: Any) {
-    value(index) = Long.unbox(elem.asInstanceOf[AnyRef])
+  def update(index: Int, elem: Long) {
+    value(index) = elem
   }
 
   def unbox(elemTag: String): AnyRef = value
@@ -40,7 +40,7 @@ final class BoxedLongArray(val value: Array[Long]) extends BoxedArray {
     result
   }
 
-  final override def filter(p: Any => Boolean): BoxedArray = {
+  final override def filter(p: Long => Boolean): BoxedArray[Long] = {
     val include = new Array[Boolean](value.length)
     var len = 0
     var i = 0
@@ -57,9 +57,11 @@ final class BoxedLongArray(val value: Array[Long]) extends BoxedArray {
     }
     new BoxedLongArray(result)
   }
-  override protected def newArray(length : Int, elements : Iterator[Any]) = {
+  override protected def newArray(length : Int, elements : Iterator[Long]) = {
     val result = new Array[Long](length)
     elements.map(_.asInstanceOf[Long]).copyToArray(result, 0)
     new BoxedLongArray(result)
   }
+
+
 }
