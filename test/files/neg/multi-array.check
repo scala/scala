@@ -1,4 +1,8 @@
+multi-array.scala:6: warning: new Array(...) with multiple dimensions has been deprecated; use Array.withDims(...) instead
+  val a: Array[Int] = new Array(10, 10)
+                      ^
 multi-array.scala:6: error: too many arguments for array constructor: found 2 but array has only 1 dimension(s)
   val a: Array[Int] = new Array(10, 10)
                       ^
+one warning found
 one error found
