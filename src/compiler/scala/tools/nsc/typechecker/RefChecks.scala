@@ -849,6 +849,12 @@ abstract class RefChecks extends InfoTransform {
               isIrrefutable(pat1, tpt.tpe)) =>
             result = qual
 
+        case Apply(Select(New(tpt), name), args)
+        if (tpt.tpe.typeSymbol == ArrayClass && args.length >= 2) =>
+          unit.deprecationWarning(tree.pos,
+            "new Array(...) with multiple dimensions has been deprecated; use Array.withDims(...) instead")
+          currentApplication = tree
+
         case Apply(fn, args) =>
           checkSensible(tree.pos, fn, args)
           currentApplication = tree
