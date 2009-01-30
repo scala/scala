@@ -28,7 +28,8 @@ object Actor {
 
   private[actors] val tl = new ThreadLocal[Actor]
 
-  private[actors] var timer = new Timer
+  // timer thread runs as daemon
+  private[actors] val timer = new Timer(true)
 
   /**
    * Returns the currently executing actor. Should be used instead
@@ -545,18 +546,11 @@ trait Actor extends AbstractActor {
         }
         else {
           waitingFor = f.isDefinedAt
-
           val thisActor = this
           onTimeout = Some(new TimerTask {
             def run() { thisActor ! TIMEOUT }
           })
-          try {
-            Actor.timer.schedule(onTimeout.get, msec)
-          } catch {
-            case ise: IllegalStateException =>
-              Actor.timer = new Timer
-              Actor.timer.schedule(onTimeout.get, msec)
-          }
+          Actor.timer.schedule(onTimeout.get, msec)
           continuation = f
           isDetached = true
         }
