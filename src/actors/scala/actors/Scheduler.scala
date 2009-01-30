@@ -26,6 +26,8 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
  */
 object Scheduler extends IScheduler {
 
+  Debug.info("initializing "+this+"...")
+
   private var sched: IScheduler = {
     val s = new FJTaskScheduler2
     s.start()
@@ -62,7 +64,7 @@ object Scheduler extends IScheduler {
       s.start()
       s
     }
-    Actor.timer = new java.util.Timer
+    //Actor.timer = new java.util.Timer
     while (!tasks.isEmpty()) {
       sched.execute(tasks.take().asInstanceOf[FJTask])
     }
