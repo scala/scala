@@ -24,9 +24,11 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
  * @version 0.9.18
  * @author Philipp Haller
  */
-class FJTaskScheduler2 extends Thread with IScheduler {
-  // as long as this thread runs, JVM should not exit
-  setDaemon(false)
+class FJTaskScheduler2(daemon: Boolean) extends Thread with IScheduler {
+  setDaemon(daemon)
+
+  def this() =
+    this(false)
 
   var printStats = false
 

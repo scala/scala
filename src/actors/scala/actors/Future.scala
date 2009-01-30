@@ -38,13 +38,19 @@ abstract class Future[+T](val ch: InputChannel[Any]) extends Responder[T] with F
  */
 object Futures {
 
+  private val sched = new FJTaskScheduler2(true)
+
   def future[T](body: => T): Future[T] = {
     case object Eval
-    val a = Actor.actor {
-      Actor.react {
-        case Eval => Actor.reply(body)
+    val a = new Actor {
+      override def scheduler: IScheduler = sched
+      def act() {
+        Actor.react {
+          case Eval => Actor.reply(body)
+        }
       }
     }
+    a.start()
     a !! (Eval, { case any => any.asInstanceOf[T] })
   }
 
