@@ -625,7 +625,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
                    " { val tmp = scala.runtime.ScalaRunTime.stringOf(" +
 	           req.fullPath(vname) +
 		   "); " +
-                   " (if(tmp.contains('\\n')) \"\\n\" else \"\") + tmp + \"\\n\"} ")
+                   " (if(tmp.toSeq.contains('\\n')) \"\\n\" else \"\") + tmp + \"\\n\"} ")
       }
     }
   }
