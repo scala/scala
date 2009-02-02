@@ -59,7 +59,7 @@ object NameTransformer {
         }
         buf.append(op2code(c))
       /* Handle glyphs that are not valid Java/JVM identifiers */
-      } else if (!Character.isJavaLetterOrDigit(c)) {
+      } else if (!Character.isJavaIdentifierPart(c)) {
 	if (buf eq null) {
 	  buf = new StringBuilder()
 	  buf.append(name.substring(0, i))
