@@ -103,8 +103,11 @@ abstract class RefChecks extends InfoTransform {
           case List(MixinOverrideError(_, msg)) =>
             unit.error(clazz.pos, msg)
           case MixinOverrideError(member, msg) :: others =>
-            unit.error(clazz.pos, msg+";\n other members with override errors are: "+
-                       (others.map(_.member.name).filter(member.name != _).removeDuplicates mkString ", "))
+            val others1 = others.map(_.member.name.decode).filter(member.name != _).removeDuplicates
+            unit.error(
+              clazz.pos,
+              msg+(if (others1.isEmpty) ""
+                   else ";\n other members with override errors are: "+(others1 mkString ", ")))
         }
       }
 
@@ -273,7 +276,7 @@ abstract class RefChecks extends InfoTransform {
 
       val opc = new overridingPairs.Cursor(clazz)
       while (opc.hasNext) {
-        //Console.println("overrides " + opc.overriding/* + ":" + opc.overriding.tpe*/ + opc.overriding.locationString + " " + opc.overridden/* + ":" + opc.overridden.tpe*/ + opc.overridden.locationString + opc.overridden.hasFlag(DEFERRED));//DEBUG
+        //Console.println(opc.overriding/* + ":" + opc.overriding.tpe*/ + " in "+opc.overriding.fullNameString + " overrides " + opc.overridden/* + ":" + opc.overridden.tpe*/ + " in "+opc.overridden.fullNameString + "/"+ opc.overridden.hasFlag(DEFERRED));//debug
         if (!opc.overridden.isClass) checkOverride(clazz, opc.overriding, opc.overridden);
 
         opc.next

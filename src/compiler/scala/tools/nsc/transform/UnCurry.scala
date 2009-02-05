@@ -202,6 +202,8 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
      *  I.e. for the method's non-local return key, generate:
      *
      *    throw new NonLocalReturnException(key, expr)
+     *  todo: maybe clone a pre-existing exception instead?
+     *  (but what to do about excaptions that miss their targets?)
      */
     private def nonLocalReturnThrow(expr: Tree, meth: Symbol) =
       localTyper.typed {

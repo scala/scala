@@ -468,6 +468,11 @@ trait Symbols {
       isClass && (isAnonymousClass || isRefinementClass || isLocal ||
                   !owner.isPackageClass && owner.isLocalClass)
 
+    /** Is this symbol a member of class `clazz'
+     */
+    def isMemberOf(clazz: Symbol) =
+      clazz.info.member(name).alternatives contains this
+
     /** A a member of class `base' is incomplete if
      *  (1) it is declared deferred or
      *  (2) it is abstract override and its super symbol in `base' is

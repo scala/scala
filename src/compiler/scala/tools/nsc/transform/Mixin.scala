@@ -987,6 +987,11 @@ abstract class Mixin extends InfoTransform {
             }
 //          }
           }
+/* //DEBUG
+        case Ident(name) if (name.toString == "xxx") =>
+          println(tree+":"+tree.tpe+"/"+tree.tpe.baseClasses)
+          tree
+*/
         case _ =>
           tree
       }

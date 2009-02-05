@@ -8,6 +8,7 @@ package scala.tools.nsc.transform
 
 import scala.tools.nsc.symtab.classfile.ClassfileConstants._
 import scala.collection.mutable.{HashMap,ListBuffer}
+import scala.collection.immutable.Set
 import scala.tools.nsc.util.Position
 import symtab._
 import Flags._
@@ -816,8 +817,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
      *    with the erased type of <code>m1</code> in the template.
      *  </p>
      */
-    private def bridgeDefs(owner: Symbol): List[Tree] = {
-      //Console.println("computing bridges for " + owner)//DEBUG
+    private def bridgeDefs(owner: Symbol): (List[Tree], Set[Symbol]) = {
+      var toBeRemoved: Set[Symbol] = Set()
+      //println("computing bridges for " + owner)//DEBUG
       assert(phase == currentRun.erasurePhase)
       val site = owner.thisType
       val bridgesScope = newScope
@@ -834,7 +836,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         val member = opc.overriding
         val other = opc.overridden
         //Console.println("bridge? " + member + ":" + member.tpe + member.locationString + " to " + other + ":" + other.tpe + other.locationString);//DEBUG
-        if (!atPhase(currentRun.explicitOuterPhase)(member.isDeferred)) {
+        if (atPhase(currentRun.explicitOuterPhase)(!member.isDeferred)) {
           val otpe = erasure(other.tpe);
           val bridgeNeeded = atPhase(phase.next) (
             !(other.tpe =:= member.tpe) &&
@@ -853,6 +855,11 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               .setInfo(otpe);
             bridgeTarget(bridge) = member
             atPhase(phase.next) { owner.info.decls.enter(bridge) }
+            if (other.owner == owner) {
+              //println("bridge to same: "+other+other.locationString)//DEBUG
+              atPhase(phase.next) { owner.info.decls.unlink(other) }
+              toBeRemoved += other
+            }
             bridgesScope enter bridge
             bridges =
               atPhase(phase.next) {
@@ -874,7 +881,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         }
         opc.next
       }
-      bridges
+      (bridges, toBeRemoved)
     }
 /*
       for (val bc <- site.baseClasses.tail; val other <- bc.info.decls.toList) {
@@ -893,8 +900,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     def addBridges(stats: List[Tree], base: Symbol): List[Tree] =
       if (base.isTrait) stats
       else {
-        val bridges = bridgeDefs(base)
-        if (bridges.isEmpty) stats else stats ::: bridges
+        val (bridges, toBeRemoved) = bridgeDefs(base)
+        if (bridges.isEmpty) stats
+        else (stats remove (stat => toBeRemoved contains stat.symbol)) ::: bridges
       }
 
     /** <p>

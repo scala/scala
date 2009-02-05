@@ -170,7 +170,7 @@ class Settings(error: String => Unit) {
   }
 
   override def equals(that: Any) = that match {
-    case s:Settings =>
+    case s: Settings =>
       assert(this.allSettings.length == s.allSettings.length)
       List.forall2 (
         this.allSettings,
@@ -334,7 +334,7 @@ class Settings(error: String => Unit) {
       if (value == default) Nil else List(name, value.toString)
 
     override def equals(that: Any) = that match {
-      case is:IntSetting => this.name == is.name && this.value == is.value
+      case is: Settings#IntSetting => this.name == is.name && this.value == is.value
       case _ => false
     }
 
@@ -355,7 +355,7 @@ class Settings(error: String => Unit) {
     def unparse: List[String] = if (value) List(name) else Nil
 
     override def equals(that: Any) = that match {
-      case bs:BooleanSetting => this.name == bs.name && this.value == bs.value
+      case bs:  Settings#BooleanSetting => this.name == bs.name && this.value == bs.value
       case _ => false
     }
 
@@ -389,7 +389,7 @@ class Settings(error: String => Unit) {
       if (value == default) Nil else List(name, value)
 
     override def equals(that: Any) = that match {
-      case ss:StringSetting => this.name == ss.name && this.value == ss.value
+      case ss: Settings# StringSetting => this.name == ss.name && this.value == ss.value
       case _ => false
     }
 
@@ -428,7 +428,7 @@ class Settings(error: String => Unit) {
       for (opt <- value) yield nameColon+opt
 
     override def equals(that: Any) = that match {
-      case mss:MultiStringSetting =>
+      case mss: Settings# MultiStringSetting =>
         this.name == mss.name &&
         this.value.length == mss.value.length &&
         List.forall2(this.value.sort(_<_), mss.value.sort(_<_))(_==_)
@@ -480,7 +480,7 @@ class Settings(error: String => Unit) {
       if (value == default) Nil else List(name + ":" + value)
 
     override def equals(that: Any) = that match {
-      case cs:ChoiceSetting => this.name == cs.name && this.value == cs.value
+      case cs: Settings# ChoiceSetting => this.name == cs.name && this.value == cs.value
       case _ => false
     }
 
@@ -566,7 +566,7 @@ class Settings(error: String => Unit) {
             List(name + ":" + phase) ::: args))
 
     override def equals(that: Any) = that match {
-      case ps:PhasesSetting =>
+      case ps: Settings#PhasesSetting =>
         this.name == ps.name &&
         this.value.length == ps.value.length &&
         List.forall2(this.value.sort(_<_), ps.value.sort(_<_))(_==_)
