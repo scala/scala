@@ -34,6 +34,7 @@ import backend.icode.analysis._
 class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
                                                              with CompilationUnits
                                                              with Plugins
+                                                             with PhaseAssembly
 {
   // alternate constructors ------------------------------------------
   def this(reporter: Reporter) =
@@ -254,7 +255,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     private val isDevirtualized = prev.name == "devirtualize" || prev.devirtualized
     override def devirtualized: Boolean = isDevirtualized  // (part of DEVIRTUALIZE)
 
-	/** Is current phase cancelled on this unit? */
+    /** Is current phase cancelled on this unit? */
     def cancelled(unit: CompilationUnit) =
       reporter.cancelled ||
       unit.isJava && this.id > currentRun.namerPhase.id
@@ -271,175 +272,277 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     }
   }
 
-  class TerminalPhase(prev: Phase) extends GlobalPhase(prev) {
-    def name = "terminal"
-    def apply(unit: CompilationUnit) {}
-  }
-
+  // phaseName = "parser"
   object syntaxAnalyzer extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]()
+    val runsRightAfter = None
   } with SyntaxAnalyzer
 
+  // factory method for
+  // phaseName = "namer"
+  // phaseName = "parser"
   object analyzer extends {
     val global: Global.this.type = Global.this
   } with Analyzer
 
+  // phaseName = "superaccessors"
   object superAccessors extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]("typer")
+    val runsRightAfter = None
   } with SuperAccessors
 
+  // phaseName = "pickler"
   object pickler extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]("superaccessors")
+    val runsRightAfter = None
   } with Pickler
 
+  // phaseName = "refchecks"
   object refchecks extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]("pickler")
+    val runsRightAfter = None
   } with RefChecks
-/*
-  object devirtualize extends {
-    val global: Global.this.type = Global.this
-  } with DeVirtualize
-*/
+
+//  object devirtualize extends {
+//    val global: Global.this.type = Global.this
+//  } with DeVirtualize
+
+  // phaseName = "liftcode"
   object liftcode extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]("refchecks")
+    val runsRightAfter = None
   } with LiftCode
 
+  // phaseName = "uncurry"
   object uncurry extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]("refchecks","liftcode")
+    val runsRightAfter = None
   } with UnCurry
 
+  // phaseName = "tailcalls"
   object tailCalls extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]("uncurry")
+    val runsRightAfter = None
   } with TailCalls
 
-//  object checkDefined extends {
-//    val global: Global.this.type = Global.this
-//  } with CheckDefined
+ //  object checkDefined extends {
+ //    val global: Global.this.type = Global.this
+ //  } with CheckDefined
 
+  // phaseName = "explicitouter"
   object explicitOuter extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]("tailcalls")
+    val runsRightAfter = None
   } with ExplicitOuter
 
+  // phaseName = "erasure"
   object erasure extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]("explicitouter")
+    val runsRightAfter = Some("explicitouter")
   } with Erasure
 
+  // phaseName = "lazyvals"
   object lazyVals extends {
     val global: Global.this.type = Global.this
     final val FLAGS_PER_WORD = 32
+    val runsAfter = List[String]("erasure")
+    val runsRightAfter = None
   } with LazyVals
 
+  // phaseName = "lambdalift"
   object lambdaLift extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]("lazyvals")
+    val runsRightAfter = None
   } with LambdaLift
 
+  // phaseName = "constructors"
   object constructors extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]("lambdalift")
+    val runsRightAfter = None
   } with Constructors
 
+  // phaseName = "flatten"
   object flatten extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]("constructors")
+    val runsRightAfter = None
   } with Flatten
-/*
-  object detach extends {
-    val global: Global.this.type = Global.this
-  } with Detach
-*/
+
+//  object detach extends {
+//    val global: Global.this.type = Global.this
+//  } with Detach
+
+  // phaseName = "mixin"
   object mixer extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]("flatten","constructors")
+    val runsRightAfter = None
   } with Mixin
 
+  // phaseName = "cleanup"
   object cleanup extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]("mixin")
+    val runsRightAfter = None
   } with CleanUp
 
-  object sampleTransform extends {
-    val global: Global.this.type = Global.this
-  } with SampleTransform
-
+  // phaseName = "icode"
   object genicode extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]("cleanup")
+    val runsRightAfter = None
   } with GenICode
-/*
-  object icodePrinter extends backend.icode.Printers {
-    val global: Global.this.type = Global.this
-  }
-*/
+
+// object icodePrinter extends backend.icode.Printers {
+//   val global: Global.this.type = Global.this
+// }
+
+  // phaseName = "???"
   object scalaPrimitives extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]()
+    val runsRightAfter = None
   } with ScalaPrimitives
 
+  // phaseName = "inliner"
   object inliner extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]("icode")
+    val runsRightAfter = None
   } with Inliners
 
+  // phaseName = "closelim"
   object closureElimination extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]("inliner")
+    val runsRightAfter = None
   } with ClosureElimination
 
+  // phaseName = "dce"
   object deadCode extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]("closelim")
+    val runsRightAfter = None
   } with DeadCodeElimination
 
+  // phaseName = "jvm"
   object genJVM extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]("dce")
+    val runsRightAfter = None
   } with GenJVM
 
+  // phaseName = "msil"
   object genMSIL extends {
     val global: Global.this.type = Global.this
+    val runsAfter = List[String]("dce")
+    val runsRightAfter = None
   } with GenMSIL
+
+  // phaseName = "terminal"
+  object terminal extends {
+    val global: Global.this.type = Global.this
+    val phaseName = "terminal"
+    val runsAfter = List[String]("jvm","msil")
+    val runsRightAfter = None
+  } with SubComponent {
+    private var cache: Option[GlobalPhase] = None
+
+    def newPhase(prev: Phase): GlobalPhase = {
+      if (cache.isEmpty) cache = Some(new TerminalPhase(prev))
+      cache.get
+    }
+
+    def reset() {
+      cache = None
+    }
+
+    class TerminalPhase(prev: Phase) extends GlobalPhase(prev) {
+      def name = "terminal"
+      def apply(unit: CompilationUnit) {}
+    }
+  }
+
+  // phaseName = "SAMPLE PHASE"
+  object sampleTransform extends {
+    val global: Global.this.type = Global.this
+    val runsAfter = List[String]()
+    val runsRightAfter = None
+  } with SampleTransform
 
   object icodeChecker extends checkers.ICodeChecker()
 
   object typer extends analyzer.Typer(
     analyzer.NoContext.make(EmptyTree, Global.this.definitions.RootClass, newScope))
 
-  /** The built-in components.  The full list of components, including
-   *  plugins, is computed in the Plugins trait.
+  /* Add the internal compiler phases to the phases set
    */
-  protected def builtInPhaseDescriptors: List[SubComponent] = List(
-    analyzer.namerFactory: SubComponent, // note: types are there because otherwise
-    analyzer.typerFactory: SubComponent, // consistency check after refchecks would fail.
-    superAccessors,  // add super accessors
-    pickler         // serialize symbol tables
+  protected def computeInternalPhases() {
+    phasesSet += syntaxAnalyzer                        // The parser
+    phasesSet += analyzer.namerFactory                 // note: types are there because otherwise
+    phasesSet += analyzer.typerFactory                 // consistency check after refchecks would fail.
+    phasesSet += superAccessors			       // add super accessors
+    phasesSet += pickler			       // serialize symbol tables
+    phasesSet += refchecks			       // perform reference and override checking, translate nested objects
 
-    // Desugar virtual classes
-    // if (false && settings.Xexperimental.value) List(devirtualize) else List()
+//    if (false && settings.Xexperimental.value)
+//	phasesSet += devirtualize		       // Desugar virtual classes4
 
-  ) ::: List(
-    refchecks        // perform reference and override checking, translate nested objects
-  ) ::: (
-    if (forJVM) List(liftcode) else List() // generate reified trees
-  ) ::: List(
-    uncurry,         // uncurry, translate function values to anonymous classes
-    tailCalls,       // replace tail calls by jumps
-    explicitOuter,   // replace C.this by explicit outer pointers, eliminate pattern matching
-//    checkDefined,
-    erasure,         // erase generic types to Java 1.4 types, add interfaces for traits
-    lazyVals,        // transforms local lazy vals into vars and initialized bits
-    lambdaLift,      // move nested functions to top level
-//    detach,
-    constructors     // move field definitions into constructors
-  ) ::: (
-    if (forMSIL) List() else List(flatten) // get rid of inner classes
-  ) ::: List(
-    mixer,           // do mixin composition, translate lazy fields
-    cleanup,         // some platform-specific cleanups
+    phasesSet += uncurry			       // uncurry, translate function values to anonymous classes
+    phasesSet += tailCalls			       // replace tail calls by jumps
+    phasesSet += explicitOuter			       // replace C.this by explicit outer pointers, eliminate pattern matching
+    phasesSet += erasure			       // erase generic types to Java 1.4 types, add interfaces for traits
+    phasesSet += lazyVals			       //
+    phasesSet += lambdaLift			       // move nested functions to top level
+    phasesSet += constructors			       // move field definitions into constructors
+    phasesSet += mixer				       // do mixin composition
+    phasesSet += cleanup			       // some platform-specific cleanups
+    phasesSet += genicode			       // generate portable intermediate code
+    phasesSet += inliner			       // optimization: do inlining
+    phasesSet += closureElimination		       // optimization: get rid of uncalled closures
+    phasesSet += deadCode			       // optimization: get rid of dead cpde
+    phasesSet += terminal                              // The last phase in the compiler chain
 
-    genicode,        // generate portable intermediate code
-    inliner,         // optimization: do inlining
-    closureElimination, // optimization: get rid of uncalled closures
-    deadCode,           // optimization: get rid of dead cpde
-    if (forMSIL) genMSIL else genJVM, // generate .class files
-    sampleTransform
-  )
+    if (! forMSIL) {
+      phasesSet += flatten			       // get rid of inner classes
+    }
+    if (forJVM) {
+      phasesSet += liftcode			       // generate reified trees
+      phasesSet += genJVM			       // generate .class files
+    }
+    if (forMSIL) {
+      phasesSet += genMSIL			       // generate .msil files
+    }
+  }
 
 
+  /* Helper method for sequncing the phase assembly
+   */
+  private def computePhaseDescriptors: List[SubComponent] = {
+    computeInternalPhases()	       // Global.scala
+    computePluginPhases()	       // plugins/Plugins.scala
+    buildCompilerFromPhasesSet()       // PhaseAssembly.scala
+  }
+
+  /* Simple option value to hold the compiler phase chain */
   private var phasesCache: Option[List[SubComponent]] = None
 
+  /* The set of phase objects that is the basis for the compiler phase chain */
+  protected val phasesSet : HashSet[SubComponent] = new HashSet[SubComponent]
+
   def phaseDescriptors = {
-    if (phasesCache.isEmpty)
-      phasesCache = Some(computePhaseDescriptors)
+    if (phasesCache.isEmpty) phasesCache = Some(computePhaseDescriptors)
     phasesCache.get
   }
 
@@ -471,6 +574,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     //Console.println("starting run: " + id)
     var currentUnit: CompilationUnit = _
     curRun = this
+    // Can not take the phaseDescriptors.head even though its the syntaxAnalyser, this will implicitly
+    // call definitions.init which uses phase and needs it to be != NoPhase
     private val firstPhase = syntaxAnalyzer.newPhase(NoPhase)
     phase = firstPhase
     definitions.init  // needs phase to be defined != NoPhase,
@@ -480,15 +585,23 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     var deprecationWarnings: Boolean = false
     var uncheckedWarnings: Boolean = false
 
+    // The first phase in the compiler phase chain
     private var p: Phase = firstPhase
 
-    protected def stopPhase(name : String) =
-      if (onlyPresentation) name == "superaccessors"
-      else settings.stop.contains(name)
-   //  protected def stopPhase(name : String) = settings.stop.contains(name)
+    protected def stopPhase(name : String) = settings.stop.contains(name)
 
-    for (pd <- phaseDescriptors.takeWhile(pd => !(stopPhase(pd.phaseName))))
+    // Reset the cache in terminal, the chain could have been build before where nobody used it
+    // This happens in the interpreter
+    terminal.reset
+
+    // Each subcomponent is asked to deliver a newPhase that is chained together. If -Ystop:phasename is
+    // given at command-line, this will stop with that phasename
+    for (pd <- phaseDescriptors.tail.takeWhile(pd => !(stopPhase(pd.phaseName))))
       if (!(settings.skip contains pd.phaseName)) p = pd.newPhase(p)
+
+    // Ensure there is a terminal phase at the end, Normally there will then be two terminal phases at the end
+    // if -Ystop:phasename was given, this makes sure that there is a terminal phase at the end
+    p = terminal.newPhase(p)
 
     def cancel { reporter.cancelled = true }
 
@@ -509,7 +622,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     private def refreshProgress =
       if (fileset.size > 0)
         progress((phasec * fileset.size) + unitc,
-                 (phaseDescriptors.length+1) * fileset.size)
+                 (phaseDescriptors.length-1) * fileset.size) // terminal phase not part of the progress display
 
     def phaseNamed(name: String): Phase = {
       var p: Phase = firstPhase
@@ -531,13 +644,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     private var unitbuf = new ListBuffer[CompilationUnit]
     private var fileset = new HashSet[AbstractFile]
 
-    lazy val terminalPhase : Phase = {
-      //var q : Phase = firstPhase
-      //while (q != null && !stopPhase(q.name)) q = q.next
-      //if (q == null)
-      new TerminalPhase(p)
-      //else q
-    }
     private def addUnit(unit: CompilationUnit) {
       unitbuf += unit
       fileset += unit.source.file
@@ -568,7 +674,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       for (source <- sources) addUnit(new CompilationUnit(source))
 
       globalPhase = firstPhase
-      while (globalPhase != terminalPhase && !reporter.hasErrors) {
+      while (globalPhase != terminal.newPhase(NoPhase) && !reporter.hasErrors) {
         val startTime = currentTime
         phase = globalPhase
         globalPhase.run

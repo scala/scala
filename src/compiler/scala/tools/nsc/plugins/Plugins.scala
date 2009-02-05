@@ -1,6 +1,7 @@
 /* NSC -- new Scala compiler
  * Copyright 2007-2009 LAMP/EPFL
  * @author Lex Spoon
+ * Updated by Anders Bach Nielsen
  */
 // $Id$
 
@@ -11,7 +12,8 @@ import java.io.File
 /** Support for run-time loading of compiler plugins.
  *
  *  @author Lex Spoon
- *  @version 1.0, 2007-5-21
+ *  @version 1.1, 2009/1/2
+ *  Updated 2009/1/2 by Anders Bach Nielsen: Added features to implement SIP 00002
  */
 trait Plugins { self: Global =>
 
@@ -90,7 +92,7 @@ trait Plugins { self: Global =>
     val plugs =
     pick(roughPluginsList,
 	 Set.empty,
-	 Set.empty ++ builtInPhaseDescriptors.map(_.phaseName))
+	 Set.empty ++ phasesSet.map(_.phaseName))
 
     for (req <- settings.require.value; if !plugs.exists(p => p.name==req))
       error("Missing required plugin: " + req)
@@ -133,49 +135,19 @@ trait Plugins { self: Global =>
     messages.mkString("\n")
   }
 
+  /**
+   * Extract all phases supplied by plugins and add them to the phasesSet.
+   * @see phasesSet
+   */
+  protected def computePluginPhases() {
 
-  /** Compute a full list of phase descriptors, including
-   *  both built-in phases and those coming from plugins. */
-  protected def computePhaseDescriptors: List[SubComponent] = {
-    def insert(descs: List[SubComponent], component: PluginComponent)
-    :List[SubComponent] =
-    {
-      descs match {
-	case Nil => assert(false); Nil
-        case hd::rest if "parser" == component.runsAfter =>
-          component :: hd :: rest
-	case hd::rest if hd.phaseName == component.runsAfter =>
-	  hd :: component :: rest
-	case hd :: rest =>
-	  hd :: (insert(rest, component))
-      }
-    }
+    var plugPhases = plugins.flatMap(_.components)
 
-    var descriptors = builtInPhaseDescriptors
-    var plugsLeft = plugins.flatMap(_.components)
-
-    // Insert all the plugins, one by one.  Note that
-    // plugins are allowed to depend on each other, thus
-    // complicating the algorithm.
-
-    while (!plugsLeft.isEmpty) {
-      val nextPlug = plugsLeft.find(plug =>
-        plug.runsAfter == "parser" ||
-        descriptors.exists(d => d.phaseName == plug.runsAfter))
-      nextPlug match {
-	case None =>
-	  error("Failed to load some plugin phases:")
-	  for (plug <- plugsLeft)
-	    error (plug.phaseName + " depends on " + plug.runsAfter)
-	  return descriptors
-	case Some(nextPlug) =>
-	  descriptors = insert(descriptors, nextPlug)
-          plugsLeft = plugsLeft.filter(p => !(p eq nextPlug))
-      }
-    }
-
-    descriptors
-  }
+    // Add all phases supplied by plugins to the phasesSet
+    for (pPhase <- plugPhases) {
+      phasesSet += pPhase
+     }
+   }
 
   /** Summary of the options for all loaded plugins */
   def pluginOptionsHelp: String = {

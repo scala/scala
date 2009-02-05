@@ -24,6 +24,8 @@ trait Analyzer extends AnyRef
   object namerFactory extends SubComponent {
     val global: Analyzer.this.global.type = Analyzer.this.global
     val phaseName = "namer"
+    val runsAfter = List[String]("parser")
+    val runsRightAfter = None
     def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
       override val checkable = false
       def apply(unit: CompilationUnit) {
@@ -35,6 +37,8 @@ trait Analyzer extends AnyRef
   object typerFactory extends SubComponent {
     val global: Analyzer.this.global.type = Analyzer.this.global
     val phaseName = "typer"
+    val runsAfter = List[String]()
+    val runsRightAfter = Some("namer")
     def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
       if (!inIDE) resetTyper()
       def apply(unit: CompilationUnit) {

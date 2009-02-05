@@ -45,6 +45,11 @@ object ScalaDoc {
       }
       try {
         object compiler extends Global(command.settings, reporter) {
+	  override protected def computeInternalPhases() : Unit = {
+	    phasesSet += syntaxAnalyzer
+	    phasesSet += analyzer.namerFactory
+	    phasesSet += analyzer.typerFactory
+	  }
 	  override val onlyPresentation = true
 	}
         if (reporter.hasErrors) {

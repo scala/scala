@@ -124,6 +124,7 @@ class Settings(error: String => Unit) {
   val Xshowcls      = StringSetting     ("-Xshow-class", "class", "Show class info", "").hideToIDE
   val Xshowobj      = StringSetting     ("-Xshow-object", "object", "Show object info", "").hideToIDE
   val showPhases    = BooleanSetting    ("-Xshow-phases", "Print a synopsis of compiler phases").hideToIDE
+  val genPhaseGraph = StringSetting     ("-Xgenerate-phase-graph", "filename", "Generate the phase graphs (outputs .dot files) to filenameX.dot", "").hideToIDE
   val sourceReader  = StringSetting     ("-Xsource-reader", "classname", "Specify a custom method for reading source files", "scala.tools.nsc.io.SourceReader").hideToIDE
 // val migrate2_7_2  = BooleanSetting    ("-Xmigrate-to-2.7.2", "Issue warning messages to help in migration to 2.7.2")
   val future        = BooleanSetting    ("-Xfuture", "Turn on future language features")

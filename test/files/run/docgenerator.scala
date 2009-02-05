@@ -117,6 +117,11 @@ object Foo2 {
       val command = new CompilerCommand(List.fromArray(args), docSettings, error, false)
       try {
         object compiler extends Global(command.settings, reporter) {
+	  override protected def computeInternalPhases() : Unit = {
+	    phasesSet += syntaxAnalyzer
+	    phasesSet += (analyzer.namerFactory: SubComponent) // note: types are there because otherwise
+	    phasesSet += (analyzer.typerFactory: SubComponent) // consistency check after refchecks would fail.
+	  }
 	  override def onlyPresentation = true
 	}
         if (reporter.hasErrors) {
