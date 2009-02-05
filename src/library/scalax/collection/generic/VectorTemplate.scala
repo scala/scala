@@ -89,7 +89,7 @@ self =>
     case that: Vector[_] =>
       var i = 0
       val len = this.length min that.length
-      val b = this.newBuilder[(A, B)]
+      val b = this.newBuilder[(A, B)](len)
       while (i < len) {
         b += ((this(i), that(i).asInstanceOf[B]))
         i += 1
@@ -102,8 +102,10 @@ self =>
   override def zipAll[B, A1 >: A, B1 >: B](that: Iterable[B], thisElem: A1, thatElem: B1): CC[(A1, B1)] = that match {
     case that: Vector[_] =>
       var i = 0
-      val len = this.length min that.length
-      val b = this.newBuilder[(A1, B1)]
+      val thisLen = this.length
+      val thatLen = that.length
+      val len = thisLen min thatLen
+      val b = this.newBuilder[(A1, B1)](thisLen max thatLen)
       while (i < len) {
         b += ((this(i), that(i).asInstanceOf[B]))
         i += 1
@@ -122,9 +124,9 @@ self =>
   }
 
   override def zipWithIndex: CC[(A, Int)] = {
-    val b = newBuilder[(A, Int)]
-    var i = 0
     val len = length
+    val b = newBuilder[(A, Int)](len)
+    var i = 0
     while (i < len) {
       b += ((this(i), i))
       i += 1
@@ -148,9 +150,9 @@ self =>
   override def head: A = if (isEmpty) throw new NoSuchElementException else this(0)
 
   override def slice(from: Int, until: Int): CC[A] = {
-    val b = newBuilder[A]
     var i = from max 0
     val end = until min length
+    val b = newBuilder[A](end - i)
     while (i < end) {
       b += this(i)
       i += 1
@@ -199,7 +201,7 @@ self =>
   override def lastIndexOf[B >: A](elem: B, end: Int): Int = lastIndexWhere(elem ==, end)
 
   override def reverse: CC[A] = {
-    val b = newBuilder[A]
+    val b = newBuilder[A](length)
     var i = length
     while (0 < i) {
       i -= 1

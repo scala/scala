@@ -21,14 +21,14 @@ import immutable.Nil
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  */
-trait Sequence[+A] extends OrderedIterable[A] with SizedIterable[A] with covariant.SequenceTemplate[Sequence, A]
+trait Sequence[+A] extends OrderedIterable[A] with SizedIterable[A] with generic.covariant.SequenceTemplate[Sequence, A]
 
 object Sequence extends covariant.SequenceFactory[Sequence] {
 
   /** The empty sequence */
   val empty : Sequence[Nothing] = immutable.Nil
 
-  type View[+UC[+B] <: Sequence[B], +A] = covariant.SequenceView[UC, A]
+  type View[+UC[B] <: Sequence[B], A] = SequenceView[UC, A]
 
   /** @deprecated use View instead
    */

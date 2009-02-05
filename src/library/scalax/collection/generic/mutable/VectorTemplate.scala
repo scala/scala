@@ -44,10 +44,10 @@ self =>
    */
   override def view(from: Int, until: Int): VectorView[CC, A] = view.slice(from, until)
 
-  def readOnly: Sequence[A] = new collection.immutable.Vector[A] { //!!!
+  def readOnly: collection.Vector[A] = new collection.Vector[A] { //!!! just use a VectorProxy?
     def length = self.length
     def apply(idx : Int) = self.apply(idx)
-    def newBuilder[B]: Builder[CC, B] = self.newBuilder[B]
+    def newBuilder[B]: Builder[collection.Vector, B] = self.newBuilder[B] //mapResult (_.readOnly)
     override def foreach(f: A => Unit) = self.foreach(f)
     override def stringPrefix = self.stringPrefix+"RO"
   }

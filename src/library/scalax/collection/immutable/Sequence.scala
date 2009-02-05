@@ -9,11 +9,13 @@ import generic.covariant
  *  @note If a collection has a known <code>size</code>, it should also sub-type <code>SizedIterable</code>.
  *
  *  @author  Matthias Zenger
- *  @autor   Martin Odersky
+ *  @autor   Martin Oderskyter
  *  @owner   Martin Odersky
  *  @version 2.8
  */
-trait Sequence[+A] extends collection.Sequence[A] with OrderedIterable[A]
+trait Sequence[+A] extends OrderedIterable[A]
+                      with covariant.SequenceTemplate[Sequence, A]
+                      with collection.Sequence[A]
 
 object Sequence extends covariant.SequenceFactory[Sequence] {
   val empty: Sequence[Nothing] = Nil

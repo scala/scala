@@ -11,7 +11,13 @@
 
 package scalax.collection.mutable
 
-import generic.mutable.VectorTemplate
+import generic.{SequenceFactory, SequenceTemplate}
+import generic.mutable.{Growable, Shrinkable}
+
+/* Factory object for `Buffer` trait */
+object Buffer extends SequenceFactory[Buffer] {
+  def apply[A](args: A*): Buffer[A] = ArrayBuffer.apply(args: _*)
+}
 
 /** Buffers are used to create sequences of elements incrementally by
  *  appending, prepending, or inserting new elements. It is also
@@ -23,9 +29,12 @@ import generic.mutable.VectorTemplate
  *  @version 2.8
   */
 @cloneable
-trait Buffer[A] extends Vector[A] with VectorTemplate[Buffer, A] with Appendable[A]
+trait Buffer[A] extends mutable.Sequence[A]
+                   with SequenceTemplate[Buffer, A]
+                   with Growable[A]
+                   with Shrinkable[A]
 //      with Scriptable[Message[(Location, A)]]
-      with CloneableCollection
+                   with CloneableCollection
 {
 
 // Abstract methods from Vector:
@@ -35,13 +44,6 @@ trait Buffer[A] extends Vector[A] with VectorTemplate[Buffer, A] with Appendable
    */
   def apply(n: Int): A
 
-  /** Return number of elements in the buffer
-   */
-  def length: Int
-
-  /** Create a new buffer of the same kind as this one */
-  def newBuilder[B]: Builder[Buffer, B] = new ArrayBuffer[B]
-
   /** Replace element at index <code>n</code> with the new element
    *  <code>newelem</code>.
    *
@@ -50,6 +52,16 @@ trait Buffer[A] extends Vector[A] with VectorTemplate[Buffer, A] with Appendable
    *  @throws   IndexOutofBoundsException if the index is not valid
    */
   def update(n: Int, newelem: A): Unit
+
+  /** Return number of elements in the buffer
+   */
+  def length: Int
+
+  /** Create a new buffer of the same kind as this one */
+  def newBuilder[B]: Builder[Buffer, B] = new ArrayBuffer[B]
+
+  override def newBuilder[B](sizeHint: Int): Builder[Buffer, B] =
+    new ArrayBuffer[B](sizeHint)
 
 // Abstract methods from Appendable
 
@@ -110,14 +122,6 @@ trait Buffer[A] extends Vector[A] with VectorTemplate[Buffer, A] with Appendable
     val i = indexOf(x)
     if (i != -1) remove(i)
   }
-
-  /** Removes a single element from this buffer, at its first occurrence,
-   *  and returns the identity of the buffer.
-   *  If the buffer does not contain that element, it is unchanged
-   *
-   *  @param x  the element to remove.
-   */
-  def - (x: A): this.type = { -=(x); this }
 
   /** Prepend two ore more elements to this buffer and return
    *  the identity of the buffer.

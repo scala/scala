@@ -122,11 +122,11 @@ object Iterable extends covariant.IterableFactory[Iterable] {
   implicit def pairIterableWrapper[C[+B] <: Iterable[B], A1, A2](seq: C[(A1, A2)]) =
     new PairIterableOps[C, A1, A2](seq)
 
-  type View[+UC[+B] <: Sequence[B], +A] = covariant.IterableView[UC, A]
+  type View[+UC[B] <: Sequence[B], A] = IterableView[UC, A]
 
   /** @deprecated use View instead
    */
-  @deprecated type Projection[+A] = View[C, A] forSome { type C[B] <: Iterable[B] }
+  @deprecated type Projection[A] = View[C, A] forSome { type C[B] <: Iterable[B] }
 
   /** The minimum element of a non-empty sequence of ordered elements
    *  @deprecated use seq.min instead

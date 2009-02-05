@@ -12,7 +12,9 @@
 package scalax.collection.mutable
 
 import scalax.collection.generic._
+import scalax.collection.generic.mutable.Growable
 import scalax.runtime._
+
 
 /** <p>
  *    A mutable sequence of characters.  This class provides an API compatible
@@ -27,8 +29,12 @@ import scalax.runtime._
 @serializable
 @SerialVersionUID(0 - 8525408645367278351L)
 final class StringBuilder(initCapacity: Int, private val initValue: String)
-      extends PartialFunction[Int, Char] with Appendable[Any] with java.lang.CharSequence {
+      extends PartialFunction[Int, Char]
+         with Growable[Any]
+         with java.lang.CharSequence {
   require(initCapacity > 0)
+
+  type Array[T] = scala.Array[T] // !!!
 
   /** The value is used for character storage. */
   private var array = new Array[Char](initCapacity + initValue.length)
@@ -849,6 +855,8 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
 
 
 object StringBuilder {
+
+  type Array[T] = scala.Array[T] // !!!
 
   private val MIN_HIGH_SURROGATE = '\uD800'
   private val MAX_HIGH_SURROGATE = '\uDBFF'

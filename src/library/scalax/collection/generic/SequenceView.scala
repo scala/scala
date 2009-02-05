@@ -97,7 +97,7 @@ self =>
     if (0 <= from && from < length) new Patched(from, patch, replaced).asCC
     else throw new IndexOutOfBoundsException(from.toString)
   override def padTo[B >: A](len: Int, elem: B): SequenceView[UC, B] =
-    patch(length, fill((len - length) max 0, elem), 0)
+    patch(length, fill((len - length) max 0)(elem), 0)
   override def zip[B](that: Iterable[B]): SequenceView[UC, (A, B)] =
     new Zipped(that.toSequence).asCC
   override def zipWithIndex: SequenceView[UC, (A, Int)] =

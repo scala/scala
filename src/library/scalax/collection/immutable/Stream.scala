@@ -416,7 +416,8 @@ import Stream._
  * @author Martin Odersky, Matthias Zenger
  * @version 1.1 08/08/03
  */
-abstract class Stream[+A] extends Sequence[A] with SequenceTemplate[Stream, A] {
+abstract class Stream[+A] extends Sequence[A]
+                             with SequenceTemplate[Stream, A] {
 self =>
 
   import collection.{Iterable, OrderedIterable, Sequence, Vector}

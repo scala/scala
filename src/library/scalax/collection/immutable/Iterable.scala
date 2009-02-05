@@ -14,6 +14,7 @@ import generic.covariant
  *  @version 2.8
  */
 trait Iterable[+A] extends collection.Iterable[A]
+                      with covariant.IterableTemplate[Iterable, A]
 
 object Iterable extends covariant.IterableFactory[Iterable] {
   val empty: Iterable[Nothing] = Nil

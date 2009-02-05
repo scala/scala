@@ -23,7 +23,17 @@ import annotation.unchecked.uncheckedVariance
  *  @version 1.1, 04/02/2004
  */
 trait IterableTemplate[+CC[+B] <: IterableTemplate[CC, B] with Iterable[B], +A]
-   extends generic.IterableTemplate[CC, A @uncheckedVariance] { self /*: CC[A]*/ => }
+   extends generic.IterableTemplate[CC, A @uncheckedVariance] { self /*: CC[A]*/ =>
+
+/* can't have a covariant view here, because mutable.Vector would
+   override it
+  override def view: IterableView[CC, A] = new IterableView[CC, A] {
+    val origin = thisCC
+    val elements: Iterator[A] = self.elements
+  }
+*/
+}
+
 
 // !!! todo: explain why @uncheckedVariance is justified here.
 

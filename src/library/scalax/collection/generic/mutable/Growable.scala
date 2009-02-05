@@ -8,7 +8,7 @@
 
 // $Id: Iterable.scala 15188 2008-05-24 15:01:02Z stepancheg $
 
-package scalax.collection.mutable
+package scalax.collection.generic.mutable
 
 /** This class represents collections that can be augmented using a += operator.
  *
@@ -16,19 +16,19 @@ package scalax.collection.mutable
  *  @owner   Martin Odersky
  *  @version 2.8
  */
-trait Appendable[A] {
+trait Growable[A] {
 
-  /** Append a single element to this buffer.
+  /** Add a single element to this collection.
    *
-   *  @param elem  the element to append.
+   *  @param elem  the element to add.
    */
   def +=(elem: A): Unit
 
-  /** Append a two or more elements to this buffer.
+  /** Add a two or more elements to this collection.
    *
-   *  @param elem1 the first element to append.
-   *  @param elem2 the second element to append.
-   *  @param elems the remaining elements to append.
+   *  @param elem1 the first element to add.
+   *  @param elem2 the second element to add.
+   *  @param elems the remaining elements to add.
    */
   def +=(elem1: A, elem2: A, elems: A*) {
     this += elem1
@@ -36,55 +36,55 @@ trait Appendable[A] {
     this ++= elems.asInstanceOf[Iterable[A]] // !@!
   }
 
-  /** Appends a number of elements provided by an iterator
+  /** Adds a number of elements provided by an iterator
    *
    *  @param iter  the iterator.
    */
   def ++=(iter: collection.Iterator[A]) { iter foreach += }
 
-  /** Appends a number of elements provided by an iterable object
+  /** Adds a number of elements provided by an iterable object
    *  via its <code>elements</code> method.
    *
    *  @param iter  the iterable object.
    */
   def ++=(iter: collection.Iterable[A]) { iter foreach += }
 
-  /** Append a single element to this buffer and return
-   *  the identity of the buffer.
+  /** Add a single element to this collection and return
+   *  the identity of the collection.
    *
-   *  @param elem  the element to append.
+   *  @param elem  the element to add.
    */
   def +(elem: A): this.type = { this += elem; this }
 
-  /** Append two or more elements to this buffer and return
-   *  the identity of the buffer.
+  /** Add two or more elements to this collection and return
+   *  the identity of the collection.
    *
-   *  @param elem1 the first element to append.
-   *  @param elem2 the second element to append.
-   *  @param elems the remaining elements to append.
+   *  @param elem1 the first element to add.
+   *  @param elem2 the second element to add.
+   *  @param elems the remaining elements to add.
    */
   def +(elem1: A, elem2: A, elems: A*): this.type =
     this + elem1 + elem2 ++ elems.asInstanceOf[Iterable[A]] // !@!
 
-  /** Appends a number of elements provided by an iterable object
+  /** Adds a number of elements provided by an iterable object
    *  via its <code>elements</code> method. The identity of the
-   *  buffer is returned.
+   *  collection is returned.
    *
    *  @param iter     the iterable object.
-   *  @return       the updated buffer.
+   *  @return       the updated collection.
    */
   def ++(iter: Iterable[A]): this.type = { this ++= iter; this }
 
-  /** Appends a number of elements provided by an iterator
+  /** Adds a number of elements provided by an iterator
    *  via its <code>elements</code> method. The identity of the
-   *  buffer is returned.
+   *  collection is returned.
    *
    *  @param iter   the iterator
-   *  @return       the updated buffer.
+   *  @return       the updated collection.
    */
   def ++(iter: Iterator[A]): this.type = { this ++= iter; this }
 
-  /** Clears the buffer contents.
+  /** Clears the collection contents.
    */
   def clear()
 }

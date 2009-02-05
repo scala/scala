@@ -13,7 +13,9 @@ import generic.covariant
  *  @owner   Martin Odersky
  *  @version 2.8
  */
-trait Vector[+A] extends collection.Vector[A] with Sequence[A]
+trait Vector[+A] extends Sequence[A]
+                    with covariant.VectorTemplate[Vector, A]
+                    with collection.Vector[A]
 
 object Vector extends covariant.SequenceFactory[Vector] {
   val empty: Vector[Nothing] = immutable.Vector.empty

@@ -12,7 +12,7 @@
 package scalax.runtime
 
 import collection.immutable.Vector
-import collection.mutable.{ArrayBuffer, BuilderProxy}
+import collection.mutable.ArrayBuffer
 import collection.generic.covariant.VectorTemplate
 
 object StringVector {
@@ -22,7 +22,7 @@ object StringVector {
 }
 
 @cloneable
-abstract class StringVector[+A] extends VectorTemplate[StringVector, A] with Vector[A] with Boxed[String] {
+abstract class StringVector[+A] extends VectorTemplate[StringVector, A] with Vector[A] {
 
   /** The length of the string */
   def length: Int
@@ -31,12 +31,11 @@ abstract class StringVector[+A] extends VectorTemplate[StringVector, A] with Vec
   def apply(idx: Int): A
 
   /** Creates new builder for this collection */
-  def newBuilder[B] = new BuilderProxy[StringVector, B] {
-    val self = new ArrayBuffer[B]
-    def result: StringVector[B] = new StringVector[B] {
-      def length = self.length
-      def apply(n: Int) = self.apply(n)
-      override def foreach(f: B => Unit) = self.foreach(f)
+  def newBuilder[B] = new ArrayBuffer[B].mapResult[StringVector] { // !!! Adriaan: can't drop [StringVector] here
+    buf => new StringVector[B] {
+      def length = buf.length
+      def apply(n: Int) = buf.apply(n)
+      override def foreach(f: B => Unit) = buf.foreach(f)
     }
   }
 

@@ -324,6 +324,9 @@ self /*: CC[A]*/ =>
    */
   override def toSequence: Sequence[A] = thisCC
 
+  /** Force toString from Iterable, not from Function */
+  override def toString = super[OrderedIterableTemplate].toString
+
   def indices: Range = 0 until length
 
   /** Creates a view of this iterable @see OrderedIterable.View

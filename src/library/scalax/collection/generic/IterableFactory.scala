@@ -26,7 +26,7 @@ trait IterableFactory[CC[A] <: Iterable[A]] {
    *  @param   n  The number of elements returned
    *  @param   elem The element returned each time
    */
-  def fill[A](n: Int, elem: => A): CC[A] = {
+  def fill[A](n: Int)(elem: => A): CC[A] = {
     val b = newBuilder[A]
     var i = 0
     while (i < n) {
@@ -36,11 +36,17 @@ trait IterableFactory[CC[A] <: Iterable[A]] {
     b.result
   }
 
-  def fill[A](n1: Int, n2: Int, elem: => A): CC[CC[A]] =
-    tabulate(n1)(_ => fill(n2, elem))
+  def fill[A](n1: Int, n2: Int)(elem: => A): CC[CC[A]] =
+    tabulate(n1)(_ => fill(n2)(elem))
 
-  def fill[A](n1: Int, n2: Int, n3: Int, elem: => A): CC[CC[CC[A]]] =
-    tabulate(n1)(_ => fill(n2, n3, elem))
+  def fill[A](n1: Int, n2: Int, n3: Int)(elem: => A): CC[CC[CC[A]]] =
+    tabulate(n1)(_ => fill(n2, n3)(elem))
+
+  def fill[A](n1: Int, n2: Int, n3: Int, n4: Int)(elem: => A): CC[CC[CC[CC[A]]]] =
+    tabulate(n1)(_ => fill(n2, n3, n4)(elem))
+
+  def fill[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(elem: => A): CC[CC[CC[CC[CC[A]]]]] =
+    tabulate(n1)(_ => fill(n2, n3, n4, n5)(elem))
 
   def tabulate[A](n: Int)(f: Int => A): CC[A] = {
     val b = newBuilder[A]
@@ -53,11 +59,16 @@ trait IterableFactory[CC[A] <: Iterable[A]] {
   }
 
   def tabulate[A](n1: Int, n2: Int)(f: (Int, Int) => A): CC[CC[A]] =
-    tabulate(n1)(i1 => tabulate(n2)(i2 => f(i1, i2)))
+    tabulate(n1)(i1 => tabulate(n2)(f(i1, _)))
 
   def tabulate[A](n1: Int, n2: Int, n3: Int)(f: (Int, Int, Int) => A): CC[CC[CC[A]]] =
-    tabulate(n1)(i1 => tabulate(n2)(i2 => tabulate(n3)(i3 => f(i1, i2, i3))))
-// todo: go up to 5(?)
+    tabulate(n1)(i1 => tabulate(n2, n3)(f(i1, _, _)))
+
+  def tabulate[A](n1: Int, n2: Int, n3: Int, n4: Int)(f: (Int, Int, Int, Int) => A): CC[CC[CC[CC[A]]]] =
+    tabulate(n1)(i1 => tabulate(n2, n3, n4)(f(i1, _, _, _)))
+
+  def tabulate[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(f: (Int, Int, Int, Int, Int) => A): CC[CC[CC[CC[CC[A]]]]] =
+    tabulate(n1)(i1 => tabulate(n2, n3, n4, n5)(f(i1, _, _, _, _)))
 
   /** Create a sequence of increasing integers in a range.
    *

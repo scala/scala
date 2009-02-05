@@ -11,9 +11,14 @@
 
 package scalax.collection.mutable
 
-import generic.SequenceForwarder
+import generic.{SequenceForwarder, SequenceFactory, SequenceTemplate}
 import immutable.List
 import collection.immutable.{List, Nil, ::}
+
+/* Factory object for `ListBuffer` class */
+object ListBuffer extends SequenceFactory[ListBuffer] {
+  def apply[A](args: A*): ListBuffer[A] = new ListBuffer[A]
+}
 
 /** A Buffer implementation back up by a list. It provides constant time
  *  prepend and append. Most other operations are linear.
@@ -25,9 +30,12 @@ import collection.immutable.{List, Nil, ::}
 @serializable
 final class ListBuffer[A]
       extends Buffer[A]
+         with SequenceTemplate[ListBuffer, A]
          with Builder[List, A]
          with SequenceForwarder[A]
 {
+  import collection.immutable.Sequence
+
   private var start: List[A] = Nil
   private var last0: ::[A] = _
   private var exported: Boolean = false
@@ -178,8 +186,7 @@ final class ListBuffer[A]
     } catch {
       case ex: Exception =>
         throw new IndexOutOfBoundsException(n.toString())
-    }
-  }
+    }  }
 
 // Implementation of abstract method in Builder
 
@@ -258,7 +265,7 @@ final class ListBuffer[A]
   }
 
   /** expose the underlying list but do not mark it as exported */
-  override def readOnly : List[A] = start
+  def readOnly: List[A] = start
 
   // Private methods
 

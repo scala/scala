@@ -10,11 +10,12 @@
 
 package scalax.collection.mutable
 
-trait Vector[A] extends collection.Vector[A] with generic.mutable.VectorTemplate[Vector, A]
+import generic._
 
-object Vector extends generic.SequenceFactory[Vector] {
+trait Vector[A] extends Sequence[A] with collection.Vector[A] with generic.mutable.VectorTemplate[Vector, A]
 
-  /** The empty iterable */
-  def apply[A](args: A*): Vector[A] = new ArrayBuffer[A] ++ args.asInstanceOf[Iterable[A]] // !@!
-
+/* Factory object for `Vector` class */
+object Vector extends SequenceFactory[Vector] {
+  /** The empty vector */
+  def apply[A](args: A*): Vector[A] = ArrayBuffer.apply(args: _*) // !!! swicth to Array?
 }

@@ -56,6 +56,11 @@ trait IterableTemplate[+CC[/*+*/B] <: IterableTemplate[CC, B] with Iterable[B], 
    */
   def newBuilder[B]: Builder[CC, B]
 
+  /** Create a new builder for this IterableType
+   *  with a hint what that its size should be size `sizeHint`
+   */
+  def newBuilder[B](sizeHint: Int): Builder[CC, B] = newBuilder[B]
+
   /** Is this collection empty? */
   def isEmpty: Boolean = !elements.hasNext
 
@@ -541,7 +546,6 @@ b   *  @param thatElem element <code>thatElem</code> is used to fill up the
     if (idx2 != -1) string = string.substring(0, idx2)
     string
   }
-
 
   /** Creates a view of this iterable @see IterableView
    */

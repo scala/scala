@@ -13,7 +13,9 @@ import generic.covariant
  *  @owner   Martin Odersky
  *  @version 2.8
  */
-trait OrderedIterable[+A] extends collection.OrderedIterable[A] with Iterable[A]
+trait OrderedIterable[+A] extends Iterable[A]
+                             with covariant.OrderedIterableTemplate[OrderedIterable, A]
+                             with collection.OrderedIterable[A]
 
 object OrderedIterable extends covariant.IterableFactory[OrderedIterable] {
   val empty: OrderedIterable[Nothing] = Nil

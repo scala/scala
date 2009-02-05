@@ -10,12 +10,22 @@
 
 package scalax.collection
 
-
-trait Builder[+CC[B], A] extends mutable.Appendable[A] {
+trait Builder[+CC[B], A] extends generic.mutable.Growable[A] {
   def +=(x: A)
   def elements: Iterator[A]
   def result: CC[A]
   override def ++=(xs: Iterator[A]) { for (x <- xs) this += x }
   override def ++=(xs: Iterable[A]) { for (x <- xs) this += x }
+
+  def mapResult[DD[B]](f: CC[A] => DD[A]) =
+    new Builder[DD, A] with Proxy {
+      val self = Builder.this
+      def +=(x: A) = self += x
+      def elements: Iterator[A] = self.elements
+      def clear() = self.clear()
+      override def ++=(xs: Iterator[A]) = self ++= xs
+      override def ++=(xs: collection.Iterable[A]) = self ++= xs
+      def result: DD[A] = f(Builder.this.result)
+    }
 }
 

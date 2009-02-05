@@ -8,14 +8,16 @@
 
 // $Id: Iterable.scala 15188 2008-05-24 15:01:02Z stepancheg $
 
-package scalax.collection.generic.covariant
+package scalax.collection
 
-import annotation.unchecked.uncheckedVariance
+import generic._
 
-/** A non-strict projection of an iterable.
- * @author Sean McDirmid
- * @author Martin Odersky
- * @note this should really be a virtual class of SequenceFactory
- */
-trait IterableView[+UC[+B] <: Iterable[B], +A]
-    extends generic.IterableView[UC, A @uncheckedVariance]
+trait Set[A] extends OrderedIterable[A] with SetTemplate[Set, A]
+
+/* Factory object for `Sequence` class */
+object Set extends IterableFactory[Set] {
+  /** The empty set */
+  def apply[A](args: A*): Set[A] = null // !!!
+}
+
+

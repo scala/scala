@@ -19,6 +19,8 @@ package scalax.collection.mutable
  */
 trait ResizableArray[A] extends Vector[A] {
 
+  import scala.Array // !!!
+
   protected def initialSize: Int = 16
   protected var array: Array[AnyRef] = new Array[AnyRef](initialSize min 1)
 

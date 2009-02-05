@@ -11,6 +11,13 @@
 
 package scalax.collection.mutable
 
+import generic.SequenceFactory
+
+/* Factory object for `ArrayBuffer` class */
+object ArrayBuffer extends SequenceFactory[ArrayBuffer] {
+  def apply[A](args: A*): ArrayBuffer[A] = new ArrayBuffer[A] ++ args.asInstanceOf[Iterable[A]] // !@!
+}
+
 /** An implementation of the <code>Buffer</code> class using an array to
  *  represent the assembled sequence internally. Append, update and random
  *  access take constant time (amortized time). Prepends and removes are
@@ -21,7 +28,14 @@ package scalax.collection.mutable
  *  @version 2.8
  */
 @serializable
-class ArrayBuffer[A] extends Buffer[A] with Builder[ArrayBuffer, A] with ResizableArray[A] {
+class ArrayBuffer[A](override protected val initialSize: Int)
+  extends Buffer[A]
+     with Vector[A]
+     with generic.mutable.VectorTemplate[ArrayBuffer, A]
+     with Builder[ArrayBuffer, A]
+     with ResizableArray[A] {
+
+  def this() = this(16)
 
   def clear() { reduceToSize(0) }
 
@@ -40,14 +54,14 @@ class ArrayBuffer[A] extends Buffer[A] with Builder[ArrayBuffer, A] with Resizab
    *  via its <code>elements</code> method. The identity of the
    *  buffer is returned.
    *
-   *  @param iter  the iterable object.
+   *  @param iter  the iterfable object.
    *  @return      the updated buffer.
    */
-  override def ++=(iter: Iterable[A]) = iter match {
-    case v: Vector[A] =>
+  override def ++=(iter: collection.Iterable[A]) = iter match {
+    case v: Vector[_] =>
       val n = v.length
       ensureSize(size0 + n)
-      v.copyToArray(array.asInstanceOf[Array[Any]], n)
+      v.copyToArray(array.asInstanceOf[scala.Array[Any]], n)
     case _ =>
       super.++=(iter)
   }
@@ -91,7 +105,7 @@ class ArrayBuffer[A] extends Buffer[A] with Builder[ArrayBuffer, A] with Resizab
     val len = xs.length
     ensureSize(size0 + len)
     copy(n, n + len, size0 - n)
-    xs.copyToArray(array.asInstanceOf[Array[Any]], n)
+    xs.copyToArray(array.asInstanceOf[scala.Array[Any]], n)
     size0 += len
   }
 

@@ -6,17 +6,13 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Sequence.scala 16092 2008-09-12 10:37:06Z nielsen $
+// $Id: CloneableCollection.scala 16893 2009-01-13 13:09:22Z cunei $
 
 
-package scalax.collection.generic.covariant
+package scala.collection.generic
 
-import annotation.unchecked.uncheckedVariance
-
-/** A non-strict projection of an iterable.
- * @author Sean McDirmid
- * @author Martin Odersky
- * @note this should really be a virtual class of SequenceFactory
+/** A trait for cloneable collections.
  */
-trait SequenceView[+UC[+B] <: Sequence[B], +A]
-    extends IterableView[UC, A] with generic.SequenceView[UC, A @uncheckedVariance]
+trait Cloneable[A <: AnyRef] extends java.lang.Cloneable {
+  override def clone(): A = super.clone().asInstanceOf[A]
+}
