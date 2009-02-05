@@ -1,0 +1,2 @@
+error: [phase assembly, before dependency on parser phase not allowed: parser => beforeparser]
+one error found

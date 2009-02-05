@@ -1,0 +1,2 @@
+error: fatal error: phase erasure want to run right after explicitouter, but some phase has declared to run before erasure. Re-run with -Xgenerate-phase-graph <filename> to better see the problem.
+one error found

@@ -1,0 +1,2 @@
+error: [phase assembly, after dependency on terminal phase not allowed: afterterminal => terminal]
+one error found
