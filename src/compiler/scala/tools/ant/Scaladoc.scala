@@ -568,6 +568,11 @@ class Scaladoc extends MatchingTask {
 
     // Compiles the actual code
     val compiler = new Global(commandSettings, reporter) {
+      override protected def computeInternalPhases() : Unit = {
+	phasesSet += syntaxAnalyzer
+	phasesSet += analyzer.namerFactory
+	phasesSet += analyzer.typerFactory
+      }
       override def onlyPresentation = true
     }
     try {
