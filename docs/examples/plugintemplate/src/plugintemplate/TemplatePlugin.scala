@@ -12,7 +12,7 @@ class TemplatePlugin(val global: Global) extends Plugin {
   /** The name of this plugin. Extracted from the properties file. */
   val name = PluginProperties.pluginName
 
-  val runsAfter = "refchecks"
+  val runsAfter = List[String]("refchecks")
 
   /** A short description of the plugin, read from the properties file */
   val description = PluginProperties.pluginDescription

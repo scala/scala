@@ -9,7 +9,7 @@ class TemplateTraverseComponent (val global: Global) extends PluginComponent {
   import global._
   import global.definitions._
 
-  val runsAfter = "refchecks"
+  val runsAfter = List[String]("refchecks")
   /** The phase name of the compiler plugin
    *  @todo Adapt to specific plugin.
    */

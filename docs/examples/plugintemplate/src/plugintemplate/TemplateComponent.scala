@@ -14,7 +14,7 @@ import scala.tools.nsc.plugins.PluginComponent
 class TemplateComponent(val global: Global) extends PluginComponent {
   import global._
 
-  val runsAfter = "refchecks"
+  val runsAfter = List[String]("refchecks")
 
   /** The name of this plugin phase
    *  @todo Adapt to specific plugin.
