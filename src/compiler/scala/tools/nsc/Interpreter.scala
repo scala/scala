@@ -483,40 +483,45 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       case Some(trees) => trees
     }
 
-    trees match {
-      case List(_:Assign) => ()
-
-      case List(_:TermTree) | List(_:Ident) | List(_:Select) =>
+    // trees is guaranteed to have a head else we'd have returned above
+    trees.head match {
+      case _:Assign =>
+      case _:TermTree | _:Ident | _:Select =>
         // Treat a single bare expression specially.
         // This is necessary due to it being hard to modify
         // code at a textual level, and it being hard to
         // submit an AST to the compiler.
         return interpret("val "+newVarName()+" = \n"+line)
-
-      case _ => ()
+      case _ =>
     }
 
-    val lineName = newLineName
+    def getLazyValDef: Option[ValDef] = trees.head match {
+      case vd: ValDef if vd.mods hasFlag Flags.LAZY => Some(vd)
+      case _ => None
+    }
+
+    def success(req: Request) = {
+      prevRequests += req     // book-keeping
+      IR.Success
+    }
 
     // figure out what kind of request
-    val req = buildRequest(trees, line, lineName)
-    if (req eq null) return IR.Error  // a disallowed statement type
+    buildRequest(trees, line, newLineName) match {
+      case null             => IR.Error   // a disallowed statement type
+      case x if !x.compile  => IR.Error   // an error happened during compilation, e.g. a type error
+      case req => getLazyValDef match {
+        // for lazy vals we must avoid referencing the variable to keep it unevaluated
+        case Some(vd) =>
+          val result = "lazy val " + vd.name + ": " + string2code(req.typeOf(vd.name)) + " = <deferred>\n"
+          if (printResults) out print clean(result)
+          success(req)
 
-    if (!req.compile)
-      return IR.Error  // an error happened during compilation, e.g. a type error
-
-    val (interpreterResultString, succeeded) = req.loadAndRun
-
-    if (printResults || !succeeded) {
-      // print the result
-      out.print(clean(interpreterResultString))
+        case None =>
+          val (result, succeeded) = req.loadAndRun
+          if (printResults || !succeeded) out print clean(result)
+          if (succeeded) success(req) else IR.Error
+      }
     }
-
-    // book-keeping
-    if (succeeded)
-      prevRequests += req
-
-    if (succeeded) IR.Success else IR.Error
   }
 
   /** A counter used for numbering objects created by <code>bind()</code>. */
