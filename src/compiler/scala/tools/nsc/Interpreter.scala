@@ -483,45 +483,32 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       case Some(trees) => trees
     }
 
-    // trees is guaranteed to have a head else we'd have returned above
-    trees.head match {
-      case _:Assign =>
+    // Treat a single bare expression specially.
+    // This is necessary due to it being hard to modify
+    // code at a textual level, and it being hard to
+    // submit an AST to the compiler.
+    if (trees.size == 1) trees.head match {
+      case _:Assign =>    // we don't want to include assignments in the next case
       case _:TermTree | _:Ident | _:Select =>
-        // Treat a single bare expression specially.
-        // This is necessary due to it being hard to modify
-        // code at a textual level, and it being hard to
-        // submit an AST to the compiler.
         return interpret("val "+newVarName()+" = \n"+line)
       case _ =>
     }
 
-    def getLazyValDef: Option[ValDef] = trees.head match {
-      case vd: ValDef if vd.mods hasFlag Flags.LAZY => Some(vd)
-      case _ => None
-    }
+    // figure out what kind of request
+    val req = buildRequest(trees, line, newLineName)
+    // null is a disallowed statement type; otherwise compile and fail if false (implying e.g. a type error)
+    if (req == null || !req.compile)
+      return IR.Error
 
-    def success(req: Request) = {
+    val (result, succeeded) = req.loadAndRun
+    if (printResults || !succeeded)
+      out print clean(result)
+
+    if (succeeded) {
       prevRequests += req     // book-keeping
       IR.Success
     }
-
-    // figure out what kind of request
-    buildRequest(trees, line, newLineName) match {
-      case null             => IR.Error   // a disallowed statement type
-      case x if !x.compile  => IR.Error   // an error happened during compilation, e.g. a type error
-      case req => getLazyValDef match {
-        // for lazy vals we must avoid referencing the variable to keep it unevaluated
-        case Some(vd) =>
-          val result = "lazy val " + vd.name + ": " + string2code(req.typeOf(vd.name)) + " = <deferred>\n"
-          if (printResults) out print clean(result)
-          success(req)
-
-        case None =>
-          val (result, succeeded) = req.loadAndRun
-          if (printResults || !succeeded) out print clean(result)
-          if (succeeded) success(req) else IR.Error
-      }
-    }
+    else IR.Error
   }
 
   /** A counter used for numbering objects created by <code>bind()</code>. */
@@ -623,6 +610,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private class GenericHandler(member: Tree) extends MemberHandler(member)
 
   private class ValHandler(member: ValDef) extends MemberHandler(member) {
+    def isLazy() = member.mods hasFlag Flags.LAZY
+
     override lazy val boundNames = List(member.name)
     override def valAndVarNames = boundNames
 
@@ -633,13 +622,17 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
             req.typeOf(compiler.encode(vname)) == "Unit"))
       {
         val prettyName = NameTransformer.decode(vname)
-        code.print(" + \"" + prettyName + ": " +
-	           string2code(req.typeOf(vname)) +
-	           " = \" + " +
-                   " { val tmp = scala.runtime.ScalaRunTime.stringOf(" +
-	           req.fullPath(vname) +
-		   "); " +
-                   " (if(tmp.toSeq.contains('\\n')) \"\\n\" else \"\") + tmp + \"\\n\"} ")
+
+        // if this is a lazy val we avoid evaluating it here
+        val resultString =
+          if (isLazy) "\"<lazy>\\n\""
+          else        " { val tmp = scala.runtime.ScalaRunTime.stringOf(" + req.fullPath(vname) +
+                      "); " + " (if(tmp.toSeq.contains('\\n')) \"\\n\" else \"\") + tmp + \"\\n\"} "
+
+        val codeToPrint =
+          " + \"" + prettyName + ": " + string2code(req.typeOf(vname)) + " = \" + " + resultString
+
+        code print codeToPrint
       }
     }
   }
