@@ -144,5 +144,9 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
     ok &&= settings.checkDependencies
   }
 
-  processArguments()
+  // setting up a hook so GenericRunnerCommand (at least) can see processArguments
+  // run after this constructor completes, but without seeing it run twice
+  val shouldProcessArguments = true
+  if (shouldProcessArguments)
+    processArguments()
 }

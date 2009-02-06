@@ -50,7 +50,8 @@ extends CompilerCommand(allargs, settings, error, false)
     }
   }
 
-  processArguments()
+  override val shouldProcessArguments = false   // tell superclass not to process arguments
+  processArguments()                            // ...and process them ourselves
 
   override def usageMsg = {
     cmdName + " [ <option> ]... [<torun> <arguments>]\n" +
