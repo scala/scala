@@ -168,5 +168,12 @@ def f(e: Exp) = e match {{  // non-exhaustive warning here
     val repl = new InterpreterLoop(input, output)
     repl.main(new Settings)
     println()
+
+    val interp = new Interpreter(new Settings)
+    interp.interpret("def plusOne(x: Int) = x + 1")
+    interp.interpret("plusOne(5)")
+    interp.reset()
+    interp.interpret("\"after reset\"")
+    interp.interpret("plusOne(5) // should be undefined now")
   }
 }

@@ -155,8 +155,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
          shadow the old ones, and old code objects refer to the old
          definitions.
   */
-  /** class loader used to load compiled code */
-  private val classLoader = {
+  private var classLoader = makeClassLoader()
+  private def makeClassLoader(): ClassLoader = {
     val parent =
       if (parentClassLoader == null)
         new URLClassLoader(compilerClasspath.toArray)
@@ -247,7 +247,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     truncPrintString(Interpreter.stripWrapperGunk(str))
 
   /** Indent some code by the width of the scala> prompt.
-   *  This way, compiler error messages read beettr.
+   *  This way, compiler error messages read better.
    */
   def indentCode(code: String) = {
     val spaces = "       "
@@ -560,6 +560,15 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     interpret("val " + name + " = " + binderName + ".value")
   }
 
+  /** Reset this interpreter, forgetting all user-specified
+   *  requests. */
+  def reset() {
+    virtualDirectory.clear()
+    classLoader = makeClassLoader()
+    nextLineNo = 0
+    nextVarNameNo = 0
+    prevRequests.clear()
+  }
 
   /** <p>
    *    This instance is no longer needed, so release any resources
