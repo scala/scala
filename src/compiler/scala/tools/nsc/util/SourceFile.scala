@@ -65,8 +65,12 @@ class BatchSourceFile(val file : AbstractFile, _content : Array[Char]) extends S
   }
   override def hashCode = file.hashCode
 
-  val content = _content // don't sweat it...
+  val content = _content
   override val length = content.length
+  // in SourceFileFragments, these are overridden to compensate during offset calculation
+  // Invariant: length + start = underlyingLength
+  def underlyingLength = length
+  def start = 0
 
   override def identifier(pos : Position, compiler : scala.tools.nsc.Global) = pos match {
     case OffsetPosition(source,offset) if source == this && offset != -1 =>
@@ -181,12 +185,20 @@ extends BatchSourceFile(name, contents)
       println("!!!")
       var off = position.offset.get
       var compsLeft = components
-      while (compsLeft.head.content.length-1 <= off && !compsLeft.tail.isEmpty) {
+      // the search here has to be against the length of the files underlying the
+      // components, not their advertised length (which in the case of a fragment is
+      // less than the underlying length.) Otherwise we can and will overshoot the
+      // correct component and return a garbage position.
+      while (compsLeft.head.underlyingLength-1 <= off && !compsLeft.tail.isEmpty) {
         println("discarding "+compsLeft.head)
-        off = off - compsLeft.head.content.length + 1
+        off = off - compsLeft.head.underlyingLength + 1
         compsLeft = compsLeft.tail
       }
-      compsLeft.head.positionInUltimateSource(new OffsetPosition(this, off))
+      // now that we've identified the correct component, we have to adjust the
+      // position we report since it is expected relative to the fragment, not the
+      // underlying file.  Thus, off - comp.start.
+      val comp = compsLeft.head
+      comp.positionInUltimateSource(new OffsetPosition(this, off - comp.start))
     }
   }
 }
@@ -201,16 +213,17 @@ object CompoundSourceFile {
 
 
 /** One portion of an underlying file.  The fragment includes
-  * the indeces from the specified start (inclusively) to stop
+  * the indices from the specified start (inclusively) to stop
   * (not inclusively).
   */
-class SourceFileFragment(
+class SourceFileFragment private (
     name: String,
     underlyingFile: BatchSourceFile,
-    start: Int,
+    override val start: Int,
     stop: Int,
     contents: Array[Char])
 extends BatchSourceFile(name, contents) {
+  override def underlyingLength = underlyingFile.length
   def this(name: String, underlyingFile: BatchSourceFile, start: Int, stop: Int) =
     this(
       name,
