@@ -665,7 +665,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       else if (sym.isModuleClass) compiles(sym.sourceModule)
       else false
 
-    def compileSources(sources: List[SourceFile]) {
+    def compileSources(_sources: List[SourceFile]) {
+      val sources = _sources.removeDuplicates // bug #1268, scalac confused by duplicated filenames
       if (reporter.hasErrors)
         return  // there is a problem already, e.g. a
                 // plugin was passed a bad option
