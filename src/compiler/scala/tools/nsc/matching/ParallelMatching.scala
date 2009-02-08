@@ -38,7 +38,7 @@ trait ParallelMatching  {
   import Types._
   import Code.{ fn, Const }
 
-  class Scrutinee(val sym: Symbol) {
+  case class Scrutinee(val sym: Symbol) {
     import definitions._
 
     def mkList(xs: List[Symbol]) = sym :: xs
@@ -89,14 +89,7 @@ trait ParallelMatching  {
     }
 
     /** returns if pattern can be considered a no-op test ??for expected type?? */
-    final def isDefault: Boolean = tree match {
-      case Bind(_, t)             => t.isDefault
-      case EmptyTree              => true // dummy
-      case Ident(nme.WILDCARD)    => true
-      case _                      => false
-    // -- what about the following? still have to test "ne null" :/
-    //  case Typed(nme.WILDCARD,_) => pattern.tpe <:< scrut.tpe
-    }
+    final def isDefault: Boolean = isDefaultPattern(tree);
 
     final def isEquals = tpe match {
       case TypeRef(_, sym, _) => sym eq EqualsPatternClass
@@ -128,20 +121,7 @@ trait ParallelMatching  {
     final def strip1: Set[Symbol] = strip._1
     final def strip2: Pattern     = strip._2
 
-    final def definedVars: List[Symbol] = {
-      implicit def listToStream[T](xs: List[T]): Stream[T] = xs.toStream
-      def definedVars1(x: Tree): Stream[Symbol] = x match {
-        case Apply(_, args)     => definedVars2(args)
-        case b @ Bind(_,p)      => Stream.cons(b.symbol, definedVars1(p))
-        case Typed(p,_)         => definedVars1(p)    // otherwise x @ (_:T)
-        case UnApply(_,args)    => definedVars2(args)
-        case ArrayValue(_,xs)   => definedVars2(xs)
-        case _                  => Nil
-      }
-      def definedVars2(args: Stream[Tree]): Stream[Symbol] = args flatMap definedVars1
-
-      definedVars1(tree).reverse.toList
-    }
+    final def definedVars: List[Symbol] = ParallelMatching.this.definedVars(tree)
 
     /** returns true if pattern tests an object */
     final def isObjectTest(head: Type) =
@@ -232,12 +212,9 @@ trait ParallelMatching  {
     }
   }
 
-  /** superclass of mixture rules for case classes and literals (both translated to switch on an integer)
+  /** mixture rule for literals
    */
-  abstract class CaseRuleApplication(rep: RepFactory) extends RuleApplication(rep) {
-    val pats:   Patterns
-    val rest:   Rep
-
+  class MixLiterals(val pats: Patterns, val rest:Rep)(implicit rep:RepFactory) extends RuleApplication(rep) {
     // e.g. (1,1) (1,3) (42,2) for column { case ..1.. => ;; case ..42..=> ;; case ..1.. => }
     var defaultV: immutable.Set[Symbol] = emptySymbolSet
     var defaultIndexSet = new BitSet(pats.size)
@@ -273,11 +250,8 @@ trait ParallelMatching  {
      **/
     def getTransition(implicit theOwner: Symbol): (List[(Int,Rep)], Set[Symbol], Option[Rep]) =
       (tagIndicesToReps, defaultV, if (haveDefault) Some(defaultsToRep) else None)
-  }
 
-  /** mixture rule for literals
-   */
-  class MixLiterals(val pats: Patterns, val rest:Rep)(implicit rep:RepFactory) extends CaseRuleApplication(rep) {
+
     val Patterns(scrut, patterns) = pats
 
     val varMap: List[(Int, List[Symbol])] =
