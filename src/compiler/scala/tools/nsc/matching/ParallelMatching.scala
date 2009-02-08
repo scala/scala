@@ -38,6 +38,16 @@ trait ParallelMatching  {
   import Types._
   import Code.{ fn, Const }
 
+  /**
+   * Encapsulates a symbol being matched on.
+   *
+   * sym match { ... }
+   *
+   * results in Scrutinee(sym).
+   *
+   * Note that we only ever match on Symbols, not Trees: A temporary variable is created for any
+   * expressions being matched on.
+   */
   case class Scrutinee(val sym: Symbol) {
     import definitions._
 
@@ -78,7 +88,9 @@ trait ParallelMatching  {
       case _                        => tpe
     }
 
-    // true if this pattern allows for a simple switch statement to be generated
+    /**
+     * Can this pattern be part of a switch statement?
+     */
     lazy val isSimpleSwitchCandidate = stripped.tree match {
       case Literal(const : Constant) if isNumeric(const.tag) =>
         const.tag match {
@@ -165,6 +177,10 @@ trait ParallelMatching  {
     }
   }
 
+  /**
+   * Class encapsulating a guard expression in a pattern match:
+   *   case ... if(tree) => ...
+   */
   case class Guard(tree: Tree) {
     def isEmpty = tree eq EmptyTree
     def duplicate = Guard(tree.duplicate)
@@ -204,7 +220,7 @@ trait ParallelMatching  {
     final def tree(implicit theOwner: Symbol, failTree: Tree): Tree = {
       val body = typer.typed { rep.requestBody(bx, subst) }
       lazy val vdefs = subst.targetParams
-      lazy val typedElse = repToTree(guardedRest)
+      lazy val typedElse = guardedRest.toTree
       lazy val typedIf = typer.typed(guard.mkIf(body, typedElse))
 
       if (guard.isEmpty) body
@@ -275,9 +291,9 @@ trait ParallelMatching  {
       val (branches, defaultV, defaultRep) = this.getTransition // tag body pairs
       val cases = for ((tag, r) <- branches) yield {
         val r2 = rep.make(r.temp, r.row.map(x => x.rebind(bindVars(tag, x.subst))))
-        CaseDef(Literal(tag), EmptyTree, repToTree(r2))
+        CaseDef(Literal(tag), EmptyTree, r2.toTree)
       }
-      lazy val ndefault = defaultRep.map(repToTree) getOrElse failTree
+      lazy val ndefault = defaultRep.map(_.toTree) getOrElse failTree
       lazy val casesWithDefault = cases ::: List(CaseDef(mk_(definitions.IntClass.tpe), EmptyTree, ndefault))
 
       cases match {
@@ -359,8 +375,8 @@ trait ParallelMatching  {
 
     final def tree(implicit theOwner: Symbol, failTree: Tree) = {
       val (uacall, vdefs, srep, frep) = this.getTransition
-      val succ = repToTree(srep)
-      val fail = frep.map(repToTree) getOrElse failTree
+      val succ = srep.toTree
+      val fail = frep.map(_.toTree) getOrElse failTree
       val cond =
         if (uacall.symbol.tpe.isBoolean) typer.typed(mkIdent(uacall.symbol))
         else nonEmptinessCheck(uacall.symbol)
@@ -434,8 +450,8 @@ trait ParallelMatching  {
 
     final def tree(implicit theOwner: Symbol, failTree: Tree) = {
       val (cx,srep,frep) = this.getTransition
-      val succ = repToTree(srep)
-      val fail = repToTree(frep)
+      val succ = srep.toTree
+      val fail = frep.toTree
       cx(succ)(fail)
     }
   }
@@ -494,10 +510,10 @@ trait ParallelMatching  {
     final def tree(implicit theOwner: Symbol, failTree: Tree) = {
       val (cond, srep, fLabel, frep) = this.getTransition
       val cond2 = typer.typed( rep.handleOuter(cond) )
-      val fail = typer.typed( repToTree(frep) )
+      val fail = typer.typed( frep.toTree)
       fLabel setInfo MethodType(Nil, fail.tpe)
 
-      typer.typed( If(cond2, repToTree(srep), LabelDef(fLabel, Nil, fail)) )
+      typer.typed( If(cond2, srep.toTree, LabelDef(fLabel, Nil, fail)) )
     }
   }
 
@@ -584,8 +600,8 @@ trait ParallelMatching  {
     final def tree(implicit theOwner: Symbol, failTree: Tree): Tree = {
       val (casted, srep, frep) = this.getTransition
       val cond = condition(casted.tpe, scrut)
-      val succ = repToTree(srep)
-      val fail = frep.map(repToTree) getOrElse failTree
+      val succ = srep.toTree
+      val fail = frep.map(_.toTree) getOrElse failTree
 
       // dig out case field accessors that were buried in (***)
       val cfa       = if (!pats.isCaseHead) Nil else casted.accessors
@@ -603,11 +619,6 @@ trait ParallelMatching  {
       typer.typed( If(cond, squeezedBlock(vdefs, succ), fail) )
     }
   }
-
-  /** converts given rep to a tree - performs recursive call to translation in the process to get sub reps
-   */
-  final def repToTree(r: Rep)(implicit theOwner: Symbol, failTree: Tree, rep: RepFactory): Tree =
-    r.applyRule.tree
 
   case class Row(pat: List[Tree], subst: Bindings, guard: Guard, bx: Int) {
     def insert(h: Tree)                               = Row(h :: pat, subst, guard, bx)
@@ -655,8 +666,6 @@ trait ParallelMatching  {
       if (indexOfAlternative == -1) List(replace(pats)) else alternativeBranches
     }
   }
-  case class Columns(cols: Column*)
-  case class Column(pat: Tree, index: Int)
 
   class RepFactory(val handleOuter: Tree => Tree)(implicit val typer : Typer) {
     var vss: List[List[Symbol]] = _
@@ -832,6 +841,11 @@ trait ParallelMatching  {
   }
 
   case class Rep(val temp: List[Symbol], val row: List[Row]) {
+    /** converts this to a tree - performs recursive call to translation in the process to get sub reps
+     */
+    final def toTree(implicit theOwner: Symbol, failTree: Tree, rep: RepFactory): Tree =
+      this.applyRule.tree
+
     private def setsToCombine: List[(Int, immutable.Set[Symbol])] = for {
       (sym, i) <- temp.zipWithIndex
       if sym hasFlag Flags.MUTABLE          // indicates that have not yet checked exhaustivity

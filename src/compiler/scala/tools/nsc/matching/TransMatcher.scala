@@ -79,7 +79,7 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
 
     implicit val fail: Tree = theFailTree
     val irep                = initRep(tmps, cases, rep)
-    val mch                 = typer.typed(repToTree(irep))
+    val mch                 = typer.typed(irep.toTree)
     var dfatree             = typer.typed(Block(vds, mch))
 
     // cannot use squeezedBlock because of side-effects, see t275

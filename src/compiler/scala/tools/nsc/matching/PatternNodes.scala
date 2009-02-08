@@ -154,6 +154,7 @@ trait PatternNodes {
   // me - if this isn't working maybe other unapply objects aren't working right either.  The big
   // problem with using unapply and type matching is that if something's amiss, it will simply fail
   // silently, with the bug most likely manifesting at some unknown later point.
+  // DRM: This problem is almost certainly an instance of bug 1697
   object Ident_Or_Empty {
     def unapply(x: Any) = x match {
       case Ident(nme.WILDCARD) | EmptyTree | _: Typed | _: Literal => true
