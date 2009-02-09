@@ -21,8 +21,8 @@ extends Global(settings, reporter) {
    */
   override protected def computeInternalPhases() : Unit = {
     phasesSet += syntaxAnalyzer
-    phasesSet += analyzer.namerFactory: SubComponent
-    phasesSet += analyzer.typerFactory: SubComponent
+    phasesSet += analyzer.namerFactory
+    phasesSet += analyzer.typerFactory
     phasesSet += superAccessors			       // add super accessors
     phasesSet += pickler			       // serialize symbol tables
     phasesSet += refchecks			       // perform reference and override checking, translate nested objects
