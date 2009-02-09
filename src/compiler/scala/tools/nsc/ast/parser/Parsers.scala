@@ -749,7 +749,7 @@ trait Parsers extends NewScanners with MarkupParsers {
               case TypeDef(_, _, _, TypeBoundsTree(_, _)) | ValDef(_, _, _, EmptyTree) | EmptyTree =>
                 ;
               case _ =>
-                syntaxError(wc.pos, "not a legal where clause", false)
+                syntaxError(wc.pos, "not a legal existential clause", false)
             }
           }
           ExistentialTypeTree(t, whereClauses)
