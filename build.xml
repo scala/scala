@@ -517,7 +517,36 @@ QUICK BUILD (QUICK)
     <stopwatch name="quick.partest.timer" action="total"/>
   </target>
   
-  <target name="quick.pre-bin" depends="quick.partest">
+  <target name="quick.pre-scalap" depends="quick.partest">
+    <uptodate property="quick.scalap.available" targetfile="${build-quick.dir}/scalap.complete">
+      <srcfiles dir="${src.dir}/scalap"/>
+    </uptodate>
+  </target>
+    
+  <target name="quick.scalap" depends="quick.pre-scalap" unless="quick.scalap.available">
+    <stopwatch name="quick.scalap.timer"/>
+    <mkdir dir="${build-quick.dir}/classes/scalap"/>
+    <scalacfork
+      destdir="${build-quick.dir}/classes/scalap"
+      compilerpathref="locker.classpath"
+      srcpath="${src.dir}/scalap"
+      params="${scalac.args}"
+      srcdir="${src.dir}/scalap"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/compiler"/>
+        <pathelement location="${build-quick.dir}/classes/partest"/>
+        <pathelement location="${build-quick.dir}/classes/scalap"/>
+        <pathelement location="${ant.jar}"/>
+      </compilationpath>
+    </scalacfork>
+    <touch file="${build-quick.dir}/scalap.complete" verbose="no"/>
+    <stopwatch name="quick.scalap.timer" action="total"/>
+  </target>
+  
+  <target name="quick.pre-bin" depends="quick.scalap">
     <condition property="quick.bin.available">
       <isset property="quick.comp.available"/>
     </condition>
@@ -527,6 +556,7 @@ QUICK BUILD (QUICK)
     <path id="quick.bin.classpath">
       <pathelement location="${build-quick.dir}/classes/library"/>
       <pathelement location="${build-quick.dir}/classes/compiler"/>
+      <pathelement location="${build-quick.dir}/classes/scalap"/>
       <pathelement location="${fjbg.jar}"/>
       <pathelement location="${jline.jar}"/>
     </path>
@@ -552,10 +582,16 @@ QUICK BUILD (QUICK)
       class="scala.tools.nsc.CompileClient"
       javaFlags="${java.flags}"
       classpathref="quick.bin.classpath"/>
+    <quick-bin
+      file="${build-quick.dir}/bin/scalap"
+      class="scala.tools.scalap.Main"
+      javaFlags="${java.flags}"
+      classpathref="quick.bin.classpath"/>
     <chmod perm="ugo+rx" file="${build-quick.dir}/bin/scala"/>
     <chmod perm="ugo+rx" file="${build-quick.dir}/bin/scalac"/>
     <chmod perm="ugo+rx" file="${build-quick.dir}/bin/scaladoc"/>
     <chmod perm="ugo+rx" file="${build-quick.dir}/bin/fsc"/>
+    <chmod perm="ugo+rx" file="${build-quick.dir}/bin/scalap"/>
     <touch file="${build-quick.dir}/bin.complete" verbose="no"/>
   </target>
 
@@ -645,7 +681,21 @@ PACKED QUICK BUILD (PACK)
     </jar>
   </target>
   
-  <target name="pack.pre-bin" depends="pack.partest">
+  <target name="pack.pre-scalap" depends="pack.partest">
+    <uptodate
+      property="pack.scalap.available"
+      targetfile="${build-pack.dir}/lib/scalap.jar"
+      srcfile="${build-quick.dir}/scalap.complete"/>
+  </target>
+
+  <target name="pack.scalap" depends="pack.pre-scalap" unless="pack.scalap.available">
+    <mkdir dir="${build-pack.dir}/lib"/>
+    <jar destfile="${build-pack.dir}/lib/scalap.jar">
+      <fileset dir="${build-quick.dir}/classes/scalap"/>
+    </jar>
+  </target>
+  
+  <target name="pack.pre-bin" depends="pack.scalap">
     <uptodate
       property="pack.bin.available"
       srcfile="${build-pack.dir}/lib/scala-compiler.jar"
@@ -676,10 +726,15 @@ PACKED QUICK BUILD (PACK)
       file="${build-pack.dir}/bin/fsc"
       class="scala.tools.nsc.CompileClient"
       javaFlags="${java.flags}"/>
+    <pack-bin
+      file="${build-pack.dir}/bin/scalap"
+      class="scala.tools.scalap.Main"
+      javaFlags="${java.flags}"/>
     <chmod perm="ugo+rx" file="${build-pack.dir}/bin/scala"/>
     <chmod perm="ugo+rx" file="${build-pack.dir}/bin/scalac"/>
     <chmod perm="ugo+rx" file="${build-pack.dir}/bin/scaladoc"/>
     <chmod perm="ugo+rx" file="${build-pack.dir}/bin/fsc"/>
+    <chmod perm="ugo+rx" file="${build-pack.dir}/bin/scalap"/>
     <touch file="${build-pack.dir}/bin.complete" verbose="no"/>
   </target>
   
@@ -688,6 +743,7 @@ PACKED QUICK BUILD (PACK)
       <pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-compiler.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-partest.jar"/>
+      <pathelement location="${build-pack.dir}/lib/scalap.jar"/>
       <pathelement location="${ant.jar}"/>
     </path>
     <taskdef resource="scala/tools/ant/antlib.xml" classpathref="pack.classpath"/>
@@ -875,7 +931,34 @@ BOOTSTRAPPING BUILD (STRAP)
     <stopwatch name="strap.partest.timer" action="total"/>
   </target>
   
-  <target name="strap.done" depends="strap.partest"/>
+  <target name="strap.pre-scalap" depends="strap.partest">
+    <uptodate property="strap.scalap.available" targetfile="${build-strap.dir}/scalap.complete">
+      <srcfiles dir="${src.dir}/scalap"/>
+    </uptodate>
+  </target>
+    
+  <target name="strap.scalap" depends="strap.pre-scalap" unless="strap.scalap.available">
+    <stopwatch name="strap.scalap.timer"/>
+    <mkdir dir="${build-strap.dir}/classes/scalap"/>
+    <scalac
+      srcdir="${src.dir}/scalap"
+      destdir="${build-strap.dir}/classes/scalap"
+      target="jvm-1.5"
+      addparams="${scalac.args}">
+      <include name="**/*.scala"/>
+      <classpath>
+        <pathelement location="${build-strap.dir}/classes/library"/>
+        <pathelement location="${build-strap.dir}/classes/compiler"/>
+        <pathelement location="${build-strap.dir}/classes/partest"/>
+        <pathelement location="${build-strap.dir}/classes/scalap"/>
+        <pathelement location="${ant.jar}"/>
+      </classpath>
+    </scalac>
+    <touch file="${build-strap.dir}/scalap.complete" verbose="no"/>
+    <stopwatch name="strap.scalap.timer" action="total"/>
+  </target>
+  
+  <target name="strap.done" depends="strap.scalap"/>
 
   <target name="strap.clean">
     <delete dir="${build-strap.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
@@ -1081,7 +1164,36 @@ OPTIMISED COMPILER
     <stopwatch name="optimised.partest.timer" action="total"/>
   </target>
 
-  <target name="optimised.pre-bin" depends="optimised.partest">
+  <target name="optimised.pre-scalap" depends="optimised.partest">
+    <uptodate property="optimised.scalap.available" targetfile="${build-optimised.dir}/scalap.complete">
+      <srcfiles dir="${src.dir}/scalap"/>
+    </uptodate>
+  </target>
+
+  <target name="optimised.scalap" depends="optimised.pre-scalap" unless="optimised.scalap.available">
+    <stopwatch name="optimised.scalap.timer"/>
+    <mkdir dir="${build-optimised.dir}/classes/scalap"/>
+    <scalacfork
+      destdir="${build-optimised.dir}/classes/scalap"
+      compilerpathref="locker.classpath"
+      srcpath="${src.dir}/scalap"
+      params="${scalac.args}"
+      srcdir="${src.dir}/scalap"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-optimised.dir}/classes/library"/>
+        <pathelement location="${build-optimised.dir}/classes/compiler"/>
+        <pathelement location="${build-optimised.dir}/classes/partest"/>
+        <pathelement location="${build-optimised.dir}/classes/scalap"/>
+        <pathelement location="${ant.jar}"/>
+      </compilationpath>
+    </scalacfork>
+    <touch file="${build-optimised.dir}/scalap.complete" verbose="no"/>
+    <stopwatch name="optimised.scalap.timer" action="total"/>
+  </target>
+
+  <target name="optimised.pre-bin" depends="optimised.scalap">
     <condition property="optimised.bin.available">
       <isset property="optimised.comp.available"/>
     </condition>
@@ -1091,6 +1203,7 @@ OPTIMISED COMPILER
     <path id="optimised.bin.classpath">
       <pathelement location="${build-optimised.dir}/classes/library"/>
       <pathelement location="${build-optimised.dir}/classes/compiler"/>
+      <pathelement location="${build-optimised.dir}/classes/scalap"/>
       <pathelement location="${fjbg.jar}"/>
       <pathelement location="${jline.jar}"/>
     </path>
@@ -1116,10 +1229,16 @@ OPTIMISED COMPILER
       class="scala.tools.nsc.CompileClient"
       javaFlags="${java.flags}"
       classpathref="optimised.bin.classpath"/>
+    <optimised-bin
+      file="${build-optimised.dir}/bin/scalap"
+      class="scala.tools.scalap.Main"
+      javaFlags="${java.flags}"
+      classpathref="optimised.bin.classpath"/>
     <chmod perm="ugo+rx" file="${build-optimised.dir}/bin/scala"/>
     <chmod perm="ugo+rx" file="${build-optimised.dir}/bin/scalac"/>
     <chmod perm="ugo+rx" file="${build-optimised.dir}/bin/scaladoc"/>
     <chmod perm="ugo+rx" file="${build-optimised.dir}/bin/fsc"/>
+    <chmod perm="ugo+rx" file="${build-optimised.dir}/bin/scalap"/>
     <touch file="${build-optimised.dir}/bin.complete" verbose="no"/>
   </target>
 
@@ -1128,6 +1247,7 @@ OPTIMISED COMPILER
       <pathelement location="${build-optimised.dir}/classes/library"/>
       <pathelement location="${build-optimised.dir}/classes/compiler"/>
       <pathelement location="${build-optimised.dir}/classes/partest"/>
+      <pathelement location="${build-optimised.dir}/classes/scalap"/>
       <pathelement location="${fjbg.jar}"/>
       <pathelement location="${ant.jar}"/>
     </path>
@@ -1212,7 +1332,7 @@ DOCUMENTATION
     <taskdef name="genman"
              classname="scala.tools.docutil.ManMaker"
              classpathref="manual.classpath"/>
-    <genman command="fsc, sbaz, scala, scalac, scaladoc"
+    <genman command="fsc, sbaz, scala, scalac, scaladoc, scalap"
             htmlout="${build-docs.dir}/manual/html"
             manout="${build-docs.dir}/manual/genman"/>
     <!-- On Windows source and target files can't be the same ! -->
@@ -1353,6 +1473,7 @@ DISTRIBUTION
     <chmod perm="ugo+rx" file="${dist.dir}/bin/scalac"/>
     <chmod perm="ugo+rx" file="${dist.dir}/bin/scaladoc"/>
     <chmod perm="ugo+rx" file="${dist.dir}/bin/fsc"/>
+    <chmod perm="ugo+rx" file="${dist.dir}/bin/scalap"/>
   </target>
 
   <target name="dist.doc" depends="dist.base">
@@ -1396,6 +1517,9 @@ DISTRIBUTION
     </jar>
     <jar destfile="${dist.dir}/src/scala-compiler-src.jar">
       <fileset dir="${src.dir}/compiler"/>
+    </jar>
+    <jar destfile="${dist.dir}/src/scalap-src.jar">
+      <fileset dir="${src.dir}/scalap"/>
     </jar>
   </target>
 

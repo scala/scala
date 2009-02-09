@@ -119,8 +119,22 @@ MAIN DISTRIBUTION SBAZ
       <libset dir="${dist.dir}/lib" includes="scala-partest.jar"/>
     </sbaz>
   </target>
+
+  <target name="pack-sbaz.scalap" depends="pack-sbaz.test">
+    <sbaz
+      file="${dists.dir}/sbaz/scalap-${version.number}.sbp"
+      adfile="${dists.dir}/sbaz/scalap-${version.number}.advert"
+      name="scalap"
+      version="${version.number}"
+      desc="The scalap package contains the Scala classfile decoder."
+      link="${sbaz.universe}/scalap-${version.number}.sbp">
+      <binset dir="${dist.dir}/bin"
+        includes="scalap,scalap.bat"/>
+      <libset dir="${dist.dir}/lib" includes="scalap.jar"/>
+    </sbaz>
+  </target>
   
-  <target name="pack-sbaz.doc" depends="pack-sbaz.test">
+  <target name="pack-sbaz.doc" depends="pack-sbaz.scalap">
     <sbaz
       file="${dists.dir}/sbaz/scala-devel-docs-${version.number}.sbp"
       adfile="${dists.dir}/sbaz/scala-devel-docs-${version.number}.advert"
