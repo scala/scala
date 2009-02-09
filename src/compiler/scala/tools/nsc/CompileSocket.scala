@@ -50,7 +50,7 @@ class CompileSocket {
 
   protected def fatal(msg: String) = {
     error(msg)
-    exit(1)
+    throw new Exception("fsc failure")
   }
 
   protected def info(msg: String) =

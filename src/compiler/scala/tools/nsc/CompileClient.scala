@@ -121,8 +121,12 @@ class StandardCompileClient {
   }
 
   def main(args: Array[String]) {
-    val status = main0(args)
-    exit(status)
+    try {
+      val status = main0(args)
+      exit(status)
+    } catch {
+      case e: Exception => exit(1)
+    }
   }
 }
 
