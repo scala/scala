@@ -541,6 +541,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   /* The set of phase objects that is the basis for the compiler phase chain */
   protected val phasesSet : HashSet[SubComponent] = new HashSet[SubComponent]
 
+  /** A accessor for the phase descriptor list (List of SubComponents), Only calculate the list once */
   def phaseDescriptors = {
     if (phasesCache.isEmpty) phasesCache = Some(computePhaseDescriptors)
     phasesCache.get
@@ -555,11 +556,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     messages.mkString("\n")
   }
 
-
-  protected def insertBefore(c: SubComponent, cs: List[SubComponent], before: SubComponent): List[SubComponent] = cs match {
-    case List() => List(c)
-    case c1 :: cs1 => if (c1 == before) c :: cs else c1 :: insertBefore(c, cs1, before)
-  }
 
   private var curRun: Run = null
   def currentRun: Run = curRun

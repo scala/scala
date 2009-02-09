@@ -119,8 +119,8 @@ object Foo2 {
         object compiler extends Global(command.settings, reporter) {
 	  override protected def computeInternalPhases() : Unit = {
 	    phasesSet += syntaxAnalyzer
-	    phasesSet += (analyzer.namerFactory: SubComponent) // note: types are there because otherwise
-	    phasesSet += (analyzer.typerFactory: SubComponent) // consistency check after refchecks would fail.
+	    phasesSet += analyzer.namerFactory
+	    phasesSet += analyzer.typerFactory
 	  }
 	  override def onlyPresentation = true
 	}
