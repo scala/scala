@@ -8,8 +8,15 @@ package scala.tools.nsc
 
 
 /** A class representing command line info for scalac */
-class CompilerCommand(arguments: List[String], val settings: Settings,
-                      error: String => Unit, interactive: Boolean) {
+class CompilerCommand(
+  arguments: List[String],
+  val settings: Settings,
+  error: String => Unit,
+  interactive: Boolean,
+  shouldProcessArguments: Boolean)
+{
+  def this(arguments: List[String], settings: Settings, error: String => Unit, interactive: Boolean) =
+    this(arguments, settings, error, interactive, true)
 
   private var fs: List[String] = List()
 
@@ -144,9 +151,10 @@ class CompilerCommand(arguments: List[String], val settings: Settings,
     ok &&= settings.checkDependencies
   }
 
-  // setting up a hook so GenericRunnerCommand (at least) can see processArguments
-  // run after this constructor completes, but without seeing it run twice
-  val shouldProcessArguments = true
+  // CompilerCommand needs processArguments called at the end of its constructor,
+  // as does its subclass GenericRunnerCommand, but it cannot be called twice as it
+  // accumulates arguments.  The fact that it's called from within the constructors
+  // makes initialization order an obstacle to simplicity.
   if (shouldProcessArguments)
     processArguments()
 }

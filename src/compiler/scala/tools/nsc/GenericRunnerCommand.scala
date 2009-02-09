@@ -12,7 +12,7 @@ class GenericRunnerCommand(
   allargs: List[String],
   override val settings: GenericRunnerSettings,
   error: String => Unit)
-extends CompilerCommand(allargs, settings, error, false)
+extends CompilerCommand(allargs, settings, error, false, false)
 {
   def this(allargs: List[String], error: String=>Unit) =
     this(allargs, new GenericRunnerSettings(error), error)
@@ -50,8 +50,8 @@ extends CompilerCommand(allargs, settings, error, false)
     }
   }
 
-  override val shouldProcessArguments = false   // tell superclass not to process arguments
-  processArguments()                            // ...and process them ourselves
+  // we can safely call processArguments since we passed the superclass shouldProcessArguments=false
+  processArguments()
 
   override def usageMsg = {
     cmdName + " [ <option> ]... [<torun> <arguments>]\n" +
