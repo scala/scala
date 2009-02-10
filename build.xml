@@ -692,6 +692,7 @@ PACKED QUICK BUILD (PACK)
     <mkdir dir="${build-pack.dir}/lib"/>
     <jar destfile="${build-pack.dir}/lib/scalap.jar">
       <fileset dir="${build-quick.dir}/classes/scalap"/>
+      <fileset file="${src.dir}/scalap/decoder.properties"/>  
     </jar>
   </target>
   

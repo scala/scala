@@ -15,7 +15,7 @@ package scala.tools.scalap
 object Properties {
 
   /** The name of the properties file */
-  private val propFilename = "decoder.properties"
+  private val propFilename = "/decoder.properties"
 
   /** The loaded properties */
   private val props = {
