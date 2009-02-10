@@ -14,7 +14,8 @@ import testing.SUnit._
 object Test extends TestConsoleMain {
   def suite = new TestSuite(
     Test1, //count, exists, filter, ..
-    Test2  //#468
+    Test2, //#468
+    Test3  //#1691
   )
 }
 
@@ -103,5 +104,25 @@ object Test2 extends TestCase("t0468") with Assert {
     val n3 = (xs1 ++ Nil).length
     val n4 = (xs1 ++ ((new collection.mutable.ArrayBuffer[Int]) + 0)).length
     assertEquals("check_++", 14, n2 + n3 + n4)
+  }
+}
+
+object Test3 extends TestCase("t1691") with Assert {
+  override def enableStackTrace = false
+  override def runTest {
+    try {
+      List.range(1, 10, 0)
+    } catch {
+      case e: IllegalArgumentException => ()
+      case _ => throw new Error("List.range(1, 10, 0)")
+    }
+    try {
+      List.range(1, 10, x => 4)
+    } catch {
+      case e: IllegalArgumentException => ()
+      case _ => throw new Error("List.range(1, 10, x => 4)")
+    }
+    assertEquals(List.range(10, 0, x => x - 2),
+		 List(10, 8, 6, 4, 2))
   }
 }
