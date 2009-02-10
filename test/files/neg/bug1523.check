@@ -1,0 +1,4 @@
+bug1523.scala:4: error: wrong number of arguments for method bug: (Any)Any
+  def go() = bug("a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a")
+             ^
+one error found

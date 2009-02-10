@@ -1516,6 +1516,9 @@ trait Typers { self: Analyzer =>
     def typedFunction(fun: Function, mode: Int, pt: Type): Tree = {
       val codeExpected = !forCLDC && !forMSIL && (pt.typeSymbol isNonBottomSubClass CodeClass)
 
+      if (fun.vparams.length > definitions.MaxFunctionArity)
+        return errorTree(fun, "implementation restricts functions to " + definitions.MaxFunctionArity + " parameters")
+
       def decompose(pt: Type): (Symbol, List[Type], Type) =
         if ((isFunctionType(pt)
              ||

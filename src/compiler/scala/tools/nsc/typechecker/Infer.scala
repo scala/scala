@@ -59,7 +59,8 @@ trait Infer {
     else actuals
 
   def actualArgs(pos: Position, actuals: List[Tree], nformals: Int): List[Tree] =
-    if (nformals == 1 && actuals.length != 1 && !phase.erasedTypes) List(atPos(pos)(gen.mkTuple(actuals))) else actuals
+    if (nformals == 1 && actuals.length != 1 && actuals.length <= definitions.MaxTupleArity && !phase.erasedTypes)
+      List(atPos(pos)(gen.mkTuple(actuals))) else actuals
 
   /** A fresh type varable with given type parameter as origin.
    *
