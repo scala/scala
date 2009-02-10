@@ -2873,11 +2873,15 @@ trait Typers { self: Analyzer =>
             case SelectFromTypeTree(_, _) => copy.SelectFromTypeTree(tree, qual, name)
           }
           val result = stabilize(makeAccessible(tree1, sym, qual.tpe, qual), qual.tpe, mode, pt)
-          if (phase.id <= currentRun.typerPhase.id &&
-              settings.Xchecknull.value &&
-              !sym.isConstructor &&
-              !(qual.tpe <:< NotNullClass.tpe) && !qual.tpe.isNotNull)
+          def isPotentialNullDeference() = {
+            phase.id <= currentRun.typerPhase.id &&
+            !sym.isConstructor &&
+            !(qual.tpe <:< NotNullClass.tpe) && !qual.tpe.isNotNull &&
+            (result.symbol != Any_isInstanceOf)  // null.isInstanceOf[T] is not a dereference; bug #1356
+          }
+          if (settings.Xchecknull.value && isPotentialNullDeference)
             unit.warning(tree.pos, "potential null pointer dereference: "+tree)
+
           result
         }
       }
