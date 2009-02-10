@@ -5,7 +5,7 @@ import java.io.{PrintStream, ByteArrayOutputStream}
 import util.StringUtil
 import java.util.regex.Pattern
 
-class ScalaSigPrinter(stream: PrintStream) {
+class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   import stream._
 
   val CONSTRUCTOR_NAME = "<init>"
@@ -15,7 +15,8 @@ class ScalaSigPrinter(stream: PrintStream) {
   def printSymbol(symbol: Symbol) {printSymbol(0, symbol)}
 
   def printSymbol(level: Int, symbol: Symbol) {
-    if (!symbol.isLocal) {
+    if (!symbol.isLocal &&
+        !(symbol.isPrivate && !printPrivates)) {
       def indent() {for (i <- 1 to level) print("  ")}
 
       symbol match {
@@ -104,7 +105,7 @@ class ScalaSigPrinter(stream: PrintStream) {
       case Some(m: MethodSymbol) => {
         val baos = new ByteArrayOutputStream
         val stream = new PrintStream(baos)
-        val printer = new ScalaSigPrinter(stream)
+        val printer = new ScalaSigPrinter(stream, printPrivates)
         printer.printMethodType(m.infoType, false)
         baos.toString
       }

@@ -15,7 +15,7 @@ package scala.tools.scalap
 object Properties {
 
   /** The name of the properties file */
-  private val propFilename = "/decoder.properties"
+  private val propFilename = "decoder.properties"
 
   /** The loaded properties */
   private val props = {
@@ -35,7 +35,7 @@ object Properties {
   }
 
   val copyrightString: String = {
-    val defaultString = "(c) 2002-2006 LAMP/EPFL"
+    val defaultString = "(c) 2002-2009 LAMP/EPFL"
     props.getProperty("copyright.string", defaultString)
   }
 

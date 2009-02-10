@@ -18,7 +18,7 @@ object scalap extends Command {
 
   val synopsis = Section("SYNOPSIS",
 
-    CmdLine(" [ " & Argument("options") & " ] " & Argument("source file")))
+    CmdLine(" [ " & Argument("options") & " ] " & Argument("class name")))
 
   val parameters = Section("PARAMETERS",
 
@@ -28,8 +28,8 @@ object scalap extends Command {
         "Command line options. See " & Link(Bold("OPTIONS"), "#options") &
         " below."),
       Definition(
-        Mono(Argument("source file")),
-        "One class file to be decoded (such as " &
+        Mono(Argument("class name")),
+        "Full-qualified name of a class to be decoded (such as " &
         Mono("hello.HelloWorld") & ").")))
 
   val description = Section("DESCRIPTION",

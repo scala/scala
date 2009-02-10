@@ -12,13 +12,29 @@
       <sourceFolder url="file://$MODULE_DIR$/compiler" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/dbc" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/library" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/manual" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/partest" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/scalap" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/swing" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/android-library" />
+      <excludeFolder url="file://$MODULE_DIR$/cldc-library" />
+      <excludeFolder url="file://$MODULE_DIR$/dotnet-library" />
+      <excludeFolder url="file://$MODULE_DIR$/jvm14-library" />
+      <excludeFolder url="file://$MODULE_DIR$/mono" />
     </content>
     <orderEntry type="library" name="lib1" level="project" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="ant" level="project" />
+    <orderEntry type="module-library">
+      <library name="my_ant">
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../../ant/ant.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
   </component>
 </module>
 

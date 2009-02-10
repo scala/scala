@@ -22,11 +22,12 @@ object Main {
   val SCALA_SIG = "ScalaSig"
   val versionMsg = "Scala classfile decoder " +
           Properties.versionString + " -- " +
-          Properties.copyrightString
+          Properties.copyrightString + "\n"
 
   /**Verbose program run?
    */
   var verbose = false
+  var printPrivates = false
 
   /**Prints usage information for scalap.
    */
@@ -74,7 +75,7 @@ object Main {
       case _ =>
     }
     // Print classes
-    val printer = new ScalaSigPrinter(stream)
+    val printer = new ScalaSigPrinter(stream, printPrivates)
     for (c <- syms) {
       printer.printSymbol(c)
     }
@@ -246,6 +247,7 @@ object Main {
       if (arguments contains "-help")
         usage
       verbose = arguments contains "-verbose"
+      printPrivates = arguments contains "-private"
       // construct a custom class path
       val classPath0 = new ClassPath(false)
       val path = arguments.getArgument("-classpath") match {
