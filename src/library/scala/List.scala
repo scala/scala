@@ -54,6 +54,8 @@ object List {
    *  @return     the sorted list of all integers in range [start;end).
    */
   def range(start: Int, end: Int, step: Int): List[Int] = {
+    if (step == 0)
+      throw new IllegalArgumentException("step is zero")
     val b = new ListBuffer[Int]
     var i = start
     while ((step <= 0 || i < end) && (step >= 0 || i > end)) {
@@ -71,7 +73,9 @@ object List {
    *
    *  @param start the start value of the list
    *  @param end  the end value of the list
-   *  @param step the increment function of the list, must be monotonically increasing or decreasing
+   *  @param step the increment function of the list, which given <code>v<sub>n</sub></code>,
+   *              computes <code>v<sub>n+1</sub></code>. Must be monotonically increasing
+   *              or decreasing.
    *  @return     the sorted list of all integers in range [start;end).
    */
   def range(start: Int, end: Int, step: Int => Int): List[Int] = {
@@ -81,7 +85,10 @@ object List {
     var i = start
     while ((!up || i < end) && (!down || i > end)) {
       b += i
-      i += step(i)
+      val next = step(i)
+      if (i == next)
+        throw new IllegalArgumentException("the step function did not make any progress on "+ i)
+      i = next
     }
     b.toList
   }

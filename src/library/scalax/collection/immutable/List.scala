@@ -589,7 +589,9 @@ object List extends SequenceFactory[List] {
    *  @deprecated  use @see iterate instead.
    *  @param start the start value of the list
    *  @param end  the end value of the list
-   *  @param step the increment function of the list, must be monotonically increasing or decreasing
+   *  @param step the increment function of the list, which given <code>v<sub>n</sub></code>,
+   *              computes <code>v<sub>n+1</sub></code>. Must be monotonically increasing
+   *              or decreasing.
    *  @return     the sorted list of all integers in range [start;end).
    */
   @deprecated def range(start: Int, end: Int, step: Int => Int): List[Int] = {
@@ -599,7 +601,10 @@ object List extends SequenceFactory[List] {
     var i = start
     while ((!up || i < end) && (!down || i > end)) {
       b += i
-      i += step(i)
+      val next = step(i)
+      if (i == next)
+        throw new IllegalArgumentException("the step function did not make any progress on "+ i)
+      i = next
     }
     b.toList
   }
