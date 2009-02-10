@@ -717,7 +717,7 @@ trait NewScanners {
   }
   def inFirstOfStat(token: Int) = token match {
   case EOF | /*CASE |*/ CATCH | ELSE | EXTENDS | FINALLY | MATCH | REQUIRES | WITH | YIELD |
-       COMMA | SEMI | NEWLINE | NEWLINES | DOT | USCORE | COLON | EQUALS | ARROW |
+       COMMA | SEMI | NEWLINE | NEWLINES | DOT | COLON | EQUALS | ARROW |  /* | USCORE - bug #756 */
        LARROW | SUBTYPE | VIEWBOUND | SUPERTYPE | HASH | // todo: add LBRACKET
        RPAREN | RBRACKET | RBRACE => false
   case _ => true
