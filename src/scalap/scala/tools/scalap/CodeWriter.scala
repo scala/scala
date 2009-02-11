@@ -32,13 +32,8 @@ class CodeWriter(writer: Writer) {
 
   def getIndentWidth = if (step == null) -1 else step.length()
 
-  def setIndentWidth(width: Int): CodeWriter = {
-    val buffer = new StringBuffer(width)
-    var i = 0
-    while (i < width)
-      buffer.append(' ')
-    setIndentString(buffer.toString())
-  }
+  def setIndentWidth(width: Int): CodeWriter =
+    setIndentString(List.make(width, ' ').mkString)
 
   def getIndentString = step;
 
