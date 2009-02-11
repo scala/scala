@@ -131,7 +131,7 @@ class Settings(error: String => Unit) {
 
   val Yhelp         = BooleanSetting    ("-Y", "Print a synopsis of private options").hideToIDE
   val browse        = PhasesSetting     ("-Ybrowse", "Browse the abstract syntax tree after")
-  val check         = PhasesSetting     ("-Ycheck", "Check the tree at the end of the given phase. Specify \"all\" to check all checkable phases")
+  val check         = PhasesSetting     ("-Ycheck", "Check the tree at the end of")
   val Xcloselim     = BooleanSetting    ("-Yclosure-elim", "Perform closure elimination")
   val Xcodebase     = StringSetting     ("-Ycodebase", "codebase", "Specify the URL containing the Scala libraries", "").hideToIDE
   val debug         = BooleanSetting    ("-Ydebug", "Output debugging messages").hideToIDE
@@ -141,7 +141,6 @@ class Settings(error: String => Unit) {
   val inline        = BooleanSetting    ("-Yinline", "Perform inlining when possible")
   val Xlinearizer   = ChoiceSetting     ("-Ylinearizer", "Linearizer to use", List("normal", "dfs", "rpo", "dump"), "rpo")
   val log           = PhasesSetting     ("-Ylog", "Log operations in")
-  val logAll        = BooleanSetting    ("-Ylog-all", "Log all operations").hideToIDE
   val noimports     = BooleanSetting    ("-Yno-imports", "Compile without any implicit imports")
   val nopredefs     = BooleanSetting    ("-Yno-predefs", "Compile without any implicit predefined values")
   val Yrecursion    = IntSetting        ("-Yrecursion", "Recursion depth used when locking symbols", 0, Some(0), None).hideToIDE
@@ -170,13 +169,8 @@ class Settings(error: String => Unit) {
   }
 
   override def equals(that: Any) = that match {
-    case s: Settings =>
-      assert(this.allSettings.length == s.allSettings.length)
-      List.forall2 (
-        this.allSettings,
-        s.allSettings
-      )(_==_)
-    case _ => false
+    case s: Settings  => this.allSettings == s.allSettings
+    case _            => false
   }
 
   def checkDependencies: Boolean = {
@@ -265,6 +259,7 @@ class Settings(error: String => Unit) {
       (name startsWith "-X") && !(name eq "-X")
     def isPrivate: Boolean =
       (name == "-P") || ((name startsWith "-Y") && !(name eq "-Y"))
+    def equalLists[T <% Ordered[T]](xs: List[T], ys: List[T]) = xs.sort(_ < _) == ys.sort(_ < _)
 
 /*
     def isDocOption: Boolean =
@@ -429,9 +424,7 @@ class Settings(error: String => Unit) {
 
     override def equals(that: Any) = that match {
       case mss: Settings# MultiStringSetting =>
-        this.name == mss.name &&
-        this.value.length == mss.value.length &&
-        List.forall2(this.value.sort(_<_), mss.value.sort(_<_))(_==_)
+        this.name == mss.name && equalLists(this.value, mss.value)
       case _ => false
     }
 
@@ -530,16 +523,18 @@ class Settings(error: String => Unit) {
   }
 
   /** A setting represented by a list of strings which should be prefixes of
-   *  phase names. This is not checked here, however.
+   *  phase names. This is not checked here, however.  Alternatively the string
+   *  "all" can be used to represent all phases.
    *  (the empty list, unless set)
    */
   case class PhasesSetting(name: String, descr: String)
-  extends Setting(descr + " <phase>") { // (see -showphases)") {
+  extends Setting(descr + " <phase> or \"all\"") {
     hideToIDE
     protected var v: List[String] = List()
 
     def value: List[String] = this.v
     def value_=(s: List[String]) { setByUser = true; this.v = s }
+    def doAllPhases() = value contains "all"
 
     def tryToSet(args: List[String]): List[String] = args match {
       case n :: rest if (n startsWith (name + ":")) =>
@@ -556,20 +551,17 @@ class Settings(error: String => Unit) {
 
     override def helpSyntax = name + ":<phase>"
 
+    // we slightly abuse the usual meaning of "contains" here by returning
+    // true if our phase list contains "all", regardless of the incoming argument
     def contains(phasename: String): Boolean =
-      value exists (str => phasename startsWith str)
+      doAllPhases || (value exists (str => phasename startsWith str))
 
-    def unparse: List[String] =
-      (value.foldLeft[List[String]]
-          (Nil)
-          ((args, phase) =>
-            List(name + ":" + phase) ::: args))
+    def unparse: List[String] = value.map(phase => name + ":" + phase)
 
     override def equals(that: Any) = that match {
       case ps: Settings#PhasesSetting =>
-        this.name == ps.name &&
-        this.value.length == ps.value.length &&
-        List.forall2(this.value.sort(_<_), ps.value.sort(_<_))(_==_)
+        (this.name == ps.name) &&
+        (this.doAllPhases && ps.doAllPhases || equalLists(this.value, ps.value))
       case _ => false
     }
 

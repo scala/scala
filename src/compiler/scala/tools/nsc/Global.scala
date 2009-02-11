@@ -126,8 +126,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     informProgress(msg + " in " + (currentTime - start) + "ms")
 
   def log(msg: AnyRef) {
-    if (settings.logAll.value || (settings.log contains phase.name))
-      inform("[log " + phase + "] " + msg)
+    if (settings.log contains phase.name) inform("[log " + phase + "] " + msg)
   }
 
   class ErrorWithPosition(val pos: Int, val error: Throwable) extends Error
@@ -686,15 +685,15 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         informTime(globalPhase.description, startTime)
         globalPhase = globalPhase.next
 
-        if ((settings.check contains globalPhase.prev.name) ||
-	    (settings.check contains "all")) {
+        if (settings.check contains globalPhase.prev.name) {
           if (globalPhase.prev.checkable) {
             phase = globalPhase
             if (globalPhase.id >= icodePhase.id) icodeChecker.checkICodes
             else checker.checkTrees
-	  } else if (!(settings.check contains "all")) {
-            warning("It is not possible to check the result of the "+globalPhase.name+" phase")
-	  }
+      	  }
+      	  else if (!settings.check.doAllPhases) {
+      	    warning("It is not possible to check the result of the "+globalPhase.name+" phase")
+          }
         }
 
         if (settings.statistics.value) statistics.print(phase)
