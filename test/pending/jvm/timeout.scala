@@ -1,8 +1,3 @@
-// Test is in pending because although it suceeds locally,
-// it takes too long on the machine which runs nightly tests.
-//
-// [partest] EXPECTED: 100 < x < 900
-// [partest] ACTUAL:   1519
 
 import scala.actors.Actor._
 import scala.actors.TIMEOUT
