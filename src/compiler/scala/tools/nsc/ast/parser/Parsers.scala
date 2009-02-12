@@ -1556,6 +1556,9 @@ trait Parsers extends NewScanners with MarkupParsers {
           loop(addMod(mods, Flags.IMPLICIT))
         case LAZY =>
           loop(addMod(mods, Flags.LAZY))
+        case NEWLINE =>
+          inNextToken
+          loop(mods)
         case _ =>
           mods
       }
