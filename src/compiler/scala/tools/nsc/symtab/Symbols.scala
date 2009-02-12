@@ -1189,7 +1189,7 @@ trait Symbols {
     final def makeNotPrivate(base: Symbol) {
       if (this hasFlag PRIVATE) {
         setFlag(notPRIVATE)
-        if (isTerm && !isDeferred) setFlag(lateFINAL)
+        if (isMethod && !isDeferred) setFlag(lateFINAL)
         if (!isStaticModule && !isClassConstructor) {
           expandName(base)
           if (isModule) moduleClass.makeNotPrivate(base)
