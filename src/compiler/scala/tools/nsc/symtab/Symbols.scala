@@ -307,7 +307,7 @@ trait Symbols {
     //final def isMonomorphicType = isType && hasFlag(MONOMORPHIC)
     final def isError = hasFlag(IS_ERROR)
     final def isErroneous = isError || isInitialized && tpe.isErroneous
-    final def isTrait = isClass & hasFlag(TRAIT | notDEFERRED)     // A virtual class becomes a trait (part of DEVIRTUALIZE)
+    final def isTrait = isClass && hasFlag(TRAIT | notDEFERRED)     // A virtual class becomes a trait (part of DEVIRTUALIZE)
     final def isTypeParameterOrSkolem = isType && hasFlag(PARAM)
     final def isTypeSkolem            = isSkolem && hasFlag(PARAM)
     final def isTypeParameter         = isTypeParameterOrSkolem && !isSkolem

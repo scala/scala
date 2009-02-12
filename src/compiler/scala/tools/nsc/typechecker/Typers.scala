@@ -705,7 +705,7 @@ trait Typers { self: Analyzer =>
         context.undetparams = context.undetparams ::: tparams1
         adapt(tree1 setType restpe.substSym(tparams, tparams1), mode, pt)
       case mt: ImplicitMethodType if ((mode & (EXPRmode | FUNmode | LHSmode)) == EXPRmode) => // (4.1)
-        if (!context.undetparams.isEmpty & (mode & POLYmode) == 0) { // (9)
+        if (!context.undetparams.isEmpty && (mode & POLYmode) == 0) { // (9)
           val tparams = context.undetparams
           context.undetparams = List()
           inferExprInstance(tree, tparams, pt)

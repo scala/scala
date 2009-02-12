@@ -62,7 +62,7 @@ trait Reifiers {
       val beforeArgs = reflect.PrefixedType(rpre, rsym)
       if (rargs.isEmpty)
 	beforeArgs
-      else if (rpre == NoType || rsym == NoSymbol)
+      else if (rpre == reflect.NoType || rsym == reflect.NoSymbol)
 	beforeArgs
       else
 	reflect.AppliedType(beforeArgs, rargs)
