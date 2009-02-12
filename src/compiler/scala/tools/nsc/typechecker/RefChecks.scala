@@ -103,7 +103,7 @@ abstract class RefChecks extends InfoTransform {
           case List(MixinOverrideError(_, msg)) =>
             unit.error(clazz.pos, msg)
           case MixinOverrideError(member, msg) :: others =>
-            val others1 = others.map(_.member.name.decode).filter(member.name != _).removeDuplicates
+            val others1 = others.map(_.member.name.decode).filter(member.name.decode != _).removeDuplicates
             unit.error(
               clazz.pos,
               msg+(if (others1.isEmpty) ""

@@ -374,7 +374,7 @@ trait Scopes {
   class ErrorScope(owner: Symbol) extends Scope(null: ScopeEntry) {
     override def lookupEntry(name: Name): ScopeEntry = {
       val e = super.lookupEntry(name)
-      if (e != NoSymbol) e
+      if (e != NoScopeEntry) e
       else {
         enter(if (name.isTermName) owner.newErrorValue(name)
               else owner.newErrorClass(name))

@@ -830,7 +830,7 @@ abstract class GenJVM extends SubComponent {
           ranges = (start, jcode.getPC()) :: ranges;
         }
 
-        if (covered != Nil)
+        if (!covered.isEmpty)
           if (settings.debug.value)
             log("Some covered blocks were not found in method: " + method +
                 " covered: " + covered + " not in " + linearization);

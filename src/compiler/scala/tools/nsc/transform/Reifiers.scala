@@ -60,9 +60,9 @@ trait Reifiers {
       val rsym = reify(sym)
       val rargs = args map reify
       val beforeArgs = reflect.PrefixedType(rpre, rsym)
-      if(rargs.isEmpty)
+      if (rargs.isEmpty)
 	beforeArgs
-      else if(beforeArgs == NoType)
+      else if (rpre == NoType || rsym == NoSymbol)
 	beforeArgs
       else
 	reflect.AppliedType(beforeArgs, rargs)
