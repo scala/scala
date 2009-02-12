@@ -47,7 +47,7 @@ trait SyntheticMethods { self: Analyzer =>
     val localTyper = newTyper(localContext)
 
     def hasImplementation(name: Name): Boolean = if (inIDE) true else {
-      val sym = clazz.info.nonPrivateMember(name)
+      val sym = clazz.info.member(name) // member and not nonPrivateMember: bug #1385
       sym.isTerm && !(sym hasFlag DEFERRED)
     }
 
