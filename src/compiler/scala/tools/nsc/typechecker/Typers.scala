@@ -2577,7 +2577,8 @@ trait Typers { self: Analyzer =>
           } else // @M: there's probably something wrong when args.length != tparams.length... (triggered by bug #320)
            // Martin, I'm using fake trees, because, if you use args or arg.map(typedType),
            // inferPolyAlternatives loops...  -- I have no idea why :-(
-            args.map(t => errorTree(tree, "wrong number of type parameters for "+treeSymTypeMsg(fun)))
+           // ...actually this was looping anyway, see bug #278.
+            return errorTree(fun, "wrong number of type parameters for "+treeSymTypeMsg(fun))
 
           typedTypeApply(fun, args1)
         case SingleType(_, _) =>
