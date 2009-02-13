@@ -6,4 +6,6 @@ trait SetFactory[CC[A] <: SetTemplate[CC, A] with Set[A]] extends IterableFactor
 
   def apply[A](elems: A*): CC[A] = empty[A] ++ elems.asInstanceOf[Iterable[A]] // !@!
 
+  override def newBuilder[B]: Builder[CC, B] = new AddableBuilder[CC, B](empty)
+
 }

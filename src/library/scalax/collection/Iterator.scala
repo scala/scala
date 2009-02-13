@@ -29,15 +29,15 @@ object Iterator {
   }
 
   /**
-   *  @param x the element
+   *  @param elem the element
    *  @return  the iterator with one single element
    *  @note  Equivalent, but more efficient than Iterator(x)
    */
-  def single[A](x: A) = new Iterator[A] {
+  def single[A](elem: A) = new Iterator[A] {
     private var hasnext = true
     def hasNext: Boolean = hasnext
     def next(): A =
-      if (hasnext) { hasnext = false; x }
+      if (hasnext) { hasnext = false; elem }
       else empty.next()
   }
 
@@ -173,7 +173,7 @@ object Iterator {
   implicit def iteratorIteratorWrapper[A](its: Iterator[Iterator[A]]): IteratorIteratorOps[A] =
     new IteratorIteratorOps[A](its)
 
-  /** @deprecated  use `xs.elements` instead
+  /** @deprecated  use `xs.elements`, or `Iterator(x1, ..., xn)` instead
    */
   @deprecated def fromValues[a](xs: a*) = xs.elements
 

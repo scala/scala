@@ -56,6 +56,4 @@ trait IterableForwarder[+A] extends Iterable[A] {
   override def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = underlying.addString(b, start, sep, end)
 
   override def head: A = underlying.head
-  override def last: A = underlying.last
-  override def sameElements[B >: A](that: OrderedIterable[B]): Boolean = underlying.sameElements(that)
 }

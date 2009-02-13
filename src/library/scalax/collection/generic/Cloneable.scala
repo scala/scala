@@ -9,10 +9,11 @@
 // $Id: CloneableCollection.scala 16893 2009-01-13 13:09:22Z cunei $
 
 
-package scala.collection.generic
+package scalax.collection.generic
 
 /** A trait for cloneable collections.
  */
-trait Cloneable[A <: AnyRef] extends java.lang.Cloneable {
+@cloneable
+trait Cloneable[A <: AnyRef]  {
   override def clone(): A = super.clone().asInstanceOf[A]
 }

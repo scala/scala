@@ -12,7 +12,8 @@
 package scalax.collection.immutable
 
 import mutable.ListBuffer
-import generic.covariant.{SequenceTemplate, SequenceFactory}
+import generic.{SequenceTemplate, SequenceFactory, EmptyIterableFactory, Builder}
+import annotation.unchecked.uncheckedVariance
 
 /** A class representing an ordered collection of elements of type
  *  <code>a</code>. This class comes with two implementing case
@@ -23,7 +24,9 @@ import generic.covariant.{SequenceTemplate, SequenceFactory}
  *  @author  Martin Odersky and others
  *  @version 2.8
  */
-sealed abstract class List[+A] extends Stream[A] with SequenceTemplate[List, A] with Product {
+sealed abstract class List[+A] extends Stream[A]
+                                  with SequenceTemplate[List, A @uncheckedVariance]
+                                  with Product {
 
   import collection.{Iterable, OrderedIterable, Sequence, Vector}
 
@@ -572,7 +575,7 @@ final case class ::[B](private var hd: B, private[scalax] var tl: List[B]) exten
  *  @author  Martin Odersky and others
  *  @version 1.0, 15/07/2003
  */
-object List extends SequenceFactory[List] {
+object List extends SequenceFactory[List] with EmptyIterableFactory[List] {
 
   override val empty: List[Nothing] = Nil
 
@@ -721,7 +724,7 @@ object List extends SequenceFactory[List] {
    *             in the same order
    *  @deprecated use `array.toList` instead
    */
-  def fromArray[A](arr: Array[A]): List[A] = fromArray(arr, 0, arr.length)
+  @deprecated def fromArray[A](arr: Array[A]): List[A] = fromArray(arr, 0, arr.length)
 
   /** Converts a range of an array into a list.
    *

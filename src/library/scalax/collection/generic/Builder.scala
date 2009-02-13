@@ -8,17 +8,24 @@
 
 // $Id: ListBuffer.scala 14378 2008-03-13 11:39:05Z dragos $
 
-package scalax.collection
+package scalax.collection.generic
 
-import collection.mutable.ListBuffer
-import collection.immutable.{List, Nil, ::}
+import generic._
 
-abstract class LazyBuilder[+CC[B], A] extends Builder[CC, A] {
-  protected var parts = new ListBuffer[Iterator[A]]
-  def +=(x: A) = { parts += Iterator.single(x) }
-  override def ++=(xs: Iterator[A]) { parts += xs }
-  override def ++=(xs: Iterable[A]) { parts += xs.elements }
-  def elements: Iterator[A] = Iterator.iteratorIteratorWrapper(parts.elements).flatten // !!! drop the wrapper and get an error
+trait Builder[+CC[B], A] extends Growable[A] {
+  def +=(x: A)
+  def elements: Iterator[A]
   def result: CC[A]
-  def clear() { parts.clear() }
+
+  def mapResult[DD[B]](f: CC[A] => DD[A]) =
+    new Builder[DD, A] with Proxy {
+      val self = Builder.this
+      def +=(x: A) = self += x
+      def elements: Iterator[A] = self.elements
+      def clear() = self.clear()
+      override def ++=(xs: Iterator[A]) = self ++= xs
+      override def ++=(xs: collection.Iterable[A]) = self ++= xs
+      def result: DD[A] = f(Builder.this.result)
+    }
 }
+

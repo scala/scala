@@ -253,7 +253,7 @@ object Array extends SequenceFactory[Array] {
  *  @author Martin Odersky
  *  @version 1.0
  */
-final class Array[A](_length: Int) extends Vector[A] with mutable.VectorTemplate[Array, A] {
+final class Array[A](_length: Int) extends Vector[A] with MutableVectorTemplate[Array, A] {
 
    /** Multidimensional array creation
     *  @deprecated use Array.ofDim instead

@@ -12,10 +12,11 @@ package scalax.collection
 
 import generic._
 import mutable.ArrayBuffer
+import annotation.unchecked.uncheckedVariance
 
-trait Vector[+A] extends Sequence[A] with covariant.VectorTemplate[Vector, A]
+trait Vector[+A] extends Sequence[A] with VectorTemplate[Vector, A @uncheckedVariance]
 
-object Vector extends covariant.SequenceFactory[Vector] {
+object Vector extends SequenceFactory[Vector] with EmptyIterableFactory[Vector] {
 
   /** The empty sequence */
   val empty : Vector[Nothing] = null // !!! todo: insert good immutable vector implementation here.

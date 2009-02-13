@@ -11,7 +11,7 @@
 
 package scalax.collection.mutable
 
-import generic.{SequenceForwarder, SequenceFactory, SequenceTemplate}
+import generic._
 import immutable.List
 import collection.immutable.{List, Nil, ::}
 
@@ -31,6 +31,8 @@ object ListBuffer extends SequenceFactory[ListBuffer] {
 final class ListBuffer[A]
       extends Buffer[A]
          with SequenceTemplate[ListBuffer, A]
+         with Addable[ListBuffer[A], A]
+         with Subtractable[ListBuffer[A], A]
          with Builder[List, A]
          with SequenceForwarder[A]
 {

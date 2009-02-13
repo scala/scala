@@ -12,7 +12,8 @@
 package scalax.collection.immutable
 
 import mutable.ListBuffer
-import generic.covariant.{SequenceTemplate, SequenceFactory}
+import generic.{SequenceTemplate, SequenceFactory, EmptyIterableFactory, Builder, LazyBuilder}
+import annotation.unchecked.uncheckedVariance
 
 /**
  * The object <code>Stream</code> provides helper functions
@@ -21,7 +22,7 @@ import generic.covariant.{SequenceTemplate, SequenceFactory}
  * @author Martin Odersky, Matthias Zenger
  * @version 1.1 08/08/03
  */
-object Stream extends SequenceFactory[Stream] {
+object Stream extends SequenceFactory[Stream] with EmptyIterableFactory[Stream] {
 
   import collection.{Iterable, OrderedIterable, Sequence, Vector}
 
@@ -417,7 +418,7 @@ import Stream._
  * @version 1.1 08/08/03
  */
 abstract class Stream[+A] extends Sequence[A]
-                             with SequenceTemplate[Stream, A] {
+                             with SequenceTemplate[Stream, A @uncheckedVariance] {
 self =>
 
   import collection.{Iterable, OrderedIterable, Sequence, Vector}

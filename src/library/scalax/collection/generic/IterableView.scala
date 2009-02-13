@@ -25,7 +25,7 @@ trait IterableView[+UC[/*+*/B] <: Iterable[B], /*+*/A] extends Iterable[A] { sel
     case _ => origin
   }
 
-  private def isDelay = elements eq underlying.elements
+  protected def isDelay = elements eq underlying.elements
 
   private[this] var forced: UC[A] = _
   private[this] var wasForced = false
@@ -99,15 +99,6 @@ trait IterableView[+UC[/*+*/B] <: Iterable[B], /*+*/A] extends Iterable[A] { sel
 
   /** Non-strict variant of @see Iterable.slice */
   override def slice(from: Int, until: Int): IterableView[UC, A] = newView(elements slice (from, until))
-
-  /** Non-strict variant of @see Iterable.takeWhile */
-  override def takeWhile(p: A => Boolean): IterableView[UC, A] = newView(elements takeWhile p)
-
-  /** Non-strict variant of @see Iterable.dropWhile */
-  override def dropWhile(p: A => Boolean): IterableView[UC, A] = newView(elements dropWhile p)
-
-  /** Non-strict variant of @see Iterable.span */
-  override def span(p: A => Boolean): (IterableView[UC, A], IterableView[UC, A]) = (takeWhile(p), dropWhile(p))
 
   /** The projection resulting from the concatenation of this projection with the <code>rest</code> projection.
    *  @param rest   The projection that gets appended to this projection

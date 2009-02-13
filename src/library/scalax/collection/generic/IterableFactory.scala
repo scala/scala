@@ -8,7 +8,7 @@ trait IterableFactory[CC[A] <: Iterable[A]] {
   protected def newBuilder[A]: Builder[CC, A] =
     apply().newBuilder[A].asInstanceOf[Builder[CC, A]]
 
-  // can't have an empty here because it is defined in subclass covariant.IterableFactory with type
+  // can't have an empty here because it is defined in subclass EmptyIterableFactory with type
   // CC[Nothing]. This type does not make sense for immutable iterables.
 
   /** Concatenate all the argument lists into a single list.
@@ -88,10 +88,10 @@ trait IterableFactory[CC[A] <: Iterable[A]] {
    *          increasing n. If `step > 0` the sequence terminates
    *          with the largest value less than `end`. If `step < 0`
    *          the sequence terminates with the smallest value greater than `end`.
-   *          If `step == 0`, the sequence gors on infinitely (in that
-   *          case the `range` operation might not terminate.
+   *          If `step == 0`, an IllegalArgumentException is thrown.
    */
   def range(start: Int, end: Int, step: Int): CC[Int] = {
+    if (step == 0) throw new IllegalArgumentException("zero step")
     val b = newBuilder[Int]
     var i = start
     while ((step <= 0 || i < end) && (step >= 0 || i > end)) {

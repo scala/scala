@@ -13,7 +13,8 @@ package scalax.runtime
 
 import collection.immutable.Vector
 import collection.mutable.ArrayBuffer
-import collection.generic.covariant.VectorTemplate
+import collection.generic.VectorTemplate
+import annotation.unchecked.uncheckedVariance
 
 object StringVector {
 
@@ -22,7 +23,7 @@ object StringVector {
 }
 
 @cloneable
-abstract class StringVector[+A] extends VectorTemplate[StringVector, A] with Vector[A] {
+abstract class StringVector[+A] extends VectorTemplate[StringVector, A @uncheckedVariance] with Vector[A] {
 
   /** The length of the string */
   def length: Int

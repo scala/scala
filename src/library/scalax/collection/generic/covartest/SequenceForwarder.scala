@@ -23,7 +23,7 @@ package scalax.collection.generic.covartest
  *  @author  Martin Odersky
  *  @version 2.8
  */
-trait SequenceForwarder[+A] extends Sequence[A] with IterableForwarder[A] {
+trait SequenceForwarder[+A] extends Sequence[A] with OrderedIterableForwarder[A] {
 
   protected override def underlying: Sequence[A]
 

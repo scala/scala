@@ -1,6 +1,7 @@
 package scalax.collection.immutable
 
-import generic.covariant
+import generic._
+import annotation.unchecked.uncheckedVariance
 
 /** Collection classes mixing in this class provide a method
  *  <code>elements</code> which returns an iterator over all the
@@ -14,10 +15,10 @@ import generic.covariant
  *  @version 2.8
  */
 trait Sequence[+A] extends OrderedIterable[A]
-                      with covariant.SequenceTemplate[Sequence, A]
+                      with SequenceTemplate[Sequence, A @uncheckedVariance]
                       with collection.Sequence[A]
 
-object Sequence extends covariant.SequenceFactory[Sequence] {
+object Sequence extends SequenceFactory[Sequence] with EmptyIterableFactory[Sequence] {
   val empty: Sequence[Nothing] = Nil
 }
 

@@ -21,7 +21,7 @@ import collection.generic._
  *  @author  Martin Odersky, Stephane Micheloud
  *  @version 1.0
  */
-abstract class BoxedArray[A] extends Vector[A] with mutable.VectorTemplate[BoxedArray, A] with Boxed {
+abstract class BoxedArray[A] extends Vector[A] with MutableVectorTemplate[BoxedArray, A] with Boxed {
 
   /** The length of the array */
   def length: Int

@@ -11,7 +11,7 @@
 
 package scalax.collection.mutable
 
-import generic.SequenceFactory
+import generic.{SequenceFactory, MutableVectorTemplate, Builder}
 
 /* Factory object for `ArrayBuffer` class */
 object ArrayBuffer extends SequenceFactory[ArrayBuffer] {
@@ -31,7 +31,7 @@ object ArrayBuffer extends SequenceFactory[ArrayBuffer] {
 class ArrayBuffer[A](override protected val initialSize: Int)
   extends Buffer[A]
      with Vector[A]
-     with generic.mutable.VectorTemplate[ArrayBuffer, A]
+     with MutableVectorTemplate[ArrayBuffer, A]
      with Builder[ArrayBuffer, A]
      with ResizableArray[A] {
 

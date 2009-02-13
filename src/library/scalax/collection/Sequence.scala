@@ -13,6 +13,7 @@ package scalax.collection
 
 import generic._
 import immutable.Nil
+import annotation.unchecked.uncheckedVariance
 
 /** Class <code>Sequence[A]</code> represents finite sequences of elements
  *  of type <code>A</code>.
@@ -21,9 +22,9 @@ import immutable.Nil
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  */
-trait Sequence[+A] extends OrderedIterable[A] with SizedIterable[A] with generic.covariant.SequenceTemplate[Sequence, A]
+trait Sequence[+A] extends OrderedIterable[A] with SizedIterable[A] with SequenceTemplate[Sequence, A @uncheckedVariance]
 
-object Sequence extends covariant.SequenceFactory[Sequence] {
+object Sequence extends SequenceFactory[Sequence] with EmptyIterableFactory[Sequence] {
 
   /** The empty sequence */
   val empty : Sequence[Nothing] = immutable.Nil

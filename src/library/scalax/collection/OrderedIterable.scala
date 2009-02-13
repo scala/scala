@@ -13,11 +13,10 @@ package scalax.collection
 
 import generic._
 import immutable.Nil
+import annotation.unchecked.uncheckedVariance
 
 /** An ordered collection is a collection with a fixed sequence of elements
- *  which corresponds to append order. In particular, it holds that
- *
- *    (c1 ++ c2).elements = c1.elements ++ c2.elements
+ *  which is the same in every run.
  *
  *  for any two ordered collections c1 and c2.
  *  Ordered collections support
@@ -27,7 +26,7 @@ import immutable.Nil
  *  @author Martin Odersky
  *  @version 2.8
  */
-trait OrderedIterable[+A] extends Iterable[A] with covariant.OrderedIterableTemplate[OrderedIterable, A]
+trait OrderedIterable[+A] extends Iterable[A] with OrderedIterableTemplate[OrderedIterable, A @uncheckedVariance]
 
 /** Various utilities for instances of <a href="Iterable.html">Iterable</a>.
  *
@@ -35,7 +34,7 @@ trait OrderedIterable[+A] extends Iterable[A] with covariant.OrderedIterableTemp
  *  @author  Martin Odersky
  *  @version 2.8
  */
-object OrderedIterable extends covariant.IterableFactory[OrderedIterable] {
+object OrderedIterable extends IterableFactory[OrderedIterable] with EmptyIterableFactory[OrderedIterable] {
 
   val empty: OrderedIterable[Nothing] = Nil
 

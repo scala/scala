@@ -6,14 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: CloneableCollection.scala 12003 2007-06-13 12:14:15Z mihaylov $
+// $Id: DefaultEntry.scala 16893 2009-01-13 13:09:22Z cunei $
 
 
 package scalax.collection.mutable
 
-/** The J2ME version of the library defined this trait with a clone method
- * to substitute for the lack of Object.clone there
- */
-trait CloneableCollection {
-  override def clone(): AnyRef = super.clone()
-}
+@serializable
+final class DefaultEntry[A, B](val key: A, var value: B)
+      extends HashEntry[A, DefaultEntry[A, B]]

@@ -31,7 +31,12 @@ package scalax.collection.generic
  *  @author  Martin Odersky
  *  @version 2.8
  */
-trait SetTemplate[+CC[B] <: SetTemplate[CC, B] with Set[B], A] extends (A => Boolean) with SizedIterable[A] with OrderedIterableTemplate[CC, A] {
+trait SetTemplate[+CC[B] <: SetTemplate[CC, B] with Set[B], A]
+  extends (A => Boolean)
+     with SizedIterable[A]
+     with IterableTemplate[CC, A]
+     with Addable[CC[A], A]
+     with Subtractable[CC[A], A] {
 
   /** Returns the number of elements in this set.
    *
@@ -52,13 +57,13 @@ trait SetTemplate[+CC[B] <: SetTemplate[CC, B] with Set[B], A] extends (A => Boo
 
   /** Create a new set with an additional element.
    */
-  def +(elem: A): CC[A]
+  def + (elem: A): CC[A]
 
   /** Remove a single element from a set.
    *  @param elem the element to be removed
    *  @return a new set with the element removed.
    */
-  def -(elem: A): CC[A]
+  def - (elem: A): CC[A]
 
   /** Checks if this set is empty.
    *
@@ -75,43 +80,6 @@ trait SetTemplate[+CC[B] <: SetTemplate[CC, B] with Set[B], A] extends (A => Boo
    *              this set.
    */
   def apply(elem: A): Boolean = contains(elem)
-
-  /** Add two or more elements to this set.
-   *  @param    elem1 the first element.
-   *  @param    elem2 the second element.
-   *  @param    elems the remaining elements.
-   *  @return a new set with the elements added.
-   */
-  def + (elem1: A, elem2: A, elems: A*): CC[A] = {
-    thisCC + elem1 + elem2 ++ elems.asInstanceOf[Iterable[A]]
-  }
-
-  /** Remove two or more elements from this set.
-   *
-   *  @param    elem1 the first element.
-   *  @param    elem2 the second element.
-   *  @param    elems the remaining elements.
-   *  @return a new set with the elements removed.
-   */
-  def - (elem1: A, elem2: A, elems: A*): CC[A] =
-    this - elem1 - elem2 -- elems.asInstanceOf[Iterable[A]]
-
-  /** Remove all the elements provided by an iterator
-   *  of the iterable object <code>elems</code> from the set.
-   *
-   *  @param elems An iterable object containing the elements to remove from the set.
-   *  @return a new set with the elements removed.
-   */
-  def -- (elems: Iterable[A]): CC[A] = this -- elems.elements
-
-  /** Remove all the elements provided by an iterator
-   *  <code>elems</code> from the set.
-   *
-   *  @param elems An iterator containing the elements to remove from the set.
-   *  @return a new set with the elements removed.
-   */
-  def -- (elems: Iterator[A]): CC[A] =
-    (thisCC /: elems) (_ - _)
 
   /** This method computes an intersection with set <code>that</code>.
    *  It removes all the elements that are not present in <code>that</code>.
@@ -137,6 +105,9 @@ trait SetTemplate[+CC[B] <: SetTemplate[CC, B] with Set[B], A] extends (A => Boo
    */
   def subsetOf(that: Set[A]): Boolean = forall(that.contains)
 
+/* What a mess! We need to remove these methods, but can't without breaking
+ * existing code. What to do?
+
   /** Compares this set with another object and returns true, iff the
    *  other object is also a set which contains the same elements as
    *  this set.
@@ -156,18 +127,22 @@ trait SetTemplate[+CC[B] <: SetTemplate[CC, B] with Set[B], A] extends (A => Boo
       false
   }
 
-  /*  @deprecated hashCode is not stable for mutable sets.
-   *              if you intend to have object identity hashCode and wish the deprecated warning
+  /*  @deprecated Since the previous hashCode is not stable for mutable sets,
+   *              the implementation of this method has been changed to
+   *              standard address-based hashCode from java.lang.Object.
+   *              If you relied on the old behavior, y
+   *              IT has been
+   *  if you intend to have object identity hashCode and wish the deprecated warning
    *              to go away, cast this set to AnyRef before calling hashCode.
    */
   @deprecated override def hashCode() =
     (0 /: this)((hash, e) => hash + e.hashCode())
-
+*/
   /** Defines the prefix of this object's <code>toString</code> representation.
    */
   override def stringPrefix: String = "Set"
 
   /** Need to override string, so that it's not the Function1's string that gets mixed in.
    */
-  override def toString = super[OrderedIterableTemplate].toString
+  override def toString = super[IterableTemplate].toString
 }

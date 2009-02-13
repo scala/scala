@@ -56,6 +56,11 @@ trait IterableTemplate[+CC[+B] <: IterableTemplate[CC, B] with Iterable[B], +A] 
    */
   def newBuilder[B]: Builder[CC, B]
 
+  /** Create a new builder for this IterableType
+   *  with a hint what that its size should be size `sizeHint`
+   */
+  def newBuilder[B](sizeHint: Int): Builder[CC, B] = newBuilder[B]
+
   /** Is this collection empty? */
   def isEmpty: Boolean = !elements.hasNext
 
@@ -65,7 +70,7 @@ trait IterableTemplate[+CC[+B] <: IterableTemplate[CC, B] with Iterable[B], +A] 
    */
   def hasDefiniteSize = true
 
-  /** Create a new sequence of type CC which contains all elements of this sequence
+  /** Create a new iterable of type CC which contains all elements of this iterable
    *  followed by all elements of Iterable `that'
    */
   def ++[B >: A](that: Iterable[B]): CC[B] = {
@@ -75,7 +80,7 @@ trait IterableTemplate[+CC[+B] <: IterableTemplate[CC, B] with Iterable[B], +A] 
     b.result
   }
 
-  /** Create a new sequence of type IterableType which contains all elements of this sequence
+  /** Create a new iterable of type CC which contains all elements of this iterable
    *  followed by all elements of Iterator `that'
    */
   def ++[B >: A](that: Iterator[B]): CC[B] = {
@@ -85,12 +90,12 @@ trait IterableTemplate[+CC[+B] <: IterableTemplate[CC, B] with Iterable[B], +A] 
     b.result
   }
 
-  /** Returns the sequence resulting from applying the given function
-   *  <code>f</code> to each element of this sequence.
+  /** Returns the iterable resulting from applying the given function
+   *  <code>f</code> to each element of this iterable.
    *
    *  @param f function to apply to each element.
    *  @return  <code>f(a<sub>0</sub>), ..., f(a<sub>n</sub>)</code> if this
-   *           sequence is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
+   *           iterable is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
    */
   def map[B](f: A => B): CC[B] = {
     val b = newBuilder[B]
@@ -99,11 +104,11 @@ trait IterableTemplate[+CC[+B] <: IterableTemplate[CC, B] with Iterable[B], +A] 
   }
 
   /** Applies the given function <code>f</code> to each element of
-   *  this sequence, then concatenates the results.
+   *  this iterable, then concatenates the results.
    *
    *  @param f the function to apply on each element.
    *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
-   *           this sequence is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
+   *           this iterable is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
    */
   def flatMap[B](f: A => Iterable[B]): CC[B] = {
     val b = newBuilder[B]
@@ -111,10 +116,10 @@ trait IterableTemplate[+CC[+B] <: IterableTemplate[CC, B] with Iterable[B], +A] 
     b.result
   }
 
-  /** Returns all the elements of this sequence that satisfy the
+  /** Returns all the elements of this iterable that satisfy the
    *  predicate <code>p</code>. The order of the elements is preserved.
-   *  @param p the predicate used to filter the list.
-   *  @return the elements of this list satisfying <code>p</code>.
+   *  @param p the predicate used to filter the iterable.
+   *  @return the elements of this iterable satisfying <code>p</code>.
    */
   def filter(p: A => Boolean): CC[A] = {
     val b = newBuilder[A]
@@ -128,7 +133,7 @@ trait IterableTemplate[+CC[+B] <: IterableTemplate[CC, B] with Iterable[B], +A] 
    *  predicate inversed.
    *
    *  @param p the predicate to use to test elements
-   *  @return  the list without all elements which satisfy <code>p</code>
+   *  @return  the iterable without all elements which satisfy <code>p</code>
    */
   def remove(p: A => Boolean): CC[A] = filter(!p(_))
 
@@ -203,6 +208,8 @@ trait IterableTemplate[+CC[+B] <: IterableTemplate[CC, B] with Iterable[B], +A] 
    *  predicate, if any.
    *
    *  @note may not terminate for infinite-sized collections.
+   *  @note Might return different results for different runs, unless this iterable is ordered, or
+   *        the operator is associative and commutative.
    *  @param p the predicate
    *  @return an option containing the first element in the iterable object
    *  satisfying <code>p</code>, or <code>None</code> if none exists.
@@ -221,8 +228,10 @@ trait IterableTemplate[+CC[+B] <: IterableTemplate[CC, B] with Iterable[B], +A] 
    *  the value <code>z</code>.
    *
    *  @note Will not terminate for infinite-sized collections.
+   *  @note Might return different results for different runs, unless this iterable is ordered, or
+   *        the operator is associative and commutative.
    *  @return <code>f(... (f(f(z, a<sub>0</sub>), a<sub>1</sub>) ...),
-   *          a<sub>n</sub>)</code> if the list is
+   *          a<sub>n</sub>)</code> if the iterable is
    *          <code>[a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub>]</code>.
    */
   def foldLeft[B](z: B)(op: (B, A) => B): B = {
@@ -232,32 +241,40 @@ trait IterableTemplate[+CC[+B] <: IterableTemplate[CC, B] with Iterable[B], +A] 
     result
   }
 
-  /** Combines the elements of this list together using the binary
+  /** Combines the elements of this iterable together using the binary
    *  function <code>f</code>, from right to left, and starting with
    *  the value <code>z</code>.
    *
    *  @note Will not terminate for infinite-sized collections.
+   *  @note Might return different results for different runs, unless this iterable is ordered, or
+   *        the operator is associative and commutative.
    *  @return <code>f(a<sub>0</sub>, f(a<sub>1</sub>, f(..., f(a<sub>n</sub>, z)...)))</code>
-   *          if the list is <code>[a<sub>0</sub>, a1, ..., a<sub>n</sub>]</code>.
+   *          if the iterable is <code>[a<sub>0</sub>, a1, ..., a<sub>n</sub>]</code>.
    */
   def foldRight[B](z: B)(op: (A, B) => B): B = elements.foldRight(z)(op)
 
   /** Similar to <code>foldLeft</code> but can be used as
-   *  an operator with the order of list and zero arguments reversed.
+   *  an operator with the order of iterable and zero arguments reversed.
    *  That is, <code>z /: xs</code> is the same as <code>xs foldLeft z</code>
    *  @note Will not terminate for infinite-sized collections.
+   *  @note Might return different results for different runs, unless this iterable is ordered, or
+   *        the operator is associative and commutative.
    */
   def /: [B](z: B)(op: (B, A) => B): B = foldLeft(z)(op)
 
   /** An alias for <code>foldRight</code>.
    *  That is, <code>xs :\ z</code> is the same as <code>xs foldRight z</code>
    *  @note Will not terminate for infinite-sized collections.
+   *  @note Might return different results for different runs, unless this iterable is ordered, or
+   *        the operator is associative and commutative.
    */
   def :\ [B](z: B)(op: (A, B) => B): B = foldRight(z)(op)
 
   /** Combines the elements of this iterable object together using the binary
    *  operator <code>op</code>, from left to right
    *  @note Will not terminate for infinite-sized collections.
+   *  @note Might return different results for different runs, unless this iterable is ordered, or
+   *        the operator is associative and commutative.
    *  @param op  The operator to apply
    *  @return <code>op(... op(a<sub>0</sub>,a<sub>1</sub>), ..., a<sub>n</sub>)</code>
       if the iterable object has elements
@@ -277,6 +294,8 @@ trait IterableTemplate[+CC[+B] <: IterableTemplate[CC, B] with Iterable[B], +A] 
   /** Combines the elements of this iterable object together using the binary
    *  operator <code>op</code>, from right to left
    *  @note Will not terminate for infinite-sized collections.
+   *  @note Might return different results for different runs, unless this iterable is ordered, or
+   *        the operator is associative and commutative.
    *  @param op  The operator to apply
    *
    *  @return <code>a<sub>0</sub> op (... op (a<sub>n-1</sub> op a<sub>n</sub>)...)</code>
@@ -288,7 +307,7 @@ trait IterableTemplate[+CC[+B] <: IterableTemplate[CC, B] with Iterable[B], +A] 
   def reduceRight[B >: A](op: (A, B) => B): B =
     elements.reduceRight(op)
 
-  /** Returns an iterable formed from this iterable and the specified list
+  /** Returns an iterable formed from this iterable and the specified iterable
    *  `other` by associating each element of the former with
    *  the element at the same position in the latter.
    *  If one of the two iterables is longer than the other, its remaining elements are ignored.
@@ -356,7 +375,7 @@ b   *  @param thatElem element <code>thatElem</code> is used to fill up the
   }
 
   /** Fills the given array <code>xs</code> with at most `len` elements of
-   *  this sequence starting at position `start`.
+   *  this iterable starting at position `start`.
    *  Copying will stop oce either the end of the current iterable is reached or
    *  `len` elements have been copied.
    *
@@ -378,7 +397,7 @@ b   *  @param thatElem element <code>thatElem</code> is used to fill up the
   }
 
   /** Fills the given array <code>xs</code> with the elements of
-   *  this sequence starting at position <code>start</code>
+   *  this iterable starting at position <code>start</code>
    *  until either the end of the current iterable or the end of array `xs` is reached.
    *
    *  @note Will not terminate for infinite-sized collections.
@@ -431,7 +450,7 @@ b   *  @param thatElem element <code>thatElem</code> is used to fill up the
    *  same order in the sorted iterable as in the original.
    *
    *  @param lt the comparison function
-   *  @return   a list sorted according to the comparison function
+   *  @return   a iterable sorted according to the comparison function
    *            <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>.
    *  @ex <pre>
    *    List("Steve", "Tom", "John", "Bob")
@@ -454,7 +473,6 @@ b   *  @param thatElem element <code>thatElem</code> is used to fill up the
    *  <code>sep</code>.
    *
    *  @ex  <code>List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"</code>
-   *  @note Will not terminate for infinite-sized collections.
    *  @param start starting string.
    *  @param sep separator string.
    *  @param end ending string.
@@ -467,7 +485,6 @@ b   *  @param thatElem element <code>thatElem</code> is used to fill up the
    *  representations of elements (w.r.t. the method <code>toString()</code>)
    *  are separated by the string <code>sep</code>.
    *
-   *  @note Will not terminate for infinite-sized collections.
    *  @param sep separator string.
    *  @return a string representation of this iterable object.
    */
@@ -475,7 +492,6 @@ b   *  @param thatElem element <code>thatElem</code> is used to fill up the
     addString(new StringBuilder(), sep).toString
 
   /** Converts a collection into a flat <code>String</code> by each element's toString method.
-   *  @note Will not terminate for infinite-sized collections.
    */
   def mkString =
     addString(new StringBuilder()).toString
@@ -485,7 +501,6 @@ b   *  @param thatElem element <code>thatElem</code> is used to fill up the
    *  <code>end</code>. Inside, the string representations of elements (w.r.t.
    *  the method <code>toString()</code>) are separated by the string
    *  <code>sep</code>.
-   *  @note Will not terminate for infinite-sized collections.
    */
   def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
     b append start
@@ -501,28 +516,13 @@ b   *  @param thatElem element <code>thatElem</code> is used to fill up the
   /** Write all elements of this string into given string builder.
    *  The string representations of elements (w.r.t. the method <code>toString()</code>)
    *  are separated by the string <code>sep</code>.
-   *  @note Will not terminate for infinite-sized collections.
    */
-  def addString(b: StringBuilder, sep: String): StringBuilder = {
-    var first = true
-    for (x <- this) {
-      if (first) first = false
-      else b append sep
-      b append x
-    }
-    b
-  }
+  def addString(b: StringBuilder, sep: String): StringBuilder = addString(b, "", sep, "")
 
   /** Write all elements of this string into given string builder without using
    *  any separator between consecutive elements.
-   *  @note Will not terminate for infinite-sized collections.
    */
-  def addString(b: StringBuilder): StringBuilder = {
-    for (x <- this) {
-      b append x
-    }
-    b
-  }
+  def addString(b: StringBuilder): StringBuilder = addString(b, "")
 
   /**
    * returns a projection that can be used to call non-strict <code>filter</code>,
@@ -547,7 +547,6 @@ b   *  @param thatElem element <code>thatElem</code> is used to fill up the
     string
   }
 
-
   /** Creates a view of this iterable @see IterableView
    */
   def view: IterableView[CC, A] = new IterableView[CC, A] { // !!! Martin: We should maybe infer the type parameters here?
@@ -557,10 +556,10 @@ b   *  @param thatElem element <code>thatElem</code> is used to fill up the
 
 // The following methods return non-deterministic results, unless this iterable is an OrderedIterable
 
-  /** The first element of this sequence.
+  /** The first element of this iterable.
    *
    *  @note  Might return different results for different runs, unless this iterable is ordered
-   *  @throws Predef.NoSuchAentException if the sequence is empty.
+   *  @throws Predef.NoSuchElementException if the iterable is empty.
    */
   def head: A = if (isEmpty) throw new NoSuchElementException else elements.next
 
@@ -574,7 +573,7 @@ b   *  @param thatElem element <code>thatElem</code> is used to fill up the
   def headOption: Option[A] = if (isEmpty) None else Some(head)
 
   /** @deprecated use headOption instead
-   *  <code>None</code> if list is empty.
+   *  <code>None</code> if iterable is empty.
    */
   @deprecated def firstOption: Option[A] = headOption
 
@@ -589,7 +588,6 @@ b   *  @param thatElem element <code>thatElem</code> is used to fill up the
    *  than <code>n</code> elements.
    *
    *  @param n the number of elements to take
-   *  @return a possibly projected sequence
    *  @note  Might return different results for different runs, unless this iterable is ordered
    */
   def take(n: Int): CC[A] = {
@@ -648,74 +646,6 @@ b   *  @param thatElem element <code>thatElem</code> is used to fill up the
     b.result
   }
 
-  /** The last element of this iterable.
-   *
-   *  @throws Predef.NoSuchElementException if the sequence is empty.
-   *  @note  Might return different results for different runs, unless this iterable is ordered
-   */
-  def last: A = {
-    var lst = head
-    for (x <- this)
-      lst = x
-    lst
-  }
-
-  /** Returns as an option the last element of this iterable or
-   *  <code>None</code> if iterable is empty.
-   *
-   *  @return the last element as an option.
-   *  @note  Might return different results for different runs, unless this iterable is ordered
-   */
-  def lastOption: Option[A] = if (isEmpty) None else Some(last)
-
-  /** An iterable consisting of all elements of this iterable except the last one.
-   *  @note  Might return different results for different runs, unless this iterable is ordered
-   */
-  def init: CC[A] = {
-    var lst = head
-    val b = newBuilder[A]
-    for (x <- this) {
-      b += lst
-      lst = x
-    }
-    b.result
-  }
-
-  /** Returns the rightmost <code>n</code> elements from this iterable.
-   *
-   *  @param n the number of elements to take
-   *  @note  Might return different results for different runs, unless this iterable is ordered
-   */
-  def takeRight(n: Int): CC[A] = {
-    val b = newBuilder[A]
-    val lead = elements drop n
-    var go = false
-    for (x <- this) {
-      if (go) b += x
-      else if (lead.hasNext) lead.next
-      else go = true
-    }
-    b.result
-  }
-
-  /** Returns the iterable wihtout its rightmost <code>n</code> elements.
-   *
-   *  @param n the number of elements to take
-   *  @note  Might return different results for different runs, unless this iterable is ordered
-   */
-  def dropRight(n: Int): CC[A] = {
-    val b = newBuilder[A]
-    val lead = elements drop n
-    breakable {
-      for (x <- this) {
-        if (!lead.hasNext) break
-        lead.next
-        b += x
-      }
-    }
-    b.result
-  }
-
   /** Split the iterable at a given point and return the two parts thus
    *  created.
    *
@@ -732,82 +662,13 @@ b   *  @param thatElem element <code>thatElem</code> is used to fill up the
     (l.result, r.result)
   }
 
-  /** Returns the longest prefix of this sequence whose elements satisfy
-   *  the predicate <code>p</code>.
-   *
-   *  @param p the test predicate.
-   *  @return  the longest prefix of this sequence whose elements satisfy
-   *           the predicate <code>p</code>.
-   *  @note  Might return different results for different runs, unless this iterable is ordered
-   */
-  def takeWhile(p: A => Boolean): CC[A] = {
-    val b = newBuilder[A]
-    breakable {
-      for (x <- this) {
-        if (!p(x)) break
-        b += x
-      }
-    }
-    b.result
-  }
-
-  /** Returns the longest suffix of this sequence whose first element
-   *  does not satisfy the predicate <code>p</code>.
-   *
-   *  @param p the test predicate.
-   *  @return  the longest suffix of the sequence whose first element
-   *           does not satisfy the predicate <code>p</code>.
-   *  @note  Might return different results for different runs, unless this iterable is ordered
-   */
-  def dropWhile(p: A => Boolean): CC[A] = {
-    val b = newBuilder[A]
-    var go = false
-    for (x <- this) {
-      if (go) b += x
-      else if (!p(x)) { go = true; b += x }
-    }
-    b.result
-  }
-
- /** Returns a pair consisting of the longest prefix of the list whose
-   *  elements all satisfy the given predicate, and the rest of the list.
-   *
-   *  @param p the test predicate
-   *  @return  a pair consisting of the longest prefix of the list whose
-   *           elements all satisfy <code>p</code>, and the rest of the list.
-   *  @note  Might return different results for different runs, unless this iterable is ordered
-   */
-  def span(p: A => Boolean): (CC[A], CC[A]) = {
-    val l, r = newBuilder[A]
-    var toLeft = true
-    for (x <- this) {
-      toLeft = toLeft && p(x)
-      (if (toLeft) l else r) += x
-    }
-    (l.result, r.result)
-  }
-
-  /** Checks if the other iterable object contains the same elements as this one.
-   *
-   *  @note will not terminate for infinite-sized iterables.
-   *  @param that  the other iterable
-   *  @return true, iff both iterables contain the same elements.
-   *  @note  Might return different results for different runs, unless this iterable is ordered
-   */
-  def sameElements[B >: A](that: OrderedIterable[B]): Boolean = {
-    val these = this.elements
-    val those = that.elements
-    while (these.hasNext && those.hasNext && these.next() == those.next()) {}
-    !these.hasNext && !those.hasNext
-  }
-
-  /** A sub-sequence view  starting at index `from`
+  /** A sub-iterable view  starting at index `from`
    *  and extending up to (but not including) index `until`.
    *
    *  @param from   The index of the first element of the slice
    *  @param until  The index of the element following the slice
    *  @note  The difference between `view` and `slice` is that `view` produces
-   *         a view of the current sequence, whereas `slice` produces a new sequence.
+   *         a view of the current iterable, whereas `slice` produces a new iterable.
    *
    *  @note  Might return different results for different runs, unless this iterable is ordered
    *  @note view(from, to)  is equivalent to view.slice(from, to)

@@ -11,8 +11,7 @@
 
 package scalax.collection.mutable
 
-import generic.{SequenceFactory, SequenceTemplate}
-import generic.mutable.{Growable, Shrinkable}
+import generic._
 
 /* Factory object for `Buffer` trait */
 object Buffer extends SequenceFactory[Buffer] {
@@ -29,12 +28,14 @@ object Buffer extends SequenceFactory[Buffer] {
  *  @version 2.8
   */
 @cloneable
-trait Buffer[A] extends mutable.Sequence[A]
+trait Buffer[A] extends Sequence[A]
                    with SequenceTemplate[Buffer, A]
+                   with Addable[Buffer[A], A]
+                   with Subtractable[Buffer[A], A]
                    with Growable[A]
                    with Shrinkable[A]
 //      with Scriptable[Message[(Location, A)]]
-                   with CloneableCollection
+                   with Cloneable[Buffer[A]]
 {
 
 // Abstract methods from Vector:
@@ -83,6 +84,10 @@ trait Buffer[A] extends mutable.Sequence[A]
    */
   def +:(elem: A): this.type
 
+  /** Append a single element to this buffer and return the identity of the buffer
+   */
+  def +(elem: A): this.type = { +=(elem); this }
+
   /** Inserts new elements at the index <code>n</code>. Opposed to method
    *  <code>update</code>, this method will not replace an element with a
    *  one. Instead, it will insert a new element at index <code>n</code>.
@@ -114,7 +119,7 @@ trait Buffer[A] extends mutable.Sequence[A]
   }
 
   /** Removes a single element from this buffer, at its first occurrence.
-   *  If the list does not contain that element, it is unchanged
+   *  If the buffer does not contain that element, it is unchanged.
    *
    *  @param x  the element to remove.
    */
@@ -122,6 +127,13 @@ trait Buffer[A] extends mutable.Sequence[A]
     val i = indexOf(x)
     if (i != -1) remove(i)
   }
+
+  /** Removes a single element from this buffer and returns the identity
+   *  of the buffer. If the buffer does not contain that element, it is unchanged.
+   *
+   *  @param x  the element to remove.
+   */
+  def -(elem: A): this.type = { -=(elem); this }
 
   /** Prepend two ore more elements to this buffer and return
    *  the identity of the buffer.
@@ -234,12 +246,6 @@ trait Buffer[A] extends mutable.Sequence[A]
     }
   }
    */
-
-  /** Return a clone of this buffer.
-   *
-   *  @return a buffer with the same elements.
-   */
-  override def clone(): Buffer[A] = super.clone().asInstanceOf[Buffer[A]]
 
   /** Defines the prefix of the string representation.
    */

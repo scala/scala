@@ -11,16 +11,18 @@
 
 package scalax.collection.immutable
 
-import collection.generic._
+import generic._
 
 object Set extends generic.SetFactory[Set] {
   private val hashSeed = "Set".hashCode
-  def empty[A]: Set[A] = null // !!!
+  def empty[A]: Set[A] = new EmptySet[A]
 }
 
 trait Set[A] extends OrderedIterable[A]
                 with collection.Set[A]
                 with SetTemplate[Set, A] {
+
+  override def newBuilder[B]: Builder[Set, B] = Set.newBuilder[B]
 
   /** Compares this set with another object and returns true, iff the
    *  other object is also a set which contains the same elements as

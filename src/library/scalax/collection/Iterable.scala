@@ -13,6 +13,7 @@ package scalax.collection
 
 import generic._
 import collection.immutable.{List, Nil, ::}
+import annotation.unchecked.uncheckedVariance
 
 /** Collection classes mixing in this class provide a method
  *  <code>elements</code> which returns an iterator over all the
@@ -25,7 +26,7 @@ import collection.immutable.{List, Nil, ::}
  *  @owner   Martin Odersky
  *  @version 2.8
  */
-trait Iterable[+A] extends covariant.IterableTemplate[Iterable, A] { self =>
+trait Iterable[+A] extends IterableTemplate[Iterable, A @uncheckedVariance] { self =>
 
   /** Creates a view of this iterable @see Iterable.View
   def view: View[Iterable, A] = new View[Iterable, A] { // !!! Martin: We should maybe infer the type parameters here?
@@ -41,7 +42,7 @@ trait Iterable[+A] extends covariant.IterableTemplate[Iterable, A] { self =>
  *  @author  Martin Odersky
  *  @version 2.8
  */
-object Iterable extends covariant.IterableFactory[Iterable] {
+object Iterable extends IterableFactory[Iterable] with EmptyIterableFactory[Iterable] {
 
   /** The empty iterable */
   val empty: Iterable[Nothing] = Nil
@@ -76,16 +77,16 @@ object Iterable extends covariant.IterableFactory[Iterable] {
     }
   }
 
-  class IterableIterableOps[C[+B] <: Iterable[B] with covariant.IterableTemplate[C, B], A](self: C[C[A]]) {
+  class IterableIterableOps[C[+B] <: Iterable[B] with IterableTemplate[C, B @uncheckedVariance], A](self: C[C[A]]) {
     def flatten: C[A] = {
-      val b: Builder[C, A] = self.newBuilder[A]
+      val b: generic.Builder[C, A] = self.newBuilder[A]
       for (xs <- self)
         b ++= xs
       b.result
     }
 
     def transpose: C[C[A]] = {
-      val bs: Array[Builder[C, A]] = self.head.map(_ => self.newBuilder[A]).toArray
+      val bs: scala.Array[generic.Builder[C, A]] = self.head.map(_ => self.newBuilder[A]).toArray
       for (xs <- self) {
         var i = 0
         for (x <- xs) {
@@ -93,7 +94,6 @@ object Iterable extends covariant.IterableFactory[Iterable] {
           i += 1
         }
       }
-      type CC[B] = C[C[B]]
       val bb = self.newBuilder[C[A]]
       for (b <- bs) bb += b.result
       bb.result
@@ -117,16 +117,16 @@ object Iterable extends covariant.IterableFactory[Iterable] {
     new ComparableIterableOps(seq, cmp)
   implicit def numericIterableWrapper[A](seq: Iterable[A])(implicit num: Numeric[A]) =
     new NumericIterableOps(seq, num)
-  implicit def iterableIterableWrapper[C[+B] <: Iterable[B] with covariant.IterableTemplate[C, B], A](seq: C[C[A]]) =
+  implicit def iterableIterableWrapper[C[+B] <: Iterable[B] with IterableTemplate[C, B], A](seq: C[C[A]]) =
     new IterableIterableOps[C, A](seq)
   implicit def pairIterableWrapper[C[+B] <: Iterable[B], A1, A2](seq: C[(A1, A2)]) =
     new PairIterableOps[C, A1, A2](seq)
 
-  type View[+UC[B] <: Sequence[B], A] = IterableView[UC, A]
+  type View[A] = IterableView[UC, A] forSome { type UC[B] <: Iterable[B] }
 
   /** @deprecated use View instead
    */
-  @deprecated type Projection[A] = View[C, A] forSome { type C[B] <: Iterable[B] }
+  @deprecated type Projection[A] = View[A]
 
   /** The minimum element of a non-empty sequence of ordered elements
    *  @deprecated use seq.min instead

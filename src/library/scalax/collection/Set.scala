@@ -12,12 +12,13 @@ package scalax.collection
 
 import generic._
 
-trait Set[A] extends OrderedIterable[A] with SetTemplate[Set, A]
+trait Set[A] extends SetTemplate[Set, A]
 
-/* Factory object for `Sequence` class */
+/* Factory object for `Set` class */
 object Set extends IterableFactory[Set] {
   /** The empty set */
   def apply[A](args: A*): Set[A] = null // !!!
+
 }
 
 

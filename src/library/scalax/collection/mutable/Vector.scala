@@ -12,7 +12,7 @@ package scalax.collection.mutable
 
 import generic._
 
-trait Vector[A] extends Sequence[A] with collection.Vector[A] with generic.mutable.VectorTemplate[Vector, A]
+trait Vector[A] extends Sequence[A] with collection.Vector[A] with MutableVectorTemplate[Vector, A]
 
 /* Factory object for `Vector` class */
 object Vector extends SequenceFactory[Vector] {

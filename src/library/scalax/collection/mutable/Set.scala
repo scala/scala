@@ -12,14 +12,13 @@
 package scalax.collection.mutable
 
 import collection.generic._
-import collection.generic.mutable.{Growable, Shrinkable}
 
 /** The canonical factory methods for <a href="Set.html">mutable sets</a>.
  *  Currently these return <a href="HashSet.html">HashSet's</a>.
  */
 object Set extends generic.SetFactory[Set] {
   /** The empty map of this type; this is implemented as a hashtable */
-  def empty[A]: Set[A] = null // !!! new HashSet[A]
+  def empty[A]: Set[A] = new HashSet[A]
 }
 
 /** This class represents mutable sets. Concrete set implementations
@@ -32,13 +31,13 @@ object Set extends generic.SetFactory[Set] {
  *  @author Martin Odersky
  *  @version 2.8
  */
-@cloneable
-trait Set[A] extends OrderedIterable[A]
-                with collection.Set[A]
+trait Set[A] extends collection.Set[A]
                 with SetTemplate[Set, A]
+                with Addable[Set[A], A]
+                with Subtractable[Set[A], A]
                 with Growable[A]
                 with Shrinkable[A]
-                with Cloneable[A] {
+                with Cloneable[Set[A]] {
 self =>
 
   /** This method allows one to add or remove an element <code>elem</code>
@@ -51,7 +50,7 @@ self =>
     if (included) this += elem else this -= elem
   }
 
-  /** Add a new element to the set.
+  /** Adds a new element to the set.
    *
    *  @param elem the element to be added
    */
@@ -62,18 +61,17 @@ self =>
    */
   def -=(elem: A)
 
-  // Bridge methods to methods in Growable/Shrinkable;
-  // we can't directly inherit these because they override nothing.
+  /** Adds a new element to the set and returns the set itself.
+   *
+   *  @param elem the element to be added
+   */
+  def +(elem: A): this.type = { +=(elem); this }
 
-  override def - (elem: A): this.type = super.-(elem)
-  override def - (elem1: A, elem2: A, elems: A*): this.type = super.-(elem1, elem2, elems: _*)
-  override def -- (elems: collection.Iterable[A]): this.type = super.--(elems)
-  override def -- (elems: Iterator[A]): this.type = super.--(elems)
-
-  override def + (elem: A): this.type = super.+(elem)
-  override def + (elem1: A, elem2: A, elems: A*): this.type = super.+(elem1, elem2, elems: _*)
-  override def ++ (elems: collection.Iterable[A]): this.type = super.++(elems)
-  override def ++ (elems: Iterator[A]): this.type = super.++(elems)
+  /** Removed a new element from the set and returns the set itself.
+   *
+   *  @param elem the element to be added
+   */
+  def -(elem: A): this.type = { -=(elem); this }
 
   /** This method computes an intersection with set <code>that</code>.
    *  It removes all the elements that are not present in <code>that</code>.
@@ -90,14 +88,16 @@ self =>
   /** Removes all elements from the set. After this operation is completed,
    *  the set will be empty.
    */
-  def clear() { elements foreach -= }
+  def clear() { foreach(-=) }
+
+  override def clone(): Set[A] = { val b = newBuilder[A]; b ++= this; b.result }
 
   /** Send a message to this scriptable object.
    *
    *  @param cmd  the message to send.
    *  @throws <code>Predef.UnsupportedOperationException</code>
    *  if the message was not understood.
-  def <<(cmd: Message[A]): Unit = cmd match {
+   def <<(cmd: Message[A]): Unit = cmd match {
     case Include(elem) => this += elem
     case Remove(elem) => this -= elem
     case Reset() => clear

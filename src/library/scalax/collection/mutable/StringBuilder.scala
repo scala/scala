@@ -12,7 +12,6 @@
 package scalax.collection.mutable
 
 import scalax.collection.generic._
-import scalax.collection.generic.mutable.Growable
 import scalax.runtime._
 
 
