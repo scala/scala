@@ -18,6 +18,7 @@ import scala.collection.mutable.{HashSet, HashMap, ListBuffer}
 
 import symtab._
 import symtab.classfile.{PickleBuffer, Pickler}
+import dependencies.DependencyAnalysis
 import util.Statistics
 import plugins.Plugins
 import ast._
@@ -442,6 +443,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val runsRightAfter = None
   } with GenJVM
 
+  object dependencyAnalysis extends {
+    val global: Global.this.type = Global.this
+    val runsAfter = List("jvm")
+    val runsRightAfter = None
+  } with DependencyAnalysis
+
   // phaseName = "msil"
   object genMSIL extends {
     val global: Global.this.type = Global.this
@@ -519,6 +526,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     if (forJVM) {
       phasesSet += liftcode			       // generate reified trees
       phasesSet += genJVM			       // generate .class files
+      if (!dependencyAnalysis.off){
+        if(settings.debug.value){
+          println("Adding dependency analysis phase");
+        }
+        phasesSet += dependencyAnalysis
+      }
     }
     if (forMSIL) {
       phasesSet += genMSIL			       // generate .msil files
@@ -661,7 +674,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       else false
 
     def compileSources(_sources: List[SourceFile]) {
-      val sources = _sources.removeDuplicates // bug #1268, scalac confused by duplicated filenames
+      val sources = dependencyAnalysis.filter(_sources.removeDuplicates) // bug #1268, scalac confused by duplicated filenames
       if (reporter.hasErrors)
         return  // there is a problem already, e.g. a
                 // plugin was passed a bad option
@@ -721,6 +734,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       }
       for ((sym, file) <- symSource.elements) resetPackageClass(sym.owner)
       informTime("total", startTime)
+
+      dependencyAnalysis.writeToFile();
     }
 
     def compileLate(file: AbstractFile) {
