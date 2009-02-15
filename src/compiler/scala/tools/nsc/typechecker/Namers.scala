@@ -27,17 +27,20 @@ trait Namers { self: Analyzer =>
    *  2. The skolem is a method parameter which appears in parameter `tparams'
    */
   class DeSkolemizeMap(tparams: List[Symbol]) extends TypeMap {
-    def apply(tp: Type): Type = tp match {
-      case TypeRef(pre, sym, args)
-      if (sym.isTypeSkolem && (tparams contains sym.deSkolemize)) =>
-        mapOver(rawTypeRef(NoPrefix, sym.deSkolemize, args))
-      case PolyType(tparams1, restpe) =>
-        new DeSkolemizeMap(tparams1 ::: tparams).mapOver(tp)
-      case ClassInfoType(parents, decls, clazz) =>
-        val parents1 = List.mapConserve(parents)(this)
+    def apply(tp: Type): Type = if (tparams.isEmpty) tp
+    else {
+      tp match {
+        case TypeRef(pre, sym, args)
+        if (sym.isTypeSkolem && (tparams contains sym.deSkolemize)) =>
+          mapOver(rawTypeRef(NoPrefix, sym.deSkolemize, args))
+        case PolyType(tparams1, restpe) =>
+          new DeSkolemizeMap(tparams1 ::: tparams).mapOver(tp)
+        case ClassInfoType(parents, decls, clazz) =>
+          val parents1 = List.mapConserve(parents)(this)
         if (parents1 eq parents) tp else ClassInfoType(parents1, decls, clazz)
-      case _ =>
-        mapOver(tp)
+        case _ =>
+          mapOver(tp)
+      }
     }
   }
   private class NormalNamer(context : Context) extends Namer(context)
@@ -415,7 +418,7 @@ trait Namers { self: Analyzer =>
 // --- Lazy Type Assignment --------------------------------------------------
 
     def typeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
-      if (settings.debug.value) log("defining " + sym + Flags.flagsToString(sym.flags));
+      if (settings.debug.value) log("defining " + sym + Flags.flagsToString(sym.flags)+sym.locationString)
       val tp = typeSig(tree)
       tp match {
         case TypeBounds(lo, hi) =>

@@ -117,6 +117,7 @@ abstract class OverridingPairs {
      *     i = index(p)
      *     j = index(b)
      *     p isSubClass b
+     *     p.baseType(b) == self.baseType(b)
      */
     private val subParents = new Array[BitSet](size)
 
@@ -124,7 +125,11 @@ abstract class OverridingPairs {
         subParents(i) = new BitSet(size);
       for (p <- parents) {
         val pIndex = index(p.typeSymbol)
-        for (bc <- p.baseClasses) include(subParents(index(bc)), pIndex)
+        for (bc <- p.baseClasses)
+          if (p.baseType(bc) =:= self.baseType(bc))
+            include(subParents(index(bc)), pIndex)
+          else if (settings.debug.value)
+            log("SKIPPING "+p+" -> "+p.baseType(bc)+" / "+self.baseType(bc)+" from "+base)
       }
     }
 
