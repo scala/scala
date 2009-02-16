@@ -1,5 +1,5 @@
 package test;
-import scala.collection.immutable._;
+import scala.collection.immutable.ListSet
 import scala.collection.mutable._;
 trait TypeManagerXXX {
   trait TypedNode;

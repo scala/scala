@@ -1,4 +1,0 @@
-Test.scala:2: error: not found: value JavaClass
-  val x = JavaClass.InnerClass
-          ^
-one error found

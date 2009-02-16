@@ -1,0 +1,4 @@
+Test.scala:2: error: value InnerClass is not a member of object JavaClass
+  val x = JavaClass.InnerClass
+                    ^
+one error found

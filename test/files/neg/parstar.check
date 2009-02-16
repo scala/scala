@@ -1,0 +1,7 @@
+parstar.scala:8: error: *-parameter must come last
+    def m(a: A*, b: B ) = a.toArray
+          ^
+parstar.scala:9: error: *-parameter must come last
+    def m(a: A*, b: B*) = a.toArray
+          ^
+two errors found
