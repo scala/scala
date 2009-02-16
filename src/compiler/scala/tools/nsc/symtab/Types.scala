@@ -960,7 +960,7 @@ trait Types {
     override val isTrivial: Boolean = pre.isTrivial
     // override def isNullable = underlying.isNullable
     override def isNotNull = underlying.isNotNull
-    private var underlyingCache: Type = _
+    private var underlyingCache: Type = NoType
     private var underlyingPeriod = NoPeriod
     override def underlying: Type = {
       // this kind of caching here won't work in the IDE
