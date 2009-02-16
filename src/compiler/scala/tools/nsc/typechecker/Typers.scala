@@ -1311,6 +1311,15 @@ trait Typers { self: Analyzer =>
       }
       val (superConstr, superArgs) = decompose(rhs)
       assert(superConstr.symbol ne null)//debug
+
+      // an object cannot be allowed to pass a reference to itself to a superconstructor
+      // because of initialization issues; bug #473
+      for {
+        arg <- superArgs
+        val sym = arg.symbol
+        if sym != null && sym.isModule && (sym.info.baseClasses contains clazz)
+      } error(rhs.pos, "super constructor cannot be passed a self reference unless parameter is declared by-name")
+
       if (superConstr.symbol.isPrimaryConstructor) {
         val superClazz = superConstr.symbol.owner
         if (!superClazz.hasFlag(JAVA)) {
