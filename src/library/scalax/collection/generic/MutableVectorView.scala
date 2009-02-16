@@ -25,6 +25,8 @@ self =>
   /** refined from Iterable.View */
   val origin: Vector[_]
 
+  override def newBuilder[A] = underlying.newBuilder[A].asInstanceOf[Builder[Vector, A]]
+
   trait Transformed[B] extends super.Transformed[B] with MutableVectorView[UC, B] {
     override val origin = self
     override def elements: Iterator[B] = new Elements(0, length)

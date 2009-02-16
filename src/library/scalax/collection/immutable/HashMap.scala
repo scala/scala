@@ -37,14 +37,16 @@ object HashMap extends MapFactory[HashMap] {
 @serializable
 class HashMap[A, B] extends Map[A,B]
                        with MapTemplate[A, B, HashMap]
-                       with mutable.HashTable[A] {
+                       with collection.mutable.HashTable[A] {
 
-  type Entry = mutable.DefaultEntry[A, Any]
+  type Entry = collection.mutable.DefaultEntry[A, Any]
 
   protected var later: HashMap[A, B] = null
   protected var oldKey: A = _
   protected var oldValue: Option[B] = _
   protected var deltaSize: Int = _
+
+  override def empty[B] = HashMap.empty[A, B]
 
   def get(key: A): Option[B] = synchronized {
     var m = this
@@ -141,7 +143,7 @@ class HashMap[A, B] extends Map[A,B]
       }
     val ltable = last.table
     val s = ltable.length
-    table = new scala.Array[mutable.HashEntry[A, Entry]](s)
+    table = new scala.Array[collection.mutable.HashEntry[A, Entry]](s)
     var i = 0
     while (i < s) {
       table(i) = copy(ltable(i).asInstanceOf[Entry])

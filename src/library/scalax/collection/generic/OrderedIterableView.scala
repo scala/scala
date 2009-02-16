@@ -19,6 +19,8 @@ trait OrderedIterableView[+UC[/*+*/B] <: Iterable[B], /*+*/A] extends IterableVi
 
   val origin: OrderedIterable[_]
 
+  override def newBuilder[A] = underlying.newBuilder[A].asInstanceOf[Builder[OrderedIterable, A]]
+
   /** Builds a new view object. This method needs to be overridden in subclasses
    *  which refine in IterableView type
    */

@@ -26,8 +26,6 @@ trait Map[A, B]
      with Cloneable[Map[A, B]] {
 self =>
 
-  override def thisCC: Map[A, B] = this
-
   /** This method allows one to add a new mapping from <code>key</code>
    *  to <code>value</code> to the map. If the map already contains a
    *  mapping for <code>key</code>, it will be overridden by this

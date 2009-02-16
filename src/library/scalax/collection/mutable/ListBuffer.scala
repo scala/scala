@@ -41,8 +41,16 @@ final class ListBuffer[A]
   private var start: List[A] = Nil
   private var last0: ::[A] = _
   private var exported: Boolean = false
+  private var len = 0
 
   protected def underlying: Sequence[A] = start
+
+  override def newBuilder[B]: Builder[ListBuffer, B] =
+    new AddableBuilder[ListBuffer, B](new ListBuffer[B]) // !!! Adriaan: inference failure here
+
+  /** The current length of the buffer
+   */
+  override def length = len
 
   // Implementations of abstract methods in Buffer
 
@@ -59,7 +67,10 @@ final class ListBuffer[A]
       if (exported) copy()
       if (n == 0) {
         val newElem = new :: (x, start.tail);
-        if (last0 eq start) last0 = newElem
+        if (last0 eq start) {
+          last0 = newElem
+          len += 1
+        }
         start = newElem
       } else {
         var cursor = start
@@ -69,7 +80,10 @@ final class ListBuffer[A]
           i += 1
         }
         val newElem = new :: (x, cursor.tail.tail)
-        if (last0 eq cursor.tail) last0 = newElem
+        if (last0 eq cursor.tail) {
+          last0 = newElem
+          len += 1
+        }
         cursor.asInstanceOf[::[A]].tl = newElem
       }
     } catch {
@@ -91,6 +105,7 @@ final class ListBuffer[A]
       last0 = new :: (x, Nil)
       last1.tl = last0
     }
+    len += 1
   }
 
   /** Clears the buffer contents.
@@ -98,6 +113,7 @@ final class ListBuffer[A]
   def clear() {
     start = Nil
     exported = false
+    len = 0
   }
 
   /** Prepends a single element to this buffer. This operation takes constant
@@ -111,6 +127,7 @@ final class ListBuffer[A]
     val newElem = new :: (x, start)
     if (start.isEmpty) last0 = newElem
     start = newElem
+    len += 1
     this
   }
 
@@ -126,6 +143,7 @@ final class ListBuffer[A]
     try {
       if (exported) copy()
       var elems = iter.elements.toList.reverse
+      len += elems.length
       if (n == 0) {
         while (!elems.isEmpty) {
           val newElem = new :: (elems.head, start)
@@ -153,42 +171,39 @@ final class ListBuffer[A]
     }
   }
 
-  /** Removes the element on a given index position. This operation takes time linear in
+  /** Removes a given number of elements on a given index position. May take time linear in
    *  the buffer size.
    *
-   *  @param n  the index which refers to the element to delete.
-   *  @return   the updated array buffer.
-   *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
+   *  @param n         the index which refers to the first element to remove.
+   *  @param count     the number of elements to remove.
    */
   def remove(n: Int, count: Int) {
-    try {
-      if (exported) copy()
-      var old = start.head;
-      if (n == 0) {
-        var c = count
-        while (c > 0) {
-          start = start.tail
-          c -= 1
-        }
-      } else {
-        var cursor = start
-        var i = 1
-        while (i < n) {
-          cursor = cursor.tail
-          i += 1
-        }
-        var c = count
-        while (c > 0) {
-          if (last0 eq cursor.tail) last0 = cursor.asInstanceOf[::[A]]
-          cursor.asInstanceOf[::[A]].tl = cursor.tail.tail
-          c -= 1
-        }
+    if (exported) copy()
+    val n1 = n max 0
+    val count1 = count min (len - n1)
+    var old = start.head;
+    if (n1 == 0) {
+      var c = count1
+      while (c > 0) {
+        start = start.tail
+        c -= 1
       }
-      old
-    } catch {
-      case ex: Exception =>
-        throw new IndexOutOfBoundsException(n.toString())
-    }  }
+    } else {
+      var cursor = start
+      var i = 1
+      while (i < n1) {
+        cursor = cursor.tail
+        i += 1
+      }
+      var c = count1
+      while (c > 0) {
+        if (last0 eq cursor.tail) last0 = cursor.asInstanceOf[::[A]]
+        cursor.asInstanceOf[::[A]].tl = cursor.tail.tail
+        c -= 1
+      }
+    }
+    len -= count1
+  }
 
 // Implementation of abstract method in Builder
 
@@ -214,9 +229,8 @@ final class ListBuffer[A]
 
 // Overrides of methods in Buffer
 
-  /** Removes the element on a given index position. Takes time linear in
-   *  the buffer size (except for the first element, which is removed in constant
-   *  time).
+  /** Removes the element on a given index position. May take time linear in
+   *  the buffer size
    *
    *  @param  n  the index which refers to the element to delete.
    *  @return n  the element that was formerly at position <code>n</code>.
@@ -224,6 +238,7 @@ final class ListBuffer[A]
    *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   override def remove(n: Int): A = try {
+    if (n < 0 || n >= len) throw new IndexOutOfBoundsException(n.toString())
     if (exported) copy()
     var old = start.head;
     if (n == 0) {
@@ -239,29 +254,31 @@ final class ListBuffer[A]
       if (last0 eq cursor.tail) last0 = cursor.asInstanceOf[::[A]]
       cursor.asInstanceOf[::[A]].tl = cursor.tail.tail
     }
+    len -= 1
     old
-  } catch {
-    case ex: Exception =>
-      throw new IndexOutOfBoundsException(n.toString())
   }
 
-  /** Remove a single element from this buffer. This operation takes linear time
-   *  (except removing the first element, which is done  in constant time).
+  /** Remove a single element from this buffer. May take time linear in the buffer size.
    *
    *  @param x  the element to remove.
    */
-  override def -= (x: A) {
+  override def -= (elem: A) {
     if (exported) copy()
     if (start.isEmpty) {}
-    else if (start.head == x) start = start.tail
-    else {
+    else if (start.head == elem) {
+      start = start.tail
+      len -= 1
+    } else {
       var cursor = start
-      while (!cursor.tail.isEmpty && cursor.tail.head != x) { cursor = cursor.tail }
+      while (!cursor.tail.isEmpty && cursor.tail.head != elem) {
+        cursor = cursor.tail
+      }
       if (!cursor.tail.isEmpty) {
         val z = cursor.asInstanceOf[::[A]]
         if (z.tl == last0)
           last0 = z
         z.tl = cursor.tail.tail
+        len -= 1
       }
     }
   }

@@ -21,28 +21,27 @@ trait Namers { self: Analyzer =>
   import definitions._
   import posAssigner.atPos
 
-  /** Convert to corresponding type parameters all skolems which satisfy one
-   *  of the following two conditions:
-   *  1. The skolem is a parameter of a class or alias type
-   *  2. The skolem is a method parameter which appears in parameter `tparams'
+  /** Convert to corresponding type parameters all skolems of method parameters
+   *  which appear in `tparams`.
    */
   class DeSkolemizeMap(tparams: List[Symbol]) extends TypeMap {
-    def apply(tp: Type): Type = if (tparams.isEmpty) tp
-    else {
-      tp match {
-        case TypeRef(pre, sym, args)
-        if (sym.isTypeSkolem && (tparams contains sym.deSkolemize)) =>
-          mapOver(rawTypeRef(NoPrefix, sym.deSkolemize, args))
-        case PolyType(tparams1, restpe) =>
-          new DeSkolemizeMap(tparams1 ::: tparams).mapOver(tp)
-        case ClassInfoType(parents, decls, clazz) =>
-          val parents1 = List.mapConserve(parents)(this)
+    def apply(tp: Type): Type = tp match {
+      case TypeRef(pre, sym, args)
+      if (sym.isTypeSkolem && (tparams contains sym.deSkolemize)) =>
+//        println("DESKOLEMIZING "+sym+" in "+sym.owner)
+        mapOver(rawTypeRef(NoPrefix, sym.deSkolemize, args))
+/*
+      case PolyType(tparams1, restpe) =>
+        new DeSkolemizeMap(tparams1 ::: tparams).mapOver(tp)
+      case ClassInfoType(parents, decls, clazz) =>
+        val parents1 = List.mapConserve(parents)(this)
         if (parents1 eq parents) tp else ClassInfoType(parents1, decls, clazz)
-        case _ =>
-          mapOver(tp)
-      }
+*/
+      case _ =>
+        mapOver(tp)
     }
   }
+
   private class NormalNamer(context : Context) extends Namer(context)
   def newNamer(context : Context) : Namer = new NormalNamer(context)
 
@@ -273,8 +272,9 @@ trait Namers { self: Analyzer =>
       tskolems foreach (_.setInfo(ltp))
       tskolems
     }
+
     /** Replace type parameters with their TypeSkolems, which can later be deskolemized to the original type param
-     * (a skolem is a representation of a bound variable when viewed outside its scope)
+     * (a skolem is a representation of a bound variable when viewed inside its scope)
      */
     def skolemize(tparams: List[TypeDef]) {
       val tskolems = newTypeSkolems(tparams map (_.symbol))
@@ -285,9 +285,6 @@ trait Namers { self: Analyzer =>
       if (inIDE && (owner eq NoSymbol)) List()
       else if (owner.isTerm || owner.isPackageClass) List()
       else applicableTypeParams(owner.owner) ::: owner.typeParams
-
-    def deSkolemize: TypeMap = new DeSkolemizeMap(applicableTypeParams(context.owner))
-    // should be special path for IDE but maybe not....
 
     def enterSym(tree: Tree): Context = try {
 
@@ -921,7 +918,26 @@ trait Namers { self: Analyzer =>
             typer.reportTypeError(tree.pos, ex)
             ErrorType
         }
-      deSkolemize(result)
+      result match {
+        case PolyType(tparams, restpe)
+        if (!tparams.isEmpty && tparams.head.owner.isTerm ||
+            // Adriaan: The added conditon below is quite a hack. It seems that HK type parameters is relying
+            // on a pass that forces all infos in the type to get everything right.
+            // The problem is that the same pass causes cyclic reference errors in
+            // test pos/cyclics.scala. It turned out that deSkolemize is run way more often than necessary,
+            // ruinning it only when needed fixes the cuclic reference errors.
+            // But correcting deSkolemize broke HK types, because we don't do the traversal anymore.
+            // For the moment I made a special hack to do the traversal if we have HK type parameters.
+            // Maybe it's not a hack, then we need to document it better. But ideally, we should find
+            // a way to deal with HK types that's not dependent on accidental side
+            // effects like this.
+            tparams.exists(!_.typeParams.isEmpty)) =>
+          new DeSkolemizeMap(tparams) mapOver result
+        case _ =>
+//          println("not skolemizing "+result+" in "+context.owner)
+//          new DeSkolemizeMap(List()) mapOver result
+          result
+      }
     }
 
     /** Check that symbol's definition is well-formed. This means:

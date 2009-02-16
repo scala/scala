@@ -39,6 +39,8 @@ class ArrayBuffer[A](override protected val initialSize: Int)
 
   def clear() { reduceToSize(0) }
 
+  override def newBuilder[B]: Builder[ArrayBuffer, B] = new ArrayBuffer[B]
+
   /** Appends a single element to this buffer and returns
    *  the identity of the buffer. It takes constant time.
    *

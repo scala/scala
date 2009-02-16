@@ -27,6 +27,8 @@ self =>
   /** refined from Iterable.View */
   val origin: Sequence[_]
 
+  override def newBuilder[A] = underlying.newBuilder[A].asInstanceOf[Builder[Sequence, A]]
+
   trait Transformed[+B] extends SequenceView[UC, B] {
     val origin = self
     protected def asCC = asInstanceOf[SequenceView[UC, B]]

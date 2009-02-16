@@ -85,7 +85,7 @@ defined class peer
 
 -----
 class NPE[T <: NPE[T] @peer] // should not crash
-error: illegal cyclic reference involving class NPE
+defined class NPE
 
 -----
 def m = {
