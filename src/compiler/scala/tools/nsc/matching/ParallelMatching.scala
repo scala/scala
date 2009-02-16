@@ -816,6 +816,7 @@ trait ParallelMatching  {
           case _: Literal | _: Typed                => opat
           case o: Ident                             => mkTypedBind(vs, equalsCheck(o))  // Ident(_) != nme.WILDCARD
           case o: Select                            => mkTypedBind(vs, equalsCheck(o))
+          case o: This                              => opat
           // @pre for UnApply_TypeApply: is not right-ignoring (no star pattern) ; no exhaustivity check
           case UnApply_TypeApply(tptArg, xs)        => temp(j) setFlag Flags.TRANS_FLAG
                                                        makeBind(vs, normalizedListPattern(xs, tptArg.tpe))
