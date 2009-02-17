@@ -15,7 +15,8 @@ object Test extends TestConsoleMain {
   def suite = new TestSuite(
     Test1, //count, exists, filter, ..
     Test2, //#468
-    Test3  //#1691
+    Test3, //#1691
+    Test4  //#1721
   )
 }
 
@@ -124,5 +125,18 @@ object Test3 extends TestCase("t1691") with Assert {
     }
     assertEquals(List.range(10, 0, x => x - 2),
 		 List(10, 8, 6, 4, 2))
+  }
+}
+
+object Test4 extends TestCase("t1721") with Assert {
+  override def enableStackTrace = false
+  override def runTest {
+    assertTrue(List(1,2,3).endsWith(List(2,3)))
+    assertFalse(List(1,2,3).endsWith(List(1,3)))
+    assertTrue(List(1,2,3).endsWith(List()))
+    assertFalse(List(1,2,3).endsWith(List(0,1,2,3)))
+    assertTrue(List(1,2,3).endsWith(List(1,2,3)))
+    assertFalse(List().endsWith(List(1,2,3)))
+    assertTrue(List().endsWith(List()))
   }
 }
