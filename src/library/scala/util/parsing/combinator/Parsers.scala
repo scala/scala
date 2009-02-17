@@ -628,11 +628,9 @@ trait Parsers {
 
   /** A parser generator for non-empty repetitions.
    *
-   *  <p>rep1sep(first, p, q) starts by using `first', followed by repeatedly uses of `p' interleaved with `q'
-   *                to parse the input, until `p' fails. `first' must succeed (the result is a `List' of the
-   *                consecutive results of `first' and `p')</p>
+   *  <p>rep1sep(p, q) repeatedly applies `p' interleaved with `q' to parse the input, until `p' fails.
+   *                The parser `p' must succeed at least once.</p>
    *
-   * @param first a `Parser' that is to be applied to the first element of input
    * @param p a `Parser' that is to be applied successively to the input
    * @param q a `Parser' that parses the elements that separate the elements parsed by `p'
    *          (interleaved with `q')
