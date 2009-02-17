@@ -1522,6 +1522,10 @@ DISTRIBUTION
     <jar destfile="${dist.dir}/src/scalap-src.jar">
       <fileset dir="${src.dir}/scalap"/>
     </jar>
+    <!-- Needed for Maven distribution -->
+    <jar destfile="${dist.dir}/src/scala-partest-src.jar">
+      <fileset dir="${src.dir}/partest"/>
+    </jar>
   </target>
 
   <target name="dist.latest.unix" depends="dist.src" unless="os.win">

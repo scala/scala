@@ -186,6 +186,8 @@ MAIN DISTRIBUTION SBAZ
     <mvn-copy-lib mvn.artifact.name="scala-compiler"/>
     <mvn-copy-lib mvn.artifact.name="scala-dbc"/>
     <mvn-copy-lib mvn.artifact.name="scala-swing"/>
+    <mvn-copy-lib mvn.artifact.name="scala-partest"/>
+    <mvn-copy-lib mvn.artifact.name="scalap"/>
   </target>
 
   <target name="pack-maven.docs" depends="pack-maven.libs">

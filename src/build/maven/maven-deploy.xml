@@ -81,6 +81,8 @@
         <deploy-local name="scala-compiler" version="@{version}" repository="@{repository}" />
         <deploy-local name="scala-dbc" version="@{version}" repository="@{repository}" />
         <deploy-local name="scala-swing" version="@{version}" repository="@{repository}"/>
+      	<deploy-local name="scalap" version="@{version}" repository="@{repository}"/>
+      	<deploy-local name="scala-partest" version="@{version}" repository="@{repository}"/>
         <!-- scala swing api is included in main library api
           <extra-attachments>
             <artifact:attach type="jar" file="scala-swing/scala-swing-docs.jar" classifier="javadoc" />
@@ -123,6 +125,8 @@
         <deploy-remote name="scala-compiler" version="@{version}" repository="@{repository}" />
         <deploy-remote name="scala-dbc" version="@{version}" repository="@{repository}" />
         <deploy-remote name="scala-swing" version="@{version}" repository="@{repository}"/>
+      	<deploy-remote name="scalap" version="@{version}" repository="@{repository}"/>
+      	<deploy-remote name="scala-partest" version="@{version}" repository="@{repository}"/>
         <!-- scala swing api is included in main library api
           <extra-attachments>
             <artifact:attach type="jar" file="scala-swing/scala-swing-docs.jar" classifier="javadoc" />
