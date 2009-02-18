@@ -1214,7 +1214,14 @@ trait Parsers extends NewScanners with MarkupParsers {
         case LPAREN | LBRACE if (canApply) =>
           // again, position should be on idetifier, not (
           var pos = if (t.pos == NoPosition) i2p(inCurrentPos) else t.pos
-          simpleExprRest(atPos(pos) { Apply(stripParens(t), argumentExprs()) }, true)
+          simpleExprRest(atPos(pos) {
+            // look for anonymous function application like (f _)(x) and translate to (f _).apply(x), bug #460
+            val sel = t match {
+              case Parens(List(Typed(_, _: Function)))  => Select(stripParens(t), nme.apply)
+              case _                                    => stripParens(t)
+            }
+            Apply(sel, argumentExprs())
+          }, true)
         case USCORE =>
           atPos(inSkipToken) { Typed(stripParens(t), Function(List(), EmptyTree)) }
         case _ =>
