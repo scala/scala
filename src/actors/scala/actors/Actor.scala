@@ -437,14 +437,11 @@ trait Actor extends AbstractActor {
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
       if (null eq qel) {
         waitingFor = f.isDefinedAt
-        isSuspended = true
         suspendActor()
       } else {
         received = Some(qel.msg)
         sessions = qel.session :: sessions
       }
-      waitingFor = waitingForNone
-      isSuspended = false
     }
     val result = f(received.get)
     sessions = sessions.tail
@@ -477,10 +474,12 @@ trait Actor extends AbstractActor {
         }
         else {
           waitingFor = f.isDefinedAt
-          isSuspended = true
           received = None
           suspendActorFor(msec)
           if (received.isEmpty) {
+            // actor is not resumed because of new message
+            // therefore, waitingFor has not been updated, yet.
+            waitingFor = waitingForNone
             if (f.isDefinedAt(TIMEOUT)) {
               received = Some(TIMEOUT)
               sessions = this :: sessions
@@ -493,8 +492,6 @@ trait Actor extends AbstractActor {
         received = Some(qel.msg)
         sessions = qel.session :: sessions
       }
-      waitingFor = waitingForNone
-      isSuspended = false
     }
     val result = f(received.get)
     sessions = sessions.tail
@@ -601,7 +598,7 @@ trait Actor extends AbstractActor {
    * @return     the reply
    */
   def !?(msg: Any): Any = {
-    val replyCh = Actor.self(scheduler).freshReplyChannel
+    val replyCh = new Channel[Any](Actor.self(scheduler))
     send(msg, replyCh)
     replyCh.receive {
       case x => x
@@ -618,7 +615,7 @@ trait Actor extends AbstractActor {
    *              <code>Some(x)</code> where <code>x</code> is the reply
    */
   def !?(msec: Long, msg: Any): Option[Any] = {
-    val replyCh = Actor.self(scheduler).freshReplyChannel
+    val replyCh = new Channel[Any](Actor.self(scheduler))
     send(msg, replyCh)
     replyCh.receiveWithin(msec) {
       case TIMEOUT => None
@@ -692,11 +689,6 @@ trait Actor extends AbstractActor {
     sender ! msg
   }
 
-  private var rc: Channel[Any] = null
-  private[actors] def replyChannel = rc
-  private[actors] def freshReplyChannel: Channel[Any] =
-    { rc = new Channel[Any](this); rc }
-
   /**
    * Receives the next message from this actor's mailbox.
    */
@@ -712,7 +704,6 @@ trait Actor extends AbstractActor {
   private var onTimeout: Option[TimerTask] = None
   // accessed in Reaction
   private[actors] var isDetached = false
-  private var isWaiting = false
 
   // guarded by lock of this
   protected def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
@@ -729,8 +720,8 @@ trait Actor extends AbstractActor {
   private[actors] var kill: () => Unit = () => {}
 
   private def suspendActor() {
-    isWaiting = true
-    while (isWaiting) {
+    isSuspended = true
+    while (isSuspended) {
       try {
         wait()
       } catch {
@@ -745,8 +736,8 @@ trait Actor extends AbstractActor {
     val ts = Platform.currentTime
     var waittime = msec
     var fromExc = false
-    isWaiting = true
-    while (isWaiting) {
+    isSuspended = true
+    while (isSuspended) {
       try {
         fromExc = false
         wait(waittime)
@@ -756,17 +747,17 @@ trait Actor extends AbstractActor {
           val now = Platform.currentTime
           val waited = now-ts
           waittime = msec-waited
-          if (waittime < 0) { isWaiting = false }
+          if (waittime < 0) { isSuspended = false }
         }
       }
-      if (!fromExc) { isWaiting = false }
+      if (!fromExc) { isSuspended = false }
     }
     // links: check if we should exit
     if (shouldExit) exit()
   }
 
   private def resumeActor() {
-    isWaiting = false
+    isSuspended = false
     notify()
   }
 

@@ -157,7 +157,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    * @return     the reply
    */
   def !?(msg: Msg): Any = {
-    val replyCh = Actor.self.freshReplyChannel
+    val replyCh = new Channel[Any](Actor.self(recv.scheduler))
     recv.send(scala.actors.!(this, msg), replyCh)
     replyCh.receive {
       case x => x
@@ -174,7 +174,7 @@ class Channel[Msg] extends InputChannel[Msg] with OutputChannel[Msg] {
    *              <code>Some(x)</code> where <code>x</code> is the reply
    */
   def !?(msec: Long, msg: Msg): Option[Any] = {
-    val replyCh = Actor.self.freshReplyChannel
+    val replyCh = new Channel[Any](Actor.self(recv.scheduler))
     recv.send(scala.actors.!(this, msg), replyCh)
     replyCh.receiveWithin(msec) {
       case TIMEOUT => None
