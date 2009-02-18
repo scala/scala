@@ -1075,9 +1075,17 @@ trait Parsers extends NewScanners with MarkupParsers {
               Match(stripParens(t), cases)
             }
           }
-          if (inToken == ARROW && location != InTemplate) {
+          // in order to allow anonymous functions as statements (as opposed to expressions) inside
+          // templates, we have to disambiguate them from self type declarations - bug #1565
+          // The case still missed is unparenthesized single argument, like "x: Int => x + 1", which
+          // may be impossible to distinguish from a self-type and so remains an error.  (See #1564)
+          def lhsIsTypedParamList() = t match {
+            case Parens(xs) if xs forall (_.isInstanceOf[Typed]) => true
+            case _ => false
+          }
+          if (inToken == ARROW && (location != InTemplate || lhsIsTypedParamList)) {
             t = atPos(inSkipToken) {
-              Function(convertToParams(t), if (location == Local) expr() else block())
+              Function(convertToParams(t), if (location != InBlock) expr() else block())
             }
           }
           stripParens(t)
@@ -2501,10 +2509,10 @@ trait Parsers extends NewScanners with MarkupParsers {
           acceptStatSep()
         } else if (isExprIntro) {
           stats += statement(InBlock)
-          if (inToken != RBRACE && inToken != CASE) acceptStatSep()
+          if (inToken != RBRACE && inToken != CASE && inToken != EOF) acceptStatSep()
         } else if (isDefIntro || isLocalModifier || in.token == AT) {
           stats ++= localDef
-          if (inToken == RBRACE || inToken == CASE) {
+          if (inToken == RBRACE || inToken == CASE || inToken == EOF) {
             syntaxError("block must end in result expression, not in definition", false)
             stats += Literal(()).setPos(inCurrentPos)
           } else acceptStatSep()
