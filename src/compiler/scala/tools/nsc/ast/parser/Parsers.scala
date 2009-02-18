@@ -796,8 +796,18 @@ trait Parsers extends NewScanners with MarkupParsers {
       }
       newLineOptWhenFollowedBy(LBRACE)
       atPos(pos) {
-        if (inToken == LBRACE)
+        if (inToken == LBRACE) {
+          // Warn if they are attempting to refine Unit; we can't be certain it's
+          // scala.Unit they're refining because at this point all we have is an
+          // identifier, but at a later stage we lose the ability to tell an empty
+          // refinement from no refinement at all.  See bug #284.
+          for (Ident(name) <- ts) name.toString match {
+            case "Unit" | "scala.Unit"  =>
+              warning("Detected apparent refinement of Unit; are you missing an '=' sign?")
+            case _ =>
+          }
           CompoundTypeTree(Template(ts.toList, emptyValDef, refinement()))
+        }
         else
           makeIntersectionTypeTree(ts.toList)
       }

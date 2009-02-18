@@ -1,0 +1,8 @@
+bug284.scala:2: warning: Detected apparent refinement of Unit; are you missing an '=' sign?
+    def f1(a: T): Unit { }
+                       ^
+bug284.scala:6: error: eof expected but '}' found.
+}
+^
+one warning found
+one error found
