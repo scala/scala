@@ -625,9 +625,9 @@ trait JavaParsers extends JavaScanners {
         Import(Ident(cdef.name.toTermName), List((nme.WILDCARD, null)))
       }
 
+    // create companion object even if it has no statics, so import A._ works; bug #1700
     def addCompanionObject(statics: List[Tree], cdef: ClassDef): List[Tree] =
-      if (statics.isEmpty) List(cdef)
-      else List(makeCompanionObject(cdef, statics), importCompanionObject(cdef), cdef)
+      List(makeCompanionObject(cdef, statics), importCompanionObject(cdef), cdef)
 
     def importDecl(): List[Tree] = {
       accept(IMPORT)
