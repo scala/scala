@@ -208,6 +208,11 @@ abstract class RefChecks extends InfoTransform {
             (ob == RootClass || ob == NoSymbol || !ob.hasTransOwner(mb) ||
              (other hasFlag PROTECTED) && !(member hasFlag PROTECTED))) {
           overrideAccessError()
+        }
+        else if (other.isClass || other.isModule) {
+          overrideError("cannot be used here - classes and objects cannot be overridden");
+        } else if (!other.isDeferred && (member.isClass || member.isModule)) {
+          overrideError("cannot be used here - classes and objects can only override abstract types");
         } else if (other hasFlag FINAL) { // (1.2)
           overrideError("cannot override final member");
         } else if (!other.isDeferred && !(member hasFlag (OVERRIDE | ABSOVERRIDE | SYNTHETIC))) { // (1.3), SYNTHETIC because of DEVIRTUALIZE
