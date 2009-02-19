@@ -344,7 +344,7 @@ trait JavaParsers extends JavaScanners {
      */
     def annotation() {
       val pos = in.currentPos
-      var t = typ()
+      var t = qualId()
       if (in.token == LPAREN) { skipAhead(); accept(RPAREN) }
       else if (in.token == LBRACE) { skipAhead(); accept(RBRACE) }
     }
