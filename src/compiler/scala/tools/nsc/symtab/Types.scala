@@ -3478,10 +3478,10 @@ A type's typeSymbol should never be inspected directly.
             var e1 = s1.lookupEntry(sym2.name)
             (e1 ne null) && {
               val substSym = sym2.info.substThis(sym2.owner, e1.sym.owner.thisType)
-              var isEqual = e1.sym.info =:= substSym
+              var isEqual = false
               while (!isEqual && (e1 ne null)) {
-                e1 = s1.lookupNextEntry(e1)
                 isEqual = e1.sym.info =:= substSym
+                e1 = s1.lookupNextEntry(e1)
               }
               isEqual
             }
