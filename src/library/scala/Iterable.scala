@@ -378,7 +378,7 @@ trait Iterable[+A] {
    *
    *  @note will not terminate for infinite-sized collections.
    *  @param that  the other iterable object
-   *  @return true, iff both iterable objects contain the same elements.
+   *  @return true, iff both iterable objects contain the same elements in the same order.
    */
   def sameElements[B >: A](that: Iterable[B]): Boolean = {
     val ita = this.elements
