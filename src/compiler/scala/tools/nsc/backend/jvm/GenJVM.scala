@@ -203,14 +203,25 @@ abstract class GenJVM extends SubComponent {
             log("No mirror class for module with linked class: " +
                 c.symbol.fullNameString)
         }
-      } /*
-	    disabling for now because it breaks compiler. Try:
-        fsc symtab/Types.scala -- you'll get 9 errors in phase GenJVM that
-        class files are not found.
-        else if (c.symbol.linkedModuleOfClass != NoSymbol && !c.symbol.hasFlag(Flags.INTERFACE)) {
-        log("Adding forwarders to existing class " + c.symbol + " found in module " + c.symbol.linkedModuleOfClass)
-        addForwarders(jclass, c.symbol.linkedModuleOfClass.moduleClass)
-      } */
+      }
+      else {
+        // indiscriminate forwarding of methods causes issues with class generation, but
+        // we should at least forward a main method if we can -- bug #363
+        val mod = c.symbol.linkedModuleOfClass
+        lazy val mainSym = mod.info.decls.lookup(nme.main)
+
+        def mainForwarderNeeded() = {
+          mod != NoSymbol &&
+          !c.symbol.hasFlag(Flags.INTERFACE) &&
+          mainSym != NoSymbol &&
+          !c.symbol.info.nonPrivateMembers.exists(_.name == nme.main)
+        }
+
+        if (mainForwarderNeeded) {
+          log("Adding main method forwarder from " + c.symbol + " to " + mod.moduleClass)
+          addForwarder(jclass, mod.moduleClass, mainSym)
+        }
+      }
 
       clasz.fields foreach genField
       clasz.methods foreach genMethod
@@ -679,6 +690,44 @@ abstract class GenJVM extends SubComponent {
       clinit.emitRETURN()
     }
 
+    /** Add a forwarder for method m */
+    def addForwarder(jclass: JClass, module: Symbol, m: Symbol) {
+      import JAccessFlags._
+      val moduleName = javaName(module) // + "$"
+      val mirrorName = moduleName.substring(0, moduleName.length() - 1)
+      val paramJavaTypes = m.tpe.paramTypes map toTypeKind
+      val paramNames: Array[String] = new Array[String](paramJavaTypes.length);
+
+      for (val i <- 0.until(paramJavaTypes.length))
+        paramNames(i) = "x_" + i
+      val mirrorMethod = jclass.addNewMethod(ACC_PUBLIC | ACC_FINAL | ACC_STATIC,
+        javaName(m),
+        javaType(m.tpe.resultType),
+        javaTypes(paramJavaTypes),
+        paramNames);
+      val mirrorCode = mirrorMethod.getCode().asInstanceOf[JExtendedCode];
+      mirrorCode.emitGETSTATIC(moduleName,
+                               nme.MODULE_INSTANCE_FIELD.toString,
+                               new JObjectType(moduleName));
+      var i = 0
+      var index = 0
+      var argTypes = mirrorMethod.getArgumentTypes()
+      while (i < argTypes.length) {
+        mirrorCode.emitLOAD(index, argTypes(i))
+        index = index + argTypes(i).getSize()
+        i += 1
+      }
+
+      mirrorCode.emitINVOKEVIRTUAL(moduleName, mirrorMethod.getName(), mirrorMethod.getType().asInstanceOf[JMethodType])
+      mirrorCode.emitRETURN(mirrorMethod.getReturnType())
+
+      addRemoteException(mirrorMethod, m)
+      addGenericSignature(mirrorMethod, m)
+      val (throws, others) = splitAnnotations(m.attributes, ThrowsAttr)
+      addExceptionsAttribute(mirrorMethod, throws)
+      addAnnotations(mirrorMethod, others)
+    }
+
     /** Add forwarders for all methods defined in `module' that don't conflict with
      *  methods in the companion class of `module'. A conflict arises when a method
      *  with the same name is defined both in a class and its companion object (method
@@ -700,47 +749,12 @@ abstract class GenJVM extends SubComponent {
           && !conflictsIn(definitions.ObjectClass, m.name)
           && !conflictsIn(module.linkedClassOfModule, m.name))
 
-      import JAccessFlags._
       assert(module.isModuleClass)
       if (settings.debug.value)
         log("Dumping mirror class for object: " + module);
 
-      val moduleName = javaName(module) // + "$"
-      val mirrorName = moduleName.substring(0, moduleName.length() - 1)
-
-      for (m <- atPhase(currentRun.picklerPhase)(module.tpe.nonPrivateMembers); if shouldForward(m)) {
-        val paramJavaTypes = m.tpe.paramTypes map toTypeKind
-        val paramNames: Array[String] = new Array[String](paramJavaTypes.length);
-        for (val i <- 0.until(paramJavaTypes.length))
-          paramNames(i) = "x_" + i
-        val mirrorMethod = jclass.addNewMethod(ACC_PUBLIC | ACC_FINAL | ACC_STATIC,
-          javaName(m),
-          javaType(m.tpe.resultType),
-          javaTypes(paramJavaTypes),
-          paramNames);
-        val mirrorCode = mirrorMethod.getCode().asInstanceOf[JExtendedCode];
-        mirrorCode.emitGETSTATIC(moduleName,
-                                 nme.MODULE_INSTANCE_FIELD.toString,
-                                 new JObjectType(moduleName));
-        var i = 0
-        var index = 0
-        var argTypes = mirrorMethod.getArgumentTypes()
-        while (i < argTypes.length) {
-          mirrorCode.emitLOAD(index, argTypes(i))
-          index = index + argTypes(i).getSize()
-          i += 1
-        }
-
-        mirrorCode.emitINVOKEVIRTUAL(moduleName, mirrorMethod.getName(), mirrorMethod.getType().asInstanceOf[JMethodType])
-        mirrorCode.emitRETURN(mirrorMethod.getReturnType())
-
-        addRemoteException(mirrorMethod, m)
-        addGenericSignature(mirrorMethod, m)
-        val (throws, others) = splitAnnotations(m.attributes, ThrowsAttr)
-        addExceptionsAttribute(mirrorMethod, throws)
-        addAnnotations(mirrorMethod, others)
-      }
-
+      for (m <- atPhase(currentRun.picklerPhase)(module.tpe.nonPrivateMembers); if shouldForward(m))
+        addForwarder(jclass, module, m)
     }
 
     /** Dump a mirror class for a top-level module. A mirror class is a class containing

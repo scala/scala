@@ -330,6 +330,7 @@ trait StdNames {
     val length = newTermName("length")
     val lengthCompare = newTermName("lengthCompare")
     val lift_ = newTermName("lift")
+    val main = newTermName("main")
     val map = newTermName("map")
     val Mutable = newTypeName("Mutable")
     val n = newTermName("n")
