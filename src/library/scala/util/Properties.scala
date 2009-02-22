@@ -25,8 +25,19 @@ object Properties {
   private val props = {
     val props = new java.util.Properties
     val stream = classOf[Application].getResourceAsStream(propFilename)
-    if (stream != null)
-      props.load(stream)
+    try {
+      if (stream != null)
+        props.load(stream)
+    } finally {
+      if (stream != null) {
+        // close quietly
+        try {
+          stream.close()
+        } catch {
+          case _ =>
+        }
+      }
+    }
     props
   }
 
