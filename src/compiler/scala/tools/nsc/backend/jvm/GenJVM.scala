@@ -205,21 +205,10 @@ abstract class GenJVM extends SubComponent {
         }
       }
       else {
-        // indiscriminate forwarding of methods causes issues with class generation, but
-        // we should at least forward a main method if we can -- bug #363
-        val mod = c.symbol.linkedModuleOfClass
-        lazy val mainSym = mod.info.decls.lookup(nme.main)
-
-        def mainForwarderNeeded() = {
-          mod != NoSymbol &&
-          !c.symbol.hasFlag(Flags.INTERFACE) &&
-          mainSym != NoSymbol &&
-          !c.symbol.info.nonPrivateMembers.exists(_.name == nme.main)
-        }
-
-        if (mainForwarderNeeded) {
-          log("Adding main method forwarder from " + c.symbol + " to " + mod.moduleClass)
-          addForwarder(jclass, mod.moduleClass, mainSym)
+        // add static forwarders if there are no name conflicts; see bugs #363 and #1735
+        if (c.symbol.linkedModuleOfClass != NoSymbol && !c.symbol.hasFlag(Flags.INTERFACE)) {
+          log("Adding forwarders to existing class " + c.symbol + " found in module " + c.symbol.linkedModuleOfClass)
+          addForwarders(jclass, c.symbol.linkedModuleOfClass.moduleClass)
         }
       }
 
@@ -695,14 +684,15 @@ abstract class GenJVM extends SubComponent {
       import JAccessFlags._
       val moduleName = javaName(module) // + "$"
       val mirrorName = moduleName.substring(0, moduleName.length() - 1)
-      val paramJavaTypes = m.tpe.paramTypes map toTypeKind
+      val paramJavaTypes = m.info.paramTypes map toTypeKind
       val paramNames: Array[String] = new Array[String](paramJavaTypes.length);
 
       for (val i <- 0.until(paramJavaTypes.length))
         paramNames(i) = "x_" + i
+
       val mirrorMethod = jclass.addNewMethod(ACC_PUBLIC | ACC_FINAL | ACC_STATIC,
         javaName(m),
-        javaType(m.tpe.resultType),
+        javaType(m.info.resultType),
         javaTypes(paramJavaTypes),
         paramNames);
       val mirrorCode = mirrorMethod.getCode().asInstanceOf[JExtendedCode];
@@ -753,7 +743,7 @@ abstract class GenJVM extends SubComponent {
       if (settings.debug.value)
         log("Dumping mirror class for object: " + module);
 
-      for (m <- atPhase(currentRun.picklerPhase)(module.tpe.nonPrivateMembers); if shouldForward(m))
+      for (m <- module.info.nonPrivateMembers; if shouldForward(m))
         addForwarder(jclass, module, m)
     }
 
