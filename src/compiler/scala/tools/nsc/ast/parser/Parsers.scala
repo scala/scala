@@ -892,7 +892,7 @@ trait Parsers extends NewScanners with MarkupParsers {
         if (inToken == ARROW)
           atPos(inSkipToken) {
             AppliedTypeTree(
-                scalaDot(nme.BYNAME_PARAM_CLASS_NAME.toTypeName), List(typ()))
+                rootScalaDot(nme.BYNAME_PARAM_CLASS_NAME.toTypeName), List(typ()))
           }
         else {
           val t = typ()
@@ -900,7 +900,7 @@ trait Parsers extends NewScanners with MarkupParsers {
             inNextToken
             atPos(t.pos) {
               AppliedTypeTree(
-                scalaDot(nme.REPEATED_PARAM_CLASS_NAME.toTypeName), List(t))
+                rootScalaDot(nme.REPEATED_PARAM_CLASS_NAME.toTypeName), List(t))
             }
           } else t
         }
@@ -1762,7 +1762,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       if (inToken == ARROW)
         atPos(inSkipToken) {
           AppliedTypeTree(
-              scalaDot(nme.BYNAME_PARAM_CLASS_NAME.toTypeName), List(typ()))
+              rootScalaDot(nme.BYNAME_PARAM_CLASS_NAME.toTypeName), List(typ()))
         }
       else {
         val t = typ()
@@ -1770,7 +1770,7 @@ trait Parsers extends NewScanners with MarkupParsers {
           inNextToken
           atPos(t.pos) {
             AppliedTypeTree(
-              scalaDot(nme.REPEATED_PARAM_CLASS_NAME.toTypeName), List(t))
+              rootScalaDot(nme.REPEATED_PARAM_CLASS_NAME.toTypeName), List(t))
           }
         } else t
       }
@@ -1832,7 +1832,7 @@ trait Parsers extends NewScanners with MarkupParsers {
 
     def bound(tok: Int, default: Name): Tree =
       if (inToken == tok) { inNextToken; typ() }
-      else scalaDot(default.toTypeName)
+      else rootScalaDot(default.toTypeName)
 
 /* -------- DEFS ------------------------------------------- */
 
