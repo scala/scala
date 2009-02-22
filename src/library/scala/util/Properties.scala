@@ -35,7 +35,7 @@ object Properties {
     */
   val versionString: String = {
     val defaultString = "(unknown)"
-    "version " + props.getProperty("version.number")
+    "version " + props.getProperty("version.number", defaultString)
   }
 
   val copyrightString: String = {
