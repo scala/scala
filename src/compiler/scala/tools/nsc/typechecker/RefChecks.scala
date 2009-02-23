@@ -737,11 +737,13 @@ abstract class RefChecks extends InfoTransform {
     override def transform(tree: Tree): Tree = try {
 
       /* Check whether argument types conform to bounds of type parameters */
-      def checkBounds(pre: Type, owner: Symbol, tparams: List[Symbol], argtps: List[Type]): Unit = try {
-        typer.infer.checkBounds(tree.pos, pre, owner, tparams, argtps, "");
+      def checkBounds(pre: Type, owner: Symbol, tparams: List[Symbol], argtps: List[Type]): Unit =
+        checkBoundsWithPos(pre, owner, tparams, argtps, tree.pos)
+      def checkBoundsWithPos(pre: Type, owner: Symbol, tparams: List[Symbol], argtps: List[Type], pos: Position): Unit = try {
+        typer.infer.checkBounds(pos, pre, owner, tparams, argtps, "");
       } catch {
         case ex: TypeError =>
-          unit.error(tree.pos, ex.getMessage());
+          unit.error(pos, ex.getMessage());
           if (settings.explaintypes.value) {
             val bounds = tparams map (tp => tp.info.instantiateTypeParams(tparams, argtps).bounds)
             List.map2(argtps, bounds)((targ, bound) => explainTypes(bound.lo, targ))
@@ -810,10 +812,27 @@ abstract class RefChecks extends InfoTransform {
 
       def isCaseApply(sym : Symbol) = sym.isSourceMethod && sym.hasFlag(CASE) && sym.name == nme.apply
 
+      def checkTypeRef(tp: TypeRef, pos: Position) {
+        val TypeRef(pre, sym, args) = tp
+        checkDeprecated(sym, pos)
+        if (!tp.isHigherKinded)
+          checkBoundsWithPos(pre, sym.owner, sym.typeParams, args, pos)
+      }
+      def checkAnnotations(annots: List[Annotation]) {
+        for ((tp @ TypeRef(_,_,_), pos) <- annots.map(a => (a.tpe, a.pos)))
+          checkTypeRef(tp, pos)
+      }
+
       val savedLocalTyper = localTyper
       val savedCurrentApplication = currentApplication
       val sym = tree.symbol
       var result = tree
+
+      // if this tree can carry modifiers, make sure any annotations also conform to type bounds; bug #935
+      tree match {
+        case x: MemberDef => checkAnnotations(x.mods.annotations)
+        case _            =>
+      }
       tree match {
         case DefDef(mods, name, tparams, vparams, tpt, EmptyTree) if tree.symbol.hasAttribute(definitions.NativeAttr) =>
           tree.symbol.resetFlag(DEFERRED)
@@ -836,9 +855,7 @@ abstract class RefChecks extends InfoTransform {
             new TypeTraverser {
               def traverse(tp: Type) {
                 tp match {
-                  case TypeRef(pre, sym, args) =>
-                    checkDeprecated(sym, tree.pos)
-                    if (!tp.isHigherKinded) checkBounds(pre, sym.owner, sym.typeParams, args)
+                  case t: TypeRef => checkTypeRef(t, tree.pos)
                   case _ =>
                 }
               }
