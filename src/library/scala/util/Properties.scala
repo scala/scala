@@ -41,9 +41,9 @@ object Properties {
     props
   }
 
-  /** The version number of the jar this was loaded from, or
-    * "(unknown)" if it cannot be determined.
-    */
+  /** The version number of the jar this was loaded from plus "version " prefix,
+   * or "version (unknown)" if it cannot be determined.
+   */
   val versionString: String = {
     val defaultString = "(unknown)"
     "version " + props.getProperty("version.number", defaultString)
