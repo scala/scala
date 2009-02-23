@@ -54,6 +54,16 @@ trait Typers { self: Analyzer =>
       super.traverse(tree)
     }
   }
+/* needed for experimental version where eraly types can be type arguments
+  class EarlyMap(clazz: Symbol) extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case TypeRef(NoPrefix, sym, List()) if (sym hasFlag PRESUPER) =>
+        TypeRef(ThisType(clazz), sym, List())
+      case _ =>
+        mapOver(tp)
+    }
+  }
+*/
   // IDE hooks
   def newTyper(context: Context): Typer = new NormalTyper(context)
   private class NormalTyper(context : Context) extends Typer(context)
@@ -522,7 +532,8 @@ trait Typers { self: Analyzer =>
       (xtypes ||
       (pt.isStable ||
        (mode & QUALmode) != 0 && !tree.symbol.isConstant ||
-       pt.typeSymbol.isAbstractType && pt.bounds.lo.isStable && !(tree.tpe <:< pt)))
+       pt.typeSymbol.isAbstractType && pt.bounds.lo.isStable && !(tree.tpe <:< pt)) ||
+       pt.typeSymbol.isRefinementClass && !(tree.tpe <:< pt))
 
     /** Make symbol accessible. This means:
      *  If symbol refers to package object, insert `.package` as second to last selector.
@@ -1011,6 +1022,14 @@ trait Typers { self: Analyzer =>
           case _ =>
             if (!supertparams.isEmpty) error(supertpt.pos, "missing type arguments")
         }
+/* experimental: early types as type arguments
+        val hasEarlyTypes = templ.body exists (treeInfo.isEarlyTypeDef)
+        val earlyMap = new EarlyMap(clazz)
+        List.mapConserve(supertpt :: mixins){ tpt =>
+          val tpt1 = checkNoEscaping.privates(clazz, tpt)
+          if (hasEarlyTypes) tpt1 else tpt1 setType earlyMap(tpt1.tpe)
+        }
+*/
 
         //Console.println("parents("+clazz") = "+supertpt :: mixins);//DEBUG
         List.mapConserve(supertpt :: mixins)(tpt => checkNoEscaping.privates(clazz, tpt))
@@ -1082,6 +1101,14 @@ trait Typers { self: Analyzer =>
 
       if (!parents.isEmpty && !parents.head.tpe.isError)
         for (p <- parents) validateParentClass(p, parents.head.tpe.typeSymbol)
+
+/*
+      if (settings.Xshowcls.value != "" &&
+          settings.Xshowcls.value == context.owner.fullNameString)
+        println("INFO "+context.owner+
+                ", baseclasses = "+(context.owner.info.baseClasses map (_.fullNameString))+
+                ", lin = "+(context.owner.info.baseClasses map (context.owner.thisType.baseType)))
+*/
     }
 
     def checkFinitary(classinfo: ClassInfoType) {
@@ -2885,6 +2912,7 @@ trait Typers { self: Analyzer =>
             case Select(_, _) => copy.Select(tree, qual, name)
             case SelectFromTypeTree(_, _) => copy.SelectFromTypeTree(tree, qual, name)
           }
+          //if (name.toString == "Elem") println("typedSelect "+qual+":"+qual.tpe+" "+sym+"/"+tree1+":"+tree1.tpe)
           val result = stabilize(makeAccessible(tree1, sym, qual.tpe, qual), qual.tpe, mode, pt)
           def isPotentialNullDeference() = {
             phase.id <= currentRun.typerPhase.id &&

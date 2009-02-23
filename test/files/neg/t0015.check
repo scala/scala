@@ -3,9 +3,4 @@ t0015.scala:5: error: type mismatch;
  required: (Nothing) => ?
    Nil.map(f _)
            ^
-t0015.scala:21: error: type mismatch;
- found   : M
- required: M.this.selfType
-    f[Int](self: selfType)
-           ^
-two errors found
+one error found

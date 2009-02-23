@@ -1551,6 +1551,9 @@ trait Symbols {
       tpeCache
     }
 
+    // needed for experimentlal code for early types as type parameters
+    // def refreshType() { tpePeriod = NoPeriod }
+
     override def typeConstructor: Type = {
       if ((tyconCache eq null) || tyconRunId != currentRunId) {
         tyconCache = typeRef(if (hasFlag(PARAM | EXISTENTIAL)) NoPrefix else owner.thisType,

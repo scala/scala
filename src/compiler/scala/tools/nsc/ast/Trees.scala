@@ -576,9 +576,10 @@ trait Trees {
           ret.symbol = vd.symbol
         ret
        })
-    val (vdefs, rest) = body span treeInfo.isPreSuper
+    val (edefs, rest) = body span treeInfo.isEarlyDef
+    val (evdefs, etdefs) = edefs partition treeInfo.isEarlyValDef
     val (lvdefs, gvdefs) = List.unzip {
-      vdefs map {
+      evdefs map {
         case vdef @ ValDef(mods, name, tpt, rhs) =>
           (copy.ValDef(vdef, Modifiers(PRESUPER), name, tpt, rhs),
            copy.ValDef(vdef, mods, name, TypeTree(), EmptyTree))
@@ -599,7 +600,7 @@ trait Trees {
         List(
           DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(()))))
       }
-    Template(parents, self, gvdefs ::: List.flatten(vparamss) ::: constrs ::: rest)
+    Template(parents, self, gvdefs ::: List.flatten(vparamss) ::: constrs ::: etdefs ::: rest)
   }
 
   /** Block of expressions (semicolon separated expressions) */

@@ -2,7 +2,7 @@
  * Copyright 2005-2009 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id$
+// $Id: Namers.scala 17114 2009-02-15 16:43:36Z odersky $
 
 package scala.tools.nsc.typechecker
 
@@ -15,7 +15,7 @@ import symtab.Flags._
  *
  *  @author Martin Odersky
  *  @version 1.0
- */
+ */ 
 trait Namers { self: Analyzer =>
   import global._
   import definitions._
@@ -26,7 +26,7 @@ trait Namers { self: Analyzer =>
    */
   class DeSkolemizeMap(tparams: List[Symbol]) extends TypeMap {
     def apply(tp: Type): Type = tp match {
-      case TypeRef(pre, sym, args)
+      case TypeRef(pre, sym, args) 
       if (sym.isTypeSkolem && (tparams contains sym.deSkolemize)) =>
 //        println("DESKOLEMIZING "+sym+" in "+sym.owner)
         mapOver(rawTypeRef(NoPrefix, sym.deSkolemize, args))
@@ -37,7 +37,7 @@ trait Namers { self: Analyzer =>
         val parents1 = List.mapConserve(parents)(this)
         if (parents1 eq parents) tp else ClassInfoType(parents1, decls, clazz)
 */
-      case _ =>
+      case _ => 
         mapOver(tp)
     }
   }
@@ -50,22 +50,22 @@ trait Namers { self: Analyzer =>
   def resetNamer() {
     caseClassOfModuleClass.clear
   }
-
+  
   abstract class Namer(val context: Context) {
 
     val typer = newTyper(context)
 
     def setPrivateWithin[Sym <: Symbol](tree: Tree, sym: Sym, mods: Modifiers): Sym = {
-      if (!mods.privateWithin.isEmpty)
+      if (!mods.privateWithin.isEmpty) 
         sym.privateWithin = typer.qualifyingClassContext(tree, mods.privateWithin, true).owner
       sym
     }
 
-    def inConstructorFlag: Long =
+    def inConstructorFlag: Long = 
       if (context.owner.isConstructor && !context.inConstructorSuffix || context.owner.isEarly) INCONSTRUCTOR
       else 0l
 
-    def moduleClassFlags(moduleFlags: Long) =
+    def moduleClassFlags(moduleFlags: Long) = 
       (moduleFlags & ModuleToClassFlags) | FINAL | inConstructorFlag
 
     def updatePosFlags(sym: Symbol, pos: Position, flags: Long): Symbol = {
@@ -76,7 +76,7 @@ trait Namers { self: Analyzer =>
       sym.flags = flags | lockedFlag
       if (sym.isModule && sym.moduleClass != NoSymbol)
         updatePosFlags(sym.moduleClass, pos, moduleClassFlags(flags))
-      if (sym.owner.isPackageClass &&
+      if (sym.owner.isPackageClass && 
           (sym.linkedSym.rawInfo.isInstanceOf[loaders.SymbolLoader] ||
            sym.linkedSym.rawInfo.isComplete && runId(sym.validTo) != currentRunId))
         // pre-set linked symbol to NoType, in case it is not loaded together with this symbol.
@@ -114,7 +114,7 @@ trait Namers { self: Analyzer =>
         newNamer(paramContext)
       }
       if (sym.isTerm) {
-        if (sym.hasFlag(PARAM) && sym.owner.isPrimaryConstructor)
+        if (sym.hasFlag(PARAM) && sym.owner.isPrimaryConstructor) 
           primaryConstructorParamNamer
         else if (sym.hasFlag(PARAMACCESSOR) && !inIDE)
           primaryConstructorParamNamer
@@ -126,7 +126,7 @@ trait Namers { self: Analyzer =>
       (!oldS.isSourceMethod ||
         nme.isSetterName(newS.name) ||
         newS.owner.isPackageClass) &&
-        !((newS.owner.isTypeParameter || newS.owner.isAbstractType) &&
+        !((newS.owner.isTypeParameter || newS.owner.isAbstractType) && 
           newS.name.length==1 && newS.name(0)=='_') //@M: allow repeated use of `_' for higher-order type params
     }
 
@@ -135,21 +135,21 @@ trait Namers { self: Analyzer =>
 
     private def doubleDefError(pos: Position, sym: Symbol) {
       context.error(pos,
-        sym.name.toString() + " is already defined as " +
-        (if (sym.hasFlag(SYNTHETIC))
-          "(compiler-generated) "+ (if (sym.isModule) "case class companion " else "")
+        sym.name.toString() + " is already defined as " + 
+        (if (sym.hasFlag(SYNTHETIC)) 
+          "(compiler-generated) "+ (if (sym.isModule) "case class companion " else "") 
          else "") +
         (if (sym.hasFlag(CASE)) "case class " + sym.name else sym.toString()))
     }
 
     private def inCurrentScope(m: Symbol): Boolean = {
-      if (context.owner.isClass) context.owner == m.owner
+      if (context.owner.isClass) context.owner == m.owner 
       else m.owner.isClass && context.scope == m.owner.info.decls
     }
 
     def enterInScope(sym: Symbol): Symbol = enterInScope(sym, context.scope)
 
-    def enterInScope(sym: Symbol, scope: Scope): Symbol = {
+    def enterInScope(sym: Symbol, scope: Scope): Symbol = { 
       // allow for overloaded methods
       if (!(sym.isSourceMethod && sym.owner.isClass && !sym.owner.isPackageClass)) {
         var prev = scope.lookupEntryWithContext(sym.name)(context.owner);
@@ -157,16 +157,16 @@ trait Namers { self: Analyzer =>
           var guess = prev
           while ((guess ne null) && (guess.sym ne sym)) guess = scope.lookupNextEntry(guess)
           if (guess != null) prev = guess
-          while (prev != null && (!prev.sym.hasRawInfo || !prev.sym.rawInfo.isComplete ||
+          while (prev != null && (!prev.sym.hasRawInfo || !prev.sym.rawInfo.isComplete || 
                  (prev.sym.sourceFile == null && sym.getClass == prev.sym.getClass))) {
             if (!prev.sym.hasRawInfo ||  prev.sym.rawInfo.isComplete) {
               Console.println("DITCHING: " + prev.sym)
             }
             scope unlink prev.sym
             prev = scope.lookupNextEntry(prev)
-          }
+          } 
           val sym0 = scope enter sym
-          if (sym0 ne sym) {
+          if (sym0 ne sym) { 
             Console.println("WEIRD: " + sym0 + " vs. " + sym + " " + sym0.id + " " + sym.id + " " + sym.sourceFile + " " + sym0.sourceFile)
           }
           if (prev != null && (sym0 ne prev.sym) && conflict(sym0,prev.sym)) {
@@ -183,13 +183,13 @@ trait Namers { self: Analyzer =>
     }
 
     def enterPackageSymbol(pos: Position, name: Name): Symbol = {
-      val (cscope, cowner) =
+      val (cscope, cowner) = 
         if (context.owner == EmptyPackageClass) (RootClass.info.decls, RootClass)
         else (context.scope, context.owner)
       val p: Symbol = cscope.lookupWithContext(name)(context.owner)
       if (p.isPackage && cscope == p.owner.info.decls) {
         p
-      } else {
+      } else { 
         val pkg = cowner.newPackage(pos, name)
         // IDE: newScope should be ok because packages are never destroyed.
         if (inIDE) assert(!pkg.moduleClass.hasRawInfo || !pkg.moduleClass.rawInfo.isComplete)
@@ -200,7 +200,7 @@ trait Namers { self: Analyzer =>
     }
 
     def enterClassSymbol(tree : ClassDef): Symbol = {
-      var c: Symbol = context.scope.lookupWithContext(tree.name)(context.owner);
+      var c: Symbol = context.scope.lookupWithContext(tree.name)(context.owner); 
       if (!inIDE && c.isType && c.owner.isPackageClass && context.scope == c.owner.info.decls && !currentRun.compiles(c)) {
         updatePosFlags(c, tree.pos, tree.mods.flags)
         setPrivateWithin(tree, c, tree.mods)
@@ -221,28 +221,28 @@ trait Namers { self: Analyzer =>
           assert(inIDE || !currentRun.compiles(clazz) || clazz.sourceFile == currentRun.symSource(c));
           currentRun.symSource(c) = clazz.sourceFile
         }
-      }
+      }  
       assert(c.name.toString.indexOf('(') == -1)
       c
     }
 
-    /** Enter a module symbol. The tree parameter can be either a module definition
+    /** Enter a module symbol. The tree parameter can be either a module definition 
      *  or a class definition */
     def enterModuleSymbol(tree : ModuleDef): Symbol = {
       // .pos, mods.flags | MODULE | FINAL, name
       var m: Symbol = context.scope.lookupWithContext(tree.name)(context.owner)
       val moduleFlags = tree.mods.flags | MODULE | FINAL
-      if (m.isModule && !m.isPackage && inCurrentScope(m) &&
+      if (m.isModule && !m.isPackage && inCurrentScope(m) && 
           ((!inIDE && !currentRun.compiles(m)) || (m hasFlag SYNTHETIC))) {
         updatePosFlags(m, tree.pos, moduleFlags)
         setPrivateWithin(tree, m, tree.mods)
         context.unit.synthetics -= m
-      } else {
+      } else {        
         m = context.owner.newModule(tree.pos, tree.name)
         m.setFlag(moduleFlags)
         m = setPrivateWithin(tree, m, tree.mods)
         m = enterInScope(m)
-
+        
         m.moduleClass.setFlag(moduleClassFlags(moduleFlags))
         setPrivateWithin(tree, m.moduleClass, tree.mods)
       }
@@ -273,7 +273,7 @@ trait Namers { self: Analyzer =>
       tskolems
     }
 
-    /** Replace type parameters with their TypeSkolems, which can later be deskolemized to the original type param
+    /** Replace type parameters with their TypeSkolems, which can later be deskolemized to the original type param 
      * (a skolem is a representation of a bound variable when viewed inside its scope)
      */
     def skolemize(tparams: List[TypeDef]) {
@@ -287,20 +287,20 @@ trait Namers { self: Analyzer =>
       else applicableTypeParams(owner.owner) ::: owner.typeParams
 
     def enterSym(tree: Tree): Context = try {
-
+      
       def finishWith(tparams: List[TypeDef]) {
         val sym = tree.symbol
         if (settings.debug.value) log("entered " + sym + " in " + context.owner + ", scope-id = " + context.scope.hashCode());
         var ltype = namerOf(sym).typeCompleter(tree)
         if (!tparams.isEmpty) {
           //@M! TypeDef's type params are handled differently
-          //@M e.g., in [A[x <: B], B], A and B are entered first as both are in scope in the definition of x
+          //@M e.g., in [A[x <: B], B], A and B are entered first as both are in scope in the definition of x 
           //@M x is only in scope in `A[x <: B]'
           if(!sym.isAbstractType) //@M TODO: change to isTypeMember ?
-            newNamer(context.makeNewScope(tree, sym)(FinishWithScopeKind)).enterSyms(tparams)
+            newNamer(context.makeNewScope(tree, sym)(FinishWithScopeKind)).enterSyms(tparams) 
           ltype = new PolyTypeCompleter(tparams, ltype, tree, sym, context) //@M
           if (sym.isTerm) skolemize(tparams)
-        }
+        } 
         setInfo(sym)(ltype)
       }
       def finish = finishWith(List())
@@ -323,16 +323,16 @@ trait Namers { self: Analyzer =>
               }
               caseClassOfModuleClass(m.moduleClass) = tree
             }
-          case tree @ ModuleDef(mods, name, _) =>
+          case tree @ ModuleDef(mods, name, _) => 
             tree.symbol = enterModuleSymbol(tree)
             tree.symbol.moduleClass.setInfo(namerOf(tree.symbol).moduleClassTypeCompleter((tree)))
             finish
-
+            
           case ValDef(mods, name, tp, rhs) =>
             if ((!context.owner.isClass ||
                  (mods.flags & (PRIVATE | LOCAL)) == (PRIVATE | LOCAL) ||
                  name.endsWith(nme.OUTER, nme.OUTER.length) ||
-                 context.unit.isJava) &&
+                 context.unit.isJava) && 
                 (mods.flags & LAZY) == 0) {
               tree.symbol = enterInScope(owner.newValue(tree.pos, name)
                 .setFlag(mods.flags))
@@ -340,7 +340,7 @@ trait Namers { self: Analyzer =>
             } else {
               // add getter and possibly also setter
               val accflags: Long = ACCESSOR |
-                (if ((mods.flags & MUTABLE) != 0) mods.flags & ~MUTABLE & ~PRESUPER
+                (if ((mods.flags & MUTABLE) != 0) mods.flags & ~MUTABLE & ~PRESUPER 
                  else mods.flags & ~PRESUPER | STABLE)
               if (nme.isSetterName(name))
                 context.error(tree.pos, "Names of vals or vars may not end in `_='")
@@ -355,9 +355,9 @@ trait Namers { self: Analyzer =>
                 setter = enterInScope(setter).asInstanceOf[TermSymbol]
                 setInfo(setter)(namerOf(setter).setterTypeCompleter(tree))
               }
-              tree.symbol =
-                if ((mods.flags & DEFERRED) == 0) {
-                  var vsym =
+              tree.symbol = 
+                if ((mods.flags & DEFERRED) == 0) { 
+                  var vsym = 
                     if (!context.owner.isClass) {
                       assert((mods.flags & LAZY) != 0) // if not a field, it has to be a lazy val
                       owner.newValue(tree.pos, name + "$lzy" ).setFlag(mods.flags | MUTABLE)
@@ -380,7 +380,7 @@ trait Namers { self: Analyzer =>
           case DefDef(mods, name, tparams, _, _, _) =>
             var sym = (owner.newMethod(tree.pos, name)).setFlag(mods.flags)
             setPrivateWithin(tree, sym, mods)
-            tree.symbol = enterInScope(sym)
+            tree.symbol = enterInScope(sym) 
             finishWith(tparams)
           case TypeDef(mods, name, tparams, _) =>
             var flags: Long = mods.flags
@@ -388,9 +388,9 @@ trait Namers { self: Analyzer =>
             var sym = new TypeSymbol(owner, tree.pos, name).setFlag(flags)
             setPrivateWithin(tree, sym, mods)
             tree.symbol = enterInScope(sym)
-            finishWith(tparams)
+            finishWith(tparams) 
           case DocDef(_, defn) =>
-            enterSym(defn)
+            enterSym(defn) 
           case imp @ Import(_, _) =>
             tree.symbol = NoSymbol.newImport(tree.pos)
             setInfo(tree.symbol)(namerOf(tree.symbol).typeCompleter(tree))
@@ -429,7 +429,7 @@ trait Namers { self: Analyzer =>
         case _ =>
       }
       sym.setInfo(tp)
-      if ((sym.isAliasType || sym.isAbstractType) && !(sym hasFlag PARAM) &&
+      if ((sym.isAliasType || sym.isAbstractType) && !(sym hasFlag PARAM) && 
           !typer.checkNonCyclic(tree.pos, tp))
         sym.setInfo(ErrorType) // this early test is there to avoid infinite baseTypes when
                                // adding setters and getters --> bug798
@@ -472,23 +472,23 @@ trait Namers { self: Analyzer =>
     }
 
     private def widenIfNotFinal(sym: Symbol, tpe: Type, pt: Type): Type = {
-      val getter =
+      val getter = 
         if (sym.isValue && sym.owner.isClass && (sym hasFlag PRIVATE))
-          sym.getter(sym.owner)
+          sym.getter(sym.owner) 
         else sym
       def isHidden(tp: Type): Boolean = tp match {
         case SingleType(pre, sym) =>
           (sym isLessAccessibleThan getter) || isHidden(pre)
         case ThisType(sym) =>
           sym isLessAccessibleThan getter
-        case p: SimpleTypeProxy =>
+        case p: SimpleTypeProxy => 
           isHidden(p.underlying)
         case _ =>
           false
       }
       val tpe1 = tpe.deconst
       val tpe2 = tpe1.widen
-      if ((sym.isVariable || sym.isMethod && !(sym hasFlag ACCESSOR)))
+      if ((sym.isVariable || sym.isMethod && !(sym hasFlag ACCESSOR))) 
         if (tpe2 <:< pt) tpe2 else tpe1
       else if (isHidden(tpe)) tpe2
       else if (!(sym hasFlag FINAL)) tpe1
@@ -503,8 +503,8 @@ trait Namers { self: Analyzer =>
           setPrivateWithin(param, sym, param.mods)
           sym = enterInScope(sym).asInstanceOf[TermSymbol]
           if (!sym.hasRawInfo || sym.rawInfo.isComplete)
-            setInfo(sym)(typeCompleter(param))
-          sym
+            setInfo(sym)(typeCompleter(param))  
+          sym  
         } else param.symbol = setInfo(
           enterInScope{
             val sym = owner.newValueParameter(param.pos, param.name).
@@ -512,7 +512,7 @@ trait Namers { self: Analyzer =>
             setPrivateWithin(param, sym, param.mods)
           })(typeCompleter(param))
         param.symbol
-      }
+      } 
       vparamss.map(_.map(enterValueParam))
     }
 
@@ -520,15 +520,15 @@ trait Namers { self: Analyzer =>
       val clazz = context.owner
       def checkParent(tpt: Tree): Type = {
         val tp = tpt.tpe
-        if (tp.typeSymbol == context.owner) {
+        if (tp.typeSymbol == context.owner) { 
           context.error(tpt.pos, ""+tp.typeSymbol+" inherits itself")
-          AnyRefClass.tpe
+          AnyRefClass.tpe 
         } else if (tp.isError) {
           AnyRefClass.tpe
         } else {
           tp
         }
-      }
+      }          
       def enterSelf(self: ValDef) {
         if (!self.tpt.isEmpty) {
           clazz.typeOfThis = selfTypeCompleter(self.tpt)
@@ -547,50 +547,13 @@ trait Namers { self: Analyzer =>
           self.symbol = context.scope enter self.symbol
         }
       }
-
-      /* experimental code for allowiong early types as type parameters
-      val earlyTypes = templ.body filter (treeInfo.isEarlyTypeDef)
-
-      val parentTyper =
-        if (earlyTypes.isEmpty) typer
-        else {
-          val earlyContext = context.outer.makeNewScope(context.tree, context.outer.owner.newLocalDummy(templ.pos))(InnerScopeKind)
-          newNamer(earlyContext).enterSyms(earlyTypes)
-          newTyper(earlyContext).typedStats(earlyTypes, context.owner)
-
-          val parentContext = context.makeNewScope(context.tree, context.owner)(InnerScopeKind)
-          for (etdef <- earlyTypes) parentContext.scope enter etdef.symbol
-          newTyper(parentContext)
-        }
-      var parents = parentTyper.parentTypes(templ) map checkParent
-      if (!earlyTypes.isEmpty) {
-        val earlyMap = new EarlyMap(context.owner)
-        for (etdef <- earlyTypes) {
-          val esym = etdef.symbol
-          esym.owner = context.owner
-          esym.asInstanceOf[TypeSymbol].refreshType()
-          esym setInfo earlyMap(esym.info)
-        }
-
-/*
-        println("earlies: "+(earlyTypes map (_.symbol)))
-        println("earlies: "+(earlyTypes map (_.symbol.tpe)))
-        println("earlies: "+(earlyTypes map (_.symbol.info)))
-        println("parents: "+parents)
-        println(templ)
-
-*/
-
-      }
-*/
       var parents = typer.parentTypes(templ) map checkParent
       enterSelf(templ.self)
       val decls = newClassScope(clazz)
-//      for (etdef <- earlyTypes) decls enter etdef.symbol
       val templateNamer = newNamer(context.make(templ, clazz, decls))
         .enterSyms(templ.body)
 
-      /* add overridden virtuals to parents
+      /* add overridden virtuals to parents 
       val overridden = clazz.overriddenVirtuals
       if (!overridden.isEmpty)
         parents = parents ::: ( overridden map (
@@ -600,18 +563,18 @@ trait Namers { self: Analyzer =>
       // check that virtual classses are only defined as members of templates
       if (clazz.isVirtualClass && !clazz.owner.isClass)
         context.error(
-          clazz.pos,
+          clazz.pos, 
           "virtual traits and their subclasses must be defined as members of some other class")
 
       // make subclasses of virtual classes virtual as well; check that
       // they are defined in same scope.
-      val virtualParents = parents map (_.typeSymbol) filter (_.isVirtualClass)
+      val virtualParents = parents map (_.typeSymbol) filter (_.isVirtualClass) 
       virtualParents find {
-        vp => !(clazz.owner.isClass && (clazz.owner isSubClass vp.owner))
+        vp => !(clazz.owner.isClass && (clazz.owner isSubClass vp.owner)) 
       } match {
         case Some(vp) =>
           context.error(
-            clazz.pos,
+            clazz.pos, 
             "subclass of virtual "+vp+
             " needs to be defined at same level,\nas member of "+vp.owner)
         case None =>
@@ -619,7 +582,7 @@ trait Namers { self: Analyzer =>
       }
 	  */
 
-      // add apply and unapply methods to companion objects of case classes,
+      // add apply and unapply methods to companion objects of case classes, 
       // unless they exist already
       Namers.this.caseClassOfModuleClass get clazz match {
         case Some(cdef) =>
@@ -637,18 +600,18 @@ trait Namers { self: Analyzer =>
           }
         case None =>
       }
-      ClassInfoType(parents, decls, clazz)
+      ClassInfoType(parents, decls, clazz)    
     }
 
-    private def classSig(tparams: List[TypeDef], impl: Template): Type =
+    private def classSig(tparams: List[TypeDef], impl: Template): Type = 
       polyType(typer.reenterTypeParams(tparams), templateSig(impl))
-
+    
     private def methodSig(tparams: List[TypeDef], vparamss: List[List[ValDef]],
                           tpt: Tree, rhs: Tree): Type = {
-      val meth = context.owner
+      val meth = context.owner 
 
       val tparamSyms = typer.reenterTypeParams(tparams)
-      var vparamSymss =
+      var vparamSymss = 
         if (inIDE && meth.isPrimaryConstructor) {
           // @S: because they have already been entered this way....
 
@@ -661,11 +624,11 @@ trait Namers { self: Analyzer =>
         tpt setPos meth.pos
       }
 
-      if (onlyPresentation && methodArgumentNames != null)
+      if (onlyPresentation && methodArgumentNames != null) 
         methodArgumentNames(meth) = vparamss.map(_.map(_.symbol));
 
       def convertToDeBruijn(vparams: List[Symbol], level: Int): TypeMap = new TypeMap {
-	def debruijnFor(param: Symbol) =
+	def debruijnFor(param: Symbol) = 
 	  DeBruijnIndex(level, vparams indexOf param)
         def apply(tp: Type) = {
           tp match {
@@ -675,12 +638,12 @@ trait Namers { self: Analyzer =>
                 if (sym hasFlag IMPLICIT) {
                   context.error(sym.pos, "illegal type dependence on implicit parameter")
                   ErrorType
-                } else
+                } else 
 */
 		debruijnFor(sym)
               } else tp
             case MethodType(formals, restpe) =>
-              val formals1 = List.mapConserve(formals)(this)
+              val formals1 = List.mapConserve(formals)(this) 
               val restpe1 = convertToDeBruijn(vparams, level + 1)(restpe)
               if ((formals1 eq formals) && (restpe1 eq restpe)) tp
               else copyMethodType(tp, formals1, restpe1)
@@ -694,7 +657,7 @@ trait Namers { self: Analyzer =>
 	    tree match {
 	      case Ident(name) if (vparams contains tree.symbol) =>
 	        val dtpe = debruijnFor(tree.symbol)
-	        val dsym =
+	        val dsym = 
 		    newLocalDummy(context.owner, tree.symbol.pos)
 		      .newValue(tree.symbol.pos, name)
 
@@ -714,9 +677,9 @@ trait Namers { self: Analyzer =>
             case SingleType(_, sym) =>
               if (sym.owner == meth && (vparamSymss exists (_ contains sym)))
                 context.error(
-                  sym.pos,
+                  sym.pos, 
                   "illegal dependent method type"+
-                  (if (settings.Xexperimental.value)
+                  (if (settings.Xexperimental.value) 
                      ": parameter appears in the type of another parameter in the same section or an earlier one"
                    else ""))
             case _ =>
@@ -725,20 +688,20 @@ trait Namers { self: Analyzer =>
           this
         }
       }
-
+      
       def makeMethodType(vparams: List[Symbol], restpe: Type) = {
-        val formals = vparams map (vparam =>
+        val formals = vparams map (vparam => 
           if (meth hasFlag JAVA) objToAny(vparam.tpe) else vparam.tpe)
         val restpe1 = convertToDeBruijn(vparams, 1)(restpe)
-        if (!vparams.isEmpty && vparams.head.hasFlag(IMPLICIT))
+        if (!vparams.isEmpty && vparams.head.hasFlag(IMPLICIT)) 
           ImplicitMethodType(formals, restpe1)
         else if (meth hasFlag JAVA) JavaMethodType(formals, restpe1)
         else MethodType(formals, restpe1)
       }
 
-      def thisMethodType(restpe: Type) =
+      def thisMethodType(restpe: Type) = 
         polyType(
-          tparamSyms,
+          tparamSyms, 
           if (vparamSymss.isEmpty) PolyType(List(), restpe)
           else checkDependencies((vparamSymss :\ restpe) (makeMethodType)))
 
@@ -775,7 +738,7 @@ trait Namers { self: Analyzer =>
           resultPt match {
             case PolyType(List(), rtpe) => resultPt = rtpe
             case MethodType(List(), rtpe) => resultPt = rtpe
-            case _ =>
+            case _ => 
           }
           if (tpt.isEmpty) {
             // provisionally assign `meth' a method type with inherited result type
@@ -783,7 +746,7 @@ trait Namers { self: Analyzer =>
             meth setInfo thisMethodType(resultPt)
           }
         }
-      }
+      } 
       // Add a () parameter section if this overrides dome method with () parameters.
       if (meth.owner.isClass && vparamss.isEmpty && overriddenSymbol.alternatives.exists(
         _.info.isInstanceOf[MethodType])) {
@@ -794,9 +757,9 @@ trait Namers { self: Analyzer =>
         vparam.tpt.tpe = ErrorType
       }
 
-      thisMethodType(
+      thisMethodType( 
         if (tpt.isEmpty) {
-          val pt = resultPt.substSym(tparamSyms, tparams map (_.symbol))
+          val pt = resultPt.substSym(tparamSyms, tparams map (_.symbol)) 
           tpt.tpe = widenIfNotFinal(meth, typer.computeType(rhs, pt), pt)
           tpt setPos meth.pos
           tpt.tpe
@@ -811,30 +774,30 @@ trait Namers { self: Analyzer =>
           TypeBounds(NothingClass.tpe, AnyClass.tpe)
         case tp @ TypeBounds(lt, rt) if (tpsym hasFlag JAVA) =>
           TypeBounds(lt, objToAny(rt))
-        case tp =>
+        case tp => 
           tp
       }
 
       def verifyOverriding(other: Symbol): Boolean = {
-        if(other.unsafeTypeParams.length != tparamSyms.length) {
-          context.error(tpsym.pos,
+        if(other.unsafeTypeParams.length != tparamSyms.length) { 
+          context.error(tpsym.pos, 
               "The kind of "+tpsym.keyString+" "+tpsym.varianceString + tpsym.nameString+
               " does not conform to the expected kind of " + other.defString + other.locationString + ".")
           false
-        } else true
+        } else true 
       }
-
+      
       // @M: make sure overriding in refinements respects rudimentary kinding
       // have to do this early, as otherwise we might get crashes: (see neg/bug1275.scala)
-      //   suppose some parameterized type member is overridden by a type member w/o params,
+      //   suppose some parameterized type member is overridden by a type member w/o params, 
       //   then appliedType will be called on a type that does not expect type args --> crash
       if (tpsym.owner.isRefinementClass &&  // only needed in refinements
           !tpsym.allOverriddenSymbols.forall{verifyOverriding(_)})
-	      ErrorType
-      else polyType(tparamSyms, tp)
+	      ErrorType 
+      else polyType(tparamSyms, tp)   
     }
 
-    /** Given a case class
+    /** Given a case class 
      *
      *   case class C[Ts] (ps: Us)
      *
@@ -847,7 +810,7 @@ trait Namers { self: Analyzer =>
      *  2. add a method
      *
      *   <synthetic> <case> def unapply[Ts](x: C[Ts]) = <ret-val>
-     *
+     * 
      *  where <ret-val> is the caseClassUnapplyReturnValue of class C (see UnApplies.scala)
      */
     def addApplyUnapply(cdef: ClassDef, namer: Namer) {
@@ -859,7 +822,7 @@ trait Namers { self: Analyzer =>
     def typeSig(tree: Tree): Type = {
       val sym: Symbol = tree.symbol
       tree match {
-        case defn: MemberDef =>
+        case defn: MemberDef => 
           val ainfos = for {
             annot <- defn.mods.annotations
             val ainfo = typer.typedAnnotation(annot, tree.symbol)
@@ -872,12 +835,12 @@ trait Namers { self: Analyzer =>
         case _ =>
       }
       implicit val scopeKind = TypeSigScopeKind
-      val result =
+      val result = 
         try {
           tree match {
             case ClassDef(_, _, tparams, impl) =>
               newNamer(context.makeNewScope(tree, sym)).classSig(tparams, impl)
-
+            
             case ModuleDef(_, _, impl) =>
               val clazz = sym.moduleClass
               clazz.setInfo(newNamer(context.makeNewScope(tree, clazz)).templateSig(impl))
@@ -885,7 +848,7 @@ trait Namers { self: Analyzer =>
               clazz.tpe
 
             case DefDef(_, _, tparams, vparamss, tpt, rhs) =>
-              //val result =
+              //val result = 
                 newNamer(context.makeNewScope(tree, sym)).methodSig(tparams, vparamss, tpt, rhs)
 
             case vdef @ ValDef(mods, _, tpt, rhs) =>
@@ -894,19 +857,19 @@ trait Namers { self: Analyzer =>
                 if (rhs.isEmpty) {
                   context.error(tpt.pos, "missing parameter type");
                   ErrorType
-                } else {
+                } else { 
                   tpt.tpe = widenIfNotFinal(
-                    sym,
-                    newTyper(typer1.context.make(vdef, sym)).computeType(rhs, WildcardType),
+                    sym, 
+                    newTyper(typer1.context.make(vdef, sym)).computeType(rhs, WildcardType), 
                     WildcardType)
                   tpt setPos vdef.pos
-                  tpt.tpe
+                  tpt.tpe 
                 }
               } else typer1.typedType(tpt).tpe
-
+            
             case TypeDef(_, _, tparams, rhs) =>
-              newNamer(context.makeNewScope(tree, sym)).typeDefSig(sym, tparams, rhs) //@M!
-
+              newNamer(context.makeNewScope(tree, sym)).typeDefSig(sym, tparams, rhs) //@M! 
+              
             case Import(expr, selectors) =>
               val expr1 = typer.typedQualifier(expr)
               val base = expr1.tpe
@@ -927,7 +890,7 @@ trait Namers { self: Analyzer =>
                     val defSym = context.prefix.member(to) filter (
                       sym => sym.exists && context.isAccessible(sym, context.prefix, false))
                     if (defSym != NoSymbol) { warnRedundant(defSym); return false }
-                  }
+                  } 
                 }
                 true
               }
@@ -944,7 +907,7 @@ trait Namers { self: Analyzer =>
                   if ((to ne null) && to != nme.WILDCARD && (rest exists (sel => sel._2 == to)))
                     context.error(tree.pos, to.decode + " appears twice as a target of a renaming");
                   checkSelectors(rest)
-                case Nil =>
+                case Nil => 
               }
               checkSelectors(selectors)
               ImportType(expr1)
@@ -956,7 +919,7 @@ trait Namers { self: Analyzer =>
             ErrorType
         }
       result match {
-        case PolyType(tparams, restpe)
+        case PolyType(tparams, restpe) 
         if (!tparams.isEmpty && tparams.head.owner.isTerm ||
             // Adriaan: The added conditon below is quite a hack. It seems that HK type parameters is relying
             // on a pass that forces all infos in the type to get everything right.
@@ -970,7 +933,7 @@ trait Namers { self: Analyzer =>
             // effects like this.
             tparams.exists(!_.typeParams.isEmpty)) =>
           new DeSkolemizeMap(tparams) mapOver result
-        case _ =>
+        case _ => 
 //          println("not skolemizing "+result+" in "+context.owner)
 //          new DeSkolemizeMap(List()) mapOver result
           result
@@ -988,10 +951,10 @@ trait Namers { self: Analyzer =>
       def checkNoConflict(flag1: Int, flag2: Int) {
         if (sym.hasFlag(flag1) && sym.hasFlag(flag2))
           context.error(sym.pos,
-            if (flag1 == DEFERRED)
+            if (flag1 == DEFERRED) 
               "abstract member may not have " + Flags.flagsToString(flag2) + " modifier";
-            else
-              "illegal combination of modifiers: " +
+            else 
+              "illegal combination of modifiers: " + 
               Flags.flagsToString(flag1) + " and " + Flags.flagsToString(flag2) +
               " for: " + sym + Flags.flagsToString(sym.rawflags));
       }
@@ -1001,7 +964,7 @@ trait Namers { self: Analyzer =>
       if (sym.hasFlag(IMPLICIT) && sym.owner.isPackageClass && !inIDE)
         context.error(sym.pos, "`implicit' modifier cannot be used for top-level objects")
       if (sym.hasFlag(ABSTRACT) && !sym.isClass)
-        context.error(sym.pos, "`abstract' modifier can be used only for classes; " +
+        context.error(sym.pos, "`abstract' modifier can be used only for classes; " + 
           "\nit should be omitted for abstract members")
       if (sym.hasFlag(OVERRIDE | ABSOVERRIDE) && !sym.hasFlag(TRAIT) && sym.isClass)
         context.error(sym.pos, "`override' modifier not allowed for classes")
@@ -1020,10 +983,10 @@ trait Namers { self: Analyzer =>
         else if (!sym.isValueParameter && !sym.isTypeParameterOrSkolem &&
           !context.tree.isInstanceOf[ExistentialTypeTree] &&
           (!sym.owner.isClass || sym.owner.isModuleClass || sym.owner.isAnonymousClass)) {
-            context.error(sym.pos,
+            context.error(sym.pos, 
               "only classes can have declared but undefined members" + varNotice(sym))
             sym.resetFlag(DEFERRED)
-        }
+        } 
       }
 
       checkNoConflict(DEFERRED, PRIVATE)
@@ -1033,20 +996,20 @@ trait Namers { self: Analyzer =>
       /* checkNoConflict(PRIVATE, FINAL) // can't do this because FINAL also means compile-time constant */
       checkNoConflict(DEFERRED, FINAL)
     }
-  }
+  } 
 
   abstract class TypeCompleter extends LazyType {
     val tree: Tree
   }
 
-  def mkTypeCompleter(t: Tree)(c: Symbol => Unit) = new TypeCompleter {
-    val tree = t
+  def mkTypeCompleter(t: Tree)(c: Symbol => Unit) = new TypeCompleter { 
+    val tree = t 
     override def complete(sym: Symbol) = c(sym)
   }
 
   /** A class representing a lazy type with known type parameters.
    */
-  class PolyTypeCompleter(tparams: List[Tree], restp: TypeCompleter, owner: Tree, ownerSym: Symbol, ctx: Context) extends TypeCompleter {
+  class PolyTypeCompleter(tparams: List[Tree], restp: TypeCompleter, owner: Tree, ownerSym: Symbol, ctx: Context) extends TypeCompleter { 
     override val typeParams: List[Symbol]= tparams map (_.symbol) //@M
     override val tree = restp.tree
     override def complete(sym: Symbol) {
@@ -1060,24 +1023,24 @@ trait Namers { self: Analyzer =>
    *  This is used for error messages, where we want to speak in terms
    *  of the actual declaration or definition, not in terms of the generated setters
    *  and getters */
-  def underlying(member: Symbol): Symbol =
+  def underlying(member: Symbol): Symbol = 
     if (member hasFlag ACCESSOR) {
       if (member.isDeferred) {
         val getter = if (member.isSetter) member.getter(member.owner) else member
-        if (inIDE && getter == NoSymbol) return NoSymbol;
-        val result = getter.owner.newValue(getter.pos, getter.name)
+        if (inIDE && getter == NoSymbol) return NoSymbol; 
+        val result = getter.owner.newValue(getter.pos, getter.name) 
           .setInfo(getter.tpe.resultType)
           .setFlag(DEFERRED)
         if (getter.setter(member.owner) != NoSymbol) result.setFlag(MUTABLE)
         result
-      } else member.accessed
+      } else member.accessed 
     } else member
 
   /** An explanatory note to be added to error messages
    *  when there's a problem with abstract var defs */
-  def varNotice(sym: Symbol): String =
+  def varNotice(sym: Symbol): String = 
     if (underlying(sym).isVariable)
-      "\n(Note that variables need to be initialized to be defined)"
+      "\n(Note that variables need to be initialized to be defined)" 
     else ""
 }
 

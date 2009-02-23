@@ -1,0 +1,10 @@
+cyclics.scala:2: error: illegal cyclic reference involving type A
+  type A = List[A]
+                ^
+cyclics.scala:3: error: illegal cyclic reference involving type B
+  type B[T] = List[B[B[T]]]
+                   ^
+cyclics.scala:5: error: illegal cyclic reference involving type E
+  type C = I { type E = C }
+                        ^
+three errors found

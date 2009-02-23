@@ -422,7 +422,7 @@ trait Types {
     def memberType(sym: Symbol): Type = {
       trackTypeIDE(sym)
       //@M don't prematurely instantiate higher-kinded types, they will be instantiated by transform, typedTypeApply, etc. when really necessary
-     sym.tpeHK match {
+      sym.tpeHK match {
         case ov @ OverloadedType(pre, alts) =>
           OverloadedType(this, alts)
 /*
@@ -440,7 +440,14 @@ trait Types {
 */
         case tp =>
           val res = tp.asSeenFrom(this, sym.owner)
-//          if (sym.name.toString == "emitSWITCH") println(this + ".memberType(" + sym +":" + sym.tpe +")" + sym.ownerChain + " = " + res);//debug
+/*
+          if (sym.name.toString == "Elem") {
+            println("pre = "+this)
+            println("pre.normalize = "+this.widen.normalize)
+            println("sym = "+sym+" in "+sym.ownerChain)
+            println("result = "+res)
+          }
+*/
           res
       }
     }
@@ -1406,7 +1413,11 @@ trait Types {
       appliedType(tp.asSeenFrom(pre, sym.owner), argsMaybeDummy)
       // TODO: argsMaybeDummy --> ok? or don't instantiate type params if isHigherKinded
 
-    def thisInfo     = if (sym.isTypeMember) transformInfo(sym.info) else sym.info
+    def thisInfo     =
+      if (sym.isAliasType) normalize
+      else if (sym.isTypeMember) transformInfo(sym.info)
+      else sym.info
+
     def relativeInfo = if (sym.isTypeMember) transformInfo(pre.memberInfo(sym)) else pre.memberInfo(sym)
 
     override def typeSymbol = if (sym.isAliasType) normalize.typeSymbol else sym
@@ -1478,25 +1489,31 @@ A type's typeSymbol should never be inspected directly.
     private def higherKindedArgs = typeParams map (_.typeConstructor) //@M must be .typeConstructor
     private def argsMaybeDummy = if (isHigherKinded) higherKindedArgs else args
 
-    override def normalize =
-      if (sym.isAliasType) { // beta-reduce
-        if (sym.info.typeParams.length == args.length || !isHigherKinded) {
-/* !isHigherKinded && sym.info.typeParams.length != args.length only happens when compiling e.g.,
-  `val x: Class' with -Xgenerics, while `type Class = java.lang.Class' had already been compiled without -Xgenerics */
-          val xform = transform(sym.info.resultType)
-          assert(xform ne this, this)
-          xform.normalize // cycles have been checked in typeRef
-        } else PolyType(typeParams, transform(sym.info.resultType).normalize)  // eta-expand
-        // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
-      } else if (isHigherKinded) {
-        // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
-		// @M: initialize needed (see test/files/pos/ticket0137.scala)
-        PolyType(typeParams, typeRef(pre, sym.initialize, higherKindedArgs))
-      } else if (sym.isRefinementClass) {
-        sym.info.normalize // @MO to AM: OK?
-      } else {
-        super.normalize
+    private var normalized: Type = null
+
+    override def normalize: Type = {
+      if (normalized == null) {
+        normalized = if (sym.isAliasType) { // beta-reduce
+          if (sym.info.typeParams.length == args.length || !isHigherKinded) {
+            /* !isHigherKinded && sym.info.typeParams.length != args.length only happens when compiling e.g.,
+             `val x: Class' with -Xgenerics, while `type Class = java.lang.Class' had already been compiled without -Xgenerics */
+            val xform = transform(sym.info.resultType)
+            assert(xform ne this, this)
+            xform.normalize // cycles have been checked in typeRef
+          } else PolyType(typeParams, transform(sym.info.resultType).normalize)  // eta-expand
+            // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
+          } else if (isHigherKinded) {
+            // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
+	    // @M: initialize needed (see test/files/pos/ticket0137.scala)
+            PolyType(typeParams, typeRef(pre, sym.initialize, higherKindedArgs))
+          } else if (sym.isRefinementClass) {
+            sym.info.normalize // @MO to AM: OK?
+          } else {
+            super.normalize
+          }
       }
+      normalized
+    }
 
     override def decls: Scope = {
       sym.info match {
@@ -2070,14 +2087,17 @@ A type's typeSymbol should never be inspected directly.
     def transform(tp: Type): Type =
       tp.resultType.asSeenFrom(pre, sym1.owner).instantiateTypeParams(sym1.typeParams, args)
     if (sym1.isAliasType && sym1.info.typeParams.length == args.length) {
+      if (!sym1.lockOK)
+        throw new TypeError("illegal cyclic reference involving " + sym1)
       // note: we require that object is initialized,
       // that's why we use info.typeParams instead of typeParams.
+/*
       sym1.lock {
         throw new TypeError("illegal cyclic reference involving " + sym1)
       }
       transform(sym1.info) // check there are no cycles
       sym1.unlock()
-
+*/
       rawTypeRef(pre, sym1, args) // don't expand type alias (cycles checked above)
     } else {
       val pre1 = removeSuper(pre, sym1)
@@ -2718,7 +2738,9 @@ A type's typeSymbol should never be inspected directly.
               } else {
                 pre1
               }
-            } else toPrefix(base(pre, clazz).prefix, clazz.owner);
+            } else {
+              toPrefix(base(pre, clazz).prefix, clazz.owner);
+            }
           toPrefix(pre, clazz)
         case SingleType(pre, sym) =>
           if (sym.isPackageClass) tp // short path

@@ -4,7 +4,9 @@
  */
 package scala.tools.nsc.symtab
 
+// todo implement in terms of BitSet
 import scala.collection.mutable.ListBuffer
+import scala.collection.immutable.Map
 import Math.max
 
 /** A base type sequence (BaseTypeSeq) is an ordered sequence spanning all the base types
@@ -31,19 +33,24 @@ trait BaseTypeSeqs {
     /** The number of types in the sequence */
     def length: Int = elems.length
 
+    var pending: Map[Int, Type] = Map()
+
     /** The type at i'th position in this sequence; lazy types are returned evaluated. */
     def apply(i: Int): Type = elems(i) match {
       case NoType =>
+        pending = Map()
         elems(i) = AnyClass.tpe
         throw CyclicInheritance
       case rtp @ RefinedType(variants, decls) =>
         // can't assert decls.isEmpty; see t0764
         //if (!decls.isEmpty) assert(false, "computing closure of "+this+":"+this.isInstanceOf[RefinedType]+"/"+closureCache(j))
         //Console.println("compute closure of "+this+" => glb("+variants+")")
+        pending += (i -> rtp)
         elems(i) = NoType
         try {
           mergePrefixAndArgs(variants, -1, lubDepth(variants)) match {
             case Some(tp0) =>
+              pending -= i
               elems(i) = tp0
               tp0
             case None =>
@@ -64,9 +71,19 @@ trait BaseTypeSeqs {
     /** The type symbol of the type at i'th position in this sequence;
      *  no evaluation needed.
      */
-    def typeSymbol(i: Int): Symbol = elems(i) match {
-      case RefinedType(v :: vs, _) => v.typeSymbol
-      case tp => tp.typeSymbol
+    def typeSymbol(i: Int): Symbol = {
+      def tsym(tp: Type) = tp match {
+        case RefinedType(v :: vs, _) => v.typeSymbol
+        case _ => tp.typeSymbol
+      }
+      elems(i) match {
+        case NoType =>
+          pending get i match {
+            case Some(tp) => tsym(tp)
+            case _ => NoType.typeSymbol
+          }
+        case tp => tsym(tp)
+      }
     }
 
     /** Return all evaluated types in this sequence as a list */

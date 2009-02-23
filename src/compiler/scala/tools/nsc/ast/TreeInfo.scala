@@ -151,8 +151,19 @@ abstract class TreeInfo {
   def preSuperFields(stats: List[Tree]): List[ValDef] =
     for (vdef @ ValDef(mods, _, _, _) <- stats if mods hasFlag PRESUPER) yield vdef
 
-  def isPreSuper(tree: Tree) = tree match {
+  def isEarlyDef(tree: Tree) = tree match {
+    case TypeDef(mods, _, _, _) => mods hasFlag PRESUPER
     case ValDef(mods, _, _, _) => mods hasFlag PRESUPER
+    case _ => false
+  }
+
+  def isEarlyValDef(tree: Tree) = tree match {
+    case ValDef(mods, _, _, _) => mods hasFlag PRESUPER
+    case _ => false
+  }
+
+  def isEarlyTypeDef(tree: Tree) = tree match {
+    case TypeDef(mods, _, _, _) => mods hasFlag PRESUPER
     case _ => false
   }
 

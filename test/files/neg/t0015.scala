@@ -18,7 +18,7 @@ abstract class M
     // compiles successfully
     //f[Int](self: actualSelfType)
 
-    f[Int](self: selfType)
+    f[Int](self: selfType) // compiles Ok now was well, because we narrow to singletonType in this situation
 
     //def g(x: Any) = {}
     //g(self: selfType)

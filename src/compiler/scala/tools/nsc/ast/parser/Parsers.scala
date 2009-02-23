@@ -2270,18 +2270,20 @@ trait Parsers extends NewScanners with MarkupParsers {
         // @S: pre template body cannot stub like post body can!
         val (self, body) = templateBody(true)
         if (inToken == WITH && self.isEmpty) {
-          val vdefs: List[ValDef] = body flatMap {
+          val earlyDefs: List[Tree] = body flatMap {
             case vdef @ ValDef(mods, name, tpt, rhs) if !(mods hasFlag Flags.DEFERRED) =>
               List(copy.ValDef(vdef, mods | Flags.PRESUPER, name, tpt, rhs))
+            case tdef @ TypeDef(mods, name, tparams, rhs) =>
+              List(copy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs))
             case stat if !stat.isEmpty =>
-                syntaxError(stat.pos, "only concrete field definitions allowed in early object initialization section", false)
+                syntaxError(stat.pos, "only type definitions and concrete field definitions allowed in early object initialization section", false)
               List()
             case _ => List()
           }
           inNextToken
           val (parents, argss) = templateParents(isTrait)
           val (self1, body1) = templateBodyOpt(isTrait)
-          (parents, argss, self1, vdefs ::: body1)
+          (parents, argss, self1, earlyDefs ::: body1)
         } else {
           (List(), List(List()), self, body)
         }
