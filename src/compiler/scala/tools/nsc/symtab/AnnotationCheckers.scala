@@ -23,6 +23,18 @@ trait AnnotationCheckers {
     /** Modify the type that has thus far been inferred
      *  for a tree.  All this should do is add annotations. */
     def addAnnotations(tree: Tree, tpe: Type): Type = tpe
+
+    /** Decide whether this annotation checker can adapt a tree
+     *  that has an annotated type to the given type tp, taking
+     *  into account the given mode (see method adapt in trait Typers).*/
+    def canAdaptAnnotations(tree: Tree, mode: Int, pt: Type): Boolean = false
+
+    /** Adapt a tree that has an annotated type to the given type tp,
+     *  taking into account the given mode (see method adapt in trait Typers).
+     *  An implementation cannot rely on canAdaptAnnotations being called
+     *  before. If the implementing class cannot do the adaptiong, it
+     *  should return the tree unchanged.*/
+    def adaptAnnotations(tree: Tree, mode: Int, pt: Type): Tree = tree
   }
 
   /** The list of annotation checkers that have been registered */
@@ -56,5 +68,21 @@ trait AnnotationCheckers {
   def addAnnotations(tree: Tree, tpe: Type): Type = {
     annotationCheckers.foldLeft(tpe)((tpe, checker) =>
       checker.addAnnotations(tree, tpe))
+  }
+
+  /** Find out whether any annotation checker can adapt a tree
+   *  to a given type. Called by Typers.adapt. */
+  def canAdaptAnnotations(tree: Tree, mode: Int, pt: Type): Boolean = {
+    annotationCheckers.foldLeft(false)((res, checker) =>
+      res || checker.canAdaptAnnotations(tree, mode, pt))
+  }
+
+  /** Let registered annotation checkers adapt a tree
+   *  to a given type (called by Typers.adapt). Annotation checkers
+   *  that cannot do the adaption should pass the tree through
+   *  unchanged. */
+  def adaptAnnotations(tree: Tree, mode: Int, pt: Type): Tree = {
+    annotationCheckers.foldLeft(tree)((tree, checker) =>
+      checker.adaptAnnotations(tree, mode, pt))
   }
 }

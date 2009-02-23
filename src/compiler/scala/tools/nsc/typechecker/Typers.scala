@@ -647,6 +647,7 @@ trait Typers { self: Analyzer =>
 
     /** Perform the following adaptations of expression, pattern or type `tree' wrt to
      *  given mode `mode' and given prototype `pt':
+     *  (-1) For expressions with annotated types, let AnnotationCheckers decide what to do
      *  (0) Convert expressions with constant types to literals
      *  (1) Resolve overloading, unless mode contains FUNmode
      *  (2) Apply parameterless functions
@@ -680,6 +681,8 @@ trait Typers { self: Analyzer =>
      *  If all this fails, error
      */
     protected def adapt(tree: Tree, mode: Int, pt: Type): Tree = tree.tpe match {
+      case atp @ AnnotatedType(_, _, _) if canAdaptAnnotations(tree, mode, pt) => // (-1)
+        adaptAnnotations(tree, mode, pt)
       case ct @ ConstantType(value) if ((mode & (TYPEmode | FUNmode)) == 0 && (ct <:< pt) && !inIDE) => // (0)
         copy.Literal(tree, value)
       case OverloadedType(pre, alts) if ((mode & FUNmode) == 0) => // (1)
@@ -2466,7 +2469,7 @@ trait Typers { self: Analyzer =>
         val cond1 = checkDead(typed(cond, BooleanClass.tpe))
         if (elsep.isEmpty) { // in the future, should be unecessary
           val thenp1 = typed(thenp, UnitClass.tpe)
-          copy.If(tree, cond1, thenp1, elsep) setType UnitClass.tpe
+          copy.If(tree, cond1, thenp1, elsep) setType thenp1.tpe
         } else {
           val thenp1 = typed(thenp, pt)
           val elsep1 = typed(elsep, pt)
@@ -3811,7 +3814,7 @@ trait Typers { self: Analyzer =>
             case RefinedType(ps, _) =>
               for (p <- ps) getParts(p, s)
             case AnnotatedType(_, t, _) =>
-	      getParts(t, s)
+              getParts(t, s)
             case _ =>
           }
         }
