@@ -818,8 +818,8 @@ abstract class RefChecks extends InfoTransform {
         if (!tp.isHigherKinded)
           checkBoundsWithPos(pre, sym.owner, sym.typeParams, args, pos)
       }
-      def checkAnnotations(annots: List[Annotation]) {
-        for ((tp @ TypeRef(_,_,_), pos) <- annots.map(a => (a.tpe, a.pos)))
+      def checkAnnotations(tpes: List[(Type, Position)]) {
+        for ((tp @ TypeRef(_,_,_), pos) <- tpes)
           checkTypeRef(tp, pos)
       }
 
@@ -828,11 +828,23 @@ abstract class RefChecks extends InfoTransform {
       val sym = tree.symbol
       var result = tree
 
+      def doTypeTraversal(f: (Type) => Unit) =
+        if (!inPattern) {
+          new TypeTraverser {
+            def traverse(tp: Type) { f(tp) }
+          } traverse tree.tpe
+        }
+
       // if this tree can carry modifiers, make sure any annotations also conform to type bounds; bug #935
       tree match {
-        case x: MemberDef => checkAnnotations(x.mods.annotations)
-        case _            =>
+        case x: MemberDef   => checkAnnotations(x.mods.annotations.map(a => (a.tpe, a.pos)))
+        case TypeTree()     => doTypeTraversal {
+          case AnnotatedType(attribs, _, _) => checkAnnotations(attribs.map(a => (a.atp, tree.pos)))
+          case _ =>
+        }
+        case _              =>
       }
+
       tree match {
         case DefDef(mods, name, tparams, vparams, tpt, EmptyTree) if tree.symbol.hasAttribute(definitions.NativeAttr) =>
           tree.symbol.resetFlag(DEFERRED)
@@ -850,17 +862,11 @@ abstract class RefChecks extends InfoTransform {
           validateBaseTypes(currentOwner)
           checkAllOverrides(currentOwner)
 
-        case TypeTree() =>
-          if (!inPattern) {
-            new TypeTraverser {
-              def traverse(tp: Type) {
-                tp match {
-                  case t: TypeRef => checkTypeRef(t, tree.pos)
-                  case _ =>
-                }
-              }
-            } traverse tree.tpe
-          }
+        case TypeTree() => doTypeTraversal {
+          case t: TypeRef => checkTypeRef(t, tree.pos)
+          case _ =>
+        }
+
         case TypeApply(fn, args) =>
           checkBounds(NoPrefix, NoSymbol, fn.tpe.typeParams, args map (_.tpe))
           if (isCaseApply(sym)) result = toConstructor(tree.pos, tree.tpe)
