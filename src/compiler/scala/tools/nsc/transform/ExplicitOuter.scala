@@ -131,7 +131,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
         }
       }
       if (!clazz.isTrait && !parents.isEmpty) {
-        for (val mc <- clazz.mixinClasses) {
+        for (mc <- clazz.mixinClasses) {
           val mixinOuterAcc: Symbol = atPhase(phase.next)(outerAccessor(mc))
           if (mixinOuterAcc != NoSymbol) {
             if (decls1 eq decls) decls1 = newScope(decls.toList)
@@ -354,7 +354,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
                 newDefs += outerAccessorDef // (1)
               }
               if (!currentClass.isTrait)
-                for (val mc <- currentClass.mixinClasses)
+                for (mc <- currentClass.mixinClasses)
                   if (outerAccessor(mc) != NoSymbol)
                     newDefs += mixinOuterAccessorDef(mc)
             }

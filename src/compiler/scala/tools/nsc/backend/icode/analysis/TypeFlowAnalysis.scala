@@ -363,7 +363,7 @@ abstract class TypeFlowAnalysis {
         new TransferFunction(consumed, gens)
       }
 
-      for (val b <- blocks) {
+      for (b <- blocks) {
         flowFun = flowFun + (b -> transfer(b))
       }
     }
@@ -619,7 +619,7 @@ abstract class TypeFlowAnalysis {
         val stack = out.stack
 
         out.stack.pop(consumed)
-        for (val g <- gens) g match {
+        for (g <- gens) g match {
           case Bind(l, t) =>
             out.vars += (l -> t.getKind(in))
           case Push(t) =>

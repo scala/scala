@@ -185,7 +185,7 @@ abstract class Mixin extends InfoTransform {
       val impl = implClass(clazz)
       assert(impl != NoSymbol)
 
-      for (val member <- impl.info.decls.toList) {
+      for (member <- impl.info.decls.toList) {
         if (!member.isMethod && !member.isModule && !member.isModuleVar) {
           assert(member.isTerm && !member.isDeferred, member)
           if (member.getter(impl) hasFlag PRIVATE) {
@@ -232,7 +232,7 @@ abstract class Mixin extends InfoTransform {
       /** Mix in members of implementation class mixinClass into class clazz */
       def mixinImplClassMembers(impl: Symbol, iface: Symbol) {
         assert (impl.isImplClass)
-        for (val member <- impl.info.decls.toList) {
+        for (member <- impl.info.decls.toList) {
           if (isForwarded(member)) {
             val imember = member.overriddenSymbol(iface)
             //Console.println("mixin member "+member+":"+member.tpe+member.locationString+" "+imember+" "+imember.overridingSymbol(clazz)+" to "+clazz+" with scope "+clazz.info.decls)//DEBUG
@@ -253,7 +253,7 @@ abstract class Mixin extends InfoTransform {
        */
       def mixinTraitMembers(mixinClass: Symbol) {
         // For all members of a trait's interface do:
-        for (val member <- mixinClass.info.decls.toList) {
+        for (member <- mixinClass.info.decls.toList) {
           if (isConcreteAccessor(member)) {
             if (isOverriddenAccessor(member, clazz.info.baseClasses)) {
               if (settings.debug.value) println("!!! is overridden val: "+member)
@@ -303,7 +303,7 @@ abstract class Mixin extends InfoTransform {
         }
       }
 
-      for (val mc <- clazz.mixinClasses)
+      for (mc <- clazz.mixinClasses)
         if (mc hasFlag lateINTERFACE) {
           // @SEAN: adding trait tracking so we don't have to recompile transitive closures
           unit.depends += mc
@@ -758,7 +758,7 @@ abstract class Mixin extends InfoTransform {
        */
       def buildFieldPositions(clazz: Symbol) {
         var fields = usedBits(clazz)
-        for (val f <- clazz.info.decls.elements if needsInitFlag(f) || f.hasFlag(LAZY)) {
+        for (f <- clazz.info.decls.elements if needsInitFlag(f) || f.hasFlag(LAZY)) {
           if (settings.debug.value) log(f.fullNameString + " -> " + fields)
           fieldOffset(f) = fields
           fields += 1
@@ -770,7 +770,7 @@ abstract class Mixin extends InfoTransform {
       var stats1 = addCheckedGetters(clazz, stats)
 
       // for all symbols `sym' in the class definition, which are mixed in:
-      for (val sym <- clazz.info.decls.toList) {
+      for (sym <- clazz.info.decls.toList) {
         if (sym hasFlag MIXEDIN) {
           if (clazz hasFlag lateINTERFACE) {
             // if current class is a trait interface, add an abstract method for accessor `sym'

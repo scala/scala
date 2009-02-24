@@ -105,23 +105,23 @@ abstract class Models {
     tree match {
       case cdef: ClassDef =>
         ret = ret + "[" +
-          (for (val tparam <- cdef.tparams) yield textFor(tparam)) + "]";
+          (for (tparam <- cdef.tparams) yield textFor(tparam)) + "]";
         cdef.mods
       case vdef: ValOrDefDef =>
         vdef match {
           case ddef: DefDef =>
           ret = ret + "[" +
-            (for (val tparam <- ddef.tparams) yield textFor(tparam)) + "]";
-          for (val vparams <- ddef.vparamss) {
+            (for (tparam <- ddef.tparams) yield textFor(tparam)) + "]";
+          for (vparams <- ddef.vparamss) {
             ret = ret + "(" +
-              (for (val vparam <- vparams) yield textFor(vparam)) + ")";
+              (for (vparam <- vparams) yield textFor(vparam)) + ")";
           }
           case _ =>
         }
         ret = ret + " : " + textFor(vdef.tpt)
 /* Martin to Sean: Please check whether this can be dropped or does it need to be adapted?
       case atd: AbsTypeDef =>
-        ret = ret + "[" + (for (val tparam <- atd.tparams) yield textFor(tparam)) + "]" +
+        ret = ret + "[" + (for (tparam <- atd.tparams) yield textFor(tparam)) + "]" +
                      ((if(atd.hi ne null) " <: " + textFor(atd.hi) else "") +
                      (if(atd.lo ne null) " >: " + textFor(atd.lo) else ""));
 */
@@ -203,13 +203,13 @@ abstract class Models {
 
       val marked = new HashSet[HasTree]
       var updated = false
-      for (val mmbr1 <- members1) if (mmbr1.isInstanceOf[PackageDef]) {
+      for (mmbr1 <- members1) if (mmbr1.isInstanceOf[PackageDef]) {
         Console.err.println("PACKAGE: " + mmbr1.symbol + " " + members1.length)
       } else if (isMember(mmbr1)) {
         val mmbr2 = member(mmbr1, members1)
         if (mmbr2 ne null) {
           var found = false
-          for (val mmbr <- members) if (!found && mmbr.replacedBy(mmbr2)) {
+          for (mmbr <- members) if (!found && mmbr.replacedBy(mmbr2)) {
             //Console.err.println("REPLACE: " + mmbr + " with " + mmbr2)
             mmbr.mods0 = mods1(mmbr1)
             found = true
@@ -287,8 +287,8 @@ abstract class Models {
       if (super.replacedBy(tree0) && tree0.isInstanceOf[DefDef]) {
         val tree1 = tree0.asInstanceOf[DefDef]
         if (tree1.vparamss.length == treez.vparamss.length) {
-          val tpz = for (val vd <- treez.vparamss) yield for (val xd <- vd) yield xd.tpe;
-          val tp1 = for (val vd <- tree1.vparamss) yield for (val xd <- vd) yield xd.tpe;
+          val tpz = for (vd <- treez.vparamss) yield for (xd <- vd) yield xd.tpe;
+          val tp1 = for (vd <- tree1.vparamss) yield for (xd <- vd) yield xd.tpe;
           tpz == tp1
         } else false
       } else false
@@ -326,7 +326,7 @@ abstract class Models {
             val tree =
               ValDef(mods, ddef.name, ddef.tpt, ddef.rhs).setPos(ddef.pos).setSymbol(sym);
             tree :: Nil;
-          } else for (val member <- members; member.symbol == sym) yield member
+          } else for (member <- members if member.symbol == sym) yield member
           if (ret.isEmpty) null
           else ret.head
         } else tree
@@ -383,7 +383,7 @@ abstract class Models {
   }
 
   def flatten0(exprs: List[Tree], filter: (Tree) => Boolean): List[Tree] =
-    for (val expr <- exprs; val t: Tree <- flatten(expr,filter)) yield t
+    for (expr <- exprs; t: Tree <- flatten(expr,filter)) yield t
 
   def flatten(expr: Tree, filter: (Tree) => Boolean): List[Tree] =
     if (filter(expr)) expr :: Nil; else expr match {

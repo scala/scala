@@ -308,7 +308,7 @@ abstract class RefChecks extends InfoTransform {
               val tp2 = erasure.erasure(clazz.thisType.memberType(other))
               atPhase(currentRun.erasurePhase.next)(tp1 matches tp2)
             })
-        for (val member <- clazz.tpe.nonPrivateMembers)
+        for (member <- clazz.tpe.nonPrivateMembers)
           if (member.isDeferred && !(clazz hasFlag ABSTRACT) &&
               !isAbstractTypeWithoutFBound(member) &&
               !((member hasFlag JAVA) && javaErasedOverridingSym(member) != NoSymbol)) {
@@ -331,7 +331,7 @@ abstract class RefChecks extends InfoTransform {
         //
         // (3) is violated but not (2).
         def checkNoAbstractDecls(bc: Symbol) {
-          for (val decl <- bc.info.decls.elements) {
+          for (decl <- bc.info.decls.elements) {
             if (decl.isDeferred && !isAbstractTypeWithoutFBound(decl)) {
               val impl = decl.matchingSymbol(clazz.thisType)
               if (impl == NoSymbol || (decl.owner isSubClass impl.owner)) {
@@ -348,12 +348,12 @@ abstract class RefChecks extends InfoTransform {
       }
 
       // 4. Check that every defined member with an `override' modifier overrides some other member.
-      for (val member <- clazz.info.decls.toList)
+      for (member <- clazz.info.decls.toList)
         if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
             (clazz.info.baseClasses.tail forall {
                bc => member.matchingSymbol(bc, clazz.thisType) == NoSymbol
             })) {
-          // for (val bc <- clazz.info.baseClasses.tail) Console.println("" + bc + " has " + bc.info.decl(member.name) + ":" + bc.info.decl(member.name).tpe);//DEBUG
+          // for (bc <- clazz.info.baseClasses.tail) Console.println("" + bc + " has " + bc.info.decl(member.name) + ":" + bc.info.decl(member.name).tpe);//DEBUG
           unit.error(member.pos, member.toString() + " overrides nothing");
           member resetFlag OVERRIDE
         }
@@ -544,7 +544,7 @@ abstract class RefChecks extends InfoTransform {
 
     private def enterSyms(stats: List[Tree]) {
       var index = -1
-      for (val stat <- stats) {
+      for (stat <- stats) {
         index = index + 1;
         stat match {
           case ClassDef(_, _, _, _) | DefDef(_, _, _, _, _, _) | ModuleDef(_, _, _) | ValDef(_, _, _, _) =>

@@ -420,7 +420,7 @@ trait Namers { self: Analyzer =>
       tp match {
         case TypeBounds(lo, hi) =>
           // check that lower bound is not an F-bound
-          for (val t <- lo) {
+          for (t <- lo) {
             t match {
               case TypeRef(_, sym, _) => sym.initialize
               case _ =>

@@ -784,9 +784,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     }
 
 /*
-      for (val bc <- root.info.baseClasses.tail; val other <- bc.info.decls.toList) {
+      for (bc <- root.info.baseClasses.tail; other <- bc.info.decls.toList) {
         if (other.isTerm && !other.isConstructor && !(other hasFlag (PRIVATE | BRIDGE))) {
-          for (val member <- root.info.nonPrivateMember(other.name).alternatives) {
+          for (member <- root.info.nonPrivateMember(other.name).alternatives) {
             if (member != other &&
                 !(member hasFlag BRIDGE) &&
                 atPhase(phase.next)(member.tpe =:= other.tpe) &&
@@ -884,9 +884,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       (bridges, toBeRemoved)
     }
 /*
-      for (val bc <- site.baseClasses.tail; val other <- bc.info.decls.toList) {
+      for (bc <- site.baseClasses.tail; other <- bc.info.decls.toList) {
         if (other.isMethod && !other.isConstructor) {
-          for (val member <- site.nonPrivateMember(other.name).alternatives) {
+          for (member <- site.nonPrivateMember(other.name).alternatives) {
             if (member != other &&
                 !(member hasFlag DEFERRED) &&
                 (site.memberType(member) matches site.memberType(other)) &&

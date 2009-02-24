@@ -2631,7 +2631,7 @@ A type's typeSymbol should never be inspected directly.
     val eparams = for ((tparam, i) <- tparams.zipWithIndex) yield {
       makeExistential("?"+i, clazz, tparam.info.bounds)
     }
-    for (val tparam <- eparams) tparam setInfo tparam.info.substSym(tparams, eparams)
+    for (tparam <- eparams) tparam setInfo tparam.info.substSym(tparams, eparams)
     eparams
   }
 

@@ -104,7 +104,7 @@ abstract class ReachingDefinitions {
     def genAndKill(b: BasicBlock): (Set[Definition], Set[Local]) = {
       var genSet: Set[Definition] = new HashSet
       var killSet: Set[Local] = new HashSet
-      for (val (i, idx) <- b.toList.zipWithIndex) i match {
+      for ((i, idx) <- b.toList.zipWithIndex) i match {
         case STORE_LOCAL(local) =>
           killSet = killSet + local
           genSet  = updateReachingDefinition(b, idx, genSet)
@@ -118,7 +118,7 @@ abstract class ReachingDefinitions {
       var drops = 0
       var stackOut: List[Set[(BasicBlock, Int)]] = Nil
 
-      for (val (instr, idx) <- b.toList.zipWithIndex) {
+      for ((instr, idx) <- b.toList.zipWithIndex) {
         if (instr == LOAD_EXCEPTION())
           ()
         else if (instr.consumed > depth) {

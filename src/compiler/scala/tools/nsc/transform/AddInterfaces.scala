@@ -132,7 +132,7 @@ abstract class AddInterfaces extends InfoTransform {
       if ((ifaceDecls lookup nme.MIXIN_CONSTRUCTOR) == NoSymbol)
         decls enter (implClass.newMethod(implClass.pos, nme.MIXIN_CONSTRUCTOR)
                      setInfo MethodType(List(), UnitClass.tpe))
-      for (val sym <- ifaceDecls.elements) {
+      for (sym <- ifaceDecls.elements) {
         if (isInterfaceMember(sym)) {
           if (needsImplMethod(sym)) {
             val impl = sym.cloneSymbol(implClass).setInfo(sym.info).resetFlag(lateDEFERRED)
@@ -265,7 +265,7 @@ abstract class AddInterfaces extends InfoTransform {
 
   def implClassDefs(trees: List[Tree]): List[Tree] = {
     val buf = new ListBuffer[Tree]
-    for (val tree <- trees)
+    for (tree <- trees)
       tree match {
         case ClassDef(_, _, _, impl) =>
           if (tree.symbol.needsImplClass)
@@ -288,8 +288,8 @@ abstract class AddInterfaces extends InfoTransform {
       Apply(Select(This(clazz), impl.primaryConstructor), List())
     }
     val mixinConstructorCalls: List[Tree] = {
-      for (val mc <- clazz.mixinClasses.reverse;
-           mc.hasFlag(lateINTERFACE) && mc != ScalaObjectClass)
+      for (mc <- clazz.mixinClasses.reverse
+           if mc.hasFlag(lateINTERFACE) && mc != ScalaObjectClass)
       yield mixinConstructorCall(implClass(mc))
     }
     (tree: @unchecked) match {

@@ -162,7 +162,7 @@ abstract class GenJVM extends SubComponent {
         parents = definitions.ObjectClass.tpe :: parents;
 
       if (!forCLDC)
-        for (val attr <- c.symbol.attributes) attr match {
+        for (attr <- c.symbol.attributes) attr match {
           case AnnotationInfo(tp, _, _) if tp.typeSymbol == SerializableAttr =>
             parents = parents ::: List(definitions.SerializableClass.tpe)
           case AnnotationInfo(tp, _, _) if tp.typeSymbol == CloneableAttr =>
@@ -373,7 +373,7 @@ abstract class GenJVM extends SubComponent {
           buf.put('['.toByte)
           val arr = const.arrayValue
           buf.putShort(arr.length.toShort)
-          for (val elem <- arr) emitElement(elem)
+          for (elem <- arr) emitElement(elem)
       }
 
       var nattr = 0
@@ -584,7 +584,7 @@ abstract class GenJVM extends SubComponent {
           }
         }
 
-        for (val local <- m.locals; (! m.params.contains(local))) {
+        for (local <- m.locals if ! m.params.contains(local)) {
           if (settings.debug.value)
             log("add local var: " + local);
           jmethod.addNewLocalVariable(javaType(local.kind), javaName(local.sym))
@@ -687,7 +687,7 @@ abstract class GenJVM extends SubComponent {
       val paramJavaTypes = m.info.paramTypes map toTypeKind
       val paramNames: Array[String] = new Array[String](paramJavaTypes.length);
 
-      for (val i <- 0.until(paramJavaTypes.length))
+      for (i <- 0 until paramJavaTypes.length)
         paramNames(i) = "x_" + i
 
       val mirrorMethod = jclass.addNewMethod(ACC_PUBLIC | ACC_FINAL | ACC_STATIC,
@@ -1237,10 +1237,10 @@ abstract class GenJVM extends SubComponent {
       }
 
       // local vars that survived this basic block
-      for (val lv <- varsInBlock) {
+      for (lv <- varsInBlock) {
         lv.ranges = (lv.start, jcode.getPC()) :: lv.ranges
       }
-      for (val lv <- b.varsInScope) {
+      for (lv <- b.varsInScope) {
         lv.ranges = (labels(b).getAnchor(), jcode.getPC()) :: lv.ranges
       }
     }

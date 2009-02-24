@@ -351,7 +351,7 @@ abstract class TreeBuilder {
       case Alternative(ts) => ts
       case _ => List(t)
     }
-    Alternative(for (val t <- ts; val a <- alternatives(t)) yield a)
+    Alternative(for (t <- ts; a <- alternatives(t)) yield a)
   }
 
   /** Create tree for a pattern sequence */
@@ -360,7 +360,7 @@ abstract class TreeBuilder {
       case Sequence(ts) => ts
       case _ => List(t)
     }
-    Sequence(for (val t <- ts; val e <- elements(t)) yield e)
+    Sequence(for (t <- ts; e <- elements(t)) yield e)
   }
 
   /** Create tree for the p+ regex pattern, becomes p p*  */

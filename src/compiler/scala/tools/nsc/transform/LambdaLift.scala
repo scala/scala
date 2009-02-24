@@ -406,6 +406,9 @@ abstract class LambdaLift extends InfoTransform {
             stat, mods, name, tparams, copy.Template(impl, parents, self, body ::: lifted))
           liftedDefs -= stat.symbol
           result
+        case DefDef(mods, name, tp, vp, tpt, Block(Nil, expr))
+        if !stat.symbol.isConstructor =>
+          copy.DefDef(stat, mods, name, tp, vp, tpt, expr)
         case _ =>
           stat
       }

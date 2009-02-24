@@ -128,7 +128,7 @@ class SemanticTokens(val compiler: Global) {
     def setLength(length1: Int) = length0 = length1
 
     // already gap
-    override def convertToGap: (Int,Actual) = (0, this)
+    override def convertToGap: (Int, Actual) = (0, this)
   }
 
   def Process(unit: CompilationUnit) = new Process(unit)
@@ -136,8 +136,8 @@ class SemanticTokens(val compiler: Global) {
     private var doLog = true
     def source = unit.source
 
-    def dbg(tree : Tree) = {
-      def treePos : Position = if (tree ne null) tree.pos else NoPosition;
+    def dbg(tree: Tree) = {
+      def treePos: Position = if (tree ne null) tree.pos else NoPosition;
       (
         "TREE=" + tree +
           (if (tree ne null) (" CLASS=" + tree.getClass()) else "") +
@@ -215,10 +215,11 @@ class SemanticTokens(val compiler: Global) {
 
 
     // ok start building....
-    def build[T <: Tree](trees : List[T]) : Unit =
-      for (val tree : T <- trees) build(tree)
+    def build[T <: Tree](trees: List[T]) {
+      for (tree <- trees) build(tree)
+    }
 
-    def build(tree0: Tree) : Unit = try {
+    def build(tree0: Tree): Unit = try {
       /* if (tree0.pos != NoPosition) */ tree0 match {
       case tree: ImplDef =>
         val pos = eatKeywords(unit.source.asInstanceOf[BatchSourceFile], tree.pos.offset.get)
@@ -252,7 +253,7 @@ class SemanticTokens(val compiler: Global) {
                 val ddef = tree.asInstanceOf[DefDef];
                 build(ddef.tparams);
 
-                for (val l0 <- ddef.vparamss; val arg <- l0) {
+                for (l0 <- ddef.vparamss; arg <- l0) {
                   val pos0 : Int = if (!unit.source.beginsWith(arg.pos.offset.get, "val ")) arg.pos.offset.get;
                                              else unit.source.skipWhitespace(arg.pos.offset.get + ("val ").length());
                   buildDef(arg.symbol, pos0);
@@ -284,7 +285,7 @@ class SemanticTokens(val compiler: Global) {
         }
         build(tree.stats)
       case tree: Function =>
-        for (val arg <- tree.vparams) if (arg.pos != NoPosition) {
+        for (arg <- tree.vparams if arg.pos != NoPosition) {
           val name = arg.name.toString().trim()
           val pos: Int =
             if (unit.source.beginsWith(arg.pos.offset.getOrElse(-1), "val "))

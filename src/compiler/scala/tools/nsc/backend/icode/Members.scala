@@ -138,11 +138,11 @@ trait Members { self: ICodes =>
       this
     }
 
-    override def toString() = symbol.fullNameString;
+    override def toString() = symbol.fullNameString
 
-    def lookupField(s: Symbol) = fields find ((f) => f.symbol == s);
-    def lookupMethod(s: Symbol) = methods find ((m) => m.symbol == s);
-    def lookupMethod(s: Name) = methods find ((m) => m.symbol.name == s);
+    def lookupField(s: Symbol) = fields find (_.symbol == s)
+    def lookupMethod(s: Symbol) = methods find (_.symbol == s)
+    def lookupMethod(s: Name) = methods find (_.symbol.name == s)
   }
 
   /** Represent a field in ICode */
@@ -248,13 +248,13 @@ trait Members { self: ICodes =>
     def normalize: Unit = if (this.code ne null) {
       import scala.collection.mutable.{Map, HashMap}
       val nextBlock: Map[BasicBlock, BasicBlock] = HashMap.empty
-      for (val b <- code.blocks.toList;
-        b.successors.length == 1;
+      for (b <- code.blocks.toList
+        if b.successors.length == 1;
         val succ = b.successors.head;
-        succ ne b;
-        succ.predecessors.length == 1;
-        succ.predecessors.head eq b;
-        !(exh.exists { (e: ExceptionHandler) =>
+        if succ ne b;
+        if succ.predecessors.length == 1;
+        if succ.predecessors.head eq b;
+        if !(exh.exists { (e: ExceptionHandler) =>
             (e.covers(succ) && !e.covers(b)) || (e.covers(b) && !e.covers(succ)) })) {
           nextBlock(b) = succ
       }

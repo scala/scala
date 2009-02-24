@@ -213,7 +213,7 @@ trait BasicBlocks {
         changed = true
         Array.copy(instrs, 0, newInstrs, 0, i)
         var j = i
-        for (val x <- is) {
+        for (x <- is) {
           newInstrs(j) = x
           j += 1
         }
@@ -234,7 +234,7 @@ trait BasicBlocks {
         val newInstrs = new Array[Instruction](instrs.length + is.length);
         Array.copy(instrs, 0, newInstrs, 0, i)
         var j = i
-        for (val x <- is) {
+        for (x <- is) {
           newInstrs(j) = x
           j += 1
         }
