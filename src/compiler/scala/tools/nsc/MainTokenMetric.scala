@@ -15,7 +15,7 @@ object MainTokenMetric {
 
   private var reporter: ConsoleReporter = _
 
-  def tokenMetric(compiler: Global, fnames: List[String]): unit = {
+  def tokenMetric(compiler: Global, fnames: List[String]) {
     import compiler.CompilationUnit
     import compiler.syntaxAnalyzer.UnitScanner
     import ast.parser.Tokens.EOF
@@ -24,8 +24,8 @@ object MainTokenMetric {
       val s = new UnitScanner(new CompilationUnit(compiler.getSourceFile(source)))
       s.nextToken
       var i = 0
-      while(s.token != EOF) {
-        i = i + 1
+      while (s.token != EOF) {
+        i += 1
         s.nextToken
       }
       Console.println(i.toString + " " + source.toString())

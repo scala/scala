@@ -14,8 +14,8 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.FakePos //{Position}
 
 
-/** The main class for scaladoc, a frontend for the Scala compiler
- * that generates documentation from source files.
+/** The main class for scaladoc, a front-end for the Scala compiler
+ *  that generates documentation from source files.
  */
 object ScalaDoc {
 
@@ -45,7 +45,7 @@ object ScalaDoc {
       }
       try {
         object compiler extends Global(command.settings, reporter) {
-	  override protected def computeInternalPhases() : Unit = {
+	  override protected def computeInternalPhases() {
 	    phasesSet += syntaxAnalyzer
 	    phasesSet += analyzer.namerFactory
 	    phasesSet += analyzer.typerFactory

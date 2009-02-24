@@ -135,9 +135,10 @@ class Scaladoc extends MatchingTask {
    *
    *  @param input The value of <code>origin</code>.
    */
-  def setSrcdir(input: Path) =
+  def setSrcdir(input: Path) {
     if (origin.isEmpty) origin = Some(input)
     else origin.get.append(input)
+  }
 
   /** Sets the <code>origin</code> as a nested src Ant parameter.
    *
@@ -152,23 +153,26 @@ class Scaladoc extends MatchingTask {
    *
    *  @param input A reference to an origin path.
    */
-  def setSrcref(input: Reference) =
+  def setSrcref(input: Reference) {
     createSrc().setRefid(input)
+  }
 
   /** Sets the <code>destdir</code> attribute. Used by Ant.
    *
    *  @param input The value of <code>destination</code>.
    */
-  def setDestdir(input: File) =
+  def setDestdir(input: File) {
     destination = Some(input)
+  }
 
   /** Sets the <code>classpath</code> attribute. Used by Ant.
    *
    *  @param input The value of <code>classpath</code>.
    */
-  def setClasspath(input: Path) =
+  def setClasspath(input: Path) {
     if (classpath.isEmpty) classpath = Some(input)
     else classpath.get.append(input)
+  }
 
   /** Sets the <code>classpath</code> as a nested classpath Ant parameter.
    *
@@ -233,16 +237,18 @@ class Scaladoc extends MatchingTask {
    *
    *  @param input A reference to a source path.
    */
-  def setBootclasspathref(input: Reference) =
+  def setBootclasspathref(input: Reference) {
     createBootclasspath().setRefid(input)
+  }
 
   /** Sets the external extensions path attribute. Used by Ant.
    *
    *  @param input The value of <code>extdirs</code>.
    */
-  def setExtdirs(input: Path): Unit =
+  def setExtdirs(input: Path) {
     if (extdirs.isEmpty) extdirs = Some(input)
     else extdirs.get.append(input)
+  }
 
   /** Sets the <code>extdirs</code> as a nested sourcepath Ant parameter.
    *
@@ -257,91 +263,103 @@ class Scaladoc extends MatchingTask {
    *
    *  @param input A reference to an extensions path.
    */
-  def setExtdirsref(input: Reference) =
+  def setExtdirsref(input: Reference) {
     createExtdirs().setRefid(input)
+  }
 
   /** Sets the <code>encoding</code> attribute. Used by Ant.
    *
    *  @param input The value of <code>encoding</code>.
    */
-  def setEncoding(input: String): Unit =
+  def setEncoding(input: String) {
     encoding = Some(input)
+  }
 
   /** Sets the <code>windowtitle</code> attribute.
    *
    *  @param input The value of <code>windowtitle</code>.
    */
-  def setWindowtitle(input: String): Unit =
+  def setWindowtitle(input: String) {
     windowtitle = Some(input)
+  }
 
   /** Sets the <code>doctitle</code> attribute.
    *
    *  @param input The value of <code>doctitle</code>.
    */
-  def setDoctitle(input: String): Unit =
+  def setDoctitle(input: String) {
     doctitle = Some(input)
+  }
 
   /** Sets the <code>stylesheetfile</code> attribute.
    *
    *  @param input The value of <code>stylesheetfile</code>.
    */
-  def setStylesheetfile(input: String): Unit =
+  def setStylesheetfile(input: String) {
     stylesheetfile = Some(input)
+  }
 
   /** Sets the <code>header</code> attribute.
    *
    *  @param input The value of <code>header</code>.
    */
-  def setHeader(input: String): Unit =
+  def setHeader(input: String) {
     pageheader = Some(input)
+  }
 
   /** Sets the <code>footer</code> attribute.
    *
    *  @param input The value of <code>footer</code>.
    */
-  def setFooter(input: String): Unit =
+  def setFooter(input: String) {
     pagefooter = Some(input)
+  }
 
   /** Sets the <code>top</code> attribute.
    *
    *  @param input The value of <code>top</code>.
    */
-  def setTop(input: String): Unit =
+  def setTop(input: String) {
     pagetop = Some(input)
+  }
 
   /** Sets the <code>bottom</code> attribute.
    *
    *  @param input The value of <code>bottom</code>.
    */
-  def setBottom(input: String): Unit =
+  def setBottom(input: String) {
     pagebottom = Some(input)
+  }
 
   /** Set the <code>addparams</code> info attribute.
    *
    *  @param input The value for <code>addparams</code>.
    */
-  def setAddparams(input: String): Unit =
+  def setAddparams(input: String) {
     addParams = input
+  }
 
   /** Set the <code>deprecation</code> info attribute.
    *
    *  @param input One of the flags <code>yes/no</code> or <code>on/off</code>.
    */
-  def setDeprecation(input: String): Unit =
+  def setDeprecation(input: String) {
     if (Flag.isPermissible(input))
       deprecation = "yes".equals(input) || "on".equals(input)
     else
       error("Unknown deprecation flag '" + input + "'")
+  }
 
   /** Set the <code>unchecked</code> info attribute.
    *
    *  @param input One of the flags <code>yes/no</code> or <code>on/off</code>.
    */
-  def setUnchecked(input: String): Unit =
+  def setUnchecked(input: String) {
     if (Flag.isPermissible(input))
       unchecked = "yes".equals(input) || "on".equals(input)
     else
       error("Unknown unchecked flag '" + input + "'")
+  }
 
 /*============================================================================*\
 **                             Properties getters                             **
@@ -568,7 +586,7 @@ class Scaladoc extends MatchingTask {
 
     // Compiles the actual code
     val compiler = new Global(commandSettings, reporter) {
-      override protected def computeInternalPhases() : Unit = {
+      override protected def computeInternalPhases() {
 	phasesSet += syntaxAnalyzer
 	phasesSet += analyzer.namerFactory
 	phasesSet += analyzer.typerFactory
@@ -597,7 +615,7 @@ class Scaladoc extends MatchingTask {
           "; see the documenter output for details.")
       reporter.printSummary()
     } catch {
-      case exception: Throwable if (exception.getMessage ne null) =>
+      case exception: Throwable if exception.getMessage ne null =>
         exception.printStackTrace()
         error("Document failed because of an internal documenter error (" +
           exception.getMessage + "); see the error output for details.")

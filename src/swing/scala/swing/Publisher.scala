@@ -33,7 +33,7 @@ trait Publisher extends Reactor {
   /**
    * Notify all registered reactions.
    */
-  def publish(e: Event) { for (val l <- listeners) l(e) }
+  def publish(e: Event) { for (l <- listeners) l(e) }
 
   listenTo(this)
 }
@@ -42,7 +42,7 @@ import scala.ref._
 
 private[swing] trait SingleRefCollection[+A <: AnyRef] extends Collection[A] { self =>
 
-  trait Ref[+A<:AnyRef] extends Reference[A] {
+  trait Ref[+A <: AnyRef] extends Reference[A] {
     override def hashCode() = {
       val v = get
       if (v == None) 0 else v.get.hashCode
@@ -64,7 +64,7 @@ private[swing] trait SingleRefCollection[+A <: AnyRef] extends Collection[A] { s
 
   def purgeReferences() {
     var ref = referenceQueue.poll
-    while(ref != None) {
+    while (ref != None) {
       removeReference(ref.get.asInstanceOf[Reference[A]])
       ref = referenceQueue.poll
     }
