@@ -104,11 +104,6 @@ trait SyntheticMethods { self: Analyzer =>
       typer.typed(DefDef(method, vparamss => Literal(Constant(clazz.name.decode))))
     }
 
-    def tagMethod: Tree = {
-      val method = syntheticMethod(nme.tag, 0, MethodType(List(), IntClass.tpe))
-      typer.typed(DefDef(method, vparamss => Literal(Constant(clazz.tag))))
-    }
-
     def forwardingMethod(name: Name): Tree = {
       val target = getMember(ScalaRunTimeModule, "_" + name)
       val paramtypes =
@@ -298,7 +293,6 @@ trait SyntheticMethods { self: Analyzer =>
                 stat.symbol.resetFlag(CASEACCESSOR)
               }
             }
-            if (!inIDE && !clazz.hasFlag(INTERFACE) && clazz.info.nonPrivateDecl(nme.tag) == NoSymbol) ts += tagMethod
           }
           if (clazz.isModuleClass) {
             if (!hasOverridingImplementation(Object_toString)) ts += moduleToStringMethod

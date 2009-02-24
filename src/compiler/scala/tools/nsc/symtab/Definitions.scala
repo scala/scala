@@ -86,7 +86,6 @@ trait Definitions {
 
     // the scala reference classes
     lazy val ScalaObjectClass: Symbol = getClass("scala.ScalaObject")
-      def ScalaObjectClass_tag = getMember(ScalaObjectClass, nme.tag)
     lazy val AnnotationClass: Symbol = getClass("scala.Annotation")
     lazy val ClassfileAnnotationClass: Symbol = getClass("scala.ClassfileAnnotation")
     lazy val StaticAnnotationClass: Symbol = getClass("scala.StaticAnnotation")

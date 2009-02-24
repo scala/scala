@@ -13,11 +13,4 @@ package scala
 
 import Predef._
 
-trait ScalaObject extends AnyRef {
-
-  /** This method is needed for optimizing pattern matching expressions
-   *  which match on constructors of case classes.
-   */
-  def $tag(): Int = 0
-
-}
+trait ScalaObject extends AnyRef
