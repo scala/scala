@@ -87,7 +87,7 @@ object Predef {
       throw new java.lang.AssertionError("assertion failed")
   }
 
-  def assert(assertion: Boolean, message: Any) {
+  def assert(assertion: Boolean, message: => Any) {
     if (!assertion)
       throw new java.lang.AssertionError("assertion failed: "+ message)
   }
@@ -97,7 +97,7 @@ object Predef {
       throw new java.lang.AssertionError("assumption failed")
   }
 
-  def assume(assumption: Boolean, message: Any) {
+  def assume(assumption: Boolean, message: => Any) {
     if (!assumption)
       throw new java.lang.AssertionError("assumption failed: "+ message)
   }
@@ -107,7 +107,7 @@ object Predef {
       throw new IllegalArgumentException("requirement failed")
   }
 
-  def require(requirement: Boolean, message: Any) {
+  def require(requirement: Boolean, message: => Any) {
     if (!requirement)
       throw new IllegalArgumentException("requirement failed: "+ message)
   }
