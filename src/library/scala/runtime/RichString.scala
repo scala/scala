@@ -221,7 +221,6 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
     result
   }
 
-
   /** <p>
    *  Uses the underlying string as a pattern (in a fashion similar to
    *  printf in C), and uses the supplied arguments to fill in the
@@ -236,12 +235,9 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
    *  @param args the arguments used to instantiating the pattern.
    *  @throws java.lang.IllegalArgumentException
    */
-  def format(args : Any*) : String = {
-    val m =  classOf[String].getDeclaredMethod("format", classOf[String], classOf[Array[Object]])
-    m.invoke(null, self,
-	     args.asInstanceOf[scala.runtime.BoxedObjectArray[_]].
-             unbox(args.getClass).asInstanceOf[Array[Object]]).asInstanceOf[String]
-  }
+  def format(args : Any*) : String =
+    // the toList is necessary right now because Array(1,2,3).toArray[Any] throws a CCE
+    java.lang.String.format(self, args.toList.toArray[Any].asInstanceOf[Array[AnyRef]]: _*)
 }
 
 object RichString {
