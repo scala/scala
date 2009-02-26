@@ -1,4 +1,0 @@
-bug1392.scala:1: error: object Int is not a value
-object X extends Application { Int }
-                               ^
-one error found
