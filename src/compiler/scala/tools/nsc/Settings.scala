@@ -119,6 +119,7 @@ class Settings(error: String => Unit) {
   val require       = MultiStringSetting("-Xplugin-require", "plugin", "Abort unless a plugin is available")
   val pluginsDir    = StringSetting     ("-Xpluginsdir", "path", "Location to find compiler plugins", pluginsDirDefault)
   val print         = PhasesSetting     ("-Xprint", "Print out program after")
+  val writeICode    = BooleanSetting    ("-Xprint-icode", "Log internal icode to *.icode files").hideToIDE
   val Xprintpos     = BooleanSetting    ("-Xprint-pos", "Print tree positions (as offsets)").hideToIDE
   val printtypes    = BooleanSetting    ("-Xprint-types", "Print tree types (debugging option)").hideToIDE
   val prompt        = BooleanSetting    ("-Xprompt", "Display a prompt after each error (debugging option)").hideToIDE
@@ -128,7 +129,6 @@ class Settings(error: String => Unit) {
   val showPhases    = BooleanSetting    ("-Xshow-phases", "Print a synopsis of compiler phases").hideToIDE
   val genPhaseGraph = StringSetting     ("-Xgenerate-phase-graph", "filename", "Generate the phase graphs (outputs .dot files) to filenameX.dot", "").hideToIDE
   val sourceReader  = StringSetting     ("-Xsource-reader", "classname", "Specify a custom method for reading source files", "scala.tools.nsc.io.SourceReader").hideToIDE
-// val migrate2_7_2  = BooleanSetting    ("-Xmigrate-to-2.7.2", "Issue warning messages to help in migration to 2.7.2")
   val future        = BooleanSetting    ("-Xfuture", "Turn on future language features")
 
   val Yhelp         = BooleanSetting    ("-Y", "Print a synopsis of private options").hideToIDE

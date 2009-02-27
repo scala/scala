@@ -687,9 +687,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         val startTime = currentTime
         phase = globalPhase
         globalPhase.run
+        if (settings.writeICode.value && globalPhase.id >= icodePhase.id)
+          writeICode()
         if (settings.print contains globalPhase.name)
-          if (globalPhase.id >= icodePhase.id) writeICode()
-          else if (settings.Xshowtrees.value) nodePrinters.printAll()
+          if (settings.Xshowtrees.value) nodePrinters.printAll()
           else printAllUnits()
         if (settings.printLate.value && globalPhase.name == "cleanup")
           printAllUnits()
