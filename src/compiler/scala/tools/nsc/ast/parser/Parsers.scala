@@ -99,7 +99,6 @@ trait Parsers extends NewScanners with MarkupParsers {
     final val SLASH: Name = "/"
     final val STAR : Name = "*"
     final val BAR  : Name = "|"
-    final val OPT  : Name = "?"
     final val LT   : Name = "<"
   }
 
@@ -1433,14 +1432,9 @@ trait Parsers extends NewScanners with MarkupParsers {
     def pattern3(seqOK: Boolean): Tree = {
       val base = opstack
       var top = simplePattern(seqOK)
-      if (seqOK && isIdent) {
-        if (inName == STAR)
+      if (seqOK && isIdent && inName == STAR)
           return atPos(inSkipToken)(Star(stripParens(top)))
-        else if (inName == PLUS)
-          return atPos(inSkipToken)(makePlus(stripParens(top)))
-        else if (inName == OPT)
-          return atPos(inSkipToken)(makeOpt(stripParens(top)))
-      }
+
       while (isIdent && inName != BAR) {
         top = reduceStack(
           false, base, top, precedence(inName), treeInfo.isLeftAssoc(inName))

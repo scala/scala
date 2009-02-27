@@ -363,14 +363,6 @@ abstract class TreeBuilder {
     Sequence(for (t <- ts; e <- elements(t)) yield e)
   }
 
-  /** Create tree for the p+ regex pattern, becomes p p*  */
-  def makePlus(p: Tree): Tree =
-    makeSequence(List(p, Star(p.duplicate)))
-
-  /** Create tree for the p? regex pattern, becomes (p| )         */
-  def makeOpt(p: Tree): Tree =
-    makeAlternative(List(p, Sequence(List())))
-
   /** Create visitor <x => x match cases> */
   def makeVisitor(cases: List[CaseDef], checkExhaustive: Boolean): Tree =
     makeVisitor(cases, checkExhaustive, "x$")
