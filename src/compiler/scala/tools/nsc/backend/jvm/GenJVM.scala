@@ -712,7 +712,10 @@ abstract class GenJVM extends SubComponent {
       mirrorCode.emitRETURN(mirrorMethod.getReturnType())
 
       addRemoteException(mirrorMethod, m)
-      // addGenericSignature(mirrorMethod, m)
+      // only add generic signature if the method is concrete; bug #1745
+      if (!m.hasFlag(Flags.DEFERRED))
+        addGenericSignature(mirrorMethod, m)
+
       val (throws, others) = splitAnnotations(m.attributes, ThrowsAttr)
       addExceptionsAttribute(mirrorMethod, throws)
       addAnnotations(mirrorMethod, others)
