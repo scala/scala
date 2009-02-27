@@ -7,6 +7,9 @@ import java.awt.event._
 import javax.swing.JComponent
 import javax.swing.border.Border
 
+/**
+ * Utility methods, mostly for wrapping components.
+ */
 object Component {
   private val ClientKey = "scala.swingWrapper"
 
@@ -27,6 +30,10 @@ object Component {
 
 /**
  * Base class for all UI elements that can be displayed in a window.
+ * Components are publishers that fire the following event classes:
+ * ComponentEvent, FocusEvent, FontChanged, ForegroundChanged, BackgroundChanged.
+ *
+ * @note [Java Swing] Unlike in Java Swing, not all components are also containers.
  *
  * @see javax.swing.JComponent
  */

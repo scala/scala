@@ -1,7 +1,7 @@
 package scala.swing
 
 /**
- * A component that can contain other components, such as layout panels.
+ * A component that can contain other components.
  *
  * @see javax.swing.JPanel
  */

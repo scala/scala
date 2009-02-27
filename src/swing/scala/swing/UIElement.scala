@@ -7,9 +7,16 @@ import java.awt.{Color, Cursor, Font, Dimension}
  * of two groups: top-level elements such as windows and dialogs, or
  * <code>Component</code>s.
  *
+ * @note [Java Swing] This trait does not have an exact counterpart in
+ * Java Swing. The peer is of type java.awt.Component since this is the
+ * least common upper bound of possible underlying peers.
+ *
  * @see java.awt.Component
  */
 trait UIElement extends Proxy {
+  /**
+   * The underlying Swing peer.
+   */
   def peer: java.awt.Component
   def self = peer
 

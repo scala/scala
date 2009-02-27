@@ -5,7 +5,8 @@ import scala.collection.mutable.Buffer
 
 object Container {
   /**
-   * Utility trait for wrapping containers.
+   * Utility trait for wrapping containers. Provides an immutable
+   * implementation of the contents member.
    */
   trait Wrapper extends Component with Container {
     protected val _contents = new Content
@@ -39,9 +40,14 @@ object Container {
 }
 
 /**
- * A UI element that can contain <code>Component</code>s, such as windows,
- * panels, and menus.
+ * The base traits for UI elements that can contain <code>Component</code>s.
+ *
+ * @note [Java Swing] This is not the wrapper for java.awt.Container but a trait
+ * that extracts a common interface for components, menus, and windows.
  */
 trait Container extends UIElement {
+  /**
+   * The child components of this container.
+   */
   def contents: Seq[Component]
 }
