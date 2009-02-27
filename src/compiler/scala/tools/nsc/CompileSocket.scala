@@ -60,8 +60,8 @@ class CompileSocket {
   val tmpDir = {
     val totry = List(
         ("scala.home", List("var", "scala-devel")),
-        ("user.home", List("tmp")),
-        ("java.io.tmpdir", Nil))
+        ("java.io.tmpdir", List("scala-devel")),
+        ("user.home", List("tmp")))
 
     /** Expand a property-extensions pair into a complete File object */
     def expand(trial: (String, List[String])): Option[File] = {
@@ -84,23 +84,17 @@ class CompileSocket {
       f.isDirectory && f.canWrite
     }
 
-    val potentials =
-      for {
-        trial <- totry
-        val expanded = expand(trial)
-        if !expanded.isEmpty
-        if isDirWritable(expanded.get)
+    def findTmpDir(): File = {
+      for (trial <- totry) expand(trial) match {
+        case Some(dir) if isDirWritable(dir) =>
+          info("[Temp directory: " + dir + "]")
+          return dir
+        case _ =>
       }
-      yield expanded.get
-
-    if (potentials.isEmpty)
       fatal("Could not find a directory for temporary files")
-    else {
-      val d = potentials.head
-      d.mkdirs
-      info("[Temp directory: " + d + "]")
-      d
     }
+
+    findTmpDir()
   }
 
   /* A directory holding port identification files */
