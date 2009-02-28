@@ -35,7 +35,7 @@ import collection.mutable.HashSet
 class StdLexical extends Lexical with StdTokens {
   // see `token' in `Scanners'
   def token: Parser[Token] =
-    ( letter ~ rep( letter | digit )                    ^^ { case first ~ rest => processIdent(first :: rest mkString "") }
+    ( identChar ~ rep( identChar | digit )              ^^ { case first ~ rest => processIdent(first :: rest mkString "") }
     | digit ~ rep( digit )                              ^^ { case first ~ rest => NumericLit(first :: rest mkString "") }
     | '\'' ~ rep( chrExcept('\'', '\n', EofCh) ) ~ '\'' ^^ { case '\'' ~ chars ~ '\'' => StringLit(chars mkString "") }
     | '\"' ~ rep( chrExcept('\"', '\n', EofCh) ) ~ '\"' ^^ { case '\"' ~ chars ~ '\"' => StringLit(chars mkString "") }
@@ -45,6 +45,9 @@ class StdLexical extends Lexical with StdTokens {
     | delim
     | failure("illegal character")
     )
+
+  // legal identifier chars other than digits
+  def identChar = letter | elem('_')
 
   // see `whitespace in `Scanners'
   def whitespace: Parser[Any] = rep(
