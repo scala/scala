@@ -439,11 +439,7 @@ trait Iterable[+A] {
   /** Converts a collection into a flat <code>String</code> by each element's toString method.
    *  @note Will not terminate for infinite-sized collections.
    */
-  def mkString = {
-    val buf = new StringBuilder
-    foreach(buf append _.toString)
-    buf.toString
-  }
+  def mkString: String = mkString("")
 
   /** Write all elements of this string into given string builder.
    *
