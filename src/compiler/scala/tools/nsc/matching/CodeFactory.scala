@@ -96,8 +96,8 @@ trait CodeFactory {
   final def Equals  (left: Tree, right: Tree): Tree = fn(left, nme.EQ, right)
   final def Eq      (left: Tree, right: Tree): Tree = fn(left, nme.eq, right)
   final def GTE     (left: Tree, right: Tree): Tree = fn(left, nme.GE, right) // >=
-  final def And     (left: Tree, right: Tree): Tree = fn(left, AND, right)
-  final def Not                   (arg: Tree): Tree = Select(arg, NOT)
+  final def And     (terms: Tree*): Tree = terms.reduceLeft((left, right) => fn(left, AND, right))
+  final def Not     (arg: Tree): Tree = Select(arg, NOT)
 
   final def ThrowMatchError(pos: Position, obj: Tree) = atPos(pos) {
     Throw( New(TypeTree(MatchErrorClass.tpe), List(List(obj))) )

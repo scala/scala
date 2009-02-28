@@ -144,6 +144,7 @@ object ScalaRunTime {
     case x: Array[Boolean] => new BoxedBooleanArray(x)
     case x: Array[AnyRef] => new BoxedObjectArray(x)
     case x: BoxedArray[_] => x
+    case null => null
   }
 
   /** Given any Scala value, convert it to a String.

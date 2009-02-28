@@ -362,10 +362,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               if (treeInfo.isPureExpr(tree)) gen.mkAttributedRef(BoxedUnit_UNIT)
               else Block(List(tree), gen.mkAttributedRef(BoxedUnit_UNIT))
             } else if (sym == ArrayClass) {
-              val elemClass = tree.tpe.typeArgs.head.typeSymbol;
-              val boxedClass = if (isValueClass(elemClass)) boxedArrayClass(elemClass)
-                               else BoxedObjectArrayClass;
-              Apply(Select(New(TypeTree(boxedClass.tpe)), nme.CONSTRUCTOR), List(tree))
+              boxArray(tree)
             } else {
               Apply(gen.mkAttributedRef(boxMethod(tree.tpe.typeSymbol)), List(tree)).
                 setPos(tree.pos) setType ObjectClass.tpe

@@ -490,10 +490,6 @@ class Scalac extends MatchingTask {
           val includedFiles = getDirectoryScanner(originDir).getIncludedFiles()
           var scalaFiles = includedFiles.filter(_.endsWith(".scala"))
           val javaFiles = includedFiles.filter(_.endsWith(".java"))
-          if (!force) {
-            scalaFiles = new SourceFileScanner(this).
-              restrict(scalaFiles, originDir, destination.get, mapper)
-          }
           javaOnly = javaOnly && (scalaFiles.length == 0)
           val list = scalaFiles.toList ::: javaFiles.toList
           if (scalacDebugging && list.length > 0)
@@ -556,6 +552,11 @@ class Scalac extends MatchingTask {
 
     log("Scalac params = '" + addParams + "'", Project.MSG_DEBUG)
     settings.parseParams(addParams, error)
+
+    if(force){
+      settings.make.value = "all"
+    }
+
     (settings, sourceFiles, javaOnly)
   }
 
