@@ -411,7 +411,7 @@ trait TypeKinds { self: ICodes =>
 
 
   /** Return the TypeKind of the given type */
-  def toTypeKind(t: Type): TypeKind = t.normalize match {
+  def toTypeKind(t: Type): TypeKind = t match {
     case ThisType(sym) =>
       if (sym == definitions.ArrayClass)
         AnyRefReference
@@ -450,7 +450,8 @@ trait TypeKinds { self: ICodes =>
     //  REFERENCE(definitions.ObjectClass)
 
     case _ =>
-      abort("Unknown type: " + t)
+      abort("Unknown type: " + t + ", " + t.normalize + "[" + t.getClass + ", " + t.normalize.getClass + "]" +
+	    " TypeRef? " + t.isInstanceOf[TypeRef] + ", " + t.normalize.isInstanceOf[TypeRef])
   }
 
   /** Return the type kind of a class, possibly an array type.
