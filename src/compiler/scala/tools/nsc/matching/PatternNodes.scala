@@ -83,9 +83,10 @@ trait PatternNodes {
       def cmp(other: Type): TypeComparison = TypeComparison(tpe, tpeWRTEquality(other))
 
       def coversSym(sym: Symbol) = {
+        lazy val lmoc = sym.linkedModuleOfClass
         val symtpe =
-          if ((sym hasFlag Flags.MODULE) && (sym.linkedModuleOfClass ne NoSymbol))
-            singleType(sym.tpe.prefix, sym.linkedModuleOfClass)   // e.g. None, Nil
+          if ((sym hasFlag Flags.MODULE) && (lmoc ne NoSymbol))
+            singleType(sym.tpe.prefix, lmoc)   // e.g. None, Nil
           else sym.tpe
 
         (tpe.typeSymbol == sym) ||

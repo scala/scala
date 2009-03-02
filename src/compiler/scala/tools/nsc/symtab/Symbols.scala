@@ -1029,7 +1029,8 @@ trait Symbols {
      */
     final def linkedClassOfModule: Symbol = {
       if (this != NoSymbol)
-        owner.info.decl(name.toTypeName).suchThat(_ isCoDefinedWith this)
+        owner.rawInfo.decl(name.toTypeName).suchThat(
+          sym => !sym.hasFlag(MODULE) && (sym isCoDefinedWith this))
       else NoSymbol
     }
 
