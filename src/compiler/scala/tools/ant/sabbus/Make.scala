@@ -6,15 +6,15 @@
 **                          |/                                          **
 \*                                                                      */
 
+// $Id$
+
 package scala.tools.ant.sabbus
 
-import java.net.URL
 import java.io.File
 import org.apache.tools.ant.Task
-import org.apache.tools.ant.types.{Path, Reference}
 
 class Make extends Task with TaskArgs {
-  override def execute: Unit = {
+  override def execute {
     if (id.isEmpty) error("Mandatory attribute 'id' is not set.")
     if (compilerPath.isEmpty) error("Mandatory attribute 'compilerpath' is not set.")
     val settings = new Settings

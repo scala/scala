@@ -6,6 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
+// $Id$
+
 package scala.tools.ant.sabbus
 
 import java.io.File
@@ -16,7 +18,7 @@ import org.apache.tools.ant.util.{GlobPatternMapper, SourceFileScanner}
 
 class Use extends MatchingTask {
 
-  def setId(input: String): Unit = {
+  def setId(input: String) {
     id = Some(input)
   }
 
@@ -24,11 +26,11 @@ class Use extends MatchingTask {
     sourceDir = Some(input)
   }
 
-  def setDestdir(input: File): Unit = {
+  def setDestdir(input: File) {
     destinationDir = Some(input)
   }
 
-  def setFailOnError(input: Boolean): Unit = {
+  def setFailOnError(input: Boolean) {
     failOnError = input
   }
 
@@ -37,7 +39,7 @@ class Use extends MatchingTask {
   private var destinationDir: Option[File] = None
   private var failOnError: Boolean = true
 
-  override def execute(): Unit = {
+  override def execute() {
     if (id.isEmpty) error("Mandatory attribute 'id' is not set.")
     if (sourceDir.isEmpty) error("Mandatory attribute 'srcdir' is not set.")
     val compiler = Compilers(id.get)

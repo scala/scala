@@ -6,6 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
+// $Id$
+
 package scala.tools.ant.sabbus
 
 case class CompilationFailure(message: String, cause: Exception) extends Exception(message, cause)

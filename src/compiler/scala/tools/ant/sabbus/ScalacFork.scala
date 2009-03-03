@@ -1,7 +1,17 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala Ant Tasks                      **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2009, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.tools.ant.sabbus
 
-import java.io.File;
-import org.apache.tools.ant.Project;
+import java.io.File
+import org.apache.tools.ant.Project
 import org.apache.tools.ant.taskdefs.{MatchingTask, Java}
 import org.apache.tools.ant.util.{GlobPatternMapper, SourceFileScanner}
 
@@ -10,15 +20,15 @@ class ScalacFork extends MatchingTask with TaskArgs {
     sourceDir = Some(input)
   }
 
-  def setFailOnError(input: Boolean): Unit = {
+  def setFailOnError(input: Boolean) {
     failOnError = input
   }
 
-  def setTimeout(input: Long): Unit = {
+  def setTimeout(input: Long) {
     timeout = Some(input)
   }
 
-  def setJvmArgs(input: String): Unit = {
+  def setJvmArgs(input: String) {
     jvmArgs = Some(input)
   }
 

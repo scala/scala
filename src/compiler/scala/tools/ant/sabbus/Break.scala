@@ -6,19 +6,21 @@
 **                          |/                                          **
 \*                                                                      */
 
+// $Id$
+
 package scala.tools.ant.sabbus
 
 import org.apache.tools.ant.Task
 
 class Break extends Task {
 
-  def setId(input: String): Unit = {
+  def setId(input: String) {
     id = Some(input)
   }
 
   private var id: Option[String] = None
 
-  override def execute: Unit = {
+  override def execute {
     if (id.isEmpty) error("Attribute 'id' is not set")
     Compilers.break(id.get)
   }

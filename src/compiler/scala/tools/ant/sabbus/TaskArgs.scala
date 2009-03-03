@@ -1,3 +1,13 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala Ant Tasks                      **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2009, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
 package scala.tools.ant.sabbus
 
 import java.io.File
@@ -6,22 +16,22 @@ import org.apache.tools.ant.types.{Path, Reference}
 
 trait TaskArgs { this: Task =>
 
-  def setId(input: String): Unit = {
+  def setId(input: String) {
     id = Some(input)
   }
 
-  def setParams(input: String): Unit = {
+  def setParams(input: String) {
     params = params match {
       case None => Some(input)
       case Some(ps) => Some(ps + " " + input)
     }
   }
 
-  def setTarget(input: String): Unit = {
+  def setTarget(input: String) {
     compTarget = Some(input)
   }
 
-  def setCompilationPath(input: Path): Unit = {
+  def setCompilationPath(input: Path) {
     if (compilationPath.isEmpty) compilationPath = Some(input)
     else compilationPath.get.append(input)
   }
@@ -31,11 +41,11 @@ trait TaskArgs { this: Task =>
     compilationPath.get.createPath()
   }
 
-  def setCompilationPathRef(input: Reference): Unit = {
+  def setCompilationPathRef(input: Reference) {
     createCompilationPath.setRefid(input)
   }
 
-  def setSrcPath(input: Path): Unit = {
+  def setSrcPath(input: Path) {
     if (sourcePath.isEmpty) sourcePath = Some(input)
     else sourcePath.get.append(input)
   }
@@ -45,11 +55,11 @@ trait TaskArgs { this: Task =>
     sourcePath.get.createPath()
   }
 
-  def setSrcPathRef(input: Reference): Unit = {
+  def setSrcPathRef(input: Reference) {
     createSrcPath.setRefid(input)
   }
 
-  def setCompilerPath(input: Path): Unit = {
+  def setCompilerPath(input: Path) {
     if (compilerPath.isEmpty) compilerPath = Some(input)
     else compilerPath.get.append(input)
   }
@@ -59,11 +69,11 @@ trait TaskArgs { this: Task =>
     compilerPath.get.createPath()
   }
 
-  def setCompilerPathRef(input: Reference): Unit = {
+  def setCompilerPathRef(input: Reference) {
     createCompilerPath.setRefid(input)
   }
 
-  def setDestdir(input: File): Unit = {
+  def setDestdir(input: File) {
     destinationDir = Some(input)
   }
 

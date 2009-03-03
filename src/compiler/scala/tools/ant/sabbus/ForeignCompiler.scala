@@ -6,6 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
+// $Id$
+
 package scala.tools.ant.sabbus
 
 import java.io.File
@@ -17,7 +19,7 @@ class ForeignCompiler {
 
   private var argsBuffer: Array[String] = null
   def args: Array[String] = argsBuffer
-  def args_=(a: Array[String]): Unit = {
+  def args_=(a: Array[String]) {
     argsBuffer = a
     nsc
   }
