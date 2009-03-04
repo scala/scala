@@ -303,7 +303,7 @@ trait Trees {
     def mods: Modifiers
     def keyword: String = this match {
       case TypeDef(_, _, _, _)      => "type"
-      case ClassDef(_, _, _, _)     => "class"
+      case ClassDef(mods, _, _, _)  => if (mods.isTrait) "trait" else "class"
       case DefDef(_, _, _, _, _, _) => "def"
       case ModuleDef(_, _, _)       => "object"
       case PackageDef(_, _)         => "package"

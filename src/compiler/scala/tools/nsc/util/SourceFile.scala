@@ -56,9 +56,10 @@ abstract class SourceFile {
 /** a file whose contents do not change over time */
 class BatchSourceFile(val file : AbstractFile, _content : Array[Char]) extends SourceFile {
   import SourceFile._
-  def this(_file: AbstractFile) = this(_file, _file.toCharArray)
-  def this(sourceName: String, content: Array[Char]) =
-    this(new VirtualFile(sourceName), content)
+  def this(_file: AbstractFile)                 = this(_file, _file.toCharArray)
+  def this(sourceName: String, cs: Seq[Char])   = this(new VirtualFile(sourceName), cs.toArray)
+  def this(_file: AbstractFile, cs: Seq[Char])  = this(_file, cs.toArray)
+
   override def equals(that : Any) = that match {
     case that : BatchSourceFile => file == that.file
     case _ => false

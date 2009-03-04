@@ -6,21 +6,23 @@
 
 package scala.tools.nsc
 
-import java.io.{File, PrintWriter, StringWriter, Writer}
-import java.lang.{Class, ClassLoader}
-import java.net.{MalformedURLException, URL, URLClassLoader}
+import java.io.{ File, PrintWriter, StringWriter, Writer }
+import java.lang.{ Class, ClassLoader }
+import java.net.{ MalformedURLException, URL, URLClassLoader }
+import java.lang.reflect
+import reflect.InvocationTargetException
 
 import scala.collection.immutable.ListSet
 import scala.collection.mutable
-import scala.collection.mutable.{ListBuffer, HashSet, ArrayBuffer}
+import scala.collection.mutable.{ ListBuffer, HashSet, ArrayBuffer }
 
-//import ast.parser.SyntaxAnalyzer
-import io.{PlainFile, VirtualDirectory}
-import reporters.{ConsoleReporter, Reporter}
-import symtab.Flags
-import util.{SourceFile,BatchSourceFile,ClassPath,NameTransformer}
-import nsc.{InterpreterResults=>IR}
-import scala.tools.nsc.interpreter._
+import io.{ PlainFile, VirtualDirectory }
+import reporters.{ ConsoleReporter, Reporter }
+import symtab.{ Flags, Names }
+import util.{ SourceFile, BatchSourceFile, ClassPath, NameTransformer }
+import nsc.{ InterpreterResults => IR }
+import nsc.interpreter._
+import Interpreter._
 
 /** <p>
  *    An interpreter for Scala code.
@@ -63,37 +65,29 @@ import scala.tools.nsc.interpreter._
  * @author Lex Spoon
  */
 class Interpreter(val settings: Settings, out: PrintWriter) {
-  import symtab.Names
-
-  /* If the interpreter is running on pre-jvm-1.5 JVM,
-     it is necessary to force the target setting to jvm-1.4 */
+  /* If running on pre-1.5 JVM, force target setting to 1.4 */
   private val major = System.getProperty("java.class.version").split("\\.")(0)
-  if (major.toInt < 49) {
-    this.settings.target.value = "jvm-1.4"
-  }
+  if (major.toInt < 49) this.settings.target.value = "jvm-1.4"
 
   /** directory to save .class files to */
   val virtualDirectory = new VirtualDirectory("(memory)", None)
 
   /** the compiler to compile expressions with */
-  val compiler: scala.tools.nsc.Global = newCompiler(settings, reporter)
+  val compiler: nsc.Global = newCompiler(settings, reporter)
 
-  import compiler.Traverser
-  import compiler.{Tree, TermTree,
-                   ValOrDefDef, ValDef, DefDef, Assign,
-                   ClassDef, ModuleDef, Ident, Select, TypeDef,
-                   Import, MemberDef, DocDef}
-  import compiler.CompilationUnit
-  import compiler.{Symbol,Name,Type}
-  import compiler.nme
-  import compiler.newTermName
-  import compiler.nme.{INTERPRETER_VAR_PREFIX, INTERPRETER_SYNTHVAR_PREFIX}
-  import Interpreter.string2code
+  import compiler.{ Traverser, CompilationUnit, Symbol, Name, Type }
+  import compiler.{
+    Tree, TermTree, ValOrDefDef, ValDef, DefDef, Assign, ClassDef,
+    ModuleDef, Ident, Select, TypeDef, Import, MemberDef, DocDef }
+  import compiler.{ nme, newTermName }
+  import nme.{
+    INTERPRETER_VAR_PREFIX, INTERPRETER_SYNTHVAR_PREFIX, INTERPRETER_LINE_PREFIX,
+    INTERPRETER_IMPORT_WRAPPER, INTERPRETER_WRAPPER_SUFFIX, USCOREkw
+  }
 
   /** construct an interpreter that reports to Console */
   def this(settings: Settings) =
-    this(settings,
-         new NewLinePrintWriter(new ConsoleWriter, true))
+    this(settings, new NewLinePrintWriter(new ConsoleWriter, true))
 
   /** whether to print out result lines */
   private var printResults: Boolean = true
@@ -117,28 +111,26 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   lazy val isettings = new InterpreterSettings
 
   object reporter extends ConsoleReporter(settings, null, out) {
-    //override def printMessage(msg: String) { out.println(clean(msg)) }
     override def printMessage(msg: String) { out.print(clean(msg) + "\n"); out.flush() }
   }
 
   /** Instantiate a compiler.  Subclasses can override this to
    *  change the compiler class used by this interpreter. */
   protected def newCompiler(settings: Settings, reporter: Reporter) = {
-    val comp = new scala.tools.nsc.Global(settings, reporter)
+    val comp = new nsc.Global(settings, reporter)
     comp.genJVM.outputDir = virtualDirectory
     comp
   }
 
-
   /** the compiler's classpath, as URL's */
   val compilerClasspath: List[URL] = {
     val classpathPart =
-      (ClassPath.expandPath(compiler.settings.classpath.value).
-         map(s => new File(s).toURL))
+      ClassPath.expandPath(compiler.settings.classpath.value).map(s => new File(s).toURL)
     def parseURL(s: String): Option[URL] =
-      try { Some(new URL(s)) }
-      catch { case _:MalformedURLException => None }
-    val codebasePart = (compiler.settings.Xcodebase.value.split(" ")).toList.flatMap(parseURL)
+      try   { Some(new URL(s)) }
+      catch { case _: MalformedURLException => None }
+
+    val codebasePart = (compiler.settings.Xcodebase.value.split(" ")).toList flatMap parseURL
     classpathPart ::: codebasePart
   }
 
@@ -157,64 +149,53 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   */
   private var classLoader = makeClassLoader()
   private def makeClassLoader(): ClassLoader = {
+    val cp = compilerClasspath.toArray
     val parent =
-      if (parentClassLoader == null)
-        new URLClassLoader(compilerClasspath.toArray)
-      else
-         new URLClassLoader(compilerClasspath.toArray,
-                            parentClassLoader)
+      if (parentClassLoader == null)  new URLClassLoader(cp)
+      else                            new URLClassLoader(cp, parentClassLoader)
+
     new AbstractFileClassLoader(virtualDirectory, parent)
   }
 
-  /** Set the current Java "context" class loader to this
-    * interpreter's class loader */
-  def setContextClassLoader() {
-    Thread.currentThread.setContextClassLoader(classLoader)
-  }
+  private def loadByName(s: String): Class[_] = Class.forName(s, true, classLoader)
+  // XXX how does this differ from getMethod("set") ?
+  private def methodByName(c: Class[_], name: String): Option[reflect.Method] =
+    c.getDeclaredMethods.toList.find(_.getName == name)
+
+  // Set the current Java "context" class loader to this interpreter's class loader
+  def setContextClassLoader() = Thread.currentThread.setContextClassLoader(classLoader)
 
   protected def parentClassLoader: ClassLoader = this.getClass.getClassLoader()
 
   /** the previous requests this interpreter has processed */
   private val prevRequests = new ArrayBuffer[Request]()
 
-  /** next line number to use */
-  private var nextLineNo = 0
+  /** counter creator */
+  def mkNameCreator(s: String) = new Function0[String] with Function1[String,String] {
+    private var x = -1
+    def apply(): String = { x += 1 ; s + x.toString }
+    // second apply method temp for newInternalVarName's bug compatibility
+    def apply(pre: String) = { x += 1 ; pre + x.toString }
+    def reset(): Unit = x = -1
+  }
 
   /** allocate a fresh line name */
-  private def newLineName = {
-    val num = nextLineNo
-    nextLineNo += 1
-    compiler.nme.INTERPRETER_LINE_PREFIX + num
-  }
+  private val newLineName = mkNameCreator(INTERPRETER_LINE_PREFIX)
 
-  /** next result variable number to use */
-  private var nextVarNameNo = 0
-
-  /** allocate a fresh variable name */
-  private def newVarName() = {
-    val num = nextVarNameNo
-    nextVarNameNo += 1
-    INTERPRETER_VAR_PREFIX + num
-  }
-
-  /** next internal variable number to use */
-  private var nextInternalVarNo = 0
+  /** allocate a fresh var name */
+  private val newVarName = mkNameCreator(INTERPRETER_VAR_PREFIX)
 
   /** allocate a fresh internal variable name */
-  private def newInternalVarName() = {
-    val num = nextVarNameNo
-    nextVarNameNo += 1
-    INTERPRETER_SYNTHVAR_PREFIX + num
-  }
-
+  /** XXX temporarily shares newVarName's creator to be bug-compatible with
+    * test case interpreter.scala */
+  private def newInternalVarName = () => newVarName(INTERPRETER_SYNTHVAR_PREFIX)
+  // private val newInternalVarName = mkNameCreator(INTERPRETER_SYNTHVAR_PREFIX)
 
   /** Check if a name looks like it was generated by newVarName */
-  private def isGeneratedVarName(name: String): Boolean =
-    name.startsWith(INTERPRETER_VAR_PREFIX) && {
-      val suffix = name.drop(INTERPRETER_VAR_PREFIX.length)
-      suffix.forall(_.isDigit)
-    }
-
+  private def isGeneratedVarName(name: String): Boolean = {
+    val pre = INTERPRETER_VAR_PREFIX
+    (name startsWith pre) && (name drop pre.length).forall(_.isDigit)
+  }
 
   /** generate a string using a routine that wants to write on a stream */
   private def stringFrom(writer: PrintWriter => Unit): String = {
@@ -228,37 +209,26 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   /** Truncate a string if it is longer than settings.maxPrintString */
   private def truncPrintString(str: String): String = {
     val maxpr = isettings.maxPrintString
-
-    if (maxpr <= 0)
-      return str
-
-    if (str.length <= maxpr)
-      return str
-
     val trailer = "..."
-    if (maxpr >= trailer.length+1)
-      return str.substring(0, maxpr-3) + trailer
 
-    str.substring(0, maxpr)
+    if (maxpr <= 0 || str.length <= maxpr) str
+    else str.substring(0, maxpr-3) + trailer
   }
 
   /** Clean up a string for output */
-  private def clean(str: String) =
-    truncPrintString(Interpreter.stripWrapperGunk(str))
+  private def clean(str: String) = truncPrintString(stripWrapperGunk(str))
 
   /** Indent some code by the width of the scala> prompt.
    *  This way, compiler error messages read better.
    */
-  def indentCode(code: String) = {
-    val spaces = "       "
-
+  private final val spaces = List.make(7, " ").mkString
+  def indentCode(code: String) =
     stringFrom(str =>
       for (line <- code.lines) {
         str.print(spaces)
         str.print(line + "\n")
         str.flush()
       })
-  }
 
   implicit def name2string(name: Name) = name.toString
 
@@ -285,149 +255,117 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    * (3) It imports multiple same-named implicits, but only the
    * last one imported is actually usable.
    */
-  private def importsCode(wanted: Set[Name]): (String, String, String) = {
+  private case class ComputedImports(prepend: String, append: String, access: String)
+  private def importsCode(wanted: Set[Name]): ComputedImports = {
     /** Narrow down the list of requests from which imports
      *  should be taken.  Removes requests which cannot contribute
      *  useful imports for the specified set of wanted names.
      */
-    def reqsToUse: List[(Request,MemberHandler)] = {
-      /** Loop through a list of MemberHandlers and select
-       *  which ones to keep.  'wanted' is the set of
-       *  names that need to be imported, and
-       *  'shadowed' is the list of names useless to import
-       *  because a later request will re-import it anyway.
+    case class ReqAndHandler(req: Request, handler: MemberHandler)
+    def reqsToUse: List[ReqAndHandler] = {
+      /** Loop through a list of MemberHandlers and select which ones to keep.
+        * 'wanted' is the set of names that need to be imported.
        */
-      def select(reqs: List[(Request,MemberHandler)], wanted: Set[Name]):
-      List[(Request,MemberHandler)] = {
+      def select(reqs: List[ReqAndHandler], wanted: Set[Name]): List[ReqAndHandler] = {
+        val isWanted = wanted contains _
+        def keepHandler(handler: MemberHandler): Boolean = {
+          import handler._
+          definesImplicit || importsWildcard || (importedNames ++ boundNames).exists(isWanted)
+        }
+
         reqs match {
-          case Nil => Nil
-
-          case (req,handler)::rest =>
-            val keepit =
-              (handler.definesImplicit ||
-               handler.importsWildcard ||
-               handler.importedNames.exists(wanted.contains(_)) ||
-               handler.boundNames.exists(wanted.contains(_)))
-
-            val newWanted =
-              if (keepit) {
-                (wanted
-                   ++ handler.usedNames
-                   -- handler.boundNames
-                   -- handler.importedNames)
-              } else {
-                wanted
-              }
-
-            val restToKeep = select(rest, newWanted)
-
-            if(keepit)
-              (req,handler) :: restToKeep
-            else
-              restToKeep
+          case Nil                                    => Nil
+          case rh :: rest if !keepHandler(rh.handler) => select(rest, wanted)
+          case rh :: rest                             =>
+            import rh.handler._
+            val newWanted = wanted ++ usedNames -- boundNames -- importedNames
+            rh :: select(rest, newWanted)
         }
       }
 
       val rhpairs = for {
         req <- prevRequests.toList.reverse
         handler <- req.handlers
-      } yield (req, handler)
+      } yield ReqAndHandler(req, handler)
 
       select(rhpairs, wanted).reverse
     }
 
-    val code = new StringBuffer
-    val trailingBraces = new StringBuffer
-    val accessPath = new StringBuffer
-    val impname = compiler.nme.INTERPRETER_IMPORT_WRAPPER
+    val code, trailingBraces, accessPath = new StringBuffer
     val currentImps = mutable.Set.empty[Name]
 
     // add code for a new object to hold some imports
     def addWrapper() {
-      code.append("object " + impname + "{\n")
-      trailingBraces.append("}\n")
-      accessPath.append("." + impname)
+      val impname = INTERPRETER_IMPORT_WRAPPER
+      code append "object %s {\n".format(impname)
+      trailingBraces append "}\n"
+      accessPath append ("." + impname)
+
       currentImps.clear
     }
 
     addWrapper()
 
-    // loop through previous requests, adding imports
-    // for each one
-    for ((req,handler) <- reqsToUse) {
-          // If the user entered an import, then just use it
+    // loop through previous requests, adding imports for each one
+    for (ReqAndHandler(req, handler) <- reqsToUse) {
+      import handler._
+      // If the user entered an import, then just use it; add an import wrapping
+      // level if the import might conflict with some other import
+      if (importsWildcard || currentImps.exists(importedNames.contains))
+        addWrapper()
 
-          // add an import wrapping level if the import might
-          // conflict with some other import
-          if(handler.importsWildcard ||
-             currentImps.exists(handler.importedNames.contains))
-            if(!currentImps.isEmpty)
-              addWrapper()
+      if (member.isInstanceOf[Import])
+        code append (member.toString + "\n")
 
-          if (handler.member.isInstanceOf[Import])
-            code.append(handler.member.toString + ";\n")
+      // give wildcard imports a import wrapper all to their own
+      if (importsWildcard)  addWrapper()
+      else                  currentImps ++= importedNames
 
-          // give wildcard imports a import wrapper all to their own
-          if(handler.importsWildcard)
-            addWrapper()
-          else
-            currentImps ++= handler.importedNames
+      // For other requests, import each bound variable.
+      // import them explicitly instead of with _, so that
+      // ambiguity errors will not be generated. Also, quote
+      // the name of the variable, so that we don't need to
+      // handle quoting keywords separately.
+      for (imv <- boundNames) {
+        if (currentImps contains imv) addWrapper()
 
-          // For other requests, import each bound variable.
-          // import them explicitly instead of with _, so that
-          // ambiguity errors will not be generated. Also, quote
- 	  // the name of the variable, so that we don't need to
- 	  // handle quoting keywords separately.
-          for (imv <- handler.boundNames) {
-            if (currentImps.contains(imv))
-              addWrapper()
-            code.append("import ")
-            code.append(req.objectName + req.accessPath + ".`" + imv + "`;\n")
-            currentImps += imv
-          }
+        code append ("import " + req.fullPath(imv))
+        currentImps += imv
+      }
     }
 
-    addWrapper() // Add one extra wrapper, to prevent warnings
-                 // in the frequent case of redefining
-                 // the value bound in the last interpreter
-                 // request.
-
-    (code.toString, trailingBraces.toString, accessPath.toString)
+    // add one extra wrapper, to prevent warnings in the common case of
+    // redefining the value bound in the last interpreter request.
+    addWrapper()
+    ComputedImports(code.toString, trailingBraces.toString, accessPath.toString)
   }
 
-  /** Parse a line into a sequence of trees. Returns None if the input
-    * is incomplete. */
+  /** Parse a line into a sequence of trees. Returns None if the input is incomplete. */
   private def parse(line: String): Option[List[Tree]] = {
     var justNeedsMore = false
     reporter.withIncompleteHandler((pos,msg) => {justNeedsMore = true}) {
       // simple parse: just parse it, nothing else
       def simpleParse(code: String): List[Tree] = {
         reporter.reset
-        val unit =
-          new CompilationUnit(
-            new BatchSourceFile("<console>", code.toCharArray()))
-        val scanner = new compiler.syntaxAnalyzer.UnitParser(unit);
-        val xxx = scanner.templateStatSeq(false);
-        (xxx._2)
+        val unit = new CompilationUnit(new BatchSourceFile("<console>", code))
+        val scanner = new compiler.syntaxAnalyzer.UnitParser(unit)
+
+        scanner.templateStatSeq(false)._2
       }
-      val (trees) = simpleParse(line)
-      if (reporter.hasErrors) {
-        Some(Nil) // the result did not parse, so stop
-      } else if (justNeedsMore) {
-        None
-      } else {
-        Some(trees)
-      }
+      val trees = simpleParse(line)
+
+      if (reporter.hasErrors)   Some(Nil)  // the result did not parse, so stop
+      else if (justNeedsMore)   None
+      else                      Some(trees)
     }
   }
 
   /** Compile an nsc SourceFile.  Returns true if there are
    *  no compilation errors, or false othrewise.
    */
-  def compileSources(sources: List[SourceFile]): Boolean = {
-    val cr = new compiler.Run
+  def compileSources(sources: SourceFile*): Boolean = {
     reporter.reset
-    cr.compileSources(sources)
+    new compiler.Run() compileSources sources.toList
     !reporter.hasErrors
   }
 
@@ -435,7 +373,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    *  compilation errors, or false otherwise.
    */
   def compileString(code: String): Boolean =
-    compileSources(List(new BatchSourceFile("<script>", code.toCharArray)))
+    compileSources(new BatchSourceFile("<script>", code))
 
   /** Build a request from the user. <code>trees</code> is <code>line</code>
    *  after being parsed.
@@ -443,20 +381,17 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private def buildRequest(trees: List[Tree], line: String, lineName: String): Request =
     new Request(line, lineName)
 
-  private def chooseHandler(member: Tree): Option[MemberHandler] =
-    member match {
-      case member: DefDef =>
-          Some(new DefHandler(member))
-      case member: ValDef =>
-          Some(new ValHandler(member))
-      case member@Assign(Ident(_), _) => Some(new AssignHandler(member))
-      case member: ModuleDef => Some(new ModuleHandler(member))
-      case member: ClassDef => Some(new ClassHandler(member))
-      case member: TypeDef => Some(new TypeAliasHandler(member))
-      case member: Import => Some(new ImportHandler(member))
-      case DocDef(_, documented) => chooseHandler(documented)
-      case member => Some(new GenericHandler(member))
-    }
+  private def chooseHandler(member: Tree): MemberHandler = member match {
+    case member: DefDef               => new DefHandler(member)
+    case member: ValDef               => new ValHandler(member)
+    case member@Assign(Ident(_), _)   => new AssignHandler(member)
+    case member: ModuleDef            => new ModuleHandler(member)
+    case member: ClassDef             => new ClassHandler(member)
+    case member: TypeDef              => new TypeAliasHandler(member)
+    case member: Import               => new ImportHandler(member)
+    case DocDef(_, documented)        => chooseHandler(documented)
+    case member                       => new GenericHandler(member)
+  }
 
   /** <p>
    *    Interpret one line of input.  All feedback, including parse errors
@@ -473,29 +408,27 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    *  @return     ...
    */
   def interpret(line: String): IR.Result = {
-    if (prevRequests.isEmpty)
-      new compiler.Run // initialize the compiler
+    // initialize the compiler
+    if (prevRequests.isEmpty) new compiler.Run
 
     // parse
     val trees = parse(indentCode(line)) match {
-      case None => return IR.Incomplete
-      case (Some(Nil)) => return IR.Error // parse error or empty input
-      case Some(trees) => trees
+      case None         => return IR.Incomplete
+      case Some(Nil)    => return IR.Error // parse error or empty input
+      case Some(trees)  => trees
     }
 
-    // Treat a single bare expression specially.
-    // This is necessary due to it being hard to modify
-    // code at a textual level, and it being hard to
-    // submit an AST to the compiler.
+    // Treat a single bare expression specially. This is necessary due to it being hard to
+    // modify code at a textual level, and it being hard to submit an AST to the compiler.
     if (trees.size == 1) trees.head match {
-      case _:Assign =>    // we don't want to include assignments in the next case
-      case _:TermTree | _:Ident | _:Select =>
-        return interpret("val "+newVarName()+" = \n"+line)
-      case _ =>
+      case _:Assign                         => // we don't want to include assignments
+      case _:TermTree | _:Ident | _:Select  =>
+        return interpret("val %s =\n%s".format(newVarName(), line))
+      case _                                =>
     }
 
     // figure out what kind of request
-    val req = buildRequest(trees, line, newLineName)
+    val req = buildRequest(trees, line, newLineName())
     // null is a disallowed statement type; otherwise compile and fail if false (implying e.g. a type error)
     if (req == null || !req.compile)
       return IR.Error
@@ -511,8 +444,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     else IR.Error
   }
 
-  /** A counter used for numbering objects created by <code>bind()</code>. */
-  private var binderNum = 0
+  /** A name creator used for objects created by <code>bind()</code>. */
+  private val newBinder = mkNameCreator("binder")
 
   /** Bind a specified name to a specified value.  The name may
    *  later be used by expressions passed to interpret.
@@ -523,38 +456,32 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    *  @return          an indication of whether the binding succeeded
    */
   def bind(name: String, boundType: String, value: Any): IR.Result = {
-    val binderName = "binder" + binderNum
-    binderNum += 1
+    val binderName = newBinder()    // "binder" + binderNum()
 
-    compileString(
-        "object " + binderName +
-        "{ var value: " + boundType + " = _; " +
-        " def set(x: Any) = value=x.asInstanceOf[" + boundType + "]; }")
+    compileString("""
+      | object %s {
+      |   var value: %s = _
+      |   def set(x: Any) = value = x.asInstanceOf[%s]
+      | }
+    """.stripMargin.format(binderName, boundType, boundType))
 
-    val binderObject =
-      Class.forName(binderName, true, classLoader)
-    val setterMethod =
-      (binderObject
-          .getDeclaredMethods
-          .toList
-          .find(meth => meth.getName == "set")
-          .get)
-    var argsHolder: Array[Any] = null // this roundabout approach is to try and
-                                      // make sure the value is boxed
+    val binderObject = loadByName(binderName)
+    val setterMethod = methodByName(binderObject, "set").get
+
+    // this roundabout approach is to ensure the value is boxed
+    var argsHolder: Array[Any] = null
     argsHolder = List(value).toArray
     setterMethod.invoke(null, argsHolder.asInstanceOf[Array[AnyRef]]: _*)
-
-    interpret("val " + name + " = " + binderName + ".value")
+    interpret("val %s = %s.value".format(name, binderName))
   }
 
-  /** Reset this interpreter, forgetting all user-specified
-   *  requests. */
+  /** Reset this interpreter, forgetting all user-specified requests. */
   def reset() {
-    virtualDirectory.clear()
-    classLoader = makeClassLoader()
-    nextLineNo = 0
-    nextVarNameNo = 0
-    prevRequests.clear()
+    virtualDirectory.clear
+    classLoader = makeClassLoader
+    newLineName.reset()
+    newVarName.reset()
+    prevRequests.clear
   }
 
   /** <p>
@@ -563,24 +490,20 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    *  </p>
    */
   def close() {
-    reporter.flush()
+    reporter.flush
   }
 
   /** A traverser that finds all mentioned identifiers, i.e. things
-   *  that need to be imported.
-   *  It might return extra names.
+   *  that need to be imported.  It might return extra names.
    */
   private class ImportVarsTraverser(definedVars: List[Name]) extends Traverser {
     val importVars = new HashSet[Name]()
 
-    override def traverse(ast: Tree) {
-      ast match {
-        case Ident(name) => importVars += name
-        case _ => super.traverse(ast)
-      }
+    override def traverse(ast: Tree) = ast match {
+      case Ident(name)  => importVars += name
+      case _            => super.traverse(ast)
     }
   }
-
 
   /** Class to handle one member among all the members included
    *  in a single interpreter request.
@@ -596,12 +519,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     def defNames: List[Name] = Nil
     val importsWildcard = false
     val importedNames: Seq[Name] = Nil
-    val definesImplicit =
-      member match {
-        case tree:MemberDef =>
-          tree.mods.hasFlag(symtab.Flags.IMPLICIT)
-        case _ => false
-      }
+    val definesImplicit = member match {
+      case tree: MemberDef  => tree.mods hasFlag Flags.IMPLICIT
+      case _                => false
+    }
 
     def extraCodeToEvaluate(req: Request, code: PrintWriter) { }
     def resultExtractionCode(req: Request, code: PrintWriter) { }
@@ -610,148 +531,116 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private class GenericHandler(member: Tree) extends MemberHandler(member)
 
   private class ValHandler(member: ValDef) extends MemberHandler(member) {
-    def isLazy() = member.mods hasFlag Flags.LAZY
+    lazy val ValDef(mods, vname, _, _) = member
+    lazy val prettyName = NameTransformer.decode(vname)
+    lazy val isLazy = mods hasFlag Flags.LAZY
 
-    override lazy val boundNames = List(member.name)
+    override lazy val boundNames = List(vname)
     override def valAndVarNames = boundNames
 
     override def resultExtractionCode(req: Request, code: PrintWriter) {
-      val vname = member.name
-      if (member.mods.isPublic &&
-          !(isGeneratedVarName(vname) &&
-            req.typeOf(compiler.encode(vname)) == "Unit"))
-      {
-        val prettyName = NameTransformer.decode(vname)
+      val isInternal = isGeneratedVarName(vname) && req.typeOfEnc(vname) == "Unit"
+      if (!mods.isPublic || isInternal) return
 
-        // if this is a lazy val we avoid evaluating it here
-        val resultString =
-          if (isLazy) "\"<lazy>\\n\""
-          else        " { val tmp = scala.runtime.ScalaRunTime.stringOf(" + req.fullPath(vname) +
-                      "); " + " (if(tmp.toSeq.contains('\\n')) \"\\n\" else \"\") + tmp + \"\\n\"} "
+      lazy val extractor = """
+        | {
+        |    val s = scala.runtime.ScalaRunTime.stringOf(%s)
+        |    val nl = if (s.toSeq.contains('\n')) "\n" else ""
+        |    nl + s + "\n"
+        | }
+      """.stripMargin.format(req fullPath vname)
 
-        val codeToPrint =
-          " + \"" + prettyName + ": " + string2code(req.typeOf(vname)) + " = \" + " + resultString
+      // if this is a lazy val we avoid evaluating it here
+      val resultString = if (isLazy) codegenln(false, "<lazy>") else extractor
+      val codeToPrint =
+        """ + "%s: %s = " + %s""" .
+        format(prettyName, string2code(req.typeOf(vname)), resultString)
 
-        code print codeToPrint
-      }
+      code print codeToPrint
     }
   }
 
   private class DefHandler(defDef: DefDef) extends MemberHandler(defDef) {
-    override lazy val boundNames = List(defDef.name)
+    lazy val DefDef(mods, name, _, _, _, _) = defDef
+    override lazy val boundNames = List(name)
     override def defNames = boundNames
 
-    override def resultExtractionCode(req: Request, code: PrintWriter) {
-      if (defDef.mods.isPublic)
-        code.print("+\""+string2code(defDef.name)+": "+
-		   string2code(req.typeOf(defDef.name))+"\\n\"")
-    }
+    override def resultExtractionCode(req: Request, code: PrintWriter) =
+      if (mods.isPublic) code print codegenln(name, ": ", req.typeOf(name))
   }
 
   private class AssignHandler(member: Assign) extends MemberHandler(member) {
-    val lhs = member. lhs.asInstanceOf[Ident] // an unfortunate limitation
-
+    val lhs = member.lhs.asInstanceOf[Ident] // an unfortunate limitation
     val helperName = newTermName(newInternalVarName())
     override val valAndVarNames = List(helperName)
 
-    override def extraCodeToEvaluate(req: Request, code: PrintWriter) {
-      code.println("val "+helperName+" = "+member.lhs+";")
-    }
+    override def extraCodeToEvaluate(req: Request, code: PrintWriter) =
+      code println """val %s = %s""".format(helperName, lhs)
 
     /** Print out lhs instead of the generated varName */
     override def resultExtractionCode(req: Request, code: PrintWriter) {
-      code.print(" + \"" + lhs + ": " +
-                 string2code(req.typeOf(compiler.encode(helperName))) +
-                 " = \" + " +
-		 string2code(req.fullPath(helperName))
-		 + " + \"\\n\"")
+      val lhsType = string2code(req typeOfEnc helperName)
+      val res = string2code(req fullPath helperName)
+      val codeToPrint = """ + "%s: %s = " + %s + "\n" """.format(lhs, lhsType, res)
+
+      code println codeToPrint
     }
   }
 
   private class ModuleHandler(module: ModuleDef) extends MemberHandler(module) {
-    override lazy val boundNames = List(module.name)
+    lazy val ModuleDef(mods, name, _) = module
+    override lazy val boundNames = List(name)
 
-    override def resultExtractionCode(req: Request, code: PrintWriter) {
-      code.println(" + \"defined module " +
-		   string2code(module.name)
-		   + "\\n\"")
-    }
+    override def resultExtractionCode(req: Request, code: PrintWriter) =
+      code println codegenln("defined module ", name)
   }
 
-  private class ClassHandler(classdef: ClassDef)
-  extends MemberHandler(classdef)
-  {
+  private class ClassHandler(classdef: ClassDef) extends MemberHandler(classdef) {
+    lazy val ClassDef(mods, name, _, _) = classdef
     override lazy val boundNames =
-      List(classdef.name) :::
-      (if (classdef.mods.hasFlag(Flags.CASE))
-         List(classdef.name.toTermName)
-       else
-         Nil)
+      name :: (if (mods hasFlag Flags.CASE) List(name.toTermName) else Nil)
 
-    // TODO: MemberDef.keyword does not include "trait";
-    // otherwise it could be used here
-    def keyword: String =
-      if (classdef.mods.isTrait) "trait" else "class"
-
-    override def resultExtractionCode(req: Request, code: PrintWriter) {
-      code.print(
-          " + \"defined " +
-          keyword +
-          " " +
-          string2code(classdef.name) +
-          "\\n\"")
-    }
+    override def resultExtractionCode(req: Request, code: PrintWriter) =
+      code print codegenln("defined %s %s".format(classdef.keyword, name))
   }
 
-  private class TypeAliasHandler(typeDef: TypeDef)
-  extends MemberHandler(typeDef)
-  {
-    override lazy val boundNames =
-      if (typeDef.mods.isPublic && compiler.treeInfo.isAliasTypeDef(typeDef))
-        List(typeDef.name)
-      else
-        Nil
+  private class TypeAliasHandler(typeDef: TypeDef) extends MemberHandler(typeDef) {
+    lazy val TypeDef(mods, name, _, _) = typeDef
+    def isAlias() = mods.isPublic && compiler.treeInfo.isAliasTypeDef(typeDef)
+    override lazy val boundNames = if (isAlias) List(name) else Nil
 
-    override def resultExtractionCode(req: Request, code: PrintWriter) {
-      code.println(" + \"defined type alias " +
-                   string2code(typeDef.name) + "\\n\"")
-    }
+    override def resultExtractionCode(req: Request, code: PrintWriter) =
+      code println codegenln("defined type alias ", name)
   }
 
   private class ImportHandler(imp: Import) extends MemberHandler(imp) {
-    override def resultExtractionCode(req: Request, code: PrintWriter) {
-      code.println("+ \"" + imp.toString + "\\n\"")
-    }
-
     /** Whether this import includes a wildcard import */
-    override val importsWildcard =
-      imp.selectors.map(_._1).contains(nme.USCOREkw)
+    override val importsWildcard = imp.selectors.map(_._1) contains USCOREkw
 
     /** The individual names imported by this statement */
-    override val importedNames: Seq[Name] =
-      for {
-        val (_,sel) <- imp.selectors
-        sel != null
-        sel != nme.USCOREkw
-        val name <- List(sel.toTypeName, sel.toTermName)
-      }
-      yield name
+    override val importedNames: Seq[Name] = for {
+      (_, sel) <- imp.selectors
+      if (sel != null && sel != USCOREkw)
+      name <- List(sel.toTypeName, sel.toTermName)
+    }
+    yield name
+
+    override def resultExtractionCode(req: Request, code: PrintWriter) =
+      code println codegenln(imp.toString)
   }
 
   /** One line of code submitted by the user for interpretation */
   private class Request(val line: String, val lineName: String) {
-    val trees = parse(line) match {
-      case Some(ts) => ts
-      case None => Nil
-    }
+    val trees = parse(line) getOrElse Nil
 
     /** name to use for the object that will compute "line" */
-    def objectName = lineName + compiler.nme.INTERPRETER_WRAPPER_SUFFIX
+    def objectName = lineName + INTERPRETER_WRAPPER_SUFFIX
 
     /** name of the object that retrieves the result from the above object */
     def resultObjectName = "RequestResult$" + objectName
 
-    val handlers: List[MemberHandler] = trees.flatMap(chooseHandler(_))
+    /** handlers for each tree in this request */
+    val handlers: List[MemberHandler] = trees map chooseHandler
 
     /** all (public) names defined by these statements */
     val boundNames = (ListSet() ++ handlers.flatMap(_.boundNames)).toList
@@ -759,16 +648,13 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     /** list of names used by this expression */
     val usedNames: List[Name] = handlers.flatMap(_.usedNames)
 
-    def myImportsCode = importsCode(Set.empty ++ usedNames)
-
-    /** Code to append to objectName to access anything that
-     *  the request binds.  */
-    val accessPath = myImportsCode._3
-
+    /** Code to import bound names from previous lines - accessPath is code to
+      * append to objectName to access anything bound by request. */
+    val ComputedImports(importsPreamble, importsTrailer, accessPath) =
+      importsCode(Set.empty ++ usedNames)
 
     /** Code to access a variable with the specified name */
-    def fullPath(vname: String): String =
-      objectName + accessPath + ".`" + vname + "`"
+    def fullPath(vname: String): String = "%s.`%s`\n".format(objectName + accessPath, vname)
 
     /** Code to access a variable with the specified name */
     def fullPath(vname: Name): String = fullPath(vname.toString)
@@ -777,66 +663,65 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     def toCompute = line
 
     /** generate the source code for the object that computes this request */
-    def objectSourceCode: String =
-      stringFrom { code =>
-        // header for the wrapper object
-        code.println("object " + objectName + " {")
+    def objectSourceCode: String = stringFrom { code =>
+      // whitespace compatible with interpreter.scala
+      val preamble = """object %s {
+        |   %s%s
+      """.stripMargin.format(objectName, importsPreamble, indentCode(toCompute))
+      // val preamble = """
+      //   | object %s {
+      //   |   %s %s
+      // """.stripMargin.format(objectName, importsPreamble, indentCode(toCompute))
+      val postamble = importsTrailer + "; }"
 
-        val (importsPreamble, importsTrailer, _) = myImportsCode
-
-        code.print(importsPreamble)
-
-        code.println(indentCode(toCompute))
-
-        handlers.foreach(_.extraCodeToEvaluate(this,code))
-
-        code.println(importsTrailer)
-
-        //end the wrapper object
-        code.println(";}")
-      }
+      code println preamble
+      handlers foreach { _.extraCodeToEvaluate(this, code) }
+      code println postamble
+    }
 
     /** Types of variables defined by this request.  They are computed
         after compilation of the main object */
     var typeOf: Map[Name, String] = _
+    def typeOfEnc(vname: Name) = typeOf(compiler encode vname)
 
     /** generate source code for the object that retrieves the result
         from objectSourceCode */
-    def resultObjectSourceCode: String =
-      stringFrom(code => {
-        code.println("object " + resultObjectName)
-        code.println("{ val result: String = {")
-        code.println(objectName + accessPath + ";")  // evaluate the object, to make sure its constructor is run
-        code.print("(\"\"")  // print an initial empty string, so later code can
-                            // uniformly be: + morestuff
-        handlers.foreach(_.resultExtractionCode(this, code))
-        code.println("\n)}")
-        code.println(";}")
-      })
+    def resultObjectSourceCode: String = stringFrom { code =>
+      val preamble = """
+      | object %s {
+      |   val result: String = {
+      |     %s    // evaluate object to make sure constructor is run
+      |     (""   // an initial "" so later code can uniformly be: + etc
+      """.stripMargin.format(resultObjectName, objectName + accessPath)
 
+      val postamble = """
+      |     )
+      |   }
+      | }
+      """.stripMargin
+
+      code println preamble
+      handlers foreach { _.resultExtractionCode(this, code) }
+      code println postamble
+    }
 
     /** Compile the object file.  Returns whether the compilation succeeded.
      *  If all goes well, the "types" map is computed. */
     def compile(): Boolean = {
-      reporter.reset  // without this, error counting is not correct,
-                      // and the interpreter sometimes overlooks compile failures!
+      // error counting is wrong, hence interpreter may overlook failure - so we reset
+      reporter.reset
 
       // compile the main object
       val objRun = new compiler.Run()
-      //println("source: "+objectSourceCode) //DEBUG
-      objRun.compileSources(
-        List(new BatchSourceFile("<console>", objectSourceCode.toCharArray))
-      )
-      if (reporter.hasErrors) return false
-
+      objRun.compileSources(List(new BatchSourceFile("<console>", objectSourceCode)))
+      if (reporter.hasErrors)
+        return false
 
       // extract and remember types
       typeOf = findTypes(objRun)
 
       // compile the result-extraction object
-      new compiler.Run().compileSources(
-        List(new BatchSourceFile("<console>", resultObjectSourceCode.toCharArray))
-      )
+      new compiler.Run().compileSources(List(new BatchSourceFile("<console>", resultObjectSourceCode)))
 
       // success
       !reporter.hasErrors
@@ -848,59 +733,55 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
      *  @return       ...
      */
     def findTypes(objRun: compiler.Run): Map[Name, String] = {
-      def valAndVarNames = handlers.flatMap(_.valAndVarNames)
-      def defNames = handlers.flatMap(_.defNames)
+      import compiler.definitions.{ EmptyPackage, getMember }
+      def valAndVarNames = handlers flatMap { _.valAndVarNames }
+      def defNames = handlers flatMap { _.defNames }
 
-      def getTypes(names: List[Name], nameMap: Name=>Name): Map[Name, String] = {
-      /** the outermost wrapper object */
-      val outerResObjSym: Symbol =
-        compiler.definitions.getMember(compiler.definitions.EmptyPackage,
-          newTermName(objectName))
+      def getTypes(names: List[Name], nameMap: Name => Name): Map[Name, String] = {
+        def atNextPhase[T](op: => T): T = compiler.atPhase(objRun.typerPhase.next)(op)
 
-      /** the innermost object inside the wrapper, found by
-        * following accessPath into the outer one. */
-      val resObjSym =
-        (accessPath.split("\\.")).foldLeft(outerResObjSym)((sym,name) =>
-          if(name == "") sym else
-            compiler.atPhase(objRun.typerPhase.next) {
-              sym.info.member(newTermName(name)) })
+        /** the outermost wrapper object */
+        val outerResObjSym: Symbol = getMember(EmptyPackage, newTermName(objectName))
 
-      names.foldLeft(Map.empty[Name,String])((map, name) => {
-          val rawType =
-            compiler.atPhase(objRun.typerPhase.next) {
-              resObjSym.info.member(name).tpe
-            }
+        /** the innermost object inside the wrapper, found by
+          * following accessPath into the outer one. */
+        val resObjSym =
+          accessPath.split("\\.").foldLeft(outerResObjSym) { (sym, name) =>
+            if (name == "") sym else
+            atNextPhase(sym.info member newTermName(name))
+          }
 
+        names.foldLeft(Map.empty[Name, String]) { (map, name) =>
+          val rawType = atNextPhase(resObjSym.info.member(name).tpe)
           // the types are all =>T; remove the =>
-          val cleanedType= rawType match {
+          val cleanedType = rawType match {
             case compiler.PolyType(Nil, rt) => rt
             case rawType => rawType
           }
 
-          map + (name -> compiler.atPhase(objRun.typerPhase.next) { cleanedType.toString })
-        })
+          map + (name -> atNextPhase(cleanedType.toString))
+        }
       }
 
-      val names1 = getTypes(valAndVarNames, n => compiler.nme.getterToLocal(n))
+      val names1 = getTypes(valAndVarNames, nme.getterToLocal(_))
       val names2 = getTypes(defNames, identity)
       names1 ++ names2
     }
 
     /** load and run the code using reflection */
     def loadAndRun: (String, Boolean) = {
-      val interpreterResultObject: Class[_] =
-        Class.forName(resultObjectName, true, classLoader)
-      val resultValMethod: java.lang.reflect.Method =
-        interpreterResultObject.getMethod("result")
-      try {
-        (resultValMethod.invoke(interpreterResultObject).toString(),
-             true)
-      } catch {
-        case e =>
-          def caus(e: Throwable): Throwable =
-            if (e.getCause eq null) e else caus(e.getCause)
-          val orig = caus(e)
-          (stringFrom(str => orig.printStackTrace(str)), false)
+      val resultObject: Class[_] = loadByName(resultObjectName)
+      val resultValMethod: reflect.Method = resultObject getMethod "result"
+
+      try   { (resultValMethod.invoke(resultObject).toString, true) }
+      catch { case e =>
+        // unwrap unhelpful nested exceptions so the most interesting one is reported
+        def unwrap(e: Throwable): Throwable = e match {
+          case (_: InvocationTargetException | _: ExceptionInInitializerError) if e.getCause ne null =>
+            unwrap(e.getCause)
+          case _ => e
+        }
+        (stringFrom(unwrap(e).printStackTrace(_)), false)
       }
     }
   }
@@ -908,27 +789,29 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
 /** Utility methods for the Interpreter. */
 object Interpreter {
-  /** Delete a directory tree recursively.  Use with care!
-   */
-  private[nsc] def deleteRecursively(path: File) {
-    path match  {
-      case _ if !path.exists =>
-        ()
-      case _ if path.isDirectory =>
-        for (p <- path.listFiles)
-          deleteRecursively(p)
-        path.delete
-      case _ =>
-        path.delete
+  /** Delete a directory tree recursively.  Use with care! */
+  private[nsc] def deleteRecursively(path: File): Unit =
+    if (path.exists) {
+      if (path.isDirectory)
+        path.listFiles foreach deleteRecursively
+
+      path.delete
     }
-  }
 
   /** Heuristically strip interpreter wrapper prefixes
    *  from an interpreter output string.
    */
   def stripWrapperGunk(str: String): String = {
-    val wrapregex = "(line[0-9]+\\$object[$.])?(\\$iw[$.])*"
+    val wrapregex = """(line[0-9]+\$object[$.])?(\$iw[$.])*"""
     str.replaceAll(wrapregex, "")
+  }
+
+  def codegenln(leadingPlus: Boolean, xs: String*): String = codegen(leadingPlus, (xs ++ Array("\n")): _*)
+  def codegenln(xs: String*): String = codegenln(true, xs: _*)
+  def codegen(xs: String*): String = codegen(true, xs: _*)
+  def codegen(leadingPlus: Boolean, xs: String*): String = {
+    val front = if (leadingPlus) "+ " else ""
+    xs.map("\"" + string2code(_) + "\"").mkString(front, " + ", "")
   }
 
   /** Convert a string into code that can recreate the string.
@@ -940,23 +823,17 @@ object Interpreter {
       var rest = c.toInt
       val buf = new StringBuilder
       for (i <- 1 to 4) {
-	buf ++= (rest % 16).toHexString
-	rest = rest / 16
+        buf ++= (rest % 16).toHexString
+        rest = rest / 16
       }
-      "\\" + "u" + buf.toString.reverse
+      "\\u" + buf.toString.reverse
     }
 
-
     val res = new StringBuilder
-    for (c <- str) {
-      if ("'\"\\" contains c) {
-	res += '\\'
-	res += c
-      } else if (!c.isControl) {
-	res += c
-      } else {
-	res ++= char2uescape(c)
-      }
+    for (c <- str) c match {
+      case '"' | '\'' | '\\'  => res += '\\' ; res += c
+      case _ if c.isControl   => res ++= char2uescape(c)
+      case _                  => res += c
     }
     res.toString
   }
