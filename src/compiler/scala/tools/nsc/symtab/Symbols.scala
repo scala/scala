@@ -1296,11 +1296,15 @@ trait Symbols {
      *  E.g. $eq => =.
      *  If settings.uniquId adds id.
      */
-    def nameString: String = {
-      var s = simpleName.decode
-      if (s endsWith nme.LOCAL_SUFFIX)
-        s = s.substring(0, s.length - nme.LOCAL_SUFFIX.length)
-      s + idString
+    def nameString: String = cleanNameString + idString
+
+    /** A nameString that never adds idString, for use in e.g. GenJVM
+     *  where appending #uniqid breaks the bytecode.
+     */
+    def cleanNameString: String = {
+      val s = simpleName.decode
+      if (s endsWith nme.LOCAL_SUFFIX) s.substring(0, s.length - nme.LOCAL_SUFFIX.length)
+      else s
     }
 
     /** String representation of symbol's full name with <code>separator</code>
