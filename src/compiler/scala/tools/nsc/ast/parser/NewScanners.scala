@@ -66,25 +66,30 @@ trait NewScanners {
     private val    next = new TokenHolder
     implicit def in : ScannerInput
 
+    def assertEmpty(th: TokenHolder) =
+      if (th.code != EMPTY) in.error(th.offset, "unexpected token")
+    def assertNotEmpty(th: TokenHolder) =
+      if (th.code == EMPTY) in.incompleteError(th.offset, "expected token not present")
+
     var lastCode = EMPTY
     next.code = EMPTY
     current.code = EMPTY
     def hasNext = in.hasNext || (next.code != EMPTY && next.code != EOF)
     def flush : ScannerInput = {
-      assert(current.code != EMPTY)
+      assertNotEmpty(current)
       in.seek(unadjust(current.offset))
       current.code = EMPTY
       next.code = EMPTY
       in
     }
     def seek(offset : Int, lastCode : Int) = {
-      assert(current.code == EMPTY)
+      assertEmpty(current)
       in.seek(unadjust(offset))
       this.lastCode = lastCode
       nextToken
     }
     def resume(lastCode : Int) = {
-      assert(current.code == EMPTY)
+      assertEmpty(current)
       this.lastCode = lastCode
       nextToken
     }
@@ -96,11 +101,11 @@ trait NewScanners {
       p
     }
     def currentPos = {
-      assert(current.code != EMPTY)
+      assertNotEmpty(current)
       current.offset
     }
     def fillNext : Boolean = {
-      assert(next.code == EMPTY)
+      assertEmpty(next)
       var hasNewline = false
       do {
         fill(next)
@@ -162,7 +167,7 @@ trait NewScanners {
       } else fill(current)
 
       def currentIsNext : Unit = {
-        assert(next.code != EMPTY)
+        assertNotEmpty(next)
         return nextToken
       }
       current.code match {
@@ -180,7 +185,7 @@ trait NewScanners {
           doc = current.value.asInstanceOf[Option[String]].getOrElse("")
         nextToken
       case NEWLINE | NEWLINES =>
-        assert(xmlOk)
+        if (!xmlOk) in.error(current.offset, "XML mode not legal here")
         val headIsRBRACE = if (sepRegions.isEmpty) true else sepRegions.head == RBRACE
         val hasNewline = fillNext
         if (headIsRBRACE && (inLastOfStat(lastCode) && inFirstOfStat(next.code)
@@ -197,7 +202,7 @@ trait NewScanners {
     }
 
     def token = {
-      assert(current.code != EMPTY)
+      assertNotEmpty(current)
       current.code
     }
 
@@ -278,7 +283,6 @@ trait NewScanners {
       case c if isDigit(c) =>
         val length = in.scratch.length
         try {
-          assert(isDigit(c))
           in.scratch append c
           while (isDigit(in.head)) in.scratch append in.next
           val n = Integer.parseInt(in.scratch.drop(length).mkString, 8)
