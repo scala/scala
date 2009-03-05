@@ -33,16 +33,16 @@ object InteractiveReader {
   val vendor = System.getProperty("java.vendor", "")
   val msgEINTR = "Interrupted system call"
 
+  def createDefault(): InteractiveReader = createDefault(null)
+
   /** Create an interactive reader.  Uses <code>JLineReader</code> if the
-   *  library is available, but otherwise uses a
-   *  <code>SimpleReaderi</code>. */
-  def createDefault(): InteractiveReader =
+   *  library is available, but otherwise uses a <code>SimpleReader</code>.
+   */
+  def createDefault(interpreter: Interpreter): InteractiveReader =
     try {
-      new JLineReader
+      new JLineReader(interpreter)
     } catch {
-      case e =>
-        //out.println("jline is not available: " + e) //debug
-        new SimpleReader()
+      case e: Exception => new SimpleReader
     }
 }
 

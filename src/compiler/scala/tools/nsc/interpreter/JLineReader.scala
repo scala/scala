@@ -7,9 +7,11 @@
 
 package scala.tools.nsc.interpreter
 import java.io.File
+import jline.{ History, ConsoleReader, ArgumentCompletor }
 
 /** Reads from the console using JLine */
-class JLineReader extends InteractiveReader {
+class JLineReader(interpreter: Interpreter) extends InteractiveReader {
+  def this() = this(null)
   val consoleReader = {
     val history = try {
       new jline.History(new File(System.getProperty("user.home"), ".scala_history"))
@@ -18,11 +20,19 @@ class JLineReader extends InteractiveReader {
       case _ => new jline.History()
     }
     val r = new jline.ConsoleReader()
-    r.setHistory(history)
-    r.setBellEnabled(false)
+    r setHistory history
+    r setBellEnabled false
+
+    if (interpreter != null) {
+      val comp = new ArgumentCompletor(new Completion(interpreter))
+      comp setStrict false
+      r addCompletor comp
+    }
+
     r
   }
-  def readOneLine(prompt: String) = consoleReader.readLine(prompt)
+
+  def readOneLine(prompt: String) = consoleReader readLine prompt
   val interactive = true
 }
 
