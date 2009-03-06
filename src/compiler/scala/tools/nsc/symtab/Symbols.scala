@@ -1048,7 +1048,7 @@ trait Symbols {
      */
     final def linkedSym: Symbol =
       if (isTerm) linkedClassOfModule
-      else if (isClass) owner.info.decl(name.toTermName).suchThat(_ isCoDefinedWith this)
+      else if (isClass) owner.rawInfo.decl(name.toTermName).suchThat(_ isCoDefinedWith this)
       else NoSymbol
 
     /** For a module class its linked class, for a plain class
