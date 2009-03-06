@@ -1385,7 +1385,7 @@ BOOTRAPING TEST AND TEST SUITE
 ============================================================================ -->
 
   <target name="test.stability" depends="strap.done">
-    <same dir="${build-quick.dir}" todir="${build-strap.dir}" failondifferent="no">
+    <same dir="${build-quick.dir}" todir="${build-strap.dir}" failondifferent="yes">
       <exclude name="**/*.properties"/>
       <exclude name="bin/**"/>
       <exclude name="*.complete"/>
