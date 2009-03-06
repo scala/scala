@@ -2515,10 +2515,10 @@ trait Parsers extends NewScanners with MarkupParsers {
           acceptStatSep()
         } else if (isExprIntro) {
           stats += statement(InBlock)
-          if (inToken != RBRACE && inToken != CASE && inToken != EOF) acceptStatSep()
+          if (inToken != RBRACE && inToken != CASE) acceptStatSep()
         } else if (isDefIntro || isLocalModifier || in.token == AT) {
           stats ++= localDef
-          if (inToken == RBRACE || inToken == CASE || inToken == EOF) {
+          if (inToken == RBRACE || inToken == CASE) {
             syntaxError("block must end in result expression, not in definition", false)
             stats += Literal(()).setPos(inCurrentPos)
           } else acceptStatSep()
