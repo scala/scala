@@ -756,7 +756,16 @@ trait Symbols {
      *  type parameters later.
      */
     def unsafeTypeParams: List[Symbol] =
-      if (isMonomorphicType) List() else rawInfo.typeParams
+      if (isMonomorphicType) List()
+      else {
+        val current = phase
+        try {
+          while (phase.keepsTypeParams) phase = phase.prev
+          rawInfo.typeParams
+        } finally {
+          phase = current
+        }
+      }
 
     /** The type parameters of this symbol.
      *  assumption: if a type starts out as monomorphic, it will not acquire

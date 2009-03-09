@@ -102,10 +102,12 @@ abstract class SymbolTable extends Names
   /** Perform given operation at given phase */
   final def atPhase[T](ph: Phase)(op: => T): T = {
     val current = phase
-    phase = ph
-    val result = op
-    phase = current
-    result
+    try {
+      phase = ph
+      op
+    } finally {
+      phase = current
+    }
   }
 
   /** The set of all installed infotransformers */

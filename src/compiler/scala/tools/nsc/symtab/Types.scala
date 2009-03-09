@@ -3796,7 +3796,7 @@ A type's typeSymbol should never be inspected directly.
     val info1 = tp1.memberInfo(sym1)
     val info2 = tp2.memberInfo(sym2).substThis(tp2.typeSymbol, tp1)
     //System.out.println("specializes "+tp1+"."+sym1+":"+info1+sym1.locationString+" AND "+tp2+"."+sym2+":"+info2)//DEBUG
-    sym2.isTerm && (info1 <:< info2) ||
+    sym2.isTerm && (info1 <:< info2) /*&& (!sym2.isStable || sym1.isStable) */ ||
     sym2.isAbstractType && info2.bounds.containsType(tp1.memberType(sym1)) ||
     sym2.isAliasType && tp2.memberType(sym2).substThis(tp2.typeSymbol, tp1) =:= tp1.memberType(sym1) //@MAT ok
   }

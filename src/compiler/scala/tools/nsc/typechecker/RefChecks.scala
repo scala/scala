@@ -433,7 +433,7 @@ abstract class RefChecks extends InfoTransform {
                 !(tvar.isTypeParameterOrSkolem && sym.isTypeParameterOrSkolem &&
                   tvar.owner == sym.owner)) state = -state;
             else if (!sym.owner.isClass ||
-                     ((sym.isPrivateLocal || sym.isProtectedLocal) && !(escapedPrivateLocals contains sym)))
+                     sym.isTerm && ((sym.isPrivateLocal || sym.isProtectedLocal) && !(escapedPrivateLocals contains sym)))
               state = AnyVariance
             else if (sym.isAliasType)
               state = NoVariance

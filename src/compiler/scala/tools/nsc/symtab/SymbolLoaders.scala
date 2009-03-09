@@ -219,7 +219,9 @@ abstract class SymbolLoaders {
       if (membersModule.isModule) {
         for (member <- membersModule.info.decls.elements) {
           // todo: handle overlapping definitions in some way: mark as errors
-          // or treat as abstractions.
+          // or treat as abstractions. For now the symbol in the package module takes precedence.
+          for (existing <- root.info.decl(member.name).alternatives)
+            root.info.decls.unlink(existing)
           root.info.decls.enter(member)
         }
       }
