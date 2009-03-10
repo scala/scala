@@ -11,59 +11,62 @@
 
 package scala.util
 
+private[scala] trait PropertiesTrait
+{
+  import java.io.{ IOException, PrintWriter }
+  protected def propCategory: String      // specializes the remainder of the values
+  protected def pickJarBasedOn: Class[_]  // props file comes from jar containing this
+
+  /** The name of the properties file */
+  protected val propFilename = "/" + propCategory + ".properties"
+
+  /** The loaded properties */
+  protected lazy val props: java.util.Properties = {
+    val props = new java.util.Properties
+    val stream = pickJarBasedOn getResourceAsStream propFilename
+    if (stream ne null)
+      quietlyDispose(props load stream, stream.close)
+
+    props
+  }
+
+  private def quietlyDispose(action: => Unit, disposal: => Unit) =
+    try     { action }
+    finally {
+        try     { disposal }
+        catch   { case _: IOException => }
+    }
+
+  // for values based on system properties
+  protected def sysprop(name: String, default: String) =
+    System.getProperty(name, default)
+
+  // for values based on propFilename
+  protected def prop(name: String, default: String): String =
+    props.getProperty(name, default)
+
+  // XXX file.encoding should not be here, as it causes system setting to
+  // be ignored.  See https://lampsvn.epfl.ch/trac/scala/ticket/1581
+
+  /** The version number of the jar this was loaded from plus "version " prefix,
+   *  or "version (unknown)" if it cannot be determined.
+   */
+  val versionString         = "version " + prop("version.number", "(unknown)")
+  val copyrightString       = prop("copyright.string", "(c) 2002-2009 LAMP/EPFL")
+  val encodingString        = prop("file.encoding", "UTF8")
+
+  // provide a main method so version info can be obtained by running this
+  private val writer = new java.io.PrintWriter(Console.err, true)
+  private val versionMsg = "Scala %s %s -- %s".format(propCategory, versionString, copyrightString)
+  def main(args: Array[String]) { writer println versionMsg }
+}
+
 /** A utility to load the library properties from a Java properties file
  *  included in the jar.
  *
  *  @author Stephane Micheloud
  */
-object Properties {
-
-  /** The name of the properties file */
-  private val propFilename = "/library.properties"
-
-  /** The loaded properties */
-  private val props = {
-    val props = new java.util.Properties
-    val stream = classOf[Application].getResourceAsStream(propFilename)
-    try {
-      if (stream != null)
-        props.load(stream)
-    } finally {
-      if (stream != null) {
-        // close quietly
-        try {
-          stream.close()
-        } catch {
-          case _ =>
-        }
-      }
-    }
-    props
-  }
-
-  /** The version number of the jar this was loaded from plus "version " prefix,
-   * or "version (unknown)" if it cannot be determined.
-   */
-  val versionString: String = {
-    val defaultString = "(unknown)"
-    "version " + props.getProperty("version.number", defaultString)
-  }
-
-  val copyrightString: String = {
-    val defaultString = "(c) 2002-2009 LAMP/EPFL"
-    props.getProperty("copyright.string", defaultString)
-  }
-
-  val encodingString: String = {
-    val defaultString = "UTF8" //"ISO-8859-1"
-    props.getProperty("file.encoding", defaultString)
-  }
-
-  private val writer = new java.io.PrintWriter(Console.err, true)
-
-  val versionMsg = "Scala library " + versionString + " -- " + copyrightString
-
-  def main(args: Array[String]) {
-    writer.println(versionMsg)
-  }
+object Properties extends PropertiesTrait {
+  protected def propCategory    = "library"
+  protected def pickJarBasedOn  = classOf[Application]
 }
