@@ -42,7 +42,7 @@ object InteractiveReader {
     try {
       new JLineReader(interpreter)
     } catch {
-      case e: Exception => new SimpleReader
+      case _: Exception | _: NoClassDefFoundError => new SimpleReader
     }
 }
 

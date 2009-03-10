@@ -888,6 +888,25 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
 /** Utility methods for the Interpreter. */
 object Interpreter {
+  def breakIf(assertion: => Boolean, args: Any*): Unit =
+    if (assertion) break(args.toList)
+
+  // start a repl binding supplied args to p1, p2, etc.
+  def break(args: List[Any]): Unit = {
+    val intLoop = new InterpreterLoop
+    intLoop.settings = new Settings(Console.println)
+    intLoop.createInterpreter
+    intLoop.in = InteractiveReader.createDefault(intLoop.interpreter)
+
+    // rebind exit so people don't accidentally call System.exit by way of predef
+    intLoop.interpreter.beQuietDuring {
+      intLoop.interpreter.interpret("""def exit = println("Type :quit to resume program execution.")""")
+      println(intLoop.inject(args))
+    }
+    intLoop.repl()
+    intLoop.closeInterpreter
+  }
+
   /** Delete a directory tree recursively.  Use with care! */
   private[nsc] def deleteRecursively(path: File): Unit =
     if (path.exists) {

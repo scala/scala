@@ -137,6 +137,7 @@ class Settings(error: String => Unit) {
   val Xcloselim     = BooleanSetting    ("-Yclosure-elim", "Perform closure elimination")
   val Xcodebase     = StringSetting     ("-Ycodebase", "codebase", "Specify the URL containing the Scala libraries", "").hideToIDE
   val debug         = BooleanSetting    ("-Ydebug", "Output debugging messages").hideToIDE
+  val debugger      = BooleanSetting    ("-Ydebugger", "Enable interactive debugger").hideToIDE
   val Xdce          = BooleanSetting    ("-Ydead-code", "Perform dead code elimination")
   val Xdetach       = BooleanSetting    ("-Ydetach", "Perform detaching of remote closures")
 //  val doc           = BooleanSetting    ("-Ydoc", "Generate documentation").hideToIDE

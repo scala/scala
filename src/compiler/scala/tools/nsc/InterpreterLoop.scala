@@ -352,6 +352,26 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     }
   }
 
+  // injects one value into the repl; returns pair of name and class
+  def injectOne(name: String, obj: Any): Tuple2[String, String] = {
+    val className = obj.asInstanceOf[AnyRef].getClass.getName
+    interpreter.bind(name, className, obj)
+    (name, className)
+  }
+
+  // injects list of values into the repl; returns summary string
+  def inject(args: List[Any]): String = {
+    val strs =
+      for ((arg, i) <- args.zipWithIndex) yield {
+        val varName = "p" + (i + 1)
+        val (vname, vtype) = injectOne(varName, arg)
+        vname + ": " + vtype
+      }
+
+    if (strs.size == 0) "Set no variables."
+    else "Variables set:\n" + strs.mkString("\n")
+  }
+
   /** process command-line arguments and do as they request */
   def main(args: Array[String]) {
     def error1(msg: String) = out println ("scala: " + msg)
