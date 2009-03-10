@@ -15,69 +15,47 @@ class Settings(error: String => Unit) {
 
   private var allsettings: List[Setting] = List()
 
-  protected def getProperty(name: String): String =
-    if (System.getProperty(name) != "")
-      System.getProperty(name)
-    else null
+  // optionizes a system property
+  private def sysprop(name: String): Option[String] =
+    System.getProperty(name) match {
+      case null | ""  => None
+      case x          => Some(x)
+    }
+
+  // given any number of possible path segments, flattens down to a
+  // :-separated style path
+  protected def concatPath(segments: Option[String]*): String =
+    segments.toList.flatMap(x => x) mkString File.pathSeparator
 
   protected val classpathDefault =
-    if (System.getProperty("env.classpath") ne null)
-      alternatePath(
-        getProperty("env.classpath"),
-        ".")
-    else getProperty("java.class.path")
+    sysprop("env.classpath") orElse sysprop("java.class.path") getOrElse ""
 
   protected val bootclasspathDefault =
-    alternatePath(
-      concatPath(
-        getProperty("sun.boot.class.path"),
-        guessedScalaBootClassPath),
-      "")
+    concatPath(sysprop("sun.boot.class.path"), guessedScalaBootClassPath)
 
   protected val extdirsDefault =
-    alternatePath(
-      concatPath(
-        getProperty("java.ext.dirs"),
-        guessedScalaExtDirs),
-      "")
+    concatPath(sysprop("java.ext.dirs"), guessedScalaExtDirs)
 
   protected val pluginsDirDefault =
-    if (Properties.scalaHome == null)
-      ""
-    else
-      new File(
-        new File(
-          new File(Properties.scalaHome, "misc"),
-          "scala-devel"),
-        "plugins").getAbsolutePath
+    guess(List("misc", "scala-devel", "plugins"), _.isDirectory) getOrElse ""
 
-  protected def alternatePath(p1: String, p2: => String) =
-    if (p1 ne null) p1 else p2
+  def onull[T <: AnyRef](x: T): Option[T] = if (x eq null) None else Some(x)
+  def mkPath(base: String, segments: String*) = new File(base, segments.mkString(File.separator))
+  def scalaHome: Option[String] = onull(Properties.scalaHome)
 
-  protected def concatPath(p1: String, p2: String) =
-     if ((p1 ne null) && (p2 ne null)) p1 + File.pathSeparator + p2
-     else if (p1 ne null) p1
-     else p2
-
-  private def guessedScalaBootClassPath = {
-    val scalaHome = Properties.scalaHome
-    if (scalaHome ne null) {
-      val guessJar = new File(new File(new File(scalaHome), "lib"), "scala-library.jar")
-      if (guessJar.isFile()) guessJar.getPath()
-      else {
-        val guessDir = new File(new File(new File(scalaHome), "classes"), "library")
-        if (guessDir.isDirectory()) guessDir.getPath() else null
-      }
-    } else null
+  // examine path relative to scala home and return Some(path) if it meets condition
+  private def guess(xs: List[String], cond: (File) => Boolean): Option[String] = {
+    if (scalaHome.isEmpty) return None
+    val f = mkPath(scalaHome.get, xs: _*)
+    if (cond(f)) Some(f.getAbsolutePath) else None
   }
 
-  private def guessedScalaExtDirs = {
-    val scalaHome = Properties.scalaHome
-    if (scalaHome ne null) {
-      val guess = new File(new File(scalaHome), "lib")
-      if (guess.isDirectory()) guess.getPath else null
-    } else null
-  }
+  private def guessedScalaBootClassPath: Option[String] =
+    guess(List("lib", "scala-library.jar"), _.isFile) orElse
+    guess(List("classes", "library"), _.isDirectory)
+
+  private def guessedScalaExtDirs: Option[String] =
+    guess(List("lib"), _.isDirectory)
 
   val debuginfo     = new DebugSetting  ("-g", "Specify level of generated debugging info", List("none", "source", "line", "vars", "notailcalls"), "vars", "vars")
   val nowarnings    = BooleanSetting    ("-nowarn", "Generate no warnings").hideToIDE
