@@ -1144,11 +1144,22 @@ abstract class GenJVM extends SubComponent {
                 }
 
               case REFERENCE(_) | ARRAY(_) =>
-                if (nextBlock == success) {
-                  jcode.emitIFNONNULL(labels(failure))
-                } else {
-                  jcode.emitIFNULL(labels(success));
-                  if (nextBlock != failure)
+                val Success = success
+                val Failure = failure
+                (cond, nextBlock) match {
+                  case (EQ, Success) =>
+                    jcode.emitIFNONNULL(labels(failure))
+                  case (NE, Failure) =>
+                    jcode.emitIFNONNULL(labels(success))
+                  case (EQ, Failure) =>
+                    jcode.emitIFNULL(labels(success))
+                  case (NE, Success) =>
+                    jcode.emitIFNULL(labels(failure))
+                  case (EQ, _) =>
+                    jcode.emitIFNULL(labels(success));
+                    jcode.emitGOTO_maybe_W(labels(failure), false);
+                  case (NE, _) =>
+                    jcode.emitIFNONNULL(labels(success));
                     jcode.emitGOTO_maybe_W(labels(failure), false);
                 }
 

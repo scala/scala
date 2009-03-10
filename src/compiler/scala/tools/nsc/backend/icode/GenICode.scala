@@ -1320,7 +1320,7 @@ abstract class GenICode extends SubComponent  {
             if (code == scalaPrimitives.ID)
               ctx1.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS))
             else
-              ctx1.bb.emit(CZJUMP(elseCtx.bb, thenCtx.bb, EQ, ANY_REF_CLASS))
+              ctx1.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, ANY_REF_CLASS))
             ctx1.bb.close
             return
           }
