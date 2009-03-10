@@ -8,7 +8,7 @@ JAVAC = $(getenv JAVAC, $(JAVA_HOME)$(DIRSEP)bin$(DIRSEP)javac)
 JAVAP = $(JAVA_HOME)$(DIRSEP)bin$(DIRSEP)javap
 
 # Default options for the JVM
-JAVA_OPTS = -Xms1024M -Xmx1024M -XX:MaxPermSize=256M
+JAVA_OPTS = $(getenv JAVA_OPTS, -Xms1024M -Xmx1024M -XX:MaxPermSize=256M)
 
 DIFF=diff
 DIFF_OPTS=-r
