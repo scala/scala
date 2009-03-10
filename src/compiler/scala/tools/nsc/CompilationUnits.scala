@@ -69,7 +69,7 @@ trait CompilationUnits { self: Global =>
 
     override def toString() = source.toString()
 
-    def clear() = {
+    def clear() {
       fresh = null
       body = null
       depends.clear

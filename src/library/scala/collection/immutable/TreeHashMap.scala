@@ -1,13 +1,14 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2008, David MacIver              **
+**    / __/ __// _ | / /  / _ |    (c) 2008-2009, David MacIver         **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
 
 // $Id: $
-package scala.collection.immutable;
+
+package scala.collection.immutable
 
 object TreeHashMap {
   private[TreeHashMap] val _empty = new TreeHashMap[Any, Nothing](IntMap.empty[Nothing]);
@@ -45,15 +46,15 @@ class TreeHashMap[Key, +Value] private (private val underlying : IntMap[AssocMap
     }
   }
 
-  def empty[V] = TreeHashMap.empty[Key, V];
+  def empty[V] = TreeHashMap.empty[Key, V]
 
-  private def hash(key : Key) =  {
+  private def hash(key : Key) = {
     var h = key.hashCode;
     h ^= ((h >>> 20) ^ (h >>> 12));
     h ^ (h >>> 7) ^ (h >>> 4);
   }
 
-  override def stringPrefix="TreeHashMap"
+  override def stringPrefix = "TreeHashMap"
 
   override lazy val size = underlying.values.foldLeft(0)((x, y) => x + y.size);
 
@@ -65,7 +66,7 @@ class TreeHashMap[Key, +Value] private (private val underlying : IntMap[AssocMap
     case _ => false;
   }
 
-  override def hashCode = underlying.hashCode;
+  override def hashCode = underlying.hashCode
 
   override def foreach(f : ((Key, Value)) => Unit) = underlying.foreachValue(_.foreach(f));
 
@@ -131,23 +132,24 @@ class TreeHashMap[Key, +Value] private (private val underlying : IntMap[AssocMap
 }
 
 
-private [collection] object AssocMap{
-  val _empty = Nil[Any];
+private [collection] object AssocMap {
+  val _empty = Nil[Any]
   def empty[Key, Value] : AssocMap[Key, Value] = _empty.asInstanceOf[AssocMap[Key, Value]]
   def singleton[Key, Value](key : Key, value : Value) = Cons(key, value, empty);
   def apply[Key, Value](maps : (Key, Value)*) =
     maps.foldLeft(empty[Key, Value])((x, y) => x.update(y._1, y._2));
 
-  private[collection] case class Nil[Key] extends AssocMap[Key, Nothing];
-  private[collection] case class Cons[S, +T](key : S, value : T, tail : AssocMap[S, T]) extends AssocMap[S, T]
+  private[collection] case class Nil[Key]() extends AssocMap[Key, Nothing]
+  private[collection] case class Cons[S, +T](key: S, value: T, tail: AssocMap[S, T]) extends AssocMap[S, T]
 }
 
-import AssocMap._;
+import AssocMap._
 
-// AssocMap is very similar to ListMap. I don't want to patch ListMap right now, so I've got a separate
-// implementation here to make tweaks to. Long term any of these changes should be merged into ListMap
-// Short term it doesn't really matter because there are almost no viable use cases for ListMap compared
-// to one of the alternatives.
+// AssocMap is very similar to ListMap. I don't want to patch ListMap right
+// now, so I've got a separate implementation here to make tweaks to. Long
+// term any of these changes should be merged into ListMap
+// Short term it doesn't really matter because there are almost no viable
+// use cases for ListMap compared to one of the alternatives.
 private[collection] sealed abstract class AssocMap[Key, +Value] extends immutable.Map[Key, Value]{
   def empty[V] = AssocMap.empty[Key, V]
 
@@ -239,14 +241,14 @@ private[collection] sealed abstract class AssocMap[Key, +Value] extends immutabl
       else Cons(key2, value2, tail.update(key, value));
   }
 
-  override def transform[C](f : (Key, Value) => C) : AssocMap[Key, C] = this match {
-    case Nil() => AssocMap.empty[Key, C];
-    case Cons(key, value, tail) => {
-      val newtail = tail.transform(f);
-      val newval = f(key, value);
+  override def transform[C](f: (Key, Value) => C): AssocMap[Key, C] = this match {
+    case Nil() =>
+      AssocMap.empty[Key, C]
+    case Cons(key, value, tail) =>
+      val newtail = tail.transform(f)
+      val newval = f(key, value)
       if ((tail eq newtail) && (value.asInstanceOf[AnyRef] eq newval.asInstanceOf[AnyRef])) this.asInstanceOf[AssocMap[Key, C]];
       else Cons(key, newval, newtail);
-    }
   }
 
   def -(key : Key) : AssocMap[Key, Value]= this match {

@@ -1,4 +1,5 @@
 /* NEST (New Scala Test)
+ * Copyright 2007-2009 LAMP/EPFL
  * @author Philipp Haller
  */
 
@@ -9,6 +10,9 @@ package scala.tools.partest.nest
 import java.io.PrintWriter
 
 object NestUI {
+
+  val versionString =
+    System.getProperty("partest.version", "version 0.9.2")
 
   val NONE = 0
   val SOME = 1
@@ -91,11 +95,10 @@ object NestUI {
     println("    --srcpath    set (relative) path to test source files")
     println("                 ex.: --srcpath pending")
     println
-    println("version 0.9.2")
+    println(versionString)
     println("maintained by Philipp Haller (EPFL)")
     exit(1)
   }
-
 
   var _verbose = false
 

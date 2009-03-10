@@ -54,9 +54,17 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
   def denotesTestDir(arg: String) =
     (new File(arg)).isDirectory
 
+  private def printVersion {
+    val versionMsg = "Scala partest "+
+      NestUI.versionString+
+      " -- "+
+      scala.tools.nsc.Properties.copyrightString
+    NestUI.outline(versionMsg+"\n")
+  }
+
   def main(argstr: String) {
     // tokenize args. filter: "".split("\\s") yields Array("")
-    var args = List.fromArray(argstr.split("\\s")).remove(_ == "")
+    var args = List.fromArray(argstr split "\\s").remove(_ == "")
 
     if (args.length == 0)
       NestUI.usage()
@@ -100,7 +108,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
             case "--show-diff"    => fileManager.showDiff = true
             case "--show-log"     => fileManager.showLog = true
             case "--failed"       => fileManager.failed = true
-            case "--version"      => //todo: printVersion
+            case "--version"      => printVersion; return
             case "--ansi"         => NestUI.initialize(NestUI.MANY)
             case "--timeout"      => readTimeout = true
             case s: String if readTimeout =>

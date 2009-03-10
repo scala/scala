@@ -94,7 +94,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   /** Be quiet.  Do not print out the results of each
     * submitted command unless an exception is thrown.  */
-  def beQuiet = { printResults = false }
+  def beQuiet { printResults = false }
 
   /** Temporarily be quiet */
   def beQuietDuring[T](operation: => T): T = {
@@ -111,7 +111,9 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   lazy val isettings = new InterpreterSettings
 
   object reporter extends ConsoleReporter(settings, null, out) {
-    override def printMessage(msg: String) { out.print(clean(msg) + "\n"); out.flush() }
+    override def printMessage(msg: String) {
+      out.print(clean(msg) + "\n"); out.flush()
+    }
   }
 
   /** Instantiate a compiler.  Subclasses can override this to

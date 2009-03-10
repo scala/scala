@@ -1,9 +1,19 @@
+/*     ___ ____ ___   __   ___   ___
+**    / _// __// _ | / /  / _ | / _ \  Scala classfile decoder
+**  __\ \/ /__/ __ |/ /__/ __ |/ ___/  (c) 2003-2009, LAMP/EPFL
+** /____/\___/_/ |_/____/_/ |_/_/      http://scala-lang.org/
+**
+*/
+
+// $Id$
+
 package scala.tools.scalap.scalax.rules.scalasig
 
-import _root_.scala.Symbol
 import java.io.{PrintStream, ByteArrayOutputStream}
-import util.StringUtil
 import java.util.regex.Pattern
+
+import _root_.scala.Symbol
+import scala.tools.scalap.scalax.util.StringUtil
 
 class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   import stream._
@@ -12,7 +22,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
 
   case class TypeFlags(printRep: Boolean)
 
-  def printSymbol(symbol: Symbol) {printSymbol(0, symbol)}
+  def printSymbol(symbol: Symbol) { printSymbol(0, symbol) }
 
   def printSymbol(level: Int, symbol: Symbol) {
     if (!symbol.isLocal &&
@@ -20,17 +30,22 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
       def indent() {for (i <- 1 to level) print("  ")}
 
       symbol match {
-        case o: ObjectSymbol => if (!isCaseClassObject(o)) {
+        case o: ObjectSymbol =>
+          if (!isCaseClassObject(o)) {
+            indent
+            printObject(level, o)
+          }
+        case c: ClassSymbol if !refinementClass(c) && !c.isModule =>
           indent
-          printObject(level, o)
-        }
-        case c: ClassSymbol if !refinementClass(c) && !c.isModule => indent; {
           printClass(level, c)
-        }
-        case m: MethodSymbol => printMethod(level, m, indent)
-        case a: AliasSymbol => indent; printAlias(level, a)
-        case t: TypeSymbol => ()
-        case s => {}
+        case m: MethodSymbol =>
+          printMethod(level, m, indent)
+        case a: AliasSymbol =>
+          indent
+          printAlias(level, a)
+        case t: TypeSymbol =>
+          ()
+        case s =>
       }
     }
   }
@@ -43,13 +58,13 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     })
   }
 
-  def underCaseClass(m: MethodSymbol) = m.parent match {
+  private def underCaseClass(m: MethodSymbol) = m.parent match {
     case Some(c: ClassSymbol) => c.isCase
     case _ => false
   }
 
 
-  def printChildren(level: Int, symbol: Symbol) {
+  private def printChildren(level: Int, symbol: Symbol) {
     for (child <- symbol.children) printSymbol(level + 1, child)
   }
 
@@ -102,14 +117,14 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
       case m : MethodSymbol if m.name == CONSTRUCTOR_NAME => true
       case _ => false
     } match {
-      case Some(m: MethodSymbol) => {
+      case Some(m: MethodSymbol) =>
         val baos = new ByteArrayOutputStream
         val stream = new PrintStream(baos)
         val printer = new ScalaSigPrinter(stream, printPrivates)
         printer.printMethodType(m.infoType, false)
         baos.toString
-      }
-      case None => ""
+      case None =>
+        ""
     }
   }
 
@@ -160,7 +175,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     }
   }
 
-  def printMethod(level: Int, m: MethodSymbol, indent : () => Unit): Unit = {
+  def printMethod(level: Int, m: MethodSymbol, indent: () => Unit) {
     val n = m.name
     if (underCaseClass(m) && n == CONSTRUCTOR_NAME) return
     if (m.isAccessor && n.endsWith("_$eq")) return
@@ -174,19 +189,17 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
       print("def ")
     }
     n match {
-      case CONSTRUCTOR_NAME => {
+      case CONSTRUCTOR_NAME =>
         print("this")
         printMethodType(m.infoType, false)
         print(" = { /* compiled code */ }")
-      }
-      case name => {
+      case name =>
         val nn = processName(name)
         print(nn)
         printMethodType(m.infoType, true)
         if (!m.isDeferred) { // Print body only for non-abstract metods
           print(" = { /* compiled code */ }")
         }
-      }
     }
     print("\n")
     printChildren(level, m)

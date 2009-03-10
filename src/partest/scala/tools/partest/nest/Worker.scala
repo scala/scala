@@ -1,4 +1,5 @@
 /* NEST (New Scala Test)
+ * Copyright 2007-2009 LAMP/EPFL
  * @author Philipp Haller
  */
 
@@ -328,7 +329,7 @@ class Worker(val fileManager: FileManager) extends Actor {
    * @param kind  The test kind (pos, neg, run, etc.)
    * @param files The list of test files
    */
-  def runTests(kind: String, files: List[File], topcont: (Int, Int) => Unit): Unit = {
+  def runTests(kind: String, files: List[File], topcont: (Int, Int) => Unit) {
     val compileMgr = new CompileManager(fileManager)
     var errors = 0
     var succeeded = true

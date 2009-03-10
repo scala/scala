@@ -77,32 +77,32 @@ class CompilerCommand(
   // start; an informative message of some sort
   // should be printed instead.
   // (note: do not add "files.isEmpty" do this list)
-  val stopSettings=List[(()=>Boolean,
-                         (Global)=>String)](
-    (()=> settings.help.value, compiler =>
-      usageMsg + compiler.pluginOptionsHelp
+  val stopSettings = List[(() => Boolean, (Global) => String)](
+    (() => settings.help.value,
+     compiler => usageMsg + compiler.pluginOptionsHelp
     ),
-    (()=> settings.Xhelp.value, compiler =>
-      xusageMsg
+    (() => settings.Xhelp.value,
+     compiler => xusageMsg
     ),
-    (()=> settings.Yhelp.value, compiler =>
-      yusageMsg
+    (() => settings.Yhelp.value,
+     compiler => yusageMsg
     ),
-    (()=> settings.showPlugins.value, compiler =>
-      compiler.pluginDescriptions
+    (() => settings.showPlugins.value,
+     compiler => compiler.pluginDescriptions
     ),
-    (()=> settings.showPhases.value, compiler =>
-      compiler.phaseDescriptions
+    (() => settings.showPhases.value,
+     compiler => compiler.phaseDescriptions
     )
   )
 
-  def shouldStopWithInfo = stopSettings.exists({pair => (pair._1)()})
-  def getInfoMessage(compiler:Global) =
-    stopSettings.find({pair => (pair._1)()}) match {
-      case Some((test,getMessage)) => getMessage(compiler)
+  def shouldStopWithInfo: Boolean =
+    stopSettings.exists(pair => (pair._1)())
+
+  def getInfoMessage(compiler: Global): String =
+    stopSettings.find(pair => (pair._1)()) match {
+      case Some((test, getMessage)) => getMessage(compiler)
       case None => ""
     }
-
 
   /** Whether the command was processed okay */
   var ok = true

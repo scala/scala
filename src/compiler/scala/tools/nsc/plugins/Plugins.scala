@@ -20,7 +20,8 @@ trait Plugins { self: Global =>
   /** Load a rough list of the plugins.  For speed, it
    *  does not instantiate a compiler run.  Therefore it cannot
    *  test for same-named phases or other problems that are
-   *  filtered from the final list of plugins. */
+   *  filtered from the final list of plugins.
+   */
   protected def loadRoughPluginsList(): List[Plugin] = {
     val jars = settings.plugin.value.map(new File(_))
     val dirs =
@@ -40,7 +41,6 @@ trait Plugins { self: Global =>
 	roughPluginsListCache = Some(loadRoughPluginsList)
         roughPluginsListCache.get
     }
-
 
   /** Load all available plugins.  Skips plugins that
    *  either have the same name as another one, or which
@@ -117,7 +117,6 @@ trait Plugins { self: Global =>
     plugs
   }
 
-
   private var pluginsCache: Option[List[Plugin]] = None
 
   def plugins: List[Plugin] = {
@@ -125,7 +124,6 @@ trait Plugins { self: Global =>
       pluginsCache = Some(loadPlugins)
     pluginsCache.get
   }
-
 
   /** A description of all the plugins that are loaded */
   def pluginDescriptions: String = {
@@ -140,10 +138,7 @@ trait Plugins { self: Global =>
    * @see phasesSet
    */
   protected def computePluginPhases() {
-
-    var plugPhases = plugins.flatMap(_.components)
-
-    // Add all phases supplied by plugins to the phasesSet
+    val plugPhases = plugins.flatMap(_.components)
     for (pPhase <- plugPhases) {
       phasesSet += pPhase
      }

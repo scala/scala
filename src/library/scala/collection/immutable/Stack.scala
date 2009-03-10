@@ -48,7 +48,8 @@ class Stack[+A] extends Seq[A] {
    *  @param   elem       the element to push on the stack.
    *  @return the stack with the new element on top.
    */
-  @deprecated def +[B >: A](elem: B): Stack[B] = new Node(elem)
+  @deprecated
+  def +[B >: A](elem: B): Stack[B] = new Node(elem)
 
   /** Push an element on the stack.
    *
@@ -63,7 +64,7 @@ class Stack[+A] extends Seq[A] {
    *  @param   elems      the element sequence.
    *  @return the stack with the new elements on top.
    */
-  def push[B >: A](elems: B*): Stack[B] = this + elems
+  def push[B >: A](elems: B*): Stack[B] = this ++ elems
 
   /** Push all elements provided by the given iterable object onto
    *  the stack. The last element returned by the iterable object
@@ -74,7 +75,8 @@ class Stack[+A] extends Seq[A] {
    *  @param   elems      the iterable object.
    *  @return the stack with the new elements on top.
    */
-  @deprecated def +[B >: A](elems: Iterable[B]): Stack[B] =
+  @deprecated
+  def +[B >: A](elems: Iterable[B]): Stack[B] =
     elems.foldLeft(this: Stack[B]){ (stack, elem) => stack + elem }
 
   /** Push all elements provided by the given iterable object onto
@@ -84,8 +86,7 @@ class Stack[+A] extends Seq[A] {
    *  @param   elems      the iterable object.
    *  @return the stack with the new elements on top.
    */
-  def push[B >: A](elems: Iterable[B]): Stack[B] =
-    this ++ elems
+  def push[B >: A](elems: Iterable[B]): Stack[B] = this ++ elems
 
   /** Push all elements provided by the given iterator object onto
    *  the stack. The last element returned by the iterable object

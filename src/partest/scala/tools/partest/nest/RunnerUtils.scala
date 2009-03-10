@@ -1,3 +1,9 @@
+/* NEST (New Scala Test)
+ * Copyright 2007-2009 LAMP/EPFL
+ * @author Philipp Haller
+ */
+
+// $Id$
 
 package scala.tools.partest.nest
 

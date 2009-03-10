@@ -55,6 +55,25 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
                                                            Console.in,
                                                            new PrintWriter(new StringWriter))
 
+  private def updatePluginPath(options: String): String = {
+    val (opt1, opt2) =
+      (options split "\\s").toList partition (_ startsWith "-Xplugin:")
+    (opt2 mkString " ")+(
+      if (opt1.isEmpty) ""
+      else {
+        def absolutize(path: String): List[String] = {
+          val args = (path substring 9 split File.pathSeparator).toList
+          val plugins = args map (arg =>
+            if (new File(arg).isAbsolute) arg
+            else fileManager.TESTROOT+File.separator+arg
+          )
+          plugins
+        }
+        " -Xplugin:"+((opt1 flatMap absolutize) mkString File.pathSeparator)
+      }
+    )
+  }
+
   def compile(out: Option[File], files: List[File], kind: String, log: File): Boolean = {
     val testSettings = newSettings
     val logWriter = new FileWriter(log)
@@ -68,13 +87,13 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     val argString = if (argsFile.exists) {
       val fileReader = new FileReader(argsFile)
       val reader = new BufferedReader(fileReader)
-      val options = reader.readLine()
+      val options = updatePluginPath(reader.readLine())
       reader.close()
       options
     } else ""
     val allOpts = fileManager.SCALAC_OPTS+" "+argString
     NestUI.verbose("scalac options: "+allOpts)
-    val args = List.fromArray(allOpts.split("\\s"))
+    val args = List.fromArray(allOpts split "\\s")
     val command = new CompilerCommand(args, testSettings, x => {}, false)
     val global = newGlobal(command.settings, logWriter)
     val testRep: ExtConsoleReporter = global.reporter.asInstanceOf[ExtConsoleReporter]

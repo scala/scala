@@ -106,7 +106,7 @@ object Console {
    *
    *  @param reader specifies the new input stream.
    */
-  def setIn(reader: Reader): Unit = {
+  def setIn(reader: Reader) {
     inVar.value = new BufferedReader(reader)
   }
 
@@ -125,8 +125,9 @@ object Console {
    *
    *  @param in the new input stream.
    */
-  def setIn(in: InputStream): Unit =
+  def setIn(in: InputStream) {
     setIn(new InputStreamReader(in))
+  }
 
   /** Set the default input stream for the duration
    *  of execution of one thunk.
@@ -142,8 +143,9 @@ object Console {
    *
    *  @param obj the object to print.
    */
-  def print(obj: Any): Unit =
+  def print(obj: Any) {
     out.print(if (null == obj) "null" else obj.toString())
+  }
 
   /** Flush the output stream. This function is required when partial
    *  output (i.e. output not terminated by a new line character) has
@@ -153,13 +155,13 @@ object Console {
 
   /** Print a new line character on the terminal.
    */
-  def println(): Unit = out.println()
+  def println() { out.println() }
 
   /** Print out an object followed by a new line character.
    *
    *  @param x the object to print.
    */
-  def println(x: Any): Unit = out.println(x)
+  def println(x: Any) { out.println(x) }
 
   /** <p>
    *    Prints its arguments as a formatted string, based on a string
@@ -183,8 +185,10 @@ object Console {
    *  @deprecated For console output, use <code>Console.printf</code>.  For <code>String</code> formatting,
    *              <code>RichString</code>'s <code>format</code> method.
    */
-  @deprecated def format(text: String, args: Any*) {
-      if (text eq null) out.printf("null") else (out.print(text format (args : _*)))
+  @deprecated
+  def format(text: String, args: Any*) {
+    if (text eq null) out.printf("null")
+    else out.print(text format (args : _*))
   }
 
   /** Read a full line from the terminal.  Returns <code>null</code> if the end of the
@@ -202,7 +206,7 @@ object Console {
    *  @return the string read from the terminal.
    */
   def readLine(text: String, args: Any*): String = {
-    format(text, args: _*)
+    printf(text, args: _*)
     readLine()
   }
 
@@ -214,17 +218,17 @@ object Console {
    *  @throws java.io.EOFException
    */
   def readBoolean(): Boolean = {
-       val s = readLine()
-       if (s == null)
-	 throw new java.io.EOFException("Console has reached end of input")
-       else
-	 s.toLowerCase() match {
-           case "true" => true
-	   case "t" => true
-	   case "yes" => true
-	   case "y" => true
-	   case _ => false
-	 }
+    val s = readLine()
+    if (s == null)
+      throw new java.io.EOFException("Console has reached end of input")
+    else
+      s.toLowerCase() match {
+        case "true" => true
+        case "t" => true
+        case "yes" => true
+        case "y" => true
+        case _ => false
+      }
   }
 
   /** Read a byte value from the terminal.

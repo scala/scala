@@ -66,11 +66,9 @@ abstract class ICodeReader extends ClassfileParser {
   /** If we're parsing a scala module, the owner of members is always
    *  the module symbol.
    */
-  override def getOwner(jflags: Int): Symbol = {
-    if (isScalaModule) {
-      this.staticModule
-    } else super.getOwner(jflags)
-  }
+  override def getOwner(jflags: Int): Symbol =
+    if (isScalaModule) this.staticModule
+    else super.getOwner(jflags)
 
   override def parseClass() {
     this.instanceCode = new IClass(clazz)
@@ -634,6 +632,7 @@ abstract class ICodeReader extends ClassfileParser {
   def isBox(m: Symbol): Boolean =
     (m.owner == definitions.BoxesRunTimeClass.moduleClass
         && m.name.startsWith("boxTo"))
+
   def isUnbox(m: Symbol): Boolean =
     (m.owner == definitions.BoxesRunTimeClass.moduleClass
         && m.name.startsWith("unboxTo"))
@@ -643,7 +642,8 @@ abstract class ICodeReader extends ClassfileParser {
    */
   def getCode(flags: Int): IClass =
     if (isScalaModule) staticCode
-    else if ((flags & JAVA_ACC_STATIC) != 0) staticCode else instanceCode
+    else if ((flags & JAVA_ACC_STATIC) != 0) staticCode
+    else instanceCode
 
   class LinearCode {
     var instrs: ListBuffer[(Int, Instruction)] = new ListBuffer

@@ -16,7 +16,7 @@ import scala.tools.nsc.util.Position
 abstract class AbstractReporter extends Reporter {
   private val positions = new HashMap[Position, Severity]
 
-  override def reset = {
+  override def reset {
     super.reset
     positions.clear
   }
@@ -28,7 +28,7 @@ abstract class AbstractReporter extends Reporter {
 
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean) {
     severity match {
-      case INFO    =>
+      case INFO =>
         if (force || settings.verbose.value) display(pos, msg, severity)
       case WARNING =>
         val hidden = testAndLog(pos, severity)

@@ -81,7 +81,7 @@ object Plugin {
       val jar = new JarFile(jarfile)
       try {
 	val ent = jar.getEntry("scalac-plugin.xml")
-	if(ent == null) return None
+	if (ent == null) return None
 
 	val inBytes = jar.getInputStream(ent)
 	val packXML = XML.load(inBytes)
@@ -92,7 +92,7 @@ object Plugin {
 	jar.close()
       }
     } catch {
-      case _:ZipException => None
+      case _: ZipException => None
     }
   }
 
@@ -132,7 +132,7 @@ object Plugin {
       dir <- dirs if dir.isDirectory
       entries = dir.listFiles
       if entries ne null
-      entry <- entries.toList.sort((f1, f2) => f1.getName <= f2.getName)
+      entry <- entries.toList.sort(_.getName <= _.getName)
       if entry.toString.toLowerCase endsWith ".jar"
       pdesc <- loadDescription(entry)
       if !(ignoring contains pdesc.name)

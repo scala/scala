@@ -38,22 +38,21 @@ class AbstractFileReader(val file: AbstractFile) {
   @throws(classOf[IndexOutOfBoundsException])
   def nextByte: Byte = {
     val b = buf(bp)
-    bp = bp + 1
+    bp += 1
     b
   }
 
   /** read some bytes
    */
   def nextBytes(len: Int): Array[Byte] = {
-    bp = bp + len
+    bp += len
     buf.subArray(bp - len, bp)
   }
 
   /** read a character
    */
-  def nextChar: Char = {
+  def nextChar: Char =
     (((nextByte & 0xff) << 8) + (nextByte & 0xff)).toChar
-  }
 
   /** read an integer
    */

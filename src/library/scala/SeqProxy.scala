@@ -40,7 +40,8 @@ trait SeqProxy[+A] extends Seq[A] with CollectionProxy[A] {
   override def lastOption = self.lastOption
   override def first = self.first
   override def firstOption = self.firstOption
-  override def headOption = self.headOption
+  @deprecated
+  override def headOption = firstOption
 
   override def ++ [B >: A](that: Iterable[B]) = self ++ that
   override def isDefinedAt(x: Int): Boolean = self isDefinedAt x
@@ -57,7 +58,8 @@ trait SeqProxy[+A] extends Seq[A] with CollectionProxy[A] {
   override def drop(n: Int): Seq[A] = self drop n
 
   override def slice(from: Int, len: Int): Seq[A] = self.slice(from, len)
-  override def slice(from: Int) = self slice from
+  @deprecated
+  override def slice(from: Int) = slice(from, length)
 
   override def takeWhile(p: A => Boolean): Seq[A] = self takeWhile p
   override def dropWhile(p: A => Boolean): Seq[A] = self dropWhile p
@@ -65,8 +67,8 @@ trait SeqProxy[+A] extends Seq[A] with CollectionProxy[A] {
   override def reverse: Seq[A] = self.reverse
 
   override def contains(elem: Any): Boolean = self contains elem
-
-  override def subseq(from: Int, end: Int) = self.subseq(from, end)
+  @deprecated
+  override def subseq(from: Int, end: Int) = slice(from, end - from)
 
   override def toArray[B >: A]: Array[B] = self.toArray
 

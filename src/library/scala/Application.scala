@@ -16,7 +16,8 @@ import scala.compat.Platform.currentTime
 
 /** <p>
  *    The <code>Application</code> trait can be used to quickly turn objects
- *    into executable programs, but is <em>not recommended</em>.  Here is an example:
+ *    into executable programs, but is <em>not recommended</em>.
+ *    Here is an example:
  *  </p><pre>
  *  <b>object</b> Main <b>extends</b> Application {
  *    Console.println("Hello World!")
@@ -36,8 +37,10 @@ import scala.compat.Platform.currentTime
  *  </p><pre>
  *  java -Dscala.time Main
  *  </pre>
- *  <p>In practice the <code>Application</code> trait has a number of serious
- *  pitfalls:
+ *  <p>
+ *    In practice the <code>Application</code> trait has a number of serious
+ *    pitfalls:
+ *  </p>
  *  <ul>
  *    <li>As described above, there is no way to obtain the
  *    command-line arguments because all code in body of an <code>object</code>
@@ -55,7 +58,7 @@ import scala.compat.Platform.currentTime
  *    optimize or JIT the code in the body of an <code>object</code> extending
  *    <code>Application</code>.  This can lead to a significant
  *    performance degradation.</li>
- *  </p>
+ *  </ul>
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 10/09/2003
@@ -71,7 +74,7 @@ trait Application {
    *
    *  @param args the arguments passed to the main method
    */
-  def main(args: Array[String]) = {
+  def main(args: Array[String]) {
     if (getProperty("scala.time") ne null) {
       val total = currentTime - executionStart
       Console.println("[total " + total + "ms]")

@@ -14,9 +14,9 @@ package scala.io
 
 import java.io.{BufferedInputStream, File, FileInputStream, InputStream,
                 PrintStream}
+import java.net.{URI, URL}
 import java.nio.{ByteBuffer, CharBuffer}
 import java.nio.charset.Charset
-import java.net.{URI, URL}
 
 /** This object provides convenience methods to create an iterable
  *  representation of a source file.
@@ -156,7 +156,7 @@ object Source {
     fromURL(new URL(s), enc)
 
   /**
-   *  @param url  ...
+   *  @param url  the source URL
    *  @return     ...
    *  @deprecated use fromURL(url, enc)
    */
@@ -192,13 +192,14 @@ object Source {
    *  @param enc the encoding to apply to the bytes
    *  @param maxlen optionally, a positive int specifying maximum number of bytes to read
    */
-  @deprecated def fromInputStream(istream: InputStream, enc: String, maxlen: Option[Int]): Source = {
+  @deprecated
+  def fromInputStream(istream: InputStream, enc: String, maxlen: Option[Int]): Source = {
     val limit = maxlen match { case Some(i) => i; case None => 0 }
     val bi = new BufferedInputStream(istream, Source.DefaultBufSize)
     val bytes = new collection.mutable.ArrayBuffer[Byte]()
     var b = 0
     var i = 0
-    while( {b = bi.read; i += 1; b} != -1 && (limit <= 0 || i < limit)) {
+    while ( {b = bi.read; i += 1; b} != -1 && (limit <= 0 || i < limit)) {
       bytes += b.toByte;
     }
     if(limit <= 0) bi.close
@@ -267,8 +268,8 @@ abstract class Source extends Iterator[Char] {
    */
   def getLine(line: Int): String = { // faster than getLines.drop(line).next
     // todo: should @throws scala.compat.Platform.IndexOutOfBoundsException
-    if (line < 1) throw new IllegalArgumentException(line.toString);
-    val buf = new StringBuilder()
+    if (line < 1) throw new IllegalArgumentException(line.toString)
+    val buf = new StringBuilder
     val it = reset
     var i = 0
 
@@ -279,7 +280,7 @@ abstract class Source extends Iterator[Char] {
     if (!it.hasNext) // this should not happen
       throw new IllegalArgumentException(
         "line " + line + " does not exist"
-      );
+      )
 
     var ch = it.next
     while (it.hasNext && '\n' != ch) {
@@ -302,11 +303,11 @@ abstract class Source extends Iterator[Char] {
     val buf = new StringBuilder
     def next = {
       var ch = iter.next
-      while(ch != '\n' && iter.hasNext) {
+      while (ch != '\n' && iter.hasNext) {
         buf append ch
         ch = iter.next
       }
-      buf.append(ch)
+      buf append ch
       val res = buf.toString()
       buf setLength 0  // clean things up for next call of "next"
       res
@@ -320,9 +321,9 @@ abstract class Source extends Iterator[Char] {
   /** returns next character and has the following side-effects: updates
    *  position (ccol and cline) and assigns the character to ch
    */
-  def next = {
+  def next: Char = {
     ch = iter.next
-    pos = Position.encode(cline,ccol)
+    pos = Position.encode(cline, ccol)
     ch match {
       case '\n' =>
         ccol = 1
@@ -337,26 +338,26 @@ abstract class Source extends Iterator[Char] {
 
   /** Reports an error message to console.
    *
-   *  @param pos ...
+   *  @param pos the source position (line/column)
    *  @param msg the error message to report
    */
   def reportError(pos: Int, msg: String) {
-    reportError(pos, msg, java.lang.System.out)
+    reportError(pos, msg, Console.out)
   }
 
   /** Reports an error message to the output stream <code>out</code>.
    *
-   *  @param pos ...
+   *  @param pos the source position (line/column)
    *  @param msg the error message to report
    *  @param out ...
    */
   def reportError(pos: Int, msg: String, out: PrintStream) {
-    nerrors = nerrors + 1
+    nerrors += 1
     report(pos, msg, out)
   }
 
   /**
-   *  @param pos ...
+   *  @param pos the source position (line/column)
    *  @param msg the error message to report
    *  @param out ...
    */
@@ -365,32 +366,32 @@ abstract class Source extends Iterator[Char] {
     val line = Position.line(pos)
     val col = Position.column(pos)
     buf.append(descr + ":" + line + ":" + col + ": " + msg)
-    buf.append(getLine(line))
+    buf append getLine(line)
     var i = 1
     while (i < col) {
-      buf.append(' ')
+      buf append ' '
       i += 1
     }
-    buf.append('^')
+    buf append '^'
     out.println(buf.toString)
   }
 
-  /** Reports a warning message to <code>java.lang.System.out</code>.
+  /** Reports a warning message to <code>Console.out</code>.
    *
-   *  @param pos ...
+   *  @param pos the source position (line/column)
    *  @param msg the warning message to report
    */
   def reportWarning(pos: Int, msg: String) {
-    reportWarning(pos, msg, java.lang.System.out)
+    reportWarning(pos, msg, Console.out)
   }
 
   /**
-   *  @param pos ...
+   *  @param pos the source position (line/column)
    *  @param msg the warning message to report
    *  @param out ...
    */
   def reportWarning(pos: Int, msg: String, out: PrintStream) {
-    nwarnings = nwarnings + 1
+    nwarnings += 1
     report(pos, "warning! " + msg, out)
   }
 

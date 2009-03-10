@@ -301,7 +301,8 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
    *  @param p the predicate used to filter the list.
    *  @return the elements of this list satisfying <code>p</code>.
    */
-  override def filter(p: A => Boolean): Seq[A] = super.filter(p).asInstanceOf[Seq[A]]
+  override def filter(p: A => Boolean): Seq[A] =
+    super.filter(p).asInstanceOf[Seq[A]]
 
   /** Returns a sequence consisting only over the first <code>n</code>
    *  elements of this sequence, or else the whole sequence, if it has less
@@ -366,7 +367,8 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
    *  @return  the longest prefix of this sequence whose elements satisfy
    *           the predicate <code>p</code>.
    */
-  override def takeWhile(p: A => Boolean): Seq[A] = super.takeWhile(p).asInstanceOf[Seq[A]]
+  override def takeWhile(p: A => Boolean): Seq[A] =
+    super.takeWhile(p).asInstanceOf[Seq[A]]
 
   /** Returns the longest suffix of this sequence whose first element
    *  does not satisfy the predicate <code>p</code>.
@@ -375,7 +377,8 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
    *  @return  the longest suffix of the sequence whose first element
    *           does not satisfy the predicate <code>p</code>.
    */
-  override def dropWhile(p: A => Boolean): Seq[A] = super.dropWhile(p).asInstanceOf[Seq[A]]
+  override def dropWhile(p: A => Boolean): Seq[A] =
+    super.dropWhile(p).asInstanceOf[Seq[A]]
 
   /** A sequence consisting of all elements of this sequence in reverse order.
    */
@@ -422,17 +425,18 @@ trait Seq[+A] extends AnyRef with PartialFunction[Int, A] with Collection[A] {
     override def force: Seq[A] = Seq.this
     def elements = Seq.this.elements
     def length = Seq.this.length
-    def apply(idx : Int) = (Seq.this.apply(idx))
+    def apply(idx: Int) = Seq.this.apply(idx)
     override def stringPrefix = Seq.this.stringPrefix + "P"
   }
 
-  def equalsWith[B](that: Seq[B])(f: (A,B) => Boolean): Boolean = {
-    if (size != that.size) return false
-    val i = elements
-    val j = that.elements
-    while (i.hasNext) if (!f(i.next, j.next)) return false
-    true
-  }
+  def equalsWith[B](that: Seq[B])(f: (A,B) => Boolean): Boolean =
+    if (size != that.size) false
+    else {
+      val i = elements
+      val j = that.elements
+      while (i.hasNext) if (!f(i.next, j.next)) return false
+      true
+    }
 
   /**
    * Checks whether the argument sequence is contained at the

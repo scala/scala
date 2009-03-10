@@ -621,7 +621,8 @@ abstract class CleanUp extends Transform {
           case MethodType(paramTypes, resType) =>
             assert(params.length == paramTypes.length)
             atPos(ad.pos)(localTyper.typed {
-              val sym = currentOwner.newValue(ad.pos, newTermName(unit.fresh.newName("qual"))) setInfo qual0.tpe
+              val t1 = newTermName(unit.fresh.newName(ad.pos, "qual"))
+              val sym = currentOwner.newValue(ad.pos, t1) setInfo qual0.tpe
               qual = gen.mkAttributedRef(sym)
               Block(
                 List(ValDef(sym, qual0)),

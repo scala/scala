@@ -20,70 +20,89 @@ import org.apache.tools.ant.types.{Path, Reference, FileSet}
 
 class PartestTask extends Task {
 
-  def addConfiguredPosTests(input: FileSet): Unit =
+  def addConfiguredPosTests(input: FileSet) {
     posFiles = Some(input)
+  }
 
-  def addConfiguredPos5Tests(input: FileSet): Unit =
+  def addConfiguredPos5Tests(input: FileSet) {
     pos5Files = Some(input)
+  }
 
-  def addConfiguredNegTests(input: FileSet): Unit =
+  def addConfiguredNegTests(input: FileSet) {
     negFiles = Some(input)
+  }
 
-  def addConfiguredRunTests(input: FileSet): Unit =
+  def addConfiguredRunTests(input: FileSet) {
     runFiles = Some(input)
+  }
 
-  def addConfiguredJvmTests(input: FileSet): Unit =
+  def addConfiguredJvmTests(input: FileSet) {
     jvmFiles = Some(input)
+  }
 
-  def addConfiguredJvm5Tests(input: FileSet): Unit =
+  def addConfiguredJvm5Tests(input: FileSet) {
     jvm5Files = Some(input)
+  }
 
-  def addConfiguredResidentTests(input: FileSet): Unit =
+  def addConfiguredResidentTests(input: FileSet) {
     residentFiles = Some(input)
+  }
 
-  def addConfiguredScriptTests(input: FileSet): Unit =
+  def addConfiguredScriptTests(input: FileSet) {
     scriptFiles = Some(input)
+  }
 
-  def addConfiguredShootoutTests(input: FileSet): Unit =
+  def addConfiguredShootoutTests(input: FileSet) {
     shootoutFiles = Some(input)
+  }
 
-  def setClasspath(input: Path): Unit =
+  def setClasspath(input: Path) {
     if (classpath.isEmpty)
       classpath = Some(input)
     else
       classpath.get.append(input)
+  }
 
   def createClasspath(): Path = {
     if (classpath.isEmpty) classpath = Some(new Path(getProject()))
     classpath.get.createPath()
   }
 
-  def setClasspathref(input: Reference): Unit =
+  def setClasspathref(input: Reference) {
     createClasspath().setRefid(input)
+  }
 
-  def setShowLog(input: Boolean): Unit =
+  def setShowLog(input: Boolean) {
     showLog = input
+  }
 
-  def setShowDiff(input: Boolean): Unit =
+  def setShowDiff(input: Boolean) {
     showDiff = input
+  }
 
-  def setErrorOnFailed(input: Boolean): Unit =
+  def setErrorOnFailed(input: Boolean) {
     errorOnFailed = input
+  }
 
-  def setJavaCmd(input: File): Unit =
+  def setJavaCmd(input: File) {
     javacmd = Some(input)
+  }
 
-  def setJavacCmd(input: File): Unit =
+  def setJavacCmd(input: File) {
     javaccmd = Some(input)
+  }
 
-  def setScalacOpts(opts: String): Unit =
+  def setScalacOpts(opts: String) {
     scalacOpts = Some(opts)
+  }
 
-  def setTimeout(delay: String): Unit =
+  def setTimeout(delay: String) {
     timeout = Some(delay)
+  }
 
-  def setDebug(input: Boolean): Unit =
+  def setDebug(input: Boolean) {
     debug = input
+  }
 
   private var classpath: Option[Path] = None
   private var javacmd: Option[File] = None
@@ -105,12 +124,20 @@ class PartestTask extends Task {
   private var timeout: Option[String] = None
   private var debug = false
 
+  private def getFiles(fileSet: Option[FileSet]): Array[File] =
+    if (fileSet.isEmpty) Array()
+    else {
+      val files = fileSet.get
+      files.getDirectoryScanner(getProject).getIncludedFiles map {
+       fs => new File(files.getDir(getProject), fs)
+      }
+    }
+
   private def getFilesAndDirs(fileSet: Option[FileSet]): Array[File] =
     if (!fileSet.isEmpty) {
       val files = fileSet.get
+      val fileTests = getFiles(fileSet)
       val dir = files.getDir(getProject)
-      val fileTests = (files.getDirectoryScanner(getProject).getIncludedFiles map { fs =>
-        new File(dir, fs) })
       val dirTests = dir.listFiles(new java.io.FileFilter {
         def accept(file: File) =
           file.isDirectory &&
@@ -122,59 +149,17 @@ class PartestTask extends Task {
     else
       Array()
 
-  private def getPosFiles: Array[File] =
-    getFilesAndDirs(posFiles)
+  private def getPosFiles      = getFilesAndDirs(posFiles)
+  private def getPos5Files     = getFilesAndDirs(pos5Files)
+  private def getNegFiles      = getFiles(negFiles)
+  private def getRunFiles      = getFiles(runFiles)
+  private def getJvmFiles      = getFilesAndDirs(jvmFiles)
+  private def getJvm5Files     = getFilesAndDirs(jvm5Files)
+  private def getResidentFiles = getFiles(residentFiles)
+  private def getScriptFiles   = getFiles(scriptFiles)
+  private def getShootoutFiles = getFiles(shootoutFiles)
 
-  private def getPos5Files: Array[File] =
-    getFilesAndDirs(pos5Files)
-
-  private def getNegFiles: Array[File] =
-    if (!negFiles.isEmpty) {
-      val files = negFiles.get
-      (files.getDirectoryScanner(getProject).getIncludedFiles map { fs => new File(files.getDir(getProject), fs) })
-    }
-    else
-      Array()
-
-  private def getRunFiles: Array[File] =
-    if (!runFiles.isEmpty) {
-      val files = runFiles.get
-      (files.getDirectoryScanner(getProject).getIncludedFiles map { fs => new File(files.getDir(getProject), fs) })
-    }
-    else
-      Array()
-
-  private def getJvmFiles: Array[File] =
-    getFilesAndDirs(jvmFiles)
-
-  private def getJvm5Files: Array[File] =
-    getFilesAndDirs(jvm5Files)
-
-  private def getResidentFiles: Array[File] =
-    if (!residentFiles.isEmpty) {
-      val files = residentFiles.get
-      (files.getDirectoryScanner(getProject).getIncludedFiles map { fs => new File(files.getDir(getProject), fs) })
-    }
-    else
-      Array()
-
-  private def getScriptFiles: Array[File] =
-    if (!scriptFiles.isEmpty) {
-      val files = scriptFiles.get
-      (files.getDirectoryScanner(getProject).getIncludedFiles map { fs => new File(files.getDir(getProject), fs) })
-    }
-    else
-      Array()
-
-  private def getShootoutFiles: Array[File] =
-    if (!shootoutFiles.isEmpty) {
-      val files = shootoutFiles.get
-      (files.getDirectoryScanner(getProject).getIncludedFiles map { fs => new File(files.getDir(getProject), fs) })
-    }
-    else
-      Array()
-
-  override def execute(): Unit = {
+  override def execute() {
     if (debug)
       System.setProperty("partest.debug", "true")
 
@@ -208,13 +193,13 @@ class PartestTask extends Task {
       (result >> 16, result & 0x00FF)
     }
 
-    def setFileManagerBooleanProperty(name: String, value: Boolean) = {
+    def setFileManagerBooleanProperty(name: String, value: Boolean) {
       val setMethod =
         antFileManager.getClass.getMethod(name+"_$eq", Array(classOf[Boolean]): _*)
       setMethod.invoke(antFileManager, Array(java.lang.Boolean.valueOf(value)): _*)
     }
 
-    def setFileManagerStringProperty(name: String, value: String) = {
+    def setFileManagerStringProperty(name: String, value: String) {
       val setMethod =
         antFileManager.getClass.getMethod(name+"_$eq", Array(classOf[String]): _*)
       setMethod.invoke(antFileManager, Array(value): _*)
@@ -304,11 +289,11 @@ class PartestTask extends Task {
       log("There where no tests to run.")
     else if (allFailures == 0)
       log("Test suite finished with no failures.")
-    else if (errorOnFailed)
-      error("Test suite finished with " + allFailures + " case" + (if (allFailures > 1) "s" else "") + " failing.")
-    else
-      log("Test suite finished with " + allFailures + " case" + (if (allFailures > 1) "s" else "") + " failing.")
-
+    else {
+      val msg = "Test suite finished with " + allFailures +
+                " case" + (if (allFailures > 1) "s" else "") + " failing."
+      if (errorOnFailed) error(msg) else log(msg)
+    }
   }
 
 }

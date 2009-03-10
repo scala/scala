@@ -22,7 +22,7 @@ abstract class Reporter {
   val WARNING = new Severity(1)
   val ERROR = new Severity(2)
 
-  def reset: Unit = {
+  def reset {
     INFO.count = 0
     ERROR.count   = 0
     WARNING.count = 0
@@ -41,9 +41,9 @@ abstract class Reporter {
   def setSource(source: SourceFile) { this.source = source }
   def getSource: SourceFile = source
 
-  def    info(pos: Position, msg: String, force: Boolean): Unit = info0(pos, msg,    INFO, force)
-  def warning(pos: Position, msg: String                ): Unit = info0(pos, msg, WARNING, false)
-  def   error(pos: Position, msg: String                ): Unit = info0(pos, msg,   ERROR, false)
+  def    info(pos: Position, msg: String, force: Boolean) { info0(pos, msg,    INFO, force) }
+  def warning(pos: Position, msg: String                ) { info0(pos, msg, WARNING, false) }
+  def   error(pos: Position, msg: String                ) { info0(pos, msg,   ERROR, false) }
 
   /** An error that could possibly be fixed if the unit were longer.
    *  This is used only when the interpreter tries

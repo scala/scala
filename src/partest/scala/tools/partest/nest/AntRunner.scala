@@ -10,24 +10,17 @@
 
 package scala.tools.partest.nest
 
-import scala.actors.Actor._
-
 import java.io.File
-import java.net.URLClassLoader
-
-import org.apache.tools.ant.Task
-import org.apache.tools.ant.types.{Path, Reference, FileSet}
 
 class AntRunner extends DirectRunner {
 
   val fileManager = new FileManager {
-
     var JAVACMD: String = "java"
     var JAVAC_CMD: String = "javac"
     var CLASSPATH: String = _
     var EXT_CLASSPATH: String = _
     var LATEST_LIB: String = _
-
+    val TESTROOT: String = ""
   }
 
   def reflectiveRunTestsForFiles(kindFiles: Array[File], kind: String): Int = {

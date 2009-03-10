@@ -48,7 +48,6 @@ class StandardCompileServer extends SocketServer {
 
   var reporter: ConsoleReporter = _
 
-
   /** Create a new compiler instance */
   def newGlobal(settings: Settings, reporter: Reporter) =
     new Global(settings, reporter) {

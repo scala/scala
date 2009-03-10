@@ -71,7 +71,7 @@ trait Scanners {
     def floatVal(negated: Boolean): Double
     def intVal: Long = intVal(false)
     def floatVal: Double = floatVal(false)
-    //def token2string(token : Int) : String = configuration.token2string(token)
+    //def token2string(token: Int): String = configuration.token2string(token)
     /** return recent scala doc, if any */
     def flushDoc: String
   }
@@ -152,14 +152,11 @@ trait Scanners {
       enterKeyword(nme.ATkw, AT)
 
       // Build keyword array
-      key = new Array[Byte](maxKey + 1)
-      for (i <- 0 to maxKey)
-        key(i) = IDENTIFIER
-      for (j <- 0 until tokenCount)
-        if (tokenName(j) ne null)
-          key(tokenName(j).start) = j.asInstanceOf[Byte]
-
+      key = Array.make(maxKey + 1, IDENTIFIER)
+      for (j <- 0 until tokenCount if tokenName(j) ne null)
+        key(tokenName(j).start) = j.toByte
     }
+
 //Token representation -----------------------------------------------------
 
   /** Convert name to token */
@@ -1028,9 +1025,12 @@ trait Scanners {
   /** ...
    */
   class UnitScanner(unit: CompilationUnit) extends Scanner {
-    val in = new CharArrayReader(unit.source.asInstanceOf[BatchSourceFile].content, !settings.nouescape.value, syntaxError)
+    val in = new CharArrayReader(
+      unit.source.asInstanceOf[BatchSourceFile].content,
+      !settings.nouescape.value, syntaxError
+    )
     def warning(pos: Int, msg: String) = unit.warning(pos, msg)
-    def error  (pos: Int, msg: String) = unit.  error(pos, msg)
+    def error  (pos: Int, msg: String) = unit.error(pos, msg)
     def incompleteInputError(pos: Int, msg: String) = unit.incompleteInputError(pos, msg)
     def deprecationWarning(pos: Int, msg: String) = unit.deprecationWarning(pos, msg)
     implicit def p2g(pos: Position): Int = pos.offset.getOrElse(-1)
