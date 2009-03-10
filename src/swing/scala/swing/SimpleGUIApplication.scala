@@ -10,8 +10,9 @@ abstract class SimpleGUIApplication extends GUIApplication {
   def top: Frame
 
   def main(args: Array[String]) = run {
-    top.pack()
-    top.visible = true
+    val t = top
+    t.pack()
+    t.visible = true
   }
 
   def resourceFromClassloader(path: String): java.net.URL =
