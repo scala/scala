@@ -11,9 +11,6 @@ import java.io.PrintWriter
 
 object NestUI {
 
-  val versionString =
-    System.getProperty("partest.version", "version 0.9.2")
-
   val NONE = 0
   val SOME = 1
   val MANY = 2
@@ -95,7 +92,7 @@ object NestUI {
     println("    --srcpath    set (relative) path to test source files")
     println("                 ex.: --srcpath pending")
     println
-    println(versionString)
+    println(utils.Properties.versionString)
     println("maintained by Philipp Haller (EPFL)")
     exit(1)
   }

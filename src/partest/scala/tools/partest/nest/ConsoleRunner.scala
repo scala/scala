@@ -56,7 +56,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
 
   private def printVersion {
     val versionMsg = "Scala partest "+
-      NestUI.versionString+
+      utils.Properties.versionString+
       " -- "+
       scala.tools.nsc.Properties.copyrightString
     NestUI.outline(versionMsg+"\n")

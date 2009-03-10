@@ -12,16 +12,14 @@ import java.io.{Writer, PrintWriter, Reader, BufferedReader,
                 OutputStreamWriter, StringReader, OutputStream}
 
 object StreamAppender {
-  def apply(reader: BufferedReader, writer: Writer) = {
+
+  def apply(reader: BufferedReader, writer: Writer): StreamAppender = {
     val pwriter = new PrintWriter(writer, true)
     new StreamAppender(reader, pwriter)
   }
 
-  def apply(reader: Reader, writer: Writer) = {
-    val bufReader = new BufferedReader(reader)
-    val pwriter = new PrintWriter(writer, true)
-    new StreamAppender(bufReader, pwriter)
-  }
+  def apply(reader: Reader, writer: Writer): StreamAppender =
+    apply(new BufferedReader(reader), writer)
 
   def appendToString(in1: InputStream, in2: InputStream): String = {
     val swriter1 = new StringWriter
@@ -37,8 +35,8 @@ object StreamAppender {
     async.join()
     swriter1.toString + swriter2.toString
   }
-
-  def inParallel(t1: Runnable, t2: Runnable, t3: Runnable) {
+/*
+  private def inParallel(t1: Runnable, t2: Runnable, t3: Runnable) {
     val thr1 = new Thread(t1)
     val thr2 = new Thread(t2)
     thr1.start()
@@ -47,8 +45,8 @@ object StreamAppender {
     thr1.join()
     thr2.join()
   }
-
-  def inParallel(t1: Runnable, t2: Runnable) {
+*/
+  private def inParallel(t1: Runnable, t2: Runnable) {
     val thr = new Thread(t2)
     thr.start()
     t1.run()
@@ -75,7 +73,8 @@ object StreamAppender {
 
 class StreamAppender(reader: BufferedReader, writer: PrintWriter) extends Runnable {
   override def run() = runAndMap(identity)
-  def runAndMap(f:String=>String): Unit = {
+
+  def runAndMap(f: String => String) {
     try {
       var line = reader.readLine()
       while (line != null) {

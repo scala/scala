@@ -131,9 +131,10 @@ PROPERTIES
   <property name="build-docs.dir" value="${build.dir}/scaladoc"/>
 
   <property name="dists.dir" value="${basedir}/dists"/>
-  
+
   <property name="copyright.string" value="Copyright 2002-2009, LAMP/EPFL"/>
-  
+  <property name="partest.version.number" value="0.9.2"/>
+
   <!-- These are NOT the flags used to run SuperSabbus, but the ones written
        into the script runners created with scala.tools.ant.ScalaTool -->
   <property name="java.flags" value="-Xmx256M -Xms32M"/>
@@ -508,6 +509,10 @@ QUICK BUILD (QUICK)
         <pathelement location="${ant.jar}"/>
       </compilationpath>
     </scalacfork>
+    <propertyfile file="${build-quick.dir}/classes/partest/partest.properties">
+      <entry key="version.number" value="${partest.version.number}"/>
+      <entry key="copyright.string" value="${copyright.string}"/>
+    </propertyfile>
     <copy todir="${build-quick.dir}/classes/partest">
       <fileset dir="${src.dir}/partest">
         <include name="**/*.xml"/>
