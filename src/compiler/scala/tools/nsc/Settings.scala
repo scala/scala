@@ -16,11 +16,7 @@ class Settings(error: String => Unit) {
   private var allsettings: List[Setting] = List()
 
   // optionizes a system property
-  private def sysprop(name: String): Option[String] =
-    System.getProperty(name) match {
-      case null | ""  => None
-      case x          => Some(x)
-    }
+  private def sysprop(name: String): Option[String] = onull(System.getProperty(name))
 
   // given any number of possible path segments, flattens down to a
   // :-separated style path
