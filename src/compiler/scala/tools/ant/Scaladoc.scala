@@ -574,6 +574,7 @@ class Scaladoc extends MatchingTask {
         args = docSettings.parseParams(args)
         if (args0 eq args) error("Parameter '" + args.head + "' is not recognised by Scaladoc.")
       }
+      else if (args.head == "") args = args.tail
       else error("Parameter '" + args.head + "' does not start with '-'.")
     }
 

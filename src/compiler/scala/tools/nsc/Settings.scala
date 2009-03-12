@@ -117,6 +117,8 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
     def doArgs(args: List[String]): List[String] = {
       if (args.isEmpty) return Nil
       val p = args.head
+      if (p == "") return args.tail // it looks like ant passes "" sometimes
+
       if (!p.startsWith("-")) {
         errorFn("Parameter '" + p + "' does not start with '-'.")
         return args
