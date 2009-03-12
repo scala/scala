@@ -42,7 +42,10 @@ final class EmptyMethodCache extends MethodCache {
 
 }
 
-final class MegaMethodCache(forName: String, forParameterTypes: Array[JClass[_]]) extends MethodCache {
+final class MegaMethodCache(
+  private[this] val forName: String,
+  private[this] val forParameterTypes: Array[JClass[_]]
+) extends MethodCache {
 
   def find(forReceiver: JClass[_]): JMethod =
     forReceiver.getMethod(forName, forParameterTypes:_*)
@@ -51,18 +54,23 @@ final class MegaMethodCache(forName: String, forParameterTypes: Array[JClass[_]]
 
 }
 
-final class PolyMethodCache(next: MethodCache, receiver: JClass[_], method: JMethod, complexity: Int) extends MethodCache {
+final class PolyMethodCache(
+  private[this] val next: MethodCache,
+  private[this] val receiver: JClass[_],
+  private[this] val method: JMethod,
+  private[this] val complexity: Int
+) extends MethodCache {
 
   def find(forReceiver: JClass[_]): JMethod =
-    if (forReceiver == receiver)
-      method
+    if (forReceiver eq receiver)
+      return method
     else
-      next.find(forReceiver) // tail call is optimised, confirm with -Ylog:tailcalls
+      return next.find(forReceiver) // tail call is optimised, confirm with -Ylog:tailcalls
 
   def add(forReceiver: JClass[_], forMethod: JMethod): MethodCache =
     if (complexity < 160) // TODO: come up with a more realistic number
-      new PolyMethodCache(this, forReceiver, forMethod, complexity + 1)
+      return new PolyMethodCache(this, forReceiver, forMethod, complexity + 1)
     else
-      new MegaMethodCache(forMethod.getName, forMethod.getParameterTypes)
+      return new MegaMethodCache(forMethod.getName, forMethod.getParameterTypes)
 
 }

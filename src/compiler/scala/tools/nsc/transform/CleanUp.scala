@@ -283,14 +283,13 @@ abstract class CleanUp extends Transform {
 
                 def reflMethod$Method(forReceiver: JClass[_]): JMethod = {
                   var method: JMethod = reflPoly$Cache.find(forReceiver)
-                  if (method == null) {
+                  if (method != null)
+                    return method
+                  else {
                     method = forReceiver.getMethod("xyz", reflParams$Cache)
                     reflPoly$Cache = reflPoly$Cache.add(forReceiver, method)
+                    return method
                   }
-                  // At that point, method is always non-null: getMethod will have previously
-                  // returned by throwing an exception if it can't find the method. Obviously,
-                  // CleanUp should not generate dynamic calls that are unsound.
-                  method
                 }
 
               */
@@ -313,34 +312,33 @@ abstract class CleanUp extends Transform {
                             Select(gen.mkAttributedRef(reflPolyCacheSym), methodCache_find),
                             List(gen.mkAttributedRef(forReceiverSym))
                           )
-                        ),
-                        If(
-                          Apply(Select(gen.mkAttributedRef(methodSym), Object_eq), List(Literal(Constant(null)))),
-                          Block(
-                            List(
-                              Assign(gen.mkAttributedRef(methodSym),
-                                Apply(
-                                  Select(gen.mkAttributedRef(forReceiverSym), Class_getMethod),
-                                  List(
-                                    Literal(Constant(method)),
-                                    gen.mkAttributedRef(reflParamsCacheSym)
-                                  )
-                                )
-                              ),
-                              Assign(
-                                gen.mkAttributedRef(reflPolyCacheSym),
-                                Apply(
-                                  Select(gen.mkAttributedRef(reflPolyCacheSym), methodCache_add),
-                                  List(gen.mkAttributedRef(forReceiverSym), gen.mkAttributedRef(methodSym))
+                        )
+                      ),
+                      If(
+                        Apply(Select(gen.mkAttributedRef(methodSym), Object_ne), List(Literal(Constant(null)))),
+                        Return(gen.mkAttributedRef(methodSym)),
+                        Block(
+                          List(
+                            Assign(gen.mkAttributedRef(methodSym),
+                              Apply(
+                                Select(gen.mkAttributedRef(forReceiverSym), Class_getMethod),
+                                List(
+                                  Literal(Constant(method)),
+                                  gen.mkAttributedRef(reflParamsCacheSym)
                                 )
                               )
                             ),
-                            Literal(Constant(()))
+                            Assign(
+                              gen.mkAttributedRef(reflPolyCacheSym),
+                              Apply(
+                                Select(gen.mkAttributedRef(reflPolyCacheSym), methodCache_add),
+                                List(gen.mkAttributedRef(forReceiverSym), gen.mkAttributedRef(methodSym))
+                              )
+                            )
                           ),
-                          EmptyTree
+                          Return(gen.mkAttributedRef(methodSym))
                         )
-                      ),
-                      gen.mkAttributedRef(methodSym)
+                      )
                     )
                   }
 
