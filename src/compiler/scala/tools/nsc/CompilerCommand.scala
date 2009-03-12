@@ -6,6 +6,8 @@
 
 package scala.tools.nsc
 
+import Settings.Setting
+import java.io.IOException
 
 /** A class representing command line info for scalac */
 class CompilerCommand(
@@ -18,16 +20,17 @@ class CompilerCommand(
   def this(arguments: List[String], settings: Settings, error: String => Unit, interactive: Boolean) =
     this(arguments, settings, error, interactive, true)
 
+  /** Private buffer for accumulating files to compile */
   private var fs: List[String] = List()
 
-  /** All files to compile */
+  /** Public list of files to compile */
   def files: List[String] = fs.reverse
 
   /** The name of the command */
   val cmdName = "scalac"
 
-  /** The file extension of files that the compiler can process */
-  lazy val fileEnding = Properties.fileEndingString
+  /** The file extensions of files that the compiler can process */
+  lazy val fileEndings = Properties.fileEndingString.split("""\|""").toList
 
   private val helpSyntaxColumnWidth: Int =
     Iterable.max(settings.allSettings map (_.helpSyntax.length))
@@ -39,64 +42,30 @@ class CompilerCommand(
     buf.toString()
   }
 
-  /** A message explaining usage and options */
-  def usageMsg: String = {
-    settings.allSettings
-      .filter(_.isStandard)
-      .map(setting =>
-           format(setting.helpSyntax) + "  " + setting.helpDescription)
-      .mkString("Usage: " + cmdName + " <options> <source files>\n" +
-                "where possible standard options include:\n  ",
-                "\n  ",
-                "\n")
-  }
+  /** Creates a help message for a subset of options based on cond */
+  def createUsageMsg(label: String, cond: (Setting) => Boolean): String =
+    settings.allSettings .
+      filter(cond) .
+      map(s => format(s.helpSyntax) + "  " + s.helpDescription) .
+      mkString("Usage: %s <options> <source files>\n%s options include:\n  " .
+        format(cmdName, label), "\n  ", "\n")
 
-  /** A message explaining usage and options */
-  def xusageMsg: String = {
-    settings.allSettings
-      .filter(_.isAdvanced)
-      .map(setting =>
-           format(setting.helpSyntax) + "  " + setting.helpDescription)
-      .mkString("Possible advanced options include:\n  ",
-                "\n  ",
-                "\n")
-  }
+  /** Messages explaining usage and options */
+  def usageMsg    = createUsageMsg("where possible standard", _.isStandard)
+  def xusageMsg   = createUsageMsg("Possible advanced", _.isAdvanced)
+  def yusageMsg   = createUsageMsg("Possible private", _.isPrivate)
 
-  /** A message explaining usage and options */
-  def yusageMsg: String = {
-    settings.allSettings
-      .filter(_.isPrivate)
-      .map(setting =>
-           format(setting.helpSyntax) + "  " + setting.helpDescription)
-      .mkString("Possible private options include:\n  ",
-                "\n  ",
-                "\n")
-  }
-
-  // If any of these settings is set, the compiler shouldn't
-  // start; an informative message of some sort
-  // should be printed instead.
+  // If any of these settings is set, the compiler shouldn't start;
+  // an informative message of some sort should be printed instead.
   // (note: do not add "files.isEmpty" do this list)
   val stopSettings = List[(() => Boolean, (Global) => String)](
-    (() => settings.help.value,
-     compiler => usageMsg + compiler.pluginOptionsHelp
-    ),
-    (() => settings.Xhelp.value,
-     compiler => xusageMsg
-    ),
-    (() => settings.Yhelp.value,
-     compiler => yusageMsg
-    ),
-    (() => settings.showPlugins.value,
-     compiler => compiler.pluginDescriptions
-    ),
-    (() => settings.showPhases.value,
-     compiler => compiler.phaseDescriptions
-    )
+    (settings.help.value _,         usageMsg + _.pluginOptionsHelp),
+    (settings.Xhelp.value _,        _ => xusageMsg),
+    (settings.Yhelp.value _,        _ => yusageMsg),
+    (settings.showPlugins.value _,  _.pluginDescriptions),
+    (settings.showPlugins.value _,  _.phaseDescriptions)
   )
-
-  def shouldStopWithInfo: Boolean =
-    stopSettings.exists(pair => (pair._1)())
+  def shouldStopWithInfo: Boolean = stopSettings exists { _._1() }
 
   def getInfoMessage(compiler: Global): String =
     stopSettings.find(pair => (pair._1)()) match {
@@ -112,42 +81,37 @@ class CompilerCommand(
   protected def processArguments() {
     // initialization
     var args = arguments
+    def errorAndNotOk(msg: String) = { error(msg) ; ok = false }
 
-    while (!args.isEmpty && ok) {
-      if (args.head startsWith "@") {
-        try {
-          args = util.ArgumentsExpander.expandArg(args.head) ::: args.tail
-        } catch {
-          case ex: java.io.IOException =>
-            error(ex.getMessage())
-            ok = false
-        }
-      } else if (args.head startsWith "-") {
-	if (interactive) {
-          error("no options can be given in interactive mode")
-          ok = false
-        } else {
-          val args0 = args
-          for (setting <- settings.allSettings)
-            if (args eq args0)
-              args = setting.tryToSet(args)
+    // given a @ argument expands it out
+    def doExpand(x: String) =
+      try   { args = util.ArgumentsExpander.expandArg(x) ::: args.tail }
+      catch { case ex: IOException  => errorAndNotOk(ex.getMessage) }
 
-          if (args eq args0) {
-            error("bad option: '" + args.head + "'")
-            ok = false
-          }
-        }
-      } else if ((settings.script.value != "") ||
-                 (fileEnding.split("\\|") exists (args.head.endsWith(_)))) {
-        fs = args.head :: fs
-        args = args.tail
-      } else if (args.head.length == 0) {//quick fix [martin: for what?]
-        args = args.tail
-      } else {
-        error("don't know what to do with " + args.head)
-        ok = false
-      }
+    // true if it's a legit looking source file
+    def isSourceFile(x: String) =
+      (settings.script.value != "") ||
+      (fileEndings exists (ext => x endsWith ext))
+
+    // given an option for scalac finds out what it is
+    def doOption(x: String): Unit = {
+      if (interactive)
+        return errorAndNotOk("no options can be given in interactive mode")
+
+      val argsLeft = settings.parseParams(args)
+      if (args != argsLeft) args = argsLeft
+      else errorAndNotOk("bad option: '" + x + "'")
     }
+
+    // cycle through args until empty or error
+    while (!args.isEmpty && ok) args.head match {
+      case x if x startsWith "@"  => doExpand(x)
+      case x if x startsWith "-"  => doOption(x)
+      case x if isSourceFile(x)   => fs = x :: fs ; args = args.tail
+      case ""                     => args = args.tail // quick fix [martin: for what?]
+      case x                      => errorAndNotOk("don't know what to do with " + x)
+    }
+
     ok &&= settings.checkDependencies
   }
 

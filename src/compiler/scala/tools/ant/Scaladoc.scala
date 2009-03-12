@@ -567,15 +567,16 @@ class Scaladoc extends MatchingTask {
     var args =
       if (addParams.trim() == "") Nil
       else List.fromArray(addParams.trim().split(" ")).map(_.trim())
+
     while (!args.isEmpty) {
-      val argsBuf = args
       if (args.head startsWith "-") {
-        for (docSetting <- docSettings.allSettings)
-          args = docSetting.tryToSet(args);
-      } else error("Parameter '" + args.head + "' does not start with '-'.")
-      if (argsBuf eq args)
-        error("Parameter '" + args.head + "' is not recognised by Scaladoc.")
+        val args0 = args
+        args = docSettings.parseParams(args)
+        if (args0 eq args) error("Parameter '" + args.head + "' is not recognised by Scaladoc.")
+      }
+      else error("Parameter '" + args.head + "' does not start with '-'.")
     }
+
     Pair(docSettings, sourceFiles)
   }
 

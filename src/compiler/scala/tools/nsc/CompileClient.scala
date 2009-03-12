@@ -34,7 +34,7 @@ class StandardCompileClient {
     pathsList.map(absFileName).mkString("", sep, "")
   }
 
-  val fileEnding = Properties.fileEndingString
+  val fileEndings = Properties.fileEndingString.split("""\|""").toList
 
   protected def normalize(args: Array[String]): (String, String) = {
      var i = 0
@@ -42,7 +42,7 @@ class StandardCompileClient {
     var serverAdr = ""
     while (i < args.length) {
       val arg = args(i)
-      if (fileEnding split ("\\|") exists (arg endsWith _)) {
+      if (fileEndings exists(arg endsWith _)) {
         args(i) = absFileName(arg)
       } else if (arg startsWith "-J") {
         //see http://java.sun.com/j2se/1.5.0/docs/tooldocs/solaris/javac.html#J

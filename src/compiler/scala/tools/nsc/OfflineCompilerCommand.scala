@@ -18,11 +18,13 @@ class OfflineCompilerCommand(
 extends CompilerCommand(arguments, new Settings(error), error, false)
 {
   override val cmdName = "fsc"
-  settings.disable(settings.prompt)
-  settings.disable(settings.resident)
-  new settings.BooleanSetting("-reset", "Reset compile server caches")
-  new settings.BooleanSetting("-shutdown", "Shutdown compile server")
-  new settings.StringSetting("-server", "hostname:portnumber",
-                             "Specify compile server socket", "")
-  new settings.BooleanSetting("-J<flag>", "Pass <flag> directly to runtime system")
+  import settings._
+
+  disable(prompt)
+  disable(resident)
+
+  BooleanSetting("-reset",    "Reset compile server caches")
+  BooleanSetting("-shutdown", "Shutdown compile server")
+  StringSetting ("-server",   "hostname:portnumber", "Specify compile server socket", "")
+  BooleanSetting("-J<flag>",  "Pass <flag> directly to runtime system")
 }

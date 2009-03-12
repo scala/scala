@@ -20,7 +20,6 @@ extends CompilerCommand(allargs, settings, error, false, false)
   def this(allargs: List[String]) =
     this(allargs, str => Console.println("Error: " + str))
 
-
   /** name of the associated compiler command */
   val compCmdName = "scalac"
 
@@ -35,9 +34,7 @@ extends CompilerCommand(allargs, settings, error, false, false)
 
     while (!args.isEmpty && ok && args.head.startsWith("-")) {
       val args0 = args
-      for (setting <- settings.allSettings)
-        if (args eq args0)
-          args = setting.tryToSet(args)
+      args = settings parseParams args
       if (args eq args0) {
         error("bad option: '" + args.head + "'")
         ok = false

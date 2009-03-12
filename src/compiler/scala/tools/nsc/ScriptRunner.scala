@@ -211,7 +211,7 @@ object ScriptRunner {
       scriptFileIn: String): Boolean =
   {
     val scriptFile = CompileClient.absFileName(scriptFileIn)
-    for (setting:settings.StringSetting <- List(
+    for (setting <- List(
             settings.classpath,
             settings.sourcepath,
             settings.bootclasspath,

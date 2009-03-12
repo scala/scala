@@ -555,7 +555,7 @@ class Scalac extends MatchingTask {
     if (!assemrefs.isEmpty) settings.assemrefs.value = assemrefs.get
 
     log("Scalac params = '" + addParams + "'", Project.MSG_DEBUG)
-    settings.parseParams(addParams, error)
+    settings.parseParams(addParams)
 
     (settings, sourceFiles, javaOnly)
   }
