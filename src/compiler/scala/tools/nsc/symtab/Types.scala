@@ -3714,7 +3714,12 @@ A type's typeSymbol should never be inspected directly.
          ||
          tp2.typeSymbol == AnyClass // @M Any and Nothing are super-type resp. subtype of every well-kinded type
          || // @M! normalize reduces higher-kinded case to PolyType's
-         (tp1.isHigherKinded && tp2.isHigherKinded) && isSubType0(tp1.normalize, tp2.normalize, depth))
+         (tp1.isHigherKinded && tp2.isHigherKinded) && {
+           val tp1a = tp1.normalize
+           val tp2a = tp2.normalize
+           assert((tp1a ne tp1) || (tp2a ne tp2))
+           isSubType0(tp1a, tp2a, depth)
+         })
       case (_, TypeRef(pre2, sym2, args2))
       if (sym2.isAbstractType && isDifferentType(tp2, tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo) &&
             (if (!inIDE) true else trackTypeIDE(sym2)) ||

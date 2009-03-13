@@ -67,7 +67,7 @@ trait Infer {
    *  @param tparam ...
    *  @return       ...
    */
-  private def freshVar(tparam: Symbol): TypeVar =
+  def freshVar(tparam: Symbol): TypeVar =
     new TypeVar(tparam.tpe, new TypeConstraint)  //@M TODO: might be affected by change to tpe in Symbol
 
   //todo: remove comments around following privates; right now they cause an IllegalAccess
@@ -143,12 +143,12 @@ trait Infer {
    *  @param upper      When <code>true</code> search for max solution else min.
    *  @throws NoInstance
    */
-  private def solvedTypes(tvars: List[TypeVar], tparams: List[Symbol],
-                          variances: List[Int], upper: Boolean, depth: Int): List[Type] = {
-    def boundsString(tvar: TypeVar) =
-      "\n  "+
-      ((tvar.constr.lobounds map (_ + " <: " + tvar.origin.typeSymbol.name)) :::
-       (tvar.constr.hibounds map (tvar.origin.typeSymbol.name + " <: " + _)) mkString ", ")
+  def solvedTypes(tvars: List[TypeVar], tparams: List[Symbol],
+                  variances: List[Int], upper: Boolean, depth: Int): List[Type] = {
+//    def boundsString(tvar: TypeVar) =
+//      "\n  "+
+//      ((tvar.constr.lobounds map (_ + " <: " + tvar.origin.typeSymbol.name)) :::
+//       (tvar.constr.hibounds map (tvar.origin.typeSymbol.name + " <: " + _)) mkString ", ")
     if (!solve(tvars, tparams, variances, upper, depth)) {
 //    no panic, it's good enough to just guess a solution, we'll find out
 //    later whether it works.
@@ -172,9 +172,6 @@ trait Infer {
    *  A method type becomes the corresponding function type.
    *  A nullary method type becomes its result type.
    *  Implicit parameters are skipped.
-   *
-   *  @param tp ...
-   *  @return   ...
    */
   def normalize(tp: Type): Type = skipImplicit(tp) match {
     case MethodType(formals, restpe) if (!restpe.isDependent) =>

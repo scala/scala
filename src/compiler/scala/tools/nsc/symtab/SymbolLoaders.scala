@@ -215,16 +215,20 @@ abstract class SymbolLoaders {
         enterPackage(name, newPackageLoader(file))
 
       // if there's a $member object, enter its members as well.
-      val membersModule = root.info.decl(nme.PACKAGEkw)
-      if (membersModule.isModule) {
-        for (member <- membersModule.info.decls.elements) {
-          // todo: handle overlapping definitions in some way: mark as errors
-          // or treat as abstractions. For now the symbol in the package module takes precedence.
-          for (existing <- root.info.decl(member.name).alternatives)
-            root.info.decls.unlink(existing)
-          root.info.decls.enter(member)
-        }
-      }
+      val pkgModule = root.info.decl(nme.PACKAGEkw)
+      if (pkgModule.isModule && !pkgModule.rawInfo.isInstanceOf[SourcefileLoader])
+        openPackageModule(pkgModule)
+    }
+  }
+
+  def openPackageModule(m: Symbol) = {
+    val owner = m.owner
+    for (member <- m.info.decls.elements) {
+      // todo: handle overlapping definitions in some way: mark as errors
+      // or treat as abstractions. For now the symbol in the package module takes precedence.
+      for (existing <- owner.info.decl(member.name).alternatives)
+        owner.info.decls.unlink(existing)
+      owner.info.decls.enter(member)
     }
   }
 

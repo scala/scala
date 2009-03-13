@@ -327,6 +327,9 @@ trait Namers { self: Analyzer =>
             tree.symbol = enterModuleSymbol(tree)
             tree.symbol.moduleClass.setInfo(namerOf(tree.symbol).moduleClassTypeCompleter((tree)))
             finish
+            if (tree.symbol.name == nme.PACKAGEkw) {
+              loaders.openPackageModule(tree.symbol)
+            }
 
           case ValDef(mods, name, tp, rhs) =>
             if ((!context.owner.isClass ||

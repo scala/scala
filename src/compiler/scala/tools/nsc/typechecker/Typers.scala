@@ -16,7 +16,7 @@ import scala.tools.nsc.util.{HashSet, Position, Set, NoPosition, SourceFile}
 import symtab.Flags._
 import util.HashSet
 
-// Suggestion check whether we can do without priminng scopes with symbols of outer scopes,
+// Suggestion check whether we can do without priming scopes with symbols of outer scopes,
 // like the IDE does.
 /** This trait provides methods to assign types to trees.
  *
@@ -162,8 +162,6 @@ trait Typers { self: Analyzer =>
     else if (fun.symbol hasFlag JAVA) mode | JAVACALLmode // !!!VARARG-CONVERSION!!!
     else mode
 
-  private val DivergentImplicit = new Exception()
-
   abstract class Typer(context0: Context) {
     import context0.unit
 
@@ -171,17 +169,39 @@ trait Typers { self: Analyzer =>
       override def isCoercible(tp: Type, pt: Type): Boolean =
         tp.isError || pt.isError ||
         context0.implicitsEnabled && // this condition prevents chains of views
-        inferView(NoPosition, tp, pt, false) != EmptyTree
+        inferView(EmptyTree, tp, pt, false) != EmptyTree
     }
 
-    /**
-     *  @param pos             ...
-     *  @param from            ...
-     *  @param to              ...
-     *  @param reportAmbiguous ...
-     *  @return                ...
+    /** Find implicit arguments and pass them to given tree.
      */
-    private def inferView(pos: Position, from: Type, to: Type, reportAmbiguous: Boolean): Tree = {
+    def applyImplicitArgs(tree: Tree): Tree = tree.tpe match {
+      case MethodType(formals, _) =>
+        def implicitArg(pt: Type): SearchResult = {
+          val result = inferImplicit(tree, pt, true, context)
+          if (result == SearchFailure)
+            context.error(tree.pos, "no implicit argument matching parameter type "+pt+" was found.")
+          result
+        }
+        val argResults = formals map implicitArg
+        val args = argResults map (_.tree)
+        for (s <- argResults map (_.subst)) {
+          s traverse tree
+          for (arg <- args) s traverse arg
+        }
+        Apply(tree, args) setPos tree.pos
+      case ErrorType =>
+        tree
+    }
+
+    /** Infer an implicit conversion (``view'') between two types.
+     *  @param tree             The tree which needs to be converted.
+     *  @param from             The source type of the conversion
+     *  @param to               The target type of the conversion
+     *  @param reportAmbiguous  Should ambiguous implicit errors be reported?
+     *                          False iff we search for a view to find out
+     *                          whether one type is coercible to another.
+     */
+    def inferView(tree: Tree, from: Type, to: Type, reportAmbiguous: Boolean): Tree = {
       if (settings.debug.value) log("infer view from "+from+" to "+to)//debug
       if (phase.id > currentRun.typerPhase.id) EmptyTree
       else from match {
@@ -189,30 +209,30 @@ trait Typers { self: Analyzer =>
         case OverloadedType(_, _) => EmptyTree
         case PolyType(_, _) => EmptyTree
         case _ =>
-          val result = inferImplicit(pos, MethodType(List(from), to), reportAmbiguous)
+          def wrapImplicit(from: Type): Tree = {
+            val result = inferImplicit(tree, MethodType(List(from), to), reportAmbiguous, context)
+            if (result.subst != EmptyTreeTypeSubstituter) result.subst traverse tree
+            result.tree
+          }
+          val result = wrapImplicit(from)
           if (result != EmptyTree) result
-          else inferImplicit(
-            pos,
-            MethodType(List(appliedType(ByNameParamClass.typeConstructor, List(from))), to),
-            reportAmbiguous)
+          else wrapImplicit(appliedType(ByNameParamClass.typeConstructor, List(from)))
       }
     }
 
-    /**
-     *  @param pos             ...
-     *  @param from            ...
-     *  @param name            ...
-     *  @param tp              ...
-     *  @param reportAmbiguous ...
-     *  @return                ...
+    /** Infer an implicit conversion (``view'') that makes a member available.
+     *  @param tree             The tree which needs to be converted.
+     *  @param from             The source type of the conversion
+     *  @param name             The name of the member that needs to be available
+     *  @param tp               The expected type of the member that needs to be available
      */
-    private def inferView(pos: Position, from: Type, name: Name, tp: Type, reportAmbiguous: Boolean): Tree = {
+    def inferView(tree: Tree, from: Type, name: Name, tp: Type): Tree = {
       val to = refinedType(List(WildcardType), NoSymbol)
-      var psym = (if (name.isTypeName) to.typeSymbol.newAbstractType(pos, name)
-                  else to.typeSymbol.newValue(pos, name))
+      var psym = if (name.isTypeName) to.typeSymbol.newAbstractType(tree.pos, name)
+                 else to.typeSymbol.newValue(tree.pos, name)
       psym = to.decls enter psym
       psym setInfo tp
-      inferView(pos, from, to, reportAmbiguous)
+      inferView(tree, from, to, true)
     }
 
     import infer._
@@ -511,7 +531,10 @@ trait Typers { self: Analyzer =>
      *  call, this is a typer over a constructor context; otherwise it is the current typer.
      */
     def constrTyperIf(inConstr: Boolean): Typer =
-      if (inConstr) newTyper(context.makeConstructorContext) else this
+      if (inConstr) {
+        assert(context.undetparams.isEmpty)
+        newTyper(context.makeConstructorContext)
+      } else this
 
     /** The typer for a label definition. If this is part of a template we
      *  first have to enter the label definition.
@@ -723,9 +746,7 @@ trait Typers { self: Analyzer =>
         adapt(tree1 setType restpe.substSym(tparams, tparams1), mode, pt)
       case mt: ImplicitMethodType if ((mode & (EXPRmode | FUNmode | LHSmode)) == EXPRmode) => // (4.1)
         if (!context.undetparams.isEmpty && (mode & POLYmode) == 0) { // (9)
-          val tparams = context.undetparams
-          context.undetparams = List()
-          inferExprInstance(tree, tparams, pt)
+          inferExprInstance(tree, context.extractUndetparams(), pt)
           adapt(tree, mode, pt)
         } else {
           val typer1 = constrTyperIf(treeInfo.isSelfOrSuperConstrCall(tree))
@@ -883,7 +904,7 @@ trait Typers { self: Analyzer =>
               if (context.implicitsEnabled && !tree.tpe.isError && !pt.isError) {
                 // (13); the condition prevents chains of views
                 if (settings.debug.value) log("inferring view from "+tree.tpe+" to "+pt)
-                val coercion = inferView(tree.pos, tree.tpe, pt, true)
+                val coercion = inferView(tree, tree.tpe, pt, true)
                 // convert forward views of delegate types into closures wrapped around
                 // the delegate's apply method (the "Invoke" method, which was translated into apply)
                 if (forMSIL && coercion != null && isCorrespondingDelegate(tree.tpe, pt)) {
@@ -915,9 +936,7 @@ trait Typers { self: Analyzer =>
      *  @return     ...
      */
     def instantiate(tree: Tree, mode: Int, pt: Type): Tree = {
-      val tparams = context.undetparams
-      context.undetparams = List()
-      inferExprInstance(tree, tparams, pt)
+      inferExprInstance(tree, context.extractUndetparams(), pt)
       adapt(tree, mode, pt)
     }
 
@@ -933,7 +952,7 @@ trait Typers { self: Analyzer =>
           ((qual.symbol eq null) || !qual.symbol.isTerm || qual.symbol.isValue) &&
           phase.id <= currentRun.typerPhase.id && !qtpe.isError && !tp.isError &&
           qtpe.typeSymbol != NullClass && qtpe.typeSymbol != NothingClass && qtpe != WildcardType) {
-        val coercion = inferView(qual.pos, qtpe, name, tp, true)
+        val coercion = inferView(qual, qtpe, name, tp)
         if (coercion != EmptyTree)
           typedQualifier(atPos(qual.pos)(Apply(coercion, List(qual))))
         else qual
@@ -1825,11 +1844,10 @@ trait Typers { self: Analyzer =>
       }
       fun.tpe match {
         case OverloadedType(pre, alts) =>
-          val undetparams = context.undetparams
-          context.undetparams = List()
+          val undetparams = context.extractUndetparams()
           val args1 = typedArgs(args, argMode(fun, mode))
           context.undetparams = undetparams
-          inferMethodAlternative(fun, context.undetparams, args1 map (_.tpe.deconst), pt)
+          inferMethodAlternative(fun, undetparams, args1 map (_.tpe.deconst), pt)
           doTypedApply(tree, adapt(fun, funMode(mode), WildcardType), args1, mode, pt)
         case mt @ MethodType(formals0, _) =>
           val formals = formalTypes(formals0, args.length)
@@ -1843,8 +1861,7 @@ trait Typers { self: Analyzer =>
             if (mt.isErroneous) setError(tree)
             else errorTree(tree, "wrong number of arguments for "+treeSymTypeMsg(fun))
           } else {
-            val tparams = context.undetparams
-            context.undetparams = List()
+            val tparams = context.extractUndetparams()
             if (tparams.isEmpty) {
               val args2 = typedArgs(args1, argMode(fun, mode), formals0, formals)
               val restpe = mt.resultType(args2 map (_.tpe))
@@ -1876,8 +1893,17 @@ trait Typers { self: Analyzer =>
 
               if (!inIDE && fun.symbol == List_apply && args.isEmpty) {
                 atPos(tree.pos) { gen.mkNil setType restpe }
-              } else
+              } else {
                 constfold(copy.Apply(tree, fun, args2).setType(ifPatternSkipFormals(restpe)))
+              }
+              /* Would like to do the following instead, but curiously this fails; todo: investigate
+              if (!inIDE && fun.symbol.name == nme.apply && fun.symbol.owner == ListClass && args.isEmpty) {
+                atPos(tree.pos) { gen.mkNil setType restpe }
+              } else {
+                constfold(copy.Apply(tree, fun, args2).setType(ifPatternSkipFormals(restpe)))
+              }
+              */
+
             } else if (needsInstantiation(tparams, formals, args1)) {
               //println("needs inst "+fun+" "+tparams+"/"+(tparams map (_.info)))
               inferExprInstance(fun, tparams, WildcardType)
@@ -1890,8 +1916,7 @@ trait Typers { self: Analyzer =>
               def typedArgToPoly(arg: Tree, formal: Type): Tree = {
                 val lenientPt = formal.instantiateTypeParams(tparams, lenientTargs)
                 val arg1 = typedArg(arg, argMode(fun, mode), POLYmode, lenientPt)
-                val argtparams = context.undetparams
-                context.undetparams = List()
+                val argtparams = context.extractUndetparams()
                 if (!argtparams.isEmpty) {
                   val strictPt = formal.instantiateTypeParams(tparams, strictTargs)
                   inferArgumentInstance(arg1, argtparams, strictPt, lenientPt)
@@ -2739,7 +2764,11 @@ trait Typers { self: Analyzer =>
               */
               if (fun2.symbol == Array_apply) typed { atPos(tree.pos) { gen.mkCheckInit(res) } }
               else res
-
+              /* Would like to do the following instead, but curiously this fails; todo: investigate
+              if (fun2.symbol.name == nme.apply && fun2.symbol.owner == ArrayClass)
+                typed { atPos(tree.pos) { gen.mkCheckInit(res) } }
+              else res
+              */
             case ex: TypeError =>
               fun match {
                 case Select(qual, name)
@@ -3552,401 +3581,11 @@ trait Typers { self: Analyzer =>
       case Some(tree1) => transformed -= tree; tree1
       case None => typed(tree, pt)
     }
-
 /*
     def convertToTypeTree(tree: Tree): Tree = tree match {
       case TypeTree() => tree
       case _ => TypeTree(tree.tpe)
     }
 */
-    /* -- Views --------------------------------------------------------------- */
-
-    private def tparamsToWildcards(tp: Type, tparams: List[Symbol]) =
-      tp.instantiateTypeParams(tparams, tparams map (t => WildcardType))
-
-    private def depoly(tp: Type): Type = tp match {
-      case PolyType(tparams, restpe) => tparamsToWildcards(restpe, tparams)
-      case _ => tp
-    }
-
-    private def containsError(tp: Type): Boolean = tp match {
-      case PolyType(tparams, restpe) => containsError(restpe)
-      case MethodType(formals, restpe) => (formals exists (_.isError)) || containsError(restpe)
-      case _ => tp.isError
-    }
-
-    private def dominates(dtor: Type, dted: Type): Boolean = {
-      def core(tp: Type): Type = tp.normalize match {
-        case RefinedType(parents, defs) => intersectionType(parents map core, tp.typeSymbol.owner)
-        case AnnotatedType(attribs, tp, selfsym) => core(tp)
-        case ExistentialType(tparams, result) => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
-        case PolyType(tparams, result) => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
-        case _ => tp
-      }
-      def stripped(tp: Type): Type = {
-        val tparams = freeTypeParametersNoSkolems.collect(tp)
-        tp.subst(tparams, tparams map (t => WildcardType))
-      }
-      def sum(xs: List[Int]) = (0 /: xs)(_ + _)
-      def complexity(tp: Type): Int = tp.normalize match {
-        case NoPrefix =>
-          0
-        case SingleType(pre, sym) =>
-          if (sym.isPackage) 0 else complexity(tp.widen)
-        case TypeRef(pre, sym, args) =>
-          complexity(pre) + sum(args map complexity) + 1
-        case RefinedType(parents, _) =>
-          sum(parents map complexity) + 1
-        case _ =>
-          1
-      }
-      def overlaps(tp1: Type, tp2: Type): Boolean = (tp1, tp2) match {
-        case (RefinedType(parents, _), _) => parents exists (overlaps(_, tp2))
-        case (_, RefinedType(parents, _)) => parents exists (overlaps(tp1, _))
-        case _ => tp1.typeSymbol == tp2.typeSymbol
-      }
-      val dtor1 = stripped(core(dtor))
-      val dted1 = stripped(core(dted))
-      overlaps(dtor1, dted1) && (dtor1 =:= dted1 || complexity(dtor1) > complexity(dted1))
-    }
-
-    /** Try to construct a typed tree from given implicit info with given
-     *  expected type.
-     *
-     *  @param pos     Position for error reporting
-     *  @param info    The given implicit info describing the implicit definition
-     *  @param pt0     The unnormalized expected type
-     *  @param pt      The normalized expected type
-     *  @param isLocal Is implicit definition visible without prefix?
-     *  @return        A typed tree if the implicit info can be made to conform
-     *                 to <code>pt</code>, EmptyTree otherwise.
-     *  @pre           <code>info.tpe</code> does not contain an error
-     */
-    private def typedImplicit(pos: Position, info: ImplicitInfo, pt0: Type, pt: Type, isLocal: Boolean): Tree =
-       context.openImplicits find (dominates(pt, _)) match {
-         case Some(pending) =>
-           throw DivergentImplicit
-           EmptyTree
-         case None =>
-           try {
-             context.openImplicits = pt :: context.openImplicits
-             typedImplicit0(pos, info, pt0, pt, isLocal)
-           } catch {
-             case DivergentImplicit =>
-               if (context.openImplicits.tail.isEmpty) {
-                 if (!(pt.isErroneous))
-                   context.unit.error(
-                     pos, "diverging implicit expansion for type "+pt+"\nstarting with "+
-                     info.sym+info.sym.locationString)
-                 EmptyTree
-               } else {
-                 throw DivergentImplicit
-               }
-           } finally {
-             context.openImplicits = context.openImplicits.tail
-           }
-       }
-
-    private def typedImplicit0(pos: Position, info: ImplicitInfo, pt0: Type, pt: Type, isLocal: Boolean): Tree = {
-      def isStable(tp: Type): Boolean = tp match {
-        case TypeRef(pre, sym, _) => sym.isPackageClass || sym.isModuleClass && isStable(pre)
-        case _ => tp.isStable
-      }
-      // println("typed impl for "+pt+"? "+info.name+":"+info.tpe+(isPlausiblyCompatible(info.tpe, pt))+isCompatible(depoly(info.tpe), pt)+isStable(info.pre))
-      if (isPlausiblyCompatible(info.tpe, pt) && isCompatible(depoly(info.tpe), pt) && isStable(info.pre)) {
-        val tree = atPos(pos) {
-          if (info.pre == NoPrefix/*isLocal*/) Ident(info.name)
-          else Select(gen.mkAttributedQualifier(info.pre), info.name)
-        }
-        // println("typed impl?? "+info.name+":"+info.tpe+" ==> "+tree+" with "+pt)
-        def fail(reason: String): Tree = {
-          if (settings.XlogImplicits.value)
-            inform(tree+" is not a valid implicit value for "+pt+" because:\n"+reason)
-          EmptyTree
-        }
-        try {
-          // if (!isLocal) tree setSymbol info.sym
-          val isView = pt0 match {
-            case MethodType(_, _) | PolyType(_, _) => true
-            case _ => false
-          }
-          val tree1 =
-            if (isView)
-              typed1(Apply(tree, List(Ident("<argument>") setType pt0.paramTypes.head)), EXPRmode, pt0.resultType)
-            else
-              typed1(tree, EXPRmode, pt)
-          //if (settings.debug.value) println("typed implicit "+tree1+":"+tree1.tpe+", pt = "+pt)
-          val tree2 = if (isView) (tree1: @unchecked) match { case Apply(fun, _) => fun }
-                      else adapt(tree1, EXPRmode, pt)
-          //if (settings.debug.value) println("adapted implicit "+tree1.symbol+":"+tree2.tpe+" to "+pt)("adapted implicit "+tree1.symbol+":"+tree2.tpe+" to "+pt)
-          def hasMatchingSymbol(tree: Tree): Boolean = (tree.symbol == info.sym) || {
-            tree match {
-              case Apply(fun, _) => hasMatchingSymbol(fun)
-              case TypeApply(fun, _) => hasMatchingSymbol(fun)
-              case Select(pre, name) => name == nme.apply && pre.symbol == info.sym
-              case _ => false
-            }
-          }
-          if (tree2.tpe.isError) EmptyTree
-          else if (hasMatchingSymbol(tree1)) tree2
-          else if (settings.XlogImplicits.value)
-            fail("candidate implicit "+info.sym+info.sym.locationString+
-                 " is shadowed by other implicit: "+tree1.symbol+tree1.symbol.locationString)
-          else EmptyTree
-        } catch {
-          case ex: TypeError => fail(ex.getMessage())
-        }
-      } else EmptyTree
-    }
-
-    /** Infer implicit argument or view.
-     *
-     *  @param  pos             position for error reporting
-     *  @param  pt0             the expected type of the implicit
-     *  @param  isView          are we searching for a view? (this affects the error message)
-     *  @param  reportAmbiguous should ambiguous errors be reported?
-     *                          False iff we search for a view to find out
-     *                          whether one type is coercible to another
-     *  @return                 ...
-     *  @see                    <code>isCoercible</code>
-     */
-    private def inferImplicit(pos: Position, pt0: Type, reportAmbiguous: Boolean): Tree = {
-      val pt = normalize(pt0)
-      val isView = pt0.isInstanceOf[MethodType]
-
-      if (util.Statistics.enabled) implcnt += 1
-      val startTime = if (util.Statistics.enabled) currentTime else 0l
-
-      val tc = newTyper(context.makeImplicit(reportAmbiguous))
-
-      def ambiguousImplicitError(info1: ImplicitInfo, info2: ImplicitInfo,
-                                 pre1: String, pre2: String, trailer: String) =
-        if (!info1.tpe.isErroneous && !info2.tpe.isErroneous) {
-          val coreMsg =
-            pre1+" "+info1.sym+info1.sym.locationString+" of type "+info1.tpe+"\n "+
-            pre2+" "+info2.sym+info2.sym.locationString+" of type "+info2.tpe+"\n "+
-            trailer
-          error(pos,
-            if (isView) {
-              val found = pt.typeArgs(0)
-              val req = pt.typeArgs(1)
-              typeErrorMsg(found, req)+
-              "\nNote that implicit conversions are not applicable because they are ambiguous:\n "+
-              coreMsg+"are possible conversion functions from "+ found+" to "+req
-            } else {
-              "ambiguous implicit values:\n "+coreMsg + "match expected type "+pt
-            })
-        }
-
-      /** Search list of implicit info lists for one matching prototype
-       *  <code>pt</code>. If found return a tree from found implicit info
-       *  which is typed with expected type <code>pt</code>.
-       *  Otherwise return EmptyTree
-       *
-       *  @param implicitInfoss The given list of lists of implicit infos
-       *  @param isLocal        Is implicit definition visible without prefix?
-       *                        If this is the case then symbols in preceding lists shadow
-       *                        symbols of the same name in succeeding lists.
-       *  @return               ...
-       */
-      def searchImplicit(implicitInfoss: List[List[ImplicitInfo]], isLocal: Boolean): Tree = {
-        def isSubClassOrObject(sym1: Symbol, sym2: Symbol): Boolean =
-          sym1 != NoSymbol && (sym1 isSubClass sym2) ||
-          sym1.isModuleClass && isSubClassOrObject(sym1.linkedClassOfClass, sym2) ||
-          sym2.isModuleClass && isSubClassOrObject(sym1, sym2.linkedClassOfClass)
-        def improves(info1: ImplicitInfo, info2: ImplicitInfo) =
-          (info2 == NoImplicitInfo) ||
-          (info1 != NoImplicitInfo) &&
-          isStrictlyMoreSpecific(info1.tpe, info2.tpe)
-        val shadowed = new HashSet[Name](8)
-        def hasExplicitResultType(sym: Symbol) = {
-          def hasExplicitRT(tree: Tree) = tree match {
-            case ValDef(_, _, tpt, _) => !tpt.isEmpty
-            case DefDef(_, _, _, _, tpt, _) => !tpt.isEmpty
-            case _ => false
-          }
-          sym.rawInfo match {
-            case tc: TypeCompleter => hasExplicitRT(tc.tree)
-            case PolyType(_, tc: TypeCompleter) => hasExplicitRT(tc.tree)
-            case _ => true
-          }
-        }
-        def comesBefore(sym: Symbol, owner: Symbol) =
-          sym.pos.offset.getOrElse(0) < owner.pos.offset.getOrElse(Integer.MAX_VALUE) &&
-          !(owner.ownerChain contains sym)
-
-        /** Should implicit definition symbol `sym' be considered for applicability testing?
-         *  This is the case if one of the following holds:
-         *   - the symbol's type is initialized
-         *   - the symbol comes from a classfile
-         *   - the symbol comes from a different sourcefile than the current one
-         *   - the symbol's definition comes before, and does not contain the closest enclosing definition,
-         *   - the symbol's definition is a val, var, or def with an explicit result type
-         *  The aim of this method is to prevent premature cyclic reference errors
-         *  by computing the types of only those implicitis for which one of these
-         *  conditions is true.
-         */
-        def isValid(sym: Symbol) = {
-          sym.isInitialized ||
-          sym.sourceFile == null ||
-          (sym.sourceFile ne context.unit.source.file) ||
-          hasExplicitResultType(sym) ||
-          comesBefore(sym, context.owner)
-        }
-        val lateImpls = new ListBuffer[Symbol]
-        def isApplicable(info: ImplicitInfo): Boolean =
-          !containsError(info.tpe) &&
-          !(isLocal && shadowed.contains(info.name)) &&
-          (!isView || info.sym != Predef_identity) &&
-          tc.typedImplicit(pos, info, pt0, pt, isLocal) != EmptyTree
-        def applicableInfos(is: List[ImplicitInfo]): List[ImplicitInfo] = {
-          val applicable = new ListBuffer[ImplicitInfo]
-          for (i <- is)
-            if (!isValid(i.sym)) lateImpls += i.sym
-            else if (isApplicable(i)) applicable += i
-          if (isLocal)
-            for (i <- is) shadowed addEntry i.name
-          applicable.toList
-        }
-        val applicable = implicitInfoss flatMap applicableInfos
-        if (applicable.isEmpty && !lateImpls.isEmpty) {
-          infer.setAddendum(pos, () =>
-            "\n Note: implicit "+lateImpls.first+" is not applicable here"+
-            "\n because it comes after the application point and it lacks an explicit result type")
-        }
-        val best = (NoImplicitInfo /: applicable) ((best, alt) => if (improves(alt, best)) alt else best)
-        if (best == NoImplicitInfo) EmptyTree
-        else {
-          val competing = applicable dropWhile (alt => best == alt || improves(best, alt))
-          if (!competing.isEmpty) ambiguousImplicitError(best, competing.head, "both", "and", "")
-          for (alt <- applicable)
-            if (alt.sym.owner != best.sym.owner && isSubClassOrObject(alt.sym.owner, best.sym.owner)) {
-              ambiguousImplicitError(best, alt,
-                                     "most specific definition is:",
-                                     "yet alternative definition  ",
-                                     "is defined in a subclass.\n Both definitions ")
-            }
-          tc.typedImplicit(pos, best, pt0, pt, isLocal)
-        }
-      }
-
-      def implicitsOfType(tp: Type): List[List[ImplicitInfo]] = {
-        def getParts(tp: Type, s: collection.jcl.Set[Type]) {
-          tp match {
-            case TypeRef(pre, sym, args) if (!sym.isPackageClass) =>
-              for (bc <- sym.info.baseClasses)
-                if (sym.isClass) s add (tp.baseType(bc))
-              getParts(pre, s)
-              for (arg <- args) getParts(arg, s)
-            case ThisType(_) =>
-              getParts(tp.widen, s)
-            case _: SingletonType =>
-              getParts(tp.widen, s)
-            case RefinedType(ps, _) =>
-              for (p <- ps) getParts(p, s)
-            case AnnotatedType(_, t, _) =>
-              getParts(t, s)
-            case _ =>
-          }
-        }
-        val tps = new collection.jcl.LinkedHashSet[Type]
-        getParts(tp, tps)
-        tps.elements.map(implicitsOfClass).toList
-      }
-
-      def implicitsOfClass(tp: Type): List[ImplicitInfo] = tp match {
-        case TypeRef(pre, clazz, _) =>
-          clazz.initialize.linkedClassOfClass.info.members.toList.filter(_.hasFlag(IMPLICIT)) map
-            (sym => new ImplicitInfo(sym.name, pre.memberType(clazz.linkedModuleOfClass), sym))
-        case _ =>
-          List()
-      }
-
-      def implicitManifest(pt: Type): Tree = pt match {
-        case TypeRef(_, ManifestClass, List(arg)) =>
-          manifestOfType(pos, arg)
-        case TypeRef(_, OptManifestClass, List(arg)) =>
-          val tree1 = manifestOfType(pos, arg)
-          if (tree1 == EmptyTree) gen.mkAttributedRef(NoManifest) else tree1
-        case TypeRef(_, tsym, _) if (tsym.isAbstractType) =>
-          implicitManifest(pt.bounds.lo)
-        case _ =>
-          EmptyTree
-      }
-
-      var tree = searchImplicit(context.implicitss, true)
-      if (tree == EmptyTree) tree = searchImplicit(implicitsOfType(pt), false)
-      if (tree == EmptyTree) tree = implicitManifest(pt)
-      if (util.Statistics.enabled)
-        impltime = impltime + currentTime - startTime
-      tree
-    }
-
-    /** Creates a tree that calls the relevant factory method in object
-      * reflect.Manifest for type 'tp'. An EmptyTree is returned if
-      * no manifest is found
-      */
-    def manifestOfType(pos: Position, tp: Type): Tree = {
-
-      /** Creates a tree that calls the factory method called constructor in object reflect.Manifest */
-      def manifestFactoryCall(constructor: String, args: Tree*): Tree =
-        if (args contains EmptyTree) EmptyTree
-        else
-          typed(atPos(pos) {
-            Apply(
-              TypeApply(
-                Select(gen.mkAttributedRef(ManifestModule), constructor),
-                List(TypeTree(tp))
-              ),
-              args.toList
-            )
-          })
-
-      /** Re-wraps a type in a manifest before calling inferImplicit on the result */
-      def findManifest(tp: Type): Tree =
-        inferImplicit(pos, appliedType(ManifestClass.typeConstructor, List(tp)), true)
-
-      tp.normalize match {
-        case ThisType(_) | SingleType(_, _) =>
-          manifestFactoryCall("singleType", gen.mkAttributedQualifier(tp))
-        case ConstantType(value) =>
-          findManifest(tp.deconst)
-        case TypeRef(pre, sym, args) =>
-          if (sym.isClass) {
-            val suffix = gen.mkClassOf(tp) :: (args map findManifest)
-            manifestFactoryCall(
-              "classType",
-              (if ((pre eq NoPrefix) || pre.typeSymbol.isStaticOwner) suffix
-               else findManifest(pre) :: suffix): _*)
-          }
-          else if (sym.isTypeParameterOrSkolem) {
-            EmptyTree  // a manifest should have been found by normal searchImplicit
-          }
-          else {
-            manifestFactoryCall(
-              "abstractType",
-              findManifest(pre) :: Literal(sym.name.toString) :: findManifest(tp.bounds.hi) :: (args map findManifest): _*)
-          }
-        case RefinedType(parents, decls) =>
-          // refinement is not generated yet
-          if (parents.length == 1) findManifest(parents.head)
-          else manifestFactoryCall("intersectionType", parents map findManifest: _*)
-        case _ =>
-          EmptyTree
-      }
-
-    }
-
-    def applyImplicitArgs(tree: Tree): Tree = tree.tpe match {
-      case MethodType(formals, _) =>
-        def implicitArg(pt: Type) = {
-          val arg = inferImplicit(tree.pos, pt, true)
-          if (arg != EmptyTree) arg
-          else errorTree(tree, "no implicit argument matching parameter type "+pt+" was found.")
-        }
-        Apply(tree, formals map implicitArg) setPos tree.pos
-      case ErrorType =>
-        tree
-    }
   }
 }

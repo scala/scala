@@ -1634,7 +1634,7 @@ trait Trees {
     }
   }
 
-  class TreeTypeSubstituter(from: List[Symbol], to: List[Type]) extends Traverser {
+  class TreeTypeSubstituter(val from: List[Symbol], to: List[Type]) extends Traverser {
     val typeSubst = new SubstTypeMap(from, to)
     override def traverse(tree: Tree) {
       if (tree.tpe ne null) tree.tpe = typeSubst(tree.tpe)
@@ -1642,6 +1642,8 @@ trait Trees {
     }
     override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
   }
+
+  lazy val EmptyTreeTypeSubstituter = new TreeTypeSubstituter(List(), List())
 
   class TreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends Traverser {
     val symSubst = new SubstSymMap(from, to)

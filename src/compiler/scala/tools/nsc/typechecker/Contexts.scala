@@ -210,6 +210,12 @@ trait Contexts { self: Analyzer =>
       _undetparams = ps
     }
 
+    def extractUndetparams() = {
+      val tparams = undetparams
+      undetparams = List()
+      tparams
+    }
+
     /**
      *  @param unit    ...
      *  @param tree    ...
@@ -623,29 +629,6 @@ trait Contexts { self: Analyzer =>
       case _ => false
     }
   }
-
-  class ImplicitInfo(val name: Name, val pre: Type, val sym: Symbol) {
-    private var tpeCache: Type = null
-    def tpe: Type = {
-      if (tpeCache eq null) tpeCache = pre.memberType(sym)
-      tpeCache
-    }
-    override def equals(other: Any) = other match {
-      case that: ImplicitInfo =>
-        if (this eq NoImplicitInfo) that eq this
-        else
-          this.name == that.name &&
-          this.pre =:= that.pre &&
-          this.sym == that.sym
-      case _ =>
-        false
-    }
-    override def hashCode =
-      name.hashCode + pre.hashCode + sym.hashCode
-    override def toString = "ImplicitInfo(" + name + "," + pre + "," + sym + ")"
-  }
-
-  val NoImplicitInfo = new ImplicitInfo(null, null, null)
 
   case class ImportType(expr: Tree) extends Type {
     override def equals(that : Any) = that match {

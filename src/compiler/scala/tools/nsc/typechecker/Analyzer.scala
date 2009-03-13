@@ -13,6 +13,7 @@ trait Analyzer extends AnyRef
             with Namers
             with Typers
             with Infer
+            with Implicits
             with Variances
             with EtaExpansion
             with SyntheticMethods
