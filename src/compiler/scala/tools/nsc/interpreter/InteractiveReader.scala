@@ -24,7 +24,7 @@ trait InteractiveReader {
     }
 
   private def restartSystemCall(e: Exception): Boolean =
-    (vendor startsWith "Apple") && (e.getMessage == msgEINTR)
+    Properties.isMac && (e.getMessage == msgEINTR)
 }
 
 

@@ -6,12 +6,9 @@
 // $Id$
 
 package scala.tools.nsc
-import scala.util.PropertiesTrait
 
-/** A utility to load the compiler properties from a Java properties file
- *  included in the jar.
- */
-object Properties extends PropertiesTrait {
+/** Loads compiler.properties from the jar. */
+object Properties extends scala.util.PropertiesTrait {
   protected def propCategory    = "compiler"
   protected def pickJarBasedOn  = classOf[Global]
 
@@ -19,11 +16,9 @@ object Properties extends PropertiesTrait {
   val fileEndingString      = prop("file.ending", ".scala|.java")
   val residentPromptString  = prop("resident.prompt", "\nnsc> ")
   val shellPromptString     = prop("shell.prompt", "\nscala> ")
+  val cmdName               = if (isWin) "scala.bat" else "scala"
 
   // settings based on System properties
-  val isWin                 = sysprop("os.name", "") startsWith "Windows"
-  val scalaHome             = sysprop("scala.home", null)
   val envClasspath          = sysprop("env.classpath", null)
   val msilILasm             = sysprop("msil.ilasm", "")
-  val cmdName               = if (isWin) "scala.bat" else "scala"
 }

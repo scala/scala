@@ -54,6 +54,9 @@ private[scala] trait PropertiesTrait
   val versionString         = "version " + prop("version.number", "(unknown)")
   val copyrightString       = prop("copyright.string", "(c) 2002-2009 LAMP/EPFL")
   val encodingString        = prop("file.encoding", "UTF8")
+  val isWin                 = sysprop("os.name", "") startsWith "Windows"
+  val isMac                 = sysprop("java.vendor", "") startsWith "Apple"
+  val scalaHome             = sysprop("scala.home", null)
 
   // provide a main method so version info can be obtained by running this
   private val writer = new java.io.PrintWriter(Console.err, true)
@@ -61,11 +64,7 @@ private[scala] trait PropertiesTrait
   def main(args: Array[String]) { writer println versionMsg }
 }
 
-/** A utility to load the library properties from a Java properties file
- *  included in the jar.
- *
- *  @author Stephane Micheloud
- */
+/** Loads library.properties from the jar. */
 object Properties extends PropertiesTrait {
   protected def propCategory    = "library"
   protected def pickJarBasedOn  = classOf[Application]

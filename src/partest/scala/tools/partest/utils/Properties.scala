@@ -10,14 +10,8 @@
 
 package scala.tools.partest.utils
 
-import scala.util.PropertiesTrait
-
-/** A utility to load the library properties from a Java properties file
- *  included in the jar.
- *
- *  @author Stephane Micheloud
- */
-object Properties extends PropertiesTrait {
+/** Loads partest.properties from the jar. */
+object Properties extends scala.util.PropertiesTrait {
   protected def propCategory    = "partest"
   protected def pickJarBasedOn  = classOf[Application]
 
