@@ -63,7 +63,7 @@ class CompilerCommand(
     (settings.Xhelp.value _,        _ => xusageMsg),
     (settings.Yhelp.value _,        _ => yusageMsg),
     (settings.showPlugins.value _,  _.pluginDescriptions),
-    (settings.showPlugins.value _,  _.phaseDescriptions)
+    (settings.showPhases.value _,   _.phaseDescriptions)
   )
   def shouldStopWithInfo: Boolean = stopSettings exists { _._1() }
 
