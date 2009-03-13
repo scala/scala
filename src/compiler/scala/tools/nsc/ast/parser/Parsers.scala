@@ -956,7 +956,7 @@ trait Parsers extends NewScanners with MarkupParsers {
      *  ResultExpr ::= (Bindings | Id `:' CompoundType) `=>' Block
      *               | Expr1
      *  Expr1      ::= if `(' Expr `)' {nl} Expr [[semi] else Expr]
-     *               | try `{' Block `}' [catch `{' CaseClauses `}'] [finally Expr]
+     *               | try (`{' Block `}' | Expr) [catch `{' CaseClauses `}'] [finally Expr]
      *               | while `(' Expr `)' {nl} Expr
      *               | do Expr [semi] while `(' Expr `)'
      *               | for (`(' Enumerators `)' | '{' Enumerators '}') {nl} [yield] Expr
@@ -997,13 +997,16 @@ trait Parsers extends NewScanners with MarkupParsers {
           atPos(pos) { If(cond, thenp, elsep) }
         case TRY =>
           atPos(inSkipToken) {
-            val body = surround(LBRACE,RBRACE)(block(), Literal(()))
+            val body =
+              if (inToken == LBRACE) surround(LBRACE, RBRACE)(block(), Literal(()))
+              else if (inToken == LPAREN) surround(LPAREN, RPAREN)(expr(), Literal(()))
+              else expr()
             val catches =
               if (inToken == CATCH) {
                 inNextToken
                 val cases = surround(LBRACE,RBRACE)(caseClauses(), Nil)
                 cases
-              } else List()
+              } else Nil
             val finalizer =
               if (inToken == FINALLY) { inNextToken; expr() }
               else EmptyTree
