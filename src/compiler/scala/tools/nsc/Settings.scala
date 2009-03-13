@@ -215,6 +215,7 @@ object Settings
     def isDefault: Boolean = !setByUser
     def value: T = v
     def value_=(arg: T) = { setByUser = true ; v = arg }
+    val choices : List[T] = Nil
   }
 
   // The Setting companion object holds all the factory methods
@@ -274,6 +275,13 @@ object Settings
      */
     private[Settings] def tryToSetProperty(args: List[String]): Option[List[String]] =
       errorAndValue("'" + name + "' does not accept property style arguments", None)
+
+    /**
+     * Attempt to set from a properties file style property value.
+     */
+    def tryToSetFromPropertyValue(s : String) {
+      tryToSet(s :: Nil)
+    }
 
     /** The syntax defining this setting in a help string */
     private var _helpSyntax = name
@@ -386,6 +394,9 @@ object Settings
 
     def tryToSet(args: List[String]) = { value = true ; Some(args) }
     def unparse: List[String] = if (value) List(name) else Nil
+    override def tryToSetFromPropertyValue(s : String) {
+      value = s.equalsIgnoreCase("true")
+    }
   }
 
   /** A setting represented by a string, (`default' unless set) */
@@ -435,7 +446,7 @@ object Settings
   class ChoiceSetting private[Settings](
     val name: String,
     val descr: String,
-    val choices: List[String],
+    override val choices: List[String],
     val default: String)
   extends Setting(descr + choices.mkString(" (", ",", ")"))
   {
