@@ -10,7 +10,6 @@ import java.io.File
 import java.lang.System
 
 class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
-
   /** scaladoc specific options */
   val memberaccess   = ChoiceSetting    ("-access", "Show only public, protected/public (default) or all classes and members",
                                          List("public", "protected", "private"), "protected")
@@ -24,9 +23,4 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
   val stylesheetfile = StringSetting    ("-stylesheetfile", "stylesheetfile", "File to change style of the generated documentation", "style.css")
   val pagetop        = StringSetting    ("-top", "pagetop", "Include top text for each page", "")
   val windowtitle    = StringSetting    ("-windowtitle", "windowtitle", "Specify window title of generated HTML documentation", "Scala 2")
-
-  List(
-    memberaccess, pagebottom, doccharset, doctitle, pagefooter,
-    pageheader, stylesheetfile, pagetop, windowtitle
-  ) foreach { _.showToIDE }
 }

@@ -299,10 +299,6 @@ object Settings
     /** A list of Strings which can recreate this setting. */
     def unparse: List[String]
 
-    /** Set to false if option should be shown to IDE. */
-    var hiddenToIDE: Boolean = true
-    def showToIDE() = hiddenToIDE = false
-
     /** Optional dependency on another setting */
     protected[Settings] var dependency: Option[(Setting, String)] = None
     def dependsOn(s: Setting, value: String): this.type = { dependency = Some((s, value)); this }
@@ -686,18 +682,4 @@ trait ScalacSettings
    */
   val pluginOptions = MultiStringSetting("-P", "plugin:opt", "Pass an option to a plugin") .
                         withHelpSyntax("-P:<plugin>:<opt>")
-
-  /**
-   *  IDE Visible Settings - "showToIDE" called on each.
-   */
-
-  val settingsForIDE = {
-    val xs = List(
-      argfiles, dependenciesFile, debuginfo, make, XO, target,
-      Xchecknull, checkInit, noassertions, Xexperimental, future, XlogImplicits, nouescape, XnoVarargsConversion, pluginsDir, Xwarninit,
-      Xcloselim, Xdce, Xdetach, inline, Xlinearizer, Ynogenericsig, noimports, nopredefs, selfInAnnots, Xwarndeadcode
-    )
-    xs foreach { _.showToIDE }
-    xs
-  }
 }
