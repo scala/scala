@@ -386,9 +386,13 @@ trait JavaParsers extends JavaScanners {
 
     def modifiers(inInterface: Boolean): Modifiers = {
       var flags: Long = Flags.JAVA
+      // assumed true unless we see public/private/protected - see bug #1240
+      var defaultAccess = true
       var privateWithin: Name =
         if (inInterface) nme.EMPTY.toTypeName else thisPackageName
+
       while (true) {
+        if (List(PUBLIC, PROTECTED, PRIVATE) contains in.token) defaultAccess = false
         in.token match {
           case AT if (in.lookaheadToken != INTERFACE) =>
             in.nextToken
@@ -416,6 +420,17 @@ trait JavaParsers extends JavaScanners {
           case NATIVE | SYNCHRONIZED | TRANSIENT | VOLATILE | STRICTFP =>
             in.nextToken
           case _ =>
+            // XXX both these checks are definitely necessary, which would
+            // seem to indicate the empty package situation needs review
+            def isEmptyPkg() =
+              privateWithin == nme.EMPTY.toTypeName ||
+              privateWithin == nme.EMPTY_PACKAGE_NAME_tn
+            // XXX I think this test should just be "if (defaultAccess)"
+            // but then many cases like pos5/t1176 fail because scala code
+            // with no package cannot access java code with no package.
+            if (defaultAccess && !isEmptyPkg)
+              flags |= Flags.LOCAL    // package private
+
             return Modifiers(flags, privateWithin)
         }
       }
