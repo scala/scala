@@ -102,19 +102,20 @@ trait Definitions {
     /*
     lazy val ByNameFunctionClass: Symbol = getClass("scala.ByNameFunction")
     */
-    lazy val IterableClass: Symbol = getClass("scala.Iterable")
+    lazy val IterableClass: Symbol = getClass2("scala.Iterable", "scala.collection.Iterable")
       def Iterable_next = getMember(IterableClass, nme.next)
       def Iterable_hasNext = getMember(IterableClass, nme.hasNext)
-    lazy val IteratorClass: Symbol = getClass("scala.Iterator")
-    lazy val SeqClass: Symbol = getClass("scala.Seq")
-    lazy val RandomAccessSeqMutableClass: Symbol = getMember(getModule("scala.RandomAccessSeq"), nme.Mutable)
+    lazy val IteratorClass: Symbol = getClass2("scala.Iterator", "scala.collection.Iterator")
+    lazy val SeqClass: Symbol = getClass2("scala.Seq", "scala.collection.Sequence")
+    lazy val RandomAccessSeqMutableClass: Symbol = getMember(
+      getModule2("scala.RandomAccessSeq", "scala.collection.Vector"), nme.Mutable)
     def Seq_length = getMember(SeqClass, nme.length)
 
-    lazy val ListClass: Symbol = getClass("scala.List")
+    lazy val ListClass: Symbol = getClass2("scala.List", "scala.collection.immutable.List")
       def List_isEmpty = getMember(ListClass, nme.isEmpty)
       def List_head = getMember(ListClass, nme.head)
       def List_tail = getMember(ListClass, nme.tail)
-    lazy val ListModule: Symbol = getModule("scala.List")
+    lazy val ListModule: Symbol = getModule2("scala.List", "scala.collection.immutable.List")
       def List_apply = getMember(ListModule, nme.apply)
     lazy val ArrayClass: Symbol = getClass("scala.Array")
       def Array_apply = getMember(ArrayClass, nme.apply)
@@ -269,8 +270,8 @@ trait Definitions {
     def seqType(arg: Type) =
       typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(arg))
 
-    def NilModule: Symbol = getModule("scala.Nil")
-    def ConsClass: Symbol = getClass("scala.$colon$colon")
+    def NilModule: Symbol = getModule2("scala.Nil", "scala.collection.immutable.Nil")
+    def ConsClass: Symbol = getClass2("scala.$colon$colon", "scala.collection.immutable.$colon$colon")
 
     // members of class scala.Any
     var Any_==          : Symbol = _
@@ -331,8 +332,34 @@ trait Definitions {
     lazy val VolatileAttr: Symbol = getClass("scala.volatile")
 
     def getModule(fullname: Name): Symbol = getModuleOrClass(fullname, true)
+    def getModule2(name1: Name, name2: Name) = try {
+      getModuleOrClass(name1, true)
+    } catch {
+      case ex1: FatalError =>
+        try {
+          getModuleOrClass(name2, true)
+        } catch {
+          case ex2: FatalError => throw ex1
+        }
+    }
 
-    def getClass(fullname: Name): Symbol = getModuleOrClass(fullname, false)
+    def getClass(fullname: Name): Symbol = {
+      var result = getModuleOrClass(fullname, false)
+      while (result.isAliasType) result = result.info.typeSymbol
+      result
+    }
+
+    def getClass2(name1: Name, name2: Name) = try {
+      var result = getModuleOrClass(name1, false)
+      if (result.isAliasType) getClass(name2) else result
+    } catch {
+      case ex1: FatalError =>
+        try {
+          getModuleOrClass(name2, false)
+        } catch {
+          case ex2: FatalError => throw ex1
+        }
+    }
 
     def getMember(owner: Symbol, name: Name): Symbol = {
       if (owner == NoSymbol) return NoSymbol
@@ -704,7 +731,7 @@ trait Definitions {
       CodeModule = getModule(sn.Code)
       RepeatedParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.REPEATED_PARAM_CLASS_NAME,
-        tparam => typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(tparam.typeConstructor)))
+        tparam => seqType(tparam.typeConstructor))
       ByNameParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.BYNAME_PARAM_CLASS_NAME, tparam => AnyClass.typeConstructor)
 

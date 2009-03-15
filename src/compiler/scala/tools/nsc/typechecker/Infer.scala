@@ -518,6 +518,22 @@ trait Infer {
         tvars map (tvar => WildcardType)
     }
 
+    /** Retract any Nothing arguments which appear covariantly in result type,
+     *  and treat them as uninstantiated parameters instead.
+     *  Map T* entries to Seq[T].
+     */
+    def adjustTypeArgs(tparams: List[Symbol], targs: List[Type], restpe: Type, uninstantiated: ListBuffer[Symbol]): List[Type] =
+      List.map2(tparams, targs) {(tparam, targ) =>
+        if (targ.typeSymbol == NothingClass && (varianceInType(restpe)(tparam) & COVARIANT) == 0) {
+          uninstantiated += tparam
+          tparam.tpe
+        } else if (targ.typeSymbol == RepeatedParamClass) {
+          targ.baseType(SeqClass)
+        } else {
+          targ.widen
+        }
+      }
+
     /** Return inferred type arguments, given type parameters, formal parameters,
     *  argument types, result type and expected result type.
     *  If this is not possible, throw a <code>NoInstance</code> exception.
@@ -572,16 +588,7 @@ trait Infer {
       val targs = solvedTypes(tvars, tparams, tparams map varianceInTypes(formals),
                               false, lubDepth(formals) max lubDepth(argtpes))
 //      val res =
-      List.map2(tparams, targs) {(tparam, targ) =>
-        if (targ.typeSymbol == NothingClass && (varianceInType(restpe)(tparam) & COVARIANT) == 0) {
-          uninstantiated += tparam
-          tparam.tpe  //@M TODO: might be affected by change to tpe in Symbol
-        } else if (targ.typeSymbol == RepeatedParamClass) {
-          targ.baseType(SeqClass)
-        } else {
-          targ.widen
-        }
-      }
+      adjustTypeArgs(tparams, targs, restpe, uninstantiated)
 //      println("meth type args "+", tparams = "+tparams+", formals = "+formals+", restpe = "+restpe+", argtpes = "+argtpes+", underlying = "+(argtpes map (_.widen))+", pt = "+pt+", uninstantiated = "+uninstantiated.toList+", result = "+res) //DEBUG
 //      res
     }
@@ -672,7 +679,7 @@ trait Infer {
       case OverloadedType(pre, alts) =>
         alts exists (alt => isMoreSpecific(pre.memberType(alt), ftpe2))
       case et: ExistentialType =>
-        et.withTypeVars(isStrictlyMoreSpecific(_, ftpe2))
+        et.withTypeVars(isMoreSpecific(_, ftpe2)) // !!! why isStrictly?
       case MethodType(formals @ (x :: xs), _) =>
         isApplicable(List(), ftpe2, formals, WildcardType)
       case PolyType(_, MethodType(formals @ (x :: xs), _)) =>
@@ -684,17 +691,24 @@ trait Infer {
           case OverloadedType(pre, alts) =>
             alts forall (alt => isMoreSpecific(ftpe1, pre.memberType(alt)))
           case et: ExistentialType =>
-            et.withTypeVars(isStrictlyMoreSpecific(ftpe1, _))
+            et.withTypeVars(isMoreSpecific(ftpe1, _))
           case MethodType(_, _) | PolyType(_, MethodType(_, _)) =>
             true
           case _ =>
             isMoreSpecificValueType(ftpe1, ftpe2, List(), List())
         }
     }
-
+/*
     def isStrictlyMoreSpecific(ftpe1: Type, ftpe2: Type): Boolean =
       ftpe1.isError || isMoreSpecific(ftpe1, ftpe2) &&
       (!isMoreSpecific(ftpe2, ftpe1) ||
+       !ftpe1.isInstanceOf[OverloadedType] && ftpe2.isInstanceOf[OverloadedType] ||
+       phase.erasedTypes && covariantReturnOverride(ftpe1, ftpe2))
+*/
+    def isStrictlyMoreSpecific(ftpe1: Type, ftpe2: Type, sym1: Symbol, sym2: Symbol): Boolean =
+      ftpe1.isError || isMoreSpecific(ftpe1, ftpe2) &&
+      (!isMoreSpecific(ftpe2, ftpe1) ||
+       (sym1.owner isSubClass sym2.owner) && (sym1.owner != sym2.owner) ||
        !ftpe1.isInstanceOf[OverloadedType] && ftpe2.isInstanceOf[OverloadedType] ||
        phase.erasedTypes && covariantReturnOverride(ftpe1, ftpe2))
 
@@ -921,14 +935,21 @@ trait Infer {
      *  @param undetparams ...
      *  @param pt ...
      */
-    def inferExprInstance(tree: Tree, undetparams: List[Symbol], pt: Type) {
+    def inferExprInstance(tree: Tree, tparams: List[Symbol], pt: Type, keepNothings: Boolean): List[Symbol] = {
       if (inferInfo)
         println("infer expr instance "+tree+":"+tree.tpe+"\n"+
-                "  undetparams = "+undetparams+"\n"+
+                "  tparams = "+tparams+"\n"+
                 "  pt = "+pt)
-      substExpr(tree, undetparams, exprTypeArgs(undetparams, tree.tpe, pt), pt)
+      val targs = exprTypeArgs(tparams, tree.tpe, pt)
+      val uninstantiated = new ListBuffer[Symbol]
+      val detargs = if (keepNothings) targs
+                    else adjustTypeArgs(tparams, targs, pt, uninstantiated)
+      val undetparams = uninstantiated.toList
+      val detparams = tparams remove (undetparams contains _)
+      substExpr(tree, detparams, detargs, pt)
       if (inferInfo)
         println("inferred expr instance "+tree)
+      undetparams
     }
 
     /** Substitite free type variables `undetparams' of polymorphic argument
@@ -1300,7 +1321,7 @@ trait Infer {
             val tp2 = pre.memberType(sym2)
             (tp2 == ErrorType ||
              !global.typer.infer.isWeaklyCompatible(tp2, pt) && global.typer.infer.isWeaklyCompatible(tp1, pt) ||
-             isStrictlyMoreSpecific(tp1, tp2)) }
+             isStrictlyMoreSpecific(tp1, tp2, sym1, sym2)) }
         val best = ((NoSymbol: Symbol) /: alts1) ((best, alt) =>
           if (improves(alt, best)) alt else best)
         val competing = alts1 dropWhile (alt => best == alt || improves(best, alt))
@@ -1348,7 +1369,7 @@ trait Infer {
           val applicable = alts filter (alt => isApplicable(undetparams, followApply(pre.memberType(alt)), argtpes, pt))
           def improves(sym1: Symbol, sym2: Symbol) =
             sym2 == NoSymbol || sym2.isError ||
-            isStrictlyMoreSpecific(followApply(pre.memberType(sym1)), followApply(pre.memberType(sym2)))
+            isStrictlyMoreSpecific(followApply(pre.memberType(sym1)), followApply(pre.memberType(sym2)), sym1, sym2)
           val best = ((NoSymbol: Symbol) /: applicable) ((best, alt) =>
             if (improves(alt, best)) alt else best)
           val competing = applicable dropWhile (alt => best == alt || improves(best, alt))

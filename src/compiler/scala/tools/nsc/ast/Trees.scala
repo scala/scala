@@ -1641,6 +1641,7 @@ trait Trees {
       super.traverse(tree)
     }
     override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
+    override def toString() = "TreeTypeSubstituter("+from+","+to+")"
   }
 
   lazy val EmptyTreeTypeSubstituter = new TreeTypeSubstituter(List(), List())
@@ -1658,6 +1659,7 @@ trait Trees {
       super.traverse(tree)
     }
     override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
+    override def toString() = "TreeSymSubstituter("+from+","+to+")"
   }
 
   class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {

@@ -746,12 +746,11 @@ trait Typers { self: Analyzer =>
         adapt(tree1 setType restpe.substSym(tparams, tparams1), mode, pt)
       case mt: ImplicitMethodType if ((mode & (EXPRmode | FUNmode | LHSmode)) == EXPRmode) => // (4.1)
         if (!context.undetparams.isEmpty && (mode & POLYmode) == 0) { // (9)
-          inferExprInstance(tree, context.extractUndetparams(), pt)
-          adapt(tree, mode, pt)
-        } else {
-          val typer1 = constrTyperIf(treeInfo.isSelfOrSuperConstrCall(tree))
-          typer1.typed(typer1.applyImplicitArgs(tree), mode, pt)
+          context.undetparams = inferExprInstance(
+            tree, context.extractUndetparams(), pt, false)
         }
+        val typer1 = constrTyperIf(treeInfo.isSelfOrSuperConstrCall(tree))
+        typer1.typed(typer1.applyImplicitArgs(tree), mode, pt)
       case mt: MethodType
       if (((mode & (EXPRmode | FUNmode | LHSmode)) == EXPRmode) &&
           (context.undetparams.isEmpty || (mode & POLYmode) != 0)) =>
@@ -936,7 +935,7 @@ trait Typers { self: Analyzer =>
      *  @return     ...
      */
     def instantiate(tree: Tree, mode: Int, pt: Type): Tree = {
-      inferExprInstance(tree, context.extractUndetparams(), pt)
+      inferExprInstance(tree, context.extractUndetparams(), pt, true)
       adapt(tree, mode, pt)
     }
 
@@ -1906,7 +1905,7 @@ trait Typers { self: Analyzer =>
 
             } else if (needsInstantiation(tparams, formals, args1)) {
               //println("needs inst "+fun+" "+tparams+"/"+(tparams map (_.info)))
-              inferExprInstance(fun, tparams, WildcardType)
+              inferExprInstance(fun, tparams, WildcardType, true)
               doTypedApply(tree, fun, args1, mode, pt)
             } else {
               assert((mode & PATTERNmode) == 0); // this case cannot arise for patterns

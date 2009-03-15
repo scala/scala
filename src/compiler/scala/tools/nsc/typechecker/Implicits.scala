@@ -28,6 +28,8 @@ self: Analyzer =>
   import definitions._
   import posAssigner.atPos
 
+  final val traceImplicits = false
+
   /** Search for an implicit value. See the comment on `result` at the end of class `ImplicitSearch`
    *  for more info how the search is conducted.
    *  @param tree             The tree for which the implicit needs to be inserted.
@@ -43,7 +45,7 @@ self: Analyzer =>
    *  @return                 A search result
    */
   def inferImplicit(tree: Tree, pt0: Type, reportAmbiguous: Boolean, context: Context): SearchResult = {
-    if (!tree.isEmpty && !context.undetparams.isEmpty)
+    if (traceImplicits && !tree.isEmpty && !context.undetparams.isEmpty)
       println("typing implicit with undetermined type params: "+context.undetparams+"\n"+tree)
     val search = new ImplicitSearch(tree, pt0, context.makeImplicit(reportAmbiguous))
     context.undetparams = context.undetparams remove (search.result.subst.from contains _)
@@ -55,7 +57,9 @@ self: Analyzer =>
    *  @param  subst   A substituter that represents the undetermined type parameters
    *                  that were instantiated by the winning implicit.
    */
-  class SearchResult(val tree: Tree, val subst: TreeTypeSubstituter)
+  class SearchResult(val tree: Tree, val subst: TreeTypeSubstituter) {
+    override def toString = "SearchResult("+tree+", "+subst+")"
+  }
 
   lazy val SearchFailure = new SearchResult(EmptyTree, EmptyTreeTypeSubstituter)
 
@@ -110,7 +114,7 @@ self: Analyzer =>
     def improves(info1: ImplicitInfo, info2: ImplicitInfo) =
       (info2 == NoImplicitInfo) ||
       (info1 != NoImplicitInfo) &&
-      isStrictlyMoreSpecific(info1.tpe, info2.tpe)
+      isStrictlyMoreSpecific(info1.tpe, info2.tpe, info1.sym, info2.sym)
 
     /** Map all type params in given list to WildcardType
      *  @param   tp  The type in which to do the mapping
@@ -230,11 +234,13 @@ self: Analyzer =>
     private def typedImplicit(info: ImplicitInfo): SearchResult =
        context.openImplicits find (dominates(pt, _)) match {
          case Some(pending) =>
+           println("Pending implicit "+pending+" dominates "+pt)
            throw DivergentImplicit
            SearchFailure
          case None =>
            try {
              context.openImplicits = pt :: context.openImplicits
+             //println("  "*context.openImplicits.length+"typed implicit "+info+" for "+pt)
              typedImplicit0(info)
            } catch {
              case DivergentImplicit =>
@@ -263,32 +269,44 @@ self: Analyzer =>
         case _ => tp.isStable
       }
 
-      if (!isPlausiblyCompatible(info.tpe, pt) || !isStable(info.pre)) return SearchFailure
+      /** Replace undetParams in type `tp` by Any/Nothing, according to variance */
+      def approximate(tp: Type) =
+        tp.instantiateTypeParams(undetParams, undetParams map (_ => WildcardType))
 
-      val tvars = undetParams map freshVar
+      /** Instantiated `pt' so that covariant occurrences of undetermined
+       *  type parameters are replaced by Any, and all other occurrences
+       *  are replaced by Nothing
+       */
+      val wildPt = approximate(pt)
 
-      // println("typed impl for "+pt+"? "+info.name+":"+info.tpe+(isPlausiblyCompatible(info.tpe, pt))+isCompatible(depoly(info.tpe), pt)+isStable(info.pre))
-      if (isCompatible(depoly(info.tpe), pt.instantiateTypeParams(undetParams, tvars))) {
+      if (traceImplicits) println("typed impl for "+wildPt+"? "+info.name+":"+info.tpe+"/"+undetParams)
+      if (isPlausiblyCompatible(info.tpe, wildPt) &&
+          isCompatible(depoly(info.tpe), wildPt) &&
+          isStable(info.pre)) {
+
         val itree = atPos(tree.pos) {
           if (info.pre == NoPrefix) Ident(info.name)
           else Select(gen.mkAttributedQualifier(info.pre), info.name)
         }
-        // println("typed impl?? "+info.name+":"+info.tpe+" ==> "+itree+" with "+pt)
+        if (traceImplicits) println("typed impl?? "+info.name+":"+info.tpe+" ==> "+itree+" with "+wildPt)
         def fail(reason: String): SearchResult = {
           if (settings.XlogImplicits.value)
-            inform(itree+" is not a valid implicit value for "+pt+" because:\n"+reason)
+            inform(itree+" is not a valid implicit value for "+pt0+" because:\n"+reason)
           SearchFailure
         }
         try {
           val itree1 =
             if (isView)
-              typed1(Apply(itree, List(Ident("<argument>") setType pt0.paramTypes.head)), EXPRmode, pt0.resultType)
+              typed1(
+                Apply(itree, List(Ident("<argument>").setType(approximate(pt0.paramTypes.head)))),
+                EXPRmode, approximate(pt0.resultType))
             else
-              typed1(itree, EXPRmode, pt)
-          //if (settings.debug.value) println("typed implicit "+itree1+":"+itree1.tpe+", pt = "+pt)
+              typed1(itree, EXPRmode, wildPt)
+
+          if (traceImplicits) println("typed implicit "+itree1+":"+itree1.tpe+", pt = "+wildPt)
           val itree2 = if (isView) (itree1: @unchecked) match { case Apply(fun, _) => fun }
-                       else adapt(itree1, EXPRmode, pt)
-          //if (settings.debug.value) println("adapted implicit "+itree1.symbol+":"+itree2.tpe+" to "+pt)("adapted implicit "+itree1.symbol+":"+itree2.tpe+" to "+pt)
+                       else adapt(itree1, EXPRmode, wildPt)
+          if (traceImplicits) println("adapted implicit "+itree1.symbol+":"+itree2.tpe+" to "+wildPt)
           def hasMatchingSymbol(tree: Tree): Boolean = (tree.symbol == info.sym) || {
             tree match {
               case Apply(fun, _) => hasMatchingSymbol(fun)
@@ -297,15 +315,25 @@ self: Analyzer =>
               case _ => false
             }
           }
+
           if (itree2.tpe.isError) SearchFailure
           else if (hasMatchingSymbol(itree1)) {
-            val targs = solvedTypes(tvars, undetParams, undetParams map varianceInType(pt),
-                                    false, lubDepth(List(depoly(info.tpe), pt)))
-            val subst = new TreeTypeSubstituter(undetParams, targs)
-            subst traverse itree2
-            // todo: remove type params that have been instantiated to Nothing, similar
-            // to methTypeArgs
-            new SearchResult(itree2, subst)
+            val tvars = undetParams map freshVar
+            if (isCompatible(itree2.tpe, pt.instantiateTypeParams(undetParams, tvars))) {
+              if (traceImplicits) println("tvars = "+tvars+"/"+(tvars map (_.constr)))
+              val targs = solvedTypes(tvars, undetParams, undetParams map varianceInType(pt),
+                                      false, lubDepth(List(itree2.tpe, pt)))
+              val subst = new TreeTypeSubstituter(undetParams, targs)
+              subst traverse itree2
+              // todo: remove type params that have been instantiated to Nothing, similar
+              // to methTypeArgs
+              val result = new SearchResult(itree2, subst)
+              if (traceImplicits) println("RESULT = "+result)
+              result
+            } else {
+              if (traceImplicits) println("incompatible???")
+              SearchFailure
+            }
           } else if (settings.XlogImplicits.value)
             fail("candidate implicit "+info.sym+info.sym.locationString+
                  " is shadowed by other implicit: "+itree1.symbol+itree1.symbol.locationString)
