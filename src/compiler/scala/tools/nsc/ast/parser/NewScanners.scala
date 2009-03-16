@@ -8,6 +8,7 @@ package scala.tools.nsc.ast.parser
 
 import scala.tools.nsc.util.SourceFile._
 import scala.tools.nsc.util._
+import scala.annotation.switch
 
 trait NewScanners {
   val global : Global
@@ -586,10 +587,25 @@ trait NewScanners {
   }
   def isDigit(c : Char) : Boolean = digit2int(c, 10) >= 0
 
-  def isIdentifierStart(c: Char): Boolean = c match {
-  case 'A' | 'B' | 'C' | 'D' | 'E' |
-       'F' | 'G' | 'H' | 'I' | 'J' |
-       'K' | 'L' | 'M' | 'N' | 'O' |
+  def isIdentifierStart(c: Char): Boolean = (c: @switch) match {
+    case 'A' | 'B' | 'C' | 'D' | 'E' |
+         'F' | 'G' | 'H' | 'I' | 'J' |
+         'K' | 'L' | 'M' | 'N' | 'O' |
+         'P' | 'Q' | 'R' | 'S' | 'T' |
+         'U' | 'V' | 'W' | 'X' | 'Y' |
+         'Z' | '$' | '_' |
+         'a' | 'b' | 'c' | 'd' | 'e' |
+         'f' | 'g' | 'h' | 'i' | 'j' |
+         'k' | 'l' | 'm' | 'n' | 'o' |
+         'p' | 'q' | 'r' | 's' | 't' |
+         'u' | 'v' | 'w' | 'x' | 'y' |  // scala-mode: need to understand multi-line case patterns
+         'z' => true
+    case _ => false
+  }
+  def isIdentifierPart(c: Char) : Boolean = (c: @switch) match {
+    case ('A' | 'B' | 'C' | 'D' | 'E' |
+          'F' | 'G' | 'H' | 'I' | 'J' |
+          'K' | 'L' | 'M' | 'N' | 'O' |
        'P' | 'Q' | 'R' | 'S' | 'T' |
        'U' | 'V' | 'W' | 'X' | 'Y' |
        'Z' | '$' | '_' |
@@ -597,35 +613,18 @@ trait NewScanners {
        'f' | 'g' | 'h' | 'i' | 'j' |
        'k' | 'l' | 'm' | 'n' | 'o' |
        'p' | 'q' | 'r' | 's' | 't' |
-       'u' | 'v' | 'w' | 'x' | 'y' |  // scala-mode: need to understand multi-line case patterns
-       'z' => true
-  case _ => false
-  }
-  def isIdentifierPart(c: Char) : Boolean = c match {
-  case ('A' | 'B' | 'C' | 'D' | 'E' |
-        'F' | 'G' | 'H' | 'I' | 'J' |
-        'K' | 'L' | 'M' | 'N' | 'O' |
-     'P' | 'Q' | 'R' | 'S' | 'T' |
-     'U' | 'V' | 'W' | 'X' | 'Y' |
-     'Z' | '$' | '_' |
-     'a' | 'b' | 'c' | 'd' | 'e' |
-     'f' | 'g' | 'h' | 'i' | 'j' |
-     'k' | 'l' | 'm' | 'n' | 'o' |
-     'p' | 'q' | 'r' | 's' | 't' |
-     'u' | 'v' | 'w' | 'x' | 'y' |
-     'z') => true
-  case '0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9' => true
-  case c if Character.isUnicodeIdentifierPart(c) => true
-  case _ => false
+       'u' | 'v' | 'w' | 'x' | 'y' |
+       'z') => true
+    case '0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9' => true
+    case c => Character.isUnicodeIdentifierPart(c)
   }
   //isIdentifierStart(c) || isDigit(c) || isUnicodeIdentifierPart(c)
-  def isOperatorPart(c : Char) : Boolean = c match {
-  case '~' | '!' | '@' | '#' | '%' |
-       '^' | '*' | '+' | '-' | '<' |
-       '>' | '?' | ':' | '=' | '&' |
-       '|' | '/' | '\\' => true
-  case c if isSpecial(c) => true
-  case _ => false
+  def isOperatorPart(c : Char) : Boolean = (c: @switch) match {
+    case '~' | '!' | '@' | '#' | '%' |
+         '^' | '*' | '+' | '-' | '<' |
+         '>' | '?' | ':' | '=' | '&' |
+         '|' | '/' | '\\' => true
+    case c => isSpecial(c)
   }
 
   private def getOperatorRest(implicit in : CoreScannerInput) : Unit = {
@@ -719,18 +718,18 @@ trait NewScanners {
       in.error(offset, "Invalid literal number")
     code
   }
-  def inFirstOfStat(token: Int) = token match {
-  case EOF | /*CASE |*/ CATCH | ELSE | EXTENDS | FINALLY | MATCH | REQUIRES | WITH | YIELD |
-       COMMA | SEMI | NEWLINE | NEWLINES | DOT | COLON | EQUALS | ARROW |  /* | USCORE - bug #756 */
-       LARROW | SUBTYPE | VIEWBOUND | SUPERTYPE | HASH | // todo: add LBRACKET
-       RPAREN | RBRACKET | RBRACE => false
-  case _ => true
+  // todo: add LBRACKET
+  def inFirstOfStat(token: Int) = (token: @switch) match {
+    case EOF | CATCH | ELSE | EXTENDS | FINALLY | MATCH | REQUIRES | WITH | YIELD |
+         COMMA | SEMI | NEWLINE | NEWLINES | DOT | COLON | EQUALS | ARROW | LARROW |
+         SUBTYPE | VIEWBOUND | SUPERTYPE | HASH | RPAREN | RBRACKET | RBRACE => false
+    case _ => true
   }
-  def inLastOfStat(token: Int) = token match {
-  case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT | SYMBOLLIT |
-       IDENTIFIER | BACKQUOTED_IDENT | THIS | NULL | TRUE | FALSE | RETURN | USCORE |
-       TYPE | XMLSTART | RPAREN | RBRACKET | RBRACE => true
-  case _ => false
+  def inLastOfStat(token: Int) = (token: @switch) match {
+    case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT | SYMBOLLIT |
+         IDENTIFIER | BACKQUOTED_IDENT | THIS | NULL | TRUE | FALSE | RETURN | USCORE |
+         TYPE | XMLSTART | RPAREN | RBRACKET | RBRACE => true
+    case _ => false
   }
 
   def digit(c : Char, radix : Int) = c match {

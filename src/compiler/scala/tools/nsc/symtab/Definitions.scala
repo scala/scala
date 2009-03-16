@@ -151,6 +151,8 @@ trait Definitions {
     var ByNameParamClass: Symbol = _
     //var UnsealedClass: Symbol = _
     lazy val UncheckedClass: Symbol = getClass("scala.unchecked")
+    lazy val TailrecClass: Symbol = getClass("scala.annotation.tailrec")
+    lazy val SwitchClass: Symbol = getClass("scala.annotation.switch")
 
     var EqualsPatternClass: Symbol = _
 

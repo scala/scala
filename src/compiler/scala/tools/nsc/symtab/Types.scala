@@ -775,6 +775,8 @@ trait Types {
 
     /** Return the attributes on this type */
     val attributes: List[AnnotationInfo] = Nil
+    /** Test for the presence of an attribute */
+    def hasAttribute(clazz: Symbol) = attributes exists { _.atp.typeSymbol == clazz }
 
     /** Add an attribute to this type */
     def withAttribute(attrib: AnnotationInfo) = withAttributes(List(attrib))

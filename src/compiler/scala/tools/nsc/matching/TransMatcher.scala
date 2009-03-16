@@ -38,7 +38,14 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
 
   /** handles all translation of pattern matching
    */
-  def handlePattern(selector: Tree, cases: List[CaseDef], doCheckExhaustive: Boolean, owner: Symbol, handleOuter: Tree => Tree)(implicit typer : Typer): Tree = {
+  def handlePattern(
+    selector: Tree,
+    cases: List[CaseDef],
+    doCheckExhaustive: Boolean,
+    owner: Symbol,
+    handleOuter: Tree => Tree)
+    (implicit typer : Typer): Tree =
+  {
     DBG("****")
     DBG("**** initalize, selector = "+selector+" selector.tpe = "+selector.tpe)
     DBG("****    doCheckExhaustive == "+doCheckExhaustive)

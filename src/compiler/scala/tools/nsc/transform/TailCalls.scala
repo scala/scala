@@ -39,6 +39,9 @@ abstract class TailCalls extends Transform
     }
   }
 
+  /** The @tailrec annotation indicates TCO is mandatory */
+  private def tailrecRequired(defdef: DefDef) = defdef.symbol hasAttribute TailrecClass
+
   /**
    * A Tail Call Transformer
    *
@@ -149,8 +152,9 @@ abstract class TailCalls extends Transform
     override def transform(tree: Tree): Tree = {
       tree match {
 
-        case DefDef(mods, name, tparams, vparams, tpt, rhs) =>
+        case dd @ DefDef(mods, name, tparams, vparams, tpt, rhs) =>
           log("Entering DefDef: " + name)
+          var isTransformed = false
           val newCtx = mkContext(ctx)
           newCtx.currentMethod = tree.symbol
           newCtx.makeLabel()
@@ -173,6 +177,7 @@ abstract class TailCalls extends Transform
             var newRHS = transform(rhs, newCtx);
             if (newCtx.accessed) {
               log("Rewrote def " + newCtx.currentMethod)
+              isTransformed = true
 
               val newThis = newCtx.currentMethod.newValue(tree.pos, nme.THIS)
                  .setInfo(currentClass.tpe)
@@ -189,6 +194,10 @@ abstract class TailCalls extends Transform
           } else {
             copy.DefDef(tree, mods, name, tparams, vparams, tpt, transform(rhs, newCtx))
           }
+
+          if (!isTransformed && tailrecRequired(dd))
+            unit.error(dd.pos, "could not optimize @tailrec annotated method")
+
           log("Leaving DefDef: " + name)
           t1
 

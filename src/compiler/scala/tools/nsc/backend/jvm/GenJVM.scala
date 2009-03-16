@@ -217,10 +217,9 @@ abstract class GenJVM extends SubComponent {
 
       addGenericSignature(jclass, c.symbol)
       addAnnotations(jclass, c.symbol.attributes)
-
       emitClass(jclass, c.symbol)
 
-      if (c.symbol.attributes.exists(_.atp.typeSymbol == BeanInfoAttr))
+      if (c.symbol hasAttribute BeanInfoAttr)
         genBeanInfoClass(c)
     }
 

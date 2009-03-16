@@ -8,6 +8,7 @@ package scala.tools.nsc.javac
 import scala.tools.nsc.util._
 import SourceFile.{LF, FF, CR, SU}
 import JavaTokens._
+import scala.annotation.switch
 
 trait JavaScanners {
   val global : Global
@@ -347,7 +348,7 @@ trait JavaScanners {
             in.next
           case _ =>
             pos = in.cpos // Position.encode(in.cline, in.ccol)
-            in.ch match {
+            (in.ch: @switch) match {
               case 'A' | 'B' | 'C' | 'D' | 'E' |
                    'F' | 'G' | 'H' | 'I' | 'J' |
                    'K' | 'L' | 'M' | 'N' | 'O' |
@@ -702,7 +703,7 @@ trait JavaScanners {
 
     private def getIdentRest {
       while (true) {
-        in.ch match {
+        (in.ch: @switch) match {
           case 'A' | 'B' | 'C' | 'D' | 'E' |
                'F' | 'G' | 'H' | 'I' | 'J' |
                'K' | 'L' | 'M' | 'N' | 'O' |

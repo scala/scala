@@ -454,16 +454,19 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           }
 
           var checkExhaustive = true
-          def isUncheckedAnnotation(tpe: Type) = tpe match {
-            case AnnotatedType(List(AnnotationInfo(atp, _, _)), _, _) if atp.typeSymbol == UncheckedClass =>
-              true
-            case _ =>
-              false
-          }
+          var requireSwitch = false
+
+          def isUncheckedAnnotation(tpe: Type) = tpe hasAttribute UncheckedClass
+          def isSwitchAnnotation(tpe: Type) = tpe hasAttribute SwitchClass
+
           nselector match {
-            case Typed(nselector1, tpt) if isUncheckedAnnotation(tpt.tpe) =>
-              nselector = nselector1
-              checkExhaustive = false
+            case Typed(nselector1, tpt) =>
+              if (isUncheckedAnnotation(tpt.tpe)) {
+                nselector = nselector1
+                checkExhaustive = false
+              }
+              if (isSwitchAnnotation(tpt.tpe))
+                requireSwitch = true
             case _ =>
           }
 
@@ -471,13 +474,22 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
 
           val t = atPos(tree.pos) {
             val t_untyped = handlePattern(nselector, ncases.toList, checkExhaustive, currentOwner, transform)(localTyper)
+            /* if @switch annotation is present, verify the resulting tree is a Match */
+            if (requireSwitch) t_untyped match {
+              case Block(_, Match(_, _))  => // ok
+              case _                      =>
+                unit.error(tree.pos, "could not emit switch for @switch annotated match")
+            }
+
             localTyper.typed(t_untyped, resultType)
           }
 
           if (settings.debug.value)
             Console.println("finished translation of " + tid)
 
-          if(nguard.isEmpty) {t} else Block(nguard.toList, t) setType t.tpe
+          if (nguard.isEmpty) t
+          else Block(nguard.toList, t) setType t.tpe
+
         case _ =>
           val x = super.transform(tree)
 

@@ -14,6 +14,7 @@ package scalax.collection.immutable
 import mutable.ListBuffer
 import generic.{SequenceTemplate, SequenceFactory, EmptyIterableFactory, Builder, LazyBuilder}
 import annotation.unchecked.uncheckedVariance
+import annotation.tailrec
 
 /**
  * The object <code>Stream</code> provides helper functions
@@ -486,6 +487,7 @@ self =>
    *  @param sep   The separator string printed between consecutive elements.
    */
   def print(sep: String) {
+    @tailrec
     def loop(these: Stream[A], start: String) {
       Console.print(start)
       if (isEmpty) Console.print("empty")

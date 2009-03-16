@@ -1,0 +1,10 @@
+tailrec.scala:6: error: could not optimize @tailrec annotated method
+  def facfail(n: Int): Int =
+      ^
+tailrec.scala:42: error: could not optimize @tailrec annotated method
+  @tailrec def fail1(x: Int): Int = fail1(x)
+               ^
+tailrec.scala:45: error: could not optimize @tailrec annotated method
+  @tailrec def fail2[T](xs: List[T]): List[T] = xs match {
+               ^
+three errors found

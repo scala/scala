@@ -91,16 +91,12 @@ trait Symbols {
       else -1
     }
 
-    var attributes: List[AnnotationInfo] = List()
-
+    // XXX the attributes logic is essentially duplicated across Symbols and Types
+    var attributes: List[AnnotationInfo] = Nil
     def setAttributes(attrs: List[AnnotationInfo]): this.type = { this.attributes = attrs; this }
 
     /** Does this symbol have an attribute of the given class? */
-    def hasAttribute(cls: Symbol): Boolean =
-      attributes.exists {
-        case AnnotationInfo(tp, _, _) if tp.typeSymbol == cls => true
-        case _ => false
-    }
+    def hasAttribute(cls: Symbol) = attributes exists { _.atp.typeSymbol == cls }
 
     var privateWithin: Symbol = _
       // set when symbol has a modifier of the form private[X], NoSymbol otherwise.
@@ -347,8 +343,7 @@ trait Symbols {
         }
       }
 
-    def isDeprecated =
-      attributes exists (attr => attr.atp.typeSymbol == DeprecatedAttr)
+    def isDeprecated = hasAttribute(DeprecatedAttr)
 
     /** Does this symbol denote a wrapper object of the interpreter or its class? */
     final def isInterpreterWrapper =

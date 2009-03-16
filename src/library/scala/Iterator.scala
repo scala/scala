@@ -14,6 +14,7 @@ package scala
 
 import Predef._
 import collection.mutable.{Buffer, ListBuffer, ArrayBuffer}
+import annotation.tailrec
 
 /** The <code>Iterator</code> object provides various functions for
  *  creating specialized iterators.
@@ -248,8 +249,14 @@ trait Iterator[+A] {
    *  @param n the number of elements to drop
    *  @return  the new iterator
    */
-  def drop(n: Int): Iterator[A] =
-    if (n > 0 && hasNext) { next; drop(n - 1) } else this
+  def drop(n: Int): Iterator[A] = {
+    @tailrec
+    def loop(left: Int): Iterator[A] =
+      if (left > 0 && hasNext) { next; loop(left - 1) }
+      else this
+
+    loop(n)
+  }
 
   /** A sub-iterator of <code>until - from elements
    *  starting at index <code>from</code>
@@ -366,12 +373,18 @@ trait Iterator[+A] {
    *  @param p the predicate used to skip elements.
    *  @return  an iterator consisting of the remaining elements
    */
-  def dropWhile(p: A => Boolean): Iterator[A] =
-    if (hasNext) {
-      val x = next
-      if (p(x)) dropWhile(p)
-      else Iterator.single(x) append this
-    } else this
+  def dropWhile(p: A => Boolean): Iterator[A] = {
+    @tailrec
+    def loop(): Iterator[A] =
+      if (hasNext) {
+        val x = next
+        if (p(x)) loop()
+        else Iterator.single(x) append this
+      }
+      else this
+
+    loop()
+  }
 
   /** Return an iterator formed from this iterator and the specified iterator
    *  <code>that</code> by associating each element of the former with
