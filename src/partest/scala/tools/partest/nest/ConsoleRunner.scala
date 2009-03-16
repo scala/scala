@@ -9,6 +9,7 @@ package scala.tools.partest.nest
 
 import java.io.{File, PrintStream, FileOutputStream, BufferedReader,
                 InputStreamReader, StringWriter, PrintWriter}
+import utils.Properties._
 
 class ConsoleRunner extends DirectRunner with RunnerUtils {
 
@@ -38,8 +39,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
 
   var fileManager: ConsoleFileManager = _
 
-  private val version = System.getProperty("java.version", "")
-  private val isJava5 = version matches "1.[5|6|7].*"
+  private val isJava5 = javaVersion matches "1.[5|6|7].*"
   private var runAll = false
   private var testFiles: List[File] = List()
   private val errors =
@@ -54,13 +54,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
   def denotesTestDir(arg: String) =
     (new File(arg)).isDirectory
 
-  private def printVersion {
-    val versionMsg = "Scala partest "+
-      utils.Properties.versionString+
-      " -- "+
-      scala.tools.nsc.Properties.copyrightString
-    NestUI.outline(versionMsg+"\n")
-  }
+  private def printVersion { NestUI outline (versionMsg + "\n") }
 
   def main(argstr: String) {
     // tokenize args. filter: "".split("\\s") yields Array("")
@@ -143,19 +137,13 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
           fileManager.latestCompFile.getParentFile.getParentFile.getCanonicalFile
       NestUI.outline("Scala compiler classes in: "+dir+"\n")
 
-      val scalaVersion = "Scala compiler "+
-        scala.tools.nsc.Properties.versionString+
-        " -- "+
-        scala.tools.nsc.Properties.copyrightString
-
-      NestUI.outline("Scala version is:          "+scalaVersion+"\n")
+      NestUI.outline("Scala version is:          "+nsc.Properties.versionMsg+"\n")
       NestUI.outline("Scalac options are:        "+fileManager.SCALAC_OPTS+"\n")
 
-      val vmBin  = System.getProperty("java.home", "")+File.separator+"bin"
-      val vmName = System.getProperty("java.vm.name", "")+" (build "+
-                   System.getProperty("java.vm.version", "")+", "+
-                   System.getProperty("java.vm.info", "")+")"
+      val vmBin  = javaHome + File.separator + "bin"
+      val vmName = "%s (build %s, %s)".format(javaVmName, javaVmVersion, javaVmInfo)
       val vmOpts = fileManager.JAVA_OPTS
+
       NestUI.outline("Java binaries in:          "+vmBin+"\n")
       NestUI.outline("Java runtime is:           "+vmName+"\n")
       NestUI.outline("Java options are:          "+vmOpts+"\n")

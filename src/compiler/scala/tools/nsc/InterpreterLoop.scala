@@ -126,15 +126,12 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
 
   /** Print a welcome message */
   def printWelcome() {
+    import Properties._
     val welcomeMsg =
      """|Welcome to Scala %s (%s, Java %s).
         |Type in expressions to have them evaluated.
         |Type :help for more information.""" .
-    stripMargin.format(
-      Properties.versionString,
-      System.getProperty("java.vm.name"),
-      System.getProperty("java.version")
-    )
+    stripMargin.format(versionString, javaVmName, javaVersion)
 
     out println welcomeMsg
     out.flush

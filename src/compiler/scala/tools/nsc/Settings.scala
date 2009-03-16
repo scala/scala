@@ -13,7 +13,7 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
   def this() = this(Console.println)
 
   // optionizes a system property
-  private def sysprop(name: String): Option[String] = onull(System.getProperty(name))
+  private def syspropopt(name: String): Option[String] = onull(System.getProperty(name))
 
   // given any number of possible path segments, flattens down to a
   // :-separated style path
@@ -21,13 +21,13 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
     segments.toList.flatMap(x => x) mkString File.pathSeparator
 
   protected def classpathDefault =
-    sysprop("env.classpath") orElse sysprop("java.class.path") getOrElse ""
+    syspropopt("env.classpath") orElse syspropopt("java.class.path") getOrElse ""
 
   protected def bootclasspathDefault =
-    concatPath(sysprop("sun.boot.class.path"), guessedScalaBootClassPath)
+    concatPath(syspropopt("sun.boot.class.path"), guessedScalaBootClassPath)
 
   protected def extdirsDefault =
-    concatPath(sysprop("java.ext.dirs"), guessedScalaExtDirs)
+    concatPath(syspropopt("java.ext.dirs"), guessedScalaExtDirs)
 
   protected def pluginsDirDefault =
     guess(List("misc", "scala-devel", "plugins"), _.isDirectory) getOrElse ""

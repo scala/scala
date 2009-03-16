@@ -20,6 +20,9 @@ class CompilerCommand(
   def this(arguments: List[String], settings: Settings, error: String => Unit, interactive: Boolean) =
     this(arguments, settings, error, interactive, true)
 
+  /** file extensions of files that the compiler can process */
+  lazy val fileEndings = Properties.fileEndings
+
   /** Private buffer for accumulating files to compile */
   private var fs: List[String] = List()
 
@@ -28,9 +31,6 @@ class CompilerCommand(
 
   /** The name of the command */
   val cmdName = "scalac"
-
-  /** The file extensions of files that the compiler can process */
-  lazy val fileEndings = Properties.fileEndingString.split("""\|""").toList
 
   private val helpSyntaxColumnWidth: Int =
     Iterable.max(settings.allSettings map (_.helpSyntax.length))
@@ -91,7 +91,7 @@ class CompilerCommand(
     // true if it's a legit looking source file
     def isSourceFile(x: String) =
       (settings.script.value != "") ||
-      (fileEndings exists (ext => x endsWith ext))
+      (fileEndings exists (x endsWith _))
 
     // given an option for scalac finds out what it is
     def doOption(x: String): Unit = {

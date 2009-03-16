@@ -13,6 +13,7 @@ import java.lang.reflect.InvocationTargetException
 import java.net.URL
 
 import util.ClassPath
+import File.pathSeparator
 
 /** An object that runs Scala code.  It has three possible
   * sources for the code to run: pre-compiled code, a script file,
@@ -52,12 +53,12 @@ object MainGenericRunner {
             filesInClasses.filter(f => f.isDirectory)
           dirsInClasses.toList
         }
-      }.mkString("", File.pathSeparator, "")
+      }.mkString("", pathSeparator, "")
 
     if (classpath == "")
-      extraClassPath + File.pathSeparator + "."
+      extraClassPath + pathSeparator + "."
     else
-      classpath + File.pathSeparator + extraClassPath
+      classpath + pathSeparator + extraClassPath
   }
 
   def main(args: Array[String]) {

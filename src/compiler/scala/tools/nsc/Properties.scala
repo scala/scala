@@ -16,7 +16,10 @@ object Properties extends scala.util.PropertiesTrait {
   val fileEndingString      = prop("file.ending", ".scala|.java")
   val residentPromptString  = prop("resident.prompt", "\nnsc> ")
   val shellPromptString     = prop("shell.prompt", "\nscala> ")
+
+  // derived values
   val cmdName               = if (isWin) "scala.bat" else "scala"
+  val fileEndings           = fileEndingString.split("""\|""").toList
 
   // settings based on System properties
   val envClasspath          = sysprop("env.classpath", null)

@@ -23,14 +23,13 @@ trait InteractiveReader {
       case e => throw e
     }
 
+  // hack necessary for OSX jvm suspension because read calls are not restarted after SIGTSTP
   private def restartSystemCall(e: Exception): Boolean =
     Properties.isMac && (e.getMessage == msgEINTR)
 }
 
 
 object InteractiveReader {
-  // hacks necessary for OSX jvm suspension because read calls are not restarted after SIGTSTP
-  val vendor = System.getProperty("java.vendor", "")
   val msgEINTR = "Interrupted system call"
 
   def createDefault(): InteractiveReader = createDefault(null)

@@ -30,6 +30,7 @@ private[scala] trait PropertiesTrait
     props
   }
 
+  protected def onull[T <: AnyRef](x: T) = if (x eq null) None else Some(x)
   private def quietlyDispose(action: => Unit, disposal: => Unit) =
     try     { action }
     finally {
@@ -38,12 +39,13 @@ private[scala] trait PropertiesTrait
     }
 
   // for values based on system properties
-  protected def sysprop(name: String, default: String) =
-    System.getProperty(name, default)
+  def sysprop(name: String): String                   = sysprop(name, "")
+  def sysprop(name: String, default: String): String  = System.getProperty(name, default)
+  def syspropset(name: String, value: String)         = System.setProperty(name, value)
 
   // for values based on propFilename
-  protected def prop(name: String, default: String): String =
-    props.getProperty(name, default)
+  def prop(name: String): String                      = props.getProperty(name, "")
+  def prop(name: String, default: String): String     = props.getProperty(name, default)
 
   // XXX file.encoding should not be here, as it causes system setting to
   // be ignored.  See https://lampsvn.epfl.ch/trac/scala/ticket/1581
@@ -54,13 +56,19 @@ private[scala] trait PropertiesTrait
   val versionString         = "version " + prop("version.number", "(unknown)")
   val copyrightString       = prop("copyright.string", "(c) 2002-2009 LAMP/EPFL")
   val encodingString        = prop("file.encoding", "UTF8")
-  val isWin                 = sysprop("os.name", "") startsWith "Windows"
-  val isMac                 = sysprop("java.vendor", "") startsWith "Apple"
-  val scalaHome             = sysprop("scala.home", null)
+  val isWin                 = sysprop("os.name") startsWith "Windows"
+  val isMac                 = sysprop("java.vendor") startsWith "Apple"
+  val javaClassPath         = sysprop("java.class.path")
+  val javaHome              = sysprop("java.home")
+  val javaVmName            = sysprop("java.vm.name")
+  val javaVmVersion         = sysprop("java.vm.version")
+  val javaVmInfo            = sysprop("java.vm.info")
+  val javaVersion           = sysprop("java.version")
+  val scalaHome             = sysprop("scala.home", null) // XXX places do null checks...
 
   // provide a main method so version info can be obtained by running this
   private val writer = new java.io.PrintWriter(Console.err, true)
-  private val versionMsg = "Scala %s %s -- %s".format(propCategory, versionString, copyrightString)
+  def versionMsg            = "Scala %s %s -- %s".format(propCategory, versionString, copyrightString)
   def main(args: Array[String]) { writer println versionMsg }
 }
 

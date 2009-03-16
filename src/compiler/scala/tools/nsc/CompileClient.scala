@@ -7,6 +7,7 @@
 package scala.tools.nsc
 
 import java.io.{BufferedReader, File, InputStreamReader, PrintWriter}
+import Properties.fileEndings
 
 /** The client part of the fsc offline compiler.  Instead of compiling
  *  things itself, it send requests to a CompileServer.
@@ -14,13 +15,10 @@ import java.io.{BufferedReader, File, InputStreamReader, PrintWriter}
 class StandardCompileClient {
   def compileSocket: CompileSocket = CompileSocket  // todo: should be lazy val
 
-  val versionMsg = "Fast Scala Compiler " +
-    Properties.versionString + " -- " +
-    Properties.copyrightString
-
-  var verbose = false
-  var version = false
-  var shutdown = false
+  val versionMsg  = "Fast " + Properties.versionMsg
+  var verbose     = false
+  var version     = false
+  var shutdown    = false
 
   /** Convert a filename to an absolute path */
   def absFileName(path: String) = new File(path).getAbsolutePath()
@@ -33,8 +31,6 @@ class StandardCompileClient {
     val pathsList = paths.split(sep).toList
     pathsList.map(absFileName).mkString("", sep, "")
   }
-
-  val fileEndings = Properties.fileEndingString.split("""\|""").toList
 
   protected def normalize(args: Array[String]): (String, String) = {
      var i = 0

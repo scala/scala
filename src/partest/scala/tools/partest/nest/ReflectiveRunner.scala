@@ -19,6 +19,12 @@ class ReflectiveRunner extends RunnerUtils {
   // to use the same classes as used by `scala` that
   // was used to start the runner.
 
+  import java.net.URLClassLoader
+  import java.io.File.pathSeparator
+  import utils.Properties.{ sysprop, syspropset }
+
+  val sepRunnerClassName = "scala.tools.partest.nest.ConsoleRunner"
+
   def main(args: String) {
     val argList = List.fromArray(args.split("\\s"))
 
@@ -37,55 +43,40 @@ class ReflectiveRunner extends RunnerUtils {
       else // auto detection
         new ConsoleFileManager
 
-    import fileManager.{latestCompFile, latestLibFile, latestActFile,
-                        latestPartestFile, latestFjbgFile}
+    import fileManager.
+      { latestCompFile, latestLibFile, latestActFile, latestPartestFile, latestFjbgFile }
+    val files =
+      Array(latestCompFile, latestLibFile, latestActFile, latestPartestFile, latestFjbgFile)
 
-    val sepUrls = Array(latestCompFile.toURL, latestLibFile.toURL,
-                        latestActFile.toURL, latestPartestFile.toURL,
-                        latestFjbgFile.toURL)
+    val sepUrls   = files map { _.toURL }
+    val sepLoader = new URLClassLoader(sepUrls, null)
 
-    val sepLoader = new java.net.URLClassLoader(sepUrls, null)
+    if (fileManager.debug)
+      println("Loading classes from:\n" + sepUrls.mkString("\n"))
 
-    if (fileManager.debug) {
-      println("Loading classes from:")
-      sepUrls foreach { url => println(url) }
-    }
+    val paths = (if (classPath.isEmpty) files.slice(0, 4) else files) map { _.getPath }
+    val newClasspath = paths mkString pathSeparator
+
+    syspropset("java.class.path", newClasspath)
+    syspropset("env.classpath", newClasspath)
+    syspropset("scala.home", "")
+
+    if (fileManager.debug)
+      for (prop <- List("java.class.path", "env.classpath", "sun.boot.class.path", "java.ext.dirs"))
+        println(prop + ": " + sysprop(prop))
 
     try {
-      val paths = if (!classPath.isEmpty)
-        Array(latestCompFile.getPath, latestLibFile.getPath,
-              latestActFile.getPath, latestPartestFile.getPath,
-              latestFjbgFile.getPath)
-      else
-        Array(latestCompFile.getPath, latestLibFile.getPath,
-              latestActFile.getPath, latestPartestFile.getPath)
-      val newClasspath = paths.mkString(java.io.File.pathSeparator)
-      System.setProperty("java.class.path", newClasspath)
-      System.setProperty("env.classpath", newClasspath)
-      System.setProperty("scala.home", "")
-      if (fileManager.debug) {
-        println("java.class.path: "+System.getProperty("java.class.path"))
-        println("env.classpath: "+System.getProperty("env.classpath"))
-        println("sun.boot.class.path: "+System.getProperty("sun.boot.class.path"))
-        println("java.ext.dirs: "+System.getProperty("java.ext.dirs"))
-      }
-
-      val sepRunnerClass =
-        sepLoader.loadClass("scala.tools.partest.nest.ConsoleRunner")
-
-      val sepRunner = sepRunnerClass.newInstance()
-
-      val stringClass = Class.forName("java.lang.String")
-      val sepMainMethod =
-        sepRunnerClass.getMethod("main", Array(stringClass): _*)
-
+      val sepRunnerClass  = sepLoader loadClass sepRunnerClassName
+      val sepRunner       = sepRunnerClass.newInstance()
+      val sepMainMethod   = sepRunnerClass.getMethod("main", Array(classOf[String]): _*)
       val cargs: Array[AnyRef] = Array(args)
       sepMainMethod.invoke(sepRunner, cargs: _*)
-    } catch {
+    }
+    catch {
       case cnfe: ClassNotFoundException =>
         cnfe.printStackTrace()
-        NestUI.failure("scala.tools.partest.nest.ConsoleRunner could not be loaded from: \n")
-        sepUrls foreach { url => NestUI.failure(url+"\n") }
+        NestUI.failure(sepRunnerClassName +" could not be loaded from:\n")
+        sepUrls foreach (x => NestUI.failure(x + "\n"))
     }
   }
 }
