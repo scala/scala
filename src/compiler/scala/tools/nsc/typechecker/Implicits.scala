@@ -52,6 +52,16 @@ self: Analyzer =>
     search.result
   }
 
+  /** If type `pt` an instance of Manifest or OptManifest, or an abstract type lower-bounded
+   *  by such an instance?
+   */
+  def isManifest(pt: Type): Boolean = pt match {
+    case TypeRef(_, ManifestClass, List(_)) |
+         TypeRef(_, OptManifestClass, List(_)) => true
+    case TypeRef(_, tsym, _) => tsym.isAbstractType && isManifest(pt.bounds.lo)
+    case _ => false
+  }
+
   /** The result of an implicit search
    *  @param  tree    The tree representing the implicit
    *  @param  subst   A substituter that represents the undetermined type parameters
@@ -234,7 +244,7 @@ self: Analyzer =>
     private def typedImplicit(info: ImplicitInfo): SearchResult =
        context.openImplicits find (dominates(pt, _)) match {
          case Some(pending) =>
-           println("Pending implicit "+pending+" dominates "+pt)
+           //println("Pending implicit "+pending+" dominates "+pt+"/"+undetParams)
            throw DivergentImplicit
            SearchFailure
          case None =>
@@ -273,9 +283,7 @@ self: Analyzer =>
       def approximate(tp: Type) =
         tp.instantiateTypeParams(undetParams, undetParams map (_ => WildcardType))
 
-      /** Instantiated `pt' so that covariant occurrences of undetermined
-       *  type parameters are replaced by Any, and all other occurrences
-       *  are replaced by Nothing
+      /** Instantiated `pt' so that undetermined type parameters are replaced by wildcards
        */
       val wildPt = approximate(pt)
 

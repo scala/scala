@@ -59,8 +59,8 @@ object testOptions {
   println(getType(x))
   println(getType(Some(Some(3))))
   println(getType(Some(List(3))))
-  //println(getType(Some(None)))  // error: no implicit argument matching parameter type TypeRep[object None] was foun
-  println(getType(None))
+  //println(getType(Some(None: List[Int])))  // error: no implicit argument matching parameter type TypeRep[object None] was foun
+  println(getType(None: Option[Int]))
   val y: Option[Int] = None
   println(getType(y))
   println
@@ -70,7 +70,7 @@ object testLists {
   println(getType(List(3)))
   println(getType(3 :: Nil))
   println(getType(List(List(3))))
-  println(getType(Nil))
+  println(getType(Nil: List[Int]))
   println(getType(List(1, "abc")))
   println
 }

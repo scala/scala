@@ -1,7 +1,7 @@
 bug550.scala:6: error: class List takes type parameters
   def sum[a](xs: List)(implicit m: Monoid[a]): a =
                  ^
-bug550.scala:8: error: no implicit argument matching parameter type Monoid[Nothing] was found.
+bug550.scala:8: error: no implicit argument matching parameter type Monoid[a] was found.
   sum(List(1,2,3))
   ^
 two errors found

@@ -747,7 +747,11 @@ trait Typers { self: Analyzer =>
       case mt: ImplicitMethodType if ((mode & (EXPRmode | FUNmode | LHSmode)) == EXPRmode) => // (4.1)
         if (!context.undetparams.isEmpty && (mode & POLYmode) == 0) { // (9)
           context.undetparams = inferExprInstance(
-            tree, context.extractUndetparams(), pt, false)
+            tree, context.extractUndetparams(), pt, mt.paramTypes exists isManifest)
+              // if we are looking for a manifest, instantiate type to Nothing anyway,
+              // as we would get amnbiguity errors otherwise. Example
+              // Looking for a manifest of Nil: This mas many potential types,
+              // so we need to instantiate to minimal type List[Nothing].
         }
         val typer1 = constrTyperIf(treeInfo.isSelfOrSuperConstrCall(tree))
         typer1.typed(typer1.applyImplicitArgs(tree), mode, pt)

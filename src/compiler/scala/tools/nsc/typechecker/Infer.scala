@@ -524,7 +524,7 @@ trait Infer {
      */
     def adjustTypeArgs(tparams: List[Symbol], targs: List[Type], restpe: Type, uninstantiated: ListBuffer[Symbol]): List[Type] =
       List.map2(tparams, targs) {(tparam, targ) =>
-        if (targ.typeSymbol == NothingClass && (varianceInType(restpe)(tparam) & COVARIANT) == 0) {
+        if (targ.typeSymbol == NothingClass && (restpe == WildcardType || (varianceInType(restpe)(tparam) & COVARIANT) == 0)) {
           uninstantiated += tparam
           tparam.tpe
         } else if (targ.typeSymbol == RepeatedParamClass) {
@@ -943,12 +943,12 @@ trait Infer {
       val targs = exprTypeArgs(tparams, tree.tpe, pt)
       val uninstantiated = new ListBuffer[Symbol]
       val detargs = if (keepNothings) targs
-                    else adjustTypeArgs(tparams, targs, pt, uninstantiated)
+                    else adjustTypeArgs(tparams, targs, WildcardType, uninstantiated)
       val undetparams = uninstantiated.toList
       val detparams = tparams remove (undetparams contains _)
       substExpr(tree, detparams, detargs, pt)
       if (inferInfo)
-        println("inferred expr instance "+tree)
+        println("inferred expr instance "+tree+", detargs = "+detargs+", undetparams = "+undetparams)
       undetparams
     }
 
