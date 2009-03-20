@@ -13,11 +13,82 @@ import testing.SUnit._
  */
 object Test extends TestConsoleMain {
   def suite = new TestSuite(
+    Test_multiset, // multiset operations: union, intersect, diff
     Test1, //count, exists, filter, ..
     Test2, //#468
     Test3, //#1691
     Test4  //#1721
   )
+}
+
+object Test_multiset extends TestCase("multiset") with Assert {
+  override def enableStackTrace = false
+  override def runTest {
+    def isSubListOf[A](thiz: List[A], that: List[A]): Boolean =
+      thiz forall (that contains _)
+    val xs = List(1, 1, 2)
+    val ys = List(1, 2, 2, 3)
+    assertEquals("xs_union_ys", List(1, 1, 2, 1, 2, 2, 3), xs union ys)
+    assertEquals("ys_union_xs", List(1, 2, 2, 3, 1, 1, 2), ys union xs)
+    assertEquals("xs_intersect_ys", List(1, 2), xs intersect ys)
+    assertEquals("ys_intersect_xs", List(1, 2), ys intersect xs)
+    assertEquals("xs_diff_ys", List(1), xs diff ys)
+    assertEquals("ys_diff_xs", List(2, 3), ys diff xs)
+    assertTrue("xs_subset_ys", isSubListOf(xs -- ys, xs diff ys))
+
+    val zs = List(0, 1, 1, 2, 2, 2)
+    assertEquals("zs_union_ys", List(0, 1, 1, 2, 2, 2, 1, 2, 2, 3), zs union ys)
+    assertEquals("ys_union_zs", List(1, 2, 2, 3, 0, 1, 1, 2, 2, 2), ys union zs)
+    assertEquals("zs_intersect_ys", List(1, 2, 2), zs intersect ys)
+    assertEquals("ys_intersect_zs", List(1, 2, 2), ys intersect zs)
+    assertEquals("zs_diff_ys", List(0, 1, 2), zs diff ys)
+    assertEquals("ys_diff_zs", List(3), ys diff zs)
+    assertTrue("xs_subset_ys", isSubListOf(zs -- ys, zs diff ys))
+
+    val ws = List(2)
+    assertEquals("ws_union_ys", List(2, 1, 2, 2, 3), ws union ys)
+    assertEquals("ys_union_ws", List(1, 2, 2, 3, 2), ys union ws)
+    assertEquals("ws_intersect_ys", List(2), ws intersect ys)
+    assertEquals("ys_intersect_ws", List(2), ys intersect ws)
+    assertEquals("ws_diff_ys", List(), ws diff ys)
+    assertEquals("ys_diff_ws", List(1, 2, 3), ys diff ws)
+    assertTrue("ws_subset_ys", isSubListOf(ws -- ys, ws diff ys))
+
+    val vs = List(3, 2, 2, 1)
+    assertEquals("xs_union_vs", List(1, 1, 2, 3, 2, 2, 1), xs union vs)
+    assertEquals("vs_union_xs", List(3, 2, 2, 1, 1, 1, 2), vs union xs)
+    assertEquals("xs_intersect_vs", List(1, 2), xs intersect vs)
+    assertEquals("vs_intersect_xs", List(2, 1), vs intersect xs)
+    assertEquals("xs_diff_vs", List(1), xs diff vs)
+    assertEquals("vs_diff_xs", List(3, 2), vs diff xs)
+    assertTrue("xs_subset_vs", isSubListOf(xs -- vs, xs diff vs))
+
+    // tests adapted from Thomas Jung
+    assertTrue(
+      "be symmetric after sorting", {
+        def sort(zs: List[Int]) = zs sort ( _ > _ )
+        sort(xs intersect ys) == sort(ys intersect xs)
+      })
+    assertTrue(
+      "obey min cardinality", {
+        def cardinality[A](zs: List[A], e: A): Int = zs count (e == _)
+        val intersection = xs intersect ys
+        xs forall (e => cardinality(intersection, e) == (cardinality(xs, e)
+min cardinality(ys, e)))
+      })
+    assertTrue(
+      "maintain order", {
+        val intersection = xs intersect ys
+		val unconsumed = xs.foldLeft(intersection){(rest, e) =>
+		  if (! rest.isEmpty && e == rest.head) rest.tail else rest
+		}
+		unconsumed.isEmpty
+      })
+    assertTrue(
+      "has the list as again intersection",
+      xs == (xs intersect xs)
+    )
+  }
 }
 
 object Test1 extends TestCase("ctor") with Assert {
@@ -34,12 +105,6 @@ object Test1 extends TestCase("ctor") with Assert {
     val n2 = xs4 count { e => e < 5 }
     assertEquals("check_count", 4, n1 + n2)
   }
-  /* deprecated
-  {
-    val ys1 = xs1 diff xs4
-    val ys2 = xs3 diff xs5
-    assertEquals("check_diff", 3, ys1.length + ys2.length)
-  }*/
   {
     val b1 = xs1 exists { e => e % 2 == 0 }
     val b2 = xs4 exists { e => e == 5 }
@@ -61,19 +126,9 @@ object Test1 extends TestCase("ctor") with Assert {
     assertEquals("check_forall", true, b1 & b2)
   }
   {
-    val ys1 = xs1 intersect xs4
-    val ys2 = xs3 intersect xs5
-    assertEquals("check_intersect", 2, ys1.length + ys2.length)
-  }
-  {
     val ys1 = xs1 remove { e => e % 2 != 0 }
     val ys2 = xs4 remove { e => e < 5 }
     assertEquals("check_remove", 3, ys1.length + ys2.length)
-  }
-  {
-    val ys1 = xs1 union xs4
-    val ys2 = xs3 union xs5
-    assertEquals("check_union", 10, ys1.length + ys2.length)
   }
   {
     val ys1 = xs1 zip xs2
@@ -96,7 +151,7 @@ object Test2 extends TestCase("t0468") with Assert {
     val xs2 = List(0)
 
     val ys1 = xs1 ::: List(4)
-    assertEquals("check_+", List(1, 2, 3, 4), ys1)
+    assertEquals("check_:::", List(1, 2, 3, 4), ys1)
 
     val ys2 = ys1 - 4
     assertEquals("check_-", xs1, ys2)

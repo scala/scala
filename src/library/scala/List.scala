@@ -11,7 +11,7 @@
 
 package scala
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, LinkedHashMap}
 import annotation.tailrec
 import Predef._
 
@@ -1239,33 +1239,80 @@ sealed abstract class List[+A] extends Seq[A] with Product {
     b.toList
   }
 
-  /** Computes the union of this list and the given list
-   *  <code>that</code>.
+  /** <p>
+   *    Computes the multiset union of this list and the given list
+   *    <code>that</code>. For example:
+   *  </p><pre>
+   *    <b>val</b> xs = List(1, 1, 2)
+   *    <b>val</b> ys = List(1, 2, 2, 3)
+   *    println(xs union ys)  // prints "List(1, 1, 2, 1, 2, 2, 3)"
+   *    println(ys union xs)  // prints "List(1, 2, 2, 3, 1, 1, 2)"
+   *  </pre>
    *
    *  @param that the list of elements to add to the list.
-   *  @return     a list without doubles containing the elements of this
+   *  @return     a list containing the elements of this
    *              list and those of the given list <code>that</code>.
    */
-  def union[B >: A](that: List[B]): List[B] = {
-    val b = new ListBuffer[B]
-    var these = this
-    while (!these.isEmpty) {
-      if (!that.contains(these.head)) b += these.head
-      these = these.tail
+  def union[B >: A](that: List[B]): List[B] = this ++ that
+
+  /** <p>
+   *    Computes the multiset intersection between this list and the
+   *    given list <code>that</code>; the intersection contains <i>m</i>
+   *    copies of an element contained in both lists, where <i>m</i> is
+   *    the smaller of the number of times the element appears in this
+   *    list or in <code>that</code>. For example:
+   *  </p><pre>
+   *    <b>val</b> xs = List(1, 1, 2)
+   *    <b>val</b> ys = List(3, 2, 2, 1)
+   *    println(xs intersect ys)  // prints "List(1, 2)"
+   *    println(ys intersect xs)  // prints "List(2, 1)"
+   *  </pre>
+   *
+   *  @param that the list to intersect.
+   *  @return     the list of elements contained both in this list and
+   *              in the given list <code>that</code>.
+   */
+  def intersect[B >: A](that: List[B]): List[B] = {
+    val occ = new LinkedHashMap[B, Int]
+    that foreach (e => if (occ contains e) occ(e) += 1 else occ(e) = 1)
+    val buf = new ListBuffer[B]
+    for (e <- this if occ contains e) {
+      if (occ(e) > 0) { occ(e) -= 1; buf += e }
     }
-    b.prependToList(that)
+    buf.toList
   }
 
-  /** Computes the difference between this list and the given list
-   *  <code>that</code>.
+  /** <p>
+   *    Computes the multiset difference between this list and the
+   *    given list <code>that</code>. If an element appears more
+   *    than once in both lists, the difference contains <i>m</i> copies
+   *    of that element, where <i>m</i> is the difference between the
+   *    number of times the element appears in this list and the number
+   *    of times it appears in <code>that</code>. For example:
+   *  </p><pre>
+   *    <b>val</b> xs = List(1, 1, 2)
+   *    <b>val</b> ys = List(1, 2, 2, 3)
+   *    println(xs diff ys)  // prints "List(1)"
+   *    println(xs -- ys)    // prints "List()"
+   *  </pre>
    *
    *  @param that the list of elements to remove from this list.
-   *  @return     this list without the elements of the given list
-   *              <code>that</code>.
-   *  @deprecated use <code>--</code> instead
+   *  @return     the list of elements contained only in this list plus
+   *              <i>m</i> copies of each element present in both lists,
+   *              where <i>m</i> is defined as above.
    */
-  @deprecated
-  def diff[B >: A](that: List[B]): List[B] = this -- that
+  def diff[B >: A](that: List[B]): List[B] = {
+    val occ = new LinkedHashMap[B, Int]
+    that foreach (e => if (occ contains e) occ(e) += 1 else occ(e) = 1)
+    val buf = new ListBuffer[B]
+    for (e <- this) {
+      if (occ contains e)
+        if (occ(e) > 0) occ(e) -= 1
+        else buf += e
+      else buf += e
+    }
+    buf.toList
+  }
 
   /** Computes the difference between this list and the given list
    *  <code>that</code>.
@@ -1320,15 +1367,6 @@ sealed abstract class List[+A] extends Seq[A] with Product {
     foreach(f(_).foreach(buf += _))
     buf.toList
   }
-
-  /** Computes the intersection between this list and the given list
-   *  <code>that</code>.
-   *
-   *  @param that the list to intersect.
-   *  @return     the list of elements contained both in this list and
-   *              in the given list <code>that</code>.
-   */
-  def intersect[B >: A](that: List[B]): List[B] = filter(x => that contains x)
 
   /** Removes redundant elements from the list. Uses the method <code>==</code>
    *  to decide if two elements are identical.
