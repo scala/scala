@@ -65,7 +65,6 @@ class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutabl
     var h = key.hashCode;
     h ^= ((h >>> 20) ^ (h >>> 12));
     h ^ (h >>> 7) ^ (h >>> 4);
-    h
   }
 
   private[this] def growTable = {
