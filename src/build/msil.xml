@@ -100,13 +100,15 @@ MSIL BUILD
          will then have a new timestamp, and be recompiled -->
     <mkdir dir="${build-msil-src.dir}"/>
     <copy todir="${build-msil-src.dir}" overwrite="true">
-      <fileset dir="${src.dir}/library">
+      <!-- FIXME: include new collection library -->
+      <fileset dir="${src.dir}/library" excludes="scalax/**">
         <and>
           <present present="srconly" targetdir="${src.dir}/dotnet-library"/>
           <different targetdir="${build-msil-src.dir}" ignoreFileTimes="true"/>
         </and>
       </fileset>
-      <fileset dir="${src.dir}/dotnet-library">
+      <!-- FIXME: include new collection library -->
+      <fileset dir="${src.dir}/dotnet-library" excludes="scalax/**">
         <different targetdir="${build-msil-src.dir}" ignoreFileTimes="true"/>
       </fileset>
     </copy>
