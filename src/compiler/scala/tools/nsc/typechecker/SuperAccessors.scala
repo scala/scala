@@ -311,16 +311,18 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     }
 
     /** Adapt the given argument in call to protected member.
-     *  Adaptation means adding a cast to a path-dependent type, for instance
+     *  Adaptation may add a cast to a path-dependent type, for instance
      *
      *  def prot$m(obj: Outer)(x: Inner) = obj.m(x.asInstanceOf[obj.Inner]).
      *
      *  such a cast might be necessary when m expects an Outer.this.Inner (the
      *  outer of 'obj' and 'x' have to be the same). This restriction can't be
      *  expressed in the type system (but is implicit when defining method m).
+     *
+     *  Also, it calls using repeated parameters are ascribed with ': _*'
      */
     private def makeArg(v: Symbol, obj: Symbol, expectedTpe: Type): Tree = {
-      val res = Ident(v)
+      var res: Tree = Ident(v)
       val sym = obj.tpe.typeSymbol
       var ownerClass: Symbol = NoSymbol
 
@@ -330,13 +332,15 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           if (sym.isSubClass(ownerClass)) true else false
         case _ => false
       }
+      if (v.info.typeSymbol == definitions.RepeatedParamClass) {
+        res = gen.wildcardStar(res)
+        log("adapted to wildcard star: " + res)
+      }
       if (isDependentType) {
         val preciseTpe = expectedTpe.asSeenFrom(singleType(NoPrefix, obj), ownerClass) //typeRef(singleType(NoPrefix, obj), v.tpe.symbol, List())
         TypeApply(Select(res, definitions.Any_asInstanceOf),
                   List(TypeTree(preciseTpe)))
-      }
-      else
-        res
+      } else res
     }
 
     /** For a path-dependent type, return the this type. */
