@@ -506,6 +506,8 @@ abstract class GenICode extends SubComponent  {
           if (guardResult) {
             tmp = ctx.makeLocal(tree.pos, tree.tpe, "tmp")
           }
+          def duplicateFinalizer =
+            (new DuplicateLabels(ctx.labels.keySet))(ctx, finalizer)
 
           var handlers = for (CaseDef(pat, _, body) <- catches.reverse)
             yield pat match {
@@ -515,11 +517,11 @@ abstract class GenICode extends SubComponent  {
                   val ctx1 = genLoad(body, ctx, kind);
                   if (guardResult) {
                     ctx1.bb.emit(STORE_LOCAL(tmp))
-                    val ctx2 = genLoad(finalizer, ctx1, UNIT)
+                    val ctx2 = genLoad(duplicateFinalizer, ctx1, UNIT)
                     ctx2.bb.emit(LOAD_LOCAL(tmp))
                     ctx2
                   } else
-                    genLoad(finalizer, ctx1, UNIT);
+                    genLoad(duplicateFinalizer, ctx1, UNIT);
                 })
 
               case Ident(nme.WILDCARD) => (definitions.ThrowableClass, kind, {
@@ -528,11 +530,11 @@ abstract class GenICode extends SubComponent  {
                   val ctx1 = genLoad(body, ctx, kind)
                   if (guardResult) {
                     ctx1.bb.emit(STORE_LOCAL(tmp))
-                    val ctx2 = genLoad(finalizer, ctx1, UNIT)
+                    val ctx2 = genLoad(duplicateFinalizer, ctx1, UNIT)
                     ctx2.bb.emit(LOAD_LOCAL(tmp))
                     ctx2
                   } else
-                    genLoad(finalizer, ctx1, UNIT)
+                    genLoad(duplicateFinalizer, ctx1, UNIT)
                 })
 
               case Bind(name, _) =>
@@ -544,17 +546,16 @@ abstract class GenICode extends SubComponent  {
                     val ctx1 = genLoad(body, ctx, kind);
                     if (guardResult) {
                       ctx1.bb.emit(STORE_LOCAL(tmp))
-                      val ctx2 = genLoad(finalizer, ctx1, UNIT)
+                      val ctx2 = genLoad(duplicateFinalizer, ctx1, UNIT)
                       ctx2.bb.emit(LOAD_LOCAL(tmp))
                       ctx2
                     } else
-                      genLoad(finalizer, ctx1, UNIT);
+                      genLoad(duplicateFinalizer, ctx1, UNIT);
                 })
             }
 
-          val duppedFinalizer = (new DuplicateLabels(ctx.labels.keySet))(ctx, finalizer)
           if (settings.debug.value)
-            log("Duplicated finalizer: " + duppedFinalizer)
+            log("Duplicated finalizer: " + duplicateFinalizer)
           ctx.Try(
             bodyCtx => {
               generatedType = kind; //toTypeKind(block.tpe);
@@ -562,11 +563,11 @@ abstract class GenICode extends SubComponent  {
               if (guardResult) {
                 val tmp = ctx1.makeLocal(tree.pos, tree.tpe, "tmp")
                 ctx1.bb.emit(STORE_LOCAL(tmp))
-                val ctx2 = genLoad(duppedFinalizer, ctx1, UNIT)
+                val ctx2 = genLoad(duplicateFinalizer, ctx1, UNIT)
                 ctx2.bb.emit(LOAD_LOCAL(tmp))
                 ctx2
               } else
-                genLoad(duppedFinalizer, ctx1, UNIT)
+                genLoad(duplicateFinalizer, ctx1, UNIT)
             },
             handlers,
             finalizer)
