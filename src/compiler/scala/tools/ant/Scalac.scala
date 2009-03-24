@@ -18,7 +18,7 @@ import org.apache.tools.ant.types.{Path, Reference}
 import org.apache.tools.ant.util.{FileUtils, GlobPatternMapper,
                                   SourceFileScanner}
 
-import scala.tools.nsc.{Global, Settings, CompilerCommand}
+import scala.tools.nsc.{Global, Settings}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 
 /** <p>
@@ -156,9 +156,6 @@ class Scalac extends MatchingTask {
   /** Prints out the files being compiled by the scalac ant task
    *  (not only the number of files). */
   protected var scalacDebugging: Boolean = false
-
-  /** An optional file containing compiler arguments */
-  protected var argfile: Option[File] = None
 
 /*============================================================================*\
 **                             Properties setters                             **
@@ -352,10 +349,6 @@ class Scalac extends MatchingTask {
 
   def setAssemrefs(input: String) { assemrefs = Some(input) }
 
-
-  /** Sets the <code>argfile</code> attribute. */
-  def setArgfile(input: File) { argfile = Some(input) }
-
 /*============================================================================*\
 **                             Properties getters                             **
 \*============================================================================*/
@@ -464,7 +457,6 @@ class Scalac extends MatchingTask {
 
   protected def newSettings(error: String=>Unit): Settings =
     new Settings(error)
-
   protected def newGlobal(settings: Settings, reporter: Reporter) =
     new Global(settings, reporter)
 
@@ -474,7 +466,7 @@ class Scalac extends MatchingTask {
 \*============================================================================*/
 
   /** Initializes settings and source files */
-  protected def initialize: (Settings, List[String], Boolean) = {
+  protected def initialize: (Settings, List[File], Boolean) = {
     // Tests if all mandatory attributes are set and valid.
     if (origin.isEmpty) error("Attribute 'srcdir' is not set.")
     if (getOrigin.isEmpty) error("Attribute 'srcdir' is not set.")
@@ -491,7 +483,7 @@ class Scalac extends MatchingTask {
     // Scans source directories to build up a compile lists.
     // If force is false, only files were the .class file in destination is
     // older than the .scala file will be used.
-    var sourceFiles: List[String] =
+    val sourceFiles: List[File] =
       for {
         val originDir <- getOrigin
         val originFiles <- {
@@ -529,18 +521,12 @@ class Scalac extends MatchingTask {
       }
       yield {
         log(originFiles, Project.MSG_DEBUG)
-        nameToFile(originDir)(originFiles).toString
+        nameToFile(originDir)(originFiles)
       }
 
     // Builds-up the compilation settings for Scalac with the existing Ant
     // parameters.
     val settings = newSettings(error)
-    if (!argfile.isEmpty) {
-      log("Using argument file: @" +argfile.get)
-      javaOnly = false // not quite correct, depends on content of argfile
-      val command = new CompilerCommand(List("@"+ argfile.get), settings, error, true)
-      sourceFiles = sourceFiles ::: command.files
-    }
     settings.outdir.value = asString(destination.get)
     if (!classpath.isEmpty)
       settings.classpath.value = asString(getClasspath)
@@ -586,7 +572,7 @@ class Scalac extends MatchingTask {
     // Compiles the actual code
     val compiler = newGlobal(settings, reporter)
     try {
-      (new compiler.Run).compile(sourceFiles)
+      (new compiler.Run).compile(sourceFiles.map (_.toString))
      }
      catch {
       case exception: Throwable if (exception.getMessage ne null) =>

@@ -32,10 +32,15 @@ class ScalacFork extends MatchingTask with TaskArgs {
     jvmArgs = Some(input)
   }
 
+  def setArgfile(input: File) {
+    argfile = Some(input)
+  }
+
   private var sourceDir: Option[File] = None
   private var failOnError: Boolean = true
   private var timeout: Option[Long] = None
   private var jvmArgs: Option[String] = None
+  private var argfile: Option[File] = None
 
   override def execute() {
     if (compilerPath.isEmpty) error("Mandatory attribute 'compilerpath' is not set.")
@@ -61,9 +66,12 @@ class ScalacFork extends MatchingTask with TaskArgs {
         destinationDir.get,
         mapper
       ) map (new File(sourceDir.get, _))
-    if (includedFiles.size > 0) {
-      log("Compiling "+ includedFiles.size +" file"+
+    if (includedFiles.size > 0 || argfile.isDefined) {
+      if (includedFiles.size > 0)
+        log("Compiling "+ includedFiles.size +" file"+
             (if (includedFiles.size > 1) "s" else "") +" to "+ destinationDir.get)
+      if (argfile.isDefined)
+        log("Using argument file: @"+ argfile.get)
 
       val java = new Java(this) // set this as owner
       java.setFork(true)
@@ -76,6 +84,8 @@ class ScalacFork extends MatchingTask with TaskArgs {
         java.createArg().setValue(arg)
       for (file <- includedFiles)
         java.createArg().setFile(file)
+      for (af <- argfile)
+        java.createArg().setValue("@"+ af)
 
       log(java.getCommandLine.getCommandline.mkString("", " ", ""), Project.MSG_VERBOSE)
       val res = java.executeJava()

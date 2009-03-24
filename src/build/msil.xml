@@ -132,27 +132,16 @@ MSIL BUILD
     <mkdir dir="${build-msil.dir}/library"/>
     <!-- <ilasm srcdir="${msil.dir}/il" includes="*.msil" outputfile="${msil.dir}/lib/predef.dll"/> -->
 
-    <pathconvert property="msil.lib.files" pathsep=" ">
-      <fileset dir="${build-msil-src.dir}">
-        <include name="**/*.scala"/>
-        <exclude name="scala/ScalaObject.scala"/>
-      </fileset>
-    </pathconvert>
-
-    <echo message="${msil.lib.files}" file="${build-msil-src.dir}/libfiles"/>
-
     <scalac
         srcdir="${build-msil-src.dir}"
         destdir="${build-msil.dir}/library"
         target="msil"
         assemname="predef.msil"
-        assemrefs="${lib.dir}"
-        argfile="${build-msil-src.dir}/libfiles">
-      <exclude name="**"/> <!-- files are in @libfiles -->
+        assemrefs="${lib.dir}">
+      <include name="**/*.scala"/>
+      <exclude name="scala/ScalaObject.scala"/>
     </scalac>
     <stopwatch name="msil.lib.timer" action="total"/>
-
-    <delete file="${build-msil-src.dir}/libfiles"/>
   </target>
 
   <target name="msil.done" depends="msil.lib"/>
