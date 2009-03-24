@@ -1748,7 +1748,7 @@ trait Trees {
         for (stat <- body)
           if (stat.isDef) erasedSyms.addEntry(stat.symbol)
         super.traverse(tree)
-      case _: DefTree =>
+      case _: DefTree | Function(_, _) =>
         erasedSyms.addEntry(tree.symbol)
         tree.symbol = NoSymbol
         tree.tpe = null
