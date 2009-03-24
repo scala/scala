@@ -729,6 +729,17 @@ abstract class GenJVM extends SubComponent {
       def conflictsIn(cls: Symbol, name: Name) =
         cls.info.nonPrivateMembers.exists(_.name == name)
 
+      /** List of parents shared by both class and module, so we don't add forwarders
+       *  for methods defined there - bug #1804 */
+      lazy val commonParents = {
+        val cps = module.info.baseClasses
+        val mps = module.linkedClassOfModule.info.baseClasses
+        cps.filter(mps contains)
+      }
+      /* the setter doesn't show up in members so we inspect the name */
+      def conflictsInCommonParent(name: Name) =
+        commonParents exists { cp => name startsWith (cp.name + "$") }
+
       /** Should method `m' get a forwarder in the mirror class? */
       def shouldForward(m: Symbol): Boolean =
         atPhase(currentRun.picklerPhase) (
@@ -740,7 +751,9 @@ abstract class GenJVM extends SubComponent {
           && !(m.owner == definitions.AnyClass)
           && !module.isSubClass(module.linkedClassOfModule)
           && !conflictsIn(definitions.ObjectClass, m.name)
-          && !conflictsIn(module.linkedClassOfModule, m.name))
+          && !conflictsInCommonParent(m.name)
+          && !conflictsIn(module.linkedClassOfModule, m.name)
+        )
 
       assert(module.isModuleClass)
       if (settings.debug.value)
