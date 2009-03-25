@@ -163,11 +163,25 @@ PACKED MSIL BUILD (MSIL-PACK)
       <fileset dir="${build-msil.dir}/library" includes="**/*.msil"/>
     </pathconvert>
     <property name="msil-pack-lib.file" value="${build-msil-pack.dir}/lib/predef.dll"/>
-    <!-- spawn="true" will prevent the ilasm command from printing anything to
-         the console. remove for debugging -->
-    <exec executable="${ilasm.cmd}"
-          vmlauncher="no">
-      <!--  spawn="true" -->
+
+    <!--
+        NOTE: Command line length hell on windows. The maximal command line length on
+        Windows XP or later is 8191 characters (http://support.microsoft.com/kb/830473).
+
+        BUT: this only applies for processes executed directly in the shell, which is NOT
+        the case by default when using ant's "exec" command; this one uses the Java VM's
+        execution facilities which allow larger command lines. Testing gives:
+          - Windows XP: 32768 characters
+
+        When the parameter (vmlauncher="false") is specified, the <exec/> command uses
+        the udnerlying shell, and the smaller limit applies.
+
+        The call to ilasm produces lots of output, which could be avoided using
+        (spawn="true"). This seems to work wrt to the character limit (32768), but is
+        probably not the best solution since it's incompatible with (failonerror),
+        and does not produce any output at all.
+    -->
+    <exec executable="${ilasm.cmd}" failonerror="true">
       <arg line="${ilasm.args}${msil-pack-lib.file} ${ilasm.infiles}"/>
     </exec>
   </target>

@@ -216,6 +216,9 @@ LOCAL REFERENCE BUILD (LOCKER)
       target="1.5" source="1.5">
         <compilerarg line="${javac.args}"/>
     </javac>
+    <!-- NOTE: Potential problem with maximal command line length on Windows
+         (32768 characters for XP, since executed with Java's "exec"). See
+         src/build/msil.xml for more details. -->
     <scalacfork
       destdir="${build-locker.dir}/classes/library"
       compilerpathref="starr.classpath"
