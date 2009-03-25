@@ -103,6 +103,9 @@ class Reaction extends Runnable {
       }
     } finally {
       Actor.tl.set(saved)
+      this.a = null
+      this.f = null
+      this.msg = null
     }
   }
 
