@@ -47,8 +47,13 @@ object LongMap{
 
 
   private[immutable] case object Nil extends LongMap[Nothing]{
-    override def equals(that : Any) = this eq that.asInstanceOf[AnyRef]
+    override def equals(that : Any) = that match {
+      case (that : AnyRef) if (this eq that) => true;
+      case (that : LongMap[_]) => false; // The only empty LongMaps are eq Nil
+      case that => super.equals(that);
+    }
   };
+
   private[immutable] case class Tip[+T](key : Long, value : T) extends LongMap[T]{
     def withValue[S](s : S) =
       if (s.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) this.asInstanceOf[LongMap.Tip[S]];
