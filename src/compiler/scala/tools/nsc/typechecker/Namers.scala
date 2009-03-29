@@ -996,7 +996,7 @@ trait Namers { self: Analyzer =>
             else
               "illegal combination of modifiers: " +
               Flags.flagsToString(flag1) + " and " + Flags.flagsToString(flag2) +
-              " for: " + sym + Flags.flagsToString(sym.rawflags));
+              " for: " + sym);
       }
 
       if (sym.hasFlag(IMPLICIT) && !sym.isTerm)
@@ -1034,6 +1034,7 @@ trait Namers { self: Analyzer =>
       checkNoConflict(PRIVATE, PROTECTED)
       checkNoConflict(PRIVATE, OVERRIDE)
       /* checkNoConflict(PRIVATE, FINAL) // can't do this because FINAL also means compile-time constant */
+      checkNoConflict(ABSTRACT, FINAL)  // bug #1833
       checkNoConflict(DEFERRED, FINAL)
     }
   }
