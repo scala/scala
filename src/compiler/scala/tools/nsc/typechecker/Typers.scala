@@ -2105,11 +2105,10 @@ trait Typers { self: Analyzer =>
           }
         }
 
+      lazy val annotationError = AnnotationInfo(ErrorType, Nil, Nil)
       typedConstr match {
         case t @ Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
-          if ((t.tpe==null) || t.tpe.isErroneous) {
-            AnnotationInfo(ErrorType, List(), List())
-          }
+          if ((t.tpe==null) || t.tpe.isErroneous) annotationError
           else {
             val annType = tpt.tpe
 
@@ -2155,9 +2154,12 @@ trait Typers { self: Analyzer =>
             if (annType.typeSymbol.hasFlag(JAVA) && settings.target.value == "jvm-1.4") {
               context.warning (annot.constr.pos, "Java annotation will not be emitted in classfile unless you use the '-target:jvm-1.5' option")
             }
-            if (attrError) AnnotationInfo(ErrorType, List(), List())
+            if (attrError) annotationError
             else AnnotationInfo(annType, constrArgs, nvPairs)
           }
+        // XXX what should the default case be doing here?
+        // see bug #1837 for code which induced a MatchError
+        case _  => annotationError
       }
     }
 
