@@ -428,7 +428,10 @@ trait Infer {
     }
 
     def isWeaklyCompatible(tp: Type, pt: Type): Boolean =
-      pt.typeSymbol == UnitClass || isCompatible(tp, pt)
+      pt.typeSymbol == UnitClass || // can perform unit coercion
+      isCompatible(tp, pt) ||
+      tp.isInstanceOf[MethodType] && // can perform implicit () instantiation
+      tp.paramTypes.length == 0 && isCompatible(tp.resultType, pt)
 
     def isCoercible(tp: Type, pt: Type): Boolean = false
 
@@ -1341,6 +1344,7 @@ trait Infer {
     def inferExprAlternative(tree: Tree, pt: Type): Unit = tree.tpe match {
       case OverloadedType(pre, alts) => tryTwice {
         var alts1 = alts filter (alt => isWeaklyCompatible(pre.memberType(alt), pt))
+        //println("trying "+alts1+(alts1 map (_.tpe))+(alts1 map (_.locationString))+" for "+pt)
         val applicable = alts1
         var secondTry = false
         if (alts1.isEmpty) {
