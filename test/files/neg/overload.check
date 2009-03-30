@@ -1,7 +1,7 @@
-overload.scala:10: error: erroneous reference to overloaded definition,
-most specific definition is: method f in class C of type (int)Unit,
-yet alternative definition   method f in class D of type (Any)Unit
-is defined in a subclass
+overload.scala:10: error: ambiguous reference to overloaded definition,
+both method f in class D of type (Any)Unit
+and  method f in class C of type (int)Unit
+match argument types (Int)
   (new D).f(1)
           ^
 one error found

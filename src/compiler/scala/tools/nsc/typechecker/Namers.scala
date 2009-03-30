@@ -286,6 +286,16 @@ trait Namers { self: Analyzer =>
       else if (owner.isTerm || owner.isPackageClass) List()
       else applicableTypeParams(owner.owner) ::: owner.typeParams
 
+    /** If no companion object for clazz exists yet, create one by applying `creator` to
+     *  class definition tree.
+     *  @return the companion object symbol.
+     */
+    def ensureCompanionObject(tree: ClassDef, creator: ClassDef => Tree): Symbol = {
+      val m: Symbol = context.scope.lookupWithContext(tree.name.toTermName)(context.owner).filter(! _.isSourceMethod)
+      if (m.isModule && inCurrentScope(m) && (inIDE || currentRun.compiles(m))) m
+      else enterSyntheticSym(creator(tree))
+    }
+
     def enterSym(tree: Tree): Context = try {
 
       def finishWith(tparams: List[TypeDef]) {
@@ -317,10 +327,7 @@ trait Namers { self: Analyzer =>
             tree.symbol = enterClassSymbol(tree)
             finishWith(tparams)
             if ((mods.flags & CASE) != 0) {
-              var m: Symbol = context.scope.lookupWithContext(tree.name.toTermName)(context.owner).filter(! _.isSourceMethod)
-              if (!(m.isModule && inCurrentScope(m) && (inIDE || currentRun.compiles(m)))) {
-                m = enterSyntheticSym(caseModuleDef(tree))
-              }
+              val m = ensureCompanionObject(tree, caseModuleDef)
               caseClassOfModuleClass(m.moduleClass) = tree
             }
           case tree @ ModuleDef(mods, name, _) =>

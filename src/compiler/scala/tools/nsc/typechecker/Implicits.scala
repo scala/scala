@@ -105,7 +105,7 @@ self: Analyzer =>
   }
 
   /** A sentinel indicating no implicit was found */
-  val NoImplicitInfo = new ImplicitInfo(null, null, null)
+  val NoImplicitInfo = new ImplicitInfo(null, NoType, NoSymbol)
 
   /** A class that sets up an implicit search. For more info, see comments for `inferImplicit`.
    *  @param tree             The tree for which the implicit needs to be inserted.
@@ -463,20 +463,16 @@ self: Analyzer =>
         // Also check that applicable infos that did not get selected are not
         // in (a companion object of) a subclass of (a companion object of) the class
         // containing the winning info.
+        /*
         for (alt <- applicable.keySet) {
-          /** Is (the companion class of) `sym1` a subclass of (the compansion class of) `sym2`? */
-          def isSubClassOrObject(sym1: Symbol, sym2: Symbol): Boolean =
-            sym1 != NoSymbol && (sym1 isSubClass sym2) ||
-            sym1.isModuleClass && isSubClassOrObject(sym1.linkedClassOfClass, sym2) ||
-            sym2.isModuleClass && isSubClassOrObject(sym1, sym2.linkedClassOfClass)
-
-          if (alt.sym.owner != best.sym.owner && isSubClassOrObject(alt.sym.owner, best.sym.owner)) {
+          if (isProperSubClassOrObject(alt.sym.owner, best.sym.owner)) {
             ambiguousImplicitError(best, alt,
                                    "most specific definition is:",
                                    "yet alternative definition  ",
                                    "is defined in a subclass.\n Both definitions ")
           }
         }
+        */
         applicable(best)
       }
     } // end searchImplicit

@@ -1437,7 +1437,7 @@ A type's typeSymbol should never be inspected directly.
 */
 
     override def bounds: TypeBounds =
-      if (sym.isAbstractType) transform(thisInfo.bounds).asInstanceOf[TypeBounds] // ??? seems to be doing asSeenFrom twice
+      if (sym.isAbstractType) thisInfo.bounds // transform(thisInfo.bounds).asInstanceOf[TypeBounds] // ??? seems to be doing asSeenFrom twice
       else super.bounds
 
     override def parents: List[Type] = {

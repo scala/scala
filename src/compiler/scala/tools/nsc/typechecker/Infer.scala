@@ -675,11 +675,11 @@ trait Infer {
      *  @param ftpe2 ...
      *  @return      ...
      */
-    def isMoreSpecific(ftpe1: Type, ftpe2: Type): Boolean = ftpe1 match {
+    def isAsSpecific(ftpe1: Type, ftpe2: Type): Boolean = ftpe1 match {
       case OverloadedType(pre, alts) =>
-        alts exists (alt => isMoreSpecific(pre.memberType(alt), ftpe2))
+        alts exists (alt => isAsSpecific(pre.memberType(alt), ftpe2))
       case et: ExistentialType =>
-        et.withTypeVars(isMoreSpecific(_, ftpe2)) // !!! why isStrictly?
+        et.withTypeVars(isAsSpecific(_, ftpe2)) // !!! why isStrictly?
       case MethodType(formals @ (x :: xs), _) =>
         isApplicable(List(), ftpe2, formals, WildcardType)
       case PolyType(_, MethodType(formals @ (x :: xs), _)) =>
@@ -689,29 +689,58 @@ trait Infer {
       case _ =>
         ftpe2 match {
           case OverloadedType(pre, alts) =>
-            alts forall (alt => isMoreSpecific(ftpe1, pre.memberType(alt)))
+            alts forall (alt => isAsSpecific(ftpe1, pre.memberType(alt)))
           case et: ExistentialType =>
-            et.withTypeVars(isMoreSpecific(ftpe1, _))
+            et.withTypeVars(isAsSpecific(ftpe1, _))
           case MethodType(_, _) | PolyType(_, MethodType(_, _)) =>
             true
           case _ =>
-            isMoreSpecificValueType(ftpe1, ftpe2, List(), List())
+            isAsSpecificValueType(ftpe1, ftpe2, List(), List())
         }
     }
 /*
     def isStrictlyMoreSpecific(ftpe1: Type, ftpe2: Type): Boolean =
-      ftpe1.isError || isMoreSpecific(ftpe1, ftpe2) &&
-      (!isMoreSpecific(ftpe2, ftpe1) ||
+      ftpe1.isError || isAsSpecific(ftpe1, ftpe2) &&
+      (!isAsSpecific(ftpe2, ftpe1) ||
        !ftpe1.isInstanceOf[OverloadedType] && ftpe2.isInstanceOf[OverloadedType] ||
        phase.erasedTypes && covariantReturnOverride(ftpe1, ftpe2))
 */
-    def isStrictlyMoreSpecific(ftpe1: Type, ftpe2: Type, sym1: Symbol, sym2: Symbol): Boolean =
-      ftpe1.isError || isMoreSpecific(ftpe1, ftpe2) &&
-      (!isMoreSpecific(ftpe2, ftpe1) ||
-       (sym1.owner isSubClass sym2.owner) && (sym1.owner != sym2.owner) ||
-       !ftpe1.isInstanceOf[OverloadedType] && ftpe2.isInstanceOf[OverloadedType] ||
-       phase.erasedTypes && covariantReturnOverride(ftpe1, ftpe2))
+    /** Is sym1 (or its companion class in case it is a module) a subclass of
+     *  sym2 (or its companion class in case it is a module)?
+     */
+    def isProperSubClassOrObject(sym1: Symbol, sym2: Symbol): Boolean =
+      sym1 != sym2 && sym1 != NoSymbol && (sym1 isSubClass sym2) ||
+      sym1.isModuleClass && isProperSubClassOrObject(sym1.linkedClassOfClass, sym2) ||
+      sym2.isModuleClass && isProperSubClassOrObject(sym1, sym2.linkedClassOfClass)
 
+    /** is symbol `sym1` defined in a proper subclass of symbol `sym2`?
+     */
+    def isInProperSubClassOrObject(sym1: Symbol, sym2: Symbol) =
+      sym2 == NoSymbol || isProperSubClassOrObject(sym1.owner, sym2.owner)
+
+    def isStrictlyMoreSpecific(ftpe1: Type, ftpe2: Type, sym1: Symbol, sym2: Symbol): Boolean =
+      ftpe1.isError || {
+        val specificCount = (if (isAsSpecific(ftpe1, ftpe2)) 1 else 0) -
+                            (if (isAsSpecific(ftpe2, ftpe1) &&
+                                 // todo: move to isAsSepecific test
+                                 (!ftpe2.isInstanceOf[OverloadedType] || ftpe1.isInstanceOf[OverloadedType]) &&
+                                 (!phase.erasedTypes || covariantReturnOverride(ftpe1, ftpe2))) 1 else 0)
+        val subClassCount = (if (isInProperSubClassOrObject(sym1, sym2)) 1 else 0) -
+                            (if (isInProperSubClassOrObject(sym2, sym1)) 1 else 0)
+        specificCount + subClassCount > 0
+      }
+/*
+      ftpe1.isError || {
+        if (isAsSpecific(ftpe1, ftpe2))
+          (!isAsSpecific(ftpe2, ftpe1) ||
+           isProperSubClassOrObject(sym1.owner, sym2.owner) ||
+           !ftpe1.isInstanceOf[OverloadedType] && ftpe2.isInstanceOf[OverloadedType] ||
+           phase.erasedTypes && covariantReturnOverride(ftpe1, ftpe2))
+        else
+          !isAsSpecific(ftpe2, ftpe1) &&
+          isProperSubClassOrObject(sym1.owner, sym2.owner)
+      }
+*/
     private def covariantReturnOverride(ftpe1: Type, ftpe2: Type): Boolean = (ftpe1, ftpe2) match {
       case (MethodType(_, rtpe1), MethodType(_, rtpe2)) =>
         rtpe1 <:< rtpe2 || rtpe2.typeSymbol == ObjectClass
@@ -719,11 +748,11 @@ trait Infer {
         false
     }
 
-    private def isMoreSpecificValueType(tpe1: Type, tpe2: Type, undef1: List[Symbol], undef2: List[Symbol]): Boolean = (tpe1, tpe2) match {
+    private def isAsSpecificValueType(tpe1: Type, tpe2: Type, undef1: List[Symbol], undef2: List[Symbol]): Boolean = (tpe1, tpe2) match {
       case (PolyType(tparams1, rtpe1), _) =>
-        isMoreSpecificValueType(rtpe1, tpe2, undef1 ::: tparams1, undef2)
+        isAsSpecificValueType(rtpe1, tpe2, undef1 ::: tparams1, undef2)
       case (_, PolyType(tparams2, rtpe2)) =>
-        isMoreSpecificValueType(tpe1, rtpe2, undef1, undef2 ::: tparams2)
+        isAsSpecificValueType(tpe1, rtpe2, undef1, undef2 ::: tparams2)
       case _ =>
         existentialAbstraction(undef1, tpe1) <:< existentialAbstraction(undef2, tpe2)
     }
@@ -1291,16 +1320,18 @@ trait Infer {
 
     /* -- Overload Resolution ---------------------------------------------- */
 
+/*
     def checkNotShadowed(pos: Position, pre: Type, best: Symbol, eligible: List[Symbol]) =
       if (!phase.erasedTypes)
         for (alt <- eligible) {
-          if (alt.owner != best.owner && alt.owner.isSubClass(best.owner))
+          if (isProperSubClassOrObject(alt.owner, best.owner))
             error(pos,
                   "erroneous reference to overloaded definition,\n"+
                   "most specific definition is: "+best+best.locationString+" of type "+pre.memberType(best)+
                   ",\nyet alternative definition   "+alt+alt.locationString+" of type "+pre.memberType(alt)+
                   "\nis defined in a subclass")
         }
+*/
 
     /** Assign <code>tree</code> the symbol and type of the alternative which
      *  matches prototype <code>pt</code>, if it exists.
@@ -1310,6 +1341,7 @@ trait Infer {
     def inferExprAlternative(tree: Tree, pt: Type): Unit = tree.tpe match {
       case OverloadedType(pre, alts) => tryTwice {
         var alts1 = alts filter (alt => isWeaklyCompatible(pre.memberType(alt), pt))
+        val applicable = alts1
         var secondTry = false
         if (alts1.isEmpty) {
           alts1 = alts
@@ -1346,9 +1378,9 @@ trait Infer {
             setError(tree)
           }
         } else {
-          val applicable = alts1 filter (alt =>
-            global.typer.infer.isWeaklyCompatible(pre.memberType(alt), pt))
-          checkNotShadowed(tree.pos, pre, best, applicable)
+//          val applicable = alts1 filter (alt =>
+//            global.typer.infer.isWeaklyCompatible(pre.memberType(alt), pt))
+//          checkNotShadowed(tree.pos, pre, best, applicable)
           tree.setSymbol(best).setType(pre.memberType(best))
         }
       }
@@ -1387,7 +1419,7 @@ trait Infer {
             setError(tree)
             ()
           } else {
-            checkNotShadowed(tree.pos, pre, best, applicable)
+//            checkNotShadowed(tree.pos, pre, best, applicable)
             tree.setSymbol(best).setType(pre.memberType(best))
           }
         }

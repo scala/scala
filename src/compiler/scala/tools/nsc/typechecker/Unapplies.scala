@@ -133,11 +133,16 @@ trait Unapplies { self: Analyzer =>
 
   /** The module corresponding to a case class; without any member definitions
    */
-  def caseModuleDef(cdef: ClassDef): ModuleDef = atPos(cdef.pos) {
-    var parents = List(gen.scalaScalaObjectConstr)
-    if (!(cdef.mods hasFlag ABSTRACT) && cdef.tparams.isEmpty && constrParamss(cdef).length == 1)
-      parents = gen.scalaFunctionConstr(constrParamss(cdef).head map (_.tpt),
-                                        Ident(cdef.name)) :: parents
+  def caseModuleDef(cdef: ClassDef): ModuleDef =
+    companionModuleDef(
+      cdef,
+      if (!(cdef.mods hasFlag ABSTRACT) && cdef.tparams.isEmpty && constrParamss(cdef).length == 1)
+        List(gen.scalaFunctionConstr(constrParamss(cdef).head map (_.tpt), Ident(cdef.name)),
+             gen.scalaScalaObjectConstr)
+      else
+        List(gen.scalaScalaObjectConstr))
+
+  def companionModuleDef(cdef: ClassDef, parents: List[Tree]): ModuleDef = atPos(cdef.pos) {
     ModuleDef(
       Modifiers(cdef.mods.flags & AccessFlags | SYNTHETIC, cdef.mods.privateWithin),
       cdef.name.toTermName,
