@@ -91,6 +91,9 @@ object ClassfileConstants {
   final val VOID_TAG   = 'V'
   final val TVAR_TAG   = 'T'
   final val ANNOTATION_TAG = '@'
+  final val SCALA_NOTHING = "scala.runtime.Nothing$"
+  final val SCALA_NULL = "scala.runtime.Null$"
+
 
   // tags describing the type of newarray
   final val T_BOOLEAN = 4

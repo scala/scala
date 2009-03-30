@@ -15,6 +15,7 @@ import scala.collection.mutable.{Map, HashMap, HashSet}
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.util.{Position, NoPosition}
+import scala.tools.nsc.symtab.classfile.ClassfileConstants._
 
 import ch.epfl.lamp.fjbg._
 
@@ -219,7 +220,7 @@ abstract class GenJVM extends SubComponent {
       clasz.fields foreach genField
       clasz.methods foreach genMethod
 
-      addGenericSignature(jclass, c.symbol)
+      addGenericSignature(jclass, c.symbol, c.symbol.owner)
       addAnnotations(jclass, c.symbol.attributes)
       emitClass(jclass, c.symbol)
 
@@ -408,10 +409,12 @@ abstract class GenJVM extends SubComponent {
       nattr
     }
 
-    def addGenericSignature(jmember: JMember, sym: Symbol) {
+    def addGenericSignature(jmember: JMember, sym: Symbol, owner: Symbol) {
       if (!sym.hasFlag(Flags.LIFTED |
                        Flags.EXPANDEDNAME | Flags.SYNTHETIC) && settings.target.value == "jvm-1.5") {
-        erasure.javaSig(sym) match {
+        val memberTpe = atPhase(currentRun.erasurePhase)(owner.info.memberInfo(sym))
+//        println("sym: " + sym.fullNameString + " : " + memberTpe + " sym.info: " + sym.info)
+        erasure.javaSig(sym, memberTpe) match {
           case Some(sig) =>
             val index = jmember.getConstantPool().addUtf8(sig).toShort
             if (settings.debug.value && settings.verbose.value)
@@ -531,7 +534,7 @@ abstract class GenJVM extends SubComponent {
         jclass.addNewField(flags | attributes,
                            javaName(f.symbol),
                            javaType(f.symbol.tpe));
-      addGenericSignature(jfield, f.symbol)
+      addGenericSignature(jfield, f.symbol, clasz.symbol)
       addAnnotations(jfield, f.symbol.attributes)
     }
 
@@ -598,7 +601,7 @@ abstract class GenJVM extends SubComponent {
           genLocalVariableTable(m, jcode);
       }
 
-      addGenericSignature(jmethod, m.symbol)
+      addGenericSignature(jmethod, m.symbol, clasz.symbol)
       val (excs, others) = splitAnnotations(m.symbol.attributes, ThrowsAttr)
       addExceptionsAttribute(jmethod, excs)
       addAnnotations(jmethod, others)
@@ -735,7 +738,7 @@ abstract class GenJVM extends SubComponent {
       addRemoteException(mirrorMethod, m)
       // only add generic signature if the method is concrete; bug #1745
       if (!m.hasFlag(Flags.DEFERRED))
-        addGenericSignature(mirrorMethod, m)
+        addGenericSignature(mirrorMethod, m, module)
 
       val (throws, others) = splitAnnotations(m.attributes, ThrowsAttr)
       addExceptionsAttribute(mirrorMethod, throws)
@@ -1628,9 +1631,9 @@ abstract class GenJVM extends SubComponent {
                         !sym.hasFlag(Flags.JAVA)) "$" else "";
 
       if (sym == definitions.NothingClass)
-        return "scala.runtime.Nothing$"
+        return javaName(definitions.RuntimeNothingClass)
       else if (sym == definitions.NullClass)
-        return "scala.runtime.Null$"
+        return javaName(definitions.RuntimeNullClass)
 
       if (sym.isClass && !sym.rawowner.isPackageClass && !sym.isModuleClass) {
         innerClasses = innerClasses + sym;

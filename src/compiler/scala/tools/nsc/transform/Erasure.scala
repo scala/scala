@@ -156,7 +156,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     UnitClass -> VOID_TAG
   )
 
-  def javaSig(sym: Symbol): Option[String] = atPhase(currentRun.erasurePhase) {
+  /** The Java signature of type 'info', for symbol sym. The symbol is used to give the right return
+   *  type for constructors.
+   */
+  def javaSig(sym: Symbol, info: Type): Option[String] = atPhase(currentRun.erasurePhase) {
 
     def jsig(tp: Type): String = jsig2(false, List(), tp)
 
@@ -194,6 +197,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             jsig(ObjectClass.tpe)
           else if (sym == UnitClass)
             jsig(BoxedUnitClass.tpe)
+          else if (sym == NothingClass)
+            jsig(RuntimeNothingClass.tpe)
+          else if (sym == NullClass)
+            jsig(RuntimeNullClass.tpe)
           else if (isValueClass(sym))
             tagOfClass(sym).toString
           else if (sym.isClass)
@@ -238,10 +245,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           else jsig(etp)
       }
     }
-    if (needsJavaSig(sym.info)) {
+    if (needsJavaSig(info)) {
       try {
         //println("Java sig of "+sym+" is "+jsig2(true, List(), sym.info))//DEBUG
-        Some(jsig2(true, List(), sym.info))
+        Some(jsig2(true, List(), info))
       } catch {
         case ex: UnknownSig => None
       }

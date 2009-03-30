@@ -64,7 +64,10 @@ abstract class ClosureElimination extends SubComponent {
         case (LOAD_LOCAL(x), STORE_LOCAL(y)) =>
         	if (x eq y) Some(Nil) else None
 
-        case (LOAD_LOCAL(_), DROP(_)) =>
+//        case (STORE_LOCAL(x), LOAD_LOCAL(y)) if (x == y) =>
+//          Some(List(DUP(x.kind), STORE_LOCAL(x)))
+
+        case (LOAD_LOCAL(_), DROP(_)) | (DUP(_), DROP(_)) =>
           Some(Nil)
 
         case (BOX(t1), UNBOX(t2)) if (t1 == t2) =>
