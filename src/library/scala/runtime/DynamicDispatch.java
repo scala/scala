@@ -30,13 +30,13 @@ public class DynamicDispatch {
      *
      * ATM, they are not yet available in the JVM.
      */
-    public static bootstrapInvokeDynamic(CallSite cs, Object... args) {
+    public static Object bootstrapInvokeDynamic(CallSite cs, Object... args) {
         println(cs);
 
         MethodHandle mh = MethodHandles.findVirtual(cs.callerClass(),
                                                     cs.name(),
                                                     cs.type());
         cs.setTarget(mh);
-        return mh(args)
+        return mh(args);
     }
 }
