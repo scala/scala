@@ -493,7 +493,7 @@ abstract class GenICode extends SubComponent  {
           ctx1.cleanups = oldcleanups
 
           if (saved) ctx1.bb.emit(LOAD_LOCAL(tmp))
-          adapt(returnedKind, ctx.method.returnType, ctx, tree.pos)
+          adapt(returnedKind, ctx1.method.returnType, ctx1, tree.pos)
           ctx1.bb.emit(RETURN(ctx.method.returnType), tree.pos)
           ctx1.bb.enterIgnoreMode
           generatedType = expectedType
