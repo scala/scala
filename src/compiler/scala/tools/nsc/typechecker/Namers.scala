@@ -1003,6 +1003,8 @@ trait Namers { self: Analyzer =>
         context.error(sym.pos, "`implicit' modifier can be used only for values, variables and methods")
       if (sym.hasFlag(IMPLICIT) && sym.owner.isPackageClass && !inIDE)
         context.error(sym.pos, "`implicit' modifier cannot be used for top-level objects")
+      if (sym.hasFlag(SEALED) && !sym.isClass)
+        context.error(sym.pos, "`sealed' modifier can be used only for classes")
       if (sym.hasFlag(ABSTRACT) && !sym.isClass)
         context.error(sym.pos, "`abstract' modifier can be used only for classes; " +
           "\nit should be omitted for abstract members")
