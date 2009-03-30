@@ -161,6 +161,28 @@ object Test extends Application {
     }
   }
 
+  // see #1589
+  object NestedLazyVals extends Application {
+    lazy val x = {
+      lazy val y = { println("forcing y"); 42; }
+      println("forcing x")
+      y
+    }
+
+    val x1 = 5 + { lazy val y = 10 ; y }
+
+    println(x)
+    println(x1)
+  }
+
+  trait TNestedLazyVals {
+    lazy val x = { lazy val y = 42; y }
+  }
+
+  object ONestedLazyVals extends Application with TNestedLazyVals {
+    println(x)
+  }
+
   println(testLazy)
   testLazy32
   testLazy33
@@ -169,4 +191,6 @@ object Test extends Application {
   testRecVal
   new CtorBlock
   println(testReturnInLazyVal)
+  NestedLazyVals
+  ONestedLazyVals
 }

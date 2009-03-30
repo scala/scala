@@ -82,3 +82,8 @@ forced lazy val t at n = 5
 First 5 elements of ones: List(1, 1, 1, 1, 1)
 I am initialized when the constructor is run
 false
+forcing x
+forcing y
+42
+15
+42

@@ -611,7 +611,7 @@ abstract class Mixin extends InfoTransform {
        *  where bitmap$n is an int value acting as a bitmap of initialized values. It is
        *  the 'n' is (offset / 32), the MASK is (1 << (offset % 32)).
        */
-      def mkLazyDef(clazz: Symbol, init: Tree, retVal: Tree, offset: Int): Tree = {
+      def mkLazyDef(clazz: Symbol, init: List[Tree], retVal: Tree, offset: Int): Tree = {
 
         val bitmapSym = bitmapFor(clazz, offset)
 
@@ -620,12 +620,12 @@ abstract class Mixin extends InfoTransform {
           If(mkTest(clazz, mask, bitmapSym, true),
              gen.mkSynchronized(gen.mkAttributedThis(clazz),
                If(mkTest(clazz, mask, bitmapSym, true),
-                  Block(List(init,
-                        mkSetFlag(clazz, offset)),
+                  Block(init :::
+                        List(mkSetFlag(clazz, offset)),
                         Literal(Constant(()))),
                  EmptyTree)),
              EmptyTree)
-        localTyper.typed(atPos(init.pos)(Block(List(result), retVal)))
+        localTyper.typed(atPos(init.head.pos)(Block(List(result), retVal)))
       }
 
       def mkCheckedAccessor(clazz: Symbol, retVal: Tree, offset: Int, pos: Position): Tree = {
@@ -644,15 +644,21 @@ abstract class Mixin extends InfoTransform {
        *  the class constructor is changed to set the initialized bits.
        */
       def addCheckedGetters(clazz: Symbol, stats: List[Tree]): List[Tree] = {
+        def findLazyAssignment(stats: List[Tree]): Tree =
+          (stats find {
+            case Assign(lhs, _) if lhs.symbol.hasFlag(LAZY) => true
+            case _ => false
+          }).get // if there's no assignment then it's a bug and we crash
+
         val stats1 = for (stat <- stats; sym = stat.symbol) yield stat match {
           case DefDef(mods, name, tp, vp, tpt, rhs)
             if sym.hasFlag(LAZY) && rhs != EmptyTree && !clazz.isImplClass =>
               assert(fieldOffset.isDefinedAt(sym))
               val rhs1 = if (sym.tpe.resultType.typeSymbol == definitions.UnitClass)
-                mkLazyDef(clazz, rhs, Literal(()), fieldOffset(sym))
+                mkLazyDef(clazz, List(rhs), Literal(()), fieldOffset(sym))
               else {
-                val Block(List(assignment), res) = rhs
-                mkLazyDef(clazz, assignment, Select(This(clazz), res.symbol), fieldOffset(sym))
+                val Block(stats, res) = rhs
+                mkLazyDef(clazz, stats, Select(This(clazz), res.symbol), fieldOffset(sym))
               }
               copy.DefDef(stat, mods, name, tp, vp, tpt, rhs1)
 
@@ -788,13 +794,13 @@ abstract class Mixin extends InfoTransform {
                     if (sym.hasFlag(LAZY) && sym.isGetter) {
                       val rhs1 =
                         if (sym.tpe.resultType.typeSymbol == definitions.UnitClass)
-                          mkLazyDef(clazz, Apply(staticRef(initializer(sym)), List(gen.mkAttributedThis(clazz))), Literal(()), fieldOffset(sym))
+                          mkLazyDef(clazz, List(Apply(staticRef(initializer(sym)), List(gen.mkAttributedThis(clazz)))), Literal(()), fieldOffset(sym))
                         else {
                           val assign = atPos(sym.pos) {
                             Assign(Select(This(sym.accessed.owner), sym.accessed) /*gen.mkAttributedRef(sym.accessed)*/ ,
                                 Apply(staticRef(initializer(sym)), gen.mkAttributedThis(clazz) :: Nil))
                           }
-                          mkLazyDef(clazz, assign, Select(This(clazz), sym.accessed), fieldOffset(sym))
+                          mkLazyDef(clazz, List(assign), Select(This(clazz), sym.accessed), fieldOffset(sym))
                         }
                       rhs1
                     } else if (sym.getter(sym.owner).tpe.resultType.typeSymbol == definitions.UnitClass) {

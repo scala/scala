@@ -72,8 +72,8 @@ abstract class LazyVals extends Transform {
               case Block(_, _) if !added =>
                 added = true
                 typed(addBitmapDefs(sym, stat))
-              case ValDef(mods, name, tpt, b @ Block(_, _)) =>
-                typed(copy.ValDef(stat, mods, name, tpt, addBitmapDefs(stat.symbol, b)))
+              case ValDef(mods, name, tpt, rhs) =>
+                typed(copy.ValDef(stat, mods, name, tpt, addBitmapDefs(stat.symbol, rhs)))
               case _ =>
                 stat
             }
@@ -84,21 +84,26 @@ abstract class LazyVals extends Transform {
     }
 
     /** Add the bitmap definitions to the rhs of a method definition.
-     *  If the rhs has been tail-call trasnformed, insert the bitmap
+     *  If the rhs has been tail-call transformed, insert the bitmap
      *  definitions inside the top-level label definition, so that each
      *  iteration has the lazy values un-initialized. Otherwise add them
      *  at the very beginning of the method.
      */
     private def addBitmapDefs(methSym: Symbol, rhs: Tree): Tree = {
+      def prependStats(stats: List[Tree], tree: Tree): Block = tree match {
+        case Block(stats1, res) => Block(stats ::: stats1, res)
+        case _ => Block(stats, tree)
+      }
+
       val bmps = bitmaps(methSym) map { b => ValDef(b, Literal(Constant(0))) }
       if (bmps.isEmpty) rhs else rhs match {
         case Block(assign, l @ LabelDef(name, params, rhs1))
           if (name.toString.equals("_" + methSym.name)
               && List.forall2(params.tail, methSym.tpe.paramTypes) { (ident, tpe) => ident.tpe == tpe }) =>
             val sym = l.symbol
-            Block(assign, copy.LabelDef(l, name, params, typed(Block(bmps, rhs1))))
+            Block(assign, copy.LabelDef(l, name, params, typed(prependStats(bmps, rhs1))))
 
-        case _ => Block(bmps, rhs)
+        case _ => prependStats(bmps, rhs)
       }
     }
 
