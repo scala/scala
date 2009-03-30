@@ -592,6 +592,25 @@ abstract class CleanUp extends Transform {
           )
         }
 
+        def getClass(q: Tree): Tree =
+          Apply(Select(q, nme.getClass_), List())
+
+      if (settings.refinementMethodDispatch.value == "invoke-dynamic") {
+/*        val guardCallSite: Tree = {
+          val cachedClass = addStaticVariableToClass("cachedClass", definitions.ClassClass.tpe, EmptyTree)
+          val tmpVar = currentOwner.newVariable(ad.pos, unit.fresh.newName(ad.pos, "x")).setInfo(definitions.AnyRefClass.tpe)
+          atPos(ad.pos)(Block(List(
+            ValDef(tmpVar, transform(qual))),
+            If(Apply(Select(gen.mkAttributedRef(cachedClass), nme.EQ), List(getClass(Ident(tmpVar)))),
+               Block(List(Assign(gen.mkAttributedRef(cachedClass), getClass(Ident(tmpVar)))),
+                     copy.ApplyDynamic(ad, Ident(tmpVar), transformTrees(params))),
+               EmptyTree)))
+        }
+        //println(guardCallSite)
+*/
+        localTyper.typed(copy.ApplyDynamic(ad, transform(qual), transformTrees(params)))
+      } else {
+
         /* ### BODY OF THE TRANSFORMATION -> remember we're in case ad@ApplyDynamic(qual, params) ### */
 
         /* This creates the tree that does the reflective call (see general comment
@@ -659,7 +678,7 @@ abstract class CleanUp extends Transform {
         /* We return the dynamic call tree, after making sure no other
          * clean-up transformation are to be applied on it. */
         transform(t)
-
+        }
         /* ### END OF DYNAMIC APPLY TRANSFORM ### */
 
       /* Some cleanup transformations add members to templates (classes, traits, etc).

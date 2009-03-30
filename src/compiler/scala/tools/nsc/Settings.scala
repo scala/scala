@@ -673,7 +673,7 @@ trait ScalacSettings
   val stop          = PhasesSetting     ("-Ystop", "Stop after phase")
   val refinementMethodDispatch =
                       ChoiceSetting     ("-Ystruct-dispatch", "Selects dispatch method for structural refinement method calls",
-                        List("no-cache", "mono-cache", "poly-cache"), "poly-cache") .
+                        List("no-cache", "mono-cache", "poly-cache", "invoke-dynamic"), "poly-cache") .
                         withHelpSyntax("-Ystruct-dispatch:<method>")
   val Xwarndeadcode = BooleanSetting    ("-Ywarn-dead-code", "Emit warnings for dead code")
 

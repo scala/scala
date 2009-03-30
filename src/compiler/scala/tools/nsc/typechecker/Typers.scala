@@ -3373,9 +3373,10 @@ trait Typers { self: Analyzer =>
           typedApply(fun, args)
 
         case ApplyDynamic(qual, args) =>
+          val reflectiveCalls = !(settings.refinementMethodDispatch.value == "invoke-dynamic")
           val qual1 = typed(qual, AnyRefClass.tpe)
-          val args1 = List.mapConserve(args)(arg => typed(arg, AnyRefClass.tpe))
-          copy.ApplyDynamic(tree, qual1, args1) setType AnyRefClass.tpe
+          val args1 = List.mapConserve(args)(arg => if (reflectiveCalls) typed(arg, AnyRefClass.tpe) else typed(arg))
+          copy.ApplyDynamic(tree, qual1, args1) setType (if (reflectiveCalls) AnyRefClass.tpe else tree.symbol.info.resultType)
 
         case Super(qual, mix) =>
           typedSuper(qual, mix)

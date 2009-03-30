@@ -846,6 +846,7 @@ abstract class GenICode extends SubComponent  {
           }
 
         case ApplyDynamic(qual, args) =>
+          ctx.clazz.bootstrapClass = Some("scala.runtime.DynamicDispatch")
           val ctx1 = genLoad(qual, ctx, ANY_REF_CLASS)
           genLoadArguments(args, tree.symbol.info.paramTypes, ctx1)
           ctx1.bb.emit(CALL_METHOD(tree.symbol, InvokeDynamic), tree.pos)

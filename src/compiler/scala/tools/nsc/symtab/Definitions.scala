@@ -127,6 +127,13 @@ trait Definitions {
       def methodCache_find = getMember(MethodCacheClass, nme.find_)
       def methodCache_add = getMember(MethodCacheClass, nme.add_)
     lazy val EmptyMethodCacheClass: Symbol = getClass("scala.runtime.EmptyMethodCache")
+
+    // invoke dynamic support
+    lazy val LinkageModule: Symbol = getModule("java.dyn.Linkage")
+      lazy val Linkage_invalidateCallerClass = getMember(LinkageModule, "invalidateCallerClass")
+    lazy val DynamicDispatchClass: Symbol = getModule("scala.runtime.DynamicDispatch")
+      lazy val DynamicDispatch_DontSetTarget: Symbol = getMember(DynamicDispatchClass, "DontSetTarget")
+
     lazy val PredefModule: Symbol = getModule("scala.Predef")
       def Predef_classOf = getMember(PredefModule, nme.classOf)
       def Predef_classOfType(classType: Type): Type =

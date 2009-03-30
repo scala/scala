@@ -72,7 +72,10 @@ abstract class GenJVM extends SubComponent {
     val BoxesRunTime = "scala.runtime.BoxesRunTime"
 
     val StringBuilderType = new JObjectType(StringBuilderClass)
-    val toStringType = new JMethodType(JObjectType.JAVA_LANG_STRING, JType.EMPTY_ARRAY)
+    val toStringType      = new JMethodType(JObjectType.JAVA_LANG_STRING, JType.EMPTY_ARRAY)
+    val MethodTypeType    = new JObjectType("java.dyn.MethodType")
+    val JavaLangClassType = new JObjectType("java.lang.Class")
+    val MethodHandleType  = new JObjectType("java.dyn.MethodHandle")
 
     // Scala attributes
     val SerializableAttr = definitions.SerializableAttr
@@ -191,7 +194,7 @@ abstract class GenJVM extends SubComponent {
       if (jclass.getName.endsWith("$"))
         jclass.addAttribute(getMarkerAttr(jclass))
 
-      if (isStaticModule(c.symbol) || serialVUID != None) {
+      if (isStaticModule(c.symbol) || serialVUID != None || clasz.bootstrapClass.isDefined) {
         if (isStaticModule(c.symbol))
             addModuleInstanceField;
         addStaticInit(jclass)
@@ -212,6 +215,7 @@ abstract class GenJVM extends SubComponent {
         }
       }
 
+      if (clasz.bootstrapClass.isDefined) jclass.setBootstrapClass(clasz.bootstrapClass.get)
       clasz.fields foreach genField
       clasz.methods foreach genMethod
 
@@ -675,7 +679,25 @@ abstract class GenJVM extends SubComponent {
         case None => ()
       }
 
+      if (clasz.bootstrapClass.isDefined) emitBootstrapMethodInstall(clinit)
+
       clinit.emitRETURN()
+    }
+
+    /** Emit code that installs a boostrap method for invoke dynamic. It installs the default
+     *  method, found in scala.runtime.DynamicDispatch.
+     */
+    def emitBootstrapMethodInstall(jcode: JExtendedCode) {
+      jcode.emitPUSH(jclass.getType.asInstanceOf[JReferenceType])
+      jcode.emitPUSH(new JObjectType("scala.runtime.DynamicDispatch"))
+      jcode.emitPUSH("bootstrapInvokeDynamic")
+      jcode.emitGETSTATIC("java.dyn.Linkage", "BOOTSTRAP_METHOD_TYPE", MethodTypeType)
+      jcode.emitDUP
+      jcode.emitINVOKESTATIC("scala.Console", "println", new JMethodType(JType.VOID, Array(JObjectType.JAVA_LANG_OBJECT)))
+      jcode.emitINVOKESTATIC("java.dyn.MethodHandles", "findStatic",
+                              new JMethodType(MethodHandleType, Array(JavaLangClassType, JObjectType.JAVA_LANG_STRING, MethodTypeType)))
+      jcode.emitINVOKESTATIC("java.dyn.Linkage", "registerBootstrapMethod",
+                              new JMethodType(JType.VOID, Array(JavaLangClassType, MethodHandleType)))
     }
 
     /** Add a forwarder for method m */
