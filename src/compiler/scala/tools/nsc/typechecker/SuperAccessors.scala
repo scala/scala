@@ -395,8 +395,13 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
      * classes, this has to be signaled as error.
      */
     private def needsProtectedAccessor(sym: Symbol, pos: Position): Boolean = {
+      def errorRestriction(msg: String) {
+        unit.error(pos, "Implementation restriction: " + msg)
+      }
+
       val res = /* settings.debug.value && */
       ((sym hasFlag PROTECTED)
+       && !sym.owner.isPackageClass
        && (!validCurrentOwner || !(currentOwner.enclClass.thisSym isSubClass sym.owner))
        && (enclPackage(sym.owner) != enclPackage(currentOwner))
        && (enclPackage(sym.owner) == enclPackage(sym.accessBoundary(sym.owner))))
@@ -405,8 +410,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         val host = hostForAccessorOf(sym, currentOwner.enclClass)
         if (host.thisSym != host) {
           if (host.thisSym.tpe.typeSymbol.hasFlag(JAVA))
-            unit.error(pos, "Implementation restriction: " + currentOwner.enclClass + " accesses protected "
-                            + sym + " from self type " + host.thisSym.tpe)
+            errorRestriction(currentOwner.enclClass + " accesses protected " + sym
+                             + " from self type " + host.thisSym.tpe)
           false
         } else res
       } else res
