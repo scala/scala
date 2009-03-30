@@ -45,13 +45,13 @@ object ScalaDoc {
       }
       try {
         object compiler extends Global(command.settings, reporter) {
-	  override protected def computeInternalPhases() {
-	    phasesSet += syntaxAnalyzer
-	    phasesSet += analyzer.namerFactory
-	    phasesSet += analyzer.typerFactory
-	  }
-	  override val onlyPresentation = true
-	}
+          override protected def computeInternalPhases() {
+            phasesSet += syntaxAnalyzer
+            phasesSet += analyzer.namerFactory
+            phasesSet += analyzer.typerFactory
+          }
+          override def onlyPresentation = true
+        }
         if (reporter.hasErrors) {
           reporter.flush()
           return
@@ -76,7 +76,7 @@ object ScalaDoc {
             val generator = new DefaultDocDriver {
               lazy val global: compiler.type = compiler
               lazy val settings = docSettings
-	    }
+            }
             generator.process(run.units)
             reporter.printSummary()
         }
@@ -93,5 +93,4 @@ object ScalaDoc {
     process(args)
     exit(if (reporter.hasErrors) 1 else 0)
   }
-
 }
