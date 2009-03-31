@@ -618,6 +618,7 @@ trait ScalacSettings
   val checkInit     = BooleanSetting    ("-Xcheckinit", "Add runtime checks on field accessors. Uninitialized accesses result in an exception being thrown.")
   val noassertions  = BooleanSetting    ("-Xdisable-assertions", "Generate no assertions and assumptions")
   val Xexperimental = BooleanSetting    ("-Xexperimental", "Enable experimental extensions")
+  val forwarders    = BooleanSetting    ("-Xforwarders", "Generate static forwarders in mirror classes")
   val future        = BooleanSetting    ("-Xfuture", "Turn on future language features")
   val genPhaseGraph = StringSetting     ("-Xgenerate-phase-graph", "file", "Generate the phase graphs (outputs .dot files) to fileX.dot", "")
   val XlogImplicits = BooleanSetting    ("-Xlog-implicits", "Show more info on why some implicits are not applicable")

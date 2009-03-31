@@ -1,4 +1,0 @@
-A.java:3: error: illegal cyclic reference involving object A
-import static test.A.STATE.UNDEF;
-       ^
-one error found

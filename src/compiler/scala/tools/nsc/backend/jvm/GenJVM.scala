@@ -209,10 +209,17 @@ abstract class GenJVM extends SubComponent {
         }
       }
       else {
+        val lmoc = c.symbol.linkedModuleOfClass
         // add static forwarders if there are no name conflicts; see bugs #363 and #1735
-        if (c.symbol.linkedModuleOfClass != NoSymbol && !c.symbol.hasFlag(Flags.INTERFACE)) {
-          log("Adding forwarders to existing class " + c.symbol + " found in module " + c.symbol.linkedModuleOfClass)
-          addForwarders(jclass, c.symbol.linkedModuleOfClass.moduleClass)
+        if (lmoc != NoSymbol && !c.symbol.hasFlag(Flags.INTERFACE)) {
+          // forwarders were creating many issues, see #1795 for instance; so for now
+          // they are only enabled if -Xforwarders is supplied to scalac...
+          if (settings.forwarders.value) {
+            log("Adding forwarders to existing class " + c.symbol + " found in module " + lmoc)
+            addForwarders(jclass, lmoc.moduleClass)
+          }
+          // ...but we special case main so at least ticket #363 can continue to work.
+          else addForwarders(jclass, lmoc.moduleClass, _.name == nme.main)
         }
       }
 
@@ -227,6 +234,7 @@ abstract class GenJVM extends SubComponent {
       if (c.symbol hasAttribute BeanInfoAttr)
         genBeanInfoClass(c)
     }
+
 
     /**
      * Generate a bean info class that describes the given class.
@@ -748,9 +756,11 @@ abstract class GenJVM extends SubComponent {
     /** Add forwarders for all methods defined in `module' that don't conflict with
      *  methods in the companion class of `module'. A conflict arises when a method
      *  with the same name is defined both in a class and its companion object (method
-     *  signature is not taken into account).
+     *  signature is not taken into account).  If 3rd argument cond is supplied, only
+     *  symbols for which cond(sym) is true are given forwarders.
      */
-    def addForwarders(jclass: JClass, module: Symbol) {
+    def addForwarders(jclass: JClass, module: Symbol) { addForwarders(jclass, module, _ => true) }
+    def addForwarders(jclass: JClass, module: Symbol, cond: (Symbol) => Boolean) {
       def conflictsIn(cls: Symbol, name: Name) =
         cls.info.nonPrivateMembers.exists(_.name == name)
 
@@ -784,7 +794,7 @@ abstract class GenJVM extends SubComponent {
       if (settings.debug.value)
         log("Dumping mirror class for object: " + module);
 
-      for (m <- module.info.nonPrivateMembers; if shouldForward(m))
+      for (m <- module.info.nonPrivateMembers; if shouldForward(m) ; if cond(m))
         addForwarder(jclass, module, m)
     }
 
