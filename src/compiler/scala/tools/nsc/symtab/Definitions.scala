@@ -103,9 +103,6 @@ trait Definitions {
     var CodeModule: Symbol = _
       def Code_lift = getMember(CodeModule, nme.lift_)
     lazy val PartialFunctionClass: Symbol = getClass("scala.PartialFunction")
-    /*
-    lazy val ByNameFunctionClass: Symbol = getClass("scala.ByNameFunction")
-    */
     lazy val IterableClass: Symbol = getClass2("scala.Iterable", "scala.collection.Iterable")
       def Iterable_next = getMember(IterableClass, nme.next)
       def Iterable_hasNext = getMember(IterableClass, nme.hasNext)

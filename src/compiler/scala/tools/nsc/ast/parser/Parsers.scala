@@ -722,13 +722,6 @@ trait Parsers extends NewScanners with MarkupParsers {
           if (inToken == RPAREN) {
             inNextToken
             atPos(accept(ARROW)) { makeFunctionTypeTree(List(), typ(isPattern)) }
-          /* Not more used
-          } else if (inToken == ARROW) {
-            inNextToken
-            val t0 = typ(isPattern)
-            accept(RPAREN)
-            atPos(accept(ARROW)) { makeByNameFunctionTypeTree(t0, typ(isPattern)) }
-          */
           } else {
             val ts = types(isPattern, false, true)
             accept(RPAREN)
