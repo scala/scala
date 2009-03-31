@@ -425,14 +425,19 @@ trait JavaParsers extends JavaScanners {
           case _ =>
             // XXX both these checks are definitely necessary, which would
             // seem to indicate the empty package situation needs review
-            def isEmptyPkg() =
-              privateWithin == nme.EMPTY.toTypeName ||
-              privateWithin == nme.EMPTY_PACKAGE_NAME_tn
+            // def isEmptyPkg() =
+            //   privateWithin == nme.EMPTY.toTypeName ||
+            //   privateWithin == nme.EMPTY_PACKAGE_NAME_tn
             // XXX I think this test should just be "if (defaultAccess)"
             // but then many cases like pos5/t1176 fail because scala code
             // with no package cannot access java code with no package.
-            if (defaultAccess && !isEmptyPkg)
-              flags |= Flags.PROTECTED    // package private
+            // if (defaultAccess && !isEmptyPkg)
+            //   flags |= Flags.PROTECTED    // package private
+
+            // my every attempt so far has left some combination of
+            // #1240, #1840, #1842, or other java/scala mixes failing.
+            // Reverting to original code, which means #1240 won't
+            // work but other variations should.
 
             return Modifiers(flags, privateWithin)
         }

@@ -219,7 +219,8 @@ abstract class GenJVM extends SubComponent {
             addForwarders(jclass, lmoc.moduleClass)
           }
           // ...but we special case main so at least ticket #363 can continue to work.
-          else addForwarders(jclass, lmoc.moduleClass, _.name == nme.main)
+          // XXX we would like to, but doing so induces #1795 as surely as adding them all.
+          // else addForwarders(jclass, lmoc.moduleClass, _.name == nme.main)
         }
       }
 
