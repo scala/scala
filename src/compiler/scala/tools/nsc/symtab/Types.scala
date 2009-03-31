@@ -1055,7 +1055,7 @@ trait Types {
           if (util.Statistics.enabled)
             compoundBaseTypeSeqCount += 1
           baseTypeSeqCache = undetBaseTypeSeq
-          baseTypeSeqCache = memo(compoundBaseTypeSeq(this/*typeSymbol, parents*/))(_.baseTypeSeq updateHead typeSymbol.tpe)
+          baseTypeSeqCache = memo(compoundBaseTypeSeq(this))(_.baseTypeSeq updateHead typeSymbol.tpe)
 //          println("normalizing baseTypeSeq of "+typeSymbol+"/"+parents+": "+baseTypeSeqCache)//DEBUG
           baseTypeSeqCache.normalize(parents)
 //          println("normalized baseTypeSeq of "+typeSymbol+"/"+parents+": "+baseTypeSeqCache)//DEBUG

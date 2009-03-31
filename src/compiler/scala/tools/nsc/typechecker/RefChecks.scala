@@ -436,7 +436,7 @@ abstract class RefChecks extends InfoTransform {
                      sym.isTerm && ((sym.isPrivateLocal || sym.isProtectedLocal) && !(escapedPrivateLocals contains sym)))
               state = AnyVariance
             else if (sym.isAliasType)
-              state = NoVariance
+              state = AnyVariance // was NoVariance, but now we always expand aliases.
             sym = sym.owner
           }
           state
@@ -453,7 +453,9 @@ abstract class RefChecks extends InfoTransform {
           case SingleType(pre, sym) =>
             validateVariance(pre, variance)
           case TypeRef(pre, sym, args) =>
-            if (sym.variance != NoVariance) {
+            if (sym.isAliasType)
+              validateVariance(tp.normalize, variance)
+            else if (sym.variance != NoVariance) {
               val v = relativeVariance(sym);
               if (v != AnyVariance && sym.variance != v * variance) {
                 //Console.println("relativeVariance(" + base + "," + sym + ") = " + v);//DEBUG

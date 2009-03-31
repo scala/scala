@@ -4,6 +4,7 @@
  */
 // $Id$
 
+
 package scala.tools.nsc.symtab
 
 import scala.collection.mutable.ListBuffer
@@ -98,8 +99,27 @@ trait Symbols {
     /** Does this symbol have an attribute of the given class? */
     def hasAttribute(cls: Symbol) = attributes exists { _.atp.typeSymbol == cls }
 
+    /** set when symbol has a modifier of the form private[X], NoSymbol otherwise.
+     *  Here's some explanation how privateWithin gets combined with access flags:
+     *
+     * PRIVATE    means class private, as in Java.
+     * PROTECTED  means protected as in Java, except that access within
+     *            the same package is not automatically allowed.
+     * LOCAL      should only be set with PRIVATE or PROTECTED.
+     *            It means that access is restricted to be from the same object.
+     *
+     * Besides these, there's the privateWithin field in Symbols which gives a visibility barrier,
+     * where privateWithin == NoSymbol means no barrier. privateWithin is incompatible with
+     * PRIVATE and LOCAL. If it is combined with PROTECTED, the two are additive. I.e.
+     * the symbol is then accessible from within the privateWithin region as well
+     * as from all subclasses. Here's a tanslation of Java's accessibility modifiers:
+     * Java private:   PRIVATE flag set, privateWithin == NoSymbol
+     * Java package:   no flag set, privateWithin == enclosing package
+     * Java protected:  PROTECTED flag set, privateWithin == enclosing package
+     * Java public:   no flag set, privateWithin == NoSymbol
+     */
     var privateWithin: Symbol = _
-      // set when symbol has a modifier of the form private[X], NoSymbol otherwise.
+
 
 // Creators -------------------------------------------------------------------
 
