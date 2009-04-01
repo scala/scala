@@ -13,8 +13,8 @@ package scala.tools.ant
 import java.io.File
 
 import org.apache.tools.ant.{BuildException, Project}
-import org.apache.tools.ant.taskdefs.MatchingTask
-import org.apache.tools.ant.types.{Path, Reference}
+import org.apache.tools.ant.taskdefs.{MatchingTask,Java}
+import org.apache.tools.ant.types.{Path, Reference, FileSet}
 import org.apache.tools.ant.util.{FileUtils, GlobPatternMapper,
                                   SourceFileScanner}
 
@@ -42,6 +42,7 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *    <li>encoding,</li>
  *    <li>target,</li>
  *    <li>force,</li>
+ *    <li>fork,</li>
  *    <li>logging,</li>
  *    <li>logphase,</li>
  *    <li>debuginfo,</li>
@@ -118,6 +119,8 @@ class Scalac extends MatchingTask {
   protected var sourcepath: Option[Path] = None
   /** The boot class path to use for this compilation. */
   protected var bootclasspath: Option[Path] = None
+  /** The path to use when finding scalac - *only used for forking!*  */
+  protected var compilerPath: Option[Path] = None
   /** The external extensions path to use for this compilation. */
   protected var extdirs: Option[Path] = None
 
@@ -129,6 +132,10 @@ class Scalac extends MatchingTask {
 
   /** Whether to force compilation of all files or not. */
   protected var force: Boolean = false
+  /** Whether to fork the execution of scalac */
+  protected var fork : Boolean = false
+  /** If forking, these are the arguments to the JVM */
+  protected var jvmArgs : Option[String] = None
   /** How much logging output to print. Either none (default),
     * verbose or debug. */
   protected var logging: Option[String] = None
@@ -189,6 +196,22 @@ class Scalac extends MatchingTask {
   def setClasspath(input: Path) {
     if (classpath.isEmpty) classpath = Some(input)
     else classpath.get.append(input)
+  }
+  /** Sets the <code>compilerPath</code> attribute. Used by Ant.
+   *  @param input The value of <code>compilerPath</code>. */
+  def setCompilerPath(input : Path) {
+    if(compilerPath.isEmpty) compilerPath = Some(input)
+    else compilerPath.get.append(input)
+  }
+
+  def createCompilerPath: Path = {
+    if (compilerPath.isEmpty) compilerPath = Some(new Path(getProject()))
+    compilerPath.get.createPath()
+  }
+  /** Sets the <code>compilerpathref</code> attribute. Used by Ant.
+   *  @param input The value of <code>compilerpathref</code>. */
+  def setCompilerPathRef(input: Reference) {
+    createCompilerPath.setRefid(input)
   }
 
   /** Sets the <code>classpath</code> as a nested classpath Ant parameter.
@@ -278,6 +301,17 @@ class Scalac extends MatchingTask {
   /** Sets the <code>force</code> attribute. Used by Ant.
    *  @param input The value for <code>force</code>. */
   def setForce(input: Boolean) { force = input }
+
+  /** Sets the <code>fork</code> attribute. Used by Ant.
+   *  @param input The value for <code>fork</code>. */
+  def setFork(input : Boolean) { fork = input }
+  /**
+   * Sets the <code>jvmargs</code> attribute.  Used by Ant.
+   * @param input The value for <code>jvmargs</code>
+   */
+  def setJvmargs(input : String) {
+    jvmArgs = Some(input)
+  }
 
   /** Sets the logging level attribute. Used by Ant.
    *  @param input The value for <code>logging</code>. */
@@ -560,12 +594,76 @@ class Scalac extends MatchingTask {
     (settings, sourceFiles, javaOnly)
   }
 
-  /** Performs the compilation. */
+
   override def execute() {
     val (settings, sourceFiles, javaOnly) = initialize
     if (sourceFiles.isEmpty || javaOnly) {
       return
     }
+    if(fork) {
+      //TODO - Error
+      executeFork(settings, sourceFiles)
+    } else {
+      executeInternal(settings, sourceFiles)
+    }
+  }
+  protected def executeFork(settings: Settings, sourceFiles : List[File]) {
+      val java = new Java(this) // set this as owner
+      java.setFork(true)
+      // using 'setLine' creates multiple arguments out of a space-separated string
+      for(args <- jvmArgs) {
+        java.createJvmarg().setLine(args)
+      }
+
+
+      //Determine the path for scalac!
+      val scalacPath = {
+        val path = new Path(getProject)
+        compilerPath match {
+          case Some(p) =>
+            //Use the user provided path
+            path.add(p)
+          case None =>
+	        //Pull classpath off our classloader
+	        //TODO - Allow user to override the compiler classpath
+	        import _root_.org.apache.tools.ant.AntClassLoader
+	        val classLoader = getClass.getClassLoader
+	        if(classLoader.isInstanceOf[AntClassLoader]) {
+	          path.add(new Path(getProject, classLoader.asInstanceOf[AntClassLoader].getClasspath))
+	        } else {
+	          throw new BuildException("Cannot determine default classpath for sclac, please specify one!")
+	        }
+        }
+        path
+      }
+      java.setClasspath(scalacPath)
+
+      java.setClassname("scala.tools.nsc.Main")
+      //if (!timeout.isEmpty) java.setTimeout(timeout.get)
+
+
+      //TODO - Determine when to pass args in file due to argument limits
+      for ( setting <- settings.allSettings;
+        arg <- setting.unparse
+      ){
+        java.createArg().setValue(arg)
+      }
+
+
+
+      for (file <- sourceFiles)
+        java.createArg().setFile(file)
+
+      log(java.getCommandLine.getCommandline.mkString("", " ", ""), Project.MSG_VERBOSE)
+      val res = java.executeJava()
+      if (failonerror && res != 0)
+        error("Compilation failed because of an internal compiler error;"+
+              " see the error output for details.")
+
+  }
+  /** Performs the compilation. */
+  protected def executeInternal(settings: Settings, sourceFiles : List[File]) {
+
 
     val reporter = new ConsoleReporter(settings)
 
