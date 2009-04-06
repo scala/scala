@@ -17,13 +17,16 @@ trait Definitions {
     def isDefinitionsInitialized = isInitialized
 
     // root packages and classes
-    lazy val RootPackage: Symbol = NoSymbol.newValue(NoPosition, nme.ROOTPKG)
-          .setFlag(FINAL | MODULE | PACKAGE | JAVA)
-          .setInfo(PolyType(List(), RootClass.tpe))
-    lazy val RootClass: Symbol = {
-      NoSymbol.newClass(NoPosition, nme.ROOT.toTypeName)
-        .setFlag(FINAL | MODULE | PACKAGE | JAVA).setInfo(rootLoader)
+    lazy val RootPackage: Symbol = {
+      val rp=NoSymbol.newValue(NoPosition, nme.ROOTPKG)
+        .setFlag(FINAL | MODULE | PACKAGE | JAVA)
+        .setInfo(PolyType(List(), RootClass.tpe))
+      RootClass.setSourceModule(rp)
+      rp
     }
+    lazy val RootClass: ModuleClassSymbol = NoSymbol.newModuleClass(NoPosition, nme.ROOT.toTypeName)
+          .setFlag(FINAL | MODULE | PACKAGE | JAVA).setInfo(rootLoader)
+
     lazy val EmptyPackage: Symbol = RootClass.newPackage(NoPosition, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL)
 
     lazy val EmptyPackageClass: Symbol = EmptyPackage.moduleClass
@@ -382,7 +385,7 @@ trait Definitions {
 
     private def getModuleOrClass(fullname: Name, module: Boolean): Symbol = {
       if (fullname == nme.NOSYMBOL) return NoSymbol
-      var sym = RootClass
+      var sym:Symbol = RootClass
       var i = 0
       var j = fullname.pos('.', i)
       while (j < fullname.length) {
