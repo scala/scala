@@ -64,7 +64,7 @@ class Stack[+A] extends Seq[A] {
    *  @param   elems      the element sequence.
    *  @return the stack with the new elements on top.
    */
-  def push[B >: A](elems: B*): Stack[B] = this ++ elems
+  def push[B >: A](elem1: B, elem2: B, elems: B*): Stack[B] = this.push(elem1).push(elem2) ++ elems
 
   /** Push all elements provided by the given iterable object onto
    *  the stack. The last element returned by the iterable object
