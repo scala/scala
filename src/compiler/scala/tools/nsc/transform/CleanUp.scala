@@ -567,8 +567,7 @@ abstract class CleanUp extends Transform {
           val sym = cdef.symbol
           // is this an anonymous function class?
           if (sym.hasFlag(SYNTHETIC) && (sym.name.toString.indexOf("anonfun") != -1) &&
-              !sym.hasAttribute(SerializableAttr) &&
-              sym.isSerializable)
+              !sym.hasAttribute(SerializableAttr))
             sym.attributes =
               AnnotationInfo(definitions.SerializableAttr.tpe, List(), List()) :: sym.attributes
         }
