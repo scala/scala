@@ -336,9 +336,9 @@ trait Symbols {
     // class C extends D( { class E { ... } ... } ). Here, E is a class local to a constructor
     final def isClassLocalToConstructor = isClass && hasFlag(INCONSTRUCTOR)
 
-    final def isAnonymousClass = isClass && (originalName startsWith nme.ANON_CLASS_NAME)
-      // startsWith necessary because name may grow when lifted and also because of anonymous function classes
-    def isAnonymousFunction = hasFlag(SYNTHETIC) && (originalName startsWith nme.ANON_FUN_NAME)
+    final def isAnonymousClass = isClass && (originalName startsWith nme.ANON_CLASS_NAME) // todo: find out why we can't use containsName here.
+    final def isAnonymousFunction = hasFlag(SYNTHETIC) && (name containsName nme.ANON_FUN_NAME)
+
     final def isRefinementClass = isClass && name == nme.REFINE_CLASS_NAME.toTypeName; // no lifting for refinement classes
     final def isModuleClass = isClass && hasFlag(MODULE)
     final def isPackageClass = isClass && hasFlag(PACKAGE)
@@ -376,6 +376,12 @@ trait Symbols {
     final def isOuterAccessor = {
       hasFlag(STABLE | SYNTHETIC) &&
       originalName == nme.OUTER
+    }
+
+    /** Is this symbol an accessor method for outer? */
+    final def isOuterField = {
+      hasFlag(SYNTHETIC) &&
+      originalName == nme.OUTER_LOCAL
     }
 
     /** Does this symbol denote a stable value? */
@@ -531,14 +537,6 @@ trait Symbols {
       if (isCovariant) 1
       else if (isContravariant) -1
       else 0
-
-    def isSerializable: Boolean = isMethod || {
-      val typeSym = info.typeSymbol
-      isValueType(typeSym) ||
-      typeSym.hasAttribute(SerializableAttr) ||
-      (info.baseClasses exists { bc => (bc hasAttribute SerializableAttr) || (bc == SerializableClass) }) ||
-      (isClass && info.members.forall(_.isSerializable))
-    }
 
 // Flags, owner, and name attributes --------------------------------------------------------------
 

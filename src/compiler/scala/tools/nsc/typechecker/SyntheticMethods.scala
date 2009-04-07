@@ -208,7 +208,7 @@ trait SyntheticMethods { self: Analyzer =>
       localTyper.typed(methodDef)
     }
 
-    def isSerializable(clazz: Symbol): Boolean =
+    def hasSerializableAnnotation(clazz: Symbol): Boolean =
       !clazz.getAttributes(definitions.SerializableAttr).isEmpty
 
     def readResolveMethod: Tree = {
@@ -314,11 +314,13 @@ trait SyntheticMethods { self: Analyzer =>
             ts += productElementMethod(accessors)
         }
 
-        if (clazz.isModuleClass && isSerializable(clazz)) {
+        if (clazz.isModuleClass && hasSerializableAnnotation(clazz)) {
           // If you serialize a singleton and then deserialize it twice,
           // you will have two instances of your singleton, unless you implement
           // the readResolve() method (see http://www.javaworld.com/javaworld/
           // jw-04-2003/jw-0425-designpatterns_p.html)
+          // question: should we do this for all serializable singletons, or (as currently done)
+          // only for those that carry a @serializable annotation?
           if (!hasImplementation(nme.readResolve)) ts += readResolveMethod
         }
         if (!forCLDC && !forMSIL)

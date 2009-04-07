@@ -348,6 +348,13 @@ class Names {
       i > suffix.length
     }
 
+    final def containsName(subname: Name): Boolean = {
+      var start = 0
+      val last = len - subname.length
+      while (start <= last && !startsWith(subname, start)) start += 1
+      start <= last
+    }
+
     /** Return the subname with characters from start to end-1.
      *
      *  @param from ...

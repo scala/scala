@@ -3774,7 +3774,7 @@ A type's typeSymbol should never be inspected directly.
     }) || {
       val tp1n = normalizePlus(tp1)
       val tp2n = normalizePlus(tp2)
-      ((tp1n ne tp1) || (tp2n ne tp2)) && isSubType0(tp1n, tp2n, depth)
+      ((tp1n ne tp1) || (tp2n ne tp2)) && isSubType(tp1n, tp2n, depth)
     }
   }
 

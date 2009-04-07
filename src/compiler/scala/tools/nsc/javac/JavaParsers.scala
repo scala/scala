@@ -387,29 +387,24 @@ trait JavaParsers extends JavaScanners {
     def modifiers(inInterface: Boolean): Modifiers = {
       var flags: Long = Flags.JAVA
       // assumed true unless we see public/private/protected - see bug #1240
-      var defaultAccess = true
       var privateWithin: Name =
         if (inInterface) nme.EMPTY.toTypeName else thisPackageName
 
       while (true) {
-        // if any explicit access modifier is present, we set privateWithin
-        // to the empty package so the flag is correctly interpreted.
-        if (List(PUBLIC, PROTECTED, PRIVATE) contains in.token) {
-          defaultAccess = false
-          privateWithin = nme.EMPTY.toTypeName
-        }
-
         in.token match {
           case AT if (in.lookaheadToken != INTERFACE) =>
             in.nextToken
             annotation()
           case PUBLIC =>
+            privateWithin = nme.EMPTY.toTypeName
             in.nextToken
           case PROTECTED =>
             flags |= Flags.PROTECTED
+            //privateWithin = thisPackageName
             in.nextToken
           case PRIVATE =>
             flags |= Flags.PRIVATE
+            privateWithin = nme.EMPTY.toTypeName
             in.nextToken
           case STATIC =>
             flags |= Flags.STATIC
