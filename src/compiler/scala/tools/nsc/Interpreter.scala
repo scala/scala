@@ -828,7 +828,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     }
 
     """** Power User mode enabled - BEEP BOOP      **
-      |** Launch scala with -Ycompletion for <tab> **
       |** New vals! Try interpreter.<tab>          **
       |** New defs! Try mkType("T", "String")      **
       |** New cmds! :help to discover them         **""".stripMargin
@@ -880,6 +879,12 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
     res getOrElse Nil
   }
+
+  def unqualifiedIds(line: String): List[String] =
+    allBoundNames .
+      map(_.toString) .
+      filter(!isSynthVarName(_)) .
+      filter(_ startsWith line)
 
   // debugging
   private var debuggingOutput = false

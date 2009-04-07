@@ -207,7 +207,8 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
      */
     val futLine = scala.concurrent.ops.future(readOneLine)
     bindSettings()
-    processLine(futLine())
+    if (!processLine(futLine()))
+      return out.println("Leaving already? That hurts, it really does.")
 
     // loops until false, then returns
     while (processLine(readOneLine)) { }
@@ -331,10 +332,10 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
       case None       =>
         val emacsShell = System.getProperty("env.emacs", "") != ""
 
-        // tab completion off by default for now
+        // the interpeter is passed as an argument to expose tab completion info
         if (settings.Xnojline.value || emacsShell) new SimpleReader
-        else if (settings.completion.value) InteractiveReader.createDefault(interpreter)
-        else InteractiveReader.createDefault()
+        else if (settings.noCompletion.value) InteractiveReader.createDefault()
+        else InteractiveReader.createDefault(interpreter)
     }
 
     loadFiles(settings)

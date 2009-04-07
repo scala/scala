@@ -651,7 +651,7 @@ trait ScalacSettings
   val check         = PhasesSetting     ("-Ycheck", "Check the tree at the end of")
   val Xcloselim     = BooleanSetting    ("-Yclosure-elim", "Perform closure elimination")
   val Xcodebase     = StringSetting     ("-Ycodebase", "codebase", "Specify the URL containing the Scala libraries", "")
-  val completion    = BooleanSetting    ("-Ycompletion", "Enable tab-completion in the REPL")
+  val noCompletion  = BooleanSetting    ("-Yno-completion", "Disable tab-completion in the REPL")
   val Xdce          = BooleanSetting    ("-Ydead-code", "Perform dead code elimination")
   val debug         = BooleanSetting    ("-Ydebug", "Output debugging messages")
   val debugger      = BooleanSetting    ("-Ydebugger", "Enable interactive debugger")
