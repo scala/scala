@@ -37,6 +37,7 @@ trait StdNames {
     val NULLkw = newTermName("null")
     val OBJECTkw = newTermName("object")
     val OUTER = newTermName("$outer")
+    val OUTER_LOCAL = newTermName("$outer ")
     val OVERRIDEkw = newTermName("override")
     val PACKAGEkw = newTermName("package")
     val PRIVATEkw = newTermName("private")
