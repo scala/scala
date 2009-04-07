@@ -24,7 +24,12 @@ class JLineReader(interpreter: Interpreter) extends InteractiveReader {
     r setBellEnabled false
 
     if (interpreter != null) {
-      val comp = new ArgumentCompletor(new Completion(interpreter))
+      // have to specify all delimiters for completion to work nicely
+      val delims = new ArgumentCompletor.AbstractArgumentDelimiter {
+        val delimChars = "(){}[],`;'\" \t".toArray
+        def isDelimiterChar(s: String, pos: Int) = delimChars contains s.charAt(pos)
+      }
+      val comp = new ArgumentCompletor(new Completion(interpreter), delims)
       comp setStrict false
       r addCompletor comp
     }

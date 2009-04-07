@@ -848,17 +848,27 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     None
   }
 
+  // XXX at the moment this is imperfect because scala's protected semantics
+  // differ from java's, so protected methods appear public via reflection;
+  // yet scala enforces the protection.  The result is that protected members
+  // appear in completion yet cannot actually be called.  Fixing this
+  // properly requires a scala.reflect.* API.  Fixing it uglily is possible
+  // too (cast to structural type!) but I deem poor use of energy.
+  private val filterFlags: Int = {
+    import java.lang.reflect.Modifier._
+    STATIC | PRIVATE | PROTECTED
+  }
+  private val methodsCode = """ .
+    | asInstanceOf[AnyRef].getClass.getMethods .
+    | filter(x => (x.getModifiers & %d) == 0) .
+    | map(_.getName) .
+    | mkString(" ")""".stripMargin.format(filterFlags)
+
   /** The main entry point for tab-completion.  When the user types x.<tab>
    *  this method is called with "x" as an argument, and it discovers the
    *  fields and methods of x via reflection and returns their names to jline.
    */
   def membersOfIdentifier(line: String): List[String] = {
-    val methodsCode = """ .
-      | asInstanceOf[AnyRef].getClass.getMethods .
-      | filter(x => !java.lang.reflect.Modifier.isStatic(x.getModifiers)) .
-      | map(_.getName) .
-      | mkString(" ")""".stripMargin
-
     val filterMethods = List("", "hashCode", "equals", "wait", "notify", "notifyAll")
     val res = beQuietDuring {
       for (name <- nameOfIdent(line) ; req <- requestForName(name)) yield {
@@ -880,6 +890,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     res getOrElse Nil
   }
 
+  /** Another entry point for tab-completion, ids in scope */
   def unqualifiedIds(line: String): List[String] =
     allBoundNames .
       map(_.toString) .
