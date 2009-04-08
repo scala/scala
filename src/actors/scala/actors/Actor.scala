@@ -659,23 +659,32 @@ trait Actor extends AbstractActor {
    * precise type for the reply value.
    */
   def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] = {
-    val ftch = new Channel[Any](Actor.self(scheduler))
-    send(msg, ftch)
+    val ftch = new Channel[A](Actor.self(scheduler))
+    send(msg, new OutputChannel[Any] {
+      def !(msg: Any) =
+        ftch ! f(msg)
+      def send(msg: Any, replyTo: OutputChannel[Any]) =
+        ftch.send(f(msg), replyTo)
+      def forward(msg: Any) =
+        ftch.forward(f(msg))
+      def receiver =
+        ftch.receiver
+    })
     new Future[A](ftch) {
       def apply() =
         if (isSet) value.get.asInstanceOf[A]
         else ch.receive {
-          case any => value = Some(f(any)); value.get.asInstanceOf[A]
+          case any => value = Some(any); value.get.asInstanceOf[A]
         }
       def respond(k: A => Unit): Unit =
  	if (isSet) k(value.get.asInstanceOf[A])
  	else ch.react {
- 	  case any => value = Some(f(any)); k(value.get.asInstanceOf[A])
+ 	  case any => value = Some(any); k(value.get.asInstanceOf[A])
  	}
       def isSet = value match {
         case None => ch.receiveWithin(0) {
           case TIMEOUT => false
-          case any => value = Some(f(any)); true
+          case any => value = Some(any); true
         }
         case Some(_) => true
       }

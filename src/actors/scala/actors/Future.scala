@@ -25,7 +25,7 @@ package scala.actors
  * @author Philipp Haller
  * @version 0.9.16
  */
-abstract class Future[+T](val ch: InputChannel[Any]) extends Responder[T] with Function0[T] {
+abstract class Future[+T](val ch: InputChannel[T]) extends Responder[T] with Function0[T] {
   protected var value: Option[Any] = None
   def isSet: Boolean
 }
