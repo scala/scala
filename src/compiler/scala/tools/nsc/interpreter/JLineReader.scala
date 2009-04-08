@@ -32,6 +32,8 @@ class JLineReader(interpreter: Interpreter) extends InteractiveReader {
       val comp = new ArgumentCompletor(new Completion(interpreter), delims)
       comp setStrict false
       r addCompletor comp
+      // XXX make this use a setting
+      r setAutoprintThreshhold 250
     }
 
     r

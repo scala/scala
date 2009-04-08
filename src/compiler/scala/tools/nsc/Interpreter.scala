@@ -869,7 +869,9 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    *  fields and methods of x via reflection and returns their names to jline.
    */
   def membersOfIdentifier(line: String): List[String] = {
-    val filterMethods = List("", "hashCode", "equals", "wait", "notify", "notifyAll")
+    import Completion.{ isValidCompletion }
+    import scala.tools.nsc.util.NameTransformer.{ decode, encode }   // e.g. $plus$plus => ++
+
     val res = beQuietDuring {
       for (name <- nameOfIdent(line) ; req <- requestForName(name)) yield {
         if (interpret("val " + newInternalVarName() + " = " + name + methodsCode) != IR.Success) Nil
@@ -877,12 +879,13 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
           val result = prevRequests.last.resultObjectName
           val resultObj = Class.forName(result, true, classLoader)
           val valMethod = resultObj.getMethod("result")
+          val str = valMethod.invoke(resultObj).toString
 
-          valMethod.invoke(resultObj).toString .
-            split(" ").toList .
-            filter(x => !filterMethods.contains(x)) .
-            filter(!_.contains("$")) .
-            removeDuplicates
+          str.substring(str.indexOf('=') + 1).trim .
+          split(" ").toList .
+          map(decode) .
+          filter(isValidCompletion) .
+          removeDuplicates
         }
       }
     }
@@ -891,11 +894,16 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   /** Another entry point for tab-completion, ids in scope */
-  def unqualifiedIds(line: String): List[String] =
+  def unqualifiedIds(): List[String] =
     allBoundNames .
       map(_.toString) .
-      filter(!isSynthVarName(_)) .
-      filter(_ startsWith line)
+      filter(!isSynthVarName(_))
+
+  /** For static/object method completion */
+  def tryToLoadClass(path: String): Option[Class[_]] = {
+    try   { Some(Class.forName(path, false, classLoader)) }
+    catch { case _: ClassNotFoundException | _: NoClassDefFoundError => None }
+  }
 
   // debugging
   private var debuggingOutput = false
