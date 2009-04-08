@@ -321,24 +321,14 @@ object Predef {
 
   implicit def float2double(x: Float): Double = x.toDouble
 
-  /** Should use java.lang.Byte.valueOf(Byte), but only available
-   * in Java 1.5 and above. */
-  implicit def byte2Byte(x: Byte) = new java.lang.Byte(x)
-  /** Should use java.lang.Short.valueOf(Short), but only available
-   * in Java 1.5 and above. */
-  implicit def short2Short(x: Short) = new java.lang.Short(x)
-  /** Should use java.lang.Character.valueOf(Char), but only available
-   * in Java 1.5 and above. */
-  implicit def char2Character(x: Char) = new java.lang.Character(x)
-  /** Should use java.lang.Integer.valueOf(Int), but only available
-   * in Java 1.5 and above. */
-  implicit def int2Integer(x: Int) = new java.lang.Integer(x)
-  /** Should use java.lang.Long.valueOf(Long), but only available
-   * in Java 1.5 and above. */
-  implicit def long2Long(x: Long) = new java.lang.Long(x)
-  implicit def float2Float(x: Float) = new java.lang.Float(x)
-  implicit def double2Double(x: Double) = new java.lang.Double(x)
-  implicit def boolean2Boolean(x: Boolean) = java.lang.Boolean.valueOf(x)
+  implicit def byte2Byte(x: Byte)           = java.lang.Byte.valueOf(x)
+  implicit def short2Short(x: Short)        = java.lang.Short.valueOf(x)
+  implicit def char2Character(x: Char)      = java.lang.Character.valueOf(x)
+  implicit def int2Integer(x: Int)          = java.lang.Integer.valueOf(x)
+  implicit def long2Long(x: Long)           = java.lang.Long.valueOf(x)
+  implicit def float2Float(x: Float)        = java.lang.Float.valueOf(x)
+  implicit def double2Double(x: Double)     = java.lang.Double.valueOf(x)
+  implicit def boolean2Boolean(x: Boolean)  = java.lang.Boolean.valueOf(x)
 
   /** any array projection can be automatically converted into an array */
   implicit def forceArrayProjection[A](x: Array.Projection[A]): Array[A] = x.force

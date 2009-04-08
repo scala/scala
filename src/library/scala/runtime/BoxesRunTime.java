@@ -42,96 +42,36 @@ public class BoxesRunTime {
 
 /* BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING */
 
-    // for 2.8: change to valueOf methods.
-
-    private static int charLowBound = 0;
-    private static int charUpBound = 255;
-    private static Character[] charCache = new Character[charUpBound - charLowBound + 1];
-
-    private static int byteLowBound = -128;
-    private static int byteUpBound = 127;
-    private static Byte[] byteCache = new Byte[byteUpBound - byteLowBound + 1];
-
-    private static int shortLowBound = -128;
-    private static int shortUpBound = 127;
-    private static Short[] shortCache = new Short[shortUpBound - shortLowBound + 1];
-
-    private static int intLowBound = -128;
-    private static int intUpBound = 1024;
-    private static Integer[] intCache = new Integer[intUpBound - intLowBound + 1];
-
-    private static int longLowBound = -128;
-    private static int longUpBound = 1024;
-    private static Long[] longCache = new Long[longUpBound - longLowBound + 1];
-
-    static {
-        int idx = 0;
-        while (idx <= charUpBound - charLowBound) {
-            charCache[idx] = new Character((char)(idx + charLowBound));
-            idx = idx + 1;
-        }
-        idx = 0;
-        while (idx <= byteUpBound - byteLowBound) {
-            byteCache[idx] = new Byte((byte)(idx + byteLowBound));
-            idx = idx + 1;
-        }
-        idx = 0;
-        while (idx <= shortUpBound - shortLowBound) {
-            shortCache[idx] = new Short((short)(idx + shortLowBound));
-            idx = idx + 1;
-        }
-        idx = 0;
-        while (idx <= intUpBound - intLowBound) {
-            intCache[idx] = new Integer((int)(idx + intLowBound));
-            idx = idx + 1;
-        }
-        idx = 0;
-        while (idx <= longUpBound - longLowBound) {
-            longCache[idx] = new Long((long)(idx + longLowBound));
-            idx = idx + 1;
-        }
-    }
-
     public static Boolean boxToBoolean(boolean b) {
-        return b ? Boolean.TRUE : Boolean.FALSE;
+        return Boolean.valueOf(b);
     }
 
     public static Character boxToCharacter(char c) {
-        if (c >= charLowBound && c <= charUpBound)
-            return charCache[(int)c - charLowBound];
-        return new Character(c);
+        return Character.valueOf(c);
     }
 
     public static Byte boxToByte(byte b) {
-        if (b >= byteLowBound && b <= byteUpBound)
-            return byteCache[(int)b - byteLowBound];
-        return new Byte(b);
+        return Byte.valueOf(b);
     }
 
     public static Short boxToShort(short s) {
-        if (s >= shortLowBound && s <= shortUpBound)
-            return shortCache[(int)s - shortLowBound];
-        return new Short(s);
+        return Short.valueOf(s);
     }
 
     public static Integer boxToInteger(int i) {
-        if (i >= intLowBound && i <= intUpBound)
-            return intCache[(int)i - intLowBound];
-        return new Integer(i);
+        return Integer.valueOf(i);
     }
 
     public static Long boxToLong(long l) {
-        if (l >= longLowBound && l <= longUpBound)
-            return longCache[(int)l - longLowBound];
-        return new Long(l);
+        return Long.valueOf(l);
     }
 
     public static Float boxToFloat(float f) {
-        return new Float(f);
+        return Float.valueOf(f);
     }
 
     public static Double boxToDouble(double d) {
-        return new Double(d);
+        return Double.valueOf(d);
     }
 
 /* UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING */
@@ -167,56 +107,6 @@ public class BoxesRunTime {
     public static double unboxToDouble(Object d) {
         return d == null ? 0.0d : ((Double)d).doubleValue();
     }
-
-    /*
-    public static boolean unboxToBoolean(Object b) {
-        if (b == null)
-          throw new ClassCastException("null is no Boolean value");
-        return ((Boolean)b).booleanValue();
-    }
-
-    public static char unboxToChar(Object c) {
-        if (c == null)
-          throw new ClassCastException("null is no Char value");
-        return ((Character)c).charValue();
-    }
-
-    public static byte unboxToByte(Object b) {
-        if (b == null)
-          throw new ClassCastException("null is no Byte value");
-        return ((Byte)b).byteValue();
-    }
-
-    public static short unboxToShort(Object s) {
-        if (s == null)
-          throw new ClassCastException("null is no Short value");
-        return ((Short)s).shortValue();
-    }
-
-    public static int unboxToInt(Object i) {
-        if (i == null)
-          throw new ClassCastException("null is no Int value");
-        return ((Integer)i).intValue();
-    }
-
-    public static long unboxToLong(Object l) {
-        if (l == null)
-          throw new ClassCastException("null is no Long value");
-        return ((Long)l).longValue();
-    }
-
-    public static float unboxToFloat(Object f) {
-        if (f == null)
-          throw new ClassCastException("null is no Float value");
-        return ((Float)f).floatValue();
-    }
-
-    public static double unboxToDouble(Object d) {
-        if (d == null)
-          throw new ClassCastException("null is no Double value");
-        return ((Double)d).doubleValue();
-    }
-    */
 
 /* COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON */
 
@@ -256,7 +146,8 @@ public class BoxesRunTime {
                 double bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).doubleValue();
                 return aa == bb;
             }
-			return b.equals(a);
+
+            return b.equals(a);
         }
         return false;
     }
