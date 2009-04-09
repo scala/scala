@@ -1696,10 +1696,18 @@ abstract class GenJVM extends SubComponent {
                        && !sym.enclClass.hasFlag(Flags.INTERFACE)
                        && !sym.isClassConstructor) ACC_FINAL else 0)
       jf = jf | (if (sym.isStaticMember) ACC_STATIC else 0)
+
       if (settings.target.value == "jvm-1.5")
         jf = jf | (if (sym hasFlag Flags.BRIDGE) ACC_BRIDGE | ACC_SYNTHETIC else 0)
+
       if (sym.isClass && !sym.hasFlag(Flags.INTERFACE))
         jf = jf | ACC_SUPER
+
+      // constructors of module classes should be private
+      if (sym.isPrimaryConstructor && isTopLevelModule(sym.owner)) {
+        jf |= ACC_PRIVATE
+        jf &= ~ACC_PUBLIC
+      }
       jf
     }
 
