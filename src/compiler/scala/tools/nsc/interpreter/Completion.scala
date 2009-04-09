@@ -4,6 +4,21 @@
  */
 // $Id$
 
+//
+// TODO, if practical:
+//
+// 1) Types: val s: String = x.<tab> should only show members which result in a String.
+//      Possible approach: evaluate buffer as if current identifier is
+// 2) Implicits: x.<tab> should show not only x's members but those of anything for which
+//      there is an implicit conversion from x.
+// 3) Chaining: x.foo(bar).<tab> should complete on foo's result type.
+// 4) Imports: after import scala.collection.mutable._, HashMap should be among
+//      my top level identifiers.
+// 5) Caching: it's silly to parse all the jars on every startup, we should have
+//      a peristent store somewhere we can write and only check last-mod dates.
+// 6) Security: Are we using the filesystem unnecessarily?
+//
+
 package scala.tools.nsc.interpreter
 
 import jline._
