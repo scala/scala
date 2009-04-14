@@ -33,7 +33,7 @@ class TextField(text0: String, columns0: Int) extends TextComponent with TextCom
   })
 
   peer.addFocusListener(new FocusAdapter {
-    override def focusLost(e: java.awt.event.FocusEvent) { EditDone(TextField.this) }
+    override def focusLost(e: java.awt.event.FocusEvent) { publish(EditDone(TextField.this)) }
   })
 
   def verifier: String => Boolean = s => peer.getInputVerifier.verify(peer)
