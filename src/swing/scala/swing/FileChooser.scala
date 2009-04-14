@@ -63,7 +63,7 @@ class FileChooser(dir: File) {
   def selectedFiles_=(files: File*) { peer.setSelectedFiles(files.toArray) }
 
   def multiSelectionEnabled: Boolean = peer.isMultiSelectionEnabled
-  def multiSelectionEnable_=(b: Boolean) { peer.setMultiSelectionEnabled(b) }
+  def multiSelectionEnabled_=(b: Boolean) { peer.setMultiSelectionEnabled(b) }
 
   def iconFor(f: File) = peer.getIcon(f)
   def descriptionFor(f: File) = peer.getDescription(f)
