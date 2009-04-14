@@ -189,12 +189,16 @@ abstract class Component extends UIElement with Publisher {
     /**
      * Publishes mouse wheel moves.
      */
-    val wheel: Publisher = new Publisher {
-      peer.addMouseWheelListener(new MouseWheelListener {
-        def mouseWheelMoved(e: java.awt.event.MouseWheelEvent) {
-          publish(MouseWheelMoved(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                             e.getPoint, e.getModifiersEx, e.getWheelRotation)(e.getWhen)) }
-      })
+    val wheel: Publisher = new LazyPublisher {
+      // We need to subscribe lazily and unsubscribe, since components in scroll panes capture
+      // mouse wheel events if there is a listener installed. See ticket #1442.
+      lazy val l = new MouseWheelListener {
+          def mouseWheelMoved(e: java.awt.event.MouseWheelEvent) {
+            publish(MouseWheelMoved(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
+                e.getPoint, e.getModifiersEx, e.getWheelRotation)(e.getWhen)) }
+        }
+      def onFirstSubscribe() = peer.addMouseWheelListener(l)
+      def onLastUnsubscribe() = peer.removeMouseWheelListener(l)
     }
   }
 

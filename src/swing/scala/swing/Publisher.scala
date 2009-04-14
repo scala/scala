@@ -38,6 +38,24 @@ trait Publisher extends Reactor {
   listenTo(this)
 }
 
+private[swing] trait LazyPublisher extends Publisher {
+  import Reactions._
+
+  def onFirstSubscribe()
+  def onLastUnsubscribe()
+
+  override def subscribe(listener: Reaction) {
+    if(listeners.size == 1) onFirstSubscribe()
+    super.subscribe(listener)
+  }
+  override def unsubscribe(listener: Reaction) {
+    super.unsubscribe(listener)
+    if(listeners.size == 1) onLastUnsubscribe()
+  }
+}
+
+
+
 import scala.ref._
 
 private[swing] trait SingleRefCollection[+A <: AnyRef] extends Collection[A] { self =>
@@ -102,7 +120,7 @@ private[swing] class StrongReference[+T <: AnyRef](value: T) extends Reference[T
     def isEnqueued(): Boolean = false
   }
 
-  abstract class RefBuffer[A <: AnyRef] extends Buffer[A] with SingleRefCollection[A] { self =>
+abstract class RefBuffer[A <: AnyRef] extends Buffer[A] with SingleRefCollection[A] { self =>
   protected val underlying: Buffer[Reference[A]]
 
   def +=(el: A) { purgeReferences(); underlying += Ref(el) }
