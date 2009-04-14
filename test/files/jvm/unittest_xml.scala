@@ -92,6 +92,10 @@ object Test {
 	 val pp = new xml.PrettyPrinter(80,5)
 	assertEquals("pretty print sorted attrib:"+pp.format(q), "<a a=\"2\" g=\"3\" j=\"2\" oo=\"2\"></a>", pp.format(q))
 
+    <hi>
+      <there/>
+      <guys/>
+    </hi>.hashCode // Bug #777
   }
   }
 
