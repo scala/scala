@@ -2,7 +2,7 @@ package scala.swing
 
 import java.awt.event._
 import javax.swing.event._
-import java.awt.{Color, Dimension, Point}
+import java.awt.{Color, Dimension, Point, Rectangle}
 import javax.swing.border._
 import javax.swing.{JComponent, Icon, BorderFactory}
 
@@ -18,6 +18,7 @@ object Swing {
 
   implicit def pair2Dimension(p: (Int, Int)): Dimension = new Dimension(p._1, p._2)
   implicit def pair2Point(p: (Int, Int)): Point = new Point(p._1, p._2)
+  implicit def pair2Point(p: (Int, Int, Int, Int)): Rectangle = new Rectangle(p._1, p._2, p._3, p._4)
 
   /**
    * Allows one to use blocks as runnables.

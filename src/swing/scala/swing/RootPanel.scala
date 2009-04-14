@@ -12,7 +12,7 @@ trait RootPanel extends Container {
    * At most one component.
    */
   def contents: Seq[Component] = {
-    Swing.toOption(peer.getContentPane.getComponent(0)).map { c =>
+    Swing.toOption[Any](peer.getContentPane.getComponent(0)).map { c =>
       Component.wrapperFor(c.asInstanceOf[javax.swing.JComponent])
     }.toList
   }
