@@ -77,6 +77,10 @@ object Table {
   }
 
   class LabelRenderer[A](convert: A => (Icon, String)) extends AbstractRenderer[A, Label](new Label) {
+    def this() {
+      this{ a => (null, a.toString) }
+    }
+
     def configure(table: Table, isSelected: Boolean, hasFocus: Boolean, a: A, row: Int, column: Int) {
       val (icon, text) = convert(a)
       component.icon = icon
@@ -198,7 +202,7 @@ class Table extends Component with Scrollable with Publisher {
      * but the result is a table that does not produce useful selections.
      */
     def intervalMode: IntervalMode.Value = IntervalMode(peer.getSelectionModel.getSelectionMode)
-    def intervalMode_=(m: IntervalMode.Value) { peer.getSelectionModel.setSelectionMode(m.id) }
+    def intervalMode_=(m: IntervalMode.Value) { peer.setSelectionMode(m.id) }
     def elementMode: ElementMode.Value =
       if(peer.getColumnSelectionAllowed && peer.getRowSelectionAllowed) ElementMode.Cell
       else if(peer.getColumnSelectionAllowed) ElementMode.Column
@@ -225,15 +229,13 @@ class Table extends Component with Scrollable with Publisher {
     })
   }
 
-  private val initialRenderer = peer.getDefaultRenderer(classOf[AnyRef])
-
   /**
    * Supplies a renderer component for a given cell.
    */
   protected def rendererComponent(isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component =
     new Component {
       override lazy val peer = {
-        val v = Table.this.peer.getValueAt(row, column)
+        val v = apply(row, column).asInstanceOf[AnyRef]
         if (v != null)
           Table.this.peer.getDefaultRenderer(v.getClass).getTableCellRendererComponent(Table.this.peer,
                  v, isSelected, hasFocus, row, column).asInstanceOf[JComponent]
@@ -244,7 +246,7 @@ class Table extends Component with Scrollable with Publisher {
 
   // TODO: a public API for setting editors
   protected def editor(row: Int, column: Int) = {
-    val v = Table.this.peer.getValueAt(row, column)
+    val v = apply(row, column).asInstanceOf[AnyRef]
     if (v != null)
       Table.this.peer.getDefaultEditor(v.getClass)
     else
@@ -253,13 +255,19 @@ class Table extends Component with Scrollable with Publisher {
 
   /**
    * Get the current value of the given cell.
+   * The given cell coordinates are in view coordinates and thus not
+   * necessarily the same as for the model.
    */
-  def apply(row: Int, column: Int): Any = model.getValueAt(row, column)
+  def apply(row: Int, column: Int): Any = model.getValueAt(row, viewToModelColumn(column))
+
+  def viewToModelColumn(idx: Int) = peer.convertColumnIndexToModel(idx)
+  def modelToViewColumn(idx: Int) = peer.convertColumnIndexToView(idx)
+
 
   /**
    * Change the value of the given cell.
    */
-  def update(row: Int, column: Int, value: Any) { model.setValueAt(value, row, column) }
+  def update(row: Int, column: Int, value: Any) { model.setValueAt(value, row, viewToModelColumn(column)) }
 
   /**
    * Visually update the given cell.

@@ -6,26 +6,25 @@ import swing.event._
 
 object TableSelection extends SimpleGUIApplication {
   val model = Array(List("Mary", "Campione", "Snowboarding", 5, false).toArray,
-            List("Alison", "Huml", "Rowing", 5, false).toArray,
-            List("Kathy", "Walrath", "Knitting", 5, false).toArray,
-            List("Sharon", "Zakhour", "Speed reading", 5, false).toArray,
-            List("Philip", "Milne", "Pool", 5, false).toArray)
+                    List("Alison", "Huml", "Rowing", 5, false).toArray,
+                    List("Kathy", "Walrath", "Knitting", 5, false).toArray,
+                    List("Sharon", "Zakhour", "Speed reading", 5, false).toArray,
+                    List("Philip", "Milne", "Pool", 5, false).toArray)
 
   val ui = new BoxPanel(Orientation.Vertical) {
-      val table = new Table(model, Array("First Name", "Last Name", "Sport", "# of Years", "Vegetarian")) {
-        preferredViewportSize = new Dimension(500, 70)
-        val l = new Table.LabelRenderer[String](a => (null,a))
-        override def rendererComponent(isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component =
-         TableSelection.model(row)(column) match {
-           case s: String => l.componentFor(this, isSelected, hasFocus, s, row, column)
-           case _ => super.rendererComponent(isSelected, hasFocus, row, column)
-         }
+    val table = new Table(model, Array("First Name", "Last Name", "Sport", "# of Years", "Vegetarian")) {
+      preferredViewportSize = new Dimension(500, 70)
+      val l = new Table.LabelRenderer[String]
+      override def rendererComponent(isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component =
+        this(row, column) match {
+          case s: String => l.componentFor(this, isSelected, hasFocus, s, row, column)
+          case _ => super.rendererComponent(isSelected, hasFocus, row, column)
+        }
       }
       //1.6:table.fillsViewportHeight = true
       listenTo(table.selection)
 
       contents += new ScrollPane(table)
-
       contents += new Label("Selection Mode")
 
       def radio(mutex: ButtonGroup, text: String): RadioButton = {
@@ -61,14 +60,6 @@ object TableSelection extends SimpleGUIApplication {
         for (c <- table.selection.columns) output.append(" " + c)
         output.append(".\n")
       }
-      reactions += {
-        case ButtonClicked(_) =>
-          rowSelection.selected = table.selection.elementMode == Table.ElementMode.Row
-          columnSelection.selected = table.selection.elementMode == Table.ElementMode.Column
-          if (cellSelection.enabled) {
-            cellSelection.selected = table.selection.elementMode == Table.ElementMode.Cell
-          }
-      }
 
       reactions += {
         case ButtonClicked(`multiInterval`) =>
@@ -100,7 +91,7 @@ object TableSelection extends SimpleGUIApplication {
           output.append("Columns selected, changes " + range + "\n")
           outputSelection()
       }
-    }
+  }
 
   def top = new MainFrame {
     title = "Table Selection"
