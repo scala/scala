@@ -10,9 +10,23 @@ import event._
  * @see javax.swing.JFrame
  */
 class Frame extends UIElement with RootPanel with Publisher {
-  override lazy val peer: JFrame = new JFrame
+  override lazy val peer: JFrame = new JFrame with SuperMixin
   def title: String = peer.getTitle
   def title_=(s: String) = peer.setTitle(s)
+
+  protected trait SuperMixin extends JFrame {
+    override protected def processWindowEvent(e: java.awt.event.WindowEvent) {
+      super.processWindowEvent(e)
+      if (e.getID() == java.awt.event.WindowEvent.WINDOW_CLOSING)
+        closeOperation()
+    }
+  }
+
+  /**
+   * This method is called when the window is closing, after all other window
+   * event listeners have been processed.
+   */
+  def closeOperation() {}
 
   override def contents_=(c: Component) {
     super.contents_=(c)

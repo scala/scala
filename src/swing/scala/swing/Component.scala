@@ -36,6 +36,8 @@ object Component {
  * @note [Java Swing] Unlike in Java Swing, not all components are also containers.
  *
  * @see javax.swing.JComponent
+ * @see http://java.sun.com/products/jfc/tsc/articles/painting/ for the component
+ * painting mechanism
  */
 abstract class Component extends UIElement with Publisher {
   override lazy val peer: javax.swing.JComponent = new javax.swing.JComponent with SuperMixin {}
