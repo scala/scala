@@ -421,7 +421,7 @@ abstract class GenJVM extends SubComponent {
     def addGenericSignature(jmember: JMember, sym: Symbol, owner: Symbol) {
       if (!sym.hasFlag(Flags.LIFTED |
                        Flags.EXPANDEDNAME | Flags.SYNTHETIC) && settings.target.value == "jvm-1.5") {
-        val memberTpe = atPhase(currentRun.erasurePhase)(owner.info.memberInfo(sym))
+        val memberTpe = atPhase(currentRun.erasurePhase)(owner.thisType.memberInfo(sym))
 //        println("sym: " + sym.fullNameString + " : " + memberTpe + " sym.info: " + sym.info)
         erasure.javaSig(sym, memberTpe) match {
           case Some(sig) =>
