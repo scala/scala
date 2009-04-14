@@ -15,6 +15,7 @@ object Swing {
   protected[swing] def toNull[A>:Null<:AnyRef](a: Option[A]): A = if(a == None) null else a.get
   protected[swing] def toNoIcon(i: Icon): Icon = if(i == null) EmptyIcon else i
   protected[swing] def toNullIcon(i: Icon): Icon = if(i == EmptyIcon) null else i
+  protected[swing] def nullPeer(c: Component) = if (c != null) c.peer else null
 
   implicit def pair2Dimension(p: (Int, Int)): Dimension = new Dimension(p._1, p._2)
   implicit def pair2Point(p: (Int, Int)): Point = new Point(p._1, p._2)

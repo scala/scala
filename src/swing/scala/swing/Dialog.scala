@@ -1,6 +1,7 @@
 package scala.swing
 
 import javax.swing.{Icon, JOptionPane}
+import Swing._
 
 /**
  * Simple predefined dialogs.
@@ -43,17 +44,17 @@ object Dialog {
 
   def showConfirmation(parent: Component, message: String, title: String,
      optionType: Options.Value, messageType: Message.Value, icon: Icon): Result.Value =
-     Result(JOptionPane.showConfirmDialog(parent.peer, message, title,
+     Result(JOptionPane.showConfirmDialog(nullPeer(parent), message, title,
                                    optionType.id, messageType.id, Swing.wrapIcon(icon)))
   def showConfirmation(parent: Component, message: String, title: String,
      optionType: Options.Value): Result.Value =
-     Result(JOptionPane.showConfirmDialog(parent.peer, message, title,
+     Result(JOptionPane.showConfirmDialog(nullPeer(parent), message, title,
                                    optionType.id))
 
   def showOptions(parent: Component, message: String, title: String,
      optionType: Options.Value, messageType: Message.Value, icon: Icon,
      entries: Seq[Any], initialEntry: Int): Result.Value = {
-       val r = JOptionPane.showOptionDialog(parent.peer, message, title,
+       val r = JOptionPane.showOptionDialog(nullPeer(parent), message, title,
                                    optionType.id, messageType.id, Swing.wrapIcon(icon),
                                    entries.map(_.asInstanceOf[AnyRef]).toArray, entries(initialEntry))
        Result(r)
@@ -64,18 +65,18 @@ object Dialog {
      entries: Seq[A], initialEntry: A): Option[A] = {
        val e = if (entries.isEmpty) null
                else entries.map(_.asInstanceOf[AnyRef]).toArray
-       val r = JOptionPane.showInputDialog(parent.peer, message, title,
+       val r = JOptionPane.showInputDialog(nullPeer(parent), message, title,
        		                               messageType.id, Swing.wrapIcon(icon),
        		                               e, initialEntry)
        Swing.toOption(r)
   }
   def showMessage(parent: Component, message: String, title: String,
      messageType: Message.Value, icon: Icon) {
-     JOptionPane.showMessageDialog(parent.peer, message, title,
+     JOptionPane.showMessageDialog(nullPeer(parent), message, title,
                                    messageType.id, Swing.wrapIcon(icon))
   }
 
   def showMessage(parent: Component, message: String) {
-     JOptionPane.showMessageDialog(parent.peer, message)
+     JOptionPane.showMessageDialog(nullPeer(parent), message)
   }
 }

@@ -80,7 +80,6 @@ object Key extends Enumeration {
   val Numpad9 = Value(VK_NUMPAD9)
   val Multiply = Value(VK_MULTIPLY)
   val Add = Value(VK_ADD)
-  val Separater = Value(VK_SEPARATER)
   val Separator = Value(VK_SEPARATOR)
   val Subtract = Value(VK_SUBTRACT)
   val Decimal = Value(VK_DECIMAL)

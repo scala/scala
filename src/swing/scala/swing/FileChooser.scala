@@ -37,9 +37,10 @@ class FileChooser(dir: File) {
 
   def this() = this(null)
 
-  def showOpenDialog(over: Component): Result.Value = Result(peer.showOpenDialog(over.peer))
-  def showSaveDialog(over: Component): Result.Value = Result(peer.showSaveDialog(over.peer))
-  def showDialog(over: Component, approveText: String): Result.Value = Result(peer.showDialog(over.peer, approveText))
+  import Swing._
+  def showOpenDialog(over: Component): Result.Value = Result(peer.showOpenDialog(nullPeer(over)))
+  def showSaveDialog(over: Component): Result.Value = Result(peer.showSaveDialog(nullPeer(over)))
+  def showDialog(over: Component, approveText: String): Result.Value = Result(peer.showDialog(nullPeer(over), approveText))
 
   def controlButtonsAreShown: Boolean = peer.getControlButtonsAreShown
   def controlButtonsAreShown_=(b: Boolean) { peer.setControlButtonsAreShown(b) }
