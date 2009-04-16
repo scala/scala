@@ -53,10 +53,11 @@ abstract class Relation extends AnyRef with Iterable[Tuple] {
    * iterators will share the same state. */
   def elements: Iterator[Tuple] = new Iterator[Tuple] {
     protected val result: java.sql.ResultSet = Relation.this.sqlResult
-    def hasNext: Boolean = !(result.isLast())
+    def hasNext: Boolean = resultNext
+    private var resultNext = result.next()
     def next: Tuple = {
-      if (result.next()) {
-        new Tuple {
+      if (resultNext) {
+        val newTuple = new Tuple {
           val me = this
           val originatingRelation = Relation.this
           val fields: List[Field] = for (fieldMetadata <- metadata) yield
@@ -66,7 +67,10 @@ abstract class Relation extends AnyRef with Iterable[Tuple] {
               val originatingTuple = me
             }
         }
-      } else error("next on empty iterator")
+        resultNext = result.next()
+        newTuple
+      }
+      else error("next on empty iterator")
     }
   }
 }
