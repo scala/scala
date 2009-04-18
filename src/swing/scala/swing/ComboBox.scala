@@ -115,7 +115,13 @@ object ComboBox {
     new AbstractListModel with ComboBoxModel {
       private var selected = items(0)
       def getSelectedItem: AnyRef = selected.asInstanceOf[AnyRef]
-      def setSelectedItem(a: Any) { selected = a.asInstanceOf[A] }
+      def setSelectedItem(a: Any) {
+        if ((selected != null && selected != a) ||
+            selected == null && a != null) {
+          selected = a.asInstanceOf[A]
+          fireContentsChanged(this, -1, -1)
+        }
+      }
       def getElementAt(n: Int) = items(n).asInstanceOf[AnyRef]
       def getSize = items.size
     }
