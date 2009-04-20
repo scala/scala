@@ -256,7 +256,7 @@ abstract class GenJVM extends SubComponent {
       for (f <- clasz.fields if f.symbol.hasGetter;
 	         val g = f.symbol.getter(c.symbol);
 	         val s = f.symbol.setter(c.symbol);
-	         if g.isPublic)
+	         if g.isPublic && !(f.symbol.name startsWith "$"))  // inserting $outer breaks the bean
         fieldList = javaName(f.symbol) :: javaName(g) :: (if (s != NoSymbol) javaName(s) else null) :: fieldList
       val methodList =
 	     for (m <- clasz.methods
