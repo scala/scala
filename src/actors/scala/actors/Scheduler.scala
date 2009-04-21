@@ -11,11 +11,7 @@
 package scala.actors
 
 import compat.Platform
-
-import java.lang.{Runnable, Thread, InterruptedException}
-
-import scala.collection.Set
-import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, HashSet}
+import java.lang.Runnable
 
 /**
  * The <code>Scheduler</code> object is used by

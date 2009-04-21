@@ -27,6 +27,7 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
 class FJTaskScheduler2(daemon: Boolean) extends Thread with IScheduler {
   setDaemon(daemon)
 
+  /** Default constructor creates a non-daemon thread. */
   def this() =
     this(false)
 
@@ -35,6 +36,9 @@ class FJTaskScheduler2(daemon: Boolean) extends Thread with IScheduler {
   val rt = Runtime.getRuntime()
   val minNumThreads = 4
 
+  /** The value of the actors.corePoolSize JVM property. This property
+   *  determines the initial thread pool size.
+   */
   val coreProp = try {
     System.getProperty("actors.corePoolSize")
   } catch {
