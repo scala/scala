@@ -1,8 +1,10 @@
 package scala.swing.test
+
+import java.awt.{Color, Dimension, Graphics, Graphics2D, Point, geom}
+
 import scala.swing.Swing._
 import scala.swing.{MainFrame, Panel, SimpleGUIApplication}
 import scala.swing.event.{MousePressed, MouseDragged, MouseReleased}
-import java.awt.{Color, Dimension, Graphics, Graphics2D, Point, geom}
 
 /**
  * Dragging the mouse draws a simple graph
@@ -14,7 +16,7 @@ object LinePainting extends SimpleGUIApplication {
     title = "SimpleDraw"
     contents = new Panel {
       background = Color.white
-      preferredSize = (200,200)
+      preferredSize = new Dimension(200, 200)
 
       listenTo(Mouse.clicks, Mouse.moves)
 
@@ -27,10 +29,10 @@ object LinePainting extends SimpleGUIApplication {
       /* records the dragging */
       val path = new geom.GeneralPath
 
-      def lineTo(p:Point) { path.lineTo(p.x, p.y); repaint() }
-      def moveTo(p:Point) { path.moveTo(p.x, p.y); repaint() }
+      def lineTo(p: Point) { path.lineTo(p.x, p.y); repaint() }
+      def moveTo(p: Point) { path.moveTo(p.x, p.y); repaint() }
 
-      override def paintComponent(g:Graphics) = {
+      override def paintComponent(g: Graphics) = {
         super.paintComponent(g)
         /* we need Graphics2D */
         val g2 = g.asInstanceOf[Graphics2D]

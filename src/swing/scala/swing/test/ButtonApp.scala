@@ -1,5 +1,7 @@
 package scala.swing.test
 
+import java.awt.Dimension
+
 import swing._
 import swing.event._
 
@@ -16,6 +18,6 @@ object ButtonApp extends SimpleGUIApplication {
         }
       }
     }
-    size = (300, 80)
+    size = new Dimension(300, 80)
   }
 }
