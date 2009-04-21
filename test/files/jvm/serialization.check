@@ -184,3 +184,7 @@ x = Paul
 y = Paul
 x equals y: true - y equals x: true
 
+x = <function>
+y = <function>
+x equals y: false - y equals x: false
+

@@ -384,6 +384,24 @@ object Test6 {
   }
 }
 
+object Test7 {
+  @serializable
+  class A(a: Int) {
+//    def this() { this(0) }
+    val f = (x: Int) => x + a
+  }
+  try {
+    val a = new A(1)
+    val f1: Int => Int = Serialize.read(Serialize.write(a.f))
+
+    EqualityTest.check(a.f, f1)
+  }
+  catch {
+    case e: Exception =>
+      println("Error in Test7: " + e)
+  }
+}
+
 //############################################################################
 // Test code
 
@@ -395,6 +413,7 @@ object Test {
     Test4_xml
     Test5
     Test6
+    Test7
   }
 }
 

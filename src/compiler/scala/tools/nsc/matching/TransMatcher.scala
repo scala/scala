@@ -11,7 +11,8 @@ package scala.tools.nsc.matching
  *
  *  @author Burak Emir
  */
-trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with ParallelMatching with CodeFactory =>
+trait TransMatcher {
+  self: transform.ExplicitOuter with PatternNodes with ParallelMatching with CodeFactory =>
 
   import global.{ typer => _, _ }
   import analyzer.Typer;
@@ -22,8 +23,8 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
   var resultType: Type = _
 
   // cache these
-  final val settings_debug       = settings.debug.value
-  final val settings_squeeze     = settings.Xsqueeze.value == "on"
+  //final val settings_debug = settings.debug.value
+  final val settings_squeeze = settings.Xsqueeze.value == "on"
 
   // check special case Seq(p1,...,pk,_*)
   protected def isRightIgnoring(p: ArrayValue): Boolean = {
@@ -44,11 +45,11 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
     doCheckExhaustive: Boolean,
     owner: Symbol,
     handleOuter: Tree => Tree)
-    (implicit typer : Typer): Tree =
+    (implicit typer: Typer): Tree =
   {
-    DBG("****")
-    DBG("**** initalize, selector = "+selector+" selector.tpe = "+selector.tpe)
-    DBG("****    doCheckExhaustive == "+doCheckExhaustive)
+    //DBG("****")
+    //DBG("**** initalize, selector = "+selector+" selector.tpe = "+selector.tpe)
+    //DBG("****    doCheckExhaustive == "+doCheckExhaustive)
 
     implicit val theOwner = owner
     implicit val rep = new RepFactory(handleOuter)
@@ -59,7 +60,9 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
       case CaseDef(Ident(nme.WILDCARD), _, _) => true
       case _                                  => false
     }
-    def doApply(fn: Tree) = (fn.symbol eq selector.tpe.decls.lookup(nme.CONSTRUCTOR)) && (cases forall caseIsOk)
+    def doApply(fn: Tree): Boolean =
+      (fn.symbol eq selector.tpe.decls.lookup(nme.CONSTRUCTOR)) &&
+      (cases forall caseIsOk)
 
     def processApply(app: Apply): (List[Symbol], List[Tree], Tree) = {
       val Apply(fn, args) = app
@@ -76,7 +79,8 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
 
     // sets temporaries, variable declarations, and the fail tree
     val (tmps, vds, theFailTree) = selector match {
-      case app @ Apply(fn, _) if isTupleType(selector.tpe) && doApply(fn) => processApply(app)
+      case app @ Apply(fn, _) if isTupleType(selector.tpe) && doApply(fn) =>
+        processApply(app)
       case _ =>
         val root: Symbol      = newVar(selector.pos, selector.tpe, flags)
         val vdef: Tree        = typer.typed(ValDef(root, selector))
@@ -85,25 +89,25 @@ trait TransMatcher { self: transform.ExplicitOuter with PatternNodes with Parall
     }
 
     implicit val fail: Tree = theFailTree
-    val irep                = initRep(tmps, cases, rep)
-    val mch                 = typer.typed(irep.toTree)
-    var dfatree             = typer.typed(Block(vds, mch))
+    val irep = initRep(tmps, cases, rep)
+    val mch = typer.typed(irep.toTree)
+    var dfatree = typer.typed(Block(vds, mch))
 
     // cannot use squeezedBlock because of side-effects, see t275
     for ((cs, bx) <- cases.zipWithIndex)
       if (!rep.isReached(bx)) cunit.error(cs.body.pos, "unreachable code")
 
     dfatree = rep.cleanup(dfatree)
-    resetTrav.traverse(dfatree)
+    resetTraverser.traverse(dfatree)
     dfatree
   }
 
-  object resetTrav extends Traverser {
+  private object resetTraverser extends Traverser {
     override def traverse(x: Tree): Unit = x match {
-      case (vd: ValDef) => if (vd.symbol hasFlag Flags.SYNTHETIC) {
-        vd.symbol resetFlag Flags.TRANS_FLAG
-        vd.symbol resetFlag Flags.MUTABLE
-      }
+      case vd: ValDef =>
+        if (vd.symbol hasFlag Flags.SYNTHETIC) {
+          vd.symbol resetFlag (Flags.TRANS_FLAG | Flags.MUTABLE)
+        }
       case _ =>
         super.traverse(x)
     }

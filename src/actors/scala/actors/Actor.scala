@@ -907,10 +907,8 @@ trait Actor extends AbstractActor {
    */
   def link(to: AbstractActor): AbstractActor = {
     assert(Actor.self == this, "link called on actor different from self")
-    synchronized {
-      links = to :: links
-    }
-    to.linkTo(this)
+    this linkTo to
+    to linkTo this
     to
   }
 
@@ -937,10 +935,8 @@ trait Actor extends AbstractActor {
    */
   def unlink(from: AbstractActor) {
     assert(Actor.self == this, "unlink called on actor different from self")
-    synchronized {
-      links = links.remove(from.==)
-    }
-    from.unlinkFrom(this)
+    this unlinkFrom from
+    from unlinkFrom this
   }
 
   private[actors] def unlinkFrom(from: AbstractActor) = synchronized {

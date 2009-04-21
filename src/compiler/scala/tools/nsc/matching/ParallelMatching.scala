@@ -28,8 +28,9 @@ import MatchUtil._
  *
  *    Row( p_m1  ...  p_mn   g_m  b_m ) + subst
  *
+ *  @author Burak Emir
  */
-trait ParallelMatching  {
+trait ParallelMatching {
   self: transform.ExplicitOuter with PatternNodes with CodeFactory =>
 
   import global.{typer => _, _}
@@ -45,8 +46,8 @@ trait ParallelMatching  {
    *
    * results in Scrutinee(sym).
    *
-   * Note that we only ever match on Symbols, not Trees: A temporary variable is created for any
-   * expressions being matched on.
+   * Note that we only ever match on Symbols, not Trees: a temporary variable
+   * is created for any expressions being matched on.
    */
   case class Scrutinee(val sym: Symbol) {
     import definitions._
@@ -911,13 +912,13 @@ trait ParallelMatching  {
             val restTemp  = temp.dropIndex(px)
             val restRows  = row.map(r => r.replace(r.pat.dropIndex(px)))
             val mr        = MixtureRule(new Scrutinee(t), column, rep.make(restTemp, restRows))
-            DBG("\n---\nmixture rule is = " + mr.getClass)
+            //DBG("\n---\nmixture rule is = " + mr.getClass)
             return mr
           }
         }
         // Row(   _   ...   _     g_1  b_1 ) :: rows     it's all default patterns
         val rest = if (g.isEmpty) null else rep.make(temp, xs)    // TODO - why null?
-        DBG("\n---\nmixture rule is = VariableRule")
+        //DBG("\n---\nmixture rule is = VariableRule")
         VariableRule (bnd, g, rest, bx)
     }
 

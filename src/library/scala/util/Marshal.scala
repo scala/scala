@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: $
+// $Id$
 
 
 package scala.util
@@ -38,7 +38,9 @@ object Marshal {
       throw new ClassCastException("type mismatch;"+
         "\n found   : "+found+
         "\n required: "+expected)
-    in.readObject.asInstanceOf[A]
+    val o = in.readObject.asInstanceOf[A]
+    in.close()
+    o
   }
 
 }
