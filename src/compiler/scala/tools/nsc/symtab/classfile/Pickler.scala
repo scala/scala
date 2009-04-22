@@ -471,7 +471,7 @@ abstract class Pickler extends SubComponent {
       var posOffset = 0
       writeRef(sym.name)
       writeRef(normalizedOwner(sym))
-      writeNat((rawFlagsToPickled(sym.flags & PickledFlags)).asInstanceOf[Int])
+      writeLongNat((rawFlagsToPickled(sym.flags & PickledFlags)))
       if (sym.privateWithin != NoSymbol) writeRef(sym.privateWithin)
       writeRef(sym.info)
       posOffset

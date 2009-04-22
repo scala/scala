@@ -182,7 +182,7 @@ abstract class UnPickler {
           }
           val name = readNameRef()
           val owner = readSymbolRef()
-          val flags = pickledToRawFlags(readNat())
+          val flags = pickledToRawFlags(readLongNat())
           var privateWithin: Symbol = NoSymbol
           var inforef = readNat()
           if (isSymbolRef(inforef)) {

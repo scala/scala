@@ -7,7 +7,7 @@
 package scala.tools.nsc.util
 
 import java.io.{File, FileInputStream, PrintStream, IOException}
-import java.lang.Integer.toHexString
+import java.lang.Long.toHexString
 import java.lang.Float.intBitsToFloat
 import java.lang.Double.longBitsToDouble
 
@@ -84,7 +84,7 @@ object ShowPickled extends Names {
     def printSymInfo() {
       printNameRef()
       printSymbolRef()
-      val pflags = buf.readNat()
+      val pflags = buf.readLongNat()
       out.print(" " + toHexString(pflags) +
                 "[" + Flags.flagsToString(Flags.pickledToRawFlags(pflags)) + "] ")
       printTypeRef()

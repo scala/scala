@@ -40,15 +40,25 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
   /** Write a natural number in big endian format, base 128.
    *  All but the last digits have bit 0x80 set.
    */
-  def writeNat(x: Int) {
-    def writeNatPrefix(x: Int) {
+  def writeNat(x: Int) =
+    writeLongNat(x.asInstanceOf[Long] & 0x00000000FFFFFFFFL)
+
+  /**
+   * Like writeNat, but for longs. This is not the same as
+   * writeLong, which writes in base 256. Note that the
+   * binary representation of LongNat is identical to Nat
+   * if the long value is in the range Int.MIN_VALUE to
+   * Int.MAX_VALUE.
+   */
+  def writeLongNat(x: Long) {
+    def writeNatPrefix(x: Long) {
       val y = x >>> 7
       if (y != 0) writeNatPrefix(y)
-      writeByte((x & 0x7f) | 0x80)
+      writeByte(((x & 0x7f) | 0x80).asInstanceOf[Int])
     }
     val y = x >>> 7
     if (y != 0) writeNatPrefix(y)
-    writeByte(x & 0x7f)
+    writeByte((x & 0x7f).asInstanceOf[Int])
   }
 
   /** Write a natural number <code>x</code> at position <code>pos</code>.
@@ -93,9 +103,11 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
 
   /** Read a natural number in big endian format, base 128.
    *  All but the last digits have bit 0x80 set.*/
-  def readNat(): Int = {
-    var b = 0
-    var x = 0
+  def readNat(): Int = readLongNat().asInstanceOf[Int]
+
+  def readLongNat(): Long = {
+    var b = 0L
+    var x = 0L
     do {
       b = readByte()
       x = (x << 7) + (b & 0x7f)

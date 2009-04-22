@@ -111,7 +111,7 @@ object PickleFormat {
  *                  | 70 PosCLASSsym len_Nat pos_Nat SymbolInfo [thistype_Ref]
  *                  | 71 PosMODULEsym len_Nat pos_Nat SymbolInfo
  *                  | 72 PosVALsym len_Nat pos_Nat SymbolInfo [alias_Ref]
- *   SymbolInfo     = name_Ref owner_Ref flags_Nat [privateWithin_Ref] info_Ref
+ *   SymbolInfo     = name_Ref owner_Ref flags_LongNat [privateWithin_Ref] info_Ref
  *   NameInfo       = <character sequence of length len_Nat in Utf8 format>
  *   NumInfo        = <len_Nat-byte signed number in big endian format>
  *   Ref            = Nat
