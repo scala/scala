@@ -116,6 +116,8 @@ object BigDecimal {
 @serializable
 class BigDecimal(val bigDecimal: BigDec) extends java.lang.Number {
   import BigDecimal.RoundingMode._
+  // import BigDecimal.RoundingMode.{ RoundingMode, ROUND_UP, ROUND_DOWN, ROUND_CEILING, ROUND_FLOOR,
+  //     ROUND_HALF_UP, ROUND_HALF_DOWN, ROUND_HALF_EVEN, ROUND_UNNECESSARY }
 
   /** Returns the hash code for this BigDecimal. */
   override def hashCode(): Int = this.bigDecimal.hashCode()

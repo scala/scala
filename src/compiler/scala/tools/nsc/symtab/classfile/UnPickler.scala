@@ -478,6 +478,7 @@ abstract class UnPickler {
 
 	case LABELtree =>
 	  val symbol = readSymbolRef()
+	  val name = readNameRef()
 	  val rhs = readTreeRef()
 	  val params = until(end, readIdentRef)
           (LabelDef(name, params, rhs).

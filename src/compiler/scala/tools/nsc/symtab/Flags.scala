@@ -6,7 +6,7 @@
 
 package scala.tools.nsc.symtab
 
-object Flags extends Enumeration {
+object Flags {
 
   // modifiers
   final val IMPLICIT      = 0x00000200
@@ -103,7 +103,6 @@ object Flags extends Enumeration {
   final val notABSTRACT   = (ABSTRACT: Long) << AntiShift
   final val notOVERRIDE   = (OVERRIDE: Long) << AntiShift
   final val notMETHOD     = (METHOD: Long) << AntiShift
-
 
   // The flags from 0x001 to 0x800 are different in the raw flags
   // and in the pickled format.
@@ -330,36 +329,4 @@ object Flags extends Enumeration {
     def isVariable  = (mods &   MUTABLE) != 0
     def isPublic    = !isPrivate && !isProtected
   }
-  case class FlagEnum(mask: Long) extends Val(maskToBit(mask), flagToString(mask))
-
-  val Implicit      = FlagEnum(IMPLICIT)
-  val Final         = FlagEnum(FINAL)
-  val Private       = FlagEnum(PRIVATE)
-  val Protected     = FlagEnum(PROTECTED)
-  val Sealed        = FlagEnum(SEALED)
-  val Override      = FlagEnum(OVERRIDE)
-  val Case          = FlagEnum(CASE)
-  val Abstract      = FlagEnum(ABSTRACT)
-  val Deferred      = FlagEnum(DEFERRED)
-  val Method        = FlagEnum(METHOD)
-  val Module        = FlagEnum(MODULE)
-  val Interface     = FlagEnum(INTERFACE)
-  val Mutable       = FlagEnum(MUTABLE)
-  val Param         = FlagEnum(PARAM)
-  val Package       = FlagEnum(PACKAGE)
-  val Deprecated    = FlagEnum(DEPRECATED)
-  val Covariant     = FlagEnum(COVARIANT)
-  val Contravariant = FlagEnum(CONTRAVARIANT)
-  val AbsOverride   = FlagEnum(ABSOVERRIDE)
-  val Local         = FlagEnum(LOCAL)
-  val Synthetic     = FlagEnum(SYNTHETIC)
-  val Stable        = FlagEnum(STABLE)
-  val CaseAccessor  = FlagEnum(CASEACCESSOR)
-  val Trait         = FlagEnum(TRAIT)
-  val Bridge        = FlagEnum(BRIDGE)
-  val Accessor      = FlagEnum(ACCESSOR)
-  val SuperAccessor = FlagEnum(SUPERACCESSOR)
-  val ParamAccessor = FlagEnum(PARAMACCESSOR)
-  val ModuleVar     = FlagEnum(MODULEVAR)
-
 }

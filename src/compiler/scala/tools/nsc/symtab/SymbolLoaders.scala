@@ -166,7 +166,7 @@ abstract class SymbolLoaders {
     def refresh() {
       /** Is the given name a valid input file base name? */
       def isValid(name: String): Boolean =
-        name.length() > 0 && !name.endsWith("$class")
+        name.length() > 0 && !name.endsWith("$class") &&
           (/*settings.XO.value*/true || name.indexOf("$anon") == -1)
 
       val classes  = new HashMap[String, global.classPath0.Context]
@@ -195,7 +195,7 @@ abstract class SymbolLoaders {
           if (file.isDirectory && directory.validPackage(file.name) && !packages.isDefinedAt(file.name))
             packages(file.name) = directory.find(file.name, true)
           else if (dir.source.compile)
-            recordClass(file, ".scala", source => checkSource(name, source.sourceFile))
+            recordClass(file, ".scala", source => checkSource(file.name, source.sourceFile))
         }
       }
 

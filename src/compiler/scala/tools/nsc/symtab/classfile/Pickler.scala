@@ -240,6 +240,7 @@ abstract class Pickler extends SubComponent {
 
 
 	case LabelDef(name, params, rhs) =>
+	  putEntry(name)
 	  putTree(rhs)
 	  putTrees(params)
 
@@ -644,6 +645,7 @@ abstract class Pickler extends SubComponent {
 	  writeNat(LABELtree)
 	  writeRef(tree.tpe)
 	  writeRef(tree.symbol)
+	  writeRef(name)
 	  writeRef(rhs)
 	  writeRefs(params)
 	  TREE
