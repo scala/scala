@@ -13,7 +13,7 @@ object Test1 {
     ! (d == WeekDays.Sat || d == WeekDays.Sun);
 
   def run: Int = {
-    val it = WeekDays filter (isWorkingDay);
+    val it = WeekDays.elements filter (isWorkingDay);
     it.toList.length
   }
 }
@@ -30,7 +30,7 @@ object Test2 {
   }
 
   def run: Int = {
-    val it = for (val s <- ThreadState; s.id != 0) yield s;
+    val it = for (val s <- ThreadState.elements; s.id != 0) yield s;
     it.toList.length
   }
 }
@@ -42,7 +42,7 @@ object Test3 {
   }
 
   def run: Int = {
-    val it = for (val d <- Direction; d.toString() startsWith "N") yield d;
+    val it = for (val d <- Direction.elements; d.toString() startsWith "N") yield d;
     it.toList.length
   }
 }
