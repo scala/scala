@@ -571,10 +571,12 @@ trait Typers { self: Analyzer =>
             case SelectFromTypeTree(qual, _) => Select(qual, nme.PACKAGEkw)
           }
         }
-        val tree1 = tree match {
-          case Ident(name) => Select(qual, name)
-          case Select(_, name) => Select(qual, name)
-          case SelectFromTypeTree(_, name) => SelectFromTypeTree(qual, name)
+        val tree1 = atPos(tree.pos) {
+          tree match {
+            case Ident(name) => Select(qual, name)
+            case Select(_, name) => Select(qual, name)
+            case SelectFromTypeTree(_, name) => SelectFromTypeTree(qual, name)
+          }
         }
         val tree2 = checkAccessible(tree1, sym, qual.tpe, qual)
         tree2
@@ -745,7 +747,7 @@ trait Typers { self: Analyzer =>
         context.undetparams = context.undetparams ::: tparams1
         adapt(tree1 setType restpe.substSym(tparams, tparams1), mode, pt)
       case mt: ImplicitMethodType if ((mode & (EXPRmode | FUNmode | LHSmode)) == EXPRmode) => // (4.1)
-        if (!context.undetparams.isEmpty && (mode & POLYmode) == 0) { // (9)
+        if (!context.undetparams.isEmpty/* && (mode & POLYmode) == 0 disabled to make implicits in new collection work; we should revisit this. */) { // (9)
           context.undetparams = inferExprInstance(
             tree, context.extractUndetparams(), pt, mt.paramTypes exists isManifest)
               // if we are looking for a manifest, instantiate type to Nothing anyway,
@@ -1479,12 +1481,13 @@ trait Typers { self: Analyzer =>
       val typedMods = typedModifiers(tdef.mods)
       val rhs1 = checkNoEscaping.privates(tdef.symbol, typedType(tdef.rhs))
       checkNonCyclic(tdef.symbol)
-      rhs1.tpe match {
-        case TypeBounds(lo1, hi1) =>
-          if (!(lo1 <:< hi1))
-            error(tdef.pos, "lower bound "+lo1+" does not conform to upper bound "+hi1)
-        case _ =>
-      }
+      if (tdef.symbol.owner.isType)
+        rhs1.tpe match {
+          case TypeBounds(lo1, hi1) =>
+            if (!(lo1 <:< hi1))
+              error(tdef.pos, "lower bound "+lo1+" does not conform to upper bound "+hi1)
+          case _ =>
+        }
       copy.TypeDef(tdef, typedMods, tdef.name, tparams1, rhs1) setType NoType
     }
 
@@ -2516,7 +2519,7 @@ trait Typers { self: Analyzer =>
           copy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitClass.tpe
         } else {
           if (!lhs1.tpe.isError) {
-            //println(lhs1+" = "+rhs)//DEBUG
+            //println(lhs1+" = "+rhs+" "+varsym+" "+mayBeVarGetter(varsym)+" "+varsym.ownerChain+" "+varsym.info)// DEBUG
             error(tree.pos,
                   if ((varsym ne null) && varsym.isValue) "reassignment to val"
                   else "assignment to non variable")
@@ -3064,7 +3067,7 @@ trait Typers { self: Analyzer =>
           if (defSym.exists && impSym.exists) {
             // imported symbols take precedence over package-owned symbols in different
             // compilation units. Defined symbols take precedence over errenous imports.
-            if (defSym.owner.isPackageClass &&
+            if (defSym.definedInPackage &&
                 ((!inIDE && !currentRun.compiles(defSym)) ||
                  (context.unit ne null) && defSym.sourceFile != context.unit.source.file))
               defSym = NoSymbol

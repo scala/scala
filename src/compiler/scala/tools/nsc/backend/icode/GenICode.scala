@@ -1426,6 +1426,7 @@ abstract class GenICode extends SubComponent  {
         case Some(local) => local
         case None =>
           val local = ctx.makeLocal(l.pos, definitions.AnyRefClass.typeConstructor, eqEqTempName.toString)
+          //assert(!l.pos.source.isEmpty, "bad position, unit = "+unit+", tree = "+l+", pos = "+l.pos.source)
           assert(l.pos.source.get == unit.source)
           assert(r.pos.source.get == unit.source)
           local.start = (l.pos).line.get

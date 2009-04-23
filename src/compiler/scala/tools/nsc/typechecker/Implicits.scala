@@ -287,7 +287,7 @@ self: Analyzer =>
        */
       val wildPt = approximate(pt)
 
-      if (traceImplicits) println("typed impl for "+wildPt+"? "+info.name+":"+info.tpe+"/"+undetParams)
+      //if (traceImplicits) println("typed impl for "+wildPt+"? "+info.name+":"+info.tpe+"/"+undetParams)
       if (isPlausiblyCompatible(info.tpe, wildPt) &&
           isCompatible(depoly(info.tpe), wildPt) &&
           isStable(info.pre)) {
@@ -296,7 +296,7 @@ self: Analyzer =>
           if (info.pre == NoPrefix) Ident(info.name)
           else Select(gen.mkAttributedQualifier(info.pre), info.name)
         }
-        if (traceImplicits) println("typed impl?? "+info.name+":"+info.tpe+" ==> "+itree+" with "+wildPt)
+        //if (traceImplicits) println("typed impl?? "+info.name+":"+info.tpe+" ==> "+itree+" with "+wildPt)
         def fail(reason: String): SearchResult = {
           if (settings.XlogImplicits.value)
             inform(itree+" is not a valid implicit value for "+pt0+" because:\n"+reason)
@@ -488,33 +488,76 @@ self: Analyzer =>
         List()
     }
 
+    /** The parts of a type is the smallest set of types that contains
+     *    - the type itself
+     *    - the parts of its immediate components (prefix and argument)
+     *    - the parts of its base types
+     */
+    private def parts(tp: Type): List[Type] = {
+      val partMap = new collection.jcl.LinkedHashMap[Symbol, List[Type]]
+      /** Add a new type to partMap, unless a subtype of it with the same
+       *  type symbol exists already.
+       */
+      def addType(newtp: Type): Boolean = {
+        val tsym = newtp.typeSymbol
+        partMap.get(tsym) match {
+          case Some(ts) =>
+            if (ts exists (_ <:< newtp)) false
+            else { partMap.put(tsym, newtp :: ts); true }
+          case None =>
+            partMap.put(tsym, List(newtp)); true
+        }
+      }
+      /** Enter all parts of `tp` into `partMap`
+       */
+      def getParts(tp: Type) {
+        tp match {
+          case TypeRef(pre, sym, args) if (!sym.isPackageClass) =>
+            if (sym.isClass && !sym.isRefinementClass && !sym.isAnonymousClass) {
+              if (addType(tp)) {
+                for (bc <- sym.info.baseClasses.tail)
+                  getParts(tp.baseType(bc))
+                getParts(pre)
+                args foreach getParts
+              }
+            } else if (sym.isAliasType) {
+              getParts(tp.normalize)
+            } else if (sym.isAbstractType) {
+              getParts(tp.bounds.hi)
+            }
+          case ThisType(_) =>
+            getParts(tp.widen)
+          case _: SingletonType =>
+            getParts(tp.widen)
+          case RefinedType(ps, _) =>
+            for (p <- ps) getParts(p)
+          case AnnotatedType(_, t, _) =>
+            getParts(t)
+          case ExistentialType(tparams, t) =>
+            getParts(t)
+          case _ =>
+        }
+      }
+      /** Gives a list of typerefs with the same type symbol,
+       *  remove all those that have a prefix which is a supertype
+       *  of some other elements's prefix.
+       */
+      def compactify(ts: List[Type]): List[Type] = ts match {
+        case List() => ts
+        case (t @ TypeRef(pre, _, _)) :: ts1 =>
+          if (ts1 exists (_.prefix <:< pre)) compactify(ts1)
+          else t :: compactify(ts1 remove (pre <:< _.prefix))
+      }
+      getParts(tp)
+      for ((k, ts) <- partMap.elements.toList; t <- compactify(ts)) yield t
+    }
+
     /** The implicits made available by type `pt`.
      *  These are all implicits found in companion objects of classes C
      *  such that some part of `tp` has C as one of its superclasses.
      */
-     private def implicitsOfExpectedType: List[List[ImplicitInfo]] = {
-        def getParts(tp: Type, s: collection.jcl.Set[Type]) {
-          tp match {
-            case TypeRef(pre, sym, args) if (!sym.isPackageClass) =>
-              for (bc <- sym.info.baseClasses)
-                if (sym.isClass) s add (tp.baseType(bc))
-              getParts(pre, s)
-              for (arg <- args) getParts(arg, s)
-            case ThisType(_) =>
-              getParts(tp.widen, s)
-            case _: SingletonType =>
-              getParts(tp.widen, s)
-            case RefinedType(ps, _) =>
-              for (p <- ps) getParts(p, s)
-            case AnnotatedType(_, t, _) =>
-              getParts(t, s)
-            case _ =>
-          }
-        }
-        val tps = new collection.jcl.LinkedHashSet[Type]
-        getParts(pt, tps)
-        tps.elements.map(implicitsOfClass).toList
-      }
+    private def implicitsOfExpectedType: List[List[ImplicitInfo]] =
+      parts(pt).elements.map(implicitsOfClass).toList
 
     /** The manifest corresponding to type `pt`, provided `pt` is an instance of Manifest.
      */
@@ -598,6 +641,8 @@ self: Analyzer =>
       val resultTree = implicitManifest(pt)
       if (resultTree != EmptyTree) result = new SearchResult(resultTree, EmptyTreeTypeSubstituter)
     }
+    if (result == SearchFailure && settings.verbose.value) //!!!
+      println("no implicits found for "+pt+" "+pt.typeSymbol.info.baseClasses+" "+parts(pt)+implicitsOfExpectedType)
     if (util.Statistics.enabled) impltime += (currentTime - startTime)
     result
   }

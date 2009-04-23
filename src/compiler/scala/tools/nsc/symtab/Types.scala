@@ -1826,8 +1826,14 @@ A type's typeSymbol should never be inspected directly.
     override def safeToString =
       pre.toString + targs.mkString("(with type arguments ", ",", ")");
     override def memberType(sym: Symbol) = pre.memberType(sym) match {
-      case PolyType(tparams, restp) => restp.subst(tparams, targs)
-      case ErrorType => ErrorType
+      case PolyType(tparams, restp) =>
+        restp.subst(tparams, targs)
+/* I don't think this is needed, as existential types close only over value types
+      case ExistentialType(tparams, qtpe) =>
+        existentialAbstraction(tparams, qtpe.memberType(sym))
+*/
+      case ErrorType =>
+        ErrorType
     }
     override def kind = "AntiPolyType"
   }
@@ -2206,10 +2212,11 @@ A type's typeSymbol should never be inspected directly.
    *  referenced by type `tpe1'.
    *  If there are no remaining type parameters, simply returns result type `tpe'.
    */
-  def existentialAbstraction(tparams: List[Symbol], tpe: Type): Type =
-    if (tparams.isEmpty) tpe
+  def existentialAbstraction(tparams: List[Symbol], tpe0: Type): Type =
+    if (tparams.isEmpty) tpe0
     else {
       var occurCount = emptySymCount ++ (tparams map (_ -> 0))
+      val tpe = deAlias(tpe0)
       for (t <- tpe) {
         t match {
           case TypeRef(_, sym, _) =>
@@ -2271,6 +2278,16 @@ A type's typeSymbol should never be inspected directly.
         case _ => ExistentialType(tparams1, tpe1)
       }
     }
+
+  /** Remove any occurrences of type aliases from this type */
+  object deAlias extends TypeMap {
+    def apply(tp: Type): Type = mapOver {
+      tp match {
+        case TypeRef(pre, sym, args) if sym.isAliasType => tp.normalize
+        case _ => tp
+      }
+    }
+  }
 
   /** Remove any occurrence of type <singleton> from this type and its parents */
   object dropSingletonType extends TypeMap {

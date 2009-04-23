@@ -463,6 +463,7 @@ trait Infer {
             case _ =>
               restpe
           }
+          //println("try to solve "+tvars+" "+tparams)
           solvedTypes(tvars, tparams, tparams map varianceInType(varianceType),
                       false, lubDepth(List(restpe, pt)))
         } catch {

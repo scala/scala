@@ -121,9 +121,11 @@ abstract class Constructors extends Transform {
       // Create an assignment to class field `to' with rhs `from'
       def mkAssign(to: Symbol, from: Tree): Tree =
         localTyper.typed {
-          atPos(to.pos) {
-            Assign(Select(This(clazz), to), from)
-          }
+          //util.trace("compiling "+unit+" ") {
+            atPos(to.pos) {
+              Assign(Select(This(clazz), to), from)
+            }
+          //}
         }
 
       // Create code to copy parameter to parameter accessor field.

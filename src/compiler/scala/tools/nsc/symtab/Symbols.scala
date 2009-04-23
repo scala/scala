@@ -342,6 +342,8 @@ trait Symbols {
     final def isRefinementClass = isClass && name == nme.REFINE_CLASS_NAME.toTypeName; // no lifting for refinement classes
     final def isModuleClass = isClass && hasFlag(MODULE)
     final def isPackageClass = isClass && hasFlag(PACKAGE)
+    final def isPackageObjectClass = isModuleClass && name.toTermName == nme.PACKAGEkw && owner.isPackageClass
+    final def definedInPackage  = owner.isPackageClass || owner.isPackageObjectClass
     final def isRoot = isPackageClass && name == nme.ROOT.toTypeName
     final def isRootPackage = isPackage && name == nme.ROOTPKG
     final def isEmptyPackage = isPackage && name == nme.EMPTY_PACKAGE_NAME
@@ -1357,6 +1359,8 @@ trait Symbols {
     override def toString(): String =
       if (isValueParameter && owner.isSetter)
         "parameter of setter "+owner.nameString
+      else if (isPackageObjectClass)
+        "package object "+nameString
       else
         compose(List(kindString,
                      if (isClassConstructor) owner.simpleName.decode+idString else nameString))

@@ -69,11 +69,11 @@ four: java.lang.String = four
 
 -----
 val four2 = m(four) // should have an existential bound
-four2: String @Annot(x) forSome { val x: java.lang.String } = four
+four2: java.lang.String @Annot(x) forSome { val x: java.lang.String } = four
 
 -----
 val four3 = four2   // should have the same type as four2
-four3: String @Annot(x) forSome { val x: java.lang.String } = four
+four3: java.lang.String @Annot(x) forSome { val x: java.lang.String } = four
 
 -----
 val stuff = m("stuff") // should not crash
@@ -93,7 +93,7 @@ def m = {
   val y : String @Annot(x) = x
   y
 } // x should be existentially bound
-m: String @Annot(x) forSome { val x: java.lang.String }
+m: java.lang.String @Annot(x) forSome { val x: java.lang.String }
 
 -----
 def n(y: String) = {
@@ -105,7 +105,7 @@ def n(y: String) = {
   }
   m("stuff".stripMargin)
 } // x should be existentially bound
-n: (String)String @Annot(x) forSome { val x: String }
+n: (String)java.lang.String @Annot(x) forSome { val x: String }
 
 -----
 class rep extends Annotation
