@@ -275,7 +275,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
         val isWanted = wanted contains _
         def keepHandler(handler: MemberHandler): Boolean = {
           import handler._
-          definesImplicit || importsWildcard || (importedNames ++ boundNames).exists(isWanted)
+          // Single symbol imports might be implicits! See bug #1752.  Rather than
+          // try to finesse this, we will mimic all imports for now.
+          def isImport = handler.isInstanceOf[ImportHandler]
+          definesImplicit || isImport || (importedNames ++ boundNames).exists(isWanted)
         }
 
         reqs match {
