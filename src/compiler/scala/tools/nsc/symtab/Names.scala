@@ -7,7 +7,7 @@
 package scala.tools.nsc.symtab
 
 import scala.tools.nsc.util.NameTransformer
-import scala.tools.util.UTF8Codec
+import scala.io.UTF8Codec
 import java.security.MessageDigest
 
 /** The class <code>Names</code> ...

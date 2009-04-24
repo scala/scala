@@ -10,7 +10,7 @@ import java.io.IOException
 import java.lang.{Float, Double}
 
 import scala.tools.nsc.util.{Position, NoPosition}
-import scala.tools.util.UTF8Codec
+import scala.io.UTF8Codec
 
 import Flags._
 import PickleFormat._
