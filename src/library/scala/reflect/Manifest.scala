@@ -105,7 +105,7 @@ object Manifest {
           val args1 = meth.invoke(that, null).asInstanceOf[Array[Manifest[_]]]
           super.<:<(that) && args.equalsWith(args1)((x, y) => x <:< y)
         } catch {
-          case _ => false
+          case _ => super.<:<(that)
         }
       }
       override lazy val toString =
