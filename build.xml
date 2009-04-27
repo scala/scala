@@ -317,6 +317,7 @@ LOCAL REFERENCE BUILD (LOCKER)
   </target>
   
   <target name="locker.unlock" depends="quick.clean">
+    <delete file="${build-locker.dir}/all.complete"/>
     <delete file="${build-locker.dir}/library.complete"/>
     <delete file="${build-locker.dir}/compiler.complete"/>
   </target>
