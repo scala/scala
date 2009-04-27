@@ -42,16 +42,16 @@ import scala.compat.Platform.currentTime
  *    pitfalls:
  *  </p>
  *  <ul>
- *    <li>As described above, there is no way to obtain the
- *    command-line arguments because all code in body of an <code>object</code>
- *    extending <code>Application</code> is run as part of the static initialization
- *    which occurs before <code>Application</code>'s <code>main</code> method
- *    even begins execution.</li>
  *    <li> Threaded code that references the object will block until static
  *    initialization is complete.  However, because the entire execution of an
  *    <code>object</code> extending <code>Application</code> takes place during
  *    static initialization, concurrent code will <em>always</em> deadlock if
  *    it must synchronize with the enclosing object.</li>
+ *    <li>As described above, there is no way to obtain the
+ *    command-line arguments because all code in body of an <code>object</code>
+ *    extending <code>Application</code> is run as part of the static initialization
+ *    which occurs before <code>Application</code>'s <code>main</code> method
+ *    even begins execution.</li>
  *    <li>Static initializers are run only once during program execution, and
  *    JVM authors usually assume their execution to be relatively short.
  *    Therefore, certain JVM configurations may become confused, or simply fail to
@@ -59,6 +59,15 @@ import scala.compat.Platform.currentTime
  *    <code>Application</code>.  This can lead to a significant
  *    performance degradation.</li>
  *  </ul>
+ *
+ *  Instead, it is recommended to define a <code>main</code> method explicitly:
+ *  <pre>
+ *  <b>object</b> Main {
+ *    <b>def</b> main(args: Array[String]) {
+ *      //..
+ *    }
+ *  }
+ *  </pre>
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 10/09/2003
