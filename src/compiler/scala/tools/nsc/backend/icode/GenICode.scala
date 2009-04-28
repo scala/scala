@@ -554,8 +554,6 @@ abstract class GenICode extends SubComponent  {
                 })
             }
 
-          if (settings.debug.value)
-            log("Duplicated finalizer: " + duplicateFinalizer)
           ctx.Try(
             bodyCtx => {
               generatedType = kind; //toTypeKind(block.tpe);
@@ -1704,8 +1702,8 @@ abstract class GenICode extends SubComponent  {
               sym.setInfo(oldLabel.tpe)
               labels(oldLabel) = sym
             }
-            val tree = copy.Apply(t, transform(fun), transformTrees(args))
-            tree.symbol = labels(t.symbol)
+            val tree = Apply(global.gen.mkAttributedRef(labels(t.symbol)), transformTrees(args)).setPos(t.pos)
+            tree.tpe = t.tpe
             tree
 
           case t @ LabelDef(name, params, rhs) =>
@@ -2111,7 +2109,7 @@ abstract class GenICode extends SubComponent  {
      * by a real JUMP instruction when all labels are resolved.
      */
     abstract class PseudoJUMP(label: Label) extends Instruction {
-      override def toString(): String = "PJUMP " + label.symbol.simpleName
+      override def toString(): String = "PJUMP " + label.symbol
 
       override def consumed = 0
       override def produced = 0
