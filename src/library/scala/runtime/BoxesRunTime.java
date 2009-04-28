@@ -14,8 +14,8 @@ package scala.runtime;
 /** An object (static class) that defines methods used for creating,
   * reverting, and calculating with, boxed values. There are four classes
   * of methods in this object:
-  *   - High-performance value boxing methods that feed from a pre-
-  *     computed map of instances for the most common instanciations.
+  *   - Convenience boxing methods which call the static valueOf method
+  *     on the boxed class, thus utilizing the JVM boxing cache.
   *   - Convenience unboxing methods returning default value on null.
   *   - The generalised comparison method to be used when an object may
   *     be a boxed value.
