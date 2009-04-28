@@ -399,7 +399,7 @@ trait Definitions {
       if (result == NoSymbol) {
         if (settings.debug.value)
           { Console.println(sym.info); Console.println(sym.info.members) }//debug
-        throw new FatalError((if (module) "object " else "class ") + fullname + " not found.")
+        throw new MissingRequirementError((if (module) "object " else "class ") + fullname)
       }
       result
     }

@@ -51,6 +51,9 @@ abstract class ClassfileParser {
   }
 
   def parse(file: AbstractFile, root: Symbol) = try {
+    def handleMissing(e: MissingRequirementError) =
+      throw new IOException("Missing dependency '" + e.req + "', required by " + in.file)
+
     def handleError(e: Exception) = {
       if (settings.debug.value) e.printStackTrace()
       throw new IOException("class file '" + in.file + "' is broken\n(" + {
@@ -84,8 +87,8 @@ abstract class ClassfileParser {
       this.pool = new ConstantPool
       parseClass()
     } catch {
-      case e: FatalError => handleError(e)
-      case e: RuntimeException => handleError(e)
+      case e: MissingRequirementError => handleMissing(e)
+      case e: RuntimeException        => handleError(e)
     }
   } finally {
     busy = false
