@@ -60,6 +60,8 @@ trait Manifest[T] extends OptManifest[T] {
     case _ => false
   }
 
+  private[reflect] def typeArguments: Option[List[Manifest[_]]] = None
+
 }
 
 /** <p>
@@ -98,19 +100,18 @@ object Manifest {
   def classType[T](clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
     new (Manifest[T] @serializable) {
       val erasure = clazz
-      val typeArguments: Seq[Manifest[_]] = args
+      private[reflect] override val typeArguments = Some(args.toList)
       override def <:<(that: Manifest[_]): Boolean = {
-        try {
-          val meth = that.getClass().getMethod("typeArguments", null)
-          val args1 = meth.invoke(that, null).asInstanceOf[Array[Manifest[_]]]
-          super.<:<(that) && args.equalsWith(args1)((x, y) => x <:< y)
-        } catch {
-          case _ => super.<:<(that)
+        that.typeArguments match {
+          case Some(thatArgs) =>
+            super.<:<(that) && args.equalsWith(thatArgs) { (x, y) => x <:< y }
+          case None =>
+            false
         }
       }
       override lazy val toString =
         (if (erasure.isArray) "Array" else erasure.getName) +
-        typeArguments.mkString("[", ", ", "]")
+        args.toList.mkString("[", ", ", "]")
     }
 
   /** Manifest for the class type `prefix # clazz'. */
@@ -124,7 +125,7 @@ object Manifest {
   def classType[T](prefix: Manifest[_], clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
     new (Manifest[T] @serializable) {
       val erasure = clazz
-      val typeArguments: Seq[Manifest[_]] = args
+      private[reflect] override val typeArguments = Some(args.toList)
       override lazy val toString =
         prefix.toString + "#" + erasure.getName + typeArguments.mkString("[", ", ", "]")
     }
@@ -142,7 +143,7 @@ object Manifest {
   def abstractType[T](prefix: Manifest[_], name: String, upperBound: Manifest[_], args: Manifest[_]*): Manifest[T] =
     new (Manifest[T] @serializable) {
       lazy val erasure = upperBound.erasure
-      val typeArguments: Seq[Manifest[_]] = args
+      private[reflect] override val typeArguments = Some(args.toList)
       override lazy val toString =
         prefix.toString + "#" + name + typeArguments.mkString("[", ", ", "]")
     }
