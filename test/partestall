@@ -1,8 +1,0 @@
-scala -cp ~/scala/build/quick/lib/partest:$HOME/scala/build/quick/lib/actors scala.tools.partest.nest.NestRunner --run
-scala -cp ~/scala/build/quick/lib/partest:$HOME/scala/build/quick/lib/actors scala.tools.partest.nest.NestRunner --jvm
-scala -cp ~/scala/build/quick/lib/partest:$HOME/scala/build/quick/lib/actors scala.tools.partest.nest.NestRunner --jvm5
-scala -cp ~/scala/build/quick/lib/partest:$HOME/scala/build/quick/lib/actors scala.tools.partest.nest.NestRunner --pos
-scala -cp ~/scala/build/quick/lib/partest:$HOME/scala/build/quick/lib/actors scala.tools.partest.nest.NestRunner --neg
-scala -cp ~/scala/build/quick/lib/partest:$HOME/scala/build/quick/lib/actors scala.tools.partest.nest.NestRunner --shootout
-sh scalatest --res
-sh scalatest --script
