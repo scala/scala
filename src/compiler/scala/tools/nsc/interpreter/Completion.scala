@@ -84,9 +84,11 @@ class Completion(val interpreter: Interpreter) extends Completor {
         case _                                    => Result(ids ::: pkgs, 0)
       }
 
+      // a few keywords which don't appear as methods via reflection
+      val memberKeywords = List("isInstanceOf", "asInstanceOf")
       def doDotted(): Result = {
         lazy val pkgs = filt(membersOfPath(path))
-        lazy val ids = filt(membersOfId(path))
+        lazy val ids = filt(membersOfId(path) ::: memberKeywords)
         lazy val statics = filt(completeStaticMembers(path))
 
         if (!pkgs.isEmpty) Result(pkgs, path.length + 1)
