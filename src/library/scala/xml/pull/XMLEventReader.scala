@@ -65,7 +65,7 @@ class XMLEventReader(src: Source) extends ProducerConsumerIterator[XMLEvent]
   // only performance (because it will finish the entire XML document,
   // or at least as much as it can fit in the queue.)
   def stop = {
-    parser.setEvent(POISON)
+    produce(POISON)
     parserThread.interrupt()
   }
 
@@ -96,15 +96,7 @@ class XMLEventReader(src: Source) extends ProducerConsumerIterator[XMLEvent]
 
     override def run() {
       curInput = input
-      try {
-        this.nextch
-        this.document()
-      }
-      catch {
-        case _: InterruptedException    => Thread.currentThread.interrupt()
-        case _: ClosedChannelException  =>
-      }
-
+      interruptibly { this.nextch ; this.document() }
       setEvent(POISON)
     }
   }
@@ -128,15 +120,17 @@ trait ProducerConsumerIterator[T >: Null] extends Iterator[T]
   // defaults to unbounded - override to positive Int if desired
   val MaxQueueSize = -1
 
+  def interruptibly[T](body: => T): Option[T] = try Some(body) catch {
+    case _: InterruptedException    => Thread.currentThread.interrupt() ; None
+    case _: ClosedChannelException  => None
+  }
+
   private[this] lazy val queue =
     if (MaxQueueSize < 0) new LinkedBlockingQueue[T]()
     else new LinkedBlockingQueue[T](MaxQueueSize)
   private[this] var buffer: T = _
   private def fillBuffer() = {
-    buffer = try queue.take catch {
-      case _: InterruptedException    => Thread.currentThread.interrupt() ; EndOfStream
-      case _: ClosedChannelException  => EndOfStream
-    }
+    buffer = interruptibly(queue.take) getOrElse EndOfStream
     isElement(buffer)
   }
   private def isElement(x: T) = x != null && x != EndOfStream
@@ -144,10 +138,7 @@ trait ProducerConsumerIterator[T >: Null] extends Iterator[T]
 
   // public producer interface - this is the only method producers call, so
   // LinkedBlockingQueue's synchronization is all we need.
-  def produce(x: T): Unit = if (!eos) try queue put x catch {
-    case _: InterruptedException    => Thread.currentThread.interrupt()
-    case _: ClosedChannelException  =>
-  }
+  def produce(x: T): Unit = if (!eos) interruptibly(queue put x)
 
   // consumer/iterator interface - we need not synchronize access to buffer
   // because we required there to be only one consumer.

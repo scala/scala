@@ -137,7 +137,7 @@ abstract class MetaData extends Collection[MetaData] {
    *  @return  <code>true</code> iff ...
    */
   def containedIn1(m: MetaData): Boolean =
-    m.equals1(this) || containedIn1(m.next)
+    m != null && (m.equals1(this) || containedIn1(m.next))
 
   /** returns a copy of this MetaData item with next field set to argument.
    *
