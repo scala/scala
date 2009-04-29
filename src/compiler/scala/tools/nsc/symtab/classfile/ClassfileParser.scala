@@ -696,7 +696,7 @@ abstract class ClassfileParser {
       val attrLen = in.nextInt
       attrName match {
         case nme.SignatureATTR =>
-          if (!isScala && !isScalaRaw && global.settings.target.value == "jvm-1.5") {
+          if (!isScala && !isScalaRaw) {
             val sig = pool.getExternalName(in.nextChar)
             val newType = sigToType(sym, sig)
             sym.setInfo(newType)
@@ -855,20 +855,16 @@ abstract class ClassfileParser {
       getScope(jflags).enter(innerClass)
       getScope(jflags).enter(innerModule)
 
-      // the 1.4 library misses entries in the InnerClasses attributes (see HashMap$Entry in LinkedHashMap)
-      // TODO: remove this test when we drop support for 1.4
-      if (settings.target.value != "jvm-1.4") {
-        val decls = innerClass.enclosingPackage.info.decls
-        val e = decls.lookupEntry(className(entry.externalName))
-        if (e ne null) {
-          //println("removing " + e)
-          decls.unlink(e)
-        }
-        val e1 = decls.lookupEntry(className(entry.externalName).toTypeName)
-        if (e1 ne null) {
-          //println("removing " + e1)
-          decls.unlink(e1)
-        }
+      val decls = innerClass.enclosingPackage.info.decls
+      val e = decls.lookupEntry(className(entry.externalName))
+      if (e ne null) {
+        //println("removing " + e)
+        decls.unlink(e)
+      }
+      val e1 = decls.lookupEntry(className(entry.externalName).toTypeName)
+      if (e1 ne null) {
+        //println("removing " + e1)
+        decls.unlink(e1)
       }
     }
 
@@ -897,7 +893,7 @@ abstract class ClassfileParser {
       val attrLen = in.nextInt
       attrName match {
         case nme.SignatureATTR =>
-          if (!isScala && global.settings.target.value == "jvm-1.5")
+          if (!isScala)
             hasMeta = true
           in.skip(attrLen)
         case nme.JacoMetaATTR =>

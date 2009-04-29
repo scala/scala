@@ -185,11 +185,7 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
    */
   def stripMargin: String = stripMargin('|')
 
-  // NB. "\\Q" + '\\' + "\\E" works on Java 1.5 and newer, but not on Java 1.4
-  private def escape(ch: Char): String = ch match {
-    case '\\' => "\\\\"
-    case _ => "\\Q"+ch+"\\E"
-  }
+  private def escape(ch: Char): String = "\\Q" + ch + "\\E"
 
   @throws(classOf[java.util.regex.PatternSyntaxException])
   def split(separator: Char): Array[String] = self.split(escape(separator))
@@ -224,7 +220,7 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
   /** <p>
    *  Uses the underlying string as a pattern (in a fashion similar to
    *  printf in C), and uses the supplied arguments to fill in the
-   *  holes.  Only works on Java 1.5 or higher!
+   *  holes.
    *  </p>
    *  <p>
    *    The interpretation of the formatting patterns is described in

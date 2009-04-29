@@ -21,7 +21,6 @@ final class StringAdd(self: Any) {
   /** Returns string formatted according to given <code>format</code> string.
    *  Format strings are as for <code>String.format</code>
    *  (@see java.lang.String.format).
-   *  Only works on Java 1.5 or higher!
    */
   def formatted(fmtstr: String): String = fmtstr format self
 }

@@ -723,10 +723,6 @@ abstract class CleanUp extends Transform {
             if ((isValueClass(tpe.typeSymbol) || tpe.typeSymbol == definitions.UnitClass)
                 && !forCLDC)
               Select(gen.mkAttributedRef(javaBoxClassModule(tpe.typeSymbol)), "TYPE")
-            else if (settings.target.value != "jvm-1.5" && !forMSIL)
-              Apply(
-                gen.mkAttributedRef(classConstantMethod(tree.pos, signature(tpe))),
-                List())
             else tree
           }
         }
@@ -755,7 +751,7 @@ abstract class CleanUp extends Transform {
 
       /* Adds @serializable annotation to anonymous function classes */
       case cdef @ ClassDef(mods, name, tparams, impl) =>
-        if (settings.target.value == "jvm-1.4" || settings.target.value == "jvm-1.5") {
+        if (settings.target.value == "jvm-1.5") {
           val sym = cdef.symbol
           // is this an anonymous function class?
           if (sym.isAnonymousFunction && !sym.hasAttribute(SerializableAttr))

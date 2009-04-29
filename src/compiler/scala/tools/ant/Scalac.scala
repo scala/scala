@@ -99,7 +99,7 @@ class Scalac extends MatchingTask {
 
   /** Defines valid values for the <code>target</code> property. */
   object Target extends PermissibleValue {
-    val values = List("jvm-1.5", "jvm-1.4", "msil", "cldc")
+    val values = List("jvm-1.5", "msil", "cldc")
   }
 
   /** Defines valid values for the <code>deprecation</code> and

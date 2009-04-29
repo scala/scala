@@ -424,7 +424,7 @@ trait JavaParsers extends JavaScanners {
             //   privateWithin == nme.EMPTY.toTypeName ||
             //   privateWithin == nme.EMPTY_PACKAGE_NAME_tn
             // XXX I think this test should just be "if (defaultAccess)"
-            // but then many cases like pos5/t1176 fail because scala code
+            // but then many cases like pos/t1176 fail because scala code
             // with no package cannot access java code with no package.
             // if (defaultAccess && !isEmptyPkg)
             //   flags |= Flags.PROTECTED    // package private

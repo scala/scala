@@ -103,9 +103,7 @@ abstract class GenJVM extends SubComponent {
 
     var innerClasses: Set[Symbol] = ListSet.empty // referenced inner classes
 
-    val fjbgContext =
-      if (settings.target.value == "jvm-1.5") new FJBGContext(49, 0)
-      else new FJBGContext()
+    val fjbgContext = new FJBGContext(49, 0)
 
     val emitSource = settings.debuginfo.level >= 1
     val emitLines  = settings.debuginfo.level >= 2
@@ -419,9 +417,8 @@ abstract class GenJVM extends SubComponent {
     }
 
     def addGenericSignature(jmember: JMember, sym: Symbol, owner: Symbol) {
-      if (settings.target.value == "jvm-1.5"
-	  && !sym.hasFlag(Flags.EXPANDEDNAME | Flags.SYNTHETIC)
-	  && !(sym.isMethod && sym.hasFlag(Flags.LIFTED))) {
+      if (!sym.hasFlag(Flags.EXPANDEDNAME | Flags.SYNTHETIC)
+          && !(sym.isMethod && sym.hasFlag(Flags.LIFTED))) {
         val memberTpe = atPhase(currentRun.erasurePhase)(owner.thisType.memberInfo(sym))
 //        println("sym: " + sym.fullNameString + " : " + memberTpe + " sym.info: " + sym.info)
         erasure.javaSig(sym, memberTpe) match {
@@ -571,11 +568,6 @@ abstract class GenJVM extends SubComponent {
                                     resTpe,
                                     javaTypes(m.params map (_.kind)),
                                     javaNames(m.params map (_.sym)));
-
-      if (m.symbol.hasFlag(Flags.BRIDGE) && settings.target.value == "jvm-1.4") {
-        jmethod.addAttribute(fjbgContext.JOtherAttribute(jclass, jmethod, "Bridge",
-                                                         new Array[Byte](0)))
-      }
 
       addRemoteException(jmethod, m.symbol)
 
@@ -1697,9 +1689,7 @@ abstract class GenJVM extends SubComponent {
                        && !sym.enclClass.hasFlag(Flags.INTERFACE)
                        && !sym.isClassConstructor) ACC_FINAL else 0)
       jf = jf | (if (sym.isStaticMember) ACC_STATIC else 0)
-
-      if (settings.target.value == "jvm-1.5")
-        jf = jf | (if (sym hasFlag Flags.BRIDGE) ACC_BRIDGE | ACC_SYNTHETIC else 0)
+      jf = jf | (if (sym hasFlag Flags.BRIDGE) ACC_BRIDGE | ACC_SYNTHETIC else 0)
 
       if (sym.isClass && !sym.hasFlag(Flags.INTERFACE))
         jf = jf | ACC_SUPER

@@ -69,11 +69,6 @@ trait Typers { self: Analyzer =>
   private class NormalTyper(context : Context) extends Typer(context)
   // hooks for auto completion
 
-  /** when in 1.4 mode the compiler accepts and ignores useless
-   *  type parameters of Java generics
-   */
-  def onePointFourMode = true // todo changeto: settings.target.value == "jvm-1.4"
-
   // Mode constants
 
   /** The three mode <code>NOmode</code>, <code>EXPRmode</code>
@@ -2154,9 +2149,6 @@ trait Typers { self: Analyzer =>
                 error(annot.constr.pos, "attribute " + annType.typeSymbol.fullNameString + " is missing element " + name.name)
               }
             }
-            if (annType.typeSymbol.hasFlag(JAVA) && settings.target.value == "jvm-1.4") {
-              context.warning (annot.constr.pos, "Java annotation will not be emitted in classfile unless you use the '-target:jvm-1.5' option")
-            }
             if (attrError) annotationError
             else AnnotationInfo(annType, constrArgs, nvPairs)
           }
@@ -3181,8 +3173,7 @@ trait Typers { self: Analyzer =>
             }}
             TypeTree(owntype) setOriginal(tree) // setPos tree.pos
           } else if (tparams.length == 0) {
-            if (onePointFourMode && (tpt1.symbol hasFlag JAVA)) tpt1
-            else errorTree(tree, tpt1.tpe+" does not take type parameters")
+            errorTree(tree, tpt1.tpe+" does not take type parameters")
           } else {
             //Console.println("\{tpt1}:\{tpt1.symbol}:\{tpt1.symbol.info}")
             if (settings.debug.value) Console.println(tpt1+":"+tpt1.symbol+":"+tpt1.symbol.info);//debug

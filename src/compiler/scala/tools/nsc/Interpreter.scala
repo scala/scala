@@ -64,11 +64,8 @@ import Interpreter._
  * @author Moez A. Abdel-Gawad
  * @author Lex Spoon
  */
-class Interpreter(val settings: Settings, out: PrintWriter) {
-  /* If running on pre-1.5 JVM, force target setting to 1.4 */
-  private val major = System.getProperty("java.class.version").split("\\.")(0)
-  if (major.toInt < 49) this.settings.target.value = "jvm-1.4"
-
+class Interpreter(val settings: Settings, out: PrintWriter)
+{
   /** directory to save .class files to */
   val virtualDirectory = new VirtualDirectory("(memory)", None)
 

@@ -59,16 +59,15 @@ object NameTransformer {
         }
         buf.append(op2code(c))
       /* Handle glyphs that are not valid Java/JVM identifiers */
-      } else if (!Character.isJavaIdentifierPart(c)) {
-	if (buf eq null) {
-	  buf = new StringBuilder()
-	  buf.append(name.substring(0, i))
-	}
-        /* Annoying hack to format a hexadeciaml number with leading
-           zeros -- there does not appear to be any function pre-Java
-           1.5 to do this. */
-	buf.append("$u" + Integer.toHexString(c + 0x10000).substring(1).toUpperCase)
-      } else if (buf ne null) {
+      }
+      else if (!Character.isJavaIdentifierPart(c)) {
+        if (buf eq null) {
+          buf = new StringBuilder()
+          buf.append(name.substring(0, i))
+        }
+        buf.append("$u%04X".format(c.toInt))
+      }
+      else if (buf ne null) {
         buf.append(c)
       }
       i += 1
@@ -110,9 +109,9 @@ object NameTransformer {
             /* Handle the decoding of Unicode glyphs that are
              * not valid Java/JVM identifiers */
           } else if ((len - i) >= 6 && // Check that there are enough characters left
-	             ch1 == 'u' &&
+                     ch1 == 'u' &&
                      ((Character.isDigit(ch2)) ||
-		     ('A' <= ch2 && ch2 <= 'F'))) {
+                     ('A' <= ch2 && ch2 <= 'F'))) {
             /* Skip past "$u", next four should be hexadecimal */
             val hex = name.substring(i+2, i+6)
             try {
@@ -137,9 +136,9 @@ object NameTransformer {
         buffer is non-empty, write the current character and advance
          one */
       if ((ops eq null) && !unicode) {
-	if (buf ne null)
+        if (buf ne null)
           buf.append(c)
-	i += 1
+        i += 1
       }
     }
     //System.out.println("= " + (if (buf == null) name else buf.toString()));//DEBUG

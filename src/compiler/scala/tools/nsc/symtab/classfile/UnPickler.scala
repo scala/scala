@@ -253,10 +253,6 @@ abstract class UnPickler {
           val pre = readTypeRef()
           val sym = readSymbolRef()
           var args = until(end, readTypeRef)
-          if ((sym hasFlag JAVA) && sym.typeParams.isEmpty && global.settings.target.value != "jvm-1.5") {
-            // forget arguments, we are compiling for 1.4; see #1144
-            args = List()
-          }
           rawTypeRef(pre, sym, args)
         case TYPEBOUNDStpe =>
           mkTypeBounds(readTypeRef(), readTypeRef())
