@@ -62,7 +62,7 @@ class NamespaceBinding(val prefix: String,
       }
       sb.append('=')
       .append('"')
-      .append(uri)
+      .append(if (uri == null) "" else uri)
       .append('"');
       parent.toString(sb, stop) // copy(ignore)
     }
