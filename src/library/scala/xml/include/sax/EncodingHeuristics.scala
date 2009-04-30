@@ -10,168 +10,95 @@
 
 package scala.xml.include.sax
 
-import java.io.{IOException, InputStreamReader, InputStream}
+import java.io.InputStream
+import scala.util.matching.Regex
 
 /**
  * <p>
  * <code>EncodingHeuristics</code> reads from a stream
  * (which should be buffered) and attempts to guess
  * what the encoding of the text in the stream is.
- * Byte order marks are stripped from the stream.
  * If it fails to determine the type of the encoding,
  * it returns the default UTF-8.
  * </p>
- * <p>
- *   Translated from Elliotte Rusty Harold's Java source
- * </p>
  *
  * @author Burak Emir
+ * @author Paul Phillips
  */
-object EncodingHeuristics {
+object EncodingHeuristics
+{
+  object EncodingNames {
+    // UCS-4 isn't yet implemented in java releases anyway...
+    val bigUCS4       = "UCS-4"
+    val littleUCS4    = "UCS-4"
+    val unusualUCS4   = "UCS-4"
+    val bigUTF16      = "UTF-16BE"
+    val littleUTF16   = "UTF-16LE"
+    val utf8          = "UTF-8"
+    val default       = utf8
+  }
+  import EncodingNames._
 
   /**
     * <p>
-    * This utility method ????.
+    * This utility method attempts to determine the XML character encoding
+    * by examining the input stream, as specified here:
+    *    http://www.w3.org/TR/xml/#sec-guessing
     * </p>
     *
     * @param in   <code>InputStream</code> to read from.
     * @return String  The name of the encoding.
-    * @throws IOException if the stream cannot be reset back to where it was when
-    *                     the method was invoked.
+    * @throws IOException if the stream cannot be reset
     */
   def readEncodingFromStream(in: InputStream): String = {
-    //System.err.println("EncodingHeuristics::readEncodingFromStream");
+    var ret: String = null
+    val bytesToRead = 1024 // enough to read most XML encoding declarations
+    def resetAndRet = { in.reset ; ret }
+
     // This may fail if there are a lot of space characters before the end
     // of the encoding declaration
-    in.mark(1024)
-    var ret: String = null
-    try {
-      // lots of things can go wrong here. If any do, I just return null
-      // so that we'll fall back on the encoding declaration or the
-      // UTF-8 default
-      val byte1 = in.read()
-      val byte2 = in.read()
-      if (byte1 == 0xFE && byte2 == 0xFF) {
-        // don't reset because the byte order mark should not be included????
-        ret =  "UnicodeBig"; // name for big-endian????
-      }
-      else if (byte1 == 0xFF && byte2 == 0xFE) {
-        // don't reset because the byte order mark should not be included????
-        // will the reader throw away the byte order mark or will it return it????
-        ret =  "UnicodeLittle"
-      }
+    in mark bytesToRead
+    val bytes = (in.read, in.read, in.read, in.read)
 
-      /* In accordance with the Character Model [Character Model],
-       when the text format is a Unicode encoding, the XInclude
-       processor must fail the inclusion when the text in the
-       selected range is non-normalized. When transcoding characters
-       to a Unicode encoding from a legacy encoding, a normalizing transcoder must be used. */
-
-      val byte3 = in.read()
-      // check for UTF-8 byte order mark
-      if (byte1 == 0xEF && byte2 == 0xBB && byte3 == 0xBF) {
-        // don't reset because the byte order mark should not be included????
-        // in general what happens if text document includes non-XML legal chars????
-        ret =  "UTF-8";
-      }
-
-      val byte4 = in.read();
-      if (byte1 == 0x00 && byte2 == 0x00 && byte3 == 0xFE && byte4 == 0xFF) {
-        // don't reset because the byte order mark should not be included????
-        ret =  "UCS-4"; // right name for big-endian UCS-4 in Java 1.4????
-      }
-      else if (byte1 == 0x00 && byte2 == 0x00 && byte3 == 0xFF && byte4 == 0xFE) {
-        // don't reset because the byte order mark should not be included????
-        ret =  "UCS-4"; // right name for little-endian UCS-4 in Java 1.4????
-      }
-
-      // no byte order mark present; first character must be
-      // less than sign or white space
-      // Let's look for less-than signs first
-      if (byte1 == 0x00 && byte2 == 0x00 && byte3 == 0x00 && byte4 == '<') {
-        in.reset()
-        ret =  "UCS-4"  // right name for big-endian UCS-4 in Java 1.4????
-      }
-      else if (byte1 == '<' && byte2 == 0x00 && byte3 == 0x00 && byte4 == 0x00) {
-        in.reset()
-        ret =  "UCS-4"  // right name for little-endian UCS-4 in Java 1.4????
-      }
-      else if (byte1 == 0x00 && byte2 == '<' && byte3 == 0x00 && byte4 == '?') {
-        in.reset()
-        ret =  "UnicodeBigUnmarked"
-      }
-      else if (byte1 == '<' && byte2 == 0x00 && byte3 == '?' && byte4 == 0x00) {
-        in.reset()
-        ret =  "UnicodeLittleUnmarked"
-      }
-      else if (byte1 == '<' && byte2 == '?' && byte3 == 'x' && byte4 == 'm') {
-        // ASCII compatible, must read encoding declaration
-        // 1024 bytes will be far enough to read most XML declarations
-        val data = new Array[Byte](1024)
-        data(0) = byte1.asInstanceOf[Byte]
-        data(1) = byte2.asInstanceOf[Byte]
-        data(2) = byte3.asInstanceOf[Byte]
-        data(3) = byte4.asInstanceOf[Byte]
-        val length = in.read(data, 4, 1020) + 4;
-        // Use Latin-1 (ISO-8859-1) because it's ASCII compatible and
-        // all byte sequences are legal Latin-1 sequences so I don't have
-        // to worry about encoding errors if I slip past the
-        // end of the XML/text declaration
-        val declaration = new String(data, 0, length, "8859_1");
-        // if any of these throw a StringIndexOutOfBoundsException
-        // we just fall into the catch bloclk and return null
-        // since this can't be well-formed XML
-        var position = declaration.indexOf("encoding") + 8;
-        var c: Char = '\0'  // bogus init value
-        // get rid of white space before equals sign
-        do {
-          c = declaration.charAt(position)
-          position += 1
-        } while (c == ' ' || c == '\t' || c == '\r' || c == '\n') ;
-        if (c != '=') { // malformed
-          in.reset()
-          ret =  "UTF-8"
-        }
-        // get rid of white space after equals sign
-        do {
-          c = declaration.charAt(position)
-          position += 1
-        } while (c == ' ' || c == '\t' || c == '\r' || c == '\n') ;
-        var delimiter: Char = c
-        if (delimiter != '\'' && delimiter != '"') { // malformed
-          in.reset()
-          ret =  "UTF-8"
-        }
-        // now positioned to read encoding name
-        val encodingName = new StringBuffer()
-        do {
-          c = declaration.charAt(position)
-          position += 1
-          encodingName.append(c)
-        } while(c != delimiter)
-        encodingName.setLength(encodingName.length() - 1)  // rm delim
-        in.reset()
-        ret =  encodingName.toString()
-      }
-        else if (byte1 == 0x4C && byte2 == 0x6F && byte3 == 0xA7 && byte4 == 0x94) {
-          // EBCDIC compatible, must read encoding declaration
-          // ????
-        }
-
-    } catch {
-      case e: Exception =>
-        in.reset()
-        ret = "UTF-8"
+    // first look for byte order mark
+    ret = bytes match {
+      case (0x00, 0x00, 0xFE, 0xFF) => bigUCS4
+      case (0xFF, 0xFE, 0x00, 0x00) => littleUCS4
+      case (0x00, 0x00, 0xFF, 0xFE) => unusualUCS4
+      case (0xFE, 0xFF, 0x00, 0x00) => unusualUCS4
+      case (0xFE, 0xFF, _   , _   ) => bigUTF16
+      case (0xFF, 0xFE, _   , _   ) => littleUTF16
+      case (0xEF, 0xBB, 0xBF, _   ) => utf8
+      case _                        => null
     }
-
-    // no XML or text declaration present
-    //System.err.println("exit EncodingHeuristics::readEncodingFromStream");
-
     if (ret != null)
-      ret
-    else {
-      in.reset()
-      "UTF-8"
+      return resetAndRet
+
+    def readASCIIEncoding: String = {
+      val data = new Array[Byte](bytesToRead - 4)
+      val length = in.read(data, 0, bytesToRead - 4)
+
+      // Use Latin-1 (ISO-8859-1) because all byte sequences are legal.
+      val declaration = new String(data, 0, length, "ISO-8859-1")
+      val regexp = """(?m).*?encoding\s*=\s*["'](.+?)['"]""".r
+      (regexp findFirstMatchIn declaration) match {
+        case None     => default
+        case Some(md) => md.subgroups(0)
+      }
     }
+
+    // no byte order mark present; first character must be '<' or whitespace
+    ret = bytes match {
+      case (0x00, 0x00, 0x00, '<' ) => bigUCS4
+      case ('<' , 0x00, 0x00, 0x00) => littleUCS4
+      case (0x00, 0x00, '<' , 0x00) => unusualUCS4
+      case (0x00, '<' , 0x00, 0x00) => unusualUCS4
+      case (0x00, '<' , 0x00, '?' ) => bigUTF16     // XXX must read encoding
+      case ('<' , 0x00, '?' , 0x00) => littleUTF16  // XXX must read encoding
+      case ('<' , '?' , 'x' , 'm' ) => readASCIIEncoding
+      case (0x4C, 0x6F, 0xA7, 0x94) => utf8         // XXX EBCDIC
+      case _                        => utf8         // no XML or text declaration present
+    }
+    resetAndRet
   }
 }
