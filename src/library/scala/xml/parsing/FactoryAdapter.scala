@@ -165,9 +165,8 @@ abstract class FactoryAdapter extends DefaultHandler() {
   def captureText(): Unit = {
     if (capture) {
       val text = buffer.toString()
-      if (text.length() > 0 && !text.equals(" ")) {
+      if (text.length() > 0)
         hStack.push(createText(text))
-      }
     }
     buffer.setLength(0)
   }
