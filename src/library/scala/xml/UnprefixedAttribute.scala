@@ -15,8 +15,12 @@ package scala.xml
  *
  *  @author Burak Emir
  */
-class UnprefixedAttribute(val key: String, val value: Seq[Node], next1: MetaData) extends MetaData {
-
+class UnprefixedAttribute(
+  val key: String,
+  val value: Seq[Node],
+  next1: MetaData)
+extends Attribute
+{
   val next = if (value ne null) next1 else next1.remove(key)
 
   /** same as this(key, Text(value), next) */
@@ -88,4 +92,6 @@ class UnprefixedAttribute(val key: String, val value: Seq[Node], next1: MetaData
     next.remove(namespace, scope, key)
 
 }
-
+object UnprefixedAttribute {
+  def unapply(x: UnprefixedAttribute) = Some(x.key, x.value, x.next)
+}

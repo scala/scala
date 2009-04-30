@@ -18,12 +18,14 @@ package scala.xml
  *  @param value the attribute value, which may not be null
  *  @param next  ...
  */
-class PrefixedAttribute(val pre: String,
-                        val key: String,
-                        val value: Seq[Node],
-                        val next: MetaData) extends MetaData {
-
-  if(value eq null)
+class PrefixedAttribute(
+  val pre: String,
+  val key: String,
+  val value: Seq[Node],
+  val next: MetaData)
+extends Attribute
+{
+  if (value eq null)
     throw new UnsupportedOperationException("value is null")
 
   /** same as this(key, Utility.parseAttributeValue(value), next) */
@@ -97,4 +99,6 @@ class PrefixedAttribute(val pre: String,
       next.remove(namespace, scope, key)
 
 }
-
+object PrefixedAttribute {
+  def unapply(x: PrefixedAttribute) = Some(x.pre, x.key, x.value, x.next)
+}
