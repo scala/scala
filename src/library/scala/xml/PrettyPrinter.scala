@@ -52,7 +52,7 @@ class PrettyPrinter( width:Int, step:Int ) {
    */
   protected def cut(s: String, ind: Int): List[Item] = {
     val tmp = width - cur
-    if (s.length < tmp)
+    if (s.length <= tmp)
       return List(Box(ind, s))
     val sb = new StringBuilder()
     var i = s.indexOf(' ')
