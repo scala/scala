@@ -32,6 +32,8 @@ abstract class ExternalID extends parsing.TokenTests
     else "PUBLIC " + quotedPublicLiteral +
       (if (systemId == null) "" else " " + quotedSystemLiteral)
   }
+  def toString(sb: StringBuilder): StringBuilder =
+    sb.append(this.toString())
 
   def systemId: String
   def publicId: String
