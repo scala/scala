@@ -11,21 +11,30 @@
 
 package scala.xml.dtd
 
-
 /** an ExternalIDs - either PublicID or SystemID
  *
  *  @author Burak Emir
  */
-abstract class ExternalID  {
+abstract class ExternalID extends parsing.TokenTests
+{
+  def quoted(s: String) = {
+    val c = if (s contains '"') '\'' else '"'
+    c + s + c
+  }
 
-  /** returns "PUBLIC "+publicLiteral+" SYSTEM "+systemLiteral */
-  override def toString(): String
+  // public != null: PUBLIC " " publicLiteral " " [systemLiteral]
+  // public == null: SYSTEM " " systemLiteral
+  override def toString(): String = {
+    lazy val quotedSystemLiteral = quoted(systemId)
+    lazy val quotedPublicLiteral = quoted(publicId)
 
-  /** returns "PUBLIC "+publicLiteral+" SYSTEM "+systemLiteral */
-  def toString(sb: StringBuilder): StringBuilder
+    if (publicId == null) "SYSTEM " + quotedSystemLiteral
+    else "PUBLIC " + quotedPublicLiteral +
+      (if (systemId == null) "" else " " + quotedSystemLiteral)
+  }
 
   def systemId: String
-
+  def publicId: String
 }
 
 /** a system identifier
@@ -33,18 +42,11 @@ abstract class ExternalID  {
  *  @author Burak Emir
  *  @param  systemLiteral the system identifier literal
  */
-case class SystemID(systemId: String) extends ExternalID with parsing.TokenTests {
+case class SystemID(systemId: String) extends ExternalID {
+  val publicId = null
 
-  if( !checkSysID(systemId) )
-    throw new IllegalArgumentException(
-      "can't use both \" and ' in systemLiteral"
-    )
-  /** returns " SYSTEM "+systemLiteral */
-  override def toString() =
-    Utility.systemLiteralToString(systemId)
-
-  override def toString(sb: StringBuilder): StringBuilder =
-    Utility.systemLiteralToString(sb, systemId)
+  if (!checkSysID(systemId))
+    throw new IllegalArgumentException("can't use both \" and ' in systemId")
 }
 
 
@@ -54,17 +56,12 @@ case class SystemID(systemId: String) extends ExternalID with parsing.TokenTests
  *  @param  publicLiteral the public identifier literal
  *  @param  systemLiteral (can be null for notation pubIDs) the system identifier literal
  */
-case class PublicID(publicId: String, systemId: String)
-extends ExternalID with parsing.TokenTests {
-
+case class PublicID(publicId: String, systemId: String) extends ExternalID {
   if (!checkPubID(publicId))
-    throw new IllegalArgumentException(
-      "publicId must consist of PubidChars"
-    )
-  if ((systemId ne null) && !checkSysID(systemId))
-    throw new IllegalArgumentException(
-      "can't use both \" and ' in systemId"
-    )
+    throw new IllegalArgumentException("publicId must consist of PubidChars")
+
+  if (systemId != null && !checkSysID(systemId))
+    throw new IllegalArgumentException("can't use both \" and ' in systemId")
 
   /** the constant "#PI" */
   def label = "#PI"
@@ -74,18 +71,4 @@ extends ExternalID with parsing.TokenTests {
 
   /** always empty */
   def child = Nil
-
-  /** returns " PUBLIC "+publicId+" "+systemId */
-  override def toString() =
-    toString(new StringBuilder()).toString()
-
-  /** appends "PUBLIC "+publicId+" "+systemId to argument */
-  override def toString(sb: StringBuilder): StringBuilder = {
-    Utility.publicLiteralToString(sb, publicId)
-    if (systemId ne null) {
-      sb.append(' ')
-      Utility.appendQuoted(systemId, sb)
-    }
-    sb
-  }
 }

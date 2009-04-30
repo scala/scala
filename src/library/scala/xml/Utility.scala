@@ -268,57 +268,6 @@ object Utility extends AnyRef with parsing.TokenTests {
     }
   )
 
-  /**
-   * Returns a hashcode for the given constituents of a node
-   *
-   * @param uri
-   * @param label
-   * @param attribs
-   * @param children
-  def hashCode(uri: String, label: String, attribs: scala.collection.mutable.HashMap[(String,String),String], scpe: Int, children: Seq[Node]): Int = {
-    41 * uri.hashCode() % 7 + label.hashCode() + attribs.toList.hashCode() + scpe + children.hashCode()
-  }
-   */
-
-  /**
-   * @param s ...
-   * @return  ...
-   */
-  def systemLiteralToString(s: String): String = {
-    val sb = new StringBuilder()
-    systemLiteralToString(sb, s)
-    sb.toString()
-  }
-
-  /**
-   * @param sb ...
-   * @param s  ...
-   * @return   ...
-   */
-  def systemLiteralToString(sb: StringBuilder, s: String): StringBuilder = {
-    sb.append("SYSTEM ")
-    appendQuoted(s, sb)
-  }
-
-  /**
-   * @param s ...
-   * @return  ...
-   */
-  def publicLiteralToString(s: String): String = {
-    val sb = new StringBuilder()
-    publicLiteralToString(sb, s)
-    sb.toString()
-  }
-
-  /**
-   * @param sb ...
-   * @param s  ...
-   * @return   ...
-   */
-  def publicLiteralToString(sb: StringBuilder, s: String): StringBuilder = {
-    sb.append("PUBLIC \"").append(s).append('"')
-  }
-
   def appendQuoted(s: String): String = {
     val sb = new StringBuilder()
     appendQuoted(s, sb)
