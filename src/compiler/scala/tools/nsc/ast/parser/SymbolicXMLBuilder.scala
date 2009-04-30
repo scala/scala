@@ -254,6 +254,8 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
       uri1 match {
         case Apply(_, List(uri @ Literal(Constant(_)))) => //text
           tlist = mkAssign(uri) :: tlist
+        case Select(_, nme.Nil) =>  // allow for xmlns="" -- bug #1626
+          tlist = mkAssign(Literal(Constant(null))) :: tlist
         case _ =>
           tlist = mkAssign(uri1) :: tlist
           //println("SymbolicXMLBuilder::handleNamespaceBinding:")
