@@ -153,6 +153,9 @@ class PrettyPrinter( width:Int, step:Int ) {
   protected def fits(test: String) =
     test.length < width - cur
 
+  private def doPreserve(node: Node) =
+    node.attribute(XML.namespace, XML.space).map(_.toString == XML.preserve) getOrElse false
+
   /** @param tail: what we'd like to sqeeze in */
   protected def traverse(node: Node, pscope: NamespaceBinding, ind: Int): Unit =  node match {
 
@@ -166,10 +169,8 @@ class PrettyPrinter( width:Int, step:Int ) {
         val test = {
           val sb = new StringBuilder()
           Utility.toXML(node, pscope, sb, false)
-          if (node.attribute("http://www.w3.org/XML/1998/namespace", "space") == "preserve")
-            sb.toString()
-          else
-            TextBuffer.fromString(sb.toString()).toText(0)._data
+          if (doPreserve(node)) sb.toString
+          else TextBuffer.fromString(sb.toString()).toText(0)._data
         }
         if (childrenAreLeaves(node) && fits(test)) {
           makeBox(ind, test)
