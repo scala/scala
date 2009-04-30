@@ -75,7 +75,7 @@ class CharArrayReader(buf: RandomAccessSeq[Char], start: Int, /* startline: int,
       case '\t' =>
         // nextcol = ((nextcol - 1) / tabinc * tabinc) + tabinc + 1;
       case CR =>
-        if (buf(bp) == LF) {
+        if (bp < buf.size && buf(bp) == LF) {
           ch = LF
           bp += 1
         }
