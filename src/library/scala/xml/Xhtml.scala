@@ -6,8 +6,33 @@ import parsing.XhtmlEntities
 
 /* (c) David Pollak  2007 WorldWide Conferencing, LLC */
 
-object Xhtml {
+object Xhtml
+{
+  /**
+   * Convenience function: same as toXhtml(node, false, false)
+   *
+   * @param node      the node
+   */
+  def toXhtml(node: Node): String = toXhtml(node, false, false)
 
+  /**
+   * Convenience function: amounts to calling toXhtml(node) on each
+   * node in the sequence.
+   *
+   * @param nodeSeq   the node sequence
+   */
+  def toXhtml(nodeSeq: NodeSeq): String = {
+    val sb = new StringBuilder
+    sequenceToXML(nodeSeq, TopScope, sb, false, false)
+    sb.toString
+  }
+
+  /**
+   * Convenience function: amounts to calling toXhtml(node, TopScope, ...)
+   * with the supplied parameters.
+   *
+   * @param nodeSeq   the node sequence
+   */
   def toXhtml(n: Node, stripComment: Boolean, convertAmp: Boolean): String = {
     val sb = new StringBuilder()
     toXhtml(n, TopScope, sb, stripComment, convertAmp)
@@ -21,38 +46,38 @@ object Xhtml {
    * @param pscope       the parent scope
    * @param sb           stringbuffer to append to
    * @param stripComment if true, strip comments
+   * @param convertAmp   if true, decode entity references
    */
-  def toXhtml(x: Node, pscope: NamespaceBinding, sb: StringBuilder, stripComment: Boolean, convertAmp: Boolean): Unit = {
+  def toXhtml(
+    x: Node,
+    pscope: NamespaceBinding,
+    sb: StringBuilder,
+    stripComment: Boolean,
+    convertAmp: Boolean): Unit =
+  {
+    def decode(er: EntityRef) = XhtmlEntities.entMap.get(er.entityName) match {
+      case Some(chr) if chr.toInt >= 128  => sb.append(chr)
+      case _                              => er.toString(sb)
+    }
+    def shortForm =
+      (x.child == null || x.child.length == 0) &&
+      !(List("div", "script", "textarea") contains x.label)
+
     x match {
-
-      case c: Comment if !stripComment =>
-        c.toString(sb)
-
-      case er: EntityRef if convertAmp =>
-        XhtmlEntities.entMap.get(er.entityName) match {
-          case Some(chr) if chr.toInt >= 128 => sb.append(chr)
-          case _ => er.toString(sb)
-        }
-
-      case x: SpecialNode =>
-        x.toString(sb)
-
-      case g: Group =>
-        for (c <- g.nodes) toXhtml(c, x.scope, sb, stripComment, convertAmp)
+      case c: Comment if !stripComment    => c.toString(sb)
+      case er: EntityRef if convertAmp    => decode(er)
+      case x: SpecialNode                 => x.toString(sb)
+      case g: Group                       =>
+        g.nodes foreach { toXhtml(_, x.scope, sb, stripComment, convertAmp) }
 
       case _  =>
-        if (((x.child eq null) || (x.child.length == 0)) && x.label != "div" && x.label != "script" && x.label != "textarea") {
-          sb.append('<')
-          x.nameToString(sb)
-          if (x.attributes ne null) x.attributes.toString(sb)
-          x.scope.toString(sb, pscope)
-          sb.append(" />")
-        } else {
-          // print tag with namespace declarations
-          sb.append('<')
-          x.nameToString(sb)
-          if (x.attributes ne null) x.attributes.toString(sb)
-          x.scope.toString(sb, pscope)
+        sb.append('<')
+        x.nameToString(sb)
+        if (x.attributes ne null) x.attributes.toString(sb)
+        x.scope.toString(sb, pscope)
+
+        if (shortForm) sb.append(" />")
+        else {
           sb.append('>')
           sequenceToXML(x.child, x.scope, sb, stripComment, convertAmp)
           sb.append("</")
@@ -63,27 +88,26 @@ object Xhtml {
   }
 
   /**
-   * @param children     ...
-   * @param pscope       ...
-   * @param sb           ...
-   * @param stripComment ...
+   * Amounts to calling toXhtml(node, ...) with the given parameters on each node.
    */
-  def sequenceToXML(children: Seq[Node], pscope: NamespaceBinding,
-                    sb: StringBuilder, stripComment: Boolean, convertAmp: Boolean): Unit = {
-    if (children.isEmpty)
-      return
-    else if (children forall { y => y.isInstanceOf[Atom[_]] && !y.isInstanceOf[Text] }) { // add space
-      val it = children.elements
-      val f = it.next
-      toXhtml(f, pscope, sb, stripComment, convertAmp)
-      while (it.hasNext) {
-        val x = it.next
-        sb.append(' ')
-        toXhtml(x, pscope, sb, stripComment, convertAmp)
-      }
-    } else {
-      for (c <- children) toXhtml(c, pscope, sb, stripComment, convertAmp)
+  def sequenceToXML(
+    children: Seq[Node],
+    pscope: NamespaceBinding,
+    sb: StringBuilder,
+    stripComment: Boolean,
+    convertAmp: Boolean): Unit =
+  {
+    def isAtomOrText(x: Node) = x match {
+      case _: Atom[_] | _: Text => true
+      case _                    => false
     }
+    val doSpaces = children forall isAtomOrText // interleave spaces
+
+    for (c <- children.take(children.length - 1)) {
+      toXhtml(c, pscope, sb, stripComment, convertAmp)
+      if (doSpaces) sb append ' '
+    }
+    toXhtml(children.last, pscope, sb, stripComment, convertAmp)
   }
 }
 
