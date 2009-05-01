@@ -78,7 +78,7 @@ extends Attribute
     sb.append(key)
     sb.append('=')
     val sb2 = new StringBuilder()
-    for (c <- value) Utility.toXML(c, TopScope, sb2, true)
+    Utility.sequenceToXML(value, TopScope, sb2, true)
     Utility.appendQuoted(sb2.toString(), sb)
   }
 
