@@ -97,11 +97,8 @@ object Xhtml
     stripComment: Boolean,
     convertAmp: Boolean): Unit =
   {
-    def isAtomOrText(x: Node) = x match {
-      case _: Atom[_] | _: Text => true
-      case _                    => false
-    }
-    val doSpaces = children forall isAtomOrText // interleave spaces
+    def isAtomAndNotText(x: Node) = x.isInstanceOf[Atom[_]] && !x.isInstanceOf[Text]
+    val doSpaces = children forall isAtomAndNotText // interleave spaces
 
     for (c <- children.take(children.length - 1)) {
       toXhtml(c, pscope, sb, stripComment, convertAmp)
