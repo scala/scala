@@ -12,20 +12,30 @@
 package scala.xml.parsing
 
 import java.io.{InputStream, Reader, File, FileDescriptor, FileInputStream}
-import scala.collection.mutable.{HashMap,Stack}
+import scala.collection.mutable.Stack
 
-import org.xml.sax.{Attributes, InputSource}
-
-import org.xml.sax.SAXException
-import org.xml.sax.SAXNotRecognizedException
-import org.xml.sax.SAXNotSupportedException
-import org.xml.sax.SAXParseException
+import org.xml.sax.{ Attributes, InputSource }
 import org.xml.sax.helpers.DefaultHandler
+import javax.xml.parsers.{ SAXParser, SAXParserFactory }
 
-import javax.xml.parsers.SAXParserFactory
-import javax.xml.parsers.ParserConfigurationException
-import javax.xml.parsers.SAXParser
+// can be mixed into FactoryAdapter if desired
+trait ConsoleErrorHandler extends DefaultHandler
+{
+  import org.xml.sax.SAXParseException
 
+  // ignore warning, crimson warns even for entity resolution!
+  override def warning(ex: SAXParseException): Unit = { }
+  override def error(ex: SAXParseException): Unit = printError("Error", ex)
+  override def fatalError(ex: SAXParseException): Unit = printError("Fatal Error", ex)
+
+  protected def printError(errtype: String, ex: SAXParseException): Unit =
+    Console.withOut(Console.err) {
+      val s = "[%s]:%d:%d: %s".format(
+        errtype, ex.getLineNumber, ex.getColumnNumber, ex.getMessage)
+      Console.println(s)
+      Console.flush
+    }
+}
 
 /** SAX adapter class, for use with Java SAX parser. Keeps track of
  *  namespace bindings, without relying on namespace handling of the
@@ -80,40 +90,32 @@ abstract class FactoryAdapter extends DefaultHandler() {
   * @param length
   */
   override def characters(ch: Array[Char], offset: Int, length: Int): Unit = {
-    if (capture) {
-      if (normalizeWhitespace) {
-        // normalizing whitespace is not compliant, but useful */
-	var i: Int = offset
-        var ws = false
-        while (i < offset + length) {
-          if (ch(i).isWhitespace) {
-            if (!ws) {
-              buffer.append(' ')
-              ws = true
-            }
-          } else {
-            buffer.append(ch(i))
-            ws = false
-          }
-	  i += 1
-        }
-      } else { // compliant:report every character
-        buffer.append(ch, offset, length)
-      }
+    if (!capture) return
+    if (!normalizeWhitespace) {
+      // compliant: report every character
+      return buffer.append(ch, offset, length)
+    }
+
+    // normalizing whitespace is not compliant, but useful
+    var i: Int = offset
+    while (i < offset + length) {
+      val c = if (ch(i).isWhitespace) ' ' else ch(i)
+      buffer append c
+      i += 1
+      // if that was whitespace, drop until non whitespace
+      if (c == ' ') while (ch(i).isWhitespace) i += 1
     }
   }
 
-  //var elemCount = 0; //STATISTICS
-
   /* ContentHandler methods */
 
-  /* Start prefix mapping - use default impl.
-   def startPrefixMapping( prefix:String , uri:String ):Unit = {}
-   */
-
   /* Start element. */
-  override def startElement(uri: String, _localName: String,
-                            qname: String, attributes: Attributes): Unit = {
+  override def startElement(
+    uri: String,
+    _localName: String,
+    qname: String,
+    attributes: Attributes): Unit =
+  {
     /*elemCount = elemCount + 1; STATISTICS */
     captureText()
     //Console.println("FactoryAdapter::startElement("+uri+","+_localName+","+qname+","+attributes+")");
@@ -217,80 +219,29 @@ abstract class FactoryAdapter extends DefaultHandler() {
       hStack.push(pi)
   }
 
-  //
-  // ErrorHandler methods
-  //
-
-  /** Warning.*/
-  override def warning(ex: SAXParseException): Unit = {
-    // ignore warning, crimson warns even for entity resolution!
-    //printError("Warning", ex);
-  }
-
-  /** Error.     */
-  override def error(ex: SAXParseException): Unit =
-    printError("Error", ex)
-
-  /** Fatal error.*/
-  override def fatalError(ex: SAXParseException): Unit =
-    printError("Fatal Error", ex)
-
-  //
-  // Protected methods
-  //
-
-  /** Prints the error message */
-  protected def printError(errtype: String, ex: SAXParseException): Unit =
-    Console.withOut(Console.err) {
-    Console.print("[")
-    Console.print(errtype)
-    Console.print("] ")
-
-    var systemId = ex.getSystemId()
-    if (systemId ne null) {
-      val index = systemId.lastIndexOf('/'.asInstanceOf[Int])
-      if (index != -1)
-        systemId = systemId.substring(index + 1)
-      //Console.print(systemId)
-    }
-
-    Console.print(':')
-    Console.print(ex.getLineNumber())
-    Console.print(':')
-    Console.print(ex.getColumnNumber())
-    Console.print(": ")
-    Console.print(ex.getMessage())
-    Console.println
-    Console.flush
-  }
-
-  var rootElem: Node = null:Node
+  var rootElem: Node = null
 
   //FactoryAdapter
   // MAIN
   //
+
+  private def mkParser(): SAXParser = {
+    val f = SAXParserFactory.newInstance()
+    f.setNamespaceAware(false)
+    f.newSAXParser()
+  }
 
   /** load XML document
    * @param source
    * @return a new XML document object
    */
   def loadXML(source: InputSource): Node = {
-    // create parser
-    val parser: SAXParser = try {
-      val f = SAXParserFactory.newInstance()
-      f.setNamespaceAware(false)
-      f.newSAXParser()
-    } catch {
-      case e: Exception =>
-        Console.err.println("error: Unable to instantiate parser")
-        throw e
-    }
-
-    // parse file
+    val parser: SAXParser = mkParser
     scopeStack.push(TopScope)
     parser.parse(source, this)
     scopeStack.pop
-    return rootElem
+
+    rootElem
   } // loadXML
 
   /** loads XML from given file */
