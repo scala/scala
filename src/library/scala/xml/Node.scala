@@ -129,13 +129,23 @@ abstract class Node extends NodeSeq {
    * @return  <code>true</code> if ..
    */
   override def equals(x: Any): Boolean = x match {
-    case g:Group => false
+    case g: Group   => false
     case that: Node =>
-      ((that.prefix == this.prefix )
-       &&(that.label == this.label )
-       &&(that.attributes ==  this.attributes)
-       && that.child.sameElements(this.child)) // sameElements
-    case _ => false
+      this.prefix == that.prefix &&
+      this.label == that.label &&
+      this.attributes == that.attributes &&
+      equalChildren(that)
+    case _          => false
+  }
+
+  // children comparison has to be done carefully - see bug #1773.
+  // It would conceivably be a better idea for a scala block which
+  // generates the empty string not to generate a child rather than
+  // our having to filter it later, but that approach would be more
+  // delicate to implement.
+  private def equalChildren(that: Node) = {
+    def noEmpties(xs: Seq[Node]) = xs filter (_.toString() != "")
+    noEmpties(this.child) sameElements noEmpties(that.child)
   }
 
   /** <p>
