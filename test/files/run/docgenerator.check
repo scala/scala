@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
         <head><title>List of all classes and objects</title>
-        <meta http-equiv="content-type" content="text/html; charset=UTF8"></meta><meta content="scaladoc" name="generator"></meta><link href="style.css" type="text/css" rel="stylesheet"></link><script type="text/javascript" src="script.js"></script>
+        <meta http-equiv="content-type" content="text/html; charset=UTF8"/><meta content="scaladoc" name="generator"/><link href="style.css" type="text/css" rel="stylesheet"/><script type="text/javascript" src="script.js"/>
         </head>
         <body onload="init()"><div><div class="kinds" id="Classes">Classes</div><ul class="list">
         <li id="Classes_C"><a href="examples/C0.html" target="contentFrame">C0</a></li>
@@ -23,22 +23,22 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
         <head><title>Scala 2</title>
-        <meta http-equiv="content-type" content="text/html; charset=UTF8"></meta><meta content="scaladoc" name="generator"></meta><link href="style.css" type="text/css" rel="stylesheet"></link><script type="text/javascript" src="script.js"></script>
+        <meta http-equiv="content-type" content="text/html; charset=UTF8"/><meta content="scaladoc" name="generator"/><link href="style.css" type="text/css" rel="stylesheet"/><script type="text/javascript" src="script.js"/>
         </head>
         <frameset cols="25%, 75%">
     <frameset rows="50%, 28, 50%">
-    <frame src="modules.html" name="modulesFrame"></frame>
-    <frame src="nav-classes.html" name="navigationFrame"></frame>
-    <frame src="all-classes.html" name="classesFrame"></frame>
+    <frame src="modules.html" name="modulesFrame"/>
+    <frame src="nav-classes.html" name="navigationFrame"/>
+    <frame src="all-classes.html" name="classesFrame"/>
     </frameset>
-    <frame src="root-content.html" name="contentFrame"></frame>
+    <frame src="root-content.html" name="contentFrame"/>
     </frameset>
       </html>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
         <head><title>List of all classes and objects</title>
-        <meta http-equiv="content-type" content="text/html; charset=UTF8"></meta><meta content="scaladoc" name="generator"></meta><link href="style.css" type="text/css" rel="stylesheet"></link><script type="text/javascript" src="script.js"></script>
+        <meta http-equiv="content-type" content="text/html; charset=UTF8"/><meta content="scaladoc" name="generator"/><link href="style.css" type="text/css" rel="stylesheet"/><script type="text/javascript" src="script.js"/>
         </head>
         <body onload="init()"><div><div class="kinds" id="Classes">Classes</div><ul class="list">
         <li id="Classes_C"><a href="examples/C0.html" target="contentFrame">C0</a></li>
@@ -52,22 +52,22 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
         <head><title>Scala 2</title>
-        <meta http-equiv="content-type" content="text/html; charset=UTF8"></meta><meta content="scaladoc" name="generator"></meta><link href="style.css" type="text/css" rel="stylesheet"></link><script type="text/javascript" src="script.js"></script>
+        <meta http-equiv="content-type" content="text/html; charset=UTF8"/><meta content="scaladoc" name="generator"/><link href="style.css" type="text/css" rel="stylesheet"/><script type="text/javascript" src="script.js"/>
         </head>
         <frameset cols="25%, 75%">
     <frameset rows="50%, 28, 50%">
-    <frame src="modules.html" name="modulesFrame"></frame>
-    <frame src="nav-classes.html" name="navigationFrame"></frame>
-    <frame src="all-classes.html" name="classesFrame"></frame>
+    <frame src="modules.html" name="modulesFrame"/>
+    <frame src="nav-classes.html" name="navigationFrame"/>
+    <frame src="all-classes.html" name="classesFrame"/>
     </frameset>
-    <frame src="root-content.html" name="contentFrame"></frame>
+    <frame src="root-content.html" name="contentFrame"/>
     </frameset>
       </html>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
         <head><title>List of all classes and objects</title>
-        <meta http-equiv="content-type" content="text/html; charset=UTF8"></meta><meta content="scaladoc" name="generator"></meta><link href="style.css" type="text/css" rel="stylesheet"></link><script type="text/javascript" src="script.js"></script>
+        <meta http-equiv="content-type" content="text/html; charset=UTF8"/><meta content="scaladoc" name="generator"/><link href="style.css" type="text/css" rel="stylesheet"/><script type="text/javascript" src="script.js"/>
         </head>
         <body onload="init()"><div><div class="kinds" id="Classes">Classes</div><ul class="list">
         <li id="Classes_C"><a href="examples/C0.html" target="contentFrame">C0</a></li>
@@ -89,22 +89,22 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
         <head><title>Scala 2</title>
-        <meta http-equiv="content-type" content="text/html; charset=UTF8"></meta><meta content="scaladoc" name="generator"></meta><link href="style.css" type="text/css" rel="stylesheet"></link><script type="text/javascript" src="script.js"></script>
+        <meta http-equiv="content-type" content="text/html; charset=UTF8"/><meta content="scaladoc" name="generator"/><link href="style.css" type="text/css" rel="stylesheet"/><script type="text/javascript" src="script.js"/>
         </head>
         <frameset cols="25%, 75%">
     <frameset rows="50%, 28, 50%">
-    <frame src="modules.html" name="modulesFrame"></frame>
-    <frame src="nav-classes.html" name="navigationFrame"></frame>
-    <frame src="all-classes.html" name="classesFrame"></frame>
+    <frame src="modules.html" name="modulesFrame"/>
+    <frame src="nav-classes.html" name="navigationFrame"/>
+    <frame src="all-classes.html" name="classesFrame"/>
     </frameset>
-    <frame src="root-content.html" name="contentFrame"></frame>
+    <frame src="root-content.html" name="contentFrame"/>
     </frameset>
       </html>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
         <head><title>List of all classes and objects</title>
-        <meta http-equiv="content-type" content="text/html; charset=UTF8"></meta><meta content="scaladoc" name="generator"></meta><link href="style.css" type="text/css" rel="stylesheet"></link><script type="text/javascript" src="script.js"></script>
+        <meta http-equiv="content-type" content="text/html; charset=UTF8"/><meta content="scaladoc" name="generator"/><link href="style.css" type="text/css" rel="stylesheet"/><script type="text/javascript" src="script.js"/>
         </head>
         <body onload="init()"><div><div class="kinds" id="Classes">Classes</div><ul class="list">
         <li id="Classes_C"><a href="examples/C0.html" target="contentFrame">C0</a></li>
@@ -130,22 +130,22 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
         <head><title>Scala 2</title>
-        <meta http-equiv="content-type" content="text/html; charset=UTF8"></meta><meta content="scaladoc" name="generator"></meta><link href="style.css" type="text/css" rel="stylesheet"></link><script type="text/javascript" src="script.js"></script>
+        <meta http-equiv="content-type" content="text/html; charset=UTF8"/><meta content="scaladoc" name="generator"/><link href="style.css" type="text/css" rel="stylesheet"/><script type="text/javascript" src="script.js"/>
         </head>
         <frameset cols="25%, 75%">
     <frameset rows="50%, 28, 50%">
-    <frame src="modules.html" name="modulesFrame"></frame>
-    <frame src="nav-classes.html" name="navigationFrame"></frame>
-    <frame src="all-classes.html" name="classesFrame"></frame>
+    <frame src="modules.html" name="modulesFrame"/>
+    <frame src="nav-classes.html" name="navigationFrame"/>
+    <frame src="all-classes.html" name="classesFrame"/>
     </frameset>
-    <frame src="root-content.html" name="contentFrame"></frame>
+    <frame src="root-content.html" name="contentFrame"/>
     </frameset>
       </html>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
         <head><title>List of all classes and objects</title>
-        <meta http-equiv="content-type" content="text/html; charset=UTF8"></meta><meta content="scaladoc" name="generator"></meta><link href="style.css" type="text/css" rel="stylesheet"></link><script type="text/javascript" src="script.js"></script>
+        <meta http-equiv="content-type" content="text/html; charset=UTF8"/><meta content="scaladoc" name="generator"/><link href="style.css" type="text/css" rel="stylesheet"/><script type="text/javascript" src="script.js"/>
         </head>
         <body onload="init()"><div><div class="kinds" id="Classes">Classes</div><ul class="list">
         <li id="Classes_B"><a href="annots/Bar.html" target="contentFrame">Bar</a></li>
@@ -163,15 +163,15 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
         <head><title>Scala 2</title>
-        <meta http-equiv="content-type" content="text/html; charset=UTF8"></meta><meta content="scaladoc" name="generator"></meta><link href="style.css" type="text/css" rel="stylesheet"></link><script type="text/javascript" src="script.js"></script>
+        <meta http-equiv="content-type" content="text/html; charset=UTF8"/><meta content="scaladoc" name="generator"/><link href="style.css" type="text/css" rel="stylesheet"/><script type="text/javascript" src="script.js"/>
         </head>
         <frameset cols="25%, 75%">
     <frameset rows="50%, 28, 50%">
-    <frame src="modules.html" name="modulesFrame"></frame>
-    <frame src="nav-classes.html" name="navigationFrame"></frame>
-    <frame src="all-classes.html" name="classesFrame"></frame>
+    <frame src="modules.html" name="modulesFrame"/>
+    <frame src="nav-classes.html" name="navigationFrame"/>
+    <frame src="all-classes.html" name="classesFrame"/>
     </frameset>
-    <frame src="root-content.html" name="contentFrame"></frame>
+    <frame src="root-content.html" name="contentFrame"/>
     </frameset>
       </html>
 

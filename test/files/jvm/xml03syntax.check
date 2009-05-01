@@ -13,5 +13,5 @@
 2
 4
 
-node=<elem key="<b>hello</b>"></elem>, key=Some(<b>hello</b>)
-node=<elem ></elem>, key=None
+node=<elem key="<b>hello</b>"/>, key=Some(<b>hello</b>)
+node=<elem />, key=None

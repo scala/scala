@@ -90,7 +90,7 @@ object Test {
 	val q = xml.Utility.sort(<a g='3' j='2' oo='2' a='2'/>)
 	assertEquals("sort attrib"+xml.Utility.sort(q.attributes).toString, " a=\"2\" g=\"3\" j=\"2\" oo=\"2\"", xml.Utility.sort(q.attributes).toString)
 	 val pp = new xml.PrettyPrinter(80,5)
-	assertEquals("pretty print sorted attrib:"+pp.format(q), "<a a=\"2\" g=\"3\" j=\"2\" oo=\"2\"></a>", pp.format(q))
+	assertEquals("pretty print sorted attrib:"+pp.format(q), "<a a=\"2\" g=\"3\" j=\"2\" oo=\"2\"/>", pp.format(q))
 
     <hi>
       <there/>

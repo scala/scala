@@ -173,7 +173,7 @@ scala>
 scala> 
 scala>      |      |      |      | res3: scala.xml.Elem = 
 <a>
-       <b d="dd" c="c"></b></a>
+       <b d="dd" c="c"/></a>
 
 scala> 
 scala> 

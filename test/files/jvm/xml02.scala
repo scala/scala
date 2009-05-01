@@ -22,7 +22,7 @@ object Test extends TestConsoleMain {
       assertTrue("@two",       ax \ "@foo" == xml.Text("bar"))    // dto.
       assertTrue("@three",     bx \ "@foo" == "bar&x")            // dto.
       assertTrue  ("@four", (bx \ "@foo") sameElements List(xml.Text("bar&x")))
-      assertEquals("@five",  "<hello foo=\"bar&amp;x\"></hello>", bx.toString)
+      assertEquals("@five",  "<hello foo=\"bar&amp;x\"/>", bx.toString)
     }
   }
 

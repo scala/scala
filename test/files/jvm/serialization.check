@@ -118,8 +118,8 @@ x = ListBuffer(white, black)
 y = ListBuffer(white, black)
 x equals y: true - y equals x: true
 
-x = <html><title>title</title><body></body></html>
-y = <html><title>title</title><body></body></html>
+x = <html><title>title</title><body/></html>
+y = <html><title>title</title><body/></html>
 x equals y: true - y equals x: true
 
 x = <html>
