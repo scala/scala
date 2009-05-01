@@ -201,11 +201,17 @@ object Utility extends AnyRef with parsing.TokenTests {
         x.nameToString(sb)
         if (x.attributes ne null) x.attributes.toString(sb)
         x.scope.toString(sb, pscope)
-        sb.append('>')
-        sequenceToXML(x.child, x.scope, sb, stripComment)
-        sb.append("</")
-        x.nameToString(sb)
-        sb.append('>')
+        if (x.child.isEmpty)
+          // no children, so use short form: <xyz .../>
+          sb.append("/>")
+        else {
+          // children, so use long form: <xyz ...>...</xyz>
+          sb.append('>')
+          sequenceToXML(x.child, x.scope, sb, stripComment)
+          sb.append("</")
+          x.nameToString(sb)
+          sb.append('>')
+        }
     }
   }
 
