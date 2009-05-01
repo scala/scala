@@ -31,6 +31,6 @@ case class Unparsed(_data: String) extends Atom[String](_data) {
   }
 
   /** returns text, with some characters escaped according to XML spec */
-  override def toString(sb: StringBuilder) = sb append data
+  override def buildString(sb: StringBuilder) = sb append data
 
 }

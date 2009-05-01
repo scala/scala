@@ -187,10 +187,10 @@ object Utility extends AnyRef with parsing.TokenTests {
     x match {
 
       case c: Comment if !stripComment =>
-        c.toString(sb)
+        c.buildString(sb)
 
       case x: SpecialNode =>
-        x.toString(sb)
+        x.buildString(sb)
 
       case g: Group =>
         for (c <- g.nodes) toXML(c, x.scope, sb, stripComment)
@@ -199,8 +199,8 @@ object Utility extends AnyRef with parsing.TokenTests {
         // print tag with namespace declarations
         sb.append('<')
         x.nameToString(sb)
-        if (x.attributes ne null) x.attributes.toString(sb)
-        x.scope.toString(sb, pscope)
+        if (x.attributes ne null) x.attributes.buildString(sb)
+        x.scope.buildString(sb, pscope)
         if (x.child.isEmpty)
           // no children, so use short form: <xyz .../>
           sb.append("/>")

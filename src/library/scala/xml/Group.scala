@@ -57,7 +57,7 @@ case class Group(val nodes: Seq[Node]) extends Node {
   /**
    * @throws Predef.UnsupportedOperationException (always)
    */
-  def toString(sb: StringBuilder) =
+  def buildString(sb: StringBuilder) =
     throw new UnsupportedOperationException(
       "class Group does not support method toString(StringBuilder)")
 

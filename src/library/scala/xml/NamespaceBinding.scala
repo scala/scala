@@ -44,17 +44,17 @@ class NamespaceBinding(val prefix: String,
 
   override def toString(): String = {
     val sb = new StringBuilder()
-    toString(sb, TopScope)
+    buildString(sb, TopScope)
     sb.toString()
   }
 
-  def toString(stop: NamespaceBinding): String = {
+  def buildString(stop: NamespaceBinding): String = {
     val sb = new StringBuilder()
-    toString(sb, stop)
+    buildString(sb, stop)
     sb.toString()
   }
 
-  def toString(sb: StringBuilder, stop: NamespaceBinding): Unit = {
+  def buildString(sb: StringBuilder, stop: NamespaceBinding): Unit = {
     if (this ne stop) { // contains?
       sb.append(" xmlns")
       if (prefix ne null) {
@@ -64,7 +64,7 @@ class NamespaceBinding(val prefix: String,
       .append('"')
       .append(if (uri == null) "" else uri)
       .append('"');
-      parent.toString(sb, stop) // copy(ignore)
+      parent.buildString(sb, stop) // copy(ignore)
     }
   }
 

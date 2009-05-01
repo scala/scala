@@ -170,7 +170,7 @@ abstract class Node extends NodeSeq {
    * @param stripComment if true, strips comment nodes from result
    * @return ...
    */
-  def toString(stripComment: Boolean): String =
+  def buildString(stripComment: Boolean): String =
     Utility.toXML(this, stripComment)
 
   /**
@@ -178,7 +178,7 @@ abstract class Node extends NodeSeq {
    *
    * @see <code><a href="#toString">toString(Boolean)</a></code>
    */
-  override def toString(): String = toString(false)
+  override def toString(): String = buildString(false)
 
   /**
    * Appends qualified name of this node to <code>StringBuilder</code>.

@@ -45,7 +45,7 @@ class Atom[+A](val data: A) extends SpecialNode {
    *  @param  sb ...
    *  @return ...
    */
-  def toString(sb: StringBuilder) =
+  def buildString(sb: StringBuilder) =
     Utility.escape(data.toString(), sb)
 
   override def text: String = data.toString()

@@ -57,24 +57,24 @@ object Xhtml
   {
     def decode(er: EntityRef) = XhtmlEntities.entMap.get(er.entityName) match {
       case Some(chr) if chr.toInt >= 128  => sb.append(chr)
-      case _                              => er.toString(sb)
+      case _                              => er.buildString(sb)
     }
     def shortForm =
       (x.child == null || x.child.length == 0) &&
       !(List("div", "script", "textarea") contains x.label)
 
     x match {
-      case c: Comment if !stripComment    => c.toString(sb)
+      case c: Comment if !stripComment    => c.buildString(sb)
       case er: EntityRef if convertAmp    => decode(er)
-      case x: SpecialNode                 => x.toString(sb)
+      case x: SpecialNode                 => x.buildString(sb)
       case g: Group                       =>
         g.nodes foreach { toXhtml(_, x.scope, sb, stripComment, convertAmp) }
 
       case _  =>
         sb.append('<')
         x.nameToString(sb)
-        if (x.attributes ne null) x.attributes.toString(sb)
-        x.scope.toString(sb, pscope)
+        if (x.attributes ne null) x.attributes.buildString(sb)
+        x.scope.buildString(sb, pscope)
 
         if (shortForm) sb.append(" />")
         else {

@@ -49,25 +49,25 @@ object ContentModel extends WordExp {
     return s
   }
 
-  def toString(r: RegExp): String = {
+  def buildString(r: RegExp): String = {
     val sb = new StringBuilder()
-    toString(r, sb)
+    buildString(r, sb)
     sb.toString()
   }
 
   /* precond: rs.length >= 1 */
-  private def toString(rs: Seq[RegExp], sb: StringBuilder, sep: Char) {
+  private def buildString(rs: Seq[RegExp], sb: StringBuilder, sep: Char) {
     val it = rs.elements
     val fst = it.next
-    toString(fst, sb)
+    buildString(fst, sb)
     for (z <- it) {
       sb.append(sep)
-      toString(z, sb)
+      buildString(z, sb)
     }
     sb
   }
 
-  def toString(c: ContentModel, sb: StringBuilder): StringBuilder = c match {
+  def buildString(c: ContentModel, sb: StringBuilder): StringBuilder = c match {
     case ANY =>
       sb.append("ANY")
     case EMPTY =>
@@ -75,18 +75,18 @@ object ContentModel extends WordExp {
     case PCDATA =>
       sb.append("(#PCDATA)")
     case ELEMENTS( _ ) | MIXED( _ ) =>
-      c.toString(sb)
+      c.buildString(sb)
   }
 
-  def toString(r: RegExp, sb:StringBuilder): StringBuilder = r match {  // !!! check for match translation problem
+  def buildString(r: RegExp, sb:StringBuilder): StringBuilder = r match {  // !!! check for match translation problem
     case Eps =>
       sb
     case Sequ(rs @ _*) =>
-      sb.append( '(' ); toString(rs, sb, ','); sb.append( ')' )
+      sb.append( '(' ); buildString(rs, sb, ','); sb.append( ')' )
     case Alt(rs @ _*) =>
-      sb.append( '(' ); toString(rs, sb, '|');  sb.append( ')' )
+      sb.append( '(' ); buildString(rs, sb, '|');  sb.append( ')' )
     case Star(r: RegExp) =>
-      sb.append( '(' ); toString(r, sb); sb.append( ")*" )
+      sb.append( '(' ); buildString(r, sb); sb.append( ")*" )
     case Letter(ElemName(name)) =>
       sb.append(name)
   }
@@ -97,11 +97,11 @@ sealed abstract class ContentModel {
 
   override def toString(): String = {
     val sb = new StringBuilder()
-    toString(sb)
+    buildString(sb)
     sb.toString()
   }
 
-  def toString(sb:StringBuilder): StringBuilder;
+  def buildString(sb:StringBuilder): StringBuilder;
   /*
   def validate(cs: NodeSeq): Boolean = this.match {
     case ANY         => true
@@ -115,13 +115,13 @@ sealed abstract class ContentModel {
 }
 
 case object PCDATA extends ContentModel {
-  override def toString(sb: StringBuilder): StringBuilder = sb.append("(#PCDATA)")
+  override def buildString(sb: StringBuilder): StringBuilder = sb.append("(#PCDATA)")
 }
 case object EMPTY extends ContentModel {
-  override def toString(sb: StringBuilder): StringBuilder = sb.append("EMPTY")
+  override def buildString(sb: StringBuilder): StringBuilder = sb.append("EMPTY")
 }
 case object ANY extends ContentModel {
-  override def toString(sb: StringBuilder): StringBuilder = sb.append("ANY")
+  override def buildString(sb: StringBuilder): StringBuilder = sb.append("ANY")
 }
 sealed abstract class DFAContentModel extends ContentModel {
   import ContentModel.ElemName
@@ -159,9 +159,9 @@ Console.println("ns = "+ns);
     }
   }
   */
-  override def toString(sb: StringBuilder): StringBuilder =  {
+  override def buildString(sb: StringBuilder): StringBuilder =  {
     sb.append("(#PCDATA|")
-    ContentModel.toString(Alt(r.asInstanceOf[Alt].rs.toList.drop(1):_*):RegExp, sb);
+    ContentModel.buildString(Alt(r.asInstanceOf[Alt].rs.toList.drop(1):_*):RegExp, sb);
     sb.append(")*");
   }
 }
@@ -185,6 +185,6 @@ case class  ELEMENTS(r:ContentModel.RegExp) extends DFAContentModel {
     }
   }
   */
-  override def toString(sb: StringBuilder): StringBuilder =
-    ContentModel.toString(r, sb)
+  override def buildString(sb: StringBuilder): StringBuilder =
+    ContentModel.buildString(r, sb)
 }

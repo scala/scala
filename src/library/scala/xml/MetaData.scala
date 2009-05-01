@@ -245,14 +245,14 @@ abstract class MetaData extends Collection[MetaData] {
 
   override def toString(): String = {
     val sb = new StringBuilder()
-    toString(sb)
+    buildString(sb)
     sb.toString()
   }
 
-  def toString(sb: StringBuilder): StringBuilder = {
+  def buildString(sb: StringBuilder): StringBuilder = {
     sb.append(' ')
     toString1(sb)
-    next.toString(sb)
+    next.buildString(sb)
   }
 
   /**

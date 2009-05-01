@@ -225,4 +225,7 @@ object Test extends Application with Assert {
   val p = scala.xml.parsing.ConstructingParser.fromSource(scala.io.Source.fromString("<foo bar:attr='&amp;'/>"),true)
   val n = p.element(new scala.xml.NamespaceBinding("bar","BAR",scala.xml.TopScope))(0)
   assertFalse( n.attributes.get("BAR", n, "attr").isEmpty)
+
+  // #547 test
+  assertTrue(<xml:group>hello</xml:group>.toString == "hello")
 }

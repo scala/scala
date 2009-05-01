@@ -116,7 +116,7 @@ class PrettyPrinter( width:Int, step:Int ) {
     val sb = new StringBuilder("<")
     n.nameToString(sb)
     //Utility.appendPrefixedName( n.prefix, n.label, pmap, sb );
-    n.attributes.toString(sb)
+    n.attributes.buildString(sb)
     //Utility.attr2xml( n.scope, n.attributes, pmap, sb );
     sb.append("/>")
     sb.toString()
@@ -126,8 +126,8 @@ class PrettyPrinter( width:Int, step:Int ) {
     val sb = new StringBuilder("<")
     n.nameToString(sb) //Utility.appendPrefixedName( n.prefix, n.label, pmap, sb );
     val i = sb.length + 1
-    n.attributes.toString(sb)
-    n.scope.toString(sb, pscope)
+    n.attributes.buildString(sb)
+    n.scope.buildString(sb, pscope)
     sb.append('>')
     (sb.toString(), i)
   }

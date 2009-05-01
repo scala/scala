@@ -125,7 +125,7 @@ trait ModelToXML extends ModelExtractor {
   def parse(str: String): NodeSeq = {
     new SpecialNode {
       def label = "#PCDATA"
-      def toString(sb: StringBuilder): StringBuilder = {
+      def buildString(sb: StringBuilder): StringBuilder = {
         sb.append(str.trim)
         sb
       }

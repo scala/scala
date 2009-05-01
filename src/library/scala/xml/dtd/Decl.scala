@@ -15,27 +15,27 @@ package scala.xml.dtd
 abstract class Decl
 
 abstract class MarkupDecl extends Decl {
-  def toString(sb: StringBuilder): StringBuilder
+  def buildString(sb: StringBuilder): StringBuilder
 }
 
 /** an element declaration
  */
 case class ElemDecl(name: String, contentModel: ContentModel)
 extends MarkupDecl with DtdTypeSymbol {
-  override def toString(sb: StringBuilder): StringBuilder = {
+  override def buildString(sb: StringBuilder): StringBuilder = {
     sb
     .append("<!ELEMENT ")
     .append(name)
     .append(' ');
 
-    ContentModel.toString(contentModel, sb);
+    ContentModel.buildString(contentModel, sb);
     sb.append('>');
   }
 }
 
 case class AttListDecl(name: String, attrs:List[AttrDecl])
 extends MarkupDecl with DtdTypeSymbol {
-  override def toString(sb: StringBuilder): StringBuilder = {
+  override def buildString(sb: StringBuilder): StringBuilder = {
     sb
     .append("<!ATTLIST ")
     .append(name)
@@ -50,11 +50,11 @@ extends MarkupDecl with DtdTypeSymbol {
  */
 case class AttrDecl(name: String, tpe: String, default: DefaultDecl) {
   override def toString(): String =
-    toString(new StringBuilder()).toString();
+    buildString(new StringBuilder()).toString();
 
-  def toString(sb: StringBuilder): StringBuilder = {
+  def buildString(sb: StringBuilder): StringBuilder = {
     sb.append("  ").append(name).append(' ').append(tpe).append(' ');
-    default.toString(sb)
+    default.buildString(sb)
   }
 
 }
@@ -64,37 +64,37 @@ abstract class EntityDecl extends MarkupDecl
 
 /** a parsed general entity declaration */
 case class ParsedEntityDecl(name: String, entdef: EntityDef) extends EntityDecl {
-  override def toString(sb: StringBuilder): StringBuilder = {
+  override def buildString(sb: StringBuilder): StringBuilder = {
     sb.append("<!ENTITY ").append( name ).append(' ');
-    entdef.toString(sb).append('>')
+    entdef.buildString(sb).append('>')
   }
 }
 
 /** a parameter entity declaration */
 case class ParameterEntityDecl(name: String, entdef: EntityDef) extends EntityDecl {
-  override def toString(sb: StringBuilder): StringBuilder = {
+  override def buildString(sb: StringBuilder): StringBuilder = {
     sb.append("<!ENTITY % ").append( name ).append(' ');
-    entdef.toString(sb).append('>')
+    entdef.buildString(sb).append('>')
   }
 }
 
 /** an unparsed entity declaration */
 case class UnparsedEntityDecl( name:String, extID:ExternalID, notation:String ) extends EntityDecl {
-  override def toString(sb: StringBuilder): StringBuilder = {
+  override def buildString(sb: StringBuilder): StringBuilder = {
     sb.append("<!ENTITY ").append( name ).append(' ');
-    extID.toString(sb).append(" NDATA ").append(notation).append('>');
+    extID.buildString(sb).append(" NDATA ").append(notation).append('>');
   }
 }
 /** a notation declaration */
 case class NotationDecl( name:String, extID:ExternalID ) extends MarkupDecl {
-  override def toString(sb: StringBuilder): StringBuilder = {
+  override def buildString(sb: StringBuilder): StringBuilder = {
     sb.append("<!NOTATION ").append( name ).append(' ');
-    extID.toString(sb)
+    extID.buildString(sb)
   }
 }
 
 abstract class EntityDef {
-  def toString(sb: StringBuilder): StringBuilder
+  def buildString(sb: StringBuilder): StringBuilder
 }
 
 case class IntDef(value:String) extends EntityDef {
@@ -118,14 +118,14 @@ case class IntDef(value:String) extends EntityDef {
   }
   validateValue();
 
-  override def toString(sb: StringBuilder): StringBuilder =
+  override def buildString(sb: StringBuilder): StringBuilder =
     Utility.appendQuoted(value, sb);
 
 }
 
 case class ExtDef(extID:ExternalID) extends EntityDef {
-  override def toString(sb: StringBuilder): StringBuilder =
-    extID.toString(sb);
+  override def buildString(sb: StringBuilder): StringBuilder =
+    extID.buildString(sb);
 }
 
 
@@ -134,7 +134,7 @@ case class PEReference(ent:String) extends MarkupDecl {
   if( !Utility.isName( ent ))
     throw new IllegalArgumentException("ent must be an XML Name");
 
-  override def toString(sb: StringBuilder): StringBuilder =
+  override def buildString(sb: StringBuilder): StringBuilder =
     sb.append('%').append(ent).append(';');
 }
 
@@ -143,24 +143,24 @@ case class PEReference(ent:String) extends MarkupDecl {
 
 abstract class DefaultDecl {
   override def toString(): String
-  def toString(sb: StringBuilder): StringBuilder
+  def buildString(sb: StringBuilder): StringBuilder
 }
 
 case object REQUIRED extends DefaultDecl {
   override def toString(): String = "#REQUIRED"
-  override def toString(sb: StringBuilder) = sb.append("#REQUIRED")
+  override def buildString(sb: StringBuilder) = sb.append("#REQUIRED")
 }
 
 case object IMPLIED extends DefaultDecl {
   override def toString(): String = "#IMPLIED"
-  override def toString(sb: StringBuilder) = sb.append("#IMPLIED")
+  override def buildString(sb: StringBuilder) = sb.append("#IMPLIED")
 }
 
 case class DEFAULT(fixed: Boolean, attValue: String) extends DefaultDecl {
   override def toString(): String =
-    toString(new StringBuilder()).toString();
+    buildString(new StringBuilder()).toString();
 
-  override def toString(sb: StringBuilder): StringBuilder = {
+  override def buildString(sb: StringBuilder): StringBuilder = {
     if (fixed) sb.append("#FIXED ")
     Utility.appendEscapedQuoted(attValue, sb)
   }
