@@ -22,7 +22,7 @@ package scala.reflect
   *   these operators should be on the unerased type.
   * </p>
   */
-trait Manifest[T] {
+trait Manifest[T] extends OptManifest[T] {
 
   /** A class representing the type U to which T would be erased. Note
     * that there is no subtyping relationship between T and U. */
@@ -58,6 +58,8 @@ trait Manifest[T] {
     case m:Manifest[_] => this.erasure == m.erasure
     case _ => false
   }
+
+  private[reflect] def typeArguments: Option[List[Manifest[_]]] = None
 
 }
 
@@ -97,8 +99,18 @@ object Manifest {
   def classType[T](clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
     new Manifest[T] {
       val erasure = clazz
-      val typeArguments: Seq[Manifest[_]] = args
-      override lazy val toString = erasure.getName + typeArguments.mkString("[", ", ", "]")
+      private[reflect] override val typeArguments = Some(args.toList)
+      override def <:<(that: Manifest[_]): Boolean = {
+        that.typeArguments match {
+          case Some(thatArgs) =>
+            super.<:<(that) && args.equalsWith(thatArgs) { (x, y) => x <:< y }
+          case None =>
+            false
+        }
+      }
+      override lazy val toString =
+        (if (erasure.isArray) "Array" else erasure.getName) +
+        args.toList.mkString("[", ", ", "]")
     }
 
   /** Manifest for the class type `prefix # clazz'. */
@@ -112,8 +124,9 @@ object Manifest {
   def classType[T](prefix: Manifest[_], clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
     new Manifest[T] {
       val erasure = clazz
-      val typeArguments: Seq[Manifest[_]] = args
-      override lazy val toString = prefix.toString + "#" + clazz.getName + typeArguments.mkString("[", ", ", "]")
+      private[reflect] override val typeArguments = Some(args.toList)
+      override lazy val toString =
+        prefix.toString + "#" + erasure.getName + typeArguments.mkString("[", ", ", "]")
     }
 
   /** Manifest for the abstract type `prefix # name'. `upperBound' is not
@@ -129,8 +142,9 @@ object Manifest {
   def abstractType[T](prefix: Manifest[_], name: String, upperBound: Manifest[_], args: Manifest[_]*): Manifest[T] =
     new Manifest[T] {
       lazy val erasure = upperBound.erasure
-      val typeArguments: Seq[Manifest[_]] = args
-      override lazy val toString = prefix.toString + "#" + name + typeArguments.mkString("[", ", ", "]")
+      private[reflect] override val typeArguments = Some(args.toList)
+      override lazy val toString =
+        prefix.toString + "#" + name + typeArguments.mkString("[", ", ", "]")
     }
 
   /** Manifest for the intersection type `parents_0 with ... with parents_n'. */

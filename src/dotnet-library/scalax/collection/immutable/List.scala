@@ -12,7 +12,8 @@
 package scalax.collection.immutable
 
 import mutable.ListBuffer
-import generic.covariant.{SequenceTemplate, SequenceFactory}
+import generic.{SequenceTemplate, SequenceFactory, EmptyIterableFactory, Builder}
+import annotation.unchecked.uncheckedVariance
 
 /** A class representing an ordered collection of elements of type
  *  <code>a</code>. This class comes with two implementing case
@@ -23,7 +24,9 @@ import generic.covariant.{SequenceTemplate, SequenceFactory}
  *  @author  Martin Odersky and others
  *  @version 2.8
  */
-sealed abstract class List[+A] extends Stream[A] with SequenceTemplate[List, A] with Product {
+sealed abstract class List[+A] extends Stream[A]
+                                  with SequenceTemplate[List, A @uncheckedVariance]
+                                  with Product {
 
   import collection.{Iterable, OrderedIterable, Sequence, Vector}
 
@@ -549,7 +552,7 @@ final case class ::[B](private var hd: B, private[scalax] var tl: List[B]) exten
  *  @author  Martin Odersky and others
  *  @version 1.0, 15/07/2003
  */
-object List extends SequenceFactory[List] {
+object List extends SequenceFactory[List] with EmptyIterableFactory[List] {
 
   override val empty: List[Nothing] = Nil
 
@@ -566,7 +569,9 @@ object List extends SequenceFactory[List] {
    *  @deprecated  use @see iterate instead.
    *  @param start the start value of the list
    *  @param end  the end value of the list
-   *  @param step the increment function of the list, must be monotonically increasing or decreasing
+   *  @param step the increment function of the list, which given <code>v<sub>n</sub></code>,
+   *              computes <code>v<sub>n+1</sub></code>. Must be monotonically increasing
+   *              or decreasing.
    *  @return     the sorted list of all integers in range [start;end).
    */
   @deprecated def range(start: Int, end: Int, step: Int => Int): List[Int] = {
@@ -576,7 +581,10 @@ object List extends SequenceFactory[List] {
     var i = start
     while ((!up || i < end) && (!down || i > end)) {
       b += i
-      i += step(i)
+      val next = step(i)
+      if (i == next)
+        throw new IllegalArgumentException("the step function did not make any progress on "+ i)
+      i = next
     }
     b.toList
   }
@@ -693,7 +701,7 @@ object List extends SequenceFactory[List] {
    *             in the same order
    *  @deprecated use `array.toList` instead
    */
-  def fromArray[A](arr: Array[A]): List[A] = fromArray(arr, 0, arr.length)
+  @deprecated def fromArray[A](arr: Array[A]): List[A] = fromArray(arr, 0, arr.length)
 
   /** Converts a range of an array into a list.
    *

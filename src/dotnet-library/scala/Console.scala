@@ -83,7 +83,7 @@ object Console {
    *
    *  @param reader specifies the new input stream.
    */
-  def setIn(reader: TextReader): Unit = {
+  def setIn(reader: TextReader) {
     inVar.value = reader
   }
 
@@ -101,8 +101,9 @@ object Console {
    *
    *  @param obj the object to print.
    */
-  def print(obj: Any): Unit =
+  def print(obj: Any) {
     out.Write(if (null == obj) "null" else obj.toString())
+  }
 
   /** Flush the output stream. This function is required when partial
    *  output (i.e. output not terminated by a new line character) has
@@ -112,13 +113,13 @@ object Console {
 
   /** Print a new line character on the terminal.
    */
-  def println(): Unit = out.WriteLine()
+  def println() { out.WriteLine() }
 
   /** Print out an object followed by a new line character.
    *
    *  @param x the object to print.
    */
-  def println(x: Any): Unit = out.WriteLine(x)
+  def println(x: Any) { out.WriteLine(x) }
 
   /** <p>
    *    Prints its arguments as a formatted string, based on a string
@@ -140,9 +141,10 @@ object Console {
    *  @see <a href="#printf(java.lang.String,scala.Any*)"
    *       target="contentFrame">Console.printf</a>.
    */
-  def format(text: String, args: Any*): Unit =
+  def format(text: String, args: Any*) {
     if (text eq null) out.Write("null")
     else out.Write(text, args.toArray)
+  }
 
   /** Read a full line from the terminal.  Throws System.IO.EndOfStreamException if the end of the
    * input stream has been reached.
@@ -151,8 +153,8 @@ object Console {
    * @throws System.IO.EndOfStreamException
    */
   def readLine(): String = {
-	val s = in.ReadLine()
-	if (s == null) throw new System.IO.EndOfStreamException("Console has reached end of input") else s
+    val s = in.ReadLine()
+    if (s == null) throw new System.IO.EndOfStreamException("Console has reached end of input") else s
   }
 
   /** Print a formatted text and read a full line from the terminal.
@@ -163,7 +165,7 @@ object Console {
    *  @return the string read from the terminal.
    */
   def readLine(text: String, args: Any*): String = {
-    format(text, args: _*)
+    printf(text, args: _*)
     readLine()
   }
 

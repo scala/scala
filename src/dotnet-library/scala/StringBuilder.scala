@@ -15,15 +15,15 @@ import Predef._
 
 /** <p>
  *    A mutable sequence of characters.  This class provides an API compatible
- *    with <code>java.lang.StringBuilder</code>, but with no guarantee of
- *    synchronization.
+ *    with <a class="java/lang/StringBuilder" href="" target="_top">
+ *    <code>java.lang.StringBuilder</code></a>.
  *  </p>
  *
  *  @author Stephane Micheloud
  *  @version 1.0
  */
 final class StringBuilder(initCapacity: Int, private val initValue: String)
-extends (Int => Char) with Proxy {
+      extends (Int => Char) {
   if (initCapacity < 0) throw new IllegalArgumentException
   if (initValue eq null) throw new NullPointerException
 
@@ -50,8 +50,6 @@ extends (Int => Char) with Proxy {
   def this(str: String) = this(16, str)
 
   append(initValue)
-
-  def self = this
 
   def toArray: Array[Char] = value
 
@@ -765,6 +763,7 @@ extends (Int => Char) with Proxy {
    *  @return  a reference to this object.
    */
   def reverse(): StringBuilder = {
+    import StringBuilder._
     var hasSurrogate = false
     val n = count - 1
     var j = (n-1) >> 1
@@ -773,8 +772,8 @@ extends (Int => Char) with Proxy {
       val temp2 = value(n - j)
       if (!hasSurrogate)
         hasSurrogate =
-          (temp >= StringBuilder.MIN_SURROGATE && temp <= StringBuilder.MAX_SURROGATE) ||
-       	  (temp2 >= StringBuilder.MIN_SURROGATE && temp2 <= StringBuilder.MAX_SURROGATE)
+          (temp >= MIN_HIGH_SURROGATE && temp <= MAX_LOW_SURROGATE) ||
+       	  (temp2 >= MIN_HIGH_SURROGATE && temp2 <= MAX_LOW_SURROGATE)
       value(j) = temp2
       value(n - j) = temp
       j -= 1
@@ -784,9 +783,9 @@ extends (Int => Char) with Proxy {
       var i = 0
       while (i < count - 1) {
         val c2 = value(i)
-	if (StringBuilder.isLowSurrogate(c2)) {
+	if (isLowSurrogate(c2)) {
           val c1 = value(i + 1)
-          if (StringBuilder.isHighSurrogate(c1)) {
+          if (isHighSurrogate(c1)) {
             value(i) = c1; i += 1
             value(i) = c2
           }
@@ -811,8 +810,8 @@ extends (Int => Char) with Proxy {
 }
 
 
-object StringBuilder {
-
+object StringBuilder
+{
   private val MIN_HIGH_SURROGATE = '\uD800'
   private val MAX_HIGH_SURROGATE = '\uDBFF'
 

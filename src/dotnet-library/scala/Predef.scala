@@ -60,7 +60,7 @@ object Predef {
 
   type Function[-A, +B] = Function1[A, B]
 
-  type Map[A, B] = collection.immutable.Map[A, B]
+  type Map[A, +B] = collection.immutable.Map[A, B]
   type Set[A] = collection.immutable.Set[A]
 
   val Map = collection.immutable.Map
@@ -82,7 +82,7 @@ object Predef {
       throw new Error("assertion failed")
   }
 
-  def assert(assertion: Boolean, message: Any) {
+  def assert(assertion: Boolean, message: => Any) {
     if (!assertion)
       throw new Error("assertion failed: " + message)
   }
@@ -92,7 +92,7 @@ object Predef {
       throw new IllegalArgumentException("assumption failed")
   }
 
-  def assume(assumption: Boolean, message: Any) {
+  def assume(assumption: Boolean, message: => Any) {
     if (!assumption)
       throw new System.Security.SecurityException("assumption failed: "+ message)
   }
@@ -102,7 +102,7 @@ object Predef {
       throw new IllegalArgumentException("requirement failed")
   }
 
-  def require(requirement: Boolean, message: Any) {
+  def require(requirement: Boolean, message: => Any) {
     if (!requirement)
       throw new IllegalArgumentException("requirement failed: "+ message)
   }
@@ -131,6 +131,7 @@ object Predef {
 
   class ArrowAssoc[A](x: A) {
     def -> [B](y: B): Tuple2[A, B] = Tuple2(x, y)
+    def →[B](y: B): Tuple2[A, B] = ->(y)
   }
   implicit def any2ArrowAssoc[A](x: A): ArrowAssoc[A] = new ArrowAssoc(x)
 
@@ -180,6 +181,7 @@ object Predef {
   implicit def doubleWrapper(x: Double) = new runtime.RichDouble(x)
 
   implicit def booleanWrapper(x: Boolean)  = new runtime.RichBoolean(x)
+  implicit def unitWrapper(x: Boolean)  = new runtime.RichUnit
 
   implicit def stringWrapper(x: String) = new runtime.RichString(x)
   //implicit def stringBuilderWrapper(x : StringBuilder): runtime.RichStringBuilder = new runtime.RichStringBuilder(x)

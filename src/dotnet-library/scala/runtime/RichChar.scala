@@ -51,20 +51,24 @@ final class RichChar(x: Char) extends Proxy with Ordered[Char] {
   def toLowerCase: Char = System.Char.ToLower(x)
   def toUpperCase: Char = System.Char.ToUpper(x)
 
-  /** Create an Iterator[Char] over the characters from 'x' to 'y' - 1
+  /** Create a <code>RandomAccessSeq.Projection[Char]</code> over the characters from 'x' to 'y' - 1
    */
-  def until(limit: Char): Iterator[Char] = new Iterator[Char] {
-    private var ch = x
-    def hasNext: Boolean = ch < limit
-    def next: Char =
-      if (hasNext) { val j = ch; ch = (ch + 1).toChar; j }
-      else throw new NoSuchElementException("next on empty iterator")
+  def until(limit: Char): RandomAccessSeq.Projection[Char] =
+    if (limit <= x) RandomAccessSeq.empty.projection
+    else
+      new RandomAccessSeq.Projection[Char] {
+        def length = limit - x
+        def apply(i: Int): Char = {
+          Predef.require(i >= 0 && i < length)
+          (x + i).toChar
+        }
+        override def stringPrefix = "RandomAccessSeq.Projection"
   }
 
   //def until(y: Char): Iterator[Char] = to(y)
 
-  /** Create an Iterator[Char] over the characters from 'x' to 'y'
+  /** Create a <code>RandomAccessSeq.Projection[Char]</code> over the characters from 'x' to 'y'
    */
-  def to(y: Char): Iterator[Char] = until((y + 1).toChar)
+  def to(y: Char): RandomAccessSeq.Projection[Char] = until((y + 1).toChar)
 
 }

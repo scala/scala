@@ -11,7 +11,8 @@
 
 package scala
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, LinkedHashMap}
+import annotation.tailrec
 import Predef._
 
 /** This object provides methods for creating specialized lists, and for
@@ -54,6 +55,8 @@ object List {
    *  @return     the sorted list of all integers in range [start;end).
    */
   def range(start: Int, end: Int, step: Int): List[Int] = {
+    if (step == 0)
+      throw new IllegalArgumentException("step is zero")
     val b = new ListBuffer[Int]
     var i = start
     while ((step <= 0 || i < end) && (step >= 0 || i > end)) {
@@ -71,7 +74,9 @@ object List {
    *
    *  @param start the start value of the list
    *  @param end  the end value of the list
-   *  @param step the increment function of the list, must be monotonically increasing or decreasing
+   *  @param step the increment function of the list, which given <code>v<sub>n</sub></code>,
+   *              computes <code>v<sub>n+1</sub></code>. Must be monotonically increasing
+   *              or decreasing.
    *  @return     the sorted list of all integers in range [start;end).
    */
   def range(start: Int, end: Int, step: Int => Int): List[Int] = {
@@ -81,7 +86,10 @@ object List {
     var i = start
     while ((!up || i < end) && (!down || i > end)) {
       b += i
-      i += step(i)
+      val next = step(i)
+      if (i == next)
+        throw new IllegalArgumentException("the step function did not make any progress on "+ i)
+      i = next
     }
     b.toList
   }
@@ -442,7 +450,7 @@ object List {
  *  @author  Martin Odersky and others
  *  @version 1.0, 16/07/2003
  */
-sealed abstract class List[+A] extends Seq[A] {
+sealed abstract class List[+A] extends Seq[A] with Product {
 
   /** Returns true if the list does not contain any elements.
    *  @return <code>true</code>, iff the list is empty.
@@ -456,7 +464,16 @@ sealed abstract class List[+A] extends Seq[A] {
    */
   def head: A
 
-  /** returns length - l, without calling length
+  /** Result of comparing <code>length</code> with operand <code>l</code>.
+   *  returns <code>x</code> where
+   *  <code>x &lt; 0</code>    iff    <code>this.length &lt; l</code>
+   *  <code>x == 0</code>   iff    <code>this.length == l</code>
+   *  <code>x &gt; 0</code>    iff    <code>this.length &gt; that</code>.
+   *
+   *  This method is used by matching streams against right-ignoring (...,_*) patterns.
+   *
+   *  This method does not call <code>List.length</code>, it works for <code>O(l)</code>,
+   *  not for <code>O(length)</code>.
    */
   override def lengthCompare(l: Int) = {
     if (isEmpty) 0 - l
@@ -523,17 +540,13 @@ sealed abstract class List[+A] extends Seq[A] {
 
   /** Appends two list objects.
    */
-  override def ++[B >: A](that: Iterable[B]): List[B] = {
-    val buf = new ListBuffer[B]
-    this copyToBuffer buf
-    that copyToBuffer buf
-    buf.toList
-  }
+  override def ++[B >: A](that: Iterable[B]): List[B] =
+    this ::: that.toList
 
   /** Reverse the given prefix and append the current list to that.
    *  This function is equivalent to an application of <code>reverse</code>
    *  on the prefix followed by a call to <code>:::</code>, but more
-   *  efficient (and tail recursive).
+   *  efficient.
    *
    *  @param prefix the prefix to reverse and then prepend
    *  @return       the concatenation of the reversed prefix and the current list.
@@ -690,6 +703,7 @@ sealed abstract class List[+A] extends Seq[A] {
    *  @return the suffix of length <code>n</code> of the list
    */
   def takeRight(n: Int): List[A] = {
+    @tailrec
     def loop(lead: List[A], lag: List[A]): List[A] = lead match {
       case Nil => lag
       case _ :: tail => loop(tail, lag.tail)
@@ -700,7 +714,7 @@ sealed abstract class List[+A] extends Seq[A] {
   /** Returns the list wihout its rightmost <code>n</code> elements.
    *
    *  @param n the number of elements to take
-   *  @return the suffix of length <code>n</code> of the list
+   *  @return the list without its rightmost <code>n</code> elements
    */
   def dropRight(n: Int): List[A] = {
     def loop(lead: List[A], lag: List[A]): List[A] = lead match {
@@ -753,9 +767,14 @@ sealed abstract class List[+A] extends Seq[A] {
    *  @return  the longest suffix of the list whose first element
    *           does not satisfy the predicate <code>p</code>.
    */
-  override def dropWhile(p: A => Boolean): List[A] =
-    if (isEmpty || !p(head)) this
-    else tail dropWhile p
+  override def dropWhile(p: A => Boolean): List[A] = {
+    @tailrec
+    def loop(xs: List[A]): List[A] =
+      if (xs.isEmpty || !p(xs.head)) xs
+      else loop(xs.tail)
+
+    loop(this)
+  }
 
   /** Returns the longest prefix of the list whose elements all satisfy
    *  the given predicate, and the rest of the list.
@@ -811,6 +830,7 @@ sealed abstract class List[+A] extends Seq[A] {
    *  @return  the reversed list of results.
    */
   def reverseMap[B](f: A => B): List[B] = {
+    @tailrec
     def loop(l: List[A], res: List[B]): List[B] = l match {
       case Nil => res
       case head :: tail => loop(tail, f(head) :: res)
@@ -1153,7 +1173,7 @@ sealed abstract class List[+A] extends Seq[A] {
     var these = this
     var those = that
     while (!these.isEmpty && !those.isEmpty) {
-      b += (these.head, those.head)
+      b += ((these.head, those.head))
       these = these.tail
       those = those.tail
     }
@@ -1172,7 +1192,7 @@ sealed abstract class List[+A] extends Seq[A] {
     var idx = 0
 
     while(!these.isEmpty) {
-      b += (these.head, idx)
+      b += ((these.head, idx))
       these = these.tail
       idx += 1
     }
@@ -1204,48 +1224,95 @@ sealed abstract class List[+A] extends Seq[A] {
     var these = this
     var those = that
     while (!these.isEmpty && !those.isEmpty) {
-      b += (these.head, those.head)
+      b += ((these.head, those.head))
       these = these.tail
       those = those.tail
     }
     while (!these.isEmpty) {
-      b += (these.head, thatElem)
+      b += ((these.head, thatElem))
       these = these.tail
     }
     while (!those.isEmpty) {
-      b += (thisElem, those.head)
+      b += ((thisElem, those.head))
       those = those.tail
     }
     b.toList
   }
 
-  /** Computes the union of this list and the given list
-   *  <code>that</code>.
+  /** <p>
+   *    Computes the multiset union of this list and the given list
+   *    <code>that</code>. For example:
+   *  </p><pre>
+   *    <b>val</b> xs = List(1, 1, 2)
+   *    <b>val</b> ys = List(1, 2, 2, 3)
+   *    println(xs union ys)  // prints "List(1, 1, 2, 1, 2, 2, 3)"
+   *    println(ys union xs)  // prints "List(1, 2, 2, 3, 1, 1, 2)"
+   *  </pre>
    *
    *  @param that the list of elements to add to the list.
-   *  @return     a list without doubles containing the elements of this
+   *  @return     a list containing the elements of this
    *              list and those of the given list <code>that</code>.
    */
-  def union[B >: A](that: List[B]): List[B] = {
-    val b = new ListBuffer[B]
-    var these = this
-    while (!these.isEmpty) {
-      if (!that.contains(these.head)) b += these.head
-      these = these.tail
+  def union[B >: A](that: List[B]): List[B] = this ++ that
+
+  /** <p>
+   *    Computes the multiset intersection between this list and the
+   *    given list <code>that</code>; the intersection contains <i>m</i>
+   *    copies of an element contained in both lists, where <i>m</i> is
+   *    the smaller of the number of times the element appears in this
+   *    list or in <code>that</code>. For example:
+   *  </p><pre>
+   *    <b>val</b> xs = List(1, 1, 2)
+   *    <b>val</b> ys = List(3, 2, 2, 1)
+   *    println(xs intersect ys)  // prints "List(1, 2)"
+   *    println(ys intersect xs)  // prints "List(2, 1)"
+   *  </pre>
+   *
+   *  @param that the list to intersect.
+   *  @return     the list of elements contained both in this list and
+   *              in the given list <code>that</code>.
+   */
+  def intersect[B >: A](that: List[B]): List[B] = {
+    val occ = new LinkedHashMap[B, Int]
+    that foreach (e => if (occ contains e) occ(e) += 1 else occ(e) = 1)
+    val buf = new ListBuffer[B]
+    for (e <- this if occ contains e) {
+      if (occ(e) > 0) { occ(e) -= 1; buf += e }
     }
-    b.prependToList(that)
+    buf.toList
   }
 
-  /** Computes the difference between this list and the given list
-   *  <code>that</code>.
+  /** <p>
+   *    Computes the multiset difference between this list and the
+   *    given list <code>that</code>. If an element appears more
+   *    than once in both lists, the difference contains <i>m</i> copies
+   *    of that element, where <i>m</i> is the difference between the
+   *    number of times the element appears in this list and the number
+   *    of times it appears in <code>that</code>. For example:
+   *  </p><pre>
+   *    <b>val</b> xs = List(1, 1, 2)
+   *    <b>val</b> ys = List(1, 2, 2, 3)
+   *    println(xs diff ys)  // prints "List(1)"
+   *    println(xs -- ys)    // prints "List()"
+   *  </pre>
    *
    *  @param that the list of elements to remove from this list.
-   *  @return     this list without the elements of the given list
-   *              <code>that</code>.
-   *  @deprecated use <code>--</code> instead
+   *  @return     the list of elements contained only in this list plus
+   *              <i>m</i> copies of each element present in both lists,
+   *              where <i>m</i> is defined as above.
    */
-  @deprecated
-  def diff[B >: A](that: List[B]): List[B] = this -- that
+  def diff[B >: A](that: List[B]): List[B] = {
+    val occ = new LinkedHashMap[B, Int]
+    that foreach (e => if (occ contains e) occ(e) += 1 else occ(e) = 1)
+    val buf = new ListBuffer[B]
+    for (e <- this) {
+      if (occ contains e)
+        if (occ(e) > 0) occ(e) -= 1
+        else buf += e
+      else buf += e
+    }
+    buf.toList
+  }
 
   /** Computes the difference between this list and the given list
    *  <code>that</code>.
@@ -1271,13 +1338,26 @@ sealed abstract class List[+A] extends Seq[A] {
    *  @return     this list without the elements of the given object
    *              <code>x</code>.
    */
-  def - [B >: A](x: B): List[B] =
-    this -- List(x)
+  def - [B >: A](x: B): List[B] = {
+    val b = new ListBuffer[B]
+    var these = this
+    while (!these.isEmpty) {
+      if (these.head != x) b += these.head
+      these = these.tail
+    }
+    b.toList
+  }
 
   /** Concatenate the elements of this list. The elements of this list
    *  should be a <code>Iterables</code>.
    *
-   *  Note: The compiler might not be able to infer the type parameter.
+   *  Note: The compiler might not be able to infer the type parameter,
+   *        so it is recommended to provide an explicit type argument.
+   *
+   *  Example:
+   *    <code>List(List(1, 3), List(2)).flatten[Int]</code>
+   *    returns
+   *    <code>List(1, 3, 2)</code>
    *
    *  @param f    An implicit conversion to an <code>Iterable</code> instance.
    *  @return     The concatenation of all elements of iterables in this list.
@@ -1287,15 +1367,6 @@ sealed abstract class List[+A] extends Seq[A] {
     foreach(f(_).foreach(buf += _))
     buf.toList
   }
-
-  /** Computes the intersection between this list and the given list
-   *  <code>that</code>.
-   *
-   *  @param that the list to intersect.
-   *  @return     the list of elements contained both in this list and
-   *              in the given list <code>that</code>.
-   */
-  def intersect[B >: A](that: List[B]): List[B] = filter(x => that contains x)
 
   /** Removes redundant elements from the list. Uses the method <code>==</code>
    *  to decide if two elements are identical.
