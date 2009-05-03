@@ -274,18 +274,23 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
       out println msg
       Result(true, None)
     }
+    def ambiguous(cmds: List[Command]) = "Ambiguous: did you mean " + cmds.map(":" + _.name).mkString(" or ") + "?"
 
     // not a command
     if (!line.startsWith(":"))
       return Result(true, interpretStartingWith(line))
 
-    // this lets us add commands willy-nilly and only requires enough command to disambiguate
-    val (x :: args) = line.substring(1).split("""\s+""").toList
+    val tokens = line.substring(1).split("""\s+""").toList
+    if (tokens.isEmpty)
+      return withError(ambiguous(commands))
 
-    commands.filter(_.name startsWith x) match {
+    val (cmd :: args) = tokens
+
+    // this lets us add commands willy-nilly and only requires enough command to disambiguate
+    commands.filter(_.name startsWith cmd) match {
       case List(x)  => x(args)
       case Nil      => withError("Unknown command.  Type :help for help.")
-      case xs       => withError("Ambiguous: did you mean " + xs.map(":" + _.name).mkString(" or ") + "?")
+      case xs       => withError(ambiguous(xs))
     }
   }
 
