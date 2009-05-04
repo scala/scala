@@ -403,13 +403,6 @@ trait Actor extends AbstractActor {
    */
   def send(msg: Any, replyTo: OutputChannel[Any]) = synchronized {
     if (waitingFor(msg)) {
-      received = Some(msg)
-
-      if (isSuspended)
-        sessions = replyTo :: sessions
-      else
-        sessions = List(replyTo)
-
       waitingFor = waitingForNone
 
       if (!onTimeout.isEmpty) {
@@ -417,10 +410,15 @@ trait Actor extends AbstractActor {
         onTimeout = None
       }
 
-      if (isSuspended)
+      if (isSuspended) {
+        sessions = replyTo :: sessions
+        received = Some(msg)
         resumeActor()
-      else // assert continuation != null
+      } else {
+        sessions = List(replyTo)
+        // assert continuation != null
         scheduler.execute(new Reaction(this, continuation, msg))
+      }
     } else {
       mailbox.append(msg, replyTo)
     }
@@ -446,6 +444,7 @@ trait Actor extends AbstractActor {
       }
     }
     val result = f(received.get)
+    received = None
     sessions = sessions.tail
     result
   }
@@ -496,6 +495,7 @@ trait Actor extends AbstractActor {
       }
     }
     val result = f(received.get)
+    received = None
     sessions = sessions.tail
     result
   }
