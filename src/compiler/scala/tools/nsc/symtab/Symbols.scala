@@ -1045,6 +1045,15 @@ trait Symbols {
           (that.sourceFile eq null) ||
           (this.sourceFile eq that.sourceFile) ||
           (this.sourceFile == that.sourceFile)
+
+        // recognize companion object in separate file and fail, else compilation
+        // appears to succeed but highly opaque errors come later: see bug #1286
+        if (res == false) {
+          val (f1, f2) = (this.sourceFile, that.sourceFile)
+          if (f1 != null && f2 != null && f1 != f2)
+            throw FatalError("Companions '" + this + "' and '" + that + "' must be defined in same file.")
+        }
+
         res
       }
 
