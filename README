@@ -27,7 +27,6 @@ scala/
            man/                 UNIX manual files.
       lib/                      Pre-compiled libraries for the build.
           fjbg.jar              The Java byte-code generation library.
-          jaco.jar              The JaCo Java compiler.
           scala-compiler.jar    The last stable version of the Scala compiler.
           scala-library.jar     The last stable version of the Scala library.
           ant/                  Support libraries for the build tool.
@@ -67,7 +66,7 @@ Part III. Requirements for SABBUS
 --------------------------------------------------------------------------------
 
 The Scala build system is based on Apache Ant. Most required pre-compiled libraries are part of the repository (in 'lib/'). The following however is assumed to be installed on the build machine:
-  - A Java runtime environment (JRE) or SDK 1.4 or above.
+  - A Java runtime environment (JRE) or SDK 1.5 or above.
   - Apache Ant version 1.7.0 or above.
 
 Part IV. Common use-cases
@@ -81,66 +80,42 @@ Part IV. Common use-cases
     - This will rebuild all quick if locker changed.
     - This will also rebuild locker if starr changed.
 
-'ant test.quick' (planned)
-  Runs the test suite against quick. This is not a full test but merely a
-  commodity feature for development.
-
-'ln -s build/quick/exec/ bin' (once)
+'ln -s build/quick/bin bin' (once)
 'ant && bin/scalac -d sandbox sandbox/test.scala && bin/scala -cp sandbox Test'
   Incrementally builds quick, and then uses it to compile and run the file
   'sandbox/test.scala'. This is a typical debug cycle.
 
 'ant newlocker'
-  “unfreezes” locker by updating it to match the current source code.
+  "unfreezes" locker by updating it to match the current source code.
     - This will delete quick so as not to mix classes compiled with different
       versions of locker.
 
 'ant test'
   Tests that your code is working and fit to be committed.
-    - Rebuilds locker from scratch (to make sure it bootstraps).
-    - Builds everything twice more and compares bit-to-bit the two builds (to
-      make sure it is stable).
-    - (planned) Runs the test suite.
+    - Runs the test suite on quick.
 
 'ant docs'
   Generates the HTML documentation for the library from the sources using the
   scaladoc tool in quick.
 
-'ant docs.compiler'
-  Generates the HTML documentation for the compiler from the sources using the
-  scaladoc tool in quick.
-
 'ant dist'
   Builds a distribution.
-    - Runs all the tests as above (and refuses to build a distribution if it
-      fails).
+    - Rebuilds locker from scratch (to make sure it bootstraps).
+    - Builds everything twice more and compares bit-to-bit the two builds (to
+      make sure it is stable).
+    - Runs the test suite (and refuses to build a distribution if it fails).
     - Creates a local distribution in 'dists/latest'.
-
-'ant pack'
-  Builds a distribution, and packages it for distribution.
-    - Runs all the tests as above (and refuses to build a distribution if it
-      fails).
-    - Creates a local distribution in 'dists/latest'.
-    - Creates all relevant Scala Bazaar archives, advertisement files and
-      ZIP/TAR archives.
-
-'ant dist.devel' or 'ant dist.patch' or 'ant dist.minor'
-  Builds a distribution (with packaging) to be publicly released and manages
-  version numbers.
-    - Patch and Minor versions are public releases. The version number is
-      automatically bumped up and is formatted as 'major.minor.patch'.
-    - Devel versions are betas for semi-public release. Numbers are formatted as
-      'major.minor.patch.svn'. Version '2.3.4.5875' is a beta for either patch
-      '2.3.5' or minor version '2.4.0'.
 
 'ant clean'
   Removes all temporary build files (locker is preserved).
 
-'ant clean.build'
-  Removes all build files (including locker).
+'ant locker.clean'
+  Removes all build files.
 
-'ant clean.all'
+'ant all.clean'
   Removes all build files (including locker) and all distributions.
+
+Additional ant targets can be seen via 'ant -p'.
 
 Part V. Contributing to Scala
 --------------------------------------------------------------------------------
