@@ -11,6 +11,8 @@
 
 package scala.xml
 
+import Utility.sbToString
+
 /**
  * Copyright 2008 Google Inc. All Rights Reserved.
  * @author Burak Emir <bqe@google.com>
@@ -234,20 +236,12 @@ abstract class MetaData extends Collection[MetaData] {
 
   override def hashCode(): Int
 
-  def toString1(): String = {
-    val sb = new StringBuilder()
-    toString1(sb)
-    sb.toString()
-  }
+  def toString1(): String = sbToString(toString1)
 
   //appends string representations of single attribute to StringBuilder
   def toString1(sb:StringBuilder): Unit
 
-  override def toString(): String = {
-    val sb = new StringBuilder()
-    buildString(sb)
-    sb.toString()
-  }
+  override def toString(): String = sbToString(buildString)
 
   def buildString(sb: StringBuilder): StringBuilder = {
     sb.append(' ')

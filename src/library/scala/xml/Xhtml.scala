@@ -3,6 +3,7 @@
 package scala.xml
 
 import parsing.XhtmlEntities
+import Utility.sbToString
 
 /* (c) David Pollak  2007 WorldWide Conferencing, LLC */
 
@@ -21,11 +22,8 @@ object Xhtml
    *
    * @param nodeSeq   the node sequence
    */
-  def toXhtml(nodeSeq: NodeSeq): String = {
-    val sb = new StringBuilder
-    sequenceToXML(nodeSeq, TopScope, sb, false, false)
-    sb.toString
-  }
+  def toXhtml(nodeSeq: NodeSeq): String =
+    sbToString(sequenceToXML(nodeSeq, TopScope, _, false, false))
 
   /**
    * Convenience function: amounts to calling toXhtml(node, TopScope, ...)
@@ -33,11 +31,8 @@ object Xhtml
    *
    * @param nodeSeq   the node sequence
    */
-  def toXhtml(n: Node, stripComment: Boolean, convertAmp: Boolean): String = {
-    val sb = new StringBuilder()
-    toXhtml(n, TopScope, sb, stripComment, convertAmp)
-    sb.toString()
-  }
+  def toXhtml(n: Node, stripComment: Boolean, convertAmp: Boolean): String =
+    sbToString(toXhtml(n, TopScope, _, stripComment, convertAmp))
 
   /**
    * Appends a tree to the given stringbuffer within given namespace scope.

@@ -10,7 +10,7 @@
 
 
 package scala.xml.dtd
-
+import Utility.sbToString
 
 abstract class Decl
 
@@ -49,8 +49,7 @@ extends MarkupDecl with DtdTypeSymbol {
  *  directly.
  */
 case class AttrDecl(name: String, tpe: String, default: DefaultDecl) {
-  override def toString(): String =
-    buildString(new StringBuilder()).toString();
+  override def toString(): String = sbToString(buildString)
 
   def buildString(sb: StringBuilder): StringBuilder = {
     sb.append("  ").append(name).append(' ').append(tpe).append(' ');
@@ -157,9 +156,7 @@ case object IMPLIED extends DefaultDecl {
 }
 
 case class DEFAULT(fixed: Boolean, attValue: String) extends DefaultDecl {
-  override def toString(): String =
-    buildString(new StringBuilder()).toString();
-
+  override def toString(): String = sbToString(buildString)
   override def buildString(sb: StringBuilder): StringBuilder = {
     if (fixed) sb.append("#FIXED ")
     Utility.appendEscapedQuoted(attValue, sb)

@@ -19,8 +19,15 @@ import collection.mutable.{Set, HashSet}
  *
  * @author Burak Emir
  */
-object Utility extends AnyRef with parsing.TokenTests {
-
+object Utility extends AnyRef with parsing.TokenTests
+{
+  // helper for the extremely oft-repeated sequence of creating a
+  // StringBuilder, passing it around, and then grabbing its String.
+  private [xml] def sbToString(f: (StringBuilder) => Unit): String = {
+    val sb = new StringBuilder
+    f(sb)
+    sb.toString
+  }
 
   /** trims an element - call this method, when you know that it is an
    *  element (and not a text node) so you know that it will not be trimmed
@@ -72,8 +79,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @param text ...
    * @return     ...
    */
-  final def escape(text: String): String =
-    escape(text, new StringBuilder()).toString()
+  final def escape(text: String): String = sbToString(escape(text, _))
 
   /**
    * Appends escaped string to <code>s</code>.
@@ -168,12 +174,8 @@ object Utility extends AnyRef with parsing.TokenTests {
    *
    * @todo define a way to escape literal characters to &amp;xx; references
    */
-  def toXML(n: Node, stripComment: Boolean): String = {
-    val sb = new StringBuilder()
-    toXML(n, TopScope, sb, stripComment)
-    sb.toString()
-  }
-
+  def toXML(n: Node, stripComment: Boolean): String =
+    sbToString(toXML(n, TopScope, _, stripComment))
 
   /**
    * Appends a tree to the given stringbuffer within given namespace scope.
@@ -274,11 +276,7 @@ object Utility extends AnyRef with parsing.TokenTests {
     }
   )
 
-  def appendQuoted(s: String): String = {
-    val sb = new StringBuilder()
-    appendQuoted(s, sb)
-    sb.toString()
-  }
+  def appendQuoted(s: String): String = sbToString(appendQuoted(s, _))
 
   /**
    * Appends &quot;s&quot; if string <code>s</code> does not contain &quot;,

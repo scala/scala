@@ -13,6 +13,7 @@ package scala.xml.dtd
 
 import scala.util.regexp.WordExp
 import scala.util.automata.{DetWordAutom, SubsetConstruction, WordBerrySethi}
+import Utility.sbToString
 
 object ContentModel extends WordExp {
   type _labelT = ElemName
@@ -49,11 +50,7 @@ object ContentModel extends WordExp {
     return s
   }
 
-  def buildString(r: RegExp): String = {
-    val sb = new StringBuilder()
-    buildString(r, sb)
-    sb.toString()
-  }
+  def buildString(r: RegExp): String = sbToString(buildString(r, _))
 
   /* precond: rs.length >= 1 */
   private def buildString(rs: Seq[RegExp], sb: StringBuilder, sep: Char) {
@@ -95,11 +92,7 @@ object ContentModel extends WordExp {
 
 sealed abstract class ContentModel {
 
-  override def toString(): String = {
-    val sb = new StringBuilder()
-    buildString(sb)
-    sb.toString()
-  }
+  override def toString(): String = sbToString(buildString)
 
   def buildString(sb:StringBuilder): StringBuilder;
   /*

@@ -60,12 +60,4 @@ case class Group(val nodes: Seq[Node]) extends Node {
   def buildString(sb: StringBuilder) =
     throw new UnsupportedOperationException(
       "class Group does not support method toString(StringBuilder)")
-
-  override def text = { // same impl as NodeSeq
-    val sb = new StringBuilder()
-    val it = elements
-    while (it.hasNext)
-      sb.append(it.next.text)
-    sb.toString()
-  }
 }

@@ -12,6 +12,7 @@
 package scala.xml
 
 import scala.collection.Map
+import Utility.sbToString
 
 /** Class for pretty printing. After instantiating, you can use the
  *  toPrettyXML methods to convert XML to a formatted string. The class
@@ -113,41 +114,43 @@ class PrettyPrinter( width:Int, step:Int ) {
    *  @return  ...
    */
   protected def leafTag(n: Node) = {
-    val sb = new StringBuilder("<")
-    n.nameToString(sb)
-    //Utility.appendPrefixedName( n.prefix, n.label, pmap, sb );
-    n.attributes.buildString(sb)
-    //Utility.attr2xml( n.scope, n.attributes, pmap, sb );
-    sb.append("/>")
-    sb.toString()
+    def mkLeaf(sb: StringBuilder) {
+      sb append '<'
+      n nameToString sb
+      n.attributes buildString sb
+      sb append "/>"
+    }
+    sbToString(mkLeaf)
   }
 
   protected def startTag(n: Node, pscope: NamespaceBinding): (String, Int) = {
-    val sb = new StringBuilder("<")
-    n.nameToString(sb) //Utility.appendPrefixedName( n.prefix, n.label, pmap, sb );
-    val i = sb.length + 1
-    n.attributes.buildString(sb)
-    n.scope.buildString(sb, pscope)
-    sb.append('>')
-    (sb.toString(), i)
+    var i = 0
+    def mkStart(sb: StringBuilder) {
+      sb append '<'
+      n nameToString sb
+      i = sb.length + 1
+      n.attributes buildString sb
+      n.scope.buildString(sb, pscope)
+      sb append '>'
+    }
+    (sbToString(mkStart), i)
   }
 
   protected def endTag(n: Node) = {
-    val sb = new StringBuilder("</")
-    n.nameToString(sb) //Utility.appendPrefixedName( n.prefix, n.label, pmap, sb );
-    sb.append('>')
-    sb.toString()
+    def mkEnd(sb: StringBuilder) {
+      sb append "</"
+      n nameToString sb
+      sb append '>'
+    }
+    sbToString(mkEnd)
   }
 
   protected def childrenAreLeaves(n: Node): Boolean = {
-    val it = n.child.elements
-    while (it.hasNext)
-      it.next match {
-        case _:Atom[_] | _:Comment | _:EntityRef | _:ProcInstr =>
-        case _:Node =>
-          return false
-      }
-    true
+    def isLeaf(l: Node) = l match {
+      case _:Atom[_] | _:Comment | _:EntityRef | _:ProcInstr  => true
+      case _                                                  => false
+    }
+    n.child forall isLeaf
   }
 
   protected def fits(test: String) =
@@ -268,11 +271,8 @@ class PrettyPrinter( width:Int, step:Int ) {
    *  @param pmap the namespace to prefix mapping
    *  @return     ...
    */
-  def format(n: Node, pscope: NamespaceBinding): String = {
-    val sb = new StringBuilder()
-    format(n, pscope, sb)
-    sb.toString()
-  }
+  def format(n: Node, pscope: NamespaceBinding): String =
+    sbToString(format(n, pscope, _))
 
   /** Returns a formatted string containing well-formed XML nodes with
    *  default namespace prefix mapping.
@@ -288,11 +288,8 @@ class PrettyPrinter( width:Int, step:Int ) {
    *  @param nodes the sequence of nodes to be serialized
    *  @param pmap  the namespace to prefix mapping
    */
-  def formatNodes(nodes: Seq[Node], pscope: NamespaceBinding): String = {
-    var sb = new StringBuilder()
-    formatNodes(nodes, pscope, sb)
-    sb.toString()
-  }
+  def formatNodes(nodes: Seq[Node], pscope: NamespaceBinding): String =
+    sbToString(formatNodes(nodes, pscope, _))
 
   /** Appends a formatted string containing well-formed XML with
    *  the given namespace to prefix mapping to the given stringbuffer.

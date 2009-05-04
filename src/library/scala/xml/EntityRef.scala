@@ -42,7 +42,7 @@ case class EntityRef(entityName: String) extends SpecialNode {
     case "amp"  => "&"
     case "apos" => "'"
     case "quot" => "\""
-    case _ => val sb = new StringBuilder(); buildString(sb).toString()
+    case _      => Utility.sbToString(buildString)
   }
 
   /** Appends "&amp; entityName;" to this string buffer.

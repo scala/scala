@@ -12,6 +12,7 @@
 package scala.xml
 
 import Predef._
+import Utility.sbToString
 
 /** The class <code>NamespaceBinding</code> represents namespace bindings
  *  and scopes. The binding for the default namespace is treated as a null
@@ -42,18 +43,9 @@ class NamespaceBinding(val prefix: String,
   def getPrefix(_uri: String): String =
     if (_uri == uri) uri else parent.getURI(_uri)
 
-  override def toString(): String = {
-    val sb = new StringBuilder()
-    buildString(sb, TopScope)
-    sb.toString()
-  }
+  override def toString(): String = sbToString(buildString(_, TopScope))
 
-  def buildString(stop: NamespaceBinding): String = {
-    val sb = new StringBuilder()
-    buildString(sb, stop)
-    sb.toString()
-  }
-
+  def buildString(stop: NamespaceBinding): String = sbToString(buildString(_, stop))
   def buildString(sb: StringBuilder, stop: NamespaceBinding): Unit = {
     if (this ne stop) { // contains?
       sb.append(" xmlns")
