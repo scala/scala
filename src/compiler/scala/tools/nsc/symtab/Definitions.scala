@@ -283,8 +283,8 @@ trait Definitions {
     def seqType(arg: Type) =
       typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(arg))
 
-    def NilModule: Symbol = getModule2("scala.Nil", "scala.collection.immutable.Nil")
-    def ConsClass: Symbol = getClass2("scala.$colon$colon", "scala.collection.immutable.$colon$colon")
+    lazy val NilModule: Symbol = getModule2("scala.Nil", "scala.collection.immutable.Nil")
+    lazy val ConsClass: Symbol = getClass2("scala.$colon$colon", "scala.collection.immutable.$colon$colon")
 
     // members of class scala.Any
     var Any_==          : Symbol = _
