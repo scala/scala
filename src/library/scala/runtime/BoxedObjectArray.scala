@@ -30,10 +30,10 @@ final class BoxedObjectArray[A <: AnyRef](val value: Array[AnyRef]) extends Boxe
   def unbox(elemClass: Class[_]): AnyRef = value
 
   override def equals(other: Any): Boolean =
-    value == other ||
-    other.isInstanceOf[BoxedObjectArray[_]] && value == other.asInstanceOf[BoxedObjectArray[_]].value
+    (value eq other.asInstanceOf[AnyRef]) ||
+    other.isInstanceOf[BoxedObjectArray[_]] && (value eq other.asInstanceOf[BoxedObjectArray[_]].value)
 
-  override def hashCode(): Int = value.hashCode()
+  override def hashCode(): Int = (value.asInstanceOf[AnyRef]).hashCode()
 
   private def create(length: Int): Array[AnyRef] = {
     createArray(value.getClass().getComponentType(), length).asInstanceOf[Array[AnyRef]]
