@@ -787,7 +787,15 @@ trait ParallelMatching {
       // `typeRef(definitions.ScalaPackageClass.tpe, definitions.EqualsPatternClass, List(stpe))'
       // and force an equality check. However, exhaustivity checking would not work anymore.
       // so first, extend exhaustivity check to equalspattern
-      def sType(o: Tree) = singleType(o.tpe.prefix, o.symbol)
+
+      // Martin: I am not really sure what stype is doing, but it caused aliases.scala to fail
+      // The problem is if a val has a singleType of some other module. Then isModule is true and
+      // sType is called. But it ends up mixing the prefix of the other module with the val symbol
+      // which then causes erasure to be confused.
+      def sType(o: Tree) = o.tpe match {
+        case st @ SingleType(pre, sym) => st
+        case _ => singleType(o.tpe.prefix, o.symbol)
+      }
       def equalsCheck(o: Tree) = if (o.symbol.isValue) singleType(NoPrefix, o.symbol) else sType(o)
       def isModule(o: Tree) = o.symbol.isModule || o.tpe.termSymbol.isModule
       def applyType(o: Tree, fn: Tree): Type = fn match {
