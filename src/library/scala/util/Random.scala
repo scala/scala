@@ -74,5 +74,7 @@ class Random(val self: java.util.Random) {
 
 /** The object <code>Random</code> offers a default implementation
  *  of scala.util.Random.
+ *
+ *  @since 2.8
  */
 object Random extends Random
