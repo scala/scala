@@ -424,7 +424,7 @@ abstract class TreeBuilder {
 
   /** Create a tree representing the function type (argtpes) => restpe */
   def makeFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree =
-    AppliedTypeTree(scalaDot(newTypeName("Function" + argtpes.length)), argtpes ::: List(restpe))
+    AppliedTypeTree(rootScalaDot(newTypeName("Function" + argtpes.length)), argtpes ::: List(restpe))
 
   /** Append implicit view section if for `implicitViews' if nonempty */
   def addImplicitViews(owner: Name, vparamss: List[List[ValDef]], implicitViews: List[Tree]): List[List[ValDef]] = {
