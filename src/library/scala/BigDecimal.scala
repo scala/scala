@@ -89,16 +89,22 @@ object BigDecimal {
   /** Implicit conversion from <code>Long</code> to <code>BigDecimal</code>. */
   implicit def long2bigDecimal(l: Long): BigDecimal = apply(l)
 
-  /** Implicit conversion from <code>Float</code> to <code>BigDecimal</code>. */
+  /** Implicit conversion from <code>Float</code> to <code>BigDecimal</code>.
+   *  @since 2.8
+   */
   implicit def float2bigDecimal(f: Float): BigDecimal = apply(f)
 
   /** Implicit conversion from <code>Double</code> to <code>BigDecimal</code>. */
   implicit def double2bigDecimal(d: Double): BigDecimal = apply(d)
 
-  /** Implicit conversion from <code>String</code> to <code>BigDecimal</code>. */
+  /** Implicit conversion from <code>String</code> to <code>BigDecimal</code>.
+   *  @since 2.8
+   */
   implicit def string2bigDecimal(s: String): BigDecimal = apply(s)
 
-  /** Implicit conversion from <code>BigInt</code> to <code>BigDecimal</code>. */
+  /** Implicit conversion from <code>BigInt</code> to <code>BigDecimal</code>.
+   *  @since 2.8
+   */
   implicit def bigInt2bigDecimal(x: BigInt): BigDecimal = apply(x)
 
   /** Implicit conversion from BigDecimal to <code>Ordered</code>. */
