@@ -257,7 +257,7 @@ trait ModelToXML extends ModelExtractor {
     var seq: NodeSeq = NodeSeq.Empty
     if (xs.elements.hasNext) {
       // alphabetic
-      val set = new scala.collection.jcl.TreeSet[entity.Member]()(mA => new Ordered[entity.Member] {
+      val set = new scala.collection.immutable.TreeSet[entity.Member]()(mA => new Ordered[entity.Member] {
         def compare(mB: entity.Member): Int =
           if (mA eq mB) 0
           else {
@@ -273,8 +273,7 @@ trait ModelToXML extends ModelExtractor {
            other match { case that: entity.Member => compare(that) == 0
                          case that: AnyRef => this.eq(that)
                          case _ => false }
-      });
-      set addAll xs;
+      })++xs
       seq = seq ++ <table cellpadding="3" class="member" summary="">
       <tr><td colspan="2" class="title">{Text(category.label + " Summary")}</td></tr>
       {set.mkXML("","\n","")(mmbr => shortHeader(mmbr))}
@@ -369,8 +368,10 @@ trait ModelToXML extends ModelExtractor {
     if (entity.sym.hasFlag(symtab.Flags.CASE)) NodeSeq.Empty;
     else {
       val sep = Text("@")
+      val seq =
       for (attr <- entity.attributes)
         yield Group({(sep ++ attrFor(attr) ++ <br/>)})
+      seq
     }
   }
 }
