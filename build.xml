@@ -85,6 +85,11 @@ END-USER TARGETS
     <antcall target="locker.done"/>
   </target>
 
+  <target name="newlibs"
+          description="Forces compiler libraries (MSIL) to be rebuilt. Add this target before any other if class file format is incompatible.">
+    <property name="libs.msil.outdated" value="yes"/>
+  </target>
+
   <target name="optimised"
           description="Build the compiler and standard library using optimisations, running 'quick'">
     <antcall target="optimised.bin"/>
@@ -116,8 +121,6 @@ PROPERTIES
   <!-- Sets location of pre-compiled libraries -->
   <property name="lib.starr.jar" value="${lib.dir}/scala-library.jar"/>
   <property name="comp.starr.jar" value="${lib.dir}/scala-compiler.jar"/>
-  <property name="fjbg.jar" value="${lib.dir}/fjbg.jar"/>
-  <property name="msil.jar" value="${lib.dir}/msil.jar"/>
   <property name="jline.jar" value="${lib.dir}/jline.jar"/>
   <property name="ant.jar" value="${ant.home}/lib/ant.jar"/>
 
@@ -129,6 +132,7 @@ PROPERTIES
   <property name="build-pack.dir" value="${build.dir}/pack"/>
   <property name="build-strap.dir" value="${build.dir}/strap"/>
   <property name="build-docs.dir" value="${build.dir}/scaladoc"/>
+  <property name="build-libs.dir" value="${build.dir}/libs"/>
 
   <property name="dists.dir" value="${basedir}/dists"/>
 
@@ -183,7 +187,7 @@ INITIALISATION
     <path id="starr.classpath">
       <pathelement location="${lib.starr.jar}"/>
       <pathelement location="${comp.starr.jar}"/>
-      <pathelement location="${fjbg.jar}"/>
+      <pathelement location="${lib.dir}/fjbg.jar"/>
       <pathelement location="${ant.jar}"/>
     </path>
     <taskdef resource="scala/tools/ant/sabbus/antlib.xml" classpathref="starr.classpath"/>
@@ -280,8 +284,8 @@ LOCAL REFERENCE BUILD (LOCKER)
       <compilationpath>
         <pathelement location="${build-locker.dir}/classes/library"/>
         <pathelement location="${build-locker.dir}/classes/compiler"/>
-        <pathelement location="${fjbg.jar}"/>
-        <pathelement location="${msil.jar}"/>
+        <pathelement location="${lib.dir}/fjbg.jar"/>
+        <pathelement location="${lib.dir}/msil.jar"/>
         <pathelement location="${jline.jar}"/>
         <pathelement location="${ant.jar}"/>
       </compilationpath>
@@ -307,7 +311,7 @@ LOCAL REFERENCE BUILD (LOCKER)
     <path id="locker.classpath">
       <pathelement location="${build-locker.dir}/classes/library"/>
       <pathelement location="${build-locker.dir}/classes/compiler"/>
-      <pathelement location="${fjbg.jar}"/>
+      <pathelement location="${lib.dir}/fjbg.jar"/>
       <pathelement location="${ant.jar}"/>
     </path>
   </target>
@@ -435,7 +439,16 @@ QUICK BUILD (QUICK)
     <stopwatch name="quick.lib.timer" action="total"/>
   </target>
   
-  <target name="quick.pre-comp" depends="quick.lib">
+  <target name="quick.pre-libs" depends="quick.lib" if="libs.msil.outdated">
+    <antcall target="libs.done"/>
+  </target>
+  
+  <target name="quick.libs" depends="quick.pre-libs" if="libs.msil.outdated">
+    <property name="fjbg.jar" value="${lib.dir}/fjbg.jar"/>
+    <property name="msil.jar" value="${lib.dir}/msil.jar"/>
+  </target>
+  
+  <target name="quick.pre-comp" depends="quick.libs">
     <uptodate property="quick.comp.available" targetfile="${build-quick.dir}/compiler.complete">
       <srcfiles dir="${src.dir}/compiler"/>
     </uptodate>
@@ -475,6 +488,35 @@ QUICK BUILD (QUICK)
     </copy>
     <touch file="${build-quick.dir}/compiler.complete" verbose="no"/>
     <stopwatch name="quick.comp.timer" action="total"/>
+  </target>
+
+  <target name="quick.pre-scalap" depends="quick.comp">
+    <uptodate property="quick.scalap.available" targetfile="${build-quick.dir}/scalap.complete">
+      <srcfiles dir="${src.dir}/scalap"/>
+    </uptodate>
+  </target>
+
+  <target name="quick.scalap" depends="quick.pre-scalap" unless="quick.scalap.available">
+    <stopwatch name="quick.scalap.timer"/>
+    <mkdir dir="${build-quick.dir}/classes/scalap"/>
+    <scalacfork
+      destdir="${build-quick.dir}/classes/scalap"
+      compilerpathref="locker.classpath"
+      srcpath="${src.dir}/scalap"
+      params="${scalac.args}"
+      srcdir="${src.dir}/scalap"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/compiler"/>
+        <pathelement location="${build-quick.dir}/classes/partest"/>
+        <pathelement location="${build-quick.dir}/classes/scalap"/>
+        <pathelement location="${ant.jar}"/>
+      </compilationpath>
+    </scalacfork>
+    <touch file="${build-quick.dir}/scalap.complete" verbose="no"/>
+    <stopwatch name="quick.scalap.timer" action="total"/>
   </target>
 
   <target name="quick.pre-partest" depends="quick.scalap">
@@ -526,35 +568,6 @@ QUICK BUILD (QUICK)
     </copy>
     <touch file="${build-quick.dir}/partest.complete" verbose="no"/>
     <stopwatch name="quick.partest.timer" action="total"/>
-  </target>
-
-  <target name="quick.pre-scalap" depends="quick.comp">
-    <uptodate property="quick.scalap.available" targetfile="${build-quick.dir}/scalap.complete">
-      <srcfiles dir="${src.dir}/scalap"/>
-    </uptodate>
-  </target>
-
-  <target name="quick.scalap" depends="quick.pre-scalap" unless="quick.scalap.available">
-    <stopwatch name="quick.scalap.timer"/>
-    <mkdir dir="${build-quick.dir}/classes/scalap"/>
-    <scalacfork
-      destdir="${build-quick.dir}/classes/scalap"
-      compilerpathref="locker.classpath"
-      srcpath="${src.dir}/scalap"
-      params="${scalac.args}"
-      srcdir="${src.dir}/scalap"
-      jvmargs="${scalacfork.jvmargs}">
-      <include name="**/*.scala"/>
-      <compilationpath>
-        <pathelement location="${build-quick.dir}/classes/library"/>
-        <pathelement location="${build-quick.dir}/classes/compiler"/>
-        <pathelement location="${build-quick.dir}/classes/partest"/>
-        <pathelement location="${build-quick.dir}/classes/scalap"/>
-        <pathelement location="${ant.jar}"/>
-      </compilationpath>
-    </scalacfork>
-    <touch file="${build-quick.dir}/scalap.complete" verbose="no"/>
-    <stopwatch name="quick.scalap.timer" action="total"/>
   </target>
 
   <target name="quick.pre-bin" depends="quick.partest">
@@ -1270,6 +1283,61 @@ OPTIMISED COMPILER
   <target name="optimised.clean">
     <delete dir="${build-optimised.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
   </target>
+
+<!-- ===========================================================================
+LIBRARIES (MSIL, FJBG maybe later)
+============================================================================ -->
+  
+  <target name="libs.start" depends="quick.lib"/>
+  
+  <target name="libs.pre-msil" depends="libs.start" if="libs.msil.outdated">
+    <uptodate property="libs.msil.available" targetfile="${build-libs.dir}/msil.complete">
+      <srcfiles dir="${src.dir}/msil">
+        <include name="**/*.java"/>
+        <include name="**/*.scala"/>
+      </srcfiles>
+    </uptodate>
+  </target>
+  
+  <target name="libs.msil" depends="libs.pre-msil" if="libs.msil.outdated" unless="libs.msil.available">
+    <mkdir dir="${build-libs.dir}/classes/msil"/>
+    <javac
+      srcdir="${src.dir}/msil"
+      destdir="${build-libs.dir}/classes/msil"
+      classpath="${build-libs.dir}/classes/msil"
+      includes="**/*.java"
+      excludes="**/tests/**"
+      target="1.5" source="1.4">
+        <compilerarg line="${javac.args}"/>
+    </javac>
+    <scalacfork
+      destdir="${build-libs.dir}/classes/msil"
+      compilerpathref="locker.classpath"
+      srcpath="${src.dir}/msil"
+      params="${scalac.args}"
+      srcdir="${src.dir}/msil"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-libs.dir}/classes/msil"/>
+      </compilationpath>
+    </scalacfork>
+    <touch file="${build-libs.dir}/msil.complete" verbose="no"/>
+  </target>
+  
+  <target name="libs.pre-msilpack" depends="libs.msil" if="libs.msil.outdated">
+    
+  </target>
+  
+  <target name="libs.msilpack" depends="libs.pre-msilpack" if="libs.msil.outdated">
+    <jar destfile="${build-libs.dir}/msil.jar">
+      <fileset dir="${build-libs.dir}/classes/msil"/>
+    </jar>
+    <property name="msil.jar" value="${build-libs.dir}/msil.jar"/>
+  </target>
+  
+  <target name="libs.done" depends="libs.msilpack"/>
 
 <!-- ===========================================================================
 DOCUMENTATION
