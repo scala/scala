@@ -21,4 +21,10 @@ import scala.util.parsing.combinator.lexical.StdLexical
 class StandardTokenParsers extends StdTokenParsers {
   type Tokens = StdTokens
   val lexical = new StdLexical
+
+  //an implicit keyword function that gives a warning when a given word is not in the reserved/delimiters list
+  override implicit def keyword(chars : String): Parser[String] =
+    if(lexical.reserved.contains(chars) || lexical.delimiters.contains(chars)) super.keyword(chars)
+    else failure("You are trying to parse \""+chars+"\", but it is neither contained in the delimiters list, nor in the reserved keyword list of your lexical object")
+
 }

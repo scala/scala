@@ -14,7 +14,6 @@ import scala.util.parsing.input._
 import scala.collection.mutable.{Map=>MutableMap}
 
 // TODO: better error handling (labelling like parsec's <?>)
-// TODO: memoisation (like packrat parsers?)
 
 /** <p>
  *    <code>Parsers</code> is a component that <i>provides</i> generic
@@ -638,8 +637,9 @@ trait Parsers {
    *         (and that only succeeds if `p' matches at least once).
    *         The results of `p' are collected in a list. The results of `q' are discarded.
    */
-  def rep1sep[T](p: => Parser[T], q: => Parser[Any]): Parser[List[T]] =
-    p ~ (q ~ rep1sep(p, q) ^^ { case x ~ y => y } | success(List())) ^^ { case x ~ y => x :: y }
+  def rep1sep[T](p : => Parser[T], q : => Parser[Any]): Parser[List[T]] =
+    p ~ rep(q ~> p) ^^ {case x~y => x::y}
+
 
   /** A parser generator that, roughly, generalises the rep1sep generator so that `q', which parses the separator,
    * produces a left-associative function that combines the elements it separates.
@@ -702,6 +702,19 @@ trait Parsers {
       case s @ Success(_, _) => Failure("Expected failure", in)
       case e @ Error(_, _) => Success((), in)
       case f @ Failure(msg, next) => Success((), in)
+    }
+  }
+
+  /** A parser generator for guard expressions. The resulting parser will fail or succeed
+   * just like the one given as parameter but it will not consume any input.
+   *
+   * @param p a `Parser' that is to be applied to the input
+   * @return A parser that returns success if and only if 'p' succeeds but never consumes any input
+   */
+  def guard[T](p: => Parser[T]): Parser[T] = Parser { in =>
+    p(in) match{
+      case s@ Success(s1,_) => Success(s1, in)
+      case e => e
     }
   }
 

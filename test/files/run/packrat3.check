@@ -1,0 +1,7 @@
+(((List(a, b)~())~List(a))~List(b, c))
+(((List(a, a, b, b)~())~List(a, a))~List(b, b, c, c))
+(((List(a, a, a, b, b, b)~())~List(a, a, a))~List(b, b, b, c, c, c))
+(((List(a, a, a, a, b, b, b, b)~())~List(a, a, a, a))~List(b, b, b, b, c, c, c, c))
+Expected failure
+``b'' expected but `c' found
+``c'' expected but EOF found
