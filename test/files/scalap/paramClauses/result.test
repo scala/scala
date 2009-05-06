@@ -1,0 +1,4 @@
+class ParamClauses extends java.lang.Object with scala.ScalaObject {
+  def this() = { /* compiled code */ }
+  def foo(i : scala.Int)(s : scala.Predef.String)(d : scala.Double) : scala.Int = { /* compiled code */ }
+}

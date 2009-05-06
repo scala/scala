@@ -1,0 +1,8 @@
+final case object CaseObject extends java.lang.Object with scala.ScalaObject with scala.Product {
+  def bar : scala.Int = { /* compiled code */ }
+  final override def toString() : java.lang.String = { /* compiled code */ }
+  override def productPrefix : java.lang.String = { /* compiled code */ }
+  override def productArity : scala.Int = { /* compiled code */ }
+  override def productElement(i : scala.Int) : scala.Any = { /* compiled code */ }
+  protected def readResolve() : java.lang.Object = { /* compiled code */ }
+}

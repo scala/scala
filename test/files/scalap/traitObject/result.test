@@ -1,0 +1,8 @@
+trait TraitObject extends java.lang.Object with scala.ScalaObject {
+  def $init$() : scala.Unit = { /* compiled code */ }
+  def foo : scala.Int = { /* compiled code */ }
+}
+final object TraitObject extends java.lang.Object with scala.ScalaObject {
+  def this() = { /* compiled code */ }
+  def bar : scala.Int = { /* compiled code */ }
+}

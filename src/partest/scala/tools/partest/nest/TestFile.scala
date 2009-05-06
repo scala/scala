@@ -106,3 +106,12 @@ case class ShootoutTestFile(override val file: File, override val fileManager: F
     settings.outdir.value = file.getParent
   }
 }
+
+case class ScalapTestFile(override val file: File, override val fileManager: FileManager, createOutDir: Boolean) extends TestFile("scalap", file, fileManager, createOutDir) {
+  override def defineSettings(settings: Settings) {
+    baseSettings(settings)
+    settings.classpath.value = settings.classpath.value+
+      File.pathSeparator+fileManager.CLASSPATH
+    settings.outdir.value = file.getParent
+  }
+}

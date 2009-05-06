@@ -476,8 +476,8 @@ QUICK BUILD (QUICK)
     <touch file="${build-quick.dir}/compiler.complete" verbose="no"/>
     <stopwatch name="quick.comp.timer" action="total"/>
   </target>
-  
-  <target name="quick.pre-partest" depends="quick.comp">
+
+  <target name="quick.pre-partest" depends="quick.scalap">
     <uptodate property="quick.partest.available" targetfile="${build-quick.dir}/partest.complete">
       <srcfiles dir="${src.dir}/partest"/>
     </uptodate>
@@ -493,6 +493,7 @@ QUICK BUILD (QUICK)
       <classpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
         <pathelement location="${build-quick.dir}/classes/compiler"/>
+        <pathelement location="${build-quick.dir}/classes/scalap"/>
         <pathelement location="${build-quick.dir}/classes/partest"/>
       </classpath>
       <include name="**/*.java"/>
@@ -509,6 +510,7 @@ QUICK BUILD (QUICK)
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
         <pathelement location="${build-quick.dir}/classes/compiler"/>
+        <pathelement location="${build-quick.dir}/classes/scalap"/>
         <pathelement location="${build-quick.dir}/classes/partest"/>
         <pathelement location="${ant.jar}"/>
       </compilationpath>
@@ -525,13 +527,13 @@ QUICK BUILD (QUICK)
     <touch file="${build-quick.dir}/partest.complete" verbose="no"/>
     <stopwatch name="quick.partest.timer" action="total"/>
   </target>
-  
-  <target name="quick.pre-scalap" depends="quick.partest">
+
+  <target name="quick.pre-scalap" depends="quick.comp">
     <uptodate property="quick.scalap.available" targetfile="${build-quick.dir}/scalap.complete">
       <srcfiles dir="${src.dir}/scalap"/>
     </uptodate>
   </target>
-    
+
   <target name="quick.scalap" depends="quick.pre-scalap" unless="quick.scalap.available">
     <stopwatch name="quick.scalap.timer"/>
     <mkdir dir="${build-quick.dir}/classes/scalap"/>
@@ -554,8 +556,8 @@ QUICK BUILD (QUICK)
     <touch file="${build-quick.dir}/scalap.complete" verbose="no"/>
     <stopwatch name="quick.scalap.timer" action="total"/>
   </target>
-  
-  <target name="quick.pre-bin" depends="quick.scalap">
+
+  <target name="quick.pre-bin" depends="quick.partest">
     <condition property="quick.bin.available">
       <isset property="quick.comp.available"/>
     </condition>
@@ -898,7 +900,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <stopwatch name="strap.comp.timer" action="total"/>
   </target>
   
-  <target name="strap.pre-partest" depends="strap.comp">
+  <target name="strap.pre-partest" depends="strap.scalap">
     <uptodate property="strap.partest.available" targetfile="${build-strap.dir}/partest.complete">
       <srcfiles dir="${src.dir}/partest"/>
     </uptodate>
@@ -914,6 +916,7 @@ BOOTSTRAPPING BUILD (STRAP)
       <classpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
         <pathelement location="${build-strap.dir}/classes/compiler"/>
+        <pathelement location="${build-strap.dir}/classes/scalap"/>
         <pathelement location="${build-strap.dir}/classes/partest"/>
       </classpath>
       <include name="**/*.java"/>
@@ -928,6 +931,7 @@ BOOTSTRAPPING BUILD (STRAP)
       <classpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
         <pathelement location="${build-strap.dir}/classes/compiler"/>
+        <pathelement location="${build-strap.dir}/classes/scalap"/>
         <pathelement location="${build-strap.dir}/classes/partest"/>
         <pathelement location="${ant.jar}"/>
       </classpath>
@@ -940,13 +944,13 @@ BOOTSTRAPPING BUILD (STRAP)
     <touch file="${build-strap.dir}/partest.complete" verbose="no"/>
     <stopwatch name="strap.partest.timer" action="total"/>
   </target>
-  
-  <target name="strap.pre-scalap" depends="strap.partest">
+
+  <target name="strap.pre-scalap" depends="strap.comp">
     <uptodate property="strap.scalap.available" targetfile="${build-strap.dir}/scalap.complete">
       <srcfiles dir="${src.dir}/scalap"/>
     </uptodate>
   </target>
-    
+
   <target name="strap.scalap" depends="strap.pre-scalap" unless="strap.scalap.available">
     <stopwatch name="strap.scalap.timer"/>
     <mkdir dir="${build-strap.dir}/classes/scalap"/>
@@ -968,7 +972,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <stopwatch name="strap.scalap.timer" action="total"/>
   </target>
   
-  <target name="strap.done" depends="strap.scalap"/>
+  <target name="strap.done" depends="strap.partest"/>
 
   <target name="strap.clean">
     <delete dir="${build-strap.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
@@ -1129,7 +1133,7 @@ OPTIMISED COMPILER
     <stopwatch name="optimised.comp.timer" action="total"/>
   </target>
 
-  <target name="optimised.pre-partest" depends="optimised.comp">
+  <target name="optimised.pre-partest" depends="optimised.scalap">
     <uptodate property="optimised.partest.available" targetfile="${build-optimised.dir}/partest.complete">
       <srcfiles dir="${src.dir}/partest"/>
     </uptodate>
@@ -1174,7 +1178,7 @@ OPTIMISED COMPILER
     <stopwatch name="optimised.partest.timer" action="total"/>
   </target>
 
-  <target name="optimised.pre-scalap" depends="optimised.partest">
+  <target name="optimised.pre-scalap" depends="optimised.comp">
     <uptodate property="optimised.scalap.available" targetfile="${build-optimised.dir}/scalap.complete">
       <srcfiles dir="${src.dir}/scalap"/>
     </uptodate>
@@ -1203,7 +1207,7 @@ OPTIMISED COMPILER
     <stopwatch name="optimised.scalap.timer" action="total"/>
   </target>
 
-  <target name="optimised.pre-bin" depends="optimised.scalap">
+  <target name="optimised.pre-bin" depends="optimised.partest">
     <condition property="optimised.bin.available">
       <isset property="optimised.comp.available"/>
     </condition>
@@ -1433,6 +1437,7 @@ BOOTRAPING TEST AND TEST SUITE
       <jvm5tests dir="${test.dir}/files/jvm5" includes="*.scala"/>
       <residenttests dir="${test.dir}/files/res" includes="*.res"/>
       <!-- <scripttests dir="${test.dir}/files/script" includes="*.scala"/> -->
+      <scalaptests dir="${test.dir}/files/scalap" includes="**/*.scala"/>
     </partest>
   </target>
   

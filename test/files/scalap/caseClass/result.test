@@ -1,0 +1,11 @@
+case class CaseClass[A >: scala.Nothing <: scala.Seq[scala.Int]](a : A, s : scala.Predef.String) extends java.lang.Object with scala.ScalaObject with scala.Product {
+  val i : A = { /* compiled code */ }
+  val s : scala.Predef.String = { /* compiled code */ }
+  def foo : scala.Int = { /* compiled code */ }
+  override def hashCode() : scala.Int = { /* compiled code */ }
+  override def toString() : scala.Predef.String = { /* compiled code */ }
+  override def equals(a : scala.Any) : scala.Boolean = { /* compiled code */ }
+  override def productPrefix : java.lang.String = { /* compiled code */ }
+  override def productArity : scala.Int = { /* compiled code */ }
+  override def productElement(i : scala.Int) : scala.Any = { /* compiled code */ }
+}

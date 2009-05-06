@@ -7,17 +7,15 @@
 
 package scala.tools.partest.nest
 
-import java.io.{File, FileInputStream, FileOutputStream, PrintStream,
-                PrintWriter, StringWriter, FileWriter, InputStreamReader,
-                FileReader, OutputStreamWriter, BufferedReader}
-
-import java.net.URL
+import java.io._
+import java.net.{URLClassLoader, URL}
 import java.util.{Timer, TimerTask}
 
 import scala.tools.nsc.{ObjectRunner, GenericRunnerCommand}
 
 import scala.actors.{Actor, Exit, TIMEOUT}
 import scala.actors.Actor._
+import scalap.scalax.rules.scalasig.{ByteCode, ClassFileParser, ScalaSigAttributeParsers}
 
 case class RunTests(kind: String, files: List[File])
 case class Results(succ: Int, fail: Int, logs: List[LogFile], outdirs: List[File])
@@ -740,6 +738,61 @@ class Worker(val fileManager: FileManager) extends Actor {
           } else
             LogContext(logFile, None)
         }
+
+      case "scalap" => {
+
+        def decompileFile(clazz: Class[_]) = {
+          val byteCode = ByteCode.forClass(clazz)
+          val classFile = ClassFileParser.parse(byteCode)
+          val Some(sig) = classFile.attribute("ScalaSig").map(_.byteCode).map(ScalaSigAttributeParsers.parse)
+          import scala.tools.scalap.Main._
+          parseScalaSignature(sig)
+        }
+
+        runInContext(file, kind, (logFile: File, outDir: File) => {
+          val sourceDir = file.getParentFile
+          val sourceDirName = sourceDir.getName
+
+          // 1. Find file with result text
+          val results = sourceDir.listFiles(new FilenameFilter {
+            def accept(dir: File, name: String) = name == "result.test"
+          })
+
+          if (results.length != 1) {
+            NestUI.verbose("Result file not found in directory " + sourceDirName + " \n")
+          } else {
+            val resFile = results(0)
+            // 2. Compile source file
+            if (!compileMgr.shouldCompile(outDir, List(file), kind, logFile)) {
+              succeeded = false
+            } else {
+
+              // 3. Decompile file and compare results
+              val className = sourceDirName.capitalize
+              val url = outDir.toURI.toURL
+              val loader = new URLClassLoader(Array(url), getClass.getClassLoader)
+              val clazz = loader.loadClass(className)
+
+              val result = decompileFile(clazz)
+
+              try {
+                val fstream = new FileWriter(logFile);
+                val out = new BufferedWriter(fstream);
+                out.write(result)
+                out.close();
+              } catch {
+                case e: IOException => NestUI.verbose(e.getMessage()); succeeded = false
+              }
+
+              val diff = fileManager.compareFiles(logFile, resFile)
+              if (!diff.equals("")) {
+                NestUI.verbose("output differs from log file\n")
+                succeeded = false
+              }
+            }
+          }
+        })
+      }
 
       case "script" => {
         val osName = System.getProperty("os.name", "")

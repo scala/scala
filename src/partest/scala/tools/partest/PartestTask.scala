@@ -56,6 +56,10 @@ class PartestTask extends Task {
     shootoutFiles = Some(input)
   }
 
+  def addConfiguredScalapTests(input: FileSet) {
+    scalapFiles = Some(input)
+  }
+
   def setClasspath(input: Path) {
     if (classpath.isEmpty)
       classpath = Some(input)
@@ -119,6 +123,7 @@ class PartestTask extends Task {
   private var residentFiles: Option[FileSet] = None
   private var scriptFiles: Option[FileSet] = None
   private var shootoutFiles: Option[FileSet] = None
+  private var scalapFiles: Option[FileSet] = None
   private var errorOnFailed: Boolean = false
   private var scalacOpts: Option[String] = None
   private var timeout: Option[String] = None
@@ -158,6 +163,7 @@ class PartestTask extends Task {
   private def getResidentFiles = getFiles(residentFiles)
   private def getScriptFiles   = getFiles(scriptFiles)
   private def getShootoutFiles = getFiles(shootoutFiles)
+  private def getScalapFiles = getFiles(scalapFiles)
 
   override def execute() {
     if (debug)
@@ -281,6 +287,13 @@ class PartestTask extends Task {
     if (getShootoutFiles.size > 0) {
       log("Running shootout tests")
       val (successes, failures) = runTestsForFiles(getShootoutFiles, "shootout")
+      allSucesses += successes
+      allFailures += failures
+    }
+
+    if (getScalapFiles.size > 0) {
+      log("Running scalap tests")
+      val (successes, failures) = runTestsForFiles(getScalapFiles, "scalap")
       allSucesses += successes
       allFailures += failures
     }

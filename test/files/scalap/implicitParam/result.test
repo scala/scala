@@ -1,0 +1,4 @@
+class ImplicitParam extends java.lang.Object with scala.ScalaObject {
+  def this() = { /* compiled code */ }
+  def foo(i : scala.Int)(implicit f : scala.Float, d : scala.Double) : scala.Int = { /* compiled code */ }
+}

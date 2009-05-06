@@ -1,0 +1,1 @@
+class CbnParam(s: => String)
