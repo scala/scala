@@ -443,7 +443,7 @@ QUICK BUILD (QUICK)
     <antcall target="libs.done"/>
   </target>
   
-  <target name="quick.libs" depends="quick.pre-libs" if="libs.msil.outdated">
+  <target name="quick.libs" depends="quick.pre-libs">
     <property name="fjbg.jar" value="${lib.dir}/fjbg.jar"/>
     <property name="msil.jar" value="${lib.dir}/msil.jar"/>
   </target>
@@ -1290,7 +1290,7 @@ LIBRARIES (MSIL, FJBG maybe later)
   
   <target name="libs.start"/>
   
-  <target name="libs.pre-msil" depends="libs.start" if="libs.msil.outdated">
+  <target name="libs.pre-msil" depends="libs.start">
     <uptodate property="libs.msil.available" targetfile="${build-libs.dir}/msil.complete">
       <srcfiles dir="${src.dir}/msil">
         <include name="**/*.java"/>
@@ -1299,7 +1299,7 @@ LIBRARIES (MSIL, FJBG maybe later)
     </uptodate>
   </target>
   
-  <target name="libs.msil" depends="libs.pre-msil" if="libs.msil.outdated" unless="libs.msil.available">
+  <target name="libs.msil" depends="libs.pre-msil" unless="libs.msil.available">
     <mkdir dir="${build-libs.dir}/classes/msil"/>
     <javac
       srcdir="${src.dir}/msil"
@@ -1326,11 +1326,10 @@ LIBRARIES (MSIL, FJBG maybe later)
     <touch file="${build-libs.dir}/msil.complete" verbose="no"/>
   </target>
   
-  <target name="libs.pre-msilpack" depends="libs.msil" if="libs.msil.outdated">
-    
+  <target name="libs.pre-msilpack" depends="libs.msil">
   </target>
   
-  <target name="libs.msilpack" depends="libs.pre-msilpack" if="libs.msil.outdated">
+  <target name="libs.msilpack" depends="libs.pre-msilpack" unless="libs.msilpack.available">
     <jar destfile="${build-libs.dir}/msil.jar">
       <fileset dir="${build-libs.dir}/classes/msil"/>
     </jar>
@@ -1680,7 +1679,13 @@ STABLE REFERENCE (STARR)
     </jar>
   </target>
 
-  <target name="starr.done" depends="starr.src"/>
+  <target name="starr.libs" depends="starr.src" if="libs.msil.outdated">
+    <copy toDir="${lib.dir}" overwrite="yes">
+      <fileset dir="${build-libs.dir}" includes="*.jar">
+    </copy>
+  </target>
+
+  <target name="starr.done" depends="starr.libs"/>
 
 <!-- ===========================================================================
 FORWARDED TARGETS FOR JVM 1.4 BUILD
