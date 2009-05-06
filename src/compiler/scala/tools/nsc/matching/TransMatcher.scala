@@ -30,7 +30,7 @@ trait TransMatcher {
   protected def isRightIgnoring(p: ArrayValue): Boolean = {
     def isDefaultStar(tree: Tree): Boolean = tree match {
       case Bind(_, q)                 => isDefaultStar(q)
-      case Star(Ident(nme.WILDCARD))  => true
+      case Star(q)                    => isDefaultPattern(q)
       case _                          => false
     }
 
