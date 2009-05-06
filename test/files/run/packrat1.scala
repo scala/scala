@@ -22,10 +22,9 @@ object Test extends Application{
 
 object grammars extends StandardTokenParsers with PackratParsers{
 
-  def extractResult(r : ParseResult[_]) = r match{
+  def extractResult(r : ParseResult[_]) = r match {
     case Success(a,_) => a
-    case Failure(a,_) => a
-    case Error(a,_) => a
+    case NoSuccess(a,_) => a
   }
 
   lexical.delimiters ++= List("+","-","*","/","(",")")

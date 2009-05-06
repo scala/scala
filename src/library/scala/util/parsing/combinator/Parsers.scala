@@ -153,6 +153,17 @@ trait Parsers {
 
     def get: Nothing = error("No result when parsing failed")
   }
+  /** An extractor so NoSuccess(msg, next) can be used in matches
+   *  Note: case class inheritance is currently sketchy and may be
+   *  deprecated, so an explicit extractor is better.
+   */
+  object NoSuccess {
+    def unapply[T](x: ParseResult[T]) = x match {
+      case Failure(msg, next)   => Some(msg, next)
+      case Error(msg, next)     => Some(msg, next)
+      case _                    => None
+    }
+  }
 
   /** The failure case of ParseResult: contains an error-message and the remaining input.
    * Parsing will back-track when a failure occurs.
@@ -304,8 +315,7 @@ trait Parsers {
           case (s1 @ Success(_, _), _) => s1
           case (_, s2 @ Success(_, _)) => s2
           case (e1 @ Error(_, _), _) => e1
-          case (f1 @ Failure(_, next1), f2 @ Failure(_, next2)) => if (next2.pos < next1.pos) f1 else f2
-          case (f1 @ Failure(_, next1), e2 @ Error(_, next2)) => if (next2.pos < next1.pos) f1 else e2
+          case (f1 @ Failure(_, next1), ns2 @ NoSuccess(_, next2)) => if (next2.pos < next1.pos) f1 else ns2
         }
       }
       override def toString = "|||"
@@ -699,9 +709,8 @@ trait Parsers {
    */
   def not[T](p: => Parser[T]): Parser[Unit] = Parser { in =>
     p(in) match {
-      case s @ Success(_, _) => Failure("Expected failure", in)
-      case e @ Error(_, _) => Success((), in)
-      case f @ Failure(msg, next) => Success((), in)
+      case Success(_, _)  => Failure("Expected failure", in)
+      case _              => Success((), in)
     }
   }
 
