@@ -16,10 +16,27 @@ import java.net.{URL, URLClassLoader}
  *  @author  Lex Spoon
  *  @version 1.1, 2007/7/13
  */
-object ObjectRunner {
+object ObjectRunner
+{
+  // we cannot use the app classloader here or we get what looks to
+  // be classloader deadlock, but if we pass null we bypass the extension
+  // classloader and our extensions, so we search the hierarchy to find
+  // the classloader whose parent is null.  Resolves bug #857.
+  private def findExtClassLoader(): ClassLoader = {
+    def search(cl: ClassLoader): ClassLoader = {
+      if (cl == null) null
+      else if (cl.getParent == null) cl
+      else search(cl.getParent)
+    }
+
+    search(Thread.currentThread.getContextClassLoader)
+  }
+
   /** Create a class loader for the specified class path */
-  private def makeClassLoader(classpath: List[URL]) =
-    new URLClassLoader(classpath.toArray, null)
+  private def makeClassLoader(classpath: List[URL]): URLClassLoader =
+    makeClassLoader(classpath, findExtClassLoader())
+  private def makeClassLoader(classpath: List[URL], parent: ClassLoader): URLClassLoader =
+    new URLClassLoader(classpath.toArray, parent)
 
   /** Look up a class with a given class path. */
   private def findClass(loader: ClassLoader, objectName: String)
