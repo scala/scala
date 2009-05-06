@@ -2,11 +2,11 @@
 Scala Software Distributions
 ----------------------------
 
-- scala-<major>.<minor>.<patch>.tar.bz2     Unis distribution
+- scala-<major>.<minor>.<patch>.tar.bz2     Unix distribution
 - scala-<major>.<minor>.<patch>.tar.gz      Unix distribution
 - scala-<major>.<minor>.<patch>.zip         Windows distribution
 
-The standard distributions require Java 1.4.x or above. If you don't
+The standard distributions require Java 1.5 or above. If you don't
 know which version of Java you have, run the command "java -version".
 
 

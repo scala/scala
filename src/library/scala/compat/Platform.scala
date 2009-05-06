@@ -11,7 +11,6 @@
 
 package scala.compat
 
-
 import java.lang.System
 import Predef._
 
@@ -52,9 +51,5 @@ object Platform {
   def collectGarbage: Unit = System.gc()
 
   /** The name of the default character set encoding as a string */
-  def defaultCharsetName: String = {
-    import java.io._
-    new OutputStreamWriter(new ByteArrayOutputStream).getEncoding()
-  }
-
+  def defaultCharsetName: String = java.nio.charset.Charset.defaultCharset.name
 }
