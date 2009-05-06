@@ -1681,7 +1681,7 @@ STABLE REFERENCE (STARR)
 
   <target name="starr.libs" depends="starr.src" if="libs.msil.outdated">
     <copy toDir="${lib.dir}" overwrite="yes">
-      <fileset dir="${build-libs.dir}" includes="*.jar">
+      <fileset dir="${build-libs.dir}" includes="*.jar"/>
     </copy>
   </target>
 
