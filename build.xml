@@ -1288,7 +1288,7 @@ OPTIMISED COMPILER
 LIBRARIES (MSIL, FJBG maybe later)
 ============================================================================ -->
   
-  <target name="libs.start" depends="quick.lib"/>
+  <target name="libs.start"/>
   
   <target name="libs.pre-msil" depends="libs.start" if="libs.msil.outdated">
     <uptodate property="libs.msil.available" targetfile="${build-libs.dir}/msil.complete">
