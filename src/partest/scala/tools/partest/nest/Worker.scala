@@ -565,7 +565,7 @@ class Worker(val fileManager: FileManager) extends Actor {
             val settings = new Settings(error)
             settings.sourcepath.value = sourcepath
             settings.classpath.value = fileManager.CLASSPATH
-            reporter = new ConsoleReporter(settings, Console.in, logConsoleWriter)
+            reporter = new ConsoleReporter(settings, scala.Console.in, logConsoleWriter)
             val command = new CompilerCommand(argList, settings, error, false)
             object compiler extends Global(command.settings, reporter)
 
