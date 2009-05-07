@@ -39,8 +39,13 @@ abstract class Relation extends AnyRef with Iterable[Tuple] {
 
   /** Metadata about the field at the given index. If there is no such
    * field <code>None</code> is returned instead. */
-  def metadataFor (index:Int): Option[FieldMetadata] =
-    try {Some(metadata(index))} catch {case e => None}
+  def metadataFor (index:Int): Option[FieldMetadata] = {
+    val meta = metadata
+    if (meta.length > index)
+      Some(meta(index))
+    else
+      None
+  }
 
   /** Metadata about the field with the given column name. If there is no
    * such field, <code>None</code> is returned instead. */
