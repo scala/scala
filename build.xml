@@ -439,11 +439,13 @@ QUICK BUILD (QUICK)
     <stopwatch name="quick.lib.timer" action="total"/>
   </target>
   
-  <target name="quick.pre-libs" depends="quick.lib" if="libs.msil.outdated">
+  <target name="quick.newlibs" depends="quick.lib" if="libs.msil.outdated">
     <antcall target="libs.done"/>
+    <property name="fjbg.jar" value="${lib.dir}/fjbg.jar"/>
+    <property name="msil.jar" value="${build-libs.dir}/msil.jar"/>
   </target>
   
-  <target name="quick.libs" depends="quick.pre-libs">
+  <target name="quick.libs" depends="quick.newlibs" unless="libs.msil.outdated">
     <property name="fjbg.jar" value="${lib.dir}/fjbg.jar"/>
     <property name="msil.jar" value="${lib.dir}/msil.jar"/>
   </target>
@@ -1333,7 +1335,6 @@ LIBRARIES (MSIL, FJBG maybe later)
     <jar destfile="${build-libs.dir}/msil.jar">
       <fileset dir="${build-libs.dir}/classes/msil"/>
     </jar>
-    <property name="msil.jar" value="${build-libs.dir}/msil.jar"/>
   </target>
   
   <target name="libs.done" depends="libs.msilpack"/>
