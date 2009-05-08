@@ -20,9 +20,9 @@ package scala.collection
  *   <li><code>scala.collection.Iterable</code> <=> <code>java.lang.Iterable</code></li>
  *   <li><code>scala.collection.Iterable</code> <=> <code>java.util.Collection</code></li>
  *   <li><code>scala.collection.Iterator</code> <=> <code>java.util.{ Iterator, Enumeration }</code></li>
- *   <li<code>>scala.collection.mutable.Buffer</code> <=> <code>java.util.List</code></li>
- *   <li<code>>scala.collection.mutable.Set</code> <=> <code>java.util.Set</code></li>
- *   <li<code>>scala.collection.mutable.Map</code> <=> <code>java.util.Map</code></li>
+ *   <li><code>scala.collection.mutable.Buffer</code> <=> <code>java.util.List</code></li>
+ *   <li><code>scala.collection.mutable.Set</code> <=> <code>java.util.Set</code></li>
+ *   <li><code>scala.collection.mutable.Map</code> <=> <code>java.util.Map</code></li>
  * <ul>
  * <p>
  * In all cases, converting from a source type to a target type and back again will return
