@@ -76,7 +76,7 @@ self =>
   /** Force evaluation of the whole stream and return it */
   def force: Stream[A] = {
     var these = this
-    while (!isEmpty) these = these.tail
+    while (!these.isEmpty) these = these.tail
     this
   }
 
