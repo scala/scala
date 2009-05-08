@@ -257,9 +257,22 @@ abstract class Constructors extends Transform {
       for ((accSym, accBody) <- outerAccessors)
         if (mustbeKept(accSym)) accessTraverser.traverse(accBody)
 
+      // Conflicting symbol list from parents: see bug #1960.
+      // It would be better to mangle the constructor parameter name since
+      // it can only be used internally, but I think we need more robust name
+      // mangling before we introduce more of it.
+      val parentSymbols =
+        Map(( for (p <- impl.parents ; sym <- p.symbol.info.nonPrivateMembers) yield sym.name -> p ): _*)
+
       // Initialize all parameters fields that must be kept.
-      val paramInits = for (acc <- paramAccessors if mustbeKept(acc))
-                       yield copyParam(acc, parameter(acc))
+      val paramInits =
+        for (acc <- paramAccessors if mustbeKept(acc)) yield {
+          if ((parentSymbols contains acc.name) && !(acc.name startsWith "$outer"))
+            unit.error(acc.pos, "parameter '%s' requires field but conflicts with %s in '%s'".format(
+              acc.name, acc.name, parentSymbols(acc.name)))
+
+          copyParam(acc, parameter(acc))
+        }
 
       // Assemble final constructor
       defBuf += copy.DefDef(
@@ -275,7 +288,7 @@ abstract class Constructors extends Transform {
 
       // Eliminate all field definitions that can be dropped from template
       copy.Template(impl, impl.parents, impl.self,
-                    defBuf.toList filter (stat => mustbeKept(stat.symbol)))
+        defBuf.toList filter (stat => mustbeKept(stat.symbol)))
     } // transformClassTemplate
 
     override def transform(tree: Tree): Tree =
