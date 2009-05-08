@@ -1164,6 +1164,7 @@ OPTIMISED COMPILER
       <classpath>
         <pathelement location="${build-optimised.dir}/classes/library"/>
         <pathelement location="${build-optimised.dir}/classes/compiler"/>
+        <pathelement location="${build-optimised.dir}/classes/scalap"/>
         <pathelement location="${build-optimised.dir}/classes/partest"/>
       </classpath>
       <include name="**/*.java"/>
@@ -1180,6 +1181,7 @@ OPTIMISED COMPILER
       <compilationpath>
         <pathelement location="${build-optimised.dir}/classes/library"/>
         <pathelement location="${build-optimised.dir}/classes/compiler"/>
+        <pathelement location="${build-optimised.dir}/classes/scalap"/>
         <pathelement location="${build-optimised.dir}/classes/partest"/>
         <pathelement location="${ant.jar}"/>
       </compilationpath>
