@@ -21,5 +21,6 @@ final class RichClass(val self: Class[_]) extends Proxy {
   def getClass(): RichClass = this
   def getName(): String = self.Name
   def getComponentType(): Class[_] = self.GetElementType
+  def isAssignableFrom(other: RichClass) = self.IsAssignableFrom(other.self)
 
 }
