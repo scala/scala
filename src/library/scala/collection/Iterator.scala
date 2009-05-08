@@ -938,7 +938,7 @@ trait Iterator[+A] { self =>
    *  @deprecated use @see zipWithIndex in Iterator
    */
   @deprecated def counted = new CountedIterator[A] {
-    private var cnt = -1
+    private var cnt = 0
     def count = cnt
     def hasNext: Boolean = self.hasNext
     def next(): A = { cnt += 1; self.next }
