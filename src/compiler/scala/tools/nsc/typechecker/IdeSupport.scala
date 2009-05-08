@@ -1,15 +1,15 @@
 package scala.tools.nsc.typechecker;
-import scala.collection.jcl.WeakHashMap
+import scala.collection.mutable.{WeakHashMap, LinkedHashSet}
 trait IdeSupport extends Analyzer {
   val global : Global with symtab.IdeSupport
   import global._
 
   private class ContextInternMap extends WeakHashMap[Context,ref.WeakReference[Context]] {
-    var last : Context = _
+    var lastContext : Context = _
     override def default(txt : Context) : ref.WeakReference[Context] = {
       if (txt eq NoContext) new ref.WeakReference(NoContext)
       val txt0 = txt.intern0
-      last = txt0 // to prevent collection
+      lastContext = txt0 // to prevent collection
       val ret = new ref.WeakReference(txt0)
       this(txt0) = ret
       ret
@@ -132,7 +132,7 @@ trait IdeSupport extends Analyzer {
       }
     }
   }
-  private val toComplete = new scala.collection.jcl.LinkedHashSet[Symbol]
+  private val toComplete = new LinkedHashSet[Symbol]
   def finishTyping = while (!toComplete.isEmpty) {
     toComplete.toList.foreach(sym => if (sym.pos match {
     case pos : TrackedPosition if !pos.isValid => toComplete.remove(sym); false

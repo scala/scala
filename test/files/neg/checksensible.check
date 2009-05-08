@@ -23,8 +23,8 @@ checksensible.scala:11: warning: comparing a fresh object using `==' will always
   println(new Object == new Object)
                      ^
 checksensible.scala:12: warning: comparing a fresh object using `!=' will always yield true
-  println(new Array(1) != new Array(1))
-                       ^
+  println(new Exception() != new Exception())
+                          ^
 checksensible.scala:15: warning: comparing values of types Int and Null using `==' will always yield false
   if (foo.length == null) //  == 0 makes more sense, but still
                  ^

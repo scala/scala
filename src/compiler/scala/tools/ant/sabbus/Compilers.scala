@@ -12,7 +12,7 @@ package scala.tools.ant.sabbus
 
 import java.net.URL
 
-object Compilers extends collection.Map[String, Compiler] {
+object Compilers extends collection.DefaultMap[String, Compiler] {
 
   val debug = false
 
@@ -22,7 +22,7 @@ object Compilers extends collection.Map[String, Compiler] {
 
   def get(id: String) = container.get(id)
 
-  def size = container.size
+  override def size = container.size
 
   def make(id: String, classpath: Array[URL], settings: Settings): Compiler = {
     val runtime = Runtime.getRuntime
@@ -43,5 +43,4 @@ object Compilers extends collection.Map[String, Compiler] {
     if (debug) println("  memory after: " + (runtime.freeMemory/1048576.).formatted("%10.2f") + " MB")
     null
   }
-
 }

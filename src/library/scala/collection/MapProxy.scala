@@ -1,3 +1,4 @@
+/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -43,3 +44,4 @@ trait MapProxy[A, +B] extends Map[A, B] with CollectionProxy[(A, B)] {
   override def filterKeys(p: A => Boolean) = self filterKeys p
   override def mapElements[C](f: B => C) = self mapElements f
 }
+*/

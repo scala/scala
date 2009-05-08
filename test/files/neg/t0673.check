@@ -1,4 +1,4 @@
-Test.scala:2: error: value InnerClass is not a member of object JavaClass
+Test.scala:2: error: object InnerClass is not a value
   val x = JavaClass.InnerClass
                     ^
 one error found

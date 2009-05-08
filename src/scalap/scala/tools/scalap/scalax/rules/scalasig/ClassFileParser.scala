@@ -76,7 +76,7 @@ class ByteCode(val bytes : Array[Byte], val pos : Int, val length : Int) {
         b = ((b & 0x1F) << 6) | (bytes(i) & 0x3F)
         i += 1
       }
-      sb + b.toChar
+      sb += b.toChar
     }
     sb.toString
   }

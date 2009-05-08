@@ -107,7 +107,7 @@ object StreamFoo extends TestCase("unapply for Streams") with Assert {
 
   def sum(stream: Stream[Int]): Int =
     stream match {
-      case Stream.empty => 0
+      case Stream.Empty => 0
       case Stream.cons(hd, tl) => hd + sum(tl)
     }
   override def runTest {

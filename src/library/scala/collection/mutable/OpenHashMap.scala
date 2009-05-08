@@ -18,6 +18,8 @@ object OpenHashMap{
     dict;
   }
 
+  def empty[K, V] = new OpenHashMap[K, V];
+
   private[mutable] class Entry[Key, Value](val key : Key,
                                            val hash : Int,
                                            var value : Option[Value])
@@ -48,6 +50,8 @@ import OpenHashMap.Entry;
 class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutable.Map[Key, Value]{
   def this() = this(8);
 
+  override def empty = OpenHashMap.empty
+
   private[this] val actualInitialSize = OpenHashMap.nextPowerOfTwo(initialSize);
 
   private var mask = actualInitialSize - 1;;
@@ -58,7 +62,7 @@ class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutabl
   // Used for tracking inserts so that iterators can determine in concurrent modification has occurred.
   private[this] var modCount = 0;
 
-  def size = _size;
+  override def size = _size;
   private[this] def size_=(s : Int) = _size = s;
 
   protected def hashOf(key : Key) = {
@@ -200,12 +204,15 @@ class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutabl
   private[this] def foreachUndeletedEntry(f : Entry[Key, Value] => Unit){
     table.foreach(entry => if (entry != null && entry.value != None) f(entry));
   }
-
-  override def transform(f : (Key, Value) => Value) =
+  override def transform(f : (Key, Value) => Value) = {
     foreachUndeletedEntry(entry => entry.value = Some(f(entry.key, entry.value.get)));
+    this
+  }
 
-  override def retain(f : (Key, Value) => Boolean) =
+  override def retain(f : (Key, Value) => Boolean) = {
     foreachUndeletedEntry(entry => if (!f(entry.key, entry.value.get)) {entry.value = None; size -= 1; deleted += 1} );
+    this
+  }
 
   override def stringPrefix = "OpenHashMap"
 }

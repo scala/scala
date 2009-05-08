@@ -8,7 +8,7 @@
 package scala.tools.nsc.backend.icode.analysis
 
 import scala.collection.immutable.{Set, ListSet, HashSet}
-import scala.collection.jcl.{HashMap, Map}
+import scala.collection.mutable.{HashMap, Map}
 
 /** Compute reaching definitions. We are only interested in reaching
  *  definitions for local variables, since values on the stack
@@ -132,7 +132,7 @@ abstract class ReachingDefinitions {
         var prod = instr.produced
         depth = depth + prod
         while (prod > 0) {
-          stackOut = (new collection.immutable.Set1((b, idx))) :: stackOut
+          stackOut = collection.immutable.Set((b, idx)) :: stackOut
           prod = prod - 1
         }
       }
@@ -184,7 +184,7 @@ abstract class ReachingDefinitions {
 
       var prod = instr.produced
       while (prod > 0) {
-        stack = (new collection.immutable.Set1((b, idx))) :: stack
+        stack = collection.immutable.Set((b, idx)) :: stack
         prod -= 1
       }
 

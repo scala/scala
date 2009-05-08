@@ -113,5 +113,4 @@ object Test extends Application {
   test("immutable.Map", immutable.Map[Int, Int](), 5000)
   test("immutable.TreeMap", new immutable.TreeMap[Int, Int], 5000)
   test("immutable.ListMap", new immutable.ListMap[Int, Int], 3000)
-  test("immutable.UnBalancedTreeMap", new immutable.UnbalancedTreeMap[Int, Int], 1000)
 }

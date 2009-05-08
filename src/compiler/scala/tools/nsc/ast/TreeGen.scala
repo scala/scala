@@ -133,6 +133,8 @@ abstract class TreeGen {
   def mkAttributedCastUntyped(tree: Tree, pt: Type): Tree = {
     if (settings.debug.value) log("casting " + tree + ":" + tree.tpe + " to " + pt)
     assert(!tree.tpe.isInstanceOf[MethodType], tree)
+    assert(!pt.typeSymbol.isPackageClass)
+    assert(!pt.typeSymbol.isPackageObjectClass)
     assert(pt eq pt.normalize) //@MAT only called during erasure, which already takes care of that
     atPos(tree.pos) {
       Apply(TypeApply(mkAttributedSelect(tree, Object_asInstanceOf), List(TypeTree(pt))), List())
@@ -159,8 +161,16 @@ abstract class TreeGen {
          qual.symbol.name.toTermName == nme.EMPTY_PACKAGE_NAME)) {
       mkAttributedIdent(sym)
     } else {
-      val result = Select(qual, sym.name) setSymbol sym
-      if (qual.tpe ne null) result setType qual.tpe.memberType(sym)
+      val qual1 =
+        if ((qual.tpe ne null) &&
+            sym.owner.isPackageObjectClass &&
+            sym.owner.owner == qual.tpe.typeSymbol) {
+          //println("insert package for "+qual+"/"+sym)
+          val pkgobj = sym.owner.sourceModule
+          Select(qual, nme.PACKAGEkw) setSymbol pkgobj setType singleType(qual.tpe, pkgobj)
+        } else qual
+      val result = Select(qual1, sym.name) setSymbol sym
+      if (qual1.tpe ne null) result setType qual.tpe.memberType(sym)
       result
     }
 

@@ -81,7 +81,7 @@ object MetaData {
  * @author Burak Emir <bqe@google.com>
  */
 @serializable
-abstract class MetaData extends Collection[MetaData] {
+abstract class MetaData extends Iterable[MetaData] {
 
   /** updates this MetaData with the MetaData given as argument. All attributes that occur in updates
    *  are part of the resulting MetaData. If an unprefixed attribute occurs in both this instance and
@@ -181,7 +181,7 @@ abstract class MetaData extends Collection[MetaData] {
       y
     }
   }
-  def size : Int = 1 + {
+  override def size : Int = 1 + {
     if (Null == next) 0 else next.size
   }
 

@@ -1,3 +1,4 @@
+/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -80,3 +81,4 @@ class Script[A] extends ArrayBuffer[Message[A]] with Message[A] {
   override def hashCode(): Int =
     throw new UnsupportedOperationException("scripts are not suitable as hash keys")
 }
+*/

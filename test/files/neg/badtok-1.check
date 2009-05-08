@@ -1,7 +1,7 @@
-badtok-1.scala:2: error: missing terminating quote
+badtok-1.scala:2: error: expected class or object definition
 '42'
 ^
-badtok-1.scala:2: error: unterminated character literal
+badtok-1.scala:2: error: unclosed character literal
 '42'
    ^
 two errors found

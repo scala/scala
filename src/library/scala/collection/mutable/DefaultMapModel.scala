@@ -11,8 +11,6 @@
 
 package scala.collection.mutable
 
-import Predef._
-
 /** This class is used internally. It implements the mutable <code>Map</code>
  *  class in terms of three functions: <code>findEntry</code>,
  *  <code>addEntry</code>, and <code>entries</code>.

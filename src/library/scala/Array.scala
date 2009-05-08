@@ -11,8 +11,8 @@
 
 package scala
 
-
-import Predef._
+import scala.collection.generic._
+import scala.collection.mutable.{Vector, ArrayBuffer}
 import compat.Platform.arraycopy
 
 /** This object contains utility methods operating on arrays.
@@ -20,9 +20,15 @@ import compat.Platform.arraycopy
  *  @author Martin Odersky
  *  @version 1.0
  */
-object Array {
+object Array extends SequenceFactory[Array] {
+
   import runtime.BoxedArray;
   import scala.runtime.ScalaRunTime.boxArray;
+
+  type Coll = Array[_]
+  implicit def builderFactory[A]: BuilderFactory[A, Array[A], Coll] = new BuilderFactory[A, Array[A], Coll] { def apply(from: Coll) = newBuilder[A] }
+  def newBuilder[A]: Builder[A, Array[A], Any] = new ArrayBuffer[A].mapResult(_.toArray)
+
   private def slowcopy(
                      src : AnyRef,
                   srcPos : Int,
@@ -76,46 +82,20 @@ object Array {
     result
   }
 
-  /** Create a an array containing of successive integers.
-   *
-   *  @param from the value of the first element of the array
-   *  @param end  the value of the last element fo the array plus 1
-   *  @return the sorted array of all integers in range [from;end).
-   */
-  def range(start: Int, end: Int): Array[Int] = {
-    val result = new Array[Int](end - start)
-    for (i <- start until end) result(i - start) = i
-    result
-  }
+  /** Returns array of length 0 */
+  override def empty[A]: Array[A] = new Array[A](0)
 
-  /** Create an array with given elements.
+ /** Create an array with given elements.
    *
    *  @param xs the elements to put in the array
    *  @return the array containing elements xs.
    */
-  def apply[A <: AnyRef](xs: A*): Array[A] = {
+  override def apply[A](xs: A*): Array[A] = {
     val array = new Array[A](xs.length)
     var i = 0
     for (x <- xs.elements) { array(i) = x; i += 1 }
     array
   }
-
-
-/* The following metod clashes with the previous one, and has therefore been
- * removed. Note that this is a choice between efficiency and generality.
- * The previous factory method is more efficient than the one that has been
- * commented out. Since it is anyway possible to create a polymorphic array
- * using
- *        new Array[T]
- * it was preferred to restrict the definition of the factory method.
-
-   def Array[A](xs: A*): Array[A] = {
-    val array = new Array[A](xs.length)
-    var i = 0
-    for (x <- xs.elements) { array(i) = x; i += 1 }
-    array
-  }
-*/
 
   def apply(xs: Boolean*): Array[Boolean] = {
     val array = new Array[Boolean](xs.length)
@@ -180,13 +160,34 @@ object Array {
     array
   }
 
+  /** Create array with given dimensions */
+  def ofDim[A](n1: Int): Array[A] =
+    new Array[A](n1)
+  def ofDim[A](n1: Int, n2: Int): Array[Array[A]] =
+    tabulate(n1)(_ => ofDim[A](n2))
+  def ofDim[A](n1: Int, n2: Int, n3: Int): Array[Array[Array[A]]] =
+    tabulate(n1)(_ => ofDim[A](n2, n3))
+  def ofDim[A](n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[A]]]] =
+    tabulate(n1)(_ => ofDim[A](n2, n3, n4))
+  def ofDim[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[A]]]]] =
+    tabulate(n1)(_ => ofDim[A](n2, n3, n4, n5))
+
+  /** Create array with given dimensions
+   * @deprecated   use ofDim instead */
+  @deprecated def withDims[A](n1: Int): Array[A] = ofDim(n1)
+  @deprecated def withDims[A](n1: Int, n2: Int): Array[Array[A]] = ofDim(n1, n2)
+  @deprecated def withDims[A](n1: Int, n2: Int, n3: Int): Array[Array[Array[A]]] = ofDim(n1, n2, n3)
+  @deprecated def withDims[A](n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[A]]]] = ofDim(n1, n2, n3, n4)
+  @deprecated def withDims[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[A]]]]] = ofDim(n1, n2, n3, n4, n5)
+
   /** Create an array containing several copies of an element.
    *
    *  @param n    the length of the resulting array
    *  @param elem the element composing the resulting array
    *  @return     an array composed of n elements all equal to elem
+   *  @deprecated use `Array.fill` instead.
    */
-  def make[A](n: Int, elem: A): Array[A] = {
+  @deprecated def make[A](n: Int, elem: A): Array[A] = {
     val a = new Array[A](n)
     var i = 0
     while (i < n) {
@@ -198,8 +199,9 @@ object Array {
 
   /** Create an array containing the values of a given function <code>f</code>
    *  over given range <code>[0..n)</code>
+   *  @deprecated use `Array.tabulate` instead.
    */
-  def fromFunction[A](f: Int => A)(n: Int): Array[A] = {
+  @deprecated def fromFunction[A](f: Int => A)(n: Int): Array[A] = {
     val a = new Array[A](n)
     var i = 0
     while (i < n) {
@@ -211,95 +213,31 @@ object Array {
 
   /** Create an array containing the values of a given function <code>f</code>
    *  over given range <code>[0..n1, 0..n2)</code>
+   *  @deprecated use `Array.tabulate` instead.
    */
-  def fromFunction[A](f: (Int, Int) => A)(n1: Int, n2: Int): Array[Array[A]] =
+  @deprecated def fromFunction[A](f: (Int, Int) => A)(n1: Int, n2: Int): Array[Array[A]] =
     fromFunction(i => fromFunction(f(i, _))(n2))(n1)
 
   /** Create an array containing the values of a given function <code>f</code>
    *  over given range <code>[0..n1, 0..n2, 0..n3)</code>
+   *  @deprecated use `Array.tabulate` instead.
    */
-  def fromFunction[A](f: (Int, Int, Int) => A)(n1: Int, n2: Int, n3: Int): Array[Array[Array[A]]] =
+  @deprecated def fromFunction[A](f: (Int, Int, Int) => A)(n1: Int, n2: Int, n3: Int): Array[Array[Array[A]]] =
     fromFunction(i => fromFunction(f(i, _, _))(n2, n3))(n1)
 
   /** Create an array containing the values of a given function <code>f</code>
    *  over given range <code>[0..n1, 0..n2, 0..n3, 0..n4)</code>
+   *  @deprecated use `Array.tabulate` instead.
    */
-  def fromFunction[A](f: (Int, Int, Int, Int) => A)(n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[A]]]] =
+  @deprecated def fromFunction[A](f: (Int, Int, Int, Int) => A)(n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[A]]]] =
     fromFunction(i => fromFunction(f(i, _, _, _))(n2, n3, n4))(n1)
 
   /** Create an array containing the values of a given function <code>f</code>
    *  over given range <code>[0..n1, 0..n2, 0..n3, 0..n4, 0..n5)</code>
+   *  @deprecated use `Array.tabulate` instead.
    */
-  def fromFunction[A](f: (Int, Int, Int, Int, Int) => A)(n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[A]]]]] =
+  @deprecated def fromFunction[A](f: (Int, Int, Int, Int, Int) => A)(n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[A]]]]] =
     fromFunction(i => fromFunction(f(i, _, _, _, _))(n2, n3, n4, n5))(n1)
-
-  /** Create array with given dimensions */
-  def withDims[A](n1: Int): Array[A] =
-    new Array[A](n1)
-  def withDims[A](n1: Int, n2: Int): Array[Array[A]] =
-    fromFunction(_ => withDims[A](n2))(n1)
-  def withDims[A](n1: Int, n2: Int, n3: Int): Array[Array[Array[A]]] =
-    fromFunction(_ => withDims[A](n2, n3))(n1)
-  def withDims[A](n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[A]]]] =
-    fromFunction(_ => withDims[A](n2, n3, n4))(n1)
-  def withDims[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[A]]]]] =
-    fromFunction(_ => withDims[A](n2, n3, n4, n5))(n1)
-
- /** This method is called as a result of a pattern match { case Array(...) => } or val Array(...) = ....
-   *
-   *  @param x the selector value
-   *  @return  array wrapped in an option
-   */
-   def unapplySeq[A](x: Array[A]): Option[Seq[A]] = Some(x)
-
-   trait ArrayLike[A] extends RandomAccessSeq.Mutable[A] {
-     def force : Array[A]
-   }
-
-   trait Projection[A] extends RandomAccessSeq.MutableProjection[A] with ArrayLike[A] {
-     protected def newArray[B >: A](length : Int, elements : Iterator[A]) : Array[B]
-     override def toArray[B >: A] = (newArray(length, elements))//:Any).asInstanceOf[Array[B]]
-     override def force : Array[A] = toArray
-     override def drop( from: Int) = slice(from, length)
-     override def take(until: Int) = slice(0, until)
-     override def dropWhile(p: A => Boolean) = {
-       val c = length + 1
-       drop((findIndexOf(!p(_)) + c) % c)
-     }
-     override def takeWhile(p: A => Boolean) = {
-       val c = length + 1
-       take((findIndexOf(!p(_)) + c) % c)
-     }
-     override def slice(from0: Int, until0: Int): Projection[A] = new RandomAccessSeq.MutableSlice[A] with Projection[A] {
-       override def from = from0
-       override def until = until0
-       override def underlying = Projection.this
-       override protected def newArray[B >: A](length: Int, elements: Iterator[A]) =
-         underlying.newArray(length, elements)
-       override def slice(from0: Int, until0: Int) =
-         Projection.this.slice(from + from0, from + until0)
-     }
-
-
-     override def reverse : Projection[A] = new Projection[A] {
-       override protected def newArray[B >: A](length : Int, elements : Iterator[A]) =
-         Projection.this.newArray(length, elements)
-       def update(idx : Int, what : A) : Unit = Projection.this.update(length - idx - 1, what)
-       def length = Projection.this.length
-       def apply(idx : Int) = Projection.this.apply(length - idx - 1)
-       override def stringPrefix = Projection.this.stringPrefix + "R"
-     }
-   }
-   trait Array0[A] extends RandomAccessSeq.Mutable[A] with ArrayLike[A] {
-     override def projection : Projection[A] = throw new Error
-     override def slice(from : Int, until : Int) : Projection[A] = projection.slice(from, until)
-     override def take(until : Int) : Projection[A] = projection.take(until)
-     override def drop(from : Int) : Projection[A] = projection.drop(from)
-     override def dropWhile(p: A => Boolean) = projection.dropWhile(p)
-     override def takeWhile(p: A => Boolean) = projection.takeWhile(p)
-     override def reverse = projection.reverse
-     override def force = asInstanceOf[Array[A]]
-   }
 }
 
 /** This class represents polymorphic arrays. <code>Array[T]</code> is Scala's representation
@@ -308,52 +246,63 @@ object Array {
  *  @author Martin Odersky
  *  @version 1.0
  */
-final class Array[A](_length: Int) extends Array.Array0[A] {
+final class Array[A](_length: Int) extends Vector[A] with VectorTemplate[A, Array[A]] {
 
-   /** Multidimensional array creation */
-   def this(dim1: Int, dim2: Int) = {
+  override protected[this] def newBuilder: Builder[A, Array[A], Any] = throw new Error()
+
+   /** Multidimensional array creation
+    *  @deprecated use Array.ofDim instead
+    */
+   @deprecated def this(dim1: Int, dim2: Int) = {
      this(dim1)
      throw new Error()
    }
 
-   /** Multidimensional array creation */
-   def this(dim1: Int, dim2: Int, dim3: Int) = {
+   /** Multidimensional array creation
+    *  @deprecated use Array.ofDim instead */
+   @deprecated def this(dim1: Int, dim2: Int, dim3: Int) = {
      this(dim1)
      throw new Error()
    }
 
-   /** Multidimensional array creation */
-   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int) = {
+   /** Multidimensional array creation
+    *  @deprecated use Array.ofDim instead */
+   @deprecated def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int) = {
      this(dim1)
      throw new Error()
    }
 
-   /** Multidimensional array creation */
-   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int) = {
+   /** Multidimensional array creation
+    *  @deprecated use Array.ofDim instead */
+   @deprecated def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int) = {
      this(dim1);
      throw new Error()
    }
 
-   /** Multidimensional array creation */
-   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int) = {
+   /** Multidimensional array creation
+    *  @deprecated use Array.ofDim instead */
+   @deprecated def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int) = {
      this(dim1)
      throw new Error()
    }
 
-   /** Multidimensional array creation */
-   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int) = {
+   /** Multidimensional array creation
+    *  @deprecated use Array.ofDim instead */
+   @deprecated def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int) = {
      this(dim1)
      throw new Error()
    }
 
-   /** Multidimensional array creation */
-   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int) = {
+   /** Multidimensional array creation
+    *  @deprecated use Array.ofDim instead */
+   @deprecated def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int) = {
      this(dim1)
      throw new Error()
    }
 
-   /** Multidimensional array creation */
-   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int, dim9: Int) = {
+   /** Multidimensional array creation
+    *  @deprecated use Array.ofDim instead */
+   @deprecated def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int, dim9: Int) = {
      this(dim1)
      throw new Error()
    }
@@ -395,66 +344,6 @@ final class Array[A](_length: Int) extends Array.Array0[A] {
    *          <code>length <= i</code>
    */
   override def update(i: Int, x: A) { throw new Error() }
-
-  /** An iterator returning the elements of this array, starting from 0.
-   */
-  override def elements: Iterator[A] = throw new Error()
-
-  /** @deprecated  use <code>slice(from,end).force</code> instead */
-  def subArray(from: Int, end: Int): Array[A] = throw new Error()
-
-  /** Returns an array consisting of all elements of this array that satisfy the
-   *  predicate <code>p</code>. The order of the elements is preserved.
-   *
-   *  @param p the predicate used to filter the array.
-   *  @return the elements of this array satisfying <code>p</code>.
-   */
-  override def filter(p: A => Boolean): Array[A] = throw new Error()
-
-  /** Returns an array consisting of all elements of this array followed
-   *  by all elements of the argument iterable.
-   */
-  override def ++[B >: A](that: Iterable[B]): Array[B] = throw new Error()
-
-  /** Returns the array resulting from applying the given function <code>f</code> to each
-   *  element of this array.
-   *
-   *  @param f function to apply to each element.
-   *  @return <code>[f(a0), ..., f(an)]</code> if this array is <code>[a0, ..., an]</code>.
-   */
-  override def map[B](f: A => B): Array[B] = throw new Error()
-
-  /** Applies the given function <code>f</code> to each element of
-   *  this array, then concatenates the results.
-   *
-   *  @param f the function to apply on each element.
-   *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
-   *           this array is <code>[a<sub>0</sub>, ..., a<sub>n</sub>]</code>.
-   */
-  override def flatMap[B](f: A => Iterable[B]): Array[B] = throw new Error()
-
-  /** Returns an array formed from this array and the specified array
-   *  <code>that</code> by associating each element of the former with
-   *  the element at the same position in the latter.
-   *  If one of the two arrays is longer than the other, its remaining elements are ignored.
-   *
-   *  @return     <code>Array({a<sub>0</sub>,b<sub>0</sub>}, ...,
-   *              {a<sub>min(m,n)</sub>,b<sub>min(m,n)</sub>})</code> when
-   *              <code>Array(a<sub>0</sub>, ..., a<sub>m</sub>)
-   *              zip Array(b<sub>0</sub>, ..., b<sub>n</sub>)</code> is invoked.
-   */
-  def zip[B](that: Array[B]): Array[(A, B)] = throw new Error()
-
-  /** Returns an array that pairs each element of this array
-   *  with its index, counting from 0.
-   *
-   *  @return      the array <code>Array({a<sub>0</sub>,0}, {a<sub>1</sub>,1},...)</code>
-   *               where <code>a<sub>i</sub></code> are the elements of this stream.
-   */
-  def zipWithIndex: Array[(A, Int)] = throw new Error()
-
-  /** Returns an array that contains all indices of this array */
-  def indices: Array[Int] = throw new Error()
 
   /**
    *  @return a deep string representation of this array.
@@ -510,4 +399,6 @@ final class Array[A](_length: Int) extends Array.Array0[A] {
    */
   def deepEquals(that: Any): Boolean = throw new Error()
 
+ /** @deprecated use slice instead */
+  @deprecated def subArray(from: Int, end: Int): Array[A] = throw new Error()
 }

@@ -11,9 +11,12 @@
 
 package scala
 
-import scala.collection.jcl
+// jcl disabled for now; go directly to java collections.
+//import scala.collection.jcl
 
-private[scala] object internedSymbols extends jcl.WeakHashMap[String, ref.WeakReference[Symbol]]
+//private[scala] object internedSymbols extends jcl.WeakHashMap[String, ref.WeakReference[Symbol]]
+private[scala] object internedSymbols
+  extends java.util.WeakHashMap[String, java.lang.ref.WeakReference[Symbol]]
 
 /** <p>
  *    This class provides a simple way to get unique objects for
@@ -56,13 +59,20 @@ object Symbol {
    *  @return the unique reference to this string.
    */
   def apply(name: String): Symbol = internedSymbols.synchronized {
-    internedSymbols.get(name).flatMap(_.get) match {
-    case Some(sym) => sym
-    case _ =>
-      val sym = new Symbol(name)
-      internedSymbols(name) = new ref.WeakReference(sym)
-      sym
+//    internedSymbols.get(name).flatMap(_.get) match {
+//    case Some(sym) => sym
+//    case _ =>
+//      val sym = new Symbol(name)
+//      internedSymbols(name) = new ref.WeakReference(sym)
+//      sym
+    var sym: Symbol = null
+    val ref = internedSymbols.get(name)
+    if (ref != null) sym = ref.get
+    if (sym == null) {
+      sym = new Symbol(name)
+      internedSymbols.put(name, new java.lang.ref.WeakReference(sym))
     }
+    sym
   }
 
   def unapply(other: Symbol): Option[String] = Some(other.name)

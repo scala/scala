@@ -1,3 +1,4 @@
+/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2008-2009, David MacIver         **
@@ -58,14 +59,16 @@ class TreeHashMap[Key, +Value] private (private val underlying : IntMap[AssocMap
 
   override lazy val size = underlying.values.foldLeft(0)((x, y) => x + y.size);
 
+  // todo: probably drop to make conform with general equals/hashcode policy
   override def equals(that : Any) = that match {
     case (that : TreeHashMap[_, _]) =>
       if (this eq that) true
       else if (this.size != that.size) false;
       else this.underlying == that.underlying;
-    case _ => false;
+    case _ => false
   }
 
+  // todo: probably drop to make conform with general equals/hashcode policy
   override def hashCode = underlying.hashCode
 
   override def foreach(f : ((Key, Value)) => Unit) = underlying.foreachValue(_.foreach(f));
@@ -282,3 +285,4 @@ private[collection] class AssocMapIterator[Key, Value](var it : AssocMap[Key, Va
   }
 }
 
+*/

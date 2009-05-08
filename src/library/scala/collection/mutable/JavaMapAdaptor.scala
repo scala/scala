@@ -21,7 +21,7 @@ package scala.collection.mutable
  */
 @deprecated class JavaMapAdaptor[A, B](jmap: java.util.Map[A, B]) extends Map[A, B] {
 
-  def size: Int = jmap.size()
+  override def size: Int = jmap.size()
 
   def get(key: A): Option[B] =
     if (jmap.containsKey(key)) Some(jmap.get(key).asInstanceOf[B]) else None
@@ -55,7 +55,7 @@ package scala.collection.mutable
     }
   }
 
-  def update(key: A, value: B): Unit = { val x = jmap.put(key, value); }
+  def update(key: A, value: B) { jmap.put(key, value) }
 
   def -= (key: A): Unit = { val x = jmap.remove(key); }
 

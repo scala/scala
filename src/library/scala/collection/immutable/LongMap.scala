@@ -43,7 +43,7 @@ object LongMap{
   def empty[T] : LongMap[T]  = LongMap.Nil;
   def singleton[T](key : Long, value : T) : LongMap[T] = LongMap.Tip(key, value);
   def apply[T](elems : (Long, T)*) : LongMap[T] =
-    elems.foldLeft(empty[T])((x, y) => x.update(y._1, y._2));
+    elems.foldLeft(empty[T])((x, y) => x.add(y._1, y._2));
 
 
   private[immutable] case object Nil extends LongMap[Nothing]{
@@ -134,8 +134,8 @@ import LongMap._;
  * <a href="http://citeseer.ist.psu.edu/okasaki98fast.html">Fast Mergeable Long Maps</a>
  * by Okasaki and Gill. Essentially a trie based on binary digits of the the integers.
  */
-sealed abstract class LongMap[+T] extends scala.collection.immutable.Map[Long, T]{
-  def empty[S] : LongMap[S] = LongMap.Nil;
+sealed abstract class LongMap[+T] extends scala.collection.immutable.Map[Long, T] with scala.collection.generic.ImmutableMapTemplate[Long, T, LongMap[T]] {
+  override def empty: LongMap[T] = LongMap.Nil;
 
   override def toList = {
     val buffer = new scala.collection.mutable.ListBuffer[(Long, T)];
@@ -210,13 +210,13 @@ sealed abstract class LongMap[+T] extends scala.collection.immutable.Map[Long, T
     case LongMap.Nil => LongMap.Nil;
   }
 
-  override def transform[S](f : (Long, T) => S) : LongMap[S] = this match {
+  def transform[S](f : (Long, T) => S) : LongMap[S] = this match {
     case b@LongMap.Bin(prefix, mask, left, right) => b.bin(left.transform(f), right.transform(f));
     case t@LongMap.Tip(key, value) => t.withValue(f(key, value));
     case LongMap.Nil => LongMap.Nil;
   }
 
-  final def size : Int = this match {
+  final override def size : Int = this match {
     case LongMap.Nil => 0;
     case LongMap.Tip(_, _) => 1;
     case LongMap.Bin(_, _, left, right) => left.size + right.size;
@@ -240,7 +240,7 @@ sealed abstract class LongMap[+T] extends scala.collection.immutable.Map[Long, T
     case LongMap.Nil => error("key not found");
   }
 
-  def update[S >: T](key : Long, value : S) : LongMap[S] = this match {
+  def add[S >: T](key : Long, value : S) : LongMap[S] = this match {
     case LongMap.Bin(prefix, mask, left, right) => if (!hasMatch(key, prefix, mask)) join(key, LongMap.Tip(key, value), prefix, this);
                                           else if (zero(key, mask)) LongMap.Bin(prefix, mask, left.update(key, value), right)
                                           else LongMap.Bin(prefix, mask, left, right.update(key, value));
@@ -248,6 +248,9 @@ sealed abstract class LongMap[+T] extends scala.collection.immutable.Map[Long, T
                              else join(key, LongMap.Tip(key, value), key2, this);
     case LongMap.Nil => LongMap.Tip(key, value);
   }
+
+  /** @deprecated use add instead */
+  @deprecated override def update[S >: T](key: Long, value: S): LongMap[S] = add(key, value)
 
   /**
    * Updates the map, using the provided function to resolve conflicts if the key is already present.
@@ -371,9 +374,7 @@ sealed abstract class LongMap[+T] extends scala.collection.immutable.Map[Long, T
    */
   def intersection[R](that : LongMap[R]) : LongMap[T] = this.intersectionWith(that, (key : Long, value : T, value2 : R) => value);
 
-  override def ++[S >: T](that : Iterable[(Long, S)]) = that match {
-    case (that : LongMap[_]) => this.unionWith[S](that.asInstanceOf[LongMap[S]], (key, x, y) => y);
-    case that => that.foldLeft(this : LongMap[S])({case (m, (x, y)) => m.update(x, y)});
-  }
+  def ++[S >: T](that : LongMap[S]) =
+    this.unionWith[S](that, (key, x, y) => y)
 }
 

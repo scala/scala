@@ -11,9 +11,6 @@
 
 package scala.runtime
 
-
-import Predef._
-
 @serializable
 final class BoxedShortArray(val value: Array[Short]) extends BoxedArray[Short] {
 
@@ -24,44 +21,5 @@ final class BoxedShortArray(val value: Array[Short]) extends BoxedArray[Short] {
   def update(index: Int, elem: Short) {
     value(index) = elem
   }
-
-  def unbox(elemTag: String): AnyRef = value
   def unbox(elemClass: Class[_]): AnyRef = value
-
-  override def equals(other: Any) =
-    value == other ||
-    other.isInstanceOf[BoxedShortArray] && value == other.asInstanceOf[BoxedShortArray].value
-
-  override def hashCode(): Int = value.hashCode()
-
-  def subArray(start: Int, end: Int): Array[Short] = {
-    val result = new Array[Short](end - start)
-    Array.copy(value, start, result, 0, end - start)
-    result
-  }
-
-  final override def filter(p: Short => Boolean): BoxedArray[Short] = {
-    val include = new Array[Boolean](value.length)
-    var len = 0
-    var i = 0
-    while (i < value.length) {
-      if (p(value(i))) { include(i) = true; len += 1 }
-      i += 1
-    }
-    val result = new Array[Short](len)
-    len = 0
-    i = 0
-    while (len < result.length) {
-      if (include(i)) { result(len) = value(i); len += 1 }
-      i += 1
-    }
-    new BoxedShortArray(result)
-  }
-  override protected def newArray(length : Int, elements : Iterator[Short]) = {
-    val result = new Array[Short](length)
-    elements.map(_.asInstanceOf[Short]).copyToArray(result, 0)
-    new BoxedShortArray(result)
-  }
-
-
 }

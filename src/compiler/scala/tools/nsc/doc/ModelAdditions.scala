@@ -398,7 +398,8 @@ class ModelAdditions(val global: Global) {
    };
    //("Float" :: "Long" :: "Number" :: "Integer" :: Nil).foreach(boxedValDescr);
 */
-   object exceptions extends collection.jcl.TreeMap[String,(Symbol,String)] {
+   object exceptions extends collection.JavaConversions.JMapWrapper[String,(Symbol,String)](
+     new java.util.TreeMap()) {
      def f(name: String) {
        this("Predef." + name) = (definitions.PredefModule, name)
      }

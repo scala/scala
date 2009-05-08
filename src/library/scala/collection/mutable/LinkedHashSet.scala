@@ -10,18 +10,25 @@
 
 package scala.collection.mutable
 
+import generic._
 
+//!!! todo make inherit from HashSet.
 object LinkedHashSet {
   /** The empty map of this type */
   def empty[A] = new LinkedHashSet[A]
 
   /** The canonical factory for this type
    */
-  def apply[A](elems: A*) = empty[A] ++ elems
+  def apply[A](elems: A*) = empty[A] ++ collection.Iterable.fromOld(elems)
 }
 
 @serializable
-class LinkedHashSet[A] extends Set[A] with FlatHashTable[A] {
+class LinkedHashSet[A] extends Set[A] with SetTemplate[A, LinkedHashSet[A]] with FlatHashTable[A] {
+
+  override def empty = LinkedHashSet.empty
+
+  override def size = super.size
+
   private var ordered = List[A]()
 
   def contains(elem: A): Boolean = containsEntry(elem)
@@ -45,5 +52,6 @@ class LinkedHashSet[A] extends Set[A] with FlatHashTable[A] {
     super.clear()
   }
   override def clone(): Set[A] = new LinkedHashSet[A] ++ this
-  override def elements = ordered.reverse.elements
+  override def elements = Iterator.fromOld(ordered.reverse.elements)
 }
+

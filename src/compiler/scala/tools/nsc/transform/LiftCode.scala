@@ -64,7 +64,7 @@ abstract class LiftCode extends Transform with Reifiers {
     }
 
     def objectName(value: Any): String = value match {
-      case Nil                => "scala.Nil"
+      case Nil                => "scala.collection.immutable.Nil"
       case reflect.NoSymbol   => "scala.reflect.NoSymbol"
       case reflect.RootSymbol => "scala.reflect.RootSymbol"
       case reflect.NoPrefix   => "scala.reflect.NoPrefix"

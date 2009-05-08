@@ -1,3 +1,4 @@
+/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -154,3 +155,4 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
     def self = BufferProxy.this.self.clone()
   }
 }
+*/

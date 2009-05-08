@@ -1,3 +1,4 @@
+/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -24,3 +25,4 @@ trait Undoable {
      */
     def undo()
 }
+*/

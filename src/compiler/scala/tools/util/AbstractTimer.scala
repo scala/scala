@@ -36,7 +36,7 @@ abstract class AbstractTimer {
 
   /** Starts a new timer. */
   def start() {
-    starts += currentTime
+    starts push currentTime
   }
 
   /** Ends the current timer. */

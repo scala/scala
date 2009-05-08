@@ -11,8 +11,6 @@
 
 package scala.collection.mutable
 
-import Predef._
-
 @serializable
 final class DefaultEntry[A, B](val key: A, var value: B)
       extends HashEntry[A, DefaultEntry[A, B]]

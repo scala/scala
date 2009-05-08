@@ -7,11 +7,10 @@
 package scala.tools.nsc.symtab
 
 import scala.collection.immutable
-import scala.collection.mutable.{ListBuffer, HashMap}
+import scala.collection.mutable.{ListBuffer, HashMap, WeakHashMap}
 import scala.compat.Platform.currentTime
 import scala.tools.nsc.ast.TreeGen
 import scala.tools.nsc.util.{HashSet, Position, NoPosition}
-import scala.collection.jcl.WeakHashMap
 import Flags._
 
 /* A standard type pattern match:
@@ -1587,8 +1586,15 @@ A type's typeSymbol should never be inspected directly.
           if (normed ne this) return normed.toString
         }
       }
-      var str = (pre.prefixString + sym.nameString +
-                 (if (args.isEmpty) "" else args.mkString("[", ",", "]")))
+      val monopart =
+        if (!settings.debug.value &&
+            (shorthands contains sym.fullNameString) &&
+            (sym.ownerChain forall (_.isClass))) // ensure that symbol is not a local copy with a name coincidence
+          sym.name.toString
+        else
+          pre.prefixString + sym.nameString
+
+      var str = monopart + (if (args.isEmpty) "" else args.mkString("[", ",", "]"))
       //if (sym.nameString startsWith "moduleType")
       //  str += ("_in_"+sym.ownerChain)
       if (sym.isPackageClass)
@@ -4468,4 +4474,14 @@ A type's typeSymbol should never be inspected directly.
   def objToAny(tp: Type): Type =
     if (!phase.erasedTypes && tp.typeSymbol == ObjectClass) AnyClass.tpe
     else tp
+
+  val shorthands = Set(
+    "scala.collection.immutable.List",
+    "scala.collection.immutable.Nil",
+    "scala.collection.Sequence",
+    "scala.collection.Traversible",
+    "scala.collection.Iterable",
+    "scala.collection.mutable.StringBuilder",
+    "scala.collection.Vector",
+    "scala.collection.Iterator")
 }

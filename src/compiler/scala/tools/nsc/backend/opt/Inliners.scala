@@ -141,7 +141,7 @@ abstract class Inliners extends SubComponent {
        val afterBlock = newBlock;
 
        /** Map from nw.init instructions to their matching NEW call */
-       val pending: collection.jcl.Map[Instruction, NEW] = new collection.jcl.HashMap
+       val pending: collection.mutable.Map[Instruction, NEW] = new collection.mutable.HashMap
 
        /** Map an instruction from the callee to one suitable for the caller. */
        def map(i: Instruction): Instruction = {

@@ -10,7 +10,6 @@ import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
 import java.lang.{Runtime, System, Thread}
 
 import scala.concurrent.ops.spawn
-import scala.tools.nsc.doc.{DocDriver => DocGenerator}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.FakePos //Position
 import scala.tools.util.SocketServer

@@ -89,6 +89,7 @@ object Test {
     val settings = new Settings
     settings.Xexperimental.value = true
     settings.selfInAnnots.value = true
+    settings.deprecation.value = true
 
     val interp = new Interpreter(settings)
 

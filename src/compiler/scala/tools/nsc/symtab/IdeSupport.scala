@@ -1,7 +1,6 @@
 package scala.tools.nsc.symtab
 import scala.tools.nsc.util._
-import scala.collection.jcl._
-import scala.collection.jcl
+import scala.collection.mutable._
 import scala.tools.nsc.io._
 
 trait IdeSupport extends SymbolTable { // added to global, not analyzers.
@@ -67,8 +66,8 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
       this(what) = set; set
     }
   }
-  private val emptySet = new jcl.LinkedList[Symbol]
-  val reuseMap = new LinkedHashMap[PersistentScope,jcl.LinkedList[Symbol]] {
+  private val emptySet = new ListBuffer[Symbol]
+  val reuseMap = new LinkedHashMap[PersistentScope,ListBuffer[Symbol]] {
     override def default(key : PersistentScope) = emptySet
   }
   def reuse(scope : PersistentScope, sym : Symbol) = {
@@ -85,9 +84,9 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
     if (e != null && e.sym == sym) {
 
       val list = reuseMap.get(scope) match {
-      case Some(list) => list
-      case None =>
-        val list = new jcl.LinkedList[Symbol]
+        case Some(list) => list
+        case None =>
+          val list = new ListBuffer[Symbol]
         reuseMap(scope) = list; list
       }
       check(!sym.isPackage, "" +sym)
@@ -135,12 +134,12 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
   }
   private def reuse(scope : PersistentScope) : PersistentScope = {
     if (currentClient.makeNoChanges) return scope
-    val buf = new jcl.LinkedList[Symbol]
+    val buf = new ListBuffer[Symbol]
     scope.toList.foreach{sym =>
       if (false && sym.hasFlag(Flags.CASE) && sym.hasFlag(Flags.SYNTHETIC)) {
         check(sym != null, "")
       } else {
-        buf add sym
+        buf += sym
         scope unlink sym
       }
     }
@@ -155,25 +154,28 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
   }
 
   def reloadSource(file : AbstractFile) = {
+    if (!currentClient.makeNoChanges)
+      topDefs removeKey file match {
+        case None => ;
+        case Some(symbols) =>
+          symbols.foreach{
+            sym =>
+              def f(sym : Symbol) = sym.owner.info.decls match {
+                case scope : PersistentScope => reuse(scope, (sym))
+                case scope =>
+                  check(false, scope + " is not persistent")
+              }
+            if (sym.isModuleClass) {
+              if (check(sym.name.isTypeName,"") && sym.hasRawInfo)
+                if (sym.linkedModuleOfClass != NoSymbol) f(sym.linkedModuleOfClass)
+            } else {
+              if (check(sym.name.isTypeName, ""))
+                f(sym)
+            }
+          }
+      }
+  }
 
-    if (!currentClient.makeNoChanges) topDefs.removeKey(file) match {
-  case None =>
-  case Some(symbols) => symbols.foreach{sym =>
-      def f(sym : Symbol) = sym.owner.info.decls match {
-      case scope : PersistentScope => reuse(scope, (sym))
-        case scope =>
-          check(false, scope + " is not persistent")
-      }
-      if (sym.isModuleClass) {
-        if (check(sym.name.isTypeName,"") && sym.hasRawInfo)
-          if (sym.linkedModuleOfClass != NoSymbol) f(sym.linkedModuleOfClass)
-      } else {
-        if (check(sym.name.isTypeName, ""))
-          f(sym)
-      }
-    }
-  }
-  }
   override def attachSource(clazz : ClassSymbol, file : io.AbstractFile) = {
     topDefs(file) += clazz
     super.attachSource(clazz, file)
@@ -234,7 +236,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
     va.isEmpty && vb.isEmpty
   case (newS:Scope,oldS:Scope) =>
     val set = new LinkedHashSet[Symbol]
-    set addAll newS.toList
+    set ++= newS.toList
     oldS.toList.forall{oldS => if (!set.remove(oldS)) {
       var other = newS.lookupEntry(oldS.name)
       while (other != null && !compareTypes(other.sym.info,oldType(oldS), syms))
@@ -382,38 +384,36 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
       if (symbol == NoSymbol) return symbol
       // catch double defs.
       record(currentClient, symbol.name)
-      val i = reuseMap(this).elements
-      while (i.hasNext) {
-        var existing = i.next
-        if (existing == symbol) return {
 
-          i.remove
-          finish(existing)
-        }
-        else if ({
-          if (existing.hasFlag(symtab.Flags.SYNTHETIC) && existing.name == symbol.name) true
-          else (symbol.pos,existing.pos) match {
+      // Martin: I changed rest of methods to avoid Iterator.remove
+      val buf = reuseMap(this)
+      if (buf contains symbol) {
+        buf -= symbol
+        finish(symbol)
+      } else buf find { existing =>
+        if (existing.hasFlag(symtab.Flags.SYNTHETIC) && existing.name == symbol.name) true
+        else (symbol.pos,existing.pos) match {
           case (apos : TrackedPosition, bpos : TrackedPosition) => apos == bpos
           case (apos : OffsetPosition , bpos : OffsetPosition) => apos == bpos
           case _ => existing.name == symbol.name
-          }
-        }) {
+        }
+      } match {
+        case Some(existing) =>
           if (check(existing != NoSymbol,"")) {
             val oldName = existing.name
             compatible(existing, symbol) match {
               case NotCompatible =>
 
               case code@GoResult(existing0) =>
-                i.remove
-                existing = existing0
+                buf -= existing
                 if (code.isInstanceOf[Updated]) {
                   invalidate(oldName)
-                  invalidate(existing.name)
+                  invalidate(existing0.name)
                 }
-                return (reuse(existing))
+                return (reuse(existing0))
             }
           }
-        }
+        case None =>
       }
       invalidate(symbol.name)
       return finish(symbol)
@@ -553,7 +553,6 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
     object owner extends ReallyHasClients
     new PersistentScope(null, owner)
   }
-  import scala.collection.jcl
   override def newPackageScope(depends0 : PackageScopeDependMap) : PackageScope = {
     object owner extends ReallyHasClients
     object myPackageScope extends PersistentScope(null, owner) with PackageScope {

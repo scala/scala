@@ -11,30 +11,30 @@
 
 package scala.collection.mutable
 
-import Predef._
+import generic._
 
-/** This class implements mutable maps using a hashtable.
- *
- *  @author  Matthias Zenger
- *  @author  Martin Odersky
- *  @version 2.0, 31/12/2006
- */
-object HashMap {
-
-  /** The empty map of this type */
-  def empty[A, B] = new HashMap[A, B]
-
-  /** The canonical factory for this type
-   */
-  def apply[A, B](elems: (A, B)*) = empty[A, B] ++ elems
-}
 
 @serializable
-class HashMap[A, B] extends Map[A,B] with HashTable[A] with DefaultMapModel[A,B] {
+class HashMap[A, B] extends Map[A, B] with MutableMapTemplate[A, B, HashMap[A, B]] with HashTable[A] with DefaultMapModel[A, B] {
+
+  override def empty: HashMap[A, B] = HashMap.empty[A, B]
+  override def mapBuilder[A, B]: Builder[(A, B), HashMap[A, B], Any] = HashMap.newBuilder[A, B]
 
   def -= (key: A) { removeEntry(key) }
 
   override def clear() = super.clear()
 
-  override def clone(): Map[A, B] = new HashMap[A, B] ++ this
+  override def size: Int = super[HashTable].size
+}
+
+/** This class implements mutable maps using a hashtable.
+ *
+ *  @author  Matthias Zenger
+ *  @author  Martin Odersky
+ *  @version 2.8
+ */
+object HashMap extends MutableMapFactory[HashMap] {
+  type Coll = HashMap[_, _]
+  implicit def builderFactory[A, B]: BuilderFactory[(A, B), HashMap[A, B], Coll] = new BuilderFactory[(A, B), HashMap[A, B], Coll] { def apply(from: Coll) = from.mapBuilder[A, B] }
+  def empty[A, B]: HashMap[A, B] = new HashMap[A, B]
 }

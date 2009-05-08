@@ -1,3 +1,4 @@
+/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -46,3 +47,4 @@ class History[A, B] extends AnyRef with Subscriber[A, B] with Collection[(B, A)]
 
   def clear(): Unit = log.clear
 }
+*/

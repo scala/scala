@@ -342,15 +342,18 @@ trait Symbols {
     final def isRefinementClass = isClass && name == nme.REFINE_CLASS_NAME.toTypeName; // no lifting for refinement classes
     final def isModuleClass = isClass && hasFlag(MODULE)
     final def isPackageClass = isClass && hasFlag(PACKAGE)
+    final def isPackageObject = isModule && name == nme.PACKAGEkw && owner.isPackageClass
     final def isPackageObjectClass = isModuleClass && name.toTermName == nme.PACKAGEkw && owner.isPackageClass
     final def definedInPackage  = owner.isPackageClass || owner.isPackageObjectClass
     final def isRoot = isPackageClass && name == nme.ROOT.toTypeName
     final def isRootPackage = isPackage && name == nme.ROOTPKG
     final def isEmptyPackage = isPackage && name == nme.EMPTY_PACKAGE_NAME
     final def isEmptyPackageClass = isPackageClass && name == nme.EMPTY_PACKAGE_NAME.toTypeName
-    final def isPredefModule = isModule && name == nme.Predef // not printed as a prefix
-    final def isScalaPackage = isPackage && name == nme.scala_ // not printed as a prefix
-    final def isScalaPackageClass = isPackageClass && name == nme.scala_.toTypeName // not printed as a prefix
+    final def isPredefModule = isModule && name == nme.Predef && owner.isScalaPackageClass // not printed as a prefix
+    final def isScalaPackage = isPackage && name == nme.scala_ && owner.isRoot || // not printed as a prefix
+                               isPackageObject && owner.isScalaPackageClass
+    final def isScalaPackageClass: Boolean = isPackageClass && owner.isRoot && name == nme.scala_.toTypeName ||
+                                    isPackageObjectClass && owner.isScalaPackageClass // not printed as a prefix
 
     /** Is symbol a monomophic type?
      *  assumption: if a type starts out as monomorphic, it will not acquire

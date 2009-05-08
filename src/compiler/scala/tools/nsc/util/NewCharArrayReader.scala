@@ -34,7 +34,7 @@ class NewCharArrayReader(val buf: RandomAccessSeq[Char], // should not change
     var ch = buf(idx)
     idx = idx + 1
     ch match {
-    case CR if buf.safeIs(idx + 1, LF) =>
+    case CR if (idx + 1 < length && buf(idx + 1) == LF) =>
       idx += 1; ch = LF
     case LF | FF =>
     case '\\' =>

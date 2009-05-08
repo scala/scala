@@ -11,7 +11,8 @@
 
 package scala
 
-import Predef._
+import collection.immutable.Vector
+import collection.generic.VectorView
 
 /** <p>
  *    The <code>Range</code> class represents integer values in range
@@ -24,11 +25,13 @@ import Predef._
  *     println(r2.length) // = 5
  *  </pre>
  *
- *  @author  Stephane Micheloud
- *  @version 1.0, 01/05/2007
+ *  @author Martin Odersky
+ *  @version 2.8
  */
-class Range(val start: Int, val end: Int, val step: Int) extends RandomAccessSeq.Projection[Int] {
-  if (step == 0) throw new Predef.IllegalArgumentException
+class Range(val start: Int, val end: Int, val step: Int) extends VectorView[Int, Vector[Int]] {
+  require(step != 0)
+
+  protected def underlying = Vector.empty[Int]
 
   /** Create a new range with the start and end values of this range and
    *  a new <code>step</code>.
@@ -36,19 +39,14 @@ class Range(val start: Int, val end: Int, val step: Int) extends RandomAccessSeq
   def by(step: Int): Range = new Range(start, end, step)
 
   override def foreach(f: Int => Unit) {
+    var i = start
     if (step > 0) {
-      var i = this.start
-      val until = if (inInterval(end)) end + 1 else end
-
-      while (i < until) {
+      while (i < end) {
         f(i)
         i += step
       }
     } else {
-      var i = this.start
-      val until = if (inInterval(end)) end - 1 else end
-
-      while (i > until) {
+      while (i > end) {
         f(i)
         i += step
       }
@@ -56,54 +54,33 @@ class Range(val start: Int, val end: Int, val step: Int) extends RandomAccessSeq
   }
 
   lazy val length: Int = {
-    if (start < end && this.step < 0) 0
-    else if (start > end && this.step > 0) 0
-    else {
-      val base = if (start < end) end - start
-                 else start - end
-      assert(base >= 0)
-      val step = if (this.step < 0) -this.step else this.step
-      assert(step >= 0)
-      base / step + last(base, step)
-    }
+    def plen(start: Int, end: Int, step: Int) =
+      if (end <= start) 0 else (end - start - 1) / step + 1
+    if (step > 0) plen(start, end, step)
+    else plen(end, start, -step)
   }
-
-  protected def last(base: Int, step: Int): Int =
-    if (base % step != 0) 1 else 0
 
   def apply(idx: Int): Int = {
-    if (idx < 0 || idx >= length) throw new Predef.IndexOutOfBoundsException
-    start + (step * idx)
+    if (idx < 0 || idx >= length) throw new IndexOutOfBoundsException(idx.toString)
+    start + idx * step
   }
 
-  /** a <code>Seq.contains</code>, not a <code>Iterator.contains</code>! */
-  def contains(x: Int): Boolean = {
-    inInterval(x) && (((x - start) % step) == 0)
-  }
+  def contains(x: Int): Boolean =
+    if (step > 0) start <= x && x < end
+    else start >= x && x > end
 
-  /** Is the argument inside the interval defined by `start' and `end'?
-   *  Returns true if `x' is inside [start, end).
-   */
-  protected def inInterval(x: Int): Boolean =
-    if (step > 0)
-      (x >= start && x < end)
-    else
-      (x <= start && x > end)
-
-  def inclusive = new Range.Inclusive(start,end,step)
+  def inclusive = Range.inclusive(start, end, step)
 }
-
 object Range {
-  class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
-    override def apply(idx: Int): Int = super.apply(idx)
-    override protected def last(base: Int, step: Int): Int = 1
-    override def by(step: Int): Range = new Inclusive(start, end, step)
-
-    /** Returns true if x is inside the interval [start, end]. */
-    override protected def inInterval(x: Int) =
-      if (step > 0)
-        (x >= start && x <= end)
-      else
-        (x <= start && x >= end)
+  /** @deprecated use Range.inclusive instead */
+  class Inclusive(start: Int, end0: Int, step: Int)
+      extends Range(start, if (step > 0) end0 + 1 else end0 - 1, step) { self =>
+    override def by(step: Int): Range = new Inclusive(start, end0, step)
   }
+
+  def apply(start: Int, end: Int, step: Int) =
+    new Range(start, end, step)
+
+  def inclusive(start: Int, end: Int, step: Int): Range =
+    new Range.Inclusive(start, end, step)
 }

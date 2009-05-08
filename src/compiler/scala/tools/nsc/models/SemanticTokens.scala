@@ -199,7 +199,7 @@ class SemanticTokens(val compiler: Global) {
     val list = new TokenList
 
     //build(unit.body)
-    val map = new scala.collection.jcl.LinkedHashMap[Int,Symbol]
+    val map = new scala.collection.mutable.LinkedHashMap[Int,Symbol]
     map.clear // populate the map.
       class visitor extends walker.Visitor {
       def contains(pos : Position) = map.contains(pos.offset.get)

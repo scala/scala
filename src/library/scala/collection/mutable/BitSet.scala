@@ -1,100 +1,50 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
-// $Id$
-
-
 package scala.collection.mutable
 
+import generic._
 
-/**
- * The class <code>BitSet</code> implements mutable, resizable Bit sets
- *
- * @author  Burak Emir, Nikolay Mihaylov
- * @version 1.1
- *
- * @param initSize: initial size in bits
- */
+/** A class for mutable bitsets */
+class BitSet(initSize: Int) extends Set[Int] with collection.BitSet with BitSetTemplate[BitSet] {
 
-@serializable
-class BitSet(initSize: Int) extends collection.BitSet with Set[Int] {
+  override def empty = BitSet.empty
 
-  import compat.Platform.{arraycopy, arrayclear}
-
-  /** default constructor, initial size of 512 bits. */
   def this() = this(0)
 
-  /** Ensures that this bitset can store at least <code>n</code> bits.
-   *
-   *  @param n ...
-   */
-  def ensureCapacity(n: Int): Unit =
-    if (capacity < n) {
-      if (nbits(arr.length) < n) {
-        val newn = memsize(n)
-        var newsize = if (arr.length == 0) newn else arr.length * 2
-        while (newn > newsize)
-          newsize = newsize * 2;
-        val newarr = new Array[Int](newsize)
-        arraycopy(arr, 0, newarr, 0, arr.length)
-        arr = newarr
-      }
-      capacity = n
+  protected var elems: Array[Long] = new Array[Long]((initSize + 63) >> 6 max 1)
+
+  protected def nwords = elems.length
+  protected def word(idx: Int): Long =
+    if (idx < nwords) elems(idx) else 0L
+  protected def updateWord(idx: Int, w: Long): BitSet = {
+    if (idx >= nwords) {
+      var newlen = nwords
+      while (idx >= newlen) newlen = newlen * 2
+      val elems1 = new Array[Long](newlen)
+      Array.copy(elems, 0, elems1, 0, nwords)
+      elems = elems1
     }
-
-  /**
-   * Sets <code>i-th</code> bit to true.
-   * No restriction on <code>i</code>
-   */
-  def +=(i: Int): Unit = {
-    ensureCapacity(i+1)
-    val oldInt = arr(offset(i))
-    val newInt = oldInt | mask(i)
-    if (oldInt != newInt) {
-      arr(offset(i)) = newInt
-      size = size + 1
-    }
+    elems(idx) = w
+    this
   }
 
-  /** Clears the <code>i</code>-th bit.
-   *
-   *  @param i the <code>i</code>-th element of the bit set.
-   */
-  def -=(i: Int): Unit = {
-    if (i >= capacity) return;
-    val oldInt = arr(offset(i))
-    val newInt = oldInt & ~mask(i)
-    if (oldInt != newInt) {
-      arr(offset(i)) = newInt
-      size = size - 1
-    }
+  protected def fromArray(words: Array[Long]): BitSet = {
+    val s = new BitSet; s.elems = words; s
   }
 
-  /** Clears all bits of the set.
-   */
-  override def clear(): Unit = {
-    arrayclear(arr)
-    size = 0
+  override def += (elem: Int) { super.+(elem) }
+
+  override def -= (elem: Int) { super.-(elem) }
+
+  override def + (elem: Int): this.type = { +=(elem); this }
+
+  override def - (elem: Int): this.type = { -=(elem); this }
+
+  def toImmutable = immutable.BitSet.fromArray(elems)
+}
+
+/** A factory object for mutable bitsets */
+object BitSet {
+  def empty: BitSet = new BitSet
+  def apply(bits: Int*): BitSet = {
+    var s = empty; for (b <- bits) s += b; s
   }
-
-  def toImmutable: collection.immutable.BitSet =
-    new immutable.BitSet(size, capacity, arr, true)
-
-  override def clone(): BitSet = new BitSet(capacity) {
-    arraycopy(BitSet.this.arr, 0, arr, 0, arr.length)
-    size = BitSet.this.size
-    capacity = BitSet.this.capacity
-  }
-
-  var size: Int = 0
-
-  var capacity: Int = initSize
-
-  protected var arr: Array[Int] = new Array[Int](memsize(initSize))
-
 }

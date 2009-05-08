@@ -550,7 +550,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
       lazy val extractor = """
         | {
         |    val s = scala.runtime.ScalaRunTime.stringOf(%s)
-        |    val nl = if (s.toSeq.contains('\n')) "\n" else ""
+        |    val nl = if (s.contains('\n')) "\n" else ""
         |    nl + s + "\n"
         | }
       """.stripMargin.format(req fullPath vname)

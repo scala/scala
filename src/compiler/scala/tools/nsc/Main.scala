@@ -76,7 +76,7 @@ object Main extends AnyRef with EvalLoop {
         }
       } catch {
         case ex @ FatalError(msg) =>
-          if (command.settings.debug.value)
+          if (true || command.settings.debug.value) // !!!
             ex.printStackTrace();
         reporter.error(null, "fatal error: " + msg)
       }

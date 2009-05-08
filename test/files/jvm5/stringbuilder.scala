@@ -49,6 +49,7 @@ object Test2 extends TestCase("append") with Assert {
 
     j0 append true append (1.toByte) append 'a' append 9 append -1L append 1.2e-10f append -2.1e+100d
     s0 append true append (1.toByte) append 'a' append 9 append -1L append 1.2e-10f append -2.1e+100d
+
     assertEquals("s0.toString equals j0.toString", true, s0.toString equals j0.toString)
 
     val j1 = new java.lang.StringBuilder // Java 1.5+

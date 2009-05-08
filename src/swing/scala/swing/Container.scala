@@ -15,7 +15,7 @@ object Container {
     protected class Content extends BufferWrapper[Component] {
       def wrap(c: java.awt.Component): Component = Component.wrapperFor(c.asInstanceOf[javax.swing.JComponent])
       override def clear { peer.removeAll() }
-      def remove(n: Int): Component = {
+      override def remove(n: Int): Component = {
         val c = peer.getComponent(n)
         peer.remove(n)
         wrap(c)

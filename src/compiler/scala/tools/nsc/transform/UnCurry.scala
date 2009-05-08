@@ -66,7 +66,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         case TypeRef(pre, sym, List(arg)) if (sym == ByNameParamClass) =>
           apply(functionType(List(), arg))
         case TypeRef(pre, sym, args) if (sym == RepeatedParamClass) =>
-          apply(rawTypeRef(pre, SeqClass, args))
+          apply(appliedType(SeqClass.typeConstructor, args))
         case _ =>
           expandAlias(mapOver(tp))
       }

@@ -174,7 +174,7 @@ class ListView[A] extends Component {
       def -=(n: A)
       def +=(n: A)
       def contains(n: A) = a.contains(n)
-      def size = a.length
+      override def size = a.length
       def elements = a.elements
     }
 
@@ -193,7 +193,7 @@ class ListView[A] extends Component {
     /**
      * The currently selected items.
      */
-    object items extends SeqProxy[A] {
+    object items extends scala.collection.SequenceProxy[A] {
       def self = peer.getSelectedValues.map(_.asInstanceOf[A])
       def leadIndex: Int = peer.getSelectionModel.getLeadSelectionIndex
       def anchorIndex: Int = peer.getSelectionModel.getAnchorSelectionIndex

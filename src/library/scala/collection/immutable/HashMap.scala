@@ -11,48 +11,39 @@
 
 package scala.collection.immutable
 
-import Predef._
+import generic._
+import annotation.unchecked.uncheckedVariance
 
-/** The canonical factory methods for <a href="HashMap.html">immutable HashMap's</a>.
+/** This class implements immutable maps using a hash table.
+ * It is optimized for sequential accesses where the last updated table is accessed most often.
+ * It supports with reasonable efficiency accesses to previous versions of the table by keeping
+ * a change log that's regularly compacted.
+ * It needs to synchronize most methods, so it is less suitable for highly concurrent accesses.
+ *
+ * @note the builder of a hash map returns specialized representations EmptyMap,Map1,..., Map4
+ * for maps of size <= 4.
  *
  *  @author  Martin Odersky
  *  @version 2.0, 19/01/2007
  */
-object HashMap {
-
-  /** The empty map of this type */
-  def empty[A, B] = new HashMap[A, B]
-
-  /** The canonical factory for this type
-   */
-  def apply[A, B](elems: (A, B)*) = empty[A, B] ++ elems
-}
-
-/** This class implements immutable maps/sets using a hash table.
-  * It is optimized for sequential accesses where the last updated table is accessed most often.
-  * It supports with reasonable efficiency accesses to previous versions of the table by keeping
-  * a change log that's regularly compacted.
-  * It needs to synchronize most methods, so it is less suitable for highly concurrent accesses.
-  *
-  *  @author  Martin Odersky
-  *  @version 2.0, 19/01/2007
-  */
 @serializable
-class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
-  type Entry = mutable.DefaultEntry[A, Any]
+class HashMap[A, +B] extends Map[A,B] with ImmutableMapTemplate[A, B, HashMap[A, B]] with mutable.HashTable[A] {
 
-  protected var later: HashMap[A, B] = null
+  type Entry = collection.mutable.DefaultEntry[A, Any]
+
+  protected var later: HashMap[A, B @uncheckedVariance] = null
   protected var oldKey: A = _
-  protected var oldValue: Option[B] = _
+  protected var oldValue: Option[B @uncheckedVariance] = _
   protected var deltaSize: Int = _
 
-  def empty[C]: Map[A, C] = new EmptyMap[A, C]
+  override def empty = HashMap.empty[A, B]
+  override def mapBuilder[A, B]: Builder[(A, B), HashMap[A, B], Any] = HashMap.newBuilder[A, B]
 
   def get(key: A): Option[B] = synchronized {
-    var m = this
+    var m: HashMap[A, _ >: B] = this
     var cnt = 0
     while (m.later != null) {
-      if (key == m.oldKey) return m.oldValue
+      if (key == m.oldKey) return m.oldValue.asInstanceOf[Option[B]]
       cnt += 1
       m = m.later
     }
@@ -62,7 +53,7 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
     else Some(getValue(e))
   }
 
-  def update [B1 >: B](key: A, value: B1): Map[A, B1] = synchronized {
+  def add [B1 >: B] (key: A, value: B1): HashMap[A, B1] = synchronized {
     makeCopyIfUpdated()
     val e = findEntry(key)
     if (e == null) {
@@ -72,22 +63,39 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
       markUpdated(key, Some(getValue(e)), 0)
       e.value = value
     }
-    later
+    later.asInstanceOf[HashMap[A, B1]]
   }
 
-  def - (key: A): Map[A, B] = synchronized {
+  /** Add a key/value pair to this map.
+   *  @param    kv the key/value pair
+   *  @return   A new map with the new binding added to this map
+   */
+  override def + [B1 >: B] (kv: (A, B1)): HashMap[A, B1] = add(kv._1, kv._2)
+
+  /** Adds two or more elements to this collection and returns
+   *  either the collection itself (if it is mutable), or a new collection
+   *  with the added elements.
+   *
+   *  @param elem1 the first element to add.
+   *  @param elem2 the second element to add.
+   *  @param elems the remaining elements to add.
+   */
+  override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *): HashMap[A, B1] =
+    this + elem1 + elem2 ++ collection.Iterable.fromOld(elems)
+
+  def - (key: A): HashMap[A, B] = synchronized {
     makeCopyIfUpdated()
     val e = findEntry(key)
     if (e == null) this
     else {
       markUpdated(key, Some(getValue(e)), -1)
       later removeEntry key
-      later
+      later.asInstanceOf[HashMap[A, B]]
     }
   }
 
   override def size: Int = synchronized {
-    var m = this
+    var m: HashMap[A, _ >: B] = this
     var cnt = 0
     var s = 0
     while (m.later != null) {
@@ -110,7 +118,7 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
 
   private def logLimit: Int = Math.sqrt(table.length).toInt
 
-  private def markUpdated(key: A, ov: Option[B], delta: Int) {
+  private[this] def markUpdated(key: A, ov: Option[B], delta: Int) {
     val lv = loadFactor
     later = new HashMap[A, B] {
       override def initialSize = 0
@@ -124,8 +132,8 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
     deltaSize = delta
   }
 
-  private def makeCopy(last: HashMap[A, B]) {
-    def undo(m: HashMap[A, B]) {
+  private def makeCopy(last: HashMap[A, _ >: B]) {
+    def undo(m: HashMap[A, _ >: B]) {
       if (m ne last) {
         undo(m.later)
         if (m.deltaSize == 1) removeEntry(m.oldKey)
@@ -143,7 +151,7 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
       }
     val ltable = last.table
     val s = ltable.length
-    table = new Array[mutable.HashEntry[A, Entry]](s)
+    table = new scala.Array[collection.mutable.HashEntry[A, Entry]](s)
     var i = 0
     while (i < s) {
       table(i) = copy(ltable(i).asInstanceOf[Entry])
@@ -156,9 +164,20 @@ class HashMap[A, B] extends Map[A,B] with mutable.HashTable[A] {
   }
 
   private def makeCopyIfUpdated() {
-    var m = this
+    var m: HashMap[A, _ >: B] = this
     while (m.later != null) m = m.later
     if (m ne this) makeCopy(m)
   }
+}
+
+/** A factory object for immutable HashMaps.
+ *
+ *  @author  Martin Odersky
+ *  @version 2.8
+ */
+object HashMap extends ImmutableMapFactory[HashMap] {
+  type Coll = HashMap[_, _]
+  implicit def builderFactory[A, B]: BuilderFactory[(A, B), HashMap[A, B], Coll] = new BuilderFactory[(A, B), HashMap[A, B], Coll] { def apply(from: Coll) = from.mapBuilder[A, B] }
+  def empty[A, B]: HashMap[A, B] = new HashMap
 }
 

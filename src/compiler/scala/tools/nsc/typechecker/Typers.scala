@@ -581,8 +581,7 @@ trait Typers { self: Analyzer =>
 
     private def isInPackageObject(sym: Symbol, pkg: Symbol) =
       pkg.isPackageClass &&
-      sym.owner.isModuleClass &&
-      sym.owner.name.toTermName == nme.PACKAGEkw &&
+      sym.owner.isPackageObjectClass &&
       sym.owner.owner == pkg
 
     /** Post-process an identifier or selection node, performing the following:

@@ -92,7 +92,7 @@ trait Binders extends AbstractSyntax with Mappable {
    */
   class Scope[binderType <: NameElement] extends Iterable[binderType]{
     private val substitution: Map[binderType, Element] =
-      new scala.collection.jcl.LinkedHashMap[binderType, Element] // a LinkedHashMap is ordered by insertion order -- important!
+      new scala.collection.mutable.LinkedHashMap[binderType, Element] // a LinkedHashMap is ordered by insertion order -- important!
 
     /** Returns a unique number identifying this Scope (only used for representation purposes).
      */

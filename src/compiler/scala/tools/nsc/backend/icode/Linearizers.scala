@@ -37,7 +37,7 @@ trait Linearizers { self: ICodes =>
       blocks = Nil;
 
       run {
-        worklist ++= (m.exh map (_.startBlock));
+        worklist pushAll (m.exh map (_.startBlock));
         worklist.push(b);
       }
 
@@ -46,7 +46,7 @@ trait Linearizers { self: ICodes =>
 
     def linearizeAt(m: IMethod, start: BasicBlock): List[BasicBlock] = {
       blocks = Nil
-      worklist.clear
+      worklist.clear()
       linearize(start)
     }
 
@@ -82,13 +82,14 @@ trait Linearizers { self: ICodes =>
      * Prepend b to the list, if not already scheduled.
      * TODO: use better test than linear search
      */
-    def add(b: BasicBlock) =
+    def add(b: BasicBlock) {
       if (blocks.contains(b))
         ()
       else {
         blocks = b :: blocks;
         worklist push b;
       }
+    }
 
     def add(bs: List[BasicBlock]): Unit = bs foreach add;
   }

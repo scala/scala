@@ -11,57 +11,70 @@
 
 package scala.collection.mutable
 
+import generic._
 
 /** A stack implements a data structure which allows to store and retrieve
  *  objects in a last-in-first-out (LIFO) fashion.
  *
  *  @author  Matthias Zenger
- *  @version 1.1, 03/05/2004
+ *  @author  Martin Odersky
+ *  @version 2.8
  */
 @serializable @cloneable
-class Stack[A] extends Seq[A] with CloneableCollection {
-  private var stack: immutable.Stack[A] = immutable.Stack.Empty
+class Stack[A] private (var elems: List[A]) extends collection.Sequence[A] with Cloneable[Stack[A]] {
+
+  def this() = this(Nil)
 
   /** Checks if the stack is empty.
    *
    *  @return true, iff there is no element on the stack
    */
-  override def isEmpty: Boolean = stack.isEmpty
+  override def isEmpty: Boolean = elems.isEmpty
 
-  override def length = stack.length
+  /** The number of elements in the stack */
+  override def length = elems.length
 
-  override def apply(index: Int) = stack(index)
+  /** Retrieve n'th element from stack, where top of stack has index 0 */
+  override def apply(index: Int) = elems(index)
 
-  /** Pushes a single element on top of the stack.
+  /** Push an element on the stack.
    *
-   *  @param  elem        the element to push onto the stack
+   *  @param   elem       the element to push on the stack.
+   *  @return the stack with the new element on top.
    */
-  def +=(elem: A) {
-    this push elem
-  }
+  def push(elem: A): this.type = { elems = elem :: elems; this }
 
-  /** Pushes all elements provided by an <code>Iterable</code> object
-   *  on top of the stack. The elements are pushed in the order they
-   *  are given out by the iterator.
+  /** Push two or more elements onto the stack. The last element
+   *  of the sequence will be on top of the new stack.
    *
-   *  @param  iter        an iterable object
+   *  @param   elems      the element sequence.
+   *  @return the stack with the new elements on top.
    */
-  def ++=(iter: Iterable[A]): Unit = stack = stack ++ iter
+  def push(elem1: A, elem2: A, elems: A*): this.type = this.push(elem1).push(elem2).pushAll(elems)
 
-  /** Pushes all elements provided by an iterator
-   *  on top of the stack. The elements are pushed in the order they
-   *  are given out by the iterator.
+  /** Push all elements provided by the given iterator object onto
+   *  the stack. The last element returned by the iterator
+   *  will be on top of the new stack.
    *
-   *  @param  iter        an iterator
+   *  @param   elems      the iterator object.
+   *  @return the stack with the new elements on top.
+   *  @deprecated
    */
-  def ++=(it: Iterator[A]): Unit = stack = stack ++ it
+  def pushAll(elems: Iterator[A]): this.type = { for (elem <- elems) { push(elem); () }; this }
 
-  /** Pushes a sequence of elements on top of the stack. The first element
-   *  is pushed first, etc.
+  /** Push all elements provided by the given iterable object onto
+   *  the stack. The last element returned by the traversible object
+   *  will be on top of the new stack.
    *
-   *  @param  elems       a sequence of elements
+   *  @param   elems      the iterable object.
+   *  @return the stack with the new elements on top.
    */
-  def push(elems: A*): Unit = (this ++= elems)
+  def pushAll(elems: collection.Traversible[A]): this.type = { for (elem <- elems) { push(elem); () }; this }
+
+  /** @deprecated use pushAll */
+  @deprecated def ++=(it: Iterator[A]): Unit = pushAll(it)
+  /** @deprecated use pushAll */
+  @deprecated def ++=(it: Iterable[A]): Unit = pushAll(it)
 
   /** Returns the top element of the stack. This method will not remove
    *  the element from the stack. An error is signaled if there is no
@@ -71,7 +84,7 @@ class Stack[A] extends Seq[A] with CloneableCollection {
    *  @return the top element
    */
   def top: A =
-    stack.top
+    elems.head
 
   /** Removes the top element from the stack.
    *
@@ -79,8 +92,8 @@ class Stack[A] extends Seq[A] with CloneableCollection {
    *  @return the top element
    */
   def pop(): A = {
-    val res = stack.top
-    stack = stack.pop
+    val res = elems.head
+    elems = elems.tail
     res
   }
 
@@ -88,52 +101,27 @@ class Stack[A] extends Seq[A] with CloneableCollection {
    * Removes all elements from the stack. After this operation completed,
    * the stack will be empty.
    */
-  def clear(): Unit = stack = immutable.Stack.Empty
+  def clear(): Unit = elems = Nil
 
   /** Returns an iterator over all elements on the stack. This iterator
    *  is stable with respect to state changes in the stack object; i.e.
    *  such changes will not be reflected in the iterator. The iterator
-   *  issues elements in the order they were inserted into the stack
-   *  (FIFO order).
+   *  issues elements in the reversed order they were inserted into the stack
+   *  (LIFO order).
    *
    *  @return an iterator over all stack elements.
    */
-  override def elements: Iterator[A] = stack.elements
+  override def elements: Iterator[A] = elems.elements
 
-  /** Creates a list of all stack elements in FIFO order.
+  /** Creates a list of all stack elements in LIFO order.
    *
    *  @return the created list.
    */
-  override def toList: List[A] = stack.toList
-
-  /** Checks if two stacks are structurally identical.
-   *
-   *  @return true, iff both stacks contain the same sequence of elements.
-   */
-  override def equals(obj: Any): Boolean = obj match {
-    case that: Stack[_] =>
-      this.stack == that.stack
-    case _ =>
-      false
-  }
-
-  /** The hashCode method always yields an error, since it is not
-   *  safe to use mutable stacks as keys in hash tables.
-   *
-   *  @return never.
-   */
-  override def hashCode(): Int =
-    throw new UnsupportedOperationException("unsuitable as hash key")
+  override def toList: List[A] = elems
 
   /** This method clones the stack.
    *
    *  @return  a stack with the same elements.
    */
-  override def clone(): Stack[A] = {
-    val res = new Stack[A]
-    res ++= this
-    res
-  }
-
-  override protected def stringPrefix: String = "Stack"
+  override def clone(): Stack[A] = new Stack[A](elems)
 }

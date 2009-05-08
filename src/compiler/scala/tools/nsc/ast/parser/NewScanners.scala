@@ -16,6 +16,27 @@ trait NewScanners {
   import Tokens._
   trait CoreScannerInput extends BufferedIterator[Char] {
     private[NewScanners] val scratch = new StringBuilder
+
+    /** iterates over and applies <code>f</code> to the next element
+     *  if this iterator has a next element that <code>f</code> is defined for.
+     */
+    def readIf[T](f : PartialFunction[Char,T]) : Option[T] =
+      if (hasNext && f.isDefinedAt(head))
+        Some(f(next))
+      else None
+
+    /** iterates over elements as long as <code>f</code> is true
+     *  for each element, returns whether anything was read
+     */
+    def readWhile(f : Char => Boolean) : Boolean = {
+      var read = false
+      while (hasNext && f(head)) {
+        next
+        read = true
+      }
+      read
+    }
+
     def readIfStartsWith(c : Char) : Boolean =
       if (head == c) { next; true } else false
     def readIfStartsWith(c0 : Char, c1 : Char) : Boolean =

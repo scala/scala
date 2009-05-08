@@ -89,10 +89,10 @@ abstract class NondetWordAutom[T <: AnyRef] {
     val sb = new StringBuilder("[NondetWordAutom  nstates=")
     sb.append(nstates)
     sb.append("  finals=")
-    var map = new scala.collection.immutable.ListMap[Int,Int]
+    var map = scala.collection.immutable.Map[Int,Int]()
     var j = 0; while (j < nstates) {
       if (isFinal(j))
-        map = map.update(j, finals(j));
+        map = map.add(j, finals(j));
       j += 1
     }
     sb.append(map.toString)

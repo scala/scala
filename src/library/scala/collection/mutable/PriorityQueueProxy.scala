@@ -1,3 +1,4 @@
+/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -98,3 +99,4 @@ abstract class PriorityQueueProxy[A <% Ordered[A]] extends PriorityQueue[A]
     def self = PriorityQueueProxy.this.self.clone()
   }
 }
+*/

@@ -163,7 +163,7 @@ class PagedSeq[T] protected (more: (Array[T], Int, Int) => Int,
   /** the subsequence from index `start' up to and excluding
    *  the minimum of index `end' and the length of the current sequence.
    */
-  override def slice(_start: Int, _end: Int) = {
+  override def slice(_start: Int, _end: Int): PagedSeq[T] = {
     page(start)
     val s = start + _start
     val e = if (_end == UndeterminedEnd) _end else start + _end

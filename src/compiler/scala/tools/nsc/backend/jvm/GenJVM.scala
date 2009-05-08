@@ -10,7 +10,7 @@ package scala.tools.nsc.backend.jvm
 import java.io.{DataOutputStream, File, OutputStream}
 import java.nio.ByteBuffer
 
-import scala.collection.immutable.{Set, ListSet}
+import scala.collection.immutable.Set
 import scala.collection.mutable.{Map, HashMap, HashSet}
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.symtab._
@@ -101,7 +101,7 @@ abstract class GenJVM extends SubComponent {
     var jmethod: JMethod = _
 //    var jcode: JExtendedCode = _
 
-    var innerClasses: Set[Symbol] = ListSet.empty // referenced inner classes
+    var innerClasses: Set[Symbol] = Set.empty // referenced inner classes
 
     val fjbgContext = new FJBGContext(49, 0)
 
@@ -152,7 +152,7 @@ abstract class GenJVM extends SubComponent {
 
     def genClass(c: IClass) {
       clasz = c
-      innerClasses = ListSet.empty
+      innerClasses = Set.empty
 
       var parents = c.symbol.info.parents
       var ifaces  = JClass.NO_INTERFACES

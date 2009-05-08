@@ -158,7 +158,7 @@ private[swing] abstract class RefSet[A <: AnyRef] extends Set[A] with SingleRefC
   def -=(el: A) { underlying -= Ref(el); purgeReferences() }
   def +=(el: A) { purgeReferences(); underlying += Ref(el) }
   def contains(el: A) = { purgeReferences(); underlying.contains(Ref(el)) }
-  def size = { purgeReferences(); underlying.size }
+  override def size = { purgeReferences(); underlying.size }
 
   protected[this] def removeReference(ref: Reference[A]) { underlying -= ref }
 }

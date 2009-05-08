@@ -29,20 +29,16 @@ final class BoxedObjectArray[A <: AnyRef](val value: Array[AnyRef]) extends Boxe
   def unbox(elemTag: String): AnyRef = value
   def unbox(elemClass: Class[_]): AnyRef = value
 
+/*
   override def equals(other: Any): Boolean =
     (value eq other.asInstanceOf[AnyRef]) ||
     other.isInstanceOf[BoxedObjectArray[_]] && (value eq other.asInstanceOf[BoxedObjectArray[_]].value)
 
   override def hashCode(): Int = (value.asInstanceOf[AnyRef]).hashCode()
+*/
 
   private def create(length: Int): Array[AnyRef] = {
     createArray(value.getClass().getComponentType(), length).asInstanceOf[Array[AnyRef]]
-  }
-
-  override def subArray(start: Int, end: Int): Array[AnyRef] = {
-    val result = create(end - start)
-    Array.copy(value, start, result, 0, end - start)
-    result
   }
 
   final override def filter(p: A => Boolean): BoxedArray[A] = {
@@ -60,12 +56,6 @@ final class BoxedObjectArray[A <: AnyRef](val value: Array[AnyRef]) extends Boxe
       if (include(i)) { result(len) = value(i); len += 1 }
       i += 1
     }
-    new BoxedObjectArray[A](result)
-  }
-
-  override protected def newArray(length: Int, elements: Iterator[A]) = {
-    val result = create(length)
-    elements.map(_.asInstanceOf[A]).copyToArray(result, 0)
     new BoxedObjectArray[A](result)
   }
 }

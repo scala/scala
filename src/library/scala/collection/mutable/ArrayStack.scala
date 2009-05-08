@@ -8,7 +8,7 @@
 
 // $Id$
 
-
+// !!! todo: integrate in collections framework
 package scala.collection.mutable;
 
 private object Utils{
@@ -32,7 +32,7 @@ private object Utils{
  * @author David MacIver
  */
 class ArrayStack[T] private(private var table : Array[AnyRef],
-                            private var index : Int) extends Collection[T]{
+                            private var index : Int) extends Iterable[T]{
   def this() = this(new Array[AnyRef](1), 0);
 
   /**
@@ -59,13 +59,19 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
 
   /**
    * View the top element of the stack.
+   * @deprecated use top instead
    */
-  def peek = table(index - 1).asInstanceOf[T]
+  def peek = top
+
+  /**
+   * View the top element of the stack.
+   */
+  def top = table(index - 1).asInstanceOf[T]
 
   /**
    * Duplicate the top element of the stack.
    */
-  def dup = push(peek);
+  def dup = push(top);
 
   /**
    * Empties the stack.
@@ -121,7 +127,7 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
    */
   def reduceWith(f : (T, T) => T) = while(size > 1) combine(f)
 
-  def size = index;
+  override def size = index;
 
   /**
    * Evaluates the expression, preserving the contents of the stack so that

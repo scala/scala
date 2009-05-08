@@ -163,7 +163,7 @@ class Table extends Component with Scrollable with Publisher {
       def -=(n: A)
       def +=(n: A)
       def contains(n: A) = a.contains(n)
-      def size = a.length
+      override def size = a.length
       def elements = a.elements
     }
 

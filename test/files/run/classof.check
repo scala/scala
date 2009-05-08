@@ -10,13 +10,13 @@ float
 double
 Class types
 class SomeClass
-class scala.List
+class scala.collection.immutable.List
 class scala.Tuple2
 Arrays:
 class [Lscala.runtime.BoxedUnit;
 class [I
 class [D
-class [Lscala.List;
+class [Lscala.collection.immutable.List;
 Functions: 
 interface scala.Function2
 interface scala.Function1

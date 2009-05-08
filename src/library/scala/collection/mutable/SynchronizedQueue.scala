@@ -20,6 +20,7 @@ package scala.collection.mutable
  *  @version 1.0, 03/05/2004
  */
 class SynchronizedQueue[A] extends Queue[A] {
+  import collection.Traversible
 
   /** Checks if the queue is empty.
    *
@@ -39,7 +40,7 @@ class SynchronizedQueue[A] extends Queue[A] {
    *
    *  @param  iter        an iterable object
    */
-  override def ++=(iter: Iterable[A]): Unit = synchronized { super.++=(iter) }
+  override def ++=(iter: Traversible[A]): Unit = synchronized { super.++=(iter) }
 
   /** Adds all elements provided by an iterator
    *  at the end of the queue. The elements are prepended in the order they
@@ -79,13 +80,6 @@ class SynchronizedQueue[A] extends Queue[A] {
    *  @return true, iff both queues contain the same sequence of elements.
    */
   override def equals(that: Any): Boolean = synchronized { super.equals(that) }
-
-  /** The hashCode method always yields an error, since it is not
-   *  safe to use mutable queues as keys in hash tables.
-   *
-   *  @return never.
-   */
-  override def hashCode(): Int = synchronized { super.hashCode() }
 
   /** Returns a textual representation of a queue as a string.
    *

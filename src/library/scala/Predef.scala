@@ -61,6 +61,10 @@ object Predef {
 
   // miscelleaneous -----------------------------------------------------
 
+  private val P = scala.`package`  // to force scala package object to be seen.
+  private val L = scala.collection.immutable.List // to force Nil, :: to be seen.
+  private val S = scala.collection.mutable.StringBuilder // to force StringBuilder to be seen.
+
   val $scope = scala.xml.TopScope
 
   type Function[-A, +B] = Function1[A, B]
@@ -189,7 +193,6 @@ object Predef {
   implicit def unitWrapper(x: Boolean)  = new runtime.RichUnit
 
   implicit def stringWrapper(x: String) = new runtime.RichString(x)
-  implicit def stringBuilderWrapper(x : StringBuilder): runtime.RichStringBuilder = new runtime.RichStringBuilder(x)
 
   implicit def any2stringadd(x: Any) = new runtime.StringAdd(x)
 
@@ -331,12 +334,12 @@ object Predef {
   implicit def boolean2Boolean(x: Boolean)  = java.lang.Boolean.valueOf(x)
 
   /** any array projection can be automatically converted into an array */
-  implicit def forceArrayProjection[A](x: Array.Projection[A]): Array[A] = x.force
+  //implicit def forceArrayProjection[A](x: Array.Projection[A]): Array[A] = x.force !!! re-enable?
   /** any random access character seq (including rich string can be converted into a string */
-  implicit def forceRandomAccessCharSeq(x: runtime.RichString): String = x.mkString
-  implicit def lazyStreamToConsable[A](xs: => Stream[A]) = new runtime.StreamCons(xs)
+  //implicit def forceRandomAccessCharSeq(x: runtime.RichString): String = x.mkString
+  //implicit def lazyStreamToConsable[A](xs: => Stream[A]) = new runtime.StreamCons(xs)
 
-  implicit def seqToCharSequence(xs: RandomAccessSeq[Char]): CharSequence = new CharSequence {
+  implicit def seqToCharSequence(xs: collection.Vector[Char]): CharSequence = new CharSequence {
     def length: Int = xs.length
     def charAt(index: Int): Char = xs(index)
     def subSequence(start: Int, end: Int): CharSequence = seqToCharSequence(xs.slice(start, end))

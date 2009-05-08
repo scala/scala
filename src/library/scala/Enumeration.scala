@@ -13,6 +13,8 @@ package scala
 
 
 import scala.collection.mutable.{Map, HashMap}
+import scala.collection.immutable.{Set, BitSet}
+import scala.collection.generic.{Builder, BuilderFactory, AddingBuilder, SetTemplate}
 
 /** <p>
  *    Defines a finite set of values specific to the enumeration. Typically
@@ -59,8 +61,9 @@ abstract class Enumeration(initial: Int, names: String*) {
   def this() = this(0, null)
   def this(names: String*) = this(0, names: _*)
 
-  /** The name of this enumeration.  */
-  protected def name = {
+  /** The name of this enumeration.
+   */
+  override def toString = {
     val cname = this.getClass().getName()
     if (cname endsWith "$")
       cname.substring(0, cname.length() - 1)
@@ -72,10 +75,21 @@ abstract class Enumeration(initial: Int, names: String*) {
 
   /** The mapping from the integer used to identifying values to the actual
     * values. */
-  private val values: Map[Int, Value] = new HashMap
+  private val vmap: Map[Int, Value] = new HashMap
 
   /** The cache listing all values of this enumeration. */
-  lazy private val vcache: List[Value] = values.values.toList.sort(_.id < _.id)
+  @transient private var vset: ValueSet = null
+  @transient private var vsetDefined = false
+
+  /** The values of this enumeration as a set.
+   */
+  def values: ValueSet = {
+    if (!vsetDefined) {
+      vset = new ValueSet(BitSet.empty ++ (vmap.values map (_.id)))
+      vsetDefined = true
+    }
+    vset
+  }
 
   /** The integer to use to identify the next created value. */
   protected var nextId = initial
@@ -89,15 +103,11 @@ abstract class Enumeration(initial: Int, names: String*) {
 
   /** The highest integer amongst those used to identify values in this
     * enumeration. */
-  protected final def maxId = topId
+  final def maxId = topId
 
-  /** The value in this enumeration identified by integer <code>x</code>. */
-  final def apply(x: Int): Value = values(x)
-
-  /** A new iterator over all values of this enumeration. */
-  final def elements: Iterator[Value] = vcache.elements
-
-  override def toString(): String = vcache.mkString("{", ", ", "}")
+  /** The value of this enumeration with given id `x`
+   */
+  final def withId(x: Int): Value = vmap(x)
 
   /** Returns a Value from this Enumeration whose name matches
    * the argument <var>s</var>.
@@ -108,7 +118,7 @@ abstract class Enumeration(initial: Int, names: String*) {
    * @return <tt>Some(Value)</tt> if an enumeration's name matches <var>s</var>,
    * else <tt>None</tt>
    */
-  def valueOf(s: String) = elements find (_.toString == s)
+  def withName(s: String): Value = values.find(_.toString == s).get
 
   /** Creates a fresh value, part of this enumeration. */
   protected final def Value: Value = Value(nextId)
@@ -152,17 +162,20 @@ abstract class Enumeration(initial: Int, names: String*) {
         case _ => false
       }
     override def hashCode: Int = id.hashCode
+
     /** this enumeration value as an <code>Int</code> bit mask.
      *  @throws IllegalArgumentException if <code>id</code> is greater than 31
+     *  @deprecated
      */
-    def mask32: Int = {
+    @deprecated def mask32: Int = {
       if (id >= 32) throw new IllegalArgumentException
       1  << id
     }
     /** this enumeration value as an <code>Long</code> bit mask.
      *  @throws IllegalArgumentException if <code>id</code> is greater than 63
+     *  @deprecated
      */
-    def mask64: Long = {
+    @deprecated def mask64: Long = {
       if (id >= 64) throw new IllegalArgumentException
       1L << id
     }
@@ -181,17 +194,47 @@ abstract class Enumeration(initial: Int, names: String*) {
     def this(name: String) = this(nextId, name)
     def this() =
       this(nextId, if (nextName.hasNext) nextName.next else nextId.toString())
-    assert(!values.isDefinedAt(i))
-    values(i) = this
+    assert(!vmap.isDefinedAt(i))
+    vmap(i) = this
+    vsetDefined = false
     nextId = i + 1
     if (nextId > topId) topId = nextId
     def id = i
     override def toString() =
-      if (name eq null) Enumeration.this.name + "(" + i + ")"
+      if (name eq null) Enumeration.this + "(" + i + ")"
       else name
     private def readResolve(): AnyRef =
-      if (values ne null) values(i)
+      if (vmap ne null) vmap(i)
       else this
+  }
+
+  /** A class for sets of values
+   *  Iterating through this set will yield values in increasing order of their ids.
+   *  @param   ids   The set of ids of values, organized as a BitSet.
+   */
+  class ValueSet private[Enumeration] (val ids: BitSet) extends Set[Value] with SetTemplate[Value, ValueSet] {
+    override def empty = ValueSet.empty
+    def contains(v: Value) = ids contains (v.id)
+    def + (value: Value) = new ValueSet(ids + value.id)
+    def - (value: Value) = new ValueSet(ids - value.id)
+    def elements = ids.elements map withId
+    override def stringPrefix = Enumeration.this + ".ValueSet"
+  }
+
+  /** A factory object for value sets */
+  object ValueSet {
+    /** The empty value set */
+    val empty = new ValueSet(BitSet.empty)
+    /** A value set consisting of given elements */
+    def apply(elems: Value*): ValueSet = {
+      var s = empty
+      for (elem <- elems) s = s + elem // !!! change to s += elem --> error
+      s
+    }
+    /** A builder object for value sets */
+    def newBuilder: Builder[Value, ValueSet, Any] = new AddingBuilder(empty)
+    /** The implicit builder for value sets */
+    implicit def builderFactory: BuilderFactory[Value, ValueSet, ValueSet] = new BuilderFactory[Value, ValueSet, ValueSet] { def apply(from: ValueSet) = newBuilder }
   }
 
   /** A set that efficiently stores enumeration values as bits.
@@ -218,8 +261,9 @@ abstract class Enumeration(initial: Int, names: String*) {
    *  <b>if</b> (e.flags.contains(flags.Private))
    *    e.flags0 = (e.flags | flags.Final).underlying;
    *  </pre>
+   *  @deprecated  use ValueSet instead
    */
-  protected abstract class SetXX extends collection.immutable.Set[Value] {
+  @deprecated abstract class SetXX extends collection.immutable.Set[Value] {
 
     /** either Int or Long */
     type Underlying <: AnyVal
@@ -255,7 +299,7 @@ abstract class Enumeration(initial: Int, names: String*) {
     def +(value: Value): TSet = this | value
     def ++(set: TSet): TSet = this | set
     def **(set: TSet): TSet = this & set
-    def size = {
+    override def size = {
       var x = underlyingAsLong
       var sz = 0
       while (x != 0) {
@@ -276,23 +320,23 @@ abstract class Enumeration(initial: Int, names: String*) {
       def next = {
         if (underlying == 0) throw new NoSuchElementException
         while ((underlying & 1) == 0) shift
-        val ret = values(bit)
+        val ret = vmap(bit)
         shift
         ret
       }
     }
-    def empty[B]: scala.collection.immutable.Set[B] = new scala.collection.immutable.HashSet[B];
   }
 
   /** An enumeration bit set that can handle enumeration values with ids up
    *  to 31 in an <code>Int</code>.
+   *  @deprecated  use ValueSet instead
    */
-  protected class Set32(val underlying: Int) extends SetXX {
+  @deprecated class Set32(val underlying: Int) extends SetXX {
     def this() = this(0)
     type Underlying = Int
     type TSet = Set32
     def underlyingAsLong = {
-      if (underlying >= 0) underlying.toLong
+       if (underlying >= 0) underlying.toLong
       else {
         val underlying0 = (~(1 << 31)) & underlying
         assert(underlying0 >= 0)
@@ -314,8 +358,9 @@ abstract class Enumeration(initial: Int, names: String*) {
 
   /** An enumeration bit set that can handle enumeration values with ids up
    *  to 63 in a <code>Long</code>.
+   *  @deprecated  use ValueSet instead
    */
-  protected class Set64(val underlying: Long) extends SetXX {
+  @deprecated class Set64(val underlying: Long) extends SetXX {
     def this() = this(0)
     type Underlying = Long
     type TSet = Set64
@@ -345,4 +390,58 @@ abstract class Enumeration(initial: Int, names: String*) {
     assert(m == 1)
     bit
   }
+
+  /** The name of this enumeration.
+   *  @deprecated  use toString instead
+   */
+  @deprecated def name = toString
+
+  /** The value in this enumeration identified by integer <code>x</code>.
+   *  @deprecated use withId instead.
+   */
+  @deprecated final def apply(x: Int): Value = withId(x)
+
+  /** @deprecated use withName instead
+   */
+  @deprecated def valueOf(s: String) = values.find(_.toString == s)
+
+  /** A new iterator over all values of this enumeration.
+   *  @deprecated use values.elements instead
+   */
+  @deprecated final def elements: Iterator[Value] = values.elements
+
+  /** Apply a function f to all values of this enumeration.
+   *  @deprecated use values.foreach instead
+   */
+  @deprecated def foreach(f: Value => Unit): Unit = elements foreach f
+
+  /** Apply a predicate p to all values of this enumeration and return
+    * true, iff the predicate yields true for all values.
+   *  @deprecated use values.forall instead
+   */
+  @deprecated def forall(p: Value => Boolean): Boolean = elements forall p
+
+  /** Apply a predicate p to all values of this enumeration and return
+    * true, iff there is at least one value for which p yields true.
+    *  @deprecated use values.exists instead
+    */
+  @deprecated def exists(p: Value => Boolean): Boolean = elements exists p
+
+  /** Returns an iterator resulting from applying the given function f to each
+    * value of this enumeration.
+    *  @deprecated use values.map instead
+    */
+  @deprecated def map[B](f: Value => B): Iterator[B] = elements map f
+
+  /** Applies the given function f to each value of this enumeration, then
+    * concatenates the results.
+    *  @deprecated use values.flatMap instead
+    */
+  @deprecated def flatMap[B](f: Value => Iterator[B]): Iterator[B] = elements flatMap f
+
+  /** Returns all values of this enumeration that satisfy the predicate p.
+    * The order of values is preserved.
+    *  @deprecated use values.filter instead
+    */
+  @deprecated def filter(p: Value => Boolean): Iterator[Value] = elements filter p
 }

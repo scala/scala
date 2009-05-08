@@ -66,7 +66,7 @@ abstract class Pickler extends SubComponent {
 
   private class Pickle(root: Symbol, rootName: Name, rootOwner: Symbol)
         extends PickleBuffer(new Array[Byte](4096), -1, 0) {
-    import scala.collection.jcl.LinkedHashMap
+    import scala.collection.mutable.LinkedHashMap
     private var entries = new Array[AnyRef](256)
     private var ep = 0
     private val index = new LinkedHashMap[AnyRef, Int]

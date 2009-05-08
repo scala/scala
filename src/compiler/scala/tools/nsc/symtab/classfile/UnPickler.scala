@@ -68,7 +68,7 @@ abstract class UnPickler {
     private def checkVersion() {
       val major = readNat()
       val minor = readNat()
-      if (major != MajorVersion || minor > MinorVersion)
+      if (major < 4 /*!= MajorVersion*/ || minor > MinorVersion) // !!! temporarily accept 4 as version.
         throw new IOException("Scala signature " + classRoot.name +
                               " has wrong version\n expected: " +
                               MajorVersion + "." + MinorVersion +

@@ -11,9 +11,10 @@
 
 package scala.runtime
 
-
 import java.lang.Character
-import Predef.NoSuchElementException
+import collection.Vector
+import collection.generic.VectorView
+import Predef.{require, NoSuchElementException}
 
 /** <p>
  *    For example, in the following code
@@ -52,24 +53,22 @@ final class RichChar(x: Char) extends Proxy with Ordered[Char] {
   def toLowerCase: Char = Character.toLowerCase(x)
   def toUpperCase: Char = Character.toUpperCase(x)
 
-  /** Create a <code>RandomAccessSeq.Projection[Char]</code> over the characters from 'x' to 'y' - 1
+  /** Create a <code>[Char]</code> over the characters from 'x' to 'y' - 1
    */
-  def until(limit: Char): RandomAccessSeq.Projection[Char] =
-    if (limit <= x) RandomAccessSeq.empty.projection
+  def until(limit: Char): VectorView[Char, Vector[Char]] =
+    if (limit <= x) Vector.empty.view
     else
-      new RandomAccessSeq.Projection[Char] {
+      new VectorView[Char, Vector[Char]] {
+        protected def underlying = Vector.empty[Char]
         def length = limit - x
         def apply(i: Int): Char = {
-          Predef.require(i >= 0 && i < length)
+          require(i >= 0 && i < length)
           (x + i).toChar
         }
-        override def stringPrefix = "RandomAccessSeq.Projection"
       }
-
-  //def until(y: Char): Iterator[Char] = to(y)
 
   /** Create a <code>RandomAccessSeq.Projection[Char]</code> over the characters from 'x' to 'y'
    */
-  def to(y: Char): RandomAccessSeq.Projection[Char] = until((y + 1).toChar)
+  def to(y: Char): VectorView[Char, Vector[Char]] = until((y + 1).toChar)
 
 }

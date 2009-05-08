@@ -11,8 +11,6 @@
 
 package scala.runtime
 
-
-import Predef._
 import compat.Platform
 
 /**
@@ -24,54 +22,8 @@ import compat.Platform
 @serializable
 final class BoxedAnyArray[A](val length: Int) extends BoxedArray[A] {
 
-/*
-  def this(dim1: Int, dim2: Int) = {
-    this(dim1);
-    initializeWith(i => new BoxedAnyArray(dim2))
-  }
-
-  def this(dim1: Int, dim2: Int, dim3: Int) = {
-    this(dim1);
-    initializeWith(i => new BoxedAnyArray(dim2, dim3))
-  }
-
-  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int) = {
-    this(dim1);
-    initializeWith(i => new BoxedAnyArray(dim2, dim3, dim4))
-  }
-
-  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int) = {
-    this(dim1);
-    initializeWith(i => new BoxedAnyArray(dim2, dim3, dim4, dim5))
-  }
-
-  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int) = {
-    this(dim1);
-    initializeWith(i => new BoxedAnyArray(dim2, dim3, dim4, dim5, dim6))
-  }
-
-  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int) = {
-    this(dim1);
-    initializeWith(i => new BoxedAnyArray(dim2, dim3, dim4, dim5, dim6, dim7))
-  }
-
-  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int) = {
-    this(dim1);
-    initializeWith(i => new BoxedAnyArray(dim2, dim3, dim4, dim5, dim6, dim7, dim8))
-  }
-
-  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int, dim9: Int) = {
-    this(dim1);
-    initializeWith(i => new BoxedAnyArray(dim2, dim3, dim4, dim5, dim6, dim7, dim8, dim9))
-  }
-
-  private def initializeWith(elem: Int => Any) = {
-    for (i <- 0 until length) update(i, elem(i))
-  }
-*/
-
   private var boxed = new Array[AnyRef](length)
-  private val hash = boxed.hashCode()
+//  private val hash = boxed.hashCode()
   private var unboxed: AnyRef = null
   private var elemClass: Class[_] = null
 
@@ -121,17 +73,6 @@ final class BoxedAnyArray[A](val length: Int) extends BoxedArray[A] {
     else
       unboxed.asInstanceOf[Array[AnyRef]](index) = elem
   }
-
-  def unbox(elemTag: String): AnyRef =
-    if (elemTag eq ScalaRunTime.IntTag) unbox(classOf[Int])
-    else if (elemTag eq ScalaRunTime.DoubleTag) unbox(classOf[Double])
-    else if (elemTag eq ScalaRunTime.FloatTag) unbox(classOf[Float])
-    else if (elemTag eq ScalaRunTime.LongTag) unbox(classOf[Long])
-    else if (elemTag eq ScalaRunTime.CharTag) unbox(classOf[Char])
-    else if (elemTag eq ScalaRunTime.ByteTag) unbox(classOf[Byte])
-    else if (elemTag eq ScalaRunTime.ShortTag) unbox(classOf[Short])
-    else if (elemTag eq ScalaRunTime.BooleanTag) unbox(classOf[Boolean])
-    else unbox(Platform.getClassForName(elemTag))
 
   def unbox(elemClass: Class[_]): AnyRef = synchronized {
     if (unboxed eq null) {
@@ -201,7 +142,6 @@ final class BoxedAnyArray[A](val length: Int) extends BoxedArray[A] {
         }
         unboxed = newvalue;
       } else if (elemClass == classOf[AnyRef]) {
-        // todo: replace with ScalaRunTime.AnyRef.class
         unboxed = boxed
       } else {
         unboxed = Platform.createArray(elemClass, length)
@@ -222,11 +162,13 @@ final class BoxedAnyArray[A](val length: Int) extends BoxedArray[A] {
     unboxed
   }
 
+/* !!! todo: deal with array equality
   override def equals(other: Any): Boolean =
     other.isInstanceOf[BoxedAnyArray[_]] && (this eq (other.asInstanceOf[BoxedAnyArray[_]])) ||
     (if (unboxed eq null) boxed == other else unboxed == other)
 
   override def hashCode(): Int = hash
+*/
 
   def value: AnyRef = {
     if (unboxed eq null) throw new NotDefinedError("BoxedAnyArray.value")
@@ -246,21 +188,21 @@ final class BoxedAnyArray[A](val length: Int) extends BoxedArray[A] {
         case that: BoxedArray[_] =>
           adapt(that.value)
         case that: Array[Int] =>
-          unbox(ScalaRunTime.IntTag); that
+          unbox(classOf[Int]); that
         case that: Array[Double] =>
-          unbox(ScalaRunTime.DoubleTag); that
+          unbox(classOf[Double]); that
         case that: Array[Float] =>
-          unbox(ScalaRunTime.FloatTag); that
+          unbox(classOf[Float]); that
         case that: Array[Long] =>
-          unbox(ScalaRunTime.LongTag); that
+          unbox(classOf[Long]); that
         case that: Array[Char] =>
-          unbox(ScalaRunTime.CharTag); that
+          unbox(classOf[Char]); that
         case that: Array[Short] =>
-          unbox(ScalaRunTime.ShortTag); that
+          unbox(classOf[Short]); that
         case that: Array[Byte] =>
-          unbox(ScalaRunTime.ByteTag); that
+          unbox(classOf[Byte]); that
         case that: Array[Boolean] =>
-          unbox(ScalaRunTime.BooleanTag); that
+          unbox(classOf[Boolean]); that
         case _ =>
           other
       }
@@ -286,34 +228,12 @@ final class BoxedAnyArray[A](val length: Int) extends BoxedArray[A] {
     Array.copy(if (unboxed ne null) unboxed else boxed, from, dest1, to, len)
   }
 
-  override def subArray(start: Int, end: Int): AnyRef = {
-    val result = new BoxedAnyArray(end - start);
-    Array.copy(this, start, result, 0, end - start)
-    result
-  }
-
   final override def filter(p: A => Boolean): BoxedArray[A] = {
-    val include = new Array[Boolean](length)
-    var len = 0
-    var i = 0
-    while (i < length) {
-      if (p(this(i))) { include(i) = true; len += 1 }
-      i += 1
-    }
+    val (len, include) = countAndMemo(p)
     val result = new BoxedAnyArray[A](len)
-    len = 0
-    i = 0
-    while (len < result.length) {
-      if (include(i)) { result(len) = this(i); len += 1 }
-      i += 1
-    }
-    result
-  }
-  override protected def newArray(length : Int, elements : Iterator[A]) = {
-    val result = new BoxedAnyArray[A](length)
-    var i = 0
-    while (elements.hasNext) {
-      result(i) = elements.next
+    var i, j = 0
+    while (j < len) {
+      if (include(i)) { result(j) = this(i); j += 1 }
       i += 1
     }
     result

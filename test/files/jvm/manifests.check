@@ -5,11 +5,11 @@ x=1, m=int
 x=abc, m=java.lang.String
 x='abc, m=scala.Symbol
 
-x=List(()), m=scala.List[void]
-x=List(true), m=scala.List[boolean]
-x=List(1), m=scala.List[int]
-x=List(abc), m=scala.List[java.lang.String]
-x=List('abc), m=scala.List[scala.Symbol]
+x=List(()), m=scala.collection.immutable.List[void]
+x=List(true), m=scala.collection.immutable.List[boolean]
+x=List(1), m=scala.collection.immutable.List[int]
+x=List(abc), m=scala.collection.immutable.List[java.lang.String]
+x=List('abc), m=scala.collection.immutable.List[scala.Symbol]
 
 x=[Z, m=Array[boolean]
 x=[C, m=Array[char]
@@ -24,12 +24,12 @@ x=(abc,xyz), m=scala.Tuple2[java.lang.String, java.lang.String]
 x=('abc,'xyz), m=scala.Tuple2[scala.Symbol, scala.Symbol]
 
 x=Test$, m=Test$
-x=scala.List$, m=scala.List$
+x=scala.collection.immutable.List$, m=scala.collection.immutable.List$
 
 x=Foo, m=Foo[int]
-x=Foo, m=Foo[scala.List[int]]
+x=Foo, m=Foo[scala.collection.immutable.List[int]]
 x=Foo, m=Foo[Foo[int]]
-x=Foo, m=Foo[scala.List[Foo[int]]]
+x=Foo, m=Foo[scala.collection.immutable.List[Foo[int]]]
 
 x=Test1$$anon$1, m=Test1$$anon$1
 

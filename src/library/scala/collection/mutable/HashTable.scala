@@ -163,10 +163,4 @@ trait HashTable[A] extends AnyRef {
   protected final def index(hcode: Int) = improve(hcode) & (table.length - 1)
 }
 
-trait HashEntry[A, E] {
-  val key: A
-  var next: E = _
-}
-
-
 

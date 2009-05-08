@@ -11,24 +11,21 @@
 
 package scala.collection.mutable
 
+import generic._
+
 /** This class implements mutable sets using a hashtable.
  *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @version 2.0, 31/12/2006
  */
-object HashSet {
-
-  /** The empty map of this type */
-  def empty[A] = new HashSet[A]
-
-  /** The canonical factory for this type
-   */
-  def apply[A](elems: A*) = empty[A] ++ elems
-}
-
 @serializable
-class HashSet[A] extends Set[A] with FlatHashTable[A] {
+class HashSet[A] extends Set[A] with SetTemplate[A, HashSet[A]] with FlatHashTable[A] {
+
+  override def empty = HashSet.empty
+  override def traversibleBuilder[B]: Builder[B, HashSet[B], Any] = HashSet.newBuilder[B]
+
+  override def size = super.size
 
   def contains(elem: A): Boolean = containsEntry(elem)
 
@@ -38,6 +35,23 @@ class HashSet[A] extends Set[A] with FlatHashTable[A] {
 
   override def clear() = super.clear()
 
-  override def clone(): Set[A] = new HashSet[A] ++ this
+  override def foreach(f: A => Unit) {
+    var i = 0
+    val len = table.length
+    while (i < len) {
+      val elem = table(i)
+      if (elem ne null) f(elem.asInstanceOf[A])
+      i += 1
+    }
+  }
+
+  override def clone(): HashSet[A] = new HashSet[A] ++ this
+}
+
+/** Factory object for `HashSet` class */
+object HashSet extends SetFactory[HashSet] {
+  type Coll = HashSet[_]
+  implicit def builderFactory[A]: BuilderFactory[A, HashSet[A], Coll] = new BuilderFactory[A, HashSet[A], Coll] { def apply(from: Coll) = from.traversibleBuilder[A] }
+  def empty[A]: HashSet[A] = new HashSet[A]
 }
 

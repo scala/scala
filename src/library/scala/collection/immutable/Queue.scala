@@ -1,3 +1,4 @@
+/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -178,3 +179,4 @@ class Queue[+A](elem: A*) extends Seq[A] {
       q._1.hashCode() + q._2.hashCode()
     }
 }
+*/

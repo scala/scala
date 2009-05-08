@@ -1,5 +1,5 @@
 bug910.scala:4: error: type mismatch;
- found   : Seq[Char]
+ found   : Sequence[Char]
  required: Seq[int]
     val y: Seq[int] = rest
                       ^

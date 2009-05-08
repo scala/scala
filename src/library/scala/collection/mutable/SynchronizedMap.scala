@@ -1,3 +1,4 @@
+/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -19,6 +20,10 @@ package scala.collection.mutable
  *  @version 2.0, 31/12/2006
  */
 trait SynchronizedMap[A, B] extends Map[A, B] {
+
+  import collection.Traversible
+
+  override def mapBuilder[A, B]: Builder[(A, B), SynchronizedMap[A, B], Any] = SynchronizedMap.newBuilder[A, B]
 
   abstract override def size: Int = synchronized {
     super.size
@@ -81,17 +86,12 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
     super.+=(kv1, kv2, kvs: _*)
   }
 
-  override def ++=(map: Iterable[(A, B)]): Unit = synchronized {
+  override def ++=(map: Traversible[(A, B)]): Unit = synchronized {
     super.++=(map)
   }
 
   override def ++=(it: Iterator[(A, B)]): Unit = synchronized {
     super.++=(it)
-  }
-
-  @deprecated
-  override def incl(mappings: (A, B)*): Unit = synchronized {
-    super.incl(mappings: _*)
   }
 
   abstract override def -=(key: A): Unit = synchronized {
@@ -102,7 +102,7 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
     super.-=(key1, key2, keys: _*)
   }
 
-  override def --=(keys: Iterable[A]): Unit = synchronized {
+  override def --=(keys: Traversible[A]): Unit = synchronized {
     super.--=(keys)
   }
 
@@ -110,24 +110,19 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
     super.--=(it)
   }
 
-  @deprecated
-  override def excl(keys: A*): Unit = synchronized {
-    super.excl(keys: _*)
-  }
-
   override def clear(): Unit = synchronized {
     super.clear
   }
-
+/* TODO: Reintegrate
   override def getOrElseUpdate(key: A, default: => B): B = synchronized {
     super.getOrElseUpdate(key, default)
   }
-
-  override def transform(f: (A, B) => B): Unit = synchronized {
+*/
+  override def transform(f: (A, B) => B): this.type = synchronized[this.type] {
     super.transform(f)
   }
 
-  override def retain(p: (A, B) => Boolean): Unit = synchronized {
+  override def retain(p: (A, B) => Boolean): this.type = synchronized[this.type] {
     super.retain(p)
   }
 
@@ -139,15 +134,23 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
     super.equals(that)
   }
 
-  override def hashCode(): Int = synchronized {
-    super.hashCode()
-  }
-
+/* TODO: Reintegrate
   override def <<(cmd: Message[(A, B)]): Unit = synchronized {
     super.<<(cmd)
   }
-
+*/
   override def clone(): Map[A, B] = synchronized {
     super.clone()
   }
 }
+
+/* Factory object for `Map` class
+ * Currently this returns a HashMap.
+ */
+object SynchronizedMap extends MutableMapFactory[SynchronizedMap] {
+  type Coll = Map[_, _]
+  implicit def implicitBuilder[A, B]: Builder[(A, B), Map[A, B], Coll] = from.mapBuilder[A, B]
+  def empty[A, B]: Map[A, B] = new HashMap[A, B] with SynchronizeddMap[A, B]
+}
+
+*/

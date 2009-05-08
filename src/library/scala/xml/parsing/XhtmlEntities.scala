@@ -34,7 +34,7 @@ object XhtmlEntities {
       ("xi",958), ("omicron",959), ("pi",960), ("rho",961), ("sigmaf",962), ("sigma",963), ("tau",964), ("upsilon",965), ("phi",966), ("chi",967),
       ("psi",968), ("omega",969), ("thetasym",977), ("upsih",978), ("piv",982))
 
-  val entMap: Map[String, Char] = Map.empty ++ entList.map { case (name, value) => (name, value.toChar)}
+  val entMap: Map[String, Char] = Map.empty[String, Char] ++ entList.map { case (name, value) => (name, value.toChar)}
 
   val entities = entList.
         map { case (name, value) => (name, new ParsedEntityDecl(name, new IntDef(value.toChar.toString)))}

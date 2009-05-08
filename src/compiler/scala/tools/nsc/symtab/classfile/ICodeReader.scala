@@ -460,7 +460,7 @@ abstract class ICodeReader extends ClassfileParser {
           size += 8
           assert(low <= high, "Value low not <= high for tableswitch.")
 
-          val tags = List.tabulate(high - low + 1, n => List(low + n))
+          val tags = List.tabulate(high - low + 1)(n => List(low + n))
           val targets = for (_ <- tags) yield parseJumpTargetW
           code.emit(LSWITCH(tags, targets ::: List(default)))
 

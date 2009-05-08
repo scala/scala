@@ -21,7 +21,7 @@ package scala.collection.mutable
  */
 @deprecated class JavaSetAdaptor[A](jset: java.util.Set[A]) extends Set[A] {
 
-  def size: Int = jset.size()
+  override def size: Int = jset.size()
 
   override def isEmpty: Boolean = jset.isEmpty()
 
@@ -45,3 +45,4 @@ package scala.collection.mutable
     res
   }
 }
+

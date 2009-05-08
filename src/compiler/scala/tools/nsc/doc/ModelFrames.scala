@@ -8,7 +8,7 @@ package scala.tools.nsc.doc
 
 import java.io.{File, FileWriter}
 import util.NameTransformer
-import scala.collection.jcl
+import scala.collection.mutable
 import scala.compat.Platform.{EOL => LINE_SEPARATOR}
 import scala.xml.{NodeSeq, Text, Unparsed, Utility}
 
@@ -228,7 +228,7 @@ trait ModelFrames extends ModelExtractor {
             {aref(navPath, contentFrame, navLabel)}
           </td></tr>
         </table>);
-      val ids = new jcl.LinkedHashSet[String]
+      val ids = new mutable.LinkedHashSet[String]
       def idFor(kind: Category, t: Entity)(seq : NodeSeq): NodeSeq = {
         val ch = t.listName.charAt(0);
         val id = kind.plural + "_" + ch;

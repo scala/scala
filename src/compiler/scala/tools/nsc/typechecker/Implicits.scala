@@ -494,7 +494,7 @@ self: Analyzer =>
      *    - the parts of its base types
      */
     private def parts(tp: Type): List[Type] = {
-      val partMap = new collection.jcl.LinkedHashMap[Symbol, List[Type]]
+      val partMap = new collection.mutable.LinkedHashMap[Symbol, List[Type]]
       /** Add a new type to partMap, unless a subtype of it with the same
        *  type symbol exists already.
        */
@@ -641,8 +641,9 @@ self: Analyzer =>
       val resultTree = implicitManifest(pt)
       if (resultTree != EmptyTree) result = new SearchResult(resultTree, EmptyTreeTypeSubstituter)
     }
-    if (result == SearchFailure && settings.verbose.value) //!!!
+    if (result == SearchFailure && settings.debug.value)
       println("no implicits found for "+pt+" "+pt.typeSymbol.info.baseClasses+" "+parts(pt)+implicitsOfExpectedType)
+
     if (util.Statistics.enabled) impltime += (currentTime - startTime)
     result
   }

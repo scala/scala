@@ -296,7 +296,6 @@ abstract class SymbolLoaders {
   }
   // IDE hook.
   protected def completeClassfile(root : Symbol, loader : ClassfileLoader)(f : => Unit) : Unit = f
-  import scala.collection.jcl
   // incremental builder hook
   protected def computeDepends(loader : PackageLoader) : PackageScopeDependMap = {
     null

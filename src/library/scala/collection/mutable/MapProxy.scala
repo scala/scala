@@ -1,3 +1,4 @@
+/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -55,3 +56,4 @@ trait MapProxy[A, B] extends Map[A, B] with collection.MapProxy[A, B] {
   @deprecated
   override def excl(keys: A*): Unit = self.excl(keys: _*)
 }
+*/

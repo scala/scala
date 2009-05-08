@@ -326,7 +326,7 @@ abstract class TailCalls extends Transform
       ctx.accessed = true
       //println("fun: " + fun + " args: " + args)
       val t = atPos(fun.pos)(Apply(Ident(ctx.label), args))
-      //println(t)
+      // println("TAIL: "+t)
       typed(t)
     }
 

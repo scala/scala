@@ -19,6 +19,7 @@ package scala.collection.mutable
  *  @version 1.0, 08/07/2003
  */
 trait SynchronizedSet[A] extends Set[A] {
+  import collection.Traversible
 
   abstract override def size: Int = synchronized {
     super.size
@@ -40,7 +41,7 @@ trait SynchronizedSet[A] extends Set[A] {
     super.+=(elem)
   }
 
-  override def ++=(that: Iterable[A]) = synchronized {
+  override def ++=(that: Traversible[A]) = synchronized {
     super.++=(that)
   }
 
@@ -48,15 +49,11 @@ trait SynchronizedSet[A] extends Set[A] {
     super.++=(it)
   }
 
-  override def incl(elems: A*): Unit = synchronized {
-    super.++=(elems)
-  }
-
   abstract override def -=(elem: A): Unit = synchronized {
     super.-=(elem)
   }
 
-  override def --=(that: Iterable[A]) = synchronized {
+  override def --=(that: Traversible[A]) = synchronized {
     super.--=(that)
   }
 
@@ -64,11 +61,7 @@ trait SynchronizedSet[A] extends Set[A] {
     super.--=(it)
   }
 
-  override def excl(elems: A*): Unit = synchronized {
-    super.--=(elems)
-  }
-
-  override def intersect(that: Set[A]) = synchronized {
+  override def intersect(that: collection.Set[A]) = synchronized[this.type] {
     super.intersect(that)
   }
 
@@ -96,10 +89,11 @@ trait SynchronizedSet[A] extends Set[A] {
     super.toString
   }
 
+/* TODO: Reintegrate
   override def <<(cmd: Message[A]): Unit = synchronized {
     super.<<(cmd)
   }
-
+*/
   override def clone(): Set[A] = synchronized {
     super.clone()
   }

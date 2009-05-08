@@ -10,38 +10,29 @@
 
 package scala.collection.immutable
 
-/** The canonical factory methods for <a href="HashSet.html">immutable HashSet's<la>.
-  *
-  *  @author  Martin Odersky
-  *  @version 2.0, 19/01/2007
-  */
-object HashSet {
+import generic._
 
-  /** The empty set of this type.
-   */
-  def empty[A] = new HashSet[A]
-
-  /** The canonical factory for this type
-   */
-  def apply[A](elems: A*) = empty[A] ++ elems
-}
-
-/** This class implements immutable maps/sets using a hash table.
-  * It is optimized for sequential accesses where the last updated table is accessed most often.
-  * It supports with reasonable efficiency accesses to previous versions of the table by keeping
-  * a change log that's regularly compacted.
-  * It needs to synchronize most methods, so it is less suitable for highly concurrent accesses.
-  *
-  *  @author  Martin Odersky
-  *  @version 2.0, 19/01/2007
-  */
+/** This class implements immutable sets using a hash table.
+ * It is optimized for sequential accesses where the last updated table is accessed most often.
+ * It supports with reasonable efficiency accesses to previous versions of the table by keeping
+ * a change log that's regularly compacted.
+ * It needs to synchronize most methods, so it is less suitable for highly concurrent accesses.
+ *
+ * @note the builder of a hash set returns specialized representations EmptySet,Set1,..., Set4
+ * for sets of size <= 4.
+ *
+ *  @author  Martin Odersky
+ *  @version 2.8
+ */
 @serializable
-class HashSet[A] extends Set[A] with mutable.FlatHashTable[A] {
+class HashSet[A] extends Set[A] with SetTemplate[A, HashSet[A]] with mutable.FlatHashTable[A] {
+
+  override def empty = HashSet.empty
+  override def traversibleBuilder[B]: Builder[B, HashSet[B], Any] = HashSet.newBuilder[B]
+
   protected var later: HashSet[A] = null
   protected var changedElem: A = _
   protected var deleted: Boolean = _
-
-  def empty[C]: Set[C] = new EmptySet[C]
 
   def contains(elem: A): Boolean = synchronized {
     var m = this
@@ -55,7 +46,7 @@ class HashSet[A] extends Set[A] with mutable.FlatHashTable[A] {
     m.containsEntry(elem)
   }
 
-  def + (elem: A): Set[A] = synchronized {
+  def + (elem: A): HashSet[A] = synchronized {
     makeCopyIfUpdated()
     if (containsEntry(elem)) this
     else {
@@ -65,7 +56,7 @@ class HashSet[A] extends Set[A] with mutable.FlatHashTable[A] {
     }
   }
 
-  def - (elem: A): Set[A] = synchronized {
+  def - (elem: A): HashSet[A] = synchronized {
     makeCopyIfUpdated()
     if (!containsEntry(elem)) this
     else {
@@ -119,8 +110,8 @@ class HashSet[A] extends Set[A] with mutable.FlatHashTable[A] {
         else removeEntry(m.changedElem)
       }
     }
-    table = new Array[AnyRef](last.table.length)
-    Array.copy(last.table, 0, table, 0, table.length)
+    table = new scala.Array[AnyRef](last.table.length)
+    scala.Array.copy(last.table, 0, table, 0, table.length)
     tableSize = last.tableSize
     threshold = last.threshold
     undo(this)
@@ -132,5 +123,16 @@ class HashSet[A] extends Set[A] with mutable.FlatHashTable[A] {
     while (m.later != null) m = m.later
     if (m ne this) makeCopy(m)
   }
+}
+
+/** A factory object for immutable HashSets
+  *
+  *  @author  Martin Odersky
+  *  @version 2.8
+  */
+object HashSet extends SetFactory[HashSet] {
+  type Coll = HashSet[_]
+  implicit def builderFactory[A]: BuilderFactory[A, HashSet[A], Coll] = new BuilderFactory[A, HashSet[A], Coll] { def apply(from: Coll) = from.traversibleBuilder[A] }
+  def empty[A]: HashSet[A] = new HashSet
 }
 

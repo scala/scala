@@ -42,7 +42,7 @@ object IntMap{
   def empty[T] : IntMap[T]  = IntMap.Nil;
   def singleton[T](key : Int, value : T) : IntMap[T] = IntMap.Tip(key, value);
   def apply[T](elems : (Int, T)*) : IntMap[T] =
-    elems.foldLeft(empty[T])((x, y) => x.update(y._1, y._2));
+    elems.foldLeft(empty[T])((x, y) => x.add(y._1, y._2));
 
 
   private[immutable] case object Nil extends IntMap[Nothing]{
@@ -133,8 +133,8 @@ import IntMap._;
  * <a href="http://citeseer.ist.psu.edu/okasaki98fast.html">Fast Mergeable Integer Maps</a>
  * by Okasaki and Gill. Essentially a trie based on binary digits of the the integers.
  */
-sealed abstract class IntMap[+T] extends scala.collection.immutable.Map[Int, T]{
-  def empty[S] : IntMap[S] = IntMap.Nil;
+sealed abstract class IntMap[+T] extends scala.collection.immutable.Map[Int, T] with scala.collection.generic.ImmutableMapTemplate[Int, T, IntMap[T]] {
+  override def empty: IntMap[T] = IntMap.Nil;
 
   override def toList = {
     val buffer = new scala.collection.mutable.ListBuffer[(Int, T)];
@@ -209,13 +209,13 @@ sealed abstract class IntMap[+T] extends scala.collection.immutable.Map[Int, T]{
     case IntMap.Nil => IntMap.Nil;
   }
 
-  override def transform[S](f : (Int, T) => S) : IntMap[S] = this match {
+  def transform[S](f : (Int, T) => S) : IntMap[S] = this match {
     case b@IntMap.Bin(prefix, mask, left, right) => b.bin(left.transform(f), right.transform(f));
     case t@IntMap.Tip(key, value) => t.withValue(f(key, value));
     case IntMap.Nil => IntMap.Nil;
   }
 
-  final def size : Int = this match {
+  final override def size : Int = this match {
     case IntMap.Nil => 0;
     case IntMap.Tip(_, _) => 1;
     case IntMap.Bin(_, _, left, right) => left.size + right.size;
@@ -239,14 +239,17 @@ sealed abstract class IntMap[+T] extends scala.collection.immutable.Map[Int, T]{
     case IntMap.Nil => error("key not found");
   }
 
-  def update[S >: T](key : Int, value : S) : IntMap[S] = this match {
+  def add[S >: T](key : Int, value : S) : IntMap[S] = this match {
     case IntMap.Bin(prefix, mask, left, right) => if (!hasMatch(key, prefix, mask)) join(key, IntMap.Tip(key, value), prefix, this);
-                                          else if (zero(key, mask)) IntMap.Bin(prefix, mask, left.update(key, value), right)
-                                          else IntMap.Bin(prefix, mask, left, right.update(key, value));
+                                          else if (zero(key, mask)) IntMap.Bin(prefix, mask, left.add(key, value), right)
+                                          else IntMap.Bin(prefix, mask, left, right.add(key, value));
     case IntMap.Tip(key2, value2) => if (key == key2) IntMap.Tip(key, value);
                              else join(key, IntMap.Tip(key, value), key2, this);
     case IntMap.Nil => IntMap.Tip(key, value);
   }
+
+  /** @deprecated use add instead */
+  @deprecated override def update[S >: T](key: Int, value: S): IntMap[S] = add(key, value)
 
   /**
    * Updates the map, using the provided function to resolve conflicts if the key is already present.
@@ -370,11 +373,8 @@ sealed abstract class IntMap[+T] extends scala.collection.immutable.Map[Int, T]{
    */
   def intersection[R](that : IntMap[R]) : IntMap[T] = this.intersectionWith(that, (key : Int, value : T, value2 : R) => value);
 
-  override def ++[S >: T](that : Iterable[(Int, S)]) = that match {
-    case (that : IntMap[_]) => this.unionWith[S](that.asInstanceOf[IntMap[S]], (key, x, y) => y);
-    case that => that.foldLeft(this : IntMap[S])({case (m, (x, y)) => m.update(x, y)});
-  }
-
+  def ++[S >: T](that : IntMap[S]) =
+    this.unionWith[S](that, (key, x, y) => y)
 
   /**
    * The entry with the lowest key value considered in unsigned order.
@@ -382,7 +382,7 @@ sealed abstract class IntMap[+T] extends scala.collection.immutable.Map[Int, T]{
   final def firstKey : Int = this match {
     case Bin(_, _, l, r) => l.firstKey;
     case Tip(k, v) => k;
-    case Nil => error("Empty set")
+    case IntMap.Nil => error("Empty set")
   }
 
   /**
@@ -391,7 +391,6 @@ sealed abstract class IntMap[+T] extends scala.collection.immutable.Map[Int, T]{
   final def lastKey : Int = this match {
     case Bin(_, _, l, r) => r.lastKey;
     case Tip(k, v) => k;
-    case Nil => error("Empty set")
+    case IntMap.Nil => error("Empty set")
   }
 }
-

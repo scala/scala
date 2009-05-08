@@ -3,7 +3,7 @@ import testing.SUnit._
 object Test extends TestConsoleMain {
 
   import scala.xml.{NodeSeq, Utility}
-  import NodeSeq.view
+  import NodeSeq.seqToNodeSeq
 
   val ax = <hello foo="bar" x:foo="baz" xmlns:x="the namespace from outer space">
              <world/>

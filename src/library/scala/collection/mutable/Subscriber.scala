@@ -1,3 +1,4 @@
+/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -23,3 +24,4 @@ package scala.collection.mutable
 trait Subscriber[-A, -B] {
   def notify(pub: B, event: A): Unit
 }
+*/

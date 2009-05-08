@@ -660,7 +660,7 @@ trait ParallelMatching {
       }
 
       val indexOfAlternative            = pat findIndexOf isAlternative
-      val pats: List[Tree]              = List.map2(pat, pat.indices)(classifyPat)
+      val pats: List[Tree]              = List.map2(pat, pat.indices.toList)(classifyPat)
       lazy val (prefix, alts :: suffix) = pats.splitAt(indexOfAlternative)
       lazy val alternativeBranches      = getAlternativeBranches(alts) map { p => replace(prefix ::: p :: suffix) }
 

@@ -33,7 +33,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
 
   protected var labels:mutable.HashSet[_labelT] = _
   // don't let this fool you, only labelAt is a real, surjective mapping
-  protected var labelAt: immutable.TreeMap[Int, _labelT] = _ // new alphabet "gamma"
+  protected var labelAt: immutable.Map[Int, _labelT] = _ // new alphabet "gamma"
 
   protected var deltaq: Array[mutable.HashMap[_labelT,List[Int]]] = _ // delta
 
@@ -80,7 +80,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
       case x:Letter =>
         //val i = posMap(x)
         val i = x.pos
-        this.follow.update(i, fol1)
+        this.follow.add(i, fol1)
         emptySet + i
       case Eps =>
         emptySet /*ignore*/
@@ -96,8 +96,8 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   /** called at the leaves of the regexp */
   protected def seenLabel(r: RegExp, i: Int, label: _labelT) {
     //Console.println("seenLabel (1)");
-    //this.posMap.update(r, i)
-    this.labelAt = this.labelAt.update(i, label)
+    //this.posMap.add(r, i)
+    this.labelAt = this.labelAt.add(i, label)
     //@ifdef if( label != Wildcard ) {
       this.labels += label
     //@ifdef }
@@ -121,10 +121,10 @@ abstract class WordBerrySethi extends BaseBerrySethi {
 
   protected def makeTransition(src: Int, dest: Int, label: _labelT ) {
     //@ifdef compiler if( label == Wildcard )
-    //@ifdef compiler   defaultq.update(src, dest::defaultq( src ))
+    //@ifdef compiler   defaultq.add(src, dest::defaultq( src ))
     //@ifdef compiler else
     val q = deltaq(src)
-    q.update(label, dest::(q.get(label) match {
+    q.add(label, dest::(q.get(label) match {
       case Some(x) => x
       case _       => Nil
     }))
@@ -132,7 +132,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
 
   protected def initialize(subexpr: Seq[RegExp]): Unit = {
     //this.posMap = new mutable.HashMap[RegExp,Int]()
-    this.labelAt = new immutable.TreeMap[Int, _labelT]()
+    this.labelAt = immutable.Map[Int, _labelT]()
     this.follow = new mutable.HashMap[Int, immutable.Set[Int]]()
     this.labels = new mutable.HashSet[_labelT]()
 
@@ -149,7 +149,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   }
 
   protected def initializeAutom() {
-    finals   = immutable.TreeMap.empty[Int, Int] // final states
+    finals   = immutable.Map.empty[Int, Int] // final states
     deltaq   = new Array[mutable.HashMap[_labelT, List[Int]]](pos) // delta
     defaultq = new Array[List[Int]](pos) // default transitions
 
@@ -171,7 +171,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
       while (it.hasNext) {
         val k = it.next
         if (pos == k)
-          finals = finals.update(j, finalTag)
+          finals = finals.add(j, finalTag)
         else
           makeTransition( j, k, labelAt(k))
       }
@@ -195,14 +195,14 @@ abstract class WordBerrySethi extends BaseBerrySethi {
         collectTransitions()
 
         if (x.isNullable) // initial state is final
-          finals = finals.update(0, finalTag)
+          finals = finals.add(0, finalTag)
 
-        var delta1: immutable.TreeMap[Int, Map[_labelT, List[Int]]] =
-          new immutable.TreeMap[Int, Map[_labelT, List[Int]]]
+        var delta1: immutable.Map[Int, Map[_labelT, List[Int]]] =
+          immutable.Map[Int, Map[_labelT, List[Int]]]()
 
         var i = 0
         while (i < deltaq.length) {
-          delta1 = delta1.update(i, deltaq(i))
+          delta1 = delta1.add(i, deltaq(i))
           i += 1
         }
         val finalsArr = new Array[Int](pos)
@@ -239,7 +239,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
               val x = new mutable.BitSet(pos)
               for (q <- trans(lab))
                 x += q
-              hmap.update(lab, x.toImmutable)
+              hmap.add(lab, x.toImmutable)
             }
             deltaArr(k) = hmap
             k += 1

@@ -11,36 +11,27 @@
 
 package scala.collection.mutable
 
+import generic._
+
 /** This class implements single linked lists where both the head (<code>elem</code>)
  *  and the tail (<code>next</code>) are mutable.
  *
- *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
+ *  @author Matthias Zenger
+ *  @author Martin Odersky
+ *  @version 2.8
  */
 @serializable
-class LinkedList[A](var elem: A, var next: LinkedList[A])
-  extends SingleLinkedList[A, LinkedList[A]]
-{
+class LinkedList[A](_elem: A, _next: LinkedList[A]) extends LinearSequence[A] with LinkedListTemplate[A, LinkedList[A]] {
+  elem = _elem
+  next = _next
+  override protected[this] def newBuilder = LinkedList.newBuilder
+  override def traversibleBuilder[B]: Builder[B, LinkedList[B], Any] = LinkedList.newBuilder[B]
+}
 
-  /** Compares two lists structurally; i.e. checks if all elements
-   *  contained in this list are also contained in the other list,
-   *  and vice versa.
-   *
-   *  @param that the other list
-   *  @return     <code>true</code> iff both lists contain exactly the
-   *              same mappings.
-   */
-  override def equals(obj: Any): Boolean = obj match {
-    case that: LinkedList[_] => this.toList equals that.toList
-    case _ => false
-  }
-
-  /** A hash method compatible with <code>equals</code>
-   */
-  override def hashCode(): Int =
-    (0 /: elements) ((hash, kv) => hash + kv.hashCode)
-
-  override protected def stringPrefix: String = "LinkedList"
+object LinkedList extends SequenceFactory[LinkedList] {
+  type Coll = LinkedList[_]
+  implicit def builderFactory[A]: BuilderFactory[A, LinkedList[A], Coll] = new BuilderFactory[A, LinkedList[A], Coll] { def apply(from: Coll) = from.traversibleBuilder[A] }
+  def newBuilder[A]: Builder[A, LinkedList[A], Any] = (new MutableList) mapResult ((l: MutableList[A]) => l.toLinkedList)
 }
 
 

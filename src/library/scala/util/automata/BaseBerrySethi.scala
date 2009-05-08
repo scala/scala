@@ -35,11 +35,11 @@ abstract class BaseBerrySethi {
 
   protected var finalTag: Int = _
 
-  protected var finals: immutable.TreeMap[Int, Int] = _     // final states
+  protected var finals: immutable.Map[Int, Int] = _     // final states
 
   // constants --------------------------
 
-  final val emptySet:immutable.Set[Int] = new immutable.TreeSet[Int]()
+  final val emptySet:immutable.Set[Int] = immutable.Set[Int]()
 
   /** computes first( r ) for the word regexp r */
   protected def compFirst(r: RegExp): immutable.Set[Int] = r match {

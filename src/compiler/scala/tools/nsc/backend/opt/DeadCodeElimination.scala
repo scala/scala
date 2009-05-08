@@ -57,7 +57,7 @@ abstract class DeadCodeElimination extends SubComponent {
     var defs: Map[(BasicBlock, Int), Set[rdef.lattice.Definition]] = HashMap.empty
 
     /** Useful instructions which have not been scanned yet. */
-    val worklist: mutable.Set[(BasicBlock, Int)] = new jcl.LinkedHashSet
+    val worklist: mutable.Set[(BasicBlock, Int)] = new mutable.LinkedHashSet
 
     /** what instructions have been marked as useful? */
     val useful: mutable.Map[BasicBlock, mutable.BitSet] = new mutable.HashMap

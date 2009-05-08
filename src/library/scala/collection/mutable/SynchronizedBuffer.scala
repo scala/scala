@@ -20,6 +20,8 @@ package scala.collection.mutable
  */
 trait SynchronizedBuffer[A] extends Buffer[A] {
 
+  import collection.Traversible
+
   abstract override def length: Int = synchronized {
     super.length
   }
@@ -55,7 +57,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param iter  the iterable object.
    */
-  override def ++(iter: Iterable[A]): Buffer[A] = synchronized {
+  override def ++(iter: Traversible[A]): Buffer[A] = synchronized {
     super.++(iter)
   }
 
@@ -64,7 +66,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param iter  the iterable object.
    */
-  override def ++=(iter: Iterable[A]): Unit = synchronized {
+  override def ++=(iter: Traversible[A]): Unit = synchronized {
     super.++=(iter)
   }
 
@@ -81,7 +83,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param iter  the iterable object.
    */
-  override def appendAll(iter: Iterable[A]): Unit = synchronized {
+  override def appendAll(iter: Traversible[A]): Unit = synchronized {
     super.appendAll(iter)
   }
 
@@ -100,7 +102,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param iter  the iterable object.
    */
-  override def ++:(iter: Iterable[A]): Buffer[A] = synchronized {
+  override def ++:(iter: Traversible[A]): Buffer[A] = synchronized {
     super.++:(iter)
   }
 
@@ -118,7 +120,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param iter  the iterable object.
    */
-  override def prependAll(elems: Iterable[A]): Unit = synchronized {
+  override def prependAll(elems: Traversible[A]): Unit = synchronized {
     super.prependAll(elems)
   }
 
@@ -140,7 +142,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *  @param n     the index where a new element will be inserted.
    *  @param iter  the iterable object providing all elements to insert.
    */
-  abstract override def insertAll(n: Int, iter: Iterable[A]): Unit = synchronized {
+  abstract override def insertAll(n: Int, iter: Traversible[A]): Unit = synchronized {
      super.insertAll(n, iter)
   }
 
@@ -167,11 +169,11 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
   abstract override def clear(): Unit = synchronized {
     super.clear
   }
-
+/* TODO: Reintegrate
   override def <<(cmd: Message[(Location, A)]): Unit = synchronized {
     super.<<(cmd)
   }
-
+*/
   /** Return a clone of this buffer.
    *
    *  @return an <code>ArrayBuffer</code> with the same elements.

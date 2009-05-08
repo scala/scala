@@ -9,7 +9,7 @@ class Test {
 
   println(((x: Int) => x + 1) == null)
   println(new Object == new Object)
-  println(new Array(1) != new Array(1))
+  println(new Exception() != new Exception())
 
   val foo: Array[String] = Array("1","2","3")
   if (foo.length == null) //  == 0 makes more sense, but still

@@ -1,5 +1,5 @@
 package test3
-import scala.collection.jcl.LinkedHashMap
+import scala.collection.mutable.LinkedHashMap
 
 trait Main {
   def asMany : ArrayResult = {

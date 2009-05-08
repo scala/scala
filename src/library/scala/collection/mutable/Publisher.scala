@@ -1,3 +1,4 @@
+/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -46,3 +47,4 @@ trait Publisher[A, This <: Publisher[A, This]] { self: This =>
     filters.keys.foreach(sub =>
       if (filters.entryExists(sub, p => p(event))) sub.notify(this, event))
 }
+*/

@@ -11,6 +11,9 @@
 
 package scala.xml
 
+import collection.immutable
+import collection.generic._
+import collection.mutable.ListBuffer
 
 /** This object ...
  *
@@ -22,7 +25,10 @@ object NodeSeq {
   def fromSeq(s: Seq[Node]): NodeSeq = new NodeSeq {
     def theSeq = s
   }
-  implicit def view(s: Seq[Node]): NodeSeq = fromSeq(s)
+  type Coll = NodeSeq
+  implicit def builderFactory: BuilderFactory[Node, NodeSeq, Coll] = new BuilderFactory[Node, NodeSeq, Coll] { def apply(from: Coll) = newBuilder }
+  def newBuilder: Builder[Node, NodeSeq, Any] = new ListBuffer[Node] mapResult fromSeq
+  implicit def seqToNodeSeq(s: Seq[Node]): NodeSeq = fromSeq(s)
 }
 
 /** This class implements a wrapper around <code>Seq[Node]</code> that
@@ -31,8 +37,12 @@ object NodeSeq {
  *  @author  Burak Emir
  *  @version 1.0
  */
-abstract class NodeSeq extends Seq[Node] {
-  import NodeSeq.view // import view magic for NodeSeq wrappers
+abstract class NodeSeq extends immutable.Sequence[Node] with SequenceTemplate[Node, NodeSeq] {
+  import NodeSeq.seqToNodeSeq // import view magic for NodeSeq wrappers
+
+  /** Creates a list buffer as builder for this class */
+  override protected[this] def newBuilder = NodeSeq.newBuilder
+
   def theSeq: Seq[Node]
   def length = theSeq.length
   override def elements = theSeq.elements

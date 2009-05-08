@@ -11,43 +11,70 @@
 
 package scala.collection.immutable
 
+import BitSet._
+import generic._
 
-/** The class <code>BitSet</code> provides an immutable bitset view on an
- *  int array. Instances can conveniently be created from instances of
- *  Bit indices are between <code>0..(capacity-1)</code> inclusive.
- *
- *  @param size     <code>size</code> represents the number of relevant bits
- *  @param capacity ...
- *  @param ba       <code>ba</code> array of ints of length
- *                  <code>n&gt;&gt;&gt;5</code>
- *  @param copy     <code>copy</code> if yes, then <code>ba</code> is copied
- *                  and updates will not affect this bitset
- *
- *  @author  Burak Emir, Nikolay Mihaylov
- *  @version 1.0
+/** a base class for immutable bit sets
  */
+abstract class BitSet extends Set[Int] with collection.BitSet with BitSetTemplate[BitSet] {
+  override def empty = BitSet.empty
+  def fromArray(elems: Array[Long]): BitSet = BitSet.fromArray(elems)
+}
 
-@serializable
-/*
- *                This is a strange class! It claims to be immutable but is not.
- *                It claims to be a BitSet but it is not a Set.
- *                Remove it or integrate it into the Set hierarchy.
- *                [Comments by Martin]
- */
-class BitSet(val size: Int, val capacity: Int, ba: Array[Int], copy: Boolean)
-  extends collection.BitSet
-{
-  import compat.Platform.arraycopy
+/** A factory object for bitsets */
+object BitSet {
 
-  protected val arr: Array[Int] = {
-    val ba1 = if (ba != null) ba else new Array[Int](0)
-    if (copy) {
-      val arr = new Array[Int](ba1.length)
-      arraycopy(ba1, 0, arr, 0, ba1.length)
-      arr
-    }
-    else
-      ba1
+  /** The empty bitset */
+  val empty: BitSet = new BitSet1(0L)
+
+  /** A bitset containing given elements */
+  def apply(elems: Int*) = (empty /: elems) (_ + _)
+
+  /** A bitset containing all the bits in an array */
+  def fromArray(elems: Array[Long]): BitSet = {
+    val len = elems.length
+    if (len == 0) empty
+    else if (len == 1) new BitSet1(elems(0))
+    else if (len == 2) new BitSet2(elems(0), elems(1))
+    else new BitSetN(elems)
   }
 
+  private val hashSeed = "BitSet".hashCode
+
+  private def updateArray(elems: Array[Long], idx: Int, w: Long): BitSet = {
+    var len = elems.length
+    while (len > 0 && (elems(len - 1) == 0L || w == 0L && idx == len - 1)) len -= 1
+    var newlen = len
+    if (idx >= newlen && w != 0L) newlen = idx + 1
+    val newelems = new Array[Long](newlen)
+    Array.copy(elems, 0, newelems, 0, len)
+    if (idx < newlen) newelems(idx) = w
+    else assert(w == 0L)
+    fromArray(newelems)
+  }
+
+  class BitSet1(val elems: Long) extends BitSet {
+    protected def nwords = 1
+    protected def word(idx: Int) = if (idx == 0) elems else 0L
+    protected def updateWord(idx: Int, w: Long): BitSet =
+      if (idx == 0) new BitSet1(w)
+      else if (idx == 1) new BitSet2(elems, w)
+      else updateArray(Array(elems), idx, w)
+  }
+
+  class BitSet2(val elems0: Long, elems1: Long) extends BitSet {
+    protected def nwords = 2
+    protected def word(idx: Int) = if (idx == 0) elems0 else if (idx == 1) elems1 else 0L
+    protected def updateWord(idx: Int, w: Long): BitSet =
+      if (idx == 0) new BitSet2(w, elems1)
+      else if (idx == 1) new BitSet2(elems0, w)
+      else updateArray(Array(elems0, elems1), idx, w)
+  }
+
+  class BitSetN(val elems: Array[Long]) extends BitSet {
+    protected def nwords = elems.length
+    protected def word(idx: Int) = if (idx < nwords) elems(idx) else 0L
+    protected def updateWord(idx: Int, w: Long): BitSet = updateArray(elems, idx, w)
+  }
 }
+

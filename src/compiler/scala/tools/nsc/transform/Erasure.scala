@@ -640,7 +640,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               qual1 = box(qual1);
             else if (!isValueType(qual1.tpe.typeSymbol) && isUnboxedValueMember(tree.symbol))
               qual1 = unbox(qual1, tree.symbol.owner.tpe)
-            else if (tree.symbol.owner == ArrayClass && qual1.tpe.typeSymbol == ObjectClass)
+            else if (tree.symbol.owner == ArrayClass && (BoxedArrayClass isSubClass qual1.tpe.typeSymbol))
               qual1 = cast(qual1, BoxedArrayClass.tpe)
 
             if (isUnboxedClass(tree.symbol.owner) && !isUnboxedClass(qual1.tpe.typeSymbol))

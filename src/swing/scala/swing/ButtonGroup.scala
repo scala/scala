@@ -18,7 +18,7 @@ class ButtonGroup(initialButtons: AbstractButton*) {
     def -=(b: AbstractButton) { peer.remove(b.peer) }
     def +=(b: AbstractButton) { peer.add(b.peer) }
     def contains(b: AbstractButton) = elements.contains(b)
-    def size = peer.getButtonCount
+    override def size = peer.getButtonCount
     def elements: Iterator[AbstractButton] = new Iterator[AbstractButton] {
       val enum = peer.getElements
       def next = Component.wrapperFor[AbstractButton](enum.nextElement)

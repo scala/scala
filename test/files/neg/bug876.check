@@ -1,4 +1,4 @@
-bug876.scala:25: error: wrong number of arguments for method apply: (AssertionError.A)manager.B in trait Map
+bug876.scala:25: error: wrong number of arguments for method apply: (AssertionError.A)manager.B in trait MapTemplate
         assert(manager.map(A2) == List(manager.map(A2, A1)))
                                                ^
 one error found

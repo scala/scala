@@ -6,7 +6,7 @@
 
 package scala.tools.nsc.doc
 
-import scala.collection.jcl
+import scala.collection.mutable
 import compat.Platform.{EOL => LINE_SEPARATOR}
 
 
@@ -32,7 +32,7 @@ trait ModelExtractor {
 
   case class Comment(body: String, attributes: List[Tag]) {
     def decodeAttributes = {
-      val map = new jcl.LinkedHashMap[String, List[(String, String)]] {
+      val map = new mutable.LinkedHashMap[String, List[(String, String)]] {
         override def default(key: String) = Nil
       }
       attributes.foreach(a => {
@@ -221,11 +221,11 @@ trait ModelExtractor {
     def path: List[ClassOrObject] = this :: Nil
     override def listName = path map (_.name) mkString "."
 
-    object freshParents extends jcl.LinkedHashSet[Type] {
-      this addAll sym.tpe.parents
-      this.toList foreach (this removeAll _.parents)
+    object freshParents extends mutable.LinkedHashSet[Type] {
+      this ++= sym.tpe.parents
+      this.toList foreach (this --= _.parents)
     }
-    object constructorArgs extends jcl.LinkedHashMap[Symbol, ValueParam] {
+    object constructorArgs extends mutable.LinkedHashMap[Symbol, ValueParam] {
       import symtab.Flags._
       sym.constrParamAccessors.filter(arg => ! (arg hasFlag SYNTHETIC)).foreach(arg => {
         val str = flagsToString(arg.flags)
@@ -242,7 +242,7 @@ trait ModelExtractor {
         this(param) = new ConstructorParam(param)
       });
     }
-    object decls extends jcl.LinkedHashMap[Symbol, Member] {
+    object decls extends mutable.LinkedHashMap[Symbol, Member] {
       sym.tpe.decls.elements.foreach(e => {
         if (!constructorArgs.contains(e)) {
           val m = Member(e)
@@ -250,9 +250,9 @@ trait ModelExtractor {
         }
       });
     }
-    def members0(f: Symbol => Boolean) = decls.projection.filterKeys(f).valueSet
+    def members0(f: Symbol => Boolean) = decls.filterKeys(f).values.toList
     def members(c: Category): Iterable[Member] = members0(c.f)
-    object inherited extends jcl.LinkedHashMap[Symbol, List[Member]]() {
+    object inherited extends mutable.LinkedHashMap[Symbol, List[Member]]() {
       override def default(tpe: Symbol) = Nil
       for (m <- sym.tpe.members if !sym.tpe.decls.elements.contains(m) &&
           (Values.f(m) || Methods.f(m))) {
@@ -281,15 +281,15 @@ trait ModelExtractor {
       override def resultType = Some(resultType0)
       protected def resultType0: Type
       override def overridden: Iterable[Symbol] = {
-        var ret: jcl.LinkedHashSet[Symbol] = null
+        var ret: mutable.LinkedHashSet[Symbol] = null
         for (parent <- ClassOrObject.this.parents) {
           val sym0 = sym.overriddenSymbol(parent.typeSymbol)
           if (sym0 != NoSymbol) {
-            if (ret == null) ret = new jcl.LinkedHashSet[Symbol];
+            if (ret == null) ret = new mutable.LinkedHashSet[Symbol];
             ret += sym0
           }
         }
-        if (ret == null) Nil else ret.readOnly
+        if (ret == null) Nil else ret
       }
     }
     case class Def(override val sym : TermSymbol) extends ValDef(sym) {
@@ -417,7 +417,7 @@ trait ModelExtractor {
     "[ \t]*@(exception|param|throws)[ \t]+(\\p{Graph}*)[ \t]*(.*)")
 
   def sort[E <: Entity](entities: Iterable[E]): Iterable[E] = {
-    val set = new jcl.TreeSet[E]()({eA: E => new Ordered[E] {
+    val set = new collection.immutable.TreeSet[E]()({eA: E => new Ordered[E] {
       def compare(eB: E): Int = {
         if (eA eq eB) return 0;
         (eA, eB) match {
@@ -443,7 +443,6 @@ trait ModelExtractor {
         eA.equals(other) || (other match { case that: AnyRef => this.eq(that)
                                            case _ => false })
     }})
-    set addAll entities;
-    set
+    set ++ entities
   }
 }

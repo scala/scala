@@ -1,8 +1,0 @@
-equality
-xpath \
-xpath \\ DESCENDANTS
-<book><author>Peter Buneman</author><author>Dan Suciu</author><title>Data on ze web</title></book>
--- group nodes
-<f><a/><b/><c/></f>
-<a/><f><a/><b/><c/></f><a/><b/><c/>
-attribute value normalization

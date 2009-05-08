@@ -113,7 +113,7 @@ trait FlatHashTable[A] {
   def elements = new Iterator[A] {
     private var i = 0
     def hasNext: Boolean = {
-      while (i < table.length && (null == table(i))) i += 1;
+      while (i < table.length && (null == table(i))) i += 1
       i < table.length
     }
     def next(): A =

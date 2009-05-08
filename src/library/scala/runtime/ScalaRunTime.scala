@@ -11,25 +11,11 @@
 
 package scala.runtime
 
-
-import Predef._
-
 /* The object <code>ScalaRunTime</code> provides ...
  */
 object ScalaRunTime {
 
-  /** Names for primitive types, used by array unboxing */
-  val ByteTag = ".Byte"
-  val ShortTag = ".Short"
-  val CharTag = ".Char"
-  val IntTag = ".Int"
-  val LongTag = ".Long"
-  val FloatTag = ".Float"
-  val DoubleTag = ".Double"
-  val BooleanTag = ".Boolean"
-
   def isArray(x: AnyRef): Boolean = (x != null && x.getClass.isArray) || (x != null && x.isInstanceOf[BoxedArray[_]])
-  def isValueTag(tag: String) = tag.charAt(0) == '.'
   def isValueClass(clazz: Class[_]) = clazz.isPrimitive()
 
   def forceBoxedArray[A <: Any](xs: Seq[A]): Array[A] = {
@@ -126,9 +112,6 @@ object ScalaRunTime {
   //  if (x == null) throw new UndefinedException else x
 
   def Seq[a](xs: a*): Seq[a] = null // interpreted specially by new backend.
-
-  def arrayValue[A](x: BoxedArray[A], elemTag: String): AnyRef =
-    if (x eq null) null else x.unbox(elemTag)
 
   def arrayValue[A](x: BoxedArray[A], elemClass: Class[_]): AnyRef =
     if (x eq null) null else x.unbox(elemClass)

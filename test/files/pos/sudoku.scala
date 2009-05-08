@@ -2,7 +2,7 @@ object SudokuSolver extends Application {
   // The board is represented by an array of strings (arrays of chars),
   // held in a global variable m. The program begins by reading 9 lines
   // of input to fill the board
-  var m: Array[Array[Char]] = List.tabulate(9, (x: Int) => readLine.toArray).toArray
+  var m: Array[Array[Char]] = Array.tabulate(9)((x: Int) => readLine.toArray)
 
   // For printing m, a method print is defined
   def print = { println(""); m map (carr => println(new String(carr))) }

@@ -7,8 +7,7 @@
 
 package scala.tools.nsc.backend.icode.analysis
 
-import scala.collection.jcl.{HashMap, Set, HashSet, LinkedHashSet}
-import scala.collection.mutable.Map
+import scala.collection.mutable.{Map, HashMap, Set, HashSet, LinkedHashSet}
 
 /** A generic framework for data flow analysis.
  */

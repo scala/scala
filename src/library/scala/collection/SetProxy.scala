@@ -1,3 +1,4 @@
+/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -28,3 +29,4 @@ trait SetProxy[A] extends Set[A] with IterableProxy[A] {
   def contains(elem: A): Boolean = self.contains(elem)
   override def subsetOf(that: Set[A]): Boolean = self.subsetOf(that)
 }
+*/

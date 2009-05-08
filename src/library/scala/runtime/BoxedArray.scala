@@ -11,9 +11,9 @@
 
 package scala.runtime
 
-
 import Predef._
-import collection.mutable.ArrayBuffer
+import collection.mutable.{Vector, ArrayBuffer}
+import collection.generic._
 
 /**
  *  <p>A class representing <code>Array[T]</code></p>
@@ -21,7 +21,8 @@ import collection.mutable.ArrayBuffer
  *  @author  Martin Odersky, Stephane Micheloud
  *  @version 1.0
  */
-abstract class BoxedArray[A] extends Array.Array0[A] {
+abstract class BoxedArray[A] extends Vector[A] with VectorTemplate[A, BoxedArray[A]] with Boxed {
+
   /** The length of the array */
   def length: Int
 
@@ -31,23 +32,20 @@ abstract class BoxedArray[A] extends Array.Array0[A] {
   /** Update element at given index */
   def update(index: Int, elem: A): Unit
 
+  /** Creates new builder for this collection ==> move to subclasses
+   *
+   * */
+  override protected[this] def newBuilder = traversibleBuilder[A]
+
+  override def traversibleBuilder[B]: Builder[B, BoxedArray[B], Any] = new ArrayBuffer[B].mapResult {
+    _.toArray.asInstanceOf[BoxedArray[B]]
+  }
+
   /** Convert to Java array.
    *  @param elemTag    Either one of the tags ".N" where N is the name of a primitive type
    *                    (@see ScalaRunTime), or a full class name.
    */
-  //todo: remove
-  def unbox(elemTag: String): AnyRef
-
   def unbox(elemClass: Class[_]): AnyRef
-
-  override def isDefinedAt(x: Int): Boolean = 0 <= x && x < length
-
-  @serializable protected class AnyIterator extends Iterator[A] {
-    var index = 0
-    def hasNext: Boolean = index < length
-    def next(): A = { val i = index; index = i + 1; apply(i) }
-  }
-  override def elements = new AnyIterator
 
   /** The underlying array value
    */
@@ -59,7 +57,14 @@ abstract class BoxedArray[A] extends Array.Array0[A] {
   def copyTo(from: Int, dest: AnyRef, to: Int, len: Int): Unit = {
     Array.copy(value, from, dest, to, len)
   }
+/*
+  override def equals(other: Any) =
+    (value eq other) ||
 
+    other.isInstanceOf[BoxedArray[_]] && (value == other.asInstanceOf[BoxedArray[_]].value)
+
+  override def hashCode(): Int = value.hashCode()
+*/
   /** Fills the given array <code>xs</code> with the elements of
    *  this sequence starting at position <code>start</code>.
    *
@@ -67,62 +72,8 @@ abstract class BoxedArray[A] extends Array.Array0[A] {
    *  @param  start starting index.
    *  @pre    the array must be large enough to hold all elements.
    */
-  override def copyToArray[B](xs: Array[B], start: Int): Unit =
-    copyTo(0, xs, start, length)
-
-  // todo: add a copyToBuffer
-
-  // todo: eliminate
-  def subArray(from: Int, end: Int): AnyRef
-
-  final override def map[b](f: A => b): Array[b] = {
-    val len = length
-    val result = new Array[b](len)
-    var i = 0
-    while (i < len) {
-      result(i) = f(apply(i))
-      i += 1
-    }
-    result
-  }
-
-  final override def flatMap[b](f: A => Iterable[b]): Array[b] = {
-    val buf = new ArrayBuffer[b]
-    val len = length
-    var i = 0
-    while (i < len) {
-      buf ++= f(apply(i))
-      i += 1
-    }
-    buf.toArray
-  }
-
-  final override def ++[b >: A](that: Iterable[b]): Array[b] = super.++(that).toArray
-
-  final def zip[b](that: Array[b]): Array[(A,b)] = {
-    val len = this.length min that.length
-    val result = new Array[(A,b)](len)
-    var i = 0
-    while (i < len) {
-      result(i) = (this(i), that(i))
-      i += 1
-    }
-    result
-  }
-
-  final def zipWithIndex: Array[(A,Int)] = {
-    val len = length
-    val result = new Array[(A,Int)](len)
-    var i = 0
-    while (i < len) {
-      result(i) = (this(i), i)
-      i += 1
-    }
-    result
-  }
-
-  /** Returns an array that contains all indices of this array */
-  def indices: Array[Int] = Array.range(0, length)
+  override def copyToArray[B](xs: Array[B], start: Int, len: Int): Unit =
+    copyTo(0, xs, start, len)
 
   final def deepToString() = deepMkString(stringPrefix + "(", ", ", ")")
 
@@ -173,15 +124,21 @@ abstract class BoxedArray[A] extends Array.Array0[A] {
         false
     }
   }
+
   override final def stringPrefix: String = "Array"
 
-  protected def newArray(length : Int, elements : Iterator[A]) : BoxedArray[A]
-  override def projection : scala.Array.Projection[A] = new scala.Array.Projection[A] {
-    def update(idx : Int, what : A) : Unit = BoxedArray.this.update(idx, what)
-    def length = BoxedArray.this.length
-    def apply(idx : Int) = BoxedArray.this.apply(idx)
-    override def stringPrefix = "ArrayP"
-    protected def newArray[B >: A](length : Int, elements : Iterator[A]) =
-      BoxedArray.this.newArray(length, elements).asInstanceOf[Array[B]]
+  protected def countAndMemo(p: A => Boolean): (Int, Array[Boolean]) = {
+    val len = length
+    val memo = new Array[Boolean](len)
+    var count = 0
+    var i = 0
+    while (i < len) {
+      if (p(this(i))) { memo(i) = true; count += 1 }
+      i += 1
+    }
+    (count, memo)
   }
+
+  /** @deprecated use slice instead */
+  @deprecated def subArray(from: Int, end: Int): BoxedArray[A] = slice(from, end)
 }

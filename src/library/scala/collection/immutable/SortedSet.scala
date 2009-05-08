@@ -8,10 +8,17 @@
 
 // $Id$
 
+/** A sorted set.
+ *
+ *  @author Sean McDirmid
+ *  @author Martin Odersky
+ *  @version 2.8
+ */
 package scala.collection.immutable
 
-trait SortedSet[A] extends scala.collection.SortedSet[A] with Set[A] {
-  override def ++ (elems: Iterable[A]): SortedSet[A] =
-    (this /: elems) ((s, elem) => s + elem)
-  override def +(elem: A): SortedSet[A]
+import generic._
+
+trait SortedSet[A] extends Set[A] with collection.SortedSet[A] with SortedSetTemplate[A, SortedSet[A]] {
+  /** Needs to be overridden in subclasses. */
+  override def empty: SortedSet[A] = throw new UnsupportedOperationException("SortedMap.empty")
 }

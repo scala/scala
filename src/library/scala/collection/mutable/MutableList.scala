@@ -11,36 +11,63 @@
 
 package scala.collection.mutable
 
+import generic._
+// import immutable.{List, Nil, ::}
 
 //import Predef.NoSuchElementException
 
 /** This class is used internally to represent mutable lists. It is the
- *  basis for the implementation of the classes <code>Buffer</code>,
+ *  basis for the implementation of the classes
  *  <code>Stack</code>, and <code>Queue</code>.
- *
+ *  !!! todo: convert to LinkedListBuffer?
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
+ *  @author  Martin Odersky
+ *  @version 2.8
  */
-trait MutableList[A] extends Seq[A] with PartialFunction[Int, A] {
+class MutableList[A] extends LinearSequence[A] with LinearSequenceTemplate[A, MutableList[A]] with Builder[A, MutableList[A], Any] {
+
+  override protected[this] def newBuilder = new MutableList[A]
 
   protected var first0: LinkedList[A] = null
   protected var last0: LinkedList[A] = null
   protected var len: Int = 0
 
-  /** Returns the length of this list.
+  /** Is the list empty?
    */
-  def length: Int = len
+  override def isEmpty = len == 0
 
-  /** Returns the <code>n</code>th element of this list. This method
-   *  yields an error if the element does not exist.
+  /** Returns the first element in this list
    */
-  def apply(n: Int): A = get(n) match {
-    case None => throw new NoSuchElementException("element not found")
-    case Some(value) => value
+  override def head: A = first0.head
+
+  /** Returns the rest of this list
+   */
+  override def tail: MutableList[A] = {
+    val tl = new MutableList[A]
+    if (first0 ne last0) {
+      tl.first0 = first0.tail
+      tl.last0 = last0
+    }
+    tl.len = len - 1
+    tl
   }
 
+  /** Returns the length of this list.
+   */
+  override def length: Int = len
+
+  /** Returns the <code>n</code>th element of this list.
+   *  @throws IndexOutofBoundsException if index does not exist.
+   */
+  override def apply(n: Int): A = first0.apply(n)
+
+  /** Updates the <code>n</code>th element of this list to a new value.
+   *  @throws IndexOutofBoundsException if index does not exist.
+   */
+  def update(n: Int, x: A): Unit = first0.update(n, x)
+
   /** Returns the <code>n</code>th element of this list or <code>None</code>
-   *  if this element does not exist.
+   *  if index does not exist.
    */
   def get(n: Int): Option[A] = first0.get(n)
 
@@ -60,16 +87,13 @@ trait MutableList[A] extends Seq[A] with PartialFunction[Int, A] {
       len = len + 1
     }
 
-  protected def reset() {
-    first0 = null
-    last0 = null
-    len = 0
-  }
+  /** @deprecated use clear instead */
+  @deprecated def reset() { clear() }
 
   /** Returns an iterator over all elements of this list.
    */
   override def elements: Iterator[A] =
-    if (first0 eq null) Nil.elements else first0.elements
+    if (first0 eq null) Iterator.empty else first0.elements
 
   override def last = last0.elem
 
@@ -78,5 +102,22 @@ trait MutableList[A] extends Seq[A] with PartialFunction[Int, A] {
    */
   override def toList: List[A] = if (first0 eq null) Nil else first0.toList
 
-  override protected def stringPrefix: String = "MutableList"
+  /** Returns the current list of elements as a linked List
+   *  sequence of elements.
+   */
+  private[mutable] def toLinkedList: LinkedList[A] = first0
+
+  /** Appends a single element to this buffer. This takes constant time.
+   *
+   *  @param elem  the element to append.
+   */
+  def +=(elem: A) = appendElem(elem)
+
+  def clear() {
+    first0 = null
+    last0 = null
+    len = 0
+  }
+
+  def result = this
 }

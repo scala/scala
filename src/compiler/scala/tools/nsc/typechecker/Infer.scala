@@ -871,8 +871,8 @@ trait Infer {
           val _arityMismatches = new ListBuffer[(Symbol, Symbol)]
           val _varianceMismatches = new ListBuffer[(Symbol, Symbol)]
           val _stricterBounds = new ListBuffer[(Symbol, Symbol)]
-          def varianceMismatch(a: Symbol, p: Symbol) { _varianceMismatches += (a, p) }
-          def stricterBound(a: Symbol, p: Symbol) { _stricterBounds += (a, p) }
+          def varianceMismatch(a: Symbol, p: Symbol) { _varianceMismatches += ((a, p)) }
+          def stricterBound(a: Symbol, p: Symbol) { _stricterBounds += ((a, p)) }
           def arityMismatches(as: Iterable[(Symbol, Symbol)]) { _arityMismatches ++= as }
           def varianceMismatches(as: Iterable[(Symbol, Symbol)]) { _varianceMismatches ++= as }
           def stricterBounds(as: Iterable[(Symbol, Symbol)]) { _stricterBounds ++= as }

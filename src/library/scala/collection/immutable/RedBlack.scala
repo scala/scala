@@ -28,10 +28,11 @@ abstract class RedBlack[A] {
     def lookup(x: A): Tree[B]
     def update[B1 >: B](k: A, v: B1): Tree[B1] = blacken(upd(k, v))
     def delete(k: A): Tree[B] = del(k)
-
-    def visit[T](input : T)(f : (T,A,B) => Tuple2[Boolean,T]) : Tuple2[Boolean,T];
-    def elements : ImmutableIterator[Pair[A,B]];
-    def elementsSlow: Iterator[Pair[A, B]];
+    def foreach(f: (A, B) => Unit)
+    /** @deprecated use foreach instead */
+    @deprecated def visit[T](input : T)(f : (T,A,B) => Tuple2[Boolean,T]) : Tuple2[Boolean,T];
+    def toStream: Stream[(A,B)]
+    def elements: Iterator[Pair[A, B]]
     def upd[B1 >: B](k: A, v: B1): Tree[B1]
     def del(k: A): Tree[B]
     def smallest: NonEmpty[B]
@@ -83,12 +84,20 @@ abstract class RedBlack[A] {
       }
     }
     def smallest: NonEmpty[B] = if (left.isEmpty) this else left.smallest
-    def elements : ImmutableIterator[Pair[A,B]] =
-      left.elements.append(Pair(key,value), () => right.elements)
+    def toStream: Stream[(A,B)] =
+      left.toStream append Stream((key,value)) append right.toStream
 
-    def elementsSlow: Iterator[Pair[A, B]] =
-      left.elementsSlow append Iterator.single(Pair(key, value)) append right.elementsSlow
+    def elements: Iterator[Pair[A, B]] =
+      left.elements append Iterator.single(Pair(key, value)) append right.elements
 
+    def foreach(f: (A, B) => Unit) {
+      left foreach f
+      f(key, value)
+      right foreach f
+    }
+
+    /** @deprecated use foreach instead */
+    @deprecated
     def visit[T](input : T)(f : (T,A,B) => Tuple2[Boolean,T]) : Tuple2[Boolean,T] = {
       val left = this.left.visit(input)(f)
       if (!left._1) return left
@@ -120,8 +129,13 @@ abstract class RedBlack[A] {
     def upd[B](k: A, v: B): Tree[B] = RedTree(k, v, Empty, Empty)
     def del(k: A): Tree[Nothing] = this
     def smallest: NonEmpty[Nothing] = throw new NoSuchElementException("empty map")
-    def elementsSlow: Iterator[Pair[A, Nothing]] = Iterator.empty
-    def elements : ImmutableIterator[Pair[A,Nothing]] = ImmutableIterator.empty
+    def elements: Iterator[Pair[A, Nothing]] = Iterator.empty
+    def toStream: Stream[(A,Nothing)] = Stream.empty
+
+    def foreach(f: (A, Nothing) => Unit) {}
+
+    /** @deprecated use foreach instead */
+    @deprecated
     def visit[T](input : T)(f : (T,A,Nothing) => Tuple2[Boolean,T]) = Tuple2(true,input)
 
     def range(from : Option[A], until : Option[A]) = this

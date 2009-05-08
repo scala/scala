@@ -141,7 +141,7 @@ trait Files{
     def lastModified = underlying.lastModified
 
     def list : Iterable[File] =
-      assertExists.assertDirectory.underlying.listFiles.projection.map(toFile)
+      assertExists.assertDirectory.underlying.listFiles.view.map(toFile)
 
     def / (file : File) : File =
       new JFile(assertDirectory.toString,

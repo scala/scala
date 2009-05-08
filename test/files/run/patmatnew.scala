@@ -311,7 +311,7 @@ object Test extends TestConsoleMain {
   object TestStream extends TestCase("unapply for Streams") {
     def sum(stream: Stream[Int]): Int =
       stream match {
-        case Stream.empty => 0
+        case Stream.Empty => 0
         case Stream.cons(hd, tl) => hd + sum(tl)
       }
 

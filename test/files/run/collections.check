@@ -32,7 +32,3 @@ test4: 25005003
 test1: 14005
 test2: 9007003, iters = 3000
 test3: 9007003
-***** immutable.UnBalancedTreeMap:
-test1: 14005
-test2: 1013003, iters = 1000
-test3: 1013003

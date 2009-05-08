@@ -277,7 +277,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
     val runsAfter = List[String]()
     val runsRightAfter = None
-  } with SyntaxAnalyzer
+  } with SyntaxAnalyzer1
 
   // factory method for
   // phaseName = "namer"

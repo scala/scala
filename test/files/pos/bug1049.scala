@@ -2,6 +2,6 @@ package bug1049
 
 abstract class Test {
   type T <: A
-  class A requires T
-  class B requires T extends A
+  class A { self: T => }
+  class B extends A { self: T => }
 }

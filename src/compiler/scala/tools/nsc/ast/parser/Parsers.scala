@@ -1919,17 +1919,17 @@ trait Parsers extends NewScanners with MarkupParsers {
      */
     def importSelector(names: ListBuffer[(Name, Name)]): Boolean =
       if (inToken == USCORE) {
-        inNextToken; names += (nme.WILDCARD, null); true
+        inNextToken; names += ((nme.WILDCARD, null)); true
       } else {
         val name = ident()
-        names += (
+        names += ((
           name,
           if (inToken == ARROW) {
             inNextToken
             if (inToken == USCORE) { inNextToken; nme.WILDCARD } else ident()
           } else {
             name
-          })
+          }))
         false
       }
 

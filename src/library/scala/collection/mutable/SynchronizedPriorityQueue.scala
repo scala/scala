@@ -1,3 +1,4 @@
+/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -84,16 +85,10 @@ class SynchronizedPriorityQueue[A <% Ordered[A]] extends PriorityQueue[A] {
    */
   override def equals(that: Any): Boolean = synchronized { super.equals(that) }
 
-  /** The hashCode method always yields an error, since it is not
-   *  safe to use mutable queues as keys in hash tables.
-   *
-   *  @return never.
-   */
-  override def hashCode(): Int = synchronized { super.hashCode() }
-
   /** Returns a textual representation of a queue as a string.
    *
    *  @return the string representation of this queue.
    */
   override def toString(): String = synchronized { super.toString() }
 }
+*/

@@ -1,0 +1,742 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id: Traversible.scala 15188 2008-05-24 15:01:02Z stepancheg $
+package scala.collection.generic
+
+// import immutable.{List, Stream, Nil} //!!!
+import mutable.{Buffer, ArrayBuffer, ListBuffer}
+import util.control.Breaks._
+
+/** A template trait for traversible collections.
+ *
+ *  Collection classes mixing in this trait provide a method
+ *  <code>foreach</code> which traverses all the
+ *  elements contained in the collection, applying a given procedure to each.
+ *  They also provide a method `newBuilder`
+ *  which creates a builder for collections of the same kind.
+ *
+ *  @author Martin Odersky
+ *  @version 2.8
+ */
+trait TraversibleTemplate[+A, +This <: TraversibleTemplate[A, This] with Traversible[A]] {
+self =>
+
+  protected def thisCollection: This = this.asInstanceOf[This]
+
+  /** Create a new builder for this traversible type.
+   */
+  protected[this] def newBuilder: Builder[A, This, Any]
+
+  /** Is this collection empty?
+   */
+  def isEmpty: Boolean = {
+    var result = true
+    breakable {
+      for (x <- this) {
+        result = false
+        break
+      }
+    }
+    result
+  }
+
+  /** The number of elements in this collection */
+  def size: Int = {
+    var result = 0
+    breakable {
+      for (x <- this) result += 1
+    }
+    result
+  }
+
+  /** returns true iff this collection has a finite size.
+   *  Many methods in this trait will not work on collections of
+   *  infinite sizes.
+   */
+  def hasDefiniteSize = true
+
+  /** Creates a new traversible of type `That` which contains all elements of this traversible
+   *  followed by all elements of another traversible
+   *
+   *  @param that   The traversible to append
+   */
+  def ++[B >: A, That](that: Traversible[B])(implicit bf: BuilderFactory[B, That, This]): That = {
+    val b = bf(thisCollection)
+    b ++= thisCollection
+    b ++= that
+    b.result
+  }
+
+  /** Create a new traversible of type `That` which contains all elements of this traversible
+   *  followed by all elements of an iterator
+   *
+   *  @param that  The iterator to append
+   */
+  def ++[B >: A, That](that: Iterator[B])(implicit bf: BuilderFactory[B, That, This]): That = {
+    val b = bf(thisCollection)
+    b ++= thisCollection
+    b ++= that
+    b.result
+  }
+
+  /** Returns the traversible that results from applying the given function
+   *  <code>f</code> to each element of this traversible and collecing the results
+   *  in an traversible of type `That`.
+   *
+   *  @param f function to apply to each element.
+   *  @return  <code>f(a<sub>0</sub>), ..., f(a<sub>n</sub>)</code> if this
+   *           traversible is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
+   */
+  def map[B, That](f: A => B)(implicit bf: BuilderFactory[B, That, This]): That = {
+    val b = bf(thisCollection)
+    for (x <- this) b += f(x)
+    b.result
+  }
+
+  /** Applies the given function <code>f</code> to each element of
+   *  this traversible, then concatenates the results in an traversible of type CC.
+   *
+   *  @param f the function to apply on each element.
+   *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
+   *           this traversible is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
+   */
+  def flatMap[B, That](f: A => Traversible[B])(implicit bf: BuilderFactory[B, That, This]): That = {
+    val b = bf(thisCollection)
+    for (x <- this) b ++= f(x)
+    b.result
+  }
+
+  /** Returns all the elements of this traversible that satisfy the
+   *  predicate <code>p</code>. The order of the elements is preserved.
+   *  @param p the predicate used to filter the traversible.
+   *  @return the elements of this traversible satisfying <code>p</code>.
+   */
+  def filter(p: A => Boolean): This = {
+    val b = newBuilder
+    for (x <- this)
+      if (p(x)) b += x
+    b.result
+  }
+
+  /** Removes all elements of the traversible which satisfy the predicate
+   *  <code>p</code>. This is like <code>filter</code> with the
+   *  predicate inversed.
+   *
+   *  @param p the predicate used to test elements
+   *  @return  the traversible without all elements that satisfy <code>p</code>
+   */
+  def remove(p: A => Boolean): This = filter(!p(_))
+
+  /** Partitions this traversible in two traversibles according to a predicate.
+   *
+   *  @param p the predicate on which to partition
+   *  @return  a pair of traversibles: the traversible that satisfies the predicate
+   *           <code>p</code> and the traversible that does not.
+   *           The relative order of the elements in the resulting traversibles
+   *           is the same as in the original traversible.
+   */
+  def partition(p: A => Boolean): (This, This) = {
+    val l, r = newBuilder
+    for (x <- this) (if (p(x)) l else r) += x
+    (l.result, r.result)
+  }
+
+  /** Partion this traversible into a map of traversibles
+   *  according to some discriminator function.
+   *  @invariant   (xs partition f)(k) = xs filter (x => f(x) == k)
+   *
+   *  @note This method is not re-implemented by views. This means
+   *        when applied to a view it will always force the view and
+   *        return a new collection.
+   */
+  def groupBy[K](f: A => K): Map[K, This] = {
+    var m = Map[K, Builder[A, This, Any]]()
+    for (elem <- this) {
+      val key = f(elem)
+      val bldr = m get key match {
+        case None => val b = newBuilder; m = m add (key, b); b
+        case Some(b) => b
+      }
+      bldr += elem
+    }
+    m mapValues (_.result)
+  }
+
+  /** Apply a function <code>f</code> to all elements of this
+   *  traversible object.
+   *
+   *  @param  f   a function that is applied to every element.
+   *  @note This method underlies the implementation of most other bulk operations.
+   *  It should be overridden in concrete collection classes with efficient implementations.
+   */
+  def foreach(f: A => Unit): Unit
+
+  /** Return true iff the given predicate `p` yields true for all elements
+   *  of this traversible.
+   *
+   *  @note May not terminate for infinite-sized collections.
+   *  @param   p     the predicate
+   */
+  def forall(p: A => Boolean): Boolean = {
+    var result = true
+    breakable {
+      for (x <- this)
+        if (!p(x)) { result = false; break }
+    }
+    result
+  }
+
+  /** Return true iff there is an element in this traversible for which the
+   *  given predicate `p` yields true.
+   *
+   *  @note May not terminate for infinite-sized collections.
+   *  @param   p     the predicate
+   */
+  def exists(p: A => Boolean): Boolean = {
+    var result = false
+    breakable {
+      for (x <- this)
+        if (p(x)) { result = true; break }
+    }
+    result
+  }
+
+  /** Count the number of elements in the traversible which satisfy a predicate.
+   *
+   *  @note Will not terminate for infinite-sized collections.
+   *  @param p the predicate for which to count
+   *  @return  the number of elements satisfying the predicate <code>p</code>.
+   */
+  def count(p: A => Boolean): Int = {
+    var cnt = 0
+    for (x <- this) {
+      if (p(x)) cnt += 1
+    }
+    cnt
+  }
+
+  /** Find and return the first element of the traversible object satisfying a
+   *  predicate, if any.
+   *
+   *  @note may not terminate for infinite-sized collections.
+   *  @note Might return different results for different runs, unless this traversible is ordered.
+   *  @param p the predicate
+   *  @return an option containing the first element in the traversible object
+   *  satisfying <code>p</code>, or <code>None</code> if none exists.
+   */
+  def find(p: A => Boolean): Option[A] = {
+    var result: Option[A] = None
+    breakable {
+      for (x <- this)
+        if (p(x)) { result = Some(x); break }
+    }
+    result
+  }
+
+  /** Combines the elements of this traversible object together using the binary
+   *  function <code>f</code>, from left to right, and starting with
+   *  the value <code>z</code>.
+   *
+   *  @note Will not terminate for infinite-sized collections.
+   *  @note Might return different results for different runs, unless this traversible is ordered, or
+   *        the operator is associative and commutative.
+   *  @return <code>f(... (f(f(z, a<sub>0</sub>), a<sub>1</sub>) ...),
+   *          a<sub>n</sub>)</code> if the traversible is
+   *          <code>[a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub>]</code>.
+   */
+  def foldLeft[B](z: B)(op: (B, A) => B): B = {
+    var result = z
+    for (x <- this)
+      result = op(result, x)
+    result
+  }
+
+  /** Similar to <code>foldLeft</code> but can be used as
+   *  an operator with the order of traversible and zero arguments reversed.
+   *  That is, <code>z /: xs</code> is the same as <code>xs foldLeft z</code>
+   *  @note Will not terminate for infinite-sized collections.
+   *  @note Might return different results for different runs, unless this traversible is ordered, or
+   *        the operator is associative and commutative.
+   */
+  def /: [B](z: B)(op: (B, A) => B): B = foldLeft(z)(op)
+
+  /** Combines the elements of this iterable together using the binary
+   *  function <code>f</code>, from right to left, and starting with
+   *  the value <code>z</code>.
+   *
+   *  @note Will not terminate for infinite-sized collections.
+   *  @note Might return different results for different runs, unless this iterable is ordered, or
+   *        the operator is associative and commutative.
+   *  @return <code>f(a<sub>0</sub>, f(a<sub>1</sub>, f(..., f(a<sub>n</sub>, z)...)))</code>
+   *          if the iterable is <code>[a<sub>0</sub>, a1, ..., a<sub>n</sub>]</code>.
+   */
+  def foldRight[B](z: B)(op: (A, B) => B): B = {
+    var elems: List[A] = Nil
+    for (x <- this) elems = x :: elems
+    elems.foldLeft(z)((x, y) => op(y, x))
+  }
+
+  /** An alias for <code>foldRight</code>.
+   *  That is, <code>xs :\ z</code> is the same as <code>xs foldRight z</code>
+   *  @note Will not terminate for infinite-sized collections.
+   *  @note Might return different results for different runs, unless this iterable is ordered, or
+   *        the operator is associative and commutative.
+   */
+  def :\ [B](z: B)(op: (A, B) => B): B = foldRight(z)(op)
+
+  /** Combines the elements of this traversible object together using the binary
+   *  operator <code>op</code>, from left to right
+   *  @note Will not terminate for infinite-sized collections.
+   *  @note Might return different results for different runs, unless this traversible is ordered, or
+   *        the operator is associative and commutative.
+   *  @param op  The operator to apply
+   *  @return <code>op(... op(a<sub>0</sub>,a<sub>1</sub>), ..., a<sub>n</sub>)</code>
+      if the traversible object has elements
+   *          <code>a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub></code>.
+   *  @throws Predef.UnsupportedOperationException if the traversible object is empty.
+   */
+  def reduceLeft[B >: A](op: (B, A) => B): B = {
+    if (isEmpty) throw new UnsupportedOperationException("empty.reduceLeft")
+    var result: B = head
+    var first = true
+    for (x <- this)
+      if (first) first = false
+      else result = op(result, x)
+    result
+  }
+
+  /** Combines the elements of this traversible object together using the binary
+   *  operator <code>op</code>, from left to right
+   *  @note Will not terminate for infinite-sized collections.
+   *  @note Might return different results for different runs, unless this traversible is ordered, or
+   *        the operator is associative and commutative.
+   *  @param op  The operator to apply
+   *  @return  If the traversible is non-empty, the result of the operations as an Option, otherwise None.
+   */
+  def reduceLeftOpt[B >: A](op: (B, A) => B): Option[B] = {
+    if (isEmpty) None else Some(reduceLeft(op))
+  }
+
+  /** Combines the elements of this iterable object together using the binary
+   *  operator <code>op</code>, from right to left
+   *  @note Will not terminate for infinite-sized collections.
+   *  @note Might return different results for different runs, unless this iterable is ordered, or
+   *        the operator is associative and commutative.
+   *  @param op  The operator to apply
+   *
+   *  @return <code>a<sub>0</sub> op (... op (a<sub>n-1</sub> op a<sub>n</sub>)...)</code>
+   *          if the iterable object has elements <code>a<sub>0</sub>, a<sub>1</sub>, ...,
+   *          a<sub>n</sub></code>.
+   *
+   *  @throws Predef.UnsupportedOperationException if the iterator is empty.
+   */
+  def reduceRight[B >: A](op: (A, B) => B): B = {
+    if (isEmpty) throw new UnsupportedOperationException("empty.reduceRight")
+    var elems: List[A] = Nil
+    for (x <- this) elems = x :: elems
+    elems.reduceLeft[B]((x, y) => op(y, x))
+  }
+
+ /** Combines the elements of this iterable object together using the binary
+   *  operator <code>op</code>, from right to left.
+   *  @note Will not terminate for infinite-sized collections.
+   *  @note Might return different results for different runs, unless this iterable is ordered, or
+   *        the operator is associative and commutative.
+   *  @param op  The operator to apply
+   *  @return  If the iterable is non-empty, the result of the operations as an Option, otherwise None.
+   */
+  def reduceRightOpt[B >: A](op: (A, B) => B): Option[B] = {
+    if (isEmpty) None else Some(reduceRight(op))
+  }
+
+  /** The first element of this traversible.
+   *
+   *  @note  Might return different results for different runs, unless this traversible is ordered
+   *  @throws Predef.NoSuchElementException if the traversible is empty.
+   */
+  def head: A = {
+    var result: () => A = () => throw new NoSuchElementException
+    breakable {
+      for (x <- this) {
+        result = () => x
+        break
+      }
+    }
+    result()
+  }
+
+ /** Returns as an option the first element of this traversible
+   *  or <code>None</code> if traversible is empty.
+   *  @note  Might return different results for different runs, unless this traversible is ordered
+   */
+  def headOption: Option[A] = if (isEmpty) None else Some(head)
+
+  /** An traversible consisting of all elements of this traversible
+   *  except the first one.
+   *  @note  Might return different results for different runs, unless this traversible is ordered
+   */
+  def tail: This = drop(1)
+
+  /** The last element of this traversible.
+   *
+   *  @throws Predef.NoSuchElementException if the traversible is empty.
+   *  @note  Might return different results for different runs, unless this traversible is ordered
+   */
+  def last: A = {
+    var lst = head
+    for (x <- this)
+      lst = x
+    lst
+  }
+
+  /** Returns as an option the last element of this traversible or
+   *  <code>None</code> if traversible is empty.
+   *
+   *  @return the last element as an option.
+   *  @note  Might return different results for different runs, unless this traversible is ordered
+   */
+  def lastOption: Option[A] = if (isEmpty) None else Some(last)
+
+  /** An traversible consisting of all elements of this traversible except the last one.
+   *  @throws Predef.UnsupportedOperationException if the stream is empty.
+   *  @note  Might return different results for different runs, unless this traversible is ordered
+   */
+  def init: This = {
+    if (isEmpty) throw new UnsupportedOperationException("empty.init")
+    var lst = head
+    var follow = false
+    val b = newBuilder
+    for (x <- this) {
+      if (follow) b += lst
+      else follow = true
+      lst = x
+    }
+    b.result
+  }
+
+  /** Return an traversible consisting only of the first <code>n</code>
+   *  elements of this traversible, or else the whole traversible, if it has less
+   *  than <code>n</code> elements.
+   *
+   *  @param n the number of elements to take
+   *  @note  Might return different results for different runs, unless this traversible is ordered
+   */
+  def take(n: Int): This = {
+    val b = newBuilder
+    var i = 0
+    breakable {
+      for (x <- this) {
+        b += x
+        i += 1
+        if (i == n) break
+      }
+    }
+    b.result
+  }
+
+  /** Returns this traversible without its <code>n</code> first elements
+   *  If this traversible has less than <code>n</code> elements, the empty
+   *  traversible is returned.
+   *
+   *  @param n the number of elements to drop
+   *  @return  the new traversible
+   *  @note  Might return different results for different runs, unless this traversible is ordered
+   */
+  def drop(n: Int): This = {
+    val b = newBuilder
+    var i = 0
+    for (x <- this) {
+      if (i >= n) b += x
+      i += 1
+    }
+    b.result
+  }
+
+  /** A sub-traversible starting at index `from`
+   *  and extending up to (but not including) index `until`.
+   *
+   *  @note c.slice(from, to)  is equivalent to (but possibly more efficient than)
+   *  c.drop(from).take(to - from)
+   *
+   *  @param from   The index of the first element of the returned subsequence
+   *  @param until  The index of the element following the returned subsequence
+   *  @note  Might return different results for different runs, unless this traversible is ordered
+   */
+  def slice(from: Int, until: Int): This = {
+    val b = newBuilder
+    var i = 0
+    breakable {
+      for (x <- this) {
+        if (i >= from) b += x
+        i += 1
+        if (i == until) break
+      }
+    }
+    b.result
+  }
+
+  /** Returns the longest prefix of this traversible whose elements satisfy
+   *  the predicate <code>p</code>.
+   *
+   *  @param p the test predicate.
+   *  @note  Might return different results for different runs, unless this traversible is ordered
+   */
+  def takeWhile(p: A => Boolean): This = {
+    val b = newBuilder
+    breakable {
+      for (x <- this) {
+        if (!p(x)) break
+        b += x
+      }
+    }
+    b.result
+  }
+
+  /** Returns the longest suffix of this traversible whose first element
+   *  does not satisfy the predicate <code>p</code>.
+   *
+   *  @param p the test predicate.
+   *  @note  Might return different results for different runs, unless this traversible is ordered
+   */
+  def dropWhile(p: A => Boolean): This = {
+    val b = newBuilder
+    var go = false
+    for (x <- this) {
+      if (!p(x)) go = true
+      if (go) b += x
+    }
+    b.result
+  }
+
+ /** Returns a pair consisting of the longest prefix of the traversible whose
+   *  elements all satisfy the given predicate, and the rest of the traversible.
+   *
+   *  @param p the test predicate
+   *  @return  a pair consisting of the longest prefix of the traversible whose
+   *           elements all satisfy <code>p</code>, and the rest of the traversible.
+   *  @note  Might return different results for different runs, unless this traversible is ordered
+   */
+  def span(p: A => Boolean): (This, This) = {
+    val l, r = newBuilder
+    var toLeft = true
+    for (x <- this) {
+      toLeft = toLeft && p(x)
+      (if (toLeft) l else r) += x
+    }
+    (l.result, r.result)
+  }
+
+  /** Split the traversible at a given point and return the two parts thus
+   *  created.
+   *
+   *  @param n the position at which to split
+   *  @return  a pair of traversibles composed of the first <code>n</code>
+   *           elements, and the other elements.
+   *  @note  Might return different results for different runs, unless this traversible is ordered
+   */
+  def splitAt(n: Int): (This, This) = {
+    val l, r = newBuilder
+    var i = 0
+    for (x <- this) {
+      (if (i < n) l else r) += x
+      i += 1
+    }
+    (l.result, r.result)
+  }
+
+  /** Copy all elements of this traversible to a given buffer
+   *  @note Will not terminate for infinite-sized collections.
+   *  @param  dest   The buffer to which elements are copied
+   */
+  def copyToBuffer[B >: A](dest: Buffer[B]) {
+    for (x <- this) dest += x
+  }
+
+  /** Fills the given array <code>xs</code> with at most `len` elements of
+   *  this traversible starting at position `start`.
+   *  Copying will stop once either the end of the current traversible is reached or
+   *  `len` elements have been copied or the end of the array is reached.
+   *
+   *  @note Will not terminate for infinite-sized collections.
+   *  @param  xs the array to fill.
+   *  @param  start starting index.
+   *  @param  len number of elements to copy
+   */
+  def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) {
+    var i = start
+    val end = (start + len) min xs.length
+    breakable {
+      for (x <- this) {
+        if (i >= end) break
+        xs(i) = x
+        i += 1
+      }
+    }
+  }
+
+  /** Fills the given array <code>xs</code> with the elements of
+   *  this traversible starting at position <code>start</code>
+   *  until either the end of the current traversible or the end of array `xs` is reached.
+   *
+   *  @note Will not terminate for infinite-sized collections.
+   *  @param  xs the array to fill.
+   *  @param  start starting index.
+   *  @pre    the array must be large enough to hold all elements.
+   */
+  def copyToArray[B >: A](xs: Array[B], start: Int) {
+    copyToArray(xs, start, xs.length - start)
+  }
+
+  /** Converts this traversible to a fresh Array containing all elements.
+   *  @note  Will not terminate for infinite-sized collections.
+   */
+  def toArray[B >: A]: Array[B] = {
+    val result = new Array[B](size)
+    copyToArray(result, 0)
+    result
+  }
+
+  /** Returns a list with all elements of this traversible object.
+   *  @note Will not terminate for infinite-sized collections.
+   */
+  def toList: List[A] = (new ListBuffer[A] ++ thisCollection).toList
+
+  /** Returns an iterable with all elements in this traversible object.
+   *  @note Will not terminate for infinite-sized collections.
+   */
+  def toIterable: Iterable[A] = toStream
+
+  /** Returns a sequence with all elements in this traversible object.
+   *  @note Will not terminate for infinite-sized collections.
+   */
+  def toSequence: Sequence[A] = toList
+
+  /** Returns a stream with all elements in this traversible object.
+   */
+  def toStream: Stream[A] = toList.toStream
+
+  /** Sort the traversible according to the comparison function
+   *  <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>,
+   *  which should be true iff <code>e1</code> is smaller than
+   *  <code>e2</code>.
+   *  The sort is stable. That is elements that are equal wrt `lt` appear in the
+   *  same order in the sorted traversible as in the original.
+   *
+   *  @param lt the comparison function
+   *  @return   a traversible sorted according to the comparison function
+   *            <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>.
+   *  @ex <pre>
+   *    List("Steve", "Tom", "John", "Bob")
+   *      .sort((e1, e2) => (e1 compareTo e2) &lt; 0) =
+   *    List("Bob", "John", "Steve", "Tom")</pre>
+   *  !!!
+  def sortWith(lt : (A,A) => Boolean): This = {
+    val arr = toArray
+    Array.sortWith(arr, lt)
+    val b = newBuilder[A]
+    for (x <- arr) b += x
+    b.result
+  }
+  */
+
+  /** Returns a string representation of this traversible object. The resulting string
+   *  begins with the string <code>start</code> and is finished by the string
+   *  <code>end</code>. Inside, the string representations of elements (w.r.t.
+   *  the method <code>toString()</code>) are separated by the string
+   *  <code>sep</code>.
+   *
+   *  @ex  <code>List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"</code>
+   *  @param start starting string.
+   *  @param sep separator string.
+   *  @param end ending string.
+   *  @return a string representation of this traversible object.
+   */
+  def mkString(start: String, sep: String, end: String): String =
+    addString(new StringBuilder(), start, sep, end).toString
+
+  /** Returns a string representation of this traversible object. The string
+   *  representations of elements (w.r.t. the method <code>toString()</code>)
+   *  are separated by the string <code>sep</code>.
+   *
+   *  @param sep separator string.
+   *  @return a string representation of this traversible object.
+   */
+  def mkString(sep: String): String =
+    addString(new StringBuilder(), sep).toString
+
+  /** Returns a string representation of this traversible object. The string
+   *  representations of elements (w.r.t. the method <code>toString()</code>)
+   *  follow each other without any separator string.
+   */
+  def mkString: String =
+    addString(new StringBuilder()).toString
+
+  /** Write all elements of this traversible into given string builder.
+   *  The written text begins with the string <code>start</code> and is finished by the string
+   *  <code>end</code>. Inside, the string representations of elements (w.r.t.
+   *  the method <code>toString()</code>) are separated by the string
+   *  <code>sep</code>.
+   */
+  def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
+    b append start
+    var first = true
+    for (x <- this) {
+      if (first) first = false
+      else b append sep
+      b append x
+    }
+    b append end
+  }
+
+  /** Write all elements of this string into given string builder.
+   *  The string representations of elements (w.r.t. the method <code>toString()</code>)
+   *  are separated by the string <code>sep</code>.
+   */
+  def addString(b: StringBuilder, sep: String): StringBuilder = addString(b, "", sep, "")
+
+  /** Write all elements of this string into given string builder without using
+   *  any separator between consecutive elements.
+   */
+  def addString(b: StringBuilder): StringBuilder = addString(b, "")
+
+  override def toString = mkString(stringPrefix + "(", ", ", ")")
+
+  /** Defines the prefix of this object's <code>toString</code> representation.
+   */
+  def stringPrefix : String = {
+    var string = thisCollection.getClass.getName
+    val idx1 = string.lastIndexOf('.' : Int)
+    if (idx1 != -1) string = string.substring(idx1 + 1)
+    val idx2 = string.indexOf('$')
+    if (idx2 != -1) string = string.substring(0, idx2)
+    string
+  }
+
+  /** Creates a view of this traversible @see TraversibleView
+   */
+  def view = new TraversibleView[A, This] {
+    protected lazy val underlying = self.thisCollection
+    override def foreach(f: A => Unit) = self foreach f
+  }
+
+  /** A sub-traversible  starting at index `from`
+   *  and extending up to (but not including) index `until`.
+   *
+   *  @param from   The index of the first element of the slice
+   *  @param until  The index of the element following the slice
+   *  @note  The difference between `view` and `slice` is that `view` produces
+   *         a view of the current iterable, whereas `slice` produces a new iterable.
+   *
+   *  @note  Might return different results for different runs, unless this iterable is ordered
+   *  @note view(from, to)  is equivalent to view.slice(from, to)
+   */
+  def view(from: Int, until: Int): TraversibleView[A, This] = view.slice(from, until)
+}
+
+

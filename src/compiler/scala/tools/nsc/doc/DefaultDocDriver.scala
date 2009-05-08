@@ -6,9 +6,9 @@
 
 package scala.tools.nsc.doc
 
+import scala.collection.mutable
 import java.util.zip.ZipFile
 
-import scala.collection.jcl
 import symtab.Flags._
 import scala.xml._
 
@@ -19,7 +19,7 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
   import global._
   import definitions.{AnyClass, AnyRefClass}
 
-  lazy val additions = new jcl.LinkedHashSet[Symbol]
+  lazy val additions = new mutable.LinkedHashSet[Symbol]
   lazy val additions0 = new ModelAdditions(global) {
     override def addition(sym: global.Symbol) = {
       super.addition(sym)
@@ -115,7 +115,7 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
     new NavigationFrame      with Frame { }
     new ListClassFrame with Frame {
       def classes = for (p <- allClasses; d <- p._2) yield d
-      object organized extends jcl.LinkedHashMap[(List[String],Boolean),List[ClassOrObject]] {
+      object organized extends mutable.LinkedHashMap[(List[String],Boolean),List[ClassOrObject]] {
         override def default(key : (List[String],Boolean)) = Nil;
         classes.foreach(cls => {
           val path = cls.path.map(_.name);
@@ -131,14 +131,15 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
         val path = cls.path.map(_.name)
         val key = (cls.path.map(_.name), cls.isInstanceOf[Clazz])
         assert(!organized(key).isEmpty);
-        (if (!organized(key).tail.isEmpty) Text(" (" +{
+
+        ((if (!organized(key).tail.isEmpty) Text(" (" +{
           //Console.println("CONFLICT: " + path + " " + organized(key));
           val str = cls.path(0).sym.owner.fullNameString('.');
           val idx = str.lastIndexOf('.');
           if (idx == -1) str;
           else str.substring(idx + 1);
-         }+ ")");
-         else NodeSeq.Empty) ++ super.optional(cls);
+        }+ ")");
+         else NodeSeq.Empty) ++ super.optional(cls))(NodeSeq.builderFactory)
       }
 
     }
@@ -176,7 +177,7 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
 
   import DocUtil._
   override def classBody(entity: ClassOrObject)(implicit from: Frame): NodeSeq =
-    (subClasses.get(entity.sym) match {
+    (((subClasses.get(entity.sym) match {
     case Some(symbols) =>
       (<dl>
       <dt style="margin:10px 0 0 20px;"><b>Direct Known Subclasses:</b></dt>
@@ -186,7 +187,7 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
       </dl><hr/>);
     case None =>
       NodeSeq.Empty
-    })++super.classBody(entity);
+    }): NodeSeq)++super.classBody(entity))//(NodeSeq.builderFactory)
 
   protected def urlFor(sym: Symbol)(implicit frame: Frame) = frame.urlFor(sym)
 
@@ -213,7 +214,7 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
       super.decodeOption(tag,option)
   }
 
-  object roots extends jcl.LinkedHashMap[String,String];
+  object roots extends mutable.LinkedHashMap[String,String];
   roots("classes") = "http://java.sun.com/j2se/1.5.0/docs/api";
   roots("rt") = roots("classes");
   private val SCALA_API_ROOT = "http://www.scala-lang.org/docu/files/api/";
@@ -260,19 +261,19 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
   protected def anchor(entity: Symbol)(implicit frame: Frame): NodeSeq =
     (<a name={Text(frame.docName(entity))}></a>)
 
-  object symbols extends jcl.LinkedHashSet[Symbol]
+  object symbols extends mutable.LinkedHashSet[Symbol]
 
-  object allClasses extends jcl.LinkedHashMap[Package, jcl.LinkedHashSet[ClassOrObject]] {
-    override def default(pkg: Package): jcl.LinkedHashSet[ClassOrObject] = {
-      object ret extends jcl.LinkedHashSet[ClassOrObject]
+  object allClasses extends mutable.LinkedHashMap[Package, mutable.LinkedHashSet[ClassOrObject]] {
+    override def default(pkg: Package): mutable.LinkedHashSet[ClassOrObject] = {
+      object ret extends mutable.LinkedHashSet[ClassOrObject]
       this(pkg) = ret
       ret
     }
   }
 
-  object subClasses extends jcl.LinkedHashMap[Symbol, jcl.LinkedHashSet[ClassOrObject]] {
+  object subClasses extends mutable.LinkedHashMap[Symbol, mutable.LinkedHashSet[ClassOrObject]] {
     override def default(key: Symbol) = {
-      val ret = new jcl.LinkedHashSet[ClassOrObject]
+      val ret = new mutable.LinkedHashSet[ClassOrObject]
       this(key) = ret
       ret
     }

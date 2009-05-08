@@ -31,6 +31,10 @@ object LinkedHashMap {
 
 @serializable
 class LinkedHashMap[A, B] extends Map[A,B] with HashTable[A] with DefaultMapModel[A,B] {
+
+  override def empty = LinkedHashMap.empty
+  override def size = super[HashTable].size
+
   private var ordered = List[Entry]()
 
   def remove(key: A): Option[B] = removeEntry(key) match {

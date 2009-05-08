@@ -12,21 +12,14 @@
 
 package scala.collection.immutable
 
+import generic._
+
 /** The canonical factory of <a href="ListMap.html">ListMap</a>'s */
-object ListMap {
+object ListMap extends ImmutableMapFactory[ListMap] {
 
-  /** The empty map of this type
-   *  @deprecated   use <code>empty</code> instead
-   */
-  @deprecated
-  def Empty[A, B] = new ListMap[A, B]
-
-  /** The empty map of this type */
-  def empty[A, B] = new ListMap[A, B]
-
-  /** The canonical factory for this type
-   */
-  def apply[A, B](elems: (A, B)*) = empty[A, B] ++ elems
+  type Coll = ListMap[_,_]
+  implicit def builderFactory[A, B]: BuilderFactory[(A, B), ListMap[A, B], Coll] = new BuilderFactory[(A, B), ListMap[A, B], Coll] { def apply(from: Coll) = from.mapBuilder[A, B] }
+  def empty[A, B]: ListMap[A, B] = new ListMap
 }
 
 /** This class implements immutable maps using a list-based data
@@ -39,18 +32,16 @@ object ListMap {
  *  @version 2.0, 01/01/2007
  */
 @serializable
-class ListMap[A, +B] extends Map[A, B] {
+class ListMap[A, +B] extends Map[A, B] with ImmutableMapTemplate[A, B, ListMap[A, B]] {
 
-  /** Returns a <code>new ListMap</code> instance mapping keys of the
-   *  same type to values of type <code>C</code>.
-   */
-  def empty[C] = ListMap.empty[A, C]
+  override def empty = ListMap.empty
+  override def mapBuilder[A, B]: Builder[(A, B), ListMap[A, B], Any] = ListMap.newBuilder[A, B]
 
   /** Returns the number of mappings in this map.
    *
    *  @return number of mappings in this map.
    */
-  def size: Int = 0
+  override def size: Int = 0
 
   /** Checks if this map maps <code>key</code> to a value and return the
    *  value if it exists.
@@ -69,7 +60,24 @@ class ListMap[A, +B] extends Map[A, B] {
    *  @param key  the key element of the updated entry.
    *  @param value the value element of the updated entry.
    */
-  def update [B1 >: B](key: A, value: B1): ListMap[A, B1] = new Node(key, value)
+  def add [B1 >: B] (key: A, value: B1): ListMap[A, B1] = new Node[B1](key, value)
+
+  /** Add a key/value pair to this map.
+   *  @param    kv the key/value pair
+   *  @return   A new map with the new binding added to this map
+   */
+  override def + [B1 >: B] (kv: (A, B1)): ListMap[A, B1] = add(kv._1, kv._2)
+
+  /** Adds two or more elements to this collection and returns
+   *  either the collection itself (if it is mutable), or a new collection
+   *  with the added elements.
+   *
+   *  @param elem1 the first element to add.
+   *  @param elem2 the second element to add.
+   *  @param elems the remaining elements to add.
+   */
+  override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *): ListMap[A, B1] =
+    this + elem1 + elem2 ++ collection.Iterable.fromOld(elems)
 
   /** This creates a new mapping without the given <code>key</code>.
    *  If the map does not contain a mapping for the given key, the
@@ -136,9 +144,9 @@ class ListMap[A, +B] extends Map[A, B] {
      *  @param k ...
      *  @param v ...
      */
-    override def update [B2 >: B1](k: A, v: B2): ListMap[A, B2] = {
+    override def add [B2 >: B1](k: A, v: B2): ListMap[A, B2] = {
       val m = if (contains(k)) this - k else this
-      new m.Node(k, v)
+      new m.Node[B2](k, v)
     }
 
     /** Creates a new mapping without the given <code>key</code>.
@@ -157,6 +165,6 @@ class ListMap[A, +B] extends Map[A, B] {
         else new tail.Node(key, value)
       }
 
-    override protected def next: ListMap[A,B1] = ListMap.this
+    override protected def next: ListMap[A, B1] = ListMap.this
   }
 }

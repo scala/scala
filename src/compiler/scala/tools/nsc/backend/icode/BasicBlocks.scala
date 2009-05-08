@@ -9,7 +9,7 @@ package scala.tools.nsc.backend.icode
 
 //import scala.tools.nsc.ast._
 import scala.collection.mutable.{Map, Set}
-import scala.collection.jcl.LinkedHashSet
+import scala.collection.mutable.LinkedHashSet
 import scala.tools.nsc.util.{Position,NoPosition}
 import scala.tools.nsc.backend.icode.analysis.ProgramPoint
 

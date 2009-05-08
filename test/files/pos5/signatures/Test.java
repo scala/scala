@@ -1,4 +1,4 @@
-import scala.RandomAccessSeq.Mutable;
+import scala.collection.mutable.Vector;
 import test.Outer;
 
 /* Test correct generation of java signatures. The Outer class should not

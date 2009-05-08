@@ -4,7 +4,7 @@ trait SymbolWalker {
   val global : Global
   import scala.tools.nsc.util._
   import global._
-  import scala.collection.jcl._
+  import scala.collection.mutable.LinkedHashSet
   trait Visitor {
     def update(pos : Position, sym : Symbol) : Unit
     def contains(pos : Position) : Boolean

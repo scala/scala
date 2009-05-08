@@ -11,37 +11,43 @@
 
 package scala.collection.mutable
 
-import Predef._
+import generic._
 
 /** This class is used internally to implement data structures that
  *  are based on resizable arrays.
- *  //todo enrich with more efficient operations
  *
  *  @author  Matthias Zenger, Burak Emir
- *  @version 1.0, 03/05/2004
+ *  @author Martin Odersky
+ *  @version 2.8
  */
-trait ResizableArray[A] extends RandomAccessSeq[A] {
+trait ResizableArray[A] extends Vector[A] with VectorTemplate[A, ResizableArray[A]] { self =>
+
+  import scala.Array // !!!
+  import collection.Iterable // !!!
+
+  override protected[this] def newBuilder = ResizableArray.newBuilder
+  override def traversibleBuilder[B]: Builder[B, ResizableArray[B], Any] = ResizableArray.newBuilder[B]
 
   protected def initialSize: Int = 16
-  protected var array: Array[AnyRef] = new Array[AnyRef](initialSize min 1)
-  private var size1: Int = 0
-  protected def size0: Int = size1
-  protected def size0_=(sz: Int) { size1 = sz }
+  protected var array: Array[AnyRef] = new Array[AnyRef](initialSize max 1)
+
+  protected var size0: Int = 0
 
   //##########################################################################
-  // implement/override methods of Seq[A]
+  // implement/override methods of Vector[A]
 
   /** Returns the length of this resizable array.
    */
   def length: Int = size0
 
-  def apply(i: Int) = array(i).asInstanceOf[A]
+  def apply(idx: Int) = {
+    if (idx >= size0) throw new IndexOutOfBoundsException(idx.toString)
+    array(idx).asInstanceOf[A]
+  }
 
-  /** remove elements of this array at indices after <code>sz</code>
-   */
-  def reduceToSize(sz: Int) {
-    if (sz > size0) throw new IllegalArgumentException
-    size0 = sz
+  def update(idx: Int, elem: A) {
+    if (idx >= size0) throw new IndexOutOfBoundsException(idx.toString)
+    array(idx) = elem.asInstanceOf[AnyRef]
   }
 
   /** Fills the given array <code>xs</code> with the elements of
@@ -56,25 +62,35 @@ trait ResizableArray[A] extends RandomAccessSeq[A] {
 
   /** Copy all elements to a buffer
    *  @param   The buffer to which elements are copied
-   */
   override def copyToBuffer[B >: A](dest: Buffer[B]) {
-    dest.++=(runtime.ScalaRunTime.boxArray(array).asInstanceOf[Array[B]], 0, size0)
+    dest ++= (array: Sequence[AnyRef]).asInstanceOf[Sequence[B]]
   }
-
-  /** Returns a new iterator over all elements of this resizable array.
    */
-  override def elements: Iterator[A] = new Iterator[A] {
+
+  override def foreach(f: A => Unit) {
     var i = 0
-    def hasNext: Boolean = i < size0
-    def next(): A = { i = i + 1; array(i - 1).asInstanceOf[A] }
+    while (i < size) {
+      f(array(i).asInstanceOf[A])
+      i += 1
+    }
   }
 
   //##########################################################################
 
+  /** remove elements of this array at indices after <code>sz</code>
+   */
+  def reduceToSize(sz: Int) {
+    require(sz <= size0)
+    while (size0 > sz) {
+      size0 -= 1
+      array(size0) = null
+    }
+  }
+
   /** ensure that the internal array has at n cells */
   protected def ensureSize(n: Int) {
     if (n > array.length) {
-      var newsize = if (array.length == 0) 2 else array.length * 2
+      var newsize = array.length * 2
       while (n > newsize)
         newsize = newsize * 2
       val newar: Array[AnyRef] = new Array(newsize)
@@ -96,4 +112,10 @@ trait ResizableArray[A] extends RandomAccessSeq[A] {
   protected def copy(m: Int, n: Int, len: Int) {
     Array.copy(array, m, array, n, len)
   }
+}
+
+object ResizableArray extends SequenceFactory[ResizableArray] {
+  type Coll = Vector[_]
+  implicit def builderFactory[A]: BuilderFactory[A, Vector[A], Coll] = new BuilderFactory[A, Vector[A], Coll] { def apply(from: Coll) = from.traversibleBuilder[A] }
+  def newBuilder[A]: Builder[A, ResizableArray[A], Any] = new ArrayBuffer[A]
 }
