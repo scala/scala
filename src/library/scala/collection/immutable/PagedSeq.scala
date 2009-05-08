@@ -109,7 +109,7 @@ import PagedSeq._
  * @author Martin Odersky
  */
 class PagedSeq[T] protected (more: (Array[T], Int, Int) => Int,
-                             first: Page[T], start: Int, end: Int) extends RandomAccessSeq[T] {
+                             first1: Page[T], start: Int, end: Int) extends RandomAccessSeq[T] {
 
   /**  A paged sequence is constructed from a method that produces more characters when asked.
    *  The producer method is analogous to the read method in java.io.Reader.
@@ -120,15 +120,15 @@ class PagedSeq[T] protected (more: (Array[T], Int, Int) => Int,
    */
   def this(more: (Array[T], Int, Int) => Int) = this(more, new Page[T](0), 0, UndeterminedEnd)
 
-  private var current: Page[T] = first
+  private var current: Page[T] = first1
 
-  private def latest = first.latest
+  private def latest = first1.latest
 
   private def addMore() = latest.addMore(more)
 
   private def page(absindex: Int) = {
     if (absindex < current.start)
-      current = first
+      current = first1
     while (absindex >= current.end && current.next != null)
       current = current.next
     while (absindex >= current.end && !current.isLast) {
@@ -167,7 +167,7 @@ class PagedSeq[T] protected (more: (Array[T], Int, Int) => Int,
     page(start)
     val s = start + _start
     val e = if (_end == UndeterminedEnd) _end else start + _end
-    var f = first
+    var f = first1
     while (f.end <= s && !f.isLast) f = f.next
     new PagedSeq(more, f, s, e)
   }

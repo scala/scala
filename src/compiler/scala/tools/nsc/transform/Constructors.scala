@@ -261,13 +261,17 @@ abstract class Constructors extends Transform {
       // It would be better to mangle the constructor parameter name since
       // it can only be used internally, but I think we need more robust name
       // mangling before we introduce more of it.
-      val parentSymbols =
-        Map(( for (p <- impl.parents ; sym <- p.symbol.info.nonPrivateMembers) yield sym.name -> p ): _*)
+      val parentSymbols = Map((for {
+        p <- impl.parents
+        if p.symbol.isTrait
+        sym <- p.symbol.info.nonPrivateMembers
+        if sym.isGetter && !sym.isOuterField
+      } yield sym.name -> p): _*)
 
       // Initialize all parameters fields that must be kept.
       val paramInits =
         for (acc <- paramAccessors if mustbeKept(acc)) yield {
-          if ((parentSymbols contains acc.name) && !(acc.name startsWith "$outer"))
+          if (parentSymbols contains acc.name)
             unit.error(acc.pos, "parameter '%s' requires field but conflicts with %s in '%s'".format(
               acc.name, acc.name, parentSymbols(acc.name)))
 
