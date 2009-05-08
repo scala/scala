@@ -30,7 +30,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
      with Builder[A, ArrayBuffer[A], Any]
      with ResizableArray[A] {
 
-  import collection.Traversible
+  import collection.Traversable
 
   def this() = this(16)
 
@@ -43,7 +43,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
   }
 
   override protected[this] def newBuilder = ArrayBuffer.newBuilder
-  override def traversibleBuilder[B]: Builder[B, ArrayBuffer[B], Any] = ArrayBuffer.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, ArrayBuffer[B], Any] = ArrayBuffer.newBuilder[B]
 
   /** Appends a single element to this buffer and returns
    *  the identity of the buffer. It takes constant time.
@@ -63,7 +63,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @param iter  the iterfable object.
    *  @return      the updated buffer.
    */
-  override def ++=(iter: Traversible[A]) = iter match {
+  override def ++=(iter: Traversable[A]) = iter match {
     case v: Vector[_] =>
       val n = v.length
       ensureSize(size0 + n)
@@ -95,7 +95,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @param iter  the iterable object.
    *  @return      the updated buffer.
    */
-  override def ++:(iter: Traversible[A]): this.type = { insertAll(0, iter); this }
+  override def ++:(iter: Traversable[A]): this.type = { insertAll(0, iter); this }
 
   /** Inserts new elements at the index <code>n</code>. Opposed to method
    *  <code>update</code>, this method will not replace an element with a
@@ -105,7 +105,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @param iter  the iterable object providing all elements to insert.
    *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
-  def insertAll(n: Int, seq: Traversible[A]) {
+  def insertAll(n: Int, seq: Traversable[A]) {
     if ((n < 0) || (n > size0))
       throw new IndexOutOfBoundsException(n.toString)
     val xs = seq.toList
@@ -158,7 +158,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
 /* Factory object for `ArrayBuffer` class */
 object ArrayBuffer extends SequenceFactory[ArrayBuffer] {
   type Coll = ArrayBuffer[_]
-  implicit def builderFactory[A]: BuilderFactory[A, ArrayBuffer[A], Coll] = new BuilderFactory[A, ArrayBuffer[A], Coll] { def apply(from: Coll) = from.traversibleBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, ArrayBuffer[A], Coll] = new BuilderFactory[A, ArrayBuffer[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
   def newBuilder[A]: Builder[A, ArrayBuffer[A], Any] = new ArrayBuffer[A]
 }
 

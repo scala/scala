@@ -25,7 +25,7 @@ import generic.{SequenceFactory, Builder, BuilderFactory, LinearSequenceTemplate
  */
 sealed abstract class List[+A] extends LinearSequence[A] with Product with LinearSequenceTemplate[A, List[A]] {
 
-  import collection.{Iterable, Traversible, Sequence, Vector}
+  import collection.{Iterable, Traversable, Sequence, Vector}
 
   /** Returns true if the list does not contain any elements.
    *  @return <code>true</code>, iff the list is empty.
@@ -48,7 +48,7 @@ sealed abstract class List[+A] extends LinearSequence[A] with Product with Linea
 
   /** Creates a list buffer as builder for this class */
   override protected[this] def newBuilder = List.newBuilder
-  override def traversibleBuilder[B]: Builder[B, List[B], Any] = List.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, List[B], Any] = List.newBuilder[B]
 
   // New methods in List
 
@@ -141,9 +141,9 @@ sealed abstract class List[+A] extends LinearSequence[A] with Product with Linea
   // Overridden methods from IterableTemplate or overloaded variants of such methods
 
   /** Create a new list which contains all elements of this list
-   *  followed by all elements of Traversible `that'
+   *  followed by all elements of Traversable `that'
    */
-  override def ++[B >: A, That](that: Traversible[B])(implicit bf: BuilderFactory[B, That, List[A]]): That = {
+  override def ++[B >: A, That](that: Traversable[B])(implicit bf: BuilderFactory[B, That, List[A]]): That = {
     val b = bf(this)
     if (b.isInstanceOf[ListBuffer[_]]) (this ::: that.toList).asInstanceOf[That]
     else super.++(that)

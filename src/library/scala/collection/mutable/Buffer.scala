@@ -25,13 +25,13 @@ import generic._
 @cloneable
 trait Buffer[A] extends Sequence[A] with BufferTemplate[A, Buffer[A]] {
   override protected[this] def newBuilder = Buffer.newBuilder
-  override def traversibleBuilder[B]: Builder[B, Buffer[B], Any] = Buffer.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, Buffer[B], Any] = Buffer.newBuilder[B]
 }
 
 /* Factory object for `Buffer` trait */
 object Buffer extends SequenceFactory[Buffer] {
   type Coll = Buffer[_]
-  implicit def builderFactory[A]: BuilderFactory[A, Buffer[A], Coll] = new BuilderFactory[A, Buffer[A], Coll] { def apply(from: Coll) = from.traversibleBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, Buffer[A], Coll] = new BuilderFactory[A, Buffer[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
   def newBuilder[A]: Builder[A, Buffer[A], Any] = new ArrayBuffer
 }
 

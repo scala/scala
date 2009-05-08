@@ -19,7 +19,7 @@ package scala.collection.mutable
  *  @version 1.0, 08/07/2003
  */
 trait SynchronizedSet[A] extends Set[A] {
-  import collection.Traversible
+  import collection.Traversable
 
   abstract override def size: Int = synchronized {
     super.size
@@ -41,7 +41,7 @@ trait SynchronizedSet[A] extends Set[A] {
     super.+=(elem)
   }
 
-  override def ++=(that: Traversible[A]) = synchronized {
+  override def ++=(that: Traversable[A]) = synchronized {
     super.++=(that)
   }
 
@@ -53,7 +53,7 @@ trait SynchronizedSet[A] extends Set[A] {
     super.-=(elem)
   }
 
-  override def --=(that: Traversible[A]) = synchronized {
+  override def --=(that: Traversable[A]) = synchronized {
     super.--=(that)
   }
 

@@ -37,7 +37,7 @@ import generic.{SequenceFactory, Builder, BuilderFactory, LazyBuilder, LinearSeq
  */
 abstract class Stream[+A] extends LinearSequence[A] with LinearSequenceTemplate[A, Stream[A]] {
 self =>
-  import collection.{Traversible, Iterable, Sequence, Vector}
+  import collection.{Traversable, Iterable, Sequence, Vector}
 
   /** is this stream empty? */
   def isEmpty: Boolean
@@ -55,22 +55,22 @@ self =>
   /** Is the tail of this stream defined? */
   protected def tailDefined: Boolean
 
-  // Implementation of abstract method in Traversible
+  // Implementation of abstract method in Traversable
 
   /** The builder for stream objects.
    *  @note: This builder is lazy only in the sense that it does not go downs the spine
-   *         of traversibles taht are added as a whole. If more layzness can be achieved,
+   *         of traversables taht are added as a whole. If more layzness can be achieved,
    *         this builder should be bypassed.
    */
   override protected[this] def newBuilder = Stream.newBuilder
-  override def traversibleBuilder[B]: Builder[B, Stream[B], Any] = Stream.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, Stream[B], Any] = Stream.newBuilder[B]
 
   // New methods in Stream
 
   /** The stream resulting from the concatenation of this stream with the argument stream.
    *  @param rest   The stream that gets appended to this stream
    */
-  def append[B >: A](rest: => Traversible[B]): Stream[B] =
+  def append[B >: A](rest: => Traversable[B]): Stream[B] =
     if (isEmpty) rest.toStream else new Stream.Cons(head, tail append rest)
 
   /** Force evaluation of the whole stream and return it */
@@ -102,7 +102,7 @@ self =>
     loop(this, "")
   }
 
-  // Overridden methods from Traversible
+  // Overridden methods from Traversable
 
   override def toStream: Stream[A] = this
 
@@ -112,13 +112,13 @@ self =>
   }
 
   /** Create a new stream which contains all elements of this stream
-   *  followed by all elements of Traversible `that'
+   *  followed by all elements of Traversable `that'
    *  @note It's subtle why this works. We know that if the target type
    *  of the Builder That is either a Stream, or one of its supertypes, or undefined,
    *  then StreamBuilder will be chosen for the implicit.
    *  we recognize that fact and optimize to get more laziness.
    */
-  override def ++[B >: A, That](that: Traversible[B])(implicit bf: BuilderFactory[B, That, Stream[A]]): That = {
+  override def ++[B >: A, That](that: Traversable[B])(implicit bf: BuilderFactory[B, That, Stream[A]]): That = {
     def loop(these: Stream[A]): Stream[B] =
       if (these.isEmpty) that.toStream else new Stream.Cons(these.head, loop(these.tail))
     if (bf.isInstanceOf[Stream.StreamBuilderFactory[_]]) loop(this).asInstanceOf[That]
@@ -152,7 +152,7 @@ self =>
    *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
    *           this stream is <code>[a<sub>0</sub>, ..., a<sub>n</sub>]</code>.
    */
-  override def flatMap[B, That](f: A => Traversible[B])(implicit bf: BuilderFactory[B, That, Stream[A]]): That = {
+  override def flatMap[B, That](f: A => Traversable[B])(implicit bf: BuilderFactory[B, That, Stream[A]]): That = {
     def loop(these: Stream[A]): Stream[B] =
       if (these.isEmpty) Stream.Empty
       else {
@@ -368,7 +368,7 @@ self =>
 object Stream extends SequenceFactory[Stream] {
 
   type Coll = Stream[_]
-  class StreamBuilderFactory[A] extends BuilderFactory[A, Stream[A], Coll] { def apply(from: Coll) = from.traversibleBuilder[A] }
+  class StreamBuilderFactory[A] extends BuilderFactory[A, Stream[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
   implicit def builderFactory[A]: BuilderFactory[A, Stream[A], Coll] = new StreamBuilderFactory[A]
 
   /** Creates a new builder for a stream */

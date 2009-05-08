@@ -28,7 +28,7 @@ import generic._
 class HashSet[A] extends Set[A] with SetTemplate[A, HashSet[A]] with mutable.FlatHashTable[A] {
 
   override def empty = HashSet.empty
-  override def traversibleBuilder[B]: Builder[B, HashSet[B], Any] = HashSet.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, HashSet[B], Any] = HashSet.newBuilder[B]
 
   protected var later: HashSet[A] = null
   protected var changedElem: A = _
@@ -132,7 +132,7 @@ class HashSet[A] extends Set[A] with SetTemplate[A, HashSet[A]] with mutable.Fla
   */
 object HashSet extends SetFactory[HashSet] {
   type Coll = HashSet[_]
-  implicit def builderFactory[A]: BuilderFactory[A, HashSet[A], Coll] = new BuilderFactory[A, HashSet[A], Coll] { def apply(from: Coll) = from.traversibleBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, HashSet[A], Coll] = new BuilderFactory[A, HashSet[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
   def empty[A]: HashSet[A] = new HashSet
 }
 

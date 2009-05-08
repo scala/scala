@@ -18,10 +18,10 @@ import mutable.ListBuffer
  */
 abstract class LazyBuilder[Elem, +To, -From] extends Builder[Elem, To, From] {
   /** The different segments of elements to be added to the builder, represented as iterators */
-  protected var parts = new ListBuffer[Traversible[Elem]]
+  protected var parts = new ListBuffer[Traversable[Elem]]
   def +=(x: Elem) = { parts += List(x) }
   override def ++=(xs: Iterator[Elem]) { parts += xs.toStream }
-  override def ++=(xs: Traversible[Elem]) { parts += xs }
+  override def ++=(xs: Traversable[Elem]) { parts += xs }
   def result(): To
   def clear() { parts.clear() }
 }

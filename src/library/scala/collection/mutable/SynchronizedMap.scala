@@ -21,7 +21,7 @@ package scala.collection.mutable
  */
 trait SynchronizedMap[A, B] extends Map[A, B] {
 
-  import collection.Traversible
+  import collection.Traversable
 
   override def mapBuilder[A, B]: Builder[(A, B), SynchronizedMap[A, B], Any] = SynchronizedMap.newBuilder[A, B]
 
@@ -86,7 +86,7 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
     super.+=(kv1, kv2, kvs: _*)
   }
 
-  override def ++=(map: Traversible[(A, B)]): Unit = synchronized {
+  override def ++=(map: Traversable[(A, B)]): Unit = synchronized {
     super.++=(map)
   }
 
@@ -102,7 +102,7 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
     super.-=(key1, key2, keys: _*)
   }
 
-  override def --=(keys: Traversible[A]): Unit = synchronized {
+  override def --=(keys: Traversable[A]): Unit = synchronized {
     super.--=(keys)
   }
 

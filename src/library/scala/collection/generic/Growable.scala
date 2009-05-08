@@ -47,7 +47,7 @@ trait Growable[-A] {
    *
    *  @param iter  the iterable object.
    */
-  def ++=(iter: Traversible[A]) { iter foreach += }
+  def ++=(iter: Traversable[A]) { iter foreach += }
 
   /** Clears the collection contents.
    */

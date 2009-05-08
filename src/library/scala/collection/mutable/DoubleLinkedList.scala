@@ -23,12 +23,12 @@ import generic._
 @serializable
 class DoubleLinkedList[A]/*(_elem: A, _next: DoubleLinkedList[A])*/ extends LinearSequence[A] with DoubleLinkedListTemplate[A, DoubleLinkedList[A]] {
   override protected[this] def newBuilder = DoubleLinkedList.newBuilder
-  override def traversibleBuilder[B]: Builder[B, DoubleLinkedList[B], Any] = DoubleLinkedList.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, DoubleLinkedList[B], Any] = DoubleLinkedList.newBuilder[B]
 }
 
 object DoubleLinkedList extends SequenceFactory[DoubleLinkedList] {
   type Coll = DoubleLinkedList[_]
-  implicit def builderFactory[A]: BuilderFactory[A, DoubleLinkedList[A], Coll] = new BuilderFactory[A, DoubleLinkedList[A], Coll] { def apply(from: Coll) = from.traversibleBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, DoubleLinkedList[A], Coll] = new BuilderFactory[A, DoubleLinkedList[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
   def newBuilder[A]: Builder[A, DoubleLinkedList[A], Any] = null // !!!
 }
 

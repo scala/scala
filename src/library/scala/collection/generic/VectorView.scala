@@ -11,7 +11,7 @@
 
 package scala.collection.generic
 
-import TraversibleView.NoBuilder
+import TraversableView.NoBuilder
 
 /** A non-strict projection of an iterable.
  * @author Sean McDirmid
@@ -21,6 +21,6 @@ import TraversibleView.NoBuilder
 trait VectorView[+A, +Coll <: Vector[_]] extends VectorViewTemplate[A, Coll, VectorView[A, Coll]]
 
 object VectorView {
-  type Coll = TraversibleView[_, _]
+  type Coll = TraversableView[_, _]
   implicit def builderFactory[A]: BuilderFactory[A, VectorView[A, Vector[_]], Coll] = new BuilderFactory[A, VectorView[A, Vector[_]], Coll] { def apply(from: Coll) = new NoBuilder }
 }

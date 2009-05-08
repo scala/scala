@@ -20,7 +20,7 @@ package scala.collection.mutable
  *  @version 1.0, 03/05/2004
  */
 class SynchronizedQueue[A] extends Queue[A] {
-  import collection.Traversible
+  import collection.Traversable
 
   /** Checks if the queue is empty.
    *
@@ -40,7 +40,7 @@ class SynchronizedQueue[A] extends Queue[A] {
    *
    *  @param  iter        an iterable object
    */
-  override def ++=(iter: Traversible[A]): Unit = synchronized { super.++=(iter) }
+  override def ++=(iter: Traversable[A]): Unit = synchronized { super.++=(iter) }
 
   /** Adds all elements provided by an iterator
    *  at the end of the queue. The elements are prepended in the order they

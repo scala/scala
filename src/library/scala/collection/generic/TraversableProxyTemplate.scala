@@ -16,22 +16,22 @@ import collection.mutable.Buffer
 // Methods could be printed by  cat TraversibeTemplate.scala | egrep '^  (override )?def'
 
 
-/** This trait implements a proxy for traversible objects. It forwards
- *  all calls to a different traversible object
+/** This trait implements a proxy for traversable objects. It forwards
+ *  all calls to a different traversable object
  *
  *  @author  Martin Odersky
  *  @version 2.8
  */
-trait TraversibleProxyTemplate[+A, +This <: TraversibleTemplate[A, This] with Traversible[A]] extends TraversibleTemplate[A, This] with Proxy {
+trait TraversableProxyTemplate[+A, +This <: TraversableTemplate[A, This] with Traversable[A]] extends TraversableTemplate[A, This] with Proxy {
   def self: This
 
   override def isEmpty: Boolean = self.isEmpty
   override def size: Int = self.size
   override def hasDefiniteSize = self.hasDefiniteSize
-  override def ++[B >: A, That](that: Traversible[B])(implicit bf: BuilderFactory[B, That, This]): That = self.++(that)(bf)
+  override def ++[B >: A, That](that: Traversable[B])(implicit bf: BuilderFactory[B, That, This]): That = self.++(that)(bf)
   override def ++[B >: A, That](that: Iterator[B])(implicit bf: BuilderFactory[B, That, This]): That = self.++(that)(bf)
   override def map[B, That](f: A => B)(implicit bf: BuilderFactory[B, That, This]): That = self.map(f)(bf)
-  override def flatMap[B, That](f: A => Traversible[B])(implicit bf: BuilderFactory[B, That, This]): That = self.flatMap(f)(bf)
+  override def flatMap[B, That](f: A => Traversable[B])(implicit bf: BuilderFactory[B, That, This]): That = self.flatMap(f)(bf)
   override def filter(p: A => Boolean): This = self.filter(p)
   override def remove(p: A => Boolean): This = self.remove(p)
   override def partition(p: A => Boolean): (This, This) = self.partition(p)
@@ -80,5 +80,5 @@ trait TraversibleProxyTemplate[+A, +This <: TraversibleTemplate[A, This] with Tr
   override def toString = self.toString
   override def stringPrefix : String = self.stringPrefix
   override def view = self.view
-  override def view(from: Int, until: Int): TraversibleView[A, This] = self.view(from, until)
+  override def view(from: Int, until: Int): TraversableView[A, This] = self.view(from, until)
 }

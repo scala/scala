@@ -21,13 +21,13 @@ trait Set[A] extends Iterable[A] with collection.Set[A] with SetTemplate[A, Set[
 
   override def hashCode = (Set.hashSeed /: this)(_ * 41 + _.hashCode)
 
-  override def traversibleBuilder[B]: Builder[B, Set[B], Any] = Set.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, Set[B], Any] = Set.newBuilder[B]
 }
 
 object Set extends SetFactory[Set] {
   private val hashSeed = "Set".hashCode
   type Coll = Set[_]
-  implicit def builderFactory[A]: BuilderFactory[A, Set[A], Coll] = new BuilderFactory[A, Set[A], Coll] { def apply(from: Coll) = from.traversibleBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, Set[A], Coll] = new BuilderFactory[A, Set[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
   def empty[A]: Set[A] = FlexSet.empty
 }
 

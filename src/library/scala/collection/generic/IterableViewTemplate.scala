@@ -8,7 +8,7 @@
 package scala.collection.generic
 
 import Math.MAX_INT
-import TraversibleView.NoBuilder
+import TraversableView.NoBuilder
 
 /** A base class for views of Iterables.
  *  @author Martin Odersky
@@ -17,7 +17,7 @@ import TraversibleView.NoBuilder
 trait IterableViewTemplate[+A,
                            +Coll <: Iterable[_],
                            +This <: IterableView[A, Coll] with IterableViewTemplate[A, Coll, This]]
-extends Iterable[A] with IterableTemplate[A, This] with TraversibleView[A, Coll] with TraversibleViewTemplate[A, Coll, This]
+extends Iterable[A] with IterableTemplate[A, This] with TraversableView[A, Coll] with TraversableViewTemplate[A, Coll, This]
 { self =>
 
   trait Transformed[+B] extends IterableView[B, Coll] with super.Transformed[B]
@@ -53,9 +53,9 @@ extends Iterable[A] with IterableTemplate[A, This] with TraversibleView[A, Coll]
   /** Boilerplate method, to override in each subclass
    *  This method could be eliminated if Scala had virtual classes
    */
-  protected override def newAppended[B >: A](that: Traversible[B]): Transformed[B] = new Appended[B] { val rest = that }
+  protected override def newAppended[B >: A](that: Traversable[B]): Transformed[B] = new Appended[B] { val rest = that }
   protected override def newMapped[B](f: A => B): Transformed[B] = new Mapped[B] { val mapping = f }
-  protected override def newFlatMapped[B](f: A => Traversible[B]): Transformed[B] = new FlatMapped[B] { val mapping = f }
+  protected override def newFlatMapped[B](f: A => Traversable[B]): Transformed[B] = new FlatMapped[B] { val mapping = f }
   protected override def newFiltered(p: A => Boolean): Transformed[A] = new Filtered { val pred = p }
   protected override def newSliced(_from: Int, _until: Int): Transformed[A] = new Sliced { val from = _from; val until = _until }
   protected override def newDroppedWhile(p: A => Boolean): Transformed[A] = new DroppedWhile { val pred = p }

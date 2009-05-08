@@ -23,14 +23,14 @@ import generic._
  */
 trait Set[A] extends (A => Boolean) with Iterable[A] with SetTemplate[A, Set[A]] {
   def empty = Set.empty
-  override def traversibleBuilder[B]: Builder[B, Set[B], Any] = Set.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, Set[B], Any] = Set.newBuilder[B]
 }
 
 /* Factory object for `Set` class */
 object Set extends SetFactory[Set] {
   def empty[A]: Set[A] = immutable.Set.empty[A]
   type Coll = Set[_]
-  implicit def builderFactory[A]: BuilderFactory[A, Set[A], Coll] = new BuilderFactory[A, Set[A], Coll] { def apply(from: Coll) = from.traversibleBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, Set[A], Coll] = new BuilderFactory[A, Set[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
 }
 
 /* !!! what to do about this?

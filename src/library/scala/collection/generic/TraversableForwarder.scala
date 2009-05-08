@@ -14,22 +14,22 @@ package scala.collection.generic
 import mutable.Buffer
 // import immutable.{List, Nil, ::, Stream}
 
-/** This trait implements a forwarder for traversible objects. It forwards
+/** This trait implements a forwarder for traversable objects. It forwards
  *  all calls to a different iterable object, except for
  *
  *    - toString, hashCode, equals, stringPrefix
  *    - newBuilder, view
  *    - all calls creating a new iterable object of the same kind
  *
- *  The above methods are forwarded by subclass TraversibleProxy
+ *  The above methods are forwarded by subclass TraversableProxy
  *
  *  @author  Martin Odersky
  *  @version 2.8
  */
-trait TraversibleForwarder[+A] extends Traversible[A] {
+trait TraversableForwarder[+A] extends Traversable[A] {
 
   /** The iterable object to which calls are forwarded */
-  protected def underlying: Traversible[A]
+  protected def underlying: Traversable[A]
 
   // Iterable delegates
   // Iterable methods could be printed by  cat IterableTemplate.scala | sed -n '/trait Iterable/,$ p' | egrep '^  (override )?def'

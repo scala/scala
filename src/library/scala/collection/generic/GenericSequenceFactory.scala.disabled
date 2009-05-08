@@ -2,7 +2,7 @@ package scala.collection.generic
 
 /** A template for companion objects of Sequence and subclasses thereof.
  */
-abstract class GenericSequenceFactory extends GenericTraversibleFactory {
+abstract class GenericSequenceFactory extends GenericTraversableFactory {
   
   type Coll <: Sequence[_]
   

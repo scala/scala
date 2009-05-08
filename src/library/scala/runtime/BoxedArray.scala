@@ -35,9 +35,9 @@ abstract class BoxedArray[A] extends Vector[A] with VectorTemplate[A, BoxedArray
   /** Creates new builder for this collection ==> move to subclasses
    *
    * */
-  override protected[this] def newBuilder = traversibleBuilder[A]
+  override protected[this] def newBuilder = traversableBuilder[A]
 
-  override def traversibleBuilder[B]: Builder[B, BoxedArray[B], Any] = new ArrayBuffer[B].mapResult {
+  override def traversableBuilder[B]: Builder[B, BoxedArray[B], Any] = new ArrayBuffer[B].mapResult {
     _.toArray.asInstanceOf[BoxedArray[B]]
   }
 

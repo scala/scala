@@ -1,10 +1,10 @@
 package scala.collection.generic
 
-/** A template for companion objects of Traversible and subclasses thereof.
+/** A template for companion objects of Traversable and subclasses thereof.
  */
-abstract class GenericTraversibleFactory {
+abstract class GenericTraversableFactory {
   
-  type Coll <: Traversible[_]
+  type Coll <: Traversable[_]
 
  /** The empty iterable of type CC */
   def empty[A, That](implicit bf: Coll => Builder[A, That, Coll]): That = apply[A, That]()
@@ -21,7 +21,7 @@ abstract class GenericTraversibleFactory {
    *  @param xss the lists that are to be concatenated
    *  @return the concatenation of all the lists
    */
-  def concat[A, That](xss: Traversible[A]*)(implicit bf: Coll => Builder[A, That, Coll]): That = {
+  def concat[A, That](xss: Traversable[A]*)(implicit bf: Coll => Builder[A, That, Coll]): That = {
     val b = bf(thisCollection)
     for (xs <- Iterable.fromOld(xss))
       b ++= xs

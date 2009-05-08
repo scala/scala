@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Traversible.scala 15188 2008-05-24 15:01:02Z stepancheg $
+// $Id: Traversable.scala 15188 2008-05-24 15:01:02Z stepancheg $
 package scala.collection
 
 // import immutable.{List, Stream, Nil}
@@ -14,7 +14,7 @@ import mutable.{Buffer, ArrayBuffer, ListBuffer}
 import util.control.Breaks._
 import generic._
 
-/** A template trait for traversible collections.
+/** A template trait for traversable collections.
  *
  *  Collection classes mixing in this trait provide a method
  *  <code>foreach</code> which traverses all the
@@ -25,23 +25,23 @@ import generic._
  *  @author Martin Odersky
  *  @version 2.8
  */
-trait Traversible[+A] extends TraversibleTemplate[A, Traversible[A]] {
-  protected[this] def newBuilder = Traversible.newBuilder
-  def traversibleBuilder[B]: Builder[B, Traversible[B], Any] = Traversible.newBuilder[B]
+trait Traversable[+A] extends TraversableTemplate[A, Traversable[A]] {
+  protected[this] def newBuilder = Traversable.newBuilder
+  def traversableBuilder[B]: Builder[B, Traversable[B], Any] = Traversable.newBuilder[B]
 
-  /* The following methods are inherited from TraversibleTemplate
+  /* The following methods are inherited from TraversableTemplate
    *
   override def isEmpty: Boolean
   override def size: Int
   override def hasDefiniteSize
-  override def ++[B >: A, That](that: Traversible[B])(implicit bf: BuilderFactory[B, That, Traversible[A]]): That
-  override def ++[B >: A, That](that: Iterator[B])(implicit bf: BuilderFactory[B, That, Traversible[A]]): That
-  override def map[B, That](f: A => B)(implicit bf: BuilderFactory[B, That, Traversible[A]]): That
-  override def flatMap[B, That](f: A => Traversible[B])(implicit bf: BuilderFactory[B, That, Traversible[A]]): That
-  override def filter(p: A => Boolean): Traversible[A]
-  override def remove(p: A => Boolean): Traversible[A]
-  override def partition(p: A => Boolean): (Traversible[A], Traversible[A])
-  override def groupBy[K](f: A => K): Map[K, Traversible[A]]
+  override def ++[B >: A, That](that: Traversable[B])(implicit bf: BuilderFactory[B, That, Traversable[A]]): That
+  override def ++[B >: A, That](that: Iterator[B])(implicit bf: BuilderFactory[B, That, Traversable[A]]): That
+  override def map[B, That](f: A => B)(implicit bf: BuilderFactory[B, That, Traversable[A]]): That
+  override def flatMap[B, That](f: A => Traversable[B])(implicit bf: BuilderFactory[B, That, Traversable[A]]): That
+  override def filter(p: A => Boolean): Traversable[A]
+  override def remove(p: A => Boolean): Traversable[A]
+  override def partition(p: A => Boolean): (Traversable[A], Traversable[A])
+  override def groupBy[K](f: A => K): Map[K, Traversable[A]]
   override def foreach(f: A => Unit): Unit
   override def forall(p: A => Boolean): Boolean
   override def exists(p: A => Boolean): Boolean
@@ -57,17 +57,17 @@ trait Traversible[+A] extends TraversibleTemplate[A, Traversible[A]] {
   override def reduceRightOpt[B >: A](op: (A, B) => B): Option[B]
   override def head: A
   override def headOption: Option[A]
-  override def tail: Traversible[A]
+  override def tail: Traversable[A]
   override def last: A
   override def lastOption: Option[A]
-  override def init: Traversible[A]
-  override def take(n: Int): Traversible[A]
-  override def drop(n: Int): Traversible[A]
-  override def slice(from: Int, until: Int): Traversible[A]
-  override def takeWhile(p: A => Boolean): Traversible[A]
-  override def dropWhile(p: A => Boolean): Traversible[A]
-  override def span(p: A => Boolean): (Traversible[A], Traversible[A])
-  override def splitAt(n: Int): (Traversible[A], Traversible[A])
+  override def init: Traversable[A]
+  override def take(n: Int): Traversable[A]
+  override def drop(n: Int): Traversable[A]
+  override def slice(from: Int, until: Int): Traversable[A]
+  override def takeWhile(p: A => Boolean): Traversable[A]
+  override def dropWhile(p: A => Boolean): Traversable[A]
+  override def span(p: A => Boolean): (Traversable[A], Traversable[A])
+  override def splitAt(n: Int): (Traversable[A], Traversable[A])
   override def copyToBuffer[B >: A](dest: Buffer[B])
   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int)
   override def copyToArray[B >: A](xs: Array[B], start: Int)
@@ -76,7 +76,7 @@ trait Traversible[+A] extends TraversibleTemplate[A, Traversible[A]] {
   override def toIterable: Iterable[A]
   override def toSequence: Sequence[A]
   override def toStream: Stream[A]
-//  override def sortWith(lt : (A,A) => Boolean): Traversible[A]
+//  override def sortWith(lt : (A,A) => Boolean): Traversable[A]
   override def mkString(start: String, sep: String, end: String): String
   override def mkString(sep: String): String
   override def mkString: String
@@ -86,20 +86,20 @@ trait Traversible[+A] extends TraversibleTemplate[A, Traversible[A]] {
   override def toString
   override def stringPrefix : String
   override def view
-  override def view(from: Int, until: Int): TraversibleView[A, Traversible[A]]
+  override def view(from: Int, until: Int): TraversableView[A, Traversable[A]]
   */
 }
 
-/** Factory methods and utilities for instances of type Traversible */
-object Traversible extends TraversibleFactory[Traversible] { self =>
+/** Factory methods and utilities for instances of type Traversable */
+object Traversable extends TraversableFactory[Traversable] { self =>
 
-  type Coll = Traversible[_]
-  implicit def builderFactory[A]: BuilderFactory[A, Traversible[A], Coll] = new BuilderFactory[A, Traversible[A], Coll] { def apply(from: Coll) = from.traversibleBuilder[A] }
-  def newBuilder[A]: Builder[A, Traversible[A], Any] = immutable.Traversible.newBuilder[A]
+  type Coll = Traversable[_]
+  implicit def builderFactory[A]: BuilderFactory[A, Traversable[A], Coll] = new BuilderFactory[A, Traversable[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
+  def newBuilder[A]: Builder[A, Traversable[A], Any] = immutable.Traversable.newBuilder[A]
 
   /** A wrapper class which adds `min` and `max` methods to iterables of an element type that has an Ordering.
    */
-  class ComparableTraversibleOps[A](self: Traversible[A], cmp: Ordering[A]) {
+  class ComparableTraversableOps[A](self: Traversable[A], cmp: Ordering[A]) {
 
     /** Returns the minimal element of the wrapped iterable `self` with respect to the given ordering `cmp` */
     def min: A = {
@@ -122,7 +122,7 @@ object Traversible extends TraversibleFactory[Traversible] { self =>
 
   /** A wrapper class which adds `sum` and `product` methods to iterables of an element type that is `Numeric`.
    */
-  class NumericTraversibleOps[A](self: Traversible[A], num: Numeric[A]) {
+  class NumericTraversableOps[A](self: Traversable[A], num: Numeric[A]) {
 
     /** Returns the sum of all elements of the wrapped iterable `self` with respect to the numeric operations in `num` */
     def sum: A = {
@@ -141,7 +141,7 @@ object Traversible extends TraversibleFactory[Traversible] { self =>
 
   /** A wrapper class which adds `flatten` and `transpose` methods to iterables or iterable element type`.
    */
-  class TraversibleTraversibleOps[This <: Traversible[Traversible[A]], A](self: This) {
+  class TraversableTraversableOps[This <: Traversable[Traversable[A]], A](self: This) {
 
     /** Returns the concatenation of all elements of the wrapped iterable `self` */
     def flatten[That](implicit bf: BuilderFactory[A, That, This]): That = {
@@ -154,7 +154,7 @@ object Traversible extends TraversibleFactory[Traversible] { self =>
     /** Returns the transposition of the wrapped iterable `self`: rows become columns and columns become rows.
      */
     def transpose[Row, That](implicit bf: BuilderFactory[A, Row, This], bbf: BuilderFactory[Row, That, This]): That = {
-      val bs: Array[Builder[A, Row, This]] = self.head.map(_ => bf(self))(Traversible.builderFactory[Builder[A, Row, This]]).toArray
+      val bs: Array[Builder[A, Row, This]] = self.head.map(_ => bf(self))(Traversable.builderFactory[Builder[A, Row, This]]).toArray
       for (xs <- self) {
         var i = 0
         for (x <- xs) {
@@ -170,7 +170,7 @@ object Traversible extends TraversibleFactory[Traversible] { self =>
 
   /** A wrapper class which adds an `unzip` method to iterable whose elements are pairs.
   	*/
-  class PairTraversibleOps[This <: Traversible[(A1, A2)], A1, A2](self: This) {
+  class PairTraversableOps[This <: Traversable[(A1, A2)], A1, A2](self: This) {
 
     /** Returns a pair of iterables consisting of the first, respectively second, component of all
      *  elements in the wrapped iterable `self`.
@@ -187,27 +187,27 @@ object Traversible extends TraversibleFactory[Traversible] { self =>
   }
 
   /** Implicit wrapper conversion of iterables with elements admitting comparison.
-   *  @see ComparableTraversibleOps
+   *  @see ComparableTraversableOps
    */
-  implicit def comparableTraversibleWrapper[A](self: Traversible[A])(implicit cmp: Ordering[A]) =
-    new ComparableTraversibleOps(self, cmp)
+  implicit def comparableTraversableWrapper[A](self: Traversable[A])(implicit cmp: Ordering[A]) =
+    new ComparableTraversableOps(self, cmp)
 
   /** Implicit wrapper conversion of iterables with numeric elements.
-   *  @see NumericTraversibleOps
+   *  @see NumericTraversableOps
    */
-  implicit def numericTraversibleWrapper[A](self: Traversible[A])(implicit num: Numeric[A]) =
-    new NumericTraversibleOps(self, num)
+  implicit def numericTraversableWrapper[A](self: Traversable[A])(implicit num: Numeric[A]) =
+    new NumericTraversableOps(self, num)
 
   /** Implicit wrapper conversion of iterables with iterable elements.
-   *  @see TraversibleTraversibleOps
+   *  @see TraversableTraversableOps
    */
-  implicit def traversibleTraversibleWrapper[This <: Traversible[Traversible[A]], A](self: This) =
-    new TraversibleTraversibleOps[This, A](self) // !!! error if type parameters are omitted
+  implicit def traversableTraversableWrapper[This <: Traversable[Traversable[A]], A](self: This) =
+    new TraversableTraversableOps[This, A](self) // !!! error if type parameters are omitted
 
   /** Implicit wrapper conversion of iterables with pairs as elements.
-   *  @see PairTraversibleOps
+   *  @see PairTraversableOps
    */
-  implicit def pairTraversibleWrapper[This <: Traversible[(A1, A2)], A1, A2](self: This) =
-    new PairTraversibleOps[This, A1, A2](self)
+  implicit def pairTraversableWrapper[This <: Traversable[(A1, A2)], A1, A2](self: This) =
+    new PairTraversableOps[This, A1, A2](self)
 }
 

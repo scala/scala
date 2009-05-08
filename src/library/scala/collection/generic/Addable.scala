@@ -46,7 +46,7 @@ trait Addable[A, +This <: Addable[A, This]] { self =>
    *
    *  @param iter     the iterable object.
    */
-  def ++ (iter: Traversible[A]): This = (thisCollection /: iter) (_ + _)
+  def ++ (iter: Traversable[A]): This = (thisCollection /: iter) (_ + _)
 
   /** Adds a number of elements provided by an iterator
    *  via its <code>elements</code> method and returns

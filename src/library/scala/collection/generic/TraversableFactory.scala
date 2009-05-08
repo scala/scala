@@ -1,8 +1,8 @@
  package scala.collection.generic
 
-/** A template for companion objects of Traversible and subclasses thereof.
+/** A template for companion objects of Traversable and subclasses thereof.
  */
-abstract class TraversibleFactory[CC[A] <: Traversible[A]] {
+abstract class TraversableFactory[CC[A] <: Traversable[A]] {
 
   /** The builder for this kind of collection.
    */
@@ -23,7 +23,7 @@ abstract class TraversibleFactory[CC[A] <: Traversible[A]] {
    *  @param xss the collections that are to be concatenated
    *  @return the concatenation of all the collections
    */
-  def concat[A](xss: Traversible[A]*): CC[A] = {
+  def concat[A](xss: Traversable[A]*): CC[A] = {
     val b = newBuilder[A]
     for (xs <- xss) b ++= xs
     b.result

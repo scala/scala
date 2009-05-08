@@ -25,7 +25,7 @@ import collection.mutable.Buffer
  *  @author  Martin Odersky
  *  @version 2.8
  */
-trait IterableForwarder[+A] extends Iterable[A] with TraversibleForwarder[A] {
+trait IterableForwarder[+A] extends Iterable[A] with TraversableForwarder[A] {
 
   /** The iterable object to which calls are forwarded */
   protected def underlying: Iterable[A]

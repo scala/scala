@@ -20,17 +20,17 @@ import util.control.Breaks._
  *  elements contained in the collection. They also provide a method `newBuilder`
  *  which creates a builder for collections of the same kind.
  *
- *  This trait implements Traversible's `foreach` method by stepping through
+ *  This trait implements Traversable's `foreach` method by stepping through
  *  all elements. Subclasses of `Iterable` should re-implement `foreach` with
  *  something more efficient, if possible.
  *
  *  This trait adds methods `elements`, `sameElements`,
- *  `takeRight`, `dropRight` to the methods inherited from trait `Traversible`.
+ *  `takeRight`, `dropRight` to the methods inherited from trait `Traversable`.
  *
  *  @author Martin Odersky
  *  @version 2.8
  */
-trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] extends TraversibleTemplate[A, This] { self =>
+trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] extends TraversableTemplate[A, This] { self =>
 
   /** Creates a new iterator over all elements contained in this
    *  iterable object.
@@ -40,7 +40,7 @@ trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] 
   def elements: Iterator[A]
 
   /** Apply a function <code>f</code> to all elements of this
-   *  traversible object.
+   *  traversable object.
    *
    *  @param  f   a function that is applied to every element.
    *  @note This method underlies the implementation of most other bulk operations.
@@ -140,7 +140,7 @@ trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] 
     !these.hasNext && !those.hasNext
   }
 
-  /** Returns a stream with all elements in this traversible object.
+  /** Returns a stream with all elements in this traversable object.
    */
   override def toStream: Stream[A] = elements.toStream
 
@@ -168,7 +168,7 @@ trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] 
   @deprecated def first: A = head
 
   /** @deprecated use headOption instead
-   *  <code>None</code> if traversible is empty.
+   *  <code>None</code> if traversable is empty.
    */
   @deprecated def firstOption: Option[A] = headOption
 

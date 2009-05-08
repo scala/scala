@@ -33,7 +33,7 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
                    with SequenceTemplate[A, This]
 { self =>
 
-  import collection.{Iterable, Traversible}
+  import collection.{Iterable, Traversable}
 
 // Abstract methods from Vector:
 
@@ -87,7 +87,7 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
    *  @param iter    the iterable object providing all elements to insert.
    *  @throws   IndexOutofBoundsException if the index is not valid
    */
-  def insertAll(n: Int, iter: Traversible[A])
+  def insertAll(n: Int, iter: Traversable[A])
 
 
   /** Removes the element on a given index position.
@@ -136,7 +136,7 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
    *
    *  @param iter  the iterable object.
    */
-  def ++:(iter: Traversible[A]): This = { for (x <- iter) x +: this; thisCollection }
+  def ++:(iter: Traversable[A]): This = { for (x <- iter) x +: this; thisCollection }
 
   /** Prepends a number of elements provided by an iterator
    *  The identity of the buffer is returned.
@@ -157,7 +157,7 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
    *
    *  @param iter  the iterable object.
    */
-  def appendAll(iter: Traversible[A]) { this ++= iter }
+  def appendAll(iter: Traversable[A]) { this ++= iter }
 
   /** Prepend given elements to this list.
    *
@@ -171,7 +171,7 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
    *
    *  @param iter  the iterable object.
    */
-  def prependAll(iter: Traversible[A]) { iter ++: this }
+  def prependAll(iter: Traversable[A]) { iter ++: this }
 
   /** Prepends a number of elements provided by an iterable object
    *  via its <code>elements</code> method. The identity of the

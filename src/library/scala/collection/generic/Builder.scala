@@ -45,7 +45,7 @@ trait Builder[-Elem, +To, -From] extends Growable[Elem] {
       def +=(x: Elem) = self += x
       def clear() = self.clear()
       override def ++=(xs: Iterator[Elem]) = self ++= xs
-      override def ++=(xs: Traversible[Elem]) = self ++= xs
+      override def ++=(xs: Traversable[Elem]) = self ++= xs
       def result: NewTo = f(self.result)
     }
 }

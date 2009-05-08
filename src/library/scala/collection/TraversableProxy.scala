@@ -16,10 +16,10 @@ import generic._
 // Methods could be printed by  cat TraversibeTemplate.scala | egrep '^  (override )?def'
 
 
-/** This trait implements a proxy for traversible objects. It forwards
- *  all calls to a different traversible object
+/** This trait implements a proxy for traversable objects. It forwards
+ *  all calls to a different traversable object
  *
  *  @author  Martin Odersky
  *  @version 2.8
  */
-trait TraversibleProxy[+A] extends Traversible[A] with TraversibleProxyTemplate[A, Traversible[A]]
+trait TraversableProxy[+A] extends Traversable[A] with TraversableProxyTemplate[A, Traversable[A]]

@@ -48,7 +48,7 @@ package scala.collection
  */
 object JavaConversions {
   import java.{ lang => jl, util => ju }
-  import scala.collection.{ generic, immutable, mutable, Traversible }
+  import scala.collection.{ generic, immutable, mutable, Traversable }
   import scala.reflect.Manifest
 
   // Scala => Java
@@ -356,7 +356,7 @@ object JavaConversions {
     def update(i : Int, elem : A) = underlying.set(i, elem)
     def +:(elem : A) = { underlying.subList(0, 0).add(elem) ; this }
     def +=(elem : A) = underlying.add(elem)
-    def insertAll(i : Int, elems : Traversible[A]) = { val ins = underlying.subList(0, i) ;  elems.foreach(ins.add(_)) }
+    def insertAll(i : Int, elems : Traversable[A]) = { val ins = underlying.subList(0, i) ;  elems.foreach(ins.add(_)) }
     def remove(i : Int) = underlying.remove(i)
     def clear = underlying.clear
     def result = this

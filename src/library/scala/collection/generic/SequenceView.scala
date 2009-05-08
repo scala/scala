@@ -12,7 +12,7 @@
 package scala.collection.generic
 
 import Sequence.fill
-import TraversibleView.NoBuilder
+import TraversableView.NoBuilder
 
 /** A non-strict projection of an iterable.
  * @author Sean McDirmid
@@ -22,7 +22,7 @@ import TraversibleView.NoBuilder
 trait SequenceView[+A, +Coll <: Sequence[_]] extends SequenceViewTemplate[A, Coll, SequenceView[A, Coll]]
 
 object SequenceView {
-  type Coll = TraversibleView[_, _]
+  type Coll = TraversableView[_, _]
   implicit def builderFactory[A]: BuilderFactory[A, SequenceView[A, Sequence[_]], Coll] = new BuilderFactory[A, SequenceView[A, Sequence[_]], Coll] { def apply(from: Coll) = new NoBuilder }
 }
 

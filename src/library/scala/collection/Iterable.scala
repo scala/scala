@@ -21,19 +21,19 @@ import generic._
  *  elements contained in the collection. They also provide a method `newBuilder`
  *  which creates a builder for collections of the same kind.
  *
- *  This trait implements Traversible's `foreach` method by stepping through
+ *  This trait implements Traversable's `foreach` method by stepping through
  *  all elements. Subclasses of `Iterable` should re-implement `foreach` with
  *  something more efficient, if possible.
  *
  *  This trait adds methods `elements`, `zip`, `zipAll`, `zipWithIndex`, `sameElements`,
- *  `takeRight`, `dropRight` to the methods inherited from trait `Traversible`.
+ *  `takeRight`, `dropRight` to the methods inherited from trait `Traversable`.
  *
  *  @author Martin Odersky
  *  @version 2.8
  */
-trait Iterable[+A] extends Traversible[A] with IterableTemplate[A, Iterable[A]] {
+trait Iterable[+A] extends Traversable[A] with IterableTemplate[A, Iterable[A]] {
   override protected[this] def newBuilder = Iterable.newBuilder
-  override def traversibleBuilder[B]: Builder[B, Iterable[B], Any] = Iterable.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, Iterable[B], Any] = Iterable.newBuilder[B]
 
   /* The following methods are inherited from trait IterableTemplate
    *
@@ -46,11 +46,11 @@ trait Iterable[+A] extends Traversible[A] with IterableTemplate[A, Iterable[A]] 
   */
 }
 
-/** Factory methods and utilities for instances of type Traversible */
-object Iterable extends TraversibleFactory[Iterable] {
+/** Factory methods and utilities for instances of type Traversable */
+object Iterable extends TraversableFactory[Iterable] {
 
   type Coll	= Iterable[_]
-  implicit def builderFactory[A]: BuilderFactory[A, Iterable[A], Coll] = new BuilderFactory[A, Iterable[A], Coll] { def apply(from: Coll) = from.traversibleBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, Iterable[A], Coll] = new BuilderFactory[A, Iterable[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
   def newBuilder[A]: Builder[A, Iterable[A], Any] = immutable.Iterable.newBuilder[A]
 
   def fromOld[A](it: scala.Iterable[A]): Iterable[A] = new Iterable[A] {

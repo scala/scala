@@ -20,7 +20,7 @@ package scala.collection.mutable
  *  @version 1.0, 03/05/2004
  */
 class SynchronizedStack[A] extends Stack[A] {
-  import collection.Traversible
+  import collection.Traversable
 
   /** Checks if the stack is empty.
    *
@@ -42,13 +42,13 @@ class SynchronizedStack[A] extends Stack[A] {
    */
   override def push(elem1: A, elem2: A, elems: A*): this.type = synchronized[this.type] { super.push(elem1, elem2, elems: _*) }
 
-  /** Pushes all elements provided by an <code>Traversible</code> object
+  /** Pushes all elements provided by an <code>Traversable</code> object
    *  on top of the stack. The elements are pushed in the order they
    *  are given out by the iterator.
    *
    *  @param  iter        an iterable object
    */
-  override def pushAll(elems: collection.Traversible[A]): this.type = synchronized[this.type] { super.pushAll(elems) }
+  override def pushAll(elems: collection.Traversable[A]): this.type = synchronized[this.type] { super.pushAll(elems) }
 
   /** Pushes all elements provided by an iterator
    *  on top of the stack. The elements are pushed in the order they

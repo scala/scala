@@ -28,7 +28,7 @@ final class ListBuffer[A]
          with Builder[A, List[A], Any]
          with SequenceForwarder[A]
 {
-  import collection.Traversible
+  import collection.Traversable
 
   private var start: List[A] = Nil
   private var last0: ::[A] = _
@@ -38,7 +38,7 @@ final class ListBuffer[A]
   protected def underlying: immutable.Sequence[A] = start
 
   override protected[this] def newBuilder = ListBuffer.newBuilder[A]
-  override def traversibleBuilder[B]: Builder[B, ListBuffer[B], Any] = ListBuffer.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, ListBuffer[B], Any] = ListBuffer.newBuilder[B]
 
   /** The current length of the buffer
    */
@@ -131,7 +131,7 @@ final class ListBuffer[A]
    *  @param  iter  the iterable object providing all elements to insert.
    *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
-  def insertAll(n: Int, seq: Traversible[A]) {
+  def insertAll(n: Int, seq: Traversable[A]) {
     try {
       if (exported) copy()
       var elems = seq.toList.reverse
@@ -319,7 +319,7 @@ final class ListBuffer[A]
 /* Factory object for `ListBuffer` class */
 object ListBuffer extends SequenceFactory[ListBuffer] {
   type Coll = ListBuffer[_]
-  implicit def builderFactory[A]: BuilderFactory[A, ListBuffer[A], Coll] = new BuilderFactory[A, ListBuffer[A], Coll] { def apply(from: Coll) = from.traversibleBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, ListBuffer[A], Coll] = new BuilderFactory[A, ListBuffer[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
   def newBuilder[A]: Builder[A, ListBuffer[A], Any] = new AddingBuilder(new ListBuffer[A])
 }
 

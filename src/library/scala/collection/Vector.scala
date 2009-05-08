@@ -23,11 +23,11 @@ import mutable.ArrayBuffer
  */
 trait Vector[+A] extends Sequence[A] with VectorTemplate[A, Vector[A]] {
   override protected[this] def newBuilder = Vector.newBuilder
-  override def traversibleBuilder[B]: Builder[B, Vector[B], Any] = Vector.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, Vector[B], Any] = Vector.newBuilder[B]
 }
 
 object Vector extends SequenceFactory[Vector] {
   type Coll = Vector[_]
-  implicit def builderFactory[A]: BuilderFactory[A, Vector[A], Coll] = new BuilderFactory[A, Vector[A], Coll] { def apply(from: Coll) = from.traversibleBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, Vector[A], Coll] = new BuilderFactory[A, Vector[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
   def newBuilder[A]: Builder[A, Vector[A], Any] = mutable.Vector.newBuilder[A]
 }

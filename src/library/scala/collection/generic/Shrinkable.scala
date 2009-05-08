@@ -46,7 +46,7 @@ trait Shrinkable[-A] {
    *
    *  @param iter  the iterable object.
    */
-  def --=(iter: Traversible[A]) { iter foreach -= }
+  def --=(iter: Traversable[A]) { iter foreach -= }
 }
 
 

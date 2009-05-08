@@ -100,7 +100,7 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
    *  @param iter     the iterable object.
    */
   //override
-  def ++(iter: Traversible[(A, B)]): this.type = { (this /: iter) (_ + _); this }
+  def ++(iter: Traversable[(A, B)]): this.type = { (this /: iter) (_ + _); this }
 
   /** Adds a number of elements provided by an iterator
    *  via its <code>elements</code> method and returns

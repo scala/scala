@@ -22,7 +22,7 @@ import collection.mutable.Buffer
  *  @author  Martin Odersky
  *  @version 2.8
  */
-trait IterableProxyTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] extends IterableTemplate[A, This] with TraversibleProxyTemplate[A, This] {
+trait IterableProxyTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] extends IterableTemplate[A, This] with TraversableProxyTemplate[A, This] {
   override def elements: Iterator[A] = self.elements
   override def takeRight(n: Int): This = self.takeRight(n)
   override def dropRight(n: Int): This = self.dropRight(n)

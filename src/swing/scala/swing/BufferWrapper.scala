@@ -11,7 +11,7 @@ protected[swing] abstract class BufferWrapper[A] extends Buffer[A] { outer =>
     remove(0)
     insertAt(n, a)
   }
-  def insertAll(n: Int, elems: scala.collection.Traversible[A]) {
+  def insertAll(n: Int, elems: scala.collection.Traversable[A]) {
     var i = n
     for (el <- elems) {
       insertAt(i, el)

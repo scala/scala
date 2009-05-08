@@ -68,14 +68,14 @@ class Stack[+A] extends Sequence[A] {
   def pushAll[B >: A](elems: Iterator[B]): Stack[B] =
     ((this: Stack[B]) /: elems)(_ push _)
 
-  /** Push all elements provided by the given traversible object onto
+  /** Push all elements provided by the given traversable object onto
    *  the stack. The last element returned by the iterable object
    *  will be on top of the new stack.
    *
    *  @param   elems      the iterable object.
    *  @return the stack with the new elements on top.
    */
-  def pushAll[B >: A](elems: collection.Traversible[B]): Stack[B] =
+  def pushAll[B >: A](elems: collection.Traversable[B]): Stack[B] =
     ((this: Stack[B]) /: elems)(_ push _)
 
   /** Returns the top element of the stack. An error is signaled if

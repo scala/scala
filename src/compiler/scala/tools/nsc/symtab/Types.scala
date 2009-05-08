@@ -4479,7 +4479,7 @@ A type's typeSymbol should never be inspected directly.
     "scala.collection.immutable.List",
     "scala.collection.immutable.Nil",
     "scala.collection.Sequence",
-    "scala.collection.Traversible",
+    "scala.collection.Traversable",
     "scala.collection.Iterable",
     "scala.collection.mutable.StringBuilder",
     "scala.collection.Vector",

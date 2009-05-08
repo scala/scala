@@ -63,13 +63,13 @@ class Stack[A] private (var elems: List[A]) extends collection.Sequence[A] with 
   def pushAll(elems: Iterator[A]): this.type = { for (elem <- elems) { push(elem); () }; this }
 
   /** Push all elements provided by the given iterable object onto
-   *  the stack. The last element returned by the traversible object
+   *  the stack. The last element returned by the traversable object
    *  will be on top of the new stack.
    *
    *  @param   elems      the iterable object.
    *  @return the stack with the new elements on top.
    */
-  def pushAll(elems: collection.Traversible[A]): this.type = { for (elem <- elems) { push(elem); () }; this }
+  def pushAll(elems: collection.Traversable[A]): this.type = { for (elem <- elems) { push(elem); () }; this }
 
   /** @deprecated use pushAll */
   @deprecated def ++=(it: Iterator[A]): Unit = pushAll(it)

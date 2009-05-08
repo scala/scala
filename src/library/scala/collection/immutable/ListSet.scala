@@ -16,7 +16,7 @@ import generic._
 /** The canonical factory of <a href="ListSet.html">ListSet</a>'s */
 object ListSet extends SetFactory[ListSet] {
   type Coll = ListSet[_]
-  implicit def builderFactory[A]: BuilderFactory[A, ListSet[A], Coll] = new BuilderFactory[A, ListSet[A], Coll] { def apply(from: Coll) = from.traversibleBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, ListSet[A], Coll] = new BuilderFactory[A, ListSet[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
   def empty[A] = new ListSet[A]
 }
 
@@ -41,7 +41,7 @@ class ListSet[A] extends Set[A] with SetTemplate[A, ListSet[A]] { self =>
   override def isEmpty: Boolean = true;
 
   override def empty = ListSet.empty
-  override def traversibleBuilder[B]: Builder[B, ListSet[B], Any] = ListSet.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, ListSet[B], Any] = ListSet.newBuilder[B]
 
   /** Checks if this set contains element <code>elem</code>.
    *

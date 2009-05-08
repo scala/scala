@@ -34,7 +34,7 @@ self =>
 
   override def empty = Set.empty
 
-  override def traversibleBuilder[B]: Builder[B, Set[B], Any] = Set.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, Set[B], Any] = Set.newBuilder[B]
 
   /** This method allows one to add or remove an element <code>elem</code>
    *  from this set depending on the value of parameter <code>included</code>.
@@ -108,7 +108,7 @@ self =>
  */
 object Set extends SetFactory[Set] {
   type Coll = Set[_]
-  implicit def builderFactory[A]: BuilderFactory[A, Set[A], Coll] = new BuilderFactory[A, Set[A], Coll] { def apply(from: Coll) = from.traversibleBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, Set[A], Coll] = new BuilderFactory[A, Set[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
   def empty[A]: Set[A] = HashSet.empty[A]
 }
 

@@ -2,7 +2,7 @@ package scala.collection.generic
 
 /** A template for companion objects of Sequence and subclasses thereof.
  */
-abstract class SequenceFactory[CC[A] <: Sequence[A]] extends TraversibleFactory[CC] {
+abstract class SequenceFactory[CC[A] <: Sequence[A]] extends TraversableFactory[CC] {
 
   /** This method is called in a pattern match { case Sequence(...) => }.
    *

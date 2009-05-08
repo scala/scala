@@ -20,7 +20,7 @@ package scala.collection.mutable
  */
 trait SynchronizedBuffer[A] extends Buffer[A] {
 
-  import collection.Traversible
+  import collection.Traversable
 
   abstract override def length: Int = synchronized {
     super.length
@@ -57,7 +57,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param iter  the iterable object.
    */
-  override def ++(iter: Traversible[A]): Buffer[A] = synchronized {
+  override def ++(iter: Traversable[A]): Buffer[A] = synchronized {
     super.++(iter)
   }
 
@@ -66,7 +66,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param iter  the iterable object.
    */
-  override def ++=(iter: Traversible[A]): Unit = synchronized {
+  override def ++=(iter: Traversable[A]): Unit = synchronized {
     super.++=(iter)
   }
 
@@ -83,7 +83,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param iter  the iterable object.
    */
-  override def appendAll(iter: Traversible[A]): Unit = synchronized {
+  override def appendAll(iter: Traversable[A]): Unit = synchronized {
     super.appendAll(iter)
   }
 
@@ -102,7 +102,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param iter  the iterable object.
    */
-  override def ++:(iter: Traversible[A]): Buffer[A] = synchronized {
+  override def ++:(iter: Traversable[A]): Buffer[A] = synchronized {
     super.++:(iter)
   }
 
@@ -120,7 +120,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param iter  the iterable object.
    */
-  override def prependAll(elems: Traversible[A]): Unit = synchronized {
+  override def prependAll(elems: Traversable[A]): Unit = synchronized {
     super.prependAll(elems)
   }
 
@@ -142,7 +142,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *  @param n     the index where a new element will be inserted.
    *  @param iter  the iterable object providing all elements to insert.
    */
-  abstract override def insertAll(n: Int, iter: Traversible[A]): Unit = synchronized {
+  abstract override def insertAll(n: Int, iter: Traversable[A]): Unit = synchronized {
      super.insertAll(n, iter)
   }
 

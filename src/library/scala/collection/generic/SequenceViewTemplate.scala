@@ -12,7 +12,7 @@
 package scala.collection.generic
 
 import Sequence.fill
-import TraversibleView.NoBuilder
+import TraversableView.NoBuilder
 
 /** A non-strict projection of an iterable.
  * @author Sean McDirmid
@@ -133,9 +133,9 @@ trait SequenceViewTemplate[+A,
   /** Boilerplate method, to override in each subclass
    *  This method could be eliminated if Scala had virtual classes
    */
-  protected override def newAppended[B >: A](that: Traversible[B]): Transformed[B] = new Appended[B] { val rest = that }
+  protected override def newAppended[B >: A](that: Traversable[B]): Transformed[B] = new Appended[B] { val rest = that }
   protected override def newMapped[B](f: A => B): Transformed[B] = new Mapped[B] { val mapping = f }
-  protected override def newFlatMapped[B](f: A => Traversible[B]): Transformed[B] = new FlatMapped[B] { val mapping = f }
+  protected override def newFlatMapped[B](f: A => Traversable[B]): Transformed[B] = new FlatMapped[B] { val mapping = f }
   protected override def newFiltered(p: A => Boolean): Transformed[A] = new Filtered { val pred = p }
   protected override def newSliced(_from: Int, _until: Int): Transformed[A] = new Sliced { val from = _from; val until = _until }
   protected override def newDroppedWhile(p: A => Boolean): Transformed[A] = new DroppedWhile { val pred = p }
