@@ -30,9 +30,9 @@ object TestMutable {
   Console.println("xs1 = " + ms1.elements.toList)
   Console.println("xs2 = " + ms2.elements.toList)
 
-  Console.println("ma0 = " + ms0.underlying.toList)
-  Console.println("ma1 = " + ms1.underlying.toList)
-  Console.println("ma2 = " + ms2.underlying.toList)
+  Console.println("ma0 = " + ms0.toList)
+  Console.println("ma1 = " + ms1.toList)
+  Console.println("ma2 = " + ms2.toList)
 
   Console.println("mi0 = " + ms0.toImmutable)
   Console.println("mi1 = " + ms1.toImmutable)
@@ -43,10 +43,10 @@ object TestMutable {
 object TestImmutable {
   import scala.collection.immutable.BitSet
 
-  val is0 = new BitSet(8, 1, null, false)
-  val is1 = new BitSet(8, 1, Array(), false)
-  val is2 = new BitSet(8, 8, Array(4), false)
-  val is3 = new BitSet(0, 0, null, false)
+  val is0 = BitSet()
+  val is1 = BitSet.fromArray(Array())
+  val is2 = BitSet.fromArray(Array(4))
+  val is3 = BitSet.empty
 
   Console.println("is0 = " + is0)
   Console.println("is1 = " + is1)
@@ -63,10 +63,10 @@ object TestImmutable {
   Console.println("ys2 = " + is2.elements.toList)
   Console.println("ys3 = " + is3.elements.toList)
 
-  Console.println("ia0 = " + is0.underlying.toList)
-  Console.println("ia1 = " + is1.underlying.toList)
-  Console.println("ia2 = " + is2.underlying.toList)
-  Console.println("ia3 = " + is3.underlying.toList)
+  Console.println("ia0 = " + is0.toList)
+  Console.println("ia1 = " + is1.toList)
+  Console.println("ia2 = " + is2.toList)
+  Console.println("ia3 = " + is3.toList)
   Console.println
 }
 
