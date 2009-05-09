@@ -277,9 +277,12 @@ trait LinearSequenceTemplate[+A, +This <: LinearSequenceTemplate[A, This] with L
    */
   override def sameElements[B >: A](that: Iterable[B]): Boolean = that match {
     case that1: LinearSequence[_] =>
-      val these = this
-      val those = that1
-      while (!these.isEmpty && !those.isEmpty && these.head == those.head) {}
+      var these = this
+      var those = that1
+      while (!these.isEmpty && !those.isEmpty && these.head == those.head) {
+        these = these.tail
+        those = those.tail
+      }
       these.isEmpty && those.isEmpty
     case _ => super.sameElements(that)
   }
