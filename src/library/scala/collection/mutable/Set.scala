@@ -34,7 +34,7 @@ self =>
 
   override def empty = Set.empty
 
-  override def traversableBuilder[B]: Builder[B, Set[B], Any] = Set.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, Set[B]] = Set.newBuilder[B]
 
   /** This method allows one to add or remove an element <code>elem</code>
    *  from this set depending on the value of parameter <code>included</code>.

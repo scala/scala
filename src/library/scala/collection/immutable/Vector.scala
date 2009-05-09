@@ -15,7 +15,7 @@ import mutable.ArrayBuffer
  */
 trait Vector[+A] extends Sequence[A] with collection.Vector[A] with VectorTemplate[A, Vector[A]] { self =>
   override protected[this] def newBuilder = Vector.newBuilder
-  override def traversableBuilder[B]: Builder[B, Vector[B], Any] = Vector.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, Vector[B]] = Vector.newBuilder[B]
 }
 
 object Vector extends SequenceFactory[Vector] {
@@ -25,5 +25,5 @@ object Vector extends SequenceFactory[Vector] {
     def apply(idx: Int) = buf.apply(idx)
   }
   implicit def builderFactory[A]: BuilderFactory[A, Vector[A], Coll] = new BuilderFactory[A, Vector[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
-  def newBuilder[A]: Builder[A, Vector[A], Any] = new ArrayBuffer[A] mapResult (buf => new Impl(buf))
+  def newBuilder[A]: Builder[A, Vector[A]] = new ArrayBuffer[A] mapResult (buf => new Impl(buf))
 }

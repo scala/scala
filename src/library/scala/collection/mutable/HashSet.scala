@@ -23,7 +23,7 @@ import generic._
 class HashSet[A] extends Set[A] with SetTemplate[A, HashSet[A]] with FlatHashTable[A] {
 
   override def empty = HashSet.empty
-  override def traversableBuilder[B]: Builder[B, HashSet[B], Any] = HashSet.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, HashSet[B]] = HashSet.newBuilder[B]
 
   override def size = super.size
 

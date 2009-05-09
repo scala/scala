@@ -11,13 +11,13 @@ import generic._
  */
 trait Iterable[+A] extends Traversable[A] with collection.Iterable[A] with IterableTemplate[A, Iterable[A]] { self =>
   override protected[this] def newBuilder = Iterable.newBuilder
-  override def traversableBuilder[B]: Builder[B, Iterable[B], Any] = Iterable.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, Iterable[B]] = Iterable.newBuilder[B]
 }
 
 /* A factory object for the trait `Iterable` */
 object Iterable extends TraversableFactory[Iterable] {
   type Coll = Iterable[_]
   implicit def builderFactory[A]: BuilderFactory[A, Iterable[A], Coll] = new BuilderFactory[A, Iterable[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
-  def newBuilder[A]: Builder[A, Iterable[A], Any] = new mutable.ListBuffer
+  def newBuilder[A]: Builder[A, Iterable[A]] = new mutable.ListBuffer
 }
 

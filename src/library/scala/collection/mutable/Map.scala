@@ -20,7 +20,7 @@ trait Map[A, B]
      with Unhashable {
 
   override def empty: Map[A, B] = Map.empty
-  override def mapBuilder[A, B]: Builder[(A, B), Map[A, B], Any] = Map.newBuilder[A, B]
+  override def mapBuilder[A, B]: Builder[(A, B), Map[A, B]] = Map.newBuilder[A, B]
 
   /** Return a read-only projection of this map.  !!! or just use an (immutable) MapProxy?
   def readOnly : collection.Map[A, B] = new collection.Map[A, B] {

@@ -29,13 +29,13 @@ package scala.collection.generic
  */
 trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with mutable.Map[A, B]]
   extends MapTemplate[A, B, This]
-     with Builder[(A, B), This, Any]
+     with Builder[(A, B), This]
      with Growable[(A, B)]
      with Shrinkable[A]
      with Cloneable[This]
 { self =>
 
-  override protected[this] def newBuilder: Builder[(A, B), This, Any] = new MutableMapBuilder[A, B, This](empty.asInstanceOf[This]) // !!! concrete overrides abstract problem
+  override protected[this] def newBuilder: Builder[(A, B), This] = new MutableMapBuilder[A, B, This](empty.asInstanceOf[This]) // !!! concrete overrides abstract problem
 
   /** This method allows one to add a new mapping from <code>key</code>
    *  to <code>value</code> to the map. If the map already contains a

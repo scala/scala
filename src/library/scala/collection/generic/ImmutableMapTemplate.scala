@@ -31,7 +31,7 @@ trait ImmutableMapTemplate[A, +B, +This <: ImmutableMapTemplate[A, B, This] with
   extends MapTemplate[A, B, This] {
 self =>
 
-  override protected[this] def newBuilder: Builder[(A, B), This, Any] = new ImmutableMapBuilder[A, B, This](empty)
+  override protected[this] def newBuilder: Builder[(A, B), This] = new ImmutableMapBuilder[A, B, This](empty)
 
   /** This function transforms all the values of mappings contained
    *  in this map with function <code>f</code>.

@@ -31,7 +31,7 @@ self =>
 
   /** Create a new builder for this traversable type.
    */
-  protected[this] def newBuilder: Builder[A, This, Any]
+  protected[this] def newBuilder: Builder[A, This]
 
   /** Is this collection empty?
    */
@@ -156,7 +156,7 @@ self =>
    *        return a new collection.
    */
   def groupBy[K](f: A => K): Map[K, This] = {
-    var m = Map[K, Builder[A, This, Any]]()
+    var m = Map[K, Builder[A, This]]()
     for (elem <- this) {
       val key = f(elem)
       val bldr = m get key match {

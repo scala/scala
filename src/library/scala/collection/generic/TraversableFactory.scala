@@ -6,7 +6,7 @@ abstract class TraversableFactory[CC[A] <: Traversable[A]] {
 
   /** The builder for this kind of collection.
    */
-  def newBuilder[A]: Builder[A, CC[A], Any]
+  def newBuilder[A]: Builder[A, CC[A]]
 
  /** The empty iterable of type CC */
   def empty[A]:  CC[A] = newBuilder[A].result

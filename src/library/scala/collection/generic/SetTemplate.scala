@@ -30,7 +30,7 @@ trait SetTemplate[A, +This <: SetTemplate[A, This] with Set[A]] extends Iterable
 
   def empty: This
 
-  override protected[this] def newBuilder: Builder[A, This, Any] = new AddingBuilder[A, This](empty)
+  override protected[this] def newBuilder: Builder[A, This] = new AddingBuilder[A, This](empty)
 
   /** Checks if this set contains element <code>elem</code>.
    *

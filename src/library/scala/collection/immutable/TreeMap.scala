@@ -19,7 +19,7 @@ object TreeMap {
 
   type Coll = TreeMap[_, _]
   implicit def builderFactory[A <% Ordered[A], B]: BuilderFactory[(A, B), TreeMap[A, B], Coll] = new BuilderFactory[(A, B), TreeMap[A, B], Coll] { def apply(from: Coll) = newBuilder[A, B] }
-  def newBuilder[A <% Ordered[A], B]: Builder[(A, B), TreeMap[A, B], Any] = new ImmutableMapBuilder(empty[A, B])
+  def newBuilder[A <% Ordered[A], B]: Builder[(A, B), TreeMap[A, B]] = new ImmutableMapBuilder(empty[A, B])
 
   /** The empty map of this type */
   def empty[A <% Ordered[A], B] = new TreeMap[A, B]
@@ -42,7 +42,7 @@ class TreeMap[A <% Ordered[A], +B](override val size: Int, t: RedBlack[A]#Tree[B
      with SortedMapTemplate[A, B, TreeMap[A, B]]
      with ImmutableMapTemplate[A, B, TreeMap[A, B]] {
 
-  override protected[this] def newBuilder : Builder[(A, B), TreeMap[A, B], Any] =
+  override protected[this] def newBuilder : Builder[(A, B), TreeMap[A, B]] =
     TreeMap.newBuilder[A, B]
 
   def isSmaller(x: A, y: A) = x < y

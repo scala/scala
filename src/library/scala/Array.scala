@@ -27,7 +27,7 @@ object Array extends SequenceFactory[Array] {
 
   type Coll = Array[_]
   implicit def builderFactory[A]: BuilderFactory[A, Array[A], Coll] = new BuilderFactory[A, Array[A], Coll] { def apply(from: Coll) = newBuilder[A] }
-  def newBuilder[A]: Builder[A, Array[A], Any] = new ArrayBuffer[A].mapResult(_.toArray)
+  def newBuilder[A]: Builder[A, Array[A]] = new ArrayBuffer[A].mapResult(_.toArray)
 
   private def slowcopy(
                      src : AnyRef,
@@ -248,7 +248,7 @@ object Array extends SequenceFactory[Array] {
  */
 final class Array[A](_length: Int) extends Vector[A] with VectorTemplate[A, Array[A]] {
 
-  override protected[this] def newBuilder: Builder[A, Array[A], Any] = throw new Error()
+  override protected[this] def newBuilder: Builder[A, Array[A]] = throw new Error()
 
    /** Multidimensional array creation
     *  @deprecated use Array.ofDim instead

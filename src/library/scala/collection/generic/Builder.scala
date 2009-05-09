@@ -15,7 +15,7 @@ package scala.collection.generic
  *  to the builder with += and then converting to the required collection type with
  *  `result`.
  */
-trait Builder[-Elem, +To, -From] extends Growable[Elem] {
+trait Builder[-Elem, +To] extends Growable[Elem] {
 
   /** Adds a single element to the builder.
    *  @param elem The element to be added
@@ -39,8 +39,8 @@ trait Builder[-Elem, +To, -From] extends Growable[Elem] {
    *  a given function is applied to the current builder's result.
    *  @param  f   the function to apply to the builder's result
    */
-  def mapResult[NewTo](f: To => NewTo): Builder[Elem, NewTo, From] =
-    new Builder[Elem, NewTo, From] with Proxy {
+  def mapResult[NewTo](f: To => NewTo): Builder[Elem, NewTo] =
+    new Builder[Elem, NewTo] with Proxy {
       val self = Builder.this
       def +=(x: Elem) = self += x
       def clear() = self.clear()

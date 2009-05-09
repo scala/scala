@@ -26,7 +26,7 @@ trait ResizableArray[A] extends Vector[A] with VectorTemplate[A, ResizableArray[
   import collection.Iterable // !!!
 
   override protected[this] def newBuilder = ResizableArray.newBuilder
-  override def traversableBuilder[B]: Builder[B, ResizableArray[B], Any] = ResizableArray.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, ResizableArray[B]] = ResizableArray.newBuilder[B]
 
   protected def initialSize: Int = 16
   protected var array: Array[AnyRef] = new Array[AnyRef](initialSize max 1)
@@ -117,5 +117,5 @@ trait ResizableArray[A] extends Vector[A] with VectorTemplate[A, ResizableArray[
 object ResizableArray extends SequenceFactory[ResizableArray] {
   type Coll = Vector[_]
   implicit def builderFactory[A]: BuilderFactory[A, Vector[A], Coll] = new BuilderFactory[A, Vector[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
-  def newBuilder[A]: Builder[A, ResizableArray[A], Any] = new ArrayBuffer[A]
+  def newBuilder[A]: Builder[A, ResizableArray[A]] = new ArrayBuffer[A]
 }

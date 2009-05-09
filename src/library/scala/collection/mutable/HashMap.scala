@@ -18,7 +18,7 @@ import generic._
 class HashMap[A, B] extends Map[A, B] with MutableMapTemplate[A, B, HashMap[A, B]] with HashTable[A] with DefaultMapModel[A, B] {
 
   override def empty: HashMap[A, B] = HashMap.empty[A, B]
-  override def mapBuilder[A, B]: Builder[(A, B), HashMap[A, B], Any] = HashMap.newBuilder[A, B]
+  override def mapBuilder[A, B]: Builder[(A, B), HashMap[A, B]] = HashMap.newBuilder[A, B]
 
   def -= (key: A) { removeEntry(key) }
 

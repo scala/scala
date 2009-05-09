@@ -18,8 +18,7 @@ import collection.immutable.Vector
 
 object RichString {
 
-//  def newBuilder: Builder[Char, String, Any] = new StringBuilder()
-  def newBuilder: Builder[Char, RichString, Any] = new StringBuilder() mapResult (new RichString(_))
+  def newBuilder: Builder[Char, RichString] = new StringBuilder() mapResult (new RichString(_))
   implicit def builderFactory: BuilderFactory[Char, RichString, RichString] = new BuilderFactory[Char, RichString, RichString] { def apply(from: RichString) = newBuilder }
   implicit def builderFactory2: BuilderFactory[Char, RichString, String] = new BuilderFactory[Char, RichString, String] { def apply(from: String) = newBuilder }
 

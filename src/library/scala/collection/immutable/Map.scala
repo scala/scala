@@ -18,7 +18,7 @@ trait Map[A, +B] extends Iterable[(A, B)]
                     with ImmutableMapTemplate[A, B, Map[A, B]] { self =>
 
   override def empty: Map[A, B] = Map.empty
-  override def mapBuilder[A, B]: Builder[(A, B), Map[A, B], Any] = Map.newBuilder[A, B]
+  override def mapBuilder[A, B]: Builder[(A, B), Map[A, B]] = Map.newBuilder[A, B]
 
   /** Add a key/value pair to this map.
    *  @param    key the key

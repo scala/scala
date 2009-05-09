@@ -35,7 +35,7 @@ object ListMap extends ImmutableMapFactory[ListMap] {
 class ListMap[A, +B] extends Map[A, B] with ImmutableMapTemplate[A, B, ListMap[A, B]] {
 
   override def empty = ListMap.empty
-  override def mapBuilder[A, B]: Builder[(A, B), ListMap[A, B], Any] = ListMap.newBuilder[A, B]
+  override def mapBuilder[A, B]: Builder[(A, B), ListMap[A, B]] = ListMap.newBuilder[A, B]
 
   /** Returns the number of mappings in this map.
    *

@@ -17,8 +17,8 @@ import generic._
 object TreeSet {
 
   type Coll = TreeSet[_]
-  implicit def implicitBuilder[A <% Ordered[A]]: Builder[A, TreeSet[A], Coll] = newBuilder[A]
-  def newBuilder[A <% Ordered[A]]: Builder[A, TreeSet[A], Any] = new AddingBuilder(empty[A])
+  implicit def implicitBuilder[A <% Ordered[A]]: Builder[A, TreeSet[A]] = newBuilder[A]
+  def newBuilder[A <% Ordered[A]]: Builder[A, TreeSet[A]] = new AddingBuilder(empty[A])
 
   /** The empty set of this type
    */

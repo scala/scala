@@ -18,7 +18,7 @@ import TraversableView.NoBuilder
 trait TraversableView[+A, +Coll <: Traversable[_]] extends TraversableViewTemplate[A, Coll, TraversableView[A, Coll]]
 
 object TraversableView {
-  class NoBuilder[A] extends Builder[A, Nothing, TraversableView[_, _]] {
+  class NoBuilder[A] extends Builder[A, Nothing] {
     def +=(elem: A) {}
     def elements: Iterator[A] = Iterator.empty
     def result() = throw new UnsupportedOperationException("TraversableView.Builder.result")

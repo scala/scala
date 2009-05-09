@@ -20,7 +20,7 @@ import generic._
 trait SortedMap[A, +B] extends Map[A, B] with SortedMapTemplate[A, B, SortedMap[A, B]] {
   /** Needs to be overridden in subclasses. */
   override def empty: SortedMap[A, B] = throw new UnsupportedOperationException("SortedMap.empty")
-  override protected[this] def newBuilder : Builder[(A, B), SortedMap[A, B], Any] =
+  override protected[this] def newBuilder : Builder[(A, B), SortedMap[A, B]] =
     throw new UnsupportedOperationException("SortedMap.newBuilder")
 
 }

@@ -25,7 +25,7 @@ import generic._
 final class ListBuffer[A]
       extends Buffer[A]
          with BufferTemplate[A, ListBuffer[A]]
-         with Builder[A, List[A], Any]
+         with Builder[A, List[A]]
          with SequenceForwarder[A]
 {
   import collection.Traversable
@@ -38,7 +38,7 @@ final class ListBuffer[A]
   protected def underlying: immutable.Sequence[A] = start
 
   override protected[this] def newBuilder = ListBuffer.newBuilder[A]
-  override def traversableBuilder[B]: Builder[B, ListBuffer[B], Any] = ListBuffer.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, ListBuffer[B]] = ListBuffer.newBuilder[B]
 
   /** The current length of the buffer
    */
@@ -320,6 +320,6 @@ final class ListBuffer[A]
 object ListBuffer extends SequenceFactory[ListBuffer] {
   type Coll = ListBuffer[_]
   implicit def builderFactory[A]: BuilderFactory[A, ListBuffer[A], Coll] = new BuilderFactory[A, ListBuffer[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
-  def newBuilder[A]: Builder[A, ListBuffer[A], Any] = new AddingBuilder(new ListBuffer[A])
+  def newBuilder[A]: Builder[A, ListBuffer[A]] = new AddingBuilder(new ListBuffer[A])
 }
 

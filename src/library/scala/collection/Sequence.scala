@@ -30,14 +30,14 @@ import util.control.Breaks._
  */
 trait Sequence[+A] extends PartialFunction[Int, A] with Iterable[A] with SequenceTemplate[A, Sequence[A]] {
   override protected[this] def newBuilder = Sequence.newBuilder
-  override def traversableBuilder[B]: Builder[B, Sequence[B], Any] = Sequence.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, Sequence[B]] = Sequence.newBuilder[B]
 }
 
 object Sequence extends SequenceFactory[Sequence] {
 
   type Coll = Sequence[_]
   implicit def builderFactory[A]: BuilderFactory[A, Sequence[A], Coll] = new BuilderFactory[A, Sequence[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
-  def newBuilder[A]: Builder[A, Sequence[A], Any] = immutable.Sequence.newBuilder[A]
+  def newBuilder[A]: Builder[A, Sequence[A]] = immutable.Sequence.newBuilder[A]
 
   /** @deprecated use View instead
    */

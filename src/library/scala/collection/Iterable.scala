@@ -33,7 +33,7 @@ import generic._
  */
 trait Iterable[+A] extends Traversable[A] with IterableTemplate[A, Iterable[A]] {
   override protected[this] def newBuilder = Iterable.newBuilder
-  override def traversableBuilder[B]: Builder[B, Iterable[B], Any] = Iterable.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, Iterable[B]] = Iterable.newBuilder[B]
 
   /* The following methods are inherited from trait IterableTemplate
    *
@@ -51,7 +51,7 @@ object Iterable extends TraversableFactory[Iterable] {
 
   type Coll	= Iterable[_]
   implicit def builderFactory[A]: BuilderFactory[A, Iterable[A], Coll] = new BuilderFactory[A, Iterable[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
-  def newBuilder[A]: Builder[A, Iterable[A], Any] = immutable.Iterable.newBuilder[A]
+  def newBuilder[A]: Builder[A, Iterable[A]] = immutable.Iterable.newBuilder[A]
 
   def fromOld[A](it: scala.Iterable[A]): Iterable[A] = new Iterable[A] {
     def elements: Iterator[A] = Iterator.fromOld(it.elements)

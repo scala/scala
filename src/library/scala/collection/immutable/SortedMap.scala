@@ -29,7 +29,7 @@ trait SortedMap[A, +B] extends Map[A, B]
   override def empty: SortedMap[A, B] = throw new UnsupportedOperationException("SortedMap.empty")
 
   /** Needs to be overridden in subclasses. */
-  override protected[this] def newBuilder : Builder[(A, B), SortedMap[A, B], Any] =
+  override protected[this] def newBuilder : Builder[(A, B), SortedMap[A, B]] =
     throw new UnsupportedOperationException("SortedMap.newBuilder")
 
   /** Add a key/value pair to this map.

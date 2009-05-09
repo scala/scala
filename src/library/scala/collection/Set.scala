@@ -23,7 +23,7 @@ import generic._
  */
 trait Set[A] extends (A => Boolean) with Iterable[A] with SetTemplate[A, Set[A]] {
   def empty = Set.empty
-  override def traversableBuilder[B]: Builder[B, Set[B], Any] = Set.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, Set[B]] = Set.newBuilder[B]
 }
 
 /* Factory object for `Set` class */

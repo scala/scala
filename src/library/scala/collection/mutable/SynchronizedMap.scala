@@ -23,7 +23,7 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
 
   import collection.Traversable
 
-  override def mapBuilder[A, B]: Builder[(A, B), SynchronizedMap[A, B], Any] = SynchronizedMap.newBuilder[A, B]
+  override def mapBuilder[A, B]: Builder[(A, B), SynchronizedMap[A, B]] = SynchronizedMap.newBuilder[A, B]
 
   abstract override def size: Int = synchronized {
     super.size
@@ -149,7 +149,7 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
  */
 object SynchronizedMap extends MutableMapFactory[SynchronizedMap] {
   type Coll = Map[_, _]
-  implicit def implicitBuilder[A, B]: Builder[(A, B), Map[A, B], Coll] = from.mapBuilder[A, B]
+  implicit def implicitBuilder[A, B]: Builder[(A, B), Map[A, B]] = from.mapBuilder[A, B]
   def empty[A, B]: Map[A, B] = new HashMap[A, B] with SynchronizeddMap[A, B]
 }
 

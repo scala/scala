@@ -63,7 +63,7 @@ self =>
    *         this builder should be bypassed.
    */
   override protected[this] def newBuilder = Stream.newBuilder
-  override def traversableBuilder[B]: Builder[B, Stream[B], Any] = Stream.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, Stream[B]] = Stream.newBuilder[B]
 
   // New methods in Stream
 
@@ -372,13 +372,13 @@ object Stream extends SequenceFactory[Stream] {
   implicit def builderFactory[A]: BuilderFactory[A, Stream[A], Coll] = new StreamBuilderFactory[A]
 
   /** Creates a new builder for a stream */
-  def newBuilder[A]: Builder[A, Stream[A], Any] = new StreamBuilder[A]
+  def newBuilder[A]: Builder[A, Stream[A]] = new StreamBuilder[A]
 
   import collection.{Iterable, Sequence, Vector}
 
   /** A builder for streams
    */
-  class StreamBuilder[A] extends LazyBuilder[A, Stream[A], Any] {
+  class StreamBuilder[A] extends LazyBuilder[A, Stream[A]] {
     def result: Stream[A] = (for (xs <- parts.elements; x <- xs.toIterable.elements) yield x).toStream
   }
 

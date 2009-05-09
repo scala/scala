@@ -4,7 +4,7 @@ package scala.collection.generic
  */
 abstract class MutableMapFactory[CC[A, B] <: mutable.Map[A, B] with MutableMapTemplate[A, B, CC[A, B]]] {
 
-  def newBuilder[A, B]: Builder[(A, B), CC[A, B], Any] = new MutableMapBuilder(empty[A, B])
+  def newBuilder[A, B]: Builder[(A, B), CC[A, B]] = new MutableMapBuilder(empty[A, B])
 
   def empty[A, B]: CC[A, B]
 

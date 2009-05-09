@@ -27,7 +27,7 @@ import scala.runtime.RichString
 @serializable
 @SerialVersionUID(0 - 8525408645367278351L)
 final class StringBuilder(initCapacity: Int, private val initValue: String)
-      extends Builder[Char, String, Any]
+      extends Builder[Char, String]
          with Vector[Char] {
 
   require(initCapacity > 0)

@@ -24,7 +24,7 @@ import generic._
  *  @author  Martin Odersky
  *  @version 2.8
  */
-class MutableList[A] extends LinearSequence[A] with LinearSequenceTemplate[A, MutableList[A]] with Builder[A, MutableList[A], Any] {
+class MutableList[A] extends LinearSequence[A] with LinearSequenceTemplate[A, MutableList[A]] with Builder[A, MutableList[A]] {
 
   override protected[this] def newBuilder = new MutableList[A]
 

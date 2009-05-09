@@ -25,13 +25,13 @@ class LinkedList[A](_elem: A, _next: LinkedList[A]) extends LinearSequence[A] wi
   elem = _elem
   next = _next
   override protected[this] def newBuilder = LinkedList.newBuilder
-  override def traversableBuilder[B]: Builder[B, LinkedList[B], Any] = LinkedList.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, LinkedList[B]] = LinkedList.newBuilder[B]
 }
 
 object LinkedList extends SequenceFactory[LinkedList] {
   type Coll = LinkedList[_]
   implicit def builderFactory[A]: BuilderFactory[A, LinkedList[A], Coll] = new BuilderFactory[A, LinkedList[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
-  def newBuilder[A]: Builder[A, LinkedList[A], Any] = (new MutableList) mapResult ((l: MutableList[A]) => l.toLinkedList)
+  def newBuilder[A]: Builder[A, LinkedList[A]] = (new MutableList) mapResult ((l: MutableList[A]) => l.toLinkedList)
 }
 
 

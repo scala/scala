@@ -37,7 +37,7 @@ class HashMap[A, +B] extends Map[A,B] with ImmutableMapTemplate[A, B, HashMap[A,
   protected var deltaSize: Int = _
 
   override def empty = HashMap.empty[A, B]
-  override def mapBuilder[A, B]: Builder[(A, B), HashMap[A, B], Any] = HashMap.newBuilder[A, B]
+  override def mapBuilder[A, B]: Builder[(A, B), HashMap[A, B]] = HashMap.newBuilder[A, B]
 
   def get(key: A): Option[B] = synchronized {
     var m: HashMap[A, _ >: B] = this

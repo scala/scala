@@ -41,7 +41,7 @@ class ListSet[A] extends Set[A] with SetTemplate[A, ListSet[A]] { self =>
   override def isEmpty: Boolean = true;
 
   override def empty = ListSet.empty
-  override def traversableBuilder[B]: Builder[B, ListSet[B], Any] = ListSet.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, ListSet[B]] = ListSet.newBuilder[B]
 
   /** Checks if this set contains element <code>elem</code>.
    *

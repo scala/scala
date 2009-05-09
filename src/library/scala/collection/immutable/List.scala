@@ -48,7 +48,7 @@ sealed abstract class List[+A] extends LinearSequence[A] with Product with Linea
 
   /** Creates a list buffer as builder for this class */
   override protected[this] def newBuilder = List.newBuilder
-  override def traversableBuilder[B]: Builder[B, List[B], Any] = List.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, List[B]] = List.newBuilder[B]
 
   // New methods in List
 
@@ -490,7 +490,7 @@ object List extends SequenceFactory[List] {
 
   type Coll = List[_]
   implicit def builderFactory[A]: BuilderFactory[A, List[A], Coll] = new BuilderFactory[A, List[A], Coll] { def apply(from: Coll) = new ListBuffer[A] }
-  def newBuilder[A]: Builder[A, List[A], Any] = new ListBuffer[A]
+  def newBuilder[A]: Builder[A, List[A]] = new ListBuffer[A]
 
   override def empty[A]: List[A] = Nil
 

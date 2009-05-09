@@ -18,7 +18,7 @@ package scala.collection.generic
  *  @param empty   The empty element of the collection.
  */
 class MutableMapBuilder[A, B, Coll <: mutable.Map[A, B] with MapTemplate[A, B, Coll]](empty: Coll)
-extends Builder[(A, B), Coll, Any] {
+extends Builder[(A, B), Coll] {
   protected var elems: Coll = empty
   def +=(x: (A, B)) { elems += x }
   def clear() { elems = empty }

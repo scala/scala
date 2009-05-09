@@ -28,7 +28,7 @@ import generic._
 class HashSet[A] extends Set[A] with SetTemplate[A, HashSet[A]] with mutable.FlatHashTable[A] {
 
   override def empty = HashSet.empty
-  override def traversableBuilder[B]: Builder[B, HashSet[B], Any] = HashSet.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, HashSet[B]] = HashSet.newBuilder[B]
 
   protected var later: HashSet[A] = null
   protected var changedElem: A = _

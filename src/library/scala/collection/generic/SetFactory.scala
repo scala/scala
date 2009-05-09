@@ -4,7 +4,7 @@ package scala.collection.generic
  */
 abstract class SetFactory[CC[A] <: Set[A] with SetTemplate[A, CC[A]]] {
 
-  def newBuilder[A]: Builder[A, CC[A], Any] = new AddingBuilder[A, CC[A]](empty[A])
+  def newBuilder[A]: Builder[A, CC[A]] = new AddingBuilder[A, CC[A]](empty[A])
 
   def empty[A]: CC[A]
 

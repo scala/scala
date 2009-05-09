@@ -27,7 +27,7 @@ import generic._
  */
 trait Traversable[+A] extends TraversableTemplate[A, Traversable[A]] {
   protected[this] def newBuilder = Traversable.newBuilder
-  def traversableBuilder[B]: Builder[B, Traversable[B], Any] = Traversable.newBuilder[B]
+  def traversableBuilder[B]: Builder[B, Traversable[B]] = Traversable.newBuilder[B]
 
   /* The following methods are inherited from TraversableTemplate
    *
@@ -95,7 +95,7 @@ object Traversable extends TraversableFactory[Traversable] { self =>
 
   type Coll = Traversable[_]
   implicit def builderFactory[A]: BuilderFactory[A, Traversable[A], Coll] = new BuilderFactory[A, Traversable[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
-  def newBuilder[A]: Builder[A, Traversable[A], Any] = immutable.Traversable.newBuilder[A]
+  def newBuilder[A]: Builder[A, Traversable[A]] = immutable.Traversable.newBuilder[A]
 
   /** A wrapper class which adds `min` and `max` methods to iterables of an element type that has an Ordering.
    */
@@ -154,7 +154,7 @@ object Traversable extends TraversableFactory[Traversable] { self =>
     /** Returns the transposition of the wrapped iterable `self`: rows become columns and columns become rows.
      */
     def transpose[Row, That](implicit bf: BuilderFactory[A, Row, This], bbf: BuilderFactory[Row, That, This]): That = {
-      val bs: Array[Builder[A, Row, This]] = self.head.map(_ => bf(self))(Traversable.builderFactory[Builder[A, Row, This]]).toArray
+      val bs: Array[Builder[A, Row]] = self.head.map(_ => bf(self))(Traversable.builderFactory[Builder[A, Row]]).toArray
       for (xs <- self) {
         var i = 0
         for (x <- xs) {

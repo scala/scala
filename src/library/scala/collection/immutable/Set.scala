@@ -21,7 +21,7 @@ trait Set[A] extends Iterable[A] with collection.Set[A] with SetTemplate[A, Set[
 
   override def hashCode = (Set.hashSeed /: this)(_ * 41 + _.hashCode)
 
-  override def traversableBuilder[B]: Builder[B, Set[B], Any] = Set.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, Set[B]] = Set.newBuilder[B]
 }
 
 object Set extends SetFactory[Set] {

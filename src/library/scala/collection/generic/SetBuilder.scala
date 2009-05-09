@@ -18,7 +18,7 @@ package scala.collection.generic
  *  @param empty   The empty element of the collection.
  */
 class SetBuilder[A, Coll <: Addable[A, Coll] with Iterable[A] with IterableTemplate[A, Coll]](empty: Coll)
-extends Builder[A, Coll, Any] {
+extends Builder[A, Coll] {
   protected var elems: Coll = empty
   def +=(x: A) { elems = elems + x }
   def clear() { elems = empty }

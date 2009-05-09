@@ -15,7 +15,7 @@ import generic._
  */
 trait Sequence[A] extends Iterable[A] with collection.Sequence[A] with SequenceTemplate[A, Sequence[A]] with Unhashable {
   override protected[this] def newBuilder = Sequence.newBuilder
-  override def traversableBuilder[B]: Builder[B, Sequence[B], Any] = Sequence.newBuilder[B]
+  override def traversableBuilder[B]: Builder[B, Sequence[B]] = Sequence.newBuilder[B]
 
   def update(idx: Int, elem: A)
 }
@@ -23,5 +23,5 @@ trait Sequence[A] extends Iterable[A] with collection.Sequence[A] with SequenceT
 object Sequence extends SequenceFactory[Sequence] {
   type Coll = Sequence[_]
   implicit def builderFactory[A]: BuilderFactory[A, Sequence[A], Coll] = new BuilderFactory[A, Sequence[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
-  def newBuilder[A]: Builder[A, Sequence[A], Any] = new ArrayBuffer
+  def newBuilder[A]: Builder[A, Sequence[A]] = new ArrayBuffer
 }

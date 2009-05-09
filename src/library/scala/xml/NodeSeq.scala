@@ -27,7 +27,7 @@ object NodeSeq {
   }
   type Coll = NodeSeq
   implicit def builderFactory: BuilderFactory[Node, NodeSeq, Coll] = new BuilderFactory[Node, NodeSeq, Coll] { def apply(from: Coll) = newBuilder }
-  def newBuilder: Builder[Node, NodeSeq, Any] = new ListBuffer[Node] mapResult fromSeq
+  def newBuilder: Builder[Node, NodeSeq] = new ListBuffer[Node] mapResult fromSeq
   implicit def seqToNodeSeq(s: Seq[Node]): NodeSeq = fromSeq(s)
 }
 

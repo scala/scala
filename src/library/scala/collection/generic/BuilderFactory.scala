@@ -15,5 +15,5 @@ package scala.collection.generic
 trait BuilderFactory[-Elem, +To, -From] {
 
   /** Creates a new builder */
-  def apply(from: From): Builder[Elem, To, From]
+  def apply(from: From): Builder[Elem, To]
 }

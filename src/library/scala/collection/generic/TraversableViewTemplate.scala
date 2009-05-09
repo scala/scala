@@ -21,7 +21,7 @@ trait TraversableViewTemplate[+A,
   extends Traversable[A] with TraversableTemplate[A, This] {
 self =>
 
-  override protected[this] def newBuilder: Builder[A, This, Any] =
+  override protected[this] def newBuilder: Builder[A, This] =
     throw new UnsupportedOperationException(this+".newBuilder")
 
   protected def underlying: Coll
