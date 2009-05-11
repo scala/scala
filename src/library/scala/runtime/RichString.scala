@@ -213,7 +213,6 @@ class RichString(val self: String) extends Proxy with Vector[Char] with VectorTe
    *  @throws java.lang.IllegalArgumentException
    */
   def format(args : Any*) : String =
-    // the toList is necessary right now because Array(1,2,3).toArray[Any] throws a CCE
-    java.lang.String.format(self, args.toList.toArray[Any].asInstanceOf[Array[AnyRef]]: _*)
+    java.lang.String.format(self, args.toArray[Any].asInstanceOf[Array[AnyRef]]: _*)
 }
 
