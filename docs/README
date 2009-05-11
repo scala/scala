@@ -32,7 +32,8 @@ directly accessible.
 
 You may test the distribution by running the following commands:
 
-$ ./bin/scalac share/doc/scala/examples/sort.scala
+$ ./bin/sbaz install scala-devel-docs
+$ ./bin/scalac doc/scala-devel-docs/examples/sort.scala
 $ ./bin/scala examples.sort
 [6,2,8,5,1]
 [1,2,5,6,8]
