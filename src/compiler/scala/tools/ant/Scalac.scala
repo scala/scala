@@ -10,7 +10,7 @@
 
 package scala.tools.ant
 
-import java.io.File
+import java.io.{File,PrintWriter,BufferedWriter,FileWriter}
 
 import org.apache.tools.ant.{BuildException, Project}
 import org.apache.tools.ant.taskdefs.{MatchingTask,Java}
@@ -642,17 +642,26 @@ class Scalac extends MatchingTask {
       //if (!timeout.isEmpty) java.setTimeout(timeout.get)
 
 
-      //TODO - Determine when to pass args in file due to argument limits
-      for ( setting <- settings.allSettings;
-        arg <- setting.unparse
-      ){
-        java.createArg().setValue(arg)
+      //Write all settings to a temporary file
+      def writeSettings() : File = {
+        def escapeArgument(arg : String) = if(arg.matches(".*\\s.*")) ('"' + arg + '"') else arg
+        val file = File.createTempFile("scalac-ant-",".args")
+        file.deleteOnExit()
+        val out = new PrintWriter(new BufferedWriter(new FileWriter(file)))
+        try {
+	        for ( setting <- settings.allSettings;
+	              arg <- setting.unparse){
+	          out.println(escapeArgument(arg))
+	        }
+            for (file <- sourceFiles) {
+                   out.println(file.getAbsolutePath)
+            }
+        } finally {
+          out.close();
+        }
+        file
       }
-
-
-
-      for (file <- sourceFiles)
-        java.createArg().setFile(file)
+      java.createArg().setValue("@" + writeSettings.getCanonicalPath)
 
       log(java.getCommandLine.getCommandline.mkString("", " ", ""), Project.MSG_VERBOSE)
       val res = java.executeJava()
