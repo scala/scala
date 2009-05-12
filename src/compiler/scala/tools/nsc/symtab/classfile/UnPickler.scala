@@ -35,7 +35,7 @@ abstract class UnPickler {
    */
   def unpickle(bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) {
     try {
-      new UnPickle(bytes, offset, classRoot, moduleRoot)
+      new UnPickle(bytes, offset, classRoot, moduleRoot, filename)
     } catch {
       case ex: IOException =>
         throw ex
@@ -45,9 +45,9 @@ abstract class UnPickler {
     }
   }
 
-  private class UnPickle(bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol) extends PickleBuffer(bytes, offset, -1) {
+  private class UnPickle(bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) extends PickleBuffer(bytes, offset, -1) {
     if (settings.debug.value) global.log("unpickle " + classRoot + " and " + moduleRoot)
-    checkVersion()
+    checkVersion(filename)
 
     /** A map from entry numbers to array offsets */
     private val index = createIndex
@@ -65,14 +65,20 @@ abstract class UnPickler {
 
     if (settings.debug.value) global.log("unpickled " + classRoot + ":" + classRoot.rawInfo + ", " + moduleRoot + ":" + moduleRoot.rawInfo);//debug
 
-    private def checkVersion() {
+    private def checkVersion(filename: String) {
       val major = readNat()
       val minor = readNat()
-      if (major < 4 /*!= MajorVersion*/ || minor > MinorVersion) // !!! temporarily accept 4 as version.
+//---cut here---
+      if (major == 4) { // !!! temporarily accept 4 as version.
+        println("WARNING: old class format, please recompile "+filename)
+      } else
+//---cut here---
+      if (major != MajorVersion || minor > MinorVersion)
         throw new IOException("Scala signature " + classRoot.name +
                               " has wrong version\n expected: " +
                               MajorVersion + "." + MinorVersion +
-                              "\n found: " + major + "." + minor)
+                              "\n found: " + major + "." + minor +
+                              " in "+filename)
     }
 
     /** The `decls' scope associated with given symbol */
