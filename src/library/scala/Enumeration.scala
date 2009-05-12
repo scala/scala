@@ -113,12 +113,12 @@ abstract class Enumeration(initial: Int, names: String*) {
    * the argument <var>s</var>.
    * You must pass a String* set of names to the constructor,
    * or initialize each Enumeration with Value(String),
-   * for valueOf to work.
+   * for withName to work.
    * @param s an enumeration name
    * @return <tt>Some(Value)</tt> if an enumeration's name matches <var>s</var>,
    * else <tt>None</tt>
    */
-  def withName(s: String): Value = values.find(_.toString == s).get
+  def withName(s: String): Option[Value] = values.find(_.toString == s)
 
   /** Creates a fresh value, part of this enumeration. */
   protected final def Value: Value = Value(nextId)
