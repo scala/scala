@@ -29,13 +29,13 @@ trait DefaultMapModel[A, B] extends Map[A, B] {
   def get(key: A): Option[B] = {
     val e = findEntry(key)
     if (e == null) None
-    else Some(e.value);
+    else Some(e.value)
   }
 
-  def update(key: A, value: B) {
+  def put(key: A, value: B): Option[B] = {
     val e = findEntry(key)
-    if (e == null) addEntry(new Entry(key, value))
-    else e.value = value
+    if (e == null) { addEntry(new Entry(key, value)); None }
+    else { val v = e.value; e.value = value; Some(v) }
   }
 
   def elements = entries map {e => (e.key, e.value)}

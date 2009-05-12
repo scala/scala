@@ -56,7 +56,7 @@ trait VectorTemplate[+A, +This <: VectorTemplate[A, This] with Vector[A]] extend
 
   override def isEmpty: Boolean = { length == 0 }
 
-  override def foreach(f: A => Unit): Unit = {
+  override def foreach[U](f: A =>  U): Unit = {
     var i = 0
     val len = length
     while (i < len) { f(this(i)); i += 1 }

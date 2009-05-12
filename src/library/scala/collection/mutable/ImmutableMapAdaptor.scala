@@ -52,7 +52,7 @@ extends Map[A, B]
 
   def update(key: A, value: B): Unit = { imap = imap.update(key, value) }
 
-  def -= (key: A): Unit = { imap = imap - key }
+  def -= (key: A): this.type = { imap = imap - key; this }
 
   override def clear(): Unit = { imap = imap.empty }
 

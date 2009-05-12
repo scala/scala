@@ -64,11 +64,12 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with CloneableCol
    *
    *  @param  elem        the element to insert
    */
-  def +=(elem: A): Unit = {
+  def +=(elem: A): this.type = {
     ensureSize(size0+1)
     array(size0) = elem.asInstanceOf[AnyRef]
     fixUp(array, size0)
     size0 = size0 + 1
+    this
   }
 
   def +(elem: A): PriorityQueue[A] = { this += elem; this }
@@ -78,7 +79,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with CloneableCol
    *  @param    kv2 the second element.
    *  @param    kvs the remaining elements.
    */
-  def += (elem1: A, elem2: A, elems: A*) { this += elem1; this += elem2; this ++= elems }
+  def += (elem1: A, elem2: A, elems: A*) = { this += elem1; this += elem2; this ++= elems }
 
   def + (elem1: A, elem2: A, elems: A*) = { this.+=(elem1, elem2, elems: _*); this }
 

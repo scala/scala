@@ -94,7 +94,7 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
    *
    * @param x The source of elements to push
    */
-  def ++=(x : Iterable[T]) = x.foreach(this +=(_))
+  def ++=(x : Iterable[T]): this.type = { x.foreach(this +=(_)); this }
 
 
   /**
@@ -102,14 +102,14 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
    *
    * @param x The source of elements to push
    */
-  def ++=(x : Iterator[T]) = x.foreach(this +=(_))
+  def ++=(x : Iterator[T]): this.type = { x.foreach(this +=(_)); this }
 
   /**
    *  Alias for push.
    *
    *  @param x The element to push
    */
-  def +=(x : T) = push(x);
+  def +=(x : T): this.type = { push(x); this }
 
 
 
@@ -162,7 +162,7 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
     }
   }
 
-  override def foreach(f : T => Unit){
+  override def foreach[U](f : T =>  U){
     var currentIndex = index;
     while(currentIndex > 0){
       currentIndex -= 1;

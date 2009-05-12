@@ -102,11 +102,14 @@ class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutabl
   private[this] def addEntry(entry : Entry[Key, Value]) =
     if (entry != null) table(findIndex(entry.key, entry.hash)) = entry;
 
-  def update(key : Key, value : Value){
-    update(key, hashOf(key), value);
+  override def update(key : Key, value : Value) {
+    put(key, hashOf(key), value);
   }
 
-  private def update(key : Key, hash : Int, value : Value) {
+  override def put(key : Key, value : Value): Option[Value] =
+    put(key, hashOf(key), value)
+
+  private def put(key : Key, hash : Int, value : Value): Option[Value] = {
     if (2 * (size + deleted) > mask) growTable;
     val index = findIndex(key, hash);
     val entry = table(index);
@@ -114,21 +117,27 @@ class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutabl
       table(index) = new Entry(key, hash, Some(value));
       modCount += 1;
       size += 1;
-    }
-    else {
+      None
+    } else {
+      val res = entry.value
       if (entry.value == None) { size += 1; modCount += 1 }
       entry.value = Some(value);
+      res
     }
   }
 
-  def -=(key : Key) = {
+  override def remove(key : Key): Option[Value] = {
     val index = findIndex(key);
     if (table(index) != null && table(index).value != None){
+      val res = table(index).value
       table(index).value = None;
       size -= 1;
       deleted += 1;
-    }
+      res
+    } else None
   }
+
+  override def delete(key: Key) { remove(key) }
 
   def get(key : Key) : Option[Value] = {
     val hash = hashOf(key);
@@ -176,7 +185,7 @@ class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutabl
 
   override def clone : OpenHashMap[Key, Value] = {
     val it = new OpenHashMap[Key, Value]
-    foreachUndeletedEntry(entry => it.update(entry.key, entry.hash, entry.value.get));
+    foreachUndeletedEntry(entry => it.put(entry.key, entry.hash, entry.value.get));
     it
   }
 
@@ -193,7 +202,7 @@ class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutabl
    *
    * @param  f The function to apply to each key, value mapping.
    */
-  override def foreach(f : ((Key, Value)) => Unit){
+  override def foreach[U](f : ((Key, Value)) =>  U){
     val startModCount = modCount;
     foreachUndeletedEntry(entry => {
       if (modCount != startModCount) error("Concurrent Modification")

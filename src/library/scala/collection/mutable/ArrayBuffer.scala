@@ -50,10 +50,11 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *
    *  @param elem  the element to append.
    */
-  def +=(elem: A) {
+  def +=(elem: A): this.type = {
     ensureSize(size0 + 1)
     array(size0) = elem.asInstanceOf[AnyRef]
     size0 += 1
+    this
   }
 
   /** Appends a number of elements provided by an iterable object
@@ -63,12 +64,13 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @param iter  the iterfable object.
    *  @return      the updated buffer.
    */
-  override def ++=(iter: Traversable[A]) = iter match {
+  override def ++=(iter: Traversable[A]): this.type = iter match {
     case v: Vector[_] =>
       val n = v.length
       ensureSize(size0 + n)
       v.copyToArray(array.asInstanceOf[scala.Array[Any]], size0, n)
       size0 += n
+      this
     case _ =>
       super.++=(iter)
   }

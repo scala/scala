@@ -53,7 +53,7 @@ class HashMap[A, +B] extends Map[A,B] with ImmutableMapTemplate[A, B, HashMap[A,
     else Some(getValue(e))
   }
 
-  def add [B1 >: B] (key: A, value: B1): HashMap[A, B1] = synchronized {
+  def updated [B1 >: B] (key: A, value: B1): HashMap[A, B1] = synchronized {
     makeCopyIfUpdated()
     val e = findEntry(key)
     if (e == null) {
@@ -70,7 +70,7 @@ class HashMap[A, +B] extends Map[A,B] with ImmutableMapTemplate[A, B, HashMap[A,
    *  @param    kv the key/value pair
    *  @return   A new map with the new binding added to this map
    */
-  override def + [B1 >: B] (kv: (A, B1)): HashMap[A, B1] = add(kv._1, kv._2)
+  override def + [B1 >: B] (kv: (A, B1)): HashMap[A, B1] = updated(kv._1, kv._2)
 
   /** Adds two or more elements to this collection and returns
    *  either the collection itself (if it is mutable), or a new collection
@@ -81,9 +81,9 @@ class HashMap[A, +B] extends Map[A,B] with ImmutableMapTemplate[A, B, HashMap[A,
    *  @param elems the remaining elements to add.
    */
   override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *): HashMap[A, B1] =
-    this + elem1 + elem2 ++ collection.Iterable.fromOld(elems)
+    this + elem1 + elem2 ++ elems
 
-  def - (key: A): HashMap[A, B] = synchronized {
+  def minus (key: A): HashMap[A, B] = synchronized {
     makeCopyIfUpdated()
     val e = findEntry(key)
     if (e == null) this

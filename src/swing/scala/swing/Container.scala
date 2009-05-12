@@ -21,7 +21,7 @@ object Container {
         wrap(c)
       }
       protected def insertAt(n: Int, c: Component) { peer.add(c.peer, n) }
-      def +=(c: Component) { peer.add(c.peer) }
+      def +=(c: Component): this.type = { peer.add(c.peer); this }
       def length = peer.getComponentCount
       def apply(n: Int) = wrap(peer.getComponent(n))
     }

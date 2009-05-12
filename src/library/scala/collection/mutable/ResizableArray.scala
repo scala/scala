@@ -67,7 +67,7 @@ trait ResizableArray[A] extends Vector[A] with VectorTemplate[A, ResizableArray[
   }
    */
 
-  override def foreach(f: A => Unit) {
+  override def foreach[U](f: A =>  U) {
     var i = 0
     while (i < size) {
       f(array(i).asInstanceOf[A])

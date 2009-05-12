@@ -52,12 +52,12 @@ class ListSet[A] extends Set[A] with SetTemplate[A, ListSet[A]] { self =>
 
   /** This method creates a new set with an additional element.
    */
-  def +(elem: A): ListSet[A] = new Node(elem)
+  def plus (elem: A): ListSet[A] = new Node(elem)
 
   /** <code>-</code> can be used to remove a single element from
    *  a set.
    */
-  def -(elem: A): ListSet[A] = this
+  def minus (elem: A): ListSet[A] = this
 
   /** Creates a new iterator over all elements contained in this set.
    *
@@ -106,12 +106,12 @@ class ListSet[A] extends Set[A] with SetTemplate[A, ListSet[A]] { self =>
 
     /** This method creates a new set with an additional element.
      */
-    override def +(e: A): ListSet[A] = if (contains(e)) this else new Node(e)
+    override def plus(e: A): ListSet[A] = if (contains(e)) this else new Node(e)
 
     /** <code>-</code> can be used to remove a single element from
      *  a set.
      */
-    override def -(e: A): ListSet[A] = if (e == elem) self else {
+    override def minus(e: A): ListSet[A] = if (e == elem) self else {
       val tail = self - e; new tail.Node(elem)
     }
 

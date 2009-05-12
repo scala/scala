@@ -47,7 +47,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param elem  the element to append.
    */
-  abstract override def +=(elem: A): Unit = synchronized {
+  abstract override def +=(elem: A): this.type = synchronized[this.type] {
     super.+=(elem)
   }
 
@@ -66,7 +66,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param iter  the iterable object.
    */
-  override def ++=(iter: Traversable[A]): Unit = synchronized {
+  override def ++=(iter: Traversable[A]): this.type = synchronized[this.type] {
     super.++=(iter)
   }
 

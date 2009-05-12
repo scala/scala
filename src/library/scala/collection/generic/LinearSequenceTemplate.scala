@@ -75,7 +75,7 @@ trait LinearSequenceTemplate[+A, +This <: LinearSequenceTemplate[A, This] with L
    *
    *  @param f the treatment to apply to each element.
    */
-  override def foreach(f: A => Unit) {
+  override def foreach[B](f: A => B) {
     var these = this
     while (!these.isEmpty) {
       f(these.head)

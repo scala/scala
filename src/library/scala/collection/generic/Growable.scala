@@ -23,7 +23,7 @@ trait Growable[-A] {
    *
    *  @param elem  the element to add.
    */
-  def +=(elem: A): Unit
+  def +=(elem: A): this.type
 
   /** Adds two or more elements to this collection.
    *
@@ -31,7 +31,7 @@ trait Growable[-A] {
    *  @param elem2 the second element to add.
    *  @param elems the remaining elements to add.
    */
-  def +=(elem1: A, elem2: A, elems: A*) {
+  def +=(elem1: A, elem2: A, elems: A*): this.type = {
     this += elem1
     this += elem2
     this ++= Iterable.fromOld(elems)
@@ -41,13 +41,13 @@ trait Growable[-A] {
    *
    *  @param iter  the iterator.
    */
-  def ++=(iter: Iterator[A]) { iter foreach += }
+  def ++=(iter: Iterator[A]): this.type = { iter foreach += ; this}
 
   /** Adds a number of elements provided by an iterable object to this collection.
    *
    *  @param iter  the iterable object.
    */
-  def ++=(iter: Traversable[A]) { iter foreach += }
+  def ++=(iter: Traversable[A]): this.type = { iter foreach +=; this }
 
   /** Clears the collection contents.
    */

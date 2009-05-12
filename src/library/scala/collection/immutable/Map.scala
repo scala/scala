@@ -25,31 +25,15 @@ trait Map[A, +B] extends Iterable[(A, B)]
    *  @param    value the value
    *  @return   A new map with the new binding added to this map
    */
-  def add [B1 >: B](key: A, value: B1): Map[A, B1]
-
-  /** Add a key/value pair to this map.
-   *  @param    kv the key/value pair
-   *  @return   A new map with the new binding added to this map
-   */
-  override def + [B1 >: B] (kv: (A, B1)): Map[A, B1] = add(kv._1, kv._2)
-
-  /** Adds two or more elements to this collection and returns
-   *  either the collection itself (if it is mutable), or a new collection
-   *  with the added elements.
-   *
-   *  @param elem1 the first element to add.
-   *  @param elem2 the second element to add.
-   *  @param elems the remaining elements to add.
-   */
-  override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *): Map[A, B1] =
-    this + elem1 + elem2 ++ collection.Iterable.fromOld(elems)
+  def updated [B1 >: B](key: A, value: B1): Map[A, B1]
 
   /** A hash method compatible with <code>equals</code>
    */
   override def hashCode() =
     (Map.hashSeed /: this) (_ * 41 + _.hashCode)
 
-  /** The same map with a given default function */
+
+  /** The same map with a given default function !!! todo: move to general maps? */
   def withDefault[B1 >: B](d: A => B1): Map[A, B1] = new Map.WithDefault[A, B1](this, d)
 
   /** The same map with a given default value */
@@ -68,8 +52,8 @@ object Map extends ImmutableMapFactory[Map] {
     def get(key: A) = underlying.get(key)
     def elements = underlying.elements
     override def empty = new WithDefault(underlying.empty, d)
-    def add[B1 >: B](key: A, value: B1): WithDefault[A, B1] = new WithDefault[A, B1](underlying.add[B1](key, value), d)
-    def - (key: A): WithDefault[A, B] = new WithDefault(underlying - key, d)
+    def updated[B1 >: B](key: A, value: B1): WithDefault[A, B1] = new WithDefault[A, B1](underlying.updated[B1](key, value), d)
+    def minus (key: A): WithDefault[A, B] = new WithDefault(underlying - key, d)
     override def default(key: A): B = d(key)
   }
 }

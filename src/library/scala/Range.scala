@@ -38,7 +38,7 @@ class Range(val start: Int, val end: Int, val step: Int) extends VectorView[Int,
    */
   def by(step: Int): Range = new Range(start, end, step)
 
-  override def foreach(f: Int => Unit) {
+  override def foreach[U](f: Int => U) {
     var i = start
     if (step > 0) {
       while (i < end) {

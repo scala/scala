@@ -160,24 +160,24 @@ class Table extends Component with Scrollable with Publisher {
   object selection extends Publisher {
     // TODO: could be a sorted set
     protected abstract class SelectionSet[A](a: =>Seq[A]) extends scala.collection.mutable.Set[A] {
-      def -=(n: A)
-      def +=(n: A)
+      def put(n: A): Boolean
+      def remove(n: A): Boolean
       def contains(n: A) = a.contains(n)
       override def size = a.length
       def elements = a.elements
     }
 
     object rows extends SelectionSet(peer.getSelectedRows) {
-      def -=(n: Int) { peer.removeRowSelectionInterval(n,n) }
-      def +=(n: Int) { peer.addRowSelectionInterval(n,n) }
+      def remove(n: Int): Boolean = { peer.removeRowSelectionInterval(n,n); true } // !!! Ingo; What to return? }
+      def put(n: Int): Boolean = { peer.addRowSelectionInterval(n,n); true } // !!! Ingo; What to return? }
 
       def leadIndex: Int = peer.getSelectionModel.getLeadSelectionIndex
       def anchorIndex: Int = peer.getSelectionModel.getAnchorSelectionIndex
     }
 
     object columns extends SelectionSet(peer.getSelectedColumns) {
-      def -=(n: Int) { peer.removeColumnSelectionInterval(n,n) }
-      def +=(n: Int) { peer.addColumnSelectionInterval(n,n) }
+      def remove(n: Int): Boolean = { peer.removeColumnSelectionInterval(n,n); true } // !!! Ingo; What to return? }
+      def put(n: Int): Boolean = { peer.addColumnSelectionInterval(n,n); true } // !!! Ingo; What to return? }
 
       def leadIndex: Int = peer.getColumnModel.getSelectionModel.getLeadSelectionIndex
       def anchorIndex: Int = peer.getColumnModel.getSelectionModel.getAnchorSelectionIndex
@@ -185,13 +185,15 @@ class Table extends Component with Scrollable with Publisher {
 
     def cells: Set[(Int, Int)] =
       new SelectionSet[(Int, Int)]((for(r <- selection.rows; c <- selection.columns) yield (r,c)).toSeq) { outer =>
-        def -=(n: (Int, Int)) {
+        def remove(n: (Int, Int)): Boolean = {
           peer.removeRowSelectionInterval(n._1,n._1)
           peer.removeColumnSelectionInterval(n._2,n._2)
+          true// !!! Ingo: what to return?
         }
-        def +=(n: (Int, Int)) {
+        def put(n: (Int, Int)): Boolean = {
           peer.addRowSelectionInterval(n._1,n._1)
           peer.addColumnSelectionInterval(n._2,n._2)
+          false// !!! Ingo: what to return?
         }
         override def size = peer.getSelectedRowCount * peer.getSelectedColumnCount
       }

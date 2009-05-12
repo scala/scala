@@ -71,7 +71,7 @@ class TreeHashMap[Key, +Value] private (private val underlying : IntMap[AssocMap
   // todo: probably drop to make conform with general equals/hashcode policy
   override def hashCode = underlying.hashCode
 
-  override def foreach(f : ((Key, Value)) => Unit) = underlying.foreachValue(_.foreach(f));
+  override def foreach[U](f : ((Key, Value)) =>  U) = underlying.foreachValue(_.foreach(f));
 
   override def toList : List[(Key, Value)] = {
     val buffer = new scala.collection.mutable.ListBuffer[(Key, Value)];
@@ -112,7 +112,7 @@ class TreeHashMap[Key, +Value] private (private val underlying : IntMap[AssocMap
     underlying.updateWith[AssocMap[Key, S]](hash(key), AssocMap.singleton[Key, S](key, value), (x, y) => y.merge(x))
   )
 
-  def -(key : Key) : TreeHashMap[Key, Value] = {
+  def minus(key : Key) : TreeHashMap[Key, Value] = {
     val h = hash(key);
     underlying.get(h) match {
       case None => this;
@@ -184,7 +184,7 @@ private[collection] sealed abstract class AssocMap[Key, +Value] extends immutabl
 
   def elements : Iterator[(Key, Value)] = new AssocMapIterator(this);
 
-  override final def foreach(f : ((Key, Value)) => Unit) = this match {
+  override final def foreach[U](f : ((Key, Value)) =>  U) = this match {
     case Cons(key, value, tail) => { f((key, value)); tail.foreach(f); }
     case Nil() => {}
   }
@@ -254,7 +254,7 @@ private[collection] sealed abstract class AssocMap[Key, +Value] extends immutabl
       else Cons(key, newval, newtail);
   }
 
-  def -(key : Key) : AssocMap[Key, Value]= this match {
+  def minus(key : Key) : AssocMap[Key, Value]= this match {
     case Nil() => this;
     case Cons(key2, value, tail) =>
       if (key == key2) tail;

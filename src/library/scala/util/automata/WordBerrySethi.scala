@@ -80,7 +80,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
       case x:Letter =>
         //val i = posMap(x)
         val i = x.pos
-        this.follow.add(i, fol1)
+        this.follow.update(i, fol1)
         emptySet + i
       case Eps =>
         emptySet /*ignore*/
@@ -97,7 +97,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   protected def seenLabel(r: RegExp, i: Int, label: _labelT) {
     //Console.println("seenLabel (1)");
     //this.posMap.add(r, i)
-    this.labelAt = this.labelAt.add(i, label)
+    this.labelAt = this.labelAt.updated(i, label)
     //@ifdef if( label != Wildcard ) {
       this.labels += label
     //@ifdef }
@@ -124,7 +124,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
     //@ifdef compiler   defaultq.add(src, dest::defaultq( src ))
     //@ifdef compiler else
     val q = deltaq(src)
-    q.add(label, dest::(q.get(label) match {
+    q.update(label, dest::(q.get(label) match {
       case Some(x) => x
       case _       => Nil
     }))
@@ -171,7 +171,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
       while (it.hasNext) {
         val k = it.next
         if (pos == k)
-          finals = finals.add(j, finalTag)
+          finals = finals.updated(j, finalTag)
         else
           makeTransition( j, k, labelAt(k))
       }
@@ -195,14 +195,14 @@ abstract class WordBerrySethi extends BaseBerrySethi {
         collectTransitions()
 
         if (x.isNullable) // initial state is final
-          finals = finals.add(0, finalTag)
+          finals = finals.updated(0, finalTag)
 
         var delta1: immutable.Map[Int, Map[_labelT, List[Int]]] =
           immutable.Map[Int, Map[_labelT, List[Int]]]()
 
         var i = 0
         while (i < deltaq.length) {
-          delta1 = delta1.add(i, deltaq(i))
+          delta1 = delta1.updated(i, deltaq(i))
           i += 1
         }
         val finalsArr = new Array[Int](pos)
@@ -239,7 +239,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
               val x = new mutable.BitSet(pos)
               for (q <- trans(lab))
                 x += q
-              hmap.add(lab, x.toImmutable)
+              hmap.update(lab, x.toImmutable)
             }
             deltaArr(k) = hmap
             k += 1

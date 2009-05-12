@@ -43,7 +43,7 @@ object LongMap{
   def empty[T] : LongMap[T]  = LongMap.Nil;
   def singleton[T](key : Long, value : T) : LongMap[T] = LongMap.Tip(key, value);
   def apply[T](elems : (Long, T)*) : LongMap[T] =
-    elems.foldLeft(empty[T])((x, y) => x.add(y._1, y._2));
+    elems.foldLeft(empty[T])((x, y) => x.updated(y._1, y._2));
 
 
   private[immutable] case object Nil extends LongMap[Nothing]{
@@ -154,7 +154,7 @@ sealed abstract class LongMap[+T] extends scala.collection.immutable.Map[Long, T
   /**
    * Loops over the key, value pairs of the map in unsigned order of the keys.
    */
-  override final def foreach(f : ((Long, T)) => Unit) : Unit = this match {
+  override final def foreach[U](f : ((Long, T)) =>  U) : Unit = this match {
     case LongMap.Bin(_, _, left, right) => {left.foreach(f); right.foreach(f); }
     case LongMap.Tip(key, value) => f((key, value));
     case LongMap.Nil => {};
@@ -240,7 +240,7 @@ sealed abstract class LongMap[+T] extends scala.collection.immutable.Map[Long, T
     case LongMap.Nil => error("key not found");
   }
 
-  def add[S >: T](key : Long, value : S) : LongMap[S] = this match {
+  def updated[S >: T](key : Long, value : S) : LongMap[S] = this match {
     case LongMap.Bin(prefix, mask, left, right) => if (!hasMatch(key, prefix, mask)) join(key, LongMap.Tip(key, value), prefix, this);
                                           else if (zero(key, mask)) LongMap.Bin(prefix, mask, left.update(key, value), right)
                                           else LongMap.Bin(prefix, mask, left, right.update(key, value));
@@ -249,8 +249,8 @@ sealed abstract class LongMap[+T] extends scala.collection.immutable.Map[Long, T
     case LongMap.Nil => LongMap.Tip(key, value);
   }
 
-  /** @deprecated use add instead */
-  @deprecated override def update[S >: T](key: Long, value: S): LongMap[S] = add(key, value)
+  /** @deprecated use updated instead */
+  @deprecated override def update[S >: T](key: Long, value: S): LongMap[S] = updated(key, value)
 
   /**
    * Updates the map, using the provided function to resolve conflicts if the key is already present.
@@ -273,7 +273,7 @@ sealed abstract class LongMap[+T] extends scala.collection.immutable.Map[Long, T
     case LongMap.Nil => LongMap.Tip(key, value);
   }
 
-  def -(key : Long) : LongMap[T] = this match {
+  def minus(key : Long) : LongMap[T] = this match {
     case LongMap.Bin(prefix, mask, left, right) =>
       if (!hasMatch(key, prefix, mask)) this;
       else if (zero(key, mask)) bin(prefix, mask, left - key, right);

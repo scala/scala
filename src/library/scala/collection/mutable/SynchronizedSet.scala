@@ -37,31 +37,31 @@ trait SynchronizedSet[A] extends Set[A] {
     super.update(elem, included)
   }
 
-  abstract override def +=(elem: A): Unit = synchronized {
+  abstract override def +=(elem: A): this.type = synchronized[this.type] {
     super.+=(elem)
   }
 
-  override def ++=(that: Traversable[A]) = synchronized {
+  override def ++=(that: Traversable[A]): this.type = synchronized[this.type] {
     super.++=(that)
   }
 
-  override def ++=(it: Iterator[A]) = synchronized {
+  override def ++=(it: Iterator[A]): this.type = synchronized[this.type] {
     super.++=(it)
   }
 
-  abstract override def -=(elem: A): Unit = synchronized {
+  abstract override def -=(elem: A): this.type = synchronized[this.type] {
     super.-=(elem)
   }
 
-  override def --=(that: Traversable[A]) = synchronized {
+  override def --=(that: Traversable[A]): this.type = synchronized[this.type] {
     super.--=(that)
   }
 
-  override def --=(it: Iterator[A]) = synchronized {
+  override def --=(it: Iterator[A]): this.type = synchronized[this.type] {
     super.--=(it)
   }
 
-  override def intersect(that: collection.Set[A]) = synchronized[this.type] {
+  override def intersect(that: collection.Set[A]) = synchronized {
     super.intersect(that)
   }
 
@@ -73,7 +73,7 @@ trait SynchronizedSet[A] extends Set[A] {
     super.subsetOf(that)
   }
 
-  override def foreach(f: A => Unit) = synchronized {
+  override def foreach[U](f: A =>  U) = synchronized {
     super.foreach(f)
   }
 

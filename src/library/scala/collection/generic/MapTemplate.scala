@@ -17,8 +17,8 @@ package scala.collection.generic
  *
  *   def get(key: A): Option[B]
  *   def elements: Iterator[(A, B)]
- *   def add[B1 >: B](key: A, value: B1): This
- *   def -(key: A): This
+ *   def updated[B1 >: B](key: A, value: B1): This
+ *   def minus(key: A): This
  *
  * If you wish that methods like, take, drop, filter return the same kind of map, you should also
  * override:
@@ -101,10 +101,10 @@ self =>
   protected class DefaultKeySet extends Set[A] {
     def contains(key : A) = self.contains(key)
     def elements = self.elements.map(_._1)
-    def + (elem: A): Set[A] = (Set[A]() ++ this + elem).asInstanceOf[Set[A]] // !!! concrete overrides abstract problem
-    def - (elem: A): Set[A] = (Set[A]() ++ this - elem).asInstanceOf[Set[A]] // !!! concrete overrides abstract problem
+    def plus (elem: A): Set[A] = (Set[A]() ++ this + elem).asInstanceOf[Set[A]] // !!! concrete overrides abstract problem
+    def minus (elem: A): Set[A] = (Set[A]() ++ this - elem).asInstanceOf[Set[A]] // !!! concrete overrides abstract problem
     override def size = self.size
-    override def foreach(f: A => Unit) = for ((k, v) <- self) f(k)
+    override def foreach[B](f: A => B) = for ((k, v) <- self) f(k)
   }
 
   /** @return the keys of this map as a set.
@@ -121,6 +121,10 @@ self =>
     def next = iter.next._2
   }
 
+  /** @return the values of this map as a set (can't do this since Set is covariant)
+  def valueSet: immutable.Set[B] = immutable.Set.empty[B] ++ (self map (_._2))
+  */
+
   /** The default value for the map, returned when a key is not found
    *  The method implemented here yields an error,
    *  but it might be overridden in subclasses.
@@ -135,7 +139,7 @@ self =>
    *  predicate `p`.
    */
   def filterKeys(p: A => Boolean) = new DefaultMap[A, B] {
-    override def foreach(f: ((A, B)) => Unit): Unit = for (kv <- self) if (p(kv._1)) f(kv)
+    override def foreach[C](f: ((A, B)) => C): Unit = for (kv <- self) if (p(kv._1)) f(kv)
     def elements = self.elements.filter(kv => p(kv._1))
     override def contains(key: A) = self.contains(key) && p(key)
     def get(key: A) = if (!p(key)) None else self.get(key)
@@ -144,7 +148,7 @@ self =>
   /** A map view resulting from applying a given function `f` to each value.
    */
   def mapValues[C](f: B => C) = new DefaultMap[A, C] {
-    override def foreach(g: ((A, C)) => Unit): Unit = for ((k, v) <- self) g((k, f(v)))
+    override def foreach[D](g: ((A, C)) => D): Unit = for ((k, v) <- self) g((k, f(v)))
     def elements = for ((k, v) <- self.elements) yield (k, f(v))
     override def size = self.size
     override def contains(key: A) = self.contains(key)
@@ -155,50 +159,91 @@ self =>
    */
   @deprecated def mapElements[C](f: B => C) = mapValues(f)
 
-  /** Add a key/value pair to this map.
+  /** A new immutable map containing updating this map with a given key/value mapping.
    *  @param    key the key
    *  @param    value the value
-   *  @return   A new map with the new binding added to this map
+   *  @return   A new map with the new key/value mapping
    */
-  def add [B1 >: B](key: A, value: B1): Map[A, B1]
+  def updated [B1 >: B](key: A, value: B1): Map[A, B1]
 
-  /** Add a key/value pair to this map.
+  /** Add a key/value pair to this map, returning a new map.
    *  @param    kv the key/value pair
    *  @return   A new map with the new binding added to this map
    */
-  def + [B1 >: B] (kv: (A, B1)): Map[A, B1] = add(kv._1, kv._2)
+  def plus [B1 >: B] (kv: (A, B1)): Map[A, B1] = updated(kv._1, kv._2)
+
+  /** Add a key/value pair to this map, returning a new map.
+   *  @param    kv the key/value pair
+   *  @return   A new map with the new binding added to this map
+   *  @note  same as `plus`
+   */
+  def + [B1 >: B] (kv: (A, B1)): Map[A, B1] = updated(kv._1, kv._2)
 
   /** Adds two or more elements to this collection and returns
-   *  either the collection itself (if it is mutable), or a new collection
-   *  with the added elements.
+   *  a new collection.
+   *
+   *  @param elem1 the first element to add.
+   *  @param elem2 the second element to add.
+   *  @param elems the remaining elements to add.
+   */
+  def plus [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *): Map[A, B1] =
+    this plus elem1 plus elem2 plusAll elems
+
+  /** Adds two or more elements to this collection and returns
+   *  a new collection.
    *
    *  @param elem1 the first element to add.
    *  @param elem2 the second element to add.
    *  @param elems the remaining elements to add.
    */
   def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *): Map[A, B1] =
-    (this + elem1 + elem2).++(collection.Iterable.fromOld(elems))(Map.builderFactory)
+    plus(elem1, elem2, elems: _*)
 
-  /** Remove a key from this map
-   *  @param    key the key to be removed
-   *  @return   If the map does not contain a binding for <code>key</code>
-   *            it is returned unchanged. Otherwise, return a new map
-   *            without a binding for <code>key</code>
-   */
-  def - (key: A): This
-
-  /** Removes all the mappings for which the predicate
-   *  <code>p</code> returns <code>true</code>.
+  /** Adds a number of elements provided by a traversable object
+   *  and returns a new collection with the added elements.
    *
-   *  @param p A predicate over key-value pairs
-   *  @return  the updated map
+   *  @param elems     the traversable object.
    */
-  override def remove(p: ((A, B)) => Boolean): This = {
-    var res: This = thisCollection
-    for (kv <- this)
-      if (p(kv)) res = (res - kv._1).asInstanceOf[This] // !!! concrete overrides abstract problem
-    res
-  }
+  def plusAll[B1 >: B](elems: Traversable[(A, B1)]): Map[A, B1] =
+    ((thisCollection: Map[A, B1]) /: elems) (_ plus _)
+
+  /** Adds a number of elements provided by a traversable object
+   *  and returns a new collection with the added elements.
+   *
+   *  @param elems     the traversable object.
+   *  @note  same as `plusAll`
+   *  @note  This is a more efficient version of Traversable.++ which avoids
+   *         copying of the collection's elements. However, it applies only if
+   *         the type of the added elements is a subtype of the element type of the
+   *         collection.
+   */
+  def ++ [B1 >: B](elems: Traversable[(A, B1)]): Map[A, B1] = plusAll(elems)
+
+  /** Adds a number of elements provided by an iterator
+   *  and returns a new collection with the added elements.
+   *
+   *  @param iter   the iterator
+   */
+  def plusAll[B1 >: B] (iter: Iterator[(A, B1)]): Map[A, B1] =
+    ((thisCollection: Map[A, B1]) /: iter) (_ plus _)
+
+  /** Adds a number of elements provided by an iterator
+   *  and returns a new collection with the added elements.
+   *
+   *  @param iter   the iterator
+   *  @note  same as `plusAll`
+   *  @note  This is a more efficient version of Traversable.++ which avoids
+   *         copying of the collection's elements. However, it applies only if
+   *         the type of the added elements is a subtype of the element type of the
+   *         collection.
+   */
+  def ++ [B1 >: B](iter: Iterator[(A, B1)]): Map[A, B1] = plusAll(iter)
+
+  /** Removes a key from this map, returning a new map
+   *  @param    key the key to be removed
+   *  @return   A new map without a binding for <code>key</code>
+   */
+  def minus (key: A): This
 
   /** Creates a string representation for this map.
    *

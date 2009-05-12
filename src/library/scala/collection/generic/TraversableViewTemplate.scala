@@ -41,7 +41,7 @@ self =>
   trait Sliced extends Transformed[A] {
     protected[this] val from: Int
     protected[this] val until: Int
-    override def foreach(f: A => Unit) {
+    override def foreach[C](f: A => C) {
       var index = 0
       for (x <- self) {
         if (from <= index) {
@@ -58,7 +58,7 @@ self =>
 
   trait Mapped[B] extends Transformed[B] {
     protected[this] val mapping: A => B
-    override def foreach(f: B => Unit) {
+    override def foreach[C](f: B => C) {
       for (x <- self)
         f(mapping(x))
     }
@@ -67,7 +67,7 @@ self =>
 
   trait FlatMapped[B] extends Transformed[B] {
     protected[this] val mapping: A => Traversable[B]
-    override def foreach(f: B => Unit) {
+    override def foreach[C](f: B => C) {
       for (x <- self)
         for (y <- mapping(x))
           f(y)
@@ -77,7 +77,7 @@ self =>
 
   trait Appended[B >: A] extends Transformed[B] {
     protected[this] val rest: Traversable[B]
-    override def foreach(f: B => Unit) {
+    override def foreach[C](f: B => C) {
       for (x <- self) f(x)
       for (x <- rest) f(x)
     }
@@ -86,7 +86,7 @@ self =>
 
   trait Filtered extends Transformed[A] {
     protected[this] val pred: A => Boolean
-    override def foreach(f: A => Unit) {
+    override def foreach[C](f: A => C) {
       for (x <- self)
         if (pred(x)) f(x)
     }
@@ -95,7 +95,7 @@ self =>
 
   trait TakenWhile extends Transformed[A] {
     protected[this] val pred: A => Boolean
-    override def foreach(f: A => Unit) {
+    override def foreach[C](f: A => C) {
       for (x <- self) {
         if (!pred(x)) return
         f(x)
@@ -106,7 +106,7 @@ self =>
 
   trait DroppedWhile extends Transformed[A] {
     protected[this] val pred: A => Boolean
-    override def foreach(f: A => Unit) {
+    override def foreach[C](f: A => C) {
       var go = false
       for (x <- self) {
         if (!go && !pred(x)) go = true

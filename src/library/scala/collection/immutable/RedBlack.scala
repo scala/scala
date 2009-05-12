@@ -28,7 +28,7 @@ abstract class RedBlack[A] {
     def lookup(x: A): Tree[B]
     def update[B1 >: B](k: A, v: B1): Tree[B1] = blacken(upd(k, v))
     def delete(k: A): Tree[B] = del(k)
-    def foreach(f: (A, B) => Unit)
+    def foreach[U](f: (A, B) =>  U)
     /** @deprecated use foreach instead */
     @deprecated def visit[T](input : T)(f : (T,A,B) => Tuple2[Boolean,T]) : Tuple2[Boolean,T];
     def toStream: Stream[(A,B)]
@@ -90,7 +90,7 @@ abstract class RedBlack[A] {
     def elements: Iterator[Pair[A, B]] =
       left.elements append Iterator.single(Pair(key, value)) append right.elements
 
-    def foreach(f: (A, B) => Unit) {
+    def foreach[U](f: (A, B) =>  U) {
       left foreach f
       f(key, value)
       right foreach f
@@ -132,7 +132,7 @@ abstract class RedBlack[A] {
     def elements: Iterator[Pair[A, Nothing]] = Iterator.empty
     def toStream: Stream[(A,Nothing)] = Stream.empty
 
-    def foreach(f: (A, Nothing) => Unit) {}
+    def foreach[U](f: (A, Nothing) =>  U) {}
 
     /** @deprecated use foreach instead */
     @deprecated

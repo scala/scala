@@ -1,20 +1,22 @@
 package scala.collection.mutable
 
 import generic._
+import BitSetTemplate.{LogWL, updateArray}
 
 /** A class for mutable bitsets */
-class BitSet(initSize: Int) extends Set[Int] with collection.BitSet with BitSetTemplate[BitSet] {
+class BitSet (protected var elems: Array[Long]) extends Set[Int] with collection.BitSet with BitSetTemplate[BitSet] with MutableSetTemplate[Int, BitSet] {
 
   override def empty = BitSet.empty
 
-  def this() = this(0)
+  def this(initSize: Int) = this(new Array[Long]((initSize + 63) >> 6 max 1))
 
-  protected var elems: Array[Long] = new Array[Long]((initSize + 63) >> 6 max 1)
+  def this() = this(0)
 
   protected def nwords = elems.length
   protected def word(idx: Int): Long =
     if (idx < nwords) elems(idx) else 0L
-  protected def updateWord(idx: Int, w: Long): BitSet = {
+
+  private def updateWord(idx: Int, w: Long) {
     if (idx >= nwords) {
       var newlen = nwords
       while (idx >= newlen) newlen = newlen * 2
@@ -23,22 +25,42 @@ class BitSet(initSize: Int) extends Set[Int] with collection.BitSet with BitSetT
       elems = elems1
     }
     elems(idx) = w
-    this
   }
 
-  protected def fromArray(words: Array[Long]): BitSet = {
-    val s = new BitSet; s.elems = words; s
+  protected def fromArray(words: Array[Long]): BitSet = new BitSet(words)
+
+  /** Adds element to bitset,
+   *  @return element was already present.
+   */
+  def put (elem: Int): Boolean = {
+    require(elem >= 0)
+    if (contains(elem)) true
+    else {
+      val idx = elem >> LogWL
+      updateWord(idx, word(idx) | (1L << elem))
+      false
+    }
   }
 
-  override def += (elem: Int) { super.+(elem) }
-
-  override def -= (elem: Int) { super.-(elem) }
-
-  override def + (elem: Int): this.type = { +=(elem); this }
-
-  override def - (elem: Int): this.type = { -=(elem); this }
+  /** Removes element from bitset.
+   *  @return element was already present.
+   */
+  def remove (elem: Int): Boolean = {
+    require(elem >= 0)
+    if (contains(elem)) {
+      val idx = elem >> LogWL
+      updateWord(idx, word(idx) & ~(1L << elem))
+      true
+    } else false
+  }
 
   def toImmutable = immutable.BitSet.fromArray(elems)
+
+  override def clone(): BitSet = {
+    val elems1 = new Array[Long](elems.length)
+    Array.copy(elems, 0, elems1, 0, elems.length)
+    new BitSet(elems1)
+  }
 }
 
 /** A factory object for mutable bitsets */

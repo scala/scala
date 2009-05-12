@@ -87,7 +87,7 @@ final class ListBuffer[A]
    *
    *  @param x  the element to append.
    */
-  def += (x: A) {
+  def += (x: A): this.type = {
     if (exported) copy()
     if (start.isEmpty) {
       last0 = new :: (x, Nil)
@@ -98,6 +98,7 @@ final class ListBuffer[A]
       last1.tl = last0
     }
     len += 1
+    this
   }
 
   /** Clears the buffer contents.
@@ -254,7 +255,7 @@ final class ListBuffer[A]
    *
    *  @param x  the element to remove.
    */
-  override def -= (elem: A) {
+  override def -= (elem: A): this.type = {
     if (exported) copy()
     if (start.isEmpty) {}
     else if (start.head == elem) {
@@ -273,6 +274,7 @@ final class ListBuffer[A]
         len -= 1
       }
     }
+    this
   }
 
   override def elements = new Iterator[A] {

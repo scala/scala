@@ -23,7 +23,7 @@ object LinkedHashSet {
 }
 
 @serializable
-class LinkedHashSet[A] extends Set[A] with SetTemplate[A, LinkedHashSet[A]] with FlatHashTable[A] {
+class LinkedHashSet[A] extends Set[A] with MutableSetTemplate[A, LinkedHashSet[A]] with FlatHashTable[A] {
 
   override def empty = LinkedHashSet.empty
 
@@ -33,16 +33,13 @@ class LinkedHashSet[A] extends Set[A] with SetTemplate[A, LinkedHashSet[A]] with
 
   def contains(elem: A): Boolean = containsEntry(elem)
 
-  def +=(elem: A) { add(elem) }
-
-  def add(elem: A): Boolean = {
+  def put(elem: A): Boolean =
     if (addEntry(elem)) {
       ordered = elem :: ordered
       true
     } else false
-  }
-  def -=(elem: A) { remove(elem) }
-  def remove(elem: A) : Boolean = removeEntry(elem) match {
+
+  def remove(elem: A): Boolean = removeEntry(elem) match {
     case None => false
     case Some(elem) => ordered = ordered.filter(_ != elem); true
   }
@@ -51,7 +48,7 @@ class LinkedHashSet[A] extends Set[A] with SetTemplate[A, LinkedHashSet[A]] with
     ordered = Nil
     super.clear()
   }
-  override def clone(): Set[A] = new LinkedHashSet[A] ++ this
+
   override def elements = Iterator.fromOld(ordered.reverse.elements)
 }
 

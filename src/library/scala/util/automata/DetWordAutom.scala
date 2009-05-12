@@ -62,7 +62,7 @@ abstract class DetWordAutom[T <: AnyRef] {
     var map = scala.collection.immutable.Map[Int,Int]()
     var j = 0; while( j < nstates ) {
       if (j < finals.length)
-        map = map.add(j, finals(j))
+        map = map.updated(j, finals(j))
       j += 1
     }
     sb.append(map.toString())

@@ -226,7 +226,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
 
   /* Appends the string representation of the <code>Any</code> argument.
    */
-  def +=(x: Char) { append(x) }
+  def +=(x: Char): this.type = { append(x); this }
 
   def +(x: Char): this.type = { +=(x); this }
 

@@ -36,7 +36,7 @@ trait TraversableForwarder[+A] extends Traversable[A] {
 
   override def isEmpty = underlying.isEmpty
   override def hasDefiniteSize = underlying.hasDefiniteSize
-  override def foreach(f: A => Unit) = underlying.foreach(f)
+  override def foreach[B](f: A => B) = underlying.foreach(f)
   override def forall(p: A => Boolean): Boolean = underlying.forall(p)
   override def exists(p: A => Boolean): Boolean = underlying.exists(p)
   override def count(p: A => Boolean): Int = underlying.count(p)

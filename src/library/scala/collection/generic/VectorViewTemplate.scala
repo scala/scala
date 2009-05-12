@@ -28,39 +28,39 @@ trait VectorViewTemplate[+A,
 
   trait Sliced extends Transformed[A] with super.Sliced {
     /** Override to use Vector's foreach; todo: see whether this is really faster */
-    override def foreach(f: A => Unit) = super[Transformed].foreach(f)
+    override def foreach[U](f: A =>  U) = super[Transformed].foreach(f)
   }
 
   trait Mapped[B] extends Transformed[B] with super.Mapped[B] {
-    override def foreach(f: B => Unit) = super[Transformed].foreach(f)
+    override def foreach[U](f: B =>  U) = super[Transformed].foreach(f)
   }
 
   trait FlatMapped[B] extends Transformed[B] with super.FlatMapped[B] {
-    override def foreach(f: B => Unit) = super[Transformed].foreach(f)
+    override def foreach[U](f: B =>  U) = super[Transformed].foreach(f)
   }
 
   trait Appended[B >: A] extends Transformed[B] with super.Appended[B] {
-    override def foreach(f: B => Unit) = super[Transformed].foreach(f)
+    override def foreach[U](f: B =>  U) = super[Transformed].foreach(f)
   }
 
   trait Filtered extends Transformed[A] with super.Filtered {
-    override def foreach(f: A => Unit) = super[Transformed].foreach(f)
+    override def foreach[U](f: A =>  U) = super[Transformed].foreach(f)
   }
 
   trait TakenWhile extends Transformed[A] with super.TakenWhile {
-    override def foreach(f: A => Unit) = super[Transformed].foreach(f)
+    override def foreach[U](f: A =>  U) = super[Transformed].foreach(f)
   }
 
   trait DroppedWhile extends Transformed[A] with super.DroppedWhile {
-    override def foreach(f: A => Unit) = super[Transformed].foreach(f)
+    override def foreach[U](f: A =>  U) = super[Transformed].foreach(f)
   }
 
   trait Reversed extends Transformed[A] with super.Reversed {
-    override def foreach(f: A => Unit) = super[Transformed].foreach(f)
+    override def foreach[U](f: A =>  U) = super[Transformed].foreach(f)
   }
 
   trait Patched[B >: A] extends Transformed[B] with super.Patched[B] {
-    override def foreach(f: B => Unit) = super[Transformed].foreach(f)
+    override def foreach[U](f: B =>  U) = super[Transformed].foreach(f)
   }
 
   /** Boilerplate method, to override in each subclass

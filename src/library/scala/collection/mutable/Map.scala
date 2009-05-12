@@ -28,7 +28,7 @@ trait Map[A, B]
     override def update(key: A, value: B) = self.update(key, value)
     override def - (elem: A) = self - elem
     override def elements = self.elements
-    override def foreach(f: ((A, B)) => Unit) = self.foreach(f)
+    override def foreach[U](f: ((A, B)) =>  U) = self.foreach(f)
     override def empty[C] = self.empty[C]
     def get(key: A) = self.get(key)
   }

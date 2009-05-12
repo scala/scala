@@ -42,7 +42,7 @@ object IntMap{
   def empty[T] : IntMap[T]  = IntMap.Nil;
   def singleton[T](key : Int, value : T) : IntMap[T] = IntMap.Tip(key, value);
   def apply[T](elems : (Int, T)*) : IntMap[T] =
-    elems.foldLeft(empty[T])((x, y) => x.add(y._1, y._2));
+    elems.foldLeft(empty[T])((x, y) => x.updated(y._1, y._2));
 
 
   private[immutable] case object Nil extends IntMap[Nothing]{
@@ -153,7 +153,7 @@ sealed abstract class IntMap[+T] extends scala.collection.immutable.Map[Int, T] 
   /**
    * Loops over the key, value pairs of the map in unsigned order of the keys.
    */
-  override final def foreach(f : ((Int, T)) => Unit) : Unit = this match {
+  override final def foreach[U](f : ((Int, T)) =>  U) : Unit = this match {
     case IntMap.Bin(_, _, left, right) => {left.foreach(f); right.foreach(f); }
     case IntMap.Tip(key, value) => f((key, value));
     case IntMap.Nil => {};
@@ -239,17 +239,17 @@ sealed abstract class IntMap[+T] extends scala.collection.immutable.Map[Int, T] 
     case IntMap.Nil => error("key not found");
   }
 
-  def add[S >: T](key : Int, value : S) : IntMap[S] = this match {
+  def updated[S >: T](key : Int, value : S) : IntMap[S] = this match {
     case IntMap.Bin(prefix, mask, left, right) => if (!hasMatch(key, prefix, mask)) join(key, IntMap.Tip(key, value), prefix, this);
-                                          else if (zero(key, mask)) IntMap.Bin(prefix, mask, left.add(key, value), right)
-                                          else IntMap.Bin(prefix, mask, left, right.add(key, value));
+                                          else if (zero(key, mask)) IntMap.Bin(prefix, mask, left.updated(key, value), right)
+                                          else IntMap.Bin(prefix, mask, left, right.updated(key, value));
     case IntMap.Tip(key2, value2) => if (key == key2) IntMap.Tip(key, value);
                              else join(key, IntMap.Tip(key, value), key2, this);
     case IntMap.Nil => IntMap.Tip(key, value);
   }
 
-  /** @deprecated use add instead */
-  @deprecated override def update[S >: T](key: Int, value: S): IntMap[S] = add(key, value)
+  /** @deprecated use updated instead */
+  @deprecated override def update[S >: T](key: Int, value: S): IntMap[S] = updated(key, value)
 
   /**
    * Updates the map, using the provided function to resolve conflicts if the key is already present.
@@ -272,7 +272,7 @@ sealed abstract class IntMap[+T] extends scala.collection.immutable.Map[Int, T] 
     case IntMap.Nil => IntMap.Tip(key, value);
   }
 
-  def -(key : Int) : IntMap[T] = this match {
+  def minus (key : Int) : IntMap[T] = this match {
     case IntMap.Bin(prefix, mask, left, right) =>
       if (!hasMatch(key, prefix, mask)) this;
       else if (zero(key, mask)) bin(prefix, mask, left - key, right);

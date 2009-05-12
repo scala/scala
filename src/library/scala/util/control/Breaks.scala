@@ -12,7 +12,6 @@ object Breaks {
       op
     } catch {
       case ex: BreakException =>
-      case ex: ContinueException => breakable(op)
     }
   }
 

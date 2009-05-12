@@ -36,7 +36,7 @@ trait TraversableProxyTemplate[+A, +This <: TraversableTemplate[A, This] with Tr
   override def remove(p: A => Boolean): This = self.remove(p)
   override def partition(p: A => Boolean): (This, This) = self.partition(p)
   override def groupBy[K](f: A => K): Map[K, This] = self.groupBy(f)
-  override def foreach(f: A => Unit): Unit = self.foreach(f)
+  override def foreach[B](f: A => B): Unit = self.foreach(f)
   override def forall(p: A => Boolean): Boolean = self.forall(p)
   override def exists(p: A => Boolean): Boolean = self.exists(p)
   override def count(p: A => Boolean): Int = self.count(p)

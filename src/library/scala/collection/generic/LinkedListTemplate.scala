@@ -79,7 +79,7 @@ trait LinkedListTemplate[A, This >: Null <: Sequence[A] with LinkedListTemplate[
     }
   }
 
-  override def foreach(f: A => Unit): Unit = {
+  override def foreach[B](f: A => B): Unit = {
     var these = this
     while (these ne null) {
       f(these.elem);

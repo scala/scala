@@ -69,10 +69,10 @@ object JSON extends Parser {
 
     if (input.forall {
       case (key: String, value: List[_]) =>
-        objMap += (key -> resolveType(value))
+        objMap = objMap.+[Any](key -> resolveType(value))
         true
       case (key : String, value : Any) =>
-        objMap += (key -> value)
+        objMap += key -> value
         true
       case _ => false
     }) objMap

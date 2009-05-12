@@ -20,7 +20,7 @@ package scala.collection.generic
 class AddingBuilder[A, Coll <: Addable[A, Coll] with Iterable[A] with IterableTemplate[A, Coll]](empty: Coll)
 extends Builder[A, Coll] {
   protected var elems: Coll = empty
-  def +=(x: A) { elems = elems + x }
+  def +=(x: A): this.type = { elems = elems + x; this }
   def clear() { elems = empty }
   def result: Coll = elems
 }

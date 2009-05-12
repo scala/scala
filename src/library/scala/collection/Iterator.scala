@@ -60,7 +60,7 @@ object Iterator {
    *  @param its the argument iterators that are to be concatenated
    *  @return the concatenation of all the argument iterators
    */
-  def concat[A](xss: Iterator[A]*): Iterator[A] =
+  @deprecated def concat[A](xss: Iterator[A]*): Iterator[A] =
     Iterable.fromOld(xss).elements.flatten
 
   /** An iterator that returns the results of some element computation a number of times.
@@ -510,7 +510,7 @@ trait Iterator[+A] { self =>
    *
    *  @param  f   a function that is applied to every element.
    */
-  def foreach(f: A => Unit) { while (hasNext) f(next()) }
+  def foreach[U](f: A =>  U) { while (hasNext) f(next()) }
 
   /** Apply a predicate <code>p</code> to all elements of this
    *  iterable object and return <code>true</code> iff the predicate yields

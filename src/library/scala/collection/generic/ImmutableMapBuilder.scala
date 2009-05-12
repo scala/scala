@@ -20,7 +20,7 @@ package scala.collection.generic
 class ImmutableMapBuilder[A, B, Coll <: immutable.Map[A, B] with MapTemplate[A, B, Coll]](empty: Coll)
 extends Builder[(A, B), Coll] {
   protected var elems: Coll = empty
-  def +=(x: (A, B)) { elems = (elems + x).asInstanceOf[Coll] }
+  def +=(x: (A, B)): this.type = { elems = (elems + x).asInstanceOf[Coll]; this }
   def clear() { elems = empty }
   def result: Coll = elems
 }

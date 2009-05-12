@@ -20,7 +20,7 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
   /** Adds a single element to the builder.
    *  @param elem The element to be added
    */
-  def +=(elem: Elem)
+  def +=(elem: Elem): this.type
 
   /** Clear the contents of this builder
    */
@@ -42,10 +42,10 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
   def mapResult[NewTo](f: To => NewTo): Builder[Elem, NewTo] =
     new Builder[Elem, NewTo] with Proxy {
       val self = Builder.this
-      def +=(x: Elem) = self += x
+      def +=(x: Elem): this.type = { self += x; this }
       def clear() = self.clear()
-      override def ++=(xs: Iterator[Elem]) = self ++= xs
-      override def ++=(xs: Traversable[Elem]) = self ++= xs
+      override def ++=(xs: Iterator[Elem]): this.type = { self ++= xs; this }
+      override def ++=(xs: Traversable[Elem]): this.type = { self ++= xs; this }
       def result: NewTo = f(self.result)
     }
 }

@@ -122,7 +122,7 @@ trait BasicBlocks {
 //    override def hashCode() = label;
 
     /** Apply a function to all the instructions of the block. */
-    override def foreach(f: Instruction => Unit) = {
+    override def foreach[U](f: Instruction => U) = {
       if (!closed) {
         dump
         global.abort("Traversing an open block!: " + label)

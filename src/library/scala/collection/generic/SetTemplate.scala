@@ -16,8 +16,8 @@ package scala.collection.generic
  *
  *   def contains(key: A): Boolean
  *   def elements: Iterator[A]
- *   def +(elem: A): This
- *   def -(elem: A): This
+ *   def plus(elem: A): This
+ *   def minus(elem: A): This
  *
  * If you wish that methods like, take, drop, filter return the same kind of set, you should also
  * override:
@@ -26,7 +26,8 @@ package scala.collection.generic
  *
  * It is also good idea to override methods foreach and size for efficiency.
  */
-trait SetTemplate[A, +This <: SetTemplate[A, This] with Set[A]] extends IterableTemplate[A, This] with Addable[A, This] with Subtractable[A, This] { self =>
+trait SetTemplate[A, +This <: SetTemplate[A, This] with Set[A]] extends IterableTemplate[A, This] with Addable[A, This] with Subtractable[A, This] {
+self =>
 
   def empty: This
 
@@ -43,12 +44,12 @@ trait SetTemplate[A, +This <: SetTemplate[A, This] with Set[A]] extends Iterable
   /** Creates a new set with an additional element, unless the element is already present.
    *  @param elem the element to be added
    */
-  def + (elem: A): This
+  def plus (elem: A): This
 
-  /** Removes a single element from a set, unless the element is not present.
+  /** Creates a new set with given element removed from this set, unless the element is not present.
    *  @param elem the element to be removed
    */
-  def - (elem: A): This
+  def minus (elem: A): This
 
   /** Checks if this set is empty.
    *
@@ -66,14 +67,22 @@ trait SetTemplate[A, +This <: SetTemplate[A, This] with Set[A]] extends Iterable
    */
   def apply(elem: A): Boolean = contains(elem)
 
-  /** This method computes an intersection with set <code>that</code>.
-   *  It removes all the elements that are not present in <code>that</code>.
+  /** Returns a new set consisting of all elements that are both in the current set
+   *  and in the argument set.
    *
    *  @param that the set to intersect with.
    */
   def intersect(that: Set[A]): This = filter(that.contains)
 
- /** This method is an alias for <code>intersect</code>.
+  /** Returns a new set consisting of all elements that are both in the current set
+   *  and in the argument set.
+   *
+   *  @param that the set to intersect with.
+   *  @note  same as `intersect`
+   */
+  def &(that: Set[A]): This = intersect(that)
+
+ /**  This method is an alias for <code>intersect</code>.
    *  It computes an intersection with set <code>that</code>.
    *  It removes all the elements that are not present in <code>that</code>.
    *
@@ -82,26 +91,39 @@ trait SetTemplate[A, +This <: SetTemplate[A, This] with Set[A]] extends Iterable
    */
   @deprecated def ** (that: Set[A]): This = intersect(that)
 
-  /** This method is an alias for <code>intersect</code>.
-   *  It computes an intersection with set <code>that</code>.
-   *  It removes all the elements that are not present in <code>that</code>.
+  /** The union of this set and the given set <code>that</code>.
    *
-   *  @param that the set to intersect with
-   */
-  def & (that: collection.Set[A]): This = intersect(that)
-
-   /** Computes the union of this set and the given set <code>that</code>.
-   *
-   *  @param that the sequence of elements to add to the sequence.
+   *  @param that the set of elements to add
    *  @return     a set containing the elements of this
    *              set and those of the given set <code>that</code>.
    */
-  def union(that: Set[A]): This = (thisCollection /: that) (_ + _)
+  def union(that: Set[A]): This = plusAll(that)
 
-  /** This method is an alias for <code>union</code>.
-   *  It computes the union of this set and the given set <code>that</code>.
+  /** The union of this set and the given set <code>that</code>.
+   *
+   *  @param that the set of elements to add
+   *  @return     a set containing the elements of this
+   *              set and those of the given set <code>that</code>.
+   *  @note       same as `union`
    */
   def | (that: Set[A]): This = union(that)
+
+  /** The difference of this set and the given set <code>that</code>.
+   *
+   *  @param that the set of elements to remove
+   *  @return     a set containing those elements of this
+   *              set that are not also contained in the given set <code>that</code>.
+   */
+  def diff(that: Set[A]): This = minusAll(that)
+
+  /** The difference of this set and the given set <code>that</code>.
+   *
+   *  @param that the set of elements to remove
+   *  @return     a set containing those elements of this
+   *              set that are not also contained in the given set <code>that</code>.
+   *  @note       same as `diff`.
+   */
+  def &~(that: Set[A]): This = diff(that)
 
   /** Checks if this set is a subset of set <code>that</code>.
    *

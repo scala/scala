@@ -15,34 +15,9 @@ trait BitSetTemplate[+This <: BitSetTemplate[This] with Set[Int]] extends SetTem
    */
   protected def word(idx: Int): Long
 
-  /** Update word at index `idx`; enlarge set if `idx` outside range of set
-   */
-  protected def updateWord(idx: Int, w: Long): This
-
   /** Create a new set of this kind from an array of longs
    */
   protected def fromArray(elems: Array[Long]): This
-
-  /** Adds element to bitset, reusing set if its mutable.
-   */
-  override def + (elem: Int): This = {
-    require(elem >= 0)
-    if (contains(elem)) thisCollection
-    else {
-      val idx = elem >> LogWL
-      updateWord(idx, word(idx) | (1L << elem))
-    }
-  }
-
-  /** Removes element to bitset, reusing set if its mutable.
-   */
-  override def - (elem: Int): This = {
-    require(elem >= 0)
-    if (contains(elem)) {
-      val idx = elem >> LogWL
-      updateWord(idx, word(idx) & ~(1L << elem))
-    } else thisCollection
-  }
 
   /** The number of elements in the bitset.
    */
@@ -68,7 +43,7 @@ trait BitSetTemplate[+This <: BitSetTemplate[This] with Set[Int]] extends SetTem
       else Iterator.empty.next
   }
 
-  override def foreach(f: Int => Unit) {
+  override def foreach[B](f: Int => B) {
     for (i <- 0 until nwords) {
       val w = word(i)
       for (j <- i * WordLength until (i + 1) * WordLength) {
@@ -142,8 +117,20 @@ trait BitSetTemplate[+This <: BitSetTemplate[This] with Set[Int]] extends SetTem
 }
 
 object BitSetTemplate {
-  private val LogWL = 6
+  private[collection] val LogWL = 6
   private val WordLength = 64
+
+  private[collection] def updateArray(elems: Array[Long], idx: Int, w: Long): Array[Long] = {
+    var len = elems.length
+    while (len > 0 && (elems(len - 1) == 0L || w == 0L && idx == len - 1)) len -= 1
+    var newlen = len
+    if (idx >= newlen && w != 0L) newlen = idx + 1
+    val newelems = new Array[Long](newlen)
+    Array.copy(elems, 0, newelems, 0, len)
+    if (idx < newlen) newelems(idx) = w
+    else assert(w == 0L)
+    newelems
+  }
 
   private val pc1: Array[Int] = {
     def countBits(x: Int): Int = if (x == 0) 0 else x % 2 + countBits(x >>> 1)

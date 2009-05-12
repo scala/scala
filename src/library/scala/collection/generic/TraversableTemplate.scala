@@ -85,6 +85,11 @@ self =>
     b.result
   }
 
+  /** Same as ++
+   */
+  def concat[B >: A, That](that: Traversable[B])(implicit bf: BuilderFactory[B, That, This]): That = ++(that)(bf)
+  def concat[B >: A, That](that: Iterator[B])(implicit bf: BuilderFactory[B, That, This]): That = ++(that)(bf)
+
   /** Returns the traversable that results from applying the given function
    *  <code>f</code> to each element of this traversable and collecing the results
    *  in an traversable of type `That`.
@@ -124,14 +129,22 @@ self =>
     b.result
   }
 
-  /** Removes all elements of the traversable which satisfy the predicate
-   *  <code>p</code>. This is like <code>filter</code> with the
-   *  predicate inversed.
+  /** Returns a traversable with all elements of this traversable which do not satisfy the predicate
+   *  <code>p</code>.
    *
    *  @param p the predicate used to test elements
    *  @return  the traversable without all elements that satisfy <code>p</code>
    */
-  def remove(p: A => Boolean): This = filter(!p(_))
+  def filterNot(p: A => Boolean): This = filter(!p(_))
+
+  /** Returns a traversable with all elements of this traversable which do not satisfy the predicate
+   *  <code>p</code>.
+   *
+   *  @param p the predicate used to test elements
+   *  @return  the traversable without all elements that satisfy <code>p</code>
+   *  @deprecated use `filterNot` instead
+   */
+  @deprecated def remove(p: A => Boolean): This = filterNot(p)
 
   /** Partitions this traversable in two traversables according to a predicate.
    *
@@ -160,7 +173,7 @@ self =>
     for (elem <- this) {
       val key = f(elem)
       val bldr = m get key match {
-        case None => val b = newBuilder; m = m add (key, b); b
+        case None => val b = newBuilder; m = m updated (key, b); b
         case Some(b) => b
       }
       bldr += elem
@@ -175,7 +188,7 @@ self =>
    *  @note This method underlies the implementation of most other bulk operations.
    *  It should be overridden in concrete collection classes with efficient implementations.
    */
-  def foreach(f: A => Unit): Unit
+  def foreach[B](f: A => B): Unit
 
   /** Return true iff the given predicate `p` yields true for all elements
    *  of this traversable.
@@ -722,7 +735,7 @@ self =>
    */
   def view = new TraversableView[A, This] {
     protected lazy val underlying = self.thisCollection
-    override def foreach(f: A => Unit) = self foreach f
+    override def foreach[B](f: A => B) = self foreach f
   }
 
   /** A sub-traversable  starting at index `from`

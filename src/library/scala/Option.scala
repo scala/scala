@@ -90,7 +90,7 @@ sealed abstract class Option[+A] extends Product {
    *
    *  @param  f   the procedure to apply.
    */
-  def foreach(f: A => Unit) {
+  def foreach[U](f: A => U) {
     if (!isEmpty) f(this.get)
   }
 

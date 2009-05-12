@@ -20,7 +20,7 @@ import generic._
  *  @version 2.0, 31/12/2006
  */
 @serializable
-class HashSet[A] extends Set[A] with SetTemplate[A, HashSet[A]] with FlatHashTable[A] {
+class HashSet[A] extends Set[A] with MutableSetTemplate[A, HashSet[A]] with FlatHashTable[A] {
 
   override def empty = HashSet.empty
   override def traversableBuilder[B]: Builder[B, HashSet[B]] = HashSet.newBuilder[B]
@@ -29,13 +29,13 @@ class HashSet[A] extends Set[A] with SetTemplate[A, HashSet[A]] with FlatHashTab
 
   def contains(elem: A): Boolean = containsEntry(elem)
 
-  def +=(elem: A) { addEntry(elem) }
+  def put(elem: A): Boolean = addEntry(elem)
 
-  def -=(elem: A) { removeEntry(elem) }
+  def remove(elem: A): Boolean = !removeEntry(elem).isEmpty
 
   override def clear() = super.clear()
 
-  override def foreach(f: A => Unit) {
+  override def foreach[U](f: A =>  U) {
     var i = 0
     val len = table.length
     while (i < len) {

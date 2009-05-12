@@ -22,7 +22,7 @@ trait Shrinkable[-A] {
    *
    *  @param elem  the element to remove.
    */
-  def -=(elem: A): Unit
+  def -=(elem: A): this.type
 
   /** Removes two or more elements from this collection.
    *
@@ -30,7 +30,7 @@ trait Shrinkable[-A] {
    *  @param elem2 the second element to remove.
    *  @param elems the remaining elements to remove.
    */
-  def -=(elem1: A, elem2: A, elems: A*) {
+  def -=(elem1: A, elem2: A, elems: A*): this.type = {
     this -= elem1
     this -= elem2
     this --= Iterable.fromOld(elems)
@@ -40,13 +40,13 @@ trait Shrinkable[-A] {
    *
    *  @param iter  the iterator.
    */
-  def --=(iter: Iterator[A]) { iter foreach -= }
+  def --=(iter: Iterator[A]): this.type = { iter foreach -=; this }
 
   /** Removes a number of elements provided by an iterable object from this collection.
    *
    *  @param iter  the iterable object.
    */
-  def --=(iter: Traversable[A]) { iter foreach -= }
+  def --=(iter: Traversable[A]): this.type = { iter foreach -=; this }
 }
 
 

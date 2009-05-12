@@ -43,7 +43,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *
    *  @param elem  the element to append.
    */
-  def +=(elem: A): Unit = self.+=(elem)
+  def +=(elem: A): this.type = { self.+=(elem); this }
 
   override def readOnly = self.readOnly
 
@@ -61,7 +61,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *
    *  @param iter  the iterable object.
    */
-  override def ++=(iter: Iterable[A]): Unit = self.++=(iter)
+  override def ++=(iter: Iterable[A]): this.type = { self.++=(iter); this }
 
   /** Appends a sequence of elements to this buffer.
    *

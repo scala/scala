@@ -508,12 +508,12 @@ object Stream extends SequenceFactory[Stream] {
   /** The concatenation of a sequence of streams
    * @deprecated use xs.flatten instead
    */
-  @deprecated def concat[A](xs: Iterable[Stream[A]]): Stream[A] = concat(xs.elements)
+  def concat[A](xs: Iterable[Stream[A]]): Stream[A] = concat(xs.elements)
 
   /** The concatenation of all streams returned by an iterator
    * @deprecated use xs.toStream.flatten instead
    */
-  @deprecated def concat[A](xs: Iterator[Stream[A]]): Stream[A] =
+  def concat[A](xs: Iterator[Stream[A]]): Stream[A] =
     if (xs.hasNext) xs.next append concat(xs)
     else empty
 

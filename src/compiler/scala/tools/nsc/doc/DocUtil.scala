@@ -92,8 +92,8 @@ object DocUtil {
     var ts = ts0
     for (t <- ts1.elements) {
       if (!ts.contains(t._1))
-        ts = ts.add(t._1, new TreeSet[S]);
-      ts = ts.add(t._1, merge(ts(t._1), t._2))
+        ts = ts.updated(t._1, new TreeSet[S]);
+      ts = ts.updated(t._1, merge(ts(t._1), t._2))
     }
     ts
   }

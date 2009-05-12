@@ -125,7 +125,7 @@ object Either {
      *
      * @param e The side-effect to execute.
      */
-    def foreach(f: A => Unit) = e match {
+    def foreach[U](f: A => U) = e match {
       case Left(a) => f(a)
       case Right(_) => {}
     }
@@ -226,7 +226,7 @@ object Either {
      *
      * @param e The side-effect to execute.
      */
-    def foreach(f: B => Unit) = e match {
+    def foreach[U](f: B => U) = e match {
       case Left(_) => {}
       case Right(b) => f(b)
     }

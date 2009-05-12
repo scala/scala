@@ -42,7 +42,7 @@ trait Traversable[+A] extends TraversableTemplate[A, Traversable[A]] {
   override def remove(p: A => Boolean): Traversable[A]
   override def partition(p: A => Boolean): (Traversable[A], Traversable[A])
   override def groupBy[K](f: A => K): Map[K, Traversable[A]]
-  override def foreach(f: A => Unit): Unit
+  override def foreach[U](f: A =>  U): Unit
   override def forall(p: A => Boolean): Boolean
   override def exists(p: A => Boolean): Boolean
   override def count(p: A => Boolean): Int
@@ -94,7 +94,9 @@ trait Traversable[+A] extends TraversableTemplate[A, Traversable[A]] {
 object Traversable extends TraversableFactory[Traversable] { self =>
 
   type Coll = Traversable[_]
+
   implicit def builderFactory[A]: BuilderFactory[A, Traversable[A], Coll] = new BuilderFactory[A, Traversable[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
+
   def newBuilder[A]: Builder[A, Traversable[A]] = immutable.Traversable.newBuilder[A]
 
   /** A wrapper class which adds `min` and `max` methods to iterables of an element type that has an Ordering.

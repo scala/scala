@@ -94,8 +94,8 @@ class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
     val sink = _emptyBitSet
     states = states + sink
 
-    deftrans = deftrans.add(q0,sink);
-    deftrans = deftrans.add(sink,sink);
+    deftrans = deftrans.updated(q0,sink);
+    deftrans = deftrans.updated(sink,sink);
 
     val rest = new mutable.ArrayStack[BitSet]();
 
@@ -104,7 +104,7 @@ class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
         states = states + Q
         rest.push(Q)
         if (nfa.containsFinal(Q))
-          finals = finals.add(Q, selectTag(Q,nfa.finals));
+          finals = finals.updated(Q, selectTag(Q,nfa.finals));
       }
     }
     rest.push(sink)
@@ -113,24 +113,24 @@ class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
     while (!rest.isEmpty) {
       // assign a number to this bitset
       val P = rest.pop
-      indexMap = indexMap.add(P,ix)
-      invIndexMap = invIndexMap.add(ix,P)
+      indexMap = indexMap.updated(P,ix)
+      invIndexMap = invIndexMap.updated(ix,P)
       ix += 1
 
       // make transitiion map
       val Pdelta = new mutable.HashMap[T, BitSet]
-      delta.add(P, Pdelta)
+      delta.update(P, Pdelta)
 
       val it = labels.elements; while(it.hasNext) {
         val label = it.next
         val Q = nfa.next(P,label)
-	Pdelta.add(label, Q)
+	Pdelta.update(label, Q)
         add(Q)
       }
 
       // collect default transitions
       val Pdef = nfa.nextDefault(P)
-      deftrans = deftrans.add(P, Pdef)
+      deftrans = deftrans.updated(P, Pdef)
       add(Pdef)
     };
 
@@ -151,7 +151,7 @@ class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
         val label = it.next
         val p = indexMap(trans(label))
         if (p != qDef)
-          ntrans.add(label, p)
+          ntrans.update(label, p)
       }
       deltaR(q) = ntrans
       defaultR(q) = qDef

@@ -74,7 +74,7 @@ class TreeMap[A <% Ordered[A], +B](override val size: Int, t: RedBlack[A]#Tree[B
    *  @param value ...
    *  @return ...
    */
-  def add [B1 >: B](key: A, value: B1): TreeMap[A, B1] = {
+  def updated [B1 >: B](key: A, value: B1): TreeMap[A, B1] = {
     val newsize = if (tree.lookup(key).isEmpty) size + 1 else size
     newMap(newsize, tree.update(key, value))
   }
@@ -83,7 +83,7 @@ class TreeMap[A <% Ordered[A], +B](override val size: Int, t: RedBlack[A]#Tree[B
    *  @param    kv the key/value pair
    *  @return   A new map with the new binding added to this map
    */
-  override def + [B1 >: B] (kv: (A, B1)): TreeMap[A, B1] = add(kv._1, kv._2)
+  override def + [B1 >: B] (kv: (A, B1)): TreeMap[A, B1] = updated(kv._1, kv._2)
 
   /** Adds two or more elements to this collection and returns
    *  either the collection itself (if it is mutable), or a new collection
@@ -104,7 +104,7 @@ class TreeMap[A <% Ordered[A], +B](override val size: Int, t: RedBlack[A]#Tree[B
     newMap(size + 1, tree.update(key, value))
   }
 
-  def - (key:A): TreeMap[A, B] =
+  def minus (key:A): TreeMap[A, B] =
     if (tree.lookup(key).isEmpty) this
     else newMap(size - 1, tree.delete(key))
 
@@ -128,7 +128,7 @@ class TreeMap[A <% Ordered[A], +B](override val size: Int, t: RedBlack[A]#Tree[B
 
   override def toStream: Stream[(A, B)] = tree.toStream
 
-  override def foreach(f : ((A,B)) => Unit) = tree foreach { case (x, y) => f(x, y) }
+  override def foreach[U](f : ((A,B)) =>  U) = tree foreach { case (x, y) => f(x, y) }
 }
 
 

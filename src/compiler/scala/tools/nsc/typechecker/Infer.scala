@@ -1014,14 +1014,15 @@ trait Infer {
      *  @return            Return the list of type parameters that remain uninstantiated.
      */
     def inferMethodInstance(fn: Tree, undetparams: List[Symbol],
-                            args: List[Tree], pt: Type): List[Symbol] = fn.tpe match {
+                            args: List[Tree], pt0: Type): List[Symbol] = fn.tpe match {
       case MethodType(formals0, _) =>
         if (inferInfo)
           println("infer method instance "+fn+"\n"+
                   "  undetparams = "+undetparams+"\n"+
                   "  args = "+args+"\n"+
-                  "  pt = "+pt)
+                  "  pt = "+pt0)
         try {
+          val pt = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
           val formals = formalTypes(formals0, args.length)
           val argtpes = actualTypes(args map (_.tpe.deconst), formals.length)
           val restpe = fn.tpe.resultType(argtpes)
@@ -1399,8 +1400,9 @@ trait Infer {
      *  with pt = WildcardType.
      *  Otherwise, if there is no best alternative, error.
      */
-    def inferMethodAlternative(tree: Tree, undetparams: List[Symbol], argtpes: List[Type], pt: Type): Unit = tree.tpe match {
+    def inferMethodAlternative(tree: Tree, undetparams: List[Symbol], argtpes: List[Type], pt0: Type): Unit = tree.tpe match {
       case OverloadedType(pre, alts) =>
+        val pt = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
         tryTwice {
           if (settings.debug.value) log("infer method alt " + tree.symbol + " with alternatives " + (alts map pre.memberType) + ", argtpes = " + argtpes + ", pt = " + pt)
           val applicable = alts filter (alt => isApplicable(undetparams, followApply(pre.memberType(alt)), argtpes, pt))
@@ -1504,3 +1506,4 @@ trait Infer {
     }
   }
 }
+

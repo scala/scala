@@ -46,7 +46,7 @@ trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] 
    *  @note This method underlies the implementation of most other bulk operations.
    *  It should be overridden in concrete collection classes with efficient implementations.
    */
-  def foreach(f: A => Unit): Unit = elements.foreach(f)
+  def foreach[B](f: A => B): Unit = elements.foreach(f)
 
   /** Is this collection empty?
    */

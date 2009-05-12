@@ -171,8 +171,8 @@ class ListView[A] extends Component {
    */
   object selection extends Publisher {
     protected abstract class Indices[A](a: =>Seq[A]) extends scala.collection.mutable.Set[A] {
-      def -=(n: A)
-      def +=(n: A)
+      def put(n: A): Boolean
+      def remove(n: A): Boolean
       def contains(n: A) = a.contains(n)
       override def size = a.length
       def elements = a.elements
@@ -182,8 +182,8 @@ class ListView[A] extends Component {
      * The indices of the currently selected items.
      */
     object indices extends Indices(peer.getSelectedIndices) {
-      def -=(n: Int) { peer.removeSelectionInterval(n,n) }
-      def +=(n: Int) { peer.addSelectionInterval(n,n) }
+      def remove(n: Int): Boolean = { peer.removeSelectionInterval(n,n); true } // !!! Ingo; What to return? }
+      def put(n: Int): Boolean = { peer.addSelectionInterval(n,n); true } // !!! Ingo; What to return? }
 
       def leadIndex: Int = peer.getSelectionModel.getLeadSelectionIndex
       def anchorIndex: Int = peer.getSelectionModel.getAnchorSelectionIndex

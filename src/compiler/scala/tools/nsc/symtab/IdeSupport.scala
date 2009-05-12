@@ -6,7 +6,7 @@ import scala.tools.nsc.io._
 trait IdeSupport extends SymbolTable { // added to global, not analyzers.
   trait ScopeClient {
     def changed : Unit = {}
-    def addTo(set : => LinkedHashSet[ScopeClient]) = set += this
+    def addTo(set : => LinkedHashSet[ScopeClient]): Unit = set += this
     def notify(name : Name, scope : HookedScope) : Boolean = false
     def notify(name : Name, sym : Symbol) : Unit = {}
     def verifyAndPrioritize[T](verify : Symbol => Symbol)(pt : Type)(f : => T) : T = f

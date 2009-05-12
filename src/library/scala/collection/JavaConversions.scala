@@ -355,7 +355,7 @@ object JavaConversions {
     def apply(i : Int) = underlying.get(i)
     def update(i : Int, elem : A) = underlying.set(i, elem)
     def +:(elem : A) = { underlying.subList(0, 0).add(elem) ; this }
-    def +=(elem : A) = underlying.add(elem)
+    def +=(elem : A): this.type = { underlying.add(elem); this }
     def insertAll(i : Int, elems : Traversable[A]) = { val ins = underlying.subList(0, i) ;  elems.foreach(ins.add(_)) }
     def remove(i : Int) = underlying.remove(i)
     def clear = underlying.clear
@@ -386,16 +386,16 @@ object JavaConversions {
     }
   }
 
-  case class JSetWrapper[A](underlying : ju.Set[A]) extends mutable.Set[A] with generic.SetTemplate[A, JSetWrapper[A]] {
+  case class JSetWrapper[A](underlying : ju.Set[A]) extends mutable.Set[A] with generic.MutableSetTemplate[A, JSetWrapper[A]] {
     override def size = underlying.size
 
     def elements = underlying.iterator
 
     def contains(elem: A): Boolean = underlying.contains(elem)
 
-    def +=(elem: A) { underlying.add(elem) }
+    def put(elem: A): Boolean = underlying.add(elem)
 
-    def -=(elem: A) { underlying.remove(elem) }
+    def remove(elem: A): Boolean = underlying.remove(elem)
 
     override def clear = underlying.clear
 
@@ -467,9 +467,19 @@ object JavaConversions {
         None
     }
 
-    def update(k : A, v : B) { underlying.put(k, v) }
+    override def put(k : A, v : B): Option[B] = {
+      val r = underlying.put(k, v)
+      if (r != null) Some(r) else None
+    }
 
-    def -=(k : A) = { underlying.remove(k) ; this }
+    override def update(k : A, v : B) { underlying.put(k, v) }
+
+    override def remove(k : A): Option[B] = {
+      val r = underlying.remove(k)
+      if (r != null) Some(r) else None
+    }
+
+    override def delete(k : A) { underlying.remove(k) }
 
     def elements = new Iterator[(A, B)] {
       val ui = underlying.entrySet.iterator

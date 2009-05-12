@@ -61,7 +61,7 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
    *
    *  @param elem  the element to append.
    */
-  def +=(elem: A)
+  def +=(elem: A): this.type
 
   /** Clears the buffer contents.
    */
@@ -74,10 +74,6 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
    *  @param elem  the element to prepend.
    */
   def +:(elem: A): This
-
-  /** Append a single element to this buffer and return the identity of the buffer
-   */
-  def +(elem: A): This = { +=(elem); thisCollection }
 
   /** Inserts new elements at the index <code>n</code>. Opposed to method
    *  <code>update</code>, this method will not replace an element with a
@@ -93,6 +89,7 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
   /** Removes the element on a given index position.
    *
    *  @param n  the index which refers to the element to delete.
+   *  @return   the previous element
    */
   def remove(n: Int): A
 
@@ -111,17 +108,19 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
    *
    *  @param x  the element to remove.
    */
-  def -= (x: A) {
+  def -= (x: A): this.type = {
     val i = indexOf(x)
     if (i != -1) remove(i)
+    this
   }
 
-  /** Removes a single element from this buffer and returns the identity
-   *  of the buffer. If the buffer does not contain that element, it is unchanged.
-   *
-   *  @param x  the element to remove.
-   */
-  def - (elem: A): This = { -=(elem); thisCollection }
+  /** Returns a new buffer which contains the elements of this buffer, plus
+   *  the given element appended at the end */
+  def plus(elem: A): This = clone() += elem
+
+  /** Returns a new buffer which contains the elements of this buffer, plus
+   *  except that the given element is removed */
+  def minus (elem: A): This = { -=(elem); thisCollection }
 
   /** Prepend two ore more elements to this buffer and return
    *  the identity of the buffer.
@@ -146,7 +145,7 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
    */
   def ++:(iter: Iterator[A]): This = { for (x <- iter) x +: this; thisCollection }
 
-  /** Appends a elements to this buffer.
+  /** Appends elements to this buffer.
    *
    *  @param elems  the elements to append.
    */
@@ -253,6 +252,100 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
       this += src(i)
       i += 1
     }
+  }
+
+  /** Adds a single element to this collection and returns
+   *  the collection itself.
+   *
+   *  @param elem  the element to add.
+   *  @deprecated  use += instead if you inted to add by side effect to an existing collection.
+   *               Use `plus` if you intend to create a new collection.
+   */
+  @deprecated override def + (elem: A): This = { +=(elem); thisCollection }
+
+  /** Adds two or more elements to this collection and returns
+   *  the collection itself.
+   *
+   *  @param elem1 the first element to add.
+   *  @param elem2 the second element to add.
+   *  @param elems the remaining elements to add.
+   *  @deprecated  use += instead if you inted to add by side effect to an existing collection.
+   *               Use `plus` if you intend to create a new collection.
+   */
+  @deprecated override def + (elem1: A, elem2: A, elems: A*): This = {
+    this += elem1 += elem2 ++= elems
+    thisCollection
+  }
+
+  /** Adds a number of elements provided by a traversable object and returns
+   *  either the collection itself.
+   *
+   *  @param iter     the iterable object.
+   *  @deprecated  use ++= instead if you inted to add by side effect to an existing collection.
+   *               Use `plusAll` if you intend to create a new collection.
+   */
+  @deprecated override def ++(iter: Traversable[A]): This = {
+    for (elem <- iter) +=(elem)
+    thisCollection
+  }
+
+  /** Adds a number of elements provided by an iterator and returns
+   *  the collection itself.
+   *
+   *  @param iter   the iterator
+   *  @deprecated  use ++= instead if you inted to add by side effect to an existing collection.
+   *               Use `plusAll` if you intend to create a new collection.
+   */
+  @deprecated override def ++ (iter: Iterator[A]): This = {
+    for (elem <- iter) +=(elem)
+    thisCollection
+  }
+
+  /** Removes a single element from this collection and returns
+   *  the collection itself.
+   *
+   *  @param elem  the element to remove.
+   *  @deprecated  use -= instead if you inted to remove by side effect from an existing collection.
+   *               Use `minus` if you intend to create a new collection.
+   */
+  @deprecated override def -(elem: A): This = { -=(elem); thisCollection }
+
+  /** Removes two or more elements from this collection and returns
+   *  the collection itself.
+   *
+   *  @param elem1 the first element to remove.
+   *  @param elem2 the second element to remove.
+   *  @param elems the remaining elements to remove.
+   *  @deprecated  use -= instead if you inted to remove by side effect from an existing collection.
+   *               Use `minus` if you intend to create a new collection.
+   */
+  @deprecated override def -(elem1: A, elem2: A, elems: A*): This = {
+    this -= elem1 -= elem2 --= elems
+    thisCollection
+  }
+
+  /** Removes a number of elements provided by a traversible object and returns
+   *  the collection itself.
+   *  @deprecated  use --= instead if you inted to remove by side effect from an existing collection.
+   *               Use `minusAll` if you intend to create a new collection.
+   *
+   *  @param iter     the iterable object.
+   */
+  @deprecated override def --(iter: Traversable[A]): This = {
+    for (elem <- iter) -=(elem)
+    thisCollection
+  }
+
+  /** Removes a number of elements provided by an iterator and returns
+   *  the collection itself.
+   *
+   *  @param iter   the iterator
+   *  @deprecated  use --= instead if you inted to remove by side effect from an existing collection.
+   *               Use `minusAll` if you intend to create a new collection.
+   */
+  @deprecated override def --(iter: Iterator[A]): This = {
+    for (elem <- iter) -=(elem)
+    thisCollection
   }
 }
 

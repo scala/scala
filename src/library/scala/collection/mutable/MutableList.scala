@@ -111,7 +111,7 @@ class MutableList[A] extends LinearSequence[A] with LinearSequenceTemplate[A, Mu
    *
    *  @param elem  the element to append.
    */
-  def +=(elem: A) = appendElem(elem)
+  def +=(elem: A): this.type = { appendElem(elem); this }
 
   def clear() {
     first0 = null

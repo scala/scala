@@ -22,7 +22,7 @@ trait SymbolWalker {
   def walk(tree: Tree, visitor : Visitor)(fid : (util.Position) => Option[String]) : Unit = {
     val visited = new LinkedHashSet[Tree]
     def f(t : Tree) : Unit = {
-      if (!visited.add(t)) return
+      if (!visited.put(t)) return
       def fs(l : List[Tree]) : Unit = {
         val i = l.elements
         while (i.hasNext) f(i.next)

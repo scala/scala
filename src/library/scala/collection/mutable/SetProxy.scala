@@ -27,15 +27,15 @@ trait SetProxy[A] extends Set[A] with collection.SetProxy[A] {
 
   override def update(elem: A, included: Boolean): Unit = self(elem) = included
 
-  def +=(elem: A): Unit = self += elem
+  def +=(elem: A): this.type = { self += elem; this }
 
-  override def ++=(that: Iterable[A]): Unit = self ++= that
+  override def ++=(that: Iterable[A]): this.type = { self ++= that; this }
 
-  override def ++=(it: Iterator[A]): Unit = self ++= it
+  override def ++=(it: Iterator[A]): this.type = { self ++= it; this }
 
   override def incl(elems: A*): Unit = self ++= elems
 
-  def -=(elem: A): Unit = self -= elem
+  def -=(elem: A): this.type = { self -= elem; this }
 
   override def --=(that: Iterable[A]): Unit = self --= that
 

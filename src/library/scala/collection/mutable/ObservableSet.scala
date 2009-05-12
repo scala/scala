@@ -27,9 +27,12 @@ trait ObservableSet[A, This <: ObservableSet[A, This]]
       with Undoable, This]
 { self: This =>
 
-  abstract override def +=(elem: A): Unit = if (!contains(elem)) {
-    super.+=(elem)
-    publish(new Include(elem) with Undoable { def undo = -=(elem) })
+  abstract override def +=(elem: A): this.type = {
+    if (!contains(elem)) {
+      super.+=(elem)
+      publish(new Include(elem) with Undoable { def undo = -=(elem) })
+    }
+    this
   }
 
   abstract override def -=(elem: A): Unit = if (contains(elem)) {

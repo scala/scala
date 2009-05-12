@@ -123,7 +123,7 @@ private[swing] class StrongReference[+T <: AnyRef](value: T) extends Reference[T
 abstract class RefBuffer[A <: AnyRef] extends Buffer[A] with SingleRefCollection[A] { self =>
   protected val underlying: Buffer[Reference[A]]
 
-  def +=(el: A) { purgeReferences(); underlying += Ref(el) }
+  def +=(el: A): this.type = { purgeReferences(); underlying += Ref(el); this }
   def +:(el: A) = { purgeReferences(); Ref(el) +: underlying; this }
   def remove(el: A) { underlying -= Ref(el); purgeReferences(); }
   def remove(n: Int) = { val el = apply(n); remove(el); el }
@@ -155,8 +155,8 @@ abstract class RefBuffer[A <: AnyRef] extends Buffer[A] with SingleRefCollection
 private[swing] abstract class RefSet[A <: AnyRef] extends Set[A] with SingleRefCollection[A] { self =>
   protected val underlying: Set[Reference[A]]
 
-  def -=(el: A) { underlying -= Ref(el); purgeReferences() }
-  def +=(el: A) { purgeReferences(); underlying += Ref(el) }
+  def remove(el: A): Boolean = { val r = underlying remove Ref(el); purgeReferences(); r }
+  def put(el: A): Boolean = { purgeReferences(); underlying put Ref(el) }
   def contains(el: A) = { purgeReferences(); underlying.contains(Ref(el)) }
   override def size = { purgeReferences(); underlying.size }
 

@@ -53,7 +53,7 @@ class TreeSet[A <% Ordered[A]](override val size: Int, t: RedBlack[A]#Tree[Unit]
 
   /** A new TreeSet with the entry added is returned,
    */
-  def + (elem: A): TreeSet[A] = {
+  def plus (elem: A): TreeSet[A] = {
     val newsize = if (tree.lookup(elem).isEmpty) size + 1 else size
     newSet(newsize, tree.update(elem, ()))
   }
@@ -66,7 +66,7 @@ class TreeSet[A <% Ordered[A]](override val size: Int, t: RedBlack[A]#Tree[Unit]
     newSet(size + 1, tree.update(elem, ()))
   }
 
-  def - (elem:A): TreeSet[A] =
+  def minus (elem:A): TreeSet[A] =
     if (tree.lookup(elem).isEmpty) this
     else newSet(size - 1, tree.delete(elem))
 
@@ -86,7 +86,7 @@ class TreeSet[A <% Ordered[A]](override val size: Int, t: RedBlack[A]#Tree[Unit]
 
   override def toStream: Stream[A] = tree.toStream map (_._1)
 
-  override def foreach(f: A => Unit) = tree foreach { (x, y) => f(x) }
+  override def foreach[U](f: A =>  U) = tree foreach { (x, y) => f(x) }
 
   override def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] = {
     val tree = this.tree.range(from, until)

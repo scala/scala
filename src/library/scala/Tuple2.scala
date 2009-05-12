@@ -45,7 +45,7 @@ object Tuple2 {
         b ++= f(elems1.next, elems2.next)
       b.result
     }
-    def foreach(f: (A1, A2) => Unit) {
+    def foreach[U](f: (A1, A2) => U) {
       val elems1 = tuple._1.elements
       val elems2 = tuple._2.elements
       while (elems1.hasNext && elems2.hasNext)

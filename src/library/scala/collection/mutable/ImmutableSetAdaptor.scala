@@ -31,7 +31,7 @@ class ImmutableSetAdaptor[A](protected var set: immutable.Set[A]) extends Set[A]
 
   def contains(elem: A): Boolean = set.contains(elem)
 
-  override def foreach(f: A => Unit): Unit = set.foreach(f)
+  override def foreach[U](f: A =>  U): Unit = set.foreach(f)
 
   override def exists(p: A => Boolean): Boolean = set.exists(p)
 
@@ -41,7 +41,7 @@ class ImmutableSetAdaptor[A](protected var set: immutable.Set[A]) extends Set[A]
 
   def elements: Iterator[A] = set.elements
 
-  def +=(elem: A): Unit = { set = set + elem }
+  def +=(elem: A): this.type = { set = set + elem; this }
 
   def -=(elem: A): Unit = { set = set - elem }
 

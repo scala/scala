@@ -60,13 +60,13 @@ class ListMap[A, +B] extends Map[A, B] with ImmutableMapTemplate[A, B, ListMap[A
    *  @param key  the key element of the updated entry.
    *  @param value the value element of the updated entry.
    */
-  def add [B1 >: B] (key: A, value: B1): ListMap[A, B1] = new Node[B1](key, value)
+  def updated [B1 >: B] (key: A, value: B1): ListMap[A, B1] = new Node[B1](key, value)
 
   /** Add a key/value pair to this map.
    *  @param    kv the key/value pair
    *  @return   A new map with the new binding added to this map
    */
-  override def + [B1 >: B] (kv: (A, B1)): ListMap[A, B1] = add(kv._1, kv._2)
+  override def + [B1 >: B] (kv: (A, B1)): ListMap[A, B1] = updated(kv._1, kv._2)
 
   /** Adds two or more elements to this collection and returns
    *  either the collection itself (if it is mutable), or a new collection
@@ -85,7 +85,7 @@ class ListMap[A, +B] extends Map[A, B] with ImmutableMapTemplate[A, B, ListMap[A
    *
    *  @param key a map without a mapping for the given key.
    */
-  def - (key: A): ListMap[A, B] = this
+  def minus (key: A): ListMap[A, B] = this
 
   /** Returns an iterator over key-value pairs.
    */
@@ -144,7 +144,7 @@ class ListMap[A, +B] extends Map[A, B] with ImmutableMapTemplate[A, B, ListMap[A
      *  @param k ...
      *  @param v ...
      */
-    override def add [B2 >: B1](k: A, v: B2): ListMap[A, B2] = {
+    override def updated [B2 >: B1](k: A, v: B2): ListMap[A, B2] = {
       val m = if (contains(k)) this - k else this
       new m.Node[B2](k, v)
     }
@@ -156,7 +156,7 @@ class ListMap[A, +B] extends Map[A, B] with ImmutableMapTemplate[A, B, ListMap[A
      *  @param k ...
      *  @return  ...
      */
-    override def - (k: A): ListMap[A, B1] =
+    override def minus (k: A): ListMap[A, B1] =
       if (k == key)
         next
       else {
