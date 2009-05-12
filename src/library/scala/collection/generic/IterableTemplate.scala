@@ -136,8 +136,11 @@ trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] 
   def sameElements[B >: A](that: Iterable[B]): Boolean = {
     val these = this.elements
     val those = that.elements
-    while (these.hasNext && those.hasNext && these.next() == those.next()) {}
-    !these.hasNext && !those.hasNext
+    var res = true
+    while (res && these.hasNext && those.hasNext) {
+      res = (these.next == those.next)
+    }
+    !these.hasNext && !those.hasNext && res
   }
 
   /** Returns a stream with all elements in this traversable object.
