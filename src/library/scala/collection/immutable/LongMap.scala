@@ -240,7 +240,9 @@ sealed abstract class LongMap[+T] extends scala.collection.immutable.Map[Long, T
     case LongMap.Nil => error("key not found");
   }
 
-  def updated[S >: T](key : Long, value : S) : LongMap[S] = this match {
+  def + [S >: T] (kv: (Long, S)): LongMap[S] = updated(kv._1, kv._2)
+
+  override def updated[S >: T](key : Long, value : S) : LongMap[S] = this match {
     case LongMap.Bin(prefix, mask, left, right) => if (!hasMatch(key, prefix, mask)) join(key, LongMap.Tip(key, value), prefix, this);
                                           else if (zero(key, mask)) LongMap.Bin(prefix, mask, left.update(key, value), right)
                                           else LongMap.Bin(prefix, mask, left, right.update(key, value));
@@ -273,7 +275,7 @@ sealed abstract class LongMap[+T] extends scala.collection.immutable.Map[Long, T
     case LongMap.Nil => LongMap.Tip(key, value);
   }
 
-  def minus(key : Long) : LongMap[T] = this match {
+  def -(key : Long) : LongMap[T] = this match {
     case LongMap.Bin(prefix, mask, left, right) =>
       if (!hasMatch(key, prefix, mask)) this;
       else if (zero(key, mask)) bin(prefix, mask, left - key, right);

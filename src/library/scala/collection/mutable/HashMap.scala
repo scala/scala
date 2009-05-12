@@ -20,10 +20,12 @@ class HashMap[A, B] extends Map[A, B] with MutableMapTemplate[A, B, HashMap[A, B
   override def empty: HashMap[A, B] = HashMap.empty[A, B]
   override def mapBuilder[A, B]: Builder[(A, B), HashMap[A, B]] = HashMap.newBuilder[A, B]
 
-  def remove(key: A): Option[B] = removeEntry(key) match {
+  override def remove(key: A): Option[B] = removeEntry(key) match {
     case Some(e) => Some(e.value)
     case None => None
   }
+
+  override def -=(key: A): this.type = { remove(key); this }
 
   override def clear() = super.clear()
 

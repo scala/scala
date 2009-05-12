@@ -74,7 +74,7 @@ class TreeMap[A <% Ordered[A], +B](override val size: Int, t: RedBlack[A]#Tree[B
    *  @param value ...
    *  @return ...
    */
-  def updated [B1 >: B](key: A, value: B1): TreeMap[A, B1] = {
+  override def updated [B1 >: B](key: A, value: B1): TreeMap[A, B1] = {
     val newsize = if (tree.lookup(key).isEmpty) size + 1 else size
     newMap(newsize, tree.update(key, value))
   }
@@ -104,7 +104,7 @@ class TreeMap[A <% Ordered[A], +B](override val size: Int, t: RedBlack[A]#Tree[B
     newMap(size + 1, tree.update(key, value))
   }
 
-  def minus (key:A): TreeMap[A, B] =
+  def - (key:A): TreeMap[A, B] =
     if (tree.lookup(key).isEmpty) this
     else newMap(size - 1, tree.delete(key))
 

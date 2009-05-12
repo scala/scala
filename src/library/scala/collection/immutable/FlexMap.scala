@@ -20,6 +20,7 @@ import generic._
  */
 trait FlexMap[A, +B] extends Map[A, B] { self =>
   override def empty: Map[A, B] = FlexMap.empty
+  def + [B1 >: B] (kv: (A, B1)): Map[A, B1] = updated(kv._1, kv._2)
 }
 
 /* Factory object for `FlexMap class */
@@ -31,8 +32,8 @@ object FlexMap extends ImmutableMapFactory[Map] {
     override def size: Int = 0
     def get(key: A): Option[B] = None
     def elements: Iterator[(A, B)] = Iterator.empty
-    def updated [B1 >: B] (key: A, value: B1): Map[A, B1] = new Map1(key, value)
-    def minus (key: A): Map[A, B] = this
+    override def updated [B1 >: B] (key: A, value: B1): Map[A, B1] = new Map1(key, value)
+    def - (key: A): Map[A, B] = this
   }
 
   @serializable
@@ -41,10 +42,10 @@ object FlexMap extends ImmutableMapFactory[Map] {
     def get(key: A): Option[B] =
       if (key == key1) Some(value1) else None
     def elements = Iterator((key1, value1))
-    def updated [B1 >: B] (key: A, value: B1): Map[A, B1] =
+    override def updated [B1 >: B] (key: A, value: B1): Map[A, B1] =
       if (key == key1) new Map1(key1, value)
       else new Map2(key1, value1, key, value)
-    def minus (key: A): Map[A, B] =
+    def - (key: A): Map[A, B] =
       if (key == key1) empty else this
     override def foreach[U](f: ((A, B)) =>  U): Unit = {
       f((key1, value1))
@@ -59,11 +60,11 @@ object FlexMap extends ImmutableMapFactory[Map] {
       else if (key == key2) Some(value2)
       else None
     def elements = Iterator((key1, value1), (key2, value2))
-    def updated [B1 >: B] (key: A, value: B1): Map[A, B1] =
+    override def updated [B1 >: B] (key: A, value: B1): Map[A, B1] =
       if (key == key1) new Map2(key1, value, key2, value2)
       else if (key == key2) new Map2(key1, value1, key2, value)
       else new Map3(key1, value1, key2, value2, key, value)
-    def minus (key: A): Map[A, B] =
+    def - (key: A): Map[A, B] =
       if (key == key1) new Map1(key2, value2)
       else if (key == key2) new Map1(key1, value1)
       else this
@@ -81,12 +82,12 @@ object FlexMap extends ImmutableMapFactory[Map] {
       else if (key == key3) Some(value3)
       else None
     def elements = Iterator((key1, value1), (key2, value2), (key3, value3))
-    def updated [B1 >: B] (key: A, value: B1): Map[A, B1] =
+    override def updated [B1 >: B] (key: A, value: B1): Map[A, B1] =
       if (key == key1)      new Map3(key1, value, key2, value2, key3, value3)
       else if (key == key2) new Map3(key1, value1, key2, value, key3, value3)
       else if (key == key3) new Map3(key1, value1, key2, value2, key3, value)
       else new Map4(key1, value1, key2, value2, key3, value3, key, value)
-    def minus (key: A): Map[A, B] =
+    def - (key: A): Map[A, B] =
       if (key == key1)      new Map2(key2, value2, key3, value3)
       else if (key == key2) new Map2(key1, value1, key3, value3)
       else if (key == key3) new Map2(key1, value1, key2, value2)
@@ -106,13 +107,13 @@ object FlexMap extends ImmutableMapFactory[Map] {
       else if (key == key4) Some(value4)
       else None
     def elements = Iterator((key1, value1), (key2, value2), (key3, value3), (key4, value4))
-    def updated [B1 >: B] (key: A, value: B1): Map[A, B1] =
+    override def updated [B1 >: B] (key: A, value: B1): Map[A, B1] =
       if (key == key1)      new Map4(key1, value, key2, value2, key3, value3, key4, value4)
       else if (key == key2) new Map4(key1, value1, key2, value, key3, value3, key4, value4)
       else if (key == key3) new Map4(key1, value1, key2, value2, key3, value, key4, value4)
       else if (key == key4) new Map4(key1, value1, key2, value2, key3, value3, key4, value)
       else new HashMap + ((key1, value1), (key2, value2), (key3, value3), (key4, value4), (key, value))
-    def minus (key: A): Map[A, B] =
+    def - (key: A): Map[A, B] =
       if (key == key1)      new Map3(key2, value2, key3, value3, key4, value4)
       else if (key == key2) new Map3(key1, value1, key3, value3, key4, value4)
       else if (key == key3) new Map3(key1, value1, key2, value2, key4, value4)

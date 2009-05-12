@@ -33,13 +33,16 @@ class LinkedHashSet[A] extends Set[A] with MutableSetTemplate[A, LinkedHashSet[A
 
   def contains(elem: A): Boolean = containsEntry(elem)
 
-  def put(elem: A): Boolean =
+  def += (elem: A): this.type = { put(elem); this }
+  def -= (elem: A): this.type = { remove(elem); this }
+
+  override def put(elem: A): Boolean =
     if (addEntry(elem)) {
       ordered = elem :: ordered
       true
     } else false
 
-  def remove(elem: A): Boolean = removeEntry(elem) match {
+  override def remove(elem: A): Boolean = removeEntry(elem) match {
     case None => false
     case Some(elem) => ordered = ordered.filter(_ != elem); true
   }

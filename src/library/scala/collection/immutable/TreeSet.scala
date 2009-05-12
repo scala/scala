@@ -53,7 +53,7 @@ class TreeSet[A <% Ordered[A]](override val size: Int, t: RedBlack[A]#Tree[Unit]
 
   /** A new TreeSet with the entry added is returned,
    */
-  def plus (elem: A): TreeSet[A] = {
+  def + (elem: A): TreeSet[A] = {
     val newsize = if (tree.lookup(elem).isEmpty) size + 1 else size
     newSet(newsize, tree.update(elem, ()))
   }
@@ -66,7 +66,7 @@ class TreeSet[A <% Ordered[A]](override val size: Int, t: RedBlack[A]#Tree[Unit]
     newSet(size + 1, tree.update(elem, ()))
   }
 
-  def minus (elem:A): TreeSet[A] =
+  def - (elem:A): TreeSet[A] =
     if (tree.lookup(elem).isEmpty) this
     else newSet(size - 1, tree.delete(elem))
 

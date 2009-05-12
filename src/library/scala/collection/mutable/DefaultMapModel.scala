@@ -32,11 +32,13 @@ trait DefaultMapModel[A, B] extends Map[A, B] {
     else Some(e.value)
   }
 
-  def put(key: A, value: B): Option[B] = {
+  override def put(key: A, value: B): Option[B] = {
     val e = findEntry(key)
     if (e == null) { addEntry(new Entry(key, value)); None }
     else { val v = e.value; e.value = value; Some(v) }
   }
+
+  def += (kv: (A, B)): this.type = { put(kv._1, kv._2); this }
 
   def elements = entries map {e => (e.key, e.value)}
 }

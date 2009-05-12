@@ -114,13 +114,22 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
     this
   }
 
-  /** Returns a new buffer which contains the elements of this buffer, plus
-   *  the given element appended at the end */
-  def plus(elem: A): This = clone() += elem
-
-  /** Returns a new buffer which contains the elements of this buffer, plus
-   *  except that the given element is removed */
-  def minus (elem: A): This = { -=(elem); thisCollection }
+  /** Perform a += on a clone of this collection */
+  override def plus(elem: A): This = clone() += elem
+  /** Perform a += on a clone of this collection */
+  override def plus(elem1: A, elem2: A, elems: A*): This = clone() += (elem1, elem2, elems: _*)
+  /** Perform a -= on a clone of this collection */
+  override def minus(elem: A): This = clone() -= elem
+  /** Perform a -= on a clone of this collection */
+  override def minus(elem1: A, elem2: A, elems: A*): This = clone() -= (elem1, elem2, elems: _*)
+  /** Perform a ++= on a clone of this collection */
+  override def plusAll(elems: Traversable[A]): This = clone() ++= elems
+  /** Perform a ++= on a clone of this collection */
+  override def plusAll(elems: Iterator[A]): This = clone() ++= elems
+  /** Perform a --= on a clone of this collection */
+  override def minusAll(elems: Traversable[A]): This = clone() --= elems
+  /** Perform a --= on a clone of this collection */
+  override def minusAll(elems: Iterator[A]): This = clone() --= elems
 
   /** Prepend two ore more elements to this buffer and return
    *  the identity of the buffer.
@@ -131,7 +140,7 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
 
   /** Prepends a number of elements provided by an iterable object
    *  via its <code>elements</code> method. The identity of the
-   *  buffer is returned.
+   *  buffer is returned.(thisCollection /: elems) (_ plus _)
    *
    *  @param iter  the iterable object.
    */

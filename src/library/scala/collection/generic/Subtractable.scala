@@ -25,15 +25,15 @@ trait Subtractable[A, +This <: Subtractable[A, This]] { self =>
    *
    *  @param elem  the element to remove.
    */
-  def minus(elem: A): This
+  def -(elem: A): This
 
   /** Returns a new collection that contains all elements of the current collection
    *  except a given element.
    *
    *  @param elem  the element to remove.
-   *  @note  same as `minus`
+   *  @note  same as `-`
    */
-  def -(elem: A): This = minus(elem)
+  def minus(elem: A): This = this - elem
 
   /** Returns a new collection that contains all elements of the current collection
    *  except a two or more given elements.
@@ -42,8 +42,8 @@ trait Subtractable[A, +This <: Subtractable[A, This]] { self =>
    *  @param elem2 the second element to remove.
    *  @param elems the remaining elements to remove.
    */
-  def minus(elem1: A, elem2: A, elems: A*): This =
-    this minus elem1 minus elem2 minusAll Iterable.fromOld(elems)
+  def -(elem1: A, elem2: A, elems: A*): This =
+    this - elem1 - elem2 -- elems
 
   /** Returns a new collection that contains all elements of the current collection
    *  except two or more given elements.
@@ -51,38 +51,38 @@ trait Subtractable[A, +This <: Subtractable[A, This]] { self =>
    *  @param elem1 the first element to remove.
    *  @param elem2 the second element to remove.
    *  @param elems the remaining elements to remove.
-   *  @note  same as minus
+   *  @note  same as -
    */
-  def - (elem1: A, elem2: A, elems: A*): This = minus(elem1, elem2, elems: _*)
+  def minus (elem1: A, elem2: A, elems: A*): This = this - (elem1, elem2, elems: _*)
 
   /** Returns a new collection that contains all elements of the current collection
    *  except the elements provided by a traversable object
    *
    *  @param elems     the traversable object containing the elements that do not form part of the new collection.
    */
-  def minusAll(elems: Traversable[A]): This = (thisCollection /: elems) (_ minus _)
+  def --(elems: Traversable[A]): This = (thisCollection /: elems) (_ - _)
 
   /** Returns a new collection that contains all elements of the current collection
    *  except the elements provided by a traversable object
    *
    *  @param elems     the traversable object containing the elements that do not form part of the new collection.
-   *  @note  same as minusAll
+   *  @note  same as --
    */
-  def --(elems: Traversable[A]): This = minusAll(elems)
+  def minusAll(elems: Traversable[A]): This = this -- elems
 
   /** Returns a new collection that contains all elements of the current collection
    *  except the elements provided by an iterator
    *
    *  @param elems     the iterator containing the elements that do not form part of the new collection
-   *  @note  same as minusAll
+   *  @note  same as --
    */
-  def minusAll(iter: Iterator[A]): This = (thisCollection /: iter) (_ minus _)
+  def --(iter: Iterator[A]): This = (thisCollection /: iter) (_ - _)
 
   /** Returns a new collection that contains all elements of the current collection
    *  except the elements provided by an iterator
    *
    *  @param elems     the iterator containing the elements that do not form part of the new collection
-   *  @note  same as minusAll
+   *  @note  same as --
    */
-  def --(iter: Iterator[A]): This = minusAll(iter)
+  def minusAll(iter: Iterator[A]): This = this -- iter
 }

@@ -19,8 +19,8 @@ import generic._
  *
  *   def get(key: A): Option[B]
  *   def elements: Iterator[(A, B)]
- *   def updated[B1 >: B](key: A, value: B1): This
- *   def minus(key: A): This
+ *   def + [B1 >: B](kv: (A, B1)): This
+ *   def -(key: A): This
  *
  * If you wish that methods like, take, drop, filter return the same kind of map, you should also
  * override:

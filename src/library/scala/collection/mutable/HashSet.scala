@@ -29,9 +29,11 @@ class HashSet[A] extends Set[A] with MutableSetTemplate[A, HashSet[A]] with Flat
 
   def contains(elem: A): Boolean = containsEntry(elem)
 
-  def put(elem: A): Boolean = addEntry(elem)
+  def += (elem: A): this.type = { addEntry(elem); this }
+  def -= (elem: A): this.type = { removeEntry(elem); this }
 
-  def remove(elem: A): Boolean = !removeEntry(elem).isEmpty
+  override def put(elem: A): Boolean = addEntry(elem)
+  override def remove(elem: A): Boolean = !removeEntry(elem).isEmpty
 
   override def clear() = super.clear()
 

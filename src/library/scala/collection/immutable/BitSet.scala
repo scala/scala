@@ -27,7 +27,7 @@ abstract class BitSet extends Set[Int] with collection.BitSet with BitSetTemplat
 
   /** Adds element to bitset, returning a new set.
    */
-  def plus (elem: Int): BitSet = {
+  def + (elem: Int): BitSet = {
     require(elem >= 0)
     if (contains(elem)) this
     else {
@@ -38,7 +38,7 @@ abstract class BitSet extends Set[Int] with collection.BitSet with BitSetTemplat
 
   /** Removes element from bitset, returning a new set
    */
-  def minus (elem: Int): BitSet = {
+  def - (elem: Int): BitSet = {
     require(elem >= 0)
     if (contains(elem)) {
       val idx = elem >> LogWL

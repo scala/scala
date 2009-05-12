@@ -46,7 +46,7 @@ class HashSet[A] extends Set[A] with SetTemplate[A, HashSet[A]] with mutable.Fla
     m.containsEntry(elem)
   }
 
-  def plus (elem: A): HashSet[A] = synchronized {
+  def + (elem: A): HashSet[A] = synchronized {
     makeCopyIfUpdated()
     if (containsEntry(elem)) this
     else {
@@ -56,7 +56,7 @@ class HashSet[A] extends Set[A] with SetTemplate[A, HashSet[A]] with mutable.Fla
     }
   }
 
-  def minus (elem: A): HashSet[A] = synchronized {
+  def - (elem: A): HashSet[A] = synchronized {
     makeCopyIfUpdated()
     if (!containsEntry(elem)) this
     else {

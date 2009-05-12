@@ -17,9 +17,9 @@ import generic._
  *  have to provide functionality for the abstract methods in Set:
  *
  *  def contains(elem: A): Boolean
- *  def put(elem: A): Boolean
- *  def remove(elem: A): Boolean
  *  def elements: Iterator[A]
+ *  def += (elem: A): this.type
+ *  def -= (elem: A): this.type
  *
  *  @author Matthias Zenger
  *  @author Martin Odersky

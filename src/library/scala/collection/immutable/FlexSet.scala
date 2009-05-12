@@ -30,8 +30,8 @@ object FlexSet extends SetFactory[Set] {
   class EmptySet[A] extends FlexSet[A] {
     override def size: Int = 0
     def contains(elem: A): Boolean = false
-    def plus (elem: A): Set[A] = new Set1(elem)
-    def minus (elem: A): Set[A] = this
+    def + (elem: A): Set[A] = new Set1(elem)
+    def - (elem: A): Set[A] = this
     def elements: Iterator[A] = Iterator.empty
     override def foreach[U](f: A =>  U): Unit = {}
   }
@@ -42,10 +42,10 @@ object FlexSet extends SetFactory[Set] {
     override def size: Int = 1
     def contains(elem: A): Boolean =
       elem == elem1
-    def plus (elem: A): Set[A] =
+    def + (elem: A): Set[A] =
       if (contains(elem)) this
       else new Set2(elem1, elem)
-    def minus (elem: A): Set[A] =
+    def - (elem: A): Set[A] =
       if (elem == elem1) new EmptySet[A]
       else this
     def elements: Iterator[A] =
@@ -61,10 +61,10 @@ object FlexSet extends SetFactory[Set] {
     override def size: Int = 2
     def contains(elem: A): Boolean =
       elem == elem1 || elem == elem2
-    def plus (elem: A): Set[A] =
+    def + (elem: A): Set[A] =
       if (contains(elem)) this
       else new Set3(elem1, elem2, elem)
-    def minus (elem: A): Set[A] =
+    def - (elem: A): Set[A] =
       if (elem == elem1) new Set1(elem2)
       else if (elem == elem2) new Set1(elem1)
       else this
@@ -81,10 +81,10 @@ object FlexSet extends SetFactory[Set] {
     override def size: Int = 3
     def contains(elem: A): Boolean =
       elem == elem1 || elem == elem2 || elem == elem3
-    def plus (elem: A): Set[A] =
+    def + (elem: A): Set[A] =
       if (contains(elem)) this
       else new Set4(elem1, elem2, elem3, elem)
-    def minus (elem: A): Set[A] =
+    def - (elem: A): Set[A] =
       if (elem == elem1) new Set2(elem2, elem3)
       else if (elem == elem2) new Set2(elem1, elem3)
       else if (elem == elem3) new Set2(elem1, elem2)
@@ -102,10 +102,10 @@ object FlexSet extends SetFactory[Set] {
     override def size: Int = 4
     def contains(elem: A): Boolean =
       elem == elem1 || elem == elem2 || elem == elem3 || elem == elem4
-    def plus (elem: A): Set[A] =
+    def + (elem: A): Set[A] =
       if (contains(elem)) this
       else new HashSet[A] + (elem1, elem2, elem3, elem4, elem)
-    def minus (elem: A): Set[A] =
+    def - (elem: A): Set[A] =
       if (elem == elem1) new Set3(elem2, elem3, elem4)
       else if (elem == elem2) new Set3(elem1, elem3, elem4)
       else if (elem == elem3) new Set3(elem1, elem2, elem4)

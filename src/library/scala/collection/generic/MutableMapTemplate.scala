@@ -16,8 +16,8 @@ package scala.collection.generic
  *
  *   def get(key: A): Option[B]
  *   def elements: Iterator[(A, B)]
- *   def put(key: A, value: B): Option[B]
- *   def remove(key: A): Option[B]
+ *   def += (kv: (A, B)): this.type
+ *   def -= (key: A): this.type
  *
  * If you wish that methods like, take, drop, filter return the same kind of map, you should also
  * override:
@@ -30,7 +30,7 @@ package scala.collection.generic
  *
  */
 trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with mutable.Map[A, B]]
-  extends MapTemplate[A, B, This]
+  extends MutableMapTemplateBase[A, B, This]
      with Builder[(A, B), This]
      with Growable[(A, B)]
      with Shrinkable[A]
@@ -46,7 +46,11 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
    * @param key    The key to update
    * @param value  The new value
    */
-  def put(key: A, value: B): Option[B]
+  def put(key: A, value: B): Option[B] = {
+    val r = get(key)
+    update(key, value)
+    r
+  }
 
   /** Adds a new mapping from <code>key</code>
    *  to <code>value</code> to the map. If the map already contains a
@@ -56,13 +60,13 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
    *  @return   An option consisting of value associated previously associated with `key` in the map,
    *            or None if `key` was not yet defined in the map.
    */
-  def update(key: A, elem: B) { put(key, elem) }
+  def update(key: A, elem: B) { this += ((key, elem)) }
 
   /** Add a new key/value mapping this map.
    *  @param    kv the key/value pair.
    *  @return   the map itself
    */
-  def += (kv: (A, B)): this.type = { update(kv._1, kv._2); this }
+  def += (kv: (A, B)): this.type
 
   /** Create a new map consisting of all elements of the current map
    *  plus the given mapping from `key` to `value`.
@@ -70,15 +74,25 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
    *  @param value  The new value
    *  @return       A fresh immutable map
    */
-  def updated[B1 >: B](key: A, value: B1): collection.Map[A, B1] =
-    (Map[A, B1]() plusAll thisCollection).updated[B1](key, value)
+  override def updated[B1 >: B](key: A, value: B1): collection.Map[A, B1] =
+    plus((key, value))
 
-  /** Create a  new map consisting of all elements of the current map
-   *  except any mapping from `key`.
-   *  @param    key the key to be removed
-   *  @return   A new map without a binding for <code>key</code>
-   */
-  def minus (key: A): This = clone() minus key
+  /** Perform a += on a clone of this collection */
+  override def plus[B1 >: B](kv: (A, B1)): mutable.Map[A, B1] = clone().asInstanceOf[mutable.Map[A, B1]] += kv
+  /** Perform a += on a clone of this collection */
+  override def plus[B1 >: B](kv1: (A, B1), kv2: (A, B1), kvs: (A, B1)*): mutable.Map[A, B1] = clone().asInstanceOf[mutable.Map[A, B1]] += (kv1, kv2, kvs: _*)
+  /** Perform a -= on a clone of this collection */
+  override def minus(key: A): This = clone() -= key
+  /** Perform a -= on a clone of this collection */
+  override def minus(key1: A, key2: A, keys: A*): This = clone() -= (key1, key2, keys: _*)
+  /** Perform a ++= on a clone of this collection */
+  override def plusAll[B1 >: B](kvs: Traversable[(A, B1)]): mutable.Map[A, B1] = clone().asInstanceOf[mutable.Map[A, B1]] ++= kvs
+  /** Perform a ++= on a clone of this collection */
+  override def plusAll[B1 >: B](kvs: Iterator[(A, B1)]): mutable.Map[A, B1] = clone().asInstanceOf[mutable.Map[A, B1]] ++= kvs
+  /** Perform a --= on a clone of this collection */
+  override def minusAll(keys: Traversable[A]): This = clone() --= keys
+  /** Perform a --= on a clone of this collection */
+  override def minusAll(keys: Iterator[A]): This = clone() --= keys
 
   /** Add a new key/value mapping and return the map itself.
    *
@@ -88,7 +102,7 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
    *               that map itself, use +=. If you do want to create a fresh map,
    *               you can use `plus` to avoid a @deprecated warning.
    */
-  @deprecated def +(kv: (A, B)): this.type = { update(kv._1, kv._2); this }
+  @deprecated def + (kv: (A, B)): this.type = { update(kv._1, kv._2); this }
 
   /** Adds two or more key/value mappings and return the map itself.
    *  with the added elements.
@@ -132,18 +146,17 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
    *  If key is not present return None.
    *  @param    key the key to be removed
    */
-  def remove(key: A): Option[B]
-
-  /** Delete a key from this map if it is present.
-   *  @param    key the key to be removed
-   */
-  def delete (key: A) { remove(key) }
+  def remove(key: A): Option[B] = {
+    val r = get(key)
+    this -= key
+    r
+  }
 
   /** Delete a key from this map if it is present.
    *  @param    key the key to be removed
    *  @note     same as `delete`.
    */
-  def -= (key: A): this.type = { delete(key); this }
+  def -= (key: A): this.type
 
   /** Delete a key from this map if it is present and return the map itself.
    *  @param    key the key to be removed

@@ -112,7 +112,7 @@ class TreeHashMap[Key, +Value] private (private val underlying : IntMap[AssocMap
     underlying.updateWith[AssocMap[Key, S]](hash(key), AssocMap.singleton[Key, S](key, value), (x, y) => y.merge(x))
   )
 
-  def minus(key : Key) : TreeHashMap[Key, Value] = {
+  def -(key : Key) : TreeHashMap[Key, Value] = {
     val h = hash(key);
     underlying.get(h) match {
       case None => this;
@@ -254,7 +254,7 @@ private[collection] sealed abstract class AssocMap[Key, +Value] extends immutabl
       else Cons(key, newval, newtail);
   }
 
-  def minus(key : Key) : AssocMap[Key, Value]= this match {
+  def -(key : Key) : AssocMap[Key, Value]= this match {
     case Nil() => this;
     case Cons(key2, value, tail) =>
       if (key == key2) tail;

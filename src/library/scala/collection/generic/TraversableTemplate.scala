@@ -87,8 +87,8 @@ self =>
 
   /** Same as ++
    */
-  def concat[B >: A, That](that: Traversable[B])(implicit bf: BuilderFactory[B, That, This]): That = ++(that)(bf)
-  def concat[B >: A, That](that: Iterator[B])(implicit bf: BuilderFactory[B, That, This]): That = ++(that)(bf)
+  def concat[B >: A, That](that: Traversable[B])(implicit bf: BuilderFactory[B, That, This]): That = this.++(that)(bf)
+  def concat[B >: A, That](that: Iterator[B])(implicit bf: BuilderFactory[B, That, This]): That = this.++(that)(bf)
 
   /** Returns the traversable that results from applying the given function
    *  <code>f</code> to each element of this traversable and collecing the results

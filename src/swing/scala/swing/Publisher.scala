@@ -155,9 +155,9 @@ abstract class RefBuffer[A <: AnyRef] extends Buffer[A] with SingleRefCollection
 private[swing] abstract class RefSet[A <: AnyRef] extends Set[A] with SingleRefCollection[A] { self =>
   protected val underlying: Set[Reference[A]]
 
-  def remove(el: A): Boolean = { val r = underlying remove Ref(el); purgeReferences(); r }
-  def put(el: A): Boolean = { purgeReferences(); underlying put Ref(el) }
-  def contains(el: A) = { purgeReferences(); underlying.contains(Ref(el)) }
+  def -=(el: A): this.type = { underlying -= Ref(el); purgeReferences(); this }
+  def +=(el: A): this.type = { purgeReferences(); underlying += Ref(el); this }
+  def contains(el: A): Boolean = { purgeReferences(); underlying.contains(Ref(el)) }
   override def size = { purgeReferences(); underlying.size }
 
   protected[this] def removeReference(ref: Reference[A]) { underlying -= ref }

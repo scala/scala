@@ -113,12 +113,14 @@ abstract class Enumeration(initial: Int, names: String*) {
    * the argument <var>s</var>.
    * You must pass a String* set of names to the constructor,
    * or initialize each Enumeration with Value(String),
-   * for withName to work.
+   * for valueOf to work.
    * @param s an enumeration name
    * @return <tt>Some(Value)</tt> if an enumeration's name matches <var>s</var>,
    * else <tt>None</tt>
+   * Note the change here is intentional. You should know whether
+   * a name is in an Enumeration beforehand. If not, just use find on values.
    */
-  def withName(s: String): Option[Value] = values.find(_.toString == s)
+  def withName(s: String): Value = values.find(_.toString == s).get
 
   /** Creates a fresh value, part of this enumeration. */
   protected final def Value: Value = Value(nextId)
@@ -215,8 +217,8 @@ abstract class Enumeration(initial: Int, names: String*) {
   class ValueSet private[Enumeration] (val ids: BitSet) extends Set[Value] with SetTemplate[Value, ValueSet] {
     override def empty = ValueSet.empty
     def contains(v: Value) = ids contains (v.id)
-    def plus (value: Value) = new ValueSet(ids + value.id)
-    def minus (value: Value) = new ValueSet(ids - value.id)
+    def + (value: Value) = new ValueSet(ids + value.id)
+    def - (value: Value) = new ValueSet(ids - value.id)
     def elements = ids.elements map Enumeration.this.apply
     override def stringPrefix = Enumeration.this + ".ValueSet"
   }
@@ -236,4 +238,53 @@ abstract class Enumeration(initial: Int, names: String*) {
     /** The implicit builder for value sets */
     implicit def builderFactory: BuilderFactory[Value, ValueSet, ValueSet] = new BuilderFactory[Value, ValueSet, ValueSet] { def apply(from: ValueSet) = newBuilder }
   }
+
+  /** The name of this enumeration.
+   *  @deprecated  use toString instead
+   */
+  @deprecated def name = toString
+
+  /** @deprecated use withName instead
+   */
+  @deprecated def valueOf(s: String) = values.find(_.toString == s)
+
+  /** A new iterator over all values of this enumeration.
+   *  @deprecated use values.elements instead
+   */
+  @deprecated final def elements: Iterator[Value] = values.elements
+
+  /** Apply a function f to all values of this enumeration.
+   *  @deprecated use values.foreach instead
+   */
+  @deprecated def foreach(f: Value => Unit): Unit = elements foreach f
+
+  /** Apply a predicate p to all values of this enumeration and return
+    * true, iff the predicate yields true for all values.
+   *  @deprecated use values.forall instead
+   */
+  @deprecated def forall(p: Value => Boolean): Boolean = elements forall p
+
+  /** Apply a predicate p to all values of this enumeration and return
+    * true, iff there is at least one value for which p yields true.
+    *  @deprecated use values.exists instead
+    */
+  @deprecated def exists(p: Value => Boolean): Boolean = elements exists p
+
+  /** Returns an iterator resulting from applying the given function f to each
+    * value of this enumeration.
+    *  @deprecated use values.map instead
+    */
+  @deprecated def map[B](f: Value => B): Iterator[B] = elements map f
+
+  /** Applies the given function f to each value of this enumeration, then
+    * concatenates the results.
+    *  @deprecated use values.flatMap instead
+    */
+  @deprecated def flatMap[B](f: Value => Iterator[B]): Iterator[B] = elements flatMap f
+
+  /** Returns all values of this enumeration that satisfy the predicate p.
+    * The order of values is preserved.
+    *  @deprecated use values.filter instead
+    */
+  @deprecated def filter(p: Value => Boolean): Iterator[Value] = elements filter p
 }

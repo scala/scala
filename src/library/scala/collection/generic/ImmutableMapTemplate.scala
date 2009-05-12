@@ -17,8 +17,8 @@ package scala.collection.generic
  *
  *   def get(key: A): Option[B]
  *   def elements: Iterator[(A, B)]
- *   def updated(key: A, value: B): This
- *   def minus(key: A): This
+ *   def + [B1 >: B](kv: (A, B)): Map[A, B1]
+ *   def - (key: A): This
  *
  * If you wish that methods like, take, drop, filter return the same kind of map, you should also
  * override:
@@ -38,30 +38,20 @@ self =>
    *  @param    value the value
    *  @return   A new map with the new key/value mapping
    */
-  def updated [B1 >: B](key: A, value: B1): immutable.Map[A, B1]
+  override def updated [B1 >: B](key: A, value: B1): immutable.Map[A, B1] = this + ((key, value))
 
   /** Add a key/value pair to this map, returning a new map.
    *  @param    kv the key/value pair
    *  @return   A new map with the new binding added to this map
    */
-  override def plus [B1 >: B] (kv: (A, B1)): immutable.Map[A, B1] = updated(kv._1, kv._2)
+  override def plus [B1 >: B] (kv: (A, B1)): immutable.Map[A, B1] = this + kv
 
   /** Add a key/value pair to this map, returning a new map.
    *  @param    kv the key/value pair
    *  @return   A new map with the new binding added to this map
    *  @note  same as `plus`
    */
-  override def + [B1 >: B] (kv: (A, B1)): immutable.Map[A, B1] = updated(kv._1, kv._2)
-
-  /** Adds two or more elements to this collection and returns
-   *  a new collection.
-   *
-   *  @param elem1 the first element to add.
-   *  @param elem2 the second element to add.
-   *  @param elems the remaining elements to add.
-   */
-  override def plus [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *): immutable.Map[A, B1] =
-    this plus elem1 plus elem2 plusAll elems
+  def + [B1 >: B] (kv: (A, B1)): immutable.Map[A, B1]
 
   /** Adds two or more elements to this collection and returns
    *  a new collection.
@@ -71,47 +61,57 @@ self =>
    *  @param elems the remaining elements to add.
    */
   override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *): immutable.Map[A, B1] =
-    plus(elem1, elem2, elems: _*)
+    this + elem1 + elem2 ++ elems
+
+  /** Adds two or more elements to this collection and returns
+   *  a new collection.
+   *
+   *  @param elem1 the first element to add.
+   *  @param elem2 the second element to add.
+   *  @param elems the remaining elements to add.
+   */
+  override def plus [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *): immutable.Map[A, B1] =
+    this.+(elem1, elem2, elems: _*)
 
   /** Adds a number of elements provided by a traversable object
    *  and returns a new collection with the added elements.
    *
    *  @param elems     the traversable object.
    */
-  override def plusAll[B1 >: B](elems: Traversable[(A, B1)]): immutable.Map[A, B1] =
-    ((thisCollection: immutable.Map[A, B1]) /: elems) (_ plus _)
+  override def ++[B1 >: B](elems: Traversable[(A, B1)]): immutable.Map[A, B1] =
+    ((thisCollection: immutable.Map[A, B1]) /: elems) (_ + _)
 
   /** Adds a number of elements provided by a traversable object
    *  and returns a new collection with the added elements.
    *
    *  @param elems     the traversable object.
-   *  @note  same as `plusAll`
+   *  @note  same as `++`
    *  @note  This is a more efficient version of Traversable.++ which avoids
    *         copying of the collection's elements. However, it applies only if
    *         the type of the added elements is a subtype of the element type of the
    *         collection.
    */
-  override def ++ [B1 >: B](elems: Traversable[(A, B1)]): immutable.Map[A, B1] = plusAll(elems)
+  override def plusAll [B1 >: B](elems: Traversable[(A, B1)]): immutable.Map[A, B1] = this.++(elems)
 
   /** Adds a number of elements provided by an iterator
    *  and returns a new collection with the added elements.
    *
    *  @param iter   the iterator
    */
-  override def plusAll[B1 >: B] (iter: Iterator[(A, B1)]): immutable.Map[A, B1] =
-    ((thisCollection: immutable.Map[A, B1]) /: iter) (_ plus _)
+  override def ++[B1 >: B] (iter: Iterator[(A, B1)]): immutable.Map[A, B1] =
+    ((thisCollection: immutable.Map[A, B1]) /: iter) (_ + _)
 
   /** Adds a number of elements provided by an iterator
    *  and returns a new collection with the added elements.
    *
    *  @param iter   the iterator
-   *  @note  same as `plusAll`
+   *  @note  same as `++`
    *  @note  This is a more efficient version of Traversable.++ which avoids
    *         copying of the collection's elements. However, it applies only if
    *         the type of the added elements is a subtype of the element type of the
    *         collection.
    */
-  override def ++ [B1 >: B](iter: Iterator[(A, B1)]): immutable.Map[A, B1] = plusAll(iter)
+  override def plusAll [B1 >: B](iter: Iterator[(A, B1)]): immutable.Map[A, B1] = this.++(iter)
 
   /** This function transforms all the values of mappings contained
    *  in this map with function <code>f</code>.
@@ -136,7 +136,7 @@ self =>
   override def filterNot(p: ((A, B)) => Boolean): This = {
     var res: This = thisCollection
     for (kv <- this)
-      if (p(kv)) res = (res minus kv._1).asInstanceOf[This] // !!! concrete overrides abstract problem
+      if (p(kv)) res = (res - kv._1).asInstanceOf[This] // !!! concrete overrides abstract problem
     res
   }
 

@@ -37,14 +37,14 @@ class LinkedHashMap[A, B] extends Map[A,B] with HashTable[A] with DefaultMapMode
 
   private var ordered = List[Entry]()
 
+  def -= (key: A): this.type = { remove(key); this }
+
   override def remove(key: A): Option[B] = removeEntry(key) match {
     case None => None
     case Some(e) =>
       ordered = ordered.filter(_ ne e)
       Some(e.value)
     }
-
-  override def delete (key: A) { remove(key) }
 
   override def put(key: A, value: B): Option[B] = {
     val e = findEntry(key)

@@ -13,7 +13,7 @@ package scala.collection
 
 import generic._
 
-/* A default map which implements the `updated` and `minus` methods of maps.
+/* A default map which implements the `updated` and `-` methods of maps.
  * Instances that inherit from DefaultMap[A, B] still have to define:
  *
  *   def get(key: A): Option[B]
@@ -28,10 +28,18 @@ trait DefaultMap[A, +B] extends Map[A, B] { self =>
 
   /** A default implementation which creates a new immutable map.
    */
-  override def updated[B1 >: B](key: A, value: B1): Map[A, B1] =
-    Map[A, B1]() ++ this + ((key, value))
+  override def +[B1 >: B](kv: (A, B1)): Map[A, B1] = {
+    val b = Map.newBuilder[A, B1]
+    b ++= this
+    b += ((kv._1, kv._2))
+    b.result
+  }
 
   /** A default implementation which creates a new immutable map.
    */
-  override def minus (key: A): Map[A, B] = Map[A, B]() ++ this - key
+  override def - (key: A): Map[A, B] = {
+    val b = newBuilder
+    b ++= this filter (key !=)
+    b.result
+  }
 }

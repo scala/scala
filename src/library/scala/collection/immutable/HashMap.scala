@@ -53,7 +53,7 @@ class HashMap[A, +B] extends Map[A,B] with ImmutableMapTemplate[A, B, HashMap[A,
     else Some(getValue(e))
   }
 
-  def updated [B1 >: B] (key: A, value: B1): HashMap[A, B1] = synchronized {
+  override def updated [B1 >: B] (key: A, value: B1): HashMap[A, B1] = synchronized {
     makeCopyIfUpdated()
     val e = findEntry(key)
     if (e == null) {
@@ -83,7 +83,7 @@ class HashMap[A, +B] extends Map[A,B] with ImmutableMapTemplate[A, B, HashMap[A,
   override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *): HashMap[A, B1] =
     this + elem1 + elem2 ++ elems
 
-  def minus (key: A): HashMap[A, B] = synchronized {
+  def - (key: A): HashMap[A, B] = synchronized {
     makeCopyIfUpdated()
     val e = findEntry(key)
     if (e == null) this

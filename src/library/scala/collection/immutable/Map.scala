@@ -25,7 +25,8 @@ trait Map[A, +B] extends Iterable[(A, B)]
    *  @param    value the value
    *  @return   A new map with the new binding added to this map
    */
-  def updated [B1 >: B](key: A, value: B1): Map[A, B1]
+  override def updated [B1 >: B](key: A, value: B1): Map[A, B1]
+  def + [B1 >: B](kv: (A, B1)): Map[A, B1]
 
   /** A hash method compatible with <code>equals</code>
    */
@@ -52,8 +53,9 @@ object Map extends ImmutableMapFactory[Map] {
     def get(key: A) = underlying.get(key)
     def elements = underlying.elements
     override def empty = new WithDefault(underlying.empty, d)
-    def updated[B1 >: B](key: A, value: B1): WithDefault[A, B1] = new WithDefault[A, B1](underlying.updated[B1](key, value), d)
-    def minus (key: A): WithDefault[A, B] = new WithDefault(underlying - key, d)
+    override def updated[B1 >: B](key: A, value: B1): WithDefault[A, B1] = new WithDefault[A, B1](underlying.updated[B1](key, value), d)
+    def + [B1 >: B](kv: (A, B1)): WithDefault[A, B1] = updated(kv._1, kv._2)
+    def - (key: A): WithDefault[A, B] = new WithDefault(underlying - key, d)
     override def default(key: A): B = d(key)
   }
 }

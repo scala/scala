@@ -393,9 +393,11 @@ object JavaConversions {
 
     def contains(elem: A): Boolean = underlying.contains(elem)
 
-    def put(elem: A): Boolean = underlying.add(elem)
+    def +=(elem: A): this.type = { underlying.add(elem); this }
+    def -=(elem: A): this.type = { underlying.remove(elem); this }
 
-    def remove(elem: A): Boolean = underlying.remove(elem)
+    override def put(elem: A): Boolean = underlying.add(elem)
+    override def remove(elem: A): Boolean = underlying.remove(elem)
 
     override def clear = underlying.clear
 
@@ -467,6 +469,9 @@ object JavaConversions {
         None
     }
 
+    def +=(kv: (A, B)): this.type = { underlying.put(kv._1, kv._2); this }
+    def -=(key: A): this.type = { underlying.remove(key); this }
+
     override def put(k : A, v : B): Option[B] = {
       val r = underlying.put(k, v)
       if (r != null) Some(r) else None
@@ -478,8 +483,6 @@ object JavaConversions {
       val r = underlying.remove(k)
       if (r != null) Some(r) else None
     }
-
-    override def delete(k : A) { underlying.remove(k) }
 
     def elements = new Iterator[(A, B)] {
       val ui = underlying.entrySet.iterator

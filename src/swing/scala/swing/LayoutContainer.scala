@@ -44,13 +44,13 @@ trait LayoutContainer extends Container.Wrapper {
    * also ensures that myComponent is properly add to this container.
    */
   def layout: Map[Component, Constraints] = new Map[Component, Constraints] {
-    def remove(c: Component): Option[Constraints] = { val r = get(c); _contents -= c; r }
-    def put(c: Component, l: Constraints): Option[Constraints] = {
-      val r = get(c)
+    def -= (c: Component): this.type = { _contents -= c; this }
+    def += (cl: (Component, Constraints)): this.type = { update(cl._1, cl._2); this }
+    override def update (c: Component, l: Constraints) {
       val (v, msg) = areValid(l)
       if (!v) throw new IllegalArgumentException(msg)
       add(c, l)
-      r
+      this
     }
     def get(c: Component) = Swing.toOption(constraintsFor(c))
     override def size = peer.getComponentCount

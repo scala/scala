@@ -106,6 +106,9 @@ class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutabl
     put(key, hashOf(key), value);
   }
 
+  def += (kv: (Key, Value)): this.type = { put(kv._1, kv._2); this }
+  def -= (key: Key): this.type = { remove(key); this }
+
   override def put(key : Key, value : Value): Option[Value] =
     put(key, hashOf(key), value)
 
@@ -136,8 +139,6 @@ class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutabl
       res
     } else None
   }
-
-  override def delete(key: Key) { remove(key) }
 
   def get(key : Key) : Option[Value] = {
     val hash = hashOf(key);

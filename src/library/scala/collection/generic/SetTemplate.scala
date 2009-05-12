@@ -16,8 +16,8 @@ package scala.collection.generic
  *
  *   def contains(key: A): Boolean
  *   def elements: Iterator[A]
- *   def plus(elem: A): This
- *   def minus(elem: A): This
+ *   def +(elem: A): This
+ *   def -(elem: A): This
  *
  * If you wish that methods like, take, drop, filter return the same kind of set, you should also
  * override:
@@ -44,12 +44,12 @@ self =>
   /** Creates a new set with an additional element, unless the element is already present.
    *  @param elem the element to be added
    */
-  def plus (elem: A): This
+  def + (elem: A): This
 
   /** Creates a new set with given element removed from this set, unless the element is not present.
    *  @param elem the element to be removed
    */
-  def minus (elem: A): This
+  def - (elem: A): This
 
   /** Checks if this set is empty.
    *
@@ -97,7 +97,7 @@ self =>
    *  @return     a set containing the elements of this
    *              set and those of the given set <code>that</code>.
    */
-  def union(that: Set[A]): This = plusAll(that)
+  def union(that: Set[A]): This = this.++(that)
 
   /** The union of this set and the given set <code>that</code>.
    *
@@ -114,7 +114,7 @@ self =>
    *  @return     a set containing those elements of this
    *              set that are not also contained in the given set <code>that</code>.
    */
-  def diff(that: Set[A]): This = minusAll(that)
+  def diff(that: Set[A]): This = --(that)
 
   /** The difference of this set and the given set <code>that</code>.
    *

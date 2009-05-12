@@ -32,7 +32,7 @@ class BitSet (protected var elems: Array[Long]) extends Set[Int] with collection
   /** Adds element to bitset,
    *  @return element was already present.
    */
-  def put (elem: Int): Boolean = {
+  override def put (elem: Int): Boolean = {
     require(elem >= 0)
     if (contains(elem)) true
     else {
@@ -45,7 +45,7 @@ class BitSet (protected var elems: Array[Long]) extends Set[Int] with collection
   /** Removes element from bitset.
    *  @return element was already present.
    */
-  def remove (elem: Int): Boolean = {
+  override def remove (elem: Int): Boolean = {
     require(elem >= 0)
     if (contains(elem)) {
       val idx = elem >> LogWL
@@ -53,6 +53,9 @@ class BitSet (protected var elems: Array[Long]) extends Set[Int] with collection
       true
     } else false
   }
+
+  def += (elem: Int): this.type = { put(elem); this }
+  def -= (elem: Int): this.type = { remove(elem); this }
 
   def toImmutable = immutable.BitSet.fromArray(elems)
 

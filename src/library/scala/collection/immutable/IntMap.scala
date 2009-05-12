@@ -239,7 +239,9 @@ sealed abstract class IntMap[+T] extends scala.collection.immutable.Map[Int, T] 
     case IntMap.Nil => error("key not found");
   }
 
-  def updated[S >: T](key : Int, value : S) : IntMap[S] = this match {
+  def + [S >: T] (kv: (Int, S)): IntMap[S] = updated(kv._1, kv._2)
+
+  override def updated[S >: T](key : Int, value : S) : IntMap[S] = this match {
     case IntMap.Bin(prefix, mask, left, right) => if (!hasMatch(key, prefix, mask)) join(key, IntMap.Tip(key, value), prefix, this);
                                           else if (zero(key, mask)) IntMap.Bin(prefix, mask, left.updated(key, value), right)
                                           else IntMap.Bin(prefix, mask, left, right.updated(key, value));
@@ -272,7 +274,7 @@ sealed abstract class IntMap[+T] extends scala.collection.immutable.Map[Int, T] 
     case IntMap.Nil => IntMap.Tip(key, value);
   }
 
-  def minus (key : Int) : IntMap[T] = this match {
+  def - (key : Int) : IntMap[T] = this match {
     case IntMap.Bin(prefix, mask, left, right) =>
       if (!hasMatch(key, prefix, mask)) this;
       else if (zero(key, mask)) bin(prefix, mask, left - key, right);

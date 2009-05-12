@@ -15,8 +15,8 @@ class ButtonGroup(initialButtons: AbstractButton*) {
   val peer: javax.swing.ButtonGroup = new javax.swing.ButtonGroup
 
   val buttons: mutable.Set[AbstractButton] = new mutable.Set[AbstractButton] {
-    def remove(b: AbstractButton): Boolean = { peer.remove(b.peer); true } // !!! Ingo: what to return?
-    def put(b: AbstractButton): Boolean = { peer.add(b.peer); true } // !!! Ingo: what to return?
+    def -=(b: AbstractButton): this.type = { peer.remove(b.peer); this }
+    def +=(b: AbstractButton): this.type = { peer.add(b.peer); this }
     def contains(b: AbstractButton) = elements.contains(b)
     override def size = peer.getButtonCount
     def elements: Iterator[AbstractButton] = new Iterator[AbstractButton] {

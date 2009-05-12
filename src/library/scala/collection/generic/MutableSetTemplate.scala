@@ -15,9 +15,9 @@ package scala.collection.generic
  *  To implement a concrete mutable set, you need to provide implementations of the following methods:
  *
  *  def contains(elem: A): Boolean
- *  def put(elem: A): Boolean
- *  def remove(elem: A): Boolean
  *  def elements: Iterator[A]
+ *  def += (elem: A): this.type
+ *  def -= (elem: A): this.type
  *
  * If you wish that methods like, take, drop, filter return the same kind of map, you should also
  * override:
@@ -42,13 +42,21 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
    *  @param elem the element to be added
    *  @return true if the element was already present in the set.
    */
-  def put(elem: A): Boolean
+  def put(elem: A): Boolean = {
+    val r = contains(elem)
+    this += elem
+    r
+  }
 
   /** Removes a single element from a set.
    *  @param elem  The element to be removed.
    *  @return  true if the element was already present in the set.
    */
-  def remove(elem: A): Boolean
+  def remove(elem: A): Boolean = {
+    val r = contains(elem)
+    this -= elem
+    r
+  }
 
   /** This method allows one to add or remove an element <code>elem</code>
    *  from this set depending on the value of parameter <code>included</code>.
@@ -57,19 +65,21 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
    *
    */
   def update(elem: A, included: Boolean) {
-    if (included) this put elem else this remove elem
+    if (included) this += elem else this -= elem
   }
+
+
 
   /** Adds a new element to the set.
    *
    *  @param elem the element to be added
    */
-  def +=(elem: A): this.type = { put(elem); this }
+  def +=(elem: A): this.type
 
   /** Removes a single element from a set.
    *  @param elem  The element to be removed.
    */
-  def -=(elem: A): this.type = { remove(elem); this }
+  def -=(elem: A): this.type
 
   /** Removes all elements from the set for which the predicate <code>p</code>
    *  yields the value <code>false</code>.
@@ -83,9 +93,22 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
 
   override def clone(): This = empty ++= thisCollection
 
-  def plus(elem: A): This = clone() += elem
-
-  def minus(elem: A): This = clone() -= elem
+  /** Perform a += on a clone of this collection */
+  override def plus(elem: A): This = clone() += elem
+  /** Perform a += on a clone of this collection */
+  override def plus(elem1: A, elem2: A, elems: A*): This = clone() += (elem1, elem2, elems: _*)
+  /** Perform a -= on a clone of this collection */
+  override def minus(elem: A): This = clone() -= elem
+  /** Perform a -= on a clone of this collection */
+  override def minus(elem1: A, elem2: A, elems: A*): This = clone() -= (elem1, elem2, elems: _*)
+  /** Perform a ++= on a clone of this collection */
+  override def plusAll(elems: Traversable[A]): This = clone() ++= elems
+  /** Perform a ++= on a clone of this collection */
+  override def plusAll(elems: Iterator[A]): This = clone() ++= elems
+  /** Perform a --= on a clone of this collection */
+  override def minusAll(elems: Traversable[A]): This = clone() --= elems
+  /** Perform a --= on a clone of this collection */
+  override def minusAll(elems: Iterator[A]): This = clone() --= elems
 
   def result: This = thisCollection
 
