@@ -498,8 +498,11 @@ abstract class Pickler extends SubComponent {
             } else {
               writeRef(sym.name); EXTref
             }
-          if (!sym.owner.isRoot) writeRef(sym.owner)
-          tag
+          if (!sym.owner.isRoot && sym.owner != NoSymbol)
+            writeRef(sym.owner)
+
+          if (sym.owner == NoSymbol) NONEsym
+          else tag
         case sym: ClassSymbol =>
           val posOffset = writeSymInfo(sym)
           if (sym.thisSym.tpe != sym.tpe) writeRef(sym.typeOfThis)
