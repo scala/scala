@@ -121,15 +121,41 @@ abstract class CopyPropagation {
        * binding of that local.
        */
       def getFieldValue(r: Record, f: Symbol): Option[Value] = {
+        if(!r.bindings.isDefinedAt(f)) None else {
+        	var target: Value = r.bindings(f)
+        	target match {
+          	case Deref(LocalVar(l)) => Some(getBinding(l))
+          	case Deref(Field(r1, f1)) => getFieldValue(r1, f1) orElse Some(target)
+//          case Deref(This)    => Some(target)
+//          case Const(k) => Some(target)
+	          case _  => Some(target)
+          }
+        }
+      }
+
+      /** The same as getFieldValue, but never returns Record/Field values. Use
+       *  this when you want to find a replacement for a field value (either a local,
+       *  or a constant/this value).
+       */
+      def getFieldNonRecordValue(r: Record, f: Symbol): Option[Value] = {
         assert(r.bindings.isDefinedAt(f),
             "Record " + r + " does not contain a field " + f);
 
         var target: Value = r.bindings(f)
         target match {
-          case Deref(LocalVar(l)) => Some(Deref(LocalVar(getAlias(l))))
-          case Deref(This)    => Some(target)
-          case Const(k) => Some(target)
-          case _  => None
+          case Deref(LocalVar(l)) =>
+            val alias = getAlias(l)
+            getBinding(alias) match {
+              case Record(_, _) => Some(Deref(LocalVar(alias)))
+              case Deref(Field(r1, f1)) =>
+                getFieldNonRecordValue(r1, f1) orElse Some(Deref(LocalVar(alias)))
+              case v => Some(v)
+            }
+          case Deref(Field(r1, f1)) =>
+            getFieldNonRecordValue(r1, f1) orElse None
+          case Deref(This) => Some(target)
+          case Const(k)    => Some(target)
+          case _           => None
         }
       }
 
@@ -159,8 +185,8 @@ abstract class CopyPropagation {
           if (a.stack eq exceptionHandlerStack) a.stack
           else if (b.stack eq exceptionHandlerStack) b.stack
           else {
-            if (a.stack.length != b.stack.length)
-              throw new LubError(a, b, "Invalid stacks in states: ");
+//            if (a.stack.length != b.stack.length)
+//              throw new LubError(a, b, "Invalid stacks in states: ");
             List.map2(a.stack, b.stack) { (v1, v2) =>
               if (v1 == v2) v1 else Unknown
             }
@@ -172,9 +198,9 @@ abstract class CopyPropagation {
           if (v1 == v2) v1 else Unknown
         }
         */
-        val commonPairs = a.bindings.toList intersect (b.bindings.toList)
         val resBindings = new HashMap[Location, Value]
-        for ((k, v) <- commonPairs)
+
+        for ((k, v) <- a.bindings if b.bindings.isDefinedAt(k) && v == b.bindings(k))
           resBindings += (k -> v);
         new State(resBindings, resStack)
       }
@@ -253,6 +279,20 @@ abstract class CopyPropagation {
             val v1 = in.stack match {
               case (r @ Record(cls, bindings)) :: xs =>
                 Deref(Field(r, field))
+
+              case Deref(LocalVar(l)) :: _ =>
+                in.getBinding(l) match {
+                  case r @ Record(cls, bindings) => Deref(Field(r, field))
+                  case _ => Unknown
+                }
+
+              case Deref(Field(r, f)) :: _ =>
+                val fld = in.getFieldValue(r, f)
+                fld match {
+                  case Some(r @ Record(cls, bindings)) if bindings.isDefinedAt(f) =>
+                  	in.getFieldValue(r, f).getOrElse(Unknown)
+                  case _ => Unknown
+                }
 
               case _ => Unknown
             }
@@ -474,17 +514,22 @@ abstract class CopyPropagation {
      *  @param state ...
      */
     final def invalidateRecords(state: copyLattice.State) {
+      def shouldRetain(sym: Symbol): Boolean = {
+        if (sym.hasFlag(symtab.Flags.MUTABLE))
+          log("dropping binding for " + sym.fullNameString)
+        !sym.hasFlag(symtab.Flags.MUTABLE)
+      }
       state.stack = state.stack map { v => v match {
         case Record(cls, bindings) =>
-          bindings.retain { (sym: Symbol, v: Value) => !sym.hasFlag(symtab.Flags.MUTABLE) }
+          bindings.retain { (sym: Symbol, v: Value) => shouldRetain(sym) }
           Record(cls, bindings)
         case _ => v
       }}
 
       state.bindings retain {(loc, value) =>
         value match {
-          case Deref(Field(_, _)) => false
-          case Boxed(Field(_, _)) => false
+          case Deref(Field(rec, sym)) => shouldRetain(sym)
+          case Boxed(Field(rec, sym)) => shouldRetain(sym)
           case _ => true
         }
       }

@@ -123,31 +123,36 @@ abstract class ClosureElimination extends SubComponent {
 
               }
 
-            case LOAD_FIELD(f, false) if accessible(f, m.symbol) =>
+            case LOAD_FIELD(f, false) /* if accessible(f, m.symbol) */ =>
+              def replaceFieldAccess(r: Record) {
+                val Record(cls, bindings) = r
+                info.getFieldNonRecordValue(r, f) match {
+                	case Some(v) =>
+                		bb.replaceInstruction(i,
+                				DROP(REFERENCE(cls)) :: valueToInstruction(v) :: Nil);
+                		log("Replaced " + i + " with " + info.getFieldNonRecordValue(r, f));
+                	case None => ();
+                }
+              }
+
               info.stack(0) match {
-                case r @ Record(cls, bindings) if bindings.isDefinedAt(f) =>
-                  info.getFieldValue(r, f) match {
-                    case Some(v) =>
-                      bb.replaceInstruction(i,
-                          DROP(REFERENCE(cls)) :: valueToInstruction(v) :: Nil);
-                      log("Replaced " + i + " with " + info.getBinding(r, f));
-                    case None => ();
-                  }
+                case r @ Record(_, bindings) if bindings.isDefinedAt(f) =>
+                  replaceFieldAccess(r)
 
                 case Deref(LocalVar(l)) =>
                   info.getBinding(l) match {
-                    case r @ Record(cls, bindings) if bindings.isDefinedAt(f) =>
-                      info.getFieldValue(r, f) match {
-                        case Some(v) =>
-                          bb.replaceInstruction(i,
-                              DROP(REFERENCE(cls)) :: valueToInstruction(v) :: Nil);
-                          log("Replaced " + i + " with " + info.getBinding(r, f));
-                        case None => ();
-                      }
-                    case _ => ();
+                    case r @ Record(_, bindings) if bindings.isDefinedAt(f) =>
+                      replaceFieldAccess(r)
+                    case _ =>
+                  }
+                case Deref(Field(r1, f1)) =>
+                  info.getFieldValue(r1, f1) match {
+                    case Some(r @ Record(_, bindings)) if bindings.isDefinedAt(f) =>
+                      replaceFieldAccess(r)
+                    case _ =>
                   }
 
-                case _ => ();
+                case _ =>
               }
 
             case UNBOX(_) =>

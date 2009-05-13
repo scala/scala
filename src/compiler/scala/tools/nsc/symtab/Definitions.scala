@@ -424,7 +424,7 @@ trait Definitions {
       clazz.setInfo(
         PolyType(
           List(tparam),
-          ClassInfoType(List(p), newClassScope(clazz), clazz)))
+          ClassInfoType(List(AnyRefClass.tpe, p), newClassScope(clazz), clazz)))
     }
 
     private def newAlias(owner: Symbol, name: Name, alias: Type): Symbol = {

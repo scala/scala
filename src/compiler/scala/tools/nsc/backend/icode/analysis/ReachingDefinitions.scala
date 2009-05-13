@@ -229,7 +229,7 @@ abstract class ReachingDefinitions {
     } else {
       val stack = this.in(bb).stack
       assert(stack.length >= m, "entry stack is too small, expected: " + m + " found: " + stack)
-      stack.take(m) flatMap (_.toList)
+      stack.drop(depth).take(m) flatMap (_.toList)
     }
 
     /** Return the definitions that produced the topmost 'm' elements on the stack,

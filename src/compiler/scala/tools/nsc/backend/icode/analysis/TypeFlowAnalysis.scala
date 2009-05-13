@@ -51,8 +51,8 @@ abstract class TypeFlowAnalysis {
       else if (s1 eq exceptionHandlerStack) s1
       else if (s2 eq exceptionHandlerStack) s2
       else {
-        if (s1.length != s2.length)
-          throw new CheckerError("Incompatible stacks: " + s1 + " and " + s2);
+//        if (s1.length != s2.length)
+//          throw new CheckerError("Incompatible stacks: " + s1 + " and " + s2);
         new TypeStack(List.map2(s1.types, s2.types) (icodes.lub))
       }
     }
@@ -89,12 +89,12 @@ abstract class TypeFlowAnalysis {
 
       for (binding1 <- env1.elements) {
         val tp2 = env2(binding1._1)
-        resultingLocals += (binding1._1 -> typeLattice.lub2(binding1._2, tp2))
+        resultingLocals += ((binding1._1, typeLattice.lub2(binding1._2, tp2)))
       }
 
       for (binding2 <- env2.elements if resultingLocals(binding2._1) eq typeLattice.bottom) {
         val tp1 = env1(binding2._1)
-        resultingLocals += (binding2._1 -> typeLattice.lub2(binding2._2, tp1))
+        resultingLocals += ((binding2._1, typeLattice.lub2(binding2._2, tp1)))
       }
 
       IState(resultingLocals, typeStackLattice.lub2(a.stack, b.stack))

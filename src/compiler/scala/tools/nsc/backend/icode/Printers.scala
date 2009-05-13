@@ -116,7 +116,9 @@ trait Printers { self: ICodes =>
     def printBlock(bb: BasicBlock) {
       print(bb.label)
       if (bb.loopHeader) print("[loop header]")
-      print(": "); indent; println
+      print(": ");
+      if (settings.debug.value) print("pred: " + bb.predecessors + " succs: " + bb.successors)
+      indent; println
       bb.toList foreach printInstruction
       undent; println
     }
@@ -125,7 +127,7 @@ trait Printers { self: ICodes =>
 //      if (settings.Xdce.value)
 //        print(if (i.useful) "   " else " * ");
       if (settings.debug.value)
-        print(i.pos.line.map(_.toString).getOrElse("No line"))
+        print(i.pos.line.map(_.toString).getOrElse(""))
       println(i.toString())
     }
   }

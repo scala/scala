@@ -51,8 +51,10 @@ abstract class ClassfileParser {
   }
 
   def parse(file: AbstractFile, root: Symbol) = try {
-    def handleMissing(e: MissingRequirementError) =
+    def handleMissing(e: MissingRequirementError) = {
+      if (settings.debug.value) e.printStackTrace
       throw new IOException("Missing dependency '" + e.req + "', required by " + in.file)
+    }
 
     def handleError(e: Exception) = {
       if (settings.debug.value) e.printStackTrace()
@@ -217,15 +219,22 @@ abstract class ClassfileParser {
           //assert(name.endsWith("$"), "Not a module class: " + name)
           f = definitions.getModule(name.subName(0, name.length - 1))
         } else {
+          val origName = nme.originalName(name)
           val owner = if (static) ownerTpe.typeSymbol.linkedClassOfClass else ownerTpe.typeSymbol
 //          println("\t" + owner.info.member(name).tpe.widen + " =:= " + tpe)
-          f = owner.info.member(name).suchThat(_.tpe.widen =:= tpe)
+          f = owner.info.member(origName).suchThat(_.tpe.widen =:= tpe)
           if (f == NoSymbol)
-            f = owner.info.member(newTermName(name.toString + nme.LOCAL_SUFFIX)).suchThat(_.tpe =:= tpe)
+            f = owner.info.member(newTermName(origName.toString + nme.LOCAL_SUFFIX)).suchThat(_.tpe =:= tpe)
           if (f == NoSymbol) {
             // if it's an impl class, try to find it's static member inside the class
-            assert(ownerTpe.typeSymbol.isImplClass, "Not an implementation class: " + owner + " couldn't find " + name + ": " + tpe + " inside: \n" + ownerTpe.members);
-            f = ownerTpe.member(name).suchThat(_.tpe =:= tpe)
+            if (ownerTpe.typeSymbol.isImplClass)
+              f = ownerTpe.member(origName).suchThat(_.tpe =:= tpe)
+            else {
+              log("Couldn't find " + name + ": " + tpe + " inside: \n" + ownerTpe)
+              f = if (tpe.isInstanceOf[MethodType]) owner.newMethod(owner.pos, name).setInfo(tpe)
+                  else owner.newValue(owner.pos, name).setInfo(tpe).setFlag(MUTABLE)
+              log("created fake member " + f.fullNameString)
+            }
 //            println("\townerTpe.decls: " + ownerTpe.decls)
 //            println("Looking for: " + name + ": " + tpe + " inside: " + ownerTpe.typeSymbol + "\n\tand found: " + ownerTpe.members)
           }

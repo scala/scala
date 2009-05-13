@@ -277,20 +277,22 @@ abstract class Inliners extends SubComponent {
     val tfa = new analysis.MethodTFA();
     tfa.stat = settings.statistics.value
 
-    def analyzeMethod(m: IMethod): Unit = try {
+    // how many times have we already inlined this method here?
+    private val inlinedMethods: Map[Symbol, Int] = new HashMap[Symbol, Int] {
+    	override def default(k: Symbol) = 0
+    }
+
+    def analyzeMethod(m: IMethod): Unit = {//try {
       var retry = false
       var count = 0
       fresh.clear
-      // how many times have we already inlined this method here?
-      val inlinedMethods: Map[Symbol, Int] = new HashMap[Symbol, Int] {
-        override def default(k: Symbol) = 0
-      }
+      inlinedMethods.clear
 
       do {
         retry = false;
         if (m.code ne null) {
           if (settings.debug.value)
-            log("Analyzing " + m + " count " + count);
+            log("Analyzing " + m + " count " + count + " with " + m.code.blocks.length + " blocks");
           tfa.init(m)
           tfa.run
           for (bb <- linearizer.linearize(m)) {
@@ -314,8 +316,7 @@ abstract class Inliners extends SubComponent {
                         log("\tlooked up method: " + concreteMethod.fullNameString)
                     }
 
-                    if (receiver == definitions.PredefModule.moduleClass) {
-                      log("loading predef")
+                    if (shouldLoad(receiver, concreteMethod)) {
                       icodes.icode(receiver, true)
                     }
                     if (settings.debug.value)
@@ -331,12 +332,11 @@ abstract class Inliners extends SubComponent {
                       icodes.icode(receiver).get.lookupMethod(concreteMethod) match {
                         case Some(inc) =>
                           if (inc.symbol != m.symbol
-                              && (inlinedMethods(inc.symbol) < 2)
                               && (inc.code ne null)
                               && shouldInline(m, inc)
                               && isSafeToInline(m, inc, info.stack)) {
                             retry = true;
-                            if (!isClosureClass(receiver)) // only count non-closures
+                            if (!(isClosureClass(receiver) && (concreteMethod.name == nme.apply))) // only count non-closures
                                 count = count + 1;
                             inline(m, bb, i, inc);
                             inlinedMethods(inc.symbol) = inlinedMethods(inc.symbol) + 1
@@ -353,7 +353,8 @@ abstract class Inliners extends SubComponent {
                                     + "\n\tshouldInline heuristics: " + shouldInline(m, inc) else ""));
                           }
                         case None =>
-                          ();
+                          if (settings.debug.value)
+                            log("could not find icode\n\treceiver: " + receiver + "\n\tmethod: " + concreteMethod)
                       }
                     }
 
@@ -364,14 +365,29 @@ abstract class Inliners extends SubComponent {
         if (tfa.stat) log(m.symbol.fullNameString + " iterations: " + tfa.iterations + " (size: " + m.code.blocks.length + ")")
       }} while (retry && count < 15)
       m.normalize
-    } catch {
-      case e =>
-        Console.println("############# Caught exception: " + e + " #################");
-        Console.println("\nMethod: " + m +
-                        "\nMethod owner: " + m.symbol.owner);
-        e.printStackTrace();
-        m.dump
-        throw e
+//    } catch {
+//      case e =>
+//        Console.println("############# Caught exception: " + e + " #################");
+//        Console.println("\nMethod: " + m +
+//                        "\nMethod owner: " + m.symbol.owner);
+//        e.printStackTrace();
+//        m.dump
+//        throw e
+			}
+
+
+    def isMonadMethod(method: Symbol): Boolean =
+      (method.name == nme.foreach
+      	|| method.name == nme.filter
+      	|| method.name == nme.map
+      	|| method.name == nme.flatMap)
+
+    /** Should the given method be loaded from disk? */
+    def shouldLoad(receiver: Symbol, method: Symbol): Boolean = {
+      if (settings.debug.value) log("shouldLoad: " + receiver + "." + method)
+      ((method.isFinal && isMonadMethod(method) && isHigherOrderMethod(method))
+        || (receiver.enclosingPackage == definitions.ScalaRunTimeModule.enclosingPackage)
+        || (receiver == definitions.PredefModule.moduleClass))
     }
 
     /** Cache whether a method calls private members. */
@@ -407,7 +423,8 @@ abstract class Inliners extends SubComponent {
 
                 case LOAD_FIELD(f, _) =>
                   if (f.hasFlag(Flags.PRIVATE))
-                    if (f.hasFlag(Flags.SYNTHETIC) || f.hasFlag(Flags.PARAMACCESSOR)) {
+                    if ((callee.sourceFile ne null)
+                        && (f.hasFlag(Flags.SYNTHETIC) || f.hasFlag(Flags.PARAMACCESSOR))) {
                       if (settings.debug.value)
                         log("Making not-private symbol out of synthetic: " + f);
                       f.setFlag(Flags.notPRIVATE)
@@ -416,7 +433,8 @@ abstract class Inliners extends SubComponent {
 
                 case STORE_FIELD(f, _) =>
                   if (f.hasFlag(Flags.PRIVATE))
-                    if (f.hasFlag(Flags.SYNTHETIC) || f.hasFlag(Flags.PARAMACCESSOR)) {
+                    if ((callee.sourceFile ne null)
+                        && (f.hasFlag(Flags.SYNTHETIC) || f.hasFlag(Flags.PARAMACCESSOR))) {
                       if (settings.debug.value)
                         log("Making not-private symbol out of synthetic: " + f);
                       f.setFlag(Flags.notPRIVATE)
@@ -456,7 +474,7 @@ abstract class Inliners extends SubComponent {
     }
 
     /** small method size (in blocks) */
-    val SMALL_METHOD_SIZE = 4
+    val SMALL_METHOD_SIZE = 1
 
     /** Decide whether to inline or not. Heuristics:
      *   - it's bad to make the caller larger (> SMALL_METHOD_SIZE)
@@ -483,14 +501,15 @@ abstract class Inliners extends SubComponent {
        if (callee.code.blocks.length > MAX_INLINE_SIZE)
          score -= 1
 
-       if (callee.symbol.tpe.paramTypes.exists(t => definitions.FunctionClass.contains(t.typeSymbol))) {
-         if (settings.debug.value)
-           log("increased score to: " + score)
+       if (isMonadMethod(callee.symbol))
          score += 2
-       }
+       else if (isHigherOrderMethod(callee.symbol))
+         score += 1
        if (isClosureClass(callee.symbol.owner))
          score += 2
 
+       if (inlinedMethods(callee.symbol) > 2) score -= 2
+       if (settings.debug.value) log("shouldInline(" + callee + ") score: " + score)
        score > 0
      }
   } /* class Inliner */
@@ -504,4 +523,10 @@ abstract class Inliners extends SubComponent {
         }
     res
   }
+
+  /** Does 'sym' denote a higher order method? */
+  def isHigherOrderMethod(sym: Symbol): Boolean =
+    (sym.isMethod
+     && atPhase(currentRun.erasurePhase.prev)(sym.info.paramTypes exists definitions.isFunctionType))
+
 } /* class Inliners */

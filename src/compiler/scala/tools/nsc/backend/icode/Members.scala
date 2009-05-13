@@ -303,6 +303,8 @@ trait Members { self: ICodes =>
       other.asInstanceOf[Local].sym == this.sym
     );
 
+    override def hashCode = sym.hashCode
+
     override def toString(): String = sym.toString()
   }
 }

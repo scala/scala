@@ -55,19 +55,21 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
   def forwardAnalysis(f: (P, lattice.Elem) => lattice.Elem): Unit = try {
     while (!worklist.isEmpty) {
       if (stat) iterations += 1
-//      Console.println("worklist in: " + worklist);
+      //Console.println("worklist in: " + worklist);
       val point = worklist.elements.next; worklist -= point; visited += point;
       //Console.println("taking out point: " + point + " worklist out: " + worklist);
       val output = f(point, in(point))
 
       if ((lattice.bottom == out(point)) || output != out(point)) {
-//        Console.println("Output changed at " + point + " from: " + out(point) + " to: " + output + " and they are different: " + (output != out(point)))
+//        Console.println("Output changed at " + point
+//                        + " from: " + out(point) + " to: " + output
+//                        + " for input: " + in(point) + " and they are different: " + (output != out(point)))
         out(point) = output
         val succs = point.successors
         succs foreach { p =>
           if (!worklist.contains(p))
             worklist += p;
-          in(p) = lattice.lub(in(p) :: (p.predecessors map out.apply))
+          in(p) = lattice.lub(/*in(p) :: */(p.predecessors map out.apply))
         }
       }
     }

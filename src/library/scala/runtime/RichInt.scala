@@ -12,7 +12,7 @@
 package scala.runtime
 
 
-final class RichInt(start: Int) extends Proxy with Ordered[Int] {
+final class RichInt(val start: Int) extends Proxy with Ordered[Int] {
 
   // Proxy
   def self: Any = start

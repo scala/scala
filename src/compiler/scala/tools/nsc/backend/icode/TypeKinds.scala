@@ -44,7 +44,7 @@ trait TypeKinds { self: ICodes =>
       case LONG            => definitions.LongClass.tpe
       case FLOAT           => definitions.FloatClass.tpe
       case DOUBLE          => definitions.DoubleClass.tpe
-      case REFERENCE(cls)  => typeRef(cls.typeConstructor.prefix, cls, Nil)
+      case REFERENCE(cls)  => cls.tpe //typeRef(cls.typeConstructor.prefix, cls, Nil)
       //case VALUE(cls)      => typeRef(cls.typeConstructor.prefix, cls, Nil);
       case ARRAY(elem)     => typeRef(definitions.ArrayClass.typeConstructor.prefix,
                                       definitions.ArrayClass,

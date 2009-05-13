@@ -1636,7 +1636,7 @@ TEST AND DISTRIBUTION BUNDLE (ALL)
 
   <target name="all.done" depends="dist.done, test.done"/>
 
-  <target name="all.clean" depends="locker.clean, docs.clean, dist.clean"/>
+  <target name="all.clean" depends="locker.clean, docs.clean, dist.clean, optimised.clean"/>
 
 <!-- ===========================================================================
 STABLE REFERENCE (STARR)

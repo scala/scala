@@ -445,7 +445,7 @@ trait BasicBlocks {
       case _ => false
     }
 
-    override def hashCode = label
+    override def hashCode = label * 41 + code.hashCode
 
     // Instead of it, rather use a printer
     def print() { print(java.lang.System.out) }

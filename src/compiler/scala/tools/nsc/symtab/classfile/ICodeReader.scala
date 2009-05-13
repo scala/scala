@@ -44,6 +44,7 @@ abstract class ICodeReader extends ClassfileParser {
     var classFile: AbstractFile = null;
     var sym = cls
     sym.info // ensure accurate type information
+
     isScalaModule = cls.isModule && !cls.hasFlag(JAVA)
     log("Reading class: " + cls + " isScalaModule?: " + isScalaModule)
     val name = cls.fullNameString(java.io.File.separatorChar) + (if (sym.hasFlag(MODULE)) "$" else "")
@@ -191,8 +192,8 @@ abstract class ICodeReader extends ClassfileParser {
       definitions.NullClass
     else if (name.endsWith("$class")) {
       val iface = definitions.getClass(name.subName(0, name.length - "$class".length))
-      log("forcing " + iface)
-      iface.info // force the mixin type-transformer
+      log("forcing " + iface.owner + " at phase: " + phase + " impl: " + iface.implClass)
+      iface.owner.info // force the mixin type-transformer
       definitions.getClass(name)
     } else if (name.endsWith("$"))
       definitions.getModule(name.subName(0, name.length - 1))
@@ -926,16 +927,19 @@ abstract class ICodeReader extends ClassfileParser {
         for ((i, idx) <- bb.toList.zipWithIndex) i match {
           case CALL_METHOD(m, Static(true)) if m.isClassConstructor =>
             val defs = rdef.findDefs(bb, idx, 1, m.info.paramTypes.length)
-            //println("ctor: " + i + " found defs: " + defs)
-            assert(defs.length == 1)
+            if (settings.debug.value) log("ctor: " + i + " found defs: " + defs)
+            assert(defs.length == 1, "wrong defs at bb " + bb + "\n" + method.dump + rdef)
             val (bb1, idx1) = defs.head
             var producer = bb1(idx1)
             while (producer.isInstanceOf[DUP]) {
               val (bb2, idx2) = rdef.findDefs(bb1, idx1, 1).head
               producer = bb2(idx2)
             }
-            assert(producer.isInstanceOf[NEW], producer)
-            producer.asInstanceOf[NEW].init = i.asInstanceOf[CALL_METHOD]
+            producer match {
+              case nw: NEW => nw.init = i.asInstanceOf[CALL_METHOD]
+              case _: THIS => () // super constructor call
+              case _ => assert(false, producer + "\n" + method.dump)
+            }
           case _ =>
         }
       }
