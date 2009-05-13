@@ -19,23 +19,29 @@ import collection.generic.VectorView
  *    It must be supplied with Integral and Ordering implementations
  *    of the range type.
  *
- *    Built-in incarnations include BigIntRange and LongRange.
+ *    Factories for likely types include Range.BigInt and Range.Long.
+ *    Range.Int exists for completeness, but the Int-based scala.Range
+ *    should be more performant.
  *  </p><pre>
  *     <b>val</b> r1 = new Range(0, 100, 1)
  *     <b>val</b> veryBig = Math.MAX_INT.toLong + 1
- *     <b>val</b> r2 = new LongRange(veryBig, veryBig + 100, 1)
+ *     <b>val</b> r2 = Range.Long(veryBig, veryBig + 100, 1)
  *     assert(r1 sameElements r2.map(_ - veryBig))
  *  </pre>
  *
  *  @author  Paul Phillips
  *  @version 2.8
  */
-class GenericRange[T]
+abstract class GenericRange[T]
   (val start: T, val end: T, val step: T)
   (implicit num: Integral[T], ord: Ordering[T])
 extends VectorView[T, Vector[T]] with RangeToString[T] {
   import num._
   import ord._
+
+  // this lets us pretend all ranges are exclusive
+  val isInclusive: Boolean
+  private val trueEnd = if (isInclusive) end + one else end
 
   // todo? - we could lift the length restriction by implementing a range as a sequence of
   // subranges and limiting the subranges to MAX_INT.  There's no other way around it because
@@ -48,17 +54,19 @@ extends VectorView[T, Vector[T]] with RangeToString[T] {
   /** Create a new range with the start and end values of this range and
    *  a new <code>step</code>.
    */
-  def by(step: T): GenericRange[T] = new GenericRange(start, end, step)
+  def by(step: T): GenericRange[T] =
+    if (isInclusive) GenericRange.inclusive(start, end, step)
+    else GenericRange(start, end, step)
 
   override def foreach[U](f: T => U) {
     var i = start
     if (step > zero) {
-      while (i < end) {
+      while (i < trueEnd) {
         f(i)
         i = i + step
       }
     } else {
-      while (i > end) {
+      while (i > trueEnd) {
         f(i)
         i = i + step
       }
@@ -67,13 +75,11 @@ extends VectorView[T, Vector[T]] with RangeToString[T] {
 
   lazy val genericLength: T = {
     def plen(start: T, end: T, step: T) =
-      if (end <= start) zero
-      else (end - start - one) / step + one
-      // if (lteq(end, start)) zero
-      // else plus(quot((minus(minus(end, start), one)), step), one)
+      if (trueEnd <= start) zero
+      else (trueEnd - start - one) / step + one
 
-    if (step > zero) plen(start, end, step)
-    else plen(end, start, -step)
+    if (step > zero) plen(start, trueEnd, step)
+    else plen(trueEnd, start, -step)
   }
   lazy val length: Int = toInt(genericLength)
 
@@ -91,11 +97,9 @@ extends VectorView[T, Vector[T]] with RangeToString[T] {
       try   { _x.asInstanceOf[T] }
       catch { case _: ClassCastException => return false }
 
-    if (step > zero) start <= x && x < end
-    else start >= x && x > end
+    if (step > zero) start <= x && x < trueEnd
+    else start >= x && x > trueEnd
   }
-
-  def inclusive = GenericRange.inclusive(start, end, step)
 }
 
 private[scala] trait RangeToString[T] extends VectorView[T, Vector[T]] {
@@ -110,39 +114,31 @@ private[scala] trait RangeToString[T] extends VectorView[T, Vector[T]] {
   }
 }
 
+
 object GenericRange {
   import Numeric._
   import Ordering._
 
-  // This is very ugly, but modelled on the existing range class for now
-  private class Inclusive[T](start: T, end0: T, step: T)(implicit num: Integral[T], ord: Ordering[T])
-  extends GenericRange(
-    start,
-    if (ord.gt(step, num.zero)) num.plus(end0, num.one) else num.minus(end0, num.one),
-    step)
+  class Inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T], ord: Ordering[T])
+  extends GenericRange(start, end, step)
   {
-    self =>
-    override def by(step: T): GenericRange[T] = new Inclusive(start, end0, step)
+    val isInclusive = true
+    def exclusive: Exclusive[T] = new Exclusive(start, end, step)
+  }
+  class Exclusive[T](start: T, end: T, step: T)(implicit num: Integral[T], ord: Ordering[T])
+  extends GenericRange(start, end, step)
+  {
+    val isInclusive = false
+    def inclusive: Inclusive[T] = new Inclusive(start, end, step)
   }
 
   def apply[T](start: T, end: T, step: T)(implicit num: Integral[T], ord: Ordering[T]) =
-    new GenericRange(start, end, step)
+    new Exclusive(start, end, step)
 
-  def inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T], ord: Ordering[T]): GenericRange[T] =
-    new GenericRange.Inclusive(start, end, step)
+  def inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T], ord: Ordering[T]) =
+    new Inclusive(start, end, step)
 }
 
-class BigIntRange(start: BigInt, end: BigInt, step: BigInt)
-extends GenericRange(start, end, step)(Numeric.BigIntIsIntegral, Ordering.BigInt) {}
-class LongRange(start: Long, end: Long, step: Long)
-extends GenericRange(start, end, step)(Numeric.LongIsIntegral, Ordering.Long) {}
-
-// Illustrating genericity with IntRange, which should have the same behavior
-// as the original Range class.  However we leave the original Range
-// indefinitely, for performance and because the compiler seems to bootstrap
-// off it and won't do so with our parameterized version without modifications.
-class IntRange(start: Int, end: Int, step: Int)
-extends GenericRange(start, end, step)(Numeric.IntIsIntegral, Ordering.Int) {}
 
 /** <p>
  *    The <code>Range</code> class represents integer values in range
@@ -217,4 +213,22 @@ object Range {
 
   def inclusive(start: Int, end: Int, step: Int): Range =
     new Range.Inclusive(start, end, step)
+
+  object BigInt {
+    def apply(start: BigInt, end: BigInt, step: BigInt) = GenericRange(start, end, step)
+    def inclusive(start: BigInt, end: BigInt, step: BigInt) = GenericRange.inclusive(start, end, step)
+  }
+  object Long {
+    def apply(start: Long, end: Long, step: Long) = GenericRange(start, end, step)
+    def inclusive(start: Long, end: Long, step: Long) = GenericRange.inclusive(start, end, step)
+  }
+
+  // Illustrating genericity with Int Range, which should have the same behavior
+  // as the original Range class.  However we leave the original Range
+  // indefinitely, for performance and because the compiler seems to bootstrap
+  // off it and won't do so with our parameterized version without modifications.
+  object Int {
+    def apply(start: Int, end: Int, step: Int) = GenericRange(start, end, step)
+    def inclusive(start: Int, end: Int, step: Int) = GenericRange.inclusive(start, end, step)
+  }
 }

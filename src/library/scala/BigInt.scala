@@ -348,6 +348,18 @@ class BigInt(val bigInteger: BigInteger) extends java.lang.Number {
    */
   def doubleValue = this.bigInteger.doubleValue
 
+  /** See <code>Iterator.range</code>. */
+  def until(end: BigInt) = Range.BigInt(this, end, BigInt(1))
+
+  /** See <code>Iterator.range</code>. */
+  def until(end: BigInt, step: BigInt) = Range.BigInt(this, end, step)
+
+  /** like <code>until</code>, but includes the last index */
+  def to(end: BigInt) = Range.BigInt.inclusive(this, end, BigInt(1))
+
+  /** like <code>until</code>, but includes the last index */
+  def to(end: BigInt, step: BigInt) = Range.BigInt.inclusive(this, end, step)
+
   /** Returns the decimal String representation of this BigInt.
    */
   override def toString(): String = this.bigInteger.toString()
