@@ -630,7 +630,7 @@ QUICK BUILD (QUICK)
     </path>
   </target>
 
-  <target name="quick.clean" depends="pack.clean">
+  <target name="quick.clean" depends="libs.clean">
     <delete dir="${build-quick.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
   </target>
 
@@ -1340,6 +1340,10 @@ LIBRARIES (MSIL, FJBG maybe later)
   </target>
   
   <target name="libs.done" depends="libs.msilpack"/>
+
+  <target name="libs.clean" depends="pack.clean">
+    <delete dir="${build-libs.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+  </target>
 
 <!-- ===========================================================================
 DOCUMENTATION
