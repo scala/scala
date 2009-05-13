@@ -68,10 +68,21 @@ abstract class UnPickler {
     private def checkVersion(filename: String) {
       val major = readNat()
       val minor = readNat()
+
+// remove the portion below, between "cut here", before releasing the first 2.8 beta
+
 //---cut here---
+
+      // transiently, use this bit as long as stability fails.
+      if (major != 4 && major != 5)
+
+      // once stability is restored, use the following bit instead:
+/*
       if (major == 4) { // !!! temporarily accept 4 as version.
         println("WARNING: old class format, please recompile "+filename)
       } else
+*/
+
 //---cut here---
       if (major != MajorVersion || minor > MinorVersion)
         throw new IOException("Scala signature " + classRoot.name +
