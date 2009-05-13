@@ -170,7 +170,7 @@ extends VectorView[Int, Vector[Int]] with RangeToString[Int]
    */
   def by(step: Int): Range = new Range(start, end, step)
 
-  override def foreach[U](f: Int => U) {
+  final override def foreach[U](f: Int => U) {
     var i = start
     if (step > 0) {
       while (i < end) {
@@ -192,7 +192,8 @@ extends VectorView[Int, Vector[Int]] with RangeToString[Int]
     else plen(end, start, -step)
   }
 
-  def apply(idx: Int): Int = {
+  @inline
+  final def apply(idx: Int): Int = {
     if (idx < 0 || idx >= length) throw new IndexOutOfBoundsException(idx.toString)
     start + idx * step
   }
@@ -206,7 +207,7 @@ extends VectorView[Int, Vector[Int]] with RangeToString[Int]
 
 object Range {
   /** @deprecated use Range.inclusive instead */
-  class Inclusive(start: Int, end0: Int, step: Int)
+  final class Inclusive(start: Int, end0: Int, step: Int)
       extends Range(start, if (step > 0) end0 + 1 else end0 - 1, step) { self =>
     override def by(step: Int): Range = new Inclusive(start, end0, step)
   }
