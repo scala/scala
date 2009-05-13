@@ -408,7 +408,9 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
       if (res) {
         val host = hostForAccessorOf(sym, currentOwner.enclClass)
-        if (host.thisSym != host) {
+        // bug #1393 - as things stand now the "host" could be a package.
+        if (host.isPackageClass) false
+        else if (host.thisSym != host) {
           if (host.thisSym.tpe.typeSymbol.hasFlag(JAVA))
             errorRestriction(currentOwner.enclClass + " accesses protected " + sym
                              + " from self type " + host.thisSym.tpe)
