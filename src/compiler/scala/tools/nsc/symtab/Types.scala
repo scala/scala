@@ -3760,19 +3760,11 @@ A type's typeSymbol should never be inspected directly.
         true
       case (RefinedType(parents1, ref1), _) =>
         parents1 exists (_ <:< tp2)
-
-      /* todo: replace following with
-      case (ThisType(_), _)
-         | {SingleType(_, _), _}
-         | {ConstantType(_), _} =>
-         once patern matching bug is fixed */
       case (_, NotNullType(ntp2)) =>
         tp1.isNotNull && tp1 <:< ntp2
       case (NotNullType(ntp1), _) =>
         ntp1 <:< tp2
-      case (ThisType(_), _) => tp1.underlying <:< tp2
-      case (SingleType(_, _), _) => tp1.underlying <:< tp2
-      case (ConstantType(_), _) =>
+      case ((_: ThisType | _: SingleType | _: ConstantType), _) =>
         tp1.underlying <:< tp2
 
       case (TypeRef(pre1, sym1, args1), _) =>
