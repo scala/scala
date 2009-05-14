@@ -6,7 +6,7 @@ import generic._
  *  that cannot be mutated.
  *
  *  @author  Matthias Zenger
- *  @autor   Martin Odersky
+ *  @author   Martin Odersky
  *  @version 2.8
  */
 trait Iterable[+A] extends Traversable[A]

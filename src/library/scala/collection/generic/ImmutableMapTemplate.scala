@@ -31,8 +31,6 @@ trait ImmutableMapTemplate[A, +B, +This <: ImmutableMapTemplate[A, B, This] with
   extends MapTemplate[A, B, This] {
 self =>
 
-  override protected[this] def newBuilder: Builder[(A, B), This] = new ImmutableMapBuilder[A, B, This](empty)
-
   /** A new immutable map containing updating this map with a given key/value mapping.
    *  @param    key the key
    *  @param    value the value

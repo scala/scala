@@ -13,7 +13,7 @@ package scala.collection.generic
 /** This class represents collections that can be augmented using a `+=` operator
  *  and that can be cleared of all elements using the `clear` method.
  *
- *  @autor   Martin Odersky
+ *  @author   Martin Odersky
  *  @owner   Martin Odersky
  *  @version 2.8
  */

@@ -12,7 +12,7 @@ import generic._
 /** A subtrait of collection.Traversable which represents traversables
  *  that can be mutated.
  *
- *  @autor   Martin Odersky
+ *  @author   Martin Odersky
  *  @version 2.8
  */
 trait Traversable[A] extends collection.Traversable[A]

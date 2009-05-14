@@ -42,13 +42,17 @@ trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] 
   /** Apply a function <code>f</code> to all elements of this
    *  traversable object.
    *
-   *  @param  f   a function that is applied to every element.
+   *  @param  f   A function that is applied for its side-effect to every element.
+   *              The result (of arbitrary type U) of function `f` is discarded.
+   *
    *  @note This method underlies the implementation of most other bulk operations.
-   *  It should be overridden in concrete collection classes with efficient implementations.
+   *        Implementing `foreach` with `elements` is often suboptimal.
+   *        So `foreach` should be overridden in concrete collection classes if a more
+   *        efficient implementation is available.
    */
-  def foreach[B](f: A => B): Unit = elements.foreach(f)
+  def foreach[U](f: A => U): Unit = elements.foreach(f)
 
-  /** Is this collection empty?
+  /** Does this iterable contain no elements?
    */
   override def isEmpty: Boolean = !elements.hasNext
 

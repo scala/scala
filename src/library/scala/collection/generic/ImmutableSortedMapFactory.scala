@@ -6,5 +6,5 @@ abstract class ImmutableSortedMapFactory[CC[A, B] <: immutable.SortedMap[A, B] w
   extends SortedMapFactory[CC] {
 
   def newBuilder[A, B](implicit ord: Ordering[A]): Builder[(A, B), CC[A, B]] =
-    new ImmutableMapBuilder[A, B, CC[A, B]](empty(ord))
+    new MapBuilder[A, B, CC[A, B]](empty(ord))
 }

@@ -11,7 +11,7 @@ package scala.collection
 
 // import immutable.{List, Stream, Nil}
 import mutable.{Buffer, ArrayBuffer, ListBuffer}
-import util.control.Breaks._
+import util.control.Breaks
 import generic._
 
 /** A template trait for traversable collections.
@@ -93,6 +93,8 @@ trait Traversable[+A] extends TraversableTemplate[A, Traversable[A]]
 /** Factory methods and utilities for instances of type Traversable */
 object Traversable extends TraversableFactory[Traversable] { self =>
 
+  /** provide braek functionality separate from client code */
+  private[collection] val breaks: Breaks = new Breaks
 
   implicit def builderFactory[A]: BuilderFactory[A, Traversable[A], Coll] = new VirtualBuilderFactory[A]
 //    new BuilderFactory[A, Traversable[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }

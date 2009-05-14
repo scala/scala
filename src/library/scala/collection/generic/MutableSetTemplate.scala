@@ -35,6 +35,9 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
      with Cloneable[This]
 { self =>
 
+  /** A common implementation of `newBuilder` for all mutable sets in terms of `empty`.
+   *  Overrides `SetTemplate` implementation for better efficiency.
+   */
   override protected[this] def newBuilder: Builder[A, This] = empty
 
   /** Adds a new element to the set.
@@ -67,8 +70,6 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
   def update(elem: A, included: Boolean) {
     if (included) this += elem else this -= elem
   }
-
-
 
   /** Adds a new element to the set.
    *

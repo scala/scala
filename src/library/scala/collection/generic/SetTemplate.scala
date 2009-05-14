@@ -12,7 +12,7 @@ package scala.collection.generic
 
 /** A generic template for sets of type A.
  *  To implement a concrete set, you need to provide implementations of the following methods:
- *  (where This is the type of the set in question):
+ *  (where `This` is the type of the set in question):
  *
  *   def contains(key: A): Boolean
  *   def elements: Iterator[A]
@@ -29,7 +29,12 @@ package scala.collection.generic
 trait SetTemplate[A, +This <: SetTemplate[A, This] with Set[A]] extends IterableTemplate[A, This] with Addable[A, This] with Subtractable[A, This] {
 self =>
 
+  /* The empty set of the dame type as this set */
   def empty: This
+
+  /** A common implementation of `newBuilder` for all sets in terms of `empty`.
+   *  Overridden for mutable sets in `MutableSetTemplate`.
+   */
   override protected[this] def newBuilder: Builder[A, This] = new AddingBuilder[A, This](empty)
 
   /** Checks if this set contains element <code>elem</code>.

@@ -35,6 +35,7 @@ trait TraversableForwarder[+A] extends Traversable[A] {
   // Iterable methods could be printed by  cat IterableTemplate.scala | sed -n '/trait Iterable/,$ p' | egrep '^  (override )?def'
 
   override def isEmpty = underlying.isEmpty
+  override def nonEmpty = underlying.nonEmpty
   override def hasDefiniteSize = underlying.hasDefiniteSize
   override def foreach[B](f: A => B) = underlying.foreach(f)
   override def forall(p: A => Boolean): Boolean = underlying.forall(p)
@@ -45,8 +46,8 @@ trait TraversableForwarder[+A] extends Traversable[A] {
   override def foldRight[B](z: B)(op: (A, B) => B): B = underlying.foldRight(z)(op)
   override def reduceLeft[B >: A](op: (B, A) => B): B = underlying.reduceLeft(op)
   override def reduceRight[B >: A](op: (A, B) => B): B = underlying.reduceRight(op)
-  override def reduceLeftOpt[B >: A](op: (B, A) => B): Option[B] = underlying.reduceLeftOpt(op)
-  override def reduceRightOpt[B >: A](op: (A, B) => B): Option[B] = underlying.reduceRightOpt(op)
+  override def reduceLeftOption[B >: A](op: (B, A) => B): Option[B] = underlying.reduceLeftOption(op)
+  override def reduceRightOption[B >: A](op: (A, B) => B): Option[B] = underlying.reduceRightOption(op)
   override def copyToBuffer[B >: A](dest: Buffer[B]) = underlying.copyToBuffer(dest)
   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) = underlying.copyToArray(xs, start, len)
   override def toArray[B >: A]: Array[B] = underlying.toArray

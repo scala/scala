@@ -37,7 +37,6 @@ import generic._
  */
 trait Map[A, +B] extends Iterable[(A, B)] with MapTemplate[A, B, Map[A, B]] {
   def empty: Map[A, B] = Map.empty
-  override protected[this] def newBuilder: Builder[(A, B), Map[A, B]] = immutable.Map.newBuilder[A, B]
 }
 
 /* Factory object for `Map` class */

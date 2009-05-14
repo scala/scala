@@ -12,7 +12,7 @@ package scala.collection.generic
 
 /** This class represents collections that can be reduced using a -= operator.
  *
- *  @autor   Martin Odersky
+ *  @author   Martin Odersky
  *  @owner   Martin Odersky
  *  @version 2.8
  */

@@ -11,7 +11,6 @@ package scala.collection.generic
 
 // import immutable.{List, Stream, Nil} //!!!
 import mutable.{Buffer, ArrayBuffer, ListBuffer}
-import util.control.Breaks._
 
 /** A template trait for traversable collections.
  *  This is a base trait of all kinds of Scala collections. It implements the
@@ -50,13 +49,25 @@ import util.control.Breaks._
 trait TraversableTemplate[+A, +This <: TraversableTemplate[A, This] with Traversable[A]] {
 self =>
 
+  import Traversable.breaks._
+
   /** The proper way to do this would be to make `self` of type `This`. But unfortunately this
    *  makes `this` to be of type `Traversable[A]`. Since `Traversable` is a subtype of
-   *  `TraversableTemplate` this means that all methods of `this` are taken from `Traversable`.
+   *  `TraversableTemplate`, all methods of `this` are taken from `Traversable`. In particular
+   *  the `newBuilder` method is taken from `Traversable`, which means it yields a `Traversable[A]`
+   *  instyead of a `This`.
+   *
+   *  The right way out of this is to change Scala's member selection rules, so that
+   *  always the most specific type will be selected, no matter whether a member is abstract
+   *  or concrete. I tried to fake this by having a method `thisTemplate` which
+   *  returns this at the Template type. But unfortunately that does not work, because
+   *  we need to call `newBuilder` on this at the Template type (so that we get back a `This`)
+   *  and `newBuilder` has to be a proctected[this] because of variance.
+   *  The less appealing alternative is implemented now: Forget the self type and
+   *  introduce a `thisCollection` which is this seen as an instance of `This`.
+   *  We should go back to this once we have ameliorated Scala's member selection rules.
    */
   protected def thisCollection: This = this.asInstanceOf[This]
-
-  protected def thisTemplate: TraversableTemplate[A, This] = this
 
   /** Create a new builder for this collection type.
    */
@@ -94,9 +105,7 @@ self =>
    */
   def size: Int = {
     var result = 0
-    breakable {
-      for (x <- this) result += 1
-    }
+    for (x <- this) result += 1
     result
   }
 
@@ -362,7 +371,7 @@ self =>
    *  @param op  The operator to apply
    *  @return  If the traversable is non-empty, the result of the operations as an Option, otherwise None.
    */
-  def reduceLeftOpt[B >: A](op: (B, A) => B): Option[B] = {
+  def reduceLeftOption[B >: A](op: (B, A) => B): Option[B] = {
     if (isEmpty) None else Some(reduceLeft(op))
   }
 
@@ -394,7 +403,7 @@ self =>
    *  @param op  The operator to apply
    *  @return  If the iterable is non-empty, the result of the operations as an Option, otherwise None.
    */
-  def reduceRightOpt[B >: A](op: (A, B) => B): Option[B] = {
+  def reduceRightOption[B >: A](op: (A, B) => B): Option[B] = {
     if (isEmpty) None else Some(reduceRight(op))
   }
 
@@ -781,5 +790,3 @@ self =>
    */
   def view(from: Int, until: Int): TraversableView[A, This] = view.slice(from, until)
 }
-
-

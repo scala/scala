@@ -5,5 +5,5 @@ package scala.collection.generic
 abstract class ImmutableMapFactory[CC[A, +B] <: immutable.Map[A, B] with ImmutableMapTemplate[A, B, CC[A, B]]]
   extends MapFactory[CC] {
 
-  def newBuilder[A, B] = new ImmutableMapBuilder[A, B, CC[A, B]](empty[A, B])
+  def newBuilder[A, B] = new MapBuilder[A, B, CC[A, B]](empty[A, B])
 }

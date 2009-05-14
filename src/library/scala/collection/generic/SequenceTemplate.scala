@@ -15,7 +15,6 @@ import mutable.{ListBuffer, HashMap}
 
 // import immutable.{List, Nil, ::}
 import generic._
-import util.control.Breaks._
 
 /** Class <code>Sequence[A]</code> represents sequences of elements
  *  of type <code>A</code>.
@@ -30,6 +29,8 @@ import util.control.Breaks._
  *  @version 1.0, 16/07/2003
  */
 trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] extends IterableTemplate[A, This] { self =>
+
+  import Traversable.breaks._
 
   /** Returns the length of the sequence.
    *

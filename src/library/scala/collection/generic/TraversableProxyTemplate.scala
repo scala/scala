@@ -46,9 +46,9 @@ trait TraversableProxyTemplate[+A, +This <: TraversableTemplate[A, This] with Tr
   override def foldRight[B](z: B)(op: (A, B) => B): B = self.foldRight(z)(op)
   override def :\ [B](z: B)(op: (A, B) => B): B = self.:\(z)(op)
   override def reduceLeft[B >: A](op: (B, A) => B): B = self.reduceLeft(op)
-  override def reduceLeftOpt[B >: A](op: (B, A) => B): Option[B] = self.reduceLeftOpt(op)
+  override def reduceLeftOption[B >: A](op: (B, A) => B): Option[B] = self.reduceLeftOption(op)
   override def reduceRight[B >: A](op: (A, B) => B): B = self.reduceRight(op)
-  override def reduceRightOpt[B >: A](op: (A, B) => B): Option[B] = self.reduceRightOpt(op)
+  override def reduceRightOption[B >: A](op: (A, B) => B): Option[B] = self.reduceRightOption(op)
   override def head: A = self.head
   override def headOption: Option[A] = self.headOption
   override def tail: This = self.tail

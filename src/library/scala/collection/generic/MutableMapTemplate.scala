@@ -37,7 +37,10 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
      with Cloneable[This]
 { self =>
 
-  override protected[this] def newBuilder: Builder[(A, B), This] = new MutableMapBuilder[A, B, This](empty.asInstanceOf[This]) // !!! concrete overrides abstract problem
+  /** A common implementation of `newBuilder` for all mutable maps in terms of `empty`.
+   *  Overrides `MapTemplate` implementation for better efficiency.
+   */
+  override protected[this] def newBuilder: Builder[(A, B), This] = empty
 
   /** Adds a new mapping from <code>key</code>
    *  to <code>value</code> to the map. If the map already contains a
@@ -60,7 +63,7 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
    *  @return   An option consisting of value associated previously associated with `key` in the map,
    *            or None if `key` was not yet defined in the map.
    */
-  def update(key: A, elem: B) { this += ((key, elem)) }
+  def update(key: A, value: B) { this += ((key, value)) }
 
   /** Add a new key/value mapping this map.
    *  @param    kv the key/value pair.
@@ -194,6 +197,9 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
     for ((k, v) <- this) if (!p(k, v)) -=(k)
     this
   }
+
+  /** @return the values of this map as a set */
+  override def valueSet: immutable.Set[B] = immutable.Set.empty[B] ++ (self map (_._2))
 
   override def clone(): This =
     empty ++ thisCollection

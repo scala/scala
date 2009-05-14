@@ -12,7 +12,7 @@ import generic._
 /** A subtrait of collection.Iterable which represents iterables
  *  that can be mutated.
  *
- *  @autor   Martin Odersky
+ *  @author   Martin Odersky
  *  @version 2.8
  */
 trait Iterable[A] extends Traversable[A]

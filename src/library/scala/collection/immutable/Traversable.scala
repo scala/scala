@@ -6,7 +6,7 @@ import generic._
  *  that cannot be mutated.
  *  !!! todo: revise equality
  *  @author  Matthias Zenger
- *  @autor   Martin Odersky
+ *  @author   Martin Odersky
  *  @version 2.8
  */
 trait Traversable[+A] extends collection.Traversable[A]

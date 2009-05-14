@@ -12,15 +12,21 @@ package scala.collection.generic
 
 // import collection.immutable.{List, Nil, ::}
 
-/** The canonical builder for collections that are addable, i.e. that support an efficient + method
- *  which adds an element to the collection.
- *  Collections are built from their empty element using this + method.
+/** The canonical builder for immutable maps, working with the map's `+` method
+ *  to add new elements.
+ *  Collections are built from their `empty` element using this + method.
  *  @param empty   The empty element of the collection.
  */
-class ImmutableMapBuilder[A, B, Coll <: immutable.Map[A, B] with MapTemplate[A, B, Coll]](empty: Coll)
+class MapBuilder[A, B, Coll <: Map[A, B] with MapTemplate[A, B, Coll]](empty: Coll)
 extends Builder[(A, B), Coll] {
   protected var elems: Coll = empty
-  def +=(x: (A, B)): this.type = { elems = (elems + x).asInstanceOf[Coll]; this }
+  def +=(x: (A, B)): this.type = {
+    elems = (elems + x).asInstanceOf[Coll]
+      // the cast is necessary because right now we cannot enforce statically that
+      // for every map of type Coll, `+` yields again a Coll. With better support
+      // for hk-types we might be able to enforce this in the future, though.
+    this
+  }
   def clear() { elems = empty }
   def result: Coll = elems
 }
