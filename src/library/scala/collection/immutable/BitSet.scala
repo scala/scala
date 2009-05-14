@@ -11,14 +11,16 @@
 
 package scala.collection.immutable
 
-import BitSet._
 import generic._
 import BitSetTemplate.{LogWL, updateArray}
 
 /** a base class for immutable bit sets
  */
-abstract class BitSet extends Set[Int] with collection.BitSet with BitSetTemplate[BitSet] {
+abstract class BitSet extends Set[Int]
+                         with collection.BitSet
+                         with BitSetTemplate[BitSet] {
   override def empty = BitSet.empty
+
   def fromArray(elems: Array[Long]): BitSet = BitSet.fromArray(elems)
 
   /** Update word at index `idx`; enlarge set if `idx` outside range of set
@@ -48,13 +50,12 @@ abstract class BitSet extends Set[Int] with collection.BitSet with BitSetTemplat
 }
 
 /** A factory object for bitsets */
-object BitSet {
+object BitSet extends BitSetFactory[BitSet] {
 
   /** The empty bitset */
   val empty: BitSet = new BitSet1(0L)
 
-  /** A bitset containing given elements */
-  def apply(elems: Int*) = (empty /: elems) (_ + _)
+  implicit def builderFactory: BuilderFactory[Int, BitSet, BitSet] = bitsetBuilderFactory
 
   /** A bitset containing all the bits in an array */
   def fromArray(elems: Array[Long]): BitSet = {

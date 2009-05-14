@@ -21,16 +21,17 @@ import generic._
  *  @author  Martin Odersky
  *  @version 2.8
  */
-trait Set[A] extends (A => Boolean) with Iterable[A] with SetTemplate[A, Set[A]] {
-  def empty = Set.empty
-  override def traversableBuilder[B]: Builder[B, Set[B]] = Set.newBuilder[B]
+trait Set[A] extends (A => Boolean)
+                with Iterable[A]
+                with SetClass[A, Set]
+                with SetTemplate[A, Set[A]] {
+  override def companion: Companion[Set] = Set
 }
 
 /* Factory object for `Set` class */
 object Set extends SetFactory[Set] {
-  def empty[A]: Set[A] = immutable.Set.empty[A]
-  type Coll = Set[_]
-  implicit def builderFactory[A]: BuilderFactory[A, Set[A], Coll] = new BuilderFactory[A, Set[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
+  override def empty[A]: Set[A] = immutable.Set.empty[A]
+  implicit def builderFactory[A]: BuilderFactory[A, Set[A], Coll] = setBuilderFactory[A]
 }
 
 /* !!! what to do about this?

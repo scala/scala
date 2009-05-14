@@ -12,6 +12,7 @@
 package scala.collection.generic
 
 import mutable.{ListBuffer, HashMap}
+
 // import immutable.{List, Nil, ::}
 import generic._
 import util.control.Breaks._
@@ -402,8 +403,12 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
     b.result
   }
 
-  private def occCounts[B](seq: Sequence[B]): HashMap[B, Int] = {
-    val occ = new HashMap[B, Int] { override def default(k: B) = 0 }
+  private def occCounts[B](seq: Sequence[B]): mutable.Map[B, Int] = {
+    val occ =
+      if (seq.isEmpty || seq.head.isInstanceOf[Unhashable])
+        new mutable.ListMap[B, Int] { override def default(k: B) = 0 }
+      else
+        new mutable.HashMap[B, Int] { override def default(k: B) = 0 }
     for (y <- seq) occ(y) += 1
     occ
   }

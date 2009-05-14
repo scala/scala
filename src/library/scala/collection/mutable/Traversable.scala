@@ -15,15 +15,16 @@ import generic._
  *  @autor   Martin Odersky
  *  @version 2.8
  */
-trait Traversable[A] extends collection.Traversable[A] with TraversableTemplate[A, Traversable[A]] with Mutable { self =>
-  override protected[this] def newBuilder = Traversable.newBuilder
-  override def traversableBuilder[B]: Builder[B, Traversable[B]] = Traversable.newBuilder[B]
+trait Traversable[A] extends collection.Traversable[A]
+                        with TraversableClass[A, Traversable]
+                        with TraversableTemplate[A, Traversable[A]]
+                        with Mutable {
+  override def companion: Companion[Traversable] = Traversable
 }
 
 /* A factory object for the trait `Traversable` */
 object Traversable extends TraversableFactory[Traversable] {
-  type Coll = Traversable[_]
-  implicit def builderFactory[A]: BuilderFactory[A, Traversable[A], Coll] = new BuilderFactory[A, Traversable[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, Traversable[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, Traversable[A]] = new ArrayBuffer
 }
 

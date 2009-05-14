@@ -1,0 +1,99 @@
+new test starting with List()
+10: List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+9: List(2, 3, 4, 5, 6, 7, 8, 9, 10)
+1
+List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+new test starting with List()
+10: List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+9: List(2, 3, 4, 5, 6, 7, 8, 9, 10)
+1
+List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+new test starting with Stream()
+10: Stream(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+9: Stream(2, 3, 4, 5, 6, 7, 8, 9, 10)
+1
+Stream(1, ?)
+new test starting with Array()
+10: Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+9: Array(2, 3, 4, 5, 6, 7, 8, 9, 10)
+1
+Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+new test starting with ArrayBuffer()
+10: ArrayBuffer(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+9: ArrayBuffer(2, 3, 4, 5, 6, 7, 8, 9, 10)
+1
+ArrayBuffer(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+new test starting with ListBuffer()
+10: ListBuffer(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+9: ListBuffer(2, 3, 4, 5, 6, 7, 8, 9, 10)
+1
+ListBuffer(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+new test starting with List()
+10: List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+9: List(2, 3, 4, 5, 6, 7, 8, 9, 10)
+1
+new test starting with ArrayBuffer()
+10: ArrayBuffer(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+9: ArrayBuffer(2, 3, 4, 5, 6, 7, 8, 9, 10)
+1
+new test starting with List()
+10: List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+9: List(2, 3, 4, 5, 6, 7, 8, 9, 10)
+1
+new test starting with List()
+10: List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+9: List(2, 3, 4, 5, 6, 7, 8, 9, 10)
+1
+new test starting with ArrayBuffer()
+10: ArrayBuffer(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+9: ArrayBuffer(2, 3, 4, 5, 6, 7, 8, 9, 10)
+1
+new test starting with List()
+10: List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+9: List(2, 3, 4, 5, 6, 7, 8, 9, 10)
+1
+new test starting with List()
+10: List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+9: List(2, 3, 4, 5, 6, 7, 8, 9, 10)
+1
+List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+new test starting with ArrayBuffer()
+10: ArrayBuffer(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+9: ArrayBuffer(2, 3, 4, 5, 6, 7, 8, 9, 10)
+1
+ArrayBuffer(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+new test starting with List()
+10: List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+9: List(2, 3, 4, 5, 6, 7, 8, 9, 10)
+1
+List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+new test starting with List()
+10: List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+9: List(2, 3, 4, 5, 6, 7, 8, 9, 10)
+1
+List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+new test starting with List()
+10: List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+9: List(2, 3, 4, 5, 6, 7, 8, 9, 10)
+1
+List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+new test starting with ArrayBuffer()
+10: ArrayBuffer(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+9: ArrayBuffer(2, 3, 4, 5, 6, 7, 8, 9, 10)
+1
+ArrayBuffer(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+true
+false
+true
+Map(O -> O, W -> W, H -> H, P -> P, G -> G, V -> V, I -> I, A -> A, F -> F, U -> U, N -> N, X -> X, Z -> Z, S -> S, D -> D, K -> K, R -> R, C -> C, B -> B, L -> L, Q -> Q, M -> M, J -> J, Y -> Y, T -> T, E -> E)
+Map(O -> O, W -> W, H -> H, P -> P, G -> G, V -> V, I -> I, A -> A, F -> F, U -> U, N -> N, X -> X, Z -> Z, S -> S, D -> D, K -> K, R -> R, C -> C, B -> B, L -> L, Q -> Q, M -> M, J -> J, Y -> Y, T -> T, E -> E)
+Map(O -> O, W -> W, H -> H, P -> P, V -> V, G -> G, I -> I, A -> A, F -> F, U -> U, N -> N, X -> X, Z -> Z, S -> S, D -> D, K -> K, R -> R, C -> C, B -> B, L -> L, Q -> Q, M -> M, J -> J, Y -> Y, T -> T, E -> E)
+Map(O -> O, W -> W, H -> H, P -> P, V -> V, G -> G, I -> I, A -> A, F -> F, U -> U, N -> N, X -> X, Z -> Z, S -> S, D -> D, K -> K, R -> R, C -> C, B -> B, L -> L, Q -> Q, M -> M, J -> J, Y -> Y, T -> T, E -> E)
+Map(O -> O, W -> W, H -> H, P -> P, G -> G, V -> V, I -> I, A -> A, F -> F, U -> U, N -> N, X -> X, Z -> Z, S -> S, D -> D, K -> K, R -> R, C -> C, B -> B, L -> L, Q -> Q, M -> M, J -> J, Y -> Y, T -> T, E -> E)
+Map(O -> O, W -> W, H -> H, P -> P, G -> G, V -> V, I -> I, A -> A, F -> F, U -> U, N -> N, X -> X, Z -> Z, S -> S, D -> D, K -> K, R -> R, C -> C, B -> B, L -> L, Q -> Q, M -> M, J -> J, Y -> Y, T -> T, E -> E)
+Map(A -> A, B -> B, C -> C, D -> D, E -> E, F -> F, G -> G, H -> H, I -> I, J -> J, K -> K, L -> L, M -> M, N -> N, O -> O, P -> P, Q -> Q, R -> R, S -> S, T -> T, U -> U, V -> V, W -> W, X -> X, Y -> Y, Z -> Z)
+Map(A -> A, B -> B, C -> C, D -> D, E -> E, F -> F, G -> G, H -> H, I -> I, J -> J, K -> K, L -> L, M -> M, N -> N, O -> O, P -> P, Q -> Q, R -> R, S -> S, T -> T, U -> U, V -> V, W -> W, X -> X, Y -> Y, Z -> Z)
+Map(O -> O, W -> W, H -> H, P -> P, V -> V, G -> G, I -> I, A -> A, F -> F, U -> U, N -> N, X -> X, Z -> Z, S -> S, D -> D, K -> K, R -> R, C -> C, B -> B, L -> L, Q -> Q, M -> M, J -> J, Y -> Y, T -> T, E -> E)
+Map(O -> O, W -> W, H -> H, P -> P, V -> V, G -> G, I -> I, A -> A, F -> F, U -> U, N -> N, X -> X, Z -> Z, S -> S, D -> D, K -> K, R -> R, C -> C, B -> B, L -> L, Q -> Q, M -> M, J -> J, Y -> Y, T -> T, E -> E)
+Map(O -> O, W -> W, H -> H, P -> P, G -> G, V -> V, I -> I, A -> A, F -> F, U -> U, N -> N, X -> X, Z -> Z, S -> S, D -> D, K -> K, R -> R, C -> C, B -> B, L -> L, Q -> Q, M -> M, J -> J, Y -> Y, T -> T, E -> E)
+Map(O -> O, W -> W, H -> H, P -> P, G -> G, V -> V, I -> I, A -> A, F -> F, U -> U, N -> N, X -> X, Z -> Z, S -> S, D -> D, K -> K, R -> R, C -> C, B -> B, L -> L, Q -> Q, M -> M, J -> J, Y -> Y, T -> T, E -> E)

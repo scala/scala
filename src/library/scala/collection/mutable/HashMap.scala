@@ -18,7 +18,6 @@ import generic._
 class HashMap[A, B] extends Map[A, B] with MutableMapTemplate[A, B, HashMap[A, B]] with HashTable[A] with DefaultMapModel[A, B] {
 
   override def empty: HashMap[A, B] = HashMap.empty[A, B]
-  override def mapBuilder[A, B]: Builder[(A, B), HashMap[A, B]] = HashMap.newBuilder[A, B]
 
   override def remove(key: A): Option[B] = removeEntry(key) match {
     case Some(e) => Some(e.value)
@@ -39,7 +38,6 @@ class HashMap[A, B] extends Map[A, B] with MutableMapTemplate[A, B, HashMap[A, B
  *  @version 2.8
  */
 object HashMap extends MutableMapFactory[HashMap] {
-  type Coll = HashMap[_, _]
-  implicit def builderFactory[A, B]: BuilderFactory[(A, B), HashMap[A, B], Coll] = new BuilderFactory[(A, B), HashMap[A, B], Coll] { def apply(from: Coll) = from.mapBuilder[A, B] }
+  implicit def builderFactory[A, B]: BuilderFactory[(A, B), HashMap[A, B], Coll] = new MapBuilderFactory[A, B]
   def empty[A, B]: HashMap[A, B] = new HashMap[A, B]
 }

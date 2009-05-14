@@ -13,15 +13,17 @@ import generic._
  *  that can be mutated.
  *  The class adds an `update` method to collection.Sequence.
  */
-trait Sequence[A] extends Iterable[A] with collection.Sequence[A] with SequenceTemplate[A, Sequence[A]] with Unhashable {
-  override protected[this] def newBuilder = Sequence.newBuilder
-  override def traversableBuilder[B]: Builder[B, Sequence[B]] = Sequence.newBuilder[B]
+trait Sequence[A] extends Iterable[A]
+                     with collection.Sequence[A]
+                     with TraversableClass[A, Sequence]
+                     with SequenceTemplate[A, Sequence[A]]
+                     with Unhashable {
+  override def companion: Companion[Sequence] = Sequence
 
   def update(idx: Int, elem: A)
 }
 
 object Sequence extends SequenceFactory[Sequence] {
-  type Coll = Sequence[_]
-  implicit def builderFactory[A]: BuilderFactory[A, Sequence[A], Coll] = new BuilderFactory[A, Sequence[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, Sequence[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, Sequence[A]] = new ArrayBuffer
 }

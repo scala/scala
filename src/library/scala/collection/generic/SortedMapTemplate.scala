@@ -23,6 +23,8 @@ self =>
   def firstKey : A = head._1
   def lastKey : A = last._1
 
+  implicit def ordering: Ordering[A]
+
   // XXX: implement default version
   def rangeImpl(from : Option[A], until : Option[A]) : This
 

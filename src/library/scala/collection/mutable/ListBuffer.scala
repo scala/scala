@@ -24,10 +24,13 @@ import generic._
 @serializable
 final class ListBuffer[A]
       extends Buffer[A]
+         with TraversableClass[A, ListBuffer]
          with BufferTemplate[A, ListBuffer[A]]
          with Builder[A, List[A]]
          with SequenceForwarder[A]
 {
+  override def companion: Companion[ListBuffer] = ListBuffer
+
   import collection.Traversable
 
   private var start: List[A] = Nil
@@ -36,9 +39,6 @@ final class ListBuffer[A]
   private var len = 0
 
   protected def underlying: immutable.Sequence[A] = start
-
-  override protected[this] def newBuilder = ListBuffer.newBuilder[A]
-  override def traversableBuilder[B]: Builder[B, ListBuffer[B]] = ListBuffer.newBuilder[B]
 
   /** The current length of the buffer
    */
@@ -320,8 +320,7 @@ final class ListBuffer[A]
 
 /* Factory object for `ListBuffer` class */
 object ListBuffer extends SequenceFactory[ListBuffer] {
-  type Coll = ListBuffer[_]
-  implicit def builderFactory[A]: BuilderFactory[A, ListBuffer[A], Coll] = new BuilderFactory[A, ListBuffer[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, ListBuffer[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, ListBuffer[A]] = new AddingBuilder(new ListBuffer[A])
 }
 

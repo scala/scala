@@ -19,8 +19,16 @@ import generic._
  */
 trait SortedMap[A, +B] extends Map[A, B] with SortedMapTemplate[A, B, SortedMap[A, B]] {
   /** Needs to be overridden in subclasses. */
-  override def empty: SortedMap[A, B] = throw new UnsupportedOperationException("SortedMap.empty")
-  override protected[this] def newBuilder : Builder[(A, B), SortedMap[A, B]] =
-    throw new UnsupportedOperationException("SortedMap.newBuilder")
+  override def empty = SortedMap.empty[A, B]
 
+  override protected[this] def newBuilder : Builder[(A, B), SortedMap[A, B]] =
+    immutable.SortedMap.newBuilder[A, B]
 }
+
+object SortedMap extends ImmutableSortedMapFactory[immutable.SortedMap] {
+  implicit def builderFactory[A, B](implicit ord: Ordering[A]): BuilderFactory[(A, B), SortedMap[A, B], Coll] = new SortedMapBuilderFactory[A, B]
+  def empty[A, B](implicit ord: Ordering[A]): immutable.SortedMap[A, B] = immutable.SortedMap.empty[A, B](ord)
+}
+
+
+

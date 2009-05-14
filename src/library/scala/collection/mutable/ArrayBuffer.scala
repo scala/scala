@@ -25,10 +25,13 @@ import generic._
 @serializable
 class ArrayBuffer[A](override protected val initialSize: Int)
   extends Buffer[A]
+     with TraversableClass[A, ArrayBuffer]
      with BufferTemplate[A, ArrayBuffer[A]]
      with VectorTemplate[A, ArrayBuffer[A]]
      with Builder[A, ArrayBuffer[A]]
      with ResizableArray[A] {
+
+  override def companion: Companion[ArrayBuffer] = ArrayBuffer
 
   import collection.Traversable
 
@@ -41,9 +44,6 @@ class ArrayBuffer[A](override protected val initialSize: Int)
     Array.copy(array, 0, newarray, 0, size0)
     array = newarray
   }
-
-  override protected[this] def newBuilder = ArrayBuffer.newBuilder
-  override def traversableBuilder[B]: Builder[B, ArrayBuffer[B]] = ArrayBuffer.newBuilder[B]
 
   /** Appends a single element to this buffer and returns
    *  the identity of the buffer. It takes constant time.
@@ -159,8 +159,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
 
 /* Factory object for `ArrayBuffer` class */
 object ArrayBuffer extends SequenceFactory[ArrayBuffer] {
-  type Coll = ArrayBuffer[_]
-  implicit def builderFactory[A]: BuilderFactory[A, ArrayBuffer[A], Coll] = new BuilderFactory[A, ArrayBuffer[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, ArrayBuffer[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, ArrayBuffer[A]] = new ArrayBuffer[A]
 }
 

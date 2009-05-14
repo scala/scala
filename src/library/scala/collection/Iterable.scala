@@ -31,9 +31,10 @@ import generic._
  *  @author Martin Odersky
  *  @version 2.8
  */
-trait Iterable[+A] extends Traversable[A] with IterableTemplate[A, Iterable[A]] {
-  override protected[this] def newBuilder = Iterable.newBuilder
-  override def traversableBuilder[B]: Builder[B, Iterable[B]] = Iterable.newBuilder[B]
+trait Iterable[+A] extends Traversable[A]
+                      with TraversableClass[A, Iterable]
+                      with IterableTemplate[A, Iterable[A]] {
+   override def companion: Companion[Iterable] = Iterable
 
   /* The following methods are inherited from trait IterableTemplate
    *
@@ -44,13 +45,13 @@ trait Iterable[+A] extends Traversable[A] with IterableTemplate[A, Iterable[A]] 
   override def view
   override def view(from: Int, until: Int)
   */
+
 }
 
 /** Factory methods and utilities for instances of type Traversable */
 object Iterable extends TraversableFactory[Iterable] {
 
-  type Coll	= Iterable[_]
-  implicit def builderFactory[A]: BuilderFactory[A, Iterable[A], Coll] = new BuilderFactory[A, Iterable[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, Iterable[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, Iterable[A]] = immutable.Iterable.newBuilder[A]
 
   def fromOld[A](it: scala.Iterable[A]): Iterable[A] = new Iterable[A] {

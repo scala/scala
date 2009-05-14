@@ -7,6 +7,8 @@ import generic._
  */
 trait BitSetTemplate[+This <: BitSetTemplate[This] with Set[Int]] extends SetTemplate[Int, This] { self =>
 
+  def empty: This
+
   /** The number of words (each with 64 bits) making up the set */
   protected def nwords: Int
 

@@ -23,7 +23,6 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
 
   import collection.Traversable
 
-  override def mapBuilder[A, B]: Builder[(A, B), SynchronizedMap[A, B]] = SynchronizedMap.newBuilder[A, B]
 
   abstract override def size: Int = synchronized {
     super.size

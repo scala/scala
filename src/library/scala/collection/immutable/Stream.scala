@@ -12,7 +12,7 @@
 package scala.collection.immutable
 
 import mutable.ListBuffer
-import generic.{SequenceFactory, Builder, BuilderFactory, LazyBuilder, LinearSequenceTemplate}
+import generic._
 
 /**
  * <p>The class <code>Stream</code> implements lazy lists where elements
@@ -35,8 +35,12 @@ import generic.{SequenceFactory, Builder, BuilderFactory, LazyBuilder, LinearSeq
  * @author Martin Odersky, Matthias Zenger
  * @version 1.1 08/08/03
  */
-abstract class Stream[+A] extends LinearSequence[A] with LinearSequenceTemplate[A, Stream[A]] {
+abstract class Stream[+A] extends LinearSequence[A]
+                             with TraversableClass[A, Stream]
+                             with LinearSequenceTemplate[A, Stream[A]] {
 self =>
+  override def companion: Companion[Stream] = Stream
+
   import collection.{Traversable, Iterable, Sequence, Vector}
 
   /** is this stream empty? */
@@ -56,14 +60,6 @@ self =>
   protected def tailDefined: Boolean
 
   // Implementation of abstract method in Traversable
-
-  /** The builder for stream objects.
-   *  @note: This builder is lazy only in the sense that it does not go downs the spine
-   *         of traversables taht are added as a whole. If more layzness can be achieved,
-   *         this builder should be bypassed.
-   */
-  override protected[this] def newBuilder = Stream.newBuilder
-  override def traversableBuilder[B]: Builder[B, Stream[B]] = Stream.newBuilder[B]
 
   // New methods in Stream
 
@@ -367,8 +363,8 @@ self =>
  */
 object Stream extends SequenceFactory[Stream] {
 
-  type Coll = Stream[_]
-  class StreamBuilderFactory[A] extends BuilderFactory[A, Stream[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
+  class StreamBuilderFactory[A] extends VirtualBuilderFactory[A]
+
   implicit def builderFactory[A]: BuilderFactory[A, Stream[A], Coll] = new StreamBuilderFactory[A]
 
   /** Creates a new builder for a stream */
@@ -377,6 +373,9 @@ object Stream extends SequenceFactory[Stream] {
   import collection.{Iterable, Sequence, Vector}
 
   /** A builder for streams
+   *  @note: This builder is lazy only in the sense that it does not go downs the spine
+   *         of traversables taht are added as a whole. If more layzness can be achieved,
+   *         this builder should be bypassed.
    */
   class StreamBuilder[A] extends LazyBuilder[A, Stream[A]] {
     def result: Stream[A] = (for (xs <- parts.elements; x <- xs.toIterable.elements) yield x).toStream

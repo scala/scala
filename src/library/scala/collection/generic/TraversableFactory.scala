@@ -2,20 +2,11 @@
 
 /** A template for companion objects of Traversable and subclasses thereof.
  */
-abstract class TraversableFactory[CC[A] <: Traversable[A]] {
+abstract class TraversableFactory[CC[X] <: Traversable[X] with TraversableClass[X, CC]]
+  extends Companion[CC] {
 
-  /** The builder for this kind of collection.
-   */
-  def newBuilder[A]: Builder[A, CC[A]]
-
- /** The empty iterable of type CC */
-  def empty[A]:  CC[A] = newBuilder[A].result
-
-  /** Creates an iterable of type CC with specified elements */
-  def apply[A](args: A*): CC[A] = {
-    val b = newBuilder[A]
-    b ++= Iterable.fromOld(args)
-    b.result
+  class VirtualBuilderFactory[A] extends BuilderFactory[A, CC[A], CC[_]] {
+    def apply(from: Coll) = from.traversableBuilder[A]
   }
 
   /** Concatenate all the argument collections into a single collection.

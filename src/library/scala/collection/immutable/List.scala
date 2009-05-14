@@ -12,7 +12,7 @@
 package scala.collection.immutable
 
 import mutable.ListBuffer
-import generic.{SequenceFactory, Builder, BuilderFactory, LinearSequenceTemplate}
+import generic._
 
 /** A class representing an ordered collection of elements of type
  *  <code>a</code>. This class comes with two implementing case
@@ -23,7 +23,11 @@ import generic.{SequenceFactory, Builder, BuilderFactory, LinearSequenceTemplate
  *  @author  Martin Odersky and others
  *  @version 2.8
  */
-sealed abstract class List[+A] extends LinearSequence[A] with Product with LinearSequenceTemplate[A, List[A]] {
+sealed abstract class List[+A] extends LinearSequence[A]
+                                  with Product
+                                  with TraversableClass[A, List]
+                                  with LinearSequenceTemplate[A, List[A]] {
+  override def companion: Companion[List] = List
 
   import collection.{Iterable, Traversable, Sequence, Vector}
 
@@ -45,10 +49,6 @@ sealed abstract class List[+A] extends LinearSequence[A] with Product with Linea
    *  @throws Predef.NoSuchElementException if the list is empty.
    */
   def tail: List[A]
-
-  /** Creates a list buffer as builder for this class */
-  override protected[this] def newBuilder = List.newBuilder
-  override def traversableBuilder[B]: Builder[B, List[B]] = List.newBuilder[B]
 
   // New methods in List
 
@@ -488,8 +488,7 @@ object List extends SequenceFactory[List] {
 
   import collection.{Iterable, Sequence, Vector}
 
-  type Coll = List[_]
-  implicit def builderFactory[A]: BuilderFactory[A, List[A], Coll] = new BuilderFactory[A, List[A], Coll] { def apply(from: Coll) = new ListBuffer[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, List[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, List[A]] = new ListBuffer[A]
 
   override def empty[A]: List[A] = Nil

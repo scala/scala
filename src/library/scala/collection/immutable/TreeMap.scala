@@ -8,25 +8,15 @@
 
 // $Id$
 
-// todo: make balanced once Tree.scala is updated to be covariant.
-
 package scala.collection.immutable
 
 import generic._
 
 /** The canonical factory of <a href="TreeMap.html">TreeMap</a>'s. */
-object TreeMap {
-
-  type Coll = TreeMap[_, _]
-  implicit def builderFactory[A <% Ordered[A], B]: BuilderFactory[(A, B), TreeMap[A, B], Coll] = new BuilderFactory[(A, B), TreeMap[A, B], Coll] { def apply(from: Coll) = newBuilder[A, B] }
-  def newBuilder[A <% Ordered[A], B]: Builder[(A, B), TreeMap[A, B]] = new ImmutableMapBuilder(empty[A, B])
-
-  /** The empty map of this type */
-  def empty[A <% Ordered[A], B] = new TreeMap[A, B]
-
-  /** The canonical factory for this type
-   */
-  def apply[A <% Ordered[A], B](elems: (A, B)*) = empty[A, B] ++ elems
+object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
+  def empty[A, B](implicit ord: Ordering[A]) = new TreeMap[A, B]()(ord)
+  implicit def builderFactory[A, B](implicit ord: Ordering[A]): BuilderFactory[(A, B), TreeMap[A, B], Coll] = new SortedMapBuilderFactory[A, B]
+  private def make[A, B](s: Int, t: RedBlack[A]#Tree[B])(implicit ord: Ordering[A]) = new TreeMap[A, B](s, t)(ord)
 }
 
 /** This class implements immutable maps using a tree.
@@ -36,18 +26,18 @@ object TreeMap {
  *  @version 1.1, 03/05/2004
  */
 @serializable
-class TreeMap[A <% Ordered[A], +B](override val size: Int, t: RedBlack[A]#Tree[B])
+class TreeMap[A, +B](override val size: Int, t: RedBlack[A]#Tree[B])(implicit val ordering: Ordering[A])
   extends RedBlack[A]
      with SortedMap[A, B]
      with SortedMapTemplate[A, B, TreeMap[A, B]]
      with ImmutableMapTemplate[A, B, TreeMap[A, B]] {
 
+  def isSmaller(x: A, y: A) = ordering.lt(x, y)
+
   override protected[this] def newBuilder : Builder[(A, B), TreeMap[A, B]] =
     TreeMap.newBuilder[A, B]
 
-  def isSmaller(x: A, y: A) = x < y
-
-  def this() = this(0, null)
+  def this()(implicit ordering: Ordering[A]) = this(0, null)(ordering)
 
   protected val tree: RedBlack[A]#Tree[B] = if (size == 0) Empty else t
 
@@ -58,13 +48,11 @@ class TreeMap[A <% Ordered[A], +B](override val size: Int, t: RedBlack[A]#Tree[B
 
   override def firstKey = t.first
   override def lastKey = t.last
-  override def compare(k0: A, k1: A): Int = k0.compare(k1)
-
-  private def newMap[B](s: Int, t: RedBlack[A]#Tree[B]) = new TreeMap[A, B](s, t)
+  override def compare(k0: A, k1: A): Int = ordering.compare(k0, k1)
 
   /** A factory to create empty maps of the same type of keys.
    */
-  override def empty = TreeMap.empty
+  override def empty: TreeMap[A, B] = TreeMap.empty[A, B](ordering)
 
   /** A new TreeMap with the entry added is returned,
    *  if key is <em>not</em> in the TreeMap, otherwise
@@ -76,7 +64,7 @@ class TreeMap[A <% Ordered[A], +B](override val size: Int, t: RedBlack[A]#Tree[B
    */
   override def updated [B1 >: B](key: A, value: B1): TreeMap[A, B1] = {
     val newsize = if (tree.lookup(key).isEmpty) size + 1 else size
-    newMap(newsize, tree.update(key, value))
+    TreeMap.make(newsize, tree.update(key, value))
   }
 
     /** Add a key/value pair to this map.
@@ -94,19 +82,19 @@ class TreeMap[A <% Ordered[A], +B](override val size: Int, t: RedBlack[A]#Tree[B
    *  @param elems the remaining elements to add.
    */
   override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *): TreeMap[A, B1] =
-    this + elem1 + elem2 ++ collection.Iterable.fromOld(elems)
+    this + elem1 + elem2 ++ elems
 
   /** A new TreeMap with the entry added is returned,
    *  assuming that key is <em>not</em> in the TreeMap.
    */
   def insert [B1 >: B](key: A, value: B1): TreeMap[A, B1] = {
     assert(tree.lookup(key).isEmpty)
-    newMap(size + 1, tree.update(key, value))
+    TreeMap.make(size + 1, tree.update(key, value))
   }
 
   def - (key:A): TreeMap[A, B] =
     if (tree.lookup(key).isEmpty) this
-    else newMap(size - 1, tree.delete(key))
+    else TreeMap.make(size - 1, tree.delete(key))
 
   /** Check if this map maps <code>key</code> to a value and return the
    *  value if it exists.

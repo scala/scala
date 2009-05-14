@@ -12,6 +12,7 @@
 package scala.collection.mutable
 
 import Predef._
+import generic._
 
 /** This class implements mutable maps using a hashtable.
  *
@@ -19,20 +20,19 @@ import Predef._
  *  @author  Martin Odersky
  *  @version 2.0, 31/12/2006
  */
-object LinkedHashMap {
-
-  /** The empty map of this type */
+object LinkedHashMap extends MutableMapFactory[LinkedHashMap] {
+  implicit def builderFactory[A, B]: BuilderFactory[(A, B), LinkedHashMap[A, B], Coll] = new MapBuilderFactory[A, B]
   def empty[A, B] = new LinkedHashMap[A, B]
-
-  /** The canonical factory for this type
-   */
-  def apply[A, B](elems: (A, B)*) = empty[A, B] ++ elems
 }
 
 @serializable
-class LinkedHashMap[A, B] extends Map[A,B] with HashTable[A] with DefaultMapModel[A,B] {
+class LinkedHashMap[A, B] extends Map[A, B]
+                             with MutableMapTemplate[A, B, LinkedHashMap[A, B]]
+                             with HashTable[A]
+                             with DefaultMapModel[A,B] {
 
   override def empty = LinkedHashMap.empty
+
   override def size = super[HashTable].size
 
   private var ordered = List[Entry]()
@@ -65,8 +65,6 @@ class LinkedHashMap[A, B] extends Map[A,B] with HashTable[A] with DefaultMapMode
     ordered = Nil
     super.clear()
   }
-
-  override def clone(): Map[A, B] = new LinkedHashMap[A, B] ++ this
 
   override def elements = ordered.reverse.elements map {e => (e.key, e.value)}
 }

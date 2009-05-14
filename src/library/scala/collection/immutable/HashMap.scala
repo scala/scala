@@ -37,7 +37,6 @@ class HashMap[A, +B] extends Map[A,B] with ImmutableMapTemplate[A, B, HashMap[A,
   protected var deltaSize: Int = _
 
   override def empty = HashMap.empty[A, B]
-  override def mapBuilder[A, B]: Builder[(A, B), HashMap[A, B]] = HashMap.newBuilder[A, B]
 
   def get(key: A): Option[B] = synchronized {
     var m: HashMap[A, _ >: B] = this
@@ -176,8 +175,7 @@ class HashMap[A, +B] extends Map[A,B] with ImmutableMapTemplate[A, B, HashMap[A,
  *  @version 2.8
  */
 object HashMap extends ImmutableMapFactory[HashMap] {
-  type Coll = HashMap[_, _]
-  implicit def builderFactory[A, B]: BuilderFactory[(A, B), HashMap[A, B], Coll] = new BuilderFactory[(A, B), HashMap[A, B], Coll] { def apply(from: Coll) = from.mapBuilder[A, B] }
+  implicit def builderFactory[A, B]: BuilderFactory[(A, B), HashMap[A, B], Coll] = new MapBuilderFactory[A, B]
   def empty[A, B]: HashMap[A, B] = new HashMap
 }
 

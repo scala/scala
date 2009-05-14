@@ -20,10 +20,11 @@ import generic._
  *  @version 2.0, 31/12/2006
  */
 @serializable
-class HashSet[A] extends Set[A] with MutableSetTemplate[A, HashSet[A]] with FlatHashTable[A] {
-
-  override def empty = HashSet.empty
-  override def traversableBuilder[B]: Builder[B, HashSet[B]] = HashSet.newBuilder[B]
+class HashSet[A] extends Set[A]
+                    with SetClass[A, HashSet]
+                    with MutableSetTemplate[A, HashSet[A]]
+                    with FlatHashTable[A] {
+  override def companion: Companion[HashSet] = HashSet
 
   override def size = super.size
 
@@ -52,8 +53,7 @@ class HashSet[A] extends Set[A] with MutableSetTemplate[A, HashSet[A]] with Flat
 
 /** Factory object for `HashSet` class */
 object HashSet extends SetFactory[HashSet] {
-  type Coll = HashSet[_]
-  implicit def builderFactory[A]: BuilderFactory[A, HashSet[A], Coll] = new BuilderFactory[A, HashSet[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
-  def empty[A]: HashSet[A] = new HashSet[A]
+  implicit def builderFactory[A]: BuilderFactory[A, HashSet[A], Coll] = setBuilderFactory[A]
+  override def empty[A]: HashSet[A] = new HashSet[A]
 }
 

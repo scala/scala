@@ -21,13 +21,13 @@ import mutable.ArrayBuffer
  *  @author Martin Odersky
  *  @version 2.8
  */
-trait Vector[+A] extends Sequence[A] with VectorTemplate[A, Vector[A]] {
-  override protected[this] def newBuilder = Vector.newBuilder
-  override def traversableBuilder[B]: Builder[B, Vector[B]] = Vector.newBuilder[B]
+trait Vector[+A] extends Sequence[A]
+                    with TraversableClass[A, Vector]
+                    with VectorTemplate[A, Vector[A]] {
+  override def companion: Companion[Vector] = Vector
 }
 
 object Vector extends SequenceFactory[Vector] {
-  type Coll = Vector[_]
-  implicit def builderFactory[A]: BuilderFactory[A, Vector[A], Coll] = new BuilderFactory[A, Vector[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, Vector[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, Vector[A]] = mutable.Vector.newBuilder[A]
 }

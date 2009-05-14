@@ -25,7 +25,6 @@ object Array extends SequenceFactory[Array] {
   import runtime.BoxedArray;
   import scala.runtime.ScalaRunTime.boxArray;
 
-  type Coll = Array[_]
   implicit def builderFactory[A]: BuilderFactory[A, Array[A], Coll] = new BuilderFactory[A, Array[A], Coll] { def apply(from: Coll) = newBuilder[A] }
   def newBuilder[A]: Builder[A, Array[A]] = new ArrayBuffer[A].mapResult(_.toArray)
 
@@ -246,9 +245,11 @@ object Array extends SequenceFactory[Array] {
  *  @author Martin Odersky
  *  @version 1.0
  */
-final class Array[A](_length: Int) extends Vector[A] with VectorTemplate[A, Array[A]] {
+final class Array[A](_length: Int) extends Vector[A]
+                                      with TraversableClass[A, Array]
+                                      with VectorTemplate[A, Array[A]] {
 
-  override protected[this] def newBuilder: Builder[A, Array[A]] = throw new Error()
+  override def companion: Companion[Array] = throw new Error()
 
    /** Multidimensional array creation
     *  @deprecated use Array.ofDim instead

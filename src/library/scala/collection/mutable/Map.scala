@@ -20,7 +20,6 @@ trait Map[A, B]
      with Unhashable {
 
   override def empty: Map[A, B] = Map.empty
-  override def mapBuilder[A, B]: Builder[(A, B), Map[A, B]] = Map.newBuilder[A, B]
 
   /** Return a read-only projection of this map.  !!! or just use an (immutable) MapProxy?
   def readOnly : collection.Map[A, B] = new collection.Map[A, B] {
@@ -38,8 +37,7 @@ trait Map[A, B]
  * Currently this returns a HashMap.
  */
 object Map extends MutableMapFactory[Map] {
-  type Coll = Map[_, _]
-  implicit def builderFactory[A, B]: BuilderFactory[(A, B), Map[A, B], Coll] = new BuilderFactory[(A, B), Map[A, B], Coll] { def apply(from: Coll) = from.mapBuilder[A, B] }
+  implicit def builderFactory[A, B]: BuilderFactory[(A, B), Map[A, B], Coll] = new MapBuilderFactory[A, B]
   def empty[A, B]: Map[A, B] = new HashMap[A, B]
 }
 

@@ -28,15 +28,16 @@ import util.control.Breaks._
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  */
-trait Sequence[+A] extends PartialFunction[Int, A] with Iterable[A] with SequenceTemplate[A, Sequence[A]] {
-  override protected[this] def newBuilder = Sequence.newBuilder
-  override def traversableBuilder[B]: Builder[B, Sequence[B]] = Sequence.newBuilder[B]
+trait Sequence[+A] extends PartialFunction[Int, A]
+                      with Iterable[A]
+                      with TraversableClass[A, Sequence]
+                      with SequenceTemplate[A, Sequence[A]] {
+  override def companion: Companion[Sequence] = Sequence
 }
 
 object Sequence extends SequenceFactory[Sequence] {
 
-  type Coll = Sequence[_]
-  implicit def builderFactory[A]: BuilderFactory[A, Sequence[A], Coll] = new BuilderFactory[A, Sequence[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, Sequence[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, Sequence[A]] = immutable.Sequence.newBuilder[A]
 
   /** @deprecated use View instead

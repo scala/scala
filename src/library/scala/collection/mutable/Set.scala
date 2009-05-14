@@ -13,7 +13,7 @@ package scala.collection.mutable
 
 import generic._
 
-/** This class represents mutable sets. Concrete set implementations
+/** A generic trait for mutable sets. Concrete set implementations
  *  have to provide functionality for the abstract methods in Set:
  *
  *  def contains(elem: A): Boolean
@@ -27,20 +27,17 @@ import generic._
  */
 trait Set[A] extends Iterable[A]
                 with collection.Set[A]
+                with SetClass[A, Set]
                 with MutableSetTemplate[A, Set[A]]
                 with Unhashable {
-
-  override def empty = Set.empty
-
-  override def traversableBuilder[B]: Builder[B, Set[B]] = Set.newBuilder[B]
+  override def companion: Companion[Set] = Set
 }
 
 /** The canonical factory methods for <a href="Set.html">mutable sets</a>.
  *  Currently this returns a HashSet.
  */
 object Set extends SetFactory[Set] {
-  type Coll = Set[_]
-  implicit def builderFactory[A]: BuilderFactory[A, Set[A], Coll] = new BuilderFactory[A, Set[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
-  def empty[A]: Set[A] = HashSet.empty[A]
+  implicit def builderFactory[A]: BuilderFactory[A, Set[A], Coll] = setBuilderFactory[A]
+  override def empty[A]: Set[A] = HashSet.empty[A]
 }
 

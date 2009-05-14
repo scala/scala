@@ -4,7 +4,10 @@ import generic._
 import BitSetTemplate.{LogWL, updateArray}
 
 /** A class for mutable bitsets */
-class BitSet (protected var elems: Array[Long]) extends Set[Int] with collection.BitSet with BitSetTemplate[BitSet] with MutableSetTemplate[Int, BitSet] {
+class BitSet (protected var elems: Array[Long]) extends Set[Int]
+                                                  with collection.BitSet
+                                                  with BitSetTemplate[BitSet]
+                                                  with MutableSetTemplate[Int, BitSet] {
 
   override def empty = BitSet.empty
 
@@ -67,9 +70,7 @@ class BitSet (protected var elems: Array[Long]) extends Set[Int] with collection
 }
 
 /** A factory object for mutable bitsets */
-object BitSet {
+object BitSet extends BitSetFactory[BitSet] {
   def empty: BitSet = new BitSet
-  def apply(bits: Int*): BitSet = {
-    var s = empty; for (b <- bits) s += b; s
-  }
+  implicit def builderFactory: BuilderFactory[Int, BitSet, BitSet] = bitsetBuilderFactory
 }

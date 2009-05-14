@@ -33,8 +33,6 @@ trait MapTemplate[A, +B, +This <: MapTemplate[A, B, This] with Map[A, B]]
      with Subtractable[A, This] {
 self =>
 
-//  import immutable.{Set, FlexSet}
-
   def empty: This
 
   /** Is this an empty map?

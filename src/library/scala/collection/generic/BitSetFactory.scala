@@ -5,23 +5,15 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+// $Id: Traversable.scala 15188 2008-05-24 15:01:02Z stepancheg $
+package scala.collection.generic
 
-// $Id$
-
-
-package scala.collection
-
-import generic._
-
-/** common base class for mutable and immutable bit sets
- */
-trait BitSet extends Set[Int]
-                with BitSetTemplate[BitSet] {
-  override def empty: BitSet = BitSet.empty
-}
-
-/** A factory object for bitsets */
-object BitSet extends BitSetFactory[BitSet] {
-  val empty: BitSet = immutable.BitSet.empty
+trait BitSetFactory[Coll <: BitSet with BitSetTemplate[Coll]] {
+  def newBuilder: Builder[Int, Coll] = new AddingBuilder[Int, Coll](empty)
+  def empty: Coll
+  def apply(elems: Int*): Coll = (empty /: elems) (_ + _)
+  def bitsetBuilderFactory = new BuilderFactory[Int, Coll, Coll] {
+    def apply(from: Coll) = newBuilder
+  }
 }
 

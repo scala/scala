@@ -16,9 +16,7 @@ import generic._
 
 /** The canonical factory of <a href="ListMap.html">ListMap</a>'s */
 object ListMap extends ImmutableMapFactory[ListMap] {
-
-  type Coll = ListMap[_,_]
-  implicit def builderFactory[A, B]: BuilderFactory[(A, B), ListMap[A, B], Coll] = new BuilderFactory[(A, B), ListMap[A, B], Coll] { def apply(from: Coll) = from.mapBuilder[A, B] }
+  implicit def builderFactory[A, B]: BuilderFactory[(A, B), ListMap[A, B], Coll] = new MapBuilderFactory[A, B]
   def empty[A, B]: ListMap[A, B] = new ListMap
 }
 
@@ -35,7 +33,6 @@ object ListMap extends ImmutableMapFactory[ListMap] {
 class ListMap[A, +B] extends Map[A, B] with ImmutableMapTemplate[A, B, ListMap[A, B]] {
 
   override def empty = ListMap.empty
-  override def mapBuilder[A, B]: Builder[(A, B), ListMap[A, B]] = ListMap.newBuilder[A, B]
 
   /** Returns the number of mappings in this map.
    *

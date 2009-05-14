@@ -19,8 +19,8 @@ package scala.collection.generic
  */
 class MutableMapBuilder[A, B, Coll <: mutable.Map[A, B] with MapTemplate[A, B, Coll]](empty: Coll)
 extends Builder[(A, B), Coll] {
-  protected var elems: Coll = empty
+  protected val elems: Coll = empty
   def +=(x: (A, B)): this.type = { elems += x; this }
-  def clear() { elems = empty }
+  def clear() { elems.clear() }
   def result: Coll = elems
 }

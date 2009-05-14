@@ -23,15 +23,15 @@ import generic._
  *  @version 2.8
   */
 @cloneable
-trait Buffer[A] extends Sequence[A] with BufferTemplate[A, Buffer[A]] {
-  override protected[this] def newBuilder = Buffer.newBuilder
-  override def traversableBuilder[B]: Builder[B, Buffer[B]] = Buffer.newBuilder[B]
+trait Buffer[A] extends Sequence[A]
+                   with TraversableClass[A, Buffer]
+                   with BufferTemplate[A, Buffer[A]] {
+  override def companion: Companion[Buffer] = Buffer
 }
 
 /* Factory object for `Buffer` trait */
 object Buffer extends SequenceFactory[Buffer] {
-  type Coll = Buffer[_]
-  implicit def builderFactory[A]: BuilderFactory[A, Buffer[A], Coll] = new BuilderFactory[A, Buffer[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, Buffer[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, Buffer[A]] = new ArrayBuffer
 }
 

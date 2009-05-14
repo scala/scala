@@ -15,15 +15,16 @@ import generic._
  *  @autor   Martin Odersky
  *  @version 2.8
  */
-trait Iterable[A] extends Traversable[A] with collection.Iterable[A] with IterableTemplate[A, Iterable[A]] { self =>
-  override protected[this] def newBuilder = Iterable.newBuilder
-  override def traversableBuilder[B]: Builder[B, Iterable[B]] = Iterable.newBuilder[B]
+trait Iterable[A] extends Traversable[A]
+                     with collection.Iterable[A]
+                     with TraversableClass[A, Iterable]
+                     with IterableTemplate[A, Iterable[A]] {
+  override def companion: Companion[Iterable] = Iterable
 }
 
 /* A factory object for the trait `Iterable` */
 object Iterable extends TraversableFactory[Iterable] {
-  type Coll = Iterable[_]
-  implicit def builderFactory[A]: BuilderFactory[A, Iterable[A], Coll] = new BuilderFactory[A, Iterable[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, Iterable[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, Iterable[A]] = new ArrayBuffer
 }
 

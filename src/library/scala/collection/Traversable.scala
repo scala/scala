@@ -25,9 +25,9 @@ import generic._
  *  @author Martin Odersky
  *  @version 2.8
  */
-trait Traversable[+A] extends TraversableTemplate[A, Traversable[A]] {
-  protected[this] def newBuilder = Traversable.newBuilder
-  def traversableBuilder[B]: Builder[B, Traversable[B]] = Traversable.newBuilder[B]
+trait Traversable[+A] extends TraversableTemplate[A, Traversable[A]]
+                         with TraversableClass[A, Traversable] {
+  def companion: Companion[Traversable] = Traversable
 
   /* The following methods are inherited from TraversableTemplate
    *
@@ -93,10 +93,9 @@ trait Traversable[+A] extends TraversableTemplate[A, Traversable[A]] {
 /** Factory methods and utilities for instances of type Traversable */
 object Traversable extends TraversableFactory[Traversable] { self =>
 
-  type Coll = Traversable[_]
 
-  implicit def builderFactory[A]: BuilderFactory[A, Traversable[A], Coll] =
-    new BuilderFactory[A, Traversable[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, Traversable[A], Coll] = new VirtualBuilderFactory[A]
+//    new BuilderFactory[A, Traversable[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
 
   def newBuilder[A]: Builder[A, Traversable[A]] = immutable.Traversable.newBuilder[A]
 

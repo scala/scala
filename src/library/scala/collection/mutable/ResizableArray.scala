@@ -20,13 +20,11 @@ import generic._
  *  @author Martin Odersky
  *  @version 2.8
  */
-trait ResizableArray[A] extends Vector[A] with VectorTemplate[A, ResizableArray[A]] { self =>
+trait ResizableArray[A] extends Vector[A]
+                           with TraversableClass[A, ResizableArray]
+                           with VectorTemplate[A, ResizableArray[A]] {
 
-  import scala.Array // !!!
-  import collection.Iterable // !!!
-
-  override protected[this] def newBuilder = ResizableArray.newBuilder
-  override def traversableBuilder[B]: Builder[B, ResizableArray[B]] = ResizableArray.newBuilder[B]
+  override def companion: Companion[ResizableArray] = ResizableArray
 
   protected def initialSize: Int = 16
   protected var array: Array[AnyRef] = new Array[AnyRef](initialSize max 1)
@@ -115,7 +113,6 @@ trait ResizableArray[A] extends Vector[A] with VectorTemplate[A, ResizableArray[
 }
 
 object ResizableArray extends SequenceFactory[ResizableArray] {
-  type Coll = Vector[_]
-  implicit def builderFactory[A]: BuilderFactory[A, Vector[A], Coll] = new BuilderFactory[A, Vector[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
+  implicit def builderFactory[A]: BuilderFactory[A, Vector[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, ResizableArray[A]] = new ArrayBuffer[A]
 }

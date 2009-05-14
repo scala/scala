@@ -37,16 +37,11 @@ import generic._
  */
 trait Map[A, +B] extends Iterable[(A, B)] with MapTemplate[A, B, Map[A, B]] {
   def empty: Map[A, B] = Map.empty
-
-  override protected[this] def newBuilder : Builder[(A, B), Map[A, B]] =
-    throw new UnsupportedOperationException("Map.newBuilder")
-
-  def mapBuilder[A, B]: Builder[(A, B), Map[A, B]] = Map.newBuilder[A, B]
+  override protected[this] def newBuilder: Builder[(A, B), Map[A, B]] = immutable.Map.newBuilder[A, B]
 }
 
 /* Factory object for `Map` class */
 object Map extends ImmutableMapFactory[immutable.Map] {
-  type Coll = Map[_, _]
   def empty[A, B]: immutable.Map[A, B] = immutable.Map.empty
-  implicit def builderFactory[A, B]: BuilderFactory[(A, B), Map[A, B], Coll] = new BuilderFactory[(A, B), Map[A, B], Coll] { def apply(from: Coll) = from.mapBuilder[A, B] }
+  implicit def builderFactory[A, B]: BuilderFactory[(A, B), Map[A, B], Coll] = new MapBuilderFactory[A, B]
 }

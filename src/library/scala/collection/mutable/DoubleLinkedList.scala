@@ -1,10 +1,12 @@
+/* TODO: reintegrate
+
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-\*                                                                      */
+*                                                                      */
 
 // $Id$
 
@@ -27,10 +29,10 @@ class DoubleLinkedList[A]/*(_elem: A, _next: DoubleLinkedList[A])*/ extends Line
 }
 
 object DoubleLinkedList extends SequenceFactory[DoubleLinkedList] {
-  type Coll = DoubleLinkedList[_]
   implicit def builderFactory[A]: BuilderFactory[A, DoubleLinkedList[A], Coll] = new BuilderFactory[A, DoubleLinkedList[A], Coll] { def apply(from: Coll) = from.traversableBuilder[A] }
   def newBuilder[A]: Builder[A, DoubleLinkedList[A]] = null // !!!
 }
 
 
 
+*/

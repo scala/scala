@@ -25,12 +25,8 @@ trait SortedMap[A, +B] extends Map[A, B]
                          with ImmutableMapTemplate[A, B, SortedMap[A, B]]
                          with SortedMapTemplate[A, B, SortedMap[A, B]] {
 
-  /** Needs to be overridden in subclasses. */
-  override def empty: SortedMap[A, B] = throw new AbstractMethodError("SortedMap.empty")
-
-  /** Needs to be overridden in subclasses. */
   override protected[this] def newBuilder : Builder[(A, B), SortedMap[A, B]] =
-    throw new AbstractMethodError("SortedMap.newBuilder")
+    immutable.SortedMap.newBuilder[A, B]
 
   override def updated [B1 >: B](key: A, value: B1): SortedMap[A, B1] = this + ((key, value))
 
@@ -109,3 +105,7 @@ trait SortedMap[A, +B] extends Map[A, B]
   override def plusAll [B1 >: B](iter: Iterator[(A, B1)]): SortedMap[A, B1] = this.++(iter)
 }
 
+object SortedMap extends ImmutableSortedMapFactory[SortedMap] {
+  implicit def builderFactory[A, B](implicit ord: Ordering[A]): BuilderFactory[(A, B), SortedMap[A, B], Coll] = new SortedMapBuilderFactory[A, B]
+  def empty[A, B](implicit ord: Ordering[A]): SortedMap[A, B] = TreeMap.empty[A, B]
+}
