@@ -210,15 +210,11 @@ trait NewScanners {
         if (!xmlOk) in.error(current.offset, "XML mode not legal here")
         val headIsRBRACE = if (sepRegions.isEmpty) true else sepRegions.head == RBRACE
         val hasNewline = fillNext
-        if (headIsRBRACE && (inLastOfStat(lastCode) && inFirstOfStat(next.code)
-           /* This need to be commented out, otherwise line
-              continuation in the interpreter will not work
-	      XXX: not sure how the IDE reacts with this commented out.
-              || next.code == EOF */ )) {
-          //if (hasNewline) current.code = NEWLINES
-        } else {
-          currentIsNext
-        }
+
+        /** don't check for next.code == EOF else repl line continuation won't work */
+        if (headIsRBRACE && (inLastOfStat(lastCode) && inFirstOfStat(next.code))) { }
+        else currentIsNext
+
       case _ =>
       }
     }
@@ -463,9 +459,6 @@ trait NewScanners {
               else {
                 in.scratch append "\"\""; true
               }
-            case '\\' if false => // XXX: not for multi-line strings?
-              in.scratch append escapeCode(in.offset - 1)
-              true
             case c => in.scratch append c; true
             }) {}
             val ret = value(STRINGLIT, in.scratch.toString)
