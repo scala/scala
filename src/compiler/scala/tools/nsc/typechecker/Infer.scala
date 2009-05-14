@@ -374,7 +374,7 @@ trait Infer {
             case ex: MalformedType =>
               if (settings.debug.value) ex.printStackTrace
               val sym2 = underlying(sym1)
-              val itype = withoutMalformedChecks(pre.memberType(sym2))
+              val itype = pre.memberType(sym2)
               accessError("\n because its instance type "+itype+
                           (if ("malformed type: "+itype.toString==ex.msg) " is malformed"
                            else " contains a "+ex.msg))

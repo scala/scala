@@ -75,7 +75,6 @@ trait Types {
   var subtypeMillis = 0l
 
   private var explainSwitch = false
-  private var checkMalformedSwitch = false // todo: it's now always false. Remove all code that depends on this switch.
 
   private final val LogPendingSubTypesThreshold = 50
   private final val LogPendingBaseTypesThreshold = 50
@@ -680,8 +679,6 @@ trait Types {
       var excluded = excludedFlags | DEFERRED
       var self: Type = null
       var continue = true
-      var savedCheckMalformedSwitch = checkMalformedSwitch
-      checkMalformedSwitch = false
       while (continue) {
         continue = false
         val bcs0 = baseClasses
@@ -700,7 +697,6 @@ trait Types {
                    sym.getFlag(PRIVATE | LOCAL) != (PRIVATE | LOCAL) ||
                    (bcs0.head.hasTransOwner(bcs.head)))) {
                 if (name.isTypeName || stableOnly && sym.isStable) {
-                  checkMalformedSwitch = savedCheckMalformedSwitch
                   if (util.Statistics.enabled)
                     findMemberMillis = findMemberMillis + currentTime - startTime
                   return sym
@@ -742,7 +738,6 @@ trait Types {
         } // while (!bcs.isEmpty)
         excluded = excludedFlags
       } // while (continue)
-      checkMalformedSwitch = savedCheckMalformedSwitch
       if (util.Statistics.enabled)
         findMemberMillis = findMemberMillis + currentTime - startTime
       if (members eq null) {
@@ -1374,7 +1369,7 @@ trait Types {
    *  @param args ...
    */
   case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type {
-//    assert(!checkMalformedSwitch || !sym.isAbstractType || pre.isStable || pre.isError)
+//    assert(!sym.isAbstractType || pre.isStable || pre.isError)
 //    assert(!pre.isInstanceOf[ClassInfoType], this)
 //    assert(!(sym hasFlag (PARAM | EXISTENTIAL)) || pre == NoPrefix, this)
 //    assert(args.isEmpty || !sym.info.typeParams.isEmpty, this)
@@ -2013,12 +2008,9 @@ A type's typeSymbol should never be inspected directly.
       var sym1 = rebind(pre, sym)
       val pre1 = removeSuper(pre, sym1)
       if (pre1 ne pre) sym1 = rebind(pre1, sym1)
-      if (checkMalformedSwitch && !pre1.isStable && !pre1.isError)
-        throw new MalformedType(pre, sym.nameString)
-      else {
-        class UniqueSingleType extends SingleType(pre1, sym1) with UniqueType
-        unique(new UniqueSingleType)
-      }
+
+      class UniqueSingleType extends SingleType(pre1, sym1) with UniqueType
+      unique(new UniqueSingleType)
     }
   }
 
@@ -2118,10 +2110,8 @@ A type's typeSymbol should never be inspected directly.
       if (pre1 ne pre) {
         if (sym1.isAbstractType) sym1 = rebind(pre1, sym1)
         typeRef(pre1, sym1, args)
-      } else if (checkMalformedSwitch && !pre.isStable && !pre.isError &&
-                 (sym1.isAbstractType /* || !pre.widen.typeSymbol.isStableClass*/)) {
-        throw new MalformedType(pre, sym1.nameString)
-      } else if (sym1.isClass && pre.isInstanceOf[CompoundType]) {
+      }
+      else if (sym1.isClass && pre.isInstanceOf[CompoundType]) {
         // sharpen prefix so that it is maximal and still contains the class.
         var p = pre.parents.reverse
         while (!p.isEmpty && p.head.member(sym1.name) != sym1) p = p.tail
@@ -4464,11 +4454,6 @@ A type's typeSymbol should never be inspected directly.
   def withTypesExplained[A](op: => A): A = {
     val s = explainSwitch
     try { explainSwitch = true; op } finally { explainSwitch = s }
-  }
-
-  def withoutMalformedChecks[T](op: => T): T = {
-    val s = checkMalformedSwitch
-    try { checkMalformedSwitch = false; op } finally { checkMalformedSwitch = s }
   }
 
   def objToAny(tp: Type): Type =
