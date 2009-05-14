@@ -13,7 +13,7 @@ package scala.collection.generic
 
 /** A generic template for maps from keys of type A to values of type B.
  *  To implement a concrete map, you need to provide implementations of the following methods:
- *  (where This is the type of the map in question):
+ *  (where `This` is the type of the map in question):
  *
  *   def get(key: A): Option[B]
  *   def elements: Iterator[(A, B)]
@@ -33,25 +33,49 @@ trait MapTemplate[A, +B, +This <: MapTemplate[A, B, This] with Map[A, B]]
      with Subtractable[A, This] {
 self =>
 
+  /* The empty map of the dame type as this map */
   def empty: This
 
-  /** Is this an empty map?
-   *
-   *  @return <code>true</code> iff the map is empty.
+  /** A common implementation of `newBuilder` for all maps in terms of `empty`.
+   *  Overridden for mutable maps in `MutableMapTemplate`.
    */
-  override def isEmpty: Boolean = size == 0
+  override protected[this] def newBuilder: Builder[(A, B), This] = new MapBuilder[A, B, This](empty)
 
   /** Check if this map maps <code>key</code> to a value and return the
-   *  value if it exists.
+   *  value as an option if it exists, None if not.
    *
-   *  @param  key the key of the mapping of interest
-   *  @return     the value of the mapping, if it exists
+   *  @param      key the key of the mapping of interest.
+   *  @return     the value of the mapping as an option, if it exists, or None.
    */
   def get(key: A): Option[B]
 
-  /** Check if this map maps <code>key</code> to a value.
-    *  Return that value if it exists, otherwise return <code>default</code>.
-    */
+  /** An iterator yielding all key/value mappings of this map. */
+  def elements: Iterator[(A, B)]
+
+  /** Add a key/value pair to this map, returning a new map.
+   *  @param    kv the key/value pair
+   *  @return   A new map with the new binding added to this map
+   */
+  def + [B1 >: B] (kv: (A, B1)): Map[A, B1]
+
+  /** Removes a key from this map, returning a new map
+   *  @param    key the key to be removed
+   *  @return   A new map without a binding for <code>key</code>
+   */
+  def - (key: A): This
+
+  /** Is this an empty map?
+   *
+   *  @return <code>true</code> iff the map does not contain any key/value mapping.
+   */
+  override def isEmpty: Boolean = size == 0
+
+  /**  Check if this map maps <code>key</code> to a value.
+   *   Return that value if it exists, otherwise return <code>default</code>.
+   *   @param   key      the key.
+   *   @param   default  a computation that yields a default value in case no binding for the key is
+   *                     found in the map.
+   */
   def getOrElse[B1 >: B](key: A, default: => B1): B1 = get(key) match {
     case Some(v) => v
     case None => default
@@ -119,9 +143,11 @@ self =>
     def next = iter.next._2
   }
 
-  /** @return the values of this map as a set (can't do this since Set is covariant)
-  def valueSet: immutable.Set[B] = immutable.Set.empty[B] ++ (self map (_._2))
-  */
+  /** @return the values of this map as a set.
+   *  @note  Can't return a Set[B] here because sets are non-variant.
+   *         The operation is overridden with the sharper type in MutableMapTemplate.
+   */
+  def valueSet: immutable.Set[_ <: B] = immutable.Set.empty[B] ++ (self map (_._2))
 
   /** The default value for the map, returned when a key is not found
    *  The method implemented here yields an error,
@@ -157,18 +183,16 @@ self =>
    */
   @deprecated def mapElements[C](f: B => C) = mapValues(f)
 
+  // The following 5 operations (updated, two times +, two times ++) should really be
+  // generic, returning This[B]. We need better covariance support to express that though.
+  // So right now we do the brute force approach of code duplication.
+
   /** A new immutable map containing updating this map with a given key/value mapping.
    *  @param    key the key
    *  @param    value the value
    *  @return   A new map with the new key/value mapping
    */
   def updated [B1 >: B](key: A, value: B1): Map[A, B1] = this + ((key, value))
-
-  /** Add a key/value pair to this map, returning a new map.
-   *  @param    kv the key/value pair
-   *  @return   A new map with the new binding added to this map
-   */
-  def + [B1 >: B] (kv: (A, B1)): Map[A, B1]
 
   /** Adds two or more elements to this collection and returns
    *  a new collection.
@@ -195,12 +219,6 @@ self =>
    */
   def ++[B1 >: B] (iter: Iterator[(A, B1)]): Map[A, B1] =
     ((thisCollection: Map[A, B1]) /: iter) (_ + _)
-
-  /** Removes a key from this map, returning a new map
-   *  @param    key the key to be removed
-   *  @return   A new map without a binding for <code>key</code>
-   */
-  def - (key: A): This
 
   /** Creates a string representation for this map.
    *
