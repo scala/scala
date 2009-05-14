@@ -73,15 +73,15 @@ abstract class UnPickler {
 
 //---cut here---
 
+/*
       // transiently, use this bit as long as stability fails.
       if (major != 4 && major != 5)
+*/
 
       // once stability is restored, use the following bit instead:
-/*
       if (major == 4) { // !!! temporarily accept 4 as version.
         println("WARNING: old class format, please recompile "+filename)
       } else
-*/
 
 //---cut here---
       if (major != MajorVersion || minor > MinorVersion)
