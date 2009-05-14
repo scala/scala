@@ -19,7 +19,7 @@ object LinkedHashSet {
 
   /** The canonical factory for this type
    */
-  def apply[A](elems: A*) = empty[A] ++ collection.Iterable.fromOld(elems)
+  def apply[A](elems: A*) = empty[A] ++= elems
 }
 
 @serializable
@@ -52,6 +52,6 @@ class LinkedHashSet[A] extends Set[A] with MutableSetTemplate[A, LinkedHashSet[A
     super.clear()
   }
 
-  override def elements = Iterator.fromOld(ordered.reverse.elements)
+  override def elements = ordered.reverse.elements
 }
 

@@ -54,14 +54,6 @@ object Iterable extends TraversableFactory[Iterable] {
   implicit def builderFactory[A]: BuilderFactory[A, Iterable[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, Iterable[A]] = immutable.Iterable.newBuilder[A]
 
-  def fromOld[A](it: scala.Iterable[A]): Iterable[A] = new Iterable[A] {
-    def elements: Iterator[A] = Iterator.fromOld(it.elements)
-  }
-
-  def toOld[A](it: Iterable[A]): scala.Iterable[A] = new scala.Iterable[A] {
-    def elements: scala.Iterator[A] = Iterator.toOld(it.elements)
-  }
-
   /** The minimum element of a non-empty sequence of ordered elements
    *  @deprecated use seq.min instead
    */

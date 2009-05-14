@@ -74,7 +74,7 @@ class ListMap[A, +B] extends Map[A, B] with ImmutableMapTemplate[A, B, ListMap[A
    *  @param elems the remaining elements to add.
    */
   override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *): ListMap[A, B1] =
-    this + elem1 + elem2 ++ collection.Iterable.fromOld(elems)
+    this + elem1 + elem2 ++ elems
 
   /** This creates a new mapping without the given <code>key</code>.
    *  If the map does not contain a mapping for the given key, the

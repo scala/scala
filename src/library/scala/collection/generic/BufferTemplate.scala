@@ -114,29 +114,12 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
     this
   }
 
-  /** Perform a += on a clone of this collection */
-  override def plus(elem: A): This = clone() += elem
-  /** Perform a += on a clone of this collection */
-  override def plus(elem1: A, elem2: A, elems: A*): This = clone() += (elem1, elem2, elems: _*)
-  /** Perform a -= on a clone of this collection */
-  override def minus(elem: A): This = clone() -= elem
-  /** Perform a -= on a clone of this collection */
-  override def minus(elem1: A, elem2: A, elems: A*): This = clone() -= (elem1, elem2, elems: _*)
-  /** Perform a ++= on a clone of this collection */
-  override def plusAll(elems: Traversable[A]): This = clone() ++= elems
-  /** Perform a ++= on a clone of this collection */
-  override def plusAll(elems: Iterator[A]): This = clone() ++= elems
-  /** Perform a --= on a clone of this collection */
-  override def minusAll(elems: Traversable[A]): This = clone() --= elems
-  /** Perform a --= on a clone of this collection */
-  override def minusAll(elems: Iterator[A]): This = clone() --= elems
-
   /** Prepend two ore more elements to this buffer and return
    *  the identity of the buffer.
    *  @param elem  the element to prepend.
    */
   def +:(elem1: A, elem2: A, elems: A*): This =
-    (elem1 +: elem2 +: Iterable.fromOld(elems) ++: thisCollection).asInstanceOf[This] // !!! does not work yet because conrete overrides abstract
+    (elem1 +: elem2 +: elems ++: thisCollection).asInstanceOf[This] // !!! does not work yet because conrete overrides abstract
 
   /** Prepends a number of elements provided by an iterable object
    *  via its <code>elements</code> method. The identity of the
@@ -158,7 +141,7 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
    *
    *  @param elems  the elements to append.
    */
-  def append(elems: A*) { this ++= Iterable.fromOld(elems) }
+  def append(elems: A*) { this ++= elems }
 
   /** Appends a number of elements provided by an iterable object
    *  via its <code>elements</code> method.
@@ -171,7 +154,7 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
    *
    *  @param elem  the element to prepend.
    */
-  def prepend(elems: A*) { Iterable.fromOld(elems) ++: this }
+  def prepend(elems: A*) { elems ++: this }
 
   /** Prepends a number of elements provided by an iterable object
    *  via its <code>elements</code> method. The identity of the
@@ -196,7 +179,7 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
    *  @param n      the index where a new element will be inserted.
    *  @param elems  the new elements to insert.
    */
-  def insert(n: Int, elems: A*) { insertAll(n, Iterable.fromOld(elems)) }
+  def insert(n: Int, elems: A*) { insertAll(n, elems) }
 
   /** Removes the first <code>n</code> elements.
    *
@@ -267,8 +250,8 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
    *  the collection itself.
    *
    *  @param elem  the element to add.
-   *  @deprecated  use += instead if you inted to add by side effect to an existing collection.
-   *               Use `plus` if you intend to create a new collection.
+   *  @deprecated  use += instead if you intend to add by side effect to an existing collection.
+   *               Use `clone() ++=` if you intend to create a new collection.
    */
   @deprecated override def + (elem: A): This = { +=(elem); thisCollection }
 
@@ -278,8 +261,8 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
    *  @param elem1 the first element to add.
    *  @param elem2 the second element to add.
    *  @param elems the remaining elements to add.
-   *  @deprecated  use += instead if you inted to add by side effect to an existing collection.
-   *               Use `plus` if you intend to create a new collection.
+   *  @deprecated  use += instead if you intend to add by side effect to an existing collection.
+   *               Use `clone() ++=` if you intend to create a new collection.
    */
   @deprecated override def + (elem1: A, elem2: A, elems: A*): This = {
     this += elem1 += elem2 ++= elems
@@ -290,8 +273,8 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
    *  either the collection itself.
    *
    *  @param iter     the iterable object.
-   *  @deprecated  use ++= instead if you inted to add by side effect to an existing collection.
-   *               Use `plusAll` if you intend to create a new collection.
+   *  @deprecated  use ++= instead if you intend to add by side effect to an existing collection.
+   *               Use `clone() ++=` if you intend to create a new collection.
    */
   @deprecated override def ++(iter: Traversable[A]): This = {
     for (elem <- iter) +=(elem)
@@ -302,8 +285,8 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
    *  the collection itself.
    *
    *  @param iter   the iterator
-   *  @deprecated  use ++= instead if you inted to add by side effect to an existing collection.
-   *               Use `plusAll` if you intend to create a new collection.
+   *  @deprecated  use ++= instead if you intend to add by side effect to an existing collection.
+   *               Use `clone() ++=` if you intend to create a new collection.
    */
   @deprecated override def ++ (iter: Iterator[A]): This = {
     for (elem <- iter) +=(elem)
@@ -314,8 +297,8 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
    *  the collection itself.
    *
    *  @param elem  the element to remove.
-   *  @deprecated  use -= instead if you inted to remove by side effect from an existing collection.
-   *               Use `minus` if you intend to create a new collection.
+   *  @deprecated  use -= instead if you intend to remove by side effect from an existing collection.
+   *               Use `clone() -=` if you intend to create a new collection.
    */
   @deprecated override def -(elem: A): This = { -=(elem); thisCollection }
 
@@ -325,8 +308,8 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
    *  @param elem1 the first element to remove.
    *  @param elem2 the second element to remove.
    *  @param elems the remaining elements to remove.
-   *  @deprecated  use -= instead if you inted to remove by side effect from an existing collection.
-   *               Use `minus` if you intend to create a new collection.
+   *  @deprecated  use -= instead if you intend to remove by side effect from an existing collection.
+   *               Use `clone() -=` if you intend to create a new collection.
    */
   @deprecated override def -(elem1: A, elem2: A, elems: A*): This = {
     this -= elem1 -= elem2 --= elems
@@ -335,8 +318,8 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
 
   /** Removes a number of elements provided by a traversible object and returns
    *  the collection itself.
-   *  @deprecated  use --= instead if you inted to remove by side effect from an existing collection.
-   *               Use `minusAll` if you intend to create a new collection.
+   *  @deprecated  use --= instead if you intend to remove by side effect from an existing collection.
+   *               Use `clone() --=` if you intend to create a new collection.
    *
    *  @param iter     the iterable object.
    */
@@ -349,8 +332,8 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
    *  the collection itself.
    *
    *  @param iter   the iterator
-   *  @deprecated  use --= instead if you inted to remove by side effect from an existing collection.
-   *               Use `minusAll` if you intend to create a new collection.
+   *  @deprecated  use --= instead if you intend to remove by side effect from an existing collection.
+   *               Use `clone() --=` if you intend to create a new collection.
    */
   @deprecated override def --(iter: Iterator[A]): This = {
     for (elem <- iter) -=(elem)

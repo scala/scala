@@ -493,7 +493,7 @@ object List extends SequenceFactory[List] {
 
   override def empty[A]: List[A] = Nil
 
-  override def apply[A](xs: A*): List[A] = Iterable.fromOld(xs).toList
+  override def apply[A](xs: A*): List[A] = xs.toList
 
   /** Create a sorted list with element values
    * <code>v<sub>n+1</sub> = step(v<sub>n</sub>)</code>
@@ -683,8 +683,7 @@ object List extends SequenceFactory[List] {
    *  @return    the string as a list of characters.
    *  @deprecated use <code>str.toList</code> instead
    */
-  @deprecated def fromString(str: String): List[Char] =
-    Iterable.fromOld(str).toList
+  @deprecated def fromString(str: String): List[Char] = str.toList
 
   /** Returns the given list of characters as a string.
    *

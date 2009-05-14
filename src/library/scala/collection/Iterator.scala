@@ -23,16 +23,6 @@ import mutable.{Buffer, ArrayBuffer, ListBuffer}
  */
 object Iterator {
 
-  def fromOld[A](it: scala.Iterator[A]): Iterator[A] = new Iterator[A] {
-    def hasNext: Boolean = it.hasNext
-    def next: A = it.next
-  }
-
-  def toOld[A](it: Iterator[A]): scala.Iterator[A] = new scala.Iterator[A] {
-    def hasNext: Boolean = it.hasNext
-    def next: A = it.next
-  }
-
   val empty = new Iterator[Nothing] {
     def hasNext: Boolean = false
     def next(): Nothing = throw new NoSuchElementException("next on empty iterator")
@@ -53,15 +43,14 @@ object Iterator {
   /** Creates an iterator with given elements
    *  @param elems  The elements returned one-by-one from the iterator
    */
-  def apply[A](elems: A*): Iterator[A] = Iterable.fromOld(elems).elements
+  def apply[A](elems: A*): Iterator[A] = elems.elements
 
   /** Concatenates the given argument iterators into a single iterator.
    *
    *  @param its the argument iterators that are to be concatenated
    *  @return the concatenation of all the argument iterators
    */
-  @deprecated def concat[A](xss: Iterator[A]*): Iterator[A] =
-    Iterable.fromOld(xss).elements.flatten
+  @deprecated def concat[A](xss: Iterator[A]*): Iterator[A] = xss.elements.flatten
 
   /** An iterator that returns the results of some element computation a number of times.
    *  @param   len  The number of elements returned
@@ -178,7 +167,7 @@ object Iterator {
 
   /** @deprecated  use `xs.elements` instead
    */
-  @deprecated def fromValues[a](xs: a*) = Iterable.fromOld(xs).elements
+  @deprecated def fromValues[a](xs: a*) = xs.elements
 
   /**
    *  @param xs the array of elements
@@ -196,15 +185,14 @@ object Iterator {
    *  @deprecated  use `xs.slice(start, start + length).elements` instead
    */
   @deprecated def fromArray[a](xs: Array[a], start: Int, length: Int): Iterator[a] =
-    Iterable.fromOld(xs.slice(start, start + length)).elements
+    xs.slice(start, start + length).elements
 
   /**
    *  @param str the given string
    *  @return    the iterator on <code>str</code>
    *  @deprecated replaced by <code>str.elements</code>
    */
-  @deprecated def fromString(str: String): Iterator[Char] =
-    Iterable.fromOld(str).elements
+  @deprecated def fromString(str: String): Iterator[Char] = str.elements
 
   /**
    *  @param n the product arity

@@ -29,7 +29,7 @@ class Queue[A] extends MutableList[A] with Cloneable[Queue[A]] {
    *
    *  @param  elems       the elements to add.
    */
-  def enqueue(elems: A*): Unit = (this ++= collection.Iterable.fromOld(elems))
+  def enqueue(elems: A*): Unit = this ++= elems
 
   /** Returns the first element in the queue, and removes this element
    *  from the queue.

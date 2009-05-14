@@ -14,12 +14,35 @@ import mutable.{Buffer, ArrayBuffer, ListBuffer}
 import util.control.Breaks._
 
 /** A template trait for traversable collections.
+ *  This is a base trait of all kinds of Scala collections. It implements the
+ *  behavior common to all collections, in terms of a method `foreach` with signature:
  *
- *  Collection classes mixing in this trait provide a method
- *  <code>foreach</code> which traverses all the
- *  elements contained in the collection, applying a given procedure to each.
- *  They also provide a method `newBuilder`
+ *   def foreach[U](f: Elem => U): Unit
+ *
+ *  Collection classes mixing in this trait provide a concrete
+ *  <code>foreach</code> method which traverses all the
+ *  elements contained in the collection, applying a given function to each.
+ *  They also need to provide a method `newBuilder`
  *  which creates a builder for collections of the same kind.
+ *
+ *  A traversable class might or might not have two properties: strictness and orderedness.
+ *  Neither is represented as a type.
+ *
+ *  The instances of a strict collection class have all their elements computed before
+ *  they can be used as values. By contrast, instances of a non-strict collection class
+ *  may defer computation of some of their elements until after the instance is available as a value.
+ *  A typical example of a non-strict collection class is a scala.immutable.Stream.
+ *  A more general class of examples are TraversableViews.
+ *
+ *  If a collection is an instance of an ordered collection class, traversing its elements
+ *  with `foreach` will always visit elements in the same order, even for different
+ *  runs of the program. If the class is not ordered, `foreach` can visit elements
+ *  in different orders for different runs (but it will keep the same order in the same run).
+ *  A typical example of a collection class which is not ordered is a `HashMap` of objects.
+ *  The traversal order for hash maps will depend on the hash codes of its elements, and
+ *  these hash codes might differ from one run to the next. By contrast, a `LinkedHashMap`
+ *  is odered because it's `foreach` method visits elements in the order they were inserted
+ *  into the `HashMap`.
  *
  *  @author Martin Odersky
  *  @version 2.8
@@ -27,13 +50,30 @@ import util.control.Breaks._
 trait TraversableTemplate[+A, +This <: TraversableTemplate[A, This] with Traversable[A]] {
 self =>
 
+  /** The proper way to do this would be to make `self` of type `This`. But unfortunately this
+   *  makes `this` to be of type `Traversable[A]`. Since `Traversable` is a subtype of
+   *  `TraversableTemplate` this means that all methods of `this` are taken from `Traversable`.
+   */
   protected def thisCollection: This = this.asInstanceOf[This]
 
-  /** Create a new builder for this traversable type.
+  protected def thisTemplate: TraversableTemplate[A, This] = this
+
+  /** Create a new builder for this collection type.
    */
   protected[this] def newBuilder: Builder[A, This]
 
-  /** Is this collection empty?
+  /** Apply a function <code>f</code> to all elements of this
+   *  traversable object.
+   *
+   *  @param  f   A function that is applied for its side-effect to every element.
+   *              The result (of arbitrary type U) of function `f` is discarded.
+   *
+   *  @note This method underlies the implementation of most other bulk operations.
+   *        It's important to implement this method in an efficient way.
+   */
+  def foreach[U](f: A => U): Unit
+
+  /** Does this collection contain no elements?
    */
   def isEmpty: Boolean = {
     var result = true
@@ -46,7 +86,12 @@ self =>
     result
   }
 
-  /** The number of elements in this collection */
+  /** Does this collection contain some elements?
+   */
+  def nonEmpty: Boolean = !isEmpty
+
+  /** The number of elements in this collection
+   */
   def size: Int = {
     var result = 0
     breakable {
@@ -55,14 +100,17 @@ self =>
     result
   }
 
-  /** returns true iff this collection has a finite size.
+  /** Returns true if this collection is known to have finite size.
+   *  This is the case if the collection type is strict, or if the
+   *  collection type is non-strict (e.g. it's a Stream), but all
+   *  collection elements have been computed.
    *  Many methods in this trait will not work on collections of
    *  infinite sizes.
    */
   def hasDefiniteSize = true
 
   /** Creates a new traversable of type `That` which contains all elements of this traversable
-   *  followed by all elements of another traversable
+   *  followed by all elements of another traversable.
    *
    *  @param that   The traversable to append
    */
@@ -73,8 +121,8 @@ self =>
     b.result
   }
 
-  /** Create a new traversable of type `That` which contains all elements of this traversable
-   *  followed by all elements of an iterator
+  /** Creates a new traversable of type `That` which contains all elements of this traversable
+   *  followed by all elements of an iterator.
    *
    *  @param that  The iterator to append
    */
@@ -85,18 +133,11 @@ self =>
     b.result
   }
 
-  /** Same as ++
-   */
-  def concat[B >: A, That](that: Traversable[B])(implicit bf: BuilderFactory[B, That, This]): That = this.++(that)(bf)
-  def concat[B >: A, That](that: Iterator[B])(implicit bf: BuilderFactory[B, That, This]): That = this.++(that)(bf)
-
   /** Returns the traversable that results from applying the given function
-   *  <code>f</code> to each element of this traversable and collecing the results
+   *  <code>f</code> to each element of this traversable and collecting the results
    *  in an traversable of type `That`.
    *
    *  @param f function to apply to each element.
-   *  @return  <code>f(a<sub>0</sub>), ..., f(a<sub>n</sub>)</code> if this
-   *           traversable is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
    */
   def map[B, That](f: A => B)(implicit bf: BuilderFactory[B, That, This]): That = {
     val b = bf(thisCollection)
@@ -105,11 +146,9 @@ self =>
   }
 
   /** Applies the given function <code>f</code> to each element of
-   *  this traversable, then concatenates the results in an traversable of type CC.
+   *  this traversable, then concatenates the results in an traversable of type That.
    *
    *  @param f the function to apply on each element.
-   *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
-   *           this traversable is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
    */
   def flatMap[B, That](f: A => Traversable[B])(implicit bf: BuilderFactory[B, That, This]): That = {
     val b = bf(thisCollection)
@@ -180,15 +219,6 @@ self =>
     }
     m mapValues (_.result)
   }
-
-  /** Apply a function <code>f</code> to all elements of this
-   *  traversable object.
-   *
-   *  @param  f   a function that is applied to every element.
-   *  @note This method underlies the implementation of most other bulk operations.
-   *  It should be overridden in concrete collection classes with efficient implementations.
-   */
-  def foreach[B](f: A => B): Unit
 
   /** Return true iff the given predicate `p` yields true for all elements
    *  of this traversable.
@@ -384,7 +414,7 @@ self =>
     result()
   }
 
- /** Returns as an option the first element of this traversable
+  /** Returns as an option the first element of this traversable
    *  or <code>None</code> if traversable is empty.
    *  @note  Might return different results for different runs, unless this traversable is ordered
    */

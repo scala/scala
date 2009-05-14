@@ -11,25 +11,25 @@
 
 package scala.collection.generic
 
-/** A generic template for mutable maps from keys of type A to values of type B.
- *  To implement a concrete mutable map, you need to provide implementations of the following methods:
+/** The reason for this class is so that we can
+ *  have both a generic immutable `+` with signature
  *
- *   def get(key: A): Option[B]
- *   def elements: Iterator[(A, B)]
- *   def += (kv: (A, B)): this.type
- *   def -= (key: A): this.type
+ *    def + [B1 >: B](kv: (A, B1)): Map[A, B1]
  *
- * If you wish that methods like, take, drop, filter return the same kind of map, you should also
- * override:
+ *  and a (deprecated) mutable `+` of signature
  *
- *   def empty: This
+ *    def + (kv: (A, B)): this.type = this += kv
  *
- * If you to avoid the unncessary construction of an Option object,
- * you could also override apply, update, and delete.
- * It is also good idea to override methods `foreach` and `size` for efficiency.
+ *  The former is required to fulfill the Map contract.
+ *  The latter is required for backwards compatibility.
+ *  We can't have both methods in the same class, as that would give a double definition.
+ *  They are OK in different classes though, and narrowly escape a `same erasure' problem.
+ *  Once the deprecated + goes away we can do without class MutableMapTemplateBase.
  *
+ *  @author Martin Odersky
+ *  @version 2.8
  */
 trait MutableMapTemplateBase[A, B, +This <: MutableMapTemplateBase[A, B, This] with mutable.Map[A, B]]
-  extends MapTemplate[A, B, This] {
-  def + [B1 >: B] (kv: (A, B1)): Map[A, B1] = plus(kv)
+  extends MapTemplate[A, B, This] with Cloneable[This] {
+  def + [B1 >: B] (kv: (A, B1)): mutable.Map[A, B1] =  clone().asInstanceOf[mutable.Map[A, B1]] += kv
 }

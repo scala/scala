@@ -31,11 +31,7 @@ trait Growable[-A] {
    *  @param elem2 the second element to add.
    *  @param elems the remaining elements to add.
    */
-  def +=(elem1: A, elem2: A, elems: A*): this.type = {
-    this += elem1
-    this += elem2
-    this ++= Iterable.fromOld(elems)
-  }
+  def +=(elem1: A, elem2: A, elems: A*): this.type = this += elem1 += elem2 ++= elems
 
   /** Adds a number of elements provided by an iterator to this collection.
    *

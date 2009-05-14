@@ -392,7 +392,7 @@ object Stream extends SequenceFactory[Stream] {
   override def empty[A]: Stream[A] = Empty
 
   /** A stream consisting of given elements */
-  override def apply[A](xs: A*): Stream[A] = Iterable.fromOld(xs).toStream
+  override def apply[A](xs: A*): Stream[A] = xs.toStream
 
   /** A wrapper class that adds `#::` for cons and `#:::` for concat as operations
    *  to streams.

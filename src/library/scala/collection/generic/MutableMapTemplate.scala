@@ -70,29 +70,11 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
 
   /** Create a new map consisting of all elements of the current map
    *  plus the given mapping from `key` to `value`.
-   *  @param key    The key to add
+   *  @param key    The key to ad
    *  @param value  The new value
    *  @return       A fresh immutable map
    */
-  override def updated[B1 >: B](key: A, value: B1): collection.Map[A, B1] =
-    plus((key, value))
-
-  /** Perform a += on a clone of this collection */
-  override def plus[B1 >: B](kv: (A, B1)): mutable.Map[A, B1] = clone().asInstanceOf[mutable.Map[A, B1]] += kv
-  /** Perform a += on a clone of this collection */
-  override def plus[B1 >: B](kv1: (A, B1), kv2: (A, B1), kvs: (A, B1)*): mutable.Map[A, B1] = clone().asInstanceOf[mutable.Map[A, B1]] += (kv1, kv2, kvs: _*)
-  /** Perform a -= on a clone of this collection */
-  override def minus(key: A): This = clone() -= key
-  /** Perform a -= on a clone of this collection */
-  override def minus(key1: A, key2: A, keys: A*): This = clone() -= (key1, key2, keys: _*)
-  /** Perform a ++= on a clone of this collection */
-  override def plusAll[B1 >: B](kvs: Traversable[(A, B1)]): mutable.Map[A, B1] = clone().asInstanceOf[mutable.Map[A, B1]] ++= kvs
-  /** Perform a ++= on a clone of this collection */
-  override def plusAll[B1 >: B](kvs: Iterator[(A, B1)]): mutable.Map[A, B1] = clone().asInstanceOf[mutable.Map[A, B1]] ++= kvs
-  /** Perform a --= on a clone of this collection */
-  override def minusAll(keys: Traversable[A]): This = clone() --= keys
-  /** Perform a --= on a clone of this collection */
-  override def minusAll(keys: Iterator[A]): This = clone() --= keys
+  override def updated[B1 >: B](key: A, value: B1): mutable.Map[A, B1] = this + ((key, value))
 
   /** Add a new key/value mapping and return the map itself.
    *
@@ -100,7 +82,7 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
    *  @deprecated  This operation will create a new map in the future. To add
    *               an element as a side effect to an existing map and return
    *               that map itself, use +=. If you do want to create a fresh map,
-   *               you can use `plus` to avoid a @deprecated warning.
+   *               you can use `clone() +=` to avoid a @deprecated warning.
    */
   @deprecated def + (kv: (A, B)): this.type = { update(kv._1, kv._2); this }
 
@@ -113,7 +95,7 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
    *  @deprecated  This operation will create a new map in the future. To add
    *               an element as a side effect to an existing map and return
    *               that map itself, use +=. If you do want to create a fresh map,
-   *               you can use `plus` to avoid a @deprecated warning.
+   *               you can use `clone() +=` to avoid a @deprecated warning.
    */
   @deprecated def +(elem1: (A, B), elem2: (A, B), elems: (A, B)*): this.type =
     this += elem1 += elem2 ++= elems
@@ -125,7 +107,7 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
    *  @deprecated  This operation will create a new map in the future. To add
    *               elements as a side effect to an existing map and return
    *               that map itself, use ++=. If you do want to create a fresh map,
-   *               you can use `plusAll` to avoid a @deprecated warning.
+   *               you can use `clone() ++=` to avoid a @deprecated warning.
    *  @param iter     the traversable object.
    */
   @deprecated def ++(iter: Traversable[(A, B)]): this.type = { for (elem <- iter) +=(elem); this }
@@ -136,7 +118,7 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
    *  @deprecated  This operation will create a new map in the future. To add
    *               elements as a side effect to an existing map and return
    *               that map itself, use ++=. If you do want to create a fresh map,
-   *               you can use `plus` to avoid a @deprecated warning.
+   *               you can use `clone() +=` to avoid a @deprecated warning.
    *
    *  @param iter   the iterator
    */
@@ -163,7 +145,7 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
    *  @deprecated  This operation will create a new map in the future. To add
    *               elements as a side effect to an existing map and return
    *               that map itself, use -=. If you do want to create a fresh map,
-   *               you can use `minus` to avoid a @deprecated warning.
+   *               you can use `clone() -=` to avoid a @deprecated warning.
    */
   @deprecated override def -(key: A): This = { -=(key); thisCollection }
 
@@ -225,8 +207,8 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
    *  @param elem1 the first element to remove.
    *  @param elem2 the second element to remove.
    *  @param elems the remaining elements to remove.
-   *  @deprecated  use -= instead if you inted to remove by side effect from an existing collection.
-   *               Use `minus` if you intend to create a new collection.
+   *  @deprecated  use -= instead if you intend to remove by side effect from an existing collection.
+   *               Use `clone() -=` if you intend to create a new collection.
    */
   @deprecated override def -(elem1: A, elem2: A, elems: A*): This = {
     this -= elem1 -= elem2 --= elems
@@ -235,8 +217,8 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
 
   /** Removes a number of elements provided by a traversible object and returns
    *  the collection itself.
-   *  @deprecated  use --= instead if you inted to remove by side effect from an existing collection.
-   *               Use `minusAll` if you intend to create a new collection.
+   *  @deprecated  use --= instead if you intend to remove by side effect from an existing collection.
+   *               Use `clone() --=` if you intend to create a new collection.
    *
    *  @param iter     the iterable object.
    */
@@ -250,8 +232,8 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
    *  the collection itself.
    *
    *  @param iter   the iterator
-   *  @deprecated  use --= instead if you inted to remove by side effect from an existing collection.
-   *               Use `minusAll` if you intend to create a new collection.
+   *  @deprecated  use --= instead if you intend to remove by side effect from an existing collection.
+   *               Use `clone() --=` if you intend to create a new collection.
    */
   @deprecated override def --(iter: Iterator[A]): This = {
     for (elem <- iter) -=(elem)

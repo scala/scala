@@ -33,7 +33,7 @@ trait Shrinkable[-A] {
   def -=(elem1: A, elem2: A, elems: A*): this.type = {
     this -= elem1
     this -= elem2
-    this --= Iterable.fromOld(elems)
+    this --= elems
   }
 
   /** Removes a number of elements provided by an iterator from this collection.
