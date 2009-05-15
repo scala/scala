@@ -17,9 +17,9 @@ object Test {
     println(extractResult(head(new lexical.Scanner("a a a b b b c c c"))))
     println(extractResult(head(new lexical.Scanner("a a a a b b b b c c c c"))))
 
-    println(extractResult(head(new lexical.Scanner("a a a b b b b c c c c"))))
-    println(extractResult(head(new lexical.Scanner("a a a a b b b c c c c"))))
-    println(extractResult(head(new lexical.Scanner("a a a a b b b b c c c"))))
+    println(extractResult(AnBnCn(new PackratReader(new lexical.Scanner("a a a b b b b c c c c")))))
+    println(extractResult(AnBnCn(new PackratReader(new lexical.Scanner("a a a a b b b c c c c")))))
+    println(extractResult(AnBnCn(new PackratReader(new lexical.Scanner("a a a a b b b b c c c")))))
   }
 }
 
