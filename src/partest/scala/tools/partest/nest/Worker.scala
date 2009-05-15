@@ -375,24 +375,46 @@ class Worker(val fileManager: FileManager) extends Actor {
 
     def compileFilesIn(dir: File, kind: String, logFile: File, outDir: File) {
       val testFiles = dir.listFiles.toList
-      val javaFiles = testFiles.filter(_.getName.endsWith(".java"))
-      val scalaFiles = testFiles.filter(_.getName.endsWith(".scala"))
-      if (!(scalaFiles.isEmpty && javaFiles.isEmpty) &&
-          !compileMgr.shouldCompile(outDir, javaFiles ::: scalaFiles, kind, logFile)) {
-        NestUI.verbose("compilation of "+scalaFiles+" failed\n")
-        succeeded = false
-      } else
-        if (!javaFiles.isEmpty) {
+
+      val groups = for (i <- 0 to 9) yield testFiles filter { f =>
+        f.getName.endsWith("_"+i+".java") ||
+        f.getName.endsWith("_"+i+".scala") }
+
+      val noSuffix = testFiles filter { f =>
+        !groups.exists(_ contains f) && (
+        f.getName.endsWith(".java") ||
+        f.getName.endsWith(".scala")) }
+
+      def compileGroup(g: List[File]) {
+        val scalaFiles = g.filter(_.getName.endsWith(".scala"))
+        val javaFiles = g.filter(_.getName.endsWith(".java"))
+
+        if (!scalaFiles.isEmpty &&
+            !compileMgr.shouldCompile(outDir,
+                                      javaFiles ::: scalaFiles,
+                                      kind, logFile)) {
+          NestUI.verbose("scalac: compilation of "+g+" failed\n")
+          succeeded = false
+        }
+
+        if (succeeded && !javaFiles.isEmpty) {
           succeeded = javac(outDir, javaFiles, logFile)
-          if (succeeded) {
-            scalaFiles foreach { scalaFile =>
-              if (!compileMgr.shouldCompile(outDir, List(scalaFile), kind, logFile)) {
-                NestUI.verbose("compilation of "+scalaFile+" failed\n")
-                succeeded = false
-              }
-            }
+          if (succeeded && !scalaFiles.isEmpty
+              && !compileMgr.shouldCompile(outDir,
+                                           scalaFiles,
+                                           kind, logFile)) {
+            NestUI.verbose("scalac: compilation of "+scalaFiles+" failed\n")
+            succeeded = false
           }
         }
+      }
+
+      if (!noSuffix.isEmpty)
+        compileGroup(noSuffix)
+      for (grp <- groups) {
+        if (succeeded)
+          compileGroup(grp)
+      }
     }
 
     def failCompileFilesIn(dir: File, kind: String, logFile: File, outDir: File) {
