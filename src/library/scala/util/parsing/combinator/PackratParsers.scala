@@ -121,7 +121,7 @@ trait PackratParsers extends Parsers {
     new PackratParser[T] {
       def apply(in: Input) = in match {
         case in: PackratReader[_] => q(in)
-        case in => p(new PackratReader(in))
+        case in => q(new PackratReader(in))
       }
     }
   }
