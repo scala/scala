@@ -4,9 +4,6 @@ How partest choses the compiler / library:
     ''lib'' directory of given path
   * ''--pack'' -> will set ''scalatest.build=build/pack'', and run all tests.
     add ''--[kind]'' to run a selected set of tests.
-  * ''--[four]'' -> will set ''scalatest.build=build-four-pack'' and
-    ''scalatest.scalac_opts=-target:jvm-1.4'', and run all tests.
-    add ''--kind'' to run a selected set of tests.
   * auto detection:
     - scalatest.build property -> ''bin'' / ''lib'' directories
     - distribution (''dists/latest'')
@@ -26,10 +23,9 @@ Other arguments:
   * --neg          next files test a compilation failure
   * --run          next files test the interpreter and all backends
   * --jvm          next files test the JVM backend
-  * --jvm5         next files test the JVM backend
   * --res          next files test the resident compiler
   * --shootout     next files are shootout tests
   * --script       next files test the script runner
-  * ''-Dscalatest.scalac_opts=-target:jvm-1.4'' -> add compiler options
+  * ''-Dscalatest.scalac_opts=...'' -> add compiler options
   * ''--verbose'' -> print verbose messages
   * ''-Dpartest.debug=true'' -> print debug messages

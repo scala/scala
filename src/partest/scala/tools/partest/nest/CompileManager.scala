@@ -103,7 +103,6 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
       case "neg"      => NegTestFile(files(0), fileManager, out.isEmpty)
       case "run"      => RunTestFile(files(0), fileManager, out.isEmpty)
       case "jvm"      => JvmTestFile(files(0), fileManager, out.isEmpty)
-      case "jvm5"     => Jvm5TestFile(files(0), fileManager, out.isEmpty)
       case "shootout" => ShootoutTestFile(files(0), fileManager, out.isEmpty)
       case "scalap"   => ScalapTestFile(files(0), fileManager, out.isEmpty)
       case "scalacheck" =>

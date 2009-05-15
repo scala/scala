@@ -22,7 +22,6 @@
       <excludeFolder url="file://$MODULE_DIR$/android-library" />
       <excludeFolder url="file://$MODULE_DIR$/cldc-library" />
       <excludeFolder url="file://$MODULE_DIR$/dotnet-library" />
-      <excludeFolder url="file://$MODULE_DIR$/jvm14-library" />
       <excludeFolder url="file://$MODULE_DIR$/mono" />
     </content>
     <content url="file://$MODULE_DIR$/../test" />

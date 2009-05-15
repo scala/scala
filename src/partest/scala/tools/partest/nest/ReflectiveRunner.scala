@@ -38,8 +38,6 @@ class ReflectiveRunner extends RunnerUtils {
         new ConsoleFileManager(classPath.get, true)
       else if (argList contains "--pack")
         new ConsoleFileManager("build/pack")
-      else if (argList contains "--four")
-        new ConsoleFileManager("build/four-pack", false, "-target:jvm-1.4")
       else // auto detection
         new ConsoleFileManager
 

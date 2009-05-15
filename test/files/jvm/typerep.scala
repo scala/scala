@@ -49,7 +49,7 @@ object testPrimitives {
   println(getType(0.0d))
   println(getType("abc"))
   println(getType(())) // Unit
-//  println(getType(classOf[Int])) // Class
+  println(getType(classOf[Int])) // Class
   println
 }
 
@@ -58,6 +58,8 @@ object testOptions {
   val x: Option[Int] = Some(2)
   println(getType(x))
   println(getType(Some(Some(3))))
+  println(getType(Some(List(3))))
+  //println(getType(Some(None: List[Int])))  // error: no implicit argument matching parameter type TypeRep[object None] was foun
   println(getType(None: Option[Int]))
   val y: Option[Int] = None
   println(getType(y))
@@ -156,7 +158,7 @@ object TypeRep {
 
   def getType[A](x: Option[A])(implicit rep: TypeRep[A]): TypeRep[Option[A]] = (x match {
     case Some(v) => SomeRep(rep)
-    case None    => NoneRep // or NoneRep(rep)
+    case None    => NoneRep
   }).asInstanceOf[TypeRep[Option[A]]]
 
   def getType[A](x: List[A])(implicit rep: TypeRep[A]): TypeRep[List[A]] = (x match {
@@ -174,11 +176,13 @@ object TypeRep {
   implicit def doubleRep: TypeRep[Double] = DoubleRep
 
   implicit def unitRep: TypeRep[Unit] = UnitRep
-//  implicit def classRep: TypeRep[Class] = ClassRep
   implicit def stringRep: TypeRep[String] = StringRep
-  implicit def noneRep: TypeRep[Option[Nothing]] = NoneRep[Nothing](NothingRep.asInstanceOf[TypeRep[Nothing]])
+  //implicit def noneRep: TypeRep[None.type] = NoneRep//[Nothing](NothingRep.asInstanceOf[TypeRep[Nothing]])
   implicit def anyRep: TypeRep[Any] = AnyRep
   implicit def nothingRep: TypeRep[Nothing] = NothingRep
+
+  implicit def classRep[A](implicit elemrep: TypeRep[A]): TypeRep[Class[A]] =
+    ClassRep(elemrep)
 
   implicit def someRep[A](implicit elemrep: TypeRep[A]): TypeRep[Some[A]] =
     SomeRep(elemrep)
@@ -189,9 +193,10 @@ object TypeRep {
   implicit def arrayRep[A](implicit elemrep: TypeRep[A]): TypeRep[Array[A]] =
     ArrayRep(elemrep)
 
-  implicit def tuple2Rep[A1, A2](implicit _1: TypeRep[A1], _2: TypeRep[A2]): TypeRep[Tuple2[A1, A2]] =
+  implicit def tuple2Rep[A1, A2](implicit _1: TypeRep[A1], _2: TypeRep[A2]): TypeRep[(A1, A2)] =
     Tuple2Rep(_1, _2)
-  implicit def tuple3Rep[A1, A2, A3](implicit _1: TypeRep[A1], _2: TypeRep[A2], _3: TypeRep[A3]): TypeRep[Tuple3[A1, A2, A3]] =
+
+  implicit def tuple3Rep[A1, A2, A3](implicit _1: TypeRep[A1], _2: TypeRep[A2], _3: TypeRep[A3]): TypeRep[(A1, A2, A3)] =
     Tuple3Rep(_1, _2, _3)
   implicit def tuple4Rep[A1, A2, A3, A4](implicit _1: TypeRep[A1], _2: TypeRep[A2], _3: TypeRep[A3], _4: TypeRep[A4]): TypeRep[Tuple4[A1, A2, A3, A4]] =
     Tuple4Rep(_1, _2, _3, _4)
@@ -263,7 +268,7 @@ object TypeRep {
   case object StringRep extends TypeRep[String] {
     override def toString = "String"
   }
-  case object NoneRep extends TypeRep[Option[Nothing]] {
+  case object NoneRep extends TypeRep[None.type] {
     override def toString = "None"
   }
   case object NilRep extends TypeRep[Nil.type] {
@@ -276,6 +281,10 @@ object TypeRep {
     override def toString = "Nothing"
   }
 
+  @serializable
+  case class ClassRep[A](elemRep: TypeRep[A]) extends TypeRep[Class[A]] {
+    override def toString = "Class[" + elemRep + "]"
+  }
   @serializable
   case class SomeRep[A](elemRep: TypeRep[A]) extends TypeRep[Some[A]] {
     override def toString = "Some[" + elemRep + "]"
@@ -296,7 +305,7 @@ object TypeRep {
   }
 
   @serializable
-  case class Tuple2Rep[A1, A2](_1: TypeRep[A1], _2: TypeRep[A2]) extends TypeRep[Tuple2[A1, A2]] {
+  case class Tuple2Rep[A1, A2](_1: TypeRep[A1], _2: TypeRep[A2]) extends TypeRep[(A1, A2)] {
     override def toString = "Tuple2[" + _1 + ", " + _2 + "]"
   }
   @serializable

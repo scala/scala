@@ -53,7 +53,7 @@ Scala Environment Options
 
 
 In the following example, simply replace <jdk> by
-"java-1.4", "java-1.5", "java-1.6", "java-1.7" or
+"java-1.5", "java-1.6", "java-1.7" or
 "java-ibm-1.5" to experiment with different Java VMs:
 
 > env JAVACMD=/home/linuxsoft/apps/<jdk>/bin/java \

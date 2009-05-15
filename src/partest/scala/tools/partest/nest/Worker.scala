@@ -513,9 +513,6 @@ class Worker(val fileManager: FileManager) extends Actor {
       case "jvm" =>
         runJvmTest(file, kind)
 
-      case "jvm5" =>
-        runJvmTest(file, kind)
-
       case "res" => {
           // when option "--failed" is provided
           // execute test only if log file is present

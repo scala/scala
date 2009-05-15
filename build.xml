@@ -1490,7 +1490,6 @@ BOOTRAPING TEST AND TEST SUITE
         <include name="run/**/*.scala"/>
         <include name="jvm/**/*.scala"/>
       </runtests>
-      <jvm5tests dir="${test.dir}/files/jvm5" includes="*.scala"/>
     </partest>
   </target>
 
@@ -1502,13 +1501,11 @@ BOOTRAPING TEST AND TEST SUITE
         <fileset dir="${test.dir}/files/lib" includes="*.jar"/>
       </classpath>
       <postests  dir="${test.dir}/files/pos" includes="*.scala"/>
-      <pos5tests dir="${test.dir}/files/pos5" includes="*.scala"/>
       <negtests  dir="${test.dir}/files/neg" includes="*.scala"/>
       <runtests  dir="${test.dir}/files">
         <include name="run/**/*.scala"/>
       </runtests>
       <jvmtests dir="${test.dir}/files/jvm" includes="*.scala"/>
-      <jvm5tests dir="${test.dir}/files/jvm5" includes="*.scala"/>
       <residenttests dir="${test.dir}/files/res" includes="*.res"/>
       <!-- <scripttests dir="${test.dir}/files/script" includes="*.scala"/> -->
       <scalaptests dir="${test.dir}/files/scalap" includes="**/*.scala"/>
@@ -1526,7 +1523,6 @@ BOOTRAPING TEST AND TEST SUITE
         <fileset dir="${test.dir}/files/lib" includes="*.jar"/>
       </classpath>
       <postests  dir="${test.dir}/files/pos" includes="*.scala"/>
-      <pos5tests dir="${test.dir}/files/pos5" includes="*.scala"/>
       <negtests  dir="${test.dir}/files/neg" includes="*.scala"/>
       <runtests  dir="${test.dir}/files">
         <include name="run/**/*.scala"/>
@@ -1695,26 +1691,6 @@ STABLE REFERENCE (STARR)
   <target name="starr.done" depends="starr.libs"/>
 
 <!-- ===========================================================================
-FORWARDED TARGETS FOR JVM 1.4 BUILD
-============================================================================ -->
-  
-  <target name="four" depends="pack.done">
-    <ant antfile="${src.dir}/build/four.xml" target="four-pack.done" inheritall="yes" inheritrefs="yes"/>
-  </target>
-
-  <target name="fourtest" depends="pack.done">
-    <ant antfile="${src.dir}/build/four.xml" target="four-test.done" inheritall="yes" inheritrefs="yes"/>
-  </target>
-
-  <target name="fourdist" depends="pack.done">
-    <ant antfile="${src.dir}/build/four.xml" target="four-all.done" inheritall="yes" inheritrefs="yes"/>
-  </target>
-
-  <target name="fourclean">
-    <ant antfile="${src.dir}/build/four.xml" target="four-all.clean" inheritall="yes" inheritrefs="yes"/>
-  </target>
-
-<!-- ===========================================================================
 FORWARDED TARGETS FOR MSIL BUILD
 ============================================================================ -->
 
@@ -1740,19 +1716,14 @@ FORWARDED TARGETS FOR PACKAGING
     <ant antfile="${src.dir}/build/pack.xml" target="pack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
   
-  <target name="fourdistpack" depends="pack.done">
-    <ant antfile="${src.dir}/build/four.xml" target="four-dist.done" inheritall="yes" inheritrefs="yes"/>
-    <ant antfile="${src.dir}/build/pack.xml" target="fourpack-all.done" inheritall="yes" inheritrefs="yes"/>
-  </target>
-
   <target name="msildistpack" depends="pack.done">
     <ant antfile="${src.dir}/build/msil.xml" target="msil-dist.done" inheritall="yes" inheritrefs="yes"/>
     <ant antfile="${src.dir}/build/pack.xml" target="msilpack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
 
   <!-- Used by the scala-installer script -->
-  <target name="alldistpack" depends="distpack, fourdistpack, msildistpack"/>
-  <target name="allallclean" depends="all.clean, fourclean, msilclean"/>
+  <target name="alldistpack" depends="distpack, msildistpack"/>
+  <target name="allallclean" depends="all.clean, msilclean"/>
 
 <!-- ===========================================================================
 FORWARDED TARGETS FOR NIGHTLY BUILDS
@@ -1760,15 +1731,6 @@ FORWARDED TARGETS FOR NIGHTLY BUILDS
 
   <target name="nightly" depends="all.done">
     <ant antfile="${src.dir}/build/pack.xml" target="pack-all.done" inheritall="yes" inheritrefs="yes"/>
-  </target>
-
-  <target name="fournightly" depends="pack.done">
-    <ant antfile="${src.dir}/build/four.xml" target="four-all.done" inheritall="yes" inheritrefs="yes"/>
-    <ant antfile="${src.dir}/build/pack.xml" target="fourpack-all.done" inheritall="yes" inheritrefs="yes"/>
-  </target>
-
-  <target name="fourfournightly">
-    <ant antfile="${src.dir}/build/four.xml" target="fourfour-test.done"/>
   </target>
 
   <target name="msilnightly" depends="pack.done">

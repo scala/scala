@@ -89,15 +89,6 @@ case class JvmTestFile(override val file: File, override val fileManager: FileMa
   }
 }
 
-case class Jvm5TestFile(override val file: File, override val fileManager: FileManager, createOutDir: Boolean) extends TestFile("jvm5", file, fileManager, createOutDir) {
-  override def defineSettings(settings: Settings) {
-    baseSettings(settings)
-    settings.classpath.value = settings.classpath.value+
-      File.pathSeparator+fileManager.CLASSPATH
-    settings.target.value = "jvm-1.5"
-  }
-}
-
 case class ShootoutTestFile(override val file: File, override val fileManager: FileManager, createOutDir: Boolean) extends TestFile("shootout", file, fileManager, createOutDir) {
   override def defineSettings(settings: Settings) {
     baseSettings(settings)

@@ -29,7 +29,6 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
               "Testing compiler (on files whose compilation should fail)"),
       TestSet("run",  fileFilter, "run", "Testing JVM backend"),
       TestSet("jvm",  fileFilter, "jvm", "Testing JVM backend"),
-      TestSet("jvm5", fileFilter, "jvm5", "Testing JVM backend"),
       TestSet("res",  Some((".res", false)), "res",
               "Testing resident compiler"),
       TestSet("shootout", fileFilter, "shootout", "Testing shootout tests"),
@@ -80,9 +79,6 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
         else if (args contains "--pack") {
           args = args.remove(_ == "--pack") // will create a result file '--pack' otherwise
           new ConsoleFileManager("build/pack")
-        } else if (args contains "--four") {
-          args = args.remove(_ == "--four")
-          new ConsoleFileManager("build/four-pack", false, "-target:jvm-1.4")
         } else // auto detection, see ConsoleFileManager.findLatest
           new ConsoleFileManager
 
@@ -206,12 +202,8 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
           NestUI.failure("invalid test file: "+firstName+"\n")
           Predef.exit(1)
         } else {
-          val k = firstName.substring(filesPos+len+1, filesPos+len+1+3)
-          val short = if (k == "jvm") {
-            if (firstName.substring(filesPos+len+1, filesPos+len+1+4) == "jvm5") "jvm5"
-            else k
-          } else k
-          val shortKinds = List("pos", "neg", "run", "jvm", "jvm5", "res")
+          val short = firstName.substring(filesPos+len+1, filesPos+len+1+3)
+          val shortKinds = List("pos", "neg", "run", "jvm", "res")
           if (shortKinds contains short) short
           else short match {
             case "sho" => "shootout"
