@@ -28,6 +28,19 @@ object Utility extends AnyRef with parsing.TokenTests
     f(sb)
     sb.toString
   }
+  private[xml] def isAtomAndNotText(x: Node) = x.isInstanceOf[Atom[_]] && !x.isInstanceOf[Text]
+
+  // XXX this is very ham fisted at the moment
+  class XMLOptions {
+    val stripComments: Boolean = false
+    val decodeEntities: Boolean = true
+    val preserveWhitespace: Boolean = false
+    val minimizeTags: Boolean = false
+  }
+  object XMLOptions {
+    def withStripComments(x: Boolean) = new XMLOptions { override val stripComments = x }
+    def withMinimizeTags(x: Boolean) = new XMLOptions { override val minimizeTags = x }
+  }
 
   /** trims an element - call this method, when you know that it is an
    *  element (and not a text node) so you know that it will not be trimmed
@@ -174,8 +187,9 @@ object Utility extends AnyRef with parsing.TokenTests
    *
    * @todo define a way to escape literal characters to &amp;xx; references
    */
-  def toXML(n: Node, stripComment: Boolean): String =
-    sbToString(toXML(n, TopScope, _, stripComment))
+  def toXML(n: Node, _stripComments: Boolean): String = {
+    sbToString(toXML(n, TopScope, _)(XMLOptions.withStripComments(_stripComments)))
+  }
 
   /**
    * Appends a tree to the given stringbuffer within given namespace scope.
@@ -185,31 +199,30 @@ object Utility extends AnyRef with parsing.TokenTests
    * @param sb           stringbuffer to append to
    * @param stripComment if true, strip comments
    */
-  def toXML(x: Node, pscope: NamespaceBinding, sb: StringBuilder, stripComment: Boolean) {
+  def toXML(x: Node, pscope: NamespaceBinding, sb: StringBuilder, _stripComments: Boolean) {
+    toXML(x, pscope, sb)(XMLOptions.withStripComments(_stripComments))
+  }
+
+  def toXML(x: Node, pscope: NamespaceBinding, sb: StringBuilder)(implicit config: XMLOptions) {
+    import config._
+
     x match {
-
-      case c: Comment if !stripComment =>
-        c.buildString(sb)
-
-      case x: SpecialNode =>
-        x.buildString(sb)
-
-      case g: Group =>
-        for (c <- g.nodes) toXML(c, x.scope, sb, stripComment)
-
+      case c: Comment if !stripComments => c buildString sb
+      case x: SpecialNode               => x buildString sb
+      case g: Group                     => for (c <- g.nodes) toXML(c, x.scope, sb)
       case _  =>
         // print tag with namespace declarations
         sb.append('<')
         x.nameToString(sb)
         if (x.attributes ne null) x.attributes.buildString(sb)
         x.scope.buildString(sb, pscope)
-        if (x.child.isEmpty)
+        if (x.child.isEmpty && minimizeTags)
           // no children, so use short form: <xyz .../>
-          sb.append("/>")
+          sb.append(" />")
         else {
           // children, so use long form: <xyz ...>...</xyz>
           sb.append('>')
-          sequenceToXML(x.child, x.scope, sb, stripComment)
+          sequenceToXML(x.child, x.scope, sb, stripComments)
           sb.append("</")
           x.nameToString(sb)
           sb.append('>')
@@ -217,31 +230,33 @@ object Utility extends AnyRef with parsing.TokenTests
     }
   }
 
+
+
   /**
    * @param children     ...
    * @param pscope       ...
    * @param sb           ...
    * @param stripComment ...
    */
-  def sequenceToXML(children: Seq[Node], pscope: NamespaceBinding,
-                    sb: StringBuilder, stripComment: Boolean) {
-    if (children.isEmpty) {
-      return
-    } else if (children forall {
-      case y: Atom[_] => !y.isInstanceOf[Text]
-      case _ => false
-    }) { // add space
+  def sequenceToXML(children: Seq[Node], pscope: NamespaceBinding, sb: StringBuilder, _stripComments: Boolean) {
+    sequenceToXML(children, pscope, sb)(XMLOptions.withStripComments(_stripComments))
+  }
+
+  def sequenceToXML(children: Seq[Node], pscope: NamespaceBinding, sb: StringBuilder)(implicit config: XMLOptions) {
+    import config._
+
+    if (children.isEmpty) return
+    else if (children forall isAtomAndNotText) { // add space
       val it = children.elements
       val f = it.next
-      toXML(f, pscope, sb, stripComment)
+      toXML(f, pscope, sb)
       while (it.hasNext) {
         val x = it.next
         sb.append(' ')
-        toXML(x, pscope, sb, stripComment)
+        toXML(x, pscope, sb)
       }
-    } else {
-      for (c <- children) toXML(c, pscope, sb, stripComment)
     }
+    else children foreach { toXML(_, pscope, sb) }
   }
 
   /**
