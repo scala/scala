@@ -117,7 +117,6 @@ object Math {
   def exp(x: Double): Double = java.lang.Math.exp(x)
   def log(x: Double): Double = java.lang.Math.log(x)
   def sqrt(x: Double): Double = java.lang.Math.sqrt(x)
-  def sqrt(x: Int): Int = java.lang.Math.sqrt(x.toDouble).toInt
   def IEEEremainder(x: Double, y: Double): Double = java.lang.Math.IEEEremainder(x, y)
 
   def ceil(x: Double): Double = java.lang.Math.ceil(x)
