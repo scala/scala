@@ -11,67 +11,40 @@
 
 package scala.runtime
 
-import Predef._
+//import scala.util.matching.Regex
+import collection.generic._
+//import collection.mutable.StringBuilder
+import collection.immutable.Vector
 
-final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char] with Ordered[String] {
-  import RichString._
-  override def apply(n: Int) = self charAt n
-  override def length = self.length
-  override def toString = self
+object RichString {
+
+  def newBuilder: Builder[Char, RichString] = new StringBuilder() mapResult (new RichString(_))
+  implicit def builderFactory: BuilderFactory[Char, RichString, RichString] = new BuilderFactory[Char, RichString, RichString] { def apply(from: RichString) = newBuilder }
+  implicit def builderFactory2: BuilderFactory[Char, RichString, String] = new BuilderFactory[Char, RichString, String] { def apply(from: String) = newBuilder }
+
+  // just statics for rich string.
+  private final val LF: Char = 0x0A
+  private final val FF: Char = 0x0C
+  private final val CR: Char = 0x0D
+  private final val SU: Char = 0x1A
+}
+
+import RichString._
+
+class RichString(val self: String) extends Proxy with Vector[Char] with VectorTemplate[Char, RichString] with PartialFunction[Int, Char] with Ordered[String] {
+
+  /** Creates a string builder buffer as builder for this class */
+  override protected[this] def newBuilder = RichString.newBuilder
+
+  /** Return element at index `n`
+   *  @throws   IndexOutofBoundsException if the index is not valid
+   */
+  def apply(n: Int): Char = self charAt n
+
+  def length: Int = self.length
+
   override def mkString = self
-
-  override def slice(from: Int, until: Int): RichString = {
-    val len = self.length
-    new RichString(
-      if (from >= until || from >= len)
-        ""
-      else {
-        val from0 = if (from < 0) 0 else from
-        val until0 = if (until > len) len else until
-        self.substring(from0, until0)
-      }
-    )
-  }
-
-  //override def ++ [B >: A](that: Iterable[B]): Seq[B] = {
-  override def ++[B >: Char](that: Iterable[B]): RandomAccessSeq[B] = that match {
-    case that: RichString => new RichString(self + that.self)
-    case that => super.++(that)
-  }
-
-  override def take(until: Int): RichString = slice(0, until)
-
-  override def drop(from: Int): RichString = slice(from, self.length)
-
-  override def startsWith[B](that: Seq[B]) = that match {
-    case that: RichString => self startsWith that.self
-    case that => super.startsWith(that)
-  }
-
-  override def endsWith[B](that: Seq[B]) = that match {
-    case that: RichString => self endsWith that.self
-    case that => super.endsWith(that)
-  }
-
-  override def indexOf[B](that: Seq[B]) = that match {
-    case that: RichString => self indexOf that.self
-    case that => super.indexOf(that)
-  }
-
-  override def containsSlice[B](that: Seq[B]) = that match {
-    case that: RichString => self contains that.self
-    case that => super.containsSlice(that)
-  }
-
-  override def reverse: RichString = {
-    val buf = new StringBuilder
-    var i = self.length - 1
-    while (i >= 0) {
-      buf append (self charAt i)
-      i -= 1
-    }
-    new RichString(buf.toString)
-  }
+  override def toString = self
 
   /** return n times the current string
    */
@@ -184,9 +157,23 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
    */
   def stripMargin: String = stripMargin('|')
 
-  def split(separator: Char): Array[String] = self.Split(Array(separator))
+//  private def escape(ch: Char): String = "\\Q" + ch + "\\E"
 
-  def split(separators: Array[Char]): Array[String] = self.Split(separators)
+//  @throws(classOf[java.util.regex.PatternSyntaxException])
+//  def split(separator: Char): Array[String] = self.split(escape(separator))
+
+//  @throws(classOf[java.util.regex.PatternSyntaxException])
+//  def split(separators: Array[Char]): Array[String] = {
+//    val re = separators.foldLeft("[")(_+escape(_)) + "]"
+//    self.split(re)
+//  }
+
+  /** You can follow a string with `.r', turning
+   *  it into a Regex. E.g.
+   *
+   *  """A\w*""".r   is the regular expression for identifiers starting with `A'.
+   */
+//  def r: Regex = new Regex(self)
 
   def toBoolean: Boolean = System.Boolean.Parse(self)
   def toByte: Byte       = System.Byte.Parse(self)
@@ -196,8 +183,19 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
   def toFloat: Float     = System.Single.Parse(self)
   def toDouble: Double   = System.Double.Parse(self)
 
+  private def parseBoolean(s: String): Boolean =
+    if (s != null) s.toLowerCase match {
+      case "true" => true
+      case "false" => false
+      case _ => throw new NumberFormatException("For input string: \""+s+"\"")
+    }
+    else
+      throw new NumberFormatException("For input string: \"null\"")
+
   def toArray: Array[Char] = {
-	self.ToCharArray()
+    val result = new Array[Char](length)
+    compat.Platform.arraycopy(self.ToCharArray, 0, result, 0, length)
+    result
   }
 
   /** <p>
@@ -214,24 +212,7 @@ final class RichString(val self: String) extends Proxy with RandomAccessSeq[Char
    *  @param args the arguments used to instantiating the pattern.
    *  @throws java.lang.IllegalArgumentException
    */
-  // def format(args : Any*) : String =
-    // the toList is necessary right now because Array(1,2,3).toArray[Any] throws a CCE
-    // Predef.format(self, args.toList.toArray[Any].asInstanceOf[Array[AnyRef]]: _*)
+//  def format(args : Any*) : String =
+//    java.lang.String.format(self, args.toArray[Any].asInstanceOf[Array[AnyRef]]: _*)
 }
 
-object RichString {
-  // just statics for rich string.
-  private final val LF: Char = 0x0A
-  private final val FF: Char = 0x0C
-  private final val CR: Char = 0x0D
-  private final val SU: Char = 0x1A
-
-  private def parseBoolean(s: String): Boolean =
-    if (s != null) s.toLowerCase match {
-      case "true" => true
-      case "false" => false
-      case _ => throw new System.FormatException("For input string: \""+s+"\"")
-    }
-    else
-      throw new System.FormatException("For input string: \"null\"")
-}

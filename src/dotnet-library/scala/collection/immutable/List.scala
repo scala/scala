@@ -9,11 +9,10 @@
 // $Id: List.scala 16287 2008-10-18 13:41:36Z nielsen $
 
 
-package scalax.collection.immutable
+package scala.collection.immutable
 
 import mutable.ListBuffer
-import generic.{SequenceTemplate, SequenceFactory, EmptyIterableFactory, Builder}
-import annotation.unchecked.uncheckedVariance
+import generic._
 
 /** A class representing an ordered collection of elements of type
  *  <code>a</code>. This class comes with two implementing case
@@ -24,11 +23,13 @@ import annotation.unchecked.uncheckedVariance
  *  @author  Martin Odersky and others
  *  @version 2.8
  */
-sealed abstract class List[+A] extends Stream[A]
-                                  with SequenceTemplate[List, A @uncheckedVariance]
-                                  with Product {
+sealed abstract class List[+A] extends LinearSequence[A]
+                                  with Product
+                                  with TraversableClass[A, List]
+                                  with LinearSequenceTemplate[A, List[A]] {
+  override def companion: Companion[List] = List
 
-  import collection.{Iterable, OrderedIterable, Sequence, Vector}
+  import collection.{Iterable, Traversable, Sequence, Vector}
 
   /** Returns true if the list does not contain any elements.
    *  @return <code>true</code>, iff the list is empty.
@@ -49,9 +50,6 @@ sealed abstract class List[+A] extends Stream[A]
    */
   def tail: List[A]
 
-  /** Creates a list buffer as builder for this class */
-  override def newBuilder[B]: Builder[List, B] = new ListBuffer[B]
-
   // New methods in List
 
   /** <p>
@@ -63,7 +61,7 @@ sealed abstract class List[+A] extends Stream[A]
    *  @ex <code>1 :: List(2, 3) = List(2, 3).::(1) = List(1, 2, 3)</code>
    */
   def ::[B >: A] (x: B): List[B] =
-    new scalax.collection.immutable.::(x, this)
+    new scala.collection.immutable.::(x, this)
 
   /** <p>
    *    Returns a list resulting from the concatenation of the given
@@ -99,7 +97,7 @@ sealed abstract class List[+A] extends Stream[A]
   /** Apply a function to all the elements of the list, and return the
    *  reversed list of results. This is equivalent to a call to <code>map</code>
    *  followed by a call to <code>reverse</code>, but more efficient.
-   *  !!! should we deprecate this? Why have reverseMap, but not filterMap, say?
+   *  !!! should we deprecate this? Why have reverseMap, but not filterMap or reverseFilter, say?
    *  @param f the function to apply to each elements.
    *  @return  the reversed list of results.
    */
@@ -112,8 +110,8 @@ sealed abstract class List[+A] extends Stream[A]
   }
 
   /** Like xs map f, but returns <code>xs</code> unchanged if function
-   *  <code>f</code> maps all elements to themselves (wrt eq)
-   *  @note Unlike `map`, `mapConserve` is not tail-recursive
+   *  <code>f</code> maps all elements to themselves (wrt ==).
+   *  @note Unlike `map`, `mapConserve` is not tail-recursive.
    */
   def mapConserve[B >: A] (f: A => B): List[B] = {
     def loop(ys: List[A]): List[B] =
@@ -121,7 +119,7 @@ sealed abstract class List[+A] extends Stream[A]
       else {
         val head0 = ys.head
         val head1 = f(head0)
-        if (head1.asInstanceOf[AnyRef] eq head0.asInstanceOf[AnyRef]) {
+        if (head1 == head0) {
           loop(ys.tail)
         } else {
           val ys1 = head1 :: ys.tail.mapConserve(f)
@@ -142,10 +140,20 @@ sealed abstract class List[+A] extends Stream[A]
 
   // Overridden methods from IterableTemplate or overloaded variants of such methods
 
-  /** Appends two list objects.
+  /** Create a new list which contains all elements of this list
+   *  followed by all elements of Traversable `that'
    */
-  override def ++[B >: A](that: Iterable[B]): List[B] =
-    this ::: that.toList
+  override def ++[B >: A, That](that: Traversable[B])(implicit bf: BuilderFactory[B, That, List[A]]): That = {
+    val b = bf(this)
+    if (b.isInstanceOf[ListBuffer[_]]) (this ::: that.toList).asInstanceOf[That]
+    else super.++(that)
+  }
+
+  /** Create a new list which contains all elements of this list
+   *  followed by all elements of Iterator `that'
+   */
+  override def ++[B >: A, That](that: Iterator[B])(implicit bf: BuilderFactory[B, That, List[A]]): That =
+    this ++ that.toList
 
   /** Overrides the method in Iterable for efficiency.
    *
@@ -195,9 +203,9 @@ sealed abstract class List[+A] extends Stream[A]
    *  @return the list with elements belonging to the given index range.
    */
   override def slice(start: Int, end: Int): List[A] = {
-    val s = start max 0
-    val e = end min this.length
-    drop(s) take (e - s)
+    var len = end
+    if (start > 0) len -= start
+    drop(start) take len
   }
 
   /** Returns the rightmost <code>n</code> elements from this list.
@@ -279,128 +287,25 @@ sealed abstract class List[+A] extends Stream[A]
     (b.toList, these)
   }
 
-  /** Returns the list resulting from applying the given function <code>f</code> to each
-   *  element of this list.
-   *
-   *  @param f function to apply to each element.
-   *  @return <code>[f(a0), ..., f(an)]</code> if this list is <code>[a0, ..., an]</code>.
+  /** A list consisting of all elements of this list in reverse order.
    */
-  final override def map[B](f: A => B): List[B] = {
-    val b = new ListBuffer[B]
+  override def reverse: List[A] = {
+    var result: List[A] = Nil
     var these = this
     while (!these.isEmpty) {
-      b += f(these.head)
+      result = these.head :: result
       these = these.tail
     }
-    b.toList
-  }
-
-  /** Returns all the elements of this list that satisfy the
-   *  predicate <code>p</code>. The order of the elements is preserved.
-   *  It is guarenteed that the receiver list itself is returned iff all its
-   *  elements satisfy the predicate `p'. Hence the following equality is valid:
-   *
-   *  (xs filter p) eq xs  ==  xs forall p
-   *
-   *  @param p the predicate used to filter the list.
-   *  @return the elements of this list satisfying <code>p</code>.
-   */
-  final override def filter(p: A => Boolean): List[A] = {
-    // return same list if all elements satisfy p
-    var these = this
-    var allTrue = true
-    val b = new ListBuffer[A]
-    while (!these.isEmpty) {
-      if (p(these.head)) b += these.head
-      else allTrue = false
-      these = these.tail
-    }
-    if (allTrue) this else b.toList
-  }
-
-  /** Applies the given function <code>f</code> to each element of
-   *  this list, then concatenates the results.
-   *
-   *  @param f the function to apply on each element.
-   *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
-   *           this list is <code>[a<sub>0</sub>, ..., a<sub>n</sub>]</code>.
-   */
-  final override def flatMap[B](f: A => Iterable[B]): List[B] = {
-    val b = new ListBuffer[B]
-    var these = this
-    while (!these.isEmpty) {
-      b ++= f(these.head)
-      these = these.tail
-    }
-    b.toList
-  }
-
-  /** Returns a list formed from this list and the specified list
-   *  <code>that</code> by associating each element of the former with
-   *  the element at the same position in the latter.
-   *  If one of the two lists is longer than the other, its remaining elements are ignored.
-   *
-   *  !!! todo: perform speed with inherited version from Iterable, and drop
-   *      if not significantly better
-   *  @return     <code>List((a<sub>0</sub>,b<sub>0</sub>), ...,
-   *              (a<sub>min(m,n)</sub>,b<sub>min(m,n)</sub>))</code> when
-   *              <code>List(a<sub>0</sub>, ..., a<sub>m</sub>)
-   *              zip List(b<sub>0</sub>, ..., b<sub>n</sub>)</code> is invoked.
-   */
-  def zip[B](that: List[B]): List[(A, B)] = {
-    val b = new ListBuffer[(A, B)]
-    var these = this
-    var those = that
-    while (!these.isEmpty && !those.isEmpty) {
-      b += ((these.head, those.head))
-      these = these.tail
-      those = those.tail
-    }
-    b.toList
-  }
-
-  /** Returns a list formed from this list and the specified list
-   *  <code>that</code> by associating each element of the former with
-   *  the element at the same position in the latter.
-   *
-   *  @param that     list <code>that</code> may have a different length
-   *                  as the self list.
-   *  @param thisElem element <code>thisElem</code> is used to fill up the
-   *                  resulting list if the self list is shorter than
-   *                  <code>that</code>
-   *  @param thatElem element <code>thatElem</code> is used to fill up the
-   *                  resulting list if <code>that</code> is shorter than
-   *                  the self list
-   *  @return         <code>List((a<sub>0</sub>,b<sub>0</sub>), ...,
-   *                  (a<sub>n</sub>,b<sub>n</sub>), (elem,b<sub>n+1</sub>),
-   *                  ..., {elem,b<sub>m</sub>})</code>
-   *                  when <code>[a<sub>0</sub>, ..., a<sub>n</sub>] zip
-   *                  [b<sub>0</sub>, ..., b<sub>m</sub>]</code> is
-   *                  invoked where <code>m &gt; n</code>.
-   */
-  def zipAll[B, C >: A, D >: B](that: List[B], thisElem: C, thatElem: D): List[(C, D)] = {
-    val b = new ListBuffer[(C, D)]
-    var these = this
-    var those = that
-    while (!these.isEmpty && !those.isEmpty) {
-      b += ((these.head, those.head))
-      these = these.tail
-      those = those.tail
-    }
-    while (!these.isEmpty) {
-      b += ((these.head, thatElem))
-      these = these.tail
-    }
-    while (!those.isEmpty) {
-      b += ((thisElem, those.head))
-      those = those.tail
-    }
-    b.toList
+    result
   }
 
   override def stringPrefix = "List"
 
-  override def toStream : Stream[A] = this
+  override def toStream : Stream[A] =
+    if (isEmpty) Stream.Empty
+    else new Stream.Cons(head, tail.toStream)
+
+  // !!! todo: work in patch
 
   /** Computes the difference between this list and the given list
    *  <code>that</code>.
@@ -424,7 +329,7 @@ sealed abstract class List[+A] extends Stream[A]
    *  <code>x</code>.
    *
    *  @param x    the object to remove from this list.
-   *  @return     this list without the elements of the given object
+   *  @return     this list without occurrences of the given object
    *              <code>x</code>.
    *  @deprecated use diff instead
    */
@@ -532,6 +437,10 @@ case object Nil extends List[Nothing] {
     throw new NoSuchElementException("head of empty list")
   override def tail: List[Nothing] =
     throw new NoSuchElementException("tail of empty list")
+  override def equals(that: Any) = that match {
+    case that1: Sequence[_] => that1.isEmpty
+    case _ => false
+  }
 }
 
 /** A non empty list characterized by a head and a tail.
@@ -540,25 +449,51 @@ case object Nil extends List[Nothing] {
  *  @version 1.0, 15/07/2003
  */
 @SerialVersionUID(0L - 8476791151983527571L)
-final case class ::[B](private var hd: B, private[scalax] var tl: List[B]) extends List[B] {
+final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extends List[B] {
   override def head : B = hd
   override def tail : List[B] = tl
   override def isEmpty: Boolean = false
+
+//  import java.io._
+
+//  private def writeObject(out: ObjectOutputStream) {
+//    var xs: List[B] = this
+//    while (!xs.isEmpty) { out.writeObject(xs.head); xs = xs.tail }
+//    out.writeObject(ListSerializeEnd)
+//  }
+
+//  private def readObject(in: ObjectInputStream) {
+//    hd = in.readObject.asInstanceOf[B]
+//    assert(hd != ListSerializeEnd)
+//    var current: ::[B] = this
+//    while (true) in.readObject match {
+//      case ListSerializeEnd =>
+//        current.tl = Nil
+//        return
+//      case a : Any =>
+//        val list : ::[B] = new ::(a.asInstanceOf[B], Nil)
+//        current.tl = list
+//        current = list
+//    }
+//  }
 }
 
 /** This object provides methods for creating specialized lists, and for
  *  transforming special kinds of lists (e.g. lists of lists).
  *
- *  @author  Martin Odersky and others
- *  @version 1.0, 15/07/2003
+ *  @author  Martin Odersky
+ *  @version 2.8
  */
-object List extends SequenceFactory[List] with EmptyIterableFactory[List] {
+object List extends SequenceFactory[List] {
 
-  override val empty: List[Nothing] = Nil
+  import collection.{Iterable, Sequence, Vector}
 
-  override def apply[A](xs: A*) = xs.asInstanceOf[Iterable[A]].toList // !@!
+  implicit def builderFactory[A]: BuilderFactory[A, List[A], Coll] = new VirtualBuilderFactory[A]
+  def newBuilder[A]: Builder[A, List[A]] = new ListBuffer[A]
 
-  override def newBuilder[B]: Builder[List, B] = new ListBuffer[B]
+  override def empty[A]: List[A] = Nil
+
+  override def apply[A](xs: A*): List[A] = xs.toList
 
   /** Create a sorted list with element values
    * <code>v<sub>n+1</sub> = step(v<sub>n</sub>)</code>
@@ -748,8 +683,7 @@ object List extends SequenceFactory[List] with EmptyIterableFactory[List] {
    *  @return    the string as a list of characters.
    *  @deprecated use <code>str.toList</code> instead
    */
-  @deprecated def fromString(str: String): List[Char] =
-    str.toList.asInstanceOf[List[Char]] // !@!
+  @deprecated def fromString(str: String): List[Char] = str.toList
 
   /** Returns the given list of characters as a string.
    *
@@ -925,5 +859,5 @@ object List extends SequenceFactory[List] with EmptyIterableFactory[List] {
 
 /** Only used for list serialization */
 @SerialVersionUID(0L - 8476791151975527571L)
-private[scalax] case object ListSerializeEnd
+private[scala] case object ListSerializeEnd
 

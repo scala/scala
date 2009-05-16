@@ -6,29 +6,34 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: StringBuilder.scala 16884 2009-01-09 16:52:09Z cunei $
 
 
-package scala
+package scala.collection.mutable
 
-import Predef._
+import collection.generic._
+import scala.runtime.RichString
 
 /** <p>
  *    A mutable sequence of characters.  This class provides an API compatible
  *    with <a class="java/lang/StringBuilder" href="" target="_top">
  *    <code>java.lang.StringBuilder</code></a>.
- *  </p>
+ *  </p>generic/
  *
  *  @author Stephane Micheloud
- *  @version 1.0
+ *  @author Martin Odersky
+ *  @version 2.8
  */
+//@serializable
+//@SerialVersionUID(0 - 8525408645367278351L)
 final class StringBuilder(initCapacity: Int, private val initValue: String)
-      extends (Int => Char) {
-  if (initCapacity < 0) throw new IllegalArgumentException
-  if (initValue eq null) throw new NullPointerException
+      extends Builder[Char, String]
+         with Vector[Char] {
+
+  require(initCapacity > 0)
 
   /** The value is used for character storage. */
-  private var value = new Array[Char](initCapacity + initValue.length)
+  private var array = new Array[Char](initCapacity + initValue.length)
 
   /** The count is the number of characters used. */
   private var count: Int = 0
@@ -47,31 +52,31 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    */
   def this(capacity: Int) = this(capacity, "")
 
+  /** Constructs a string builder with initial characters
+   *  equal to characters of `str`.
+   */
   def this(str: String) = this(16, str)
 
   append(initValue)
 
-  def toArray: Array[Char] = value
+  def toArray: Array[Char] = array
 
   def length: Int = count
-
   def length_=(n: Int) { setLength(n) }
 
-  /** Sets the length of the character sequence.
+  /** Clears the builder contents.
+   */
+  def clear(): Unit = setLength(0)
+
+ /** Sets the length of the character sequence.
    *
    *  @param  newLength  the new length
    *  @throws IndexOutOfBoundsException  if the <code>n</code> argument is negative.
    */
   def setLength(n: Int) {
-    if (n < 0)
-      throw new StringIndexOutOfBoundsException//(n)
-    if (n > value.length) expandCapacity(n)
-    if (count < n)
-      while (count < n) {
-        value(count) = '\0'; count += 1
-      }
-    else
-      count = n
+    require(n >= 0, n)
+    while (count < n) append('\0')
+    count = n
   }
 
   /** Returns the current capacity. The capacity is the amount of storage
@@ -80,10 +85,13 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    *
    *  @return  the current capacity
    */
-  def capacity: Int = value.length
+  def capacity: Int = array.length
 
-  /** Same as <code>ensureCapacity</code>. */
-  def capacity_=(n: Int) { ensureCapacity(n) }
+  /** Same as <code>ensureCapacity</code>.
+   *  @deprecated use `ensureCapacity` instead. An assignment is misleading
+   *  because it can never decrease the capacity.
+   */
+  @deprecated def capacity_=(n: Int) { ensureCapacity(n) }
 
   /** <p>
    *    Ensures that the capacity is at least equal to the specified minimum.
@@ -102,15 +110,14 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    *  @param n the minimum desired capacity.
    */
   def ensureCapacity(n: Int) {
-    if (n > value.length) expandCapacity(n)
-  }
-
-  private def expandCapacity(n: Int) {
-    val newCapacity = (value.length + 1) * 2
-    value = StringBuilder.copyOf(
-      value,
-      if (newCapacity < 0) Math.MAX_INT else if (n > newCapacity) n else newCapacity
-    )
+    if (n > array.length) {
+      var newsize = array.length * 2
+      while (n > newsize)
+        newsize = newsize * 2
+      val newar = new Array[Char](newsize)
+      Array.copy(array, 0, newar, 0, count)
+      array = newar
+    }
   }
 
   /** <p>
@@ -131,7 +138,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
   def charAt(index: Int): Char = {
     if (index < 0 || index >= count)
       throw new StringIndexOutOfBoundsException//(index)
-    value(index)
+    array(index)
   }
 
   /** Same as <code>charAt</code>. */
@@ -150,7 +157,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
   def deleteCharAt(index: Int): StringBuilder = {
     if (index < 0 || index >= count)
       throw new StringIndexOutOfBoundsException//(index)
-    compat.Platform.arraycopy(value, index + 1, value, index, count - index - 1)
+    compat.Platform.arraycopy(array, index + 1, array, index, count - index - 1)
     count -= 1
     this
   }
@@ -174,7 +181,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
   def setCharAt(index: Int, ch: Char) {
     if (index < 0 || index >= count)
       throw new StringIndexOutOfBoundsException//(index)
-    value(index) = ch
+    array(index) = ch
   }
 
   /** Same as <code>setCharAt</code>. */
@@ -212,8 +219,17 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
       throw new StringIndexOutOfBoundsException//(end)
     if (start > end)
       throw new StringIndexOutOfBoundsException//(end - start)
-    new String(value, start, end - start)
+    new String(array, start, end - start)
   }
+
+//  def subSequence(start: Int, end: Int): java.lang.CharSequence = substring(start, end)
+
+  /* Appends the string representation of the <code>Any</code> argument.
+   */
+  def +=(x: Char): this.type = { append(x); this }
+
+  def +(x: Char): this.type = { +=(x); this }
+
 
   /** <p>
    *    Appends the string representation of the <code>Any</code>
@@ -221,8 +237,8 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    *  </p>
    *  <p>
    *    The argument is converted to a string as if by the method
-   *    <code>System.Convert.ToString</code>, and the characters of
-   *    that string are then appended to this sequence.
+   *    <code>System.Convert.ToString</code>, and the characters of that
+   *    string are then appended to this sequence.
    *  </p>
    *
    *  @param  x   an <code>Any</code> object.
@@ -239,12 +255,9 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
   def append(s: String): StringBuilder = {
     val str = if (s == null) "null" else s
     val len = str.length
-    if (len > 0) {
-      val newCount = count + len
-      if (newCount > value.length) expandCapacity(newCount)
-      compat.Platform.arraycopy(str.ToCharArray, 0, value, count, len)
-      count = newCount
-    }
+    ensureCapacity(count + len)
+    compat.Platform.arraycopy(str.ToCharArray, 0, array, count, len)
+    count += len
     this
   }
 
@@ -258,10 +271,9 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
       append("null")
     else {
       val len = sb.length
-      val newCount = count + len
-      if (newCount > value.length) expandCapacity(newCount)
-      compat.Platform.arraycopy(sb.toArray, 0, value, count, len)
-      count = newCount
+      ensureCapacity(count + len)
+      compat.Platform.arraycopy(sb.toArray, 0, array, count, len)
+      count += len
       this
     }
 
@@ -278,8 +290,14 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    *  @param  x  the characters to be appended.
    *  @return    a reference to this object.
    */
-  def append(x: Seq[Char]): StringBuilder =
-    append(x.toArray, 0, x.length)
+  def appendAll(x: Seq[Char]): StringBuilder =
+    appendAll(x.toArray, 0, x.length)
+
+   /*  @deprecated  use appendAll instead. This method is deprecated
+    *               because of the possible confusion with `append(Any)`.
+    */
+  @deprecated def append(x: Seq[Char]): StringBuilder =
+    appendAll(x)
 
   /** <p>
    *    Appends the string representation of the <code>Char</code> array
@@ -294,8 +312,14 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    *  @param  x  the characters to be appended.
    *  @return    a reference to this object.
    */
-  def append(x: Array[Char]): StringBuilder =
-    append(x, 0, x.length)
+  def appendAll(x: Array[Char]): StringBuilder =
+    appendAll(x, 0, x.length)
+
+  /**  @deprecated  use appendAll instead. This method is deprecated
+   *               because of the possible confusion with `append(Any)`.
+   */
+  @deprecated def append(x: Array[Char]): StringBuilder =
+    appendAll(x)
 
   /** <p>
    *    Appends the string representation of a subarray of the
@@ -313,13 +337,18 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    *  @param  len    the number of <code>Char</code>s to append.
    *  @return        a reference to this object.
    */
-  def append(x: Array[Char], offset: Int, len: Int): StringBuilder = {
-    val newCount = count + len
-    if (newCount > value.length) expandCapacity(newCount)
-    compat.Platform.arraycopy(x, offset, value, count, len)
-    count = newCount
+  def appendAll(x: Array[Char], offset: Int, len: Int): StringBuilder = {
+    ensureCapacity(count + len)
+    compat.Platform.arraycopy(x, offset, array, count, len)
+    count += len
     this
   }
+
+  /**  @deprecated  use appendAll instead. This method is deprecated
+   *               because of the possible confusion with `append(Any, Int, Int)`.
+   */
+  @deprecated def append(x: Array[Char], offset: Int, len: Int): StringBuilder =
+    appendAll(x, offset, len)
 
   /** <p>
    *    Appends the string representation of the <code>Boolean</code>
@@ -327,37 +356,20 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    *  </p>
    *  <p>
    *    The argument is converted to a string as if by the method
-   *    <code>System.Convert.ToString</code>, and the characters of
-   *    that string are then appended to this sequence.
+   *    <code>System.Convert.ToString</code>, and the characters of that
+   *   string are then appended to this sequence.
    *  </p>
    *
    *   @param  x  a <code>Boolean</code>.
    *   @return    a reference to this object.
    */
-  def append(x: Boolean): StringBuilder = {
-    if (x) {
-      val newCount = count + 4
-      if (newCount > value.length) expandCapacity(newCount)
-      value(count) = 't'; count += 1
-      value(count) = 'r'; count += 1
-      value(count) = 'u'; count += 1
-      value(count) = 'e'; count += 1
-    } else {
-      val newCount = count + 5
-      if (newCount > value.length) expandCapacity(newCount)
-      value(count) = 'f'; count += 1
-      value(count) = 'a'; count += 1
-      value(count) = 'l'; count += 1
-      value(count) = 's'; count += 1
-      value(count) = 'e'; count += 1
-    }
-    this
-  }
+  def append(x: Boolean): StringBuilder = append(System.Convert.ToString(x))
+//  def append(x: Byte): StringBuilder = append(System.Convert.ToString(x))
 
   def append(x: Char): StringBuilder = {
-    val newCount = count + 1
-    if (newCount > value.length) expandCapacity(newCount)
-    value(count) = x; count += 1
+    ensureCapacity(count + 1)
+    array(count) = x
+    count += 1
     this
   }
 
@@ -395,7 +407,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
     val end0 = if (end > count) count else end
     val len = end0 - start
     if (len > 0) {
-      compat.Platform.arraycopy(value, start + len, value, start, count - end0)
+      compat.Platform.arraycopy(array, start + len, array, start, count - end0)
       count -= len
     }
     this
@@ -423,10 +435,10 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
     val end0 = if (end > count) count else end
     val len = str.length()
     val newCount = count + len - (end0 - start)
-    if (newCount > value.length) expandCapacity(newCount)
+    ensureCapacity(newCount)
 
-    compat.Platform.arraycopy(value, end, value, start + len, count - end)
-    compat.Platform.arraycopy(str.ToCharArray, 0, value, start, len)
+    compat.Platform.arraycopy(array, end, array, start + len, count - end)
+    compat.Platform.arraycopy(str.ToCharArray, 0, array, start, len)
     count = newCount
     this
   }
@@ -451,20 +463,25 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    *                 <code>(offset+len)</code> is greater than
    *                 <code>str.length</code>.
    */
-  def insert(index: Int, str: Array[Char], offset: Int, len: Int): StringBuilder = {
+  def insertAll(index: Int, str: Array[Char], offset: Int, len: Int): StringBuilder = {
     if (index < 0 || index > count)
       throw new StringIndexOutOfBoundsException//(index)
     if (offset < 0 || len < 0 || offset > str.length - len)
-      throw new StringIndexOutOfBoundsException/*(
-                "offset " + offset + ", len " + len +
-                ", str.length " + str.length)*/
-    val newCount = count + len
-    if (newCount > value.length) expandCapacity(newCount)
-    compat.Platform.arraycopy(value, index, value, index + len, count - index)
-    compat.Platform.arraycopy(str, offset, value, index, len)
-    count = newCount
+      throw new StringIndexOutOfBoundsException//(
+//                "offset " + offset + ", len " + len +
+//                ", str.length " + str.length)
+    ensureCapacity(count + len)
+    compat.Platform.arraycopy(array, index, array, index + len, count - index)
+    compat.Platform.arraycopy(str, offset, array, index, len)
+    count += len
     this
   }
+
+  /**  @deprecated  use insertAll instead. This method is deprecated
+   *               because of the possible confusion with `insert(Int, Any, Int, Int)`.
+   */
+  @deprecated def insert(index: Int, str: Array[Char], offset: Int, len: Int): StringBuilder =
+    insertAll(index, str, offset, len)
 
   /** <p>
    *    Inserts the string representation of the <code>Any</code>
@@ -502,11 +519,10 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
       throw new StringIndexOutOfBoundsException//(at)
     val str = if (x == null) "null" else x
     val len = str.length
-    val newCount = count + len
-    if (newCount > value.length) expandCapacity(newCount)
-    compat.Platform.arraycopy(value, at, value, at + len, count - at)
-    compat.Platform.arraycopy(str.ToCharArray, 0, value, at, len)
-    count = newCount
+    ensureCapacity(count + len)
+    compat.Platform.arraycopy(array, at, array, at + len, count - at)
+    compat.Platform.arraycopy(str.ToCharArray, 0, array, at, len)
+    count += len
     this
   }
 
@@ -518,8 +534,14 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    *  @return     a reference to this object.
    *  @throws StringIndexOutOfBoundsException  if the offset is invalid.
    */
-  def insert(at: Int, x: Seq[Char]): StringBuilder =
-    insert(at, x.toArray)
+  def insertAll(at: Int, x: Seq[Char]): StringBuilder =
+    insertAll(at, x.toArray)
+
+  /*  @deprecated use insertAll instead. This method is deprecated
+   *  because of the possible confusion with `insert(Int, Any)`.
+   */
+  @deprecated def insert(at: Int, x: Seq[Char]): StringBuilder =
+    insertAll(at, x)
 
   /** Inserts the string representation of the <code>Char</code> array
    *  argument into this sequence.
@@ -529,17 +551,22 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    *  @return     a reference to this object.
    *  @throws StringIndexOutOfBoundsException  if the offset is invalid.
    */
-  def insert(at: Int, x: Array[Char]): StringBuilder = {
+  def insertAll(at: Int, x: Array[Char]): StringBuilder = {
     if (at < 0 || at > count)
       throw new StringIndexOutOfBoundsException//(at)
     val len = x.length
-    val newCount = count + len
-    if (newCount > value.length) expandCapacity(newCount)
-    compat.Platform.arraycopy(value, at, value, at + len, count - at)
-    compat.Platform.arraycopy(x, 0, value, at, len)
-    count = newCount
+    ensureCapacity(count + len)
+    compat.Platform.arraycopy(array, at, array, at + len, count - at)
+    compat.Platform.arraycopy(x, 0, array, at, len)
+    count += len
     this
   }
+
+  /*  @deprecated use insertAll instead. This method is deprecated
+   *  because of the possible confusion with `insert(Int, Any)`.
+   */
+  @deprecated def insert(at: Int, x: Array[Char]): StringBuilder =
+    insertAll(at, x)
 
   /** <p>
    *    Inserts the string representation of the <code>Boolean</code> argument
@@ -557,6 +584,21 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
   def insert(at: Int, x: Boolean): StringBuilder =
     insert(at, System.Convert.ToString(x))
 
+  /** <p>
+   *    Inserts the string representation of the <code>Byte</code> argument
+   *    into this sequence.
+   *  </p>
+   *  <p>
+   *    The offset argument must be greater than or equal to 0, and less than
+   *    or equal to the length of this sequence.
+   *  </p>
+   *
+   *  @param  at  the offset position.
+   *  @param  x   a <code>Byte</code> value.
+   *  @return     a reference to this object.
+   */
+//  def insert(at: Int, x: Byte): StringBuilder =
+//    insert(at, System.Convert.ToString(x))
 
   /** <p>
    *    Inserts the string representation of the <code>Char</code> argument
@@ -574,11 +616,10 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
   def insert(at: Int, x: Char): StringBuilder = {
     if (at < 0 || at > count)
       throw new StringIndexOutOfBoundsException//(at)
-    val newCount = count + 1
-    if (newCount > value.length) expandCapacity(newCount)
-    compat.Platform.arraycopy(value, at, value, at + 1, count - at)
-    value(at) = x
-    count = newCount
+    ensureCapacity(count + 1)
+    compat.Platform.arraycopy(array, at, array, at + 1, count - at)
+    array(at) = x
+    count += 1
     this
   }
 
@@ -701,7 +742,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    *                    of the specified substring, starting at the specified index.
    */
   def indexOf(str: String, fromIndex: Int): Int =
-    StringBuilder.indexOf(value, 0, count, str.ToCharArray, 0, str.length(), fromIndex)
+    StringBuilder.indexOf(array, 0, count, str.ToCharArray, 0, str.length(), fromIndex)
 
   /** <p>
    *    Returns the index within this string of the rightmost occurrence
@@ -729,7 +770,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    *    Returns the index within this string of the last occurrence of the
    *    specified substring. The integer returned is the largest value
    *    <code>k</code> such that:
-   *  </p><pre>
+   *  </p><pre>val
    *    k <= Math.min(fromIndex, str.length()) &&
    *                   this.toString().startsWith(str, k)</pre>
    *  <p>
@@ -743,7 +784,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    *                     of the specified substring.
    */
   def lastIndexOf(str: String, fromIndex: Int): Int =
-    StringBuilder.lastIndexOf(value, 0, count, str.ToCharArray, 0, str.length(), fromIndex)
+    StringBuilder.lastIndexOf(array, 0, count, str.ToCharArray, 0, str.length(), fromIndex)
 
   /** <p>
    *    Causes this character sequence to be replaced by the reverse of the
@@ -762,32 +803,31 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    *
    *  @return  a reference to this object.
    */
-  def reverse(): StringBuilder = {
-    import StringBuilder._
+  override def reverse(): StringBuilder = {
     var hasSurrogate = false
     val n = count - 1
     var j = (n-1) >> 1
     while (j >= 0) {
-      val temp = value(j)
-      val temp2 = value(n - j)
+      val temp = array(j)
+      val temp2 = array(n - j)
       if (!hasSurrogate)
         hasSurrogate =
-          (temp >= MIN_HIGH_SURROGATE && temp <= MAX_LOW_SURROGATE) ||
-       	  (temp2 >= MIN_HIGH_SURROGATE && temp2 <= MAX_LOW_SURROGATE)
-      value(j) = temp2
-      value(n - j) = temp
+          (temp >= StringBuilder.MIN_SURROGATE && temp <= StringBuilder.MAX_SURROGATE) ||
+       	  (temp2 >= StringBuilder.MIN_SURROGATE && temp2 <= StringBuilder.MAX_SURROGATE)
+      array(j) = temp2
+      array(n - j) = temp
       j -= 1
     }
     if (hasSurrogate) {
       // Reverse back all valid surrogate pairs
       var i = 0
       while (i < count - 1) {
-        val c2 = value(i)
-	if (isLowSurrogate(c2)) {
-          val c1 = value(i + 1)
-          if (isHighSurrogate(c1)) {
-            value(i) = c1; i += 1
-            value(i) = c2
+        val c2 = array(i)
+	if (StringBuilder.isLowSurrogate(c2)) {
+          val c1 = array(i + 1)
+          if (StringBuilder.isHighSurrogate(c1)) {
+            array(i) = c1; i += 1
+            array(i) = c2
           }
         }
         i += 1
@@ -805,13 +845,16 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    *
    *  @return  a string representation of this sequence of characters.
    */
-  override def toString(): String = new String(value, 0, count)
+  override def toString: String = new String(array, 0, count)
 
+  def result(): String = toString
 }
 
 
-object StringBuilder
-{
+object StringBuilder {
+
+  type Array[T] = scala.Array[T] // !!!
+
   private val MIN_HIGH_SURROGATE = '\uD800'
   private val MAX_HIGH_SURROGATE = '\uDBFF'
 
@@ -839,6 +882,8 @@ object StringBuilder
   private def indexOf(source: Array[Char], sourceOffset: Int, sourceCount: Int,
                       target: Array[Char], targetOffset: Int, targetCount: Int,
                       fromIndex: Int): Int =
+    // todo: There are faster string search algorithms than this!
+    // we should use at least KMP here.
     if (fromIndex >= sourceCount)
       if (targetCount == 0) sourceCount else -1
     else {

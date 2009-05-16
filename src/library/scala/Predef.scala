@@ -58,6 +58,7 @@ object Predef {
   type IllegalArgumentException        = java.lang.IllegalArgumentException
   type NoSuchElementException          = java.util.NoSuchElementException
   type NumberFormatException           = java.lang.NumberFormatException
+  type AbstractMethodError             = java.lang.AbstractMethodError
 
   // miscelleaneous -----------------------------------------------------
 

@@ -426,7 +426,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
        *  return statements. These are disallowed in the CLR. By lifting
        *  such returns will be converted to throws.
        */
-      def shouldBeLiftedAnyway(tree: Tree) =
+      def shouldBeLiftedAnyway(tree: Tree) = false && // buggy, see #1981
         forMSIL && lookForReturns.found(tree)
 
       /** Transform tree `t' to { def f = t; f } where `f' is a fresh name

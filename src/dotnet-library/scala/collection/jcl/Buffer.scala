@@ -1,1 +1,0 @@
-/* Buffer does not exist for the dotnet target */

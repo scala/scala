@@ -12,7 +12,7 @@
 package scala.runtime
 
 
-final class RichInt(start: Int) extends Proxy with Ordered[Int] {
+final class RichInt(val start: Int) extends Proxy with Ordered[Int] {
 
   // Proxy
   def self: Any = start
@@ -27,7 +27,7 @@ final class RichInt(start: Int) extends Proxy with Ordered[Int] {
   def until(end: Int, step: Int): Range = new Range(start, end, step)
 
   /** like <code>until</code>, but includes the last index */
-  def to(end: Int) = new Range.Inclusive(start, end, 1)
+  def to(end: Int) = Range.inclusive(start, end, 1)
 
   def min(that: Int): Int = if (start < that) start else that
   def max(that: Int): Int = if (start > that) start else that

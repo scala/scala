@@ -52,9 +52,14 @@ object Predef {
   type UnsupportedOperationException = System.InvalidOperationException
   type IllegalArgumentException = System.ArgumentException
   type NoSuchElementException = System.InvalidOperationException
-  //type NumberFormatException = java.lang.NumberFormatException
+  type NumberFormatException = System.FormatException
+  type AbstractMethodError = System.InvalidOperationException
 
   // miscelleaneous -----------------------------------------------------
+
+  private val P = scala.`package`  // to force scala package object to be seen.
+  private val L = scala.collection.immutable.List // to force Nil, :: to be seen.
+  private val S = scala.collection.mutable.StringBuilder // to force StringBuilder to be seen.
 
   //val $scope = scala.xml.TopScope
 
@@ -184,7 +189,6 @@ object Predef {
   implicit def unitWrapper(x: Boolean)  = new runtime.RichUnit
 
   implicit def stringWrapper(x: String) = new runtime.RichString(x)
-  //implicit def stringBuilderWrapper(x : StringBuilder): runtime.RichStringBuilder = new runtime.RichStringBuilder(x)
 
   implicit def any2stringadd(x: Any) = new runtime.StringAdd(x)
 
@@ -323,7 +327,7 @@ object Predef {
 
   implicit def float2double(x: Float): Double = x.toDouble
 
-  implicit def forceArrayProjection[A](x : Array.Projection[A]) : Array[A] = x.force
+  //implicit def forceArrayProjection[A](x : Array.Projection[A]) : Array[A] = x.force !!! re-enable?
 
   def currentThread = System.Threading.Thread.CurrentThread
 

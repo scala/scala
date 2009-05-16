@@ -1,1 +1,0 @@
-/* JavaSetAdaptor does not exist for the dotnet target */
