@@ -15,8 +15,9 @@ import scala.collection.Map
 import Utility.sbToString
 
 /** Class for pretty printing. After instantiating, you can use the
- *  toPrettyXML methods to convert XML to a formatted string. The class
- *  can be reused to pretty print any number of XML nodes.
+ *  format() and formatNode() methods to convert XML to a formatted
+ *  string. The class can be reused to pretty print any number of
+ *  XML nodes.
  *
  *  @author  Burak Emir
  *  @version 1.0
