@@ -145,7 +145,7 @@ PROPERTIES
 
   <property
       name="scalacfork.jvmargs"
-      value="-Xms512M -Xmx768M -Xss1M -XX:MaxPermSize=128M"/>
+      value="-Xms512M -Xmx512M -Xss1M -XX:MaxPermSize=128M"/>
 
   <property name="javac.cmd" value="${env.JAVA_HOME}/bin/javac"/>
 
@@ -1528,7 +1528,6 @@ BOOTRAPING TEST AND TEST SUITE
         <include name="run/**/*.scala"/>
       </runtests>
       <jvmtests dir="${test.dir}/files/jvm" includes="*.scala"/>
-      <jvm5tests dir="${test.dir}/files/jvm5" includes="*.scala"/>
       <residenttests dir="${test.dir}/files/res" includes="*.res"/>
       <!-- <scripttests dir="${test.dir}/files/script" includes="*.scala"/> -->
     </partest>
