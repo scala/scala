@@ -828,8 +828,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   /** Returns the file with the given suffix for the given class. */
   def getFile(clazz: Symbol, suffix: String): File = {
-    val outdirname = settings.outdir.value
-    var outdir = new File(if (outdirname == "") "." else outdirname)
+    val outdirname = settings.outputDirs.outputDirFor(clazz.sourceFile)
+    var outdir = new File(if (outdirname == "") "." else outdirname.path)
     val filename = clazz.fullNameString('.')
     var start = 0
     var end = filename.indexOf('.', start)

@@ -7,6 +7,8 @@
 package scala.tools.nsc
 
 import java.io.File
+import io.AbstractFile
+import util.SourceFile
 import Settings._
 
 class Settings(errorFn: String => Unit) extends ScalacSettings {
@@ -72,6 +74,16 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
 
     true
   }
+
+
+  /** A list pairing source directories with their output directory.
+   *  This option is not available on the command line, but can be set by
+   *  other tools (IDEs especially). The command line specifies a single
+   *  output directory that is used for all source files, denoted by a
+   *  '*' in this list.
+   */
+  lazy val outputDirs = new OutputDirs
+
 
   /** Try to add additional command line parameters.
    *  Returns unconsumed arguments.
@@ -203,6 +215,7 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
   lazy val DebugSetting        = untupled(tupled(sdebug _) andThen add[DebugSetting])
   lazy val PhasesSetting       = untupled(tupled(phase _) andThen add[PhasesSetting])
   lazy val DefinesSetting      = add(defines())
+  lazy val OutputSetting       = untupled(tupled(output _) andThen add[OutputSetting])
 }
 
 object Settings
@@ -216,6 +229,72 @@ object Settings
     def value: T = v
     def value_=(arg: T) = { setByUser = true ; v = arg }
     val choices : List[T] = Nil
+  }
+
+  /** A class for holding mappings from source directories to
+   *  their output location. This functionality can be accessed
+   *  only programmatically. The command line compiler uses a
+   *  single output location, but tools may use this functionality
+   *  to set output location per source directory.
+   */
+  class OutputDirs {
+    /** Pairs of source directory - destination directory. */
+    private var outputDirs: List[(AbstractFile, AbstractFile)] = Nil
+
+    /** If this is not None, the output location where all
+     *  classes should go.
+     */
+    private var singleOutDir: Option[AbstractFile] = None
+
+    /** Add a destination directory for sources found under srcdir.
+     *  Both directories should exits.
+     */
+    def add(srcDir: String, outDir: String): Unit =
+      add(checkDir(AbstractFile.getDirectory(srcDir), srcDir),
+          checkDir(AbstractFile.getDirectory(outDir), outDir))
+
+    /** Check that dir is exists and is a directory. */
+    private def checkDir(dir: AbstractFile, name: String): AbstractFile = {
+      if ((dir eq null) || !dir.isDirectory)
+        throw new FatalError(name + " does not exist or is not a directory")
+      dir
+    }
+
+    /** Set the single output directory. From now on, all files will
+     *  be dumped in there, regardless of previous calls to 'add'.
+     */
+    def setSingleOutput(outDir: String) {
+      val dst = AbstractFile.getDirectory(outDir)
+      checkDir(dst, outDir)
+
+      singleOutDir = Some(dst)
+    }
+
+    def add(src: AbstractFile, dst: AbstractFile) {
+//      singleOutDir = None
+      outputDirs ::= (src, dst)
+    }
+
+    /** Return the list of source-destination directory pairs. */
+    def outputs: List[(AbstractFile, AbstractFile)] = outputDirs
+
+    /** Return the output directory for the given file.
+     */
+    def outputDirFor(src: AbstractFile): AbstractFile = {
+      def isBelow(dir: AbstractFile, f: AbstractFile) =
+        f.path.startsWith(dir.path)
+
+      singleOutDir match {
+        case Some(d) => d
+        case None =>
+          (outputs find Function.tupled(isBelow)) match {
+            case Some((_, d)) => d
+            case _ =>
+              throw new FatalError("Could not find an output directory for "
+                                   + src.path + " in " + outputs)
+          }
+      }
+    }
   }
 
   // The Setting companion object holds all the factory methods
@@ -242,6 +321,9 @@ object Settings
       new PhasesSetting(name, descr)
 
     def defines() = new DefinesSetting()
+
+    def output(outputDirs: OutputDirs, default: String) =
+      new OutputSetting(outputDirs, default)
   }
 
   /** A base class for settings of all types.
@@ -413,6 +495,17 @@ object Settings
     def unparse: List[String] = if (value == default) Nil else List(name, value)
 
     withHelpSyntax(name + " <" + arg + ">")
+  }
+
+  /** Set the output directory. */
+  class OutputSetting private[Settings](
+    outputDirs: OutputDirs,
+    default: String)
+    extends StringSetting("-d", "directory", "Specify where to place generated class files", default) {
+      override def value_=(str: String) {
+        super.value_=(str)
+        outputDirs.setSingleOutput(str)
+      }
   }
 
   /** A setting that accumulates all strings supplied to it */
@@ -588,7 +681,7 @@ trait ScalacSettings
   val argfiles      = BooleanSetting    ("@<file>", "A text file containing compiler arguments (options and source files)")
   val bootclasspath = StringSetting     ("-bootclasspath", "path", "Override location of bootstrap class files", bootclasspathDefault)
   val classpath     = StringSetting     ("-classpath", "path", "Specify where to find user class files", classpathDefault).withAbbreviation("-cp")
-  val outdir        = StringSetting     ("-d", "directory", "Specify where to place generated class files", ".")
+  val outdir        = OutputSetting     (outputDirs, ".")
   val dependenciesFile  = StringSetting ("-dependencyfile", "file", "Specify the file in which dependencies are tracked", ".scala_dependencies")
   val deprecation   = BooleanSetting    ("-deprecation", "Output source locations where deprecated APIs are used")
   val encoding      = StringSetting     ("-encoding", "encoding", "Specify character encoding used by source files", Properties.encodingString)
