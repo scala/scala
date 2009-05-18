@@ -2,7 +2,7 @@
  * Copyright 2005-2009 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id$
+// $Id: Parsers.scala 17415 2009-03-31 13:38:18Z imaier $
 //todo: allow infix type patterns
 
 
@@ -50,7 +50,8 @@ import Tokens._
  *    </li>
  *  </ol>
  */
-trait Parsers extends NewScanners with MarkupParsers {
+trait Parsers extends Scanners with MarkupParsers {
+self =>
   val global : Global
   import global._
 
@@ -59,12 +60,9 @@ trait Parsers extends NewScanners with MarkupParsers {
 
   case class OpInfo(operand: Tree, operator: Name, pos: Int)
 
-  /** ...
-   *
-   *  @author Sean McDirmid
-   */
   class UnitParser(val unit: global.CompilationUnit) extends Parser {
     val in = new UnitScanner(unit)
+    in.init()
 
     def freshName(pos: Position, prefix: String): Name =
       unit.fresh.newName(pos, prefix)
@@ -82,19 +80,23 @@ trait Parsers extends NewScanners with MarkupParsers {
     def syntaxError(pos: Int, msg: String) { unit.error(pos, msg) }
 
     /** the markup parser */
-    def xmlp = {
-      if (xmlp0 == null)
-        xmlp0 = new MarkupParser(this, true)
-      xmlp0
-    }
+    lazy val xmlp = new MarkupParser(this, true)
+
     object symbXMLBuilder extends SymbolicXMLBuilder(treeBuilder, this, true) { // DEBUG choices
-      val global: Parsers.this.global.type = Parsers.this.global
+      val global: self.global.type = self.global
       def freshName(prefix: String): Name = UnitParser.this.freshName(NoPosition, prefix)
     }
-    private var xmlp0: MarkupParser = null
     def xmlLiteral : Tree = xmlp.xLiteral
     def xmlLiteralPattern : Tree = xmlp.xLiteralPattern
   }
+
+  class ScanOnly(unit: global.CompilationUnit) extends UnitParser(unit) {
+    override def parse(): Tree = {
+      while (in.token != EOF) in.nextToken
+      null
+    }
+  }
+
   // parser constants, here so they don't pollute parser debug listing
   private object ParserConfiguration {
     final val Local = 0
@@ -114,34 +116,34 @@ trait Parsers extends NewScanners with MarkupParsers {
   abstract class Parser {
     ParserConfiguration.hashCode
     import ParserConfiguration._
-    val in: ParserScanner
+    val in: Scanner
     //val unit : CompilationUnit
     //import in.ScanPosition
     protected def freshName(pos: Position, prefix: String): Name
-    protected def posToReport: Int = in.currentPos
+    protected def posToReport: Int = in.offset
 
     protected implicit def i2p(offset: Int): Position
     //private implicit def p2i(pos: Position) = pos.offset.get
 
     private def inToken = in.token
-    private def inSkipToken = in.skipToken
-    private def inNextToken = in.nextToken
-    private def inCurrentPos = in.currentPos
-    private def inNextTokenCode : Int = in.nextTokenCode
+    private def inSkipToken = in.skipToken()
+    private def inNextToken = in.nextToken()
+    private def inCurrentPos = in.offset
+    private def inNextTokenCode : Int = in.next.token
     private def inName = in.name
     private def charVal = in.charVal
     private def intVal(isNegated: Boolean) = in.intVal(isNegated).asInstanceOf[Int]
     private def longVal(isNegated: Boolean) = in.intVal(isNegated)
     private def floatVal(isNegated: Boolean) = in.floatVal(isNegated).asInstanceOf[Float]
     private def doubleVal(isNegated: Boolean) = in.floatVal(isNegated)
-    private def stringVal = in.stringVal
+    private def stringVal = in.strVal
 
     /** whether a non-continuable syntax error has been seen */
     //private var syntaxErrorSeen = false
     private var lastErrorPos : Int = -1
 
     object treeBuilder extends TreeBuilder {
-      val global: Parsers.this.global.type = Parsers.this.global
+      val global: self.global.type = self.global
       def freshName(pos : Position, prefix: String): Name =
         Parser.this.freshName(pos, prefix)
     }
@@ -298,8 +300,7 @@ trait Parsers extends NewScanners with MarkupParsers {
           //else
             inCurrentPos
         val msg =
-          ScannerConfiguration.token2string(token) + " expected but " +
-            ScannerConfiguration.token2string(inToken) + " found."
+          token2string(token) + " expected but " +token2string(inToken) + " found."
 
         if (inToken == EOF)
           incompleteInputError(msg)
@@ -680,7 +681,7 @@ trait Parsers extends NewScanners with MarkupParsers {
     */
     def requiresTypeOpt(): Tree =
       if (inToken == REQUIRES) {
-        deprecationWarning(in.currentPos, "`requires T' has been deprecated; use `{ self: T => ...'  instead")
+        deprecationWarning(inCurrentPos, "`requires T' has been deprecated; use `{ self: T => ...'  instead")
         inNextToken; annotType(false)
       } else TypeTree()
 
@@ -836,7 +837,7 @@ trait Parsers extends NewScanners with MarkupParsers {
           accept(RPAREN)
           atPos(pos) { makeTupleType(ts, true) }
         } else if (inToken == USCORE) {
-          wildcardType(in.skipToken)
+          wildcardType(inSkipToken)
         } else {
           val r = path(false, true)
           r match {
@@ -931,7 +932,7 @@ trait Parsers extends NewScanners with MarkupParsers {
     def exprs(): List[Tree] = {
       val ts = new ListBuffer[Tree] + expr()
       while (inToken == COMMA) {
-        val pos = in.currentPos
+        val pos = inCurrentPos
         inNextToken
         if (inToken == RPAREN) {
           deprecationWarning(pos, "Trailing commas have been deprecated")
@@ -1039,7 +1040,7 @@ trait Parsers extends NewScanners with MarkupParsers {
             Throw(expr())
           }
         case DOT =>
-          deprecationWarning(in.currentPos, "`.f' has been deprecated; use `_.f'  instead")
+          deprecationWarning(inCurrentPos, "`.f' has been deprecated; use `_.f'  instead")
           atPos(inSkipToken) {
             if (isIdent) {
               makeDotClosure(stripParens(simpleExpr()))
@@ -1158,7 +1159,7 @@ trait Parsers extends NewScanners with MarkupParsers {
         val name = unaryOp()
         atPos(pos) { Select(stripParens(simpleExpr()), name) }
       } else if (isIdent && inName == AMP) {
-        deprecationWarning(in.currentPos, "`&f' has been deprecated; use `f _' instead")
+        deprecationWarning(inCurrentPos, "`&f' has been deprecated; use `f _' instead")
         val pos = inCurrentPos
         val name = ident()
         atPos(pos) { Typed(stripParens(simpleExpr()), Function(List(), EmptyTree)) }
@@ -1284,8 +1285,9 @@ trait Parsers extends NewScanners with MarkupParsers {
 
     /** Block ::= BlockStatSeq
      */
-    def block(): Tree =
+    def block(): Tree = {
       makeBlock(blockStatSeq(new ListBuffer[Tree]))
+    }
 
    /** CaseClauses ::= CaseClause {CaseClause}
     */
@@ -1742,7 +1744,7 @@ trait Parsers extends NewScanners with MarkupParsers {
       val pos = inCurrentPos
       newLineOptWhenFollowedBy(LPAREN)
       if (ofCaseClass && inToken != LPAREN)
-        deprecationWarning(in.currentPos, "case classes without a parameter list have been deprecated;\n"+
+        deprecationWarning(inCurrentPos, "case classes without a parameter list have been deprecated;\n"+
                            "use either case objects or case classes with `()' as parameter list.")
       while (implicitmod == 0 && inToken == LPAREN) {
         inNextToken

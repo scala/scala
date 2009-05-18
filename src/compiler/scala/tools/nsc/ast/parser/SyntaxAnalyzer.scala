@@ -2,7 +2,7 @@
  * Copyright 2005-2009 LAMP/EPFL
  * @author Martin Odersky
  */
-// $Id$
+// $Id: SyntaxAnalyzer.scala 16893 2009-01-13 13:09:22Z cunei $
 
 package scala.tools.nsc.ast.parser
 
@@ -10,7 +10,7 @@ import javac._
 
 /** An nsc sub-component.
  */
-abstract class SyntaxAnalyzer extends SubComponent with Parsers with MarkupParsers with NewScanners with JavaParsers with JavaScanners {
+abstract class SyntaxAnalyzer extends SubComponent with Parsers with MarkupParsers with Scanners with JavaParsers with JavaScanners {
 
   val phaseName = "parser"
 

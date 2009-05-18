@@ -2,258 +2,107 @@
  * Copyright 2005-2009 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id$
+// $Id: Scanners.scala 17274 2009-03-10 11:39:04Z michelou $
 
 package scala.tools.nsc.ast.parser
 
 import scala.tools.nsc.util._
 import SourceFile.{LF, FF, CR, SU}
 import Tokens._
+import scala.annotation.switch
 
 trait Scanners {
   val global : Global
   import global._
-  abstract class AbstractTokenData {
-    def token: Int
-    type ScanPosition
-    val NoPos: ScanPosition
-    def pos: ScanPosition
-    def currentPos: ScanPosition
-    def name: Name
-  }
 
-  /** A class for representing a token's data. */
-  trait TokenData extends AbstractTokenData {
-    type ScanPosition = Int
+  /** Offset into source character array */
+  type Offset = Int
 
-    val NoPos: Int = -1
+  /** An undefined offset */
+  val NoOffset: Offset = -1
+
+  trait TokenData {
+
     /** the next token */
     var token: Int = EMPTY
-    /** the token's position */
-    var pos: Int = 0
-    override def currentPos: Int = pos - 1
 
-    /** the first character position after the previous token */
-    var lastPos: Int = 0
+    /** the offset of the first character of the current token */
+    var offset: Offset = 0
 
-    /** the name of an identifier or token */
+    /** the offset of the character following the token preceding this one */
+    var lastOffset: Offset = 0
+
+    /** the name of an identifier */
     var name: Name = null
+
+    /** the string value of a literal */
+    var strVal: String = null
 
     /** the base of a number */
     var base: Int = 0
 
     def copyFrom(td: TokenData) = {
       this.token = td.token
-      this.pos = td.pos
-      this.lastPos = td.lastPos
+      this.offset = td.offset
+      this.lastOffset = td.lastOffset
       this.name = td.name
+      this.strVal = td.strVal
       this.base = td.base
     }
   }
 
-  /** ...
-   */
-  abstract class AbstractScanner extends AbstractTokenData {
-    implicit def p2g(pos: Position): ScanPosition
-    implicit def g2p(pos: ScanPosition): Position
-    def warning(pos: ScanPosition, msg: String): Unit
-    def error  (pos: ScanPosition, msg: String): Unit
-    def incompleteInputError(pos: ScanPosition, msg: String): Unit
-    def deprecationWarning(pos: ScanPosition, msg: String): Unit
-    /** the last error position
+  abstract class Scanner extends CharArrayReader1 with TokenData {
+
+    def flush = { charOffset = offset; nextChar(); this }
+
+    def resume(lastCode: Int) = {
+      token = lastCode
+      assert(next.token == EMPTY)
+      nextToken()
+    }
+
+    // things to fill in, in addition to buf, decodeUni
+    def warning(off: Offset, msg: String): Unit
+    def error  (off: Offset, msg: String): Unit
+    def incompleteInputError(off: Offset, msg: String): Unit
+    def deprecationWarning(off: Offset, msg: String): Unit
+
+    /** the last error offset
      */
-    var errpos: ScanPosition
-    var lastPos: ScanPosition
-    def skipToken: ScanPosition
-    def nextToken: Unit
-    def next: AbstractTokenData
-    def intVal(negated: Boolean): Long
-    def floatVal(negated: Boolean): Double
-    def intVal: Long = intVal(false)
-    def floatVal: Double = floatVal(false)
-    //def token2string(token: Int): String = configuration.token2string(token)
-    /** return recent scala doc, if any */
-    def flushDoc: String
-  }
+    var errOffset: Offset = NoOffset
 
-  object ScannerConfiguration {
-//  Keywords -----------------------------------------------------------------
-    /** Keyword array; maps from name indices to tokens */
-    private var key: Array[Byte] = _
-    private var maxKey = 0
-    private var tokenName = new Array[Name](128)
-
-    {
-      var tokenCount = 0
-
-      // Enter keywords
-
-      def enterKeyword(n: Name, tokenId: Int) {
-        while (tokenId >= tokenName.length) {
-          val newTokName = new Array[Name](tokenName.length * 2)
-          Array.copy(tokenName, 0, newTokName, 0, newTokName.length)
-          tokenName = newTokName
-        }
-        tokenName(tokenId) = n
-        if (n.start > maxKey) maxKey = n.start
-        if (tokenId >= tokenCount) tokenCount = tokenId + 1
-      }
-
-      enterKeyword(nme.ABSTRACTkw, ABSTRACT)
-      enterKeyword(nme.CASEkw, CASE)
-      enterKeyword(nme.CATCHkw, CATCH)
-      enterKeyword(nme.CLASSkw, CLASS)
-      enterKeyword(nme.DEFkw, DEF)
-      enterKeyword(nme.DOkw, DO)
-      enterKeyword(nme.ELSEkw, ELSE)
-      enterKeyword(nme.EXTENDSkw, EXTENDS)
-      enterKeyword(nme.FALSEkw, FALSE)
-      enterKeyword(nme.FINALkw, FINAL)
-      enterKeyword(nme.FINALLYkw, FINALLY)
-      enterKeyword(nme.FORkw, FOR)
-      enterKeyword(nme.FORSOMEkw, FORSOME)
-      enterKeyword(nme.IFkw, IF)
-      enterKeyword(nme.IMPLICITkw, IMPLICIT)
-      enterKeyword(nme.IMPORTkw, IMPORT)
-      enterKeyword(nme.LAZYkw, LAZY)
-      enterKeyword(nme.MATCHkw, MATCH)
-      enterKeyword(nme.NEWkw, NEW)
-      enterKeyword(nme.NULLkw, NULL)
-      enterKeyword(nme.OBJECTkw, OBJECT)
-      enterKeyword(nme.OVERRIDEkw, OVERRIDE)
-      enterKeyword(nme.PACKAGEkw, PACKAGE)
-      enterKeyword(nme.PRIVATEkw, PRIVATE)
-      enterKeyword(nme.PROTECTEDkw, PROTECTED)
-      enterKeyword(nme.REQUIRESkw, REQUIRES)
-      enterKeyword(nme.RETURNkw, RETURN)
-      enterKeyword(nme.SEALEDkw, SEALED)
-      enterKeyword(nme.SUPERkw, SUPER)
-      enterKeyword(nme.THISkw, THIS)
-      enterKeyword(nme.THROWkw, THROW)
-      enterKeyword(nme.TRAITkw, TRAIT)
-      enterKeyword(nme.TRUEkw, TRUE)
-      enterKeyword(nme.TRYkw, TRY)
-      enterKeyword(nme.TYPEkw, TYPE)
-      enterKeyword(nme.VALkw, VAL)
-      enterKeyword(nme.VARkw, VAR)
-      enterKeyword(nme.WHILEkw, WHILE)
-      enterKeyword(nme.WITHkw, WITH)
-      enterKeyword(nme.YIELDkw, YIELD)
-      enterKeyword(nme.DOTkw, DOT)
-      enterKeyword(nme.USCOREkw, USCORE)
-      enterKeyword(nme.COLONkw, COLON)
-      enterKeyword(nme.EQUALSkw, EQUALS)
-      enterKeyword(nme.ARROWkw, ARROW)
-      enterKeyword(nme.LARROWkw, LARROW)
-      enterKeyword(nme.SUBTYPEkw, SUBTYPE)
-      enterKeyword(nme.VIEWBOUNDkw, VIEWBOUND)
-      enterKeyword(nme.SUPERTYPEkw, SUPERTYPE)
-      enterKeyword(nme.HASHkw, HASH)
-      enterKeyword(nme.ATkw, AT)
-
-      // Build keyword array
-      key = Array.make(maxKey + 1, IDENTIFIER)
-      for (j <- 0 until tokenCount if tokenName(j) ne null)
-        key(tokenName(j).start) = j.toByte
-    }
-
-//Token representation -----------------------------------------------------
-
-  /** Convert name to token */
-  def name2token(name: Name): Int =
-    if (name.start <= maxKey) key(name.start) else IDENTIFIER
-
-  /** Returns the string representation of given token. */
-  def token2string(token: Int): String = token match {
-    case IDENTIFIER | BACKQUOTED_IDENT =>
-      "identifier"/* + \""+name+"\""*/
-    case CHARLIT =>
-      "character literal"
-    case INTLIT =>
-      "integer literal"
-    case LONGLIT =>
-      "long literal"
-    case FLOATLIT =>
-      "float literal"
-    case DOUBLELIT =>
-      "double literal"
-    case STRINGLIT =>
-      "string literal"
-    case SYMBOLLIT =>
-      "symbol literal"
-    case LPAREN =>
-      "'('"
-    case RPAREN =>
-      "')'"
-    case LBRACE =>
-      "'{'"
-    case RBRACE =>
-      "'}'"
-    case LBRACKET =>
-      "'['"
-    case RBRACKET =>
-      "']'"
-    case EOF =>
-      "eof"
-    case ERROR =>
-      "something"
-    case SEMI =>
-      "';'"
-    case NEWLINE =>
-      "';'"
-    case NEWLINES =>
-      "';'"
-    case COMMA =>
-      "','"
-    case CASECLASS =>
-      "case class"
-    case CASEOBJECT =>
-      "case object"
-    case XMLSTART =>
-      "$XMLSTART$<"
-    case _ =>
-      try {
-        "'" + tokenName(token) + "'"
-      } catch {
-        case _: ArrayIndexOutOfBoundsException =>
-          "'<" + token + ">'"
-        case _: NullPointerException =>
-          "'<(" + token + ")>'"
-      }
-    }
-  }
-
-
-  /** A scanner for the programming language Scala.
-   *
-   *  @author     Matthias Zenger, Martin Odersky, Burak Emir
-   *  @version    1.1
-   */
-  abstract class Scanner extends AbstractScanner with TokenData {
-    override def intVal = super.intVal
-    override def floatVal = super.floatVal
-    override var errpos: Int = NoPos
-
-    val in: CharArrayReader
-
-    /** character buffer for literals
+    /** A character buffer for literals
      */
-    val cbuf = new StringBuilder()
+    val cbuf = new StringBuilder
 
-    /** append Unicode character to "lit" buffer
-    */
-    protected def putChar(c: Char) { cbuf.append(c) }
-
-    /** Clear buffer and set name */
-    private def setName {
-      name = newTermName(cbuf.toString())
-      cbuf.setLength(0)
+    /** append Unicode character to "cbuf" buffer
+     */
+    protected def putChar(c: Char) {
+//      assert(cbuf.size < 10000, cbuf)
+      cbuf.append(c)
     }
+
+    /** Clear buffer and set name and token */
+    private def finishNamed() {
+      name = newTermName(cbuf.toString)
+      token = name2token(name)
+      cbuf.clear()
+    }
+
+    /** Clear buffer and set string */
+    private def setStrVal() {
+      strVal = cbuf.toString
+      cbuf.clear()
+    }
+
+    /** Should doc comments be built? */
+    def buildDocs: Boolean = onlyPresentation
 
     /** buffer for the documentation comment
      */
     var docBuffer: StringBuilder = null
 
+    /** Return current docBuffer and set docBuffer to null */
     def flushDoc = {
       val ret = if (docBuffer != null) docBuffer.toString else null
       docBuffer = null
@@ -268,71 +117,81 @@ trait Scanners {
 
     private class TokenData0 extends TokenData
 
-    /** we need one token lookahead
+    /** we need one token lookahead and one token history
      */
     val next : TokenData = new TokenData0
     val prev : TokenData = new TokenData0
 
-    /** a stack which indicates whether line-ends can be statement separators
+    /** a stack of tokens which indicates whether line-ends can be statement separators
      */
     var sepRegions: List[Int] = List()
 
-    /** A new line was inserted where in version 1.0 it would not be.
-     *  Only significant if settings.migrate.value is set
-     */
-    var newNewLine = false
-
-    /** Parser is currently skipping ahead because of an error.
-     *  Only significant if settings.migrate.value is set
-     */
-    var skipping = false
-
 // Get next token ------------------------------------------------------------
 
-    /** read next token and return last position
+    /** read next token and return last offset
      */
-    def skipToken: Int = {
-      val p = pos; nextToken
-      // XXX: account for off by one error //???
-      (p - 1)
+    def skipToken(): Offset = {
+      val off = offset
+      nextToken()
+      off
     }
 
-    def nextToken {
-      if (token == LPAREN) {
-        sepRegions = RPAREN :: sepRegions
-      } else if (token == LBRACKET) {
-        sepRegions = RBRACKET :: sepRegions
-      } else if  (token == LBRACE) {
-        sepRegions = RBRACE :: sepRegions
-      } else if (token == CASE) {
-        sepRegions = ARROW :: sepRegions
-      } else if (token == RBRACE) {
-        while (!sepRegions.isEmpty && sepRegions.head != RBRACE)
-          sepRegions = sepRegions.tail
-        if (!sepRegions.isEmpty)
-          sepRegions = sepRegions.tail
-      } else if (token == RBRACKET || token == RPAREN || token == ARROW) {
-        if (!sepRegions.isEmpty && sepRegions.head == token)
-          sepRegions = sepRegions.tail
+    /** Produce next token, filling TokenData fields of Scanner.
+     */
+    def nextToken() {
+      val lastToken = token
+      // Adapt sepRegions according to last token
+      (lastToken: @switch) match {
+        case LPAREN =>
+          sepRegions = RPAREN :: sepRegions
+        case LBRACKET =>
+          sepRegions = RBRACKET :: sepRegions
+        case LBRACE =>
+          sepRegions = RBRACE :: sepRegions
+        case CASE =>
+          sepRegions = ARROW :: sepRegions
+        case RBRACE =>
+          sepRegions = sepRegions dropWhile (_ != RBRACE)
+          if (!sepRegions.isEmpty) sepRegions = sepRegions.tail
+        case RBRACKET | RPAREN | ARROW =>
+          if (!sepRegions.isEmpty && sepRegions.head == lastToken)
+            sepRegions = sepRegions.tail
+        case _ =>
       }
 
-      val lastToken = token
+      // Read a token or copy it from `next` tokenData
       if (next.token == EMPTY) {
+        lastOffset = charOffset - 1
         fetchToken()
       } else {
         this copyFrom next
         next.token = EMPTY
       }
+
+      /** Insert NEWLINE or NEWLINES if
+       *  - we are after a newline
+       *  - we are within a { ... } or on toplevel (wrt sepRegions)
+       *  - the current token can start a statement and the one before can end it
+       *  insert NEWLINES if we are past a blank line, NEWLINE otherwise
+       */
+      if (afterLineEnd() && inLastOfStat(lastToken) && inFirstOfStat(token) &&
+          (sepRegions.isEmpty || sepRegions.head == RBRACE)) {
+        next copyFrom this
+        offset = if (lineStartOffset <= offset) lineStartOffset else lastLineStartOffset
+        token = if (pastBlankLine()) NEWLINES else NEWLINE
+      }
+
+      // Join CASE + CLASS => CASECLASS, CASE + OBJECT => CASEOBJECT, SEMI + ELSE => ELSE
       if (token == CASE) {
         prev copyFrom this
+        val nextLastOffset = charOffset - 1
         fetchToken()
         if (token == CLASS) {
           token = CASECLASS
-          lastPos = prev.lastPos
         } else if (token == OBJECT) {
           token = CASEOBJECT
-          lastPos = prev.lastPos
         } else {
+          lastOffset = nextLastOffset
           next copyFrom this
           this copyFrom prev
         }
@@ -343,274 +202,224 @@ trait Scanners {
           next copyFrom this
           this copyFrom prev
         }
-      } else if (token == IDENTIFIER && name == nme.MIXINkw) { //todo: remove eventually
-        prev.copyFrom(this)
-        fetchToken()
-        if (token == CLASS)
-          warning(prev.pos, "`mixin' is no longer a reserved word; you should use `trait' instead of `mixin class'");
-        next.copyFrom(this)
-        this.copyFrom(prev)
       }
 
-      if (afterLineEnd() && inLastOfStat(lastToken) && inFirstOfStat(token) &&
-          (sepRegions.isEmpty || sepRegions.head == RBRACE)) {
-        next copyFrom this
-        pos = in.lineStartPos
-        token = if (in.lastBlankLinePos > lastPos) NEWLINES else NEWLINE
-      }
+//      print("["+this+"]")
     }
 
-    private def afterLineEnd() = (
-      lastPos < in.lineStartPos &&
-      (in.lineStartPos <= pos ||
-       lastPos < in.lastLineStartPos && in.lastLineStartPos <= pos)
-    )
+    /** Is current token first one after a newline? */
+    private def afterLineEnd(): Boolean =
+      lastOffset < lineStartOffset &&
+      (lineStartOffset <= offset ||
+       lastOffset < lastLineStartOffset && lastLineStartOffset <= offset)
 
-    /** read next token
+    /** Is there a blank line between the current token and the last one?
+     *  @pre  afterLineEnd().
      */
-    private def fetchToken() {
-      if (token == EOF) return
-      lastPos = in.cpos - 1 // Position.encode(in.cline, in.ccol)
-      //var index = bp
-      while (true) {
-        in.ch match {
-          case ' ' | '\t' | CR | LF | FF =>
-            in.next
-          case _ =>
-            pos = in.cpos // Position.encode(in.cline, in.ccol)
-            in.ch match {
-              case '\u21D2' =>
-                in.next; token = ARROW
-                return
-              case '\u2190' =>
-                in.next; token = LARROW
-                return
-              case 'A' | 'B' | 'C' | 'D' | 'E' |
-                   'F' | 'G' | 'H' | 'I' | 'J' |
-                   'K' | 'L' | 'M' | 'N' | 'O' |
-                   'P' | 'Q' | 'R' | 'S' | 'T' |
-                   'U' | 'V' | 'W' | 'X' | 'Y' |
-                   'Z' | '$' | '_' |
-                   'a' | 'b' | 'c' | 'd' | 'e' |
-                   'f' | 'g' | 'h' | 'i' | 'j' |
-                   'k' | 'l' | 'm' | 'n' | 'o' |
-                   'p' | 'q' | 'r' | 's' | 't' |
-                   'u' | 'v' | 'w' | 'x' | 'y' |  // scala-mode: need to understand multi-line case patterns
-                   'z' =>
-                putChar(in.ch)
-                in.next
-                getIdentRest  // scala-mode: wrong indent for multi-line case blocks
-                return
-
-            case '<' => // is XMLSTART?
-              val last = in.last
-              in.next
-              last match {
-              case ' '|'\t'|'\n'|'{'|'('|'>' if xml.Parsing.isNameStart(in.ch) || in.ch == '!' || in.ch == '?' =>
-                token = XMLSTART
-              case _ =>
-                // Console.println("found '<', but last is '"+in.last+"'"); // DEBUG
-                putChar('<')
-                getOperatorRest
-              }
-              return
-
-            case '~' | '!' | '@' | '#' | '%' |
-                 '^' | '*' | '+' | '-' | /*'<' | */
-                 '>' | '?' | ':' | '=' | '&' |
-                 '|' | '\\' =>
-               putChar(in.ch)
-               in.next
-               getOperatorRest; // XXX
-               return
-              case '/' =>
-                in.next
-                if (!skipComment()) {
-                  putChar('/')
-                  getOperatorRest
-                  return
-                }
-              case '0' =>
-                putChar(in.ch)
-                in.next
-                if (in.ch == 'x' || in.ch == 'X') {
-                  in.next
-                  base = 16
-                } else {
-                  base = 8
-                }
-                getNumber
-                return
-              case '1' | '2' | '3' | '4' |
-                   '5' | '6' | '7' | '8' | '9' =>
-                base = 10
-                getNumber
-                return
-              case '`' =>
-                in.next
-                getStringLit('`', BACKQUOTED_IDENT)
-                return
-              case '\"' =>
-                in.next
-                if (in.ch == '\"') {
-                  in.next
-                  if (in.ch == '\"') {
-                    in.next
-                    val saved = in.lineStartPos
-                    getMultiLineStringLit
-                    if (in.lineStartPos != saved) // ignore linestarts within a mulit-line string
-                      in.lastLineStartPos = saved
-                  } else {
-                    token = STRINGLIT
-                    name = nme.EMPTY
-                  }
-                } else {
-                  getStringLit('\"', STRINGLIT)
-                }
-                return
-              case '\'' =>
-                in.next
-                in.ch match {
-                  case 'A' | 'B' | 'C' | 'D' | 'E' |
-                       'F' | 'G' | 'H' | 'I' | 'J' |
-                       'K' | 'L' | 'M' | 'N' | 'O' |
-                       'P' | 'Q' | 'R' | 'S' | 'T' |
-                       'U' | 'V' | 'W' | 'X' | 'Y' |
-                       'Z' | '$' | '_' |
-                       'a' | 'b' | 'c' | 'd' | 'e' |
-                       'f' | 'g' | 'h' | 'i' | 'j' |
-                       'k' | 'l' | 'm' | 'n' | 'o' |
-                       'p' | 'q' | 'r' | 's' | 't' |
-                       'u' | 'v' | 'w' | 'x' | 'y' |
-                       'z' |
-                       '0' | '1' | '2' | '3' | '4' |
-                       '5' | '6' | '7' | '8' | '9' =>
-                    putChar(in.ch)
-                    in.next
-                    if (in.ch != '\'') {
-                      getIdentRest
-                      token = SYMBOLLIT
-                      return
-                    }
-                  case _ =>
-                    if (Character.isUnicodeIdentifierStart(in.ch)) {
-                      putChar(in.ch)
-                      in.next
-                      if (in.ch != '\'') {
-                        getIdentRest
-                        token = SYMBOLLIT
-                        return
-                      }
-                    } else if (isSpecial(in.ch)) {
-                      putChar(in.ch)
-                      in.next
-                      if (in.ch != '\'') {
-                        getOperatorRest
-                        token = SYMBOLLIT
-                        return
-                      }
-                    } else {
-                      getlitch()
-                    }
-                }
-                if (in.ch == '\'') {
-                  in.next
-                  token = CHARLIT
-                  setName
-                } else {
-                  syntaxError("unclosed character literal")
-                }
-                return
-              case '.' =>
-                in.next
-                if ('0' <= in.ch && in.ch <= '9') {
-                  putChar('.'); getFraction
-                } else {
-                  token = DOT
-                }
-                return
-              case ';' =>
-                in.next; token = SEMI
-                return
-              case ',' =>
-                in.next; token = COMMA
-                return
-              case '(' =>   //scala-mode: need to understand character quotes
-                in.next; token = LPAREN
-                return
-              case '{' =>
-                in.next; token = LBRACE
-                return
-              case ')' =>
-                in.next; token = RPAREN
-                return
-              case '}' =>
-                in.next;
-                token = RBRACE
-                return
-              case '[' =>
-                in.next; token = LBRACKET
-                return
-              case ']' =>
-                in.next; token = RBRACKET
-                return
-              case SU =>
-                if (!in.hasNext) token = EOF
-                else {
-                  syntaxError("illegal character")
-                  in.next
-                }
-                return
-              case _ =>
-                if (Character.isUnicodeIdentifierStart(in.ch)) {
-                  putChar(in.ch)
-                  in.next
-                  getIdentRest
-                } else if (isSpecial(in.ch)) {
-                  putChar(in.ch)
-                  getOperatorRest
-                } else {
-                  syntaxError("illegal character")
-                  in.next
-                }
-                return
+    private def pastBlankLine(): Boolean = {
+      var idx = lastOffset
+      var ch = buf(idx)
+      val end = offset
+      while (idx < end) {
+        if (ch == LF || ch == FF) {
+          do {
+            idx += 1; ch = buf(idx)
+            if (ch == LF || ch == FF) {
+//              println("blank line found at "+lastOffset+":"+(lastOffset to idx).map(buf(_)).toList)
+              return true
             }
+          } while (idx < end && ch <= ' ')
         }
+        idx += 1; ch = buf(idx)
+      }
+      false
+    }
+
+    /** read next token, filling TokenData fields of Scanner.
+     */
+    private final def fetchToken() {
+      offset = charOffset - 1
+      (ch: @switch) match {
+        case ' ' | '\t' | CR | LF | FF =>
+          nextChar()
+          fetchToken()
+        case 'A' | 'B' | 'C' | 'D' | 'E' |
+             'F' | 'G' | 'H' | 'I' | 'J' |
+             'K' | 'L' | 'M' | 'N' | 'O' |
+             'P' | 'Q' | 'R' | 'S' | 'T' |
+             'U' | 'V' | 'W' | 'X' | 'Y' |
+             'Z' | '$' | '_' |
+             'a' | 'b' | 'c' | 'd' | 'e' |
+             'f' | 'g' | 'h' | 'i' | 'j' |
+             'k' | 'l' | 'm' | 'n' | 'o' |
+             'p' | 'q' | 'r' | 's' | 't' |
+             'u' | 'v' | 'w' | 'x' | 'y' |  // scala-mode: need to understand multi-line case patterns
+             'z' =>
+          putChar(ch)
+          nextChar()
+          getIdentRest()  // scala-mode: wrong indent for multi-line case blocks
+        case '<' => // is XMLSTART?
+          val last = if (charOffset >= 2) buf(charOffset - 2) else ' '
+          nextChar()
+          last match {
+            case ' '|'\t'|'\n'|'{'|'('|'>' if xml.Parsing.isNameStart(ch) || ch == '!' || ch == '?' =>
+              token = XMLSTART
+            case _ =>
+              // Console.println("found '<', but last is '"+in.last+"'"); // DEBUG
+              putChar('<')
+              getOperatorRest()
+          }
+        case '~' | '!' | '@' | '#' | '%' |
+             '^' | '*' | '+' | '-' | /*'<' | */
+             '>' | '?' | ':' | '=' | '&' |
+             '|' | '\\' =>
+          putChar(ch)
+          nextChar()
+          getOperatorRest()
+        case '/' =>
+          nextChar()
+          if (skipComment()) {
+            fetchToken()
+          } else {
+            putChar('/')
+            getOperatorRest()
+          }
+        case '0' =>
+          putChar(ch)
+          nextChar()
+          if (ch == 'x' || ch == 'X') {
+            nextChar()
+            base = 16
+          } else {
+            base = 8
+          }
+          getNumber()
+        case '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
+          base = 10
+          getNumber()
+        case '`' =>
+          nextChar()
+          if (getStringLit('`')) {
+            finishNamed();
+            if (name.length == 0) syntaxError("empty quoted identifier")
+            token = BACKQUOTED_IDENT
+          }
+          else syntaxError("unclosed quoted identifier")
+        case '\"' =>
+          nextChar()
+          if (ch == '\"') {
+            nextChar()
+            if (ch == '\"') {
+              nextChar()
+              val saved = lineStartOffset
+              getMultiLineStringLit()
+              if (lineStartOffset != saved) // ignore linestarts within a multi-line string
+                lastLineStartOffset = saved
+            } else {
+              token = STRINGLIT
+              strVal = ""
+            }
+          } else if (getStringLit('\"')) {
+            setStrVal()
+            token = STRINGLIT
+          } else {
+            syntaxError("unclosed string literal")
+          }
+        case '\'' =>
+          nextChar()
+          if (isIdentifierStart(ch) || '0' <= ch && ch <= '9')
+            charLitOr(getIdentRest)
+          else if (isSpecial(ch))
+            charLitOr(getOperatorRest)
+          else {
+            getLitChar()
+            if (ch == '\'') {
+              nextChar()
+              token = CHARLIT
+              setStrVal()
+            } else {
+              syntaxError("unclosed character literal")
+            }
+          }
+        case '.' =>
+          nextChar()
+          if ('0' <= ch && ch <= '9') {
+            putChar('.'); getFraction()
+          } else {
+            token = DOT
+          }
+        case ';' =>
+          nextChar(); token = SEMI
+        case ',' =>
+          nextChar(); token = COMMA
+        case '(' =>
+          nextChar(); token = LPAREN
+        case '{' =>
+          nextChar(); token = LBRACE
+        case ')' =>
+          nextChar(); token = RPAREN
+        case '}' =>
+          nextChar(); token = RBRACE
+        case '[' =>
+          nextChar(); token = LBRACKET
+        case ']' =>
+          nextChar(); token = RBRACKET
+        case SU =>
+          if (charOffset >= buf.length) token = EOF
+          else {
+            syntaxError("illegal character")
+            nextChar()
+          }
+        case _ =>
+          if (ch == '\u21D2') {
+            nextChar(); token = ARROW
+          } else if (ch == '\u2190') {
+            nextChar(); token = LARROW
+          } else if (Character.isUnicodeIdentifierStart(ch)) {
+            putChar(ch)
+            nextChar()
+            getIdentRest()
+          } else if (isSpecial(ch)) {
+            putChar(ch)
+            getOperatorRest()
+          } else {
+            syntaxError("illegal character")
+            nextChar()
+          }
       }
     }
 
     private def skipComment(): Boolean = {
-      if (in.ch == '/') {
+      if (ch == '/') {
         do {
-          in.next
-        } while ((in.ch != CR) && (in.ch != LF) && (in.ch != SU))
+          nextChar()
+        } while ((ch != CR) && (ch != LF) && (ch != SU))
         true
-      } else if (in.ch == '*') {
+      } else if (ch == '*') {
         docBuffer = null
         var openComments = 1
-        in.next
-        val scalaDoc = ("/**", "*/")
-        if (in.ch == '*' && onlyPresentation)
-          docBuffer = new StringBuilder(scalaDoc._1)
+        nextChar()
+        if (ch == '*' && buildDocs)
+          docBuffer = new StringBuilder("/**")
         while (openComments > 0) {
           do {
             do {
-              if (in.ch == '/') {
-                in.next; putDocChar(in.ch)
-                if (in.ch == '*') {
-                  in.next; putDocChar(in.ch)
-                  openComments = openComments + 1
+              if (ch == '/') {
+                nextChar(); putDocChar(ch)
+                if (ch == '*') {
+                  nextChar(); putDocChar(ch)
+                  openComments += 1
                 }
               }
-              if (in.ch != '*' && in.ch != SU) {
-                in.next; putDocChar(in.ch)
+              if (ch != '*' && ch != SU) {
+                nextChar(); putDocChar(ch)
               }
-            } while (in.ch != '*' && in.ch != SU)
-            while (in.ch == '*') {
-              in.next; putDocChar(in.ch)
+            } while (ch != '*' && ch != SU)
+            while (ch == '*') {
+              nextChar(); putDocChar(ch)
             }
-          } while (in.ch != '/' && in.ch != SU)
-          if (in.ch == '/') in.next
+          } while (ch != '/' && ch != SU)
+          if (ch == '/') nextChar()
           else incompleteInputError("unclosed comment")
           openComments -= 1
         }
@@ -620,16 +429,17 @@ trait Scanners {
       }
     }
 
+    /** Can token start a statement? */
     def inFirstOfStat(token: Int) = token match {
-      case EOF | CASE | CATCH | ELSE | EXTENDS | FINALLY | FORSOME | MATCH |
-           REQUIRES | WITH | YIELD | COMMA | SEMI | NEWLINE | NEWLINES | DOT |
-           USCORE | COLON | EQUALS | ARROW | LARROW | SUBTYPE | VIEWBOUND |
-           SUPERTYPE | HASH | RPAREN | RBRACKET | RBRACE => // todo: add LBRACKET
+      case EOF | CATCH | ELSE | EXTENDS | FINALLY | FORSOME | MATCH | WITH | YIELD |
+           COMMA | SEMI | NEWLINE | NEWLINES | DOT | COLON | EQUALS | ARROW | LARROW |
+           SUBTYPE | VIEWBOUND | SUPERTYPE | HASH | RPAREN | RBRACKET | RBRACE | LBRACKET =>
         false
       case _ =>
         true
     }
 
+    /** Can token end a statement? */
     def inLastOfStat(token: Int) = token match {
       case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT | SYMBOLLIT |
            IDENTIFIER | BACKQUOTED_IDENT | THIS | NULL | TRUE | FALSE | RETURN | USCORE |
@@ -641,152 +451,102 @@ trait Scanners {
 
 // Identifiers ---------------------------------------------------------------
 
-    def isIdentStart(c: Char): Boolean = (
-      ('A' <= c && c <= 'Z') ||
-      ('a' <= c && c <= 'a') ||
-      (c == '_') || (c == '$') ||
-      Character.isUnicodeIdentifierStart(c)
-    )
-
-    def isIdentPart(c: Char) = (
-      isIdentStart(c) ||
-      ('0' <= c && c <= '9') ||
-      Character.isUnicodeIdentifierPart(c)
-    )
-
-    def isSpecial(c: Char) = {
-      val chtp = Character.getType(c)
-      chtp == Character.MATH_SYMBOL || chtp == Character.OTHER_SYMBOL
-    }
-
-    private def getIdentRest {
-      while (true) {
-        in.ch match {
-          case 'A' | 'B' | 'C' | 'D' | 'E' |
-               'F' | 'G' | 'H' | 'I' | 'J' |
-               'K' | 'L' | 'M' | 'N' | 'O' |
-               'P' | 'Q' | 'R' | 'S' | 'T' |
-               'U' | 'V' | 'W' | 'X' | 'Y' |
-               'Z' | '$' |
-               'a' | 'b' | 'c' | 'd' | 'e' |
-               'f' | 'g' | 'h' | 'i' | 'j' |
-               'k' | 'l' | 'm' | 'n' | 'o' |
-               'p' | 'q' | 'r' | 's' | 't' |
-               'u' | 'v' | 'w' | 'x' | 'y' |
-               'z' |
-               '0' | '1' | '2' | '3' | '4' |
-               '5' | '6' | '7' | '8' | '9' =>
-            putChar(in.ch)
-            in.next
-
-          case '_' =>
-            putChar(in.ch)
-            in.next
-            getIdentOrOperatorRest
-            return
-          case SU =>
-            setName
-            token = ScannerConfiguration.name2token(name)
-            return
-          case _ =>
-            if (Character.isUnicodeIdentifierPart(in.ch)) {
-              putChar(in.ch)
-              in.next
-            } else {
-              setName
-              token = ScannerConfiguration.name2token(name)
-              return
-            }
+    private def getIdentRest(): Unit = (ch: @switch) match {
+      case 'A' | 'B' | 'C' | 'D' | 'E' |
+           'F' | 'G' | 'H' | 'I' | 'J' |
+           'K' | 'L' | 'M' | 'N' | 'O' |
+           'P' | 'Q' | 'R' | 'S' | 'T' |
+           'U' | 'V' | 'W' | 'X' | 'Y' |
+           'Z' | '$' |
+           'a' | 'b' | 'c' | 'd' | 'e' |
+           'f' | 'g' | 'h' | 'i' | 'j' |
+           'k' | 'l' | 'm' | 'n' | 'o' |
+           'p' | 'q' | 'r' | 's' | 't' |
+           'u' | 'v' | 'w' | 'x' | 'y' |
+           'z' |
+           '0' | '1' | '2' | '3' | '4' |
+           '5' | '6' | '7' | '8' | '9' =>
+        putChar(ch)
+        nextChar()
+        getIdentRest()
+      case '_' =>
+        putChar(ch)
+        nextChar()
+        getIdentOrOperatorRest()
+      case SU => // strangely enough, Character.isUnicodeIdentifierPart(SU) returns true!
+        finishNamed()
+      case _ =>
+        if (Character.isUnicodeIdentifierPart(ch)) {
+          putChar(ch)
+          nextChar()
+          getIdentRest()
+        } else {
+          finishNamed()
         }
-      }
     }
 
-    private def getOperatorRest {
-      while (true) {
-        in.ch match {
-          case '~' | '!' | '@' | '#' | '%' |
-               '^' | '*' | '+' | '-' | '<' |
-               '>' | '?' | ':' | '=' | '&' |
-               '|' | '\\' =>
-            putChar(in.ch)
-            in.next
-          case '/' =>
-            in.next
-            if (skipComment) {
-              setName
-              token = ScannerConfiguration.name2token(name)
-              return
-            } else putChar('/')
-          case _ =>
-            if (isSpecial(in.ch)) {
-              putChar(in.ch)
-              in.next
-            } else {
-              setName
-              token = ScannerConfiguration.name2token(name)
-              return
-            }
-        }
-      }
+    private def getOperatorRest(): Unit = (ch: @switch) match {
+      case '~' | '!' | '@' | '#' | '%' |
+           '^' | '*' | '+' | '-' | '<' |
+           '>' | '?' | ':' | '=' | '&' |
+           '|' | '\\' =>
+        putChar(ch); nextChar(); getOperatorRest()
+      case '/' =>
+        nextChar()
+        if (skipComment()) finishNamed()
+        else { putChar('/'); getOperatorRest() }
+      case _ =>
+        if (isSpecial(ch)) { putChar(ch); nextChar(); getOperatorRest() }
+        else finishNamed()
     }
 
-    private def getIdentOrOperatorRest {
-      if (isIdentPart(in.ch))
-        getIdentRest
-      else in.ch match {
+    private def getIdentOrOperatorRest() {
+      if (isIdentifierPart(ch))
+        getIdentRest()
+      else ch match {
         case '~' | '!' | '@' | '#' | '%' |
              '^' | '*' | '+' | '-' | '<' |
              '>' | '?' | ':' | '=' | '&' |
              '|' | '\\' | '/' =>
-          getOperatorRest
+          getOperatorRest()
         case _ =>
-          if (isSpecial(in.ch)) getOperatorRest
-          else {
-            setName
-            token = ScannerConfiguration.name2token(name)
-          }
+          if (isSpecial(ch)) getOperatorRest()
+          else finishNamed()
       }
     }
 
-    private def getStringLit(delimiter: Char, litType: Int) {
-      //assert((litType==STRINGLIT) || (litType==IDENTIFIER))
-      while (in.ch != delimiter && (in.isUnicode || in.ch != CR && in.ch != LF && in.ch != SU)) {
-        getlitch()
+    private def getStringLit(delimiter: Char): Boolean = {
+      while (ch != delimiter && (isUnicodeEscape || ch != CR && ch != LF && ch != SU)) {
+        getLitChar()
       }
-      if (in.ch == delimiter) {
-        token = litType
-        setName
-        in.next
-      } else {
-        val typeDesc = if(litType == STRINGLIT) "string literal" else "quoted identifier"
-        syntaxError("unclosed " + typeDesc)
-      }
+      if (ch == delimiter) { nextChar(); true }
+      else false
     }
 
-    private def getMultiLineStringLit {
-      if (in.ch == '\"') {
-        in.next
-        if (in.ch == '\"') {
-          in.next
-          if (in.ch == '\"') {
-            in.next
+    private def getMultiLineStringLit() {
+      if (ch == '\"') {
+        nextChar()
+        if (ch == '\"') {
+          nextChar()
+          if (ch == '\"') {
+            nextChar()
             token = STRINGLIT
-            setName
+            setStrVal()
           } else {
             putChar('\"')
             putChar('\"')
-            getMultiLineStringLit
+            getMultiLineStringLit()
           }
         } else {
           putChar('\"')
-          getMultiLineStringLit
+          getMultiLineStringLit()
         }
-      } else if (in.ch == SU) {
+      } else if (ch == SU) {
         incompleteInputError("unclosed multi-line string literal")
       } else {
-        putChar(in.ch)
-        in.next
-        getMultiLineStringLit
+        putChar(ch)
+        nextChar()
+        getMultiLineStringLit()
       }
     }
 
@@ -794,24 +554,24 @@ trait Scanners {
 
     /** read next character in character or string literal:
     */
-    protected def getlitch() =
-      if (in.ch == '\\') {
-        in.next
-        if ('0' <= in.ch && in.ch <= '7') {
-          val leadch: Char = in.ch
-          var oct: Int = in.digit2int(in.ch, 8)
-          in.next
-          if ('0' <= in.ch && in.ch <= '7') {
-            oct = oct * 8 + in.digit2int(in.ch, 8)
-            in.next
-            if (leadch <= '3' && '0' <= in.ch && in.ch <= '7') {
-              oct = oct * 8 + in.digit2int(in.ch, 8)
-              in.next
+    protected def getLitChar() =
+      if (ch == '\\') {
+        nextChar()
+        if ('0' <= ch && ch <= '7') {
+          val leadch: Char = ch
+          var oct: Int = digit2int(ch, 8)
+          nextChar()
+          if ('0' <= ch && ch <= '7') {
+            oct = oct * 8 + digit2int(ch, 8)
+            nextChar()
+            if (leadch <= '3' && '0' <= ch && ch <= '7') {
+              oct = oct * 8 + digit2int(ch, 8)
+              nextChar()
             }
           }
-          putChar(oct.asInstanceOf[Char])
+          putChar(oct.toChar)
         } else {
-          in.ch match {
+          ch match {
             case 'b'  => putChar('\b')
             case 't'  => putChar('\t')
             case 'n'  => putChar('\n')
@@ -821,71 +581,77 @@ trait Scanners {
             case '\'' => putChar('\'')
             case '\\' => putChar('\\')
             case _    =>
-              syntaxError(in.cpos - 1, "invalid escape character")
-              putChar(in.ch)
+              syntaxError(charOffset - 1, "invalid escape character")
+              putChar(ch)
           }
-          in.next
+          nextChar()
         }
       } else  {
-        putChar(in.ch)
-        in.next
+        putChar(ch)
+        nextChar()
       }
 
     /** read fractional part and exponent of floating point number
      *  if one is present.
      */
-    protected def getFraction {
+    protected def getFraction() {
       token = DOUBLELIT
-      while ('0' <= in.ch && in.ch <= '9') {
-        putChar(in.ch)
-        in.next
+      while ('0' <= ch && ch <= '9') {
+        putChar(ch)
+        nextChar()
       }
-      if (in.ch == 'e' || in.ch == 'E') {
-        val lookahead = in.copy
-        lookahead.next
+      if (ch == 'e' || ch == 'E') {
+        val lookahead = lookaheadReader
+        lookahead.nextChar()
         if (lookahead.ch == '+' || lookahead.ch == '-') {
-          lookahead.next
+          lookahead.nextChar()
         }
         if ('0' <= lookahead.ch && lookahead.ch <= '9') {
-          putChar(in.ch)
-          in.next
-          if (in.ch == '+' || in.ch == '-') {
-            putChar(in.ch)
-            in.next
+          putChar(ch)
+          nextChar()
+          if (ch == '+' || ch == '-') {
+            putChar(ch)
+            nextChar()
           }
-          while ('0' <= in.ch && in.ch <= '9') {
-            putChar(in.ch)
-            in.next
+          while ('0' <= ch && ch <= '9') {
+            putChar(ch)
+            nextChar()
           }
         }
         token = DOUBLELIT
       }
-      if (in.ch == 'd' || in.ch == 'D') {
-        putChar(in.ch)
-        in.next
+      if (ch == 'd' || ch == 'D') {
+        putChar(ch)
+        nextChar()
         token = DOUBLELIT
-      } else if (in.ch == 'f' || in.ch == 'F') {
-        putChar(in.ch)
-        in.next
+      } else if (ch == 'f' || ch == 'F') {
+        putChar(ch)
+        nextChar()
         token = FLOATLIT
       }
-      setName
+      checkNoLetter()
+      setStrVal()
     }
 
-    /** convert name to long value
+    /** Convert current strVal to char value
+     */
+    def charVal: Char = if (strVal.length > 0) strVal.charAt(0) else 0
+
+    /** Convert current strVal, base to long value
+     *  This is tricky because of max negative value.
      */
     def intVal(negated: Boolean): Long = {
       if (token == CHARLIT && !negated) {
-        if (name.length > 0) name(0) else 0
+        charVal
       } else {
         var value: Long = 0
         val divider = if (base == 10) 1 else 2
         val limit: Long =
           if (token == LONGLIT) Math.MAX_LONG else Math.MAX_INT
         var i = 0
-        val len = name.length
+        val len = strVal.length
         while (i < len) {
-          val d = in.digit2int(name(i), base)
+          val d = digit2int(strVal charAt i, base)
           if (d < 0) {
             syntaxError("malformed integer number")
             return 0
@@ -904,14 +670,15 @@ trait Scanners {
       }
     }
 
+    def intVal: Long = intVal(false)
 
-    /** convert name, base to double value
+    /** Convert current strVal, base to double value
     */
     def floatVal(negated: Boolean): Double = {
       val limit: Double =
         if (token == DOUBLELIT) Math.MAX_DOUBLE else Math.MAX_FLOAT
       try {
-        val value: Double = java.lang.Double.valueOf(name.toString()).doubleValue()
+        val value: Double = java.lang.Double.valueOf(strVal).doubleValue()
         if (value > limit)
           syntaxError("floating point number too large")
         if (negated) -value else value
@@ -921,70 +688,90 @@ trait Scanners {
           0.0
       }
     }
-    /** read a number into name and set base
+
+    def floatVal: Double = floatVal(false)
+
+    def checkNoLetter() {
+      if (isIdentifierPart(ch) && ch >= ' ')
+        syntaxError("Invalid literal number")
+    }
+
+    /** Read a number into strVal and set base
     */
-    protected def getNumber {
-      while (in.digit2int(in.ch, if (base < 10) 10 else base) >= 0) {
-        putChar(in.ch)
-        in.next
+    protected def getNumber() {
+      val base1 = if (base < 10) 10 else base
+        // read 8,9's even if format is octal, produce a malformed number error afterwards.
+      while (digit2int(ch, base1) >= 0) {
+        putChar(ch)
+        nextChar()
       }
       token = INTLIT
-      if (base <= 10 && in.ch == '.') {
-        val lookahead = in.copy
-        lookahead.next
+      if (base <= 10 && ch == '.') {
+        val lookahead = lookaheadReader
+        lookahead.nextChar()
         lookahead.ch match {
           case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' |
                '8' | '9' | 'd' | 'D' | 'e' | 'E' | 'f' | 'F' =>
-            putChar(in.ch)
-            in.next
-            return getFraction
+            putChar(ch)
+            nextChar()
+            return getFraction()
           case _ =>
-            if (!isIdentStart(lookahead.ch)) {
-              putChar(in.ch)
-              in.next
-              return getFraction
+            if (!isIdentifierStart(lookahead.ch)) {
+              putChar(ch)
+              nextChar()
+              return getFraction()
             }
         }
       }
       if (base <= 10 &&
-          (in.ch == 'e' || in.ch == 'E' ||
-           in.ch == 'f' || in.ch == 'F' ||
-           in.ch == 'd' || in.ch == 'D')) {
-        return getFraction
+          (ch == 'e' || ch == 'E' ||
+           ch == 'f' || ch == 'F' ||
+           ch == 'd' || ch == 'D')) {
+        return getFraction()
       }
-      setName
-      if (in.ch == 'l' || in.ch == 'L') {
-        in.next
+      setStrVal()
+      if (ch == 'l' || ch == 'L') {
+        nextChar()
         token = LONGLIT
-      }
+      } else checkNoLetter()
     }
 
-// XML lexing----------------------------------------------------------------
-    def xSync = {
-      token = NEWLINE  // avoid getting NEWLINE from nextToken if last was RBRACE
-      //in.next
-      nextToken
+    /** Parse character literal if current character is followed by \',
+     *  or follow with given op and return a symol literal token
+     */
+    def charLitOr(op: () => Unit) {
+      putChar(ch)
+      nextChar()
+      if (ch == '\'') {
+        nextChar()
+        token = CHARLIT
+        setStrVal()
+      } else {
+        op()
+        token = SYMBOLLIT
+        strVal = name.toString
+      }
     }
 
 // Errors -----------------------------------------------------------------
 
-    /** generate an error at the given position
+    /** generate an error at the given offset
     */
-    def syntaxError(pos: Int, msg: String) {
-      error(pos, msg)
+    def syntaxError(off: Offset, msg: String) {
+      error(off, msg)
       token = ERROR
-      errpos = pos
+      errOffset = off
     }
 
-    /** generate an error at the current token position
+    /** generate an error at the current token offset
     */
-    def syntaxError(msg: String) { syntaxError(pos, msg) }
+    def syntaxError(msg: String): Unit = syntaxError(offset, msg)
 
     /** signal an error where the input ended in the middle of a token */
     def incompleteInputError(msg: String) {
-      incompleteInputError(pos, msg)
+      incompleteInputError(offset, msg)
       token = EOF
-      errpos = pos
+      errOffset = offset
     }
 
     override def toString() = token match {
@@ -1001,7 +788,7 @@ trait Scanners {
       case DOUBLELIT =>
         "double(" + floatVal + ")"
       case STRINGLIT =>
-        "string(" + name + ")"
+        "string(" + strVal + ")"
       case SEMI =>
         ";"
       case NEWLINE =>
@@ -1011,29 +798,174 @@ trait Scanners {
       case COMMA =>
         ","
       case _ =>
-        ScannerConfiguration.token2string(token)
+        token2string(token)
     }
 
-    /** INIT: read lookahead character and token.
+    /** Initialization method: read first char, then first token
      */
-    def init {
-      in.next
-      nextToken
+    def init() {
+      nextChar()
+      nextToken()
     }
+  } // end Scanner
+
+  // ------------- character classification --------------------------------
+
+    def isIdentifierStart(c: Char): Boolean = (
+      ('A' <= c && c <= 'Z') ||
+      ('a' <= c && c <= 'a') ||
+      (c == '_') || (c == '$') ||
+      Character.isUnicodeIdentifierStart(c)
+    )
+
+    def isIdentifierPart(c: Char) = (
+      isIdentifierStart(c) ||
+      ('0' <= c && c <= '9') ||
+      Character.isUnicodeIdentifierPart(c)
+    )
+
+    def isSpecial(c: Char) = {
+      val chtp = Character.getType(c)
+      chtp == Character.MATH_SYMBOL || chtp == Character.OTHER_SYMBOL
+    }
+
+    def isOperatorPart(c : Char) : Boolean = (c: @switch) match {
+      case '~' | '!' | '@' | '#' | '%' |
+           '^' | '*' | '+' | '-' | '<' |
+           '>' | '?' | ':' | '=' | '&' |
+           '|' | '/' | '\\' => true
+      case c => isSpecial(c)
+    }
+
+  // ------------- keyword configuration -----------------------------------
+
+  /** Keyword array; maps from name indices to tokens */
+  private var keyCode: Array[Byte] = _
+  /** The highest name index of a keyword token */
+  private var maxKey = 0
+  /** An array of all keyword token names */
+  private var keyName = new Array[Name](128)
+  /** The highest keyword token plus one */
+  private var tokenCount = 0
+
+  /** Enter keyword with given name and token id */
+  protected def enterKeyword(n: Name, tokenId: Int) {
+    while (tokenId >= keyName.length) {
+      val newTokName = new Array[Name](keyName.length * 2)
+      Array.copy(keyName, 0, newTokName, 0, newTokName.length)
+      keyName = newTokName
+    }
+    keyName(tokenId) = n
+    if (n.start > maxKey) maxKey = n.start
+    if (tokenId >= tokenCount) tokenCount = tokenId + 1
   }
 
-  /** ...
+  /** Enter all keywords */
+  protected def enterKeywords() {
+    enterKeyword(nme.ABSTRACTkw, ABSTRACT)
+    enterKeyword(nme.CASEkw, CASE)
+    enterKeyword(nme.CATCHkw, CATCH)
+    enterKeyword(nme.CLASSkw, CLASS)
+    enterKeyword(nme.DEFkw, DEF)
+    enterKeyword(nme.DOkw, DO)
+    enterKeyword(nme.ELSEkw, ELSE)
+    enterKeyword(nme.EXTENDSkw, EXTENDS)
+    enterKeyword(nme.FALSEkw, FALSE)
+    enterKeyword(nme.FINALkw, FINAL)
+    enterKeyword(nme.FINALLYkw, FINALLY)
+    enterKeyword(nme.FORkw, FOR)
+    enterKeyword(nme.FORSOMEkw, FORSOME)
+    enterKeyword(nme.IFkw, IF)
+    enterKeyword(nme.IMPLICITkw, IMPLICIT)
+    enterKeyword(nme.IMPORTkw, IMPORT)
+    enterKeyword(nme.LAZYkw, LAZY)
+    enterKeyword(nme.MATCHkw, MATCH)
+    enterKeyword(nme.NEWkw, NEW)
+    enterKeyword(nme.NULLkw, NULL)
+    enterKeyword(nme.OBJECTkw, OBJECT)
+    enterKeyword(nme.OVERRIDEkw, OVERRIDE)
+    enterKeyword(nme.PACKAGEkw, PACKAGE)
+    enterKeyword(nme.PRIVATEkw, PRIVATE)
+    enterKeyword(nme.PROTECTEDkw, PROTECTED)
+    enterKeyword(nme.RETURNkw, RETURN)
+    enterKeyword(nme.SEALEDkw, SEALED)
+    enterKeyword(nme.SUPERkw, SUPER)
+    enterKeyword(nme.THISkw, THIS)
+    enterKeyword(nme.THROWkw, THROW)
+    enterKeyword(nme.TRAITkw, TRAIT)
+    enterKeyword(nme.TRUEkw, TRUE)
+    enterKeyword(nme.TRYkw, TRY)
+    enterKeyword(nme.TYPEkw, TYPE)
+    enterKeyword(nme.VALkw, VAL)
+    enterKeyword(nme.VARkw, VAR)
+    enterKeyword(nme.WHILEkw, WHILE)
+    enterKeyword(nme.WITHkw, WITH)
+    enterKeyword(nme.YIELDkw, YIELD)
+    enterKeyword(nme.DOTkw, DOT)
+    enterKeyword(nme.USCOREkw, USCORE)
+    enterKeyword(nme.COLONkw, COLON)
+    enterKeyword(nme.EQUALSkw, EQUALS)
+    enterKeyword(nme.ARROWkw, ARROW)
+    enterKeyword(nme.LARROWkw, LARROW)
+    enterKeyword(nme.SUBTYPEkw, SUBTYPE)
+    enterKeyword(nme.VIEWBOUNDkw, VIEWBOUND)
+    enterKeyword(nme.SUPERTYPEkw, SUPERTYPE)
+    enterKeyword(nme.HASHkw, HASH)
+    enterKeyword(nme.ATkw, AT)
+  }
+
+  { // initialization
+    enterKeywords()
+    // Build keyword array
+    keyCode = Array.make(maxKey + 1, IDENTIFIER)
+    for (j <- 0 until tokenCount if keyName(j) ne null)
+      keyCode(keyName(j).start) = j.toByte
+  }
+
+  /** Convert name to token */
+  def name2token(name: Name): Int =
+    if (name.start <= maxKey) keyCode(name.start) else IDENTIFIER
+
+// Token representation ----------------------------------------------------
+
+  /** Returns the string representation of given token. */
+  def token2string(token: Int): String = (token: @switch) match {
+    case IDENTIFIER | BACKQUOTED_IDENT => "identifier"
+    case CHARLIT => "character literal"
+    case INTLIT => "integer literal"
+    case LONGLIT => "long literal"
+    case FLOATLIT => "float literal"
+    case DOUBLELIT => "double literal"
+    case STRINGLIT => "string literal"
+    case SYMBOLLIT => "symbol literal"
+    case LPAREN => "'('"
+    case RPAREN => "')'"
+    case LBRACE => "'{'"
+    case RBRACE => "'}'"
+    case LBRACKET => "'['"
+    case RBRACKET => "']'"
+    case EOF => "eof"
+    case ERROR => "something"
+    case SEMI => "';'"
+    case NEWLINE => "';'"
+    case NEWLINES => "';'"
+    case COMMA => "','"
+    case CASECLASS => "case class"
+    case CASEOBJECT => "case object"
+    case XMLSTART => "$XMLSTART$<"
+    case _ =>
+      if (token <= maxKey) "'" + keyName(token) + "'"
+      else "'<" + token + ">'"
+  }
+
+  /** A scanner over a given compilation unit
    */
   class UnitScanner(unit: CompilationUnit) extends Scanner {
-    val in = new CharArrayReader(
-      unit.source.asInstanceOf[BatchSourceFile].content,
-      !settings.nouescape.value, syntaxError
-    )
-    def warning(pos: Int, msg: String) = unit.warning(pos, msg)
-    def error  (pos: Int, msg: String) = unit.error(pos, msg)
-    def incompleteInputError(pos: Int, msg: String) = unit.incompleteInputError(pos, msg)
-    def deprecationWarning(pos: Int, msg: String) = unit.deprecationWarning(pos, msg)
-    implicit def p2g(pos: Position): Int = pos.offset.getOrElse(-1)
-    implicit def g2p(pos: Int): Position = new OffsetPosition(unit.source, pos)
+    val buf = unit.source.asInstanceOf[BatchSourceFile].content
+    val decodeUnit = !settings.nouescape.value
+    def warning(off: Offset, msg: String) = unit.warning(unit.position(off), msg)
+    def error  (off: Offset, msg: String) = unit.error(unit.position(off), msg)
+    def incompleteInputError(off: Offset, msg: String) = unit.incompleteInputError(unit.position(off), msg)
+    def deprecationWarning(off: Offset, msg: String) = unit.deprecationWarning(unit.position(off), msg)
   }
 }

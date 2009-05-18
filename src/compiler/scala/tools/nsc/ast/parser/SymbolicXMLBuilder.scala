@@ -2,7 +2,7 @@
  * Copyright 2005-2009 LAMP/EPFL
  * @author Burak Emir
  */
-// $Id$
+// $Id: SymbolicXMLBuilder.scala 16884 2009-01-09 16:52:09Z cunei $
 
 package scala.tools.nsc.ast.parser
 
