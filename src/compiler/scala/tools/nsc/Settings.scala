@@ -281,8 +281,8 @@ object Settings
     /** Return the output directory for the given file.
      */
     def outputDirFor(src: AbstractFile): AbstractFile = {
-      def isBelow(dir: AbstractFile, f: AbstractFile) =
-        f.path.startsWith(dir.path)
+      def isBelow(srcDir: AbstractFile, outDir: AbstractFile) =
+        src.path.startsWith(srcDir.path)
 
       singleOutDir match {
         case Some(d) => d
