@@ -145,7 +145,7 @@ PROPERTIES
 
   <property
       name="scalacfork.jvmargs"
-      value="-Xms512M -Xmx512M -Xss1M -XX:MaxPermSize=128M"/>
+      value="-Xms512M -Xmx768M -Xss1M -XX:MaxPermSize=128M"/>
 
   <property name="javac.cmd" value="${env.JAVA_HOME}/bin/javac"/>
 
