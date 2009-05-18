@@ -16,8 +16,8 @@ package scala.util.regexp
  *  @author  Burak Emir
  *  @version 1.0
  */
-abstract class Base {
-
+abstract class Base
+{
   type _regexpT <: RegExp
 
   abstract class RegExp {
@@ -25,31 +25,22 @@ abstract class Base {
   }
 
   /** Alt( R,R,R* ) */
-  case class Alt(rs: _regexpT*)  extends RegExp {
-
+  case class Alt(rs: _regexpT*) extends RegExp {
     // check rs \in R,R,R*
     // @todo: flattening
-    if ({ val it = rs.elements; !it.hasNext || {it.next; !it.hasNext }})
-      throw new SyntaxError("need at least 2 branches in Alt");
+    if (rs.size < 2)
+      throw new SyntaxError("need at least 2 branches in Alt")
 
-    final val isNullable = {
-      val it = rs.elements
-      while (it.hasNext && it.next.isNullable) {}
-      !it.hasNext
-    }
+    final val isNullable = rs forall (_.isNullable)
   }
 
   case class Sequ(rs: _regexpT*) extends RegExp {
     // @todo: flattening
     // check rs \in R,R*
-    if ({ val it = rs.elements; !it.hasNext })
+    if (rs.isEmpty)
       throw new SyntaxError("need at least 1 item in Sequ")
 
-    final val isNullable = {
-      val it = rs.elements
-      while (it.hasNext && it.next.isNullable) {}
-      !it.hasNext
-    }
+    final val isNullable = rs forall (_.isNullable)
   }
 
   case class Star(r: _regexpT) extends RegExp {
@@ -68,9 +59,5 @@ abstract class Base {
   }
 
   final def mkSequ(rs: _regexpT *): RegExp =
-    if (!rs.elements.hasNext)
-      Eps
-    else
-      Sequ(rs:_*)
-
+    if (rs.isEmpty) Eps else Sequ(rs : _*)
 }
