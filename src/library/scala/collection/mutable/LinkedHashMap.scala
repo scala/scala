@@ -67,4 +67,38 @@ class LinkedHashMap[A, B] extends Map[A, B]
   }
 
   override def elements = ordered.reverse.elements map {e => (e.key, e.value)}
+
+  // debug NoSuchElementException in Pickler
+  var savedTableString = ""
+  def saveTableStringIfResize(hcode: Int) {
+    savedTableString =
+      if (tableSize + 1 > threshold) tableString(hcode)
+      else ""
+  }
+
+  def tableString(hcode: Int): String = {
+    val sb = new StringBuilder
+    sb.append("index: "+ index(hcode) +"\n")
+    for (i <- 0 until table.length) {
+      sb.append(""+ i +": ")
+      var e = table(i).asInstanceOf[Entry]
+      while (e != null) {
+        sb.append("("+ (try { e.key.toString } catch { case _ => "<..>"}) +" -> "+ e.value +"), ")
+        e = e.next
+      }
+      sb.append("\n")
+    }
+    sb.toString
+  }
+
+  def printHashTable(hcode: Int) {
+    if (savedTableString != "") {
+      println("BEFORE (add did a resize!)")
+      println(savedTableString)
+      println("AFTER")
+    } else {
+      println("TABLE after adding (no re-size was required)")
+    }
+    println(tableString(hcode))
+  }
 }

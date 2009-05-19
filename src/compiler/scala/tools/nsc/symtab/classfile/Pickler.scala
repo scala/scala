@@ -108,7 +108,15 @@ abstract class Pickler extends SubComponent {
           entries = entries1
         }
         entries(ep) = entry
+        // debug NoSuchElementException
+        index.saveTableStringIfResize(entry.hashCode())
+
         index(entry) = ep
+        // debug NoSuchElementException
+        if (index.get(entry) == None) {
+          println("could not add entry: "+ entry +"; "+ entry.hashCode())
+          index.printHashTable(entry.hashCode())
+        }
         ep = ep + 1
         true
     }
@@ -459,7 +467,16 @@ abstract class Pickler extends SubComponent {
      *
      *  @param ref ...
      */
-    private def writeRef(ref: AnyRef) { writeNat(index(ref)) }
+    private def writeRef(ref: AnyRef) {
+      try {
+        writeNat(index(ref))
+      } catch {
+        case e: java.util.NoSuchElementException =>
+          println("entry not found: "+ ref +"; "+ ref.hashCode())
+          index.printHashTable(ref.hashCode())
+          throw e
+      }
+    }
     private def writeRefs(refs: List[AnyRef]) { refs foreach writeRef }
 
     /** Write name, owner, flags, and info of a symbol.
