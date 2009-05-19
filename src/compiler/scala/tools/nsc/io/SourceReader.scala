@@ -67,20 +67,16 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
         val c = Channels.newChannel(z.getArchive.getInputStream(z.entry))
         read(c)
       case _ =>
-        throw new IOException(file.toString()+" is neither plain file nor ZipArchive#FileEntry")
+        val b = ByteBuffer.wrap(file.toByteArray)
+        try {
+          read(b)
+        } catch {
+          case e:Exception =>
+            if (true) e.printStackTrace
+            reportEncodingError(file.toString())
+            new Array[Char](0)
+        }
     }
-    /*
-    val decoder: CharsetDecoder = this.decoder.reset();
-    val bytes: ByteBuffer = ByteBuffer.wrap(file.read);
-    val chars: CharBuffer = this.chars; chars.clear();
-    try {
-      terminate(flush(decoder, decode(decoder, bytes, chars, true)));
-    } catch {
-      case e:Exception =>
-        reportEncodingError(file.toString())
-        new Array[Char](0)
-    }
-    */
   }
 
   /** Reads the specified byte channel. */
@@ -95,6 +91,13 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
       chars = decode(decoder, bytes, chars, endOfInput)
     }
     terminate(flush(decoder, chars))
+  }
+
+  /** Reads the specified byte buffer. */
+  protected def read(bytes: ByteBuffer): Array[Char] = {
+    val decoder: CharsetDecoder = this.decoder.reset()
+    val chars: CharBuffer = this.chars; chars.clear()
+    terminate(flush(decoder, decode(decoder, bytes, chars, true)))
   }
 
   //########################################################################
