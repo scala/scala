@@ -32,12 +32,6 @@ abstract class GenJVM extends SubComponent {
 
   val phaseName = "jvm"
 
-  /**
-   * Directory where output will be written.  By default it
-   * is the directory specified by Settings.outdir.
-   */
-  var outputDir: AbstractFile = AbstractFile.getDirectory(settings.outdir.value)
-
   /** Create a new phase */
   override def newPhase(p: Phase) = new JvmPhase(p)
 

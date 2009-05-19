@@ -265,9 +265,14 @@ object Settings
      */
     def setSingleOutput(outDir: String) {
       val dst = AbstractFile.getDirectory(outDir)
-      checkDir(dst, outDir)
+      setSingleOutput(checkDir(dst, outDir))
+    }
 
-      singleOutDir = Some(dst)
+    /** Set the single output directory. From now on, all files will
+     *  be dumped in there, regardless of previous calls to 'add'.
+     */
+    def setSingleOutput(dir: AbstractFile) {
+      singleOutDir = Some(dir)
     }
 
     def add(src: AbstractFile, dst: AbstractFile) {
@@ -502,6 +507,7 @@ object Settings
     outputDirs: OutputDirs,
     default: String)
     extends StringSetting("-d", "directory", "Specify where to place generated class files", default) {
+      value = default
       override def value_=(str: String) {
         super.value_=(str)
         outputDirs.setSingleOutput(str)

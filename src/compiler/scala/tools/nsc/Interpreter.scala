@@ -116,8 +116,8 @@ class Interpreter(val settings: Settings, out: PrintWriter)
   /** Instantiate a compiler.  Subclasses can override this to
    *  change the compiler class used by this interpreter. */
   protected def newCompiler(settings: Settings, reporter: Reporter) = {
+    settings.outputDirs.setSingleOutput(virtualDirectory)
     val comp = new nsc.Global(settings, reporter)
-    comp.genJVM.outputDir = virtualDirectory
     comp
   }
 
