@@ -18,6 +18,6 @@ trait TraversableClass[+A, +CC[X] <: Traversable[X]] {
   protected[this] def newBuilder: Builder[A, CC[A]] = companion.newBuilder[A]
 
   /** The generic builder that builds instances of CC at arbitrary element types. */
-  def traversableBuilder[B]: Builder[B, CC[B]] = companion.newBuilder[B]
+  def genericBuilder[B]: Builder[B, CC[B]] = companion.newBuilder[B]
 }
 

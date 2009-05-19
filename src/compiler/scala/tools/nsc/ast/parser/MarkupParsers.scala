@@ -7,7 +7,7 @@
 package scala.tools.nsc.ast.parser
 
 import scala.collection.mutable
-import scala.tools.nsc.util.{Position,NoPosition,SourceFile,CharArrayReader1}
+import scala.tools.nsc.util.{Position,NoPosition,SourceFile,CharArrayReader}
 import scala.xml.{Text, TextBuffer}
 import SourceFile.{SU,LF}
 import scala.annotation.switch
@@ -38,11 +38,11 @@ trait MarkupParsers {self: Parsers =>
     import Tokens.{EMPTY, LBRACE, RBRACE}
 
     final val preserveWS = presWS
-    var input : CharArrayReader1 = _
+    var input : CharArrayReader = _
 
-    import parser.{symbXMLBuilder => handle, i2p}
+    import parser.{symbXMLBuilder => handle, o2p, r2p}
 
-    def pos : Int = input.charOffset
+    def curOffset : Int = input.charOffset - 1
     var tmppos : Position = NoPosition
     def ch = input.ch
     /** this method assign the next character to ch and advances in input */
@@ -82,17 +82,18 @@ trait MarkupParsers {self: Parsers =>
     /*[Duplicate]*/ def xAttributes = {
       var aMap = new mutable.HashMap[String, Tree]()
       while (xml.Parsing.isNameStart(ch)) {
+        val start = curOffset
         val key = xName
         xEQ
         val delim = ch
-        val pos1 = pos
+        val mid = curOffset
         val value: /* AttribValue[*/Tree/*]*/ = ch match {
           case '"' | '\'' =>
             nextch
             val tmp = xAttributeValue(delim)
             nextch
             try {
-              handle.parseAttribute(pos1, tmp)
+              handle.parseAttribute(r2p(start, mid, curOffset), tmp)
             } catch {
               case e =>
                 reportSyntaxError("error parsing attribute value")
@@ -174,6 +175,7 @@ trait MarkupParsers {self: Parsers =>
      * see [15]
      */
     /*[Duplicate]*/ def xCharData: Tree = {
+      val start = curOffset
       xToken('[')
       xToken('C')
       xToken('D')
@@ -181,7 +183,7 @@ trait MarkupParsers {self: Parsers =>
       xToken('T')
       xToken('A')
       xToken('[')
-      val pos1 = pos
+      val mid = curOffset
       val sb: StringBuilder = new StringBuilder()
       while (true) {
         if (ch==']' &&
@@ -189,7 +191,7 @@ trait MarkupParsers {self: Parsers =>
            { sb.append(ch); nextch; ch == '>' }) {
           sb.length = sb.length - 2
           nextch
-          return handle.charData(pos1, sb.toString())
+          return handle.charData(r2p(start, mid, curOffset), sb.toString())
         } else if (ch == SU)
           throw TruncatedXML
         else
@@ -200,7 +202,7 @@ trait MarkupParsers {self: Parsers =>
     }
 
     def xUnparsed: Tree = {
-      val pos1 = pos
+      val start = curOffset
       val sb: StringBuilder = new StringBuilder()
       while (true) {
         if (ch=='<' &&
@@ -220,7 +222,7 @@ trait MarkupParsers {self: Parsers =>
            { sb.append(ch); nextch; ch == '>' }) {
           sb.length = sb.length - "</xml:unparsed".length
           nextch
-          return handle.unparsed(pos1, sb.toString())
+          return handle.unparsed(r2p(start, start, curOffset), sb.toString())
         } else if (ch == SU) {
           throw TruncatedXML
         } else sb.append(ch)
@@ -264,6 +266,7 @@ trait MarkupParsers {self: Parsers =>
      * see [15]
      */
     /*[Duplicate]*/ def xComment: Tree = {
+      val start = curOffset - 2 // ? right so ?
       val sb: StringBuilder = new StringBuilder()
       xToken('-')
       xToken('-')
@@ -272,7 +275,7 @@ trait MarkupParsers {self: Parsers =>
           sb.length = sb.length - 1
           nextch
           xToken('>')
-          return handle.comment(pos, sb.toString())
+          return handle.comment(r2p(start, start, curOffset), sb.toString())
         } else if (ch == SU) {
           throw TruncatedXML
         } else sb.append(ch)
@@ -360,7 +363,7 @@ trait MarkupParsers {self: Parsers =>
         if (xEmbeddedBlock)
           ts.append(xEmbeddedExpr)
         else {
-          tmppos = pos
+          tmppos = o2p(curOffset)
           ch match {
             case '<' => // end tag, cdata, comment, pi or child node
               nextch
@@ -384,25 +387,26 @@ trait MarkupParsers {self: Parsers =>
      *                | xmlTag1 '/' '>'
      */
     /*[Duplicate]*/ def element: Tree = {
-      val pos1 = pos
+      val start = curOffset
       val (qname, attrMap) = xTag
       if (ch == '/') { // empty element
         xToken('/')
         xToken('>')
-        handle.element(pos1, qname, attrMap, new mutable.ListBuffer[Tree])
+        handle.element(r2p(start, start, curOffset), qname, attrMap, new mutable.ListBuffer[Tree])
       }
       else { // handle content
         xToken('>')
         if (qname == "xml:unparsed")
           return xUnparsed
 
-        debugLastStartElement.push((pos1, qname))
+        debugLastStartElement.push((start, qname))
         val ts = content
         xEndTag(qname)
         debugLastStartElement.pop
+        val pos = r2p(start, start, curOffset)
         qname match {
-          case "xml:group" => handle.group(pos1, ts)
-          case _ => handle.element(pos1, qname, attrMap, ts)
+          case "xml:group" => handle.group(pos, ts)
+          case _ => handle.element(pos, qname, attrMap, ts)
         }
       }
     }
@@ -520,7 +524,8 @@ trait MarkupParsers {self: Parsers =>
       //val pos = s.currentPos
       var tree:Tree = null
       val ts = new mutable.ArrayBuffer[Tree]()
-      tmppos = (pos)    // Iuli: added this line, as it seems content_LT uses tmppos when creating trees
+      val start = curOffset
+      tmppos = o2p(curOffset)    // Iuli: added this line, as it seems content_LT uses tmppos when creating trees
 //      assert(ch == '<')
 //      nextch
       content_LT(ts)
@@ -541,7 +546,7 @@ trait MarkupParsers {self: Parsers =>
           ts.append(element)
           xSpaceOpt
         }
-        tree = handle.makeXMLseq((pos), ts)
+        tree = handle.makeXMLseq(r2p(start, start, curOffset), ts)
       } else {
         input = parser.in
         assert(ts.length == 1)
@@ -582,7 +587,7 @@ trait MarkupParsers {self: Parsers =>
       tree
     } catch {
       case c @ TruncatedXML =>
-        parser.syntaxError(pos - 1, c.getMessage)
+        parser.syntaxError(curOffset, c.getMessage)
         EmptyTree
 
       case c @ (MissingEndTagException | ConfusedAboutBracesException) =>
@@ -634,12 +639,12 @@ trait MarkupParsers {self: Parsers =>
 /*
     private def init {
       ch = s.in.ch
-      pos = s.in.cpos
+      curOffset = s.in.ccurOffset
     }
     */
 
     def reportSyntaxError(str: String) = {
-      parser.syntaxError(pos - 1, "in XML literal: " + str)
+      parser.syntaxError(curOffset, "in XML literal: " + str)
       nextch
     }
 /*
@@ -652,14 +657,14 @@ trait MarkupParsers {self: Parsers =>
      *                  | Name [S] '/' '>'
      */
     def xPattern: Tree = {
-      val pos1 = pos
+      var start = curOffset
       val qname = xName
-      debugLastStartElement.push((pos1, qname))
+      debugLastStartElement.push((start, qname))
       xSpaceOpt
       if (ch == '/') { // empty tag
         nextch
         xToken('>')
-        return handle.makeXMLpat(pos1, qname, new mutable.ArrayBuffer[Tree]())
+        return handle.makeXMLpat(r2p(start, start, curOffset), qname, new mutable.ArrayBuffer[Tree]())
       }
 
       // else: tag with content
@@ -667,7 +672,7 @@ trait MarkupParsers {self: Parsers =>
       var ts = new mutable.ArrayBuffer[Tree]
       var exit = false
       while (! exit) {
-        val pos2 = pos
+        val start1 = curOffset
         if (xEmbeddedBlock) {
           ts ++= xScalaPatterns
         } else
@@ -690,15 +695,15 @@ trait MarkupParsers {self: Parsers =>
             case SU =>
               throw TruncatedXML
 
-            case _ => // teMaxt
-              appendText(pos2, ts, xText)
+            case _ => // text
+              appendText(r2p(start1, start1, curOffset), ts, xText)
               // here  xEmbeddedBlock might be true;
               //if( xEmbeddedBlock ) throw new ApplicationError("after:"+text); // assert
           }
       }
       xEndTag(qname)
       debugLastStartElement.pop
-      handle.makeXMLpat(pos1, qname, ts)
+      handle.makeXMLpat(r2p(start, start, curOffset), qname, ts)
     }
 
   } /* class MarkupParser */

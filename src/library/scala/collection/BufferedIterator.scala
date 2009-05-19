@@ -19,7 +19,7 @@ package scala.collection
  */
 trait BufferedIterator[+A] extends Iterator[A] {
 
-  /** Returns current element of iterator without advancing beyond it.
+  /** Returns next element of iterator without advancing beyond it.
    */
   def head: A
 

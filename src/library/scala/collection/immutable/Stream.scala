@@ -482,7 +482,7 @@ object Stream extends SequenceFactory[Stream] {
    * @return the stream containing an inifinite number of elem
    * @deprecated use fill instead
    */
-  def fill[A](elem: => A): Stream[A] = new Cons(elem, fill(elem))
+  def continually[A](elem: => A): Stream[A] = new Cons(elem, continually(elem))
 
   override def fill[A](n: Int)(elem: => A): Stream[A] =
     if (n <= 0) Empty else new Cons(elem, fill(n-1)(elem))

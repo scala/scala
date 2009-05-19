@@ -2,125 +2,89 @@
  * Copyright 2005-2009 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id$
+// $Id: NewCharArrayReader.scala 16893 2009-01-13 13:09:22Z cunei $
 
 package scala.tools.nsc.util
 
 import scala.tools.nsc.util.SourceFile.{LF, FF, CR, SU}
 
-class CharArrayReader(buf: RandomAccessSeq[Char], start: Int, /* startline: int, startcol: int, */
-                      decodeUni: Boolean, error: String => Unit) extends Iterator[Char] with Cloneable {
+abstract class CharArrayReader { self =>
 
-  def this(buf: RandomAccessSeq[Char], decodeUni: Boolean, error: String => Unit) =
-    this(buf, 0, /* 1, 1, */ decodeUni, error)
+  val buf: Array[Char]
 
-  /** produce a duplicate of this char array reader which starts reading
-    *  at current position, independent of what happens to original reader
-	*/
-  def dup: CharArrayReader = clone().asInstanceOf[CharArrayReader]
+  def decodeUni: Boolean = true
 
-  /** layout constant
-   */
-  val tabinc = 8
+  /** An error routine to call on bad unicode escapes \\uxxxx. */
+  protected def error(offset: Int, msg: String)
 
-  /** the line and column position of the current character
-  */
+  /** the last read character */
   var ch: Char = _
-  var bp = start
-  var oldBp = -1
-  var oldCh: Char = _
 
-  //private var cline: Int = _
-  //private var ccol: Int = _
-  def cpos = bp
-  var isUnicode: Boolean = _
-  var lastLineStartPos: Int = 0
-  var lineStartPos: Int = 0
-  var lastBlankLinePos: Int = 0
+  /** The offset one past the last read character */
+  var charOffset: Int = 0
 
-  private var onlyBlankChars = false
-  //private var nextline = startline
-  //private var nextcol = startcol
+  /** The start offset of the current line */
+  var lineStartOffset: Int = 0
 
-  private def markNewLine() {
-    lastLineStartPos = lineStartPos
-    if (onlyBlankChars) lastBlankLinePos = lineStartPos
-    lineStartPos = bp
-    onlyBlankChars = true
-    //nextline += 1
-    //nextcol = 1
-  }
+  /** The start offset of the line before the current one */
+  var lastLineStartOffset: Int = 0
 
-  def hasNext: Boolean = if (bp < buf.length) true
-  else {
-    false
-  }
+  private var lastUnicodeOffset = -1
 
-  def last: Char = if (bp > start + 2) buf(bp - 2) else ' ' // XML literals
+  /** Is last character a unicode escape \\uxxxx? */
+  def isUnicodeEscape = charOffset == lastUnicodeOffset
 
-  def next: Char = {
-    //cline = nextline
-    //ccol = nextcol
-    val buf = this.buf.asInstanceOf[runtime.BoxedCharArray].value
-    if(!hasNext) {
+  /** Advance one character */
+  final def nextChar() {
+    if (charOffset >= buf.length) {
       ch = SU
-      return SU  // there is an endless stream of SU's at the end
+    } else {
+      val c = buf(charOffset)
+      ch = c
+      charOffset += 1
+      if (c == '\\') potentialUnicode()
+      else if (c < ' ') potentialLineEnd()
+//      print("`"+ch+"'")
     }
-    oldBp = bp
-    oldCh = ch
-    ch = buf(bp)
-    isUnicode = false
-    bp = bp + 1
-    ch match {
-      case '\t' =>
-        // nextcol = ((nextcol - 1) / tabinc * tabinc) + tabinc + 1;
-      case CR =>
-        if (bp < buf.size && buf(bp) == LF) {
-          ch = LF
-          bp += 1
-        }
-        markNewLine()
-      case LF | FF =>
-        markNewLine()
-      case '\\' =>
-        def evenSlashPrefix: Boolean = {
-          var p = bp - 2
-          while (p >= 0 && buf(p) == '\\') p -= 1
-          (bp - p) % 2 == 0
-        }
-        def udigit: Int = {
-          val d = digit2int(buf(bp), 16)
-          if (d >= 0) { bp += 1; /* nextcol = nextcol + 1 */ }
-          else error("error in unicode escape");
-          d
-        }
-        // nextcol += 1
-        if (buf(bp) == 'u' && decodeUni && evenSlashPrefix) {
-          do {
-            bp += 1 //; nextcol += 1
-          } while (buf(bp) == 'u');
-          val code = udigit << 12 | udigit << 8 | udigit << 4 | udigit
-          ch = code.asInstanceOf[Char]
-          isUnicode = true
-        }
-      case _ =>
-        if (ch > ' ') onlyBlankChars = false
-        // nextcol += 1
-    }
-    ch
   }
 
-  def rewind {
-    if (oldBp == -1) throw new IllegalArgumentException
-    bp = oldBp
-    ch = oldCh
-    oldBp = -1
-    oldCh = 'x'
+  /** Interpret \\uxxxx escapes */
+  private def potentialUnicode() {
+    def evenSlashPrefix: Boolean = {
+      var p = charOffset - 2
+      while (p >= 0 && buf(p) == '\\') p -= 1
+      (charOffset - p) % 2 == 0
+    }
+    def udigit: Int = {
+      val d = digit2int(buf(charOffset), 16)
+      if (d >= 0) charOffset += 1
+      else error(charOffset, "error in unicode escape")
+      d
+    }
+    if (charOffset < buf.length && buf(charOffset) == 'u' && decodeUni && evenSlashPrefix) {
+      do charOffset += 1
+      while (charOffset < buf.length && buf(charOffset) == 'u')
+      val code = udigit << 12 | udigit << 8 | udigit << 4 | udigit
+      lastUnicodeOffset = charOffset
+      ch = code.toChar
+    }
   }
 
-  def copy: CharArrayReader =
-    new CharArrayReader(buf, bp, /* nextcol, nextline, */ decodeUni, error)
+  /** Handle line ends, replace CR+LF by LF */
+  private def potentialLineEnd() {
+    if (ch == CR)
+      if (charOffset < buf.length && buf(charOffset) == LF) {
+        charOffset += 1
+        ch = LF
+      }
+    if (ch == LF || ch == FF) {
+      lastLineStartOffset = lineStartOffset
+      lineStartOffset = charOffset
+    }
+  }
 
+  /** Convert a character digit to an Int according to given base,
+   *  -1 if no success */
   def digit2int(ch: Char, base: Int): Int = {
     if ('0' <= ch && ch <= '9' && ch < '0' + base)
       ch - '0'
@@ -130,5 +94,14 @@ class CharArrayReader(buf: RandomAccessSeq[Char], start: Int, /* startline: int,
       ch - 'a' + 10
     else
       -1
+  }
+
+  /** A new reader that takes off at the current character position */
+  def lookaheadReader = new CharArrayReader {
+    val buf = self.buf
+    charOffset = self.charOffset
+    ch = self.ch
+    override def decodeUni = self.decodeUni
+    def error(offset: Int, msg: String) = self.error(offset, msg)
   }
 }

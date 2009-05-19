@@ -15,5 +15,5 @@ package scala.collection.generic
  */
 @cloneable
 trait Cloneable[+A <: AnyRef]  {
-  override def clone(): A = super.clone().asInstanceOf[A]
+  override def clone: A = super.clone().asInstanceOf[A]
 }

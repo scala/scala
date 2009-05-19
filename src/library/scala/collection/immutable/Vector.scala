@@ -21,7 +21,7 @@ trait Vector[+A] extends Sequence[A]
 }
 
 object Vector extends SequenceFactory[Vector] {
-    class Impl[A](buf: ArrayBuffer[A]) extends Vector[A] { // todo: insert better vector implementation here
+  class Impl[A](buf: ArrayBuffer[A]) extends Vector[A] { // todo: insert better vector implementation here
     def length = buf.length
     def apply(idx: Int) = buf.apply(idx)
   }

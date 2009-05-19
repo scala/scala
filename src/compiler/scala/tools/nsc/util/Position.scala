@@ -16,6 +16,14 @@ trait Position {
   def offset: Option[Int] = None
   def source: Option[SourceFile] = None
 
+  def start: Int = mid
+  def mid: Int = offset.get
+  def end: Int = mid
+
+  def startOrElse(d: Int) = offset.get//OrElse(d)
+  def midOrElse(d: Int) = offset.get//OrElse(d)
+  def endOrElse(d: Int) = offset.get//OrElse(d)
+
   def line: Option[Int] =
     if (offset.isEmpty || source.isEmpty) None
     else Some(source.get.offsetToLine(offset.get) + 1)
@@ -75,6 +83,7 @@ case class FakePos(msg: String) extends Position {
   override def toString=msg
 }
 
+// ??? needed
 case class LinePosition(source0: SourceFile, line0: Int) extends Position {
   assert(line0 >= 1)
   override def offset = None
@@ -90,10 +99,15 @@ case class OffsetPosition(source0: SourceFile, offset0: Int) extends Position {
   case that : OffsetPosition => offset0 == that.offset0 && source0.file == that.source0.file
   case that => false
   }
-  override def hashCode = offset0 + source0.file.hashCode
+  override def hashCode = offset0 * 37 + source0.file.hashCode
 }
 
 /** new for position ranges */
-class RangePosition(source0: SourceFile, offset0: Int, start: Int, end: Int)
-extends OffsetPosition(source0, offset0)
+class RangePosition(source0: SourceFile, override val start: Int, override val mid: Int, override val end: Int)
+extends OffsetPosition(source0, mid) {
+  override def startOrElse(d: Int) = start
+  override def midOrElse(d: Int) = mid
+  override def endOrElse(d: Int) = end
+}
+
 

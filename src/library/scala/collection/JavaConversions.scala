@@ -396,7 +396,7 @@ object JavaConversions {
     def +=(elem: A): this.type = { underlying.add(elem); this }
     def -=(elem: A): this.type = { underlying.remove(elem); this }
 
-    override def put(elem: A): Boolean = underlying.add(elem)
+    override def put(elem: A): Boolean = !underlying.add(elem)
     override def remove(elem: A): Boolean = underlying.remove(elem)
 
     override def clear = underlying.clear

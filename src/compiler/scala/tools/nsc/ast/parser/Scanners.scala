@@ -51,7 +51,7 @@ trait Scanners {
     }
   }
 
-  abstract class Scanner extends CharArrayReader1 with TokenData {
+  abstract class Scanner extends CharArrayReader with TokenData {
 
     def flush = { charOffset = offset; nextChar(); this }
 

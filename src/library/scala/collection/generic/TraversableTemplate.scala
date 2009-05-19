@@ -208,7 +208,7 @@ self =>
     (l.result, r.result)
   }
 
-  /** Partion this traversable into a map of traversables
+  /** Partition this traversable into a map of traversables
    *  according to some discriminator function.
    *  @invariant   (xs partition f)(k) = xs filter (x => f(x) == k)
    *

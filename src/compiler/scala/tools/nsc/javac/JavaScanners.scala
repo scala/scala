@@ -10,6 +10,7 @@ import SourceFile.{LF, FF, CR, SU}
 import JavaTokens._
 import scala.annotation.switch
 
+// Todo merge these better with Scanners
 trait JavaScanners {
   val global : Global
   import global._
@@ -254,7 +255,7 @@ trait JavaScanners {
     override var errpos: Int = NoPos
     def currentPos: Position = g2p(pos - 1)
 
-    var in: CharArrayReader = _
+    var in: JavaCharArrayReader = _
 
     def dup: JavaScanner = {
       val dup = clone().asInstanceOf[JavaScanner]
@@ -967,7 +968,7 @@ trait JavaScanners {
   /** ...
    */
   class JavaUnitScanner(unit: CompilationUnit) extends JavaScanner {
-    in = new CharArrayReader(unit.source.asInstanceOf[BatchSourceFile].content, !settings.nouescape.value, syntaxError)
+    in = new JavaCharArrayReader(unit.source.asInstanceOf[BatchSourceFile].content, !settings.nouescape.value, syntaxError)
     init
     def warning(pos: Int, msg: String) = unit.warning(pos, msg)
     def error  (pos: Int, msg: String) = unit.  error(pos, msg)

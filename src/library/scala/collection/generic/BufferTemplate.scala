@@ -114,13 +114,6 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
     this
   }
 
-  /** Prepend two ore more elements to this buffer and return
-   *  the identity of the buffer.
-   *  @param elem  the element to prepend.
-   */
-  def +:(elem1: A, elem2: A, elems: A*): This =
-    (elem1 +: elem2 +: elems ++: thisCollection).asInstanceOf[This] // !!! does not work yet because conrete overrides abstract
-
   /** Prepends a number of elements provided by an iterable object
    *  via its <code>elements</code> method. The identity of the
    *  buffer is returned.(thisCollection /: elems) (_ plus _)

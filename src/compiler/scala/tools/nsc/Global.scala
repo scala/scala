@@ -12,7 +12,7 @@ import java.nio.charset._
 import compat.Platform.currentTime
 import scala.tools.nsc.io.{SourceReader, AbstractFile}
 import scala.tools.nsc.reporters._
-import scala.tools.nsc.util.{ClassPath, SourceFile, BatchSourceFile}
+import scala.tools.nsc.util.{ClassPath, SourceFile, BatchSourceFile, OffsetPosition}
 
 import scala.collection.mutable.{HashSet, HashMap, ListBuffer}
 
@@ -117,6 +117,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def warning(msg: String) = reporter.warning(NoPosition, msg)
   def inform(msg: String) = Console.err.println(msg)
   def inform[T](msg: String, value: T): T = { inform(msg+value); value }
+
+  def rangePos(source: SourceFile, start: Int, mid: Int, end: Int) = OffsetPosition(source, mid)
 
   //reporter.info(null, msg, true)
 

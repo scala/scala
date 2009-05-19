@@ -169,7 +169,8 @@ self =>
     def get(key: A) = if (!p(key)) None else self.get(key)
   }
 
-  /** A map view resulting from applying a given function `f` to each value.
+  /** A map view resulting from applying a given function `f` to each value
+   *  associated with a key in this map.
    */
   def mapValues[C](f: B => C) = new DefaultMap[A, C] {
     override def foreach[D](g: ((A, C)) => D): Unit = for ((k, v) <- self) g((k, f(v)))

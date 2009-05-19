@@ -6,7 +6,7 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with TraversableClass[
   extends Companion[CC] {
 
   class VirtualBuilderFactory[A] extends BuilderFactory[A, CC[A], CC[_]] {
-    def apply(from: Coll) = from.traversableBuilder[A]
+    def apply(from: Coll) = from.genericBuilder[A]
   }
 
   /** Concatenate all the argument collections into a single collection.

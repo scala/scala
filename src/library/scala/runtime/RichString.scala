@@ -98,8 +98,8 @@ class RichString(val self: String) extends Proxy with Vector[Char] with VectorTe
    *  </ul>
    */
   def linesWithSeparators = new Iterator[String] {
-    val len = self.length
-    var index = 0
+    private val len = self.length
+    private var index = 0
     def hasNext: Boolean = index < len
     def next(): String = {
       if (index >= len) throw new NoSuchElementException("next on empty iterator")

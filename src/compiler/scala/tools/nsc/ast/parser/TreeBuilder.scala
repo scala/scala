@@ -15,6 +15,7 @@ abstract class TreeBuilder {
   val global: Global
   import global._
   import posAssigner.atPos;
+
   def freshName(pos : Position, prefix: String): Name
   def freshName(pos : Position): Name = freshName(pos, "x$")
 
@@ -218,10 +219,10 @@ abstract class TreeBuilder {
   def makeSyntheticTypeParam(pname: Name, bounds: Tree) =
     TypeDef(Modifiers(DEFERRED | SYNTHETIC), pname, List(), bounds)
 
-  abstract class Enumerator
+  abstract class Enumerator { def pos: Position }
   case class ValFrom(pos: Position, pat: Tree, rhs: Tree) extends Enumerator
   case class ValEq(pos: Position, pat: Tree, rhs: Tree) extends Enumerator
-  case class Filter(test: Tree) extends Enumerator
+  case class Filter(pos: Position, test: Tree) extends Enumerator
 
   /** Create tree for for-comprehension &lt;for (enums) do body&gt; or
   *   &lt;for (enums) yield body&gt; where mapName and flatMapName are chosen
@@ -302,7 +303,7 @@ abstract class TreeBuilder {
         atPos(pos) {
           makeCombination(flatMapName, rhs, pat, makeFor(mapName, flatMapName, rest, body))
         }
-      case ValFrom(pos, pat, rhs) :: Filter(test) :: rest =>
+      case ValFrom(pos, pat, rhs) :: Filter(_, test) :: rest =>
         makeFor(mapName, flatMapName,
                 ValFrom(pos, pat, makeCombination(nme.filter, rhs, pat.duplicate, test)) :: rest,
                 body)
@@ -434,19 +435,4 @@ abstract class TreeBuilder {
     else vparamss ::: List(implicitViews map makeViewParam)
   }
 
-  /** Create a tree representing a packaging */
-  def makePackaging(pkg: Tree, stats: List[Tree]): PackageDef = pkg match {
-    case Ident(name) =>
-      PackageDef(name, stats).setPos(pkg.pos)
-    case Select(qual, name) =>
-      makePackaging(qual, List(PackageDef(name, stats).setPos(pkg.pos)))
-  }
-
-  /** Create a tree representing a package object */
-  def makePackageObject(objDef: ModuleDef): PackageDef = objDef match {
-    case ModuleDef(mods, name, impl) =>
-      makePackaging(Ident(name), List(ModuleDef(mods, nme.PACKAGEkw, impl)))
-  }
-
-  case class Parens(args: List[Tree]) extends Tree
 }

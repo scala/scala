@@ -111,7 +111,11 @@ trait Trees {
     def tpe = rawtpe
     def tpe_=(t: Type) = rawtpe = t
 
-    def setPos(pos: Position): this.type = { rawpos = pos; this }
+    def setPos(pos: Position): this.type = {
+      rawpos = pos;
+      this
+    }
+
     def setType(tp: Type): this.type = {
       /*assert(kindingIrrelevant(tp) || !kindStar || !tp.isHigherKinded,
                tp+" should not be higher-kinded");*/
@@ -857,6 +861,8 @@ trait Trees {
   case class ExistentialTypeTree(tpt: Tree, whereClauses: List[Tree])
        extends TypTree
 
+  case class Parens(args: List[Tree]) extends Tree // only used during parsing
+
   trait StubTree extends Tree {
     def underlying : AnyRef
     override def equalsStructure0(that: Tree)(f : (Tree,Tree) => Boolean): Boolean = this eq that
@@ -1597,6 +1603,8 @@ trait Trees {
         traverse(lo); traverse(hi)
       case ExistentialTypeTree(tpt, whereClauses) =>
         traverse(tpt); traverseTrees(whereClauses)
+      case Parens(ts) =>
+        traverseTrees(ts)
       case tree : StubTree =>
     }
 
