@@ -162,12 +162,7 @@ self =>
   /** A map view consisting only of those key value pairs where the key satisfies a given
    *  predicate `p`.
    */
-  def filterKeys(p: A => Boolean) = new DefaultMap[A, B] {
-    override def foreach[C](f: ((A, B)) => C): Unit = for (kv <- self) if (p(kv._1)) f(kv)
-    def elements = self.elements.filter(kv => p(kv._1))
-    override def contains(key: A) = self.contains(key) && p(key)
-    def get(key: A) = if (!p(key)) None else self.get(key)
-  }
+  def filterKeys(p: A => Boolean): This = this filter (kv => p(kv._1))
 
   /** A map view resulting from applying a given function `f` to each value.
    */
