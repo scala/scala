@@ -156,9 +156,10 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     List(
        NoArgs("help", "prints this help message", printHelp),
        OneArg("load", "followed by a filename loads a Scala file", load),
-       NoArgs("replay", "resets execution and replays all previous commands", replay),
+       NoArgs("power", "enable power user mode", power),
        NoArgs("quit", "exits the interpreter", () => Result(false, None)),
-       NoArgs("power", "enable power user mode", power)
+       NoArgs("replay", "resets execution and replays all previous commands", replay),
+       NoArgs("silent", "disable/enable automatic printing of results", verbosity)
     )
   }
 
@@ -264,6 +265,12 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
   def power() = {
     powerUserOn = true
     interpreter.powerUser()
+  }
+
+  def verbosity() = {
+    val old = interpreter.printResults
+    interpreter.printResults = !old
+    out.println("Switched " + (if (old) "off" else "on") + " result printing.")
   }
 
   /** Run one command submitted by the user.  Two values are returned:

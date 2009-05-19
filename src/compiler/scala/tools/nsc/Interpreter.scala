@@ -87,11 +87,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
     this(settings, new NewLinePrintWriter(new ConsoleWriter, true))
 
   /** whether to print out result lines */
-  private var printResults: Boolean = true
-
-  /** Be quiet.  Do not print out the results of each
-    * submitted command unless an exception is thrown.  */
-  def beQuiet { printResults = false }
+  private[nsc] var printResults: Boolean = true
 
   /** Temporarily be quiet */
   def beQuietDuring[T](operation: => T): T = {
