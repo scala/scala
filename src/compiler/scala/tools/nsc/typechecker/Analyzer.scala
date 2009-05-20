@@ -41,7 +41,7 @@ trait Analyzer extends AnyRef
     val runsAfter = List[String]()
     val runsRightAfter = Some("namer")
     def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
-      if (!inIDE) resetTyper()
+      resetTyper()
       def apply(unit: CompilationUnit) {
         try {
           unit.body = newTyper(rootContext(unit)).typed(unit.body)

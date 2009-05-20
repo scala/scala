@@ -116,7 +116,7 @@ trait Namers { self: Analyzer =>
       if (sym.isTerm) {
         if (sym.hasFlag(PARAM) && sym.owner.isPrimaryConstructor)
           primaryConstructorParamNamer
-        else if (sym.hasFlag(PARAMACCESSOR) && !inIDE)
+        else if (sym.hasFlag(PARAMACCESSOR))
           primaryConstructorParamNamer
         else innerNamer
       } else innerNamer
@@ -153,29 +153,9 @@ trait Namers { self: Analyzer =>
       // allow for overloaded methods
       if (!(sym.isSourceMethod && sym.owner.isClass && !sym.owner.isPackageClass)) {
         var prev = scope.lookupEntryWithContext(sym.name)(context.owner);
-        if ((prev ne null) && inIDE) {
-          var guess = prev
-          while ((guess ne null) && (guess.sym ne sym)) guess = scope.lookupNextEntry(guess)
-          if (guess != null) prev = guess
-          while (prev != null && (!prev.sym.hasRawInfo || !prev.sym.rawInfo.isComplete ||
-                 (prev.sym.sourceFile == null && sym.getClass == prev.sym.getClass))) {
-            if (!prev.sym.hasRawInfo ||  prev.sym.rawInfo.isComplete) {
-              Console.println("DITCHING: " + prev.sym)
-            }
-            scope unlink prev.sym
-            prev = scope.lookupNextEntry(prev)
-          }
-          val sym0 = scope enter sym
-          if (sym0 ne sym) {
-            Console.println("WEIRD: " + sym0 + " vs. " + sym + " " + sym0.id + " " + sym.id + " " + sym.sourceFile + " " + sym0.sourceFile)
-          }
-          if (prev != null && (sym0 ne prev.sym) && conflict(sym0,prev.sym)) {
-            doubleDefError(sym0.pos, prev.sym)
-          }
-          sym0
-        } else if ((prev ne null) && prev.owner == scope && conflict(sym, prev.sym)) {
+        if ((prev ne null) && prev.owner == scope && conflict(sym, prev.sym)) {
            doubleDefError(sym.pos, prev.sym)
-           sym setInfo ErrorType // don't do this in IDE for stability
+           sym setInfo ErrorType
            scope unlink prev.sym // let them co-exist...
            scope enter sym
         } else scope enter sym
@@ -191,8 +171,6 @@ trait Namers { self: Analyzer =>
         p
       } else {
         val pkg = cowner.newPackage(pos, name)
-        // IDE: newScope should be ok because packages are never destroyed.
-        if (inIDE) assert(!pkg.moduleClass.hasRawInfo || !pkg.moduleClass.rawInfo.isComplete)
         pkg.moduleClass.setInfo(new PackageClassInfoType(newScope, pkg.moduleClass, null))
         pkg.setInfo(pkg.moduleClass.tpe)
         enterInScope(pkg, cscope)
@@ -201,7 +179,7 @@ trait Namers { self: Analyzer =>
 
     def enterClassSymbol(tree : ClassDef): Symbol = {
       var c: Symbol = context.scope.lookupWithContext(tree.name)(context.owner);
-      if (!inIDE && c.isType && c.owner.isPackageClass && context.scope == c.owner.info.decls && !currentRun.compiles(c)) {
+      if (c.isType && c.owner.isPackageClass && context.scope == c.owner.info.decls && !currentRun.compiles(c)) {
         updatePosFlags(c, tree.pos, tree.mods.flags)
         setPrivateWithin(tree, c, tree.mods)
       } else {
@@ -218,7 +196,7 @@ trait Namers { self: Analyzer =>
         }
         clazz.sourceFile = file
         if (clazz.sourceFile ne null) {
-          assert(inIDE || !currentRun.compiles(clazz) || clazz.sourceFile == currentRun.symSource(c));
+          assert(!currentRun.compiles(clazz) || clazz.sourceFile == currentRun.symSource(c));
           currentRun.symSource(c) = clazz.sourceFile
         }
       }
@@ -233,7 +211,7 @@ trait Namers { self: Analyzer =>
       var m: Symbol = context.scope.lookupWithContext(tree.name)(context.owner)
       val moduleFlags = tree.mods.flags | MODULE | FINAL
       if (m.isModule && !m.isPackage && inCurrentScope(m) &&
-          ((!inIDE && !currentRun.compiles(m)) || (m hasFlag SYNTHETIC))) {
+          (!currentRun.compiles(m) || (m hasFlag SYNTHETIC))) {
         updatePosFlags(m, tree.pos, moduleFlags)
         setPrivateWithin(tree, m, tree.mods)
         context.unit.synthetics -= m
@@ -282,8 +260,7 @@ trait Namers { self: Analyzer =>
     }
 
     def applicableTypeParams(owner: Symbol): List[Symbol] =
-      if (inIDE && (owner eq NoSymbol)) List()
-      else if (owner.isTerm || owner.isPackageClass) List()
+      if (owner.isTerm || owner.isPackageClass) List()
       else applicableTypeParams(owner.owner) ::: owner.typeParams
 
     /** If no companion object for clazz exists yet, create one by applying `creator` to
@@ -292,7 +269,7 @@ trait Namers { self: Analyzer =>
      */
     def ensureCompanionObject(tree: ClassDef, creator: ClassDef => Tree): Symbol = {
       val m: Symbol = context.scope.lookupWithContext(tree.name.toTermName)(context.owner).filter(! _.isSourceMethod)
-      if (m.isModule && inCurrentScope(m) && (inIDE || currentRun.compiles(m))) m
+      if (m.isModule && inCurrentScope(m) && currentRun.compiles(m)) m
       else enterSyntheticSym(creator(tree))
     }
 
@@ -451,9 +428,6 @@ trait Namers { self: Analyzer =>
       mkTypeCompleter(tree) { sym =>
         val moduleSymbol = tree.symbol
         assert(moduleSymbol.moduleClass == sym)
-        if (inIDE && moduleSymbol.rawInfo.isComplete) {
-          // reset!
-        }
         moduleSymbol.info // sets moduleClass info as a side effect.
         //assert(sym.rawInfo.isComplete)
       }
@@ -507,15 +481,7 @@ trait Namers { self: Analyzer =>
 
     def enterValueParams(owner: Symbol, vparamss: List[List[ValDef]]): List[List[Symbol]] = {
       def enterValueParam(param: ValDef): Symbol = {
-        if (inIDE) param.symbol = {
-          var sym = owner.newValueParameter(param.pos, param.name).
-            setFlag(param.mods.flags & (BYNAMEPARAM | IMPLICIT))
-          setPrivateWithin(param, sym, param.mods)
-          sym = enterInScope(sym).asInstanceOf[TermSymbol]
-          if (!sym.hasRawInfo || sym.rawInfo.isComplete)
-            setInfo(sym)(typeCompleter(param))
-          sym
-        } else param.symbol = setInfo(
+        param.symbol = setInfo(
           enterInScope{
             val sym = owner.newValueParameter(param.pos, param.name).
               setFlag(param.mods.flags & (BYNAMEPARAM | IMPLICIT))
@@ -633,18 +599,8 @@ trait Namers { self: Analyzer =>
       // unless they exist already
       Namers.this.caseClassOfModuleClass get clazz match {
         case Some(cdef) =>
-          val go = if (inIDE) { // garbage collect in the presentaiton compiler.
-            assert(cdef.symbol != null && cdef.symbol != NoSymbol)
-            if (!cdef.symbol.isClass || !cdef.symbol.hasFlag(CASE) || cdef.symbol.rawInfo == NoType) false
-            else true
-          } else true
-          if (go)
-            addApplyUnapply(cdef, templateNamer)
-          if (!go || !inIDE) caseClassOfModuleClass -= clazz
-          if (!go) {
-            val rem = clazz.linkedModuleOfClass
-            assert(rem != NoSymbol)
-          }
+          addApplyUnapply(cdef, templateNamer)
+          caseClassOfModuleClass -= clazz
         case None =>
       }
       ClassInfoType(parents, decls, clazz)
@@ -658,14 +614,8 @@ trait Namers { self: Analyzer =>
       val meth = context.owner
 
       val tparamSyms = typer.reenterTypeParams(tparams)
-      var vparamSymss =
-        if (inIDE && meth.isPrimaryConstructor) {
-          // @S: because they have already been entered this way....
+      var vparamSymss = enterValueParams(meth, vparamss)
 
-          enterValueParams(meth.owner.owner, vparamss)
-        } else {
-          enterValueParams(meth, vparamss)
-        }
       if (tpt.isEmpty && meth.name == nme.CONSTRUCTOR) {
         tpt.tpe = context.enclClass.owner.tpe
         tpt setPos meth.pos
@@ -1008,7 +958,7 @@ trait Namers { self: Analyzer =>
 
       if (sym.hasFlag(IMPLICIT) && !sym.isTerm)
         context.error(sym.pos, "`implicit' modifier can be used only for values, variables and methods")
-      if (sym.hasFlag(IMPLICIT) && sym.owner.isPackageClass && !inIDE)
+      if (sym.hasFlag(IMPLICIT) && sym.owner.isPackageClass)
         context.error(sym.pos, "`implicit' modifier cannot be used for top-level objects")
       if (sym.hasFlag(SEALED) && !sym.isClass)
         context.error(sym.pos, "`sealed' modifier can be used only for classes")
@@ -1077,7 +1027,6 @@ trait Namers { self: Analyzer =>
     if (member hasFlag ACCESSOR) {
       if (member.isDeferred) {
         val getter = if (member.isSetter) member.getter(member.owner) else member
-        if (inIDE && getter == NoSymbol) return NoSymbol;
         val result = getter.owner.newValue(getter.pos, getter.name)
           .setInfo(getter.tpe.resultType)
           .setFlag(DEFERRED)

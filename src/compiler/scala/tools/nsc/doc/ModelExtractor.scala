@@ -345,7 +345,10 @@ trait ModelExtractor {
       if (sym.isLocalClass) return false
       if (sym.isLocal) return false
       if (sym.isPrivateLocal) return false
-      if (sym hasFlag PRIVATE) return !inIDE //false
+      // the next line used to return !inIDE - now it returns true.  The underlying
+      // logic being applied here is somewhat mysterious (if PRIVATE return isVisible == true?)
+      // but changing it causes the docgenerator.scala test case to break, so I leave as-is.
+      if (sym hasFlag PRIVATE) return true
       if (sym hasFlag SYNTHETIC) return false
       if (sym hasFlag BRIDGE) return false
       if ((sym.nameString indexOf "$") != -1) return false

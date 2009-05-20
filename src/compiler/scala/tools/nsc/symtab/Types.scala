@@ -669,7 +669,6 @@ trait Types {
       // See (t0851) for a situation where this happens.
       if (!this.isGround)
         return typeVarToOriginMap(this).findMember(name, excludedFlags, requiredFlags, stableOnly)(from)
-      if (inIDE) trackTypeIDE(typeSymbol)
       if (util.Statistics.enabled) findMemberCount += 1
       val startTime = if (util.Statistics.enabled) currentTime else 0l
 
@@ -832,11 +831,7 @@ trait Types {
     override def baseType(clazz: Symbol): Type = supertype.baseType(clazz)
     override def baseTypeSeq: BaseTypeSeq = supertype.baseTypeSeq
     override def baseTypeSeqDepth: Int = supertype.baseTypeSeqDepth
-    override def baseClasses: List[Symbol] = {
-      val supertype = this.supertype
-      if (inIDE && supertype == null) Nil
-      else supertype.baseClasses
-    }
+    override def baseClasses: List[Symbol] = supertype.baseClasses
     override def isNotNull = supertype.isNotNull
   }
 
@@ -966,8 +961,6 @@ trait Types {
     private var underlyingCache: Type = NoType
     private var underlyingPeriod = NoPeriod
     override def underlying: Type = {
-      // this kind of caching here won't work in the IDE
-      if (inIDE) return pre.memberType(sym).resultType
       val period = underlyingPeriod
       if (period != currentPeriod) {
         underlyingPeriod = currentPeriod
@@ -1064,7 +1057,6 @@ trait Types {
     override def baseTypeSeqDepth: Int = baseTypeSeq.maxDepth
 
     override def baseClasses: List[Symbol] = {
-      if (inIDE) trackTypeIDE(typeSymbol)
       def computeBaseClasses: List[Symbol] =
         if (parents.isEmpty) List(typeSymbol)
         else {
@@ -1113,16 +1105,11 @@ trait Types {
     }
 
     override def baseType(sym: Symbol): Type = {
-      if (inIDE) { trackTypeIDE(sym); trackTypeIDE(typeSymbol); }
       val index = baseTypeIndex(sym)
       if (index >= 0) baseTypeSeq(index) else NoType
     }
 
-    override def narrow: Type = {
-      if (inIDE) trackTypeIDE(typeSymbol)
-      typeSymbol.thisType
-    }
-
+    override def narrow: Type = typeSymbol.thisType
     override def isNotNull: Boolean = parents exists (_.isNotNull)
 
     // override def isNullable: Boolean =
@@ -1691,11 +1678,6 @@ A type's typeSymbol should never be inspected directly.
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
     override def narrow: Type = resultType.narrow
     override def isVolatile = resultType.isVolatile
-
-    override def deconst =
-      if (inIDE) PolyType(typeParams, resultType.deconst)
-      else super.deconst
-
     override def finalResultType: Type = resultType.finalResultType
 
     /** @M: abstractTypeSig now wraps a TypeBounds in a PolyType
@@ -2040,13 +2022,10 @@ A type's typeSymbol should never be inspected directly.
     if (phase.erasedTypes)
       if (parents.isEmpty) ObjectClass.tpe else parents.head
     else {
-      val clazz = recycle(owner.newRefinementClass(if (inIDE) pos else NoPosition))
-      if (!inIDE || !parents.isEmpty) {
-        val result = refinementOfClass(clazz, parents, decls)
-        clazz.setInfo(result)
-        result
-      } else clazz.info
-      //result
+      val clazz = recycle(owner.newRefinementClass(NoPosition))
+      val result = refinementOfClass(clazz, parents, decls)
+      clazz.setInfo(result)
+      result
     }
   }
 
@@ -2770,14 +2749,10 @@ A type's typeSymbol should never be inspected directly.
             if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) mapOver(tp)
             //@M! see test pos/tcpoly_return_overriding.scala why mapOver is necessary
             else {
-              def throwError : Nothing =
-                // IDE: in the IDE, this will occur because we complete everything
-                //      too eagerly. It doesn't matter, the error will be fixed when
-                //      the node is re-typed.
-                if (inIDE) throw new TypeError("internal error: " + tp + " in " + sym.owner +
-                  " cannot be instantiated from " + pre.widen)
-                     else throw new Error("" + tp + sym.locationString +
-                                     " cannot be instantiated from " + pre.widen)
+              def throwError : Nothing = throw new Error(
+                "" + tp + sym.locationString + " cannot be instantiated from " + pre.widen
+              )
+
               def instParam(ps: List[Symbol], as: List[Type]): Type =
                 if (ps.isEmpty) throwError
                 else if (sym eq ps.head)
@@ -2824,7 +2799,6 @@ A type's typeSymbol should never be inspected directly.
 
       def subst(tp: Type, sym: Symbol, from: List[Symbol], to: List[T]): Type =
         if (from.isEmpty) tp
-        else if (to.isEmpty && inIDE) throw new TypeError(NoPosition, "type parameter list problem");
         else if (matches(from.head, sym)) toType(tp, to.head)
         else subst(tp, sym, from.tail, to.tail)
 
@@ -3200,8 +3174,7 @@ A type's typeSymbol should never be inspected directly.
 
   object adaptToNewRunMap extends TypeMap {
     private def adaptToNewRun(pre: Type, sym: Symbol): Symbol = {
-      if (inIDE) sym // dependecies adapted at a finer granularity in IDE
-      else if (sym.isModuleClass && !phase.flatClasses) {
+      if (sym.isModuleClass && !phase.flatClasses) {
         adaptToNewRun(pre, sym.sourceModule).moduleClass
       } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.owner.isPackageClass) {
         sym
@@ -3660,12 +3633,9 @@ A type's typeSymbol should never be inspected directly.
       case (SingleType(_, _), ThisType(_))      => tp1 =:= tp2
       case (SingleType(_, _), SingleType(_, _)) => tp1 =:= tp2
       case (ConstantType(_), ConstantType(_))   => tp1 =:= tp2
-      case (TypeRef(pre1, sym1: TypeSkolem, args1), TypeRef(pre2, sym2: TypeSkolem, args2))
-      if (inIDE && args1 == args2 && pre1 == pre2 && sym1.deSkolemize == sym2.deSkolemize) => true
       case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2))
       if !(tp1.isHigherKinded || tp2.isHigherKinded) =>
         //Console.println("isSubType " + tp1 + " " + tp2);//DEBUG
-        if (inIDE) { trackTypeIDE(sym1); trackTypeIDE(sym2); }
 
         def isSubArgs(tps1: List[Type], tps2: List[Type],
                       tparams: List[Symbol]): Boolean = (
@@ -3736,8 +3706,7 @@ A type's typeSymbol should never be inspected directly.
            isSubType0(tp1a, tp2a, depth)
          })
       case (_, TypeRef(pre2, sym2, args2))
-      if (sym2.isAbstractType && isDifferentType(tp2, tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo) &&
-            (if (!inIDE) true else trackTypeIDE(sym2)) ||
+      if (sym2.isAbstractType && isDifferentType(tp2, tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo) ||
           sym2 == NotNullClass && tp1.isNotNull) =>
         true
       case (_, TypeRef(pre2, sym2, args2))
@@ -3768,7 +3737,6 @@ A type's typeSymbol should never be inspected directly.
         tp1.underlying <:< tp2
 
       case (TypeRef(pre1, sym1, args1), _) =>
-        if (inIDE) trackTypeIDE(sym1)
         (sym1 == NothingClass && tp2 <:< AnyClass.tpe
          ||
          sym1 == NullClass && tp2.isInstanceOf[SingletonType] && (tp1 <:< tp2.widen)

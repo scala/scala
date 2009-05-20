@@ -573,12 +573,9 @@ trait Trees {
     // create parameters for <init>
     var vparamss1 =
       vparamss map (vps => vps.map { vd =>
-        val ret = ValDef(
+        ValDef(
           Modifiers(vd.mods.flags & IMPLICIT | PARAM) withAnnotations vd.mods.annotations,
           vd.name, vd.tpt.duplicate, EmptyTree).setPos(vd.pos)
-        if (inIDE && vd.symbol != NoSymbol)
-          ret.symbol = vd.symbol
-        ret
        })
     val (edefs, rest) = body span treeInfo.isEarlyDef
     val (evdefs, etdefs) = edefs partition treeInfo.isEarlyValDef

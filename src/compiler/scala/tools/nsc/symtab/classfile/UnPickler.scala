@@ -773,8 +773,7 @@ abstract class UnPickler {
 
 
     private def errorBadSignature(msg: String) =
-      if (inIDE) throw new TypeError(msg)
-      else throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg)
+      throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg)
 
     private var printedReflectAnnotationWarning = false
     private def reflectAnnotationWarning() {
@@ -790,10 +789,9 @@ abstract class UnPickler {
       // In IDE, captures class files dependencies so they can be reloaded when their dependencies change.
       private val ideHook = unpickleIDEHook
       override def complete(sym: Symbol) : Unit = {
-        if (sym.rawInfo != this && inIDE) return
         val tp = ideHook(at(i, readType))
         sym setInfo tp
-        if (!inIDE && currentRunId != definedAtRunId) sym.setInfo(adaptToNewRunMap(tp))
+        if (currentRunId != definedAtRunId) sym.setInfo(adaptToNewRunMap(tp))
       }
       override def load(sym: Symbol) { complete(sym) }
     }

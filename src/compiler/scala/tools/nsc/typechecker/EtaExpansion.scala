@@ -49,22 +49,18 @@ trait EtaExpansion { self: Analyzer =>
    */
   def etaExpand(unit : CompilationUnit, tree: Tree): Tree = {
     val tpe = tree.tpe
-    val symbolHash = if (!inIDE) "" else Integer.toString(tree.symbol.hashCode, 10 + ('z' - 'a')) + "$"
+    val symbolHash = ""
     var cnt = 0 // for NoPosition
     def freshName(pos : util.Position, n : Int) = {
       cnt += 1
-      if (!inIDE) {
-        newTermName(unit.fresh.newName(pos, "eta$" + (cnt - 1) + "$"))
-      } else if (pos == util.NoPosition) {
-        // nothing we can do, hope for no conflict!
-        newTermName(("eta$" + symbolHash + (cnt - 1)))
-      } else
-        newTermName(unit.fresh.newName(pos, "eta$" + symbolHash + (cnt - 1) + "$"))
-        // Martin to Sean: I removed the
-        // else if (n == 0) branch and changed `n' in the line above to `(cnt - 1)'
-        // this was necessary because otherwise curried eta-expansions would get the same
-        // symbol. An example which failes test/files/run/Course-2002-02.scala
-        // todo: review and get rid of the `n' argument (which is unused right now).
+      newTermName(unit.fresh.newName(pos, "eta$" + (cnt - 1) + "$"))
+      // Note - the comment below made more sense before I ripped inIDE out -
+      // I leave it in to give context to the todo: at the bottom.
+      // Martin to Sean: I removed the
+      // else if (n == 0) branch and changed `n' in the line above to `(cnt - 1)'
+      // this was necessary because otherwise curried eta-expansions would get the same
+      // symbol. An example which failes test/files/run/Course-2002-02.scala
+      // todo: review and get rid of the `n' argument (which is unused right now).
     }
     // { cnt = cnt + 1; newTermName("eta$" + cnt) }
     val defs = new ListBuffer[Tree]

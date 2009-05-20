@@ -371,11 +371,8 @@ abstract class ClassfileParser {
     externalName = pool.getClassName(nameIdx)
     val c = if (externalName.toString.indexOf('$') < 0) pool.getClassSymbol(nameIdx) else clazz
     if (c != clazz && externalName.toString.indexOf("$") < 0) {
-      if ((clazz eq NoSymbol) && (c ne NoSymbol)) { // XXX: needed for build compiler, so can't protect with inIDE
-        clazz = c
-      } else if (inIDE) {
-        Console.println("WRONG CLASS: expected: " + clazz + " found " + c)
-      } else throw new IOException("class file '" + in.file + "' contains wrong " + c)
+      if ((clazz eq NoSymbol) && (c ne NoSymbol)) clazz = c
+      else throw new IOException("class file '" + in.file + "' contains wrong " + c)
     }
 
     addEnclosingTParams(clazz)

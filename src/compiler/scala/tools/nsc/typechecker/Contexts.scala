@@ -145,64 +145,9 @@ trait Contexts { self: Analyzer =>
       txt
     }
     override def equals(that: Any): Boolean = that match {
-      case that: AnyRef if (this eq that) =>
-        true
-      case that if !inIDE =>
-        super.equals(that)
-      //case NoContext => false
-      case that: Context =>
-        if (that eq NoContext) return this eq NoContext
-        assert(that ne NoContext)
-        if (this eq NoContext) return false
-        assert(inIDE)
-        def eq[T](x : T, y : T) = x == y
-        val a0 = {
-          if ((tree ne null) && (tree ne EmptyTree)) tree.setType(null)
-          if ((tree eq null) || (that.tree eq null)) tree == that.tree else
-            tree equalsStructure that.tree;
-        }
-        val a1 = eq(owner, that.owner)
-        val a2 = eq(scope, that.scope)
-        def fix(txt0 : Context, txt1 : Context) =
-          ((this eq txt0) && (that eq txt1)) || (txt0 eq txt1)
-
-        val a3 = fix(outer, that.outer)
-        val a4 = fix(enclClass, that.enclClass)
-        val a5 = fix(enclMethod, that.enclMethod)
-        val a6 = eq(variance, that.variance)
-        val a7 = eq(_undetparams, that._undetparams)
-        val a8 = eq(depth, that.depth)
-        val a9 = eq(imports, that.imports)
-
-        val a10 = eq(openImplicits, that.openImplicits)
-        val a11 = eq(prefix, that.prefix)
-        val a12 = eq(inConstructorSuffix, that.inConstructorSuffix)
-        val a13 = eq(implicitsEnabled, that.implicitsEnabled)
-        val a14 = eq(checking, that.checking)
-        val a15 = eq(retyping, that.retyping)
-        val a16 = eq(savedTypeBounds, that.savedTypeBounds)
-        val a17 = eq(unit, that.unit)
-        val ret = a0 && a1 && a2 && a3 && a4 && a5 && a6 && a7 && a8 && a9 && a10 && a11 && a12 && a13 && a14 && a15 && a16 && a17
-        val a18 = {
-          if (implicitsRunId > that.implicitsRunId) {
-            that.implicitsRunId = NoRunId
-            that.implicitsCache = null
-          }
-          else if (that.implicitsRunId > implicitsRunId) {
-            implicitsRunId = NoRunId
-            implicitsCache = null
-          }
-          implicitsCache == that.implicitsCache
-        }
-        if (ret) {
-          if (!a18) {
-            //assert(this.implicitsCache == null || that.implicitsCache == null)
-          }
-        }
-        ret
-      case _ => false
+      case that: AnyRef if this eq that => true
+      case that                         => super.equals(that)
     }
-
 
     def undetparams = _undetparams
     def undetparams_=(ps: List[Symbol]) = {
@@ -345,7 +290,7 @@ trait Contexts { self: Analyzer =>
 
     def error(pos: Position, err: Error) {
       val msg = err.getMessage()
-      if (reportGeneralErrors || inIDE)
+      if (reportGeneralErrors)
         unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
       else
         throw err
@@ -439,8 +384,6 @@ trait Contexts { self: Analyzer =>
       def accessWithin(owner: Symbol): Boolean = {
         var c = this
         while (c != NoContext && c.owner != owner) {
-          if (false && inIDE) // XXX: we didn't get to update these syms....
-            assert(c.owner.fullNameString != owner.fullNameString)
           if (c.outer eq null) assert(false, "accessWithin(" + owner + ") " + c);//debug
           if (c.outer.enclClass eq null) assert(false, "accessWithin(" + owner + ") " + c);//debug
           c = c.outer.enclClass
@@ -632,12 +575,10 @@ trait Contexts { self: Analyzer =>
 
   case class ImportType(expr: Tree) extends Type {
     override def equals(that : Any) = that match {
-    case ImportType(expr) =>
-      if (inIDE) this.expr equalsStructure expr
-      else this.expr == expr
-    case _ => false
+      case ImportType(expr) => this.expr == expr
+      case _                => false
     }
-    override def hashCode = if (inIDE) expr.hashCodeStructure else expr.hashCode
+    override def hashCode = expr.hashCode
     override def safeToString = "ImportType("+expr+")"
   }
   protected def intern(txt : Context) = txt

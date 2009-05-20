@@ -35,8 +35,6 @@ abstract class SymbolTable extends Names
   /** Are we compiling for .NET ? */
   def forMSIL: Boolean
 
-  /** are we in a lampion presentation compiler? cannot get inIDE flag from global */
-  def inIDE : Boolean = false
   protected def trackTypeIDE(sym : Symbol) : Boolean = true
   def compare(sym : Symbol, name : Name) = sym.name == name
   def verifyAndPrioritize[T](g : Symbol => Symbol)(pt : Type)(f : => T) = f

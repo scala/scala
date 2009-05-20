@@ -48,29 +48,6 @@ abstract class SymbolLoaders {
     protected def sourceString: String
 
     override def complete(root: Symbol) : Unit = {
-      if (inIDE && root.owner != NoSymbol) {
-        assert(root.rawInfo == this)
-        if (root.isModuleClass) {
-          val clazz = root.sourceModule.linkedClassOfModule
-          assert(root.rawInfo == this)
-          if (clazz != NoSymbol && !clazz.rawInfo.isInstanceOf[SymbolLoader]) {
-            // bail
-            root.setInfo(ErrorType)
-            Console.println("ditch " + root)
-            return
-          }
-        } else if (root.isClass) {
-          val module = root.linkedModuleOfClass
-          assert(root.rawInfo == this)
-          if (module != NoSymbol && !module.rawInfo.isInstanceOf[SymbolLoader]) {
-            root.setInfo(ErrorType)
-            Console.println("ditch " + root)
-            return
-          }
-        } else {
-          assert(root.isModule)
-        }
-      }
       try {
         val start = currentTime
         val currentphase = phase
@@ -124,11 +101,10 @@ abstract class SymbolLoaders {
 
     def enterPackage(name: String, completer: SymbolLoader) {
       val preExisting = root.info.decls.lookup(newTermName(name))
-      if (preExisting != NoSymbol) {
-        if (inIDE) return
-        else throw new TypeError(
+      if (preExisting != NoSymbol)
+        throw new TypeError(
           root+" contains object and package with same name: "+name+"\none of them needs to be removed from classpath")
-      }
+
       val pkg = root.newPackage(NoPosition, newTermName(name))
       pkg.moduleClass.setInfo(completer)
       pkg.setInfo(pkg.moduleClass.tpe)
@@ -181,7 +157,7 @@ abstract class SymbolLoaders {
         }
       }
 
-      for (dir <- directory.entries) if ((dir.location ne null) && (!inIDE || dir.location.isDirectory)) {
+      for (dir <- directory.entries) if ((dir.location ne null) && dir.location.isDirectory) {
         for (file <- dir.location) {
           if (file.isDirectory && directory.validPackage(file.name) && !packages.isDefinedAt(file.name))
             packages(file.name) = directory.find(file.name, true);

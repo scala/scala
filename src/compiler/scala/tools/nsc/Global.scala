@@ -867,7 +867,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def forCLDC: Boolean = settings.target.value == "cldc"
   def forJVM : Boolean = settings.target.value startsWith "jvm"
   def forMSIL: Boolean = settings.target.value == "msil"
-  def onlyPresentation = inIDE
+  def onlyPresentation = false
   private val unpickleIDEHook0 : (( => Type) => Type) = f => f
   def unpickleIDEHook : (( => Type) => Type) = unpickleIDEHook0
 

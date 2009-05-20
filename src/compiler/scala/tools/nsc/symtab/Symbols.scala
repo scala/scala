@@ -626,7 +626,6 @@ trait Symbols {
       var cnt = 0
       while (validTo == NoPeriod) {
         //if (settings.debug.value) System.out.println("completing " + this);//DEBUG
-        if (inIDE && (infos eq null)) return ErrorType
         assert(infos ne null, this.name)
         assert(infos.prev eq null, this.name)
         val tp = infos.info
@@ -683,8 +682,7 @@ trait Symbols {
       val curPeriod = currentPeriod
       val curPid = phaseId(curPeriod)
 
-      if (!inIDE && validTo != NoPeriod) { // IDE doesn't adapt.
-
+      if (validTo != NoPeriod) {
         // skip any infos that concern later phases
         while (curPid < phaseId(infos.validFrom) && infos.prev != null)
           infos = infos.prev
@@ -908,11 +906,7 @@ trait Symbols {
 
     def suchThat(cond: Symbol => Boolean): Symbol = {
       val result = filter(cond)
-      // @S: seems like NoSymbol has the overloaded flag????
-      if (inIDE && (this eq result) && result != NoSymbol && (result hasFlag OVERLOADED)) {
-        return result
-      }
-      if (!inIDE) assert(!(result hasFlag OVERLOADED), result.alternatives)
+      assert(!(result hasFlag OVERLOADED), result.alternatives)
       result
     }
 
@@ -1259,15 +1253,8 @@ trait Symbols {
         newTermName(fullNameString('$') + nme.EXPAND_SEPARATOR_STRING + name)
     }
 
-    def sourceFile: AbstractFile = {
-      var ret = (if (isModule) moduleClass else toplevelClass).sourceFile
-      if (ret == null && inIDE && !isModule) this match {
-        case sym : ModuleSymbol if sym.referenced != null =>
-          ret = sym.referenced.sourceFile
-        case _ =>
-      }
-      ret
-    }
+    def sourceFile: AbstractFile =
+      (if (isModule) moduleClass else toplevelClass).sourceFile
 
     def sourceFile_=(f: AbstractFile) {
       throw new Error("sourceFile_= inapplicable for " + this)
@@ -1502,14 +1489,8 @@ trait Symbols {
     }
 
     def setLazyAccessor(sym: Symbol): TermSymbol = {
-      // @S: in IDE setLazyAccessor can be called multiple times on same sym
-      if (inIDE && referenced != NoSymbol && referenced != sym) {
-        // do nothing
-        recycle(referenced)
-      } else {
-        assert(hasFlag(LAZY) && (referenced == NoSymbol || referenced == sym), this)
-        referenced = sym
-      }
+      assert(hasFlag(LAZY) && (referenced == NoSymbol || referenced == sym), this)
+      referenced = sym
       this
     }
 

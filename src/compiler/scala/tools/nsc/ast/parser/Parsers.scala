@@ -1984,13 +1984,6 @@ self =>
         newmods = newmods | Flags.DEFERRED
         EmptyTree
       }
-      var originalUsed = false
-      for ((pos, name) <- lhs.toList) yield atPos(pos) {
-        if (inIDE && !originalUsed) {
-          originalUsed = true
-          ValDef(newmods, name, tp, rhs)
-        } else ValDef(newmods, name, tp.duplicate, rhs.duplicate)
-      }
     }
      */
 

@@ -17,7 +17,6 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
     condition
   }
 
-  override def inIDE = true
   import CompatibleResult._
   trait TrackedPosition extends Position with ReallyHasClients {
     // symbols without scopes!

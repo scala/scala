@@ -46,12 +46,12 @@ trait SyntheticMethods { self: Analyzer =>
     val localContext = if (reporter.hasErrors) context.makeSilent(false) else context
     val localTyper = newTyper(localContext)
 
-    def hasImplementation(name: Name): Boolean = if (inIDE) true else {
+    def hasImplementation(name: Name): Boolean = {
       val sym = clazz.info.member(name) // member and not nonPrivateMember: bug #1385
       sym.isTerm && !(sym hasFlag DEFERRED)
     }
 
-    def hasOverridingImplementation(meth: Symbol): Boolean = if (inIDE) true else {
+    def hasOverridingImplementation(meth: Symbol): Boolean = {
       val sym = clazz.info.nonPrivateMember(meth.name)
       sym.alternatives exists { sym =>
         sym != meth && !(sym hasFlag DEFERRED) && !(sym hasFlag (SYNTHETIC | SYNTHETICMETH)) &&
@@ -64,7 +64,7 @@ trait SyntheticMethods { self: Analyzer =>
 
     def newSyntheticMethod(name: Name, flags: Int, tpe: Type) = {
       var method = clazz.newMethod(clazz.pos, name)
-        .setFlag(flags | (if (inIDE) SYNTHETIC else SYNTHETICMETH))
+        .setFlag(flags | SYNTHETICMETH)
         .setInfo(tpe)
       method = clazz.info.decls.enter(method).asInstanceOf[TermSymbol]
       method
