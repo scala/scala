@@ -214,5 +214,22 @@ class RichString(val self: String) extends Proxy with Vector[Char] with VectorTe
    */
   def format(args : Any*) : String =
     java.lang.String.format(self, args.toArray[Any].asInstanceOf[Array[AnyRef]]: _*)
+
+  /** <p>
+   *  Like format(args*) but takes an initial Locale parameter
+   *  which influences formatting as in java.lang.String's format.
+   *  </p>
+   *  <p>
+   *    The interpretation of the formatting patterns is described in
+   *    <a href="" target="contentFrame" class="java/util/Formatter">
+   *    <code>java.util.Formatter</code></a>.
+   *  </p>
+   *
+   *  @param locale an instance of java.util.Locale
+   *  @param args the arguments used to instantiating the pattern.
+   *  @throws java.lang.IllegalArgumentException
+   */
+  def format(l: java.util.Locale, args: Any*): String =
+    java.lang.String.format(l, self, args.toArray[Any].asInstanceOf[Array[AnyRef]]: _*)
 }
 
