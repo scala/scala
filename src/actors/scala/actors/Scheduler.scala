@@ -60,10 +60,10 @@ object Scheduler extends IScheduler {
       s.start()
       s
     }
-    //Actor.timer = new java.util.Timer
-    while (!tasks.isEmpty()) {
-      sched.execute(tasks.take().asInstanceOf[FJTask])
-    }
+    if (tasks != null)
+      while (!tasks.isEmpty()) {
+        sched.execute(tasks.take().asInstanceOf[FJTask])
+      }
     tasks = null
   }
 
