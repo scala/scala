@@ -1,4 +1,8 @@
+bug563.scala:5: warning: for (val x <- ... ) has been deprecated; use for (x <- ... ) instead
+        for (val n <- sn)
+             ^
 bug563.scala:6: error: missing parameter type
             map(n,ptr => new Cell(ptr.elem));
                   ^
+one warning found
 one error found

@@ -2,5 +2,5 @@ gadts1.scala:15: error: type mismatch;
  found   : Test.Double
  required: a
     case NumTerm(n) => c.x = Double(1.0) 
-                             ^
+                                   ^
 one error found

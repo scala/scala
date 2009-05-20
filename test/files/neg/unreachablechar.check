@@ -1,4 +1,4 @@
 unreachablechar.scala:5: error: unreachable code
     case 'f' => println("not stuff?");
-                ^
+                       ^
 one error found

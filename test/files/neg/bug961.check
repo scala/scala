@@ -4,6 +4,6 @@ use either case objects or case classes with `()' as parameter list.
                                ^
 bug961.scala:11: error: Temp.this.B of type object Temp.B does not take parameters
   B() match {
-  ^
+   ^
 one warning found
 one error found

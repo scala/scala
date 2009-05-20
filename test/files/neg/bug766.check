@@ -1,4 +1,8 @@
+bug766.scala:4: warning: for (val x <- ... ) has been deprecated; use for (x <- ... ) instead
+    for (val n <- Nil; val m <- Nil) {
+         ^
 bug766.scala:5: error: not found: value badIdentifier
       val p = badIdentifier
               ^
+one warning found
 one error found

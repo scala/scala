@@ -1,3 +1,12 @@
+viewtest.scala:96: warning: for (val x <- ... ) has been deprecated; use for (x <- ... ) instead
+      for (val s <- args) {
+           ^
+viewtest.scala:103: warning: for (val x <- ... ) has been deprecated; use for (x <- ... ) instead
+      for (val s <- args) {
+           ^
+viewtest.scala:110: warning: for (val x <- ... ) has been deprecated; use for (x <- ... ) instead
+      for (val s <- args) {
+           ^
 viewtest.scala:43: error: type mismatch;
  found   : List[a(in method compareTo)]
  required: List[a(in method view3)]
@@ -9,4 +18,5 @@ viewtest.scala:104: error: ambiguous implicit values:
  match expected type (test.Str) => test.Ordered[test.Str]
         t = t insert Str(s)
               ^
+three warnings found
 two errors found

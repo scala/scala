@@ -1,4 +1,8 @@
+bug765.scala:2: warning: for (val x <- ... ) has been deprecated; use for (x <- ... ) instead
+  for (val e <- List()) { //required
+       ^
 bug765.scala:3: error: not found: type Bar123
     val bar = new Bar123
                   ^
+one warning found
 one error found

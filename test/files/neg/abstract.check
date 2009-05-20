@@ -2,10 +2,10 @@ abstract.scala:6: error: type mismatch;
  found   : A
  required: A.this.T
   def foo2: T = bar().baz();
-                      ^
+                         ^
 abstract.scala:9: error: type mismatch;
  found   : A
  required: A.this.T
   def foo5: T = baz().baz();
-                      ^
+                         ^
 two errors found

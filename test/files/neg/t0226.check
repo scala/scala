@@ -6,5 +6,5 @@ t0226.scala:5: error: not found: type A1
                              ^
 t0226.scala:8: error: no implicit argument matching parameter type Test.this.Foo[((List[Char], Int), (object Nil, Int))] was found.
   foo(((List('b'), 3), (Nil, 4)))
-  ^
+     ^
 three errors found
