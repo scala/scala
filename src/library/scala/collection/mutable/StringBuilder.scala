@@ -879,79 +879,75 @@ object StringBuilder {
     dest
   }
 
-  private def indexOf(source: Array[Char], sourceOffset: Int, sourceCount: Int,
-                      target: Array[Char], targetOffset: Int, targetCount: Int,
-                      fromIndex: Int): Int =
-    // todo: There are faster string search algorithms than this!
-    // we should use at least KMP here.
-    if (fromIndex >= sourceCount)
-      if (targetCount == 0) sourceCount else -1
-    else {
-      val inx = if (fromIndex < 0) 0 else fromIndex
-      if (targetCount == 0)
-        inx
-      else {
-        val first  = target(targetOffset)
-        val max = sourceOffset + (sourceCount - targetCount)
-
-        var i = sourceOffset + inx
-        while (i <= max) {
-          /* Look for first character. */
-          if (source(i) != first) {
-            i += 1
-            while (i <= max && source(i) != first) i += 1
-          }
-          /* Found first character, now look at the rest of v2 */
-          if (i <= max) {
-            var j = i + 1
-            val end = j + targetCount - 1
-            var k = targetOffset + 1
-            while (j < end && source(j) == target(k)) {
-              j += 1
-              k += 1
-            }
-            if (j == end) {
-              /* Found whole string. */
-              return i - sourceOffset
-            }
-          } // if
-          i += 1
-        } // while
-        -1
-      }
+  // KMP implementation by paulp, based on the undoubtedly reliable wikipedia entry
+  private def KMP(S: Array[Char], W: Array[Char]): Option[Int] = {
+    // trivial cases
+    if (W.length == 0) return Some(0)
+    else if (W.length == 1) return S.indexOf(W(0)) match {
+      case -1 => None
+      case x  => Some(x)
     }
 
-  private def lastIndexOf(source: Array[Char], sourceOffset: Int, sourceCount: Int,
-                          target: Array[Char], targetOffset: Int, targetCount: Int,
-                          fromIndex: Int): Int = {
-    val rightIndex = sourceCount - targetCount
-    if (fromIndex < 0) return -1
-    val inx = if (fromIndex > rightIndex) rightIndex else fromIndex
-    // Empty string always matches
-    if (targetCount == 0) return inx
-
-    val strLastIndex = targetOffset + targetCount - 1
-    val strLastChar = target(strLastIndex)
-    val min = sourceOffset + targetCount - 1
-    var i = min + fromIndex
-
-    while (true) {
-      while (i >= min && source(i) != strLastChar) i -= 1
-      if (i < min) return -1
-      var j = i - 1
-      val start = j - (targetCount - 1)
-      var k = strLastIndex - 1
-      var outerWhile = false
-      while (j > start && !outerWhile) {
-        if (source(j) != target(k)) {
-          j -= 1
-          k -= 1
-          i -= 1
-          outerWhile = true
+    val T: Array[Int] = {
+      val arr = new Array[Int](W.length)
+      var pos = 2
+      var cnd = 0
+      arr(0) = -1
+      arr(1) = 0
+      while (pos < W.length) {
+        if (W(pos - 1) == W(cnd)) {
+          arr(pos) = cnd + 1
+          pos += 1
+          cnd += 1
+        }
+        else if (cnd > 0) {
+          cnd = arr(cnd)
+        }
+        else {
+          arr(pos) = 0
+          pos += 1
         }
       }
-      if (!outerWhile) return start - sourceOffset + 1
+      arr
     }
-    -1
+
+    var m, i = 0
+    def mi = m + i
+
+    while (mi < S.length) {
+      if (W(i) == S(mi)) {
+        i += 1
+        if (i == W.length)
+          return Some(m)
+      }
+      else {
+        m = mi - T(i)
+        if (i > 0)
+          i = T(i)
+      }
+    }
+    None
   }
+
+  private def indexOf(
+    source: Array[Char], sourceOffset: Int, sourceCount: Int,
+    target: Array[Char], targetOffset: Int, targetCount: Int,
+    fromIndex: Int): Int =
+      KMP(source.slice(sourceOffset, sourceCount) drop fromIndex, target.slice(targetOffset, targetCount)) match {
+        case None     => -1
+        case Some(x)  => x + fromIndex
+      }
+
+  private def lastIndexOf(
+    source: Array[Char], sourceOffset: Int, sourceCount: Int,
+    target: Array[Char], targetOffset: Int, targetCount: Int,
+    fromIndex: Int): Int = {
+      val src = (source.slice(sourceOffset, sourceCount) take fromIndex).reverse
+      val tgt = target.slice(targetOffset, targetCount).reverse
+
+      KMP(src, tgt) match {
+        case None     => -1
+        case Some(x)  => (src.length - tgt.length - x) + sourceOffset
+      }
+    }
 }
