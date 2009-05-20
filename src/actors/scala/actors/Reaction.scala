@@ -13,23 +13,6 @@ package scala.actors
 
 import java.lang.{InterruptedException, Runnable}
 
-/** <p>
- *    This exception is thrown whenever an actor exits.
- *    Its purpose is to let <code>exit</code> have
- *    return type <code>Nothing</code>.
- *  </p>
- *
- *  @version 0.9.10
- *  @author Philipp Haller
- */
-private[actors] class ExitActorException extends Throwable {
-  /*
-   * For efficiency reasons we do not fill in
-   * the execution stack trace.
-   */
-  override def fillInStackTrace(): Throwable = this
-}
-
 private[actors] class KillActorException extends Throwable {
   /*
    * For efficiency reasons we do not fill in
@@ -83,10 +66,6 @@ class Reaction extends Runnable {
       }
     }
     catch {
-      case eae: ExitActorException => {
-        //Debug.info(a+": exiting...")
-        a.terminated()
-      }
       case _: SuspendActorException => {
         // do nothing (continuation is already saved)
       }

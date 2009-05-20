@@ -977,7 +977,8 @@ trait Actor extends AbstractActor {
     // links
     if (!links.isEmpty)
       exitLinked()
-    throw new ExitActorException
+    terminated()
+    throw new SuspendActorException
   }
 
   // Assume !links.isEmpty
