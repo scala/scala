@@ -422,8 +422,8 @@ trait Actor extends AbstractActor {
    */
   def receive[R](f: PartialFunction[Any, R]): R = {
     assert(Actor.self == this, "receive from channel belonging to other actor")
-    if (shouldExit) exit() // links
     this.synchronized {
+      if (shouldExit) exit() // links
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
       if (null eq qel) {
         waitingFor = f.isDefinedAt
@@ -451,8 +451,9 @@ trait Actor extends AbstractActor {
    */
   def receiveWithin[R](msec: Long)(f: PartialFunction[Any, R]): R = {
     assert(Actor.self == this, "receive from channel belonging to other actor")
-    if (shouldExit) exit() // links
     this.synchronized {
+      if (shouldExit) exit() // links
+
       // first, remove spurious TIMEOUT message from mailbox if any
       val spurious = mailbox.extractFirst((m: Any) => m == TIMEOUT)
 
@@ -502,8 +503,8 @@ trait Actor extends AbstractActor {
    */
   def react(f: PartialFunction[Any, Unit]): Nothing = {
     assert(Actor.self == this, "react on channel belonging to other actor")
-    if (shouldExit) exit() // links
     this.synchronized {
+      if (shouldExit) exit() // links
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
       if (null eq qel) {
         waitingFor = f.isDefinedAt
@@ -529,8 +530,9 @@ trait Actor extends AbstractActor {
    */
   def reactWithin(msec: Long)(f: PartialFunction[Any, Unit]): Nothing = {
     assert(Actor.self == this, "react on channel belonging to other actor")
-    if (shouldExit) exit() // links
     this.synchronized {
+      if (shouldExit) exit() // links
+
       // first, remove spurious TIMEOUT message from mailbox if any
       val spurious = mailbox.extractFirst((m: Any) => m == TIMEOUT)
 
