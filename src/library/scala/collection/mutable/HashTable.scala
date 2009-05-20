@@ -131,7 +131,7 @@ trait HashTable[A] extends AnyRef {
   private def newThreshold(size: Int) =
     ((size.toLong * loadFactor)/loadFactorDenum).toInt
 
-  private def resize(newSize: Int) = {
+  /* debug NoSuchElementException private*/ protected def resize(newSize: Int) = {
     val oldTable = table
     table = new Array(newSize)
     var i = oldTable.length - 1

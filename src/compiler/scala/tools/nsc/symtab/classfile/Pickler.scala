@@ -69,7 +69,7 @@ abstract class Pickler extends SubComponent {
     import scala.collection.mutable.LinkedHashMap
     private var entries = new Array[AnyRef](256)
     private var ep = 0
-    private val index = new LinkedHashMap[AnyRef, Int]
+    private val index = new LinkedHashMap[AnyRef, (Int, Int)]
 
     /** Is symbol an existentially bound variable with a package as owner?
      *  Such symbols should be treated as if they were local.
@@ -108,13 +108,10 @@ abstract class Pickler extends SubComponent {
           entries = entries1
         }
         entries(ep) = entry
-        // debug NoSuchElementException
-        index.saveTableStringIfResize(entry.hashCode())
-
-        index(entry) = ep
+        index(entry) = (ep, entry.hashCode()) // debug NoSuchElementException
         // debug NoSuchElementException
         if (index.get(entry) == None) {
-          println("could not add entry: "+ entry +"; "+ entry.hashCode())
+          println("could not add entry: "+ entry)
           index.printHashTable(entry.hashCode())
         }
         ep = ep + 1
@@ -469,10 +466,10 @@ abstract class Pickler extends SubComponent {
      */
     private def writeRef(ref: AnyRef) {
       try {
-        writeNat(index(ref))
+        writeNat(index(ref)._1) // debug NoSuchElementException
       } catch {
         case e: java.util.NoSuchElementException =>
-          println("entry not found: "+ ref +"; "+ ref.hashCode())
+          println("entry not found: "+ ref)
           index.printHashTable(ref.hashCode())
           throw e
       }

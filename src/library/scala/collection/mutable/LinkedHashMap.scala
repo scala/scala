@@ -69,16 +69,30 @@ class LinkedHashMap[A, B] extends Map[A, B]
   override def elements = ordered.reverse.elements map {e => (e.key, e.value)}
 
   // debug NoSuchElementException in Pickler
-  var savedTableString = ""
-  def saveTableStringIfResize(hcode: Int) {
-    savedTableString =
-      if (tableSize + 1 > threshold) tableString(hcode)
-      else ""
+  var previousTables: List[(String, Int)] = Nil
+
+  override protected def resize(newSize: Int) {
+    previousTables = (tableString(table), table.length) :: previousTables
+    super.resize(newSize)
+    // check consistency
+    for (i <- 0 until table.length) {
+      var e = table(i)
+      while (e != null) {
+        if (index(e.key.hashCode()) != i) {
+          println("INCONSISTENT entry at "+ i +" after resize. before:")
+          println("index before: "+ indx(e.key.hashCode(), previousTables.head._2))
+          println(previousTables.head._1)
+          println("AFTER:")
+          println("index after: "+ index(e.key.hashCode()))
+          println(tableString(table))
+        }
+        e = e.next
+      }
+    }
   }
 
-  def tableString(hcode: Int): String = {
+  def tableString(table: Array[HashEntry[A, Entry]]): String = {
     val sb = new StringBuilder
-    sb.append("index: "+ index(hcode) +"\n")
     for (i <- 0 until table.length) {
       sb.append(""+ i +": ")
       var e = table(i).asInstanceOf[Entry]
@@ -91,14 +105,16 @@ class LinkedHashMap[A, B] extends Map[A, B]
     sb.toString
   }
 
-  def printHashTable(hcode: Int) {
-    if (savedTableString != "") {
-      println("BEFORE (add did a resize!)")
-      println(savedTableString)
-      println("AFTER")
-    } else {
-      println("TABLE after adding (no re-size was required)")
+  def indx(hash: Int, length: Int) = improve(hash) & (length - 1)
+  def printHashTable(notFoundHash: Int) {
+    println("Hash not found: "+ notFoundHash)
+    println("hashtables")
+    for (tb <- previousTables.reverse) {
+      println("with index: "+ indx(notFoundHash, tb._2))
+      println(tb._1)
+      println(" ==> RESIZE, then:")
     }
-    println(tableString(hcode))
+    println("with index: "+ index(notFoundHash))
+    println(tableString(table))
   }
 }
