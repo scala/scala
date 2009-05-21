@@ -111,6 +111,7 @@ trait Definitions {
       def Iterable_hasNext = getMember(IterableClass, nme.hasNext)
     lazy val IteratorClass: Symbol = getClass2("scala.Iterator", "scala.collection.Iterator")
     lazy val SeqClass: Symbol = getClass2("scala.Seq", "scala.collection.Sequence")
+    lazy val TraversableClass: Symbol = getClass("scala.collection.Traversable")
     lazy val RandomAccessSeqMutableClass: Symbol = getMember(
       getModule2("scala.RandomAccessSeq", "scala.collection.Vector"), nme.Mutable)
     def Seq_length = getMember(SeqClass, nme.length)

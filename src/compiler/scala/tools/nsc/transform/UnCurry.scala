@@ -371,7 +371,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
       }
     }
 
-    def transformArgs(pos: Position, args: List[Tree], formals: List[Type]) = {
+    def transformArgs(pos: Position, args: List[Tree], formals: List[Type], isJava: Boolean) = {
       if (formals.isEmpty) {
         assert(args.isEmpty); List()
       } else {
@@ -381,15 +381,25 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
               def mkArrayValue(ts: List[Tree]) =
                 atPos(pos)(ArrayValue(TypeTree(elempt), ts) setType formals.last);
 
+              // when calling into java varargs, make sure it's an array - see bug #1360
+              def forceToArray(arg: Tree) = {
+                val Typed(tree, _) = arg
+                lazy val isTraversable = tree.tpe.baseClasses contains TraversableClass
+                lazy val toArray = tree.tpe member nme.toArray
+
+                if (isJava && isTraversable && toArray != NoSymbol)
+                  Apply(gen.mkAttributedSelect(tree, toArray), Nil) setType tree.tpe.memberType(toArray)
+                else
+                  tree
+              }
+
               if (args.isEmpty)
                 List(mkArrayValue(args))
               else {
-                val suffix: Tree = args.last match {
-                  case Typed(arg, Ident(name)) if name == nme.WILDCARD_STAR.toTypeName =>
-                    arg /*setType seqType(arg.tpe)*/
-                  case _ =>
-                    mkArrayValue(args.drop(formals.length - 1))
-                }
+                val suffix: Tree =
+                  if (treeInfo isWildcardStarArg args.last) forceToArray(args.last)
+                  else mkArrayValue(args drop (formals.length - 1))
+
                 args.take(formals.length - 1) ::: List(suffix)
               }
             case _ => args
@@ -510,7 +520,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
             if (fn.symbol.name == nme.unapply)
               args
             else if (fn.symbol.name == nme.unapplySeq)
-              transformArgs(tree.pos, args, analyzer.unapplyTypeListFromReturnTypeSeq(fn.tpe))
+              transformArgs(tree.pos, args, analyzer.unapplyTypeListFromReturnTypeSeq(fn.tpe), false)
             else { assert(false,"internal error: UnApply node has wrong symbol"); null })
           copy.UnApply(tree, fn1, args1)
 
@@ -525,7 +535,8 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           } else {
             withNeedLift(true) {
               val formals = fn.tpe.paramTypes;
-              copy.Apply(tree, transform(fn), transformTrees(transformArgs(tree.pos, args, formals)))
+              val isJava = fn.symbol hasFlag JAVA // in case we need a varargs transformation
+              copy.Apply(tree, transform(fn), transformTrees(transformArgs(tree.pos, args, formals, isJava)))
             }
           }
 

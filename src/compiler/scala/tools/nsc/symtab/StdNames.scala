@@ -321,6 +321,7 @@ trait StdNames {
     val self = newTermName("self")
     val synchronized_ = newTermName("synchronized")
     val tail = newTermName("tail")
+    val toArray = newTermName("toArray")
     val toList = newTermName("toList")
     val toSeq = newTermName("toSeq")
     val toString_ = newTermName("toString")
