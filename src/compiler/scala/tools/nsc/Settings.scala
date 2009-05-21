@@ -276,7 +276,7 @@ object Settings
     }
 
     def add(src: AbstractFile, dst: AbstractFile) {
-//      singleOutDir = None
+      singleOutDir = None
       outputDirs ::= (src, dst)
     }
 

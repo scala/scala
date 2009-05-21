@@ -131,7 +131,7 @@ abstract class GenJVM extends SubComponent {
         addScalaAttr(if (isTopLevelModule(sym)) sym.sourceModule else sym);
       addInnerClasses(jclass)
 
-      val outfile = getFile(sym.sourceFile, jclass, ".class")
+      val outfile = getFile(sym, jclass, ".class")
       val outstream = new DataOutputStream(outfile.output)
       jclass.writeTo(outstream)
       outstream.close()
@@ -265,17 +265,17 @@ abstract class GenJVM extends SubComponent {
       val conType = new JMethodType(JType.VOID, Array(javaType(definitions.ClassClass), stringArrayKind, stringArrayKind))
 
       def push(lst:Seq[String]) {
-	      var fi = 0
-	      for (f <- lst) {
-    	    jcode.emitDUP()
-	        jcode.emitPUSH(fi)
-    	    if (f != null)
-	          jcode.emitPUSH(f)
-	        else
-	          jcode.emitACONST_NULL()
-	        jcode.emitASTORE(strKind)
-	        fi += 1
-	      }
+        var fi = 0
+        for (f <- lst) {
+          jcode.emitDUP()
+          jcode.emitPUSH(fi)
+          if (f != null)
+            jcode.emitPUSH(f)
+          else
+            jcode.emitACONST_NULL()
+          jcode.emitASTORE(strKind)
+          fi += 1
+        }
       }
 
       jcode.emitALOAD_0()
@@ -298,7 +298,7 @@ abstract class GenJVM extends SubComponent {
       jcode.emitRETURN()
 
       // write the bean information class file.
-      val outfile = getFile(c.symbol.sourceFile, beanInfoClass, ".class")
+      val outfile = getFile(c.symbol, beanInfoClass, ".class")
       val outstream = new DataOutputStream(outfile.output)
       beanInfoClass.writeTo(outstream)
       outstream.close()
@@ -1736,7 +1736,11 @@ abstract class GenJVM extends SubComponent {
       res
     }
 
-    def getFile(sourceFile: AbstractFile, cls: JClass, suffix: String): AbstractFile = {
+    /** Return an abstract file for the given class symbol, with the desired suffix.
+     *  Create all necessary subdirectories on the way.
+     */
+    def getFile(sym: Symbol, cls: JClass, suffix: String): AbstractFile = {
+      val sourceFile = atPhase(currentRun.flattenPhase.prev)(sym.sourceFile)
       var dir: AbstractFile = settings.outputDirs.outputDirFor(sourceFile)
       val pathParts = cls.getName().split("[./]").toList
       for (part <- pathParts.init) {
@@ -1755,7 +1759,7 @@ abstract class GenJVM extends SubComponent {
         case _ => p :: collapsed
       }}).reverse
 
-    def assert(cond: Boolean, msg: String) = if (!cond) {
+    def assert(cond: Boolean, msg: => String) = if (!cond) {
       method.dump
       throw new Error(msg + "\nMethod: " + method)
     }
