@@ -26,6 +26,7 @@ trait CompilationUnits { self: Global =>
      *  To get their sourcefiles, you need to dereference with .sourcefile
      */
     val depends = new HashSet[Symbol]
+
     /** so we can relink
      */
     val defined = new HashSet[Symbol]
@@ -39,6 +40,9 @@ trait CompilationUnits { self: Global =>
 
     /** used to track changes in a signature */
     var pickleHash : Long = 0
+
+    /** the current edit point offset */
+    var editPoint: Int = -1
 
     def position(pos: Int) = source.position(pos)
 

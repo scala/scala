@@ -1646,6 +1646,8 @@ A type's typeSymbol should never be inspected directly.
     override def kind = "MethodType"
   }
 
+  // Lukas: check whether we can eliminate this in favor of implicit flags on parameters
+
   class ImplicitMethodType(pts: List[Type], rt: Type) extends MethodType(pts, rt) {
     override protected def paramPrefix = "(implicit "
   }
@@ -2016,6 +2018,8 @@ A type's typeSymbol should never be inspected directly.
     }
     new RefinementOfClass
   }
+
+
 
   /** the canonical creator for a refined type with a given scope */
   def refinedType(parents: List[Type], owner: Symbol, decls: Scope, pos : Position): Type = {
@@ -3226,6 +3230,10 @@ A type's typeSymbol should never be inspected directly.
         val restp1 = this(restp)
         if (restp1 eq restp) tp
         else PolyType(tparams, restp1)
+
+      // Lukas: we need to check (together) whether we should also include parameter types
+      // of PolyType and MethodType in adaptToNewRun
+
       case ClassInfoType(parents, decls, clazz) =>
         if (clazz.isPackageClass) tp
         else {

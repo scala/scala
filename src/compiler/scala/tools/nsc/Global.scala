@@ -38,10 +38,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
                                                              with PhaseAssembly
 {
   // alternate constructors ------------------------------------------
+
   def this(reporter: Reporter) =
     this(new Settings(err => reporter.error(null,err)),
          reporter)
-
   def this(settings: Settings) =
     this(settings, new ConsoleReporter(settings))
 
@@ -49,6 +49,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   // sub-components --------------------------------------------------
 
+  /** Print tree in detailed form */
   object nodePrinters extends {
     val global: Global.this.type = Global.this
   } with NodePrinters {
@@ -56,6 +57,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   }
   val nodeToString = nodePrinters.nodeToString
 
+  /** Generate ASTs */
   object gen extends {
     val global: Global.this.type = Global.this
   } with TreeGen {
@@ -63,38 +65,47 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       typer.typed(mkAttributedCastUntyped(tree, pt))
   }
 
+  /** Fold constants */
   object constfold extends {
     val global: Global.this.type = Global.this
   } with ConstantFolder
 
+  /** Tree checker (used for testing and debugging) */
   object checker extends {
     val global: Global.this.type = Global.this
   } with TreeCheckers
 
+  /** ICode generator */
   object icodes extends {
     val global: Global.this.type = Global.this
   } with ICodes
 
+  /** ICode analysis for optimization */
   object analysis extends {
     val global: Global.this.type = Global.this
   } with TypeFlowAnalysis
 
+  /** Copy propagation for optimization */
   object copyPropagation extends {
     val global: Global.this.type = Global.this
   } with CopyPropagation
 
+  /** Icode verification */
   object checkers extends {
     val global: Global.this.type = Global.this
   } with Checkers
 
+  /** Some statistics (normally disabled) */
   object statistics extends {
     val global: Global.this.type = Global.this
   } with Statistics
 
+  /** Computing pairs of overriding/overridden symbols */
   object overridingPairs extends {
     val global: Global.this.type = Global.this
   } with OverridingPairs
 
+  /** Representing ASTs as graphs */
   object treeBrowsers extends {
     val global: Global.this.type = Global.this
   } with TreeBrowsers
@@ -104,21 +115,38 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
 //  val copy = new LazyTreeCopier()
 
+  /** A map of all doc comments, indexed by symbols.
+   *  Only active in onlyPresentation mode
+   */
   val comments =
     if (onlyPresentation) new HashMap[Symbol,String]
     else null
+
+  /** A map of argument names for methods
+   *  !!! can be dropped once named method arguments are in !!!
+   */
   val methodArgumentNames =
     if (onlyPresentation) new HashMap[Symbol,List[List[Symbol]]]
     else null
 
-// reporting -------------------------------------------------------
+  // ------------ Hooks for IDE ----------------------------------
+
+  /** Return a position correponding to tree startaing at `start`, with tip
+   *  at `mid`, and ending at `end`. ^ batch mode errors point at tip.
+   */
+  def rangePos(source: SourceFile, start: Int, mid: Int, end: Int) = OffsetPosition(source, mid)
+
+  /** Poll for a high-priority task
+   */
+  def pollForHighPriorityJob() {}
+
+// ------------------ Reporting -------------------------------------
+
   import nsc.util.NoPosition
   def error(msg: String) = reporter.error(NoPosition, msg)
   def warning(msg: String) = reporter.warning(NoPosition, msg)
   def inform(msg: String) = Console.err.println(msg)
   def inform[T](msg: String, value: T): T = { inform(msg+value); value }
-
-  def rangePos(source: SourceFile, start: Int, mid: Int, end: Int) = OffsetPosition(source, mid)
 
   //reporter.info(null, msg, true)
 
@@ -155,7 +183,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   def abort(msg: String) = throw new Error(msg)
 
-// file interface -------------------------------------------------------
+// ------------ File interface -----------------------------------------
 
   private val reader: SourceReader = {
     def stdCharset: Charset = {
@@ -204,7 +232,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     set
   }
 
-
   if (settings.verbose.value) {
     inform("[Classpath = " + classPath + "]")
     if (forMSIL) inform("[AssemRefs = " + settings.assemrefs.value + "]")
@@ -235,7 +262,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     if (forMSIL) new loaders.NamespaceLoader(classPath.root)
     else new loaders.PackageLoader(classPath.root /* getRoot() */)
 
-// Phases ------------------------------------------------------------}
+// ------------ Phases -------------------------------------------}
 
   var globalPhase: Phase = NoPhase
 
@@ -575,61 +602,85 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     messages.mkString("\n")
   }
 
+  // ----------- Runs ---------------------------------------
 
   private var curRun: Run = null
-  def currentRun: Run = curRun
   private var curRunId = 0
+
+  /** The currently active run
+   */
+  def currentRun: Run = curRun
+
+  /** The id of the currently active run
+   */
   override def currentRunId = curRunId
 
-  private var runCount = 0
-
+  /** A Run is a single execution of the compiler on a sets of units
+   */
   class Run {
-    curRunId += 1
-    assert(curRunId > 0)
-    //Console.println("starting run: " + id)
-    var currentUnit: CompilationUnit = _
-    curRun = this
-    // Can not take the phaseDescriptors.head even though its the syntaxAnalyser, this will implicitly
-    // call definitions.init which uses phase and needs it to be != NoPhase
-    private val firstPhase = syntaxAnalyzer.newPhase(NoPhase)
-    phase = firstPhase
-    definitions.init  // needs phase to be defined != NoPhase,
-                      // that's why it is placed here.
 
-    /** Deprecation warnings occurred */
+    private val firstPhase = {
+      // ----------- Initialization code -------------------------
+      curRunId += 1
+      assert(curRunId > 0)
+      curRun = this
+      //Console.println("starting run: " + id)
+
+      // Can not take the phaseDescriptors.head even though its the syntaxAnalyser, this will implicitly
+      // call definitions.init which uses phase and needs it to be != NoPhase
+      val phase1 = syntaxAnalyzer.newPhase(NoPhase)
+      phase = phase1
+      definitions.init  // needs phase to be defined != NoPhase,
+                        // that's why it is placed here.
+
+      // The first phase in the compiler phase chain
+      var p: Phase = phase1
+
+      // Reset the cache in terminal, the chain could have been build before where nobody used it
+      // This happens in the interpreter
+      terminal.reset
+
+      // Each subcomponent is asked to deliver a newPhase that is chained together. If -Ystop:phasename is
+      // given at command-line, this will stop with that phasename
+      for (pd <- phaseDescriptors.tail.takeWhile(pd => !(stopPhase(pd.phaseName))))
+        if (!(settings.skip contains pd.phaseName)) p = pd.newPhase(p)
+
+      // Ensure there is a terminal phase at the end, Normally there will then be two terminal phases at the end
+      // if -Ystop:phasename was given, this makes sure that there is a terminal phase at the end
+      p = terminal.newPhase(p)
+
+      phase1
+    }
+
+    // --------------- Miscellania -------------------------------
+
+    /** The currently compiled unit; set from GlobalPhase */
+    var currentUnit: CompilationUnit = _
+
+    /** Flags indicating whether deprecation warnings occurred */
     var deprecationWarnings: Boolean = false
     var uncheckedWarnings: Boolean = false
 
-    // The first phase in the compiler phase chain
-    private var p: Phase = firstPhase
-
-    protected def stopPhase(name : String) = settings.stop.contains(name)
-
-    // Reset the cache in terminal, the chain could have been build before where nobody used it
-    // This happens in the interpreter
-    terminal.reset
-
-    // Each subcomponent is asked to deliver a newPhase that is chained together. If -Ystop:phasename is
-    // given at command-line, this will stop with that phasename
-    for (pd <- phaseDescriptors.tail.takeWhile(pd => !(stopPhase(pd.phaseName))))
-      if (!(settings.skip contains pd.phaseName)) p = pd.newPhase(p)
-
-    // Ensure there is a terminal phase at the end, Normally there will then be two terminal phases at the end
-    // if -Ystop:phasename was given, this makes sure that there is a terminal phase at the end
-    p = terminal.newPhase(p)
-
     def cancel { reporter.cancelled = true }
 
-    // progress tracking
+    // ------------------ Progress tracking -------------------------
+
     def progress(current: Int, total: Int) {}
 
     private var phasec: Int = 0
     private var unitc: Int = 0
+
+    /** take note that phase is completed
+     *  (for progress reporting)
+     */
     def advancePhase {
       unitc = 0
       phasec += 1
       refreshProgress
     }
+    /** take note that a phase on a unit is completed
+     *  (for progress reporting)
+     */
     def advanceUnit {
       unitc += 1
       refreshProgress
@@ -638,6 +689,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       if (fileset.size > 0)
         progress((phasec * fileset.size) + unitc,
                  (phaseDescriptors.length-1) * fileset.size) // terminal phase not part of the progress display
+
+    // ----- finding phases --------------------------------------------
 
     def phaseNamed(name: String): Phase = {
       var p: Phase = firstPhase
@@ -656,14 +709,21 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val mixinPhase = phaseNamed("mixin")
     val icodePhase = phaseNamed("icode")
 
+    /** A test whether compilation should stop at phase with given name */
+    protected def stopPhase(name : String) = settings.stop.contains(name)
+
+    // ----------- Units and top-level classes and objects --------
+
     private var unitbuf = new ListBuffer[CompilationUnit]
     private var fileset = new HashSet[AbstractFile]
 
+    /** add unit to be compiled in this run */
     private def addUnit(unit: CompilationUnit) {
       unitbuf += unit
       fileset += unit.source.file
     }
 
+    /* An iterator returning all the units being compiled in this run */
     def units: Iterator[CompilationUnit] = unitbuf.elements
 
     /** A map from compiled top-level symbols to their source files */
@@ -680,6 +740,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       else if (sym.isModuleClass) compiles(sym.sourceModule)
       else false
 
+    // --------------- Compilation methods ----------------------------
+
+    /** Compile list of source files */
     def compileSources(_sources: List[SourceFile]) {
       val sources = dependencyAnalysis.filter(_sources.removeDuplicates) // bug #1268, scalac confused by duplicated filenames
       if (reporter.hasErrors)
@@ -715,7 +778,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       	    warning("It is not possible to check the result of the "+globalPhase.name+" phase")
           }
         }
-
         if (settings.statistics.value) statistics.print(phase)
         advancePhase
       }
@@ -745,29 +807,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       dependencyAnalysis.writeToFile();
     }
 
-    def compileLate(file: AbstractFile) {
-      if (fileset eq null) {
-        val msg = "No class file for " + file +
-                  " was found\n(This file cannot be loaded as a source file)"
-        inform(msg)
-        throw new FatalError(msg)
-      }
-      else if (!(fileset contains file)) {
-        val unit = new CompilationUnit(getSourceFile(file))
-        addUnit(unit)
-        var localPhase = firstPhase.asInstanceOf[GlobalPhase]
-        while (localPhase != null && (localPhase.id < globalPhase.id || localPhase.id <= namerPhase.id) && !reporter.hasErrors) {
-          val oldSource = reporter.getSource
-          reporter.setSource(unit.source)
-          atPhase(localPhase)(localPhase.applyPhase(unit))
-          val newLocalPhase = localPhase.next.asInstanceOf[GlobalPhase]
-          localPhase = if (localPhase == newLocalPhase) null else newLocalPhase
-          reporter.setSource(oldSource)
-        }
-        refreshProgress
-      }
-    }
-
+    /** Compile list of abstract files */
     def compileFiles(files: List[AbstractFile]) {
       try {
         compileSources(files map getSourceFile)
@@ -776,6 +816,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       }
     }
 
+    /** Compile list of files given by their names */
     def compile(filenames: List[String]) {
       try {
         val scriptMain = settings.script.value
@@ -795,6 +836,41 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       }
     }
 
+    /** Compile abstract file until `globalPhase`, but at least
+     *  to phase "namer".
+     */
+    def compileLate(file: AbstractFile) {
+      if (fileset eq null) {
+        val msg = "No class file for " + file +
+                  " was found\n(This file cannot be loaded as a source file)"
+        inform(msg)
+        throw new FatalError(msg)
+      }
+      else if (!(fileset contains file)) {
+        compileLate(new CompilationUnit(getSourceFile(file)))
+      }
+    }
+
+    /** Compile abstract file until `globalPhase`, but at least
+     *  to phase "namer".
+     */
+    def compileLate(unit: CompilationUnit) {
+      addUnit(unit)
+      var localPhase = firstPhase.asInstanceOf[GlobalPhase]
+      while (localPhase != null && (localPhase.id < globalPhase.id || localPhase.id <= namerPhase.id) && !reporter.hasErrors) {
+        val oldSource = reporter.getSource
+        reporter.setSource(unit.source)
+        atPhase(localPhase)(localPhase.applyPhase(unit))
+        val newLocalPhase = localPhase.next.asInstanceOf[GlobalPhase]
+        localPhase = if (localPhase == newLocalPhase) null else newLocalPhase
+        reporter.setSource(oldSource)
+      }
+      refreshProgress
+    }
+
+    /** Reset package class to state at typer (not sure what this
+     *  is needed for?)
+     */
     private def resetPackageClass(pclazz: Symbol) {
       atPhase(firstPhase) {
         pclazz.setInfo(atPhase(typerPhase)(pclazz.info))
@@ -802,7 +878,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       if (!pclazz.isRoot) resetPackageClass(pclazz.owner)
     }
   } // class Run
-
 
   def printAllUnits() {
     print("[[syntax trees at end of " + phase + "]]")

@@ -18,6 +18,7 @@ self =>
 
   /** Called from typechecker */
   override def pollForHighPriorityJob() {
+    // don';t do this if polling notnenabled unless cancel
     scheduler.nextWorkItem() match {
       case Some(action) =>
         pollingEnabled = false
@@ -98,10 +99,10 @@ self =>
     currentTyperRun = new TyperRun
     while (outOfDate) {
       outOfDate = false
-      remainingPriUnits = priorityUnits
       for ((unit, id) <- unitsWithRunId.elements) {
         if (id != currentRunId) unitsToCompile += unit
       }
+      remainingPriUnits = priorityUnits
       while (unitsToCompile.nonEmpty) {
         if (change) {
           change = false
@@ -122,19 +123,6 @@ self =>
   } catch {
     case ex: FreshRunReq => outOfDate = true
   }
-
-  /** The compilation unit corresponding to a source file */
-  def unitOf(s: SourceFile): CompilationUnit =
-    unitsWithRunId.keys find (_.source == s) match {
-      case Some(unit) => unit
-      case None =>
-        val unit = new CompilationUnit(s)
-        unitsWithRunId(unit) = NotLoaded
-        unit
-    }
-
-  /** The compilation unit corresponding to a position */
-  def unitOf(pos: Position): CompilationUnit = unitOf(pos.source.get)
 
   /** Make sure a set of compilation units is loaded and parsed */
   def reload(units: Set[CompilationUnit]) = {
@@ -178,13 +166,26 @@ self =>
     }
   }
 
-  /** Locate smallest tree that encloses position */
-  def locateTree(pos: Position): Tree =
-    locate(pos, unitOf(pos).body)
-
   // ----------------- interface to IDE ------------------------------------
 
   private val scheduler = new WorkScheduler
+
+  /** The compilation unit corresponding to a source file */
+  def unitOf(s: SourceFile): CompilationUnit =
+    unitsWithRunId.keys find (_.source == s) match {
+      case Some(unit) => unit
+      case None =>
+        val unit = new CompilationUnit(s)
+        unitsWithRunId(unit) = NotLoaded
+        unit
+    }
+
+  /** The compilation unit corresponding to a position */
+  def unitOf(pos: Position): CompilationUnit = unitOf(pos.source.get)
+
+  /** Locate smallest tree that encloses position */
+  def locateTree(pos: Position): Tree =
+    locate(pos, unitOf(pos).body)
 
   /** Make sure a set of compilation units is loaded and parsed */
   def askReload(units: Set[CompilationUnit]) =
@@ -194,7 +195,7 @@ self =>
   def askTypeAt(pos: Position, result: SyncVar[Tree]) =
     scheduler.postWorkItem(() => self.typedTreeAt(pos, result))
 
-  /** Ask to do unit first on subsequent type checking passes */
+  /** Ask to do unit first on present and subsequent type checking passes */
   def askToDoFirst(unit: CompilationUnit) = {
     def moveToFront(unit: CompilationUnit, units: List[CompilationUnit]) = unit :: (units filter (unit !=))
     scheduler.postWorkItem { () =>
@@ -203,7 +204,7 @@ self =>
     }
   }
 
-  /** Cancel current high-priority job */
+  /** Cancel currently pending high-priority jobs */
   def askCancel() =
     scheduler.raise(new CancelActionReq)
 

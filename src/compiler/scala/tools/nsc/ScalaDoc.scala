@@ -71,7 +71,7 @@ object ScalaDoc {
         else if (command.settings.showPhases.value)
           reporter.info(null, compiler.phaseDescriptions, true)
         else {
-            val run = new compiler.Run
+            val run = new compiler.Run()
             run compile command.files
             val generator = new DefaultDocDriver {
               lazy val global: compiler.type = compiler

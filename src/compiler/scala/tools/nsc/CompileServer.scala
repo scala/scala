@@ -113,7 +113,7 @@ class StandardCompileServer extends SocketServer {
                 compiler = newGlobal(command.settings, reporter)
               }
               val c = compiler
-              val run = new c.Run
+              val run = new c.Run()
               run compile command.files
             } catch {
               case ex @ FatalError(msg) =>

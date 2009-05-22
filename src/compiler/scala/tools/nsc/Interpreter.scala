@@ -410,7 +410,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
    */
   def interpret(line: String): IR.Result = {
     // initialize the compiler
-    if (prevRequests.isEmpty) new compiler.Run
+    if (prevRequests.isEmpty) new compiler.Run()
 
     // parse
     val trees = parse(indentCode(line)) match {

@@ -36,7 +36,7 @@ object Main extends AnyRef with EvalLoop {
     loop { line =>
       val args = List.fromString(line, ' ')
       val command = new CompilerCommand(args, new Settings(error), error, true)
-      (new compiler.Run) compile command.files
+      new compiler.Run() compile command.files
     }
   }
 
@@ -69,7 +69,7 @@ object Main extends AnyRef with EvalLoop {
             reporter.info(null, command.usageMsg, true)
             reporter.info(null, compiler.pluginOptionsHelp, true)
           } else {
-            val run = new compiler.Run
+            val run = new compiler.Run()
             run compile command.files
             reporter.printSummary()
           }

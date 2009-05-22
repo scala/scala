@@ -30,6 +30,16 @@ self: Analyzer =>
 
   final val traceImplicits = false
 
+  var implicitTime = 0L
+  var inscopeSucceed = 0L
+  var inscopeFail = 0L
+  var oftypeSucceed = 0L
+  var oftypeFail = 0L
+  var manifSucceed = 0L
+  var manifFail = 0L
+  var hits = 0
+  var misses = 0
+
   /** Search for an implicit value. See the comment on `result` at the end of class `ImplicitSearch`
    *  for more info how the search is conducted.
    *  @param tree             The tree for which the implicit needs to be inserted.
@@ -51,6 +61,11 @@ self: Analyzer =>
     context.undetparams = context.undetparams remove (search.result.subst.from contains _)
     search.result
   }
+
+  final val sizeLimit = 100
+  val implicitsCache = new HashMap[Type, SearchResult]
+
+  def resetImplicits() { implicitsCache.clear() }
 
   /** If type `pt` an instance of Manifest or OptManifest, or an abstract type lower-bounded
    *  by such an instance?
@@ -633,16 +648,35 @@ self: Analyzer =>
      *  If that fails, and `pt` is an instance of Manifest, try to construct a manifest.
      *  If all fails return SearchFailure
      */
+    //val start = System.nanoTime()
     var result = searchImplicit(context.implicitss, true)
+    //val timer1 = System.nanoTime()
+    //if (result == SearchFailure) inscopeFail += timer1 - start else inscopeSucceed += timer1 - start
     if (result == SearchFailure) {
-      result = searchImplicit(implicitsOfExpectedType, false)
+      implicitsCache get pt match {
+        case Some(r) =>
+          hits += 1
+          result = r
+        case None =>
+          misses += 1
+          result = searchImplicit(implicitsOfExpectedType, false)
+//        println("new fact: search implicit of "+pt+" = "+result)
+//          if (implicitsCache.size >= sizeLimit)
+//            implicitsCache -= implicitsCache.values.next
+          implicitsCache(pt) = result
+      }
     }
+    //val timer2 = System.nanoTime()
+    //if (result == SearchFailure) oftypeFail += timer2 - timer1 else oftypeSucceed += timer2 - timer1
     if (result == SearchFailure) {
       val resultTree = implicitManifest(pt)
       if (resultTree != EmptyTree) result = new SearchResult(resultTree, EmptyTreeTypeSubstituter)
     }
+    //val timer3 = System.nanoTime()
+    //if (result == SearchFailure) manifFail += timer3 - timer2 else manifSucceed += timer3 - timer2
     if (result == SearchFailure && settings.debug.value)
       println("no implicits found for "+pt+" "+pt.typeSymbol.info.baseClasses+" "+parts(pt)+implicitsOfExpectedType)
+    //implicitTime += System.nanoTime() - start
 
     if (util.Statistics.enabled) impltime += (currentTime - startTime)
     result

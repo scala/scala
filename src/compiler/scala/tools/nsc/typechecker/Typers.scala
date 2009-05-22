@@ -36,6 +36,10 @@ trait Typers { self: Analyzer =>
   var implcnt = 0
   var impltime = 0l
 
+  var failedApplies = 0L
+  var failedOpEqs = 0L
+  var failedSilent = 0L
+
   private val transformed = new HashMap[Tree, Tree]
 
   private val superDefs = new HashMap[Symbol, ListBuffer[Tree]]
@@ -43,6 +47,7 @@ trait Typers { self: Analyzer =>
   def resetTyper() {
     resetContexts
     resetNamer()
+    resetImplicits()
     transformed.clear
     superDefs.clear
   }
@@ -660,7 +665,9 @@ trait Typers { self: Analyzer =>
         else qual.tpe.nonLocalMember(name)(from)
     }
 
-    def silent(op: Typer => Tree): AnyRef /* in fact, TypeError or Tree */ = try {
+    def silent(op: Typer => Tree): AnyRef /* in fact, TypeError or Tree */ = {
+      val start = System.nanoTime()
+      try {
       if (context.reportGeneralErrors) {
         val context1 = context.makeSilent(context.reportAmbiguousErrors)
         context1.undetparams = context.undetparams
@@ -675,8 +682,10 @@ trait Typers { self: Analyzer =>
       }
     } catch {
       case ex: CyclicReference => throw ex
-      case ex: TypeError => ex
-    }
+      case ex: TypeError =>
+        failedSilent += System.nanoTime() - start
+        ex
+    }}
 
     /** Perform the following adaptations of expression, pattern or type `tree' wrt to
      *  given mode `mode' and given prototype `pt':
@@ -1815,6 +1824,16 @@ trait Typers { self: Analyzer =>
       fun.tpe match {
         case OverloadedType(pre, alts) =>
           val undetparams = context.extractUndetparams()
+
+          /* Lukas:
+
+          var m: Map[Tree, Name] = Map()
+          val args1 = List.mapConserve(args) {
+            case Assign(name, rhs) => m += (rhs -> name)
+            case arg => arg
+          }
+          */
+
           val args1 = typedArgs(args, argMode(fun, mode))
           context.undetparams = undetparams
           inferMethodAlternative(fun, undetparams, args1 map (_.tpe.deconst), pt)
@@ -2667,11 +2686,13 @@ trait Typers { self: Analyzer =>
        *  @param args ...
        *  @return     ...
        */
-      def tryTypedApply(fun: Tree, args: List[Tree]): Tree =
+      def tryTypedApply(fun: Tree, args: List[Tree]): Tree = {
+        val start = System.nanoTime()
         silent(_.doTypedApply(tree, fun, args, mode, pt)) match {
           case t: Tree =>
             t
           case ex: TypeError =>
+            failedApplies += System.nanoTime() - start
             def errorInResult(tree: Tree): Boolean = tree.pos == ex.pos || {
               tree match {
                 case Block(_, r) => errorInResult(r)
@@ -2701,6 +2722,7 @@ trait Typers { self: Analyzer =>
             reportTypeError(tree.pos, ex)
             setError(tree)
         }
+      }
 
       def typedApply(fun: Tree, args: List[Tree]) = {
         val stableApplication = (fun.symbol ne null) && fun.symbol.isMethod && fun.symbol.isStable
@@ -2709,6 +2731,7 @@ trait Typers { self: Analyzer =>
           typed1(tree, mode & ~PATTERNmode | EXPRmode, pt)
         } else {
           val funpt = if ((mode & PATTERNmode) != 0) pt else WildcardType
+          val start = System.nanoTime()
           silent(_.typed(fun, funMode(mode), funpt)) match {
             case fun1: Tree =>
               val fun2 = if (stableApplication) stabilizeFun(fun1, mode, pt) else fun1
@@ -2736,6 +2759,7 @@ trait Typers { self: Analyzer =>
               else res
               */
             case ex: TypeError =>
+              failedOpEqs += System.nanoTime() - start
               fun match {
                 case Select(qual, name)
                 if (mode & PATTERNmode) == 0 && nme.isOpAssignmentName(name.decode) =>
@@ -3425,6 +3449,7 @@ trait Typers { self: Analyzer =>
         val result = if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt)
         if (printTypings) println("adapted "+tree1+":"+tree1.tpe+" to "+pt+", "+context.undetparams); //DEBUG
 //      if ((mode & TYPEmode) != 0) println("type: "+tree1+" has type "+tree1.tpe)
+        if (phase.id == currentRun.typerPhase.id) pollForHighPriorityJob()
         result
       } catch {
         case ex: TypeError =>
