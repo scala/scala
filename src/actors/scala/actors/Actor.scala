@@ -211,7 +211,7 @@ object Actor {
       true // events are immediately removed from the mailbox
     def apply(m: Any) {
       if (f.isDefinedAt(m)) f(m)
-      self.react(this)
+      a.react(this)
     }
   }
 
@@ -431,7 +431,7 @@ trait Actor extends AbstractActor {
    * @return      result of processing the received value
    */
   def receive[R](f: PartialFunction[Any, R]): R = {
-    assert(Actor.self == this, "receive from channel belonging to other actor")
+    assert(Actor.self(scheduler) == this, "receive from channel belonging to other actor")
     this.synchronized {
       if (shouldExit) exit() // links
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
@@ -458,7 +458,7 @@ trait Actor extends AbstractActor {
    * @return      result of processing the received value
    */
   def receiveWithin[R](msec: Long)(f: PartialFunction[Any, R]): R = {
-    assert(Actor.self == this, "receive from channel belonging to other actor")
+    assert(Actor.self(scheduler) == this, "receive from channel belonging to other actor")
     this.synchronized {
       if (shouldExit) exit() // links
 
@@ -510,7 +510,7 @@ trait Actor extends AbstractActor {
    * @param  f    a partial function with message patterns and actions
    */
   def react(f: PartialFunction[Any, Unit]): Nothing = {
-    assert(Actor.self == this, "react on channel belonging to other actor")
+    assert(Actor.self(scheduler) == this, "react on channel belonging to other actor")
     this.synchronized {
       if (shouldExit) exit() // links
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
@@ -537,7 +537,7 @@ trait Actor extends AbstractActor {
    * @param  f    a partial function with message patterns and actions
    */
   def reactWithin(msec: Long)(f: PartialFunction[Any, Unit]): Nothing = {
-    assert(Actor.self == this, "react on channel belonging to other actor")
+    assert(Actor.self(scheduler) == this, "react on channel belonging to other actor")
     this.synchronized {
       if (shouldExit) exit() // links
       // first, remove spurious TIMEOUT message from mailbox if any
@@ -907,7 +907,7 @@ trait Actor extends AbstractActor {
    * @return   ...
    */
   def link(to: AbstractActor): AbstractActor = {
-    assert(Actor.self == this, "link called on actor different from self")
+    assert(Actor.self(scheduler) == this, "link called on actor different from self")
     this linkTo to
     to linkTo this
     to
@@ -917,7 +917,7 @@ trait Actor extends AbstractActor {
    * Links <code>self</code> to actor defined by <code>body</code>.
    */
   def link(body: => Unit): Actor = {
-    assert(Actor.self == this, "link called on actor different from self")
+    assert(Actor.self(scheduler) == this, "link called on actor different from self")
     val a = new Actor {
       def act() = body
       override final val scheduler: IScheduler = Actor.this.scheduler
@@ -935,7 +935,7 @@ trait Actor extends AbstractActor {
    * Unlinks <code>self</code> from actor <code>from</code>.
    */
   def unlink(from: AbstractActor) {
-    assert(Actor.self == this, "unlink called on actor different from self")
+    assert(Actor.self(scheduler) == this, "unlink called on actor different from self")
     this unlinkFrom from
     from unlinkFrom this
   }
@@ -965,7 +965,7 @@ trait Actor extends AbstractActor {
    *   <code>reason != 'normal</code>.
    * </p>
    */
-  def exit(reason: AnyRef): Nothing = {
+  protected[actors] def exit(reason: AnyRef): Nothing = {
     exitReason = reason
     exit()
   }
@@ -973,7 +973,7 @@ trait Actor extends AbstractActor {
   /**
    * Terminates with exit reason <code>'normal</code>.
    */
-  def exit(): Nothing = {
+  protected[actors] def exit(): Nothing = {
     // links
     if (!links.isEmpty)
       exitLinked()

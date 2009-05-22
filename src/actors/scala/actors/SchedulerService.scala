@@ -13,10 +13,10 @@ package scala.actors
 import java.lang.{Runnable, Thread, InterruptedException}
 
 /**
- * The abstract <code>SchedulerService</code> class allows
- * subclasses to implement a custom <code>onShutdown</code>
- * method, which is invoked when the runtime system has detected
- * that all actors have been terminated.
+ * The abstract <code>SchedulerService</code> class allows subclasses
+ * to implement a custom <code>onShutdown</code> method, which is
+ * invoked when the runtime system has detected that all actors have
+ * been terminated.
  *
  * @version 0.9.18
  * @author Philipp Haller
@@ -78,12 +78,14 @@ abstract class SchedulerService(daemon: Boolean) extends Thread with IScheduler 
     }
   }
 
-  /** Submits a <code>Runnable</code> for execution.
+  /** Submits a closure for execution.
    *
-   *  @param  task  the task to be executed
+   *  @param  fun  the closure to be executed
    */
-  def execute(task: Runnable): Unit =
-    execute { task.run() }
+  def execute(fun: => Unit): Unit =
+    execute(new Runnable {
+      def run() { fun }
+    })
 
   /** Shuts down the scheduler.
    */

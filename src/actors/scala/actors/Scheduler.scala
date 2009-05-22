@@ -14,8 +14,8 @@ import compat.Platform
 import java.lang.Runnable
 
 /**
- * The <code>Scheduler</code> object is used by
- * <code>Actor</code> to execute tasks of an execution of an actor.
+ * The <code>Scheduler</code> object is used by <code>Actor</code> to
+ * execute tasks of an execution of an actor.
  *
  * @version 0.9.18
  * @author Philipp Haller
@@ -25,7 +25,7 @@ object Scheduler extends IScheduler {
   Debug.info("initializing "+this+"...")
 
   private var sched: IScheduler = {
-    val s = new FJTaskScheduler2
+    val s = new DefaultExecutorScheduler
     s.start()
     s
   }
@@ -108,7 +108,7 @@ object Scheduler extends IScheduler {
  * for all schedulers used to execute actor tasks.
  *
  * Subclasses of <code>Actor</code> that override its
- * <code>scheduler</code> member value must provide
+ * <code>scheduler</code> member must provide
  * an implementation of the <code>IScheduler</code>
  * trait.
  *
