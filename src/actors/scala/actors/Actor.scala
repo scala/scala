@@ -376,7 +376,16 @@ trait Actor extends AbstractActor {
   private var received: Option[Any] = None
 
   private val waitingForNone = (m: Any) => false
+
+  /* Whenever this Actor executes on some thread, waitingFor is
+   * guaranteed to be equal to waitingForNone.
+   *
+   * In other words, whenever waitingFor is not equal to
+   * waitingForNone, this Actor is guaranteed not to execute on some
+   * thread.
+   */
   private var waitingFor: Any => Boolean = waitingForNone
+
   private var isSuspended = false
 
   protected val mailbox = new MessageQueue
@@ -517,7 +526,6 @@ trait Actor extends AbstractActor {
       if (null eq qel) {
         waitingFor = f.isDefinedAt
         continuation = f
-        isDetached = true
       } else {
         sessions = List(qel.session)
         scheduleActor(f, qel.msg)
@@ -561,7 +569,6 @@ trait Actor extends AbstractActor {
           })
           Actor.timer.schedule(onTimeout.get, msec)
           continuation = f
-          isDetached = true
         }
       } else {
         sessions = List(qel.session)
@@ -801,8 +808,6 @@ trait Actor extends AbstractActor {
 
   private var continuation: PartialFunction[Any, Unit] = null
   private var onTimeout: Option[TimerTask] = None
-  // accessed in Reaction
-  private[actors] var isDetached = false
 
   // guarded by lock of this
   protected def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
@@ -1014,8 +1019,9 @@ trait Actor extends AbstractActor {
         // (because shouldExit == true)
         if (isSuspended)
           resumeActor()
-        else if (isDetached)
+        else if (waitingFor ne waitingForNone) {
           scheduleActor(null, null)
+        }
       }
   }
 

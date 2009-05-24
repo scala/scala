@@ -49,7 +49,6 @@ class Reaction extends Runnable {
   def run() {
     val saved = Actor.tl.get.asInstanceOf[Actor]
     Actor.tl.set(a)
-    a.isDetached = false
     try {
       if (a.shouldExit) // links
         a.exit()
