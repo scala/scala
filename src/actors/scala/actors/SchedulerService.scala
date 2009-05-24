@@ -53,22 +53,22 @@ abstract class SchedulerService(daemon: Boolean) extends Thread with IScheduler 
 
   override def run() {
     try {
-      while (!terminating) {
+      while (true) {
         this.synchronized {
           try {
             wait(CHECK_FREQ)
           } catch {
             case _: InterruptedException =>
-              if (terminating) throw new QuitException
           }
+          if (terminating)
+            throw new QuitException
 
           actorGC.gc()
 
-          if (actorGC.allTerminated) {
+          if (actorGC.allTerminated)
             throw new QuitException
-          }
-        } // sync
-      } // while (!terminating)
+        }
+      }
     } catch {
       case _: QuitException =>
         Debug.info(this+": initiating shutdown...")

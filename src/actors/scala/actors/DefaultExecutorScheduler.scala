@@ -23,7 +23,7 @@ import java.util.concurrent.{ThreadPoolExecutor, TimeUnit, LinkedBlockingQueue}
  *
  * @author Philipp Haller
  */
-class DefaultExecutorScheduler extends {
+class DefaultExecutorScheduler extends ExecutorScheduler {
 
   private val rt = Runtime.getRuntime()
   private val minNumThreads = 4
@@ -69,6 +69,8 @@ class DefaultExecutorScheduler extends {
                                                   50L,
                                                   TimeUnit.MILLISECONDS,
                                                   workQueue)
-  } with ExecutorScheduler(threadPool) {
-    override val CHECK_FREQ = 50
-  }
+
+  executor = threadPool
+
+  override val CHECK_FREQ = 50
+}

@@ -50,21 +50,41 @@ object Scheduler extends IScheduler {
     } else
       error("snapshot operation not supported.")
 
-  /* Creates an instance of class <code>FJTaskScheduler2</code>
-   * and submits <code>tasks</code> for execution.
+  /** Shuts down the current scheduler and creates and starts a new scheduler.
+   *
+   *  If the current scheduler is an <code>FJTaskScheduler2</code>
+   *  a new scheduler of the same class is created. In that case,
+   *  tasks resulting from a <code>snapshot</code> are
+   *  submitted for execution.
+   *
+   *  If the current scheduler is not an <code>FJTaskScheduler2</code>,
+   *  a <code>DefaultExecutorScheduler</code> is created.
    */
   def restart(): Unit = synchronized {
-    sched = {
-      val s = new FJTaskScheduler2
-      actorGC.setPendingCount(pendingCount)
-      s.start()
-      s
-    }
-    if (tasks != null)
-      while (!tasks.isEmpty()) {
-        sched.execute(tasks.take().asInstanceOf[FJTask])
+    // 1. shut down current scheduler
+    sched.shutdown()
+
+    // 2. create and start new scheduler
+    if (sched.isInstanceOf[FJTaskScheduler2]) {
+      sched = {
+        val s = new FJTaskScheduler2
+        actorGC.setPendingCount(pendingCount)
+        s.start()
+        s
       }
-    tasks = null
+      if (tasks != null) {
+        while (!tasks.isEmpty()) {
+          sched.execute(tasks.take().asInstanceOf[FJTask])
+        }
+        tasks = null
+      }
+    } else {
+      sched = {
+        val s = new DefaultExecutorScheduler
+        s.start()
+        s
+      }
+    }
   }
 
   def execute(task: Runnable) {

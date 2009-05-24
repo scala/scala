@@ -10,7 +10,7 @@
 
 package scala.actors
 
-import java.util.concurrent.ExecutorService
+import java.util.concurrent.{ExecutorService, RejectedExecutionException}
 
 /**
  * The <code>ExecutorScheduler</code> class uses an
@@ -18,14 +18,28 @@ import java.util.concurrent.ExecutorService
  *
  * @author Philipp Haller
  */
-class ExecutorScheduler(executor: ExecutorService) extends SchedulerService {
+class ExecutorScheduler(var executor: ExecutorService) extends SchedulerService {
+
+  /* This constructor (and the var above) is currently only used to work
+   * around a bug in scaladoc, which cannot deal with early initializers
+   * (to be used in subclasses such as DefaultExecutorScheduler) properly.
+   */
+  def this() {
+    this(null)
+  }
 
   /** Submits a <code>Runnable</code> for execution.
    *
    *  @param  task  the task to be executed
    */
-  def execute(task: Runnable): Unit =
-    executor execute task
+  def execute(task: Runnable) {
+    try {
+      executor execute task
+    } catch {
+      case ree: RejectedExecutionException =>
+        Debug.info("caught "+ree)
+    }
+  }
 
   /** This method is called when the <code>SchedulerService</code>
    *  shuts down.
