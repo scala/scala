@@ -23,8 +23,6 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
     List(
       TestSet("pos", fileFilter, "pos",
               "Testing compiler (on files whose compilation should succeed)"),
-      TestSet("pos5", fileFilter, "pos",
-              "Testing compiler (on files whose compilation should succeed on 1.5 JVM)"),
       TestSet("neg",  fileFilter, "neg",
               "Testing compiler (on files whose compilation should fail)"),
       TestSet("run",  fileFilter, "run", "Testing JVM backend"),
@@ -179,10 +177,11 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
     val TestSet(loc, filter, kind, msg) = testSet
     val files = fileManager.getFiles(loc, true, filter)
     if (!files.isEmpty) {
+      NestUI.verbose("test files: "+files)
       NestUI.outline("\n"+msg+"\n")
       runTestsForFiles(files, kind)
     } else {
-      NestUI.failure("test dir empty\n")
+      NestUI.verbose("test dir empty\n")
       (0, 0)
     }
   }

@@ -92,16 +92,10 @@ class Worker(val fileManager: FileManager) extends Actor {
   var createdLogFiles: List[LogFile] = List()
   var createdOutputDirs: List[File] = List()
 
-  def createLogFile(dir: File, fileBase: String, kind: String): LogFile = {
-    val logFile = new LogFile(dir, fileBase + "-" + kind + ".log")
+  def createLogFile(file: File, kind: String): LogFile = {
+    val logFile = fileManager.getLogFile(file, kind)
     createdLogFiles = logFile :: createdLogFiles
     logFile
-  }
-
-  def createLogFile(file: File, kind: String): LogFile = {
-    val dir = file.getParentFile
-    val fileBase = basename(file.getName)
-    createLogFile(dir, fileBase, kind)
   }
 
   def createOutputDir(dir: File, fileBase: String, kind: String): File = {

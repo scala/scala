@@ -65,4 +65,18 @@ trait FileManager {
   var JAVA_OPTS   = System.getProperty("scalatest.java_opts", "")
 
   var timeout = "1200000"
+
+  def getLogFile(dir: File, fileBase: String, kind: String): LogFile =
+    new LogFile(dir, fileBase + "-" + kind + ".log")
+
+  def getLogFile(file: File, kind: String): LogFile = {
+    val dir = file.getParentFile
+    val fileBase = basename(file.getName)
+    getLogFile(dir, fileBase, kind)
+  }
+
+  def logFileExists(file: File, kind: String): Boolean = {
+    val logFile = getLogFile(file, kind)
+    logFile.exists && logFile.canRead
+  }
 }

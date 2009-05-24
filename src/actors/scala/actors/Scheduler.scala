@@ -88,25 +88,11 @@ object Scheduler extends IScheduler {
   }
 
   def execute(task: Runnable) {
-    val t = currentThread
-    if (t.isInstanceOf[FJTaskRunner]) {
-      val tr = t.asInstanceOf[FJTaskRunner]
-      tr.push(new FJTask {
-        def run() { task.run() }
-      })
-    } else
-      sched execute task
+    sched execute task
   }
 
   def execute(fun: => Unit) {
-    val t = currentThread
-    if (t.isInstanceOf[FJTaskRunner]) {
-      val tr = t.asInstanceOf[FJTaskRunner]
-      tr.push(new FJTask {
-        def run() { fun }
-      })
-    } else
-      sched execute { fun }
+    sched execute { fun }
   }
 
   def shutdown() = sched.shutdown()

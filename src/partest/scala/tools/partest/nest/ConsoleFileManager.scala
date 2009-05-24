@@ -277,7 +277,7 @@ else
   def getFiles(kind: String, doCheck: Boolean, filter: Option[(String, Boolean)]): List[File] = {
     val dir = new File(srcDir, kind)
     NestUI.verbose("look in "+dir+" for tests")
-    if (dir.isDirectory) {
+    val files = if (dir.isDirectory) {
       if (!testFiles.isEmpty) {
         val dirpath = dir.getAbsolutePath
         testFiles filter { _.getParentFile.getAbsolutePath == dirpath }
@@ -296,11 +296,15 @@ else
           }
           dir.listFiles(filter).toList
       } else // skip
-          Nil
+        Nil
     } else {
       NestUI.failure("Directory \"" + dir.getPath + "\" not found")
       Nil
     }
+    if (failed)
+      files filter { logFileExists(_, kind) }
+    else
+      files
   }
 
   def getFiles(kind: String, doCheck: Boolean): List[File] =
