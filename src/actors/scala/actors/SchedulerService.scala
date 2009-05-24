@@ -21,17 +21,11 @@ import java.lang.{Runnable, Thread, InterruptedException}
  * @version 0.9.18
  * @author Philipp Haller
  */
-abstract class SchedulerService(daemon: Boolean) extends Thread with IScheduler {
+abstract class SchedulerService(daemon: Boolean) extends Thread with ActorGC {
   setDaemon(daemon)
 
   def this() =
     this(false)
-
-  /** The <code>ActorGC</code> instance that keeps track of the
-   *  live actor objects that are managed by <code>this</code>
-   *  scheduler.
-   */
-  val actorGC = new ActorGC
 
   private var terminating = false
 
@@ -63,9 +57,9 @@ abstract class SchedulerService(daemon: Boolean) extends Thread with IScheduler 
           if (terminating)
             throw new QuitException
 
-          actorGC.gc()
+          gc()
 
-          if (actorGC.allTerminated)
+          if (allTerminated)
             throw new QuitException
         }
       }
@@ -92,5 +86,19 @@ abstract class SchedulerService(daemon: Boolean) extends Thread with IScheduler 
   def shutdown(): Unit = synchronized {
     terminating = true
   }
+}
 
+/**
+ * The <code>QuitException</code> class is used to manage control flow
+ * of certain schedulers and worker threads.
+ *
+ * @version 0.9.8
+ * @author Philipp Haller
+ */
+private[actors] class QuitException extends Throwable {
+  /*
+   For efficiency reasons we do not fill in
+   the execution stack trace.
+   */
+  override def fillInStackTrace(): Throwable = this
 }

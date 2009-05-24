@@ -24,7 +24,7 @@ import scala.collection.mutable.{HashMap, HashSet}
  * (e.g. act method finishes, exit explicitly called, an exception is thrown),
  * the ActorGC is informed via the <code>terminated</code> method.
  */
-class ActorGC {
+trait ActorGC extends IScheduler {
 
   private var pendingReactions = 0
   private val termHandlers = new HashMap[Actor, () => Unit]
@@ -70,13 +70,13 @@ class ActorGC {
     pendingReactions <= 0
   }
 
-  private[actors] def onTerminate(a: Actor)(f: => Unit) = synchronized {
+  def onTerminate(a: Actor)(f: => Unit) = synchronized {
     termHandlers += (a -> (() => f))
   }
 
   /* Called only from <code>Reaction</code>.
    */
-  private[actors] def terminated(a: Actor) = synchronized {
+  def terminated(a: Actor) = synchronized {
     // execute registered termination handler (if any)
     termHandlers.get(a) match {
       case Some(handler) =>

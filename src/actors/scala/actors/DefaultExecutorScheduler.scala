@@ -25,47 +25,10 @@ import java.util.concurrent.{ThreadPoolExecutor, TimeUnit, LinkedBlockingQueue}
  */
 class DefaultExecutorScheduler extends ExecutorScheduler {
 
-  private val rt = Runtime.getRuntime()
-  private val minNumThreads = 4
-
-  /** The value of the actors.corePoolSize JVM property. This property
-   *  determines the initial thread pool size.
-   */
-  private val coreProp = try {
-    System.getProperty("actors.corePoolSize")
-  } catch {
-    case ace: java.security.AccessControlException =>
-      null
-  }
-
-  private val maxProp =
-    try {
-      System.getProperty("actors.maxPoolSize")
-    } catch {
-      case ace: java.security.AccessControlException =>
-        null
-    }
-
-  private val initCoreSize =
-    if (null ne coreProp) Integer.parseInt(coreProp)
-    else {
-      val numCores = rt.availableProcessors()
-      if (2 * numCores > minNumThreads)
-        2 * numCores
-      else
-        minNumThreads
-    }
-
-  private val maxSize =
-    if (null ne maxProp) Integer.parseInt(maxProp)
-    else 256
-
-  private val coreSize = initCoreSize
-
   private val workQueue = new LinkedBlockingQueue[Runnable]
 
-  private val threadPool = new ThreadPoolExecutor(coreSize,
-                                                  maxSize,
+  private val threadPool = new ThreadPoolExecutor(ThreadPoolConfig.corePoolSize,
+                                                  ThreadPoolConfig.maxPoolSize,
                                                   50L,
                                                   TimeUnit.MILLISECONDS,
                                                   workQueue)

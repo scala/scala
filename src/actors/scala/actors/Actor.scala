@@ -875,7 +875,7 @@ trait Actor extends AbstractActor {
     shouldExit = false
 
     scheduler execute {
-      scheduler.actorGC.newActor(Actor.this)
+      scheduler.newActor(Actor.this)
       (new Reaction(Actor.this)).run()
     }
 
@@ -1020,11 +1020,14 @@ trait Actor extends AbstractActor {
   }
 
   private[actors] def terminated() {
-    scheduler.actorGC.terminated(this)
+    scheduler.terminated(this)
   }
 
+  /* Requires qualified private, because <code>RemoteActor</code> must
+   * register termination handler.
+   */
   private[actors] def onTerminate(f: => Unit) {
-    scheduler.actorGC.onTerminate(this) { f }
+    scheduler.onTerminate(this) { f }
   }
 }
 

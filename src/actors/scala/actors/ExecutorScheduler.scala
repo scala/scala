@@ -18,7 +18,7 @@ import java.util.concurrent.{ExecutorService, RejectedExecutionException}
  *
  * @author Philipp Haller
  */
-class ExecutorScheduler(var executor: ExecutorService) extends SchedulerService {
+class ExecutorScheduler(protected var executor: ExecutorService) extends SchedulerService {
 
   /* This constructor (and the var above) is currently only used to work
    * around a bug in scaladoc, which cannot deal with early initializers
@@ -46,4 +46,7 @@ class ExecutorScheduler(var executor: ExecutorService) extends SchedulerService 
    */
   def onShutdown(): Unit =
     executor.shutdown()
+
+  def isActive =
+    !executor.isShutdown
 }

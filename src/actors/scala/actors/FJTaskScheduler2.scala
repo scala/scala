@@ -24,59 +24,22 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
  * @version 0.9.18
  * @author Philipp Haller
  */
-class FJTaskScheduler2(daemon: Boolean) extends Thread with IScheduler {
+class FJTaskScheduler2(val initCoreSize: Int, val maxSize: Int, daemon: Boolean) extends Thread with ActorGC {
   setDaemon(daemon)
 
   /** Default constructor creates a non-daemon thread. */
   def this() =
-    this(false)
+    this(ThreadPoolConfig.corePoolSize, ThreadPoolConfig.maxPoolSize, false)
+
+  def this(daemon: Boolean) =
+    this(ThreadPoolConfig.corePoolSize, ThreadPoolConfig.maxPoolSize, daemon)
 
   var printStats = false
-
-  val rt = Runtime.getRuntime()
-  val minNumThreads = 4
-
-  /** The value of the actors.corePoolSize JVM property. This property
-   *  determines the initial thread pool size.
-   */
-  val coreProp = try {
-    System.getProperty("actors.corePoolSize")
-  } catch {
-    case ace: java.security.AccessControlException =>
-      null
-  }
-  val maxProp =
-    try {
-      System.getProperty("actors.maxPoolSize")
-    } catch {
-      case ace: java.security.AccessControlException =>
-        null
-    }
-
-  val initCoreSize =
-    if (null ne coreProp) Integer.parseInt(coreProp)
-    else {
-      val numCores = rt.availableProcessors()
-      if (2 * numCores > minNumThreads)
-        2 * numCores
-      else
-        minNumThreads
-    }
-
-  val maxSize =
-    if (null ne maxProp) Integer.parseInt(maxProp)
-    else 256
 
   private var coreSize = initCoreSize
 
   private val executor =
     new FJTaskRunnerGroup(coreSize)
-
-  /** The <code>ActorGC</code> instance that keeps track of the
-   *  live actor objects that are managed by <code>this</code>
-   *  scheduler.
-   */
-  val actorGC = new ActorGC
 
   private var terminating = false
   private var suspending = false
@@ -116,7 +79,7 @@ class FJTaskScheduler2(daemon: Boolean) extends Thread with IScheduler {
 
           if (!suspending) {
 
-            actorGC.gc()
+            gc()
 
             // check if we need more threads
             if (coreSize < maxSize
@@ -126,7 +89,7 @@ class FJTaskScheduler2(daemon: Boolean) extends Thread with IScheduler {
                   coreSize += 1
                 }
             else {
-              if (actorGC.allTerminated) {
+              if (allTerminated) {
                 // if all worker threads idle terminate
                 if (executor.getActiveCount() == 0) {
                   Debug.info(this+": initiating shutdown...")
@@ -171,5 +134,7 @@ class FJTaskScheduler2(daemon: Boolean) extends Thread with IScheduler {
     suspending = true
     executor.snapshot()
   }
+
+  def isActive = !terminating && !suspending
 
 }
