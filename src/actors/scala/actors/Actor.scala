@@ -1024,7 +1024,7 @@ trait Actor extends AbstractActor {
   }
 
   /* Requires qualified private, because <code>RemoteActor</code> must
-   * register termination handler.
+   * register a termination handler.
    */
   private[actors] def onTerminate(f: => Unit) {
     scheduler.onTerminate(this) { f }

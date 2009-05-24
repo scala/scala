@@ -48,7 +48,7 @@ trait ActorGC extends IScheduler {
   }
 
   /** Removes unreachable actors from refSet. */
-  def gc() = synchronized {
+  protected def gc() = synchronized {
     // check for unreachable actors
     def drainRefQ() {
       val wr = refQ.poll
@@ -62,11 +62,11 @@ trait ActorGC extends IScheduler {
     drainRefQ()
   }
 
-  def status() {
+  protected def status() {
     println(this+": size of refSet: "+refSet.size)
   }
 
-  def allTerminated: Boolean = synchronized {
+  protected def allTerminated: Boolean = synchronized {
     pendingReactions <= 0
   }
 

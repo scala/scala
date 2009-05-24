@@ -8,6 +8,9 @@
 
 package scala.actors
 
+/**
+ * @author Erik Engbrecht
+ */
 trait DelegatingScheduler extends IScheduler {
   protected def makeNewScheduler(): IScheduler
 
