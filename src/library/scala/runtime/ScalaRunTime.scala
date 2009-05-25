@@ -68,7 +68,7 @@ object ScalaRunTime {
     caseFields(x).mkString(x.productPrefix + "(", ",", ")")
 
   def _hashCode(x: Product): Int = {
-    var code = x.getClass().getName().hashCode()
+    var code = x.productPrefix.hashCode()
     val arr =  x.productArity
     var i = 0
     while (i < arr) {
