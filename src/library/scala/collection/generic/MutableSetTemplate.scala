@@ -43,9 +43,9 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
   /** Adds a new element to the set.
    *
    *  @param elem the element to be added
-   *  @return true if the element was already present in the set.
+   *  @return true if the element was not yet present in the set.
    */
-  def put(elem: A): Boolean = {
+  def add(elem: A): Boolean = {
     val r = contains(elem)
     this += elem
     r
