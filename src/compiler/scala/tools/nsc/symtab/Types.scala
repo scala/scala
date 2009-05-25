@@ -818,8 +818,7 @@ trait Types {
 // Subclasses ------------------------------------------------------------
 
   trait UniqueType {
-    private val hashcode = { val h = super.hashCode(); if (h < 0) -h else h }
-    override def hashCode() = hashcode
+    override lazy val hashCode: Int = super.hashCode()
   }
  /** A base class for types that defer some operations
    *  to their immediate supertype.
@@ -2297,11 +2296,9 @@ A type's typeSymbol should never be inspected directly.
       uniques = new HashSet(20000)
       uniqueRunId = currentRunId
     }
-    val tp1 = uniques.findEntry(tp)
-    if (tp1 eq null) {
-      uniques.addEntry(tp); tp
-    } else {
-      tp1.asInstanceOf[T]
+    uniques.findEntry(tp) match {
+      case null   => uniques.addEntry(tp); tp
+      case tp1    => tp1.asInstanceOf[T]
     }
   }
 
