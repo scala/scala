@@ -1653,29 +1653,38 @@ trait Typers { self: Analyzer =>
     def typedStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
 
       val inBlock = exprOwner == context.owner
+      val localTarget =
+        context.unit != null &&
+        context.unit.targetPos != NoPosition &&
+        (stats exists (context.unit.targetPos includes _.pos))
 
       def typedStat(stat: Tree): Tree = {
         if (context.owner.isRefinementClass && !treeInfo.isDeclaration(stat))
           errorTree(stat, "only declarations allowed here")
-        stat match {
-          case imp @ Import(_, _) =>
-            val imp0 = typedImport(imp)
-            if (imp0 ne null) {
-              context = context.makeNewImport(imp0)
-              imp0.symbol.initialize
-            }
-            EmptyTree
-          case _ =>
-            val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) this
-                             else newTyper(context.make(stat, exprOwner))
-            val result = checkDead(localTyper.typed(stat))
-            if (treeInfo.isSelfOrSuperConstrCall(result)) {
-              context.inConstructorSuffix = true
-              if (treeInfo.isSelfConstrCall(result) && result.symbol.pos.offset.getOrElse(0) >= exprOwner.enclMethod.pos.offset.getOrElse(0))
-                error(stat.pos, "called constructor's definition must precede calling constructor's definition")
-            }
-            result
-        }
+        else
+          stat match {
+            case imp @ Import(_, _) =>
+              val imp0 = typedImport(imp)
+              if (imp0 ne null) {
+                context = context.makeNewImport(imp0)
+                imp0.symbol.initialize
+              }
+              EmptyTree
+            case _ =>
+              if (localTarget && !(context.unit.targetPos includes stat.pos)) {
+                stat
+              } else {
+                val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) this
+                                 else newTyper(context.make(stat, exprOwner))
+                val result = checkDead(localTyper.typed(stat))
+                if (treeInfo.isSelfOrSuperConstrCall(result)) {
+                  context.inConstructorSuffix = true
+                  if (treeInfo.isSelfConstrCall(result) && result.symbol.pos.offset.getOrElse(0) >= exprOwner.enclMethod.pos.offset.getOrElse(0))
+                    error(stat.pos, "called constructor's definition must precede calling constructor's definition")
+                }
+                result
+              }
+          }
       }
 
       def accesses(accessor: Symbol, accessed: Symbol) =
@@ -3432,8 +3441,6 @@ trait Typers { self: Analyzer =>
       }
 
       try {
-        if (settings.debug.value)
-          assert(pt ne null, tree)//debug
         if (context.retyping &&
             (tree.tpe ne null) && (tree.tpe.isErroneous || !(tree.tpe <:< pt))) {
           tree.tpe = null
@@ -3449,7 +3456,7 @@ trait Typers { self: Analyzer =>
         val result = if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt)
         if (printTypings) println("adapted "+tree1+":"+tree1.tpe+" to "+pt+", "+context.undetparams); //DEBUG
 //      if ((mode & TYPEmode) != 0) println("type: "+tree1+" has type "+tree1.tpe)
-        if (phase.id == currentRun.typerPhase.id) pollForHighPriorityJob()
+        if (phase.id == currentRun.typerPhase.id) signalDone(context.asInstanceOf[analyzer.Context], tree, result)
         result
       } catch {
         case ex: TypeError =>

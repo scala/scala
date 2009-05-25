@@ -1,6 +1,6 @@
 package scala.tools.nsc.interactive
 
-import scala.collection.mutable.{LinkedHashSet, LinkedHashMap}
+import scala.collection.mutable.{LinkedHashSet, LinkedHashMap, SynchronizedMap}
 import scala.concurrent.SyncVar
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{SourceFile, Position, RangePosition, OffsetPosition, NoPosition, WorkScheduler}
@@ -8,63 +8,93 @@ import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.ast._
 
-class Global(_settings: Settings, _reporter: Reporter) extends nsc.Global(_settings, _reporter) {
+/** The main class of the presentation compiler in an interactive environment such as an IDE
+ */
+class Global(_settings: Settings, _reporter: Reporter)
+  extends nsc.Global(_settings, _reporter)
+     with ContextTrees {
 self =>
 
-  /** Make rangePos return a RangePosition */
-  override def rangePos(source: SourceFile, start: Int, mid: Int, end: Int) = new RangePosition(source, start, mid, end)
-
-  private var pollingEnabled = true
-
-  /** Called from typechecker */
-  override def pollForHighPriorityJob() {
-    // don';t do this if polling notnenabled unless cancel
-    scheduler.nextWorkItem() match {
-      case Some(action) =>
-        pollingEnabled = false
-        try {
-          action()
-        } catch {
-          case ex: CancelActionReq =>
-        }
-        pollingEnabled = true
-      case None =>
-    }
-  }
-
   /** A list indicating in which order some units should be typechecked.
-   *  All units in priorityUnits are typechecked before any unit not in this list
+   *  All units in firsts are typechecked before any unit not in this list
    *  Modified by askToDoFirst
    */
-  var priorityUnits: List[CompilationUnit] = List()
-
-  /** The list of high-proiority units that still needs to be typechecked in current iteration */
-  var remainingPriUnits: List[CompilationUnit] = List()
+  var firsts: List[AbstractFile] = List()
 
   /** Is there a loaded unit not up-to-date wrt typechecking?
    */
   var outOfDate: Boolean = false
 
-  /** Has a loaded unit changed recently, or has a new unit been added?
-   */
-  var change: Boolean = false
-
-  /** The units that still need compiling in the current pass */
-  val unitsToCompile = new LinkedHashSet[CompilationUnit]
-
   /** A map of all loaded units to the id of the last compiler run that typechecked them
    *  @see NotLoaded, JustParsed
    */
-  val unitsWithRunId = new LinkedHashMap[CompilationUnit, Int]
+  val unitOfFile = new LinkedHashMap[AbstractFile, RichCompilationUnit] with
+                       SynchronizedMap[AbstractFile, RichCompilationUnit]
 
-  /** The value associated in unitsWithRunId for units that have not yet been loaded */
+  /** The status value of a unit that has not yet been loaded */
   final val NotLoaded = -1
 
-  /** The value associated in unitsWithRunId for units that have not yet been typechecked */
+  /** The status value of a unit that has not yet been typechecked */
   final val JustParsed = 0
 
   /** The currently active typer run */
   var currentTyperRun: TyperRun = _
+
+  /** Is a background compiler currently running? */
+  var compiling = false
+
+  // ----------- Overriding hooks in nsc.Global -----------------------
+
+  /** Make rangePos return a RangePosition */
+  override def rangePos(source: SourceFile, start: Int, mid: Int, end: Int) =
+    new RangePosition(source, start, mid, end)
+
+  /** Called from typechecker */
+  override def signalDone(context: Context, old: Tree, result: Tree) {
+    def integrateNew() {
+      context.unit.body = new TreeReplacer(old, result) transform context.unit.body
+    }
+    if (context.unit.targetPos includes result.pos) {
+      integrateNew()
+      throw new TyperResult(result)
+    }
+    pollForWork()
+    if (outOfDate) {
+      integrateNew()
+      throw new FreshRunReq
+    }
+  }
+
+  override def registerContext(c: Context) = c.unit match {
+    case u: RichCompilationUnit => addContext(u.contexts, c)
+    case _ =>
+  }
+
+  // ----------------- Polling ---------------------------------------
+
+  private var pollingEnabled = false
+
+  /** Called from runner thread and singnalDone */
+  def pollForWork() {
+    if (pollingEnabled)
+      scheduler.nextWorkItem() match {
+        case Some(action) =>
+          pollingEnabled = false
+          try {
+            action()
+          } catch {
+            case ex: CancelActionReq =>
+          } finally {
+            scheduler.doneWorkItem()
+          }
+          pollingEnabled = true
+        case None =>
+      }
+    else
+      scheduler.pollException()
+  }
+
+  // ----------------- The Background Runner Thread -----------------------
 
   /** The current presentation compiler runner */
   private var compileRunner = newRunnerThread
@@ -74,7 +104,21 @@ self =>
   def newRunnerThread: Thread = new Thread("Scala Presentation Compiler") {
     override def run() {
       try {
-        while (true) typeCheckPass()
+        while (true) {
+          scheduler.waitForMoreWork()
+          pollForWork()
+          while (outOfDate) {
+            outOfDate = false
+            try {
+              compiling = true
+              backgroundCompile()
+            } catch {
+              case ex: FreshRunReq =>
+            } finally {
+              compiling = false
+            }
+          }
+        }
       } catch {
         case ex: ShutdownReq =>
           ;
@@ -87,121 +131,227 @@ self =>
     }
   }
 
-  /** A pass that first waits for something to do, then typechecks all loaded units
-   *  until everything is up-to-date
+  /** Compile all given units
    */
-  private def typeCheckPass() = try {
-    while (!outOfDate) {
-      scheduler.waitForMoreWork()
-      pollForHighPriorityJob()
-    }
+  private def backgroundCompile() {
     inform("Starting new presentation compiler type checking pass")
-    currentTyperRun = new TyperRun
-    while (outOfDate) {
-      outOfDate = false
-      for ((unit, id) <- unitsWithRunId.elements) {
-        if (id != currentRunId) unitsToCompile += unit
-      }
-      remainingPriUnits = priorityUnits
-      while (unitsToCompile.nonEmpty) {
-        if (change) {
-          change = false
-          outOfDate = true
-          currentTyperRun = new TyperRun()
+    val unitsToCompile = new LinkedHashSet[RichCompilationUnit] ++= unitOfFile.values
+    var rest = firsts
+    def getUnit(): RichCompilationUnit = rest match {
+      case List() =>
+        unitsToCompile.head
+      case f :: fs =>
+        unitsToCompile.find(_.source.file == f) match {
+          case Some(unit) => unit
+          case None => rest = fs; getUnit()
         }
-        var unit = unitsToCompile.head
-        if (!remainingPriUnits.isEmpty) {
-          unit = remainingPriUnits.head
-          remainingPriUnits = remainingPriUnits.tail
-        }
-        inform("type checking: "+unit)
-        currentTyperRun.typeCheck(unit, NoPosition)
-        unitsWithRunId(unit) = currentRunId
-        unitsToCompile -= unit
-      }
     }
-  } catch {
-    case ex: FreshRunReq => outOfDate = true
+    while (unitsToCompile.nonEmpty) {
+      val unit = getUnit()
+      recompile(unit)
+      unitsToCompile -= unit
+    }
   }
 
-  /** Make sure a set of compilation units is loaded and parsed */
-  def reload(units: Set[CompilationUnit]) = {
-    for (unit <- units) {
-      currentTyperRun.compileLate(unit)
-      unitsWithRunId(unit) = JustParsed
-      unitsToCompile += unit
+  /** Reset unit to just-parsed state */
+  def reset(unit: RichCompilationUnit): Unit =
+    if (unit.status > JustParsed) {
+      unit.depends.clear()
+      unit.defined.clear()
+      unit.synthetics.clear()
+      unit.toCheck.clear()
+      unit.targetPos = NoPosition
+      unit.contexts.clear()
+      ResetAttrs.traverse(unit.body)
+      currentTyperRun.enterNames(unit)
+      unit.status = JustParsed
     }
-    change = true
+
+  /** Make sure symbol and type attributes are reset and recompile unit.
+   */
+  def recompile(unit: RichCompilationUnit) {
+    assert(unit.status != NotLoaded)
+    reset(unit)
+    inform("type checking: "+unit)
+    currentTyperRun.typeCheck(unit)
+    unit.status = currentRunId
+  }
+
+  /** Move list of files to front of firsts */
+  def moveToFront(fs: List[AbstractFile]) {
+    firsts = fs ::: (firsts diff fs)
+  }
+
+  // ----------------- Implementations of client commmands -----------------------
+
+  /** Make sure a set of compilation units is loaded and parsed */
+  def reload(sources: Set[SourceFile]) = {
+    currentTyperRun = new TyperRun()
+    for (source <- sources) {
+      val unit = new RichCompilationUnit(source)
+      unitOfFile(source.file) = unit
+      currentTyperRun.compileLate(unit)
+      unit.status = JustParsed
+    }
     outOfDate = true
+    moveToFront(sources.toList map (_.file))
+    if (compiling) throw new FreshRunReq
   }
 
   /** Set sync var `result` to a fully attributed tree located at position `pos`  */
   def typedTreeAt(pos: Position, result: SyncVar[Tree]) {
     val unit = unitOf(pos)
-    if (unitsWithRunId(unit) == NotLoaded)
-      reload(Set(unit))
-    if (unitsWithRunId(unit) != currentRunId)
-      currentTyperRun.typeCheck(unit, pos)
-    result set locateTree(pos)
+    assert(unit.status != NotLoaded)
+    moveToFront(List(unit.source.file))
+    result set currentTyperRun.typedTreeAt(pos)
   }
+
+  // ---------------- Helper classes ---------------------------
 
   /** A locator for trees with given positions.
    *  Given a position `pos`, locator.apply returns
    *  the smallest tree that encloses `pos`.
    */
-  object locate extends Traverser {
-    var pos: Position = _
+  class Locator(pos: Position) extends Traverser {
     var last: Tree = _
-    def apply(pos: Position, root: Tree): Tree = {
-      this.pos = pos
+    def locateIn(root: Tree): Tree = {
       this.last = EmptyTree
       traverse(root)
       this.last
     }
     override def traverse(t: Tree) {
-      if (t.pos.start <= pos.start && pos.end <= t.pos.end) {
+      if (t.pos includes pos) {
         last = t
         super.traverse(t)
       }
     }
   }
 
+  /** A transformer that replaces tree `from` with tree `to` in a given tree */
+  class TreeReplacer(from: Tree, to: Tree) extends Transformer {
+    override def transform(t: Tree): Tree = {
+      if (t.pos includes from.pos)
+        if (t == from) to
+        else super.transform(t)
+      else
+        t
+    }
+  }
+
+  /** A traverser that resets all type and symbol attributes in a tree */
+  object ResetAttrs extends Traverser {
+    override def traverse(t: Tree) {
+      if (t.hasSymbol) t.symbol = NoSymbol
+      t.tpe = null
+      super.traverse(t)
+    }
+  }
+
+  /** The typer run */
+  class TyperRun extends Run {
+    // units is always empty
+    // symSource, symData are ignored
+    override def compiles(sym: Symbol) = false
+
+    def typeCheck(unit: CompilationUnit) {
+      applyPhase(typerPhase, unit)
+    }
+
+    def enterNames(unit: CompilationUnit) {
+      applyPhase(namerPhase, unit)
+    }
+
+    /** Return fully attributed tree at given position
+     *  (i.e. largest tree that's contained by position)
+     */
+    def typedTreeAt(pos: Position): Tree = {
+      val tree = locateTree(pos)
+      if (tree.tpe ne null) tree
+      else {
+        val unit = unitOf(pos)
+        assert(unit.status >= JustParsed)
+        unit.targetPos = pos
+        try {
+          typeCheck(unit)
+          throw new FatalError("tree not found")
+        } catch {
+          case ex: TyperResult => ex.tree
+        }
+      }
+    }
+
+    /** Apply a phase to a compilation unit */
+    private def applyPhase(phase: Phase, unit: CompilationUnit) {
+      val oldSource = reporter.getSource
+      try {
+        reporter.setSource(unit.source)
+        atPhase(phase) { phase.asInstanceOf[GlobalPhase] applyPhase unit }
+      } finally {
+        reporter setSource oldSource
+      }
+    }
+  }
+
+  class TyperResult(val tree: Tree) extends Exception
+
+  class RichCompilationUnit(source: SourceFile) extends CompilationUnit(source) {
+
+    var status: Int = NotLoaded
+
+    /** the current edit point offset */
+    var editPoint: Int = -1
+
+    /** The position of a targeted type check
+     *  If this is different from NoPosition, the type checking
+     *  will stop once a tree that contains this position range
+     *  is fully attributed.
+     */
+    var _targetPos: Position = NoPosition
+    override def targetPos: Position = _targetPos
+    def targetPos_=(p: Position) { _targetPos = p }
+
+    var contexts: Contexts = new Contexts
+
+  }
+
+  assert(globalPhase.id == 0)
+
   // ----------------- interface to IDE ------------------------------------
 
   private val scheduler = new WorkScheduler
 
   /** The compilation unit corresponding to a source file */
-  def unitOf(s: SourceFile): CompilationUnit =
-    unitsWithRunId.keys find (_.source == s) match {
-      case Some(unit) => unit
-      case None =>
-        val unit = new CompilationUnit(s)
-        unitsWithRunId(unit) = NotLoaded
-        unit
-    }
+  def unitOf(s: SourceFile): RichCompilationUnit = unitOfFile get s.file match {
+    case Some(unit) =>
+      unit
+    case None =>
+      val unit = new RichCompilationUnit(s)
+      unitOfFile(s.file) = unit
+      unit
+  }
 
   /** The compilation unit corresponding to a position */
-  def unitOf(pos: Position): CompilationUnit = unitOf(pos.source.get)
+  def unitOf(pos: Position): RichCompilationUnit = unitOf(pos.source.get)
 
   /** Locate smallest tree that encloses position */
   def locateTree(pos: Position): Tree =
-    locate(pos, unitOf(pos).body)
+    new Locator(pos) locateIn unitOf(pos).body
+
+  /** Locate smallest context that encloses position */
+  def locateContext(pos: Position): Option[Context] =
+    locateContext(unitOf(pos).contexts, pos)
 
   /** Make sure a set of compilation units is loaded and parsed */
-  def askReload(units: Set[CompilationUnit]) =
-    scheduler.postWorkItem(() => reload(units))
+  def askReload(sources: Set[SourceFile]) =
+    scheduler.postWorkItem(() => reload(sources))
 
   /** Set sync var `result` to a fully attributed tree located at position `pos`  */
   def askTypeAt(pos: Position, result: SyncVar[Tree]) =
     scheduler.postWorkItem(() => self.typedTreeAt(pos, result))
 
   /** Ask to do unit first on present and subsequent type checking passes */
-  def askToDoFirst(unit: CompilationUnit) = {
-    def moveToFront(unit: CompilationUnit, units: List[CompilationUnit]) = unit :: (units filter (unit !=))
-    scheduler.postWorkItem { () =>
-      remainingPriUnits = moveToFront(unit, remainingPriUnits)
-      priorityUnits = moveToFront(unit, priorityUnits)
-    }
+  def askToDoFirst(f: AbstractFile) = {
+    scheduler.postWorkItem { () => moveToFront(List(f)) }
   }
 
   /** Cancel currently pending high-priority jobs */
@@ -221,25 +371,5 @@ self =>
   class CancelActionReq extends Exception
   class FreshRunReq extends Exception
   class ShutdownReq extends Exception
-
-  /** The typer run */
-  class TyperRun extends Run {
-    // units is always empty
-    // symSource, symData are ignored
-    override def compiles(sym: Symbol) = false
-
-    def typeCheck(unit: CompilationUnit, pos: Position) {
-      assert(unitsWithRunId(unit) >= JustParsed)
-/*
-      unit.needOnly =
-        if (pos == NoPosition) PackageDef(nme.EMPTY, List()) setPos(
-        else
-
-      typerPhase.applyPhase(unit)
-
-*/
-    }
-  }
-
-  assert(globalPhase.id == 0)
 }
+

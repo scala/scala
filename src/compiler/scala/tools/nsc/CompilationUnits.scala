@@ -6,7 +6,7 @@
 
 package scala.tools.nsc
 
-import scala.tools.nsc.util.{FreshNameCreator,OffsetPosition,Position,SourceFile}
+import scala.tools.nsc.util.{FreshNameCreator,OffsetPosition,Position,NoPosition,SourceFile}
 import scala.tools.nsc.io.AbstractFile
 import scala.collection.mutable.{HashSet, HashMap, ListBuffer}
 
@@ -16,6 +16,7 @@ trait CompilationUnits { self: Global =>
     * It typically corresponds to a single file of source code.  It includes
     * error-reporting hooks.  */
   class CompilationUnit(val source: SourceFile) extends CompilationUnitTrait {
+
     /** the fresh name creator */
     var fresh : FreshNameCreator = new FreshNameCreator.Default
 
@@ -41,10 +42,14 @@ trait CompilationUnits { self: Global =>
     /** used to track changes in a signature */
     var pickleHash : Long = 0
 
-    /** the current edit point offset */
-    var editPoint: Int = -1
-
     def position(pos: Int) = source.position(pos)
+
+    /** The position of a targeted type check
+     *  If this is different from NoPosition, the type checking
+     *  will stop once a tree that contains this position range
+     *  is fully attributed.
+     */
+    def targetPos: Position = NoPosition
 
     /** The icode representation of classes in this compilation unit.
      *  It is empty up to phase 'icode'.

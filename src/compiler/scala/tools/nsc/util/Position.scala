@@ -15,6 +15,7 @@ trait Position {
   import Position.tabInc
   def offset: Option[Int] = None
   def source: Option[SourceFile] = None
+  def isDefined: Boolean = false
 
   def start: Int = mid
   def mid: Int = offset.get
@@ -23,6 +24,15 @@ trait Position {
   def startOrElse(d: Int) = offset.get//OrElse(d)
   def midOrElse(d: Int) = offset.get//OrElse(d)
   def endOrElse(d: Int) = offset.get//OrElse(d)
+
+  def includes(pos: Position) =
+    isDefined && pos.isDefined && start <= pos.start && pos.end <= end
+
+  def precedes(pos: Position) =
+    isDefined && pos.isDefined && end <= pos.start
+
+  def sameRange(pos: Position) =
+    isDefined && pos.isDefined && start == pos.start && end == pos.end
 
   def line: Option[Int] =
     if (offset.isEmpty || source.isEmpty) None
@@ -83,18 +93,10 @@ case class FakePos(msg: String) extends Position {
   override def toString=msg
 }
 
-// ??? needed
-case class LinePosition(source0: SourceFile, line0: Int) extends Position {
-  assert(line0 >= 1)
-  override def offset = None
-  override def column = None
-  override def line = Some(line0)
-  override def source = Some(source0)
-}
-
 case class OffsetPosition(source0: SourceFile, offset0: Int) extends Position {
   override def source = Some(source0)
   override def offset = Some(offset0)
+  override def isDefined = true
   override def equals(that : Any) = that match {
   case that : OffsetPosition => offset0 == that.offset0 && source0.file == that.source0.file
   case that => false
@@ -105,6 +107,7 @@ case class OffsetPosition(source0: SourceFile, offset0: Int) extends Position {
 /** new for position ranges */
 class RangePosition(source0: SourceFile, override val start: Int, override val mid: Int, override val end: Int)
 extends OffsetPosition(source0, mid) {
+  override def isDefined = true
   override def startOrElse(d: Int) = start
   override def midOrElse(d: Int) = mid
   override def endOrElse(d: Int) = end

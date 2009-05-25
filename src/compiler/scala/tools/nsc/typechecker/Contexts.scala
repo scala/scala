@@ -210,6 +210,7 @@ trait Contexts { self: Analyzer =>
       c.checking = this.checking
       c.retyping = this.retyping
       c.openImplicits = this.openImplicits
+      registerContext(c.asInstanceOf[analyzer.Context])
       c
     }
 

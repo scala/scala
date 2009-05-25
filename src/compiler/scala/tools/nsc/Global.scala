@@ -129,16 +129,20 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     if (onlyPresentation) new HashMap[Symbol,List[List[Symbol]]]
     else null
 
-  // ------------ Hooks for IDE ----------------------------------
+  // ------------ Hooks for interactive mode-------------------------
 
   /** Return a position correponding to tree startaing at `start`, with tip
    *  at `mid`, and ending at `end`. ^ batch mode errors point at tip.
    */
   def rangePos(source: SourceFile, start: Int, mid: Int, end: Int) = OffsetPosition(source, mid)
 
-  /** Poll for a high-priority task
+  /** Called every time an AST node is succesfully typedchecked in typerPhase.
    */
-  def pollForHighPriorityJob() {}
+  def signalDone(context: analyzer.Context, old: Tree, result: Tree) {}
+
+  /** Register new context; called for every created context
+   */
+  def registerContext(c: analyzer.Context) {}
 
 // ------------------ Reporting -------------------------------------
 
