@@ -62,6 +62,9 @@ trait FlatHashTable[A] {
     null != entry
   }
 
+  /** Add entry if not yet in table
+   *  Return whether a new entry was added
+   */
   def addEntry(elem: A) : Boolean = {
     var h = index(elemHashCode(elem))
     var entry = table(h)

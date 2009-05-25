@@ -62,6 +62,8 @@ trait HashTable[A] extends AnyRef {
    */
   def size = tableSize
 
+  /** Find entry with given key in table, null if not found
+   */
   protected def findEntry(key: A): Entry = {
     val h = index(elemHashCode(key))
     var e = table(h).asInstanceOf[Entry]
@@ -69,6 +71,9 @@ trait HashTable[A] extends AnyRef {
     e
   }
 
+  /** Add entry to table
+   *  pre: no entry with same key exists
+   */
   protected def addEntry(e: Entry) {
     val h = index(elemHashCode(e.key))
     e.next = table(h).asInstanceOf[Entry]
@@ -78,14 +83,16 @@ trait HashTable[A] extends AnyRef {
       resize(2 * table.length)
   }
 
-  protected def removeEntry(key: A) : Option[Entry] = {
+  /** Remove entry from table if present
+   */
+  protected def removeEntry(key: A) : Entry = {
     val h = index(elemHashCode(key))
     var e = table(h).asInstanceOf[Entry]
     if (e != null) {
       if (elemEquals(e.key, key)) {
         table(h) = e.next
         tableSize = tableSize - 1
-        return Some(e)
+        return e
       } else {
         var e1 = e.next
         while (e1 != null && !elemEquals(e1.key, key)) {
@@ -95,13 +102,15 @@ trait HashTable[A] extends AnyRef {
         if (e1 != null) {
           e.next = e1.next
           tableSize = tableSize - 1
-          return Some(e1)
+          return e1
         }
       }
     }
-    None
+    null
   }
 
+  /** An iterator returning all entries
+   */
   protected def entries: Iterator[Entry] = new Iterator[Entry] {
     val iterTable = table
     var idx = table.length - 1
@@ -122,6 +131,8 @@ trait HashTable[A] extends AnyRef {
     }
   }
 
+  /** Remove all entries from table
+   */
   def clear() {
     var i = table.length - 1
     while (i >= 0) { table(i) = null; i = i - 1 }

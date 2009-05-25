@@ -12,46 +12,49 @@ package scala.collection.mutable
 
 import generic._
 
-//!!! todo make inherit from HashSet.
-object LinkedHashSet {
-  /** The empty map of this type */
-  def empty[A] = new LinkedHashSet[A]
-
-  /** The canonical factory for this type
-   */
-  def apply[A](elems: A*) = empty[A] ++= elems
-}
-
+/** Todo: this has O(n) cost for element removal.
+ *  Should be rewritten to be more efficient.
+ */
 @serializable
-class LinkedHashSet[A] extends Set[A] with MutableSetTemplate[A, LinkedHashSet[A]] with FlatHashTable[A] {
+class LinkedHashSet[A] extends Set[A]
+                          with SetClass[A, LinkedHashSet]
+                          with MutableSetTemplate[A, LinkedHashSet[A]]
+                          with FlatHashTable[A]
+{
+  override def companion: Companion[LinkedHashSet] = LinkedHashSet
 
-  override def empty = LinkedHashSet.empty
+  protected val ordered = new ListBuffer[A]
 
   override def size = super.size
 
-  private var ordered = List[A]()
-
   def contains(elem: A): Boolean = containsEntry(elem)
 
-  def += (elem: A): this.type = { put(elem); this }
+  def += (elem: A): this.type = { add(elem); this }
   def -= (elem: A): this.type = { remove(elem); this }
 
-  override def put(elem: A): Boolean =
-    if (addEntry(elem)) {
-      ordered = elem :: ordered
-      true
-    } else false
+  override def add(elem: A): Boolean =
+    if (addEntry(elem)) { ordered += elem; true }
+    else false
 
-  override def remove(elem: A): Boolean = removeEntry(elem) match {
-    case None => false
-    case Some(elem) => ordered = ordered.filter(_ != elem); true
-  }
+  override def remove(elem: A): Boolean =
+    removeEntry(elem) match {
+      case None => false
+      case _ => ordered -= elem; true
+    }
 
   override def clear() {
-    ordered = Nil
+    ordered.clear()
     super.clear()
   }
 
-  override def elements = ordered.reverse.elements
+  override def elements = ordered.elements
+
+  override def foreach[U](f: A => U) = ordered foreach f
+}
+
+/** Factory object for `LinkedHashSet` class */
+object LinkedHashSet extends SetFactory[LinkedHashSet] {
+  implicit def builderFactory[A]: BuilderFactory[A, LinkedHashSet[A], Coll] = setBuilderFactory[A]
+  override def empty[A]: LinkedHashSet[A] = new LinkedHashSet[A]
 }
 

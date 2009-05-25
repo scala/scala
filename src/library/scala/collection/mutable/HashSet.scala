@@ -33,8 +33,8 @@ class HashSet[A] extends Set[A]
   def += (elem: A): this.type = { addEntry(elem); this }
   def -= (elem: A): this.type = { removeEntry(elem); this }
 
-  override def put(elem: A): Boolean = addEntry(elem)
-  override def remove(elem: A): Boolean = !removeEntry(elem).isEmpty
+  override def add(elem: A): Boolean = addEntry(elem)
+  override def remove(elem: A): Boolean = removeEntry(elem).isDefined
 
   override def clear() = super.clear()
 

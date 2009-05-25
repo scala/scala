@@ -18,7 +18,7 @@ import generic._
  *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
- *  @version 2.0, 31/12/2006
+ *  @version 2.8
  */
 object LinkedHashMap extends MutableMapFactory[LinkedHashMap] {
   implicit def builderFactory[A, B]: BuilderFactory[(A, B), LinkedHashMap[A, B], Coll] = new MapBuilderFactory[A, B]
@@ -28,45 +28,89 @@ object LinkedHashMap extends MutableMapFactory[LinkedHashMap] {
 @serializable
 class LinkedHashMap[A, B] extends Map[A, B]
                              with MutableMapTemplate[A, B, LinkedHashMap[A, B]]
-                             with HashTable[A]
-                             with DefaultMapModel[A,B] {
+                             with HashTable[A] {
 
-  override def empty = LinkedHashMap.empty
-
+  override def empty = LinkedHashMap.empty[A, B]
   override def size = super[HashTable].size
 
-  private var ordered = List[Entry]()
+  type Entry = LinkedEntry[A, B]
 
-  def -= (key: A): this.type = { remove(key); this }
+  protected var firstEntry: Entry = null
+  protected var lastEntry: Entry = null
 
-  override def remove(key: A): Option[B] = removeEntry(key) match {
-    case None => None
-    case Some(e) =>
-      ordered = ordered.filter(_ ne e)
-      Some(e.value)
-    }
+  def get(key: A): Option[B] = {
+    val e = findEntry(key)
+    if (e == null) None
+    else Some(e.value)
+  }
 
   override def put(key: A, value: B): Option[B] = {
     val e = findEntry(key)
     if (e == null) {
       val e = new Entry(key, value)
-      ordered = e :: ordered
       addEntry(e)
+      if (firstEntry == null) firstEntry = e
+      else { lastEntry.later = e; e.earlier = lastEntry }
+      lastEntry = e
       None
     } else {
-      val ret = Some(e.value)
+      val v = e.value
       e.value = value
-      ret
+      Some(v)
     }
   }
-  override def update(key: A, value: B) { put(key, value) }
 
-  override def clear() {
-    ordered = Nil
-    super.clear()
+  override def remove(key: A): Option[B] = {
+    val e = removeEntry(key)
+    if (e eq null) None
+    else {
+      if (e.earlier eq null) firstEntry = e.later
+      else e.earlier.later = e.later
+      if (e.later eq null) lastEntry = e.earlier
+      else e.later.earlier = e.earlier
+      Some(e.value)
+    }
   }
 
-  override def elements = ordered.reverse.elements map {e => (e.key, e.value)}
+  def += (kv: (A, B)): this.type = { put(kv._1, kv._2); this }
+  def -=(key: A): this.type = { remove(key); this }
+
+  def elements: Iterator[(A, B)] = new Iterator[(A, B)] {
+    private var cur = firstEntry
+    def hasNext = cur ne null
+    def next =
+      if (hasNext) { val res = (cur.key, cur.value); cur = cur.later; res }
+      else Iterator.empty.next
+  }
+
+  override def keys: Iterator[A] = new Iterator[A] {
+    private var cur = firstEntry
+    def hasNext = cur ne null
+    def next =
+      if (hasNext) { val res = cur.key; cur = cur.later; res }
+      else Iterator.empty.next
+  }
+
+  override def values: Iterator[B] = new Iterator[B] {
+    private var cur = firstEntry
+    def hasNext = cur ne null
+    def next = { val res = cur.value; cur = cur.later; res }
+      if (hasNext) { val res = cur.value; cur = cur.later; res }
+      else Iterator.empty.next
+  }
+
+  override def foreach[U](f: ((A, B)) => U) = {
+    var cur = firstEntry
+    while (cur ne null) {
+      f((cur.key, cur.value))
+      cur = cur.later
+    }
+  }
+
+  override def clear() {
+    super[HashTable].clear()
+    firstEntry = null
+  }
 
   // debug NoSuchElementException in Pickler
   var previousTables: List[(String, Int)] = Nil

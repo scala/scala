@@ -7,7 +7,7 @@
 \*                                                                      */
 
 // $Id$
-
+// !!! check whether we have all methods */
 
 package scala.collection.mutable
 
@@ -33,10 +33,6 @@ trait SynchronizedSet[A] extends Set[A] {
     super.contains(elem)
   }
 
-  abstract override def update(elem: A, included: Boolean): Unit = synchronized {
-    super.update(elem, included)
-  }
-
   abstract override def +=(elem: A): this.type = synchronized[this.type] {
     super.+=(elem)
   }
@@ -59,6 +55,18 @@ trait SynchronizedSet[A] extends Set[A] {
 
   override def --=(it: Iterator[A]): this.type = synchronized[this.type] {
     super.--=(it)
+  }
+
+  override def update(elem: A, included: Boolean): Unit = synchronized {
+    super.update(elem, included)
+  }
+
+  override def add(elem: A): Boolean = synchronized {
+    super.add(elem)
+  }
+
+  override def remove(elem: A): Boolean = synchronized {
+    super.remove(elem)
   }
 
   override def intersect(that: collection.Set[A]) = synchronized {

@@ -35,13 +35,13 @@ class BitSet (protected var elems: Array[Long]) extends Set[Int]
   /** Adds element to bitset,
    *  @return element was already present.
    */
-  override def put (elem: Int): Boolean = {
+  override def add (elem: Int): Boolean = {
     require(elem >= 0)
-    if (contains(elem)) true
+    if (contains(elem)) false
     else {
       val idx = elem >> LogWL
       updateWord(idx, word(idx) | (1L << elem))
-      false
+      true
     }
   }
 
@@ -57,7 +57,7 @@ class BitSet (protected var elems: Array[Long]) extends Set[Int]
     } else false
   }
 
-  def += (elem: Int): this.type = { put(elem); this }
+  def += (elem: Int): this.type = { add(elem); this }
   def -= (elem: Int): this.type = { remove(elem); this }
 
   def toImmutable = immutable.BitSet.fromArray(elems)

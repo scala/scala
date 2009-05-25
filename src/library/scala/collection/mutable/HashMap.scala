@@ -15,20 +15,46 @@ import generic._
 
 
 @serializable
-class HashMap[A, B] extends Map[A, B] with MutableMapTemplate[A, B, HashMap[A, B]] with HashTable[A] with DefaultMapModel[A, B] {
+class HashMap[A, B] extends Map[A, B]
+                       with MutableMapTemplate[A, B, HashMap[A, B]]
+                       with HashTable[A] {
 
   override def empty: HashMap[A, B] = HashMap.empty[A, B]
+  override def clear() = super.clear()
+  override def size: Int = super[HashTable].size
 
-  override def remove(key: A): Option[B] = removeEntry(key) match {
-    case Some(e) => Some(e.value)
-    case None => None
+  type Entry = DefaultEntry[A, B]
+
+  def get(key: A): Option[B] = {
+    val e = findEntry(key)
+    if (e == null) None
+    else Some(e.value)
   }
 
-  override def -=(key: A): this.type = { remove(key); this }
+  override def put(key: A, value: B): Option[B] = {
+    val e = findEntry(key)
+    if (e == null) { addEntry(new Entry(key, value)); None }
+    else { val v = e.value; e.value = value; Some(v) }
+  }
 
-  override def clear() = super.clear()
+  override def update(key: A, value: B): Unit = put(key, value)
 
-  override def size: Int = super[HashTable].size
+  override def remove(key: A): Option[B] = {
+    val e = removeEntry(key)
+    if (e ne null) Some(e.value)
+    else None
+  }
+
+  def += (kv: (A, B)): this.type = {
+    val e = findEntry(kv._1)
+    if (e == null) addEntry(new Entry(kv._1, kv._2))
+    else e.value = kv._2
+    this
+  }
+
+  def -=(key: A): this.type = { removeEntry(key); this }
+
+  def elements = entries map {e => (e.key, e.value)}
 }
 
 /** This class implements mutable maps using a hashtable.
