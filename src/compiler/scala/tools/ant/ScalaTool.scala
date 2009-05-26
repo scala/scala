@@ -169,20 +169,17 @@ class ScalaTool extends MatchingTask {
     private def error(message: String): Nothing =
       throw new BuildException(message, getLocation())
 
+    // XXX encoding and generalize
+    private def getResourceAsCharStream(clazz: Class[_], resource: String): Stream[Char] = {
+      val stream = clazz.getClassLoader() getResourceAsStream resource
+      if (stream == null) Stream.empty
+      else Stream continually stream.read() takeWhile (_ != -1) map (_.asInstanceOf[Char])
+    }
+
     private def readAndPatchResource(resource: String, tokens: Map[String, String]): String = {
-      val chars = new Iterator[Char] {
-        private val stream =
-          this.getClass().getClassLoader().getResourceAsStream(resource)
-        private def readStream(): Char = stream.read().asInstanceOf[Char]
-        private var buf: Char = readStream()
-        def hasNext: Boolean = (buf != (-1.).asInstanceOf[Char])
-        def next: Char = {
-          val bufbuf = buf
-          buf = readStream()
-          bufbuf
-        }
-      }
+      val chars = getResourceAsCharStream(this.getClass, resource).elements
       val builder = new StringBuilder()
+
       while (chars.hasNext) {
         val char = chars.next
         if (char == '@') {
@@ -211,13 +208,6 @@ class ScalaTool extends MatchingTask {
         writer.write(content)
         writer.close()
       }
-
-    private def expandUnixVar(vars: Map[String,String]): Map[String,String] =
-      vars transform { (x, vari) => vari.replaceAll("#([^#]*)#", "\\$$1") }
-
-    private def expandWinVar(vars: Map[String,String]): Map[String,String] =
-      vars transform { (x, vari) => vari.replaceAll("#([^#]*)#", "%_$1%") }
-
 
 /*============================================================================*\
 **                           The big execute method                           **

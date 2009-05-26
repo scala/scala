@@ -753,7 +753,6 @@ trait ScalacSettings
   val noCompletion  = BooleanSetting    ("-Yno-completion", "Disable tab-completion in the REPL")
   val Xdce          = BooleanSetting    ("-Ydead-code", "Perform dead code elimination")
   val debug         = BooleanSetting    ("-Ydebug", "Output debugging messages")
-  val debugger      = BooleanSetting    ("-Ydebugger", "Enable interactive debugger")
   val Xdetach       = BooleanSetting    ("-Ydetach", "Perform detaching of remote closures")
   // val doc           = BooleanSetting    ("-Ydoc", "Generate documentation")
   val inline        = BooleanSetting    ("-Yinline", "Perform inlining when possible")

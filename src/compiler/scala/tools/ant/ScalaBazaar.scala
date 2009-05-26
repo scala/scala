@@ -15,7 +15,7 @@ package scala.tools.ant {
   import scala.collection.mutable.HashMap
   import java.io.{File, FileInputStream, FileOutputStream,
                   FileWriter, StringReader}
-  import java.net.{URL, URLClassLoader}
+  import java.net.URL
   import java.util.{ArrayList, Vector}
   import java.util.zip.{ZipOutputStream, ZipEntry}
 

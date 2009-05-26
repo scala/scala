@@ -6,6 +6,7 @@
 package scala.tools.nsc.interpreter
 
 import scala.tools.nsc.io.AbstractFile
+import scala.util.ScalaClassLoader
 
 /**
  * A class loader that loads files from a {@link scala.tools.nsc.io.AbstractFile}.
@@ -13,21 +14,18 @@ import scala.tools.nsc.io.AbstractFile
  * @author Lex Spoon
  */
 class AbstractFileClassLoader(root: AbstractFile, parent: ClassLoader)
-extends ClassLoader(parent)
+    extends ClassLoader(parent)
+    with ScalaClassLoader
 {
   override def findClass(name: String): Class[_] = {
+    def onull[T](x: T): T = if (x == null) throw new ClassNotFoundException(name) else x
     var file: AbstractFile = root
     val pathParts = name.split("[./]").toList
-    for (dirPart <- pathParts.init) {
-      file = file.lookupName(dirPart, true)
-      if (file == null) {
-        throw new ClassNotFoundException(name)
-      }
-    }
-    file = file.lookupName(pathParts.last+".class", false)
-    if (file == null) {
-      throw new ClassNotFoundException(name)
-    }
+
+    for (dirPart <- pathParts.init)
+      file = onull(file.lookupName(dirPart, true))
+
+    file = onull(file.lookupName(pathParts.last+".class", false))
     val bytes = file.toByteArray
     defineClass(name, bytes, 0, bytes.length)
   }

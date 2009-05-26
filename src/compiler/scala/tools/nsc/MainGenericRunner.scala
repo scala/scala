@@ -10,7 +10,8 @@ package scala.tools.nsc
 import java.io.{File, IOException}
 import java.lang.{ClassNotFoundException, NoSuchMethodException}
 import java.lang.reflect.InvocationTargetException
-import java.net.URL
+import java.net.{ URL, MalformedURLException }
+import scala.util.ScalaClassLoader
 
 import util.ClassPath
 import File.pathSeparator
@@ -25,40 +26,23 @@ object MainGenericRunner {
    *  input classpath is empty; otherwise do not.
    *
    *  @param  classpath
-   *  @return ...
+   *  @return the new classpath
    */
   private def addClasspathExtras(classpath: String): String = {
     val scalaHome = Properties.scalaHome
 
-    val extraClassPath =
-      if (scalaHome eq null)
-        ""
-      else {
-        def listDir(name:String):Array[File] = {
-          val libdir = new File(new File(scalaHome), name)
-          if (!libdir.exists || libdir.isFile)
-            Array()
-          else
-            libdir.listFiles
-        }
-        {
-          val filesInLib = listDir("lib")
-          val jarsInLib =
-            filesInLib.filter(f =>
-              f.isFile && f.getName.endsWith(".jar"))
-          jarsInLib.toList
-        } ::: {
-          val filesInClasses = listDir("classes")
-          val dirsInClasses =
-            filesInClasses.filter(f => f.isDirectory)
-          dirsInClasses.toList
-        }
-      }.mkString("", pathSeparator, "")
+    def listDir(name: String): List[File] = {
+      val libdir = new File(new File(scalaHome), name)
+      if (!libdir.exists || libdir.isFile) Nil else libdir.listFiles.toList
+    }
+    lazy val jarsInLib = listDir("lib") filter (_.getName endsWith ".jar")
+    lazy val dirsInClasses = listDir("classes") filter (_.isDirectory)
+    val cpScala =
+      if (scalaHome == null) Nil
+      else (jarsInLib ::: dirsInClasses) map (_.toString)
 
-    if (classpath == "")
-      extraClassPath + pathSeparator + "."
-    else
-      classpath + pathSeparator + extraClassPath
+    // either prepend existing classpath or append "."
+    (if (classpath == "") cpScala ::: List(".") else classpath :: cpScala) mkString pathSeparator
   }
 
   def main(args: Array[String]) {
@@ -114,8 +98,8 @@ object MainGenericRunner {
       ) yield url.get
 
     def specToURL(spec: String): Option[URL] =
-      try { Some(new URL(spec)) }
-      catch { case e => Console.println(e); None }
+      try   { Some(new URL(spec)) }
+      catch { case e: MalformedURLException => Console.println(e); None }
 
     def urls(specs: String): List[URL] =
       if (specs == null || specs.length == 0) Nil
@@ -146,8 +130,7 @@ object MainGenericRunner {
           settings.howtorun.value match {
             case "object" => true
             case "script" => false
-            case "guess" =>
-              ObjectRunner.classExists(classpath, thingToRun)
+            case "guess"  => ScalaClassLoader.classExists(classpath, thingToRun)
           }
 
         if (isObjectName) {

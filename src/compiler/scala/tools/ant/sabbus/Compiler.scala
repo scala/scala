@@ -13,25 +13,19 @@ package scala.tools.ant.sabbus
 import java.io.File
 import java.net.URL
 import java.lang.reflect.InvocationTargetException
+import scala.util.ScalaClassLoader
 
-class Compiler(classpath: Array[URL], val settings: Settings) {
-
-  private lazy val classLoader: ClassLoader =
-    new java.net.URLClassLoader(classpath, null)
-
-  private lazy val foreignCompilerName: String =
-    "scala.tools.ant.sabbus.ForeignCompiler"
-  private lazy val foreignCompiler: AnyRef =
-    classLoader.loadClass(foreignCompilerName).newInstance.asInstanceOf[AnyRef]
+class Compiler(classpath: Array[URL], val settings: Settings)
+{
+  val foreignCompilerName: String = "scala.tools.ant.sabbus.ForeignCompiler"
+  private lazy val classLoader = ScalaClassLoader fromURLs classpath
+  private lazy val foreignCompiler: AnyRef = classLoader create foreignCompilerName
 
   private def settingsArray: Array[String] = settings.toArgs.toArray
-
   foreignInvoke("args_$eq", Array(classOf[Array[String]]), Array(settingsArray))
 
-  private def foreignInvoke(method: String, types: Array[Class[T] forSome { type T }] , args: Array[AnyRef]) =
-    try {
-      foreignCompiler.getClass.getMethod(method, types : _*).invoke(foreignCompiler, args : _*)
-    }
+  private def foreignInvoke(method: String, types: Array[Class[_]], args: Array[AnyRef]) =
+    try foreignCompiler.getClass.getMethod(method, types: _*).invoke(foreignCompiler, args: _*)
     catch {
       case e: InvocationTargetException => throw e.getCause
     }
@@ -44,8 +38,6 @@ class Compiler(classpath: Array[URL], val settings: Settings) {
       (result >> 16, result & 0x00FF)
     }
     catch {
-      case ex: Exception =>
-        throw CompilationFailure(ex.getMessage, ex)
+      case ex: Exception => throw CompilationFailure(ex.getMessage, ex)
     }
-
 }

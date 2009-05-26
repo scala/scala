@@ -171,7 +171,7 @@ scala> <console>:1: error: expected start of definition
 scala> 
 scala> 
 scala> 
-scala>      |      |      |      | res3: scala.xml.Elem = 
+scala>      |      |      |      | res2: scala.xml.Elem = 
 <a>
        <b d="dd" c="c"></b></a>
 
@@ -181,7 +181,7 @@ scala>      |      |      |      |
 scala> 
 scala> 
 scala> 
-scala>      |      |      | res4: java.lang.String = 
+scala>      |      |      | res3: java.lang.String = 
 
        hello
        there

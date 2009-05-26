@@ -157,9 +157,9 @@ class ReflectiveCompiler(val fileManager: ConsoleFileManager) extends SimpleComp
   val fileClass = Class.forName("java.io.File")
   val stringClass = Class.forName("java.lang.String")
   val sepCompileMethod =
-    sepCompilerClass.getMethod("compile", Array(fileClass, stringClass): _*)
+    sepCompilerClass.getMethod("compile", fileClass, stringClass)
   val sepCompileMethod2 =
-    sepCompilerClass.getMethod("compile", Array(fileClass, stringClass, fileClass): _*)
+    sepCompilerClass.getMethod("compile", fileClass, stringClass, fileClass)
 
   /* This method throws java.lang.reflect.InvocationTargetException
    * if the compiler crashes.
@@ -167,8 +167,7 @@ class ReflectiveCompiler(val fileManager: ConsoleFileManager) extends SimpleComp
    * methods of class CompileManager.
    */
   def compile(out: Option[File], files: List[File], kind: String, log: File): Boolean = {
-    val fileArgs: Array[AnyRef] = Array(out, files, kind, log)
-    val res = sepCompileMethod2.invoke(sepCompiler, fileArgs: _*).asInstanceOf[java.lang.Boolean]
+    val res = sepCompileMethod2.invoke(sepCompiler, out, files, kind, log).asInstanceOf[java.lang.Boolean]
     res.booleanValue()
   }
 }

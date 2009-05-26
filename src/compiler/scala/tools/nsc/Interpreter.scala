@@ -8,13 +8,15 @@ package scala.tools.nsc
 
 import java.io.{ File, PrintWriter, StringWriter, Writer }
 import java.lang.{ Class, ClassLoader }
-import java.net.{ MalformedURLException, URL, URLClassLoader }
+import java.net.{ MalformedURLException, URL }
 import java.lang.reflect
 import reflect.InvocationTargetException
 
 import scala.collection.immutable.ListSet
 import scala.collection.mutable
 import scala.collection.mutable.{ ListBuffer, HashSet, ArrayBuffer }
+import scala.util.{ ScalaClassLoader, URLClassLoader }
+import scala.util.control.Exception.reflectionUnwrapper
 
 import io.{ PlainFile, VirtualDirectory }
 import reporters.{ ConsoleReporter, Reporter }
@@ -70,7 +72,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
   val virtualDirectory = new VirtualDirectory("(memory)", None)
 
   /** the compiler to compile expressions with */
-  val compiler: nsc.Global = newCompiler(settings, reporter)
+  val compiler: Global = newCompiler(settings, reporter)
 
   import compiler.{ Traverser, CompilationUnit, Symbol, Name, Type }
   import compiler.{
@@ -112,18 +114,15 @@ class Interpreter(val settings: Settings, out: PrintWriter)
   /** Instantiate a compiler.  Subclasses can override this to
    *  change the compiler class used by this interpreter. */
   protected def newCompiler(settings: Settings, reporter: Reporter) = {
-    settings.outputDirs.setSingleOutput(virtualDirectory)
-    val comp = new nsc.Global(settings, reporter)
-    comp
+    settings.outputDirs setSingleOutput virtualDirectory
+    new Global(settings, reporter)
   }
 
   /** the compiler's classpath, as URL's */
   val compilerClasspath: List[URL] = {
+    import net.Utility.parseURL
     val classpathPart =
       ClassPath.expandPath(compiler.settings.classpath.value).map(s => new File(s).toURL)
-    def parseURL(s: String): Option[URL] =
-      try   { Some(new URL(s)) }
-      catch { case _: MalformedURLException => None }
 
     val codebasePart = (compiler.settings.Xcodebase.value.split(" ")).toList flatMap parseURL
     classpathPart ::: codebasePart
@@ -142,58 +141,49 @@ class Interpreter(val settings: Settings, out: PrintWriter)
          shadow the old ones, and old code objects refer to the old
          definitions.
   */
-  private var classLoader = makeClassLoader()
-  private def makeClassLoader(): ClassLoader = {
-    val cp = compilerClasspath.toArray
+  private var classLoader: ScalaClassLoader = makeClassLoader()
+  private def makeClassLoader(): ScalaClassLoader = {
     val parent =
-      if (parentClassLoader == null)  new URLClassLoader(cp)
-      else                            new URLClassLoader(cp, parentClassLoader)
+      if (parentClassLoader == null)  ScalaClassLoader fromURLs compilerClasspath
+      else                            new URLClassLoader(compilerClasspath, parentClassLoader)
 
     new AbstractFileClassLoader(virtualDirectory, parent)
   }
-
-  private def loadByName(s: String): Class[_] = Class.forName(s, true, classLoader)
-  // XXX how does this differ from getMethod("set") ?
-  private def methodByName(c: Class[_], name: String): Option[reflect.Method] =
-    c.getDeclaredMethods.toList.find(_.getName == name)
-
-  // Set the current Java "context" class loader to this interpreter's class loader
-  def setContextClassLoader() = Thread.currentThread.setContextClassLoader(classLoader)
+  private def loadByName(s: String): Class[_] = (classLoader tryToInitializeClass s).get
+  private def methodByName(c: Class[_], name: String): reflect.Method =
+    c.getMethod(name, classOf[Object])
 
   protected def parentClassLoader: ClassLoader = this.getClass.getClassLoader()
+
+  // Set the current Java "context" class loader to this interpreter's class loader
+  def setContextClassLoader() = classLoader.setAsContext()
 
   /** the previous requests this interpreter has processed */
   private val prevRequests = new ArrayBuffer[Request]()
   private def allUsedNames = prevRequests.toList.flatMap(_.usedNames).removeDuplicates
   private def allBoundNames = prevRequests.toList.flatMap(_.boundNames).removeDuplicates
 
-  /** counter creator */
-  def mkNameCreator(s: String) = new Function0[String] with Function1[String,String] {
+  /** Generates names pre0, pre1, etc. via calls to apply method */
+  class NameCreator(pre: String) {
     private var x = -1
-    def apply(): String = { x += 1 ; s + x.toString }
-    // second apply method temp for newInternalVarName's bug compatibility
-    def apply(pre: String) = { x += 1 ; pre + x.toString }
+    def apply(): String = { x += 1 ; pre + x.toString }
     def reset(): Unit = x = -1
+    def didGenerate(name: String) =
+      (name startsWith pre) && ((name drop pre.length) forall (_.isDigit))
   }
 
   /** allocate a fresh line name */
-  private val newLineName = mkNameCreator(INTERPRETER_LINE_PREFIX)
+  private val lineNameCreator = new NameCreator(INTERPRETER_LINE_PREFIX)
 
   /** allocate a fresh var name */
-  private val newVarName = mkNameCreator(INTERPRETER_VAR_PREFIX)
+  private val varNameCreator = new NameCreator(INTERPRETER_VAR_PREFIX)
 
   /** allocate a fresh internal variable name */
-  /** XXX temporarily shares newVarName's creator to be bug-compatible with
-    * test case interpreter.scala */
-  private def newInternalVarName = () => newVarName(INTERPRETER_SYNTHVAR_PREFIX)
-  // private val newInternalVarName = mkNameCreator(INTERPRETER_SYNTHVAR_PREFIX)
+  private def synthVarNameCreator = new NameCreator(INTERPRETER_SYNTHVAR_PREFIX)
 
-  private def isGenerated(pre: String, name: String) =
-    (name startsWith pre) && (name drop pre.length).forall(_.isDigit)
-
-  /** Check if a name looks like it was generated by newVarName */
-  private def isGeneratedVarName(name: String): Boolean = isGenerated(INTERPRETER_VAR_PREFIX, name)
-  private def isSynthVarName(name: String): Boolean = isGenerated(INTERPRETER_SYNTHVAR_PREFIX, name)
+  /** Check if a name looks like it was generated by varNameCreator */
+  private def isGeneratedVarName(name: String): Boolean = varNameCreator didGenerate name
+  private def isSynthVarName(name: String): Boolean = synthVarNameCreator didGenerate name
 
   /** generate a string using a routine that wants to write on a stream */
   private def stringFrom(writer: PrintWriter => Unit): String = {
@@ -424,12 +414,12 @@ class Interpreter(val settings: Settings, out: PrintWriter)
     if (trees.size == 1) trees.head match {
       case _:Assign                         => // we don't want to include assignments
       case _:TermTree | _:Ident | _:Select  =>
-        return interpret("val %s =\n%s".format(newVarName(), line))
+        return interpret("val %s =\n%s".format(varNameCreator(), line))
       case _                                =>
     }
 
     // figure out what kind of request
-    val req = buildRequest(trees, line, newLineName())
+    val req = buildRequest(trees, line, lineNameCreator())
     // null is a disallowed statement type; otherwise compile and fail if false (implying e.g. a type error)
     if (req == null || !req.compile)
       return IR.Error
@@ -446,7 +436,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
   }
 
   /** A name creator used for objects created by <code>bind()</code>. */
-  private val newBinder = mkNameCreator("binder")
+  private val newBinder = new NameCreator("binder")
 
   /** Bind a specified name to a specified value.  The name may
    *  later be used by expressions passed to interpret.
@@ -467,7 +457,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
     """.stripMargin.format(binderName, boundType, boundType))
 
     val binderObject = loadByName(binderName)
-    val setterMethod = methodByName(binderObject, "set").get
+    val setterMethod = methodByName(binderObject, "set")
 
     // this roundabout approach is to ensure the value is boxed
     var argsHolder: Array[Any] = null
@@ -480,8 +470,8 @@ class Interpreter(val settings: Settings, out: PrintWriter)
   def reset() {
     virtualDirectory.clear
     classLoader = makeClassLoader
-    newLineName.reset()
-    newVarName.reset()
+    lineNameCreator.reset()
+    varNameCreator.reset()
     prevRequests.clear
   }
 
@@ -572,7 +562,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
 
   private class AssignHandler(member: Assign) extends MemberHandler(member) {
     val lhs = member.lhs.asInstanceOf[Ident] // an unfortunate limitation
-    val helperName = newTermName(newInternalVarName())
+    val helperName = newTermName(synthVarNameCreator())
     override val valAndVarNames = List(helperName)
 
     override def extraCodeToEvaluate(req: Request, code: PrintWriter) =
@@ -773,16 +763,11 @@ class Interpreter(val settings: Settings, out: PrintWriter)
     def loadAndRun: (String, Boolean) = {
       val resultObject: Class[_] = loadByName(resultObjectName)
       val resultValMethod: reflect.Method = resultObject getMethod "result"
+      lazy val pair = (resultValMethod.invoke(resultObject).toString, true)
 
-      try   { (resultValMethod.invoke(resultObject).toString, true) }
-      catch { case e =>
-        // unwrap unhelpful nested exceptions so the most interesting one is reported
-        def unwrap(e: Throwable): Throwable = e match {
-          case (_: InvocationTargetException | _: ExceptionInInitializerError) if e.getCause ne null =>
-            unwrap(e.getCause)
-          case _ => e
-        }
-        (stringFrom(unwrap(e).printStackTrace(_)), false)
+      (reflectionUnwrapper either pair) match {
+        case Left(e)                => (stringFrom(e.printStackTrace(_)), false)
+        case Right((res, success))  => (res, success)
       }
     }
   }
@@ -870,11 +855,11 @@ class Interpreter(val settings: Settings, out: PrintWriter)
 
     val res = beQuietDuring {
       for (name <- nameOfIdent(line) ; req <- requestForName(name)) yield {
-        if (interpret("val " + newInternalVarName() + " = " + name + methodsCode) != IR.Success) Nil
+        if (interpret("val " + synthVarNameCreator() + " = " + name + methodsCode) != IR.Success) Nil
         else {
           val result = prevRequests.last.resultObjectName
-          val resultObj = Class.forName(result, true, classLoader)
-          val valMethod = resultObj.getMethod("result")
+          val resultObj = (classLoader tryToInitializeClass result).get
+          val valMethod = resultObj getMethod "result"
           val str = valMethod.invoke(resultObj).toString
 
           str.substring(str.indexOf('=') + 1).trim .
@@ -896,10 +881,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
       filter(!isSynthVarName(_))
 
   /** For static/object method completion */
-  def tryToLoadClass(path: String): Option[Class[_]] = {
-    try   { Some(Class.forName(path, false, classLoader)) }
-    catch { case _: ClassNotFoundException | _: NoClassDefFoundError => None }
-  }
+  def getClassObject(path: String): Option[Class[_]] = classLoader tryToLoadClass path
 
   // debugging
   private var debuggingOutput = false

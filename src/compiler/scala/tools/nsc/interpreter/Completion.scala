@@ -136,9 +136,9 @@ class Completion(val interpreter: Interpreter) extends Completor {
         filter (isValidCompletion)
 
     // java style, static methods
-    val js = interpreter.tryToLoadClass(path).map(getMembers(_, true)) getOrElse Nil
+    val js = (interpreter getClassObject path).map(getMembers(_, true)) getOrElse Nil
     // scala style, methods on companion object
-    val ss = interpreter.tryToLoadClass(path + "$").map(getMembers(_, false)) getOrElse Nil
+    val ss = (interpreter getClassObject (path + "$")).map(getMembers(_, false)) getOrElse Nil
 
     js ::: ss
   }

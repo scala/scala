@@ -8,7 +8,6 @@ package scala.tools.nsc
 
 import java.io.{BufferedReader, File, FileReader, PrintWriter}
 import java.io.IOException
-import java.lang.{ClassLoader, System}
 
 import scala.tools.nsc.{InterpreterResults => IR}
 import scala.tools.nsc.interpreter._
@@ -84,6 +83,9 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
   var interpreter: Interpreter = _    // set by createInterpreter()
   def isettings = interpreter.isettings
 
+  // XXX
+  var addedClasspath: List[String] = Nil
+
   /** A reverse list of commands to replay if the user requests a :replay */
   var replayCommandsRev: List[String] = Nil
 
@@ -104,6 +106,9 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
 
   /** Create a new interpreter. */
   def createInterpreter() {
+    if (!addedClasspath.isEmpty)
+      settings.classpath.value += addedClasspath.map(File.pathSeparator + _).mkString
+
     interpreter = new Interpreter(settings, out) {
       override protected def parentClassLoader = classOf[InterpreterLoop].getClassLoader
     }
@@ -155,6 +160,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     import CommandImplicits._
     List(
        NoArgs("help", "prints this help message", printHelp),
+       OneArg("jar", "add a jar to the classpath", addJar),
        OneArg("load", "followed by a filename loads a Scala file", load),
        NoArgs("power", "enable power user mode", power),
        NoArgs("quit", "exits the interpreter", () => Result(false, None)),
@@ -260,6 +266,18 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
       shouldReplay = Some(":load " + arg)
     })
     Result(true, shouldReplay)
+  }
+
+
+  def addJar(arg: String): Unit = {
+    val f = new java.io.File(arg)
+    if (!f.exists) {
+      out.println("The file '" + f + "' doesn't seem to exist.")
+      return
+    }
+    addedClasspath = addedClasspath ::: List(f.getCanonicalPath)
+    println("Added " + f.getCanonicalPath + " to your classpath.")
+    replay()
   }
 
   def power() = {
