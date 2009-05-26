@@ -12,6 +12,7 @@
 package scala.collection.generic
 
 import mutable.Buffer
+import script._
 
 /** Buffers are used to create sequences of elements incrementally by
  *  appending, prepending, or inserting new elements. It is also
@@ -26,7 +27,7 @@ import mutable.Buffer
 trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
                 extends Growable[A]
                    with Shrinkable[A]
-//      with Scriptable[Message[(Location, A)]]
+                   with Scriptable[A]
                    with Addable[A, This]
                    with Subtractable[A, This]
                    with Cloneable[This]
@@ -191,33 +192,26 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
   /** Send a message to this scriptable object.
    *
    *  @param cmd  the message to send.
-   *  !!!! todo: rewrite location, msg etc with enumerations or else pack in a subpackage
-  def <<(cmd: Message[(Location, A)]) {
-    cmd match {
-      case Include((l, elem)) => l match {
-        case Start => prepend(elem)
-        case End => append(elem)
-        case Index(n) => insert(n, elem)
-        case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
-      }
-      case Update((l, elem)) => l match {
-        case Start => update(0, elem)
-        case End => update(length - 1, elem)
-        case Index(n) => update(n, elem)
-        case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
-      }
-      case Remove((l, _)) => l match {
-        case Start => remove(0)
-        case End => remove(length - 1)
-        case Index(n) => remove(n)
-        case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
-      }
-      case Reset() => clear
-      case s: Script[_] => s.elements foreach <<
-      case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
-    }
-  }
    */
+  def <<(cmd: Message[A]): Unit = cmd match {
+    case Include(Start, x)      => prepend(x)
+    case Include(End, x)        => append(x)
+    case Include(Index(n), x)   => insert(n, x)
+    case Include(NoLo, x)       => this += x
+
+    case Update(Start, x)       => update(0, x)
+    case Update(End, x)         => update(length - 1, x)
+    case Update(Index(n), x)    => update(n, x)
+
+    case Remove(Start, x)       => if (this(0) == x) remove(0)
+    case Remove(End, x)         => if (this(length - 1) == x) remove(length - 1)
+    case Remove(Index(n), x)    => if (this(n) == x) remove(n)
+    case Remove(NoLo, x)        => this -= x
+
+    case Reset                  => clear
+    case s: Script[_]           => s.elements foreach <<
+    case _                      => throw new UnsupportedOperationException("message " + cmd + " not understood")
+  }
 
   /** Defines the prefix of the string representation.
    */

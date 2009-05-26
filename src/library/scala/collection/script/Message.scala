@@ -1,4 +1,3 @@
-/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -10,10 +9,10 @@
 // $Id$
 
 
-package scala.collection.mutable
-
+package scala.collection.script
 
 import Predef._
+import mutable.ArrayBuffer
 
 /** Class <code>Message</code> represents messages that are issued by observable
  *  collection classes whenever a data structure is changed. Class <code>Message</code>
@@ -32,7 +31,9 @@ trait Message[+A]
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-case class Include[+I](elem: I) extends Message[I]
+case class Include[+A](location: Location, elem: A) extends Message[A] {
+  def this(elem: A) = this(NoLo, elem)
+}
 
 /** This observable update refers to destructive modification operations
  *  of elements from collection classes.
@@ -40,7 +41,9 @@ case class Include[+I](elem: I) extends Message[I]
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-case class Update[+A](elem: A) extends Message[A]
+case class Update[+A](location: Location, elem: A) extends Message[A] {
+  def this(elem: A) = this(NoLo, elem)
+}
 
 /** This observable update refers to removal operations of elements
  *  from collection classes.
@@ -48,14 +51,16 @@ case class Update[+A](elem: A) extends Message[A]
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-case class Remove[+A](elem: A) extends Message[A]
+case class Remove[+A](location: Location, elem: A) extends Message[A] {
+  def this(elem: A) = this(NoLo, elem)
+}
 
 /** This command refers to reset operations.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-case class Reset[+A]() extends Message[A]
+case object Reset extends Message[Nothing]
 
 /** Objects of this class represent compound messages consisting
  *  of a sequence of other messages.
@@ -81,4 +86,3 @@ class Script[A] extends ArrayBuffer[Message[A]] with Message[A] {
   override def hashCode(): Int =
     throw new UnsupportedOperationException("scripts are not suitable as hash keys")
 }
-*/

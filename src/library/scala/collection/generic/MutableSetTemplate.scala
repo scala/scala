@@ -11,6 +11,8 @@
 
 package scala.collection.generic
 
+import script._
+
 /** A generic template for mutable sets of elements of type A.
  *  To implement a concrete mutable set, you need to provide implementations of the following methods:
  *
@@ -29,6 +31,7 @@ package scala.collection.generic
  */
 trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Set[A]]
   extends SetTemplate[A, This]
+     with Scriptable[A]
      with Builder[A, This]
      with Growable[A]
      with Shrinkable[A]
@@ -196,14 +199,14 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
    *  @param cmd  the message to send.
    *  @throws <code>Predef.UnsupportedOperationException</code>
    *  if the message was not understood.
+   */
    def <<(cmd: Message[A]): Unit = cmd match {
-    case Include(elem) => this += elem
-    case Remove(elem) => this -= elem
-    case Reset() => clear
-    case s: Script[_] => s.elements foreach <<
-    case _ => throw new UnsupportedOperationException("message " + cmd + " not understood")
-  }
-  */
+     case Include(_, x)     => this += x
+     case Remove(_, x)      => this -= x
+     case Reset             => clear
+     case s: Script[_]      => s.elements foreach <<
+     case _                 => throw new UnsupportedOperationException("message " + cmd + " not understood")
+   }
 }
 
 
