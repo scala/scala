@@ -148,6 +148,7 @@ self =>
     val prefix = firsts map unitOf
     val units = prefix ::: (unitOfFile.values.toList diff prefix)
     units foreach recompile
+    inform("Everything is now up to date")
   }
 
   /** Reset unit to just-parsed state */
