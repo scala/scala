@@ -8,7 +8,6 @@ class WorkScheduler {
 
   private var todo = new Queue[Action]
   private var except: Option[Exception] = None
-  private var working = false
 
   /** Called from server: block until todo list is nonempty */
   def waitForMoreWork() = synchronized {
@@ -23,24 +22,15 @@ class WorkScheduler {
   /** Called from server: get first action in todo list, and pop it off */
   def nextWorkItem(): Option[Action] = synchronized {
     if (!todo.isEmpty) {
-      working = true
       Some(todo.dequeue())
     } else None
   }
 
-  /** Called from server: raise any exception posted by client */
-  def pollException() = synchronized {
-    except match {
-      case Some(exc) => throw exc
-      case None =>
-    }
-  }
-
-  /** Called from server: mark workitem as finished (influences
-   *  meaning of raise)
+  /** Called from server: return optional exception posted by client
+   *  Reset to no exception.
    */
-  def doneWorkItem() = synchronized {
-    working = false
+  def pollException(): Option[Exception] = synchronized {
+    val result = except; except = None; result
   }
 
   /** Called from client: have action executed by server */
@@ -55,10 +45,9 @@ class WorkScheduler {
   }
 
   /** Called from client:
-   *  If work in progress, raise an exception in it next
-   *  time pollException is called.
+   *  Require an exception to be thrown on next poll.
    */
   def raise(exc: Exception) = synchronized {
-    if (working) except = Some(exc)
+    except = Some(exc)
   }
 }
