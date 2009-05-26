@@ -55,7 +55,7 @@ self =>
     def integrateNew() {
       context.unit.body = new TreeReplacer(old, result) transform context.unit.body
     }
-    if (context.unit.targetPos includes result.pos) {
+    if ((context.unit != null) && (context.unit.targetPos includes result.pos)) {
       integrateNew()
       throw new TyperResult(result)
     }
@@ -233,11 +233,12 @@ self =>
     override def traverse(t: Tree) {
       if (t.hasSymbol) t.symbol = NoSymbol
       t match {
-        case EmptyTree => ;
+        case EmptyTree =>
+          ;
+        case _ =>
+          t.tpe = null
+          super.traverse(t)
       }
-
-      t.tpe = null
-      super.traverse(t)
     }
   }
 

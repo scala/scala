@@ -44,6 +44,7 @@ abstract class AbstractReporter extends Reporter {
   }
 
   /** Logs a position and returns <code>true</code> if it was already logged.
+   *  @note  Two positions are considered identical for logging if they have the same point.
    *
    *  @param pos ...
    *  @return    <code>true</code> if <code>pos</code> was already logged.
@@ -51,9 +52,9 @@ abstract class AbstractReporter extends Reporter {
   private def testAndLog(pos: Position, severity: Severity): Boolean = {
     if (pos eq null) return false
     if (pos.offset.isEmpty) return false
-    if ((positions contains pos) && positions(pos) >= severity) return true
-    positions += (pos -> severity)
+    val fpos = pos.focus
+    if ((positions contains fpos) && positions(fpos) >= severity) return true
+    positions += (fpos -> severity)
     false
   }
-
 }

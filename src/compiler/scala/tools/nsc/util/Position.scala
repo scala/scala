@@ -27,10 +27,13 @@ trait Position {
   def endOrElse(d: Int) = offset.getOrElse(d)
 
   def underlying = this
+  def focus = this
 
   def includes(pos: Position) =
     isDefined && pos.isDefined && start <= pos.start && pos.end <= end
 
+  /** Does this position precede that position?
+   */
   def precedes(pos: Position) =
     isDefined && pos.isDefined && end <= pos.start
 
@@ -114,6 +117,7 @@ extends OffsetPosition(source0, point) {
   override def startOrElse(d: Int) = start
   override def pointOrElse(d: Int) = point
   override def endOrElse(d: Int) = end
+  override def focus = OffsetPosition(source0, point)
 }
 
 

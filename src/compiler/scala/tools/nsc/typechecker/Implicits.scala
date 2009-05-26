@@ -28,7 +28,7 @@ self: Analyzer =>
   import definitions._
   import posAssigner.atPos
 
-  final val traceImplicits = false
+  final val traceImplicits = true
 
   var implicitTime = 0L
   var inscopeSucceed = 0L
@@ -55,6 +55,7 @@ self: Analyzer =>
    *  @return                 A search result
    */
   def inferImplicit(tree: Tree, pt0: Type, reportAmbiguous: Boolean, context: Context): SearchResult = {
+    println("infer impl "+pt0)
     if (traceImplicits && !tree.isEmpty && !context.undetparams.isEmpty)
       println("typing implicit with undetermined type params: "+context.undetparams+"\n"+tree)
     val search = new ImplicitSearch(tree, pt0, context.makeImplicit(reportAmbiguous))
@@ -302,7 +303,7 @@ self: Analyzer =>
        */
       val wildPt = approximate(pt)
 
-      //if (traceImplicits) println("typed impl for "+wildPt+"? "+info.name+":"+info.tpe+"/"+undetParams)
+      if (traceImplicits) println("typed impl for "+wildPt+"? "+info.name+":"+info.tpe+"/"+undetParams)
       if (isPlausiblyCompatible(info.tpe, wildPt) &&
           isCompatible(depoly(info.tpe), wildPt) &&
           isStable(info.pre)) {
@@ -311,7 +312,7 @@ self: Analyzer =>
           if (info.pre == NoPrefix) Ident(info.name)
           else Select(gen.mkAttributedQualifier(info.pre), info.name)
         }
-        //if (traceImplicits) println("typed impl?? "+info.name+":"+info.tpe+" ==> "+itree+" with "+wildPt)
+        if (traceImplicits) println("typed impl?? "+info.name+":"+info.tpe+" ==> "+itree+" with "+wildPt)
         def fail(reason: String): SearchResult = {
           if (settings.XlogImplicits.value)
             inform(itree+" is not a valid implicit value for "+pt0+" because:\n"+reason)
@@ -653,18 +654,21 @@ self: Analyzer =>
     //val timer1 = System.nanoTime()
     //if (result == SearchFailure) inscopeFail += timer1 - start else inscopeSucceed += timer1 - start
     if (result == SearchFailure) {
-      implicitsCache get pt match {
-        case Some(r) =>
-          hits += 1
-          result = r
-        case None =>
-          misses += 1
-          result = searchImplicit(implicitsOfExpectedType, false)
-//        println("new fact: search implicit of "+pt+" = "+result)
+      if (pt.isInstanceOf[UniqueType])
+        implicitsCache get pt match {
+          case Some(r) =>
+            hits += 1
+            result = r
+          case None =>
+            misses += 1
+            result = searchImplicit(implicitsOfExpectedType, false)
+//          println("new fact: search implicit of "+pt+" = "+result)
 //          if (implicitsCache.size >= sizeLimit)
 //            implicitsCache -= implicitsCache.values.next
-          implicitsCache(pt) = result
-      }
+            implicitsCache(pt) = result
+        }
+      else
+        result = searchImplicit(implicitsOfExpectedType, false)
     }
     //val timer2 = System.nanoTime()
     //if (result == SearchFailure) oftypeFail += timer2 - timer1 else oftypeSucceed += timer2 - timer1

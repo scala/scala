@@ -50,23 +50,37 @@ trait ContextTrees { self: Global =>
       else if (cpos precedes contexts(0).pos)
         new ContextTree(context) +: contexts
       else {
+        def insertAt(idx: Int): Boolean = {
+          val oldpos = contexts(idx).pos
+          if (oldpos sameRange cpos) {
+            contexts(idx) = new ContextTree(context, contexts(idx).children)
+            true
+          } else if (oldpos includes cpos) {
+            addContext(contexts(idx).children, context)
+            true
+          } else if (cpos includes oldpos) {
+            val start = contexts.indexWhere(cpos includes _.pos)
+            val last = contexts.lastIndexWhere(cpos includes _.pos)
+            contexts(start) = new ContextTree(context, contexts.slice(start, last + 1))
+            contexts.remove(start + 1, last - start)
+            true
+          } else false
+        }
         def loop(lo: Int, hi: Int) {
-          assert(lo <= hi)
-          val mid = (lo + hi) / 2
-          val midpos = contexts(mid).pos
-          if (cpos precedes midpos)
-            loop(lo, mid - 1)
-          else if (midpos precedes cpos)
-            loop(mid + 1, hi)
-          else if (midpos sameRange cpos)
-            contexts(mid) = new ContextTree(context, contexts(mid).children)
-          else if ((midpos includes cpos) && !(cpos includes midpos))
-            addContext(contexts(mid).children, context)
-          else if (cpos includes midpos)
-            contexts(mid) = new ContextTree(context, ArrayBuffer(contexts(mid)))
-          else {
-            inform("internal error? skewed positions: "+midpos+"/"+cpos)
-            contexts(mid) = new ContextTree(context)
+          if (hi - lo > 1) {
+            val mid = (lo + hi) / 2
+            val midpos = contexts(mid).pos
+            if (cpos precedes midpos)
+              loop(lo, mid)
+            else if (midpos precedes cpos)
+              loop(mid, hi)
+          } else if (!insertAt(lo) && !insertAt(hi)) {
+            val lopos = contexts(lo).pos
+            val hipos = contexts(hi).pos
+            if ((lopos precedes cpos) && (cpos precedes hipos))
+              contexts.insert(hi, new ContextTree(context))
+            else
+              inform("internal error? skewed positions: "+lopos+" !< "+cpos+" !< "+hipos)
           }
         }
         loop(0, hi)
