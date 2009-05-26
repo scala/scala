@@ -1787,6 +1787,7 @@ trait Trees {
     override def point: Int = original.pos.point
     override def end: Int = original.pos.end
     override def underlying = original.pos.underlying
+    override def focus = original.pos.focus
   }
 }
 

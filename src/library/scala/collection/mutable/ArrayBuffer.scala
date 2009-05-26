@@ -127,7 +127,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   override def remove(n: Int, count: Int) {
-    if ((n < 0) || (n >= size0))
+    if ((n < 0) || (n >= size0) && count > 0)
       throw new IndexOutOfBoundsException(n.toString)
     copy(n + count, n, size0 - (n + count))
     size0 -= count

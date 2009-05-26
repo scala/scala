@@ -27,17 +27,19 @@ object REPL extends EvalLoop {
     val reloadResult = new SyncVar[Either[Unit, Throwable]]
     val typeatResult = new SyncVar[Either[comp.Tree, Throwable]]
     loop { line =>
+      println("["+line+"]")
+      println((line split " ").toList)
       (line split " ").toList match {
         case "reload" :: args =>
           comp.askReload(args map toSourceFile, reloadResult)
           show(reloadResult)
-        case List("typeat", file, line, col1, col2) =>
+        case "typeat" :: file :: line :: col1 :: col2 :: Nil =>
           val source = toSourceFile(file)
           val linestart = source.lineToOffset(line.toInt)
           val pos = comp.rangePos(source, linestart + col1.toInt, linestart + col1.toInt, linestart + col2.toInt)
           comp.askTypeAt(pos, typeatResult)
           show(typeatResult)
-        case List("quit") =>
+        case "quit" :: Nil =>
           System.exit(1)
         case _ =>
           println("unrecongized command")

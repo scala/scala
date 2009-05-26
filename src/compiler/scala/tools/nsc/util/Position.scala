@@ -32,10 +32,16 @@ trait Position {
   def includes(pos: Position) =
     isDefined && pos.isDefined && start <= pos.start && pos.end <= end
 
+  def properlyIncludes(pos: Position) =
+    includes(pos) && (start < pos.start || pos.end < end)
+
   /** Does this position precede that position?
    */
   def precedes(pos: Position) =
     isDefined && pos.isDefined && end <= pos.start
+
+  def properlyPrecedes(pos: Position) =
+    precedes(pos) && start < pos.end
 
   def sameRange(pos: Position) =
     isDefined && pos.isDefined && start == pos.start && end == pos.end
@@ -118,6 +124,7 @@ extends OffsetPosition(source0, point) {
   override def pointOrElse(d: Int) = point
   override def endOrElse(d: Int) = end
   override def focus = OffsetPosition(source0, point)
+  override def toString = "RangePosition("+source0+", "+start+", "+point+", "+end+")"
 }
 
 

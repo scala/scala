@@ -11,6 +11,7 @@ trait ContextTrees { self: Global =>
   class ContextTree(val context: Context, val children: ArrayBuffer[ContextTree]) {
     def this(context: Context) = this(context, new ArrayBuffer[ContextTree])
     def pos: Position = context.tree.pos
+    override def toString = "ContextTree("+pos+", "+children+")"
   }
 
   def locateContext(contexts: Contexts, pos: Position): Option[Context] = {
@@ -39,15 +40,16 @@ trait ContextTrees { self: Global =>
 
   def addContext(contexts: Contexts, context: Context) {
     val cpos = context.tree.pos
+    try {
     if (!cpos.isDefined || cpos.isSynthetic) {}
     else if (contexts.isEmpty) contexts += new ContextTree(context)
     else {
       val hi = contexts.length - 1
-      if (contexts(hi).pos precedes cpos)
+      if (contexts(hi).pos properlyPrecedes cpos)
         contexts += new ContextTree(context)
-      else if (contexts(hi).pos includes cpos) // fast path w/o search
+      else if (contexts(hi).pos properlyIncludes cpos) // fast path w/o search
         addContext(contexts(hi).children, context)
-      else if (cpos precedes contexts(0).pos)
+      else if (cpos properlyPrecedes contexts(0).pos)
         new ContextTree(context) +: contexts
       else {
         def insertAt(idx: Int): Boolean = {
@@ -86,6 +88,11 @@ trait ContextTrees { self: Global =>
         loop(0, hi)
       }
     }
-  }
+  } catch {
+    case ex: Throwable =>
+      println("failure inserting "+context.tree.pos+" into "+contexts+"/"+contexts(contexts.length - 1).pos+"/"+
+              (contexts(contexts.length - 1).pos includes cpos))
+      throw ex
+  }}
 }
 
