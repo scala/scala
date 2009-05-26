@@ -12,13 +12,18 @@ Bundle-ClassPath:
  lib/msil.jar
 Export-Package: 
  scala.tools.nsc,
- scala.tools.nsc.util,
- scala.tools.nsc.io,
- scala.tools.nsc.typechecker,
- scala.tools.nsc.symtab,
  scala.tools.nsc.ast,
  scala.tools.nsc.ast.parser,
- scala.tools.nsc.reporters
+ scala.tools.nsc.dependencies,
+ scala.tools.nsc.interactive,
+ scala.tools.nsc.interpreter,
+ scala.tools.nsc.io,
+ scala.tools.nsc.plugins,
+ scala.tools.nsc.reporters,
+ scala.tools.nsc.symtab,
+ scala.tools.nsc.symtab.classfile,
+ scala.tools.nsc.typechecker,
+ scala.tools.nsc.util
 Require-Bundle: 
  org.apache.ant,
  scala.library

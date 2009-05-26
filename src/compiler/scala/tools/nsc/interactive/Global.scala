@@ -72,7 +72,7 @@ self =>
 
   // ----------------- Polling ---------------------------------------
 
-  private var pollingEnabled = false
+  private var pollingEnabled = true
 
   /** Called from runner thread and singnalDone */
   def pollForWork() {
@@ -95,6 +95,9 @@ self =>
   }
 
   // ----------------- The Background Runner Thread -----------------------
+
+  /* Must be initialized before starting compilerRunner */
+  private val scheduler = new WorkScheduler
 
   /** The current presentation compiler runner */
   private var compileRunner = newRunnerThread
@@ -185,16 +188,16 @@ self =>
   // ----------------- Implementations of client commmands -----------------------
 
   /** Make sure a set of compilation units is loaded and parsed */
-  def reload(sources: Set[SourceFile]) = {
+  def reload(sources: Set[SourceFile], reloaded: SyncVar[Unit]) = {
     currentTyperRun = new TyperRun()
     for (source <- sources) {
-      val unit = new RichCompilationUnit(source)
-      unitOfFile(source.file) = unit
+      val unit = unitOf(source)
       currentTyperRun.compileLate(unit)
       unit.status = JustParsed
     }
     outOfDate = true
     moveToFront(sources.toList map (_.file))
+    reloaded.set(())
     if (compiling) throw new FreshRunReq
   }
 
@@ -318,8 +321,6 @@ self =>
 
   // ----------------- interface to IDE ------------------------------------
 
-  private val scheduler = new WorkScheduler
-
   /** The compilation unit corresponding to a source file */
   def unitOf(s: SourceFile): RichCompilationUnit = unitOfFile get s.file match {
     case Some(unit) =>
@@ -342,8 +343,8 @@ self =>
     locateContext(unitOf(pos).contexts, pos)
 
   /** Make sure a set of compilation units is loaded and parsed */
-  def askReload(sources: Set[SourceFile]) =
-    scheduler.postWorkItem(() => reload(sources))
+  def askReload(sources: Set[SourceFile], reloaded: SyncVar[Unit]) =
+    scheduler.postWorkItem(() => reload(sources, reloaded))
 
   /** Set sync var `result` to a fully attributed tree located at position `pos`  */
   def askTypeAt(pos: Position, result: SyncVar[Tree]) =

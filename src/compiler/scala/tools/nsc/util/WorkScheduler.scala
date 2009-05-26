@@ -12,7 +12,7 @@ class WorkScheduler {
 
   /** Called from server: block until todo list is nonempty */
   def waitForMoreWork() = synchronized {
-    do { wait() } while (todo.isEmpty)
+    while (todo.isEmpty) { wait() }
   }
 
   /** called from Server: test whether todo list is nonempty */
@@ -44,7 +44,7 @@ class WorkScheduler {
   }
 
   /** Called from client: have action executed by server */
-  def postWorkItem(action: Action) {
+  def postWorkItem(action: Action) = synchronized {
     todo enqueue action
     notify()
   }
@@ -62,4 +62,3 @@ class WorkScheduler {
     if (working) except = Some(exc)
   }
 }
-
