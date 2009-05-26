@@ -196,12 +196,12 @@ self =>
       }
       moveToFront(sources)
       result set Left(())
-      if (compiling) throw new FreshRunReq
     } catch {
       case ex =>
         result set Right(ex)
         throw ex
     }
+    if (compiling) throw new FreshRunReq
   }
 
   /** Set sync var `result` to a fully attributed tree located at position `pos`  */
