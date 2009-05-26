@@ -221,7 +221,7 @@ trait Trees {
         equals0(this0.productElement(i), that0.productElement(i))
       val b = results.foldLeft(true)((x,y) => x && y)
       if (b) (this,that) match {
-      case (this0 : TypeTree,that0 : TypeTree) if this0.original != null && that0.original != null =>
+      case (this0 : TypeTree, that0 : TypeTree) if this0.original != null && that0.original != null =>
         this0.original.equalsStructure0(that0.original)(f)
       case _ => true
       } else false
@@ -818,7 +818,10 @@ trait Trees {
       setPos(SyntheticPosition(tree))
     }
 
-    def original: Tree = pos.asInstanceOf[SyntheticPosition].original
+    def original: Tree = pos match {
+      case SyntheticPosition(orig) => orig
+      case _ => null
+    }
 
     override def isEmpty = (tpe eq null) || tpe == NoType
   }
