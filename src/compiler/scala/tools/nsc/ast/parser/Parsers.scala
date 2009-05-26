@@ -378,10 +378,10 @@ self =>
 
     def atPos[T <: Tree](offset: Int)(t: T): T =
       posAssigner.atPos(r2p(offset, offset, in.lastOffset))(t)
-    def atPos[T <: Tree](start: Int, mid: Int)(t: T): T =
-      posAssigner.atPos(r2p(start, mid, in.lastOffset))(t)
-    def atPos[T <: Tree](start: Int, mid: Int, end: Int)(t: T): T =
-      posAssigner.atPos(r2p(start, mid, end))(t)
+    def atPos[T <: Tree](start: Int, point: Int)(t: T): T =
+      posAssigner.atPos(r2p(start, point, in.lastOffset))(t)
+    def atPos[T <: Tree](start: Int, point: Int, end: Int)(t: T): T =
+      posAssigner.atPos(r2p(start, point, end))(t)
     def atPos[T <: Tree](pos: Position)(t: T): T =
       posAssigner.atPos(pos)(t)
 
@@ -498,8 +498,8 @@ self =>
       }
 
     def selector(t: Tree): Tree = {
-      val mid = in.offset
-      Select(t, ident()) setPos r2p(t.pos.start, mid, in.lastOffset)
+      val point = in.offset
+      Select(t, ident()) setPos r2p(t.pos.start, point, in.lastOffset)
     }
 
     /** Path       ::= StableId
@@ -1281,16 +1281,16 @@ self =>
       val start = in.offset
       if (in.token == VAL) in.nextToken()
       val pat = pattern1(false)
-      val mid = in.offset
+      val point = in.offset
       val tok = in.token
       if (tok == EQUALS && eqOK) in.nextToken()
       else accept(LARROW)
       val rhs = expr()
-      enums += makeGenerator(r2p(start, mid, in.lastOffset), pat, tok == EQUALS, rhs)
+      enums += makeGenerator(r2p(start, point, in.lastOffset), pat, tok == EQUALS, rhs)
       if (in.token == IF) enums += makeFilter(in.offset, guard())
     }
 
-    def makeFilter(start: Int, tree: Tree) = Filter(r2p(start, tree.pos.mid, tree.pos.end), tree)
+    def makeFilter(start: Int, tree: Tree) = Filter(r2p(start, tree.pos.point, tree.pos.end), tree)
 
 /* -------- PATTERNS ------------------------------------------- */
 
@@ -1715,7 +1715,7 @@ self =>
         val t = typ()
         if (isIdent && in.name == STAR) {
           in.nextToken()
-          atPos(t.pos.start, t.pos.mid) {
+          atPos(t.pos.start, t.pos.point) {
             AppliedTypeTree(
               rootScalaDot(nme.REPEATED_PARAM_CLASS_NAME.toTypeName), List(t))
           }
@@ -1947,7 +1947,7 @@ self =>
         //Console.println("DEBUG: p = "+p.toString()); // DEBUG
         val trees =
           makePatDef(newmods, if (tp.isEmpty) p else Typed(p, tp), rhs) map
-            atPos(p.pos.start, p.pos.mid)
+            atPos(p.pos.start, p.pos.point)
         rhs = rhs.duplicate
         if (newmods hasFlag Flags.DEFERRED) {
           trees match {
@@ -2283,7 +2283,7 @@ self =>
 
   /** Create a tree representing a packaging */
     def makePackaging(start: Int, pkg: Tree, stats: List[Tree]): PackageDef =
-      atPos(start, pkg.pos.mid) {
+      atPos(start, pkg.pos.point) {
         pkg match {
           case Ident(name) =>
             PackageDef(name, stats)

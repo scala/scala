@@ -820,6 +820,7 @@ trait Types {
   trait UniqueType {
     override lazy val hashCode: Int = super.hashCode()
   }
+
  /** A base class for types that defer some operations
    *  to their immediate supertype.
    */

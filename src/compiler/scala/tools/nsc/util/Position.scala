@@ -16,14 +16,17 @@ trait Position {
   def offset: Option[Int] = None
   def source: Option[SourceFile] = None
   def isDefined: Boolean = false
+  def isSynthetic: Boolean = false
 
-  def start: Int = mid
-  def mid: Int = offset.get
-  def end: Int = mid
+  def start: Int = point
+  def point: Int = offset.get
+  def end: Int = point
 
-  def startOrElse(d: Int) = offset.get//OrElse(d)
-  def midOrElse(d: Int) = offset.get//OrElse(d)
-  def endOrElse(d: Int) = offset.get//OrElse(d)
+  def startOrElse(d: Int) = offset.getOrElse(d)
+  def pointOrElse(d: Int) = offset.getOrElse(d)
+  def endOrElse(d: Int) = offset.getOrElse(d)
+
+  def underlying = this
 
   def includes(pos: Position) =
     isDefined && pos.isDefined && start <= pos.start && pos.end <= end
@@ -105,12 +108,13 @@ case class OffsetPosition(source0: SourceFile, offset0: Int) extends Position {
 }
 
 /** new for position ranges */
-class RangePosition(source0: SourceFile, override val start: Int, override val mid: Int, override val end: Int)
-extends OffsetPosition(source0, mid) {
+class RangePosition(source0: SourceFile, override val start: Int, override val point: Int, override val end: Int)
+extends OffsetPosition(source0, point) {
   override def isDefined = true
   override def startOrElse(d: Int) = start
-  override def midOrElse(d: Int) = mid
+  override def pointOrElse(d: Int) = point
   override def endOrElse(d: Int) = end
 }
+
 
 

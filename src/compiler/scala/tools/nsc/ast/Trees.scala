@@ -812,14 +812,13 @@ trait Trees {
     * <code>RefCheck</code>, where the arbitrary type trees are all replaced by
     * TypeTree's. */
   case class TypeTree() extends TypTree {
-    var original: Tree = _
-
     override def symbol = if (tpe == null) null else tpe.typeSymbol
 
     def setOriginal(tree: Tree): this.type = {
-      original = tree
-      setPos(tree.pos)
+      setPos(SyntheticPosition(tree))
     }
+
+    def original: Tree = pos.asInstanceOf[SyntheticPosition].original
 
     override def isEmpty = (tpe eq null) || tpe == NoType
   }
@@ -1773,5 +1772,18 @@ trait Trees {
     def isTop : Boolean
   }
 
+  /** A position to be used for synthetic trees that correspond to some original tree
+   *  @note Trees with synthetic positions may not contain trees with real positions inside them!
+   */
+  case class SyntheticPosition(original: Tree) extends Position {
+    override def isDefined: Boolean = true
+    override def isSynthetic: Boolean = true
+    override def offset: Option[Int] = original.pos.offset
+    override def source: Option[SourceFile] = original.pos.source
+    override def start: Int = original.pos.start
+    override def point: Int = original.pos.point
+    override def end: Int = original.pos.end
+    override def underlying = original.pos.underlying
+  }
 }
 

@@ -1,6 +1,6 @@
 package scala.tools.nsc.interactive
 
-import scala.collection.mutable.{LinkedHashSet, LinkedHashMap, SynchronizedMap}
+import scala.collection.mutable.{LinkedHashMap, SynchronizedMap}
 import scala.concurrent.SyncVar
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{SourceFile, Position, RangePosition, OffsetPosition, NoPosition, WorkScheduler}
@@ -11,7 +11,7 @@ import scala.tools.nsc.ast._
 /** The main class of the presentation compiler in an interactive environment such as an IDE
  */
 class Global(settings: Settings, reporter: Reporter)
-  extends nsc.Global(settings, reporter) with ContextTrees {
+  extends nsc.Global(settings, reporter) with CompilerControl with ContextTrees with RichCompilationUnits {
 self =>
 
   /** A list indicating in which order some units should be typechecked.
@@ -43,8 +43,8 @@ self =>
   // ----------- Overriding hooks in nsc.Global -----------------------
 
   /** Create a RangePosition */
-  override def rangePos(source: SourceFile, start: Int, mid: Int, end: Int) =
-    new RangePosition(source, start, mid, end)
+  override def rangePos(source: SourceFile, start: Int, point: Int, end: Int) =
+    new RangePosition(source, start, point, end)
 
   /** Called from typechecker: signal that a node has been completely typechecked
    *  @param  context  The context that typechecked the node
@@ -85,7 +85,7 @@ self =>
     scheduler.pollException() match {
       case Some(ex: CancelActionReq) => if (acting) throw ex
       case Some(ex: FreshRunReq) => if (compiling) throw ex
-      case Some(ex) => throw ex
+      case Some(ex: Throwable) => throw ex
       case _ =>
     }
     scheduler.nextWorkItem() match {
@@ -103,9 +103,6 @@ self =>
   }
 
   // ----------------- The Background Runner Thread -----------------------
-
-  /* Must be initialized before starting compilerRunner */
-  private val scheduler = new WorkScheduler
 
   /** The current presentation compiler runner */
   private var compileRunner = newRunnerThread
@@ -220,25 +217,6 @@ self =>
 
   // ---------------- Helper classes ---------------------------
 
-  /** A locator for trees with given positions.
-   *  Given a position `pos`, locator.apply returns
-   *  the smallest tree that encloses `pos`.
-   */
-  class Locator(pos: Position) extends Traverser {
-    var last: Tree = _
-    def locateIn(root: Tree): Tree = {
-      this.last = EmptyTree
-      traverse(root)
-      this.last
-    }
-    override def traverse(t: Tree) {
-      if (t.pos includes pos) {
-        last = t
-        super.traverse(t)
-      }
-    }
-  }
-
   /** A transformer that replaces tree `from` with tree `to` in a given tree */
   class TreeReplacer(from: Tree, to: Tree) extends Transformer {
     override def transform(t: Tree): Tree = {
@@ -254,6 +232,10 @@ self =>
   object ResetAttrs extends Traverser {
     override def traverse(t: Tree) {
       if (t.hasSymbol) t.symbol = NoSymbol
+      t match {
+        case EmptyTree => ;
+      }
+
       t.tpe = null
       super.traverse(t)
     }
@@ -306,83 +288,7 @@ self =>
 
   class TyperResult(val tree: Tree) extends Exception
 
-  class RichCompilationUnit(source: SourceFile) extends CompilationUnit(source) {
-
-    /** The runid of the latest compiler run that typechecked this unit,
-     *  or else @see NotLoaded, JustParsed
-     */
-    var status: Int = NotLoaded
-
-    /** the current edit point offset */
-    var editPoint: Int = -1
-
-    /** The position of a targeted type check
-     *  If this is different from NoPosition, the type checking
-     *  will stop once a tree that contains this position range
-     *  is fully attributed.
-     */
-    var _targetPos: Position = NoPosition
-    override def targetPos: Position = _targetPos
-    def targetPos_=(p: Position) { _targetPos = p }
-
-    var contexts: Contexts = new Contexts
-
-  }
-
   assert(globalPhase.id == 0)
 
-  // ----------------- interface to IDE ------------------------------------
-
-  /** The compilation unit corresponding to a source file */
-  def unitOf(s: SourceFile): RichCompilationUnit = unitOfFile get s.file match {
-    case Some(unit) =>
-      unit
-    case None =>
-      val unit = new RichCompilationUnit(s)
-      unitOfFile(s.file) = unit
-      unit
-  }
-
-  /** The compilation unit corresponding to a position */
-  def unitOf(pos: Position): RichCompilationUnit = unitOf(pos.source.get)
-
-  /** Locate smallest tree that encloses position */
-  def locateTree(pos: Position): Tree =
-    new Locator(pos) locateIn unitOf(pos).body
-
-  /** Locate smallest context that encloses position */
-  def locateContext(pos: Position): Option[Context] =
-    locateContext(unitOf(pos).contexts, pos)
-
-  /** Make sure a set of compilation units is loaded and parsed */
-  def askReload(sources: List[SourceFile], result: SyncVar[Either[Unit, Throwable]]) =
-    scheduler.postWorkItem(() => reload(sources, result))
-
-  /** Set sync var `result` to a fully attributed tree located at position `pos`  */
-  def askTypeAt(pos: Position, result: SyncVar[Either[Tree, Throwable]]) =
-    scheduler.postWorkItem(() => self.typedTreeAt(pos, result))
-
-  /** Ask to do unit first on present and subsequent type checking passes */
-  def askToDoFirst(f: SourceFile) = {
-    scheduler.postWorkItem { () => moveToFront(List(f)) }
-  }
-
-  /** Cancel currently pending high-priority jobs */
-  def askCancel() =
-    scheduler.raise(new CancelActionReq)
-
-  /** Cancel current compiler run and start a fresh one where everything will be re-typechecked
-   *  (but not re-loaded).
-   */
-  def askReset() =
-    scheduler.raise(new FreshRunReq)
-
-  /** Tell the compile server to shutdown, and do not restart again */
-  def askShutdown() =
-    scheduler.raise(new ShutdownReq)
-
-  class CancelActionReq extends Exception
-  class FreshRunReq extends Exception
-  class ShutdownReq extends Exception
 }
 

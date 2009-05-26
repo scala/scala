@@ -3412,10 +3412,15 @@ trait Typers { self: Analyzer =>
           newTyper(context.makeNewScope(tree, context.owner)).typedExistentialTypeTree(etpt, mode)
 
         case TypeTree() =>
-          // we should get here only when something before failed
-          // and we try again (@see tryTypedApply). In that case we can assign
-          // whatever type to tree; we just have to survive until a real error message is issued.
-          tree setType AnyClass.tpe
+          tree.pos match {
+            case SyntheticPosition(original) =>
+              tree setType typedType(original, mode).tpe
+            case _ =>
+              // we should get here only when something before failed
+              // and we try again (@see tryTypedApply). In that case we can assign
+              // whatever type to tree; we just have to survive until a real error message is issued.
+              tree setType AnyClass.tpe
+          }
         case _ =>
           throw new Error("unexpected tree: " + tree.getClass + "\n" + tree)//debug
       }

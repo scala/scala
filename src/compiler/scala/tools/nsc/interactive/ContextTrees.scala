@@ -39,7 +39,8 @@ trait ContextTrees { self: Global =>
 
   def addContext(contexts: Contexts, context: Context) {
     val cpos = context.tree.pos
-    if (contexts.isEmpty) contexts += new ContextTree(context)
+    if (!cpos.isDefined || cpos.isSynthetic) {}
+    else if (contexts.isEmpty) contexts += new ContextTree(context)
     else {
       val hi = contexts.length - 1
       if (contexts(hi).pos precedes cpos)
