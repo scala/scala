@@ -772,7 +772,11 @@ class Interpreter(val settings: Settings, out: PrintWriter)
       }
 
       (reflectionUnwrapper either pair) match {
-        case Left(e)                => (stringFrom(unwrap(e).printStackTrace(_)), false)
+        case Left(e)                =>
+          val unwrapped = unwrap(e)
+          beQuietDuring { bind("lastException", "java.lang.Throwable", unwrapped) }
+
+          (stringFrom(unwrapped.printStackTrace(_)), false)
         case Right((res, success))  => (res, success)
       }
     }
