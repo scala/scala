@@ -20,31 +20,8 @@ object ActorGC {
   private var pendingReactions = 0
   private val termHandlers = new HashMap[Actor, () => Unit]
 
-  private val refQ = new ReferenceQueue[Actor]
-  private val refSet = new HashSet[Reference[t] forSome { type t <: Actor }]
-
   def newActor(a: Actor) = synchronized {
-    val wr = new WeakReference[Actor](a, refQ)
-    refSet += wr
     pendingReactions += 1
-  }
-
-  def gc() = synchronized {
-    // check for unreachable actors
-    def drainRefQ() {
-      val wr = refQ.poll
-      if (wr != null) {
-        pendingReactions -= 1
-        refSet -= wr
-        // continue draining
-        drainRefQ()
-      }
-    }
-    drainRefQ()
-  }
-
-  def status() {
-    println("ActorGC: size of refSet: "+refSet.size)
   }
 
   def allTerminated: Boolean = synchronized {

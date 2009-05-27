@@ -74,8 +74,6 @@ class TickedScheduler extends Thread with WorkerThreadScheduler {
               if (terminating) throw new QuitException
           }
 
-          ActorGC.gc()
-
           if (tasks.length > 0) {
             // check if we need more threads
             if (Platform.currentTime - lastActivity >= TICK_FREQ) {

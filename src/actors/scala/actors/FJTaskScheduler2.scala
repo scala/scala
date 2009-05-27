@@ -117,8 +117,6 @@ class FJTaskScheduler2 extends Thread with IScheduler {
 
           if (!suspending) {
 
-            ActorGC.gc()
-
             // check if we need more threads
             if (coreSize < maxSize
                 && allWorkersBlocked
