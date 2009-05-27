@@ -61,7 +61,7 @@ class Reaction extends Runnable {
         } catch {
           case _: KillActorException =>
         }
-        a.kill(); a.exit()
+        a.kill()
       }
     }
     catch {
