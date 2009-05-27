@@ -191,7 +191,6 @@ INITIALISATION
       <pathelement location="${ant.jar}"/>
     </path>
     <taskdef resource="scala/tools/ant/sabbus/antlib.xml" classpathref="starr.classpath"/>
-    <taskdef resource="scala/tools/ant/antlib.xml" classpathref="starr.classpath"/>
   </target>
 
 <!-- ===========================================================================
@@ -224,33 +223,31 @@ LOCAL REFERENCE BUILD (LOCKER)
     <!-- NOTE: Potential problem with maximal command line length on Windows
          (32768 characters for XP, since executed with Java's "exec"). See
          src/build/msil.xml for more details. -->
-    <scalac
-      fork="true"
+    <scalacfork
       destdir="${build-locker.dir}/classes/library"
       compilerpathref="starr.classpath"
-      sourcepath="${src.dir}/library"
-      addParams="${scalac.args}"
+      srcpath="${src.dir}/library"
+      params="${scalac.args}"
       srcdir="${src.dir}/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="scala/Predef.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-locker.dir}/classes/library"/>
-      </classpath>
-    </scalac>
-    <scalac
-      fork="true"
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
       destdir="${build-locker.dir}/classes/library"
       compilerpathref="starr.classpath"
-      sourcepath="${src.dir}/library"
-      addParams="${scalac.args}"
+      srcpath="${src.dir}/library"
+      params="${scalac.args}"
       srcdir="${src.dir}/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-locker.dir}/classes/library"/>
-      </classpath>
-    </scalac>
+      </compilationpath>
+    </scalacfork>
     <propertyfile file="${build-locker.dir}/classes/library/library.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
@@ -276,24 +273,23 @@ LOCAL REFERENCE BUILD (LOCKER)
   <target name="locker.comp" depends="locker.pre-comp" if="locker.comp.needed">
     <stopwatch name="locker.comp.timer"/>
     <mkdir dir="${build-locker.dir}/classes/compiler"/>
-    <scalac
-      fork="true"
+    <scalacfork
       destdir="${build-locker.dir}/classes/compiler"
       compilerpathref="starr.classpath"
-      sourcepath="${src.dir}/compiler"
-      addParams="${scalac.args}"
+      srcpath="${src.dir}/compiler"
+      params="${scalac.args}"
       srcdir="${src.dir}/compiler"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-locker.dir}/classes/library"/>
         <pathelement location="${build-locker.dir}/classes/compiler"/>
         <pathelement location="${lib.dir}/fjbg.jar"/>
         <pathelement location="${lib.dir}/msil.jar"/>
         <pathelement location="${jline.jar}"/>
         <pathelement location="${ant.jar}"/>
-      </classpath>
-    </scalac>
+      </compilationpath>
+    </scalacfork>
     <propertyfile file="${build-locker.dir}/classes/compiler/compiler.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
@@ -366,72 +362,67 @@ QUICK BUILD (QUICK)
       target="1.5" source="1.5">
       <compilerarg line="${javac.args}"/>
     </javac>
-    <scalac
-      fork="true"
+    <scalacfork
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
-      sourcepath="${src.dir}/library"
-      addParams="${scalac.args}"
+      srcpath="${src.dir}/library"
+      params="${scalac.args}"
       srcdir="${src.dir}/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="scala/Predef.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
-      </classpath>
-    </scalac>
-    <scalac
-      fork="true"
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
-      sourcepath="${src.dir}/library"
-      addParams="${scalac.args}"
+      srcpath="${src.dir}/library"
+      params="${scalac.args}"
       srcdir="${src.dir}/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
-      </classpath>
-    </scalac>
-    <scalac
-      fork="true"
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
-      sourcepath="${src.dir}/library"
-      addParams="${scalac.args}"
+      srcpath="${src.dir}/library"
+      params="${scalac.args}"
       srcdir="${src.dir}/actors"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
-      </classpath>
-    </scalac>
-    <scalac
-      fork="true"
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
-      sourcepath="${src.dir}/library"
-      addParams="${scalac.args}"
+      srcpath="${src.dir}/library"
+      params="${scalac.args}"
       srcdir="${src.dir}/dbc"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
-      </classpath>
-    </scalac>
-    <scalac
-      fork="true"
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
-      sourcepath="${src.dir}/library"
-      addParams="${scalac.args}"
+      srcpath="${src.dir}/library"
+      params="${scalac.args}"
       srcdir="${src.dir}/swing"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
-      </classpath>
-    </scalac>
+      </compilationpath>
+    </scalacfork>
     <propertyfile file="${build-quick.dir}/classes/library/library.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
@@ -468,24 +459,23 @@ QUICK BUILD (QUICK)
   <target name="quick.comp" depends="quick.pre-comp" unless="quick.comp.available">
     <stopwatch name="quick.comp.timer"/>
     <mkdir dir="${build-quick.dir}/classes/compiler"/>
-    <scalac
-      fork="true"
+    <scalacfork
       destdir="${build-quick.dir}/classes/compiler"
       compilerpathref="locker.classpath"
-      sourcepath="${src.dir}/compiler"
-      addParams="${scalac.args}"
+      srcpath="${src.dir}/compiler"
+      params="${scalac.args}"
       srcdir="${src.dir}/compiler"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
         <pathelement location="${build-quick.dir}/classes/compiler"/>
         <pathelement location="${fjbg.jar}"/>
         <pathelement location="${msil.jar}"/>
         <pathelement location="${jline.jar}"/>
         <pathelement location="${ant.jar}"/>
-      </classpath>
-    </scalac>
+      </compilationpath>
+    </scalacfork>
     <propertyfile file="${build-quick.dir}/classes/compiler/compiler.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
@@ -511,23 +501,22 @@ QUICK BUILD (QUICK)
   <target name="quick.scalap" depends="quick.pre-scalap" unless="quick.scalap.available">
     <stopwatch name="quick.scalap.timer"/>
     <mkdir dir="${build-quick.dir}/classes/scalap"/>
-    <scalac
-      fork="true"
+    <scalacfork
       destdir="${build-quick.dir}/classes/scalap"
       compilerpathref="locker.classpath"
-      sourcepath="${src.dir}/scalap"
-      addParams="${scalac.args}"
+      srcpath="${src.dir}/scalap"
+      params="${scalac.args}"
       srcdir="${src.dir}/scalap"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
         <pathelement location="${build-quick.dir}/classes/compiler"/>
         <pathelement location="${build-quick.dir}/classes/partest"/>
         <pathelement location="${build-quick.dir}/classes/scalap"/>
         <pathelement location="${ant.jar}"/>
-      </classpath>
-    </scalac>
+      </compilationpath>
+    </scalacfork>
     <touch file="${build-quick.dir}/scalap.complete" verbose="no"/>
     <stopwatch name="quick.scalap.timer" action="total"/>
   </target>
@@ -554,23 +543,22 @@ QUICK BUILD (QUICK)
       <include name="**/*.java"/>
       <compilerarg line="${javac.args}"/>
     </javac>
-    <scalac
-      fork="true"
+    <scalacfork
       destdir="${build-quick.dir}/classes/partest"
       compilerpathref="locker.classpath"
-      sourcepath="${src.dir}/partest"
-      addParams="${scalac.args}"
+      srcpath="${src.dir}/partest"
+      params="${scalac.args}"
       srcdir="${src.dir}/partest"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
         <pathelement location="${build-quick.dir}/classes/compiler"/>
         <pathelement location="${build-quick.dir}/classes/scalap"/>
         <pathelement location="${build-quick.dir}/classes/partest"/>
         <pathelement location="${ant.jar}"/>
-      </classpath>
-    </scalac>
+      </compilationpath>
+    </scalacfork>
     <propertyfile file="${build-quick.dir}/classes/partest/partest.properties">
       <entry key="version.number" value="${partest.version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
@@ -785,9 +773,7 @@ PACKED QUICK BUILD (PACK)
       <pathelement location="${build-pack.dir}/lib/scalap.jar"/>
       <pathelement location="${ant.jar}"/>
     </path>
-    <!-- TODO - either import to new namespace, or use pack.classpath and fork old scalac calls -->
-    <!--<taskdef resource="scala/tools/ant/antlib.xml" classpathref="pack.classpath"/> -->
-    <taskdef name="pack-scalac" classname="scala.tools.ant.Scalac" classpathref="pack.classpath"/>
+    <taskdef resource="scala/tools/ant/antlib.xml" classpathref="pack.classpath"/>
     <taskdef resource="scala/tools/partest/antlib.xml" classpathref="pack.classpath"/>
   </target>
 
@@ -831,7 +817,7 @@ BOOTSTRAPPING BUILD (STRAP)
       target="1.5" source="1.5">
       <compilerarg line="${javac.args}"/>
     </javac>
-    <pack-scalac
+    <scalac
       srcdir="${src.dir}/library"
       destdir="${build-strap.dir}/classes/library"
       classpath="${build-strap.dir}/classes/library"
@@ -839,8 +825,8 @@ BOOTSTRAPPING BUILD (STRAP)
       target="jvm-1.5"
       addparams="${scalac.args}">
       <include name="scala/Predef.scala"/>
-    </pack-scalac>
-    <pack-scalac
+    </scalac>
+    <scalac
       srcdir="${src.dir}/library"
       destdir="${build-strap.dir}/classes/library"
       classpath="${build-strap.dir}/classes/library"
@@ -848,31 +834,31 @@ BOOTSTRAPPING BUILD (STRAP)
       addparams="${scalac.args}">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
-    </pack-scalac>
-    <pack-scalac
+    </scalac>
+    <scalac
       srcdir="${src.dir}/actors"
       destdir="${build-strap.dir}/classes/library"
       classpath="${build-strap.dir}/classes/library"
       target="jvm-1.5"
       addparams="${scalac.args}">
       <include name="**/*.scala"/>
-    </pack-scalac>
-    <pack-scalac
+    </scalac>
+    <scalac
       srcdir="${src.dir}/dbc"
       destdir="${build-strap.dir}/classes/library"
       classpath="${build-strap.dir}/classes/library"
       target="jvm-1.5"
       addparams="${scalac.args}">
       <include name="**/*.scala"/>
-    </pack-scalac>
-    <pack-scalac
+    </scalac>
+    <scalac
       srcdir="${src.dir}/swing"
       destdir="${build-strap.dir}/classes/library"
       classpath="${build-strap.dir}/classes/library"
       target="jvm-1.5"
       addparams="${scalac.args}">
       <include name="**/*.scala"/>
-    </pack-scalac>
+    </scalac>
     <propertyfile file="${build-strap.dir}/classes/library/library.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
@@ -898,7 +884,7 @@ BOOTSTRAPPING BUILD (STRAP)
   <target name="strap.comp" depends="strap.pre-comp" unless="strap.comp.available">
     <stopwatch name="strap.comp.timer"/>
     <mkdir dir="${build-strap.dir}/classes/compiler"/>
-    <pack-scalac
+    <scalac
       srcdir="${src.dir}/compiler"
       destdir="${build-strap.dir}/classes/compiler"
       target="jvm-1.5"
@@ -912,7 +898,7 @@ BOOTSTRAPPING BUILD (STRAP)
         <pathelement location="${jline.jar}"/>
         <pathelement location="${ant.jar}"/>
       </classpath>
-    </pack-scalac>
+    </scalac>
     <propertyfile file="${build-strap.dir}/classes/compiler/compiler.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
@@ -951,7 +937,7 @@ BOOTSTRAPPING BUILD (STRAP)
       <include name="**/*.java"/>
       <compilerarg line="${javac.args}"/>
     </javac>
-    <pack-scalac
+    <scalac
       srcdir="${src.dir}/partest"
       destdir="${build-strap.dir}/classes/partest"
       target="jvm-1.5"
@@ -964,7 +950,7 @@ BOOTSTRAPPING BUILD (STRAP)
         <pathelement location="${build-strap.dir}/classes/partest"/>
         <pathelement location="${ant.jar}"/>
       </classpath>
-    </pack-scalac>
+    </scalac>
     <copy todir="${build-strap.dir}/classes/partest">
       <fileset dir="${src.dir}/partest">
         <include name="**/*.xml"/>
@@ -983,7 +969,7 @@ BOOTSTRAPPING BUILD (STRAP)
   <target name="strap.scalap" depends="strap.pre-scalap" unless="strap.scalap.available">
     <stopwatch name="strap.scalap.timer"/>
     <mkdir dir="${build-strap.dir}/classes/scalap"/>
-    <pack-scalac
+    <scalac
       srcdir="${src.dir}/scalap"
       destdir="${build-strap.dir}/classes/scalap"
       target="jvm-1.5"
@@ -996,7 +982,7 @@ BOOTSTRAPPING BUILD (STRAP)
         <pathelement location="${build-strap.dir}/classes/scalap"/>
         <pathelement location="${ant.jar}"/>
       </classpath>
-    </pack-scalac>
+    </scalac>
     <touch file="${build-strap.dir}/scalap.complete" verbose="no"/>
     <stopwatch name="strap.scalap.timer" action="total"/>
   </target>
@@ -1043,72 +1029,67 @@ OPTIMISED COMPILER
       target="1.5" source="1.5">
       <compilerarg line="${javac.args}"/>
     </javac>
-    <scalac
-      fork="true"
+    <scalacfork
       destdir="${build-optimised.dir}/classes/library"
       compilerpathref="quick.classpath"
-      sourcepath="${src.dir}/library"
-      addParams="-optimise ${scalac.args}"
+      srcpath="${src.dir}/library"
+      params="-optimise ${scalac.args}"
       srcdir="${src.dir}/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="scala/Predef.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-optimised.dir}/classes/library"/>
-      </classpath>
-    </scalac>
-    <scalac
-      fork="true"
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
       destdir="${build-optimised.dir}/classes/library"
       compilerpathref="quick.classpath"
-      sourcepath="${src.dir}/library"
-      addParams="-optimise ${scalac.args}"
+      srcpath="${src.dir}/library"
+      params="-optimise ${scalac.args}"
       srcdir="${src.dir}/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-optimised.dir}/classes/library"/>
-      </classpath>
-    </scalac>
-    <scalac
-      fork="true"
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
       destdir="${build-optimised.dir}/classes/library"
       compilerpathref="quick.classpath"
-      sourcepath="${src.dir}/library"
-      addParams="-optimise ${scalac.args}"
+      srcpath="${src.dir}/library"
+      params="-optimise ${scalac.args}"
       srcdir="${src.dir}/actors"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-optimised.dir}/classes/library"/>
-      </classpath>
-    </scalac>
-    <scalac
-      fork="true"
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
       destdir="${build-optimised.dir}/classes/library"
       compilerpathref="quick.classpath"
-      sourcepath="${src.dir}/library"
-      addParams="-optimise ${scalac.args}"
+      srcpath="${src.dir}/library"
+      params="-optimise ${scalac.args}"
       srcdir="${src.dir}/dbc"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-optimised.dir}/classes/library"/>
-      </classpath>
-    </scalac>
-    <scalac
-      fork="true"
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
       destdir="${build-optimised.dir}/classes/library"
       compilerpathref="quick.classpath"
-      sourcepath="${src.dir}/library"
-      addParams="-optimise ${scalac.args}"
+      srcpath="${src.dir}/library"
+      params="-optimise ${scalac.args}"
       srcdir="${src.dir}/swing"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-optimised.dir}/classes/library"/>
-      </classpath>
-    </scalac>
+      </compilationpath>
+    </scalacfork>
     <propertyfile file="${build-optimised.dir}/classes/library/library.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
@@ -1134,24 +1115,23 @@ OPTIMISED COMPILER
   <target name="optimised.comp" depends="optimised.pre-comp" unless="optimised.comp.available">
     <stopwatch name="optimised.comp.timer"/>
     <mkdir dir="${build-optimised.dir}/classes/compiler"/>
-    <scalac
-      fork="true"
+    <scalacfork
       destdir="${build-optimised.dir}/classes/compiler"
       compilerpathref="quick.classpath"
-      sourcepath="${src.dir}/compiler"
-      addParams="-optimise ${scalac.args}"
+      srcpath="${src.dir}/compiler"
+      params="-optimise ${scalac.args}"
       srcdir="${src.dir}/compiler"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-optimised.dir}/classes/library"/>
         <pathelement location="${build-optimised.dir}/classes/compiler"/>
         <pathelement location="${fjbg.jar}"/>
         <pathelement location="${msil.jar}"/>
         <pathelement location="${jline.jar}"/>
         <pathelement location="${ant.jar}"/>
-      </classpath>
-    </scalac>
+      </compilationpath>
+    </scalacfork>
     <propertyfile file="${build-optimised.dir}/classes/compiler/compiler.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
@@ -1190,23 +1170,22 @@ OPTIMISED COMPILER
       <include name="**/*.java"/>
       <compilerarg line="${javac.args}"/>
     </javac>
-    <scalac
-      fork="true"
+    <scalacfork
       destdir="${build-optimised.dir}/classes/partest"
       compilerpathref="locker.classpath"
-      sourcepath="${src.dir}/partest"
-      addParams="${scalac.args}"
+      srcpath="${src.dir}/partest"
+      params="${scalac.args}"
       srcdir="${src.dir}/partest"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-optimised.dir}/classes/library"/>
         <pathelement location="${build-optimised.dir}/classes/compiler"/>
         <pathelement location="${build-optimised.dir}/classes/scalap"/>
         <pathelement location="${build-optimised.dir}/classes/partest"/>
         <pathelement location="${ant.jar}"/>
-      </classpath>
-    </scalac>
+      </compilationpath>
+    </scalacfork>
     <copy todir="${build-optimised.dir}/classes/partest">
       <fileset dir="${src.dir}/partest">
         <include name="**/*.xml"/>
@@ -1225,23 +1204,22 @@ OPTIMISED COMPILER
   <target name="optimised.scalap" depends="optimised.pre-scalap" unless="optimised.scalap.available">
     <stopwatch name="optimised.scalap.timer"/>
     <mkdir dir="${build-optimised.dir}/classes/scalap"/>
-    <scalac
-      fork="true"
+    <scalacfork
       destdir="${build-optimised.dir}/classes/scalap"
       compilerpathref="locker.classpath"
-      sourcepath="${src.dir}/scalap"
-      addParams="${scalac.args}"
+      srcpath="${src.dir}/scalap"
+      params="${scalac.args}"
       srcdir="${src.dir}/scalap"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-optimised.dir}/classes/library"/>
         <pathelement location="${build-optimised.dir}/classes/compiler"/>
         <pathelement location="${build-optimised.dir}/classes/partest"/>
         <pathelement location="${build-optimised.dir}/classes/scalap"/>
         <pathelement location="${ant.jar}"/>
-      </classpath>
-    </scalac>
+      </compilationpath>
+    </scalacfork>
     <touch file="${build-optimised.dir}/scalap.complete" verbose="no"/>
     <stopwatch name="optimised.scalap.timer" action="total"/>
   </target>
@@ -1336,20 +1314,19 @@ LIBRARIES (MSIL, FJBG maybe later)
       target="1.5" source="1.4">
         <compilerarg line="${javac.args}"/>
     </javac>
-    <scalac
-      fork="true"
+    <scalacfork
       destdir="${build-libs.dir}/classes/msil"
       compilerpathref="locker.classpath"
-      sourcepath="${src.dir}/msil"
-      addParams="${scalac.args}"
+      srcpath="${src.dir}/msil"
+      params="${scalac.args}"
       srcdir="${src.dir}/msil"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
         <pathelement location="${build-libs.dir}/classes/msil"/>
-      </classpath>
-    </scalac>
+      </compilationpath>
+    </scalacfork>
     <touch file="${build-libs.dir}/msil.complete" verbose="no"/>
   </target>
   
