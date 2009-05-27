@@ -98,6 +98,7 @@ trait Position {
          })
   }
 
+  def show: String = "["+toString+"]"
 }
 
 case object NoPosition extends Position
@@ -114,6 +115,7 @@ case class OffsetPosition(source0: SourceFile, offset0: Int) extends Position {
   case that => false
   }
   override def hashCode = offset0 * 37 + source0.file.hashCode
+  override def show = "["+point+"]"
 }
 
 /** new for position ranges */
@@ -125,6 +127,7 @@ extends OffsetPosition(source0, point) {
   override def endOrElse(d: Int) = end
   override def focus = OffsetPosition(source0, point)
   override def toString = "RangePosition("+source0+", "+start+", "+point+", "+end+")"
+  override def show = "["+start+":"+end+"]"
 }
 
 

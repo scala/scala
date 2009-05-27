@@ -28,8 +28,8 @@ self =>
   /** The currently active typer run */
   private var currentTyperRun: TyperRun = _
 
-  /** Is a background compiler currently running? */
-  private var compiling = false
+  /** Is a background compiler run needed? */
+  private var outOfDate = false
 
   /** Is a reload/ background compiler currently running? */
   private var acting = false
@@ -84,7 +84,7 @@ self =>
   def pollForWork() {
     scheduler.pollException() match {
       case Some(ex: CancelActionReq) => if (acting) throw ex
-      case Some(ex: FreshRunReq) => if (compiling) throw ex
+      case Some(ex: FreshRunReq) => if (outOfDate) throw ex
       case Some(ex: Throwable) => throw ex
       case _ =>
     }
@@ -115,16 +115,13 @@ self =>
         while (true) {
           scheduler.waitForMoreWork()
           pollForWork()
-          var continue = true
-          while (continue) {
+          while (outOfDate) {
             try {
-              compiling = true
               backgroundCompile()
-              continue = false
             } catch {
               case ex: FreshRunReq =>
             } finally {
-              compiling = false
+              outOfDate = false
             }
           }
         }
@@ -190,6 +187,7 @@ self =>
         val unit = new RichCompilationUnit(source)
         unitOfFile(source.file) = unit
         currentTyperRun.compileLate(unit)
+        validatePositions(unit.body)
         unit.status = JustParsed
       }
       moveToFront(sources)
@@ -199,7 +197,8 @@ self =>
         result set Right(ex)
         throw ex
     }
-    if (compiling) throw new FreshRunReq
+    if (outOfDate) throw new FreshRunReq
+    else outOfDate = true
   }
 
   /** Set sync var `result` to a fully attributed tree located at position `pos`  */
@@ -217,6 +216,29 @@ self =>
   }
 
   // ---------------- Helper classes ---------------------------
+
+
+  def validatePositions(tree: Tree) {
+    def check(condition: Boolean, msg: => String) {
+      if (!condition) {
+        println("**** bad positions:")
+        println(msg)
+        println("================= in =================")
+        println(tree)
+      }
+    }
+    def validate(tree: Tree, encltree: Tree, lefttree: Tree) {
+      if (encltree.pos.isSynthetic) check(tree.pos.isSynthetic, "synthetic "+encltree+" contains nonsynthetic" + tree)
+      check(encltree.pos includes tree.pos, encltree+" does not include "+tree)
+      if (lefttree != EmptyTree) check(lefttree.pos precedes tree.pos, lefttree+" does not not precede "+tree)
+      var newleft: Tree = EmptyTree
+      for (ct <- tree.children) {
+        validate(ct, tree, newleft)
+        newleft = ct
+      }
+    }
+    validate(tree, tree, EmptyTree)
+  }
 
   /** A transformer that replaces tree `from` with tree `to` in a given tree */
   class TreeReplacer(from: Tree, to: Tree) extends Transformer {
@@ -262,6 +284,7 @@ self =>
      */
     def typedTreeAt(pos: Position): Tree = {
       val tree = locateTree(pos)
+//      println("at pos "+pos+" was found: "+tree)
       if (tree.tpe ne null) tree
       else {
         val unit = unitOf(pos)

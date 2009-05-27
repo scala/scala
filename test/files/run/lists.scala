@@ -17,7 +17,8 @@ object Test extends TestConsoleMain {
     Test1, //count, exists, filter, ..
     Test2, //#468
     Test3, //#1691
-    Test4  //#1721
+    Test4,  //#1721
+    Test5
   )
 }
 
@@ -193,5 +194,18 @@ object Test4 extends TestCase("t1721") with Assert {
     assertTrue(List(1,2,3).endsWith(List(1,2,3)))
     assertFalse(List().endsWith(List(1,2,3)))
     assertTrue(List().endsWith(List()))
+  }
+}
+
+object Test5 extends TestCase("list pattern matching") {
+  def show(xs: List[String]) = xs match {
+    case "foo" :: args => args.toString
+    case List(x) => x.toString
+    case Nil => "Nil"
+  }
+  override def runTest {
+    assert(show(List()) == "Nil")
+    assert(show(List("a")) == "a")
+    assert(show(List("foo", "b")) == "List(b)")
   }
 }

@@ -114,6 +114,7 @@ self =>
     def freshName(pos: Position, prefix: String): Name
     def o2p(offset: Int): Position
     def r2p(start: Int, mid: Int, end: Int): Position
+    def t2p(tree: Tree): Position = SyntheticPosition(tree)
     //private implicit def p2i(pos: Position) = pos.offset.get
 
     /** whether a non-continuable syntax error has been seen */
@@ -370,7 +371,7 @@ self =>
     */
     def joinComment(trees: => List[Tree]): List[Tree] = {
       val buf = in.flushDoc
-      if ((buf ne null) && buf.length > 0) trees map (t => DocDef(buf, t) setPos t.pos)
+      if ((buf ne null) && buf.length > 0) trees map (t => DocDef(buf, t) setPos t.pos) // !!! take true comment position
       else trees
     }
 
@@ -403,13 +404,13 @@ self =>
       tree match {
         case Ident(name) =>
           removeAsPlaceholder(name)
-          ValDef(Modifiers(Flags.PARAM), name, TypeTree(), EmptyTree)
+          ValDef(Modifiers(Flags.PARAM), name, TypeTree() setPos o2p(tree.pos.end), EmptyTree)
         case Typed(tree @ Ident(name), tpe) if (tpe.isType) => // get the ident!
           removeAsPlaceholder(name)
           ValDef(Modifiers(Flags.PARAM), name, tpe, EmptyTree)
         case _ =>
           syntaxError(tree.pos, "not a legal formal parameter", false)
-          ValDef(Modifiers(Flags.PARAM), nme.ERROR, errorTypeTree, EmptyTree)
+          ValDef(Modifiers(Flags.PARAM), nme.ERROR, errorTypeTree setPos o2p(tree.pos.end), EmptyTree)
       }
     }
 
@@ -812,7 +813,7 @@ self =>
     def wildcardType(start: Int) = {
       val pname = freshName(o2p(start), "_$").toTypeName
       val t = atPos(start) { Ident(pname) }
-      val param = atPos(start) { makeSyntheticTypeParam(pname, typeBounds()) }
+      val param = atPos(t2p(t)) { makeSyntheticTypeParam(pname, typeBounds()) }
       placeholderTypes = param :: placeholderTypes
       t
     }
@@ -1130,12 +1131,12 @@ self =>
           path(true, false)
         case USCORE =>
           val start = in.offset
-          atPos(in.skipToken()) {
-            val pname = freshName(o2p(start), "x$")
-            val param = atPos(start){ makeSyntheticParam(pname) }
-            placeholderParams = param :: placeholderParams
-            Ident(pname)
-          }
+          val pname = freshName(o2p(start), "x$")
+          val id = atPos(start) (Ident(pname))
+          in.nextToken()
+          val param = atPos(t2p(id)){ makeSyntheticParam(pname) }
+          placeholderParams = param :: placeholderParams
+          id
         case LPAREN =>
           atPos(in.skipToken()) {
             val ts = if (in.token == RPAREN) List() else exprs()

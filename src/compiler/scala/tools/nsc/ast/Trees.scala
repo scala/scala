@@ -96,7 +96,7 @@ trait Trees {
   // @M helper method for asserts that check consistency in kinding
   //def kindingIrrelevant(tp: Type) = (tp eq null) || phase.name == "erasure" || phase.erasedTypes
 
-  abstract class Tree {
+  abstract class Tree extends Product {
     {
       import util.Statistics
       if (Statistics.enabled) nodeCount += 1
@@ -159,6 +159,10 @@ trait Trees {
     /** Is there part of this tree which satisfies predicate `p'? */
     def exists(p: Tree => Boolean): Boolean = !find(p).isEmpty
 
+    /** The direct children of this tree */
+    def children(): Iterator[Tree] =
+      productElements filter (_.isInstanceOf[Tree]) map (_.asInstanceOf[Tree])
+
     override def toString(): String = {
       val buffer = new StringWriter()
       val printer = treePrinters.create(new PrintWriter(buffer))
@@ -190,10 +194,7 @@ trait Trees {
           i += 1
         }
       }
-      this match {
-        case p : Product => g(p)
-        case _ =>
-      }
+      g(this)
       hc
     }
     def equalsStructure(that : Tree) = equalsStructure0(that){case (t0,t1) => false}
@@ -1788,6 +1789,7 @@ trait Trees {
     override def end: Int = original.pos.end
     override def underlying = original.pos.underlying
     override def focus = original.pos.focus
+    override def show = "["+underlying.show+"]"
   }
 }
 

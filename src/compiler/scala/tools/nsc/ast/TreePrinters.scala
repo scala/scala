@@ -389,7 +389,7 @@ abstract class TreePrinters {
     }
 
     def print(tree: Tree) {
-      if (settings.Xprintpos.value) print("[" + tree.pos + "]")
+      if (settings.Xprintpos.value) print(tree.pos.show)
       printRaw(
         if (tree.isDef && tree.symbol != NoSymbol && tree.symbol.isInitialized) {
           tree match {

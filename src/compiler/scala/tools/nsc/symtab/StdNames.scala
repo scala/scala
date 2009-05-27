@@ -234,6 +234,7 @@ trait StdNames {
     val Function = newTermName("Function")
     val Function1 = newTermName("Function1")
     val Int = newTermName("Int")
+    val List = newTermName("List")
     val Long = newTermName("Long")
     val Nil = newTermName("Nil")
     val Object = newTermName("Object")

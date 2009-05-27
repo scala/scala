@@ -37,6 +37,9 @@ trait Definitions {
     lazy val ScalaPackage: Symbol = getModule("scala")
     lazy val ScalaPackageClass: Symbol = ScalaPackage.tpe.typeSymbol
 
+    lazy val ScalaCollectionImmutablePackage: Symbol = getModule("scala.collection.immutable")
+    lazy val ScalaCollectionImmutablePackageClass: Symbol = ScalaCollectionImmutablePackage.tpe.typeSymbol
+
     var AnyClass: Symbol = _
     var AnyValClass: Symbol = _
     var AnyRefClass: Symbol = _
@@ -111,6 +114,7 @@ trait Definitions {
       def Iterable_hasNext = getMember(IterableClass, nme.hasNext)
     lazy val IteratorClass: Symbol = getClass2("scala.Iterator", "scala.collection.Iterator")
     lazy val SeqClass: Symbol = getClass2("scala.Seq", "scala.collection.Sequence")
+    lazy val SeqModule: Symbol = getModule2("scala.Seq", "scala.collection.Sequence")
     lazy val TraversableClass: Symbol = getClass("scala.collection.Traversable")
     lazy val RandomAccessSeqMutableClass: Symbol = getMember(
       getModule2("scala.RandomAccessSeq", "scala.collection.Vector"), nme.Mutable)

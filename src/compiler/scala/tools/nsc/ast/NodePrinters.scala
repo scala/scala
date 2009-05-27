@@ -341,8 +341,6 @@ abstract class NodePrinters {
                   }
                   printcln(")")
                 } else printcln(p.productPrefix)
-              case _ =>
-                printcln("***" + tree.getClass)
             }
         }
       }

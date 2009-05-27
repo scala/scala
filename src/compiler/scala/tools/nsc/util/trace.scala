@@ -5,4 +5,8 @@ object trace {
     println(msg+value)
     value
   }
+  def withFun[T, U](msg: String)(value: T)(fun: T => U): T = {
+    println(msg+fun(value))
+    value
+  }
 }

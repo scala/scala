@@ -560,10 +560,25 @@ trait Typers { self: Analyzer =>
 
     /** Make symbol accessible. This means:
      *  If symbol refers to package object, insert `.package` as second to last selector.
-     *  Call checkAccessible, which sets symbol's attributes.
+     *  (exception for some symbols in scala package which are dealiased immediately)
+     *  Call checkAccessible, which sets tree's attributes.
+     *  @return modified tree and new prefix type
      */
-    private def makeAccessible(tree: Tree, sym: Symbol, pre: Type, site: Tree): Tree =
+    private def makeAccessible(tree: Tree, sym: Symbol, pre: Type, site: Tree): (Tree, Type) =
       if (isInPackageObject(sym, pre.typeSymbol)) {
+        if (pre.typeSymbol == ScalaPackageClass && sym.isTerm) {
+          // short cut some aliases. It seems that without that pattern matching
+          // fails to notice exhaustiveness and to generate good code when
+          // List extractors are mixed with :: patterns. See Test5 in lists.scala.
+          def dealias(sym: Symbol) =
+            (atPos(tree.pos) { gen.mkAttributedRef(sym) }, sym.owner.thisType)
+          sym.name match {
+            case nme.List => return dealias(ListModule)
+            case nme.Seq => return dealias(SeqModule)
+            case nme.Nil => return dealias(NilModule)
+            case _ =>
+          }
+        }
         val qual = typedQualifier {
           tree match {
             case Ident(_) => Ident(nme.PACKAGEkw)
@@ -578,10 +593,9 @@ trait Typers { self: Analyzer =>
             case SelectFromTypeTree(_, name) => SelectFromTypeTree(qual, name)
           }
         }
-        val tree2 = checkAccessible(tree1, sym, qual.tpe, qual)
-        tree2
+        (checkAccessible(tree1, sym, qual.tpe, qual), qual.tpe)
       } else {
-        checkAccessible(tree, sym, pre, site)
+        (checkAccessible(tree, sym, pre, site), pre)
       }
 
     private def isInPackageObject(sym: Symbol, pkg: Symbol) =
@@ -2943,7 +2957,8 @@ trait Typers { self: Analyzer =>
             case SelectFromTypeTree(_, _) => copy.SelectFromTypeTree(tree, qual, name)
           }
           //if (name.toString == "Elem") println("typedSelect "+qual+":"+qual.tpe+" "+sym+"/"+tree1+":"+tree1.tpe)
-          val result = stabilize(makeAccessible(tree1, sym, qual.tpe, qual), qual.tpe, mode, pt)
+          val (tree2, pre2) = makeAccessible(tree1, sym, qual.tpe, qual)
+          val result = stabilize(tree2, pre2, mode, pt)
           def isPotentialNullDeference() = {
             phase.id <= currentRun.typerPhase.id &&
             !sym.isConstructor &&
@@ -3103,7 +3118,8 @@ trait Typers { self: Analyzer =>
           val tree1 = if (qual == EmptyTree) tree
                       else atPos(tree.pos)(Select(qual, name))
                     // atPos necessary because qualifier might come from startContext
-          stabilize(makeAccessible(tree1, defSym, pre, qual), pre, mode, pt)
+          val (tree2, pre2) = makeAccessible(tree1, defSym, pre, qual)
+          stabilize(tree2, pre2, mode, pt)
         }
       }
 
