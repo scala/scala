@@ -54,10 +54,15 @@ class Reaction extends Runnable {
         a.exit()
       else {
         try {
-          if (f == null)
-            a.act()
-          else
-            f(msg)
+          try {
+            if (f == null)
+              a.act()
+            else
+              f(msg)
+          } catch {
+            case e: Exception if (a.exceptionHandler.isDefinedAt(e)) =>
+              a.exceptionHandler(e)
+          }
         } catch {
           case _: KillActorException =>
         }

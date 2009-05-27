@@ -412,6 +412,8 @@ trait Actor extends AbstractActor {
    */
   private var onTimeout: Option[TimerTask] = None
 
+  protected[actors] def exceptionHandler: PartialFunction[Exception, Unit] = Map()
+
   protected[actors] def scheduler: IScheduler =
     Scheduler
 
