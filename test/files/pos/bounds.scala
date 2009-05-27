@@ -7,5 +7,5 @@ class ListMap[A, +B] extends Map[A, B] {}
 
 object ListMap {
   def empty[X, Y] = new ListMap[X, Y]
-  def apply[A1, B2](elems: Pair[A1, B2]*): Map[A1, B2] = empty[A1,B2].++(elems.elements)
+  def apply[A1, B2](elems: Pair[A1, B2]*): Map[A1, B2] = empty[A1,B2].++(elems.iterator)
 }

@@ -64,11 +64,11 @@ abstract class TreeBuilder {
     def init: Traverser = { buf.clear; this }
     override def traverse(tree: Tree): Unit = tree match {
       case Bind(name, Typed(tree1, tpt)) =>
-        if ((name != nme.WILDCARD) && (buf.elements forall (name !=)))
+        if ((name != nme.WILDCARD) && (buf.iterator forall (name !=)))
           buf += ((name, if (treeInfo.mayBeTypePat(tpt)) TypeTree() else tpt, tree.pos))
         traverse(tree1)
       case Bind(name, tree1) =>
-        if ((name != nme.WILDCARD) && (buf.elements forall (name !=)))
+        if ((name != nme.WILDCARD) && (buf.iterator forall (name !=)))
           buf += ((name, TypeTree(), tree.pos))
         traverse(tree1)
       case _ =>
@@ -231,33 +231,33 @@ abstract class TreeBuilder {
   *
   *  1.
   *
-  *    for (val P <- G) E   ==>   G.foreach (P => E)
+  *    for (P <- G) E   ==>   G.foreach (P => E)
   *
   *     Here and in the following (P => E) is interpreted as the function (P => E)
   *     if P is a a variable pattern and as the partial function { case P => E } otherwise.
   *
   *  2.
   *
-  *    for (val P <- G) yield E  ==>  G.map (P => E)
+  *    for (P <- G) yield E  ==>  G.map (P => E)
   *
   *  3.
   *
-  *    for (val P_1 <- G_1; val P_2 <- G_2; ...) ...
+  *    for (P_1 <- G_1; val P_2 <- G_2; ...) ...
   *      ==>
-  *    G_1.flatMap (P_1 => for (val P_2 <- G_2; ...) ...)
+  *    G_1.flatMap (P_1 => for (P_2 <- G_2; ...) ...)
   *
   *  4.
   *
-  *    for (val P <- G; E; ...) ...
+  *    for (P <- G; E; ...) ...
   *      =>
-  *    for (val P <- G.filter (P => E); ...) ...
+  *    for (P <- G.filter (P => E); ...) ...
   *
   *  5. For N < MaxTupleArity:
   *
-  *    for (val P_1 <- G; val P_2 = E_2; val P_N = E_N; ...)
+  *    for (P_1 <- G; val P_2 = E_2; val P_N = E_N; ...)
   *      ==>
-  *    for (val TupleN(P_1, P_2, ... P_N) <-
-  *      for (val x_1 @ P_1 <- G) yield {
+  *    for (TupleN(P_1, P_2, ... P_N) <-
+  *      for (x_1 @ P_1 <- G) yield {
   *        val x_2 @ P_2 = E_2
   *        ...
   *        val x_N & P_N = E_N
@@ -415,7 +415,7 @@ abstract class TreeBuilder {
           val firstDef = ValDef(Modifiers(PRIVATE | LOCAL | SYNTHETIC | (mods.flags & LAZY)),
                                 tmp, TypeTree(), matchExpr)
           var cnt = 0
-          val restDefs = for (val (vname, tpt, pos) <- vars) yield atPos(pos) {
+          val restDefs = for ((vname, tpt, pos) <- vars) yield atPos(pos) {
             cnt = cnt + 1
             ValDef(mods, vname, tpt, Select(Ident(tmp), newTermName("_" + cnt)))
           }

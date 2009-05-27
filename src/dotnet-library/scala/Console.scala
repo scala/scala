@@ -279,7 +279,7 @@ object Console {
 //  private def textParams(s: Seq[Any]): Array[AnyRef] = {
 //    val res = new Array[AnyRef](s.length)
 //    var i: Int = 0
-//    val iter = s.elements
+//    val iter = s.iterator
 //    while (iter.hasNext) {
 //      res(i) = iter.next match {
 //        case x: Boolean => java.lang.Boolean.valueOf(x)

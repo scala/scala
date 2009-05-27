@@ -77,7 +77,7 @@ case class Database(dbms: Vendor) {
       connection.close()
     } else {
       lock.acquire
-      usedConnections = usedConnections.remove(e => (e.equals(connection)));
+      usedConnections = usedConnections.filterNot(e => (e.equals(connection)));
       if (availableConnections.length < vendor.retainedConnections)
         availableConnections = connection :: availableConnections
       else

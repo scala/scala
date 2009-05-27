@@ -20,7 +20,8 @@ trait TraversableView[+A, +Coll <: Traversable[_]] extends TraversableViewTempla
 object TraversableView {
   class NoBuilder[A] extends Builder[A, Nothing] {
     def +=(elem: A): this.type = this
-    def elements: Iterator[A] = Iterator.empty
+    def iterator: Iterator[A] = Iterator.empty
+    @deprecated def elements = iterator
     def result() = throw new UnsupportedOperationException("TraversableView.Builder.result")
     def clear() {}
   }

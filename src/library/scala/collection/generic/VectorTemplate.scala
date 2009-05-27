@@ -24,7 +24,7 @@ trait VectorTemplate[+A, +This <: VectorTemplate[A, This] with Vector[A]] extend
 
   // Overridden methods from IterableTemplate
 
-  /** The iterator returned by the elements method
+  /** The iterator returned by the iterator method
    */
   protected class Elements(start: Int, end: Int) extends scala.collection.BufferedIterator[A] {
     private var i = start
@@ -52,7 +52,7 @@ trait VectorTemplate[+A, +This <: VectorTemplate[A, This] with Vector[A]] extend
       else this
   }
 
-  override def elements: Iterator[A] = new Elements(0, length)
+  override def iterator: Iterator[A] = new Elements(0, length)
 
   override def isEmpty: Boolean = { length == 0 }
 
@@ -205,7 +205,7 @@ trait VectorTemplate[+A, +This <: VectorTemplate[A, This] with Vector[A]] extend
     b.result
   }
 
-  override def reversedElements: Iterator[A] = new Iterator[A] {
+  override def reverseIterator: Iterator[A] = new Iterator[A] {
     private var i = self.length
     def hasNext: Boolean = 0 < i
     def next: A =
@@ -229,7 +229,7 @@ trait VectorTemplate[+A, +This <: VectorTemplate[A, This] with Vector[A]] extend
     case _ =>
       var i = offset
       val thisLen = length
-      val thatElems = that.elements
+      val thatElems = that.iterator
       while (i < thisLen && thatElems.hasNext && this(i) == thatElems.next()) {
         i += 1
       }
@@ -272,7 +272,7 @@ trait VectorTemplate[+A, +This <: VectorTemplate[A, This] with Vector[A]] extend
 
   override def view = new VectorView[A, This] {
     protected lazy val underlying = self.thisCollection
-    override def elements = self.elements
+    override def iterator = self.iterator
     override def length = self.length
     override def apply(idx: Int) = self.apply(idx)
   }

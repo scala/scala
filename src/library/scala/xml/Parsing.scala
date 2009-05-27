@@ -30,7 +30,7 @@ object Parsing {
 
   /** <pre>(#x20 | #x9 | #xD | #xA)+</pre> */
   final def isSpace(cs: Seq[Char]): Boolean = {
-    val it = cs.elements
+    val it = cs.iterator
     it.hasNext && it.forall { isSpace }
   }
 
@@ -75,7 +75,7 @@ object Parsing {
   def isName(s: String): Boolean =
     if (s.length() > 0) {
       val z: Seq[Char] = s
-      val y = z.elements
+      val y = z.iterator
       if (isNameStart(y.next)) {
         while (y.hasNext && isNameChar(y.next)) {}
         !y.hasNext
@@ -97,7 +97,7 @@ object Parsing {
   def checkPubID(s: String): Boolean =
     if (s.length() > 0) {
       val z:Seq[Char] = s
-      val y = z.elements
+      val y = z.iterator
       while (y.hasNext && isPubIDChar(y.next)) {}
       !y.hasNext
     } else true

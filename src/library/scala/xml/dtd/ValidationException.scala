@@ -34,7 +34,7 @@ object MakeValidationException {
   def fromMissingAttribute(allKeys: scala.collection.Set[String]) = {
     val sb = new StringBuilder("missing value for REQUIRED attribute")
     if (allKeys.size > 1) sb.append('s');
-    val it = allKeys.elements
+    val it = allKeys.iterator
     while (it.hasNext) {
       sb.append('\'').append(it.next).append('\'')
     }

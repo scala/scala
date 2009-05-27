@@ -269,7 +269,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
   }
 
   def xToken(that: Seq[Char]): Unit = {
-    val it = that.elements;
+    val it = that.iterator;
     while (it.hasNext)
       xToken(it.next);
   }
@@ -1173,7 +1173,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
    */
   def normalizeAttributeValue(attval: String): String = {
     val s: Seq[Char] = attval
-    val it = s.elements
+    val it = s.iterator
     while (it.hasNext) {
       it.next match {
         case ' '|'\t'|'\n'|'\r' =>

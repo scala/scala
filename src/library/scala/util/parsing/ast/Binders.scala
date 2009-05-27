@@ -102,17 +102,17 @@ trait Binders extends AbstractSyntax with Mappable {
      * For a typical let-binding, this is just the variable name. For an argument list to a method body,
      * there is one binder per formal argument.
      */
-    def elements = substitution.keys
+    def iterator = substitution.keysIterator
 
     /** Return the `i'th binder in this scope.*/
-    def apply(i: Int): binderType = elements.toList(i)
+    def apply(i: Int): binderType = this.iterator.toList(i)
 
     /** Returns true if this container has a binder equal (==) to `b'
      */
     def binds(b: binderType): Boolean = substitution.contains(b)
 
     def indexFor(b: binderType): Option[Int] = {
-      val iter = elements.counted
+      val iter = this.iterator.counted
       for (that <- iter) {
         if (that.name == b.name) // TODO: why do name equals and structural equals differ?
           return Some(iter.count)
@@ -164,10 +164,10 @@ trait Binders extends AbstractSyntax with Mappable {
      */
     def getElementFor(b: binderType): Element = substitution(b)
 
-    override def toString: String =  elements.toList.mkString("[",", ","]")+"!"+id // TODO show substitution?
+    override def toString: String =  this.iterator.toList.mkString("[",", ","]")+"!"+id // TODO show substitution?
 
     /** Returns a list of strings that represent the binder elements, each tagged with this scope's id.*/
-    def bindersToString: List[String] = (for(val b <- elements) yield b+"!"+id).toList
+    def bindersToString: List[String] = (for(b <- this.iterator) yield b+"!"+id).toList
 
     /** Return a new inheriting scope that won't check whether binding is respected until the scope is left (so as to support forward references) **/
     def allowForwardRef: Scope[binderType] = this // TODO
@@ -276,7 +276,7 @@ trait Binders extends AbstractSyntax with Mappable {
   implicit def ScopeIsMappable[bt <: NameElement <% Mappable[bt]](scope: Scope[bt]): Mappable[Scope[bt]] =
     new Mappable[Scope[bt]] {
       def gmap(f: Mapper): Scope[bt] = { val newScope = new Scope[bt]()
-        for(val b <- scope) newScope.addBinder(f(b))
+        for(b <- scope) newScope.addBinder(f(b))
         newScope
       }
     }

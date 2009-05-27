@@ -25,7 +25,7 @@ class TestSet(s0: Set[Int], s1: Set[Int]) {
     case 7         => "size"
   }
   def checkSubSet(pre: String, s0: Set[Int], s1: Set[Int]) {
-    for (e <- s0.elements)
+    for (e <- s0.iterator)
       if (!(s1 contains e)) {
         assert(false, pre+" element: "+e+"\n S0 = "+s0+"\n S1 = "+s1)
       }

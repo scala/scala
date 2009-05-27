@@ -23,7 +23,7 @@ class ListMap[A, B] extends Map[A, B] with MutableMapTemplate[A, B, ListMap[A, B
   private var siz: Int = 0
 
   def get(key: A): Option[B] = elems find (_._1 == key) map (_._2)
-  def elements: Iterator[(A, B)] = elems.elements
+  def iterator: Iterator[(A, B)] = elems.iterator
   def += (kv: (A, B)) = { elems = remove(kv._1, elems); elems = kv :: elems; siz += 1; this }
   def -= (key: A) = { elems = remove(key, elems); this }
 

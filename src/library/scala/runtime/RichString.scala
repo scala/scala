@@ -97,7 +97,7 @@ class RichString(val self: String) extends Proxy with Vector[Char] with VectorTe
    *    <li>FF - form feed   (0x0C hex)</li>
    *  </ul>
    */
-  def linesWithSeparators = new Iterator[String] {
+  def linesWithSeparators: Iterator[String] = new Iterator[String] {
     private val len = self.length
     private var index = 0
     def hasNext: Boolean = index < len
@@ -115,6 +115,13 @@ class RichString(val self: String) extends Proxy with Vector[Char] with VectorTe
    *  returned by <code>linesWithSeparators</code>.
    */
   def lines: Iterator[String] =
+    linesWithSeparators map (line => new RichString(line).stripLineEnd)
+
+  /** Return all lines in this string in an iterator, excluding trailing line
+   *  end characters, i.e. apply <code>.stripLineEnd</code> to all lines
+   *  returned by <code>linesWithSeparators</code>.
+   */
+  def linesIterator: Iterator[String] =
     linesWithSeparators map (line => new RichString(line).stripLineEnd)
 
   /** Returns this string with first character converted to upper case */

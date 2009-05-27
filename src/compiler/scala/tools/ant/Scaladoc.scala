@@ -372,7 +372,7 @@ class Scaladoc extends MatchingTask {
    */
   private def getClasspath: List[File] =
     if (classpath.isEmpty) error("Member 'classpath' is empty.")
-    else List.fromArray(classpath.get.list()).map(nameToFile)
+    else classpath.get.list().toList.map(nameToFile)
 
   /** Gets the value of the <code>origin</code> attribute in a Scala-friendly
    *  form.
@@ -381,7 +381,7 @@ class Scaladoc extends MatchingTask {
    */
   private def getOrigin: List[File] =
     if (origin.isEmpty) error("Member 'origin' is empty.")
-    else List.fromArray(origin.get.list()).map(nameToFile)
+    else origin.get.list().toList.map(nameToFile)
 
   /** Gets the value of the <code>destination</code> attribute in a
    *  Scala-friendly form.
@@ -399,7 +399,7 @@ class Scaladoc extends MatchingTask {
    */
   private def getSourcepath: List[File] =
     if (sourcepath.isEmpty) error("Member 'sourcepath' is empty.")
-    else List.fromArray(sourcepath.get.list()).map(nameToFile)
+    else sourcepath.get.list().toList.map(nameToFile)
 
   /** Gets the value of the <code>bootclasspath</code> attribute in a
    *  Scala-friendly form.
@@ -408,7 +408,7 @@ class Scaladoc extends MatchingTask {
    */
   private def getBootclasspath: List[File] =
     if (bootclasspath.isEmpty) error("Member 'bootclasspath' is empty.")
-    else List.fromArray(bootclasspath.get.list()).map(nameToFile)
+    else bootclasspath.get.list().toList.map(nameToFile)
 
   /** Gets the value of the <code>extdirs</code> attribute in a
    *  Scala-friendly form.
@@ -417,7 +417,7 @@ class Scaladoc extends MatchingTask {
    */
   private def getExtdirs: List[File] =
     if (extdirs.isEmpty) error("Member 'extdirs' is empty.")
-    else List.fromArray(extdirs.get.list()).map(nameToFile)
+    else extdirs.get.list().toList.map(nameToFile)
 
 /*============================================================================*\
 **                       Compilation and support methods                      **
@@ -513,7 +513,7 @@ class Scaladoc extends MatchingTask {
         originFile <- {
           val includedFiles =
             getDirectoryScanner(originDir).getIncludedFiles()
-          val list = List.fromArray(includedFiles)
+          val list = includedFiles.toList
           if (list.length > 0)
             log(
               "Documenting " + list.length + " source file" +
@@ -566,7 +566,7 @@ class Scaladoc extends MatchingTask {
     log("Scaladoc params = '" + addParams + "'", Project.MSG_DEBUG)
     var args =
       if (addParams.trim() == "") Nil
-      else List.fromArray(addParams.trim().split(" ")).map(_.trim())
+      else addParams.trim().split(" ").toList.map(_.trim())
 
     while (!args.isEmpty) {
       if (args.head startsWith "-") {

@@ -85,9 +85,9 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
   override def isDirectory = true
 
   /** Returns all abstract subfiles of this abstract directory. */
-  override def elements: Iterator[AbstractFile] = {
+  override def iterator: Iterator[AbstractFile] = {
     if (root eq null) load()
-    root.elements
+    root.iterator
   }
 
   /**
@@ -189,7 +189,7 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
     override def lastModified: Long =
       if (entry ne null) entry.getTime() else super.lastModified
 
-    override def elements: Iterator[AbstractFile] = entries.values
+    override def iterator: Iterator[AbstractFile] = entries.valuesIterator
 
     override def lookupName(name: String, directory: Boolean): AbstractFile =
       entries.get(if (directory) name + "/" else name) match {
@@ -241,9 +241,9 @@ final class URLZipArchive(url: URL) extends AbstractFile {
 
   def output = throw new Error("unsupported")
 
-  override def elements: Iterator[AbstractFile] = {
+  override def iterator: Iterator[AbstractFile] = {
     if (root eq null) load()
-    root.elements
+    root.iterator
   }
 
   override def lookupName(name: String, directory: Boolean): AbstractFile = {
@@ -324,7 +324,7 @@ final class URLZipArchive(url: URL) extends AbstractFile {
     override def lastModified: Long =
       if (entry ne null) entry.getTime() else super.lastModified
 
-    override def elements: Iterator[AbstractFile] = entries.values
+    override def iterator: Iterator[AbstractFile] = entries.valuesIterator
 
     override def lookupName(name: String, directory: Boolean): AbstractFile =
       entries.get(if (directory) name + "/" else name) match {

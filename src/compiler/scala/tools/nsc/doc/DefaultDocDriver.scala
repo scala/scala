@@ -109,7 +109,7 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
       for (pp <- d.sym.tpe.parents) subClasses(pp.typeSymbol) += d
     }
     copyResources
-    lazy val packages0 = sort(allClasses.keySet)
+    lazy val packages0 = sort(allClasses.keys)
     new AllPackagesFrame     with Frame { def packages = packages0 }
     new PackagesContentFrame with Frame { def packages = packages0 }
     new NavigationFrame      with Frame { }

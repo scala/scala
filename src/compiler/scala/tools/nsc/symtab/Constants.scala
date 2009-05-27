@@ -201,7 +201,7 @@ trait Constants {
     def escapedStringValue: String = {
       def escape(text: String): String = {
         val buf = new StringBuilder
-        for (c <- text.elements)
+        for (c <- text.iterator)
           if (c.isControl)
             buf.append("\\0" + toOctalString(c.asInstanceOf[Int]))
           else

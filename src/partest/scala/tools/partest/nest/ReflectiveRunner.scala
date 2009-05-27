@@ -26,7 +26,7 @@ class ReflectiveRunner extends RunnerUtils {
   val sepRunnerClassName = "scala.tools.partest.nest.ConsoleRunner"
 
   def main(args: String) {
-    val argList = List.fromArray(args.split("\\s"))
+    val argList = (args.split("\\s")).toList
 
     // find out which build to test
     val buildPath = searchPath("--buildpath", argList)

@@ -28,7 +28,7 @@ class Scanner extends Tokens with parsing.TokenTests {
   /** initializes the scanner on input s */
   final def initScanner(s: String) {
     value = ""
-    it = (s).elements
+    it = (s).iterator
     token = 1+END
     next
     nextToken
@@ -50,7 +50,7 @@ class Scanner extends Tokens with parsing.TokenTests {
   }
 
   final def accS(ds: Seq[Char]) {
-    val jt = ds.elements
+    val jt = ds.iterator
     while (jt.hasNext) { acc(jt.next) }
   }
 

@@ -12,11 +12,11 @@ trait IterableTemplate {
   type Constr <: IterableTemplate
   type ConstrOf[A] = Constr { type Elem = A }
 
-  def elements: Iterator[Elem]
+  def iterator: Iterator[Elem]
 
   def map [B] (f: Elem => B): ConstrOf[B]
 
-  def foreach(f: Elem => Unit) = elements.foreach(f)
+  def foreach(f: Elem => Unit) = iterator.foreach(f)
 }
 
 

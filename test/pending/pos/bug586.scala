@@ -11,7 +11,7 @@ with imm.Set[A]
   def +(elem: A) = new HashTreeSet(map + elem -> ())
   def -(elem: A) = new HashTreeSet(map - elem)
   def contains(elem: A) = map.isDefinedAt(elem)
-  def elements = map.elements.map(._1)
+  def iterator = map.iterator.map(._1)
   def empty:imm.Set[A] = new HashTreeSet[A]()
 }
 

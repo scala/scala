@@ -657,7 +657,7 @@ self =>
   /** Returns a list with all elements of this traversable object.
    *  @note Will not terminate for infinite-sized collections.
    */
-  def toList: List[A] = (new ListBuffer[A] ++ thisCollection).toList
+  def toList: List[A] = (new ListBuffer[A] ++= thisCollection).toList
 
   /** Returns an iterable with all elements in this traversable object.
    *  @note Will not terminate for infinite-sized collections.

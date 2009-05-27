@@ -73,7 +73,7 @@ object iq {
      *  Expected: Elements:  1  2  3  4  5  6  7  8  9
      */
     Console.print("Elements: ");
-    q6.elements.foreach(e => Console.print(" "+ e + " "))
+    q6.iterator.foreach(e => Console.print(" "+ e + " "))
     Console.println;
 
    /* Testing mkString

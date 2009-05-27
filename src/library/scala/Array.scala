@@ -92,70 +92,70 @@ object Array extends SequenceFactory[Array] {
   override def apply[A](xs: A*): Array[A] = {
     val array = new Array[A](xs.length)
     var i = 0
-    for (x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
 
   def apply(xs: Boolean*): Array[Boolean] = {
     val array = new Array[Boolean](xs.length)
     var i = 0
-    for (x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
 
   def apply(xs: Byte*): Array[Byte] = {
     val array = new Array[Byte](xs.length)
     var i = 0
-    for (x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
 
   def apply(xs: Short*): Array[Short] = {
     val array = new Array[Short](xs.length)
     var i = 0
-    for (x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
 
   def apply(xs: Char*): Array[Char] = {
     val array = new Array[Char](xs.length)
     var i = 0
-    for (x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
 
   def apply(xs: Int*): Array[Int] = {
     val array = new Array[Int](xs.length)
     var i = 0
-    for (x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
 
   def apply(xs: Long*): Array[Long] = {
     val array = new Array[Long](xs.length)
     var i = 0
-    for (x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
 
   def apply(xs: Float*): Array[Float] = {
     val array = new Array[Float](xs.length)
     var i = 0
-    for (x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
 
   def apply(xs: Double*): Array[Double] = {
     val array = new Array[Double](xs.length)
     var i = 0
-    for (x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
 
   def apply(xs: Unit*): Array[Unit] = {
     val array = new Array[Unit](xs.length)
     var i = 0
-    for (x <- xs.elements) { array(i) = x; i += 1 }
+    for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
 

@@ -277,7 +277,7 @@ final class ListBuffer[A]
     this
   }
 
-  override def elements = new Iterator[A] {
+  override def iterator = new Iterator[A] {
     var cursor: List[A] = null
     def hasNext: Boolean = !start.isEmpty && cursor != last0
     def next(): A =
@@ -309,7 +309,7 @@ final class ListBuffer[A]
    *
    *  @return a <code>ListBuffer</code> with the same elements.
    */
-  override def clone(): ListBuffer[A] = (new ListBuffer[A]) ++ this
+  override def clone(): ListBuffer[A] = (new ListBuffer[A]) ++= this
 
   /** Defines the prefix of the string representation.
    *

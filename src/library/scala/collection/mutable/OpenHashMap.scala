@@ -165,7 +165,7 @@ class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutabl
    * An iterator over the elements of this map. Use of this iterator follows the same
    * contract for concurrent modification as the foreach method.
    */
-  def elements = new Iterator[(Key, Value)]{
+  def iterator = new Iterator[(Key, Value)]{
     var index = 0;
     val initialModCount = modCount;
 
@@ -183,6 +183,9 @@ class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutabl
       (result.key, result.value.get);
     }
   }
+
+  /** @deprecated use `iterator` instead */
+  @deprecated override def elements: Iterator[(Key, Value)] = iterator
 
   override def clone : OpenHashMap[Key, Value] = {
     val it = new OpenHashMap[Key, Value]

@@ -184,7 +184,7 @@ trait PackratParsers extends Parsers {
         if(evalSet contains p){
           //something in cache, and p is in the evalSet
           //remove the rule from the evalSet of the Head
-          h.evalSet = h.evalSet.remove(_==p)
+          h.evalSet = h.evalSet.filterNot(_==p)
           val tempRes = p(in)
           //we know that cached has an entry here
           val tempEntry: MemoEntry[_] = cached.get // match {case Some(x: MemoEntry[_]) => x}

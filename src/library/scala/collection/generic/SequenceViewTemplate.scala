@@ -102,7 +102,7 @@ trait SequenceViewTemplate[+A,
   }
 
   trait Reversed extends Transformed[A] {
-    override def elements: Iterator[A] = self.reversedElements
+    override def iterator: Iterator[A] = self.reverseIterator
     override def length: Int = self.length
     override def apply(idx: Int): A = self.apply(length - 1 - idx)
     override def stringPrefix = super.stringPrefix+"R"
@@ -113,7 +113,7 @@ trait SequenceViewTemplate[+A,
     protected[this] val patch: Sequence[B]
     protected[this] val replaced: Int
     private val plen = patch.length
-    override def elements: Iterator[B] = self.elements patch (from, patch.elements, replaced)
+    override def iterator: Iterator[B] = self.iterator patch (from, patch.iterator, replaced)
     override def length: Int = self.length + plen - replaced
     override def apply(idx: Int): B =
       if (idx < from) self.apply(idx)
@@ -124,7 +124,7 @@ trait SequenceViewTemplate[+A,
 
   trait Zipped[B] extends Transformed[(A, B)] {
     protected[this] val other: Sequence[B]
-    override def elements: Iterator[(A, B)] = self.elements zip other.elements
+    override def iterator: Iterator[(A, B)] = self.iterator zip other.iterator
     override def length = self.length min other.length
     override def apply(idx: Int): (A, B) = (self.apply(idx), other.apply(idx))
     override def stringPrefix = super.stringPrefix+"Z"

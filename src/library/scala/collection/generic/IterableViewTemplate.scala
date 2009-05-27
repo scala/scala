@@ -23,31 +23,31 @@ extends Iterable[A] with IterableTemplate[A, This] with TraversableView[A, Coll]
   trait Transformed[+B] extends IterableView[B, Coll] with super.Transformed[B]
 
   trait Sliced extends Transformed[A] with super.Sliced {
-    override def elements = self.elements slice (from, until)
+    override def iterator = self.iterator slice (from, until)
   }
 
   trait Mapped[B] extends Transformed[B] with super.Mapped[B] {
-    override def elements = self.elements map mapping
+    override def iterator = self.iterator map mapping
   }
 
   trait FlatMapped[B] extends Transformed[B] with super.FlatMapped[B] {
-    override def elements = self.elements flatMap (mapping(_).toIterable.elements)
+    override def iterator = self.iterator flatMap (mapping(_).toIterable.iterator)
   }
 
   trait Appended[B >: A] extends Transformed[B] with super.Appended[B] {
-    override def elements = self.elements ++ rest.toIterable.elements
+    override def iterator = self.iterator ++ rest.toIterable.iterator
   }
 
   trait Filtered extends Transformed[A] with super.Filtered {
-    override def elements = self.elements filter pred
+    override def iterator = self.iterator filter pred
   }
 
   trait TakenWhile extends Transformed[A] with super.TakenWhile {
-    override def elements = self.elements takeWhile pred
+    override def iterator = self.iterator takeWhile pred
   }
 
   trait DroppedWhile extends Transformed[A] with super.DroppedWhile {
-    override def elements = self.elements dropWhile pred
+    override def iterator = self.iterator dropWhile pred
   }
 
   /** Boilerplate method, to override in each subclass

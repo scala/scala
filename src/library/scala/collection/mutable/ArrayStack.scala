@@ -153,7 +153,7 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
   /**
    * Iterates over the stack in fifo order.
    */
-  def elements = new Iterator[T]{
+  def iterator: Iterator[T] = new Iterator[T]{
     var currentIndex = index;
     def hasNext = currentIndex > 0;
     def next = {
@@ -161,6 +161,8 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
       table(currentIndex).asInstanceOf[T];
     }
   }
+
+  @deprecated def elements = iterator
 
   override def foreach[U](f : T =>  U){
     var currentIndex = index;

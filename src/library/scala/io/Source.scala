@@ -68,7 +68,7 @@ object Source {
    *  @return      ...
    */
   def fromChars(chars: Array[Char]): Source = {
-    val it = chars.elements
+    val it = chars.iterator
     new Source {
       def reset() = fromChars(chars)
       val iter = it
@@ -81,7 +81,7 @@ object Source {
    *  @return  ...
    */
   def fromString(s: String): Source = {
-    val it = s.elements
+    val it = s.iterator
     new Source {
       def reset() = fromString(s)
       val iter = it

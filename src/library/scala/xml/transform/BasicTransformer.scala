@@ -29,7 +29,7 @@ abstract class BasicTransformer extends Function1[Node,Node] {
    */
   protected def buffer(pos: Int, ns: Seq[Node]): NodeBuffer = {
     val nb = new NodeBuffer()
-    var jt = ns.elements
+    var jt = ns.iterator
     var j = 0; while (j < pos-1) {
       nb.append(jt.next)
       j += 1
@@ -45,7 +45,7 @@ abstract class BasicTransformer extends Function1[Node,Node] {
   protected def freeze(nb: NodeBuffer): Seq[Node] = {
     val arr = new Array[Node](nb.length)
     var i = 0
-    val it = nb.elements; while (it.hasNext) {
+    val it = nb.iterator; while (it.hasNext) {
       arr(i) = it.next
       i += 1
     }
@@ -62,7 +62,7 @@ abstract class BasicTransformer extends Function1[Node,Node] {
    *  @return   ...
    */
   protected def unchanged(n: Node, ns: Seq[Node]) =
-    single(ns) && (ns.elements.next.eq(n))
+    single(ns) && (ns.iterator.next.eq(n))
 
   /** Call transform(Node) for each node in ns, append results
    *  to NodeBuffer.
@@ -78,7 +78,7 @@ abstract class BasicTransformer extends Function1[Node,Node] {
    */
   def transform(ns: Seq[Node]): Seq[Node] = {
     var i = 0
-    val it = ns.elements
+    val it = ns.iterator
     try {
       while (it.hasNext) {
         val n = it.next
@@ -114,7 +114,7 @@ abstract class BasicTransformer extends Function1[Node,Node] {
     val seq = transform(n)
     if (!single(seq))
       throw new UnsupportedOperationException("transform must return single node for root");
-    else seq.elements.next
+    else seq.iterator.next
   }
 }
 

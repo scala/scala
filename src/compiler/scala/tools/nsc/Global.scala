@@ -728,7 +728,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     }
 
     /* An iterator returning all the units being compiled in this run */
-    def units: Iterator[CompilationUnit] = unitbuf.elements
+    def units: Iterator[CompilationUnit] = unitbuf.iterator
 
     /** A map from compiled top-level symbols to their source files */
     val symSource = new HashMap[Symbol, AbstractFile]
@@ -792,7 +792,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         showDef(newTermName(settings.Xshowobj.value), true)
 
       if (reporter.hasErrors) {
-        for ((sym, file) <- symSource.elements) {
+        for ((sym, file) <- symSource.iterator) {
           sym.reset(new loaders.SourcefileLoader(file))
           if (sym.isTerm) sym.moduleClass.reset(loaders.moduleClassLoader)
         }
@@ -805,7 +805,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
           warning("there were unchecked warnings; re-run with " + settings.unchecked.name + " for details")
         }
       }
-      for ((sym, file) <- symSource.elements) resetPackageClass(sym.owner)
+      for ((sym, file) <- symSource.iterator) resetPackageClass(sym.owner)
       informTime("total", startTime)
 
       dependencyAnalysis.writeToFile();

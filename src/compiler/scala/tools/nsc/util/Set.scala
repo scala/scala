@@ -14,11 +14,13 @@ abstract class Set[T <: AnyRef] {
 
   def addEntry(x: T): Unit
 
-  def elements: Iterator[T]
+  def iterator: Iterator[T]
+
+  @deprecated def elements = iterator
 
   def contains(x: T): Boolean =
     findEntry(x) ne null
 
-  def toList = elements.toList
+  def toList = iterator.toList
 
 }

@@ -156,7 +156,7 @@ trait Linearizers { self: ICodes =>
       if (m.code.startBlock.predecessors eq Nil)
         blocks
       else
-        m.code.startBlock :: (blocks.remove(_ == m.code.startBlock))
+        m.code.startBlock :: (blocks.filterNot(_ == m.code.startBlock))
     }
 
     def linearizeAt(m: IMethod, start: BasicBlock): List[BasicBlock] = {

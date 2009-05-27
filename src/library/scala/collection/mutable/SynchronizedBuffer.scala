@@ -26,8 +26,8 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
     super.length
   }
 
-  abstract override def elements: Iterator[A] = synchronized {
-    super.elements
+  abstract override def iterator: Iterator[A] = synchronized {
+    super.iterator
   }
 
   abstract override def apply(n: Int): A = synchronized {
@@ -52,7 +52,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
   }
 
   /** Appends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method. The identity of the
+   *  via its <code>iterator</code> method. The identity of the
    *  buffer is returned.
    *
    *  @param iter  the iterable object.
@@ -62,7 +62,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
   }
 
   /** Appends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method.
+   *  via its <code>iterator</code> method.
    *
    *  @param iter  the iterable object.
    */
@@ -79,7 +79,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
   }
 
   /** Appends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method.
+   *  via its <code>iterator</code> method.
    *
    *  @param iter  the iterable object.
    */
@@ -97,7 +97,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
   }
 
   /** Prepends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method. The identity of the
+   *  via its <code>iterator</code> method. The identity of the
    *  buffer is returned.
    *
    *  @param iter  the iterable object.
@@ -115,7 +115,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
   }
 
   /** Prepends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method. The identity of the
+   *  via its <code>iterator</code> method. The identity of the
    *  buffer is returned.
    *
    *  @param iter  the iterable object.

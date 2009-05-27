@@ -27,7 +27,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
 
   def length: Int = self.length
 
-  override def elements: Iterator[A] = self.elements
+  override def iterator: Iterator[A] = self.iterator
 
   def apply(n: Int): A = self.apply(n)
 
@@ -48,7 +48,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
   override def readOnly = self.readOnly
 
   /** Appends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method. The identity of the
+   *  via its <code>iterator</code> method. The identity of the
    *  buffer is returned.
    *
    *  @param iter  the iterable object.
@@ -57,7 +57,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
   override def ++(iter: Iterable[A]): Buffer[A] = self.++(iter)
 
   /** Appends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method.
+   *  via its <code>iterator</code> method.
    *
    *  @param iter  the iterable object.
    */
@@ -70,7 +70,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
   override def append(elems: A*): Unit = self.++=(elems)
 
   /** Appends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method.
+   *  via its <code>iterator</code> method.
    *
    *  @param iter  the iterable object.
    */
@@ -84,7 +84,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
   def +:(elem: A): Buffer[A] = self.+:(elem)
 
   /** Prepends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method. The identity of the
+   *  via its <code>iterator</code> method. The identity of the
    *  buffer is returned.
    *
    *  @param iter  the iterable object.
@@ -98,7 +98,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
   override def prepend(elems: A*): Unit = self.prependAll(elems)
 
   /** Prepends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method. The identity of the
+   *  via its <code>iterator</code> method. The identity of the
    *  buffer is returned.
    *
    *  @param iter  the iterable object.

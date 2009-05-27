@@ -467,13 +467,13 @@ self: Analyzer =>
       }
 
       /** A candidate for best applicable info wrt `improves` */
-      val best = (NoImplicitInfo /: applicable.keySet) (
+      val best = (NoImplicitInfo /: applicable.keys) (
         (best, alt) => if (improves(alt, best)) alt else best)
       if (best == NoImplicitInfo) SearchFailure
       else {
         /** The list of all applicable infos which are not improved upon by `best`. */
-        val competing = applicable.keySet dropWhile (alt => best == alt || improves(best, alt))
-        if (!competing.isEmpty) ambiguousImplicitError(best, competing.elements.next, "both", "and", "") // !!! streamline when new collection is there
+        val competing = applicable.keys dropWhile (alt => best == alt || improves(best, alt))
+        if (!competing.isEmpty) ambiguousImplicitError(best, competing.iterator.next, "both", "and", "") // !!! streamline when new collection is there
 
         // Also check that applicable infos that did not get selected are not
         // in (a companion object of) a subclass of (a companion object of) the class
@@ -564,7 +564,7 @@ self: Analyzer =>
           else t :: compactify(ts1 remove (pre <:< _.prefix))
       }
       getParts(tp)
-      for ((k, ts) <- partMap.elements.toList; t <- compactify(ts)) yield t
+      for ((k, ts) <- partMap.iterator.toList; t <- compactify(ts)) yield t
     }
 
     /** The implicits made available by type `pt`.
@@ -572,7 +572,7 @@ self: Analyzer =>
      *  such that some part of `tp` has C as one of its superclasses.
      */
     private def implicitsOfExpectedType: List[List[ImplicitInfo]] =
-      parts(pt).elements.map(implicitsOfClass).toList
+      parts(pt).iterator.map(implicitsOfClass).toList
 
     /** The manifest corresponding to type `pt`, provided `pt` is an instance of Manifest.
      */

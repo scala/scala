@@ -40,6 +40,7 @@ trait DefaultMapModel[A, B] extends Map[A, B] {
 
   def += (kv: (A, B)): this.type = { put(kv._1, kv._2); this }
 
-  def elements = entries map {e => (e.key, e.value)}
+  def iterator = entries map {e => (e.key, e.value)}
+
 }
 

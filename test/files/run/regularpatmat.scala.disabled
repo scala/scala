@@ -709,7 +709,7 @@ object testBugSequenceApply {
 
   case class ThreeBars extends Seq[Int] {
     override def length = 3;
-    def elements = x.elements;
+    def iterator = x.iterator;
     def apply(i:Int) = x.apply(i);
   }
 

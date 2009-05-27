@@ -222,7 +222,7 @@ abstract class TypeParser {
 	}
     } */
 
-    for (method <- methodsSet.elements)
+    for (method <- methodsSet.iterator)
       if (!method.IsPrivate() && !method.IsAssembly() && !method.IsFamilyAndAssembly())
         createMethod(method);
 

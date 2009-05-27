@@ -92,8 +92,8 @@ class MutableList[A] extends LinearSequence[A] with LinearSequenceTemplate[A, Mu
 
   /** Returns an iterator over all elements of this list.
    */
-  override def elements: Iterator[A] =
-    if (first0 eq null) Iterator.empty else first0.elements
+  override def iterator: Iterator[A] =
+    if (first0 eq null) Iterator.empty else first0.iterator
 
   override def last = last0.elem
 

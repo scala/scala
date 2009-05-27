@@ -29,7 +29,7 @@ object Queue {
 class Queue[+A](elem: A*) extends Seq[A] {
 
   protected val in: List[A] = Nil
-  protected val out: List[A] = elem.elements.toList
+  protected val out: List[A] = elem.iterator.toList
 
   protected def mkQueue[A](i: List[A], o: List[A]): Queue[A] =
     new Queue[A]() {
@@ -56,7 +56,7 @@ class Queue[+A](elem: A*) extends Seq[A] {
 
   /** Returns the elements in the list as an iterator
    */
-  override def elements: Iterator[A] = (out ::: in.reverse).elements
+  override def iterator: Iterator[A] = (out ::: in.reverse).iterator
 
   /** Checks if the queue is empty.
    *
@@ -96,7 +96,7 @@ class Queue[+A](elem: A*) extends Seq[A] {
    */
   @deprecated def +[B >: A](iter: Iterable[B]) = {
     var q: List[B] = in
-    iter.elements.foreach(e => q = e :: q)
+    iter.iterator.foreach(e => q = e :: q)
     mkQueue(q, out)
   }
 
@@ -110,7 +110,7 @@ class Queue[+A](elem: A*) extends Seq[A] {
    */
   def enqueue[B >: A](iter: Iterable[B]) = {
     var q: List[B] = in
-    iter.elements.foreach(e => q = e :: q)
+    iter.iterator.foreach(e => q = e :: q)
     mkQueue(q, out)
   }
 

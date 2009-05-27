@@ -32,7 +32,8 @@ abstract class RedBlack[A] {
     /** @deprecated use foreach instead */
     @deprecated def visit[T](input : T)(f : (T,A,B) => Tuple2[Boolean,T]) : Tuple2[Boolean,T];
     def toStream: Stream[(A,B)]
-    def elements: Iterator[Pair[A, B]]
+    def iterator: Iterator[(A, B)]
+    @deprecated def elements = iterator
     def upd[B1 >: B](k: A, v: B1): Tree[B1]
     def del(k: A): Tree[B]
     def smallest: NonEmpty[B]
@@ -87,8 +88,8 @@ abstract class RedBlack[A] {
     def toStream: Stream[(A,B)] =
       left.toStream append Stream((key,value)) append right.toStream
 
-    def elements: Iterator[Pair[A, B]] =
-      left.elements append Iterator.single(Pair(key, value)) append right.elements
+    def iterator: Iterator[(A, B)] =
+      left.iterator append Iterator.single(Pair(key, value)) append right.iterator
 
     def foreach[U](f: (A, B) =>  U) {
       left foreach f
@@ -129,7 +130,7 @@ abstract class RedBlack[A] {
     def upd[B](k: A, v: B): Tree[B] = RedTree(k, v, Empty, Empty)
     def del(k: A): Tree[Nothing] = this
     def smallest: NonEmpty[Nothing] = throw new NoSuchElementException("empty map")
-    def elements: Iterator[Pair[A, Nothing]] = Iterator.empty
+    def iterator: Iterator[(A, Nothing)] = Iterator.empty
     def toStream: Stream[(A,Nothing)] = Stream.empty
 
     def foreach[U](f: (A, Nothing) =>  U) {}

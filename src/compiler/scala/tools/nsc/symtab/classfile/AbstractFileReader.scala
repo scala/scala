@@ -46,7 +46,7 @@ class AbstractFileReader(val file: AbstractFile) {
    */
   def nextBytes(len: Int): Array[Byte] = {
     bp += len
-    buf.subArray(bp - len, bp)
+    buf.slice(bp - len, bp)
   }
 
   /** read a character

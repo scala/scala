@@ -38,7 +38,7 @@ trait Iterable[+A] extends Traversable[A]
 
   /* The following methods are inherited from trait IterableTemplate
    *
-  override def elements: Iterator[A]
+  override def iterator: Iterator[A]
   override def takeRight(n: Int): Iterable[A]
   override def dropRight(n: Int): Iterable[A]
   override def sameElements[B >: A](that: Iterable[B]): Boolean
@@ -58,7 +58,7 @@ object Iterable extends TraversableFactory[Iterable] {
    *  @deprecated use seq.min instead
    */
   @deprecated def min[A <% Ordered[A]](seq: Iterable[A]): A = {
-    val xs = seq.elements
+    val xs = seq.iterator
     if (!xs.hasNext) throw new IllegalArgumentException("min(<empty>)")
     var min = xs.next
     while (xs.hasNext) {
@@ -72,7 +72,7 @@ object Iterable extends TraversableFactory[Iterable] {
    *  @deprecated use seq.max iConstead
    */
   @deprecated def max[A <% Ordered[A]](seq: Iterable[A]): A = {
-    val xs = seq.elements
+    val xs = seq.iterator
     if (!xs.hasNext) throw new IllegalArgumentException("max(<empty>)")
     var max = xs.next
     while (xs.hasNext) {

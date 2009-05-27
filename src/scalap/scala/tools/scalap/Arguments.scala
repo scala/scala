@@ -95,7 +95,7 @@ object Arguments {
               i = i + 2
             }
           } else {
-            var iter = prefixes.elements
+            var iter = prefixes.iterator
             val j = i
             while ((i == j) && iter.hasNext) {
               val prefix = iter.next
@@ -105,7 +105,7 @@ object Arguments {
               }
             }
             if (i == j) {
-              val iter = prefixedBindings.keys;
+              val iter = prefixedBindings.keysIterator;
               while ((i == j) && iter.hasNext) {
                 val prefix = iter.next
                 if (args(i) startsWith prefix) {
@@ -127,7 +127,7 @@ object Arguments {
 
   def parse(options: String*)(args: Array[String]): Arguments = {
     val parser = new Parser('-')
-    val iter = options.elements
+    val iter = options.iterator
     while (iter.hasNext)
       parser withOption iter.next
     parser.parse(args)

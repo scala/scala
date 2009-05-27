@@ -146,7 +146,7 @@ sealed abstract class LongMap[+T] extends scala.collection.immutable.Map[Long, T
   /**
    * Iterator over key, value pairs of the map in unsigned order of the keys.
    */
-  def elements : Iterator[(Long, T)] = this match {
+  def iterator: Iterator[(Long, T)] = this match {
     case LongMap.Nil => Iterator.empty;
     case _ => new LongMapEntryIterator(this);
   }
@@ -160,7 +160,7 @@ sealed abstract class LongMap[+T] extends scala.collection.immutable.Map[Long, T
     case LongMap.Nil => {};
   }
 
-  override def keys : Iterator[Long] = this match {
+  override def keysIterator : Iterator[Long] = this match {
     case LongMap.Nil => Iterator.empty;
     case _ => new LongMapKeyIterator(this);
   }
@@ -177,7 +177,7 @@ sealed abstract class LongMap[+T] extends scala.collection.immutable.Map[Long, T
     case LongMap.Nil => {}
   }
 
-  override def values : Iterator[T] = this match {
+  override def valuesIterator : Iterator[T] = this match {
     case LongMap.Nil => Iterator.empty;
     case _ => new LongMapValueIterator(this);
   }

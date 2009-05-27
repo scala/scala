@@ -75,7 +75,7 @@ class LinkedHashMap[A, B] extends Map[A, B]
   def += (kv: (A, B)): this.type = { put(kv._1, kv._2); this }
   def -=(key: A): this.type = { remove(key); this }
 
-  def elements: Iterator[(A, B)] = new Iterator[(A, B)] {
+  def iterator: Iterator[(A, B)] = new Iterator[(A, B)] {
     private var cur = firstEntry
     def hasNext = cur ne null
     def next =
@@ -83,7 +83,7 @@ class LinkedHashMap[A, B] extends Map[A, B]
       else Iterator.empty.next
   }
 
-  override def keys: Iterator[A] = new Iterator[A] {
+  override def keysIterator: Iterator[A] = new Iterator[A] {
     private var cur = firstEntry
     def hasNext = cur ne null
     def next =
@@ -91,7 +91,7 @@ class LinkedHashMap[A, B] extends Map[A, B]
       else Iterator.empty.next
   }
 
-  override def values: Iterator[B] = new Iterator[B] {
+  override def valuesIterator: Iterator[B] = new Iterator[B] {
     private var cur = firstEntry
     def hasNext = cur ne null
     def next = { val res = cur.value; cur = cur.later; res }

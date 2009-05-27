@@ -111,7 +111,7 @@ class Stack[A] private (var elems: List[A]) extends collection.Sequence[A] with 
    *
    *  @return an iterator over all stack elements.
    */
-  override def elements: Iterator[A] = elems.elements
+  override def iterator: Iterator[A] = elems.iterator
 
   /** Creates a list of all stack elements in LIFO order.
    *

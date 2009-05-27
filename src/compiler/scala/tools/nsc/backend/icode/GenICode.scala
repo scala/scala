@@ -507,7 +507,7 @@ abstract class GenICode extends SubComponent  {
             tmp = ctx.makeLocal(tree.pos, tree.tpe, "tmp")
           }
           def duplicateFinalizer =
-            (new DuplicateLabels(ctx.labels.keySet))(ctx, finalizer)
+            (new DuplicateLabels(ctx.labels.keys))(ctx, finalizer)
 
           var handlers = for (CaseDef(pat, _, body) <- catches.reverse)
             yield pat match {
@@ -1526,7 +1526,7 @@ abstract class GenICode extends SubComponent  {
         assert(ctx.clazz.symbol eq cls,
                "Classes are not the same: " + ctx.clazz.symbol + ", " + cls)
 
-      for (f <- cls.info.decls.elements)
+      for (f <- cls.info.decls.iterator)
         if (!f.isMethod && f.isTerm)
           ctx.clazz.addField(new IField(f));
     }

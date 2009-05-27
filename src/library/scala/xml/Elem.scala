@@ -80,7 +80,7 @@ object Elem {
     */
    override def text = {
      val sb = new StringBuilder()
-     val it = child.elements
+     val it = child.iterator
      while (it.hasNext)
        sb.append(it.next.text)
      sb.toString()

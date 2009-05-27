@@ -2135,7 +2135,7 @@ trait Typers { self: Analyzer =>
             val attrScope = annType.decls
               .filter(sym => sym.isMethod && !sym.isConstructor && sym.hasFlag(JAVA))
             val names = new collection.mutable.HashSet[Symbol]
-            names ++= attrScope.elements.filter(_.isMethod)
+            names ++= attrScope.iterator.filter(_.isMethod)
             if (args.length == 1) {
               names.retain(sym => sym.name != nme.value)
             }

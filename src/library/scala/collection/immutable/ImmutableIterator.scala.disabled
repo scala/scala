@@ -104,7 +104,10 @@ sealed abstract class ImmutableIterator[+A] {
 
   /** Converts this immutable iterator into a conventional iterator.
    */
-  def elements: Iterator[A] = new Elements
+  def iterator: Iterator[A] = new Elements
+
+  @deprecated def elements = iterator
+  
 }
 
 

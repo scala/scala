@@ -24,11 +24,11 @@ trait SymbolWalker {
     def f(t : Tree) : Unit = {
       if (visited.add(t)) return
       def fs(l : List[Tree]) : Unit = {
-        val i = l.elements
+        val i = l.iterator
         while (i.hasNext) f(i.next)
       }
       def fss(l : List[List[Tree]]) : Unit = {
-        val i = l.elements
+        val i = l.iterator
         while (i.hasNext) fs(i.next)
       }
       if (t.isInstanceOf[StubTree]) return
@@ -109,8 +109,8 @@ trait SymbolWalker {
       (t) match {
       case (t : MemberDef) if t.symbol != null && t.symbol != NoSymbol =>
         val annotated = if (sym.isModule) sym.moduleClass else sym
-        val i = t.mods.annotations.elements
-        val j = annotated.attributes.elements
+        val i = t.mods.annotations.iterator
+        val j = annotated.attributes.iterator
         while (i.hasNext && j.hasNext) {
           val tree = i.next.constr
           val ainfo = j.next
@@ -156,8 +156,8 @@ trait SymbolWalker {
       case tree : UnApply => f(tree.fun); fs(tree.args)
       case tree : AppliedTypeTree =>
         if (tree.tpe != null) {
-          val i = tree.tpe.typeArgs.elements
-          val j = tree.args.elements
+          val i = tree.tpe.typeArgs.iterator
+          val j = tree.args.iterator
           while (i.hasNext && j.hasNext) {
             val tpe = i.next
             val arg = j.next

@@ -16,7 +16,7 @@ import util.control.Breaks._
 /** A template trait for iterable collections.
  *
  *  Collection classes mixing in this trait provide a method
- *  <code>elements</code> which returns an iterator over all the
+ *  <code>iterator</code> which returns an iterator over all the
  *  elements contained in the collection. They also provide a method `newBuilder`
  *  which creates a builder for collections of the same kind.
  *
@@ -24,7 +24,7 @@ import util.control.Breaks._
  *  all elements. Subclasses of `Iterable` should re-implement `foreach` with
  *  something more efficient, if possible.
  *
- *  This trait adds methods `elements`, `sameElements`,
+ *  This trait adds methods `iterator`, `sameElements`,
  *  `takeRight`, `dropRight` to the methods inherited from trait `Traversable`.
  *
  *  @author Martin Odersky
@@ -37,7 +37,7 @@ trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] 
    *
    *  @return the new iterator
    */
-  def elements: Iterator[A]
+  def iterator: Iterator[A]
 
   /** Apply a function <code>f</code> to all elements of this
    *  traversable object.
@@ -46,15 +46,15 @@ trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] 
    *              The result (of arbitrary type U) of function `f` is discarded.
    *
    *  @note This method underlies the implementation of most other bulk operations.
-   *        Implementing `foreach` with `elements` is often suboptimal.
+   *        Implementing `foreach` with `iterator` is often suboptimal.
    *        So `foreach` should be overridden in concrete collection classes if a more
    *        efficient implementation is available.
    */
-  def foreach[U](f: A => U): Unit = elements.foreach(f)
+  def foreach[U](f: A => U): Unit = this.iterator.foreach(f)
 
   /** Does this iterable contain no elements?
    */
-  override def isEmpty: Boolean = !elements.hasNext
+  override def isEmpty: Boolean = !this.iterator.hasNext
 
   /** Combines the elements of this iterable together using the binary
    *  function <code>f</code>, from right to left, and starting with
@@ -67,7 +67,7 @@ trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] 
    *          if the iterable is <code>[a<sub>0</sub>, a1, ..., a<sub>n</sub>]</code>.
    */
   override def foldRight[B](z: B)(op: (A, B) => B): B =
-    elements.foldRight(z)(op)
+    this.iterator.foldRight(z)(op)
 
   /** Combines the elements of this iterable object together using the binary
    *  operator <code>op</code>, from right to left
@@ -83,7 +83,7 @@ trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] 
    *  @throws Predef.UnsupportedOperationException if the iterator is empty.
    */
   override def reduceRight[B >: A](op: (A, B) => B): B =
-    elements.reduceRight(op)
+    this.iterator.reduceRight(op)
 
   /** The iterable itself */
   override def toIterable: Iterable[A] = thisCollection
@@ -93,7 +93,11 @@ trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] 
    *  @note  Might return different results for different runs, unless this iterable is ordered
    *  @throws Predef.NoSuchElementException if the iterable is empty.
    */
-  override def head: A = if (isEmpty) throw new NoSuchElementException else elements.next
+  override def head: A =
+    if (isEmpty)
+      throw new NoSuchElementException
+    else
+      this.iterator.next
 
   /** Returns the rightmost <code>n</code> elements from this iterable.
    *
@@ -102,7 +106,7 @@ trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] 
    */
   def takeRight(n: Int): This = {
     val b = newBuilder
-    val lead = elements drop n
+    val lead = this.iterator drop n
     var go = false
     for (x <- this) {
       if (lead.hasNext) lead.next
@@ -119,7 +123,7 @@ trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] 
    */
   def dropRight(n: Int): This = {
     val b = newBuilder
-    val lead = elements drop n
+    val lead = iterator drop n
     breakable {
       for (x <- this) {
         if (!lead.hasNext) break
@@ -138,8 +142,8 @@ trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] 
    *  @note  Might return different results for different runs, unless this iterable is ordered
    */
   def sameElements[B >: A](that: Iterable[B]): Boolean = {
-    val these = this.elements
-    val those = that.elements
+    val these = this.iterator
+    val those = that.iterator
     var res = true
     while (res && these.hasNext && those.hasNext) {
       res = (these.next == those.next)
@@ -149,13 +153,13 @@ trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] 
 
   /** Returns a stream with all elements in this traversable object.
    */
-  override def toStream: Stream[A] = elements.toStream
+  override def toStream: Stream[A] = iterator.toStream
 
   /** Creates a view of this iterable @see IterableView
    */
   override def view = new IterableView[A, This] {
     protected lazy val underlying = self.thisCollection
-    override def elements = self.elements
+    override def iterator = self.iterator
   }
 
   /** A sub-iterable view  starting at index `from`

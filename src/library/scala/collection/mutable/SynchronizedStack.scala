@@ -84,7 +84,7 @@ class SynchronizedStack[A] extends Stack[A] {
    *
    *  @return an iterator over all stack elements.
    */
-  override def elements: Iterator[A] = synchronized { super.elements }
+  override def iterator: Iterator[A] = synchronized { super.iterator }
 
   /** Creates a list of all stack elements in FIFO order.
    *

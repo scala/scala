@@ -35,7 +35,7 @@ object ContentModel extends WordExp {
   def getLabels(r: RegExp): scala.collection.Set[String] = {
     val s = new scala.collection.mutable.HashSet[String]()
     def traverse1(xs: Seq[RegExp]) {
-      val it = xs.elements
+      val it = xs.iterator
       while (it.hasNext) traverse(it.next)
     }
     def traverse(r: RegExp) {
@@ -54,7 +54,7 @@ object ContentModel extends WordExp {
 
   /* precond: rs.length >= 1 */
   private def buildString(rs: Seq[RegExp], sb: StringBuilder, sep: Char) {
-    val it = rs.elements
+    val it = rs.iterator
     val fst = it.next
     buildString(fst, sb)
     for (z <- it) {
@@ -136,7 +136,7 @@ case class MIXED(r: ContentModel.RegExp) extends DFAContentModel {
     def cond(n:Node) =
       !n.isInstanceOf[Text] && !n.isInstanceOf[SpecialNode];
 Console.println("ns = "+ns);
-    val jt = ns.elements;
+    val jt = ns.iterator;
     def hasNext = jt.hasNext;
     def next = {
       var r: Node = jt.next;
@@ -162,7 +162,7 @@ Console.println("ns = "+ns);
 case class  ELEMENTS(r:ContentModel.RegExp) extends DFAContentModel {
   /*
   def getIterator(ns:NodeSeq) = new Iterator[String] {
-    val jt = ns.elements.buffered;
+    val jt = ns.iterator.buffered;
     def hasNext = jt.hasNext;
     def next = {
       var r: Node = jt.next;

@@ -430,7 +430,7 @@ abstract class GenMSIL extends SubComponent {
       }
 
       val length = buf.position()
-      buf.array().subArray(0, length)
+      buf.array().slice(0, length)
     }
 
     def writeAssembly() {

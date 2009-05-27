@@ -27,7 +27,7 @@ trait Sorted[K, +This <: Sorted[K, This]] extends Ranged[K, This] {
    */
   def to(to: K): This = {
     // tough!
-    val i = keySet.from(to).elements;
+    val i = keySet.from(to).iterator;
     if (!i.hasNext) return thisCollection
     val next = i.next;
     if (next == to) {
@@ -37,7 +37,7 @@ trait Sorted[K, +This <: Sorted[K, This]] extends Ranged[K, This] {
   }
 
   protected def hasAll(j: Iterator[K]): Boolean = {
-    val i = keySet.elements;
+    val i = keySet.iterator;
     if (!i.hasNext) return !j.hasNext;
     var in = i.next;
     while (j.hasNext) {

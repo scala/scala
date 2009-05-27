@@ -26,7 +26,7 @@ object RichCharTest1 extends RichTest {
 }
 // object RichCharTest2 extends RichTest {
 //   case class C(s: String) {
-//     private val it = s.elements
+//     private val it = s.iterator
 //     private var c: Char = _
 //     def ch(): Char = c
 //     def nextch(): Unit = { c = if (it.hasNext) it.next else ';' }

@@ -85,7 +85,7 @@ object UTF8Codec {
   def encode(s: String): Array[Byte] = {
     val dst = new Array[Byte](s.length() * 3)
     val len = encode(s, dst, 0)
-    dst.subArray(0, len)
+    dst.slice(0, len)
   }
 
   def decode(src: Array[Byte], from: Int,

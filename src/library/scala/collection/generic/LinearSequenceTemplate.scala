@@ -60,7 +60,7 @@ trait LinearSequenceTemplate[+A, +This <: LinearSequenceTemplate[A, This] with L
 
   /** Returns the elements in the sequence as an iterator
    */
-  override def elements: Iterator[A] = new Iterator[A] {
+  override def iterator: Iterator[A] = new Iterator[A] {
     var these = self
     def hasNext: Boolean = !these.isEmpty
     def next: A =
@@ -69,6 +69,8 @@ trait LinearSequenceTemplate[+A, +This <: LinearSequenceTemplate[A, This] with L
       } else Iterator.empty.next
     override def toList: List[A] = these.toList
   }
+
+  @deprecated def elements = iterator
 
   /** Apply the given function <code>f</code> to each element of this linear sequence
    *  (while respecting the order of the elements).

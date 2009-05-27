@@ -74,7 +74,7 @@ sealed abstract class List[+A] extends LinearSequence[A]
    */
   def :::[B >: A](prefix: List[B]): List[B] =
     if (isEmpty) prefix
-    else (new ListBuffer[B] ++ prefix).prependToList(this)
+    else (new ListBuffer[B] ++= prefix).prependToList(this)
 
   /** Reverse the given prefix and append the current list to that.
    *  This function is equivalent to an application of <code>reverse</code>
@@ -807,7 +807,7 @@ object List extends SequenceFactory[List] {
    *           <code>[a<sub>0</sub>, ..., a<sub>k</sub>]</code>,
    *           <code>[b<sub>0</sub>, ..., b<sub>l</sub>]</code> and
    *           <code>n = min(k,l)</code>
-   *  @deprecated  use (xs, ys).forall(f) instead
+   *  @deprecated  use (xs, ys).exists(f) instead
    */
   @deprecated def exists2[A,B](xs: List[A], ys: List[B])(f: (A, B) => Boolean): Boolean = {
     var xc = xs

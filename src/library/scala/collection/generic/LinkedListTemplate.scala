@@ -69,7 +69,7 @@ trait LinkedListTemplate[A, This >: Null <: Sequence[A] with LinkedListTemplate[
     else None
   }
 
-  override def elements: Iterator[A] = new Iterator[A] {
+  override def iterator: Iterator[A] = new Iterator[A] {
     var elems = self
     def hasNext = (elems ne null)
     def next = {

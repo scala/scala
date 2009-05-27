@@ -32,12 +32,16 @@ trait Product extends AnyRef {
    */
   def productArity: Int
 
-  def productElements: Iterator[Any] = new Iterator[Any] {
+  def productIterator: Iterator[Any] = new Iterator[Any] {
     private var c: Int = 0
     private val cmax = productArity
     def hasNext = c < cmax
     def next() = { val result = productElement(c); c += 1; result }
   }
+
+  /** @deprecated use productIterator instead
+   */
+  @deprecated def productElements: Iterator[Any] = productIterator
 
   /**
    *  By default the empty string. Implementations may override this

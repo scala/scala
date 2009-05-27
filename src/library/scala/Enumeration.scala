@@ -44,7 +44,7 @@ import scala.collection.generic.{Builder, BuilderFactory, AddingBuilder, SetTemp
  *
  *    <b>def</b> isWorkingDay(d: WeekDay) = ! (d == Sat || d == Sun)
  *
- *    WeekDay.elements filter isWorkingDay foreach println
+ *    WeekDay.iterator filter isWorkingDay foreach println
  *  }</pre>
  *
  *  @param initial The initial value from which to count the integers that
@@ -95,7 +95,7 @@ abstract class Enumeration(initial: Int, names: String*) {
   protected var nextId = initial
 
   /** The string to use to name the next created value. */
-  protected var nextName = names.elements
+  protected var nextName = names.iterator
 
   /** The highest integer amongst those used to identify values in this
     * enumeration. */
@@ -219,7 +219,7 @@ abstract class Enumeration(initial: Int, names: String*) {
     def contains(v: Value) = ids contains (v.id)
     def + (value: Value) = new ValueSet(ids + value.id)
     def - (value: Value) = new ValueSet(ids - value.id)
-    def elements = ids.elements map Enumeration.this.apply
+    def iterator = ids.iterator map Enumeration.this.apply
     override def stringPrefix = Enumeration.this + ".ValueSet"
   }
 
@@ -249,42 +249,42 @@ abstract class Enumeration(initial: Int, names: String*) {
   @deprecated def valueOf(s: String) = values.find(_.toString == s)
 
   /** A new iterator over all values of this enumeration.
-   *  @deprecated use values.elements instead
+   *  @deprecated use values.iterator instead
    */
-  @deprecated final def elements: Iterator[Value] = values.elements
+  @deprecated final def iterator: Iterator[Value] = values.iterator
 
   /** Apply a function f to all values of this enumeration.
    *  @deprecated use values.foreach instead
    */
-  @deprecated def foreach(f: Value => Unit): Unit = elements foreach f
+  @deprecated def foreach(f: Value => Unit): Unit = this.iterator foreach f
 
   /** Apply a predicate p to all values of this enumeration and return
     * true, iff the predicate yields true for all values.
    *  @deprecated use values.forall instead
    */
-  @deprecated def forall(p: Value => Boolean): Boolean = elements forall p
+  @deprecated def forall(p: Value => Boolean): Boolean = this.iterator forall p
 
   /** Apply a predicate p to all values of this enumeration and return
     * true, iff there is at least one value for which p yields true.
     *  @deprecated use values.exists instead
     */
-  @deprecated def exists(p: Value => Boolean): Boolean = elements exists p
+  @deprecated def exists(p: Value => Boolean): Boolean = this.iterator exists p
 
   /** Returns an iterator resulting from applying the given function f to each
     * value of this enumeration.
     *  @deprecated use values.map instead
     */
-  @deprecated def map[B](f: Value => B): Iterator[B] = elements map f
+  @deprecated def map[B](f: Value => B): Iterator[B] = this.iterator map f
 
   /** Applies the given function f to each value of this enumeration, then
     * concatenates the results.
     *  @deprecated use values.flatMap instead
     */
-  @deprecated def flatMap[B](f: Value => Iterator[B]): Iterator[B] = elements flatMap f
+  @deprecated def flatMap[B](f: Value => Iterator[B]): Iterator[B] = this.iterator flatMap f
 
   /** Returns all values of this enumeration that satisfy the predicate p.
     * The order of values is preserved.
     *  @deprecated use values.filter instead
     */
-  @deprecated def filter(p: Value => Boolean): Iterator[Value] = elements filter p
+  @deprecated def filter(p: Value => Boolean): Iterator[Value] = this.iterator filter p
 }

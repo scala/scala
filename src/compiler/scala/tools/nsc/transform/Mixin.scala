@@ -749,7 +749,7 @@ abstract class Mixin extends InfoTransform {
         // parents != baseClasses.map(_.tpe): bug #1535
         val fields = for {
           sc <- clazz.info.baseClasses.map(_.tpe)
-          field <- sc.decls.elements.toList
+          field <- sc.decls.iterator.toList
           if needsBitmapField(sc, field)
         } yield field
 
@@ -764,7 +764,7 @@ abstract class Mixin extends InfoTransform {
        */
       def buildFieldPositions(clazz: Symbol) {
         var fields = usedBits(clazz)
-        for (f <- clazz.info.decls.elements if needsInitFlag(f) || f.hasFlag(LAZY)) {
+        for (f <- clazz.info.decls.iterator if needsInitFlag(f) || f.hasFlag(LAZY)) {
           if (settings.debug.value) log(f.fullNameString + " -> " + fields)
           fieldOffset(f) = fields
           fields += 1

@@ -188,7 +188,7 @@ trait Reifiers {
         case Some(tgt) => tgt
       }
     def hasAllTargets: Boolean =
-      targets.elements.map(_._2).forall {
+      targets.iterator.map(_._2).forall {
         case Some(_) => true
         case None => false
       }

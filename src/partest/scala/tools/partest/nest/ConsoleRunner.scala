@@ -55,7 +55,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
 
   def main(argstr: String) {
     // tokenize args. filter: "".split("\\s") yields Array("")
-    var args = List.fromArray(argstr split "\\s").remove(_ == "")
+    var args = (argstr split "\\s").toList.filterNot(_ == "")
 
     if (args.length == 0)
       NestUI.usage()
@@ -75,7 +75,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
         else if (!classPath.isEmpty)
           new ConsoleFileManager(classPath.get, true)
         else if (args contains "--pack") {
-          args = args.remove(_ == "--pack") // will create a result file '--pack' otherwise
+          args = args.filterNot(_ == "--pack") // will create a result file '--pack' otherwise
           new ConsoleFileManager("build/pack")
         } else // auto detection, see ConsoleFileManager.findLatest
           new ConsoleFileManager

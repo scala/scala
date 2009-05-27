@@ -132,7 +132,7 @@ trait BindingParsers extends Parsers with Binders {
     val oldEnv = binderEnv // save old environment
 
     // bring binders in the scope in scope
-    for(val b <- scope) binderEnv = binderEnv.extend(b, scope)
+    for(b <- scope) binderEnv = binderEnv.extend(b, scope)
 
     // return the result of running block (in which these binders are in scope)
     // before returning, the binderEnv is restored to its old value

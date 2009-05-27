@@ -78,7 +78,7 @@ extends java.lang.Thread with scala.util.logging.Logged {
     val res = ConstructingParser.fromSource(src,false).document.docElem(0)
     switch
     log("[load done]")
-    res.child.elements
+    res.child.iterator
   }
 
   /** saves the XML to file */

@@ -112,7 +112,7 @@ class TreeMap[A, +B](override val size: Int, t: RedBlack[A]#Tree[B])(implicit va
    *
    *  @return the new iterator
    */
-  def elements: Iterator[(A, B)] = tree.toStream.elements
+  def iterator: Iterator[(A, B)] = tree.toStream.iterator
 
   override def toStream: Stream[(A, B)] = tree.toStream
 

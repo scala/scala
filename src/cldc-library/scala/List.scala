@@ -501,7 +501,7 @@ sealed abstract class List[+A] extends Seq[A] {
    *
    *  @return an iterator on the list elements.
    */
-  override def elements: Iterator[A] = new Iterator[A] {
+  override def iterator: Iterator[A] = new Iterator[A] {
     var these = List.this
     def hasNext: Boolean = !these.isEmpty
     def next: A =
@@ -1027,7 +1027,7 @@ sealed abstract class List[+A] extends Seq[A] {
     val b = new ListBuffer[B]
     var these = this
     while (!these.isEmpty) {
-      var those = f(these.head).elements
+      var those = f(these.head).iterator
       while (those.hasNext) {
         b += those.next
       }

@@ -58,7 +58,7 @@ object genprod {
 
   def zippedAndCommaSeparated(left: List[String], right: List[String]): String = {
     val sb = new StringBuilder
-    val it = (left zip right).elements
+    val it = (left zip right).iterator
     def append1 = {
       val p = it.next
       sb.append(p._1).append(':').append(p._2)

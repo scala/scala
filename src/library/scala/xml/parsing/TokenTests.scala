@@ -25,7 +25,7 @@ trait TokenTests {
 
   /** (#x20 | #x9 | #xD | #xA)+ */
   final def isSpace(cs: Seq[Char]): Boolean = {
-    val it = cs.elements;
+    val it = cs.iterator;
     it.hasNext && it.forall { isSpace };
   }
 
@@ -72,7 +72,7 @@ trait TokenTests {
    */
   def isName(s: String): Boolean = {
     if( s.length() > 0 ) {
-      val y           = s.elements;
+      val y           = s.iterator;
       if (isNameStart(y.next)) {
         while (y.hasNext && isNameChar(y.next)) {};
         !y.hasNext
@@ -105,7 +105,7 @@ trait TokenTests {
    * @param ianaEncoding The IANA encoding name.
    */
   def isValidIANAEncoding(ianaEncoding: Seq[Char]): Boolean = {
-    val it = ianaEncoding.elements;
+    val it = ianaEncoding.iterator;
     if (!it.hasNext)
       return false;
 
@@ -131,7 +131,7 @@ trait TokenTests {
   def checkPubID(s: String): Boolean = {
     //Console.println("checkPubID of \""+s+"\"");
     if (s.length() > 0) {
-      val y = s.elements;
+      val y = s.iterator;
       var c = ' ';
       while (y.hasNext && isPubIDChar(c)) {
         //Console.println(c);

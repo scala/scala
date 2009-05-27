@@ -56,7 +56,7 @@ abstract class Relation extends AnyRef with Iterable[Tuple] {
    * <h3>Caution</h3> A Relation only has one single iterator, due to limitations
    * in DBMS. This means that if this method is called multiple times, all returned
    * iterators will share the same state. */
-  def elements: Iterator[Tuple] = new Iterator[Tuple] {
+  def iterator: Iterator[Tuple] = new Iterator[Tuple] {
     protected val result: java.sql.ResultSet = Relation.this.sqlResult
     def hasNext: Boolean = resultNext
     private var resultNext = result.next()
@@ -78,4 +78,7 @@ abstract class Relation extends AnyRef with Iterable[Tuple] {
       else error("next on empty iterator")
     }
   }
+
+  @deprecated def elements = iterator
+
 }

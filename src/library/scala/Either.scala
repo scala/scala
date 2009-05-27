@@ -189,7 +189,7 @@ object Either {
      * <code>Seq</code> if this is a <code>Right</code>.
      */
     def toSeq = e match {
-      case Left(a) => Seq.singleton(a)
+      case Left(a) => Seq(a)
       case Right(_) => Seq.empty
     }
 
@@ -291,7 +291,7 @@ object Either {
      */
     def toSeq = e match {
       case Left(_) => Seq.empty
-      case Right(b) => Seq.singleton(b)
+      case Right(b) => Seq(b)
     }
 
     /**

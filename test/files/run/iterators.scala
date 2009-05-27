@@ -85,7 +85,7 @@ object Test {
   }
 
   def check_collect: String =
-    List(1, 2, 3, 4, 5).elements.collect.mkString("x")
+    List(1, 2, 3, 4, 5).iterator.collect.mkString("x")
 
   def check_indexOf: String = {
     val i = List(1, 2, 3, 4, 5).indexOf(4)

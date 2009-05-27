@@ -21,6 +21,6 @@ class TreeMap[KEY,VALUE](_factory:TreeMapFactory[KEY]) extends Tree[KEY,Pair[KEY
   val order = _factory.order;
   def this(newOrder:Order[KEY]) = this(new TreeMapFactory[KEY](newOrder));
   def get(key:KEY) = null;
-  def elements:Iterator[Pair[KEY,VALUE]] = null;
+  def iterator:Iterator[Pair[KEY,VALUE]] = null;
   override def size = super[Tree].size
 }

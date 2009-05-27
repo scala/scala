@@ -31,7 +31,7 @@ abstract class PriorityQueueProxy[A <% Ordered[A]] extends PriorityQueue[A]
    *
    *  @return the new iterator
    */
-  override def elements: Iterator[A] = self.elements
+  override def iterator: Iterator[A] = self.iterator
 
   /** Returns the length of this priority queue.
    */

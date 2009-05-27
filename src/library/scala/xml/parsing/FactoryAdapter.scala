@@ -93,7 +93,7 @@ abstract class FactoryAdapter extends DefaultHandler() {
     if (!capture) return
     if (!normalizeWhitespace) {
       // compliant: report every character
-      return buffer.append(ch, offset, length)
+      return buffer.appendAll(ch, offset, length)
     }
 
     // normalizing whitespace is not compliant, but useful

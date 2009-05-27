@@ -69,8 +69,8 @@ object BytePickle {
         case Def() => Array.concat(s, (List[Byte](1)).toArray)
       };
     def appU(s: Array[Byte]): (RefDef, Array[Byte]) =
-      if (s(0) == 0) (Ref(), s.subArray(1, s.length))
-      else (Def(), s.subArray(1, s.length));
+      if (s(0) == 0) (Ref(), s.slice(1, s.length))
+      else (Def(), s.slice(1, s.length));
   }
 
   val REF = 0
@@ -91,7 +91,7 @@ object BytePickle {
         } while ((b & 0x80) != 0);
         x
       }
-      (readNat, s.subArray(num, s.length))
+      (readNat, s.slice(num, s.length))
     }
   }
 
@@ -260,7 +260,7 @@ object BytePickle {
         } while ((b & 0x80) != 0);
         x
       }
-      (readNat, new UnPicklerState(s.stream.subArray(num, s.stream.length), s.dict))
+      (readNat, new UnPicklerState(s.stream.slice(num, s.stream.length), s.dict))
     }
   }
 
@@ -268,7 +268,7 @@ object BytePickle {
     def appP(b: Byte, s: PicklerState): PicklerState =
       new PicklerState(Array.concat(s.stream, (List[Byte](b)).toArray), s.dict);
     def appU(s: UnPicklerState): (Byte, UnPicklerState) =
-      (s.stream(0), new UnPicklerState(s.stream.subArray(1, s.stream.length), s.dict));
+      (s.stream(0), new UnPicklerState(s.stream.slice(1, s.stream.length), s.dict));
   }
 
   def string: SPU[String] =

@@ -47,7 +47,7 @@ class LinkedHashSet[A] extends Set[A]
     super.clear()
   }
 
-  override def elements = ordered.elements
+  override def iterator = ordered.iterator
 
   override def foreach[U](f: A => U) = ordered foreach f
 }

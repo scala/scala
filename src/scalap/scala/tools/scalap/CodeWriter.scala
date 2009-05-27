@@ -33,7 +33,7 @@ class CodeWriter(writer: Writer) {
   def getIndentWidth = if (step == null) -1 else step.length()
 
   def setIndentWidth(width: Int): CodeWriter =
-    setIndentString(List.make(width, ' ').mkString)
+    setIndentString(List.fill(width)(' ').mkString)
 
   def getIndentString = step;
 

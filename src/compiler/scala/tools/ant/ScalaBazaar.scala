@@ -87,8 +87,8 @@ package scala.tools.ant {
           content.update(key, value :: content(key))
         else content.update(key, List(value))
       }
-      def fileSets = elements.toList
-      def elements = content.elements
+      def fileSets = content.toList
+      def iterator = content.iterator
     }
 
 
@@ -125,7 +125,7 @@ package scala.tools.ant {
     /** Sets the depends attribute. Used by Ant.
       * @param input The value for <code>depends</code>. */
     def setDepends(input: String) = {
-      depends = List.fromArray(input.split(",")).flatMap { s: String =>
+      depends = input.split(",").toList.flatMap { s: String =>
         val st = s.trim()
         (if (st != "") List(st) else Nil)
       }
@@ -291,7 +291,7 @@ package scala.tools.ant {
         for {
           Pair(folder, fileSets) <- fileSetsMap.fileSets
           fileSet <- fileSets
-          file <- List.fromArray(fileSet.getDirectoryScanner(getProject).getIncludedFiles)
+          file <- fileSet.getDirectoryScanner(getProject).getIncludedFiles.toList
         } yield Triple(folder, fileSet.getDir(getProject), file)
       val zip = new ZipOutputStream(new FileOutputStream(file.get, false))
       if (!zipContent.isEmpty) {

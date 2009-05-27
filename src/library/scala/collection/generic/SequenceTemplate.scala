@@ -20,7 +20,7 @@ import generic._
  *  of type <code>A</code>.
  *  It adds the following methods to class Iterable:
  *   `length`, `lengthCompare`, `apply`, `isDefinedAt`, `segmentLength`, `prefixLengh`,
- *   `indexWhere`, `indexOf`, `lastIndexWhere`, `lastIndexOf`, `reverse`, `reversedElements`,
+ *   `indexWhere`, `indexOf`, `lastIndexWhere`, `lastIndexOf`, `reverse`, `reverseIterator`,
  *   `startsWith`, `endsWith`, `indexOfSeq`, , `zip`, `zipAll`, `zipWithIndex`.
  *
  *
@@ -77,8 +77,8 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
    */
   def zip[A1 >: A, B, That](that: Sequence[B])(implicit bf: BuilderFactory[(A1, B), That, This]): That = {
     val b = bf(thisCollection)
-    val these = this.elements
-    val those = that.elements
+    val these = this.iterator
+    val those = that.iterator
     while (these.hasNext && those.hasNext)
       b += ((these.next, those.next))
     b.result
@@ -106,8 +106,8 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
    */
   def zipAll[B, A1 >: A, That](that: Sequence[B], thisElem: A1, thatElem: B)(implicit bf: BuilderFactory[(A1, B), That, This]): That = {
     val b = bf(thisCollection)
-    val these = this.elements
-    val those = that.elements
+    val these = this.iterator
+    val those = that.iterator
     while (these.hasNext && those.hasNext)
       b += ((these.next, those.next))
     while (these.hasNext)
@@ -242,7 +242,7 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
    */
   def lastIndexWhere(p: A => Boolean, end: Int): Int = {
     var i = length - 1
-    val it = reversedElements
+    val it = reverseIterator
     while (it.hasNext && { val elem = it.next; (i > end || !p(elem)) }) i -= 1
     i
   }
@@ -266,7 +266,10 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
 
   /** The elements of this sequence in reversed order
    */
-  def reversedElements: Iterator[A] = reverse.elements
+  def reverseIterator: Iterator[A] = reverse.iterator
+
+  /** @deprecated use `reverseIterator` instead */
+  @deprecated def reversedElements = reverseIterator
 
   /**
    * Checks whether the argument sequence is contained at the
@@ -282,8 +285,8 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
    * @see String.startsWith
    */
   def startsWith[B](that: Sequence[B], offset: Int): Boolean = {
-    val i = elements.drop(offset)
-    val j = that.elements
+    val i = this.iterator.drop(offset)
+    val j = that.iterator
     while (j.hasNext && i.hasNext) {
       if (i.next != j.next) return false
     }
@@ -302,8 +305,8 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
    *  @see String.endsWith
    */
   def endsWith[B](that: Sequence[B]): Boolean = {
-    val i = this.elements.drop(length - that.length)
-    val j = that.elements
+    val i = this.iterator.drop(length - that.length)
+    val j = that.iterator
     while (i.hasNext && j.hasNext && i.next == j.next) ()
     !j.hasNext
   }
@@ -467,7 +470,7 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
 
   override def view = new SequenceView[A, This] {
     protected lazy val underlying = self.thisCollection
-    override def elements = self.elements
+    override def iterator = self.iterator
     override def length = self.length
     override def apply(idx: Int) = self.apply(idx)
   }
@@ -476,8 +479,8 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
 
   override def equals(that: Any): Boolean = that match {
     case that1: Sequence[a] =>
-      val these = this.elements
-      val those = that1.elements
+      val these = this.iterator
+      val those = that1.iterator
       while (these.hasNext && those.hasNext && these.next() == those.next()) {}
       !these.hasNext && !those.hasNext
     case _ =>
@@ -507,8 +510,8 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
    *   <code>(s1, s2) forall { case (x, y) => f(x, y) }</code>
    */
   @deprecated def equalsWith[B](that: Sequence[B])(f: (A,B) => Boolean): Boolean = {
-    val i = this.elements
-    val j = that.elements
+    val i = this.iterator
+    val j = that.iterator
     while (i.hasNext && j.hasNext && f(i.next, j.next)) ()
     !i.hasNext && !j.hasNext
   }

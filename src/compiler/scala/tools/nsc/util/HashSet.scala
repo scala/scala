@@ -41,7 +41,7 @@ class HashSet[T >: Null <: AnyRef](initialCapacity: Int) extends Set[T] {
     if (used >= (capacity >> 2)) growTable()
   }
 
-  def elements = new Iterator[T] {
+  def iterator = new Iterator[T] {
     private var i = 0
     def hasNext: Boolean = {
       while (i < capacity && (table(i) eq null)) i += 1

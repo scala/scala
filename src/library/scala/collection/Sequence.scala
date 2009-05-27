@@ -20,7 +20,7 @@ import util.control.Breaks._
  *  of type <code>A</code>.
  *  It adds the following methods to class Iterable:
  *   `length`, `lengthCompare`, `apply`, `isDefinedAt`, `segmentLength`, `prefixLengh`,
- *   `indexWhere`, `indexOf`, `lastIndexWhere`, `lastIndexOf`, `reverse`, `reversedElements`,
+ *   `indexWhere`, `indexOf`, `lastIndexWhere`, `lastIndexOf`, `reverse`, `reverseIterator`,
  *   `startsWith`, `endsWith`, `indexOfSeq`.
  *
  *

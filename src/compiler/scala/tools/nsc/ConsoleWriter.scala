@@ -20,7 +20,7 @@ class ConsoleWriter extends Writer {
 
   def write(cbuf: Array[Char], off: Int, len: Int) {
     if (len > 0)
-      write(new String(cbuf.subArray(off, off+len)))
+      write(new String(cbuf.slice(off, off+len)))
   }
 
   override def write(str: String) { Console.print(str) }

@@ -86,10 +86,10 @@ abstract class BoxedArray[A] extends Vector[A] with VectorTemplate[A, BoxedArray
     }
     val buf = new StringBuilder()
     buf.append(start)
-    val elems = elements
-    if (elems.hasNext) buf.append(_deepToString(elems.next))
-    while (elems.hasNext) {
-      buf.append(sep); buf.append(_deepToString(elems.next))
+    val iter = this.iterator
+    if (iter.hasNext) buf.append(_deepToString(iter.next))
+    while (iter.hasNext) {
+      buf.append(sep); buf.append(_deepToString(iter.next))
     }
     buf.append(end)
     buf.toString
@@ -108,8 +108,8 @@ abstract class BoxedArray[A] extends Vector[A] with VectorTemplate[A, BoxedArray
         x1.equals(x2)
     }
     def _sameElements(a1: BoxedArray[_], a2: BoxedArray[_]): Boolean = {
-      val it1 = a1.elements
-      val it2 = a2.elements
+      val it1 = a1.iterator
+      val it2 = a2.iterator
       var res = true
       while (res && it1.hasNext && it2.hasNext)
         res = _deepEquals(it1.next, it2.next)

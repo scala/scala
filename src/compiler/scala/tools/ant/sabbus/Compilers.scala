@@ -18,7 +18,7 @@ object Compilers extends collection.DefaultMap[String, Compiler] {
 
   private val container = new collection.mutable.HashMap[String, Compiler]
 
-  def elements = container.elements
+  def iterator = container.iterator
 
   def get(id: String) = container.get(id)
 

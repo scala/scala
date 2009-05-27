@@ -58,8 +58,8 @@ class ElementValidator() extends Function1[Node,Boolean] {
             case _ =>
               x.namespace eq null
           }}
-          . map { x => ElemName(x.label) }
-          . elements;
+          .map { x => ElemName(x.label) }
+          .iterator;
 
   /** check attributes, return true if md corresponds to attribute declarations in adecls.
    */
@@ -71,7 +71,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
     var ok = new scala.collection.mutable.BitSet(adecls.length);
     def find(Key:String): AttrDecl = {
       var attr: AttrDecl = null;
-      val jt = adecls.elements; while(j < adecls.length) {
+      val jt = adecls.iterator; while(j < adecls.length) {
         jt.next match {
           case a @ AttrDecl(Key, _, _) => attr = a; ok += j; j = adecls.length;
           case _                       => j = j + 1;
@@ -79,7 +79,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
       }
       attr
     }
-    val it = md.elements; while(it.hasNext) {
+    val it = md.iterator; while(it.hasNext) {
       val attr = it.next
       j = 0
       find(attr.key) match {
@@ -99,7 +99,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
 
     //val missing = ok.toSet(false); FIXME: it doesn't seem to be used anywhere
     j = 0
-    var kt = adecls.elements
+    var kt = adecls.iterator
     while (kt.hasNext) {
       kt.next match {
         case AttrDecl(key, tpe, REQUIRED) if !ok(j) =>
@@ -129,7 +129,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
       val j = exc.length
       def find(Key: String): Boolean = {
         var res = false
-        val jt = branches.elements
+        val jt = branches.iterator
         while (jt.hasNext && !res)
           jt.next match { // !!! check for match translation problem
             case ContentModel.Letter(ElemName(Key)) => res = true;

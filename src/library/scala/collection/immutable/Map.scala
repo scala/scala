@@ -48,7 +48,7 @@ object Map extends ImmutableMapFactory[Map] {
   class WithDefault[A, +B](underlying: Map[A, B], d: A => B) extends Map[A, B] {
     override def size = underlying.size
     def get(key: A) = underlying.get(key)
-    def elements = underlying.elements
+    def iterator = underlying.iterator
     override def empty = new WithDefault(underlying.empty, d)
     override def updated[B1 >: B](key: A, value: B1): WithDefault[A, B1] = new WithDefault[A, B1](underlying.updated[B1](key, value), d)
     def + [B1 >: B](kv: (A, B1)): WithDefault[A, B1] = updated(kv._1, kv._2)
@@ -60,7 +60,7 @@ object Map extends ImmutableMapFactory[Map] {
   class EmptyMap[A, +B] extends Map[A, B] {
     override def size: Int = 0
     def get(key: A): Option[B] = None
-    def elements: Iterator[(A, B)] = Iterator.empty
+    def iterator: Iterator[(A, B)] = Iterator.empty
     override def updated [B1 >: B] (key: A, value: B1): Map[A, B1] = new Map1(key, value)
     def + [B1 >: B](kv: (A, B1)): Map[A, B1] = updated(kv._1, kv._2)
     def - (key: A): Map[A, B] = this
@@ -71,7 +71,7 @@ object Map extends ImmutableMapFactory[Map] {
     override def size = 1
     def get(key: A): Option[B] =
       if (key == key1) Some(value1) else None
-    def elements = Iterator((key1, value1))
+    def iterator = Iterator((key1, value1))
     override def updated [B1 >: B] (key: A, value: B1): Map[A, B1] =
       if (key == key1) new Map1(key1, value)
       else new Map2(key1, value1, key, value)
@@ -90,7 +90,7 @@ object Map extends ImmutableMapFactory[Map] {
       if (key == key1) Some(value1)
       else if (key == key2) Some(value2)
       else None
-    def elements = Iterator((key1, value1), (key2, value2))
+    def iterator = Iterator((key1, value1), (key2, value2))
     override def updated [B1 >: B] (key: A, value: B1): Map[A, B1] =
       if (key == key1) new Map2(key1, value, key2, value2)
       else if (key == key2) new Map2(key1, value1, key2, value)
@@ -113,7 +113,7 @@ object Map extends ImmutableMapFactory[Map] {
       else if (key == key2) Some(value2)
       else if (key == key3) Some(value3)
       else None
-    def elements = Iterator((key1, value1), (key2, value2), (key3, value3))
+    def iterator = Iterator((key1, value1), (key2, value2), (key3, value3))
     override def updated [B1 >: B] (key: A, value: B1): Map[A, B1] =
       if (key == key1)      new Map3(key1, value, key2, value2, key3, value3)
       else if (key == key2) new Map3(key1, value1, key2, value, key3, value3)
@@ -139,7 +139,7 @@ object Map extends ImmutableMapFactory[Map] {
       else if (key == key3) Some(value3)
       else if (key == key4) Some(value4)
       else None
-    def elements = Iterator((key1, value1), (key2, value2), (key3, value3), (key4, value4))
+    def iterator = Iterator((key1, value1), (key2, value2), (key3, value3), (key4, value4))
     override def updated [B1 >: B] (key: A, value: B1): Map[A, B1] =
       if (key == key1)      new Map4(key1, value, key2, value2, key3, value3, key4, value4)
       else if (key == key2) new Map4(key1, value1, key2, value, key3, value3, key4, value4)

@@ -1047,7 +1047,7 @@ trait Types {
           baseTypeSeqCache.normalize(parents)
 //          println("normalized baseTypeSeq of "+typeSymbol+"/"+parents+": "+baseTypeSeqCache)//DEBUG
         }
-        //Console.println("baseTypeSeq(" + typeSymbol + ") = " + List.fromArray(baseTypeSeqCache));//DEBUG
+        //Console.println("baseTypeSeq(" + typeSymbol + ") = " + baseTypeSeqCache.toList);//DEBUG
       }
       if (baseTypeSeqCache eq undetBaseTypeSeq)
         throw new TypeError("illegal cyclic inheritance involving " + typeSymbol)
@@ -1176,7 +1176,7 @@ trait Types {
         case ps @ (_ :: ps1) =>
           (ps ne parents) ||
           (ps1 exists contributesAbstractMembers) ||
-          (decls.elements exists (m => m.isDeferred && isVisible(m)))
+          (decls.iterator exists (m => m.isDeferred && isVisible(m)))
         case _ =>
           false
        })
@@ -1296,7 +1296,7 @@ trait Types {
       val lastRefs = Array(refs(0), refs(1))
       state = Initialized
       var change = false
-      for ((from, targets) <- refs(NonExpansive).elements)
+      for ((from, targets) <- refs(NonExpansive).iterator)
         for (target <- targets) {
           var thatInfo = classInfo(target)
           if (thatInfo.state != Initialized)
@@ -1304,7 +1304,7 @@ trait Types {
           addRefs(NonExpansive, from, thatInfo.getRefs(NonExpansive, target))
           addRefs(Expansive, from, thatInfo.getRefs(Expansive, target))
         }
-      for ((from, targets) <- refs(Expansive).elements)
+      for ((from, targets) <- refs(Expansive).iterator)
         for (target <- targets) {
           var thatInfo = classInfo(target)
           addRefs(Expansive, from, thatInfo.getRefs(NonExpansive, target))
@@ -2376,7 +2376,7 @@ A type's typeSymbol should never be inspected directly.
         else mkSuperType(thistp1, supertp1)
       case TypeRef(pre, sym, args) =>
         val pre1 = this(pre)
-        //val args1 = List.mapConserve(args)(this)
+        //val args1 = args mapConserve this(_)
         val args1 = if (args.isEmpty) args
                     else {
                       val tparams = sym.typeParams
@@ -4175,11 +4175,10 @@ A type's typeSymbol should never be inspected directly.
               val glbThisType = glbRefined.typeSymbol.thisType
               def glbsym(proto: Symbol): Symbol = {
                 val prototp = glbThisType.memberInfo(proto)
-                val syms = for {
-                  val t <- ts
-                  val alt <- t.nonPrivateMember(proto.name).alternatives
-                  glbThisType.memberInfo(alt) matches prototp
-                } yield alt
+                val syms = for (t <- ts;
+	              alt <- (t.nonPrivateMember(proto.name).alternatives);
+                  if glbThisType.memberInfo(alt) matches prototp
+                ) yield alt
                 val symtypes = syms map glbThisType.memberInfo
                 assert(!symtypes.isEmpty)
                 proto.cloneSymbol(glbRefined.typeSymbol).setInfo(
@@ -4210,7 +4209,7 @@ A type's typeSymbol should never be inspected directly.
                 try {
                   globalGlbDepth += 1
                   val dss = ts flatMap refinedToDecls
-                  for (ds <- dss; val sym <- ds.elements)
+                  for (ds <- dss; val sym <- ds.iterator)
                     if (globalGlbDepth < globalGlbLimit && !(glbThisType specializes sym))
                       try {
                         addMember(glbThisType, glbRefined, glbsym(sym))

@@ -13,7 +13,7 @@ object fors {
   }
 
   def printOlderThan20(xs: Seq[Person]): Iterator[String] =
-    printOlderThan20(xs.elements)
+    printOlderThan20(xs.iterator)
 
   def printOlderThan20(xs: Iterator[Person]): Iterator[String] =
     for (p <- xs if p.age > 20) yield p.name

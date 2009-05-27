@@ -93,7 +93,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     } else ""
     val allOpts = fileManager.SCALAC_OPTS+" "+argString
     NestUI.verbose("scalac options: "+allOpts)
-    val args = List.fromArray(allOpts split "\\s")
+    val args = (allOpts split "\\s").toList
     val command = new CompilerCommand(args, testSettings, x => {}, false)
     val global = newGlobal(command.settings, logWriter)
     val testRep: ExtConsoleReporter = global.reporter.asInstanceOf[ExtConsoleReporter]

@@ -40,13 +40,17 @@ extends Map[A, B]
 
   override def isDefinedAt(key: A) = imap.isDefinedAt(key)
 
-  override def keys: Iterator[A] = imap.keys
+  override def keys: collection.Set[A] = imap.keys
 
-  override def keySet: collection.Set[A] = imap.keySet
+  override def keysIterator: Iterator[A] = imap.keysIterator
 
-  override def values: Iterator[B] = imap.values
+  override def values: collection.Set[A] = imap.values
 
-  def elements: Iterator[(A, B)] = imap.elements
+  override def valuesIterator: Iterator[B] = imap.valuesIterator
+
+  def iterator: Iterator[(A, B)] = imap.iterator
+
+  @deprecated def elements = iterator
 
   override def toList: List[(A, B)] = imap.toList
 

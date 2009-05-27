@@ -56,7 +56,7 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
     while (!worklist.isEmpty) {
       if (stat) iterations += 1
       //Console.println("worklist in: " + worklist);
-      val point = worklist.elements.next; worklist -= point; visited += point;
+      val point = worklist.iterator.next; worklist -= point; visited += point;
       //Console.println("taking out point: " + point + " worklist out: " + worklist);
       val output = f(point, in(point))
 
@@ -88,7 +88,7 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
   def backwardAnalysis(f: (P, lattice.Elem) => lattice.Elem): Unit =
     while (!worklist.isEmpty) {
       if (stat) iterations += 1
-      val point = worklist.elements.next; worklist -= point
+      val point = worklist.iterator.next; worklist -= point
 
       out(point) = lattice.lub(point.successors map in.apply)
       val input = f(point, out(point))

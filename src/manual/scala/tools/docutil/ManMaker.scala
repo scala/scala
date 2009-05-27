@@ -17,7 +17,7 @@ class ManMaker extends Task {
 
 
   def setCommand(input: String) {
-    command = List.fromArray(input.split(",")).flatMap { s =>
+    command = input.split(",").toList.flatMap { s =>
       val st = s.trim()
       if (st != "") List(st) else Nil
     }

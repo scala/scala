@@ -43,14 +43,14 @@ object Iterator {
   /** Creates an iterator with given elements
    *  @param elems  The elements returned one-by-one from the iterator
    */
-  def apply[A](elems: A*): Iterator[A] = elems.elements
+  def apply[A](elems: A*): Iterator[A] = elems.iterator
 
   /** Concatenates the given argument iterators into a single iterator.
    *
    *  @param its the argument iterators that are to be concatenated
    *  @return the concatenation of all the argument iterators
    */
-  @deprecated def concat[A](xss: Iterator[A]*): Iterator[A] = xss.elements.flatten
+  @deprecated def concat[A](xss: Iterator[A]*): Iterator[A] = xss.iterator.flatten
 
   /** An iterator that returns the results of some element computation a number of times.
    *  @param   len  The number of elements returned
@@ -165,14 +165,14 @@ object Iterator {
   implicit def iteratorIteratorWrapper[A](its: Iterator[Iterator[A]]): IteratorIteratorOps[A] =
     new IteratorIteratorOps[A](its)
 
-  /** @deprecated  use `xs.elements` instead
+  /** @deprecated  use `xs.iterator` or `Iterator(xs)` instead
    */
-  @deprecated def fromValues[a](xs: a*) = xs.elements
+  @deprecated def fromValues[a](xs: a*) = xs.iterator
 
   /**
    *  @param xs the array of elements
-   *  @see also: Vector.elements and slice
-   *  @deprecated  use `xs.elements` instead
+   *  @see also: Vector.iterator and slice
+   *  @deprecated  use `xs.iterator` instead
    */
   @deprecated def fromArray[a](xs: Array[a]): Iterator[a] =
     fromArray(xs, 0, xs.length)
@@ -181,23 +181,23 @@ object Iterator {
    *  @param xs     the array of elements
    *  @param start  the start index
    *  @param length  the length
-   *  @see also: Vector.elements and slice
-   *  @deprecated  use `xs.slice(start, start + length).elements` instead
+   *  @see also: Vector.iterator and slice
+   *  @deprecated  use `xs.slice(start, start + length).iterator` instead
    */
   @deprecated def fromArray[a](xs: Array[a], start: Int, length: Int): Iterator[a] =
-    xs.slice(start, start + length).elements
+    xs.slice(start, start + length).iterator
 
   /**
    *  @param str the given string
    *  @return    the iterator on <code>str</code>
-   *  @deprecated replaced by <code>str.elements</code>
+   *  @deprecated replaced by <code>str.iterator</code>
    */
-  @deprecated def fromString(str: String): Iterator[Char] = str.elements
+  @deprecated def fromString(str: String): Iterator[Char] = str.iterator
 
   /**
    *  @param n the product arity
    *  @return  the iterator on <code>Product&lt;n&gt;</code>.
-   *  @deprecated use product.productElements instead
+   *  @deprecated use product.productIterator instead
    */
   @deprecated def fromProduct(n: Product): Iterator[Any] = new Iterator[Any] {
     private var c: Int = 0

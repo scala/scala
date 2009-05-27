@@ -1464,23 +1464,23 @@ trait Trees {
     }
 
     def transformTrees(trees: List[Tree]): List[Tree] =
-        List.mapConserve(trees)(transform)
+        trees mapConserve (transform(_))
     def transformTemplate(tree: Template): Template =
       transform(tree: Tree).asInstanceOf[Template]
     def transformTypeDefs(trees: List[TypeDef]): List[TypeDef] =
-      List.mapConserve(trees)(tree => transform(tree).asInstanceOf[TypeDef])
+      trees mapConserve (tree => transform(tree).asInstanceOf[TypeDef])
     def transformValDef(tree: ValDef): ValDef =
       if (tree.isEmpty) tree else transform(tree).asInstanceOf[ValDef]
     def transformValDefs(trees: List[ValDef]): List[ValDef] =
-      List.mapConserve(trees)(transformValDef)
+      trees mapConserve (transformValDef(_))
     def transformValDefss(treess: List[List[ValDef]]): List[List[ValDef]] =
-      List.mapConserve(treess)(transformValDefs)
+      treess mapConserve (transformValDefs(_))
     def transformCaseDefs(trees: List[CaseDef]): List[CaseDef] =
-      List.mapConserve(trees)(tree => transform(tree).asInstanceOf[CaseDef])
+      trees mapConserve (tree => transform(tree).asInstanceOf[CaseDef])
     def transformIdents(trees: List[Ident]): List[Ident] =
-      List.mapConserve(trees)(tree => transform(tree).asInstanceOf[Ident])
+      trees mapConserve (tree => transform(tree).asInstanceOf[Ident])
     def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] =
-      List.mapConserve(stats)(stat =>
+      stats mapConserve (stat =>
         if (exprOwner != currentOwner && stat.isTerm) atOwner(exprOwner)(transform(stat))
         else transform(stat)) filter (EmptyTree !=)
     def transformUnit(unit: CompilationUnit) { unit.body = transform(unit.body) }
@@ -1789,7 +1789,7 @@ trait Trees {
     override def end: Int = original.pos.end
     override def underlying = original.pos.underlying
     override def focus = original.pos.focus
-    override def show = "["+underlying.show+"]"
+    override def show = "["+ underlying.show +"]"
   }
 }
 

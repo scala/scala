@@ -82,7 +82,9 @@ class TreeSet[A <% Ordered[A]](override val size: Int, t: RedBlack[A]#Tree[Unit]
    *
    *  @return the new iterator
    */
-  def elements: Iterator[A] = tree.toStream.elements map (_._1)
+  def iterator: Iterator[A] = tree.toStream.iterator map (_._1)
+
+  @deprecated def elements = iterator
 
   override def toStream: Stream[A] = tree.toStream map (_._1)
 

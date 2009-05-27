@@ -77,7 +77,7 @@ class SynchronizedPriorityQueue[A <% Ordered[A]] extends PriorityQueue[A] {
    *
    *  @return  an iterator over all elements sorted in descending order.
    */
-  override def elements: Iterator[A] = synchronized { super.elements }
+  override def iterator: Iterator[A] = synchronized { super.iterator }
 
   /** Checks if two queues are structurally identical.
    *

@@ -18,21 +18,21 @@ trait HOSeq {
     type m[+x]
 
     //def unit[a](orig: a): m[a]
-    def elements: Iterator[t]
+    def iterator: Iterator[t]
 
     // construct an empty accumulator that will produce the same structure as this iterable, with elements of type t
     def accumulator[t]: Accumulator[m, t]
 
     def filter(p: t => Boolean): m[t] = {
       val buf = accumulator[t]
-      val elems = elements
+      val elems = iterator
       while (elems.hasNext) { val x = elems.next; if (p(x)) buf += x }
       buf.result
     }
 
     def map[s](f: t => s): m[s] = {
       val buf = accumulator[s]
-      val elems = elements
+      val elems = iterator
       while (elems.hasNext) buf += f(elems.next)
       buf.result
     }
@@ -44,9 +44,9 @@ trait HOSeq {
     def flatMap[resColl[+x] <: Iterable[x], s](f: t => resColl[s])(implicit buf: Accumulator[resColl, s]): resColl[s] = {
         // TODO:  would a viewbound for resColl[x] be better?
         // -- 2nd-order type params are not yet in scope in view bound
-      val elems = elements
+      val elems = iterator
       while (elems.hasNext) {
-        val elemss: Iterator[s] = f(elems.next).elements
+        val elemss: Iterator[s] = f(elems.next).iterator
         while (elemss.hasNext) buf += elemss.next
       }
       buf.result
@@ -112,7 +112,7 @@ trait HOSeq {
     def head: t
     def tail: List[t]
     def isEmpty: Boolean
-    def elements: Iterator[t] = new Iterator[t] {
+    def iterator: Iterator[t] = new Iterator[t] {
       var these = List.this
       def hasNext: Boolean = !these.isEmpty
       def next: t =

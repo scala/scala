@@ -161,7 +161,7 @@ object Predef {
   def println() = Console.println()
   def println(x: Any) = Console.println(x)
   def printf(text: String, xs: Any*) = Console.printf(text, xs: _*)
-  def format(text: String, xs: Any*) = Console.format(text, xs: _*)
+  def format(text: String, xs: Any*) = stringWrapper(text).format(xs: _*)
 
   def readLine(): String = Console.readLine()
   def readLine(text: String, args: Any*) = Console.readLine(text, args)
@@ -209,8 +209,8 @@ object Predef {
       val self = xs
       def compare(that: Iterable[A]): Int = {
         var res = 0
-        val these = xs.elements
-        val those = that.elements
+        val these = xs.iterator
+        val those = that.iterator
         while (res == 0 && these.hasNext)
           res = if (those.hasNext) these.next compare those.next else 1
         if (res == 0) {

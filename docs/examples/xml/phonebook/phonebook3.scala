@@ -25,7 +25,7 @@ object phonebook3 {
           case x @ <entry><name>{ Text(Name) }</name>{ ch1 @ _* }</entry> =>
 
             var updated = false;
-            val ch2 = for(val c <- ch1) yield c match { // does it have the phone number?
+            val ch2 = for(c <- ch1) yield c match { // does it have the phone number?
 
               case y @ <phone>{ _* }</phone> if y \ "@where" == Where =>
                 updated = true
@@ -62,7 +62,7 @@ object phonebook3 {
     // decompose phonebook, apply updates
     phonebook match {
       case <phonebook>{ ch @ _* }</phonebook> =>
-        <phonebook>{ copyOrChange( ch.elements ) }</phonebook>
+        <phonebook>{ copyOrChange( ch.iterator ) }</phonebook>
     }
 
   }

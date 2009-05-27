@@ -161,7 +161,7 @@ abstract class CLRTypes {
    */
   private def findAssembly(name: String): Assembly = {
     // see if the assembly is referenced directly
-    for (file <- global.assemrefs.elements if file.getName() == name) {
+    for (file <- global.assemrefs.iterator if file.getName() == name) {
       val assem = Assembly.LoadFrom(file.getPath())
       if (assem != null) {
 	global.assemrefs -= file
@@ -170,7 +170,7 @@ abstract class CLRTypes {
       }
     }
     // look in directories specified with the '-r' option
-    for (dir <- global.assemrefs.elements if dir.isDirectory()) {
+    for (dir <- global.assemrefs.iterator if dir.isDirectory()) {
       val file = new File(dir, name)
       if (file.exists()) {
 	val assem = Assembly.LoadFrom(file.getPath())
@@ -196,7 +196,7 @@ abstract class CLRTypes {
   /** Load the rest of the assemblies specified with the '-r' option
    */
   private def findAllAssemblies() {
-    for (file <- global.assemrefs.elements) {
+    for (file <- global.assemrefs.iterator) {
       if (file.isFile()) {
         //System.out.println("Loading assembly " + file)
 	val assem = Assembly.LoadFrom(file.getPath())

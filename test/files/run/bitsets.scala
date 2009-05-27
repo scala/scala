@@ -26,9 +26,9 @@ object TestMutable {
   Console.println("mb1 = " + ms1.contains(2))
   Console.println("mb2 = " + ms2.contains(3))
 
-  Console.println("xs0 = " + ms0.elements.toList)
-  Console.println("xs1 = " + ms1.elements.toList)
-  Console.println("xs2 = " + ms2.elements.toList)
+  Console.println("xs0 = " + ms0.iterator.toList)
+  Console.println("xs1 = " + ms1.iterator.toList)
+  Console.println("xs2 = " + ms2.iterator.toList)
 
   Console.println("ma0 = " + ms0.toList)
   Console.println("ma1 = " + ms1.toList)
@@ -58,10 +58,10 @@ object TestImmutable {
   Console.println("ib2 = " + is2.contains(2))
   Console.println("ib3 = " + is3.contains(2))
 
-  Console.println("ys0 = " + is0.elements.toList)
-  Console.println("ys1 = " + is1.elements.toList)
-  Console.println("ys2 = " + is2.elements.toList)
-  Console.println("ys3 = " + is3.elements.toList)
+  Console.println("ys0 = " + is0.iterator.toList)
+  Console.println("ys1 = " + is1.iterator.toList)
+  Console.println("ys2 = " + is2.iterator.toList)
+  Console.println("ys3 = " + is3.iterator.toList)
 
   Console.println("ia0 = " + is0.toList)
   Console.println("ia1 = " + is1.toList)

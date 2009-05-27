@@ -105,7 +105,7 @@ class Stack[+A] extends Sequence[A] {
    *
    *  @return an iterator over all stack elements.
    */
-  override def elements: Iterator[A] = new Iterator[A] {
+  override def iterator: Iterator[A] = new Iterator[A] {
     private var cur = Stack.this
     def hasNext: Boolean = !cur.isEmpty
     def next: A = { val r = top; cur = cur.pop; r }

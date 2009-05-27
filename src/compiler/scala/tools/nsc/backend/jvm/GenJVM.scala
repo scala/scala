@@ -464,7 +464,7 @@ abstract class GenJVM extends SubComponent {
         return
 
       val length = buf.position();
-      val arr = buf.array().subArray(0, length);
+      val arr = buf.array().slice(0, length);
 
       val attr = jmember.getContext().JOtherAttribute(jmember.getJClass(),
                                                       jmember,
@@ -476,7 +476,7 @@ abstract class GenJVM extends SubComponent {
 
     def addInnerClasses(jclass: JClass) {
       def addOwnInnerClasses(cls: Symbol) {
-        for (sym <- cls.info.decls.elements if sym.isClass)
+        for (sym <- cls.info.decls.iterator if sym.isClass)
           innerClasses = innerClasses + sym;
       }
       // add inner classes which might not have been referenced yet

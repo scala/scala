@@ -111,7 +111,7 @@ trait HashTable[A] extends AnyRef {
 
   /** An iterator returning all entries
    */
-  protected def entries: Iterator[Entry] = new Iterator[Entry] {
+  protected def entriesIterator: Iterator[Entry] = new Iterator[Entry] {
     val iterTable = table
     var idx = table.length - 1
     var es = iterTable(idx).asInstanceOf[Entry]
@@ -130,6 +130,11 @@ trait HashTable[A] extends AnyRef {
       }
     }
   }
+
+  /** An iterator returning all entries
+   *  @deprecated use entriesIterator instead
+   */
+  @deprecated protected def entries: Iterator[Entry] = entriesIterator
 
   /** Remove all entries from table
    */

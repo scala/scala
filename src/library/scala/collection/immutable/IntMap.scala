@@ -145,7 +145,7 @@ sealed abstract class IntMap[+T] extends scala.collection.immutable.Map[Int, T] 
   /**
    * Iterator over key, value pairs of the map in unsigned order of the keys.
    */
-  def elements : Iterator[(Int, T)] = this match {
+  def iterator : Iterator[(Int, T)] = this match {
     case IntMap.Nil => Iterator.empty;
     case _ => new IntMapEntryIterator(this);
   }
@@ -159,7 +159,7 @@ sealed abstract class IntMap[+T] extends scala.collection.immutable.Map[Int, T] 
     case IntMap.Nil => {};
   }
 
-  override def keys : Iterator[Int] = this match {
+  override def keysIterator : Iterator[Int] = this match {
     case IntMap.Nil => Iterator.empty;
     case _ => new IntMapKeyIterator(this);
   }
@@ -176,7 +176,7 @@ sealed abstract class IntMap[+T] extends scala.collection.immutable.Map[Int, T] 
     case IntMap.Nil => {}
   }
 
-  override def values : Iterator[T] = this match {
+  override def valuesIterator : Iterator[T] = this match {
     case IntMap.Nil => Iterator.empty;
     case _ => new IntMapValueIterator(this);
   }

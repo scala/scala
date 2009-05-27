@@ -243,7 +243,7 @@ trait ModelToXML extends ModelExtractor {
 
   def longList(entity: ClassOrObject, category: Category)(implicit from: Frame): NodeSeq = {
     val xs = entity.members(category)
-    if (!xs.elements.hasNext)
+    if (!xs.iterator.hasNext)
       NodeSeq.Empty
     else Group(
         <table cellpadding="3" class="member-detail" summary="">
@@ -255,7 +255,7 @@ trait ModelToXML extends ModelExtractor {
   def shortList(entity: ClassOrObject, category: Category)(implicit from: Frame): NodeSeq = {
     val xs = entity.members(category)
     var seq: NodeSeq = NodeSeq.Empty
-    if (xs.elements.hasNext) {
+    if (xs.iterator.hasNext) {
       // alphabetic
       val set = new scala.collection.immutable.TreeSet[entity.Member]()(mA => new Ordered[entity.Member] {
         def compare(mB: entity.Member): Int =

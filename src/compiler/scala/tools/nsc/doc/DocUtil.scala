@@ -90,14 +90,14 @@ object DocUtil {
   def merge[T,S <: Ordered[S]](ts0: ListMap[T,TreeSet[S]],
                                ts1: ListMap[T,TreeSet[S]]): ListMap[T,TreeSet[S]] = {
     var ts = ts0
-    for (t <- ts1.elements) {
+    for (t <- ts1.iterator) {
       if (!ts.contains(t._1))
         ts = ts.updated(t._1, new TreeSet[S]);
       ts = ts.updated(t._1, merge(ts(t._1), t._2))
     }
     ts
   }
-  implicit def coerceIterable[T](list : Iterable[T]) = NodeWrapper(list.elements)
+  implicit def coerceIterable[T](list : Iterable[T]) = NodeWrapper(list.iterator)
   implicit def coerceIterator[T](list : Iterator[T]) = NodeWrapper(list)
 
   case class NodeWrapper[T](list : Iterator[T]) {

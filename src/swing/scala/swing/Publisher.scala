@@ -90,8 +90,8 @@ private[swing] trait SingleRefCollection[+A <: AnyRef] extends Collection[A] { s
 
   protected[this] def removeReference(ref: Reference[A])
 
-  def elements = new Iterator[A] {
-    private val elems = self.underlying.elements
+  def iterator = new Iterator[A] {
+    private val elems = self.underlying.iterator
     private var hd: A = _
     private var ahead: Boolean = false
     private def skip: Unit =
@@ -134,7 +134,7 @@ abstract class RefBuffer[A <: AnyRef] extends Buffer[A] with SingleRefCollection
   def update(n: Int, el: A) { purgeReferences(); underlying(n) = Ref(el) }
   def readOnly : Seq[A] = new Seq[A] {
     def length = self.length
-    def elements = self.elements
+    def iterator = self.iterator
     def apply(n: Int) = self(n)
   }
   def apply(n: Int) = {

@@ -140,7 +140,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
 
     // determine "Sethi-length" of the regexp
     //activeBinders = new Vector()
-    var it = subexpr.elements
+    var it = subexpr.iterator
     while (it.hasNext)
       traverse(it.next)
 
@@ -167,7 +167,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
     var j = 0; while (j < pos) {
       //Console.println("WBS.collectTrans, j = "+j)
       val fol = this.follow(j)
-      val it = fol.elements
+      val it = fol.iterator
       while (it.hasNext) {
         val k = it.next
         if (pos == k)
@@ -218,7 +218,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
         }
 
         val initialsArr = new Array[Int](initials.size)
-        val it = initials.elements
+        val it = initials.iterator
 
         {
           var k = 0; while (k < initials.size) {

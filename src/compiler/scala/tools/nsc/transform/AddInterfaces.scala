@@ -133,7 +133,7 @@ abstract class AddInterfaces extends InfoTransform {
       if ((ifaceDecls lookup nme.MIXIN_CONSTRUCTOR) == NoSymbol)
         decls enter (implClass.newMethod(implClass.pos, nme.MIXIN_CONSTRUCTOR)
                      setInfo MethodType(List(), UnitClass.tpe))
-      for (sym <- ifaceDecls.elements) {
+      for (sym <- ifaceDecls.iterator) {
         if (isInterfaceMember(sym)) {
           if (needsImplMethod(sym)) {
             val impl = sym.cloneSymbol(implClass).setInfo(sym.info).resetFlag(lateDEFERRED)

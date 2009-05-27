@@ -164,7 +164,7 @@ class Table extends Component with Scrollable with Publisher {
       def +=(n: A): this.type
       def contains(n: A) = a.contains(n)
       override def size = a.length
-      def elements = a.elements
+      def iterator = a.iterator
     }
 
     object rows extends SelectionSet(peer.getSelectedRows) {

@@ -46,7 +46,7 @@ class RollbackIterator[+A](underlying: Iterator[A]) extends BufferedIterator.Def
       if (g.isEmpty) {
         //putBack(rollback(0))
         val sz = oldLength.getOrElse(0)
-        val i = rollback.drop(sz).reverse.elements
+        val i = rollback.drop(sz).reverse.iterator
         while (i.hasNext) putBack(i.next)
         if (oldLength.isEmpty) rollback = null          
         else rollback.reduceToSize(sz)

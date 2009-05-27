@@ -18,7 +18,7 @@ trait MutableVectorTemplate[A, +This <: MutableVectorTemplate[A, This] with muta
    */
   override def view = new MutableVectorView[A, This] {
     protected lazy val underlying = self.thisCollection
-    override def elements = self.elements
+    override def iterator = self.iterator
     override def length = self.length
     override def apply(idx: Int) = self.apply(idx)
     override def update(idx: Int, elem: A) = self.update(idx, elem)

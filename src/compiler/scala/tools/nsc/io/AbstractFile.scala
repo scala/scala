@@ -151,7 +151,9 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   }
 
   /** Returns all abstract subfiles of this abstract directory. */
-  def elements: Iterator[AbstractFile]
+  def iterator: Iterator[AbstractFile]
+
+  @deprecated def elements = iterator
 
   /** Returns the abstract file in this abstract directory with the specified
    *  name. If there is no such file, returns <code>null</code>. The argument

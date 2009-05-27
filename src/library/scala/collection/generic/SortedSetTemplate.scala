@@ -32,7 +32,7 @@ self =>
   override def range(from: A, until: A): This = rangeImpl(Some(from), Some(until))
 
   override def subsetOf(that: Set[A]): Boolean = that match {
-    case that: SortedSet[_] => that.hasAll(elements)
+    case that: SortedSet[_] => that.hasAll(this.iterator)
     case that => super.subsetOf(that)
   }
 }

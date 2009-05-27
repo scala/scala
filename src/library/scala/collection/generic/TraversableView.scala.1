@@ -137,7 +137,8 @@ self =>
 object TraversableView {
   class NoBuilder[A] extends Builder[A, Nothing, TraversableView[_, _]] {
     def +=(elem: A) {}
-    def elements: Iterator[A] = Iterator.empty
+    def iterator: Iterator[A] = Iterator.empty
+    @deprecated def elements = iterator
     def result() = throw new UnsupportedOperationException("TraversableView.Builder.result")
     def clear() {}
   }

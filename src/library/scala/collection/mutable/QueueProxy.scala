@@ -90,7 +90,7 @@ trait QueueProxy[A] extends Queue[A] with SeqProxy[A] {
    *
    *  @return an iterator over all queue elements.
    */
-  override def elements: Iterator[A] = self.elements
+  override def iteratoor: Iterator[A] = self.iterator
 
   /** This method clones the queue.
    *

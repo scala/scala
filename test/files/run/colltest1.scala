@@ -30,7 +30,7 @@ object Test extends Application {
     val (o, e) = ten.partition(_ % 2 == 0)
     assert(o.size == e.size)
     val gs = ten groupBy (x => x / 4)
-    val vs1 = (for (k <- gs.keys; v <- gs(k).toIterable.elements) yield v).toList
+    val vs1 = (for (k <- gs.keysIterator; v <- gs(k).toIterable.iterator) yield v).toList
     val vs2 = Traversable.traversableTraversableWrapper[List[Traversable[Int]], Int](gs.values.toList).flatten
 //    val vs2 = gs.values.toList flatMap (xs => xs)
     assert(ten.head == 1)
@@ -67,7 +67,7 @@ object Test extends Application {
   def orderedIterableTest(empty: Iterable[Int]) {
     orderedTraversableTest(empty)
     val six = empty ++ List(1, 2, 3, 4, 5, 6)
-    assert(six.elements.toStream == six)
+    assert(six.iterator.toStream == six)
     assert(six.takeRight(4) == List(3, 4, 5, 6), six.takeRight(4))
     assert(six.dropRight(3) == List(1, 2, 3))
     assert(six sameElements (1 to 6))
@@ -107,7 +107,7 @@ object Test extends Application {
     assert(ten.reverse startsWith List(10, 9, 8), ten.reverse.take(10).toList)
     assert(ten.reverse.length == 10)
     assert(ten.reverse.reverse == ten)
-    assert(ten.reversedElements.toList.reverse == ten, ten.reversedElements.toList)
+    assert(ten.reverseIterator.toList.reverse == ten, ten.reverseIterator.toList)
     assert(ten.startsWith(List(1)))
     assert(ten.startsWith(List(3, 4), 2))
     assert(ten.endsWith(List(9, 10)))
@@ -174,10 +174,10 @@ object Test extends Application {
     assert(m.keys forall (k => (m apply k) == k))
     assert(m.keys forall (m contains))
     assert(m.getOrElse("7", "@") == "@")
-    assert(m.keys.length == 26)
+    assert(m.keys.size == 26)
     assert(m.size == 26)
-    assert(m.keySet == Set() ++ m.keys)
-    assert(m.keys.toList == m.values.toList)
+    assert(m.keys == Set() ++ m.keys)
+    assert(m.keysIterator.toList == m.keys.toList)
     val m1 = empty ++ m
     val mm = m -- m.keySet.toList
     assert(mm.isEmpty, mm)

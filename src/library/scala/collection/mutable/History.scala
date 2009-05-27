@@ -38,8 +38,8 @@ class History[A, B] extends AnyRef with Subscriber[A, B] with Collection[(B, A)]
   }
 
   override def size: Int = log.length
-  def elements: Iterator[(B, A)] = log.elements
-  def events: Iterator[A] = log.elements.map { case (_, e) => e }
+  def iterator: Iterator[(B, A)] = log.iterator
+  def events: Iterator[A] = log.iterator.map { case (_, e) => e }
 
   def clear(): Unit = log.clear
 }

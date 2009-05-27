@@ -150,7 +150,7 @@ class ListView[A] extends Component {
     case model: ModelWrapper => model.items
     case model @ _ => new Seq[A] {
      def length = model.getSize
-     def elements = new Iterator[A] {
+     def iterator = new Iterator[A] {
        var idx = 0
        def next = { idx += 1; apply(idx-1) }
        def hasNext = idx < length
@@ -175,7 +175,7 @@ class ListView[A] extends Component {
       def +=(n: A): this.type
       def contains(n: A) = a.contains(n)
       override def size = a.length
-      def elements = a.elements
+      def iterator = a.iterator
     }
 
     /**

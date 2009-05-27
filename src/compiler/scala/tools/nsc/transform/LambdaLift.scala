@@ -182,7 +182,7 @@ abstract class LambdaLift extends InfoTransform {
     }
 */
     def freeVars(sym: Symbol): Iterator[Symbol] = free.get(sym) match {
-      case Some(ss) => ss.elements
+      case Some(ss) => ss.iterator
       case None => Iterator.empty
     }
 
@@ -238,12 +238,12 @@ abstract class LambdaLift extends InfoTransform {
       do {
         changedFreeVars = false
         for (caller <- called.keys;
-             callee <- called(caller).elements;
+             callee <- called(caller).iterator;
              fv <- freeVars(callee))
           markFree(fv, caller)
       } while (changedFreeVars);
 
-      for (sym <- renamable.elements) {
+      for (sym <- renamable.iterator) {
         val base =
           if (sym.isAnonymousFunction && sym.owner.isMethod)
             sym.name.toString() + "$" + sym.owner.name.toString() + "$"
@@ -256,9 +256,9 @@ abstract class LambdaLift extends InfoTransform {
       atPhase(phase.next) {
         for (owner <- free.keys) {
           if (settings.debug.value)
-            log("free(" + owner + owner.locationString + ") = " + free(owner).elements.toList);
+            log("free(" + owner + owner.locationString + ") = " + free(owner).iterator.toList);
           proxies(owner) =
-            for (fv <- free(owner).elements.toList) yield {
+            for (fv <- free(owner).iterator.toList) yield {
               val proxy = owner.newValue(owner.pos, fv.name)
                 .setFlag(if (owner.isClass) PARAMACCESSOR | PRIVATE | LOCAL else PARAM)
                 .setFlag(SYNTHETIC)

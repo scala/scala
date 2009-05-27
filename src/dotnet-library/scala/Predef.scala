@@ -211,8 +211,8 @@ object Predef {
       val self = xs
       def compare(that: Iterable[A]): Int = {
         var res = 0
-        val these = xs.elements
-        val those = that.elements
+        val these = xs.iterator
+        val those = that.iterator
         while (res == 0 && these.hasNext)
           res = if (those.hasNext) these.next compare those.next else 1
         if (res == 0) {

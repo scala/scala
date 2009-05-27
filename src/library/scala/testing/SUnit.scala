@@ -128,7 +128,7 @@ object SUnit {
       buf.length
 
     def failures() =
-      buf.elements map { x => new TestFailure(x) }
+      buf.iterator map { x => new TestFailure(x) }
   }
 
   /** The class <code>TestSuite</code> runs a composite of test cases.

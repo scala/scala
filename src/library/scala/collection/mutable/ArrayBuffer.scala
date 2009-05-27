@@ -58,7 +58,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
   }
 
   /** Appends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method. The identity of the
+   *  via its <code>iterator</code> method. The identity of the
    *  buffer is returned.
    *
    *  @param iter  the iterfable object.
@@ -91,7 +91,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
   }
 
   /** Prepends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method. The identity of the
+   *  via its <code>iterator</code> method. The identity of the
    *  buffer is returned.
    *
    *  @param iter  the iterable object.
@@ -148,7 +148,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *
    *  @return an <code>ArrayBuffer</code> with the same elements.
    */
-  override def clone(): ArrayBuffer[A] = new ArrayBuffer[A] ++ this
+  override def clone(): ArrayBuffer[A] = new ArrayBuffer[A] ++= this
 
   def result: ArrayBuffer[A] = this
 

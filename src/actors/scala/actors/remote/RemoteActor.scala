@@ -118,7 +118,7 @@ object RemoteActor {
   }
 
   def someKernel: NetKernel =
-    kernels.values.next
+    kernels.valuesIterator.next
 }
 
 

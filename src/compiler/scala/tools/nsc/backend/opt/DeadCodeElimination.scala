@@ -135,7 +135,7 @@ abstract class DeadCodeElimination extends SubComponent {
     def mark {
 //      log("Starting with worklist: " + worklist)
       while (!worklist.isEmpty) {
-        val (bb, idx) = worklist.elements.next
+        val (bb, idx) = worklist.iterator.next
         worklist -= ((bb, idx))
         if (settings.debug.value)
           log("Marking instr: \tBB_" + bb + ": " + idx + " " + bb(idx))

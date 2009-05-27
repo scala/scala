@@ -93,7 +93,7 @@ class ScalaTool extends MatchingTask {
 
   /** Sets the platforms attribute. */
   def setPlatforms(input: String) = {
-    platforms = List.fromArray(input.split(",")).flatMap { s: String =>
+    platforms = input.split(",").toList.flatMap { s: String =>
       val st = s.trim
       if (Platforms.isPermissible(st))
         (if (input != "") List(st) else Nil)
@@ -119,7 +119,7 @@ class ScalaTool extends MatchingTask {
 
   /** Sets JVM properties that will be set whilst running the tool. */
   def setProperties(input: String) = {
-    properties = List.fromArray(input.split(",")).flatMap { s: String =>
+    properties = input.split(",").toList.flatMap { s: String =>
       val st = s.trim
       val stArray = st.split("=", 2)
       if (stArray.length == 2) {
@@ -177,7 +177,7 @@ class ScalaTool extends MatchingTask {
     }
 
     private def readAndPatchResource(resource: String, tokens: Map[String, String]): String = {
-      val chars = getResourceAsCharStream(this.getClass, resource).elements
+      val chars = getResourceAsCharStream(this.getClass, resource).iterator
       val builder = new StringBuilder()
 
       while (chars.hasNext) {

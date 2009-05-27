@@ -83,7 +83,7 @@ abstract class Inliners extends SubComponent {
        /* Map 'original' blocks to the ones inlined in the caller. */
        val inlinedBlock: Map[BasicBlock, BasicBlock] = new HashMap
 
-       val varsInScope: Set[Local] = new HashSet[Local] ++ block.varsInScope.elements
+       val varsInScope: Set[Local] = new HashSet[Local] ++ block.varsInScope.iterator
 
        val instrBefore = block.toList.takeWhile {
          case i @ SCOPE_ENTER(l) => varsInScope += l

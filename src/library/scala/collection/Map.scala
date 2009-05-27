@@ -18,7 +18,7 @@ import generic._
  *  (where This is the type of the map in question):
  *
  *   def get(key: A): Option[B]
- *   def elements: Iterator[(A, B)]
+ *   def iterator: Iterator[(A, B)]
  *   def + [B1 >: B](kv: (A, B1)): This
  *   def -(key: A): This
  *

@@ -164,7 +164,7 @@ abstract class MetaData extends Iterable[MetaData] {
     that match {
       case m: MetaData =>
         var res = (this.length == m.length) && (this.hashCode() == m.hashCode())
-        val it = this.elements
+        val it = this.iterator
         while (res && it.hasNext) { res = it.next.containedIn1(m) }
         res
       case _ =>
@@ -172,7 +172,7 @@ abstract class MetaData extends Iterable[MetaData] {
     }
 
   /** returns an iterator on attributes */
-  def elements: Iterator[MetaData] = new Iterator[MetaData] {
+  def iterator: Iterator[MetaData] = new Iterator[MetaData] {
     var x: MetaData = MetaData.this
     def hasNext = Null != x
     def next = {

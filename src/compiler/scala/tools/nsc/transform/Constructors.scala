@@ -249,7 +249,7 @@ abstract class Constructors extends Transform {
 
       // first traverse all definitions except outeraccesors
       // (outeraccessors are avoided in accessTraverser)
-      for (stat <- defBuf.elements) accessTraverser.traverse(stat)
+      for (stat <- defBuf.iterator) accessTraverser.traverse(stat)
 
       // then traverse all bodies of outeraccessors which are accessed themselves
       // note: this relies on the fact that an outer accessor never calls another

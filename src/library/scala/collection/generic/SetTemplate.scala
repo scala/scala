@@ -15,7 +15,7 @@ package scala.collection.generic
  *  (where `This` is the type of the set in question):
  *
  *   def contains(key: A): Boolean
- *   def elements: Iterator[A]
+ *   def iterator: Iterator[A]
  *   def +(elem: A): This
  *   def -(elem: A): This
  *

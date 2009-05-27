@@ -41,7 +41,7 @@ trait SequenceForwarder[+A] extends Sequence[A] with IterableForwarder[A] {
   override def prefixLength(p: A => Boolean) = underlying.prefixLength(p)
   override def indexWhere(p: A => Boolean, from: Int): Int = underlying.indexWhere(p, from)
   override def indexOf[B >: A](elem: B, from: Int): Int = underlying.indexOf(elem, from)
-  override def reversedElements: Iterator[A] = underlying.reversedElements
+  override def reverseIterator: Iterator[A] = underlying.reverseIterator
   override def startsWith[B](that: Sequence[B], offset: Int): Boolean = underlying.startsWith(that, offset)
   override def endsWith[B](that: Sequence[B]): Boolean = underlying.endsWith(that)
   override def indexOfSeq[B >: A](that: Sequence[B]): Int = underlying.indexOfSeq(that)

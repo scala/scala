@@ -47,13 +47,13 @@ class NodeBuffer extends scala.collection.mutable.ArrayBuffer[Node] {
           this &+ it.next
 
       case n:Node =>
-        super.+(n)
+        super.+=(n)
 
       case ns:Iterable[_] =>
-        this &+ ns.elements
+        this &+ ns.iterator
 
       case d =>
-        super.+(new Atom(d))
+        super.+=(new Atom(d))
     }
     this
   }

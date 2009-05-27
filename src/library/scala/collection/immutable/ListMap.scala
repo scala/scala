@@ -86,14 +86,14 @@ class ListMap[A, +B] extends Map[A, B] with ImmutableMapTemplate[A, B, ListMap[A
 
   /** Returns an iterator over key-value pairs.
    */
-  def elements: Iterator[(A,B)] =
+  def iterator: Iterator[(A,B)] =
     new Iterator[(A,B)] {
       var self: ListMap[A,B] = ListMap.this
       def hasNext = !self.isEmpty
       def next: (A,B) =
         if (!hasNext) throw new NoSuchElementException("next on empty iterator")
         else { val res = (self.key, self.value); self = self.next; res }
-    }.toList.reverse.elements
+    }.toList.reverseIterator
 
   protected def key: A = throw new NoSuchElementException("empty map")
   protected def value: B = throw new NoSuchElementException("empty map")

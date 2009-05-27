@@ -107,9 +107,9 @@ class HashMap[A, +B] extends Map[A,B] with ImmutableMapTemplate[A, B, HashMap[A,
     s
   }
 
-  def elements = synchronized {
+  def iterator = synchronized {
     makeCopyIfUpdated()
-    entries map {e => (e.key, getValue(e))}
+    entriesIterator map {e => (e.key, getValue(e))}
   }
 
   private def getValue(e: Entry) =

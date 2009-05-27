@@ -17,7 +17,7 @@ import script._
  *  To implement a concrete mutable set, you need to provide implementations of the following methods:
  *
  *  def contains(elem: A): Boolean
- *  def elements: Iterator[A]
+ *  def iterator: Iterator[A]
  *  def += (elem: A): this.type
  *  def -= (elem: A): this.type
  *
@@ -204,7 +204,7 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
      case Include(_, x)     => this += x
      case Remove(_, x)      => this -= x
      case Reset()           => clear
-     case s: Script[_]      => s.elements foreach <<
+     case s: Script[_]      => s.iterator foreach <<
      case _                 => throw new UnsupportedOperationException("message " + cmd + " not understood")
    }
 }

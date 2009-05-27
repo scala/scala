@@ -344,7 +344,9 @@ trait Scopes {
 
     /** Return all symbols as an interator in the order they were entered in this scope.
      */
-    def elements: Iterator[Symbol] = toList.elements
+    def iterator: Iterator[Symbol] = toList.iterator
+
+    @deprecated def elements = iterator
 
     def filter(p: Symbol => Boolean): Scope =
       if (!(toList forall p)) newScope(toList filter p) else this

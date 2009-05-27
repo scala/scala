@@ -116,7 +116,7 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
   }
 
   /** Prepends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method. The identity of the
+   *  via its <code>iterator</code> method. The identity of the
    *  buffer is returned.(thisCollection /: elems) (_ plus _)
    *
    *  @param iter  the iterable object.
@@ -138,7 +138,7 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
   def append(elems: A*) { this ++= elems }
 
   /** Appends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method.
+   *  via its <code>iterator</code> method.
    *
    *  @param iter  the iterable object.
    */
@@ -151,7 +151,7 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
   def prepend(elems: A*) { elems ++: this }
 
   /** Prepends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method. The identity of the
+   *  via its <code>iterator</code> method. The identity of the
    *  buffer is returned.
    *
    *  @param iter  the iterable object.
@@ -159,7 +159,7 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
   def prependAll(iter: Traversable[A]) { iter ++: this }
 
   /** Prepends a number of elements provided by an iterable object
-   *  via its <code>elements</code> method. The identity of the
+   *  via its <code>iterator</code> method. The identity of the
    *  buffer is returned.
    *
    *  @param iter  the iterable object.
@@ -209,7 +209,7 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
     case Remove(NoLo, x)        => this -= x
 
     case Reset()                => clear
-    case s: Script[_]           => s.elements foreach <<
+    case s: Script[_]           => s.iterator foreach <<
     case _                      => throw new UnsupportedOperationException("message " + cmd + " not understood")
   }
 

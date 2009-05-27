@@ -72,7 +72,7 @@ class VirtualFile(val name: String, _path: String) extends AbstractFile {
   def lastModified: Long = Math.MIN_LONG
 
   /** Returns all abstract subfiles of this abstract directory. */
-  def elements: Iterator[AbstractFile] = {
+  def iterator: Iterator[AbstractFile] = {
     assert(isDirectory, "not a directory '" + this + "'")
     Iterator.empty
   }

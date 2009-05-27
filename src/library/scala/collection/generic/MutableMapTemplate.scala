@@ -15,7 +15,7 @@ package scala.collection.generic
  *  To implement a concrete mutable map, you need to provide implementations of the following methods:
  *
  *   def get(key: A): Option[B]
- *   def elements: Iterator[(A, B)]
+ *   def iterator: Iterator[(A, B)]
  *   def += (kv: (A, B)): this.type
  *   def -= (key: A): this.type
  *
@@ -104,7 +104,7 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
     this += elem1 += elem2 ++= elems
 
   /** Adds a number of elements provided by a traversable object
-   *  via its <code>elements</code> method and returns
+   *  via its <code>iterator</code> method and returns
    *  either the collection itself (if it is mutable), or a new collection
    *  with the added elements.
    *  @deprecated  This operation will create a new map in the future. To add
@@ -116,7 +116,7 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
   @deprecated def ++(iter: Traversable[(A, B)]): this.type = { for (elem <- iter) +=(elem); this }
 
   /** Adds a number of elements provided by an iterator
-   *  via its <code>elements</code> method and returns
+   *  via its <code>iterator</code> method and returns
    *  the collection itself.
    *  @deprecated  This operation will create a new map in the future. To add
    *               elements as a side effect to an existing map and return
@@ -163,7 +163,7 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
   /** Removes all elements from the set. After this operation is completed,
    *  the set will be empty.
    */
-  def clear() { for ((k, v) <- elements) -=(k) }
+  def clear() { for ((k, v) <- this.iterator) -=(k) }
 
   /** Check if this map maps <code>key</code> to a value.
     * Return that value if it exists, otherwise put <code>default</code>
@@ -181,7 +181,7 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
    * @param f  The transformation to apply
    */
   def transform(f: (A, B) => B): this.type = {
-    elements foreach {
+    this.iterator foreach {
       case (key, value) => update(key, f(key, value))
     }
     this
@@ -199,10 +199,10 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
   }
 
   /** @return the values of this map as a set */
-  override def valueSet: immutable.Set[B] = immutable.Set.empty[B] ++ (self map (_._2))
+  override def values: collection.immutable.Set[B] = immutable.Set.empty[B] ++ (self map (_._2))
 
   override def clone(): This =
-    empty ++ thisCollection
+    empty ++= thisCollection
 
   /** The result when this map is used as a builder */
   def result: This = thisCollection

@@ -682,7 +682,7 @@ abstract class ICodeReader extends ClassfileParser {
       var otherBlock: BasicBlock = null
       var disableJmpTarget = false
 
-      for ((pc, instr) <- instrs.elements) {
+      for ((pc, instr) <- instrs.iterator) {
 //        Console.println("> " + pc + ": " + instr);
         if (jmpTargets contains pc) {
           otherBlock = blocks(pc)

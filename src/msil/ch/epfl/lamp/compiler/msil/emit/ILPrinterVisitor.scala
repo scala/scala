@@ -110,7 +110,7 @@ abstract class ILPrinterVisitor extends Visitor {
 
 	protected def printAssemblyBoilerplate() {
 	// print all the external assemblies
-    for (val j <- 0 until as.length) {
+    for (j <- 0 until as.length) {
 	    printAssemblySignature(as(j), true)
 	}
 	// print assembly declaration
@@ -170,7 +170,7 @@ abstract class ILPrinterVisitor extends Visitor {
 	if (ifaces.length > 0) {
 	    println()
 	    print("       implements ")
-        for (val i <- 0 until ifaces.length) {
+        for (i <- 0 until ifaces.length) {
 		if (i > 0) {
 		    println(",")
 		    print("                  ")
@@ -356,7 +356,7 @@ abstract class ILPrinterVisitor extends Visitor {
 	if (locals.length > 0) {
 	    println(".locals init (")
 	    indent()
-        for (val i <- 0 until locals.length) {
+        for (i <- 0 until locals.length) {
 		if (i > 0) println(",")
 		print(locals(i))
 	    } // end while
@@ -402,7 +402,7 @@ abstract class ILPrinterVisitor extends Visitor {
 	    print("(")
 	    val targets = argument.asInstanceOf[Array[Label]]
             val m = targets.length
-            for (val i <- 0 until m) {
+            for (i <- 0 until m) {
 	        if (i != 0) print(", ")
 		print(targets(i))
 	    } // end for
@@ -540,7 +540,7 @@ abstract class ILPrinterVisitor extends Visitor {
 	print(' '); printName(method.Name)
 	val params = method.GetParameters()
 	print('(')
-	for (val i <- 0 until params.length) {
+	for (i <- 0 until params.length) {
 	    if (i > 0) print(", ")
 	    print(params(i).asInstanceOf[ParameterBuilder])
 	}
@@ -570,7 +570,7 @@ abstract class ILPrinterVisitor extends Visitor {
 
 	var params = method.GetParameters()
 	print("(")
-	for (val i <- 0 until params.length) {
+	for (i <- 0 until params.length) {
 	    if (i > 0) print(", ")
 	    printSignature(params(i).ParameterType)
 	}
@@ -619,7 +619,7 @@ abstract class ILPrinterVisitor extends Visitor {
 
     def printAttributes(icap: ICustomAttributeProvider) {
         var attrs = icap.GetCustomAttributes(false)
-        for (val i <- 0 until attrs.length) {
+        for (i <- 0 until attrs.length) {
             print(".custom ")
             printSignature((attrs(i).asInstanceOf[Attribute]).getConstructor())
             print(" = (")
@@ -640,7 +640,7 @@ object ILPrinterVisitor {
     protected final val SPACES_LEN = SPACES.length()
 
     def hasControlChars(str: String): Boolean = {
-    for(val i <- 0 until str.length()) {
+    for(i <- 0 until str.length()) {
         var ch = str.charAt(i)
         ch match {
           case '\b' =>

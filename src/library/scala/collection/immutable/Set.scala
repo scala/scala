@@ -17,7 +17,7 @@ import generic._
  *  have to provide functionality for the abstract methods in Set:
  *
  *  def contains(elem: A): Boolean
- *  def elements: Iterator[A]
+ *  def iterator: Iterator[A]
  *  def + (elem: A): This
  *  def - (elem: A): This
  *
@@ -48,7 +48,8 @@ object Set extends SetFactory[Set] {
     def contains(elem: A): Boolean = false
     def + (elem: A): Set[A] = new Set1(elem)
     def - (elem: A): Set[A] = this
-    def elements: Iterator[A] = Iterator.empty
+    def iterator: Iterator[A] = Iterator.empty
+    @deprecated def elements = iterator
     override def foreach[U](f: A =>  U): Unit = {}
   }
 
@@ -64,8 +65,9 @@ object Set extends SetFactory[Set] {
     def - (elem: A): Set[A] =
       if (elem == elem1) new EmptySet[A]
       else this
-    def elements: Iterator[A] =
+    def iterator: Iterator[A] =
       Iterator(elem1)
+    @deprecated def elements = iterator
     override def foreach[U](f: A =>  U): Unit = {
       f(elem1)
     }
@@ -84,8 +86,9 @@ object Set extends SetFactory[Set] {
       if (elem == elem1) new Set1(elem2)
       else if (elem == elem2) new Set1(elem1)
       else this
-    def elements: Iterator[A] =
+    def iterator: Iterator[A] =
       Iterator(elem1, elem2)
+    @deprecated def elements = iterator
     override def foreach[U](f: A =>  U): Unit = {
       f(elem1); f(elem2)
     }
@@ -105,8 +108,9 @@ object Set extends SetFactory[Set] {
       else if (elem == elem2) new Set2(elem1, elem3)
       else if (elem == elem3) new Set2(elem1, elem2)
       else this
-    def elements: Iterator[A] =
+    def iterator: Iterator[A] =
       Iterator(elem1, elem2, elem3)
+    @deprecated def elements = iterator
     override def foreach[U](f: A =>  U): Unit = {
       f(elem1); f(elem2); f(elem3)
     }
@@ -127,8 +131,9 @@ object Set extends SetFactory[Set] {
       else if (elem == elem3) new Set3(elem1, elem2, elem4)
       else if (elem == elem4) new Set3(elem1, elem2, elem3)
       else this
-    def elements: Iterator[A] =
+    def iterator: Iterator[A] =
       Iterator(elem1, elem2, elem3, elem4)
+    @deprecated def elements = iterator
     override def foreach[U](f: A =>  U): Unit = {
       f(elem1); f(elem2); f(elem3); f(elem4)
     }

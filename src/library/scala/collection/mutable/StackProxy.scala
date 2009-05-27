@@ -94,7 +94,7 @@ trait StackProxy[A] extends Stack[A] with SeqProxy[A] {
    *
    *  @return an iterator over all stack elements.
    */
-  override def elements: Iterator[A] = self.elements
+  override def iterator: Iterator[A] = self.iterator
 
   /** Creates a list of all stack elements in FIFO order.
    *

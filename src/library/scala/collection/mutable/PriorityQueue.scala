@@ -88,7 +88,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with CloneableCol
    *
    *  @param  iter        an iterable object
    */
-  def ++=(iter: Iterable[A]): Unit = this ++= iter.elements
+  def ++=(iter: Iterable[A]): Unit = this ++= iter.iterator
 
   /** Adds all elements provided by an iterator into the priority queue.
    *
@@ -138,7 +138,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with CloneableCol
    *
    *  @return  an iterator over all elements sorted in descending order.
    */
-  override def elements: Iterator[A] = new Iterator[A] {
+  override def iterator: Iterator[A] = new Iterator[A] {
     val as: Array[AnyRef] = new Array[AnyRef](size0)
     Array.copy(array, 0, as, 0, size0)
     var i = size0 - 1
@@ -158,7 +158,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with CloneableCol
    */
   override def equals(obj: Any): Boolean = obj match {
     case that: PriorityQueue[_] =>
-      (this.elements zip that.elements) forall {
+      (this.iterator zip that.iterator) forall {
         case (thiselem, thatelem) => thiselem == thatelem
       }
     case _ =>

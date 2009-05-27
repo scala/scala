@@ -33,7 +33,7 @@ object ScalaDoc {
   def process(args: Array[String]) {
     val docSettings : doc.Settings = new doc.Settings(error)
     reporter = new ConsoleReporter(docSettings)
-    val command = new CompilerCommand(List.fromArray(args), docSettings, error, false)
+    val command = new CompilerCommand(args.toList, docSettings, error, false)
     if (command.settings.version.value)
       reporter.info(null, versionMsg, true)
     else {

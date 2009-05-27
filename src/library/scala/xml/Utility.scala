@@ -102,7 +102,7 @@ object Utility extends AnyRef with parsing.TokenTests
    * @return     ...
    */
   final def escape(text: String, s: StringBuilder): StringBuilder = {
-    for (c <- text.elements) c match {
+    for (c <- text.iterator) c match {
       case '<' => s.append("&lt;")
       case '>' => s.append("&gt;")
       case '&' => s.append("&amp;")
@@ -141,7 +141,7 @@ object Utility extends AnyRef with parsing.TokenTests
    */
   def collectNamespaces(nodes: Seq[Node]): Set[String] = {
     var m = new HashSet[String]()
-    val it = nodes.elements
+    val it = nodes.iterator
     while (it.hasNext)
       collectNamespaces(it.next, m);
     m
@@ -247,7 +247,7 @@ object Utility extends AnyRef with parsing.TokenTests
 
     if (children.isEmpty) return
     else if (children forall isAtomAndNotText) { // add space
-      val it = children.elements
+      val it = children.iterator
       val f = it.next
       toXML(f, pscope, sb)
       while (it.hasNext) {
@@ -285,7 +285,7 @@ object Utility extends AnyRef with parsing.TokenTests
     + scpeHash * 31
     + {
       var c = 0
-      val i = children.elements
+      val i = children.iterator
       while(i.hasNext) c = c * 41 + i.next.hashCode
       c
     }
@@ -379,7 +379,7 @@ object Utility extends AnyRef with parsing.TokenTests
     val sb  = new StringBuilder
     var rfb: StringBuilder = null
     val nb = new NodeBuffer()
-    val it = zs.elements
+    val it = zs.iterator
     while (it.hasNext) {
       var c = it.next
       c match {

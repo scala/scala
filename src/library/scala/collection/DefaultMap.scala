@@ -17,7 +17,7 @@ import generic._
  * Instances that inherit from DefaultMap[A, B] still have to define:
  *
  *   def get(key: A): Option[B]
- *   def elements: Iterator[(A, B)]
+ *   def iterator: Iterator[(A, B)]
  *
  * It refers back to the original map.
  *

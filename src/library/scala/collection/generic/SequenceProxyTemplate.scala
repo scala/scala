@@ -41,7 +41,7 @@ trait SequenceProxyTemplate[+A, +This <: SequenceTemplate[A, This] with Sequence
   override def lastIndexWhere(p: A => Boolean): Int = self.lastIndexWhere(p, length - 1)
   override def lastIndexWhere(p: A => Boolean, end: Int): Int = self.lastIndexWhere(p)
   override def reverse: This = self.reverse
-  override def reversedElements: Iterator[A] = self.reversedElements
+  override def reverseIterator: Iterator[A] = self.reverseIterator
   override def startsWith[B](that: Sequence[B], offset: Int): Boolean = self.startsWith(that, offset)
   override def startsWith[B](that: Sequence[B]): Boolean = self.startsWith(that)
   override def endsWith[B](that: Sequence[B]): Boolean = self.endsWith(that)

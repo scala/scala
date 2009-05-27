@@ -16,7 +16,7 @@ package scala.collection.generic
  *  (where `This` is the type of the map in question):
  *
  *   def get(key: A): Option[B]
- *   def elements: Iterator[(A, B)]
+ *   def iterator: Iterator[(A, B)]
  *   def + [B1 >: B](kv: (A, B1)): This
  *   def -(key: A): This
  *
@@ -50,7 +50,9 @@ self =>
   def get(key: A): Option[B]
 
   /** An iterator yielding all key/value mappings of this map. */
-  def elements: Iterator[(A, B)]
+  def iterator: Iterator[(A, B)]
+
+  @deprecated def elements = iterator
 
   /** Add a key/value pair to this map, returning a new map.
    *  @param    kv the key/value pair
@@ -110,44 +112,52 @@ self =>
    */
   def isDefinedAt(key: A) = contains(key)
 
-  /** Creates an iterator for all keys.
-   *
-   *  @return an iterator over all keys.
+  /**
+   *  @return the keys of this map as a set.
    */
-  def keys: Iterator[A] = new Iterator[A] {
-    val iter = self.elements
-    def hasNext = iter.hasNext
-    def next = iter.next._1
-  }
+  def keys: Set[A] = new DefaultKeySet
 
   protected class DefaultKeySet extends Set[A] {
     def contains(key : A) = self.contains(key)
-    def elements = self.elements.map(_._1)
+    def iterator = self.iterator.map(_._1)
+    @deprecated def elements = iterator
     def + (elem: A): Set[A] = (Set[A]() ++ this + elem).asInstanceOf[Set[A]] // !!! concrete overrides abstract problem
     def - (elem: A): Set[A] = (Set[A]() ++ this - elem).asInstanceOf[Set[A]] // !!! concrete overrides abstract problem
     override def size = self.size
     override def foreach[B](f: A => B) = for ((k, v) <- self) f(k)
   }
 
-  /** @return the keys of this map as a set.
-   */
-  def keySet: Set[A] = new DefaultKeySet
-
-  /** Creates an iterator for a contained values.
+  /** @deprecated use `keys` instead
    *
-   *  @return an iterator over all values.
+   *  @return the keys of this map as a set.
    */
-  def values: Iterator[B] = new Iterator[B] {
-    val iter = self.elements
+  @deprecated def keySet: collection.Set[A] = new DefaultKeySet
+
+  /** Creates an iterator for all keys.
+   *
+   *  @return an iterator over all keys.
+   */
+  def keysIterator: Iterator[A] = new Iterator[A] {
+    val iter = self.iterator
     def hasNext = iter.hasNext
-    def next = iter.next._2
+    def next = iter.next._1
   }
 
   /** @return the values of this map as a set.
    *  @note  Can't return a Set[B] here because sets are non-variant.
    *         The operation is overridden with the sharper type in MutableMapTemplate.
    */
-  def valueSet: immutable.Set[_ <: B] = immutable.Set.empty[B] ++ (self map (_._2))
+  def values: collection.Set[_ <: B] = immutable.Set.empty[B] ++ (self map (_._2))
+
+  /** Creates an iterator for a contained values.
+   *
+   *  @return an iterator over all values.
+   */
+  def valuesIterator: Iterator[B] = new Iterator[B] {
+    val iter = self.iterator
+    def hasNext = iter.hasNext
+    def next = iter.next._2
+  }
 
   /** The default value for the map, returned when a key is not found
    *  The method implemented here yields an error,
@@ -164,7 +174,7 @@ self =>
    */
   def filterKeys(p: A => Boolean) = new DefaultMap[A, B] {
     override def foreach[C](f: ((A, B)) => C): Unit = for (kv <- self) if (p(kv._1)) f(kv)
-    def elements = self.elements.filter(kv => p(kv._1))
+    def iterator = self.iterator.filter(kv => p(kv._1))
     override def contains(key: A) = self.contains(key) && p(key)
     def get(key: A) = if (!p(key)) None else self.get(key)
   }
@@ -174,7 +184,7 @@ self =>
    */
   def mapValues[C](f: B => C) = new DefaultMap[A, C] {
     override def foreach[D](g: ((A, C)) => D): Unit = for ((k, v) <- self) g((k, f(v)))
-    def elements = for ((k, v) <- self.elements) yield (k, f(v))
+    def iterator = for ((k, v) <- self.iterator) yield (k, f(v))
     override def size = self.size
     override def contains(key: A) = self.contains(key)
     def get(key: A) = self.get(key).map(f)
@@ -226,7 +236,7 @@ self =>
    *  @return    a string showing all mappings
    */
   override def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder =
-    elements.map { case (k, v) => k+" -> "+v }.addString(b, start, sep, end)
+    this.iterator.map { case (k, v) => k+" -> "+v }.addString(b, start, sep, end)
 
   /** Compares two maps structurally; i.e. checks if all mappings
    *  contained in this map are also contained in the other map,

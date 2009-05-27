@@ -36,7 +36,7 @@ object TreeHashMap {
  * @author David MacIver
  */
 class TreeHashMap[Key, +Value] private (private val underlying : IntMap[AssocMap[Key, Value]]) extends scala.collection.immutable.Map[Key, Value]{
-  def elements : Iterator[(Key, Value)] = new Iterator[(Key, Value)]{
+  def iterator : Iterator[(Key, Value)] = new Iterator[(Key, Value)]{
     val assocIt = new AssocMapIterator(AssocMap.empty[Key, Value]);
     val intIterator = underlying.values;
 
@@ -182,7 +182,9 @@ private[collection] sealed abstract class AssocMap[Key, +Value] extends immutabl
     case Nil() => AssocMap.empty;
   }
 
-  def elements : Iterator[(Key, Value)] = new AssocMapIterator(this);
+  def iterator : Iterator[(Key, Value)] = new AssocMapIterator(this)
+
+  @deprecated def elements = iterator
 
   override final def foreach[U](f : ((Key, Value)) =>  U) = this match {
     case Cons(key, value, tail) => { f((key, value)); tail.foreach(f); }

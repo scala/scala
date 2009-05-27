@@ -946,7 +946,7 @@ trait Actor extends AbstractActor {
   }
 
   private[actors] def unlinkFrom(from: AbstractActor) = synchronized {
-    links = links.remove(from.==)
+    links = links.filterNot(from.==)
   }
 
   var trapExit = false
@@ -990,7 +990,7 @@ trait Actor extends AbstractActor {
   private[actors] def exitLinked() {
     exiting = true
     // remove this from links
-    val mylinks = links.remove(this.==)
+    val mylinks = links.filterNot(this.==)
     // exit linked processes
     mylinks.foreach((linked: AbstractActor) => {
       unlink(linked)

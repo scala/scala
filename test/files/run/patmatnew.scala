@@ -315,7 +315,7 @@ object Test extends TestConsoleMain {
         case Stream.cons(hd, tl) => hd + sum(tl)
       }
 
-    val str: Stream[int] = Stream.fromIterator(List(1,2,3).elements)
+    val str: Stream[int] = Stream.fromIterator(List(1,2,3).iterator)
 
     def runTest() = assertEquals(sum(str), 6)
   }

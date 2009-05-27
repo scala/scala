@@ -81,11 +81,11 @@ class HashSet[A] extends Set[A]
     s
   }
 
-  override def elements = synchronized {
+  override def iterator = synchronized {
     makeCopyIfUpdated()
     // note need to cache because (later versions of) set might be mutated while elements are traversed.
-    val cached = new mutable.ArrayBuffer() ++ super.elements
-    cached.elements
+    val cached = new mutable.ArrayBuffer() ++= super.iterator
+    cached.iterator
   }
 
   private def logLimit: Int = Math.sqrt(table.length).toInt

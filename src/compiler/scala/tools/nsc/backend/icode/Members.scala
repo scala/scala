@@ -79,7 +79,7 @@ trait Members { self: ICodes =>
     /* This method applies the given function to each basic block. */
     def traverseFeedBack(f: (BasicBlock, HashMap[BasicBlock, Boolean]) => Unit) = {
       val visited : HashMap[BasicBlock, Boolean] = new HashMap;
-      visited ++= blocks.elements.map(x => (x, false));
+      visited ++= blocks.iterator.map(x => (x, false));
 
       var blockToVisit: List[BasicBlock] = List(startBlock)
 
@@ -274,7 +274,7 @@ trait Members { self: ICodes =>
           } while (nextBlock.isDefinedAt(succ))
           bb.close
         } else
-          bb = nextBlock.keys.next
+          bb = nextBlock.keysIterator.next
       }
     }
 

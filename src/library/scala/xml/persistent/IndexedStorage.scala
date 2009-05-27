@@ -40,7 +40,7 @@ extends CachedFileStorage(file) {
   }
 
   def nodes: Iterator[Node] = synchronized {
-    theMap.values
+    theMap.valuesIterator
   }
 
   def lookup(n: A): Option[Node] = theMap.get(n)

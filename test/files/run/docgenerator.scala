@@ -114,7 +114,7 @@ object Foo2 {
     def process(args: Array[String]) {
       val docSettings = new scala.tools.nsc.doc.Settings(error)
       reporter = new ConsoleReporter(docSettings)
-      val command = new CompilerCommand(List.fromArray(args), docSettings, error, false)
+      val command = new CompilerCommand(args.toList, docSettings, error, false)
       try {
         object compiler extends Global(command.settings, reporter) {
 	  override protected def computeInternalPhases() : Unit = {

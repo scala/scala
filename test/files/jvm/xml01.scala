@@ -57,8 +57,8 @@ object Test extends Application with Assert {
 
 /*
   Console.println( parsedxml2 \ "_" );
-  Console.println( (parsedxml2 \ "_" ).elements);
-  for( val i <- (parsedxml2 \ "_" ).elements) {
+  Console.println( (parsedxml2 \ "_" ).iterator);
+  for( val i <- (parsedxml2 \ "_" ).iterator) {
     Console.println( i );
   };
   */

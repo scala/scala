@@ -45,7 +45,7 @@ abstract class BaseBerrySethi {
   protected def compFirst(r: RegExp): immutable.Set[Int] = r match {
     case x:Alt =>
       var tmp = emptySet
-      val it = x.rs.elements                       // union
+      val it = x.rs.iterator                       // union
       while (it.hasNext) { tmp = tmp ++ compFirst(it.next) }
       tmp
     case Eps =>
@@ -55,7 +55,7 @@ abstract class BaseBerrySethi {
       compFirst(x.r)
     case x:Sequ =>
       var tmp = emptySet;
-      val it = x.rs.elements;                       // union
+      val it = x.rs.iterator;                       // union
       while (it.hasNext) {
 	val z = it.next
 	tmp = tmp ++ compFirst(z)
@@ -73,7 +73,7 @@ abstract class BaseBerrySethi {
   protected def compLast(r: RegExp): immutable.Set[Int] = r match {
     case x:Alt =>
       var tmp = emptySet
-      val it = x.rs.elements                      // union
+      val it = x.rs.iterator                      // union
       while (it.hasNext) { tmp = tmp ++ compFirst(it.next) }
       tmp
     case Eps =>
@@ -83,7 +83,7 @@ abstract class BaseBerrySethi {
       compLast(x.r)
     case x:Sequ =>
       var tmp = emptySet
-      val it = x.rs.elements.toList.reverse.elements       // union
+      val it = x.rs.iterator.toList.reverse.iterator       // union
       while (it.hasNext) {
         val z = it.next
         tmp = tmp ++ compLast(z)
@@ -109,7 +109,7 @@ abstract class BaseBerrySethi {
     var fol = emptySet
     if (r.length > 0) {//non-empty expr
 
-      val it = r.elements.toList.reverse.elements
+      val it = r.iterator.toList.reverse.iterator
 
       fol = fol + pos // don't modify pos !
       while (it.hasNext) {
@@ -137,7 +137,7 @@ abstract class BaseBerrySethi {
 
       case x:Alt =>
         var first = emptySet
-        val it = x.rs.elements.toList.reverse.elements
+        val it = x.rs.iterator.toList.reverse.iterator
         while (it.hasNext)
           first = first ++ compFollow1(fol, it.next);
         first
@@ -157,7 +157,7 @@ abstract class BaseBerrySethi {
 
       case x:Sequ =>
         var first = emptySet
-        val it = x.rs.elements.toList.reverse.elements
+        val it = x.rs.iterator.toList.reverse.iterator
         while (it.hasNext) {
           val p = it.next
           first = compFollow1(fol, p)
@@ -181,10 +181,10 @@ abstract class BaseBerrySethi {
   protected def traverse(r: RegExp): Unit = r match {
     // (is tree automaton stuff, more than Berry-Sethi)
     case x:Alt =>
-      val it = x.rs.elements
+      val it = x.rs.iterator
       while (it.hasNext) traverse(it.next)
     case x:Sequ =>
-      val it = x.rs.elements
+      val it = x.rs.iterator
       while (it.hasNext) traverse(it.next)
     case x:Meta =>
       traverse(x.r)

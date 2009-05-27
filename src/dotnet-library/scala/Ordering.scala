@@ -160,8 +160,8 @@ object Ordering
   implicit def Iterable[T](implicit ord : Ordering[T]) : Ordering[Iterable[T]] =
   new Ordering[Iterable[T]] {
     def compare(x : Iterable[T], y : Iterable[T]) : Int = {
-      val xe = x.elements;
-      val ye = y.elements;
+      val xe = x.iterator;
+      val ye = y.iterator;
 
       while (xe.hasNext && ye.hasNext){
         val res = ord.compare(xe.next, ye.next);

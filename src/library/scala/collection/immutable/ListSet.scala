@@ -62,13 +62,15 @@ class ListSet[A] extends Set[A]
    *  @throws Predef.NoSuchElementException
    *  @return the new iterator
    */
-  def elements: Iterator[A] = new Iterator[A] {
+  def iterator: Iterator[A] = new Iterator[A] {
     var that: ListSet[A] = self;
     def hasNext = !that.isEmpty;
     def next: A =
       if (!hasNext) throw new NoSuchElementException("next on empty iterator")
       else { val res = that.elem; that = that.next; res }
   }
+
+  @deprecated def elements = iterator
 
   /**
    *  @throws Predef.NoSuchElementException

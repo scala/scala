@@ -12,7 +12,6 @@ package scala.tools.scalap.scalax.rules.scalasig
 import java.io.{PrintStream, ByteArrayOutputStream}
 import java.util.regex.Pattern
 
-import _root_.scala.Symbol
 import scala.tools.scalap.scalax.util.StringUtil
 
 class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
@@ -319,7 +318,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     "\\$times" -> "*", "\\$div" -> "/", "\\$bslash" -> "\\\\",
     "\\$greater" -> ">", "\\$qmark" -> "?", "\\$percent" -> "%",
     "\\$amp" -> "&", "\\$colon" -> ":", "\\$u2192" -> "→")
-  val pattern = Pattern.compile(_syms.keySet.foldLeft("")((x, y) => if (x == "") y else x + "|" + y))
+  val pattern = Pattern.compile(_syms.keys.foldLeft("")((x, y) => if (x == "") y else x + "|" + y))
   val placeholderPattern = "_\\$(\\d)+"
 
   def processName(name: String) = {

@@ -331,7 +331,7 @@ abstract class RefChecks extends InfoTransform {
         //
         // (3) is violated but not (2).
         def checkNoAbstractDecls(bc: Symbol) {
-          for (decl <- bc.info.decls.elements) {
+          for (decl <- bc.info.decls.iterator) {
             if (decl.isDeferred && !isAbstractTypeWithoutFBound(decl)) {
               val impl = decl.matchingSymbol(clazz.thisType)
               if (impl == NoSymbol || (decl.owner isSubClass impl.owner)) {

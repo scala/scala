@@ -31,8 +31,8 @@ trait NodeFactory[A <: Node] {
   /** faster equality, because */
   def eqElements(ch1:Seq[Node], ch2:Seq[Node]): Boolean = {
     (ch1.length == ch2.length) && {
-      val it1 = ch1.elements;
-      val it2 = ch2.elements;
+      val it1 = ch1.iterator;
+      val it2 = ch2.iterator;
       var res = true;
       while(res && it1.hasNext) {
         res = it1.next.eq(it2.next);
@@ -53,7 +53,7 @@ trait NodeFactory[A <: Node] {
     val hash    = Utility.hashCode( pre, name, attrSeq.hashCode(), scpe.hashCode(), children ) ;
     cache.get( hash ) match {
       case Some(list) => // find structurally equal
-        val it     = list.elements;
+        val it     = list.iterator;
         val lookup = it.find { x => nodeEquals(x, pre, name, attrSeq, scpe, children) };
         lookup match {
           case Some(x) =>

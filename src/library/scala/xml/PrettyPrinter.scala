@@ -91,7 +91,7 @@ class PrettyPrinter( width:Int, step:Int ) {
       items = Box(ind, s) :: items
       cur += s.length
     } else try {
-      for (b <- cut(s, ind).elements)  // break it up
+      for (b <- cut(s, ind).iterator)  // break it up
         items = b :: items
     } catch {
       case _:BrokenException => makePara(ind, s) // give up, para
@@ -168,7 +168,7 @@ class PrettyPrinter( width:Int, step:Int ) {
       case _:Atom[_] | _:Comment | _:EntityRef | _:ProcInstr =>
         makeBox( ind, node.toString().trim() )
       case g @ Group(xs) =>
-        traverse(xs.elements, pscope, ind)
+        traverse(xs.iterator, pscope, ind)
       case _ =>
         val test = {
           val sb = new StringBuilder()
@@ -184,7 +184,7 @@ class PrettyPrinter( width:Int, step:Int ) {
           if (stg.length < width - cur) { // start tag fits
             makeBox(ind, stg)
             makeBreak()
-            traverse(node.child.elements, node.scope, ind + step)
+            traverse(node.child.iterator, node.scope, ind + step)
             makeBox(ind, etg)
           } else if (len2 < width - cur) {
             // <start label + attrs + tag + content + end tag
@@ -192,7 +192,7 @@ class PrettyPrinter( width:Int, step:Int ) {
             makeBreak() // todo: break the rest in pieces
             /*{ //@todo
              val sq:Seq[String] = stg.split(" ");
-             val it = sq.elements;
+             val it = sq.iterator;
              it.next;
              for (c <- it) {
                makeBox(ind+len2-2, c)
@@ -201,7 +201,7 @@ class PrettyPrinter( width:Int, step:Int ) {
              }*/
             makeBox(ind, stg.substring(len2, stg.length))
             makeBreak()
-            traverse(node.child.elements, node.scope, ind + step)
+            traverse(node.child.iterator, node.scope, ind + step)
             makeBox(cur, etg)
             makeBreak()
           } else { // give up
@@ -300,7 +300,7 @@ class PrettyPrinter( width:Int, step:Int ) {
    *  @param sb   the string buffer to which to append to
    */
   def formatNodes(nodes: Seq[Node], pscope: NamespaceBinding, sb: StringBuilder): Unit =
-    for (n <- nodes.elements) {
+    for (n <- nodes.iterator) {
       sb.append(format(n, pscope))
     }
 

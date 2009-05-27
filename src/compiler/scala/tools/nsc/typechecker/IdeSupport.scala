@@ -49,7 +49,7 @@ trait IdeSupport extends Analyzer {
           val oldType = oldTypeFor(sym0)
           oldType match {
             case PolyType(xxx,_) =>
-              val i = xxx.elements
+              val i = xxx.iterator
               var pause = false
               while (i.hasNext) {
                 if (i.next.pos == util.NoPosition) pause = true

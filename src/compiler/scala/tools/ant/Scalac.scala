@@ -324,7 +324,7 @@ class Scalac extends MatchingTask {
   /** Sets the <code>logphase</code> attribute. Used by Ant.
    *  @param input The value for <code>logPhase</code>. */
   def setLogPhase(input: String) {
-    logPhase = List.fromArray(input.split(",")).flatMap { s: String =>
+    logPhase = input.split(",").toList.flatMap { s: String =>
       val st = s.trim()
       if (CompilerPhase.isPermissible(st))
         (if (input != "") List(st) else Nil)

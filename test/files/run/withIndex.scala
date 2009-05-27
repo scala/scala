@@ -2,8 +2,8 @@ object Test {
   def main(args: Array[String]) = {
     val ary: Array[String] = Array("a", "b", "c")
     val lst: List[String] = List("a", "b", "c")
-    val itr: Iterator[String] = lst.elements
-    val str: Stream[String] = Stream.fromIterator(lst.elements)
+    val itr: Iterator[String] = lst.iterator
+    val str: Stream[String] = Stream.fromIterator(lst.iterator)
 
     Console.println(ary.zipWithIndex.toList)
     Console.println(lst.zipWithIndex.toList)
@@ -18,7 +18,7 @@ object Test {
 
     val emptyArray = new Array[String](0)
     val emptyList: List[String] = Nil
-    val emptyIterator = emptyList.elements
+    val emptyIterator = emptyList.iterator
     val emptyStream: Stream[String] = Stream.empty
 
     Console.println(emptyArray.zipWithIndex.toList)

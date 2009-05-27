@@ -54,7 +54,7 @@ class HashMap[A, B] extends Map[A, B]
 
   def -=(key: A): this.type = { removeEntry(key); this }
 
-  def elements = entries map {e => (e.key, e.value)}
+  def iterator = entriesIterator map {e => (e.key, e.value)}
 }
 
 /** This class implements mutable maps using a hashtable.

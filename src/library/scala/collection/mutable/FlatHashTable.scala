@@ -113,7 +113,7 @@ trait FlatHashTable[A] {
     None
   }
 
-  def elements = new Iterator[A] {
+  def iterator = new Iterator[A] {
     private var i = 0
     def hasNext: Boolean = {
       while (i < table.length && (null == table(i))) i += 1
@@ -123,6 +123,8 @@ trait FlatHashTable[A] {
       if (hasNext) { i += 1; table(i - 1).asInstanceOf[A] }
       else Iterator.empty.next
   }
+
+  @deprecated def elements = iterator
 
   private def growTable() {
     val oldtable = table

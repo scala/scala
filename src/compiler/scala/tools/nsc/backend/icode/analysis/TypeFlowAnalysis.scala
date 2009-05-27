@@ -87,12 +87,12 @@ abstract class TypeFlowAnalysis {
 
       val resultingLocals = new VarBinding
 
-      for (binding1 <- env1.elements) {
+      for (binding1 <- env1.iterator) {
         val tp2 = env2(binding1._1)
         resultingLocals += ((binding1._1, typeLattice.lub2(binding1._2, tp2)))
       }
 
-      for (binding2 <- env2.elements if resultingLocals(binding2._1) eq typeLattice.bottom) {
+      for (binding2 <- env2.iterator if resultingLocals(binding2._1) eq typeLattice.bottom) {
         val tp1 = env1(binding2._1)
         resultingLocals += ((binding2._1, typeLattice.lub2(binding2._2, tp1)))
       }

@@ -21,8 +21,8 @@ object Tuple2 {
 /* !!! todo: enable
   class IterableOps[CC[+B] <: Iterable[B] with IterableTemplate[CC, B @uncheckedVariance], A1, A2](tuple: (CC[A1], Iterable[A2])) {
     def zip: CC[(A1, A2)] = {
-      val elems1 = tuple._1.elements
-      val elems2 = tuple._2.elements
+      val elems1 = tuple._1.iterator
+      val elems2 = tuple._2.iterator
       val b = (tuple._1: IterableTemplate[CC, A1]).newBuilder[(A1, A2)]
         // : needed because otherwise it picks Iterable's builder.
       while (elems1.hasNext && elems2.hasNext)
@@ -30,37 +30,37 @@ object Tuple2 {
       b.result
     }
     def map[B](f: (A1, A2) => B): CC[B] = {
-      val elems1 = tuple._1.elements
-      val elems2 = tuple._2.elements
+      val elems1 = tuple._1.iterator
+      val elems2 = tuple._2.iterator
       val b = (tuple._1: IterableTemplate[CC, A1]).newBuilder[B]
       while (elems1.hasNext && elems2.hasNext)
         b += f(elems1.next, elems2.next)
       b.result
     }
     def flatMap[B](f: (A1, A2) => CC[B]): CC[B] = {
-      val elems1 = tuple._1.elements
-      val elems2 = tuple._2.elements
+      val elems1 = tuple._1.iterator
+      val elems2 = tuple._2.iterator
       val b = (tuple._1: IterableTemplate[CC, A1]).newBuilder[B]
       while (elems1.hasNext && elems2.hasNext)
         b ++= f(elems1.next, elems2.next)
       b.result
     }
     def foreach[U](f: (A1, A2) => U) {
-      val elems1 = tuple._1.elements
-      val elems2 = tuple._2.elements
+      val elems1 = tuple._1.iterator
+      val elems2 = tuple._2.iterator
       while (elems1.hasNext && elems2.hasNext)
         f(elems1.next, elems2.next)
     }
     def forall(p: (A1, A2) => Boolean): Boolean = {
-      val elems1 = tuple._1.elements
-      val elems2 = tuple._2.elements
+      val elems1 = tuple._1.iterator
+      val elems2 = tuple._2.iterator
       while (elems1.hasNext && elems2.hasNext)
         if (!p(elems1.next, elems2.next)) return false
       true
     }
     def exists(p: (A1, A2) => Boolean): Boolean = {
-      val elems1 = tuple._1.elements
-      val elems2 = tuple._2.elements
+      val elems1 = tuple._1.iterator
+      val elems2 = tuple._2.iterator
       while (elems1.hasNext && elems2.hasNext)
         if (p(elems1.next, elems2.next)) return true
       false

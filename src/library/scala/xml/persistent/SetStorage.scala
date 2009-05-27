@@ -27,7 +27,7 @@ class SetStorage(file: File) extends CachedFileStorage(file) {
   {
     val it = super.initialNodes
     dirty = it.hasNext
-    for(val x <- it) {
+    for(x <- it) {
       theSet += x;
     }
   }
@@ -38,6 +38,6 @@ class SetStorage(file: File) extends CachedFileStorage(file) {
 
   def -= (e: Node): Unit = synchronized { this.dirty = true; theSet -= e }
 
-  def nodes = synchronized { theSet.elements }
+  def nodes = synchronized { theSet.iterator }
 
 }

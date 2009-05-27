@@ -184,7 +184,7 @@ self =>
    *  @param p the predicate used to filter the stream.
    *  @return the elements of this stream satisfying <code>p</code>.
    */
-  override def partition(p: A => Boolean): (Stream[A], Stream[A]) = (filter(p(_)), remove(p(_)))
+  override def partition(p: A => Boolean): (Stream[A], Stream[A]) = (filter(p(_)), filterNot(p(_)))
 
   /** Returns a stream formed from this stream and the specified stream
    *  <code>that</code> by associating each element of the former with
@@ -200,7 +200,7 @@ self =>
     def loop(these: Stream[A], elems2: Iterator[B]): Stream[(A1, B)] =
       if (these.isEmpty || !elems2.hasNext) Stream.Empty
       else new Stream.Cons((these.head, elems2.next), loop(these.tail, elems2))
-    if (bf.isInstanceOf[Stream.StreamBuilderFactory[_]]) loop(this, that.elements).asInstanceOf[That]
+    if (bf.isInstanceOf[Stream.StreamBuilderFactory[_]]) loop(this, that.iterator).asInstanceOf[That]
     else super.zip[A1, B, That](that)
   }
 
@@ -378,7 +378,7 @@ object Stream extends SequenceFactory[Stream] {
    *         this builder should be bypassed.
    */
   class StreamBuilder[A] extends LazyBuilder[A, Stream[A]] {
-    def result: Stream[A] = (for (xs <- parts.elements; x <- xs.toIterable.elements) yield x).toStream
+    def result: Stream[A] = (for (xs <- parts.iterator; x <- xs.toIterable.iterator) yield x).toStream
   }
 
   object Empty extends Stream[Nothing] {
@@ -507,7 +507,7 @@ object Stream extends SequenceFactory[Stream] {
   /** The concatenation of a sequence of streams
    * @deprecated use xs.flatten instead
    */
-  def concat[A](xs: Iterable[Stream[A]]): Stream[A] = concat(xs.elements)
+  def concat[A](xs: Iterable[Stream[A]]): Stream[A] = concat(xs.iterator)
 
   /** The concatenation of all streams returned by an iterator
    * @deprecated use xs.toStream.flatten instead

@@ -173,7 +173,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
   def parseAttribute(pos: Position, s: String): Tree = {
     val ns = xml.Utility.parseAttributeValue(s)
     val ts: ListBuffer[Tree] = new ListBuffer
-    val it = ns.elements
+    val it = ns.iterator
     while (it.hasNext) it.next match {
       case Text(s)      => ts += text(pos, s) // makeText1(Literal(Constant(s)))
       case EntityRef(s) => ts += entityRef(pos, s)
@@ -209,7 +209,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
     //var _buffer = New( _scala_xml_NodeBuffer, List(Nil))
 
     var as:List[Tree] = ValDef(NoMods, _buf, TypeTree(), New( _scala_xml_NodeBuffer, List(Nil)))::Nil
-    val it = args.elements
+    val it = args.iterator
     while (it.hasNext) {
       val t = it.next
       if (!isEmptyText(t)) {
@@ -264,7 +264,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
     }
 
     /* DEBUG */
-    val attrIt = attrMap.keys
+    val attrIt = attrMap.keysIterator
     while (attrIt.hasNext) {
       val z = attrIt.next
       if (z startsWith "xmlns") {  // handle namespace
@@ -317,7 +317,7 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
       tlist2 = t :: tlist2
     }
 
-    var it = attrMap.elements
+    var it = attrMap.iterator
     while (it.hasNext) {
       val ansk = it.next
       getPrefix(ansk._1) match {

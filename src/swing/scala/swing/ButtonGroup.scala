@@ -17,9 +17,9 @@ class ButtonGroup(initialButtons: AbstractButton*) {
   val buttons: mutable.Set[AbstractButton] = new mutable.Set[AbstractButton] {
     def -=(b: AbstractButton): this.type = { peer.remove(b.peer); this }
     def +=(b: AbstractButton): this.type = { peer.add(b.peer); this }
-    def contains(b: AbstractButton) = elements.contains(b)
+    def contains(b: AbstractButton) = this.iterator.contains(b)
     override def size = peer.getButtonCount
-    def elements: Iterator[AbstractButton] = new Iterator[AbstractButton] {
+    def iterator: Iterator[AbstractButton] = new Iterator[AbstractButton] {
       val enum = peer.getElements
       def next = Component.wrapperFor[AbstractButton](enum.nextElement)
       def hasNext = enum.hasMoreElements

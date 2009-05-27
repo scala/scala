@@ -231,7 +231,7 @@ trait ModelExtractor {
         val str = flagsToString(arg.flags)
         assert((arg hasFlag PRIVATE) && (arg hasFlag LOCAL), arg)
         val argName = arg.name.toString.trim
-        val actual = sym.tpe.decls.elements.find(e => {
+        val actual = sym.tpe.decls.iterator.find(e => {
           val eName = e.name.toString.trim;
           argName == eName && {
             val str = flagsToString(e.flags);
@@ -243,7 +243,7 @@ trait ModelExtractor {
       });
     }
     object decls extends mutable.LinkedHashMap[Symbol, Member] {
-      sym.tpe.decls.elements.foreach(e => {
+      sym.tpe.decls.iterator.foreach(e => {
         if (!constructorArgs.contains(e)) {
           val m = Member(e)
           if (!m.isEmpty && !this.contains(e)) this.put(e, m.get)
@@ -254,7 +254,7 @@ trait ModelExtractor {
     def members(c: Category): Iterable[Member] = members0(c.f)
     object inherited extends mutable.LinkedHashMap[Symbol, List[Member]]() {
       override def default(tpe: Symbol) = Nil
-      for (m <- sym.tpe.members if !sym.tpe.decls.elements.contains(m) &&
+      for (m <- sym.tpe.members if !sym.tpe.decls.iterator.contains(m) &&
           (Values.f(m) || Methods.f(m))) {
         val o = m.overridingSymbol(sym)
         if (o == NoSymbol) {

@@ -16,7 +16,7 @@ trait HOSeq {
   //           is an invariant position -- should probably rule that out?
   trait Iterable[+m[+x], +t] {
     //def unit[a](orig: a): m[a]
-    def elements: Iterator[t]
+    def iterator: Iterator[t]
 
     // construct an empty accumulator that will produce the same structure as this iterable, with elements of type t
     def accumulator[t]: Accumulator[m, t]
@@ -44,7 +44,7 @@ trait HOSeq {
         // -- 2nd-order type params are not yet in scope in view bound
       val elems = elements
       while (elems.hasNext) {
-        val elemss: Iterator[s] = f(elems.next).elements
+        val elemss: Iterator[s] = f(elems.next).iterator
         while (elemss.hasNext) buf += elemss.next
       }
       buf.result
@@ -108,7 +108,7 @@ trait HOSeq {
           def head: t
           def tail: List[t]
           def isEmpty: Boolean
-          def elements: Iterator[t] = error("TODO")
+          def iterator: Iterator[t] = error("TODO")
 
           // construct an empty accumulator that will produce the same structure as this iterable, with elements of type t
           def accumulator[t]: Accumulator[List, t] = error("TODO")

@@ -33,7 +33,7 @@ trait BitSetTemplate[+This <: BitSetTemplate[This] with Set[Int]] extends SetTem
     s
   }
 
-  def elements = new Iterator[Int] {
+  def iterator = new Iterator[Int] {
     private var current = 0
     private val end = nwords * WordLength
     def hasNext: Boolean = {
@@ -44,6 +44,8 @@ trait BitSetTemplate[+This <: BitSetTemplate[This] with Set[Int]] extends SetTem
       if (hasNext) { val r = current; current += 1; r }
       else Iterator.empty.next
   }
+
+  @deprecated def elements = iterator
 
   override def foreach[B](f: Int => B) {
     for (i <- 0 until nwords) {
@@ -136,7 +138,7 @@ object BitSetTemplate {
 
   private val pc1: Array[Int] = {
     def countBits(x: Int): Int = if (x == 0) 0 else x % 2 + countBits(x >>> 1)
-    Array.fromFunction(countBits _)(256)
+    Array.tabulate(256)(countBits _)
   }
 
   private def popCount(w: Long): Int = {

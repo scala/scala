@@ -45,7 +45,7 @@ abstract class NodeSeq extends immutable.Sequence[Node] with SequenceTemplate[No
 
   def theSeq: Seq[Node]
   def length = theSeq.length
-  override def elements = theSeq.elements
+  override def iterator = theSeq.iterator
   def apply(i: Int): Node = theSeq.apply(i)
 
   def apply(f: Node => Boolean): NodeSeq = filter(f)
@@ -76,10 +76,10 @@ abstract class NodeSeq extends immutable.Sequence[Node] with SequenceTemplate[No
   def \(that: String): NodeSeq = that match {
     case "_" =>
       var zs: List[Node] = Nil
-      val it = this.elements
+      val it = this.iterator
       while (it.hasNext) {
         val x = it.next
-        val jt = x.child.elements
+        val jt = x.child.iterator
         while (jt.hasNext) {
           val y = jt.next
           if (y.typeTag$ != -1)
@@ -114,10 +114,10 @@ abstract class NodeSeq extends immutable.Sequence[Node] with SequenceTemplate[No
 
     case _   =>
       var zs: List[Node] = Nil
-      val it = this.elements
+      val it = this.iterator
       while (it.hasNext) {
         val x = it.next
-        val jt = x.child.elements
+        val jt = x.child.iterator
         while (jt.hasNext) {
           val y = jt.next
           if (y.label == that)
@@ -145,10 +145,10 @@ abstract class NodeSeq extends immutable.Sequence[Node] with SequenceTemplate[No
   def \\ (that: String): NodeSeq = that match {
     case "_" =>
       var zs: List[Node] = Nil
-      val it = this.elements
+      val it = this.iterator
       while (it.hasNext) {
         val x = it.next
-        val jt = x.descendant_or_self.elements
+        val jt = x.descendant_or_self.iterator
         while (jt.hasNext) {
           val y = jt.next
           if (y.typeTag$ != -1)
@@ -159,14 +159,14 @@ abstract class NodeSeq extends immutable.Sequence[Node] with SequenceTemplate[No
 
     case _ if that.charAt(0) == '@' =>
       var zs: List[Node] = Nil
-      val it = this.elements
+      val it = this.iterator
       while (it.hasNext) {
         val x = it.next
-        val jt = x.descendant_or_self.elements
+        val jt = x.descendant_or_self.iterator
         while (jt.hasNext) {
           val y = jt.next
           if (y.typeTag$ != -1) {
-            val kt = (y \ that).elements
+            val kt = (y \ that).iterator
             while (kt.hasNext) {
               zs = (kt.next)::zs
             }
@@ -177,10 +177,10 @@ abstract class NodeSeq extends immutable.Sequence[Node] with SequenceTemplate[No
 
     case _ =>
       var zs: List[Node] = Nil
-      val it = this.elements
+      val it = this.iterator
       while (it.hasNext) {
         val x = it.next
-        val jt = x.descendant_or_self.elements
+        val jt = x.descendant_or_self.iterator
         while (jt.hasNext) {
           val y = jt.next
           if (y.typeTag$ != -1 && y.label == that)
@@ -190,7 +190,7 @@ abstract class NodeSeq extends immutable.Sequence[Node] with SequenceTemplate[No
     zs.reverse
   }
 
-  override def toString(): String = theSeq.elements.foldLeft ("") {
+  override def toString(): String = theSeq.iterator.foldLeft ("") {
     (s: String, x: Node) => s + x.toString()
   }
 /*
@@ -209,7 +209,7 @@ abstract class NodeSeq extends immutable.Sequence[Node] with SequenceTemplate[No
 
   def text: String = {
     val sb = new StringBuilder()
-    val it = elements
+    val it = this.iterator
     while (it.hasNext) {
       sb.append(it.next.text)
     }

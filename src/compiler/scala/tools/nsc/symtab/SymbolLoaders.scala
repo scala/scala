@@ -175,7 +175,7 @@ abstract class SymbolLoaders {
       }
 
       // do classes first
-      for ((name, file) <- classes.elements) {
+      for ((name, file) <- classes.iterator) {
         val loader = if (!file.isSourceFile) {
           new ClassfileLoader(file.classFile, file.sourceFile, file.sourcePath)
         } else {
@@ -186,7 +186,7 @@ abstract class SymbolLoaders {
       }
 
       // packages second
-      for ((name, file) <- packages.elements)
+      for ((name, file) <- packages.iterator)
         enterPackage(name, newPackageLoader(file))
 
       // if there's a $member object, enter its members as well.
@@ -198,7 +198,7 @@ abstract class SymbolLoaders {
 
   def openPackageModule(m: Symbol) = {
     val owner = m.owner
-    for (member <- m.info.decls.elements) {
+    for (member <- m.info.decls.iterator) {
       // todo: handle overlapping definitions in some way: mark as errors
       // or treat as abstractions. For now the symbol in the package module takes precedence.
       for (existing <- owner.info.decl(member.name).alternatives)
@@ -235,7 +235,7 @@ abstract class SymbolLoaders {
 
       super.doComplete(root)
 
-      for (namespace <- namespaces.elements) {
+      for (namespace <- namespaces.iterator) {
         val oldPkg = root.info.decls lookup newTermName(namespace)
         if (oldPkg == NoSymbol)
           enterPackage(namespace, new NamespaceLoader(new classPath0.Context(List())))
@@ -243,7 +243,7 @@ abstract class SymbolLoaders {
       }
 
       // import the CLR types contained in the package (namespace)
-      for ((name, typ) <- types.elements) {
+      for ((name, typ) <- types.iterator) {
         assert(namespace == typ.Namespace, typ.FullName)
 
         if (typ.IsDefined(clrTypes.SCALA_SYMTAB_ATTR, false)) {

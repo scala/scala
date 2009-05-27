@@ -34,7 +34,7 @@ object PagedSeq {
 
   /** Constructs a character sequence from a character iterable */
   def fromIterable[T](source: Iterable[T]): PagedSeq[T] =
-    fromIterator(source.elements)
+    fromIterator(source.iterator)
 
   /** Constructs a character sequence from a string iterator */
   def fromStrings(source: Iterator[String]): PagedSeq[Char] = {
@@ -55,7 +55,7 @@ object PagedSeq {
 
   /** Constructs a character sequence from a string iterable */
   def fromStrings(source: Iterable[String]): PagedSeq[Char] =
-    fromStrings(source.elements)
+    fromStrings(source.iterator)
 
   /** Constructs a character sequence from a line iterator
    *  Lines do not contain trailing `\n' characters; The method inserts
@@ -77,7 +77,7 @@ object PagedSeq {
    *  a line separator `\n' between any two lines in the sequence.
    */
   def fromLines(source: Iterable[String]): PagedSeq[Char] =
-    fromLines(source.elements)
+    fromLines(source.iterator)
 
   /** Constructs a character sequence from an input reader
    */
@@ -180,7 +180,7 @@ class PagedSeq[T] protected (more: (Array[T], Int, Int) => Int,
   /** Convert sequence to string */
   override def toString = {
     val buf = new StringBuilder
-    for (ch <- elements) buf append ch
+    for (ch <- PagedSeq.this.iterator) buf append ch
     buf.toString
   }
 }

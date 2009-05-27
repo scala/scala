@@ -54,11 +54,11 @@ class PlainFile(val file: File) extends AbstractFile {
   def lastModified: Long = file.lastModified()
 
   /** Returns all abstract subfiles of this abstract directory. */
-  def elements: Iterator[AbstractFile] = {
+  def iterator: Iterator[AbstractFile] = {
     assert(isDirectory, "not a directory '" + this + "'")
     val names: Array[String] = file.list()
     if ((names eq null) || names.length == 0) Iterator.empty
-    else names.elements.map { name: String => new File(file, name) }
+    else names.iterator.map { name: String => new File(file, name) }
       .filter(_.exists).map(file => new PlainFile(file))
   }
 

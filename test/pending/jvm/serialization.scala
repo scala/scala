@@ -39,7 +39,7 @@ object Serialize {
 object Test1_scala {
 
   private def arrayToString[A](arr: Array[A]): String =
-    List.fromArray(arr).mkString("Array[",",","]")
+    arr.mkString("Array[",",","]")
 
   private def arrayEquals[A, B](a1: Array[A], a2: Array[B]) =
      (a1.length == a2.length) &&
@@ -225,7 +225,7 @@ object Test4_xml {
           <th>Last Name</th>
           <th>First Name</th>
         </tr>
-        { for (val p <- people) yield
+        { for (p <- people) yield
         <tr>
           <td> { p.name } </td>
           <td> { p.age.toString() } </td>

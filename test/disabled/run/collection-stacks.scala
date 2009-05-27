@@ -16,8 +16,8 @@ object Test extends Application {
   }
 
   // check #957
-  check("1-2-3", immutableStack(1, 2, 3).elements.mkString("-"))
-  check("1-2-3", mutableStack(1, 2, 3).elements.mkString("-"))
+  check("1-2-3", immutableStack(1, 2, 3).iterator.mkString("-"))
+  check("1-2-3", mutableStack(1, 2, 3).iterator.mkString("-"))
 
   println("apply")
   check(1, immutableStack(1, 2, 3).apply(0))
