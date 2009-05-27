@@ -132,7 +132,7 @@ MSIL BUILD
     <mkdir dir="${build-msil.dir}/library"/>
     <!-- <ilasm srcdir="${msil.dir}/il" includes="*.msil" outputfile="${msil.dir}/lib/predef.dll"/> -->
 
-    <pack-scalac
+    <scalac
         srcdir="${build-msil-src.dir}"
         destdir="${build-msil.dir}/library"
         target="msil"
@@ -140,7 +140,7 @@ MSIL BUILD
         assemrefs="${lib.dir}">
       <include name="**/*.scala"/>
       <exclude name="scala/ScalaObject.scala"/>
-    </pack-scalac>
+    </scalac>
     <stopwatch name="msil.lib.timer" action="total"/>
   </target>
 
