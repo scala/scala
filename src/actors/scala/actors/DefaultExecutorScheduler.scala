@@ -10,7 +10,7 @@
 
 package scala.actors
 
-import java.util.concurrent.{ThreadPoolExecutor, TimeUnit, LinkedBlockingQueue}
+import java.util.concurrent.{ThreadPoolExecutor, TimeUnit, LinkedBlockingQueue, ThreadFactory}
 
 /**
  * The <code>DefaultExecutorScheduler</code> class uses a default
@@ -23,15 +23,27 @@ import java.util.concurrent.{ThreadPoolExecutor, TimeUnit, LinkedBlockingQueue}
  *
  * @author Philipp Haller
  */
-class DefaultExecutorScheduler extends ExecutorScheduler {
+class DefaultExecutorScheduler(daemon: Boolean) extends ExecutorScheduler {
+
+  def this() =
+    this(false)
 
   private val workQueue = new LinkedBlockingQueue[Runnable]
+
+  private val threadFactory = new ThreadFactory {
+    def newThread(r: Runnable): Thread = {
+      val result = new Thread(r)
+      result.setDaemon(daemon)
+      result
+    }
+  }
 
   private val threadPool = new ThreadPoolExecutor(ThreadPoolConfig.corePoolSize,
                                                   ThreadPoolConfig.maxPoolSize,
                                                   50L,
                                                   TimeUnit.MILLISECONDS,
-                                                  workQueue)
+                                                  workQueue,
+                                                  threadFactory)
 
   executor = threadPool
 

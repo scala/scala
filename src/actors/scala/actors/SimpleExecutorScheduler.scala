@@ -48,7 +48,8 @@ class SimpleExecutorScheduler(protected var executor: ExecutorService) extends I
       executor execute task
     } catch {
       case ree: RejectedExecutionException =>
-        Debug.info("caught "+ree)
+        // run task on current thread
+        task.run()
     }
   }
 
@@ -73,7 +74,7 @@ class SimpleExecutorScheduler(protected var executor: ExecutorService) extends I
    *  has not been shut down.
    */
   def isActive =
-    !executor.isShutdown()
+    (executor ne null) && !executor.isShutdown()
 
   def newActor(a: Actor) {}
 

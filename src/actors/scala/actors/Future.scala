@@ -38,7 +38,7 @@ abstract class Future[+T](val ch: InputChannel[T]) extends Responder[T] with Fun
  */
 object Futures {
 
-  private val sched = new FJTaskScheduler2(true)
+  private lazy val sched = new DefaultExecutorScheduler(true)
 
   def future[T](body: => T): Future[T] = {
     case object Eval
