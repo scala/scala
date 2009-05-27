@@ -1,4 +1,3 @@
-/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -20,9 +19,7 @@ package scala.collection.mutable
  *  @version 1.0, 08/07/2003
  */
 trait Undoable {
-
-    /** Undo the last operation.
-     */
-    def undo()
+  /** Undo the last operation.
+   */
+  def undo(): Unit
 }
-*/

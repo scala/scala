@@ -208,7 +208,7 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
     case Remove(Index(n), x)    => if (this(n) == x) remove(n)
     case Remove(NoLo, x)        => this -= x
 
-    case Reset                  => clear
+    case Reset()                => clear
     case s: Script[_]           => s.elements foreach <<
     case _                      => throw new UnsupportedOperationException("message " + cmd + " not understood")
   }

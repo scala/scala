@@ -1,4 +1,3 @@
-/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -23,28 +22,25 @@ package scala.collection.mutable
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-trait Publisher[A, This <: Publisher[A, This]] { self: This =>
-  private val filters = new HashMap[Subscriber[A, This],
-                                    scala.collection.mutable.Set[A => Boolean]]
-                            with MultiMap[Subscriber[A, This], A => Boolean]
-  private val suspended = new HashSet[Subscriber[A, This]]
+trait Publisher[A, This <: Publisher[A, This]] {
+  self: This =>
 
-  def subscribe(sub: Subscriber[A, This]): Unit =
-    subscribe(sub, event => true)
+  type SubThis = Subscriber[A, This]
+  type Filter = A => Boolean
 
-  def subscribe(sub: Subscriber[A, This], filter: A => Boolean): Unit =
-    filters.add(sub, filter)
+  private val filters = new HashMap[SubThis, Set[Filter]] with MultiMap[SubThis, Filter]
+  private val suspended = new HashSet[SubThis]
 
-  def suspendSubscription(sub: Subscriber[A, This]): Unit = suspended += sub
-
-  def activateSubscription(sub: Subscriber[A, This]): Unit = suspended -= sub
-
-  def removeSubscription(sub: Subscriber[A, This]): Unit = filters -= sub
-
+  def subscribe(sub: SubThis): Unit = subscribe(sub, event => true)
+  def subscribe(sub: SubThis, filter: Filter): Unit = filters(sub) += filter
+  def suspendSubscription(sub: SubThis): Unit = suspended += sub
+  def activateSubscription(sub: SubThis): Unit = suspended -= sub
+  def removeSubscription(sub: SubThis): Unit = filters -= sub
   def removeSubscriptions() { filters.clear }
 
   protected def publish(event: A): Unit =
     filters.keys.foreach(sub =>
-      if (filters.entryExists(sub, p => p(event))) sub.notify(this, event))
+      if (filters.entryExists(sub, p => p(event)))
+        sub.notify(this, event)
+    )
 }
-*/

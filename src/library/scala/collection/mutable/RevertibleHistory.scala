@@ -1,4 +1,3 @@
-/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -32,4 +31,3 @@ class RevertableHistory[A <: Undoable, B] extends History[A, B] with Undoable {
     old.foreach { case (sub, event) => event.undo }
   }
 }
-*/

@@ -203,14 +203,8 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
    def <<(cmd: Message[A]): Unit = cmd match {
      case Include(_, x)     => this += x
      case Remove(_, x)      => this -= x
-     case Reset             => clear
+     case Reset()           => clear
      case s: Script[_]      => s.elements foreach <<
      case _                 => throw new UnsupportedOperationException("message " + cmd + " not understood")
    }
 }
-
-
-
-
-
-

@@ -1,4 +1,3 @@
-/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -22,10 +21,9 @@ package scala.collection.mutable
  *  @version 1.0, 08/07/2003
  */
 @serializable
-class History[A, B] extends AnyRef with Subscriber[A, B] with Collection[(B, A)] {
-
+class History[A, B] extends AnyRef with Subscriber[A, B] with Collection[(B, A)]
+{
   protected val log: Queue[(B, A)] = new Queue[(B, A)]
-
   val maxHistory: Int = 1000
 
   /**
@@ -33,18 +31,15 @@ class History[A, B] extends AnyRef with Subscriber[A, B] with Collection[(B, A)]
    *  @param event ...
    */
   def notify(pub: B, event: A): Unit = {
-    if (log.length >= maxHistory) {
-      val old = log.dequeue;
-    }
+    if (log.length >= maxHistory)
+      log.dequeue
+
     log.enqueue((pub, event))
   }
 
-  def elements: Iterator[(B, A)] = log.elements
-
-  def events: Iterator[A] = log.elements.map { case (_, e) => e }
-
   override def size: Int = log.length
+  def elements: Iterator[(B, A)] = log.elements
+  def events: Iterator[A] = log.elements.map { case (_, e) => e }
 
   def clear(): Unit = log.clear
 }
-*/

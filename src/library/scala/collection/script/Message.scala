@@ -60,7 +60,7 @@ case class Remove[+A](location: Location, elem: A) extends Message[A] {
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  */
-case object Reset extends Message[Nothing]
+case class Reset[+A]() extends Message[A]
 
 /** Objects of this class represent compound messages consisting
  *  of a sequence of other messages.

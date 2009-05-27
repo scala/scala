@@ -1,4 +1,3 @@
-/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -12,6 +11,7 @@
 
 package scala.collection.mutable
 
+import script._
 
 /** This class is typically used as a mixin. It adds a subscription
  *  mechanism to the <code>Set</code> class into which this abstract
@@ -23,8 +23,7 @@ package scala.collection.mutable
  */
 trait ObservableSet[A, This <: ObservableSet[A, This]]
       extends Set[A]
-      with Publisher[Message[A]
-      with Undoable, This]
+      with Publisher[Message[A] with Undoable, This]
 { self: This =>
 
   abstract override def +=(elem: A): this.type = {
@@ -35,9 +34,12 @@ trait ObservableSet[A, This <: ObservableSet[A, This]]
     this
   }
 
-  abstract override def -=(elem: A): Unit = if (contains(elem)) {
-    super.-=(elem)
-    publish(new Remove(elem) with Undoable { def undo = +=(elem) })
+  abstract override def -=(elem: A): this.type = {
+    if (contains(elem)) {
+      super.-=(elem)
+      publish(new Remove(elem) with Undoable { def undo = +=(elem) })
+    }
+    this
   }
 
   abstract override def clear(): Unit = {
@@ -47,4 +49,3 @@ trait ObservableSet[A, This <: ObservableSet[A, This]]
     })
   }
 }
-*/
