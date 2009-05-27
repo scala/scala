@@ -162,8 +162,6 @@ self =>
       unit.contexts.clear()
       ResetAttrs.traverse(unit.body)
       currentTyperRun.enterNames(unit)
-      unit.body = EmptyTree // Not sure if this is correct, but it makes the
-                            // observable behaviour more stable
       unit.status = JustParsed
     }
 
