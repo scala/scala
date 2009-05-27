@@ -162,8 +162,6 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
     }
   }
 
-  @deprecated def elements = iterator
-
   override def foreach[U](f : T =>  U){
     var currentIndex = index;
     while(currentIndex > 0){

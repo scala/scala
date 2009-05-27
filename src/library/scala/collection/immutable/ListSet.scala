@@ -70,8 +70,6 @@ class ListSet[A] extends Set[A]
       else { val res = that.elem; that = that.next; res }
   }
 
-  @deprecated def elements = iterator
-
   /**
    *  @throws Predef.NoSuchElementException
    */

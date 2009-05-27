@@ -49,7 +49,6 @@ object Set extends SetFactory[Set] {
     def + (elem: A): Set[A] = new Set1(elem)
     def - (elem: A): Set[A] = this
     def iterator: Iterator[A] = Iterator.empty
-    @deprecated def elements = iterator
     override def foreach[U](f: A =>  U): Unit = {}
   }
 
@@ -67,7 +66,6 @@ object Set extends SetFactory[Set] {
       else this
     def iterator: Iterator[A] =
       Iterator(elem1)
-    @deprecated def elements = iterator
     override def foreach[U](f: A =>  U): Unit = {
       f(elem1)
     }
@@ -88,7 +86,6 @@ object Set extends SetFactory[Set] {
       else this
     def iterator: Iterator[A] =
       Iterator(elem1, elem2)
-    @deprecated def elements = iterator
     override def foreach[U](f: A =>  U): Unit = {
       f(elem1); f(elem2)
     }
@@ -110,7 +107,6 @@ object Set extends SetFactory[Set] {
       else this
     def iterator: Iterator[A] =
       Iterator(elem1, elem2, elem3)
-    @deprecated def elements = iterator
     override def foreach[U](f: A =>  U): Unit = {
       f(elem1); f(elem2); f(elem3)
     }
@@ -133,7 +129,6 @@ object Set extends SetFactory[Set] {
       else this
     def iterator: Iterator[A] =
       Iterator(elem1, elem2, elem3, elem4)
-    @deprecated def elements = iterator
     override def foreach[U](f: A =>  U): Unit = {
       f(elem1); f(elem2); f(elem3); f(elem4)
     }

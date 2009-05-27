@@ -70,8 +70,6 @@ trait LinearSequenceTemplate[+A, +This <: LinearSequenceTemplate[A, This] with L
     override def toList: List[A] = these.toList
   }
 
-  @deprecated def elements = iterator
-
   /** Apply the given function <code>f</code> to each element of this linear sequence
    *  (while respecting the order of the elements).
    *

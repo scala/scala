@@ -324,20 +324,17 @@ object JavaConversions {
 
   case class IterableWrapper[A](underlying : Iterable[A]) extends ju.AbstractCollection[A] {
     def iterator = underlying.iterator
-	@deprecated def elements = iterator
     def size = underlying.size
     override def isEmpty = underlying.isEmpty
   }
 
   case class JIterableWrapper[A](underlying : jl.Iterable[A]) extends Iterable[A] {
     def iterator = underlying.iterator
-	@deprecated def elements = iterator
     def newBuilder[B] = new mutable.ArrayBuffer[B]
   }
 
   case class JCollectionWrapper[A](underlying : ju.Collection[A]) extends Iterable[A] {
     def iterator = underlying.iterator
-	@deprecated def elements = iterator
     override def size = underlying.size
     override def isEmpty = underlying.isEmpty
     def newBuilder[B] = new mutable.ArrayBuffer[B]
@@ -355,7 +352,6 @@ object JavaConversions {
     def length = underlying.size
     override def isEmpty = underlying.isEmpty
     override def iterator : Iterator[A] = underlying.iterator
-    @deprecated def elements = iterator
     def apply(i : Int) = underlying.get(i)
     def update(i : Int, elem : A) = underlying.set(i, elem)
     def +:(elem : A) = { underlying.subList(0, 0).add(elem) ; this }
@@ -389,14 +385,12 @@ object JavaConversions {
       }
     }
 
-	@deprecated def elements = iterator
   }
 
   case class JSetWrapper[A](underlying : ju.Set[A]) extends mutable.Set[A] with generic.MutableSetTemplate[A, JSetWrapper[A]] {
     override def size = underlying.size
 
     def iterator = underlying.iterator
-    @deprecated def elements = iterator
 
     def contains(elem: A): Boolean = underlying.contains(elem)
 
@@ -454,8 +448,6 @@ object JavaConversions {
             }
           }
         }
-
-	    @deprecated def elements = iterator
 
         def remove = prev match {
           case Some(k) => val v = self.remove(k.asInstanceOf[AnyRef]) ; prev = None ; v

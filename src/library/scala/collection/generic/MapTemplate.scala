@@ -52,8 +52,6 @@ self =>
   /** An iterator yielding all key/value mappings of this map. */
   def iterator: Iterator[(A, B)]
 
-  @deprecated def elements = iterator
-
   /** Add a key/value pair to this map, returning a new map.
    *  @param    kv the key/value pair
    *  @return   A new map with the new binding added to this map
@@ -120,7 +118,6 @@ self =>
   protected class DefaultKeySet extends Set[A] {
     def contains(key : A) = self.contains(key)
     def iterator = self.iterator.map(_._1)
-    @deprecated def elements = iterator
     def + (elem: A): Set[A] = (Set[A]() ++ this + elem).asInstanceOf[Set[A]] // !!! concrete overrides abstract problem
     def - (elem: A): Set[A] = (Set[A]() ++ this - elem).asInstanceOf[Set[A]] // !!! concrete overrides abstract problem
     override def size = self.size

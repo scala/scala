@@ -92,8 +92,6 @@ trait BasicBlocks {
     def iterator: Iterator[Instruction] =
       if (closed) instrs.iterator else instructionList.reverse.iterator
 
-    @deprecated def elements = iterator
-
     /** return the underlying array of instructions */
     def getArray: Array[Instruction] = {
       assert(closed)

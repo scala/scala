@@ -124,8 +124,6 @@ trait FlatHashTable[A] {
       else Iterator.empty.next
   }
 
-  @deprecated def elements = iterator
-
   private def growTable() {
     val oldtable = table
     table = new Array[AnyRef](table.length * 2)

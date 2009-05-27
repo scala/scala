@@ -79,6 +79,4 @@ abstract class Relation extends AnyRef with Iterable[Tuple] {
     }
   }
 
-  @deprecated def elements = iterator
-
 }

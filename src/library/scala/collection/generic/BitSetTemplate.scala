@@ -45,8 +45,6 @@ trait BitSetTemplate[+This <: BitSetTemplate[This] with Set[Int]] extends SetTem
       else Iterator.empty.next
   }
 
-  @deprecated def elements = iterator
-
   override def foreach[B](f: Int => B) {
     for (i <- 0 until nwords) {
       val w = word(i)
