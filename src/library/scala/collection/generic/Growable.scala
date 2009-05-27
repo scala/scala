@@ -37,7 +37,7 @@ trait Growable[-A] {
    *
    *  @param iter  the iterator.
    */
-  def ++=(iter: Iterator[A]): this.type = { iter foreach += ; this}
+  def ++=(iter: Iterator[A]): this.type = { iter foreach += ; this }
 
   /** Adds a number of elements provided by an iterable object to this collection.
    *

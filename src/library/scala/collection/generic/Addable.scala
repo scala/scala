@@ -10,7 +10,8 @@
 
 package scala.collection.generic
 
-/** This class represents collections that can be augmented usmutableing a += operator.
+/** This class represents collections that can be added to other
+ *  collections using a '+' operator.
  *
  *  @author   Martin Odersky
  *  @owner   Martin Odersky

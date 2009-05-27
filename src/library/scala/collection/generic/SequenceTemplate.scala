@@ -19,7 +19,7 @@ import generic._
 /** Class <code>Sequence[A]</code> represents sequences of elements
  *  of type <code>A</code>.
  *  It adds the following methods to class Iterable:
- *   `length`, `lengthCompare`, `apply`, `isDefinedAt`, `segmentLength`, `prefixLengh`,
+ *   `length`, `lengthCompare`, `apply`, `isDefinedAt`, `segmentLength`, `prefixLength`,
  *   `indexWhere`, `indexOf`, `lastIndexWhere`, `lastIndexOf`, `reverse`, `reverseIterator`,
  *   `startsWith`, `endsWith`, `indexOfSeq`, , `zip`, `zipAll`, `zipWithIndex`.
  *

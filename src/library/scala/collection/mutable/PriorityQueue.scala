@@ -1,4 +1,3 @@
-/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -12,39 +11,56 @@
 
 package scala.collection.mutable
 
+import generic.{ Addable, Cloneable, Growable }
 
-//import Predef.{NoSuchElementException, UnsupportedOperationException}
 
-/** This class implements priority queues using a heap. The
- *  elements of the queue have to be ordered in terms of the
- *  <code>Ordered[T]</code> class.
+/** This class implements priority queues using a heap.
+ *  To prioritize elements of type T there must be an implicit
+ *  Ordering[T] available at creation.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 03/05/2004
  */
 
 @serializable @cloneable
-class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with CloneableCollection {
-  size0 = size0 + 1                           // we do not use array(0)
-  override def length: Int = super.length - 1 // adjust length accordingly
+class PriorityQueue[A](implicit ord: Ordering[A])
+      extends ResizableArray[A]
+      with Addable[A, PriorityQueue[A]]
+      with Growable[A]
+      with Cloneable[PriorityQueue[A]]
+{
+  import ord._
 
+  size0 += 1                                    // we do not use array(0)
+  override def length: Int = super.length - 1   // adjust length accordingly
+  override def isEmpty: Boolean = size0 < 2
+  override protected def thisCollection = this
+
+  // hey foreach, our 0th element doesn't exist
+  override def foreach[U](f: A => U) {
+    var i = 1
+    while (i < size) {
+      f(toA(array(i)))
+      i += 1
+    }
+  }
+
+  private def toA(x: AnyRef): A = x.asInstanceOf[A]
   protected def fixUp(as: Array[AnyRef], m: Int): Unit = {
     var k: Int = m
-    while ((k > 1) && (as(k / 2).asInstanceOf[A] < as(k).asInstanceOf[A])) {
+    while (k > 1 && toA(as(k / 2)) < toA(as(k))) {
       swap(k, k / 2)
       k = k / 2
     }
   }
-
   protected def fixDown(as: Array[AnyRef], m: Int, n: Int): Unit = {
     var k: Int = m
-    var loop: Boolean = true
-    while (loop && (n >= 2 * k)) {
+    while (n >= 2 * k) {
       var j = 2 * k
-      if ((j < n) && (as(j).asInstanceOf[A] < as(j + 1).asInstanceOf[A]))
-        j = j + 1;
-      if (!(as(k).asInstanceOf[A] < as(j).asInstanceOf[A]))
-        loop = false
+      if (j < n && toA(as(j)) < toA(as(j + 1)))
+        j += 1
+      if (toA(as(k)) >= toA(as(j)))
+        return
       else {
         val h = as(k)
         as(k) = as(j)
@@ -54,57 +70,45 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with CloneableCol
     }
   }
 
-  /** Checks if the queue is empty.
-   *
-   *  @return true, iff there is no element in the queue.
-   */
-  override def isEmpty: Boolean = size0 < 2
-
   /** Inserts a single element into the priority queue.
    *
    *  @param  elem        the element to insert
    */
   def +=(elem: A): this.type = {
-    ensureSize(size0+1)
+    ensureSize(size0 + 1)
     array(size0) = elem.asInstanceOf[AnyRef]
     fixUp(array, size0)
-    size0 = size0 + 1
+    size0 += 1
     this
   }
 
-  def +(elem: A): PriorityQueue[A] = { this += elem; this }
+  def +(elem: A): PriorityQueue[A] = { this.clone() += elem }
 
   /** Add two or more elements to this set.
    *  @param    elem1 the first element.
    *  @param    kv2 the second element.
    *  @param    kvs the remaining elements.
    */
-  def += (elem1: A, elem2: A, elems: A*) = { this += elem1; this += elem2; this ++= elems }
-
-  def + (elem1: A, elem2: A, elems: A*) = { this.+=(elem1, elem2, elems: _*); this }
+  override def +(elem1: A, elem2: A, elems: A*) = { this.clone().+=(elem1, elem2, elems : _*) }
 
   /** Adds all elements provided by an <code>Iterable</code> object
    *  into the priority queue.
    *
    *  @param  iter        an iterable object
    */
-  def ++=(iter: Iterable[A]): Unit = this ++= iter.iterator
+  def ++(elems: Traversable[A]) = { this.clone() ++= elems }  // ??? XXX why does this "override nothing" with override?
 
   /** Adds all elements provided by an iterator into the priority queue.
    *
    *  @param  it        an iterator
    */
-  def ++=(it: Iterator[A]): Unit = it foreach { e => this += e }
-
-  def ++(iter: Iterable[A]): PriorityQueue[A] = { this ++= iter; this }
-
-  def ++(iter: Iterator[A]): PriorityQueue[A] = { this ++= iter; this }
+  override def ++(iter: Iterator[A]) = { this.clone() ++= iter } // ...whereas this doesn't?
 
   /** Adds all elements to the queue.
    *
    *  @param  elems       the elements to add.
    */
-  def enqueue(elems: A*): Unit = (this ++= elems)
+  def enqueue(elems: A*): Unit = { this ++= elems }
 
   /** Returns the element with the highest priority in the queue,
    *  and removes this element from the queue.
@@ -117,7 +121,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with CloneableCol
       size0 = size0 - 1
       swap(1, size0)
       fixDown(array, 1, size0 - 1)
-      array(size0).asInstanceOf[A]
+      toA(array(size0))
     } else
       throw new NoSuchElementException("no element to remove from heap")
 
@@ -126,14 +130,14 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with CloneableCol
    *
    *  @return   the element with the highest priority.
    */
-  def max: A = if (size0 > 1) array(1).asInstanceOf[A] else throw new NoSuchElementException("queue is empty")
+  def max: A = if (size0 > 1) toA(array(1)) else throw new NoSuchElementException("queue is empty")
 
   /** Removes all elements from the queue. After this operation is completed,
    *  the queue will be empty.
    */
   def clear(): Unit = { size0 = 1 }
 
-  /** Returns an iterator which yiels all the elements of the priority
+  /** Returns an iterator which yields all the elements of the priority
    *  queue in descending priority order.
    *
    *  @return  an iterator over all elements sorted in descending order.
@@ -144,7 +148,7 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with CloneableCol
     var i = size0 - 1
     def hasNext: Boolean = i > 0
     def next(): A = {
-      val res = as(1).asInstanceOf[A]
+      val res = toA(as(1))
       as(1) = as(i)
       i = i - 1
       fixDown(as, 1, i)
@@ -157,12 +161,8 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with CloneableCol
    *  @return true, iff both queues contain the same sequence of elements.
    */
   override def equals(obj: Any): Boolean = obj match {
-    case that: PriorityQueue[_] =>
-      (this.iterator zip that.iterator) forall {
-        case (thiselem, thatelem) => thiselem == thatelem
-      }
-    case _ =>
-      false
+    case that: PriorityQueue[_] => (this.iterator zip that.iterator) forall { case (x, y) => x == y }
+    case _                      => false
   }
 
   /** The hashCode method always yields an error, since it is not
@@ -175,26 +175,18 @@ class PriorityQueue[A <% Ordered[A]] extends ResizableArray[A] with CloneableCol
 
   /** Returns a regular queue containing the same elements.
    */
-  def toQueue: Queue[A] = {
-    val res = new Queue[A]
-    res ++= this
-    res
-  }
+  def toQueue: Queue[A] = new Queue[A] ++= this.iterator
 
   /** Returns a textual representation of a queue as a string.
    *
    *  @return the string representation of this queue.
    */
   override def toString() = toList.mkString("PriorityQueue(", ", ", ")")
+  override def toList = this.iterator.toList
 
   /** This method clones the priority queue.
    *
    *  @return  a priority queue with the same elements.
    */
-  override def clone(): PriorityQueue[A] = {
-    val res = new PriorityQueue[A]
-    res ++= this
-    res
-  }
+  override def clone(): PriorityQueue[A] = new PriorityQueue[A] ++= this.iterator
 }
-*/
