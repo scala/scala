@@ -765,8 +765,14 @@ class Interpreter(val settings: Settings, out: PrintWriter)
       val resultValMethod: reflect.Method = resultObject getMethod "result"
       lazy val pair = (resultValMethod.invoke(resultObject).toString, true)
 
+      def unwrap(e: Throwable): Throwable = e match {
+        case (_: InvocationTargetException | _: ExceptionInInitializerError) if e.getCause ne null =>
+          unwrap(e.getCause)
+        case _ => e
+      }
+
       (reflectionUnwrapper either pair) match {
-        case Left(e)                => (stringFrom(e.printStackTrace(_)), false)
+        case Left(e)                => (stringFrom(unwrap(e).printStackTrace(_)), false)
         case Right((res, success))  => (res, success)
       }
     }
