@@ -484,9 +484,9 @@ self =>
     var i = 0
     breakable {
       for (x <- this) {
+        if (i >= n) break
         b += x
         i += 1
-        if (i == n) break
       }
     }
     b.result
