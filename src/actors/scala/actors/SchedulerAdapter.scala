@@ -6,6 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
+// $Id$
+
 package scala.actors
 
 /** The <code>SchedulerAdapter</code> trait is used to adapt
@@ -15,7 +17,6 @@ package scala.actors
  *  <code>execute(f: => Unit)</code> method is sufficient to
  *  obtain a concrete class that extends <code>IScheduler</code>.
  *
- *  @version 0.9.18
  *  @author Philipp Haller
  */
 trait SchedulerAdapter extends IScheduler {
@@ -32,4 +33,32 @@ trait SchedulerAdapter extends IScheduler {
   def shutdown(): Unit =
     Scheduler.shutdown()
 
+  /** When the scheduler is active, it can execute tasks.
+   */
+  def isActive: Boolean =
+    Scheduler.isActive
+
+  /** Registers a newly created actor with this scheduler.
+   *
+   *  @param  a  the actor to be registered
+   */
+  def newActor(a: OutputChannelActor) =
+    Scheduler.newActor(a)
+
+  /** Unregisters an actor from this scheduler, because it
+   *  has terminated.
+   *
+   *  @param  a  the actor to be unregistered
+   */
+  def terminated(a: OutputChannelActor) =
+    Scheduler.terminated(a)
+
+  /** Registers a closure to be executed when the specified
+   *  actor terminates.
+   *
+   *  @param  a  the actor
+   *  @param  f  the closure to be registered
+   */
+  def onTerminate(a: OutputChannelActor)(f: => Unit) =
+    Scheduler.onTerminate(a)(f)
 }
