@@ -780,7 +780,7 @@ trait Actor extends OutputChannelActor with AbstractActor {
   }
 
   // guarded by lock of this
-  protected override def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
+  private def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
     if ((f eq null) && (continuation eq null)) {
       // do nothing (timeout is handled instead)
     }
