@@ -12,6 +12,7 @@ package scala.actors
 
 trait OutputChannelActor extends OutputChannel[Any] {
 
+  @volatile
   protected var ignoreSender: Boolean = false
 
   /* The actor's mailbox. */
@@ -45,27 +46,34 @@ trait OutputChannelActor extends OutputChannel[Any] {
    */
   def act(): Unit
 
-  protected[actors] def exceptionHandler: PartialFunction[Exception, Unit] = Map()
+  protected[actors] def exceptionHandler: PartialFunction[Exception, Unit] =
+    Map()
 
   protected[actors] def scheduler: IScheduler =
     Scheduler
 
-  def mailboxSize: Int = synchronized {
+  protected[actors] def mailboxSize: Int =
     mailbox.size
-  }
 
   def send(msg: Any, replyTo: OutputChannel[Any]) = synchronized {
-    if (waitingFor(msg)) {
+    if (waitingFor ne waitingForNone) {
+      val savedWaitingFor = waitingFor
       waitingFor = waitingForNone
-
-      if (!ignoreSender)
-        senders = List(replyTo)
-
-      // assert continuation != null
-      scheduler.execute(new LightReaction(this, continuation, msg))
-    } else {
+      scheduler execute {
+        if (synchronized { savedWaitingFor(msg) }) {
+          synchronized {
+            if (!ignoreSender)
+              senders = List(replyTo)
+          }
+          // assert continuation != null
+          (new LightReaction(this, continuation, msg)).run()
+        } else synchronized {
+          waitingFor = savedWaitingFor
+          mailbox.append(msg, replyTo)
+        }
+      }
+    } else
       mailbox.append(msg, replyTo)
-    }
   }
 
   def !(msg: Any) {
@@ -78,9 +86,9 @@ trait OutputChannelActor extends OutputChannel[Any] {
 
   def receiver: Actor = this.asInstanceOf[Actor]
 
-  def react(f: PartialFunction[Any, Unit]): Nothing = {
+  protected[actors] def react(f: PartialFunction[Any, Unit]): Nothing = {
     assert(Actor.rawSelf(scheduler) == this, "react on channel belonging to other actor")
-    this.synchronized {
+    synchronized {
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
       if (null eq qel) {
         waitingFor = f.isDefinedAt
@@ -90,27 +98,26 @@ trait OutputChannelActor extends OutputChannel[Any] {
           senders = List(qel.session)
         scheduleActor(f, qel.msg)
       }
-      throw new SuspendActorException
     }
+    throw Actor.suspendException
   }
 
-  def sender: OutputChannel[Any] = senders.head
+  protected[actors] def sender: OutputChannel[Any] = senders.head
 
   /**
    * Replies with <code>msg</code> to the sender.
    */
-  def reply(msg: Any) {
+  protected[actors] def reply(msg: Any) {
     sender ! msg
   }
 
   private def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) = {
-    val task = new LightReaction(this,
-                                 if (f eq null) continuation else f,
-                                 msg)
-    scheduler execute task
+    scheduler execute (new LightReaction(this,
+                                         if (f eq null) continuation else f,
+                                         msg))
   }
 
-  def start(): OutputChannelActor = synchronized {
+  def start(): OutputChannelActor = {
     scheduler execute {
       scheduler.newActor(OutputChannelActor.this)
       (new LightReaction(OutputChannelActor.this)).run()
@@ -135,7 +142,7 @@ trait OutputChannelActor extends OutputChannel[Any] {
       // instead of directly executing `next`,
       // schedule as continuation
       scheduleActor({ case _ => next }, 1)
-      throw new SuspendActorException
+      throw Actor.suspendException
     }
     first
     throw new KillActorException
@@ -143,7 +150,7 @@ trait OutputChannelActor extends OutputChannel[Any] {
 
   protected[actors] def exit(): Nothing = {
     terminated()
-    throw new SuspendActorException
+    throw Actor.suspendException
   }
 
   protected[actors] def terminated() {
