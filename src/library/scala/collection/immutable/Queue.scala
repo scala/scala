@@ -1,4 +1,3 @@
-/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -12,11 +11,11 @@
 
 package scala.collection.immutable
 
-
-//import Predef.NoSuchElementException
+import scala.annotation.tailrec
 
 object Queue {
-  val Empty: Queue[Nothing] = new Queue()
+  val Empty: Queue[Nothing] = new Queue(Nil, Nil)
+  def apply[A](elems: A*) = new Queue(Nil, elems.toList)
 }
 
 /** <code>Queue</code> objects implement data structures that allow to
@@ -26,17 +25,11 @@ object Queue {
  *  @version 1.0, 08/07/2003
  */
 @serializable
-class Queue[+A](elem: A*) extends Seq[A] {
-
-  protected val in: List[A] = Nil
-  protected val out: List[A] = elem.iterator.toList
-
-  protected def mkQueue[A](i: List[A], o: List[A]): Queue[A] =
-    new Queue[A]() {
-      override protected val in = i
-      override protected val out = o
-    }
-
+class Queue[+A] protected(
+  protected val  in: List[A],
+  protected val out: List[A])
+extends immutable.Sequence[A]
+{
   /** Returns the <code>n</code>-th element of this queue.
    *  The first element is at position 0.
    *
@@ -45,13 +38,17 @@ class Queue[+A](elem: A*) extends Seq[A] {
    *  @throws Predef.NoSuchElementException if the queue is too short.
    */
   def apply(n: Int): A = {
-    val len = out.length
-    if (n < len) out.apply(n)
-    else {
-      val m = n - len
-      if (m < in.length) in.reverse.apply(m)
-      else throw new NoSuchElementException("index out of range")
-    }
+    @tailrec
+    def walk(i: Int, inlist: List[A], outlist: List[A]): A =
+      (i == 0, inlist.isEmpty, outlist.isEmpty) match {
+        case (_, true, true)       => throw new NoSuchElementException("index out of range")
+        case (true, _, false)      => outlist.head
+        case (true, _, true)       => inlist.last
+        case (false, _, false)     => walk(i - 1, inlist, outlist.tail)
+        case (false, false, true)  => walk(i - 1, Nil, inlist.reverse.tail)
+      }
+
+    walk(n, in, out)
   }
 
   /** Returns the elements in the list as an iterator
@@ -75,14 +72,14 @@ class Queue[+A](elem: A*) extends Seq[A] {
    *
    *  @param  elem        the element to insert
    */
-  @deprecated def +[B >: A](elem: B) = mkQueue(elem :: in, out)
+  @deprecated def +[B >: A](elem: B) = enqueue(elem)
 
   /** Creates a new queue with element added at the end
    *  of the old queue.
    *
    *  @param  elem        the element to insert
    */
-  def enqueue[B >: A](elem: B) = mkQueue(elem :: in, out)
+  def enqueue[B >: A](elem: B) = new Queue(elem :: in, out)
 
   /** Returns a new queue with all all elements provided by
    *  an <code>Iterable</code> object added at the end of
@@ -94,13 +91,9 @@ class Queue[+A](elem: A*) extends Seq[A] {
    *
    *  @param  iter        an iterable object
    */
-  @deprecated def +[B >: A](iter: Iterable[B]) = {
-    var q: List[B] = in
-    iter.iterator.foreach(e => q = e :: q)
-    mkQueue(q, out)
-  }
+  @deprecated def +[B >: A](iter: Iterable[B]) = enqueue(iter)
 
-  /** Returns a new queue with all all elements provided by
+  /** Returns a new queue with all elements provided by
    *  an <code>Iterable</code> object added at the end of
    *  the queue.
    *  The elements are prepended in the order they
@@ -108,11 +101,8 @@ class Queue[+A](elem: A*) extends Seq[A] {
    *
    *  @param  iter        an iterable object
    */
-  def enqueue[B >: A](iter: Iterable[B]) = {
-    var q: List[B] = in
-    iter.iterator.foreach(e => q = e :: q)
-    mkQueue(q, out)
-  }
+  def enqueue[B >: A](iter: Iterable[B]) =
+    new Queue(iter.iterator.toList.reverse ::: in, out)
 
   /** Returns a tuple with the first element in the queue,
    *  and a new queue with this element removed.
@@ -120,12 +110,10 @@ class Queue[+A](elem: A*) extends Seq[A] {
    *  @throws Predef.NoSuchElementException
    *  @return the first element of the queue.
    */
-  def dequeue: (A, Queue[A]) = {
-    val (newOut, newIn) =
-      if (out.isEmpty) (in.reverse, Nil)
-      else (out, in)
-    if (newOut.isEmpty) throw new NoSuchElementException("queue empty")
-    else (newOut.head, mkQueue(newIn, newOut.tail))
+  def dequeue: (A, Queue[A]) = out match {
+    case Nil if !in.isEmpty => val rev = in.reverse ; (rev.head, new Queue(Nil, rev.tail))
+    case x :: xs            => (x, new Queue(in, xs))
+    case _                  => throw new NoSuchElementException("queue empty")
   }
 
   /** Returns the first element in the queue, or throws an error if there
@@ -135,10 +123,9 @@ class Queue[+A](elem: A*) extends Seq[A] {
    *  @return the first element.
    */
   def front: A =
-    if (out.isEmpty) {
-      if (in.isEmpty) throw new NoSuchElementException("queue empty") else in.last
-    } else
-      out.head
+    if (!out.isEmpty) out.head
+    else if (!in.isEmpty) in.last
+    else throw new NoSuchElementException("queue empty")
 
   /** Returns a string representation of this queue.
    */
@@ -150,33 +137,11 @@ class Queue[+A](elem: A*) extends Seq[A] {
    *  @return true, iff the two queues are structurally equal.
    */
   override def equals(o: Any): Boolean = o match {
-    case q: Queue[_] =>
-      /* A function that compares the element at
-         position index in q with the element at
-         the same position in this (queue).
-         If they are equal the next element is
-         compared. */
-      def eqe(index: Int): Boolean = (
-        /* If all elements are compared
-        the queues are equal. */
-        index >= this.length ||
-        /* Otherwise: compare the elements */
-        (q.apply(index) == this.apply(index) &&
-         /* if they are equal compare the rest. */
-         eqe(index + 1))
-      );
-        /* If the length of the ques are the same,
-         compare each element, starting at index 0. */
-      (q.length == this.length) && eqe(0);
-
-    case _ => false /* o is not a queue: not equal to this. */
+    case q: Queue[_]  => this sameElements q
+    case _            => false
   }
 
-  override def hashCode(): Int =
+  override lazy val hashCode: Int =
     if (isEmpty) 0
-    else {
-      val q: (A,Queue[A]) = dequeue;
-      q._1.hashCode() + q._2.hashCode()
-    }
+    else dequeue match { case (x,y) => x.hashCode + y.hashCode }
 }
-*/
