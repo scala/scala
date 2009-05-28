@@ -51,7 +51,28 @@ class Random(self0: System.Random) {
    *  double value with mean 0.0 and standard deviation 1.0 from this
    *  random number generator's sequence.
    */
-  //def nextGaussian(): Double
+  def nextGaussian(): Double = synchronized {
+    if (nextGaussianAvailable) {
+      nextGaussianAvailable = false
+      nextGaussian
+    } else {
+      var gauss1: Double
+      var gauss2: Double
+      var s: Double
+      do {
+        gauss1 = 2 * nextDouble() - 1   // between -1.0 and 1.0
+        gauss2 = 2 * nextDouble() - 1   // between -1.0 and 1.0
+        s = Math.pow(gauss1) + Math.pow(gauss2)
+      } while (s >= 1 || s == 0);
+      val multiplier = Math.sqrt(-2 * Math.log(s)/s)
+      nextGaussian = gauss1 * multiplier
+      nextGaussianAvailable = true
+      gauss2 * multiplier
+    }
+  }
+
+  private var nextGaussianAvailable: Boolean = false
+  private var nextGaussian: Double = _
 
   /** Returns the next pseudorandom, uniformly distributed int value
    *  from this random number generator's sequence.

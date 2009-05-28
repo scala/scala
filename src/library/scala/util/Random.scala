@@ -50,8 +50,7 @@ class Random(val self: java.util.Random) {
    *  double value with mean 0.0 and standard deviation 1.0 from this
    *  random number generator's sequence.
    */
-  // XXX why is this the only method of java.util.Random to be commented out?
-  //def nextGaussian(): Double = self.nextGaussian()
+  def nextGaussian(): Double = self.nextGaussian()
 
   /** Returns the next pseudorandom, uniformly distributed int value
    *  from this random number generator's sequence.
