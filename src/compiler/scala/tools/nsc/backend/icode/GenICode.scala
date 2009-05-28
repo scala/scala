@@ -408,8 +408,6 @@ abstract class GenICode extends SubComponent  {
         case ValDef(_, _, _, rhs) =>
           val sym = tree.symbol
           val local = ctx.method.addLocal(new Local(sym, toTypeKind(sym.info), false))
-          ctx.scope.add(local)
-          ctx.bb.emit(SCOPE_ENTER(local))
 
           if (rhs == EmptyTree) {
             if (settings.debug.value)
@@ -422,6 +420,8 @@ abstract class GenICode extends SubComponent  {
             ctx1 = genLoad(rhs, ctx, local.kind);
 
           ctx1.bb.emit(STORE_LOCAL(local), tree.pos)
+          ctx1.scope.add(local)
+          ctx1.bb.emit(SCOPE_ENTER(local))
           generatedType = UNIT
           ctx1
 
