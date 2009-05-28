@@ -37,7 +37,8 @@ class ExecutorScheduler(protected var executor: ExecutorService) extends Schedul
       executor execute task
     } catch {
       case ree: RejectedExecutionException =>
-        Debug.info("caught "+ree)
+        // run task on current thread
+        task.run()
     }
   }
 
@@ -48,5 +49,5 @@ class ExecutorScheduler(protected var executor: ExecutorService) extends Schedul
     executor.shutdown()
 
   def isActive =
-    !executor.isShutdown
+    (executor ne null) && !executor.isShutdown
 }

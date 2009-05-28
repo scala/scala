@@ -16,27 +16,34 @@ import java.util.concurrent.{ExecutorService, RejectedExecutionException}
 /**
  * The <code>SimpleExecutorScheduler</code> class uses an
  * <code>ExecutorService</code> to execute <code>Actor</code>s. It
- * does not start an additional thread. Also, the underlying
- * <code>ExecutorService</code> is not shut down automatically;
- * instead, the <code>ExecutorService</code> must be shut down either
+ * does not start an additional thread.
+ *
+ * A <code>SimpleExecutorScheduler</code> attempts to shut down
+ * the underlying <code>ExecutorService</code> only if
+ * <code>terminate</code> is set to true.
+ *
+ * Otherwise, the <code>ExecutorService</code> must be shut down either
  * directly or by shutting down the
  * <code>SimpleExecutorScheduler</code> instance.
  *
  * @author Philipp Haller
  */
-class SimpleExecutorScheduler(protected var executor: ExecutorService) extends IScheduler {
+class SimpleExecutorScheduler(protected var executor: ExecutorService,
+                              protected var terminate: Boolean) extends TerminationService(terminate) {
 
-  /* Maintains at most one closure per actor that is executed
+  /* Maintains per actor one closure that is executed
    * when the actor terminates.
    */
   protected val termHandlers = new HashMap[OutputChannelActor, () => Unit]
+
+  private var pendingReactions = 0
 
   /* This constructor (and the var above) is currently only used to work
    * around a bug in scaladoc, which cannot deal with early initializers
    * (to be used in subclasses such as DefaultExecutorScheduler) properly.
    */
   def this() {
-    this(null)
+    this(null, true)
   }
 
   /** Submits a <code>Runnable</code> for execution.
@@ -53,20 +60,7 @@ class SimpleExecutorScheduler(protected var executor: ExecutorService) extends I
     }
   }
 
-  /** Submits a closure for execution.
-   *
-   *  @param  block  the closure to be executed
-   */
-  def execute(block: => Unit) {
-    val task = new Runnable {
-      def run() { block }
-    }
-    execute(task)
-  }
-
-  /** Shuts down the scheduler.
-   */
-  def shutdown() {
+  def onShutdown() {
     executor.shutdown()
   }
 
@@ -75,32 +69,4 @@ class SimpleExecutorScheduler(protected var executor: ExecutorService) extends I
    */
   def isActive =
     (executor ne null) && !executor.isShutdown()
-
-  def newActor(a: OutputChannelActor) {}
-
-  def terminated(a: OutputChannelActor) {
-    // obtain termination handler (if any)
-    val todo = synchronized {
-      termHandlers.get(a) match {
-        case Some(handler) =>
-          termHandlers -= a
-          () => handler
-        case None =>
-          () => { /* do nothing */ }
-      }
-    }
-
-    // invoke termination handler (if any)
-    todo()
-  }
-
-  /** Registers a closure to be executed when the specified
-   *  actor terminates.
-   *
-   *  @param  a  the actor
-   *  @param  f  the closure to be registered
-   */
-  def onTerminate(a: OutputChannelActor)(block: => Unit) = synchronized {
-    termHandlers += (a -> (() => block))
-  }
 }

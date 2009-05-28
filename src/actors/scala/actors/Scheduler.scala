@@ -10,8 +10,8 @@
 
 package scala.actors
 
-import compat.Platform
 import java.lang.Runnable
+import java.util.concurrent._
 
 /**
  * The <code>Scheduler</code> object is used by <code>Actor</code> to
@@ -25,9 +25,15 @@ object Scheduler extends DelegatingScheduler {
   Debug.info("initializing "+this+"...")
 
   def makeNewScheduler: IScheduler = {
-    val sched = new DefaultExecutorScheduler
-    sched.start()
-    sched
+    val workQueue = new LinkedBlockingQueue[Runnable](100000)
+    val threadPool = new ThreadPoolExecutor(ThreadPoolConfig.corePoolSize,
+                                            ThreadPoolConfig.maxPoolSize,
+                                            50L,
+                                            TimeUnit.MILLISECONDS,
+                                            workQueue)
+    val s = new SimpleExecutorScheduler(threadPool, true)
+    s.start()
+    s
   }
 
   private var tasks: LinkedQueue = null
@@ -56,8 +62,9 @@ object Scheduler extends DelegatingScheduler {
    */
   def restart(): Unit = synchronized {
     // 1. shut down current scheduler
-    if (sched ne null)
+    if (sched ne null) {
       sched.shutdown()
+    }
 
     // 2. create and start new scheduler
     if ((sched ne null) && sched.isInstanceOf[FJTaskScheduler2]) {
@@ -73,11 +80,8 @@ object Scheduler extends DelegatingScheduler {
         tasks = null
       }
     } else {
-      sched = {
-        val s = new DefaultExecutorScheduler
-        s.start()
-        s
-      }
+      // will trigger creation of new delegate scheduler
+      sched = null
     }
   }
 
