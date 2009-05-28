@@ -24,7 +24,7 @@ import scala.collection.mutable.ListBuffer
 trait Positions extends Trees {
 self: Global =>
 
-  private case class Range(val pos: Position, val tree: Tree) {
+  case class Range(val pos: Position, val tree: Tree) {
     def isFree = tree == EmptyTree
   }
 
@@ -83,22 +83,26 @@ self: Global =>
      *  @param ranges   The current list of non-overlapping ranges,
      *                  both occupied and free, sorted from later to earlier.
      *                  No TransparentPositions allowed here!
-     *  @param cts      The list of trees to insert in ranges.
+     *  @param trees    The list of trees to insert in ranges.
      */
-    def iterate(ranges: List[Range], cts: List[Tree]): Unit = cts match {
+    def iterate(ranges: List[Range], trees: List[Tree]): Unit = trees match {
       case List() =>
         ;
-      case ct :: cts1 =>
-        val conflicting = new ListBuffer[Tree]
-        val ranges1 = insert(ranges, ct, conflicting)
-        if (conflicting.isEmpty) {
-          iterate(ranges1, cts1)
-        } else {
-          val splitNode =
-            if (conflicting.size == 1 && (conflicting.head.pos includes ct.pos)) conflicting.head
-            else ct
-          splitNode setPos new TransparentPosition(splitNode.pos.source.get, splitNode.pos.start, splitNode.pos.point, splitNode.pos.end)
-          ensureNonOverlapping(replace(cts, splitNode, solidDescendants(splitNode)))
+      case ct :: trees1 =>
+        if (isTransparent(ct.pos))
+          iterate(ranges, solidDescendants(ct) ::: trees1)
+        else if (ct.pos.isDefined) {
+          val conflicting = new ListBuffer[Tree]
+          val ranges1 = insert(ranges, ct, conflicting)
+          if (conflicting.isEmpty) {
+            iterate(ranges1, trees1)
+          } else {
+            val splitNode =
+              if (conflicting.size == 1 && (conflicting.head.pos includes ct.pos)) conflicting.head
+              else ct
+            splitNode setPos new TransparentPosition(splitNode.pos.source.get, splitNode.pos.start, splitNode.pos.point, splitNode.pos.end)
+            ensureNonOverlapping(replace(cts, splitNode, solidDescendants(splitNode)))
+          }
         }
     }
 
@@ -131,15 +135,18 @@ self: Global =>
   private def setChildrenPos(pos: Position, trees: List[Tree]) {
     var currentPos = pos
     for (tree <- trees) {
-      val children = tree.children
-      if (children.isEmpty)
-        tree setPos OffsetPosition(pos.source.get, currentPos.start)
-      else {
-        setChildrenPos(currentPos, children)
-        tree setPos new RangePosition(
-          pos.source.get, (children map (_.pos.start)).min, pos.point, (children map (_.pos.end)).max)
+      if (tree != EmptyTree && tree.pos == NoPosition) {
+        val children = tree.children
+        if (children.isEmpty)
+          tree setPos OffsetPosition(pos.source.get, currentPos.start)
+        else {
+          setChildrenPos(currentPos, children)
+          tree setPos new RangePosition(
+            pos.source.get, (children map (_.pos.start)).min, pos.point, (children map (_.pos.end)).max)
+        }
+        currentPos = new RangePosition(pos.source.get, tree.pos.end, pos.point, pos.end)
       }
-      currentPos = new RangePosition(pos.source.get, tree.pos.end, pos.point, pos.end)
+//      println("set children pos "+pos+" of "+trees)
     }
     ensureNonOverlapping(trees)
   }

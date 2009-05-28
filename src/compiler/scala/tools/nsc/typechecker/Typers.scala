@@ -27,8 +27,6 @@ trait Typers { self: Analyzer =>
   import global._
   import definitions._
 
-  private final val printTypings = false
-
   var appcnt = 0
   var idcnt = 0
   var selcnt = 0

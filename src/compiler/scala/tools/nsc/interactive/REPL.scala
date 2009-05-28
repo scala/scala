@@ -32,7 +32,9 @@ object REPL {
       reporter.info(null, versionMsg, true)
     else {
       try {
-        object compiler extends Global(command.settings, reporter)
+        object compiler extends Global(command.settings, reporter) {
+//          printTypings = true
+        }
         if (reporter.hasErrors) {
           reporter.flush()
           return

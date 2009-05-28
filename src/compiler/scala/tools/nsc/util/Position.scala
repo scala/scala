@@ -44,6 +44,7 @@ trait Position {
     precedes(pos) && start < pos.end
 
   def overlaps(pos: Position) =
+    isDefined && pos.isDefined &&
     (pos.start <= start && start < pos.end) || (start <= pos.start && pos.start < end)
 
   def sameRange(pos: Position) =

@@ -145,6 +145,7 @@ self =>
    */
   private def backgroundCompile() {
     inform("Starting new presentation compiler type checking pass")
+    reporter.reset
     firsts = firsts filter (s => unitOfFile contains (s.file))
     val prefix = firsts map unitOf
     val units = prefix ::: (unitOfFile.values.toList diff prefix)
@@ -161,16 +162,23 @@ self =>
       unit.toCheck.clear()
       unit.targetPos = NoPosition
       unit.contexts.clear()
-      ResetAttrs.traverse(unit.body)
-      currentTyperRun.enterNames(unit)
-      unit.status = JustParsed
+      unit.body = EmptyTree
+      unit.status = NotLoaded
     }
+
+  /** Parse unit and create a name index. */
+  def parse(unit: RichCompilationUnit): Unit = {
+    currentTyperRun.compileLate(unit)
+    validatePositions(unit.body)
+    unit.status = JustParsed
+  }
 
   /** Make sure symbol and type attributes are reset and recompile unit.
    */
   def recompile(unit: RichCompilationUnit) {
-    assert(unit.status != NotLoaded)
     reset(unit)
+    inform("parsing: "+unit)
+    parse(unit)
     inform("type checking: "+unit)
     currentTyperRun.typeCheck(unit)
     unit.status = currentRunId
@@ -190,9 +198,7 @@ self =>
       for (source <- sources) {
         val unit = new RichCompilationUnit(source)
         unitOfFile(source.file) = unit
-        currentTyperRun.compileLate(unit)
-        validatePositions(unit.body)
-        unit.status = JustParsed
+        parse(unit)
       }
       moveToFront(sources)
       result set Left(())
@@ -208,10 +214,13 @@ self =>
   /** Set sync var `result` to a fully attributed tree located at position `pos`  */
   def typedTreeAt(pos: Position, result: SyncVar[Either[Tree, Throwable]]) {
     try {
+      println("typed tree at "+pos.show)
       val unit = unitOf(pos)
       assert(unit.status != NotLoaded)
       moveToFront(List(unit.source))
-      result set Left(currentTyperRun.typedTreeAt(pos))
+      val typedTree = currentTyperRun.typedTreeAt(pos)
+      val located = new Locator(pos) locateIn typedTree
+      result set Left(located)
     } catch {
       case ex =>
         result set Right(ex)
@@ -233,15 +242,18 @@ self =>
   }
 
   /** A traverser that resets all type and symbol attributes in a tree */
-  object ResetAttrs extends Traverser {
-    override def traverse(t: Tree) {
+  object ResetAttrs extends Transformer {
+    override def transform(t: Tree): Tree = {
       if (t.hasSymbol) t.symbol = NoSymbol
       t match {
         case EmptyTree =>
-          ;
+          t
+        case tt: TypeTree =>
+          if (tt.original != null) tt.original
+          else t
         case _ =>
           t.tpe = null
-          super.traverse(t)
+          super.transform(t)
       }
     }
   }
@@ -252,13 +264,9 @@ self =>
     // symSource, symData are ignored
     override def compiles(sym: Symbol) = false
 
-    def typeCheck(unit: CompilationUnit) {
-      applyPhase(typerPhase, unit)
-    }
+    def typeCheck(unit: CompilationUnit): Unit = applyPhase(typerPhase, unit)
 
-    def enterNames(unit: CompilationUnit) {
-      applyPhase(namerPhase, unit)
-    }
+    def enterNames(unit: CompilationUnit): Unit = applyPhase(namerPhase, unit)
 
     /** Return fully attributed tree at given position
      *  (i.e. largest tree that's contained by position)
@@ -280,7 +288,9 @@ self =>
       }
     }
 
-    /** Apply a phase to a compilation unit */
+    /** Apply a phase to a compilation unit
+     *  @return true iff typechecked correctly
+     */
     private def applyPhase(phase: Phase, unit: CompilationUnit) {
       val oldSource = reporter.getSource
       try {

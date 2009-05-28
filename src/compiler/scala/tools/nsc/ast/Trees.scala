@@ -159,9 +159,12 @@ trait Trees {
     /** Is there part of this tree which satisfies predicate `p'? */
     def exists(p: Tree => Boolean): Boolean = !find(p).isEmpty
 
-    /** The direct children of this tree */
+    /** The direct child trees of this tree
+     *  EmptyTrees are always omitted. Lists are collapsed.
+     */
     def children(): List[Tree] = {
       def subtrees(x: Any): List[Tree] = x match {
+        case EmptyTree => List()
         case t: Tree => List(t)
         case xs: List[_] => xs flatMap subtrees
         case _ => List()

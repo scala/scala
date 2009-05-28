@@ -319,6 +319,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   } with Analyzer
 
+  /** Switch to turn on detailed type logs */
+  var printTypings = false
+
   // phaseName = "superaccessors"
   object superAccessors extends {
     val global: Global.this.type = Global.this

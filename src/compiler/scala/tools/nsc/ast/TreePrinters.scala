@@ -336,15 +336,15 @@ abstract class TreePrinters {
         case Literal(x) =>
           print(x.escapedStringValue)
 
-        case TypeTree() =>
-          print(
-            if (tree.tpe eq null)
-              "<type ?>"
-            else if ((tree.tpe.typeSymbol ne null) && tree.tpe.typeSymbol.isAnonymousClass)
-              tree.tpe.typeSymbol.toString()
-            else
-              tree.tpe.toString()
-          )
+        case tt: TypeTree =>
+          if (tree.tpe eq null) {
+            if (tt.original != null) { print("<type: "); print(tt.original); print(">") }
+            else print("<type ?>")
+          } else if ((tree.tpe.typeSymbol ne null) && tree.tpe.typeSymbol.isAnonymousClass) {
+            print(tree.tpe.typeSymbol.toString())
+          } else {
+            tree.tpe.toString()
+          }
 
         case Annotated(Annotation(Apply(Select(New(tpt), nme.CONSTRUCTOR), args), elements), tree) =>
           def printAnnot() {
