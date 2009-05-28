@@ -43,7 +43,6 @@ abstract class RefChecks extends InfoTransform {
   import global._
   import definitions._
   import typer.{typed, typedOperator, atOwner}
-  import posAssigner.atPos
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "refchecks"

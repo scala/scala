@@ -13,7 +13,6 @@ import scala.collection.mutable.{HashMap, ListBuffer}
 abstract class Flatten extends InfoTransform {
   import global._
   import definitions._
-  import posAssigner.atPos
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "flatten"

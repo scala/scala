@@ -19,7 +19,6 @@ import symtab.Flags._
 trait Namers { self: Analyzer =>
   import global._
   import definitions._
-  import posAssigner.atPos
 
   /** Convert to corresponding type parameters all skolems of method parameters
    *  which appear in `tparams`.

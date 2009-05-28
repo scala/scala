@@ -86,7 +86,7 @@ self =>
 
     object symbXMLBuilder extends SymbolicXMLBuilder(treeBuilder, this, true) { // DEBUG choices
       val global: self.global.type = self.global
-      def freshName(prefix: String): Name = UnitParser.this.freshName(NoPosition, prefix)
+      def freshName(prefix: String): Name = UnitParser.this.freshName(prefix)
     }
 
     def xmlLiteral : Tree = xmlp.xLiteral
@@ -112,6 +112,8 @@ self =>
     //val unit : CompilationUnit
     //import in.ScanPosition
     def freshName(pos: Position, prefix: String): Name
+    def freshName(prefix: String): Name = freshName(NoPosition, prefix) // todo get rid of position
+
     def o2p(offset: Int): Position
     def r2p(start: Int, mid: Int, end: Int): Position
     def t2p(tree: Tree): Position = SyntheticPosition(tree)
@@ -124,10 +126,9 @@ self =>
 
     object treeBuilder extends TreeBuilder {
       val global: self.global.type = self.global
-      def freshName(pos : Position, prefix: String): Name =
-        Parser.this.freshName(pos, prefix)
+      def freshName(prefix: String): Name = Parser.this.freshName(prefix)
     }
-    import treeBuilder._
+    import treeBuilder.{global => _, _}
 
     /** The implicit view parameters of the surrounding class */
     var implicitClassViews: List[Tree] = Nil
@@ -378,13 +379,13 @@ self =>
 /* ---------- TREE CONSTRUCTION ------------------------------------------- */
 
     def atPos[T <: Tree](offset: Int)(t: T): T =
-      posAssigner.atPos(r2p(offset, offset, in.lastOffset))(t)
+      global.atPos(r2p(offset, offset, in.lastOffset))(t)
     def atPos[T <: Tree](start: Int, point: Int)(t: T): T =
-      posAssigner.atPos(r2p(start, point, in.lastOffset))(t)
+      global.atPos(r2p(start, point, in.lastOffset))(t)
     def atPos[T <: Tree](start: Int, point: Int, end: Int)(t: T): T =
-      posAssigner.atPos(r2p(start, point, end))(t)
+      global.atPos(r2p(start, point, end))(t)
     def atPos[T <: Tree](pos: Position)(t: T): T =
-      posAssigner.atPos(pos)(t)
+      global.atPos(pos)(t)
 
     /** Convert tree to formal parameter list
     */
@@ -718,8 +719,9 @@ self =>
         val leftAssoc = treeInfo.isLeftAssoc(in.name)
         if (mode != InfixMode.FirstOp) checkAssoc(opOffset, in.name, mode == InfixMode.LeftOp)
         val op = ident()
+        val tycon = atPos(opOffset) { Ident(op.toTypeName) }
         newLineOptWhenFollowing(isTypeIntroToken)
-        def mkOp(t1: Tree) = atPos(t.pos.start, opOffset) { AppliedTypeTree(Ident(op.toTypeName), List(t, t1)) }
+        def mkOp(t1: Tree) = atPos(t.pos.start, opOffset) { AppliedTypeTree(tycon, List(t, t1)) }
         if (leftAssoc)
           infixTypeRest(mkOp(compoundType(isPattern)), isPattern, InfixMode.LeftOp)
         else
@@ -845,16 +847,13 @@ self =>
         // copy-paste (with change) from def paramType
         if (in.token == ARROW) {
           in.nextToken()
-          atPos(start) {
-            AppliedTypeTree(rootScalaDot(nme.BYNAME_PARAM_CLASS_NAME.toTypeName), List(typ()))
-          }
+          val tycon = atPos(start) { rootScalaDot(nme.BYNAME_PARAM_CLASS_NAME.toTypeName) }
+          atPos(start) { AppliedTypeTree(tycon, List(typ())) }
         } else {
           val t = typ()
           if (isIdent && in.name == STAR) {
-            in.nextToken()
-            atPos(start) {
-              AppliedTypeTree(rootScalaDot(nme.REPEATED_PARAM_CLASS_NAME.toTypeName), List(t))
-            }
+            val tycon = atPos(in.skipToken()) { rootScalaDot(nme.REPEATED_PARAM_CLASS_NAME.toTypeName) }
+            atPos(start) { AppliedTypeTree(tycon, List(t)) }
           } else t
         }
       } else {

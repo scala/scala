@@ -26,7 +26,6 @@ self: Analyzer =>
 
   import global._
   import definitions._
-  import posAssigner.atPos
 
   final val traceImplicits = false
 

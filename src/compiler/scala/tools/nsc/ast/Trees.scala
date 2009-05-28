@@ -160,8 +160,14 @@ trait Trees {
     def exists(p: Tree => Boolean): Boolean = !find(p).isEmpty
 
     /** The direct children of this tree */
-    def children(): Iterator[Tree] =
-      productElements filter (_.isInstanceOf[Tree]) map (_.asInstanceOf[Tree])
+    def children(): List[Tree] = {
+      def subtrees(x: Any): List[Tree] = x match {
+        case t: Tree => List(t)
+        case xs: List[_] => xs flatMap subtrees
+        case _ => List()
+      }
+      productElements.toList flatMap subtrees
+    }
 
     override def toString(): String = {
       val buffer = new StringWriter()
@@ -341,7 +347,7 @@ trait Trees {
    *  @return          ...
    */
   def ClassDef(sym: Symbol, impl: Template): ClassDef =
-    posAssigner.atPos(sym.pos) {
+    atPos(sym.pos) {
       ClassDef(Modifiers(sym.flags),
                sym.name,
                sym.typeParams map TypeDef,
@@ -381,7 +387,7 @@ trait Trees {
    *  @return          ...
    */
   def ModuleDef(sym: Symbol, impl: Template): ModuleDef =
-    posAssigner.atPos(sym.pos) {
+    atPos(sym.pos) {
       ModuleDef(Modifiers(sym.flags), sym.name, impl) setSymbol sym
     }
 
@@ -406,7 +412,7 @@ trait Trees {
   }
 
   def ValDef(sym: Symbol, rhs: Tree): ValDef =
-    posAssigner.atPos(sym.pos) {
+    atPos(sym.pos) {
       ValDef(Modifiers(sym.flags), sym.name, TypeTree(sym.tpe), rhs) setSymbol sym
     }
 
@@ -436,7 +442,7 @@ trait Trees {
   }
 
   def DefDef(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef =
-    posAssigner.atPos(sym.pos) {
+    atPos(sym.pos) {
       assert(sym != NoSymbol)
       DefDef(Modifiers(sym.flags),
              sym.name,
@@ -465,7 +471,7 @@ trait Trees {
 
   /** A TypeDef node which defines given `sym' with given tight hand side `rhs'. */
   def TypeDef(sym: Symbol, rhs: Tree): TypeDef =
-    posAssigner.atPos(sym.pos) {
+    atPos(sym.pos) {
       TypeDef(Modifiers(sym.flags), sym.name, sym.typeParams map TypeDef, rhs) setSymbol sym
     }
 
@@ -502,7 +508,7 @@ trait Trees {
    *  @return       ...
    */
   def LabelDef(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef =
-    posAssigner.atPos(sym.pos) {
+    atPos(sym.pos) {
       LabelDef(sym.name, params map Ident, rhs) setSymbol sym
     }
 
@@ -598,7 +604,7 @@ trait Trees {
             !vparamss1.head.isEmpty && (vparamss1.head.head.mods.flags & IMPLICIT) != 0)
           vparamss1 = List() :: vparamss1;
         val superRef: Tree = Select(Super(nme.EMPTY.toTypeName, nme.EMPTY.toTypeName), nme.CONSTRUCTOR)
-        val superCall = posAssigner.atPos(parents.head.pos) { (superRef /: argss) (Apply) }
+        val superCall = atPos(parents.head.pos) { (superRef /: argss) (Apply) }
         List(
           DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(()))))
       }
@@ -1694,11 +1700,12 @@ trait Trees {
         super.traverse(t)
       }
     }
-    def atPos[T <: Tree](pos: Position)(tree: T): T = {
-      this.pos = pos
-      traverse(tree)
-      tree
-    }
+  }
+
+  def atPos[T <: Tree](pos: Position)(tree: T): T = {
+    posAssigner.pos = pos
+    posAssigner.traverse(tree)
+    tree
   }
 
   class ForeachTreeTraverser(f: Tree => Unit) extends Traverser {

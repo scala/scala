@@ -19,7 +19,6 @@ import matching.{TransMatcher, PatternNodes, CodeFactory, ParallelMatching}
 abstract class ExplicitOuter extends InfoTransform with TransMatcher with PatternNodes with CodeFactory with ParallelMatching with TypingTransformers {
   import global._
   import definitions._
-  import posAssigner.atPos
 
   /** The following flags may be set by this phase: */
   override def phaseNewFlags: Long = notPRIVATE | notPROTECTED | lateFINAL

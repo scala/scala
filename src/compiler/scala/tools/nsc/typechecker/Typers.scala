@@ -26,7 +26,6 @@ import util.HashSet
 trait Typers { self: Analyzer =>
   import global._
   import definitions._
-  import posAssigner.atPos
 
   private final val printTypings = false
 

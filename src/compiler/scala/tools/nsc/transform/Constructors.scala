@@ -16,7 +16,6 @@ import util.TreeSet
 abstract class Constructors extends Transform {
   import global._
   import definitions._
-  import posAssigner.atPos
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "constructors"

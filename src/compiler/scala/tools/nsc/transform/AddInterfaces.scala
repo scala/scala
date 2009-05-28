@@ -13,7 +13,6 @@ import collection.mutable.{HashMap, ListBuffer}
 abstract class AddInterfaces extends InfoTransform {
   import global._                  // the global environment
   import definitions._             // standard classes and methods
-  import posAssigner.atPos         // for filling in tree positions
 
   /** <p>
    *    The phase sets <code>lateINTERFACE</code> for non-interface traits

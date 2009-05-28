@@ -17,7 +17,6 @@ import symtab.Flags._
 trait EtaExpansion { self: Analyzer =>
 
   import global._
-  import posAssigner.atPos
 
   object etaExpansion {
     def unapply(tree: Tree): Option[(List[ValDef], Tree, List[Tree])] = tree match {

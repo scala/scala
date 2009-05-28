@@ -67,24 +67,4 @@ trait CompilerControl { self: Global =>
   class FreshRunReq extends Exception
   class ShutdownReq extends Exception
 
-  // ---------------- Helper class -----------------------------
-
-  /** A locator for trees with given positions.
-   *  Given a position `pos`, locator.apply returns
-   *  the smallest tree that encloses `pos`.
-   */
-  private class Locator(pos: Position) extends Traverser {
-    var last: Tree = _
-    def locateIn(root: Tree): Tree = {
-      this.last = EmptyTree
-      traverse(root)
-      this.last
-    }
-    override def traverse(t: Tree) {
-      if (!t.pos.isSynthetic && (t.pos includes pos)) {
-        last = t
-        super.traverse(t)
-      }
-    }
-  }
 }

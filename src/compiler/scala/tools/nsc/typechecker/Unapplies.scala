@@ -16,7 +16,6 @@ trait Unapplies { self: Analyzer =>
 
   import global._
   import definitions._
-  import posAssigner.atPos
 
   /** returns type list for return type of the extraction */
   def unapplyTypeList(ufn: Symbol, ufntpe: Type) = {

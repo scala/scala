@@ -20,7 +20,6 @@ abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers # Parser, preser
 
   val global: Global
   import global._
-  import global.posAssigner.atPos
 
   var isPattern: Boolean = _
 

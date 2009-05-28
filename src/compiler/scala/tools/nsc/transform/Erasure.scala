@@ -20,7 +20,6 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
   //          out erasure still works, uses its own typed methods.
   lazy val typerXXX = this.typer
   import typerXXX.{typed}             // methods to type trees
-  import posAssigner.atPos         // for filling in tree positions
 
   val phaseName: String = "erasure"
 

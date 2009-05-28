@@ -18,7 +18,6 @@ trait Infer {
   self: Analyzer =>
   import global._
   import definitions._
-  import posAssigner.atPos
 
   // statistics
   var normM = 0

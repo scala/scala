@@ -9,7 +9,6 @@ abstract class LazyVals extends Transform {
   import global._                  // the global environment
   import definitions._             // standard classes and methods
   import typer.{typed, atOwner}    // methods to type trees
-  import posAssigner.atPos         // for filling in tree positions
 
   val phaseName: String = "lazyvals"
 

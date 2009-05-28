@@ -14,10 +14,9 @@ abstract class TreeBuilder {
 
   val global: Global
   import global._
-  import posAssigner.atPos;
 
-  def freshName(pos : Position, prefix: String): Name
-  def freshName(pos : Position): Name = freshName(pos, "x$")
+  def freshName(prefix: String): Name
+  def freshName(): Name = freshName("x$")
 
   def rootId(name: Name) = Select(Ident(nme.ROOTPKG), name)
   def rootScalaDot(name: Name): Tree = Select(rootId(nme.scala_) setSymbol definitions.ScalaPackage, name)
@@ -131,7 +130,7 @@ abstract class TreeBuilder {
       if (treeInfo.isLeftAssoc(op)) {
         Apply(Select(stripParens(left), op.encode), arguments)
       } else {
-        val x = freshName(posAssigner.pos);
+        val x = freshName()
         Block(
           List(ValDef(Modifiers(SYNTHETIC), x, TypeTree(), stripParens(left))),
           Apply(Select(stripParens(right), op.encode), List(Ident(x))))
@@ -158,8 +157,10 @@ abstract class TreeBuilder {
 
   /** Create a tree represeting an assignment &lt;lhs = rhs&gt; */
   def makeAssign(lhs: Tree, rhs: Tree): Tree = lhs match {
-    case Apply(fn, args) => Apply(Select(fn, nme.update), args ::: List(rhs))
-    case _ => Assign(lhs, rhs)
+    case Apply(fn, args) =>
+      Apply(atPos(fn.pos) { Select(fn, nme.update) }, args ::: List(rhs))
+    case _ =>
+      Assign(lhs, rhs)
   }
 
   /** A type tree corresponding to (possibly unary) intersection type */
@@ -287,7 +288,7 @@ abstract class TreeBuilder {
 
     def makeBind(pat: Tree): Tree = pat match {
       case Bind(_, _) => pat
-      case _ => Bind(freshName(pat.pos), pat)
+      case _ => Bind(freshName(), pat)
     }
 
     def makeValue(pat: Tree): Tree = pat match {
@@ -373,7 +374,7 @@ abstract class TreeBuilder {
 
   /** Create visitor <x => x match cases> */
   def makeVisitor(cases: List[CaseDef], checkExhaustive: Boolean, prefix: String): Tree = {
-    val x = freshName(posAssigner.pos, prefix)
+    val x = freshName(prefix)
     val sel = if (checkExhaustive) Ident(x) else makeUnchecked(Ident(x))
     Function(List(makeSyntheticParam(x)), Match(sel, cases))
   }
@@ -411,7 +412,7 @@ abstract class TreeBuilder {
         case List((vname, tpt, pos)) =>
           List(ValDef(mods, vname, tpt, matchExpr).setPos(pos))
         case _ =>
-          val tmp = freshName(pat1.pos)
+          val tmp = freshName()
           val firstDef = ValDef(Modifiers(PRIVATE | LOCAL | SYNTHETIC | (mods.flags & LAZY)),
                                 tmp, TypeTree(), matchExpr)
           var cnt = 0
@@ -430,7 +431,7 @@ abstract class TreeBuilder {
   /** Append implicit view section if for `implicitViews' if nonempty */
   def addImplicitViews(owner: Name, vparamss: List[List[ValDef]], implicitViews: List[Tree]): List[List[ValDef]] = {
     val mods = Modifiers(if (owner.isTypeName) PARAMACCESSOR | LOCAL | PRIVATE else PARAM)
-    def makeViewParam(tpt: Tree) = ValDef(mods | IMPLICIT, freshName(tpt.pos, "view$"), tpt, EmptyTree)
+    def makeViewParam(tpt: Tree) = ValDef(mods | IMPLICIT, freshName("view$"), tpt, EmptyTree)
     if (implicitViews.isEmpty) vparamss
     else vparamss ::: List(implicitViews map makeViewParam)
   }

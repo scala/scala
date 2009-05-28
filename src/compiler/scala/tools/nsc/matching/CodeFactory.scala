@@ -19,7 +19,6 @@ trait CodeFactory {
   import analyzer.Typer;
 
   import definitions._             // standard classes and methods
-  import posAssigner.atPos         // for filling in tree positions
   import Code._
 
   /** Methods to simplify code generation

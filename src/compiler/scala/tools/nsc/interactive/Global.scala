@@ -11,7 +11,11 @@ import scala.tools.nsc.ast._
 /** The main class of the presentation compiler in an interactive environment such as an IDE
  */
 class Global(settings: Settings, reporter: Reporter)
-  extends nsc.Global(settings, reporter) with CompilerControl with ContextTrees with RichCompilationUnits {
+  extends nsc.Global(settings, reporter)
+     with CompilerControl
+     with Positions
+     with ContextTrees
+     with RichCompilationUnits {
 self =>
 
   /** A list indicating in which order some units should be typechecked.
@@ -216,29 +220,6 @@ self =>
   }
 
   // ---------------- Helper classes ---------------------------
-
-
-  def validatePositions(tree: Tree) {
-    def check(condition: Boolean, msg: => String) {
-      if (!condition) {
-        println("**** bad positions:")
-        println(msg)
-        println("================= in =================")
-        println(tree)
-      }
-    }
-    def validate(tree: Tree, encltree: Tree, lefttree: Tree) {
-      if (encltree.pos.isSynthetic) check(tree.pos.isSynthetic, "synthetic "+encltree+" contains nonsynthetic" + tree)
-      check(encltree.pos includes tree.pos, encltree+" does not include "+tree)
-      if (lefttree != EmptyTree) check(lefttree.pos precedes tree.pos, lefttree+" does not not precede "+tree)
-      var newleft: Tree = EmptyTree
-      for (ct <- tree.children) {
-        validate(ct, tree, newleft)
-        newleft = ct
-      }
-    }
-    validate(tree, tree, EmptyTree)
-  }
 
   /** A transformer that replaces tree `from` with tree `to` in a given tree */
   class TreeReplacer(from: Tree, to: Tree) extends Transformer {

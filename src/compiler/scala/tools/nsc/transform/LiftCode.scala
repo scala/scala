@@ -24,7 +24,6 @@ abstract class LiftCode extends Transform with Reifiers {
   import global._                  // the global environment
   import definitions._             // standard classes and methods
   import typer.{typed, atOwner}    // methods to type trees
-  import posAssigner.atPos         // for filling in tree positions
 
   val symbols: global.type = global
 

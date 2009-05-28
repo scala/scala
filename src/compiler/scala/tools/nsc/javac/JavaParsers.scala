@@ -16,7 +16,6 @@ import JavaTokens._
 trait JavaParsers extends JavaScanners {
   val global : Global
   import global._
-  import posAssigner.atPos
   import definitions._
 
   case class JavaOpInfo(operand: Tree, operator: Name, pos: Int)

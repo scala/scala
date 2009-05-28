@@ -15,7 +15,6 @@ import scala.collection.mutable.HashMap
 abstract class Mixin extends InfoTransform {
   import global._
   import definitions._
-  import posAssigner.atPos
 
   /** The name of the phase: */
   val phaseName: String = "mixin"

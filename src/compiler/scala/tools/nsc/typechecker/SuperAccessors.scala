@@ -26,7 +26,6 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
   // inherits abstract value `global' and class `Phase' from Transform
 
   import global._
-  import posAssigner.atPos
   import typer.typed
 
   /** the following two members override abstract members in Transform */

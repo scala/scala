@@ -34,7 +34,6 @@ import scala.tools.nsc.util.Position
 abstract class UnCurry extends InfoTransform with TypingTransformers {
   import global._                  // the global environment
   import definitions._             // standard classes and methods
-  import posAssigner.atPos         // for filling in tree positions
 
   val phaseName: String = "uncurry"
 

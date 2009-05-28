@@ -31,7 +31,6 @@ trait MarkupParsers {self: Parsers =>
   }
 
   import global._
-  //import posAssigner.atPos
 
   class MarkupParser(parser: UnitParser, presWS: Boolean) /*with scala.xml.parsing.MarkupParser[Tree,Tree] */{
 

@@ -16,7 +16,6 @@ abstract class TreeGen {
 
   import global._
   import definitions._
-  import posAssigner.atPos
 
   def scalaDot(name: Name): Tree =
     Select(Ident(nme.scala_) setSymbol ScalaPackage, name)
