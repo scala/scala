@@ -100,8 +100,6 @@ class FJTaskScheduler2 extends Thread with IScheduler {
 
           if (!suspending) {
 
-            ActorGC.gc()
-
             // check if we need more threads
             if (Platform.currentTime - lastActivity >= TICK_FREQ
                 && coreSize < maxSize
