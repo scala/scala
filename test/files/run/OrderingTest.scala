@@ -16,7 +16,7 @@ object Test extends Application {
   }
 
   assert(Ordering[String].compare("australopithecus", "brontausaurus") < 0)
-  assert(Ordering[Unit].compare((), ()) == 0)
+  // assert(Ordering[Unit].compare((), ()) == 0)
 
   testAll("bar", "foo");
   testAll[Byte](0, 1);
