@@ -30,9 +30,9 @@ class SingleThreadedScheduler extends IScheduler {
 
   def shutdown() {}
 
-  def newActor(actor: Actor) {}
-  def terminated(actor: Actor) {}
-  def onTerminate(actor: Actor)(f: => Unit) {}
+  def newActor(actor: OutputChannelActor) {}
+  def terminated(actor: OutputChannelActor) {}
+  def onTerminate(actor: OutputChannelActor)(f: => Unit) {}
 
   def isActive = true
 }

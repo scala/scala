@@ -47,14 +47,14 @@ trait IScheduler {
    *
    *  @param  a  the actor to be registered
    */
-  def newActor(a: Actor): Unit
+  def newActor(a: OutputChannelActor): Unit
 
   /** Unregisters an actor from this scheduler, because it
    *  has terminated.
    *
    *  @param  a  the actor to be registered
    */
-  def terminated(a: Actor): Unit
+  def terminated(a: OutputChannelActor): Unit
 
   /** Registers a closure to be executed when the specified
    *  actor terminates.
@@ -62,5 +62,5 @@ trait IScheduler {
    *  @param  a  the actor
    *  @param  f  the closure to be registered
    */
-  def onTerminate(a: Actor)(f: => Unit): Unit
+  def onTerminate(a: OutputChannelActor)(f: => Unit): Unit
 }

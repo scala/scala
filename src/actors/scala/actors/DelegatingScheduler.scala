@@ -43,9 +43,9 @@ trait DelegatingScheduler extends IScheduler {
     }
   }
 
-  def newActor(actor: Actor) = impl.newActor(actor)
+  def newActor(actor: OutputChannelActor) = impl.newActor(actor)
 
-  def terminated(actor: Actor) = impl.terminated(actor)
+  def terminated(actor: OutputChannelActor) = impl.terminated(actor)
 
-  def onTerminate(actor: Actor)(f: => Unit) = impl.onTerminate(actor)(f)
+  def onTerminate(actor: OutputChannelActor)(f: => Unit) = impl.onTerminate(actor)(f)
 }

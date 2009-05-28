@@ -27,7 +27,7 @@ import java.util.concurrent.ExecutionException
  */
 object Actor {
 
-  private[actors] val tl = new ThreadLocal[Actor]
+  private[actors] val tl = new ThreadLocal[OutputChannelActor]
 
   // timer thread runs as daemon
   private[actors] val timer = new Timer(true)
@@ -41,7 +41,12 @@ object Actor {
    */
   def self: Actor = self(Scheduler)
 
-  private[actors] def self(sched: IScheduler): Actor = {
+  private[actors] def self(sched: IScheduler): Actor =
+    rawSelf(sched).asInstanceOf[Actor]
+
+  private[actors] def rawSelf: OutputChannelActor = rawSelf(Scheduler)
+
+  private[actors] def rawSelf(sched: IScheduler): OutputChannelActor = {
     val s = tl.get
     if (s eq null) {
       val r = new ActorProxy(currentThread, sched)
@@ -185,7 +190,7 @@ object Actor {
    * @return   this function never returns
    */
   def react(f: PartialFunction[Any, Unit]): Nothing =
-    self.react(f)
+    rawSelf.react(f)
 
   /**
    * Lightweight variant of <code>receiveWithin</code>.
@@ -202,9 +207,9 @@ object Actor {
     self.reactWithin(msec)(f)
 
   def eventloop(f: PartialFunction[Any, Unit]): Nothing =
-    self.react(new RecursiveProxyHandler(self, f))
+    rawSelf.react(new RecursiveProxyHandler(rawSelf, f))
 
-  private class RecursiveProxyHandler(a: Actor, f: PartialFunction[Any, Unit])
+  private class RecursiveProxyHandler(a: OutputChannelActor, f: PartialFunction[Any, Unit])
           extends PartialFunction[Any, Unit] {
     def isDefinedAt(m: Any): Boolean =
       true // events are immediately removed from the mailbox
@@ -217,26 +222,26 @@ object Actor {
   /**
    * Returns the actor which sent the last received message.
    */
-  def sender: OutputChannel[Any] = self.sender
+  def sender: OutputChannel[Any] = rawSelf.sender
 
   /**
    * Send <code>msg</code> to the actor waiting in a call to
    * <code>!?</code>.
    */
-  def reply(msg: Any): Unit = self.reply(msg)
+  def reply(msg: Any): Unit = rawSelf.reply(msg)
 
   /**
    * Send <code>()</code> to the actor waiting in a call to
    * <code>!?</code>.
    */
-  def reply(): Unit = self.reply(())
+  def reply(): Unit = rawSelf.reply(())
 
   /**
    * Returns the number of messages in <code>self</code>'s mailbox
    *
    * @return the number of messages in <code>self</code>'s mailbox
    */
-  def mailboxSize: Int = self.mailboxSize
+  def mailboxSize: Int = rawSelf.mailboxSize
 
   /**
    * <p>
@@ -265,7 +270,7 @@ object Actor {
   }
 
   implicit def mkBody[a](body: => a) = new Body[a] {
-    def andThen[b](other: => b): Unit = self.seq(body, other)
+    def andThen[b](other: => b): Unit = rawSelf.seq(body, other)
   }
 
   /**
@@ -369,30 +374,7 @@ object Actor {
  * @author Philipp Haller
  */
 @serializable
-trait Actor extends AbstractActor {
-
-  /* The actor's mailbox. */
-  private val mailbox = new MessageQueue
-
-  /* A list of the current senders. The head of the list is
-   * the sender of the message that was received last.
-   */
-  private var senders: List[OutputChannel[Any]] = Nil
-
-  /* If the actor waits in a react, continuation holds the
-   * message handler that react was called with.
-   */
-  private var continuation: PartialFunction[Any, Unit] = null
-
-  /* Whenever this Actor executes on some thread, waitingFor is
-   * guaranteed to be equal to waitingForNone.
-   *
-   * In other words, whenever waitingFor is not equal to
-   * waitingForNone, this Actor is guaranteed not to execute on some
-   * thread.
-   */
-  private val waitingForNone = (m: Any) => false
-  private var waitingFor: Any => Boolean = waitingForNone
+trait Actor extends OutputChannelActor with AbstractActor {
 
   /* The following two fields are only used when the actor
    * suspends by blocking its underlying thread, for example,
@@ -412,20 +394,6 @@ trait Actor extends AbstractActor {
    */
   private var onTimeout: Option[TimerTask] = None
 
-  protected[actors] def exceptionHandler: PartialFunction[Exception, Unit] = Map()
-
-  protected[actors] def scheduler: IScheduler =
-    Scheduler
-
-  /**
-   * Returns the number of messages in this actor's mailbox
-   *
-   * @return the number of messages in this actor's mailbox
-   */
-  def mailboxSize: Int = synchronized {
-    mailbox.size
-  }
-
   /**
    * Sends <code>msg</code> to this actor (asynchronous) supplying
    * explicit reply destination.
@@ -433,7 +401,7 @@ trait Actor extends AbstractActor {
    * @param  msg      the message to send
    * @param  replyTo  the reply destination
    */
-  def send(msg: Any, replyTo: OutputChannel[Any]) = synchronized {
+  override def send(msg: Any, replyTo: OutputChannel[Any]) = synchronized {
     if (waitingFor(msg)) {
       waitingFor = waitingForNone
 
@@ -541,7 +509,7 @@ trait Actor extends AbstractActor {
    *
    * @param  f    a partial function with message patterns and actions
    */
-  def react(f: PartialFunction[Any, Unit]): Nothing = {
+  override def react(f: PartialFunction[Any, Unit]): Nothing = {
     assert(Actor.self(scheduler) == this, "react on channel belonging to other actor")
     this.synchronized {
       if (shouldExit) exit() // links
@@ -603,24 +571,16 @@ trait Actor extends AbstractActor {
   }
 
   /**
-   * The behavior of an actor is specified by implementing this
-   * abstract method. Note that the preferred way to create actors
-   * is through the <code>actor</code> method
-   * defined in object <code>Actor</code>.
-   */
-  def act(): Unit
-
-  /**
    * Sends <code>msg</code> to this actor (asynchronous).
    */
-  def !(msg: Any) {
-    send(msg, Actor.self(scheduler))
+  override def !(msg: Any) {
+    send(msg, Actor.rawSelf(scheduler))
   }
 
   /**
    * Forwards <code>msg</code> to this actor (asynchronous).
    */
-  def forward(msg: Any) {
+  override def forward(msg: Any) {
     send(msg, Actor.sender)
   }
 
@@ -813,25 +773,14 @@ trait Actor extends AbstractActor {
   }
 
   /**
-   * Replies with <code>msg</code> to the sender.
-   */
-  def reply(msg: Any) {
-    sender ! msg
-  }
-
-  /**
    * Receives the next message from this actor's mailbox.
    */
   def ? : Any = receive {
     case x => x
   }
 
-  def sender: OutputChannel[Any] = senders.head
-
-  def receiver: Actor = this
-
   // guarded by lock of this
-  protected def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
+  protected override def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
     if ((f eq null) && (continuation eq null)) {
       // do nothing (timeout is handled instead)
     }
@@ -887,7 +836,7 @@ trait Actor extends AbstractActor {
   /**
    * Starts this actor.
    */
-  def start(): Actor = synchronized {
+  override def start(): Actor = synchronized {
     // Reset various flags.
     //
     // Note that we do *not* reset `trapExit`. The reason is that
@@ -904,29 +853,6 @@ trait Actor extends AbstractActor {
     }
 
     this
-  }
-
-  /* This closure is used to implement control-flow operations
-   * built on top of `seq`. Note that the only invocation of
-   * `kill` is supposed to be inside `Reaction.run`.
-   */
-  private[actors] var kill: () => Unit =
-    () => { exit() }
-
-  private def seq[a, b](first: => a, next: => b): Unit = {
-    val s = Actor.self(scheduler)
-    val killNext = s.kill
-    s.kill = () => {
-      s.kill = killNext
-
-      // to avoid stack overflow:
-      // instead of directly executing `next`,
-      // schedule as continuation
-      scheduleActor({ case _ => next }, 1)
-      throw new SuspendActorException
-    }
-    first
-    throw new KillActorException
   }
 
   private[actors] var links: List[AbstractActor] = Nil
@@ -1007,7 +933,7 @@ trait Actor extends AbstractActor {
   /**
    * Terminates with exit reason <code>'normal</code>.
    */
-  protected[actors] def exit(): Nothing = {
+  protected[actors] override def exit(): Nothing = {
     // links
     if (!links.isEmpty)
       exitLinked()
@@ -1052,10 +978,6 @@ trait Actor extends AbstractActor {
           scheduleActor(null, null)
         }
       }
-  }
-
-  private[actors] def terminated() {
-    scheduler.terminated(this)
   }
 
   /* Requires qualified private, because <code>RemoteActor</code> must

@@ -29,7 +29,7 @@ class SimpleExecutorScheduler(protected var executor: ExecutorService) extends I
   /* Maintains at most one closure per actor that is executed
    * when the actor terminates.
    */
-  protected val termHandlers = new HashMap[Actor, () => Unit]
+  protected val termHandlers = new HashMap[OutputChannelActor, () => Unit]
 
   /* This constructor (and the var above) is currently only used to work
    * around a bug in scaladoc, which cannot deal with early initializers
@@ -76,9 +76,9 @@ class SimpleExecutorScheduler(protected var executor: ExecutorService) extends I
   def isActive =
     (executor ne null) && !executor.isShutdown()
 
-  def newActor(a: Actor) {}
+  def newActor(a: OutputChannelActor) {}
 
-  def terminated(a: Actor) {
+  def terminated(a: OutputChannelActor) {
     // obtain termination handler (if any)
     val todo = synchronized {
       termHandlers.get(a) match {
@@ -100,7 +100,7 @@ class SimpleExecutorScheduler(protected var executor: ExecutorService) extends I
    *  @param  a  the actor
    *  @param  f  the closure to be registered
    */
-  def onTerminate(a: Actor)(block: => Unit) = synchronized {
+  def onTerminate(a: OutputChannelActor)(block: => Unit) = synchronized {
     termHandlers += (a -> (() => block))
   }
 }

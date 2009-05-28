@@ -27,22 +27,22 @@ import scala.collection.mutable.{HashMap, HashSet}
 trait ActorGC extends IScheduler {
 
   private var pendingReactions = 0
-  private val termHandlers = new HashMap[Actor, () => Unit]
+  private val termHandlers = new HashMap[OutputChannelActor, () => Unit]
 
   /** Actors are added to refQ in newActor. */
-  private val refQ = new ReferenceQueue[Actor]
+  private val refQ = new ReferenceQueue[OutputChannelActor]
 
   /**
    * This is a set of references to all the actors registered with
    * this ActorGC. It is maintained so that the WeakReferences will not be GC'd
    * before the actors to which they point.
    */
-  private val refSet = new HashSet[Reference[t] forSome { type t <: Actor }]
+  private val refSet = new HashSet[Reference[t] forSome { type t <: OutputChannelActor }]
 
   /** newActor is invoked whenever a new actor is started. */
-  def newActor(a: Actor) = synchronized {
+  def newActor(a: OutputChannelActor) = synchronized {
     // registers a reference to the actor with the ReferenceQueue
-    val wr = new WeakReference[Actor](a, refQ)
+    val wr = new WeakReference[OutputChannelActor](a, refQ)
     refSet += wr
     pendingReactions += 1
   }
@@ -70,13 +70,13 @@ trait ActorGC extends IScheduler {
     pendingReactions <= 0
   }
 
-  def onTerminate(a: Actor)(f: => Unit) = synchronized {
+  def onTerminate(a: OutputChannelActor)(f: => Unit) = synchronized {
     termHandlers += (a -> (() => f))
   }
 
   /* Called only from <code>Reaction</code>.
    */
-  def terminated(a: Actor) = synchronized {
+  def terminated(a: OutputChannelActor) = synchronized {
     // execute registered termination handler (if any)
     termHandlers.get(a) match {
       case Some(handler) =>
@@ -88,7 +88,7 @@ trait ActorGC extends IScheduler {
     }
 
     // find the weak reference that points to the terminated actor, if any
-    refSet.find((ref: Reference[t] forSome { type t <: Actor }) => ref.get() == a) match {
+    refSet.find((ref: Reference[t] forSome { type t <: OutputChannelActor }) => ref.get() == a) match {
       case Some(r) =>
         // invoking clear will not cause r to be enqueued
         r.clear()
