@@ -72,13 +72,20 @@ trait Ordering[T] extends PartialOrdering[T] {
    */
   override def equiv(x: T, y: T): Boolean = compare(x, y) == 0
 
+  /** Returns the argument which comes later in the ordering. */
+  def max(x: T, y: T): T = if (gteq(x, y)) x else y
+
+  /** Returns the argument which comes earlier in the ordering. */
+  def min(x: T, y: T): T = if (lteq(x, y)) x else y
+
   class Ops(lhs: T) {
     def <(rhs: T) = lt(lhs, rhs)
     def <=(rhs: T) = lteq(lhs, rhs)
     def >(rhs: T) = gt(lhs, rhs)
     def >=(rhs: T) = gteq(lhs, rhs)
-    def ===(rhs: T) = equiv(lhs, rhs)
-    def !==(rhs: T) = !equiv(lhs, rhs)
+    def equiv(rhs: T) = Ordering.this.equiv(lhs, rhs)
+    def max(rhs: T): T = Ordering.this.max(lhs, rhs)
+    def min(rhs: T): T = Ordering.this.min(lhs, rhs)
   }
   implicit def mkOrderingOps(lhs: T): Ops = new Ops(lhs)
 }
@@ -87,65 +94,87 @@ object Ordering
 {
   def apply[T](implicit ord : Ordering[T]) = ord
 
-  implicit val Unit : Ordering[Unit] = new Ordering[Unit] {
+  trait UnitOrdering extends Ordering[Unit] {
     def compare(x : Unit, y : Unit) = 0;
   }
+  // XXX For the time being this is non-implicit so there remains
+  // only one default implicit conversion Unit => AnyRef (the other
+  // being any2stringadd in Predef.) See
+  //    test/files/neg/structural.scala
+  // for an example of code which is influenced by the next line.
+  // implicit object Unit extends UnitOrdering
+  object Unit extends UnitOrdering
 
-  implicit val Boolean : Ordering[Boolean] = new Ordering[Boolean] {
+  trait BooleanOrdering extends Ordering[Boolean] {
     def compare(x : Boolean, y : Boolean) = (x, y) match {
       case (false, true) => -1;
       case (true, false) => 1;
       case _ => 0;
     }
   }
+  implicit object Boolean extends BooleanOrdering
 
-  implicit val Byte : Ordering[Byte] = new Ordering[Byte] {
+  trait ByteOrdering extends Ordering[Byte] {
     def compare(x : Byte, y : Byte) = x.toInt - y.toInt;
   }
+  implicit object Byte extends ByteOrdering
 
-  implicit val Char : Ordering[Char] = new Ordering[Char] {
+  trait CharOrdering extends Ordering[Char] {
     def compare(x : Char, y : Char) = x.toInt - y.toInt;
   }
+  implicit object Char extends CharOrdering
 
-  implicit val Short : Ordering[Short] = new Ordering[Short] {
+  trait ShortOrdering extends Ordering[Short] {
     def compare(x : Short, y : Short) = x.toInt - y.toInt;
   }
+  implicit object Short extends ShortOrdering
 
-  implicit val Int : Ordering[Int] = new Ordering[Int] {
+  trait IntOrdering extends Ordering[Int] {
     def compare(x : Int, y : Int) =
       if(x < y) -1;
       else if (x == y) 0;
       else 1
   }
+  implicit object Int extends IntOrdering
 
-  implicit val Long : Ordering[Long] = new Ordering[Long] {
+  trait LongOrdering extends Ordering[Long] {
     def compare(x : Long, y : Long) =
       if(x < y) -1;
       else if (x == y) 0;
       else 1
   }
+  implicit object Long extends LongOrdering
 
-  implicit val Float : Ordering[Float] = new Ordering[Float] {
+  trait FloatOrdering extends Ordering[Float] {
     def compare(x : Float, y : Float) =
       if(x < y) -1;
       else if (x == y) 0;
       else 1
   }
+  implicit object Float extends FloatOrdering
 
-  implicit val Double : Ordering[Double] = new Ordering[Double] {
+  trait DoubleOrdering extends Ordering[Double] {
     def compare(x : Double, y : Double) =
       if(x < y) -1;
       else if (x == y) 0;
       else 1
   }
+  implicit object Double extends DoubleOrdering
 
-  implicit val BigInt : Ordering[BigInt] = new Ordering[BigInt] {
+  trait BigIntOrdering extends Ordering[BigInt] {
     def compare(x : BigInt, y : BigInt) = x.compare(y);
   }
+  implicit object BigInt extends BigIntOrdering
 
-  implicit val String : Ordering[String] = new Ordering[String] {
+  trait BigDecimalOrdering extends Ordering[BigDecimal] {
+    def compare(x : BigDecimal, y : BigDecimal) = x.compare(y);
+  }
+  implicit object BigDecimal extends BigDecimalOrdering
+
+  trait StringOrdering extends Ordering[String] {
     def compare(x : String, y : String) = x.compareTo(y);
   }
+  implicit object String extends StringOrdering
 
   implicit def Option[T](implicit ord : Ordering[T]) : Ordering[Option[T]] =
     new Ordering[Option[T]] {
@@ -158,19 +187,19 @@ object Ordering
     }
 
   implicit def Iterable[T](implicit ord : Ordering[T]) : Ordering[Iterable[T]] =
-  new Ordering[Iterable[T]] {
-    def compare(x : Iterable[T], y : Iterable[T]) : Int = {
-      val xe = x.iterator;
-      val ye = y.iterator;
+    new Ordering[Iterable[T]] {
+      def compare(x : Iterable[T], y : Iterable[T]) : Int = {
+        val xe = x.iterator;
+        val ye = y.iterator;
 
-      while (xe.hasNext && ye.hasNext){
-        val res = ord.compare(xe.next, ye.next);
-        if (res != 0) return res;
+        while (xe.hasNext && ye.hasNext){
+          val res = ord.compare(xe.next, ye.next);
+          if (res != 0) return res;
+        }
+
+        Boolean.compare(xe.hasNext, ye.hasNext);
       }
-
-      Boolean.compare(xe.hasNext, ye.hasNext);
     }
-  }
 
   implicit def Tuple2[T1, T2](implicit ord1 : Ordering[T1], ord2 : Ordering[T2]) : Ordering[(T1, T2)] =
     new Ordering[(T1, T2)]{

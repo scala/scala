@@ -357,25 +357,6 @@ object List {
   def transpose[A](xss: List[List[A]]): List[List[A]] =
     if (xss.head.isEmpty) List()
     else (xss map (xs => xs.head)) :: transpose(xss map (xs => xs.tail))
-
-  /** Lists with ordered elements are ordered
-  implicit def list2ordered[a <% Ordered[a]](x: List[a]): Ordered[List[a]] = new Ordered[List[a]] {
-    def compare [b >: List[a] <% Ordered[b]](y: b): Int = y match {
-      case y1: List[a] => compareLists(x, y1);
-      case _ => -(y compare x)
-    }
-    private def compareLists(xs: List[a], ys: List[a]): Int = {
-      if (xs.isEmpty && ys.isEmpty) 0
-      else if (xs.isEmpty) -1
-      else if (ys.isEmpty) 1
-      else {
-        val s = xs.head compare ys.head;
-        if (s != 0) s
-        else compareLists(xs.tail, ys.tail)
-      }
-    }
-  }
-   */
 }
 
 /** A class representing an ordered collection of elements of type

@@ -101,13 +101,6 @@ object BigInt {
   /** Implicit copnversion from long to BigInt
    */
   implicit def long2bigInt(l: Long): BigInt = apply(l)
-
-  /** Implicit conversion from BigInt to <code>Ordered</code>.
-   */
-  implicit def bigInt2ordered(x: BigInt): Ordered[BigInt] = new Ordered[BigInt] with Proxy {
-    def self: Any = x;
-    def compare (y: BigInt): Int = x.bigInteger.compareTo(y.bigInteger)
-  }
 }
 
 /**

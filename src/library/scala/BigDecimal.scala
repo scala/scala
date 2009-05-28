@@ -106,13 +106,6 @@ object BigDecimal {
    *  @since 2.8
    */
   implicit def bigInt2bigDecimal(x: BigInt): BigDecimal = apply(x)
-
-  /** Implicit conversion from BigDecimal to <code>Ordered</code>. */
-  implicit def bigDecimal2ordered(x: BigDecimal): Ordered[BigDecimal] =
-    new Ordered[BigDecimal] with Proxy {
-      def self: Any = x
-      def compare(y: BigDecimal): Int = x.bigDecimal.compareTo(y.bigDecimal)
-    }
 }
 
 /**

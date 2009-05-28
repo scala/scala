@@ -16,8 +16,8 @@ import collection.generic.VectorView
 /** <p>
  *    <code>GenericRange</code> is a generified version of the
  *    <code>Range</code> class which works with arbitrary types.
- *    It must be supplied with Integral and Ordering implementations
- *    of the range type.
+ *    It must be supplied with an Integral implementation of the
+ *    range type.
  *
  *    Factories for likely types include Range.BigInt and Range.Long.
  *    Range.Int exists for completeness, but the Int-based scala.Range
@@ -34,10 +34,9 @@ import collection.generic.VectorView
  */
 abstract class GenericRange[T]
   (val start: T, val end: T, val step: T)
-  (implicit num: Integral[T], ord: Ordering[T])
+  (implicit num: Integral[T])
 extends VectorView[T, Vector[T]] with RangeToString[T] {
   import num._
-  import ord._
 
   // this lets us pretend all ranges are exclusive
   val isInclusive: Boolean
@@ -46,7 +45,7 @@ extends VectorView[T, Vector[T]] with RangeToString[T] {
   // todo? - we could lift the length restriction by implementing a range as a sequence of
   // subranges and limiting the subranges to MAX_INT.  There's no other way around it because
   // the generics we inherit assume integer-based indexing (as well they should.)
-  require(step !== zero)
+  require(!(step equiv zero))
   require(genericLength <= fromInt(Math.MAX_INT), "Implementation restricts ranges to Math.MAX_INT elements.")
 
   protected def underlying = Vector.empty[T]
@@ -117,25 +116,24 @@ private[scala] trait RangeToString[T] extends VectorView[T, Vector[T]] {
 
 object GenericRange {
   import Numeric._
-  import Ordering._
 
-  class Inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T], ord: Ordering[T])
+  class Inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
   extends GenericRange(start, end, step)
   {
     val isInclusive = true
     def exclusive: Exclusive[T] = new Exclusive(start, end, step)
   }
-  class Exclusive[T](start: T, end: T, step: T)(implicit num: Integral[T], ord: Ordering[T])
+  class Exclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
   extends GenericRange(start, end, step)
   {
     val isInclusive = false
     def inclusive: Inclusive[T] = new Inclusive(start, end, step)
   }
 
-  def apply[T](start: T, end: T, step: T)(implicit num: Integral[T], ord: Ordering[T]) =
+  def apply[T](start: T, end: T, step: T)(implicit num: Integral[T]) =
     new Exclusive(start, end, step)
 
-  def inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T], ord: Ordering[T]) =
+  def inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T]) =
     new Inclusive(start, end, step)
 }
 
