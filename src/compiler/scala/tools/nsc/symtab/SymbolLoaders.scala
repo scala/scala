@@ -256,6 +256,10 @@ abstract class SymbolLoaders {
         else
           enterClassAndModule(name, new MSILTypeLoader(typ))
       }
+
+      val pkgModule = root.info.decl(nme.PACKAGEkw)
+      if (pkgModule.isModule && !pkgModule.rawInfo.isInstanceOf[SourcefileLoader])
+        openPackageModule(pkgModule)
     }
   }  // NamespaceLoader
 
