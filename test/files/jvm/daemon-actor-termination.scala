@@ -13,15 +13,15 @@ object Test {
 
   class MyDaemon extends DaemonActor {
     def act() {
-      println("I'm going to make you wait.")
+      println("MSG1")
       Thread.sleep(5000)
-      println("Ok, I'm done.")
+      println("done")
     }
   }
   def main(args: Array[String]) {
     val daemon = new MyDaemon
     daemon.start()
     Thread.sleep(500) // give the daemon a chance to start
-    println("I'm tired of waiting for you.  Good bye.")
+    println("MSG2")
   }
 }
