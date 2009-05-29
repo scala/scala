@@ -39,9 +39,13 @@ abstract class TreeBuilder {
   private object patvarTransformer extends Transformer {
     override def transform(tree: Tree): Tree = tree match {
       case Ident(name) if (treeInfo.isVarPattern(tree) && name != nme.WILDCARD) =>
-        atPos(tree.pos)(Bind(name, Ident(nme.WILDCARD)))
+        atPos(tree.pos)(Bind(name, atPos(tree) (Ident(nme.WILDCARD))))
       case Typed(id @ Ident(name), tpt) if (treeInfo.isVarPattern(id) && name != nme.WILDCARD) =>
-        Bind(name, atPos(tree.pos)(Typed(Ident(nme.WILDCARD), tpt))) setPos id.pos
+        atPos(tree.pos.withPoint(id.pos.point)) {
+          Bind(name, atPos(tree.pos.withStart(tree.pos.point)) {
+            Typed(Ident(nme.WILDCARD), tpt)
+          })
+        }
       case Apply(fn @ Apply(_, _), args) =>
         copy.Apply(tree, transform(fn), transformTrees(args))
       case Apply(fn, args) =>
@@ -105,7 +109,7 @@ abstract class TreeBuilder {
     case _ => t
   }
 
-  def makeAnnotated(t: Tree, annot: Annotation): Tree = Annotated(annot, t) setPos annot.pos
+  def makeAnnotated(t: Tree, annot: Annotation): Tree = atPos(annot.pos union t.pos)(Annotated(annot, t))
 
   def makeSelfDef(name: Name, tpt: Tree): ValDef =
     ValDef(Modifiers(PRIVATE), name, tpt, EmptyTree)
@@ -387,10 +391,10 @@ abstract class TreeBuilder {
   def makePatDef(pat: Tree, rhs: Tree): List[Tree] =
     makePatDef(Modifiers(0), pat, rhs)
 
-  /** Create tree for pattern definition &lt;mods val pat0 = rhs&gt; */
+  /** Create tree for pattern definition <mods val pat0 = rhs> */
   def makePatDef(mods: Modifiers, pat: Tree, rhs: Tree): List[Tree] = matchVarPattern(pat) match {
     case Some((name, tpt)) =>
-      List(ValDef(mods, name, tpt, rhs).setPos(pat.pos))
+      List(ValDef(mods, name, tpt, rhs))
 
     case None =>
       //  in case there is exactly one variable x_1 in pattern
@@ -403,14 +407,14 @@ abstract class TreeBuilder {
       //                  val/var x_N = t$._N
       val pat1 = patvarTransformer.transform(pat)
       val vars = getVariables(pat1)
-      val matchExpr = atPos(pat1.pos){
+      val matchExpr = atPos(rhs.pos){
         Match(
           makeUnchecked(rhs),
-          List(CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (_._1) map Ident, true))))
+          List(makeSynthetic(CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (_._1) map Ident, true)))))
       }
       vars match {
         case List((vname, tpt, pos)) =>
-          List(ValDef(mods, vname, tpt, matchExpr).setPos(pos))
+          List(ValDef(mods, vname, tpt, matchExpr))
         case _ =>
           val tmp = freshName()
           val firstDef = ValDef(Modifiers(PRIVATE | LOCAL | SYNTHETIC | (mods.flags & LAZY)),

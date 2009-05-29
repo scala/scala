@@ -52,7 +52,7 @@ abstract class AbstractReporter extends Reporter {
   private def testAndLog(pos: Position, severity: Severity): Boolean = {
     if (pos eq null) return false
     if (pos.offset.isEmpty) return false
-    val fpos = pos.focus
+    val fpos = pos.focusPoint
     if ((positions contains fpos) && positions(fpos) >= severity) return true
     positions += (fpos -> severity)
     false

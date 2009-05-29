@@ -116,7 +116,7 @@ self =>
 
     def o2p(offset: Int): Position
     def r2p(start: Int, mid: Int, end: Int): Position
-    def t2p(tree: Tree): Position = SyntheticPosition(tree)
+    def t2p(tree: Tree): Position = SyntheticAliasPosition(tree)
     //private implicit def p2i(pos: Position) = pos.offset.get
 
     /** whether a non-continuable syntax error has been seen */

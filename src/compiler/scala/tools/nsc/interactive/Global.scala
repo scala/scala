@@ -228,6 +228,8 @@ self =>
     }
   }
 
+  def typeCompletion() {}
+
   // ---------------- Helper classes ---------------------------
 
   /** A transformer that replaces tree `from` with tree `to` in a given tree */
