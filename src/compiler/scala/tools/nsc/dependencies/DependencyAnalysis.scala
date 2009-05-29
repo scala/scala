@@ -1,7 +1,8 @@
 package scala.tools.nsc.dependencies;
 import util.SourceFile;
+import nsc.io.AbstractFile
 
-trait DependencyAnalysis extends SubComponent with Files{
+trait DependencyAnalysis extends SubComponent with Files {
   import global._
 
   val phaseName = "dependencyAnalysis";
@@ -16,34 +17,41 @@ trait DependencyAnalysis extends SubComponent with Files{
     case "immediate" => 1
   }
 
-  def nameToFile(name : Any) =
-    settings.outdir.value / (name.toString.replace(".", java.io.File.separator) + ".class")
+  def nameToFile(src: AbstractFile, name : String) =
+    settings.outputDirs.outputDirFor(src)
+      .lookupPathUnchecked(name.toString.replace(".", java.io.File.separator) + ".class", false)
 
-  lazy val dependenciesFile : Option[File] = settings.dependenciesFile.value match {
-    case "none" => None
-    case x => Some(toFile(x))
+  private var depFile: Option[AbstractFile] = None
+
+  def dependenciesFile_=(file: AbstractFile) {
+    assert(file ne null)
+    depFile = Some(file)
   }
+
+  def dependenciesFile: Option[AbstractFile] = depFile
 
   def classpath = settings.classpath.value
   def newDeps = new FileDependencies(classpath);
 
-  lazy val dependencies =
-    dependenciesFile match {
-      case Some(f) if f.exists => {
-        val fd = FileDependencies.readFrom(f);
-        if (fd.classpath != classpath) {
-          if(settings.debug.value){
-            println("Classpath has changed. Nuking dependencies");
-          }
-          newDeps
-        }
-        else fd
-      }
-      case _ => newDeps;
-    }
+  var dependencies = newDeps
 
-  def writeToFile() = if(!off){
-    dependenciesFile.foreach(dependencies.writeTo(_));
+  /** Write dependencies to the current file. */
+  def saveDependencies() =
+    if(dependenciesFile.isDefined)
+      dependencies.writeTo(dependenciesFile.get)
+
+  /** Load dependencies from the given file and save the file reference for
+   *  future saves.
+   */
+  def loadFrom(f: AbstractFile) {
+    dependenciesFile = f
+    val fd = FileDependencies.readFrom(f);
+    dependencies = if (fd.classpath != classpath) {
+      if(settings.debug.value){
+        println("Classpath has changed. Nuking dependencies");
+      }
+      newDeps
+    } else fd
   }
 
   def filter(files : List[SourceFile]) : List[SourceFile] =
@@ -77,13 +85,13 @@ trait DependencyAnalysis extends SubComponent with Files{
       // they  have no source file. We simply ignore this case
       // as irrelevant to dependency analysis.
       if (f != null){
-        val source : File = unit.source.file.file;
+        val source: AbstractFile = unit.source.file;
         for (d <- unit.icode){
-          dependencies.emits(source, nameToFile(d))
+          dependencies.emits(source, nameToFile(unit.source.file, d.toString))
         }
 
         for (d <- unit.depends; if (d.sourceFile != null)){
-          dependencies.depends(source, d.sourceFile.file);
+          dependencies.depends(source, d.sourceFile);
         }
       }
     }

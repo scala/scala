@@ -26,13 +26,16 @@ class PlainFile(val file: File) extends AbstractFile {
                       catch { case _: IOException => file.getAbsolutePath }
 
   assert(file ne null)
-  assert(file.exists(), "non-existent file: " + file)
+//  assert(file.exists(), "non-existent file: " + file)
 
   /** Returns the name of this abstract file. */
   def name = file.getName()
 
   /** Returns the path of this abstract file. */
   def path = file.getPath()
+
+  /** The absolute file. */
+  def absolute = new PlainFile(file.getCanonicalFile())
 
   override def container : AbstractFile = new PlainFile(file.getParentFile)
 
@@ -78,6 +81,29 @@ class PlainFile(val file: File) extends AbstractFile {
     if (!child.exists() || (directory != child.isDirectory) ||
         directory == child.isFile()) null
     else new PlainFile(child)
+  }
+
+  /** Does this abstract file denote an existing file? */
+  def create {
+    if (!exists)
+      file.createNewFile()
+  }
+
+  /** Delete the underlying file or directory (recursively). */
+  def delete {
+    if (file.isFile) file.delete
+    else if (file.isDirectory) {
+      elements.foreach(_.delete)
+      file.delete
+    }
+  }
+
+  /** Returns a plain file with the given name. It does not
+   *  check that it exists.
+   */
+  def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile = {
+    val f = new File(file, name)
+    new PlainFile(f)
   }
 
 }

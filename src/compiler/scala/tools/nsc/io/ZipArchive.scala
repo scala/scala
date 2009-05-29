@@ -101,6 +101,12 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
     root.lookupName(name, directory)
   }
 
+  /** Returns an abstract file with the given name. It does not
+   *  check that it exists.
+   */
+  override def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile =
+    throw new UnsupportedOperationException()
+
   //########################################################################
   // Private Methods
 
@@ -231,11 +237,23 @@ final class URLZipArchive(url: URL) extends AbstractFile {
 
   def file: File = null
 
+  def absolute: AbstractFile = this
+
   def isDirectory: Boolean = true
 
   def lastModified: Long =
     try { url.openConnection().getLastModified() }
     catch { case _ => 0 }
+
+  /** Does this abstract file denote an existing file? */
+  def create {
+    throw new UnsupportedOperationException
+  }
+
+  /** Delete the underlying file or directory (recursively). */
+  def delete {
+    throw new UnsupportedOperationException
+  }
 
   def input: InputStream = url.openStream()
 
@@ -250,6 +268,12 @@ final class URLZipArchive(url: URL) extends AbstractFile {
     if (root eq null) load()
     root.lookupName(name, directory)
   }
+
+  /** Returns an abstract file with the given name. It does not
+   *  check that it exists.
+   */
+  def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile =
+    throw new UnsupportedOperationException()
 
   private def load() {
     def getEntryInputStream(in: InputStream): InputStream = {

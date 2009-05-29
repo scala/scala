@@ -17,6 +17,9 @@ extends AbstractFile {
       case None => name
       case Some(parent) => parent.path+'/'+ name
     }
+
+  def absolute = this
+
   def container = maybeContainer.get
   def isDirectory = true
   var lastModified: Long = System.currentTimeMillis
@@ -26,6 +29,22 @@ extends AbstractFile {
   override def file = null
   override def input = error("directories cannot be read")
   override def output = error("directories cannot be written")
+
+  /** Does this abstract file denote an existing file? */
+  def create {
+    throw new UnsupportedOperationException
+  }
+
+  /** Delete the underlying file or directory (recursively). */
+  def delete {
+    throw new UnsupportedOperationException
+  }
+
+  /** Returns an abstract file with the given name. It does not
+   *  check that it exists.
+   */
+  def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile =
+    throw new UnsupportedOperationException()
 
   private val files = mut.Map.empty[String, AbstractFile]
 

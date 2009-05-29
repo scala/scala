@@ -102,11 +102,25 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   /** Returns the path of this abstract file. */
   def path: String
 
+  /** The absolute file, if this is a relative file. */
+  def absolute: AbstractFile
+
   /** Returns the containing directory of this abstract file */
   def container : AbstractFile
 
   /** Returns the underlying File if any and null otherwise. */
   def file: File
+
+  /** Does this abstract file denote an existing file? */
+  def exists: Boolean =
+    if (file ne null) file.exists()
+    else true
+
+  /** Create a file on disk, if one does not exist already. */
+  def create: Unit
+
+  /** Delete the underlying file or directory (recursively). */
+  def delete: Unit
 
   /** Is this abstract file a directory? */
   def isDirectory: Boolean
@@ -164,6 +178,11 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
    */
   def lookupName(name: String, directory: Boolean): AbstractFile
 
+  /** Returns an abstract file with the given name. It does not
+   *  check that it exists.
+   */
+  def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile
+
   /** Returns the abstract file in this abstract directory with the specified
    *  path relative to it, If there is no such file, returns null. The argument
    *  <code>directory</code> tells whether to look for a directory or a regular
@@ -174,8 +193,23 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
    *  @return          ...
    */
   def lookupPath(path: String, directory: Boolean): AbstractFile = {
-    val length = path.length()
+    lookup((f, p, dir) => f.lookupName(p, dir), path, directory)
+  }
+
+  /** Return an abstract file that does not check that `path' denotes
+   *  an existing file.
+   */
+  def lookupPathUnchecked(path: String, directory: Boolean): AbstractFile = {
+    lookup((f, p, dir) => f.lookupNameUnchecked(p, dir), path, directory)
+  }
+
+  private def lookup(getFile: (AbstractFile, String, Boolean) => AbstractFile,
+                     path0: String,
+                     directory: Boolean): AbstractFile = {
     val separator = File.separatorChar
+    // trim trailing '/'s
+    val path = if (path0.charAt(path0.length - 1) == separator) path0.substring(0, path0.length - 1) else path0
+    val length = path.length()
     assert(0 < length && path.lastIndexOf(separator) < length - 1, path)
     var file = this
     var start = 0
@@ -183,7 +217,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
       val index = path.indexOf(separator, start)
       assert(index < 0 || start < index)
       val name = path.substring(start, if (index < 0) length else index)
-      file = file.lookupName(name, if (index < 0) directory else true)
+      file = getFile(file, name, if (index < 0) directory else true)
       if ((file eq null) || index < 0) return file
       start = index + 1
     }

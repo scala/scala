@@ -47,6 +47,8 @@ class VirtualFile(val name: String, _path: String) extends AbstractFile {
 
   def path = _path
 
+  def absolute = this
+
   /** Returns null. */
   final def file: File = null
 
@@ -77,6 +79,16 @@ class VirtualFile(val name: String, _path: String) extends AbstractFile {
     Iterator.empty
   }
 
+  /** Does this abstract file denote an existing file? */
+  def create {
+    throw new UnsupportedOperationException
+  }
+
+  /** Delete the underlying file or directory (recursively). */
+  def delete {
+    throw new UnsupportedOperationException
+  }
+
   /**
    * Returns the abstract file in this abstract directory with the
    * specified name. If there is no such file, returns null. The
@@ -91,6 +103,12 @@ class VirtualFile(val name: String, _path: String) extends AbstractFile {
     assert(isDirectory, "not a directory '" + this + "'")
     null
   }
+
+  /** Returns an abstract file with the given name. It does not
+   *  check that it exists.
+   */
+  def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile =
+    throw new UnsupportedOperationException()
 
   //########################################################################
 }

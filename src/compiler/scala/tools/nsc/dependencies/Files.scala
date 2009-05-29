@@ -1,18 +1,32 @@
 package scala.tools.nsc.dependencies;
 
-import java.io.{File => JFile, _}
+import java.io.{InputStream, OutputStream, PrintStream, InputStreamReader, BufferedReader}
+import nsc.io.{AbstractFile, PlainFile}
 
-import scala.collection.mutable._;
+import scala.collection._;
 
-trait Files{
+trait Files {
 
-  implicit def toFile(name : String) : File = toFile(new JFile(name));
-  implicit def toFile(jf : JFile) : File = new File(jf);
+  /** Resolve the given name to a file. */
+  implicit def toFile(name: String): AbstractFile = {
+    val file = rootDirectory.lookupPathUnchecked(name, false)
+    assert(file ne null, name)
+    file
+  }
 
-  class FileDependencies(val classpath : String){
-    class Tracker extends OpenHashMap[File, Set[File]]{
-      override def default(key : File) = {
-        this(key) = new HashSet[File];
+  /** The directory where file lookup should start at. */
+  var rootDirectory: AbstractFile = {
+    AbstractFile.getDirectory(".")
+//     val roots = java.io.File.listRoots()
+//     assert(roots.length > 0)
+//     new PlainFile(roots(0))
+  }
+
+  class FileDependencies(val classpath : String) {
+
+    class Tracker extends mutable.OpenHashMap[AbstractFile, mutable.Set[AbstractFile]]{
+      override def default(key: AbstractFile) = {
+        this(key) = new mutable.HashSet[AbstractFile];
         this(key);
       }
     }
@@ -22,20 +36,22 @@ trait Files{
 
     def isEmpty = dependencies.isEmpty && targets.isEmpty
 
-    def emits(source : File, result : File) = targets(source.absolute) += result.absolute;
-    def depends(from : File, on : File) = dependencies(from.absolute) += on.absolute;
+    def emits(source: AbstractFile, result: AbstractFile) =
+      targets(source) += result;
+    def depends(from: AbstractFile, on: AbstractFile) =
+      dependencies(from) += on;
 
-    def reset(file : File) = dependencies -= file;
+    def reset(file: AbstractFile) = dependencies -= file;
 
     def cleanEmpty() = {
       dependencies.foreach({case (key, value) => value.retain(_.exists)})
       dependencies.retain((key, value) => key.exists && !value.isEmpty)
     }
 
-    def containsFile(f : File) = targets.contains(f.absolute)
+    def containsFile(f: AbstractFile) = targets.contains(f.absolute)
 
     def invalidatedFiles(maxDepth : Int) = {
-      val direct = new HashSet[File];
+      val direct = new mutable.HashSet[AbstractFile];
 
       for ((file, products) <- targets) {
         // This looks a bit odd. It may seem like one should invalidate a file
@@ -45,12 +61,25 @@ trait Files{
         direct(file) ||= products.forall(d => d.lastModified < file.lastModified)
       }
 
+      val indirect = dependentFiles(maxDepth, direct)
 
-      val seen = new HashSet[File];
-      val indirect = new HashSet[File];
-      val newInvalidations = new HashSet[File];
+      for ((source, targets) <- targets;
+           if direct(source) || indirect(source)){
+        targets.foreach(_.delete);
+        targets -= source;
+      }
 
-      def invalid(file : File) = indirect(file) || direct(file);
+      (direct, indirect);
+    }
+
+    /** Return the sef of files that depend on the given changed files.
+     *  It computes the transitive closure up to the given depth.
+     */
+    def dependentFiles(depth: Int, changed: Set[AbstractFile]): Set[AbstractFile] = {
+      val indirect = new mutable.HashSet[AbstractFile];
+      val newInvalidations = new mutable.HashSet[AbstractFile];
+
+      def invalid(file: AbstractFile) = indirect(file) || changed(file);
 
       def go(i : Int) : Unit = if(i > 0){
         newInvalidations.clear;
@@ -64,25 +93,26 @@ trait Files{
         else ()
       }
 
-      go(maxDepth)
+      go(depth)
 
-      indirect --= direct
-
-      for ((source, targets) <- targets; if (invalid(source))){
-        targets.foreach(_.rm);
-        targets -= source;
-      }
-
-      (direct, indirect);
+      indirect --= changed
     }
 
-    def writeTo(file : File) : Unit = file.writeTo(out => writeTo(new PrintStream(out)));
+    def writeTo(file: AbstractFile) {
+      writeToFile(file)(out => writeTo(new PrintStream(out)))
+    }
+
     def writeTo(print : PrintStream) : Unit = {
+      def prettify(path: String): String =
+        if (path.startsWith("./"))
+          path.substring(2, path.length)
+        else path
+
       cleanEmpty();
       def emit(tracker : Tracker){
         for ((f, ds) <- tracker;
               d <- ds){
-          print.println(f + " -> " + d);
+          print.println(prettify(f.toString) + " -> " + prettify(d.toString));
         }
       }
 
@@ -95,10 +125,12 @@ trait Files{
     }
   }
 
+
+
   object FileDependencies{
     val Separator = "-------";
 
-    def readFrom(file : File) = file.readFrom(in => {
+    def readFrom(file: AbstractFile): FileDependencies = readFromFile(file) { in =>
       val reader = new BufferedReader(new InputStreamReader(in));
       val it = new FileDependencies(reader.readLine);
       reader.readLine;
@@ -118,88 +150,27 @@ trait Files{
       }
 
       it;
-    })
-  }
-
-
-  def currentDirectory = new File(new JFile("."))
-
-  case class File private[Files](val underlying : JFile){
-    if (underlying == null) throw new NullPointerException();
-
-    def absolute : File = underlying.getAbsoluteFile;
-    def canonical : File = underlying.getCanonicalFile
-
-    def assertDirectory =
-      if (exists && !isDirectory) error(this + " is not a directory")
-      else this;
-
-    def assertExists =
-      if (!exists) error(this + " does not exist")
-      else this;
-
-    def lastModified = underlying.lastModified
-
-    def list : Iterable[File] =
-      assertExists.assertDirectory.underlying.listFiles.view.map(toFile)
-
-    def / (file : File) : File =
-      new JFile(assertDirectory.toString,
-                file.toString)
-
-    override def toString = {
-      val it = underlying.getPath;
-      if (it.length == 0) "."
-      else it
-    }
-
-    def exists = underlying.exists
-    def isDirectory = underlying.isDirectory;
-
-    def parent : File = {
-      val x = underlying.getParentFile;
-      if (x == null) currentDirectory
-      else x
-    }
-
-    def create : Boolean = {parent.mkdir; underlying.createNewFile }
-    def mkdir : Boolean =
-      if (exists) { assertDirectory; false }
-      else {parent.mkdir; underlying.mkdir; }
-
-    def rm : Boolean = {
-      if (isDirectory) list.foreach(_.rm);
-      underlying.delete;
-    }
-
-    def descendants : Iterable[File] =
-      list.flatMap(x => if (x.isDirectory) x.descendants else List(x))
-
-    def extension = {
-      val name = toString;
-      val i = name.lastIndexOf('.');
-      if (i == -1) "" else name.substring(i + 1)
-    }
-
-    def writeTo[T](f : OutputStream => T) : T = {
-      val out = new FileOutputStream(underlying);
-      try {
-        f(out);
-      } finally {
-        out.close;
-      }
-    }
-
-    def readFrom[T](f : InputStream => T) : T = {
-      val in = new FileInputStream(underlying);
-      try{
-        f(in);
-      } finally {
-        in.close;
-      }
     }
   }
 
+
+  def writeToFile[T](file: AbstractFile)(f: OutputStream => T) : T = {
+    val out = file.output
+    try {
+      f(out);
+    } finally {
+      out.close;
+    }
+  }
+
+  def readFromFile[T](file: AbstractFile)(f: InputStream => T) : T = {
+    val in = file.input
+    try{
+      f(in);
+    } finally {
+      in.close;
+    }
+  }
 }
 
 object Files extends Files;

@@ -18,7 +18,7 @@ import scala.collection.mutable.{HashSet, HashMap, ListBuffer}
 
 import symtab._
 import symtab.classfile.{PickleBuffer, Pickler}
-import dependencies.DependencyAnalysis
+import dependencies.{DependencyAnalysis}
 import util.Statistics
 import plugins.Plugins
 import ast._
@@ -216,6 +216,17 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         new SourceReader(charset.newDecoder(), reporter)
     }
   }
+
+  settings.dependenciesFile.value match {
+    case "none" => ()
+    case x =>
+      val jfile = new java.io.File(x)
+      if (!jfile.exists) jfile.createNewFile
+
+      dependencyAnalysis.loadFrom(AbstractFile.getFile(jfile))
+  }
+
+
 
   lazy val classPath0 = new ClassPath(false && onlyPresentation)
 
@@ -567,12 +578,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     if (forJVM) {
       phasesSet += liftcode			       // generate reified trees
       phasesSet += genJVM			       // generate .class files
-      if (!dependencyAnalysis.off){
-        if(settings.debug.value){
-          println("Adding dependency analysis phase");
-        }
-        phasesSet += dependencyAnalysis
-      }
+      phasesSet += dependencyAnalysis
     }
     if (forMSIL) {
       phasesSet += genMSIL			       // generate .msil files
@@ -811,7 +817,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       for ((sym, file) <- symSource.iterator) resetPackageClass(sym.owner)
       informTime("total", startTime)
 
-      dependencyAnalysis.writeToFile();
+      if (!dependencyAnalysis.off)
+        dependencyAnalysis.saveDependencies()
     }
 
     /** Compile list of abstract files */
