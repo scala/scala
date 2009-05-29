@@ -394,46 +394,21 @@ trait Actor extends OutputChannelActor with AbstractActor {
    */
   private var onTimeout: Option[TimerTask] = None
 
-  /**
-   * Sends <code>msg</code> to this actor (asynchronous) supplying
-   * explicit reply destination.
-   *
-   * @param  msg      the message to send
-   * @param  replyTo  the reply destination
-   */
-  override def send(msg: Any, replyTo: OutputChannel[Any]) = synchronized {
-    if (waitingFor ne waitingForNone) {
-      val savedWaitingFor = waitingFor
-      waitingFor = waitingForNone
-      scheduler execute {
-        if (synchronized { savedWaitingFor(msg) }) {
-          synchronized {
-            if (!onTimeout.isEmpty) {
-              onTimeout.get.cancel()
-              onTimeout = None
-            }
-          }
-
-          if (isSuspended) {
-            synchronized {
-              senders = replyTo :: senders
-              received = Some(msg)
-              resumeActor()
-            }
-          } else {
-            synchronized {
-              senders = List(replyTo)
-            }
-            // assert continuation != null
-            (new Reaction(this, continuation, msg)).run()
-          }
-        } else synchronized {
-          waitingFor = savedWaitingFor
-          mailbox.append(msg, replyTo)
-        }
+  protected[this] override def resumeReceiver(item: (Any, OutputChannel[Any])) {
+    if (!onTimeout.isEmpty) {
+      onTimeout.get.cancel()
+      onTimeout = None
+    }
+    if (isSuspended) {
+      synchronized {
+        senders = item._2 :: senders
+        received = Some(item._1)
+        resumeActor()
       }
     } else {
-      mailbox.append(msg, replyTo)
+      senders = List(item._2)
+      // assert continuation != null
+      (new Reaction(this, continuation, item._1)).run()
     }
   }
 
@@ -445,17 +420,34 @@ trait Actor extends OutputChannelActor with AbstractActor {
    */
   def receive[R](f: PartialFunction[Any, R]): R = {
     assert(Actor.self(scheduler) == this, "receive from channel belonging to other actor")
+
     synchronized {
       if (shouldExit) exit() // links
+      drainSendBuffer()
+    }
+
+    var done = false
+    while (!done) {
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
       if (null eq qel) {
-        waitingFor = f.isDefinedAt
-        suspendActor()
+        synchronized {
+          // in mean time new stuff might have arrived
+          if (!sendBuffer.isEmpty) {
+            drainSendBuffer()
+            // keep going
+          } else {
+            waitingFor = f.isDefinedAt
+            suspendActor()
+            done = true
+          }
+        }
       } else {
         received = Some(qel.msg)
         senders = qel.session :: senders
+        done = true
       }
     }
+
     val result = f(received.get)
     received = None
     senders = senders.tail
@@ -472,41 +464,57 @@ trait Actor extends OutputChannelActor with AbstractActor {
    */
   def receiveWithin[R](msec: Long)(f: PartialFunction[Any, R]): R = {
     assert(Actor.self(scheduler) == this, "receive from channel belonging to other actor")
+
     synchronized {
       if (shouldExit) exit() // links
+      drainSendBuffer()
+    }
 
-      // first, remove spurious TIMEOUT message from mailbox if any
-      val spurious = mailbox.extractFirst((m: Any) => m == TIMEOUT)
+    // first, remove spurious TIMEOUT message from mailbox if any
+    mailbox.extractFirst((m: Any) => m == TIMEOUT)
 
+    val receiveTimeout = () => {
+      if (f.isDefinedAt(TIMEOUT)) {
+        received = Some(TIMEOUT)
+        senders = this :: senders
+      } else
+        error("unhandled timeout")
+    }
+
+    var done = false
+    while (!done) {
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
       if (null eq qel) {
-        if (msec == 0) {
-          if (f.isDefinedAt(TIMEOUT)) {
-            received = Some(TIMEOUT)
-            senders = this :: senders
-          } else
-            error("unhandled timeout")
-        } else {
-          waitingFor = f.isDefinedAt
-          received = None
-          suspendActorFor(msec)
-          if (received.isEmpty) {
-            // actor is not resumed because of new message
-            // therefore, waitingFor has not been updated, yet.
-            waitingFor = waitingForNone
-            if (f.isDefinedAt(TIMEOUT)) {
-              received = Some(TIMEOUT)
-              senders = this :: senders
+        val todo = synchronized {
+          // in mean time new stuff might have arrived
+          if (!sendBuffer.isEmpty) {
+            drainSendBuffer()
+            // keep going
+            () => {}
+          } else if (msec == 0) {
+            done = true
+            receiveTimeout
+          } else {
+            waitingFor = f.isDefinedAt
+            received = None
+            suspendActorFor(msec)
+            if (received.isEmpty) {
+              // actor is not resumed because of new message
+              // therefore, waitingFor has not been updated, yet.
+              waitingFor = waitingForNone
             }
-            else
-              error("unhandled timeout")
+            done = true
+            receiveTimeout
           }
         }
+        todo()
       } else {
         received = Some(qel.msg)
         senders = qel.session :: senders
+        done = true
       }
     }
+
     val result = f(received.get)
     received = None
     senders = senders.tail
@@ -525,15 +533,9 @@ trait Actor extends OutputChannelActor with AbstractActor {
     assert(Actor.self(scheduler) == this, "react on channel belonging to other actor")
     synchronized {
       if (shouldExit) exit() // links
-      val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
-      if (null eq qel) {
-        waitingFor = f.isDefinedAt
-        continuation = f
-      } else {
-        senders = List(qel.session)
-        scheduleActor(f, qel.msg)
-      }
+      drainSendBuffer()
     }
+    searchMailbox(f)
     throw Actor.suspendException
   }
 
@@ -549,35 +551,56 @@ trait Actor extends OutputChannelActor with AbstractActor {
    */
   def reactWithin(msec: Long)(f: PartialFunction[Any, Unit]): Nothing = {
     assert(Actor.self(scheduler) == this, "react on channel belonging to other actor")
+
     synchronized {
       if (shouldExit) exit() // links
+      drainSendBuffer()
+    }
 
-      // first, remove spurious TIMEOUT message from mailbox if any
-      val spurious = mailbox.extractFirst((m: Any) => m == TIMEOUT)
+    // first, remove spurious TIMEOUT message from mailbox if any
+    mailbox.extractFirst((m: Any) => m == TIMEOUT)
 
+    val receiveTimeout = () => {
+      if (f.isDefinedAt(TIMEOUT)) {
+        senders = List(this)
+        scheduleActor(f, TIMEOUT)
+      } else
+        error("unhandled timeout")
+    }
+
+    var done = false
+    while (!done) {
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
       if (null eq qel) {
-        if (msec == 0) {
-          if (f.isDefinedAt(TIMEOUT)) {
-            senders = List(this)
-            scheduleActor(f, TIMEOUT)
+        val todo = synchronized {
+          // in mean time new stuff might have arrived
+          if (!sendBuffer.isEmpty) {
+            drainSendBuffer()
+            // keep going
+            () => {}
+          } else if (msec == 0) {
+            done = true
+            receiveTimeout
+          } else {
+            waitingFor = f.isDefinedAt
+            val thisActor = this
+            onTimeout = Some(new TimerTask {
+              def run() { thisActor.send(TIMEOUT, thisActor) }
+            })
+            Actor.timer.schedule(onTimeout.get, msec)
+            continuation = f
+            done = true
+            () => {}
           }
-          else
-            error("unhandled timeout")
-        } else {
-          waitingFor = f.isDefinedAt
-          val thisActor = this
-          onTimeout = Some(new TimerTask {
-            def run() { thisActor.send(TIMEOUT, thisActor) }
-          })
-          Actor.timer.schedule(onTimeout.get, msec)
-          continuation = f
         }
+        todo()
       } else {
         senders = List(qel.session)
         scheduleActor(f, qel.msg)
+        done = true
       }
     }
+
     throw Actor.suspendException
   }
 
@@ -791,7 +814,7 @@ trait Actor extends OutputChannelActor with AbstractActor {
   }
 
   // guarded by lock of this
-  private def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
+  protected override def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
     if ((f eq null) && (continuation eq null)) {
       // do nothing (timeout is handled instead)
     }

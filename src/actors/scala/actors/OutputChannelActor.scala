@@ -10,6 +10,8 @@
 
 package scala.actors
 
+import scala.collection.mutable.Queue
+
 trait OutputChannelActor extends OutputChannel[Any] {
 
   @volatile
@@ -17,6 +19,8 @@ trait OutputChannelActor extends OutputChannel[Any] {
 
   /* The actor's mailbox. */
   protected val mailbox = new MessageQueue
+
+  protected var sendBuffer = new Queue[(Any, OutputChannel[Any])]
 
   /* A list of the current senders. The head of the list is
    * the sender of the message that was received last.
@@ -55,25 +59,52 @@ trait OutputChannelActor extends OutputChannel[Any] {
   protected[actors] def mailboxSize: Int =
     mailbox.size
 
-  def send(msg: Any, replyTo: OutputChannel[Any]) = synchronized {
-    if (waitingFor ne waitingForNone) {
-      val savedWaitingFor = waitingFor
-      waitingFor = waitingForNone
-      scheduler execute {
-        if (synchronized { savedWaitingFor(msg) }) {
-          synchronized {
-            if (!ignoreSender)
-              senders = List(replyTo)
+  /**
+   * Sends <code>msg</code> to this actor (asynchronous) supplying
+   * explicit reply destination.
+   *
+   * @param  msg      the message to send
+   * @param  replyTo  the reply destination
+   */
+  def send(msg: Any, replyTo: OutputChannel[Any]) {
+    val todo = synchronized {
+      if (waitingFor ne waitingForNone) {
+        val savedWaitingFor = waitingFor
+        waitingFor = waitingForNone
+        () => scheduler execute {
+          var item: Option[(Any, OutputChannel[Any])] =
+            synchronized { Some(msg, replyTo) }
+          while (!item.isEmpty) {
+            if (savedWaitingFor(item.get._1)) {
+              resumeReceiver(item.get)
+              item = None
+            } else {
+              mailbox.append(item.get._1, item.get._2)
+
+              item = synchronized {
+                if (!sendBuffer.isEmpty)
+                  Some(sendBuffer.dequeue())
+                else {
+                  waitingFor = savedWaitingFor
+                  None
+                }
+              }
+            }
           }
-          // assert continuation != null
-          (new LightReaction(this, continuation, msg)).run()
-        } else synchronized {
-          waitingFor = savedWaitingFor
-          mailbox.append(msg, replyTo)
         }
+      } else {
+        sendBuffer.enqueue((msg, replyTo))
+        () => { /* do nothing */ }
       }
-    } else
-      mailbox.append(msg, replyTo)
+    }
+    todo()
+  }
+
+  protected[this] def resumeReceiver(item: (Any, OutputChannel[Any])) {
+    if (!ignoreSender)
+      senders = List(item._2)
+    // assert continuation != null
+    (new LightReaction(this, continuation, item._1)).run()
   }
 
   def !(msg: Any) {
@@ -86,19 +117,41 @@ trait OutputChannelActor extends OutputChannel[Any] {
 
   def receiver: Actor = this.asInstanceOf[Actor]
 
-  protected[actors] def react(f: PartialFunction[Any, Unit]): Nothing = {
-    assert(Actor.rawSelf(scheduler) == this, "react on channel belonging to other actor")
-    synchronized {
+  protected[this] def drainSendBuffer() {
+    while (!sendBuffer.isEmpty) {
+      val item = sendBuffer.dequeue()
+      mailbox.append(item._1, item._2)
+    }
+  }
+
+  protected[this] def searchMailbox(f: PartialFunction[Any, Unit]) {
+    var done = false
+    while (!done) {
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
       if (null eq qel) {
-        waitingFor = f.isDefinedAt
-        continuation = f
+        synchronized {
+          // in mean time new stuff might have arrived
+          if (!sendBuffer.isEmpty) {
+            drainSendBuffer()
+            // keep going
+          } else {
+            waitingFor = f.isDefinedAt
+            continuation = f
+            done = true
+          }
+        }
       } else {
-        if (!ignoreSender)
-          senders = List(qel.session)
+        senders = List(qel.session)
         scheduleActor(f, qel.msg)
+        done = true
       }
     }
+  }
+
+  protected[actors] def react(f: PartialFunction[Any, Unit]): Nothing = {
+    assert(Actor.rawSelf(scheduler) == this, "react on channel belonging to other actor")
+    synchronized { drainSendBuffer() }
+    searchMailbox(f)
     throw Actor.suspendException
   }
 
@@ -111,7 +164,7 @@ trait OutputChannelActor extends OutputChannel[Any] {
     sender ! msg
   }
 
-  private def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) = {
+  protected def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) = {
     scheduler execute (new LightReaction(this,
                                          if (f eq null) continuation else f,
                                          msg))
