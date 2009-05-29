@@ -343,7 +343,7 @@ abstract class TreePrinters {
           } else if ((tree.tpe.typeSymbol ne null) && tree.tpe.typeSymbol.isAnonymousClass) {
             print(tree.tpe.typeSymbol.toString())
           } else {
-            tree.tpe.toString()
+            print(tree.tpe.toString())
           }
 
         case Annotated(Annotation(Apply(Select(New(tpt), nme.CONSTRUCTOR), args), elements), tree) =>
