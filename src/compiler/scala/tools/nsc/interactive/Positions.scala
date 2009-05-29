@@ -29,11 +29,17 @@ self: Global =>
   }
 
   class TransparentPosition(source0: SourceFile, start: Int, point: Int, end: Int) extends RangePosition(source0, start, point, end) {
-    override def toString = "<"+super.toString+">"
+    override def show = "<"+super.show+">"
   }
 
   def isTransparent(pos: Position) = pos.isInstanceOf[TransparentPosition]
   def isRange(pos: Position) = pos.isInstanceOf[RangePosition]
+  def isPositionable(tree: Tree) = tree match {
+    case EmptyTree => false
+    case `emptyValDef` => false
+    case TypeTree() => tree.tpe != NoType
+    case _ => true
+  }
 
   // -------------- ensuring no overlaps -------------------------------
 
@@ -136,7 +142,7 @@ self: Global =>
   private def setChildrenPos(pos: Position, trees: List[Tree]) {
     var currentPos = pos
     for (tree <- trees) {
-      if (tree != EmptyTree && tree.pos == NoPosition) {
+      if (isPositionable(tree) && tree.pos == NoPosition) {
         val children = tree.children
         if (children.isEmpty)
           tree setPos OffsetPosition(pos.source.get, currentPos.start)
@@ -157,7 +163,7 @@ self: Global =>
    */
   override def atPos[T <: Tree](pos: Position)(tree: T): T =
     if (isRange(pos)) {
-      if (tree != EmptyTree && tree.pos == NoPosition) {
+      if (isPositionable(tree) && tree.pos == NoPosition) {
         tree.setPos(pos)
         val children = tree.children
         if (children.nonEmpty) {
@@ -180,11 +186,11 @@ self: Global =>
       inform(tree.toString)
     }
     def validate(tree: Tree, encltree: Tree) {
-      if (tree != EmptyTree && !tree.pos.isDefined)
+      if (isPositionable(tree) && !tree.pos.isDefined)
         error("tree without position: "+tree)
-      if (encltree.pos.isSynthetic && !tree.pos.isSynthetic)
+      if (encltree.pos.isSynthetic && !tree.pos.isDefined && tree.pos.isSynthetic)
         error("synthetic "+encltree+" contains nonsynthetic" + tree)
-      if (!(encltree.pos includes tree.pos))
+      if (tree.pos.isDefined && !(encltree.pos includes tree.pos))
         error(encltree+" does not include "+tree)
       for ((t1, t2) <- findOverlapping(tree.children flatMap solidDescendants))
         error("overlapping trees: "+t1+" === and === "+t2)

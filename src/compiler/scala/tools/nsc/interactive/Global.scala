@@ -1,7 +1,6 @@
 package scala.tools.nsc.interactive
 
 import scala.collection.mutable.{LinkedHashMap, SynchronizedMap}
-import scala.concurrent.SyncVar
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{SourceFile, Position, RangePosition, OffsetPosition, NoPosition, WorkScheduler}
 import scala.tools.nsc.reporters._
@@ -191,44 +190,73 @@ self =>
 
   // ----------------- Implementations of client commmands -----------------------
 
+  def respond[T](result: Response[T])(op: => T): Unit = try {
+    result set Left(op)
+  } catch {
+    case ex =>
+      result set Right(ex)
+      throw ex
+  }
+
   /** Make sure a set of compilation units is loaded and parsed */
-  def reload(sources: List[SourceFile], result: SyncVar[Either[Unit, Throwable]]) {
-    try {
+  def reload(sources: List[SourceFile], result: Response[Unit]) {
+    respond(result) {
       currentTyperRun = new TyperRun()
       for (source <- sources) {
         val unit = new RichCompilationUnit(source)
         unitOfFile(source.file) = unit
         parse(unit)
+        if (settings.Xprintpos.value) treePrinter.print(unit)
       }
       moveToFront(sources)
-      result set Left(())
-    } catch {
-      case ex =>
-        result set Right(ex)
-        throw ex
+      ()
     }
     if (outOfDate) throw new FreshRunReq
     else outOfDate = true
   }
 
-  /** Set sync var `result` to a fully attributed tree located at position `pos`  */
-  def typedTreeAt(pos: Position, result: SyncVar[Either[Tree, Throwable]]) {
-    try {
-      println("typed tree at "+pos.show)
-      val unit = unitOf(pos)
-      assert(unit.status != NotLoaded)
-      moveToFront(List(unit.source))
-      val typedTree = currentTyperRun.typedTreeAt(pos)
-      val located = new Locator(pos) locateIn typedTree
-      result set Left(located)
-    } catch {
-      case ex =>
-        result set Right(ex)
-        throw ex
-    }
+  /** A fully attributed tree located at position `pos`  */
+  def typedTreeAt(pos: Position): Tree = {
+    val unit = unitOf(pos)
+    assert(unit.status != NotLoaded)
+    moveToFront(List(unit.source))
+    val typedTree = currentTyperRun.typedTreeAt(pos)
+    new Locator(pos) locateIn typedTree
   }
 
-  def typeCompletion() {}
+  /** Set sync var `result` to a fully attributed tree located at position `pos`  */
+  def getTypedTreeAt(pos: Position, result: Response[Tree]) {
+    respond(result)(typedTreeAt(pos))
+  }
+
+  def stabilizedType(tree: Tree): Type = tree match {
+    case Ident(_) if tree.symbol.isStable => singleType(NoPrefix, tree.symbol)
+    case Select(qual, _) if tree.symbol.isStable => singleType(qual.tpe, tree.symbol)
+    case _ => tree.tpe
+  }
+
+  def completion(pos: Position, result: Response[List[Member]]) {
+    import MemberStatus._
+    respond(result) {
+      val tree = typedTreeAt(pos)
+      locateContext(pos) match {
+        case Some(context) =>
+          val superAccess = tree.isInstanceOf[Super]
+          val pre = stabilizedType(tree)
+          def withStatus(sym: Symbol, vs: ValueSet) = (
+            sym,
+            pre.memberType(sym),
+            if (context.isAccessible(sym, pre, superAccess)) vs + Accessible else vs
+          )
+          val decls = tree.tpe.decls.toList map (sym => withStatus(sym, ValueSet()))
+          val inherited = tree.tpe.members.toList diff decls map (sym => withStatus(sym, ValueSet(Inherited)))
+          val implicits = List() // not yet done
+          decls ::: inherited ::: implicits
+        case None =>
+          throw new FatalError("no context found for "+pos)
+      }
+    }
+  }
 
   // ---------------- Helper classes ---------------------------
 

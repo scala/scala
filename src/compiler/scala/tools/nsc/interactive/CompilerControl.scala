@@ -10,6 +10,14 @@ import scala.tools.nsc.ast._
  */
 trait CompilerControl { self: Global =>
 
+  object MemberStatus extends Enumeration {
+    val Accessible, Inherited, Implicit = Value
+  }
+
+  type Response[T] = SyncVar[Either[T, Throwable]]
+
+  type Member = (Symbol, Type, MemberStatus.ValueSet)
+
   /* Must be initialized before starting compilerRunner */
   protected val scheduler = new WorkScheduler
 
@@ -38,12 +46,15 @@ trait CompilerControl { self: Global =>
     locateContext(unitOf(pos).contexts, pos)
 
   /** Make sure a set of compilation units is loaded and parsed */
-  def askReload(sources: List[SourceFile], result: SyncVar[Either[Unit, Throwable]]) =
+  def askReload(sources: List[SourceFile], result: Response[Unit]) =
     scheduler.postWorkItem(() => reload(sources, result))
 
   /** Set sync var `result` to a fully attributed tree located at position `pos`  */
-  def askTypeAt(pos: Position, result: SyncVar[Either[Tree, Throwable]]) =
-    scheduler.postWorkItem(() => self.typedTreeAt(pos, result))
+  def askTypeAt(pos: Position, result: Response[Tree]) =
+    scheduler.postWorkItem(() => self.getTypedTreeAt(pos, result))
+
+  def askCompletion(pos: Position, result: Response[List[Member]]) =
+    scheduler.postWorkItem(() => self.completion(pos, result))
 
   /** Ask to do unit first on present and subsequent type checking passes */
   def askToDoFirst(f: SourceFile) = {

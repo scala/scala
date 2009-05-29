@@ -75,25 +75,39 @@ object REPL {
   /** Commands:
    *
    *  reload file1 ... fileN
-   *  typeat file line col
-   *
-   *
+   *  typeat file line off1 off2?
+   *  complete file line off1 off2?
    */
   def run(comp: Global) {
-    val reloadResult = new SyncVar[Either[Unit, Throwable]]
-    val typeatResult = new SyncVar[Either[comp.Tree, Throwable]]
+    val reloadResult = new comp.Response[Unit]
+    val typeatResult = new comp.Response[comp.Tree]
+    val completeResult = new comp.Response[List[comp.Member]]
+    def makePos(file: String, off1: String, off2: String) = {
+      val source = toSourceFile(file)
+      comp.rangePos(source, off1.toInt, off1.toInt, off2.toInt)
+    }
+    def doTypeAt(pos: Position) {
+      comp.askTypeAt(pos, typeatResult)
+      show(typeatResult)
+    }
+    def doComplete(pos: Position) {
+      comp.askCompletion(pos, completeResult)
+      show(completeResult)
+    }
     loop { line =>
       (line split " ").toList match {
         case "reload" :: args =>
           comp.askReload(args map toSourceFile, reloadResult)
           show(reloadResult)
-        case "typeat" :: file :: line :: col1 :: col2 :: Nil =>
-          val source = toSourceFile(file)
-          val linestart = source.lineToOffset(line.toInt)
-          val pos = comp.rangePos(source, linestart + col1.toInt, linestart + col1.toInt, linestart + col2.toInt)
-          comp.askTypeAt(pos, typeatResult)
-          show(typeatResult)
-        case "quit" :: Nil =>
+        case List("typeat", file, off1, off2) =>
+          doTypeAt(makePos(file, off1, off2))
+        case List("typeat", file, off1) =>
+          doTypeAt(makePos(file, off1, off1))
+        case List("complete", file, off1, off2) =>
+          doComplete(makePos(file, off1, off2))
+        case List("complete", file, off1) =>
+          doComplete(makePos(file, off1, off1))
+        case List("quit") =>
           System.exit(1)
         case _ =>
           println("unrecongized command")

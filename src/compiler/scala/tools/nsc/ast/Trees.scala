@@ -428,7 +428,8 @@ trait Trees {
   object emptyValDef
   extends ValDef(Modifiers(PRIVATE), nme.WILDCARD, TypeTree(NoType), EmptyTree) {
     override def isEmpty = true
-    setPos(NoPosition)
+    super.setPos(NoPosition)
+    override def setPos(pos: Position) = { assert(false); this }
   }
 
   /** Method definition
@@ -612,7 +613,7 @@ trait Trees {
             !vparamss1.head.isEmpty && (vparamss1.head.head.mods.flags & IMPLICIT) != 0)
           vparamss1 = List() :: vparamss1;
         val superRef: Tree = Select(Super(nme.EMPTY.toTypeName, nme.EMPTY.toTypeName), nme.CONSTRUCTOR)
-        val superCall = atPos(parents.head) { (superRef /: argss) (Apply) }
+        val superCall = (superRef /: argss) (Apply)
         List(
           DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(()))))
       }
