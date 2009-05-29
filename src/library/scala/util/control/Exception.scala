@@ -20,6 +20,9 @@ object Exception
   type Catcher[+T] = PartialFunction[Throwable, T]
   type ExceptionCatcher[+T] = PartialFunction[Exception, T]
 
+  // due to the magic of contravariance, Throwable => T is a subtype of
+  // Exception => T, not the other way around.  So we manually construct
+  // a Throwable => T and simply rethrow the non-Exceptions.
   implicit def fromExceptionCatcher[T](pf: ExceptionCatcher[T]): Catcher[T] = {
     new PartialFunction[Throwable, T] {
       def isDefinedAt(x: Throwable) = x match {
@@ -45,40 +48,46 @@ object Exception
   }
 
   /** A container class for finally code. */
-  class Finally(fin: => Unit) extends Described {
+  class Finally private[Exception](body: => Unit) extends Described {
     protected val name = "Finally"
 
-    def and(fin2: => Unit) = new Finally({ fin ; fin2 })
-    def invoke() { fin }
+    def and(other: => Unit) = new Finally({ body ; other })
+    def invoke() { body }
   }
 
-  /** A container class for catch logic. */
-  class Catch[+T](val pf: Catcher[T]) extends Described {
+  /** A container class for catch/finally logic. */
+  class Catch[+T] private[Exception](
+    private[Exception] val pf: Catcher[T],
+    private[Exception] val fin: Finally)
+  extends Described
+  {
+    def this(pf: Catcher[T]) = this(pf, noFinally)
     protected val name = "Catch"
 
     /** Create a new Catch with additional exception handling logic. */
-    def or[U >: T](pf2: Catcher[U]): Catch[U] = new Catch(pf orElse pf2)
-    def or[U >: T](catch2: Catch[U]): Catch[U] = or(catch2.pf)
+    def or[U >: T](pf2: Catcher[U]): Catch[U] = new Catch(pf orElse pf2, fin)
+    def or[U >: T](other: Catch[U]): Catch[U] = or(other.pf)
 
-    /** Invoke this catch logic upon the supplied body. */
-    def invokeOn[U >: T](body: => U): U =
+    /** Apply this catch logic to the supplied body. */
+    def apply[U >: T](body: => U): U =
       try     { body }
       catch   { case e if pf.isDefinedAt(e) => pf(e) }
+      finally { fin.invoke() }
 
     /* Create an empty Try container with this Catch and the supplied Finally */
-    def andFinally(fin: => Unit): Try[T] = andFinally(new Finally(fin))
-    def andFinally(fin: Finally): Try[T] = new Try(throw noTryBody, this, fin)
+    def andFinally(fin2: Finally): Catch[T] = new Catch(pf, fin and fin2)
+    def andFinally(fin: => Unit): Catch[T] = andFinally(new Finally(fin))
 
-    /** Invoke this catch logic upon the supplied body, mapping the result
+    /** Apply this catch logic to the supplied body, mapping the result
      *  into Option[T] - None if any exception was caught, Some(T) otherwise.
      */
-    def opt[U >: T](body: => U): Option[U] = toOption invokeOn Some(body)
+    def opt[U >: T](body: => U): Option[U] = toOption(Some(body))
 
-    /** Invoke this catch logic upon the supplied body, mapping the result
+    /** Apply this catch logic to the supplied body, mapping the result
      *  into Either[Throwable, T] - Left(exception) if an exception was caught,
      *  Right(T) otherwise.
      */
-    def either[U >: T](body: => U): Either[Throwable, U] = toEither invokeOn Right(body)
+    def either[U >: T](body: => U): Either[Throwable, U] = toEither(Right(body))
 
     /** Create a new Catch with the same isDefinedAt logic as this one,
       * but with the supplied apply method replacing the current one. */
@@ -87,7 +96,7 @@ object Exception
         def isDefinedAt(x: Throwable) = pf isDefinedAt x
         def apply(x: Throwable) = f(x)
       }
-      new Catch(pf2)
+      new Catch(pf2, fin)
     }
 
     /** Convenience methods. */
@@ -95,42 +104,34 @@ object Exception
     def toEither: Catch[Either[Throwable, T]] = withApply(Left(_))
   }
 
-  /** A container class for try/catch/finally logic. */
-  class Try[+T](body: => T, val catcher: Catch[T], val fin: Finally) {
-    /** Invoke "body" using catch logic "catcher" and finally "fin" */
-    def invoke(): T                       = withFin { catcher invokeOn body }
-    def invokeOn[U >: T](body2: => U): U  = withFin { catcher invokeOn body2 }
+  /** A container class for Try logic */
+  class Try[+T] private[Exception](body: => T, val catcher: Catch[T]) {
+    /** Execute "body" using catch/finally logic "catcher" */
+    def apply(): T                    = catcher(body)
+    def apply[U >: T](body2: => U): U = catcher(body2)
 
-    /** As invoke, but map caught exceptions to None and success to Some(T) */
-    def opt(): Option[T]                = withFin { catcher opt body }
+    /** As apply, but map caught exceptions to None and success to Some(T) */
+    def opt(): Option[T]                      = catcher opt body
+    def opt[U >: T](body2: => U): Option[U]   = catcher opt body2
 
-    /** As invoke, but map caught exceptions to Left(ex) and success to Right(x) */
-    def either(): Either[Throwable, T]  = withFin { catcher either body }
+    /** As apply, but map caught exceptions to Left(ex) and success to Right(x) */
+    def either(): Either[Throwable, T]                    = catcher either body
+    def either[U >: T](body2: => U): Either[Throwable, U] = catcher either body2
 
     /** Create a new Try with the supplied body replacing the current body */
-    def tryInstead[U >: T](body2: => U) = new Try(body2, catcher, fin)
-
-    /** Create a new Try with the supplied Catch replacing the current Catch */
-    def catchInstead[U >: T](catcher2: Catch[U]) = new Try(body, catcher2, fin)
-
-    /** Create a new Try with the supplied Finally replacing the current Finally */
-    def finInstead(fin2: Finally) = new Try(body, catcher, fin2)
+    def tryInstead[U >: T](body2: => U) = new Try(body2, catcher)
 
     /** Create a new Try with the supplied logic appended to the existing Catch logic. */
-    def or[U >: T](pf2: PartialFunction[Throwable, U]) =
-      new Try(body, catcher or pf2, fin)
+    def or[U >: T](pf2: Catcher[U]) = new Try(body, catcher or pf2)
 
     /** Create a new Try with the supplied code appended to the existing Finally. */
-    def andFinally(fin2: => Unit) = new Try(body, catcher, fin and fin2)
+    def andFinally(fin2: => Unit) = new Try(body, catcher andFinally fin2)
 
-    override def toString() = List("Try(<body>)", catcher.toString, fin.toString) mkString " "
-    private def withFin[T](f: => T) =
-      try     { f }
-      finally { fin.invoke() }
+    override def toString() = List("Try(<body>)", catcher.toString) mkString " "
   }
 
-  /** The empty try block */
-  final val noTryBody = new Exception("No try body defined.")
+  /** The empty Finally object. */
+  final val noFinally = new Finally(()) withDesc "()"
 
   /** The empty Catch object. */
   final val noCatch: Catch[Nothing] = new Catch(
@@ -140,8 +141,6 @@ object Exception
     }
   ) withDesc "<nothing>"
 
-  /** The empty Finally object. */
-  final val noFinally = new Finally(()) withDesc "()"
 
   /** Creates a Catch object which will catch any of the supplied exceptions.
     * Since the returned Catch object has no specific logic defined and will simply
@@ -156,6 +155,7 @@ object Exception
   def ignoring(exceptions: Class[_ <: Throwable]*): Catch[Unit] =
     catching(exceptions: _*) withApply (_ => ())
 
+  /** Creates a Catch object which maps all the supplied exceptions to 'None'. */
   def failing[T](exceptions: Class[_ <: Throwable]*): Catch[Option[T]] =
     catching(exceptions: _*) withApply (_ => None)
 
@@ -163,8 +163,7 @@ object Exception
     def by(f: (Throwable) => T): Catch[T] = catching(exceptions: _*) withApply f
   }
 
-
-  /** Creates a catch object which unwraps any of the supplied exceptions */
+  /** Creates a Catch object which unwraps any of the supplied exceptions. */
   def unwrapping[T](exceptions: Class[_ <: Throwable]*): Catch[T] = {
     def unwrap(x: Throwable): Throwable =
       if (wouldMatch(x, exceptions) && x.getCause != null) unwrap(x.getCause)

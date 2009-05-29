@@ -763,19 +763,20 @@ class Interpreter(val settings: Settings, out: PrintWriter)
     def loadAndRun: (String, Boolean) = {
       val resultObject: Class[_] = loadByName(resultObjectName)
       val resultValMethod: reflect.Method = resultObject getMethod "result"
-      def invocation = (resultValMethod.invoke(resultObject).toString, true)
+      // XXX if wrapperExceptions isn't type-annotated we crash scalac
+      val wrapperExceptions: List[Class[_ <: Throwable]] =
+        List(classOf[InvocationTargetException], classOf[ExceptionInInitializerError])
 
       def onErr: Catcher[(String, Boolean)] = { case t: Throwable =>
         beQuietDuring { bind("lastException", "java.lang.Throwable", t) }
         (stringFrom(t.printStackTrace(_)), false)
       }
 
-      catching(onErr) invokeOn(
-        unwrapping(
-          classOf[InvocationTargetException],
-          classOf[ExceptionInInitializerError]
-        ) invokeOn invocation
-      )
+      catching(onErr) {
+        unwrapping(wrapperExceptions: _*) {
+          (resultValMethod.invoke(resultObject).toString, true)
+        }
+      }
     }
   }
 
