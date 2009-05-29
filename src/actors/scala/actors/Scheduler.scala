@@ -63,13 +63,16 @@ object Scheduler extends IScheduler {
       s
     }
     //Actor.timer = new java.util.Timer
-    while (!tasks.isEmpty()) {
-      sched.execute(tasks.take().asInstanceOf[FJTask])
+    if (tasks ne null) {
+      while (!tasks.isEmpty()) {
+        sched.execute(tasks.take().asInstanceOf[FJTask])
+      }
+      tasks = null
     }
-    tasks = null
   }
 
   def execute(task: Runnable) {
+/*
     val t = currentThread
     if (t.isInstanceOf[FJTaskRunner]) {
       val tr = t.asInstanceOf[FJTaskRunner]
@@ -77,10 +80,12 @@ object Scheduler extends IScheduler {
         def run() { task.run() }
       })
     } else
+*/
       sched execute task
   }
 
   def execute(fun: => Unit) {
+/*
     val t = currentThread
     if (t.isInstanceOf[FJTaskRunner]) {
       val tr = t.asInstanceOf[FJTaskRunner]
@@ -88,6 +93,7 @@ object Scheduler extends IScheduler {
         def run() { fun }
       })
     } else
+*/
       sched execute { fun }
   }
 
