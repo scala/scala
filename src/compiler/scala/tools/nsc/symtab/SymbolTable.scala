@@ -26,9 +26,6 @@ abstract class SymbolTable extends Names
   def rootLoader: LazyType
   def log(msg: AnyRef)
 
-  /** Are we compiling for the J2ME CLDC platform ? */
-  def forCLDC: Boolean
-
   /** Are we compiling for Java SE ? */
   def forJVM: Boolean
 

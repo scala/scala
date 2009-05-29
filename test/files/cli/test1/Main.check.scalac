@@ -15,7 +15,7 @@ where possible options include:
   -encoding <encoding>            Specify character encoding used by source files
   -windowtitle <windowtitle>      Specify window title of generated HTML documentation
   -documenttitle <documenttitle>  Specify document title of generated HTML documentation
-  -target:<target>                Specify which backend to use (jvm-1.5,jvm-1.4,msil,cldc)
+  -target:<target>                Specify which backend to use (jvm-1.5,msil)
   -migrate                        Assist in migrating from Scala version 1.0
   -o <file>                       Name of the output assembly (only relevant with -target:msil)
   -r <path>                       List of assemblies referenced by the program (only relevant with -target:msil)

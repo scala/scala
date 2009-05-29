@@ -485,18 +485,7 @@ trait StdNames {
     final val Code          = newTermName("scala.reflect.Code")
   }
 
-  private class CLDCNames extends JavaNames {
-    final val Serializable  = nme.NOSYMBOL
-    final val BeanProperty  = nme.NOSYMBOL
-    final val Code          = nme.NOSYMBOL
-    final val Method        = nme.NOSYMBOL
-  }
-
-  private var sn0 : SymbolNames = _
-  def sn: SymbolNames = {
-    if (sn0 == null) sn0 = if (forMSIL) new MSILNames
-    else if (forCLDC) new CLDCNames
+  lazy val sn: SymbolNames =
+    if (forMSIL) new MSILNames
     else new J2SENames
-    sn0
-  }
 }

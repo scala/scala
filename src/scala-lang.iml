@@ -20,7 +20,6 @@
       <sourceFolder url="file://$MODULE_DIR$/scalap" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/swing" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/android-library" />
-      <excludeFolder url="file://$MODULE_DIR$/cldc-library" />
       <excludeFolder url="file://$MODULE_DIR$/dotnet-library" />
       <excludeFolder url="file://$MODULE_DIR$/mono" />
     </content>

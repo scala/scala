@@ -323,7 +323,7 @@ trait SyntheticMethods { self: Analyzer =>
           // only for those that carry a @serializable annotation?
           if (!hasImplementation(nme.readResolve)) ts += readResolveMethod
         }
-        if (!forCLDC && !forMSIL)
+        if (!forMSIL)
           for (sym <- clazz.info.decls.toList)
             if (!sym.getAttributes(BeanPropertyAttr).isEmpty)
               if (sym.isGetter)

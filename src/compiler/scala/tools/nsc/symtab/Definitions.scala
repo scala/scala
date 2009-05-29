@@ -533,10 +533,10 @@ trait Definitions {
       val longtype = LongClass.typeConstructor
       val longparam = List(longtype)
 
-      val floattype = if (forCLDC) null else FloatClass.typeConstructor
-      val floatparam = if (forCLDC) null else List(floattype)
-      val doubletype = if (forCLDC) null else DoubleClass.typeConstructor
-      val doubleparam = if (forCLDC) null else List(doubletype)
+      val floattype = FloatClass.typeConstructor
+      val floatparam = List(floattype)
+      val doubletype = DoubleClass.typeConstructor
+      val doubleparam = List(doubletype)
 
       val stringtype = StringClass.typeConstructor
 
@@ -579,10 +579,8 @@ trait Definitions {
         newParameterlessMethod(clazz, nme.toInt,    inttype)
         newParameterlessMethod(clazz, nme.toLong,   longtype)
 
-        if (!forCLDC) {
-          newParameterlessMethod(clazz, nme.toFloat,  floattype)
-          newParameterlessMethod(clazz, nme.toDouble, doubletype)
-        }
+        newParameterlessMethod(clazz, nme.toFloat,  floattype)
+        newParameterlessMethod(clazz, nme.toDouble, doubletype)
 
         // def +(s: String): String
         newMethod(clazz, nme.ADD, List(stringtype), stringtype)
@@ -619,11 +617,10 @@ trait Definitions {
         addBinops(charparam,   restype,    isCardinal)
         addBinops(intparam,    restype,    isCardinal)
         addBinops(longparam,   restype2,   isCardinal)
-        if (!forCLDC) {
-          val restype3 = if (clazz eq DoubleClass) doubletype else floattype
-          addBinops(floatparam,  restype3,   false)
-          addBinops(doubleparam, doubletype, false)
-        }
+
+        val restype3 = if (clazz eq DoubleClass) doubletype else floattype
+        addBinops(floatparam,  restype3,   false)
+        addBinops(doubleparam, doubletype, false)
       }
 
       initValueClass(ByteClass,   true)
@@ -631,10 +628,9 @@ trait Definitions {
       initValueClass(CharClass,   true)
       initValueClass(IntClass,    true)
       initValueClass(LongClass,   true)
-      if (!forCLDC) {
-        initValueClass(FloatClass,  false)
-        initValueClass(DoubleClass, false)
-      }
+      initValueClass(FloatClass,  false)
+      initValueClass(DoubleClass, false)
+
       def addModuleMethod(clazz: Symbol, name: Name, value: Any) {
         val owner = clazz.linkedClassOfClass
         newParameterlessMethod(owner, name, mkConstantType(Constant(value)))
@@ -650,21 +646,19 @@ trait Definitions {
       addModuleMethod(LongClass,  "MinValue",  java.lang.Long.MIN_VALUE)
       addModuleMethod(LongClass,  "MaxValue",  java.lang.Long.MAX_VALUE)
 
-      if (!forCLDC) {
-        addModuleMethod(FloatClass, "MinValue", -java.lang.Float.MAX_VALUE)
-        addModuleMethod(FloatClass, "MaxValue",  java.lang.Float.MAX_VALUE)
-        addModuleMethod(FloatClass, "Epsilon",   java.lang.Float.MIN_VALUE)
-        addModuleMethod(FloatClass, "NaN",       java.lang.Float.NaN)
-        addModuleMethod(FloatClass, "PositiveInfinity", java.lang.Float.POSITIVE_INFINITY)
-        addModuleMethod(FloatClass, "NegativeInfinity", java.lang.Float.NEGATIVE_INFINITY)
+      addModuleMethod(FloatClass, "MinValue", -java.lang.Float.MAX_VALUE)
+      addModuleMethod(FloatClass, "MaxValue",  java.lang.Float.MAX_VALUE)
+      addModuleMethod(FloatClass, "Epsilon",   java.lang.Float.MIN_VALUE)
+      addModuleMethod(FloatClass, "NaN",       java.lang.Float.NaN)
+      addModuleMethod(FloatClass, "PositiveInfinity", java.lang.Float.POSITIVE_INFINITY)
+      addModuleMethod(FloatClass, "NegativeInfinity", java.lang.Float.NEGATIVE_INFINITY)
 
-        addModuleMethod(DoubleClass, "MinValue", -java.lang.Double.MAX_VALUE)
-        addModuleMethod(DoubleClass, "MaxValue",  java.lang.Double.MAX_VALUE)
-        addModuleMethod(DoubleClass, "Epsilon",   java.lang.Double.MIN_VALUE)
-        addModuleMethod(DoubleClass, "NaN",       java.lang.Double.NaN)
-        addModuleMethod(DoubleClass, "PositiveInfinity", java.lang.Double.POSITIVE_INFINITY)
-        addModuleMethod(DoubleClass, "NegativeInfinity", java.lang.Double.NEGATIVE_INFINITY)
-      }
+      addModuleMethod(DoubleClass, "MinValue", -java.lang.Double.MAX_VALUE)
+      addModuleMethod(DoubleClass, "MaxValue",  java.lang.Double.MAX_VALUE)
+      addModuleMethod(DoubleClass, "Epsilon",   java.lang.Double.MIN_VALUE)
+      addModuleMethod(DoubleClass, "NaN",       java.lang.Double.NaN)
+      addModuleMethod(DoubleClass, "PositiveInfinity", java.lang.Double.POSITIVE_INFINITY)
+      addModuleMethod(DoubleClass, "NegativeInfinity", java.lang.Double.NEGATIVE_INFINITY)
     }
 
     /** Is symbol a value class? */
@@ -740,10 +734,8 @@ trait Definitions {
       CharClass =    newValueClass(nme.Char, 'C')
       IntClass =     newValueClass(nme.Int, 'I')
       LongClass =    newValueClass(nme.Long, 'L')
-      if (!forCLDC) {
-        FloatClass =   newValueClass(nme.Float, 'F')
-        DoubleClass =  newValueClass(nme.Double, 'D')
-      }
+      FloatClass =   newValueClass(nme.Float, 'F')
+      DoubleClass =  newValueClass(nme.Double, 'D')
 
       CodeClass = getClass(sn.Code)
       CodeModule = getModule(sn.Code)

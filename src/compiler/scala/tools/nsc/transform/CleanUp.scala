@@ -39,11 +39,9 @@ abstract class CleanUp extends Transform {
       javaBoxClassModule(IntClass)     = getModule("java.lang.Integer")
       javaBoxClassModule(CharClass)    = getModule("java.lang.Character")
       javaBoxClassModule(LongClass)    = getModule("java.lang.Long")
-      if (!forCLDC) {
-        javaBoxClassModule(FloatClass)   = getModule("java.lang.Float")
-        javaBoxClassModule(DoubleClass)  = getModule("java.lang.Double")
-        javaBoxClassModule(UnitClass)    = getModule("java.lang.Void")
-      }
+      javaBoxClassModule(FloatClass)   = getModule("java.lang.Float")
+      javaBoxClassModule(DoubleClass)  = getModule("java.lang.Double")
+      javaBoxClassModule(UnitClass)    = getModule("java.lang.Void")
     }
 
     private var localTyper: analyzer.Typer = null
@@ -351,14 +349,7 @@ abstract class CleanUp extends Transform {
         def mayRequirePrimitiveReplacement: Boolean = {
 
           def isBoxed(sym: Symbol): Boolean =
-            if (forCLDC) {
-              (sym isNonBottomSubClass ByteClass) ||
-              (sym isNonBottomSubClass ShortClass) ||
-              (sym isNonBottomSubClass CharClass) ||
-              (sym isNonBottomSubClass IntClass) ||
-              (sym isNonBottomSubClass LongClass)
-            }
-            else ((sym isNonBottomSubClass BoxedNumberClass) ||
+            ((sym isNonBottomSubClass BoxedNumberClass) ||
               (!forMSIL && (sym isNonBottomSubClass BoxedCharacterClass)))
 
           val sym = qual.tpe.typeSymbol
@@ -719,8 +710,7 @@ abstract class CleanUp extends Transform {
         val tpe = c.typeValue
         atPos(tree.pos) {
           localTyper.typed {
-            if ((isValueClass(tpe.typeSymbol) || tpe.typeSymbol == definitions.UnitClass)
-                && !forCLDC)
+            if (isValueClass(tpe.typeSymbol) || tpe.typeSymbol == definitions.UnitClass)
               Select(gen.mkAttributedRef(javaBoxClassModule(tpe.typeSymbol)), "TYPE")
             else tree
           }

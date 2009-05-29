@@ -126,7 +126,7 @@ object scalac extends Command {
           CmdOption("target:", Argument("target")),
           SeqPara(
             "Specify which backend to use (" & Mono("jvm-1.5," &
-            "msil,cldc") & ").",
+            "msil") & ").",
             "The default value is " & Mono("\"jvm-1.5\"") & " (was " &
             Mono("\"jvm-1.4\"") & " up to Scala version 2.6.1).")),
         Definition(

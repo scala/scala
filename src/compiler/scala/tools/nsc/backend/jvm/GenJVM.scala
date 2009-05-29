@@ -157,19 +157,18 @@ abstract class GenJVM extends SubComponent {
       if (parents.isEmpty)
         parents = definitions.ObjectClass.tpe :: parents;
 
-      if (!forCLDC)
-        for (attr <- c.symbol.attributes) attr match {
-          case AnnotationInfo(tp, _, _) if tp.typeSymbol == SerializableAttr =>
-            parents = parents ::: List(definitions.SerializableClass.tpe)
-          case AnnotationInfo(tp, _, _) if tp.typeSymbol == CloneableAttr =>
-            parents = parents ::: List(CloneableClass.tpe)
-          case AnnotationInfo(tp, value :: _, _) if tp.typeSymbol == SerialVersionUID =>
-            serialVUID = Some(value.constant.get.longValue)
-          case AnnotationInfo(tp, _, _) if tp.typeSymbol == RemoteAttr =>
-            parents = parents ::: List(RemoteInterface.tpe)
-            remoteClass = true
-          case _ => ()
-        }
+      for (attr <- c.symbol.attributes) attr match {
+        case AnnotationInfo(tp, _, _) if tp.typeSymbol == SerializableAttr =>
+          parents = parents ::: List(definitions.SerializableClass.tpe)
+        case AnnotationInfo(tp, _, _) if tp.typeSymbol == CloneableAttr =>
+          parents = parents ::: List(CloneableClass.tpe)
+        case AnnotationInfo(tp, value :: _, _) if tp.typeSymbol == SerialVersionUID =>
+          serialVUID = Some(value.constant.get.longValue)
+        case AnnotationInfo(tp, _, _) if tp.typeSymbol == RemoteAttr =>
+          parents = parents ::: List(RemoteInterface.tpe)
+          remoteClass = true
+        case _ => ()
+      }
 
       parents = parents.removeDuplicates
 
@@ -614,15 +613,12 @@ abstract class GenJVM extends SubComponent {
         case _ => false
       }
 
-      if (remoteClass ||
-          (meth.hasAttribute(RemoteAttr)
-           && jmethod.isPublic()
-           && !forCLDC)) {
-          val ainfo = AnnotationInfo(ThrowsAttr.tpe, List(new AnnotationArgument(Constant(RemoteException))), List())
-          if (!meth.attributes.exists(isRemoteThrows)) {
-            meth.attributes = ainfo :: meth.attributes;
-          }
+      if (remoteClass || (meth.hasAttribute(RemoteAttr) && jmethod.isPublic())) {
+        val ainfo = AnnotationInfo(ThrowsAttr.tpe, List(new AnnotationArgument(Constant(RemoteException))), List())
+        if (!meth.attributes.exists(isRemoteThrows)) {
+          meth.attributes = ainfo :: meth.attributes;
         }
+      }
     }
 
 

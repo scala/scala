@@ -28,10 +28,8 @@ trait ModelFrames extends ModelExtractor {
     SyntheticClasses ++= List(
       NothingClass, NullClass, AnyClass, AnyRefClass, AnyValClass,
       //value classes
-      BooleanClass, ByteClass, CharClass, IntClass, LongClass, ShortClass, UnitClass)
-
-    if (!global.forCLDC)
-      SyntheticClasses ++= List(FloatClass, DoubleClass)
+      BooleanClass, ByteClass, CharClass, IntClass, LongClass, ShortClass,
+      FloatClass, DoubleClass, UnitClass)
   }
 
   val outdir      = settings.outdir.value

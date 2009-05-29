@@ -481,10 +481,8 @@ trait TypeKinds { self: ICodes =>
     primitiveTypeMap += (definitions.CharClass -> CHAR)
     primitiveTypeMap += (definitions.IntClass -> INT)
     primitiveTypeMap += (definitions.LongClass -> LONG)
-    if (!forCLDC) {
-      primitiveTypeMap += (definitions.FloatClass -> FLOAT)
-      primitiveTypeMap += (definitions.DoubleClass -> DOUBLE)
-    }
+    primitiveTypeMap += (definitions.FloatClass -> FLOAT)
+    primitiveTypeMap += (definitions.DoubleClass -> DOUBLE)
 //    primitiveTypeMap += (definitions.StringClass -> STRING)
   }
 

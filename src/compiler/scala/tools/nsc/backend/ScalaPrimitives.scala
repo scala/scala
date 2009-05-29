@@ -276,10 +276,8 @@ abstract class ScalaPrimitives {
     addPrimitives(ByteClass, nme.UNARY_-, NEG)
     addPrimitives(ByteClass, nme.UNARY_~, NOT)
 
-    if (!forCLDC) {
-      addPrimitives(ByteClass, nme.toFloat,  B2F)
-      addPrimitives(ByteClass, nme.toDouble, B2D)
-    }
+    addPrimitives(ByteClass, nme.toFloat,  B2F)
+    addPrimitives(ByteClass, nme.toDouble, B2D)
 
     // scala.Short
     addPrimitives(ShortClass, nme.EQ, EQ)
@@ -310,10 +308,8 @@ abstract class ScalaPrimitives {
     addPrimitives(ShortClass, nme.UNARY_-, NEG)
     addPrimitives(ShortClass, nme.UNARY_~, NOT)
 
-    if (!forCLDC) {
-      addPrimitives(ShortClass, nme.toFloat,  S2F)
-      addPrimitives(ShortClass, nme.toDouble, S2D)
-    }
+    addPrimitives(ShortClass, nme.toFloat,  S2F)
+    addPrimitives(ShortClass, nme.toDouble, S2D)
 
     // scala.Char
     addPrimitives(CharClass, nme.EQ, EQ)
@@ -343,10 +339,8 @@ abstract class ScalaPrimitives {
     addPrimitives(CharClass, nme.UNARY_+, POS)
     addPrimitives(CharClass, nme.UNARY_-, NEG)
     addPrimitives(CharClass, nme.UNARY_~, NOT)
-    if (!forCLDC) {
-      addPrimitives(CharClass, nme.toFloat,  C2F)
-      addPrimitives(CharClass, nme.toDouble, C2D)
-    }
+    addPrimitives(CharClass, nme.toFloat,  C2F)
+    addPrimitives(CharClass, nme.toDouble, C2D)
 
     // scala.Int
     addPrimitives(IntClass, nme.EQ, EQ)
@@ -376,10 +370,8 @@ abstract class ScalaPrimitives {
     addPrimitives(IntClass, nme.UNARY_+, POS)
     addPrimitives(IntClass, nme.UNARY_-, NEG)
     addPrimitives(IntClass, nme.UNARY_~, NOT)
-    if (!forCLDC) {
-      addPrimitives(IntClass, nme.toFloat,  I2F)
-      addPrimitives(IntClass, nme.toDouble, I2D)
-    }
+    addPrimitives(IntClass, nme.toFloat,  I2F)
+    addPrimitives(IntClass, nme.toDouble, I2D)
 
     // scala.Long
     addPrimitives(LongClass, nme.EQ, EQ)
@@ -409,60 +401,57 @@ abstract class ScalaPrimitives {
     addPrimitives(LongClass, nme.UNARY_+, POS)
     addPrimitives(LongClass, nme.UNARY_-, NEG)
     addPrimitives(LongClass, nme.UNARY_~, NOT)
-    if (!forCLDC) {
-      addPrimitives(LongClass, nme.toFloat,  L2F)
-      addPrimitives(LongClass, nme.toDouble, L2D)
-    }
+    addPrimitives(LongClass, nme.toFloat,  L2F)
+    addPrimitives(LongClass, nme.toDouble, L2D)
 
-    if (!forCLDC) {
-      // scala.Float
-      addPrimitives(FloatClass, nme.EQ, EQ)
-      addPrimitives(FloatClass, nme.NE, NE)
-      addPrimitives(FloatClass, nme.ADD, ADD)
-      addPrimitives(FloatClass, nme.SUB, SUB)
-      addPrimitives(FloatClass, nme.MUL, MUL)
-      addPrimitives(FloatClass, nme.DIV, DIV)
-      addPrimitives(FloatClass, nme.MOD, MOD)
-      addPrimitives(FloatClass, nme.LT, LT)
-      addPrimitives(FloatClass, nme.LE, LE)
-      addPrimitives(FloatClass, nme.GT, GT)
-      addPrimitives(FloatClass, nme.GE, GE)
-      // conversions
-      addPrimitives(FloatClass, nme.toByte,   F2B)
-      addPrimitives(FloatClass, nme.toShort,  F2S)
-      addPrimitives(FloatClass, nme.toChar,   F2C)
-      addPrimitives(FloatClass, nme.toInt,    F2I)
-      addPrimitives(FloatClass, nme.toLong,   F2L)
-      addPrimitives(FloatClass, nme.toFloat,  F2F)
-      addPrimitives(FloatClass, nme.toDouble, F2D)
-      // unary methods
-      addPrimitives(FloatClass, nme.UNARY_+, POS)
-      addPrimitives(FloatClass, nme.UNARY_-, NEG)
+    // scala.Float
+    addPrimitives(FloatClass, nme.EQ, EQ)
+    addPrimitives(FloatClass, nme.NE, NE)
+    addPrimitives(FloatClass, nme.ADD, ADD)
+    addPrimitives(FloatClass, nme.SUB, SUB)
+    addPrimitives(FloatClass, nme.MUL, MUL)
+    addPrimitives(FloatClass, nme.DIV, DIV)
+    addPrimitives(FloatClass, nme.MOD, MOD)
+    addPrimitives(FloatClass, nme.LT, LT)
+    addPrimitives(FloatClass, nme.LE, LE)
+    addPrimitives(FloatClass, nme.GT, GT)
+    addPrimitives(FloatClass, nme.GE, GE)
+    // conversions
+    addPrimitives(FloatClass, nme.toByte,   F2B)
+    addPrimitives(FloatClass, nme.toShort,  F2S)
+    addPrimitives(FloatClass, nme.toChar,   F2C)
+    addPrimitives(FloatClass, nme.toInt,    F2I)
+    addPrimitives(FloatClass, nme.toLong,   F2L)
+    addPrimitives(FloatClass, nme.toFloat,  F2F)
+    addPrimitives(FloatClass, nme.toDouble, F2D)
+    // unary methods
+    addPrimitives(FloatClass, nme.UNARY_+, POS)
+    addPrimitives(FloatClass, nme.UNARY_-, NEG)
 
-      // scala.Double
-      addPrimitives(DoubleClass, nme.EQ, EQ)
-      addPrimitives(DoubleClass, nme.NE, NE)
-      addPrimitives(DoubleClass, nme.ADD, ADD)
-      addPrimitives(DoubleClass, nme.SUB, SUB)
-      addPrimitives(DoubleClass, nme.MUL, MUL)
-      addPrimitives(DoubleClass, nme.DIV, DIV)
-      addPrimitives(DoubleClass, nme.MOD, MOD)
-      addPrimitives(DoubleClass, nme.LT, LT)
-      addPrimitives(DoubleClass, nme.LE, LE)
-      addPrimitives(DoubleClass, nme.GT, GT)
-      addPrimitives(DoubleClass, nme.GE, GE)
-      // conversions
-      addPrimitives(DoubleClass, nme.toByte,   D2B)
-      addPrimitives(DoubleClass, nme.toShort,  D2S)
-      addPrimitives(DoubleClass, nme.toChar,   D2C)
-      addPrimitives(DoubleClass, nme.toInt,    D2I)
-      addPrimitives(DoubleClass, nme.toLong,   D2L)
-      addPrimitives(DoubleClass, nme.toFloat,  D2F)
-      addPrimitives(DoubleClass, nme.toDouble, D2D)
-      // unary methods
-      addPrimitives(DoubleClass, nme.UNARY_+, POS)
-      addPrimitives(DoubleClass, nme.UNARY_-, NEG)
-    }
+    // scala.Double
+    addPrimitives(DoubleClass, nme.EQ, EQ)
+    addPrimitives(DoubleClass, nme.NE, NE)
+    addPrimitives(DoubleClass, nme.ADD, ADD)
+    addPrimitives(DoubleClass, nme.SUB, SUB)
+    addPrimitives(DoubleClass, nme.MUL, MUL)
+    addPrimitives(DoubleClass, nme.DIV, DIV)
+    addPrimitives(DoubleClass, nme.MOD, MOD)
+    addPrimitives(DoubleClass, nme.LT, LT)
+    addPrimitives(DoubleClass, nme.LE, LE)
+    addPrimitives(DoubleClass, nme.GT, GT)
+    addPrimitives(DoubleClass, nme.GE, GE)
+    // conversions
+    addPrimitives(DoubleClass, nme.toByte,   D2B)
+    addPrimitives(DoubleClass, nme.toShort,  D2S)
+    addPrimitives(DoubleClass, nme.toChar,   D2C)
+    addPrimitives(DoubleClass, nme.toInt,    D2I)
+    addPrimitives(DoubleClass, nme.toLong,   D2L)
+    addPrimitives(DoubleClass, nme.toFloat,  D2F)
+    addPrimitives(DoubleClass, nme.toDouble, D2D)
+    // unary methods
+    addPrimitives(DoubleClass, nme.UNARY_+, POS)
+    addPrimitives(DoubleClass, nme.UNARY_-, NEG)
+
     // and the type map!
     initPrimitiveTypeMap
   }
