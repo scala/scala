@@ -16,7 +16,7 @@ import scala.collection.immutable.ListSet
 import scala.collection.mutable
 import scala.collection.mutable.{ ListBuffer, HashSet, ArrayBuffer }
 import scala.util.{ ScalaClassLoader, URLClassLoader }
-import scala.util.control.Exception.reflectionUnwrapper
+import scala.util.control.Exception.{ Catcher, catching, unwrapping }
 
 import io.{ PlainFile, VirtualDirectory }
 import reporters.{ ConsoleReporter, Reporter }
@@ -763,22 +763,19 @@ class Interpreter(val settings: Settings, out: PrintWriter)
     def loadAndRun: (String, Boolean) = {
       val resultObject: Class[_] = loadByName(resultObjectName)
       val resultValMethod: reflect.Method = resultObject getMethod "result"
-      lazy val pair = (resultValMethod.invoke(resultObject).toString, true)
+      def invocation = (resultValMethod.invoke(resultObject).toString, true)
 
-      def unwrap(e: Throwable): Throwable = e match {
-        case (_: InvocationTargetException | _: ExceptionInInitializerError) if e.getCause ne null =>
-          unwrap(e.getCause)
-        case _ => e
+      def onErr: Catcher[(String, Boolean)] = { case t: Throwable =>
+        beQuietDuring { bind("lastException", "java.lang.Throwable", t) }
+        (stringFrom(t.printStackTrace(_)), false)
       }
 
-      (reflectionUnwrapper either pair) match {
-        case Left(e)                =>
-          val unwrapped = unwrap(e)
-          beQuietDuring { bind("lastException", "java.lang.Throwable", unwrapped) }
-
-          (stringFrom(unwrapped.printStackTrace(_)), false)
-        case Right((res, success))  => (res, success)
-      }
+      catching(onErr) invokeOn(
+        unwrapping(
+          classOf[InvocationTargetException],
+          classOf[ExceptionInInitializerError]
+        ) invokeOn invocation
+      )
     }
   }
 
