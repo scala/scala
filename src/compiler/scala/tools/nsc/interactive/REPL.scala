@@ -33,7 +33,7 @@ object REPL {
     else {
       try {
         object compiler extends Global(command.settings, reporter) {
-//          printTypings = true
+          printTypings = true
         }
         if (reporter.hasErrors) {
           reporter.flush()

@@ -116,6 +116,10 @@ trait Trees {
       this
     }
 
+    def setOriginal(tree: Tree): this.type = {
+      setPos(SyntheticAliasPosition(tree))
+    }
+
     def setType(tp: Type): this.type = {
       /*assert(kindingIrrelevant(tp) || !kindStar || !tp.isHigherKinded,
                tp+" should not be higher-kinded");*/
@@ -424,6 +428,7 @@ trait Trees {
   object emptyValDef
   extends ValDef(Modifiers(PRIVATE), nme.WILDCARD, TypeTree(NoType), EmptyTree) {
     override def isEmpty = true
+    setPos(NoPosition)
   }
 
   /** Method definition
@@ -585,7 +590,7 @@ trait Trees {
       vparamss map (vps => vps.map { vd =>
         ValDef(
           Modifiers(vd.mods.flags & IMPLICIT | PARAM) withAnnotations vd.mods.annotations,
-          vd.name, vd.tpt.duplicate, EmptyTree).setPos(vd.pos)
+          vd.name, vd.tpt.duplicate, EmptyTree).setOriginal(vd)
        })
     val (edefs, rest) = body span treeInfo.isEarlyDef
     val (evdefs, etdefs) = edefs partition treeInfo.isEarlyValDef
@@ -607,7 +612,7 @@ trait Trees {
             !vparamss1.head.isEmpty && (vparamss1.head.head.mods.flags & IMPLICIT) != 0)
           vparamss1 = List() :: vparamss1;
         val superRef: Tree = Select(Super(nme.EMPTY.toTypeName, nme.EMPTY.toTypeName), nme.CONSTRUCTOR)
-        val superCall = atPos(parents.head.pos) { (superRef /: argss) (Apply) }
+        val superCall = atPos(parents.head) { (superRef /: argss) (Apply) }
         List(
           DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(()))))
       }
@@ -824,12 +829,8 @@ trait Trees {
   case class TypeTree() extends TypTree {
     override def symbol = if (tpe == null) null else tpe.typeSymbol
 
-    def setOriginal(tree: Tree): this.type = {
-      setPos(SyntheticPosition(tree))
-    }
-
     def original: Tree = pos match {
-      case SyntheticPosition(orig) => orig
+      case SyntheticAliasPosition(orig) => orig
       case _ => null
     }
 
@@ -1705,9 +1706,26 @@ trait Trees {
     }
   }
 
+  object syntheticMaker extends Traverser {
+    override def traverse(t: Tree) {
+      if (!t.pos.isSynthetic) {
+        t setPos t.pos.toSynthetic
+        super.traverse(t)
+      }
+    }
+  }
+
   def atPos[T <: Tree](pos: Position)(tree: T): T = {
     posAssigner.pos = pos
     posAssigner.traverse(tree)
+    tree
+  }
+
+  def atPos[T <: Tree](original: Tree)(tree: T): T =
+    atPos(SyntheticAliasPosition(original))(tree)
+
+  def makeSynthetic[T <: Tree](tree: T): T = {
+    syntheticMaker.traverse(tree)
     tree
   }
 
@@ -1789,7 +1807,7 @@ trait Trees {
   /** A position to be used for synthetic trees that correspond to some original tree
    *  @note Trees with synthetic positions may not contain trees with real positions inside them!
    */
-  case class SyntheticPosition(original: Tree) extends Position {
+  case class SyntheticAliasPosition(original: Tree) extends Position {
     override def isDefined: Boolean = true
     override def isSynthetic: Boolean = true
     override def offset: Option[Int] = original.pos.offset
@@ -1798,7 +1816,9 @@ trait Trees {
     override def point: Int = original.pos.point
     override def end: Int = original.pos.end
     override def underlying = original.pos.underlying
-    override def focus = original.pos.focus
+    override def focusStart = original.pos.focusStart
+    override def focusPoint = original.pos.focusPoint
+    override def focusEnd = original.pos.focusEnd
     override def show = "["+ underlying.show +"]"
   }
 }

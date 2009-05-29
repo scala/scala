@@ -91,7 +91,7 @@ self: Global =>
       case ct :: trees1 =>
         if (isTransparent(ct.pos))
           iterate(ranges, solidDescendants(ct) ::: trees1)
-        else if (ct.pos.isDefined) {
+        else if (ct.pos.isDefined && !ct.pos.isSynthetic) {
           val conflicting = new ListBuffer[Tree]
           val ranges1 = insert(ranges, ct, conflicting)
           if (conflicting.isEmpty) {
@@ -113,9 +113,11 @@ self: Global =>
   def findOverlapping(cts: List[Tree]): List[(Tree, Tree)] = {
     var ranges = List(maxFree)
     for (ct <- cts) {
-      val conflicting = new ListBuffer[Tree]
-      ranges = insert(ranges, ct, conflicting)
-      if (conflicting.nonEmpty) return conflicting.toList map (t => (t, ct))
+      if (ct.pos.isDefined && !ct.pos.isSynthetic) {
+        val conflicting = new ListBuffer[Tree]
+        ranges = insert(ranges, ct, conflicting)
+        if (conflicting.nonEmpty) return conflicting.toList map (t => (t, ct))
+      }
     }
     List()
   }
@@ -123,7 +125,6 @@ self: Global =>
   // -------------- setting positions -------------------------------
 
   /** The sorted list of descendant nodes, a long positions */
-
 
   /** Set position of all children of a node
    *  @param  pos   A target position.
@@ -179,12 +180,15 @@ self: Global =>
       inform(tree.toString)
     }
     def validate(tree: Tree, encltree: Tree) {
+      if (tree != EmptyTree && !tree.pos.isDefined)
+        error("tree without position: "+tree)
       if (encltree.pos.isSynthetic && !tree.pos.isSynthetic)
         error("synthetic "+encltree+" contains nonsynthetic" + tree)
       if (!(encltree.pos includes tree.pos))
         error(encltree+" does not include "+tree)
       for ((t1, t2) <- findOverlapping(tree.children flatMap solidDescendants))
         error("overlapping trees: "+t1+" === and === "+t2)
+      for (ct <- tree.children flatMap solidDescendants) validate(ct, tree)
     }
     validate(tree, tree)
   }

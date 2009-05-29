@@ -17,6 +17,7 @@ trait Position {
   def source: Option[SourceFile] = None
   def isDefined: Boolean = false
   def isSynthetic: Boolean = false
+  def toSynthetic: Position = this
 
   def start: Int = point
   def point: Int = offset.get
@@ -26,8 +27,31 @@ trait Position {
   def pointOrElse(d: Int) = offset.getOrElse(d)
   def endOrElse(d: Int) = offset.getOrElse(d)
 
+  def withStart(off: Int) = this
+  def withEnd(off: Int) = this
+  def withPoint(off: Int) = this
+
+  /** If this is a range, the union with the other range, with the point of this position.
+   *  Otherwise, this position
+   */
+  def union(pos: Position) = this
+
   def underlying = this
-  def focus = this
+
+  /** If this is a range position, the offset position of its start.
+   *  Otherwise the position itself
+   */
+  def focusStart = this
+
+  /** If this is a range position, the offset position of its point.
+   *  Otherwise the position itself
+   */
+  def focusPoint = this
+
+  /** If this is a range position, the offset position of its end.
+   *  Otherwise the position itself
+   */
+  def focusEnd = this
 
   def includes(pos: Position) =
     isDefined && pos.isDefined && start <= pos.start && pos.end <= end
@@ -113,7 +137,9 @@ case class FakePos(msg: String) extends Position {
 case class OffsetPosition(source0: SourceFile, offset0: Int) extends Position {
   override def source = Some(source0)
   override def offset = Some(offset0)
+  override def withPoint(off: Int) = new OffsetPosition(source0, off)
   override def isDefined = true
+  override def toSynthetic: Position = new SyntheticOffsetPosition(source0, offset0)
   override def equals(that : Any) = that match {
   case that : OffsetPosition => offset0 == that.offset0 && source0.file == that.source0.file
   case that => false
@@ -122,17 +148,46 @@ case class OffsetPosition(source0: SourceFile, offset0: Int) extends Position {
   override def show = "["+point+"]"
 }
 
+class SyntheticOffsetPosition(source0: SourceFile, offset0: Int) extends OffsetPosition(source0, offset0) {
+  override def isSynthetic = true
+  override def toSynthetic = this
+  override def withPoint(off: Int) = new SyntheticOffsetPosition(source0, off)
+}
+
 /** new for position ranges */
 class RangePosition(source0: SourceFile, override val start: Int, override val point: Int, override val end: Int)
 extends OffsetPosition(source0, point) {
   override def isDefined = true
   override def startOrElse(d: Int) = start
   override def pointOrElse(d: Int) = point
+  override def withStart(off: Int) = new RangePosition(source0, off, point, end)
+  override def withEnd(off: Int) = new RangePosition(source0, start, off, end)
+  override def withPoint(off: Int) = new RangePosition(source0, start, point, off)
+  override def union(pos: Position) = new RangePosition(source0, start min pos.start, point, end max pos.end)
   override def endOrElse(d: Int) = end
-  override def focus = OffsetPosition(source0, point)
+  override def focusStart = OffsetPosition(source0, start)
+  override def focusPoint = OffsetPosition(source0, point)
+  override def focusEnd = OffsetPosition(source0, end)
+  override def toSynthetic = new SyntheticRangePosition(source0, start, point, end)
   override def toString = "RangePosition("+source0+", "+start+", "+point+", "+end+")"
   override def show = "["+start+":"+end+"]"
 }
+
+/** A position to be used for synthetic trees that do not correspond to some original tree
+ *  @note Trees with synthetic positions may not contain trees with real positions inside them!
+ */
+class SyntheticRangePosition(source0: SourceFile, start: Int, point: Int, end: Int) extends RangePosition(source0, start, point, end) {
+  override def isSynthetic = true
+  override def toSynthetic = this
+  override def withStart(off: Int) = new SyntheticRangePosition(source0, off, point, end)
+  override def withEnd(off: Int) = new SyntheticRangePosition(source0, start, off, end)
+  override def withPoint(off: Int) = new SyntheticRangePosition(source0, start, point, off)
+  override def union(pos: Position) = new SyntheticRangePosition(source0, start min pos.start, point, end max pos.end)
+  override def focusStart = new SyntheticOffsetPosition(source0, start)
+  override def focusPoint = new SyntheticOffsetPosition(source0, point)
+  override def focusEnd = new SyntheticOffsetPosition(source0, end)
+}
+
 
 
 

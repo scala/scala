@@ -576,13 +576,13 @@ trait Typers { self: Analyzer =>
             case _ =>
           }
         }
-        val qual = typedQualifier {
+        val qual = typedQualifier { atPos(tree.pos.focusStart) {
           tree match {
             case Ident(_) => Ident(nme.PACKAGEkw)
             case Select(qual, _) => Select(qual, nme.PACKAGEkw)
             case SelectFromTypeTree(qual, _) => Select(qual, nme.PACKAGEkw)
           }
-        }
+        }}
         val tree1 = atPos(tree.pos) {
           tree match {
             case Ident(name) => Select(qual, name)
@@ -1226,12 +1226,12 @@ trait Typers { self: Analyzer =>
         assert(getter != NoSymbol, stat)
         if (getter hasFlag OVERLOADED)
           error(getter.pos, getter+" is defined twice")
-        val getterDef: DefDef = {
+        val getterDef: DefDef = atPos(vdef) {
           getter.attributes = value.initialize.attributes
           val result = DefDef(getter, vparamss =>
               if (mods hasFlag DEFERRED) EmptyTree
               else typed(
-                atPos(vdef.pos) { gen.mkCheckInit(Select(This(value.owner), value)) },
+                atPos(vdef) { gen.mkCheckInit(Select(This(value.owner), value)) },
                 EXPRmode, value.tpe))
           result.tpt.asInstanceOf[TypeTree] setOriginal tpt /* setPos tpt.pos */
           checkNoEscaping.privates(getter, result.tpt)
@@ -1242,7 +1242,7 @@ trait Typers { self: Analyzer =>
         def setterDef: DefDef = {
           val setr = getter.setter(value.owner)
           setr.attributes = value.attributes
-          val result = atPos(vdef.pos)(
+          val result = atPos(vdef)(
             DefDef(setr, vparamss =>
               if ((mods hasFlag DEFERRED) || (setr hasFlag OVERLOADED))
                 EmptyTree
@@ -3071,7 +3071,7 @@ trait Typers { self: Analyzer =>
             else if (!defSym.owner.isClass || defSym.owner.isPackageClass || defSym.isTypeParameterOrSkolem)
               pre = NoPrefix
             else
-              qual = atPos(tree.pos)(gen.mkAttributedQualifier(pre))
+              qual = atPos(tree.pos.focusStart)(gen.mkAttributedQualifier(pre))
           } else {
             if (impSym.exists) {
               var impSym1 = NoSymbol
@@ -3097,7 +3097,7 @@ trait Typers { self: Analyzer =>
                 imports1 = imports1.tail
               }
               defSym = impSym
-              qual = atPos(tree.pos)(resetPos(imports.head.qual.duplicate))
+              qual = atPos(tree.pos.focusStart)(resetPos(imports.head.qual.duplicate))
               pre = qual.tpe
             } else {
               if (settings.debug.value) {
@@ -3267,10 +3267,12 @@ trait Typers { self: Analyzer =>
           if (selector == EmptyTree) {
             val arity = if (isFunctionType(pt)) pt.normalize.typeArgs.length - 1 else 1
             val params = for (i <- List.range(0, arity)) yield
-              ValDef(Modifiers(PARAM | SYNTHETIC),
-                  unit.fresh.newName(tree.pos, "x" + i + "$"), TypeTree(), EmptyTree)
+              atPos(tree.pos.focusStart) {
+                ValDef(Modifiers(PARAM | SYNTHETIC),
+                       unit.fresh.newName(tree.pos, "x" + i + "$"), TypeTree(), EmptyTree)
+              }
             val ids = for (p <- params) yield Ident(p.name)
-            val selector1 = atPos(tree.pos) { if (arity == 1) ids.head else gen.mkTuple(ids) }
+            val selector1 = atPos(tree.pos.focusStart) { if (arity == 1) ids.head else gen.mkTuple(ids) }
             val body = copy.Match(tree, selector1, cases)
             typed1(atPos(tree.pos) { Function(params, body) }, mode, pt)
           } else {
@@ -3426,7 +3428,7 @@ trait Typers { self: Analyzer =>
 
         case TypeTree() =>
           tree.pos match {
-            case SyntheticPosition(original) =>
+            case SyntheticAliasPosition(original) =>
               tree setType typedType(original, mode).tpe
             case _ =>
               // we should get here only when something before failed
