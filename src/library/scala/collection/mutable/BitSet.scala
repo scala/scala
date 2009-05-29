@@ -60,6 +60,9 @@ class BitSet (protected var elems: Array[Long]) extends Set[Int]
   def += (elem: Int): this.type = { add(elem); this }
   def -= (elem: Int): this.type = { remove(elem); this }
 
+  override def clear() {
+    elems = new Array[Long](elems.length)
+  }
   def toImmutable = immutable.BitSet.fromArray(elems)
 
   override def clone(): BitSet = {
