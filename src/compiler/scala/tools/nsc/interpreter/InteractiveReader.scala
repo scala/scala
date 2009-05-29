@@ -5,6 +5,7 @@
 // $Id$
 
 package scala.tools.nsc.interpreter
+import scala.util.control.Exception._
 
 /** Reads lines from an input stream */
 trait InteractiveReader {
@@ -14,14 +15,12 @@ trait InteractiveReader {
   protected def readOneLine(prompt: String): String
   val interactive: Boolean
 
-  def readLine(prompt: String): String =
-    try {
-      readOneLine(prompt)
-    }
-    catch {
+  def readLine(prompt: String): String = {
+    def handler: Catcher[String] = {
       case e: IOException if restartSystemCall(e) => readLine(prompt)
-      case e => throw e
     }
+    catching(handler) { readOneLine(prompt) }
+  }
 
   // hack necessary for OSX jvm suspension because read calls are not restarted after SIGTSTP
   private def restartSystemCall(e: Exception): Boolean =
@@ -31,6 +30,7 @@ trait InteractiveReader {
 
 object InteractiveReader {
   val msgEINTR = "Interrupted system call"
+  private val exes = List(classOf[Exception], classOf[NoClassDefFoundError])
 
   def createDefault(): InteractiveReader = createDefault(null)
 
@@ -38,10 +38,8 @@ object InteractiveReader {
    *  library is available, but otherwise uses a <code>SimpleReader</code>.
    */
   def createDefault(interpreter: Interpreter): InteractiveReader =
-    try {
-      new JLineReader(interpreter)
-    } catch {
-      case _: Exception | _: NoClassDefFoundError => new SimpleReader
-    }
+    catching(exes: _*)
+      . opt (new JLineReader(interpreter))
+      . getOrElse (new SimpleReader)
 }
 

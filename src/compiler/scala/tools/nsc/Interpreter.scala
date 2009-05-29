@@ -16,7 +16,7 @@ import scala.collection.immutable.ListSet
 import scala.collection.mutable
 import scala.collection.mutable.{ ListBuffer, HashSet, ArrayBuffer }
 import scala.util.{ ScalaClassLoader, URLClassLoader }
-import scala.util.control.Exception.{ Catcher, catching, unwrapping }
+import scala.util.control.Exception.{ Catcher, catching, ultimately, unwrapping }
 
 import io.{ PlainFile, VirtualDirectory }
 import reporters.{ ConsoleReporter, Reporter }
@@ -94,11 +94,9 @@ class Interpreter(val settings: Settings, out: PrintWriter)
   /** Temporarily be quiet */
   def beQuietDuring[T](operation: => T): T = {
     val wasPrinting = printResults
-    try {
+    ultimately(printResults = wasPrinting) {
       printResults = false
       operation
-    } finally {
-      printResults = wasPrinting
     }
   }
 
