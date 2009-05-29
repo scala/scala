@@ -23,6 +23,9 @@ trait CompilerControl { self: Global =>
       unit
   }
 
+  /** Remove the corresponding CompilationUnit from consideration for recompilation */
+  def removeUnitOf(s: SourceFile) = unitOfFile remove s.file
+
   /** The compilation unit corresponding to a position */
   def unitOf(pos: Position): RichCompilationUnit = unitOf(pos.source.get)
 
