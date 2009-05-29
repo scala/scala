@@ -4,7 +4,7 @@ object Test {
   val rt = Runtime.getRuntime()
   val sender = actor {
     var cnt = 0
-    while(cnt < 1000) {
+    while(cnt < 500) {
       if ((cnt % 100) == 0) println(cnt)
       receiver ! new Array[Int] (1048576)
       cnt += 1
