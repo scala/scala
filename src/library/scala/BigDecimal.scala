@@ -60,7 +60,7 @@ object BigDecimal {
    *  @return  the constructed <code>BigDecimal</code>
    */
   def apply(d: Double): BigDecimal =
-    new BigDecimal(new BigDec(d))
+    new BigDecimal(BigDec.valueOf(d))
 
   /** Translates a character array representation of a <code>BigDecimal</code>
    *  into a <code>BigDecimal</code>.
