@@ -427,18 +427,6 @@ abstract class ClassfileParser {
             clazz.newConstructor(NoPosition)
             .setFlag(clazz.flags & ConstrFlags)
             .setInfo(MethodType(List(), clazz.tpe)))
-
-          // If the annotation has an attribute with name 'value'
-          // add a constructor for it
-          if (isAnnotation) {
-            val value = instanceDefs.lookup(nme.value)
-            if (value != NoSymbol) {
-              val constr = clazz.newConstructor(NoPosition)
-              instanceDefs.enter(constr
-                .setFlag(clazz.flags & ConstrFlags)
-                .setInfo(MethodType(constr.newSyntheticValueParams(List(value.tpe.resultType)), clazz.tpe)))
-            }
-          }
         }
     } else
       parseAttributes(clazz, classInfo)
@@ -752,78 +740,87 @@ abstract class ClassfileParser {
               staticModule.moduleClass.sourceFile = clazz.sourceFile
             }
           }
+        // Attribute on methods of java annotation classes when that method has a default
         case nme.AnnotationDefaultATTR =>
-          sym.attributes =
-            AnnotationInfo(definitions.AnnotationDefaultAttr.tpe, List(), List()) :: sym.attributes
+          sym.addAnnotation(AnnotationInfo(definitions.AnnotationDefaultAttr.tpe, List(), List()))
           in.skip(attrLen)
+        // Java annotatinos on classes / methods / fields with RetentionPolicy.RUNTIME
         case nme.RuntimeAnnotationATTR =>
-          parseAnnotations(attrLen)
-          if (settings.debug.value)
-            global.inform("" + sym + "; attributes = " + sym.attributes)
+          if (!isScala) {
+            // no need to read annotations if isScala, ClassfileAnnotations are pickled
+            parseAnnotations(attrLen)
+            if (settings.debug.value)
+              global.inform("" + sym + "; annotations = " + sym.annotations)
+          } else
+            in.skip(attrLen)
+
+        // TODO 1: parse runtime visible annotations on parameters
+        // case nme.RuntimeParamAnnotationATTR
+
+        // TODO 2: also parse RuntimeInvisibleAnnotation / RuntimeInvisibleParamAnnotation,
+        // i.e. java annotations with RetentionPolicy.CLASS?
         case _ =>
           in.skip(attrLen)
       }
     }
-    def parseTaggedConstant: Constant = {
+
+    def parseAnnotationArgument: Option[ConstantAnnotationArgument] = {
       val tag = in.nextByte
       val index = in.nextChar
       tag match {
-        case STRING_TAG => Constant(pool.getName(index).toString())
-        case BOOL_TAG   => pool.getConstant(index)
-        case BYTE_TAG   => pool.getConstant(index)
-        case CHAR_TAG   => pool.getConstant(index)
-        case SHORT_TAG  => pool.getConstant(index)
-        case INT_TAG    => pool.getConstant(index)
-        case LONG_TAG   => pool.getConstant(index)
-        case FLOAT_TAG  => pool.getConstant(index)
-        case DOUBLE_TAG => pool.getConstant(index)
-        case CLASS_TAG  => Constant(pool.getType(index))
+        case STRING_TAG =>
+          Some(LiteralAnnotationArgument(Constant(pool.getName(index).toString())))
+        case BOOL_TAG | BYTE_TAG | CHAR_TAG | SHORT_TAG | INT_TAG |
+             LONG_TAG | FLOAT_TAG | DOUBLE_TAG =>
+          Some(LiteralAnnotationArgument(pool.getConstant(index)))
+        case CLASS_TAG  =>
+          Some(LiteralAnnotationArgument(Constant(pool.getType(index))))
         case ENUM_TAG   =>
           val t = pool.getType(index)
           val n = pool.getName(in.nextChar)
           val s = t.typeSymbol.linkedModuleOfClass.info.decls.lookup(n)
           assert(s != NoSymbol, t)
-          Constant(s)
+          Some(LiteralAnnotationArgument(Constant(s)))
         case ARRAY_TAG  =>
-          val arr = new ArrayBuffer[Constant]()
-          for (i <- 0 until index) {
-            arr += parseTaggedConstant
-          }
-          new ArrayConstant(arr.toArray,
-              appliedType(definitions.ArrayClass.typeConstructor, List(arr(0).tpe)))
-	case ANNOTATION_TAG =>
-	  parseAnnotation(index)  // skip it
-	  new AnnotationConstant()
+          val arr = new ArrayBuffer[ConstantAnnotationArgument]()
+          var hasError = false
+          for (i <- 0 until index)
+            parseAnnotationArgument match {
+              case Some(c) => arr += c
+              case None => hasError = true
+            }
+          if (hasError) None
+          else Some(ArrayAnnotationArgument(arr.toArray))
+        case ANNOTATION_TAG =>
+          parseAnnotation(index) map (NestedAnnotationArgument(_))
       }
     }
 
     /** Parse and return a single annotation.  If it is malformed,
-     *  or it contains a nested annotation, return None.
+     *  return None.
      */
-    def parseAnnotation(attrNameIndex: Char): Option[AnnotationInfo] =
-      try {
-        val attrType = pool.getType(attrNameIndex)
-        val nargs = in.nextChar
-        val nvpairs = new ListBuffer[(Name,AnnotationArgument)]
-        var nestedAnnot = false  // if a nested annotation is seen,
-                                 // then skip this annotation
-        for (i <- 0 until nargs) {
-          val name = pool.getName(in.nextChar)
-          val argConst = parseTaggedConstant
-          if (argConst.tag == AnnotationTag)
-            nestedAnnot = true
-          else
-            nvpairs += ((name, new AnnotationArgument(argConst)))
+    def parseAnnotation(attrNameIndex: Char): Option[AnnotationInfo] = try {
+      val attrType = pool.getType(attrNameIndex)
+      val nargs = in.nextChar
+      val nvpairs = new ListBuffer[(Name,ConstantAnnotationArgument)]
+      var hasError = false
+      for (i <- 0 until nargs) {
+        val name = pool.getName(in.nextChar)
+        parseAnnotationArgument match {
+          case Some(c) => nvpairs += ((name, c))
+          case None => hasError = true
         }
-
-        if (nestedAnnot)
-          None
-        else
-          Some(AnnotationInfo(attrType, List(), nvpairs.toList))
-      } catch {
-        case f: FatalError => throw f // don't eat fatal errors, they mean a class was not found
-        case ex: Throwable => None // ignore malformed annotations ==> t1135
       }
+      if (hasError) None
+      else Some(AnnotationInfo(attrType, List(), nvpairs.toList))
+    } catch {
+      case f: FatalError => throw f // don't eat fatal errors, they mean a class was not found
+      case ex: Throwable =>
+        if (settings.debug.value)
+          global.inform("dropping annotation on " + sym +
+                        ", an error occured during parsing (e.g. annotation  class not found)")
+        None // ignore malformed annotations ==> t1135
+    }
 
     /** Parse a sequence of annotations and attach them to the
      *  current symbol sym.
@@ -832,12 +829,9 @@ abstract class ClassfileParser {
       val nAttr = in.nextChar
       for (n <- 0 until nAttr)
         parseAnnotation(in.nextChar) match {
-          case None =>
-            if (settings.debug.value)
-              global.inform("dropping annotation on " +
-                              sym + " that has a nested annotation")
           case Some(annot) =>
-            sym.attributes = annot :: sym.attributes
+            sym.addAnnotation(annot)
+          case None =>
         }
     }
 

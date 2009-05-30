@@ -82,12 +82,11 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
   /** Add a new key/value mapping and return the map itself.
    *
    *  @param kv    the key/value mapping to be added
-   *  @deprecated  This operation will create a new map in the future. To add
-   *               an element as a side effect to an existing map and return
-   *               that map itself, use +=. If you do want to create a fresh map,
-   *               you can use `clone() +=` to avoid a @deprecated warning.
    */
-  @deprecated def + (kv: (A, B)): this.type = { update(kv._1, kv._2); this }
+  @deprecated("This operation will create a new map in the future. To add an element as a side\n"+
+              "effect to an existing map and return that map itself, use +=. If you do want\n"+
+              "to create a fresh map, you can use `clone() +=' to avoid a @deprecated warning.")
+ def + (kv: (A, B)): this.type = { update(kv._1, kv._2); this }
 
   /** Adds two or more key/value mappings and return the map itself.
    *  with the added elements.
@@ -95,37 +94,35 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
    *  @param elem1 the first element to add.
    *  @param elem2 the second element to add.
    *  @param elems the remaining elements to add.
-   *  @deprecated  This operation will create a new map in the future. To add
-   *               an element as a side effect to an existing map and return
-   *               that map itself, use +=. If you do want to create a fresh map,
-   *               you can use `clone() +=` to avoid a @deprecated warning.
    */
-  @deprecated def +(elem1: (A, B), elem2: (A, B), elems: (A, B)*): this.type =
+  @deprecated("This operation will create a new map in the future. To add an element as a side\n"+
+              "effect to an existing map and return that map itself, use +=. If you do want to\n"+
+              "create a fresh map, you can use `clone() +=` to avoid a @deprecated warning.")
+  def +(elem1: (A, B), elem2: (A, B), elems: (A, B)*): this.type =
     this += elem1 += elem2 ++= elems
 
   /** Adds a number of elements provided by a traversable object
    *  via its <code>iterator</code> method and returns
    *  either the collection itself (if it is mutable), or a new collection
    *  with the added elements.
-   *  @deprecated  This operation will create a new map in the future. To add
-   *               elements as a side effect to an existing map and return
-   *               that map itself, use ++=. If you do want to create a fresh map,
-   *               you can use `clone() ++=` to avoid a @deprecated warning.
+   *
    *  @param iter     the traversable object.
    */
-  @deprecated def ++(iter: Traversable[(A, B)]): this.type = { for (elem <- iter) +=(elem); this }
+  @deprecated("This operation will create a new map in the future. To add elements as a side\n"+
+              "effect to an existing map and return that map itself, use ++=. If you do want\n"+
+              "to create a fresh map, you can use `clone() ++=` to avoid a @deprecated warning.")
+  def ++(iter: Traversable[(A, B)]): this.type = { for (elem <- iter) +=(elem); this }
 
   /** Adds a number of elements provided by an iterator
    *  via its <code>iterator</code> method and returns
    *  the collection itself.
-   *  @deprecated  This operation will create a new map in the future. To add
-   *               elements as a side effect to an existing map and return
-   *               that map itself, use ++=. If you do want to create a fresh map,
-   *               you can use `clone() +=` to avoid a @deprecated warning.
    *
    *  @param iter   the iterator
    */
-  @deprecated def ++(iter: Iterator[(A, B)]): this.type = { for (elem <- iter) +=(elem); this }
+  @deprecated("This operation will create a new map in the future. To add elements as a side\n"+
+              "effect to an existing map and return that map itself, use ++=. If you do want\n"+
+              "to create a fresh map, you can use `clone() +=` to avoid a @deprecated warning.")
+  def ++(iter: Iterator[(A, B)]): this.type = { for (elem <- iter) +=(elem); this }
 
   /** If given key is defined in this map, remove it and return associated value as an Option.
    *  If key is not present return None.
@@ -145,19 +142,17 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
 
   /** Delete a key from this map if it is present and return the map itself.
    *  @param    key the key to be removed
-   *  @deprecated  This operation will create a new map in the future. To add
-   *               elements as a side effect to an existing map and return
-   *               that map itself, use -=. If you do want to create a fresh map,
-   *               you can use `clone() -=` to avoid a @deprecated warning.
    */
-  @deprecated override def -(key: A): This = { -=(key); thisCollection }
+  @deprecated("This operation will create a new map in the future. To add elements as a side\n"+
+              "effect to an existing map and return that map itself, use -=. If you do want\n"+
+              "to create a fresh map, you can use `clone() -=` to avoid a @deprecated warning.")
+  override def -(key: A): This = { -=(key); thisCollection }
 
   /** If given key is defined in this map, remove it and return associated value as an Option.
    *  If key is not present return None.
    *  @param    key the key to be removed
-   *  @deprecated  Use `remove` instead.
    */
-   @deprecated def removeKey(key: A): Option[B] = remove(key)
+   @deprecated("Use `remove' instead") def removeKey(key: A): Option[B] = remove(key)
 
 
   /** Removes all elements from the set. After this operation is completed,
@@ -191,8 +186,8 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
    *  <code>p</code> returns <code>true</code>.
    *
    * @param p  The test predicate
-   * @deprecated cannot be type inferred because of retain in Iterable.
    */
+  @deprecated("cannot be type inferred because of retain in Iterable.")
   def retain(p: (A, B) => Boolean): this.type = {
     for ((k, v) <- this) if (!p(k, v)) -=(k)
     this
@@ -213,22 +208,22 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
    *  @param elem1 the first element to remove.
    *  @param elem2 the second element to remove.
    *  @param elems the remaining elements to remove.
-   *  @deprecated  use -= instead if you intend to remove by side effect from an existing collection.
-   *               Use `clone() -=` if you intend to create a new collection.
    */
-  @deprecated override def -(elem1: A, elem2: A, elems: A*): This = {
+  @deprecated("Use -= instead if you intend to remove by side effect from an existing collection.\n"+
+              "Use `clone() -=' if you intend to create a new collection.")
+  override def -(elem1: A, elem2: A, elems: A*): This = {
     this -= elem1 -= elem2 --= elems
     thisCollection
   }
 
   /** Removes a number of elements provided by a traversible object and returns
    *  the collection itself.
-   *  @deprecated  use --= instead if you intend to remove by side effect from an existing collection.
-   *               Use `clone() --=` if you intend to create a new collection.
    *
    *  @param iter     the iterable object.
    */
-  @deprecated override def --(iter: Traversable[A]): This = {
+  @deprecated("Use --= instead if you intend to remove by side effect from an existing collection.\n"+
+              "Use `clone() --=' if you intend to create a new collection.")
+  override def --(iter: Traversable[A]): This = {
     for (elem <- iter) -=(elem)
     thisCollection
   }
@@ -238,10 +233,10 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
    *  the collection itself.
    *
    *  @param iter   the iterator
-   *  @deprecated  use --= instead if you intend to remove by side effect from an existing collection.
-   *               Use `clone() --=` if you intend to create a new collection.
    */
-  @deprecated override def --(iter: Iterator[A]): This = {
+  @deprecated("Use --= instead if you intend to remove by side effect from an existing collection.\n"+
+              "Use `clone() --=' if you intend to create a new collection.")
+  override def --(iter: Iterator[A]): This = {
     for (elem <- iter) -=(elem)
     thisCollection
   }

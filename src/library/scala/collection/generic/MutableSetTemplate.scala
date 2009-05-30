@@ -103,10 +103,10 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
    *  the collection itself.
    *
    *  @param elem  the element to add.
-   *  @deprecated  use += instead if you intend to add by side effect to an existing collection.
-   *               Use `clone() +=` if you intend to create a new collection.
    */
-  @deprecated override def + (elem: A): This = { +=(elem); thisCollection }
+  @deprecated("Use += instead if you intend to add by side effect to an existing collection.\n"+
+              "Use `clone() +=' if you intend to create a new collection.")
+ override def + (elem: A): This = { +=(elem); thisCollection }
 
   /** Adds two or more elements to this collection and returns
    *  the collection itself.
@@ -114,10 +114,10 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
    *  @param elem1 the first element to add.
    *  @param elem2 the second element to add.
    *  @param elems the remaining elements to add.
-   *  @deprecated  use += instead if you intend to add by side effect to an existing collection.
-   *               Use `clone() +=` if you intend to create a new collection.
    */
-  @deprecated override def + (elem1: A, elem2: A, elems: A*): This = {
+  @deprecated("Use += instead if you intend to add by side effect to an existing collection.\n"+
+              "Use `clone() +=' if you intend to create a new collection.")
+  override def + (elem1: A, elem2: A, elems: A*): This = {
     this += elem1 += elem2 ++= elems
     thisCollection
   }
@@ -126,10 +126,10 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
    *  either the collection itself.
    *
    *  @param iter     the iterable object.
-   *  @deprecated  use ++= instead if you intend to add by side effect to an existing collection.
-   *               Use `clone() ++=` if you intend to create a new collection.
    */
-  @deprecated override def ++(iter: Traversable[A]): This = {
+  @deprecated("Use ++= instead if you intend to add by side effect to an existing collection.\n"+
+              "Use `clone() ++=' if you intend to create a new collection.")
+  override def ++(iter: Traversable[A]): This = {
     for (elem <- iter) +=(elem)
     thisCollection
   }
@@ -139,10 +139,10 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
    *  the collection itself.
    *
    *  @param iter   the iterator
-   *  @deprecated  use ++= instead if you intend to add by side effect to an existing collection.
-   *               Use `clone() ++=` if you intend to create a new collection.
    */
-  @deprecated override def ++ (iter: Iterator[A]): This = {
+  @deprecated("Use ++= instead if you intend to add by side effect to an existing collection.\n"+
+              "Use `clone() ++=' if you intend to create a new collection.")
+  override def ++ (iter: Iterator[A]): This = {
     for (elem <- iter) +=(elem)
     thisCollection
   }
@@ -151,10 +151,10 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
    *  the collection itself.
    *
    *  @param elem  the element to remove.
-   *  @deprecated  use -= instead if you intend to remove by side effect from an existing collection.
-   *               Use `clone() -=` if you intend to create a new collection.
    */
-  @deprecated override def -(elem: A): This = { -=(elem); thisCollection }
+  @deprecated("Use -= instead if you intend to remove by side effect from an existing collection.\n"+
+              "Use `clone() -=' if you intend to create a new collection.")
+  override def -(elem: A): This = { -=(elem); thisCollection }
 
   /** Removes two or more elements from this collection and returns
    *  the collection itself.
@@ -162,22 +162,22 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
    *  @param elem1 the first element to remove.
    *  @param elem2 the second element to remove.
    *  @param elems the remaining elements to remove.
-   *  @deprecated  use -= instead if you intend to remove by side effect from an existing collection.
-   *               Use `clone() -=` if you intend to create a new collection.
    */
-  @deprecated override def -(elem1: A, elem2: A, elems: A*): This = {
+  @deprecated("Use -= instead if you intend to remove by side effect from an existing collection.\n"+
+              "Use `clone() -=' if you intend to create a new collection.")
+  override def -(elem1: A, elem2: A, elems: A*): This = {
     this -= elem1 -= elem2 --= elems
     thisCollection
   }
 
   /** Removes a number of elements provided by a traversible object and returns
    *  the collection itself.
-   *  @deprecated  use --= instead if you intend to remove by side effect from an existing collection.
-   *               Use `clone() --=` if you intend to create a new collection.
    *
    *  @param iter     the iterable object.
    */
-  @deprecated override def --(iter: Traversable[A]): This = {
+  @deprecated("Use --= instead if you intend to remove by side effect from an existing collection.\n"+
+              "Use `clone() --=' if you intend to create a new collection.")
+  override def --(iter: Traversable[A]): This = {
     for (elem <- iter) -=(elem)
     thisCollection
   }
@@ -186,10 +186,10 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
    *  the collection itself.
    *
    *  @param iter   the iterator
-   *  @deprecated  use --= instead if you intend to remove by side effect from an existing collection.
-   *               Use `clone() --=` if you intend to create a new collection.
    */
-  @deprecated override def --(iter: Iterator[A]): This = {
+  @deprecated("Use --= instead if you intend to remove by side effect from an existing collection.\n"+
+              "Use `clone() --=' if you intend to create a new collection.")
+  override def --(iter: Iterator[A]): This = {
     for (elem <- iter) -=(elem)
     thisCollection
   }

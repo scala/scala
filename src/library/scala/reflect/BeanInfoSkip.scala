@@ -10,7 +10,7 @@
 
 package scala.reflect
 
-/** This attribute indicates that bean information should
+/** This annotation indicates that bean information should
  *  <strong>not</strong> be generated for the val, var, or def that it is
  *  attached to.
  *

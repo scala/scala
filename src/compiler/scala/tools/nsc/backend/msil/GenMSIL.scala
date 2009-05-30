@@ -294,29 +294,30 @@ abstract class GenMSIL extends SubComponent {
       }
     }
 
-    def addAttributes(member: ICustomAttributeSetter, attributes: List[AnnotationInfo]) {
-      return // FIXME
-
+    def addAttributes(member: ICustomAttributeSetter, annotations: List[AnnotationInfo]) {
+      return // TODO: implement at some point
+    }
+/*
       if (settings.debug.value)
-        log("creating attributes: " + attributes + " for member : " + member)
-      for (attr@ AnnotationInfo(typ, annArgs, nvPairs) <- attributes ;
-           if attr.isConstant)
-           /* !typ.typeSymbol.hasFlag(Flags.JAVA) */
+        log("creating annotations: " + annotations + " for member : " + member)
+      for (annot@ AnnotationInfo(typ, annArgs, nvPairs) <- annotations ;
+           if annot.isConstant)
+           //!typ.typeSymbol.hasFlag(Flags.JAVA)
       {
 //        assert(consts.length <= 1,
-//               "too many constant arguments for attribute; "+consts.toString())
+//               "too many constant arguments for annotations; "+consts.toString())
 
-        // Problem / TODO having the symbol of the attribute type would be nicer
+        // Problem / TODO having the symbol of the annotations type would be nicer
         // (i hope that type.typeSymbol is the same as the one in types2create)
-        // AND: this will crash if the attribute Type is already compiled (-> not a typeBuilder)
+        // AND: this will crash if the annotations Type is already compiled (-> not a typeBuilder)
         // when this is solved, types2create will be the same as icodes.classes, thus superfluous
-        val attrType: TypeBuilder = getType(typ.typeSymbol).asInstanceOf[TypeBuilder]
-//        val attrType: MsilType = getType(typ.typeSymbol)
+        val annType: TypeBuilder = getType(typ.typeSymbol).asInstanceOf[TypeBuilder]
+//        val annType: MsilType = getType(typ.typeSymbol)
 
         // Problem / TODO: i have no idea which constructor is used. This
         // information should be available in AnnotationInfo.
-        attrType.CreateType() // else, GetConstructors can't be used
-        val constr: ConstructorInfo = attrType.GetConstructors()(0)
+        annType.CreateType() // else, GetConstructors can't be used
+        val constr: ConstructorInfo = annType.GetConstructors()(0)
         // prevent a second call of CreateType, only needed because there's no
         // otehr way than GetConstructors()(0) to get the constructor, if there's
         // no constructor symbol available.
@@ -327,9 +328,9 @@ abstract class GenMSIL extends SubComponent {
             (for((n,v) <- nvPairs) yield (n, v.constant.get)))
         member.SetCustomAttribute(constr, args)
       }
-    }
+    } */
 
-    def getAttributeArgs(consts: List[Constant], nvPairs: List[(Name, Constant)]): Array[Byte] = {
+/*    def getAttributeArgs(consts: List[Constant], nvPairs: List[(Name, Constant)]): Array[Byte] = {
       val buf = ByteBuffer.allocate(2048) // FIXME: this may be not enough!
       buf.order(ByteOrder.LITTLE_ENDIAN)
       buf.putShort(1.toShort) // signature
@@ -431,7 +432,7 @@ abstract class GenMSIL extends SubComponent {
 
       val length = buf.position()
       buf.array().slice(0, length)
-    }
+    } */
 
     def writeAssembly() {
       if (entryPoint != null) {
@@ -533,7 +534,7 @@ abstract class GenMSIL extends SubComponent {
         assert(!isTopLevelModule(sym), "can't remove the 'if'")
       }
 
-      addAttributes(tBuilder, sym.attributes)
+      addAttributes(tBuilder, sym.annotations)
 
       if (iclass.symbol != definitions.ArrayClass)
         iclass.methods foreach genMethod
@@ -1858,10 +1859,10 @@ abstract class GenMSIL extends SubComponent {
       mf = mf | (if (sym.isTrait && !sym.isImplClass) TypeAttributes.Interface else TypeAttributes.Class)
       mf = mf | (if (sym isFinal) TypeAttributes.Sealed else 0)
 
-      sym.attributes foreach { a => a match {
+      sym.annotations foreach { a => a match {
         case AnnotationInfo(SerializableAttr, _, _) =>
-          // TODO: add the Serializable TypeAttribute also if the attribute
-          // System.SerializableAttribute is present (.net attribute, not scala)
+          // TODO: add the Serializable TypeAttribute also if the annotation
+          // System.SerializableAttribute is present (.net annotation, not scala)
           //  Best way to do it: compare with
           //  definitions.getClass("System.SerializableAttribute").tpe
           //  when frontend available
@@ -1906,9 +1907,9 @@ abstract class GenMSIL extends SubComponent {
         mf = mf | FieldAttributes.Static
 
       // TRANSIENT: "not nerialized", VOLATILE: doesn't exist on .net
-      // TODO: add this attribute also if the class has the custom attribute
+      // TODO: add this annotation also if the class has the custom attribute
       // System.NotSerializedAttribute
-      sym.attributes.foreach( a => a match {
+      sym.annotations.foreach( a => a match {
         case AnnotationInfo(TransientAtt, _, _) =>
           mf = mf | FieldAttributes.NotSerialized
         case _ => ()
@@ -2062,7 +2063,7 @@ abstract class GenMSIL extends SubComponent {
         var attributes = msilFieldFlags(sym)
         val fBuilder = mtype.DefineField(msilName(sym), msilType(sym.tpe), attributes)
         fields(sym.asInstanceOf[clrTypes.global.Symbol]) = fBuilder
-        addAttributes(fBuilder, sym.attributes)
+        addAttributes(fBuilder, sym.annotations)
       }
 
       if (iclass.symbol != definitions.ArrayClass)
@@ -2084,7 +2085,7 @@ abstract class GenMSIL extends SubComponent {
             constr.DefineParameter(i, ParameterAttributes.None, msilName(m.params(i).sym))
           }
           mapConstructor(sym, constr)
-          addAttributes(constr, sym.attributes)
+          addAttributes(constr, sym.annotations)
         } else {
           var resType = msilType(m.returnType)
           val method =
@@ -2094,7 +2095,7 @@ abstract class GenMSIL extends SubComponent {
           }
           if (!methods.contains(sym.asInstanceOf[clrTypes.global.Symbol]))
             mapMethod(sym, method)
-          addAttributes(method, sym.attributes)
+          addAttributes(method, sym.annotations)
           if (settings.debug.value)
             log("\t created MethodBuilder " + method)
         }
@@ -2123,7 +2124,7 @@ abstract class GenMSIL extends SubComponent {
     }
 
     private def isCloneable(sym: Symbol): Boolean = {
-      !sym.attributes.forall( a => a match {
+      !sym.annotations.forall( a => a match {
         case AnnotationInfo(CloneableAttr, _, _) => false
         case _ => true
       })

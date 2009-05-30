@@ -200,7 +200,7 @@ extends VectorView[Int, Vector[Int]] with RangeToString[Int]
 }
 
 object Range {
-  /** @deprecated use Range.inclusive instead */
+  @deprecated("use Range.inclusive instead")
   final class Inclusive(start: Int, end0: Int, step: Int)
       extends Range(start, if (step > 0) end0 + 1 else end0 - 1, step) { self =>
     override def by(step: Int): Range = new Inclusive(start, end0, step)

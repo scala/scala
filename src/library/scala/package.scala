@@ -2,10 +2,8 @@ package object scala {
   type Iterable[+A] = scala.collection.Iterable[A]
   val Iterable = scala.collection.Iterable
 
-  /** @deprecated  use Iterable instead */
-  @deprecated type Collection[+A] = Iterable[A]
-  /** @deprecated  use Iterable instead */
-  @deprecated val Collection = Iterable
+  @deprecated("use Iterable instead") type Collection[+A] = Iterable[A]
+  @deprecated("use Iterable instead") val Collection = Iterable
 
   type Seq[+A] = scala.collection.Sequence[A]
   val Seq = scala.collection.Sequence

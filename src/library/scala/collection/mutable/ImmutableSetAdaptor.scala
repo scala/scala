@@ -41,7 +41,7 @@ class ImmutableSetAdaptor[A](protected var set: immutable.Set[A]) extends Set[A]
 
   def iterator: Iterator[A] = set.iterator
 
-  @deprecated override def elements: Iterator[A] = iterator
+  @deprecated("use `iterator' instead") override def elements: Iterator[A] = iterator
 
   def +=(elem: A): this.type = { set = set + elem; this }
 

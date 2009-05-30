@@ -84,7 +84,7 @@ trait ModelExtractor {
     override def toString = sym.toString
     def comment: Option[String] = global.comments.get(sym)
     // comments decoded, now what?
-    def attributes = sym.attributes
+    def attributes = sym.annotations
     def decodeComment: Option[Comment] = {
       val comment0 = this.comment
       if (comment0.isEmpty) None
@@ -190,7 +190,7 @@ trait ModelExtractor {
   trait TopLevel extends ClassOrObject
   class TopLevelClass (sym: Symbol) extends Entity(sym) with TopLevel with Clazz
   class TopLevelObject(sym: Symbol) extends Entity(sym) with TopLevel with Object {
-    override def attributes = sym.moduleClass.attributes
+    override def attributes = sym.moduleClass.annotations
   }
 
   def compare(pathA: List[ClassOrObject], pathB: List[ClassOrObject]): Int = {
@@ -337,7 +337,7 @@ trait ModelExtractor {
     case class NestedClass(override val sym: ClassSymbol) extends NestedClassOrObject(sym) with Clazz
 
     case class NestedObject(override val sym: ModuleSymbol) extends NestedClassOrObject(sym) with Object {
-      override def attributes = sym.moduleClass.attributes
+      override def attributes = sym.moduleClass.annotations
     }
 
     def isVisible(sym: Symbol): Boolean = {

@@ -396,8 +396,11 @@ trait StdNames {
     val SignatureATTR = newTermName("Signature")
     val ScalaSignatureATTR = newTermName("ScalaSig")
     val AnnotationDefaultATTR = newTermName("AnnotationDefault")
+    // Stores Java annotations with RetentionPolicy.RUNTIME
     val RuntimeAnnotationATTR = newTermName("RuntimeVisibleAnnotations")
+    // Stores Java annotations with RetentionPolicy.CLASS. Currently not used (Apr 2009).
     val ClassfileAnnotationATTR = newTermName("RuntimeInvisibleAnnotations")
+    // Stores Java annotations on parameters with RetentionPolicy.RUNTIME
     val RuntimeParamAnnotationATTR = newTermName("RuntimeVisibleParameterAnnotations")
     val ScalaATTR = newTermName("Scala")
   }

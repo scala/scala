@@ -144,16 +144,20 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
   def times[T](n: Int, op: ()=>T): List[T] =
     if (n == 0) List() else op() :: times(n-1, op)
 
-  /** Create an index.
+  /** Pickle = majorVersion_Nat minorVersion_Nat nbEntries_Nat {Entry}
+   *  Entry  = type_Nat length_Nat [actual entries]
    *
-   *  @return ...
+   *  Assumes that the ..Version_Nat are already consumed.
+   *
+   *  @return an array mapping entry numbers to locations in
+   *  the byte array where the entries start.
    */
   def createIndex: Array[Int] = {
-    val index = new Array[Int](readNat())
+    val index = new Array[Int](readNat()) // nbEntries_Nat
     for (i <- 0 until index.length) {
       index(i) = readIndex
-      readByte()
-      readIndex = readNat() + readIndex
+      readByte() // skip type_Nat
+      readIndex = readNat() + readIndex // read length_Nat, jump to next entry
     }
     index
   }

@@ -457,8 +457,8 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
           var checkExhaustive = true
           var requireSwitch = false
 
-          def isUncheckedAnnotation(tpe: Type) = tpe hasAttribute UncheckedClass
-          def isSwitchAnnotation(tpe: Type) = tpe hasAttribute SwitchClass
+          def isUncheckedAnnotation(tpe: Type) = tpe hasAnnotation UncheckedClass
+          def isSwitchAnnotation(tpe: Type) = tpe hasAnnotation SwitchClass
 
           nselector match {
             case Typed(nselector1, tpt) =>

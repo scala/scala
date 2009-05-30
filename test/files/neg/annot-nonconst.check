@@ -1,9 +1,9 @@
 annot-nonconst.scala:1: warning: implementation restriction: subclassing Classfile does not
 make your annotation visible at runtime.  If that is what
 you want, you must write the annotation class in Java.
-class Length(n: Int) extends ClassfileAnnotation
+class Length(value: Int) extends ClassfileAnnotation
       ^
-annot-nonconst.scala:5: error: attribute argument needs to be a constant; found: Test.this.n
+annot-nonconst.scala:5: error: annotation argument needs to be a constant; found: n
   @Length(n) def foo = "foo"
           ^
 one warning found

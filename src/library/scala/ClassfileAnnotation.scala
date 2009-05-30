@@ -20,4 +20,4 @@ package scala
  *  @author  Martin Odersky
  *  @version 1.1, 2/02/2007
  */
-trait ClassfileAnnotation extends Annotation
+trait ClassfileAnnotation extends StaticAnnotation

@@ -17,8 +17,8 @@ package scala.util.parsing.input
 object CharArrayReader {
   final val EofCh = '\032'
 
-  /** @deprecated  This should probably be LF instead? */
-  @deprecated final val CR = '\015'
+  @deprecated("This should probably be LF instead?")
+  final val CR = '\015'
 }
 
 /** A character array reader reads a stream of characters (keeping track of their positions)

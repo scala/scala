@@ -57,10 +57,8 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
     x;
   }
 
-  /**
-   * View the top element of the stack.
-   * @deprecated use top instead
-   */
+  /** View the top element of the stack. */
+  @deprecated("use top instead")
   def peek = top
 
   /**

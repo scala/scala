@@ -780,7 +780,11 @@ abstract class RefChecks extends InfoTransform {
        */
       def checkDeprecated(sym: Symbol, pos: Position) {
         if (sym.isDeprecated && !currentOwner.ownerChain.exists(_.isDeprecated)) {
-          unit.deprecationWarning(pos, sym+sym.locationString+" is deprecated")
+          val dmsg = sym.deprecationMessage
+          val msg = sym.toString + sym.locationString +" is deprecated"+
+                    (if (dmsg.isDefined) ": "+ dmsg.get
+                     else "")
+          unit.deprecationWarning(pos, msg)
         }
       }
 
@@ -836,18 +840,24 @@ abstract class RefChecks extends InfoTransform {
           } traverse tree.tpe
         }
 
-      // if this tree can carry modifiers, make sure any annotations also conform to type bounds; bug #935
+      // Apply RefChecks to annotations. Makes sure the annotations conform to
+      // type bounds (bug #935), issues deprecation warnings for symbols used
+      // inside annotations.
       tree match {
-        case x: MemberDef   => checkAnnotations(x.mods.annotations.map(a => (a.tpe, a.pos)))
-        case TypeTree()     => doTypeTraversal {
-          case AnnotatedType(attribs, _, _) => checkAnnotations(attribs.map(a => (a.atp, tree.pos)))
+        case m: MemberDef =>
+          checkAnnotations(m.symbol.annotations.map(a => (a.atp, tree.pos)))
+          transformTrees(m.symbol.annotations.flatMap(a => a.args.map(_.intTree)))
+        case TypeTree() => doTypeTraversal {
+          case AnnotatedType(annots, _, _) =>
+            checkAnnotations(annots.map(a => (a.atp, tree.pos)))
+            transformTrees(annots.flatMap(a => a.args.map(_.intTree)))
           case _ =>
         }
-        case _              =>
+        case _ =>
       }
 
       tree match {
-        case DefDef(mods, name, tparams, vparams, tpt, EmptyTree) if tree.symbol.hasAttribute(definitions.NativeAttr) =>
+        case DefDef(mods, name, tparams, vparams, tpt, EmptyTree) if tree.symbol.hasAnnotation(definitions.NativeAttr) =>
           tree.symbol.resetFlag(DEFERRED)
           result = transform(treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt,
                 typed(Apply(gen.mkAttributedRef(definitions.Predef_error), List(Literal("native method stub"))))))

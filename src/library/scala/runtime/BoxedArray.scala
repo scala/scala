@@ -139,6 +139,6 @@ abstract class BoxedArray[A] extends Vector[A] with VectorTemplate[A, BoxedArray
     (count, memo)
   }
 
-  /** @deprecated use slice instead */
-  @deprecated def subArray(from: Int, end: Int): BoxedArray[A] = slice(from, end)
+  @deprecated("use slice instead")
+  def subArray(from: Int, end: Int): BoxedArray[A] = slice(from, end)
 }

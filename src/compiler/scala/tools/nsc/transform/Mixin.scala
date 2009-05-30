@@ -284,7 +284,7 @@ abstract class Mixin extends InfoTransform {
                               setFlag (LOCAL | PRIVATE | member.getFlag(MUTABLE | LAZY))
                               setFlag (if (!member.hasFlag(STABLE)) MUTABLE else 0)
                               setInfo member.tpe.resultType
-                              setAttributes member.attributes)
+                              setAnnotations member.annotations)
                 }
             }
           } else if (member hasFlag SUPERACCESSOR) { // mixin super accessors
@@ -565,7 +565,7 @@ abstract class Mixin extends InfoTransform {
                        .setInfo(definitions.IntClass.tpe)
                        .setFlag(PROTECTED)
           atPhase(currentRun.typerPhase) {
-            sym.attributes = AnnotationInfo(definitions.VolatileAttr.tpe, List(), List()) :: sym.attributes
+            sym.addAnnotation(AnnotationInfo(definitions.VolatileAttr.tpe, List(), List()))
           }
           clazz.info.decls.enter(sym)
           addDef(clazz.pos, ValDef(sym, Literal(Constant(0))))

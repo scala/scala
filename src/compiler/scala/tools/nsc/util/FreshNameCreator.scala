@@ -11,14 +11,14 @@ import scala.collection.mutable.HashMap
 trait FreshNameCreator {
 
   /** do not call before after type checking ends.
-   *  Use <code>newName(Position, String)</code> instead.
    */
-  @deprecated def newName(prefix: String): String
+  @deprecated("use newName(Position, String) instead")
+  def newName(prefix: String): String
 
   /** do not call before after type checking ends.
-   *  Use newName(Position) instead.
    */
-  @deprecated def newName(): String
+  @deprecated("use newName(Position) instead")
+  def newName(): String
 
   def newName(pos: util.Position, prefix: String): String
   def newName(pos: util.Position): String

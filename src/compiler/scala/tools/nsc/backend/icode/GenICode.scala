@@ -108,7 +108,7 @@ abstract class GenICode extends SubComponent  {
 
         var ctx1 = ctx.enterMethod(m, tree.asInstanceOf[DefDef])
         addMethodParams(ctx1, vparamss)
-        m.native = m.symbol.hasAttribute(definitions.NativeAttr)
+        m.native = m.symbol.hasAnnotation(definitions.NativeAttr)
 
         if (!m.isDeferred && !m.native) {
           ctx1 = genLoad(rhs, ctx1, m.returnType);

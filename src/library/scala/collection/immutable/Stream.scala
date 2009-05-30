@@ -416,8 +416,7 @@ object Stream extends SequenceFactory[Stream] {
       else Some((xs.head, xs.tail))
   }
 
-  /** @deprecated   use #:: instead */
-  @deprecated lazy val lazy_:: = #::
+  @deprecated("use #:: instead") lazy val lazy_:: = #::
 
   /** An alternative way of building and matching Streams using Stream.cons(hd, tl).
    */
@@ -480,8 +479,8 @@ object Stream extends SequenceFactory[Stream] {
    * occurrence)
    * @param elem the element composing the resulting stream
    * @return the stream containing an inifinite number of elem
-   * @deprecated use fill instead
    */
+  @deprecated("use `fill' instead")
   def continually[A](elem: => A): Stream[A] = new Cons(elem, continually(elem))
 
   override def fill[A](n: Int)(elem: => A): Stream[A] =
@@ -499,19 +498,19 @@ object Stream extends SequenceFactory[Stream] {
 
   /** A stream containing all elements of a given iterator, in the order they are produced.
    *  @param it   The iterator producing the stream's elements
-   *  @deprecated use it.toStream instead
    */
-  @deprecated def fromIterator[A](it: Iterator[A]): Stream[A] =
+  @deprecated("use it.toStream instead")
+  def fromIterator[A](it: Iterator[A]): Stream[A] =
     if (it.hasNext) cons(it.next, fromIterator(it)) else empty
 
   /** The concatenation of a sequence of streams
-   * @deprecated use xs.flatten instead
    */
+  @deprecated("use xs.flatten instead")
   def concat[A](xs: Iterable[Stream[A]]): Stream[A] = concat(xs.iterator)
 
   /** The concatenation of all streams returned by an iterator
-   * @deprecated use xs.toStream.flatten instead
    */
+  @deprecated("use xs.toStream.flatten instead")
   def concat[A](xs: Iterator[Stream[A]]): Stream[A] =
     if (xs.hasNext) xs.next append concat(xs)
     else empty
@@ -522,13 +521,13 @@ object Stream extends SequenceFactory[Stream] {
    * where <code>v<sub>0</sub> = start</code>
    * and elements are in the range between <code>start</code> (inclusive)
    * and <code>end</code> (exclusive)
-   * @deprecated  use @see iterate instead.
    * @param start the start value of the stream
    * @param end the end value of the stream
    * @param step the increment function of the stream, must be monotonically increasing or decreasing
    * @return the stream starting at value <code>start</code>.
    */
-  @deprecated def range(start: Int, end: Int, step: Int => Int): Stream[Int] = {
+  @deprecated("use `iterate' instead.")
+  def range(start: Int, end: Int, step: Int => Int): Stream[Int] = {
     val up = step(start) > start
     val down = step(start) < start
     def loop(lo: Int): Stream[Int] =
@@ -542,18 +541,18 @@ object Stream extends SequenceFactory[Stream] {
    *
    * @param elem the element composing the resulting stream
    * @return the stream containing an inifinite number of elem
-   * @deprecated use fill(elem) instead
    */
-  @deprecated def const[A](elem: A): Stream[A] = cons(elem, const(elem))
+  @deprecated("use fill(elem) instead")
+  def const[A](elem: A): Stream[A] = cons(elem, const(elem))
 
   /** Create a stream containing several copies of an element.
    *
    *  @param n    the length of the resulting stream
    *  @param elem the element composing the resulting stream
    *  @return     the stream composed of n elements all equal to elem
-   *  @deprecated use fill(n, elem) instead
    */
-  @deprecated def make[A](n: Int, elem: A): Stream[A] =
+  @deprecated("use fill(n, elem) instead")
+  def make[A](n: Int, elem: A): Stream[A] =
     const(elem) take n
 }
 

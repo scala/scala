@@ -1,5 +1,5 @@
 class App(arg: String) {
-  @deprecated def this() {
+  @deprecated("..") def this() {
     this("foo")
   }
 }

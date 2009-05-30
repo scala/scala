@@ -25,20 +25,20 @@ object Predef {
 
   // aliases ------------------------------------------------------------
 
-  @deprecated type byte    = scala.Byte
-  @deprecated type short   = scala.Short
-  @deprecated type char    = scala.Char
-  @deprecated type int     = scala.Int
-  @deprecated type long    = scala.Long
-  @deprecated type float   = scala.Float
-  @deprecated type double  = scala.Double
-  @deprecated type boolean = scala.Boolean
-  @deprecated type unit    = scala.Unit
+  @deprecated("lower-case type aliases will be removed") type byte    = scala.Byte
+  @deprecated("lower-case type aliases will be removed") type short   = scala.Short
+  @deprecated("lower-case type aliases will be removed") type char    = scala.Char
+  @deprecated("lower-case type aliases will be removed") type int     = scala.Int
+  @deprecated("lower-case type aliases will be removed") type long    = scala.Long
+  @deprecated("lower-case type aliases will be removed") type float   = scala.Float
+  @deprecated("lower-case type aliases will be removed") type double  = scala.Double
+  @deprecated("lower-case type aliases will be removed") type boolean = scala.Boolean
+  @deprecated("lower-case type aliases will be removed") type unit    = scala.Unit
 
-  /** @deprecated use <code>java.lang.Integer</code> instead */
-  @deprecated type Integer = java.lang.Integer
-  /** @deprecated use <code>java.lang.Character</code> instead */
-  @deprecated type Character = java.lang.Character
+  @deprecated("use <code>java.lang.Integer</code> instead")
+  type Integer = java.lang.Integer
+  @deprecated("use <code>java.lang.Character</code> instead")
+  type Character = java.lang.Character
 
   type String        = java.lang.String
   type Class[T]      = java.lang.Class[T]

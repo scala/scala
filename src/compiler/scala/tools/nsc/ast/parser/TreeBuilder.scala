@@ -109,7 +109,7 @@ abstract class TreeBuilder {
     case _ => t
   }
 
-  def makeAnnotated(t: Tree, annot: Annotation): Tree = atPos(annot.pos union t.pos)(Annotated(annot, t))
+  def makeAnnotated(t: Tree, annot: Tree): Tree = atPos(annot.pos union t.pos)(Annotated(annot, t))
 
   def makeSelfDef(name: Name, tpt: Tree): ValDef =
     ValDef(Modifiers(PRIVATE), name, tpt, EmptyTree)
@@ -374,7 +374,7 @@ abstract class TreeBuilder {
     makeVisitor(cases, checkExhaustive, "x$")
 
   private def makeUnchecked(expr: Tree): Tree =
-    Annotated(Annotation(New(scalaDot(definitions.UncheckedClass.name), List(List())), List()), expr)
+    Annotated(New(scalaDot(definitions.UncheckedClass.name), List(List())), expr)
 
   /** Create visitor <x => x match cases> */
   def makeVisitor(cases: List[CaseDef], checkExhaustive: Boolean, prefix: String): Tree = {

@@ -29,11 +29,11 @@ abstract class RedBlack[A] {
     def update[B1 >: B](k: A, v: B1): Tree[B1] = blacken(upd(k, v))
     def delete(k: A): Tree[B] = del(k)
     def foreach[U](f: (A, B) =>  U)
-    /** @deprecated use foreach instead */
-    @deprecated def visit[T](input : T)(f : (T,A,B) => Tuple2[Boolean,T]) : Tuple2[Boolean,T];
+    @deprecated("use `foreach' instead")
+    def visit[T](input : T)(f : (T,A,B) => Tuple2[Boolean,T]) : Tuple2[Boolean,T];
     def toStream: Stream[(A,B)]
     def iterator: Iterator[(A, B)]
-    @deprecated def elements = iterator
+    @deprecated("use `iterator' instead") def elements = iterator
     def upd[B1 >: B](k: A, v: B1): Tree[B1]
     def del(k: A): Tree[B]
     def smallest: NonEmpty[B]
@@ -97,8 +97,7 @@ abstract class RedBlack[A] {
       right foreach f
     }
 
-    /** @deprecated use foreach instead */
-    @deprecated
+    @deprecated("use `foreach' instead")
     def visit[T](input : T)(f : (T,A,B) => Tuple2[Boolean,T]) : Tuple2[Boolean,T] = {
       val left = this.left.visit(input)(f)
       if (!left._1) return left
@@ -135,8 +134,7 @@ abstract class RedBlack[A] {
 
     def foreach[U](f: (A, Nothing) =>  U) {}
 
-    /** @deprecated use foreach instead */
-    @deprecated
+    @deprecated("use `foreach' instead")
     def visit[T](input : T)(f : (T,A,Nothing) => Tuple2[Boolean,T]) = Tuple2(true,input)
 
     def range(from : Option[A], until : Option[A]) = this

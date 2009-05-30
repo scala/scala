@@ -29,9 +29,8 @@ trait Constants {
   final val StringTag  = LITERALstring - LITERAL
   final val NullTag    = LITERALnull - LITERAL
   final val ClassTag   = LITERALclass - LITERAL
+  // For supporting java enumerations inside java annotations (see ClassfileParser)
   final val EnumTag    = ClassTag + 1
-  final val ArrayTag   = EnumTag + 1
-  final val AnnotationTag = ArrayTag + 1
 
   def isNumeric(tag: Int) = ByteTag <= tag && tag <= DoubleTag
 
@@ -50,7 +49,6 @@ trait Constants {
       else if (value.isInstanceOf[String]) StringTag
       else if (value.isInstanceOf[Type]) ClassTag
       else if (value.isInstanceOf[Symbol]) EnumTag
-      else if (value.isInstanceOf[Array[Constant]]) ArrayTag
       else if (value == null) NullTag
       else throw new Error("bad constant value: " + value)
 
@@ -68,7 +66,6 @@ trait Constants {
       case NullTag    => NullClass.tpe
       case ClassTag   => Predef_classOfType(value.asInstanceOf[Type])
       case EnumTag    => symbolValue.owner.linkedClassOfClass.tpe
-      case AnnotationTag => AnnotationClass.tpe  // what should it be?
     }
 
     /** We need the equals method to take account of tags as well as values.
@@ -222,23 +219,7 @@ trait Constants {
 
     def symbolValue: Symbol = value.asInstanceOf[Symbol]
 
-    def arrayValue: Array[Constant] =
-      throw new Error("value " + value + " is not an array")
-
     override def hashCode(): Int =
       if (value == null) 0 else value.hashCode() * 41 + 17
-  }
-
-  class ArrayConstant(override val arrayValue: Array[Constant],
-                      override val tpe: Type)
-  extends Constant(arrayValue) {
-    override def toString() = arrayValue.mkString("Constant(", "," , ")")
-  }
-
-  /** A place-holder for annotation constants.  The contents of
-   *  the constant are not read. */
-  class AnnotationConstant()
-  extends Constant(null) {
-    override val tag = AnnotationTag
   }
 }

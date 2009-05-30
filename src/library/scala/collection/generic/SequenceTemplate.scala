@@ -180,11 +180,8 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
     result
   }
 
-  /** Returns index of the first element satisying a predicate, or -1.
-   *
-   *  @deprecated  Use `indexWhere` instead
-   */
-  @deprecated def findIndexOf(p: A => Boolean): Int = indexWhere(p)
+  /** Returns index of the first element satisying a predicate, or -1. */
+  @deprecated("Use `indexWhere' instead") def findIndexOf(p: A => Boolean): Int = indexWhere(p)
 
   /** Returns the index of the first occurence of the specified
    *  object in this iterable object.
@@ -268,8 +265,7 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
    */
   def reverseIterator: Iterator[A] = reverse.iterator
 
-  /** @deprecated use `reverseIterator` instead */
-  @deprecated def reversedElements = reverseIterator
+  @deprecated("use `reverseIterator' instead") def reversedElements = reverseIterator
 
   /**
    * Checks whether the argument sequence is contained at the
@@ -491,42 +487,36 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
    */
   override def toString = super[IterableTemplate].toString
 
-  /** Returns index of the last element satisying a predicate, or -1.
-   *  @deprecated use `lastIndexWhere` instead
-   */
-  @deprecated def findLastIndexOf(p: A => Boolean): Int = lastIndexWhere(p)
+  /** Returns index of the last element satisying a predicate, or -1. */
+  @deprecated("use `lastIndexWhere' instead")
+  def findLastIndexOf(p: A => Boolean): Int = lastIndexWhere(p)
 
   /** A sub-sequence starting at index <code>from</code>
     *  and extending up to the length of the current sequence
     *
     *  @param from   The index of the first element of the slice
     *  @throws IndexOutOfBoundsException if <code>from &lt; 0</code>
-    *  @deprecated   use <code>drop</code> instead
     */
-  @deprecated def slice(from: Int): Sequence[A] = slice(from, length)
+  @deprecated("use `drop' instead")
+  def slice(from: Int): Sequence[A] = slice(from, length)
 
-  /** @deprecated Should be replaced by
-   *
-   *   <code>(s1, s2) forall { case (x, y) => f(x, y) }</code>
-   */
-  @deprecated def equalsWith[B](that: Sequence[B])(f: (A,B) => Boolean): Boolean = {
+  @deprecated("Should be replaced by  <code>(s1, s2) forall { case (x, y) => f(x, y) }</code>")
+  def equalsWith[B](that: Sequence[B])(f: (A,B) => Boolean): Boolean = {
     val i = this.iterator
     val j = that.iterator
     while (i.hasNext && j.hasNext && f(i.next, j.next)) ()
     !i.hasNext && !j.hasNext
   }
 
-  /** Is <code>that</code> a slice in this?
-   *  @deprecated  Should be repaced by <code>indexOf(that) != -1</code>
-   */
-  @deprecated def containsSlice[B](that: Sequence[B]): Boolean = indexOf(that) != -1
+  /** Is <code>that</code> a slice in this? */
+  @deprecated("Should be repaced by <code>indexOf(that) != -1</code>")
+  def containsSlice[B](that: Sequence[B]): Boolean = indexOf(that) != -1
 
  /**
    * returns a projection that can be used to call non-strict <code>filter</code>,
    * <code>map</code>, and <code>flatMap</code> methods that build projections
    * of the collection.
-   * @deprecated use view instead
    */
-  @deprecated override def projection = view
+  @deprecated("use `view' instead") override def projection = view
 }
 

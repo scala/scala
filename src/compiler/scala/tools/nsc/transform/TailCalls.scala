@@ -39,7 +39,7 @@ abstract class TailCalls extends Transform
   }
 
   /** The @tailrec annotation indicates TCO is mandatory */
-  private def tailrecRequired(defdef: DefDef) = defdef.symbol hasAttribute TailrecClass
+  private def tailrecRequired(defdef: DefDef) = defdef.symbol hasAnnotation TailrecClass
 
   /**
    * A Tail Call Transformer

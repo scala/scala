@@ -55,8 +55,8 @@ trait AnnotationCheckers {
   /** Check that the annotations on two types conform.  To do
    *  so, consult all registered annotation checkers. */
   def annotationsConform(tp1: Type, tp2: Type): Boolean = {
-    /* Finish quickly if there are no attributes */
-    if (tp1.attributes.isEmpty && tp2.attributes.isEmpty)
+    /* Finish quickly if there are no annotations */
+    if (tp1.annotations.isEmpty && tp2.annotations.isEmpty)
       true
     else
      annotationCheckers.forall(

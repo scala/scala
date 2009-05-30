@@ -87,11 +87,10 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    */
   def capacity: Int = array.length
 
-  /** Same as <code>ensureCapacity</code>.
-   *  @deprecated use `ensureCapacity` instead. An assignment is misleading
-   *  because it can never decrease the capacity.
-   */
-  @deprecated def capacity_=(n: Int) { ensureCapacity(n) }
+  /** Same as <code>ensureCapacity</code>. */
+  @deprecated("use `ensureCapacity' instead. An assignment is misleading because\n"+
+              "it can never decrease the capacity.")
+  def capacity_=(n: Int) { ensureCapacity(n) }
 
   /** <p>
    *    Ensures that the capacity is at least equal to the specified minimum.
@@ -293,10 +292,9 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
   def appendAll(x: Seq[Char]): StringBuilder =
     appendAll(x.toArray, 0, x.length)
 
-   /*  @deprecated  use appendAll instead. This method is deprecated
-    *               because of the possible confusion with `append(Any)`.
-    */
-  @deprecated def append(x: Seq[Char]): StringBuilder =
+  @deprecated("use appendAll instead. This method is deprecated because of the\n"+
+              "possible confusion with `append(Any)'.")
+  def append(x: Seq[Char]): StringBuilder =
     appendAll(x)
 
   /** <p>
@@ -315,10 +313,9 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
   def appendAll(x: Array[Char]): StringBuilder =
     appendAll(x, 0, x.length)
 
-  /**  @deprecated  use appendAll instead. This method is deprecated
-   *               because of the possible confusion with `append(Any)`.
-   */
-  @deprecated def append(x: Array[Char]): StringBuilder =
+  @deprecated("use appendAll instead. This method is deprecated because\n"+
+              "of the possible confusion with `append(Any)'.")
+  def append(x: Array[Char]): StringBuilder =
     appendAll(x)
 
   /** <p>
@@ -344,10 +341,9 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
     this
   }
 
-  /**  @deprecated  use appendAll instead. This method is deprecated
-   *               because of the possible confusion with `append(Any, Int, Int)`.
-   */
-  @deprecated def append(x: Array[Char], offset: Int, len: Int): StringBuilder =
+  @deprecated("use appendAll instead. This method is deprecated because\n"+
+              "of the possible confusion with `append(Any, Int, Int)'.")
+  def append(x: Array[Char], offset: Int, len: Int): StringBuilder =
     appendAll(x, offset, len)
 
   /** <p>
@@ -477,10 +473,9 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
     this
   }
 
-  /**  @deprecated  use insertAll instead. This method is deprecated
-   *               because of the possible confusion with `insert(Int, Any, Int, Int)`.
-   */
-  @deprecated def insert(index: Int, str: Array[Char], offset: Int, len: Int): StringBuilder =
+  @deprecated("use insertAll instead. This method is deprecated because of the\n"+
+              "possible confusion with `insert(Int, Any, Int, Int)'.")
+  def insert(index: Int, str: Array[Char], offset: Int, len: Int): StringBuilder =
     insertAll(index, str, offset, len)
 
   /** <p>
@@ -537,10 +532,9 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
   def insertAll(at: Int, x: Seq[Char]): StringBuilder =
     insertAll(at, x.toArray)
 
-  /*  @deprecated use insertAll instead. This method is deprecated
-   *  because of the possible confusion with `insert(Int, Any)`.
-   */
-  @deprecated def insert(at: Int, x: Seq[Char]): StringBuilder =
+  @deprecated("use insertAll instead. This method is deprecated because of\n"+
+              "the possible confusion with `insert(Int, Any)'.")
+  def insert(at: Int, x: Seq[Char]): StringBuilder =
     insertAll(at, x)
 
   /** Inserts the string representation of the <code>Char</code> array
@@ -562,10 +556,9 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
     this
   }
 
-  /*  @deprecated use insertAll instead. This method is deprecated
-   *  because of the possible confusion with `insert(Int, Any)`.
-   */
-  @deprecated def insert(at: Int, x: Array[Char]): StringBuilder =
+  @deprecated("use insertAll instead. This method is deprecated because of\n"+
+              "the possible confusion with `insert(Int, Any)'.")
+  def insert(at: Int, x: Array[Char]): StringBuilder =
     insertAll(at, x)
 
   /** <p>

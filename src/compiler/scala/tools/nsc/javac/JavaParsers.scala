@@ -330,8 +330,8 @@ trait JavaParsers extends JavaScanners {
       } else t
     }
 
-    def annotations(): List[Annotation] = {
-      //var annots = new ListBuffer[Annotation]
+    def annotations(): List[Tree] = {
+      //var annots = new ListBuffer[Tree]
       while (in.token == AT) {
         in.nextToken
         annotation()
@@ -548,9 +548,7 @@ trait JavaParsers extends JavaScanners {
               if (parentToken == AT && in.token == DEFAULT) {
                 val annot =
                   atPos(pos) {
-                    Annotation(
-                      New(rootId(nme.AnnotationDefaultATTR.toTypeName), List(List())),
-                      List())
+                    New(rootId(nme.AnnotationDefaultATTR.toTypeName), List(List()))
                   }
                 mods1 = Modifiers(mods1.flags, mods1.privateWithin, annot :: mods1.annotations)
                 skipTo(SEMI)

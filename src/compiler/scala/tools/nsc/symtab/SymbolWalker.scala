@@ -110,9 +110,9 @@ trait SymbolWalker {
       case (t : MemberDef) if t.symbol != null && t.symbol != NoSymbol =>
         val annotated = if (sym.isModule) sym.moduleClass else sym
         val i = t.mods.annotations.iterator
-        val j = annotated.attributes.iterator
+        val j = annotated.annotations.iterator
         while (i.hasNext && j.hasNext) {
-          val tree = i.next.constr
+          val tree = i.next
           val ainfo = j.next
           val sym = ainfo.atp.typeSymbol
           tree.setType(ainfo.atp)
@@ -150,7 +150,6 @@ trait SymbolWalker {
         } else tree.qualifier
 
         f(qualifier)
-      case tree : Annotation => f(tree.constr)
       case tree : Annotated => f(tree.annot); f(tree.arg)
       case tree : GenericApply => f(tree.fun); fs(tree.args)
       case tree : UnApply => f(tree.fun); fs(tree.args)

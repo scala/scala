@@ -346,7 +346,7 @@ trait Scopes {
      */
     def iterator: Iterator[Symbol] = toList.iterator
 
-    @deprecated def elements = iterator
+    @deprecated("use `iterator'") def elements = iterator
 
     def filter(p: Symbol => Boolean): Scope =
       if (!(toList forall p)) newScope(toList filter p) else this

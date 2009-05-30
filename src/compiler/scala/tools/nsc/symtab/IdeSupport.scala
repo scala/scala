@@ -338,7 +338,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
       def nuke(existing: Symbol) : Unit = {
         if (existing.isMonomorphicType) existing.resetFlag(Flags.MONOMORPHIC)
         assert(!existing.isPackage)
-        existing.attributes = Nil // reset attributes, we don't look at these.
+        existing.setAnnotations(Nil) // reset annotations, we don't look at these.
         if (existing.isModuleClass) {
           //Console.println("NUKE_N: " + existing + " " + existing.id)
         } else {

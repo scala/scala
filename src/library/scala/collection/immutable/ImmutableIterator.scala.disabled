@@ -106,7 +106,7 @@ sealed abstract class ImmutableIterator[+A] {
    */
   def iterator: Iterator[A] = new Elements
 
-  @deprecated def elements = iterator
+  @deprecated("use `iterator' instead") def elements = iterator
   
 }
 

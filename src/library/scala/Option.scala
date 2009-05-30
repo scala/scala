@@ -44,9 +44,7 @@ sealed abstract class Option[+A] extends Product {
    */
   def get: A
 
-  /** @deprecated; use <code>getOrElse</code> instead
-   */
-  @deprecated
+  @deprecated("use <code>getOrElse</code> instead")
   def get[B >: A](default: B): B = this match {
     case None => default
     case Some(x) => x

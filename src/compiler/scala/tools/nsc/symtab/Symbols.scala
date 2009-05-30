@@ -92,12 +92,32 @@ trait Symbols {
       else -1
     }
 
-    // XXX the attributes logic is essentially duplicated across Symbols and Types
-    var attributes: List[AnnotationInfo] = Nil
-    def setAttributes(attrs: List[AnnotationInfo]): this.type = { this.attributes = attrs; this }
+// annotations
 
-    /** Does this symbol have an attribute of the given class? */
-    def hasAttribute(cls: Symbol) = attributes exists { _.atp.typeSymbol == cls }
+    private var rawannots: List[AnnotationInfoBase] = Nil
+
+    /** After the typer phase (before, look at the definition's Modifiers), contains
+     *  the annotations attached to member a definition (class, method, type, field).
+     */
+    def annotations: List[AnnotationInfo] = {
+      val annots1 = rawannots map {
+        case LazyAnnotationInfo(annot) => annot()
+        case a @ AnnotationInfo(_, _, _) => a
+      } filter { a => !a.atp.isError }
+      rawannots = annots1
+      annots1
+    }
+
+    def setAnnotations(annots: List[AnnotationInfoBase]): this.type = {
+      this.rawannots = annots
+      this
+    }
+
+    def addAnnotation(annot: AnnotationInfo): this.type =
+      setAnnotations(annot :: this.annotations)
+
+    /** Does this symbol have an annotation of the given class? */
+    def hasAnnotation(cls: Symbol) = annotations exists { _.atp.typeSymbol == cls }
 
     /** set when symbol has a modifier of the form private[X], NoSymbol otherwise.
      *  Here's some explanation how privateWithin gets combined with access flags:
@@ -389,7 +409,14 @@ trait Symbols {
         }
       }
 
-    def isDeprecated = hasAttribute(DeprecatedAttr)
+    def isDeprecated = hasAnnotation(DeprecatedAttr)
+    def deprecationMessage: Option[String] =
+      annotations find (_.atp.typeSymbol == DeprecatedAttr) flatMap { annot =>
+        if (annot.args.length == 1)
+          annot.args.head.constant map { c => c.stringValue }
+        else
+          None
+      }
 
     /** Does this symbol denote a wrapper object of the interpreter or its class? */
     final def isInterpreterWrapper =
@@ -415,7 +442,7 @@ trait Symbols {
       isTerm &&
       !hasFlag(MUTABLE) &&
       (!hasFlag(METHOD | BYNAMEPARAM) || hasFlag(STABLE)) &&
-      !(tpe.isVolatile && getAttributes(uncheckedStableClass).isEmpty)
+      !(tpe.isVolatile && !hasAnnotation(uncheckedStableClass))
 
     def isDeferred =
       hasFlag(DEFERRED) && !isClass
@@ -815,9 +842,6 @@ trait Symbols {
      */
     def paramss: List[List[Symbol]] = info.paramss
 
-    def getAttributes(clazz: Symbol): List[AnnotationInfo] =
-      attributes.filter(_.atp.typeSymbol.isNonBottomSubClass(clazz))
-
     /** The least proper supertype of a class; includes all parent types
      *  and refinement where needed. You need to compute that in a situation like this:
      *  {
@@ -944,7 +968,7 @@ trait Symbols {
     /** A clone of this symbol, but with given owner */
     final def cloneSymbol(owner: Symbol): Symbol =
       cloneSymbolImpl(owner).setInfo(info.cloneInfo(this))
-        .setFlag(this.rawflags).setAttributes(this.attributes)
+        .setFlag(this.rawflags).setAnnotations(this.annotations)
 
     /** Internal method to clone a symbol's implementation without flags or type
      */

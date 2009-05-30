@@ -13,8 +13,7 @@ package scala.collection.mutable
 
 /** The J2ME version of the library defined this trait with a clone method
  * to substitute for the lack of Object.clone there
- *  @deprecated use Cloneable instead
  */
-@deprecated trait CloneableCollection {
+@deprecated("use Cloneable instead") trait CloneableCollection {
   override def clone(): AnyRef = super.clone()
 }

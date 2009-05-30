@@ -12,9 +12,9 @@
 package scala
 
 /** Counted iterators keep track of the number of elements seen so far
- *  @deprecated  use iterator.zipWithIndex instead
  */
-@deprecated trait CountedIterator[+A] extends Iterator[A] {
+@deprecated("use iterator.zipWithIndex instead")
+trait CountedIterator[+A] extends Iterator[A] {
   /** counts the elements in this iterator; counts start at 0
    */
   def count: Int

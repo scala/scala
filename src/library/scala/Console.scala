@@ -182,10 +182,9 @@ object Console {
   /**
    *  @see <a href="#printf(java.lang.String,scala.Any*)"
    *       target="contentFrame">Console.printf</a>.
-   *  @deprecated For console output, use <code>Console.printf</code>.  For <code>String</code> formatting,
-   *              <code>RichString</code>'s <code>format</code> method.
    */
-  @deprecated
+  @deprecated("For console output, use <code>Console.printf</code>. For <code>String</code>\n"+
+              "formatting, <code>RichString</code>'s <code>format</code> method.")
   def format(text: String, args: Any*) {
     if (text eq null) out.printf("null")
     else out.print(text format (args : _*))

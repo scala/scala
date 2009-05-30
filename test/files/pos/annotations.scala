@@ -5,7 +5,8 @@ object Test {
   // bug #1028
   val x = 1
   @ann(x) val a = ()
-  @ann({val y = 2; y}) val b = ()
+  @ann({val yy = 2; yy}) val b = ()
+  val bb: Int @ann({val yy = 2; yy}) = 10
 
   def c: Int @ann(x) = 1
   def d: String @ann({val z = 0; z - 1}) = "2"

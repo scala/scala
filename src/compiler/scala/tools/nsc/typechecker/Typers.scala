@@ -333,7 +333,7 @@ trait Typers { self: Analyzer =>
     def checkNonCyclic(pos: Position, tp: Type): Boolean = {
       def checkNotLocked(sym: Symbol): Boolean = {
         sym.initialize
-	sym.lockOK || {error(pos, "cyclic aliasing or subtyping involving "+sym); false}
+        sym.lockOK || {error(pos, "cyclic aliasing or subtyping involving "+sym); false}
       }
       tp match {
         case TypeRef(pre, sym, args) =>
@@ -521,10 +521,10 @@ trait Typers { self: Analyzer =>
         while (c != NoContext && c.owner.name != qual) c = c.outer.enclClass
       }
       if (c == NoContext || !(packageOK || c.enclClass.tree.isInstanceOf[Template]))
-	  error(
-	    tree.pos,
-	    if (qual.isEmpty) tree+" can be used only in a class, object, or template"
-	    else qual+" is not an enclosing class")
+        error(
+          tree.pos,
+          if (qual.isEmpty) tree+" can be used only in a class, object, or template"
+          else qual+" is not an enclosing class")
       c
     }
 
@@ -1153,7 +1153,7 @@ trait Typers { self: Analyzer =>
           if (!(selfType <:< parent.tpe.typeOfThis) &&
               !phase.erasedTypes &&
               !(context.owner hasFlag SYNTHETIC) && // don't do this check for synthetic concrete classes for virtuals (part of DEVIRTUALIZE)
-	      !(settings.suppressVTWarn.value))
+              !(settings.suppressVTWarn.value))
           {
             //Console.println(context.owner);//DEBUG
             //Console.println(context.owner.unsafeTypeParams);//DEBUG
@@ -1205,8 +1205,8 @@ trait Typers { self: Analyzer =>
      */
     def typedClassDef(cdef: ClassDef): Tree = {
 //      attributes(cdef)
-      val typedMods = typedModifiers(cdef.mods)
-      val clazz = cdef.symbol;
+      val clazz = cdef.symbol
+      val typedMods = removeAnnotations(cdef.mods)
       assert(clazz != NoSymbol)
       reenterTypeParams(cdef.tparams)
       val tparams1 = List.mapConserve(cdef.tparams)(typedTypeDef)
@@ -1214,11 +1214,11 @@ trait Typers { self: Analyzer =>
         .typedTemplate(cdef.impl, parentTypes(cdef.impl))
       val impl2 = addSyntheticMethods(impl1, clazz, context)
       if ((clazz != ClassfileAnnotationClass) &&
-	  (clazz isNonBottomSubClass ClassfileAnnotationClass))
-	unit.warning (cdef.pos,
+          (clazz isNonBottomSubClass ClassfileAnnotationClass))
+        unit.warning (cdef.pos,
           "implementation restriction: subclassing Classfile does not\n"+
           "make your annotation visible at runtime.  If that is what\n"+
-	  "you want, you must write the annotation class in Java.")
+          "you want, you must write the annotation class in Java.")
       treeCopy.ClassDef(cdef, typedMods, cdef.name, tparams1, impl2)
         .setType(NoType)
     }
@@ -1230,8 +1230,8 @@ trait Typers { self: Analyzer =>
     def typedModuleDef(mdef: ModuleDef): Tree = {
       //Console.println("sourcefile of " + mdef.symbol + "=" + mdef.symbol.sourceFile)
 //      attributes(mdef)
-      val typedMods = typedModifiers(mdef.mods)
       val clazz = mdef.symbol.moduleClass
+      val typedMods = removeAnnotations(mdef.mods)
       assert(clazz != NoSymbol)
       val impl1 = newTyper(context.make(mdef.impl, clazz, scopeFor(mdef.impl, TypedDefScopeKind)))
         .typedTemplate(mdef.impl, parentTypes(mdef.impl))
@@ -1247,44 +1247,47 @@ trait Typers { self: Analyzer =>
     def addGetterSetter(stat: Tree): List[Tree] = stat match {
       case ValDef(mods, name, tpt, rhs)
         if (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL)
-          && !stat.symbol.isModuleVar
-          && !stat.symbol.hasFlag(LAZY) =>
-        val vdef = treeCopy.ValDef(stat, mods | PRIVATE | LOCAL, nme.getterToLocal(name), tpt, rhs)
-        val value = vdef.symbol
+          && !stat.symbol.isModuleVar =>
+        val value = stat.symbol
         val getter = if ((mods hasFlag DEFERRED)) value else value.getter(value.owner)
         assert(getter != NoSymbol, stat)
         if (getter hasFlag OVERLOADED)
           error(getter.pos, getter+" is defined twice")
-        val getterDef: DefDef = atPos(vdef) {
-          getter.attributes = value.initialize.attributes
-          val result = DefDef(getter,
-              if (mods hasFlag DEFERRED) EmptyTree
-              else typed(
-                atPos(vdef) { gen.mkCheckInit(Select(This(value.owner), value)) },
-                EXPRmode, value.tpe))
-          result.tpt.asInstanceOf[TypeTree] setOriginal tpt /* setPos tpt.pos */
-          checkNoEscaping.privates(getter, result.tpt)
-          treeCopy.DefDef(result, result.mods withAnnotations mods.annotations, result.name,
-                      result.tparams, result.vparamss, result.tpt, result.rhs)
-          //todo: withAnnotations is probably unnecessary
-        }
-        def setterDef: DefDef = {
-          val setr = getter.setter(value.owner)
-          setr.attributes = value.attributes
-          val result = atPos(vdef)(
-            DefDef(setr,
-              if ((mods hasFlag DEFERRED) || (setr hasFlag OVERLOADED))
-                EmptyTree
-              else
-                typed(Assign(Select(This(value.owner), value),
-                             Ident(setr.paramss.head.head)))))
-          treeCopy.DefDef(result, result.mods withAnnotations mods.annotations, result.name,
-                      result.tparams, result.vparamss, result.tpt, result.rhs)
-        }
-        val gs = if (mods hasFlag MUTABLE) List(getterDef, setterDef)
-                 else List(getterDef)
-        if (mods hasFlag DEFERRED) gs else vdef :: gs
 
+        // todo: potentially dangerous not to duplicate the trees and clone the symbols / types.
+        getter.setAnnotations(value.initialize.annotations)
+
+        if (value.hasFlag(LAZY)) List(stat)
+        else {
+          val vdef = treeCopy.ValDef(stat, mods | PRIVATE | LOCAL, nme.getterToLocal(name), tpt, rhs)
+          val getterDef: DefDef = atPos(vdef) {
+            val result = DefDef(getter,
+                if (mods hasFlag DEFERRED) EmptyTree
+                else typed(
+                  atPos(vdef) { gen.mkCheckInit(Select(This(value.owner), value)) },
+                  EXPRmode, value.tpe))
+            result.tpt.asInstanceOf[TypeTree] setOriginal tpt /* setPos tpt.pos */
+            checkNoEscaping.privates(getter, result.tpt)
+            treeCopy.DefDef(result, result.mods, result.name,
+                        result.tparams, result.vparamss, result.tpt, result.rhs)
+          }
+          def setterDef: DefDef = {
+            val setr = getter.setter(value.owner)
+            setr.setAnnotations(value.annotations)
+            val result = atPos(vdef)(
+              DefDef(setr,
+                if ((mods hasFlag DEFERRED) || (setr hasFlag OVERLOADED))
+                  EmptyTree
+                else
+                  typed(Assign(Select(This(value.owner), value),
+                               Ident(setr.paramss.head.head)))))
+            treeCopy.DefDef(result, result.mods, result.name, result.tparams,
+                            result.vparamss, result.tpt, result.rhs)
+          }
+          val gs = if (mods hasFlag MUTABLE) List(getterDef, setterDef)
+                   else List(getterDef)
+          if (mods hasFlag DEFERRED) gs else vdef :: gs
+        }
       case DocDef(comment, defn) =>
         addGetterSetter(defn) map (stat => DocDef(comment, stat))
 
@@ -1342,12 +1345,11 @@ trait Typers { self: Analyzer =>
       treeCopy.Template(templ, parents1, self1, body1) setType clazz.tpe
     }
 
-    /** Type check the annotations within a set of modifiers.  */
-    def typedModifiers(mods: Modifiers): Modifiers = {
-      val Modifiers(flags, privateWithin, annotations) = mods
-      val typedAnnots = annotations.map(typed(_).asInstanceOf[Annotation])
-      Modifiers(flags, privateWithin, typedAnnots)
-    }
+    /** Remove definition annotations from modifiers (they have been saved
+     *  into the symbol's ``annotations'' in the type completer / namer)
+     */
+    def removeAnnotations(mods: Modifiers): Modifiers =
+      Modifiers(mods.flags, mods.privateWithin, Nil)
 
     /**
      *  @param vdef ...
@@ -1357,7 +1359,7 @@ trait Typers { self: Analyzer =>
 //      attributes(vdef)
       val sym = vdef.symbol
       val typer1 = constrTyperIf(sym.hasFlag(PARAM) && sym.owner.isConstructor)
-      val typedMods = typedModifiers(vdef.mods)
+      val typedMods = removeAnnotations(vdef.mods)
 
       var tpt1 = checkNoEscaping.privates(sym, typer1.typedType(vdef.tpt))
       checkNonCyclic(vdef, tpt1)
@@ -1484,7 +1486,7 @@ trait Typers { self: Analyzer =>
       }
       checkNonCyclic(ddef, tpt1)
       ddef.tpt.setType(tpt1.tpe)
-      val typedMods = typedModifiers(ddef.mods)
+      val typedMods = removeAnnotations(ddef.mods)
       var rhs1 =
         if (ddef.name == nme.CONSTRUCTOR) {
           if (!meth.isPrimaryConstructor &&
@@ -1525,7 +1527,7 @@ trait Typers { self: Analyzer =>
     def typedTypeDef(tdef: TypeDef): TypeDef = {
       reenterTypeParams(tdef.tparams) // @M!
       val tparams1 = List.mapConserve(tdef.tparams)(typedTypeDef) // @M!
-      val typedMods = typedModifiers(tdef.mods)
+      val typedMods = removeAnnotations(tdef.mods)
       val rhs1 = checkNoEscaping.privates(tdef.symbol, typedType(tdef.rhs))
       checkNonCyclic(tdef.symbol)
       if (tdef.symbol.owner.isType)
@@ -2226,38 +2228,154 @@ trait Typers { self: Analyzer =>
       }
     }
 
-    def typedAnnotation(annot: Annotation, owner: Symbol): AnnotationInfo =
-      typedAnnotation(annot, owner, EXPRmode)
+    def typedAnnotation(constr: Tree): AnnotationInfo =
+      typedAnnotation(constr, EXPRmode)
 
-    def typedAnnotation(annot: Annotation, owner: Symbol, mode: Int): AnnotationInfo =
-      typedAnnotation(annot, owner, mode, NoSymbol)
+    def typedAnnotation(constr: Tree, mode: Int): AnnotationInfo =
+      typedAnnotation(constr, mode, NoSymbol)
 
-    def typedAnnotation(annot: Annotation, owner: Symbol, mode: Int, selfsym: Symbol): AnnotationInfo = {
-      var attrError: Boolean = false
-      def error(pos: Position, msg: String): Null = {
+    def typedAnnotation(constr: Tree, mode: Int, selfsym: Symbol): AnnotationInfo =
+      typedAnnotation(constr, mode, selfsym, AnnotationClass, false)
+
+    /**
+     * Convert an annotation constructor call into an AnnotationInfo.
+     *
+     * @param annClass the expected annotation class
+     */
+    def typedAnnotation(ann: Tree, mode: Int, selfsym: Symbol, annClass: Symbol, requireJava: Boolean): AnnotationInfo = {
+      lazy val annotationError = AnnotationInfo(ErrorType, Nil, Nil)
+      var hasError: Boolean = false
+      def error(pos: Position, msg: String) = {
         context.error(pos, msg)
-        attrError = true
-        null
+        hasError = true
+        annotationError
       }
-      def needConst(tr: Tree) {
-        error(tr.pos, "attribute argument needs to be a constant; found: "+tr)
+      def needConst(tr: Tree): None.type = {
+        error(tr.pos, "annotation argument needs to be a constant; found: "+tr)
+        None
       }
 
-      val typedConstr =
-        if (selfsym == NoSymbol) {
-          // why a new typer: definitions inside the annotation's constructor argument
-          // should not have the annotated's owner as owner.
-          val typer1 = newTyper(context.makeNewScope(annot.constr, owner)(TypedScopeKind))
-          typer1.typed(annot.constr, mode, AnnotationClass.tpe)
+      /** Converts an untyped tree to a ConstantAnnotationArgument. If the conversion fails,
+       *  an error message is reporded and None is returned.
+       */
+      def tree2ConstArg(tree: Tree, pt: Type): Option[ConstantAnnotationArgument] = tree match {
+        case ann @ Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
+          val annInfo = typedAnnotation(ann, mode, NoSymbol, pt.typeSymbol, true)
+          if (annInfo.atp.isErroneous) {
+            // recursive typedAnnotation call already printed an error, so don't call "error"
+            hasError = true
+            None
+          } else Some(NestedAnnotationArgument(annInfo))
+
+        // use of: object Array.apply[A <: AnyRef](args: A*): Array[A] = ...
+        // and object Array.apply(args: Int*): Array[Int] = ... (and similar)
+        case Apply(fun, members) =>
+          val typedFun = typed(fun, funMode(mode), WildcardType)
+          if (typedFun.symbol.owner == ArrayModule.moduleClass &&
+              typedFun.symbol.name == nme.apply &&
+              pt.typeSymbol == ArrayClass &&
+              !pt.typeArgs.isEmpty)
+            trees2ConstArg(members, pt.typeArgs.head)
+          else
+            needConst(tree)
+
+        case Typed(t, _) => tree2ConstArg(t, pt)
+
+        case tree => typed(tree, EXPRmode, pt) match {
+          case l @ Literal(c) if !l.isErroneous =>
+            Some(LiteralAnnotationArgument(c))
+          case _ =>
+            needConst(tree)
+        }
+      }
+      def trees2ConstArg(trees: List[Tree], pt: Type): Option[ArrayAnnotationArgument] = {
+        val args = trees.map(tree2ConstArg(_, pt))
+        if (args.exists(_.isEmpty)) None
+        else Some(ArrayAnnotationArgument(args.map(_.get).toArray))
+      }
+
+
+      // begin typedAnnotation
+      val (fun, argss) = {
+        def extract(fun: Tree, outerArgss: List[List[Tree]]):
+          (Tree, List[List[Tree]]) = fun match {
+            case Apply(f, args) =>
+              extract(f, args :: outerArgss)
+            case Select(New(tpt), nme.CONSTRUCTOR) =>
+              (fun, outerArgss)
+            case _ =>
+              error(fun.pos, "unexpected tree in annotationn: "+ fun)
+              (setError(fun), outerArgss)
+          }
+        extract(ann, List())
+      }
+
+      if (fun.isErroneous) annotationError
+      else {
+        val typedFun @ Select(New(tpt), _) = typed(fun, funMode(mode), WildcardType)
+        val annType = tpt.tpe
+
+        if (typedFun.isErroneous) annotationError
+        else if (annType.typeSymbol isNonBottomSubClass ClassfileAnnotationClass) {
+          // annotation to be saved as java annotation
+          val isJava = typedFun.symbol.owner.hasFlag(JAVA)
+          if (!annType.typeSymbol.isNonBottomSubClass(annClass)) {
+            error(tpt.pos, "expected annotation of type "+ annClass.tpe +", found "+ annType)
+          } else if (argss.length > 1) {
+            error(ann.pos, "multiple argument lists on java annotation")
+          } else {
+            val args =
+              if (argss.head.length == 1 && !isNamed(argss.head.head))
+                List(Assign(Ident(nme.value), argss.head.head))
+              else argss.head
+            val annScope = annType.decls
+                .filter(sym => sym.isMethod && !sym.isConstructor && sym.hasFlag(JAVA))
+            val names = new collection.mutable.HashSet[Symbol]
+            names ++= (if (isJava) annScope.iterator
+                       else typedFun.tpe.params.iterator)
+            val nvPairs = args map {
+              case arg @ Assign(Ident(name), rhs) =>
+                val sym = if (isJava) annScope.lookupWithContext(name)(context.owner)
+                          else typedFun.tpe.params.find(p => p.name == name).getOrElse(NoSymbol)
+                if (sym == NoSymbol) {
+                  error(arg.pos, "unknown annotation argument name: " + name)
+                  (nme.ERROR, None)
+                } else if (!names.contains(sym)) {
+                  error(arg.pos, "duplicate value for anontation argument " + name)
+                  (nme.ERROR, None)
+                } else {
+                  names -= sym
+                  val annArg = tree2ConstArg(rhs, sym.tpe.resultType)
+                  (sym.name, annArg)
+                }
+              case arg =>
+                error(arg.pos, "java annotation arguments have to be supplied as named arguments")
+                (nme.ERROR, None)
+            }
+
+            for (name <- names) {
+              if (!name.annotations.contains(AnnotationInfo(AnnotationDefaultAttr.tpe, List(), List())) &&
+                  !name.hasFlag(DEFAULTPARAM))
+                error(ann.pos, "annotation " + annType.typeSymbol.fullNameString + " is missing argument " + name.name)
+            }
+
+            if (hasError) annotationError
+            else AnnotationInfo(annType, List(), nvPairs map {p => (p._1, p._2.get)})
+          }
+        } else if (requireJava) {
+          error(ann.pos, "nested java annotations must be defined in java; found: "+ annType)
         } else {
-          // Since a selfsym is supplied, the annotation should have
-          // an extra "self" identifier in scope for type checking.
-          // This is implemented by wrapping the rhs
-          // in a function like "self => rhs" during type checking,
-          // and then stripping the "self =>" and substituting
-          // in the supplied selfsym.
-          val funcparm = ValDef(NoMods, nme.self, TypeTree(selfsym.info), EmptyTree)
-          val func = Function(List(funcparm), annot.constr.duplicate)
+          val typedAnn = if (selfsym == NoSymbol) {
+            typed(ann, mode, annClass.tpe)
+          } else {
+            // Since a selfsym is supplied, the annotation should have
+            // an extra "self" identifier in scope for type checking.
+            // This is implemented by wrapping the rhs
+            // in a function like "self => rhs" during type checking,
+            // and then stripping the "self =>" and substituting
+            // in the supplied selfsym.
+            val funcparm = ValDef(NoMods, nme.self, TypeTree(selfsym.info), EmptyTree)
+            val func = Function(List(funcparm), ann.duplicate)
                                          // The .duplicate of annot.constr
                                          // deals with problems that
                                          // accur if this annotation is
@@ -2267,71 +2385,48 @@ trait Typers { self: Analyzer =>
                                          // ident's within annot.constr
                                          // will retain the old symbol
                                          // from the previous typing.
-          val fun1clazz = FunctionClass(1)
-          val funcType = typeRef(fun1clazz.tpe.prefix,
-                                 fun1clazz,
-                                 List(selfsym.info, AnnotationClass.tpe))
+            val fun1clazz = FunctionClass(1)
+            val funcType = typeRef(fun1clazz.tpe.prefix,
+                                   fun1clazz,
+                                   List(selfsym.info, annClass.tpe))
 
-          typed(func, mode, funcType) match {
-            case t @ Function(List(arg), rhs) =>
-              val subs =
-                new TreeSymSubstituter(List(arg.symbol),List(selfsym))
-              subs(rhs)
+            typed(func, mode, funcType) match {
+              case t @ Function(List(arg), rhs) =>
+                val subs =
+                  new TreeSymSubstituter(List(arg.symbol),List(selfsym))
+                subs(rhs)
+            }
           }
+
+          def annInfo(t: Tree): AnnotationInfo = t match {
+            case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
+              AnnotationInfo(annType, args.map(AnnotationArgument(_)), List())
+
+            case Block(stats, expr) =>
+              context.warning(t.pos, "Usage of named or default arguments transformed this annotation\n"+
+                                "constructor call into a block. The corresponding AnnotationInfo\n"+
+                                "will contain references to local values and default getters instead\n"+
+                                "of the actual argument trees")
+              annInfo(expr)
+
+            case Apply(fun, args) =>
+              context.warning(t.pos, "Implementation limitation: multiple argument lists on annotations are\n"+
+                                     "currently not supported; ignoring arguments "+ args)
+              annInfo(fun)
+
+            case _ =>
+              error(t.pos, "unexpected tree after typing annotation: "+ typedAnn)
+          }
+
+          if (annType.typeSymbol == DeprecatedAttr &&
+              (argss.length == 0 || argss.head.length == 0))
+            unit.deprecationWarning(ann.pos,
+              "the `deprecated' annotation now takes a (message: String) as parameter\n"+
+              "indicating the reason for deprecation. That message is printed to the console and included in scaladoc.")
+
+          if ((typedAnn.tpe == null) || typedAnn.tpe.isErroneous) annotationError
+          else annInfo(typedAnn)
         }
-
-      lazy val annotationError = AnnotationInfo(ErrorType, Nil, Nil)
-      typedConstr match {
-        case t @ Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
-          if ((t.tpe==null) || t.tpe.isErroneous) annotationError
-          else {
-            val annType = tpt.tpe
-
-            val needsConstant =
-              (annType.typeSymbol isNonBottomSubClass ClassfileAnnotationClass)
-
-            def annotArg(tree: Tree): AnnotationArgument = {
-              val arg = new AnnotationArgument(tree)
-              if (needsConstant && !arg.isConstant)
-                needConst(tree)
-              arg
-            }
-            val constrArgs = args map annotArg
-
-            val attrScope = annType.decls
-              .filter(sym => sym.isMethod && !sym.isConstructor && sym.hasFlag(JAVA))
-            val names = new collection.mutable.HashSet[Symbol]
-            names ++= attrScope.iterator.filter(_.isMethod)
-            if (args.length == 1) {
-              names.retain(sym => sym.name != nme.value)
-            }
-            val nvPairs = annot.elements map {
-              case vd @ ValDef(_, name, _, rhs) => {
-                val sym = attrScope.lookupWithContext(name)(context.owner);
-                if (sym == NoSymbol) {
-                  error(vd.pos, "unknown attribute element name: " + name)
-                } else if (!names.contains(sym)) {
-                  error(vd.pos, "duplicate value for element " + name)
-                } else {
-                  names -= sym
-                  val annArg =
-                    annotArg(
-                      typed(rhs, EXPRmode, sym.tpe.resultType))
-                  (sym.name, annArg)
-                }
-              }
-            }
-            for (name <- names) {
-              if (!name.attributes.contains(AnnotationInfo(AnnotationDefaultAttr.tpe, List(), List()))) {
-                error(annot.constr.pos, "attribute " + annType.typeSymbol.fullNameString + " is missing element " + name.name)
-              }
-            }
-            if (attrError) annotationError
-            else AnnotationInfo(annType, constrArgs, nvPairs)
-          }
-        // XXX what should the default case be doing here?
-        // see bug #1837 for code which induced a MatchError
-        case _  => annotationError
       }
     }
 
@@ -2461,19 +2556,19 @@ trait Typers { self: Analyzer =>
           t match {
             case ExistentialType(tparams, _) =>
               boundSyms ++= tparams
-	    case AnnotatedType(annots, _, _) =>
-	      for (annot <- annots; arg <- annot.args; t <- arg.intTree) {
-		t match {
-		  case Ident(_) =>
-		    // Check the symbol of an Ident, unless the
-		    // Ident's type is already over an existential.
-		    // (If the type is already over an existential,
+            case AnnotatedType(annots, _, _) =>
+              for (annot <- annots; arg <- annot.args; t <- arg.intTree) {
+                t match {
+                  case Ident(_) =>
+                    // Check the symbol of an Ident, unless the
+                    // Ident's type is already over an existential.
+                    // (If the type is already over an existential,
                     // then remap the type, not the core symbol.)
-		    if (!t.tpe.typeSymbol.hasFlag(EXISTENTIAL))
-		      addIfLocal(t.symbol, t.tpe)
-		  case _ => ()
-		}
-	      }
+                    if (!t.tpe.typeSymbol.hasFlag(EXISTENTIAL))
+                      addIfLocal(t.symbol, t.tpe)
+                  case _ => ()
+                }
+              }
             case _ =>
           }
           addIfLocal(t.termSymbol, t)
@@ -2482,7 +2577,7 @@ trait Typers { self: Analyzer =>
       }
 
       object substLocals extends TypeMap {
-	    override val dropNonConstraintAnnotations = true
+        override val dropNonConstraintAnnotations = true
 
         def apply(t: Type): Type = t match {
           case TypeRef(_, sym, args) if (sym.isLocal && args.length > 0) =>
@@ -2493,22 +2588,22 @@ trait Typers { self: Analyzer =>
           case _ => mapOver(t)
         }
 
-	override def mapOver(arg: Tree, giveup: ()=>Nothing) = {
-	  object substLocalTrees extends TypeMapTransformer {
-	    override def transform(tr: Tree) = {
+        override def mapOver(arg: Tree, giveup: ()=>Nothing) = {
+          object substLocalTrees extends TypeMapTransformer {
+            override def transform(tr: Tree) = {
               localInstances.get(new SymInstance(tr.symbol, tr.tpe)) match {
-		case Some(local) =>
-		  Ident(local.existentialToString)
-		    .setSymbol(tr.symbol).copyAttrs(tr).setType(
-		      typeRef(NoPrefix, local, List()))
+                case Some(local) =>
+                  Ident(local.existentialToString)
+                    .setSymbol(tr.symbol).copyAttrs(tr).setType(
+                      typeRef(NoPrefix, local, List()))
 
-		case None => super.transform(tr)
-	      }
-	    }
-	  }
+                case None => super.transform(tr)
+              }
+            }
+          }
 
-	  substLocalTrees.transform(arg)
-	}
+          substLocalTrees.transform(arg)
+        }
       }
 
       val normalizedTpe = normalizeLocals(tree.tpe)
@@ -2548,70 +2643,71 @@ trait Typers { self: Analyzer =>
         case _ => NoType
       }
 
-      def typedAnnotated(annot: Annotation, arg1: Tree): Tree = {
+      def typedAnnotated(ann: Tree, arg1: Tree): Tree = {
         /** mode for typing the annotation itself */
         val annotMode = mode & ~TYPEmode | EXPRmode
 
         if (arg1.isType) {
-          val selfsym =
-            if (!settings.selfInAnnots.value)
-              NoSymbol
-            else
-              arg1.tpe.selfsym match {
-                case NoSymbol =>
-                  /* Implementation limitation: Currently this
-                   * can cause cyclical reference errors even
-                   * when the self symbol is not referenced at all.
-                   * Surely at least some of these cases can be
-                   * fixed by proper use of LazyType's.  Lex tinkered
-                   * on this but did not succeed, so is leaving
-                   * it alone for now. Example code with the problem:
-                   *  class peer extends Annotation
-                   *  class NPE[T <: NPE[T] @peer]
-                   *
-                   * (Note: -Yself-in-annots must be on to see the problem)
-                   **/
-                  val sym =
-                    newLocalDummy(context.owner, annot.pos)
-                      .newValue(annot.pos, nme.self)
-                  sym.setInfo(arg1.tpe.withoutAttributes)
-                  sym
-                case sym => sym
-              }
+          // make sure the annotation is only typechecked once
+          if (ann.tpe == null) {
+            // an annotated type
+            val selfsym =
+              if (!settings.selfInAnnots.value)
+                NoSymbol
+              else
+                arg1.tpe.selfsym match {
+                  case NoSymbol =>
+                    /* Implementation limitation: Currently this
+                     * can cause cyclical reference errors even
+                     * when the self symbol is not referenced at all.
+                     * Surely at least some of these cases can be
+                     * fixed by proper use of LazyType's.  Lex tinkered
+                     * on this but did not succeed, so is leaving
+                     * it alone for now. Example code with the problem:
+                     *  class peer extends Annotation
+                     *  class NPE[T <: NPE[T] @peer]
+                     *
+                     * (Note: -Yself-in-annots must be on to see the problem)
+                     **/
+                    val sym =
+                      newLocalDummy(context.owner, ann.pos)
+                        .newValue(ann.pos, nme.self)
+                    sym.setInfo(arg1.tpe.withoutAnnotations)
+                    sym
+                  case sym => sym
+                }
 
-          // use the annotation context's owner as parent for symbols defined
-          // inside a type annotation
-          val ainfo = typedAnnotation(annot, context.owner, annotMode, selfsym)
-          val atype0 = arg1.tpe.withAttribute(ainfo)
-          val atype =
-            if ((selfsym != NoSymbol) && (ainfo.refsSymbol(selfsym)))
-              atype0.withSelfsym(selfsym)
-            else
-              atype0 // do not record selfsym if
-                     // this annotation did not need it
+            val ainfo = typedAnnotation(ann, annotMode, selfsym)
+            val atype0 = arg1.tpe.withAnnotation(ainfo)
+            val atype =
+              if ((selfsym != NoSymbol) && (ainfo.refsSymbol(selfsym)))
+                atype0.withSelfsym(selfsym)
+              else
+                atype0 // do not record selfsym if
+                       // this annotation did not need it
 
-          if (ainfo.isErroneous)
-            arg1  // simply drop erroneous annotations
-          else
-            TypeTree(atype) setOriginal tree
-        } else {
-          def annotTypeTree(ainfo: AnnotationInfo): Tree =
-            TypeTree(arg1.tpe.withAttribute(ainfo)) setOriginal tree
-
-          val annotInfo = typedAnnotation(annot, context.owner, annotMode)
-
-          arg1 match {
-            case _: DefTree =>
-              if (!annotInfo.atp.isError) {
-                val attributed =
-                  if (arg1.symbol.isModule) arg1.symbol.moduleClass else arg1.symbol
-                attributed.attributes = annotInfo :: attributed.attributes
-              }
-              arg1
-            case _ =>
-              val atpt = annotTypeTree(annotInfo)
-              Typed(arg1, atpt) setPos tree.pos setType atpt.tpe
+            if (ainfo.isErroneous)
+              arg1  // simply drop erroneous annotations
+            else {
+              ann.tpe = atype
+              TypeTree(atype) setOriginal tree
+            }
+          } else {
+            // the annotation was typechecked before
+            TypeTree(ann.tpe) setOriginal tree
           }
+        } else {
+          // An annotated term, created with annotation ascription
+          //   term : @annot()
+          def annotTypeTree(ainfo: AnnotationInfo): Tree =
+            TypeTree(arg1.tpe.withAnnotation(ainfo)) setOriginal tree
+
+          if (ann.tpe == null) {
+            val annotInfo = typedAnnotation(ann, annotMode)
+            ann.tpe = arg1.tpe.withAnnotation(annotInfo)
+          }
+          val atype = ann.tpe
+          Typed(arg1, TypeTree(atype) setOriginal tree) setPos tree.pos setType atype
         }
       }
 
@@ -2957,9 +3053,9 @@ trait Typers { self: Analyzer =>
                   if (treeInfo.isVariableOrGetter(qual1)) {
                     convertToAssignment(fun, qual1, name, args, ex)
                   } else {
-		    if ((qual1.symbol ne null) && qual1.symbol.isValue)
-		      error(tree.pos, "reassignment to val")
-		    else
+                    if ((qual1.symbol ne null) && qual1.symbol.isValue)
+                      error(tree.pos, "reassignment to val")
+                    else
                       reportTypeError(fun.pos, ex)
                     setError(tree)
                   }
@@ -3382,14 +3478,8 @@ trait Typers { self: Analyzer =>
           if ((comments ne null) && (defn.symbol ne null) && (defn.symbol ne NoSymbol)) comments(defn.symbol) = comment
           ret
 
-	case Annotation(constr, elements) =>
-	  val typedConstr = typed(constr, mode, WildcardType)
-	  val typedElems = elements.map(typed(_, mode, WildcardType))
-          (treeCopy.Annotation(tree, typedConstr, typedElems)
-	    setType typedConstr.tpe)
-
-        case Annotated(annot, arg) =>
-          typedAnnotated(annot, typed(arg, mode, pt))
+        case Annotated(constr, arg) =>
+          typedAnnotated(constr, typed(arg, mode, pt))
 
         case tree @ Block(_, _) =>
           newTyper(context.makeNewScope(tree, context.owner)(BlockScopeKind(context.depth)))

@@ -45,12 +45,13 @@ trait Trees {
 
   // modifiers --------------------------------------------------------
 
-  /** @param privateWithin   the qualifier for a private (a type name)
-   *                         or nme.EMPTY.toTypeName, if none is given.
-   *  @param annotations     the annotations for the definition
-   *                         (i.e things starting with @)
+  /** @param privateWithin the qualifier for a private (a type name)
+   *    or nme.EMPTY.toTypeName, if none is given.
+   *  @param annotations the annotations for the definition.
+   *    <strong>Note:</strong> the typechecker drops these annotations,
+   *    use the AnnotationInfo's (Symbol.annotations) in later phases.
    */
-  case class Modifiers(flags: Long, privateWithin: Name, annotations: List[Annotation]) {
+  case class Modifiers(flags: Long, privateWithin: Name, annotations: List[Tree]) {
     def isCovariant     = hasFlag(COVARIANT    )  // marked with `+'
     def isContravariant = hasFlag(CONTRAVARIANT)  // marked with `-'
     def isPrivate   = hasFlag(PRIVATE  )
@@ -83,7 +84,7 @@ trait Trees {
       if (flags1 == flags) this
       else Modifiers(flags1, privateWithin, annotations)
     }
-    def withAnnotations(annots: List[Annotation]) =
+    def withAnnotations(annots: List[Tree]) =
       if (annots.isEmpty) this
       else Modifiers(flags, privateWithin, annotations ::: annots)
   }
@@ -514,10 +515,6 @@ trait Trees {
     // The symbol of an Import is an import symbol @see Symbol.newImport
     // It's used primarily as a marker to check that the import has been typechecked.
 
-  /** Annotation application (constructor arguments + name-value pairs) */
-  case class Annotation(constr: Tree, elements: List[Tree])
-       extends TermTree
-
   /** Documented definition, eliminated by analyzer */
   case class DocDef(comment: String, definition: Tree)
        extends Tree {
@@ -828,8 +825,12 @@ trait Trees {
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
   // def TypeTree(tp: Type, tree : Tree): TypeTree = TypeTree(tree) setType tp
 
-  /** A tree that has an attribute attached to it */
-  case class Annotated(annot: Annotation, arg: Tree) extends Tree {
+  /** A tree that has an annotation attached to it. Only used for annotated types and
+   *  annotation ascriptions, annotations on definitions are stored in the Modifiers.
+   *  Eliminated by typechecker (typedAnnotated), the annotations are then stored in
+   *  an AnnotatedType.
+   */
+  case class Annotated(annot: Tree, arg: Tree) extends Tree {
     override def isType = arg.isType
     override def isTerm = arg.isTerm
   }
@@ -896,9 +897,6 @@ trait Trees {
      // for instance
      //   import qual.{x, y => z, _}  would be represented as
      //   Import(qual, List(("x", "x"), ("y", "z"), (WILDCARD, null)))
-  case Annotation(constr, elements) =>
-     // @constr(elements) where constr = tp(args),   (an instance of Apply)
-     //                         elements = { val x1 = c1, ..., val xn = cn }
   case DocDef(comment, definition) =>                             (eliminated by typecheck)
      // /** comment */ definition
   case Template(parents, self, body) =>
@@ -990,7 +988,6 @@ trait Trees {
     def TypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], rhs: Tree): TypeDef
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree): LabelDef
     def Import(tree: Tree, expr: Tree, selectors: List[(Name, Name)]): Import
-    def Annotation(tree: Tree, constr: Tree, elements: List[Tree]): Annotation
     def DocDef(tree: Tree, comment: String, definition: Tree): DocDef
     def Template(tree: Tree, parents: List[Tree], self: ValDef, body: List[Tree]): Template
     def Block(tree: Tree, stats: List[Tree], expr: Tree): Block
@@ -1019,7 +1016,7 @@ trait Trees {
     def Ident(tree: Tree, name: Name): Ident
     def Literal(tree: Tree, value: Constant): Literal
     def TypeTree(tree: Tree): TypeTree
-    def Annotated(tree: Tree, annot: Annotation, arg: Tree): Annotated
+    def Annotated(tree: Tree, annot: Tree, arg: Tree): Annotated
     def SingletonTypeTree(tree: Tree, ref: Tree): SingletonTypeTree
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name): SelectFromTypeTree
     def CompoundTypeTree(tree: Tree, templ: Template): CompoundTypeTree
@@ -1045,8 +1042,6 @@ trait Trees {
       new LabelDef(name, params, rhs).copyAttrs(tree)
     def Import(tree: Tree, expr: Tree, selectors: List[(Name, Name)]) =
       new Import(expr, selectors).copyAttrs(tree)
-    def Annotation(tree: Tree, constr: Tree, elements: List[Tree]) =
-      new Annotation(constr, elements).copyAttrs(tree)
     def DocDef(tree: Tree, comment: String, definition: Tree) =
       new DocDef(comment, definition).copyAttrs(tree)
     def Template(tree: Tree, parents: List[Tree], self: ValDef, body: List[Tree]) =
@@ -1103,7 +1098,7 @@ trait Trees {
       new Literal(value).copyAttrs(tree)
     def TypeTree(tree: Tree) =
       new TypeTree().copyAttrs(tree)
-    def Annotated(tree: Tree, annot: Annotation, arg: Tree) =
+    def Annotated(tree: Tree, annot: Tree, arg: Tree) =
       new Annotated(annot, arg).copyAttrs(tree)
     def SingletonTypeTree(tree: Tree, ref: Tree) =
       new SingletonTypeTree(ref).copyAttrs(tree)
@@ -1123,7 +1118,7 @@ trait Trees {
     def this() = this(new StrictTreeCopier)
     def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], impl: Template) = tree match {
       case t @ ClassDef(mods0, name0, tparams0, impl0)
-      if (mods0 == mods && (name0 == name) && (tparams0 == tparams) && (impl0 == impl)) => t
+      if (mods0 == mods) && (name0 == name) && (tparams0 == tparams) && (impl0 == impl) => t
       case _ => treeCopy.ClassDef(tree, mods, name, tparams, impl)
     }
     def PackageDef(tree: Tree, name: Name, stats: List[Tree]) = tree match {
@@ -1161,11 +1156,6 @@ trait Trees {
       case t @ Import(expr0, selectors0)
       if (expr0 == expr) && (selectors0 == selectors) => t
       case _ => treeCopy.Import(tree, expr, selectors)
-    }
-    def Annotation(tree: Tree, constr: Tree, elements: List[Tree]) = tree match {
-      case t @ Annotation(constr0, elements0)
-      if (constr0 == constr) && (elements0 == elements) => t
-      case _ => treeCopy.Annotation(tree, constr, elements)
     }
     def DocDef(tree: Tree, comment: String, definition: Tree) = tree match {
       case t @ DocDef(comment0, definition0)
@@ -1306,7 +1296,7 @@ trait Trees {
       case t @ TypeTree() => t
       case _ => treeCopy.TypeTree(tree)
     }
-    def Annotated(tree: Tree, annot: Annotation, arg: Tree) = tree match {
+    def Annotated(tree: Tree, annot: Tree, arg: Tree) = tree match {
       case t @ Annotated(annot0, arg0)
       if (annot0==annot) => t
       case _ => treeCopy.Annotated(tree, annot, arg)
@@ -1358,31 +1348,34 @@ trait Trees {
         }
       case ClassDef(mods, name, tparams, impl) =>
         atOwner(tree.symbol) {
-          treeCopy.ClassDef(tree, mods, name, transformTypeDefs(tparams), transformTemplate(impl))
+          treeCopy.ClassDef(tree, transformModifiers(mods), name,
+                            transformTypeDefs(tparams), transformTemplate(impl))
         }
       case ModuleDef(mods, name, impl) =>
         atOwner(tree.symbol.moduleClass) {
-          treeCopy.ModuleDef(tree, mods, name, transformTemplate(impl))
+          treeCopy.ModuleDef(tree, transformModifiers(mods),
+                             name, transformTemplate(impl))
         }
       case ValDef(mods, name, tpt, rhs) =>
         atOwner(tree.symbol) {
-          treeCopy.ValDef(tree, mods, name, transform(tpt), transform(rhs))
+          treeCopy.ValDef(tree, transformModifiers(mods),
+                          name, transform(tpt), transform(rhs))
         }
       case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
         atOwner(tree.symbol) {
-          treeCopy.DefDef(
-            tree, mods, name, transformTypeDefs(tparams), transformValDefss(vparamss), transform(tpt), transform(rhs))
+          treeCopy.DefDef(tree, transformModifiers(mods), name,
+                          transformTypeDefs(tparams), transformValDefss(vparamss),
+                          transform(tpt), transform(rhs))
         }
       case TypeDef(mods, name, tparams, rhs) =>
         atOwner(tree.symbol) {
-          treeCopy.TypeDef(tree, mods, name, transformTypeDefs(tparams), transform(rhs))
+          treeCopy.TypeDef(tree, transformModifiers(mods), name,
+                           transformTypeDefs(tparams), transform(rhs))
         }
       case LabelDef(name, params, rhs) =>
         treeCopy.LabelDef(tree, name, transformIdents(params), transform(rhs)) //bq: Martin, once, atOwner(...) works, also change `LamdaLifter.proxy'
       case Import(expr, selectors) =>
         treeCopy.Import(tree, transform(expr), selectors)
-      case Annotation(constr, elements) =>
-        treeCopy.Annotation(tree, transform(constr), transformTrees(elements))
       case DocDef(comment, definition) =>
         treeCopy.DocDef(tree, comment, transform(definition))
       case Template(parents, self, body) =>
@@ -1442,7 +1435,7 @@ trait Trees {
       case TypeTree() =>
         treeCopy.TypeTree(tree)
       case Annotated(annot, arg) =>
-        treeCopy.Annotated(tree, transform(annot).asInstanceOf[Annotation], transform(arg))
+        treeCopy.Annotated(tree, transform(annot), transform(arg))
       case SingletonTypeTree(ref) =>
         treeCopy.SingletonTypeTree(tree, transform(ref))
       case SelectFromTypeTree(qualifier, selector) =>
@@ -1482,6 +1475,8 @@ trait Trees {
         if (exprOwner != currentOwner && stat.isTerm) atOwner(exprOwner)(transform(stat))
         else transform(stat)) filter (EmptyTree !=)
     def transformUnit(unit: CompilationUnit) { unit.body = transform(unit.body) }
+    def transformModifiers(mods: Modifiers): Modifiers =
+      Modifiers(mods.flags, mods.privateWithin, transformTrees(mods.annotations))
 
     def atOwner[A](owner: Symbol)(trans: => A): A = {
       val prevOwner = currentOwner
@@ -1525,8 +1520,6 @@ trait Trees {
         traverseTrees(params); traverse(rhs)
       case Import(expr, selectors) =>
         traverse(expr)
-      case Annotation(constr, elements) =>
-        traverse(constr); traverseTrees(elements)
       case Annotated(annot, arg) =>
         traverse(annot); traverse(arg)
       case DocDef(comment, definition) =>

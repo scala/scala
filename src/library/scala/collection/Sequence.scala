@@ -40,17 +40,13 @@ object Sequence extends SequenceFactory[Sequence] {
   implicit def builderFactory[A]: BuilderFactory[A, Sequence[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, Sequence[A]] = immutable.Sequence.newBuilder[A]
 
-  /** @deprecated use View instead
-   */
-  @deprecated type Projection[A] = SequenceView[A, Coll]
+  @deprecated("use View instead") type Projection[A] = SequenceView[A, Coll]
 
-  /** @deprecated use Sequence(value) instead */
-  @deprecated def singleton[A](value: A) = Sequence(value)
+  @deprecated("use Sequence(value) instead")
+  def singleton[A](value: A) = Sequence(value)
 
-  /** Builds a singleton sequence.
-   *
-   * @deprecated use <code>Sequence(x)</code> instead.
-   */
-  @deprecated def single[A](x: A) = singleton(x)
+  /** Builds a singleton sequence. */
+  @deprecated("use <code>Sequence(x)</code> instead.")
+  def single[A](x: A) = singleton(x)
 }
 

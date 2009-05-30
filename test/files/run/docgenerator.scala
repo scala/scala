@@ -51,25 +51,25 @@ object Test {
     val code ="""
 package annots
 
-@deprecated
+@deprecated("msg")
 object Foo { val x = 0 }
 
-@deprecated
+@deprecated("msg")
 class Bar { val x = 1 }
 
 object Foo1 {
-  @deprecated
+  @deprecated("msg")
   object Foo11 { val x = 3 }
 }
 
 class Bar1 {
-  @deprecated
+  @deprecated("msg")
   object Foo11 { val x = 2 }
 }
 
 class Bar2 {
   def bar {
-    @deprecated
+    @deprecated("msg")
     object Foo21 { val x = 4 }
     ()
   }
@@ -77,7 +77,7 @@ class Bar2 {
 
 object Foo2 {
   def foo {
-    @deprecated
+    @deprecated("msg")
     object Foo21 { val x = 5 }
     ()
   }

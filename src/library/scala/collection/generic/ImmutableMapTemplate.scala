@@ -97,6 +97,6 @@ self =>
     res
   }
 
-  /** @deprecated use updated instead */
-  @deprecated def update[B1 >: B](key: A, value: B1): immutable.Map[A, B1] = updated(key, value).asInstanceOf[immutable.Map[A, B1]]
+  @deprecated("use `updated' instead")
+  def update[B1 >: B](key: A, value: B1): immutable.Map[A, B1] = updated(key, value).asInstanceOf[immutable.Map[A, B1]]
 }

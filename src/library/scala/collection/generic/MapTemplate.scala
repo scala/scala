@@ -124,11 +124,8 @@ self =>
     override def foreach[B](f: A => B) = for ((k, v) <- self) f(k)
   }
 
-  /** @deprecated use `keys` instead
-   *
-   *  @return the keys of this map as a set.
-   */
-  @deprecated def keySet: collection.Set[A] = new DefaultKeySet
+  /** @return the keys of this map as a set. */
+  @deprecated("use `keys' instead") def keySet: collection.Set[A] = new DefaultKeySet
 
   /** Creates an iterator for all keys.
    *
@@ -187,9 +184,7 @@ self =>
     def get(key: A) = self.get(key).map(f)
   }
 
-  /** @deprecated  use mapValues instead
-   */
-  @deprecated def mapElements[C](f: B => C) = mapValues(f)
+  @deprecated("use `mapValues' instead") def mapElements[C](f: B => C) = mapValues(f)
 
   // The following 5 operations (updated, two times +, two times ++) should really be
   // generic, returning This[B]. We need better covariance support to express that though.

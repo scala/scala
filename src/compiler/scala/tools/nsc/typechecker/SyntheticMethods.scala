@@ -210,7 +210,7 @@ trait SyntheticMethods { self: Analyzer =>
     }
 
     def hasSerializableAnnotation(clazz: Symbol): Boolean =
-      !clazz.getAttributes(definitions.SerializableAttr).isEmpty
+      clazz.hasAnnotation(definitions.SerializableAttr)
 
     def readResolveMethod: Tree = {
       // !!! the synthetic method "readResolve" should be private,
@@ -231,51 +231,7 @@ trait SyntheticMethods { self: Analyzer =>
         result
     }
 
-    def beanSetterOrGetter(sym: Symbol): Symbol =
-      if (!sym.name(0).isLetter) {
-        context.unit.error(sym.pos, "attribute `BeanProperty' can be applied only to fields that start with a letter")
-        NoSymbol
-      } else {
-        var name0 = sym.name
-        if (sym.isSetter) name0 = nme.setterToGetter(name0)
-        val prefix = if (sym.isSetter) "set" else
-          if (sym.tpe.resultType == BooleanClass.tpe) "is" else "get"
-        val arity = if (sym.isSetter) 1 else 0
-        val name1 = prefix + name0(0).toUpperCase + name0.subName(1, name0.length)
-        val sym1 = clazz.info.decl(name1)
-        if (sym1 != NoSymbol && sym1.tpe.paramTypes.length == arity) {
-          context.unit.error(sym.pos, "a definition of `"+name1+"' already exists in " + clazz)
-          NoSymbol
-        } else {
-          val m = clazz.newMethod(sym.pos, name1)
-          m.setInfo(sym.info.cloneInfo(clazz))
-           .setFlag(sym.getFlag(DEFERRED | OVERRIDE | STATIC))
-          m
-        }
-      }
-
     val ts = new ListBuffer[Tree]
-
-    def addBeanGetterMethod(sym: Symbol) = {
-      val getter = beanSetterOrGetter(sym)
-      if (getter != NoSymbol) {
-        clazz.info.decls.enter(getter)
-        ts += typer.typed(DefDef(
-          getter,
-          if (sym hasFlag DEFERRED) EmptyTree else gen.mkAttributedRef(sym)))
-      }
-    }
-
-    def addBeanSetterMethod(sym: Symbol) = {
-      val setter = beanSetterOrGetter(sym)
-      if (setter != NoSymbol) {
-        clazz.info.decls.enter(setter)
-        ts += typer.typed(DefDef(
-          setter,
-          if (sym hasFlag DEFERRED) EmptyTree
-          else Apply(gen.mkAttributedRef(sym), List(Ident(setter.paramss.head.head)))))
-      }
-    }
 
     def isPublic(sym: Symbol) =
       !sym.hasFlag(PRIVATE | PROTECTED) && sym.privateWithin == NoSymbol
@@ -285,7 +241,7 @@ trait SyntheticMethods { self: Analyzer =>
         if (clazz hasFlag CASE) {
           val isTop = !(clazz.info.baseClasses.tail exists (_ hasFlag CASE))
           // case classes are implicitly declared serializable
-          clazz.attributes = AnnotationInfo(SerializableAttr.tpe, List(), List()) :: clazz.attributes
+          clazz.addAnnotation(AnnotationInfo(SerializableAttr.tpe, List(), List()))
 
           if (isTop) {
             for (stat <- templ.body) {
@@ -324,15 +280,6 @@ trait SyntheticMethods { self: Analyzer =>
           // only for those that carry a @serializable annotation?
           if (!hasImplementation(nme.readResolve)) ts += readResolveMethod
         }
-        if (!forMSIL)
-          for (sym <- clazz.info.decls.toList)
-            if (!sym.getAttributes(BeanPropertyAttr).isEmpty)
-              if (sym.isGetter)
-                addBeanGetterMethod(sym)
-              else if (sym.isSetter)
-                addBeanSetterMethod(sym)
-              else if (sym.isMethod || sym.isType)
-                context.unit.error(sym.pos, "attribute `BeanProperty' is not applicable to " + sym)
       } catch {
         case ex: TypeError =>
           if (!reporter.hasErrors) throw ex

@@ -50,7 +50,7 @@ extends Map[A, B]
 
   def iterator: Iterator[(A, B)] = imap.iterator
 
-  @deprecated def elements = iterator
+  @deprecated("use `iterator' instead") def elements = iterator
 
   override def toList: List[(A, B)] = imap.toList
 

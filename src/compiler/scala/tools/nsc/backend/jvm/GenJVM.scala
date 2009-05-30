@@ -157,7 +157,7 @@ abstract class GenJVM extends SubComponent {
       if (parents.isEmpty)
         parents = definitions.ObjectClass.tpe :: parents;
 
-      for (attr <- c.symbol.attributes) attr match {
+      for (annot <- c.symbol.annotations) annot match {
         case AnnotationInfo(tp, _, _) if tp.typeSymbol == SerializableAttr =>
           parents = parents ::: List(definitions.SerializableClass.tpe)
         case AnnotationInfo(tp, _, _) if tp.typeSymbol == CloneableAttr =>
@@ -220,10 +220,10 @@ abstract class GenJVM extends SubComponent {
       clasz.methods foreach genMethod
 
       addGenericSignature(jclass, c.symbol, c.symbol.owner)
-      addAnnotations(jclass, c.symbol.attributes)
+      addAnnotations(jclass, c.symbol.annotations)
       emitClass(jclass, c.symbol)
 
-      if (c.symbol hasAttribute BeanInfoAttr)
+      if (c.symbol hasAnnotation BeanInfoAttr)
         genBeanInfoClass(c)
     }
 
@@ -234,7 +234,7 @@ abstract class GenJVM extends SubComponent {
      * @author Ross Judson (ross.judson@soletta.com)
      */
     def genBeanInfoClass(c: IClass) {
-      val description = c.symbol.attributes.find(_.atp.typeSymbol == BeanDescriptionAttr)
+      val description = c.symbol.annotations.find(_.atp.typeSymbol == BeanDescriptionAttr)
       // informProgress(description.toString())
 
       val beanInfoClass = fjbgContext.JClass(javaFlags(c.symbol),
@@ -328,85 +328,90 @@ abstract class GenJVM extends SubComponent {
       addAttribute(jmethod, nme.ExceptionsATTR, buf)
     }
 
-    /** Whether an annotation should be emitted as a Java annotation */
-    private def shouldEmitAttribute(annot: AnnotationInfo) =
-      (annot.atp.typeSymbol.hasFlag(Flags.JAVA) &&
+    /** Whether an annotation should be emitted as a Java annotation
+     *   .initialize: if 'annnot' is read from pickle, atp might be un-initialized
+     */
+    private def shouldEmitAnnotation(annot: AnnotationInfo) =
+      (annot.atp.typeSymbol.initialize.hasFlag(Flags.JAVA) &&
        annot.atp.typeSymbol.isNonBottomSubClass(definitions.ClassfileAnnotationClass) &&
-       annot.isConstant)
+       annot.args.isEmpty)
 
+    private def emitJavaAnnotations(cpool: JConstantPool, buf: ByteBuffer, annotations: List[AnnotationInfo]): Int = {
+      def emitArgument(arg: ConstantAnnotationArgument): Unit = arg match {
+        case LiteralAnnotationArgument(const) =>
+          const.tag match {
+            case BooleanTag =>
+              buf.put('Z'.toByte)
+              buf.putShort(cpool.addInteger(if(const.booleanValue) 1 else 0).toShort)
+            case ByteTag    =>
+              buf.put('B'.toByte)
+              buf.putShort(cpool.addInteger(const.byteValue).toShort)
+            case ShortTag   =>
+              buf.put('S'.toByte)
+              buf.putShort(cpool.addInteger(const.shortValue).toShort)
+            case CharTag    =>
+              buf.put('C'.toByte)
+              buf.putShort(cpool.addInteger(const.charValue).toShort)
+            case IntTag     =>
+              buf.put('I'.toByte)
+              buf.putShort(cpool.addInteger(const.intValue).toShort)
+            case LongTag    =>
+              buf.put('J'.toByte)
+              buf.putShort(cpool.addLong(const.longValue).toShort)
+            case FloatTag   =>
+              buf.put('F'.toByte)
+              buf.putShort(cpool.addFloat(const.floatValue).toShort)
+            case DoubleTag  =>
+              buf.put('D'.toByte)
+              buf.putShort(cpool.addDouble(const.doubleValue).toShort)
+            case StringTag  =>
+              buf.put('s'.toByte)
+              buf.putShort(cpool.addUtf8(const.stringValue).toShort)
+            case ClassTag   =>
+              buf.put('c'.toByte)
+              buf.putShort(cpool.addUtf8(javaType(const.typeValue).getSignature()).toShort)
+            case EnumTag =>
+              buf.put('e'.toByte)
+              buf.putShort(cpool.addUtf8(javaType(const.tpe).getSignature()).toShort)
+              buf.putShort(cpool.addUtf8(const.symbolValue.name.toString).toShort)
+          }
 
-    private def emitAttributes(cpool: JConstantPool, buf: ByteBuffer, attributes: List[AnnotationInfo]): Int = {
-//      val cpool = jclass.getConstantPool()
-
-      def emitElement(const: Constant): Unit = const.tag match {
-        case BooleanTag =>
-          buf.put('Z'.toByte)
-          buf.putShort(cpool.addInteger(if(const.booleanValue) 1 else 0).toShort)
-        case ByteTag    =>
-          buf.put('B'.toByte)
-          buf.putShort(cpool.addInteger(const.byteValue).toShort)
-        case ShortTag   =>
-          buf.put('S'.toByte)
-          buf.putShort(cpool.addInteger(const.shortValue).toShort)
-        case CharTag    =>
-          buf.put('C'.toByte)
-          buf.putShort(cpool.addInteger(const.charValue).toShort)
-        case IntTag     =>
-          buf.put('I'.toByte)
-          buf.putShort(cpool.addInteger(const.intValue).toShort)
-        case LongTag    =>
-          buf.put('J'.toByte)
-          buf.putShort(cpool.addLong(const.longValue).toShort)
-        case FloatTag   =>
-          buf.put('F'.toByte)
-          buf.putShort(cpool.addFloat(const.floatValue).toShort)
-        case DoubleTag  =>
-          buf.put('D'.toByte)
-          buf.putShort(cpool.addDouble(const.doubleValue).toShort)
-        case StringTag  =>
-          buf.put('s'.toByte)
-          buf.putShort(cpool.addUtf8(const.stringValue).toShort)
-        case ClassTag   =>
-          buf.put('c'.toByte)
-          buf.putShort(cpool.addUtf8(javaType(const.typeValue).getSignature()).toShort)
-        case EnumTag =>
-          buf.put('e'.toByte)
-          buf.putShort(cpool.addUtf8(javaType(const.tpe).getSignature()).toShort)
-          buf.putShort(cpool.addUtf8(const.symbolValue.name.toString).toShort)
-        case ArrayTag =>
+        case ArrayAnnotationArgument(args) =>
           buf.put('['.toByte)
-          val arr = const.arrayValue
-          buf.putShort(arr.length.toShort)
-          for (elem <- arr) emitElement(elem)
+          buf.putShort(args.length.toShort)
+          for (val elem <- args) emitArgument(elem)
+
+        case NestedAnnotationArgument(annInfo) =>
+          buf.put('@'.toByte)
+          emitAnnotation(annInfo)
       }
 
-      var nattr = 0
+      def emitAnnotation(annotInfo: AnnotationInfo) {
+        val AnnotationInfo(typ, args, assocs) = annotInfo
+        val jtype = javaType(typ)
+        buf.putShort(cpool.addUtf8(jtype.getSignature()).toShort)
+        assert(args.isEmpty, args.toString)
+        buf.putShort(assocs.length.toShort)
+        for ((name, value) <- assocs) {
+          buf.putShort(cpool.addUtf8(name.toString).toShort)
+          emitArgument(value)
+        }
+      }
+
+      var nannots = 0
       val pos = buf.position()
 
       // put some random value; the actual number of annotations is determined at the end
       buf.putShort(0xbaba.toShort)
 
-      for (attrib@AnnotationInfo(typ, consts, nvPairs) <- attributes;
-           if shouldEmitAttribute(attrib))
-      {
-        nattr += 1
-        val jtype = javaType(typ)
-        buf.putShort(cpool.addUtf8(jtype.getSignature()).toShort)
-        assert(consts.length <= 1, consts.toString)
-        buf.putShort((consts.length + nvPairs.length).toShort)
-        if (!consts.isEmpty) {
-          buf.putShort(cpool.addUtf8("value").toShort)
-          emitElement(consts.head.constant.get)
-        }
-        for ((name, value) <- nvPairs) {
-          buf.putShort(cpool.addUtf8(name.toString).toShort)
-          emitElement(value.constant.get)
-        }
+      for (annot <- annotations if shouldEmitAnnotation(annot)) {
+        nannots += 1
+        emitAnnotation(annot)
       }
 
       // save the number of annotations
-      buf.putShort(pos, nattr.toShort)
-      nattr
+      buf.putShort(pos, nannots.toShort)
+      nannots
     }
 
     def addGenericSignature(jmember: JMember, sym: Symbol, owner: Symbol) {
@@ -429,31 +434,28 @@ abstract class GenJVM extends SubComponent {
       }
     }
 
-    def addAnnotations(jmember: JMember, attributes: List[AnnotationInfo]) {
-      val toEmit = attributes.filter(shouldEmitAttribute(_))
+    def addAnnotations(jmember: JMember, annotations: List[AnnotationInfo]) {
+      val toEmit = annotations.filter(shouldEmitAnnotation(_))
 
       if (toEmit.isEmpty) return
 
       val buf: ByteBuffer = ByteBuffer.allocate(2048)
 
-      emitAttributes(jmember.getConstantPool, buf, toEmit)
+      emitJavaAnnotations(jmember.getConstantPool, buf, toEmit)
 
       addAttribute(jmember, nme.RuntimeAnnotationATTR, buf)
     }
 
-    def addParamAnnotations(pattrss: List[List[AnnotationInfo]]) {
-      val attributes = for (attrs <- pattrss) yield
-        for (attr @ AnnotationInfo(tpe, _, _) <- attrs;
-             if attr.isConstant;
-             if tpe.typeSymbol isNonBottomSubClass definitions.ClassfileAnnotationClass) yield attr;
-      if (attributes.forall(_.isEmpty)) return;
+    def addParamAnnotations(jmethod: JMethod, pannotss: List[List[AnnotationInfo]]) {
+      val annotations = pannotss map (annots => annots.filter(shouldEmitAnnotation(_)))
+      if (annotations.forall(_.isEmpty)) return;
 
       val buf: ByteBuffer = ByteBuffer.allocate(2048)
 
       // number of parameters
-      buf.put(attributes.length.toByte)
-      for (attrs <- attributes)
-        emitAttributes(jmethod.getConstantPool, buf, attrs)
+      buf.put(annotations.length.toByte)
+      for (annots <- annotations)
+        emitJavaAnnotations(jmethod.getConstantPool, buf, annots)
 
       addAttribute(jmethod, nme.RuntimeParamAnnotationATTR, buf)
     }
@@ -519,7 +521,7 @@ abstract class GenJVM extends SubComponent {
         log("Adding field: " + f.symbol.fullNameString);
       var attributes = 0
 
-      f.symbol.attributes foreach { a => a match {
+      f.symbol.annotations foreach { a => a match {
         case AnnotationInfo(tp, _, _) if tp.typeSymbol == TransientAtt =>
           attributes = attributes | JAccessFlags.ACC_TRANSIENT
         case AnnotationInfo(tp, _, _) if tp.typeSymbol == VolatileAttr =>
@@ -535,7 +537,7 @@ abstract class GenJVM extends SubComponent {
                            javaName(f.symbol),
                            javaType(f.symbol.tpe));
       addGenericSignature(jfield, f.symbol, clasz.symbol)
-      addAnnotations(jfield, f.symbol.attributes)
+      addAnnotations(jfield, f.symbol.annotations)
     }
 
     def genMethod(m: IMethod) {
@@ -597,10 +599,10 @@ abstract class GenJVM extends SubComponent {
       }
 
       addGenericSignature(jmethod, m.symbol, clasz.symbol)
-      val (excs, others) = splitAnnotations(m.symbol.attributes, ThrowsAttr)
+      val (excs, others) = splitAnnotations(m.symbol.annotations, ThrowsAttr)
       addExceptionsAttribute(jmethod, excs)
       addAnnotations(jmethod, others)
-      addParamAnnotations(m.params.map(_.sym.attributes))
+      addParamAnnotations(jmethod, m.params.map(_.sym.annotations))
     }
 
     private def addRemoteException(jmethod: JMethod, meth: Symbol) {
@@ -613,10 +615,11 @@ abstract class GenJVM extends SubComponent {
         case _ => false
       }
 
-      if (remoteClass || (meth.hasAttribute(RemoteAttr) && jmethod.isPublic())) {
+      if (remoteClass ||
+          (meth.hasAnnotation(RemoteAttr) && jmethod.isPublic())) {
         val ainfo = AnnotationInfo(ThrowsAttr.tpe, List(new AnnotationArgument(Constant(RemoteException))), List())
-        if (!meth.attributes.exists(isRemoteThrows)) {
-          meth.attributes = ainfo :: meth.attributes;
+        if (!meth.annotations.exists(isRemoteThrows)) {
+          meth.addAnnotation(ainfo)
         }
       }
     }
@@ -732,9 +735,10 @@ abstract class GenJVM extends SubComponent {
       if (!m.hasFlag(Flags.DEFERRED))
         addGenericSignature(mirrorMethod, m, module)
 
-      val (throws, others) = splitAnnotations(m.attributes, ThrowsAttr)
+      val (throws, others) = splitAnnotations(m.annotations, ThrowsAttr)
       addExceptionsAttribute(mirrorMethod, throws)
       addAnnotations(mirrorMethod, others)
+      addParamAnnotations(mirrorMethod, m.info.params.map(_.annotations))
     }
 
     /** Add forwarders for all methods defined in `module' that don't conflict with
@@ -1521,7 +1525,7 @@ abstract class GenJVM extends SubComponent {
         val attr =
             fjbgContext.JOtherAttribute(jclass,
                                         jmethod,
-                                        "LocalVariableTable",
+                                        nme.LocalVariableTableATTR.toString,
                                         lvTab.array())
         jcode.addAttribute(attr)
     }

@@ -165,16 +165,15 @@ object Iterator {
   implicit def iteratorIteratorWrapper[A](its: Iterator[Iterator[A]]): IteratorIteratorOps[A] =
     new IteratorIteratorOps[A](its)
 
-  /** @deprecated  use `xs.iterator` or `Iterator(xs)` instead
-   */
-  @deprecated def fromValues[a](xs: a*) = xs.iterator
+  @deprecated("use `xs.iterator' or `Iterator(xs)' instead")
+  def fromValues[a](xs: a*) = xs.iterator
 
   /**
    *  @param xs the array of elements
    *  @see also: Vector.iterator and slice
-   *  @deprecated  use `xs.iterator` instead
    */
-  @deprecated def fromArray[a](xs: Array[a]): Iterator[a] =
+  @deprecated("use `xs.iterator' instead")
+  def fromArray[a](xs: Array[a]): Iterator[a] =
     fromArray(xs, 0, xs.length)
 
   /**
@@ -182,24 +181,24 @@ object Iterator {
    *  @param start  the start index
    *  @param length  the length
    *  @see also: Vector.iterator and slice
-   *  @deprecated  use `xs.slice(start, start + length).iterator` instead
    */
-  @deprecated def fromArray[a](xs: Array[a], start: Int, length: Int): Iterator[a] =
+  @deprecated("use `xs.slice(start, start + length).iterator' instead")
+  def fromArray[a](xs: Array[a], start: Int, length: Int): Iterator[a] =
     xs.slice(start, start + length).iterator
 
   /**
    *  @param str the given string
    *  @return    the iterator on <code>str</code>
-   *  @deprecated replaced by <code>str.iterator</code>
    */
-  @deprecated def fromString(str: String): Iterator[Char] = str.iterator
+  @deprecated("replaced by <code>str.iterator</code>")
+  def fromString(str: String): Iterator[Char] = str.iterator
 
   /**
    *  @param n the product arity
    *  @return  the iterator on <code>Product&lt;n&gt;</code>.
-   *  @deprecated use product.productIterator instead
    */
-  @deprecated def fromProduct(n: Product): Iterator[Any] = new Iterator[Any] {
+  @deprecated("use product.productIterator instead")
+  def fromProduct(n: Product): Iterator[Any] = new Iterator[Any] {
     private var c: Int = 0
     private val cmax = n.productArity
     def hasNext = c < cmax
@@ -216,9 +215,9 @@ object Iterator {
    *  @param end   the end value of the iterator
    *  @param step  the increment function of the iterator, must be monotonically increasing or decreasing
    *  @return      the iterator with values in range <code>[start;end)</code>.
-   *  @deprecated  use Iterator.iterate(start, end - start)(step) instead
    */
-  @deprecated def range(start: Int, end: Int, step: Int => Int) = new Iterator[Int] {
+  @deprecated("use Iterator.iterate(start, end - start)(step) instead")
+  def range(start: Int, end: Int, step: Int => Int) = new Iterator[Int] {
     private val up = step(start) > start
     private val down = step(start) < start
     private var i = start
@@ -235,9 +234,9 @@ object Iterator {
    *  @param start the start value of the iterator
    *  @param step  the increment function of the iterator
    *  @return      the iterator starting at value <code>start</code>.
-   *  @deprecated  use iterate(start)(step) instead
    */
-  @deprecated def from(start: Int, step: Int => Int): Iterator[Int] = new Iterator[Int] {
+  @deprecated("use iterate(start)(step) instead")
+  def from(start: Int, step: Int => Int): Iterator[Int] = new Iterator[Int] {
     private var i = start
     override def hasNext: Boolean = true
     def next(): Int = { val j = i; i = step(i); j }
@@ -247,9 +246,9 @@ object Iterator {
    *  returned by a given iterator of iterators.
    *   @param its   The iterator which returns on each call to next
    *                a new iterator whose elements are to be concatenated to the result.
-   *   @deprecated  use its.flatten instead
    */
-  @deprecated def flatten[T](its: Iterator[Iterator[T]]): Iterator[T] = new Iterator[T] {
+  @deprecated("use its.flatten instead")
+  def flatten[T](its: Iterator[Iterator[T]]): Iterator[T] = new Iterator[T] {
     private var cur = its.next
     def hasNext: Boolean = {
       while (!cur.hasNext && its.hasNext) cur = its.next
@@ -902,30 +901,28 @@ trait Iterator[+A] { self =>
 
  /** Returns a new iterator that first yields the elements of this
    *  iterator followed by the elements provided by iterator <code>that</code>.
-   *  @deprecated  use <code>++</code>
    */
-  @deprecated def append[B >: A](that: Iterator[B]) = new Iterator[B] {
+  @deprecated("use <code>++</code>")
+  def append[B >: A](that: Iterator[B]) = new Iterator[B] {
     def hasNext = self.hasNext || that.hasNext
     def next() = (if (self.hasNext) self else that).next()
   }
 
-  /** Returns index of the first element satisfying a predicate, or -1.
-   *
-   *  @deprecated use `indexWhere` instead
-   */
-  @deprecated def findIndexOf(p: A => Boolean): Int = indexWhere(p)
+  /** Returns index of the first element satisfying a predicate, or -1. */
+  @deprecated("use `indexWhere` instead")
+  def findIndexOf(p: A => Boolean): Int = indexWhere(p)
 
   /** Collect elements into a seq.
    *
    * @return  a sequence which enumerates all elements of this iterator.
-   * @deprecated  use toSequence instead
    */
-  @deprecated def collect: Sequence[A] = toSequence
+  @deprecated("use toSequence instead")
+  def collect: Sequence[A] = toSequence
 
   /** Returns a counted iterator from this iterator.
-   *  @deprecated use @see zipWithIndex in Iterator
    */
-  @deprecated def counted = new CountedIterator[A] {
+  @deprecated("use zipWithIndex in Iterator")
+  def counted = new CountedIterator[A] {
     private var cnt = 0
     def count = cnt
     def hasNext: Boolean = self.hasNext
@@ -940,19 +937,21 @@ trait Iterator[+A] { self =>
    *  @param  start the starting index.
    *  @param  sz    the maximum number of elements to be read.
    *  @pre          the array must be large enough to hold <code>sz</code> elements.
-   *  @deprecated   use copyToArray instead
    */
-  @deprecated def readInto[B >: A](xs: Array[B], start: Int, sz: Int) {
+  @deprecated("use copyToArray instead")
+  def readInto[B >: A](xs: Array[B], start: Int, sz: Int) {
     var i = start
     while (hasNext && i - start < sz) {
       xs(i) = next
       i += 1
     }
   }
-  @deprecated def readInto[B >: A](xs: Array[B], start: Int) {
+  @deprecated("use copyToArray instead")
+  def readInto[B >: A](xs: Array[B], start: Int) {
     readInto(xs, start, xs.length - start)
   }
-  @deprecated def readInto[B >: A](xs: Array[B]) {
+  @deprecated("use copyToArray instead")
+  def readInto[B >: A](xs: Array[B]) {
     readInto(xs, 0, xs.length)
   }
 }

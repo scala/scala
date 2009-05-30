@@ -769,7 +769,7 @@ self =>
     }
 
     def annotTypeRest(t: Tree): Tree =
-      (t /: annotations(false)) (makeAnnotated)
+      (t /: annotations(false, false)) (makeAnnotated)
 
     /** SimpleType       ::=  SimpleType TypeArgs
      *                     |  SimpleType `#' Id
@@ -1021,7 +1021,7 @@ self =>
               syntaxErrorOrIncomplete("`*' expected", true)
             }
           } else if (in.token == AT) {
-            t = (t /: annotations(false)) (makeAnnotated)
+            t = (t /: annotations(false, false)) (makeAnnotated)
           } else {
             t = atPos(t.pos.start, colonPos) {
               val tpt =
@@ -1575,50 +1575,29 @@ self =>
       loop(NoMods)
     }
 
-    /** Annotations   ::= {Annotation [nl]}
-     *  Annotation    ::= `@' AnnotationExpr
+    /** Annotations      ::= {`@' SimpleType {ArgumentExprs}}
+     *  ConsrAnnotations ::= {`@' SimpleType ArgumentExprs}
      */
-    def annotations(skipNewLines: Boolean): List[Annotation] = {
-      var annots = new ListBuffer[Annotation]
+    def annotations(skipNewLines: Boolean, requireOneArgList: Boolean): List[Tree] = {
+      var annots = new ListBuffer[Tree]
       while (in.token == AT) {
         in.nextToken()
-        annots += annotationExpr()
+        annots += annotationExpr(requireOneArgList)
         if (skipNewLines) newLineOpt()
       }
       annots.toList
     }
 
-    /** AnnotationExpr ::= StableId [TypeArgs] [`(' [Exprs] `)'] [[nl] `{' {NameValuePair} `}']
-     *  NameValuePair ::= val id `=' PrefixExpr
-     */
-    def annotationExpr(): Annotation = {
-      def nameValuePair(): Tree = {
-        atPos(in.offset) {
-          accept(VAL)
-          val aname = ident()
-          accept(EQUALS)
-          val rhs = stripParens(prefixExpr())
-          ValDef(NoMods, aname, TypeTree(), rhs)
-        }
-      }
+    def annotationExpr(requireOneArgList: Boolean): Tree = {
       atPos(in.offset) {
-        var t: Tree = convertToTypeId(stableId())
-        if (in.token == LBRACKET)
-          t = AppliedTypeTree(t, typeArgs(false, false))
-        val args = if (in.token == LPAREN) argumentExprs() else List()
-        newLineOptWhenFollowedBy(LBRACE)
-        val nameValuePairs: List[Tree] = if (in.token == LBRACE) {
-          in.nextToken()
-          val nvps = new ListBuffer[Tree] += nameValuePair()
-          while (in.token == COMMA) {
-            in.nextToken()
-            nvps += nameValuePair()
-          }
-          accept(RBRACE)
-          nvps.toList
-        } else List()
-        val constr = New(t, List(args))
-        Annotation(constr, nameValuePairs)
+        val t = simpleType(false)
+        val argss = new ListBuffer[List[Tree]]
+        if (requireOneArgList)
+          argss += argumentExprs()
+        else if (in.token == LPAREN)
+          do { argss += argumentExprs() } while (in.token == LPAREN)
+        else argss += List()
+        New(t, argss.toList)
       }
     }
 
@@ -1638,7 +1617,7 @@ self =>
       var caseParam = ofCaseClass
       def param(): ValDef = {
         val start = in.offset
-        val annots = annotations(false)
+        val annots = annotations(false, false)
         var mods = Modifiers(Flags.PARAM)
         if (owner.isTypeName) {
           mods = modifiers() | Flags.PARAMACCESSOR
@@ -1926,12 +1905,12 @@ self =>
     }
     /** IDE hook: for non-local defs or dcls with modifiers and annotations */
     def nonLocalDefOrDcl : List[Tree] = {
-      val annots = annotations(true)
+      val annots = annotations(true, false)
       defOrDcl(modifiers() withAnnotations annots)
     }
     /** not hooked by the IDE, will not undergo stubbing. Used for early initialization blocks. */
     def preNonLocalDefOrDcl : List[Tree] = {
-      val annots = annotations(true)
+      val annots = annotations(true, false)
       defOrDcl(modifiers() withAnnotations annots)
     }
 
@@ -2111,7 +2090,7 @@ self =>
 
     /** Hook for IDE, for top-level classes/objects */
     def topLevelTmplDef: Tree = {
-      val annots = annotations(true)
+      val annots = annotations(true, false)
       val mods = modifiers() withAnnotations annots
       tmplDef(mods)
     }
@@ -2156,7 +2135,7 @@ self =>
           syntaxError("traits cannot have type parameters with <% bounds", false)
           implicitClassViews = List()
         }
-        val constrAnnots = annotations(false)
+        val constrAnnots = annotations(false, true)
         val (constrMods, vparamss) =
           if (mods.hasFlag(Flags.TRAIT)) (Modifiers(Flags.TRAIT), List())
           else (accessModifierOpt(), paramClauses(name, implicitClassViews, mods.hasFlag(Flags.CASE)))
@@ -2457,7 +2436,7 @@ self =>
     */
 
     def localDef : List[Tree] = {
-      val annots = annotations(true)
+      val annots = annotations(true, false)
       val mods = localModifiers() withAnnotations annots
       if (!(mods hasFlag ~(Flags.IMPLICIT | Flags.LAZY))) defOrDcl(mods)
       else List(tmplDef(mods))

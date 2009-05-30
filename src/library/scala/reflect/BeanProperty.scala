@@ -12,7 +12,7 @@
 package scala.reflect
 
 /** <p>
- *    This attribute adds a setter and a getter method, following the
+ *    This annotation adds a setter and a getter method, following the
  *    Java Bean convention (first letter of the property is capitalized)
  *    used by popular Java web frameworks. For example:
  *  </p><pre>

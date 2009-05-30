@@ -190,9 +190,9 @@ self =>
    *
    *  @param p the predicate used to test elements
    *  @return  the traversable without all elements that satisfy <code>p</code>
-   *  @deprecated use `filterNot` instead
    */
-  @deprecated def remove(p: A => Boolean): This = filterNot(p)
+  @deprecated("use `filterNot' instead")
+  def remove(p: A => Boolean): This = filterNot(p)
 
   /** Partitions this traversable in two traversables according to a predicate.
    *

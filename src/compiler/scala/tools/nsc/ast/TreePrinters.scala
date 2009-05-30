@@ -115,7 +115,7 @@ abstract class TreePrinters {
     }
 
     def printAnnotations(tree: Tree) {
-      val annots = tree.symbol.attributes
+      val annots = tree.symbol.annotations
       if (!annots.isEmpty) {
         annots foreach { annot => print("@"+annot+" ") }
         println
@@ -209,14 +209,6 @@ abstract class TreePrinters {
 
         case DocDef(comment, definition) =>
           print(comment); println; print(definition)
-
-        case Annotation(Apply(Select(New(tpt), nme.CONSTRUCTOR), args), elements) =>
-          print(tpt)
-          if (!args.isEmpty)
-            printRow(args, "(", ",", ")")
-          if (!elements.isEmpty)
-            print((for (Assign(name, value) <- elements) yield "val " + name + " = " + value).
-                  mkString("{", ",", "}"))
 
         case Template(parents, self, body) =>
           val currentOwner1 = currentOwner
@@ -346,16 +338,13 @@ abstract class TreePrinters {
             print(tree.tpe.toString())
           }
 
-        case Annotated(Annotation(Apply(Select(New(tpt), nme.CONSTRUCTOR), args), elements), tree) =>
+        case Annotated(Apply(Select(New(tpt), nme.CONSTRUCTOR), args), tree) =>
           def printAnnot() {
             print("@"); print(tpt)
             if (!args.isEmpty)
               printRow(args, "(", ",", ")")
-            if (!elements.isEmpty)
-              print((for (Assign(name, value) <- elements) yield "val " + name + " = " + value).
-                    mkString("{", ",", "}"))
           }
-          if (tree.isType) { printAnnot(); print(" "); print(tree) }
+          if (tree.isType) { print(tree); print(" "); printAnnot() }
           else { print(tree); print(": "); printAnnot() }
 
         case SingletonTypeTree(ref) =>

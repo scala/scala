@@ -91,9 +91,8 @@ self =>
    *  It removes all the elements that are not present in <code>that</code>.
    *
    *  @param that the set to intersect with
-   *  @deprecated use & instead
    */
-  @deprecated def ** (that: Set[A]): This = intersect(that)
+  @deprecated("use & instead") def ** (that: Set[A]): This = intersect(that)
 
   /** The union of this set and the given set <code>that</code>.
    *

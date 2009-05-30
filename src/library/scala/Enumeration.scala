@@ -167,7 +167,6 @@ abstract class Enumeration(initial: Int, names: String*) {
 
     /** this enumeration value as an <code>Int</code> bit mask.
      *  @throws IllegalArgumentException if <code>id</code> is greater than 31
-     *  @deprecated
      */
     @deprecated def mask32: Int = {
       if (id >= 32) throw new IllegalArgumentException
@@ -175,7 +174,6 @@ abstract class Enumeration(initial: Int, names: String*) {
     }
     /** this enumeration value as an <code>Long</code> bit mask.
      *  @throws IllegalArgumentException if <code>id</code> is greater than 63
-     *  @deprecated
      */
     @deprecated def mask64: Long = {
       if (id >= 64) throw new IllegalArgumentException
@@ -239,52 +237,47 @@ abstract class Enumeration(initial: Int, names: String*) {
     implicit def builderFactory: BuilderFactory[Value, ValueSet, ValueSet] = new BuilderFactory[Value, ValueSet, ValueSet] { def apply(from: ValueSet) = newBuilder }
   }
 
-  /** The name of this enumeration.
-   *  @deprecated  use toString instead
-   */
-  @deprecated def name = toString
+  /** The name of this enumeration. */
+  @deprecated("use toString instead") def name = toString
 
-  /** @deprecated use withName instead
-   */
-  @deprecated def valueOf(s: String) = values.find(_.toString == s)
+  @deprecated("use withName instead")
+  def valueOf(s: String) = values.find(_.toString == s)
 
-  /** A new iterator over all values of this enumeration.
-   *  @deprecated use values.iterator instead
-   */
-  @deprecated final def iterator: Iterator[Value] = values.iterator
+  /** A new iterator over all values of this enumeration. */
+  @deprecated("use values.iterator instead")
+  final def iterator: Iterator[Value] = values.iterator
 
-  /** Apply a function f to all values of this enumeration.
-   *  @deprecated use values.foreach instead
-   */
-  @deprecated def foreach(f: Value => Unit): Unit = this.iterator foreach f
+  /** Apply a function f to all values of this enumeration. */
+  @deprecated("use values.foreach instead")
+  def foreach(f: Value => Unit): Unit = this.iterator foreach f
 
   /** Apply a predicate p to all values of this enumeration and return
     * true, iff the predicate yields true for all values.
-   *  @deprecated use values.forall instead
    */
-  @deprecated def forall(p: Value => Boolean): Boolean = this.iterator forall p
+  @deprecated("use values.forall instead")
+  def forall(p: Value => Boolean): Boolean = this.iterator forall p
 
   /** Apply a predicate p to all values of this enumeration and return
     * true, iff there is at least one value for which p yields true.
-    *  @deprecated use values.exists instead
     */
-  @deprecated def exists(p: Value => Boolean): Boolean = this.iterator exists p
+  @deprecated("use values.exists instead")
+  def exists(p: Value => Boolean): Boolean = this.iterator exists p
 
   /** Returns an iterator resulting from applying the given function f to each
     * value of this enumeration.
-    *  @deprecated use values.map instead
     */
-  @deprecated def map[B](f: Value => B): Iterator[B] = this.iterator map f
+  @deprecated("use values.map instead")
+  def map[B](f: Value => B): Iterator[B] = this.iterator map f
 
   /** Applies the given function f to each value of this enumeration, then
     * concatenates the results.
-    *  @deprecated use values.flatMap instead
     */
-  @deprecated def flatMap[B](f: Value => Iterator[B]): Iterator[B] = this.iterator flatMap f
+  @deprecated("use values.flatMap instead")
+  def flatMap[B](f: Value => Iterator[B]): Iterator[B] = this.iterator flatMap f
 
   /** Returns all values of this enumeration that satisfy the predicate p.
     * The order of values is preserved.
-    *  @deprecated use values.filter instead
     */
-  @deprecated def filter(p: Value => Boolean): Iterator[Value] = this.iterator filter p
+  @deprecated("use values.filter instead")
+  def filter(p: Value => Boolean): Iterator[Value] = this.iterator filter p
 }

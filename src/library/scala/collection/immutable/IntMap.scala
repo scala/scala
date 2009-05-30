@@ -250,8 +250,8 @@ sealed abstract class IntMap[+T] extends scala.collection.immutable.Map[Int, T] 
     case IntMap.Nil => IntMap.Tip(key, value);
   }
 
-  /** @deprecated use updated instead */
-  @deprecated override def update[S >: T](key: Int, value: S): IntMap[S] = updated(key, value)
+  @deprecated("use `updated' instead")
+  override def update[S >: T](key: Int, value: S): IntMap[S] = updated(key, value)
 
   /**
    * Updates the map, using the provided function to resolve conflicts if the key is already present.

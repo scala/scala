@@ -326,7 +326,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           case Match(selector, cases) =>
             atPos(tree.pos) {
               Match(
-                Annotated(Annotation(New(TypeTree(UncheckedClass.tpe), List(List())), List()), selector),
+                Annotated(New(TypeTree(UncheckedClass.tpe), List(List())), selector),
                 cases)
             }
           case _ =>

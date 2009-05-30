@@ -15,4 +15,6 @@ package scala
  * An annotation that designates the definition to which it is applied as deprecated.
  * Access to the member then generates a deprecated warning.
  */
-class deprecated extends StaticAnnotation {}
+class deprecated(message: String) extends StaticAnnotation {
+  def this() = this("")
+}

@@ -41,13 +41,13 @@ abstract class NodePrinters {
           if (comma) buf.append(",")
           buf.append(EOL)
         }
-        def annotationInfoToString(attr: AnnotationInfo): String = {
+        def annotationInfoToString(annot: AnnotationInfo): String = {
           val str = new StringBuilder
-          str.append(attr.atp.toString())
-          if (!attr.args.isEmpty)
-            str.append(attr.args.mkString("(", ",", ")"))
-          if (!attr.assocs.isEmpty)
-            for (((name, value), index) <- attr.assocs.zipWithIndex) {
+          str.append(annot.atp.toString())
+          if (!annot.args.isEmpty)
+            str.append(annot.args.mkString("(", ",", ")"))
+          if (!annot.assocs.isEmpty)
+            for (((name, value), index) <- annot.assocs.zipWithIndex) {
               if (index > 0)
                 str.append(", ")
               str.append(name).append(" = ").append(value)
@@ -116,13 +116,13 @@ abstract class NodePrinters {
           if (sym hasFlag TRANS_FLAG   ) buf.append(" | TRANS_FLAG")
           if (sym hasFlag LOCKED       ) buf.append(" | LOCKED")
 
-          val attrs = ", attrs=" + (
-            if (!sym.attributes.isEmpty)
-              sym.attributes.map(annotationInfoToString).mkString("[", ",", "]")
+          val annots = ", annots=" + (
+            if (!sym.annotations.isEmpty)
+              sym.annotations.map(annotationInfoToString).mkString("[", ",", "]")
             else
               tree.asInstanceOf[MemberDef].mods.annotations)
           (if (buf.length() > 2) buf.substring(3)
-          else "0") + ", // flags=" + flagsToString(sym.flags) + attrs
+          else "0") + ", // flags=" + flagsToString(sym.flags) + annots
         }
         def nodeinfo(tree: Tree): String =
           if (infolevel == InfoLevel.Quiet) ""

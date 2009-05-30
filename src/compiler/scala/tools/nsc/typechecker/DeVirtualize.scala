@@ -241,7 +241,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
   protected def mkAbstractType(clazz: Symbol): Symbol = {
     val cabstype = clazz.owner.newAbstractType(clazz.pos, clazz.name)
       .setFlag(clazz.flags & absTypeFlagMask | SYNTHETIC)
-      .setAttributes(clazz.attributes)
+      .setAnnotations(clazz.annotations)
     atPhase(ownPhase.next) {
       cabstype setInfo new PolyTypeCompleter(cabstype, clazz) {
         def getInfo = {
@@ -291,7 +291,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
     val pos = if (clazz.owner == owner) clazz.pos else owner.pos
     val factory = owner.newMethod(pos, factoryName(clazz))
       .setFlag(clazz.flags & factoryFlagMask | SYNTHETIC)
-      .setAttributes(clazz.attributes)
+      .setAnnotations(clazz.annotations)
     factory setInfo new PolyTypeCompleter(factory, clazz) {
       private def copyType(tpe: Type): Type = tpe match {
         case MethodType(formals, restpe) => MethodType(formals, copyType(restpe))
@@ -316,7 +316,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
   protected def mkConcreteClass(clazz: Symbol, factory: Symbol) = {
     val cclazz = factory.newClass(clazz.pos, concreteClassName(clazz))
       .setFlag(FINAL | SYNTHETIC)
-      .setAttributes(clazz.attributes)
+      .setAnnotations(clazz.annotations)
 
     cclazz setInfo new LazyType {
       override def complete(sym: Symbol) {

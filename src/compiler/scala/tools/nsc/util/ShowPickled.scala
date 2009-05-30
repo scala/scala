@@ -52,7 +52,6 @@ object ShowPickled extends Names {
     case LITERALstring  => "LITERALstring"
     case LITERALnull    => "LITERALnull"
     case LITERALclass   => "LITERALclass"
-    case ATTRIBUTE      => "ATTRIBUTE"
     case CHILDREN       => "CHILDREN"
     case PosTYPEsym     => "PosTYPEsym"
     case PosALIASsym    => "PosALIASsym"
@@ -157,8 +156,6 @@ object ShowPickled extends Names {
           out.print(" <null>")
         case LITERALclass   =>
           printTypeRef()
-        case ATTRIBUTE      =>
-          printSymbolRef(); printTypeRef(); buf.until(end, printConstantRef)
         case CHILDREN       =>
           printSymbolRef(); buf.until(end, printSymbolRef)
         case _ =>

@@ -184,8 +184,8 @@ class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutabl
     }
   }
 
-  /** @deprecated use `iterator` instead */
-  @deprecated override def elements: Iterator[(Key, Value)] = iterator
+  @deprecated("use `iterator' instead")
+  override def elements: Iterator[(Key, Value)] = iterator
 
   override def clone : OpenHashMap[Key, Value] = {
     val it = new OpenHashMap[Key, Value]

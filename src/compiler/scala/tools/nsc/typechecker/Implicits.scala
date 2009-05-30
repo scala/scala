@@ -179,7 +179,7 @@ self: Analyzer =>
     private def dominates(dtor: Type, dted: Type): Boolean = {
       def core(tp: Type): Type = tp.normalize match {
         case RefinedType(parents, defs) => intersectionType(parents map core, tp.typeSymbol.owner)
-        case AnnotatedType(attribs, tp, selfsym) => core(tp)
+        case AnnotatedType(annots, tp, selfsym) => core(tp)
         case ExistentialType(tparams, result) => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
         case PolyType(tparams, result) => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
         case _ => tp

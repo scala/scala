@@ -145,8 +145,8 @@ object Source {
   /**
    *  @param s    ...
    *  @return     ...
-   *  @deprecated use fromURL(s, enc)
    */
+  @deprecated("use fromURL(s, enc)")
   def fromURL(s: String): Source =
     fromURL(new URL(s))
 
@@ -158,8 +158,8 @@ object Source {
   /**
    *  @param url  the source URL
    *  @return     ...
-   *  @deprecated use fromURL(url, enc)
    */
+  @deprecated("use fromURL(url, enc)")
   def fromURL(url: URL): Source = {
     val it = new Iterator[Char] {
       var data: Int = _

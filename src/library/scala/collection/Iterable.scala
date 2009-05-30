@@ -54,10 +54,9 @@ object Iterable extends TraversableFactory[Iterable] {
   implicit def builderFactory[A]: BuilderFactory[A, Iterable[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, Iterable[A]] = immutable.Iterable.newBuilder[A]
 
-  /** The minimum element of a non-empty sequence of ordered elements
-   *  @deprecated use seq.min instead
-   */
-  @deprecated def min[A <% Ordered[A]](seq: Iterable[A]): A = {
+  /** The minimum element of a non-empty sequence of ordered elements */
+  @deprecated("use seq.min instead")
+  def min[A <% Ordered[A]](seq: Iterable[A]): A = {
     val xs = seq.iterator
     if (!xs.hasNext) throw new IllegalArgumentException("min(<empty>)")
     var min = xs.next
@@ -68,10 +67,9 @@ object Iterable extends TraversableFactory[Iterable] {
     min
   }
 
-  /** The maximum element of a non-empty sequence of ordered elements
-   *  @deprecated use seq.max iConstead
-   */
-  @deprecated def max[A <% Ordered[A]](seq: Iterable[A]): A = {
+  /** The maximum element of a non-empty sequence of ordered elements */
+  @deprecated("use seq.max iConstead")
+  def max[A <% Ordered[A]](seq: Iterable[A]): A = {
     val xs = seq.iterator
     if (!xs.hasNext) throw new IllegalArgumentException("max(<empty>)")
     var max = xs.next
@@ -82,7 +80,5 @@ object Iterable extends TraversableFactory[Iterable] {
     max
   }
 
-  /** @deprecated use View instead
-   */
-  @deprecated type Projection[A] = IterableView[A, Coll]
+  @deprecated("use View instead") type Projection[A] = IterableView[A, Coll]
 }

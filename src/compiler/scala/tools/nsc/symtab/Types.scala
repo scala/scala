@@ -30,8 +30,8 @@ import Flags._
     // pre.sym[targs]
   case RefinedType(parents, defs) =>
     // parent1 with ... with parentn { defs }
-  case AnnotatedType(attribs, tp, selfsym) =>
-    // tp @attribs
+  case AnnotatedType(annots, tp, selfsym) =>
+    // tp @annots
 
   // the following are non-value types; you cannot write them down in Scala source.
 
@@ -195,8 +195,8 @@ trait Types {
     override def isComplete = underlying.isComplete
     override def complete(sym: Symbol) = underlying.complete(sym)
     override def load(sym: Symbol) { underlying.load(sym) }
-    override def withAttributes(attribs: List[AnnotationInfo]) = maybeRewrap(underlying.withAttributes(attribs))
-    override def withoutAttributes = maybeRewrap(underlying.withoutAttributes)
+    override def withAnnotations(annots: List[AnnotationInfo]) = maybeRewrap(underlying.withAnnotations(annots))
+    override def withoutAnnotations = maybeRewrap(underlying.withoutAnnotations)
   }
 
   /** The base class for all types */
@@ -778,23 +778,24 @@ trait Types {
       skolems
     }
 
-    /** Return the attributes on this type */
-    val attributes: List[AnnotationInfo] = Nil
-    /** Test for the presence of an attribute */
-    def hasAttribute(clazz: Symbol) = attributes exists { _.atp.typeSymbol == clazz }
+    /** Return the annotations on this type. */
+    def annotations: List[AnnotationInfo] = Nil
 
-    /** Add an attribute to this type */
-    def withAttribute(attrib: AnnotationInfo) = withAttributes(List(attrib))
+    /** Test for the presence of an annotation */
+    def hasAnnotation(clazz: Symbol) = annotations exists { _.atp.typeSymbol == clazz }
 
-    /** Add a number of attributes to this type */
-    def withAttributes(attribs: List[AnnotationInfo]): Type =
-      attribs match {
+    /** Add an annotation to this type */
+    def withAnnotation(annot: AnnotationInfo) = withAnnotations(List(annot))
+
+    /** Add a number of annotations to this type */
+    def withAnnotations(annots: List[AnnotationInfo]): Type =
+      annots match {
         case Nil => this
-        case _ => AnnotatedType(attribs, this, NoSymbol)
+        case _ => AnnotatedType(annots, this, NoSymbol)
       }
 
     /** Remove any annotations from this type */
-    def withoutAttributes = this
+    def withoutAnnotations = this
 
     /** Remove any annotations from this type and from any
      *  types embedded in this type. */
@@ -1885,47 +1886,44 @@ A type's typeSymbol should never be inspected directly.
     override def kind = "TypeVar"
   }
 
-  /** A type carrying some annotations.  The annotations have
-    * no significance to the core compiler, but can be observed
-    * by type-system plugins.  The core compiler does take care
-    * to propagate annotations and to save them in the symbol
-    * tables of object files.
-    *
-    * @param attributes the list of annotations on the type
-    * @param underlying the type without the annotation
-    * @param selfsym a "self" symbol with type <code>underlying</code>;
-    *                only available if -Yself-in-annots is
-    *                turned on.  Can be NoSymbol if it is not used.
-    */
-  case class AnnotatedType(override val attributes: List[AnnotationInfo],
+  /** A type carrying some annotations. Created by the typechecker
+   *  when eliminating ``Annotated'' trees (see typedAnnotated).
+   *
+   *  @param annotations the list of annotations on the type
+   *  @param underlying the type without the annotation
+   *  @param selfsym a "self" symbol with type <code>underlying</code>;
+   *    only available if -Yself-in-annots is turned on. Can be NoSymbol
+   *    if it is not used.
+   */
+  case class AnnotatedType(override val annotations: List[AnnotationInfo],
                            override val underlying: Type,
 			   override val selfsym: Symbol)
   extends RewrappingTypeProxy {
 
-    assert(!attributes.isEmpty)
+    assert(!annotations.isEmpty)
 
-    override protected def rewrap(tp: Type) = AnnotatedType(attributes, tp, selfsym)
+    override protected def rewrap(tp: Type) = AnnotatedType(annotations, tp, selfsym)
 
     override def safeToString: String = {
       val attString =
-        if (attributes.isEmpty)
+        if (annotations.isEmpty)
           ""
         else
-          attributes.mkString(" @", " @", "")
+          annotations.mkString(" @", " @", "")
 
       underlying + attString
     }
 
-    /** Add a number of attributes to this type */
-    override def withAttributes(attribs: List[AnnotationInfo]): Type =
-      AnnotatedType(attribs:::this.attributes, this, selfsym)
+    /** Add a number of annotations to this type */
+    override def withAnnotations(annots: List[AnnotationInfo]): Type =
+      AnnotatedType(annots:::this.annotations, this, selfsym)
 
-    /** Remove any attributes from this type */
-    override def withoutAttributes = underlying.withoutAttributes
+    /** Remove any annotations from this type */
+    override def withoutAnnotations = underlying.withoutAnnotations
 
     /** Set the self symbol */
     override def withSelfsym(sym: Symbol) =
-      AnnotatedType(attributes, underlying, sym)
+      AnnotatedType(annotations, underlying, sym)
 
     /** Drop the annotations on the bounds, unless but the low and high bounds are
      *  exactly tp. */
@@ -1939,11 +1937,11 @@ A type's typeSymbol should never be inspected directly.
 
     // ** Replace formal type parameter symbols with actual type arguments. * /
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) = {
-      val attributes1 = attributes.map(info => AnnotationInfo(info.atp.instantiateTypeParams(
+      val annotations1 = annotations.map(info => AnnotationInfo(info.atp.instantiateTypeParams(
           formals, actuals), info.args, info.assocs))
       val underlying1 = underlying.instantiateTypeParams(formals, actuals)
-      if ((attributes1 eq attributes) && (underlying1 eq underlying)) this
-      else AnnotatedType(attributes1, underlying1, selfsym)
+      if ((annotations1 eq annotations) && (underlying1 eq underlying)) this
+      else AnnotatedType(annotations1, underlying1, selfsym)
     }
 
     /** Return the base type sequence of tp, dropping the annotations, unless the base type sequence of tp
@@ -3035,7 +3033,7 @@ A type's typeSymbol should never be inspected directly.
 	override def transform(tree: Tree): Tree =
 	  tree match {
 	    case tree@Ident(name) =>
-	      tree.tpe.withoutAttributes match {
+	      tree.tpe.withoutAnnotations match {
 		case DeBruijnIndex(level, pid) =>
 		  if (level == 1) {
 		    if (actuals(pid).isStable)
@@ -3575,9 +3573,9 @@ A type's typeSymbol should never be inspected directly.
         if (constr2.inst != NoType) tp1 =:= constr2.inst
         else isRelatable(tv2, tp1) && (tv2 tryInstantiate wildcardToTypeVarMap(tp1))
       case (AnnotatedType(_,_,_), _) =>
-        annotationsConform(tp1, tp2) && annotationsConform(tp2, tp1) && tp1.withoutAttributes =:= tp2.withoutAttributes
+        annotationsConform(tp1, tp2) && annotationsConform(tp2, tp1) && tp1.withoutAnnotations =:= tp2.withoutAnnotations
       case (_, AnnotatedType(_,_,_)) =>
-        annotationsConform(tp1, tp2) && annotationsConform(tp2, tp1) && tp1.withoutAttributes =:= tp2.withoutAttributes
+        annotationsConform(tp1, tp2) && annotationsConform(tp2, tp1) && tp1.withoutAnnotations =:= tp2.withoutAnnotations
       case (_: SingletonType, _: SingletonType) =>
         var origin1 = tp1
         while (origin1.underlying.isInstanceOf[SingletonType]) {
@@ -3725,9 +3723,9 @@ A type's typeSymbol should never be inspected directly.
       case (TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
         lo2 <:< lo1 && hi1 <:< hi2
       case (AnnotatedType(_,_,_), _) =>
-        annotationsConform(tp1, tp2) && tp1.withoutAttributes <:< tp2.withoutAttributes
+        annotationsConform(tp1, tp2) && tp1.withoutAnnotations <:< tp2.withoutAnnotations
       case (_, AnnotatedType(_,_,_)) =>
-        annotationsConform(tp1, tp2) && tp1.withoutAttributes <:< tp2.withoutAttributes
+        annotationsConform(tp1, tp2) && tp1.withoutAnnotations <:< tp2.withoutAnnotations
       case (BoundedWildcardType(bounds), _) =>
         bounds.lo <:< tp2
       case (_, BoundedWildcardType(bounds)) =>

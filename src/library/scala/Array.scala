@@ -171,22 +171,21 @@ object Array extends SequenceFactory[Array] {
   def ofDim[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[A]]]]] =
     tabulate(n1)(_ => ofDim[A](n2, n3, n4, n5))
 
-  /** Create array with given dimensions
-   * @deprecated   use ofDim instead */
-  @deprecated def withDims[A](n1: Int): Array[A] = ofDim(n1)
-  @deprecated def withDims[A](n1: Int, n2: Int): Array[Array[A]] = ofDim(n1, n2)
-  @deprecated def withDims[A](n1: Int, n2: Int, n3: Int): Array[Array[Array[A]]] = ofDim(n1, n2, n3)
-  @deprecated def withDims[A](n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[A]]]] = ofDim(n1, n2, n3, n4)
-  @deprecated def withDims[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[A]]]]] = ofDim(n1, n2, n3, n4, n5)
+  /** Create array with given dimensions */
+  @deprecated("use `ofDim' instead") def withDims[A](n1: Int): Array[A] = ofDim(n1)
+  @deprecated("use `ofDim' instead") def withDims[A](n1: Int, n2: Int): Array[Array[A]] = ofDim(n1, n2)
+  @deprecated("use `ofDim' instead") def withDims[A](n1: Int, n2: Int, n3: Int): Array[Array[Array[A]]] = ofDim(n1, n2, n3)
+  @deprecated("use `ofDim' instead") def withDims[A](n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[A]]]] = ofDim(n1, n2, n3, n4)
+  @deprecated("use `ofDim' instead") def withDims[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[A]]]]] = ofDim(n1, n2, n3, n4, n5)
 
   /** Create an array containing several copies of an element.
    *
    *  @param n    the length of the resulting array
    *  @param elem the element composing the resulting array
    *  @return     an array composed of n elements all equal to elem
-   *  @deprecated use `Array.fill` instead.
    */
-  @deprecated def make[A](n: Int, elem: A): Array[A] = {
+  @deprecated("use `Array.fill' instead")
+  def make[A](n: Int, elem: A): Array[A] = {
     val a = new Array[A](n)
     var i = 0
     while (i < n) {
@@ -198,9 +197,9 @@ object Array extends SequenceFactory[Array] {
 
   /** Create an array containing the values of a given function <code>f</code>
    *  over given range <code>[0..n)</code>
-   *  @deprecated use `Array.tabulate` instead.
    */
-  @deprecated def fromFunction[A](f: Int => A)(n: Int): Array[A] = {
+  @deprecated("use `Array.tabulate' instead")
+  def fromFunction[A](f: Int => A)(n: Int): Array[A] = {
     val a = new Array[A](n)
     var i = 0
     while (i < n) {
@@ -212,30 +211,30 @@ object Array extends SequenceFactory[Array] {
 
   /** Create an array containing the values of a given function <code>f</code>
    *  over given range <code>[0..n1, 0..n2)</code>
-   *  @deprecated use `Array.tabulate` instead.
    */
-  @deprecated def fromFunction[A](f: (Int, Int) => A)(n1: Int, n2: Int): Array[Array[A]] =
+  @deprecated("use `Array.tabulate' instead")
+  def fromFunction[A](f: (Int, Int) => A)(n1: Int, n2: Int): Array[Array[A]] =
     fromFunction(i => fromFunction(f(i, _))(n2))(n1)
 
   /** Create an array containing the values of a given function <code>f</code>
    *  over given range <code>[0..n1, 0..n2, 0..n3)</code>
-   *  @deprecated use `Array.tabulate` instead.
    */
-  @deprecated def fromFunction[A](f: (Int, Int, Int) => A)(n1: Int, n2: Int, n3: Int): Array[Array[Array[A]]] =
+  @deprecated("use `Array.tabulate' instead")
+  def fromFunction[A](f: (Int, Int, Int) => A)(n1: Int, n2: Int, n3: Int): Array[Array[Array[A]]] =
     fromFunction(i => fromFunction(f(i, _, _))(n2, n3))(n1)
 
   /** Create an array containing the values of a given function <code>f</code>
    *  over given range <code>[0..n1, 0..n2, 0..n3, 0..n4)</code>
-   *  @deprecated use `Array.tabulate` instead.
    */
-  @deprecated def fromFunction[A](f: (Int, Int, Int, Int) => A)(n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[A]]]] =
+  @deprecated("use `Array.tabulate' instead")
+  def fromFunction[A](f: (Int, Int, Int, Int) => A)(n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[A]]]] =
     fromFunction(i => fromFunction(f(i, _, _, _))(n2, n3, n4))(n1)
 
   /** Create an array containing the values of a given function <code>f</code>
    *  over given range <code>[0..n1, 0..n2, 0..n3, 0..n4, 0..n5)</code>
-   *  @deprecated use `Array.tabulate` instead.
    */
-  @deprecated def fromFunction[A](f: (Int, Int, Int, Int, Int) => A)(n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[A]]]]] =
+  @deprecated("use `Array.tabulate' instead")
+  def fromFunction[A](f: (Int, Int, Int, Int, Int) => A)(n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[A]]]]] =
     fromFunction(i => fromFunction(f(i, _, _, _, _))(n2, n3, n4, n5))(n1)
 }
 
@@ -251,59 +250,58 @@ final class Array[A](_length: Int) extends Vector[A]
 
   override def companion: Companion[Array] = throw new Error()
 
-   /** Multidimensional array creation
-    *  @deprecated use Array.ofDim instead
-    */
-   @deprecated def this(dim1: Int, dim2: Int) = {
+   /** Multidimensional array creation */
+   @deprecated("use `Array.ofDim' instead")
+   def this(dim1: Int, dim2: Int) = {
      this(dim1)
      throw new Error()
    }
 
-   /** Multidimensional array creation
-    *  @deprecated use Array.ofDim instead */
-   @deprecated def this(dim1: Int, dim2: Int, dim3: Int) = {
+   /** Multidimensional array creation */
+   @deprecated("use `Array.ofDim' instead")
+   def this(dim1: Int, dim2: Int, dim3: Int) = {
      this(dim1)
      throw new Error()
    }
 
-   /** Multidimensional array creation
-    *  @deprecated use Array.ofDim instead */
-   @deprecated def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int) = {
+   /** Multidimensional array creation */
+   @deprecated("use `Array.ofDim' instead")
+   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int) = {
      this(dim1)
      throw new Error()
    }
 
-   /** Multidimensional array creation
-    *  @deprecated use Array.ofDim instead */
-   @deprecated def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int) = {
+   /** Multidimensional array creation */
+   @deprecated("use `Array.ofDim' instead")
+   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int) = {
      this(dim1);
      throw new Error()
    }
 
-   /** Multidimensional array creation
-    *  @deprecated use Array.ofDim instead */
-   @deprecated def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int) = {
+   /** Multidimensional array creation */
+   @deprecated("use `Array.ofDim' instead")
+   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int) = {
      this(dim1)
      throw new Error()
    }
 
-   /** Multidimensional array creation
-    *  @deprecated use Array.ofDim instead */
-   @deprecated def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int) = {
+   /** Multidimensional array creation */
+   @deprecated("use `Array.ofDim' instead")
+   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int) = {
      this(dim1)
      throw new Error()
    }
 
-   /** Multidimensional array creation
-    *  @deprecated use Array.ofDim instead */
-   @deprecated def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int) = {
+   /** Multidimensional array creation */
+   @deprecated("use `Array.ofDim' instead")
+   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int) = {
      this(dim1)
      throw new Error()
    }
 
-   /** Multidimensional array creation
-    *  @deprecated use Array.ofDim instead */
-   @deprecated def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int, dim9: Int) = {
+   /** Multidimensional array creation */
+   @deprecated("use `Array.ofDim' instead")
+   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int, dim9: Int) = {
      this(dim1)
      throw new Error()
    }
@@ -400,6 +398,6 @@ final class Array[A](_length: Int) extends Vector[A]
    */
   def deepEquals(that: Any): Boolean = throw new Error()
 
- /** @deprecated use slice instead */
-  @deprecated def subArray(from: Int, end: Int): Array[A] = throw new Error()
+  @deprecated("use `slice' instead")
+  def subArray(from: Int, end: Int): Array[A] = throw new Error()
 }

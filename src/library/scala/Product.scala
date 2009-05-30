@@ -39,9 +39,8 @@ trait Product extends AnyRef {
     def next() = { val result = productElement(c); c += 1; result }
   }
 
-  /** @deprecated use productIterator instead
-   */
-  @deprecated def productElements: Iterator[Any] = productIterator
+  @deprecated("use productIterator instead")
+  def productElements: Iterator[Any] = productIterator
 
   /**
    *  By default the empty string. Implementations may override this

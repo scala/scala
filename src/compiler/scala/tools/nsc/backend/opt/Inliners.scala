@@ -486,8 +486,8 @@ abstract class Inliners extends SubComponent {
      */
     def shouldInline(caller: IMethod, callee: IMethod): Boolean = {
        if (caller.symbol.hasFlag(Flags.BRIDGE)) return false;
-       if (callee.symbol.hasAttribute(ScalaNoInlineAttr)) return false
-       if (callee.symbol.hasAttribute(ScalaInlineAttr)) return true
+       if (callee.symbol.hasAnnotation(ScalaNoInlineAttr)) return false
+       if (callee.symbol.hasAnnotation(ScalaInlineAttr)) return true
        if (settings.debug.value)
          log("shouldInline: " + caller + " with " + callee)
        var score = 0

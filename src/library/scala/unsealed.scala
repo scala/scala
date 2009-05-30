@@ -11,7 +11,5 @@
 
 package scala
 
-/** @deprecated   use <a href="unchecked.html">
- *  <code>@unchecked</code></a> instead.
- */
-@deprecated class unsealed extends Annotation
+@deprecated("use `unchecked' instead")
+class unsealed extends Annotation

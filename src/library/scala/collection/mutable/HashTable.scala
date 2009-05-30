@@ -131,10 +131,9 @@ trait HashTable[A] extends AnyRef {
     }
   }
 
-  /** An iterator returning all entries
-   *  @deprecated use entriesIterator instead
-   */
-  @deprecated protected def entries: Iterator[Entry] = entriesIterator
+  /** An iterator returning all entries */
+  @deprecated("use entriesIterator instead")
+  protected def entries: Iterator[Entry] = entriesIterator
 
   /** Remove all entries from table
    */

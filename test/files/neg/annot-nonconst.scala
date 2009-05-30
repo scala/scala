@@ -1,4 +1,4 @@
-class Length(n: Int) extends ClassfileAnnotation
+class Length(value: Int) extends ClassfileAnnotation
 
 object Test {
   def n = 15

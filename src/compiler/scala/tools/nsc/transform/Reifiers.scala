@@ -86,7 +86,7 @@ trait Reifiers {
 	boundss,
 	reify(result))
       //todo: treat ExistentialType
-    case AnnotatedType(attribs, tp, _) =>
+    case AnnotatedType(annots, tp, _) =>
       reify(tp)
     case _ =>
       println("could not reify: " + tp)

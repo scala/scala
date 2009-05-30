@@ -68,11 +68,10 @@ extends immutable.Sequence[A]
   /** Creates a new queue with element added at the end
    *  of the old queue.
    *
-   *  @deprecated Use the method <code>enqueue</code> from now on.
-   *
    *  @param  elem        the element to insert
    */
-  @deprecated def +[B >: A](elem: B) = enqueue(elem)
+  @deprecated("Use the method <code>enqueue</code> from now on.")
+  def +[B >: A](elem: B) = enqueue(elem)
 
   /** Creates a new queue with element added at the end
    *  of the old queue.
@@ -87,11 +86,10 @@ extends immutable.Sequence[A]
    *  The elements are prepended in the order they
    *  are given out by the iterator.
    *
-   *  @deprecated Use the method <code>enqueue</code> from now on.
-   *
    *  @param  iter        an iterable object
    */
-  @deprecated def +[B >: A](iter: Iterable[B]) = enqueue(iter)
+  @deprecated("Use the method <code>enqueue</code> from now on.")
+  def +[B >: A](iter: Iterable[B]) = enqueue(iter)
 
   /** Returns a new queue with all elements provided by
    *  an <code>Iterable</code> object added at the end of

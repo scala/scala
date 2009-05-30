@@ -742,9 +742,9 @@ abstract class CleanUp extends Transform {
         if (settings.target.value == "jvm-1.5") {
           val sym = cdef.symbol
           // is this an anonymous function class?
-          if (sym.isAnonymousFunction && !sym.hasAttribute(SerializableAttr))
-            sym.attributes =
-              AnnotationInfo(definitions.SerializableAttr.tpe, List(), List()) :: sym.attributes
+          if (sym.isAnonymousFunction && !sym.hasAnnotation(SerializableAttr))
+            sym.addAnnotation(
+              AnnotationInfo(definitions.SerializableAttr.tpe, List(), List()))
         }
         super.transform(tree)
 

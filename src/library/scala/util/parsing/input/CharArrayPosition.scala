@@ -18,9 +18,8 @@ package scala.util.parsing.input
  *  @param columm The column number of the position (1-based)
  *
  * @author Martin Odersky, Adriaan Moors
- * @deprecated; use OffsetPosition instead
  */
-@deprecated
+@deprecated("use OffsetPosition instead")
 class CharArrayPosition(val source: Array[Char], val line: Int, val column: Int) extends Position {
 
   // TODO: this could be implemented more high-level:

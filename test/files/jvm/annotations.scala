@@ -67,10 +67,11 @@ public class Main {
 */
 object Test4 {
   import test.SourceAnnotation // defined in SourceAnnotation.java
-  @SourceAnnotation{val value = "http://scala-lang.org",
-                    val mails = Array("scala@lists.epfl.ch", "scala-lounge@lists.epfl.ch")}
+  @SourceAnnotation(value = "http://scala-lang.org",
+                    mails = Array("scala@lists.epfl.ch", "scala-lounge@lists.epfl.ch"))
   class Foo1
-  @SourceAnnotation("http://bloodsuckers.com") { val mails = Array("you@bloodsuckers.com") }
+  @SourceAnnotation(value = "http://bloodsuckers.com",
+                    mails = Array("you@bloodsuckers.com"))
   class Foo2
   @SourceAnnotation("http://bloodsuckers.com")
   class Foo3
@@ -82,7 +83,7 @@ object Test4 {
     @SourceAnnotation("file:///dev/zero")
     def bar: Int = 0
   }
-  class Foo6 @SourceAnnotation("primary constructor")(s: String) {
+  class Foo6 @SourceAnnotation("primary constructor") (s: String) {
     // to guarantee that primary constructor annotations
     // are not applied to secondary constructors
     def this() = this("")
