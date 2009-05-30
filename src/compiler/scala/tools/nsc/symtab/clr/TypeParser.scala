@@ -362,13 +362,13 @@ abstract class TypeParser {
     methodType(method.GetParameters().map(_.ParameterType), rettype);
 
   /** Return a method type for the provided argument types and return type. */
-  private def methodType(argtypes: Array[MSILType], rettype: Type): Symbol => Type = method => {
+  private def methodType(argtypes: Array[MSILType], rettype: Type): Symbol => Type = {
     def paramType(typ: MSILType): Type =
       if (typ eq clrTypes.OBJECT) definitions.AnyClass.tpe
       else getCLSType(typ);
     val ptypes = argtypes.map(paramType).toList;
     if (ptypes.contains(null)) null
-    else JavaMethodType(method.newSyntheticValueParams(ptypes), rettype);
+    else method => JavaMethodType(method.newSyntheticValueParams(ptypes), rettype);
   }
 
     //##########################################################################
