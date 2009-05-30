@@ -258,6 +258,26 @@ abstract class UnPickler {
       sym
     }
 
+    /** To avoid cutting and pasting between METHODtpe and IMPLICITMETHODtpe */
+    private def readMethodParams(isImplicit: Boolean, end: Int): List[Symbol] = {
+      if (readIndex == end)
+        return Nil
+
+      val index = readNat()
+      if (isSymbolRef(index))
+        at(index, readSymbol) :: until(end, readSymbolRef)
+      else {
+        val formals =
+          if (isImplicit) until(end, readTypeRef)
+          else at(index, readType) :: until(end, readTypeRef)
+
+        // @LUC TODO the owner should be the method symbol, and newSyntheticValueParams
+        // should only be called once, not separately for each parameter list
+        val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "unPickler$dummy")
+        dummyMethod.newSyntheticValueParams(formals)
+      }
+    }
+
     /** Read a type */
     private def readType(): Type = {
       val tag = readByte()
@@ -295,37 +315,12 @@ abstract class UnPickler {
           ClassInfoType(until(end, readTypeRef), symScope(clazz), clazz)
         case METHODtpe =>
           val restpe = readTypeRef()
-
           // compatibility with old format. TODO replace by "until(end, readSymbolRef)"
-          val params = if (readIndex == end) List[Symbol]()
-                       else {
-                         val index = readNat()
-                         if (isSymbolRef(index))
-                           at(index, readSymbol) :: until(end, readSymbolRef)
-                         else {
-                           val formals = at(index, readType) :: until(end, readTypeRef)
-                           // @LUC TODO the owner should be the method symbol, and newSyntheticValueParams
-                           // should only be called once, not separately for each parameter list
-                           val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "unPickler$dummy")
-                           dummyMethod.newSyntheticValueParams(formals)
-                         }
-                       }
+          val params = readMethodParams(false, end)
           MethodType(params, restpe)
         case IMPLICITMETHODtpe =>
           val restpe = readTypeRef()
-          val params = if (readIndex == end) List[Symbol]()
-                       else {
-                         val index = readNat()
-                         if (isSymbolRef(index))
-                           at(index, readSymbol) :: until(end, readSymbolRef)
-                         else {
-                           val formals = until(end, readTypeRef)
-                           // @LUC TODO the owner should be the method symbol, and newSyntheticValueParams
-                           // should only be called once, not separately for each parameter list
-                           val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "unPickler$dummy")
-                           dummyMethod.newSyntheticValueParams(formals)
-                         }
-                       }
+          val params = readMethodParams(true, end)
           ImplicitMethodType(params, restpe)
         case POLYtpe =>
           val restpe = readTypeRef()
