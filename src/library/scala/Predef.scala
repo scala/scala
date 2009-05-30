@@ -246,7 +246,7 @@ object Predef {
   /** any array projection can be automatically converted into an array */
   //implicit def forceArrayProjection[A](x: Array.Projection[A]): Array[A] = x.force !!! re-enable?
   /** any random access character seq (including rich string can be converted into a string */
-  implicit def richString2String(x: runtime.RichString): String = x.toString
+  implicit def richString2String(x: runtime.RichString): String = if (x eq null) null else x.toString
   //implicit def lazyStreamToConsable[A](xs: => Stream[A]) = new runtime.StreamCons(xs)
 
   implicit def seqToCharSequence(xs: collection.Vector[Char]): CharSequence = new CharSequence {
