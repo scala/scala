@@ -18,6 +18,7 @@ trait Analyzer extends AnyRef
             with EtaExpansion
             with SyntheticMethods
             with Unapplies
+            with NamesDefaults
 {
   val global : Global
   import global._

@@ -2,7 +2,7 @@
  * Copyright 2005-2009 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id: Parsers.scala 17415 2009-03-31 13:38:18Z imaier $
+// $Id: Parsers.scala 17756 2009-05-18 14:28:59Z rytz $
 //todo: allow infix type patterns
 
 
@@ -1029,7 +1029,7 @@ self =>
               if (isWildcard(t))
                 (placeholderParams: @unchecked) match {
                   case (vd @ ValDef(mods, name, _, _)) :: rest =>
-                    placeholderParams = copy.ValDef(vd, mods, name, tpt.duplicate, EmptyTree) :: rest
+                    placeholderParams = treeCopy.ValDef(vd, mods, name, tpt.duplicate, EmptyTree) :: rest
                 }
               // this does not correspond to syntax, but is necessary to
               // accept closures. We might restrict closures to be between {...} only.
@@ -1200,11 +1200,27 @@ self =>
     /** ArgumentExprs ::= `(' [Exprs [`,']] `)'
       *                 | [nl] BlockExpr
      */
-    def argumentExprs(): List[Tree] =
+    def argumentExprs(): List[Tree] = {
+      // if arg has the form "x$1 => a = x$1" it's treated as "a = x$1" with x$1
+      // in placeholderParams. This allows e.g. "val f: Int => Int = foo(a = 1, b = _)"
+      def convertArg(arg: Tree): Tree = arg match {
+        case Function(
+          List(vd @ ValDef(mods, pname1, ptype1, EmptyTree)),
+          Assign(Ident(aname), rhs)) if (mods hasFlag Flags.SYNTHETIC) =>
+          rhs match {
+            case Ident(`pname1`) | Typed(Ident(`pname1`), _) =>
+              placeholderParams = vd :: placeholderParams
+              atPos(arg.pos) { Assign(Ident(aname), Ident(pname1)) }
+            case _ => arg
+          }
+        case _ => arg
+      }
+
       if (in.token == LBRACE)
         List(blockExpr())
       else
-        surround(LPAREN, RPAREN)(if (in.token == RPAREN) List() else exprs(), List())
+        surround(LPAREN, RPAREN)(if (in.token == RPAREN) List() else (exprs() map convertArg), List())
+    }
 
     /** BlockExpr ::= `{' (CaseClauses | Block) `}'
      */
@@ -1611,11 +1627,11 @@ self =>
     /** ParamClauses      ::= {ParamClause} [[nl] `(' implicit Params `)']
      *  ParamClause       ::= [nl] `(' [Params] ')'
      *  Params            ::= Param {`,' Param}
-     *  Param             ::= {Annotation} Id [`:' ParamType]
+     *  Param             ::= {Annotation} Id [`:' ParamType] [`=' Expr]
      *  ClassParamClauses ::= {ClassParamClause} [[nl] `(' implicit ClassParams `)']
      *  ClassParamClause  ::= [nl] `(' [ClassParams] ')'
      *  ClassParams       ::= ClassParam {`,' ClassParam}
-     *  ClassParam        ::= {Annotation}  [{Modifier} (`val' | `var')] Id [`:' ParamType]
+     *  ClassParam        ::= {Annotation}  [{Modifier} (`val' | `var')] Id [`:' ParamType] [`=' Expr]
      */
     def paramClauses(owner: Name, implicitViews: List[Tree], ofCaseClass: Boolean): List[List[ValDef]] = {
       var implicitmod = 0
@@ -1657,8 +1673,14 @@ self =>
             }
             paramType()
           }
+        val default =
+          if (in.token == EQUALS) {
+            in.nextToken()
+            mods |= Flags.DEFAULTPARAM
+            expr()
+          } else EmptyTree
         atPos(start, if (name == nme.ERROR) start else nameOffset) {
-          ValDef((mods | implicitmod | bynamemod) withAnnotations annots, name, tpt, EmptyTree)
+          ValDef((mods | implicitmod | bynamemod) withAnnotations annots, name, tpt, default)
         }
       }
       def paramClause(): List[ValDef] = {
@@ -2194,9 +2216,9 @@ self =>
         if (in.token == WITH && self.isEmpty) {
           val earlyDefs: List[Tree] = body flatMap {
             case vdef @ ValDef(mods, name, tpt, rhs) if !(mods hasFlag Flags.DEFERRED) =>
-              List(copy.ValDef(vdef, mods | Flags.PRESUPER, name, tpt, rhs))
+              List(treeCopy.ValDef(vdef, mods | Flags.PRESUPER, name, tpt, rhs))
             case tdef @ TypeDef(mods, name, tparams, rhs) =>
-              List(copy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs))
+              List(treeCopy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs))
             case stat if !stat.isEmpty =>
               syntaxError(stat.pos, "only type definitions and concrete field definitions allowed in early object initialization section", false)
               List()

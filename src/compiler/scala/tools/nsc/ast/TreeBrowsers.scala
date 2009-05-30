@@ -650,11 +650,11 @@ abstract class TreeBrowsers {
                         clazz.name.toString() :: ")")
         )
 
-      case MethodType(paramtypes, result) =>
+      case MethodType(params, result) =>
         Document.group(
           Document.nest(4, "MethodType(" :/:
                         Document.group("(" :/:
-                                       toDocument(paramtypes) :/:
+                                       symsToDocument(params) :/:
                                        "), ") :/:
                         toDocument(result) :: ")")
         )

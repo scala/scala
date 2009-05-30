@@ -94,8 +94,15 @@ trait Unapplies { self: Analyzer =>
     unapp
   }
 
-  private def copyUntyped[T <: Tree](tree: T): T = {
+  def copyUntyped[T <: Tree](tree: T): T = {
     val tree1 = tree.duplicate
+    UnTyper.traverse(tree1)
+    tree1
+  }
+
+  def copyUntypedInvariant(td: TypeDef): TypeDef = {
+    val tree1 = treeCopy.TypeDef(td, td.mods &~ (COVARIANT | CONTRAVARIANT),
+                  td.name, td.tparams map (_.duplicate), td.rhs.duplicate)
     UnTyper.traverse(tree1)
     tree1
   }
@@ -151,7 +158,7 @@ trait Unapplies { self: Analyzer =>
   /** The apply method corresponding to a case class
    */
   def caseModuleApplyMeth(cdef: ClassDef): DefDef = {
-    val tparams = cdef.tparams map copyUntyped[TypeDef]
+    val tparams = cdef.tparams map copyUntypedInvariant
     val cparamss = constrParamss(cdef)
     atPos(cdef.pos) {
       DefDef(
@@ -167,7 +174,7 @@ trait Unapplies { self: Analyzer =>
   /** The unapply method corresponding to a case class
    */
   def caseModuleUnapplyMeth(cdef: ClassDef): DefDef = {
-    val tparams = cdef.tparams map copyUntyped[TypeDef]
+    val tparams = cdef.tparams map copyUntypedInvariant
     val unapplyParamName = newTermName("x$0")
     val hasVarArg = constrParamss(cdef) match {
       case (cps @ (_ :: _)) :: _ => treeInfo.isRepeatedParamType(cps.last.tpt)
@@ -182,6 +189,30 @@ trait Unapplies { self: Analyzer =>
                          classType(cdef, tparams), EmptyTree))),
         TypeTree(),
         caseClassUnapplyReturnValue(unapplyParamName, cdef.symbol))
+    }
+  }
+
+  def caseClassCopyMeth(cdef: ClassDef): Option[DefDef] = {
+    val cparamss = constrParamss(cdef)
+    if (cparamss.length == 1 && cparamss.head.isEmpty ||  // no copy method if there are no arguments
+        cdef.symbol.hasFlag(ABSTRACT) ||
+        cparamss.exists(_.exists(vd =>
+          treeInfo.isRepeatedParamType(vd.tpt) ||
+          treeInfo.isByNameParamType(vd.tpt))))
+      None
+    else {
+      val tparams = cdef.tparams map copyUntypedInvariant
+      // the parameter types have to be exactly the same as the constructor's parameter types; so it's
+      // not good enough to just duplicated the (untyped) tpt tree; the parameter types are removed here
+      // and re-added in ``finishWith'' in the namer.
+      val paramss = cparamss map (_.map(vd =>
+        treeCopy.ValDef(vd, vd.mods | DEFAULTPARAM, vd.name,
+                        TypeTree().setOriginal(vd.tpt), Ident(vd.name))))
+      val classTpe = classType(cdef, tparams)
+      Some(atPos(cdef.pos) {
+        DefDef(Modifiers(SYNTHETIC), nme.copy, tparams, paramss, classTpe,
+               New(classTpe, paramss map (_ map (p => Ident(p.name)))))
+      })
     }
   }
 }

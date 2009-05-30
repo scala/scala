@@ -87,8 +87,8 @@ trait Variances {
       flip(varianceInType(lo)(tparam)) & varianceInType(hi)(tparam)
     case RefinedType(parents, defs) =>
       varianceInTypes(parents)(tparam) & varianceInSyms(defs.toList)(tparam)
-    case MethodType(formals, restpe) =>
-      flip(varianceInTypes(formals)(tparam)) & varianceInType(restpe)(tparam)
+    case MethodType(params, restpe) =>
+      flip(varianceInSyms(params)(tparam)) & varianceInType(restpe)(tparam)
     case PolyType(tparams, restpe) =>
       flip(varianceInSyms(tparams)(tparam)) & varianceInType(restpe)(tparam)
     case ExistentialType(tparams, restpe) =>

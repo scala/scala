@@ -80,11 +80,11 @@ trait EtaExpansion { self: Analyzer =>
         }
       tree match {
         case Apply(fn, args) =>
-          copy.Apply(tree, liftoutPrefix(fn), List.mapConserve(args)(liftout)) setType null
+          treeCopy.Apply(tree, liftoutPrefix(fn), List.mapConserve(args)(liftout)) setType null
         case TypeApply(fn, args) =>
-          copy.TypeApply(tree, liftoutPrefix(fn), args) setType null
+          treeCopy.TypeApply(tree, liftoutPrefix(fn), args) setType null
         case Select(qual, name) =>
-          copy.Select(tree, liftout(qual), name) setSymbol NoSymbol setType null
+          treeCopy.Select(tree, liftout(qual), name) setSymbol NoSymbol setType null
         case Ident(name) =>
           tree
       }
@@ -99,14 +99,14 @@ trait EtaExpansion { self: Analyzer =>
     def expand(tree: Tree, tpe: Type): Tree = tpe match {
       case mt: ImplicitMethodType =>
         tree
-      case MethodType(formals, restpe) =>
+      case MethodType(paramSyms, restpe) =>
         var cnt0 = 0
         def cnt = {
           cnt0 += 1
           cnt0 - 1
         }
-        val params = formals map (formal =>
-          ValDef(Modifiers(SYNTHETIC | PARAM), freshName(tree.pos, cnt), TypeTree(formal), EmptyTree))
+        val params = paramSyms map (sym =>
+          ValDef(Modifiers(SYNTHETIC | PARAM), sym.name, TypeTree(sym.tpe), EmptyTree))
         atPos(tree.pos)(Function(params, expand(Apply(tree, params map gen.paramToArg), restpe)))
         //atPos(tree.pos)(Function(params, expand(Apply(tree, args), restpe)))
       case _ =>

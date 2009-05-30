@@ -128,6 +128,7 @@ trait Definitions {
       def List_apply = getMember(ListModule, nme.apply)
     lazy val ArrayClass: Symbol = getClass("scala.Array")
       def Array_apply = getMember(ArrayClass, nme.apply)
+      def Array_update = getMember(ArrayClass, nme.update)
     lazy val ArrayModule: Symbol = getModule("scala.Array")
       def ArrayModule_apply = getMember(ArrayModule, nme.apply)
     lazy val SerializableClass: Symbol = getClass(sn.Serializable)
@@ -445,13 +446,22 @@ trait Definitions {
       msym
     }
 
-    private def newMethod(owner: Symbol, name: Name, formals: List[Type], restpe: Type): Symbol =
-      newMethod(owner, name).setInfo(MethodType(formals, restpe))
 
-    private def newPolyMethod(owner: Symbol, name: Name, tcon: Symbol => Type): Symbol = {
+    private def newMethod(owner: Symbol, name: Name, formals: List[Type], restpe: Type): Symbol = {
+      val msym = newMethod(owner, name)
+      val params = msym.newSyntheticValueParams(formals)
+      msym.setInfo(MethodType(params, restpe))
+    }
+
+    /** tcon receives the type parameter symbol as argument */
+    private def newPolyMethod(owner: Symbol, name: Name, tcon: Symbol => Type): Symbol =
+      newPolyMethodCon(owner, name, tparam => msym => tcon(tparam))
+
+    /** tcon receives the type parameter symbol and the method symbol as arguments */
+    private def newPolyMethodCon(owner: Symbol, name: Name, tcon: Symbol => Symbol => Type): Symbol = {
       val msym = newMethod(owner, name)
       val tparam = newTypeParam(msym, 0)
-      msym.setInfo(PolyType(List(tparam), tcon(tparam)))
+      msym.setInfo(PolyType(List(tparam), tcon(tparam)(msym)))
     }
 
     private def newParameterlessMethod(owner: Symbol, name: Name, restpe: Type) =
@@ -479,7 +489,7 @@ trait Definitions {
     /** Test whether a method symbol is that of a boxing method. */
     def isBox(m: Symbol) = (boxMethod.values contains m) && {
       m.tpe match {
-        case MethodType(List(argtpe), _) => (boxMethod get argtpe.typeSymbol) match {
+        case MethodType(List(arg), _) => (boxMethod get arg.tpe.typeSymbol) match {
           case Some(`m`) => true
           case _ => false
         }
@@ -794,9 +804,9 @@ trait Definitions {
       Object_!= = newMethod(ObjectClass, nme.NE, anyrefparam, booltype) setFlag FINAL
       Object_eq = newMethod(ObjectClass, nme.eq, anyrefparam, booltype) setFlag FINAL
       Object_ne = newMethod(ObjectClass, "ne", anyrefparam, booltype) setFlag FINAL
-      Object_synchronized = newPolyMethod(
+      Object_synchronized = newPolyMethodCon(
         ObjectClass, nme.synchronized_,
-        tparam => MethodType(List(tparam.typeConstructor), tparam.typeConstructor)) setFlag FINAL
+        tparam => msym => MethodType(msym.newSyntheticValueParams(List(tparam.typeConstructor)), tparam.typeConstructor)) setFlag FINAL
       Object_isInstanceOf = newPolyMethod(
         ObjectClass, "$isInstanceOf",
         tparam => MethodType(List(), booltype)) setFlag FINAL

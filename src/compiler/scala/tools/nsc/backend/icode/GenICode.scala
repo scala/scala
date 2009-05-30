@@ -1707,7 +1707,7 @@ abstract class GenICode extends SubComponent  {
               sym.setInfo(oldLabel.tpe)
               labels(oldLabel) = sym
             }
-            val tree = copy.LabelDef(t, name1, params, transform(rhs))
+            val tree = treeCopy.LabelDef(t, name1, params, transform(rhs))
             tree.symbol = labels(t.symbol)
 
             ctx.labels += (tree.symbol -> (new Label(tree.symbol) setParams(params map (_.symbol))));

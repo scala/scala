@@ -141,10 +141,12 @@ trait ModelFrames extends ModelExtractor {
       }
       java.net.URLEncoder.encode(sym.nameString +
         (sym.tpe match {
-          case MethodType(paramTypes, _) =>
+          case MethodType(params, _) =>
+            val paramTypes = params map (_.tpe)
             if (sym hasFlag Flags.JAVA) javaParams(paramTypes)
             else scalaParams(paramTypes)
-          case PolyType(_, MethodType(paramTypes, _)) =>
+          case PolyType(_, MethodType(params, _)) =>
+            val paramTypes = params map (_.tpe)
             if (sym hasFlag Flags.JAVA) javaParams(paramTypes)
             else scalaParams(paramTypes)
           case _ => ""

@@ -128,7 +128,8 @@ trait PatternNodes {
           val listType = TypeRef(pre, definitions.ListClass, List(tptArg))
                resType = TypeRef(pre, sym                  , List(tptArg))
 
-          MethodType(List(tptArg, listType), resType)
+          val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "matching$dummy")
+          MethodType(dummyMethod.newSyntheticValueParams(List(tptArg, listType)), resType)
       }
       Apply(TypeTree(consType), List(x,normalizedListPattern(xs,tptArg))) setType resType
   }

@@ -225,11 +225,11 @@ abstract class AddInterfaces extends InfoTransform {
 
   private def ifaceMemberDef(tree: Tree): Tree =
     if (!tree.isDef || !isInterfaceMember(tree.symbol)) EmptyTree
-    else if (needsImplMethod(tree.symbol)) DefDef(tree.symbol, vparamss => EmptyTree)
+    else if (needsImplMethod(tree.symbol)) DefDef(tree.symbol, EmptyTree)
     else tree
 
   private def ifaceTemplate(templ: Template): Template =
-    copy.Template(templ, templ.parents, emptyValDef, templ.body map ifaceMemberDef)
+    treeCopy.Template(templ, templ.parents, emptyValDef, templ.body map ifaceMemberDef)
 
   private def implMethodDef(tree: Tree, ifaceMethod: Symbol): Tree =
     implMethodMap.get(ifaceMethod) match {
@@ -251,7 +251,7 @@ abstract class AddInterfaces extends InfoTransform {
    */
   private def addMixinConstructorDef(clazz: Symbol, stats: List[Tree]): List[Tree] =
     if (treeInfo.firstConstructor(stats) != EmptyTree) stats
-    else DefDef(clazz.primaryConstructor, vparamss => Block(List(), Literal(()))) :: stats
+    else DefDef(clazz.primaryConstructor, Block(List(), Literal(()))) :: stats
 
   private def implTemplate(clazz: Symbol, templ: Template): Template = atPos(templ.pos) {
     val templ1 = atPos(templ.pos) {
@@ -296,7 +296,7 @@ abstract class AddInterfaces extends InfoTransform {
       case Block(stats, expr) =>
         val (presuper, supercall :: rest) = stats span (_.symbol.hasFlag(PRESUPER))
         //assert(supercall.symbol.isClassConstructor, supercall)
-        copy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)
+        treeCopy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)
     }
   }
 
@@ -309,14 +309,14 @@ abstract class AddInterfaces extends InfoTransform {
       val tree1 = tree match {
         case ClassDef(mods, name, tparams, impl) if (sym.needsImplClass) =>
           implClass(sym).initialize // to force lateDEFERRED flags
-          copy.ClassDef(tree, mods | INTERFACE, name, tparams, ifaceTemplate(impl))
+          treeCopy.ClassDef(tree, mods | INTERFACE, name, tparams, ifaceTemplate(impl))
         case DefDef(mods, name, tparams, vparamss, tpt, rhs)
         if (sym.isClassConstructor && sym.isPrimaryConstructor && sym.owner != ArrayClass) =>
-          copy.DefDef(tree, mods, name, tparams, vparamss, tpt,
+          treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt,
                       addMixinConstructorCalls(rhs, sym.owner)) // (3)
         case Template(parents, self, body) =>
           val parents1 = sym.owner.info.parents map (t => TypeTree(t) setPos tree.pos)
-          copy.Template(tree, parents1, emptyValDef, body)
+          treeCopy.Template(tree, parents1, emptyValDef, body)
         case This(_) =>
           if (sym.needsImplClass) {
             val impl = implClass(sym)
@@ -338,7 +338,7 @@ abstract class AddInterfaces extends InfoTransform {
               else mix
             }
           if (sym.needsImplClass) Super(implClass(sym), mix1) setPos tree.pos
-          else copy.Super(tree, qual, mix1)
+          else treeCopy.Super(tree, qual, mix1)
 */
         case _ =>
           tree

@@ -53,6 +53,7 @@ object Flags {
 
   final val CASEACCESSOR  = 0x01000000    // symbol is a case parameter (or its accessor)
   final val TRAIT         = 0x02000000    // symbol is a trait
+  final val DEFAULTPARAM  = 0x02000000    // the parameter has a default value
   final val BRIDGE        = 0x04000000    // function is a bridge method. Set by Erasure
   final val ACCESSOR      = 0x08000000    // a value or variable accessor (getter or setter)
 

@@ -114,7 +114,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             superAcc.setInfo(superAccTpe.cloneInfo(superAcc))
             //println("creating super acc "+superAcc+":"+superAcc.tpe)//DEBUG
             clazz.info.decls enter superAcc;
-            accDefBuf(clazz) += typed(DefDef(superAcc, vparamss => EmptyTree))
+            accDefBuf(clazz) += typed(DefDef(superAcc, EmptyTree))
           }
           atPos(sup.pos) {
             Select(gen.mkAttributedThis(clazz), superAcc) setType tree.tpe;
@@ -154,7 +154,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         curTree = tree
         val body1 = atOwner(currentOwner) { transformTrees(body) }
 	accDefs = accDefs.tail;
-	copy.Template(tree, parents, self, ownAccDefs.toList ::: body1);
+	treeCopy.Template(tree, parents, self, ownAccDefs.toList ::: body1);
 
       case TypeApply(sel @ Select(This(_), name), args) =>
         val sym = tree.symbol
@@ -220,10 +220,10 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
       case Apply(fn, args) =>
         assert(fn.tpe != null, tree)
-        copy.Apply(tree, transform(fn), transformArgs(args, fn.tpe.paramTypes))
+        treeCopy.Apply(tree, transform(fn), transformArgs(args, fn.tpe.paramTypes))
       case Function(vparams, body) =>
         withInvalidOwner {
-          copy.Function(tree, vparams, transform(body))
+          treeCopy.Function(tree, vparams, transform(body))
         }
       case _ =>
         super.transform(tree)
@@ -260,7 +260,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       /** Return a list of list of types of all value parameter sections. */
       def allParamTypes(tpe: Type): List[List[Type]] = tpe match {
         case PolyType(_, restpe) => allParamTypes(restpe)
-        case MethodType(pts, res) => pts :: allParamTypes(res)
+        case MethodType(params, res) => params.map(_.tpe) :: allParamTypes(res)
         case _ => Nil
       }
 
@@ -274,21 +274,25 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       // if the result type depends on the this type of an enclosing class, the accessor
       // has to take an object of exactly this type, otherwise it's more general
       val objType = if (isThisType(memberType.finalResultType)) clazz.thisType else clazz.typeOfThis
-      val accType = memberType match {
+      val accType = (protAcc: Symbol) => memberType match {
         case PolyType(tparams, restpe) =>
-          PolyType(tparams, MethodType(List(objType), restpe.asSeenFrom(qual.tpe, sym.owner)))
+          // luc: question to author: should the tparams symbols not be cloned and get a new owner (protAcc)?
+          PolyType(tparams, MethodType(List(protAcc.newSyntheticValueParam(objType)),
+                                       restpe.cloneInfo(protAcc).asSeenFrom(qual.tpe, sym.owner)))
         case _ =>
-          MethodType(List(objType), memberType.asSeenFrom(qual.tpe, sym.owner))
+          MethodType(List(protAcc.newSyntheticValueParam(objType)),
+                     memberType.cloneInfo(protAcc).asSeenFrom(qual.tpe, sym.owner))
       }
       if (settings.debug.value) log("accType: " + accType)
 
-      var protAcc = clazz.info.decl(accName).suchThat(_.tpe == accType)
+      var protAcc = clazz.info.decl(accName).suchThat(s => s == NoSymbol || s.tpe =:= accType(s))
       if (protAcc == NoSymbol) {
-        protAcc = clazz.newMethod(tree.pos, nme.protName(sym.originalName)).setInfo(accType)
+        protAcc = clazz.newMethod(tree.pos, nme.protName(sym.originalName))
+        protAcc.setInfo(accType(protAcc))
         clazz.info.decls.enter(protAcc);
-        val code = DefDef(protAcc, vparamss => {
-          val obj = vparamss.head.head // receiver
-          vparamss.tail.zip(allParamTypes(sym.tpe)).foldLeft(Select(Ident(obj), sym): Tree) (
+        val code = DefDef(protAcc, {
+          val obj = protAcc.paramss.head.head // receiver
+          protAcc.paramss.tail.zip(allParamTypes(sym.tpe)).foldLeft(Select(Ident(obj), sym): Tree) (
               (fun, pvparams) => {
                 Apply(fun, (List.map2(pvparams._1, pvparams._2) { (v, origTpe) => makeArg(v, obj, origTpe) } ))
               })
@@ -362,10 +366,11 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       var protAcc = clazz.info.decl(accName)
       if (protAcc == NoSymbol) {
         protAcc = clazz.newMethod(field.pos, nme.protSetterName(field.originalName))
-                           .setInfo(MethodType(List(clazz.typeOfThis, field.tpe), definitions.UnitClass.tpe));
+        protAcc.setInfo(MethodType(protAcc.newSyntheticValueParams(List(clazz.typeOfThis, field.tpe)),
+                                   definitions.UnitClass.tpe))
         clazz.info.decls.enter(protAcc)
-        val code = DefDef(protAcc, vparamss => {
-          val obj :: value :: Nil = vparamss.head;
+        val code = DefDef(protAcc, {
+          val obj :: value :: Nil = protAcc.paramss.head;
           atPos(tree.pos) {
             Assign(
               Select(Ident(obj), field.name),

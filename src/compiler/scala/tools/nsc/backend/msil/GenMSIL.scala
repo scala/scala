@@ -1425,10 +1425,11 @@ abstract class GenMSIL extends SubComponent {
               // method: implicit view(FunctionX[PType0, PType1, ...,PTypeN, ResType]):DelegateType
               val (isDelegateView, paramType, resType) = atPhase(currentRun.typerPhase){
                 msym.tpe match {
-                  case MethodType(parameterTypes, resultType)
-                  if (parameterTypes.length == 1 && msym.name == nme.view_) =>
-                    val isDel = definitions.isCorrespondingDelegate(resultType, parameterTypes(0))
-                    (isDel, parameterTypes(0), resultType)
+                  case MethodType(params, resultType)
+                  if (params.length == 1 && msym.name == nme.view_) =>
+                    val paramType = params(0).tpe
+                    val isDel = definitions.isCorrespondingDelegate(resultType, paramType)
+                    (isDel, paramType, resultType)
                   case _ => (false, null, null)
                 }
               }
@@ -2267,16 +2268,16 @@ abstract class GenMSIL extends SubComponent {
 
 
       // create the static caller method and the delegate object
-      val (paramTypes, returnType) = delegateType.member(nme.apply).tpe match {
+      val (params, returnType) = delegateType.member(nme.apply).tpe match {
         case MethodType(delParams, delReturn) => (delParams, delReturn)
         case _ => abort("not a delegate type: "  + delegateType)
       }
       val caller: MethodBuilder = delegateCallers.DefineMethod(
         "$delegateCaller$$" + nbDelegateCallers,
         MethodAttributes.Final | MethodAttributes.Public | MethodAttributes.Static,
-        msilType(returnType), paramTypes.map(msilType).toArray)
-      for (i <- 0 until paramTypes.length)
-        caller.DefineParameter(i, ParameterAttributes.None, "arg" + i)
+        msilType(returnType), (params map (_.tpe)).map(msilType).toArray)
+      for (i <- 0 until params.length)
+        caller.DefineParameter(i, ParameterAttributes.None, "arg" + i) // FIXME: use name of parameter symbol
       val delegCtor = msilType(delegateType).GetConstructor(Array(MOBJECT, INT_PTR))
       mcode.Emit(OpCodes.Ldnull)
       mcode.Emit(OpCodes.Ldftn, caller)
@@ -2287,9 +2288,9 @@ abstract class GenMSIL extends SubComponent {
       val functionApply: MethodInfo = getMethod(functionType.member(nme.apply))
       val dcode: ILGenerator = caller.GetILGenerator()
       dcode.Emit(OpCodes.Ldsfld, anonfunField)
-      for (i <- 0 until paramTypes.length) {
+      for (i <- 0 until params.length) {
         loadArg(dcode)(i)
-        emitBox(dcode, toTypeKind(paramTypes(i)))
+        emitBox(dcode, toTypeKind(params(i).tpe))
       }
       dcode.Emit(OpCodes.Callvirt, functionApply)
       emitUnbox(dcode, toTypeKind(returnType))
@@ -2444,7 +2445,7 @@ abstract class GenMSIL extends SubComponent {
             alternatives.foreach(s => mapMethod(s, newClass, newName, msilParamTypes(s)))
 
           // paramTypes: List[Type], resType: Type
-          case MethodType(paramTypes, resType) =>
+          case MethodType(params, resType) =>
             mapMethod(memberSym, newClass, newName, msilParamTypes(memberSym))
 
           case _ =>

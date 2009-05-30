@@ -159,10 +159,11 @@ abstract class TypeParser {
 	    gparamsLength = gparams.length;
 	    val name: Name = if (gparamsLength == 0) prop.Name else nme.apply;
 	    val flags = translateAttributes(getter);
-	    val mtype: Type = if (gparamsLength == 0) PolyType(List(), propType)
-                              else methodType(getter, getter.ReturnType);
 	    val owner: Symbol = if (getter.IsStatic) statics else clazz;
-	    val methodSym = owner.newMethod(NoPosition, name).setFlag(flags).setInfo(mtype);
+	    val methodSym = owner.newMethod(NoPosition, name).setFlag(flags)
+	    val mtype: Type = if (gparamsLength == 0) PolyType(List(), propType)
+                              else methodType(getter, getter.ReturnType)(methodSym)
+        methodSym.setInfo(mtype);
 	    methodSym.setFlag(Flags.ACCESSOR);
 	    (if (getter.IsStatic) staticDefs else instanceDefs).enter(methodSym)
 	    clrTypes.methods(methodSym) = getter;
@@ -181,9 +182,10 @@ abstract class TypeParser {
 	    val name: Name = if (gparamsLength == 0) nme.getterToSetter(prop.Name)
 			     else nme.update;
 	    val flags = translateAttributes(setter);
-	    val mtype: Type = methodType(setter, definitions.UnitClass.tpe);
+	    val mtype = methodType(setter, definitions.UnitClass.tpe);
 	    val owner: Symbol = if (setter.IsStatic) statics else clazz;
-	    val methodSym = owner.newMethod(NoPosition, name).setFlag(flags).setInfo(mtype);
+	    val methodSym = owner.newMethod(NoPosition, name).setFlag(flags)
+        methodSym.setInfo(mtype(methodSym))
 	    methodSym.setFlag(Flags.ACCESSOR);
 	    (if (setter.IsStatic) staticDefs else instanceDefs).enter(methodSym);
 	    clrTypes.methods(methodSym) = setter;
@@ -234,13 +236,13 @@ abstract class TypeParser {
 
     // create the box/unbox methods for value types
     if (typ.IsValueType) {
-      val box = statics.newMethod(NoPosition, nme.box).
-        setInfo(MethodType(List(clazz.tpe), definitions.ObjectClass.tpe));
-      definitions.boxMethod(clazz) = box;
-      val unbox = statics.newMethod(NoPosition, nme.unbox).
-        setInfo(MethodType(List(definitions.ObjectClass.tpe), clazz.tpe));
-      definitions.unboxMethod(clazz) = unbox;
-      //Console.println(typ.FullName + " : " + parents);
+      val box = statics.newMethod(NoPosition, nme.box)
+      box.setInfo(MethodType(box.newSyntheticValueParams(List(clazz.tpe)), definitions.ObjectClass.tpe))
+      definitions.boxMethod(clazz) = box
+      val unbox = statics.newMethod(NoPosition, nme.unbox)
+      unbox.setInfo(MethodType(unbox.newSyntheticValueParams(List(definitions.ObjectClass.tpe)), clazz.tpe))
+      definitions.unboxMethod(clazz) = unbox
+      //Console.println(typ.FullName + " : " + parents)
     }
 
     // for enumerations introduce comparison and bitwise logical operations;
@@ -253,17 +255,17 @@ abstract class TypeParser {
 
       val flags = Flags.JAVA | Flags.FINAL
       for (cmpName <- ENUM_CMP_NAMES) {
-	val enumCmpType: Type = JavaMethodType(List(clazz.tpe), definitions.BooleanClass.tpe);
-	val enumCmp: Symbol = clazz.newMethod(NoPosition, cmpName);
-	enumCmp.setFlag(flags).setInfo(enumCmpType)
-	instanceDefs.enter(enumCmp);
+        val enumCmp = clazz.newMethod(NoPosition, cmpName)
+        val enumCmpType = JavaMethodType(enumCmp.newSyntheticValueParams(List(clazz.tpe)), definitions.BooleanClass.tpe)
+        enumCmp.setFlag(flags).setInfo(enumCmpType)
+        instanceDefs.enter(enumCmp)
       }
 
       for (bitLogName <- ENUM_BIT_LOG_NAMES) {
-	val enumBitLogType = JavaMethodType(List(clazz.tpe), classInfo);
-	val enumBitLog = clazz.newMethod(NoPosition, bitLogName);
-	enumBitLog.setFlag(flags).setInfo(enumBitLogType);
-	instanceDefs.enter(enumBitLog);
+        val enumBitLog = clazz.newMethod(NoPosition, bitLogName)
+        val enumBitLogType = JavaMethodType(enumBitLog.newSyntheticValueParams(List(clazz.tpe)), classInfo)
+        enumBitLog.setFlag(flags).setInfo(enumBitLogType)
+        instanceDefs.enter(enumBitLog)
       }
     }
 
@@ -277,8 +279,8 @@ abstract class TypeParser {
     if (mtype == null) return;
     val flags = translateAttributes(method);
     val owner = if (method.IsStatic()) statics else clazz;
-    val methodSym = owner.newMethod(NoPosition, getName(method)).setFlag(flags).
-    setInfo(mtype);
+    val methodSym = owner.newMethod(NoPosition, getName(method)).setFlag(flags)
+    methodSym.setInfo(mtype(methodSym))
     (if (method.IsStatic()) staticDefs else instanceDefs).enter(methodSym);
     if (method.IsConstructor())
       clrTypes.constructors(methodSym) = method.asInstanceOf[ConstructorInfo]
@@ -286,17 +288,17 @@ abstract class TypeParser {
   }
 
   private def createMethod(name: Name, flags: Long, args: Array[MSILType], retType: MSILType, method: MethodInfo, statik: Boolean): Symbol = {
-    val mtype: Type = methodType(args, getCLSType(retType));
-    assert(mtype != null);
+    val mtype = methodType(args, getCLSType(retType))
+    assert(mtype != null)
     createMethod(name, flags, mtype, method, statik)
   }
 
-  private def createMethod(name: Name, flags: Long, mtype: Type, method: MethodInfo, statik: Boolean): Symbol = {
-    val methodSym: Symbol = (if (statik)  statics else clazz).newMethod(NoPosition, name);
-    methodSym.setFlag(flags).setInfo(mtype);
-    (if (statik) staticDefs else instanceDefs).enter(methodSym);
+  private def createMethod(name: Name, flags: Long, mtype: Symbol => Type, method: MethodInfo, statik: Boolean): Symbol = {
+    val methodSym: Symbol = (if (statik)  statics else clazz).newMethod(NoPosition, name)
+    methodSym.setFlag(flags).setInfo(mtype(methodSym))
+    (if (statik) staticDefs else instanceDefs).enter(methodSym)
     if (method != null)
-      clrTypes.methods(methodSym)  = method;
+      clrTypes.methods(methodSym)  = method
     methodSym
   }
 
@@ -312,12 +314,12 @@ abstract class TypeParser {
     // create the forward view: delegate => function
     val delegateParamTypes: List[Type] = List(typClrType);
     // not ImplicitMethodType, this is for methods with implicit parameters (not implicit methods)
-    val forwardViewMethodType = JavaMethodType(delegateParamTypes, funType);
+    val forwardViewMethodType = (msym: Symbol) => JavaMethodType(msym.newSyntheticValueParams(delegateParamTypes), funType)
     val fmsym = createMethod(nme.view_, flags, forwardViewMethodType, null, true);
 
     // create the backward view: function => delegate
     val functionParamTypes: List[Type] = List(funType);
-    val backwardViewMethodType = JavaMethodType(functionParamTypes, typClrType);
+    val backwardViewMethodType = (msym: Symbol) => JavaMethodType(msym.newSyntheticValueParams(functionParamTypes), typClrType)
     val bmsym = createMethod(nme.view_, flags, backwardViewMethodType, null, true);
   }
 
@@ -350,23 +352,23 @@ abstract class TypeParser {
 
   //##########################################################################
 
-  private def methodType(method: MethodBase, rettype: MSILType): Type = {
+  private def methodType(method: MethodBase, rettype: MSILType): Symbol => Type = {
     val rtype = getCLSType(rettype);
     if (rtype == null) null else methodType(method, rtype);
   }
 
   /** Return a method type for the given method. */
-  private def methodType(method: MethodBase, rettype: Type): Type =
+  private def methodType(method: MethodBase, rettype: Type): Symbol => Type =
     methodType(method.GetParameters().map(_.ParameterType), rettype);
 
   /** Return a method type for the provided argument types and return type. */
-  private def methodType(argtypes: Array[MSILType], rettype: Type): Type = {
+  private def methodType(argtypes: Array[MSILType], rettype: Type): Symbol => Type = method => {
     def paramType(typ: MSILType): Type =
       if (typ eq clrTypes.OBJECT) definitions.AnyClass.tpe
       else getCLSType(typ);
     val ptypes = argtypes.map(paramType).toList;
     if (ptypes.contains(null)) null
-    else JavaMethodType(ptypes, rettype);
+    else JavaMethodType(method.newSyntheticValueParams(ptypes), rettype);
   }
 
     //##########################################################################

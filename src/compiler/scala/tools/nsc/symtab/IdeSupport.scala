@@ -259,7 +259,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
   def hasError(infoA : Type) : Boolean = {
     if (infoA == ErrorType) return true
     infoA match {
-    case MethodType(args,ret) => hasError(ret) || args.exists(hasError)
+    case MethodType(args,ret) => hasError(ret) || infoA.paramTypes.exists(hasError)
     case PolyType(params,ret) => hasError(ret)
     case TypeBounds(lo,hi) => hasError(lo) || hasError(hi)
     case TypeRef(pre,_,args) => hasError(pre) || args.exists(hasError)
@@ -638,7 +638,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
   }
 
   object lightDuplicator extends Transformer {
-    override val copy = new StrictTreeCopier
+    override val treeCopy = new StrictTreeCopier
   }
   // make the trees less detailed.
   override def sanitize(tree : Tree) : Tree = lightDuplicator.transform(tree match {

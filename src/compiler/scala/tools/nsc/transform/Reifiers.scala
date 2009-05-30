@@ -72,8 +72,8 @@ trait Reifiers {
       if (_log_reify_type_) println("cannot handle RefinedType "+tp); reflect.NoType
     case ClassInfoType(parents, defs, clazz) =>
       if (_log_reify_type_) println("cannot handle ClassInfoType "+tp); reflect.NoType
-    case MethodType(paramtypes, result) =>
-      reflect.MethodType(paramtypes.map(reify), reify(result))
+    case MethodType(params, result) =>
+      reflect.MethodType(params.map(reify), reify(result))
     case PolyType(tparams, result) =>
       val boundss =
 	for {
@@ -139,8 +139,8 @@ trait Reifiers {
 	  appliedType(untpe, args.map(unreify))
       case reflect.TypeBounds(lo, hi) =>
 	TypeBounds(unreify(lo), unreify(hi))
-      case reflect.MethodType(formals, restpe) =>
-	MethodType(formals.map(unreify), unreify(restpe))
+      case reflect.MethodType(params, restpe) =>
+	MethodType(params.map(unreify), unreify(restpe))
       case reflect.PolyType(typeParams, typeBounds, resultType) =>
 	PolyType(typeParams.map(unreify), unreify(resultType))
       //todo: treat ExistentialType

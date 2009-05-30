@@ -158,7 +158,7 @@ self: Analyzer =>
      */
     private def containsError(tp: Type): Boolean = tp match {
       case PolyType(tparams, restpe) => containsError(restpe)
-      case MethodType(formals, restpe) => (formals exists (_.isError)) || containsError(restpe)
+      case MethodType(params, restpe) => (params map (_.tpe) exists (_.isError)) || containsError(restpe)
       case _ => tp.isError
     }
 

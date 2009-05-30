@@ -74,7 +74,7 @@ trait TransMatcher {
           (v, typedValDef(v, ti))
         }
       )
-      (tmps, vds, ThrowMatchError(selector.pos, copy.Apply(app, fn, tmps map mkIdent)))
+      (tmps, vds, ThrowMatchError(selector.pos, treeCopy.Apply(app, fn, tmps map mkIdent)))
     }
 
     // sets temporaries, variable declarations, and the fail tree

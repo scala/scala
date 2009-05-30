@@ -197,7 +197,13 @@ abstract class UnPickler {
             if (tag > PosOffset) readNat
             else -1
           }
-          val name = readNameRef()
+          var defaultGetter: Symbol = NoSymbol
+          var nameref = readNat()
+          if (tag == VALsym && isSymbolRef(nameref)) {
+            defaultGetter = at(nameref, readSymbol)
+            nameref = readNat()
+          }
+          val name = at(nameref, readName)
           val owner = readSymbolRef()
           val flags = pickledToRawFlags(readLongNat())
           var privateWithin: Symbol = NoSymbol
@@ -234,6 +240,7 @@ abstract class UnPickler {
             case VALsym =>
               sym = if (name == moduleRoot.name && owner == moduleRoot.owner) moduleRoot.resetFlag(MODULE)
                     else owner.newValue(NoPosition, name)
+              sym.defaultGetter = defaultGetter
             case _ =>
               errorBadSignature("bad symbol tag: " + tag)
           }
@@ -288,10 +295,38 @@ abstract class UnPickler {
           ClassInfoType(until(end, readTypeRef), symScope(clazz), clazz)
         case METHODtpe =>
           val restpe = readTypeRef()
-          MethodType(until(end, readTypeRef), restpe)
+
+          // compatibility with old format. TODO replace by "until(end, readSymbolRef)"
+          val params = if (readIndex == end) List[Symbol]()
+                       else {
+                         val index = readNat()
+                         if (isSymbolRef(index))
+                           at(index, readSymbol) :: until(end, readSymbolRef)
+                         else {
+                           val formals = at(index, readType) :: until(end, readTypeRef)
+                           // @LUC TODO the owner should be the method symbol, and newSyntheticValueParams
+                           // should only be called once, not separately for each parameter list
+                           val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "unPickler$dummy")
+                           dummyMethod.newSyntheticValueParams(formals)
+                         }
+                       }
+          MethodType(params, restpe)
         case IMPLICITMETHODtpe =>
           val restpe = readTypeRef()
-          ImplicitMethodType(until(end, readTypeRef), restpe)
+          val params = if (readIndex == end) List[Symbol]()
+                       else {
+                         val index = readNat()
+                         if (isSymbolRef(index))
+                           at(index, readSymbol) :: until(end, readSymbolRef)
+                         else {
+                           val formals = until(end, readTypeRef)
+                           // @LUC TODO the owner should be the method symbol, and newSyntheticValueParams
+                           // should only be called once, not separately for each parameter list
+                           val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "unPickler$dummy")
+                           dummyMethod.newSyntheticValueParams(formals)
+                         }
+                       }
+          ImplicitMethodType(params, restpe)
         case POLYtpe =>
           val restpe = readTypeRef()
           PolyType(until(end, readSymbolRef), restpe)

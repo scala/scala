@@ -72,7 +72,7 @@ abstract class TreePrinters {
       tree match {
         case ValDef(mods, name, tp, rhs) =>
           printAnnotations(tree)
-          print(symName(tree, name)); printOpt(": ", tp)
+          print(symName(tree, name)); printOpt(": ", tp); printOpt(" = ", rhs)
         case TypeDef(mods, name, tparams, rhs) =>
           print(symName(tree, name))
           printTypeParams(tparams); print(rhs)

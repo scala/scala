@@ -90,13 +90,13 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           apply(restpe)
         case ExistentialType(tparams, restpe) =>
           apply(restpe)
-        case mt @ MethodType(formals, restpe) =>
+        case mt @ MethodType(params, restpe) =>
           MethodType(
-            formals map apply,
+            cloneSymbols(params) map (p => p.setInfo(apply(p.tpe))),
             if (restpe.typeSymbol == UnitClass)
               erasedTypeRef(UnitClass)
             else if (settings.Xexperimental.value)
-              apply(mt.resultType(formals)) // this gets rid of DeBruijnTypes
+              apply(mt.resultType(params map (_.tpe))) // this gets rid of DeBruijnTypes
             else
               apply(restpe))
         case RefinedType(parents, decls) =>
@@ -229,8 +229,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           assert(!tparams.isEmpty)
           def paramSig(tsym: Symbol) = tsym.name+boundSig(hiBounds(tsym.info.bounds))
           (if (toplevel) "<"+(tparams map paramSig).mkString+">" else "")+jsig(restpe)
-        case MethodType(formals, restpe) =>
-          "("+(formals map jsig).mkString+")"+
+        case MethodType(params, restpe) =>
+          "("+(params map (_.tpe) map jsig).mkString+")"+
           (if (restpe.typeSymbol == UnitClass || sym.isConstructor) VOID_TAG.toString else jsig(restpe))
         case RefinedType(parents, decls) if (!parents.isEmpty) =>
           jsig(parents.head)
@@ -305,17 +305,27 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     else if (sym.isTerm && sym.owner == ArrayClass) {
       if (sym.isClassConstructor)
         tp match {
-          case MethodType(formals, TypeRef(pre, sym, args)) =>
-            MethodType(formals map erasure, typeRef(erasure(pre), sym, args))
+          case MethodType(params, TypeRef(pre, sym, args)) =>
+            MethodType(cloneSymbols(params) map (p => p.setInfo(erasure(p.tpe))),
+                       typeRef(erasure(pre), sym, args))
         }
       else if (sym.name == nme.apply)
         tp
       else if (sym.name == nme.update)
         tp match {
           case MethodType(List(index, tvar), restpe) =>
-            MethodType(List(erasure(index), tvar), erasedTypeRef(UnitClass))
+            MethodType(List(index.cloneSymbol.setInfo(erasure(index.tpe)), tvar),
+                       erasedTypeRef(UnitClass))
         }
       else erasure(tp)
+    } else if (
+      sym.owner != NoSymbol &&
+      sym.owner.owner == ArrayClass &&
+      sym == Array_update.paramss.head(1)) {
+      // special case for Array.update: the non-erased type remains, i.e. (Int,A)Unit
+      // since the erasure type map gets applied to every symbol, we have to catch the
+      // symbol here
+      tp
     } else {
 /*
       val erased =
@@ -359,7 +369,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     private def box(tree: Tree): Tree = tree match {
       case LabelDef(name, params, rhs) =>
         val rhs1 = box(rhs)
-        copy.LabelDef(tree, name, params, rhs1) setType rhs1.tpe
+        treeCopy.LabelDef(tree, name, params, rhs1) setType rhs1.tpe
       case _ =>
         typed {
           atPos(tree.pos) {
@@ -381,7 +391,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     private def boxArray(tree: Tree): Tree = tree match {
       case LabelDef(name, params, rhs) =>
         val rhs1 = boxArray(rhs)
-        copy.LabelDef(tree, name, params, rhs1) setType rhs1.tpe
+        treeCopy.LabelDef(tree, name, params, rhs1) setType rhs1.tpe
       case _ =>
         typed {
           atPos(tree.pos) {
@@ -399,7 +409,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
     private def unbox(tree: Tree, pt: Type): Tree = tree match {
       case LabelDef(name, params, rhs) =>
         val rhs1 = unbox(rhs, pt)
-        copy.LabelDef(tree, name, params, rhs1) setType rhs1.tpe
+        treeCopy.LabelDef(tree, name, params, rhs1) setType rhs1.tpe
       case _ =>
         typed {
           atPos(tree.pos) {
@@ -651,7 +661,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               // println("member cast "+tree.symbol+" "+tree.symbol.ownerChain+" "+qual1+" "+qual1.tpe)
               qual1 = cast(qual1, tree.symbol.owner.tpe)
             }
-            copy.Select(tree, qual1, name)
+            treeCopy.Select(tree, qual1, name)
           }
         case _ =>
           tree
@@ -685,17 +695,17 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
       }
       def adaptCase(cdef: CaseDef): CaseDef = {
         val body1 = adaptToType(cdef.body, tree1.tpe)
-        copy.CaseDef(cdef, cdef.pat, cdef.guard, body1) setType body1.tpe
+        treeCopy.CaseDef(cdef, cdef.pat, cdef.guard, body1) setType body1.tpe
       }
       def adaptBranch(branch: Tree): Tree =
         if (branch == EmptyTree) branch else adaptToType(branch, tree1.tpe);
       tree1 match {
         case If(cond, thenp, elsep) =>
-          copy.If(tree1, cond, adaptBranch(thenp), adaptBranch(elsep))
+          treeCopy.If(tree1, cond, adaptBranch(thenp), adaptBranch(elsep))
         case Match(selector, cases) =>
-          copy.Match(tree1, selector, cases map adaptCase)
+          treeCopy.Match(tree1, selector, cases map adaptCase)
         case Try(block, catches, finalizer) =>
-          copy.Try(tree1, adaptBranch(block), catches map adaptCase, finalizer)
+          treeCopy.Try(tree1, adaptBranch(block), catches map adaptCase, finalizer)
         case Ident(_) | Select(_, _) =>
           if (tree1.symbol hasFlag OVERLOADED) {
             val first = tree1.symbol.alternatives.head
@@ -737,20 +747,22 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
      */
     private def checkNoDoubleDefs(root: Symbol) {
       def doubleDefError(sym1: Symbol, sym2: Symbol) {
-        val tpe1 = atPhase(currentRun.refchecksPhase.next)(root.thisType.memberType(sym1))
-        val tpe2 = atPhase(currentRun.refchecksPhase.next)(root.thisType.memberType(sym2))
+        // the .toString must also be computed at the earlier phase
+        def atRefc[T](op: => T) = atPhase[T](currentRun.refchecksPhase.next)(op)
+        val tpe1 = atRefc(root.thisType.memberType(sym1))
+        val tpe2 = atRefc(root.thisType.memberType(sym2))
         if (!tpe1.isErroneous && !tpe2.isErroneous)
           unit.error(
           if (sym1.owner == root) sym1.pos else root.pos,
           (if (sym1.owner == sym2.owner) "double definition:\n"
            else if (sym1.owner == root) "name clash between defined and inherited member:\n"
            else "name clash between inherited members:\n") +
-          sym1 + ":" + tpe1 +
+          sym1 + ":" + atRefc(tpe1.toString) +
             (if (sym1.owner == root) "" else sym1.locationString) + " and\n" +
-          sym2 + ":" + tpe2 +
+          sym2 + ":" + atRefc(tpe2.toString) +
             (if (sym2.owner == root) " at line " + (sym2.pos).line.get else sym2.locationString) +
           "\nhave same type" +
-          (if (tpe1 =:= tpe2) "" else " after erasure: " + atPhase(phase.next)(sym1.tpe)))
+          (if (atRefc(tpe1 =:= tpe2)) "" else " after erasure: " + atPhase(phase.next)(sym1.tpe)))
         sym1.setInfo(ErrorType)
       }
 
@@ -857,7 +869,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               .setPos(owner.pos)
               .setFlag(member.flags | BRIDGE)
               .resetFlag(ACCESSOR | DEFERRED | LAZY | lateDEFERRED)
-              .setInfo(otpe);
+            // the parameter symbols need to have the new owner
+            bridge.setInfo(otpe.cloneInfo(bridge))
             bridgeTarget(bridge) = member
             atPhase(phase.next) { owner.info.decls.enter(bridge) }
             if (other.owner == owner) {
@@ -870,11 +883,11 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               atPhase(phase.next) {
                 atPos(bridge.pos) {
                   val bridgeDef =
-                    DefDef(bridge, vparamss =>
+                    DefDef(bridge,
                       member.tpe match {
                         case MethodType(List(), ConstantType(c)) => Literal(c)
                         case _ =>
-                          (((Select(This(owner), member): Tree) /: vparamss)
+                          (((Select(This(owner), member): Tree) /: bridge.paramss)
                              ((fun, vparams) => Apply(fun, vparams map Ident)))
                       });
                   if (settings.debug.value)
@@ -945,9 +958,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           case ClassDef(mods, name, tparams, impl) =>
             if (settings.debug.value)
               log("defs of " + tree.symbol + " = " + tree.symbol.info.decls)
-            copy.ClassDef(tree, mods, name, List(), impl)
+            treeCopy.ClassDef(tree, mods, name, List(), impl)
           case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-            copy.DefDef(tree, mods, name, List(), vparamss, tpt, rhs)
+            treeCopy.DefDef(tree, mods, name, List(), vparamss, tpt, rhs)
           case TypeDef(_, _, _, _) =>
             EmptyTree
           case TypeApply(fun, args) if (fun.symbol.owner != AnyClass &&
@@ -1045,14 +1058,14 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
             assert(!currentOwner.isImplClass)
             //Console.println("checking no dble defs " + tree)//DEBUG
             checkNoDoubleDefs(tree.symbol.owner)
-            copy.Template(tree, parents, emptyValDef, addBridges(body, currentOwner))
+            treeCopy.Template(tree, parents, emptyValDef, addBridges(body, currentOwner))
 
           case Match(selector, cases) =>
             Match(Typed(selector, TypeTree(selector.tpe)), cases)
 
           case Literal(ct) if ct.tag == ClassTag
                            && ct.typeValue.typeSymbol != definitions.UnitClass =>
-            copy.Literal(tree, Constant(erasure(ct.typeValue)))
+            treeCopy.Literal(tree, Constant(erasure(ct.typeValue)))
 
           case _ =>
             tree

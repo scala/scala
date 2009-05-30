@@ -30,7 +30,7 @@ abstract class SampleTransform extends Transform {
           expr
         case Block(defs, sup @ Super(qual, mix)) => // A hypthothetic transformation, which replaces
                                                     // {super} by {super.sample}
-          copy.Block(                           // `copy' is the usual lazy tree copier
+          treeCopy.Block(                           // `copy' is the usual lazy tree copier
             tree1, defs,
             typed(                              // `typed' assigns types to its tree argument
               atPos(tree1.pos)(                 // `atPos' fills in position of its tree argument

@@ -1,0 +1,90 @@
+1: @
+get: $
+get: 2
+2: $
+get: 3
+get: **
+3: **
+get: 110
+get: 11
+get: \
+get: 2.399
+11: \, 110, 2.399
+get: 14
+get: 3920
+get: }
+get: [
+14: [, 3920, }
+get: 4
+get: @
+4: @
+get: 8
+get: 9
+get: %
+get: 5
+5: %, 17
+12: ', 13, 16
+6: ~
+get: 7
+get: +
+7: +
+get: +
+get: 8
+8: +
+9: ?
+get: 39
+get: 38
+get: |
+10: |, 77
+get: 2.233
+get: <
+get: 13
+get: x
+13: x, 2.233, <
+14: /
+100: 100: nix, nix, 982, 982, 0
+100: overridden, bla, 0, 0, 555
+100: overridden, , 93.3, 93.3, -1
+first
+first
+second
+first
+second
+second
+second
+first
+second
+f
+second
+second
+first
+third
+fourth
+fifth
+sixth
+first
+2, List(4, 4, 4)
+2, List()
+5
+get: 11
+11
+get: 1
+get: 2
+get: 2
+3
+dlkfj0dlkfj102
+lskf2dkflj2
+dlkd5nixda10nixdadklfj1dklfj
+C(dlkf,234,struct)struct???
+C(dflkj,234,Some(209))None!!
+20020100
+C(dlfkj,11,10)35dlkf
+dflk10
+1-1jupee
+12.39
+2
+Factory(1,blabla)
+Factory(-1,blabla)
+Fact2(ju,1)
+Fact2(1,1)
+Fact2(10,blabla)

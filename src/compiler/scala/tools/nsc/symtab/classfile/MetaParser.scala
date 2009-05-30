@@ -134,7 +134,10 @@ abstract class MetaParser{
     def parse(): Type = {
       nextToken();
       if (token == "[") PolyType(parseTypeParams(), parse())
-      else if (token == "(") MethodType(parseParams(), parse())
+      else if (token == "(") {
+        val formals = parseParams()
+        MethodType(owner.newSyntheticValueParams(formals), parse())
+      }
       else parseType()
     }
     owner.setInfo(parse())
@@ -151,7 +154,10 @@ abstract class MetaParser{
   protected def parseConstr() {
     def parse(): Type = {
       nextToken()
-      if (token == "(") MethodType(parseParams(), parse())
+      if (token == "(") {
+        val formals = parseParams()
+        MethodType(owner.newSyntheticValueParams(formals), parse())
+      }
       else owner.owner.tpe
     }
     owner.setInfo(parse())

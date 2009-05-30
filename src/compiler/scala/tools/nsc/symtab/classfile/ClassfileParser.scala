@@ -255,9 +255,9 @@ abstract class ClassfileParser {
         var tpe  = getType(in.getChar(start + 3))
         if (name == nme.CONSTRUCTOR)
           tpe match {
-            case MethodType(formals, restpe) =>
+            case MethodType(params, restpe) =>
               assert(restpe.typeSymbol == definitions.UnitClass)
-              tpe = MethodType(formals, ownerTpe)
+              tpe = MethodType(params, ownerTpe)
           }
 
         p = (name, tpe)
@@ -295,8 +295,10 @@ abstract class ClassfileParser {
       c
     }
 
-    def getType(index: Int): Type =
-      sigToType(null, getExternalName(index))
+    def getType(index: Int): Type = getType(null, index)
+
+    def getType(sym: Symbol, index: Int): Type =
+      sigToType(sym, getExternalName(index))
 
     def getSuperClass(index: Int): Symbol =
       if (index == 0) definitions.AnyClass else getClassSymbol(index)
@@ -431,10 +433,10 @@ abstract class ClassfileParser {
           if (isAnnotation) {
             val value = instanceDefs.lookup(nme.value)
             if (value != NoSymbol) {
-              instanceDefs.enter(
-                clazz.newConstructor(NoPosition)
+              val constr = clazz.newConstructor(NoPosition)
+              instanceDefs.enter(constr
                 .setFlag(clazz.flags & ConstrFlags)
-                .setInfo(MethodType(List(value.tpe.resultType), clazz.tpe)))
+                .setInfo(MethodType(constr.newSyntheticValueParams(List(value.tpe.resultType)), clazz.tpe)))
             }
           }
         }
@@ -488,23 +490,22 @@ abstract class ClassfileParser {
         in.skip(4); skipAttributes()
       } else {
         val name = pool.getName(in.nextChar)
-        var info = pool.getType(in.nextChar)
+        val sym = getOwner(jflags).newMethod(NoPosition, name).setFlag(sflags)
+        var info = pool.getType(sym, (in.nextChar))
         if (name == nme.CONSTRUCTOR)
           info match {
-            case MethodType(formals, restpe) =>
-              assert(restpe.typeSymbol == definitions.UnitClass)
+            case MethodType(params, restpe) =>
               // if this is a non-static inner class, remove the explicit outer parameter
-              val newFormals = innerClasses.get(externalName) match {
+              val newParams = innerClasses.get(externalName) match {
                 case Some(entry) if !isScalaRaw && (entry.jflags & JAVA_ACC_STATIC) == 0 =>
-                  assert(formals.head.typeSymbol == clazz.owner, formals.head.typeSymbol + ": " + clazz.owner)
-                  formals.tail
+                  assert(params.head.tpe.typeSymbol == clazz.owner, params.head.tpe.typeSymbol + ": " + clazz.owner)
+                  params.tail
                 case _ =>
-                  formals
+                  params
               }
-              info = MethodType(newFormals, clazz.tpe)
+              info = MethodType(newParams, clazz.tpe)
           }
-        val sym = getOwner(jflags)
-          .newMethod(NoPosition, name).setFlag(sflags).setInfo(info)
+        sym.setInfo(info)
         setPrivateWithin(sym, jflags)
         parseAttributes(sym, info)
         if ((jflags & JAVA_ACC_VARARGS) != 0) {
@@ -518,12 +519,13 @@ abstract class ClassfileParser {
   /** Convert repeated parameters to arrays if they occur as part of a Java method
    */
   private def arrayToRepeated(tp: Type): Type = tp match {
-    case MethodType(formals, rtpe) =>
+    case MethodType(params, rtpe) =>
+      val formals = tp.paramTypes
       assert(formals.last.typeSymbol == definitions.ArrayClass)
-      MethodType(
-        formals.init :::
-        List(appliedType(definitions.RepeatedParamClass.typeConstructor, List(formals.last.typeArgs.head))),
-        rtpe)
+      val method = params.last.owner
+      val newParams = method.newSyntheticValueParams(formals.init :::
+           List(appliedType(definitions.RepeatedParamClass.typeConstructor, List(formals.last.typeArgs.head))))
+      MethodType(newParams, rtpe)
     case PolyType(tparams, rtpe) =>
       PolyType(tparams, arrayToRepeated(rtpe))
   }
@@ -619,6 +621,8 @@ abstract class ClassfileParser {
           while ('0' <= sig(index) && sig(index) <= '9') index += 1
           appliedType(definitions.ArrayClass.tpe, List(sig2type(tparams, skiptvs)))
         case '(' =>
+          // we need a method symbol. given in line 486 by calling getType(methodSym, ..)
+          assert(sym ne null)
           val paramtypes = new ListBuffer[Type]()
           while (sig(index) != ')') {
             paramtypes += objToAny(sig2type(tparams, skiptvs))
@@ -629,7 +633,7 @@ abstract class ClassfileParser {
             clazz.tpe
           } else
             sig2type(tparams, skiptvs)
-          JavaMethodType(paramtypes.toList, restype)
+          JavaMethodType(sym.newSyntheticValueParams(paramtypes.toList), restype)
         case 'T' =>
           val n = subName(';'.==).toTypeName
           index += 1

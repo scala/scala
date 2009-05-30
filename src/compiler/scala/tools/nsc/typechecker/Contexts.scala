@@ -102,6 +102,8 @@ trait Contexts { self: Analyzer =>
     var imports: List[ImportInfo] = List()   // currently visible imports
     var openImplicits: List[Type] = List()   // types for which implicit arguments
                                              // are currently searched
+    // for a named application block (Tree) the corresponding NamedApplyInfo
+    var namedApplyBlockInfo: Option[(Tree, NamedApplyInfo)] = None
     var prefix: Type = NoPrefix
     var inConstructorSuffix = false         // are we in a secondary constructor
                                             // after the this constructor call?

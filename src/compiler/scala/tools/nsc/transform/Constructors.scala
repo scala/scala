@@ -179,7 +179,7 @@ abstract class Constructors extends Transform {
           // all methods except the primary constructor go into template
           stat.symbol.tpe match {
             case MethodType(List(), tp @ ConstantType(c)) =>
-              defBuf += copy.DefDef(
+              defBuf += treeCopy.DefDef(
                 stat, mods, name, tparams, vparamss, tpt,
                 Literal(c) setPos rhs.pos setType tp)
             case _ =>
@@ -198,7 +198,7 @@ abstract class Constructors extends Transform {
               (if (canBeMoved(stat)) constrPrefixBuf else constrStatBuf) += mkAssign(
                 stat.symbol, rhs1)
             }
-            defBuf += copy.ValDef(stat, mods, name, tpt, EmptyTree)
+            defBuf += treeCopy.ValDef(stat, mods, name, tpt, EmptyTree)
           }
         case ClassDef(_, _, _, _) =>
           // classes are treated recursively, and left in the template
@@ -278,9 +278,9 @@ abstract class Constructors extends Transform {
         }
 
       // Assemble final constructor
-      defBuf += copy.DefDef(
+      defBuf += treeCopy.DefDef(
         constr, constr.mods, constr.name, constr.tparams, constr.vparamss, constr.tpt,
-        copy.Block(
+        treeCopy.Block(
           constrBody,
           paramInits ::: constrPrefixBuf.toList ::: constrStatBuf.toList,
           constrBody.expr));
@@ -290,14 +290,14 @@ abstract class Constructors extends Transform {
         if (!mustbeKept(sym)) clazz.info.decls unlink sym
 
       // Eliminate all field definitions that can be dropped from template
-      copy.Template(impl, impl.parents, impl.self,
+      treeCopy.Template(impl, impl.parents, impl.self,
         defBuf.toList filter (stat => mustbeKept(stat.symbol)))
     } // transformClassTemplate
 
     override def transform(tree: Tree): Tree =
       tree match {
         case ClassDef(mods, name, tparams, impl) if !tree.symbol.hasFlag(INTERFACE) =>
-          copy.ClassDef(tree, mods, name, tparams, transformClassTemplate(impl))
+          treeCopy.ClassDef(tree, mods, name, tparams, transformClassTemplate(impl))
         case _ =>
           super.transform(tree)
       }

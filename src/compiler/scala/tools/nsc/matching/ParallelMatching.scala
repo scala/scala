@@ -117,7 +117,7 @@ trait ParallelMatching {
 
     final def getAlternativeBranches: List[Tree] = {
       def get_BIND(pctx: Tree => Tree, p: Tree): List[Tree] = p match {
-        case b @ Bind(n, p)   => get_BIND((x: Tree) => pctx(copy.Bind(b, n, x) setType x.tpe), p)
+        case b @ Bind(n, p)   => get_BIND((x: Tree) => pctx(treeCopy.Bind(b, n, x) setType x.tpe), p)
         case Alternative(ps)  => ps map pctx
       }
       get_BIND(x => x, tree)
@@ -653,7 +653,7 @@ trait ParallelMatching {
       }
       def getAlternativeBranches(p: Tree): List[Tree] = {
         def get_BIND(pctx:Tree => Tree, p:Tree): List[Tree] = p match {
-          case b @ Bind(n,p)   => get_BIND((x: Tree) => pctx(copy.Bind(b, n, x) setType x.tpe), p)
+          case b @ Bind(n,p)   => get_BIND((x: Tree) => pctx(treeCopy.Bind(b, n, x) setType x.tpe), p)
           case Alternative(ps) => ps map pctx
         }
         get_BIND(x => x, p)
@@ -735,15 +735,15 @@ trait ParallelMatching {
       }
       if (!isReached(bx)) { // first time this bx is requested
         // might be bound elsewhere ( see `x @ unapply' ) <-- this comment refers to null check
-        val (vsyms, argts, vdefs) : (List[Symbol], List[Type], List[Tree]) = unzip3(
+        val (vsyms, vdefs) : (List[Symbol], List[Tree]) = List.unzip(
           for (v <- vss(bx) ; substv <- subst(v)) yield
-            (v, v.tpe, typedValDef(v, substv))
+            (v, typedValDef(v, substv))
         )
 
         val body  = targets(bx)
         // @bug: typer is not able to digest a body of type Nothing being assigned result type Unit
         val tpe = if (body.tpe.isNothing) body.tpe else resultType
-        val label = theOwner.newLabel(body.pos, "body%"+bx) setInfo MethodType(argts, tpe)
+        val label = theOwner.newLabel(body.pos, "body%"+bx) setInfo MethodType(vsyms, tpe)
         // TODO - newLabel doesn't get a fresh name, is that okay? or should it be more like this:
         // val label = theOwner.newLabel(body.pos, cunit.fresh.newName(body.pos, "body%"+bx)) setInfo MethodType(argts, tpe)
         labels(bx) = label
@@ -759,7 +759,7 @@ trait ParallelMatching {
       val args: List[Ident] = vss(bx).flatMap(subst(_))
       val label = labels(bx)
       val body = targets(bx)
-      val MethodType(fmls, _) = label.tpe
+      val fmls = label.tpe.paramTypes
 
       // sanity checks
       if (fmls.length != args.length) {
@@ -829,7 +829,8 @@ trait ParallelMatching {
           // @pre for UnApply_TypeApply: is not right-ignoring (no star pattern) ; no exhaustivity check
           case UnApply_TypeApply(tptArg, xs)        => temp(j) setFlag Flags.TRANS_FLAG
                                                        makeBind(vs, normalizedListPattern(xs, tptArg.tpe))
-          case ua @ UnApply(Apply(fn, _), _)        => val MethodType(List(argtpe, _*), _) = fn.tpe
+          case ua @ UnApply(Apply(fn, _), _)        => val MethodType(List(arg, _*), _) = fn.tpe
+                                                       val argtpe = arg.tpe
                                                        val npat = if (temp(j).tpe <:< argtpe) ua
                                                                   else Typed(ua, TypeTree(argtpe)) setType argtpe
                                                        makeBind(vs, npat) setType argtpe

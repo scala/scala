@@ -48,7 +48,7 @@ case class TypeBounds(lo: Type, hi: Type) extends Type
 
 /** This type is required by the compiler and <b>should not be used in client code</b>.
   * <code>(formals1 ... formalsn) restpe</code> */
-case class MethodType(formals: List[Type], restpe: Type) extends Type
+case class MethodType(formals: List[Symbol], restpe: Type) extends Type
 
 
 /** This type is required by the compiler and <b>should not be used in client code</b>. */
@@ -56,7 +56,7 @@ case class PolyType(typeParams: List[Symbol], typeBounds: List[(Type, Type)], re
 
 
 /** This type is required by the compiler and <b>should not be used in client code</b>. */
-class ImplicitMethodType(formals: List[Type], restpe: Type)
+class ImplicitMethodType(formals: List[Symbol], restpe: Type)
 extends MethodType(formals, restpe)
 
 

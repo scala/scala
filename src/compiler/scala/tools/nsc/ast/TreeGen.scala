@@ -268,12 +268,12 @@ abstract class TreeGen {
   // def m: T = { if (m$ eq null) m$ = new m$class(...) m$ }
   // where (...) are eventual outer accessors
   def mkCachedModuleAccessDef(accessor: Symbol, mvar: Symbol) =
-    DefDef(accessor, vparamss => mkCached(mvar, newModule(accessor, mvar.tpe)))
+    DefDef(accessor, mkCached(mvar, newModule(accessor, mvar.tpe)))
 
   // def m: T = new tpe(...)
   // where (...) are eventual outer accessors
   def mkModuleAccessDef(accessor: Symbol, tpe: Type) =
-    DefDef(accessor, vparamss => newModule(accessor, tpe))
+    DefDef(accessor, newModule(accessor, tpe))
 
   private def newModule(accessor: Symbol, tpe: Type) =
     New(TypeTree(tpe),
@@ -282,7 +282,7 @@ abstract class TreeGen {
 
   // def m: T;
   def mkModuleAccessDcl(accessor: Symbol) =
-    DefDef(accessor setFlag lateDEFERRED, vparamss => EmptyTree)
+    DefDef(accessor setFlag lateDEFERRED, EmptyTree)
 
   def mkRuntimeCall(meth: Name, args: List[Tree]): Tree =
     Apply(Select(mkAttributedRef(ScalaRunTimeModule), meth), args)

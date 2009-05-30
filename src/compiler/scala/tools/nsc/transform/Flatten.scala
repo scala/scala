@@ -56,6 +56,9 @@ abstract class Flatten extends InfoTransform {
           }
         }
         ClassInfoType(parents1, decls1, clazz)
+      case MethodType(params, restp) =>
+        val restp1 = apply(restp)
+        if (restp1 eq restp) tp else copyMethodType(tp, params, restp1)
       case PolyType(tparams, restp) =>
         val restp1 = apply(restp);
         if (restp1 eq restp) tp else PolyType(tparams, restp1)

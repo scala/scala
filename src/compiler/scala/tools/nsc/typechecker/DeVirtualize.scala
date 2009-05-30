@@ -259,9 +259,9 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
 
   protected def paramTypesAndIndices(tpe: Type, start: Int): List[List[(Type, Int)]] = tpe match {
     case PolyType(_, restpe) => paramTypesAndIndices(restpe, start)
-    case MethodType(formals, restpe) =>
-      val end = start + formals.length
-      (formals zip List.range(start, end)) :: paramTypesAndIndices(restpe, end)
+    case MethodType(params, restpe) =>
+      val end = start + params.length
+      (tpe.paramTypes zip List.range(start, end)) :: paramTypesAndIndices(restpe, end)
     case _ =>
       List()
   }
@@ -398,7 +398,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
               .setInfo(PolyType(List(), pt))
             cclazz.info.decls enter pfield
             atPos(factory.pos) {
-              DefDef(pfield, vparamss => Ident(fixParamName(i)))
+              DefDef(pfield, Ident(fixParamName(i)))
             }
           }
         }
@@ -436,14 +436,14 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
       val abstpeSym = abstractType(clazz)
       localTyper.typed {
         atPos(factorySym.pos) {
-          DefDef(factorySym, vparamss =>
+          DefDef(factorySym,
             Block(
               List(cclazzDef),
               TypeApply(
                 Select(
                   gen.mkForwarder(
                     Select(New(TypeTree(cclazzDef.symbol.tpe)), nme.CONSTRUCTOR),
-                    vparamss),
+                    factorySym.paramss),
                   Any_asInstanceOf),
              List(
                TypeTree(
@@ -463,7 +463,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
         .resetFlag(notOVERRIDE | notFINAL)
       cclazz.info.decls.enter(bridge)
       val superRef: Tree = Select(Super(cclazz, nme.EMPTY.toTypeName), meth)
-      DefDef(bridge, vparamss => gen.mkForwarder(superRef, vparamss))
+      DefDef(bridge, gen.mkForwarder(superRef, bridge.paramss))
     }
 
     /** Replace definitions of virtual classes by definitions of corresponding
@@ -526,13 +526,13 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
                   val pfield = paramField(sym.owner, paramFieldCount)
                   paramFieldCount += 1
                   pfield setPos pacc.pos
-                  paramFields += localTyper.typed(DefDef(pfield, vparamss => EmptyTree))
+                  paramFields += localTyper.typed(DefDef(pfield, EmptyTree))
                   val pfieldRef = localTyper.typed {
                     atPos(pacc.pos) {
                       Select(This(sym.owner), pfield)
                     }
                   }
-                  paramFieldAccessors += copy.ValDef(pacc, mods, name, tpt, pfieldRef)
+                  paramFieldAccessors += treeCopy.ValDef(pacc, mods, name, tpt, pfieldRef)
                 case _ =>
                   stat.symbol resetFlag PARAMACCESSOR // ??? can we do this
                   others += stat
@@ -540,11 +540,11 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
             else
               (if (stat.symbol != null && (stat.symbol hasFlag PRESUPER)) presupers else others) += stat
           }
-          copy.Template(tree, parents, self,
-                        paramFieldAccessors.toList :::
-                        presupers.toList :::
-                        paramFields.toList :::
-                        others.toList)
+          treeCopy.Template(tree, parents, self,
+                            paramFieldAccessors.toList :::
+                            presupers.toList :::
+                            paramFields.toList :::
+                            others.toList)
         case _ =>
           tree setType atPhase(ownPhase)(devirtualizeMap(tree.tpe))
       }

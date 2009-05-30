@@ -709,7 +709,7 @@ abstract class RefChecks extends InfoTransform {
           assert(lazyDefSym != NoSymbol, vsym)
           val ownerTransformer = new ChangeOwnerTraverser(vsym, lazyDefSym)
           val lazyDef = atPos(tree.pos)(
-              DefDef(lazyDefSym, vparamss => ownerTransformer(
+              DefDef(lazyDefSym, ownerTransformer(
                 if (tree.symbol.owner.isTrait // for traits, this is further tranformed in mixins
                     || hasUnitType) rhs
                 else Block(List(
@@ -849,7 +849,7 @@ abstract class RefChecks extends InfoTransform {
       tree match {
         case DefDef(mods, name, tparams, vparams, tpt, EmptyTree) if tree.symbol.hasAttribute(definitions.NativeAttr) =>
           tree.symbol.resetFlag(DEFERRED)
-          result = transform(copy.DefDef(tree, mods, name, tparams, vparams, tpt,
+          result = transform(treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt,
                 typed(Apply(gen.mkAttributedRef(definitions.Predef_error), List(Literal("native method stub"))))))
 
         case DefDef(_, _, _, _, _, _) =>
@@ -942,7 +942,7 @@ abstract class RefChecks extends InfoTransform {
           inPattern = true
           val pat1 = transform(pat)
           inPattern = false
-          copy.CaseDef(tree, pat1, transform(guard), transform(body))
+          treeCopy.CaseDef(tree, pat1, transform(guard), transform(body))
         case _ =>
           super.transform(result)
       }

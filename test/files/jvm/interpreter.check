@@ -5,7 +5,7 @@ scala>
 scala> 
 scala> res0: Int = 7
 
-scala>      |      |      |      | gcd: (Int,Int)Int
+scala>      |      |      |      | gcd: (x: Int,y: Int)Int
 
 scala> five: Int = 5
 
@@ -59,7 +59,7 @@ scala> defined class Foo
 
 scala> defined class Bar
 
-scala> foo2bar: (Foo)Bar
+scala> foo2bar: (foo: Foo)Bar
 
 scala> bar: Bar = Bar(3)
 
@@ -206,11 +206,11 @@ missing combination           Term
 
        def f(e: Exp) = e match {  // non-exhaustive warning here
                        ^
-f: (Exp)Int
+f: (e: Exp)Int
 
 scala> 
 scala> 
-plusOne: (Int)Int
+plusOne: (x: Int)Int
 res0: Int = 6
 res0: java.lang.String = after reset
 <console>:5: error: not found: value plusOne

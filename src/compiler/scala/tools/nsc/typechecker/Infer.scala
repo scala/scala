@@ -37,15 +37,20 @@ trait Infer {
   /** The formal parameter types corresponding to <code>formals</code>.
    *  If <code>formals</code> has a repeated last parameter, a list of
    *  (nargs - params.length + 1) copies of its type is returned.
+   *  By-name types are replaced with their underlying type.
    *
    *  @param formals ...
    *  @param nargs ...
    */
-  def formalTypes(formals: List[Type], nargs: Int): List[Type] = {
-    val formals1 = formals map {
+  def formalTypes(formals: List[Type], nargs: Int): List[Type] =
+    formalTypes(formals, nargs, true)
+
+  /** This variant allows keeping ByName parameters. Useed in NamesDefaults. */
+  def formalTypes(formals: List[Type], nargs: Int, removeByName: Boolean): List[Type] = {
+    val formals1 = if (removeByName) formals map {
       case TypeRef(_, sym, List(arg)) if (sym == ByNameParamClass) => arg
       case formal => formal
-    }
+    } else formals
     if (isVarArgs(formals1)) {
       val ft = formals1.last.normalize.typeArgs.head
       formals1.init ::: (for (i <- List.range(formals1.length - 1, nargs)) yield ft)
@@ -173,9 +178,9 @@ trait Infer {
    *  Implicit parameters are skipped.
    */
   def normalize(tp: Type): Type = skipImplicit(tp) match {
-    case MethodType(formals, restpe) if (!restpe.isDependent) =>
+    case MethodType(params, restpe) if (!restpe.isDependent) =>
       if (util.Statistics.enabled) normM += 1
-      functionType(formals, normalize(restpe))
+      functionType(params map (_.tpe), normalize(restpe))
     case PolyType(List(), restpe) =>
       if (util.Statistics.enabled) normP += 1
       normalize(restpe)
@@ -392,7 +397,8 @@ trait Infer {
         isPlausiblyCompatible(mt.resultType, pt)
       case ExistentialType(tparams, qtpe) =>
         isPlausiblyCompatible(qtpe, pt)
-      case MethodType(formals, _) =>
+      case MethodType(params, _) =>
+        val formals = tp.paramTypes
         pt.normalize match {
           case TypeRef(pre, sym, args) =>
             !sym.isClass || {
@@ -458,7 +464,7 @@ trait Infer {
           // See test pos/jesper.scala
           val varianceType = restpe match {
             case mt: ImplicitMethodType if isFullyDefined(pt) =>
-              MethodType(mt.paramTypes, AnyClass.tpe)
+              MethodType(mt.params, AnyClass.tpe)
             case _ =>
               restpe
           }
@@ -543,6 +549,8 @@ trait Infer {
     *  Undetermined type arguments are represented by `definitions.NothingClass.tpe'.
     *  No check that inferred parameters conform to their bounds is made here.
     *
+    *  bq: was private, but need it for unapply checking
+    *
     *  @param   tparams         the type parameters of the method
     *  @param   formals         the value parameter types of the method
     *  @param   restp           the result type of the method
@@ -556,7 +564,6 @@ trait Infer {
     *  @return                  ...
     *  @throws                  NoInstance
     */
-    // bq: was private, but need it for unapply checking
     def methTypeArgs(tparams: List[Symbol], formals: List[Type], restpe: Type,
                              argtpes: List[Type], pt: Type,
                              uninstantiated: ListBuffer[Symbol]): List[Type] = {
@@ -612,14 +619,60 @@ trait Infer {
       case _ =>
         formalTypes(tp.paramTypes, n).length == n
     }
+    /**
+     * Verifies whether the named application is valid. The logic is very
+     * similar to the one in NamesDefaults.removeNames.
+     *
+     * @return a triple (argtpes1, argPos, namesOk) where
+     *  - argtpes1 the argument types in named application (assignments to
+     *    non-parameter names are treated as assignments, i.e. type Unit)
+     *  - argPos a Function1[Int, Int] mapping arguments from their current
+     *    to the corresponding position in params
+     *  - namesOK is false when there's an invalid use of named arguments
+     */
+    private def checkNames(argtpes: List[Type], params: List[Symbol]) = {
+      val argPos = (new Array[Int](argtpes.length)) map (x => -1)
+      var positionalAllowed = true
+      var namesOK = true
+      var index = 0
+      val argtpes1 = argtpes map {
+        case NamedType(name, tp) => // a named argument
+          var res = tp
+          val pos = params.findIndexOf(p => p.name == name && !p.hasFlag(SYNTHETIC))
+          if (pos == -1) {
+            if (positionalAllowed) { // treat assignment as positional argument
+              argPos(index) = index
+              res = UnitClass.tpe
+            } else                   // unknown parameter name
+              namesOK = false
+          } else if (argPos.contains(pos)) { // parameter specified twice
+            namesOK = false
+          } else {
+            positionalAllowed = false
+            argPos(index) = pos
+          }
+          index += 1
+          res
+        case tp => // a positional argument
+          argPos(index) = index
+          if (!positionalAllowed)
+            namesOK = false // positional after named
+          index += 1
+          tp
+      }
+      (argtpes1, argPos, namesOK)
+    }
 
     /** Is there an instantiation of free type variables <code>undetparams</code>
      *  such that function type <code>ftpe</code> is applicable to
      *  <code>argtpes</code> and its result conform to <code>pt</code>?
      *
      *  @param undetparams ...
-     *  @param ftpe        ...
-     *  @param argtpes     ...
+     *  @param ftpe        the type of the function (often a MethodType)
+     *  @param argtpes     the argument types; a NamedType(name, tp) for named
+     *    arguments. For each NamedType, if `name' does not exist in `ftpe', that
+     *    type is set to `Unit', i.e. the corresponding argument is treated as
+     *    an assignment expression (@see checkNames).
      *  @param pt          ...
      *  @return            ...
      */
@@ -630,24 +683,75 @@ trait Infer {
           alts exists (alt => isApplicable(undetparams, pre.memberType(alt), argtpes0, pt))
         case ExistentialType(tparams, qtpe) =>
           isApplicable(undetparams, qtpe, argtpes0, pt)
-        case MethodType(formals0, _) =>
-          val formals = formalTypes(formals0, argtpes0.length)
-          val argtpes = actualTypes(argtpes0, formals.length)
-          val restpe = ftpe.resultType(argtpes)
-          if (undetparams.isEmpty) {
-            (formals.length == argtpes.length &&
-             isCompatible(argtpes, formals) &&
-             isWeaklyCompatible(restpe, pt))
-          } else {
-            try {
-              val uninstantiated = new ListBuffer[Symbol]
-              val targs = methTypeArgs(undetparams, formals, restpe, argtpes, pt, uninstantiated)
-              (exprTypeArgs(uninstantiated.toList, restpe.instantiateTypeParams(undetparams, targs), pt) ne null) &&
-              isWithinBounds(NoPrefix, NoSymbol, undetparams, targs)
-            } catch {
-              case ex: NoInstance => false
+        case MethodType(params, _) =>
+          // repeat varargs as needed, remove ByName
+          val formals = formalTypes(params map (_.tpe), argtpes0.length)
+
+          def tryTupleApply: Boolean = {
+            // if 1 formal, 1 argtpe (a tuple), otherwise unmodified argtpes0
+            val tupleArgTpe = actualTypes(argtpes0 map {
+                // no assignment is treated as named argument here
+              case NamedType(name, tp) => UnitClass.tpe
+              case tp => tp
+              }, formals.length)
+
+            argtpes0.length != tupleArgTpe.length &&
+              isApplicable(undetparams, ftpe, tupleArgTpe, pt)
+          }
+          def typesCompatible(argtpes: List[Type]) = {
+            val restpe = ftpe.resultType(argtpes)
+            if (undetparams.isEmpty) {
+              (isCompatible(argtpes, formals) &&
+               isWeaklyCompatible(restpe, pt))
+            } else {
+              try {
+                val uninstantiated = new ListBuffer[Symbol]
+                val targs = methTypeArgs(undetparams, formals, restpe, argtpes, pt, uninstantiated)
+                (exprTypeArgs(uninstantiated.toList, restpe.instantiateTypeParams(undetparams, targs), pt) ne null) &&
+                isWithinBounds(NoPrefix, NoSymbol, undetparams, targs)
+              } catch {
+                case ex: NoInstance => false
+              }
             }
           }
+
+          // very similar logic to doTypedApply in typechecker
+          if (argtpes0.length > formals.length) tryTupleApply
+          else if (argtpes0.length == formals.length) {
+            if (!argtpes0.exists(_.isInstanceOf[NamedType])) {
+              // fast track if no named arguments are used
+              typesCompatible(argtpes0)
+            } else {
+              // named arguments are used
+              val (argtpes1, argPos, namesOK) = checkNames(argtpes0, params)
+              if (!namesOK) false
+              // when using named application, the vararg param has to be specified exactly once
+              else if (!isIdentity(argPos) && (formals.length != params.length)) false
+              else {
+                // nb. arguments and names are OK, check if types are compatible
+                typesCompatible(reorderArgs(argtpes1, argPos))
+              }
+            }
+          } else {
+            // not enough arguments, check if applicable using defaults
+            val namedArgtpes = argtpes0.dropWhile {
+              case NamedType(name, _) => params.forall(_.name != name)
+              case _ => true
+            }
+            val namedParams = params.drop(argtpes0.length - namedArgtpes.length)
+            val missingParams = namedParams.filter(p => namedArgtpes.forall {
+              case NamedType(name, _) => name != p.name
+              case _ => true
+            })
+            if (missingParams.exists(!_.hasFlag(DEFAULTPARAM))) tryTupleApply
+            else {
+              val argtpes1 = argtpes0 ::: missingParams.map {
+                p => NamedType(p.name, p.tpe) // add defaults as named arguments
+              }
+              isApplicable(undetparams, ftpe, argtpes1, pt)
+            }
+          }
+
         case PolyType(tparams, restpe) =>
           val tparams1 = cloneSymbols(tparams)
           isApplicable(tparams1 ::: undetparams, restpe.substSym(tparams, tparams1), argtpes0, pt)
@@ -657,7 +761,8 @@ trait Infer {
           false
       }
 
-    private[typechecker] def isApplicableSafe(undetparams: List[Symbol], ftpe: Type, argtpes0: List[Type], pt: Type): Boolean = {
+    private[typechecker] def isApplicableSafe(undetparams: List[Symbol], ftpe: Type,
+                                              argtpes0: List[Type], pt: Type): Boolean = {
       val reportAmbiguousErrors = context.reportAmbiguousErrors
       context.reportAmbiguousErrors = false
       try {
@@ -683,10 +788,10 @@ trait Infer {
         alts exists (alt => isAsSpecific(pre.memberType(alt), ftpe2))
       case et: ExistentialType =>
         et.withTypeVars(isAsSpecific(_, ftpe2)) // !!! why isStrictly?
-      case MethodType(formals @ (x :: xs), _) =>
-        isApplicable(List(), ftpe2, formals, WildcardType)
-      case PolyType(_, MethodType(formals @ (x :: xs), _)) =>
-        isApplicable(List(), ftpe2, formals, WildcardType)
+      case MethodType(params @ (x :: xs), _) =>
+        isApplicable(List(), ftpe2, params map (_.tpe), WildcardType)
+      case PolyType(_, MethodType(params @ (x :: xs), _)) =>
+        isApplicable(List(), ftpe2, params map (_.tpe), WildcardType)
       case ErrorType =>
         true
       case _ =>
@@ -1014,7 +1119,7 @@ trait Infer {
      */
     def inferMethodInstance(fn: Tree, undetparams: List[Symbol],
                             args: List[Tree], pt0: Type): List[Symbol] = fn.tpe match {
-      case MethodType(formals0, _) =>
+      case MethodType(params0, _) =>
         if (inferInfo)
           println("infer method instance "+fn+"\n"+
                   "  undetparams = "+undetparams+"\n"+
@@ -1022,7 +1127,7 @@ trait Infer {
                   "  pt = "+pt0)
         try {
           val pt = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
-          val formals = formalTypes(formals0, args.length)
+          val formals = formalTypes(params0 map (_.tpe), args.length)
           val argtpes = actualTypes(args map (_.tpe.deconst), formals.length)
           val restpe = fn.tpe.resultType(argtpes)
           val uninstantiated = new ListBuffer[Symbol]
@@ -1393,24 +1498,57 @@ trait Infer {
 
     /** Assign <code>tree</code> the type of an alternative which is applicable
      *  to <code>argtpes</code>, and whose result type is compatible with `pt'.
-     *  If several applicable alternatives exist, take the
-     *  most specialized one.
+     *  If several applicable alternatives exist, drop the alternatives which use
+     *  default arguments, then select the most specialized one.
      *  If no applicable alternative exists, and pt != WildcardType, try again
      *  with pt = WildcardType.
      *  Otherwise, if there is no best alternative, error.
+     *
+     *  @param argtpes contains the argument types. If an argument is named, as
+     *    "a = 3", the corresponding type is `NamedType("a", Int)'. If the name
+     *    of some NamedType does not exist in an alternative's parameter names,
+     *    the type is replaces by `Unit', i.e. the argument is treated as an
+     *    assignment expression.
      */
-    def inferMethodAlternative(tree: Tree, undetparams: List[Symbol], argtpes: List[Type], pt0: Type): Unit = tree.tpe match {
+    def inferMethodAlternative(tree: Tree, undetparams: List[Symbol],
+                               argtpes: List[Type], pt0: Type): Unit = tree.tpe match {
       case OverloadedType(pre, alts) =>
         val pt = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
         tryTwice {
-          if (settings.debug.value) log("infer method alt " + tree.symbol + " with alternatives " + (alts map pre.memberType) + ", argtpes = " + argtpes + ", pt = " + pt)
-          val applicable = alts filter (alt => isApplicable(undetparams, followApply(pre.memberType(alt)), argtpes, pt))
+          if (settings.debug.value)
+            log("infer method alt "+ tree.symbol +" with alternatives "+
+                (alts map pre.memberType) +", argtpes = "+ argtpes +", pt = "+ pt)
+
+          val allApplicable = alts filter (alt =>
+            isApplicable(undetparams, followApply(pre.memberType(alt)), argtpes, pt))
+
+          // if there are multiple, drop those that use a default
+          // (keep those that use vararg / tupling conversion)
+          val applicable =
+            if (allApplicable.length <= 1) allApplicable
+            else allApplicable filter (alt => {
+              val mtypes = followApply(alt.tpe) match {
+                case OverloadedType(_, alts) =>
+                  // for functional values, the `apply' method might be overloaded
+                  alts map (_.tpe)
+                case t => List(t)
+              }
+              mtypes.exists(t => t.paramTypes.length < argtpes.length || // tupling (*)
+                                 hasExactlyNumParams(t, argtpes.length)) // same nb or vararg
+              // (*) more arguments than parameters, but still applicable: tuplig conversion works.
+              //     todo: should not return "false" when paramTypes = (Unit) no argument is given
+              //     (tupling would work)
+            })
+
+
           def improves(sym1: Symbol, sym2: Symbol) =
             sym2 == NoSymbol || sym2.isError ||
-            isStrictlyMoreSpecific(followApply(pre.memberType(sym1)), followApply(pre.memberType(sym2)), sym1, sym2)
+            isStrictlyMoreSpecific(followApply(pre.memberType(sym1)),
+                                   followApply(pre.memberType(sym2)), sym1, sym2)
+
           val best = ((NoSymbol: Symbol) /: applicable) ((best, alt) =>
             if (improves(alt, best)) alt else best)
-          val competing = applicable dropWhile (alt => best == alt || improves(best, alt))
+          val competing = applicable.dropWhile(alt => best == alt || improves(best, alt))
           if (best == NoSymbol) {
             if (pt == WildcardType) {
               errorTree(tree, applyErrorMsg(tree, " cannot be applied to ", argtpes, pt))

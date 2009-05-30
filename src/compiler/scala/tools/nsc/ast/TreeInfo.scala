@@ -174,6 +174,13 @@ abstract class TreeInfo {
     case _ => false
   }
 
+  /** Is tpt a by-name parameter type? */
+  def isByNameParamType(tpt: Tree) = tpt match {
+    case AppliedTypeTree(Select(_, n), _) => n == nme.BYNAME_PARAM_CLASS_NAME.toTypeName
+    case TypeTree() => tpt.tpe.typeSymbol == definitions.ByNameParamClass
+    case _ => false
+  }
+
   /** Is name a left-associative operator? */
   def isLeftAssoc(operator: Name): Boolean =
     operator.length > 0 && operator(operator.length - 1) != ':'

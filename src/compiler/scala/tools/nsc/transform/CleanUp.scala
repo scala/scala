@@ -69,11 +69,10 @@ abstract class CleanUp extends Transform {
         val mdef =
           localTyper.typed {
             atPos(pos) {
-              DefDef(meth, vparamss =>
-                gen.mkCached(
-                  cvar,
-                  Apply(
-                    gen.mkAttributedRef(forName), List(Literal(sig)))))
+              DefDef(meth, gen.mkCached(
+                cvar,
+                Apply(
+                  gen.mkAttributedRef(forName), List(Literal(sig)))))
             }
           }
 
@@ -155,12 +154,12 @@ abstract class CleanUp extends Transform {
                                   (forBody: Pair[Symbol, List[Symbol]] => Tree): Symbol = {
           val methSym = currentClass.newMethod(ad.pos, unit.fresh.newName(ad.pos, forName))
             .setFlag(STATIC | SYNTHETIC)
-            .setInfo(MethodType(forArgsTypes, forResultType))
+          methSym.setInfo(MethodType(methSym.newSyntheticValueParams(forArgsTypes), forResultType))
           currentClass.info.decls.enter(methSym)
           val methDef =
             localTyper.typed {
               atPos(ad.pos) {
-                DefDef(methSym, { vparamss => forBody(Pair(methSym, vparamss(0))) })
+                DefDef(methSym, { forBody(Pair(methSym, methSym.paramss(0))) })
               }
             }
           newDefs.append(transform(methDef))
@@ -593,12 +592,12 @@ abstract class CleanUp extends Transform {
             ValDef(tmpVar, transform(qual))),
             If(Apply(Select(gen.mkAttributedRef(cachedClass), nme.EQ), List(getClass(Ident(tmpVar)))),
                Block(List(Assign(gen.mkAttributedRef(cachedClass), getClass(Ident(tmpVar)))),
-                     copy.ApplyDynamic(ad, Ident(tmpVar), transformTrees(params))),
+                     treeCopy.ApplyDynamic(ad, Ident(tmpVar), transformTrees(params))),
                EmptyTree)))
         }
         //println(guardCallSite)
 */
-        localTyper.typed(copy.ApplyDynamic(ad, transform(qual), transformTrees(params)))
+        localTyper.typed(treeCopy.ApplyDynamic(ad, transform(qual), transformTrees(params)))
       } else {
 
         /* ### BODY OF THE TRANSFORMATION -> remember we're in case ad@ApplyDynamic(qual, params) ### */
@@ -625,8 +624,8 @@ abstract class CleanUp extends Transform {
          *   because invoke only returns object and erasure made sure the result is
          *   expected to be an AnyRef. */
         val t: Tree = ad.symbol.tpe match {
-          case MethodType(paramTypes, resType) =>
-            assert(params.length == paramTypes.length)
+          case MethodType(mparams, resType) =>
+            assert(params.length == mparams.length)
             atPos(ad.pos)(localTyper.typed {
               val t1 = newTermName(unit.fresh.newName(ad.pos, "qual"))
               val sym = currentOwner.newValue(ad.pos, t1) setInfo qual0.tpe
@@ -635,9 +634,9 @@ abstract class CleanUp extends Transform {
                 List(ValDef(sym, qual0)),
                 fixResult(if (isValueClass(resType.typeSymbol)) boxedClass(resType.typeSymbol).tpe else resType) {
                   if (mayRequirePrimitiveReplacement)
-                    callAsOperator(paramTypes, resType)
+                    callAsOperator(mparams map (_.tpe), resType)
                   else
-                    callAsMethod(paramTypes, resType)
+                    callAsMethod(mparams map (_.tpe), resType)
                 }
               )
             })
@@ -651,10 +650,10 @@ abstract class CleanUp extends Transform {
             "(" + params.map(_.toString).mkString(", ") + ")' with"
           )
           ad.symbol.tpe match {
-            case MethodType(paramTypes, resType) =>
+            case MethodType(mparams, resType) =>
               Console.println(
                 "  - declared parameters' types: " +
-                (paramTypes.map(_.toString)).mkString("'",", ","'"))
+                (mparams.map(_.toString)).mkString("'",", ","'"))
               Console.println(
                 "  - passed arguments' types:    " +
                 (params.map(_.toString)).mkString("'",", ","'"))
@@ -695,14 +694,14 @@ abstract class CleanUp extends Transform {
                 case thePrimaryConstructor@DefDef(mods, name, tparams, vparamss, tpt, rhs) if (thePrimaryConstructor == firstConstructor) =>
                   val newRhs = rhs match {
                     case theRhs@Block(stats, expr) =>
-                      copy.Block(theRhs, transformTrees(newInits.toList) ::: stats, expr)
+                      treeCopy.Block(theRhs, transformTrees(newInits.toList) ::: stats, expr)
                   }
-                  copy.DefDef(thePrimaryConstructor, mods, name, tparams, vparamss, tpt, newRhs)
+                  treeCopy.DefDef(thePrimaryConstructor, mods, name, tparams, vparamss, tpt, newRhs)
                 case notThePrimaryConstructor =>
                   notThePrimaryConstructor
               }
             )
-            copy.Template(tree, parents, self, newBody)
+            treeCopy.Template(tree, parents, self, newBody)
         }
         else super.transform(tree)
 

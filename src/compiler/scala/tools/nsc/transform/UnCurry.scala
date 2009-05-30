@@ -51,13 +51,13 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
     def apply(tp0: Type): Type = {
       val tp = expandAlias(tp0)
       tp match {
-        case MethodType(formals, MethodType(formals1, restpe)) =>
-          apply(MethodType(formals ::: formals1, restpe))
+        case MethodType(params, MethodType(params1, restpe)) =>
+          apply(MethodType(params ::: params1, restpe))
         case MethodType(formals, ExistentialType(tparams, restpe @ MethodType(_, _))) =>
           assert(false, "unexpected curried method types with intervening exitential")
           tp0
         case mt: ImplicitMethodType =>
-          apply(MethodType(mt.paramTypes, mt.resultType))
+          apply(MethodType(mt.params, mt.resultType))
         case PolyType(List(), restpe) =>
           apply(MethodType(List(), restpe))
         case PolyType(tparams, restpe) =>
@@ -91,11 +91,11 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
   /** Convert repeated parameters to arrays if they occur as part of a Java method
    */
   private def repeatedToArray(tp: Type): Type = tp match {
-    case MethodType(formals, rtpe)
-    if (!formals.isEmpty && formals.last.typeSymbol == RepeatedParamClass) =>
-      MethodType(formals.init :::
-                 List(appliedType(ArrayClass.typeConstructor, List(formals.last.typeArgs.head))),
-                 rtpe)
+    case MethodType(params, rtpe)
+    if (!params.isEmpty && params.last.tpe.typeSymbol == RepeatedParamClass) =>
+      val arrayParam = params.last.owner.newSyntheticValueParams(List(
+        appliedType(ArrayClass.typeConstructor, List(params.last.tpe.typeArgs.head))))
+      MethodType(params.init ::: arrayParam, rtpe)
     case PolyType(tparams, rtpe) =>
       val rtpe1 = repeatedToArray(rtpe)
       if (rtpe1 eq rtpe) tp
@@ -304,8 +304,8 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         val restpe = fun.tpe.typeArgs.last
         anonClass setInfo ClassInfoType(
           List(ObjectClass.tpe, fun.tpe, ScalaObjectClass.tpe), newScope, anonClass);
-        val applyMethod = anonClass.newMethod(fun.pos, nme.apply)
-          .setFlag(FINAL).setInfo(MethodType(formals, restpe));
+        val applyMethod = anonClass.newMethod(fun.pos, nme.apply).setFlag(FINAL)
+        applyMethod.setInfo(MethodType(applyMethod.newSyntheticValueParams(formals), restpe))
         anonClass.info.decls enter applyMethod;
         for (vparam <- fun.vparams) vparam.symbol.owner = applyMethod;
         new ChangeOwnerTraverser(fun.symbol, applyMethod).traverse(fun.body);
@@ -334,8 +334,9 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         }
         val members = {
           if (fun.tpe.typeSymbol == PartialFunctionClass) {
-            val isDefinedAtMethod = anonClass.newMethod(fun.pos, nme.isDefinedAt)
-              .setFlag(FINAL).setInfo(MethodType(formals, BooleanClass.tpe))
+            val isDefinedAtMethod = anonClass.newMethod(fun.pos, nme.isDefinedAt).setFlag(FINAL)
+            isDefinedAtMethod.setInfo(MethodType(isDefinedAtMethod.newSyntheticValueParams(formals),
+                                                 BooleanClass.tpe))
             anonClass.info.decls enter isDefinedAtMethod
             def idbody(idparam: Symbol) = fun.body match {
               case Match(_, cases) =>
@@ -352,7 +353,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
                       List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))))
             }
             List(applyMethodDef(mkUnchecked(fun.body)),
-                 DefDef(isDefinedAtMethod, vparamss => mkUnchecked(idbody(vparamss.head.head))))
+                 DefDef(isDefinedAtMethod, mkUnchecked(idbody(isDefinedAtMethod.paramss.head.head))))
           } else {
             List(applyMethodDef(fun.body))
           }
@@ -475,9 +476,9 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
                     val rest = stats drop presupers.length
                     val supercalls = rest take 1 map transformInConstructor
                     val others = rest drop 1 map transform
-                    copy.Block(rhs, presupers ::: supercalls ::: others, transform(expr))
+                    treeCopy.Block(rhs, presupers ::: supercalls ::: others, transform(expr))
                 }
-                copy.DefDef(
+                treeCopy.DefDef(
                   tree, mods, name, transformTypeDefs(tparams),
                   transformValDefss(vparamss), transform(tpt), rhs1)
               }
@@ -521,7 +522,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
             else if (fn.symbol.name == nme.unapplySeq)
               transformArgs(tree.pos, args, analyzer.unapplyTypeListFromReturnTypeSeq(fn.tpe), false)
             else { assert(false,"internal error: UnApply node has wrong symbol"); null })
-          copy.UnApply(tree, fn1, args1)
+          treeCopy.UnApply(tree, fn1, args1)
 
         case Apply(fn, args) =>
           if (settings.noassertions.value &&
@@ -530,12 +531,12 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
               fn.symbol.owner == PredefModule.moduleClass) {
             Literal(()).setPos(tree.pos).setType(UnitClass.tpe)
           } else if (fn.symbol == Object_synchronized && shouldBeLiftedAnyway(args.head)) {
-            transform(copy.Apply(tree, fn, List(liftTree(args.head))))
+            transform(treeCopy.Apply(tree, fn, List(liftTree(args.head))))
           } else {
             withNeedLift(true) {
               val formals = fn.tpe.paramTypes;
               val isJava = fn.symbol hasFlag JAVA // in case we need a varargs transformation
-              copy.Apply(tree, transform(fn), transformTrees(transformArgs(tree.pos, args, formals, isJava)))
+              treeCopy.Apply(tree, transform(fn), transformTrees(transformArgs(tree.pos, args, formals, isJava)))
             }
           }
 
@@ -552,7 +553,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           inPattern = true
           val pat1 = transform(pat)
           inPattern = false
-          copy.CaseDef(tree, pat1, transform(guard), transform(body))
+          treeCopy.CaseDef(tree, pat1, transform(guard), transform(body))
 
         case fun @ Function(_, _) =>
           mainTransform(transformFunction(fun))
@@ -592,7 +593,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
             case None => rhs
             case Some(k) => atPos(rhs.pos)(nonLocalReturnTry(rhs, k, tree.symbol))
           }
-          copy.DefDef(tree, mods, name, tparams, List(List.flatten(vparamss)), tpt, rhs1)
+          treeCopy.DefDef(tree, mods, name, tparams, List(List.flatten(vparamss)), tpt, rhs1)
         case Try(body, catches, finalizer) =>
           if (catches forall treeInfo.isCatchCase) tree
           else {
@@ -617,10 +618,10 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
             if (settings.debug.value) log("rewrote try: " + catches + " ==> " + catchall);
             val catches1 = localTyper.typedCases(
               tree, List(catchall), ThrowableClass.tpe, WildcardType);
-            copy.Try(tree, body, catches1, finalizer)
+            treeCopy.Try(tree, body, catches1, finalizer)
           }
         case Apply(Apply(fn, args), args1) =>
-          copy.Apply(tree, fn, args ::: args1)
+          treeCopy.Apply(tree, fn, args ::: args1)
         case Ident(name) =>
           assert(name != nme.WILDCARD_STAR.toTypeName)
           applyUnary(tree);

@@ -26,7 +26,8 @@ object PickleFormat {
  *                  | 5 ALIASsym len_Nat SymbolInfo
  *                  | 6 CLASSsym len_Nat SymbolInfo [thistype_Ref]
  *                  | 7 MODULEsym len_Nat SymbolInfo
- *                  | 8 VALsym len_Nat SymbolInfo [alias_Ref]
+ *                  | 8 VALsym len_Nat SymbolInfo [alias_Ref] // old VALsym, unPickling supported (checkin if minor version < 2) ** @LUC TODO remove
+ *                  | 8 VALsym len_Nat [defaultGetter_Ref] SymbolInfo [alias_Ref]
  *                  | 9 EXTref len_Nat name_Ref [owner_Ref]
  *                  | 10 EXTMODCLASSref len_Nat name_Ref [owner_Ref]
  *                  | 11 NOtpe len_Nat
@@ -38,7 +39,8 @@ object PickleFormat {
  *                  | 17 TYPEBOUNDStpe len_Nat tpe_Ref tpe_Ref
  *                  | 18 REFINEDtpe len_Nat classsym_Ref {tpe_Ref}
  *                  | 19 CLASSINFOtpe len_Nat classsym_Ref {tpe_Ref}
- *                  | 20 METHODtpe len_Nat tpe_Ref {tpe_Ref}
+ *                  | 20 METHODtpe len_Nat tpe_Ref {tpe_Ref} // old method type, unPickling still supported ** @LUC TODO remove
+ *                  | 20 METHODtpe len_Nat tpe_Ref {sym_Ref} // new method type
  *                  | 21 POLYTtpe len_Nat tpe_Ref {sym_Ref}
  *                  | 22 IMPLICITMETHODtpe len_Nat tpe_Ref {tpe_Ref}
  *                  | 24 LITERALunit len_Nat

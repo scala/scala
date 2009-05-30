@@ -157,7 +157,8 @@ abstract class TailCalls extends Transform
           val newCtx = mkContext(ctx)
           newCtx.currentMethod = tree.symbol
           newCtx.makeLabel()
-          newCtx.label.setInfo(MethodType(currentClass.tpe :: tree.symbol.tpe.paramTypes, tree.symbol.tpe.finalResultType))
+          val currentClassParam = tree.symbol.newSyntheticValueParam(currentClass.tpe)
+          newCtx.label.setInfo(MethodType(currentClassParam :: tree.symbol.tpe.params, tree.symbol.tpe.finalResultType))
           newCtx.tailPos = true
 
           val t1 = if (newCtx.currentMethod.isFinal ||
@@ -187,11 +188,11 @@ abstract class TailCalls extends Transform
                     LabelDef(newCtx.label,
                              newThis :: (List.flatten(vparams) map (_.symbol)),
                              newRHS))));
-              copy.DefDef(tree, mods, name, tparams, vparams, tpt, newRHS);
+              treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt, newRHS);
             } else
-              copy.DefDef(tree, mods, name, tparams, vparams, tpt, newRHS);
+              treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt, newRHS);
           } else {
-            copy.DefDef(tree, mods, name, tparams, vparams, tpt, transform(rhs, newCtx))
+            treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt, transform(rhs, newCtx))
           }
 
           if (!isTransformed && tailrecRequired(dd))
@@ -218,12 +219,12 @@ abstract class TailCalls extends Transform
           super.transform(tree)
 
         case Block(stats, expr) =>
-          copy.Block(tree,
-                     transformTrees(stats, mkContext(ctx, false)),
-                     transform(expr))
+          treeCopy.Block(tree,
+                         transformTrees(stats, mkContext(ctx, false)),
+                         transform(expr))
 
         case CaseDef(pat, guard, body) =>
-          copy.CaseDef(tree, pat, guard, transform(body))
+          treeCopy.CaseDef(tree, pat, guard, transform(body))
 
         case Sequence(_) | Alternative(_) |
              Star(_)     | Bind(_, _) =>
@@ -237,24 +238,24 @@ abstract class TailCalls extends Transform
           super.transform(tree)
 
         case If(cond, thenp, elsep) =>
-          copy.If(tree, cond, transform(thenp), transform(elsep))
+          treeCopy.If(tree, cond, transform(thenp), transform(elsep))
 
         case Match(selector, cases) => //super.transform(tree);
-          copy.Match(tree, transform(selector, mkContext(ctx, false)), transformTrees(cases).asInstanceOf[List[CaseDef]])
+          treeCopy.Match(tree, transform(selector, mkContext(ctx, false)), transformTrees(cases).asInstanceOf[List[CaseDef]])
 
         case Return(expr) => super.transform(tree)
         case Try(block, catches, finalizer) =>
            // no calls inside a try are in tail position, but keep recursing for nested functions
-          copy.Try(tree, transform(block, mkContext(ctx, false)),
-                   transformTrees(catches, mkContext(ctx, false)).asInstanceOf[List[CaseDef]],
-                   transform(finalizer, mkContext(ctx, false)))
+          treeCopy.Try(tree, transform(block, mkContext(ctx, false)),
+                       transformTrees(catches, mkContext(ctx, false)).asInstanceOf[List[CaseDef]],
+                       transform(finalizer, mkContext(ctx, false)))
 
         case Throw(expr) => super.transform(tree)
         case New(tpt) => super.transform(tree)
         case Typed(expr, tpt) => super.transform(tree)
 
         case Apply(tapply @ TypeApply(fun, targs), vargs) =>
-          lazy val defaultTree = copy.Apply(tree, tapply, transformTrees(vargs, mkContext(ctx, false)))
+          lazy val defaultTree = treeCopy.Apply(tree, tapply, transformTrees(vargs, mkContext(ctx, false)))
           if ( ctx.currentMethod.isFinal &&
                ctx.tailPos &&
                isSameTypes(ctx.tparams, targs map (_.tpe.typeSymbol)) &&
@@ -280,10 +281,10 @@ abstract class TailCalls extends Transform
 
         case Apply(fun, args) if (fun.symbol == definitions.Boolean_or ||
                                   fun.symbol == definitions.Boolean_and) =>
-          copy.Apply(tree, fun, transformTrees(args))
+          treeCopy.Apply(tree, fun, transformTrees(args))
 
         case Apply(fun, args) =>
-          lazy val defaultTree = copy.Apply(tree, fun, transformTrees(args, mkContext(ctx, false)))
+          lazy val defaultTree = treeCopy.Apply(tree, fun, transformTrees(args, mkContext(ctx, false)))
           if (ctx.currentMethod.isFinal &&
               ctx.tailPos &&
               isRecursiveCall(fun)) {

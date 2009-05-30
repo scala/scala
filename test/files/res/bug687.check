@@ -1,9 +1,9 @@
 
 nsc> 
 nsc> bug687/QueryB.scala:3: error: name clash between defined and inherited member:
-method equals:(java.lang.Object)Boolean and
-method equals:(Any)Boolean in class Any
-have same type after erasure: (java.lang.Object)Boolean
+method equals:(o: java.lang.Object)Boolean and
+method equals:(x$1: Any)Boolean in class Any
+have same type after erasure: (o: java.lang.Object)Boolean
   override def equals(o : Object) = false;
                ^
 

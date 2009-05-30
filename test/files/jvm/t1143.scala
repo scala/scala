@@ -55,7 +55,7 @@ class Main {
   var pass = "pass"
   def main(args: Array[String]) {
     val f = new Form {
-      val p = new Printer(new VarModel(pass, pass=_))
+      val p = new Printer(new VarModel(pass, s => pass = s))
     }
     ()
   }

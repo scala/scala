@@ -47,13 +47,13 @@ abstract class TreeBuilder {
           })
         }
       case Apply(fn @ Apply(_, _), args) =>
-        copy.Apply(tree, transform(fn), transformTrees(args))
+        treeCopy.Apply(tree, transform(fn), transformTrees(args))
       case Apply(fn, args) =>
-        copy.Apply(tree, fn, transformTrees(args))
+        treeCopy.Apply(tree, fn, transformTrees(args))
       case Typed(expr, tpt) =>
-        copy.Typed(tree, transform(expr), tpt)
+        treeCopy.Typed(tree, transform(expr), tpt)
       case Bind(name, body) =>
-        copy.Bind(tree, name, transform(body))
+        treeCopy.Bind(tree, name, transform(body))
       case Sequence(_) | Alternative(_) | Star(_) =>
         super.transform(tree)
       case _ =>

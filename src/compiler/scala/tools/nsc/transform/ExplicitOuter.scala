@@ -99,7 +99,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
    *  </ol>
    */
   def transformInfo(sym: Symbol, tp: Type): Type = tp match {
-    case MethodType(formals, restpe1) =>
+    case MethodType(params, restpe1) =>
       val restpe = transformInfo(sym, restpe1)
       if (sym.owner.isTrait && ((sym hasFlag SUPERACCESSOR) || sym.isModule)) { // 5
         sym.makeNotPrivate(sym.owner)
@@ -108,10 +108,12 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
       if (sym.owner.isTrait && (sym hasFlag (ACCESSOR | SUPERACCESSOR)))
         sym.makeNotPrivate(sym.owner); //(2)
       if (sym.owner.isTrait && (sym hasFlag PROTECTED)) sym setFlag notPROTECTED // 6
-      if (sym.isClassConstructor && isInner(sym.owner)) // 1
-        MethodType(sym.owner.outerClass.thisType :: formals, restpe)
-      else if (restpe ne restpe1)
-        MethodType(formals, restpe)
+      if (sym.isClassConstructor && isInner(sym.owner)) { // 1
+        val p = sym.newValueParameter(sym.pos, "arg" + nme.OUTER)
+                   .setInfo(sym.owner.outerClass.thisType)
+        MethodType(p :: params, restpe)
+      } else if (restpe ne restpe1)
+        MethodType(params, restpe)
       else tp
     case ClassInfoType(parents, decls, clazz) =>
       var decls1 = decls
@@ -306,7 +308,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
                 else Select(This(currentClass), outerField(currentClass))
       localTyper.typed {
         atPos(currentClass.pos) {
-          DefDef(outerAcc, {vparamss => rhs})
+          DefDef(outerAcc, rhs)
         }
       }
     }
@@ -329,7 +331,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
       localTyper.typed {
         atPos(currentClass.pos) {
           // @S: atPos not good enough because of nested atPos in DefDef method, which gives position from wrong class!
-          DefDef(outerAcc, {vparamss=>rhs}).setPos(currentClass.pos)
+          DefDef(outerAcc, rhs).setPos(currentClass.pos)
         }
       }
     }
@@ -359,7 +361,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
             }
           }
           super.transform(
-            copy.Template(tree, parents, self,
+            treeCopy.Template(tree, parents, self,
                           if (newDefs.isEmpty) decls else decls ::: newDefs.toList)
           )
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
@@ -375,7 +377,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
                       sym.newValueParameter(sym.pos, nme.OUTER) setInfo outerField(clazz).info
                     ((ValDef(outerParam) setType NoType) :: vparamss.head) :: vparamss.tail
                   } else vparamss
-                super.transform(copy.DefDef(tree, mods, name, tparams, vparamss1, tpt, rhs))
+                super.transform(treeCopy.DefDef(tree, mods, name, tparams, vparamss1, tpt, rhs))
             }
           } else
             super.transform(tree)
@@ -405,7 +407,7 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
                 gen.mkAttributedQualifier(pre)
               }
             }
-            super.transform(copy.Apply(tree, sel, outerVal :: args))
+            super.transform(treeCopy.Apply(tree, sel, outerVal :: args))
 
         case mch @ Match(selector, cases) => // <----- transmatch hook
           val tid = if (settings.debug.value) {
@@ -426,14 +428,14 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
               fmls += vs1.head.tpe
               vs1 = vs1.tail
             }
-            val tpe    = new MethodType(fmls.toList, definitions.BooleanClass.tpe)
+            val tpe    = new MethodType(method.newSyntheticValueParams(fmls.toList),
+                                        definitions.BooleanClass.tpe)
             method setInfo tpe
             localTyper.
             typed {
               DefDef(method,
-                     {vparamss =>
-                        new ChangeOwnerTraverser(currentOwner, method).traverse(guard);
-                        new TreeSymSubstituter(vs, vparamss.head).traverse(guard);guard})}
+                     {  new ChangeOwnerTraverser(currentOwner, method).traverse(guard);
+                        new TreeSymSubstituter(vs, method.paramss.head).traverse(guard);guard})}
           }
 
           val nguard = new ListBuffer[Tree]

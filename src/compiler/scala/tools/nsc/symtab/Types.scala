@@ -144,6 +144,8 @@ trait Types {
     override def isVolatile = underlying.isVolatile
     override def finalResultType = underlying.finalResultType
     override def paramSectionCount = underlying.paramSectionCount
+    override def paramss = underlying.paramss
+    override def params = underlying.params
     override def paramTypes = underlying.paramTypes
     override def termSymbol = underlying.termSymbol
     override def termSymbolDirect = underlying.termSymbolDirect
@@ -180,6 +182,8 @@ trait Types {
     override def resultType(actuals: List[Type]) = maybeRewrap(underlying.resultType(actuals))
     override def finalResultType = maybeRewrap(underlying.finalResultType)
     override def paramSectionCount = 0
+    override def paramss: List[List[Symbol]] = List()
+    override def params: List[Symbol] = List()
     override def paramTypes: List[Type] = List()
     override def typeArgs = underlying.typeArgs
     override def notNull = maybeRewrap(underlying.notNull)
@@ -307,6 +311,14 @@ trait Types {
     /** For a method or poly type, the number of its value parameter sections,
      *  0 for all other types */
     def paramSectionCount: Int = 0
+
+    /** For a method or poly type, a list of its value parameter sections,
+     *  the empty list for all other types */
+    def paramss: List[List[Symbol]] = List()
+
+    /** For a method or poly type, its first value parameter section,
+     *  the empty list for all other types */
+    def params: List[Symbol] = List()
 
     /** For a method or poly type, the types of its first value parameter section,
      *  the empty list for all other types */
@@ -584,8 +596,8 @@ trait Types {
       -1
     }
 
-    /** If this is a polytype, a copy with cloned type parameters owned
-     *  by `owner'. Identity for all other types.
+    /** If this is a poly- or methodtype, a copy with cloned type / value parameters
+     *  owned by `owner'. Identity for all other types.
      */
     def cloneInfo(owner: Symbol) = this
 
@@ -1608,13 +1620,19 @@ A type's typeSymbol should never be inspected directly.
 
   /** A class representing a method type with parameters.
    */
-  case class MethodType(override val paramTypes: List[Type],
+  case class MethodType(override val params: List[Symbol],
                         override val resultType: Type) extends Type {
     override val isTrivial: Boolean =
       paramTypes.forall(_.isTrivial) && resultType.isTrivial
 
     //assert(paramTypes forall (pt => !pt.typeSymbol.isImplClass))//DEBUG
     override def paramSectionCount: Int = resultType.paramSectionCount + 1
+
+    override def paramss: List[List[Symbol]] = params :: resultType.paramss
+
+    override def paramTypes = params map (_.tpe)
+
+    override def boundSyms = params ::: resultType.boundSyms
 
     override def resultType(actuals: List[Type]) = {
       val map = new InstantiateDeBruijnMap(actuals)
@@ -1628,31 +1646,32 @@ A type's typeSymbol should never be inspected directly.
 
     override def finalResultType: Type = resultType.finalResultType
 
-    protected def paramPrefix = "("
-
     private def dependentToString(base: Int): String = {
       val params = for ((pt, n) <- paramTypes.zipWithIndex) yield "x$"+n+":"+pt
       val res = resultType match {
         case mt: MethodType => mt.dependentToString(base + params.length)
         case rt => rt.toString
       }
-      params.mkString(paramPrefix, ",", ")")+res
+      params.mkString("(", ",", ")")+res
     }
 
     override def safeToString: String =
       if (resultType.isDependent) dependentToString(0)
-      else paramTypes.mkString(paramPrefix, ",", ")") + resultType
+      else params.map(_.defString).mkString("(", ",", ")") + resultType
+
+    override def cloneInfo(owner: Symbol) = {
+      val vparams = cloneSymbols(params, owner)
+      copyMethodType(this, vparams, resultType.substSym(params, vparams).cloneInfo(owner))
+    }
 
     override def kind = "MethodType"
   }
 
-  // Lukas: check whether we can eliminate this in favor of implicit flags on parameters
+  // todo: this class is no longer needed, a method type is implicit if the first
+  // parameter has the IMPLICIT flag
+  class ImplicitMethodType(ps: List[Symbol], rt: Type) extends MethodType(ps, rt)
 
-  class ImplicitMethodType(pts: List[Type], rt: Type) extends MethodType(pts, rt) {
-    override protected def paramPrefix = "(implicit "
-  }
-
-  class JavaMethodType(pts: List[Type], rt: Type) extends MethodType(pts, rt)
+  class JavaMethodType(ps: List[Symbol], rt: Type) extends MethodType(ps, rt)
 
   /** A class representing a polymorphic type or, if tparams.length == 0,
    *  a parameterless method type.
@@ -1667,12 +1686,14 @@ A type's typeSymbol should never be inspected directly.
        extends Type {
 
     override def paramSectionCount: Int = resultType.paramSectionCount
+    override def paramss: List[List[Symbol]] = resultType.paramss
+    override def params: List[Symbol] = resultType.params
     override def paramTypes: List[Type] = resultType.paramTypes
     override def parents: List[Type] = resultType.parents
     override def decls: Scope = resultType.decls
     override def termSymbol: Symbol = resultType.termSymbol
     override def typeSymbol: Symbol = resultType.typeSymbol
-    override def boundSyms: List[Symbol] = typeParams
+    override def boundSyms: List[Symbol] = typeParams ::: resultType.boundSyms
     override def prefix: Type = resultType.prefix
     override def baseTypeSeq: BaseTypeSeq = resultType.baseTypeSeq
     override def baseTypeSeqDepth: Int = resultType.baseTypeSeqDepth
@@ -1698,7 +1719,7 @@ A type's typeSymbol should never be inspected directly.
 
     override def cloneInfo(owner: Symbol) = {
       val tparams = cloneSymbols(typeParams, owner)
-      PolyType(tparams, resultType.substSym(typeParams, tparams))
+      PolyType(tparams, resultType.substSym(typeParams, tparams).cloneInfo(owner))
     }
 
     override def kind = "PolyType"
@@ -1938,6 +1959,14 @@ A type's typeSymbol should never be inspected directly.
     override def kind = "AnnotatedType"
   }
 
+  /** A class representing types with a name. When an application uses
+   *  named arguments, the named argument types for calling isApplicable
+   *  are represented as NamedType.
+   */
+  case class NamedType(name: Name, tp: Type) extends Type {
+    override def safeToString: String = name.toString +": "+ tp
+  }
+
   /** A class representing an as-yet unevaluated type.
    */
   abstract class LazyType extends Type {
@@ -2113,12 +2142,19 @@ A type's typeSymbol should never be inspected directly.
   }
 
   /** The canonical creator for implicit method types */
-  def ImplicitMethodType(paramTypes: List[Type], resultType: Type): ImplicitMethodType =
-    new ImplicitMethodType(paramTypes, resultType) // don't unique this!
+  def ImplicitMethodType(params: List[Symbol], resultType: Type): ImplicitMethodType =
+    new ImplicitMethodType(params, resultType) // don't unique this!
 
   /** The canonical creator for implicit method types */
-  def JavaMethodType(paramTypes: List[Type], resultType: Type): JavaMethodType =
-    new JavaMethodType(paramTypes, resultType) // don't unique this!
+  def JavaMethodType(params: List[Symbol], resultType: Type): JavaMethodType =
+    new JavaMethodType(params, resultType) // don't unique this!
+
+  /** Create a new MethodType of the same class as tp, i.e. keep Java / ImplicitMethodType */
+  def copyMethodType(tp: Type, params: List[Symbol], restpe: Type): Type = tp match {
+    case _: ImplicitMethodType => ImplicitMethodType(params, restpe)
+    case _: JavaMethodType => JavaMethodType(params, restpe)
+    case _ => MethodType(params, restpe)
+  }
 
   /** A creator for intersection type where intersections of a single type are
    *  replaced by the type itself, and repeated parent classes are merged.
@@ -2409,13 +2445,14 @@ A type's typeSymbol should never be inspected directly.
         if ((parents1 eq parents) && (decls1 eq decls)) tp
         else cloneDecls(ClassInfoType(parents1, new Scope(), clazz), tp, decls1)
 */
-      case MethodType(paramtypes, result) =>
+      case MethodType(params, result) =>
         variance = -variance
-        val paramtypes1 = List.mapConserve(paramtypes)(this)
+        val params1 = mapOver(params)
         variance = -variance
         val result1 = this(result)
-        if ((paramtypes1 eq paramtypes) && (result1 eq result)) tp
-        else copyMethodType(tp, paramtypes1, result1)
+        if ((params1 eq params) && (result1 eq result)) tp
+        // for new dependent types: result1.substSym(params, params1)?
+        else copyMethodType(tp, params1, result1.substSym(params, params1))
       case PolyType(tparams, result) =>
         variance = -variance
         val tparams1 = mapOver(tparams)
@@ -2576,12 +2613,6 @@ A type's typeSymbol should never be inspected directly.
 	else
 	  tree1.shallowDuplicate.setType(tpe1)
       }
-    }
-
-    protected def copyMethodType(tp: Type, formals: List[Type], restpe: Type): Type = tp match {
-      case _: ImplicitMethodType => ImplicitMethodType(formals, restpe)
-      case _: JavaMethodType => JavaMethodType(formals, restpe)
-      case _ => MethodType(formals, restpe)
     }
   }
 
@@ -2804,10 +2835,13 @@ A type's typeSymbol should never be inspected directly.
         else if (matches(from.head, sym)) toType(tp, to.head)
         else subst(tp, sym, from.tail, to.tail)
 
-    private def renameBoundSyms(tp: Type) = tp match {
+    private def renameBoundSyms(tp: Type): Type = tp match {
+      case MethodType(ps, restp) =>
+        val ps1 = cloneSymbols(ps)
+        copyMethodType(tp, ps1, renameBoundSyms(restp.substSym(ps, ps1)))
       case PolyType(bs, restp) =>
         val bs1 = cloneSymbols(bs)
-        PolyType(bs1, restp.substSym(bs, bs1))
+        PolyType(bs1, renameBoundSyms(restp.substSym(bs, bs1)))
       case ExistentialType(bs, restp) =>
         val bs1 = cloneSymbols(bs)
         ExistentialType(bs1, restp.substSym(bs, bs1))
@@ -3182,7 +3216,8 @@ A type's typeSymbol should never be inspected directly.
         sym
       } else {
         var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)(NoSymbol)
-        if (rebind0 == NoSymbol) { assert(false, ""+pre+"."+sym+" does no longer exist, phase = "+phase) }
+        if (rebind0 == NoSymbol) {
+          assert(false, ""+pre+"."+sym+" does no longer exist, phase = "+phase) }
         /** The two symbols have the same fully qualified name */
         def corresponds(sym1: Symbol, sym2: Symbol): Boolean =
           sym1.name == sym2.name && (sym1.isPackageClass || corresponds(sym1.owner, sym2.owner))
@@ -3224,6 +3259,10 @@ A type's typeSymbol should never be inspected directly.
           if ((pre1 eq pre) && (sym1 eq sym) && (args1 eq args)/* && sym.isExternal*/) tp
           else typeRef(pre1, sym1, args1)
         }
+      case MethodType(params, restp) =>
+        val restp1 = this(restp)
+        if (restp1 eq restp) tp
+        else copyMethodType(tp, params, restp1)
       case PolyType(tparams, restp) =>
         val restp1 = this(restp)
         if (restp1 eq restp) tp
@@ -3245,7 +3284,6 @@ A type's typeSymbol should never be inspected directly.
         else refinedType(parents1, tp.typeSymbol.owner, decls, tp.typeSymbol.owner.pos)
       case SuperType(_, _) => mapOver(tp)
       case TypeBounds(_, _) => mapOver(tp)
-      case MethodType(_, _) => mapOver(tp)
       case TypeVar(_, _) => mapOver(tp)
       case AnnotatedType(_,_,_) => mapOver(tp)
       case NotNullType(_) => mapOver(tp)
@@ -3509,9 +3547,9 @@ A type's typeSymbol should never be inspected directly.
         }
         //Console.println("is same? " + tp1 + " " + tp2 + " " + tp1.typeSymbol.owner + " " + tp2.typeSymbol.owner)//DEBUG
         isSameTypes(parents1, parents2) && isSubScope(ref1, ref2) && isSubScope(ref2, ref1)
-      case (MethodType(pts1, res1), MethodType(pts2, res2)) =>
-        (pts1.length == pts2.length &&
-         isSameTypes(pts1, pts2) &&
+      case (MethodType(params1, res1), MethodType(params2, res2)) =>
+        // new dependent types: probably fix this, use substSym as done for PolyType
+        (isSameTypes(tp1.paramTypes, tp2.paramTypes) &&
          res1 =:= res2 &&
          tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
       case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
@@ -3674,9 +3712,9 @@ A type's typeSymbol should never be inspected directly.
            val tp2n = normalizePlus(tp2)
            ((tp1n ne tp1) || (tp2n ne tp2)) && isSubType(tp1n, tp2n, depth)
          })
-      case (MethodType(pts1, res1), MethodType(pts2, res2)) =>
-        (pts1.length == pts2.length &&
-         matchingParams(pts1, pts2, tp1.isInstanceOf[JavaMethodType], tp2.isInstanceOf[JavaMethodType]) &&
+      case (MethodType(params1, res1), MethodType(params2, res2)) =>
+        (params1.length == params2.length &&
+         matchingParams(tp1.paramTypes, tp2.paramTypes, tp1.isInstanceOf[JavaMethodType], tp2.isInstanceOf[JavaMethodType]) &&
          (res1 <:< res2) &&
          tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
       case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
@@ -3793,8 +3831,8 @@ A type's typeSymbol should never be inspected directly.
       tparams1.length == tparams2.length &&
       matchesType(res1, res2.substSym(tparams2, tparams1), alwaysMatchSimple)
     (tp1, tp2) match {
-      case (MethodType(pts1, res1), MethodType(pts2, res2)) =>
-        matchingParams(pts1, pts2, tp1.isInstanceOf[JavaMethodType], tp2.isInstanceOf[JavaMethodType]) &&
+      case (MethodType(params1, res1), MethodType(params2, res2)) =>
+        matchingParams(tp1.paramTypes, tp2.paramTypes, tp1.isInstanceOf[JavaMethodType], tp2.isInstanceOf[JavaMethodType]) &&
         matchesType(res1, res2, alwaysMatchSimple) &&
         tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType]
       case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
@@ -4047,8 +4085,8 @@ A type's typeSymbol should never be inspected directly.
           List.map2(tparams, List.transpose(matchingBounds(ts, tparams)))
             ((tparam, bounds) => tparam.cloneSymbol.setInfo(glb(bounds, depth))),
           lub0(matchingInstTypes(ts, tparams)))
-      case ts @ MethodType(pts, _) :: rest =>
-        MethodType(pts, lub0(matchingRestypes(ts, pts)))
+      case ts @ MethodType(params, _) :: rest =>
+        MethodType(params, lub0(matchingRestypes(ts, params map (_.tpe))))
       case ts @ TypeBounds(_, _) :: rest =>
         mkTypeBounds(glb(ts map (_.bounds.lo), depth), lub(ts map (_.bounds.hi), depth))
       case ts0 =>
@@ -4074,7 +4112,7 @@ A type's typeSymbol should never be inspected directly.
                 val symtypes =
                   (List.map2(narrowts, syms)
                      ((t, sym) => t.memberInfo(sym).substThis(t.typeSymbol, lubThisType)));
-                if (proto.isTerm)
+                if (proto.isTerm) // possible problem: owner of info is still the old one, instead of new refinement class
                   proto.cloneSymbol(lubRefined.typeSymbol).setInfo(lub(symtypes, decr(depth)))
                 else if (symtypes.tail forall (symtypes.head =:=))
                   proto.cloneSymbol(lubRefined.typeSymbol).setInfo(symtypes.head)
@@ -4148,8 +4186,8 @@ A type's typeSymbol should never be inspected directly.
           List.map2(tparams, List.transpose(matchingBounds(ts, tparams)))
           ((tparam, bounds) => tparam.cloneSymbol.setInfo(lub(bounds, depth))),
           glb0(matchingInstTypes(ts, tparams)))
-      case ts @ MethodType(pts, _) :: rest =>
-        MethodType(pts, glb0(matchingRestypes(ts, pts)))
+      case ts @ MethodType(params, _) :: rest =>
+        MethodType(params, glb0(matchingRestypes(ts, params map (_.tpe))))
       case ts @ TypeBounds(_, _) :: rest =>
         mkTypeBounds(lub(ts map (_.bounds.lo), depth), glb(ts map (_.bounds.hi), depth))
       case ts0 =>
@@ -4361,7 +4399,7 @@ A type's typeSymbol should never be inspected directly.
    */
   private def matchingRestypes(tps: List[Type], pts: List[Type]): List[Type] =
     tps map {
-      case MethodType(pts1, res) if (isSameTypes(pts1, pts)) =>
+      case MethodType(params1, res) if (isSameTypes(params1 map (_.tpe), pts)) =>
         res
       case _ =>
         throw new NoCommonType(tps)

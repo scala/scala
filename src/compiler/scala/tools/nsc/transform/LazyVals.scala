@@ -60,8 +60,8 @@ abstract class LazyVals extends Transform {
             rhs1
           } else
             super.transform(rhs)
-          copy.DefDef(tree, mods, name, tparams, vparams, tpt,
-                      typed(addBitmapDefs(sym, res)))
+          treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt,
+                          typed(addBitmapDefs(sym, res)))
 
         case Template(parents, self, body) =>
           val body1 = super.transformTrees(body)
@@ -72,11 +72,11 @@ abstract class LazyVals extends Transform {
                 added = true
                 typed(addBitmapDefs(sym, stat))
               case ValDef(mods, name, tpt, rhs) =>
-                typed(copy.ValDef(stat, mods, name, tpt, addBitmapDefs(stat.symbol, rhs)))
+                typed(treeCopy.ValDef(stat, mods, name, tpt, addBitmapDefs(stat.symbol, rhs)))
               case _ =>
                 stat
             }
-          copy.Template(tree, parents, self, stats)
+          treeCopy.Template(tree, parents, self, stats)
 
         case _ => super.transform(tree)
       }
@@ -100,7 +100,7 @@ abstract class LazyVals extends Transform {
           if (name.toString.equals("_" + methSym.name)
               && List.forall2(params.tail, methSym.tpe.paramTypes) { (ident, tpe) => ident.tpe == tpe }) =>
             val sym = l.symbol
-            Block(assign, copy.LabelDef(l, name, params, typed(prependStats(bmps, rhs1))))
+            Block(assign, treeCopy.LabelDef(l, name, params, typed(prependStats(bmps, rhs1))))
 
         case _ => prependStats(bmps, rhs)
       }

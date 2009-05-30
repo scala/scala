@@ -92,6 +92,7 @@ abstract class NodePrinters {
 
           if (sym hasFlag CASEACCESSOR ) buf.append(" | CASEACCESSOR")
           if (sym hasFlag TRAIT        ) buf.append(" | TRAIT")
+          if (sym hasFlag DEFAULTPARAM ) buf.append(" | DEFAULTPARAM")
           if (sym hasFlag BRIDGE       ) buf.append(" | BRIDGE")
           if (sym hasFlag ACCESSOR     ) buf.append(" | ACCESSOR")
 

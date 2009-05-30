@@ -101,9 +101,8 @@ abstract class LambdaLift extends InfoTransform {
       def localToConstr(sym: Symbol) =
         if (sym.isLocalDummy) sym.owner.primaryConstructor else sym;
       var encl = localToConstr(sym)
-      while (!encl.isMethod && !encl.isClass) {
-        encl = localToConstr(outer(encl));
-      }
+      while (!encl.isMethod && !encl.isClass)
+        encl = localToConstr(outer(encl))
       encl
     }
 
@@ -318,12 +317,13 @@ abstract class LambdaLift extends InfoTransform {
         val freeParams = ps map (p => ValDef(p) setPos tree.pos setType NoType);
         tree match {
           case DefDef(mods, name, tparams, List(vparams), tpt, rhs) =>
+            val addParams = cloneSymbols(ps).map(_.setFlag(PARAM))
             sym.updateInfo(
-              lifted(MethodType(sym.info.paramTypes ::: (ps map (_.tpe)), sym.info.resultType)));
-            copy.DefDef(tree, mods, name, tparams, List(vparams ::: freeParams), tpt, rhs)
+              lifted(MethodType(sym.info.params ::: addParams, sym.info.resultType)))
+            treeCopy.DefDef(tree, mods, name, tparams, List(vparams ::: freeParams), tpt, rhs)
           case ClassDef(mods, name, tparams, impl @ Template(parents, self, body)) =>
-            copy.ClassDef(tree, mods, name, tparams,
-                          copy.Template(impl, parents, self, body ::: freeParams))
+            treeCopy.ClassDef(tree, mods, name, tparams,
+                              treeCopy.Template(impl, parents, self, body ::: freeParams))
         }
       case None =>
         tree
@@ -358,20 +358,20 @@ abstract class LambdaLift extends InfoTransform {
                   Apply(Select(New(TypeTree(sym.tpe)), nme.CONSTRUCTOR), List(rhs))
                 }
               }
-            copy.ValDef(tree, mods, name, tpt1, rhs1)
+            treeCopy.ValDef(tree, mods, name, tpt1, rhs1)
           } else tree
         case Return(Block(stats, value)) =>
-          Block(stats, copy.Return(tree, value)) setType tree.tpe setPos tree.pos
+          Block(stats, treeCopy.Return(tree, value)) setType tree.tpe setPos tree.pos
         case Return(expr) =>
           assert(sym == currentMethod, sym)
           tree
         case Apply(fn, args) =>
-          copy.Apply(tree, fn, addFreeArgs(tree.pos, sym, args))
+          treeCopy.Apply(tree, fn, addFreeArgs(tree.pos, sym, args))
         case Assign(Apply(TypeApply(sel @ Select(qual, _), _), List()), rhs) =>
           // eliminate casts introduced by selecting a captured variable field
           // on the lhs of an assignment.
           assert(sel.symbol == Object_asInstanceOf)
-          copy.Assign(tree, qual, rhs)
+          treeCopy.Assign(tree, qual, rhs)
         case Ident(name) =>
           val tree1 =
             if (sym != NoSymbol && sym.isTerm && !sym.isLabel)
@@ -401,13 +401,13 @@ abstract class LambdaLift extends InfoTransform {
       def addLifted(stat: Tree): Tree = stat match {
         case ClassDef(mods, name, tparams, impl @ Template(parents, self, body)) =>
           val lifted = liftedDefs(stat.symbol).toList map addLifted
-          val result = copy.ClassDef(
-            stat, mods, name, tparams, copy.Template(impl, parents, self, body ::: lifted))
+          val result = treeCopy.ClassDef(
+            stat, mods, name, tparams, treeCopy.Template(impl, parents, self, body ::: lifted))
           liftedDefs -= stat.symbol
           result
         case DefDef(mods, name, tp, vp, tpt, Block(Nil, expr))
         if !stat.symbol.isConstructor =>
-          copy.DefDef(stat, mods, name, tp, vp, tpt, expr)
+          treeCopy.DefDef(stat, mods, name, tp, vp, tpt, expr)
         case _ =>
           stat
       }

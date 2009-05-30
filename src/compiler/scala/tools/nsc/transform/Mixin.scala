@@ -172,7 +172,7 @@ abstract class Mixin extends InfoTransform {
         val setterName = nme.getterToSetter(nme.getterName(field.name))
         val setter = clazz.newMethod(field.pos, setterName)
           .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | lateDEFERRED)
-          .setInfo(MethodType(List(field.info), UnitClass.tpe))
+        setter.setInfo(MethodType(setter.newSyntheticValueParams(List(field.info)), UnitClass.tpe))
         if (needsExpandedSetterName(field)) {
           //println("creating expanded setter from "+field)
           setter.name = clazz.expandedSetterName(setter.name)
@@ -351,11 +351,12 @@ abstract class Mixin extends InfoTransform {
       if ((parents1 eq parents) && (decls1 eq decls)) tp
       else ClassInfoType(parents1, decls1, clazz)
 
-    case MethodType(formals, restp) =>
+    case MethodType(params, restp) =>
       toInterfaceMap(
-        if (isImplementedStatically(sym))
-          MethodType(toInterface(sym.owner.typeOfThis) :: formals, restp)
-        else
+        if (isImplementedStatically(sym)) {
+          val ownerParam = sym.newSyntheticValueParam(toInterface(sym.owner.typeOfThis))
+          MethodType(ownerParam :: params, restp)
+        } else
           tp)
 
     case _ =>
@@ -419,7 +420,7 @@ abstract class Mixin extends InfoTransform {
               .setFlag(PARAM)
               .setInfo(toInterface(currentOwner.typeOfThis));
             val selfdef = ValDef(self) setType NoType
-            copy.DefDef(tree, mods, name, tparams, List(selfdef :: vparams), tpt, rhs)
+            treeCopy.DefDef(tree, mods, name, tparams, List(selfdef :: vparams), tpt, rhs)
           } else {
             EmptyTree
           }
@@ -508,7 +509,7 @@ abstract class Mixin extends InfoTransform {
        *               right-hand side
        */
       def addDefDef(sym: Symbol, rhs: List[Symbol] => Tree) {
-        addDef(position(sym), DefDef(sym, vparamss => rhs(vparamss.head)))
+        addDef(position(sym), DefDef(sym, rhs(sym.paramss.head)))
       }
 
       /** Add `newdefs' to `stats', removing any abstract method definitions
@@ -548,7 +549,7 @@ abstract class Mixin extends InfoTransform {
             log("complete super acc " + stat.symbol + stat.symbol.locationString +
                 " " + rhs1 + " " + stat.symbol.alias + stat.symbol.alias.locationString +
                 "/" + stat.symbol.alias.owner.hasFlag(lateINTERFACE))//debug
-          copy.DefDef(stat, mods, name, tparams, List(vparams), tpt, rhs2)
+          treeCopy.DefDef(stat, mods, name, tparams, List(vparams), tpt, rhs2)
         case _ =>
           stat
       }
@@ -659,7 +660,7 @@ abstract class Mixin extends InfoTransform {
                 val Block(stats, res) = rhs
                 mkLazyDef(clazz, stats, Select(This(clazz), res.symbol), fieldOffset(sym))
               }
-              copy.DefDef(stat, mods, name, tp, vp, tpt, rhs1)
+              treeCopy.DefDef(stat, mods, name, tp, vp, tpt, rhs1)
 
           case DefDef(mods, name, tp, vp, tpt, rhs)
             if needsInitFlag(sym) && rhs != EmptyTree && !clazz.isImplClass && !clazz.isTrait =>
@@ -670,10 +671,10 @@ abstract class Mixin extends InfoTransform {
               else {
                 mkCheckedAccessor(clazz, rhs, fieldOffset(sym), stat.pos)
               }
-              copy.DefDef(stat, mods, name, tp, vp, tpt, rhs1)
+              treeCopy.DefDef(stat, mods, name, tp, vp, tpt, rhs1)
 
           case DefDef(mods, name, tp, vp, tpt, rhs) if sym.isConstructor =>
-            copy.DefDef(stat, mods, name, tp, vp, tpt, addInitBits(clazz, rhs))
+            treeCopy.DefDef(stat, mods, name, tp, vp, tpt, addInitBits(clazz, rhs))
 
           case _ => stat
         }
@@ -890,7 +891,7 @@ abstract class Mixin extends InfoTransform {
           // add all new definitions to current class or interface
           val body1 = addNewDefs(currentOwner, body)
 
-          copy.Template(tree, parents1, self, body1)
+          treeCopy.Template(tree, parents1, self, body1)
 
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
         if (tree.symbol == Object_asInstanceOf && (qual.tpe <:< targ.tpe)) =>

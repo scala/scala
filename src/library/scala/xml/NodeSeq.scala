@@ -51,7 +51,7 @@ abstract class NodeSeq extends immutable.Sequence[Node] with SequenceTemplate[No
   def apply(f: Node => Boolean): NodeSeq = filter(f)
 
   /** structural equality */
-  override def equals(x: Any) = x match {
+  override def equals(x: Any): Boolean = x match {
     case z:Node      => (length == 1) && z == apply(0)
     case z:Seq[_]    => sameElements(z)
     case z:String    => text == z

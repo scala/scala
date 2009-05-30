@@ -59,13 +59,13 @@ trait SyntheticMethods { self: Analyzer =>
       }
     }
 
-    def syntheticMethod(name: Name, flags: Int, tpe: Type) =
-      newSyntheticMethod(name, flags | OVERRIDE, tpe)
+    def syntheticMethod(name: Name, flags: Int, tpeCons: Symbol => Type) =
+      newSyntheticMethod(name, flags | OVERRIDE, tpeCons)
 
-    def newSyntheticMethod(name: Name, flags: Int, tpe: Type) = {
+    def newSyntheticMethod(name: Name, flags: Int, tpeCons: Symbol => Type) = {
       var method = clazz.newMethod(clazz.pos, name)
         .setFlag(flags | SYNTHETICMETH)
-        .setInfo(tpe)
+      method.setInfo(tpeCons(method))
       method = clazz.info.decls.enter(method).asInstanceOf[TermSymbol]
       method
     }
@@ -77,31 +77,32 @@ trait SyntheticMethods { self: Analyzer =>
     }
     */
     def productPrefixMethod: Tree = {
-      val method = syntheticMethod(nme.productPrefix, 0, PolyType(List(), StringClass.tpe))
-      typer.typed(DefDef(method, vparamss => Literal(Constant(clazz.name.decode))))
+      val method = syntheticMethod(nme.productPrefix, 0, sym => PolyType(List(), StringClass.tpe))
+      typer.typed(DefDef(method, Literal(Constant(clazz.name.decode))))
     }
 
     def productArityMethod(nargs:Int ): Tree = {
-      val method = syntheticMethod(nme.productArity, 0, PolyType(List(), IntClass.tpe))
-      typer.typed(DefDef(method, vparamss => Literal(Constant(nargs))))
+      val method = syntheticMethod(nme.productArity, 0, sym => PolyType(List(), IntClass.tpe))
+      typer.typed(DefDef(method, Literal(Constant(nargs))))
     }
 
     def productElementMethod(accs: List[Symbol]): Tree = {
       //val retTpe = lub(accs map (_.tpe.resultType))
-      val method = syntheticMethod(nme.productElement, 0, MethodType(List(IntClass.tpe), AnyClass.tpe/*retTpe*/))
-      typer.typed(DefDef(method, vparamss => Match(Ident(vparamss.head.head), {
+      val method = syntheticMethod(nme.productElement, 0,
+        sym => MethodType(sym.newSyntheticValueParams(List(IntClass.tpe)), AnyClass.tpe/*retTpe*/))
+      typer.typed(DefDef(method, Match(Ident(method.paramss.head.head), {
 	(for ((sym,i) <- accs.zipWithIndex) yield {
 	  CaseDef(Literal(Constant(i)),EmptyTree, Ident(sym))
 	}):::List(CaseDef(Ident(nme.WILDCARD), EmptyTree,
 		    Throw(New(TypeTree(IndexOutOfBoundsExceptionClass.tpe), List(List(
-		      Select(Ident(vparamss.head.head), nme.toString_)
+		      Select(Ident(method.paramss.head.head), nme.toString_)
 		    ))))))
       })))
     }
 
     def moduleToStringMethod: Tree = {
-      val method = syntheticMethod(nme.toString_, FINAL, MethodType(List(), StringClass.tpe))
-      typer.typed(DefDef(method, vparamss => Literal(Constant(clazz.name.decode))))
+      val method = syntheticMethod(nme.toString_, FINAL, sym => MethodType(List(), StringClass.tpe))
+      typer.typed(DefDef(method, Literal(Constant(clazz.name.decode))))
     }
 
     def forwardingMethod(name: Name): Tree = {
@@ -110,13 +111,14 @@ trait SyntheticMethods { self: Analyzer =>
         if (target.tpe.paramTypes.isEmpty) List()
         else target.tpe.paramTypes.tail
       val method = syntheticMethod(
-        name, 0, MethodType(paramtypes, target.tpe.resultType))
-      typer.typed(DefDef(method, vparamss =>
-        Apply(gen.mkAttributedRef(target), This(clazz) :: (vparamss.head map Ident))))
+        name, 0, sym => MethodType(sym.newSyntheticValueParams(paramtypes), target.tpe.resultType))
+      typer.typed(DefDef(method,
+        Apply(gen.mkAttributedRef(target), This(clazz) :: (method.paramss.head map Ident))))
     }
 
     def equalsSym =
-      syntheticMethod(nme.equals_, 0, MethodType(List(AnyClass.tpe), BooleanClass.tpe))
+      syntheticMethod(nme.equals_, 0,
+                      sym => MethodType(sym.newSyntheticValueParams(List(AnyClass.tpe)), BooleanClass.tpe))
 
     /** The equality method for case modules:
      *   def equals(that: Any) = this eq that
@@ -124,13 +126,13 @@ trait SyntheticMethods { self: Analyzer =>
     def equalsModuleMethod: Tree = {
       val method = equalsSym
       val methodDef =
-        DefDef(method, vparamss =>
+        DefDef(method,
           Apply(
             Select(This(clazz), Object_eq),
             List(
               TypeApply(
                 Select(
-                  Ident(vparamss.head.head),
+                  Ident(method.paramss.head.head),
                   Any_asInstanceOf),
                 List(TypeTree(AnyRefClass.tpe))))))
       localTyper.typed(methodDef)
@@ -149,9 +151,8 @@ trait SyntheticMethods { self: Analyzer =>
       val method = equalsSym
       val methodDef =
         DefDef(
-          method,
-          { vparamss =>
-            val that = Ident(vparamss.head.head)
+          method, {
+            val that = Ident(method.paramss.head.head)
             val constrParamTypes = clazz.primaryConstructor.tpe.paramTypes
             val hasVarArgs = !constrParamTypes.isEmpty && constrParamTypes.last.typeSymbol == RepeatedParamClass
             if (false && clazz.isStatic) {
@@ -165,7 +166,7 @@ trait SyntheticMethods { self: Analyzer =>
                   Boolean_and),
                 List(
                   Apply(gen.mkAttributedRef(target),
-                        This(clazz) :: (vparamss.head map Ident))))
+                        This(clazz) :: (method.paramss.head map Ident))))
             } else {
               val (pat, guard) = {
                 val guards = new ListBuffer[Tree]
@@ -215,8 +216,8 @@ trait SyntheticMethods { self: Analyzer =>
       // !!! the synthetic method "readResolve" should be private,
       // but then it is renamed !!!
       val method = newSyntheticMethod(nme.readResolve, PROTECTED,
-                                      MethodType(List(), ObjectClass.tpe))
-      typer.typed(DefDef(method, vparamss => gen.mkAttributedRef(clazz.sourceModule)))
+                                      sym => MethodType(List(), ObjectClass.tpe))
+      typer.typed(DefDef(method, gen.mkAttributedRef(clazz.sourceModule)))
     }
 
     def newAccessorMethod(tree: Tree): Tree = tree match {
@@ -225,7 +226,7 @@ trait SyntheticMethods { self: Analyzer =>
         newAcc.name = context.unit.fresh.newName(tree.symbol.pos, tree.symbol.name + "$")
         newAcc.setFlag(SYNTHETIC).resetFlag(ACCESSOR | PARAMACCESSOR | PRIVATE)
         newAcc = newAcc.owner.info.decls enter newAcc
-        val result = typer.typed(DefDef(newAcc, vparamss => rhs.duplicate))
+        val result = typer.typed(DefDef(newAcc, rhs.duplicate))
         log("new accessor method " + result)
         result
     }
@@ -246,9 +247,10 @@ trait SyntheticMethods { self: Analyzer =>
           context.unit.error(sym.pos, "a definition of `"+name1+"' already exists in " + clazz)
           NoSymbol
         } else {
-          clazz.newMethod(sym.pos, name1)
-            .setInfo(sym.info)
-            .setFlag(sym.getFlag(DEFERRED | OVERRIDE | STATIC))
+          val m = clazz.newMethod(sym.pos, name1)
+          m.setInfo(sym.info.cloneInfo(clazz))
+           .setFlag(sym.getFlag(DEFERRED | OVERRIDE | STATIC))
+          m
         }
       }
 
@@ -260,7 +262,7 @@ trait SyntheticMethods { self: Analyzer =>
         clazz.info.decls.enter(getter)
         ts += typer.typed(DefDef(
           getter,
-          vparamss => if (sym hasFlag DEFERRED) EmptyTree else gen.mkAttributedRef(sym)))
+          if (sym hasFlag DEFERRED) EmptyTree else gen.mkAttributedRef(sym)))
       }
     }
 
@@ -270,9 +272,8 @@ trait SyntheticMethods { self: Analyzer =>
         clazz.info.decls.enter(setter)
         ts += typer.typed(DefDef(
           setter,
-          vparamss =>
-            if (sym hasFlag DEFERRED) EmptyTree
-            else Apply(gen.mkAttributedRef(sym), List(Ident(vparamss.head.head)))))
+          if (sym hasFlag DEFERRED) EmptyTree
+          else Apply(gen.mkAttributedRef(sym), List(Ident(setter.paramss.head.head)))))
       }
     }
 
@@ -338,7 +339,7 @@ trait SyntheticMethods { self: Analyzer =>
       }
     }
     val synthetics = ts.toList
-    copy.Template(
+    treeCopy.Template(
       templ, templ.parents, templ.self, if (synthetics.isEmpty) templ.body else templ.body ::: synthetics)
   }
 }

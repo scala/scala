@@ -120,7 +120,6 @@ trait Symbols {
      */
     var privateWithin: Symbol = _
 
-
 // Creators -------------------------------------------------------------------
 
     final def newValue(pos: Position, name: Name) =
@@ -206,6 +205,28 @@ trait Symbols {
      */
     final def newTypeParameter(pos: Position, name: Name) =
       newAbstractType(pos, name).setFlag(PARAM)
+
+    /** Synthetic value parameters when parameter symbols are not available
+     */
+    final def newSyntheticValueParamss(argtypess: List[List[Type]]): List[List[Symbol]] = {
+      var cnt = 0
+      def freshName() = { cnt += 1; newTermName("x$" + cnt) }
+      def param(tp: Type) =
+        newValueParameter(owner.pos, freshName()).setFlag(SYNTHETIC).setInfo(tp)
+      argtypess map (_.map(param))
+    }
+
+    /** Synthetic value parameters when parameter symbols are not available.
+     *  Calling this method multiple times will re-use the same parameter names.
+     */
+    final def newSyntheticValueParams(argtypes: List[Type]): List[Symbol] =
+      newSyntheticValueParamss(List(argtypes)).head
+
+    /** Synthetic value parameter when parameter symbol is not available.
+     *  Calling this method multiple times will re-use the same parameter name.
+     */
+    final def newSyntheticValueParam(argtype: Type): Symbol =
+      newSyntheticValueParams(List(argtype)).head
 
     /** Type skolems are type parameters ``seen from the inside''
      *  Given a class C[T]
@@ -790,6 +811,10 @@ trait Symbols {
     def typeParams: List[Symbol] =
       if (isMonomorphicType) List() else { rawInfo.load(this); rawInfo.typeParams }
 
+    /** The value parameter sections of this symbol.
+     */
+    def paramss: List[List[Symbol]] = info.paramss
+
     def getAttributes(clazz: Symbol): List[AnnotationInfo] =
       attributes.filter(_.atp.typeSymbol.isNonBottomSubClass(clazz))
 
@@ -992,6 +1017,13 @@ trait Symbols {
      *  is an alias, NoSymbol for all others
      */
     def alias: Symbol = NoSymbol
+
+    /** For parameter symbols: the method computing its default value, NoSymbol
+     *  for all others
+     */
+    def defaultGetter: Symbol = NoSymbol
+    def defaultGetter_=(getter: Symbol): Unit =
+      throw new Error("defaultGetter cannot be set for " + this)
 
     /** For a lazy value, it's lazy accessor. NoSymbol for all others */
     def lazyAccessor: Symbol = NoSymbol
@@ -1402,8 +1434,8 @@ trait Symbols {
         tp match {
           case PolyType(tparams, res) =>
             typeParamsString + infoString(res)
-          case MethodType(pts, res) =>
-            pts.mkString("(", ",", ")") + infoString(res)
+          case MethodType(params, res) =>
+           params.map(_.defString).mkString("(", ",", ")") + infoString(res)
           case _ =>
             ": " + tp
         }
@@ -1449,10 +1481,12 @@ trait Symbols {
     privateWithin = NoSymbol
 
     protected var referenced: Symbol = NoSymbol
+    protected var defGetter: Symbol = NoSymbol
 
     def cloneSymbolImpl(owner: Symbol): Symbol = {
       val clone = new TermSymbol(owner, pos, name)
       clone.referenced = referenced
+      clone.defGetter = defGetter
       clone
     }
 
@@ -1468,6 +1502,10 @@ trait Symbols {
       referenced = alias
       this
     }
+
+    override def defaultGetter = defGetter
+    override def defaultGetter_=(getter: Symbol): Unit =
+      defGetter = getter
 
     override def outerSource: Symbol =
       if (name endsWith nme.OUTER) initialize.referenced
@@ -1768,6 +1806,7 @@ trait Symbols {
     override def accessBoundary(base: Symbol): Symbol = RootClass
     def cloneSymbolImpl(owner: Symbol): Symbol = throw new Error()
   }
+
 
   def cloneSymbols(syms: List[Symbol]): List[Symbol] = {
     val syms1 = syms map (_.cloneSymbol)
