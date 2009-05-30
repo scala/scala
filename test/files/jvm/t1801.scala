@@ -6,7 +6,7 @@ object Test {
     var cnt = 0
     while(cnt < 500) {
       if ((cnt % 100) == 0) println(cnt)
-      receiver ! new Array[Int] (1048576)
+      receiver ! new Array[Int] (148576)
       cnt += 1
       //println ("Used Mem: " + (((rt.totalMemory() - rt.freeMemory()) / 1048576.) formatted "%.2f") + " Mb")
     }
