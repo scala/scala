@@ -42,7 +42,7 @@ trait SchedulerAdapter extends IScheduler {
    *
    *  @param  a  the actor to be registered
    */
-  def newActor(a: OutputChannelActor) =
+  def newActor(a: Reactor) =
     Scheduler.newActor(a)
 
   /** Unregisters an actor from this scheduler, because it
@@ -50,7 +50,7 @@ trait SchedulerAdapter extends IScheduler {
    *
    *  @param  a  the actor to be unregistered
    */
-  def terminated(a: OutputChannelActor) =
+  def terminated(a: Reactor) =
     Scheduler.terminated(a)
 
   /** Registers a closure to be executed when the specified
@@ -59,6 +59,6 @@ trait SchedulerAdapter extends IScheduler {
    *  @param  a  the actor
    *  @param  f  the closure to be registered
    */
-  def onTerminate(a: OutputChannelActor)(f: => Unit) =
+  def onTerminate(a: Reactor)(f: => Unit) =
     Scheduler.onTerminate(a)(f)
 }

@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutionException
  */
 object Actor {
 
-  private[actors] val tl = new ThreadLocal[OutputChannelActor]
+  private[actors] val tl = new ThreadLocal[Reactor]
 
   // timer thread runs as daemon
   private[actors] val timer = new Timer(true)
@@ -43,9 +43,9 @@ object Actor {
   private[actors] def self(sched: IScheduler): Actor =
     rawSelf(sched).asInstanceOf[Actor]
 
-  private[actors] def rawSelf: OutputChannelActor = rawSelf(Scheduler)
+  private[actors] def rawSelf: Reactor = rawSelf(Scheduler)
 
-  private[actors] def rawSelf(sched: IScheduler): OutputChannelActor = {
+  private[actors] def rawSelf(sched: IScheduler): Reactor = {
     val s = tl.get
     if (s eq null) {
       val r = new ActorProxy(currentThread, sched)
@@ -208,7 +208,7 @@ object Actor {
   def eventloop(f: PartialFunction[Any, Unit]): Nothing =
     rawSelf.react(new RecursiveProxyHandler(rawSelf, f))
 
-  private class RecursiveProxyHandler(a: OutputChannelActor, f: PartialFunction[Any, Unit])
+  private class RecursiveProxyHandler(a: Reactor, f: PartialFunction[Any, Unit])
           extends PartialFunction[Any, Unit] {
     def isDefinedAt(m: Any): Boolean =
       true // events are immediately removed from the mailbox
@@ -373,7 +373,7 @@ object Actor {
  * @author Philipp Haller
  */
 @serializable
-trait Actor extends OutputChannelActor with AbstractActor {
+trait Actor extends Reactor with AbstractActor {
 
   /* The following two fields are only used when the actor
    * suspends by blocking its underlying thread, for example,
@@ -394,7 +394,16 @@ trait Actor extends OutputChannelActor with AbstractActor {
    */
   private var onTimeout: Option[TimerTask] = None
 
-  protected[this] override def resumeReceiver(item: (Any, OutputChannel[Any])) {
+  protected[this] override def makeReaction(block: => Unit): Runnable = {
+    if (isSuspended)
+      new Runnable {
+        def run() { block }
+      }
+    else
+      new ActorTask(this, { block })
+  }
+
+  protected[this] override def resumeReceiver(item: (Any, OutputChannel[Any]), onSameThread: Boolean) {
     if (!onTimeout.isEmpty) {
       onTimeout.get.cancel()
       onTimeout = None
@@ -408,7 +417,10 @@ trait Actor extends OutputChannelActor with AbstractActor {
     } else {
       senders = List(item._2)
       // assert continuation != null
-      (new Reaction(this, continuation, item._1)).run()
+      if (onSameThread)
+        continuation(item._1)
+      else
+        scheduleActor(null, item._1)
     }
   }
 
@@ -423,7 +435,7 @@ trait Actor extends OutputChannelActor with AbstractActor {
 
     synchronized {
       if (shouldExit) exit() // links
-      drainSendBuffer()
+      drainSendBuffer(mailbox)
     }
 
     var done = false
@@ -433,7 +445,7 @@ trait Actor extends OutputChannelActor with AbstractActor {
         synchronized {
           // in mean time new stuff might have arrived
           if (!sendBuffer.isEmpty) {
-            drainSendBuffer()
+            drainSendBuffer(mailbox)
             // keep going
           } else {
             waitingFor = f.isDefinedAt
@@ -467,7 +479,7 @@ trait Actor extends OutputChannelActor with AbstractActor {
 
     synchronized {
       if (shouldExit) exit() // links
-      drainSendBuffer()
+      drainSendBuffer(mailbox)
     }
 
     // first, remove spurious TIMEOUT message from mailbox if any
@@ -488,7 +500,7 @@ trait Actor extends OutputChannelActor with AbstractActor {
         val todo = synchronized {
           // in mean time new stuff might have arrived
           if (!sendBuffer.isEmpty) {
-            drainSendBuffer()
+            drainSendBuffer(mailbox)
             // keep going
             () => {}
           } else if (msec == 0) {
@@ -498,13 +510,14 @@ trait Actor extends OutputChannelActor with AbstractActor {
             waitingFor = f.isDefinedAt
             received = None
             suspendActorFor(msec)
+            done = true
             if (received.isEmpty) {
               // actor is not resumed because of new message
               // therefore, waitingFor has not been updated, yet.
               waitingFor = waitingForNone
-            }
-            done = true
-            receiveTimeout
+              receiveTimeout
+            } else
+              () => {}
           }
         }
         todo()
@@ -533,9 +546,10 @@ trait Actor extends OutputChannelActor with AbstractActor {
     assert(Actor.self(scheduler) == this, "react on channel belonging to other actor")
     synchronized {
       if (shouldExit) exit() // links
-      drainSendBuffer()
+      drainSendBuffer(mailbox)
     }
-    searchMailbox(f)
+    continuation = f
+    searchMailbox(mailbox, f.isDefinedAt, false)
     throw Actor.suspendException
   }
 
@@ -554,7 +568,7 @@ trait Actor extends OutputChannelActor with AbstractActor {
 
     synchronized {
       if (shouldExit) exit() // links
-      drainSendBuffer()
+      drainSendBuffer(mailbox)
     }
 
     // first, remove spurious TIMEOUT message from mailbox if any
@@ -575,7 +589,7 @@ trait Actor extends OutputChannelActor with AbstractActor {
         val todo = synchronized {
           // in mean time new stuff might have arrived
           if (!sendBuffer.isEmpty) {
-            drainSendBuffer()
+            drainSendBuffer(mailbox)
             // keep going
             () => {}
           } else if (msec == 0) {
@@ -681,16 +695,16 @@ trait Actor extends OutputChannelActor with AbstractActor {
         new Future[Any](someChan) {
           def apply() =
             if (isSet) value.get
-            else ch.receive {
+            else inputChannel.receive {
               case any => value = Some(any); any
             }
           def respond(k: Any => Unit): Unit =
             if (isSet) k(value.get)
-            else ch.react {
+            else inputChannel.react {
  	      case any => value = Some(any); k(any)
           }
           def isSet = value match {
-            case None => ch.receiveWithin(0) {
+            case None => inputChannel.receiveWithin(0) {
               case TIMEOUT => false
               case any => value = Some(any); true
             }
@@ -704,16 +718,16 @@ trait Actor extends OutputChannelActor with AbstractActor {
         new Future[A](someChan) {
           def apply() =
             if (isSet) value.get.asInstanceOf[A]
-            else ch.receive {
+            else inputChannel.receive {
               case any => value = Some(any); any
             }
           def respond(k: A => Unit): Unit =
  	    if (isSet) k(value.get.asInstanceOf[A])
-            else ch.react {
+            else inputChannel.react {
               case any => value = Some(any); k(any)
             }
           def isSet = value match {
-            case None => ch.receiveWithin(0) {
+            case None => inputChannel.receiveWithin(0) {
               case TIMEOUT => false
               case any => value = Some(any); true
             }
@@ -744,13 +758,13 @@ trait Actor extends OutputChannelActor with AbstractActor {
             else
               throw new ExecutionException(new Exception(reason.toString()))
           }
-        } else ch.receive(handleReply andThen {(x: Unit) => apply()})
+        } else inputChannel.receive(handleReply andThen {(x: Unit) => apply()})
 
       def respond(k: Any => Unit): Unit =
  	if (isSet)
           apply()
  	else
-          ch.react(handleReply andThen {(x: Unit) => k(apply())})
+          inputChannel.react(handleReply andThen {(x: Unit) => k(apply())})
 
       def isSet = (value match {
         case None =>
@@ -760,7 +774,7 @@ trait Actor extends OutputChannelActor with AbstractActor {
           }
           val whatToDo =
             handleTimeout orElse (handleReply andThen {(x: Unit) => true})
-          ch.receiveWithin(0)(whatToDo)
+          inputChannel.receiveWithin(0)(whatToDo)
         case Some(_) => true
       }) || !exitReason.isEmpty
     }
@@ -788,16 +802,16 @@ trait Actor extends OutputChannelActor with AbstractActor {
     new Future[A](ftch) {
       def apply() =
         if (isSet) value.get.asInstanceOf[A]
-        else ch.receive {
+        else inputChannel.receive {
           case any => value = Some(any); value.get.asInstanceOf[A]
         }
       def respond(k: A => Unit): Unit =
  	if (isSet) k(value.get.asInstanceOf[A])
- 	else ch.react {
+ 	else inputChannel.react {
  	  case any => value = Some(any); k(value.get.asInstanceOf[A])
  	}
       def isSet = value match {
-        case None => ch.receiveWithin(0) {
+        case None => inputChannel.receiveWithin(0) {
           case TIMEOUT => false
           case any => value = Some(any); true
         }

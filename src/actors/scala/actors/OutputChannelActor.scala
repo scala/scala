@@ -12,7 +12,7 @@ package scala.actors
 
 import scala.collection.mutable.Queue
 
-trait OutputChannelActor extends OutputChannel[Any] {
+trait Reactor extends OutputChannel[Any] {
 
   @volatile
   protected var ignoreSender: Boolean = false
@@ -71,27 +71,11 @@ trait OutputChannelActor extends OutputChannel[Any] {
       if (waitingFor ne waitingForNone) {
         val savedWaitingFor = waitingFor
         waitingFor = waitingForNone
-        () => scheduler execute {
-          var item: Option[(Any, OutputChannel[Any])] =
-            synchronized { Some(msg, replyTo) }
-          while (!item.isEmpty) {
-            if (savedWaitingFor(item.get._1)) {
-              resumeReceiver(item.get)
-              item = None
-            } else {
-              mailbox.append(item.get._1, item.get._2)
-
-              item = synchronized {
-                if (!sendBuffer.isEmpty)
-                  Some(sendBuffer.dequeue())
-                else {
-                  waitingFor = savedWaitingFor
-                  None
-                }
-              }
-            }
-          }
-        }
+        () => scheduler execute (makeReaction {
+          val startMbox = new MessageQueue
+          synchronized { startMbox.append(msg, replyTo) }
+          searchMailbox(startMbox, savedWaitingFor, true)
+        })
       } else {
         sendBuffer.enqueue((msg, replyTo))
         () => { /* do nothing */ }
@@ -100,11 +84,17 @@ trait OutputChannelActor extends OutputChannel[Any] {
     todo()
   }
 
-  protected[this] def resumeReceiver(item: (Any, OutputChannel[Any])) {
+  protected[this] def makeReaction(block: => Unit): Runnable =
+    new ReactorTask(this, { block })
+
+  protected[this] def resumeReceiver(item: (Any, OutputChannel[Any]), onSameThread: Boolean) {
     if (!ignoreSender)
       senders = List(item._2)
     // assert continuation != null
-    (new LightReaction(this, continuation, item._1)).run()
+    if (onSameThread)
+      continuation(item._1)
+    else
+      scheduleActor(null, item._1)
   }
 
   def !(msg: Any) {
@@ -117,32 +107,37 @@ trait OutputChannelActor extends OutputChannel[Any] {
 
   def receiver: Actor = this.asInstanceOf[Actor]
 
-  protected[this] def drainSendBuffer() {
+  protected[this] def drainSendBuffer(mbox: MessageQueue) {
     while (!sendBuffer.isEmpty) {
       val item = sendBuffer.dequeue()
-      mailbox.append(item._1, item._2)
+      mbox.append(item._1, item._2)
     }
   }
 
-  protected[this] def searchMailbox(f: PartialFunction[Any, Unit]) {
+  // assume continuation has been set
+  protected[this] def searchMailbox(startMbox: MessageQueue,
+                                    handlesMessage: Any => Boolean,
+                                    resumeOnSameThread: Boolean) {
+    var tmpMbox = startMbox
     var done = false
     while (!done) {
-      val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
+      val qel = tmpMbox.extractFirst((m: Any) => handlesMessage(m))
+      if (tmpMbox ne mailbox)
+        tmpMbox.foreach((m, s) => mailbox.append(m, s))
       if (null eq qel) {
         synchronized {
           // in mean time new stuff might have arrived
           if (!sendBuffer.isEmpty) {
-            drainSendBuffer()
+            tmpMbox = new MessageQueue
+            drainSendBuffer(tmpMbox)
             // keep going
           } else {
-            waitingFor = f.isDefinedAt
-            continuation = f
+            waitingFor = handlesMessage
             done = true
           }
         }
       } else {
-        senders = List(qel.session)
-        scheduleActor(f, qel.msg)
+        resumeReceiver((qel.msg, qel.session), resumeOnSameThread)
         done = true
       }
     }
@@ -150,8 +145,9 @@ trait OutputChannelActor extends OutputChannel[Any] {
 
   protected[actors] def react(f: PartialFunction[Any, Unit]): Nothing = {
     assert(Actor.rawSelf(scheduler) == this, "react on channel belonging to other actor")
-    synchronized { drainSendBuffer() }
-    searchMailbox(f)
+    synchronized { drainSendBuffer(mailbox) }
+    continuation = f
+    searchMailbox(mailbox, f.isDefinedAt, false)
     throw Actor.suspendException
   }
 
@@ -170,10 +166,10 @@ trait OutputChannelActor extends OutputChannel[Any] {
                                          msg))
   }
 
-  def start(): OutputChannelActor = {
+  def start(): Reactor = {
     scheduler execute {
-      scheduler.newActor(OutputChannelActor.this)
-      (new LightReaction(OutputChannelActor.this)).run()
+      scheduler.newActor(this)
+      (new LightReaction(this)).run()
     }
     this
   }

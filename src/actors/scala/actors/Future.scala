@@ -25,7 +25,7 @@ package scala.actors
  * @author Philipp Haller
  * @version 0.9.16
  */
-abstract class Future[+T](val ch: InputChannel[T]) extends Responder[T] with Function0[T] {
+abstract class Future[+T](val inputChannel: InputChannel[T]) extends Responder[T] with Function0[T] {
   protected var value: Option[Any] = None
   def isSet: Boolean
 }
@@ -61,7 +61,8 @@ object Futures {
   }
 
   def awaitEither[a, b](ft1: Future[a], ft2: Future[b]): Any = {
-    val FutCh1 = ft1.ch; val FutCh2 = ft2.ch
+    val FutCh1 = ft1.inputChannel
+    val FutCh2 = ft2.inputChannel
     Actor.receive {
       case FutCh1 ! arg1 => arg1
       case FutCh2 ! arg2 => arg2
@@ -95,7 +96,7 @@ object Futures {
     })
 
     val partFuns = unsetFts.map((p: Pair[Int, Future[Any]]) => {
-      val FutCh = p._2.ch
+      val FutCh = p._2.inputChannel
       val singleCase: PartialFunction[Any, Pair[Int, Any]] = {
         case FutCh ! any => Pair(p._1, any)
       }

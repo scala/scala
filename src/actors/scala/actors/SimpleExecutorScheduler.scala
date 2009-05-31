@@ -34,7 +34,7 @@ class SimpleExecutorScheduler(protected var executor: ExecutorService,
   /* Maintains per actor one closure that is executed
    * when the actor terminates.
    */
-  protected val termHandlers = new HashMap[OutputChannelActor, () => Unit]
+  protected val termHandlers = new HashMap[Reactor, () => Unit]
 
   private var pendingReactions = 0
 

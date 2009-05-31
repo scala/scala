@@ -67,6 +67,14 @@ class MessageQueue {
     }
   }
 
+  def foreach(f: (Any, OutputChannel[Any]) => Unit) {
+    var curr = first
+    while (curr != null) {
+      f(curr.msg, curr.session)
+      curr = curr.next
+    }
+  }
+
   def foldLeft[B](z: B)(f: (B, Any) => B): B = {
     var acc = z
     var curr = first

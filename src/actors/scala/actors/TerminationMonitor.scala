@@ -15,10 +15,10 @@ import scala.collection.mutable.HashMap
 trait TerminationMonitor extends IScheduler {
 
   private var pendingReactions = 0
-  private val termHandlers = new HashMap[OutputChannelActor, () => Unit]
+  private val termHandlers = new HashMap[Reactor, () => Unit]
 
   /** newActor is invoked whenever a new actor is started. */
-  def newActor(a: OutputChannelActor) = synchronized {
+  def newActor(a: Reactor) = synchronized {
     pendingReactions += 1
   }
 
@@ -28,11 +28,11 @@ trait TerminationMonitor extends IScheduler {
    *  @param  a  the actor
    *  @param  f  the closure to be registered
    */
-  def onTerminate(a: OutputChannelActor)(f: => Unit) = synchronized {
+  def onTerminate(a: Reactor)(f: => Unit) = synchronized {
     termHandlers += (a -> (() => f))
   }
 
-  def terminated(a: OutputChannelActor) = synchronized {
+  def terminated(a: Reactor) = synchronized {
     // obtain termination handler (if any)
     val todo = synchronized {
       termHandlers.get(a) match {

@@ -31,65 +31,13 @@ private[actors] class KillActorException extends Throwable {
  *  @version 0.9.10
  *  @author Philipp Haller
  */
-class Reaction extends Runnable {
-
-  private[actors] var a: Actor = _
-  private var f: PartialFunction[Any, Unit] = _
-  private var msg: Any = _
-
-  def this(a: Actor, f: PartialFunction[Any, Unit], msg: Any) = {
-    this()
-    this.a = a
-    this.f = f
-    this.msg = msg
-  }
+class Reaction(a: Actor, f: PartialFunction[Any, Unit], msg: Any) extends ActorTask(a, {
+  if (f == null)
+    a.act()
+  else
+    f(msg)
+}) {
 
   def this(a: Actor) = this(a, null, null)
-
-  def run() {
-    val saved = Actor.tl.get.asInstanceOf[Actor]
-    Actor.tl.set(a)
-    try {
-      if (a.shouldExit) // links
-        a.exit()
-      else {
-        try {
-          try {
-            if (f == null)
-              a.act()
-            else
-              f(msg)
-          } catch {
-            case e: Exception if (a.exceptionHandler.isDefinedAt(e)) =>
-              a.exceptionHandler(e)
-          }
-        } catch {
-          case _: KillActorException =>
-        }
-        a.kill()
-      }
-    }
-    catch {
-      case _: SuspendActorException => {
-        // do nothing (continuation is already saved)
-      }
-      case t: Throwable => {
-        Debug.info(a+": caught "+t)
-        a.terminated()
-        // links
-        a.synchronized {
-          if (!a.links.isEmpty)
-            a.exitLinked(t)
-          else
-            t.printStackTrace()
-        }
-      }
-    } finally {
-      Actor.tl.set(saved)
-      this.a = null
-      this.f = null
-      this.msg = null
-    }
-  }
 
 }
