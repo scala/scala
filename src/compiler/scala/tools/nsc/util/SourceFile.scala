@@ -66,8 +66,14 @@ class BatchSourceFile(val file : AbstractFile, _content : Array[Char]) extends S
   }
   override def hashCode = file.hashCode
 
-  val content = _content
-  override val length = content.length
+  var content = _content
+  var length = _content.length
+
+  def setContent(newContent : Array[Char]) {
+    content = newContent
+    length = newContent.length
+  }
+
   // in SourceFileFragments, these are overridden to compensate during offset calculation
   // Invariant: length + start = underlyingLength
   def underlyingLength = length
