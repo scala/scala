@@ -1,8 +1,8 @@
 
-import scala.actors.OutputChannelActor
+import scala.actors.Reactor
 import scala.actors.Actor._
 
-case class Ping(from: OutputChannelActor)
+case class Ping(from: Reactor)
 case object Pong
 case object Stop
 
@@ -20,7 +20,7 @@ object Test {
   }
 }
 
-class PingActor(count: Int, pong: OutputChannelActor) extends OutputChannelActor {
+class PingActor(count: Int, pong: Reactor) extends Reactor {
   ignoreSender = true
   def act() {
     var pingsLeft = count - 1
@@ -43,7 +43,7 @@ class PingActor(count: Int, pong: OutputChannelActor) extends OutputChannelActor
   }
 }
 
-class PongActor extends OutputChannelActor {
+class PongActor extends Reactor {
   ignoreSender = true
   def act() {
     var pongCount = 0
