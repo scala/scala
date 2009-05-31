@@ -97,7 +97,7 @@ MAIN DISTRIBUTION SBAZ
       <binset
           dir="${dist.dir}/bin"
           includes="scala,scala.bat,scalac,scalac.bat,scaladoc,scaladoc.bat,fsc,fsc.bat"/>
-      <libset dir="${dist.dir}/lib" includes="scala-compiler.jar,jline.jar"/>
+      <libset dir="${dist.dir}/lib" includes="scala-compiler.jar"/>
       <manset dir="${dist.dir}/man" includes="**"/>
       <srcset dir="${dist.dir}/src" includes="scala-compiler-src.jar"/>
     </sbaz>
