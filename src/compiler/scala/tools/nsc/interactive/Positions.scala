@@ -148,9 +148,9 @@ self: Global =>
           tree setPos OffsetPosition(pos.source.get, currentPos.start)
         else {
           setChildrenPos(currentPos, children)
-          // temporary hack to work around issues with implicit resolution
+          val positionableChildren = children filter (isPositionable(_))
           tree setPos new RangePosition(
-            pos.source.get, (children map (_.pos.start)).min, pos.point, (children map (_.pos.end)).max)
+            pos.source.get, (positionableChildren map (_.pos.start)).min, pos.point, (positionableChildren map (_.pos.end)).max)
         }
         currentPos = new RangePosition(pos.source.get, tree.pos.end, pos.point, pos.end)
       }

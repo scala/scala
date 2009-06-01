@@ -3708,6 +3708,8 @@ trait Typers { self: Analyzer =>
      *  @return     ...
      */
     def typed(tree: Tree, mode: Int, pt: Type): Tree = {
+      import scala.tools.nsc.interactive.CompilerControl
+
       def dropExistential(tp: Type): Type = tp match {
         case ExistentialType(tparams, tpe) =>
           if (settings.debug.value) println("drop ex "+tree+" "+tp)
@@ -3738,6 +3740,7 @@ trait Typers { self: Analyzer =>
         if (phase.id == currentRun.typerPhase.id) signalDone(context.asInstanceOf[analyzer.Context], tree, result)
         result
       } catch {
+        case ex: CompilerControl#FreshRunReq => throw ex
         case ex: TypeError =>
           tree.tpe = null
           //Console.println("caught "+ex+" in typed");//DEBUG
