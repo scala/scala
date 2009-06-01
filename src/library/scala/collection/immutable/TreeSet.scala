@@ -14,9 +14,8 @@ package scala.collection.immutable
 import generic._
 
 /** The canonical factory of <a href="TreeSet.html">TreeSet</a>'s. */
-object TreeSet {
+object TreeSet extends SortedSetFactory[TreeSet]{
 
-  type Coll = TreeSet[_]
   implicit def implicitBuilder[A](implicit ordering : Ordering[A]) : Builder[A, TreeSet[A]] = newBuilder[A](ordering)
   def newBuilder[A](implicit ordering : Ordering[A]) : Builder[A, TreeSet[A]] = new AddingBuilder(empty[A](ordering))
 
@@ -24,9 +23,6 @@ object TreeSet {
    */
   def empty[A](implicit ordering : Ordering[A]) = new TreeSet[A]
 
-  /** The canonical factory for this type
-   */
-  def apply[A](elems: A*)(implicit ordering : Ordering[A]) : TreeSet[A] = empty[A] ++ elems
 }
 
 /** This class implements immutable sets using a tree.
