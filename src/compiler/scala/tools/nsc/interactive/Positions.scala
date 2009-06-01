@@ -148,6 +148,7 @@ self: Global =>
           tree setPos OffsetPosition(pos.source.get, currentPos.start)
         else {
           setChildrenPos(currentPos, children)
+          // temporary hack to work around issues with implicit resolution
           tree setPos new RangePosition(
             pos.source.get, (children map (_.pos.start)).min, pos.point, (children map (_.pos.end)).max)
         }

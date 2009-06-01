@@ -257,8 +257,8 @@ trait ModelToXML extends ModelExtractor {
     var seq: NodeSeq = NodeSeq.Empty
     if (xs.iterator.hasNext) {
       // alphabetic
-      val set = new scala.collection.immutable.TreeSet[entity.Member]()(mA => new Ordered[entity.Member] {
-        def compare(mB: entity.Member): Int =
+      val set = new scala.collection.immutable.TreeSet[entity.Member]()(new Ordering[entity.Member] {
+        def compare(mA : entity.Member, mB: entity.Member): Int =
           if (mA eq mB) 0
           else {
             val diff = mA.name compare mB.name
@@ -269,10 +269,6 @@ trait ModelToXML extends ModelExtractor {
               diff0
             }
           }
-        override def equals(other: Any): Boolean =
-           other match { case that: entity.Member => compare(that) == 0
-                         case that: AnyRef => this.eq(that)
-                         case _ => false }
       })++xs
       seq = seq ++ <table cellpadding="3" class="member" summary="">
       <tr><td colspan="2" class="title">{Text(category.label + " Summary")}</td></tr>

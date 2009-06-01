@@ -94,6 +94,10 @@ object Ordering
 {
   def apply[T](implicit ord : Ordering[T]) = ord
 
+  def ordered[A <: Ordered[A]] : Ordering[A] = new Ordering[A]{
+    def compare(x : A, y : A) = x.compare(y);
+  }
+
   trait UnitOrdering extends Ordering[Unit] {
     def compare(x : Unit, y : Unit) = 0;
   }

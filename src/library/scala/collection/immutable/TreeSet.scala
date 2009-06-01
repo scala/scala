@@ -17,16 +17,16 @@ import generic._
 object TreeSet {
 
   type Coll = TreeSet[_]
-  implicit def implicitBuilder[A <% Ordered[A]]: Builder[A, TreeSet[A]] = newBuilder[A]
-  def newBuilder[A <% Ordered[A]]: Builder[A, TreeSet[A]] = new AddingBuilder(empty[A])
+  implicit def implicitBuilder[A](implicit ordering : Ordering[A]) : Builder[A, TreeSet[A]] = newBuilder[A](ordering)
+  def newBuilder[A](implicit ordering : Ordering[A]) : Builder[A, TreeSet[A]] = new AddingBuilder(empty[A](ordering))
 
   /** The empty set of this type
    */
-  def empty[A <% Ordered[A]] = new TreeSet[A]
+  def empty[A](implicit ordering : Ordering[A]) = new TreeSet[A]
 
   /** The canonical factory for this type
    */
-  def apply[A <% Ordered[A]](elems: A*) : TreeSet[A] = empty[A] ++ elems
+  def apply[A](elems: A*)(implicit ordering : Ordering[A]) : TreeSet[A] = empty[A] ++ elems
 }
 
 /** This class implements immutable sets using a tree.
@@ -36,12 +36,12 @@ object TreeSet {
  */
 
 @serializable
-class TreeSet[A <% Ordered[A]](override val size: Int, t: RedBlack[A]#Tree[Unit])
+class TreeSet[A](override val size: Int, t: RedBlack[A]#Tree[Unit])(implicit val ordering : Ordering[A])
   extends RedBlack[A] with SortedSet[A] with SortedSetTemplate[A, TreeSet[A]] {
 
-  def isSmaller(x: A, y: A) = x < y
+  def isSmaller(x: A, y: A) = compare(x,y) < 0
 
-  def this() = this(0, null)
+  def this()(implicit ordering : Ordering[A]) = this(0, null)(ordering)
 
   protected val tree: RedBlack[A]#Tree[Unit] = if (size == 0) Empty else t
 
@@ -94,5 +94,5 @@ class TreeSet[A <% Ordered[A]](override val size: Int, t: RedBlack[A]#Tree[Unit]
   }
   override def firstKey = tree.first
   override def lastKey = tree.last
-  override def compare(a0: A, a1: A) = a0.compare(a1)
+  override def compare(a0: A, a1: A) = ordering.compare(a0, a1);
 }

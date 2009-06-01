@@ -420,8 +420,8 @@ trait ModelExtractor {
     "[ \t]*@(exception|param|throws)[ \t]+(\\p{Graph}*)[ \t]*(.*)")
 
   def sort[E <: Entity](entities: Iterable[E]): Iterable[E] = {
-    val set = new collection.immutable.TreeSet[E]()({eA: E => new Ordered[E] {
-      def compare(eB: E): Int = {
+    val set = new collection.immutable.TreeSet[E]()(new Ordering[E] {
+      def compare(eA : E, eB: E): Int = {
         if (eA eq eB) return 0;
         (eA, eB) match {
           case (eA: ClassOrObject, eB: ClassOrObject) =>
@@ -442,10 +442,7 @@ trait ModelExtractor {
         assert(diff0 != 0)
         diff0
       }
-      override def equals(other: Any) : Boolean =
-        eA.equals(other) || (other match { case that: AnyRef => this.eq(that)
-                                           case _ => false })
-    }})
+    })
     set ++ entities
   }
 }
