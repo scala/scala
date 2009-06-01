@@ -1,3 +1,3 @@
 package scala.swing.event
 
-case class WindowClosed(override val source: Frame) extends WindowEvent(source)
+case class WindowClosed(override val source: Window) extends WindowEvent(source)

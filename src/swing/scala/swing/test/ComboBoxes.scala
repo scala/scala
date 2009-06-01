@@ -14,7 +14,7 @@ import javax.swing.{Icon, ImageIcon}
  */
 object ComboBoxes extends SimpleGUIApplication {
   import ComboBox._
-  val ui = new FlowPanel {
+  lazy val ui = new FlowPanel {
    	contents += new ComboBox(List(1,2,3,4))
 
     val patterns = List("dd MMMMM yyyy",

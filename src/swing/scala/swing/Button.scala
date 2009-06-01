@@ -3,6 +3,10 @@ package scala.swing
 import javax.swing._
 import event._
 
+object Button {
+  def apply(text0: String)(op: => Unit) = new Button(Action(text0)(op))
+}
+
 /**
  * A button that can be clicked, usually to perform some action.
  *

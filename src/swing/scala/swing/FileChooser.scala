@@ -48,7 +48,7 @@ class FileChooser(dir: File) {
   def title: String = peer.getDialogTitle
   def title_=(t: String) { peer.setDialogTitle(t) }
 
-  def accessory: Component = Component.wrapperFor(peer.getAccessory)
+  def accessory: Component = UIElement.cachedWrapper(peer.getAccessory)
   def accessory_=(c: Component) { peer.setAccessory(c.peer) }
 
   def fileHidingEnabled: Boolean = peer.isFileHidingEnabled
@@ -73,4 +73,31 @@ class FileChooser(dir: File) {
   def traversable(f: File) = peer.isTraversable(f)
 
   def acceptAllFileFilter = peer.getAcceptAllFileFilter
+
+  /*peer.addPropertyChangeListener(new java.beans.PropertyChangeListener {
+    def propertyChange(e: java.beans.PropertyChangeEvent) {
+      import JFileChooser._
+      e.getPropertyName match {
+        case APPROVE_BUTTON_TEXT_CHANGED_PROPERTY =>
+        case ACCESSORY_CHANGED_PROPERTY =>
+        case APPROVE_BUTTON_MNEMONIC_CHANGED_PROPERTY =>
+        case APPROVE_BUTTON_TEXT_CHANGED_PROPERTY =>
+        case APPROVE_BUTTON_TOOL_TIP_TEXT_CHANGED_PROPERTY =>
+        case CHOOSABLE_FILE_FILTER_CHANGED_PROPERTY =>
+        case CONTROL_BUTTONS_ARE_SHOWN_CHANGED_PROPERTY =>
+        case DIALOG_TITLE_CHANGED_PROPERTY =>
+        case DIALOG_TYPE_CHANGED_PROPERTY =>
+        case DIRECTORY_CHANGED_PROPERTY =>
+        case FILE_FILTER_CHANGED_PROPERTY =>
+        case FILE_HIDING_CHANGED_PROPERTY =>
+        case FILE_SELECTION_MODE_CHANGED_PROPERTY =>
+        case FILE_SYSTEM_VIEW_CHANGED_PROPERTY =>
+        case FILE_VIEW_CHANGED_PROPERTY =>
+        case MULTI_SELECTION_ENABLED_CHANGED_PROPERTY =>
+        case SELECTED_FILE_CHANGED_PROPERTY =>
+        case SELECTED_FILES_CHANGED_PROPERTY =>
+        case _ =>
+      }
+    }
+  })*/
 }

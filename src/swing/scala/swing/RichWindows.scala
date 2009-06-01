@@ -1,7 +1,70 @@
 package scala.swing
 
-import javax.swing.{Icon, JOptionPane}
+import java.awt.{Image, Window => AWTWindow}
+import javax.swing._
 import Swing._
+
+object RichWindow {
+  /**
+   * Mixin this trait if you want an undecorated window.
+   */
+  trait Undecorated extends RichWindow {
+    peer.setUndecorated(true)
+  }
+}
+
+/**
+ * A window that adds some functionality to the plain Window class and serves as
+ * the common base class for frames and dialogs.
+ *
+ * Implementation note: this class is sealed since we need to know that a rich
+ * window is either a dialog or a frame at some point.
+ */
+sealed trait RichWindow extends Window {
+  def peer: AWTWindow with InterfaceMixin
+
+  trait InterfaceMixin extends super.InterfaceMixin {
+    def getJMenuBar: JMenuBar
+    def setJMenuBar(b: JMenuBar)
+    def setUndecorated(b: Boolean)
+    def setTitle(s: String)
+    def getTitle: String
+    def setResizable(b: Boolean)
+    def isResizable: Boolean
+  }
+
+  def title: String = peer.getTitle
+  def title_=(s: String) = peer.setTitle(s)
+
+  def menuBar: MenuBar = UIElement.cachedWrapper(peer.getJMenuBar)
+  def menuBar_=(m: MenuBar) = peer.setJMenuBar(m.peer)
+
+  def resizable_=(b: Boolean) { peer.setResizable(b) }
+  def resizable = peer.isResizable
+}
+
+/**
+ * A window with decoration such as a title, border, and action buttons.
+ *
+ * An AWT window cannot be wrapped dynamically with this class, i.e., you cannot
+ * write something like new Window { def peer = myAWTWindow }
+ *
+ * @see javax.swing.JFrame
+ */
+class Frame extends RichWindow {
+  override lazy val peer: JFrame with InterfaceMixin = new JFrame with InterfaceMixin with SuperMixin
+
+  protected trait SuperMixin extends JFrame {
+    override protected def processWindowEvent(e: java.awt.event.WindowEvent) {
+      super.processWindowEvent(e)
+      if (e.getID() == java.awt.event.WindowEvent.WINDOW_CLOSING)
+        closeOperation()
+    }
+  }
+
+  def iconImage: Image = peer.getIconImage
+  def iconImage_=(i: Image) { peer.setIconImage(i) }
+}
 
 /**
  * Simple predefined dialogs.
@@ -66,8 +129,8 @@ object Dialog {
        val e = if (entries.isEmpty) null
                else entries.map(_.asInstanceOf[AnyRef]).toArray
        val r = JOptionPane.showInputDialog(nullPeer(parent), message, title,
-       		                               messageType.id, Swing.wrapIcon(icon),
-       		                               e, initialEntry)
+                                         messageType.id, Swing.wrapIcon(icon),
+                                         e, initialEntry)
        Swing.toOption(r)
   }
   def showMessage(parent: Component, message: String, title: String,
@@ -80,3 +143,23 @@ object Dialog {
      JOptionPane.showMessageDialog(nullPeer(parent), message)
   }
 }
+
+/**
+ * A dialog window.
+ *
+ * @see javax.swing.JDialog
+ */
+class Dialog(owner: Window) extends RichWindow {
+  override lazy val peer: JDialog with InterfaceMixin =
+    if (owner == null) new JDialog with InterfaceMixin
+    else owner match {
+      case f: Frame => new JDialog(f.peer) with InterfaceMixin
+      case d: Dialog => new JDialog(d.peer) with InterfaceMixin
+    }
+
+  def this() = this(null)
+
+  def modal_=(b: Boolean) { peer.setModal(b) }
+  def modal = peer.isModal
+}
+

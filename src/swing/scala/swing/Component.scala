@@ -2,7 +2,7 @@ package scala.swing
 
 import event._
 
-import java.awt.{Dimension, Point}
+import java.awt.{Dimension, Point, Graphics, Graphics2D}
 import java.awt.event._
 import javax.swing.JComponent
 import javax.swing.border.Border
@@ -11,15 +11,6 @@ import javax.swing.border.Border
  * Utility methods, mostly for wrapping components.
  */
 object Component {
-  private val ClientKey = "scala.swingWrapper"
-
-  /**
-   * Returns the wrapper for a given peer, null if there is no wrapper
-   * for the given component.
-   */
-  protected[swing] def wrapperFor[C<:Component](c: javax.swing.JComponent): C =
-    c.getClientProperty(ClientKey).asInstanceOf[C]
-
   /**
    * Wraps a given Java Swing Component into a new wrapper.
    */
@@ -42,27 +33,25 @@ object Component {
 abstract class Component extends UIElement with Publisher {
   override lazy val peer: javax.swing.JComponent = new javax.swing.JComponent with SuperMixin {}
   var initP: JComponent = null
-  peer.putClientProperty(Component.ClientKey, this)
 
   /**
    * This trait is used to redirect certain calls from the peer to the wrapper
    * and back. Useful to expose methods that can be customized by overriding.
    */
   protected trait SuperMixin extends JComponent {
-    override def paintComponent(g: java.awt.Graphics) {
-      Component.this.paintComponent(g)
+    override def paintComponent(g: Graphics) {
+      Component.this.paintComponent(g.asInstanceOf[Graphics2D])
     }
-    def __super__paintComponent(g: java.awt.Graphics) {
+    def __super__paintComponent(g: Graphics) {
       super.paintComponent(g)
     }
-    override def paint(g: java.awt.Graphics) {
-      Component.this.paint(g)
+    override def paint(g: Graphics) {
+      Component.this.paint(g.asInstanceOf[Graphics2D])
     }
-    def __super__paint(g: java.awt.Graphics) {
+    def __super__paint(g: Graphics) {
       super.paint(g)
     }
   }
-
 
   /**
    * Used by certain layout managers, e.g., BoxLayout or OverlayLayout to
@@ -90,7 +79,7 @@ abstract class Component extends UIElement with Publisher {
   }
   def inputVerifier_=(v: this.type => Boolean) {
     peer.setInputVerifier(new javax.swing.InputVerifier {
-      def verify(c: javax.swing.JComponent) = v(Component.wrapperFor(c))
+      def verify(c: javax.swing.JComponent) = v(UIElement.cachedWrapper(c))
     })
   }
 
@@ -99,7 +88,7 @@ abstract class Component extends UIElement with Publisher {
   }
   def verifyOnTraversal_=(v: (Component, Component) => Boolean) {
     peer.setInputVerifier(new javax.swing.InputVerifier {
-      def verify(c: javax.swing.JComponent) = v(Component.wrapperFor(c))
+      def verify(c: javax.swing.JComponent) = v(UIElement.cachedWrapper(c))
     })
   }*/
 
@@ -120,7 +109,7 @@ abstract class Component extends UIElement with Publisher {
 
   peer.addFocusListener(new java.awt.event.FocusListener {
     def other(e: java.awt.event.FocusEvent) = e.getOppositeComponent match {
-      case c: JComponent => Some(Component.wrapperFor(c))
+      case c: JComponent => Some(UIElement.cachedWrapper(c))
       case _ => None
     }
 
@@ -132,11 +121,13 @@ abstract class Component extends UIElement with Publisher {
     }
   })
 
+  @deprecated lazy val Mouse = mouse
+
   /**
    * Contains publishers for various mouse events. They are separated for
    * efficiency reasons.
    */
-  object Mouse {
+  object mouse {
     /**
      * Publishes clicks, presses and releases.
      */
@@ -145,16 +136,13 @@ abstract class Component extends UIElement with Publisher {
         def mouseEntered(e: java.awt.event.MouseEvent) { }
         def mouseExited(e: java.awt.event.MouseEvent) { }
         def mouseClicked(e: java.awt.event.MouseEvent) {
-          publish(MouseClicked(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                               e.getPoint, e.getModifiersEx, e.getClickCount, e.isPopupTrigger)(e.getWhen))
+          publish(new MouseClicked(e))
         }
         def mousePressed(e: java.awt.event.MouseEvent) {
-          publish(MousePressed(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                               e.getPoint, e.getModifiersEx, e.getClickCount, e.isPopupTrigger)(e.getWhen))
+          publish(new MousePressed(e))
         }
         def mouseReleased(e: java.awt.event.MouseEvent) {
-          publish(MouseReleased(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                                e.getPoint, e.getModifiersEx, e.getClickCount, e.isPopupTrigger)(e.getWhen))
+          publish(new MouseReleased(e))
         }
       })
     }
@@ -164,12 +152,10 @@ abstract class Component extends UIElement with Publisher {
     val moves: Publisher = new Publisher {
       peer.addMouseListener(new MouseListener {
         def mouseEntered(e: java.awt.event.MouseEvent) {
-          publish(MouseEntered(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                               e.getPoint, e.getModifiersEx)(e.getWhen))
+          publish(new MouseEntered(e))
         }
         def mouseExited(e: java.awt.event.MouseEvent) {
-          publish(MouseExited(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                              e.getPoint, e.getModifiersEx)(e.getWhen))
+          publish(new MouseExited(e))
         }
         def mouseClicked(e: java.awt.event.MouseEvent) {}
         def mousePressed(e: java.awt.event.MouseEvent) { }
@@ -177,12 +163,10 @@ abstract class Component extends UIElement with Publisher {
       })
       peer.addMouseMotionListener(new MouseMotionListener {
         def mouseMoved(e: java.awt.event.MouseEvent) {
-          publish(MouseMoved(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                             e.getPoint, e.getModifiersEx)(e.getWhen))
+          publish(new MouseMoved(e))
         }
         def mouseDragged(e: java.awt.event.MouseEvent) {
-          publish(MouseDragged(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                               e.getPoint, e.getModifiersEx)(e.getWhen))
+          publish(new MouseDragged(e))
         }
       })
     }
@@ -194,14 +178,26 @@ abstract class Component extends UIElement with Publisher {
       // mouse wheel events if there is a listener installed. See ticket #1442.
       lazy val l = new MouseWheelListener {
           def mouseWheelMoved(e: java.awt.event.MouseWheelEvent) {
-            publish(MouseWheelMoved(Component.wrapperFor(e.getSource.asInstanceOf[JComponent]),
-                e.getPoint, e.getModifiersEx, e.getWheelRotation)(e.getWhen)) }
+            publish(new MouseWheelMoved(e)) }
         }
       def onFirstSubscribe() = peer.addMouseWheelListener(l)
       def onLastUnsubscribe() = peer.removeMouseWheelListener(l)
     }
   }
 
+  object keys extends Publisher {
+    peer.addKeyListener(new KeyListener {
+      def keyPressed(e: java.awt.event.KeyEvent) { publish(new KeyPressed(e)) }
+      def keyReleased(e: java.awt.event.KeyEvent) { publish(new KeyReleased(e)) }
+      def keyTyped(e: java.awt.event.KeyEvent) { publish(new KeyTyped(e)) }
+    })
+  }
+
+  def focusable: Boolean = peer.isFocusable
+  def focusable_=(b: Boolean) = peer.setFocusable(b)
+  def requestFocus() = peer.requestFocus()
+  def requestFocusInWindow() = peer.requestFocusInWindow()
+  def hasFocus: Boolean = peer.isFocusOwner
 
   peer.addPropertyChangeListener(new java.beans.PropertyChangeListener {
     def propertyChange(e: java.beans.PropertyChangeEvent) {
@@ -224,19 +220,19 @@ abstract class Component extends UIElement with Publisher {
 
   def revalidate() { peer.revalidate() }
 
-  def requestFocus() { peer.requestFocus() }
+
 
   /**
    * For custom painting, users should usually override this method.
    */
-  protected def paintComponent(g: java.awt.Graphics) {
+  protected def paintComponent(g: Graphics2D) {
     peer match {
       case peer: SuperMixin => peer.__super__paintComponent(g)
       case _ => // it's a wrapper created on the fly
     }
   }
 
-  protected def paint(g: java.awt.Graphics) {
+  protected def paint(g: Graphics2D) {
     peer match {
       case peer: SuperMixin => peer.__super__paint(g)
       case _ => // it's a wrapper created on the fly

@@ -6,8 +6,8 @@ import swing.event._
 object Dialogs extends SimpleGUIApplication {
   import TabbedPane._
 
-  val label = new Label("No Result yet")
-  val tabs = new TabbedPane {
+  lazy val label = new Label("No Result yet")
+  lazy val tabs = new TabbedPane {
     pages += new Page("File", new GridBagPanel { grid =>
       import GridBagPanel._
       val buttonText = new TextField("Click Me")
@@ -101,10 +101,10 @@ object Dialogs extends SimpleGUIApplication {
       val mutex = new ButtonGroup
       val pick = new RadioButton("Pick one of several choices")
       val enter = new RadioButton("Enter some text")
-      //val nonClosing = new RadioButton("Non-auto-closing dialog")
-      //val validate = new RadioButton("Input-validating dialog (with custom message area)")
-      //val nonModal = new RadioButton("Non-modal dialog")
-      val radios = List(pick, enter)//, nonClosing, validate, nonModal)
+      val custom = new RadioButton("Custom")
+      val customUndec = new RadioButton("Custom undecorated")
+      val custom2 = new RadioButton("2 custom dialogs")
+      val radios = List(pick, enter, custom, customUndec, custom2)
       mutex.buttons ++= radios
       mutex.select(pick)
       val buttons = new BoxPanel(Orientation.Vertical) {
@@ -141,18 +141,33 @@ object Dialogs extends SimpleGUIApplication {
               label.text =  "Green eggs and... " + s.get + "!"
             else
               label.text = "Come on, finish the sentence!"
+          case `custom` =>
+            val dialog = new Dialog(top)
+            dialog.open()
+            dialog.contents = Button("Close Me!") { dialog.close() }
+          case `customUndec` =>
+            val dialog = new Dialog with RichWindow.Undecorated
+            dialog.open()
+            dialog.contents = Button("Close Me!") { dialog.close() }
+          case `custom2` =>
+            val d1 = new Dialog
+            val d2 = new Dialog(d1)
+            d1.open()
+            d2.open()
+            d1.contents = Button("Close Me! I am the owner and will automatically close the other one") { d1.close() }
+            d2.contents = Button("Close Me!") { d2.close() }
         }
       })) = Position.South
     })
   }
 
-  val ui = new BorderPanel {
+  lazy val ui: Panel = new BorderPanel {
     layout(tabs) = BorderPanel.Position.Center
     layout(label) = BorderPanel.Position.South
   }
 
 
-  def top = new MainFrame {
+  lazy val top = new MainFrame {
     title = "Dialog Demo"
     contents = ui
   }

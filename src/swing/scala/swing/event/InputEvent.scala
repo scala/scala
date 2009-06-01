@@ -1,6 +1,9 @@
 package scala.swing.event
 
 trait InputEvent extends ComponentEvent {
-  val when: Long
-  val modifiers: Int
+  def peer: java.awt.event.InputEvent
+  def when: Long = peer.getWhen
+  def modifiers: Int
+  def consume() { peer.consume() }
+  def consumed: Boolean = peer.isConsumed
 }

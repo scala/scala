@@ -3,21 +3,18 @@ package scala.swing
 import javax.swing._
 import event.Event
 
+/**
+ * Convenience class with utility methods for GUI applications.
+ */
 class GUIApplication {
-  //def defaultLookAndFeelDecorated: Boolean = true
 
-  def init() = {
-    //UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
-    //JFrame.setDefaultLookAndFeelDecorated(defaultLookAndFeelDecorated)
-  }
+  /**
+   * Called before the GUI is created. Override to customize.
+   */
+  def init() {}
 
   /**
    * Initializes the framework and runs the given program.
    */
-  def run(prog: => Unit): Unit =
-    SwingUtilities.invokeLater {
-      new Runnable() {
-        def run() = { init(); prog }
-      }
-    }
+  def run(prog: => Unit) = Swing.onEDT { init(); prog }
 }

@@ -4,7 +4,7 @@ import java.awt.event._
 import javax.swing.event._
 import java.awt.{Color, Dimension, Point, Rectangle}
 import javax.swing.border._
-import javax.swing.{JComponent, Icon, BorderFactory}
+import javax.swing.{JComponent, Icon, BorderFactory, SwingUtilities}
 
 /**
  * Helpers for this package.
@@ -121,4 +121,16 @@ object Swing {
 
   def TitledBorder(border: Border, title: String) =
     BorderFactory.createTitledBorder(border, title)
+
+  /**
+   * Schedule the given code to be executed on the Swing event dispatching
+   * thread (EDT). Returns immediately.
+   */
+  def onEDT(op: =>Unit) = SwingUtilities invokeLater op
+
+  /**
+   * Schedule the given code to be executed on the Swing event dispatching
+   * thread (EDT). Blocks until after the code has been run.
+   */
+  def onEDTWait(op: =>Unit) = SwingUtilities invokeAndWait op
 }

@@ -11,7 +11,7 @@ object TableSelection extends SimpleGUIApplication {
                     List("Sharon", "Zakhour", "Speed reading", 5, false).toArray,
                     List("Philip", "Milne", "Pool", 5, false).toArray)
 
-  val ui = new BoxPanel(Orientation.Vertical) {
+  lazy val ui = new BoxPanel(Orientation.Vertical) {
     val table = new Table(model, Array("First Name", "Last Name", "Sport", "# of Years", "Vegetarian")) {
       preferredViewportSize = new Dimension(500, 70)
       val l = new Table.LabelRenderer[String]

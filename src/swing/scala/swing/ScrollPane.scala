@@ -15,7 +15,7 @@ class ScrollPane extends Component with Container {
     viewportView = c
   }
   def contents: Seq[Component] =
-    List(Component.wrapperFor(peer.getViewport.getView.asInstanceOf[javax.swing.JComponent]))
+    List(UIElement.cachedWrapper(peer.getViewport.getView.asInstanceOf[javax.swing.JComponent]))
 
   /**
    * Sets the single child.
@@ -29,11 +29,11 @@ class ScrollPane extends Component with Container {
    * want to let the row header be a list view with the same row height as
    * the viewport component.
    */
-  def rowHeaderView: Option[Component] = Swing.toOption(peer.getRowHeader.getView).map(Component.wrapperFor(_))
+  def rowHeaderView: Option[Component] = Swing.toOption(peer.getRowHeader.getView).map(UIElement.cachedWrapper(_))
   def rowHeaderView_=(c: Component) = peer.setRowHeaderView(c.peer)
   def rowHeaderView_=(c: Option[Component]) = peer.setRowHeaderView(Swing.toNull(c.map(_.peer)))
 
-  def viewportView: Option[Component] = Swing.toOption(peer.getViewport.getView).map(Component.wrapperFor(_))
+  def viewportView: Option[Component] = Swing.toOption(peer.getViewport.getView).map(UIElement.cachedWrapper(_))
   def viewportView_=(c: Component) = peer.setViewportView(c.peer)
   def viewportView_=(c: Option[Component]) = peer.setViewportView(Swing.toNull(c.map(_.peer)))
 }

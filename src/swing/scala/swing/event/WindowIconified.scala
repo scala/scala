@@ -1,3 +1,3 @@
 package scala.swing.event
 
-case class WindowIconified(override val source: Frame) extends WindowEvent(source)
+case class WindowIconified(override val source: Window) extends WindowEvent(source)

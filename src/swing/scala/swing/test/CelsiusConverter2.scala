@@ -4,9 +4,9 @@ import swing._
 import event._
 
 object CelsiusConverter2 extends SimpleGUIApplication {
-  val ui = new FlowPanel {
-   	val Celsius = new TextField { columns = 5 }
-    val Fahrenheit = new TextField { columns = 5 }
+  lazy val ui = new FlowPanel {
+   	val Celsius = new TextField { text = "0"; columns = 5 }
+    val Fahrenheit = new TextField { text = "0"; columns = 5 }
     contents.append(Celsius, new Label(" Celsius  =  "),
                     Fahrenheit, new Label(" Fahrenheit"))
     border = Swing.EmptyBorder(15, 10, 10, 10)

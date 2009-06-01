@@ -6,7 +6,7 @@ object SequentialContainer {
   /**
    * Utility trait for wrapping sequential containers.
    */
-  trait Wrapper extends Component with SequentialContainer with Container.Wrapper {
+  trait Wrapper extends SequentialContainer with Container.Wrapper {
     override val contents: Buffer[Component] = new Content
     //def contents_=(c: Component*)  { contents.clear(); contents ++= c }
   }

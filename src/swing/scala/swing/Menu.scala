@@ -14,7 +14,7 @@ class MenuBar extends Component with SequentialContainer.Wrapper {
   def menus: Seq[Menu] = contents.filter(_.isInstanceOf[Menu]).map(_.asInstanceOf[Menu])
 
   // Not implemented by Swing
-  //def helpMenu: Menu = Component.wrapperFor(peer.getHelpMenu)
+  //def helpMenu: Menu = UIElement.cachedWrapper(peer.getHelpMenu)
   //def helpMenu_=(m: Menu) { peer.setHelpMenu(m.peer) }
 }
 

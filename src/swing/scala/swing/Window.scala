@@ -1,0 +1,64 @@
+package scala.swing
+
+import java.awt.{Image, Point, Window => AWTWindow}
+import javax.swing._
+import event._
+
+/**
+ * A window with decoration such as a title, border, and action buttons.
+ *
+ * An AWT window cannot be wrapped dynamically with this class, i.e., you cannot
+ * write something like new Window { def peer = myAWTWindow }
+ *
+ * @see javax.swing.JFrame
+ */
+abstract class Window extends UIElement with RootPanel with Publisher { outer =>
+  def peer: AWTWindow with InterfaceMixin
+
+  protected trait InterfaceMixin extends javax.swing.RootPaneContainer {
+    def getRootPane: JRootPane
+    //protected def setRootPane(p: JRootPane)
+  }
+
+  /**
+   * This method is called when the window is closing, after all other window
+   * event listeners have been processed.
+   */
+  def closeOperation() {}
+
+  override def contents_=(c: Component) {
+    super.contents_=(c)
+    peer.pack() // pack also validates, which is generally required after an add
+  }
+  def defaultButton: Option[Button] =
+    Swing.toOption(peer.getRootPane.getDefaultButton).map(UIElement.cachedWrapper(_))
+  def defaultButton_=(b: Button) {
+    peer.getRootPane.setDefaultButton(b.peer)
+  }
+  def defaultButton_=(b: Option[Button]) {
+    peer.getRootPane.setDefaultButton(Swing.toNull(b.map(_.peer)))
+  }
+
+  def dispose() { peer.dispose() }
+
+  def pack(): this.type = { peer.pack(); this }
+
+  def setLocationRelativeTo(c: UIElement) { peer.setLocationRelativeTo(c.peer) }
+  def centerOnScreen() { peer.setLocationRelativeTo(null) }
+  def location_=(p: Point) { peer.setLocation(p) }
+
+  def owner: Window = UIElement.cachedWrapper(peer.getOwner)
+
+  def open() { peer.show() }
+  def close() { peer.hide() }
+
+  peer.addWindowListener(new java.awt.event.WindowListener {
+    def windowActivated(e: java.awt.event.WindowEvent) { publish(WindowActivated(outer)) }
+    def windowClosed(e: java.awt.event.WindowEvent) { publish(WindowClosed(outer)) }
+    def windowClosing(e: java.awt.event.WindowEvent) { publish(WindowClosing(outer)) }
+    def windowDeactivated(e: java.awt.event.WindowEvent) { publish(WindowDeactivated(outer)) }
+    def windowDeiconified(e: java.awt.event.WindowEvent) { publish(WindowDeiconified(outer)) }
+    def windowIconified(e: java.awt.event.WindowEvent) { publish(WindowIconified(outer)) }
+    def windowOpened(e: java.awt.event.WindowEvent) { publish(WindowOpened(outer)) }
+  })
+}

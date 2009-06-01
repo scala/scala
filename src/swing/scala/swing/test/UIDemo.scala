@@ -95,6 +95,7 @@ object UIDemo extends SimpleGUIApplication {
         }
 
         pages += new Page("Password", password)
+        pages += new Page("Painting", LinePainting.ui)
       }
 
       val list = new ListView(tabs.pages) {

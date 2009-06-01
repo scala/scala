@@ -11,7 +11,8 @@ import Swing._
  * @see javax.swing.JSplitPane
  */
 class SplitPane(o: Orientation.Value, left: Component, right: Component) extends Component with Container with Orientable {
-  override lazy val peer: javax.swing.JSplitPane = new javax.swing.JSplitPane(o.id, left.peer, right.peer)
+  override lazy val peer: javax.swing.JSplitPane with OrientedMixin =
+    new javax.swing.JSplitPane(o.id, left.peer, right.peer) with OrientedMixin
   def this(o: Orientation.Value) = this(o, new Component {}, new Component {})
   def this() = this(Orientation.Horizontal)
 
@@ -21,9 +22,9 @@ class SplitPane(o: Orientation.Value, left: Component, right: Component) extends
     peer.setRightComponent(right.peer)
   }
 
-  def topComponent: Component = Component.wrapperFor(peer.getTopComponent.asInstanceOf[javax.swing.JComponent])
+  def topComponent: Component = UIElement.cachedWrapper(peer.getTopComponent.asInstanceOf[javax.swing.JComponent])
   def topComponent_=(c: Component) { peer.setTopComponent(c.peer) }
-  def bottomComponent: Component = Component.wrapperFor(peer.getBottomComponent.asInstanceOf[javax.swing.JComponent])
+  def bottomComponent: Component = UIElement.cachedWrapper(peer.getBottomComponent.asInstanceOf[javax.swing.JComponent])
   def bottomComponent_=(c: Component) { peer.setBottomComponent(c.peer) }
 
   def leftComponent: Component = topComponent

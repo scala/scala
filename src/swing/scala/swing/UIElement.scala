@@ -1,6 +1,37 @@
 package scala.swing
 
 import java.awt.{Color, Cursor, Font, Dimension, Rectangle}
+import scala.collection.mutable.HashMap
+import scala.ref._
+import java.util.WeakHashMap
+
+object UIElement {
+  private val ClientKey = "scala.swingWrapper"
+  private[this] val wrapperCache = new WeakHashMap[java.awt.Component, WeakReference[UIElement]]
+
+  private def cache(e: UIElement) = e.peer match {
+    case p: javax.swing.JComponent => p.putClientProperty(ClientKey, e)
+    case _ => wrapperCache.put(e.peer, new WeakReference(e))
+  }
+
+  /**
+   * Returns the wrapper for a given peer, null if there is no cached wrapper
+   * for the given component.
+   */
+  private[swing] def cachedWrapper[C<:UIElement](c: java.awt.Component): C = (c match {
+    case c: javax.swing.JComponent => c.getClientProperty(ClientKey)
+    case _ => wrapperCache.get(c)
+  }).asInstanceOf[C]
+
+  /**
+   * Wraps a given AWT component in a UIElement.
+   */
+  def wrap(c: java.awt.Component): UIElement = {
+    val w = cachedWrapper(c)
+    if (w != null) w
+    else new UIElement { def peer = c }
+  }
+}
 
 /**
  * The base trait of all user interface elements. Subclasses belong to one
@@ -19,6 +50,8 @@ trait UIElement extends Proxy {
    */
   def peer: java.awt.Component
   def self = peer
+
+  UIElement.cache(this)
 
   def foreground: Color = peer.getForeground
   def foreground_=(c: Color) = peer.setForeground(c)
@@ -51,6 +84,7 @@ trait UIElement extends Proxy {
   def visible: Boolean = peer.isVisible
   def visible_=(b: Boolean) { peer.setVisible(b) }
   def showing: Boolean = peer.isShowing
+  def displayable: Boolean = peer.isDisplayable
 
   def repaint() { peer.repaint }
   def repaint(rect: Rectangle) { peer.repaint(rect.x, rect.y, rect.width, rect.height) }
