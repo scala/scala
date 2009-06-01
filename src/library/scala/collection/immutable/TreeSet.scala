@@ -39,6 +39,8 @@ object TreeSet {
 class TreeSet[A](override val size: Int, t: RedBlack[A]#Tree[Unit])(implicit val ordering : Ordering[A])
   extends RedBlack[A] with SortedSet[A] with SortedSetTemplate[A, TreeSet[A]] {
 
+  override def stringPrefix = "TreeSet"
+
   def isSmaller(x: A, y: A) = compare(x,y) < 0
 
   def this()(implicit ordering : Ordering[A]) = this(0, null)(ordering)
@@ -94,5 +96,4 @@ class TreeSet[A](override val size: Int, t: RedBlack[A]#Tree[Unit])(implicit val
   }
   override def firstKey = tree.first
   override def lastKey = tree.last
-  override def compare(a0: A, a1: A) = ordering.compare(a0, a1);
 }

@@ -1,6 +1,6 @@
 package scala.collection.generic
 
-/** A template for companion objects of mutable.Map and subclasses thereof.
+/** A template for companion objects of immutable.Map and subclasses thereof.
  */
 abstract class ImmutableSortedMapFactory[CC[A, B] <: immutable.SortedMap[A, B] with SortedMapTemplate[A, B, CC[A, B]]]
   extends SortedMapFactory[CC] {
