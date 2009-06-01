@@ -39,6 +39,7 @@ package scala
  */
 
 trait Ordering[T] extends PartialOrdering[T] {
+  outer =>
  /** Returns a negative integer iff <code>x</code> comes before
    * <code>y</code> in the ordering, returns 0 iff <code>x</code>
    * is the same in the ordering as <code>y</code>, and returns a
@@ -77,6 +78,11 @@ trait Ordering[T] extends PartialOrdering[T] {
 
   /** Returns the argument which comes earlier in the ordering. */
   def min(x: T, y: T): T = if (lteq(x, y)) x else y
+
+  override def reverse : Ordering[T] = new Ordering[T]{
+    override def reverse = outer;
+    def compare(x : T, y : T) = outer.compare(y, x);
+  }
 
   class Ops(lhs: T) {
     def <(rhs: T) = lt(lhs, rhs)

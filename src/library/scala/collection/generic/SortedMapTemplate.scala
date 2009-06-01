@@ -29,7 +29,7 @@ self =>
   def rangeImpl(from : Option[A], until : Option[A]) : This
 
   protected class DefaultKeySet extends super.DefaultKeySet with SortedSet[A] {
-    def compare(k0: A, k1: A) = self.thisCollection.compare(k0, k1)
+    def ordering = self.ordering;
     /** We can't give an implementation of +/- here because we do not have a generic sorted set implementation
      */
     override def + (elem: A): SortedSet[A] = throw new UnsupportedOperationException("keySet.+")

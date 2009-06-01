@@ -35,6 +35,7 @@ package scala
  */
 
 trait PartialOrdering[T] extends Equiv[T] {
+  outer =>
   /** Returns <code>true</code> iff <code>x</code> comes before
    *  <code>y</code> in the ordering.
    */
@@ -59,4 +60,10 @@ trait PartialOrdering[T] extends Equiv[T] {
    *  <code>y</code> in the ordering.
    */
   def equiv(x: T, y: T): Boolean = lteq(x,y) && lteq(y,x)
+
+
+  def reverse : PartialOrdering[T] = new PartialOrdering[T]{
+    override def reverse = outer;
+    def lteq(x : T, y : T) = outer.lteq(y, x);
+  }
 }
