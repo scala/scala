@@ -56,7 +56,7 @@ trait LayoutContainer extends Container.Wrapper {
     override def size = peer.getComponentCount
     def iterator: Iterator[(Component, Constraints)] =
       Iterator.range(0,size).map { c =>
-        val comp = Component.wrapperFor[Component](peer.getComponent(c).asInstanceOf[JComponent])
+        val comp = UIElement.cachedWrapper[Component](peer.getComponent(c).asInstanceOf[JComponent])
         (comp, constraintsFor(comp))
       }
   }

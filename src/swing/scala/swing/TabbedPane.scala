@@ -29,7 +29,7 @@ object TabbedPane {
     def title: String = _title//parent.peer.getTitleAt(index)
     def title_=(t: String) { _title = title0; if (parent != null) parent.peer.setTitleAt(index, t) }
     protected var _content = content0
-    def content: Component = _content//Component.wrapperFor(peer.getComponentAt(index).asInstanceOf[JComponent])
+    def content: Component = _content//UIElement.cachedWrapper(peer.getComponentAt(index).asInstanceOf[JComponent])
     def content_=(c: Component) { _content = c; if (parent != null) parent.peer.setComponentAt(index, c.peer) }
     protected var _tip = tip0
     def tip: String = _tip//peer.getToolTipTextAt(index)
@@ -85,7 +85,7 @@ class TabbedPane extends Component with Publisher {
     def +=(t: Page): this.type = { t.parent = TabbedPane.this; peer.addTab(t.title, null, t.content.peer, t.tip); this }
     def length = peer.getTabCount
     def apply(n: Int) = new Page(TabbedPane.this, peer.getTitleAt(n),
-                                Component.wrapperFor(peer.getComponentAt(n).asInstanceOf[javax.swing.JComponent]),
+                                UIElement.cachedWrapper(peer.getComponentAt(n).asInstanceOf[javax.swing.JComponent]),
                                 peer.getToolTipTextAt(n))
   }
 

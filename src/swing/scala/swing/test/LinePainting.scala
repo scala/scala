@@ -1,45 +1,53 @@
 package scala.swing.test
-
-import java.awt.{Color, Dimension, Graphics, Graphics2D, Point, geom}
-
 import scala.swing.Swing._
 import scala.swing.{MainFrame, Panel, SimpleGUIApplication}
-import scala.swing.event.{MousePressed, MouseDragged, MouseReleased}
+import scala.swing.event._
+import java.awt.{Color, Dimension, Graphics, Graphics2D, Point, geom}
 
 /**
  * Dragging the mouse draws a simple graph
  *
- * @author Frank Teubler
+ * @author Frank Teubler, Ingo Maier
  */
 object LinePainting extends SimpleGUIApplication {
-  def top = new MainFrame {
-    title = "SimpleDraw"
-    contents = new Panel {
-      background = Color.white
-      preferredSize = new Dimension(200, 200)
+  lazy val ui = new Panel {
+    background = Color.white
+    preferredSize = (200,200)
 
-      listenTo(Mouse.clicks, Mouse.moves)
+    focusable = true
+    listenTo(mouse.clicks, mouse.moves, keys)
 
-      reactions += {
-        case e: MousePressed  => moveTo(e.point)
-        case e: MouseDragged  => lineTo(e.point)
-        case e: MouseReleased => lineTo(e.point)
-      }
 
-      /* records the dragging */
-      val path = new geom.GeneralPath
+    reactions += {
+      case e: MousePressed  =>
+        moveTo(e.point)
+        requestFocusInWindow()
+      case e: MouseDragged  => lineTo(e.point)
+      case e: MouseReleased => lineTo(e.point)
+      case KeyTyped(_,'c',_,_) =>
+        path = new geom.GeneralPath
+        repaint()
+      case _: FocusLost => repaint()
+    }
 
-      def lineTo(p: Point) { path.lineTo(p.x, p.y); repaint() }
-      def moveTo(p: Point) { path.moveTo(p.x, p.y); repaint() }
+    /* records the dragging */
+    var path = new geom.GeneralPath
 
-      override def paintComponent(g: Graphics) = {
-        super.paintComponent(g)
-        /* we need Graphics2D */
-        val g2 = g.asInstanceOf[Graphics2D]
-        g2.draw(path)
-      }
+    def lineTo(p: Point) { path.lineTo(p.x, p.y); repaint() }
+    def moveTo(p: Point) { path.moveTo(p.x, p.y); repaint() }
+
+    override def paintComponent(g: Graphics2D) = {
+      super.paintComponent(g)
+      g.setColor(new Color(100,100,100))
+      g.drawString("Press left mouse button and drag to paint." +
+                   (if(hasFocus) " Press 'c' to clear." else ""), 10, size.height-10)
+      g.setColor(Color.black)
+      g.draw(path)
     }
   }
+
+  def top = new MainFrame {
+    title = "Simple Line Painting Demo"
+    contents = ui
+  }
 }
-
-
