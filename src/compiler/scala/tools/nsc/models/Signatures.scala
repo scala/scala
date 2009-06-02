@@ -9,7 +9,8 @@ package scala.tools.nsc.models
 import scala.collection.mutable.{HashMap, HashSet}
 import scala.tools.nsc.{Global => Compiler}
 import scala.tools.nsc.symtab.{Flags, Names}
-import scala.tools.nsc.util.{NameTransformer, Position, SourceFile}
+import scala.tools.nsc.util.{ Position, SourceFile }
+import scala.util.NameTransformer
 
 /** This class ...
  *

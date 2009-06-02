@@ -21,7 +21,8 @@ import scala.util.control.Exception.{ Catcher, catching, ultimately, unwrapping 
 import io.{ PlainFile, VirtualDirectory }
 import reporters.{ ConsoleReporter, Reporter }
 import symtab.{ Flags, Names }
-import util.{ SourceFile, BatchSourceFile, ClassPath, NameTransformer }
+import util.{ SourceFile, BatchSourceFile, ClassPath }
+import scala.util.NameTransformer
 import nsc.{ InterpreterResults => IR }
 import nsc.interpreter._
 import Interpreter._
@@ -857,7 +858,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
    */
   def membersOfIdentifier(line: String): List[String] = {
     import Completion.{ isValidCompletion }
-    import scala.tools.nsc.util.NameTransformer.{ decode, encode }   // e.g. $plus$plus => ++
+    import NameTransformer.{ decode, encode }   // e.g. $plus$plus => ++
 
     val res = beQuietDuring {
       for (name <- nameOfIdent(line) ; req <- requestForName(name)) yield {

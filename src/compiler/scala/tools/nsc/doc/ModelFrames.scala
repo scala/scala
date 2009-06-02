@@ -7,7 +7,7 @@
 package scala.tools.nsc.doc
 
 import java.io.{File, FileWriter}
-import util.NameTransformer
+import scala.util.NameTransformer
 import scala.collection.mutable
 import scala.compat.Platform.{EOL => LINE_SEPARATOR}
 import scala.xml.{NodeSeq, Text, Unparsed, Utility}

@@ -4,7 +4,7 @@
  */
 // $Id$
 
-package scala.tools.nsc.util
+package scala.util
 
 object NameTransformer {
   private val nops = 128

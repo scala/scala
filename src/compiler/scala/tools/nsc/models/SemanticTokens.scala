@@ -13,7 +13,8 @@ import scala.collection.mutable.{HashMap, HashSet}
 import scala.tools.nsc.Global
 import scala.tools.nsc.symtab.{Flags, Names}
 import scala.tools.nsc.symtab.Flags.DEFERRED
-import scala.tools.nsc.util.{BatchSourceFile, NameTransformer, NoPosition, Position, SourceFile}
+import scala.tools.nsc.util.{BatchSourceFile, NoPosition, Position, SourceFile}
+import scala.util.NameTransformer
 
 class SemanticTokens(val compiler: Global) {
   import compiler._
