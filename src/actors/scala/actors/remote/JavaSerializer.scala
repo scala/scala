@@ -17,13 +17,22 @@ import java.io.{ByteArrayInputStream, ByteArrayOutputStream,
 /**
  *  @author Guy Oliver
  */
-class CustomObjectInputStream(os: InputStream, cl: ClassLoader) extends ObjectInputStream(os) {
-  override def resolveClass(cd: ObjectStreamClass): Class[T] forSome { type T } =
+private[remote] class CustomObjectInputStream(in: InputStream, cl: ClassLoader)
+extends ObjectInputStream(in) {
+  override def resolveClass(cd: ObjectStreamClass): Class[_] =
     try {
       cl.loadClass(cd.getName())
     } catch {
       case cnf: ClassNotFoundException =>
         super.resolveClass(cd)
+    }
+  override def resolveProxyClass(interfaces: Array[String]): Class[_] =
+    try {
+      val ifaces = interfaces map { iface => cl.loadClass(iface) }
+      java.lang.reflect.Proxy.getProxyClass(cl, ifaces: _*)
+    } catch {
+      case e: ClassNotFoundException =>
+        super.resolveProxyClass(interfaces)
     }
 }
 

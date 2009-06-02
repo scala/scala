@@ -21,12 +21,12 @@ abstract class Serializer(val service: Service) {
   def deserialize(a: Array[Byte]): AnyRef
 
   @throws(classOf[IOException])
-  def readBytes(inputStream: DataInputStream): Array[Byte] = {
+  private def readBytes(inputStream: DataInputStream): Array[Byte] = {
     try {
       val length = inputStream.readInt()
       val bytes = new Array[Byte](length)
       inputStream.readFully(bytes, 0, length)
-      return bytes
+      bytes
     }
     catch {
       case npe: NullPointerException =>
@@ -41,7 +41,7 @@ abstract class Serializer(val service: Service) {
   }
 
   @throws(classOf[IOException])
-  def writeBytes(outputStream: DataOutputStream, bytes: Array[Byte]) {
+  private def writeBytes(outputStream: DataOutputStream, bytes: Array[Byte]) {
     val length = bytes.length;
     // original length
     outputStream.writeInt(length)

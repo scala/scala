@@ -138,7 +138,7 @@ class TcpService(port: Int, cl: ClassLoader) extends Thread with Service {
     try {
       val socket = new ServerSocket(port)
       while (!shouldTerminate) {
-        Debug.info(this+": waiting for new connection...")
+        Debug.info(this+": waiting for new connection on port "+port+"...")
         val nextClient = socket.accept()
         if (!shouldTerminate) {
           val worker = new TcpServiceWorker(this, nextClient)
@@ -182,8 +182,8 @@ class TcpService(port: Int, cl: ClassLoader) extends Thread with Service {
   }
 
   def connect(n: Node): TcpServiceWorker = synchronized {
-    val sock = new Socket(n.address, n.port)
-    val worker = new TcpServiceWorker(this, sock)
+    val socket = new Socket(n.address, n.port)
+    val worker = new TcpServiceWorker(this, socket)
     worker.sendNode(n)
     worker.start()
     addConnection(n, worker)
@@ -192,13 +192,11 @@ class TcpService(port: Int, cl: ClassLoader) extends Thread with Service {
 
   def disconnectNode(n: Node) = synchronized {
     connections.get(n) match {
-      case None => {
+      case None =>
         // do nothing
-      }
-      case Some(worker) => {
+      case Some(worker) =>
         connections -= n
         worker.halt
-      }
     }
   }
 
@@ -219,27 +217,23 @@ class TcpService(port: Int, cl: ClassLoader) extends Thread with Service {
 }
 
 
-class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
-  val in = so.getInputStream()
-  val out = so.getOutputStream()
-
-  val datain = new DataInputStream(in)
-  val dataout = new DataOutputStream(out)
+private[actors] class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
+  val datain = new DataInputStream(so.getInputStream)
+  val dataout = new DataOutputStream(so.getOutputStream)
 
   var connectedNode: Node = _
 
-  def sendNode(n: Node) = {
+  def sendNode(n: Node) {
     connectedNode = n
     parent.serializer.writeObject(dataout, parent.node)
   }
 
-  def readNode = {
+  def readNode {
     val node = parent.serializer.readObject(datain)
     node match {
-      case n: Node => {
+      case n: Node =>
         connectedNode = n
         parent.addConnection(n, this)
-      }
     }
   }
 
@@ -272,6 +266,6 @@ class TcpServiceWorker(parent: TcpService, so: Socket) extends Thread {
         Debug.info(this+": caught "+e)
         parent nodeDown connectedNode
     }
-    Debug.info(this+": terminated")
+    Debug.info(this+": service terminated at "+parent.node)
   }
 }
