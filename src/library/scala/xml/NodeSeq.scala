@@ -73,58 +73,35 @@ abstract class NodeSeq extends immutable.Sequence[Node] with SequenceTemplate[No
    *  @param that ...
    *  @return     ...
    */
-  def \(that: String): NodeSeq = that match {
-    case "_" =>
-      var zs: List[Node] = Nil
-      val it = this.iterator
-      while (it.hasNext) {
-        val x = it.next
-        val jt = x.child.iterator
-        while (jt.hasNext) {
-          val y = jt.next
-          if (y.typeTag$ != -1)
-            zs = y::zs
+  def \(that: String): NodeSeq = {
+    def atResult = {
+      def fail = throw new IllegalArgumentException(that)
+      lazy val y = this(0)
+      val attr =
+        if (that.length == 1) fail
+        else if (that(1) == '{') {
+          val i = that indexOf '}'
+          if (i == -1) fail
+          val (uri, key) = (that.substring(2,i), that.substring(i+1, that.length()))
+          if (uri == "" || key == "") fail
+          else y.attribute(uri, key)
         }
-      }
-      NodeSeq.fromSeq(zs.reverse)
+        else y.attribute(that.substring(1))
 
-    case _ if (that.charAt(0) == '@') && (this.length == 1) =>
-      if (that.length() == 1)
-        throw new IllegalArgumentException(that)
-      if (that.charAt(1) == '{') {
-        val i = that.indexOf('}')
-        if (i == -1)
-          throw new IllegalArgumentException(that)
-        val (uri, key) = (that.substring(2,i), that.substring(i+1, that.length()))
-        if (uri == "" || key == "")
-          throw new IllegalArgumentException(that)
-        val y = this(0)
-        y.attribute(uri, key) match {
-          case Some(x) => Group(x)
-          case _       => NodeSeq.Empty
-        }
-      } else {
-        val k = that.substring(1)
-        val y = this(0)
-        y.attribute(k) match {
-          case Some(x) => Group(x)
-          case _       => NodeSeq.Empty
-        }
+      attr match {
+        case Some(x)  => Group(x)
+        case _        => NodeSeq.Empty
       }
+    }
 
-    case _   =>
-      var zs: List[Node] = Nil
-      val it = this.iterator
-      while (it.hasNext) {
-        val x = it.next
-        val jt = x.child.iterator
-        while (jt.hasNext) {
-          val y = jt.next
-          if (y.label == that)
-            zs = y::zs
-        }
-      }
-      NodeSeq.fromSeq(zs.reverse)
+    def makeSeq(cond: (Node) => Boolean) =
+      NodeSeq fromSeq (this flatMap (_.child) filter cond)
+
+    that match {
+      case "_"                                        => makeSeq(!_.isAtom)
+      case _ if (that(0) == '@' && this.length == 1)  => atResult
+      case _                                          => makeSeq(_.label == that)
+    }
   }
 
   /** projection function. Similar to XPath, use <code>this \\ 'foo</code>
@@ -142,52 +119,13 @@ abstract class NodeSeq extends immutable.Sequence[Node] with SequenceTemplate[No
    *  @param that ...
    *  @return     ...
    */
-  def \\ (that: String): NodeSeq = that match {
-    case "_" =>
-      var zs: List[Node] = Nil
-      val it = this.iterator
-      while (it.hasNext) {
-        val x = it.next
-        val jt = x.descendant_or_self.iterator
-        while (jt.hasNext) {
-          val y = jt.next
-          if (y.typeTag$ != -1)
-            zs = y::zs
-        }
-      }
-      zs.reverse
-
-    case _ if that.charAt(0) == '@' =>
-      var zs: List[Node] = Nil
-      val it = this.iterator
-      while (it.hasNext) {
-        val x = it.next
-        val jt = x.descendant_or_self.iterator
-        while (jt.hasNext) {
-          val y = jt.next
-          if (y.typeTag$ != -1) {
-            val kt = (y \ that).iterator
-            while (kt.hasNext) {
-              zs = (kt.next)::zs
-            }
-          }
-        }
-      }
-      zs.reverse
-
-    case _ =>
-      var zs: List[Node] = Nil
-      val it = this.iterator
-      while (it.hasNext) {
-        val x = it.next
-        val jt = x.descendant_or_self.iterator
-        while (jt.hasNext) {
-          val y = jt.next
-          if (y.typeTag$ != -1 && y.label == that)
-            zs = y::zs
-        }
-      }
-    zs.reverse
+  def \\ (that: String): NodeSeq = {
+    def filt(cond: (Node) => Boolean) = this flatMap (_.descendant_or_self) filter cond
+    that match {
+      case "_"                  => filt(!_.isAtom)
+      case _ if that(0) == '@'  => filt(!_.isAtom) flatMap (_ \ that)
+      case _                    => filt(x => !x.isAtom && x.label == that)
+    }
   }
 
   override def toString(): String = theSeq.iterator.foldLeft ("") {

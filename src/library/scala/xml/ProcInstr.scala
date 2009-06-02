@@ -24,7 +24,7 @@ case class ProcInstr(target:String, proctext:String) extends SpecialNode {
   else if (text.indexOf("?>") != -1)
     throw new IllegalArgumentException(proctext+" may not contain \"?>\"")
 
-  final override def typeTag$: Int = -2
+  final override def collectNamespacesAndDontTransform = false
 
   (target: Seq[Char]) match {
     case Seq('X'|'x','M'|'m','L'|'l') =>

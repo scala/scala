@@ -18,7 +18,7 @@ package scala.xml
  */
 case class Comment(commentText: String) extends SpecialNode {
 
-  final override def typeTag$: Int = -3
+  final override def collectNamespacesAndDontTransform = false
 
   if (commentText.indexOf("--") != -1)
     throw new IllegalArgumentException("text containts \"--\"")

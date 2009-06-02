@@ -98,7 +98,7 @@ abstract class BasicTransformer extends Function1[Node,Node] {
   }
 
   def transform(n: Node): Seq[Node] = {
-    if (n.typeTag$ < 0)
+    if (!n.collectNamespacesAndDontTransform)
       n
     else {
       val ch = n.child

@@ -19,23 +19,9 @@ package scala.xml
  * @param   text the text contained in this node.
  */
 case class EntityRef(entityName: String) extends SpecialNode {
-
-  final override def typeTag$: Int = -5
-
-  /** structural equality */
-  override def equals(x: Any): Boolean = x match {
-    case EntityRef(x) => x.equals(entityName)
-    case _ => false
-  }
-
-  /** the constant "#ENTITY"
-   */
+  final override def collectNamespacesAndDontTransform = false
   def label = "#ENTITY"
 
-  override def hashCode() = entityName.hashCode()
-
-  /** ...
-   */
   override def text = entityName match {
     case "lt"   => "<"
     case "gt"   => ">"

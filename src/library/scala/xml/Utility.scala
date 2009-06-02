@@ -28,7 +28,7 @@ object Utility extends AnyRef with parsing.TokenTests
     f(sb)
     sb.toString
   }
-  private[xml] def isAtomAndNotText(x: Node) = x.isInstanceOf[Atom[_]] && !x.isInstanceOf[Text]
+  private[xml] def isAtomAndNotText(x: Node) = x.isAtom && !x.isInstanceOf[Text]
 
   // XXX this is very ham fisted at the moment
   class XMLOptions {
@@ -153,7 +153,7 @@ object Utility extends AnyRef with parsing.TokenTests
    * @param set ...
    */
   def collectNamespaces(n: Node, set: Set[String]) {
-    if (n.typeTag$ >= 0) {
+    if (n.collectNamespacesAndDontTransform) {
       set += n.namespace
       for (a <- n.attributes) a match {
         case _:PrefixedAttribute =>

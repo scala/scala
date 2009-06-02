@@ -18,26 +18,19 @@ package scala.xml
  *  @param text the text contained in this node, may not be <code>null</code>.
  */
 @serializable
-class Atom[+A](val data: A) extends SpecialNode {
+class Atom[+A](val data: A) extends SpecialNode
+{
+  if (data.asInstanceOf[AnyRef] == null)
+    throw new IllegalArgumentException("cannot construct Atom(null)")
 
-  data.asInstanceOf[AnyRef] match {
-    case null => new IllegalArgumentException("cannot construct Atom(null)")
-    case _ =>
-  }
-  final override def typeTag$: Int = -1
-
-  /** the constant "#PCDATA"
-   */
+  final override def collectNamespacesAndDontTransform = false
   def label = "#PCDATA"
 
   override def equals(x: Any) = x match {
     case s:Atom[_] => data == s.data
     case _         => false
   }
-
-  /** hashcode for this Text */
-  override def hashCode() =
-    data.hashCode()
+  override def hashCode() = data.hashCode()
 
   /** Returns text, with some characters escaped according to the XML
    *  specification.
