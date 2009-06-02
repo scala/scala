@@ -93,6 +93,23 @@ object Utility extends AnyRef with parsing.TokenTests
    */
   final def escape(text: String): String = sbToString(escape(text, _))
 
+  object Escapes {
+    /** For reasons unclear escape and unescape are a long ways from
+     *  being logical inverses. */
+    private val pairs = List(
+      "lt"    -> '<',
+      "gt"    -> '>',
+      "amp"   -> '&',
+      "quot"  -> '"'
+      // comment explaining why this isn't escaped --
+      // is valid xhtml but not html, and IE doesn't know it, says jweb
+      // "apos"  -> '\''
+    )
+    val escMap    = Map((for ((s, c) <- pairs) yield (c, "&%s;" format s)) : _*)
+    val unescMap  = Map(("apos"  -> '\'') :: pairs : _*)
+  }
+  import Escapes._
+
   /**
    * Appends escaped string to <code>s</code>.
    *
@@ -100,17 +117,11 @@ object Utility extends AnyRef with parsing.TokenTests
    * @param s    ...
    * @return     ...
    */
-  final def escape(text: String, s: StringBuilder): StringBuilder = {
-    for (c <- text.iterator) c match {
-      case '<' => s.append("&lt;")
-      case '>' => s.append("&gt;")
-      case '&' => s.append("&amp;")
-      case '"' => s.append("&quot;")
-      //case '\'' => s.append("&apos;") // is valid xhtml but not html, and IE doesn't know it, says jweb
-      case _   => s.append(c)
-    }
-    s
-  }
+  final def escape(text: String, s: StringBuilder): StringBuilder =
+    text.foldLeft(s)((s, c) => escMap.get(c) match {
+      case Some(str)  => s append str
+      case None       => s append c
+    })
 
   /**
    * Appends unescaped string to <code>s</code>, amp becomes &amp;
@@ -122,14 +133,7 @@ object Utility extends AnyRef with parsing.TokenTests
    *            entity.
    */
   final def unescape(ref: String, s: StringBuilder): StringBuilder =
-    ref match {
-      case "lt"   => s.append('<')
-      case "gt"   => s.append('>')
-      case "amp"  => s.append('&')
-      case "quot" => s.append('"')
-      case "apos" => s.append('\'')
-      case _   => null
-    }
+    (unescMap get ref) map (s append _) getOrElse null
 
   /**
    * Returns a set of all namespaces used in a sequence of nodes
@@ -138,13 +142,8 @@ object Utility extends AnyRef with parsing.TokenTests
    * @param nodes ...
    * @return      ...
    */
-  def collectNamespaces(nodes: Seq[Node]): Set[String] = {
-    var m = new HashSet[String]()
-    val it = nodes.iterator
-    while (it.hasNext)
-      collectNamespaces(it.next, m);
-    m
-  }
+  def collectNamespaces(nodes: Seq[Node]): Set[String] =
+    nodes.foldLeft(new HashSet[String]) { (set, x) => collectNamespaces(x, set) ; set }
 
   /**
    * Adds all namespaces in node to set.
