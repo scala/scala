@@ -28,13 +28,13 @@ self =>
   // XXX: implement default version
   def rangeImpl(from : Option[A], until : Option[A]) : This
 
-  protected class DefaultKeySet extends super.DefaultKeySet with SortedSet[A] {
+  protected class DefaultKeySet extends super.DefaultKeySet with immutable.SortedSet[A] {
     def ordering = self.ordering;
     /** We can't give an implementation of +/- here because we do not have a generic sorted set implementation
      */
-    override def + (elem: A): SortedSet[A] = throw new UnsupportedOperationException("keySet.+")
-    override def - (elem: A): SortedSet[A] = throw new UnsupportedOperationException("keySet.-")
-    override def rangeImpl(from : Option[A], until : Option[A]) : SortedSet[A] = {
+    override def + (elem: A): immutable.SortedSet[A] = throw new UnsupportedOperationException("keySet.+")
+    override def - (elem: A): immutable.SortedSet[A] = throw new UnsupportedOperationException("keySet.-")
+    override def rangeImpl(from : Option[A], until : Option[A]) : immutable.SortedSet[A] = {
       val map = self.rangeImpl(from, until)
       new map.DefaultKeySet
     }

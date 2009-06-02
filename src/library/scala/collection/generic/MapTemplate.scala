@@ -113,13 +113,13 @@ self =>
   /**
    *  @return the keys of this map as a set.
    */
-  def keys: Set[A] = new DefaultKeySet
+  def keys: immutable.Set[A] = new DefaultKeySet
 
-  protected class DefaultKeySet extends Set[A] {
+  protected class DefaultKeySet extends immutable.Set[A] {
     def contains(key : A) = self.contains(key)
     def iterator = self.iterator.map(_._1)
-    def + (elem: A): Set[A] = (Set[A]() ++ this + elem).asInstanceOf[Set[A]] // !!! concrete overrides abstract problem
-    def - (elem: A): Set[A] = (Set[A]() ++ this - elem).asInstanceOf[Set[A]] // !!! concrete overrides abstract problem
+    def + (elem: A): immutable.Set[A] = (immutable.Set[A]() ++ this + elem).asInstanceOf[immutable.Set[A]] // !!! concrete overrides abstract problem
+    def - (elem: A): immutable.Set[A] = (immutable.Set[A]() ++ this - elem).asInstanceOf[immutable.Set[A]] // !!! concrete overrides abstract problem
     override def size = self.size
     override def foreach[B](f: A => B) = for ((k, v) <- self) f(k)
   }
@@ -137,11 +137,9 @@ self =>
     def next = iter.next._1
   }
 
-  /** @return the values of this map as a set.
-   *  @note  Can't return a Set[B] here because sets are non-variant.
-   *         The operation is overridden with the sharper type in MutableMapTemplate.
+  /** @return the values of this map as an iterable.
    */
-  def values: collection.Set[_ <: B] = immutable.Set.empty[B] ++ (self map (_._2))
+  def values: immutable.Sequence[B] = immutable.Sequence.empty[B] ++ (self map (_._2))
 
   /** Creates an iterator for a contained values.
    *
