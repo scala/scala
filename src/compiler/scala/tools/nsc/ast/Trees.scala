@@ -575,8 +575,8 @@ trait Trees {
       vparamss map (vps => vps.map { vd =>
         atPos(vd) {
           ValDef(
-            Modifiers(vd.mods.flags & IMPLICIT | PARAM) withAnnotations vd.mods.annotations,
-            vd.name, atPos(vd.tpt) { vd.tpt.duplicate }, EmptyTree)
+            Modifiers(vd.mods.flags & (IMPLICIT | DEFAULTPARAM) | PARAM) withAnnotations vd.mods.annotations,
+            vd.name, atPos(vd.tpt) { vd.tpt.duplicate }, vd.rhs.duplicate)
         }})
     val (edefs, rest) = body span treeInfo.isEarlyDef
     val (evdefs, etdefs) = edefs partition treeInfo.isEarlyValDef
