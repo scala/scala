@@ -113,6 +113,10 @@ trait Trees {
     def tpe_=(t: Type) = rawtpe = t
 
     def setPos(pos: Position): this.type = {
+      pos match {
+        case SyntheticAliasPosition(orig) => assert(orig != this)
+        case _ =>
+      } // !!!
       rawpos = pos;
       this
     }
@@ -569,17 +573,19 @@ trait Trees {
     // create parameters for <init>
     var vparamss1 =
       vparamss map (vps => vps.map { vd =>
-        ValDef(
-          Modifiers(vd.mods.flags & (IMPLICIT | DEFAULTPARAM) | PARAM) withAnnotations vd.mods.annotations,
-          vd.name, vd.tpt.duplicate, vd.rhs.duplicate).setOriginal(vd)
-       })
+        atPos(vd) {
+          ValDef(
+            Modifiers(vd.mods.flags & IMPLICIT | PARAM) withAnnotations vd.mods.annotations,
+            vd.name, atPos(vd.tpt) { vd.tpt.duplicate }, EmptyTree)
+        }})
     val (edefs, rest) = body span treeInfo.isEarlyDef
     val (evdefs, etdefs) = edefs partition treeInfo.isEarlyValDef
     val (lvdefs, gvdefs) = List.unzip {
       evdefs map {
         case vdef @ ValDef(mods, name, tpt, rhs) =>
-          (treeCopy.ValDef(vdef, Modifiers(PRESUPER), name, tpt, rhs),
-           treeCopy.ValDef(vdef, mods, name, TypeTree(), EmptyTree))
+          val fld = atPos(vdef.pos) { treeCopy.ValDef(vdef, mods, name, TypeTree(), EmptyTree) }
+          val local = atPos(fld) { treeCopy.ValDef(vdef, Modifiers(PRESUPER), name, tpt, rhs) }
+          (local, fld)
       }
     }
     val constrs =

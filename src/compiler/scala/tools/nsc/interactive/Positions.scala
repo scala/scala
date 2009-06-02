@@ -66,6 +66,7 @@ self: Global =>
     case r :: rs1 =>
       assert(!isTransparent(t.pos))
       if (r.isFree && (r.pos includes t.pos)) {
+//      println("subdividing "+r+"/"+t.pos)
         maybeFree(t.pos.end, r.pos.end) ::: List(Range(t.pos, t)) ::: maybeFree(r.pos.start, t.pos.start) ::: rs1
       } else {
         if (!r.isFree && (r.pos overlaps t.pos)) conflicting += r.tree
@@ -97,21 +98,25 @@ self: Global =>
       case ct :: trees1 =>
         if (isTransparent(ct.pos))
           iterate(ranges, solidDescendants(ct) ::: trees1)
-        else if (ct.pos.isDefined && !ct.pos.isSynthetic) {
+        else if (!ct.pos.isDefined || ct.pos.isSynthetic)
+          iterate(ranges, trees1)
+        else {
           val conflicting = new ListBuffer[Tree]
           val ranges1 = insert(ranges, ct, conflicting)
+//          println("inserted "+ct+"; ranges = "+ranges1)
           if (conflicting.isEmpty) {
             iterate(ranges1, trees1)
           } else {
             val splitNode =
               if (conflicting.size == 1 && (conflicting.head.pos includes ct.pos)) conflicting.head
               else ct
+            println("splitting "+splitNode)
             splitNode setPos new TransparentPosition(splitNode.pos.source.get, splitNode.pos.start, splitNode.pos.point, splitNode.pos.end)
             ensureNonOverlapping(replace(cts, splitNode, solidDescendants(splitNode)))
           }
         }
     }
-
+//    println("ensure non overlap "+cts)
     iterate(List(maxFree), cts)
   }
 
@@ -137,26 +142,28 @@ self: Global =>
    *                Uses the point of the position as the point of all positions it assigns.
    *                Uses the start of this position as an Offset position for unpositioed trees
    *                without children.
-   *  @param  trees  The children to position
+   *  @param  trees  The children to position. All children must be positionable.
    */
-  private def setChildrenPos(pos: Position, trees: List[Tree]) {
+  private def setChildrenPos(pos: Position, trees: List[Tree]): Unit = try {
     var currentPos = pos
     for (tree <- trees) {
-      if (isPositionable(tree) && tree.pos == NoPosition) {
-        val children = tree.children
+      if (tree.pos == NoPosition) {
+        val children = tree.children filter isPositionable
         if (children.isEmpty)
           tree setPos OffsetPosition(pos.source.get, currentPos.start)
         else {
           setChildrenPos(currentPos, children)
-          val positionableChildren = children filter (isPositionable(_))
           tree setPos new RangePosition(
-            pos.source.get, (positionableChildren map (_.pos.start)).min, pos.point, (positionableChildren map (_.pos.end)).max)
+            pos.source.get, (children map (_.pos.start)).min, pos.point, (children map (_.pos.end)).max)
         }
         currentPos = new RangePosition(pos.source.get, tree.pos.end, pos.point, pos.end)
       }
-//      println("set children pos "+pos+" of "+trees)
     }
     ensureNonOverlapping(trees)
+  } catch {
+    case ex: Exception =>
+      println("error while set children pos "+pos+" of "+trees)
+      throw ex
   }
 
   /** Position a tree.
@@ -169,7 +176,13 @@ self: Global =>
         val children = tree.children
         if (children.nonEmpty) {
           if (children.tail.isEmpty) atPos(pos)(children.head)
-          else setChildrenPos(pos, children)
+          else if (tree.isInstanceOf[Template]) {
+            println("setting children "+children)
+            setChildrenPos(pos, children filter isPositionable)
+            println("set children "+children)
+          } else {
+            setChildrenPos(pos, children filter isPositionable)
+          }
         }
       }
       tree
@@ -186,19 +199,29 @@ self: Global =>
       inform("================= in =================")
       inform(tree.toString)
     }
-    def validate(tree: Tree, encltree: Tree) {
-      if (isPositionable(tree) && !tree.pos.isDefined)
-        error("tree without position: "+tree)
-      if (encltree.pos.isSynthetic && !tree.pos.isDefined && tree.pos.isSynthetic)
-        error("synthetic "+encltree+" contains nonsynthetic" + tree)
-      if (tree.pos.isDefined && !(encltree.pos includes tree.pos))
-        error(encltree+" does not include "+tree)
-      for ((t1, t2) <- findOverlapping(tree.children flatMap solidDescendants))
-        error("overlapping trees: "+t1+" === and === "+t2)
-      for (ct <- tree.children flatMap solidDescendants) validate(ct, tree)
+    def validate(tree: Tree, encltree: Tree): Unit = try {
+      if (isPositionable(tree)) {
+        if (!tree.pos.isDefined) {
+          error("tree without position: "+tree)
+          throw new ValidateError
+        }
+        if (encltree.pos.isSynthetic && !tree.pos.isDefined && tree.pos.isSynthetic)
+          error("synthetic "+encltree+" contains nonsynthetic" + tree)
+        if (tree.pos.isDefined && !(encltree.pos includes tree.pos))
+          error(encltree+" does not include "+tree)
+        for ((t1, t2) <- findOverlapping(tree.children flatMap solidDescendants))
+          error("overlapping trees: "+t1+" === and === "+t2)
+        for (ct <- tree.children flatMap solidDescendants) validate(ct, tree)
+      }
+    } catch {
+      case ex: ValidateError =>
+        println("error while validating "+tree)
+      throw ex
     }
     validate(tree, tree)
   }
+
+  class ValidateError extends Exception
 
   // ---------------- Locating trees ----------------------------------
 

@@ -64,13 +64,12 @@ abstract class Enumeration(initial: Int, names: String*) {
   /** The name of this enumeration.
    */
   override def toString = {
-    val cname = this.getClass().getName()
-    if (cname endsWith "$")
-      cname.substring(0, cname.length() - 1)
-    else if (cname endsWith "$class")
-      cname.substring(0, cname.length() - 6)
-    else
-      cname
+    var string = getClass.getName
+    val idx1 = string.lastIndexOf('.' : Int)
+    if (idx1 != -1) string = string.substring(idx1 + 1)
+    val idx2 = string.indexOf('$')
+    if (idx2 != -1) string = string.substring(0, idx2)
+    string
   }
 
   /** The mapping from the integer used to identifying values to the actual

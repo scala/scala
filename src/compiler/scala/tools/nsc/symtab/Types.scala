@@ -3899,7 +3899,7 @@ A type's typeSymbol should never be inspected directly.
         val up = if (variance != CONTRAVARIANT) upper else !upper
         tvar.constr.inst = null
         val bound: Type = if (up) tparam.info.bounds.hi else tparam.info.bounds.lo
-        // Console.println("solveOne0 "+tvar+" "+config+" "+bound);//DEBUG
+        //Console.println("solveOne0 "+tvar+" "+config+" "+bound);//DEBUG
         var cyclic = bound contains tparam
         for ((tvar2, (tparam2, variance2)) <- config) {
           if (tparam2 != tparam &&
