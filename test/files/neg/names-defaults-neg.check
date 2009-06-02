@@ -12,6 +12,10 @@ names-defaults-neg.scala:8: error: positional after named argument.
 names-defaults-neg.scala:9: error: positional after named argument.
   test1(b = "(*", 23)
                   ^
+names-defaults-neg.scala:14: error: reference to x is ambiguous; it is both, a parameter
+name of the method and the name of a variable currently in scope.
+  test2(x = 1)
+          ^
 names-defaults-neg.scala:16: error: not found: value c
   test1(c = 0, b = "joke")
         ^
@@ -70,29 +74,17 @@ match argument types (a: Int,b: java.lang.String) and expected result type Any
 names-defaults-neg.scala:75: error: multiple overloaded alternatives of method foo define default arguments
   def foo(a: Int = 0) = a
       ^
-names-defaults-neg.scala:76: error: multiple overloaded alternatives of method foo define default arguments
-  def foo(b: String = "another") = b
-      ^
-names-defaults-neg.scala:76: error: method foo$default$1 is defined twice
-  def foo(b: String = "another") = b
-          ^
 names-defaults-neg.scala:85: error: multiple overloaded alternatives of method foo define default arguments
   override def foo(a: Int = 1092) = a
                ^
-names-defaults-neg.scala:86: error: multiple overloaded alternatives of method foo define default arguments
-  def foo(b: String = "lskdfj")
-      ^
-names-defaults-neg.scala:88: error: multiple overloaded alternatives of method bar define default arguments
-  def bar(i: Int = 129083) = i
-      ^
 names-defaults-neg.scala:88: error: type mismatch;
  found   : Int(129083)
  required: java.lang.String
   def bar(i: Int = 129083) = i
                    ^
-names-defaults-neg.scala:86: error: method foo$default$1 is defined twice
-  def foo(b: String = "lskdfj")
-          ^
+names-defaults-neg.scala:88: error: multiple overloaded alternatives of method bar define default arguments
+  def bar(i: Int = 129083) = i
+      ^
 names-defaults-neg.scala:93: error: using named or default arguments in a super constructor call is not allowed
 class B1 extends A1(10)
       ^
@@ -105,4 +97,4 @@ names-defaults-neg.scala:99: error: using named or default arguments in a self c
 names-defaults-neg.scala:105: error: using named or default arguments in a self constructor call is not allowed
     this(sep + b + sep)
     ^
-28 errors found
+25 errors found

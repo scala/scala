@@ -349,7 +349,7 @@ trait NamesDefaults { self: Analyzer =>
     // @LUC TODO: make faster (don't use zipWithIndex)
     val namelessArgs = for ((arg, index) <- (args.zipWithIndex)) yield arg match {
       case Assign(Ident(name), rhs) =>
-        val pos = params.findIndexOf(p => p.name == name && !p.hasFlag(SYNTHETIC))
+        val pos = params.indexWhere(p => p.name == name && !p.hasFlag(SYNTHETIC))
         if (pos == -1) {
           if (positionalAllowed) {
             argPos(index) = index
@@ -362,9 +362,31 @@ trait NamesDefaults { self: Analyzer =>
         } else if (argPos contains pos) {
           errorTree(arg, "parameter specified twice: "+ name)
         } else {
-          positionalAllowed = false
-          argPos(index) = pos
-          rhs
+          // for named arguments, check wether the assignment expression would
+          // typecheck. if it does, report an ambiguous error.
+          val param = params(pos)
+          val paramtpe = params(pos).tpe.cloneInfo(param)
+          // replace type parameters by wildcard. in the below example we need to
+          // typecheck (x = 1) with wildcard (not T) so that it succeeds.
+          //   def f[T](x: T) = x
+          //   var x = 0
+          //   f(x = 1)   <<  "x = 1" typechecks with expected type WildcardType
+          val udp = typer.context.extractUndetparams()
+          val subst = new SubstTypeMap(udp, udp map (_ => WildcardType))
+          val res = typer.silent(_.typed(arg, subst(paramtpe))) match {
+            case _: TypeError =>
+              positionalAllowed = false
+              argPos(index) = pos
+              // if `rhs' has the form `x = ...`, wrap it into a block, prevent
+              // treating it as named argument again.
+              if (isNamed(rhs)) Block(List(), rhs)
+              else  rhs
+            case t: Tree =>
+              errorTree(arg, "reference to "+ name +" is ambiguous; it is both, a parameter\n"+
+                             "name of the method and the name of a variable currently in scope.")
+          }
+          typer.context.undetparams = udp
+          res
         }
       case _ =>
         argPos(index) = index

@@ -1510,12 +1510,23 @@ trait Typers { self: Analyzer =>
 
       // only one overloaded method is allowed to have defaults
       if (meth.owner.isClass && meth.paramss.exists(_.exists(_.hasFlag(DEFAULTPARAM)))) {
-        val overloads = meth.owner.info.member(meth.name)
-        val otherHasDefault = overloads.filter(alt => {
-          alt != meth && alt.paramss.exists(_.exists(_.hasFlag(DEFAULTPARAM)))
-        }) != NoSymbol
-        if (otherHasDefault)
-          error(meth.pos, "multiple overloaded alternatives of "+ meth +" define default arguments")
+        // don't do the check if it has already failed for another alternatvie
+        if (meth.paramss.exists(_.exists(p => p.hasFlag(DEFAULTPARAM) &&
+                                              !p.defaultGetter.tpe.isError))) {
+          val overloads = meth.owner.info.member(meth.name)
+          val others = overloads.filter(alt => {
+            alt != meth && alt.paramss.exists(_.exists(_.hasFlag(DEFAULTPARAM)))
+          })
+          if (others != NoSymbol) {
+            // setting `ErrorType' to defaultGetters prevents the error
+            // messages saying "foo$default$1 is defined twice"
+            for (ps <- meth.paramss; p <- ps)
+              if (p hasFlag DEFAULTPARAM) p.defaultGetter.setInfo(ErrorType)
+            for (alt <- others.alternatives; ps <- alt.paramss; p <- ps)
+              if (p hasFlag DEFAULTPARAM) p.defaultGetter.setInfo(ErrorType)
+            error(meth.pos, "multiple overloaded alternatives of "+ meth +" define default arguments")
+          }
+        }
 
         if (meth.paramss.exists(_.exists(_.tpe.typeSymbol == RepeatedParamClass)))
           error(meth.pos, "methods with `*'-parameters are not allowed to have default arguments")
@@ -2018,8 +2029,10 @@ trait Typers { self: Analyzer =>
                 if (allArgs.length == formals.length) {
                   // a default for each missing argument was found
                   val (namelessArgs, argPos) = removeNames(Typer.this)(allArgs, params)
-                  transformNamedApplication(Typer.this, mode, pt)(
-                                            treeCopy.Apply(tree, fun1, namelessArgs), argPos)
+                  if (namelessArgs exists (_.isErroneous)) setError(tree)
+                  else
+                    transformNamedApplication(Typer.this, mode, pt)(
+                      treeCopy.Apply(tree, fun1, namelessArgs), argPos)
                 } else {
                   tryTupleApply.getOrElse {
                     val suffix =

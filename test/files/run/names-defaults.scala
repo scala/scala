@@ -167,6 +167,14 @@ object Test extends Application {
   println(Fact2(10)().copy(y = "blabla")())
 
 
+  // assignment to var <-> named argument
+  var argName = 1
+  test5(argName = (argName = 2))
+  println(argName) // should be 2
+  test5({argName = 3; ()})
+  println(argName) // should be 3
+
+
   // DEFINITIONS
   def test1(a: Int, b: String) = println(a +": "+ b)
   def test2(u: Int, v: Int)(k: String, l: Int) = println(l +": "+ k +", "+ (u + v))
@@ -177,6 +185,7 @@ object Test extends Application {
     def inner(b: Int = a, c: String) = println(b +": "+ c)
     inner(c = "/")
   }
+  def test5(argName: Unit) = println("test5")
 }
 
 
