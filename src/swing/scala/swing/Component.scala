@@ -121,6 +121,9 @@ abstract class Component extends UIElement with Publisher {
     }
   })
 
+  /**
+   * @deprecated Use mouse instead.
+   */
   @deprecated lazy val Mouse = mouse
 
   /**

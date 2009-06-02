@@ -1,6 +1,7 @@
 package scala.swing
 
-import scala.collection.mutable._
+import scala.collection._
+import scala.collection.mutable.{Buffer, HashSet, Set}
 import event.Event
 
 /**
@@ -58,7 +59,7 @@ private[swing] trait LazyPublisher extends Publisher {
 
 import scala.ref._
 
-private[swing] trait SingleRefCollection[+A <: AnyRef] extends Collection[A] { self =>
+private[swing] trait SingleRefCollection[+A <: AnyRef] extends Iterable[A] { self =>
 
   trait Ref[+A <: AnyRef] extends Reference[A] {
     override def hashCode() = {
@@ -78,7 +79,7 @@ private[swing] trait SingleRefCollection[+A <: AnyRef] extends Collection[A] { s
   protected[this] def Ref(a: A): Ref[A]
   protected[this] val referenceQueue = new ReferenceQueue[A]
 
-  protected val underlying: Collection[Reference[A]]
+  protected val underlying: Iterable[Reference[A]]
 
   def purgeReferences() {
     var ref = referenceQueue.poll
@@ -129,7 +130,7 @@ abstract class RefBuffer[A <: AnyRef] extends Buffer[A] with SingleRefCollection
   def remove(n: Int) = { val el = apply(n); remove(el); el }
   def insertAll(n: Int, iter: Iterable[A]) {
     purgeReferences()
-    underlying.insertAll(n, iter.projection.map(Ref(_)))
+    underlying.insertAll(n, iter.view.map(Ref(_)))
   }
   def update(n: Int, el: A) { purgeReferences(); underlying(n) = Ref(el) }
   def readOnly : Seq[A] = new Seq[A] {

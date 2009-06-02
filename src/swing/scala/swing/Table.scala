@@ -184,7 +184,7 @@ class Table extends Component with Scrollable with Publisher {
     }
 
     def cells: Set[(Int, Int)] =
-      new SelectionSet[(Int, Int)]((for(r <- selection.rows; c <- selection.columns) yield (r,c)).toSeq) { outer =>
+      new SelectionSet[(Int, Int)]((for(r <- selection.rows; c <- selection.columns) yield (r,c)).toSequence) { outer =>
         def -=(n: (Int, Int)) = {
           peer.removeRowSelectionInterval(n._1,n._1)
           peer.removeColumnSelectionInterval(n._2,n._2)
