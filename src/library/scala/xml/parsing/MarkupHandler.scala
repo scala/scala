@@ -25,8 +25,8 @@ import scala.xml.dtd._
  *  @todo can we ignore more entity declarations (i.e. those with extIDs)?
  *  @todo expanding entity references
  */
-abstract class MarkupHandler extends AnyRef with Logged {
-
+abstract class MarkupHandler extends Logged
+{
   // impl. of Logged
   //def log(msg:String) = {}
 

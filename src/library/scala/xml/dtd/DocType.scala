@@ -19,27 +19,17 @@ package scala.xml.dtd
  *  @param  extID  None, or Some(external ID of this doctype)
  *  @param  intSubset sequence of internal subset declarations
  */
-case class DocType(name: String, extID: ExternalID, intSubset: Seq[dtd.Decl]) {
-
+case class DocType(name: String, extID: ExternalID, intSubset: Seq[dtd.Decl])
+{
   if (!Utility.isName(name))
-    throw new IllegalArgumentException(name+" must be an XML Name");
-
-  /** hashcode for this processing instruction */
-  final override def hashCode() =
-    name.hashCode() + 7 * extID.hashCode() + 41*intSubset.toList.hashCode();
+    throw new IllegalArgumentException(name+" must be an XML Name")
 
   /** returns "&lt;!DOCTYPE + name + extID? + ("["+intSubSet+"]")? >" */
   final override def toString() = {
-    val sb = new StringBuilder("<!DOCTYPE ")
-    sb.append(name)
-    sb.append(' ')
-    sb.append(extID.toString())
-    if (intSubset.length > 0) {
-      sb.append('[')
-      for (d <- intSubset) sb.append(d.toString())
-      sb.append(']')
-    }
-    sb.append('>')
-    sb.toString()
+    def intString =
+      if (intSubset.isEmpty) ""
+      else intSubset.mkString("[", "", "]")
+
+    """<!DOCTYPE %s %s%s>""".format(name, extID.toString, intString)
   }
 }

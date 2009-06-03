@@ -9,11 +9,10 @@
 // $Id$
 
 
-package scala.xml.path;
+package scala.xml.path
 
-
-object Expression {
-
+object Expression
+{
   final def testFromString(x: String): Test = {
     x.charAt(0) match {
       case '*' if( x.length() == 1 ) => WildcardTest;

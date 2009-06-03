@@ -21,7 +21,7 @@ import collection.mutable.ListBuffer
  *  @version 1.0
  */
 object NodeSeq {
-  final val Empty = new NodeSeq { def theSeq = Nil }
+  final val Empty = fromSeq(Nil)
   def fromSeq(s: Seq[Node]): NodeSeq = new NodeSeq {
     def theSeq = s
   }
@@ -46,8 +46,8 @@ abstract class NodeSeq extends immutable.Sequence[Node] with SequenceTemplate[No
   def theSeq: Seq[Node]
   def length = theSeq.length
   override def iterator = theSeq.iterator
-  def apply(i: Int): Node = theSeq.apply(i)
 
+  def apply(i: Int): Node = theSeq(i)
   def apply(f: Node => Boolean): NodeSeq = filter(f)
 
   /** structural equality */
@@ -55,7 +55,7 @@ abstract class NodeSeq extends immutable.Sequence[Node] with SequenceTemplate[No
     case z:Node      => (length == 1) && z == apply(0)
     case z:Seq[_]    => sameElements(z)
     case z:String    => text == z
-    case _           => false;
+    case _           => false
   }
 
   /** Projection function. Similar to XPath, use <code>this \ "foo"</code>
@@ -128,29 +128,6 @@ abstract class NodeSeq extends immutable.Sequence[Node] with SequenceTemplate[No
     }
   }
 
-  override def toString(): String = theSeq.iterator.foldLeft ("") {
-    (s: String, x: Node) => s + x.toString()
-  }
-/*
-  def map(f: Node => NodeSeq): NodeSeq = flatMap(f)
-
-  def flatMap(f: Node => NodeSeq): NodeSeq = {
-    val y = toList flatMap { x => f(x).toList }
-    y
-  }
-
-  override def filter(f: Node => Boolean): NodeSeq = {
-    val x = toList filter f
-    x
-  }
-*/
-
-  def text: String = {
-    val sb = new StringBuilder()
-    val it = this.iterator
-    while (it.hasNext) {
-      sb.append(it.next.text)
-    }
-    sb.toString()
-  }
+  override def toString(): String = theSeq.mkString
+  def text: String                = this map (_.text) mkString
 }

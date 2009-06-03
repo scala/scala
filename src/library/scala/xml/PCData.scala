@@ -23,9 +23,6 @@ case class PCData(_data: String) extends Atom[String](_data) {
    *  @param  sb ...
    *  @return ...
    */
-  override def buildString(sb: StringBuilder) = {
-    sb.append("<![CDATA[")
-    sb.append(data)
-    sb.append("]]>")
-  }
+  override def buildString(sb: StringBuilder) =
+    sb append "<![CDATA[%s]]>".format(data)
 }

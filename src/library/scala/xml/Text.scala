@@ -19,10 +19,10 @@ package scala.xml
  *
  *  @param text the text contained in this node, may not be null.
  */
-case class Text(_data: String) extends Atom[String](_data) {
-
+case class Text(_data: String) extends Atom[String](_data)
+{
   if (null == data)
-    throw new java.lang.NullPointerException("tried to construct Text with null")
+    throw new IllegalArgumentException("tried to construct Text with null")
 
   final override def equals(x: Any) = x match {
     case s:String  => s == data

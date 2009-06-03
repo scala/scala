@@ -12,6 +12,7 @@
 package scala.xml
 
 import Utility.sbToString
+import annotation.tailrec
 
 /**
  * Copyright 2008 Google Inc. All Rights Reserved.
@@ -25,11 +26,10 @@ object MetaData {
    * the attributes in new_tail, but does not guarantee to preserve the relative order of attribs.
    * Duplicates can be removed with normalize.
    */
+  @tailrec
   def concatenate(attribs: MetaData, new_tail: MetaData): MetaData =
-    if (attribs eq Null)
-      new_tail
-    else
-      concatenate(attribs.next, attribs.copy(new_tail)) // tail-recursive
+    if (attribs eq Null) new_tail
+    else concatenate(attribs.next, attribs.copy(new_tail))
 
   /**
    * returns normalized MetaData, with all duplicates removed and namespace prefixes resolved to
@@ -81,29 +81,17 @@ object MetaData {
  * @author Burak Emir <bqe@google.com>
  */
 @serializable
-abstract class MetaData extends Iterable[MetaData] {
-
-  /** updates this MetaData with the MetaData given as argument. All attributes that occur in updates
-   *  are part of the resulting MetaData. If an unprefixed attribute occurs in both this instance and
-   *  updates, only the one in updates is part of the result (avoiding duplicates). However, for
-   *  prefixed attributes no duplicate-detection is attempted, the method
-   *  append(updates: MetaData, scope:NamespaceBinding) should be used instead.
-   *
-   *  @param updates MetaData with new attributes and updated attributes
-   *  @return a new MetaData instance that contains the combined attributes of this and updates
-   */
-  def append(updates: MetaData): MetaData =
-    MetaData.update(this, TopScope, updates)
-
-  /** updates this MetaData with the MetaData given as argument. All attributes that occur in updates
+abstract class MetaData extends Iterable[MetaData]
+{
+  /** Updates this MetaData with the MetaData given as argument. All attributes that occur in updates
    *  are part of the resulting MetaData. If an attribute occurs in both this instance and
    *  updates, only the one in updates is part of the result (avoiding duplicates). For prefixed
-   *  attributes, namespaces are resolved using the given scope.
+   *  attributes, namespaces are resolved using the given scope, which defaults to TopScope.
    *
    *  @param updates MetaData with new and updated attributes
    *  @return a new MetaData instance that contains old, new and updated attributes
    */
-  def append(updates: MetaData, scope: NamespaceBinding): MetaData =
+  def append(updates: MetaData, scope: NamespaceBinding = TopScope): MetaData =
     MetaData.update(this, scope, updates)
 
   /**
@@ -160,16 +148,13 @@ abstract class MetaData extends Iterable[MetaData] {
   def isPrefixed: Boolean
 
   /** deep equals method */
-  override def equals(that: Any) =
-    that match {
-      case m: MetaData =>
-        var res = (this.length == m.length) && (this.hashCode() == m.hashCode())
-        val it = this.iterator
-        while (res && it.hasNext) { res = it.next.containedIn1(m) }
-        res
-      case _ =>
-        false
-    }
+  override def equals(that: Any) = that match {
+    case m: MetaData  =>
+      (this.length == m.length) &&
+      (this.hashCode == m.hashCode) &&
+      (this forall (_ containedIn1 m))
+    case _            => false
+  }
 
   /** returns an iterator on attributes */
   def iterator: Iterator[MetaData] = new Iterator[MetaData] {
@@ -238,8 +223,8 @@ abstract class MetaData extends Iterable[MetaData] {
 
   def toString1(): String = sbToString(toString1)
 
-  //appends string representations of single attribute to StringBuilder
-  def toString1(sb:StringBuilder): Unit
+  // appends string representations of single attribute to StringBuilder
+  def toString1(sb: StringBuilder): Unit
 
   override def toString(): String = sbToString(buildString)
 
@@ -259,7 +244,7 @@ abstract class MetaData extends Iterable[MetaData] {
    *  @param key ...
    *  @return    ...
    */
-  def remove(key:String): MetaData
+  def remove(key: String): MetaData
 
   /**
    *  @param namespace ...

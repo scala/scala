@@ -12,6 +12,7 @@
 package scala.xml
 
 import collection.mutable.{Set, HashSet}
+import parsing.XhtmlEntities
 
 /**
  * The <code>Utility</code> object provides utility functions for processing
@@ -21,6 +22,8 @@ import collection.mutable.{Set, HashSet}
  */
 object Utility extends AnyRef with parsing.TokenTests
 {
+  implicit def implicitSbToString(sb: StringBuilder) = sb.toString()
+
   // helper for the extremely oft-repeated sequence of creating a
   // StringBuilder, passing it around, and then grabbing its String.
   private [xml] def sbToString(f: (StringBuilder) => Unit): String = {
@@ -29,18 +32,6 @@ object Utility extends AnyRef with parsing.TokenTests
     sb.toString
   }
   private[xml] def isAtomAndNotText(x: Node) = x.isAtom && !x.isInstanceOf[Text]
-
-  // XXX this is very ham fisted at the moment
-  class XMLOptions {
-    val stripComments: Boolean = false
-    val decodeEntities: Boolean = true
-    val preserveWhitespace: Boolean = false
-    val minimizeTags: Boolean = false
-  }
-  object XMLOptions {
-    def withStripComments(x: Boolean) = new XMLOptions { override val stripComments = x }
-    def withMinimizeTags(x: Boolean) = new XMLOptions { override val minimizeTags = x }
-  }
 
   /** trims an element - call this method, when you know that it is an
    *  element (and not a text node) so you know that it will not be trimmed
@@ -95,13 +86,13 @@ object Utility extends AnyRef with parsing.TokenTests
 
   object Escapes {
     /** For reasons unclear escape and unescape are a long ways from
-     *  being logical inverses. */
+        being logical inverses. */
     private val pairs = List(
       "lt"    -> '<',
       "gt"    -> '>',
       "amp"   -> '&',
       "quot"  -> '"'
-      // comment explaining why this isn't escaped --
+      // enigmatic comment explaining why this isn't escaped --
       // is valid xhtml but not html, and IE doesn't know it, says jweb
       // "apos"  -> '\''
     )
@@ -164,50 +155,32 @@ object Utility extends AnyRef with parsing.TokenTests
     }
   }
 
-  /**
-   * Returs the string representation of an XML node, with comments stripped
-   * the comments.
-   *
-   * @param n the XML node
-   * @return  the string representation of node <code>n</code>.
-   *
-   * @see "toXML(Node, Boolean)"
-   */
-  def toXML(n: Node): String = toXML(n, true)
+  // def toXML(
+  //   x: Node,
+  //   pscope: NamespaceBinding = TopScope,
+  //   sb: StringBuilder = new StringBuilder,
+  //   stripComments: Boolean = false,
+  //   decodeEntities: Boolean = true,
+  //   preserveWhitespace: Boolean = false,
+  //   minimizeTags: Boolean = false): String =
+  // {
+  //   toXMLsb(x, pscope, sb, stripComments, decodeEntities, preserveWhitespace, minimizeTags)
+  //   sb.toString()
+  // }
 
-  /**
-   * Return the string representation of a Node. uses namespace mapping from
-   *  <code>defaultPrefixes(n)</code>.
-   *
-   * @param n            the XML node
-   * @param stripComment ...
-   * @return             ...
-   *
-   * @todo define a way to escape literal characters to &amp;xx; references
-   */
-  def toXML(n: Node, _stripComments: Boolean): String = {
-    sbToString(toXML(n, TopScope, _)(XMLOptions.withStripComments(_stripComments)))
-  }
-
-  /**
-   * Appends a tree to the given stringbuffer within given namespace scope.
-   *
-   * @param n            the node
-   * @param pscope       the parent scope
-   * @param sb           stringbuffer to append to
-   * @param stripComment if true, strip comments
-   */
-  def toXML(x: Node, pscope: NamespaceBinding, sb: StringBuilder, _stripComments: Boolean) {
-    toXML(x, pscope, sb)(XMLOptions.withStripComments(_stripComments))
-  }
-
-  def toXML(x: Node, pscope: NamespaceBinding, sb: StringBuilder)(implicit config: XMLOptions) {
-    import config._
-
+  def toXML(
+    x: Node,
+    pscope: NamespaceBinding = TopScope,
+    sb: StringBuilder = new StringBuilder,
+    stripComments: Boolean = false,
+    decodeEntities: Boolean = true,
+    preserveWhitespace: Boolean = false,
+    minimizeTags: Boolean = false): StringBuilder =
+  {
     x match {
       case c: Comment if !stripComments => c buildString sb
       case x: SpecialNode               => x buildString sb
-      case g: Group                     => for (c <- g.nodes) toXML(c, x.scope, sb)
+      case g: Group                     => for (c <- g.nodes) toXML(c, x.scope, sb) ; sb
       case _  =>
         // print tag with namespace declarations
         sb.append('<')
@@ -228,21 +201,12 @@ object Utility extends AnyRef with parsing.TokenTests
     }
   }
 
-
-
-  /**
-   * @param children     ...
-   * @param pscope       ...
-   * @param sb           ...
-   * @param stripComment ...
-   */
-  def sequenceToXML(children: Seq[Node], pscope: NamespaceBinding, sb: StringBuilder, _stripComments: Boolean) {
-    sequenceToXML(children, pscope, sb)(XMLOptions.withStripComments(_stripComments))
-  }
-
-  def sequenceToXML(children: Seq[Node], pscope: NamespaceBinding, sb: StringBuilder)(implicit config: XMLOptions) {
-    import config._
-
+  def sequenceToXML(
+    children: Seq[Node],
+    pscope: NamespaceBinding = TopScope,
+    sb: StringBuilder = new StringBuilder,
+    stripComments: Boolean = false): Unit =
+  {
     if (children.isEmpty) return
     else if (children forall isAtomAndNotText) { // add space
       val it = children.iterator
@@ -263,9 +227,9 @@ object Utility extends AnyRef with parsing.TokenTests
    * @param name ...
    * @return     ...
    */
-  final def prefix(name: String): Option[String] = {
-    val i = name.indexOf(':'.asInstanceOf[Int])
-    if (i != -1) Some(name.substring(0, i)) else None
+  final def prefix(name: String): Option[String] = (name indexOf ':') match {
+    case -1   => None
+    case i    => Some(name.substring(0, i))
   }
 
   /**
@@ -300,7 +264,7 @@ object Utility extends AnyRef with parsing.TokenTests
    * @return   ...
    */
   def appendQuoted(s: String, sb: StringBuilder) = {
-    val ch = if (s.indexOf('"'.asInstanceOf[Int]) == -1) '"' else '\'';
+    val ch = if (s contains '"') '\'' else '"'
     sb.append(ch).append(s).append(ch)
   }
 
@@ -326,17 +290,11 @@ object Utility extends AnyRef with parsing.TokenTests
    * @return      ...
    */
   def getName(s: String, index: Int): String = {
-    var i = index;
-    val sb = new StringBuilder();
-    if (i < s.length) {
-      var c = s.charAt(i);
-      if (isNameStart(s.charAt(i)))
-        while (i < s.length && { c = s.charAt(i); isNameChar(c)}) {
-          sb.append(c)
-          i = i + 1
-        }
-      sb.toString()
-    } else null
+    if (index >= s.length) null
+    else (s drop index) match {
+      case Seq(x, xs @ _*) if isNameStart(x)  => (Array(x) ++ (xs takeWhile isNameChar)).mkString
+      case _                                  => ""
+    }
   }
 
   /**

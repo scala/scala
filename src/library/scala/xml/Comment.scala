@@ -16,29 +16,17 @@ package scala.xml
  * @author Burak Emir
  * @param text the text contained in this node, may not contain "--"
  */
-case class Comment(commentText: String) extends SpecialNode {
-
+case class Comment(commentText: String) extends SpecialNode
+{
+  def label = "#REM"
+  override def text = ""
   final override def collectNamespacesAndDontTransform = false
 
-  if (commentText.indexOf("--") != -1)
-    throw new IllegalArgumentException("text containts \"--\"")
-
-  /** structural equality */
-  override def equals(x: Any): Boolean = x match {
-    case Comment(x) => x.equals(commentText)
-    case _ => false
-  }
-
-  /** the constant &quot;#REM&quot; */
-  def label = "#REM"
-
-  /** hashcode for this Comment */
-  override def hashCode() = commentText.hashCode()
-
-  override def text = ""
+  if (commentText contains "--")
+    throw new IllegalArgumentException("text contains \"--\"")
 
   /** Appends &quot;<!-- text -->&quot; to this string buffer.
    */
   override def buildString(sb: StringBuilder) =
-    sb.append("<!--").append(commentText).append("-->")
+    sb append ("<!--" + commentText + "-->")
 }

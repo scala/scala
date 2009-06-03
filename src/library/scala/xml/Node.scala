@@ -174,8 +174,8 @@ abstract class Node extends NodeSeq {
    * @param stripComment if true, strips comment nodes from result
    * @return ...
    */
-  def buildString(stripComment: Boolean): String =
-    Utility.toXML(this, stripComment)
+  def buildString(stripComments: Boolean): String =
+    Utility.toXML(this, stripComments = stripComments).toString
 
   /**
    * Same as <code>toString(false)</code>.

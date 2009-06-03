@@ -14,7 +14,7 @@ package scala.xml
 case object Null extends MetaData {
 
   /** appends given MetaData items to this MetaData list */
-  override def append(m: MetaData): MetaData = m
+  override def append(m: MetaData, scope: NamespaceBinding = TopScope): MetaData = m
 
   override def containedIn1(m: MetaData): Boolean = false
 

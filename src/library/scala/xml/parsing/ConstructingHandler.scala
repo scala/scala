@@ -16,8 +16,8 @@ package scala.xml.parsing
  *  @author  Burak Emir
  *  @version 1.0
  */
-abstract class ConstructingHandler extends MarkupHandler {
-
+abstract class ConstructingHandler extends MarkupHandler
+{
   val preserveWS: Boolean
 
   def elem(pos: Int, pre: String, label: String, attrs: MetaData,
@@ -27,13 +27,7 @@ abstract class ConstructingHandler extends MarkupHandler {
   def procInstr(pos: Int, target: String, txt: String) =
     ProcInstr(target, txt)
 
-  def comment(pos: Int, txt: String) =
-    Comment(txt)
-
-  def entityRef(pos: Int, n: String) =
-    EntityRef(n)
-
-  def text(pos: Int, txt:String) =
-    Text(txt)
-
+  def comment(pos: Int, txt: String)  = Comment(txt)
+  def entityRef(pos: Int, n: String)  = EntityRef(n)
+  def text(pos: Int, txt: String)     = Text(txt)
 }

@@ -17,11 +17,12 @@ package scala.xml
  * @param  target target name of this PI
  * @param  text   text contained in this node, may not contain "?>"
  */
-case class ProcInstr(target:String, proctext:String) extends SpecialNode {
+case class ProcInstr(target:String, proctext:String) extends SpecialNode
+{
 
   if (!Utility.isName(target))
     throw new IllegalArgumentException(target+" must be an XML Name")
-  else if (text.indexOf("?>") != -1)
+  if (text.indexOf("?>") != -1)
     throw new IllegalArgumentException(proctext+" may not contain \"?>\"")
 
   final override def collectNamespacesAndDontTransform = false

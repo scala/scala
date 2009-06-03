@@ -29,27 +29,26 @@ object Parsing {
   }
 
   /** <pre>(#x20 | #x9 | #xD | #xA)+</pre> */
-  final def isSpace(cs: Seq[Char]): Boolean = {
-    val it = cs.iterator
-    it.hasNext && it.forall { isSpace }
-  }
+  final def isSpace(cs: Seq[Char]): Boolean = cs forall isSpace
 
   /** <pre>NameChar ::= Letter | Digit | '.' | '-' | '_' | ':'
    *             | CombiningChar | Extender</pre>
    *
    * see [4] and Appendix B of XML 1.0 specification
    */
-  def isNameChar(ch: Char) = isNameStart(ch) || (ch match {
-    case '.' | '-' | ':' => true
-    case _ => java.lang.Character.getType(ch).asInstanceOf[Byte] match {
-      case java.lang.Character.COMBINING_SPACING_MARK => true  // Mc
-      case java.lang.Character.ENCLOSING_MARK => true          // Me
-      case java.lang.Character.NON_SPACING_MARK => true        // Mn
-      case java.lang.Character.MODIFIER_LETTER => true         // Lm
-      case java.lang.Character.DECIMAL_DIGIT_NUMBER => true    // Nd
-      case _ => false
-    }
-  });
+  private val nameCharTypeList = {
+    import java.lang.Character._
+    List(
+      COMBINING_SPACING_MARK,   // Mc
+      ENCLOSING_MARK,           // Me
+      NON_SPACING_MARK,         // Mn
+      MODIFIER_LETTER,          // Lm
+      DECIMAL_DIGIT_NUMBER      // Nd
+    )
+  }
+  def isNameChar(ch: Char) =
+    isNameStart(ch) || List('.', '-', ':').contains(ch) ||
+    nameCharTypeList.contains(Character.getType(ch).asInstanceOf[Byte])
 
   /** <pre>NameStart ::= ( Letter | '_' )</pre>
    *  where Letter means in one of the Unicode general
@@ -94,12 +93,5 @@ object Parsing {
   def checkSysID(s: String): Boolean =
     s.indexOf('"') == -1 || s.indexOf('\'') == -1
 
-  def checkPubID(s: String): Boolean =
-    if (s.length() > 0) {
-      val z:Seq[Char] = s
-      val y = z.iterator
-      while (y.hasNext && isPubIDChar(y.next)) {}
-      !y.hasNext
-    } else true
-
+  def checkPubID(s: String): Boolean = s forall isPubIDChar
 }

@@ -21,7 +21,8 @@ abstract class MarkupDecl extends Decl {
 /** an element declaration
  */
 case class ElemDecl(name: String, contentModel: ContentModel)
-extends MarkupDecl with DtdTypeSymbol {
+extends MarkupDecl with DtdTypeSymbol
+{
   override def buildString(sb: StringBuilder): StringBuilder = {
     sb
     .append("<!ELEMENT ")

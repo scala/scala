@@ -18,7 +18,5 @@ package scala.xml
  * @version 1.0
  */
 object QNode {
-
-  def unapplySeq(n:Node) = Some (Tuple4(n.scope.getURI(n.prefix), n.label, n.attributes, n.child))
-
+  def unapplySeq(n: Node) = Some((n.scope.getURI(n.prefix), n.label, n.attributes, n.child))
 }

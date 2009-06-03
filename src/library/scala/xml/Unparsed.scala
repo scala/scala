@@ -15,12 +15,12 @@ package scala.xml
  *  are off regarding wellformedness etc.
  *
  * @author Burak Emir
- * @param _data content in this node, may not be null.
+ * @param data content in this node, may not be null.
  */
-case class Unparsed(_data: String) extends Atom[String](_data) {
-
+class Unparsed(data: String) extends Atom[String](data)
+{
   if (null == data)
-    throw new java.lang.NullPointerException("tried to construct Unparsed with null")
+    throw new IllegalArgumentException("tried to construct Unparsed with null")
 
   final override def equals(x: Any) = x match {
     case s:String   => s == data
@@ -32,5 +32,9 @@ case class Unparsed(_data: String) extends Atom[String](_data) {
 
   /** returns text, with some characters escaped according to XML spec */
   override def buildString(sb: StringBuilder) = sb append data
+}
 
+object Unparsed {
+  def apply(data: String) = new Unparsed(data)
+  def unapply(x: Unparsed) = Some(x.data)
 }

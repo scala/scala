@@ -16,8 +16,8 @@ package scala.xml.transform
  *  @author  Burak Emir
  *  @version 1.0
  */
-abstract class BasicTransformer extends Function1[Node,Node] {
-
+abstract class BasicTransformer extends Function1[Node,Node]
+{
   protected case class NeedsCopy(result: Seq[Node]) extends Throwable
 
   /** Returns a new node buffer with the first <code>pos</code> elements

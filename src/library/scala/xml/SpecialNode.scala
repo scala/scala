@@ -21,8 +21,8 @@ package scala.xml
  *
  *  @author Burak Emir
  */
-abstract class SpecialNode extends Node with pull.XMLEvent {
-
+abstract class SpecialNode extends Node with pull.XMLEvent
+{
   /** always empty */
   final override def attributes = Null
 
@@ -34,5 +34,4 @@ abstract class SpecialNode extends Node with pull.XMLEvent {
 
   /** append string representation to the given stringbuffer */
   def buildString(sb: StringBuilder): StringBuilder
-
 }
