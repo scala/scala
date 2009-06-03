@@ -53,11 +53,6 @@ object ShowPickled extends Names {
     case LITERALnull    => "LITERALnull"
     case LITERALclass   => "LITERALclass"
     case CHILDREN       => "CHILDREN"
-    case PosTYPEsym     => "PosTYPEsym"
-    case PosALIASsym    => "PosALIASsym"
-    case PosCLASSsym    => "PosCLASSsym"
-    case PosMODULEsym   => "PosMODULEsym"
-    case PosVALsym      => "PosVALsym"
     case _ => "***BAD TAG***(" + tag + ")"
   }
 
@@ -107,10 +102,6 @@ object ShowPickled extends Names {
           out.print(newTypeName(buf.bytes, buf.readIndex, len))
           buf.readIndex = end
         case TYPEsym | ALIASsym | CLASSsym | MODULEsym | VALsym =>
-          printSymInfo()
-          if (tag == CLASSsym && (buf.readIndex < end)) printTypeRef()
-        case PosTYPEsym | PosALIASsym | PosCLASSsym | PosMODULEsym | PosVALsym =>
-          printNat()
           printSymInfo()
           if (tag == CLASSsym && (buf.readIndex < end)) printTypeRef()
         case EXTref | EXTMODCLASSref =>

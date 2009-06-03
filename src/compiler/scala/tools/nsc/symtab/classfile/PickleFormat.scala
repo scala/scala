@@ -26,7 +26,6 @@ object PickleFormat {
  *                  | 5 ALIASsym len_Nat SymbolInfo
  *                  | 6 CLASSsym len_Nat SymbolInfo [thistype_Ref]
  *                  | 7 MODULEsym len_Nat SymbolInfo
- *                  | 8 VALsym len_Nat SymbolInfo [alias_Ref] // old VALsym, unPickling supported (checkin if minor version < 2) ** @LUC TODO remove
  *                  | 8 VALsym len_Nat [defaultGetter_Ref] SymbolInfo [alias_Ref]
  *                  | 9 EXTref len_Nat name_Ref [owner_Ref]
  *                  | 10 EXTMODCLASSref len_Nat name_Ref [owner_Ref]
@@ -39,8 +38,7 @@ object PickleFormat {
  *                  | 17 TYPEBOUNDStpe len_Nat tpe_Ref tpe_Ref
  *                  | 18 REFINEDtpe len_Nat classsym_Ref {tpe_Ref}
  *                  | 19 CLASSINFOtpe len_Nat classsym_Ref {tpe_Ref}
- *                  | 20 METHODtpe len_Nat tpe_Ref {tpe_Ref} // old method type, unPickling still supported ** @LUC TODO remove
- *                  | 20 METHODtpe len_Nat tpe_Ref {sym_Ref} // new method type
+ *                  | 20 METHODtpe len_Nat tpe_Ref {sym_Ref}
  *                  | 21 POLYTtpe len_Nat tpe_Ref {sym_Ref}
  *                  | 22 IMPLICITMETHODtpe len_Nat tpe_Ref {tpe_Ref}
  *                  | 52 SUPERtpe len_Nat tpe_Ref tpe_Ref
@@ -56,12 +54,10 @@ object PickleFormat {
  *                  | 33 LITERALstring len_Nat name_Ref
  *                  | 34 LITERALnull len_Nat
  *                  | 35 LITERALclass len_Nat type_Ref
- *                  | 40 SYMANNOT len_Nat sym_Ref info_Ref {AnnotArg_Ref} {name_Ref AnnotArg_Ref} // old symbolAnnot, unpickling still works @LUC TODO remove for 2.8.0
- *                  | 40 SYMANNOT len_Nat sym_Ref info_Ref {annotArg_Ref} {name_Ref constAnnotArg_Ref}
+ *                  | 40 SYMANNOT len_Nat sym_Ref AnnotInfoBody
  *                  | 41 CHILDREN len_Nat sym_Ref {sym_Ref}
  *                  | 42 ANNOTATEDtpe len_Nat [sym_Ref] tpe_Ref {annotinfo_Ref}
- *                  | 43 ANNOTINFO len_Nat info_Ref numConstrArgs_Nat {annotArg_Ref} {name_Ref annotArg_Ref}  // old annot info, unpickling still works @LUC TODO remove
- *                  | 43 ANNOTINFO len_Nat info_Ref {annotArg_Ref} {name_Ref constAnnotArg_Ref}
+ *                  | 43 ANNOTINFO len_Nat AnnotInfoBody
  *                  | 44 ANNOTARGARRAY len_Nat {constAnnotArg_Ref}
  *                  | 47 DEBRUIJNINDEXtpe len_Nat level_Nat index_Nat
  *                  | 48 EXISTENTIALtpe len_Nat type_Ref {symbol_Ref}
@@ -74,7 +70,6 @@ object PickleFormat {
  *                  | 49 TREE len_Nat 7 TYPEDEFtree type_Ref sym_Ref mods_Ref name_Ref tree_Ref {tree_Ref}
  *                  | 49 TREE len_Nat 8 LABELtree type_Ref sym_Ref tree_Ref {tree_Ref}
  *                  | 49 TREE len_Nat 9 IMPORTtree type_Ref sym_Ref tree_Ref {name_Ref name_Ref}
- *                  | 49 TREE len_Nat 10 ANNOTATIONtree type_Ref sym_Ref tree_Ref {tree_Ref}     // still unpickled      @LUC TODO remove
  *                  | 49 TREE len_Nat 11 DOCDEFtree type_Ref sym_Ref string_Ref tree_Ref
  *                  | 49 TREE len_Nat 12 TEMPLATEtree type_Ref sym_Ref numparents_Nat {tree_Ref} tree_Ref {tree_Ref}
  *                  | 49 TREE len_Nat 13 BLOCKtree type_Ref tree_Ref {tree_Ref}
@@ -110,17 +105,12 @@ object PickleFormat {
  *                  | 49 TREE len_Nat 43 APPLIEDTYPEtree type_Ref tree_Ref {tree_Ref}
  *                  | 49 TREE len_Nat 44 TYPEBOUNDStree type_Ref tree_Ref tree_Ref
  *                  | 49 TREE len_Nat 45 EXISTENTIALTYPEtree type_Ref tree_Ref {tree_Ref}
- *                  | 50 MODIFIERS len_Nat flags_Long privateWithin_Ref {Annotation_Ref}        // still unpickled,   @LUC TODO: remove Annotation_Ref's
  *                  | 50 MODIFIERS len_Nat flags_Long privateWithin_Ref
- *                  | 68 PosTYPEsym len_Nat pos_Nat SymbolInfo
- *                  | 69 PosALIASsym len_Nat pos_Nat SymbolInfo
- *                  | 70 PosCLASSsym len_Nat pos_Nat SymbolInfo [thistype_Ref]
- *                  | 71 PosMODULEsym len_Nat pos_Nat SymbolInfo
- *                  | 72 PosVALsym len_Nat pos_Nat SymbolInfo [alias_Ref]
  *   SymbolInfo     = name_Ref owner_Ref flags_LongNat [privateWithin_Ref] info_Ref
  *   NameInfo       = <character sequence of length len_Nat in Utf8 format>
  *   NumInfo        = <len_Nat-byte signed number in big endian format>
  *   Ref            = Nat
+ *   AnnotInfoBody  = info_Ref {annotArg_Ref} {name_Ref constAnnotArg_Ref}
  *   AnnotArg       = Tree | Constant
  *   ConstAnnotArg  = Constant | AnnotInfo | AnnotArgArray
  *
@@ -171,15 +161,7 @@ object PickleFormat {
   final val ANNOTINFO = 43
   final val ANNOTARGARRAY = 44
 
-  final val REFLTREE = 44    // @LUC TODO remove; prefix saying that a reflect tree is coming
-                               // support dropped in September of 2007, remove for 2.8.0
-
-  final val REFLTYPE = 45      // prefix code that means a reflect type is coming
-                               // support dropped in September of 2007, remove for 2.8.0
-
-  final val REFLSYM = 46       // prefix code that means a reflect symbol is coming
-                               // support dropped in September of 2007, remove for 2.8.0
-
+  final val SUPERtpe = 46
   final val DEBRUIJNINDEXtpe = 47
   final val EXISTENTIALtpe = 48
 
@@ -193,7 +175,6 @@ object PickleFormat {
     final val TYPEDEFtree = 7
     final val LABELtree = 8
     final val IMPORTtree = 9
-    final val ANNOTATIONtree = 10   // @LUC TODO remove (still unpickling now)
     final val DOCDEFtree = 11
     final val TEMPLATEtree = 12
     final val BLOCKtree = 13
@@ -231,23 +212,14 @@ object PickleFormat {
     final val EXISTENTIALTYPEtree = 45
 
   final val MODIFIERS = 50
-  final val SUPERtpe = 52
 
   final val firstSymTag = NONEsym
   final val lastSymTag = VALsym
   final val lastExtSymTag = EXTMODCLASSref
 
 
-  //The following two are no longer accurate, because ATTRIBUTEDtpe,
+  //The following two are no longer accurate, because ANNOTATEDtpe,
   //SUPERtpe, ... are not in the same range as the other types
   //final val firstTypeTag = NOtpe
   //final val lastTypeTag = POLYtpe
-
-  /** no longer emitted since September 2007, remove for 2.8.0 */
-  final val PosOffset = 64
-  final val PosTYPEsym  = PosOffset + TYPEsym
-  final val PosALIASsym = PosOffset + ALIASsym
-  final val PosCLASSsym = PosOffset + CLASSsym
-  final val PosMODULEsym = PosOffset + MODULEsym
-  final val PosVALsym = PosOffset + VALsym
 }

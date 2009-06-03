@@ -107,3 +107,6 @@ class A3(x: String, y: Int = 11) {
 }
 
 case class Fact(a: Int, b: String)(c: Int*)
+
+class A5 { def foo(a: Object = "dlkf") = 0 }
+class B5 extends A5 { override def foo(a: Object = new Object) = 1 }

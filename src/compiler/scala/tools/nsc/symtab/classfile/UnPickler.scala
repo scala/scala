@@ -47,8 +47,6 @@ abstract class UnPickler {
 
   private class UnPickle(bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) extends PickleBuffer(bytes, offset, -1) {
     if (settings.debug.value) global.log("unpickle " + classRoot + " and " + moduleRoot)
-    var major = 0
-    var minor = 0
     checkVersion(filename)
 
     /** A map from entry numbers to array offsets */
@@ -64,7 +62,7 @@ abstract class UnPickler {
       if (isSymbolEntry(i))
         at(i, readSymbol)
       else if (isSymbolAnnotationEntry(i))
-        at(i, {() => if (major == 4) readOldSymbolAnnotation() else readSymbolAnnotation(); null})  //@LUC todo remove for 2.8
+        at(i, {() => readSymbolAnnotation(); null})
       else if (isChildrenEntry(i))
         at(i, {() => readChildren(); null})
     }
@@ -72,24 +70,8 @@ abstract class UnPickler {
     if (settings.debug.value) global.log("unpickled " + classRoot + ":" + classRoot.rawInfo + ", " + moduleRoot + ":" + moduleRoot.rawInfo);//debug
 
     private def checkVersion(filename: String) {
-      major = readNat()
-      minor = readNat()
-
-// remove the portion below, between "cut here", before releasing the first 2.8 beta
-
-//---cut here---
-
-/*
-      // transiently, use this bit as long as stability fails.
-      if (major != 4 && major != 5)
-*/
-
-      // once stability is restored, use the following bit instead:
-      if (major == 4) { // !!! temporarily accept 4 as version.
-        println("WARNING: old class format, please recompile "+filename)
-      } else
-
-//---cut here---
+      val major = readNat()
+      val minor = readNat()
       if (major != MajorVersion || minor > MinorVersion)
         throw new IOException("Scala signature " + classRoot.name +
                               " has wrong version\n expected: " +
@@ -112,14 +94,14 @@ abstract class UnPickler {
 
     /** Does entry represent an (internal) symbol */
     private def isSymbolEntry(i: Int): Boolean = {
-      val tag = bytes(index(i)) % PosOffset // @LUC TODO remove posOffset by 2.8.0
+      val tag = bytes(index(i))
       (firstSymTag <= tag && tag <= lastSymTag &&
        (tag != CLASSsym || !isRefinementSymbolEntry(i)))
     }
 
     /** Does entry represent an (internal or external) symbol */
     private def isSymbolRef(i: Int): Boolean = {
-      val tag = bytes(index(i)) % PosOffset // @LUC TODO remove posOffset by 2.8.0
+      val tag = bytes(index(i))
       (firstSymTag <= tag && tag <= lastExtSymTag)
     }
 
@@ -148,9 +130,8 @@ abstract class UnPickler {
       val savedIndex = readIndex
       readIndex = index(i)
       val tag = readByte()
-      if (tag % PosOffset != CLASSsym) assert(false) // @LUC TODO remove posOffset by 2.8.0
+      if (tag != CLASSsym) assert(false)
       readNat(); // read length
-      if (tag > PosOffset) readNat(); // @LUC TODO read position, remove posOffset by 2.8.0
       val result = readNameRef() == nme.REFINE_CLASS_NAME.toTypeName
       readIndex = savedIndex
       result
@@ -210,11 +191,6 @@ abstract class UnPickler {
         case NONEsym =>
           sym = NoSymbol
         case _ => // symbols that were pickled with Pickler.writeSymInfo
-          // @LUC TODO remove posOffset by 2.8.0
-          val unusedPos : Int = {
-            if (tag > PosOffset) readNat
-            else -1
-          }
           var defaultGetter: Symbol = NoSymbol
           var nameref = readNat()
           if (tag == VALsym && isSymbolRef(nameref)) {
@@ -230,7 +206,7 @@ abstract class UnPickler {
             privateWithin = at(inforef, readSymbol)
             inforef = readNat()
           }
-          (tag % PosOffset) match { // @LUC TODO remove posOffset by 2.8.0
+          tag match {
             case TYPEsym =>
               sym = owner.newAbstractType(NoPosition, name)
             case ALIASsym =>
@@ -276,26 +252,6 @@ abstract class UnPickler {
       sym
     }
 
-    /** To avoid cutting and pasting between METHODtpe and IMPLICITMETHODtpe */
-    private def readMethodParams(isImplicit: Boolean, end: Int): List[Symbol] = {
-      if (readIndex == end)
-        return Nil
-
-      val index = readNat()
-      if (isSymbolRef(index))
-        at(index, readSymbol) :: until(end, readSymbolRef)
-      else {
-        val formals =
-          if (isImplicit) until(end, readTypeRef)
-          else at(index, readType) :: until(end, readTypeRef)
-
-        // @LUC TODO the owner should be the method symbol, and newSyntheticValueParams
-        // should only be called once, not separately for each parameter list
-        val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "unPickler$dummy")
-        dummyMethod.newSyntheticValueParams(formals)
-      }
-    }
-
     /** Read a type */
     private def readType(): Type = {
       val tag = readByte()
@@ -337,8 +293,7 @@ abstract class UnPickler {
           ClassInfoType(until(end, readTypeRef), symScope(clazz), clazz)
         case METHODtpe =>
           val restpe = readTypeRef()
-          // compatibility with old format. TODO replace by "until(end, readSymbolRef)"
-          val params = readMethodParams(false, end)
+          val params = until(end, readSymbolRef)
           // if the method is overloaded, the params cannot be determined (see readSymbol) => return NoType.
           // Only happen for trees, "case Apply" in readTree() takes care of selecting the correct
           // alternative after parsing the arguments.
@@ -346,7 +301,7 @@ abstract class UnPickler {
           else MethodType(params, restpe)
         case IMPLICITMETHODtpe =>
           val restpe = readTypeRef()
-          val params = readMethodParams(true, end)
+          val params = until(end, readSymbolRef)
           ImplicitMethodType(params, restpe)
         case POLYtpe =>
           val restpe = readTypeRef()
@@ -413,11 +368,7 @@ abstract class UnPickler {
      *  Tree's for its arguments.
      */
     private def readAnnotationArg(): AnnotationArgument = {
-      // @LUC TODO Warning about reflection trees in pickle. Remove for 2.8.0
-      if (peekByte() == REFLTREE) {
-        reflectAnnotationWarning()
-        new AnnotationArgument(EmptyTree)
-      } else if (peekByte() == TREE) {
+      if (peekByte() == TREE) {
         val tree = readTree()
         new AnnotationArgument(tree)
       } else {
@@ -460,20 +411,6 @@ abstract class UnPickler {
       AnnotationInfo(atp, args.toList, assocs.toList)
     }
 
-    /** Old-style annotation infos. Deprecated in June 2008,
-     *   @LUC TODO remove for 2.8.0
-     */
-    private def readOldAnnotationInfo(end: Int): AnnotationInfo = {
-      val atp = readTypeRef()
-      val numargs = readNat()
-      val args = times(numargs, readAnnotationArgRef)
-      val assocs =
-        until(end, () => {
-          val name = readNameRef()
-          val arg = readAnnotationArgRef
-          (name, arg)})
-      AnnotationInfo(atp, args, List())
-    }
 
     /** Read an annotation and as a side effect store it into
      *  the symbol it requests. Called at top-level, for all
@@ -487,27 +424,6 @@ abstract class UnPickler {
       target.addAnnotation(readAnnotationInfo(end))
     }
 
-    /**  @LUC TODO Old-style symbol annotations, deprecated by June 2008, remove for 2.8.0 */
-    private def readOldSymbolAnnotation() {
-      val tag = readByte()
-      if (tag != SYMANNOT)
-        errorBadSignature("symbol annotation expected ("+ tag +")")
-      val end = readNat() + readIndex
-      val target = readSymbolRef()
-      val attrType = readTypeRef()
-      val args = new ListBuffer[AnnotationArgument]
-      val assocs = new ListBuffer[(Name, AnnotationArgument)]
-      while (readIndex != end) {
-        val argref = readNat()
-        if (isNameEntry(argref))
-          assocs += ((at(argref, readName), readAnnotationArgRef))
-        else
-          args += at(argref, readAnnotationArg)
-      }
-      val attr = AnnotationInfo(attrType, args.toList, List())
-      target.addAnnotation(attr)
-    }
-
     /** Read an annotation and return it. Only called when
      *  unpickling an ANNOTATED(WSELF)tpe. */
     private def readAnnotation(): AnnotationInfo = {
@@ -515,22 +431,14 @@ abstract class UnPickler {
       if (tag != ANNOTINFO)
         errorBadSignature("annotation expected (" + tag + ")")
       val end = readNat() + readIndex
-      if (major == 4) { //  @LUC TODO deprecated by June 2008, remove for 2.8.0
-        readOldAnnotationInfo(end)
-      } else {
-        readAnnotationInfo(end)
-      }
+      readAnnotationInfo(end)
     }
 
-    private def readTree(): Tree = readTree(false) // @LUC TODO remove
-
     /* Read an abstract syntax tree */
-    private def readTree(skipTag: Boolean): Tree = {
-      if (!skipTag) { // @LUC TODO remove skipTag
+    private def readTree(): Tree = {
       val outerTag = readByte()
       if (outerTag != TREE)
         errorBadSignature("tree expected (" + outerTag + ")")
-      }
       val end = readNat() + readIndex
       val tag = readByte()
       val tpe =
@@ -627,13 +535,6 @@ abstract class UnPickler {
           (Import(expr, selectors).
            setSymbol(symbol).
            setType(tpe))
-
-        // @LUC TODO remove for 2.8.0 (no longer pickled)
-        case ANNOTATIONtree =>
-          val constr = readTreeRef()
-          val elements = until(end, readTreeRef)
-          //(Annotation(constr, elements).setType(tpe))
-          EmptyTree
 
         case DOCDEFtree =>
           val comment = readConstantRef match {
@@ -843,7 +744,6 @@ abstract class UnPickler {
       val pflags = (pflagsHi.toLong << 32) + pflagsLo
       val flags = pickledToRawFlags(pflags)
       val privateWithin = readNameRef()
-      val annotations = until(end, () => at(readNat(), () => readTree(true))) // @LUC TODO remove this line
       Modifiers(flags, privateWithin, Nil)
     }
 
@@ -897,16 +797,6 @@ abstract class UnPickler {
 
     private def errorBadSignature(msg: String) =
       throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg)
-
-    /**  @LUC TODO Warning about reflection trees in pickle. Remove for 2.8.0 */
-    private var printedReflectAnnotationWarning = false
-    private def reflectAnnotationWarning() {
-      if (!printedReflectAnnotationWarning) {
-        global.warning(
-          "warning: dropping a legacy format annotation in " + classRoot.name)
-        printedReflectAnnotationWarning = true
-      }
-    }
 
     private class LazyTypeRef(i: Int) extends LazyType {
       private val definedAtRunId = currentRunId

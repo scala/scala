@@ -97,4 +97,9 @@ names-defaults-neg.scala:99: error: using named or default arguments in a self c
 names-defaults-neg.scala:105: error: using named or default arguments in a self constructor call is not allowed
     this(sep + b + sep)
     ^
-25 errors found
+names-defaults-neg.scala:112: error: type mismatch;
+ found   : java.lang.Object
+ required: java.lang.String
+class B5 extends A5 { override def foo(a: Object = new Object) = 1 }
+                                                   ^
+26 errors found

@@ -175,6 +175,12 @@ object Test extends Application {
   println(argName) // should be 3
 
 
+  // dependent types and copy method
+  val a11 = new A2
+  val b11 = a11.B2(new a11.C2)(1)
+  println(b11.copy()())
+
+
   // DEFINITIONS
   def test1(a: Int, b: String) = println(a +": "+ b)
   def test2(u: Int, v: Int)(k: String, l: Int) = println(l +": "+ k +", "+ (u + v))
@@ -229,3 +235,12 @@ class MN extends M {
 
 case class Factory(x: Int = 1, y: String)(z: String = y)
 case class Fact2[T, +U](x: T = "ju", y: U = 1)(z: T = 2)
+
+
+// dependent types and copy method
+class A2 {
+  case class B2(x: C2)(y: Int) extends A2 {
+    override def toString = "slkdfj" + y
+  }
+  class C2
+}
