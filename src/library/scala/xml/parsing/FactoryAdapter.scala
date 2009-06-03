@@ -41,7 +41,9 @@ trait ConsoleErrorHandler extends DefaultHandler
  *  namespace bindings, without relying on namespace handling of the
  *  underlying SAX parser.
  */
-abstract class FactoryAdapter extends DefaultHandler() {
+abstract class FactoryAdapter extends DefaultHandler with factory.XMLLoader[Node]
+{
+  var rootElem: Node = null
 
   val buffer      = new StringBuilder()
   val attribStack = new Stack[MetaData]
@@ -218,54 +220,4 @@ abstract class FactoryAdapter extends DefaultHandler() {
     for (pi <- createProcInstr(target, data))
       hStack.push(pi)
   }
-
-  var rootElem: Node = null
-
-  //FactoryAdapter
-  // MAIN
-  //
-
-  private def mkParser(): SAXParser = {
-    val f = SAXParserFactory.newInstance()
-    f.setNamespaceAware(false)
-    f.newSAXParser()
-  }
-
-  /** load XML document
-   * @param source
-   * @return a new XML document object
-   */
-  def loadXML(source: InputSource): Node = {
-    val parser: SAXParser = mkParser
-    scopeStack.push(TopScope)
-    parser.parse(source, this)
-    scopeStack.pop
-
-    rootElem
-  } // loadXML
-
-  /** loads XML from given file */
-  def loadFile(file: File): Node =
-    loadXML(new InputSource(new FileInputStream(file)))
-
-  /** loads XML from given file descriptor */
-  def loadFile(fileDesc: FileDescriptor): Node =
-    loadXML(new InputSource(new FileInputStream(fileDesc)))
-
-  /** loads XML from given file */
-  def loadFile(fileName: String): Node =
-    loadXML(new InputSource(new FileInputStream(fileName)))
-
-  /** loads XML from given InputStream */
-  def load(is: InputStream): Node =
-    loadXML(new InputSource(is))
-
-  /** loads XML from given Reader */
-  def load(reader: Reader): Node =
-    loadXML(new InputSource(reader))
-
-  /** loads XML from given sysID */
-  def load(sysID: String): Node =
-    loadXML(new InputSource(sysID))
-
 }

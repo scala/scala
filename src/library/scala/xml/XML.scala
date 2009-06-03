@@ -11,13 +11,28 @@
 
 package scala.xml
 
-
 import Predef._
 import scala.xml.parsing.NoBindingFactoryAdapter
+import scala.xml.factory.XMLLoader
 import org.xml.sax.InputSource
+import javax.xml.parsers.{ SAXParser, SAXParserFactory }
 import java.io.{File, FileDescriptor, FileInputStream, FileOutputStream}
 import java.io.{InputStream, Reader, StringReader, Writer}
+import java.nio.channels.Channels
 import scala.util.control.Exception.ultimately
+
+object Source
+{
+  def fromFile(file: File)              = new InputSource(new FileInputStream(file))
+  def fromFile(fd: FileDescriptor)      = new InputSource(new FileInputStream(fd))
+  def fromFile(name: String)            = new InputSource(new FileInputStream(name))
+
+  def fromInputStream(is: InputStream)  = new InputSource(is)
+  def fromReader(reader: Reader)        = new InputSource(reader)
+  def fromSysId(sysID: String)          = new InputSource(sysID)
+  def fromString(string: String)        = fromReader(new StringReader(string))
+}
+import Source._
 
 /** The object <code>XML</code> provides constants, and functions to load
  *  and save XML elements. Use this when data binding is not desired, i.e.
@@ -26,7 +41,7 @@ import scala.util.control.Exception.ultimately
  *  @author  Burak Emir
  *  @version 1.0, 25/04/2005
  */
-object XML
+object XML extends XMLLoader[Elem]
 {
   val xml       = "xml"
   val xmlns     = "xmlns"
@@ -36,43 +51,9 @@ object XML
   val lang      = "lang"
   val encoding  = "ISO-8859-1"
 
-  // functions for generic xml loading, saving
-  private def mkAdapter(is: InputSource): Elem      = new NoBindingFactoryAdapter().loadXML(is)
-  private def mkAdapter(fis: FileInputStream): Elem = mkAdapter(new InputSource(fis))
-
-  /** loads XML from given file, using XML parser in JDK. */
-  final def loadFile(file: File): Elem =
-    mkAdapter(new FileInputStream(file))
-
-  /** loads XML from given file descriptor, using XML parser in JDK. */
-  final def loadFile(fileDesc: FileDescriptor): Elem =
-    mkAdapter(new FileInputStream(fileDesc))
-
-  /** loads XML from given file, using XML parser in JDK. */
-  final def loadFile(fileName: String): Elem =
-    mkAdapter(new FileInputStream(fileName))
-
-  /** loads XML from given InputStream, using XML parser in JDK. */
-  final def load(is: InputStream): Elem =
-    mkAdapter(new InputSource(is))
-
-  /** loads XML from given Reader, using XML parser in JDK. */
-  final def load(reader: Reader): Elem =
-    mkAdapter(new InputSource(reader))
-
-  /** loads XML from given sysID, using XML parser in JDK. */
-  final def load(sysID: String): Elem =
-    mkAdapter(new InputSource(sysID))
-
-  /** loads XML from a given input source, using XML parser in JDK.
-   *
-   *  @param source ...
-   *  @return       ...
-   */
-  final def load(source: InputSource): Elem = mkAdapter(source)
-
-  /** loads XML from a string, using XML parser in JDK. */
-  final def loadString(string: String): Elem = load(new StringReader(string))
+  /** Returns an XMLLoader whose load* methods will use the supplied SAXParser. */
+  def withSAXParser(p: SAXParser): XMLLoader[Elem] =
+    new XMLLoader[Elem] { override val parser: SAXParser = p }
 
   @deprecated("Use save() instead")
   final def saveFull(filename: String, node: Node, xmlDecl: Boolean, doctype: dtd.DocType): Unit =
@@ -99,9 +80,6 @@ object XML
     doctype: dtd.DocType
     ): Unit =
   {
-    // using NIO classes of JDK 1.4
-    import java.io._
-    import java.nio.channels._
     val fos = new FileOutputStream(filename)
     val w = Channels.newWriter(fos.getChannel(), enc)
 
