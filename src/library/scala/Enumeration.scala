@@ -64,7 +64,7 @@ abstract class Enumeration(initial: Int, names: String*) {
   /** The name of this enumeration.
    */
   override def toString = {
-    var string = getClass.getName
+    var string = this.getClass.getName
     val idx1 = string.lastIndexOf('.' : Int)
     if (idx1 != -1) string = string.substring(idx1 + 1)
     val idx2 = string.indexOf('$')
