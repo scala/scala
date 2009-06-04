@@ -1152,9 +1152,9 @@ trait Types {
     private def higherKindedArgs =
       typeParams map (_.typeConstructor)
 
-	/* MO to AM: This is probably not correct
+    /* MO to AM: This is probably not correct
      * If they are several higher-kinded parents with different bounds we need
-	 * to take the intersection of their bounds
+     * to take the intersection of their bounds
      */
     override def normalize =
       if (isHigherKinded)
@@ -1500,7 +1500,7 @@ A type's typeSymbol should never be inspected directly.
             // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
           } else if (isHigherKinded) {
             // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
-	    // @M: initialize needed (see test/files/pos/ticket0137.scala)
+            // @M: initialize needed (see test/files/pos/ticket0137.scala)
             PolyType(typeParams, typeRef(pre, sym.initialize, higherKindedArgs))
           } else if (sym.isRefinementClass) {
             sym.info.normalize // @MO to AM: OK?
@@ -1640,9 +1640,9 @@ A type's typeSymbol should never be inspected directly.
       val rawResTpe = map.apply(resultType)
 
       if (phase.erasedTypes)
-	rawResTpe
+        rawResTpe
       else
-	existentialAbstraction(map.existentialsNeeded, rawResTpe)
+        existentialAbstraction(map.existentialsNeeded, rawResTpe)
     }
 
     override def finalResultType: Type = resultType.finalResultType
@@ -1897,7 +1897,7 @@ A type's typeSymbol should never be inspected directly.
    */
   case class AnnotatedType(override val annotations: List[AnnotationInfo],
                            override val underlying: Type,
-			   override val selfsym: Symbol)
+                           override val selfsym: Symbol)
   extends RewrappingTypeProxy {
 
     assert(!annotations.isEmpty)
@@ -2251,26 +2251,26 @@ A type's typeSymbol should never be inspected directly.
               //println("eliminate "+sym+"/"+repl+"/"+occurCount(sym)+"/"+(tparams exists (repl.contains)))//DEBUG
               if (repl.typeSymbol != NothingClass && repl.typeSymbol != NullClass &&
                   occurCount(sym) == 1 && !(tparams exists (repl.contains)))
-		repl
+                repl
               else tp1
             case _ =>
               tp1
           }
         }
-	override def mapOver(tree: Tree) =
-	  tree match {
-	    case tree:Ident
-	    if tree.tpe.isStable
-	    =>
+        override def mapOver(tree: Tree) =
+          tree match {
+            case tree:Ident
+            if tree.tpe.isStable
+            =>
               // Do not discard the types of existential ident's.
-	      // The symbol of the Ident itself cannot be listed
+              // The symbol of the Ident itself cannot be listed
               // in the existential's parameters, so the
-	      // resulting existential type would be ill-formed.
-	      Some(tree)
+              // resulting existential type would be ill-formed.
+              Some(tree)
 
-	    case _ =>
-	      super.mapOver(tree)
-	  }
+            case _ =>
+              super.mapOver(tree)
+          }
 
 
 
@@ -2379,12 +2379,12 @@ A type's typeSymbol should never be inspected directly.
     /** Check whether two lists have elements that are eq-equal */
     def allEq[T <: AnyRef](l1: List[T], l2: List[T]): Boolean =
       (l1, l2) match {
-	case (Nil, Nil) => true
-	case (hd1::tl1, hd2::tl2) =>
-	  if (!(hd1 eq hd2))
-	    return false
-	  allEq(tl1, tl2)
-	case _ => false
+        case (Nil, Nil) => true
+        case (hd1::tl1, hd2::tl2) =>
+          if (!(hd1 eq hd2))
+            return false
+          allEq(tl1, tl2)
+        case _ => false
       }
 
     /** Map this function over given type */
@@ -2534,9 +2534,9 @@ A type's typeSymbol should never be inspected directly.
     : List[AnnotationInfo] = {
       val newAnnots = annots.flatMap(mapOver(_))
       if (allEq(newAnnots, annots))
-	annots
+        annots
       else
-	newAnnots
+        newAnnots
     }
 
 
@@ -2544,19 +2544,19 @@ A type's typeSymbol should never be inspected directly.
       val AnnotationInfo(atp, args, assocs) = annot
 
       if (dropNonConstraintAnnotations &&
-	  !(atp.typeSymbol isNonBottomSubClass TypeConstraintClass))
-	return None
+          !(atp.typeSymbol isNonBottomSubClass TypeConstraintClass))
+        return None
 
       val atp1 = mapOver(atp)
       val args1 = mapOverAnnotationArgs(args)
       // there is no need to rewrite assocs, as they should be constants
 
       if ((args eq args1) && (atp eq atp1))
-	Some(annot)
+        Some(annot)
       else if (args1.length == args.length)
-	Some(AnnotationInfo(atp1, args1, assocs))
+        Some(AnnotationInfo(atp1, args1, assocs))
       else
-	None
+        None
     }
 
     /** Map over a set of annotation arguments.  If any
@@ -2565,26 +2565,26 @@ A type's typeSymbol should never be inspected directly.
     : List[AnnotationArgument] = {
       val args1 = args.flatMap(mapOver(_))
       if (args1.length != args.length)
-	Nil
+        Nil
       else if (allEq(args, args1))
-	args
+        args
       else
-	args1
+        args1
     }
 
 
     def mapOver(arg: AnnotationArgument): Option[AnnotationArgument] = {
       if (arg.isConstant)
-	Some(arg)
+        Some(arg)
       else {
-	mapOver(arg.intTree) match {
-	  case None => None
+        mapOver(arg.intTree) match {
+          case None => None
 
-	  case Some(tree1)
-	  if (tree1 eq arg.intTree) => Some(arg)
+          case Some(tree1)
+          if (tree1 eq arg.intTree) => Some(arg)
 
-	  case Some(tree1) => Some(new AnnotationArgument(tree1))
-	}
+          case Some(tree1) => Some(new AnnotationArgument(tree1))
+        }
       }
     }
 
@@ -2607,9 +2607,9 @@ A type's typeSymbol should never be inspected directly.
         val tree1 = super.transform(tree)
         val tpe1 = TypeMap.this(tree1.tpe)
         if ((tree eq tree1) && (tree.tpe eq tpe1))
-	  tree
-	else
-	  tree1.shallowDuplicate.setType(tpe1)
+          tree
+        else
+          tree1.shallowDuplicate.setType(tpe1)
       }
     }
   }
@@ -2692,28 +2692,28 @@ A type's typeSymbol should never be inspected directly.
 
     override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
       object annotationArgRewriter extends TypeMapTransformer {
-	/** Rewrite "this" trees as needed for asSeenFrom */
-	def rewriteThis(tree: Tree): Tree =
-	  tree match {
-	    case This(_)
-	    if (tree.symbol isNonBottomSubClass clazz) &&
-	       (pre.widen.typeSymbol isNonBottomSubClass tree.symbol) =>
-  	      if (pre.isStable) {
-		val termSym =
-		  pre.typeSymbol.owner.newValue(
-		    pre.typeSymbol.pos,
-		    pre.typeSymbol.name).setInfo(pre)  // what symbol should really be used?
-		mkAttributedQualifier(pre, termSym)
-	      } else
-		giveup()
+        /** Rewrite "this" trees as needed for asSeenFrom */
+        def rewriteThis(tree: Tree): Tree =
+          tree match {
+            case This(_)
+            if (tree.symbol isNonBottomSubClass clazz) &&
+               (pre.widen.typeSymbol isNonBottomSubClass tree.symbol) =>
+              if (pre.isStable) {
+                val termSym =
+                  pre.typeSymbol.owner.newValue(
+                    pre.typeSymbol.pos,
+                    pre.typeSymbol.name).setInfo(pre)  // what symbol should really be used?
+                mkAttributedQualifier(pre, termSym)
+              } else
+                giveup()
 
-	    case tree => tree
-	  }
+            case tree => tree
+          }
 
-	override def transform(tree: Tree): Tree = {
-	  val tree1 = rewriteThis(super.transform(tree))
-	  tree1
-	}
+        override def transform(tree: Tree): Tree = {
+          val tree1 = rewriteThis(super.transform(tree))
+          tree1
+        }
       }
 
       annotationArgRewriter.transform(tree)
@@ -2908,29 +2908,29 @@ A type's typeSymbol should never be inspected directly.
     override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
       object trans extends TypeMapTransformer {
 
-	def termMapsTo(sym: Symbol) =
-	  if (from contains sym)
-	    Some(to(from.indexOf(sym)))
-	  else
-	    None
+        def termMapsTo(sym: Symbol) =
+          if (from contains sym)
+            Some(to(from.indexOf(sym)))
+          else
+            None
 
-	override def transform(tree: Tree) =
-	  tree match {
-	    case tree@Ident(_) =>
-	      termMapsTo(tree.symbol) match {
-		case Some(tosym) =>
-		  if (tosym.info.bounds.hi.typeSymbol isSubClass SingletonClass) {
-		    Ident(tosym.existentialToString)
-		      .setSymbol(tosym)
-		      .setPos(tosym.pos)
-		      .setType(dropSingletonType(tosym.info.bounds.hi))
-		  } else {
-		    giveup()
-		  }
-		case None => super.transform(tree)
-	      }
-	    case tree => super.transform(tree)
-	  }
+        override def transform(tree: Tree) =
+          tree match {
+            case tree@Ident(_) =>
+              termMapsTo(tree.symbol) match {
+                case Some(tosym) =>
+                  if (tosym.info.bounds.hi.typeSymbol isSubClass SingletonClass) {
+                    Ident(tosym.existentialToString)
+                      .setSymbol(tosym)
+                      .setPos(tosym.pos)
+                      .setType(dropSingletonType(tosym.info.bounds.hi))
+                  } else {
+                    giveup()
+                  }
+                case None => super.transform(tree)
+              }
+            case tree => super.transform(tree)
+          }
       }
       trans.transform(tree)
     }
@@ -2944,18 +2944,18 @@ A type's typeSymbol should never be inspected directly.
 
     override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
       object trans extends TypeMapTransformer {
-	override def transform(tree: Tree) =
-	  tree match {
-	    case tree@Ident(_) if from contains tree.symbol =>
-	      val totpe = to(from.indexOf(tree.symbol))
-	      if (!totpe.isStable) {
-		giveup()
-	      } else {
-		tree.duplicate.setType(totpe)
-	      }
+        override def transform(tree: Tree) =
+          tree match {
+            case tree@Ident(_) if from contains tree.symbol =>
+              val totpe = to(from.indexOf(tree.symbol))
+              if (!totpe.isStable) {
+                giveup()
+              } else {
+                tree.duplicate.setType(totpe)
+              }
 
-	    case _ => super.transform(tree)
-	  }
+            case _ => super.transform(tree)
+          }
       }
       trans.transform(tree)
       }
@@ -3002,21 +3002,21 @@ A type's typeSymbol should never be inspected directly.
      * inside the existential quantifier.  */
     def existSymFor(actualIdx: Int, oldSym: Symbol) =
       if (existSyms.isDefinedAt(actualIdx))
-	existSyms(actualIdx)
+        existSyms(actualIdx)
       else {
-	val symowner = oldSym.owner // what should be used??
+        val symowner = oldSym.owner // what should be used??
         val bound = singletonBounds(actuals(actualIdx))
 
         val sym =
-	  symowner.newAbstractType(oldSym.pos, oldSym.name+".type")
+          symowner.newAbstractType(oldSym.pos, oldSym.name+".type")
 
-	sym.setInfo(bound)
+        sym.setInfo(bound)
         sym.setFlag(oldSym.flags)
-	sym.setFlag(EXISTENTIAL)
+        sym.setFlag(EXISTENTIAL)
 
 
-	existSyms = existSyms + (actualIdx -> sym)
-	sym
+        existSyms = existSyms + (actualIdx -> sym)
+        sym
       }
 
     def apply(tp: Type): Type = tp match {
@@ -3030,28 +3030,28 @@ A type's typeSymbol should never be inspected directly.
 
     override def mapOver(arg: Tree, giveup: ()=>Nothing): Tree = {
       object treeTrans extends TypeMapTransformer {
-	override def transform(tree: Tree): Tree =
-	  tree match {
-	    case tree@Ident(name) =>
-	      tree.tpe.withoutAnnotations match {
-		case DeBruijnIndex(level, pid) =>
-		  if (level == 1) {
-		    if (actuals(pid).isStable)
-		      mkAttributedQualifier(actuals(pid), tree.symbol)
-		    else {
-		      val sym = existSymFor(pid, tree.symbol)
+        override def transform(tree: Tree): Tree =
+          tree match {
+            case tree@Ident(name) =>
+              tree.tpe.withoutAnnotations match {
+                case DeBruijnIndex(level, pid) =>
+                  if (level == 1) {
+                    if (actuals(pid).isStable)
+                      mkAttributedQualifier(actuals(pid), tree.symbol)
+                    else {
+                      val sym = existSymFor(pid, tree.symbol)
                       (Ident(tree.symbol.name)
-		       copyAttrs tree
-		       setType typeRef(NoPrefix, sym, Nil))
-		    }
-		  } else
-		    tree.duplicate.setType(
-		      DeBruijnIndex(level-1, pid))
-		case _ => super.transform(tree)
+                       copyAttrs tree
+                       setType typeRef(NoPrefix, sym, Nil))
+                    }
+                  } else
+                    tree.duplicate.setType(
+                      DeBruijnIndex(level-1, pid))
+                case _ => super.transform(tree)
 
-	      }
-	    case _ => super.transform(tree)
-	  }
+              }
+            case _ => super.transform(tree)
+          }
       }
 
       treeTrans.transform(arg)
@@ -3112,9 +3112,9 @@ A type's typeSymbol should never be inspected directly.
 
     override def mapOver(arg: Tree) = {
       for (t <- arg) {
-	traverse(t.tpe)
-	if (t.symbol == sym)
-	  result = true
+        traverse(t.tpe)
+        if (t.symbol == sym)
+          result = true
       }
       Some(arg)
     }
@@ -3130,7 +3130,7 @@ A type's typeSymbol should never be inspected directly.
     }
     override def mapOver(arg: Tree) = {
       for (t <- arg) {
-	traverse(t.tpe)
+        traverse(t.tpe)
       }
       Some(arg)
     }
@@ -4212,7 +4212,7 @@ A type's typeSymbol should never be inspected directly.
               def glbsym(proto: Symbol): Symbol = {
                 val prototp = glbThisType.memberInfo(proto)
                 val syms = for (t <- ts;
-	              alt <- (t.nonPrivateMember(proto.name).alternatives);
+                      alt <- (t.nonPrivateMember(proto.name).alternatives);
                   if glbThisType.memberInfo(alt) matches prototp
                 ) yield alt
                 val symtypes = syms map glbThisType.memberInfo
