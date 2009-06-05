@@ -29,6 +29,12 @@ final class RichDouble(x: Double) extends Proxy with Ordered[Double] {
   def ceil: Double = Math.ceil(x)
   def floor: Double = Math.floor(x)
 
+  /** See <code>Iterator.range</code>. */
+  def until(end: Double, step: Double) = Range.Double(x, end, step)
+
+  /** like <code>until</code>, but includes the last index */
+  def to(end: Double, step: Double) = Range.Double.inclusive(x, end, step)
+
   /** Converts an angle measured in degrees to an approximately equivalent
    *  angle measured in radians.
    *

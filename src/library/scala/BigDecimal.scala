@@ -266,6 +266,12 @@ class BigDecimal(val bigDecimal: BigDec) extends java.lang.Number {
    */
   def doubleValue = this.bigDecimal.doubleValue
 
+  /** See <code>Iterator.range</code>. */
+  def until(end: BigDecimal, step: BigDecimal) = Range.BigDecimal(this, end, step)
+
+  /** like <code>until</code>, but includes the last index */
+  def to(end: BigDecimal, step: BigDecimal) = Range.BigDecimal.inclusive(this, end, step)
+
   /** Converts this <code>BigDecimal</code> to a BigInteger.
    */
   def toBigInt(): BigInt = new BigInt(this.bigDecimal.toBigInteger())

@@ -73,6 +73,32 @@ object Numeric {
     def toDouble(x: Double): Double = x
   }
   implicit object DoubleIsFractional extends DoubleIsFractional with Ordering.DoubleOrdering
+
+  trait BigDecimalIsConflicted {
+    def plus(x: BigDecimal, y: BigDecimal): BigDecimal = x + y
+    def minus(x: BigDecimal, y: BigDecimal): BigDecimal = x - y
+    def times(x: BigDecimal, y: BigDecimal): BigDecimal = x * y
+    def negate(x: BigDecimal): BigDecimal = -x
+    def fromInt(x: Int): BigDecimal = BigDecimal(x)
+    def toInt(x: BigDecimal): Int = x.intValue
+    def toLong(x: BigDecimal): Long = x.longValue
+    def toFloat(x: BigDecimal): Float = x.floatValue
+    def toDouble(x: BigDecimal): Double = x.doubleValue
+  }
+
+  trait BigDecimalIsFractional extends BigDecimalIsConflicted with Fractional[BigDecimal] {
+    def div(x: BigDecimal, y: BigDecimal): BigDecimal = x / y
+  }
+  trait BigDecimalAsIfIntegral extends BigDecimalIsConflicted with Integral[BigDecimal] {
+    def quot(x: BigDecimal, y: BigDecimal): BigDecimal = x / y
+    // scala.BigDecimal doesn't give access to remainder, grr
+    def rem(x: BigDecimal, y: BigDecimal): BigDecimal =
+      new BigDecimal(x.bigDecimal remainder y.bigDecimal)
+  }
+
+  // The Fractional one is the implicit, but Integral is useful for GenericRange.
+  implicit object BigDecimalIsFractional extends BigDecimalIsFractional with Ordering.BigDecimalOrdering
+  object BigDecimalAsIfIntegral extends BigDecimalAsIfIntegral with Ordering.BigDecimalOrdering
 }
 
 trait Numeric[T] extends Ordering[T] {

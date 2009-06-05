@@ -34,14 +34,10 @@ import util.control.Exception.catching
  *  @version 2.8
  */
 abstract class GenericRange[T]
-  (val start: T, val end: T, val step: T)
+  (val start: T, val end: T, val step: T, val isInclusive: Boolean = false)
   (implicit num: Integral[T])
 extends VectorView[T, Vector[T]] with RangeToString[T] {
   import num._
-
-  // this lets us pretend all ranges are exclusive
-  val isInclusive: Boolean
-  private val trueEnd = if (isInclusive) end + one else end
 
   // todo? - we could lift the length restriction by implementing a range as a sequence of
   // subranges and limiting the subranges to MAX_INT.  There's no other way around it because
@@ -49,6 +45,8 @@ extends VectorView[T, Vector[T]] with RangeToString[T] {
   require(!(step equiv zero))
   require(genericLength <= fromInt(Math.MAX_INT), "Implementation restricts ranges to Math.MAX_INT elements.")
 
+  // By adjusting end based on isInclusive, we can treat all ranges as exclusive.
+  private lazy val trueEnd: T = if (isInclusive) end + step else end
   protected def underlying = Vector.empty[T]
 
   /** Create a new range with the start and end values of this range and
@@ -74,9 +72,8 @@ extends VectorView[T, Vector[T]] with RangeToString[T] {
   }
 
   lazy val genericLength: T = {
-    def plen(start: T, end: T, step: T) =
-      if (trueEnd <= start) zero
-      else (trueEnd - start - one) / step + one
+    def plen(s: T, e: T, stp: T) =
+      if (e <= s) zero else ((e - s) / stp)
 
     if (step > zero) plen(start, trueEnd, step)
     else plen(trueEnd, start, -step)
@@ -88,7 +85,7 @@ extends VectorView[T, Vector[T]] with RangeToString[T] {
   def apply(idx: Int): T = applyAt(fromInt(idx))
   def applyAt(idx: T): T = {
     if (idx < zero || idx >= genericLength) throw new IndexOutOfBoundsException(idx.toString)
-    start + idx * step
+    start + (idx * step)
   }
 
   // The contains situation makes for some interesting code.
@@ -119,7 +116,7 @@ private[scala] trait RangeToString[T] extends VectorView[T, Vector[T]] {
   // if the Range is unduly large.  This interacts poorly with the REPL.
   override def toString() = {
     val MAX_PRINT = 512  // some arbitrary value
-    val str = (this take MAX_PRINT).toString
+    val str = (this take MAX_PRINT).mkString(", ")
 
     if (length > MAX_PRINT) str.replaceAll("""\)$""", ", ...)")
     else str
@@ -128,18 +125,13 @@ private[scala] trait RangeToString[T] extends VectorView[T, Vector[T]] {
 
 
 object GenericRange {
-  import Numeric._
-
   class Inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
-  extends GenericRange(start, end, step)
-  {
-    val isInclusive = true
+  extends GenericRange(start, end, step, true) {
     def exclusive: Exclusive[T] = new Exclusive(start, end, step)
   }
+
   class Exclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
-  extends GenericRange(start, end, step)
-  {
-    val isInclusive = false
+  extends GenericRange(start, end, step, false) {
     def inclusive: Inclusive[T] = new Inclusive(start, end, step)
   }
 
@@ -229,9 +221,23 @@ object Range {
     def apply(start: BigInt, end: BigInt, step: BigInt) = GenericRange(start, end, step)
     def inclusive(start: BigInt, end: BigInt, step: BigInt) = GenericRange.inclusive(start, end, step)
   }
+  // The BigDecimal and Double ranges will throw an exception if they cannot
+  // step exactly as requested.
+  object BigDecimal {
+    def apply(start: BigDecimal, end: BigDecimal, step: BigDecimal) =
+      GenericRange(start, end, step)(Numeric.BigDecimalAsIfIntegral)
+    def inclusive(start: BigDecimal, end: BigDecimal, step: BigDecimal) =
+      GenericRange.inclusive(start, end, step)(Numeric.BigDecimalAsIfIntegral)
+  }
   object Long {
     def apply(start: Long, end: Long, step: Long) = GenericRange(start, end, step)
     def inclusive(start: Long, end: Long, step: Long) = GenericRange.inclusive(start, end, step)
+  }
+  object Double {
+    def apply(start: Double, end: Double, step: Double) =
+      BigDecimal(scala.BigDecimal(start), scala.BigDecimal(end), scala.BigDecimal(step))
+    def inclusive(start: Double, end: Double, step: Double) =
+      BigDecimal.inclusive(scala.BigDecimal(start), scala.BigDecimal(end), scala.BigDecimal(step))
   }
 
   // Illustrating genericity with Int Range, which should have the same behavior
