@@ -194,7 +194,7 @@ object Exception
   }
 
   /** Private **/
-  private def wouldMatch(x: AnyRef, classes: collection.Sequence[Class[_]]): Boolean =
+  private def wouldMatch(x: Throwable, classes: collection.Sequence[Class[_]]): Boolean =
     classes exists (_ isAssignableFrom x.getClass)
 
   private def pfFromExceptions(exceptions: Class[_]*) =

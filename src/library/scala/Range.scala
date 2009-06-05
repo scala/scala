@@ -12,6 +12,7 @@ package scala
 
 import collection.immutable.Vector
 import collection.generic.VectorView
+import util.control.Exception.catching
 
 /** <p>
  *    <code>GenericRange</code> is a generified version of the
@@ -90,14 +91,26 @@ extends VectorView[T, Vector[T]] with RangeToString[T] {
     start + idx * step
   }
 
+  // The contains situation makes for some interesting code.
+  // This attempts to check containerhood in a range-sensible way, but
+  // falls back on super.contains if the cast ends up failing.
   override def contains(_x: Any): Boolean = {
-    // XXX - can we avoid this cast and still have a contains method?
-    val x =
-      try   { _x.asInstanceOf[T] }
-      catch { case _: ClassCastException => return false }
+    def doContains = {
+      // checking for Int is important so for instance BigIntRange from
+      // 1 to Googlefinity can see if 5 is in there without calling super.
+      val x = _x match {
+        case i: Int => fromInt(i)
+        case _      => _x.asInstanceOf[T]
+      }
+      def matchesStep = (x - start) % step == zero
+      def withinRange =
+        if (step > zero) start <= x && x < trueEnd
+        else start >= x && x > trueEnd
 
-    if (step > zero) start <= x && x < trueEnd
-    else start >= x && x > trueEnd
+      withinRange && matchesStep
+    }
+
+    catching(classOf[ClassCastException]) opt doContains getOrElse super.contains(_x)
   }
 }
 
