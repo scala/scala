@@ -410,8 +410,8 @@ trait Actor extends Reactor with AbstractActor {
     }
     if (isSuspended) {
       synchronized {
-        senders = item._2 :: senders
         received = Some(item._1)
+        senders = item._2 :: senders
         resumeActor()
       }
     } else {
@@ -597,12 +597,12 @@ trait Actor extends Reactor with AbstractActor {
             receiveTimeout
           } else {
             waitingFor = f.isDefinedAt
+            continuation = f
             val thisActor = this
             onTimeout = Some(new TimerTask {
               def run() { thisActor.send(TIMEOUT, thisActor) }
             })
             Actor.timer.schedule(onTimeout.get, msec)
-            continuation = f
             done = true
             () => {}
           }

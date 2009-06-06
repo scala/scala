@@ -31,13 +31,6 @@ import java.util.concurrent.{ExecutorService, RejectedExecutionException}
 class SimpleExecutorScheduler(protected var executor: ExecutorService,
                               protected var terminate: Boolean) extends TerminationService(terminate) {
 
-  /* Maintains per actor one closure that is executed
-   * when the actor terminates.
-   */
-  protected val termHandlers = new HashMap[Reactor, () => Unit]
-
-  private var pendingReactions = 0
-
   /* This constructor (and the var above) is currently only used to work
    * around a bug in scaladoc, which cannot deal with early initializers
    * (to be used in subclasses such as DefaultExecutorScheduler) properly.

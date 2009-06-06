@@ -16,10 +16,13 @@ trait TerminationMonitor extends IScheduler {
 
   private var pendingReactions = 0
   private val termHandlers = new HashMap[Reactor, () => Unit]
+  private var started = false
 
   /** newActor is invoked whenever a new actor is started. */
   def newActor(a: Reactor) = synchronized {
     pendingReactions += 1
+    if (!started)
+      started = true
   }
 
   /** Registers a closure to be executed when the specified
@@ -53,7 +56,7 @@ trait TerminationMonitor extends IScheduler {
   }
 
   protected def allTerminated: Boolean = synchronized {
-    pendingReactions <= 0
+    started && pendingReactions <= 0
   }
 
 }
