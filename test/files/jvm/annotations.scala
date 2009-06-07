@@ -131,7 +131,7 @@ object Test5 {
   class Count {
     // we use "Integer" instead of "Int" because of Java reflection
     @BeanProperty
-    private var count: Integer = 0
+    var count: Integer = 0
 
     private val getter =
       getClass().getMethod("getCount")
