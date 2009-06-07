@@ -464,7 +464,7 @@ trait Namers { self: Analyzer =>
           context.error(vd.pos, "`BeanProperty' annotation can only be applied "+
                                 "to non-private fields")
         else {
-          val flags = (mods.flags & (DEFERRED | OVERRIDE | STATIC)) | SYNTHETIC
+          val flags = mods.flags & (DEFERRED | OVERRIDE | STATIC)
           val beanName = name(0).toString.toUpperCase + name.subName(1, name.length)
 
           val getterName = if (hasBoolBP) "is" + beanName
