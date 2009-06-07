@@ -372,18 +372,13 @@ trait Namers { self: Analyzer =>
                  else mods.flags & ~PRESUPER | STABLE)
               if (nme.isSetterName(name))
                 context.error(tree.pos, "Names of vals or vars may not end in `_='")
-              var getter = owner.newMethod(tree.pos, name).setFlag(accflags)
-              setPrivateWithin(tree, getter, mods)
-              getter = enterInScope(getter).asInstanceOf[TermSymbol]
-              // needs the current context for adding synthetic BeanGetter / -Setter.
-              // namerOf(getter) has a primaryConstructorContext which cannot be used
-              // do add definitions to the class
-              setInfo(getter)(namerOf(getter).getterTypeCompleter(vd, context))
+              // .isInstanceOf[..]: probably for (old) IDE hook. is this obsolete?
+              val getter = enterNewMethod(tree, name, accflags, mods).asInstanceOf[TermSymbol]
+              setInfo(getter)(namerOf(getter).getterTypeCompleter(vd))
               if ((mods.flags & MUTABLE) != 0) {
-                var setter = owner.newMethod(tree.pos, nme.getterToSetter(name))
-                                .setFlag(accflags & ~STABLE & ~CASEACCESSOR)
-                setPrivateWithin(tree, setter, mods)
-                setter = enterInScope(setter).asInstanceOf[TermSymbol]
+                val setter = enterNewMethod(tree, nme.getterToSetter(name),
+                                            accflags & ~STABLE & ~CASEACCESSOR,
+                                            mods).asInstanceOf[TermSymbol]
                 setInfo(setter)(namerOf(setter).setterTypeCompleter(vd))
               }
               tree.symbol =
@@ -403,6 +398,7 @@ trait Namers { self: Analyzer =>
                     vsym.setLazyAccessor(getter)
                   vsym
                 } else getter
+              addBeanGetterSetter(vd, getter)
             }
           case DefDef(mods, nme.CONSTRUCTOR, tparams, _, _, _) =>
             var sym = owner.newConstructor(tree.pos).setFlag(mods.flags | owner.getFlag(ConstrFlags))
@@ -410,9 +406,7 @@ trait Namers { self: Analyzer =>
             tree.symbol = enterInScope(sym)
             finishWith(tparams)
           case DefDef(mods, name, tparams, _, _, _) =>
-            var sym = (owner.newMethod(tree.pos, name)).setFlag(mods.flags)
-            setPrivateWithin(tree, sym, mods)
-            tree.symbol = enterInScope(sym)
+            tree.symbol = enterNewMethod(tree, name, mods.flags, mods)
             finishWith(tparams)
           case TypeDef(mods, name, tparams, _) =>
             var flags: Long = mods.flags
@@ -443,6 +437,58 @@ trait Namers { self: Analyzer =>
       context.unit.synthetics(tree.symbol) = tree
       tree.symbol
     }
+
+    def enterNewMethod(tree: Tree, name: Name, flags: Long, mods: Modifiers) = {
+      val sym = context.owner.newMethod(tree.pos, name).setFlag(flags)
+      setPrivateWithin(tree, sym, mods)
+      enterInScope(sym)
+    }
+
+    private def addBeanGetterSetter(vd: ValDef, getter: Symbol) {
+      def isAnn(ann: Tree, demand: String) = ann match {
+        case Apply(Select(New(Ident(name)), _), _) =>
+          name.toString == demand
+        case Apply(Select(New(Select(pre, name)), _), _) =>
+          name.toString == demand
+        case _ => false
+      }
+      val ValDef(mods, name, tpt, _) = vd
+      val hasBP = mods.annotations.exists(isAnn(_, "BeanProperty"))
+      val hasBoolBP = mods.annotations.exists(isAnn(_, "BooleanBeanProperty"))
+      if ((hasBP || hasBoolBP) && !forMSIL) {
+        if (!name(0).isLetter)
+          context.error(vd.pos, "`BeanProperty' annotation can be applied "+
+                                "only to fields that start with a letter")
+        else if (mods hasFlag PRIVATE)
+          // avoids name clashes with private fields in traits
+          context.error(vd.pos, "`BeanProperty' annotation can only be applied "+
+                                "to non-private fields")
+        else {
+          val flags = (mods.flags & (DEFERRED | OVERRIDE | STATIC)) | SYNTHETIC
+          val beanName = name(0).toString.toUpperCase + name.subName(1, name.length)
+
+          val getterName = if (hasBoolBP) "is" + beanName
+                           else "get" + beanName
+          val getterMods = Modifiers(flags, mods.privateWithin,
+                                     mods.annotations map (_.duplicate))
+          val beanGetterDef = atPos(vd.pos) {
+            DefDef(getterMods, getterName, Nil, List(Nil), tpt.duplicate,
+                   if (mods hasFlag DEFERRED) EmptyTree
+                   else Select(This(getter.owner.name), name)) }
+          enterSyntheticSym(beanGetterDef)
+
+          if (mods hasFlag MUTABLE) {
+            // can't use "enterSyntheticSym", because the parameter type is not yet
+            // known. instead, uses the same machinery as for the non-bean setter:
+            // create and enter the symbol here, add the tree in Typer.addGettterSetter.
+            val setterName = "set" + beanName
+            val setter = enterNewMethod(vd, setterName, flags, mods).asInstanceOf[TermSymbol]
+            setInfo(setter)(namerOf(setter).setterTypeCompleter(vd))
+          }
+        }
+      }
+    }
+
 
 // --- Lazy Type Assignment --------------------------------------------------
 
@@ -478,12 +524,10 @@ trait Namers { self: Analyzer =>
       }
     }
 
-    def getterTypeCompleter(vd: ValDef, getterCtx: Context) = mkTypeCompleter(vd) { sym =>
+    def getterTypeCompleter(vd: ValDef) = mkTypeCompleter(vd) { sym =>
       if (settings.debug.value) log("defining " + sym)
       val tp = typeSig(vd)
       sym.setInfo(PolyType(List(), tp))
-      if (sym.hasAnnotation(BeanPropertyAttr) && sym.owner.isClass && !forMSIL)
-        addBeanGetterSetter(vd, tp, getterCtx)
       if (settings.debug.value) log("defined " + sym)
       validate(sym)
     }
@@ -494,56 +538,6 @@ trait Namers { self: Analyzer =>
       sym.setInfo(MethodType(List(param), UnitClass.tpe))
       if (settings.debug.value) log("defined " + sym)
       validate(sym)
-    }
-
-    private def addBeanGetterSetter(vd: ValDef, tp: Type, getterCtx: Context) {
-      val ValDef(mods, name, _, _) = vd
-      val sym = vd.symbol
-      if (!name(0).isLetter)
-        context.error(sym.pos, "`BeanProperty' annotation can be applied "+
-                               "only to fields that start with a letter")
-      else {
-        val tmplCtx = getterCtx.nextEnclosing(c => c.scope.toList.contains(sym))
-        assert(tmplCtx != NoContext, context)
-        val tmplNamer = newNamer(tmplCtx)
-        val flags = (mods.flags & (DEFERRED | OVERRIDE | STATIC)) | SYNTHETIC
-        val beanName = name(0).toString.toUpperCase + name.subName(1, name.length)
-        val getterName = if (tp == BooleanClass.tpe) "is" + beanName
-                         else "get" + beanName
-        val existingGetter = sym.owner.info.decl(getterName)
-        if (existingGetter != NoSymbol) {
-          if (!existingGetter.hasFlag(SYNTHETIC))
-            context.error(sym.pos, "a defintion of `"+ getterName +
-                                   "' already exists in "+ sym.owner)
-        } else {
-          val getterMods = Modifiers(flags, mods.privateWithin,
-                                     mods.annotations map (_.duplicate))
-          val beanGetterDef = atPos(sym.pos) {
-            DefDef(getterMods, getterName, Nil, List(Nil), TypeTree(tp),
-                   if (mods hasFlag DEFERRED) EmptyTree
-                   else Select(This(sym.owner.name), name)) }
-          tmplNamer.enterSyntheticSym(beanGetterDef)
-        }
-        if (mods hasFlag MUTABLE) {
-          val setterName = "set" + beanName
-          val existingSetter = sym.owner.info.decl(setterName)
-          if (existingSetter != NoSymbol) {
-            if (!existingSetter.hasFlag(SYNTHETIC))
-              context.error(sym.pos, "a defintion of `"+ setterName +
-                                     "' already exists in "+ sym.owner)
-          } else {
-            val setterMods = Modifiers(flags, mods.privateWithin,
-                                       mods.annotations map (_.duplicate))
-            val param = ValDef(NoMods, "new" + name, TypeTree(tp), EmptyTree)
-            val beanSetterDef = atPos(sym.pos) {
-              DefDef(setterMods, setterName, Nil, List(List(param)),
-                     TypeTree(UnitClass.tpe),
-                     if (mods hasFlag DEFERRED) EmptyTree
-                     else Assign(Select(This(sym.owner.name), name), Ident(param.name))) }
-            tmplNamer.enterSyntheticSym(beanSetterDef)
-          }
-        }
-      }
     }
 
     def selfTypeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>

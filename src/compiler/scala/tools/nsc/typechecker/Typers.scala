@@ -1271,22 +1271,33 @@ trait Typers { self: Analyzer =>
             treeCopy.DefDef(result, result.mods, result.name,
                         result.tparams, result.vparamss, result.tpt, result.rhs)
           }
-          def setterDef: DefDef = {
-            val setr = getter.setter(value.owner)
-            setr.setAnnotations(value.annotations)
+          def setterDef(setter: Symbol): DefDef = {
+            setter.setAnnotations(value.annotations)
             val result = atPos(vdef)(
-              DefDef(setr,
-                if ((mods hasFlag DEFERRED) || (setr hasFlag OVERLOADED))
+              DefDef(setter,
+                if ((mods hasFlag DEFERRED) || (setter hasFlag OVERLOADED))
                   EmptyTree
                 else
                   typed(Assign(Select(This(value.owner), value),
-                               Ident(setr.paramss.head.head)))))
+                               Ident(setter.paramss.head.head)))))
             treeCopy.DefDef(result, result.mods, result.name, result.tparams,
                             result.vparamss, result.tpt, result.rhs)
           }
-          val gs = if (mods hasFlag MUTABLE) List(getterDef, setterDef)
-                   else List(getterDef)
-          if (mods hasFlag DEFERRED) gs else vdef :: gs
+
+          val gs = new ListBuffer[DefDef]
+          gs.append(getterDef)
+          if (mods hasFlag MUTABLE) {
+            val setter = getter.setter(value.owner)
+            gs.append(setterDef(setter))
+            if (!forMSIL && (value.hasAnnotation(BeanPropertyAttr) ||
+                 value.hasAnnotation(BooleanBeanPropertyAttr))) {
+              val beanSetterName = "set" + name(0).toString.toUpperCase +
+                                   name.subName(1, name.length)
+              val beanSetter = value.owner.info.decl(beanSetterName)
+              gs.append(setterDef(beanSetter))
+            }
+          }
+          if (mods hasFlag DEFERRED) gs.toList else vdef :: gs.toList
         }
       case DocDef(comment, defn) =>
         addGetterSetter(defn) map (stat => DocDef(comment, stat))
@@ -1798,7 +1809,7 @@ trait Typers { self: Analyzer =>
           context.unit.synthetics get e.sym match {
             case Some(tree) =>
               newStats += typedStat(tree) // might add even more synthetics to the scope
-            context.unit.synthetics -= e.sym
+              context.unit.synthetics -= e.sym
             case _ =>
           }
 

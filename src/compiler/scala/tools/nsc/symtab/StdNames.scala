@@ -418,6 +418,7 @@ trait StdNames {
     val ValueType    : Name
     val Serializable : Name
     val BeanProperty : Name
+    val BooleanBeanProperty: Name
     val Delegate     : Name
     val IOOBException: Name // IndexOutOfBoundsException
     val Code         : Name
@@ -465,6 +466,7 @@ trait StdNames {
     final val ValueType     = newTermName("System.ValueType")
     final val Serializable  = nme.NOSYMBOL
     final val BeanProperty  = nme.NOSYMBOL
+    final val BooleanBeanProperty = nme.NOSYMBOL
     final val Delegate      = newTermName("System.MulticastDelegate")
     final val IOOBException = newTermName("System.IndexOutOfRangeException")
     final val Code          = nme.NOSYMBOL
@@ -486,6 +488,7 @@ trait StdNames {
   private class J2SENames extends JavaNames {
     final val Serializable  = newTermName("java.io.Serializable")
     final val BeanProperty  = newTermName("scala.reflect.BeanProperty")
+    final val BooleanBeanProperty  = newTermName("scala.reflect.BooleanBeanProperty")
     final val Code          = newTermName("scala.reflect.Code")
   }
 

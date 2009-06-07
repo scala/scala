@@ -346,6 +346,7 @@ trait Definitions {
     lazy val SerializableAttr: Symbol = getClass("scala.serializable")
     lazy val DeprecatedAttr: Symbol = getClass("scala.deprecated")
     lazy val BeanPropertyAttr: Symbol = getClass(sn.BeanProperty)
+    lazy val BooleanBeanPropertyAttr: Symbol = getClass(sn.BooleanBeanProperty)
     var AnnotationDefaultAttr: Symbol = _
     lazy val NativeAttr: Symbol = getClass("scala.native")
     lazy val VolatileAttr: Symbol = getClass("scala.volatile")

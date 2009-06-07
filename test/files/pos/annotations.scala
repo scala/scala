@@ -22,5 +22,55 @@ object Test {
 
   // bug #1070
   trait T { @BeanProperty var field = 1 }
+
+  // annotation on annotation constructor
+  @(ann @ann(100))(200) def foo() = 300
 }
 
+// test forward references to getters / setters
+class BeanPropertyTests {
+  @scala.reflect.BeanProperty lazy val lv1 = 0
+
+  def foo() {
+    val bp1 = new BeanPropertyTests1
+
+    println(lv1)
+    println(getLv1())
+    println(bp1.getLv2())
+
+    println(getV1())
+    setV1(10)
+    bp1.setV2(100)
+  }
+
+  @scala.reflect.BeanProperty var v1 = 0
+
+}
+
+class BeanPropertyTests1 {
+  @scala.reflect.BeanProperty lazy val lv2 = "0"
+  @scala.reflect.BeanProperty var v2 = 0
+}
+
+// test mixin of getters / setters, and implementing abstract
+// methods using @BeanProperty
+class C extends T with BeanF {
+  def foo() {
+    setF("doch!")
+    setG(true)
+    this.getF()
+  }
+}
+
+trait T {
+  @scala.reflect.BeanProperty var f = "nei"
+  @scala.reflect.BooleanBeanProperty var g = false
+}
+
+trait BeanF {
+  def getF(): String
+  def setF(n: String): Unit
+
+  def isG(): Boolean
+  def setG(nb: Boolean): Unit
+}
