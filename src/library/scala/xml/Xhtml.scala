@@ -24,6 +24,12 @@ object Xhtml
    */
   def toXhtml(nodeSeq: NodeSeq): String = sbToString(sequenceToXML(nodeSeq: Seq[Node], sb = _))
 
+  /** Elements which we believe are safe to minimize if minimizeTags is true.
+   *  See http://www.w3.org/TR/xhtml1/guidelines.html#C_3
+   */
+  private val minimizableElements =
+    List("base", "meta", "link", "hr", "br", "param", "img", "area", "input", "col")
+
   def toXhtml(
     x: Node,
     pscope: NamespaceBinding = TopScope,
@@ -31,7 +37,7 @@ object Xhtml
     stripComments: Boolean = false,
     decodeEntities: Boolean = false,
     preserveWhitespace: Boolean = false,
-    minimizeTags: Boolean = false): Unit =
+    minimizeTags: Boolean = true): Unit =
   {
     def decode(er: EntityRef) = XhtmlEntities.entMap.get(er.entityName) match {
       case Some(chr) if chr.toInt >= 128  => sb.append(chr)
@@ -40,7 +46,7 @@ object Xhtml
     def shortForm =
       minimizeTags &&
       (x.child == null || x.child.length == 0) &&
-      !(List("div", "script", "textarea") contains x.label)
+      (minimizableElements contains x.label)
 
     x match {
       case c: Comment if !stripComments     => c buildString sb
@@ -76,7 +82,7 @@ object Xhtml
     stripComments: Boolean = false,
     decodeEntities: Boolean = false,
     preserveWhitespace: Boolean = false,
-    minimizeTags: Boolean = false): Unit =
+    minimizeTags: Boolean = true): Unit =
   {
     if (children.isEmpty)
       return
