@@ -218,8 +218,7 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
   lazy val OutputSetting       = untupled(tupled(output _) andThen add[OutputSetting])
 }
 
-object Settings
-{
+object Settings {
   // basically this is a value which remembers if it's been modified
   trait SettingValue {
     type T <: Any
@@ -402,12 +401,8 @@ object Settings
 
     // Equality
     def eqValues: List[Any] = List(name, value)
-    def isEq(other: this.type) = eqValues == other.eqValues
+    def isEq(other: Setting) = eqValues == other.eqValues
     override def hashCode() = name.hashCode
-    override def equals(that: Any) = that match {
-      case x: this.type => this isEq x
-      case _            => false
-    }
   }
 
   /** A setting represented by a positive integer */
@@ -417,8 +412,7 @@ object Settings
     val default: Int,
     val min: Option[Int],
     val max: Option[Int])
-  extends Setting(descr)
-  {
+  extends Setting(descr) {
     type T = Int
     protected var v = default
     override def value_=(s: Int) =
@@ -465,14 +459,18 @@ object Settings
     def unparse: List[String] =
       if (value == default) Nil
       else List(name, value.toString)
+
+    override def equals(that: Any) = that match {
+      case x: IntSetting => this isEq x
+      case _            => false
+    }
   }
 
   /** A setting represented by a boolean flag (false, unless set) */
   class BooleanSetting private[Settings](
     val name: String,
     val descr: String)
-  extends Setting(descr)
-  {
+  extends Setting(descr) {
     type T = Boolean
     protected var v = false
 
@@ -480,6 +478,10 @@ object Settings
     def unparse: List[String] = if (value) List(name) else Nil
     override def tryToSetFromPropertyValue(s : String) {
       value = s.equalsIgnoreCase("true")
+    }
+    override def equals(that: Any) = that match {
+      case x: BooleanSetting => this isEq x
+      case _            => false
     }
   }
 
@@ -489,8 +491,7 @@ object Settings
     val arg: String,
     val descr: String,
     val default: String)
-  extends Setting(descr)
-  {
+  extends Setting(descr) {
     type T = String
     protected var v = default
 
@@ -501,6 +502,11 @@ object Settings
     def unparse: List[String] = if (value == default) Nil else List(name, value)
 
     withHelpSyntax(name + " <" + arg + ">")
+
+    override def equals(that: Any) = that match {
+      case x: StringSetting => this isEq x
+      case _            => false
+    }
   }
 
   /** Set the output directory. */
@@ -520,8 +526,7 @@ object Settings
     val name: String,
     val arg: String,
     val descr: String)
-  extends Setting(descr)
-  {
+  extends Setting(descr) {
     type T = List[String]
     protected var v: List[String] = Nil
     def appendToValue(str: String) { value ++= List(str) }
@@ -534,6 +539,10 @@ object Settings
     def unparse: List[String] = value map { name + ":" + _ }
 
     withHelpSyntax(name + ":<" + arg + ">")
+    override def equals(that: Any) = that match {
+      case x: MultiStringSetting => this isEq x
+      case _            => false
+    }
   }
 
   /** A setting represented by a string in a given set of <code>choices</code>,
@@ -544,8 +553,7 @@ object Settings
     val descr: String,
     override val choices: List[String],
     val default: String)
-  extends Setting(descr + choices.mkString(" (", ",", ")"))
-  {
+  extends Setting(descr + choices.mkString(" (", ",", ")")) {
     type T = String
     protected var v: String = default
     protected def argument: String = name.substring(1)
@@ -561,6 +569,10 @@ object Settings
       if (value == default) Nil else List(name + ":" + value)
 
     withHelpSyntax(name + ":<" + argument + ">")
+    override def equals(that: Any) = that match {
+      case x: ChoiceSetting => this isEq x
+      case _            => false
+    }
   }
 
   /** Same as ChoiceSetting but have a <code>level</code> int which tells the
@@ -573,8 +585,7 @@ object Settings
     choices: List[String],
     default: String,
     val defaultEmpty: String)
-  extends ChoiceSetting(name, descr, choices, default)
-  {
+  extends ChoiceSetting(name, descr, choices, default) {
     def indexOf[T](xs: List[T], e: T): Option[Int] = xs.indexOf(e) match {
       case -1 => None
       case x  => Some(x)
@@ -589,6 +600,10 @@ object Settings
     override def tryToSet(args: List[String]) =
       if (args.isEmpty) { value = defaultEmpty ; Some(Nil) }
       else super.tryToSet(args)
+    override def equals(that: Any) = that match {
+      case x: DebugSetting => this isEq x
+      case _            => false
+    }
   }
 
   /** A setting represented by a list of strings which should be prefixes of
@@ -599,8 +614,7 @@ object Settings
   class PhasesSetting private[Settings](
     val name: String,
     val descr: String)
-  extends Setting(descr + " <phase> or \"all\"")
-  {
+  extends Setting(descr + " <phase> or \"all\"") {
     type T = List[String]
     protected var v: List[String] = Nil
 
@@ -627,8 +641,7 @@ object Settings
   }
 
   /** A setting for a -D style property definition */
-  class DefinesSetting private[Settings] extends Setting("set a Java property")
-  {
+  class DefinesSetting private[Settings] extends Setting("set a Java property") {
     type T = List[(String, String)]
     protected var v: T = Nil
     def name = "-D"
@@ -658,12 +671,15 @@ object Settings
 
     def unparse: List[String] =
       value map { case (k,v) => "-D" + k + (if (v == "") "" else "=" + v) }
+    override def equals(that: Any) = that match {
+      case x: DefinesSetting => this isEq x
+      case _            => false
+    }
   }
 
 }
 
-trait ScalacSettings
-{
+trait ScalacSettings {
   self: Settings =>
 
   import collection.immutable.TreeSet
