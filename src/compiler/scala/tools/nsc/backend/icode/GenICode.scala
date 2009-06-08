@@ -507,7 +507,7 @@ abstract class GenICode extends SubComponent  {
             tmp = ctx.makeLocal(tree.pos, tree.tpe, "tmp")
           }
           def duplicateFinalizer =
-            (new DuplicateLabels(ctx.labels.keys))(ctx, finalizer)
+            (new DuplicateLabels(ctx.labels.keySet))(ctx, finalizer)
 
           var handlers = for (CaseDef(pat, _, body) <- catches.reverse)
             yield pat match {

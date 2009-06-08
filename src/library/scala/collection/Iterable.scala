@@ -17,7 +17,7 @@ import generic._
 /** A template trait for iterable collections.
  *
  *  Collection classes mixing in this trait provide a method
- *  <code>elements</code> which returns an iterator over all the
+ *  <code>iterator</code> which returns an iterator over all the
  *  elements contained in the collection. They also provide a method `newBuilder`
  *  which creates a builder for collections of the same kind.
  *

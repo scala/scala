@@ -193,9 +193,6 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
     this
   }
 
-  /** @return the values of this map as a set */
-  override def values: immutable.Sequence[B] = immutable.Sequence.empty[B] ++ (self map (_._2))
-
   override def clone(): This =
     empty ++= thisCollection
 

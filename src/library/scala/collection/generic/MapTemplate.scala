@@ -110,22 +110,17 @@ self =>
    */
   def isDefinedAt(key: A) = contains(key)
 
-  /**
-   *  @return the keys of this map as a set.
-   */
-  def keys: immutable.Set[A] = new DefaultKeySet
+  /** @return the keys of this map as a set. */
+  def keySet: Set[A] = new DefaultKeySet
 
-  protected class DefaultKeySet extends immutable.Set[A] {
+  protected class DefaultKeySet extends Set[A] {
     def contains(key : A) = self.contains(key)
     def iterator = self.iterator.map(_._1)
-    def + (elem: A): immutable.Set[A] = (immutable.Set[A]() ++ this + elem).asInstanceOf[immutable.Set[A]] // !!! concrete overrides abstract problem
-    def - (elem: A): immutable.Set[A] = (immutable.Set[A]() ++ this - elem).asInstanceOf[immutable.Set[A]] // !!! concrete overrides abstract problem
+    def + (elem: A): Set[A] = (Set[A]() ++ this + elem).asInstanceOf[Set[A]] // !!! concrete overrides abstract problem
+    def - (elem: A): Set[A] = (Set[A]() ++ this - elem).asInstanceOf[Set[A]] // !!! concrete overrides abstract problem
     override def size = self.size
-    override def foreach[B](f: A => B) = for ((k, v) <- self) f(k)
+    override def foreach[C](f: A => C) = for ((k, v) <- self) f(k)
   }
-
-  /** @return the keys of this map as a set. */
-  @deprecated("use `keys' instead") def keySet: collection.Set[A] = new DefaultKeySet
 
   /** Creates an iterator for all keys.
    *
@@ -137,9 +132,22 @@ self =>
     def next = iter.next._1
   }
 
+  /** Creates an iterator for all keys.
+   *
+   *  @return an iterator over all keys.
+   */
+  @deprecated("use `keysIterator' instead")
+  def keys: Iterator[A] = keysIterator
+
   /** @return the values of this map as an iterable.
    */
-  def values: immutable.Sequence[B] = immutable.Sequence.empty[B] ++ (self map (_._2))
+  def valueIterable: Iterable[B] = new DefaultValuesIterable
+
+  protected class DefaultValuesIterable extends Iterable[B] {
+    def iterator = self.iterator.map(_._2)
+    override def size = self.size
+    override def foreach[C](f: B => C) = for ((k, v) <- self) f(v)
+  }
 
   /** Creates an iterator for a contained values.
    *
@@ -150,6 +158,13 @@ self =>
     def hasNext = iter.hasNext
     def next = iter.next._2
   }
+
+  /** Creates an iterator for a contained values.
+   *
+   *  @return an iterator over all values.
+   */
+  @deprecated("use `valuesIterator' instead")
+  def values: Iterator[B] = valuesIterator
 
   /** The default value for the map, returned when a key is not found
    *  The method implemented here yields an error,

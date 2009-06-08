@@ -471,7 +471,7 @@ self: Analyzer =>
       if (best == NoImplicitInfo) SearchFailure
       else {
         /** The list of all applicable infos which are not improved upon by `best`. */
-        val competing = applicable.keys dropWhile (alt => best == alt || improves(best, alt))
+        val competing = applicable.keySet dropWhile (alt => best == alt || improves(best, alt))
         if (!competing.isEmpty) ambiguousImplicitError(best, competing.iterator.next, "both", "and", "") // !!! streamline when new collection is there
 
         // Also check that applicable infos that did not get selected are not
