@@ -63,7 +63,7 @@ class Completion(val interpreter: Interpreter) extends Completor {
     def filt(xs: List[String]) = xs filter (_ startsWith stub)
 
     case class Result(candidates: List[String], position: Int) {
-      def getCandidates() = candidates.map(_.trim).removeDuplicates.sort(_ < _)
+      def getCandidates() = (candidates map (_.trim) removeDuplicates) sort (_ < _)
     }
 
     // work out completion candidates and position
@@ -88,12 +88,13 @@ class Completion(val interpreter: Interpreter) extends Completor {
       val memberKeywords = List("isInstanceOf", "asInstanceOf")
       def doDotted(): Result = {
         lazy val pkgs = filt(membersOfPath(path))
-        lazy val ids = filt(membersOfId(path) ::: memberKeywords)
+        lazy val ids = filt(membersOfId(path))
+        lazy val idExtras = filt(memberKeywords)  // isInstanceOf and asInstanceOf
         lazy val statics = filt(completeStaticMembers(path))
 
         if (!pkgs.isEmpty) Result(pkgs, path.length + 1)
-        else if (!ids.isEmpty) Result(ids, path.length + 1)
-        else Result(statics, path.length + 1)
+        else if (!ids.isEmpty) Result(ids ::: idExtras, path.length + 1)
+        else Result(statics ::: idExtras, path.length + 1)
       }
 
       segments.size match {
