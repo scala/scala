@@ -13,6 +13,7 @@ package scala
 import collection.immutable.Vector
 import collection.generic.VectorView
 import util.control.Exception.catching
+import util.Hashable
 
 /** <p>
  *    <code>GenericRange</code> is a generified version of the
@@ -36,7 +37,7 @@ import util.control.Exception.catching
 abstract class GenericRange[T]
   (val start: T, val end: T, val step: T, val isInclusive: Boolean = false)
   (implicit num: Integral[T])
-extends VectorView[T, Vector[T]] with RangeToString[T] {
+extends VectorView[T, Vector[T]] with RangeToString[T] with Hashable {
   import num._
 
   // todo? - we could lift the length restriction by implementing a range as a sequence of
@@ -108,6 +109,13 @@ extends VectorView[T, Vector[T]] with RangeToString[T] {
     }
 
     catching(classOf[ClassCastException]) opt doContains getOrElse super.contains(_x)
+  }
+
+  // Using trueEnd gives us Range(1, 10, 1).inclusive == Range(1, 11, 1)
+  val hashValues = List(start, trueEnd, step)
+  override def equals(other: Any) = other match {
+    case x: GenericRange[_] => this equalHashValues x
+    case _                  => false
   }
 }
 
