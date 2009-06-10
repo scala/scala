@@ -988,8 +988,8 @@ trait ParallelMatching {
 
   final def condition(tpe: Type, scrutTree: Tree)(implicit typer : Typer): Tree = {
     assert((tpe ne NoType) && (scrutTree.tpe ne NoType))
-    lazy val equalsRef      = Equals(gen.mkAttributedRef(tpe.termSymbol), scrutTree)
-    lazy val isInst         = gen.mkIsInstanceOf(scrutTree, tpe)
+    def equalsRef      = Equals(gen.mkAttributedRef(tpe.termSymbol), scrutTree)
+    def isInst         = gen.mkIsInstanceOf(scrutTree, tpe)
 
     tpe match {
       case _: SingletonType if !tpe.isInstanceOf[ConstantType] =>

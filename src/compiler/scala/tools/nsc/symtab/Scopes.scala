@@ -12,12 +12,21 @@ trait Scopes {
   class ScopeEntry(val sym: Symbol, val owner: Scope) {
     /** the next entry in the hash bucket
      */
-    var tail: ScopeEntry = _
+    var tail: ScopeEntry = null
 
     /** the next entry in this scope
      */
     var next: ScopeEntry = null
 
+    def iterator: Iterator[ScopeEntry] = new Iterator[ScopeEntry] {
+      private var buf: ScopeEntry = ScopeEntry.this
+      def hasNext = buf != null
+      def next = {
+        val res = buf
+        buf = buf.next
+        res
+      }
+    }
     override def hashCode(): Int = sym.name.start
     override def toString(): String = sym.toString()
   }

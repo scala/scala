@@ -22,8 +22,6 @@ trait TransMatcher {
   var cunit: CompilationUnit = _  // memory leak?
   var resultType: Type = _
 
-  // cache these
-  //final val settings_debug = settings.debug.value
   final val settings_squeeze = settings.Xsqueeze.value == "on"
 
   // check special case Seq(p1,...,pk,_*)
@@ -47,10 +45,6 @@ trait TransMatcher {
     handleOuter: Tree => Tree)
     (implicit typer: Typer): Tree =
   {
-    //DBG("****")
-    //DBG("**** initalize, selector = "+selector+" selector.tpe = "+selector.tpe)
-    //DBG("****    doCheckExhaustive == "+doCheckExhaustive)
-
     implicit val theOwner = owner
     implicit val rep = new RepFactory(handleOuter)
     val flags = if (doCheckExhaustive) Nil else List(Flags.TRANS_FLAG)
