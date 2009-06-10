@@ -187,6 +187,16 @@ class BigDecimal(val bigDecimal: BigDec) extends java.lang.Number {
   def max (that: BigDecimal): BigDecimal =
     new BigDecimal(this.bigDecimal.max(that.bigDecimal))
 
+  /** Remainder after dividing this by that.
+   */
+  def remainder (that: BigDecimal): BigDecimal =
+    new BigDecimal(this.bigDecimal remainder that.bigDecimal)
+
+  /** Returns a BigDecimal whose value is this ** n.
+   */
+  def pow (n: Int): BigDecimal =
+    new BigDecimal(this.bigDecimal pow n)
+
   /** Returns a BigDecimal whose value is the negation of this BigDecimal
    */
   def unary_- : BigDecimal = new BigDecimal(this.bigDecimal.negate())
