@@ -1054,6 +1054,11 @@ trait Namers { self: Analyzer =>
       val sym: Symbol = tree.symbol
       // For definitions, transform Annotation trees to AnnotationInfos, assign
       // them to the sym's annotations. Type annotations: see Typer.typedAnnotated
+
+      // We have to parse definition annotatinos here (not in the typer when traversing
+      // the MemberDef tree): the typer looks at annotations of certain symbols; if
+      // they were added only in typer, depending on the compilation order, they would
+      // be visible or not
       val annotated = if (sym.isModule) sym.moduleClass else sym
       if (annotated.annotations.isEmpty) tree match {
         case defn: MemberDef =>

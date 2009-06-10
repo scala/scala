@@ -33,23 +33,14 @@ trait AnnotationInfos {
      *  converted into a compile-time Constant. Used to pickle Literals
      *  as Constants
      */
-    val constant = {
-      def lit2cons(t: Tree): Option[Constant] = t match {
-        case Literal(c) => Some(c)
-        // case Typed(t, _) => lit2cons(t)
-        // disabling this: in the expression "3: @ann", the annotation gets lost.
-        case _ => None
-      }
-      lit2cons(intTree)
+    val constant = intTree match {
+      case Literal(c) => Some(c)
+      case _ => None
     }
 
     def isConstant = !constant.isEmpty
 
-    override def toString: String =
-      constant match {
-        case Some(cons) => cons.escapedStringValue
-        case None => intTree.toString
-      }
+    override def toString = intTree.toString
   }
 
   /** Subclasses of this class are used to represent Arguments
