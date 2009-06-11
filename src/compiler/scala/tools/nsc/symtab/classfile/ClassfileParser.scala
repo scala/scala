@@ -245,19 +245,28 @@ abstract class ClassfileParser {
       f
     }
 
-    def getNameAndType(index: Int, ownerTpe: Type): (Name, Type) = {
+    /** Return a name and a type at the given index. If the type is a method
+     *  type, a dummy symbol is created in 'ownerTpe', which is used as the
+     *  owner of its value parameters. This might lead to inconsistencies,
+     *  if a symbol of the given name already exists, and has a different
+     *  type.
+     */
+    private def getNameAndType(index: Int, ownerTpe: Type): (Name, Type) = {
       if (index <= 0 || len <= index) errorBadIndex(index)
       var p = values(index).asInstanceOf[(Name, Type)]
       if (p eq null) {
         val start = starts(index)
         if (in.buf(start) != CONSTANT_NAMEANDTYPE) errorBadTag(start)
         val name = getName(in.getChar(start + 1))
-        var tpe  = getType(in.getChar(start + 3))
+        // create a dummy symbol for method types
+        val dummySym = ownerTpe.typeSymbol.newMethod(ownerTpe.typeSymbol.pos, name)
+        var tpe  = getType(dummySym, in.getChar(start + 3))
+
+        // fix the return type, which is blindly set to the class currently parsed
         if (name == nme.CONSTRUCTOR)
           tpe match {
-            case MethodType(params, restpe) =>
-              assert(restpe.typeSymbol == definitions.UnitClass)
-              tpe = MethodType(params, ownerTpe)
+            case MethodType(formals, restpe) =>
+              tpe = MethodType(formals, ownerTpe)
           }
 
         p = (name, tpe)
@@ -616,7 +625,7 @@ abstract class ClassfileParser {
             paramtypes += objToAny(sig2type(tparams, skiptvs))
           }
           index += 1
-          val restype = if (sym != null && sym.isConstructor) {
+          val restype = if (sym != null && sym.isClassConstructor) {
             accept('V')
             clazz.tpe
           } else
