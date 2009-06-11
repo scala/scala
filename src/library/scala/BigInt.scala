@@ -108,7 +108,9 @@ object BigInt {
  *  @version 1.0, 15/07/2003
  */
 @serializable
-class BigInt(val bigInteger: BigInteger) extends java.lang.Number {
+class BigInt(val bigInteger: BigInteger) extends java.lang.Number
+{
+  import BigDecimal.equalsOwnLongValue
 
   /** Returns the hash code for this BigInt. */
   override def hashCode(): Int = this.bigInteger.hashCode()
@@ -116,18 +118,28 @@ class BigInt(val bigInteger: BigInteger) extends java.lang.Number {
   /** Compares this BigInt with the specified value for equality.
    */
   override def equals (that: Any): Boolean = that match {
-    case that: BigInt => this equals that
-    case that: java.lang.Double => this.bigInteger.doubleValue == that.doubleValue
-    case that: java.lang.Float  => this.bigInteger.floatValue == that.floatValue
-    case that: java.lang.Number => this equals BigInt(that.longValue)
-    case that: java.lang.Character => this equals BigInt(that.charValue.asInstanceOf[Int])
-    case _ => false
+    case that: BigInt               => this equals that
+    case that: BigInteger           => this equals new BigInt(that)
+    case that: BigDecimal           => this equals that
+    case that: java.math.BigDecimal => this equals BigDecimal(that)
+    case that: java.lang.Double     => this equals BigDecimal(that.doubleValue)
+    case that: java.lang.Float      => this equals BigDecimal(that.floatValue)
+    case that: java.lang.Number     => equalsOwnLongValue(that) && (this equals BigInt(that.longValue))
+    case that: java.lang.Character  => this equals BigInt(that.charValue.asInstanceOf[Int])
+    case _                          => false
   }
 
   /** Compares this BigInt with the specified BigInt for equality.
    */
   def equals (that: BigInt): Boolean =
     this.bigInteger.compareTo(that.bigInteger) == 0
+
+  /** Compares this BigInt with the specified BigDecimal for equality.
+   */
+  def equals(that: BigDecimal): Boolean = that.toBigIntExact match {
+    case None     => false
+    case Some(x)  => this equals x
+  }
 
   /** Compares this BigInt with the specified BigInt
    */

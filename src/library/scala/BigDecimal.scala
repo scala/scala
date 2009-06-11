@@ -37,13 +37,14 @@ object BigDecimal
    *  @param i the specified integer value
    *  @return  the constructed <code>BigDecimal</code>
    */
-  def apply(i: Int): BigDecimal =
+  def apply(i: Int): BigDecimal = apply(i, defaultMathContext)
+  def apply(i: Int, mc: MathContext): BigDecimal =
     if (minCached <= i && i <= maxCached) {
       val offset = i - minCached
       var n = cache(offset)
-      if (n eq null) { n = new BigDecimal(BigDec.valueOf(i)); cache(offset) = n }
+      if (n eq null) { n = new BigDecimal(BigDec.valueOf(i), mc); cache(offset) = n }
       n
-    } else new BigDecimal(BigDec.valueOf(i))
+    } else new BigDecimal(BigDec.valueOf(i), mc)
 
   /** Constructs a <code>BigDecimal</code> whose value is equal to that of the
    *  specified long value.
@@ -53,11 +54,23 @@ object BigDecimal
    */
   def apply(l: Long): BigDecimal =
     if (minCached <= l && l <= maxCached) apply(l.toInt)
-    else new BigDecimal(BigDec.valueOf(l))
+    else new BigDecimal(BigDec.valueOf(l), defaultMathContext)
 
+  def apply(l: Long, mc: MathContext): BigDecimal =
+    new BigDecimal(new BigDec(l, mc), mc)
+
+  /** Constructs a <code>BigDecimal</code> whose unscaled value is equal to that
+   *  of the specified long value.
+   *
+   *  @param  unscaledVal the value
+   *  @param  scale       the scale
+   *  @return the constructed <code>BigDecimal</code>
+   */
   def apply(unscaledVal: Long, scale: Int): BigDecimal =
-    if (scale == 0) apply(unscaledVal)
-    else new BigDecimal(BigDec.valueOf(unscaledVal, scale))
+    apply(BigInt(unscaledVal), scale)
+
+  def apply(unscaledVal: Long, scale: Int, mc: MathContext): BigDecimal =
+    apply(BigInt(unscaledVal), scale, mc)
 
   /** Constructs a <code>BigDecimal</code> whose value is equal to that of the
    *  specified double value.
@@ -65,21 +78,23 @@ object BigDecimal
    *  @param d the specified <code>Double</code> value
    *  @return  the constructed <code>BigDecimal</code>
    */
-  def apply(d: Double): BigDecimal =
-    new BigDecimal(BigDec.valueOf(d))
+  def apply(d: Double): BigDecimal = apply(d, defaultMathContext)
+  // note we don't use the static valueOf because it doesn't let us supply
+  // a MathContext, but we should be duplicating its logic, modulo caching.
+  def apply(d: Double, mc: MathContext): BigDecimal =
+    new BigDecimal(new BigDec(java.lang.Double.toString(d), mc), mc)
 
   /** Translates a character array representation of a <code>BigDecimal</code>
    *  into a <code>BigDecimal</code>.
    */
-  def apply(x: Array[Char]): BigDecimal =
-    new BigDecimal(new BigDec(x.toString))
+  def apply(x: Array[Char]): BigDecimal = apply(x, defaultMathContext)
+  def apply(x: Array[Char], mc: MathContext): BigDecimal =
+    new BigDecimal(new BigDec(x.toString, mc), mc)
 
   /** Translates the decimal String representation of a <code>BigDecimal</code>
    *  into a <code>BigDecimal</code>.
    */
-  def apply(x: String): BigDecimal =
-    new BigDecimal(new BigDec(x))
-
+  def apply(x: String): BigDecimal = apply(x, defaultMathContext)
   def apply(x: String, mc: MathContext): BigDecimal =
     new BigDecimal(new BigDec(x, mc), mc)
 
@@ -89,8 +104,23 @@ object BigDecimal
    *  @param x the specified <code>BigInt</code> value
    *  @return  the constructed <code>BigDecimal</code>
    */
-  def apply(x: BigInt): BigDecimal =
-    new BigDecimal(new BigDec(x.bigInteger))
+  def apply(x: BigInt): BigDecimal = apply(x, defaultMathContext)
+  def apply(x: BigInt, mc: MathContext): BigDecimal =
+    new BigDecimal(new BigDec(x.bigInteger, mc), mc)
+
+  /** Constructs a <code>BigDecimal</code> whose unscaled value is equal to that
+   *  of the specified <code>BigInt</code> value.
+   *
+   *  @param unscaledVal the specified <code>BigInt</code> value
+   *  @param scale       the scale
+   *  @return  the constructed <code>BigDecimal</code>
+   */
+  def apply(unscaledVal: BigInt, scale: Int): BigDecimal = apply(unscaledVal, scale, defaultMathContext)
+  def apply(unscaledVal: BigInt, scale: Int, mc: MathContext): BigDecimal =
+    new BigDecimal(new BigDec(unscaledVal.bigInteger, scale, mc), mc)
+
+  def apply(bd: BigDec): BigDecimal = apply(bd, defaultMathContext)
+  def apply(bd: BigDec, mc: MathContext): BigDecimal = new BigDecimal(bd, mc)
 
   /** Implicit conversion from <code>Int</code> to <code>BigDecimal</code>. */
   implicit def int2bigDecimal(i: Int): BigDecimal = apply(i)
@@ -115,6 +145,11 @@ object BigDecimal
    *  @since 2.8
    */
   implicit def bigInt2bigDecimal(x: BigInt): BigDecimal = apply(x)
+
+  // Anyone can subclass Number, so we can't just assume .longValue is an unrounded
+  // representation (as it cannot be for anything larger than Long.) So we also confirm
+  // that at least x thinks it's equal to x.longValue.
+  private[scala] def equalsOwnLongValue(that: Number): Boolean = that == that.longValue
 }
 
 /**
@@ -129,6 +164,7 @@ extends java.lang.Number
 {
   def this(bigDecimal: BigDec) = this(bigDecimal, BigDecimal.defaultMathContext)
   import BigDecimal.RoundingMode._
+  import BigDecimal.equalsOwnLongValue
 
   /** Cuts way down on the wrapper noise. */
   private implicit def bigdec2BigDecimal(x: BigDec): BigDecimal = new BigDecimal(x, mc)
@@ -138,13 +174,16 @@ extends java.lang.Number
 
   /** Compares this BigDecimal with the specified value for equality.
    */
-  override def equals(that: Any): Boolean = that match {
-    case that: BigDecimal => this equals that
-    case that: java.lang.Double => this.bigDecimal.doubleValue == that.doubleValue
-    case that: java.lang.Float  => this.bigDecimal.floatValue == that.floatValue
-    case that: java.lang.Number => this equals BigDecimal(that.longValue)
-    case that: java.lang.Character => this equals BigDecimal(that.charValue.asInstanceOf[Int])
-    case _ => false
+  override def equals (that: Any): Boolean = that match {
+    case that: BigDecimal           => this equals that
+    case that: BigDec               => this equals BigDecimal(that)
+    case that: BigInt               => this equals BigDecimal(that)
+    case that: java.math.BigInteger => this equals BigDecimal(new BigInt(that), mc)
+    case that: java.lang.Double     => this equals BigDecimal(that.doubleValue)
+    case that: java.lang.Float      => this equals BigDecimal(that.floatValue)
+    case that: java.lang.Number     => equalsOwnLongValue(that) && (this equals BigDecimal(that.longValue))
+    case that: java.lang.Character  => this equals BigDecimal(that.charValue.asInstanceOf[Int])
+    case _                          => false
   }
 
   /** Compares this BigDecimal with the specified BigDecimal for equality.
@@ -326,6 +365,13 @@ extends java.lang.Number
   /** Converts this <code>BigDecimal</code> to a scala.BigInt.
    */
   def toBigInt(): BigInt = new BigInt(this.bigDecimal.toBigInteger())
+
+  /** Converts this <code>BigDecimal</code> to a scala.BigInt if it
+   *  can be done losslessly, returning Some(BigInt) or None.
+   */
+  def toBigIntExact(): Option[BigInt] =
+    try Some(new BigInt(this.bigDecimal.toBigIntegerExact()))
+    catch { case _: ArithmeticException => None }
 
   /** Returns the decimal String representation of this BigDecimal.
    */
