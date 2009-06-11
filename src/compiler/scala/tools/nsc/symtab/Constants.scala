@@ -30,7 +30,7 @@ trait Constants {
   final val NullTag    = LITERALnull - LITERAL
   final val ClassTag   = LITERALclass - LITERAL
   // For supporting java enumerations inside java annotations (see ClassfileParser)
-  final val EnumTag    = ClassTag + 1
+  final val EnumTag    = LITERALenum - LITERAL
 
   def isNumeric(tag: Int) = ByteTag <= tag && tag <= DoubleTag
 

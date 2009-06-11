@@ -2548,8 +2548,8 @@ A type's typeSymbol should never be inspected directly.
         return None
 
       val atp1 = mapOver(atp)
-      val args1 = mapOverAnnotationArgs(args)
-      // there is no need to rewrite assocs, as they should be constants
+      val args1 = mapOverAnnotArgs(args)
+      // there is no need to rewrite assocs, as they are constants
 
       if ((args eq args1) && (atp eq atp1))
         Some(annot)
@@ -2561,8 +2561,7 @@ A type's typeSymbol should never be inspected directly.
 
     /** Map over a set of annotation arguments.  If any
      *  of the arguments cannot be mapped, then return Nil.  */
-    def mapOverAnnotationArgs(args: List[AnnotationArgument])
-    : List[AnnotationArgument] = {
+    def mapOverAnnotArgs(args: List[Tree]): List[Tree] = {
       val args1 = args.flatMap(mapOver(_))
       if (args1.length != args.length)
         Nil
@@ -2571,23 +2570,6 @@ A type's typeSymbol should never be inspected directly.
       else
         args1
     }
-
-
-    def mapOver(arg: AnnotationArgument): Option[AnnotationArgument] = {
-      if (arg.isConstant)
-        Some(arg)
-      else {
-        mapOver(arg.intTree) match {
-          case None => None
-
-          case Some(tree1)
-          if (tree1 eq arg.intTree) => Some(arg)
-
-          case Some(tree1) => Some(new AnnotationArgument(tree1))
-        }
-      }
-    }
-
 
     def mapOver(tree: Tree): Option[Tree] =
       Some(mapOver(tree, ()=>return None))

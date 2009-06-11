@@ -764,35 +764,35 @@ abstract class ClassfileParser {
       }
     }
 
-    def parseAnnotationArgument: Option[ConstantAnnotationArgument] = {
+    def parseAnnotArg: Option[ClassfileAnnotArg] = {
       val tag = in.nextByte
       val index = in.nextChar
       tag match {
         case STRING_TAG =>
-          Some(LiteralAnnotationArgument(Constant(pool.getName(index).toString())))
+          Some(LiteralAnnotArg(Constant(pool.getName(index).toString())))
         case BOOL_TAG | BYTE_TAG | CHAR_TAG | SHORT_TAG | INT_TAG |
              LONG_TAG | FLOAT_TAG | DOUBLE_TAG =>
-          Some(LiteralAnnotationArgument(pool.getConstant(index)))
+          Some(LiteralAnnotArg(pool.getConstant(index)))
         case CLASS_TAG  =>
-          Some(LiteralAnnotationArgument(Constant(pool.getType(index))))
+          Some(LiteralAnnotArg(Constant(pool.getType(index))))
         case ENUM_TAG   =>
           val t = pool.getType(index)
           val n = pool.getName(in.nextChar)
           val s = t.typeSymbol.linkedModuleOfClass.info.decls.lookup(n)
           assert(s != NoSymbol, t)
-          Some(LiteralAnnotationArgument(Constant(s)))
+          Some(LiteralAnnotArg(Constant(s)))
         case ARRAY_TAG  =>
-          val arr = new ArrayBuffer[ConstantAnnotationArgument]()
+          val arr = new ArrayBuffer[ClassfileAnnotArg]()
           var hasError = false
           for (i <- 0 until index)
-            parseAnnotationArgument match {
+            parseAnnotArg match {
               case Some(c) => arr += c
               case None => hasError = true
             }
           if (hasError) None
-          else Some(ArrayAnnotationArgument(arr.toArray))
+          else Some(ArrayAnnotArg(arr.toArray))
         case ANNOTATION_TAG =>
-          parseAnnotation(index) map (NestedAnnotationArgument(_))
+          parseAnnotation(index) map (NestedAnnotArg(_))
       }
     }
 
@@ -802,11 +802,11 @@ abstract class ClassfileParser {
     def parseAnnotation(attrNameIndex: Char): Option[AnnotationInfo] = try {
       val attrType = pool.getType(attrNameIndex)
       val nargs = in.nextChar
-      val nvpairs = new ListBuffer[(Name,ConstantAnnotationArgument)]
+      val nvpairs = new ListBuffer[(Name, ClassfileAnnotArg)]
       var hasError = false
       for (i <- 0 until nargs) {
         val name = pool.getName(in.nextChar)
-        parseAnnotationArgument match {
+        parseAnnotArg match {
           case Some(c) => nvpairs += ((name, c))
           case None => hasError = true
         }

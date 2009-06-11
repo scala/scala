@@ -6,5 +6,6 @@ trait Service {
 class Provider
     extends Service
 {
-  def someMethod() = ()
+  // test enumeration java annotations
+  @Ann(Days.Friday) def someMethod() = ()
 }

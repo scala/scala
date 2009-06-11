@@ -768,7 +768,7 @@ trait Namers { self: Analyzer =>
           }
         }
 
-        // AnnotatedTypes can contain trees in the AnnotationArguments. When accessing a
+        // AnnotatedTypes can contain trees in the annotation arguments. When accessing a
         // parameter in an annotation, set the type of the Ident to the DeBruijnIndex
         object treeTrans extends TypeMapTransformer {
           override def transform(tree: Tree): Tree =

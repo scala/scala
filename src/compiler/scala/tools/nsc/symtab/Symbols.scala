@@ -412,10 +412,12 @@ trait Symbols {
     def isDeprecated = hasAnnotation(DeprecatedAttr)
     def deprecationMessage: Option[String] =
       annotations find (_.atp.typeSymbol == DeprecatedAttr) flatMap { annot =>
-        if (annot.args.length == 1)
-          annot.args.head.constant map { c => c.stringValue }
-        else
-          None
+        annot.args match {
+          case Literal(const) :: Nil =>
+            Some(const.stringValue)
+          case _ =>
+            None
+        }
       }
 
     /** Does this symbol denote a wrapper object of the interpreter or its class? */

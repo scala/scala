@@ -846,11 +846,11 @@ abstract class RefChecks extends InfoTransform {
       tree match {
         case m: MemberDef =>
           checkAnnotations(m.symbol.annotations.map(a => (a.atp, tree.pos)))
-          transformTrees(m.symbol.annotations.flatMap(a => a.args.map(_.intTree)))
+          transformTrees(m.symbol.annotations.flatMap(_.args))
         case TypeTree() => doTypeTraversal {
           case AnnotatedType(annots, _, _) =>
             checkAnnotations(annots.map(a => (a.atp, tree.pos)))
-            transformTrees(annots.flatMap(a => a.args.map(_.intTree)))
+            transformTrees(annots.flatMap(_.args))
           case _ =>
         }
         case _ =>

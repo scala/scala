@@ -162,8 +162,8 @@ abstract class GenJVM extends SubComponent {
           parents = parents ::: List(definitions.SerializableClass.tpe)
         case AnnotationInfo(tp, _, _) if tp.typeSymbol == CloneableAttr =>
           parents = parents ::: List(CloneableClass.tpe)
-        case AnnotationInfo(tp, value :: _, _) if tp.typeSymbol == SerialVersionUID =>
-          serialVUID = Some(value.constant.get.longValue)
+        case AnnotationInfo(tp, Literal(const) :: _, _) if tp.typeSymbol == SerialVersionUID =>
+          serialVUID = Some(const.longValue)
         case AnnotationInfo(tp, _, _) if tp.typeSymbol == RemoteAttr =>
           parents = parents ::: List(RemoteInterface.tpe)
           remoteClass = true
@@ -317,9 +317,10 @@ abstract class GenJVM extends SubComponent {
       buf.putShort(0xbaba.toShort)
 
       for (AnnotationInfo(tp, List(exc), _) <- excs.removeDuplicates if tp.typeSymbol == ThrowsAttr) {
+        val Literal(const) = exc
         buf.putShort(
           cpool.addClass(
-            javaName(exc.constant.get.typeValue.typeSymbol)).shortValue)
+            javaName(const.typeValue.typeSymbol)).shortValue)
         nattr += 1
       }
 
@@ -337,8 +338,8 @@ abstract class GenJVM extends SubComponent {
        annot.args.isEmpty)
 
     private def emitJavaAnnotations(cpool: JConstantPool, buf: ByteBuffer, annotations: List[AnnotationInfo]): Int = {
-      def emitArgument(arg: ConstantAnnotationArgument): Unit = arg match {
-        case LiteralAnnotationArgument(const) =>
+      def emitArgument(arg: ClassfileAnnotArg): Unit = arg match {
+        case LiteralAnnotArg(const) =>
           const.tag match {
             case BooleanTag =>
               buf.put('Z'.toByte)
@@ -376,12 +377,12 @@ abstract class GenJVM extends SubComponent {
               buf.putShort(cpool.addUtf8(const.symbolValue.name.toString).toShort)
           }
 
-        case ArrayAnnotationArgument(args) =>
+        case ArrayAnnotArg(args) =>
           buf.put('['.toByte)
           buf.putShort(args.length.toShort)
           for (val elem <- args) emitArgument(elem)
 
-        case NestedAnnotationArgument(annInfo) =>
+        case NestedAnnotArg(annInfo) =>
           buf.put('@'.toByte)
           emitAnnotation(annInfo)
       }
@@ -608,7 +609,7 @@ abstract class GenJVM extends SubComponent {
     private def addRemoteException(jmethod: JMethod, meth: Symbol) {
       def isRemoteThrows(ainfo: AnnotationInfo) = ainfo match {
         case AnnotationInfo(tp, List(arg), _) if tp.typeSymbol == ThrowsAttr =>
-          arg.intTree match {
+          arg match {
             case Literal(Constant(tpe: Type)) if tpe.typeSymbol == RemoteException.typeSymbol => true
             case _ => false
           }
@@ -617,7 +618,8 @@ abstract class GenJVM extends SubComponent {
 
       if (remoteClass ||
           (meth.hasAnnotation(RemoteAttr) && jmethod.isPublic())) {
-        val ainfo = AnnotationInfo(ThrowsAttr.tpe, List(new AnnotationArgument(Constant(RemoteException))), List())
+        val c = Constant(RemoteException)
+        val ainfo = AnnotationInfo(ThrowsAttr.tpe, List(Literal(c).setType(c.tpe)), List())
         if (!meth.annotations.exists(isRemoteThrows)) {
           meth.addAnnotation(ainfo)
         }

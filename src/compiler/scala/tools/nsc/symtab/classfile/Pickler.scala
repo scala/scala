@@ -408,13 +408,12 @@ abstract class Pickler extends SubComponent {
 
     /** Store a constant in map <code>index</code> along with
      *  anything it references.
-     *  No need to treat Constants with EnumTag (only used for Java
-     *  annotations with Java enum parameters)
      */
     private def putConstant(c: Constant) {
       if (putEntry(c)) {
         if (c.tag == StringTag) putEntry(newTermName(c.stringValue))
         else if (c.tag == ClassTag) putType(c.typeValue)
+        else if (c.tag == EnumTag) putSymbol(c.symbolValue)
       }
     }
 
@@ -442,29 +441,29 @@ abstract class Pickler extends SubComponent {
 
     /** Puts the members of an AnnotationInfo */
     private def putAnnotationBody(annot: AnnotationInfo) {
-      def putAnnotationArg(arg: AnnotationArgument) {
-        arg.constant match {
-          case Some(c) => putConstant(c)
-          case None => putTree(arg.intTree)
+      def putAnnotArg(arg: Tree) {
+        arg match {
+          case Literal(c) => putConstant(c)
+          case _ => putTree(arg)
         }
       }
-      def putConstantAnnotationArg(carg: ConstantAnnotationArgument) {
+      def putClassfileAnnotArg(carg: ClassfileAnnotArg) {
         carg match {
-          case LiteralAnnotationArgument(const) =>
+          case LiteralAnnotArg(const) =>
             putConstant(const)
-          case ArrayAnnotationArgument(args) =>
+          case ArrayAnnotArg(args) =>
             if (putEntry(carg))
-              args foreach putConstantAnnotationArg
-          case NestedAnnotationArgument(annInfo) =>
+              args foreach putClassfileAnnotArg
+          case NestedAnnotArg(annInfo) =>
             putAnnotation(annInfo)
         }
       }
       val AnnotationInfo(tpe, args, assocs) = annot
       putType(tpe)
-      args foreach putAnnotationArg
+      args foreach putAnnotArg
       assocs foreach { asc =>
         putEntry(asc._1)
-        putConstantAnnotationArg(asc._2)
+        putClassfileAnnotArg(asc._2)
       }
     }
 
@@ -496,29 +495,29 @@ abstract class Pickler extends SubComponent {
 
     /** Write an annotation */
     private def writeAnnotation(annot: AnnotationInfo) {
-      def writeAnnotationArg(arg: AnnotationArgument) {
-        arg.constant match {
-          case Some(c) => writeRef(c)
-          case None => writeRef(arg.intTree)
+      def writeAnnotArg(arg: Tree) {
+        arg match {
+          case Literal(c) => writeRef(c)
+          case _ => writeRef(arg)
         }
       }
 
       writeRef(annot.atp)
-      annot.args foreach writeAnnotationArg
+      annot.args foreach writeAnnotArg
       annot.assocs foreach { asc =>
         writeRef(asc._1)
-        writeConstantAnnotationArg(asc._2)
+        writeClassfileAnnotArg(asc._2)
       }
     }
 
-    /** Write a ConstantAnnotationArgument (argument to java annotation) */
-    def writeConstantAnnotationArg(carg: ConstantAnnotationArgument) {
+    /** Write a ClassfileAnnotArg (argument to classfile annotation) */
+    def writeClassfileAnnotArg(carg: ClassfileAnnotArg) {
       carg match {
-        case LiteralAnnotationArgument(const) =>
+        case LiteralAnnotArg(const) =>
           writeRef(const)
-        case ArrayAnnotationArgument(args) =>
+        case ArrayAnnotArg(args) =>
           writeRef(carg)
-        case NestedAnnotationArgument(annInfo) =>
+        case NestedAnnotArg(annInfo) =>
           writeRef(annInfo)
       }
     }
@@ -584,13 +583,13 @@ abstract class Pickler extends SubComponent {
         case DeBruijnIndex(l, i) =>
           writeNat(l); writeNat(i); DEBRUIJNINDEXtpe
         case c @ Constant(_) =>
-          // No case for Constant with EnumTag. See comment on "def putConstant"
           if (c.tag == BooleanTag) writeLong(if (c.booleanValue) 1 else 0)
           else if (ByteTag <= c.tag && c.tag <= LongTag) writeLong(c.longValue)
           else if (c.tag == FloatTag) writeLong(Float.floatToIntBits(c.floatValue))
           else if (c.tag == DoubleTag) writeLong(Double.doubleToLongBits(c.doubleValue))
           else if (c.tag == StringTag) writeRef(newTermName(c.stringValue))
           else if (c.tag == ClassTag) writeRef(c.typeValue)
+          else if (c.tag == EnumTag) writeRef(c.symbolValue)
           LITERAL + c.tag // also treats UnitTag, NullTag; no value required
         case AnnotatedType(annotations, tp, selfsym) =>
           val staticAnnots = staticAnnotations(annotations)
@@ -610,8 +609,8 @@ abstract class Pickler extends SubComponent {
           writeAnnotation(annot)
           SYMANNOT
 
-        case ArrayAnnotationArgument(args) =>
-          args foreach writeConstantAnnotationArg
+        case ArrayAnnotArg(args) =>
+          args foreach writeClassfileAnnotArg
           ANNOTARGARRAY
 
         case (target: Symbol, children: List[Symbol]) =>
@@ -955,7 +954,7 @@ abstract class Pickler extends SubComponent {
           writeRefs(whereClauses)
           TREE
 
-        case Modifiers(flags, privateWithin, annotations) =>
+        case Modifiers(flags, privateWithin, _) =>
           val pflags = rawFlagsToPickled(flags)
           writeNat((pflags >> 32).toInt)
           writeNat((pflags & 0xFFFFFFFF).toInt)
@@ -1057,6 +1056,7 @@ abstract class Pickler extends SubComponent {
           else if (c.tag == DoubleTag) print("Double "+c.doubleValue)
           else if (c.tag == StringTag) { print("String "); printRef(newTermName(c.stringValue)) }
           else if (c.tag == ClassTag) { print("Class "); printRef(c.typeValue) }
+          else if (c.tag == EnumTag) { print("Enum "); printRef(c.symbolValue) }
         case AnnotatedType(annots, tp, selfsym) =>
           if (settings.selfInAnnots.value) {
             print("ANNOTATEDWSELFtpe ")

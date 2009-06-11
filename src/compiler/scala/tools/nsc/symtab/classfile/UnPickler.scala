@@ -350,6 +350,7 @@ abstract class UnPickler {
         case LITERALstring  => Constant(readNameRef().toString())
         case LITERALnull    => Constant(null)
         case LITERALclass   => Constant(readTypeRef())
+        case LITERALenum    => Constant(readSymbolRef())
         case _              => errorBadSignature("bad constant tag: " + tag)
       }
     }
@@ -364,31 +365,30 @@ abstract class UnPickler {
       while (readIndex != end) target addChild readSymbolRef()
     }
 
-    /** Read an annotation argument. It can use either Constant's or
-     *  Tree's for its arguments.
+    /** Read an annotation argument, which is pickled either
+     *  as a Constant or a Tree.
      */
-    private def readAnnotationArg(): AnnotationArgument = {
+    private def readAnnotArg(): Tree = {
       if (peekByte() == TREE) {
-        val tree = readTree()
-        new AnnotationArgument(tree)
+        readTree()
       } else {
         val const = readConstant()
-        new AnnotationArgument(const)
+        Literal(const).setType(const.tpe)
       }
     }
 
-    /** Read a ConstantAnnotationArgument (argument to a java annotation)
+    /** Read a ClassfileAnnotArg (argument to a classfile annotation)
      */
-    private def readConstantAnnotationArg(): ConstantAnnotationArgument = {
+    private def readClassfileAnnotArg(): ClassfileAnnotArg = {
       val b = peekByte()
       if (peekByte() == ANNOTINFO) {
-        NestedAnnotationArgument(readAnnotation())
+        NestedAnnotArg(readAnnotation())
       } else if (peekByte() == ANNOTARGARRAY) {
         readByte()
         val end = readNat() + readIndex
-        ArrayAnnotationArgument(until(end, readConstantAnnotationArgRef).toArray)
+        ArrayAnnotArg(until(end, readClassfileAnnotArgRef).toArray)
       } else {
-        LiteralAnnotationArgument(readConstant())
+        LiteralAnnotArg(readConstant())
       }
     }
 
@@ -397,16 +397,14 @@ abstract class UnPickler {
      */
     private def readAnnotationInfo(end: Int): AnnotationInfo = {
       val atp = readTypeRef()
-      //val args = until(end, readAnnotationArgRef)
-      //AnnotationInfo(atp, args, List())
-      val args = new ListBuffer[AnnotationArgument]
-      val assocs = new ListBuffer[(Name, ConstantAnnotationArgument)]
+      val args = new ListBuffer[Tree]
+      val assocs = new ListBuffer[(Name, ClassfileAnnotArg)]
       while (readIndex != end) {
         val argref = readNat()
         if (isNameEntry(argref))
-          assocs += ((at(argref, readName), readConstantAnnotationArgRef))
+          assocs += ((at(argref, readName), readClassfileAnnotArgRef))
         else
-          args += at(argref, readAnnotationArg)
+          args += at(argref, readAnnotArg)
       }
       AnnotationInfo(atp, args.toList, assocs.toList)
     }
@@ -424,8 +422,8 @@ abstract class UnPickler {
       target.addAnnotation(readAnnotationInfo(end))
     }
 
-    /** Read an annotation and return it. Only called when
-     *  unpickling an ANNOTATED(WSELF)tpe. */
+    /** Read an annotation and return it. Used when unpickling
+     *  an ANNOTATED(WSELF)tpe or a NestedAnnotArg */
     private def readAnnotation(): AnnotationInfo = {
       val tag = readByte()
       if (tag != ANNOTINFO)
@@ -752,10 +750,10 @@ abstract class UnPickler {
     private def readSymbolRef(): Symbol = at(readNat(), readSymbol)
     private def readTypeRef(): Type = at(readNat(), readType)
     private def readConstantRef(): Constant = at(readNat(), readConstant)
-    private def readAnnotationArgRef(): AnnotationArgument =
-      at(readNat(), readAnnotationArg)
-    private def readConstantAnnotationArgRef(): ConstantAnnotationArgument =
-      at(readNat(), readConstantAnnotationArg)
+    private def readAnnotArgRef(): Tree =
+      at(readNat(), readAnnotArg)
+    private def readClassfileAnnotArgRef(): ClassfileAnnotArg =
+      at(readNat(), readClassfileAnnotArg)
     private def readAnnotationRef(): AnnotationInfo =
       at(readNat(), readAnnotation)
     private def readModifiersRef(): Modifiers =

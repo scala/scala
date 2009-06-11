@@ -2035,7 +2035,7 @@ trait Typers { self: Analyzer =>
               else {
                 assert(isNamedApplyBlock(fun1), fun1)
                 val NamedApplyInfo(qual, targs, previousArgss, _) =
-                context.namedApplyBlockInfo.get._2
+                  context.namedApplyBlockInfo.get._2
                 val (allArgs, missing) = addDefaults(args, qual, targs, previousArgss, mt.params)
                 if (allArgs.length == formals.length) {
                   // a default for each missing argument was found
@@ -2279,17 +2279,17 @@ trait Typers { self: Analyzer =>
         None
       }
 
-      /** Converts an untyped tree to a ConstantAnnotationArgument. If the conversion fails,
+      /** Converts an untyped tree to a ClassfileAnnotArg. If the conversion fails,
        *  an error message is reporded and None is returned.
        */
-      def tree2ConstArg(tree: Tree, pt: Type): Option[ConstantAnnotationArgument] = tree match {
+      def tree2ConstArg(tree: Tree, pt: Type): Option[ClassfileAnnotArg] = tree match {
         case ann @ Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
           val annInfo = typedAnnotation(ann, mode, NoSymbol, pt.typeSymbol, true)
           if (annInfo.atp.isErroneous) {
             // recursive typedAnnotation call already printed an error, so don't call "error"
             hasError = true
             None
-          } else Some(NestedAnnotationArgument(annInfo))
+          } else Some(NestedAnnotArg(annInfo))
 
         // use of: object Array.apply[A <: AnyRef](args: A*): Array[A] = ...
         // and object Array.apply(args: Int*): Array[Int] = ... (and similar)
@@ -2307,17 +2307,16 @@ trait Typers { self: Analyzer =>
 
         case tree => typed(tree, EXPRmode, pt) match {
           case l @ Literal(c) if !l.isErroneous =>
-            Some(LiteralAnnotationArgument(c))
+            Some(LiteralAnnotArg(c))
           case _ =>
             needConst(tree)
         }
       }
-      def trees2ConstArg(trees: List[Tree], pt: Type): Option[ArrayAnnotationArgument] = {
+      def trees2ConstArg(trees: List[Tree], pt: Type): Option[ArrayAnnotArg] = {
         val args = trees.map(tree2ConstArg(_, pt))
         if (args.exists(_.isEmpty)) None
-        else Some(ArrayAnnotationArgument(args.map(_.get).toArray))
+        else Some(ArrayAnnotArg(args.map(_.get).toArray))
       }
-
 
       // begin typedAnnotation
       val (fun, argss) = {
@@ -2424,7 +2423,7 @@ trait Typers { self: Analyzer =>
 
           def annInfo(t: Tree): AnnotationInfo = t match {
             case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
-              AnnotationInfo(annType, args.map(AnnotationArgument(_)), List())
+              AnnotationInfo(annType, args, List())
 
             case Block(stats, expr) =>
               context.warning(t.pos, "Usage of named or default arguments transformed this annotation\n"+
@@ -2581,15 +2580,15 @@ trait Typers { self: Analyzer =>
             case ExistentialType(tparams, _) =>
               boundSyms ++= tparams
             case AnnotatedType(annots, _, _) =>
-              for (annot <- annots; arg <- annot.args; t <- arg.intTree) {
-                t match {
+              for (annot <- annots; arg <- annot.args) {
+                arg match {
                   case Ident(_) =>
                     // Check the symbol of an Ident, unless the
                     // Ident's type is already over an existential.
                     // (If the type is already over an existential,
                     // then remap the type, not the core symbol.)
-                    if (!t.tpe.typeSymbol.hasFlag(EXISTENTIAL))
-                      addIfLocal(t.symbol, t.tpe)
+                    if (!arg.tpe.typeSymbol.hasFlag(EXISTENTIAL))
+                      addIfLocal(arg.symbol, arg.tpe)
                   case _ => ()
                 }
               }
