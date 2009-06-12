@@ -6,7 +6,7 @@
 package scala.util
 
 import java.lang.{ ClassLoader => JavaClassLoader }
-import java.lang.reflect.{ Modifier, Method }
+import java.lang.reflect.{ Constructor, Modifier, Method }
 import java.net.URL
 import ScalaClassLoader._
 import scala.util.control.Exception.{ catching }
@@ -68,23 +68,6 @@ object ScalaClassLoader {
   def getContextLoader() = Thread.currentThread.getContextClassLoader()
   def getSystemLoader() = JavaClassLoader.getSystemClassLoader()
   def defaultParentClassLoader() = findExtClassLoader()
-
-  /** XXX move this to RichClass. */
-  def callReflectively[T](clazz: Class[_], obj: String, method: String, args: Any*): Option[T] = {
-    val exceptions = List(
-      classOf[ClassNotFoundException],
-      classOf[NoSuchMethodException],
-      classOf[SecurityException],
-      classOf[NullPointerException],
-      classOf[ClassCastException]
-    )
-
-    catching(exceptions: _*) opt {
-      val o: Class[_] = clazz.getClassLoader loadClass obj
-      val m: Method = o getDeclaredMethod method
-      m.invoke(o, args map (_.asInstanceOf[AnyRef]) : _*).asInstanceOf[T]
-    }
-  }
 
   def fromURLs(urls: Seq[URL]): URLClassLoader =
     new URLClassLoader(urls.toList, defaultParentClassLoader())
