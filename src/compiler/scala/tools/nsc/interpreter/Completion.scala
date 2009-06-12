@@ -159,7 +159,7 @@ object Completion
 
   private def exists(path: String) = new File(path) exists
 
-  def isValidCompletion(x: String) = !(x contains "$") && !(excludeMethods contains x)
+  def isValidCompletion(x: String) = !(x contains "$$") && !(excludeMethods contains x)
   def isClass(x: String)    = x endsWith ".class"
   def dropClass(x: String)  = x.substring(0, x.length - 6)  // drop .class
 
@@ -185,6 +185,7 @@ object Completion
     val jars = cp.removeDuplicates filter (_ endsWith ".jar")
 
     // for e.g. foo.bar.baz.C, returns (foo -> bar), (foo.bar -> baz), (foo.bar.baz -> C)
+    // and scala.Range$BigInt needs to go scala -> Range -> BigInt
     def subpaths(s: String): List[(String, String)] = {
       val segs = s.split('.')
       for (i <- List.range(0, segs.length - 1)) yield {
@@ -195,7 +196,9 @@ object Completion
     }
 
     def oneJar(jar: String): Unit = {
-      val classfiles = Completion.getClassFiles(jar).map(_.replace('/', '.'))
+      def cleanup(s: String): String = s map { c => if (c == '/' || c == '$') '.' else c } toString
+      val classfiles = Completion getClassFiles jar map cleanup
+
       for (cl <- classfiles; (k, v) <- subpaths(cl)) {
         if (map containsKey k) map.put(k, v :: map.get(k))
         else map.put(k, List(v))
