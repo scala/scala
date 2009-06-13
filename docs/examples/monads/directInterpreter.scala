@@ -4,14 +4,14 @@ object directInterpreter {
 
   trait Term;
   case class Var(x: Name) extends Term;
-  case class Con(n: int) extends Term;
+  case class Con(n: Int) extends Term;
   case class Add(l: Term, r: Term) extends Term;
   case class Lam(x: Name, body: Term) extends Term;
   case class App(fun: Term, arg: Term) extends Term;
 
   trait Value;
   case object Wrong extends Value;
-  case class Num(n: int) extends Value;
+  case class Num(n: Int) extends Value;
   case class Fun(f: Value => Value)extends Value;
 
   def showval(v: Value): String = v match {

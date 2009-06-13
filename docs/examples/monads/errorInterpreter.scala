@@ -25,7 +25,7 @@ object errorInterpreter {
 
   trait Term
   case class Var(x: Name) extends Term
-  case class Con(n: int) extends Term
+  case class Con(n: Int) extends Term
   case class Add(l: Term, r: Term) extends Term
   case class Lam(x: Name, body: Term) extends Term
   case class App(fun: Term, arg: Term) extends Term
@@ -34,7 +34,7 @@ object errorInterpreter {
   case object Wrong extends Value {
     override def toString() = "wrong"
   }
-  case class Num(n: int) extends Value {
+  case class Num(n: Int) extends Value {
     override def toString() = n.toString()
   }
   case class Fun(f: Value => M[Value]) extends Value {
