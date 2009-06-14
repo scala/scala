@@ -25,7 +25,6 @@ object Scheduler extends DelegatingScheduler {
   Debug.info("initializing "+this+"...")
 
   def makeNewScheduler: IScheduler = {
-    /*
     val workQueue = new LinkedBlockingQueue[Runnable](100000)
     val threadPool = new ThreadPoolExecutor(ThreadPoolConfig.corePoolSize,
                                             ThreadPoolConfig.maxPoolSize,
@@ -33,8 +32,7 @@ object Scheduler extends DelegatingScheduler {
                                             TimeUnit.MILLISECONDS,
                                             workQueue)
     val s = new SimpleExecutorScheduler(threadPool, true)
-    */
-    val s = new ForkJoinScheduler
+    //val s = new ForkJoinScheduler
     s.start()
     s
   }
