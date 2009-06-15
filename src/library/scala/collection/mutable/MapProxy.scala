@@ -1,4 +1,3 @@
-/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -12,6 +11,7 @@
 
 package scala.collection.mutable
 
+import generic.MapProxyTemplate
 
 /** <p>
  *    This is a simple wrapper class for <a href="Map.html"
@@ -25,35 +25,17 @@ package scala.collection.mutable
  *  @author  Matthias Zenger, Martin Odersky
  *  @version 2.0, 31/12/2006
  */
-trait MapProxy[A, B] extends Map[A, B] with collection.MapProxy[A, B] {
 
-  def self: Map[A, B]
+trait MapProxy[A, B] extends mutable.Map[A, B] with MapProxyTemplate[A, B, mutable.Map[A, B]]
+{
+  override def empty: MapProxy[A, B] = new MapProxy[A, B] { val self = mutable.Map[A,B]() }
 
-  override def update(key: A, value: B): Unit = self.update(key, value)
-  override def += (kv: (A, B)): this.type = { self += kv; this }
-  override def += (kv1: (A, B), kv2: (A, B), kvs: (A, B)*): this.type = { self.+=(kv1, kv2, kvs: _*); this }
-  override def ++= (kvs: Iterable[(A, B)]): this.type = { self ++= kvs; this }
-  override def ++= (kvs: Iterator[(A, B)]): this.type = { self ++= kvs; this }
-  override def + (kv: (A, B)): Map[A, B] = self + kv
-  override def + (kv1: (A, B), kv2: (A, B), kvs: (A, B)*): Map[A, B] = self.+(kv1, kv2, kvs: _*)
-  override def ++ (kvs: Iterable[(A, B)]): Map[A, B] = self ++ kvs
-  override def ++ (kvs: Iterator[(A, B)]): Map[A, B] = self ++ kvs
-  override def -= (key: A): this.type = { self -= key; this }
-  override def -= (key1: A, key2: A, keys: A*): this.type = { self.-=(key1, key2, keys: _*); this }
-  override def --= (keys: Iterable[A]): this.type = { self --= keys; this }
-  override def --= (keys: Iterator[A]): this.type = { self --= keys; this }
-  override def - (key: A): Map[A, B] = self - key
-  override def - (key1: A, key2: A, keys: A*): Map[A, B] = self.-(key1, key2, keys: _*)
-  override def -- (keys: Iterable[A]): Map[A, B] = self -- keys
-  override def -- (keys: Iterator[A]): Map[A, B] = self -- keys
-  override def clear(): Unit = self.clear
-  override def transform(f: (A, B) => B) = self transform f
-  override def retain(p: (A, B) => Boolean): Unit = self retain p
-  override def <<(cmd: Message[(A, B)]): Unit = self << cmd
-  override def clone(): Map[A, B] = self.clone()
-  @deprecated
-  override def incl(mappings: (A, B)*): Unit = self.incl(mappings: _*)
-  @deprecated
-  override def excl(keys: A*): Unit = self.excl(keys: _*)
+  override def +(kv: (A, B)): this.type = { self.update(kv._1, kv._2) ; this }
+  override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *) = self.+(elem1, elem2, elems: _*)
+  override def -(key: A): this.type = { self.remove(key); this }
+
+  override def += (kv: (A, B)): this.type = { self += kv ; this }
+  override def -= (key: A): this.type = { self -= key ; this }
+
+  // method ++ overrides nothing ???
 }
-*/
