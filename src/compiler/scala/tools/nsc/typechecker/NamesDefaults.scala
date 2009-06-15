@@ -179,13 +179,23 @@ trait NamesDefaults { self: Analyzer =>
           assert(treeInfo.isPureExpr(qual), qual)
           blockWithoutQualifier(baseFun1, defaultQual)
 
+        // super constructor calls
+
+        case Select(Super(_, _), _) if isConstr =>
+          blockWithoutQualifier(baseFun1, None)
+
+        // self constructor calls (in secondary constructors)
+
+        case Select(qual, name) if isConstr =>
+          assert(treeInfo.isPureExpr(qual), qual)
+          blockWithoutQualifier(baseFun1, None)
+
         // other method calls
 
         case Ident(_) =>
           blockWithoutQualifier(baseFun1, None)
 
         case Select(qual, name) =>
-          assert(!isConstr, baseFun1)
           if (treeInfo.isPureExpr(qual))
             blockWithoutQualifier(baseFun1, Some(qual.duplicate))
           else
@@ -224,11 +234,7 @@ trait NamesDefaults { self: Analyzer =>
     }
 
     // begin transform
-    if (treeInfo.isSelfConstrCall(tree)) {
-      errorTree(tree, "using named or default arguments in a self constructor call is not allowed")
-    } else if (treeInfo.isSuperConstrCall(tree)) {
-      errorTree(tree, "using named or default arguments in a super constructor call is not allowed")
-    } else if (isNamedApplyBlock(tree)) {
+    if (isNamedApplyBlock(tree)) {
       context.namedApplyBlockInfo.get._1
     } else tree match {
       // we know that Apply(Apply(...)) can only be an application of a curried method;

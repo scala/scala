@@ -183,9 +183,20 @@ object Test extends Application {
 
 
   // bug #2057
-  class O { class I(x: Int = 1) }
+  class O { class I(val x: Int = 1) }
   class U extends O { val f = new I() }
+  val u1 = new U
+  println(u1.f.x)
 
+
+  // names / defaults in self constructor call
+  new A3("lskfdjlk")
+  new A4(1.23, ",")
+
+
+  // names / defaults in super constructor call
+  new B4()
+  new B5()
 
 
   // DEFINITIONS
@@ -250,4 +261,30 @@ class A2 {
     override def toString = "slkdfj" + y
   }
   class C2
+}
+
+
+
+// using names / defaults in self constructor call
+class A3(x: String, y: Int = 10) {
+  def this(a: Object) {
+    this(y = 10, x = a.toString())
+    println(x)
+  }
+}
+class A4(x: String, y: Int = 11) {
+  def this(b: Double, sep: String) {
+    this(sep + b + sep)
+    println(y)
+  }
+}
+
+
+// using names / defaults in super constructor call
+class A5(x: Int, val y: Int = 2)(z: Int = x + y)
+class B4 extends A5(10)() {
+  println(y)
+}
+class B5 extends A5(y = 20, x = 2)() {
+  println(y)
 }

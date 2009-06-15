@@ -88,25 +88,8 @@ class C extends B {
   def bar(i: Int = 129083) = i
 }
 
-// using names / defaults in super constructor call not allowed
-class A1(x: Int, y: Int = 2)
-class B1 extends A1(10)
-class B2 extends A1(y = 20, x = 2)
-
-// using names / defaults in self constructor call not allowed
-class A2(x: String, y: Int = 10) {
-  def this(a: Object) {
-    this(y = 10, x = a.toString())
-    println(x)
-  }
-}
-class A3(x: String, y: Int = 11) {
-  def this(b: Double, sep: String) {
-    this(sep + b + sep)
-  }
-}
-
 case class Fact(a: Int, b: String)(c: Int*)
 
+// overriding default must have same type
 class A5 { def foo(a: Object = "dlkf") = 0 }
 class B5 extends A5 { override def foo(a: Object = new Object) = 1 }

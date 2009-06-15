@@ -85,21 +85,9 @@ names-defaults-neg.scala:88: error: type mismatch;
 names-defaults-neg.scala:88: error: multiple overloaded alternatives of method bar define default arguments
   def bar(i: Int = 129083) = i
       ^
-names-defaults-neg.scala:93: error: using named or default arguments in a super constructor call is not allowed
-class B1 extends A1(10)
-      ^
-names-defaults-neg.scala:94: error: using named or default arguments in a super constructor call is not allowed
-class B2 extends A1(y = 20, x = 2)
-      ^
-names-defaults-neg.scala:99: error: using named or default arguments in a self constructor call is not allowed
-    this(y = 10, x = a.toString())
-    ^
-names-defaults-neg.scala:105: error: using named or default arguments in a self constructor call is not allowed
-    this(sep + b + sep)
-    ^
-names-defaults-neg.scala:112: error: type mismatch;
+names-defaults-neg.scala:95: error: type mismatch;
  found   : java.lang.Object
  required: java.lang.String
 class B5 extends A5 { override def foo(a: Object = new Object) = 1 }
                                                    ^
-26 errors found
+22 errors found

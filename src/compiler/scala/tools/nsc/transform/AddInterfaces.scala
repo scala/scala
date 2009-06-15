@@ -294,7 +294,8 @@ abstract class AddInterfaces extends InfoTransform {
     }
     (tree: @unchecked) match {
       case Block(stats, expr) =>
-        val (presuper, supercall :: rest) = stats span (_.symbol.hasFlag(PRESUPER))
+        // needs `hasSymbol' check because `supercall' could be a block (named / default args)
+        val (presuper, supercall :: rest) = stats span (t => t.hasSymbol && t.symbol.hasFlag(PRESUPER))
         //assert(supercall.symbol.isClassConstructor, supercall)
         treeCopy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)
     }
