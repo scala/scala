@@ -193,11 +193,15 @@ abstract class ICodeReader extends ClassfileParser {
       log("forcing " + iface.owner + " at phase: " + phase + " impl: " + iface.implClass)
       iface.owner.info // force the mixin type-transformer
       definitions.getClass(name)
-    } else if (name.endsWith("$"))
-      definitions.getModule(name.subName(0, name.length - 1))
-    else
+    } else if (name.endsWith("$")) {
+      val sym = forceMangledName(name.subName(0, name.length -1), true)
+      if (sym == NoSymbol)
+        definitions.getModule(name.subName(0, name.length - 1))
+      else sym
+    } else {
+      forceMangledName(name, false)
       definitions.getClass(name)
-        //super.classNameToSymbol(name)
+    }
     if (sym.isModule)
       sym.moduleClass
     else

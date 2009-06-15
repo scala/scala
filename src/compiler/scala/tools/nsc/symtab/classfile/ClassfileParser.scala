@@ -217,7 +217,9 @@ abstract class ClassfileParser {
           val index = in.getChar(start + 1)
           val name = getExternalName(in.getChar(starts(index) + 1))
           //assert(name.endsWith("$"), "Not a module class: " + name)
-          f = definitions.getModule(name.subName(0, name.length - 1))
+          f = forceMangledName(name.subName(0, name.length - 1), true)
+          if (f == NoSymbol)
+            f = definitions.getModule(name.subName(0, name.length - 1))
         } else {
           val origName = nme.originalName(name)
           val owner = if (static) ownerTpe.typeSymbol.linkedClassOfClass else ownerTpe.typeSymbol
@@ -349,6 +351,21 @@ abstract class ClassfileParser {
     /** Throws an exception signaling a bad tag at given address. */
     private def errorBadTag(start: Int) =
       throw new RuntimeException("bad constant pool tag " + in.buf(start) + " at byte " + start)
+  }
+
+  /** Try to force the chain of enclosing classes for the given name. Otherwise
+   *  flatten would not lift classes that were not referenced in the source code.
+   */
+  def forceMangledName(name: Name, module: Boolean): Symbol = {
+    val parts = name.toString.split(Array('.', '$'))
+    var sym: Symbol = definitions.RootClass
+    atPhase(currentRun.flattenPhase.prev) {
+      for (part <- parts) {
+        sym = sym.info.decl(part)//.suchThat(module == _.isModule)
+      }
+    }
+//    println("found: " + sym)
+    sym
   }
 
 
