@@ -96,11 +96,16 @@ trait Symbols {
 
     private var rawannots: List[AnnotationInfoBase] = Nil
 
+    /* Used in namer to check wether annotations were already assigned or not */
+    def rawAnnotations:List[AnnotationInfoBase] = rawannots
+
     /** After the typer phase (before, look at the definition's Modifiers), contains
      *  the annotations attached to member a definition (class, method, type, field).
      */
     def annotations: List[AnnotationInfo] = {
-      val annots1 = rawannots map {
+      // .initialize: the type completer of the symbol parses the annotations,
+      // see "def typeSig" in Namers
+      val annots1 = initialize.rawannots map {
         case LazyAnnotationInfo(annot) => annot()
         case a @ AnnotationInfo(_, _, _) => a
       } filter { a => !a.atp.isError }
@@ -114,7 +119,7 @@ trait Symbols {
     }
 
     def addAnnotation(annot: AnnotationInfo): this.type =
-      setAnnotations(annot :: this.annotations)
+      setAnnotations(annot :: this.rawannots)
 
     /** Does this symbol have an annotation of the given class? */
     def hasAnnotation(cls: Symbol) = annotations exists { _.atp.typeSymbol == cls }

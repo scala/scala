@@ -1060,7 +1060,9 @@ trait Namers { self: Analyzer =>
       // they were added only in typer, depending on the compilation order, they would
       // be visible or not
       val annotated = if (sym.isModule) sym.moduleClass else sym
-      if (annotated.annotations.isEmpty) tree match {
+      // typeSig might be called multiple times, e.g. on a ValDef: val, getter, setter
+      // parse the annotations only once.
+      if (annotated.rawAnnotations.isEmpty) tree match {
         case defn: MemberDef =>
           val ainfos = defn.mods.annotations filter { _ != null } map { ann =>
             // need to be lazy, #1782

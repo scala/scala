@@ -165,29 +165,19 @@ trait NamesDefaults { self: Analyzer =>
         // constructor calls
 
         case Select(New(TypeTree()), _) if isConstr =>
-          val module = baseFun.symbol.owner.linkedModuleOfClass
-          val defaultQual = if (module == NoSymbol) None
-
-                            else Some(gen.mkAttributedRef(module))
-          blockWithoutQualifier(baseFun1, defaultQual)
+          blockWithoutQualifier(baseFun1, None)
 
         case Select(New(Ident(_)), _) if isConstr =>
           blockWithoutQualifier(baseFun1, None)
 
         case Select(nev @ New(sel @ Select(qual, typeName)), constr) if isConstr =>
+          // #2057
           val module = baseFun.symbol.owner.linkedModuleOfClass
           val defaultQual = if (module == NoSymbol) None
-                            else Some(gen.mkAttributedRef(module))
-          if (treeInfo.isPureExpr(qual)) {
-            blockWithoutQualifier(baseFun1, defaultQual)
-          } else {
-            val fun: Symbol => Tree =
-              sym => treeCopy.Select(baseFun1,
-                       treeCopy.New(nev,
-                         treeCopy.Select(sel, gen.mkAttributedRef(sym), typeName)),
-                       constr)
-            blockWithQualifier(qual, fun, sym => defaultQual)
-          }
+                            else Some(gen.mkAttributedSelect(qual.duplicate, module))
+          // in `new q.C()', q is always stable
+          assert(treeInfo.isPureExpr(qual), qual)
+          blockWithoutQualifier(baseFun1, defaultQual)
 
         // other method calls
 

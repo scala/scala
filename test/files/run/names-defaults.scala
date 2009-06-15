@@ -181,6 +181,13 @@ object Test extends Application {
   println(b11.copy()())
 
 
+
+  // bug #2057
+  class O { class I(x: Int = 1) }
+  class U extends O { val f = new I() }
+
+
+
   // DEFINITIONS
   def test1(a: Int, b: String) = println(a +": "+ b)
   def test2(u: Int, v: Int)(k: String, l: Int) = println(l +": "+ k +", "+ (u + v))

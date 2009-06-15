@@ -1255,7 +1255,7 @@ trait Typers { self: Analyzer =>
           error(getter.pos, getter+" is defined twice")
 
         // todo: potentially dangerous not to duplicate the trees and clone the symbols / types.
-        getter.setAnnotations(value.initialize.annotations)
+        getter.setAnnotations(value.annotations)
 
         if (value.hasFlag(LAZY)) List(stat)
         else {
@@ -2340,12 +2340,12 @@ trait Typers { self: Analyzer =>
 
         if (typedFun.isErroneous) annotationError
         else if (annType.typeSymbol isNonBottomSubClass ClassfileAnnotationClass) {
-          // annotation to be saved as java annotation
+          // annotation to be saved as java classfile annotation
           val isJava = typedFun.symbol.owner.hasFlag(JAVA)
           if (!annType.typeSymbol.isNonBottomSubClass(annClass)) {
             error(tpt.pos, "expected annotation of type "+ annClass.tpe +", found "+ annType)
           } else if (argss.length > 1) {
-            error(ann.pos, "multiple argument lists on java annotation")
+            error(ann.pos, "multiple argument lists on classfile annotation")
           } else {
             val args =
               if (argss.head.length == 1 && !isNamed(argss.head.head))
@@ -2372,7 +2372,7 @@ trait Typers { self: Analyzer =>
                   (sym.name, annArg)
                 }
               case arg =>
-                error(arg.pos, "java annotation arguments have to be supplied as named arguments")
+                error(arg.pos, "classfile annotation arguments have to be supplied as named arguments")
                 (nme.ERROR, None)
             }
 
@@ -2386,7 +2386,7 @@ trait Typers { self: Analyzer =>
             else AnnotationInfo(annType, List(), nvPairs map {p => (p._1, p._2.get)})
           }
         } else if (requireJava) {
-          error(ann.pos, "nested java annotations must be defined in java; found: "+ annType)
+          error(ann.pos, "nested classfile annotations must be defined in java; found: "+ annType)
         } else {
           val typedAnn = if (selfsym == NoSymbol) {
             typed(ann, mode, annClass.tpe)
