@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: CloneableCollection.scala 16893 2009-01-13 13:09:22Z cunei $
+// $Id$
 
 
 package scala.collection.generic

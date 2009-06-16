@@ -5,6 +5,10 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+
+// $Id$
+
+
 package scala.collection.generic
 
 /** A subtrait of collection.Vector which represents sequences

@@ -5,7 +5,10 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
-// $Id: Traversable.scala 15188 2008-05-24 15:01:02Z stepancheg $
+
+// $Id$
+
+
 package scala.collection.generic
 
 trait TraversableClass[+A, +CC[X] <: Traversable[X]] {

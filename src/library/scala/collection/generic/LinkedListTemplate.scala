@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: SingleLinkedList.scala 16893 2009-01-13 13:09:22Z cunei $
+// $Id$
 
 
 package scala.collection.generic
@@ -79,7 +79,7 @@ trait LinkedListTemplate[A, This >: Null <: Sequence[A] with LinkedListTemplate[
     }
   }
 
-  override def foreach[B](f: A => B): Unit = {
+  override def foreach[B](f: A => B) {
     var these = this
     while (these ne null) {
       f(these.elem);

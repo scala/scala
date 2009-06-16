@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Sequence.scala 16092 2008-09-12 10:37:06Z nielsen $
+// $Id$
 
 
 package scala.collection.generic
@@ -19,8 +19,8 @@ import util.control.Breaks._
 /** Class <code>Linear[A]</code> represents linear sequences of elements.
  *  For such sequences `isEmpty`, `head` and `tail` are guaranteed to be
  *  efficient constant time (or near so) operations.
- *  It does not add any methods to Sequence but overrides several
- *  methods with optimized implementations.
+ *  It does not add any methods to <code>Sequence</code> but overrides
+ *  several methods with optimized implementations.
  *
  *  @author  Martin Odersky
  *  @author  Matthias Zenger

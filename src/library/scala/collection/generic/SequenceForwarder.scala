@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: SeqProxy.scala 15458 2008-06-28 20:23:22Z stepancheg $
+// $Id$
 
 
 package scala.collection.generic

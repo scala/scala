@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: ListBuffer.scala 14378 2008-03-13 11:39:05Z dragos $
+// $Id$
 
 package scala.collection.generic
 

@@ -6,26 +6,26 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Map.scala 16884 2009-01-09 16:52:09Z cunei $
+// $Id$
 
 
 package scala.collection.generic
 
 /** A generic template for maps from keys of type A to values of type B.
- *  To implement a concrete map, you need to provide implementations of the following methods:
- *  (where `This` is the type of the map in question):
+ *  To implement a concrete map, you need to provide implementations of the
+ *  following methods (where `This` is the type of the map in question):<pre>
  *
  *   def get(key: A): Option[B]
  *   def iterator: Iterator[(A, B)]
  *   def + [B1 >: B](kv: (A, B1)): This
- *   def -(key: A): This
+ *   def -(key: A): This</pre>
  *
- * If you wish that methods like, take, drop, filter return the same kind of map, you should also
- * override:
+ *  If you wish that methods like, take, drop, filter return the same kind of
+ *  map, you should also override:<pre>
  *
- *   def empty: This
+ *   def empty: This</pre>
  *
- * It is also good idea to override methods foreach and size for efficiency.
+ *  It is also good idea to override methods foreach and size for efficiency.
  */
 trait MapTemplate[A, +B, +This <: MapTemplate[A, B, This] with Map[A, B]]
   extends PartialFunction[A, B]

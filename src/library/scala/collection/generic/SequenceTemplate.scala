@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Sequence.scala 16092 2008-09-12 10:37:06Z nielsen $
+// $Id$
 
 
 package scala.collection.generic
@@ -52,7 +52,7 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
    *  is O(length min len) instead of O(length). The method should be overwritten
    *  if computing length is cheap.
    */
-  def lengthCompare(len: Int): Int =  {
+  def lengthCompare(len: Int): Int = {
     var i = 0
     breakable {
       for (_ <- this) {
@@ -181,7 +181,8 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
   }
 
   /** Returns index of the first element satisying a predicate, or -1. */
-  @deprecated("Use `indexWhere' instead") def findIndexOf(p: A => Boolean): Int = indexWhere(p)
+  @deprecated("Use `indexWhere' instead")
+  def findIndexOf(p: A => Boolean): Int = indexWhere(p)
 
   /** Returns the index of the first occurence of the specified
    *  object in this iterable object.
@@ -265,7 +266,8 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
    */
   def reverseIterator: Iterator[A] = reverse.iterator
 
-  @deprecated("use `reverseIterator' instead") def reversedElements = reverseIterator
+  @deprecated("use `reverseIterator' instead")
+  def reversedElements = reverseIterator
 
   /**
    * Checks whether the argument sequence is contained at the
@@ -517,6 +519,7 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
    * <code>map</code>, and <code>flatMap</code> methods that build projections
    * of the collection.
    */
-  @deprecated("use `view' instead") override def projection = view
+  @deprecated("use `view' instead")
+  override def projection = view
 }
 

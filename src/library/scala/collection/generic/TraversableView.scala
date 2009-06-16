@@ -5,13 +5,17 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+
+// $Id$
+
+
 package scala.collection.generic
 
-import Math.MAX_INT
 import TraversableView.NoBuilder
 
 /** A base class for views of Traversable.
  *  Every subclass has to implenment the foreach method
+ *
  *  @author Martin Odersky
  *  @version 2.8
  */

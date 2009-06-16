@@ -1,19 +1,19 @@
 package examples.pilib
 
+import scala.concurrent.pilib._
+
 /** Solution of exercise session 6 (first question). */
 object semaphore {
 
-  import scala.concurrent.pilib._
-
-  class Signal extends Chan[unit] {
+  class Signal extends Chan[Unit] {
     def send = write(())
     def receive = read
   }
 
   /** Interface. */
   trait Semaphore {
-    def get: unit
-    def release: unit
+    def get: Unit
+    def release: Unit
   }
 
   /** First implementation. */
@@ -22,10 +22,10 @@ object semaphore {
     private val g = new Signal
     private val r = new Signal
 
-    def get: unit = g.send
-    def release: unit = r.send
+    def get: Unit = g.send
+    def release: Unit = r.send
 
-    private def Sched: unit = choice (
+    private def Sched: Unit = choice (
       g * (x => { r.receive; Sched }),
       r * (x => Sched)
     )
@@ -38,8 +38,8 @@ object semaphore {
     private val a = new Signal
     private val na = new Signal
 
-    def get: unit = { a.receive; spawn< na.send > }
-    def release: unit = choice (
+    def get { a.receive; spawn< na.send > }
+    def release: Unit = choice (
       a * (x => spawn< a.send >),
       na * (x => spawn< a.send >)
     )
@@ -47,24 +47,24 @@ object semaphore {
   }
 
   /** Test program. */
-  def main(args: Array[String]): unit = {
-    val random = new java.util.Random()
+  def main(args: Array[String]) {
+    val random = new util.Random()
     val sem = new Sem2
-    def mutex(p: => unit): unit = { sem.get; p; sem.release }
+    def mutex(p: => Unit) { sem.get; p; sem.release }
 
     spawn< {
       Thread.sleep(1 + random.nextInt(100));
       mutex( {
-        System.out.println("a1");
+        println("a1");
         Thread.sleep(1 + random.nextInt(100));
-        System.out.println("a2")
+        println("a2")
       } )
     } | {
       Thread.sleep(1 + random.nextInt(100));
       mutex( {
-        System.out.println("b1");
+        println("b1");
         Thread.sleep(1 + random.nextInt(100));
-        System.out.println("b2")
+        println("b2")
       } )
     } >;
   }

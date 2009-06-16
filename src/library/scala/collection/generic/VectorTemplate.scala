@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Vector.scala 15437 2008-06-25 16:22:45Z stepancheg $
+// $Id$
 
 package scala.collection.generic
 

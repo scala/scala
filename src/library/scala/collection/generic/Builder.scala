@@ -6,14 +6,14 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: ListBuffer.scala 14378 2008-03-13 11:39:05Z dragos $
+// $Id$
 
 package scala.collection.generic
 
 /** The base trait of all builders.
- *  A builder lets one construct a collection incrementally, by adding elements
- *  to the builder with += and then converting to the required collection type with
- *  `result`.
+ *  A builder lets one construct a collection incrementally, by adding
+ *  elements to the builder with += and then converting to the required
+ *  collection type with `result`.
  */
 trait Builder[-Elem, +To] extends Growable[Elem] {
 
@@ -26,7 +26,8 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
    */
   def clear()
 
-  /** Returns collection resulting from this builder. The buffer's contents are undefined afterwards.
+  /** Returns collection resulting from this builder. The buffer's contents
+   *  are undefined afterwards.
    */
   def result(): To
 
@@ -35,8 +36,8 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
    */
   def sizeHint(size: Int) {}
 
-  /** Create a new builder which is the same as the current builder except that
-   *  a given function is applied to the current builder's result.
+  /** Create a new builder which is the same as the current builder except
+   *  that a given function is applied to the current builder's result.
    *  @param  f   the function to apply to the builder's result
    */
   def mapResult[NewTo](f: To => NewTo): Builder[Elem, NewTo] =

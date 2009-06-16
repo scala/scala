@@ -6,14 +6,14 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: ListBuffer.scala 14378 2008-03-13 11:39:05Z dragos $
+// $Id$
 
 package scala.collection.generic
 
 // import collection.immutable.{List, Nil, ::}
 
-/** The canonical builder for collections that are addable, i.e. that support an efficient + method
- *  which adds an element to the collection.
+/** The canonical builder for collections that are addable, i.e. that support
+ *  an efficient + method which adds an element to the collection.
  *  Collections are built from their empty element using this + method.
  *  @param empty   The empty element of the collection.
  */

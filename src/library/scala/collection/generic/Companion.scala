@@ -5,7 +5,10 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
-// $Id: Traversable.scala 15188 2008-05-24 15:01:02Z stepancheg $
+
+// $Id$
+
+
 package scala.collection.generic
 
 abstract class Companion[+CC[X] <: Traversable[X]] {
@@ -14,7 +17,7 @@ abstract class Companion[+CC[X] <: Traversable[X]] {
   def newBuilder[A]: Builder[A, CC[A]]
 
  /** The empty iterable of type CC */
-  def empty[A]:  CC[A] = newBuilder[A].result
+  def empty[A]: CC[A] = newBuilder[A].result
 
   /** Creates an iterable of type CC with specified elements */
   def apply[A](args: A*): CC[A] = {

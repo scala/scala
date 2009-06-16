@@ -1,38 +1,37 @@
 package examples.pilib
 
 import scala.concurrent.pilib._
-//import pilib._;
 
 /** Church encoding of naturals in the Pi-calculus */
 object piNat extends Application {
 
   /** Locations of Pi-calculus natural */
-  class NatChan extends Chan[Triple[Chan[unit], Chan[NatChan], Chan[NatChan]]]
+  class NatChan extends Chan[Triple[Chan[Unit], Chan[NatChan], Chan[NatChan]]]
 
   /** Zero */
-  def Z(l: NatChan): unit = choice (
+  def Z(l: NatChan): Unit = choice (
     l * { case Triple(z, sd, d) => z.write(()) }
   )
 
   /** Successor of Double */
-  def SD(n: NatChan, l: NatChan): unit = choice (
+  def SD(n: NatChan, l: NatChan): Unit = choice (
     l * { case Triple(z, sd, d) => sd.write(n) }
   )
 
   /** Double */
-  def D(n: NatChan, l: NatChan): unit = choice (
+  def D(n: NatChan, l: NatChan): Unit = choice (
     l * { case Triple(z, sd, d) => d.write(n) }
   )
 
   /** Make "l" a location representing the natural "n" */
-  def make(n: int, l: NatChan): unit =
+  def make(n: Int, l: NatChan): Unit =
     if (n == 0) Z(l)
     else if (n % 2 == 0) { val l1 = new NatChan; spawn < D(l1, l) >; make(n/2, l1) }
     else { val l1 = new NatChan; spawn < SD(l1, l) >; make(n/2, l1) }
 
   /** Consume the natural "m" and put it successor at location "n" */
-  def Succ(m: NatChan, n: NatChan): unit = {
-    val z = new Chan[unit]
+  def Succ(m: NatChan, n: NatChan) {
+    val z = new Chan[Unit]
     val sd = new Chan[NatChan]
     val d = new Chan[NatChan]
     spawn < m.write(Triple(z, sd, d)) >;
@@ -44,8 +43,8 @@ object piNat extends Application {
   }
 
   /** Consume the natural "l" and put two copies at locations "m" and "n" */
-  def Copy(l: NatChan, m: NatChan, n: NatChan): unit = {
-    val z = new Chan[unit]
+  def Copy(l: NatChan, m: NatChan, n: NatChan) {
+    val z = new Chan[Unit]
     val sd = new Chan[NatChan]
     val d = new Chan[NatChan]
     spawn < l.write(Triple(z, sd, d)) >;
@@ -61,8 +60,8 @@ object piNat extends Application {
   }
 
   /** Consume the natural at location "n" and return its value */
-  def value(n: NatChan): int =  {
-    val z = new Chan[unit]
+  def value(n: NatChan): Int = {
+    val z = new Chan[Unit]
     val sd = new Chan[NatChan]
     val d = new Chan[NatChan]
     spawn < n.write(Triple(z, sd, d)) >;
@@ -84,7 +83,7 @@ object piNat extends Application {
   make(i, l) |
   Copy(l, l1, l2) |
   Succ(l2, l3) |
-  System.out.println("" + i + " = " + value(l1)) |
-  System.out.println("succ " + i + " = " + value(l3)) >
+  println("" + i + " = " + value(l1)) |
+  println("succ " + i + " = " + value(l3)) >
 
 }

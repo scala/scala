@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: SortedSet.scala 16893 2009-01-13 13:09:22Z cunei $
+// $Id$
 // !!! todo: integrate in new collections library
 
 package scala.collection.generic

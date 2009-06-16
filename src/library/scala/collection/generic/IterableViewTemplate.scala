@@ -5,9 +5,12 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+
+// $Id$
+
+
 package scala.collection.generic
 
-import Math.MAX_INT
 import TraversableView.NoBuilder
 
 /** A base class for views of Iterables.
