@@ -28,14 +28,15 @@ import generic.MapProxyTemplate
 
 trait MapProxy[A, B] extends mutable.Map[A, B] with MapProxyTemplate[A, B, mutable.Map[A, B]]
 {
-  override def empty: MapProxy[A, B] = new MapProxy[A, B] { val self = mutable.Map[A,B]() }
+  override def thisCollection = this
+  override def empty: MapProxy[A, B] = new MapProxy[A, B] { val self = MapProxy.this.self.empty }
 
-  override def +(kv: (A, B)): this.type = { self.update(kv._1, kv._2) ; this }
-  override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *) = self.+(elem1, elem2, elems: _*)
-  override def -(key: A): this.type = { self.remove(key); this }
+  override def +(kv: (A, B)) = { self.update(kv._1, kv._2) ; this }
+  override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *) =
+    { self.+(elem1, elem2, elems: _*) ; this }
 
-  override def += (kv: (A, B)): this.type = { self += kv ; this }
-  override def -= (key: A): this.type = { self -= key ; this }
+  override def -(key: A) = { self.remove(key); this }
 
-  // method ++ overrides nothing ???
+  override def += (kv: (A, B)) = { self += kv ; this }
+  override def -= (key: A) = { self -= key ; this }
 }

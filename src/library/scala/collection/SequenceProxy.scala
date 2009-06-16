@@ -6,14 +6,12 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: IterableProxy.scala 15458 2008-06-28 20:23:22Z stepancheg $
+// $Id: SequenceProxy.scala 15458 2008-06-28 20:23:22Z stepancheg $
 
 
 package scala.collection
 
 import generic._
-
-// Methods could be printed by  cat Traversibe.scala | egrep '^  (override )?def'
 
 
 /** This trait implements a proxy for iterable objects. It forwards

@@ -20,7 +20,9 @@ trait MapProxyTemplate[A, +B, +This <: MapTemplate[A, B, This] with Map[A, B]]
       extends MapTemplate[A, B, This]
       with IterableProxyTemplate[(A, B), This]
 {
-  override def self: This
+  // def empty: This
+  // def + [B1 >: B] (kv: (A, B1)): Map[A, B1]
+  // def - (key: A): This
 
   override def get(key: A): Option[B] = self.get(key)
   override def iterator: Iterator[(A, B)] = self.iterator
@@ -39,6 +41,11 @@ trait MapProxyTemplate[A, +B, +This <: MapTemplate[A, B, This] with Map[A, B]]
   override def filterKeys(p: A => Boolean) = self.filterKeys(p)
   override def mapValues[C](f: B => C) = self.mapValues(f)
 
-  override def hashCode = self.hashCode
-  override def equals(other: Any) = self equals other
+  // override def updated [B1 >: B](key: A, value: B1) = self + ((key, value))
+  // override def + [B1 >: B](elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *) = self.+(elem1, elem2, elems: _*)
+  // override def ++[B1 >: B](elems: Traversable[(A, B1)]) = self.++(elems)
+  // override def ++[B1 >: B](iter: Iterator[(A, B1)]) = self.++(iter)
+
+  override def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder =
+    self.addString(b, start, sep, end)
 }

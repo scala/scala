@@ -28,20 +28,15 @@ import generic.MapProxyTemplate
 
 trait MapProxy[A, +B] extends immutable.Map[A, B] with MapProxyTemplate[A, B, immutable.Map[A, B]]
 {
+  override def thisCollection = this
   private def newProxy[B1 >: B](newSelf: immutable.Map[A, B1]): MapProxy[A, B1] =
     new MapProxy[A, B1] { val self = newSelf }
 
-  override def empty = newProxy(immutable.Map[A, B]())
+  override def empty = newProxy(self.empty)
   override def updated [B1 >: B](key: A, value: B1) = newProxy(self.updated(key, value))
 
   override def + [B1 >: B](kv: (A, B1)): Map[A, B1] = newProxy(self + kv)
-  override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *) =
+  override def + [B1 >: B](elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *) =
     newProxy(self.+(elem1, elem2, elems: _*))
   override def -(key: A) = newProxy(self - key)
-
-  // error: method ++ overrides nothing  -- ??
-  // override def ++[B1 >: B](elems: Traversable[(A, B1)]) = super.++(elems)
-  // override def ++[B1 >: B] (iter: Iterator[(A, B1)]): immutable.Map[A, B1] =
-  override def filterNot(p: ((A, B)) => Boolean) = newProxy(self.filterNot(p))
-  override def update[B1 >: B](key: A, value: B1) = newProxy(self.update(key, value))
 }

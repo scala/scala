@@ -13,7 +13,7 @@ package scala.collection.generic
 
 import collection.mutable.Buffer
 
-// Methods could be printed by  cat TraversibeTemplate.scala | egrep '^  (override )?def'
+// Methods could be printed by  cat TraversableTemplate.scala | egrep '^  (override )?def'
 
 
 /** This trait implements a proxy for traversable objects. It forwards
@@ -25,7 +25,9 @@ import collection.mutable.Buffer
 trait TraversableProxyTemplate[+A, +This <: TraversableTemplate[A, This] with Traversable[A]] extends TraversableTemplate[A, This] with Proxy {
   def self: This
 
+  override def foreach[B](f: A => B): Unit = self.foreach(f)
   override def isEmpty: Boolean = self.isEmpty
+  override def nonEmpty: Boolean = self.nonEmpty
   override def size: Int = self.size
   override def hasDefiniteSize = self.hasDefiniteSize
   override def ++[B >: A, That](that: Traversable[B])(implicit bf: BuilderFactory[B, That, This]): That = self.++(that)(bf)
@@ -33,10 +35,10 @@ trait TraversableProxyTemplate[+A, +This <: TraversableTemplate[A, This] with Tr
   override def map[B, That](f: A => B)(implicit bf: BuilderFactory[B, That, This]): That = self.map(f)(bf)
   override def flatMap[B, That](f: A => Traversable[B])(implicit bf: BuilderFactory[B, That, This]): That = self.flatMap(f)(bf)
   override def filter(p: A => Boolean): This = self.filter(p)
+  override def filterNot(p: A => Boolean): This = self.filterNot(p)
   override def remove(p: A => Boolean): This = self.remove(p)
   override def partition(p: A => Boolean): (This, This) = self.partition(p)
   override def groupBy[K](f: A => K): Map[K, This] = self.groupBy(f)
-  override def foreach[B](f: A => B): Unit = self.foreach(f)
   override def forall(p: A => Boolean): Boolean = self.forall(p)
   override def exists(p: A => Boolean): Boolean = self.exists(p)
   override def count(p: A => Boolean): Int = self.count(p)
@@ -70,6 +72,7 @@ trait TraversableProxyTemplate[+A, +This <: TraversableTemplate[A, This] with Tr
   override def toIterable: Iterable[A] = self.toIterable
   override def toSequence: Sequence[A] = self.toSequence
   override def toStream: Stream[A] = self.toStream
+  override def toSet[B >: A]: Set[B] = self.toSet
 //  override def sortWith(lt : (A,A) => Boolean): This = self.sortWith(lt)
   override def mkString(start: String, sep: String, end: String): String = self.mkString(start, sep, end)
   override def mkString(sep: String): String = self.mkString(sep)
@@ -77,7 +80,6 @@ trait TraversableProxyTemplate[+A, +This <: TraversableTemplate[A, This] with Tr
   override def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = self.addString(b, start, sep, end)
   override def addString(b: StringBuilder, sep: String): StringBuilder = self.addString(b, sep)
   override def addString(b: StringBuilder): StringBuilder = self.addString(b)
-  override def toString = self.toString
   override def stringPrefix : String = self.stringPrefix
   override def view = self.view
   override def view(from: Int, until: Int): TraversableView[A, This] = self.view(from, until)
