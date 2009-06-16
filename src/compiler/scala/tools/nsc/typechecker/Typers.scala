@@ -780,39 +780,21 @@ trait Typers { self: Analyzer =>
       case mt: MethodType
       if (((mode & (EXPRmode | FUNmode | LHSmode)) == EXPRmode) &&
           (context.undetparams.isEmpty || (mode & POLYmode) != 0)) =>
-        // if (isNamedApplyBlock(tree)), we know that `tree' is a transformed
-        // named application and has the following form:
-        // { val x$1 = arg1
-        //   [...]
-        //   val x$n = argn
-        //   fun(x$1, ..)..(.., x$n) }
-        // Eta-Expansion needs to be performed on the method `fun', not on
-        // the entire block, so we extract the fun (`tree1') apply eta-expansion,
-        // and re-construct the block at the end:
-        // { val x$1 = arg1
-        //   [...]
-        //   val x$n = argn
-        //   (y$1, .., y$n) => fun(x$1, ..)..(.., x$n)(y$1, ..)..(.., y$n) }
-        val (tree1, meth, isExpanded) = tree match {
-          case Block(_, tree1) if isNamedApplyBlock(tree) =>
-            context.namedApplyBlockInfo = None
-            (tree1, tree1.symbol, true)
-          case _ => (tree, tree.symbol, false)
+
+        val meth = tree match {
+          // a partial named application is a block (see comment in EtaExpansion)
+          case Block(_, tree1) => tree1.symbol
+          case _ => tree.symbol
         }
         if (!meth.isConstructor &&
             //isCompatible(tparamsToWildcards(mt, context.undetparams), pt) &&
             isFunctionType(pt))/* &&
             (pt <:< functionType(mt.paramTypes map (t => WildcardType), WildcardType)))*/ { // (4.2)
-          if (settings.debug.value) log("eta-expanding "+tree1+":"+tree1.tpe+" to "+pt)
-          checkParamsConvertible(tree1.pos, tree1.tpe)
-          val tree2 = etaExpand(context.unit, tree1)
-          //println("eta "+tree1+" ---> "+tree2+":"+tree2.tpe)
-          val typedFun = typed(tree2, mode, pt)
-          tree match {
-            case Block(stats, fun) if (isExpanded) =>
-              treeCopy.Block(tree, stats, typedFun).setType(typedFun.tpe)
-            case _ => typedFun
-          }
+          if (settings.debug.value) log("eta-expanding "+tree+":"+tree.tpe+" to "+pt)
+          checkParamsConvertible(tree.pos, tree.tpe)
+          val tree1 = etaExpand(context.unit, tree)
+          //println("eta "+tree+" ---> "+tree1+":"+tree1.tpe)
+          typed(tree1, mode, pt)
         } else if (!meth.isConstructor && mt.paramTypes.isEmpty) { // (4.3)
           adapt(typed(Apply(tree, List()) setPos tree.pos), mode, pt)
         } else if (context.implicitsEnabled) {

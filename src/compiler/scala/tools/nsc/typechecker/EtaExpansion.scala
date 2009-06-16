@@ -79,6 +79,16 @@ trait EtaExpansion { self: Analyzer =>
           Ident(vname) setPos tree.pos
         }
       tree match {
+        // a partial application using named arguments has the following form:
+        // { val qual$1 = qual
+        //   val x$1 = arg1
+        //   [...]
+        //   val x$n = argn
+        //   qual$1.fun(x$1, ..)..(.., x$n) }
+        // Eta-expansion has to be performed on `fun'
+        case Block(stats, fun) =>
+          defs ++= stats
+          liftoutPrefix(fun)
         case Apply(fn, args) =>
           treeCopy.Apply(tree, liftoutPrefix(fn), List.mapConserve(args)(liftout)) setType null
         case TypeApply(fn, args) =>
