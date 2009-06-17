@@ -112,32 +112,30 @@ import genprod._
 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz */
 
 object FunctionZero extends Function(0) {
-  override def descriptiveComment = functionNTemplate.format("currentSeconds", "anonfun0", """
-  *
-  *    <b>val</b> currentSeconds = () => System.currentTimeMillis() / 1000L
-  *
-  *    <b>val</b> anonfun0 = <b>new</b> Function0[Long] {
-  *      <b>def</b> apply(): Long = System.currentTimeMillis() / 1000L
-  *    }
-  *
-  *    println(currentSeconds())
-  *    println(anonfun0())
-""")
+  override def descriptiveComment = functionNTemplate.format("currentSeconds", "anonfun0",
+""" *
+ *    <b>val</b> currentSeconds = () => System.currentTimeMillis() / 1000L
+ *
+ *    <b>val</b> anonfun0 = <b>new</b> Function0[Long] {
+ *      <b>def</b> apply(): Long = System.currentTimeMillis() / 1000L
+ *    }
+ *
+ *    println(currentSeconds())
+ *    println(anonfun0())""")
   override def moreMethods = ""
 }
 
 object FunctionOne extends Function(1) {
-  override def descriptiveComment = functionNTemplate.format("succ", "anonfun1", """
-  *
-  *    <b>val</b> succ = (x: Int) => x + 1
-  *
-  *    <b>val</b> anonfun1 = <b>new</b> Function1[Int, Int] {
-  *      <b>def</b> apply(x: Int): Int = x + 1
-  *    }
-  *
-  *    println(succ(0))
-  *    println(anonfun1(0))
-""")
+  override def descriptiveComment = functionNTemplate.format("succ", "anonfun1",
+""" *
+ *    <b>val</b> succ = (x: Int) => x + 1
+ *
+ *    <b>val</b> anonfun1 = <b>new</b> Function1[Int, Int] {
+ *      <b>def</b> apply(x: Int): Int = x + 1
+ *    }
+ *
+ *    println(succ(0))
+ *    println(anonfun1(0))""")
 
   override def moreMethods = """
   /** (f compose g)(x) ==  f(g(x))
@@ -151,17 +149,16 @@ object FunctionOne extends Function(1) {
 }
 
 object FunctionTwo extends Function(2) {
-  override def descriptiveComment = functionNTemplate.format("max", "anonfun2", """
-  *
-  *    <b>val</b> max = (x: Int, y: Int) => <b>if</b> (x < y) y <b>else</b> x
-  *
-  *    <b>val</b> anonfun2 = <b>new</b> Function2[Int, Int, Int] {
-  *      <b>def</b> apply(x: Int, y: Int): Int = <b>if</b> (x < y) y <b>else</b> x
-  *    }
-  *
-  *    println(max(0, 1))
-  *    println(anonfun2(0, 1))
-""")
+  override def descriptiveComment = functionNTemplate.format("max", "anonfun2",
+""" *
+ *    <b>val</b> max = (x: Int, y: Int) => <b>if</b> (x < y) y <b>else</b> x
+ *
+ *    <b>val</b> anonfun2 = <b>new</b> Function2[Int, Int, Int] {
+ *      <b>def</b> apply(x: Int, y: Int): Int = <b>if</b> (x < y) y <b>else</b> x
+ *    }
+ *
+ *    println(max(0, 1))
+ *    println(anonfun2(0, 1))""")
 }
 
 object Function
@@ -178,13 +175,14 @@ object Function
 class Function(val i: Int) extends Group("Function") with Arity
 {
   val functionNTemplate = """<p>
-       In the following example the definition of
-  *    <code>%s</code> is a shorthand for the anonymous class
-  *    definition <code>%s</code>:
-  *  </p>
-  *  <pre>
-  *  <b>object</b> Main <b>extends</b> Application { %s
-  *  }</pre>"""
+ * In the following example the definition of
+ *    <code>%s</code> is a shorthand for the anonymous class
+ *    definition <code>%s</code>:
+ *  </p>
+ *  <pre>
+ *  <b>object</b> Main <b>extends</b> Application {
+%s
+ *  }</pre>"""
 
   def toStr() = "\"" + ("<function%d>" format i) + "\""
   def apply() = {
@@ -258,12 +256,12 @@ class Tuple(val i: Int) extends Group("Tuple") with Arity
 {
   // prettifies it a little if it's overlong
   def mkToString() = {
-    def str(xs: List[String]) = xs.mkString(""" + ", " + """)
+    def str(xs: List[String]) = xs.mkString(""" + "," + """)
     if (i <= MAX_ARITY / 2) str(mdefs)
     else {
       val s1 = str(mdefs take (i / 2))
       val s2 = str(mdefs drop (i / 2))
-      s1 + " +\n    \", \" + " + s2
+      s1 + " +\n    \",\" + " + s2
     }
   }
 
