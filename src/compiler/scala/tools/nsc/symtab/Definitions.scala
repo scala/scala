@@ -170,6 +170,7 @@ trait Definitions {
     lazy val UncheckedClass: Symbol = getClass("scala.unchecked")
     lazy val TailrecClass: Symbol = getClass("scala.annotation.tailrec")
     lazy val SwitchClass: Symbol = getClass("scala.annotation.switch")
+    lazy val ExperimentalClass: Symbol = getClass("scala.annotation.experimental")
 
     var EqualsPatternClass: Symbol = _
 
