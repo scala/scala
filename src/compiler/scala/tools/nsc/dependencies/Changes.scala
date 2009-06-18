@@ -24,11 +24,17 @@ abstract class Changes {
     def morePermissive: Boolean = !moreRestrictive
   }
 
-  case class Parents(target: Symbol) extends Change
-  case class TypeParams(from: List[Symbol], to: List[Symbol]) extends Change
-  case class Added(member: String) extends Change
-  case class Removed(member: String) extends Change
-  case class Changed(member: String)extends Change
+
+  /** An entity in source code, either a class or a member definition.
+   *  Name is fully-qualified.
+   */
+  abstract class Entity
+  case class Class(name: String) extends Entity
+  case class Definition(name: String) extends Entity
+
+  case class Added(e: Entity) extends Change
+  case class Removed(e: Entity) extends Change
+  case class Changed(e: Entity) extends Change
 
 
   /** Return the list of changes between 'from' and 'to'.
@@ -36,29 +42,32 @@ abstract class Changes {
   def changeSet(from: Symbol, to: Symbol): List[Change] = {
     val cs = new mutable.ListBuffer[Change]
 
-    if ((from.info.parents intersect to.info.parents).size
-        != from.info.parents.size)
-      cs += Parents(from)
-
-    if (from.typeParams != to.typeParams)
-      cs += TypeParams(from.typeParams, to.typeParams)
+    if (((from.info.parents intersect to.info.parents).size
+         != from.info.parents.size)
+        || (from.typeParams != to.typeParams))
+      cs += Changed(toEntity(from))
 
     // new members not yet visited
-    val newMembers = mutable.HashSet[String]()
-    (to.info.decls.elements) foreach (newMembers += _.fullNameString)
+    val newMembers = mutable.HashSet[Symbol]()
+    newMembers ++= to.info.decls.elements
 
     for (o <- from.info.decls.elements;
          val n = to.info.decl(o.name)) {
-      newMembers -= n.fullNameString
+      newMembers -= n
 
-      if (n == NoSymbol)
-        cs += Removed(o.fullNameString)
+      if (o.isClass)
+        cs ++= changeSet(o, n)
+      else if (n == NoSymbol)
+        cs += Removed(toEntity(o))
       else if (n.suchThat(_.tpe == o.tpe) == NoSymbol)
-        cs += Changed(o.fullNameString)
+        cs += Changed(toEntity(o))
     }
-    cs ++= (newMembers map Added)
+    cs ++= (newMembers map (Added compose toEntity))
 
     cs.toList
   }
 
+  private def toEntity(sym: Symbol): Entity =
+    if (sym.isClass) Class(sym.fullNameString)
+    else Definition(sym.fullNameString)
 }
