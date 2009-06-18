@@ -812,8 +812,11 @@ abstract class UnPickler {
       override def complete(sym: Symbol) {
         super.complete(sym)
         var alias = at(j, readSymbol)
-        if (alias hasFlag OVERLOADED)
-          alias = alias suchThat (alt => sym.tpe =:= sym.owner.thisType.memberType(alt))
+        if (alias hasFlag OVERLOADED) {
+          atPhase(currentRun.picklerPhase) {
+            alias = alias suchThat (alt => sym.tpe =:= sym.owner.thisType.memberType(alt))
+          }
+        }
         sym.asInstanceOf[TermSymbol].setAlias(alias)
       }
     }
