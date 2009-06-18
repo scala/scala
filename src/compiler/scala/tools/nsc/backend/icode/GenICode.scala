@@ -610,7 +610,7 @@ abstract class GenICode extends SubComponent  {
               ctx1.bb.emit(CONSTANT(Constant(false)))
           }
           else if (r.isValueType && cast) {
-            assert(false) /* Erasure should have added an unboxing operation to prevent that. */
+            assert(false, tree) /* Erasure should have added an unboxing operation to prevent that. */
           }
           else if (r.isValueType)
             ctx.bb.emit(IS_INSTANCE(REFERENCE(definitions.boxedClass(r.toType.typeSymbol))))
@@ -651,7 +651,7 @@ abstract class GenICode extends SubComponent  {
             assert(ctor.isClassConstructor,
                    "'new' call to non-constructor: " + ctor.name)
 
-          generatedType = toTypeKind(fun.tpe.resultType)
+          generatedType = toTypeKind(tpt.tpe)
           if (settings.debug.value)
             assert(generatedType.isReferenceType || generatedType.isArrayType,
                  "Non reference type cannot be instantiated: " + generatedType)
