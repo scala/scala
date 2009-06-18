@@ -57,7 +57,10 @@ abstract class TreePrinters {
 
     def printTypeParams(ts: List[TypeDef]) {
       if (!ts.isEmpty) {
-        print("["); printSeq(ts){printParam}{print(", ")}; print("]")
+        print("["); printSeq(ts){ t =>
+          printAnnotations(t)
+          printParam(t)
+        }{print(", ")}; print("]")
       }
     }
 
@@ -87,7 +90,6 @@ abstract class TreePrinters {
           printColumn(List(tree), "{", ";", "}")
       }
     }
-
     def symName(tree: Tree, name: Name): String =
       if (tree.symbol != null && tree.symbol != NoSymbol) {
         ((if (tree.symbol.isMixinConstructor) "/*"+tree.symbol.owner.name+"*/" else "") +
@@ -177,6 +179,7 @@ abstract class TreePrinters {
 
         case TypeDef(mods, name, tparams, rhs) =>
           if (mods hasFlag (PARAM | DEFERRED)) {
+            printAnnotations(tree)
             printModifiers(tree, mods); print("type "); printParam(tree)
           } else {
             printAnnotations(tree)
@@ -194,19 +197,19 @@ abstract class TreePrinters {
               if (isNotRemap(s)) s._1.toString else s._1.toString + "=>" + s._2.toString
 
           print("import "); print(expr)
-	  print(".")
+          print(".")
           selectors match {
             case List(s) =>
               // If there is just one selector and it is not remapping a name, no braces are needed
-	      if (isNotRemap(s)) {
-		print(selectorToString(s))
-	      } else {
-		print("{"); print(selectorToString(s)); print("}")
-	      }
+              if (isNotRemap(s)) {
+                print(selectorToString(s))
+              } else {
+                print("{"); print(selectorToString(s)); print("}")
+              }
               // If there is more than one selector braces are always needed
-	    case many =>
+            case many =>
               print(many.map(selectorToString).mkString("{", ", ", "}"))
-	  }
+          }
 
         case DocDef(comment, definition) =>
           print(comment); println; print(definition)
@@ -410,21 +413,21 @@ abstract class TreePrinters {
   def create(writer: PrintWriter): TreePrinter = new TreePrinter(writer)
   def create(stream: OutputStream): TreePrinter = create(new PrintWriter(stream))
   def create(): TreePrinter = {
-    /** A writer that writes to the current Console and
-      * is sensitive to replacement of the Console's
-      * output stream.
-      */
-    object ConsoleWriter extends Writer {
-      override def write(str: String) { Console.print(str) }
-
-      def write(cbuf: Array[Char], off: Int, len: Int) {
-        val str = new String(cbuf, off, len)
-        write(str)
-      }
-
-      def close = { /* do nothing */ }
-      def flush = { /* do nothing */ }
-    }
     create(new PrintWriter(ConsoleWriter))
+  }
+  /** A writer that writes to the current Console and
+   * is sensitive to replacement of the Console's
+   * output stream.
+   */
+  object ConsoleWriter extends Writer {
+    override def write(str: String) { Console.print(str) }
+
+    def write(cbuf: Array[Char], off: Int, len: Int) {
+      val str = new String(cbuf, off, len)
+      write(str)
+    }
+
+    def close = { /* do nothing */ }
+    def flush = { /* do nothing */ }
   }
 }

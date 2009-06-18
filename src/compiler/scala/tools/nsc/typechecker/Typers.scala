@@ -3046,8 +3046,13 @@ trait Typers { self: Analyzer =>
                 res.tpe = res.tpe.notNull
               }
               */
-              if (fun2.symbol == Array_apply) typed { atPos(tree.pos) { gen.mkCheckInit(res) } }
-              else res
+              if (fun2.symbol == Array_apply) {
+                val checked = gen.mkCheckInit(res)
+                // this check is needed to avoid infinite recursion in Duplicators
+                // (calling typed1 more than once for the same tree
+                if (checked ne res) typed { atPos(tree.pos)(checked) }
+       	        else res
+              } else res
               /* Would like to do the following instead, but curiously this fails; todo: investigate
               if (fun2.symbol.name == nme.apply && fun2.symbol.owner == ArrayClass)
                 typed { atPos(tree.pos) { gen.mkCheckInit(res) } }

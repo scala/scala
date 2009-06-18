@@ -48,7 +48,7 @@ abstract class TreeBrowsers {
    */
   class SwingBrowser {
 
-    def browse(t: Tree): Unit = {
+    def browse(t: Tree): Tree = {
       val tm = new ASTTreeModel(t)
 
       val frame = new BrowserFrame()
@@ -59,6 +59,7 @@ abstract class TreeBrowsers {
 
       // wait for the frame to be closed
       lock.acquire
+      t
     }
 
     def browse(units: Iterator[CompilationUnit]): Unit =
@@ -138,7 +139,7 @@ abstract class TreeBrowsers {
     var splitPane: JSplitPane = _
     var treeModel: TreeModel = _
 
-    val textArea: JTextArea = new JTextArea(20, 150)
+    val textArea: JTextArea = new JTextArea(30, 120)
     val infoPanel = new TextInfoPanel()
 
     /** Create a frame that displays the AST.
@@ -201,7 +202,7 @@ abstract class TreeBrowsers {
   /**
    * Present detailed information about the selected tree node.
    */
-  class TextInfoPanel extends JTextArea(30, 40) {
+  class TextInfoPanel extends JTextArea(20, 50) {
 
     setFont(new Font("monospaced", Font.PLAIN, 12))
 
@@ -216,9 +217,13 @@ abstract class TreeBrowsers {
         case _ =>
           str.append("tree.pos: ").append(t.pos)
           str.append("\nSymbol: ").append(TreeInfo.symbolText(t))
-          str.append("\nSymbol info: \n")
-          TreeInfo.symbolTypeDoc(t).format(getWidth() / getColumnWidth(), buf)
-          str.append(buf.toString())
+          str.append("\nSymbol owner: ").append(
+            if ((t.symbol ne null) && t.symbol != NoSymbol)
+              t.symbol.owner.toString
+            else
+              "NoSymbol has no owner")
+          if ((t.symbol ne null) && t.symbol.isType)
+            str.append("\ntermSymbol: " + t.symbol.tpe.termSymbol + "\ntypeSymbol: " + t.symbol.tpe.typeSymbol)
           str.append("\nSymbol tpe: ")
           if (t.symbol ne null) {
             str.append(t.symbol.tpe).append("\n")
@@ -226,7 +231,10 @@ abstract class TreeBrowsers {
             TypePrinter.toDocument(t.symbol.tpe).format(getWidth() / getColumnWidth(), buf)
             str.append(buf.toString())
           }
-          str.append("\nSymbol Attributes: \n").append(TreeInfo.symbolAttributes(t))
+          str.append("\n\nSymbol info: \n")
+          TreeInfo.symbolTypeDoc(t).format(getWidth() / getColumnWidth(), buf)
+          str.append(buf.toString())
+          str.append("\n\nSymbol Attributes: \n").append(TreeInfo.symbolAttributes(t))
           str.append("\ntree.tpe: ")
           if (t.tpe ne null) {
             str.append(t.tpe.toString()).append("\n")
@@ -238,7 +246,6 @@ abstract class TreeBrowsers {
       setText(str.toString())
     }
   }
-
 
   /** Computes different information about a tree node. It
    *  is used as central place to do all pattern matching against
@@ -567,7 +574,7 @@ abstract class TreeBrowsers {
       if ((s ne null) && (s != NoSymbol)) {
         var str = flagsToString(s.flags)
         if (s.isStaticMember) str = str + " isStatic ";
-        str
+        str + " annotations: " + s.annotations.mkString("", " ", "")
       }
       else ""
     }
@@ -620,7 +627,7 @@ abstract class TreeBrowsers {
         Document.group(
           Document.nest(4, "TypeRef(" :/:
                         toDocument(pre) :: ", " :/:
-                        sym.name.toString() :: ", " :/:
+                        sym.name.toString() + sym.idString :: ", " :/:
                         "[ " :: toDocument(args) ::"]" :: ")")
         )
 
@@ -641,7 +648,7 @@ abstract class TreeBrowsers {
         Document.group(
           Document.nest(4,"ClassInfoType(" :/:
                         toDocument(parents) :: ", " :/:
-                        clazz.name.toString() :: ")")
+                        clazz.name.toString() + clazz.idString :: ")")
         )
 
       case MethodType(params, result) =>

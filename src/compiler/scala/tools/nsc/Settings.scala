@@ -792,6 +792,7 @@ trait ScalacSettings {
                         List("no-cache", "mono-cache", "poly-cache", "invoke-dynamic"), "poly-cache") .
                         withHelpSyntax("-Ystruct-dispatch:<method>")
   val Xwarndeadcode = BooleanSetting    ("-Ywarn-dead-code", "Emit warnings for dead code")
+  val specialize     = BooleanSetting   ("-Yspecialize", "Specialize generic code on types.")
 
   /**
    * -P "Plugin" settings

@@ -1,5 +1,14 @@
 class ann(i: Int) extends Annotation
 
+// annotations on abstract types
+abstract class C1[@serializable @cloneable +T, U, V[_]]
+abstract class C2[@deprecated
+                  @ann(1) T <: Number,
+                  V]
+abstract class C3 {
+  @ann(2) type X <: Number
+}
+
 object Test {
 
   // bug #1028
@@ -10,6 +19,7 @@ object Test {
 
   def c: Int @ann(x) = 1
   def d: String @ann({val z = 0; z - 1}) = "2"
+  def e[@deprecated T, U](x: T) = x
 
   //bug #1214
   val y = new (Integer @ann(0))(2)

@@ -38,7 +38,6 @@ object Flags {
   final val BYNAMEPARAM   = 0x00010000    // parameter is by name
   final val CONTRAVARIANT = 0x00020000    // symbol is a contravariant type variable
   final val LABEL         = 0x00020000    // method symbol is a label. Set by TailCall
-  final val DEFAULTINIT   = 0x00020000    // field is initialized to the default value (used by checkinit)
   final val INCONSTRUCTOR = 0x00020000    // class symbol is defined in this/superclass
                                           // constructor.
   final val ABSOVERRIDE   = 0x00040000    // combination of abstract & override
@@ -81,6 +80,8 @@ object Flags {
                                           // after each phase.
 
   final val LOCKED        = 0x8000000000L // temporary flag to catch cyclic dependencies
+  final val SPECIALIZED   = 0x10000000000L// symbol is a generated specialized member
+  final val DEFAULTINIT   = 0x20000000000L// symbol is a generated specialized member
 
   final val InitialFlags  = 0x0001FFFFFFFFFFFFL // flags that are enabled from phase 1.
   final val LateFlags     = 0x00FE000000000000L // flags that override flags in 0x1FC.

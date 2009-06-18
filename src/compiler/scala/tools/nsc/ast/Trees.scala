@@ -477,6 +477,10 @@ trait Trees {
   def DefDef(sym: Symbol, rhs: Tree): DefDef =
     DefDef(sym, Modifiers(sym.flags), rhs)
 
+  def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef = {
+    DefDef(sym, rhs(sym.info.paramss))
+  }
+
   /** Abstract type, type parameter, or type alias */
   case class TypeDef(mods: Modifiers, name: Name, tparams: List[TypeDef], rhs: Tree)
        extends MemberDef {

@@ -390,7 +390,13 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val runsRightAfter = None
   } with ExplicitOuter
 
-  // phaseName = "erasure"
+  // phaseName = "specialize"
+  object specializeTypes extends {
+    val global: Global.this.type = Global.this
+    val runsAfter = List[String]("")
+    val runsRightAfter = Some("tailcalls")
+  } with SpecializeTypes
+
   object erasure extends {
     val global: Global.this.type = Global.this
     val runsAfter = List[String]("explicitouter")
@@ -557,6 +563,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
     phasesSet += uncurry			       // uncurry, translate function values to anonymous classes
     phasesSet += tailCalls			       // replace tail calls by jumps
+    if (settings.specialize.value)
+      phasesSet += specializeTypes
     phasesSet += explicitOuter			       // replace C.this by explicit outer pointers, eliminate pattern matching
     phasesSet += erasure			       // erase generic types to Java 1.4 types, add interfaces for traits
     phasesSet += lazyVals			       //

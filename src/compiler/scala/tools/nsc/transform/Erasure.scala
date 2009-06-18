@@ -102,8 +102,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         case RefinedType(parents, decls) =>
           if (parents.isEmpty) erasedTypeRef(ObjectClass)
           else apply(parents.head)
-	case AnnotatedType(_, atp, _) =>
-	  apply(atp)
+        case AnnotatedType(_, atp, _) =>
+          apply(atp)
         case ClassInfoType(parents, decls, clazz) =>
           ClassInfoType(
             if ((clazz == ObjectClass) || (isValueType(clazz))) List()
@@ -781,7 +781,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
 
       val opc = new overridingPairs.Cursor(root) {
         override def exclude(sym: Symbol): Boolean =
-          !sym.isTerm || sym.hasFlag(PRIVATE) || super.exclude(sym)
+          (!sym.isTerm || sym.hasFlag(PRIVATE) || super.exclude(sym)
+           // specialized members have no type history before 'specialize', causing duble def errors for curried defs
+           || !sym.hasTypeAt(currentRun.refchecksPhase.id))
+
         override def matches(sym1: Symbol, sym2: Symbol): Boolean =
           atPhase(phase.next)(sym1.tpe =:= sym2.tpe)
       }
@@ -794,7 +797,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                      opc.overriding.infosString +
                      opc.overridden.locationString + " " +
                      opc.overridden.infosString)
-            doubleDefError(opc.overriding, opc.overridden)
+          doubleDefError(opc.overriding, opc.overridden)
         }
         opc.next
       }

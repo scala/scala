@@ -500,7 +500,7 @@ trait Definitions {
     }
 
     val refClass = new HashMap[Symbol, Symbol]
-    private val abbrvTag = new HashMap[Symbol, Char]
+    val abbrvTag = new HashMap[Symbol, Char]
 
     private def newValueClass(name: Name, tag: Char): Symbol = {
       val boxedName = sn.Boxed(name)

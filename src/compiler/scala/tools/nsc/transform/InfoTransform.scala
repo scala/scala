@@ -22,8 +22,11 @@ trait InfoTransform extends Transform {
     new Phase(prev)
 
   protected def changesBaseClasses = true
+  protected def keepsTypeParams = false
 
   class Phase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+    override val keepsTypeParams = InfoTransform.this.keepsTypeParams
+
     if (infoTransformers.nextFrom(id).pid != id) {
       // this phase is not yet in the infoTransformers
       val infoTransformer = new InfoTransformer {

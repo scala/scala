@@ -1725,15 +1725,15 @@ self =>
 
     /** TypeParamClauseOpt    ::= [TypeParamClause]
      *  TypeParamClause       ::= `[' VariantTypeParam {`,' VariantTypeParam} `]']
-     *  VariantTypeParam      ::= [`+' | `-'] TypeParam
+     *  VariantTypeParam      ::= {Annotation} [`+' | `-'] TypeParam
      *  FunTypeParamClauseOpt ::= [FunTypeParamClause]
      *  FunTypeParamClause    ::= `[' TypeParam {`,' TypeParam} `]']
      *  TypeParam             ::= Id TypeParamClauseOpt TypeBounds [<% Type]
      */
     def typeParamClauseOpt(owner: Name, implicitViewBuf: ListBuffer[Tree]): List[TypeDef] = {
-      def typeParam(): TypeDef = {
+      def typeParam(ms: Modifiers): TypeDef = {
+        var mods = ms | Flags.PARAM
         val start = in.offset
-        var mods = Modifiers(Flags.PARAM)
         if (owner.isTypeName && isIdent) {
           if (in.name == PLUS) {
             in.nextToken()
@@ -1763,10 +1763,10 @@ self =>
       newLineOptWhenFollowedBy(LBRACKET)
       if (in.token == LBRACKET) {
         in.nextToken()
-        params += typeParam()
+        params += typeParam(NoMods.withAnnotations(annotations(true, false)))
         while (in.token == COMMA) {
           in.nextToken()
-          params += typeParam()
+          params += typeParam(NoMods.withAnnotations(annotations(true, false)))
         }
         accept(RBRACKET)
       }

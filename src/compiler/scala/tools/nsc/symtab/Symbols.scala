@@ -124,6 +124,10 @@ trait Symbols {
     /** Does this symbol have an annotation of the given class? */
     def hasAnnotation(cls: Symbol) = annotations exists { _.atp.typeSymbol == cls }
 
+    /** Remove all annotations matching the given class. */
+    def removeAnnotation(cls: Symbol): Unit =
+      setAnnotations(annotations.remove(_.atp.typeSymbol == cls))
+
     /** set when symbol has a modifier of the form private[X], NoSymbol otherwise.
      *  Here's some explanation how privateWithin gets combined with access flags:
      *
@@ -988,9 +992,11 @@ trait Symbols {
       cloneSymbol(owner)
 
     /** A clone of this symbol, but with given owner */
-    final def cloneSymbol(owner: Symbol): Symbol =
-      cloneSymbolImpl(owner).setInfo(info.cloneInfo(this))
+    final def cloneSymbol(owner: Symbol): Symbol = {
+      val newSym = cloneSymbolImpl(owner)
+      newSym.setInfo(info.cloneInfo(newSym))
         .setFlag(this.rawflags).setAnnotations(this.annotations)
+    }
 
     /** Internal method to clone a symbol's implementation without flags or type
      */
@@ -1537,14 +1543,14 @@ trait Symbols {
     }
 
     override def alias: Symbol =
-      if (hasFlag(SUPERACCESSOR | PARAMACCESSOR | MIXEDIN)) initialize.referenced
+      if (hasFlag(SUPERACCESSOR | PARAMACCESSOR | MIXEDIN | SPECIALIZED)) initialize.referenced
       else NoSymbol
 
     def setAlias(alias: Symbol): TermSymbol = {
       assert(alias != NoSymbol, this)
       assert(!(alias hasFlag OVERLOADED), alias)
 
-      assert(hasFlag(SUPERACCESSOR | PARAMACCESSOR | MIXEDIN), this)
+      assert(hasFlag(SUPERACCESSOR | PARAMACCESSOR | MIXEDIN | SPECIALIZED), this)
       referenced = alias
       this
     }

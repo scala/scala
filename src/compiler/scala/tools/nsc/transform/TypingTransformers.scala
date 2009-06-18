@@ -28,7 +28,8 @@ trait TypingTransformers {
 
     def atOwner[A](tree: Tree, owner: Symbol)(trans: => A): A = {
       val savedLocalTyper = localTyper
-      localTyper = localTyper.atOwner(tree, owner)
+//      println("ttransformer atOwner: " + owner + " isPackage? " + owner.isPackage)
+      localTyper = localTyper.atOwner(tree, if (owner.isModule) owner.moduleClass else owner)
       typers += Pair(owner, localTyper)
       val result = super.atOwner(owner)(trans)
       localTyper = savedLocalTyper
@@ -42,6 +43,8 @@ trait TypingTransformers {
         case Template(_, _, _) =>
           // enter template into context chain
           atOwner(currentOwner) { super.transform(tree) }
+        case PackageDef(_, _) =>
+          atOwner(tree.symbol) { super.transform(tree) }
         case _ =>
           super.transform(tree)
       }
