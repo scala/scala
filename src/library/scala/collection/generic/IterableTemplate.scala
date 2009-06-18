@@ -178,10 +178,10 @@ trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] 
    */
   override def view(from: Int, until: Int) = view.slice(from, until)
 
-  @deprecated("use `updated' instead") def first: A = head
+  @deprecated("use `head' instead") def first: A = head
 
   /** <code>None</code> if traversable is empty. */
-  @deprecated("use `updated' instead") def firstOption: Option[A] = headOption
+  @deprecated("use `headOption' instead") def firstOption: Option[A] = headOption
 
   @deprecated("use `toSequence' instead") def toSeq: Sequence[A] = toSequence
 
