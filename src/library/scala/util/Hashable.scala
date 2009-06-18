@@ -24,7 +24,7 @@ abstract trait Hashable extends AnyRef
 {
   import Hashable._
   protected def hashValues: Seq[Any]  // in an ideal universe this would be more like Seq[Hashable]
-  protected def hashSeed: Int = 0
+  protected def hashSeed: Int = 1
 
   override def hashCode: Int =
     (hashValues map calculateHashCode).foldLeft(hashSeed)((x, y) => x * 41 + y)
