@@ -302,6 +302,8 @@ trait Symbols {
        case None => true }))
   }
 
+  protected var activeLocks = 0
+
   // Lock a symbol, using the handler if the recursion depth becomes too great.
   def lock(handler: => Unit) = {
     if ((rawflags & LOCKED) != 0) {
@@ -317,14 +319,20 @@ trait Symbols {
             recursionTable += (this -> 1)
         }
       } else { handler }
-    } else { rawflags |= LOCKED }
+    } else {
+      rawflags |= LOCKED
+      activeLocks += 1
+    }
   }
 
   // Unlock a symbol
   def unlock() = {
-    rawflags = rawflags & ~LOCKED
-    if (settings.Yrecursion.value != 0)
-      recursionTable -= this
+    if ((rawflags & LOCKED) != 0) {
+      activeLocks -= 1
+      rawflags = rawflags & ~LOCKED
+      if (settings.Yrecursion.value != 0)
+        recursionTable -= this
+    }
   }
 
 // Tests ----------------------------------------------------------------------
@@ -809,6 +817,13 @@ trait Symbols {
     final def isUpdatedAt(pid: Phase#Id): Boolean = {
       var infos = this.infos
       while ((infos ne null) && phaseId(infos.validFrom) != pid + 1) infos = infos.prev
+      infos ne null
+    }
+
+    /** Was symbol's type updated during given phase? */
+    final def hasTypeAt(pid: Phase#Id): Boolean = {
+      var infos = this.infos
+      while ((infos ne null) && phaseId(infos.validFrom) > pid) infos = infos.prev
       infos ne null
     }
 

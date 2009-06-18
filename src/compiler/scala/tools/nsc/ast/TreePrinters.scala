@@ -115,12 +115,13 @@ abstract class TreePrinters {
     }
 
     def printAnnotations(tree: Tree) {
-      val annots = tree.symbol.annotations
-      if (!annots.isEmpty) {
-        annots foreach { annot => print("@"+annot+" ") }
-        println
-      }
-      else {
+      if (tree.symbol.rawInfo.isComplete) {
+        val annots = tree.symbol.annotations
+        if (!annots.isEmpty) {
+          annots foreach { annot => print("@"+annot+" ") }
+          println
+        }
+      } else {
         val annots = tree.asInstanceOf[MemberDef].mods.annotations
         if (!annots.isEmpty) {
           annots foreach { annot => print("@"+annot+" ") }

@@ -10,18 +10,29 @@ import scala.tools.nsc.ast._
  */
 trait CompilerControl { self: Global =>
 
+  /** Response wrapper to client
+   */
+  type Response[T] = SyncVar[Either[T, Throwable]]
+
+  abstract class WorkItem extends (() => Unit)
+
+  /** The status of a member that's returned by completion.
+   */
   object MemberStatus extends Enumeration {
     val Accessible, Inherited, Implicit = Value
   }
 
-  type Response[T] = SyncVar[Either[T, Throwable]]
-
+  /** Info given for every member found by completion
+   */
   type Member = (Symbol, Type, MemberStatus.ValueSet)
 
-  /* Must be initialized before starting compilerRunner */
+  /** The scheduler by which client and compiler communicate
+   *  Must be initialized before starting compilerRunner
+   */
   protected val scheduler = new WorkScheduler
 
-  /** The compilation unit corresponding to a source file */
+  /** The compilation unit corresponding to a source file
+   */
   def unitOf(s: SourceFile): RichCompilationUnit = unitOfFile get s.file match {
     case Some(unit) =>
       unit
@@ -31,34 +42,53 @@ trait CompilerControl { self: Global =>
       unit
   }
 
-  /** Remove the corresponding CompilationUnit from consideration for recompilation */
-  def removeUnitOf(s: SourceFile) = unitOfFile remove s.file
-
   /** The compilation unit corresponding to a position */
   def unitOf(pos: Position): RichCompilationUnit = unitOf(pos.source.get)
 
-  /** Locate smallest tree that encloses position */
+  /** Remove the CompilationUnit corresponding to the given SourceFile
+   *  from consideration for recompilation.
+   */
+  def removeUnitOf(s: SourceFile) = unitOfFile remove s.file
+
+  /** Locate smallest tree that encloses position
+   */
   def locateTree(pos: Position): Tree =
     new Locator(pos) locateIn unitOf(pos).body
 
-  /** Locate smallest context that encloses position */
+  /** Locate smallest context that encloses position
+   */
   def locateContext(pos: Position): Option[Context] =
     locateContext(unitOf(pos).contexts, pos)
 
-  /** Make sure a set of compilation units is loaded and parsed */
+  /** Make sure a set of compilation units is loaded and parsed.
+   *  Return () to syncvar `result` on completion.
+   */
   def askReload(sources: List[SourceFile], result: Response[Unit]) =
-    scheduler.postWorkItem(() => reload(sources, result))
+    scheduler postWorkItem new WorkItem {
+      def apply() = reload(sources, result)
+      override def toString = "reload "+sources
+    }
 
-  /** Set sync var `result` to a fully attributed tree located at position `pos`  */
+  /** Set sync var `result` to a fully attributed tree located at position `pos`
+   */
   def askTypeAt(pos: Position, result: Response[Tree]) =
-    scheduler.postWorkItem(() => self.getTypedTreeAt(pos, result))
+    scheduler postWorkItem new WorkItem {
+      def apply() = self.getTypedTreeAt(pos, result)
+      override def toString = "typeat "+pos.source+" "+pos.show
+    }
 
   def askCompletion(pos: Position, result: Response[List[Member]]) =
-    scheduler.postWorkItem(() => self.completion(pos, result))
+    scheduler postWorkItem new WorkItem {
+      def apply() = self.completion(pos, result)
+      override def toString = "completion "+pos.source+" "+pos.show
+    }
 
   /** Ask to do unit first on present and subsequent type checking passes */
   def askToDoFirst(f: SourceFile) = {
-    scheduler.postWorkItem { () => moveToFront(List(f)) }
+    scheduler postWorkItem new WorkItem {
+      def apply() = moveToFront(List(f))
+      override def toString = "dofirst "+f
+    }
   }
 
   /** Cancel currently pending high-priority jobs */

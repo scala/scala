@@ -17,13 +17,15 @@ class Global(settings: Settings, reporter: Reporter)
      with RichCompilationUnits {
 self =>
 
+  override def onlyPresentation = true
+
   /** A list indicating in which order some units should be typechecked.
    *  All units in firsts are typechecked before any unit not in this list
    *  Modified by askToDoFirst, reload, typeAtTree.
    */
   var firsts: List[SourceFile] = List()
 
-  /** A map of all loaded files units to the rich compilation units that corresponds to them.
+  /** A map of all loaded files to the rich compilation units that correspond to them.
    */
   val unitOfFile = new LinkedHashMap[AbstractFile, RichCompilationUnit] with
                        SynchronizedMap[AbstractFile, RichCompilationUnit]
@@ -34,7 +36,7 @@ self =>
   /** Is a background compiler run needed? */
   private var outOfDate = false
 
-  /** Is a reload/ background compiler currently running? */
+  /** Is a reload/background compiler currently running? */
   private var acting = false
 
   /** The status value of a unit that has not yet been loaded */
@@ -43,13 +45,19 @@ self =>
   /** The status value of a unit that has not yet been typechecked */
   final val JustParsed = 0
 
+  private var resultTree = EmptyTree
+
   // ----------- Overriding hooks in nsc.Global -----------------------
 
   /** Create a RangePosition */
   override def rangePos(source: SourceFile, start: Int, point: Int, end: Int) =
     new RangePosition(source, start, point, end)
 
-  /** Called from typechecker: signal that a node has been completely typechecked
+
+
+  /** Called from typechecker, which signal hereby that a node has been completely typechecked.
+   *  If the node is included in unit.targetPos, abandons run and returns newly attributed tree.
+   *  Otherwise, if there's some higher priority work to be done, also abandons run with a FreshRunReq.
    *  @param  context  The context that typechecked the node
    *  @param  old      The original node
    *  @param  result   The transformed node
@@ -58,7 +66,7 @@ self =>
     def integrateNew() {
       context.unit.body = new TreeReplacer(old, result) transform context.unit.body
     }
-    if ((context.unit != null) && (context.unit.targetPos includes result.pos)) {
+    if ((context.unit != null) && !result.pos.isSynthetic && (result.pos includes context.unit.targetPos)) {
       integrateNew()
       throw new TyperResult(result)
     }
@@ -70,8 +78,8 @@ self =>
     }
   }
 
-  /** Called every time a context is created
-   *  Register the context in a context tree
+  /** Called from typechecker every time a context is created.
+   *  Registers the context in a context tree
    */
   override def registerContext(c: Context) = c.unit match {
     case u: RichCompilationUnit => addContext(u.contexts, c)
@@ -95,10 +103,14 @@ self =>
       case Some(action) =>
         try {
           acting = true
+          println("picked up work item: "+action)
           action()
+          println("done with work item: "+action)
         } catch {
           case ex: CancelActionReq =>
+            println("cancelled work item: "+action)
         } finally {
+          println("quitting work item: "+action)
           acting = false
         }
       case None =>
@@ -121,10 +133,9 @@ self =>
           while (outOfDate) {
             try {
               backgroundCompile()
+              outOfDate = false
             } catch {
               case ex: FreshRunReq =>
-            } finally {
-              outOfDate = false
             }
           }
         }
@@ -148,7 +159,7 @@ self =>
     firsts = firsts filter (s => unitOfFile contains (s.file))
     val prefix = firsts map unitOf
     val units = prefix ::: (unitOfFile.values.toList diff prefix)
-    units foreach recompile
+    recompile(units)
     inform("Everything is now up to date")
   }
 
@@ -172,15 +183,19 @@ self =>
     unit.status = JustParsed
   }
 
-  /** Make sure symbol and type attributes are reset and recompile unit.
+  /** Make sure symbol and type attributes are reset and recompile units.
    */
-  def recompile(unit: RichCompilationUnit) {
-    reset(unit)
-    inform("parsing: "+unit)
-    parse(unit)
-    inform("type checking: "+unit)
-    currentTyperRun.typeCheck(unit)
-    unit.status = currentRunId
+  def recompile(units: List[RichCompilationUnit]) {
+    for (unit <- units) {
+      reset(unit)
+      inform("parsing: "+unit)
+      parse(unit)
+    }
+    for (unit <- units) {
+      inform("type checking: "+unit)
+      currentTyperRun.typeCheck(unit)
+      unit.status = currentRunId
+    }
   }
 
   /** Move list of files to front of firsts */
@@ -209,7 +224,6 @@ self =>
         if (settings.Xprintpos.value) treePrinter.print(unit)
       }
       moveToFront(sources)
-      ()
     }
     if (outOfDate) throw new FreshRunReq
     else outOfDate = true
@@ -248,8 +262,8 @@ self =>
             pre.memberType(sym),
             if (context.isAccessible(sym, pre, superAccess)) vs + Accessible else vs
           )
-          val decls = tree.tpe.decls.toList map (sym => withStatus(sym, ValueSet()))
-          val inherited = tree.tpe.members.toList diff decls map (sym => withStatus(sym, ValueSet(Inherited)))
+          val decls = tree.tpe.decls.toList map (withStatus(_, ValueSet()))
+          val inherited = tree.tpe.members.toList diff decls map (withStatus(_, ValueSet(Inherited)))
           val implicits = List() // not yet done
           decls ::: inherited ::: implicits
         case None =>
@@ -263,15 +277,13 @@ self =>
   /** A transformer that replaces tree `from` with tree `to` in a given tree */
   class TreeReplacer(from: Tree, to: Tree) extends Transformer {
     override def transform(t: Tree): Tree = {
-      if (t.pos includes from.pos)
-        if (t == from) to
-        else super.transform(t)
-      else
-        t
+      if (t == from) to
+      else if ((t.pos includes from.pos) || isTransparent(t.pos)) super.transform(t)
+      else t
     }
   }
 
-  /** A traverser that resets all type and symbol attributes in a tree */
+  /** A traverser that resets all type and symbol attributes in a tree
   object ResetAttrs extends Transformer {
     override def transform(t: Tree): Tree = {
       if (t.hasSymbol) t.symbol = NoSymbol
@@ -287,6 +299,7 @@ self =>
       }
     }
   }
+  */
 
   /** The typer run */
   class TyperRun extends Run {
@@ -302,18 +315,24 @@ self =>
      *  (i.e. largest tree that's contained by position)
      */
     def typedTreeAt(pos: Position): Tree = {
+      println("starting typedTreeAt")
       val tree = locateTree(pos)
-//      println("at pos "+pos+" was found: "+tree)
-      if (tree.tpe ne null) tree
-      else {
+      println("at pos "+pos+" was found: "+tree)
+      if (tree.tpe ne null) {
+        println("already attributed")
+        tree
+      } else {
         val unit = unitOf(pos)
         assert(unit.status >= JustParsed)
         unit.targetPos = pos
         try {
+          println("starting type targetted check")
           typeCheck(unit)
           throw new FatalError("tree not found")
         } catch {
-          case ex: TyperResult => ex.tree
+          case ex: TyperResult =>
+            println("result found")
+            ex.tree
         }
       }
     }

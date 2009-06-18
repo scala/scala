@@ -470,9 +470,9 @@ trait Namers { self: Analyzer =>
           val getterName = if (hasBoolBP) "is" + beanName
                            else "get" + beanName
           val getterMods = Modifiers(flags, mods.privateWithin,
-                                     mods.annotations map (_.duplicate))
+                                     mods.annotations map (_.syntheticDuplicate))
           val beanGetterDef = atPos(vd.pos) {
-            DefDef(getterMods, getterName, Nil, List(Nil), tpt.duplicate,
+            DefDef(getterMods, getterName, Nil, List(Nil), tpt.syntheticDuplicate,
                    if (mods hasFlag DEFERRED) EmptyTree
                    else Select(This(getter.owner.name), name)) }
           enterSyntheticSym(beanGetterDef)
@@ -936,7 +936,7 @@ trait Namers { self: Analyzer =>
             var deftParams = tparams map copyUntyped[TypeDef]
             val defvParamss = previous map (_.map(p => {
               // in the default getter, remove the default parameter
-              val p1 = atPos(p.pos) { ValDef(p.mods &~ DEFAULTPARAM, p.name, p.tpt.duplicate, EmptyTree) }
+              val p1 = atPos(p.pos) { ValDef(p.mods &~ DEFAULTPARAM, p.name, p.tpt.syntheticDuplicate, EmptyTree) }
               UnTyper.traverse(p1)
               p1
             }))

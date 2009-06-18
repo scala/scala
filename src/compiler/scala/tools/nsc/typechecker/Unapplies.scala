@@ -95,14 +95,14 @@ trait Unapplies { self: Analyzer =>
   }
 
   def copyUntyped[T <: Tree](tree: T): T = {
-    val tree1 = tree.duplicate
+    val tree1 = tree.syntheticDuplicate
     UnTyper.traverse(tree1)
     tree1
   }
 
   def copyUntypedInvariant(td: TypeDef): TypeDef = {
     val tree1 = treeCopy.TypeDef(td, td.mods &~ (COVARIANT | CONTRAVARIANT),
-                  td.name, td.tparams map (_.duplicate), td.rhs.duplicate)
+                  td.name, td.tparams map (_.syntheticDuplicate), td.rhs.syntheticDuplicate)
     UnTyper.traverse(tree1)
     tree1
   }

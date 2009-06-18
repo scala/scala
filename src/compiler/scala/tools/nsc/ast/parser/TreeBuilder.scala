@@ -208,7 +208,7 @@ abstract class TreeBuilder {
               List(
                 makeVisitor(
                   List(
-                    CaseDef(pat1.duplicate, EmptyTree, Literal(true)),
+                    CaseDef(pat1.syntheticDuplicate, EmptyTree, Literal(true)),
                     CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))),
                   false,
                   nme.CHECK_IF_REFUTABLE_STRING
@@ -301,16 +301,16 @@ abstract class TreeBuilder {
 
     enums match {
       case ValFrom(pos, pat, rhs) :: Nil =>
-        atPos(pos) {
+        atPos(pos union body.pos) {
           makeCombination(mapName, rhs, pat, body)
         }
       case ValFrom(pos, pat, rhs) :: (rest @ (ValFrom(_,  _, _) :: _)) =>
-        atPos(pos) {
+        atPos(pos union body.pos) {
           makeCombination(flatMapName, rhs, pat, makeFor(mapName, flatMapName, rest, body))
         }
       case ValFrom(pos, pat, rhs) :: Filter(_, test) :: rest =>
         makeFor(mapName, flatMapName,
-                ValFrom(pos, pat, makeCombination(nme.filter, rhs, pat.duplicate, test)) :: rest,
+                ValFrom(pos, pat, makeCombination(nme.filter, rhs, pat.syntheticDuplicate, test)) :: rest,
                 body)
       case ValFrom(pos, pat, rhs) :: rest =>
         val valeqs = rest.take(definitions.MaxTupleArity - 1).takeWhile(_.isInstanceOf[ValEq]);
@@ -318,9 +318,9 @@ abstract class TreeBuilder {
         val rest1 = rest.drop(valeqs.length)
         val pats = valeqs map { case ValEq(_, pat, _) => pat }
         val rhss = valeqs map { case ValEq(_, _, rhs) => rhs }
-        val defpats = pats map (x => makeBind(x.duplicate))
+        val defpats = pats map (x => makeBind(x.syntheticDuplicate))
         val pdefs = List.flatten(List.map2(defpats, rhss)(makePatDef))
-        val patX1 = makeBind(pat.duplicate);
+        val patX1 = makeBind(pat.syntheticDuplicate);
         val ids = (patX1 :: defpats) map makeValue
         val rhs1 = makeForYield(
           List(ValFrom(pos, patX1, rhs)),
@@ -373,8 +373,9 @@ abstract class TreeBuilder {
   def makeVisitor(cases: List[CaseDef], checkExhaustive: Boolean): Tree =
     makeVisitor(cases, checkExhaustive, "x$")
 
-  private def makeUnchecked(expr: Tree): Tree =
+  private def makeUnchecked(expr: Tree): Tree = atPos(expr.pos) {
     Annotated(New(scalaDot(definitions.UncheckedClass.name), List(List())), expr)
+  }
 
   /** Create visitor <x => x match cases> */
   def makeVisitor(cases: List[CaseDef], checkExhaustive: Boolean, prefix: String): Tree = {
@@ -410,7 +411,12 @@ abstract class TreeBuilder {
       val matchExpr = atPos(rhs.pos){
         Match(
           makeUnchecked(rhs),
-          List(makeSynthetic(CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (_._1) map Ident, true)))))
+          List(
+            makeSynthetic(
+              atPos(rhs.pos) {
+                CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (_._1) map Ident, true))
+              })))
+
       }
       vars match {
         case List((vname, tpt, pos)) =>

@@ -13,14 +13,35 @@ object Position {
 
 trait Position {
   import Position.tabInc
+
+  /** An optional value containing the point of this position as an offset in a source file,
+   *  or None if not defined
+   */
   def offset: Option[Int] = None
+
+  /** An optional value containing the source file referred to by this position, or
+   *  None if not defined.
+   */
   def source: Option[SourceFile] = None
+
+  /** Is this position neither a NoPosition nor a FakePosition?
+   *  If isDefined is true, offset and source are both defined.
+   */
   def isDefined: Boolean = false
+
+  /** Is this position a synthetic position? */
   def isSynthetic: Boolean = false
+
+  /** if possible, make this position a synthetic one */
   def toSynthetic: Position = this
 
+  /** The start of the position's range */
   def start: Int = point
+
+  /**  The point (where the ^ is) of the position */
   def point: Int = offset.get
+
+  /** The end of the position's range */
   def end: Int = point
 
   def startOrElse(d: Int) = offset.getOrElse(d)
@@ -36,6 +57,9 @@ trait Position {
    */
   def union(pos: Position) = this
 
+  /** The underlying position; for a SyntheticAliasPosition this is the underlying position
+   *  of the aliased tree.
+   */
   def underlying = this
 
   /** If this is a range position, the offset position of its start.
@@ -53,24 +77,42 @@ trait Position {
    */
   def focusEnd = this
 
+  /** Does this position include the given position `pos`.
+   *  This holds if both positions are defined, and the range [start..end] of this position
+   *  is the same or covers the range of the given position.
+   */
   def includes(pos: Position) =
     isDefined && pos.isDefined && start <= pos.start && pos.end <= end
 
+  /** Does this position properly include the given position `pos` ("properly" meaning their
+   *  ranges are not the same)?
+   */
   def properlyIncludes(pos: Position) =
     includes(pos) && (start < pos.start || pos.end < end)
 
   /** Does this position precede that position?
+   *  This holds if both positions are defined and the end point of this position
+   *  is not larger than the start point of the given position.
    */
   def precedes(pos: Position) =
     isDefined && pos.isDefined && end <= pos.start
 
+  /** Does this position properly precede the given position `pos` ("properly" meaning their ranges
+   *  do not share a common point).
+   */
   def properlyPrecedes(pos: Position) =
     precedes(pos) && start < pos.end
 
+  /** Does this position overlap with that position?
+   *  This holds if both positions are defined and there is an interval of
+   *  non-zero length that is shared by both position ranges.
+   */
   def overlaps(pos: Position) =
     isDefined && pos.isDefined &&
     (pos.start <= start && start < pos.end) || (start <= pos.start && pos.start < end)
 
+  /** Does this position cover the same range as that position?
+   */
   def sameRange(pos: Position) =
     isDefined && pos.isDefined && start == pos.start && end == pos.end
 
@@ -161,9 +203,11 @@ extends OffsetPosition(source0, point) {
   override def startOrElse(d: Int) = start
   override def pointOrElse(d: Int) = point
   override def withStart(off: Int) = new RangePosition(source0, off, point, end)
-  override def withEnd(off: Int) = new RangePosition(source0, start, off, end)
-  override def withPoint(off: Int) = new RangePosition(source0, start, point, off)
-  override def union(pos: Position) = new RangePosition(source0, start min pos.start, point, end max pos.end)
+  override def withEnd(off: Int) = new RangePosition(source0, start, point, off)
+  override def withPoint(off: Int) = new RangePosition(source0, start, off, end)
+  override def union(pos: Position) =
+    if (pos.isDefined) new RangePosition(source0, start min pos.start, point, end max pos.end)
+    else this
   override def endOrElse(d: Int) = end
   override def focusStart = OffsetPosition(source0, start)
   override def focusPoint = OffsetPosition(source0, point)
@@ -175,17 +219,21 @@ extends OffsetPosition(source0, point) {
 
 /** A position to be used for synthetic trees that do not correspond to some original tree
  *  @note Trees with synthetic positions may not contain trees with real positions inside them!
+ *  todo: needed?
  */
 class SyntheticRangePosition(source0: SourceFile, start: Int, point: Int, end: Int) extends RangePosition(source0, start, point, end) {
   override def isSynthetic = true
   override def toSynthetic = this
   override def withStart(off: Int) = new SyntheticRangePosition(source0, off, point, end)
-  override def withEnd(off: Int) = new SyntheticRangePosition(source0, start, off, end)
-  override def withPoint(off: Int) = new SyntheticRangePosition(source0, start, point, off)
-  override def union(pos: Position) = new SyntheticRangePosition(source0, start min pos.start, point, end max pos.end)
+  override def withEnd(off: Int) = new SyntheticRangePosition(source0, start, point, off)
+  override def withPoint(off: Int) = new SyntheticRangePosition(source0, start, off, end)
+  override def union(pos: Position) =
+    if (pos.isDefined) new SyntheticRangePosition(source0, start min pos.start, point, end max pos.end)
+    else this
   override def focusStart = new SyntheticOffsetPosition(source0, start)
   override def focusPoint = new SyntheticOffsetPosition(source0, point)
   override def focusEnd = new SyntheticOffsetPosition(source0, end)
+  override def show = "<["+start+":"+end+"]>"
 }
 
 

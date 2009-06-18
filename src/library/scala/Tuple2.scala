@@ -82,10 +82,22 @@ object Tuple2 {
 /** Tuple2 is the canonical representation of a @see Product2
  *
  */
-case class Tuple2[+T1, +T2](_1:T1,_2:T2)
-  extends Product2[T1, T2]
-{
-  override def toString() = "(" + _1 + "," + _2 + ")"
+case class Tuple2[+T1, +T2](_1:T1, _2:T2) extends Product2[T1, T2]  {
+/*
+  def map[CC[X] <: Traversable[X], A1, A2, B](implicit fst: T1 => CC[A1], snd: T2 => Traversable[A2]) = (f: (A1, A2) => B) => {
+    val b = fst(_1).genericBuilder[B]
+    val it1 = _1.iterator
+    val it2 = _2.iterator
+    while (it1.hasNext && it2.hasNext)
+      b += f(it1.next, it2.next)
+    b.result
+  }
+*/
+  override def toString() = {
+     val sb = new StringBuilder
+     sb.append('(').append(_1).append(',').append(_2).append(')')
+     sb.toString
+   }
 
   /** Swap the elements of the tuple */
   def swap: Tuple2[T2,T1] = Tuple2(_2, _1)

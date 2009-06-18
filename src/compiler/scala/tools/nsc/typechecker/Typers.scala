@@ -1029,7 +1029,7 @@ trait Typers { self: Analyzer =>
         // A method to replace a super reference by a New in a supercall
         def transformSuperCall(scall: Tree): Tree = (scall: @unchecked) match {
           case Apply(fn, args) =>
-            treeCopy.Apply(scall, transformSuperCall(fn), args map (_.duplicate))
+            treeCopy.Apply(scall, transformSuperCall(fn), args map (_.syntheticDuplicate))
           case Select(Super(_, _), nme.CONSTRUCTOR) =>
             treeCopy.Select(
               scall,
@@ -1040,15 +1040,15 @@ trait Typers { self: Analyzer =>
         treeInfo.firstConstructor(templ.body) match {
           case constr @ DefDef(_, _, _, vparamss, _, cbody @ Block(cstats, cunit)) =>
             // Convert constructor body to block in environment and typecheck it
-            val cstats1: List[Tree] = cstats map (_.duplicate)
+            val cstats1: List[Tree] = cstats map (_.syntheticDuplicate)
             val scall = if (cstats.isEmpty) EmptyTree else cstats.last
             val cbody1 = scall match {
               case Apply(_, _) =>
                 treeCopy.Block(cbody, cstats1.init,
-                           if (supertparams.isEmpty) cunit.duplicate
+                           if (supertparams.isEmpty) cunit.syntheticDuplicate
                            else transformSuperCall(scall))
               case _ =>
-                treeCopy.Block(cbody, cstats1, cunit.duplicate)
+                treeCopy.Block(cbody, cstats1, cunit.syntheticDuplicate)
             }
 
             val outercontext = context.outer
@@ -1056,7 +1056,7 @@ trait Typers { self: Analyzer =>
             val cscope = outercontext.makeNewScope(constr, outercontext.owner)(ParentTypesScopeKind(clazz))
             val cbody2 = newTyper(cscope) // called both during completion AND typing.
                 .typePrimaryConstrBody(clazz,
-                  cbody1, supertparams, clazz.unsafeTypeParams, vparamss map (_.map(_.duplicate)))
+                  cbody1, supertparams, clazz.unsafeTypeParams, vparamss map (_.map(_.syntheticDuplicate)))
 
             scall match {
               case Apply(_, _) =>
@@ -1570,13 +1570,17 @@ trait Typers { self: Analyzer =>
      *  @return      ...
      */
     def typedBlock(block: Block, mode: Int, pt: Type): Block = {
-      if (context.retyping) {
-        for (stat <- block.stats) {
-          if (stat.isDef) context.scope.enter(stat.symbol)
-        }
-      }
       namer.enterSyms(block.stats)
-      block.stats foreach enterLabelDef
+      for (stat <- block.stats) {
+        if (onlyPresentation && stat.isDef) {
+          if (stat.isDef) {
+            var e = context.scope.lookupEntry(stat.symbol.name)
+            while ((e ne null) && (e.sym ne stat.symbol)) e = e.tail
+            if (e eq null) context.scope.enter(stat.symbol)
+          }
+        }
+        enterLabelDef(stat)
+      }
       val stats1 = typedStats(block.stats, context.owner)
       val expr1 = typed(block.expr, mode & ~(FUNmode | QUALmode), pt)
       val block1 = treeCopy.Block(block, stats1, expr1)
@@ -2380,7 +2384,7 @@ trait Typers { self: Analyzer =>
             // and then stripping the "self =>" and substituting
             // in the supplied selfsym.
             val funcparm = ValDef(NoMods, nme.self, TypeTree(selfsym.info), EmptyTree)
-            val func = Function(List(funcparm), ann.duplicate)
+            val func = Function(List(funcparm), ann.syntheticDuplicate)
                                          // The .duplicate of annot.constr
                                          // deals with problems that
                                          // accur if this annotation is
@@ -3077,7 +3081,7 @@ trait Typers { self: Analyzer =>
         def mkAssign(vble: Tree): Tree =
           Assign(
             vble,
-              Apply(Select(vble.duplicate, prefix) setPos fun.pos, args) setPos tree.pos
+              Apply(Select(vble.syntheticDuplicate, prefix) setPos fun.pos, args) setPos tree.pos
           ) setPos tree.pos
         val tree1 = qual match {
           case Select(qualqual, vname) =>
@@ -3368,7 +3372,7 @@ trait Typers { self: Analyzer =>
                 imports1 = imports1.tail
               }
               defSym = impSym
-              qual = atPos(tree.pos.focusStart)(resetPos(imports.head.qual.duplicate))
+              qual = atPos(tree.pos.focusStart)(resetPos(imports.head.qual.syntheticDuplicate))
               pre = qual.tpe
             } else {
               if (settings.debug.value) {
@@ -3742,7 +3746,7 @@ trait Typers { self: Analyzer =>
         val result = if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt)
         if (printTypings) println("adapted "+tree1+":"+tree1.tpe+" to "+pt+", "+context.undetparams); //DEBUG
 //      if ((mode & TYPEmode) != 0) println("type: "+tree1+" has type "+tree1.tpe)
-        if (phase.id == currentRun.typerPhase.id) signalDone(context.asInstanceOf[analyzer.Context], tree, result)
+        if (phase.id <= currentRun.typerPhase.id) signalDone(context.asInstanceOf[analyzer.Context], tree, result)
         result
       } catch {
         case ex: CompilerControl#FreshRunReq => throw ex

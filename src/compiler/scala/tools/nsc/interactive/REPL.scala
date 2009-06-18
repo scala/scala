@@ -33,7 +33,7 @@ object REPL {
     else {
       try {
         object compiler extends Global(command.settings, reporter) {
-          printTypings = true
+//          printTypings = true
         }
         if (reporter.hasErrors) {
           reporter.flush()
@@ -75,8 +75,8 @@ object REPL {
   /** Commands:
    *
    *  reload file1 ... fileN
-   *  typeat file line off1 off2?
-   *  complete file line off1 off2?
+   *  typeat file off1 off2?
+   *  complete file off1 off2?
    */
   def run(comp: Global) {
     val reloadResult = new comp.Response[Unit]
@@ -122,5 +122,6 @@ object REPL {
       case Left(result) => println("==> "+result)
       case Right(exc/*: Throwable ??*/) => exc.printStackTrace; println("ERROR: "+exc)
     }
+    svar.unset()
   }
 }

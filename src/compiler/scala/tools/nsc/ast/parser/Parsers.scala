@@ -1029,7 +1029,7 @@ self =>
               if (isWildcard(t))
                 (placeholderParams: @unchecked) match {
                   case (vd @ ValDef(mods, name, _, _)) :: rest =>
-                    placeholderParams = treeCopy.ValDef(vd, mods, name, tpt.duplicate, EmptyTree) :: rest
+                    placeholderParams = treeCopy.ValDef(vd, mods, name, tpt.syntheticDuplicate, EmptyTree) :: rest
                 }
               // this does not correspond to syntax, but is necessary to
               // accept closures. We might restrict closures to be between {...} only.
@@ -1949,7 +1949,7 @@ self =>
         val trees =
           makePatDef(newmods, if (tp.isEmpty) p else Typed(p, tp), rhs) map
             atPos(p.pos.start, p.pos.point)
-        rhs = rhs.duplicate
+        rhs = rhs.syntheticDuplicate
         if (newmods hasFlag Flags.DEFERRED) {
           trees match {
             case List(ValDef(_, _, _, EmptyTree)) =>
@@ -1998,7 +1998,7 @@ self =>
       val start = in.skipToken()
       if (in.token == THIS) {
         atPos(start, in.skipToken()) {
-          val vparamss = paramClauses(nme.CONSTRUCTOR, implicitClassViews map (_.duplicate), false)
+          val vparamss = paramClauses(nme.CONSTRUCTOR, implicitClassViews map (_.syntheticDuplicate), false)
           newLineOptWhenFollowedBy(LBRACE)
           val rhs = if (in.token == LBRACE) constrBlock(vparamss)
                     else { accept(EQUALS); constrExpr(vparamss) }
