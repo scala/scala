@@ -990,7 +990,7 @@ abstract class ClassfileParser {
           case Some(entry) =>
             val sym = classSymbol(entry.outerName)
             if (static) {
-              val s = atPhase(currentRun.flattenPhase.prev)(sym.linkedModuleOfClass.info.member(innerName.toTypeName))
+              val s = atPhase(currentRun.typerPhase)(sym.linkedModuleOfClass.info.member(innerName.toTypeName))
               assert(s ne NoSymbol, sym + "." + innerName + " linkedModule: " + sym.linkedModuleOfClass + sym.linkedModuleOfClass.info.members)
               s
             } else
