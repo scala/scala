@@ -65,7 +65,7 @@ object Invocation
    *  an apply method, which packages the method arguments.  The type parameter
    *  is the method's expected result type.
    */
-  class SymbolWithArguments[R](val sym: ScalaSymbol, val args: PrimitivePreserver[_]*) {
+  class SymbolWithArguments(val sym: ScalaSymbol, val args: PrimitivePreserver[_]*) {
     def getArgs = args map (_.value.asInstanceOf[AnyRef])
     def getArgTypes = args.toList map (_.clazz)
     def argsMatch(m: JMethod) =
@@ -85,10 +85,10 @@ object Invocation
 
   }
   class RichSymbol(sym: ScalaSymbol) {
-    def apply[R](args: PrimitivePreserver[_]*): SymbolWithArguments[R] =
-      new SymbolWithArguments[R](sym, args: _*)
+    def apply(args: PrimitivePreserver[_]*): SymbolWithArguments =
+      new SymbolWithArguments(sym, args: _*)
   }
-  implicit def makeRichSymbol[R](sym: ScalaSymbol): RichSymbol = new RichSymbol(sym)
+  implicit def makeRichSymbol(sym: ScalaSymbol): RichSymbol = new RichSymbol(sym)
 
   /** An implicit on AnyRef provides it with the 'o' method, which is supposed
    *  to look like a giant '.' and present the feel of method invocation.
@@ -98,13 +98,13 @@ object Invocation
 
     /** Issue call without touching result - returns Any.
      */
-    def o(sym: ScalaSymbol): Any = oo(new SymbolWithArguments[Any](sym))
-    def o(symApp: SymbolWithArguments[_]): Any = oo(symApp)
+    def o(sym: ScalaSymbol): Any = oo(new SymbolWithArguments(sym))
+    def o(symApp: SymbolWithArguments): Any = oo(symApp)
 
     /** Issue call expecting return type R - casts result to R.
      */
-    def oo[R](sym: ScalaSymbol): R = oo[R](new SymbolWithArguments[R](sym))
-    def oo[R](symApp: SymbolWithArguments[R]): R = {
+    def oo[R](sym: ScalaSymbol): R = oo[R](new SymbolWithArguments(sym))
+    def oo[R](symApp: SymbolWithArguments): R = {
       def method = symApp getMethodOn self
       method.invoke(self, symApp.getArgs: _*).asInstanceOf[R]
     }

@@ -242,7 +242,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  @param str comma-separated string of distinct primitive types.
    */
   def parseTypes(str: String): List[Type] = {
-    if (str.trim.isEmpty)
+    if (str.trim == "")
       List()
     else {
       val buf = new mutable.ListBuffer[Type]
