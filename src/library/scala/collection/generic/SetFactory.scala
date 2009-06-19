@@ -11,7 +11,7 @@
 
 package scala.collection.generic
 
-/** A template for companion objects of <code>Map</code> and subclasses
+/** A template for companion objects of <code>Set</code> and subclasses
  *  thereof.
  */
 abstract class SetFactory[CC[X] <: Set[X] with SetTemplate[X, CC[X]]]

@@ -93,7 +93,7 @@ trait Traversable[+A] extends TraversableTemplate[A, Traversable[A]]
 /** Factory methods and utilities for instances of type Traversable */
 object Traversable extends TraversableFactory[Traversable] { self =>
 
-  /** provide braek functionality separate from client code */
+  /** provide break functionality separate from client code */
   private[collection] val breaks: Breaks = new Breaks
 
   implicit def builderFactory[A]: BuilderFactory[A, Traversable[A], Coll] = new VirtualBuilderFactory[A]
