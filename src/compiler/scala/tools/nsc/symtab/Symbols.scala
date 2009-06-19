@@ -122,7 +122,11 @@ trait Symbols {
       setAnnotations(annot :: this.rawannots)
 
     /** Does this symbol have an annotation of the given class? */
-    def hasAnnotation(cls: Symbol) = annotations exists { _.atp.typeSymbol == cls }
+    def hasAnnotation(cls: Symbol) =
+      getAnnotation(cls).isDefined
+
+    def getAnnotation(cls: Symbol): Option[AnnotationInfo] =
+      annotations find (_.atp.typeSymbol == cls)
 
     /** Remove all annotations matching the given class. */
     def removeAnnotation(cls: Symbol): Unit =

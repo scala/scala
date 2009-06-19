@@ -19,7 +19,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   override def keepsTypeParams = true
 
   /** Concrete types for specialization */
-  final lazy val concreteTypes = List(definitions.IntClass.tpe, definitions.DoubleClass.tpe)
+//  final lazy val concreteTypes = List(definitions.IntClass.tpe, definitions.DoubleClass.tpe)
 
   type TypeEnv = immutable.Map[Symbol, Type]
   def emptyEnv: TypeEnv = immutable.ListMap.empty[Symbol, Type]
@@ -58,17 +58,19 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
      *  to a type for which `sym' is specialized.
      */
     def isValid(env: TypeEnv, sym: Symbol): Boolean = {
+      def validBinding(tvar: Symbol, tpe: Type, sym: Symbol) =
+        (tvar.hasAnnotation(SpecializedClass)
+         && sym.typeParams.contains(tvar)
+         && concreteTypes(tvar).contains(tpe))
       env forall { binding =>
         val (tvar, tpe) = binding
 //         log("isValid: " + env + " sym: " + sym + " sym.tparams: " + sym.typeParams)
 //         log("Flag " + tvar + ": " + tvar.hasAnnotation(SpecializedClass))
 //         log("tparams contains: " + sym.typeParams.contains(tvar))
 //         log("concreteTypes: " + concreteTypes.contains(tpe))
-        ((tvar.hasAnnotation(SpecializedClass)
-         && sym.typeParams.contains(tvar)
-         && concreteTypes.contains(tpe))
-          || (if (sym.owner != definitions.RootClass) isValid(env, sym.owner) else false))
-        // FIXME: it expects all type parameters to appear in the same owner!
+        (validBinding(tvar, tpe, sym)
+         || ((sym.owner != definitions.RootClass)
+             && validBinding(tvar, tpe, sym.owner)))
       }
     }
   }
@@ -223,14 +225,74 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   }
 
+  lazy val primitiveTypes = Map(
+    "Boolean" -> definitions.BooleanClass.tpe,
+    "Byte"    -> definitions.ByteClass.tpe,
+    "Short"   -> definitions.ShortClass.tpe,
+    "Char"    -> definitions.CharClass.tpe,
+    "Int"     -> definitions.IntClass.tpe,
+    "Long"    -> definitions.LongClass.tpe,
+    "Float"   -> definitions.FloatClass.tpe,
+    "Double"  -> definitions.DoubleClass.tpe)
+
+
+
+  /** Parse the given string into the list of types it contains.
+   *
+   *  @param str comma-separated string of distinct primitive types.
+   */
+  def parseTypes(str: String): List[Type] = {
+    if (str.trim.isEmpty)
+      List()
+    else {
+      val buf = new mutable.ListBuffer[Type]
+      for (t <- str.split(','))
+        primitiveTypes.get(t.trim) match {
+          case Some(tpe) => buf += tpe
+          case None =>
+            error("Invalid type " + t + ". Expected one of " + primitiveTypes.keys.mkString("", ", ", "."))
+        }
+      buf.toList
+    }
+  }
+
+  /** Return the concrete types `sym' should be specialized at.
+   */
+  def concreteTypes(sym: Symbol): List[Type] =
+    sym.getAnnotation(SpecializedClass) match {
+      case Some(AnnotationInfo(_, args, _)) =>
+        args match {
+          case Literal(ct) :: _ =>
+            val tpes = parseTypes(ct.stringValue)
+            log(sym + " specialized on " + tpes)
+            tpes
+          case _ =>
+            log(sym + " specialized on everything")
+            primitiveTypes.values.toList
+        }
+      case _ =>
+        Nil
+    }
+
+  /** Return a list of all type environements for all specializations
+   *  of @specialized types in `tps'.
+   */
+  private def specializations(tps: List[Symbol]): List[TypeEnv] = {
+    val stps = tps filter (_.hasAnnotation(SpecializedClass))
+    val env = immutable.HashMap.empty[Symbol, Type]
+    count(stps, concreteTypes _) map { tps =>
+      immutable.HashMap.empty[Symbol, Type] ++ (stps zip tps)
+    }
+  }
+
   /** Generate all arrangements with repetitions from the list of values,
    *  with 'pos' positions. For example, count(2, List(1, 2)) yields
    *  List(List(1, 1), List(1, 2), List(2, 1), List(2, 2))
    */
-  private def count[T](pos: Int, values: List[T]): List[List[T]] = {
-    if (pos == 0) Nil
-    else if (pos == 1) values map (v => List(v))
-    else for (v <- values; vs <- count(pos - 1, values)) yield v :: vs
+  private def count[A, V](xs: List[A], values: A => List[V]): List[List[V]] = {
+    if (xs.isEmpty) Nil
+    else if (xs.tail.isEmpty) values(xs.head) map (_ :: Nil)
+    else for (v <- values(xs.head); vs <- count(xs.tail, values)) yield v :: vs
   }
 
   /** Does the given tpe need to be specialized in the environment 'env'? */
@@ -651,17 +713,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     decl.setInfo(if (decl.isConstructor) tpe match {
       case MethodType(args, resTpe) => MethodType(args, decl.owner.tpe)
     } else tpe)
-  }
-
-  /** Return a list of all type environements for all specializations
-   *  of @specialized types in `tps'.
-   */
-  private def specializations(tps: List[Symbol]): List[TypeEnv] = {
-    val stps = tps filter (_.hasAnnotation(SpecializedClass))
-    val env = immutable.HashMap.empty[Symbol, Type]
-    count(stps.length, concreteTypes) map { tps =>
-      immutable.HashMap.empty[Symbol, Type] ++ (stps zip tps)
-    }
   }
 
   /** Type transformation.
