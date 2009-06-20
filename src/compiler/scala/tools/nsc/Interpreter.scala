@@ -159,8 +159,11 @@ class Interpreter(val settings: Settings, out: PrintWriter)
 
   /** the previous requests this interpreter has processed */
   private val prevRequests = new ArrayBuffer[Request]()
+  val prevImports = new ListBuffer[Import]()
+
   private def allUsedNames = prevRequests.toList.flatMap(_.usedNames).removeDuplicates
   private def allBoundNames = prevRequests.toList.flatMap(_.boundNames).removeDuplicates
+  // private def allImportedNames = prevImports.toList.flatMap(_.importedNames).removeDuplicates
 
   /** Generates names pre0, pre1, etc. via calls to apply method */
   class NameCreator(pre: String) {
@@ -614,6 +617,9 @@ class Interpreter(val settings: Settings, out: PrintWriter)
       name <- List(sel.toTypeName, sel.toTermName)
     }
     yield name
+
+    // record the import
+    prevImports += imp
 
     override def resultExtractionCode(req: Request, code: PrintWriter) =
       code println codegenln(imp.toString)

@@ -32,19 +32,29 @@ class Completion(val interpreter: Interpreter) extends Completor {
   import java.util.{ List => JList }
   import interpreter.compilerClasspath
 
-  // it takes a little while to look through the jars so we use a future and a concurrent map
-  val dottedPaths = new ConcurrentHashMap[String, List[String]]
+  // This is a wrapper which lets us use a def until some lengthy
+  // action is complete, and then a val from that point on.
+  class LazyValFuture[T](f: () => T, body: => Unit) {
+    private[this] var isDone = false
+    private[this] lazy val complete = f()
+    def apply(): T = if (isDone) complete else f()
 
-  private var doneExaminingJars = false
-  scala.concurrent.ops.future {
-    getDottedPaths(dottedPaths, interpreter)
-    doneExaminingJars = true
+    scala.concurrent.ops.future {
+      body
+      isDone = true
+    }
   }
 
-  // Would like to find a nicer way to do this, but this works for now
-  lazy val topLevelPackagesVal  = topLevelPackagesDef
-  def topLevelPackagesDef()     = enumToList(dottedPaths.keys) filter (x => !x.contains('.'))
-  def topLevelPackages          = if (doneExaminingJars) topLevelPackagesVal else topLevelPackagesDef
+  // it takes a little while to look through the jars so we use a future and a concurrent map
+  class CompletionAgent {
+    val dottedPaths = new ConcurrentHashMap[String, List[String]]
+    val topLevelPackages = new LazyValFuture(
+      () => enumToList(dottedPaths.keys) filterNot (_ contains '.'),
+      getDottedPaths(dottedPaths, interpreter)
+    )
+  }
+  val agent = new CompletionAgent
+  import agent._
 
   // One instance of a command line
   class Buffer(s: String) {
@@ -110,8 +120,19 @@ class Completion(val interpreter: Interpreter) extends Completor {
     def isValidPath(s: String) = dottedPaths containsKey s
     def membersOfPath(s: String) = if (isValidPath(s)) dottedPaths get s else Nil
 
-    def pkgsStartingWith(s: String) = topLevelPackages filter (_ startsWith s)
-    def idsStartingWith(s: String) = interpreter.unqualifiedIds filter (_ startsWith s)
+    // XXX generalize this to look through imports
+    def membersOfScala() = membersOfPath("scala")
+    def membersOfJavaLang() = membersOfPath("java.lang")
+    def membersOfPredef() = membersOfId("scala.Predef")
+    def defaultMembers = {
+      val xs = membersOfScala ::: membersOfJavaLang ::: membersOfPredef
+      val excludes = List("""Tuple\d+""".r, """Product\d+""".r, """Function\d+""".r,
+        """.*Exception$""".r, """.*Error$""".r)
+      xs filter (x => excludes forall (r => r.findFirstMatchIn(x).isEmpty))
+    }
+
+    def pkgsStartingWith(s: String) = topLevelPackages() filter (_ startsWith s)
+    def idsStartingWith(s: String) = (interpreter.unqualifiedIds ::: defaultMembers) filter (_ startsWith s)
 
     def complete(clist: JList[String]): Int = {
       val res = analyzeBuffer(clist)
@@ -136,10 +157,15 @@ class Completion(val interpreter: Interpreter) extends Completor {
         map (_.getName) .
         filter (isValidCompletion)
 
+    def getClassObject(path: String): Option[Class[_]] =
+      (interpreter getClassObject path) orElse
+      (interpreter getClassObject ("scala." + path)) orElse
+      (interpreter getClassObject ("java.lang." + path))
+
     // java style, static methods
-    val js = (interpreter getClassObject path).map(getMembers(_, true)) getOrElse Nil
+    val js = getClassObject(path) map (getMembers(_, true)) getOrElse Nil
     // scala style, methods on companion object
-    val ss = (interpreter getClassObject (path + "$")).map(getMembers(_, false)) getOrElse Nil
+    val ss = getClassObject(path + "$") map (getMembers(_, false)) getOrElse Nil
 
     js ::: ss
   }
