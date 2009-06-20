@@ -1,4 +1,5 @@
-names-defaults-neg.scala:63: error: not enough arguments for method apply: (a: Int,b: String)(c: Int*)Fact in object Fact, unspecified parameter: value b
+names-defaults-neg.scala:63: error: not enough arguments for method apply: (a: Int,b: String)(c: Int*)Fact in object Fact.
+Unspecified value parameter b.
   val fac = Fact(1)(2, 3)
                 ^
 names-defaults-neg.scala:5: error: type mismatch;
@@ -71,23 +72,33 @@ and  method f in object t8 of type (a: Int,b: java.lang.Object)java.lang.String
 match argument types (a: Int,b: java.lang.String) and expected result type Any
   println(t8.f(a = 0, b = "1")) // ambigous reference
              ^
-names-defaults-neg.scala:75: error: multiple overloaded alternatives of method foo define default arguments
+names-defaults-neg.scala:67: error: wrong number of arguments for <none>: (x: Int,y: String)A1
+  A1() match { case A1(_) => () }
+                      ^
+names-defaults-neg.scala:74: error: inferred kinds of the type arguments (List[Int]) do not conform to the expected kinds of the type parameters (type T).
+List[Int]'s type parameters do not match type T's expected parameters: class List has one type parameter, but type T has one
+  test4()
+  ^
+error: type mismatch;
+ found   : List[Int]
+ required: List[List[List[List[X forSome { type X }]]]]
+names-defaults-neg.scala:77: error: type mismatch;
+ found   : List[Int]
+ required: List[List[?]]
+  def test6[T](x: List[List[T]] = List(1,2)) = x
+                                      ^
+names-defaults-neg.scala:80: error: type mismatch;
+ found   : Int
+ required: String
+  new A2[String]()
+  ^
+names-defaults-neg.scala:90: error: multiple overloaded alternatives of method foo define default arguments
   def foo(a: Int = 0) = a
       ^
-names-defaults-neg.scala:85: error: multiple overloaded alternatives of method foo define default arguments
+names-defaults-neg.scala:100: error: multiple overloaded alternatives of method foo define default arguments
   override def foo(a: Int = 1092) = a
                ^
-names-defaults-neg.scala:88: error: type mismatch;
- found   : Int(129083)
- required: java.lang.String
-  def bar(i: Int = 129083) = i
-                   ^
-names-defaults-neg.scala:88: error: multiple overloaded alternatives of method bar define default arguments
+names-defaults-neg.scala:103: error: multiple overloaded alternatives of method bar define default arguments
   def bar(i: Int = 129083) = i
       ^
-names-defaults-neg.scala:95: error: type mismatch;
- found   : java.lang.Object
- required: java.lang.String
-class B5 extends A5 { override def foo(a: Object = new Object) = 1 }
-                                                   ^
-22 errors found
+25 errors found

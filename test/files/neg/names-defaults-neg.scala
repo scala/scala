@@ -63,6 +63,21 @@ object Test extends Application {
   val fac = Fact(1)(2, 3)
   val facc = fac.copy(b = "dlkfj")()
 
+  // no defaults in patterns
+  A1() match { case A1(_) => () }
+
+
+  // return types of default getters
+
+  // definition compiles, but default cannot  be used, it doesn't conform
+  def test4[T[P]](x: T[T[List[T[X forSome { type X }]]]] = List(1,2)) = x
+  test4()
+
+  // doesn't compile
+  def test6[T](x: List[List[T]] = List(1,2)) = x
+
+  // correct error message
+  new A2[String]()
 
   // DEFINITIONS
   def test1(a: Int, b: String) = a +": "+ b
@@ -90,6 +105,6 @@ class C extends B {
 
 case class Fact(a: Int, b: String)(c: Int*)
 
-// overriding default must have same type
-class A5 { def foo(a: Object = "dlkf") = 0 }
-class B5 extends A5 { override def foo(a: Object = new Object) = 1 }
+case class A1(x: Int = 1, y: String = "2")
+
+class A2[T](a: T = 1)

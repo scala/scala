@@ -146,6 +146,15 @@ abstract class LambdaLift extends InfoTransform {
         if (!(ss contains sym)) {
           ss addEntry sym
           renamable addEntry sym
+          atPhase(currentRun.picklerPhase) {
+            // The param symbol in the MethodType should not be renamed, only the symbol in scope. This way,
+            // parameter names for named arguments are not changed. Example: without cloning the MethodType,
+            //     def closure(x: Int) = { () => x }
+            // would have the signatrue
+            //     closure: (x$1: Int)() => Int
+            if (sym.hasFlag(PARAM) && sym.owner.info.paramss.exists(_.contains(sym)))
+              sym.owner.setInfo(sym.owner.info.cloneInfo(sym.owner))
+          }
           changedFreeVars = true
           if (settings.debug.value) log("" + sym + " is free in " + owner);
           if (sym.isVariable && !(sym hasFlag CAPTURED)) {

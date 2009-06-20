@@ -940,9 +940,6 @@ trait Namers { self: Analyzer =>
               UnTyper.traverse(p1)
               p1
             }))
-            // let the compiler infer the return type of the defaultGetter. needed in "foo[T](a: T = 1)"
-            val defTpt = TypeTree()
-            val defRhs = copyUntyped(vparam.rhs)
 
             val parentNamer = if (isConstr) {
               val (cdef, nmr) = moduleNamer.getOrElse {
@@ -964,6 +961,29 @@ trait Namers { self: Analyzer =>
                 nmr
               }
             }
+
+            // If the parameter type mentions any type parameter of the method, let the compiler infer the
+            // return type of the default getter => allow "def foo[T](x: T = 1)" to compile.
+            // This is better than always inferring the result type, for example in
+            //    def f(i: Int, m: Int => Int = identity _) = m(i)
+            // if we infer the default's type, we get "Nothing => Nothing", and the default is not usable.
+            val names = deftParams map { case TypeDef(_, name, _, _) => name }
+            object subst extends Transformer {
+              override def transform(tree: Tree): Tree = tree match {
+                case Ident(name) if (names contains name) =>
+                  TypeTree()
+                case _ =>
+                  super.transform(tree)
+              }
+              def apply(tree: Tree) = {
+                val r = transform(tree)
+                if (r.find(_.isEmpty).isEmpty) r
+                else TypeTree()
+              }
+            }
+
+            val defTpt = subst(copyUntyped(vparam.tpt))
+            val defRhs = copyUntyped(vparam.rhs)
 
             val defaultTree = atPos(vparam.pos) {
               DefDef(

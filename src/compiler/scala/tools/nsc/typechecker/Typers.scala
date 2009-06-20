@@ -174,23 +174,32 @@ trait Typers { self: Analyzer =>
 
     /** Find implicit arguments and pass them to given tree.
      */
-    def applyImplicitArgs(tree: Tree): Tree = tree.tpe match {
+    def applyImplicitArgs(fun: Tree): Tree = fun.tpe match {
       case MethodType(params, _) =>
-        def implicitArg(pt: Type): SearchResult = {
-          val result = inferImplicit(tree, pt, true, context)
-          if (result == SearchFailure)
-            context.error(tree.pos, "no implicit argument matching parameter type "+pt+" was found.")
-          result
-        }
+        def implicitArg(pt: Type): SearchResult =
+          inferImplicit(fun, pt, true, context)
+
+        var positional = true
         val argResults = params map (_.tpe) map implicitArg
-        val args = argResults map (_.tree)
+        val args = argResults.zip(params) flatMap {
+          case (arg, param) =>
+            if (arg != SearchFailure) {
+              if (positional) List(arg.tree)
+              else List(atPos(arg.tree.pos)(Assign(Ident(param.name), (arg.tree))))
+            } else {
+              if (!param.hasFlag(DEFAULTPARAM))
+                context.error(fun.pos, "could not find implicit value for parameter "+ param.name +":"+ param.tpe +".")
+              positional = false
+              Nil
+            }
+        }
         for (s <- argResults map (_.subst)) {
-          s traverse tree
+          s traverse fun
           for (arg <- args) s traverse arg
         }
-        Apply(tree, args) setPos tree.pos
+        Apply(fun, args) setPos fun.pos
       case ErrorType =>
-        tree
+        fun
     }
 
     /** Infer an implicit conversion (``view'') between two types.
@@ -795,7 +804,7 @@ trait Typers { self: Analyzer =>
           val tree1 = etaExpand(context.unit, tree)
           //println("eta "+tree+" ---> "+tree1+":"+tree1.tpe)
           typed(tree1, mode, pt)
-        } else if (!meth.isConstructor && mt.paramTypes.isEmpty) { // (4.3)
+        } else if (!meth.isConstructor && mt.params.isEmpty) { // (4.3)
           adapt(typed(Apply(tree, List()) setPos tree.pos), mode, pt)
         } else if (context.implicitsEnabled) {
           errorTree(tree, "missing arguments for "+meth+meth.locationString+
@@ -1990,6 +1999,9 @@ trait Typers { self: Analyzer =>
            */
           def tryNamesDefaults: Tree = {
             if (mt.isErroneous) setError(tree)
+            else if ((mode & PATTERNmode) != 0)
+              // #2064
+              errorTree(tree, "wrong number of arguments for "+ treeSymTypeMsg(fun))
             else if (args.length > formals.length) {
               tryTupleApply.getOrElse {
                 errorTree(tree, "too many arguments for "+treeSymTypeMsg(fun))
@@ -2020,22 +2032,27 @@ trait Typers { self: Analyzer =>
               if (fun1.isErroneous) setError(tree)
               else {
                 assert(isNamedApplyBlock(fun1), fun1)
-                val NamedApplyInfo(qual, targs, previousArgss, _) =
-                  context.namedApplyBlockInfo.get._2
-                val (allArgs, missing) = addDefaults(args, qual, targs, previousArgss, mt.params)
+                val NamedApplyInfo(qual, targs, previousArgss, _) = context.namedApplyBlockInfo.get._2
+                val blockIsEmpty = fun1 match {
+                  case Block(Nil, _) =>
+                    // if the block does not have any ValDef we can remove it. Note that the call to
+                    // "transformNamedApplication" is always needed in order to obtain targs/previousArgss
+                    context.namedApplyBlockInfo = None
+                    true
+                  case _ => false
+                }
+                val (allArgs, missing) = addDefaults(args, qual, targs, previousArgss, params, fun.pos)
                 if (allArgs.length == formals.length) {
-                  // a default for each missing argument was found
-                  val (namelessArgs, argPos) = removeNames(Typer.this)(allArgs, params)
-                  if (namelessArgs exists (_.isErroneous)) setError(tree)
-                  else
-                    transformNamedApplication(Typer.this, mode, pt)(
-                      treeCopy.Apply(tree, fun1, namelessArgs), argPos)
+                  doTypedApply(tree, if (blockIsEmpty) fun else fun1, allArgs, mode, pt)
                 } else {
                   tryTupleApply.getOrElse {
                     val suffix =
                       if (missing.isEmpty) ""
-                      else ", unspecified parameter"+ (if (missing.length > 1) "s: " else ": ") +
-                           (missing.take(3).mkString(", ")) + (if (missing.length > 3) ", ..." else "")
+                      else {
+                        val missingStr = missing.take(3).map(_.name).mkString(", ") + (if (missing.length > 3) ", ..." else ".")
+                        val sOpt = if (missing.length > 1) "s" else ""
+                        ".\nUnspecified value parameter"+ sOpt +" "+ missingStr
+                      }
                     errorTree(tree, "not enough arguments for "+treeSymTypeMsg(fun) + suffix)
                   }
                 }
@@ -2043,10 +2060,10 @@ trait Typers { self: Analyzer =>
             }
           }
 
-          if (formals.length != args.length ||   // wrong nb of arguments
-                     args.exists(isNamed(_)) ||  // uses a named argument
-                     isNamedApplyBlock(fun)) {   // fun was transformed to a named apply block =>
-                                                 // integrate this application into the block
+          if (formals.length != args.length || // wrong nb of arguments
+              args.exists(isNamed(_)) ||       // uses a named argument
+              isNamedApplyBlock(fun)) {        // fun was transformed to a named apply block =>
+                                               // integrate this application into the block
             tryNamesDefaults
           } else {
             val tparams = context.extractUndetparams()

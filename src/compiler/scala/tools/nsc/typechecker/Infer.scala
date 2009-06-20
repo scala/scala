@@ -735,18 +735,13 @@ trait Infer {
             }
           } else {
             // not enough arguments, check if applicable using defaults
-            val namedArgtpes = argtpes0.dropWhile {
-              case NamedType(name, _) => params.forall(_.name != name)
-              case _ => true
-            }
-            val namedParams = params.drop(argtpes0.length - namedArgtpes.length)
-            val missingParams = namedParams.filter(p => namedArgtpes.forall {
-              case NamedType(name, _) => name != p.name
-              case _ => true
-            })
-            if (missingParams.exists(!_.hasFlag(DEFAULTPARAM))) tryTupleApply
+            val missing = missingParams[Type](argtpes0, params, {
+              case NamedType(name, _) => Some(name)
+              case _ => None
+            })._1
+            if (missing.exists(!_.hasFlag(DEFAULTPARAM))) tryTupleApply
             else {
-              val argtpes1 = argtpes0 ::: missingParams.map {
+              val argtpes1 = argtpes0 ::: missing.map {
                 p => NamedType(p.name, p.tpe) // add defaults as named arguments
               }
               isApplicable(undetparams, ftpe, argtpes1, pt)
