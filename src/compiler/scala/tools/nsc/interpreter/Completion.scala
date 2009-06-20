@@ -24,6 +24,7 @@ package scala.tools.nsc.interpreter
 import jline._
 import java.net.URL
 import java.util.concurrent.ConcurrentHashMap
+import scala.concurrent.DelayedLazyVal
 
 // REPL completor - queries supplied interpreter for valid completions
 // based on current contents of buffer.
@@ -32,23 +33,10 @@ class Completion(val interpreter: Interpreter) extends Completor {
   import java.util.{ List => JList }
   import interpreter.compilerClasspath
 
-  // This is a wrapper which lets us use a def until some lengthy
-  // action is complete, and then a val from that point on.
-  class LazyValFuture[T](f: () => T, body: => Unit) {
-    private[this] var isDone = false
-    private[this] lazy val complete = f()
-    def apply(): T = if (isDone) complete else f()
-
-    scala.concurrent.ops.future {
-      body
-      isDone = true
-    }
-  }
-
   // it takes a little while to look through the jars so we use a future and a concurrent map
   class CompletionAgent {
     val dottedPaths = new ConcurrentHashMap[String, List[String]]
-    val topLevelPackages = new LazyValFuture(
+    val topLevelPackages = new DelayedLazyVal(
       () => enumToList(dottedPaths.keys) filterNot (_ contains '.'),
       getDottedPaths(dottedPaths, interpreter)
     )
