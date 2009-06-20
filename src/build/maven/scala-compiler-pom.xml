@@ -36,6 +36,12 @@
 			<artifactId>scala-library</artifactId>
 			<version>@VERSION@</version>
 		</dependency>
+                <dependency>
+                        <groupId>jline</groupId>
+                        <artifactId>jline</artifactId>
+                        <version>0.9.91</version>
+                        <optional>true</optional>
+                </dependency>
 	</dependencies>
 	<distributionManagement>
 		<repository>
