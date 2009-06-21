@@ -31,8 +31,6 @@ object Test_BigInt extends TestCase("BigInt") with Assert {
     assertEquals("int_mul_bigint", 2*x*y, y*x*2)
     assertTrue("z_<=_3", z <= 3)
     assertFalse("3_<_z", 3 < z)
-    assertTrue("z_==_3", z == 3)
-    assertTrue("3_==_z", 3 == z)
   }
 }
 
@@ -52,8 +50,6 @@ object Test_BigDecimal extends TestCase("BigDecimal") with Assert {
     val z = 1 + y
     assertTrue("z_<=_3", z <= 3)
     assertFalse("3_<_z", 3 < z)
-    assertTrue("z_==_3", z == 3)
-    assertTrue("3_==_z", 3 == z)
 
     val a: BigDecimal= Math.MAX_LONG
     val b: BigDecimal = 1

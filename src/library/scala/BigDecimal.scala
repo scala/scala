@@ -145,11 +145,6 @@ object BigDecimal
    *  @since 2.8
    */
   implicit def bigInt2bigDecimal(x: BigInt): BigDecimal = apply(x)
-
-  // Anyone can subclass Number, so we can't just assume .longValue is an unrounded
-  // representation (as it cannot be for anything larger than Long.) So we also confirm
-  // that at least x thinks it's equal to x.longValue.
-  private[scala] def equalsOwnLongValue(that: Number): Boolean = that == that.longValue
 }
 
 /**
@@ -164,7 +159,6 @@ extends java.lang.Number
 {
   def this(bigDecimal: BigDec) = this(bigDecimal, BigDecimal.defaultMathContext)
   import BigDecimal.RoundingMode._
-  import BigDecimal.equalsOwnLongValue
 
   /** Cuts way down on the wrapper noise. */
   private implicit def bigdec2BigDecimal(x: BigDec): BigDecimal = new BigDecimal(x, mc)
@@ -173,16 +167,11 @@ extends java.lang.Number
   override def hashCode(): Int = this.bigDecimal.hashCode()
 
   /** Compares this BigDecimal with the specified value for equality.
+   *  Will only claim equality with scala.BigDecimal and java.math.BigDecimal.
    */
   override def equals (that: Any): Boolean = that match {
     case that: BigDecimal           => this equals that
     case that: BigDec               => this equals BigDecimal(that)
-    case that: BigInt               => this equals BigDecimal(that)
-    case that: java.math.BigInteger => this equals BigDecimal(new BigInt(that), mc)
-    case that: java.lang.Double     => this equals BigDecimal(that.doubleValue)
-    case that: java.lang.Float      => this equals BigDecimal(that.floatValue)
-    case that: java.lang.Number     => equalsOwnLongValue(that) && (this equals BigDecimal(that.longValue))
-    case that: java.lang.Character  => this equals BigDecimal(that.charValue.asInstanceOf[Int])
     case _                          => false
   }
 
