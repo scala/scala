@@ -22,7 +22,7 @@ object Test {
 
   def main(args: Array[String]) {
     val rt = Runtime.getRuntime()
-    for (o <- 1 to 200000) {
+    for (o <- 1 to 300000) {
       println("Outer [2AN] "+o)
       var a: List[A] = Nil
       for (i <- 1 to 10000) {
@@ -32,7 +32,7 @@ object Test {
         t ! Start
       }
       for (act <- a) act ! EndMe
-      rt.gc()
+      //rt.gc()
       println("Free "+z(rt.freeMemory())+" total "+z(rt.totalMemory()))
     }
   }
