@@ -1,0 +1,10 @@
+unit2anyref.scala:2: error: type mismatch;
+ found   : Unit
+ required: AnyRef
+Note that implicit conversions are not applicable because they are ambiguous:
+ both method orderingToOrdered in object Predef of type [T](x: T)(implicit ord: Ordering[T])Ordered[T]
+ and method any2stringadd in object Predef of type (x: Any)scala.runtime.StringAdd
+ are possible conversion functions from Unit to AnyRef
+  val x: AnyRef = ()  // this should not succeed.
+                  ^
+one error found

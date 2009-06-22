@@ -100,20 +100,14 @@ object Ordering
 {
   def apply[T](implicit ord : Ordering[T]) = ord
 
-  def ordered[A <: Ordered[A]] : Ordering[A] = new Ordering[A]{
+  def ordered[A <: Ordered[A]] : Ordering[A] = new Ordering[A] {
     def compare(x : A, y : A) = x.compare(y);
   }
 
   trait UnitOrdering extends Ordering[Unit] {
     def compare(x : Unit, y : Unit) = 0;
   }
-  // XXX For the time being this is non-implicit so there remains
-  // only one default implicit conversion Unit => AnyRef (the other
-  // being any2stringadd in Predef.) See
-  //    test/files/neg/structural.scala
-  // for an example of code which is influenced by the next line.
-  // implicit object Unit extends UnitOrdering
-  object Unit extends UnitOrdering
+  implicit object Unit extends UnitOrdering
 
   trait BooleanOrdering extends Ordering[Boolean] {
     def compare(x : Boolean, y : Boolean) = (x, y) match {

@@ -13,11 +13,11 @@ object Test extends Application {
     def f4[C <: AnyRef](x: AnyRef{ type D <: AnyRef; def m[E >: Null <: AnyRef](x: D): AnyRef; val x: D }) = x.m[Tata](x.x) //suceed
     def f5[C <: AnyRef](x: AnyRef{ type D <: AnyRef; def m[E >: Null <: AnyRef](x: E): AnyRef; val x: Tata }) = x.m[Tata](x.x) //suceed
 
-    def f6[C <: AnyRef](x: AnyRef{ type D <: AnyRef; def m[E >: Null <: AnyRef](x: AnyRef): A }) = x.m[Tata](()) //suceed
-    def f7[C <: AnyRef](x: AnyRef{ type D <: AnyRef; def m[E >: Null <: AnyRef](x: AnyRef): B }) = x.m[Tata](()) //suceed
-    def f8[C <: AnyRef](x: AnyRef{ type D <: AnyRef; def m[E >: Null <: AnyRef](x: AnyRef): C }) = x.m[Tata](()) //suceed
-    def f9[C <: AnyRef](x: AnyRef{ type D <: AnyRef; def m[E >: Null <: AnyRef](x: AnyRef): D }) = x.m[Tata](()) //suceed
-    def f0[C <: AnyRef](x: AnyRef{ type D <: AnyRef; def m[E >: Null <: AnyRef](x: AnyRef): E }) = x.m[Tata](()) //suceed
+    def f6[C <: AnyRef](x: AnyRef{ type D <: AnyRef; def m[E >: Null <: AnyRef](x: AnyRef): A }) = x.m[Tata](new AnyRef) //suceed
+    def f7[C <: AnyRef](x: AnyRef{ type D <: AnyRef; def m[E >: Null <: AnyRef](x: AnyRef): B }) = x.m[Tata](new AnyRef) //suceed
+    def f8[C <: AnyRef](x: AnyRef{ type D <: AnyRef; def m[E >: Null <: AnyRef](x: AnyRef): C }) = x.m[Tata](new AnyRef) //suceed
+    def f9[C <: AnyRef](x: AnyRef{ type D <: AnyRef; def m[E >: Null <: AnyRef](x: AnyRef): D }) = x.m[Tata](new AnyRef) //suceed
+    def f0[C <: AnyRef](x: AnyRef{ type D <: AnyRef; def m[E >: Null <: AnyRef](x: AnyRef): E }) = x.m[Tata](new AnyRef) //suceed
 
   }
 

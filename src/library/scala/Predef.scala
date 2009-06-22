@@ -190,8 +190,7 @@ object Predef {
   implicit def floatWrapper(x: Float)   = new runtime.RichFloat(x)
   implicit def doubleWrapper(x: Double) = new runtime.RichDouble(x)
 
-  implicit def booleanWrapper(x: Boolean)  = new runtime.RichBoolean(x)
-  implicit def unitWrapper(x: Boolean)  = new runtime.RichUnit
+  implicit def booleanWrapper(x: Boolean) = new runtime.RichBoolean(x)
 
   implicit def stringWrapper(x: String) = new runtime.RichString(x)
 
@@ -202,12 +201,6 @@ object Predef {
   /** Lens from Ordering[T] to Ordered[T] */
   implicit def orderingToOrdered[T](x: T)(implicit ord: Ordering[T]): Ordered[T] =
     new Ordered[T] { def compare(that: T): Int = ord.compare(x, that) }
-
-  /** Temporarily leaving this conversion to Ordered - see Ordering.scala for reasoning */
-  implicit def unit2ordered(x: Unit): Ordered[Unit] = new Ordered[Unit] with Proxy {
-    def self: Any = x
-    def compare(y: Unit): Int = 0
-  }
 
   implicit def byte2short(x: Byte): Short = x.toShort
   implicit def byte2int(x: Byte): Int = x.toInt
