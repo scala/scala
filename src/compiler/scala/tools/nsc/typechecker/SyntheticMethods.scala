@@ -138,14 +138,16 @@ trait SyntheticMethods { self: Analyzer =>
       localTyper.typed(methodDef)
     }
 
-    /** The equality method for case classes:
+    /** The equality method for case classes.  The argument is an Any,
+     *  but because of boxing it will always be an Object, so a check
+     *  is neither necessary nor useful before the cast.
+     *
      *   def equals(that: Any) =
-     *     that.isInstanceOf[AnyRef] &&
-     *     ((this eq that.asInstanceOf[AnyRef]) ||
+     *     (this eq that.asInstanceOf[AnyRef]) ||
      *     (that match {
      *       case this.C(this.arg_1, ..., this.arg_n) => true
      *       case _ => false
-     *     }))
+     *     })
      */
     def equalsClassMethod: Tree = {
       val method = equalsSym
@@ -155,55 +157,33 @@ trait SyntheticMethods { self: Analyzer =>
             val that = Ident(method.paramss.head.head)
             val constrParamTypes = clazz.primaryConstructor.tpe.paramTypes
             val hasVarArgs = !constrParamTypes.isEmpty && constrParamTypes.last.typeSymbol == RepeatedParamClass
-            if (false && clazz.isStatic) {
-              // todo: elim
-              val target = getMember(ScalaRunTimeModule, if (hasVarArgs) nme._equalsWithVarArgs else nme._equals)
-              Apply(
-                Select(
-                  TypeApply(
-                    Select(that, Any_isInstanceOf),
-                    List(TypeTree(clazz.tpe))),
-                  Boolean_and),
-                List(
-                  Apply(gen.mkAttributedRef(target),
-                        This(clazz) :: (method.paramss.head map Ident))))
-            } else {
-              val (pat, guard) = {
-                val guards = new ListBuffer[Tree]
-                val params = for ((acc, cpt) <- clazz.caseFieldAccessors zip constrParamTypes) yield {
-                  val name = context.unit.fresh.newName(clazz.pos, acc.name+"$")
-                  val isVarArg = cpt.typeSymbol == RepeatedParamClass
-                  guards += Apply(
-                    Select(
-                      Ident(name),
-                      if (isVarArg) nme.sameElements else nme.EQ),
-                    List(Ident(acc)))
-                  Bind(name,
-                       if (isVarArg) Star(Ident(nme.WILDCARD))
-                       else Ident(nme.WILDCARD))
-                }
-                ( Apply(Ident(clazz.name.toTermName), params),
-                  if (guards.isEmpty) EmptyTree
-                  else guards reduceLeft { (g1: Tree, g2: Tree) =>
-                    Apply(Select(g1, nme.AMPAMP), List(g2))
-                  }
-                )
+            val (pat, guard) = {
+              val guards = new ListBuffer[Tree]
+              val params = for ((acc, cpt) <- clazz.caseFieldAccessors zip constrParamTypes) yield {
+                val name = context.unit.fresh.newName(clazz.pos, acc.name+"$")
+                val isVarArg = cpt.typeSymbol == RepeatedParamClass
+                guards += Apply(
+                  Select(
+                    Ident(name),
+                    if (isVarArg) nme.sameElements else nme.EQ),
+                  List(Ident(acc)))
+                Bind(name,
+                     if (isVarArg) Star(Ident(nme.WILDCARD))
+                     else Ident(nme.WILDCARD))
               }
-              val isAnyRef = TypeApply(
-                    Select(that, Any_isInstanceOf),
-                    List(TypeTree(AnyRefClass.tpe)))
-              val cast = TypeApply(
-                    Select(that, Any_asInstanceOf),
-                    List(TypeTree(AnyRefClass.tpe)))
-              val eq_ = Apply(Select( This(clazz) , nme.eq), List(that setType AnyRefClass.tpe))
-              val match_ = Match(that, List(
-                    CaseDef(pat, guard, Literal(Constant(true))),
-                    CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))))
-              Apply(
-                    Select(isAnyRef, Boolean_and),
-                    List(Apply(Select(eq_, Boolean_or),
-                    List(match_))))
+              ( Apply(Ident(clazz.name.toTermName), params),
+                if (guards.isEmpty) EmptyTree
+                else guards reduceLeft { (g1: Tree, g2: Tree) =>
+                  Apply(Select(g1, nme.AMPAMP), List(g2))
+                }
+              )
             }
+            val eq_ = Apply(Select(This(clazz), nme.eq), List(that setType AnyRefClass.tpe))
+            val match_ = Match(that, List(
+                  CaseDef(pat, guard, Literal(Constant(true))),
+                  CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))))
+
+            gen.mkOr(eq_, match_)
           }
         )
       localTyper.typed(methodDef)
