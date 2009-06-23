@@ -10,6 +10,8 @@
 
 package scala
 
+import java.util.Comparator
+
 /** A trait for representing total orderings.  It is important to
  * distinguish between a type that has a total order and a representation
  * of total  ordering on some type.  This trait is for representing the
@@ -38,7 +40,7 @@ package scala
  * @version 0.9.5, 2008-04-15
  */
 
-trait Ordering[T] extends PartialOrdering[T] {
+trait Ordering[T] extends Comparator[T] with PartialOrdering[T] {
   outer =>
  /** Returns a negative integer iff <code>x</code> comes before
    * <code>y</code> in the ordering, returns 0 iff <code>x</code>
