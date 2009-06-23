@@ -240,22 +240,6 @@ self =>
   override def take(n: Int): Stream[A] =
     if (n <= 0 || isEmpty) Stream.Empty else new Stream.Cons(head, tail take (n-1))
 
-  /** Returns the stream without its <code>n</code> first elements.
-   *  If the stream has less than <code>n</code> elements, the empty stream is returned.
-   *
-   *  @param n the number of elements to drop.
-   *  @return the stream without its <code>n</code> first elements.
-   */
-  override def drop(n: Int): Stream[A] = {
-    var these: Stream[A] = this
-    var count = n
-    while (!these.isEmpty && count > 0) {
-      these = these.tail
-      count -= 1
-    }
-    these
-  }
-
   /** A substream starting at index `from`
    *  and extending up to (but not including) index `until`.
    *
@@ -452,7 +436,8 @@ object Stream extends SequenceFactory[Stream] {
    */
   def iterate(start: Int)(f: Int => Int): Stream[Int] = new Cons(start, iterate(f(start))(f))
 
-  override def iterate(start: Int, len: Int)(f: Int => Int): Stream[Int] = iterate(start)(f) take len
+  override def iterate(start: Int, len: Int)(f: Int => Int): Stream[Int] =
+    iterate(start)(f) take len
 
   /**
    * Create an infinite stream starting at <code>start</code>
@@ -500,8 +485,7 @@ object Stream extends SequenceFactory[Stream] {
    *  @param it   The iterator producing the stream's elements
    */
   @deprecated("use it.toStream instead")
-  def fromIterator[A](it: Iterator[A]): Stream[A] =
-    if (it.hasNext) cons(it.next, fromIterator(it)) else empty
+  def fromIterator[A](it: Iterator[A]): Stream[A] = it.toStream
 
   /** The concatenation of a sequence of streams
    */
@@ -511,9 +495,7 @@ object Stream extends SequenceFactory[Stream] {
   /** The concatenation of all streams returned by an iterator
    */
   @deprecated("use xs.toStream.flatten instead")
-  def concat[A](xs: Iterator[Stream[A]]): Stream[A] =
-    if (xs.hasNext) xs.next append concat(xs)
-    else empty
+  def concat[A](xs: Iterator[Stream[A]]): Stream[A] = xs.toStream.flatten
 
   /**
    * Create a stream with element values
@@ -527,14 +509,8 @@ object Stream extends SequenceFactory[Stream] {
    * @return the stream starting at value <code>start</code>.
    */
   @deprecated("use `iterate' instead.")
-  def range(start: Int, end: Int, step: Int => Int): Stream[Int] = {
-    val up = step(start) > start
-    val down = step(start) < start
-    def loop(lo: Int): Stream[Int] =
-      if ((!up || lo < end) && (!down || lo > end)) cons(lo, loop(step(lo)))
-      else empty
-    loop(start)
-  }
+  def range(start: Int, end: Int, step: Int => Int): Stream[Int] =
+    iterate(start, end - start)(step)
 
   /**
    * Create an infinite stream containing the given element.
@@ -552,8 +528,7 @@ object Stream extends SequenceFactory[Stream] {
    *  @return     the stream composed of n elements all equal to elem
    */
   @deprecated("use fill(n, elem) instead")
-  def make[A](n: Int, elem: A): Stream[A] =
-    const(elem) take n
+  def make[A](n: Int, elem: A): Stream[A] = fill(n)(elem)
 }
 
 
