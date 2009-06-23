@@ -33,7 +33,7 @@ package scala
  *  @author  Martin Odersky
  *  @version 1.1, 2006-07-24
  */
-trait Ordered[A] {
+trait Ordered[A] extends java.lang.Comparable[A] {
 
   /** Result of comparing <code>this</code> with operand <code>that</code>.
    *  returns <code>x</code> where
