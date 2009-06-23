@@ -24,11 +24,12 @@ import java.nio.charset.Charset
  *  @author  Burak Emir
  *  @version 1.0, 19/08/2004
  */
-object Source {
-
+object Source
+{
   val DefaultBufSize = 2048
-
   val NoReset: () => Source = () => throw new UnsupportedOperationException()
+
+  def defaultCodec = Codec(util.Properties.encodingString)
 
   /** Creates a <code>Source</code> instance from the given array of bytes,
    *  with empty description.
@@ -129,7 +130,7 @@ object Source {
     val inpStream = new FileInputStream(file)
     val size = if (bufferSize > 0) bufferSize else Source.DefaultBufSize
     setFileDescriptor(file,
-      BufferedSource.fromInputStream(inpStream, enc, size, { () => fromFile(file, enc, size)}))
+      BufferedSource.fromInputStream(inpStream, size, () => fromFile(file, enc, size))(Codec(enc)))
   }
 
   /** This method sets the descr property of the given source to a string of the form "file:"+path
@@ -195,7 +196,7 @@ object Source {
   @deprecated
   def fromInputStream(istream: InputStream, enc: String, maxlen: Option[Int]): Source = {
     val limit = maxlen match { case Some(i) => i; case None => 0 }
-    val bi = new BufferedInputStream(istream, Source.DefaultBufSize)
+    val bi = new BufferedInputStream(istream, DefaultBufSize)
     val bytes = new collection.mutable.ArrayBuffer[Byte]()
     var b = 0
     var i = 0
@@ -206,15 +207,10 @@ object Source {
     fromBytes(bytes.toArray, enc)
   }
 
-  /** same as BufferedSource.fromInputStream(is, enc, Source.DefaultBufSize)
+  /** same as BufferedSource.fromInputStream(is)
    */
-  def fromInputStream(is: InputStream, enc: String): Source =
-    BufferedSource.fromInputStream(is, enc, Source.DefaultBufSize, { () => fromInputStream(is, enc) })
-
-  /** same as BufferedSource.fromInputStream(is, "utf-8", Source.DefaultBufSize) */
-  def fromInputStream(is: InputStream): Source =
-    BufferedSource.fromInputStream(is, "utf-8", Source.DefaultBufSize, { () => fromInputStream(is) })
-
+  def fromInputStream(is: InputStream, codec: Codec = defaultCodec): Source =
+    BufferedSource.fromInputStream(is, DefaultBufSize, () => fromInputStream(is, codec))(codec)
 }
 
 /** The class <code>Source</code> implements an iterable representation
