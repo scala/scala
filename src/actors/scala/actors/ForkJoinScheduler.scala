@@ -16,15 +16,9 @@ class ForkJoinScheduler extends Thread with IScheduler with TerminationMonitor {
 
   private val CHECK_FREQ = 50
 
-  private def allWorkersWaiting: Boolean =
-    pool.workers.forall(t => {
-      if (t == null)
-        true
-      else {
-        val s = t.getState()
-        s == State.WAITING || s == State.TIMED_WAITING
-      }
-    })
+  override def managedBlock(blocker: ForkJoinPool.ManagedBlocker) {
+    ForkJoinPool.managedBlock(blocker, true)
+  }
 
   override def run() {
     try {
@@ -41,16 +35,6 @@ class ForkJoinScheduler extends Thread with IScheduler with TerminationMonitor {
           if (allTerminated) {
             //Debug.info(this+": all actors terminated")
             throw new QuitException
-          }
-
-          if (!pool.isQuiescent && allWorkersWaiting) {
-            //Debug.info(this+": all workers blocked")
-            val par = pool.getParallelism()
-            //Debug.info(this+": parallelism "+par)
-            //Debug.info(this+": max pool size "+pool.getMaximumPoolSize())
-            if (par < pool.getMaximumPoolSize()) {
-              pool.setParallelism(par + 1)
-            }
           }
         }
       }

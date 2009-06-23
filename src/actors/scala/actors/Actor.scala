@@ -14,6 +14,8 @@ import scala.compat.Platform
 import java.util.{Timer, TimerTask}
 import java.util.concurrent.ExecutionException
 
+import forkjoin.ForkJoinPool
+
 /**
  * The <code>Actor</code> object provides functions for the definition of
  * actors, as well as actor operations, such as
@@ -449,7 +451,8 @@ trait Actor extends Reactor with AbstractActor {
             // keep going
           } else {
             waitingFor = f.isDefinedAt
-            suspendActor()
+            isSuspended = true
+            scheduler.managedBlock(new ActorBlocker(0))
             done = true
           }
         }
@@ -509,7 +512,8 @@ trait Actor extends Reactor with AbstractActor {
           } else {
             waitingFor = f.isDefinedAt
             received = None
-            suspendActorFor(msec)
+            isSuspended = true
+            scheduler.managedBlock(new ActorBlocker(msec))
             done = true
             if (received.isEmpty) {
               // actor is not resumed because of new message
@@ -839,8 +843,19 @@ trait Actor extends Reactor with AbstractActor {
       scheduler execute task
     }
 
+  class ActorBlocker(timeout: Long) extends ForkJoinPool.ManagedBlocker {
+    def block() = {
+      if (timeout > 0)
+        Actor.this.suspendActorFor(timeout)
+      else
+        Actor.this.suspendActor()
+      true
+    }
+    def isReleasable() =
+      !Actor.this.isSuspended
+  }
+
   private def suspendActor() {
-    isSuspended = true
     while (isSuspended) {
       try {
         wait()
@@ -856,7 +871,6 @@ trait Actor extends Reactor with AbstractActor {
     val ts = Platform.currentTime
     var waittime = msec
     var fromExc = false
-    isSuspended = true
     while (isSuspended) {
       try {
         fromExc = false

@@ -8,6 +8,8 @@
 
 package scala.actors
 
+import forkjoin.ForkJoinPool
+
 /**
  * @author Erik Engbrecht
  */
@@ -48,4 +50,7 @@ trait DelegatingScheduler extends IScheduler {
   def terminated(actor: Reactor) = impl.terminated(actor)
 
   def onTerminate(actor: Reactor)(f: => Unit) = impl.onTerminate(actor)(f)
+
+  override def managedBlock(blocker: ForkJoinPool.ManagedBlocker): Unit =
+    impl.managedBlock(blocker)
 }
