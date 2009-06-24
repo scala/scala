@@ -167,8 +167,12 @@ object Exception
     * an exception handler function as an argument to "by".  Example:
     * handling(ex1, ex2) by (_.printStackTrace)
     */
-  def handling[T](exceptions: Class[_]*) = new {
-    def by(f: (Throwable) => T): Catch[T] = catching(exceptions: _*) withApply f
+  class By[T,R](f: T => R) {
+    def by(x: T): R = f(x)
+  }
+  def handling[T](exceptions: Class[_]*) = {
+    def fun(f: Throwable => T) = catching(exceptions: _*) withApply f
+    new By[Throwable => T, Catch[T]](fun _)
   }
 
   /** Returns a Catch object with no catch logic and the argument as Finally. */

@@ -338,17 +338,18 @@ class BigInt(val bigInteger: BigInteger) extends jl.Number
    */
   def doubleValue = this.bigInteger.doubleValue
 
-  /** See <code>Iterator.range</code>. */
-  def until(end: BigInt) = Range.BigInt(this, end, BigInt(1))
+  /** Create a GenericRange[BigInt] in range <code>[start;end)</code>
+   *  with the specified step, where start is the target BigInt.
+   *
+   *  @param end    the end value of the range (exclusive)
+   *  @param step   the distance between elements (defaults to 1)
+   *  @return       the range
+   */
+  def until(end: BigInt, step: BigInt = BigInt(1)) = Range.BigInt(this, end, step)
 
-  /** See <code>Iterator.range</code>. */
-  def until(end: BigInt, step: BigInt) = Range.BigInt(this, end, step)
-
-  /** like <code>until</code>, but includes the last index */
-  def to(end: BigInt) = Range.BigInt.inclusive(this, end, BigInt(1))
-
-  /** like <code>until</code>, but includes the last index */
-  def to(end: BigInt, step: BigInt) = Range.BigInt.inclusive(this, end, step)
+  /** Like until, but inclusive of the end value.
+   */
+  def to(end: BigInt, step: BigInt = BigInt(1)) = Range.BigInt.inclusive(this, end, step)
 
   /** Returns the decimal String representation of this BigInt.
    */

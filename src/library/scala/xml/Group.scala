@@ -21,7 +21,7 @@ case class Group(val nodes: Seq[Node]) extends Node {
 
   override def theSeq = nodes
 
-  /** structural equality */
+  /** XXX this is ridiculous, we can't do equality like this. */
   override def equals(x: Any) = x match {
     case z:Group     => (length == z.length) && sameElements(z)
     case z:Node      => (length == 1) && z == apply(0)
@@ -29,6 +29,8 @@ case class Group(val nodes: Seq[Node]) extends Node {
     case z:String    => text == z
     case _           => false
   }
+  /* As if there were a hashCode which could back up the above implementation! */
+  override def hashCode = nodes.hashCode
 
   /**
    * @throws Predef.UnsupportedOperationException (always)

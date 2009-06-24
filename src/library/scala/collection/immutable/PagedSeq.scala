@@ -14,7 +14,6 @@ package scala.collection.immutable
 import java.io._
 import util.matching.Regex
 
-
 /** The PagedSeq object defines a lazy implementations of
  *  a random access sequence.
  */
@@ -108,9 +107,13 @@ import PagedSeq._
  *
  * @author Martin Odersky
  */
-class PagedSeq[T] protected (more: (Array[T], Int, Int) => Int,
-                             first1: Page[T], start: Int, end: Int) extends RandomAccessSeq[T] {
-
+class PagedSeq[T] protected(
+  more: (Array[T], Int, Int) => Int,
+  first1: Page[T],
+  start: Int,
+  end: Int)
+extends collection.Vector[T]
+{
   /**  A paged sequence is constructed from a method that produces more characters when asked.
    *  The producer method is analogous to the read method in java.io.Reader.
    *  It takes three parameters: an array of characters, a start index, and an end index.

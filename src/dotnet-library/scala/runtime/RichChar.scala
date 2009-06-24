@@ -67,7 +67,7 @@ final class RichChar(x: Char) extends Proxy with Ordered[Char] {
         }
       }
 
-  /** Create a <code>RandomAccessSeq.Projection[Char]</code> over the characters from 'x' to 'y'
+  /** Create a <code>VectorView[Char]</code> over the characters from 'x' to 'y'
    */
   def to(y: Char): VectorView[Char, Vector[Char]] = until((y + 1).toChar)
 

@@ -10,6 +10,7 @@
 
 package scala
 
+import annotation.experimental
 import collection.immutable.Vector
 import collection.generic.VectorView
 import util.control.Exception.catching
@@ -21,9 +22,9 @@ import util.Hashable
  *    It must be supplied with an Integral implementation of the
  *    range type.
  *
- *    Factories for likely types include Range.BigInt and Range.Long.
- *    Range.Int exists for completeness, but the Int-based scala.Range
- *    should be more performant.
+ *    Factories for likely types include Range.BigInt, Range.Long,
+ *    and Range.BigDecimal.  Range.Int exists for completeness, but
+ *    the Int-based scala.Range should be more performant.
  *  </p><pre>
  *     <b>val</b> r1 = new Range(0, 100, 1)
  *     <b>val</b> veryBig = Math.MAX_INT.toLong + 1
@@ -34,6 +35,7 @@ import util.Hashable
  *  @author  Paul Phillips
  *  @version 2.8
  */
+@experimental
 abstract class GenericRange[T]
   (val start: T, val end: T, val step: T, val isInclusive: Boolean = false)
   (implicit num: Integral[T])
@@ -53,9 +55,17 @@ extends VectorView[T, Vector[T]] with RangeToString[T] with Hashable {
   /** Create a new range with the start and end values of this range and
    *  a new <code>step</code>.
    */
-  def by(step: T): GenericRange[T] =
-    if (isInclusive) GenericRange.inclusive(start, end, step)
-    else GenericRange(start, end, step)
+  def by(newStep: T): GenericRange[T] = copy(start, end, newStep)
+
+  /** Create a copy of this range.
+   */
+  def copy(start: T, end: T, step: T): GenericRange[T]
+
+  /** Shift or multiply the entire range by some constant.
+   */
+  def -(shift: T) = this + negate(shift)
+  def +(shift: T) = copy(this.start + shift, this.end + shift, step)
+  def *(mult: T) = copy(this.start * mult, this.end * mult, step * mult)
 
   override def foreach[U](f: T => U) {
     var i = start
@@ -132,21 +142,23 @@ private[scala] trait RangeToString[T] extends VectorView[T, Vector[T]] {
 }
 
 
-object GenericRange {
+object GenericRange
+{
   class Inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
   extends GenericRange(start, end, step, true) {
-    def exclusive: Exclusive[T] = new Exclusive(start, end, step)
+    def exclusive: Exclusive[T] = GenericRange(start, end, step)
+    def copy(start: T, end: T, step: T): Inclusive[T] = GenericRange.inclusive(start, end, step)
   }
 
   class Exclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
   extends GenericRange(start, end, step, false) {
-    def inclusive: Inclusive[T] = new Inclusive(start, end, step)
+    def inclusive: Inclusive[T] = GenericRange.inclusive(start, end, step)
+    def copy(start: T, end: T, step: T): Exclusive[T] = GenericRange(start, end, step)
   }
 
-  def apply[T](start: T, end: T, step: T)(implicit num: Integral[T]) =
+  def apply[T](start: T, end: T, step: T)(implicit num: Integral[T]): Exclusive[T] =
     new Exclusive(start, end, step)
-
-  def inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T]) =
+  def inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T]): Inclusive[T] =
     new Inclusive(start, end, step)
 }
 
@@ -210,6 +222,12 @@ extends VectorView[Int, Vector[Int]] with RangeToString[Int]
     else start >= x && x > end
 
   def inclusive = Range.inclusive(start, end, step)
+  // XXX right now (1 to 10).toList == (1 to 10) but their hashCodes are unequal.
+  override def equals(other: Any) = other match {
+    case x: Range => start == x.start && end == x.end && step == x.step
+    case _        => super.equals(other)
+  }
+  override def hashCode = start + end + step
 }
 
 object Range {
@@ -219,33 +237,45 @@ object Range {
     override def by(step: Int): Range = new Inclusive(start, end0, step)
   }
 
+  // The standard / Int-specific Range.
   def apply(start: Int, end: Int, step: Int) =
     new Range(start, end, step)
-
   def inclusive(start: Int, end: Int, step: Int): Range =
     new Range.Inclusive(start, end, step)
 
+  // BigInt and Long are straightforward generic ranges.
   object BigInt {
     def apply(start: BigInt, end: BigInt, step: BigInt) = GenericRange(start, end, step)
     def inclusive(start: BigInt, end: BigInt, step: BigInt) = GenericRange.inclusive(start, end, step)
-  }
-  // The BigDecimal and Double ranges will throw an exception if they cannot
-  // step exactly as requested.
-  object BigDecimal {
-    def apply(start: BigDecimal, end: BigDecimal, step: BigDecimal) =
-      GenericRange(start, end, step)(Numeric.BigDecimalAsIfIntegral)
-    def inclusive(start: BigDecimal, end: BigDecimal, step: BigDecimal) =
-      GenericRange.inclusive(start, end, step)(Numeric.BigDecimalAsIfIntegral)
   }
   object Long {
     def apply(start: Long, end: Long, step: Long) = GenericRange(start, end, step)
     def inclusive(start: Long, end: Long, step: Long) = GenericRange.inclusive(start, end, step)
   }
+
+  // BigDecimal uses an alternative implementation of Numeric in which
+  // it pretends to be Integral[T] instead of Fractional[T].  See Numeric for
+  // details.  The intention is for it to throw an exception anytime
+  // imprecision or surprises might result from anything, although this may
+  // not yet be fully implemented.
+  object BigDecimal {
+    implicit val bigDecAsIntegral = scala.Numeric.BigDecimalAsIfIntegral
+
+    def apply(start: BigDecimal, end: BigDecimal, step: BigDecimal) =
+      GenericRange(start, end, step)
+    def inclusive(start: BigDecimal, end: BigDecimal, step: BigDecimal) =
+      GenericRange.inclusive(start, end, step)
+  }
+  // Double re-uses BigDecimal's range.
   object Double {
-    def apply(start: Double, end: Double, step: Double) =
-      BigDecimal(scala.BigDecimal(start), scala.BigDecimal(end), scala.BigDecimal(step))
-    def inclusive(start: Double, end: Double, step: Double) =
-      BigDecimal.inclusive(scala.BigDecimal(start), scala.BigDecimal(end), scala.BigDecimal(step))
+    def apply(start: Double, end: Double, step: Double) = scala.BigDecimal(start) until end by step
+    def inclusive(start: Double, end: Double, step: Double) = scala.BigDecimal(start) to end by step
+  }
+
+  // As there is no appealing default step size for not-really-integral ranges,
+  // we offer a partially constructed object.
+  class Partial[T, U](f: T => U) {
+    def by(x: T): U = f(x)
   }
 
   // Illustrating genericity with Int Range, which should have the same behavior

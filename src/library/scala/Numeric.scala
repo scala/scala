@@ -74,7 +74,7 @@ object Numeric {
   }
   implicit object DoubleIsFractional extends DoubleIsFractional with Ordering.DoubleOrdering
 
-  trait BigDecimalIsConflicted {
+  trait BigDecimalIsConflicted extends Numeric[BigDecimal] {
     def plus(x: BigDecimal, y: BigDecimal): BigDecimal = x + y
     def minus(x: BigDecimal, y: BigDecimal): BigDecimal = x - y
     def times(x: BigDecimal, y: BigDecimal): BigDecimal = x * y

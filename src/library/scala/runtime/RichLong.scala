@@ -20,17 +20,18 @@ final class RichLong(x: Long) extends Proxy with Ordered[Long] {
   // Ordered[Long].compare
   def compare(y: Long): Int = if (x < y) -1 else if (x > y) 1 else 0
 
-  /** See <code>Iterator.range</code>. */
-  def until(end: Long) = Range.Long(x, end, 1L)
+  /** Create a GenericRange[Long] in range <code>[start;end)</code>
+   *  with the specified step, where start is the target Long.
+   *
+   *  @param end    the end value of the range (exclusive)
+   *  @param step   the distance between elements (defaults to 1)
+   *  @return       the range
+   */
+  def until(end: Long, step: Long = 1L): GenericRange.Exclusive[Long] = Range.Long(x, end, step)
 
-  /** See <code>Iterator.range</code>. */
-  def until(end: Long, step: Long) = Range.Long(x, end, step)
-
-  /** like <code>until</code>, but includes the last index */
-  def to(end: Long) = Range.Long.inclusive(x, end, 1L)
-
-  /** like <code>until</code>, but includes the last index */
-  def to(end: Long, step: Long) = Range.Long.inclusive(x, end, step)
+  /** Like until, but inclusive of the end value.
+   */
+  def to(end: Long, step: Long = 1L): GenericRange.Inclusive[Long] = Range.Long.inclusive(x, end, step)
 
   def min(y: Long): Long = if (x < y) x else y
   def max(y: Long): Long = if (x > y) x else y

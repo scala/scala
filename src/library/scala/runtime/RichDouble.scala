@@ -13,12 +13,9 @@ package scala.runtime
 
 
 final class RichDouble(x: Double) extends Proxy with Ordered[Double] {
-
   // Proxy.self
   def self: Any = x
 
-  // Ordered[Double].compare
-  //def compare(y: Double): Int = if (x < y) -1 else if (x > y) 1 else 0
   def compare(y: Double): Int = java.lang.Double.compare(x, y)
 
   def min(y: Double): Double = Math.min(x, y)
@@ -29,11 +26,21 @@ final class RichDouble(x: Double) extends Proxy with Ordered[Double] {
   def ceil: Double = Math.ceil(x)
   def floor: Double = Math.floor(x)
 
-  /** See <code>Iterator.range</code>. */
-  def until(end: Double, step: Double) = Range.Double(x, end, step)
+  /** See <code>BigDecimal.until</code>. */
+  def until(end: Double): Range.Partial[Double, GenericRange.Exclusive[BigDecimal]] =
+    new Range.Partial(until(end, _))
 
-  /** like <code>until</code>, but includes the last index */
-  def to(end: Double, step: Double) = Range.Double.inclusive(x, end, step)
+  /** See <code>BigDecimal.until</code>. */
+  def until(end: Double, step: Double): GenericRange.Exclusive[BigDecimal] =
+    BigDecimal(x).until(end, step)
+
+  /** See <code>BigDecimal.to</code>. */
+  def to(end: Double): Range.Partial[Double, GenericRange.Inclusive[BigDecimal]] =
+    new Range.Partial(to(end, _))
+
+  /** See <code>BigDecimal.to</code>. */
+  def to(end: Double, step: Double): GenericRange.Inclusive[BigDecimal] =
+    BigDecimal(x).to(end, step)
 
   /** Converts an angle measured in degrees to an approximately equivalent
    *  angle measured in radians.

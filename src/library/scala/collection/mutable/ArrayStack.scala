@@ -31,6 +31,7 @@ private object Utils{
  *
  * @author David MacIver
  */
+@cloneable
 class ArrayStack[T] private(private var table : Array[AnyRef],
                             private var index : Int) extends Iterable[T]{
   def this() = this(new Array[AnyRef](1), 0);

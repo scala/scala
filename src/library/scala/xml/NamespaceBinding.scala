@@ -22,12 +22,10 @@ import Utility.sbToString
  *  @author  Burak Emir
  *  @version 1.0
  */
-@serializable
+@SerialVersionUID(0 - 2518644165573446725L)
 class NamespaceBinding(val prefix: String,
                        val uri: String,
                        val parent: NamespaceBinding) extends AnyRef {
-
-  private val serialVersionUID = 0 - 2518644165573446725L
 
   if (null != prefix && 0 == prefix.length())
     throw new IllegalArgumentException("zero length prefix not allowed")

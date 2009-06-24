@@ -345,10 +345,30 @@ extends java.lang.Number
   def intValueExact: Int      = bigDecimal.intValueExact
   def longValueExact: Long    = bigDecimal.longValueExact
 
-  /** See <code>Iterator.range</code>. */
+  /** Creates a partially constructed GenericRange[BigDecimal] in range
+   *  <code>[start;end)</code>, where start is the target BigDecimal.  The step
+   *  must be supplied via the "by" method of the returned object in order
+   *  to receive the fully constructed range.  For example:
+   * <pre>
+   * val partial = BigDecimal(1.0) to 2.0       // not usable yet
+   * val range = partial by 0.01                // now a GenericRange
+   * val range2 = BigDecimal(0) to 1.0 by 0.01  // all at once of course is fine too
+   * </pre>
+   *
+   *  @param end    the end value of the range (exclusive)
+   *  @return       the partially constructed GenericRange
+   */
+  def until(end: BigDecimal): Range.Partial[BigDecimal, GenericRange.Exclusive[BigDecimal]] =
+    new Range.Partial(until(end, _))
+
+  /** Same as the one-argument <code>until</code>, but creates the range immediately. */
   def until(end: BigDecimal, step: BigDecimal) = Range.BigDecimal(this, end, step)
 
-  /** like <code>until</code>, but includes the last index */
+  /** Like <code>until</code>, but inclusive of the end value. */
+  def to(end: BigDecimal): Range.Partial[BigDecimal, GenericRange.Inclusive[BigDecimal]] =
+    new Range.Partial(to(end, _))
+
+  /** Like <code>until</code>, but inclusive of the end value. */
   def to(end: BigDecimal, step: BigDecimal) = Range.BigDecimal.inclusive(this, end, step)
 
   /** Converts this <code>BigDecimal</code> to a scala.BigInt.
