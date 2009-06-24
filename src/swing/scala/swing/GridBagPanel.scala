@@ -19,7 +19,7 @@ object GridBagPanel {
     val SouthWest = Value(GridBagConstraints.SOUTHWEST)
     val West = Value(GridBagConstraints.WEST)
     val NorthWest = Value(GridBagConstraints.NORTHWEST)
-    val CENTER = Value(GridBagConstraints.CENTER)
+    val Center = Value(GridBagConstraints.CENTER)
 
     val PageStart = Value(GridBagConstraints.PAGE_START)
     val PageEnd = Value(GridBagConstraints.PAGE_END)

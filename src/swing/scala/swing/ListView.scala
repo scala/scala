@@ -26,8 +26,8 @@ object ListView {
      * Wrapper for <code>javax.swing.ListCellRenderer<code>s
      */
   	class Wrapped[A](override val peer: ListCellRenderer) extends Renderer[A] {
-  	  def componentFor(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int) = {
-        Component.wrap(peer.getListCellRendererComponent(list.peer, a, index, isSelected, hasFocus).asInstanceOf[JComponent])
+  	  def componentFor(list: ListView[_], isSelected: Boolean, focused: Boolean, a: A, index: Int) = {
+        Component.wrap(peer.getListCellRendererComponent(list.peer, a, index, isSelected, focused).asInstanceOf[JComponent])
       }
   	}
 
@@ -46,8 +46,8 @@ object ListView {
      * </code>
      */
     def apply[A,B](f: A => B)(implicit renderer: Renderer[B]): Renderer[A] = new Renderer[A] {
-      def componentFor(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int): Component =
-        renderer.componentFor(list, isSelected, hasFocus, f(a), index)
+      def componentFor(list: ListView[_], isSelected: Boolean, focused: Boolean, a: A, index: Int): Component =
+        renderer.componentFor(list, isSelected, focused, f(a), index)
     }
   }
 
@@ -61,10 +61,10 @@ object ListView {
    */
   abstract class Renderer[-A] {
     def peer: ListCellRenderer = new ListCellRenderer {
-      def getListCellRendererComponent(list: JList, a: Any, index: Int, isSelected: Boolean, hasFocus: Boolean) =
-        componentFor(ListView.wrap[A](list), isSelected, hasFocus, a.asInstanceOf[A], index).peer
+      def getListCellRendererComponent(list: JList, a: Any, index: Int, isSelected: Boolean, focused: Boolean) =
+        componentFor(ListView.wrap[A](list), isSelected, focused, a.asInstanceOf[A], index).peer
     }
-    def componentFor(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int): Component
+    def componentFor(list: ListView[_], isSelected: Boolean, focused: Boolean, a: A, index: Int): Component
   }
 
   /**
@@ -84,7 +84,7 @@ object ListView {
      * This includes foreground and background colors, as well as colors
      * of item selections.
      */
-    def preConfigure(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int) {
+    def preConfigure(list: ListView[_], isSelected: Boolean, focused: Boolean, a: A, index: Int) {
       if (isSelected) {
         component.background = list.selectionBackground
         component.foreground = list.selectionForeground
@@ -96,14 +96,14 @@ object ListView {
     /**
      * Configuration that is specific to the component and this renderer.
      */
-    def configure(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int)
+    def configure(list: ListView[_], isSelected: Boolean, focused: Boolean, a: A, index: Int)
 
     /**
      * Configures the component before returning it.
      */
-    def componentFor(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, a: A, index: Int): Component = {
-      preConfigure(list, isSelected, hasFocus, a, index)
-      configure(list, isSelected, hasFocus, a, index)
+    def componentFor(list: ListView[_], isSelected: Boolean, focused: Boolean, a: A, index: Int): Component = {
+      preConfigure(list, isSelected, focused, a, index)
+      configure(list, isSelected, focused, a, index)
       component
     }
   }
@@ -115,8 +115,8 @@ object ListView {
    */
   implicit object GenericRenderer extends Renderer[Any] {
     override lazy val peer: ListCellRenderer = new DefaultListCellRenderer
-    def componentFor(list: ListView[_], isSelected: Boolean, hasFocus: Boolean, a: Any, index: Int): Component = {
-      val c = peer.getListCellRendererComponent(list.peer, a, index, isSelected, hasFocus).asInstanceOf[JComponent]
+    def componentFor(list: ListView[_], isSelected: Boolean, focused: Boolean, a: Any, index: Int): Component = {
+      val c = peer.getListCellRendererComponent(list.peer, a, index, isSelected, focused).asInstanceOf[JComponent]
       val w = UIElement.cachedWrapper[Component](c)
       if (w eq null) Component.wrap(c) else w
     }

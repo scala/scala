@@ -1,6 +1,6 @@
 package scala.swing
 
-import java.awt.{Image, Window => AWTWindow}
+import java.awt.{Image, Window => AWTWindow, Frame => AWTFrame}
 import javax.swing._
 import Swing._
 
@@ -9,6 +9,8 @@ object RichWindow {
    * Mixin this trait if you want an undecorated window.
    */
   trait Undecorated extends RichWindow {
+    // we do a mixin here, since setUndecorated is only allowed to be called
+    // when the component is not displayable.
     peer.setUndecorated(true)
   }
 }
@@ -62,6 +64,13 @@ class Frame extends RichWindow {
     }
   }
 
+  def iconify() { peer.setExtendedState(peer.getExtendedState | AWTFrame.ICONIFIED) }
+  def uniconify() { peer.setExtendedState(peer.getExtendedState & ~AWTFrame.ICONIFIED) }
+  def iconified() { (peer.getExtendedState & AWTFrame.ICONIFIED) != 0 }
+  def maximize() { peer.setExtendedState(peer.getExtendedState | AWTFrame.MAXIMIZED_BOTH) }
+  def unmaximize() { peer.setExtendedState(peer.getExtendedState & ~AWTFrame.MAXIMIZED_BOTH) }
+  def maximized() { (peer.getExtendedState & AWTFrame.MAXIMIZED_BOTH) != 0 }
+
   def iconImage: Image = peer.getIconImage
   def iconImage_=(i: Image) { peer.setIconImage(i) }
 }
@@ -104,43 +113,52 @@ object Dialog {
     val Closed = Value(JOptionPane.CLOSED_OPTION)
   }
 
+  private def uiString(txt: String) = UIManager.getString(txt)
 
-  def showConfirmation(parent: Component, message: String, title: String,
-     optionType: Options.Value, messageType: Message.Value, icon: Icon): Result.Value =
+  def showConfirmation(parent: Component = null,
+                       message: Any,
+                       title: String = uiString("OptionPane.titleText"),
+                       optionType: Options.Value = Options.YesNo,
+                       messageType: Message.Value = Message.Question,
+                       icon: Icon = EmptyIcon): Result.Value =
      Result(JOptionPane.showConfirmDialog(nullPeer(parent), message, title,
                                    optionType.id, messageType.id, Swing.wrapIcon(icon)))
-  def showConfirmation(parent: Component, message: String, title: String,
-     optionType: Options.Value): Result.Value =
-     Result(JOptionPane.showConfirmDialog(nullPeer(parent), message, title,
-                                   optionType.id))
 
-  def showOptions(parent: Component, message: String, title: String,
-     optionType: Options.Value, messageType: Message.Value, icon: Icon,
-     entries: Seq[Any], initialEntry: Int): Result.Value = {
-       val r = JOptionPane.showOptionDialog(nullPeer(parent), message, title,
+  def showOptions(parent: Component = null,
+                  message: Any,
+                  title: String = uiString("OptionPane.titleText"),
+                  optionType: Options.Value = Options.YesNo,
+                  messageType: Message.Value = Message.Question,
+                  icon: Icon = EmptyIcon,
+                  entries: Seq[Any],
+                  initial: Int): Result.Value = {
+    val r = JOptionPane.showOptionDialog(nullPeer(parent), message, title,
                                    optionType.id, messageType.id, Swing.wrapIcon(icon),
-                                   entries.map(_.asInstanceOf[AnyRef]).toArray, entries(initialEntry))
-       Result(r)
-     }
-
-  def showInput[A](parent: Component, message: String, title: String,
-                   messageType: Message.Value, icon: Icon,
-     entries: Seq[A], initialEntry: A): Option[A] = {
-       val e = if (entries.isEmpty) null
-               else entries.map(_.asInstanceOf[AnyRef]).toArray
-       val r = JOptionPane.showInputDialog(nullPeer(parent), message, title,
-                                         messageType.id, Swing.wrapIcon(icon),
-                                         e, initialEntry)
-       Swing.toOption(r)
+                                   entries.map(_.asInstanceOf[AnyRef]).toArray, entries(initial))
+    Result(r)
   }
-  def showMessage(parent: Component, message: String, title: String,
-     messageType: Message.Value, icon: Icon) {
+
+  def showInput[A](parent: Component = null,
+                   message: Any,
+                   title: String = uiString("OptionPane.inputDialogTitle"),
+                   messageType: Message.Value = Message.Question,
+                   icon: Icon = EmptyIcon,
+                   entries: Seq[A] = Nil,
+                   initial: A): Option[A] = {
+    val e = if (entries.isEmpty) null
+            else entries.map(_.asInstanceOf[AnyRef]).toArray
+    val r = JOptionPane.showInputDialog(nullPeer(parent), message, title,
+        messageType.id, Swing.wrapIcon(icon),
+        e, initial)
+    Swing.toOption(r)
+  }
+  def showMessage(parent: Component = null,
+                  message: Any,
+                  title: String = uiString("OptionPane.messageDialogTitle"),
+                  messageType: Message.Value = Message.Info,
+                  icon: Icon = EmptyIcon) {
      JOptionPane.showMessageDialog(nullPeer(parent), message, title,
                                    messageType.id, Swing.wrapIcon(icon))
-  }
-
-  def showMessage(parent: Component, message: String) {
-     JOptionPane.showMessageDialog(nullPeer(parent), message)
   }
 }
 

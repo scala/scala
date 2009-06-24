@@ -30,7 +30,7 @@ object Component {
  * @see http://java.sun.com/products/jfc/tsc/articles/painting/ for the component
  * painting mechanism
  */
-abstract class Component extends UIElement with Publisher {
+abstract class Component extends UIElement with LazyPublisher {
   override lazy val peer: javax.swing.JComponent = new javax.swing.JComponent with SuperMixin {}
   var initP: JComponent = null
 
@@ -92,39 +92,9 @@ abstract class Component extends UIElement with Publisher {
     })
   }*/
 
-  peer.addComponentListener(new java.awt.event.ComponentListener {
-    def componentHidden(e: java.awt.event.ComponentEvent) {
-      publish(ComponentHidden(Component.this))
-    }
-    def componentShown(e: java.awt.event.ComponentEvent) {
-      publish(ComponentShown(Component.this))
-    }
-    def componentMoved(e: java.awt.event.ComponentEvent) {
-      publish(ComponentMoved(Component.this))
-    }
-    def componentResized(e: java.awt.event.ComponentEvent) {
-      publish(ComponentResized(Component.this))
-    }
-  })
 
-  peer.addFocusListener(new java.awt.event.FocusListener {
-    def other(e: java.awt.event.FocusEvent) = e.getOppositeComponent match {
-      case c: JComponent => Some(UIElement.cachedWrapper(c))
-      case _ => None
-    }
 
-    def focusGained(e: java.awt.event.FocusEvent) {
-      publish(FocusGained(Component.this, other(e), e.isTemporary))
-    }
-    def focusLost(e: java.awt.event.FocusEvent) {
-      publish(FocusLost(Component.this, other(e), e.isTemporary))
-    }
-  })
-
-  /**
-   * @deprecated Use mouse instead.
-   */
-  @deprecated lazy val Mouse = mouse
+  @deprecated("Use mouse instead") lazy val Mouse = mouse
 
   /**
    * Contains publishers for various mouse events. They are separated for
@@ -202,28 +172,58 @@ abstract class Component extends UIElement with Publisher {
   def requestFocusInWindow() = peer.requestFocusInWindow()
   def hasFocus: Boolean = peer.isFocusOwner
 
-  peer.addPropertyChangeListener(new java.beans.PropertyChangeListener {
-    def propertyChange(e: java.beans.PropertyChangeEvent) {
-      e.getPropertyName match {
-        case "font" => publish(FontChanged(Component.this))
-        case "background" => publish(ForegroundChanged(Component.this))
-        case "foreground" => publish(BackgroundChanged(Component.this))
-        case _ =>
-        /*case "focusable" =>
-        case "focusTraversalKeysEnabled" =>
-        case "forwardFocusTraversalKeys" =>
-        case "backwardFocusTraversalKeys" =>
-        case "upCycleFocusTraversalKeys" =>
-        case "downCycleFocusTraversalKeys" =>
-        case "focusTraversalPolicy" =>
-        case "focusCycleRoot" =>*/
+  def onFirstSubscribe {
+    peer.addComponentListener(new java.awt.event.ComponentListener {
+      def componentHidden(e: java.awt.event.ComponentEvent) {
+        publish(ComponentHidden(Component.this))
       }
-    }
-  })
+      def componentShown(e: java.awt.event.ComponentEvent) {
+        publish(ComponentShown(Component.this))
+      }
+      def componentMoved(e: java.awt.event.ComponentEvent) {
+        publish(ComponentMoved(Component.this))
+      }
+      def componentResized(e: java.awt.event.ComponentEvent) {
+        publish(ComponentResized(Component.this))
+      }
+    })
+
+    peer.addFocusListener(new java.awt.event.FocusListener {
+      def other(e: java.awt.event.FocusEvent) = e.getOppositeComponent match {
+        case c: JComponent => Some(UIElement.cachedWrapper(c))
+        case _ => None
+      }
+
+      def focusGained(e: java.awt.event.FocusEvent) {
+        publish(FocusGained(Component.this, other(e), e.isTemporary))
+      }
+      def focusLost(e: java.awt.event.FocusEvent) {
+        publish(FocusLost(Component.this, other(e), e.isTemporary))
+      }
+    })
+
+    peer.addPropertyChangeListener(new java.beans.PropertyChangeListener {
+      def propertyChange(e: java.beans.PropertyChangeEvent) {
+        e.getPropertyName match {
+          case "font" => publish(FontChanged(Component.this))
+          case "background" => publish(ForegroundChanged(Component.this))
+          case "foreground" => publish(BackgroundChanged(Component.this))
+          case _ =>
+          /*case "focusable" =>
+          case "focusTraversalKeysEnabled" =>
+          case "forwardFocusTraversalKeys" =>
+          case "backwardFocusTraversalKeys" =>
+          case "upCycleFocusTraversalKeys" =>
+          case "downCycleFocusTraversalKeys" =>
+          case "focusTraversalPolicy" =>
+          case "focusCycleRoot" =>*/
+        }
+      }
+    })
+  }
+  def onLastUnsubscribe() {}
 
   def revalidate() { peer.revalidate() }
-
-
 
   /**
    * For custom painting, users should usually override this method.

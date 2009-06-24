@@ -1,6 +1,27 @@
 package scala.swing
 
-import javax.swing.JScrollPane
+import javax.swing.{JScrollPane, ScrollPaneConstants}
+
+object ScrollPane {
+  object BarPolicy extends Enumeration {
+    import ScrollPaneConstants._
+    val AsNeeded = new Value(HORIZONTAL_SCROLLBAR_AS_NEEDED,
+                             VERTICAL_SCROLLBAR_AS_NEEDED)
+    val Never = new Value(HORIZONTAL_SCROLLBAR_NEVER,
+                          VERTICAL_SCROLLBAR_NEVER)
+    val Always = new Value(HORIZONTAL_SCROLLBAR_ALWAYS,
+                           VERTICAL_SCROLLBAR_ALWAYS)
+
+    def wrap(id: Int) = id match {
+      case HORIZONTAL_SCROLLBAR_AS_NEEDED | VERTICAL_SCROLLBAR_AS_NEEDED => AsNeeded
+      case HORIZONTAL_SCROLLBAR_NEVER | VERTICAL_SCROLLBAR_NEVER => Never
+      case HORIZONTAL_SCROLLBAR_ALWAYS | VERTICAL_SCROLLBAR_ALWAYS => Always
+    }
+    class Value(val horizontalPeer: Int, val verticalPeer: Int) extends super.Val {
+      override def id = horizontalPeer
+    }
+  }
+}
 
 /**
  * Can have at most a single child component, which will be put inside a canvas (the viewport)
@@ -9,10 +30,12 @@ import javax.swing.JScrollPane
  * @see javax.swing.JScrollPane
  */
 class ScrollPane extends Component with Container {
+  import ScrollPane._
+
   override lazy val peer: JScrollPane = new JScrollPane
   def this(c: Component) = {
     this()
-    viewportView = c
+    contents = c
   }
   def contents: Seq[Component] =
     List(UIElement.cachedWrapper(peer.getViewport.getView.asInstanceOf[javax.swing.JComponent]))
@@ -33,7 +56,18 @@ class ScrollPane extends Component with Container {
   def rowHeaderView_=(c: Component) = peer.setRowHeaderView(c.peer)
   def rowHeaderView_=(c: Option[Component]) = peer.setRowHeaderView(Swing.toNull(c.map(_.peer)))
 
+  def columnHeaderView: Option[Component] = Swing.toOption(peer.getColumnHeader.getView).map(UIElement.cachedWrapper(_))
+  def columnHeaderView_=(c: Component) = peer.setColumnHeaderView(c.peer)
+  def columnHeaderView_=(c: Option[Component]) = peer.setColumnHeaderView(Swing.toNull(c.map(_.peer)))
+
   def viewportView: Option[Component] = Swing.toOption(peer.getViewport.getView).map(UIElement.cachedWrapper(_))
   def viewportView_=(c: Component) = peer.setViewportView(c.peer)
   def viewportView_=(c: Option[Component]) = peer.setViewportView(Swing.toNull(c.map(_.peer)))
+
+  def verticalScrollBarPolicy = BarPolicy.wrap(peer.getVerticalScrollBarPolicy)
+  def verticalScrollBarPolicy_=(p: BarPolicy.Value) = peer.setVerticalScrollBarPolicy(p.verticalPeer)
+
+  def horizontalScrollBarPolicy = BarPolicy.wrap(peer.getHorizontalScrollBarPolicy)
+  def horizontalScrollBarPolicy_=(p: BarPolicy.Value) = peer.setHorizontalScrollBarPolicy(p.horizontalPeer)
+
 }

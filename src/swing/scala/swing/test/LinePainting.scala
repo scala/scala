@@ -17,7 +17,6 @@ object LinePainting extends SimpleGUIApplication {
     focusable = true
     listenTo(mouse.clicks, mouse.moves, keys)
 
-
     reactions += {
       case e: MousePressed  =>
         moveTo(e.point)

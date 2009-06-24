@@ -7,7 +7,6 @@ import Swing._
 object UIDemo extends SimpleGUIApplication {
   def top = new MainFrame {
     title = "UIElement Test"
-
     menuBar = new MenuBar
 
     val menu = new Menu("A Menu")

@@ -112,7 +112,7 @@ private[swing] trait SingleRefCollection[+A <: AnyRef] extends Iterable[A] { sel
 
 private[swing] class StrongReference[+T <: AnyRef](value: T) extends Reference[T] {
     private[this] var ref: Option[T] = Some(value)
-    @deprecated def isValid: Boolean = ref != None
+    def isValid: Boolean = ref != None
     def apply(): T = ref.get
     def get : Option[T] = ref
     override def toString = get.map(_.toString).getOrElse("<deleted>")

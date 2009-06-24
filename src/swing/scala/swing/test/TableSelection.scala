@@ -10,15 +10,18 @@ object TableSelection extends SimpleGUIApplication {
                     List("Kathy", "Walrath", "Knitting", 5, false).toArray,
                     List("Sharon", "Zakhour", "Speed reading", 5, false).toArray,
                     List("Philip", "Milne", "Pool", 5, false).toArray)
+  /*val model = Array.tabulate(10000) { i =>
+    List("Mary", "Campione", "Snowboarding", i, false).toArray
+  }*/
 
   lazy val ui = new BoxPanel(Orientation.Vertical) {
     val table = new Table(model, Array("First Name", "Last Name", "Sport", "# of Years", "Vegetarian")) {
       preferredViewportSize = new Dimension(500, 70)
       val l = new Table.LabelRenderer[String]
-      override def rendererComponent(isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component =
+      override def rendererComponent(isSelected: Boolean, focused: Boolean, row: Int, column: Int): Component =
         this(row, column) match {
-          case s: String => l.componentFor(this, isSelected, hasFocus, s, row, column)
-          case _ => super.rendererComponent(isSelected, hasFocus, row, column)
+          case s: String => l.componentFor(this, isSelected, focused, s, row, column)
+          case _ => super.rendererComponent(isSelected, focused, row, column)
         }
       }
       //1.6:table.fillsViewportHeight = true

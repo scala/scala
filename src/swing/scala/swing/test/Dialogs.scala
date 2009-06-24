@@ -60,38 +60,39 @@ object Dialogs extends SimpleGUIApplication {
           case `ok` =>
             showMessage(buttons, "Eggs aren't supposed to be green.")
           case `ynlf` =>
-            showConfirmation(buttons, "Would you like green eggs and ham?",
-                            "An Inane Question", Options.YesNo) match {
-              case Result.Yes => label.text = "Ewww!"
-              case Result.No => label.text = "Me neither!"
-              case _ => label.text = "Come on -- tell me!"
+            label.text = showConfirmation(buttons,
+                             "Would you like green eggs and ham?",
+                             "An Inane Question") match {
+              case Result.Yes => "Ewww!"
+              case Result.No => "Me neither!"
+              case _ => "Come on -- tell me!"
           }
           case `ynp` =>
             val options = List("Yes, please",
                                "No, thanks",
                                "No eggs, no ham!")
-            showOptions(buttons,
+            label.text = showOptions(buttons,
                         "Would you like some green eggs to go with that ham?",
                         "A Silly Question",
-                        Options.YesNo, Message.Question,
-                        Swing.EmptyIcon, options, 2) match {
-              case Result.Yes => label.text = "You're kidding!"
-              case Result.No => label.text = "I don't like them, either."
-              case _ => label.text = "Come on -- 'fess up!"
+                        entries = options,
+                        initial = 2) match {
+              case Result.Yes => "You're kidding!"
+              case Result.No => "I don't like them, either."
+              case _ => "Come on -- 'fess up!"
             }
           case `yncp` =>
             val options = List("Yes, please",
                                "No, thanks",
                                "No eggs, no ham!")
-            showOptions(buttons,
-                        "Would you like some green eggs to go with that ham?",
-                        "A Silly Question",
-                        Options.YesNoCancel, Message.Question,
-                        Swing.EmptyIcon, options, 2) match {
-              case Result.Yes => label.text = "Here you go: green eggs and ham!"
-              case Result.No => label.text = "OK, just the ham, then."
-              case Result.Cancel => label.text = "Well, I'm certainly not going to eat them!"
-              case _ => label.text = "Please tell me what you want!"
+            label.text = showOptions(buttons,
+                        message = "Would you like some green eggs to go with that ham?",
+                        title = "A Silly Question",
+                        entries = options,
+                        initial = 2) match {
+              case Result.Yes => "Here you go: green eggs and ham!"
+              case Result.No => "OK, just the ham, then."
+              case Result.Cancel => "Well, I'm certainly not going to eat them!"
+              case _ => "Please tell me what you want!"
             }
         }
       })) = Position.South
@@ -117,30 +118,30 @@ object Dialogs extends SimpleGUIApplication {
           case `pick` =>
             val possibilities = List("ham", "spam", "yam")
             val s = showInput(buttons,
-                      "Complete the sentence:\n"
-                      + "\"Green eggs and...\"",
+                      "Complete the sentence:\n\"Green eggs and...\"",
                       "Customized Dialog",
-                      Message.Plain, Swing.EmptyIcon,
+                      Message.Plain,
+                      Swing.EmptyIcon,
                       possibilities, "ham")
 
-                    //If a string was returned, say so.
-            if ((s != None) && (s.get.length > 0))
-              label.text =  "Green eggs and... " + s.get + "!"
+            //If a string was returned, say so.
+            label.text = if ((s != None) && (s.get.length > 0))
+              "Green eggs and... " + s.get + "!"
             else
-              label.text = "Come on, finish the sentence!"
+              "Come on, finish the sentence!"
           case `enter` =>
             val s = showInput(buttons,
-                      "Complete the sentence:\n"
-                      + "\"Green eggs and...\"",
+                      "Complete the sentence:\n\"Green eggs and...\"",
                       "Customized Dialog",
-                      Message.Plain, Swing.EmptyIcon,
+                      Message.Plain,
+                      Swing.EmptyIcon,
                       Nil, "ham")
 
-                    //If a string was returned, say so.
-            if ((s != None) && (s.get.length > 0))
-              label.text =  "Green eggs and... " + s.get + "!"
+            //If a string was returned, say so.
+            label.text = if ((s != None) && (s.get.length > 0))
+              "Green eggs and... " + s.get + "!"
             else
-              label.text = "Come on, finish the sentence!"
+              "Come on, finish the sentence!"
           case `custom` =>
             val dialog = new Dialog(top)
             dialog.open()

@@ -94,6 +94,9 @@ object Table {
 /**
  * Displays a matrix of items.
  *
+ * To obtain a scrollable table or row and columns headers,
+ * wrap the table in a scroll pane.
+ *
  * @see javax.swing.JTable
  */
 class Table extends Component with Scrollable with Publisher {
@@ -234,15 +237,15 @@ class Table extends Component with Scrollable with Publisher {
   /**
    * Supplies a renderer component for a given cell.
    */
-  protected def rendererComponent(isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component =
+  protected def rendererComponent(isSelected: Boolean, focused: Boolean, row: Int, column: Int): Component =
     new Component {
       override lazy val peer = {
         val v = apply(row, column).asInstanceOf[AnyRef]
         if (v != null)
           Table.this.peer.getDefaultRenderer(v.getClass).getTableCellRendererComponent(Table.this.peer,
-                 v, isSelected, hasFocus, row, column).asInstanceOf[JComponent]
+                 v, isSelected, focused, row, column).asInstanceOf[JComponent]
         else Table.this.peer.getDefaultRenderer(classOf[Object]).getTableCellRendererComponent(Table.this.peer,
-                 v, isSelected, hasFocus, row, column).asInstanceOf[JComponent]
+                 v, isSelected, focused, row, column).asInstanceOf[JComponent]
       }
     }
 
