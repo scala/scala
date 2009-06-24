@@ -17,6 +17,8 @@ class Global(settings: Settings, reporter: Reporter)
      with RichCompilationUnits {
 self =>
 
+  import definitions._
+
   override def onlyPresentation = true
 
   /** A list indicating in which order some units should be typechecked.
@@ -45,15 +47,11 @@ self =>
   /** The status value of a unit that has not yet been typechecked */
   final val JustParsed = 0
 
-  private var resultTree = EmptyTree
-
   // ----------- Overriding hooks in nsc.Global -----------------------
 
   /** Create a RangePosition */
   override def rangePos(source: SourceFile, start: Int, point: Int, end: Int) =
     new RangePosition(source, start, point, end)
-
-
 
   /** Called from typechecker, which signal hereby that a node has been completely typechecked.
    *  If the node is included in unit.targetPos, abandons run and returns newly attributed tree.
@@ -66,15 +64,25 @@ self =>
     def integrateNew() {
       context.unit.body = new TreeReplacer(old, result) transform context.unit.body
     }
-    if ((context.unit != null) && !result.pos.isSynthetic && (result.pos includes context.unit.targetPos)) {
-      integrateNew()
-      throw new TyperResult(result)
-    }
-    val typerRun = currentTyperRun
-    pollForWork()
-    if (typerRun != currentTyperRun) {
-      integrateNew()
-      throw new FreshRunReq
+    if (activeLocks == 0) {
+      if (context.unit != null &&
+          !result.pos.isSynthetic &&
+          !isTransparent(result.pos) &&
+          (result.pos includes context.unit.targetPos)) {
+        integrateNew()
+        var located = new Locator(context.unit.targetPos) locateIn result
+        if (located == EmptyTree) {
+          println("something's wrong: no "+context.unit+" in "+result+result.pos)
+          located = result
+        }
+        throw new TyperResult(located)
+      }
+      val typerRun = currentTyperRun
+      pollForWork()
+      if (typerRun != currentTyperRun) {
+        integrateNew()
+        throw new FreshRunReq
+      }
     }
   }
 
@@ -193,6 +201,7 @@ self =>
     }
     for (unit <- units) {
       inform("type checking: "+unit)
+      activeLocks = 0
       currentTyperRun.typeCheck(unit)
       unit.status = currentRunId
     }
@@ -249,26 +258,53 @@ self =>
     case _ => tree.tpe
   }
 
+  import analyzer.{SearchResult, ImplicitSearch}
+
   def completion(pos: Position, result: Response[List[Member]]) {
-    import MemberStatus._
     respond(result) {
       val tree = typedTreeAt(pos)
       locateContext(pos) match {
         case Some(context) =>
           val superAccess = tree.isInstanceOf[Super]
           val pre = stabilizedType(tree)
-          def withStatus(sym: Symbol, vs: ValueSet) = (
+          def member(sym: Symbol, inherited: Boolean) = new Member(
             sym,
-            pre.memberType(sym),
-            if (context.isAccessible(sym, pre, superAccess)) vs + Accessible else vs
+            pre memberType sym,
+            context.isAccessible(sym, pre, superAccess),
+            inherited,
+            NoSymbol
           )
-          val decls = tree.tpe.decls.toList map (withStatus(_, ValueSet()))
-          val inherited = tree.tpe.members.toList diff decls map (withStatus(_, ValueSet(Inherited)))
-          val implicits = List() // not yet done
+          def implicitMembers(s: SearchResult): List[Member] = {
+            val vtree = viewApply(s, tree, context)
+            val vpre = stabilizedType(vtree)
+            vtree.tpe.members map { sym => new Member(
+              sym,
+              vpre memberType sym,
+              context.isAccessible(sym, vpre, false),
+              false,
+              s.tree.symbol
+            )}
+          }
+          val decls = tree.tpe.decls.toList map (member(_, false))
+          val inherited = tree.tpe.members.toList diff decls map (member(_, true))
+          val implicits = applicableViews(tree, context) flatMap implicitMembers
           decls ::: inherited ::: implicits
         case None =>
           throw new FatalError("no context found for "+pos)
       }
+    }
+  }
+
+  def applicableViews(tree: Tree, context: Context): List[SearchResult] =
+    new ImplicitSearch(tree, functionType(List(tree.tpe), AnyClass.tpe), true, context.makeImplicit(false))
+      .allImplicits
+
+  def viewApply(view: SearchResult, tree: Tree, context: Context): Tree = {
+    assert(view.tree != EmptyTree)
+    try {
+      analyzer.newTyper(context.makeImplicit(false)).typed(Apply(view.tree, List(tree)) setPos tree.pos)
+    } catch {
+      case ex: TypeError => EmptyTree
     }
   }
 
@@ -317,7 +353,7 @@ self =>
     def typedTreeAt(pos: Position): Tree = {
       println("starting typedTreeAt")
       val tree = locateTree(pos)
-      println("at pos "+pos+" was found: "+tree)
+      println("at pos "+pos+" was found: "+tree+tree.pos.show)
       if (tree.tpe ne null) {
         println("already attributed")
         tree
@@ -331,8 +367,9 @@ self =>
           throw new FatalError("tree not found")
         } catch {
           case ex: TyperResult =>
-            println("result found")
             ex.tree
+        } finally {
+          unit.targetPos = NoPosition
         }
       }
     }

@@ -415,6 +415,7 @@ abstract class RefChecks extends InfoTransform {
 
     val varianceValidator = new Traverser {
 
+      /** Validate variance of info of symbol `base` */
       private def validateVariance(base: Symbol) {
 
         def varianceString(variance: Int): String =
@@ -422,25 +423,46 @@ abstract class RefChecks extends InfoTransform {
           else if (variance == -1) "contravariant"
           else "invariant";
 
+        /** The variance of a symbol occurrence of `tvar`
+         *  seen at the level of the definition of `base`.
+         *  The search proceeds from `base` to the owner of `tvar`.
+         *  Initially the state is covariant, but it might change along the search.
+         */
         def relativeVariance(tvar: Symbol): Int = {
           val clazz = tvar.owner
           var sym = base
           var state = CoVariance
           while (sym != clazz && state != AnyVariance) {
             //Console.println("flip: " + sym + " " + sym.isParameter());//DEBUG
+            // Flip occurrences of type parameters and parameters, unless
+            //  - it's a constructor, or case class factory or extractor
+            //  - it's a type parameter of tvar's owner.
             if ((sym hasFlag PARAM) && !sym.owner.isConstructor && !sym.owner.isCaseApplyOrUnapply &&
                 !(tvar.isTypeParameterOrSkolem && sym.isTypeParameterOrSkolem &&
                   tvar.owner == sym.owner)) state = -state;
             else if (!sym.owner.isClass ||
-                     sym.isTerm && ((sym.isPrivateLocal || sym.isProtectedLocal) && !(escapedPrivateLocals contains sym)))
+                     sym.isTerm && ((sym.isPrivateLocal || sym.isProtectedLocal) && !(escapedPrivateLocals contains sym))) {
+              // return AnyVariance if `sym` is local to a term
+              // or is private[this] or protected[this]
               state = AnyVariance
-            else if (sym.isAliasType)
-              state = AnyVariance // was NoVariance, but now we always expand aliases.
+            } else if (sym.isAliasType) {
+              // return AnyVariance if `sym` is an alias type
+              // that does not override anything. This is OK, because we always
+              // expand aliases for variance checking.
+              // However, if `sym` does override a type in a base class
+              // we have to assume NoVariance, as there might then be
+              // references to the type parameter that are not variance checked.
+              state = if (sym.allOverriddenSymbols.isEmpty) AnyVariance
+                      else NoVariance
+            }
             sym = sym.owner
           }
           state
         }
 
+        /** Validate that the type `tp` is variance-correct, assuming
+         *  the type occurs itself at variance position given by `variance`
+         */
         def validateVariance(tp: Type, variance: Int): Unit = tp match {
           case ErrorType => ;
           case WildcardType => ;
@@ -452,10 +474,10 @@ abstract class RefChecks extends InfoTransform {
           case SingleType(pre, sym) =>
             validateVariance(pre, variance)
           case TypeRef(pre, sym, args) =>
-            if (sym.isAliasType)
+            if (sym.isAliasType && relativeVariance(sym) == AnyVariance)
               validateVariance(tp.normalize, variance)
             else if (sym.variance != NoVariance) {
-              val v = relativeVariance(sym);
+              val v = relativeVariance(sym)
               if (v != AnyVariance && sym.variance != v * variance) {
                 //Console.println("relativeVariance(" + base + "," + sym + ") = " + v);//DEBUG
                 def tpString(tp: Type) = tp match {
@@ -476,6 +498,8 @@ abstract class RefChecks extends InfoTransform {
             validateVariances(parents, variance)
           case RefinedType(parents, decls) =>
             validateVariances(parents, variance)
+            for (sym <- decls.toList)
+              validateVariance(sym.info, if (sym.isAliasType) NoVariance else variance)
           case TypeBounds(lo, hi) =>
             validateVariance(lo, -variance)
             validateVariance(hi, variance)
@@ -507,7 +531,8 @@ abstract class RefChecks extends InfoTransform {
 
       override def traverse(tree: Tree) {
         tree match {
-          case ClassDef(_, _, _, _) | TypeDef(_, _, _, _) =>
+          case ClassDef(_, _, _, _) |
+               TypeDef(_, _, _, _) =>
             validateVariance(tree.symbol)
             super.traverse(tree)
           // ModuleDefs need not be considered because they have been eliminated already

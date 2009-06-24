@@ -16,15 +16,9 @@ trait CompilerControl { self: Global =>
 
   abstract class WorkItem extends (() => Unit)
 
-  /** The status of a member that's returned by completion.
-   */
-  object MemberStatus extends Enumeration {
-    val Accessible, Inherited, Implicit = Value
-  }
-
   /** Info given for every member found by completion
    */
-  type Member = (Symbol, Type, MemberStatus.ValueSet)
+  case class Member(val sym: Symbol, val tpe: Type, val accessible: Boolean, val inherited: Boolean, val viaView: Symbol)
 
   /** The scheduler by which client and compiler communicate
    *  Must be initialized before starting compilerRunner

@@ -10,6 +10,7 @@ import scala.tools.nsc.util._
 import SourceFile.{LF, FF, CR, SU}
 import Tokens._
 import scala.annotation.switch
+import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 
 trait Scanners {
   val global : Global
@@ -174,7 +175,7 @@ trait Scanners {
        *  - the current token can start a statement and the one before can end it
        *  insert NEWLINES if we are past a blank line, NEWLINE otherwise
        */
-      if (afterLineEnd() && inLastOfStat(lastToken) && inFirstOfStat(token) &&
+      if (!applyBracePatch() && afterLineEnd() && inLastOfStat(lastToken) && inFirstOfStat(token) &&
           (sepRegions.isEmpty || sepRegions.head == RBRACE)) {
         next copyFrom this
         offset = if (lineStartOffset <= offset) lineStartOffset else lastLineStartOffset
@@ -237,9 +238,10 @@ trait Scanners {
 
     /** read next token, filling TokenData fields of Scanner.
      */
-    private final def fetchToken() {
+    protected final def fetchToken() {
       offset = charOffset - 1
       (ch: @switch) match {
+
         case ' ' | '\t' | CR | LF | FF =>
           nextChar()
           fetchToken()
@@ -801,6 +803,20 @@ trait Scanners {
         token2string(token)
     }
 
+    // ------------- brace counting and healing ------------------------------
+
+    /** overridden in UnitScanners:
+     *  apply brace patch if one exists for this offset
+     *  return true if subsequent end of line handling should be suppressed.
+     */
+    def applyBracePatch(): Boolean = false
+
+    /** overridden in UnitScanners */
+    def parenBalance(token: Int) = 0
+
+    /** overridden in UnitScanners */
+    def healBraces(): List[BracePatch] = List()
+
     /** Initialization method: read first char, then first token
      */
     def init() {
@@ -958,12 +974,208 @@ trait Scanners {
 
   /** A scanner over a given compilation unit
    */
-  class UnitScanner(unit: CompilationUnit) extends Scanner {
+  class UnitScanner(unit: CompilationUnit, patches: List[BracePatch]) extends Scanner {
+    def this(unit: CompilationUnit) = this(unit, List())
     val buf = unit.source.asInstanceOf[BatchSourceFile].content
     val decodeUnit = !settings.nouescape.value
+
     def warning(off: Offset, msg: String) = unit.warning(unit.position(off), msg)
     def error  (off: Offset, msg: String) = unit.error(unit.position(off), msg)
     def incompleteInputError(off: Offset, msg: String) = unit.incompleteInputError(unit.position(off), msg)
     def deprecationWarning(off: Offset, msg: String) = unit.deprecationWarning(unit.position(off), msg)
+
+    private var bracePatches: List[BracePatch] = patches
+
+    lazy val parensAnalyzer = new ParensAnalyzer(unit, List())
+
+    override def parenBalance(token: Int) = parensAnalyzer.balance(token)
+
+    override def healBraces(): List[BracePatch] = {
+      var patches: List[BracePatch] = List()
+      if (!parensAnalyzer.tabSeen) {
+        var bal = parensAnalyzer.balance(RBRACE)
+        while (bal < 0) {
+          patches = new ParensAnalyzer(unit, patches).insertRBrace()
+          bal += 1
+        }
+        while (bal > 0) {
+          patches = new ParensAnalyzer(unit, patches).deleteRBrace()
+          bal -= 1
+        }
+      }
+      patches
+    }
+
+    /** Insert or delete a brace, if a patch exists for this offset */
+    override def applyBracePatch(): Boolean = {
+      if (bracePatches.isEmpty || bracePatches.head.off != offset) false
+      else {
+        val patch = bracePatches.head
+        bracePatches = bracePatches.tail
+//        println("applying brace patch "+offset)//DEBUG
+        if (patch.inserted) {
+          next copyFrom this
+          error(offset, "Missing closing brace `}' assumed here")
+          token = RBRACE
+          true
+        } else {
+          error(offset, "Unmatched closing brace '}' ignored here")
+          fetchToken()
+          false
+        }
+      }
+    }
+  }
+
+  class ParensAnalyzer(unit: CompilationUnit, patches: List[BracePatch]) extends UnitScanner(unit, patches) {
+    var balance = collection.mutable.Map(RPAREN -> 0, RBRACKET -> 0, RBRACE -> 0)
+
+    init()
+
+    /** The offset of the first token on this line, or next following line if blank
+     */
+    val lineStart = new ArrayBuffer[Int]
+
+    /** The list of matching top-level brace pairs (each of which may contain nested brace pairs).
+     */
+    val bracePairs: List[BracePair] = {
+
+      var lineCount = 1
+      var lastOffset = 0
+
+      def scan(bpbuf: ListBuffer[BracePair]): Int = {
+        if (token != NEWLINE && token != NEWLINES) {
+          while (lastOffset < offset) {
+            if (buf(lastOffset) == LF) lineCount += 1
+            lastOffset += 1
+          }
+          while (lineCount > lineStart.length)
+            lineStart += offset
+        }
+        token match {
+          case LPAREN =>
+            balance(RPAREN) -= 1; nextToken(); scan(bpbuf)
+          case LBRACKET =>
+            balance(RBRACKET) -= 1; nextToken(); scan(bpbuf)
+          case RPAREN =>
+            balance(RPAREN) += 1; nextToken(); scan(bpbuf)
+          case RBRACKET =>
+            balance(RBRACKET) += 1; nextToken(); scan(bpbuf)
+          case LBRACE =>
+            balance(RBRACE) -= 1
+            val lc = lineCount
+            val loff = offset
+            val bpbuf1 = new ListBuffer[BracePair]
+            nextToken()
+            val roff = scan(bpbuf1)
+            if (lc != lineCount)
+              bpbuf += BracePair(loff, roff, bpbuf1.toList)
+            scan(bpbuf)
+          case RBRACE =>
+            balance(RBRACE) += 1
+            val off = offset; nextToken(); off
+          case EOF =>
+            -1
+          case _ =>
+            nextToken(); scan(bpbuf)
+        }
+      }
+
+      val bpbuf = new ListBuffer[BracePair]
+      while (token != EOF) {
+        val roff = scan(bpbuf)
+        if (roff != -1) {
+          val current = BracePair(-1, roff, bpbuf.toList)
+          bpbuf.clear()
+          bpbuf += current
+        }
+      }
+//      println("lineStart = "+lineStart)//DEBUG
+//      println("bracepairs = "+bpbuf.toList)//DEBUG
+      bpbuf.toList
+    }
+
+    var tabSeen = false
+
+    def line(offset: Int): Int = {
+      def findLine(lo: Int, hi: Int): Int = {
+        val mid = (lo + hi) / 2
+        if (offset < lineStart(mid)) findLine(lo, mid - 1)
+        else if (mid + 1 < lineStart.length && offset >= lineStart(mid + 1)) findLine(mid + 1, hi)
+        else mid
+      }
+      findLine(0, lineStart.length - 1)
+    }
+
+    def column(offset: Int): Int = {
+      var col = 0
+      var i = offset - 1
+      while (i >= 0 && buf(i) != CR && buf(i) != LF) {
+        if (buf(i) == '\t') tabSeen = true
+        col += 1
+        i -= 1
+      }
+      col
+    }
+
+    def insertPatch(patches: List[BracePatch], patch: BracePatch): List[BracePatch] = patches match {
+      case List() => List(patch)
+      case bp :: bps => if (patch.off < bp.off) patch :: patches
+                        else bp :: insertPatch(bps, patch)
+    }
+
+    def leftColumn(offset: Int) =
+      if (offset == -1) -1 else column(lineStart(line(offset)))
+
+    def rightColumn(offset: Int, default: Int) =
+      if (offset == -1) -1
+      else {
+        val rlin = line(offset)
+        if (lineStart(rlin) == offset) column(offset)
+        else if (rlin + 1 < lineStart.length) column(lineStart(rlin + 1))
+        else default
+      }
+
+    def insertRBrace(): List[BracePatch] = {
+      def insert(bps: List[BracePair]): List[BracePatch] = bps match {
+        case List() => patches
+        case (bp @ BracePair(loff, roff, nested)) :: bps1 =>
+          val lcol = leftColumn(loff)
+          val rcol = rightColumn(roff, lcol)
+          if (lcol <= rcol) insert(bps1)
+          else {
+//            println("patch inside "+bp+"/"+line(loff)+"/"+lineStart(line(loff))+"/"+lcol+"/"+rcol)//DEBUG
+            val patches1 = insert(nested)
+            if (patches1 ne patches) patches1
+            else {
+//              println("patch for "+bp)//DEBUG
+              var lin = line(loff) + 1
+              while (lin < lineStart.length && column(lineStart(lin)) > lcol)
+                lin += 1
+              if (lin < lineStart.length)
+                insertPatch(patches, BracePatch(lineStart(lin), true))
+              else patches
+            }
+          }
+      }
+      insert(bracePairs)
+    }
+
+    def deleteRBrace(): List[BracePatch] = {
+      def delete(bps: List[BracePair]): List[BracePatch] = bps match {
+        case List() => patches
+        case BracePair(loff, roff, nested) :: bps1 =>
+          val lcol = leftColumn(loff)
+          val rcol = rightColumn(roff, lcol)
+          if (lcol >= rcol) delete(bps1)
+          else {
+            val patches1 = delete(nested)
+            if (patches1 ne patches) patches1
+            else insertPatch(patches, BracePatch(roff, false))
+          }
+      }
+      delete(bracePairs)
+    }
+    override def error(offset: Int, msg: String) {}
   }
 }

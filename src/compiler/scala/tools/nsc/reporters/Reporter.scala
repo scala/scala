@@ -53,14 +53,18 @@ abstract class Reporter {
    * Should be re-factored into a subclass.
    */
   var incompleteInputError: (Position, String) => Unit = error
+  var incompleteHandled: Boolean = false
 
   def withIncompleteHandler[T](handler: (Position, String) => Unit)(thunk: => T) = {
     val savedHandler = incompleteInputError
+    val savedHandled = incompleteHandled
     try {
       incompleteInputError = handler
+      incompleteHandled = true
       thunk
     } finally {
       incompleteInputError = savedHandler
+      incompleteHandled = savedHandled
     }
   }
 

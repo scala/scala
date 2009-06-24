@@ -29,6 +29,8 @@ trait Symbols {
   val emptySymbolArray = new Array[Symbol](0)
   val emptySymbolSet = Set.empty[Symbol]
 
+  /** Used for deciding in the IDE whether we can interrupt the compiler */
+  protected var activeLocks = 0
 
   /** Used to keep track of the recursion depth on locked symbols */
   private var recursionTable = Map.empty[Symbol, Int]
@@ -299,49 +301,47 @@ trait Symbols {
 
 // Locking and unlocking ------------------------------------------------------
 
-  // True if the symbol is unlocked.
-  // True if the symbol is locked but still below the allowed recursion depth.
-  // False otherwise
-  def lockOK: Boolean = {
-    ((rawflags & LOCKED) == 0) ||
-    ((settings.Yrecursion.value != 0) &&
-     (recursionTable get this match {
-       case Some(n) => (n <= settings.Yrecursion.value)
-       case None => true }))
-  }
-
-  protected var activeLocks = 0
-
-  // Lock a symbol, using the handler if the recursion depth becomes too great.
-  def lock(handler: => Unit) = {
-    if ((rawflags & LOCKED) != 0) {
-      if (settings.Yrecursion.value != 0) {
-        recursionTable get this match {
-          case Some(n) =>
-            if (n > settings.Yrecursion.value) {
-	      handler
-	    } else {
-              recursionTable += (this -> (n + 1))
-	    }
-          case None =>
-            recursionTable += (this -> 1)
-        }
-      } else { handler }
-    } else {
-      rawflags |= LOCKED
-      activeLocks += 1
+    // True if the symbol is unlocked.
+    // True if the symbol is locked but still below the allowed recursion depth.
+    // False otherwise
+    def lockOK: Boolean = {
+      ((rawflags & LOCKED) == 0) ||
+      ((settings.Yrecursion.value != 0) &&
+       (recursionTable get this match {
+         case Some(n) => (n <= settings.Yrecursion.value)
+         case None => true }))
     }
-  }
 
-  // Unlock a symbol
-  def unlock() = {
-    if ((rawflags & LOCKED) != 0) {
-      activeLocks -= 1
-      rawflags = rawflags & ~LOCKED
-      if (settings.Yrecursion.value != 0)
-        recursionTable -= this
+    // Lock a symbol, using the handler if the recursion depth becomes too great.
+    def lock(handler: => Unit) = {
+      if ((rawflags & LOCKED) != 0) {
+        if (settings.Yrecursion.value != 0) {
+          recursionTable get this match {
+            case Some(n) =>
+              if (n > settings.Yrecursion.value) {
+                handler
+              } else {
+                recursionTable += (this -> (n + 1))
+              }
+            case None =>
+              recursionTable += (this -> 1)
+          }
+        } else { handler }
+      } else {
+        rawflags |= LOCKED
+        activeLocks += 1
+      }
     }
-  }
+
+    // Unlock a symbol
+    def unlock() = {
+      if ((rawflags & LOCKED) != 0) {
+        activeLocks -= 1
+        rawflags = rawflags & ~LOCKED
+        if (settings.Yrecursion.value != 0)
+          recursionTable -= this
+      }
+    }
 
 // Tests ----------------------------------------------------------------------
 
@@ -1423,12 +1423,9 @@ trait Symbols {
      *  Never adds id.
      */
     final def fullNameString(separator: Char): String = {
-      if (this == NoSymbol) return "<NoSymbol>"
-      assert(owner != NoSymbol, this)
       var str =
-        if (owner.isRoot ||
-            owner.isEmptyPackageClass ||
-            owner.isInterpreterWrapper) simpleName.toString
+        if (isRoot || isRootPackage || this == NoSymbol) this.toString
+        else if (owner.isRoot || owner.isEmptyPackageClass || owner.isInterpreterWrapper) simpleName.toString
         else owner.enclClass.fullNameString(separator) + separator + simpleName
       if (str.charAt(str.length - 1) == ' ') str = str.substring(0, str.length - 1)
       str

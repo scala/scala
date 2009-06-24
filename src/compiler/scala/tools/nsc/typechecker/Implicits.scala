@@ -44,21 +44,20 @@ self: Analyzer =>
    *  @param tree             The tree for which the implicit needs to be inserted.
    *                          (the inference might instantiate some of the undetermined
    *                          type parameters of that tree.
-   *  @param pt0              The original expected type of the implicit. A method type
-   *                          for `pt0` implies we are looking for a view, any other type implies
-   *                          we are looking for an implicit parameter.
+   *  @param pt               The expected type of the implicit.
    *  @param reportAmbiguous  Should ambiguous implicit errors be reported?
    *                          False iff we search for a view to find out
    *                          whether one type is coercible to another.
+   *  @param isView           We are looking for a view
    *  @param context          The current context
    *  @return                 A search result
    */
-  def inferImplicit(tree: Tree, pt0: Type, reportAmbiguous: Boolean, context: Context): SearchResult = {
+  def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context): SearchResult = {
     if (traceImplicits && !tree.isEmpty && !context.undetparams.isEmpty)
       println("typing implicit with undetermined type params: "+context.undetparams+"\n"+tree)
-    val search = new ImplicitSearch(tree, pt0, context.makeImplicit(reportAmbiguous))
-    context.undetparams = context.undetparams remove (search.result.subst.from contains _)
-    search.result
+    val result = new ImplicitSearch(tree, pt, isView, context.makeImplicit(reportAmbiguous)).bestImplicit
+    context.undetparams = context.undetparams remove (result.subst.from contains _)
+    result
   }
 
   final val sizeLimit = 100
@@ -123,12 +122,11 @@ self: Analyzer =>
 
   /** A class that sets up an implicit search. For more info, see comments for `inferImplicit`.
    *  @param tree             The tree for which the implicit needs to be inserted.
-   *  @param pt0              The original expected type of the implicit. A method type
-   *                          for `pt0` implies we are looking for a view, any other type implies
-   *                          we are looking for an implicit parameter.
+   *  @param pt               The original expected type of the implicit.
+   *  @param isView           We are looking for a view
    *  @param context0         The context used for the implicit search
    */
-  private class ImplicitSearch(tree: Tree, pt0: Type, context0: Context)
+  class ImplicitSearch(tree: Tree, pt: Type, isView: Boolean, context0: Context)
     extends Typer(context0) {
 
     import infer._
@@ -209,17 +207,6 @@ self: Analyzer =>
       val dtor1 = stripped(core(dtor))
       val dted1 = stripped(core(dted))
       overlaps(dtor1, dted1) && (dtor1 =:= dted1 || complexity(dtor1) > complexity(dted1))
-    }
-
-    /** The normalized expected type (which is a value type). */
-    private val pt = normalize(pt0)
-
-    /** Are we looking for an implicit view? This is signalled by the original expected type
-     *  being a method or a polymorphic type.
-     */
-    private val isView = pt0 match {
-      case MethodType(_, _) | PolyType(_, _) => true
-      case _ => false
     }
 
     if (util.Statistics.enabled) implcnt += 1
@@ -313,15 +300,15 @@ self: Analyzer =>
         //if (traceImplicits) println("typed impl?? "+info.name+":"+info.tpe+" ==> "+itree+" with "+wildPt)
         def fail(reason: String): SearchResult = {
           if (settings.XlogImplicits.value)
-            inform(itree+" is not a valid implicit value for "+pt0+" because:\n"+reason)
+            inform(itree+" is not a valid implicit value for "+pt+" because:\n"+reason)
           SearchFailure
         }
         try {
           val itree1 =
             if (isView)
               typed1(
-                Apply(itree, List(Ident("<argument>").setType(approximate(pt0.paramTypes.head)))),
-                EXPRmode, approximate(pt0.resultType))
+                Apply(itree, List(Ident("<argument>").setType(approximate(pt.typeArgs.head)))),
+                EXPRmode, approximate(pt.typeArgs.tail.head))
             else
               typed1(itree, EXPRmode, wildPt)
 
@@ -368,60 +355,55 @@ self: Analyzer =>
       }
     }
 
-    /** Search list of implicit info lists for one matching prototype
-     *  <code>pt</code>. If found return a search result with a tree from found implicit info
-     *  which is typed with expected type <code>pt</code>.
-     *  Otherwise return SearchFailure.
-     *
-     *  @param implicitInfoss The given list of lists of implicit infos
+    /** Should implicit definition symbol `sym' be considered for applicability testing?
+     *  This is the case if one of the following holds:
+     *   - the symbol's type is initialized
+     *   - the symbol comes from a classfile
+     *   - the symbol comes from a different sourcefile than the current one
+     *   - the symbol's definition comes before, and does not contain the closest enclosing definition,
+     *   - the symbol's definition is a val, var, or def with an explicit result type
+     *  The aim of this method is to prevent premature cyclic reference errors
+     *  by computing the types of only those implicitis for which one of these
+     *  conditions is true.
+     */
+    def isValid(sym: Symbol) = {
+      def hasExplicitResultType(sym: Symbol) = {
+        def hasExplicitRT(tree: Tree) = tree match {
+          case ValDef(_, _, tpt, _) => !tpt.isEmpty
+          case DefDef(_, _, _, _, tpt, _) => !tpt.isEmpty
+          case _ => false
+        }
+        sym.rawInfo match {
+          case tc: TypeCompleter => hasExplicitRT(tc.tree)
+          case PolyType(_, tc: TypeCompleter) => hasExplicitRT(tc.tree)
+          case _ => true
+        }
+      }
+      def comesBefore(sym: Symbol, owner: Symbol) =
+        sym.pos.offset.getOrElse(0) < owner.pos.offset.getOrElse(Integer.MAX_VALUE) &&
+        !(owner.ownerChain contains sym)
+
+      sym.isInitialized ||
+      sym.sourceFile == null ||
+      (sym.sourceFile ne context.unit.source.file) ||
+      hasExplicitResultType(sym) ||
+      comesBefore(sym, context.owner)
+    }
+
+    /** Computes from a list of lists of implicit infos a map which takes
+     *  infos which are applicable for given expected type `pt` to their attributed trees.
+     *  Computes invalid implicits as a side effect (used for better error message).
+     *  @param iss            The given list of lists of implicit infos
      *  @param isLocal        Is implicit definition visible without prefix?
      *                        If this is the case then symbols in preceding lists shadow
      *                        symbols of the same name in succeeding lists.
      */
-    def searchImplicit(implicitInfoss: List[List[ImplicitInfo]], isLocal: Boolean): SearchResult = {
+    def applicableInfos(iss: List[List[ImplicitInfo]],
+                        isLocal: Boolean,
+                        invalidImplicits: ListBuffer[Symbol]): Map[ImplicitInfo, SearchResult] = {
 
       /** A set containing names that are shadowed by implicit infos */
       val shadowed = new HashSet[Name](8)
-
-      /** Should implicit definition symbol `sym' be considered for applicability testing?
-       *  This is the case if one of the following holds:
-       *   - the symbol's type is initialized
-       *   - the symbol comes from a classfile
-       *   - the symbol comes from a different sourcefile than the current one
-       *   - the symbol's definition comes before, and does not contain the closest enclosing definition,
-       *   - the symbol's definition is a val, var, or def with an explicit result type
-       *  The aim of this method is to prevent premature cyclic reference errors
-       *  by computing the types of only those implicitis for which one of these
-       *  conditions is true.
-       */
-      def isValid(sym: Symbol) = {
-        def hasExplicitResultType(sym: Symbol) = {
-          def hasExplicitRT(tree: Tree) = tree match {
-            case ValDef(_, _, tpt, _) => !tpt.isEmpty
-            case DefDef(_, _, _, _, tpt, _) => !tpt.isEmpty
-            case _ => false
-          }
-          sym.rawInfo match {
-            case tc: TypeCompleter => hasExplicitRT(tc.tree)
-            case PolyType(_, tc: TypeCompleter) => hasExplicitRT(tc.tree)
-            case _ => true
-          }
-        }
-        def comesBefore(sym: Symbol, owner: Symbol) =
-          sym.pos.offset.getOrElse(0) < owner.pos.offset.getOrElse(Integer.MAX_VALUE) &&
-          !(owner.ownerChain contains sym)
-
-        sym.isInitialized ||
-        sym.sourceFile == null ||
-        (sym.sourceFile ne context.unit.source.file) ||
-        hasExplicitResultType(sym) ||
-        comesBefore(sym, context.owner)
-      }
-
-      /** The implicits that are not valid because they come later in the source
-       *  and lack an explicit result type. Used for error diagnostics only.
-       */
-      val invalidImplicits = new ListBuffer[Symbol]
 
       /** Try implicit `info` to see whether it is applicable for expected type `pt`.
        *  This is the case if all of the following holds:
@@ -438,11 +420,7 @@ self: Analyzer =>
             (!isView || info.sym != Predef_identity)) typedImplicit(info)
         else SearchFailure
 
-      /** Computes from a list of implicit infos a map which takes
-       *  infos which are applicable for given expected type `pt` to their attributed trees.
-       *  Computes invalid implicits as a side effect (used for better error message).
-       */
-      def applicableInfos(is: List[ImplicitInfo]): Map[ImplicitInfo, SearchResult] = {
+      def appInfos(is: List[ImplicitInfo]): Map[ImplicitInfo, SearchResult] = {
         var applicable = Map[ImplicitInfo, SearchResult]()
         for (i <- is)
           if (!isValid(i.sym)) invalidImplicits += i.sym
@@ -455,9 +433,28 @@ self: Analyzer =>
         applicable
       }
 
+      (Map[ImplicitInfo, SearchResult]() /: (iss map appInfos))(_ ++ _)
+    }
+
+    /** Search list of implicit info lists for one matching prototype
+     *  <code>pt</code>. If found return a search result with a tree from found implicit info
+     *  which is typed with expected type <code>pt</code>.
+     *  Otherwise return SearchFailure.
+     *
+     *  @param implicitInfoss The given list of lists of implicit infos
+     *  @param isLocal        Is implicit definition visible without prefix?
+     *                        If this is the case then symbols in preceding lists shadow
+     *                        symbols of the same name in succeeding lists.
+     */
+    def searchImplicit(implicitInfoss: List[List[ImplicitInfo]], isLocal: Boolean): SearchResult = {
+
+      /** The implicits that are not valid because they come later in the source
+       *  and lack an explicit result type. Used for error diagnostics only.
+       */
+      val invalidImplicits = new ListBuffer[Symbol]
+
       /** A map which takes applicable infos to their attributed trees. */
-      val applicable: Map[ImplicitInfo, SearchResult] =
-          (Map[ImplicitInfo, SearchResult]() /: (implicitInfoss map applicableInfos))(_ ++ _)
+      val applicable = applicableInfos(implicitInfoss, isLocal, invalidImplicits)
 
       if (applicable.isEmpty && !invalidImplicits.isEmpty) {
         infer.setAddendum(tree.pos, () =>
@@ -477,6 +474,7 @@ self: Analyzer =>
         // Also check that applicable infos that did not get selected are not
         // in (a companion object of) a subclass of (a companion object of) the class
         // containing the winning info.
+        // (no longer needed; rules have changed)
         /*
         for (alt <- applicable.keySet) {
           if (isProperSubClassOrObject(alt.sym.owner, best.sym.owner)) {
@@ -609,7 +607,7 @@ self: Analyzer =>
 
       /** Re-wraps a type in a manifest before calling inferImplicit on the result */
       def findManifest(tp: Type): Tree =
-        inferImplicit(tree, appliedType(ManifestClass.typeConstructor, List(tp)), true, context).tree
+        inferImplicit(tree, appliedType(ManifestClass.typeConstructor, List(tp)), true, false, context).tree
 
       tp.normalize match {
         case ThisType(_) | SingleType(_, _) =>
@@ -647,41 +645,50 @@ self: Analyzer =>
      *  If that fails, and `pt` is an instance of Manifest, try to construct a manifest.
      *  If all fails return SearchFailure
      */
-    //val start = System.nanoTime()
-    var result = searchImplicit(context.implicitss, true)
-    //val timer1 = System.nanoTime()
-    //if (result == SearchFailure) inscopeFail += timer1 - start else inscopeSucceed += timer1 - start
-    if (result == SearchFailure) {
-      if (pt.isInstanceOf[UniqueType])
-        implicitsCache get pt match {
-          case Some(r) =>
-            hits += 1
-            result = r
-          case None =>
-            misses += 1
-            result = searchImplicit(implicitsOfExpectedType, false)
-//          println("new fact: search implicit of "+pt+" = "+result)
-//          if (implicitsCache.size >= sizeLimit)
-//            implicitsCache -= implicitsCache.values.next
+    def bestImplicit: SearchResult = {
+      //val start = System.nanoTime()
+      var result = searchImplicit(context.implicitss, true)
+      //val timer1 = System.nanoTime()
+      //if (result == SearchFailure) inscopeFail += timer1 - start else inscopeSucceed += timer1 - start
+      if (result == SearchFailure) {
+        if (pt.isInstanceOf[UniqueType])
+          implicitsCache get pt match {
+            case Some(r) =>
+              hits += 1
+              result = r
+            case None =>
+              misses += 1
+              result = searchImplicit(implicitsOfExpectedType, false)
+            //          println("new fact: search implicit of "+pt+" = "+result)
+            //          if (implicitsCache.size >= sizeLimit)
+            //            implicitsCache -= implicitsCache.values.next
             implicitsCache(pt) = result
-        }
-      else
-        result = searchImplicit(implicitsOfExpectedType, false)
-    }
-    //val timer2 = System.nanoTime()
-    //if (result == SearchFailure) oftypeFail += timer2 - timer1 else oftypeSucceed += timer2 - timer1
-    if (result == SearchFailure) {
-      val resultTree = implicitManifest(pt)
-      if (resultTree != EmptyTree) result = new SearchResult(resultTree, EmptyTreeTypeSubstituter)
-    }
-    //val timer3 = System.nanoTime()
-    //if (result == SearchFailure) manifFail += timer3 - timer2 else manifSucceed += timer3 - timer2
-    if (result == SearchFailure && settings.debug.value)
-      println("no implicits found for "+pt+" "+pt.typeSymbol.info.baseClasses+" "+parts(pt)+implicitsOfExpectedType)
-    //implicitTime += System.nanoTime() - start
+          }
+        else
+          result = searchImplicit(implicitsOfExpectedType, false)
+      }
+      //val timer2 = System.nanoTime()
+      //if (result == SearchFailure) oftypeFail += timer2 - timer1 else oftypeSucceed += timer2 - timer1
+      if (result == SearchFailure) {
+        val resultTree = implicitManifest(pt)
+        if (resultTree != EmptyTree) result = new SearchResult(resultTree, EmptyTreeTypeSubstituter)
+      }
+      //val timer3 = System.nanoTime()
+      //if (result == SearchFailure) manifFail += timer3 - timer2 else manifSucceed += timer3 - timer2
+      if (result == SearchFailure && settings.debug.value)
+        println("no implicits found for "+pt+" "+pt.typeSymbol.info.baseClasses+" "+parts(pt)+implicitsOfExpectedType)
+      //implicitTime += System.nanoTime() - start
 
-    if (util.Statistics.enabled) impltime += (currentTime - startTime)
-    result
+      if (util.Statistics.enabled) impltime += (currentTime - startTime)
+      result
+    }
+
+    def allImplicits: List[SearchResult] = {
+      val invalidImplicits = new ListBuffer[Symbol]
+      def search(iss: List[List[ImplicitInfo]], isLocal: Boolean) =
+        applicableInfos(iss, isLocal, invalidImplicits).values.toList
+      search(context.implicitss, true) ::: search(implicitsOfExpectedType, false)
+    }
   }
 
   private val DivergentImplicit = new Exception()

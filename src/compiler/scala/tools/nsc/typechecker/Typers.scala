@@ -176,11 +176,8 @@ trait Typers { self: Analyzer =>
      */
     def applyImplicitArgs(fun: Tree): Tree = fun.tpe match {
       case MethodType(params, _) =>
-        def implicitArg(pt: Type): SearchResult =
-          inferImplicit(fun, pt, true, context)
-
         var positional = true
-        val argResults = params map (_.tpe) map implicitArg
+        val argResults = params map (_.tpe) map (inferImplicit(fun, _, true, false, context))
         val args = argResults.zip(params) flatMap {
           case (arg, param) =>
             if (arg != SearchFailure) {
@@ -218,15 +215,14 @@ trait Typers { self: Analyzer =>
         case OverloadedType(_, _) => EmptyTree
         case PolyType(_, _) => EmptyTree
         case _ =>
-          val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "typer$dummy")
-          def wrapImplicit(from: Symbol): Tree = {
-            val result = inferImplicit(tree, MethodType(List(from), to), reportAmbiguous, context)
+          def wrapImplicit(from: Type): Tree = {
+            val result = inferImplicit(tree, functionType(List(from), to), reportAmbiguous, true, context)
             if (result.subst != EmptyTreeTypeSubstituter) result.subst traverse tree
             result.tree
           }
-          val result = wrapImplicit(dummyMethod.newSyntheticValueParam(from))
+          val result = wrapImplicit(from)
           if (result != EmptyTree) result
-          else wrapImplicit(dummyMethod.newSyntheticValueParam(appliedType(ByNameParamClass.typeConstructor, List(from))))
+          else wrapImplicit(appliedType(ByNameParamClass.typeConstructor, List(from)))
       }
     }
 

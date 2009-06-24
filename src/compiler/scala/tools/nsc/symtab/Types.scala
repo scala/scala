@@ -2332,7 +2332,10 @@ A type's typeSymbol should never be inspected directly.
       uniqueRunId = currentRunId
     }
     uniques.findEntry(tp) match {
-      case null   => uniques.addEntry(tp); tp
+      case null   =>
+        //println("new unique type: "+tp)
+        uniques.addEntry(tp);
+        tp
       case tp1    => tp1.asInstanceOf[T]
     }
   }

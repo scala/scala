@@ -59,8 +59,11 @@ self =>
 
   case class OpInfo(operand: Tree, operator: Name, offset: Offset)
 
-  class UnitParser(val unit: global.CompilationUnit) extends Parser {
-    val in = new UnitScanner(unit)
+  class UnitParser(val unit: global.CompilationUnit, patches: List[BracePatch]) extends Parser {
+
+    def this(unit: global.CompilationUnit) = this(unit, List())
+
+    val in = new UnitScanner(unit, patches)
     in.init()
 
     def freshName(pos: Position, prefix: String): Name =
@@ -71,15 +74,45 @@ self =>
 
     def warning(offset: Int, msg: String) { unit.warning(o2p(offset), msg) }
 
-    def incompleteInputError(msg: String) {
-      unit.incompleteInputError(o2p(unit.source.asInstanceOf[BatchSourceFile].content.length - 1), msg)
-    }
-
     def deprecationWarning(offset: Int, msg: String) {
       unit.deprecationWarning(o2p(offset), msg)
     }
 
-    def syntaxError(offset: Int, msg: String) { unit.error(o2p(offset), msg) }
+    var smartParsing = false
+
+    val syntaxErrors = new ListBuffer[(Int, String)]
+
+    def incompleteInputError(msg: String) {
+      val offset = unit.source.asInstanceOf[BatchSourceFile].content.length - 1
+      if (smartParsing) syntaxErrors += ((offset, msg))
+      else unit.incompleteInputError(o2p(offset), msg)
+    }
+
+    def syntaxError(offset: Int, msg: String) {
+      if (smartParsing) syntaxErrors += ((offset, msg))
+      else unit.error(o2p(offset), msg)
+    }
+
+    /** parse unit. If there are inbalanced braces,
+     *  try to correct them and reparse.
+     */
+    def smartParse(): Tree = try {
+      smartParsing = true
+      val firstTry = parse()
+      if (syntaxErrors.isEmpty) firstTry
+      else {
+        val patches = in.healBraces()
+        if (patches.isEmpty) {
+          for ((offset, msg) <- syntaxErrors) unit.error(o2p(offset), msg)
+          firstTry
+        } else {
+          println(patches)
+          new UnitParser(unit, patches).parse()
+        }
+      }
+    } finally {
+      smartParsing = false
+    }
 
     /** the markup parser */
     lazy val xmlp = new MarkupParser(this, true)
@@ -200,7 +233,9 @@ self =>
 
 /* ------------- ERROR HANDLING ------------------------------------------- */
 
-    protected def skip() {
+    var assumedClosingParens = collection.mutable.Map(RPAREN -> 0, RBRACKET -> 0, RBRACE -> 0)
+
+    protected def skip(targetToken: Int) {
       var nparens = 0
       var nbraces = 0
       while (true) {
@@ -224,6 +259,7 @@ self =>
             nbraces += 1
           case _ =>
         }
+        if (targetToken == in.token && nparens == 0 && nbraces == 0) return
         in.nextToken()
       }
     }
@@ -248,7 +284,7 @@ self =>
         lastErrorOffset = in.offset
       }
       if (skipIt)
-        skip()
+        skip(UNDEF)
     }
 
     def warning(msg: String) { warning(in.offset, msg) }
@@ -268,13 +304,21 @@ self =>
       if (in.token != token) {
         val msg =
           token2string(token) + " expected but " +token2string(in.token) + " found."
-
+        syntaxErrorOrIncomplete(msg, true)
         if (in.token == EOF) incompleteInputError(msg)
-        else syntaxError(in.offset, msg, true)
+        else syntaxError(in.offset, msg, false)
+        if ((token == RPAREN || token == RBRACE || token == RBRACKET))
+          if (in.parenBalance(token) + assumedClosingParens(token) < 0)
+            assumedClosingParens(token) += 1
+          else
+            skip(token)
+        else
+          skip(UNDEF)
       }
       if (in.token == token) in.nextToken()
       offset
     }
+
     def surround[T](open: Int, close: Int)(f: => T, orElse: T): T = {
       val wasOpened = in.token == open
       accept(open)
