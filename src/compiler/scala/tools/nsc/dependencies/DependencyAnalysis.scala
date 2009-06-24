@@ -94,12 +94,6 @@ trait DependencyAnalysis extends SubComponent with Files {
           dependencies.depends(source, d.sourceFile);
         }
       }
-      // When all is said and done, if the dependencies file is 0 length
-      // delete it so people do not curse it with the vehemence with which
-      // they curse .DS_Store and the like.  This feels like a strange
-      // place to put this, but was the best I could find on short notice.
-      for (f <- dependenciesFile ; size <- f.sizeOption ; if size == 0)
-        f.delete
     }
   }
 }
