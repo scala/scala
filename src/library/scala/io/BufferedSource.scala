@@ -31,7 +31,7 @@ object BufferedSource
     inputStream: InputStream,
     bufferSize: Int = DefaultBufSize,
     reset: () => Source = null
-  )(implicit codec: Codec = defaultCodec) =
+  )(implicit codec: Codec = Codec.default) =
   {
     if (reset == null) new BufferedSource(inputStream, bufferSize, codec)
     else {

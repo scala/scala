@@ -12,125 +12,72 @@
 package scala.io
 
 
-import java.io.{BufferedInputStream, File, FileInputStream, InputStream,
-                PrintStream}
-import java.net.{URI, URL}
-import java.nio.{ByteBuffer, CharBuffer}
-import java.nio.charset.Charset
+import java.io.{ File, FileInputStream, InputStream, PrintStream }
+import java.net.{ URI, URL }
 
 /** This object provides convenience methods to create an iterable
  *  representation of a source file.
  *
- *  @author  Burak Emir
+ *  @author  Burak Emir, Paul Phillips
  *  @version 1.0, 19/08/2004
  */
-object Source
-{
+object Source {
   val DefaultBufSize = 2048
   val NoReset: () => Source = () => throw new UnsupportedOperationException()
 
-  def defaultCodec = Codec(util.Properties.encodingString)
-
-  /** Creates a <code>Source</code> instance from the given array of bytes,
-   *  with empty description.
-   *
-   *  @param bytes ...
-   *  @return      the created <code>Source</code> instance.
-   */
-  def fromBytes(bytes: Array[Byte]): Source =
-    fromString(new String(bytes))
-
-  /** Creates Source from array of bytes with given encoding, with
-   *  empty description.
-   *
-   *  @param bytes ...
-   *  @param enc   ...
-   *  @return      ...
-   */
-  def fromBytes(bytes: Array[Byte], enc: String): Source =
-    fromString(new String(bytes, enc))
+  def fromIterable(iterable: Iterable[Char]): Source = new Source {
+    def reset() = fromIterable(iterable)
+    val iter = iterable.iterator
+  }
 
   /** Creates a <code>Source</code> instance from a single character.
    *
    *  @param c ...
    *  @return  the create <code>Source</code> instance.
    */
-  def fromChar(c: Char): Source = {
-    val it = Iterator.single(c)
-    new Source {
-      def reset() = fromChar(c)
-      val iter = it
-    }
-  }
+  def fromChar(c: Char): Source = fromIterable(Array(c))
 
   /** creates Source from array of characters, with empty description.
    *
    *  @param chars ...
    *  @return      ...
    */
-  def fromChars(chars: Array[Char]): Source = {
-    val it = chars.iterator
-    new Source {
-      def reset() = fromChars(chars)
-      val iter = it
-    }
-  }
+  def fromChars(chars: Array[Char]): Source = fromIterable(chars)
 
   /** creates Source from string, with empty description.
    *
    *  @param s ...
    *  @return  ...
    */
-  def fromString(s: String): Source = {
-    val it = s.iterator
-    new Source {
-      def reset() = fromString(s)
-      val iter = it
-    }
-  }
+  def fromString(s: String): Source = fromIterable(s)
 
-  /** creates Source from file with given name, setting its description to
-   *  filename.
+  /** Create a <code>Source</code> from array of bytes, with
+   *  empty description.
+   *
+   *  @param bytes ...
+   *  @param enc   ...
+   *  @return      the created <code>Source</code> instance.
    */
-  def fromFile(name: String): Source =
-    fromFile(name, util.Properties.encodingString)
+  def fromBytes(bytes: Array[Byte])(implicit codec: Codec = Codec.default): Source =
+    fromString(new String(bytes, codec.name))
 
-  /** creates Source from file with given name, using given encoding, setting
+  /** creates Source from file with given name, setting
    *  its description to filename.
    */
-  def fromFile(name: String, enc: String): Source =
-    fromFile(new File(name), enc)
+  def fromFilename(name: String)(implicit codec: Codec = Codec.default): Source = fromFile(new File(name))
 
   /** creates <code>Source</code> from file with given file: URI
    */
-  def fromFile(uri: URI): Source =
-    fromFile(uri, util.Properties.encodingString)
-
-  /** creates Source from file with given file: URI
-   */
-  def fromFile(uri: URI, enc: String): Source =
-    fromFile(new File(uri), enc)
-
-  /** creates Source from file, using default character encoding, setting its
-   *  description to filename.
-   */
-  def fromFile(file: File): Source =
-    fromFile(file, util.Properties.encodingString, Source.DefaultBufSize)
-
-  /** same as fromFile(file, enc, Source.DefaultBufSize)
-   */
-  def fromFile(file: File, enc: String): Source =
-    fromFile(file, enc, Source.DefaultBufSize)
+  def fromURI(uri: URI)(implicit codec: Codec = Codec.default): Source = fromFile(new File(uri))
 
   /** Creates Source from <code>file</code>, using given character encoding,
    *  setting its description to filename. Input is buffered in a buffer of
    *  size <code>bufferSize</code>.
    */
-  def fromFile(file: File, enc: String, bufferSize: Int): Source = {
-    val inpStream = new FileInputStream(file)
-    val size = if (bufferSize > 0) bufferSize else Source.DefaultBufSize
+  def fromFile(file: File, bufferSize: Int = DefaultBufSize)(implicit codec: Codec = Codec.default): Source = {
+    val inputStream = new FileInputStream(file)
     setFileDescriptor(file,
-      BufferedSource.fromInputStream(inpStream, size, () => fromFile(file, enc, size))(Codec(enc)))
+      BufferedSource.fromInputStream(inputStream, bufferSize, () => fromFile(file, bufferSize)(codec)))
   }
 
   /** This method sets the descr property of the given source to a string of the form "file:"+path
@@ -138,79 +85,20 @@ object Source
    *  @param s    the source whose property we set
    *  @return     s
    */
-  private def setFileDescriptor(file: File, s: Source): Source = {
-    s.descr = new StringBuilder("file:").append(file.getAbsolutePath()).toString();
-    s
-  }
-
-  /**
-   *  @param s    ...
-   *  @return     ...
-   */
-  @deprecated("use fromURL(s, enc)")
-  def fromURL(s: String): Source =
-    fromURL(new URL(s))
-
-  /** same as fromURL(new URL(s), enc)
-   */
-  def fromURL(s: String, enc:String): Source =
-    fromURL(new URL(s), enc)
-
-  /**
-   *  @param url  the source URL
-   *  @return     ...
-   */
-  @deprecated("use fromURL(url, enc)")
-  def fromURL(url: URL): Source = {
-    val it = new Iterator[Char] {
-      var data: Int = _
-      def hasNext = {data != -1}
-      def next = {val x = data.asInstanceOf[Char]; data = bufIn.read(); x}
-      val in = url.openStream()
-      val bufIn = new BufferedInputStream(in)
-      data = bufIn.read()
-    }
-    val s = new Source {
-      def reset() = fromURL(url)
-      val iter = it
-    }
-    s.descr = url.toString()
-    s
+  private def setFileDescriptor(file: File, source: Source): Source = {
+    source.descr = "file:" + file.getAbsolutePath
+    source
   }
 
   /** same as fromInputStream(url.openStream(), enc)
    */
-  def fromURL(url: URL, enc:String): Source =
-    fromInputStream(url.openStream(), enc)
-
-  /** reads data from <code>istream</code> into a byte array, and calls
-   *  <code>fromBytes</code> with given encoding <code>enc</code>.
-   *  If <code>maxlen</code> is given, reads not more bytes than <code>maxlen</code>;
-   *  if <code>maxlen</code> was not given, or <code>was &lt;= 0</code>, then
-   *  whole <code>istream</code> is read and closed afterwards.
-   *
-   *  @param istream the input stream from which to read
-   *  @param enc the encoding to apply to the bytes
-   *  @param maxlen optionally, a positive int specifying maximum number of bytes to read
-   */
-  @deprecated
-  def fromInputStream(istream: InputStream, enc: String, maxlen: Option[Int]): Source = {
-    val limit = maxlen match { case Some(i) => i; case None => 0 }
-    val bi = new BufferedInputStream(istream, DefaultBufSize)
-    val bytes = new collection.mutable.ArrayBuffer[Byte]()
-    var b = 0
-    var i = 0
-    while ( {b = bi.read; i += 1; b} != -1 && (limit <= 0 || i < limit)) {
-      bytes += b.toByte;
-    }
-    if(limit <= 0) bi.close
-    fromBytes(bytes.toArray, enc)
-  }
+  def fromURL(url: URL)(implicit codec: Codec = Codec.default): Source =
+    fromInputStream(url.openStream())
 
   /** same as BufferedSource.fromInputStream(is)
    */
-  def fromInputStream(is: InputStream, codec: Codec = defaultCodec): Source =
-    BufferedSource.fromInputStream(is, DefaultBufSize, () => fromInputStream(is, codec))(codec)
+  def fromInputStream(inputStream: InputStream)(implicit codec: Codec = Codec.default): Source =
+    BufferedSource.fromInputStream(inputStream, DefaultBufSize, () => fromInputStream(inputStream)(codec))
 }
 
 /** The class <code>Source</code> implements an iterable representation
@@ -332,22 +220,17 @@ abstract class Source extends Iterator[Char] {
     ch
   }
 
-  /** Reports an error message to console.
-   *
-   *  @param pos the source position (line/column)
-   *  @param msg the error message to report
-   */
-  def reportError(pos: Int, msg: String) {
-    reportError(pos, msg, Console.out)
-  }
-
   /** Reports an error message to the output stream <code>out</code>.
    *
    *  @param pos the source position (line/column)
    *  @param msg the error message to report
-   *  @param out ...
+   *  @param out PrintStream to use (optional: defaults to <code>Console.err</code>)
    */
-  def reportError(pos: Int, msg: String, out: PrintStream) {
+  def reportError(
+    pos: Int,
+    msg: String,
+    out: PrintStream = Console.err)
+  {
     nerrors += 1
     report(pos, msg, out)
   }
@@ -355,7 +238,7 @@ abstract class Source extends Iterator[Char] {
   /**
    *  @param pos the source position (line/column)
    *  @param msg the error message to report
-   *  @param out ...
+   *  @param out PrintStream to use
    */
   def report(pos: Int, msg: String, out: PrintStream) {
     val buf = new StringBuilder
@@ -372,26 +255,20 @@ abstract class Source extends Iterator[Char] {
     out.println(buf.toString)
   }
 
-  /** Reports a warning message to <code>Console.out</code>.
-   *
-   *  @param pos the source position (line/column)
-   *  @param msg the warning message to report
-   */
-  def reportWarning(pos: Int, msg: String) {
-    reportWarning(pos, msg, Console.out)
-  }
-
   /**
    *  @param pos the source position (line/column)
    *  @param msg the warning message to report
-   *  @param out ...
+   *  @param out PrintStream to use (optional: defaults to <code>Console.out</code>)
    */
-  def reportWarning(pos: Int, msg: String, out: PrintStream) {
+  def reportWarning(
+    pos: Int,
+    msg: String,
+    out: PrintStream = Console.out)
+  {
     nwarnings += 1
     report(pos, "warning! " + msg, out)
   }
 
-  /** the actual reset method */
+  /** The reset() method creates a fresh copy of this Source. */
   def reset(): Source
-
 }

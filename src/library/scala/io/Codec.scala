@@ -16,6 +16,7 @@ import java.nio.charset.{ Charset, CharsetDecoder, CodingErrorAction }
  *
  */
 class Codec(charSet: Charset) {
+  def name = charSet.name
   def decoder = charSet.newDecoder()
 
   // by default we replace bad chars with the decoder's replacement value (e.g. "?")
@@ -25,6 +26,7 @@ class Codec(charSet: Charset) {
 }
 
 object Codec {
+  def default                               = apply(Charset.defaultCharset)
   def apply(encoding: String): Codec        = new Codec(Charset forName encoding)
   def apply(charSet: Charset): Codec        = new Codec(charSet)
   def apply(decoder: CharsetDecoder): Codec = {

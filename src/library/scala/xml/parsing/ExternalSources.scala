@@ -76,7 +76,7 @@ trait ExternalSources { self: ExternalSources with MarkupParser with MarkupHandl
     } else
       fileStr = fileStr.substring(0,
                                   fileStr.lastIndexOf(java.io.File.separator)+1)
-    Source.fromFile(fileStr + systemId)
+    Source.fromFilename(fileStr + systemId)()
   }
 
 }
