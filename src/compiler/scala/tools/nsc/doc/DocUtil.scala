@@ -56,7 +56,8 @@ object DocUtil {
         (<a href={href}>{t0}</a>);
     }
 
-    val encoding = Properties.encodingString
+    // can't use platform default here or the generated XML may end up all MacRoman
+    val encoding = Properties.sourceEncoding
     val generator = System.getProperty("doc.generator", "scaladoc (" + Properties.versionString + ")")
     val header =
       (<meta http-equiv="content-type" content={"text/html; charset=" + encoding}/>

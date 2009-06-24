@@ -12,6 +12,17 @@ package scala.io
 
 import java.nio.charset.{ Charset, CharsetDecoder, CodingErrorAction }
 
+// Some notes about encodings for use in refining this implementation.
+//
+// Emails: encoding recorded in header, e.g. Content-Type: charset= "iso-8859-1"
+// HTML: optional content-type meta tag.
+//   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+// XML: optional encoding parameter.
+//   <?xml version="1.0" encoding="ISO8859-1" ?>
+//
+// MacRoman vs. UTF-8: see http://jira.codehaus.org/browse/JRUBY-3576
+// -Dfile.encoding: see http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4375816
+
 /** A class for character encoding/decoding preferences.
  *
  */
@@ -19,7 +30,7 @@ class Codec(charSet: Charset) {
   def name = charSet.name
   def decoder = charSet.newDecoder()
 
-  // by default we replace bad chars with the decoder's replacement value (e.g. "?")
+  // by default we ignore bad characters.
   // this behavior can be altered by overriding these two methods
   def malformedAction(): CodingErrorAction = CodingErrorAction.IGNORE
   def receivedMalformedInput(e: Exception): Char = decoder.replacement()(0)

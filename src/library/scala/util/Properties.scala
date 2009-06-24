@@ -47,15 +47,22 @@ private[scala] trait PropertiesTrait
   def prop(name: String): String                      = props.getProperty(name, "")
   def prop(name: String, default: String): String     = props.getProperty(name, default)
 
-  // XXX file.encoding should not be here, as it causes system setting to
-  // be ignored.  See https://lampsvn.epfl.ch/trac/scala/ticket/1581
-
   /** The version number of the jar this was loaded from plus "version " prefix,
    *  or "version (unknown)" if it cannot be determined.
    */
   val versionString         = "version " + prop("version.number", "(unknown)")
   val copyrightString       = prop("copyright.string", "(c) 2002-2009 LAMP/EPFL")
-  val encodingString        = prop("file.encoding", "UTF8")
+
+  /** This is the encoding to use reading in source files, overridden with -encoding
+   *  Note that it uses "prop" i.e. looks in the scala jar, not the system properties.
+   */
+  val sourceEncoding        = prop("file.encoding", "UTF8")
+
+  /** This is the default text encoding, overridden (unreliably) with
+   *  JAVA_OPTS="-Dfile.encoding=Foo"
+   */
+  val encodingString        = sysprop("file.encoding", "UTF8")
+
   val isWin                 = sysprop("os.name") startsWith "Windows"
   val isMac                 = sysprop("java.vendor") startsWith "Apple"
   val javaClassPath         = sysprop("java.class.path")
@@ -64,6 +71,7 @@ private[scala] trait PropertiesTrait
   val javaVmVersion         = sysprop("java.vm.version")
   val javaVmInfo            = sysprop("java.vm.info")
   val javaVersion           = sysprop("java.version")
+  val tmpDir                = sysprop("java.io.tmpdir")
   val scalaHome             = sysprop("scala.home", null) // XXX places do null checks...
 
   // provide a main method so version info can be obtained by running this

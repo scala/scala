@@ -14,7 +14,4 @@ package scala.tools.partest.utils
 object Properties extends scala.util.PropertiesTrait {
   protected def propCategory    = "partest"
   protected def pickJarBasedOn  = classOf[Application]
-
-  // XXX unlikely it's intentional that only partest uses ISO-8859-1
-  override val encodingString = prop("file.encoding", "ISO-8859-1")
 }

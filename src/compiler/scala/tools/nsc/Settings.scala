@@ -707,7 +707,7 @@ trait ScalacSettings {
   val outdir        = OutputSetting     (outputDirs, ".")
   val dependenciesFile  = StringSetting ("-dependencyfile", "file", "Specify the file in which dependencies are tracked", ".scala_dependencies")
   val deprecation   = BooleanSetting    ("-deprecation", "Output source locations where deprecated APIs are used")
-  val encoding      = StringSetting     ("-encoding", "encoding", "Specify character encoding used by source files", Properties.encodingString)
+  val encoding      = StringSetting     ("-encoding", "encoding", "Specify character encoding used by source files", Properties.sourceEncoding)
   val explaintypes  = BooleanSetting    ("-explaintypes", "Explain type errors in more detail")
   val extdirs       = StringSetting     ("-extdirs", "dirs", "Override location of installed extensions", extdirsDefault)
   val debuginfo     = DebugSetting      ("-g", "Specify level of generated debugging info", List("none", "source", "line", "vars", "notailcalls"), "vars", "vars")

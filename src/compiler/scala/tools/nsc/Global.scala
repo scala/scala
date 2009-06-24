@@ -191,7 +191,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   private val reader: SourceReader = {
     def stdCharset: Charset = {
-      settings.encoding.value = Properties.encodingString // A mandatory charset
+      settings.encoding.value = Properties.sourceEncoding // A mandatory charset
       Charset.forName(settings.encoding.value)
     }
     val charset =

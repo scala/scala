@@ -22,9 +22,9 @@ object BufferedSource
    *  using encoding in implicit parameter <code>codec</code>.
    *
    *  @param  inputStream  the input stream from which to read
-   *  @param  bufferSize   buffer size (defaults to BufferedSource.DefaultBufSize)
+   *  @param  bufferSize   buffer size (defaults to Source.DefaultBufSize)
    *  @param  reset        a () => Source which resets the stream (defaults to Source.NoReset)
-   *  @param  codec        (implicit) a scala.io.Codec specifying behavior (defaults to BufferedSource.defaultCodec)
+   *  @param  codec        (implicit) a scala.io.Codec specifying behavior (defaults to Codec.default)
    *  @return              the buffered source
    */
   def fromInputStream(

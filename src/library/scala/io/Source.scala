@@ -11,8 +11,7 @@
 
 package scala.io
 
-
-import java.io.{ File, FileInputStream, InputStream, PrintStream }
+import java.io.{ FileInputStream, InputStream, PrintStream, File => JFile }
 import java.net.{ URI, URL }
 
 /** This object provides convenience methods to create an iterable
@@ -64,17 +63,17 @@ object Source {
   /** creates Source from file with given name, setting
    *  its description to filename.
    */
-  def fromFilename(name: String)(implicit codec: Codec = Codec.default): Source = fromFile(new File(name))
+  def fromFilename(name: String)(implicit codec: Codec = Codec.default): Source = fromFile(new JFile(name))
 
   /** creates <code>Source</code> from file with given file: URI
    */
-  def fromURI(uri: URI)(implicit codec: Codec = Codec.default): Source = fromFile(new File(uri))
+  def fromURI(uri: URI)(implicit codec: Codec = Codec.default): Source = fromFile(new JFile(uri))
 
   /** Creates Source from <code>file</code>, using given character encoding,
    *  setting its description to filename. Input is buffered in a buffer of
    *  size <code>bufferSize</code>.
    */
-  def fromFile(file: File, bufferSize: Int = DefaultBufSize)(implicit codec: Codec = Codec.default): Source = {
+  def fromFile(file: JFile, bufferSize: Int = DefaultBufSize)(implicit codec: Codec = Codec.default): Source = {
     val inputStream = new FileInputStream(file)
     setFileDescriptor(file,
       BufferedSource.fromInputStream(inputStream, bufferSize, () => fromFile(file, bufferSize)(codec)))
@@ -85,7 +84,7 @@ object Source {
    *  @param s    the source whose property we set
    *  @return     s
    */
-  private def setFileDescriptor(file: File, source: Source): Source = {
+  private def setFileDescriptor(file: JFile, source: Source): Source = {
     source.descr = "file:" + file.getAbsolutePath
     source
   }

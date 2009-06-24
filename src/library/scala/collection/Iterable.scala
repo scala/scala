@@ -25,7 +25,7 @@ import generic._
  *  all elements. Subclasses of `Iterable` should re-implement `foreach` with
  *  something more efficient, if possible.
  *
- *  This trait adds methods `elements`, `zip`, `zipAll`, `zipWithIndex`, `sameElements`,
+ *  This trait adds methods `iterator`, `zip`, `zipAll`, `zipWithIndex`, `sameElements`,
  *  `takeRight`, `dropRight` to the methods inherited from trait `Traversable`.
  *
  *  @author Martin Odersky
