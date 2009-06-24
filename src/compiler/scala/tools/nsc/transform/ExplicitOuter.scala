@@ -58,9 +58,8 @@ abstract class ExplicitOuter extends InfoTransform with TransMatcher with Patter
     val firstTry = clazz.info.decl(clazz expandedName nme.OUTER)
     if (firstTry != NoSymbol && firstTry.outerSource == clazz) firstTry
     else {
-      val e = clazz.info.decls.elems
-      if (e == null) NoSymbol
-      else (e.iterator find (_.sym.outerSource == clazz) map (_.sym)) getOrElse NoSymbol
+      entryIterator(clazz.info.decls.elems) .
+        find (_.sym.outerSource == clazz) map (_.sym) getOrElse NoSymbol
     }
   }
 

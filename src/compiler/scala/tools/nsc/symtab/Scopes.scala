@@ -9,6 +9,12 @@ package scala.tools.nsc.symtab
 trait Scopes {
   self: SymbolTable =>
 
+  def entryIterator(e: ScopeEntry): Iterator[ScopeEntry] =
+    if (e == null) Iterator.empty else e.entryIterator
+
+  def bucketIterator(e: ScopeEntry): Iterator[ScopeEntry] =
+    if (e == null) Iterator.empty else e.bucketIterator
+
   class ScopeEntry(val sym: Symbol, val owner: Scope) {
     /** the next entry in the hash bucket
      */
@@ -18,15 +24,19 @@ trait Scopes {
      */
     var next: ScopeEntry = null
 
-    def iterator: Iterator[ScopeEntry] = new Iterator[ScopeEntry] {
+    class ScopeEntryIterator(f: ScopeEntry => ScopeEntry) extends Iterator[ScopeEntry] {
       private var buf: ScopeEntry = ScopeEntry.this
       def hasNext = buf != null
       def next = {
         val res = buf
-        buf = buf.next
+        buf = f(buf)
         res
       }
     }
+
+    def bucketIterator: Iterator[ScopeEntry] = new ScopeEntryIterator(_.tail)
+    def entryIterator: Iterator[ScopeEntry] = new ScopeEntryIterator(_.next)
+
     override def hashCode(): Int = sym.name.start
     override def toString(): String = sym.toString()
   }
@@ -89,7 +99,7 @@ trait Scopes {
   final def newScope(base: Scope) : Scope = newScope(base.elems)
   final def newScope(decls: List[Symbol]) : Scope = {
     val ret = newScope
-    decls.foreach(d => ret.enter(d))
+    decls foreach ret.enter
     ret
   }
   def newThrowAwayScope(decls : List[Symbol]) : Scope = newScope(decls)
@@ -115,7 +125,7 @@ trait Scopes {
     }
   }
 
-  abstract class Scope(initElems: ScopeEntry)  {
+  abstract class Scope(initElems: ScopeEntry) {
 
     var elems: ScopeEntry = initElems
 
@@ -126,6 +136,9 @@ trait Scopes {
     /** the hash table
      */
     private var hashtable: Array[ScopeEntry] = null
+    private def hashtableIterator(index: Int): Iterator[ScopeEntry] =
+      if (hashtable == null) Iterator.empty
+      else bucketIterator(hashtable(index))
 
     /** a cache for all elements, to be used by symbol iterator.
      */
@@ -147,24 +160,18 @@ trait Scopes {
 
     def this(base: Scope) = {
       this(base.elems)
-/*
-      if (base.hashtable ne null) {
-        this.hashtable = new Array[ScopeEntry](HASHSIZE)
-        System.arraycopy(base.hashtable, 0, this.hashtable, 0, HASHSIZE)
-      }
-*/
       nestinglevel = base.nestinglevel + 1
     }
 
     def this(decls: List[Symbol]) = {
       this()
-      decls.foreach(sym => enter(sym))
+      decls foreach enter
     }
 
     /** Returns a new scope with the same content as this one. */
     def cloneScope: Scope = {
       val clone = newScope
-      this.toList.foreach(sym => clone.enter(sym))
+      this.toList foreach (clone enter _)
       clone
     }
     /* clear the contents of this scope */
@@ -179,15 +186,7 @@ trait Scopes {
     def isEmpty: Boolean = elems eq null
 
     /** the number of entries in this scope */
-    def size: Int = {
-      var s = 0
-      var e = elems
-      while (e ne null) {
-        s += 1
-        e = e.next
-      }
-      s
-    }
+    def size: Int = entryIterator(elems).length
 
     /** enter a scope entry
      *
@@ -312,29 +311,17 @@ trait Scopes {
      *  @return     ...
      */
     def lookupEntry(name: Name): ScopeEntry = {
-      var e: ScopeEntry = null
-      if (hashtable ne null) {
-        e = hashtable(name.start & HASHMASK)
-        while ((e ne null) && e.sym.name != name) {
-          e = e.tail
-        }
-      } else {
-        e = elems
-        while ((e ne null) && e.sym.name != name) {
-          e = e.next
-        }
-      }
-      e
+      val it =
+        if (hashtable != null) hashtableIterator(name.start & HASHMASK)
+        else entryIterator(elems)
+
+      it find (_.sym.name == name) orNull
     }
 
     /** lookup next entry with same name as this one */
     def lookupNextEntry(entry: ScopeEntry): ScopeEntry = {
-      var e = entry
-      if (hashtable ne null) //debug
-      do { e = e.tail } while ((e ne null) && e.sym.name != entry.sym.name)
-      else
-        do { e = e.next } while ((e ne null) && e.sym.name != entry.sym.name);
-      e
+      val it = if (hashtable == null) entry.entryIterator else entry.bucketIterator
+      (it drop 1) find (_.sym.name == entry.sym.name) orNull
     }
 
     /** Return all symbols as a list in the order they were entered in this scope.
@@ -384,15 +371,15 @@ trait Scopes {
    */
   class ErrorScope(owner: Symbol) extends Scope(null: ScopeEntry) {
     override def lookupEntry(name: Name): ScopeEntry = {
-      val e = super.lookupEntry(name)
-      if (e != NoScopeEntry) e
-      else {
-        enter(if (name.isTermName) owner.newErrorValue(name)
-              else owner.newErrorClass(name))
-        super.lookupEntry(name)
+      def errorScope =
+        if (name.isTermName) owner newErrorValue name
+        else owner newErrorClass name
+
+      super.lookupEntry(name) match {
+        case NoScopeEntry   => enter(errorScope) ; super.lookupEntry(name)
+        case e              => e
       }
     }
   }
-
 }
 
