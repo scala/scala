@@ -11,13 +11,33 @@
 
 package scala
 
-
 import Predef._
+import annotation.experimental
 
-object Option {
+object Option
+{
   /** An implicit conversion that converts an option to an iterable value
    */
   implicit def option2Iterable[A](xo: Option[A]): Iterable[A] = xo.toList
+
+  /** An Option factory which creates Some(value) if the argument is not null,
+   *  and None if it is null.
+   *
+   *  @param  x the value
+   *  @return   Some(value) if value != null, None if value == null
+   */
+  @experimental
+  def apply[A](x: A): Option[A] = if (x == null) None else Some(x)
+
+  class NullableOption[A >: Null <: AnyRef](x: Option[A]) {
+    /** The option's value if it is nonempty, or <code>null</code> if it is empty.
+     *  The use of null of course is discouraged, but code written to use Options
+     *  often must interface with code which expects and returns nulls.
+     */
+    @experimental
+    def orNull: A = if (x.isEmpty) null else x.get
+  }
+  implicit def option2NullableOption[A >: Null <: AnyRef](xo: Option[A]): NullableOption[A] = new NullableOption(xo)
 }
 
 /** This class represents optional values. Instances of <code>Option</code>
@@ -91,6 +111,15 @@ sealed abstract class Option[+A] extends Product {
   def foreach[U](f: A => U) {
     if (!isEmpty) f(this.get)
   }
+
+  /** If the given partial function <code>pf</code> is defined for the
+   *  option's value, apply it to the value.  Otherwise, None.
+   *
+   *  @param  pf   the partial function.
+   */
+  @experimental
+  def filterMap[B](pf: PartialFunction[Any, B]): Option[B] =
+    if (!isEmpty && pf.isDefinedAt(this.get)) Some(pf(this.get)) else None
 
   /** If the option is nonempty return it,
    *  otherwise return the result of evaluating an alternative expression.
