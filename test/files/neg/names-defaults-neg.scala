@@ -17,6 +17,7 @@ object Test extends Application {
   test7((m = 1))  // named arguments must be top-level assignments
   test7({m = 1})
   test7 { m = 1 } // no named arguments in argument block
+  test8(x = 1)
 
   // argument specified twice
   test1(1, a = 2)
@@ -86,6 +87,7 @@ object Test extends Application {
   def test2(x: Unit) = println("test2")
   def test3(a: Int, b: Int) = a + b
   def test7(m: Int) = m
+  def test8[T](x: => T) = println("test8")
 }
 
 // only one overloaded alternative is allowed to have defaults

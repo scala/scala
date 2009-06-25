@@ -372,7 +372,12 @@ trait NamesDefaults { self: Analyzer =>
           //   var x = 0
           //   f(x = 1)   <<  "x = 1" typechecks with expected type WildcardType
           val udp = typer.context.extractUndetparams()
-          val subst = new SubstTypeMap(udp, udp map (_ => WildcardType))
+          val subst = new SubstTypeMap(udp, udp map (_ => WildcardType)) {
+            override def apply(tp: Type): Type = tp match {
+              case TypeRef(_, sym, List(arg)) if (sym == ByNameParamClass) => super.apply(arg)
+              case _ => super.apply(tp)
+            }
+          }
           val res = typer.silent(_.typed(arg, subst(paramtpe))) match {
             case _: TypeError =>
               positionalAllowed = false
