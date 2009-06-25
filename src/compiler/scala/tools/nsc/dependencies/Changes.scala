@@ -36,14 +36,14 @@ abstract class Changes {
   case class Removed(e: Entity) extends Change
   case class Changed(e: Entity) extends Change
 
-
   /** Return the list of changes between 'from' and 'to'.
    */
   def changeSet(from: Symbol, to: Symbol): List[Change] = {
+//     println("changeSet " + from + "(" + from.info + ")"
+//             + " vs " + to + "(" + to.info + ")")
     val cs = new mutable.ListBuffer[Change]
 
-    if (((from.info.parents intersect to.info.parents).size
-         != from.info.parents.size)
+    if (((from.info.parents zip to.info.parents) exists { case (t1, t2) => !(t1 =:= t2) })
         || (from.typeParams != to.typeParams))
       cs += Changed(toEntity(from))
 
@@ -59,8 +59,14 @@ abstract class Changes {
         cs ++= changeSet(o, n)
       else if (n == NoSymbol)
         cs += Removed(toEntity(o))
-      else if (n.suchThat(_.tpe == o.tpe) == NoSymbol)
-        cs += Changed(toEntity(o))
+      else {
+        val newSym = n.suchThat(_.tpe =:= o.tpe)
+        if (newSym == NoSymbol) {
+//          println(n + " changed from " + o.tpe + " to " + n.tpe)
+          cs += Changed(toEntity(o))
+        } else
+          newMembers -= newSym
+      }
     }
     cs ++= (newMembers map (Added compose toEntity))
 

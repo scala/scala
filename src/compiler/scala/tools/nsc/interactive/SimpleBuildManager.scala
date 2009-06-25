@@ -1,4 +1,4 @@
-package scala.tools.nsc
+package scala.tools.nsc.interactive
 
 import scala.collection._
 
@@ -17,7 +17,7 @@ import nsc.io.AbstractFile
  */
 class SimpleBuildManager(val settings: Settings) extends BuildManager {
 
-  val compiler: Global = new Global(settings)
+  val compiler: nsc.Global = new nsc.Global(settings)
 
   /** Managed source files. */
   private val sources: mutable.Set[AbstractFile] = new mutable.HashSet[AbstractFile]

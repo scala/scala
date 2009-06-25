@@ -217,16 +217,14 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     }
   }
 
-  settings.dependenciesFile.value match {
-    case "none" => ()
-    case x =>
-      val jfile = new java.io.File(x)
-      if (!jfile.exists) jfile.createNewFile
-
-      dependencyAnalysis.loadFrom(AbstractFile.getFile(jfile))
-  }
-
-
+  if (settings.make.value != "all")
+    settings.dependenciesFile.value match {
+      case "none" => ()
+      case x =>
+        val jfile = new java.io.File(x)
+        if (!jfile.exists) jfile.createNewFile
+        else dependencyAnalysis.loadFrom(AbstractFile.getFile(jfile))
+    }
 
   lazy val classPath0 = new ClassPath(false && onlyPresentation)
 
@@ -590,7 +588,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     if (forJVM) {
       phasesSet += liftcode			       // generate reified trees
       phasesSet += genJVM			       // generate .class files
-      phasesSet += dependencyAnalysis
+      if (settings.make.value != "all")
+        phasesSet += dependencyAnalysis
     }
     if (forMSIL) {
       phasesSet += genMSIL			       // generate .msil files

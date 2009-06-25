@@ -1,4 +1,4 @@
-package scala.tools.nsc
+package scala.tools.nsc.interactive
 
 import scala.collection._
 
@@ -27,7 +27,7 @@ trait BuildManager {
   /** Save dependency information to `file'. */
   def saveTo(file: AbstractFile)
 
-  def compiler: Global
+  def compiler: nsc.Global
 }
 
 
@@ -52,7 +52,8 @@ object BuildManagerTest extends EvalLoop {
     val settings = new Settings(error)
     val command = new CompilerCommand(List.fromArray(args), settings, error, false)
 //    settings.make.value = "off"
-    val buildManager: BuildManager = new SimpleBuildManager(settings)
+//    val buildManager: BuildManager = new SimpleBuildManager(settings)
+    val buildManager: BuildManager = new RefinedBuildManager(settings)
 
     buildManager.addSourceFiles(command.files)
 
