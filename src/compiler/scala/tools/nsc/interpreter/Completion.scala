@@ -130,8 +130,8 @@ class Completion(val interpreter: Interpreter) extends Completor {
   }
 
   // jline's completion comes through here - we ask a Buffer for the candidates.
-  override def complete(_buffer: String, cursor: Int, candidates: JList[_]): Int =
-    new Buffer(_buffer).complete(candidates.asInstanceOf[JList[String]])
+  override def complete(_buffer: String, cursor: Int, candidates: JList[String]): Int =
+    new Buffer(_buffer).complete(candidates)
 
   def completeStaticMembers(path: String): List[String] = {
     import java.lang.reflect.Modifier.{ isPrivate, isProtected, isStatic }
