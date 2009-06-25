@@ -637,6 +637,10 @@ trait Types {
      */
     def isComplete: Boolean = true
 
+    /** Is this type a varargs parameter?
+     */
+    def isVarargs: Boolean = typeSymbol == RepeatedParamClass
+
     /** If this is a lazy type, assign a new type to `sym'. */
     def complete(sym: Symbol) {}
 
