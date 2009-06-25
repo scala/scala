@@ -1119,7 +1119,7 @@ trait Namers { self: Analyzer =>
                     sym,
                     newTyper(typer1.context.make(vdef, sym)).computeType(rhs, WildcardType),
                     WildcardType)
-                  tpt setPos vdef.pos
+                  tpt setOriginal vdef
                   tpt.tpe
                 }
               } else typer1.typedType(tpt).tpe
