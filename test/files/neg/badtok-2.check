@@ -1,7 +1,4 @@
 badtok-2.scala:3: error: unclosed quoted identifier
 `x
 ^
-badtok-2.scala:3: error: '}' expected but eof found.
-`x
- ^
-two errors found
+one error found
