@@ -689,14 +689,8 @@ self =>
 
     /** Types ::= Type {`,' Type}
      */
-    def types(isPattern: Boolean, isTypeApply: Boolean, isFuncArg: Boolean): List[Tree] = {
-      val ts = new ListBuffer[Tree] += argType(isPattern, isTypeApply, isFuncArg)
-      while (in.token == COMMA) {
-        in.nextToken()
-        ts += argType(isPattern, isTypeApply, isFuncArg)
-      }
-      ts.toList
-    }
+    def types(isPattern: Boolean, isTypeApply: Boolean, isFuncArg: Boolean): List[Tree] =
+      exprs(() => argType(isPattern, isTypeApply, isFuncArg))
 
     /** Type ::= InfixType `=>' Type
      *         | `(' [`=>' Type] `)' `=>' Type
@@ -817,7 +811,7 @@ self =>
      *                     |  SimpleType `#' Id
      *                     |  StableId
      *                     |  Path `.' type
-     *                     |  `(' Types [`,'] `)'
+     *                     |  `(' Types `)'
      *                     |  WildcardType
      */
     def simpleType(isPattern: Boolean): Tree = {
@@ -914,11 +908,11 @@ self =>
 
     /** Exprs ::= Expr {`,' Expr}
      */
-    def exprs(): List[Tree] = {
-      val ts = new ListBuffer[Tree] += expr()
+    def exprs(part: () => Tree = expr _): List[Tree] = {
+      val ts = new ListBuffer[Tree] += part()
       while (in.token == COMMA) {
         in.nextToken()
-        ts += expr()
+        ts += part()
       }
       ts.toList
     }
@@ -1155,7 +1149,7 @@ self =>
      * SimpleExpr1   ::= literal
      *                |  xLiteral
      *                |  Path
-     *                |  `(' [Exprs [`,']] `)'
+     *                |  `(' [Exprs] `)'
      *                |  SimpleExpr `.' Id
      *                |  SimpleExpr TypeArgs
      *                |  SimpleExpr1 ArgumentExprs
@@ -1239,10 +1233,19 @@ self =>
       }
     }
 
-    /** ArgumentExprs ::= `(' [Exprs [`,']] `)'
+    /** ArgumentExprs ::= `(' [Exprs] `)'
       *                 | [nl] BlockExpr
      */
     def argumentExprs(): List[Tree] = {
+      def args(): List[Tree] = exprs(() => {
+        val maybeNamed = isIdent
+        expr() match {
+          case a @ Assign(id, rhs) if maybeNamed =>
+            atPos(a.pos) { new AssignOrNamedArg(id, rhs) }
+          case e => e
+        }
+      })
+
       // if arg has the form "x$1 => a = x$1" it's treated as "a = x$1" with x$1
       // in placeholderParams. This allows e.g. "val f: Int => Int = foo(a = 1, b = _)"
       def convertArg(arg: Tree): Tree = arg match {
@@ -1252,7 +1255,7 @@ self =>
           rhs match {
             case Ident(`pname1`) | Typed(Ident(`pname1`), _) =>
               placeholderParams = vd :: placeholderParams
-              atPos(arg.pos) { Assign(Ident(aname), Ident(pname1)) }
+              atPos(arg.pos) { new AssignOrNamedArg(Ident(aname), Ident(pname1)) }
             case _ => arg
           }
         case _ => arg
@@ -1261,7 +1264,7 @@ self =>
       if (in.token == LBRACE)
         List(blockExpr())
       else
-        surround(LPAREN, RPAREN)(if (in.token == RPAREN) List() else (exprs() map convertArg), List())
+        surround(LPAREN, RPAREN)(if (in.token == RPAREN) List() else (args() map convertArg), List())
     }
 
     /** BlockExpr ::= `{' (CaseClauses | Block) `}'
@@ -1354,17 +1357,9 @@ self =>
 
     /**   Patterns ::= Pattern { `,' Pattern }
      *    SeqPatterns ::= SeqPattern { `,' SeqPattern }
-     *
-     *  (also eats trailing comma if it finds one)
      */
-    def patterns(seqOK: Boolean): List[Tree] = {
-      val ts = new ListBuffer[Tree] += pattern(seqOK)
-      while (in.token == COMMA) {
-        in.nextToken()
-        ts += pattern(seqOK)
-      }
-      ts.toList
-    }
+    def patterns(seqOK: Boolean): List[Tree] =
+      exprs(() => pattern(seqOK))
 
     /**   Pattern  ::=  Pattern1 { `|' Pattern1 }
      *    SeqPattern ::= SeqPattern1 { `|' SeqPattern1 }
@@ -1453,15 +1448,15 @@ self =>
      *                    |  `_'
      *                    |  literal
      *                    |  XmlPattern
-     *                    |  StableId  [TypeArgs] [`(' [SeqPatterns [`,']] `)']
-     *                    |  `(' [Patterns [`,']] `)'
+     *                    |  StableId  [TypeArgs] [`(' [SeqPatterns] `)']
+     *                    |  `(' [Patterns] `)'
      *  SimpleSeqPattern ::= varid
      *                    |  `_'
      *                    |  literal
      *                    |  XmlPattern
      *                    |  `<' xLiteralPattern
-     *                    |  StableId [TypeArgs] [`(' [SeqPatterns [`,']] `)']
-     *                    |  `(' [SeqPatterns [`,']] `)'
+     *                    |  StableId [TypeArgs] [`(' [SeqPatterns] `)']
+     *                    |  `(' [SeqPatterns] `)'
      *
      * XXX: Hook for IDE
      */
@@ -1833,11 +1828,7 @@ self =>
      */
     def importClause(): List[Tree] = {
       accept(IMPORT)
-      val ts = new ListBuffer[Tree] += importExpr()
-      while (in.token == COMMA) {
-        in.nextToken(); ts += importExpr()
-      }
-      ts.toList
+      exprs(() => importExpr())
     }
 
     /**  ImportExpr ::= StableId `.' (Id | `_' | ImportSelectors)
@@ -2208,7 +2199,7 @@ self =>
       }
     }
 
-    /** ClassParents       ::= AnnotType {`(' [Exprs [`,']] `)'} {with AnnotType}
+    /** ClassParents       ::= AnnotType {`(' [Exprs] `)'} {with AnnotType}
      *  TraitParents       ::= AnnotType {with AnnotType}
      */
     def templateParents(isTrait: Boolean): (List[Tree], List[List[Tree]]) = {

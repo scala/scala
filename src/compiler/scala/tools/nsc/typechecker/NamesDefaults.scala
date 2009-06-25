@@ -23,7 +23,7 @@ trait NamesDefaults { self: Analyzer =>
   val noApplyInfo = NamedApplyInfo(None, Nil, Nil, null)
 
   def nameOf(arg: Tree) = arg match {
-    case Assign(Ident(name), rhs) => Some(name)
+    case a @ Assign(Ident(name), rhs) if a.namedArg => Some(name)
     case _ => None
   }
   def isNamed(arg: Tree) = nameOf(arg).isDefined
@@ -327,7 +327,7 @@ trait NamesDefaults { self: Analyzer =>
           val default2 = (default1 /: previousArgss)((tree, args) =>
             Apply(tree, args.map(_.duplicate)).setPos(pos))
           if (positional) default2
-          else Assign(Ident(p.name), default2)
+          else atPos(pos) { new AssignOrNamedArg(Ident(p.name), default2) }
         })
         (givenArgs ::: defaultArgs, Nil)
       } else (givenArgs, missing filter (! _.hasFlag(DEFAULTPARAM)))
@@ -348,14 +348,14 @@ trait NamesDefaults { self: Analyzer =>
     val argPos = (new Array[Int](args.length)) map (x => -1)
     var positionalAllowed = true
     val namelessArgs = for ((arg, index) <- (args.zipWithIndex)) yield arg match {
-      case Assign(Ident(name), rhs) =>
+      case a @ Assign(Ident(name), rhs) if a.namedArg =>
         val pos = params.indexWhere(p => p.name == name && !p.hasFlag(SYNTHETIC))
         if (pos == -1) {
           if (positionalAllowed) {
             argPos(index) = index
             // prevent isNamed from being true when calling doTypedApply recursively,
             // treat the arg as an assignment of type Unit
-            Block(List(), arg)
+            Assign(a.lhs, rhs).setPos(arg.pos)
           } else {
             errorTree(arg, "unknown parameter name: "+ name)
           }
@@ -377,10 +377,7 @@ trait NamesDefaults { self: Analyzer =>
             case _: TypeError =>
               positionalAllowed = false
               argPos(index) = pos
-              // if `rhs' has the form `x = ...`, wrap it into a block, prevent
-              // treating it as named argument again.
-              if (isNamed(rhs)) Block(List(), rhs)
-              else  rhs
+              rhs
             case t: Tree =>
               errorTree(arg, "reference to "+ name +" is ambiguous; it is both, a parameter\n"+
                              "name of the method and the name of a variable currently in scope.")

@@ -823,6 +823,8 @@ trait Infer {
       sym2 == NoSymbol || isProperSubClassOrObject(sym1.owner, sym2.owner)
 
     def isStrictlyMoreSpecific(ftpe1: Type, ftpe2: Type, sym1: Symbol, sym2: Symbol): Boolean =
+      // ftpe1 / ftpe2 are OverloadedTypes (possibly with one single alternative) if they
+      // denote the type of an "apply" member method (see "followApply")
       ftpe1.isError || {
         val specificCount = (if (isAsSpecific(ftpe1, ftpe2)) 1 else 0) -
                             (if (isAsSpecific(ftpe2, ftpe1) &&
@@ -1535,7 +1537,6 @@ trait Infer {
               //     todo: should not return "false" when paramTypes = (Unit) no argument is given
               //     (tupling would work)
             })
-
 
           def improves(sym1: Symbol, sym2: Symbol) =
             sym2 == NoSymbol || sym2.isError ||

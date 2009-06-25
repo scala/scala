@@ -182,10 +182,11 @@ trait Typers { self: Analyzer =>
           case (arg, param) =>
             if (arg != SearchFailure) {
               if (positional) List(arg.tree)
-              else List(atPos(arg.tree.pos)(Assign(Ident(param.name), (arg.tree))))
+              else List(atPos(arg.tree.pos)(new AssignOrNamedArg(Ident(param.name), (arg.tree))))
             } else {
               if (!param.hasFlag(DEFAULTPARAM))
-                context.error(fun.pos, "could not find implicit value for parameter "+ param.name +":"+ param.tpe +".")
+                context.error(fun.pos, "could not find implicit value for parameter "+
+                                       param.name +":"+ param.tpe +".")
               positional = false
               Nil
             }
@@ -1526,8 +1527,11 @@ trait Typers { self: Analyzer =>
           }
         }
 
-        if (meth.paramss.exists(_.exists(_.tpe.typeSymbol == RepeatedParamClass)))
-          error(meth.pos, "methods with `*'-parameters are not allowed to have default arguments")
+        if (meth.paramss.exists( ps => {
+          ps.exists(_.hasFlag(DEFAULTPARAM)) &&
+          (ps.last.tpe.typeSymbol == RepeatedParamClass)
+        }))
+          error(meth.pos, "a parameter section with a `*'-parameter is not allowed to have default arguments")
       }
 
       treeCopy.DefDef(ddef, typedMods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
@@ -1912,16 +1916,13 @@ trait Typers { self: Analyzer =>
       if (fun.hasSymbol && (fun.symbol hasFlag OVERLOADED)) {
         // remove alternatives with wrong number of parameters without looking at types.
         // less expensive than including them in inferMethodAlternatvie (see below).
-        def shapeType(arg: Tree): Type = {
-          def shape(arg1: Tree, toplevel: Boolean): Type = arg1 match {
-            case Function(vparams, body) =>
-              functionType(vparams map (vparam => AnyClass.tpe), shape(body, false))
-            case Assign(Ident(name), rhs) if toplevel =>
-              NamedType(name, shape(rhs, false))
-            case _ =>
-              NothingClass.tpe
-          }
-          shape(arg, true)
+        def shapeType(arg: Tree): Type = arg match {
+          case Function(vparams, body) =>
+            functionType(vparams map (vparam => AnyClass.tpe), shapeType(body))
+          case a @ Assign(Ident(name), rhs) if a.namedArg =>
+            NamedType(name, shapeType(rhs))
+          case _ =>
+            NothingClass.tpe
         }
         val argtypes = args map shapeType
         val pre = fun.symbol.tpe.prefix
@@ -1949,11 +1950,12 @@ trait Typers { self: Analyzer =>
           val argtpes = new ListBuffer[Type]
           val amode = argMode(fun, mode)
           val args1 = args map {
-            case Assign(Ident(name), rhs) =>
+            case arg @ Assign(Ident(name), rhs) if arg.namedArg =>
               // named args: only type the righthand sides ("unknown identifier" errors otherwise)
               val rhs1 = typedArg(rhs, amode, 0, WildcardType)
               argtpes += NamedType(name, rhs1.tpe.deconst)
-              Assign(Ident(name), rhs1) // untyped; that's ok because we call doTypedApply
+              // the assign is untyped; that's ok because we call doTypedApply
+              atPos(arg.pos) { new AssignOrNamedArg(arg.lhs , rhs1) }
             case arg =>
               val arg1 = typedArg(arg, amode, 0, WildcardType)
               argtpes += arg1.tpe.deconst
@@ -2348,7 +2350,7 @@ trait Typers { self: Analyzer =>
           } else {
             val args =
               if (argss.head.length == 1 && !isNamed(argss.head.head))
-                List(Assign(Ident(nme.value), argss.head.head))
+                List(new AssignOrNamedArg(Ident(nme.value), argss.head.head))
               else argss.head
             val annScope = annType.decls
                 .filter(sym => sym.isMethod && !sym.isConstructor && sym.hasFlag(JAVA))
@@ -2356,7 +2358,7 @@ trait Typers { self: Analyzer =>
             names ++= (if (isJava) annScope.iterator
                        else typedFun.tpe.params.iterator)
             val nvPairs = args map {
-              case arg @ Assign(Ident(name), rhs) =>
+              case arg @ Assign(Ident(name), rhs) if arg.namedArg =>
                 val sym = if (isJava) annScope.lookupWithContext(name)(context.owner)
                           else typedFun.tpe.params.find(p => p.name == name).getOrElse(NoSymbol)
                 if (sym == NoSymbol) {

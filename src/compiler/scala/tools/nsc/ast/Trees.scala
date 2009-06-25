@@ -690,7 +690,17 @@ trait Trees {
 
   /** Assignment */
   case class Assign(lhs: Tree, rhs: Tree)
-       extends TermTree
+       extends TermTree {
+    def namedArg = false
+  }
+
+  /** Either an assignment or a named argument. Only appears in argument lists,
+   *  eliminated by typecheck.
+   */
+  class AssignOrNamedArg(lhs: Tree, rhs: Tree)
+       extends Assign(lhs, rhs) {
+    override def namedArg = true
+  }
 
   /** Conditional expression */
   case class If(cond: Tree, thenp: Tree, elsep: Tree)

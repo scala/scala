@@ -171,8 +171,12 @@ object Test extends Application {
   var argName = 1
   test5(argName = (argName = 2))
   println(argName) // should be 2
-  test5({argName = 3; ()})
+  test5({argName = 3})
   println(argName) // should be 3
+  test5((argName = 4))
+  println(argName) // should be 4
+  test5 { argName = 5 }
+  println(argName) // should be 5
 
 
   // dependent types and copy method
@@ -304,7 +308,8 @@ class A2 {
 
 
 
-// using names / defaults in self constructor call
+// using names / defaults in self constructor call.
+// overloading resolution: calling A3("string") picks the second, method with default is always less specific.
 class A3(x: String, y: Int = 10) {
   def this(a: Object) {
     this(y = 10, x = a.toString())
