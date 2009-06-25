@@ -881,28 +881,32 @@ class Worker(val fileManager: FileManager) extends Actor {
     }
 
     def reportResult(logs: Option[LogContext]) {
-      // delete log file only if test was successful
-      if (succeeded && !logs.isEmpty)
-        logs.get.file.toDelete = true
-
       if (!succeeded) {
         errors += 1
         NestUI.verbose("incremented errors: "+errors)
       }
 
-      if (!logs.isEmpty)
-        logs.get.writers match {
-          case Some((swr, wr)) =>
-            printInfoEnd(succeeded, wr)
-            wr.flush()
-            swr.flush()
-            NestUI.normal(swr.toString)
-            if (!succeeded && fileManager.showDiff && diff != "")
-              NestUI.normal(diff)
-            if (!succeeded && fileManager.showLog)
-              showLog(logs.get.file)
-          case None =>
-        }
+      try {
+        // delete log file only if test was successful
+        if (succeeded && !logs.isEmpty)
+          logs.get.file.toDelete = true
+
+        if (!logs.isEmpty)
+          logs.get.writers match {
+            case Some((swr, wr)) =>
+              printInfoEnd(succeeded, wr)
+              wr.flush()
+              swr.flush()
+              NestUI.normal(swr.toString)
+              if (!succeeded && fileManager.showDiff && diff != "")
+                NestUI.normal(diff)
+              if (!succeeded && fileManager.showLog)
+                showLog(logs.get.file)
+            case None =>
+          }
+      } catch {
+        case npe: NullPointerException =>
+      }
     }
 
     val numFiles = files.size
