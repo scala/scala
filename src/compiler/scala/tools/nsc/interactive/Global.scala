@@ -125,6 +125,8 @@ self =>
     }
   }
 
+  def hoverInfo(): String = ""
+
   // ----------------- The Background Runner Thread -----------------------
 
   /** The current presentation compiler runner */
