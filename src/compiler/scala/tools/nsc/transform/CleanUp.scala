@@ -422,9 +422,9 @@ abstract class CleanUp extends Transform {
           case nme.LSL =>
             (definitions.getMember(definitions.BoxesRunTimeClass, newTermName("shiftSignedLeft")), testForNumber)
           case nme.LSR =>
-            (definitions.getMember(definitions.BoxesRunTimeClass, newTermName("shiftSignedRight")), testForNumber)
-          case nme.ASR =>
             (definitions.getMember(definitions.BoxesRunTimeClass, newTermName("shiftLogicalRight")), testForNumber)
+          case nme.ASR =>
+            (definitions.getMember(definitions.BoxesRunTimeClass, newTermName("shiftSignedRight")), testForNumber)
           case nme.EQ =>
             (definitions.getMember(definitions.BoxesRunTimeClass, newTermName("testEqual")), testForNumberOrBoolean)
           case nme.NE =>

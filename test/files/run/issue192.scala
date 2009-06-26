@@ -63,8 +63,8 @@ object Test extends Application {
   print("f17 = "); println(f17(false) == (false && true))
 
   print("f18 = "); println(f18(4) == (4 << 7))
-  print("f19 = "); println(f19(4) == (4 >> 7))
-  print("f20 = "); println(f20(4) == (4 >>> 7))
+  print("f19 = "); println(f19(-4) == (-4 >> 7))
+  print("f20 = "); println(f20(-4) == (-4 >>> 7))
 
   print("f21 = "); println(f21(4.2) == (4.2.toByte))
   print("f22 = "); println(f22(4.2) == (4.2.toShort))
