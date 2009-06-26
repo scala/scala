@@ -76,23 +76,24 @@ trait Definitions {
     lazy val Delegate_scalaCallerTargets: HashMap[Symbol, Symbol] = new HashMap()
 
     // the scala value classes
-    var UnitClass: Symbol = _
-    var BooleanClass: Symbol = _
-      def Boolean_not = getMember(BooleanClass, nme.UNARY_!)
-      def Boolean_and = getMember(BooleanClass, nme.ZAND)
-      def Boolean_or  = getMember(BooleanClass, nme.ZOR)
-    var ByteClass: Symbol = _
-    var ShortClass: Symbol = _
-    var CharClass: Symbol = _
-    var IntClass: Symbol = _
-      def Int_Or  = definitions.getMember(definitions.IntClass, nme.OR)
-      def Int_And = definitions.getMember(definitions.IntClass, nme.AND)
-      def Int_==  = definitions.getMember(definitions.IntClass, nme.EQ)
-      def Int_!=  = definitions.getMember(definitions.IntClass, nme.NE)
+    lazy val UnitClass =    newClass(ScalaPackageClass, nme.Unit, List(AnyValClass.typeConstructor)).setFlag(ABSTRACT | FINAL)
+    lazy val BooleanClass = newValueClass(nme.Boolean, 'Z')
+    lazy val ByteClass =    newValueClass(nme.Byte, 'B')
+    lazy val ShortClass =   newValueClass(nme.Short, 'S')
+    lazy val CharClass =    newValueClass(nme.Char, 'C')
+    lazy val IntClass =     newValueClass(nme.Int, 'I')
+    lazy val LongClass =    newValueClass(nme.Long, 'L')
+    lazy val FloatClass =   newValueClass(nme.Float, 'F')
+    lazy val DoubleClass =  newValueClass(nme.Double, 'D')
 
-    var LongClass: Symbol = _
-    var FloatClass: Symbol = _
-    var DoubleClass: Symbol = _
+    // some value class conveniences
+    def Boolean_not = getMember(BooleanClass, nme.UNARY_!)
+    def Boolean_and = getMember(BooleanClass, nme.ZAND)
+    def Boolean_or  = getMember(BooleanClass, nme.ZOR)
+    def Int_Or      = getMember(IntClass, nme.OR)
+    def Int_And     = getMember(IntClass, nme.AND)
+    def Int_==      = getMember(IntClass, nme.EQ)
+    def Int_!=      = getMember(IntClass, nme.NE)
 
     // the scala reference classes
     lazy val ScalaObjectClass: Symbol = getClass("scala.ScalaObject")
@@ -733,19 +734,7 @@ trait Definitions {
       SingletonClass = newClass(ScalaPackageClass, nme.Singleton, any)
         .setFlag(ABSTRACT | TRAIT | FINAL)
 
-      UnitClass =
-        newClass(ScalaPackageClass, nme.Unit, List(AnyValClass.typeConstructor))
-        .setFlag(ABSTRACT | FINAL)
       abbrvTag(UnitClass) = 'V'
-
-      BooleanClass = newValueClass(nme.Boolean, 'Z')
-      ByteClass =    newValueClass(nme.Byte, 'B')
-      ShortClass =   newValueClass(nme.Short, 'S')
-      CharClass =    newValueClass(nme.Char, 'C')
-      IntClass =     newValueClass(nme.Int, 'I')
-      LongClass =    newValueClass(nme.Long, 'L')
-      FloatClass =   newValueClass(nme.Float, 'F')
-      DoubleClass =  newValueClass(nme.Double, 'D')
 
       CodeClass = getClass(sn.Code)
       CodeModule = getModule(sn.Code)
