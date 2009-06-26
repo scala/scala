@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module relativePaths="true" type="JAVA_MODULE" version="4">
+  <component name="FacetManager">
+    <facet type="Scala" name="Scala">
+      <configuration />
+    </facet>
+  </component>
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$/src/partest">
+      <sourceFolder url="file://$MODULE_DIR$/src/partest" isTestSource="true" />
+    </content>
+    <content url="file://$MODULE_DIR$/test" />
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="lib1" level="project" />
+    <orderEntry type="module" module-name="actors" />
+    <orderEntry type="module" module-name="compiler" />
+    <orderEntry type="module" module-name="dbc" />
+    <orderEntry type="module" module-name="library" />
+    <orderEntry type="module" module-name="manual" />
+    <orderEntry type="module" module-name="scalap" />
+    <orderEntry type="module" module-name="swing" />
+  </component>
+</module>
+
