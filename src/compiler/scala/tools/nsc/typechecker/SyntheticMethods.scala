@@ -225,19 +225,19 @@ trait SyntheticMethods extends ast.TreeDSL {
         }
 
         // methods for case classes only
-        def classMethods = Map(
+        def classMethods = List(
           Object_hashCode -> (() => forwardingMethod(nme.hashCode_)),
           Object_toString -> (() => forwardingMethod(nme.toString_)),
           Object_equals   -> (() => equalsClassMethod)
         )
         // methods for case objects only
-        def objectMethods = Map(
+        def objectMethods = List(
           Object_toString -> (() => moduleToStringMethod)
         )
         // methods for both classes and objects
         def everywhereMethods = {
           val accessors = clazz.caseFieldAccessors
-          Map(
+          List(
             Product_productPrefix   -> (() => productPrefixMethod),
             Product_productArity    -> (() => productArityMethod(accessors.length)),
             Product_productElement  -> (() => productElementMethod(accessors))
@@ -251,8 +251,8 @@ trait SyntheticMethods extends ast.TreeDSL {
           if (otherEquals.owner != clazz && (otherEquals hasFlag SYNTHETICMETH)) ts += equalsModuleMethod
         }
 
-        val map = (if (clazz.isModuleClass) objectMethods else classMethods) ++ everywhereMethods
-        for ((m, impl) <- map ; if !hasOverridingImplementation(m))
+        val methods = (if (clazz.isModuleClass) objectMethods else classMethods) ++ everywhereMethods
+        for ((m, impl) <- methods ; if !hasOverridingImplementation(m))
           ts += impl()
       }
 
