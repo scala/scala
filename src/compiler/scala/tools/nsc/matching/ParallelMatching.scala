@@ -1015,7 +1015,7 @@ trait ParallelMatching {
 
     outerAccessor(tpe2test.typeSymbol) match {
       case NoSymbol => if (settings.debug.value) cunit.warning(scrut.pos, "no outer acc for "+tpe2test.typeSymbol) ; cond
-      case outerAcc => And(cond, Eq(Code.fn(gen.mkAsInstanceOf(scrut, tpe2test, true), outerAcc), theRef))
+      case outerAcc => And(cond, Eq(Code.fn(gen.mkAsInstanceOf(scrut, tpe2test), outerAcc), theRef))
     }
   }
 

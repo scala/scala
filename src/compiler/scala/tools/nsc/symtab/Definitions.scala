@@ -301,8 +301,6 @@ trait Definitions {
     var Any_toString    : Symbol = _
     var Any_isInstanceOf: Symbol = _
     var Any_asInstanceOf: Symbol = _
-    var Any_isInstanceOfErased: Symbol = _
-    var Any_asInstanceOfErased: Symbol = _
 
     // members of class java.lang.{Object, String}
     var Object_eq          : Symbol = _
@@ -795,11 +793,6 @@ trait Definitions {
         AnyClass, nme.isInstanceOf_, tparam => booltype) setFlag FINAL
       Any_asInstanceOf = newPolyMethod(
         AnyClass, nme.asInstanceOf_, tparam => tparam.typeConstructor) setFlag FINAL
-      Any_isInstanceOfErased = newPolyMethod(
-        AnyClass, nme.isInstanceOfErased, tparam => booltype) setFlag FINAL
-      //todo: do we need this?
-      Any_asInstanceOfErased = newPolyMethod(
-        AnyClass, nme.asInstanceOfErased, tparam => tparam.typeConstructor) setFlag FINAL
 
       // members of class java.lang.{Object, String}
       Object_== = newMethod(ObjectClass, nme.EQ, anyrefparam, booltype) setFlag FINAL

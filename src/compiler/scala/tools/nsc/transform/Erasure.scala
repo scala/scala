@@ -615,8 +615,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
           atPos(tree.pos) {
             Typed(Apply(translated, args), tpt)
           }
-        case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
-        if ((tree.symbol == Any_asInstanceOf || tree.symbol == Any_asInstanceOfErased)) =>
+        case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List()) if tree.symbol == Any_asInstanceOf =>
           val qual1 = typedQualifier(qual)
           val qualClass = qual1.tpe.typeSymbol
           val targClass = targ.tpe.typeSymbol
@@ -636,9 +635,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
         case Select(qual, name) if (name != nme.CONSTRUCTOR) =>
           if (tree.symbol == NoSymbol)
             tree
-          else if (tree.symbol == Any_asInstanceOf || tree.symbol == Any_asInstanceOfErased)
+          else if (tree.symbol == Any_asInstanceOf)
             adaptMember(atPos(tree.pos)(Select(qual, Object_asInstanceOf)))
-          else if (tree.symbol == Any_isInstanceOf || tree.symbol == Any_isInstanceOfErased)
+          else if (tree.symbol == Any_isInstanceOf)
             adaptMember(atPos(tree.pos)(Select(qual, Object_isInstanceOf)))
           else if (tree.symbol.owner == AnyClass)
             adaptMember(atPos(tree.pos)(Select(qual, getMember(ObjectClass, name))))
@@ -982,7 +981,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
               unit.warning(tree.pos,
                            "System.arraycopy should be applied only to arrays with fixed element types;\n" +
                            "use Array.copy instead")
-            if (fn.symbol == Any_asInstanceOf || fn.symbol == Any_asInstanceOfErased)
+            if (fn.symbol == Any_asInstanceOf)
               fn match {
                 case TypeApply(Select(qual, _), List(targ)) =>
                   if (qual.tpe <:< targ.tpe) {
@@ -997,9 +996,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer {
                   } else
                     tree
               }
-              // todo: get rid of instanceOfErased
               // todo: also handle the case where the singleton type is buried in a compound
-            else if (fn.symbol == Any_isInstanceOf || fn.symbol == Any_isInstanceOfErased)
+            else if (fn.symbol == Any_isInstanceOf)
               fn match {
                 case TypeApply(sel @ Select(qual, name), List(targ)) =>
                   def mkIsInstanceOf(q: () => Tree)(tp: Type): Tree =

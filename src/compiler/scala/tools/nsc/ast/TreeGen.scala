@@ -174,39 +174,24 @@ abstract class TreeGen {
     }
 
   /** Builds an instance test with given value and type. */
-  def mkIsInstanceOf(value: Tree, tpe: Type, erased: Boolean): Tree = { // buraq: we ignore erase, no rtt
-    val sym = definitions.Any_isInstanceOf
-    /*
-    val sym =
-      if (erased) definitions.Any_isInstanceOfErased
-      else definitions.Any_isInstanceOf
-        */
+  def mkIsInstanceOf(value: Tree, tpe: Type): Tree = // buraq: we ignore erase, no rtt
     Apply(
       TypeApply(
-        mkAttributedSelect(value, sym),
-        List(TypeTree(tpe.normalize))),
-      List())
-  }
-
-  def mkIsInstanceOf(value: Tree, tpe: Type): Tree = {
-    mkIsInstanceOf(value, tpe, false/*global.phase.erasedTypes*/) // buraq: ignore which phase it is
-  }
+        mkAttributedSelect(value, Any_isInstanceOf),
+        List(TypeTree(tpe.normalize))
+      ),
+      Nil
+    )
 
   /** Builds a cast with given value and type. */
-  def mkAsInstanceOf(value: Tree, tpe: Type, erased: Boolean): Tree = {
-    val sym =
-      if (erased) definitions.Any_asInstanceOfErased
-      else definitions.Any_asInstanceOf
-
+  def mkAsInstanceOf(value: Tree, tpe: Type): Tree =
     Apply(
       TypeApply(
-        mkAttributedSelect(value, sym),
-        List(TypeTree(tpe.normalize))),
-      List())
-  }
-
-  def mkAsInstanceOf(value: Tree, tpe: Type): Tree =
-    mkAsInstanceOf(value, tpe, global.phase.erasedTypes)
+        mkAttributedSelect(value, Any_asInstanceOf),
+        List(TypeTree(tpe.normalize))
+      ),
+      Nil
+    )
 
   def mkClassOf(tp: Type): Tree =
     Literal(Constant(tp)) setType Predef_classOfType(tp)

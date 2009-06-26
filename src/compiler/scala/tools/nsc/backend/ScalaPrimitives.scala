@@ -214,8 +214,6 @@ abstract class ScalaPrimitives {
     addPrimitive(Any_!=, NE)
     addPrimitive(Any_isInstanceOf, IS)
     addPrimitive(Any_asInstanceOf, AS)
-    addPrimitive(Any_isInstanceOfErased, ISERASED)
-    addPrimitive(Any_asInstanceOfErased, ASERASED)
 
     // java.lang.Object
     addPrimitive(Object_eq, ID)

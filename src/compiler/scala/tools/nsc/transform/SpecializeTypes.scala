@@ -1094,7 +1094,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         val tree1 = super.transform(tree)
         if (needsCast(tree1)) {
           log("inserting cast for " + tree1 + " tpe: " + tree1.tpe)
-          val tree2 = gen.mkAsInstanceOf(tree1, tree1.tpe.typeSymbol.info.bounds.hi, false)
+          val tree2 = gen.mkAsInstanceOf(tree1, tree1.tpe.typeSymbol.info.bounds.hi)
           log(" casted to: " + tree2)
           tree2
         } else
@@ -1201,7 +1201,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       log("no need to cast from " + tpe + " to " + pt)
       tree
     } else
-      gen.mkAsInstanceOf(tree, pt, false)
+      gen.mkAsInstanceOf(tree, pt)
 
 
   private def makeArguments(fun: Symbol, vparams: List[Symbol]): List[Tree] = {
@@ -1212,7 +1212,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     for ((tp, arg) <- fun.info.paramTypes zip vparams) yield {
       if (needsCast(arg.tpe, tp)) {
         //log("tp: " + tp + " " + tp.typeSymbol.owner)
-        gen.mkAsInstanceOf(Ident(arg), tp, false)
+        gen.mkAsInstanceOf(Ident(arg), tp)
       } else Ident(arg)
     }
   }
