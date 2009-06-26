@@ -20,7 +20,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
 
     object referencesAnalysis extends {
       val global: BuilderGlobal.this.type = BuilderGlobal.this
-      val runsAfter = List("typer")
+      val runsAfter = List("icode")
       val runsRightAfter = None
     } with References
 
@@ -59,7 +59,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
    *  them and all files that depend on them. Only files that
    *  have been previously added as source files are recompiled.
    */
-  def update(files: Set[AbstractFile]) {
+  def update(files: Set[AbstractFile]): Unit = if (!files.isEmpty) {
     val deps = compiler.dependencyAnalysis.dependencies
     val run = new compiler.Run()
     compiler.inform("compiling " + files)
@@ -83,7 +83,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
     }
     println("Changes: " + changesOf)
     updateDefinitions
-    invalidated(files, changesOf)
+    update(invalidated(files, changesOf))
   }
 
   /** Return the set of source files that are invalidated by the given changes. */
@@ -92,6 +92,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
     var directDeps =
       compiler.dependencyAnalysis.dependencies.dependentFiles(1, files)
 
+//    println("direct dependencies on " + files + " " + directDeps)
     def invalidate(file: AbstractFile, reason: String, change: Change) = {
       println("invalidate " + file + " because " + reason + " [" + change + "]")
       buf += file
@@ -126,11 +127,13 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
           case Changed(Class(name)) =>
             if (cls.info.typeSymbol.fullNameString == name)
               invalidate(file, "self type changed", change)
+          case _ =>
+            ()
         }
       }
 
       def checkReferences(file: AbstractFile) {
-        println(references)
+//        println(file + ":" + references(file))
         val refs = references(file)
         change match {
           case Removed(Definition(name)) if refs(name) =>

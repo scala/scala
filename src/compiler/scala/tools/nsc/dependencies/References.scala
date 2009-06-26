@@ -30,14 +30,15 @@ abstract class References extends SubComponent with Files {
         override def traverse(tree: Tree) {
           if ((tree.symbol ne null)
               && (tree.symbol != NoSymbol)
+              && (!tree.symbol.isPackage)
               && (!tree.symbol.hasFlag(Flags.JAVA))
               && ((tree.symbol.sourceFile eq null)
                   || (tree.symbol.sourceFile.path != file.path))) {
             references = references.updated(file, references(file) + tree.symbol.fullNameString)
           }
           tree match {
-            case cdef: ClassDef if !cdef.symbol.isModuleClass =>
-              buf += cdef.symbol.cloneSymbol
+            case cdef: ClassDef if !cdef.symbol.isModuleClass && !cdef.symbol.hasFlag(Flags.PACKAGE) =>
+              buf += cdef.symbol
               super.traverse(tree)
 
             case _ =>
