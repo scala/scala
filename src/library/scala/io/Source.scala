@@ -63,7 +63,7 @@ object Source {
   /** creates Source from file with given name, setting
    *  its description to filename.
    */
-  def fromFilename(name: String)(implicit codec: Codec = Codec.default): Source = fromFile(new JFile(name))
+  def fromPath(name: String)(implicit codec: Codec = Codec.default): Source = fromFile(new JFile(name))
 
   /** creates <code>Source</code> from file with given file: URI
    */
