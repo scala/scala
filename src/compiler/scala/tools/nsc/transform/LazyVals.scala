@@ -3,7 +3,7 @@ package scala.tools.nsc.transform;
 import scala.tools.nsc._
 import scala.collection.mutable.HashMap
 
-abstract class LazyVals extends Transform {
+abstract class LazyVals extends Transform with ast.TreeDSL {
   // inherits abstract value `global' and class `Phase' from Transform
 
   import global._                  // the global environment
@@ -146,13 +146,10 @@ abstract class LazyVals extends Transform {
           (Block(List(rhs, mkSetFlag(bitmapSym, mask)), Literal(Constant(()))), Literal(()))
       }
 
+      import CODE._
+
       val result = atPos(tree.pos) {
-        If(Apply(
-            Select(
-              Apply(Select(Ident(bitmapSym), Int_And),
-                    List(mask)),
-              Int_==),
-            List(Literal(Constant(0)))), block, EmptyTree)
+        IF ((Ident(bitmapSym) BIT_AND mask) EQINT ZERO) THEN block ENDIF
       }
       typed(Block(List(result), res))
     }

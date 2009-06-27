@@ -13,7 +13,7 @@ import util.TreeSet
 /** This phase converts classes with parameters into Java-like classes with
  *  fields, which are assigned to from constructors.
  */
-abstract class Constructors extends Transform {
+abstract class Constructors extends Transform with ast.TreeDSL {
   import global._
   import definitions._
 
@@ -130,19 +130,16 @@ abstract class Constructors extends Transform {
       // Create code to copy parameter to parameter accessor field.
       // If parameter is $outer, check that it is not null.
       def copyParam(to: Symbol, from: Symbol): Tree = {
+        import CODE._
         var result = mkAssign(to, Ident(from))
         if (from.name == nme.OUTER)
           result =
             atPos(to.pos) {
               localTyper.typed {
-                If(
-                  Apply(
-                    Select(Ident(from), nme.eq),
-                    List(Literal(Constant(null)))),
-                  Throw(New(TypeTree(NullPointerExceptionClass.tpe), List(List()))),
-                  result)
+                IF (from EQREF NULL) THEN THROW(NullPointerExceptionClass) ELSE result
               }
             }
+
         result
       }
 

@@ -174,24 +174,28 @@ abstract class TreeGen {
     }
 
   /** Builds an instance test with given value and type. */
-  def mkIsInstanceOf(value: Tree, tpe: Type): Tree = // buraq: we ignore erase, no rtt
+  def mkIsInstanceOf(value: Tree, tpe: Type, any: Boolean = true): Tree = {
+    val sym = if (any) Any_isInstanceOf else Object_isInstanceOf
     Apply(
       TypeApply(
-        mkAttributedSelect(value, Any_isInstanceOf),
+        mkAttributedSelect(value, sym),
         List(TypeTree(tpe.normalize))
       ),
       Nil
     )
+  }
 
   /** Builds a cast with given value and type. */
-  def mkAsInstanceOf(value: Tree, tpe: Type): Tree =
+  def mkAsInstanceOf(value: Tree, tpe: Type, any: Boolean = true): Tree = {
+    val sym = if (any) Any_asInstanceOf else Object_asInstanceOf
     Apply(
       TypeApply(
-        mkAttributedSelect(value, Any_asInstanceOf),
+        mkAttributedSelect(value, sym),
         List(TypeTree(tpe.normalize))
       ),
       Nil
     )
+  }
 
   def mkClassOf(tp: Type): Tree =
     Literal(Constant(tp)) setType Predef_classOfType(tp)
