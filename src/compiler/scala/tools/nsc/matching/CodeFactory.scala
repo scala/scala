@@ -105,38 +105,26 @@ trait CodeFactory {
   final def NotNull(tree: Tree)(implicit typer : Typer) = typer.typed(fn(tree, nme.ne, NULL))
   final def Get(tree: Tree) = fn(tree, nme.get)
 
-  // statistics
-  var nremoved = 0
-  var nsubstituted = 0
-
   final def squeezedBlock(vds: List[Tree], exp: Tree)(implicit theOwner: Symbol): Tree =
     if (settings_squeeze) Block(Nil, squeezedBlock1(vds, exp))
     else                  Block(vds, exp)
 
   final def squeezedBlock1(vds: List[Tree], exp: Tree)(implicit theOwner: Symbol): Tree = {
-    val tpe = exp.tpe
-
     class RefTraverser(sym: Symbol) extends Traverser {
-      var nref = 0
-      var nsafeRef = 0
+      var nref, nsafeRef = 0
       override def traverse(tree: Tree) = tree match {
-        case t:Ident if t.symbol eq sym =>
+        case t: Ident if t.symbol eq sym =>
           nref += 1
-          if(sym.owner == currentOwner)  { // oldOwner should match currentOwner
+          if (sym.owner == currentOwner) // oldOwner should match currentOwner
             nsafeRef += 1
-          }
-        case LabelDef(_,args,rhs) =>
-          var args1 = args; while(args1 ne Nil) {
-            if(args1.head.symbol eq sym) {
-              nref += 2   // will abort traversal, cannot substitute this one
-              args1 = Nil // break
-            } else {
-              args1 = args1.tail
-            }
+
+        case LabelDef(_, args, rhs) =>
+          (args dropWhile(_.symbol ne sym)) match {
+            case Nil  =>
+            case _    => nref += 2  // cannot substitute this one
           }
           traverse(rhs)
-        case t if nref > 1 =>
-          // abort, no story to tell
+        case t if nref > 1 =>       // abort, no story to tell
         case t =>
           super.traverse(t)
       }
@@ -145,44 +133,33 @@ trait CodeFactory {
     class Subst(sym: Symbol, rhs: Tree) extends Transformer {
       var stop = false
       override def transform(tree: Tree) = tree match {
-        case t:Ident if t.symbol == sym =>
+        case t: Ident if t.symbol == sym =>
           stop = true
           rhs
-        case t if stop =>
-          t
-        case t =>
-          super.transform(t)
+        case _ => if (stop) tree else super.transform(tree)
       }
     }
-    vds match {
-      case Nil =>
-        exp
-      case (vd:ValDef) :: rest =>
-        // recurse
-        val exp1 = squeezedBlock(rest, exp)
 
+    lazy val squeezedTail = squeezedBlock(vds.tail, exp)
+    def default = squeezedTail match {
+      case Block(vds2, exp2) => Block(vds.head :: vds2, exp2)
+      case exp2              => Block(vds.head :: Nil,  exp2)
+    }
+
+    if (vds.isEmpty) exp
+    else vds.head match {
+      case vd: ValDef =>
         val sym = vd.symbol
         val rt = new RefTraverser(sym)
-        rt.atOwner (theOwner) (rt.traverse(exp1))
+        rt.atOwner (theOwner) (rt traverse squeezedTail)
+
         rt.nref match {
-          case 0 =>
-            nremoved += 1
-            exp1
-          case 1 if rt.nsafeRef == 1 =>
-            nsubstituted += 1
-            new Subst(sym, vd.rhs).transform(exp1)
-          case _ =>
-            exp1 match {
-              case Block(vds2, exp2) => Block(vd::vds2, exp2)
-              case exp2              => Block(vd::Nil,  exp2)
-            }
+          case 0                      => squeezedTail
+          case 1 if rt.nsafeRef == 1  => new Subst(sym, vd.rhs) transform squeezedTail
+          case _                      => default
         }
-      case x::xs =>
-        squeezedBlock(xs, exp) match {
-          case Block(vds2, exp2) => Block(x::vds2, exp2)
-          case exp2              => Block(x::Nil,  exp2)
-        }
+      case _          =>
+        default
     }
   }
 }
-
