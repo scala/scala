@@ -10,6 +10,9 @@ import scala.collection.mutable.ListBuffer
 import symtab.Flags._
 import symtab.SymbolTable
 
+/** XXX to resolve: TreeGen only assumes global is a SymbolTable, but
+ *  TreeDSL at the moment expects a Global.  Can we get by with SymbolTable?
+ */
 abstract class TreeGen {
 
   val global: SymbolTable
@@ -102,9 +105,9 @@ abstract class TreeGen {
   def mkAttributedRef(pre: Type, sym: Symbol): Tree = {
     val qual = mkAttributedQualifier(pre)
     qual match {
-      case EmptyTree => mkAttributedIdent(sym)
+      case EmptyTree                                                              => mkAttributedIdent(sym)
       case This(clazz) if (qual.symbol.isRoot || qual.symbol.isEmptyPackageClass) => mkAttributedIdent(sym)
-      case _ => mkAttributedSelect(qual, sym)
+      case _                                                                      => mkAttributedSelect(qual, sym)
     }
   }
 
@@ -119,8 +122,7 @@ abstract class TreeGen {
       if (tree.symbol.isStable) tree.setType(singleType(tree.symbol.owner.thisType, tree.symbol))
       else tree
     case Select(qual, _) =>
-      assert(tree.symbol ne null)
-      assert(qual.tpe ne null)
+      assert((tree.symbol ne null) && (qual.tpe ne null))
       if (tree.symbol.isStable && qual.tpe.isStable)
         tree.setType(singleType(qual.tpe, tree.symbol))
       else tree
@@ -135,9 +137,7 @@ abstract class TreeGen {
     assert(!pt.typeSymbol.isPackageClass)
     assert(!pt.typeSymbol.isPackageObjectClass)
     assert(pt eq pt.normalize) //@MAT only called during erasure, which already takes care of that
-    atPos(tree.pos) {
-      Apply(TypeApply(mkAttributedSelect(tree, Object_asInstanceOf), List(TypeTree(pt))), List())
-    }
+    atPos(tree.pos)(mkAsInstanceOf(tree, pt, false))
   }
 
   /** Builds a reference with stable type to given symbol */
@@ -150,59 +150,60 @@ abstract class TreeGen {
   def mkAttributedThis(sym: Symbol): Tree =
     This(sym.name) setSymbol sym setType sym.thisType
 
-  def mkAttributedIdent(sym: Symbol): Tree = {
+  def mkAttributedIdent(sym: Symbol): Tree =
     Ident(sym.name) setSymbol sym setType sym.tpe
+
+  /** XXX this method needs a close analysis to identify its essential logical
+   *  units - this attempt at modularization verges on the arbitrary.
+   */
+  def mkAttributedSelect(qual: Tree, sym: Symbol): Tree = {
+    def tpe = qual.tpe
+    def isUnqualified(s: Symbol) =
+      s != null && (List(nme.ROOT, nme.EMPTY_PACKAGE_NAME) contains s.name.toTermName)
+    def isInPkgObject(s: Symbol) =
+      tpe != null && s.owner.isPackageObjectClass && s.owner.owner == tpe.typeSymbol
+    def getQualifier() =
+      if (!isInPkgObject(sym)) qual
+      else {
+        val pkgobj = sym.owner.sourceModule
+        Select(qual, nme.PACKAGEkw) setSymbol pkgobj setType singleType(tpe, pkgobj)
+      }
+
+    if (isUnqualified(qual.symbol)) mkAttributedIdent(sym)
+    else {
+      val newQualifier = getQualifier()
+      def verifyType(tree: Tree) =
+        if (newQualifier.tpe == null) tree
+        else tree setType (tpe memberType sym)
+
+      verifyType( Select(newQualifier, sym.name) setSymbol sym )
+    }
   }
 
-  def mkAttributedSelect(qual: Tree, sym: Symbol): Tree =
-    if ((qual.symbol ne null) &&
-        (qual.symbol.name.toTermName == nme.ROOT ||
-         qual.symbol.name.toTermName == nme.EMPTY_PACKAGE_NAME)) {
-      mkAttributedIdent(sym)
-    } else {
-      val qual1 =
-        if ((qual.tpe ne null) &&
-            sym.owner.isPackageObjectClass &&
-            sym.owner.owner == qual.tpe.typeSymbol) {
-          //println("insert package for "+qual+"/"+sym)
-          val pkgobj = sym.owner.sourceModule
-          Select(qual, nme.PACKAGEkw) setSymbol pkgobj setType singleType(qual.tpe, pkgobj)
-        } else qual
-      val result = Select(qual1, sym.name) setSymbol sym
-      if (qual1.tpe ne null) result setType qual.tpe.memberType(sym)
-      result
-    }
-
-  /** Builds an instance test with given value and type. */
-  def mkIsInstanceOf(value: Tree, tpe: Type, any: Boolean = true): Tree = {
-    val sym = if (any) Any_isInstanceOf else Object_isInstanceOf
+  private def mkTypeApply(value: Tree, tpe: Type, what: Symbol) =
     Apply(
       TypeApply(
-        mkAttributedSelect(value, sym),
+        mkAttributedSelect(value, what),
         List(TypeTree(tpe.normalize))
       ),
       Nil
     )
-  }
+  /** Builds an instance test with given value and type. */
+  def mkIsInstanceOf(value: Tree, tpe: Type, any: Boolean = true): Tree =
+    mkTypeApply(value, tpe, (if (any) Any_isInstanceOf else Object_isInstanceOf))
 
   /** Builds a cast with given value and type. */
-  def mkAsInstanceOf(value: Tree, tpe: Type, any: Boolean = true): Tree = {
-    val sym = if (any) Any_asInstanceOf else Object_asInstanceOf
-    Apply(
-      TypeApply(
-        mkAttributedSelect(value, sym),
-        List(TypeTree(tpe.normalize))
-      ),
-      Nil
-    )
-  }
+  def mkAsInstanceOf(value: Tree, tpe: Type, any: Boolean = true): Tree =
+    mkTypeApply(value, tpe, (if (any) Any_asInstanceOf else Object_asInstanceOf))
 
   def mkClassOf(tp: Type): Tree =
     Literal(Constant(tp)) setType Predef_classOfType(tp)
 
   def mkCheckInit(tree: Tree): Tree = {
-    var tpe = tree.tpe
-    if (tpe == null && tree.hasSymbol) tpe = tree.symbol.tpe
+    val tpe =
+      if (tree.tpe != null || !tree.hasSymbol) tree.tpe
+      else tree.symbol.tpe
+
     if (!global.phase.erasedTypes && settings.Xchecknull.value &&
         tpe <:< NotNullClass.tpe && !tpe.isNotNull)
       mkRuntimeCall(nme.checkInitialized, List(tree))
@@ -212,23 +213,24 @@ abstract class TreeGen {
 
   /** Builds a list with given head and tail. */
   def mkNewCons(head: Tree, tail: Tree): Tree =
-    New(Apply(mkAttributedRef(definitions.ConsClass), List(head, tail)))
+    New(Apply(mkAttributedRef(ConsClass), List(head, tail)))
 
   /** Builds a list with given head and tail. */
-  def mkNil: Tree =
-    mkAttributedRef(definitions.NilModule)
+  def mkNil: Tree = mkAttributedRef(NilModule)
 
   /** Builds a tuple */
   def mkTuple(elems: List[Tree]): Tree =
     if (elems.isEmpty) Literal(())
     else Apply(
-      Select(mkAttributedRef(definitions.TupleClass(elems.length).caseModule), nme.apply),
+      Select(mkAttributedRef(TupleClass(elems.length).caseModule), nme.apply),
       elems)
 
-  def mkAnd(tree1: Tree, tree2: Tree) =
+  // tree1 AND tree2
+  def mkAnd(tree1: Tree, tree2: Tree): Tree =
     Apply(Select(tree1, Boolean_and), List(tree2))
 
-  def mkOr(tree1: Tree, tree2: Tree) =
+  // tree1 OR tree2
+  def mkOr(tree1: Tree, tree2: Tree): Tree =
     Apply(Select(tree1, Boolean_or), List(tree2))
 
   def mkCached(cvar: Symbol, expr: Tree): Tree = {
@@ -278,7 +280,7 @@ abstract class TreeGen {
 
   /** Make a synchronized block on 'monitor'. */
   def mkSynchronized(monitor: Tree, body: Tree): Tree =
-    Apply(Select(monitor, definitions.Object_synchronized), List(body))
+    Apply(Select(monitor, Object_synchronized), List(body))
 
   def wildcardStar(tree: Tree) =
     atPos(tree.pos) { Typed(tree, Ident(nme.WILDCARD_STAR.toTypeName)) }

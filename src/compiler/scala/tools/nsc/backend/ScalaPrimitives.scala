@@ -235,15 +235,12 @@ abstract class ScalaPrimitives {
     // scala.Boolean
     addPrimitives(BooleanClass, nme.EQ, EQ)
     addPrimitives(BooleanClass, nme.NE, NE)
-    addPrimitive(Boolean_not, ZNOT)
-    addPrimitive(Boolean_or, ZOR)
-    addPrimitive(Boolean_and, ZAND)
+    addPrimitives(BooleanClass, nme.UNARY_!, ZNOT)
+    addPrimitives(BooleanClass, nme.ZOR, ZOR)
+    addPrimitives(BooleanClass, nme.ZAND, ZAND)
     addPrimitives(BooleanClass, nme.OR, OR)
     addPrimitives(BooleanClass, nme.AND, AND)
     addPrimitives(BooleanClass, nme.XOR, XOR)
-//    addPrimitives(BooleanClass, nme.ADD, CONCAT)
-    // unary !
-//  addPrimitives(BooleanClass, nme.UNARY_!, ZNOT)
 
     // scala.Byte
     addPrimitives(ByteClass, nme.EQ, EQ)

@@ -12,9 +12,10 @@ import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.util.{Position,NoPosition}
 import scala.collection.mutable.HashMap
 
-abstract class Mixin extends InfoTransform {
+abstract class Mixin extends InfoTransform with ast.TreeDSL {
   import global._
   import definitions._
+  import CODE._
 
   /** The name of the phase: */
   val phaseName: String = "mixin"
@@ -381,6 +382,7 @@ abstract class Mixin extends InfoTransform {
 
     /** The typer */
     private var localTyper: erasure.Typer = _
+    private def typedPos(pos: Position)(tree: Tree) = localTyper typed { atPos(pos)(tree) }
 
     import scala.collection._
 
@@ -489,7 +491,7 @@ abstract class Mixin extends InfoTransform {
       /** Attribute given tree and anchor at given position */
       def attributedDef(pos: Position, tree: Tree): Tree = {
         if (settings.debug.value) log("add new def to " + clazz + ": " + tree)
-        localTyper.typed { atPos(pos) { tree } }
+        typedPos(pos)(tree)
       }
 
       /** The position of given symbol, or, if this is undefined,
@@ -576,19 +578,20 @@ abstract class Mixin extends InfoTransform {
       /** Return an (untyped) tree of the form 'Clazz.this.bmp = Clazz.this.bmp | mask'. */
       def mkSetFlag(clazz: Symbol, offset: Int): Tree = {
         val bmp = bitmapFor(clazz, offset)
-        val mask = Literal(Constant(1 << (offset % FLAGS_PER_WORD)))
+        val mask = LIT(1 << (offset % FLAGS_PER_WORD))
+        def x = This(clazz) DOT bmp
 
-        Assign(Select(This(clazz), bmp),
-          Apply(Select(Select(This(clazz), bmp), Int_Or), List(mask)))
+        x === (x INT_| mask)
       }
 
       /** Return an (untyped) tree of the form 'clazz.this.bitmapSym & mask (==|!=) 0', the
        *  precise comparison operator depending on the value of 'equalToZero'.
        */
-      def mkTest(clazz: Symbol, mask: Tree, bitmapSym: Symbol, equalToZero: Boolean): Tree =
-        Apply(Select(Apply(Select(Select(This(clazz), bitmapSym), Int_And), List(mask)),
-                     if (equalToZero) Int_== else Int_!=),
-              List(Literal(Constant(0))))
+      def mkTest(clazz: Symbol, mask: Tree, bitmapSym: Symbol, equalToZero: Boolean): Tree = {
+        def lhs = (This(clazz) DOT bitmapSym) INT_& mask
+        if (equalToZero)  lhs INT_== ZERO
+        else              lhs INT_!= ZERO
+      }
 
       /** return a 'lazified' version of rhs.
        *  @param clazz The class symbol
@@ -612,31 +615,30 @@ abstract class Mixin extends InfoTransform {
        *  the 'n' is (offset / 32), the MASK is (1 << (offset % 32)).
        */
       def mkLazyDef(clazz: Symbol, init: List[Tree], retVal: Tree, offset: Int): Tree = {
-
         val bitmapSym = bitmapFor(clazz, offset)
+        val mask      = LIT(1 << (offset % FLAGS_PER_WORD))
+        def cond      = mkTest(clazz, mask, bitmapSym, true)
+        def syncBody  = init ::: List(mkSetFlag(clazz, offset), UNIT)
 
-        val mask = Literal(Constant(1 << (offset % FLAGS_PER_WORD)))
-        val result =
-          If(mkTest(clazz, mask, bitmapSym, true),
-             gen.mkSynchronized(gen.mkAttributedThis(clazz),
-               If(mkTest(clazz, mask, bitmapSym, true),
-                  Block(init :::
-                        List(mkSetFlag(clazz, offset)),
-                        Literal(Constant(()))),
-                 EmptyTree)),
-             EmptyTree)
-        localTyper.typed(atPos(init.head.pos)(Block(List(result), retVal)))
+        val result    =
+          IF (cond) THEN gen.mkSynchronized(
+            gen mkAttributedThis clazz,
+            IF (cond) THEN BLOCK(syncBody: _*) ENDIF
+          ) ENDIF
+
+        typedPos(init.head.pos)(BLOCK(result, retVal))
       }
 
       def mkCheckedAccessor(clazz: Symbol, retVal: Tree, offset: Int, pos: Position): Tree = {
         val bitmapSym = bitmapFor(clazz, offset)
-        val mask = Literal(Constant(1 << (offset % FLAGS_PER_WORD)))
-        val msg = "Uninitialized field: " + unit.source + ": " + pos.line.get
-        val result =
-          If(mkTest(clazz, mask, bitmapSym, false),
-             retVal,
-             Throw(New(TypeTree(definitions.UninitializedErrorClass.tpe), List(List(Literal(Constant(msg)))))))
-        localTyper.typed(atPos(pos)(Block(List(result), retVal)))
+        val mask      = LIT(1 << (offset % FLAGS_PER_WORD))
+        val msg       = "Uninitialized field: " + unit.source + ": " + pos.line.get
+        val result    =
+          IF (mkTest(clazz, mask, bitmapSym, false)) .
+            THEN (retVal) .
+            ELSE (THROW(UninitializedErrorClass, LIT(msg)))
+
+        typedPos(pos)(BLOCK(result, retVal))
       }
 
       /** Complete lazy field accessors. Applies only to classes, for it's own (non inherited) lazy fields.
@@ -911,11 +913,8 @@ abstract class Mixin extends InfoTransform {
           def staticCall(target: Symbol) = {
             if (target == NoSymbol)
               assert(false, "" + sym + ":" + sym.tpe + " " + sym.owner + " " + implClass(sym.owner) + " " + implClass(sym.owner).info.member(sym.name) + " " + atPhase(phase.prev)(implClass(sym.owner).info.member(sym.name).tpe) + " " + phase);//debug
-            localTyper.typed {
-              atPos(tree.pos) {
-                Apply(staticRef(target), transformSuper(qual) :: args)
-              }
-            }
+
+            typedPos(tree.pos)(Apply(staticRef(target), transformSuper(qual) :: args))
           }
           if (isStaticOnly(sym)) {
             // change calls to methods which are defined only in implementation
@@ -934,12 +933,9 @@ abstract class Mixin extends InfoTransform {
                 if (sym.hasFlag(ACCESSOR)) {
                   assert(args.isEmpty)
                   val sym1 = sym.overridingSymbol(currentOwner.enclClass)
-                  localTyper.typed {
-                    atPos(tree.pos) {
-                      Apply(Select(transformSuper(qual), sym1), List())
-                    }
-                  }
-                } else {
+                  typedPos(tree.pos)((transformSuper(qual) DOT sym1)())
+                }
+                else {
                   staticCall(atPhase(phase.prev)(sym.overridingSymbol(implClass(sym.owner))))
                 }
               } else {
@@ -959,49 +955,25 @@ abstract class Mixin extends InfoTransform {
           tree
 
         case Select(qual, name) if sym.owner.isImplClass && !isStaticOnly(sym) =>
+          assert(!sym.isMethod, "no method allowed here: %s%s %s".format(sym, sym.isImplOnly, flagsToString(sym.flags)))
+
           // refer to fields in some implementation class via an abstract
           // getter in the interface.
-
-          if (sym.isMethod)
-            assert(false, "no method allowed here: " + sym + sym.isImplOnly +
-                          " " + flagsToString(sym.flags))
           val iface = toInterface(sym.owner.tpe).typeSymbol
           val getter = sym.getter(iface)
           assert(getter != NoSymbol)
-          localTyper.typed {
-            atPos(tree.pos) {
-              Apply(Select(qual, getter), List())
-            }
-          }
+          typedPos(tree.pos)((qual DOT getter)())
 
         case Assign(Apply(lhs @ Select(qual, _), List()), rhs) =>
           // assign to fields in some implementation class via an abstract
           // setter in the interface.
-          localTyper.typed {
-/*
-            println(lhs.symbol)
-            println(lhs.symbol.owner.info.decls)
-            println(needsExpandedSetterName(lhs.symbol))
-            println(toInterface(lhs.symbol.owner.tpe).typeSymbol)
-            println(toInterface(lhs.symbol.owner.tpe).typeSymbol.info.decls)
-            util.trace("generating tree: ") {
-*/
-            atPos(tree.pos) {
-              Apply(
-                Select(
-                  qual,
-                  lhs.symbol.setter(
-                    toInterface(lhs.symbol.owner.tpe).typeSymbol,
-                    needsExpandedSetterName(lhs.symbol))) setPos lhs.pos,
-                List(rhs))
-            }
-//          }
-          }
-/* //DEBUG
-        case Ident(name) if (name.toString == "xxx") =>
-          println(tree+":"+tree.tpe+"/"+tree.tpe.baseClasses)
-          tree
-*/
+          def setter = lhs.symbol.setter(
+            toInterface(lhs.symbol.owner.tpe).typeSymbol,
+            needsExpandedSetterName(lhs.symbol)
+          ) setPos lhs.pos
+
+          typedPos(tree.pos) { (qual DOT setter)(rhs) }
+
         case _ =>
           tree
       }

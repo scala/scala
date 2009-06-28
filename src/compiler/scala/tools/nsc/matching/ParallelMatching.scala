@@ -30,14 +30,15 @@ import MatchUtil._
  *
  *  @author Burak Emir
  */
-trait ParallelMatching {
+trait ParallelMatching extends ast.TreeDSL {
   self: transform.ExplicitOuter with PatternNodes with CodeFactory =>
 
   import global.{typer => _, _}
   import analyzer.Typer;
   import symtab.Flags
   import Types._
-  import Code.{ fn, Const }
+  import Code.Const
+  import CODE._
 
   /**
    * Encapsulates a symbol being matched on.
@@ -56,7 +57,7 @@ trait ParallelMatching {
     def mkList(prefix: List[Symbol], suffix: List[Symbol]) = prefix ::: sym :: suffix
     def isDefined = sym ne NoSymbol
     def accessors = sym.caseFieldAccessors
-    def id = mkIdent(sym)
+    def id = ID(sym)
     def tpe = sym.tpe
     def pos = sym.pos
     def isChar = tpe.widen.isChar
@@ -292,10 +293,11 @@ trait ParallelMatching {
       val (branches, defaultV, defaultRep) = this.getTransition // tag body pairs
       val cases = for ((tag, r) <- branches) yield {
         val r2 = rep.make(r.temp, r.row.map(x => x.rebind(bindVars(tag, x.subst))))
-        CaseDef(Literal(tag), EmptyTree, r2.toTree)
+
+        CASE(Literal(tag)) ==> r2.toTree
       }
-      lazy val ndefault = defaultRep.map(_.toTree) getOrElse failTree
-      lazy val casesWithDefault = cases ::: List(CaseDef(mk_(definitions.IntClass.tpe), EmptyTree, ndefault))
+      lazy val ndefault         = defaultRep.map(_.toTree) getOrElse failTree
+      lazy val casesWithDefault = cases ::: List(CASE(mk_(definitions.IntClass.tpe)) ==> ndefault)
 
       cases match {
         case CaseDef(lit,_,body) :: Nil   => If(Equals(scrut.id, lit), body, ndefault)
@@ -354,19 +356,19 @@ trait ParallelMatching {
           val vtpe = app.tpe.typeArgs(0)
           val vsym = newVarCapture(ua.pos, vtpe)
           val nrows = mkNewRows((xs) => List(xs.head), 1)
-          val vdef = typedValDef(vsym, Get(mkIdent(ures)))
+          val vdef = typedValDef(vsym, Get(ID(ures)))
           mkTransition(List(vdef), List(vsym), nrows)
 
         case _ => // app.tpe is Option[? <: ProductN[T1,...,Tn]]
           val uresGet = newVarCapture(ua.pos, app.tpe.typeArgs(0))
-          val vdefHead = typedValDef(uresGet, Get(mkIdent(ures)))
+          val vdefHead = typedValDef(uresGet, Get(ID(ures)))
           val ts = definitions.getProductArgs(uresGet.tpe).get
           val nrows = mkNewRows(identity, ts.size)
           val (vdefs: List[Tree], vsyms: List[Symbol]) = List.unzip(
             for ((vtpe, i) <- ts.zip((1 to ts.size).toList)) yield {
               val vchild = newVarCapture(ua.pos, vtpe)
               val accSym = definitions.productProj(uresGet, i)
-              val rhs = typer.typed(Code.fn(mkIdent(uresGet), accSym))
+              val rhs = typer.typed(fn(ID(uresGet), accSym))
 
               (typedValDef(vchild, rhs), vchild)
             })
@@ -379,8 +381,8 @@ trait ParallelMatching {
       val succ = srep.toTree
       val fail = frep.map(_.toTree) getOrElse failTree
       val cond =
-        if (uacall.symbol.tpe.isBoolean) typer.typed(mkIdent(uacall.symbol))
-        else nonEmptinessCheck(uacall.symbol)
+        if (uacall.symbol.tpe.isBoolean) typer.typed(ID(uacall.symbol))
+        else uacall.symbol IS_DEFINED
 
       typer.typed( squeezedBlock(List(rep.handleOuter(uacall)), If(cond,squeezedBlock(vdefs,succ),fail)) )
     }
@@ -609,7 +611,7 @@ trait ParallelMatching {
       val caseTemps = srep.temp match { case x :: xs if x == casted.sym => xs ; case x => x }
 
       var vdefs = for ((tmp, accessorMethod) <- caseTemps.zip(cfa)) yield {
-        val untypedAccess = Code.fn(casted.id, accessorMethod)
+        val untypedAccess = fn(casted.id, accessorMethod)
         val typedAccess = typer.typed(untypedAccess)
         typedValDef(tmp, typedAccess)
       }
@@ -701,10 +703,9 @@ trait ParallelMatching {
           case If(cond, Const(true), Const(false)) =>
             super.transform(cond)
           case If(cond1, If(cond2, thenp, elsep1), elsep2) if (elsep1 equalsStructure elsep2) =>
-            super.transform(If(And(cond1,cond2), thenp, elsep1))
+            super.transform( IF (cond1 AND cond2) THEN thenp ELSE elsep1 )
           case If(cond1, If(cond2, thenp, Apply(jmp,List())), ld:LabelDef) if (jmp.symbol eq ld.symbol) =>
-            super.transform(If(And(cond1,cond2), thenp, ld))
-
+            super.transform( IF (cond1 AND cond2) THEN thenp ELSE ld )
           case t => super.transform(t)
         }
       }
@@ -731,7 +732,7 @@ trait ParallelMatching {
     final def requestBody(bx: Int, subst: Bindings)(implicit theOwner: Symbol): Tree = {
       if (bx < 0) { // is shortcut
         val jlabel = shortCuts(-bx-1)
-        return Apply(mkIdent(jlabel), Nil)
+        return Apply(ID(jlabel), Nil)
       }
       if (!isReached(bx)) { // first time this bx is requested
         // might be bound elsewhere ( see `x @ unapply' ) <-- this comment refers to null check
@@ -777,7 +778,7 @@ trait ParallelMatching {
           val vdefs = for (v <- vss(bx) ; substv <- subst(v)) yield typedValDef(v, substv)
           squeezedBlock(vdefs, body.duplicate setType resultType)
         case _ =>
-          Apply(mkIdent(label),args)
+          Apply(ID(label), args)
       }
     }
 
@@ -1015,7 +1016,7 @@ trait ParallelMatching {
 
     outerAccessor(tpe2test.typeSymbol) match {
       case NoSymbol => if (settings.debug.value) cunit.warning(scrut.pos, "no outer acc for "+tpe2test.typeSymbol) ; cond
-      case outerAcc => And(cond, Eq(Code.fn(gen.mkAsInstanceOf(scrut, tpe2test), outerAcc), theRef))
+      case outerAcc => cond AND (((scrut AS_ANY tpe2test) DOT outerAcc)() ANY_EQ theRef)
     }
   }
 

@@ -116,7 +116,7 @@ trait SyntheticMethods extends ast.TreeDSL {
         name, 0, makeTypeConstructor(paramtypes, target.tpe.resultType)
       )
 
-      typer.typed {
+      typer typed {
         DEF(method) === {
           Apply(gen.mkAttributedRef(target), This(clazz) :: (method ARGNAMES))
         }
@@ -171,11 +171,11 @@ trait SyntheticMethods extends ast.TreeDSL {
       val (guards, params) = List.map2(clazz.caseFieldAccessors, constrParamTypes)(makeTrees) unzip
 
       // Pattern is classname applied to parameters, and guards are all logical and-ed
-      val (guard, pat) = (AND(guards : _*), clazz.name.toTermName APPLY params)
+      val (guard, pat) = (AND(guards: _*), clazz.name.toTermName APPLY params)
 
       localTyper typed {
         DEF(method) === {
-          (This(clazz) EQREF that) OR (that MATCH(
+          (This(clazz) ANY_EQ that) OR (that MATCH(
             (CASE(pat) IF guard)  ==> TRUE        ,
             DEFAULT               ==> FALSE
           ))

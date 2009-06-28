@@ -86,14 +86,10 @@ trait Definitions {
     lazy val FloatClass =   newValueClass(nme.Float, 'F')
     lazy val DoubleClass =  newValueClass(nme.Double, 'D')
 
-    // some value class conveniences
-    def Boolean_not = getMember(BooleanClass, nme.UNARY_!)
+    // XXX the class-specific member symbols need to be grouped somewhere
+    // associated with that class.
     def Boolean_and = getMember(BooleanClass, nme.ZAND)
     def Boolean_or  = getMember(BooleanClass, nme.ZOR)
-    def Int_Or      = getMember(IntClass, nme.OR)
-    def Int_And     = getMember(IntClass, nme.AND)
-    def Int_==      = getMember(IntClass, nme.EQ)
-    def Int_!=      = getMember(IntClass, nme.NE)
 
     // the scala reference classes
     lazy val ScalaObjectClass: Symbol = getClass("scala.ScalaObject")

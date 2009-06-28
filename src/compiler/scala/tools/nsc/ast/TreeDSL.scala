@@ -18,7 +18,9 @@ trait TreeDSL {
   import definitions._
 
   object CODE {
-    def LIT(x: Any)   = Literal(Constant(x))
+    def LIT(x: Any)     = Literal(Constant(x))
+    def ID(sym: Symbol) = Ident(sym) setType sym.tpe
+
     def TRUE          = LIT(true)
     def FALSE         = LIT(false)
     def NULL          = LIT(null)
@@ -26,13 +28,10 @@ trait TreeDSL {
     def ZERO          = LIT(0)
     def WILD          = Ident(nme.WILDCARD)
 
-    case class ExpectApply(target: Tree) {
-      def apply(args: Tree*) = Apply(target, args.toList)
-    }
+    def fn(lhs: Tree, op:   Name, args: Tree*)  = Apply(Select(lhs, op), args.toList)
+    def fn(lhs: Tree, op: Symbol, args: Tree*)  = Apply(Select(lhs, op), args.toList)
 
     class TreeMethods(target: Tree) {
-      private def binop(lhs: Tree, op: Name, rhs: Tree)   = Apply(Select(lhs, op), List(rhs))
-      private def binop(lhs: Tree, op: Symbol, rhs: Tree) = Apply(Select(lhs, op), List(rhs))
       private def toAnyRef(x: Tree) = x setType AnyRefClass.tpe
 
       /** logical/comparison ops **/
@@ -46,19 +45,27 @@ trait TreeDSL {
         else if (other == EmptyTree) target
         else gen.mkAnd(target, other)
 
-      def BIT_AND(other: Tree)      = binop(target, Int_And, other)
-      def EQREF(other: Tree)        = binop(target, nme.eq, toAnyRef(other))
-      def NE_REF(other: Tree)       = binop(target, nme.ne, other)
-      def EQEQ(other: Tree)         = binop(target, nme.EQ, other)
-      def EQINT(other: Tree)        = binop(target, Int_==, other)
-      def EQANY(other: Tree)        = binop(target, Any_==, other)
-      def NOT_==(other: Tree)       = binop(target, Object_ne, other)
+      def NE_REF(other: Tree)       = fn(target, nme.ne, other)
+      def EQEQ(other: Tree)         = fn(target, nme.EQ, other)
+
+      def ANY_EQ  (other: Tree)     = fn(target, nme.eq, toAnyRef(other))
+      def ANY_==  (other: Tree)     = fn(target, Any_==, other)
+      def OBJ_!=  (other: Tree)     = fn(target, Object_ne, other)
+
+      def INT_|   (other: Tree)     = fn(target, getMember(IntClass, nme.OR), other)
+      def INT_&   (other: Tree)     = fn(target, getMember(IntClass, nme.AND), other)
+      def INT_==  (other: Tree)     = fn(target, getMember(IntClass, nme.EQ), other)
+      def INT_!=  (other: Tree)     = fn(target, getMember(IntClass, nme.NE), other)
+
+      def BOOL_&& (other: Tree)     = fn(target, getMember(BooleanClass, nme.ZAND), other)
+      def BOOL_|| (other: Tree)     = fn(target, getMember(BooleanClass, nme.ZOR), other)
 
       /** Apply, Select, Match **/
+      def APPLY(params: Tree*)      = Apply(target, params.toList)
       def APPLY(params: List[Tree]) = Apply(target, params)
       def MATCH(cases: CaseDef*)    = Match(target, cases.toList)
-      def DOT(member: Name)         = ExpectApply(Select(target, member))
-      def DOT(sym: Symbol)          = ExpectApply(Select(target, sym))
+      def DOT(member: Name)         = SelectStart(Select(target, member))
+      def DOT(sym: Symbol)          = SelectStart(Select(target, sym))
 
       /** Assignment */
       def ===(rhs: Tree)            = Assign(target, rhs)
@@ -67,13 +74,18 @@ trait TreeDSL {
        *  what differs between the different forms of IS and AS.
        */
       def AS(tpe: Type)       = TypeApply(Select(target, Any_asInstanceOf), List(TypeTree(tpe)))
+      def AS_ANY(tpe: Type)   = gen.mkAsInstanceOf(target, tpe)
       def AS_ATTR(tpe: Type)  = gen.mkAttributedCast(target, tpe)
 
       def IS(tpe: Type)       = gen.mkIsInstanceOf(target, tpe, true)
       def IS_OBJ(tpe: Type)   = gen.mkIsInstanceOf(target, tpe, false)
 
-      def TOSTRING()  = Apply(Select(target, nme.toString_), Nil)
-      def GETCLASS()  = Apply(Select(target, Object_getClass), Nil)
+      def TOSTRING()          = fn(target, nme.toString_)
+      def GETCLASS()          = fn(target, Object_getClass)
+    }
+
+    case class SelectStart(tree: Select) {
+      def apply(args: Tree*) = Apply(tree, args.toList)
     }
 
     class CaseStart(pat: Tree, guard: Tree) {
@@ -110,7 +122,11 @@ trait TreeDSL {
 
     class SymbolMethods(target: Symbol) {
       def BIND(body: Tree) = Bind(target, body)
-      // def DOT(member: Symbol) = new TreeMethods(Ident(target)) DOT member
+
+      // Option
+      def IS_DEFINED() =
+        if (target.tpe.typeSymbol == SomeClass) TRUE   // is Some[_]
+        else NOT(ID(target) DOT nme.isEmpty)           // is Option[_]
 
       // name of nth indexed argument to a method (first parameter list), defaults to 1st
       def ARG(idx: Int = 0) = Ident(target.paramss.head(idx))
@@ -135,6 +151,14 @@ trait TreeDSL {
     def TRY(tree: Tree)   = new TryStart(tree, Nil, EmptyTree)
     def REF(sym: Symbol)  = gen.mkAttributedRef(sym)
     def BLOCK(xs: Tree*)  = Block(xs.init.toList, xs.last)
+    def NOT(tree: Tree)   = Select(tree, getMember(BooleanClass, nme.UNARY_!))
+
+    //
+    // Unused, from the pattern matcher:
+    // def SEQELEM(tpe: Type): Type = (tpe.widen baseType SeqClass) match {
+    //   case NoType   => Predef.error("arg " + tpe + " not subtype of Seq[A]")
+    //   case t        => t typeArgs 0
+    // }
 
     /** Implicits - some of these should probably disappear **/
     implicit def mkTreeMethods(target: Tree): TreeMethods = new TreeMethods(target)
@@ -146,5 +170,13 @@ trait TreeDSL {
     implicit def mkNameMethodsFromString(target: String): NameMethods = new NameMethods(target)
 
     implicit def mkSymbolMethodsFromSymbol(target: Symbol): SymbolMethods = new SymbolMethods(target)
+
+    /** (foo DOT bar) might be simply a Select, but more likely it is to be immediately
+     *  followed by an Apply.  We don't want to add an actual apply method to arbitrary
+     *  trees, so SelectStart is created with an apply - and if apply is not the next
+     *  thing called, the implicit from SelectStart -> Tree will provide the tree.
+     */
+    implicit def mkTreeFromSelectStart(ss: SelectStart): Select = ss.tree
+    implicit def mkTreeMethodsFromSelectStart(ss: SelectStart): TreeMethods = mkTreeMethods(ss.tree)
   }
 }

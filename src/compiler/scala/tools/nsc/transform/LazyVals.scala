@@ -28,8 +28,6 @@ abstract class LazyVals extends Transform with ast.TreeDSL {
    * Transform local lazy accessors to check for the initialized bit.
    */
   class LazyValues(unit: CompilationUnit) extends Transformer {
-
-    import definitions.{Int_And, Int_Or, Int_==}
     /** map from method symbols to the number of lazy values it defines. */
     private val lazyVals = new HashMap[Symbol, Int] {
       override def default(meth: Symbol) = 0
@@ -106,6 +104,8 @@ abstract class LazyVals extends Transform with ast.TreeDSL {
       }
     }
 
+    import CODE._
+
     /** return a 'lazified' version of rhs. Rhs should conform to the
      *  following schema:
      *  {
@@ -146,18 +146,14 @@ abstract class LazyVals extends Transform with ast.TreeDSL {
           (Block(List(rhs, mkSetFlag(bitmapSym, mask)), Literal(Constant(()))), Literal(()))
       }
 
-      import CODE._
-
       val result = atPos(tree.pos) {
-        IF ((Ident(bitmapSym) BIT_AND mask) EQINT ZERO) THEN block ENDIF
+        IF ((Ident(bitmapSym) INT_& mask) INT_== ZERO) THEN block ENDIF
       }
       typed(Block(List(result), res))
     }
 
     private def mkSetFlag(bmp: Symbol, mask: Tree): Tree =
-      Assign(Ident(bmp),
-        Apply(Select(Ident(bmp), Int_Or), List(mask)))
-
+      Ident(bmp) === (Ident(bmp) INT_| mask)
 
     final val FLAGS_PER_WORD = 32
     val bitmaps = new HashMap[Symbol, List[Symbol]] {

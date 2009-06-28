@@ -16,7 +16,14 @@ import matching.{TransMatcher, PatternNodes, CodeFactory, ParallelMatching}
  *  @author  Martin Odersky
  *  @version 1.0
  */
-abstract class ExplicitOuter extends InfoTransform with TransMatcher with PatternNodes with CodeFactory with ParallelMatching with TypingTransformers {
+abstract class ExplicitOuter extends InfoTransform
+      with TransMatcher
+      with PatternNodes
+      with CodeFactory
+      with ParallelMatching
+      with TypingTransformers
+      with ast.TreeDSL
+{
   import global._
   import definitions._
 

@@ -136,7 +136,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           result =
             atPos(to.pos) {
               localTyper.typed {
-                IF (from EQREF NULL) THEN THROW(NullPointerExceptionClass) ELSE result
+                IF (from ANY_EQ NULL) THEN THROW(NullPointerExceptionClass) ELSE result
               }
             }
 

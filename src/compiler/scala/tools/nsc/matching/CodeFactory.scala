@@ -12,29 +12,21 @@ import scala.tools.nsc.util.Position
  *
  *  @author Burak Emir
  */
-trait CodeFactory {
+trait CodeFactory extends ast.TreeDSL
+{
   self: transform.ExplicitOuter with PatternNodes =>
 
   import global.{typer => _, _}
-  import analyzer.Typer;
+  import analyzer.Typer
 
-  import definitions._             // standard classes and methods
+  import definitions._
   import Code._
+  import CODE._
 
   /** Methods to simplify code generation
    */
   object Code {
-    // function application
-    def fn(lhs: Tree, op:   Name, args: Tree*)  = Apply(Select(lhs, op), args.toList)
-    def fn(lhs: Tree, op: Symbol, args: Tree*)  = Apply(Select(lhs, op), args.toList)
-
-    val AND   = definitions.Boolean_and
-    val NOT   = definitions.Boolean_not
-    val SEQ   = definitions.SeqClass
-    val SOME  = definitions.SomeClass
-    val TRUE  = Const(true)
-    val FALSE = Const(false)
-    val NULL  = Const(null)
+    // val SOME  = definitions.SomeClass
 
     object Const {
       def apply(x: Any) = Literal(Constant(x))
@@ -56,21 +48,6 @@ trait CodeFactory {
 
   final def mkIdent(sym: Symbol)  = Ident(sym) setType sym.tpe
   final def mk_(tpe: Type)        = Ident(nme.WILDCARD) setType tpe
-
-  /** returns A for T <: Sequence[ A ]
-   */
-  final def getElemType_Sequence(tpe: Type): Type = {
-    val tpe1 = tpe.widen.baseType(SEQ)
-    if (tpe1 == NoType)
-      Predef.error("arg " + tpe + " not subtype of Seq[A]")
-
-    tpe1.typeArgs(0)
-  }
-
-  // Option fullness check
-  final def nonEmptinessCheck(vsym: Symbol) =
-    if (vsym.tpe.typeSymbol == SOME) TRUE           // is Some[_]
-    else Not(Select(mkIdent(vsym), nme.isEmpty))    // is Option[_]
 
   /** for tree of sequence type, returns tree that drops first i elements */
   final def seqDrop(sel:Tree, ix: Int)(implicit typer : Typer) =
@@ -95,8 +72,6 @@ trait CodeFactory {
   final def Equals  (left: Tree, right: Tree): Tree = fn(left, nme.EQ, right)
   final def Eq      (left: Tree, right: Tree): Tree = fn(left, nme.eq, right)
   final def GTE     (left: Tree, right: Tree): Tree = fn(left, nme.GE, right) // >=
-  final def And     (terms: Tree*): Tree = terms.reduceLeft((left, right) => fn(left, AND, right))
-  final def Not     (arg: Tree): Tree = Select(arg, NOT)
 
   final def ThrowMatchError(pos: Position, obj: Tree) = atPos(pos) {
     Throw( New(TypeTree(MatchErrorClass.tpe), List(List(obj))) )

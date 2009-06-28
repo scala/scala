@@ -267,7 +267,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
                     BLOCK(
                       VAL(methodSym) === ((REF(reflPolyCacheSym) DOT methodCache_find)(REF(forReceiverSym))) ,
-                      IF (REF(methodSym) NOT_== NULL) .
+                      IF (REF(methodSym) OBJ_!= NULL) .
                         THEN (Return(REF(methodSym)))
                       ELSE {
                         def methodSymRHS  = ((REF(forReceiverSym) DOT Class_getMethod)(LIT(method), REF(reflParamsCacheSym)))
@@ -366,7 +366,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             val sym = currentOwner.newValue(ad.pos, mkTerm()) setInfo ObjectClass.tpe
             BLOCK(
               VAL(sym) === tree,
-              IF (NULL EQANY REF(sym)) THEN NULL ELSE gen.mkRuntimeCall(nme.boxArray, List(REF(sym)))
+              IF (NULL ANY_== REF(sym)) THEN NULL ELSE gen.mkRuntimeCall(nme.boxArray, List(REF(sym)))
             )
           }
           resType.typeSymbol match {
@@ -394,7 +394,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
                 BLOCK(
                   VAL(sym) === param,
-                  IF (NULL EQANY REF(sym)) .
+                  IF (NULL ANY_== REF(sym)) .
                     THEN (NULL) .
                   ELSE (
                     IF (REF(sym) IS_OBJ BoxedArrayClass.tpe) .
