@@ -30,7 +30,7 @@ object Component {
  * @see http://java.sun.com/products/jfc/tsc/articles/painting/ for the component
  * painting mechanism
  */
-abstract class Component extends UIElement with LazyPublisher {
+abstract class Component extends UIElement {
   override lazy val peer: javax.swing.JComponent = new javax.swing.JComponent with SuperMixin {}
   var initP: JComponent = null
 
@@ -172,7 +172,9 @@ abstract class Component extends UIElement with LazyPublisher {
   def requestFocusInWindow() = peer.requestFocusInWindow()
   def hasFocus: Boolean = peer.isFocusOwner
 
-  def onFirstSubscribe {
+  override def onFirstSubscribe {
+    super.onFirstSubscribe
+    // TODO: deprecated, remove after 2.8
     peer.addComponentListener(new java.awt.event.ComponentListener {
       def componentHidden(e: java.awt.event.ComponentEvent) {
         publish(ComponentHidden(Component.this))
@@ -221,7 +223,6 @@ abstract class Component extends UIElement with LazyPublisher {
       }
     })
   }
-  def onLastUnsubscribe() {}
 
   def revalidate() { peer.revalidate() }
 

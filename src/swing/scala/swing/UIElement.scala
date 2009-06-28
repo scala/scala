@@ -4,6 +4,7 @@ import java.awt.{Color, Cursor, Font, Dimension, Rectangle}
 import scala.collection.mutable.HashMap
 import scala.ref._
 import java.util.WeakHashMap
+import event._
 
 object UIElement {
   private val ClientKey = "scala.swingWrapper"
@@ -44,7 +45,7 @@ object UIElement {
  *
  * @see java.awt.Component
  */
-trait UIElement extends Proxy {
+trait UIElement extends Proxy with LazyPublisher {
   /**
    * The underlying Swing peer.
    */
@@ -94,4 +95,22 @@ trait UIElement extends Proxy {
   def repaint(rect: Rectangle) { peer.repaint(rect.x, rect.y, rect.width, rect.height) }
   def ignoreRepaint: Boolean = peer.getIgnoreRepaint
   def ignoreRepaint_=(b: Boolean) { peer.setIgnoreRepaint(b) }
+
+  def onFirstSubscribe {
+    peer.addComponentListener(new java.awt.event.ComponentListener {
+      def componentHidden(e: java.awt.event.ComponentEvent) {
+        publish(UIElementHidden(UIElement.this))
+      }
+      def componentShown(e: java.awt.event.ComponentEvent) {
+        publish(UIElementShown(UIElement.this))
+      }
+      def componentMoved(e: java.awt.event.ComponentEvent) {
+        publish(UIElementMoved(UIElement.this))
+      }
+      def componentResized(e: java.awt.event.ComponentEvent) {
+        publish(UIElementResized(UIElement.this))
+      }
+    })
+  }
+  def onLastUnsubscribe {}
 }
