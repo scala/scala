@@ -11,13 +11,15 @@ import scala.tools.nsc.util.{Position, NoPosition}
 /**
  *  @author Burak Emir
  */
-trait PatternNodes {
+trait PatternNodes extends ast.TreeDSL
+{
   self: transform.ExplicitOuter =>
 
   import global.{ typer => _, _ }
   import analyzer.Typer
   import symtab.Flags
   import Types._
+  import CODE._
 
   case class TypeComparison(x: Type, y: Type) {
     def xIsaY = x <:< y
@@ -111,7 +113,7 @@ trait PatternNodes {
     if (vs eq Nil) pat else Bind(vs.head, makeBind(vs.tail, pat)) setType pat.tpe
 
   def mkTypedBind(vs: List[Symbol], tpe: Type) =
-    makeBind(vs, Typed(mk_(tpe), TypeTree(tpe)) setType tpe)
+    makeBind(vs, Typed(WILD(tpe), TypeTree(tpe)) setType tpe)
 
   def mkEmptyTreeBind(vs: List[Symbol], tpe: Type) =
     makeBind(vs, Typed(EmptyTree, TypeTree(tpe)) setType tpe)
@@ -120,7 +122,7 @@ trait PatternNodes {
 
   def normalizedListPattern(pats:List[Tree], tptArg:Type): Tree = pats match {
     case Nil   => gen.mkNil
-    case (sp @ Strip(_, _: Star)) :: xs => makeBind(definedVars(sp), mk_(sp.tpe))
+    case (sp @ Strip(_, _: Star)) :: xs => makeBind(definedVars(sp), WILD(sp.tpe))
     case x::xs =>
       var resType: Type = null;
       val consType: Type = definitions.ConsClass.primaryConstructor.tpe match {
@@ -240,9 +242,8 @@ trait PatternNodes {
      * The corresponding list of value definitions.
      */
     final def targetParams(implicit typer: Typer): List[ValDef] =
-      bindings.toList.map{ case Binding(v, t) => ValDef(v,
-        typer.typed{if(t.tpe <:< v.tpe) mkIdent(t)
-                    else gen.mkAsInstanceOf(mkIdent(t), v.tpe)})}
+      for (Binding(v, t) <- bindings.toList) yield
+        VAL(v) === (typer typed (if (t.tpe <:< v.tpe) ID(t) else (ID(t) AS_ANY v.tpe)))
   }
 
   val NoBinding: Bindings = Bindings()

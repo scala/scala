@@ -18,15 +18,25 @@ trait TreeDSL {
   import definitions._
 
   object CODE {
-    def LIT(x: Any)     = Literal(Constant(x))
+    object LIT extends (Any => Literal) {
+      def apply(x: Any)   = Literal(Constant(x))
+      def unapply(x: Any) = x match {
+        case Literal(Constant(value)) => Some(value)
+        case _                        => None
+      }
+    }
+
     def ID(sym: Symbol) = Ident(sym) setType sym.tpe
 
-    def TRUE          = LIT(true)
-    def FALSE         = LIT(false)
-    def NULL          = LIT(null)
-    def UNIT          = LIT(())
-    def ZERO          = LIT(0)
-    def WILD          = Ident(nme.WILDCARD)
+    val TRUE          = LIT(true)
+    val FALSE         = LIT(false)
+    val NULL          = LIT(null)
+    val UNIT          = LIT(())
+    val ZERO          = LIT(0)
+
+    def WILD(tpe: Type = null) =
+      if (tpe == null) Ident(nme.WILDCARD)
+      else Ident(nme.WILDCARD) setType tpe
 
     def fn(lhs: Tree, op:   Name, args: Tree*)  = Apply(Select(lhs, op), args.toList)
     def fn(lhs: Tree, op: Symbol, args: Tree*)  = Apply(Select(lhs, op), args.toList)
@@ -45,9 +55,7 @@ trait TreeDSL {
         else if (other == EmptyTree) target
         else gen.mkAnd(target, other)
 
-      def NE_REF(other: Tree)       = fn(target, nme.ne, other)
-      def EQEQ(other: Tree)         = fn(target, nme.EQ, other)
-
+      def ANY_NE  (other: Tree)     = fn(target, nme.ne, toAnyRef(other))
       def ANY_EQ  (other: Tree)     = fn(target, nme.eq, toAnyRef(other))
       def ANY_==  (other: Tree)     = fn(target, Any_==, other)
       def OBJ_!=  (other: Tree)     = fn(target, Object_ne, other)
@@ -114,7 +122,7 @@ trait TreeDSL {
     }
 
     def CASE(pat: Tree): CaseStart  = new CaseStart(pat, EmptyTree)
-    def DEFAULT: CaseStart          = new CaseStart(WILD, EmptyTree)
+    def DEFAULT: CaseStart          = new CaseStart(WILD(), EmptyTree)
 
     class NameMethods(target: Name) {
       def BIND(body: Tree) = Bind(target, body)
@@ -153,6 +161,7 @@ trait TreeDSL {
     def IF(tree: Tree)    = new IfStart(tree, EmptyTree)
     def TRY(tree: Tree)   = new TryStart(tree, Nil, EmptyTree)
     def REF(sym: Symbol)  = gen.mkAttributedRef(sym)
+    def REF(pre: Type, sym: Symbol) = gen.mkAttributedRef(pre, sym)
     def BLOCK(xs: Tree*)  = Block(xs.init.toList, xs.last)
     def NOT(tree: Tree)   = Select(tree, getMember(BooleanClass, nme.UNARY_!))
 

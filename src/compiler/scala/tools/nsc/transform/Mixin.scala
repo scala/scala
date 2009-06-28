@@ -271,11 +271,10 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
               }
               if (!member.isSetter)
                 member.tpe match {
-                  case MethodType(List(), ConstantType(_)) =>
+                  case MethodType(Nil, ConstantType(_)) =>
                     // member is a constant; only getter is needed
                     ;
-                  case MethodType(List(), TypeRef(_, tpeSym, _))
-                    if tpeSym == definitions.UnitClass =>
+                  case MethodType(Nil, TypeRef(_, UnitClass, _)) =>
                     // member is a value of type unit. No field needed
                     ;
                   case _ =>
@@ -562,22 +561,22 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         assert(!sym.hasFlag(OVERLOADED))
         if (sym == NoSymbol) {
           sym = clazz.newVariable(clazz.pos, nme.bitmapName(offset / FLAGS_PER_WORD))
-                       .setInfo(definitions.IntClass.tpe)
+                       .setInfo(IntClass.tpe)
                        .setFlag(PROTECTED)
           atPhase(currentRun.typerPhase) {
-            sym.addAnnotation(AnnotationInfo(definitions.VolatileAttr.tpe, List(), List()))
+            sym.addAnnotation(AnnotationInfo(VolatileAttr.tpe, List(), List()))
           }
           clazz.info.decls.enter(sym)
-          addDef(clazz.pos, ValDef(sym, Literal(Constant(0))))
+          addDef(clazz.pos, ValDef(sym, ZERO))
         }
         sym
       }
 
       /** Return an (untyped) tree of the form 'Clazz.this.bmp = Clazz.this.bmp | mask'. */
       def mkSetFlag(clazz: Symbol, offset: Int): Tree = {
-        val bmp = bitmapFor(clazz, offset)
-        val mask = LIT(1 << (offset % FLAGS_PER_WORD))
-        def x = This(clazz) DOT bmp
+        val bmp   = bitmapFor(clazz, offset)
+        val mask  = LIT(1 << (offset % FLAGS_PER_WORD))
+        def x     = This(clazz) DOT bmp
 
         x === (x INT_| mask)
       }
@@ -654,8 +653,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           case DefDef(mods, name, tp, vp, tpt, rhs)
             if sym.hasFlag(LAZY) && rhs != EmptyTree && !clazz.isImplClass =>
               assert(fieldOffset.isDefinedAt(sym))
-              val rhs1 = if (sym.tpe.resultType.typeSymbol == definitions.UnitClass)
-                mkLazyDef(clazz, List(rhs), Literal(()), fieldOffset(sym))
+              val rhs1 = if (sym.tpe.resultType.typeSymbol == UnitClass)
+                mkLazyDef(clazz, List(rhs), UNIT, fieldOffset(sym))
               else {
                 val Block(stats, res) = rhs
                 mkLazyDef(clazz, stats, Select(This(clazz), res.symbol), fieldOffset(sym))
@@ -666,8 +665,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             if needsInitFlag(sym) && rhs != EmptyTree && !clazz.isImplClass && !clazz.isTrait =>
               assert(fieldOffset.isDefinedAt(sym))
 
-              val rhs1 = if (sym.tpe.resultType.typeSymbol == definitions.UnitClass)
-                mkCheckedAccessor(clazz, Literal(()), fieldOffset(sym), stat.pos)
+              val rhs1 = if (sym.tpe.resultType.typeSymbol == UnitClass)
+                mkCheckedAccessor(clazz, UNIT, fieldOffset(sym), stat.pos)
               else {
                 mkCheckedAccessor(clazz, rhs, fieldOffset(sym), stat.pos)
               }
@@ -793,8 +792,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                     // if it is a mixed-in lazy value, complete the accessor
                     if (sym.hasFlag(LAZY) && sym.isGetter) {
                       val rhs1 =
-                        if (sym.tpe.resultType.typeSymbol == definitions.UnitClass)
-                          mkLazyDef(clazz, List(Apply(staticRef(initializer(sym)), List(gen.mkAttributedThis(clazz)))), Literal(()), fieldOffset(sym))
+                        if (sym.tpe.resultType.typeSymbol == UnitClass)
+                          mkLazyDef(clazz, List(Apply(staticRef(initializer(sym)), List(gen.mkAttributedThis(clazz)))), UNIT, fieldOffset(sym))
                         else {
                           val assign = atPos(sym.pos) {
                             Assign(Select(This(sym.accessed.owner), sym.accessed) /*gen.mkAttributedRef(sym.accessed)*/ ,
@@ -803,8 +802,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                           mkLazyDef(clazz, List(assign), Select(This(clazz), sym.accessed), fieldOffset(sym))
                         }
                       rhs1
-                    } else if (sym.getter(sym.owner).tpe.resultType.typeSymbol == definitions.UnitClass) {
-                      Literal(())
+                    } else if (sym.getter(sym.owner).tpe.resultType.typeSymbol == UnitClass) {
+                      UNIT
                     } else {
                       Select(This(clazz), sym.accessed)
                     }
@@ -819,13 +818,13 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                           false
                       }
                     }
-                  if (isOverriddenSetter) Literal(())
+                  if (isOverriddenSetter) UNIT
                   else accessedRef match {
                     case Literal(_) => accessedRef
                     case _ =>
                       val init = Assign(accessedRef, Ident(vparams.head))
                       if (settings.checkInit.value && needsInitFlag(sym.getter(clazz))) {
-                        Block(List(init, mkSetFlag(clazz, fieldOffset(sym.getter(clazz)))), Literal(()))
+                        Block(List(init, mkSetFlag(clazz, fieldOffset(sym.getter(clazz)))), UNIT)
                       } else
                         init
                   }

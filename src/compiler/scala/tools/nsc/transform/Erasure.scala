@@ -975,9 +975,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
                           gen.evalOnce(qual, currentOwner, unit) { q =>
                             gen.mkOr(
                               mkIsInstanceOf(q)(targ.tpe),
-                              atPos(tree.pos) {
-                                Apply(gen.mkAttributedRef(isArrayMethod), List(q()))
-                              })
+                              atPos(tree.pos) { REF(isArrayMethod) APPLY (q()) }
+                            )
                           }
                         }
                       } else tree

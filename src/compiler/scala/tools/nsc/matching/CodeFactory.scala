@@ -18,66 +18,43 @@ trait CodeFactory extends ast.TreeDSL
 
   import global.{typer => _, _}
   import analyzer.Typer
-
   import definitions._
-  import Code._
   import CODE._
 
-  /** Methods to simplify code generation
-   */
-  object Code {
-    // val SOME  = definitions.SomeClass
-
-    object Const {
-      def apply(x: Any) = Literal(Constant(x))
-      def unapply(x: Any) = x match {
-        case Literal(Constant(value)) => Some(value)
-        case _ => None
-      }
+  final def typedValDef(x: Symbol, rhs: Tree)(implicit typer: Typer) = {
+    val finalRhs = x.tpe match {
+      case WildcardType   =>
+        rhs setType null
+        x setInfo typer.typed(rhs).tpe
+        rhs
+      case _              =>
+        typer.typed(rhs, x.tpe)
     }
+    typer typed (VAL(x) === finalRhs)
   }
-
-  final def typedValDef(x: Symbol, rhs: Tree)(implicit typer: Typer) = x.tpe match {
-    case WildcardType =>
-      rhs setType null
-      x setInfo typer.typed(rhs).tpe
-      typer.typed(ValDef(x, rhs))
-    case _ =>
-      typer.typed(ValDef(x, typer.typed(rhs, x.tpe)))
-  }
-
-  final def mkIdent(sym: Symbol)  = Ident(sym) setType sym.tpe
-  final def mk_(tpe: Type)        = Ident(nme.WILDCARD) setType tpe
 
   /** for tree of sequence type, returns tree that drops first i elements */
   final def seqDrop(sel:Tree, ix: Int)(implicit typer : Typer) =
     if (ix == 0) sel else
-    typer.typed(Select(fn(sel, nme.drop, Const(ix)), nme.toSeq))
+    typer typed (fn(sel, nme.drop, LIT(ix)) DOT nme.toSeq)
 
   /** for tree of sequence type, returns tree that represents element at index i */
   final def seqElement(sel:Tree, ix: Int)(implicit typer : Typer) =
-    typer.typed(fn(sel, sel.tpe.member(nme.apply), Const(ix)))
+    typer typed (fn(sel, sel.tpe.member(nme.apply), LIT(ix)))
 
   /** for tree of sequence type, returns boolean tree testing that the sequence has length i */
   final def seqHasLength(sel: Tree, ntpe: Type, i: Int)(implicit typer : Typer) =
-    typer.typed( Equals(fn(sel, ntpe.member(nme.lengthCompare), Const(i)), Const(0)) )     // defs.Seq_length ?
+    typer typed (fn(sel, ntpe.member(nme.lengthCompare), LIT(i)) ANY_== ZERO)     // defs.Seq_length ?
 
   /** for tree of sequence type sel, returns boolean tree testing that length >= i
    */
   final def seqLongerThan(sel:Tree, tpe:Type, i:Int)(implicit typer : Typer) = {
-    val cmp = fn(sel, tpe.member(nme.lengthCompare), Const(i))
-    GTE(typer.typed(cmp), typer.typed(Const(0)))  // defs.Seq_length instead of tpe.member?
+    val cmp = fn(sel, tpe.member(nme.lengthCompare), LIT(i))
+    GTE(typer.typed(cmp), typer.typed(ZERO))  // defs.Seq_length instead of tpe.member?
   }
 
-  final def Equals  (left: Tree, right: Tree): Tree = fn(left, nme.EQ, right)
-  final def Eq      (left: Tree, right: Tree): Tree = fn(left, nme.eq, right)
   final def GTE     (left: Tree, right: Tree): Tree = fn(left, nme.GE, right) // >=
-
-  final def ThrowMatchError(pos: Position, obj: Tree) = atPos(pos) {
-    Throw( New(TypeTree(MatchErrorClass.tpe), List(List(obj))) )
-  }
-
-  final def NotNull(tree: Tree)(implicit typer : Typer) = typer.typed(fn(tree, nme.ne, NULL))
+  final def ThrowMatchError(pos: Position, obj: Tree) = atPos(pos)(THROW(MatchErrorClass, obj))
   final def Get(tree: Tree) = fn(tree, nme.get)
 
   final def squeezedBlock(vds: List[Tree], exp: Tree)(implicit theOwner: Symbol): Tree =

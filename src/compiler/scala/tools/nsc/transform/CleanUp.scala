@@ -224,7 +224,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               addStaticMethodToClass("reflMethod$Method", List(ClassClass.tpe), MethodClass.tpe) {
                 case Pair(reflMethodSym, List(forReceiverSym)) =>
                   BLOCK(
-                    IF (REF(reflClassCacheSym) NE_REF REF(forReceiverSym)) THEN BLOCK(
+                    IF (REF(reflClassCacheSym) ANY_NE REF(forReceiverSym)) THEN BLOCK(
                       REF(reflMethodCacheSym) === ((REF(forReceiverSym) DOT getMethodSym)(LIT(method), REF(reflParamsCacheSym))) ,
                       REF(reflClassCacheSym) === REF(forReceiverSym),
                       UNIT
@@ -260,29 +260,25 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               val reflPolyCacheSym: Symbol =
                 addStaticVariableToClass("reflPoly$Cache", MethodCacheClass.tpe, NEW(TypeTree(EmptyMethodCacheClass.tpe)))
 
-              val reflMethodSym: Symbol =
-                addStaticMethodToClass("reflMethod$Method", List(ClassClass.tpe), MethodClass.tpe)
-                  { case Pair(reflMethodSym, List(forReceiverSym)) =>
-                    val methodSym = reflMethodSym.newVariable(ad.pos, mkTerm("method")) setInfo MethodClass.tpe
+              addStaticMethodToClass("reflMethod$Method", List(ClassClass.tpe), MethodClass.tpe)
+                { case Pair(reflMethodSym, List(forReceiverSym)) =>
+                  val methodSym = reflMethodSym.newVariable(ad.pos, mkTerm("method")) setInfo MethodClass.tpe
 
-                    BLOCK(
-                      VAL(methodSym) === ((REF(reflPolyCacheSym) DOT methodCache_find)(REF(forReceiverSym))) ,
-                      IF (REF(methodSym) OBJ_!= NULL) .
-                        THEN (Return(REF(methodSym)))
-                      ELSE {
-                        def methodSymRHS  = ((REF(forReceiverSym) DOT Class_getMethod)(LIT(method), REF(reflParamsCacheSym)))
-                        def cacheRHS      = ((REF(reflPolyCacheSym) DOT methodCache_add)(REF(forReceiverSym), REF(methodSym)))
-                        BLOCK(
-                          REF(methodSym)        === methodSymRHS,
-                          REF(reflPolyCacheSym) === cacheRHS,
-                          Return(REF(methodSym))
-                        )
-                      }
-                    )
-                  }
-
-              reflMethodSym
-
+                  BLOCK(
+                    VAL(methodSym) === ((REF(reflPolyCacheSym) DOT methodCache_find)(REF(forReceiverSym))) ,
+                    IF (REF(methodSym) OBJ_!= NULL) .
+                      THEN (Return(REF(methodSym)))
+                    ELSE {
+                      def methodSymRHS  = ((REF(forReceiverSym) DOT Class_getMethod)(LIT(method), REF(reflParamsCacheSym)))
+                      def cacheRHS      = ((REF(reflPolyCacheSym) DOT methodCache_add)(REF(forReceiverSym), REF(methodSym)))
+                      BLOCK(
+                        REF(methodSym)        === methodSymRHS,
+                        REF(reflPolyCacheSym) === cacheRHS,
+                        Return(REF(methodSym))
+                      )
+                    }
+                  )
+                }
         }
 
         /* ### HANDLING METHODS NORMALLY COMPILED TO OPERATORS ### */
@@ -575,18 +571,14 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         val tpe = theTry.tpe.widen
         val tempVar = currentOwner.newValue(theTry.pos, unit.fresh.newName(theTry.pos, "exceptionResult"))
           .setInfo(tpe).setFlag(Flags.MUTABLE)
+        def assignBlock(rhs: Tree) = super.transform(BLOCK(Ident(tempVar) === transform(rhs)))
 
-        val newBlock = super.transform(Block(Nil, Assign(Ident(tempVar), transform(block))))
-        val newCatches = for (CaseDef(pattern, guard, body) <- catches) yield {
-          CaseDef(
-            super.transform(pattern),
-            super.transform(guard),
-            Block(Nil, Assign(Ident(tempVar), super.transform(body)))
-          )
-        }
-        val newTry = Try(newBlock, newCatches, super.transform(finalizer))
-        val res = Block(List(ValDef(tempVar, EmptyTree), newTry), Ident(tempVar))
-        localTyper.typed(res)
+        val newBlock    = assignBlock(block)
+        val newCatches  = for (CaseDef(pattern, guard, body) <- catches) yield
+          (CASE(super.transform(pattern)) IF (super.transform(guard))) ==> assignBlock(body)
+        val newTry      = Try(newBlock, newCatches, super.transform(finalizer))
+
+        localTyper typed { BLOCK(VAL(tempVar) === EmptyTree, newTry, Ident(tempVar)) }
 
       /* Adds @serializable annotation to anonymous function classes */
       case cdef @ ClassDef(mods, name, tparams, impl) =>
@@ -594,8 +586,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           val sym = cdef.symbol
           // is this an anonymous function class?
           if (sym.isAnonymousFunction && !sym.hasAnnotation(SerializableAttr))
-            sym.addAnnotation(
-              AnnotationInfo(definitions.SerializableAttr.tpe, List(), List()))
+            sym addAnnotation AnnotationInfo(SerializableAttr.tpe, Nil, Nil)
         }
         super.transform(tree)
 

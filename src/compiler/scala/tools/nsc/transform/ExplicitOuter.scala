@@ -441,7 +441,8 @@ abstract class ExplicitOuter extends InfoTransform
 
                   localTyper.typed(Apply(Ident(guardDef.symbol), vs map Ident))
                 }
-              CaseDef(transform(p), gdcall, transform(b))
+
+              (CODE.CASE(transform(p)) IF gdcall) ==> transform(b)
             }
 
           def isUncheckedAnnotation(tpe: Type) = tpe hasAnnotation UncheckedClass

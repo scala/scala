@@ -11,13 +11,14 @@ package scala.tools.nsc.matching
  *
  *  @author Burak Emir
  */
-trait TransMatcher {
+trait TransMatcher extends ast.TreeDSL {
   self: transform.ExplicitOuter with PatternNodes with ParallelMatching with CodeFactory =>
 
   import global.{ typer => _, _ }
   import analyzer.Typer;
   import definitions._
   import symtab.Flags
+  import CODE._
 
   var cunit: CompilationUnit = _  // memory leak?
   var resultType: Type = _
@@ -68,7 +69,7 @@ trait TransMatcher {
           (v, typedValDef(v, ti))
         }
       )
-      (tmps, vds, ThrowMatchError(selector.pos, treeCopy.Apply(app, fn, tmps map mkIdent)))
+      (tmps, vds, ThrowMatchError(selector.pos, treeCopy.Apply(app, fn, tmps map ID)))
     }
 
     // sets temporaries, variable declarations, and the fail tree
@@ -78,7 +79,7 @@ trait TransMatcher {
       case _ =>
         val root: Symbol      = newVar(selector.pos, selector.tpe, flags)
         val vdef: Tree        = typer.typed(ValDef(root, selector))
-        val failTree: Tree    = ThrowMatchError(selector.pos, mkIdent(root))
+        val failTree: Tree    = ThrowMatchError(selector.pos, ID(root))
         (List(root), List(vdef), failTree)
     }
 
