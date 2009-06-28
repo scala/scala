@@ -136,4 +136,26 @@ object Futures {
     }
     results
   }
+
+  def fromInputChannel[T](inputChannel: InputChannel[T]): Future[T] =
+    new Future[T](inputChannel) {
+      def apply() =
+        if (isSet) value.get.asInstanceOf[T]
+        else inputChannel.receive {
+          case any => value = Some(any); value.get.asInstanceOf[T]
+        }
+      def respond(k: T => Unit): Unit =
+        if (isSet) k(value.get.asInstanceOf[T])
+        else inputChannel.react {
+ 	  case any => value = Some(any); k(value.get.asInstanceOf[T])
+        }
+      def isSet = value match {
+        case None => inputChannel.receiveWithin(0) {
+          case TIMEOUT => false
+          case any => value = Some(any); true
+        }
+        case Some(_) => true
+      }
+    }
+
 }

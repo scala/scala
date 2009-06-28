@@ -12,22 +12,17 @@ package scala.actors
 
 import scala.collection.mutable.Queue
 
+/**
+ * The Reactor trait provides lightweight actors.
+ *
+ * @author Philipp Haller
+ */
 trait Reactor extends OutputChannel[Any] {
-
-  @volatile
-  protected var ignoreSender: Boolean = false
 
   /* The actor's mailbox. */
   protected val mailbox = new MessageQueue
 
   protected var sendBuffer = new Queue[(Any, OutputChannel[Any])]
-
-  /* A list of the current senders. The head of the list is
-   * the sender of the message that was received last.
-   */
-  protected var senders: List[OutputChannel[Any]] =
-    if (ignoreSender) List(null)
-    else Nil
 
   /* If the actor waits in a react, continuation holds the
    * message handler that react was called with.
@@ -88,8 +83,6 @@ trait Reactor extends OutputChannel[Any] {
     new ReactorTask(this, { block })
 
   protected[this] def resumeReceiver(item: (Any, OutputChannel[Any]), onSameThread: Boolean) {
-    if (!ignoreSender)
-      senders = List(item._2)
     // assert continuation != null
     if (onSameThread)
       continuation(item._1)
@@ -98,11 +91,11 @@ trait Reactor extends OutputChannel[Any] {
   }
 
   def !(msg: Any) {
-    send(msg, if (ignoreSender) null else Actor.rawSelf(scheduler))
+    send(msg, null)
   }
 
   def forward(msg: Any) {
-    send(msg, if (ignoreSender) null else Actor.sender)
+    send(msg, null)
   }
 
   def receiver: Actor = this.asInstanceOf[Actor]
@@ -149,15 +142,6 @@ trait Reactor extends OutputChannel[Any] {
     continuation = f
     searchMailbox(mailbox, f.isDefinedAt, false)
     throw Actor.suspendException
-  }
-
-  protected[actors] def sender: OutputChannel[Any] = senders.head
-
-  /**
-   * Replies with <code>msg</code> to the sender.
-   */
-  protected[actors] def reply(msg: Any) {
-    sender ! msg
   }
 
   protected def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) = {

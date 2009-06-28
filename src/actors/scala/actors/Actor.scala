@@ -223,19 +223,22 @@ object Actor {
   /**
    * Returns the actor which sent the last received message.
    */
-  def sender: OutputChannel[Any] = rawSelf.sender
+  def sender: OutputChannel[Any] =
+    rawSelf.asInstanceOf[ReplyReactor].sender
 
   /**
    * Send <code>msg</code> to the actor waiting in a call to
    * <code>!?</code>.
    */
-  def reply(msg: Any): Unit = rawSelf.reply(msg)
+  def reply(msg: Any): Unit =
+    rawSelf.asInstanceOf[ReplyReactor].reply(msg)
 
   /**
    * Send <code>()</code> to the actor waiting in a call to
    * <code>!?</code>.
    */
-  def reply(): Unit = rawSelf.reply(())
+  def reply(): Unit =
+    rawSelf.asInstanceOf[ReplyReactor].reply(())
 
   /**
    * Returns the number of messages in <code>self</code>'s mailbox
@@ -375,7 +378,7 @@ object Actor {
  * @author Philipp Haller
  */
 @serializable
-trait Actor extends Reactor with AbstractActor {
+trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
 
   /* The following two fields are only used when the actor
    * suspends by blocking its underlying thread, for example,
@@ -620,208 +623,6 @@ trait Actor extends Reactor with AbstractActor {
     }
 
     throw Actor.suspendException
-  }
-
-  /**
-   * Sends <code>msg</code> to this actor (asynchronous).
-   */
-  override def !(msg: Any) {
-    send(msg, Actor.rawSelf(scheduler))
-  }
-
-  /**
-   * Forwards <code>msg</code> to this actor (asynchronous).
-   */
-  override def forward(msg: Any) {
-    send(msg, Actor.sender)
-  }
-
-  /**
-   * Sends <code>msg</code> to this actor and awaits reply
-   * (synchronous).
-   *
-   * @param  msg the message to be sent
-   * @return     the reply
-   */
-  def !?(msg: Any): Any = {
-    val replyCh = new Channel[Any](Actor.self(scheduler))
-    send(msg, replyCh)
-    replyCh.receive {
-      case x => x
-    }
-  }
-
-  /**
-   * Sends <code>msg</code> to this actor and awaits reply
-   * (synchronous) within <code>msec</code> milliseconds.
-   *
-   * @param  msec the time span before timeout
-   * @param  msg  the message to be sent
-   * @return      <code>None</code> in case of timeout, otherwise
-   *              <code>Some(x)</code> where <code>x</code> is the reply
-   */
-  def !?(msec: Long, msg: Any): Option[Any] = {
-    val replyCh = new Channel[Any](Actor.self(scheduler))
-    send(msg, replyCh)
-    replyCh.receiveWithin(msec) {
-      case TIMEOUT => None
-      case x => Some(x)
-    }
-  }
-
-  /**
-   * Sends <code>msg</code> to this actor and immediately
-   * returns a future representing the reply value.
-   */
-  def !!(msg: Any): Future[Any] = {
-    val ftch = new Channel[Any](Actor.self(scheduler))
-    val linkedChannel = new AbstractActor {
-      def !(msg: Any) =
-        ftch ! msg
-      def send(msg: Any, replyTo: OutputChannel[Any]) =
-        ftch.send(msg, replyTo)
-      def forward(msg: Any) =
-        ftch.forward(msg)
-      def receiver =
-        ftch.receiver
-      def linkTo(to: AbstractActor) { /* do nothing */ }
-      def unlinkFrom(from: AbstractActor) { /* do nothing */ }
-      def exit(from: AbstractActor, reason: AnyRef) {
-        ftch.send(Exit(from, reason), Actor.this)
-      }
-      // should never be invoked; return dummy value
-      def !?(msg: Any) = msg
-      // should never be invoked; return dummy value
-      def !?(msec: Long, msg: Any): Option[Any] = Some(msg)
-      // should never be invoked; return dummy value
-      def !!(msg: Any): Future[Any] = {
-        val someChan = new Channel[Any](Actor.self(scheduler))
-        new Future[Any](someChan) {
-          def apply() =
-            if (isSet) value.get
-            else inputChannel.receive {
-              case any => value = Some(any); any
-            }
-          def respond(k: Any => Unit): Unit =
-            if (isSet) k(value.get)
-            else inputChannel.react {
- 	      case any => value = Some(any); k(any)
-          }
-          def isSet = value match {
-            case None => inputChannel.receiveWithin(0) {
-              case TIMEOUT => false
-              case any => value = Some(any); true
-            }
-            case Some(_) => true
-          }
-        }
-      }
-      // should never be invoked; return dummy value
-      def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] = {
-        val someChan = new Channel[A](Actor.self(scheduler))
-        new Future[A](someChan) {
-          def apply() =
-            if (isSet) value.get.asInstanceOf[A]
-            else inputChannel.receive {
-              case any => value = Some(any); any
-            }
-          def respond(k: A => Unit): Unit =
- 	    if (isSet) k(value.get.asInstanceOf[A])
-            else inputChannel.react {
-              case any => value = Some(any); k(any)
-            }
-          def isSet = value match {
-            case None => inputChannel.receiveWithin(0) {
-              case TIMEOUT => false
-              case any => value = Some(any); true
-            }
-            case Some(_) => true
-          }
-        }
-      }
-    }
-    linkTo(linkedChannel)
-    send(msg, linkedChannel)
-    new Future[Any](ftch) {
-      var exitReason: Option[Any] = None
-      val handleReply: PartialFunction[Any, Unit] = {
-        case Exit(from, reason) =>
-          exitReason = Some(reason)
-        case any =>
-          value = Some(any)
-      }
-
-      def apply(): Any =
-        if (isSet) {
-          if (!value.isEmpty)
-            value.get
-          else if (!exitReason.isEmpty) {
-            val reason = exitReason.get
-            if (reason.isInstanceOf[Throwable])
-              throw new ExecutionException(reason.asInstanceOf[Throwable])
-            else
-              throw new ExecutionException(new Exception(reason.toString()))
-          }
-        } else inputChannel.receive(handleReply andThen {(x: Unit) => apply()})
-
-      def respond(k: Any => Unit): Unit =
- 	if (isSet)
-          apply()
- 	else
-          inputChannel.react(handleReply andThen {(x: Unit) => k(apply())})
-
-      def isSet = (value match {
-        case None =>
-          val handleTimeout: PartialFunction[Any, Boolean] = {
-            case TIMEOUT =>
-              false
-          }
-          val whatToDo =
-            handleTimeout orElse (handleReply andThen {(x: Unit) => true})
-          inputChannel.receiveWithin(0)(whatToDo)
-        case Some(_) => true
-      }) || !exitReason.isEmpty
-    }
-  }
-
-  /**
-   * Sends <code>msg</code> to this actor and immediately
-   * returns a future representing the reply value.
-   * The reply is post-processed using the partial function
-   * <code>f</code>. This also allows to recover a more
-   * precise type for the reply value.
-   */
-  def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] = {
-    val ftch = new Channel[A](Actor.self(scheduler))
-    send(msg, new OutputChannel[Any] {
-      def !(msg: Any) =
-        ftch ! f(msg)
-      def send(msg: Any, replyTo: OutputChannel[Any]) =
-        ftch.send(f(msg), replyTo)
-      def forward(msg: Any) =
-        ftch.forward(f(msg))
-      def receiver =
-        ftch.receiver
-    })
-    new Future[A](ftch) {
-      def apply() =
-        if (isSet) value.get.asInstanceOf[A]
-        else inputChannel.receive {
-          case any => value = Some(any); value.get.asInstanceOf[A]
-        }
-      def respond(k: A => Unit): Unit =
- 	if (isSet) k(value.get.asInstanceOf[A])
- 	else inputChannel.react {
- 	  case any => value = Some(any); k(value.get.asInstanceOf[A])
- 	}
-      def isSet = value match {
-        case None => inputChannel.receiveWithin(0) {
-          case TIMEOUT => false
-          case any => value = Some(any); true
-        }
-        case Some(_) => true
-      }
-    }
   }
 
   /**

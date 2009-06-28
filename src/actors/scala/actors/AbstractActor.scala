@@ -16,7 +16,7 @@ package scala.actors
  * @version 0.9.18
  * @author Philipp Haller
  */
-trait AbstractActor extends OutputChannel[Any] {
+trait AbstractActor extends OutputChannel[Any] with Replyable[Any, Any] {
 
   private[actors] var exiting = false
 
@@ -25,13 +25,5 @@ trait AbstractActor extends OutputChannel[Any] {
   private[actors] def unlinkFrom(from: AbstractActor): Unit
 
   private[actors] def exit(from: AbstractActor, reason: AnyRef): Unit
-
-  def !?(msg: Any): Any
-
-  def !?(msec: Long, msg: Any): Option[Any]
-
-  def !!(msg: Any): Future[Any]
-
-  def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A]
 
 }

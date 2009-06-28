@@ -59,8 +59,6 @@ class ActorTask extends Runnable {
         a.synchronized {
           if (!a.links.isEmpty)
             a.exitLinked(t)
-          else
-            t.printStackTrace()
         }
       }
     } finally {
