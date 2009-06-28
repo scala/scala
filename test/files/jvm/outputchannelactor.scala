@@ -21,7 +21,6 @@ object Test {
 }
 
 class PingActor(count: Int, pong: Reactor) extends Reactor {
-  ignoreSender = true
   def act() {
     var pingsLeft = count - 1
     pong ! Ping(this)
@@ -44,7 +43,6 @@ class PingActor(count: Int, pong: Reactor) extends Reactor {
 }
 
 class PongActor extends Reactor {
-  ignoreSender = true
   def act() {
     var pongCount = 0
     loop {
