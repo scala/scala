@@ -9,6 +9,7 @@ abstract class LazyVals extends Transform with ast.TreeDSL {
   import global._                  // the global environment
   import definitions._             // standard classes and methods
   import typer.{typed, atOwner}    // methods to type trees
+  import CODE._
 
   val phaseName: String = "lazyvals"
 
@@ -20,8 +21,7 @@ abstract class LazyVals extends Transform with ast.TreeDSL {
 
   /** The phase defined by this transform */
   class Phase(prev: scala.tools.nsc.Phase) extends StdPhase(prev) {
-    def apply(unit: global.CompilationUnit): Unit =
-        newTransformer(unit).transformUnit(unit);
+    def apply(unit: global.CompilationUnit): Unit = newTransformer(unit) transformUnit unit
   }
 
   /**
@@ -92,7 +92,7 @@ abstract class LazyVals extends Transform with ast.TreeDSL {
         case _ => Block(stats, tree)
       }
 
-      val bmps = bitmaps(methSym) map { b => ValDef(b, Literal(Constant(0))) }
+      val bmps = bitmaps(methSym) map (ValDef(_, ZERO))
       if (bmps.isEmpty) rhs else rhs match {
         case Block(assign, l @ LabelDef(name, params, rhs1))
           if (name.toString.equals("_" + methSym.name)
@@ -103,8 +103,6 @@ abstract class LazyVals extends Transform with ast.TreeDSL {
         case _ => prependStats(bmps, rhs)
       }
     }
-
-    import CODE._
 
     /** return a 'lazified' version of rhs. Rhs should conform to the
      *  following schema:
@@ -135,21 +133,20 @@ abstract class LazyVals extends Transform with ast.TreeDSL {
      *  }
      */
     private def mkLazyDef(meth: Symbol, tree: Tree, offset: Int): Tree = {
-      val bitmapSym = getBitmapFor(meth, offset)
-      val mask = Literal(Constant(1 << (offset % FLAGS_PER_WORD)))
+      val bitmapSym           = getBitmapFor(meth, offset)
+      val mask                = LIT(1 << (offset % FLAGS_PER_WORD))
+      def mkBlock(stmt: Tree) = BLOCK(stmt, mkSetFlag(bitmapSym, mask), UNIT)
 
       val (block, res) = tree match {
-        case Block(List(assignment), res) =>
-          (Block(List(assignment, mkSetFlag(bitmapSym, mask)), Literal(Constant(()))), res)
-        case rhs =>
-          assert(meth.tpe.finalResultType.typeSymbol == definitions.UnitClass)
-          (Block(List(rhs, mkSetFlag(bitmapSym, mask)), Literal(Constant(()))), Literal(()))
+        case Block(List(assignment), res) => (mkBlock(assignment),  res)
+        case rhs                          => (mkBlock(rhs),         UNIT)
       }
+      assert(res != UNIT || meth.tpe.finalResultType.typeSymbol == UnitClass)
 
-      val result = atPos(tree.pos) {
-        IF ((Ident(bitmapSym) INT_& mask) INT_== ZERO) THEN block ENDIF
-      }
-      typed(Block(List(result), res))
+      atPos(tree.pos)(typed {
+        def body = { IF ((Ident(bitmapSym) INT_& mask) INT_== ZERO) THEN block ENDIF }
+        BLOCK(body, res)
+      })
     }
 
     private def mkSetFlag(bmp: Symbol, mask: Tree): Tree =

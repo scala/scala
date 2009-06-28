@@ -139,7 +139,10 @@ trait TreeDSL {
       val arg = if (msg == null) Nil else List(msg.TOSTRING)
       Throw(New(TypeTree(sym.tpe), List(arg)))
     }
-    def NEW(tpe: Tree, args: Tree*) = New(tpe, List(args.toList))
+    def NEW(tpe: Tree, args: Tree*)   = New(tpe, List(args.toList))
+    def NEW(sym: Symbol, args: Tree*) =
+      if (args.isEmpty) New(TypeTree(sym.tpe))
+      else New(TypeTree(sym.tpe), List(args.toList))
 
     def VAL(sym: Symbol) = new ValStart(sym)
     def DEF(sym: Symbol) = new DefStart(sym)

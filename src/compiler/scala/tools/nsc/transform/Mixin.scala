@@ -459,14 +459,14 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     /** Create a static reference to given symbol <code>sym</code> of the
      *  form <code>M.sym</code> where M is the symbol's implementation module.
      */
-    private def staticRef(sym: Symbol) = {
+    private def staticRef(sym: Symbol): Tree = {
       sym.owner.info  //todo: needed?
       sym.owner.owner.info //todo: needed?
       if (sym.owner.sourceModule == NoSymbol) {
         assert(false, "" + sym + " in " + sym.owner + " in " + sym.owner.owner +
                       " " + sym.owner.owner.info.decls.toList)//debug
       }
-      Select(gen.mkAttributedRef(sym.owner.sourceModule), sym)
+      REF(sym.owner.sourceModule) DOT sym
     }
 
     /** Add all new definitions to a non-trait class
@@ -542,9 +542,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       def completeSuperAccessor(stat: Tree) = stat match {
         case DefDef(mods, name, tparams, List(vparams), tpt, EmptyTree)
         if (stat.symbol hasFlag SUPERACCESSOR) =>
-          val rhs0 =
-            Apply(Select(Super(clazz, nme.EMPTY.toTypeName), stat.symbol.alias),
-                  vparams map (vparam => Ident(vparam.symbol)))
+          val rhs0 = (Super(clazz, nme.EMPTY.toTypeName) DOT stat.symbol.alias)(vparams map (v => Ident(v.symbol)): _*)
           val rhs1 = localTyper.typed(atPos(stat.pos)(rhs0), stat.symbol.tpe.resultType)
           val rhs2 = atPhase(currentRun.mixinPhase)(transform(rhs1))
           if (settings.debug.value)
