@@ -754,12 +754,12 @@ class Worker(val fileManager: FileManager) extends Actor {
 
       case "scalap" => {
 
-        def decompileFile(clazz: Class[_]) = {
+        def decompileFile(clazz: Class[_], packObj: Boolean) = {
           val byteCode = ByteCode.forClass(clazz)
           val classFile = ClassFileParser.parse(byteCode)
           val Some(sig) = classFile.attribute("ScalaSig").map(_.byteCode).map(ScalaSigAttributeParsers.parse)
           import scala.tools.scalap.Main._
-          parseScalaSignature(sig)
+          parseScalaSignature(sig, packObj)
         }
 
         runInContext(file, kind, (logFile: File, outDir: File) => {
@@ -781,12 +781,13 @@ class Worker(val fileManager: FileManager) extends Actor {
             } else {
 
               // 3. Decompile file and compare results
-              val className = sourceDirName.capitalize
+              val isPackageObject = sourceDir.getName.startsWith("package")
+              val className = sourceDirName.capitalize + (if (!isPackageObject) "" else ".package")
               val url = outDir.toURI.toURL
               val loader = new URLClassLoader(Array(url), getClass.getClassLoader)
               val clazz = loader.loadClass(className)
 
-              val result = decompileFile(clazz)
+              val result = decompileFile(clazz, isPackageObject)
 
               try {
                 val fstream = new FileWriter(logFile);

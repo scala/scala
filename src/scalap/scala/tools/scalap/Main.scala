@@ -61,16 +61,28 @@ object Main {
     out.flush()
   }
 
-  def parseScalaSignature(scalaSig: ScalaSig) = {
+  def isPackageObjectFile(s: String) = s != null && (s.endsWith(File.separator + "package") || s == "package")
+
+  def parseScalaSignature(scalaSig: ScalaSig, isPackageObject: Boolean) = {
     val baos = new ByteArrayOutputStream
     val stream = new PrintStream(baos)
     val syms = scalaSig.topLevelClasses ::: scalaSig.topLevelObjects
     syms.first.parent match {
     //Partial match
       case Some(p) if (p.name != "<empty>") => {
-        stream.print("package ");
-        stream.print(p.path);
-        stream.print("\n")
+        val path = p.path
+        if (!isPackageObject) {
+          stream.print("package ");
+          stream.print(path);
+          stream.print("\n")
+        } else {
+          val i = path.lastIndexOf(".")
+          if (i > 0) {
+            stream.print("package ");
+            stream.print(path.substring(0, i))
+            stream.print("\n")
+          }
+        }
       }
       case _ =>
     }
@@ -83,11 +95,11 @@ object Main {
   }
 
 
-  def decompileScala(bytes: Array[Byte]) = {
+  def decompileScala(bytes: Array[Byte], isPackageObject: Boolean) = {
     val byteCode = ByteCode(bytes)
     val classFile = ClassFileParser.parse(byteCode)
     classFile.attribute(SCALA_SIG).map(_.byteCode).map(ScalaSigAttributeParsers.parse) match {
-      case Some(scalaSig) => Console.println(parseScalaSignature(scalaSig))
+      case Some(scalaSig) => Console.println(parseScalaSignature(scalaSig, isPackageObject))
       case None => //Do nothing
     }
   }
@@ -112,7 +124,7 @@ object Main {
       }
       val bytes = cfile.toByteArray
       if (isScalaFile(bytes)) {
-        decompileScala(bytes)
+        decompileScala(bytes, isPackageObjectFile(filename))
       } else {
         // construct a reader for the classfile content
         val reader = new ByteArrayReader(cfile.toByteArray)

@@ -32,7 +32,12 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         case o: ObjectSymbol =>
           if (!isCaseClassObject(o)) {
             indent
-            printObject(level, o)
+            if (o.name == "package") {
+              // print package object
+              printPackageObject(level, o)
+            } else {
+              printObject(level, o)
+            }
           }
         case c: ClassSymbol if !refinementClass(c) && !c.isModule =>
           indent
@@ -76,7 +81,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   def printModifiers(symbol: Symbol) {
     if (symbol.isSealed) print("sealed ")
     if (symbol.isImplicit) print("implicit ")
-    if (symbol.isFinal) print("final ")
+    if (symbol.isFinal && !symbol.isInstanceOf[ObjectSymbol]) print("final ")
     if (symbol.isPrivate) print("private ")
     else if (symbol.isProtected) print("protected ")
     if (symbol.isOverride) print("override ")
@@ -120,11 +125,25 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         val baos = new ByteArrayOutputStream
         val stream = new PrintStream(baos)
         val printer = new ScalaSigPrinter(stream, printPrivates)
-        printer.printMethodType(m.infoType, false)
+//        printer.printMethodType(m.infoType, false)
         baos.toString
       case None =>
         ""
     }
+  }
+
+  def printPackageObject(level: Int, o: ObjectSymbol) {
+    printModifiers(o)
+    print("package ")
+    print("object ")
+    val poName = o.symbolInfo.owner.name
+    print(processName(poName))
+    val TypeRefType(prefix, classSymbol: ClassSymbol, typeArgs) = o.infoType
+    printType(classSymbol)
+    print(" {\n")
+    printChildren(level, classSymbol)
+    printWithIndent(level, "}\n")
+
   }
 
   def printObject(level: Int, o: ObjectSymbol) {
@@ -148,33 +167,49 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     if (res.length > 1) StringUtil.decapitalize(res.substring(0, 1)) else res.toLowerCase
   })
 
-  def printMethodType(t: Type, printResult: Boolean): Unit = {
-    def _pmt(mt: Type {def resultType: Type; def paramTypes: Seq[Type]}) = {
-      print(genParamNames(mt).zip(mt.paramTypes.toList.map(toString(_)(TypeFlags(true)))).map(p => p._1 + " : " + p._2).mkString(
-        "(" + (mt match {case ImplicitMethodType(_, _) => "implicit "; case _ => ""})
+  def printMethodType(t: Type, printResult: Boolean)(implicit cont : => Unit): Unit = {
+
+    def _pmt(mt: Type {def resultType: Type; def paramSymbols: Seq[Symbol]}) = {
+
+      val paramEntries = mt.paramSymbols.map({
+        case ms: MethodSymbol => ms.name + " : " + toString(ms.infoType)(TypeFlags(true))
+        case _ => "^___^"
+      })
+
+      // Printe parameter clauses
+      print(paramEntries.mkString(
+        "(" + (mt match {case _ : ImplicitMethodType => "implicit "; case _ => ""})
         , ", ", ")"))
+
+      // Print result type
       mt.resultType match {
-        case mt: MethodType => printMethodType(mt, printResult)
-        case imt: ImplicitMethodType => printMethodType(imt, printResult)
+        case mt: MethodType => printMethodType(mt, printResult)({})
+        case imt: ImplicitMethodType => printMethodType(imt, printResult)({})
         case x => if (printResult) {
           print(" : ");
           printType(x)
         }
       }
     }
+
     t match {
-      case mt@MethodType(resType, paramTypes) => _pmt(mt)
-      case mt@ImplicitMethodType(resType, paramTypes) => _pmt(mt)
+      case mt@MethodType(resType, paramSymbols) => _pmt(mt)
+      case mt@ImplicitMethodType(resType, paramSymbols) => _pmt(mt)
       case pt@PolyType(mt, typeParams) => {
         print(typeParamString(typeParams))
-        printMethodType(mt, printResult)
+        printMethodType(mt, printResult)({})
       }
       //todo consider another method types
       case x => print(" : "); printType(x)
     }
+
+    // Print rest of the symbol output
+    cont
   }
 
   def printMethod(level: Int, m: MethodSymbol, indent: () => Unit) {
+    def cont = print(" = { /* compiled code */ }")
+
     val n = m.name
     if (underCaseClass(m) && n == CONSTRUCTOR_NAME) return
     if (m.isAccessor && n.endsWith("_$eq")) return
@@ -190,18 +225,15 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     n match {
       case CONSTRUCTOR_NAME =>
         print("this")
-        printMethodType(m.infoType, false)
-        print(" = { /* compiled code */ }")
+        printMethodType(m.infoType, false)(cont)
       case name =>
         val nn = processName(name)
         print(nn)
-        printMethodType(m.infoType, true)
-        if (!m.isDeferred) { // Print body only for non-abstract metods
-          print(" = { /* compiled code */ }")
-        }
+        printMethodType(m.infoType, true)(
+          {if (!m.isDeferred) print(" = { /* compiled code */ }" /* Print body only for non-abstract metods */ )}
+          )
     }
     print("\n")
-    printChildren(level, m)
   }
 
   def printAlias(level: Int, a: AliasSymbol) {
@@ -276,7 +308,10 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         case _ => "scala.Seq" + typeArgString(typeArgs)
       }
       case "scala.<byname>" => "=> " + toString(typeArgs.first)
-      case _ => StringUtil.trimStart(processName(symbol.path) + typeArgString(typeArgs), "<empty>.")
+      case _ => {
+        val path = StringUtil.cutSubstring(symbol.path)(".package") //remove package object reference
+        StringUtil.trimStart(processName(path) + typeArgString(typeArgs), "<empty>.")
+      }
     })
     case TypeBoundsType(lower, upper) => " >: " + toString(lower) + " <: " + toString(upper)
     case RefinedType(classSym, typeRefs) => sep + typeRefs.map(toString).mkString("", " with ", "")

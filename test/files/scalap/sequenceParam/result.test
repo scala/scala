@@ -1,0 +1,3 @@
+class SequenceParam extends java.lang.Object with scala.ScalaObject {
+  def this(s : scala.Predef.String, i : scala.Int*) = { /* compiled code */ }
+}
