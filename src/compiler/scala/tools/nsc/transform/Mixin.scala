@@ -564,10 +564,10 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                        .setInfo(IntClass.tpe)
                        .setFlag(PROTECTED)
           atPhase(currentRun.typerPhase) {
-            sym.addAnnotation(AnnotationInfo(VolatileAttr.tpe, List(), List()))
+            sym addAnnotation AnnotationInfo(VolatileAttr.tpe, Nil, Nil)
           }
           clazz.info.decls.enter(sym)
-          addDef(clazz.pos, ValDef(sym, ZERO))
+          addDef(clazz.pos, VAL(sym) === ZERO)
         }
         sym
       }
@@ -643,11 +643,9 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        *  the class constructor is changed to set the initialized bits.
        */
       def addCheckedGetters(clazz: Symbol, stats: List[Tree]): List[Tree] = {
-        def findLazyAssignment(stats: List[Tree]): Tree =
-          (stats find {
-            case Assign(lhs, _) if lhs.symbol.hasFlag(LAZY) => true
-            case _ => false
-          }).get // if there's no assignment then it's a bug and we crash
+        def findLazyAssignment(stats: List[Tree]): Tree = (
+          for (s @ Assign(lhs, _) <- stats ; if lhs.symbol hasFlag LAZY) yield s
+        ) head // if there's no assignment then it's a bug and we crash
 
         val stats1 = for (stat <- stats; sym = stat.symbol) yield stat match {
           case DefDef(mods, name, tp, vp, tpt, rhs)
@@ -665,11 +663,9 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             if needsInitFlag(sym) && rhs != EmptyTree && !clazz.isImplClass && !clazz.isTrait =>
               assert(fieldOffset.isDefinedAt(sym))
 
-              val rhs1 = if (sym.tpe.resultType.typeSymbol == UnitClass)
-                mkCheckedAccessor(clazz, UNIT, fieldOffset(sym), stat.pos)
-              else {
-                mkCheckedAccessor(clazz, rhs, fieldOffset(sym), stat.pos)
-              }
+              val rhs1 = (mkCheckedAccessor(clazz, _: Tree, fieldOffset(sym), stat.pos))(
+                if (sym.tpe.resultType.typeSymbol == UnitClass) UNIT else rhs
+              )
               treeCopy.DefDef(stat, mods, name, tp, vp, tpt, rhs1)
 
           case DefDef(mods, name, tp, vp, tpt, rhs) if sym.isConstructor =>

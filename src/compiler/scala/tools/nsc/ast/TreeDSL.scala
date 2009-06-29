@@ -28,10 +28,14 @@ trait TreeDSL {
 
     def ID(sym: Symbol) = Ident(sym) setType sym.tpe
 
+    // You might think these could be vals, but empirically I have found that
+    // at least in the case of UNIT the compiler breaks if you re-use trees.
+    // However we need stable identifiers to have attractive pattern matching.
+    // So it's inconsistent until I devise a better way.
     val TRUE          = LIT(true)
     val FALSE         = LIT(false)
-    val NULL          = LIT(null)
-    val UNIT          = LIT(())
+    def NULL          = LIT(null)
+    def UNIT          = LIT(())
     val ZERO          = LIT(0)
 
     def WILD(tpe: Type = null) =
