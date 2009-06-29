@@ -387,9 +387,13 @@ abstract class TypeFlowAnalysis {
           stack push toTypeKind(const.tpe)
 
         case LOAD_ARRAY_ITEM(kind) =>
-          val Pair(idxKind, ARRAY(elem)) = stack.pop2
-          assert(idxKind == INT || idxKind == CHAR || idxKind == SHORT || idxKind == BYTE)
-          stack.push(elem)
+          stack.pop2 match {
+            case (idxKind, ARRAY(elem)) =>
+              assert(idxKind == INT || idxKind == CHAR || idxKind == SHORT || idxKind == BYTE)
+              stack.push(elem)
+            case (_, _) =>
+              stack.push(kind)
+          }
 
         case LOAD_LOCAL(local) =>
           val t = bindings(local)
