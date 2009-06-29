@@ -7,6 +7,8 @@
 
 package scala.tools.nsc.backend.opt
 
+
+import scala.util.control.Breaks._
 import scala.collection.mutable.{Map, HashMap, Set, HashSet}
 import scala.tools.nsc.symtab._
 
@@ -343,7 +345,7 @@ abstract class Inliners extends SubComponent {
 
                             /* Remove this method from the cache, as the calls-private relation
                                might have changed after the inlining. */
-                            callsPrivate -= m;
+                            usesNonPublics -= m;
                           } else {
                             if (settings.debug.value)
                               log("inline failed for " + inc + " because:\n\tinc.symbol != m.symbol: " + (inc.symbol != m.symbol)
@@ -391,7 +393,11 @@ abstract class Inliners extends SubComponent {
     }
 
     /** Cache whether a method calls private members. */
-    val callsPrivate: Map[IMethod, Boolean] = new HashMap;
+    val usesNonPublics: Map[IMethod, NonPublicRefs.Value] = new HashMap;
+
+    object NonPublicRefs extends Enumeration {
+      val Public, Protected, Private = Value
+    }
 
     def isRecursive(m: IMethod): Boolean = m.recursive
 
@@ -405,48 +411,56 @@ abstract class Inliners extends SubComponent {
      *    - synthetic private members are made public in this pass.
      */
     def isSafeToInline(caller: IMethod, callee: IMethod, stack: TypeStack): Boolean = {
-      var callsPrivateMember = false
+      def makePublic(f: Symbol): Boolean =
+        if ((callee.sourceFile ne null)
+            && (f.hasFlag(Flags.SYNTHETIC | Flags.PARAMACCESSOR))) {
+          if (settings.debug.value) log("Making not-private symbol out of synthetic: " + f)
+          f.setFlag(Flags.notPRIVATE)
+          true
+        } else false
+
+      import NonPublicRefs._
+      var callsNonPublic = Public
 
       if (callee.recursive) return false
 
-      callsPrivate get (callee) match {
+      usesNonPublics.get(callee) match {
         case Some(b) =>
-          callsPrivateMember = b
+          callsNonPublic = b
         case None =>
-          for (b <- callee.code.blocks)
-            for (i <- b.toList)
+          breakable {
+            for (b <- callee.code.blocks; i <- b.toList)
               i match {
                 case CALL_METHOD(m, style) =>
                   if (m.hasFlag(Flags.PRIVATE) ||
-                      (style.isSuper && !m.isClassConstructor))
-                    callsPrivateMember = true;
+                      (style.isSuper && !m.isClassConstructor)) {
+                    callsNonPublic = Private
+                    break
+                  }
+                  if (m.hasFlag(Flags.PROTECTED)) callsNonPublic = Protected
 
                 case LOAD_FIELD(f, _) =>
-                  if (f.hasFlag(Flags.PRIVATE))
-                    if ((callee.sourceFile ne null)
-                        && (f.hasFlag(Flags.SYNTHETIC) || f.hasFlag(Flags.PARAMACCESSOR))) {
-                      if (settings.debug.value)
-                        log("Making not-private symbol out of synthetic: " + f);
-                      f.setFlag(Flags.notPRIVATE)
-                    } else
-                      callsPrivateMember = true;
+                  if (f.hasFlag(Flags.PRIVATE) && !makePublic(f)) {
+                    callsNonPublic = Private;
+                    break
+                  }
+                  if (f.hasFlag(Flags.PROTECTED)) callsNonPublic = Protected
 
                 case STORE_FIELD(f, _) =>
-                  if (f.hasFlag(Flags.PRIVATE))
-                    if ((callee.sourceFile ne null)
-                        && (f.hasFlag(Flags.SYNTHETIC) || f.hasFlag(Flags.PARAMACCESSOR))) {
-                      if (settings.debug.value)
-                        log("Making not-private symbol out of synthetic: " + f);
-                      f.setFlag(Flags.notPRIVATE)
-                    } else
-                      callsPrivateMember = true;
+                  if (f.hasFlag(Flags.PRIVATE) && !makePublic(f)) {
+                    callsNonPublic = Private;
+                    break
+                  }
+                  if (f.hasFlag(Flags.PROTECTED)) callsNonPublic = Protected
 
                 case _ => ()
               }
-          callsPrivate += (callee -> callsPrivateMember)
-        }
+          }
+          usesNonPublics += (callee -> callsNonPublic)
+      }
 
-      if (callsPrivateMember && (caller.symbol.owner != callee.symbol.owner))
+      if ((callsNonPublic == Private && (caller.symbol.owner != callee.symbol.owner))
+          || callsNonPublic == Protected && !(caller.symbol.owner.tpe <:< callee.symbol.owner.tpe))
         return false;
 
       if (stack.length > (1 + callee.symbol.info.paramTypes.length) &&
