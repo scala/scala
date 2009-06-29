@@ -7,7 +7,7 @@
 package scala.tools.nsc.transform
 
 import symtab._
-import Flags._
+import Flags.{ CASE => _, _ }
 import scala.collection.mutable.{HashMap, ListBuffer}
 import matching.{TransMatcher, PatternNodes, CodeFactory, ParallelMatching}
 
@@ -26,6 +26,7 @@ abstract class ExplicitOuter extends InfoTransform
 {
   import global._
   import definitions._
+  import CODE._
 
   /** The following flags may be set by this phase: */
   override def phaseNewFlags: Long = notPRIVATE | notPROTECTED | lateFINAL
@@ -420,6 +421,13 @@ abstract class ExplicitOuter extends InfoTransform
             val tpe    = new MethodType(method newSyntheticValueParams fmls, BooleanClass.tpe)
             method setInfo tpe
 
+            // XXX integrate
+            // localTyper typed (DEF(method) === {
+            //   new ChangeOwnerTraverser(currentOwner, method) traverse guard
+            //   new TreeSymSubstituter(vs, method.paramss.head) traverse guard
+            //   guard
+            // })
+            //
             localTyper.typed(
               DefDef(method, {
                 new ChangeOwnerTraverser(currentOwner, method) traverse guard
@@ -439,10 +447,10 @@ abstract class ExplicitOuter extends InfoTransform
                   val guardDef = makeGuardDef(vs, guard)
                   nguard       += transform(guardDef) // building up list of guards
 
-                  localTyper.typed(Apply(Ident(guardDef.symbol), vs map Ident))
+                  localTyper typed (Ident(guardDef.symbol) APPLY(vs map Ident))
                 }
 
-              (CODE.CASE(transform(p)) IF gdcall) ==> transform(b)
+              (CASE(transform(p)) IF gdcall) ==> transform(b)
             }
 
           def isUncheckedAnnotation(tpe: Type) = tpe hasAnnotation UncheckedClass

@@ -121,9 +121,9 @@ trait PatternNodes extends ast.TreeDSL
   def mkEqualsRef(xs: List[Type]) = typeRef(NoPrefix, definitions.EqualsPatternClass, xs)
 
   def normalizedListPattern(pats:List[Tree], tptArg:Type): Tree = pats match {
-    case Nil   => gen.mkNil
-    case (sp @ Strip(_, _: Star)) :: xs => makeBind(definedVars(sp), WILD(sp.tpe))
-    case x::xs =>
+    case Nil                            => gen.mkNil
+    case (sp @ Strip(_, _: Star)) :: _  => makeBind(definedVars(sp), WILD(sp.tpe))
+    case x :: xs                        =>
       var resType: Type = null;
       val consType: Type = definitions.ConsClass.primaryConstructor.tpe match {
         case mt @ MethodType(args, res @ TypeRef(pre,sym,origArgs)) =>
@@ -133,23 +133,33 @@ trait PatternNodes extends ast.TreeDSL
           val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "matching$dummy")
           MethodType(dummyMethod.newSyntheticValueParams(List(tptArg, listType)), resType)
       }
-      Apply(TypeTree(consType), List(x,normalizedListPattern(xs,tptArg))) setType resType
+      Apply(TypeTree(consType), List(x, normalizedListPattern(xs, tptArg))) setType resType
   }
 
+  // if Apply target !isType and takes no args, returns target prefix and symbol
   object Apply_Value {
-    def unapply(x: Apply) = if (!x.fun.isType && x.args.isEmpty) Some(x.tpe.prefix, x.symbol) else None
+    def unapply(x: Any) = x match {
+      case x @ Apply(fun, args) if !fun.isType && args.isEmpty  => Some(x.tpe.prefix, x.symbol)
+      case _                                                    => None
+    }
   }
 
+  // if Apply tpe !isCaseClass and Apply_Value says false, return the Apply target
   object Apply_Function {
-    def isApplyFunction(o: Apply) = !o.tpe.isCaseClass || !Apply_Value.unapply(o).isEmpty /*see t301*/
-    def unapply(x: Apply) = if (x.args.isEmpty && isApplyFunction(x)) Some(x.fun) else None
+    /* see t301 */
+    def isApplyFunction(o: Apply) = !o.tpe.isCaseClass || !Apply_Value.unapply(o).isEmpty
+    def unapply(x: Any) = x match {
+      case x @ Apply(fun, Nil) if isApplyFunction(x)  => Some(fun)
+      case _                                          => None
+    }
   }
 
-  object Apply_CaseClass_NoArgs {
-    def unapply(x: Apply) = if (x.fun.isType && x.args.isEmpty) Some(x.tpe) else None
-  }
-  object Apply_CaseClass_WithArgs {
-    def unapply(x: Apply) = x.fun.isType
+  // if Apply target isType (? what does this imply exactly) returns type and arguments.
+  object Apply_CaseClass {
+    def unapply(x: Any) = x match {
+      case x @ Apply(fun, args) if fun.isType => Some(x.tpe, args)
+      case _                                  => None
+    }
   }
 
   // TODO - this doesn't work! For some reason this sometimes returns false when encapsulated
@@ -202,12 +212,15 @@ trait PatternNodes extends ast.TreeDSL
     case b @ Bind(_,pat) => val (vs, p) = strip(pat); (vs + b.symbol, p)
     case _               => (emptySymbolSet, x)
   }
-  final def strip1(x: Tree): Set[Symbol] = strip(x)._1
-  final def strip2(x: Tree): Tree = strip(x)._2;
 
   object Strip  { def unapply(x: Tree): Option[(Set[Symbol], Tree)] = Some(strip(x))  }
-  object Strip1 { def unapply(x: Tree): Option[Set[Symbol]]         = Some(strip1(x)) }
-  object Strip2 { def unapply(x: Tree): Option[Tree]                = Some(strip2(x)) }
+
+  object BoundVariables {
+    def unapply(x: Tree): Option[List[Symbol]] = Some(Pattern(x).boundVariables)
+  }
+  object Stripped {
+    def unapply(x: Tree): Option[Tree] = Some(Pattern(x).stripped)
+  }
 
   final def definedVars(x: Tree): List[Symbol] = {
     implicit def listToStream[T](xs: List[T]): Stream[T] = xs.toStream

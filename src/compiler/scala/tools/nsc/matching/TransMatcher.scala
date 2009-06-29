@@ -50,6 +50,7 @@ trait TransMatcher extends ast.TreeDSL {
     implicit val rep = new RepFactory(handleOuter)
     val flags = if (doCheckExhaustive) Nil else List(Flags.TRANS_FLAG)
 
+    def matchError(obj: Tree) = atPos(selector.pos)(THROW(MatchErrorClass, obj))
     def caseIsOk(c: CaseDef) = c match {
       case CaseDef(_: Apply, _, _)            => true
       case CaseDef(Ident(nme.WILDCARD), _, _) => true
@@ -69,7 +70,7 @@ trait TransMatcher extends ast.TreeDSL {
           (v, typedValDef(v, ti))
         }
       )
-      (tmps, vds, ThrowMatchError(selector.pos, treeCopy.Apply(app, fn, tmps map ID)))
+      (tmps, vds, matchError(treeCopy.Apply(app, fn, tmps map ID)))
     }
 
     // sets temporaries, variable declarations, and the fail tree
@@ -79,14 +80,14 @@ trait TransMatcher extends ast.TreeDSL {
       case _ =>
         val root: Symbol      = newVar(selector.pos, selector.tpe, flags)
         val vdef: Tree        = typer.typed(ValDef(root, selector))
-        val failTree: Tree    = ThrowMatchError(selector.pos, ID(root))
+        val failTree: Tree    = matchError(ID(root))
         (List(root), List(vdef), failTree)
     }
 
     implicit val fail: Tree = theFailTree
     val irep = initRep(tmps, cases, rep)
-    val mch = typer.typed(irep.toTree)
-    var dfatree = typer.typed(Block(vds, mch))
+    val mch = typer typed irep.toTree
+    var dfatree = typer typed Block(vds, mch)
 
     // cannot use squeezedBlock because of side-effects, see t275
     for ((cs, bx) <- cases.zipWithIndex)

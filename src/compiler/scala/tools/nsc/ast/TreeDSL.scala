@@ -62,6 +62,7 @@ trait TreeDSL {
       def ANY_NE  (other: Tree)     = fn(target, nme.ne, toAnyRef(other))
       def ANY_EQ  (other: Tree)     = fn(target, nme.eq, toAnyRef(other))
       def ANY_==  (other: Tree)     = fn(target, Any_==, other)
+      def ANY_>=  (other: Tree)     = fn(target, nme.GE, other)
       def OBJ_!=  (other: Tree)     = fn(target, Object_ne, other)
 
       def INT_|   (other: Tree)     = fn(target, getMember(IntClass, nme.OR), other)
@@ -81,6 +82,11 @@ trait TreeDSL {
 
       /** Assignment */
       def ===(rhs: Tree)            = Assign(target, rhs)
+
+      /** for tree of sequence type, returns tree that drops first i elements */
+      def DROP(count: Int): Tree =
+        if (count == 0) target
+        else (target DOT nme.drop)(LIT(count)) DOT nme.toSeq
 
       /** Casting & type tests -- working our way toward understanding exactly
        *  what differs between the different forms of IS and AS.
