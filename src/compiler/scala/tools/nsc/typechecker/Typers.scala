@@ -2253,21 +2253,13 @@ trait Typers { self: Analyzer =>
       }
     }
 
-    def typedAnnotation(constr: Tree): AnnotationInfo =
-      typedAnnotation(constr, EXPRmode)
-
-    def typedAnnotation(constr: Tree, mode: Int): AnnotationInfo =
-      typedAnnotation(constr, mode, NoSymbol)
-
-    def typedAnnotation(constr: Tree, mode: Int, selfsym: Symbol): AnnotationInfo =
-      typedAnnotation(constr, mode, selfsym, AnnotationClass, false)
-
     /**
      * Convert an annotation constructor call into an AnnotationInfo.
      *
      * @param annClass the expected annotation class
      */
-    def typedAnnotation(ann: Tree, mode: Int, selfsym: Symbol, annClass: Symbol, requireJava: Boolean): AnnotationInfo = {
+    def typedAnnotation(ann: Tree, mode: Int = EXPRmode, selfsym: Symbol = NoSymbol,
+                        annClass: Symbol = AnnotationClass, requireJava: Boolean = false): AnnotationInfo = {
       lazy val annotationError = AnnotationInfo(ErrorType, Nil, Nil)
       var hasError: Boolean = false
       def error(pos: Position, msg: String) = {

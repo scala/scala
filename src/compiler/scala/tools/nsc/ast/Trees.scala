@@ -1101,8 +1101,10 @@ trait Trees {
       new ArrayValue(elemtpt, trees).copyAttrs(tree)
     def Function(tree: Tree, vparams: List[ValDef], body: Tree) =
       new Function(vparams, body).copyAttrs(tree)
-    def Assign(tree: Tree, lhs: Tree, rhs: Tree) =
-      new Assign(lhs, rhs).copyAttrs(tree)
+    def Assign(tree: Tree, lhs: Tree, rhs: Tree) = tree match {
+      case t: AssignOrNamedArg => new AssignOrNamedArg(lhs, rhs).copyAttrs(tree)
+      case _ => new Assign(lhs, rhs).copyAttrs(tree)
+    }
     def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree) =
       new If(cond, thenp, elsep).copyAttrs(tree)
     def Match(tree: Tree, selector: Tree, cases: List[CaseDef]) =
