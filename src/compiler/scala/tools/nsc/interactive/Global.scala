@@ -1,6 +1,9 @@
 package scala.tools.nsc.interactive
 
+import java.io.{ PrintWriter, StringWriter }
+
 import scala.collection.mutable.{LinkedHashMap, SynchronizedMap}
+import scala.concurrent.SyncVar
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{SourceFile, Position, RangePosition, OffsetPosition, NoPosition, WorkScheduler}
 import scala.tools.nsc.reporters._
@@ -125,7 +128,30 @@ self =>
     }
   }
 
-  def hoverInfo(): String = ""
+  def debugInfo(source : SourceFile, start : Int, length : Int): String = {
+    val end = start+length
+    val pos = rangePos(source, start, start, end)
+
+    val tree = locateTree(pos)
+    val sw = new StringWriter
+    val pw = new PrintWriter(sw)
+    treePrinters.create(pw).print(tree)
+    pw.flush
+
+    val typed = new SyncVar[Either[Tree, Throwable]]
+    askTypeAt(pos, typed)
+    val typ = typed.get.left.toOption match {
+      case Some(tree) =>
+        val sw = new StringWriter
+        val pw = new PrintWriter(sw)
+        treePrinters.create(pw).print(tree)
+        pw.flush
+        sw.toString
+      case None => "<None>"
+    }
+
+    source.content.view.drop(start).take(length).mkString+" : "+source.path+" ("+start+", "+end+")\n\nlocateTree:\n"+sw.toString+"\n\naskTypeAt:\n"+typ
+  }
 
   // ----------------- The Background Runner Thread -----------------------
 

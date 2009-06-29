@@ -23,7 +23,8 @@ Export-Package:
  scala.tools.nsc.symtab,
  scala.tools.nsc.symtab.classfile,
  scala.tools.nsc.typechecker,
- scala.tools.nsc.util
+ scala.tools.nsc.util,
+ ch.epfl.lamp.fjbg
 Require-Bundle: 
  org.apache.ant,
  scala.library
