@@ -94,10 +94,10 @@ List[Int]'s type parameters do not match type T's expected parameters: class Lis
   ^
 error: type mismatch;
  found   : List[Int]
- required: List[List[List[List[X forSome { type X }]]]]
+ required: List[List[scala.List[List[X forSome { type X }]]]]
 names-defaults-neg.scala:80: error: type mismatch;
  found   : List[Int]
- required: List[List[?]]
+ required: scala.List[scala.List[?]]
   def test6[T](x: List[List[T]] = List(1,2)) = x
                                       ^
 names-defaults-neg.scala:83: error: type mismatch;

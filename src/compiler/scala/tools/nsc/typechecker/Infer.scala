@@ -292,7 +292,10 @@ trait Infer {
       withDisambiguation(tp1, tp2) { global.explainTypes(tp1, tp2) }
 
     /** If types `tp1' `tp2' contain different type variables with same name
-     *  differentiate the names by including owner information
+     *  differentiate the names by including owner information.  Also, if the
+     *  type error is because of a conflict between two identically named
+     *  classes and one is in package scala, fully qualify the name so one
+     *  need not deduce why "java.util.Iterator" and "Iterator" don't match.
      */
     private def withDisambiguation[T](tp1: Type, tp2: Type)(op: => T): T = {
 
@@ -306,13 +309,22 @@ trait Infer {
       for {
         t1 @ TypeRef(_, sym1, _) <- tp1
         t2 @ TypeRef(_, sym2, _) <- tp2
-        if sym1 != sym2 && t1.toString == t2.toString
+        if sym1 != sym2
       } {
-        val name = sym1.name
-        explainName(sym1)
-        explainName(sym2)
-        if (sym1.owner == sym2.owner) sym2.name = newTypeName("(some other)"+sym2.name)
-        patches += ((sym1, sym2, name))
+        if (t1.toString == t2.toString) { // type variable collisions
+          val name = sym1.name
+          explainName(sym1)
+          explainName(sym2)
+          if (sym1.owner == sym2.owner) sym2.name = newTypeName("(some other)"+sym2.name)
+          patches += ((sym1, sym2, name))
+        }
+        else if (sym1.name == sym2.name) { // symbol name collisions where one is in scala._
+          val name = sym1.name
+          def scalaQualify(s: Symbol) =
+            if (s.owner.isScalaPackageClass) s.name = newTypeName("scala." + s.name)
+          List(sym1, sym2) foreach scalaQualify
+          patches += ((sym1, sym2, name))
+        }
       }
 
       val result = op
