@@ -38,9 +38,16 @@ trait TreeDSL {
     def UNIT          = LIT(())
     val ZERO          = LIT(0)
 
-    def WILD(tpe: Type = null) =
-      if (tpe == null) Ident(nme.WILDCARD)
-      else Ident(nme.WILDCARD) setType tpe
+    object WILD {
+      def apply(tpe: Type = null) =
+        if (tpe == null) Ident(nme.WILDCARD)
+        else Ident(nme.WILDCARD) setType tpe
+
+      def unapply(other: Any) = other match {
+        case Ident(nme.WILDCARD)  => true
+        case _                    => false
+      }
+    }
 
     def fn(lhs: Tree, op:   Name, args: Tree*)  = Apply(Select(lhs, op), args.toList)
     def fn(lhs: Tree, op: Symbol, args: Tree*)  = Apply(Select(lhs, op), args.toList)

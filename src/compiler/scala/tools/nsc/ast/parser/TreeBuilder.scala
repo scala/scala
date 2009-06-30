@@ -34,14 +34,14 @@ abstract class TreeBuilder extends TreeDSL
   private object patvarTransformer extends Transformer {
     override def transform(tree: Tree): Tree = tree match {
       case Ident(name) if (treeInfo.isVarPattern(tree) && name != nme.WILDCARD) =>
-        atPos(tree.pos)(Bind(name, atPos(tree) (Ident(nme.WILDCARD))))
+        atPos(tree.pos)(Bind(name, atPos(tree)(WILD())))
       case Typed(id @ Ident(name), tpt) if (treeInfo.isVarPattern(id) && name != nme.WILDCARD) =>
         atPos(tree.pos.withPoint(id.pos.point)) {
           Bind(name, atPos(tree.pos.withStart(tree.pos.point)) {
             // XXX question: how do these differ:
             // Typed(Ident(nme.WILDCARD), tpt) // annotation (eliminated by explicitouter)
             // Ident(nme.WILDCARD) setType tpt //
-            Typed(Ident(nme.WILDCARD), tpt)
+            Typed(WILD(), tpt)
           })
         }
       case Apply(fn @ Apply(_, _), args) =>
@@ -168,27 +168,20 @@ abstract class TreeBuilder extends TreeDSL
   /** A type tree corresponding to (possibly unary) intersection type */
   def makeIntersectionTypeTree(tps: List[Tree]): Tree =
     if (tps.tail.isEmpty) tps.head
-    else CompoundTypeTree(Template(tps, emptyValDef, List()))
+    else CompoundTypeTree(Template(tps, emptyValDef, Nil))
 
   /** Create tree representing a while loop */
-  def makeWhile(lname: Name, cond: Tree, body: Tree): Tree = {
-    val continu = Ident(lname) APPLY ()
-    val rhs     = IF (cond) THEN BLOCK(body, continu) ELSE UNIT
-
-    LabelDef(lname, Nil, rhs)
-  }
+  def makeWhile(lname: Name, cond: Tree, body: Tree): Tree =
+    LabelDef(lname, Nil, IF (cond) THEN BLOCK(body, Ident(lname) APPLY ()) ELSE UNIT)
 
   /** Create tree representing a do-while loop */
-  def makeDoWhile(lname: Name, body: Tree, cond: Tree): Tree = {
-    val continu = Apply(Ident(lname), List())
-    val rhs = Block(List(body), If(cond, continu, Literal(())))
-    LabelDef(lname, Nil, rhs)
-  }
+  def makeDoWhile(lname: Name, body: Tree, cond: Tree): Tree =
+    LabelDef(lname, Nil, BLOCK(body, IF (cond) THEN (Ident(lname) APPLY ()) ELSE UNIT))
 
   /** Create block of statements `stats'  */
   def makeBlock(stats: List[Tree]): Tree =
-    if (stats.isEmpty) Literal(())
-    else if (!stats.last.isTerm) Block(stats, Literal(()))
+    if (stats.isEmpty) UNIT
+    else if (!stats.last.isTerm) Block(stats, UNIT)
     else if (stats.length == 1) stats.head
     else Block(stats.init, stats.last)
 
@@ -206,9 +199,7 @@ abstract class TreeBuilder extends TreeDSL
               Select(rhs, nme.filter),
               List(
                 makeVisitor(
-                  List(
-                    CaseDef(pat1.syntheticDuplicate, EmptyTree, TRUE),
-                    CaseDef(Ident(nme.WILDCARD), EmptyTree, FALSE)),
+                  List(CASE(pat1.syntheticDuplicate) ==> TRUE, DEFAULT ==> FALSE),
                   false,
                   nme.CHECK_IF_REFUTABLE_STRING
                 )))
@@ -221,7 +212,7 @@ abstract class TreeBuilder extends TreeDSL
     ValDef(Modifiers(PARAM | SYNTHETIC), pname, TypeTree(), EmptyTree)
 
   def makeSyntheticTypeParam(pname: Name, bounds: Tree) =
-    TypeDef(Modifiers(DEFERRED | SYNTHETIC), pname, List(), bounds)
+    TypeDef(Modifiers(DEFERRED | SYNTHETIC), pname, Nil, bounds)
 
   abstract class Enumerator { def pos: Position }
   case class ValFrom(pos: Position, pat: Tree, rhs: Tree) extends Enumerator
