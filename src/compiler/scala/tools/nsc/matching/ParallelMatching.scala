@@ -377,13 +377,13 @@ trait ParallelMatching extends ast.TreeDSL {
     final def tree(implicit theOwner: Symbol, failTree: Tree) = {
       val (uacall, vdefs, srep, frep) = this.getTransition
       val succ = srep.toTree
-      val fail = frep.map(_.toTree) getOrElse failTree
+      val fail = frep map (_.toTree) getOrElse (failTree)
       val cond =
-        if (uacall.symbol.tpe.isBoolean) typer.typed(ID(uacall.symbol))
+        if (uacall.symbol.tpe.isBoolean) typer typed ID(uacall.symbol)
         else uacall.symbol IS_DEFINED
 
       typer typed (squeezedBlock(
-        List(rep.handleOuter(uacall)),
+        List(rep handleOuter uacall),
         IF(cond) THEN squeezedBlock(vdefs, succ) ELSE fail
       ))
     }

@@ -16,6 +16,7 @@ trait TreeDSL {
 
   import global._
   import definitions._
+  import gen.{ scalaDot }
 
   object CODE {
     object LIT extends (Any => Literal) {
@@ -182,12 +183,25 @@ trait TreeDSL {
     def BLOCK(xs: Tree*)  = Block(xs.init.toList, xs.last)
     def NOT(tree: Tree)   = Select(tree, getMember(BooleanClass, nme.UNARY_!))
 
-    //
-    // Unused, from the pattern matcher:
-    // def SEQELEM(tpe: Type): Type = (tpe.widen baseType SeqClass) match {
-    //   case NoType   => Predef.error("arg " + tpe + " not subtype of Seq[A]")
-    //   case t        => t typeArgs 0
-    // }
+    private val _SOME     = scalaDot(nme.Some)
+    def SOME(xs: Tree*)   = Apply(_SOME, List(makeTupleTerm(xs.toList, true)))
+
+    /** Some of this is basically verbatim from TreeBuilder, but we do not want
+     *  to get involved with him because he's an untyped only sort.
+     */
+    private def tupleName(count: Int, f: (String) => Name = newTermName(_: String)) =
+      scalaDot(f("Tuple" + count))
+
+    def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
+      case Nil                        => UNIT
+      case List(tree) if flattenUnary => tree
+      case _                          => Apply(tupleName(trees.length), trees)
+    }
+    def makeTupleType(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
+      case Nil                        => gen.scalaUnitConstr
+      case List(tree) if flattenUnary => tree
+      case _                          => AppliedTypeTree(tupleName(trees.length, newTypeName), trees)
+    }
 
     /** Implicits - some of these should probably disappear **/
     implicit def mkTreeMethods(target: Tree): TreeMethods = new TreeMethods(target)
