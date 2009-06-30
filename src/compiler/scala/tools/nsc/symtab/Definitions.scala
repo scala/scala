@@ -169,7 +169,7 @@ trait Definitions {
     lazy val SwitchClass: Symbol = getClass("scala.annotation.switch")
     lazy val ExperimentalClass: Symbol = getClass("scala.annotation.experimental")
 
-    var EqualsPatternClass: Symbol = _
+    lazy val EqualsPatternClass: Symbol = newClass(ScalaPackageClass, nme.EQUALS_PATTERN_NAME, Nil)
 
     val MaxTupleArity = 22
     val TupleClass: Array[Symbol] = new Array(MaxTupleArity + 1)
@@ -740,14 +740,10 @@ trait Definitions {
       ByNameParamClass = newCovariantPolyClass(
         ScalaPackageClass, nme.BYNAME_PARAM_CLASS_NAME, tparam => AnyClass.typeConstructor)
 
-      EqualsPatternClass = newClass(ScalaPackageClass, nme.EQUALS_PATTERN_NAME, List());
-      {
-        val tparam = newTypeParam(EqualsPatternClass, 0)
-        EqualsPatternClass.setInfo(
-          PolyType(
-            List(tparam),
-            ClassInfoType(List(AnyClass.typeConstructor), newClassScope(EqualsPatternClass), EqualsPatternClass)))
-      }
+      EqualsPatternClass setInfo PolyType(
+        List(newTypeParam(EqualsPatternClass, 0)),
+        ClassInfoType(List(AnyClass.typeConstructor), newClassScope(EqualsPatternClass), EqualsPatternClass)
+      )
 
       /* <unapply> */
       //UnsealedClass = getClass("scala.unsealed") //todo: remove once 2.4 is out.

@@ -115,6 +115,8 @@ trait ParallelMatching extends ast.TreeDSL {
     }
 
     final def getAlternativeBranches: List[Tree] = {
+
+
       def get_BIND(pctx: Tree => Tree, p: Tree): List[Tree] = p match {
         case b @ Bind(n, p)   => get_BIND((x: Tree) => pctx(treeCopy.Bind(b, n, x) setType x.tpe), p)
         case Alternative(ps)  => ps map pctx
@@ -328,7 +330,7 @@ trait ParallelMatching extends ast.TreeDSL {
       val ures = newVarCapture(ua.pos, app.tpe)
       val rhs = Apply(fxn, scrut.id :: appargs.tail) setType ures.tpe
       val uacall = typedValDef(ures, rhs)
-      val zipped = pats.zip(rest.row)
+      val zipped = pats zip rest.row
       val nrowsOther = zipped.tail flatMap
         { case (Stripped(sameUnapplyCall(_)), _) => Nil ; case (pat, r) => List(r.insert(pat)) }
 
@@ -627,14 +629,14 @@ trait ParallelMatching extends ast.TreeDSL {
   }
 
   case class Row(pat: List[Tree], subst: Bindings, guard: Guard, bx: Int) {
-    def insert(h: Tree)                               = Row(h :: pat, subst, guard, bx)
-    def insert(hs: List[Tree])                        = Row(hs ::: pat, subst, guard, bx)           // prepends supplied tree
-    def replace(hs: List[Tree])                       = Row(hs, subst, guard, bx)                   // substitutes for patterns
-    def rebind(b: Bindings)                           = Row(pat, b, guard, bx)                      // substitutes for bindings
-    def insert2(hs: List[Tree], vs: Iterable[Symbol], temp: Symbol) =                               // prepends and prepends
-      Row(hs ::: pat, subst.add(vs, temp), guard, bx)
+    def insert(h: Tree)                               = copy(pat = h :: pat)
+    def insert(hs: List[Tree])                        = copy(pat = hs ::: pat)    // prepends supplied tree
+    def replace(hs: List[Tree])                       = copy(pat = hs)            // substitutes for patterns
+    def rebind(b: Bindings)                           = copy(subst = b)           // substitutes for bindings
+    def insert2(hs: List[Tree], vs: Iterable[Symbol], temp: Symbol) =             // prepends and prepends
+      copy(pat = hs ::: pat, subst = subst.add(vs, temp))
 
-    def insert(p: Pattern)                            = Row(p.tree :: pat, subst, guard, bx)        // transitioning to patterns
+    def insert(p: Pattern)                            = copy(pat = p.tree :: pat) // transitioning to patterns
 
     /** returns true if the patterns in this row cover a type symbols "combination" and there is no guard
      *  @param comb pairs of (column index, type symbol)
@@ -696,7 +698,7 @@ trait ParallelMatching extends ast.TreeDSL {
 
     final def cleanup(tree: Tree)(implicit theOwner: Symbol): Tree = {
       object lxtt extends Transformer {
-        override def transform(tree:Tree): Tree = tree match {
+        override def transform(tree: Tree): Tree = tree match {
           case blck @ Block(vdefs, ld @ LabelDef(name,params,body)) =>
             val bx = labelIndex(ld.symbol)
             if (bx >= 0 && !isReachedTwice(bx)) squeezedBlock(vdefs,body)
@@ -706,12 +708,12 @@ trait ParallelMatching extends ast.TreeDSL {
             super.transform(cond)
           case If(cond1, If(cond2, thenp, elsep1), elsep2) if (elsep1 equalsStructure elsep2) =>
             super.transform( IF (cond1 AND cond2) THEN thenp ELSE elsep1 )
-          case If(cond1, If(cond2, thenp, Apply(jmp,List())), ld:LabelDef) if (jmp.symbol eq ld.symbol) =>
+          case If(cond1, If(cond2, thenp, Apply(jmp, Nil)), ld: LabelDef) if (jmp.symbol eq ld.symbol) =>
             super.transform( IF (cond1 AND cond2) THEN thenp ELSE ld )
           case t => super.transform(t)
         }
       }
-      val res = lxtt.transform(tree)
+      val res = lxtt transform tree
       cleanup()
       res
     }
@@ -759,20 +761,21 @@ trait ParallelMatching extends ast.TreeDSL {
 
       // if some bx is not reached twice, its LabelDef is replaced with body itself
       markReachedTwice(bx)
-      val args: List[Ident] = vss(bx).flatMap(subst(_))
+      val args  = vss(bx) map subst flatten // flatMap (subst(_))
       val label = labels(bx)
-      val body = targets(bx)
-      val fmls = label.tpe.paramTypes
+      val body  = targets(bx)
+      val fmls  = label.tpe.paramTypes
 
-      // sanity checks
+      // same number of arguments as formal parameters
       if (fmls.length != args.length) {
         cunit.error(body.pos, "consistency problem in target generation ! I have args "+
           args+" and need to jump to a label with fmls "+fmls)
         throw FatalError("consistency problem")
       }
-      fmls.zip(args).find(x => !(x._2.tpe <:< x._1)) match {
-        case Some(Tuple2(f, a)) => cunit.error(body.pos, "consistency problem ! "+a.tpe+" "+f) ; throw FatalError("consistency problem")
-        case None =>
+      // each argument conforms to formal
+      for ((f, a) <- fmls zip args ; if !(a.tpe <:< f)) {
+        cunit.error(body.pos, "consistency problem ! "+a.tpe+" "+f)
+        throw FatalError("consistency problem")
       }
 
       body match {
@@ -859,21 +862,23 @@ trait ParallelMatching extends ast.TreeDSL {
     final def toTree(implicit theOwner: Symbol, failTree: Tree, rep: RepFactory): Tree =
       this.applyRule.tree
 
-    private def setsToCombine: List[(Int, immutable.Set[Symbol])] = for {
-      (sym, i) <- temp.zipWithIndex
-      if sym hasFlag Flags.MUTABLE          // indicates that have not yet checked exhaustivity
-      if !(sym hasFlag Flags.TRANS_FLAG)    // indicates @unchecked
-      if sym.tpe.typeSymbol hasFlag Flags.SEALED
-    } yield {
-      sym resetFlag Flags.MUTABLE
-      // this should enumerate all cases... however, also the superclass is taken if it is not abstract
-      def candidates(tpesym: Symbol): immutable.Set[Symbol] = {
-        def countCandidates(x: Symbol) = if (x hasFlag Flags.ABSTRACT) candidates(x) else candidates(x) + x
-        if (tpesym hasFlag Flags.SEALED) tpesym.children.flatMap(countCandidates)
-        else emptySymbolSet
+    private def toUse(s: Symbol) =
+       (s hasFlag Flags.MUTABLE) &&                 // indicates that have not yet checked exhaustivity
+      !(s hasFlag Flags.TRANS_FLAG) &&              // indicates @unchecked
+       (s.tpe.typeSymbol hasFlag Flags.SEALED)
+
+    // the superclass is taken if it is not abstract
+    private def countSuper(s: Symbol): Set[Symbol]  = if (s hasFlag Flags.ABSTRACT) emptySymbolSet else Set(s)
+    private def countSymbol(s: Symbol): Set[Symbol] = candidates(s) ++ countSuper(s)
+    private def candidates(s: Symbol): Set[Symbol]  =
+      if (s hasFlag Flags.SEALED) s.children flatMap countSymbol
+      else emptySymbolSet
+
+    private def setsToCombine: List[(Int, Set[Symbol])] =
+      for ((sym, i) <- temp.zipWithIndex ; if toUse(sym)) yield {
+        sym resetFlag Flags.MUTABLE
+        (i, candidates(sym.tpe.typeSymbol))
       }
-      (i, candidates(sym.tpe.typeSymbol))
-    }
 
     // computes cartesian product, keeps indices available
     private def combine(colcom: List[(Int, Set[Symbol])]): List[List[(Int, Symbol)]] = colcom match {
