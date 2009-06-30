@@ -61,15 +61,16 @@ extends Source
   val reader = new BufferedReader(new InputStreamReader(inputStream, decoder), bufferSize)
 
   override val iter = new Iterator[Char] {
-    private def getc(): Char =
-      try     { reader.read().toChar }
+    private def getc(): Int =
+      try     { reader.read() }
       catch   { case e: CharacterCodingException => codec receivedMalformedInput e }
 
-    var buf_char = getc
-    def hasNext = reader.ready()
+    private[this] var buf_char = getc
+    def peek = buf_char
+    def hasNext = { buf_char != -1 }
     def next = {
-      val c = buf_char
-      if (hasNext) buf_char = getc
+      val c = buf_char.toChar
+      buf_char = getc
       c
     }
   }
