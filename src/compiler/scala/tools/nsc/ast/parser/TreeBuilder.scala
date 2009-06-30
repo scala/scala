@@ -10,11 +10,13 @@ import symtab.Flags._
 import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.util.Position
 
-abstract class TreeBuilder extends TreeDSL
-{
+/** Methods for building trees, used in the parser.  All the trees
+ *  returned by this class must be untyped.
+ */
+abstract class TreeBuilder {
+
   val global: Global
   import global._
-  import CODE._
 
   def freshName(prefix: String): Name
   def freshName(): Name = freshName("x$")
@@ -34,14 +36,11 @@ abstract class TreeBuilder extends TreeDSL
   private object patvarTransformer extends Transformer {
     override def transform(tree: Tree): Tree = tree match {
       case Ident(name) if (treeInfo.isVarPattern(tree) && name != nme.WILDCARD) =>
-        atPos(tree.pos)(Bind(name, atPos(tree)(WILD())))
+        atPos(tree.pos)(Bind(name, atPos(tree) (Ident(nme.WILDCARD))))
       case Typed(id @ Ident(name), tpt) if (treeInfo.isVarPattern(id) && name != nme.WILDCARD) =>
         atPos(tree.pos.withPoint(id.pos.point)) {
           Bind(name, atPos(tree.pos.withStart(tree.pos.point)) {
-            // XXX question: how do these differ:
-            // Typed(Ident(nme.WILDCARD), tpt) // annotation (eliminated by explicitouter)
-            // Ident(nme.WILDCARD) setType tpt //
-            Typed(WILD(), tpt)
+            Typed(Ident(nme.WILDCARD), tpt)
           })
         }
       case Apply(fn @ Apply(_, _), args) =>
@@ -63,18 +62,14 @@ abstract class TreeBuilder extends TreeDSL
   private object getvarTraverser extends Traverser {
     val buf = new ListBuffer[(Name, Tree, Position)]
     def init: Traverser = { buf.clear; this }
-    def isVar(name: Name) = (name != nme.WILDCARD) && (buf.iterator forall (name !=))
-
     override def traverse(tree: Tree): Unit = tree match {
       case Bind(name, Typed(tree1, tpt)) =>
-        if (isVar(name))
+        if ((name != nme.WILDCARD) && (buf.iterator forall (name !=)))
           buf += ((name, if (treeInfo.mayBeTypePat(tpt)) TypeTree() else tpt, tree.pos))
-
         traverse(tree1)
       case Bind(name, tree1) =>
-        if (isVar(name))
+        if ((name != nme.WILDCARD) && (buf.iterator forall (name !=)))
           buf += ((name, TypeTree(), tree.pos))
-
         traverse(tree1)
       case _ =>
         super.traverse(tree)
@@ -95,14 +90,15 @@ abstract class TreeBuilder extends TreeDSL
   }
 
   def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
-    case Nil                        => UNIT
+    case Nil => Literal(())
     case List(tree) if flattenUnary => tree
-    case _                          => makeTuple(trees, false)
+    case _ => makeTuple(trees, false)
   }
+
   def makeTupleType(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
-    case Nil                        => scalaUnitConstr
+    case Nil => scalaUnitConstr
     case List(tree) if flattenUnary => tree
-    case _                          => AppliedTypeTree(scalaDot(newTypeName("Tuple" + trees.length)), trees)
+    case _ => AppliedTypeTree(scalaDot(newTypeName("Tuple" + trees.length)), trees)
   }
 
   def stripParens(t: Tree) = t match {
@@ -129,32 +125,35 @@ abstract class TreeBuilder extends TreeDSL
   def makeBinop(isExpr: Boolean, left: Tree, op: Name, right: Tree): Tree = {
     val arguments = right match {
       case Parens(args) => args
-      case _            => List(right)
+      case _ => List(right)
     }
-
-    if (!isExpr) Ident(op.encode) APPLY (stripParens(left) :: arguments)
-    else if (treeInfo isLeftAssoc op) (stripParens(left) DOT op.encode)(arguments: _*)
-    else {
-      val x = freshName()
-      BLOCK(
-        ValDef(Modifiers(SYNTHETIC), x, TypeTree(), stripParens(left)),
-        (stripParens(right) DOT op.encode)(Ident(x))
-      )
+    if (isExpr) {
+      if (treeInfo.isLeftAssoc(op)) {
+        Apply(Select(stripParens(left), op.encode), arguments)
+      } else {
+        val x = freshName()
+        Block(
+          List(ValDef(Modifiers(SYNTHETIC), x, TypeTree(), stripParens(left))),
+          Apply(Select(stripParens(right), op.encode), List(Ident(x))))
+      }
+    } else {
+      Apply(Ident(op.encode), stripParens(left) :: arguments)
     }
   }
 
   /** Create tree representing an object creation <new parents { stats }> */
   def makeNew(parents: List[Tree], self: ValDef, stats: List[Tree], argss: List[List[Tree]]): Tree =
-    (parents, stats) match {
-      case (Nil, _)         => makeNew(List(scalaAnyRefConstr), self, stats, argss)
-      case (x :: Nil, Nil)  => New(x, argss)
-      case _                =>
-        val x = nme.ANON_CLASS_NAME.toTypeName
-        BLOCK(
-          ClassDef(Modifiers(FINAL), x, Nil,
-            Template(parents, self, NoMods, List(Nil), argss, stats)),
-          New(Ident(x), List(Nil))
-        )
+    if (parents.isEmpty)
+      makeNew(List(scalaAnyRefConstr), self, stats, argss)
+    else if (parents.tail.isEmpty && stats.isEmpty)
+      New(parents.head, argss)
+    else {
+      val x = nme.ANON_CLASS_NAME.toTypeName
+      Block(
+        List(ClassDef(
+          Modifiers(FINAL), x, Nil,
+          Template(parents, self, NoMods, List(Nil), argss, stats))),
+        New(Ident(x), List(Nil)))
     }
 
   /** Create a tree represeting an assignment &lt;lhs = rhs&gt; */
@@ -171,17 +170,23 @@ abstract class TreeBuilder extends TreeDSL
     else CompoundTypeTree(Template(tps, emptyValDef, Nil))
 
   /** Create tree representing a while loop */
-  def makeWhile(lname: Name, cond: Tree, body: Tree): Tree =
-    LabelDef(lname, Nil, IF (cond) THEN BLOCK(body, Ident(lname) APPLY ()) ELSE UNIT)
+  def makeWhile(lname: Name, cond: Tree, body: Tree): Tree = {
+    val continu = Apply(Ident(lname), Nil)
+    val rhs = If(cond, Block(List(body), continu), Literal(()))
+    LabelDef(lname, Nil, rhs)
+  }
 
   /** Create tree representing a do-while loop */
-  def makeDoWhile(lname: Name, body: Tree, cond: Tree): Tree =
-    LabelDef(lname, Nil, BLOCK(body, IF (cond) THEN (Ident(lname) APPLY ()) ELSE UNIT))
+  def makeDoWhile(lname: Name, body: Tree, cond: Tree): Tree = {
+    val continu = Apply(Ident(lname), Nil)
+    val rhs = Block(List(body), If(cond, continu, Literal(())))
+    LabelDef(lname, Nil, rhs)
+  }
 
   /** Create block of statements `stats'  */
   def makeBlock(stats: List[Tree]): Tree =
-    if (stats.isEmpty) UNIT
-    else if (!stats.last.isTerm) Block(stats, UNIT)
+    if (stats.isEmpty) Literal(())
+    else if (!stats.last.isTerm) Block(stats, Literal(()))
     else if (stats.length == 1) stats.head
     else Block(stats.init, stats.last)
 
@@ -199,7 +204,9 @@ abstract class TreeBuilder extends TreeDSL
               Select(rhs, nme.filter),
               List(
                 makeVisitor(
-                  List(CASE(pat1.syntheticDuplicate) ==> TRUE, DEFAULT ==> FALSE),
+                  List(
+                    CaseDef(pat1.syntheticDuplicate, EmptyTree, Literal(true)),
+                    CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))),
                   false,
                   nme.CHECK_IF_REFUTABLE_STRING
                 )))
@@ -273,16 +280,16 @@ abstract class TreeBuilder extends TreeDSL
     }
 
     def makeCombination(meth: Name, qual: Tree, pat: Tree, body: Tree): Tree =
-      (qual DOT meth)(makeClosure(pat, body))
+      Apply(Select(qual, meth), List(makeClosure(pat, body)));
 
     def patternVar(pat: Tree): Option[Name] = pat match {
-      case Bind(name, _)  => Some(name)
-      case _              => None
+      case Bind(name, _) => Some(name)
+      case _ => None
     }
 
     def makeBind(pat: Tree): Tree = pat match {
       case Bind(_, _) => pat
-      case _          => Bind(freshName(), pat)
+      case _ => Bind(freshName(), pat)
     }
 
     def makeValue(pat: Tree): Tree = pat match {
@@ -376,7 +383,7 @@ abstract class TreeBuilder extends TreeDSL
 
   /** Create tree for case definition &lt;case pat if guard => rhs&gt; */
   def makeCaseDef(pat: Tree, guard: Tree, rhs: Tree): CaseDef =
-    (CASE(patvarTransformer transform pat) IF guard) ==> rhs
+    CaseDef(patvarTransformer.transform(pat), guard, rhs)
 
   /** Create tree for pattern definition &lt;val pat0 = rhs&gt; */
   def makePatDef(pat: Tree, rhs: Tree): List[Tree] =
@@ -396,25 +403,31 @@ abstract class TreeBuilder extends TreeDSL
       //                  val/var x_1 = t$._1
       //                  ...
       //                  val/var x_N = t$._N
-      val pat1        = patvarTransformer.transform(pat)
-      val vars        = getVariables(pat1)
-      def flags       = Modifiers(PRIVATE | LOCAL | SYNTHETIC | (mods.flags & LAZY))
-      val matchExpr   = atPos(rhs.pos) {
-        makeUnchecked(rhs) MATCH (
-          makeSynthetic(atPos(rhs.pos) { CASE(pat1) ==> makeTupleTerm(vars map (v => Ident(v._1)), true) })
-        )
+      val pat1 = patvarTransformer.transform(pat)
+      val vars = getVariables(pat1)
+      val matchExpr = atPos(rhs.pos){
+        Match(
+          makeUnchecked(rhs),
+          List(
+            makeSynthetic(
+              atPos(rhs.pos) {
+                CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (_._1) map Ident, true))
+              })))
+
       }
-
       vars match {
-        case List((vname, tpt, pos))  => List(ValDef(mods, vname, tpt, matchExpr))
-        case _                        =>
-          val x             = freshName()
-          def body(i: Int)  = Select(Ident(x), newTermName("_" + i))
-
-          ValDef(flags, x, TypeTree(), matchExpr) :: (
-            for (((vname, tpt, pos), cnt) <- vars.zipWithIndex) yield
-              atPos(pos)( ValDef(mods, vname, tpt, body(cnt + 1)) )
-          )
+        case List((vname, tpt, pos)) =>
+          List(ValDef(mods, vname, tpt, matchExpr))
+        case _ =>
+          val tmp = freshName()
+          val firstDef = ValDef(Modifiers(PRIVATE | LOCAL | SYNTHETIC | (mods.flags & LAZY)),
+                                tmp, TypeTree(), matchExpr)
+          var cnt = 0
+          val restDefs = for ((vname, tpt, pos) <- vars) yield atPos(pos) {
+            cnt = cnt + 1
+            ValDef(mods, vname, tpt, Select(Ident(tmp), newTermName("_" + cnt)))
+          }
+          firstDef :: restDefs
       }
   }
 
