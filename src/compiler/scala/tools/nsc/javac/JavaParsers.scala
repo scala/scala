@@ -98,11 +98,7 @@ trait JavaParsers extends JavaScanners {
 
     // --------- tree building -----------------------------
 
-    def rootId(name: Name) =
-      Select(Ident(nme.ROOTPKG), name)
-
-    def scalaDot(name: Name): Tree =
-      Select(rootId(nme.scala_) setSymbol ScalaPackage, name)
+    import gen.{ rootId, scalaDot }
 
     def javaDot(name: Name): Tree =
       Select(rootId(nme.java), name)

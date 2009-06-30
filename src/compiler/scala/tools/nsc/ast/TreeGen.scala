@@ -13,23 +13,20 @@ import symtab.SymbolTable
 /** XXX to resolve: TreeGen only assumes global is a SymbolTable, but
  *  TreeDSL at the moment expects a Global.  Can we get by with SymbolTable?
  */
-abstract class TreeGen {
-
+abstract class TreeGen
+{
   val global: SymbolTable
 
   import global._
   import definitions._
 
-  def scalaDot(name: Name): Tree =
-    Select(Ident(nme.scala_) setSymbol ScalaPackage, name)
-  def scalaAnyRefConstr: Tree =
-    scalaDot(nme.AnyRef.toTypeName)
-  def scalaUnitConstr: Tree =
-    scalaDot(nme.Unit.toTypeName)
-  def scalaScalaObjectConstr: Tree =
-    scalaDot(nme.ScalaObject.toTypeName)
-  def productConstr: Tree =
-    scalaDot(nme.Product.toTypeName)
+  def rootId(name: Name)          = Select(Ident(nme.ROOTPKG), name)
+  def rootScalaDot(name: Name)    = Select(rootId(nme.scala_) setSymbol ScalaPackage, name)
+  def scalaDot(name: Name)        = Select(Ident(nme.scala_) setSymbol ScalaPackage, name)
+  def scalaAnyRefConstr           = scalaDot(nme.AnyRef.toTypeName)
+  def scalaUnitConstr             = scalaDot(nme.Unit.toTypeName)
+  def scalaScalaObjectConstr      = scalaDot(nme.ScalaObject.toTypeName)
+  def productConstr               = scalaDot(nme.Product.toTypeName)
 
   def scalaFunctionConstr(argtpes: List[Tree], restpe: Tree): Tree =
     AppliedTypeTree(

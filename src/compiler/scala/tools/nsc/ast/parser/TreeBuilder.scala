@@ -19,19 +19,13 @@ abstract class TreeBuilder extends TreeDSL
   def freshName(prefix: String): Name
   def freshName(): Name = freshName("x$")
 
-  def rootId(name: Name) = Select(Ident(nme.ROOTPKG), name)
-  def rootScalaDot(name: Name): Tree = Select(rootId(nme.scala_) setSymbol definitions.ScalaPackage, name)
-
-  def scalaDot(name: Name): Tree =
-    Select(Ident(nme.scala_) setSymbol definitions.ScalaPackage, name)
-  def scalaAnyRefConstr: Tree =
-    scalaDot(nme.AnyRef.toTypeName)
-  def scalaUnitConstr: Tree =
-    scalaDot(nme.Unit.toTypeName)
-  def scalaScalaObjectConstr: Tree =
-    scalaDot(nme.ScalaObject.toTypeName)
-  def productConstr: Tree =
-    scalaDot(nme.Product.toTypeName)
+  lazy val rootId                  = gen.rootId _
+  lazy val rootScalaDot            = gen.rootScalaDot _
+  lazy val scalaDot                = gen.scalaDot _
+  lazy val scalaAnyRefConstr       = gen.scalaAnyRefConstr
+  lazy val scalaUnitConstr         = gen.scalaUnitConstr
+  lazy val scalaScalaObjectConstr  = gen.scalaScalaObjectConstr
+  lazy val productConstr           = gen.productConstr
 
   /** Convert all occurrences of (lower-case) variables in a pattern as follows:
    *    x                  becomes      x @ _
@@ -434,8 +428,7 @@ abstract class TreeBuilder extends TreeDSL
   }
 
   /** Create a tree representing the function type (argtpes) => restpe */
-  def makeFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree =
-    AppliedTypeTree(rootScalaDot(newTypeName("Function" + argtpes.length)), argtpes ::: List(restpe))
+  val makeFunctionTypeTree = gen.scalaFunctionConstr _
 
   /** Append implicit view section if for `implicitViews' if nonempty */
   def addImplicitViews(owner: Name, vparamss: List[List[ValDef]], implicitViews: List[Tree]): List[List[ValDef]] = {
