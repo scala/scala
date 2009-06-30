@@ -64,6 +64,8 @@ trait VectorViewTemplate[+A,
     override def foreach[U](f: B =>  U) = super[Transformed].foreach(f)
   }
 
+  trait Zipped[B] extends Transformed[(A, B)] with super.Zipped[B]
+
   /** Boilerplate method, to override in each subclass
    *  This method could be eliminated if Scala had virtual classes
    */
@@ -77,5 +79,8 @@ trait VectorViewTemplate[+A,
   protected override def newReversed: Transformed[A] = new Reversed { }
   protected override def newPatched[B >: A](_from: Int, _patch: Sequence[B], _replaced: Int): Transformed[B] = new Patched[B] {
     val from = _from; val patch = _patch; val replaced = _replaced
+  }
+  protected override def newZipped[B](that: Sequence[B]): Transformed[(A, B)] = new Zipped[B] {
+    val other = that
   }
 }
