@@ -274,8 +274,7 @@ trait Typers { self: Analyzer =>
               case _ =>
                 ex.getMessage()
             }
-          if (context.retyping) context.error(pos, msg)
-          else context.unit.error(pos, msg)
+          context.error(pos, msg)
           if (sym == ObjectClass)
             throw new FatalError("cannot redefine root "+sym)
         case _ =>
@@ -1919,7 +1918,7 @@ trait Typers { self: Analyzer =>
         def shapeType(arg: Tree): Type = arg match {
           case Function(vparams, body) =>
             functionType(vparams map (vparam => AnyClass.tpe), shapeType(body))
-          case a @ Assign(Ident(name), rhs) if a.namedArg =>
+          case AssignOrNamedArg(Ident(name), rhs) =>
             NamedType(name, shapeType(rhs))
           case _ =>
             NothingClass.tpe
@@ -1950,7 +1949,7 @@ trait Typers { self: Analyzer =>
           val argtpes = new ListBuffer[Type]
           val amode = argMode(fun, mode)
           val args1 = args map {
-            case arg @ Assign(Ident(name), rhs) if arg.namedArg =>
+            case arg @ AssignOrNamedArg(Ident(name), rhs) =>
               // named args: only type the righthand sides ("unknown identifier" errors otherwise)
               val rhs1 = typedArg(rhs, amode, 0, WildcardType)
               argtpes += NamedType(name, rhs1.tpe.deconst)
@@ -2350,7 +2349,7 @@ trait Typers { self: Analyzer =>
             names ++= (if (isJava) annScope.iterator
                        else typedFun.tpe.params.iterator)
             val nvPairs = args map {
-              case arg @ Assign(Ident(name), rhs) if arg.namedArg =>
+              case arg @ AssignOrNamedArg(Ident(name), rhs) =>
                 val sym = if (isJava) annScope.lookupWithContext(name)(context.owner)
                           else typedFun.tpe.params.find(p => p.name == name).getOrElse(NoSymbol)
                 if (sym == NoSymbol) {
@@ -3539,6 +3538,9 @@ trait Typers { self: Analyzer =>
           newTyper(context.makeNewScope(tree, tree.symbol)).typedFunction(tree, mode, pt)
 
         case Assign(lhs, rhs) =>
+          typedAssign(lhs, rhs)
+
+        case AssignOrNamedArg(lhs, rhs) => // called by NamesDefaults in silent typecheck
           typedAssign(lhs, rhs)
 
         case If(cond, thenp, elsep) =>

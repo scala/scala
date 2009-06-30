@@ -471,6 +471,16 @@ self =>
       }
     }
 
+    /** part {`,' part} */
+    def commaSeparated(part: () => Tree): List[Tree] = {
+      val ts = new ListBuffer[Tree] += part()
+      while (in.token == COMMA) {
+        in.nextToken()
+        ts += part()
+      }
+      ts.toList
+    }
+
 /* --------- OPERAND/OPERATOR STACK --------------------------------------- */
 
     /** modes for infix types */
@@ -690,7 +700,7 @@ self =>
     /** Types ::= Type {`,' Type}
      */
     def types(isPattern: Boolean, isTypeApply: Boolean, isFuncArg: Boolean): List[Tree] =
-      exprs(() => argType(isPattern, isTypeApply, isFuncArg))
+      commaSeparated(() => argType(isPattern, isTypeApply, isFuncArg))
 
     /** Type ::= InfixType `=>' Type
      *         | `(' [`=>' Type] `)' `=>' Type
@@ -904,17 +914,6 @@ self =>
     def equalsExpr(): Tree = {
       accept(EQUALS)
       expr()
-    }
-
-    /** Exprs ::= Expr {`,' Expr}
-     */
-    def exprs(part: () => Tree = expr _): List[Tree] = {
-      val ts = new ListBuffer[Tree] += part()
-      while (in.token == COMMA) {
-        in.nextToken()
-        ts += part()
-      }
-      ts.toList
     }
 
     def condExpr(): Tree = {
@@ -1174,7 +1173,7 @@ self =>
           id
         case LPAREN =>
           atPos(in.skipToken()) {
-            val ts = if (in.token == RPAREN) List() else exprs()
+            val ts = if (in.token == RPAREN) List() else commaSeparated(expr _)
             accept(RPAREN)
             Parens(ts)
           }
@@ -1237,11 +1236,11 @@ self =>
       *                 | [nl] BlockExpr
      */
     def argumentExprs(): List[Tree] = {
-      def args(): List[Tree] = exprs(() => {
+      def args(): List[Tree] = commaSeparated(() => {
         val maybeNamed = isIdent
         expr() match {
           case a @ Assign(id, rhs) if maybeNamed =>
-            atPos(a.pos) { new AssignOrNamedArg(id, rhs) }
+            atPos(a.pos) { AssignOrNamedArg(id, rhs) }
           case e => e
         }
       })
@@ -1255,7 +1254,7 @@ self =>
           rhs match {
             case Ident(`pname1`) | Typed(Ident(`pname1`), _) =>
               placeholderParams = vd :: placeholderParams
-              atPos(arg.pos) { new AssignOrNamedArg(Ident(aname), Ident(pname1)) }
+              atPos(arg.pos) { AssignOrNamedArg(Ident(aname), Ident(pname1)) }
             case _ => arg
           }
         case _ => arg
@@ -1359,7 +1358,7 @@ self =>
      *    SeqPatterns ::= SeqPattern { `,' SeqPattern }
      */
     def patterns(seqOK: Boolean): List[Tree] =
-      exprs(() => pattern(seqOK))
+      commaSeparated(() => pattern(seqOK))
 
     /**   Pattern  ::=  Pattern1 { `|' Pattern1 }
      *    SeqPattern ::= SeqPattern1 { `|' SeqPattern1 }
@@ -1828,7 +1827,7 @@ self =>
      */
     def importClause(): List[Tree] = {
       accept(IMPORT)
-      exprs(() => importExpr())
+      commaSeparated(() => importExpr())
     }
 
     /**  ImportExpr ::= StableId `.' (Id | `_' | ImportSelectors)
