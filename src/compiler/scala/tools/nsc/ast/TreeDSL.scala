@@ -90,7 +90,7 @@ trait TreeDSL {
       /** Assignment */
       def ===(rhs: Tree)            = Assign(target, rhs)
 
-      /** for tree of sequence type, returns tree that drops first i elements */
+      /** Methods for sequences **/
       def DROP(count: Int): Tree =
         if (count == 0) target
         else (target DOT nme.drop)(LIT(count)) DOT nme.toSeq

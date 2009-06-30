@@ -6,6 +6,7 @@
 
 package scala.tools.nsc.transform
 
+import util.Position
 import scala.collection.mutable.{Map, HashMap}
 
 /** A base class for transforms.
@@ -20,6 +21,7 @@ trait TypingTransformers {
     var localTyper: analyzer.Typer = analyzer.newTyper(
       analyzer.rootContext(unit, EmptyTree, true))
     protected var curTree: Tree = _
+    protected def typedPos(pos: Position)(tree: Tree) = localTyper typed { atPos(pos)(tree) }
 
     /** a typer for each enclosing class */
     var typers: Map[Symbol, analyzer.Typer] = new HashMap

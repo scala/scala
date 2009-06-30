@@ -33,24 +33,6 @@ trait CodeFactory extends ast.TreeDSL
     typer typed (VAL(x) === finalRhs)
   }
 
-  /** for tree of sequence type, returns tree that drops first i elements */
-  final def seqDrop(sel: Tree, ix: Int)(implicit typer : Typer) =
-    typer typed (sel DROP ix)
-
-  /** for tree of sequence type, returns tree that represents element at index i */
-  final def seqElement(sel: Tree, ix: Int)(implicit typer : Typer) =
-    typer typed ((sel DOT (sel.tpe member nme.apply))(LIT(ix)))
-
-  private def lengthCompare(sel: Tree, tpe: Type, i: Int) = ((sel DOT tpe.member(nme.lengthCompare))(LIT(i)))
-
-  /** for tree of sequence type, returns boolean tree testing that the sequence has length i */
-  final def seqHasLength(sel: Tree, tpe: Type, i: Int)(implicit typer : Typer) =
-    typer typed (lengthCompare(sel, tpe, i) ANY_== ZERO)
-
-  /** for tree of sequence type sel, returns boolean tree testing that length >= i */
-  final def seqLongerThan(sel:Tree, tpe:Type, i:Int)(implicit typer : Typer) =
-    typer typed (lengthCompare(sel, tpe, i) ANY_>= ZERO)
-
   final def squeezedBlock(vds: List[Tree], exp: Tree)(implicit theOwner: Symbol): Tree =
     if (settings_squeeze) Block(Nil, squeezedBlock1(vds, exp))
     else                  Block(vds, exp)

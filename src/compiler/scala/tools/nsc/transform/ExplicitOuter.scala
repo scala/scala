@@ -164,7 +164,6 @@ abstract class ExplicitOuter extends InfoTransform
    *  The class provides methods for referencing via outer.
    */
   abstract class OuterPathTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
-
     /** The directly enclosing outer parameter, if we are in a constructor */
     protected var outerParam: Symbol = NoSymbol
 
@@ -296,22 +295,17 @@ abstract class ExplicitOuter extends InfoTransform
 
     /** The definition tree of the outer accessor of current class
      */
-    def outerFieldDef: Tree = {
-      val outerFld = outerField(currentClass)
-      ValDef(outerFld, EmptyTree)
-    }
+    def outerFieldDef: Tree = VAL(outerField(currentClass)) === EmptyTree
 
     /** The definition tree of the outer accessor of current class
      */
     def outerAccessorDef: Tree = {
       val outerAcc = outerAccessor(currentClass)
-      var rhs = if (outerAcc.isDeferred) EmptyTree
-                else Select(This(currentClass), outerField(currentClass))
-      localTyper.typed {
-        atPos(currentClass.pos) {
-          DefDef(outerAcc, rhs)
-        }
-      }
+      var rhs: Tree =
+        if (outerAcc.isDeferred) EmptyTree
+        else This(currentClass) DOT outerField(currentClass)
+
+      typedPos(currentClass.pos)(DEF(outerAcc) === rhs)
     }
 
     /** The definition tree of the outer accessor for class
@@ -328,23 +322,28 @@ abstract class ExplicitOuter extends InfoTransform
         if (mixinClass.owner.isTerm) gen.mkAttributedThis(mixinClass.owner.enclClass)
         else gen.mkAttributedQualifier(currentClass.thisType.baseType(mixinClass).prefix)
       val rhs = ExplicitOuterTransformer.this.transform(path)
-      rhs.setPos(currentClass.pos) // see note below
-      localTyper.typed {
-        atPos(currentClass.pos) {
-          // @S: atPos not good enough because of nested atPos in DefDef method, which gives position from wrong class!
-          DefDef(outerAcc, rhs).setPos(currentClass.pos)
-        }
-      }
+
+      // @S: atPos not good enough because of nested atPos in DefDef method, which gives position from wrong class!
+      rhs setPos currentClass.pos
+      typedPos(currentClass.pos) { (DEF(outerAcc) === rhs) setPos currentClass.pos }
+    }
+
+    /** If FLAG is set on symbol, sets notFLAG (this exists in anticipation of generalizing). */
+    def setNotFlags(sym: Symbol, flags: Int*) {
+      val notMap = Map(
+        PRIVATE -> notPRIVATE,
+        PROTECTED -> notPROTECTED
+      )
+      for (f <- flags ; notFlag <- notMap get f ; if sym hasFlag f)
+        sym setFlag notFlag
     }
 
     /** The main transformation method */
     override def transform(tree: Tree): Tree = {
-
       val sym = tree.symbol
-      if ((sym ne null) && sym.isType) {//(9)
-        if (sym hasFlag PRIVATE) sym setFlag notPRIVATE
-        if (sym hasFlag PROTECTED) sym setFlag notPROTECTED
-      }
+      if (sym != null && sym.isType)  //(9)
+        setNotFlags(sym, PRIVATE, PROTECTED)
+
       tree match {
         case Template(parents, self, decls) =>
           val newDefs = new ListBuffer[Tree]
@@ -414,27 +413,17 @@ abstract class ExplicitOuter extends InfoTransform
           var nselector = transform(selector)
 
           def makeGuardDef(vs: List[Symbol], guard: Tree) = {
-            import symtab.Flags._
             val gdname = cunit.fresh.newName(guard.pos, "gd")
             val method = currentOwner.newMethod(mch.pos, gdname) setFlag SYNTHETIC
             val fmls   = vs map (_.tpe)
             val tpe    = new MethodType(method newSyntheticValueParams fmls, BooleanClass.tpe)
             method setInfo tpe
 
-            // XXX integrate
-            // localTyper typed (DEF(method) === {
-            //   new ChangeOwnerTraverser(currentOwner, method) traverse guard
-            //   new TreeSymSubstituter(vs, method.paramss.head) traverse guard
-            //   guard
-            // })
-            //
-            localTyper.typed(
-              DefDef(method, {
-                new ChangeOwnerTraverser(currentOwner, method) traverse guard
-                new TreeSymSubstituter(vs, method.paramss.head) traverse guard
-                guard
-              })
-            )
+            localTyper typed (DEF(method) === {
+              new ChangeOwnerTraverser(currentOwner, method) traverse guard
+              new TreeSymSubstituter(vs, method.paramss.head) traverse guard
+              guard
+            })
           }
 
           val nguard = new ListBuffer[Tree]
@@ -447,7 +436,7 @@ abstract class ExplicitOuter extends InfoTransform
                   val guardDef = makeGuardDef(vs, guard)
                   nguard       += transform(guardDef) // building up list of guards
 
-                  localTyper typed (Ident(guardDef.symbol) APPLY(vs map Ident))
+                  localTyper typed (Ident(guardDef.symbol) APPLY (vs map Ident))
                 }
 
               (CASE(transform(p)) IF gdcall) ==> transform(b)
