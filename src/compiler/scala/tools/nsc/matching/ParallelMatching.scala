@@ -234,7 +234,7 @@ trait ParallelMatching extends ast.TreeDSL {
    */
   class MixLiterals(val pats: Patterns, val rest: Rep)(implicit rep:RepFactory) extends RuleApplication(rep) {
     // e.g. (1,1) (1,3) (42,2) for column { case ..1.. => ;; case ..42..=> ;; case ..1.. => }
-    var defaultV: immutable.Set[Symbol] = emptySymbolSet
+    var defaultV: Set[Symbol] = emptySymbolSet
     var defaultIndexSet = new BitSet(pats.size)
 
     def insertDefault(tag: Int, vs: Traversable[Symbol]) {
@@ -609,22 +609,18 @@ trait ParallelMatching extends ast.TreeDSL {
       val (casted, srep, frep) = this.getTransition
       val cond = condition(casted.tpe, scrut)
       val succ = srep.toTree
-      val fail = frep.map(_.toTree) getOrElse failTree
+      val fail = frep map (_.toTree) getOrElse (failTree)
 
       // dig out case field accessors that were buried in (***)
       val cfa       = if (!pats.isCaseHead) Nil else casted.accessors
       val caseTemps = srep.temp match { case x :: xs if x == casted.sym => xs ; case x => x }
+      def needCast  = if (casted.sym ne scrut.sym) List(VAL(casted.sym) === (scrut.id AS_ANY casted.tpe)) else Nil
+      val vdefs     = needCast ::: (
+        for ((tmp, accessor) <- caseTemps zip cfa) yield
+          typedValDef(tmp, typer typed fn(casted.id, accessor))
+      )
 
-      var vdefs = for ((tmp, accessorMethod) <- caseTemps.zip(cfa)) yield {
-        val untypedAccess = fn(casted.id, accessorMethod)
-        val typedAccess = typer.typed(untypedAccess)
-        typedValDef(tmp, typedAccess)
-      }
-
-      if (casted.sym ne scrut.sym)
-        vdefs = ValDef(casted.sym, gen.mkAsInstanceOf(scrut.id, casted.tpe)) :: vdefs
-
-      typer.typed( If(cond, squeezedBlock(vdefs, succ), fail) )
+      typer typed (IF (cond) THEN squeezedBlock(vdefs, succ) ELSE fail)
     }
   }
 
@@ -648,7 +644,7 @@ trait ParallelMatching extends ast.TreeDSL {
         case _                          => p.tpe coversSym sym
       }
 
-      guard.isEmpty && results.forall(_ == true)
+      guard.isEmpty && (results forall (true ==))
     }
 
     // returns this row with alternatives expanded
@@ -850,7 +846,7 @@ trait ParallelMatching extends ast.TreeDSL {
         }
       }
 
-      val row = row1 flatMap { _.expand(classifyPat) }
+      val row = row1 flatMap (_ expand classifyPat)
       if (row.length != row1.length) make(temp, row)  // recursive call if any change
       else Rep(temp, row).init
     }
