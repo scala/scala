@@ -65,10 +65,9 @@ abstract class ExplicitOuter extends InfoTransform
   def outerAccessor(clazz: Symbol): Symbol = {
     val firstTry = clazz.info.decl(clazz expandedName nme.OUTER)
     if (firstTry != NoSymbol && firstTry.outerSource == clazz) firstTry
-    else {
+    else
       entryIterator(clazz.info.decls.elems) .
-        find (_.sym.outerSource == clazz) map (_.sym) getOrElse NoSymbol
-    }
+        find (_.sym.outerSource == clazz) map (_.sym) getOrElse (NoSymbol)
   }
 
   /** <p>
@@ -127,15 +126,17 @@ abstract class ExplicitOuter extends InfoTransform
       if (isInner(clazz) && !(clazz hasFlag INTERFACE)) {
         decls1 = newScope(decls.toList)
         val outerAcc = clazz.newMethod(clazz.pos, nme.OUTER) // 3
-        outerAcc.expandName(clazz)
+        outerAcc expandName clazz
+
         val restpe = if (clazz.isTrait) clazz.outerClass.tpe else clazz.outerClass.thisType
-        decls1 enter clazz.newOuterAccessor(clazz.pos).setInfo(MethodType(List(), restpe))
+        decls1 enter (clazz.newOuterAccessor(clazz.pos) setInfo MethodType(Nil, restpe))
         if (hasOuterField(clazz)) { //2
           val access = if (clazz.isFinal) PRIVATE | LOCAL else PROTECTED
           decls1 enter (
-            clazz.newValue(clazz.pos, nme.getterToLocal(nme.OUTER))
+            clazz.newValue(clazz.pos, nme getterToLocal nme.OUTER)
             setFlag (SYNTHETIC | PARAMACCESSOR | access)
-            setInfo clazz.outerClass.thisType)
+            setInfo clazz.outerClass.thisType
+          )
         }
       }
       if (!clazz.isTrait && !parents.isEmpty) {
@@ -144,8 +145,7 @@ abstract class ExplicitOuter extends InfoTransform
           if (mixinOuterAcc != NoSymbol) {
             if (decls1 eq decls) decls1 = newScope(decls.toList)
             val newAcc = mixinOuterAcc.cloneSymbol(clazz)
-            newAcc.resetFlag(DEFERRED)
-            newAcc.setInfo(clazz.thisType.memberType(mixinOuterAcc))
+            newAcc resetFlag DEFERRED setInfo (clazz.thisType memberType mixinOuterAcc)
             decls1 enter newAcc
           }
         }
@@ -171,8 +171,8 @@ abstract class ExplicitOuter extends InfoTransform
      *  The result is typed but not positioned.
      */
     protected def outerValue: Tree =
-      if (outerParam != NoSymbol) gen.mkAttributedIdent(outerParam)
-      else outerSelect(gen.mkAttributedThis(currentClass))
+      if (outerParam != NoSymbol) ID(outerParam)
+      else outerSelect(THIS(currentClass))
 
     /** Select and apply outer accessor from 'base'
      *  The result is typed but not positioned.
@@ -189,13 +189,14 @@ abstract class ExplicitOuter extends InfoTransform
         if (outerAcc.owner == currentClass &&
             base.tpe =:= currentClass.thisType &&
             outerAcc.owner.isFinal)
-          outerField(currentClass).suchThat(_.owner == currentClass)
+          outerField(currentClass) suchThat (_.owner == currentClass)
         else
           NoSymbol
       val path =
         if (outerFld != NoSymbol) Select(base, outerFld)
-        else Apply(Select(base, outerAcc), List())
-      localTyper.typed(path)
+        else Apply(Select(base, outerAcc), Nil)
+
+      localTyper typed path
     }
 
     /** The path
@@ -319,8 +320,8 @@ abstract class ExplicitOuter extends InfoTransform
       val outerAcc = outerAccessor(mixinClass).overridingSymbol(currentClass)
       assert(outerAcc != NoSymbol)
       val path =
-        if (mixinClass.owner.isTerm) gen.mkAttributedThis(mixinClass.owner.enclClass)
-        else gen.mkAttributedQualifier(currentClass.thisType.baseType(mixinClass).prefix)
+        if (mixinClass.owner.isTerm) THIS(mixinClass.owner.enclClass)
+        else gen.mkAttributedQualifier(currentClass.thisType baseType mixinClass prefix)
       val rhs = ExplicitOuterTransformer.this.transform(path)
 
       // @S: atPos not good enough because of nested atPos in DefDef method, which gives position from wrong class!
@@ -413,7 +414,7 @@ abstract class ExplicitOuter extends InfoTransform
           var nselector = transform(selector)
 
           def makeGuardDef(vs: List[Symbol], guard: Tree) = {
-            val gdname = cunit.fresh.newName(guard.pos, "gd")
+            val gdname = newName(guard.pos, "gd")
             val method = currentOwner.newMethod(mch.pos, gdname) setFlag SYNTHETIC
             val fmls   = vs map (_.tpe)
             val tpe    = new MethodType(method newSyntheticValueParams fmls, BooleanClass.tpe)

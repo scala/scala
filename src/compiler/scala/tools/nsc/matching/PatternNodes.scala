@@ -120,7 +120,7 @@ trait PatternNodes extends ast.TreeDSL
 
   def mkTypedBind(vs: List[Symbol], tpe: Type)      = mkBind(vs, tpe, WILD(tpe))
   def mkEmptyTreeBind(vs: List[Symbol], tpe: Type)  = mkBind(vs, tpe, EmptyTree)
-  def mkEqualsRef(xs: List[Type]) = typeRef(NoPrefix, EqualsPatternClass, xs)
+  def mkEqualsRef(xs: List[Type])                   = typeRef(NoPrefix, EqualsPatternClass, xs)
 
   def normalizedListPattern(pats: List[Tree], tptArg: Type): Tree = pats match {
     case Nil                            => gen.mkNil

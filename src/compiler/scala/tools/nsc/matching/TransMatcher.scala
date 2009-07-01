@@ -7,6 +7,8 @@
 
 package scala.tools.nsc.matching
 
+import util.Position
+
 /** Translation of pattern matching
  *
  *  @author Burak Emir
@@ -22,6 +24,8 @@ trait TransMatcher extends ast.TreeDSL {
 
   var cunit: CompilationUnit = _  // memory leak?
   var resultType: Type = _
+
+  def newName(pos: Position, s: String) = cunit.fresh.newName(pos, s)
 
   final val settings_squeeze = settings.Xsqueeze.value == "on"
 

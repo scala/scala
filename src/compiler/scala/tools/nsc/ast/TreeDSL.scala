@@ -27,8 +27,6 @@ trait TreeDSL {
       }
     }
 
-    def ID(sym: Symbol) = Ident(sym) setType sym.tpe
-
     // You might think these could be vals, but empirically I have found that
     // at least in the case of UNIT the compiler breaks if you re-use trees.
     // However we need stable identifiers to have attractive pattern matching.
@@ -178,13 +176,17 @@ trait TreeDSL {
 
     def IF(tree: Tree)    = new IfStart(tree, EmptyTree)
     def TRY(tree: Tree)   = new TryStart(tree, Nil, EmptyTree)
-    def REF(sym: Symbol)  = gen.mkAttributedRef(sym)
-    def REF(pre: Type, sym: Symbol) = gen.mkAttributedRef(pre, sym)
     def BLOCK(xs: Tree*)  = Block(xs.init.toList, xs.last)
     def NOT(tree: Tree)   = Select(tree, getMember(BooleanClass, nme.UNARY_!))
 
     private val _SOME     = scalaDot(nme.Some)
     def SOME(xs: Tree*)   = Apply(_SOME, List(makeTupleTerm(xs.toList, true)))
+
+    /** Typed trees from symbols. */
+    def THIS(sym: Symbol)             = gen.mkAttributedThis(sym)
+    def ID(sym: Symbol)               = gen.mkAttributedIdent(sym)
+    def REF(sym: Symbol)              = gen.mkAttributedRef(sym)
+    def REF(pre: Type, sym: Symbol)   = gen.mkAttributedRef(pre, sym)
 
     /** Some of this is basically verbatim from TreeBuilder, but we do not want
      *  to get involved with him because he's an untyped only sort.
