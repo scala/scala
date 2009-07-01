@@ -55,23 +55,20 @@ trait TransMatcher extends ast.TreeDSL {
     val flags = if (doCheckExhaustive) Nil else List(Flags.TRANS_FLAG)
 
     def matchError(obj: Tree) = atPos(selector.pos)(THROW(MatchErrorClass, obj))
-    def caseIsOk(c: CaseDef) = c match {
-      case CaseDef(_: Apply, _, _)            => true
-      case CaseDef(Ident(nme.WILDCARD), _, _) => true
-      case _                                  => false
+    def caseIsOk(c: CaseDef) = c.pat match {
+      case _: Apply | Ident(nme.WILDCARD) => true
+      case _                              => false
     }
     def doApply(fn: Tree): Boolean =
-      (fn.symbol eq selector.tpe.decls.lookup(nme.CONSTRUCTOR)) &&
+      (fn.symbol eq (selector.tpe.decls lookup nme.CONSTRUCTOR)) &&
       (cases forall caseIsOk)
 
-    def processApply(app: Apply): (List[Symbol], List[Tree], Tree) = {
+    def processTuple(app: Apply): (List[Symbol], List[Tree], Tree) = {
       val Apply(fn, args) = app
       val (tmps, vds) = List.unzip(
-        for ((ti, i) <- args.zipWithIndex) yield {
-          // These type parameter vars were not being set as synthetic.
-          // Temporarily noted on the off chance it was intentional.
-          val v = newVar(ti.pos, cunit.fresh.newName(ti.pos, "tp"), selector.tpe.typeArgs(i), flags)
-          (v, typedValDef(v, ti))
+        for ((arg, typeArg) <- args zip selector.tpe.typeArgs) yield {
+          val v = newVar(arg.pos, newName(arg.pos, "tp"), typeArg, flags)
+          (v, typedValDef(v, arg))
         }
       )
       (tmps, vds, matchError(treeCopy.Apply(app, fn, tmps map ID)))
@@ -80,10 +77,10 @@ trait TransMatcher extends ast.TreeDSL {
     // sets temporaries, variable declarations, and the fail tree
     val (tmps, vds, theFailTree) = selector match {
       case app @ Apply(fn, _) if isTupleType(selector.tpe) && doApply(fn) =>
-        processApply(app)
+        processTuple(app)
       case _ =>
         val root: Symbol      = newVar(selector.pos, selector.tpe, flags)
-        val vdef: Tree        = typer.typed(ValDef(root, selector))
+        val vdef: Tree        = typer typed (VAL(root) === selector)
         val failTree: Tree    = matchError(ID(root))
         (List(root), List(vdef), failTree)
     }
@@ -97,8 +94,8 @@ trait TransMatcher extends ast.TreeDSL {
     for ((cs, bx) <- cases.zipWithIndex)
       if (!rep.isReached(bx)) cunit.error(cs.body.pos, "unreachable code")
 
-    dfatree = rep.cleanup(dfatree)
-    resetTraverser.traverse(dfatree)
+    dfatree = rep cleanup dfatree
+    resetTraverser traverse dfatree
     dfatree
   }
 
