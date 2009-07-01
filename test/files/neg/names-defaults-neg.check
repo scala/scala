@@ -90,11 +90,13 @@ names-defaults-neg.scala:70: error: wrong number of arguments for <none>: (x: In
                       ^
 names-defaults-neg.scala:77: error: inferred kinds of the type arguments (List[Int]) do not conform to the expected kinds of the type parameters (type T).
 List[Int]'s type parameters do not match type T's expected parameters: class List has one type parameter, but type T has one
+Error occured in an application involving default arguments.
   test4()
   ^
 error: type mismatch;
  found   : List[Int]
  required: List[List[scala.List[List[X forSome { type X }]]]]
+Error occured in an application involving default arguments.
 names-defaults-neg.scala:80: error: type mismatch;
  found   : List[Int]
  required: scala.List[scala.List[?]]
@@ -103,6 +105,7 @@ names-defaults-neg.scala:80: error: type mismatch;
 names-defaults-neg.scala:83: error: type mismatch;
  found   : Int
  required: String
+Error occured in an application involving default arguments.
   new A2[String]()
   ^
 names-defaults-neg.scala:95: error: multiple overloaded alternatives of method foo define default arguments

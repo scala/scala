@@ -110,6 +110,7 @@ trait Contexts { self: Analyzer =>
     var returnsSeen = false                 // for method context: were returns encountered?
     var reportAmbiguousErrors = false
     var reportGeneralErrors = false
+    var diagnostic: List[String] = Nil      // these messages are printed when issuing an error
     var implicitsEnabled = false
     var checking = false
     var retyping = false
@@ -208,6 +209,7 @@ trait Contexts { self: Analyzer =>
       c.imports = imports
       c.reportAmbiguousErrors = this.reportAmbiguousErrors
       c.reportGeneralErrors = this.reportGeneralErrors
+      c.diagnostic = this.diagnostic
       c.implicitsEnabled = this.implicitsEnabled
       c.checking = this.checking
       c.retyping = this.retyping
@@ -291,8 +293,12 @@ trait Contexts { self: Analyzer =>
       c
     }
 
+    private def diagString =
+      if (diagnostic.isEmpty) ""
+      else diagnostic.mkString("\n","\n", "")
+
     def error(pos: Position, err: Error) {
-      val msg = err.getMessage()
+      val msg = err.getMessage() + diagString
       if (reportGeneralErrors)
         unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
       else
@@ -300,10 +306,11 @@ trait Contexts { self: Analyzer =>
     }
 
     def error(pos: Position, msg: String) {
+      val msg1 = msg + diagString
       if (reportGeneralErrors)
-        unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
+        unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg1 else msg1)
       else
-        throw new TypeError(pos, msg)
+        throw new TypeError(pos, msg1)
     }
 
     def warning(pos:  Position, msg: String) {
