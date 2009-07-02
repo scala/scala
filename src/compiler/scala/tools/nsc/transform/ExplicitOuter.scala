@@ -317,7 +317,7 @@ abstract class ExplicitOuter extends InfoTransform
      *  @pre mixinClass is an inner class
      */
     def mixinOuterAccessorDef(mixinClass: Symbol): Tree = {
-      val outerAcc = outerAccessor(mixinClass).overridingSymbol(currentClass)
+      val outerAcc = outerAccessor(mixinClass) overridingSymbol currentClass
       assert(outerAcc != NoSymbol)
       val path =
         if (mixinClass.owner.isTerm) THIS(mixinClass.owner.enclClass)

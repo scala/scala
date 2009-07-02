@@ -16,16 +16,26 @@ trait CodeFactory extends ast.TreeDSL
 {
   self: transform.ExplicitOuter with PatternNodes =>
 
-  import global.{typer => _, _}
+  import global.{ typer => _, _ }
   import analyzer.Typer
   import definitions._
   import CODE._
+
+  // strip bindings to find what tree lies underneath
+  def unbind(x: Tree): Tree = x match {
+    case Bind(_, y) => unbind(y)
+    case y          => y
+  }
+
+  // Create a conditional based on a partial function - for values not defined
+  // on the partial, it is false.
+  def cond[T](x: T)(f: PartialFunction[T, Boolean]) = (f isDefinedAt x) && f(x)
 
   final def typedValDef(x: Symbol, rhs: Tree)(implicit typer: Typer) = {
     val finalRhs = x.tpe match {
       case WildcardType   =>
         rhs setType null
-        x setInfo typer.typed(rhs).tpe
+        x setInfo (typer typed rhs).tpe
         rhs
       case _              =>
         typer.typed(rhs, x.tpe)

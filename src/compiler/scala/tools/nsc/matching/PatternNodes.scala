@@ -32,9 +32,9 @@ trait PatternNodes extends ast.TreeDSL
 
     private def cmpSymbols(t1: Type, t2: Type) = t1.typeSymbol eq t2.typeSymbol
     // true if t2 is a parent of t1.  Should this be rather: tpe.baseTypes.exists...?
-    private def  parenthood(t1: Type, t2: Type) = t1.parents.exists(p => cmpSymbols(p, t2))
+    private def  parenthood(t1: Type, t2: Type) = t1.parents exists (p => cmpSymbols(p, t2))
     // true if t1 is direct subtype of t2 (can't use just <:< cause have to take variance into account)
-    private def subtypehood(t1: Type, t2: Type) = t1.parents.exists(p => cmpSymbols(p, t2) && p <:< t2)
+    private def subtypehood(t1: Type, t2: Type) = t1.parents exists (p => cmpSymbols(p, t2) && p <:< t2)
 
     def yParentsX = parenthood(x, y)
     def xParentsY = parenthood(y, x)
@@ -72,15 +72,14 @@ trait PatternNodes extends ast.TreeDSL
       }
       lazy val tpe = tpeWRTEquality(_tpe)
 
-      // The several different logics in these tests are intentionally grouped here to
-      // draw attention to them.  To the extent that the differences are intentional,
-      // the thinking behind the distinctions needs to be documented.
-      def       isInt = tpe =:= IntClass.tpe
-      def      isChar = tpe =:= CharClass.tpe
-      def    isAnyRef = tpe <:< AnyRefClass.tpe
-      def   isBoolean = tpe.typeSymbol eq BooleanClass
-      def     isArray = tpe.typeSymbol eq ArrayClass
-      def   isNothing = tpe.typeSymbol eq NothingClass
+      // These tests for final classes can inspect the typeSymbol
+      private def is(s: Symbol) = tpe.typeSymbol eq s
+      def       isInt = is(IntClass)
+      def      isChar = is(CharClass)
+      def   isBoolean = is(BooleanClass)
+      def   isNothing = is(NothingClass)
+      def     isArray = is(ArrayClass)
+
       def isCaseClass = tpe.typeSymbol hasFlag Flags.CASE
 
       def cmp(other: Type): TypeComparison = TypeComparison(tpe, tpeWRTEquality(other))
@@ -95,7 +94,7 @@ trait PatternNodes extends ast.TreeDSL
         (tpe.typeSymbol == sym) ||
         (symtpe <:< tpe) ||
         (symtpe.parents exists (_.typeSymbol eq tpe.typeSymbol)) || // e.g. Some[Int] <: Option[&b]
-        (tpe.prefix.memberType(sym) <:< tpe)  // outer, see combinator.lexical.Scanner
+        ((tpe.prefix memberType sym) <:< tpe)  // outer, see combinator.lexical.Scanner
       }
     }
 
@@ -133,7 +132,7 @@ trait PatternNodes extends ast.TreeDSL
         val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "matching$dummy")
         val res         = mkTypeRef(sym)
 
-        (MethodType(dummyMethod.newSyntheticValueParams(List(tptArg, mkTypeRef(ListClass))), res), res)
+        (MethodType(dummyMethod newSyntheticValueParams List(tptArg, mkTypeRef(ListClass)), res), res)
       }
       Apply(TypeTree(consType), List(x, normalizedListPattern(xs, tptArg))) setType resType
   }
@@ -164,22 +163,6 @@ trait PatternNodes extends ast.TreeDSL
     }
   }
 
-  // TODO - this doesn't work! For some reason this sometimes returns false when encapsulated
-  // in an object like this, when it returns true if the same logic is applied literally in
-  // the classifyPat match in ParallelMatching.  I couldn't figure out why, and it concerns
-  // me - if this isn't working maybe other unapply objects aren't working right either.  The big
-  // problem with using unapply and type matching is that if something's amiss, it will simply fail
-  // silently, with the bug most likely manifesting at some unknown later point.
-  // DRM: This problem is almost certainly an instance of bug 1697
-  object Ident_Or_Empty {
-    def unapply(x: Any) = x match {
-      case Ident(nme.WILDCARD) | EmptyTree | _: Typed | _: Literal => true
-      // this returns false, and then a line identical the one above will match
-      // back in PM.scala.
-      case _ => false
-    }
-  }
-
   object UnApply_TypeApply {
     def unapply(x: UnApply) = x match {
       case UnApply(Apply(TypeApply(sel @ Select(stor, nme.unapplySeq), List(tptArg)), _), ArrayValue(_, xs)::Nil)
@@ -197,25 +180,24 @@ trait PatternNodes extends ast.TreeDSL
   }
 
   /** returns if pattern can be considered a no-op test ??for expected type?? */
-  final def isDefaultPattern(pattern: Tree): Boolean = pattern match {
-    case Bind(_, p)            => isDefaultPattern(p)
-    case EmptyTree             => true // dummy
-    case Ident(nme.WILDCARD)   => true
-    case _                     => false
-// -- what about the following? still have to test "ne null" :/
-//  case Typed(nme.WILDCARD,_) => pattern.tpe <:< scrut.tpe
-  }
+  final def isDefaultPattern(pattern: Tree): Boolean =
+    cond(unbind(pattern)) { case EmptyTree | Ident(nme.WILDCARD) => true }
+    // -- what about the following? still have to test "ne null" :/
+    //  case Typed(nme.WILDCARD,_) => pattern.tpe <:< scrut.tpe
 
   /** returns all variables that are binding the given pattern
    *  @param   x a pattern
    *  @return  vs variables bound, p pattern proper
    */
-  final def strip(x: Tree): (Set[Symbol], Tree) = x match {
-    case b @ Bind(_,pat) => val (vs, p) = strip(pat); (vs + b.symbol, p)
-    case _               => (emptySymbolSet, x)
-  }
 
-  object Strip  { def unapply(x: Tree): Option[(Set[Symbol], Tree)] = Some(strip(x))  }
+  object Strip  {
+    // all variables binding the given pattern
+    private def strip(syms: Set[Symbol], t: Tree): (Set[Symbol], Tree) = t match {
+      case b @ Bind(_, pat) => strip(syms + b.symbol, pat)
+      case _                => (syms, t)
+    }
+    def unapply(x: Tree): Option[(Set[Symbol], Tree)] = Some(strip(Set(), x))
+  }
 
   object BoundVariables {
     def unapply(x: Tree): Option[List[Symbol]] = Some(Pattern(x).boundVariables)

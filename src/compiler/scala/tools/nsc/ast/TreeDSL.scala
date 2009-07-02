@@ -33,7 +33,7 @@ trait TreeDSL {
     // So it's inconsistent until I devise a better way.
     val TRUE          = LIT(true)
     val FALSE         = LIT(false)
-    def NULL          = LIT(null)
+    val NULL          = LIT(null)
     def UNIT          = LIT(())
     val ZERO          = LIT(0)
 

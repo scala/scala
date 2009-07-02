@@ -80,7 +80,7 @@ trait ParallelMatching extends ast.TreeDSL {
     def assertIsSubtype(other: Type) = assert(isSubType(tpe, other), "problem "+tpe+" not <: "+other)
     def casted(headType: Type)(implicit theOwner: Symbol) =
       if (tpe =:= headType) this
-      else new Scrutinee(newVar(pos, headType, flags))
+      else new Scrutinee(newVar(pos, headType, flags = flags))
   }
 
   case class Pattern(tree: Tree) {
@@ -98,26 +98,16 @@ trait ParallelMatching extends ast.TreeDSL {
     /**
      * Can this pattern be part of a switch statement?
      */
-    lazy val isSimpleSwitchCandidate = stripped.tree match {
-      case Literal(const : Constant) if isNumeric(const.tag) =>
-        const.tag match {
-          case FloatTag | DoubleTag | LongTag => false
-          case _ => true
-        }
-      case _ => false
+    lazy val isSimpleSwitchCandidate = cond(stripped.tree) {
+      case Literal(const: Constant) if isNumeric(const.tag) =>
+        !cond(const.tag) { case FloatTag | DoubleTag | LongTag => true }
     }
 
     /** returns if pattern can be considered a no-op test ??for expected type?? */
-    final def isDefault: Boolean = isDefaultPattern(tree);
-
-    final def isEquals = tpe match {
-      case TypeRef(_, sym, _) => sym eq EqualsPatternClass
-      case _                  => false
-    }
+    final def isDefault = isDefaultPattern(tree)
+    final def isEquals  = cond(tpe) { case TypeRef(_, EqualsPatternClass, _) => true }
 
     final def getAlternativeBranches: List[Tree] = {
-
-
       def get_BIND(pctx: Tree => Tree, p: Tree): List[Tree] = p match {
         case b @ Bind(n, p)   => get_BIND((x: Tree) => pctx(treeCopy.Bind(b, n, x) setType x.tpe), p)
         case Alternative(ps)  => ps map pctx
@@ -146,7 +136,7 @@ trait ParallelMatching extends ast.TreeDSL {
   }
 
   case class Patterns(scrut: Scrutinee, ps: List[Pattern]) {
-    private lazy val column = ps.map(_.tree)
+    private lazy val column = ps map (_.tree)
     lazy val head = ps.head
     lazy val tail = Patterns(scrut, ps.tail)
     lazy val last = ps.last
@@ -162,10 +152,7 @@ trait ParallelMatching extends ast.TreeDSL {
     def isObjectTest(pat: Pattern)  = pat isObjectTest headType
     def isObjectTest(pat: Tree)     = Pattern(pat) isObjectTest headType
     // an unapply for which we don't need a type test
-    def isUnapplyHead = head.tree match {
-      case __UnApply(_,argtpe,_)  => scrut.tpe <:< argtpe
-      case _                      => false
-    }
+    def isUnapplyHead = cond (head.tree) { case __UnApply(_,tpe,_)  => scrut.tpe <:< tpe }
 
     def isSimpleSwitch: Boolean =
       scrut.isSimple && ps.init.forall(_.isSimpleSwitchCandidate) &&
@@ -331,7 +318,8 @@ trait ParallelMatching extends ast.TreeDSL {
       }
     }
 
-    def newVarCapture(pos: Position,tpe: Type)(implicit theOwner:Symbol) = newVar(pos, tpe, scrut.flags)
+    def newVarCapture(pos: Position,tpe: Type)(implicit theOwner:Symbol) =
+      newVar(pos, tpe, flags = scrut.flags)
 
     /** returns (unapply-call, success-rep, optional fail-rep*/
     final def getTransition(implicit theOwner: Symbol): (Tree, List[Tree], Rep, Option[Rep]) = {
@@ -615,10 +603,10 @@ trait ParallelMatching extends ast.TreeDSL {
         val subtests =
           if (!ms) subsumed
           else moreSpecific.zip(subsumed) map { case (mspat, (j, pats)) => (j, mspat::pats) }
-        val ntriples = for ((j, ps) <- subtests) yield {
-          val (vs, thePat) = strip(pats(j))
-          rest.row(j).insert2(ps, vs, casted.sym)
-        }
+        val ntriples =
+          for ((j, ps) <- subtests ; val Strip(vs, thePat) = pats(j)) yield
+            (rest row j).insert2(ps, vs, casted.sym)
+
         rep.make(subtestTemps ::: accessorTemps ::: rest.temp, ntriples)
       }
 
@@ -665,7 +653,7 @@ trait ParallelMatching extends ast.TreeDSL {
      *  @param comb pairs of (column index, type symbol)
      */
     def covers(comb: List[Combo]) = {
-      lazy val results = for (Combo(i, sym) <- comb ; val p = pat(i).stripped) yield p match {
+      val results = for (Combo(i, sym) <- comb ; val p = pat(i).stripped) yield p match {
         case _ if isDefaultPattern(p)   => true
         case _: UnApply | _: ArrayValue => true
         case _                          => p.tpe coversSym sym
@@ -676,16 +664,13 @@ trait ParallelMatching extends ast.TreeDSL {
 
     // returns this row with alternatives expanded
     def expand(classifyPat: (Tree, Int) => Tree): List[Row] = {
-      def isAlternative(p: Tree): Boolean = p.stripped match {
-        case Alternative(ps) => true
-        case _               => false
-      }
+      def isAlternative(p: Tree) = cond(p.stripped) { case Alternative(_) => true }
       def getAlternativeBranches(p: Tree): List[Tree] = {
         def get_BIND(pctx:Tree => Tree, p:Tree): List[Tree] = p match {
           case b @ Bind(n,p)   => get_BIND((x: Tree) => pctx(treeCopy.Bind(b, n, x) setType x.tpe), p)
           case Alternative(ps) => ps map pctx
         }
-        get_BIND(x => x, p)
+        logAndReturn("get_BIND: ", get_BIND(x => x, p))
       }
 
       val indexOfAlternative            = pat findIndexOf isAlternative
@@ -697,14 +682,14 @@ trait ParallelMatching extends ast.TreeDSL {
     }
   }
 
-  class RepFactory(val handleOuter: Tree => Tree)(implicit val typer : Typer) {
+  class RepFactory(val handleOuter: Tree => Tree)(implicit val typer: Typer) {
     var vss: List[List[Symbol]] = _
     val labels = new collection.mutable.HashMap[Int, Symbol]()
     var targets: List[Tree] = _
     var reached: BitSet = _
     var shortCuts: List[Symbol] = Nil
 
-    final def make(temp:List[Symbol], row:List[Row], targets: List[Tree], vss:List[List[Symbol]])(implicit theOwner: Symbol): Rep = {
+    final def make(temp: List[Symbol], row:List[Row], targets: List[Tree], vss: List[List[Symbol]])(implicit theOwner: Symbol): Rep = {
       // ensured that labels(i) eq null for all i, cleanup() has to be called after translation
       this.targets      = targets
       this.vss          = vss
@@ -712,7 +697,7 @@ trait ParallelMatching extends ast.TreeDSL {
       make(temp, row)
     }
 
-    final def shortCut(theLabel:Symbol): Int = {
+    final def shortCut(theLabel: Symbol): Int = {
       shortCuts = shortCuts ::: List(theLabel)
       -shortCuts.length
     }
@@ -722,16 +707,18 @@ trait ParallelMatching extends ast.TreeDSL {
         override def transform(tree: Tree): Tree = tree match {
           case blck @ Block(vdefs, ld @ LabelDef(name,params,body)) =>
             val bx = labelIndex(ld.symbol)
-            if (bx >= 0 && !isReachedTwice(bx)) squeezedBlock(vdefs,body)
+            if (bx >= 0 && !isReachedTwice(bx)) squeezedBlock(vdefs, body)
             else blck
 
-          case If(cond, TRUE, FALSE) =>
-            super.transform(cond)
-          case If(cond1, If(cond2, thenp, elsep1), elsep2) if (elsep1 equalsStructure elsep2) =>
-            super.transform( IF (cond1 AND cond2) THEN thenp ELSE elsep1 )
-          case If(cond1, If(cond2, thenp, Apply(jmp, Nil)), ld: LabelDef) if (jmp.symbol eq ld.symbol) =>
-            super.transform( IF (cond1 AND cond2) THEN thenp ELSE ld )
-          case t => super.transform(t)
+          case t => super.transform(t match {
+            case If(cond, TRUE, FALSE) =>
+              cond
+            case If(cond1, If(cond2, thenp, elsep1), elsep2) if (elsep1 equalsStructure elsep2) =>
+              IF (cond1 AND cond2) THEN thenp ELSE elsep1
+            case If(cond1, If(cond2, thenp, Apply(jmp, Nil)), ld: LabelDef) if jmp.symbol eq ld.symbol =>
+              IF (cond1 AND cond2) THEN thenp ELSE ld
+            case t => t
+          })
         }
       }
       val res = lxtt transform tree
@@ -751,10 +738,10 @@ trait ParallelMatching extends ast.TreeDSL {
     final def isReachedTwice(bx: Int) = (bx < 0) || reached(bx)
 
     /* @returns bx such that labels(bx) eq label, -1 if no such bx exists */
-    final def labelIndex(label: Symbol): Int = {
-      for ((k, v) <- labels ; if v eq label) return k
-      -1
-    }
+    final def labelIndex(label: Symbol) = labels find (_._2 eq label) map (_._1) getOrElse (-1)
+
+    /** All trees except those which don't need labels (?) */
+    def isLabellable(t: Tree) = !cond(t) { case _: Throw | _: Literal => true }
 
     /** first time bx is requested, a LabelDef is returned. next time, a jump.
      *  the function takes care of binding
@@ -777,10 +764,10 @@ trait ParallelMatching extends ast.TreeDSL {
         val label   = theOwner.newLabel(body.pos, "body%"+bx) setInfo MethodType(vsyms, tpe)
         labels(bx)  = label
 
-        return body match {
-          case _: Throw | _: Literal  => squeezedBlock(vdefs, body.duplicate setType tpe)
-          case _                      => squeezedBlock(vdefs.reverse, LabelDef(label, vsyms, body setType tpe))
-        }
+        return squeezedBlock(vdefs, (
+          if (isLabellable(body)) LabelDef(label, vsyms, body setType tpe)
+          else body.duplicate setType tpe
+        ))
       }
 
       // if some bx is not reached twice, its LabelDef is replaced with body itself
@@ -805,13 +792,10 @@ trait ParallelMatching extends ast.TreeDSL {
       }
       log("no consistency problem: calling %s(%s) with (%s)".format(label, fmls, args))
 
-      body match {
-        case _: Throw | _: Literal =>       // might be bound elsewhere (see `x @ unapply')
-          val vdefs = for (v <- vss(bx) ; substv <- subst(v)) yield typedValDef(v, substv)
-          squeezedBlock(vdefs, body.duplicate setType resultType)
-        case _ =>
-          Apply(ID(label), args)
-      }
+      def vds = for (v <- vss(bx) ; substv <- subst(v)) yield typedValDef(v, substv)
+
+      if (isLabellable(body)) ID(label) APPLY (args)
+      else                    squeezedBlock(vds, body.duplicate setType resultType)
     }
 
     /** the injection here handles alternatives and unapply type tests */
@@ -826,8 +810,8 @@ trait ParallelMatching extends ast.TreeDSL {
       // sType is called. But it ends up mixing the prefix of the other module with the val symbol
       // which then causes erasure to be confused.
       def sType(o: Tree) = o.tpe match {
-        case st @ SingleType(pre, sym) => st
-        case _ => singleType(o.tpe.prefix, o.symbol)
+        case st: SingleType => st
+        case _              => singleType(o.tpe.prefix, o.symbol)
       }
       def equalsCheck(o: Tree) = if (o.symbol.isValue) singleType(NoPrefix, o.symbol) else sType(o)
       def isModule(o: Tree) = o.symbol.isModule || o.tpe.termSymbol.isModule
@@ -844,7 +828,10 @@ trait ParallelMatching extends ast.TreeDSL {
       }
 
       def classifyPat(opat: Tree, j: Int): Tree = {
-        val (vs, strippedPat) = strip(opat) match { case (vset, pat) => (vset.toList, pat) }
+        val (vs, strippedPat) = {
+          val Strip(vset, pat) = opat
+          (vset.toList, pat)
+        }
         // @todo: rewrite UnApply(Apply(fn, _), _) case, using __UnApply instead of UnApply like so:
         // case  ua @ __UnApply(_,argtpe,_) =>
         //   val ua = prepat
@@ -968,7 +955,8 @@ trait ParallelMatching extends ast.TreeDSL {
 
         var bnd = subst
         for (((rpat, t), px) <- pats zip temp zipWithIndex) {
-          val (vs, p) = strip(rpat)
+          val Strip(vs, p) = rpat
+
           if (isDefaultPattern(p)) bnd = bnd.add(vs, t)
           else {
             // Row( _  ... _ p_1i  ...  p_1n   g_m  b_m ) :: rows
@@ -1020,18 +1008,16 @@ trait ParallelMatching extends ast.TreeDSL {
     rep.make(roots, rows.flatMap(x => x), targets, vss)
   }
 
-  final def newVar(pos: Position, name: Name, tpe: Type, flags: List[Long])(implicit theOwner: Symbol): Symbol = {
-    assert(tpe ne null, "newVar("+name+", null)")
-    val sym = theOwner.newVariable(pos, name) // careful: pos has special meaning
-    sym setInfo tpe
-    sym setFlag flags.foldLeft(Flags.SYNTHETIC.toLong)(_|_)
+  final def newVar(
+    pos: Position,
+    tpe: Type,
+    flags: List[Long] = Nil,
+    name: Name = null
+  )(implicit theOwner: Symbol): Symbol = {
+    val n: Name = if (name == null) newName(pos, "temp") else name
+    // careful: pos has special meaning
+    theOwner.newVariable(pos, n) setInfo tpe setFlag (0L /: flags)(_|_)
   }
-
-  final def newVar(pos: Position, tpe: Type, flags: List[Long])(implicit theOwner: Symbol): Symbol =
-    newVar(pos, newName(pos, "temp"), tpe, flags)
-
-  final def newVar(pos: Position, tpe: Type)(implicit theOwner: Symbol): Symbol =
-    newVar(pos, tpe, Nil)
 
   /** returns the condition in "if (cond) k1 else k2"
    */
@@ -1043,21 +1029,22 @@ trait ParallelMatching extends ast.TreeDSL {
     else addOuterCondition(cond, tpe, scrut.id, rep.handleOuter)
   }
 
-  final def condition(tpe: Type, scrutTree: Tree)(implicit typer : Typer): Tree = {
+  final def condition(tpe: Type, scrutTree: Tree)(implicit typer: Typer): Tree = {
     assert((tpe ne NoType) && (scrutTree.tpe ne NoType))
-    def equalsRef      = REF(tpe.termSymbol) ANY_== scrutTree
-    def isInst         = scrutTree IS tpe
+    def equalsRef         = REF(tpe.termSymbol) ANY_== scrutTree
+    def isInst            = scrutTree IS tpe
+    def isAnyRef(t: Type) = t <:< definitions.AnyRefClass.tpe
 
     tpe match {
-      case ct: ConstantType => ct.value match {                                         // constant
-          case v @ Constant(null) if scrutTree.tpe.isAnyRef     => scrutTree ANY_EQ NULL
-          case v                                                => scrutTree ANY_== Literal(v)
+      case ct: ConstantType => ct.value match {                  // constant
+          case v @ Constant(null) if isAnyRef(scrutTree.tpe)  => scrutTree ANY_EQ NULL
+          case v                                              => scrutTree ANY_== Literal(v)
         }
       case _: SingletonType =>
         if (tpe.termSymbol.isModule) equalsRef  // object
-        else typer typed (if (tpe.prefix ne NoPrefix) isInst else equalsRef)
+        else typer typed { if (tpe.prefix ne NoPrefix) isInst else equalsRef }
       case _ =>
-        if (scrutTree.tpe <:< tpe && tpe.isAnyRef) typer typed (scrutTree OBJ_!= NULL)
+        if (scrutTree.tpe <:< tpe && isAnyRef(tpe)) typer typed (scrutTree OBJ_!= NULL)
         else isInst
     }
   }
