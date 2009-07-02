@@ -10,6 +10,9 @@ import symtab.Flags._
 import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.util.Position
 
+/** Methods for building trees, used in the parser.  All the trees
+ *  returned by this class must be untyped.
+ */
 abstract class TreeBuilder {
 
   val global: Global
@@ -18,19 +21,19 @@ abstract class TreeBuilder {
   def freshName(prefix: String): Name
   def freshName(): Name = freshName("x$")
 
-  def rootId(name: Name) = Select(Ident(nme.ROOTPKG), name)
-  def rootScalaDot(name: Name): Tree = Select(rootId(nme.scala_) setSymbol definitions.ScalaPackage, name)
+  /* These methods should probably be factored into a shared trait.
+   * Be careful what you share between TreeGen and TreeBuilder!
+   */
+  def rootId                  = gen.rootId _
+  def rootScalaDot            = gen.rootScalaDot _
+  def scalaDot                = gen.scalaDot _
+  def scalaAnyRefConstr       = gen.scalaAnyRefConstr
+  def scalaUnitConstr         = gen.scalaUnitConstr
+  def scalaScalaObjectConstr  = gen.scalaScalaObjectConstr
+  def productConstr           = gen.productConstr
 
-  def scalaDot(name: Name): Tree =
-    Select(Ident(nme.scala_) setSymbol definitions.ScalaPackage, name)
-  def scalaAnyRefConstr: Tree =
-    scalaDot(nme.AnyRef.toTypeName)
-  def scalaUnitConstr: Tree =
-    scalaDot(nme.Unit.toTypeName)
-  def scalaScalaObjectConstr: Tree =
-    scalaDot(nme.ScalaObject.toTypeName)
-  def productConstr: Tree =
-    scalaDot(nme.Product.toTypeName)
+  /** Create a tree representing the function type (argtpes) => restpe */
+  def makeFunctionTypeTree    = gen.scalaFunctionConstr _
 
   /** Convert all occurrences of (lower-case) variables in a pattern as follows:
    *    x                  becomes      x @ _
@@ -93,13 +96,13 @@ abstract class TreeBuilder {
   }
 
   def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
-    case List() => Literal(())
+    case Nil => Literal(())
     case List(tree) if flattenUnary => tree
     case _ => makeTuple(trees, false)
   }
 
   def makeTupleType(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
-    case List() => scalaUnitConstr
+    case Nil => scalaUnitConstr
     case List(tree) if flattenUnary => tree
     case _ => AppliedTypeTree(scalaDot(newTypeName("Tuple" + trees.length)), trees)
   }
@@ -154,9 +157,9 @@ abstract class TreeBuilder {
       val x = nme.ANON_CLASS_NAME.toTypeName
       Block(
         List(ClassDef(
-          Modifiers(FINAL), x, List(),
-          Template(parents, self, NoMods, List(List()), argss, stats))),
-        New(Ident(x), List(List())))
+          Modifiers(FINAL), x, Nil,
+          Template(parents, self, NoMods, List(Nil), argss, stats))),
+        New(Ident(x), List(Nil)))
     }
 
   /** Create a tree represeting an assignment &lt;lhs = rhs&gt; */
@@ -170,18 +173,18 @@ abstract class TreeBuilder {
   /** A type tree corresponding to (possibly unary) intersection type */
   def makeIntersectionTypeTree(tps: List[Tree]): Tree =
     if (tps.tail.isEmpty) tps.head
-    else CompoundTypeTree(Template(tps, emptyValDef, List()))
+    else CompoundTypeTree(Template(tps, emptyValDef, Nil))
 
   /** Create tree representing a while loop */
   def makeWhile(lname: Name, cond: Tree, body: Tree): Tree = {
-    val continu = Apply(Ident(lname), List())
+    val continu = Apply(Ident(lname), Nil)
     val rhs = If(cond, Block(List(body), continu), Literal(()))
     LabelDef(lname, Nil, rhs)
   }
 
   /** Create tree representing a do-while loop */
   def makeDoWhile(lname: Name, body: Tree, cond: Tree): Tree = {
-    val continu = Apply(Ident(lname), List())
+    val continu = Apply(Ident(lname), Nil)
     val rhs = Block(List(body), If(cond, continu, Literal(())))
     LabelDef(lname, Nil, rhs)
   }
@@ -222,7 +225,7 @@ abstract class TreeBuilder {
     ValDef(Modifiers(PARAM | SYNTHETIC), pname, TypeTree(), EmptyTree)
 
   def makeSyntheticTypeParam(pname: Name, bounds: Tree) =
-    TypeDef(Modifiers(DEFERRED | SYNTHETIC), pname, List(), bounds)
+    TypeDef(Modifiers(DEFERRED | SYNTHETIC), pname, Nil, bounds)
 
   abstract class Enumerator { def pos: Position }
   case class ValFrom(pos: Position, pat: Tree, rhs: Tree) extends Enumerator
@@ -354,19 +357,19 @@ abstract class TreeBuilder {
   /** Create tree for a pattern alternative */
   def makeAlternative(ts: List[Tree]): Tree = {
     def alternatives(t: Tree): List[Tree] = t match {
-      case Alternative(ts) => ts
-      case _ => List(t)
+      case Alternative(ts)  => ts
+      case _                => List(t)
     }
-    Alternative(for (t <- ts; a <- alternatives(t)) yield a)
+    Alternative(ts flatMap alternatives)
   }
 
   /** Create tree for a pattern sequence */
   def makeSequence(ts: List[Tree]): Tree = {
     def elements(t: Tree): List[Tree] = t match {
       case Sequence(ts) => ts
-      case _ => List(t)
+      case _            => List(t)
     }
-    Sequence(for (t <- ts; e <- elements(t)) yield e)
+    Sequence(ts flatMap elements)
   }
 
   /** Create visitor <x => x match cases> */
@@ -374,7 +377,7 @@ abstract class TreeBuilder {
     makeVisitor(cases, checkExhaustive, "x$")
 
   private def makeUnchecked(expr: Tree): Tree = atPos(expr.pos) {
-    Annotated(New(scalaDot(definitions.UncheckedClass.name), List(List())), expr)
+    Annotated(New(scalaDot(definitions.UncheckedClass.name), List(Nil)), expr)
   }
 
   /** Create visitor <x => x match cases> */
@@ -433,10 +436,6 @@ abstract class TreeBuilder {
           firstDef :: restDefs
       }
   }
-
-  /** Create a tree representing the function type (argtpes) => restpe */
-  def makeFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree =
-    AppliedTypeTree(rootScalaDot(newTypeName("Function" + argtpes.length)), argtpes ::: List(restpe))
 
   /** Append implicit view section if for `implicitViews' if nonempty */
   def addImplicitViews(owner: Name, vparamss: List[List[ValDef]], implicitViews: List[Tree]): List[List[ValDef]] = {
