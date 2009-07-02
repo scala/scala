@@ -843,7 +843,6 @@ trait Namers { self: Analyzer =>
         // for instance, B.foo would not override A.foo, and the default on parameter b would not be inherited
         //   class A { def foo[T](a: T)(b: T = a) = a }
         //   class B extends A { override def foo[U](a: U)(b: U) = b }
-        //   (new B).foo(1)()
         sym != NoSymbol && (site.memberType(sym) matches thisMethodType(resultPt).substSym(tparams map (_.symbol), tparamSyms))
       })
 

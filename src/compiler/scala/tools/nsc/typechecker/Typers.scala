@@ -1507,7 +1507,8 @@ trait Typers { self: Analyzer =>
           checkStructuralCondition(meth.owner, vparam)
 
       // only one overloaded method is allowed to have defaults
-      if (meth.owner.isClass && meth.paramss.exists(_.exists(_.hasFlag(DEFAULTPARAM)))) {
+      if (phase.id <= currentRun.typerPhase.id &&
+          meth.owner.isClass && meth.paramss.exists(_.exists(_.hasFlag(DEFAULTPARAM)))) {
         // don't do the check if it has already failed for another alternatvie
         if (meth.paramss.exists(_.exists(p => p.hasFlag(DEFAULTPARAM) &&
                                               !p.defaultGetter.tpe.isError))) {
