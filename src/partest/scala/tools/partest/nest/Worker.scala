@@ -759,7 +759,7 @@ class Worker(val fileManager: FileManager) extends Actor {
           val classFile = ClassFileParser.parse(byteCode)
           val Some(sig) = classFile.attribute("ScalaSig").map(_.byteCode).map(ScalaSigAttributeParsers.parse)
           import scala.tools.scalap.Main._
-          parseScalaSignature(sig/*, packObj*/)
+          parseScalaSignature(sig, packObj)
         }
 
         runInContext(file, kind, (logFile: File, outDir: File) => {
