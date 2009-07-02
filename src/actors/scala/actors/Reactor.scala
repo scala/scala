@@ -66,11 +66,11 @@ trait Reactor extends OutputChannel[Any] {
       if (waitingFor ne waitingForNone) {
         val savedWaitingFor = waitingFor
         waitingFor = waitingForNone
-        () => scheduler execute (makeReaction {
+        () => scheduler execute (makeReaction(() => {
           val startMbox = new MessageQueue
           synchronized { startMbox.append(msg, replyTo) }
           searchMailbox(startMbox, savedWaitingFor, true)
-        })
+        }))
       } else {
         sendBuffer.enqueue((msg, replyTo))
         () => { /* do nothing */ }
@@ -79,8 +79,8 @@ trait Reactor extends OutputChannel[Any] {
     todo()
   }
 
-  protected[this] def makeReaction(block: => Unit): Runnable =
-    new ReactorTask(this, { block })
+  protected[this] def makeReaction(fun: () => Unit): Runnable =
+    new ReactorTask(this, fun)
 
   protected[this] def resumeReceiver(item: (Any, OutputChannel[Any]), onSameThread: Boolean) {
     // assert continuation != null

@@ -24,10 +24,10 @@ class ReactorTask extends Runnable {
   private var reactor: Reactor = null
   private var fun: () => Unit = null
 
-  def this(reactor: Reactor, block: => Unit) {
+  def this(reactor: Reactor, fun: () => Unit) {
     this()
     this.reactor = reactor
-    this.fun = () => { block }
+    this.fun = fun
   }
 
   def run() {

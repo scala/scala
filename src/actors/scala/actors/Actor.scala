@@ -399,13 +399,13 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
    */
   private var onTimeout: Option[TimerTask] = None
 
-  protected[this] override def makeReaction(block: => Unit): Runnable = {
+  protected[this] override def makeReaction(fun: () => Unit): Runnable = {
     if (isSuspended)
       new Runnable {
-        def run() { block }
+        def run() { fun() }
       }
     else
-      new ActorTask(this, { block })
+      new ActorTask(this, fun)
   }
 
   protected[this] override def resumeReceiver(item: (Any, OutputChannel[Any]), onSameThread: Boolean) {

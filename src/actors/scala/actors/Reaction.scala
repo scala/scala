@@ -31,7 +31,7 @@ private[actors] class KillActorException extends Throwable {
  *  @version 0.9.10
  *  @author Philipp Haller
  */
-class Reaction(a: Actor, f: PartialFunction[Any, Unit], msg: Any) extends ActorTask(a, {
+class Reaction(a: Actor, f: PartialFunction[Any, Unit], msg: Any) extends ActorTask(a, () => {
   if (f == null)
     a.act()
   else
