@@ -560,7 +560,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
         case Apply(Select(New(tpt), name), args) if (tpt.tpe.typeSymbol == BoxedArrayClass) =>
           assert(name == nme.CONSTRUCTOR);
           val translated: Tree =
-            if (args.length >= 2) REF(ArrayModule) DOT nme.withDims
+            if (args.length >= 2) REF(ArrayModule) DOT nme.ofDim
             else                  NEW(BoxedAnyArrayClass) DOT name
 
           atPos(tree.pos) {

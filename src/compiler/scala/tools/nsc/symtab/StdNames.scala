@@ -311,6 +311,7 @@ trait StdNames {
     val notify_ = newTermName("notify")
     val notifyAll_ = newTermName("notifyAll")
     val null_ = newTermName("null")
+    val ofDim = newTermName("ofDim")
     val print = newTermName("print")
     val productArity = newTermName("productArity")
     val productElement = newTermName("productElement")
@@ -336,7 +337,6 @@ trait StdNames {
     val value = newTermName("value")
     val view_ = newTermName("view")
     val wait_ = newTermName("wait")
-    val withDims = newTermName("withDims")
     val zip = newTermName("zip")
 
     val ZAND = encode("&&")

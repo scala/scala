@@ -20,20 +20,15 @@ abstract class TreeBuilder {
 
   def freshName(prefix: String): Name
   def freshName(): Name = freshName("x$")
+  def o2p(offset: Int): Position
 
-  /* These methods should probably be factored into a shared trait.
-   * Be careful what you share between TreeGen and TreeBuilder!
-   */
-  def rootId                  = gen.rootId _
-  def rootScalaDot            = gen.rootScalaDot _
-  def scalaDot                = gen.scalaDot _
-  def scalaAnyRefConstr       = gen.scalaAnyRefConstr
-  def scalaUnitConstr         = gen.scalaUnitConstr
-  def scalaScalaObjectConstr  = gen.scalaScalaObjectConstr
-  def productConstr           = gen.productConstr
-
-  /** Create a tree representing the function type (argtpes) => restpe */
-  def makeFunctionTypeTree    = gen.scalaFunctionConstr _
+  def rootId(name: Name)       = gen.rootId(name)
+  def rootScalaDot(name: Name) = gen.rootScalaDot(name)
+  def scalaDot(name: Name)     = gen.scalaDot(name)
+  def scalaAnyRefConstr        = gen.scalaAnyRefConstr
+  def scalaUnitConstr          = gen.scalaUnitConstr
+  def scalaScalaObjectConstr   = gen.scalaScalaObjectConstr
+  def productConstr            = gen.productConstr
 
   /** Convert all occurrences of (lower-case) variables in a pattern as follows:
    *    x                  becomes      x @ _
@@ -147,19 +142,31 @@ abstract class TreeBuilder {
     }
   }
 
-  /** Create tree representing an object creation <new parents { stats }> */
-  def makeNew(parents: List[Tree], self: ValDef, stats: List[Tree], argss: List[List[Tree]]): Tree =
+  /** Create positioned tree representing an object creation <new parents { stats }
+   *  @param npos  the position of the new
+   *  @param cpos  the position of the anonymous class startig with parents
+   */
+  def makeNew(parents: List[Tree], self: ValDef, stats: List[Tree], argss: List[List[Tree]],
+              npos: Position, cpos: Position): Tree =
     if (parents.isEmpty)
-      makeNew(List(scalaAnyRefConstr), self, stats, argss)
+      makeNew(List(scalaAnyRefConstr), self, stats, argss, npos, cpos)
     else if (parents.tail.isEmpty && stats.isEmpty)
-      New(parents.head, argss)
+      atPos(npos union cpos) { New(parents.head, argss) }
     else {
       val x = nme.ANON_CLASS_NAME.toTypeName
-      Block(
-        List(ClassDef(
-          Modifiers(FINAL), x, Nil,
-          Template(parents, self, NoMods, List(Nil), argss, stats))),
-        New(Ident(x), List(Nil)))
+      atPos(npos union cpos) {
+        Block(
+          List(
+            atPos(cpos) {
+              ClassDef(
+                Modifiers(FINAL), x, Nil,
+                Template(parents, self, NoMods, List(Nil), argss, stats, cpos.toSynthetic))
+            }),
+          New(
+            Ident(x) setPos npos.toSynthetic,
+            List(Nil)) setPos npos
+        )
+      }
     }
 
   /** Create a tree represeting an assignment &lt;lhs = rhs&gt; */
@@ -177,7 +184,7 @@ abstract class TreeBuilder {
 
   /** Create tree representing a while loop */
   def makeWhile(lname: Name, cond: Tree, body: Tree): Tree = {
-    val continu = Apply(Ident(lname), Nil)
+    val continu = atPos(o2p(body.pos.end)) { Apply(Ident(lname), Nil) }
     val rhs = If(cond, Block(List(body), continu), Literal(()))
     LabelDef(lname, Nil, rhs)
   }
@@ -205,7 +212,7 @@ abstract class TreeBuilder {
         case Some(_) =>
           rhs
         case None =>
-          atPos(pos) {
+          atPos(rhs.pos) {
             Apply(
               Select(rhs, nme.filter),
               List(
@@ -278,11 +285,13 @@ abstract class TreeBuilder {
   */
   private def makeFor(mapName: Name, flatMapName: Name, enums: List[Enumerator], body: Tree): Tree = {
 
-    def makeClosure(pat: Tree, body: Tree): Tree = matchVarPattern(pat) match {
-      case Some((name, tpt)) =>
-        Function(List(ValDef(Modifiers(PARAM), name, tpt, EmptyTree)), body)
-      case None =>
-        makeVisitor(List(CaseDef(pat, EmptyTree, body)), false)
+    def makeClosure(pat: Tree, body: Tree): Tree = {
+      matchVarPattern(pat) match {
+        case Some((name, tpt)) =>
+          Function(List(ValDef(Modifiers(PARAM), name, tpt, EmptyTree)), body)
+        case None =>
+          makeVisitor(List(CaseDef(pat, EmptyTree, body)), false)
+      }
     }
 
     def makeCombination(meth: Name, qual: Tree, pat: Tree, body: Tree): Tree =
@@ -302,35 +311,37 @@ abstract class TreeBuilder {
       case Bind(name, _) => Ident(name)
     }
 
-    enums match {
-      case ValFrom(pos, pat, rhs) :: Nil =>
-        atPos(pos union body.pos) {
-          makeCombination(mapName, rhs, pat, body)
-        }
-      case ValFrom(pos, pat, rhs) :: (rest @ (ValFrom(_,  _, _) :: _)) =>
-        atPos(pos union body.pos) {
-          makeCombination(flatMapName, rhs, pat, makeFor(mapName, flatMapName, rest, body))
-        }
-      case ValFrom(pos, pat, rhs) :: Filter(_, test) :: rest =>
-        makeFor(mapName, flatMapName,
-                ValFrom(pos, pat, makeCombination(nme.filter, rhs, pat.syntheticDuplicate, test)) :: rest,
-                body)
-      case ValFrom(pos, pat, rhs) :: rest =>
-        val valeqs = rest.take(definitions.MaxTupleArity - 1).takeWhile(_.isInstanceOf[ValEq]);
-        assert(!valeqs.isEmpty)
-        val rest1 = rest.drop(valeqs.length)
-        val pats = valeqs map { case ValEq(_, pat, _) => pat }
-        val rhss = valeqs map { case ValEq(_, _, rhs) => rhs }
-        val defpats = pats map (x => makeBind(x.syntheticDuplicate))
-        val pdefs = List.flatten(List.map2(defpats, rhss)(makePatDef))
-        val patX1 = makeBind(pat.syntheticDuplicate);
-        val ids = (patX1 :: defpats) map makeValue
-        val rhs1 = makeForYield(
-          List(ValFrom(pos, patX1, rhs)),
-          Block(pdefs, makeTupleTerm(ids, true)))
-        makeFor(mapName, flatMapName, ValFrom(pos, makeTuple(pat :: pats, false), rhs1) :: rest1, body)
-      case _ =>
-        EmptyTree //may happen for erroneous input
+    withSplitAllowed {
+      enums match {
+        case ValFrom(pos, pat, rhs) :: Nil =>
+          atPos(pos union body.pos) {
+            makeCombination(mapName, rhs, pat, body)
+          }
+        case ValFrom(pos, pat, rhs) :: (rest @ (ValFrom(_,  _, _) :: _)) =>
+          atPos(pos union body.pos) {
+            makeCombination(flatMapName, rhs, pat, makeFor(mapName, flatMapName, rest, body))
+          }
+        case ValFrom(pos, pat, rhs) :: Filter(_, test) :: rest =>
+          makeFor(mapName, flatMapName,
+                  ValFrom(pos, pat, makeCombination(nme.filter, rhs, pat.syntheticDuplicate, test)) :: rest,
+                  body)
+        case ValFrom(pos, pat, rhs) :: rest =>
+          val valeqs = rest.take(definitions.MaxTupleArity - 1).takeWhile(_.isInstanceOf[ValEq]);
+          assert(!valeqs.isEmpty)
+          val rest1 = rest.drop(valeqs.length)
+          val pats = valeqs map { case ValEq(_, pat, _) => pat }
+          val rhss = valeqs map { case ValEq(_, _, rhs) => rhs }
+          val defpats = pats map (x => makeBind(x.syntheticDuplicate))
+          val pdefs = List.flatten(List.map2(defpats, rhss)(makePatDef))
+          val patX1 = makeBind(pat.syntheticDuplicate);
+          val ids = (patX1 :: defpats) map makeValue
+          val rhs1 = makeForYield(
+            List(ValFrom(pos, patX1, rhs)),
+            Block(pdefs, makeTupleTerm(ids, true)))
+          makeFor(mapName, flatMapName, ValFrom(pos, makeTuple(pat :: pats, false), rhs1) :: rest1, body)
+        case _ =>
+          EmptyTree //may happen for erroneous input
+      }
     }
   }
 
@@ -376,14 +387,14 @@ abstract class TreeBuilder {
   def makeVisitor(cases: List[CaseDef], checkExhaustive: Boolean): Tree =
     makeVisitor(cases, checkExhaustive, "x$")
 
-  private def makeUnchecked(expr: Tree): Tree = atPos(expr.pos) {
+  private def makeUnchecked(expr: Tree): Tree =
     Annotated(New(scalaDot(definitions.UncheckedClass.name), List(Nil)), expr)
-  }
 
   /** Create visitor <x => x match cases> */
   def makeVisitor(cases: List[CaseDef], checkExhaustive: Boolean, prefix: String): Tree = {
     val x = freshName(prefix)
-    val sel = if (checkExhaustive) Ident(x) else makeUnchecked(Ident(x))
+    val id = Ident(x)
+    val sel = if (checkExhaustive) id else makeUnchecked(id)
     Function(List(makeSyntheticParam(x)), Match(sel, cases))
   }
 
@@ -398,7 +409,9 @@ abstract class TreeBuilder {
   /** Create tree for pattern definition <mods val pat0 = rhs> */
   def makePatDef(mods: Modifiers, pat: Tree, rhs: Tree): List[Tree] = matchVarPattern(pat) match {
     case Some((name, tpt)) =>
-      List(ValDef(mods, name, tpt, rhs))
+      List(atPos(pat.pos union rhs.pos) {
+        ValDef(mods, name, tpt, rhs)
+      })
 
     case None =>
       //  in case there is exactly one variable x_1 in pattern
@@ -423,11 +436,16 @@ abstract class TreeBuilder {
       }
       vars match {
         case List((vname, tpt, pos)) =>
-          List(ValDef(mods, vname, tpt, matchExpr))
+          List(atPos(pat.pos union rhs.pos) {
+            ValDef(mods, vname, tpt, matchExpr)
+          })
         case _ =>
           val tmp = freshName()
-          val firstDef = ValDef(Modifiers(PRIVATE | LOCAL | SYNTHETIC | (mods.flags & LAZY)),
-                                tmp, TypeTree(), matchExpr)
+          val firstDef =
+            atPos(rhs.pos) {
+              ValDef(Modifiers(PRIVATE | LOCAL | SYNTHETIC | (mods.flags & LAZY)),
+                     tmp, TypeTree(), matchExpr)
+            }
           var cnt = 0
           val restDefs = for ((vname, tpt, pos) <- vars) yield atPos(pos) {
             cnt = cnt + 1
@@ -436,6 +454,10 @@ abstract class TreeBuilder {
           firstDef :: restDefs
       }
   }
+
+  /** Create a tree representing the function type (argtpes) => restpe */
+  def makeFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree =
+    AppliedTypeTree(rootScalaDot(newTypeName("Function" + argtpes.length)), argtpes ::: List(restpe))
 
   /** Append implicit view section if for `implicitViews' if nonempty */
   def addImplicitViews(owner: Name, vparamss: List[List[ValDef]], implicitViews: List[Tree]): List[List[ValDef]] = {

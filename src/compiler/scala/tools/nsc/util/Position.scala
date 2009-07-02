@@ -109,7 +109,7 @@ trait Position {
    */
   def overlaps(pos: Position) =
     isDefined && pos.isDefined &&
-    (pos.start <= start && start < pos.end) || (start <= pos.start && pos.start < end)
+    (pos.start < end && start < pos.end) || (start < pos.end && pos.start < end)
 
   /** Does this position cover the same range as that position?
    */
@@ -194,6 +194,7 @@ class SyntheticOffsetPosition(source0: SourceFile, offset0: Int) extends OffsetP
   override def isSynthetic = true
   override def toSynthetic = this
   override def withPoint(off: Int) = new SyntheticOffsetPosition(source0, off)
+  override def show = "<["+point+"]>"
 }
 
 /** new for position ranges */
@@ -206,35 +207,16 @@ extends OffsetPosition(source0, point) {
   override def withEnd(off: Int) = new RangePosition(source0, start, point, off)
   override def withPoint(off: Int) = new RangePosition(source0, start, off, end)
   override def union(pos: Position) =
-    if (pos.isDefined) new RangePosition(source0, start min pos.start, point, end max pos.end)
+    if (pos.isDefined && !pos.isSynthetic) new RangePosition(source0, start min pos.start, point, end max pos.end)
     else this
   override def endOrElse(d: Int) = end
   override def focusStart = OffsetPosition(source0, start)
   override def focusPoint = OffsetPosition(source0, point)
   override def focusEnd = OffsetPosition(source0, end)
-  override def toSynthetic = new SyntheticRangePosition(source0, start, point, end)
   override def toString = "RangePosition("+source0+", "+start+", "+point+", "+end+")"
   override def show = "["+start+":"+end+"]"
 }
 
-/** A position to be used for synthetic trees that do not correspond to some original tree
- *  @note Trees with synthetic positions may not contain trees with real positions inside them!
- *  todo: needed?
- */
-class SyntheticRangePosition(source0: SourceFile, start: Int, point: Int, end: Int) extends RangePosition(source0, start, point, end) {
-  override def isSynthetic = true
-  override def toSynthetic = this
-  override def withStart(off: Int) = new SyntheticRangePosition(source0, off, point, end)
-  override def withEnd(off: Int) = new SyntheticRangePosition(source0, start, point, off)
-  override def withPoint(off: Int) = new SyntheticRangePosition(source0, start, off, end)
-  override def union(pos: Position) =
-    if (pos.isDefined) new SyntheticRangePosition(source0, start min pos.start, point, end max pos.end)
-    else this
-  override def focusStart = new SyntheticOffsetPosition(source0, start)
-  override def focusPoint = new SyntheticOffsetPosition(source0, point)
-  override def focusEnd = new SyntheticOffsetPosition(source0, end)
-  override def show = "<["+start+":"+end+"]>"
-}
 
 
 

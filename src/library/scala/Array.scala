@@ -171,13 +171,6 @@ object Array extends SequenceFactory[Array] {
   def ofDim[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[A]]]]] =
     tabulate(n1)(_ => ofDim[A](n2, n3, n4, n5))
 
-  /** Create array with given dimensions */
-  @deprecated("use `ofDim' instead") def withDims[A](n1: Int): Array[A] = ofDim(n1)
-  @deprecated("use `ofDim' instead") def withDims[A](n1: Int, n2: Int): Array[Array[A]] = ofDim(n1, n2)
-  @deprecated("use `ofDim' instead") def withDims[A](n1: Int, n2: Int, n3: Int): Array[Array[Array[A]]] = ofDim(n1, n2, n3)
-  @deprecated("use `ofDim' instead") def withDims[A](n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[A]]]] = ofDim(n1, n2, n3, n4)
-  @deprecated("use `ofDim' instead") def withDims[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[A]]]]] = ofDim(n1, n2, n3, n4, n5)
-
   /** Create an array containing several copies of an element.
    *
    *  @param n    the length of the resulting array

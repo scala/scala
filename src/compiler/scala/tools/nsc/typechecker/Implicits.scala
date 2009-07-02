@@ -293,7 +293,7 @@ self: Analyzer =>
           isCompatible(depoly(info.tpe), wildPt) &&
           isStable(info.pre)) {
 
-        val itree = atPos(tree.pos) {
+        val itree = atPos(tree) {
           if (info.pre == NoPrefix) Ident(info.name)
           else Select(gen.mkAttributedQualifier(info.pre), info.name)
         }
@@ -595,7 +595,7 @@ self: Analyzer =>
       def manifestFactoryCall(constructor: String, args: Tree*): Tree =
         if (args contains EmptyTree) EmptyTree
         else
-          typed(atPos(tree.pos) {
+          typed(atPos(tree) {
             Apply(
               TypeApply(
                 Select(gen.mkAttributedRef(ManifestModule), constructor),

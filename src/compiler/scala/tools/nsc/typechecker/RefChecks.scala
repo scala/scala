@@ -919,7 +919,7 @@ abstract class RefChecks extends InfoTransform {
         case Apply(Select(New(tpt), name), args)
         if (tpt.tpe.typeSymbol == ArrayClass && args.length >= 2) =>
           unit.deprecationWarning(tree.pos,
-            "new Array(...) with multiple dimensions has been deprecated; use Array.withDims(...) instead")
+            "new Array(...) with multiple dimensions has been deprecated; use Array.ofDim(...) instead")
           currentApplication = tree
 
         case Apply(fn, args) =>

@@ -104,7 +104,7 @@ trait Trees {
     }
 
     val id = nodeCount
-//    assert(id != 151)
+    //assert(id != 225)
     nodeCount += 1
 
     private var rawpos: Position = NoPosition
@@ -380,11 +380,11 @@ trait Trees {
    *                    and value parameter fields.
    *  @return          ...
    */
-  def ClassDef(sym: Symbol, constrMods: Modifiers, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree]): ClassDef =
+  def ClassDef(sym: Symbol, constrMods: Modifiers, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree], superPos: Position): ClassDef =
     ClassDef(sym,
       Template(sym.info.parents map TypeTree,
                if (sym.thisSym == sym || phase.erasedTypes) emptyValDef else ValDef(sym.thisSym),
-               constrMods, vparamss, argss, body))
+               constrMods, vparamss, argss, body, superPos))
 
   /** Singleton object definition
    *
@@ -588,16 +588,16 @@ trait Trees {
    *    body
    *  }
    */
-  def Template(parents: List[Tree], self: ValDef, constrMods: Modifiers, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree]): Template = {
+  def Template(parents: List[Tree], self: ValDef, constrMods: Modifiers, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree], superPos: Position): Template = {
     /* Add constructor to template */
 
-    // create parameters for <init>
+    // create parameters for <init> as synthetic trees.
     var vparamss1 =
       vparamss map (vps => vps.map { vd =>
         atPos(vd) {
           ValDef(
             Modifiers(vd.mods.flags & (IMPLICIT | DEFAULTPARAM) | PARAM) withAnnotations vd.mods.annotations,
-            vd.name, atPos(vd.tpt) { vd.tpt.syntheticDuplicate }, vd.rhs.syntheticDuplicate)
+            vd.name, vd.tpt.syntheticDuplicate, vd.rhs.syntheticDuplicate)
         }})
     val (edefs, rest) = body span treeInfo.isEarlyDef
     val (evdefs, etdefs) = edefs partition treeInfo.isEarlyValDef
@@ -609,7 +609,7 @@ trait Trees {
           (local, fld)
       }
     }
-    val constrs =
+    val constrs = {
       if (constrMods.isTrait) {
         if (body forall treeInfo.isInterfaceMember) List()
         else List(
@@ -619,11 +619,14 @@ trait Trees {
         if (vparamss1.isEmpty ||
             !vparamss1.head.isEmpty && (vparamss1.head.head.mods.flags & IMPLICIT) != 0)
           vparamss1 = List() :: vparamss1;
-        val superRef: Tree = Select(Super(nme.EMPTY.toTypeName, nme.EMPTY.toTypeName), nme.CONSTRUCTOR)
+        val superRef: Tree = atPos(superPos) {
+          Select(Super(nme.EMPTY.toTypeName, nme.EMPTY.toTypeName), nme.CONSTRUCTOR)
+        }
         val superCall = (superRef /: argss) (Apply)
         List(
           DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(()))))
       }
+    }
     // remove defaults
     val vparamss2 = vparamss map (vps => vps map { vd =>
       treeCopy.ValDef(vd, vd.mods &~ DEFAULTPARAM, vd.name, vd.tpt, EmptyTree)
@@ -866,6 +869,10 @@ trait Trees {
   case class Annotated(annot: Tree, arg: Tree) extends Tree {
     override def isType = arg.isType
     override def isTerm = arg.isTerm
+    override def setPos(pos: Position) : this.type = {
+//      assert(pos.start != 27934, this)
+      super.setPos(pos)
+    }
   }
 
   /** Singleton type, eliminated by RefCheck */

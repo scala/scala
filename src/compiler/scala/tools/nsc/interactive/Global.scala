@@ -52,7 +52,6 @@ self =>
 
   // ----------- Overriding hooks in nsc.Global -----------------------
 
-  /** Create a RangePosition */
   override def rangePos(source: SourceFile, start: Int, point: Int, end: Int) =
     new RangePosition(source, start, point, end)
 
@@ -129,6 +128,7 @@ self =>
   }
 
   def debugInfo(source : SourceFile, start : Int, length : Int): String = {
+    println("DEBUG INFO "+source+"/"+start+"/"+length)
     val end = start+length
     val pos = rangePos(source, start, start, end)
 
@@ -180,6 +180,7 @@ self =>
           ;
         case ex =>
           ex.printStackTrace()
+          outOfDate = false
           inform("Fatal Error: "+ex)
           compileRunner = newRunnerThread
       }
@@ -216,6 +217,7 @@ self =>
   def parse(unit: RichCompilationUnit): Unit = {
     currentTyperRun.compileLate(unit)
     validatePositions(unit.body)
+    println("parsed: [["+unit.body+"]]")
     unit.status = JustParsed
   }
 
@@ -251,17 +253,20 @@ self =>
   }
 
   /** Make sure a set of compilation units is loaded and parsed */
-  def reload(sources: List[SourceFile], result: Response[Unit]) {
-    respond(result) {
-      currentTyperRun = new TyperRun()
-      for (source <- sources) {
-        val unit = new RichCompilationUnit(source)
-        unitOfFile(source.file) = unit
-        parse(unit)
-        if (settings.Xprintpos.value) treePrinter.print(unit)
-      }
-      moveToFront(sources)
+  def reloadSources(sources: List[SourceFile]) {
+    currentTyperRun = new TyperRun()
+    for (source <- sources) {
+      val unit = new RichCompilationUnit(source)
+      unitOfFile(source.file) = unit
+      parse(unit)
+      if (settings.Xprintpos.value) treePrinter.print(unit)
     }
+    moveToFront(sources)
+  }
+
+  /** Make sure a set of compilation units is loaded and parsed */
+  def reload(sources: List[SourceFile], result: Response[Unit]) {
+    respond(result)(reloadSources(sources))
     if (outOfDate) throw new FreshRunReq
     else outOfDate = true
   }
@@ -269,8 +274,9 @@ self =>
   /** A fully attributed tree located at position `pos`  */
   def typedTreeAt(pos: Position): Tree = {
     val unit = unitOf(pos)
-    assert(unit.status != NotLoaded)
-    moveToFront(List(unit.source))
+    val sources = List(unit.source)
+    if (unit.status == NotLoaded) reloadSources(sources)
+    moveToFront(sources)
     val typedTree = currentTyperRun.typedTreeAt(pos)
     new Locator(pos) locateIn typedTree
   }

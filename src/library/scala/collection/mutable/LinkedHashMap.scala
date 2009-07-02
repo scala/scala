@@ -94,7 +94,7 @@ class LinkedHashMap[A, B] extends Map[A, B]
   override def valuesIterator: Iterator[B] = new Iterator[B] {
     private var cur = firstEntry
     def hasNext = cur ne null
-    def next = { val res = cur.value; cur = cur.later; res }
+    def next =
       if (hasNext) { val res = cur.value; cur = cur.later; res }
       else Iterator.empty.next
   }

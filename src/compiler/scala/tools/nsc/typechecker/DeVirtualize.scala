@@ -403,7 +403,9 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
           }
         }
       }
-      ClassDef(cclazz, Modifiers(0), vparamss, List(List()), pfields ::: overrideBridges)
+      atPos(clazz.pos) {
+        ClassDef(cclazz, Modifiers(0), vparamss, List(List()), pfields ::: overrideBridges, clazz.pos.toSynthetic)
+      }
     }
 
 

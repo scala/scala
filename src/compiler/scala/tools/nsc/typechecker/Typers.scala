@@ -3473,7 +3473,7 @@ trait Typers { self: Analyzer =>
       //if (settings.debug.value && tree.isDef) log("typing definition of "+sym);//DEBUG
       tree match {
         case PackageDef(name, stats) =>
-          assert(sym.moduleClass ne NoSymbol)
+          assert(sym.moduleClass ne NoSymbol, sym)
           val stats1 = newTyper(context.make(tree, sym.moduleClass, sym.info.decls))
             .typedStats(stats, NoSymbol)
           treeCopy.PackageDef(tree, name, stats1) setType NoType

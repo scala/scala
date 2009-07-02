@@ -373,12 +373,12 @@ trait Namers { self: Analyzer =>
               if (nme.isSetterName(name))
                 context.error(tree.pos, "Names of vals or vars may not end in `_='")
               // .isInstanceOf[..]: probably for (old) IDE hook. is this obsolete?
-              val getter = enterNewMethod(tree, name, accflags, mods).asInstanceOf[TermSymbol]
+              val getter = enterAliasMethod(tree, name, accflags, mods)
               setInfo(getter)(namerOf(getter).getterTypeCompleter(vd))
               if ((mods.flags & MUTABLE) != 0) {
-                val setter = enterNewMethod(tree, nme.getterToSetter(name),
+                val setter = enterAliasMethod(tree, nme.getterToSetter(name),
                                             accflags & ~STABLE & ~CASEACCESSOR,
-                                            mods).asInstanceOf[TermSymbol]
+                                            mods)
                 setInfo(setter)(namerOf(setter).setterTypeCompleter(vd))
               }
               tree.symbol =
@@ -406,7 +406,7 @@ trait Namers { self: Analyzer =>
             tree.symbol = enterInScope(sym)
             finishWith(tparams)
           case DefDef(mods, name, tparams, _, _, _) =>
-            tree.symbol = enterNewMethod(tree, name, mods.flags, mods)
+            tree.symbol = enterNewMethod(tree, name, mods.flags, mods, tree.pos)
             finishWith(tparams)
           case TypeDef(mods, name, tparams, _) =>
             var flags: Long = mods.flags
@@ -438,11 +438,15 @@ trait Namers { self: Analyzer =>
       tree.symbol
     }
 
-    def enterNewMethod(tree: Tree, name: Name, flags: Long, mods: Modifiers) = {
-      val sym = context.owner.newMethod(tree.pos, name).setFlag(flags)
+    def enterNewMethod(tree: Tree, name: Name, flags: Long, mods: Modifiers, pos: Position): TermSymbol = {
+      val sym = context.owner.newMethod(pos, name).setFlag(flags)
       setPrivateWithin(tree, sym, mods)
       enterInScope(sym)
+      sym
     }
+
+    def enterAliasMethod(tree: Tree, name: Name, flags: Long, mods: Modifiers): TermSymbol =
+      enterNewMethod(tree, name, flags, mods, SyntheticAliasPosition(tree))
 
     private def addBeanGetterSetter(vd: ValDef, getter: Symbol) {
       def isAnn(ann: Tree, demand: String) = ann match {
@@ -482,7 +486,8 @@ trait Namers { self: Analyzer =>
             // known. instead, uses the same machinery as for the non-bean setter:
             // create and enter the symbol here, add the tree in Typer.addGettterSetter.
             val setterName = "set" + beanName
-            val setter = enterNewMethod(vd, setterName, flags, mods).asInstanceOf[TermSymbol]
+            val setter = enterAliasMethod(vd, setterName, flags, mods)
+              .setPos(SyntheticAliasPosition(vd))
             setInfo(setter)(namerOf(setter).setterTypeCompleter(vd))
           }
         }

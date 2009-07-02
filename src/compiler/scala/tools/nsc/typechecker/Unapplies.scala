@@ -135,11 +135,11 @@ trait Unapplies extends ast.TreeDSL
     companionModuleDef(cdef, parents ::: List(gen.scalaScalaObjectConstr))
   }
 
-  def companionModuleDef(cdef: ClassDef, parents: List[Tree]): ModuleDef = atPos(cdef.pos) {
+  def companionModuleDef(cdef: ClassDef, parents: List[Tree]): ModuleDef = atPos(cdef) {
     ModuleDef(
       Modifiers(cdef.mods.flags & AccessFlags | SYNTHETIC, cdef.mods.privateWithin),
       cdef.name.toTermName,
-      Template(parents, emptyValDef, NoMods, Nil, List(Nil), Nil))
+      Template(parents, emptyValDef, NoMods, Nil, List(Nil), Nil, cdef.impl.pos.toSynthetic))
   }
 
   private val caseMods = Modifiers(SYNTHETIC | CASE)

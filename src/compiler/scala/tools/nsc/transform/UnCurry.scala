@@ -361,7 +361,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         localTyper.typed {
           atPos(fun.pos) {
             Block(
-              List(ClassDef(anonClass, NoMods, List(List()), List(List()), members)),
+              List(ClassDef(anonClass, NoMods, List(List()), List(List()), members, fun.pos.toSynthetic)),
               Typed(
                 New(TypeTree(anonClass.tpe), List(List())),
                 TypeTree(fun.tpe)))

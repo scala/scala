@@ -12,7 +12,7 @@ import java.nio.charset._
 import compat.Platform.currentTime
 import scala.tools.nsc.io.{SourceReader, AbstractFile}
 import scala.tools.nsc.reporters._
-import scala.tools.nsc.util.{ClassPath, SourceFile, BatchSourceFile, OffsetPosition}
+import scala.tools.nsc.util.{ClassPath, SourceFile, BatchSourceFile, OffsetPosition, RangePosition}
 
 import scala.collection.mutable.{HashSet, HashMap, ListBuffer}
 
@@ -31,9 +31,11 @@ import backend.jvm.GenJVM
 import backend.msil.GenMSIL
 import backend.opt.{Inliners, ClosureElimination, DeadCodeElimination}
 import backend.icode.analysis._
+import interactive._
 
 class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
                                                              with CompilationUnits
+                                                             with Positions
                                                              with Plugins
                                                              with PhaseAssembly
 {
@@ -42,6 +44,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def this(reporter: Reporter) =
     this(new Settings(err => reporter.error(null,err)),
          reporter)
+
   def this(settings: Settings) =
     this(settings, new ConsoleReporter(settings))
 
@@ -134,7 +137,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   /** Return a position correponding to tree startaing at `start`, with tip
    *  at `mid`, and ending at `end`. ^ batch mode errors point at tip.
    */
-  def rangePos(source: SourceFile, start: Int, mid: Int, end: Int) = OffsetPosition(source, mid)
+  def rangePos(source: SourceFile, start: Int, point: Int, end: Int) =
+    if (settings.Yrangepos.value) new RangePosition(source, start, point, end)
+    else new OffsetPosition(source, point)
 
   /** Called every time an AST node is succesfully typedchecked in typerPhase.
    */
@@ -143,6 +148,16 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   /** Register new context; called for every created context
    */
   def registerContext(c: analyzer.Context) {}
+
+  /** Allow splits when positioning a tree */
+  def withSplitAllowed(op: => Tree) = {
+    splitAllowed = true
+    try {
+      op
+    } finally {
+      splitAllowed = false
+    }
+  }
 
 // ------------------ Reporting -------------------------------------
 
@@ -311,7 +326,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         if (!cancelled(unit)) apply(unit)
         currentRun.advanceUnit
       } finally {
-        assert(currentRun.currentUnit == unit)
+        //assert(currentRun.currentUnit == unit)
         currentRun.currentUnit = unit0
       }
     }
@@ -882,7 +897,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     def compileLate(unit: CompilationUnit) {
       addUnit(unit)
       var localPhase = firstPhase.asInstanceOf[GlobalPhase]
-      while (localPhase != null && (localPhase.id < globalPhase.id || localPhase.id <= namerPhase.id) && !reporter.hasErrors) {
+      while (localPhase != null && (localPhase.id  < globalPhase.id || localPhase.id <= namerPhase.id)/* && !reporter.hasErrors*/) {
         val oldSource = reporter.getSource
         reporter.setSource(unit.source)
         atPhase(localPhase)(localPhase.applyPhase(unit))
