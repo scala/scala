@@ -11,8 +11,6 @@ import util.Position
 import collection._
 import mutable.BitSet
 import immutable.IntMap
-import MatchUtil.ListPlus._
-import MatchUtil.Implicits._
 import MatchUtil._
 
 /** Translation of match expressions.
@@ -49,7 +47,7 @@ trait ParallelMatching extends ast.TreeDSL {
 
   def ifDebug(body: => Unit): Unit          = { if (settings.debug.value) body }
   def DBG(msg: String): Unit                = { ifDebug(println(msg)) }
-  def TRACE(f: String, xs: String*): Unit   = { if (trace) println(f.format(xs : _*)) }
+  def TRACE(f: String, xs: Any*): Unit      = { if (trace) println(if (xs.isEmpty) f else f.format(xs : _*)) }
   def logAndReturn[T](s: String, x: T): T   = { log(s + x.toString) ; x }
   def traceAndReturn[T](s: String, x: T): T = { TRACE(s + x.toString) ; x }
 
@@ -808,7 +806,7 @@ trait ParallelMatching extends ast.TreeDSL {
           ( for ((i, l) <- labels) yield "labels(%d) = %s".format(i, l) ) ++
           ( for ((s, v) <- List("bx" -> bx, "label.tpe" -> label.tpe)) yield "%s = %s".format(s, v) )
 
-        xs.flatten mkString "\n"
+        xs mkString "\n"
       }
       // sanity checks: same length lists and args are conformant with formals
       def isConsistent() = (fmls.length == args.length) && List.forall2(args, fmls)(_.tpe <:< _)
@@ -917,6 +915,21 @@ trait ParallelMatching extends ast.TreeDSL {
       if (row.length != row1.length) make(temp, row)  // recursive call if any change
       else Rep(temp, row).init
     }
+
+    override def toString() = {
+      val toPrint: List[(Any, Traversable[Any])] =
+        ((vss.zipWithIndex map (_.swap)) :::
+        List[(Any, Traversable[Any])](
+          "labels" -> labels,
+          "targets" -> targets,
+          "reached" -> reached,
+          "shortCuts" -> shortCuts)
+        ) filterNot (_._2.isEmpty)
+      val strs = toPrint map { case (k, v) => "    %s = %s\n".format(k, v) }
+
+      if (toPrint.isEmpty) "RepFactory()"
+      else "RepFactory(\n%s)".format(strs mkString)
+    }
   }
 
   case class Combo(index: Int, sym: Symbol)
@@ -976,30 +989,33 @@ trait ParallelMatching extends ast.TreeDSL {
      *
      *         tmp1       tmp_m
      */
-    final def applyRule(implicit theOwner: Symbol, rep: RepFactory): RuleApplication = row match {
-      case Nil                              => ErrorRule()
-      case Row(pats, subst, g, bx) :: xs    =>
+    final def applyRule(implicit theOwner: Symbol, rep: RepFactory): RuleApplication = {
+      def dropIndex[T](xs: List[T], n: Int) = (xs take n) ::: (xs drop (n + 1))
+      row match {
+        case Nil                              => ErrorRule()
+        case Row(pats, subst, g, bx) :: xs    =>
 
-        var bnd = subst
-        for (((rpat, t), px) <- pats zip temp zipWithIndex) {
-          val Strip(vs, p) = rpat
+          var bnd = subst
+          for (((rpat, t), px) <- pats zip temp zipWithIndex) {
+            val Strip(vs, p) = rpat
 
-          if (isDefaultPattern(p)) bnd = bnd.add(vs, t)
-          else {
-            // Row( _  ... _ p_1i  ...  p_1n   g_m  b_m ) :: rows
-            // cut out column px that contains the non-default pattern
-            val column    = rpat :: (row.tail map (_ pat px))
-            val restTemp  = temp dropIndex px
-            val restRows  = row map (r => r replace (r.pat dropIndex px))
-            val mr        = MixtureRule(new Scrutinee(t), column, rep.make(restTemp, restRows))
+            if (isDefaultPattern(p)) bnd = bnd.add(vs, t)
+            else {
+              // Row( _  ... _ p_1i  ...  p_1n   g_m  b_m ) :: rows
+              // cut out column px that contains the non-default pattern
+              val column    = rpat :: (row.tail map (_ pat px))
+              val restTemp  = dropIndex(temp, px)
+              val restRows  = row map (r => r replace dropIndex(r.pat, px))
+              val mr        = MixtureRule(new Scrutinee(t), column, rep.make(restTemp, restRows))
 
-            // TRACE("Mixture rule is = " + mr.getClass)
-            return mr
+              // TRACE("Mixture rule is = " + mr.getClass)
+              return mr
+            }
           }
-        }
-        // Row(   _   ...   _     g_1  b_1 ) :: rows     it's all default patterns
-        val rest = if (g.isEmpty) null else rep.make(temp, xs)    // TODO - why null?
-        VariableRule (bnd, g, rest, bx)
+          // Row(   _   ...   _     g_1  b_1 ) :: rows     it's all default patterns
+          val rest = if (g.isEmpty) null else rep.make(temp, xs)    // TODO - why null?
+          VariableRule (bnd, g, rest, bx)
+      }
     }
 
     // a fancy toString method for debugging

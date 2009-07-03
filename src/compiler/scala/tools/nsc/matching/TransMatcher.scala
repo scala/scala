@@ -8,12 +8,15 @@
 package scala.tools.nsc.matching
 
 import util.Position
+import ast.{ TreePrinters, Trees }
+import symtab.SymbolTable
+import java.io.{ StringWriter, PrintWriter }
 
 /** Translation of pattern matching
  *
  *  @author Burak Emir
  */
-trait TransMatcher extends ast.TreeDSL {
+trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
   self: transform.ExplicitOuter with PatternNodes with ParallelMatching with CodeFactory =>
 
   import global.{ typer => _, _ }
@@ -81,13 +84,26 @@ trait TransMatcher extends ast.TreeDSL {
     val mch = typer typed irep.toTree
     var dfatree = typer typed Block(vds, mch)
 
+    TRACE("handlePattern(\n  tmps = %s\n  cases = %s\n  rep = %s\n  initRep = %s\n)",
+      tmps, cases.mkString("(\n    ", "\n    ", "\n)"), rep, irep)
+    TRACE("dfatree(1) = " + toCompactString(dfatree))
+
     // cannot use squeezedBlock because of side-effects, see t275
     for ((cs, bx) <- cases.zipWithIndex)
       if (!rep.isReached(bx)) cunit.error(cs.body.pos, "unreachable code")
 
     dfatree = rep cleanup dfatree
     resetTraverser traverse dfatree
+    TRACE("dfatree(2) = " + toCompactString(dfatree))
     dfatree
+  }
+
+  private def toCompactString(t: Tree): String = {
+    val buffer = new StringWriter()
+    val printer = compactTreePrinters.create(new PrintWriter(buffer))
+    printer.print(t)
+    printer.flush()
+    buffer.toString
   }
 
   private object resetTraverser extends Traverser {
@@ -100,4 +116,91 @@ trait TransMatcher extends ast.TreeDSL {
         super.traverse(x)
     }
   }
+}
+
+/** A tree printer which is stingier about vertical whitespace and unnecessary
+ *  punctuation than the standard one.
+ */
+trait CompactTreePrinter {
+  val global: Global
+
+  object compactTreePrinters extends {
+    val trees: global.type = global
+  } with TreePrinters {
+    import trees._
+
+    override def create(writer: PrintWriter): TreePrinter = new TreePrinter(writer) {
+      // drill down through Blocks and pull out the real statements.
+      def allStatements(t: Tree): List[Tree] = t match {
+        case Block(stmts, expr) => (stmts flatMap allStatements) ::: List(expr)
+        case _                  => List(t)
+      }
+
+      override def printRaw(tree: Tree): Unit = {
+        // routing supercalls through this for debugging ease
+        def s() = {
+          // Console.println("toSuper: " + tree.getClass)
+          super.printRaw(tree)
+        }
+
+        tree match {
+          // labels used for jumps - does not map to valid scala code
+          case LabelDef(name, params, rhs) =>
+            print("labeldef %s(%s) = ".format(name, params mkString ","))
+            printRaw(rhs)
+
+          // target.method(arg) ==> target method arg
+          case Apply(Select(target, method), List(arg)) =>
+            (target, arg) match {
+              case (_: Ident, _: Literal | _: Ident)  =>
+                printRaw(target)
+                print(" %s " format method)
+                printRaw(arg)
+              case _                        => s()
+            }
+
+          // case Select(Select(_, x), y) if x.toString == "this" =>
+          //   print(symName(tree, y))
+          // target.unary_! ==> !target
+          case Select(qualifier, name) =>
+            val n = symName(tree, name)
+            if (n startsWith "unary_") {
+              print(n drop 6)
+              print(qualifier)
+            }
+            else s()
+
+          // target.toString() ==> target.toString
+          case Apply(fn, Nil)   => printRaw(fn)
+
+          // if a Block only continues one actual statement, just print it.
+          case Block(stats, expr) =>
+            allStatements(tree) match {
+              case List(x)            => printRow(List(x), "", ";", "")
+              case _                  => s()
+            }
+
+          // If thenp or elsep has only one statement, it doesn't need more than one line.
+          case If(cond, thenp, elsep) =>
+            printRow(List(cond), "if (", "", ") ")
+
+            allStatements(thenp) match {
+              case List(x)  => printRow(List(x), "", ";", "")
+              case _        => printRaw(thenp)
+            }
+            println
+            allStatements(elsep) match {
+              case Nil      =>
+              case List(x)  => printRow(List(x), "else ", "", "")
+              case xs       => print("else ") ; printRaw(elsep)
+            }
+          case _        => s()
+        }
+      }
+      // override def symName(tree: Tree, name: Name): String =
+      //   super.symName(tree, name).replaceAll("""^(.*)\.""", "")
+    }
+  }
+
+  lazy val compactTreePrinter = compactTreePrinters.create()
 }
