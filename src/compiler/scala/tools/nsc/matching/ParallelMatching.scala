@@ -33,6 +33,9 @@ import MatchUtil._
 trait ParallelMatching extends ast.TreeDSL {
   self: transform.ExplicitOuter with PatternNodes with CodeFactory =>
 
+  // debugging var, set to true to see how sausages are made
+  private var trace = false
+
   import global.{typer => _, _}
   import analyzer.Typer;
   import symtab.Flags
@@ -44,8 +47,11 @@ trait ParallelMatching extends ast.TreeDSL {
   }
   import Implicits._
 
-  def DBG(msg: String) = if (settings.debug.value) println(msg)
-  def logAndReturn[T](s: String, x: T): T = { log(s + x.toString) ; x }
+  def ifDebug(body: => Unit): Unit          = { if (settings.debug.value) body }
+  def DBG(msg: String): Unit                = { ifDebug(println(msg)) }
+  def TRACE(f: String, xs: String*): Unit   = { if (trace) println(f.format(xs : _*)) }
+  def logAndReturn[T](s: String, x: T): T   = { log(s + x.toString) ; x }
+  def traceAndReturn[T](s: String, x: T): T = { TRACE(s + x.toString) ; x }
 
   /**
    * Encapsulates a symbol being matched on.
@@ -60,20 +66,23 @@ trait ParallelMatching extends ast.TreeDSL {
   case class Scrutinee(val sym: Symbol) {
     import definitions._
 
+    // presenting a face of our symbol
+    def tpe       = sym.tpe
+    def pos       = sym.pos
+    def accessors = sym.caseFieldAccessors
+    def id        = ID(sym)   // attributed ident
+
+    // tests
+    def isDefined = sym ne NoSymbol
+    def isSimple  = tpe.isChar || tpe.isInt
+
+    // sequences
+    def seqType   = tpe.widen baseType SeqClass
+    def elemType  = tpe typeArgs 0  // can this happen? if (seqType == NoType) error("...")
+
     def mkList(xs: List[Symbol]) = sym :: xs
     def mkList(prefix: List[Symbol], suffix: List[Symbol]) = prefix ::: sym :: suffix
-    def isDefined = sym ne NoSymbol
-    def accessors = sym.caseFieldAccessors
-    def id = ID(sym)
-    def tpe = sym.tpe
-    def pos = sym.pos
-    def isChar = tpe.widen.isChar
-    def isSimple = isChar || tpe.widen.isInt
-    lazy val sequenceType = tpe.widen baseType SeqClass
-    lazy val elementType = sequenceType match {
-      case NoType => Predef.error("arg " + tpe + " not subtype of Seq[A]")
-      case _      => tpe.typeArgs(0)
-    }
+
     // for propagating "unchecked" to synthetic vars
     def flags: List[Long] = if (sym hasFlag Flags.TRANS_FLAG) List(Flags.TRANS_FLAG) else Nil
 
@@ -176,8 +185,9 @@ trait ParallelMatching extends ast.TreeDSL {
    *   case ... if(tree) => ...
    */
   case class Guard(tree: Tree) {
-    def isEmpty = tree eq EmptyTree
+    def isEmpty   = tree eq EmptyTree
     def duplicate = Guard(tree.duplicate)
+    override def toString() = if (isEmpty) "" else " // if %s" format tree
   }
   val NoGuard = Guard(EmptyTree)
 
@@ -193,8 +203,8 @@ trait ParallelMatching extends ast.TreeDSL {
 
     // used in MixEquals and MixSequence
     final protected def repWithoutHead(pats: Patterns, rest: Rep)(implicit theOwner: Symbol): Rep = {
-      val nfailrow = List.map2(pats.tail.ps, rest.row.tail)((p, r) => r.insert(p))
-      rep.make(scrut.mkList(rest.temp), nfailrow)
+      val nfailrow = List.map2(rest.row.tail, pats.tail.ps)(_ insert _)
+      rep.make(scrut mkList rest.temp, nfailrow)
     }
 
     /** translate outcome of the rule application into code (possible involving recursive application of rewriting) */
@@ -291,7 +301,7 @@ trait ParallelMatching extends ast.TreeDSL {
       cases match {
         case CaseDef(lit,_,body) :: Nil   => IF (scrut.id ANY_== lit) THEN body ELSE ndefault
         case _                            =>
-          val target: Tree = if (scrut.isChar) scrut.id DOT nme.toInt else scrut.id // chars to ints
+          val target: Tree = if (scrut.tpe.isChar) scrut.id DOT nme.toInt else scrut.id // chars to ints
           target MATCH (casesWithDefault: _*)
       }
     }
@@ -318,7 +328,7 @@ trait ParallelMatching extends ast.TreeDSL {
       }
     }
 
-    def newVarCapture(pos: Position,tpe: Type)(implicit theOwner:Symbol) =
+    def newVarCapture(pos: Position, tpe: Type)(implicit theOwner: Symbol) =
       newVar(pos, tpe, flags = scrut.flags)
 
     /** returns (unapply-call, success-rep, optional fail-rep*/
@@ -406,7 +416,7 @@ trait ParallelMatching extends ast.TreeDSL {
     def compareOp                 = pats.head.tpe member nme.lengthCompare  // symbol for length comparison
 
     final def removeStar(xs: List[Tree]): List[Tree] =
-      xs.init ::: makeBind(xs.last.boundVariables, WILD(scrut.sequenceType)) :: Nil
+      xs.init ::: makeBind(xs.last.boundVariables, WILD(scrut.seqType)) :: Nil
 
     protected def getSubPatterns(len: Int, x: Tree): Option[List[Tree]] = x match {
       case av @ ArrayValue(_,xs) if (!isRightIgnoring(av) && xs.length == len)   => Some(xs ::: List(EmptyTree))
@@ -437,10 +447,10 @@ trait ParallelMatching extends ast.TreeDSL {
       scrut assertIsSubtype pats.head.tpe   // scrut.tpe <:< column.head.tpe confirmed by assertion
       val av @ ArrayValue(_, xs)  = pats.head.tree
       val ys                      = if (isRightIgnoring(av)) xs.init else xs
-      val vs                      = ys map (y => newVar(y.stripped.pos, scrut.elementType))
+      val vs                      = ys map (y => newVar(y.stripped.pos, scrut.elemType))
       def scrutineeCopy           = scrut.id.duplicate
 
-      lazy val tail               = newVar(scrut.pos, scrut.sequenceType)
+      lazy val tail               = newVar(scrut.pos, scrut.seqType)
       lazy val lastBinding        = typedValDef(tail, scrutineeCopy DROP ys.size)
       def elemAt(i: Int)          = typer typed ((scrutineeCopy DOT (scrutineeCopy.tpe member nme.apply))(LIT(i)))
 
@@ -513,14 +523,14 @@ trait ParallelMatching extends ast.TreeDSL {
       val vs        = head.boundVariables
       val nsuccFst  = rest.row.head.insert2(List(EmptyTree), vs, scrut.sym)
       val fLabel    = theOwner.newLabel(scrut.pos, newName(scrut.pos, "failCont%")) // warning, untyped
-      val sx        = rep.shortCut(fLabel) // register shortcut
+      val sx        = rep shortCut fLabel // register shortcut
       val nsuccRow  = nsuccFst :: Row(getDummies( 1 /* scrutinee */ + rest.temp.length), NoBinding, NoGuard, sx) :: Nil
 
       // todo: optimize if no guard, and no further tests
       val nsucc = rep.make(scrut mkList rest.temp, nsuccRow)
       val nfail = repWithoutHead(pats, rest)
 
-      (typer.typed(scrut.id ANY_== vlue), nsucc, fLabel, nfail)
+      (typer typed (scrut.id ANY_== vlue), nsucc, fLabel, nfail)
     }
 
     final def tree(implicit theOwner: Symbol, failTree: Tree) = {
@@ -551,7 +561,7 @@ trait ParallelMatching extends ast.TreeDSL {
     def join[T](xs: List[Option[T]]): List[T] = xs.flatMap(x => x)
     val (moreSpecific, subsumed, remaining) : (List[Tree], List[(Int, List[Tree])], List[(Int, Tree)]) = unzip3(
       for ((pat @ Stripped(spat), j) <- pats.zip) yield {
-        def eqHead(tpe: Type) = pats.headType =:= tpe
+        def eqHead(tpe: Type)         = pats.headType =:= tpe
         def alts(yes: Tree, no: Tree) = if (eqHead(pat.tpe)) yes else no
 
         lazy val isDef                = isDefaultPattern(pat)
@@ -598,7 +608,7 @@ trait ParallelMatching extends ast.TreeDSL {
         val ms = moreSpecific exists (_ != EmptyTree)
         val accessorTemps =
           if (!pats.isCaseHead) Nil
-          else casted.accessors.map(meth => newVar(scrut.pos, casted.tpe.memberType(meth).resultType, scrut.flags))
+          else casted.accessors map (meth => newVar(scrut.pos, (casted.tpe memberType meth).resultType, scrut.flags))
         val subtestTemps = if (!ms) Nil else List(casted.sym)
         val subtests =
           if (!ms) subsumed
@@ -680,20 +690,31 @@ trait ParallelMatching extends ast.TreeDSL {
 
       if (indexOfAlternative == -1) List(replace(pats)) else alternativeBranches
     }
+    override def toString() = {
+      val patStr = pat.mkString
+      val others = List(subst, guard) map (_.toString) filter (_ != "")
+      val otherStr = if (others.isEmpty) "" else " // " + others.mkString(" ")
+
+      "Row(%d) %s%s".format(bx, patStr, otherStr)
+    }
   }
 
+  import collection.mutable.HashMap
   class RepFactory(val handleOuter: Tree => Tree)(implicit val typer: Typer) {
     var vss: List[List[Symbol]] = _
-    val labels = new collection.mutable.HashMap[Int, Symbol]()
+    val labels: HashMap[Int, Symbol] = new HashMap
     var targets: List[Tree] = _
     var reached: BitSet = _
-    var shortCuts: List[Symbol] = Nil
+    var shortCuts: List[Symbol] = _
 
     final def make(temp: List[Symbol], row:List[Row], targets: List[Tree], vss: List[List[Symbol]])(implicit theOwner: Symbol): Rep = {
       // ensured that labels(i) eq null for all i, cleanup() has to be called after translation
-      this.targets      = targets
       this.vss          = vss
+      this.labels.clear()
+      shortCuts = Nil
+      this.targets      = targets
       this.reached      = new BitSet(targets.length)
+
       make(temp, row)
     }
 
@@ -705,7 +726,7 @@ trait ParallelMatching extends ast.TreeDSL {
     final def cleanup(tree: Tree)(implicit theOwner: Symbol): Tree = {
       object lxtt extends Transformer {
         override def transform(tree: Tree): Tree = tree match {
-          case blck @ Block(vdefs, ld @ LabelDef(name,params,body)) =>
+          case blck @ Block(vdefs, ld @ LabelDef(name, params, body)) =>
             val bx = labelIndex(ld.symbol)
             if (bx >= 0 && !isReachedTwice(bx)) squeezedBlock(vdefs, body)
             else blck
@@ -727,6 +748,8 @@ trait ParallelMatching extends ast.TreeDSL {
     }
 
     final def cleanup() {
+      this.vss = null
+      this.targets = null
       labels.clear()
       reached = null
       shortCuts = Nil
@@ -778,19 +801,27 @@ trait ParallelMatching extends ast.TreeDSL {
       val body  = targets(bx)
       val fmls  = label.tpe.paramTypes
 
-      // same number of arguments as formal parameters
-      if (fmls.length != args.length) {
-        cunit.error(body.pos, "consistency problem compiling %s!\nCannot jump to %s(%s) with args (%s)".format(
-          cunit.source, label, fmls, args)
+      def debugConsistencyFailure(): String = {
+        val xs =
+          ( for ((vs, i) <- vss.zipWithIndex) yield "vss(%d) = %s\nargs = %s".format(i, vs mkString ", ", args) ) ++
+          ( for ((t, i) <- targets.zipWithIndex) yield "targets(%d) = %s".format(i, t) ) ++
+          ( for ((i, l) <- labels) yield "labels(%d) = %s".format(i, l) ) ++
+          ( for ((s, v) <- List("bx" -> bx, "label.tpe" -> label.tpe)) yield "%s = %s".format(s, v) )
+
+        xs.flatten mkString "\n"
+      }
+      // sanity checks: same length lists and args are conformant with formals
+      def isConsistent() = (fmls.length == args.length) && List.forall2(args, fmls)(_.tpe <:< _)
+
+      if (!isConsistent()) {
+        val msg = (
+          """Consistency problem compiling %s!
+            |Trying to call %s(%s) with arguments (%s)""" .
+            stripMargin.format(cunit.source, label, fmls, args)
         )
-        throw FatalError("consistency problem")
+        TRACE(debugConsistencyFailure())
+        cunit.error(body.pos, msg)
       }
-      // each argument conforms to formal
-      for ((f, a) <- fmls zip args ; if !(a.tpe <:< f)) {
-        cunit.error(body.pos, "consistency problem! %s <:< %s is false".format(a.tpe, f))
-        throw FatalError("consistency problem")
-      }
-      log("no consistency problem: calling %s(%s) with (%s)".format(label, fmls, args))
 
       def vds = for (v <- vss(bx) ; substv <- subst(v)) yield typedValDef(v, substv)
 
@@ -832,12 +863,6 @@ trait ParallelMatching extends ast.TreeDSL {
           val Strip(vset, pat) = opat
           (vset.toList, pat)
         }
-        // @todo: rewrite UnApply(Apply(fn, _), _) case, using __UnApply instead of UnApply like so:
-        // case  ua @ __UnApply(_,argtpe,_) =>
-        //   val ua = prepat
-        //   val npat = (if (temp(j).tpe <:< argtpe) ua else Typed(ua,TypeTree(argtpe)).setType(argtpe))
-        //   pats = (makeBind(vs, npat) setType argtpe)::pats
-
         def doUnapplyApply(ua: UnApply, fn: Tree) = {
           val MethodType(List(arg, _*), _) = fn.tpe
           val argtpe = arg.tpe
@@ -845,12 +870,14 @@ trait ParallelMatching extends ast.TreeDSL {
             if (temp(j).tpe <:< argtpe) ua
             else Typed(ua, TypeTree(argtpe)) setType argtpe
 
+          // TRACE("doUnapplyApply: %s <:< %s == %s", temp(j).tpe, argtpe, (temp(j).tpe <:< argtpe))
           logAndReturn("doUnapplyApply: ", makeBind(vs, npat) setType argtpe)
         }
         def doApplyFunction(o: Tree, fn: Tree) = {
           val stpe = applyType(o, fn)
           val ttst = mkEqualsRef(List(stpe))
 
+          // TRACE("doApplyFunction: stpe = %s, ttst = %s", stpe, ttst)
           logAndReturn("doApplyFunction: ", makeBind(vs, Typed(WILD(ttst), TypeTree(stpe)) setType ttst))
         }
 
@@ -860,7 +887,6 @@ trait ParallelMatching extends ast.TreeDSL {
           case _: Alternative                       => opat
           case Typed(p @ Stripped(_: UnApply), tpt) => if (temp(j).tpe <:< tpt.tpe) makeBind(vs, p)
                                                        else opat
-          // case Ident_Or_Empty()                     => opat    // this doesn't work - see notes in PatternNode
           case Ident(nme.WILDCARD) | EmptyTree      => opat
           case _: Literal | _: Typed                => opat
           case o: Ident                             => mkTypedBind(vs, equalsCheck(o))  // Ident(_) != nme.WILDCARD
@@ -894,6 +920,7 @@ trait ParallelMatching extends ast.TreeDSL {
   }
 
   case class Combo(index: Int, sym: Symbol)
+  case class SetCombo(index: Int, syms: Set[Symbol])
 
   case class Rep(val temp: List[Symbol], val row: List[Row]) {
     /** converts this to a tree - performs recursive call to translation in the process to get sub reps
@@ -965,7 +992,8 @@ trait ParallelMatching extends ast.TreeDSL {
             val restTemp  = temp dropIndex px
             val restRows  = row map (r => r replace (r.pat dropIndex px))
             val mr        = MixtureRule(new Scrutinee(t), column, rep.make(restTemp, restRows))
-            //DBG("\n---\nmixture rule is = " + mr.getClass)
+
+            // TRACE("Mixture rule is = " + mr.getClass)
             return mr
           }
         }
@@ -975,15 +1003,47 @@ trait ParallelMatching extends ast.TreeDSL {
     }
 
     // a fancy toString method for debugging
-    override final def toString = {
-      val tempStr = (temp map (t => pad(t.name))).mkString + "\n"
-      val rowStr  = (row map (r => (r.pat ::: List(r.subst, r.guard, r.bx))) map pad mkString).mkString + "\n"
-      tempStr + rowStr
+    override def toString() = {
+      val tempStr = (temp map (t => pad(t.name))).mkString
+      // val rowStr  = (row map (r => (r.pat ::: List(r.subst, r.guard, r.bx))) map pad mkString).mkString
+
+      val underlines = tempStr.replaceAll("""\S""", "-")
+      val rowStr = (
+        for (Row(pat, subst, guard, bx) <- row) yield {
+          val extraStr: String = guard.toString + subst
+          "%s %s\n".format(pat map pad mkString, extraStr)
+        }
+      ) mkString
+
+      if (temp.size == 0) "Rep(%dx%d)".format(temp.size, row.size)
+      else "Rep(%dx%d)\n%s\n%s\n%s".format(temp.size, row.size, tempStr, underlines, rowStr)
     }
 
     private val NPAD = 15
-    private def pad(s: Any): String = pad(s.toString)
-    private def pad(s: String): String = List.fill(NPAD - s.length - 1)(" ").mkString + s
+
+    private def typeToString(t: Type): String = t match {
+      case NoType => "x"
+      case x      => x.toString
+    }
+    private def symbolToString(s: Symbol): String = s match {
+      case x  => x.toString
+    }
+    private def treeToString(t: Tree): String = t.stripped match {
+      case EmptyTree            => "?"
+      case WILD()               => "_"
+      case Literal(Constant(x)) => "LIT(%s)".format(x)
+      case Apply(fn, args)      => "%s(%s)".format(treeToString(fn), args map treeToString mkString ",")
+      case x: TypeTree          => "TT(%s)".format(symbolToString(x.symbol))
+      case Typed(expr, tpt)     => "%s: %s".format(treeToString(expr), treeToString(tpt))
+      case x                    =>  x.toString + " (" + x.getClass + ")"
+    }
+
+    private def pad(s: Any): String = pad(s match {
+      case x: Tree    => treeToString(x)
+      // case x: AnyRef  => x.toString + " (" + x.getClass + ")"
+      case x                  => x.toString
+    })
+    private def pad(s: String): String = "%%%ds" format (NPAD - 1) format s
   }
 
   /** creates initial clause matrix
@@ -1058,7 +1118,7 @@ trait ParallelMatching extends ast.TreeDSL {
     })
 
     outerAccessor(tpe2test.typeSymbol) match {
-      case NoSymbol => if (settings.debug.value) cunit.warning(scrut.pos, "no outer acc for "+tpe2test.typeSymbol) ; cond
+      case NoSymbol => ifDebug(cunit.warning(scrut.pos, "no outer acc for "+tpe2test.typeSymbol)) ; cond
       case outerAcc => cond AND (((scrut AS_ANY tpe2test) DOT outerAcc)() ANY_EQ theRef)
     }
   }

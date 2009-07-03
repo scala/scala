@@ -27,10 +27,6 @@ trait CodeFactory extends ast.TreeDSL
     case y          => y
   }
 
-  // Create a conditional based on a partial function - for values not defined
-  // on the partial, it is false.
-  def cond[T](x: T)(f: PartialFunction[T, Boolean]) = (f isDefinedAt x) && f(x)
-
   final def typedValDef(x: Symbol, rhs: Tree)(implicit typer: Typer) = {
     val finalRhs = x.tpe match {
       case WildcardType   =>

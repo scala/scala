@@ -221,7 +221,9 @@ trait PatternNodes extends ast.TreeDSL
   /** pvar: the symbol of the pattern variable
    *  temp: the temp variable that holds the actual value
    */
-  case class Binding(pvar: Symbol, temp: Symbol)
+  case class Binding(pvar: Symbol, temp: Symbol) {
+    override def toString() = "%s @ %s".format(pvar.name, temp.name)
+  }
 
   case class Bindings(bindings: Binding*) extends Function1[Symbol, Option[Ident]] {
     private def castIfNeeded(pvar: Symbol, t: Symbol) =
@@ -231,7 +233,15 @@ trait PatternNodes extends ast.TreeDSL
       Bindings((vs.toList map (Binding(_: Symbol, temp))) ++ bindings : _*)
 
     def apply(v: Symbol): Option[Ident] =
-      bindings find (_.pvar eq v) map (x => Ident(x.temp) setType v.tpe)
+      (bindings find (_.pvar eq v) map (x => Ident(x.temp) setType v.tpe)) match {
+        case res @ Some(_)  => traceAndReturn("Bindings.apply = ", res)
+        case res            => res
+      }
+
+    override def toString() = bindings.toList match {
+      case Nil      => ""
+      case xs       => xs.mkString(" Bound(", ", ", ")")
+    }
 
     /** The corresponding list of value definitions. */
     final def targetParams(implicit typer: Typer): List[ValDef] =

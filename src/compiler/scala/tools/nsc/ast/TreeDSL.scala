@@ -19,6 +19,10 @@ trait TreeDSL {
   import gen.{ scalaDot }
 
   object CODE {
+    // Create a conditional based on a partial function - for values not defined
+    // on the partial, it is false.
+    def cond[T](x: T)(f: PartialFunction[T, Boolean]) = (f isDefinedAt x) && f(x)
+
     object LIT extends (Any => Literal) {
       def apply(x: Any)   = Literal(Constant(x))
       def unapply(x: Any) = x match {
@@ -27,25 +31,23 @@ trait TreeDSL {
       }
     }
 
-    // You might think these could be vals, but empirically I have found that
+    // You might think these could all be vals, but empirically I have found that
     // at least in the case of UNIT the compiler breaks if you re-use trees.
     // However we need stable identifiers to have attractive pattern matching.
     // So it's inconsistent until I devise a better way.
     val TRUE          = LIT(true)
     val FALSE         = LIT(false)
     val NULL          = LIT(null)
-    def UNIT          = LIT(())
     val ZERO          = LIT(0)
+    def UNIT          = LIT(())
 
     object WILD {
       def apply(tpe: Type = null) =
         if (tpe == null) Ident(nme.WILDCARD)
         else Ident(nme.WILDCARD) setType tpe
 
-      def unapply(other: Any) = other match {
-        case Ident(nme.WILDCARD)  => true
-        case _                    => false
-      }
+      def unapply(other: Any) =
+        cond(other) { case Ident(nme.WILDCARD)  => true }
     }
 
     def fn(lhs: Tree, op:   Name, args: Tree*)  = Apply(Select(lhs, op), args.toList)

@@ -13,30 +13,9 @@ object MatchUtil
   def impossible:           Nothing = abort("this never happens")
   def abort(msg: String):   Nothing = throw new RuntimeException(msg)
 
-  // def classifyPatString(pat: Tree) = pat match {
-  //   case _: Alternative                 => "Alternative"
-  //   case Typed(Strip2(_: UnApply), _)   => "Typed"
-  //   case Ident_Or_Empty()               => "Ident(_)|EmptyTree"
-  //   case _: Ident                       => "Ident"
-  //   case _: Select                      => "Select"
-  //   case UnApply_TypeApply(_, _)        => "Unapply(...TypeApply...)"
-  //   case UnApply(_: Apply, _)           => "Unapply(Apply())"
-  //   case Apply_Function(_)              => "Apply !isCaseClass"
-  //   case Apply_Value(_, _)              => "Apply_Value"
-  //   case Apply_CaseClass_NoArgs(_)      => "Apply_CaseClass_NoArgs"
-  //   case Apply_CaseClass_WithArgs()     => "Apply_CaseClass_WithArgs"
-  //   case _: ArrayValue                  => "ArrayValue"
-  //   case _                              => "Unknown!"
-  // }
-
   object Implicits {
     implicit def listPlusOps[T](xs: List[T]) = new ListPlus(xs)
   }
-
-  // object Flags {
-  //   import symtab.Flags
-  //   import symtab.Symbols
-  // }
 
   class ListPlus[A](list: List[A]) {
     /** Returns the list without the element at index <code>n</code>.
