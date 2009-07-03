@@ -26,9 +26,10 @@ import java.nio.charset.{ Charset, CharsetDecoder, CodingErrorAction }
 /** A class for character encoding/decoding preferences.
  *
  */
-class Codec(charSet: Charset) {
+class Codec(val charSet: Charset) {
   def name = charSet.name
   def decoder = charSet.newDecoder()
+  def encoder = charSet.newEncoder()
 
   // by default we ignore bad characters.
   // this behavior can be altered by overriding these two methods
