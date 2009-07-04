@@ -11,6 +11,7 @@ import util.Position
 import ast.{ TreePrinters, Trees }
 import symtab.SymbolTable
 import java.io.{ StringWriter, PrintWriter }
+import scala.util.NameTransformer.decode
 
 /** Translation of pattern matching
  *
@@ -47,7 +48,7 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
     (implicit typer: Typer): Tree =
   {
     implicit val theOwner = owner
-    implicit val rep = new RepFactory(handleOuter)
+    implicit val rep = new RepFactory(handleOuter, typer)
     val flags = if (doCheckExhaustive) Nil else List(Flags.TRANS_FLAG)
 
     def matchError(obj: Tree)   = atPos(selector.pos)(THROW(MatchErrorClass, obj))
@@ -84,9 +85,9 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
     val mch = typer typed irep.toTree
     var dfatree = typer typed Block(vds, mch)
 
-    TRACE("handlePattern(\n  tmps = %s\n  cases = %s\n  rep = %s\n  initRep = %s\n)",
-      tmps, cases.mkString("(\n    ", "\n    ", "\n)"), rep, irep)
-    TRACE("dfatree(1) = " + toCompactString(dfatree))
+    // TRACE("handlePattern(\n  tmps = %s\n  cases = %s\n  rep = %s\n  initRep = %s\n)",
+    //   tmps, cases.mkString("(\n    ", "\n    ", "\n)"), rep, irep)
+    // TRACE("dfatree(1) = " + toCompactString(dfatree))
 
     // cannot use squeezedBlock because of side-effects, see t275
     for ((cs, bx) <- cases.zipWithIndex)
@@ -94,7 +95,7 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
 
     dfatree = rep cleanup dfatree
     resetTraverser traverse dfatree
-    TRACE("dfatree(2) = " + toCompactString(dfatree))
+    // TRACE("dfatree(2) = " + toCompactString(dfatree))
     dfatree
   }
 
@@ -154,7 +155,7 @@ trait CompactTreePrinter {
             (target, arg) match {
               case (_: Ident, _: Literal | _: Ident)  =>
                 printRaw(target)
-                print(" %s " format method)
+                print(" %s " format symName(tree, method))
                 printRaw(arg)
               case _                        => s()
             }
@@ -184,21 +185,30 @@ trait CompactTreePrinter {
           case If(cond, thenp, elsep) =>
             printRow(List(cond), "if (", "", ") ")
 
-            allStatements(thenp) match {
-              case List(x)  => printRow(List(x), "", ";", "")
-              case _        => printRaw(thenp)
+            def ifIndented(x: Tree) = {
+              indent ; println ; printRaw(x) ; undent
             }
-            println
-            allStatements(elsep) match {
-              case Nil      =>
-              case List(x)  => printRow(List(x), "else ", "", "")
-              case xs       => print("else ") ; printRaw(elsep)
+
+            indent ; println ;
+            allStatements(thenp) match {
+              case List(x: If)  => ifIndented(x)
+              case List(x)      => printRaw(x)
+              case _            => printRaw(thenp)
+            }
+            undent ; println ;
+            val elseStmts = allStatements(elsep)
+            if (!elseStmts.isEmpty) {
+              print("else")
+              indent ; println
+              elseStmts match {
+                case List(x)      => printRaw(x)
+                case xs           => printRaw(elsep)
+              }
+              undent ; println
             }
           case _        => s()
         }
       }
-      // override def symName(tree: Tree, name: Name): String =
-      //   super.symName(tree, name).replaceAll("""^(.*)\.""", "")
     }
   }
 
