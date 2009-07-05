@@ -2301,7 +2301,8 @@ trait Typers { self: Analyzer =>
         case Typed(t, _) => tree2ConstArg(t, pt)
 
         case tree => typed(tree, EXPRmode, pt) match {
-          case l @ Literal(c) if !l.isErroneous =>
+          // null cannot be used as constant value for classfile annotations
+          case l @ Literal(c) if !(l.isErroneous || c.value == null) =>
             Some(LiteralAnnotArg(c))
           case _ =>
             needConst(tree)
