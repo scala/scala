@@ -32,9 +32,15 @@ trait PatternNodes extends ast.TreeDSL
 
     private def cmpSymbols(t1: Type, t2: Type) = t1.typeSymbol eq t2.typeSymbol
     // true if t2 is a parent of t1.  Should this be rather: tpe.baseTypes.exists...?
-    private def  parenthood(t1: Type, t2: Type) = t1.parents exists (p => cmpSymbols(p, t2))
+    private def  parenthood(t1: Type, t2: Type) = {
+      // t1.parents exists (p => cmpSymbols(p, t2))
+      t1.baseClasses exists (_ eq t2.typeSymbol)
+    }
     // true if t1 is direct subtype of t2 (can't use just <:< cause have to take variance into account)
-    private def subtypehood(t1: Type, t2: Type) = t1.parents exists (p => cmpSymbols(p, t2) && p <:< t2)
+    private def subtypehood(t1: Type, t2: Type) = {
+      // t1.parents exists (p => cmpSymbols(p, t2) && p <:< t2)
+      t1.baseClasses exists (p => (p eq t2.typeSymbol) && p.tpe <:< t2)
+    }
 
     def yParentsX = parenthood(x, y)
     def xParentsY = parenthood(y, x)
@@ -47,7 +53,7 @@ trait PatternNodes extends ast.TreeDSL
        *  ideally there is a better way to do it, and ideally defined in Types.scala
        */
       private def cmpErased(t1: Type, t2: Type) = (t1, t2) match {
-        case (_: TypeRef, _: TypeRef) => (eqPrefix && eqSymbol && !t1.isArray) || parenthood(t1, t2)
+        case (_: TypeRef, _: TypeRef) => !t1.isArray && eqPrefix && (eqSymbol || parenthood(t1, t2))
         case _ => false
       }
 
