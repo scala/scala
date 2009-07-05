@@ -17,7 +17,7 @@ import symtab.Flags.MUTABLE
  *  @author  Burak Emir
  *  @version 1.0
  */
-abstract class SymbolicXMLBuilder(make: TreeBuilder, p: Parsers#Parser, preserveWS: Boolean)
+abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean)
 {
   val global: Global
   import global._

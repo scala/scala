@@ -243,7 +243,7 @@ abstract class TreeGen
 
   // var m$: T = null; or, if class member: local var m$: T = _;
   def mkModuleVarDef(accessor: Symbol) = {
-    val mvar = accessor.owner.newVariable(accessor.pos, nme.moduleVarName(accessor.name))
+    val mvar = accessor.owner.newVariable(accessor.pos.toSynthetic, nme.moduleVarName(accessor.name))
       .setInfo(accessor.tpe.finalResultType)
       .setFlag(MODULEVAR);
     if (mvar.owner.isClass) {
@@ -304,7 +304,7 @@ abstract class TreeGen
     if (treeInfo.isPureExpr(expr)) {
       within(() => expr);
     } else {
-      val temp = owner.newValue(expr.pos, unit.fresh.newName(expr.pos, "ev$"))
+      val temp = owner.newValue(expr.pos.toSynthetic, unit.fresh.newName(expr.pos, "ev$"))
       .setFlag(SYNTHETIC).setInfo(expr.tpe);
       atPos(expr.pos) {
         Block(List(ValDef(temp, expr)), within(() => Ident(temp) setType expr.tpe))
@@ -318,7 +318,7 @@ abstract class TreeGen
       if (treeInfo.isPureExpr(expr)) {
         exprs1 += (() => expr)
       } else {
-        val temp = owner.newValue(expr.pos, unit.fresh.newName(expr.pos))
+        val temp = owner.newValue(expr.pos.toSynthetic, unit.fresh.newName(expr.pos))
           .setFlag(SYNTHETIC).setInfo(expr.tpe)
         vdefs += ValDef(temp, expr)
         exprs1 += (() => Ident(temp) setType expr.tpe)
@@ -327,6 +327,6 @@ abstract class TreeGen
     val prefix = vdefs.toList
     val result = within(exprs1.toList)
     if (prefix.isEmpty) result
-    else Block(prefix, result) setPos prefix.head.pos
+    else Block(prefix, result) setPos (prefix.head.pos union result.pos)
   }
 }

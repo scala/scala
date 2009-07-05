@@ -117,7 +117,7 @@ self =>
     /** the markup parser */
     lazy val xmlp = new MarkupParser(this, true)
 
-    object symbXMLBuilder extends SymbolicXMLBuilder(treeBuilder, this, true) { // DEBUG choices
+    object symbXMLBuilder extends SymbolicXMLBuilder(this, true) { // DEBUG choices
       val global: self.global.type = self.global
       def freshName(prefix: String): Name = UnitParser.this.freshName(prefix)
     }
@@ -161,6 +161,7 @@ self =>
       val global: self.global.type = self.global
       def freshName(prefix: String): Name = Parser.this.freshName(prefix)
       def o2p(offset: Int) = Parser.this.o2p(offset)
+      def r2p(start: Int, point: Int, end: Int) = Parser.this.r2p(start, point, end)
     }
     import treeBuilder.{global => _, _}
 
@@ -1795,7 +1796,10 @@ self =>
         }
         if (in.token == VIEWBOUND && (implicitViewBuf ne null))
           implicitViewBuf += atPos(start, in.skipToken()) {
-            makeFunctionTypeTree(List(Ident(pname)), typ())
+            val t = typ()
+            atPos(t.pos) {
+              makeFunctionTypeTree(List(Ident(pname)), t)
+            }
           }
         param
       }
@@ -1822,7 +1826,7 @@ self =>
 
     def bound(tok: Int, default: Name): Tree =
       if (in.token == tok) { in.nextToken(); typ() }
-      else rootScalaDot(default.toTypeName)
+      else atPos(o2p(in.lastOffset).toSynthetic) { rootScalaDot(default.toTypeName) }
 
 /* -------- DEFS ------------------------------------------- */
 

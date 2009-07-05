@@ -8,7 +8,7 @@ package scala.tools.nsc.ast.parser
 
 import symtab.Flags._
 import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.util.Position
+import scala.tools.nsc.util.{Position, SyntheticOffsetPosition}
 
 /** Methods for building trees, used in the parser.  All the trees
  *  returned by this class must be untyped.
@@ -21,6 +21,7 @@ abstract class TreeBuilder {
   def freshName(prefix: String): Name
   def freshName(): Name = freshName("x$")
   def o2p(offset: Int): Position
+  def r2p(start: Int, point: Int, end: Int): Position
 
   def rootId(name: Name)       = gen.rootId(name)
   def rootScalaDot(name: Name) = gen.rootScalaDot(name)
@@ -65,12 +66,18 @@ abstract class TreeBuilder {
     def init: Traverser = { buf.clear; this }
     override def traverse(tree: Tree): Unit = tree match {
       case Bind(name, Typed(tree1, tpt)) =>
-        if ((name != nme.WILDCARD) && (buf.iterator forall (name !=)))
+        if ((name != nme.WILDCARD) && (buf.iterator forall (name !=))) {
           buf += ((name, if (treeInfo.mayBeTypePat(tpt)) TypeTree() else tpt, tree.pos))
+        }
         traverse(tree1)
       case Bind(name, tree1) =>
-        if ((name != nme.WILDCARD) && (buf.iterator forall (name !=)))
-          buf += ((name, TypeTree(), tree.pos))
+        if ((name != nme.WILDCARD) && (buf.iterator forall (name !=))) {
+          // can assume only name range as position, as otherwise might overlap
+          // with binds embedded in pattern tree1
+          val start = tree.pos.start
+          val end = start + name.decode.length
+          buf += ((name, TypeTree(), r2p(start, start, end)))
+        }
         traverse(tree1)
       case _ =>
         super.traverse(tree)
@@ -192,7 +199,7 @@ abstract class TreeBuilder {
   /** Create tree representing a do-while loop */
   def makeDoWhile(lname: Name, body: Tree, cond: Tree): Tree = {
     val continu = Apply(Ident(lname), Nil)
-    val rhs = Block(List(body), If(cond, continu, Literal(())))
+    val rhs = Block(List(body), atPos(o2p(body.pos.end)) { If(cond, continu, Literal(())) })
     LabelDef(lname, Nil, rhs)
   }
 
@@ -282,67 +289,92 @@ abstract class TreeBuilder {
   *    If any of the P_i are variable patterns, the corresponding `x_i @ P_i' is not generated
   *    and the variable constituting P_i is used instead of x_i
   *
+  *  @param mapName      The name to be used for maps (either map or foreach)
+  *  @param flatMapName  The name to be used for flatMaps (either flatMap or foreach)
+  *  @param enums        The enumerators in the for expression
+  *  @param body          The body of the for expression
   */
   private def makeFor(mapName: Name, flatMapName: Name, enums: List[Enumerator], body: Tree): Tree = {
 
-    def makeClosure(pat: Tree, body: Tree): Tree = {
+    /** make a closure pat => body.
+     *  The closure is assigned a transparent position with the point at pos.point and
+     *  the limits given by pat and body.
+     */
+    def makeClosure(pos: Position, pat: Tree, body: Tree): Tree = {
+      def splitpos = makeTransparent(wrappingPos(List(pat, body)).withPoint(pos.point))
       matchVarPattern(pat) match {
         case Some((name, tpt)) =>
-          Function(List(ValDef(Modifiers(PARAM), name, tpt, EmptyTree)), body)
+          Function(
+            List(atPos(pat.pos) { ValDef(Modifiers(PARAM), name, tpt, EmptyTree) }),
+            body) setPos splitpos
         case None =>
-          makeVisitor(List(CaseDef(pat, EmptyTree, body)), false)
+          atPos(splitpos) {
+            makeVisitor(List(CaseDef(pat, EmptyTree, body)), false)
+          }
       }
     }
 
-    def makeCombination(meth: Name, qual: Tree, pat: Tree, body: Tree): Tree =
-      Apply(Select(qual, meth), List(makeClosure(pat, body)));
+    /** Make an application  qual.meth(pat => body) positioned at `pos`.
+     */
+    def makeCombination(pos: Position, meth: Name, qual: Tree, pat: Tree, body: Tree): Tree =
+      Apply(Select(qual, meth) setPos qual.pos, List(makeClosure(pos, pat, body))) setPos pos
 
+    /** Optionally, if pattern is a `Bind`, the bound name, otherwise None.
+     */
     def patternVar(pat: Tree): Option[Name] = pat match {
       case Bind(name, _) => Some(name)
       case _ => None
     }
 
+    /** If `pat` is not yet a `Bind` wrap it in one with a fresh name
+     */
     def makeBind(pat: Tree): Tree = pat match {
       case Bind(_, _) => pat
-      case _ => Bind(freshName(), pat)
+      case _ => Bind(freshName(), pat) setPos pat.pos
     }
 
+    /** A reference to the name bound in Bind `pat`.
+     */
     def makeValue(pat: Tree): Tree = pat match {
-      case Bind(name, _) => Ident(name)
+      case Bind(name, _) => Ident(name) setPos pat.pos.toSynthetic
     }
 
-    withSplitAllowed {
-      enums match {
-        case ValFrom(pos, pat, rhs) :: Nil =>
-          atPos(pos union body.pos) {
-            makeCombination(mapName, rhs, pat, body)
-          }
-        case ValFrom(pos, pat, rhs) :: (rest @ (ValFrom(_,  _, _) :: _)) =>
-          atPos(pos union body.pos) {
-            makeCombination(flatMapName, rhs, pat, makeFor(mapName, flatMapName, rest, body))
-          }
-        case ValFrom(pos, pat, rhs) :: Filter(_, test) :: rest =>
-          makeFor(mapName, flatMapName,
-                  ValFrom(pos, pat, makeCombination(nme.filter, rhs, pat.syntheticDuplicate, test)) :: rest,
-                  body)
-        case ValFrom(pos, pat, rhs) :: rest =>
-          val valeqs = rest.take(definitions.MaxTupleArity - 1).takeWhile(_.isInstanceOf[ValEq]);
-          assert(!valeqs.isEmpty)
-          val rest1 = rest.drop(valeqs.length)
-          val pats = valeqs map { case ValEq(_, pat, _) => pat }
-          val rhss = valeqs map { case ValEq(_, _, rhs) => rhs }
-          val defpats = pats map (x => makeBind(x.syntheticDuplicate))
-          val pdefs = List.flatten(List.map2(defpats, rhss)(makePatDef))
-          val patX1 = makeBind(pat.syntheticDuplicate);
-          val ids = (patX1 :: defpats) map makeValue
-          val rhs1 = makeForYield(
-            List(ValFrom(pos, patX1, rhs)),
-            Block(pdefs, makeTupleTerm(ids, true)))
-          makeFor(mapName, flatMapName, ValFrom(pos, makeTuple(pat :: pats, false), rhs1) :: rest1, body)
-        case _ =>
-          EmptyTree //may happen for erroneous input
-      }
+    /** The position of the closure that starts with generator at position `genpos`.
+     */
+    def closurePos(genpos: Position) = r2p(genpos.start, genpos.point, body.pos.end)
+
+//    val result =
+    enums match {
+      case ValFrom(pos, pat, rhs) :: Nil =>
+        makeCombination(closurePos(pos), mapName, rhs, pat, body)
+      case ValFrom(pos, pat, rhs) :: (rest @ (ValFrom(_,  _, _) :: _)) =>
+        makeCombination(closurePos(pos), flatMapName, rhs, pat,
+                        makeFor(mapName, flatMapName, rest, body))
+      case ValFrom(pos, pat, rhs) :: Filter(_, test) :: rest =>
+        makeFor(mapName, flatMapName,
+                ValFrom(pos, pat, makeCombination(closurePos(pos), nme.filter, rhs, pat.syntheticDuplicate, test)) :: rest,
+                body)
+      case ValFrom(pos, pat, rhs) :: rest =>
+        val valeqs = rest.take(definitions.MaxTupleArity - 1).takeWhile(_.isInstanceOf[ValEq]);
+        assert(!valeqs.isEmpty)
+        val rest1 = rest.drop(valeqs.length)
+        val pats = valeqs map { case ValEq(_, pat, _) => pat }
+        val rhss = valeqs map { case ValEq(_, _, rhs) => rhs }
+        val defpat1 = makeBind(pat)
+        val defpats = pats map makeBind
+        val pdefs = List.flatten(List.map2(defpats, rhss)(makePatDef))
+        val ids = (defpat1 :: defpats) map makeValue
+        val rhs1 = makeForYield(
+          List(ValFrom(pos, defpat1, rhs)),
+          Block(pdefs, makeTupleTerm(ids, true) setPos wrappingPos(ids)) setPos wrappingPos(pdefs))
+        val allpats = (pat :: pats) map (_.syntheticDuplicate)
+        val vfrom1 = ValFrom(r2p(pos.start, pos.point, rhs1.pos.end), makeTuple(allpats, false), rhs1)
+        makeFor(mapName, flatMapName, vfrom1 :: rest1, body)
+      case _ =>
+        EmptyTree //may happen for erroneous input
     }
+//    println("made for "+result)
+//    result
   }
 
   /** Create tree for for-do comprehension &lt;for (enums) body&gt; */

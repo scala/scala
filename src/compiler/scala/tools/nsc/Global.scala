@@ -134,13 +134,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   // ------------ Hooks for interactive mode-------------------------
 
-  /** Return a position correponding to tree startaing at `start`, with tip
-   *  at `mid`, and ending at `end`. ^ batch mode errors point at tip.
-   */
-  def rangePos(source: SourceFile, start: Int, point: Int, end: Int) =
-    if (settings.Yrangepos.value) new RangePosition(source, start, point, end)
-    else new OffsetPosition(source, point)
-
   /** Called every time an AST node is succesfully typedchecked in typerPhase.
    */
   def signalDone(context: analyzer.Context, old: Tree, result: Tree) {}
@@ -148,16 +141,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   /** Register new context; called for every created context
    */
   def registerContext(c: analyzer.Context) {}
-
-  /** Allow splits when positioning a tree */
-  def withSplitAllowed(op: => Tree) = {
-    splitAllowed = true
-    try {
-      op
-    } finally {
-      splitAllowed = false
-    }
-  }
 
 // ------------------ Reporting -------------------------------------
 

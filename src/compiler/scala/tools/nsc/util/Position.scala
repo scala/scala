@@ -195,6 +195,11 @@ class SyntheticOffsetPosition(source0: SourceFile, offset0: Int) extends OffsetP
   override def toSynthetic = this
   override def withPoint(off: Int) = new SyntheticOffsetPosition(source0, off)
   override def show = "<["+point+"]>"
+/*
+  override def union(pos: Position) =
+    if (pos.isDefined && !pos.isSynthetic) pos
+    else this
+*/
 }
 
 /** new for position ranges */
@@ -206,15 +211,15 @@ extends OffsetPosition(source0, point) {
   override def withStart(off: Int) = new RangePosition(source0, off, point, end)
   override def withEnd(off: Int) = new RangePosition(source0, start, point, off)
   override def withPoint(off: Int) = new RangePosition(source0, start, off, end)
-  override def union(pos: Position) =
-    if (pos.isDefined && !pos.isSynthetic) new RangePosition(source0, start min pos.start, point, end max pos.end)
-    else this
   override def endOrElse(d: Int) = end
   override def focusStart = OffsetPosition(source0, start)
   override def focusPoint = OffsetPosition(source0, point)
   override def focusEnd = OffsetPosition(source0, end)
   override def toString = "RangePosition("+source0+", "+start+", "+point+", "+end+")"
   override def show = "["+start+":"+end+"]"
+  override def union(pos: Position) =
+    if (pos.isDefined && !pos.isSynthetic) new RangePosition(source0, start min pos.start, point, end max pos.end)
+    else this
 }
 
 

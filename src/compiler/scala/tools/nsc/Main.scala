@@ -54,7 +54,9 @@ object Main extends AnyRef with EvalLoop {
             command.settings.assemrefs.value + File.pathSeparator + libpath
       }
       try {
-        object compiler extends Global(command.settings, reporter)
+        val compiler = if (command.settings.Yrangepos.value) new interactive.Global(command.settings, reporter)
+        else new Global(command.settings, reporter)
+
         if (reporter.hasErrors) {
           reporter.flush()
           return
