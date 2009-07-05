@@ -18,7 +18,7 @@ package scala.xml
  */
 @serializable
 case class Group(val nodes: Seq[Node]) extends Node {
-
+  // final override def doTransform         = false
   override def theSeq = nodes
 
   /** XXX this is ridiculous, we can't do equality like this. */

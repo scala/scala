@@ -20,7 +20,8 @@ case class Comment(commentText: String) extends SpecialNode
 {
   def label = "#REM"
   override def text = ""
-  final override def collectNamespacesAndDontTransform = false
+  final override def doCollectNamespaces = false
+  final override def doTransform         = false
 
   if (commentText contains "--")
     throw new IllegalArgumentException("text contains \"--\"")

@@ -48,9 +48,9 @@ abstract class Node extends NodeSeq {
    */
   def isAtom = this.isInstanceOf[Atom[_]]
 
-  /** The logic formerly found in typeTag$, as best I could infer it.
-   *  XXX obviously this name is ludicrous.  */
-  def collectNamespacesAndDontTransform = true
+  /** The logic formerly found in typeTag$, as best I could infer it. */
+  def doCollectNamespaces = true  // if (tag >= 0) DO collect namespaces
+  def doTransform         = true  // if (tag < 0) DO NOT transform
 
   /**
    *  method returning the namespace bindings of this node. by default, this

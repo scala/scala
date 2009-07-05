@@ -49,6 +49,9 @@ class Elem(
   val child: Node*)
 extends Node
 {
+  final override def doCollectNamespaces = true
+  final override def doTransform         = true
+
   if ((null != prefix) && 0 == prefix.length())
     throw new IllegalArgumentException("prefix of zero length, use null instead")
 
@@ -58,8 +61,6 @@ extends Node
   //@todo: copy the children,
   //  setting namespace scope if necessary
   //  cleaning adjacent text nodes if necessary
-
-  final override def collectNamespacesAndDontTransform = true
 
   override def hashCode(): Int =
     Utility.hashCode(prefix, label, attributes.hashCode(), scope.hashCode(), child)

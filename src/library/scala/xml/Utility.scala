@@ -143,7 +143,7 @@ object Utility extends AnyRef with parsing.TokenTests
    * @param set ...
    */
   def collectNamespaces(n: Node, set: Set[String]) {
-    if (n.collectNamespacesAndDontTransform) {
+    if (n.doCollectNamespaces) {
       set += n.namespace
       for (a <- n.attributes) a match {
         case _:PrefixedAttribute =>

@@ -19,7 +19,8 @@ package scala.xml
  * @param   text the text contained in this node.
  */
 case class EntityRef(entityName: String) extends SpecialNode {
-  final override def collectNamespacesAndDontTransform = false
+  final override def doCollectNamespaces = false
+  final override def doTransform         = false
   def label = "#ENTITY"
 
   override def text = entityName match {

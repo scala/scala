@@ -23,7 +23,9 @@ class Atom[+A](val data: A) extends SpecialNode
   if (data.asInstanceOf[AnyRef] == null)
     throw new IllegalArgumentException("cannot construct Atom(null)")
 
-  final override def collectNamespacesAndDontTransform = false
+  final override def doCollectNamespaces = false
+  final override def doTransform         = false
+
   def label = "#PCDATA"
 
   override def equals(x: Any) = x match {
