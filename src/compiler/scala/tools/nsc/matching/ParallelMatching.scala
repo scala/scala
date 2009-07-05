@@ -930,16 +930,27 @@ trait ParallelMatching extends ast.TreeDSL {
         Branch(casted, nmatrix, nmatrixFail)
       }
 
+      // temporary checks so we're less crashy while we determine what to implement.
+      def checkErroneous(scrut: Scrutinee): Type = {
+        scrut.tpe match {
+          case tpe @ ThisType(_) if tpe.termSymbol == NoSymbol        =>
+            cunit.error(scrut.pos, "self type test in anonymous class forbidden by implementation.")
+            ErrorType
+          case x => x
+        }
+      }
+
       final def tree(): Tree = {
         val Branch(casted, srep, frep) = this.getTransition
-        val cond = condition(casted.tpe, scrut)
+        val castedTpe = checkErroneous(casted)
+        val cond = condition(castedTpe, scrut)
         val succ = srep.toTree
         val fail = frep map (_.toTree) getOrElse (failTree)
 
         // dig out case field accessors that were buried in (***)
         val cfa       = if (!pats.isCaseHead) Nil else casted.accessors
         val caseTemps = srep.temp match { case x :: xs if x == casted.sym => xs ; case x => x }
-        def needCast  = if (casted.sym ne scrut.sym) List(VAL(casted.sym) === (scrut.id AS_ANY casted.tpe)) else Nil
+        def needCast  = if (casted.sym ne scrut.sym) List(VAL(casted.sym) === (scrut.id AS_ANY castedTpe)) else Nil
         val vdefs     = needCast ::: (
           for ((tmp, accessor) <- caseTemps zip cfa) yield
             typedValDef(tmp, typer typed fn(casted.id, accessor))
