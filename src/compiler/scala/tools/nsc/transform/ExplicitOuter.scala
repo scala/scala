@@ -8,8 +8,8 @@ package scala.tools.nsc.transform
 
 import symtab._
 import Flags.{ CASE => _, _ }
-import scala.collection.mutable.{HashMap, ListBuffer}
-import matching.{TransMatcher, PatternNodes, CodeFactory, ParallelMatching}
+import scala.collection.mutable.ListBuffer
+import matching.{ TransMatcher, PatternNodes, ParallelMatching }
 
 /** This class ...
  *
@@ -19,7 +19,6 @@ import matching.{TransMatcher, PatternNodes, CodeFactory, ParallelMatching}
 abstract class ExplicitOuter extends InfoTransform
       with TransMatcher
       with PatternNodes
-      with CodeFactory
       with ParallelMatching
       with TypingTransformers
       with ast.TreeDSL
@@ -460,7 +459,7 @@ abstract class ExplicitOuter extends InfoTransform
           ExplicitOuter.this.resultType = tree.tpe
 
           val t = atPos(tree.pos) {
-            val t_untyped = handlePattern(nselector, ncases, checkExhaustive, currentOwner, transform)(localTyper)
+            val t_untyped = handlePattern(nselector, ncases, checkExhaustive, currentOwner, transform, localTyper)
             /* if @switch annotation is present, verify the resulting tree is a Match */
             if (requireSwitch) t_untyped match {
               case Block(_, Match(_, _))  => // ok

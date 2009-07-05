@@ -5,6 +5,26 @@
  */
 // $Id$
 
+/**
+ * Simple pattern types:
+ *
+ * 1 Variable               x
+ * 3 Literal                56
+ *
+ * Types which must be decomposed into conditionals and simple types:
+ *
+ * 2 Typed                  x: Int
+ * 4 Stable Identifier      Bob
+ * 5 Constructor            Symbol("abc")
+ * 6 Tuple                  (5, 5)
+ * 7 Extractor              List(1, 2)
+ * 8 Sequence               List(1, 2, _*)
+ * 9 Infix                  5 :: xs
+ * 10 Alternative           "foo" | "bar"
+ * 11 XML                   --
+ * 12 Regular Expression    --
+ */
+
 package scala.tools.nsc.matching
 
 import util.Position
@@ -18,7 +38,7 @@ import scala.util.NameTransformer.decode
  *  @author Burak Emir
  */
 trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
-  self: transform.ExplicitOuter with PatternNodes with ParallelMatching with CodeFactory =>
+  self: transform.ExplicitOuter with PatternNodes with ParallelMatching =>
 
   import global.{ typer => _, _ }
   import analyzer.Typer;
@@ -33,9 +53,95 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
 
   final val settings_squeeze = settings.Xsqueeze.value == "on"
 
-  // check special case Seq(p1,...,pk,_*)
-  protected def isRightIgnoring(p: ArrayValue): Boolean =
-    !p.elems.isEmpty && cond(unbind(p.elems.last)) { case Star(q) => isDefaultPattern(q) }
+  /** Contains data structures which the match algorithm implementation
+   *  requires but which aren't essential to the algorithm itself.
+   */
+  case class MatchMatrixContext(
+    handleOuter: TreeFunction1,
+    typer: Typer,
+    owner: Symbol)
+  {
+    def newVar(
+      pos: Position,
+      tpe: Type,
+      flags: List[Long] = Nil,
+      name: Name = null): Symbol =
+    {
+      val n: Name = if (name == null) newName(pos, "temp") else name
+      // careful: pos has special meaning
+      owner.newVariable(pos, n) setInfo tpe setFlag (0L /: flags)(_|_)
+    }
+
+    def typedValDef(x: Symbol, rhs: Tree) = {
+      val finalRhs = x.tpe match {
+        case WildcardType   =>
+          rhs setType null
+          x setInfo (typer typed rhs).tpe
+          rhs
+        case _              =>
+          typer.typed(rhs, x.tpe)
+      }
+      typer typed (VAL(x) === finalRhs)
+    }
+
+    def squeezedBlock(vds: List[Tree], exp: Tree): Tree =
+      if (settings_squeeze) Block(Nil, squeezedBlock1(vds, exp))
+      else                  Block(vds, exp)
+
+    private def squeezedBlock1(vds: List[Tree], exp: Tree): Tree = {
+      class RefTraverser(sym: Symbol) extends Traverser {
+        var nref, nsafeRef = 0
+        override def traverse(tree: Tree) = tree match {
+          case t: Ident if t.symbol eq sym =>
+            nref += 1
+            if (sym.owner == currentOwner) // oldOwner should match currentOwner
+              nsafeRef += 1
+
+          case LabelDef(_, args, rhs) =>
+            (args dropWhile(_.symbol ne sym)) match {
+              case Nil  =>
+              case _    => nref += 2  // cannot substitute this one
+            }
+            traverse(rhs)
+          case t if nref > 1 =>       // abort, no story to tell
+          case t =>
+            super.traverse(t)
+        }
+      }
+
+      class Subst(sym: Symbol, rhs: Tree) extends Transformer {
+        var stop = false
+        override def transform(tree: Tree) = tree match {
+          case t: Ident if t.symbol == sym =>
+            stop = true
+            rhs
+          case _ => if (stop) tree else super.transform(tree)
+        }
+      }
+
+      lazy val squeezedTail = squeezedBlock(vds.tail, exp)
+      def default = squeezedTail match {
+        case Block(vds2, exp2) => Block(vds.head :: vds2, exp2)
+        case exp2              => Block(vds.head :: Nil,  exp2)
+      }
+
+      if (vds.isEmpty) exp
+      else vds.head match {
+        case vd: ValDef =>
+          val sym = vd.symbol
+          val rt = new RefTraverser(sym)
+          rt.atOwner (owner) (rt traverse squeezedTail)
+
+          rt.nref match {
+            case 0                      => squeezedTail
+            case 1 if rt.nsafeRef == 1  => new Subst(sym, vd.rhs) transform squeezedTail
+            case _                      => default
+          }
+        case _          =>
+          default
+      }
+    }
+  }
 
   /** handles all translation of pattern matching
    */
@@ -44,12 +150,13 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
     cases: List[CaseDef],
     doCheckExhaustive: Boolean,
     owner: Symbol,
-    handleOuter: Tree => Tree)
-    (implicit typer: Typer): Tree =
+    handleOuter: TreeFunction1,
+    localTyper: Typer): Tree =
   {
-    implicit val theOwner = owner
-    implicit val rep = new RepFactory(handleOuter, typer)
-    val flags = if (doCheckExhaustive) Nil else List(Flags.TRANS_FLAG)
+    val flags     = if (doCheckExhaustive) Nil else List(Flags.TRANS_FLAG)
+    val context   = MatchMatrixContext(handleOuter, localTyper, owner)
+
+    import context._
 
     def matchError(obj: Tree)   = atPos(selector.pos)(THROW(MatchErrorClass, obj))
     def caseIsOk(c: CaseDef)    = cond(c.pat) { case _: Apply | Ident(nme.WILDCARD) => true }
@@ -80,9 +187,9 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
         (List(root), List(vdef), failTree)
     }
 
-    implicit val fail: Tree = theFailTree
-    val irep = initRep(tmps, cases, rep)
-    val mch = typer typed irep.toTree
+    val matrix  = new MatchMatrix(context, theFailTree)
+    val rep     = matrix.execute(tmps, cases)
+    val mch     = typer typed rep.toTree
     var dfatree = typer typed Block(vds, mch)
 
     // TRACE("handlePattern(\n  tmps = %s\n  cases = %s\n  rep = %s\n  initRep = %s\n)",
@@ -91,9 +198,9 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
 
     // cannot use squeezedBlock because of side-effects, see t275
     for ((cs, bx) <- cases.zipWithIndex)
-      if (!rep.isReached(bx)) cunit.error(cs.body.pos, "unreachable code")
+      if (!matrix.isReached(bx)) cunit.error(cs.body.pos, "unreachable code")
 
-    dfatree = rep cleanup dfatree
+    dfatree = matrix cleanup dfatree
     resetTraverser traverse dfatree
     // TRACE("dfatree(2) = " + toCompactString(dfatree))
     dfatree

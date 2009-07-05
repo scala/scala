@@ -105,8 +105,6 @@ trait PatternNodes extends ast.TreeDSL
     }
   }
 
-  final def DBG(x: => String)   = if (settings.debug.value) Console.println(x)
-
   final def getDummies(i: Int): List[Tree] = List.fill(i)(EmptyTree)
 
   def makeBind(vs: List[Symbol], pat: Tree): Tree = vs match {

@@ -19,9 +19,19 @@ trait TreeDSL {
   import gen.{ scalaDot }
 
   object CODE {
+    // clarity aliases
+    type TreeFunction1 = Tree => Tree
+    type TreeFunction2 = (Tree, Tree) => Tree
+
     // Create a conditional based on a partial function - for values not defined
     // on the partial, it is false.
     def cond[T](x: T)(f: PartialFunction[T, Boolean]) = (f isDefinedAt x) && f(x)
+
+    // strip bindings to find what lies beneath
+    final def unbind(x: Tree): Tree = x match {
+      case Bind(_, y) => unbind(y)
+      case y          => y
+    }
 
     object LIT extends (Any => Literal) {
       def apply(x: Any)   = Literal(Constant(x))
