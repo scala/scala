@@ -1,5 +1,6 @@
 package scala.swing
 
+import javax.swing.{JSlider, JLabel}
 import event._
 
 /**
@@ -12,8 +13,8 @@ import event._
  * @see javax.swing.JSlider
  */
 class Slider extends Component with Orientable with Publisher {
-  override lazy val peer: javax.swing.JSlider with OrientedMixin =
-    new javax.swing.JSlider with OrientedMixin
+  override lazy val peer: JSlider with OrientedMixin =
+    new JSlider with OrientedMixin
 
   def min: Int = peer.getMinimum
   def min_=(v: Int) { peer.setMinimum(v) }
@@ -42,11 +43,13 @@ class Slider extends Component with Orientable with Publisher {
   def adjusting = peer.getValueIsAdjusting
 
   def labels: scala.collection.Map[Int, Label] =
-    new scala.collection.JavaConversions.JMapWrapper[Int, Label](
-      peer.getLabelTable.asInstanceOf[java.util.Hashtable[Int, Label]])
+    new scala.collection.JavaConversions.JMapWrapper[Int, JLabel](
+      peer.getLabelTable.asInstanceOf[java.util.Hashtable[Int, JLabel]])
+      .mapValues(v => (UIElement cachedWrapper v).asInstanceOf[Label])
   def labels_=(l: scala.collection.Map[Int, Label]) {
+    // TODO: do some lazy wrapping
     val table = new java.util.Hashtable[Any, Any]
-    for ((k,v) <- l) table.put(k, v)
+    for ((k,v) <- l) table.put(k, v.peer)
     peer.setLabelTable(table)
   }
 
