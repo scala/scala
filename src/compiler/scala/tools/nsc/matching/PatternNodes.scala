@@ -86,8 +86,6 @@ trait PatternNodes extends ast.TreeDSL
       def   isNothing = is(NothingClass)
       def     isArray = is(ArrayClass)
 
-      def isCaseClass = tpe.typeSymbol hasFlag Flags.CASE
-
       def cmp(other: Type): TypeComparison = TypeComparison(tpe, tpeWRTEquality(other))
 
       def coversSym(sym: Symbol) = {
@@ -152,7 +150,7 @@ trait PatternNodes extends ast.TreeDSL
   // if Apply tpe !isCaseClass and Apply_Value says false, return the Apply target
   object Apply_Function {
     /* see t301 */
-    def isApplyFunction(o: Apply) = !o.tpe.isCaseClass || !Apply_Value.unapply(o).isEmpty
+    def isApplyFunction(t: Apply) = !isCaseClass(t.tpe) || !Apply_Value.unapply(t).isEmpty
     def unapply(x: Any) = x match {
       case x @ Apply(fun, Nil) if isApplyFunction(x)  => Some(fun)
       case _                                          => None
@@ -182,12 +180,6 @@ trait PatternNodes extends ast.TreeDSL
       case _                                      => None
     }
   }
-
-  /** returns if pattern can be considered a no-op test ??for expected type?? */
-  final def isDefaultPattern(pattern: Tree): Boolean =
-    cond(unbind(pattern)) { case EmptyTree | Ident(nme.WILDCARD) => true }
-    // -- what about the following? still have to test "ne null" :/
-    //  case Typed(nme.WILDCARD,_) => pattern.tpe <:< scrut.tpe
 
   /** returns all variables that are binding the given pattern
    *  @param   x a pattern

@@ -143,9 +143,9 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
     }
   }
 
-  case class MatchMatrixInput(
+  case class MatchMatrixInit(
     roots: List[Symbol],
-    vars: List[Tree],
+    cases: List[CaseDef],
     default: Tree
   )
 
@@ -159,6 +159,7 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
   {
     import context._
 
+    // TRANS_FLAG communicates that there should be no exhaustiveness checking
     val flags                 = List(Flags.TRANS_FLAG) filterNot (_ => isChecked)
     def matchError(obj: Tree) = atPos(selector.pos)(THROW(MatchErrorClass, obj))
     def caseIsOk(c: CaseDef)  = cond(c.pat) { case _: Apply | Ident(nme.WILDCARD) => true }
@@ -170,15 +171,15 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
       (cases forall caseIsOk)
 
     // For x match { ... we start with a single root
-    def singleMatch() = {
+    def singleMatch(): (List[Tree], MatchMatrixInit) = {
       val root: Symbol      = newVar(selector.pos, selector.tpe, flags)
       val varDef: Tree      = typedValDef(root, selector)
 
-      MatchMatrixInput(List(root), List(varDef), matchError(ID(root)))
+      (List(varDef), MatchMatrixInit(List(root), cases, matchError(ID(root))))
     }
 
     // For (x, y, z) match { ... we start with multiple roots, called tpXX.
-    def tupleMatch(app: Apply) = {
+    def tupleMatch(app: Apply): (List[Tree], MatchMatrixInit) = {
       val Apply(fn, args) = app
       val (roots, vars) = List.unzip(
         for ((arg, typeArg) <- args zip selector.tpe.typeArgs) yield {
@@ -186,17 +187,17 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
           (v, typedValDef(v, arg))
         }
       )
-      MatchMatrixInput(roots, vars, matchError(treeCopy.Apply(app, fn, roots map ID)))
+      (vars, MatchMatrixInit(roots, cases, matchError(treeCopy.Apply(app, fn, roots map ID))))
     }
 
-    // sets up input for the matching algorithm
-    val MatchMatrixInput(roots, vars, default) = selector match {
+    // sets up top level variables and algorithm input
+    val (vars, matrixInit) = selector match {
       case app @ Apply(fn, _) if isTupleType(selector.tpe) && doApply(fn) => tupleMatch(app)
       case _                                                              => singleMatch()
     }
 
-    val matrix  = new MatchMatrix(context, default)
-    val rep     = matrix.expand(roots, cases)         // expands casedefs and assigns name
+    val matrix  = new MatchMatrix(context, matrixInit)
+    val rep     = matrix.expansion                    // expands casedefs and assigns name
     val mch     = typer typed rep.toTree              // executes algorithm, converts tree to DFA
     val dfatree = typer typed Block(vars, mch)        // packages into a code block
 

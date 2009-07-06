@@ -23,7 +23,6 @@ trait Unapplies extends ast.TreeDSL
   private def isVarargs(vd: ValDef) = treeInfo isRepeatedParamType vd.tpt
   private def isByName(vd: ValDef)  = treeInfo isByNameParamType vd.tpt
   private def toIdent(x: DefTree)   = Ident(x.name)
-  private def applyAndReturn[T](f: T => Unit)(x: T): T = { f(x) ; x }
 
   /** returns type list for return type of the extraction */
   def unapplyTypeList(ufn: Symbol, ufntpe: Type) = {
