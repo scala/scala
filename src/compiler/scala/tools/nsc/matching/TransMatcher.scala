@@ -47,7 +47,6 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
   import CODE._
 
   var cunit: CompilationUnit = _  // memory leak?
-  var resultType: Type = _
 
   def newName(pos: Position, s: String) = cunit.fresh.newName(pos, s)
 
@@ -57,9 +56,10 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
    *  requires but which aren't essential to the algorithm itself.
    */
   case class MatchMatrixContext(
-    handleOuter: TreeFunction1,
-    typer: Typer,
-    owner: Symbol)
+    handleOuter: TreeFunction1,   // Tree => Tree function
+    typer: Typer,                 // a local typer
+    owner: Symbol,                // the current owner
+    resultType: Type)             // the expected result type of the whole match
   {
     def newVar(
       pos: Position,
@@ -143,67 +143,73 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
     }
   }
 
-  /** handles all translation of pattern matching
+  case class MatchMatrixInput(
+    roots: List[Symbol],
+    vars: List[Tree],
+    default: Tree
+  )
+
+  /** Handles all translation of pattern matching.
    */
   def handlePattern(
-    selector: Tree,
-    cases: List[CaseDef],
-    doCheckExhaustive: Boolean,
-    owner: Symbol,
-    handleOuter: TreeFunction1,
-    localTyper: Typer): Tree =
+    selector: Tree,         // tree being matched upon (called scrutinee after this)
+    cases: List[CaseDef],   // list of cases in the match
+    isChecked: Boolean,     // whether exhaustiveness checking is enabled (disabled with @unchecked)
+    context: MatchMatrixContext): Tree =
   {
-    val flags     = if (doCheckExhaustive) Nil else List(Flags.TRANS_FLAG)
-    val context   = MatchMatrixContext(handleOuter, localTyper, owner)
-
     import context._
 
-    def matchError(obj: Tree)   = atPos(selector.pos)(THROW(MatchErrorClass, obj))
-    def caseIsOk(c: CaseDef)    = cond(c.pat) { case _: Apply | Ident(nme.WILDCARD) => true }
+    val flags                 = List(Flags.TRANS_FLAG) filterNot (_ => isChecked)
+    def matchError(obj: Tree) = atPos(selector.pos)(THROW(MatchErrorClass, obj))
+    def caseIsOk(c: CaseDef)  = cond(c.pat) { case _: Apply | Ident(nme.WILDCARD) => true }
 
+    // this appears to be an attempt at optimizing when all case defs are constructor
+    // patterns, but I don't think it's correct.
     def doApply(fn: Tree): Boolean =
       (fn.symbol eq (selector.tpe.decls lookup nme.CONSTRUCTOR)) &&
       (cases forall caseIsOk)
 
-    def processTuple(app: Apply): (List[Symbol], List[Tree], Tree) = {
+    // For x match { ... we start with a single root
+    def singleMatch() = {
+      val root: Symbol      = newVar(selector.pos, selector.tpe, flags)
+      val varDef: Tree      = typedValDef(root, selector)
+
+      MatchMatrixInput(List(root), List(varDef), matchError(ID(root)))
+    }
+
+    // For (x, y, z) match { ... we start with multiple roots, called tpXX.
+    def tupleMatch(app: Apply) = {
       val Apply(fn, args) = app
-      val (tmps, vds) = List.unzip(
+      val (roots, vars) = List.unzip(
         for ((arg, typeArg) <- args zip selector.tpe.typeArgs) yield {
           val v = newVar(arg.pos, typeArg, flags, newName(arg.pos, "tp"))
           (v, typedValDef(v, arg))
         }
       )
-      (tmps, vds, matchError(treeCopy.Apply(app, fn, tmps map ID)))
+      MatchMatrixInput(roots, vars, matchError(treeCopy.Apply(app, fn, roots map ID)))
     }
 
-    // sets temporaries, variable declarations, and the fail tree
-    val (tmps, vds, theFailTree) = selector match {
-      case app @ Apply(fn, _) if isTupleType(selector.tpe) && doApply(fn) =>
-        processTuple(app)
-      case _ =>
-        val root: Symbol      = newVar(selector.pos, selector.tpe, flags)
-        val vdef: Tree        = typer typed (VAL(root) === selector)
-        val failTree: Tree    = matchError(ID(root))
-        (List(root), List(vdef), failTree)
+    // sets up input for the matching algorithm
+    val MatchMatrixInput(roots, vars, default) = selector match {
+      case app @ Apply(fn, _) if isTupleType(selector.tpe) && doApply(fn) => tupleMatch(app)
+      case _                                                              => singleMatch()
     }
 
-    val matrix  = new MatchMatrix(context, theFailTree)
-    val rep     = matrix.execute(tmps, cases)
-    val mch     = typer typed rep.toTree
-    var dfatree = typer typed Block(vds, mch)
+    val matrix  = new MatchMatrix(context, default)
+    val rep     = matrix.expand(roots, cases)         // expands casedefs and assigns name
+    val mch     = typer typed rep.toTree              // executes algorithm, converts tree to DFA
+    val dfatree = typer typed Block(vars, mch)        // packages into a code block
 
-    // TRACE("handlePattern(\n  tmps = %s\n  cases = %s\n  rep = %s\n  initRep = %s\n)",
-    //   tmps, cases.mkString("(\n    ", "\n    ", "\n)"), rep, irep)
+    // TRACE("handlePattern(\n  roots = %s\n  cases = %s\n  rep = %s\n  initRep = %s\n)",
+    //   roots, cases.mkString("(\n    ", "\n    ", "\n)"), rep, irep)
     // TRACE("dfatree(1) = " + toCompactString(dfatree))
 
-    // cannot use squeezedBlock because of side-effects, see t275
+    // redundancy check
     for ((cs, bx) <- cases.zipWithIndex)
       if (!matrix.isReached(bx)) cunit.error(cs.body.pos, "unreachable code")
 
-    dfatree = matrix cleanup dfatree
-    resetTraverser traverse dfatree
-    // TRACE("dfatree(2) = " + toCompactString(dfatree))
-    dfatree
+    // cleanup performs squeezing and resets any remaining TRANS_FLAGs
+    matrix cleanup dfatree
   }
 
   private def toCompactString(t: Tree): String = {
@@ -212,17 +218,6 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
     printer.print(t)
     printer.flush()
     buffer.toString
-  }
-
-  private object resetTraverser extends Traverser {
-    override def traverse(x: Tree): Unit = x match {
-      case vd: ValDef =>
-        if (vd.symbol hasFlag Flags.SYNTHETIC) {
-          vd.symbol resetFlag (Flags.TRANS_FLAG | Flags.MUTABLE)
-        }
-      case _ =>
-        super.traverse(x)
-    }
   }
 }
 

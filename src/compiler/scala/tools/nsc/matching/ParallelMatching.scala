@@ -167,13 +167,8 @@ trait ParallelMatching extends ast.TreeDSL {
 
           case t =>
             super.transform(t match {
+              // note - it is too early for any other true/false related optimizations
               case If(cond, IsTrue(), IsFalse())  => cond
-              // These definitely cause failure after locker!
-              // case If(IsTrue(), thenp, _)         => thenp
-              // case If(IsFalse(), _, elsep)        => elsep
-              // We could do more here...
-              // case If(cond, thenp, IsFalse()) =>
-              //   gen.mkAnd(cond, thenp)
 
               case If(cond1, If(cond2, thenp, elsep1), elsep2) if (elsep1 equalsStructure elsep2) =>
                 IF (cond1 AND cond2) THEN thenp ELSE elsep1
@@ -183,8 +178,20 @@ trait ParallelMatching extends ast.TreeDSL {
           })
         }
       }
+      object resetTraverser extends Traverser {
+        import Flags._
+        def reset(vd: ValDef) =
+          if (vd.symbol hasFlag SYNTHETIC) vd.symbol resetFlag (TRANS_FLAG|MUTABLE)
+
+        override def traverse(x: Tree): Unit = x match {
+          case vd: ValDef => reset(vd)
+          case _          => super.traverse(x)
+        }
+      }
+
       val res = lxtt transform tree
       cleanup()
+      resetTraverser traverse res
       res
     }
 
@@ -273,11 +280,6 @@ trait ParallelMatching extends ast.TreeDSL {
 
     /** the injection here handles alternatives and unapply type tests */
     final def make(temp: List[Symbol], row1: List[Row]): Rep = {
-      // equals check: call singleType(NoPrefix, o.symbol) `stpe'. Then we could also return
-      // `typeRef(definitions.ScalaPackageClass.tpe, definitions.EqualsPatternClass, List(stpe))'
-      // and force an equality check. However, exhaustivity checking would not work anymore.
-      // so first, extend exhaustivity check to equalspattern
-
       // Martin: I am not really sure what stype is doing, but it caused aliases.scala to fail
       // The problem is if a val has a singleType of some other module. Then isModule is true and
       // sType is called. But it ends up mixing the prefix of the other module with the val symbol
@@ -1138,8 +1140,8 @@ trait ParallelMatching extends ast.TreeDSL {
       private def pad(s: String): String = "%%%ds" format (NPAD - 1) format s
     }
 
-    /** Executes the match algorithm. */
-    final def execute(roots: List[Symbol], cases: List[Tree]) = {
+    /** Expands the patterns recursively. */
+    final def expand(roots: List[Symbol], cases: List[Tree]) = {
       val (rows, targets, vss): (List[Option[Row]], List[Tree], List[List[Symbol]]) = unzip3(
         for ((CaseDef(pat, g, b), bx) <- cases.zipWithIndex) yield {  // stash away pvars and bodies for later
 
@@ -1190,7 +1192,7 @@ trait ParallelMatching extends ast.TreeDSL {
     }
 
     /** adds a test comparing the dynamic outer to the static outer */
-    final def addOuterCondition(cond: Tree, tpe2test: Type, scrut: Tree, handleOuter: Tree=>Tree) = {
+    final def addOuterCondition(cond: Tree, tpe2test: Type, scrut: Tree, handleOuter: TreeFunction1) = {
       val theRef = handleOuter(tpe2test match {
         case TypeRef(NoPrefix, _, _)          => abort("assertion failed: NoPrefix")
         case TypeRef(ThisType(clazz), _, _)   => THIS(clazz)

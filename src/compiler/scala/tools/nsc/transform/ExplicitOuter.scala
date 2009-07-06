@@ -338,6 +338,72 @@ abstract class ExplicitOuter extends InfoTransform
         sym setFlag notFlag
     }
 
+    def matchTranslation(tree: Match) = {
+      val Match(selector, cases) = tree
+      var nselector = transform(selector)
+
+      def makeGuardDef(vs: List[Symbol], guard: Tree) = {
+        val gdname = newName(guard.pos, "gd")
+        val method = currentOwner.newMethod(tree.pos, gdname) setFlag SYNTHETIC
+        val fmls   = vs map (_.tpe)
+        val tpe    = new MethodType(method newSyntheticValueParams fmls, BooleanClass.tpe)
+        method setInfo tpe
+
+        localTyper typed (DEF(method) === {
+          new ChangeOwnerTraverser(currentOwner, method) traverse guard
+          new TreeSymSubstituter(vs, method.paramss.head) traverse guard
+          guard
+        })
+      }
+
+      val nguard = new ListBuffer[Tree]
+      val ncases =
+        for (CaseDef(p, guard, b) <- cases) yield {
+          val gdcall =
+            if (guard == EmptyTree) EmptyTree
+            else {
+              val vs       = definedVars(p)
+              val guardDef = makeGuardDef(vs, guard)
+              nguard       += transform(guardDef) // building up list of guards
+
+              localTyper typed (Ident(guardDef.symbol) APPLY (vs map Ident))
+            }
+
+          (CASE(transform(p)) IF gdcall) ==> transform(b)
+        }
+
+      def isUncheckedAnnotation(tpe: Type) = tpe hasAnnotation UncheckedClass
+      def isSwitchAnnotation(tpe: Type) = tpe hasAnnotation SwitchClass
+
+      val (checkExhaustive, requireSwitch) = nselector match {
+        case Typed(nselector1, tpt) =>
+          val unchecked = isUncheckedAnnotation(tpt.tpe)
+          if (unchecked)
+            nselector = nselector1
+
+          (!unchecked, isSwitchAnnotation(tpt.tpe))
+        case _  =>
+          (true, false)
+      }
+
+      val t = atPos(tree.pos) {
+        val context     = MatchMatrixContext(transform, localTyper, currentOwner, tree.tpe)
+        val t_untyped   = handlePattern(nselector, ncases, checkExhaustive, context)
+
+        /* if @switch annotation is present, verify the resulting tree is a Match */
+        if (requireSwitch) t_untyped match {
+          case Block(_, Match(_, _))  => // ok
+          case _                      =>
+            unit.error(tree.pos, "could not emit switch for @switch annotated match")
+        }
+
+        localTyper.typed(t_untyped, context.resultType)
+      }
+
+      if (nguard.isEmpty) t
+      else Block(nguard.toList, t) setType t.tpe
+    }
+
     /** The main transformation method */
     override def transform(tree: Tree): Tree = {
       val sym = tree.symbol
@@ -409,69 +475,9 @@ abstract class ExplicitOuter extends InfoTransform
             }
             super.transform(treeCopy.Apply(tree, sel, outerVal :: args))
 
-        case mch @ Match(selector, cases) => // <----- transmatch hook
-          var nselector = transform(selector)
-
-          def makeGuardDef(vs: List[Symbol], guard: Tree) = {
-            val gdname = newName(guard.pos, "gd")
-            val method = currentOwner.newMethod(mch.pos, gdname) setFlag SYNTHETIC
-            val fmls   = vs map (_.tpe)
-            val tpe    = new MethodType(method newSyntheticValueParams fmls, BooleanClass.tpe)
-            method setInfo tpe
-
-            localTyper typed (DEF(method) === {
-              new ChangeOwnerTraverser(currentOwner, method) traverse guard
-              new TreeSymSubstituter(vs, method.paramss.head) traverse guard
-              guard
-            })
-          }
-
-          val nguard = new ListBuffer[Tree]
-          val ncases =
-            for (CaseDef(p, guard, b) <- cases) yield {
-              val gdcall =
-                if (guard == EmptyTree) EmptyTree
-                else {
-                  val vs       = definedVars(p)
-                  val guardDef = makeGuardDef(vs, guard)
-                  nguard       += transform(guardDef) // building up list of guards
-
-                  localTyper typed (Ident(guardDef.symbol) APPLY (vs map Ident))
-                }
-
-              (CASE(transform(p)) IF gdcall) ==> transform(b)
-            }
-
-          def isUncheckedAnnotation(tpe: Type) = tpe hasAnnotation UncheckedClass
-          def isSwitchAnnotation(tpe: Type) = tpe hasAnnotation SwitchClass
-
-          val (checkExhaustive, requireSwitch) = nselector match {
-            case Typed(nselector1, tpt) =>
-              val unchecked = isUncheckedAnnotation(tpt.tpe)
-              if (unchecked)
-                nselector = nselector1
-
-              (!unchecked, isSwitchAnnotation(tpt.tpe))
-            case _  =>
-              (true, false)
-          }
-
-          ExplicitOuter.this.resultType = tree.tpe
-
-          val t = atPos(tree.pos) {
-            val t_untyped = handlePattern(nselector, ncases, checkExhaustive, currentOwner, transform, localTyper)
-            /* if @switch annotation is present, verify the resulting tree is a Match */
-            if (requireSwitch) t_untyped match {
-              case Block(_, Match(_, _))  => // ok
-              case _                      =>
-                unit.error(tree.pos, "could not emit switch for @switch annotated match")
-            }
-
-            localTyper.typed(t_untyped, resultType)
-          }
-
-          if (nguard.isEmpty) t
-          else Block(nguard.toList, t) setType t.tpe
+        // TransMatch hook
+        case mch: Match =>
+          matchTranslation(mch)
 
         case _ =>
           val x = super.transform(tree)
