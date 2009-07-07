@@ -21,7 +21,6 @@ package scala.collection.generic
  *    <b>def</b> iterator: Iterator[A]
  *    <b>def</b> +(elem: A): This
  *    <b>def</b> -(elem: A): This</pre>
- *  </pre>
  *  <p>
  *    If you wish that methods <code>like</code>, <code>take</code>, <code>drop</code>,
  *    <code>filter</code> return the same kind of set, you should also override:
@@ -42,8 +41,10 @@ self =>
   /* The empty set of the dame type as this set */
   def empty: This
 
-  /** A common implementation of `newBuilder` for all sets in terms of `empty`.
-   *  Overridden for mutable sets in `MutableSetTemplate`.
+  /** A common implementation of <code>newBuilder</code> for all sets in terms
+   *  of <code>empty</code>. Overridden for mutable sets in
+   *  <a href="MutableSetTemplate.html" target="ContentFrame">
+   *  <code>MutableSetTemplate</code></a>.
    */
   override protected[this] def newBuilder: Builder[A, This] = new AddingBuilder[A, This](empty)
 
@@ -55,12 +56,16 @@ self =>
    */
   def contains(elem: A): Boolean
 
-  /** Creates a new set with an additional element, unless the element is already present.
+  /** Creates a new set with an additional element, unless the element is
+   *  already present.
+   *
    *  @param elem the element to be added
    */
   def + (elem: A): This
 
-  /** Creates a new set with given element removed from this set, unless the element is not present.
+  /** Creates a new set with given element removed from this set, unless the
+   *  element is not present.
+   *
    *  @param elem the element to be removed
    */
   def - (elem: A): This
@@ -81,18 +86,18 @@ self =>
    */
   def apply(elem: A): Boolean = contains(elem)
 
-  /** Returns a new set consisting of all elements that are both in the current set
-   *  and in the argument set.
+  /** Returns a new set consisting of all elements that are both in the current
+   *  set and in the argument set.
    *
    *  @param that the set to intersect with.
    */
   def intersect(that: Set[A]): This = filter(that.contains)
 
-  /** Returns a new set consisting of all elements that are both in the current set
-   *  and in the argument set.
+  /** Returns a new set consisting of all elements that are both in the current
+   *  set and in the argument set.
    *
    *  @param that the set to intersect with.
-   *  @note  same as `intersect`
+   *  @note  same as <code>intersect</code>.
    */
   def &(that: Set[A]): This = intersect(that)
 
@@ -117,7 +122,7 @@ self =>
    *  @param that the set of elements to add
    *  @return     a set containing the elements of this
    *              set and those of the given set <code>that</code>.
-   *  @note       same as `union`
+   *  @note       same as <code>union</code>.
    */
   def | (that: Set[A]): This = union(that)
 
@@ -134,7 +139,7 @@ self =>
    *  @param that the set of elements to remove
    *  @return     a set containing those elements of this
    *              set that are not also contained in the given set <code>that</code>.
-   *  @note       same as `diff`.
+   *  @note       same as <code>diff</code>.
    */
   def &~(that: Set[A]): This = diff(that)
 

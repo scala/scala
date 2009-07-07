@@ -13,20 +13,25 @@ package scala.collection.generic
 
 import script._
 
-/** A generic template for mutable sets of elements of type A.
- *  To implement a concrete mutable set, you need to provide implementations of the following methods:
- *
- *  def contains(elem: A): Boolean
- *  def iterator: Iterator[A]
- *  def += (elem: A): this.type
- *  def -= (elem: A): this.type
- *
- * If you wish that methods like, take, drop, filter return the same kind of map, you should also
- * override:
- *
- *   def empty: This
- *
- * It is also good idea to override methods `foreach` and `size` for efficiency.
+/** <p>
+ *    A generic template for mutable sets of elements of type <code>A</code>.
+ *    To implement a concrete mutable set, you need to provide implementations
+ *    of the following methods:
+ *  </p><pre>
+ *    <b>def</b> contains(elem: A): Boolean
+ *    <b>def</b> iterator: Iterator[A]
+ *    <b>def</b> += (elem: A): <b>this.type</b>
+ *    <b>def</b> -= (elem: A): <b>this.type</b></pre>
+ *  <p>
+ *    If you wish that methods <code>like</code>, <code>take</code>,
+ *    <code>drop</code>, <code>filter</code> return the same kind of map,
+ *    you should also override:
+ *  </p><pre>
+ *    <b>def</b> empty: This</pre>
+ *  <p>
+ *    It is also good idea to override methods <code>foreach</code> and
+ *    <code>size</code> for efficiency.
+ *  </p>
  *
  */
 trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Set[A]]
@@ -38,8 +43,9 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
      with Cloneable[This]
 { self =>
 
-  /** A common implementation of `newBuilder` for all mutable sets in terms of `empty`.
-   *  Overrides `SetTemplate` implementation for better efficiency.
+  /** A common implementation of <code>newBuilder</code> for all mutable sets
+   *  in terms of <code>empty</code>. Overrides <code>SetTemplate</code>
+   *  implementation for better efficiency.
    */
   override protected[this] def newBuilder: Builder[A, This] = empty
 
@@ -55,6 +61,7 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
   }
 
   /** Removes a single element from a set.
+   *
    *  @param elem  The element to be removed.
    *  @return  true if the element was already present in the set.
    */
