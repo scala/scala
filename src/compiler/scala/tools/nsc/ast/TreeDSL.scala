@@ -27,6 +27,11 @@ trait TreeDSL {
     // on the partial, it is false.
     def cond[T](x: T)(f: PartialFunction[T, Boolean]) = (f isDefinedAt x) && f(x)
 
+    // Like cond, but transforms the value T => Some(U) if the pf is defined,
+    // or returns None if it is not.
+    def condOpt[T,U](x: T)(f: PartialFunction[T, U]): Option[U] =
+      if (f isDefinedAt x) Some(f(x)) else None
+
     // Applies a function to a value and then returns the value.
     def applyAndReturn[T](f: T => Unit)(x: T): T = { f(x) ; x }
 
@@ -84,6 +89,7 @@ trait TreeDSL {
       def ANY_EQ  (other: Tree)     = fn(target, nme.eq, toAnyRef(other))
       def ANY_==  (other: Tree)     = fn(target, Any_==, other)
       def ANY_>=  (other: Tree)     = fn(target, nme.GE, other)
+      def ANY_<=  (other: Tree)     = fn(target, nme.LE, other)
       def OBJ_!=  (other: Tree)     = fn(target, Object_ne, other)
 
       def INT_|   (other: Tree)     = fn(target, getMember(IntClass, nme.OR), other)

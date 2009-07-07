@@ -1,0 +1,7 @@
+pat_unreachable.scala:5: error: unreachable code
+    case Seq(x, y, z, w) => List(z,w) // redundant!
+                                ^
+pat_unreachable.scala:9: error: unreachable code
+    case Seq(x, y) => List(x, y)
+                          ^
+two errors found

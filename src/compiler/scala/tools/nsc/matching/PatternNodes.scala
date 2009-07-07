@@ -22,11 +22,11 @@ trait PatternNodes extends ast.TreeDSL
   import CODE._
   import definitions.{ ConsClass, ListClass, EqualsPatternClass, ListModule }
 
+  type TypeTest = (Type, Type) => Boolean
+
   case class TypeComparison(x: Type, y: Type) {
     def xIsaY = x <:< y
     def yIsaX = y <:< x
-    def xEqY  = y =:= x
-    def xIgnY = !xIsaY && !yIsaX && !xEqY
     def eqSymbol = cmpSymbols(x, y)
     def eqPrefix = x.prefix =:= y.prefix
 
