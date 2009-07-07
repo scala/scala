@@ -11,23 +11,33 @@
 
 package scala.collection.generic
 
-/** A generic template for mutable maps from keys of type A to values of type B.
- *  To implement a concrete mutable map, you need to provide implementations of the following methods:
- *
- *   def get(key: A): Option[B]
- *   def iterator: Iterator[(A, B)]
- *   def += (kv: (A, B)): this.type
- *   def -= (key: A): this.type
- *
- * If you wish that methods like, take, drop, filter return the same kind of map, you should also
- * override:
- *
- *   def empty: This
- *
- * If you to avoid the unncessary construction of an Option object,
- * you could also override apply, update, and delete.
- * It is also good idea to override methods `foreach` and `size` for efficiency.
- *
+/** <p>
+ *    A generic template for mutable maps from keys of type <code>A</code> to
+ *    values of type <code>B</code>.
+ *  </p>
+ *  <p>
+ *    To implement a concrete mutable map, you need to provide implementations
+ *    of the following methods:
+ *  </p><pre>
+ *    <b>def</b> get(key: A): Option[B]
+ *    <b>def</b> iterator: Iterator[(A, B)]
+ *    <b>def</b> += (kv: (A, B)): <b>this.type</b>
+ *    <b>def</b> -= (key: A): <b>this.type</b></pre>
+ *  <p>
+ *    If you wish that methods <code>like</code>, <code>take</code>,
+ *    <code>drop</code>, <code>filter</code> return the same kind of map, you
+ *    should also override:
+ *  </p><pre>
+ *   <b>def</b> empty: This</pre>
+ *  <p>
+ *    If you to avoid the unncessary construction of an <code>Option</code>
+ *    object, you could also override <code>apply</code>, <code>update</code>,
+ *    and <code>delete</code>.
+ *  </p>
+ *  <p>
+ *    It is also good idea to override methods <code>foreach</code> and
+ *    <code>size</code> for efficiency.
+ *  </p>
  */
 trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with mutable.Map[A, B]]
   extends MutableMapTemplateBase[A, B, This]
@@ -37,8 +47,13 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
      with Cloneable[This]
 { self =>
 
-  /** A common implementation of `newBuilder` for all mutable maps in terms of `empty`.
-   *  Overrides `MapTemplate` implementation for better efficiency.
+  /** <p>
+   *    A common implementation of <code>newBuilder</code> for all mutable maps
+   *    in terms of <code>empty</code>.
+   *  </p>
+   *  <p>
+   *    Overrides <code>MapTemplate</code> implementation for better efficiency.
+   *  </p>
    */
   override protected[this] def newBuilder: Builder[(A, B), This] = empty
 
@@ -58,6 +73,7 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
   /** Adds a new mapping from <code>key</code>
    *  to <code>value</code> to the map. If the map already contains a
    *  mapping for <code>key</code>, it will be overridden.
+   *
    *  @param key    The key to update
    *  @param value  The new value
    *  @return   An option consisting of value associated previously associated with `key` in the map,
@@ -72,7 +88,8 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
   def += (kv: (A, B)): this.type
 
   /** Create a new map consisting of all elements of the current map
-   *  plus the given mapping from `key` to `value`.
+   *  plus the given mapping from <code>key</code> to <code>value</code>.
+   *
    *  @param key    The key to ad
    *  @param value  The new value
    *  @return       A fresh immutable map

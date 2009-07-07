@@ -10,8 +10,11 @@ package scala.annotation
 /** <p>
  *    An annotation to be applied to a match expression.  If present,
  *    the compiler will verify that the match has been compiled to a
- *    tableswitch or lookupswitch, and issue an error if it instead
- *    compiles into a series of conditional expressions.<br/>
+ *    <a href="http://java.sun.com/docs/books/jvms/second_edition/html/Instructions2.doc14.html"
+ *    target="_top"><code>tableswitch</code></a> or
+ *    <a href="http://java.sun.com/docs/books/jvms/second_edition/html/Instructions2.doc8.html#lookupswitch"
+ *    target="_top"><code>lookupswitch</code></a>, and issue an error if it
+ *    instead compiles into a series of conditional expressions.<br/>
  *    Example:
  *  </p>
  *  <pre>

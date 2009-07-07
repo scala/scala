@@ -28,7 +28,7 @@ package scala.collection.generic
  *    <code>filter</code> return the same kind of map, you should also override:
  *  </p>
  *  <pre>
- *    <b>def</b> empty: This
+ *    <b>def</b> empty: This</pre>
  *  <p>
  *    It is also good idea to override methods <code>foreach</code> and
  *    <code>size</code> for efficiency.
@@ -96,9 +96,11 @@ self =>
    *  <code>p</code> returns <code>true</code>.
    *
    *  @param p A predicate over key-value pairs
-   *  @note    This method works by successively removing elements fro which the predicate is false from this set.
-   *           If removal is slow, or you expect that most elements of the set will be removed,
-   *           you might consider using `filter` with a negated predicate instead.
+   *  @note    This method works by successively removing elements fro which the
+   *           predicate is false from this set.
+   *           If removal is slow, or you expect that most elements of the set$
+   *           will be removed, you might consider using <code>filter</code>
+   *           with a negated predicate instead.
    */
   override def filterNot(p: ((A, B)) => Boolean): This = {
     var res: This = thisCollection

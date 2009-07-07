@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: $
 
 
 package scala.reflect
@@ -17,36 +17,42 @@ import java.lang.{ Class => JClass }
 import java.lang.reflect.{ Method => JMethod }
 import scala.{ Symbol => ScalaSymbol }
 
-/** A more convenient syntax for reflective invocation.  Example usage:
- *
- *    class Obj { private def foo(x: Int, y: String): Long = x + y.length }
- *
- *  You can call it reflectively one of two ways:
- *
- *    import scala.reflect.Invocation._
- *    (new Obj) o 'foo(5, "abc")                 // the 'o' method returns Any
- *    val x: Long = (new Obj) oo 'foo(5, "abc")  // the 'oo' method casts to expected type.
- *
- *  If you call the 'oo' method and do not give the type inferencer enough help,
- *  it will most likely infer Nothing, which will result in a ClassCastException.
+/** <p>
+ *    A more convenient syntax for reflective invocation.<br/>
+ *    Example usage:
+ *  </p><pre>
+ *    <b>class</b> Obj { <b>private def</b> foo(x: Int, y: String): Long = x + y.length }</pre>
+ *  <p>
+ *    You can call it reflectively one of two ways:
+ *  </p><pre>
+ *    <b>import</b> scala.reflect.Invocation._
+ *    (<b>new</b> Obj) o 'foo(5, "abc")                 // the 'o' method returns Any
+ *    <b>val</b> x: Long = (<b>new</b> Obj) oo 'foo(5, "abc")  // the 'oo' method casts to expected type.</pre>
+ *  <p>
+ *    If you call the <code>oo</code> method and do not give the type inferencer
+ *    enough help, it will most likely infer <code>Nothing</code>, which will
+ *    result in a <code>ClassCastException</code>.
+ *  </p>
  *
  *  @author  Paul Phillips
- *
  */
 @experimental
 object Invocation
 {
-  /** In order to encapsulate anything to do with reflection, we must
-   *  overcome an issue with the boxing of primitives.  If we declare a
-   *  method which takes arguments of type Any, by the time the method
-   *  parameters can be examined, the primitives have already been boxed.
-   *  The reflective call will then fail because classOf[java.lang.Integer]
-   *  is not the same thing as classOf[scala.Int].
-   *
-   *  Any useful workaround will require examining the arguments before
-   *  the method is called.  The approach here is to define two implicits,
-   *  one for AnyRefs and one for AnyVals, and box them in a container
-   *  which preserves their original class identity.
+  /** <p>
+   *    In order to encapsulate anything to do with reflection, we must
+   *    overcome an issue with the boxing of primitives.  If we declare a
+   *    method which takes arguments of type <code>Any</code>, by the time the
+   *    method parameters can be examined, the primitives have already been boxed.
+   *    The reflective call will then fail because <code>classOf[java.lang.Integer]</code>
+   *    is not the same thing as <code>classOf[scala.Int].</code>
+   *  </p>
+   *  <p>
+   *    Any useful workaround will require examining the arguments before
+   *    the method is called.  The approach here is to define two implicits,
+   *    one for <code>AnyRef</code>'s and one for <code>AnyVal</code>'s, and
+   *    box them in a container which preserves their original class identity.
+   *  </p>
    */
   trait PrimitivePreserver[T] {
     val value: T
@@ -112,7 +118,7 @@ object Invocation
   implicit def makeReflectionOperators[T <: AnyRef](x: T): ReflectionOperators[T] =
     new ReflectionOperators(x)
 
-  /** Obtain the class object for an AnyVal.
+  /** Obtain the class object for an <code>AnyVal</code>.
    */
   def getAnyValClass(x: AnyVal): JClass[_] = x match {
     case _: Byte    => classOf[Byte]

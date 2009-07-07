@@ -1,18 +1,34 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
+
 package scala.testing
 
-/** Classes inheriting trait `Show` can test their member methods using the notattion
- *  'meth(arg_1, ..., arg_n), where `meth' is the name of the method and `arg_1,...,arg_n' are
- *  the arguments. The only difference to a normal method call is the leading quote character (').
- *  A quoted method call like the one above will produces a legible diagnostic to be printed on Console.
- *  It is of the form
- *
- *    meth(arg_1, ..., arg_n)  gives  <result>
- *
- *  where <result> is the result of evaluating the call.
+/** <p>
+ *    Classes inheriting trait <code>Show</code> can test their member methods
+ *    using the notattion <code>meth(arg<sub>1</sub>, ..., arg<sub>n</sub>)</code>,
+ *    where <code>meth</code> is the name of the method and
+ *    <code>arg<sub>1</sub>,...,arg<sub>n</sub></code> are the arguments.
+ *    The only difference to a normal method call is the leading quote
+ *    character ('). A quoted method call like the one above will produces a
+ *    legible diagnostic to be printed on <a href="../Console.html"
+ *    target="ContentFrame"><code>Console</code></a>. It is of the form
+ *  </p><pre>
+ *    meth(arg<sub>1</sub>, ..., arg<sub>n</sub>)  gives  &lt;result&gt;</pre>
+ *  <p>
+ *    where <code>&lt;result&gt;</code> is the result of evaluating the call.
+ *  </p>
  */
 trait Show {
 
-  /** The result class of wrapper `symApply`.
+  /** The result class of wrapper <code>symApply</code>.
    *  Prints out diagnostics of method applications.
    */
   class SymApply(f: Symbol) {
