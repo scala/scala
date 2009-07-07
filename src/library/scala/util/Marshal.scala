@@ -30,17 +30,22 @@ object Marshal {
     ba.toByteArray()
   }
 
+  @throws(classOf[IOException])
   @throws(classOf[ClassCastException])
+  @throws(classOf[ClassNotFoundException])
   def load[A](buffer: Array[Byte])(implicit expected: Manifest[A]): A = {
     val in = new ObjectInputStream(new ByteArrayInputStream(buffer))
     val found = in.readObject.asInstanceOf[Manifest[_]]
-    if (! (found <:< expected))
+    if (found <:< expected) {
+      val o = in.readObject.asInstanceOf[A]
+      in.close()
+      o
+    } else {
+      in.close()
       throw new ClassCastException("type mismatch;"+
         "\n found   : "+found+
         "\n required: "+expected)
-    val o = in.readObject.asInstanceOf[A]
-    in.close()
-    o
+    }
   }
 
 }

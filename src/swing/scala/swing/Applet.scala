@@ -1,15 +1,29 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2007-2009, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
+
 package scala.swing
 
 import javax.swing.JApplet
 
-/**
- * Clients should implement the ui field. See the SimpleApplet demo for an example.
+/** <p>
+ *    Clients should implement the ui field. See the <code>SimpleApplet</code>
+ *    demo for an example.
+ *  </p>
+ *  <p>
+ *    <b>Note</b>: <code>Applet</code> extends <code>javax.swing.JApplet</code>
+ *    to satisfy Java's applet loading mechanism. The usual component wrapping
+ *    scheme doesn't  work here.
+ *  </p>
  *
- * Note: <code>Applet</code> extends <code>javax.swing.JApplet</code> to satisfy
- * Java's applet loading mechanism. The usual component wrapping scheme doesn't
- * work here.
- *
- * @see javax.swing.JApplet
+ *  @see javax.swing.JApplet
  */
 abstract class Applet extends JApplet { outer =>
   val ui: UI

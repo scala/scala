@@ -13,27 +13,30 @@ package scala.collection
 
 import generic._
 
-/** A map from keys of type A to values of type B.
- *  To implement a concrete map, you need to provide implementations of the following methods:
- *  (where This is the type of the map in question):
+/** <p>
+ *    A map from keys of type <code>A</code> to values of type <code>B</code>.
+ *    To implement a concrete map, you need to provide implementations of the
+ *    following methods (where <code>This</code> is the type of the map in question):
+ *  </p><pre>
+ *    <b>def</b> get(key: A): Option[B]
+ *    <b>def</b> iterator: Iterator[(A, B)]
+ *    <b>def</b> + [B1 >: B](kv: (A, B1)): This
+ *    <b>def</b> -(key: A): This</pre>
+ *  <p>
+ *    If you wish that methods like, take, drop, filter return the same kind
+ *    of map, you should also override:
+ *  </p><pre>
+ *    <b>def</b> empty: This</pre>
+ *  <p>
+ *    It might also be a good idea to override methods <code>foreach</code>
+ *    and <code>size</code> for efficiency.
+ *  </p>
  *
- *   def get(key: A): Option[B]
- *   def iterator: Iterator[(A, B)]
- *   def + [B1 >: B](kv: (A, B1)): This
- *   def -(key: A): This
+ * @note If you do not have specific implementations for `add` and `-` in mind,
+ *       you might consider inheriting from <code>DefaultMap</code> instead.
  *
- * If you wish that methods like, take, drop, filter return the same kind of map, you should also
- * override:
- *
- *   def empty: This
- *
- * It might also be a good idea to override methods foreach and size for efficiency.
- *
- * @note If you do not have speicifc implementations for `add` and `-` in mind, you
- *       might consider inheriting from `DefaultMap` instead.
- *
- * @note Of you additions and mutations return the same kind of map as the map you are defining,
- *       you should inherit from `MapTemplate` as well.
+ * @note Of you additions and mutations return the same kind of map as the map
+ *       you are defining, you should inherit from <code>MapTemplate</code> as well.
  */
 trait Map[A, +B] extends Iterable[(A, B)] with MapTemplate[A, B, Map[A, B]] {
   def empty: Map[A, B] = Map.empty

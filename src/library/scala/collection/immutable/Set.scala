@@ -13,15 +13,18 @@ package scala.collection.immutable
 
 import generic._
 
-/** A generic trait for immutable sets. Concrete set implementations
- *  have to provide functionality for the abstract methods in Set:
- *
- *  def contains(elem: A): Boolean
- *  def iterator: Iterator[A]
- *  def + (elem: A): This
- *  def - (elem: A): This
- *
- *  where `This` is the type of the set
+/** <p>
+ *    A generic trait for immutable sets. Concrete set implementations have
+ *    to provide functionality for the abstract methods in <code>Set</code>:
+ *  </p>
+ *  <pre>
+ *    <b>def</b> contains(elem: A): Boolean
+ *    <b>def</b> iterator: Iterator[A]
+ *    <b>def</b> + (elem: A): This
+ *    <b>def</b> - (elem: A): This</pre>
+ *  <p>
+ *    where <code>This</code> is the type of the set.
+ *  </p>
  *
  *  @author Matthias Zenger
  *  @author Martin Odersky

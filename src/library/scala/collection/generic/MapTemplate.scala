@@ -11,21 +11,31 @@
 
 package scala.collection.generic
 
-/** A generic template for maps from keys of type A to values of type B.
- *  To implement a concrete map, you need to provide implementations of the
- *  following methods (where `This` is the type of the map in question):<pre>
+/** <p>
+ *    A generic template for maps from keys of type <code>A</code> to values
+ *    of type <code>B</code>.<br/>
+ *    To implement a concrete map, you need to provide implementations of the
+ *    following methods (where <code>This</code> is the type of the map in
+ *    question):
+ *  </p>
+ *  <pre>
+ *    <b>def</b> get(key: A): Option[B]
+ *    <b>def</b> iterator: Iterator[(A, B)]
+ *    <b>def</b> + [B1 >: B](kv: (A, B1)): This
+ *    <b>def</b> -(key: A): This</pre>
+ *  <p>
+ *    If you wish that methods <code>like</code>, <code>take</code>, <code>drop</code>,
+ *    <code>filter</code> return the same kind of map, you should also override:
+ *  </p>
+ *  <pre>
+ *   <b>def</b> empty: This</pre>
+ *  <p>
+ *    It is also good idea to override methods <code>foreach</code> and
+ *    <code>size</code> for efficiency.
+ *  </p>
  *
- *   def get(key: A): Option[B]
- *   def iterator: Iterator[(A, B)]
- *   def + [B1 >: B](kv: (A, B1)): This
- *   def -(key: A): This</pre>
- *
- *  If you wish that methods like, take, drop, filter return the same kind of
- *  map, you should also override:<pre>
- *
- *   def empty: This</pre>
- *
- *  It is also good idea to override methods foreach and size for efficiency.
+ *  @author  Martin Odersky
+ *  @version 2.8
  */
 trait MapTemplate[A, +B, +This <: MapTemplate[A, B, This] with Map[A, B]]
   extends PartialFunction[A, B]

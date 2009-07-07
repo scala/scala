@@ -10,8 +10,12 @@ package scalay.collection.generic
 import Math.MAX_INT
 import TraversableView.NoBuilder
 
-/** A base class for views of Traversable.
- *  Every subclass has to implenment the foreach method
+/** <p>
+ *    A base class for views of <code>Traversable</code>.
+ *  </p>
+ *  <p>
+ *    Every subclass has to implement the <code>foreach</code> method.
+ *  </p>
  */
 abstract class TraversableView[+A, +Coll <: Traversable[_]] extends Traversable[A] { 
 self =>

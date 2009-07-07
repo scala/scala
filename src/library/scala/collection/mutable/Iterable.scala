@@ -9,8 +9,11 @@ package scala.collection.mutable
 
 import generic._
 
-/** A subtrait of collection.Iterable which represents iterables
- *  that can be mutated.
+/** <p>
+ *    A subtrait of <a href="../Iterable.html" target="contentFrame">
+ *    <code>collection.Iterable</code></a> which represents iterables
+ *    that can be mutated.
+ *  </p>
  *
  *  @author   Martin Odersky
  *  @version 2.8
@@ -22,7 +25,14 @@ trait Iterable[A] extends Traversable[A]
   override def companion: Companion[Iterable] = Iterable
 }
 
-/* A factory object for the trait `Iterable` */
+/** <p>
+ *    A factory object for the trait <a href="Iterable.html"
+ *    target="contentFrame"><code>Iterable</code></a>.
+ *  </p>
+ *
+ *  @author   Martin Odersky
+ *  @version 2.8
+ */
 object Iterable extends TraversableFactory[Iterable] {
   implicit def builderFactory[A]: BuilderFactory[A, Iterable[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, Iterable[A]] = new ArrayBuffer

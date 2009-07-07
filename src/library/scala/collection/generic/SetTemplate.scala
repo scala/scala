@@ -10,21 +10,31 @@
 
 package scala.collection.generic
 
-/** A generic template for sets of type A.
- *  To implement a concrete set, you need to provide implementations of the following methods:
- *  (where `This` is the type of the set in question):
+/** <p>
+ *    A generic template for sets of type <code>A</code>.<br/>
+ *    To implement a concrete set, you need to provide implementations of the
+ *    following methods (where <code>This</code> is the type of the set in
+ *    question):
+ *  </p>
+ *  <pre>
+ *    <b>def</b> contains(key: A): Boolean
+ *    <b>def</b> iterator: Iterator[A]
+ *    <b>def</b> +(elem: A): This
+ *    <b>def</b> -(elem: A): This</pre>
+ *  </pre>
+ *  <p>
+ *    If you wish that methods <code>like</code>, <code>take</code>, <code>drop</code>,
+ *    <code>filter</code> return the same kind of set, you should also override:
+ *  </p>
+ *  <pre>
+ *   <b>def</b> empty: This</pre>
+ *  <p>
+ *    It is also good idea to override methods <code>foreach</code> and
+ *    <code>size</code> for efficiency.
+ *  </p>
  *
- *   def contains(key: A): Boolean
- *   def iterator: Iterator[A]
- *   def +(elem: A): This
- *   def -(elem: A): This
- *
- * If you wish that methods like, take, drop, filter return the same kind of set, you should also
- * override:
- *
- *   def empty: This
- *
- * It is also good idea to override methods foreach and size for efficiency.
+ *  @author  Martin Odersky
+ *  @version 2.8
  */
 trait SetTemplate[A, +This <: SetTemplate[A, This] with Set[A]] extends IterableTemplate[A, This] with Addable[A, This] with Subtractable[A, This] {
 self =>

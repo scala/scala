@@ -11,7 +11,23 @@ package scala.annotation
  *    An annotation to be applied to a match expression.  If present,
  *    the compiler will verify that the match has been compiled to a
  *    tableswitch or lookupswitch, and issue an error if it instead
- *    compiles into a series of conditional expressions.
+ *    compiles into a series of conditional expressions.<br/>
+ *    Example:
  *  </p>
+ *  <pre>
+ *    <b>def</b> fetchToken() {
+ *      (ch: @switch) <b>match</b> {
+ *        <b>case</b> ' ' | '\t' | CR | LF | FF <b>=&gt;</b>
+ *          nextChar()
+ *          fetchToken()
+ *        <b>case</b> 'A' &#47;*..'Z'*&#47; | '$' | '_' | 'a' &#47;*..'z'*&#47; <b>=&gt;</b>
+ *          putChar(ch)
+ *          nextChar()
+ *          getIdentRest()
+ *        <b>case</b> ',' <b>=&gt;</b>
+ *          nextChar(); token = COMMA
+ *        // more cases
+ *      }
+ *    }</pre>
  */
 final class switch extends StaticAnnotation

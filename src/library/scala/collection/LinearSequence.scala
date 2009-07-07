@@ -16,11 +16,14 @@ import mutable.ListBuffer
 import generic._
 import util.control.Breaks._
 
-/** Class <code>Linear[A]</code> represents linear sequences of elements.
- *  For such sequences `isEmpty`, `head` and `tail` are guaranteed to be
- *  efficient constant time (or near so) operations.
- *  It does not add any methods to Sequence but overrides several
- *  methods with optimized implementations.
+/** <p>
+ *    Class <code>Linear[A]</code> represents linear sequences of elements.
+ *    For such sequences <code>isEmpty</code>, <code>head</code> and
+ *    <code>tail</code> are guaranteed to be efficient constant time (or near so)
+ *    operations.<br/>
+ *    It does not add any methods to <code>Sequence</code> but overrides several
+ *    methods with optimized implementations.
+ *  </p>
  *
  *  @author  Martin Odersky
  *  @author  Matthias Zenger

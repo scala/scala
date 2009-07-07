@@ -1,16 +1,28 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2007-2009, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
+
 package scala.swing
 
 import javax.swing.JComponent
 import scala.collection.mutable.Map
 
-/**
- * A container that associates layout constraints of member type Constraints
- * with its children. See GridBagPanel for an example container with custom
- * constraints.
+/** <p>
+ *    A container that associates layout constraints of member type
+ *    <code>Constraints</code> with its children. See <code>GridBagPanel</code>
+ *    for an example container with custom constraints.
+ *  </p>
  *
- * @note [Java Swing] In scala.swing, panels and layout managers are
- * combined into subclasses of this base class. This approach allows for typed
- * component constraints.
+ *  @note [Java Swing] In scala.swing, panels and layout managers are
+ *  combined into subclasses of this base class. This approach allows for typed
+ *  component constraints.
  */
 trait LayoutContainer extends Container.Wrapper {
   /**

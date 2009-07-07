@@ -14,8 +14,11 @@ package scala.collection.generic
 import Math.MAX_INT
 import TraversableView.NoBuilder
 
-/** A base class for views of <code>Traversable</code>.
- *  Every subclass has to implenment the foreach method
+/** <p>
+ *    A base class for views of <a href="../Traversable.html"
+ *    target="contentFrame"><code>Traversable</code></a>.<br/>
+ *    Every subclass has to implement the <code>foreach</code> method.
+ *  </p>
  *
  *  @author Martin Odersky
  *  @version 2.8

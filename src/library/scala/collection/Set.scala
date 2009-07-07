@@ -15,7 +15,6 @@ import generic._
 /** <p>
  *    A set is a collection that includes at most one of any object.
  *  </p>
- *  <p>
  *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky

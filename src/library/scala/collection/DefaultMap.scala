@@ -13,16 +13,21 @@ package scala.collection
 
 import generic._
 
-/* A default map which implements the `updated` and `-` methods of maps.
- * Instances that inherit from DefaultMap[A, B] still have to define:
- *
- *   def get(key: A): Option[B]
- *   def iterator: Iterator[(A, B)]
- *
- * It refers back to the original map.
- *
- * It might also be advisable to override `foreach` or `size` if efficient
- * implementations can be found.
+/** <p>
+ *    A default map which implements the <code>updated</code> and <code>-</code>
+ *    methods of maps.<br/>
+ *    Instances that inherit from <code>DefaultMap[A, B]</code> still have to
+ *    define:
+ *  </p><pre>
+ *    <b>def</b> get(key: A): Option[B]
+ *    <b>def</b> iterator: Iterator[(A, B)]</pre>
+ *  <p>
+ *    It refers back to the original map.
+ *  </p>
+ *  <p>
+ *    It might also be advisable to override <code>foreach</code> or
+ *    <code>size</code> if efficient implementations can be found.
+ *  </p>
  */
 trait DefaultMap[A, +B] extends Map[A, B] { self =>
 

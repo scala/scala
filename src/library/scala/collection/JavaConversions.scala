@@ -10,41 +10,44 @@
 
 package scala.collection
 
-/**
- * A collection of implicit conversions supporting interoperability between Scala and Java
- * collections.
- * <p>
- * The following conversions are supported,
- * <p>
- * <ul>
- *   <li><code>scala.collection.Iterable</code> <=> <code>java.lang.Iterable</code></li>
- *   <li><code>scala.collection.Iterable</code> <=> <code>java.util.Collection</code></li>
- *   <li><code>scala.collection.Iterator</code> <=> <code>java.util.{ Iterator, Enumeration }</code></li>
- *   <li><code>scala.collection.mutable.Buffer</code> <=> <code>java.util.List</code></li>
- *   <li><code>scala.collection.mutable.Set</code> <=> <code>java.util.Set</code></li>
- *   <li><code>scala.collection.mutable.Map</code> <=> <code>java.util.Map</code></li>
- * <ul>
- * <p>
- * In all cases, converting from a source type to a target type and back again will return
- * the original source object, eg.
- * <p>
- * <pre>
- * import scala.collections.jcl.Conversions._
+/** <p>
+ *    A collection of implicit conversions supporting interoperability between
+ *    Scala and Java collections.
+ *  </p>
+ *  <p>
+ *    The following conversions are supported:
+ *  </p>
+ *  <ul>
+ *    <li><code>scala.collection.Iterable</code> <=> <code>java.lang.Iterable</code></li>
+ *    <li><code>scala.collection.Iterable</code> <=> <code>java.util.Collection</code></li>
+ *    <li><code>scala.collection.Iterator</code> <=> <code>java.util.{ Iterator, Enumeration }</code></li>
+ *    <li><code>scala.collection.mutable.Buffer</code> <=> <code>java.util.List</code></li>
+ *    <li><code>scala.collection.mutable.Set</code> <=> <code>java.util.Set</code></li>
+ *    <li><code>scala.collection.mutable.Map</code> <=> <code>java.util.Map</code></li>
+ *  </ul>
+ *  <p>
+ *    In all cases, converting from a source type to a target type and back
+ *    again will return the original source object, eg.
+ *  </p>
+ *  <pre>
+ *    <b>import</b> scala.collections.jcl.Conversions._
  *
- * val sl = new scala.collection.mutable.ListBuffer[Int]
- * val jl : java.util.List[Int] = sl
- * val sl2 : scala.collection.mutable.Buffer[Int] = jl
- * assert(sl eq sl2)g
- * </pre>
+ *    <b>val</b> sl = <b>new</b> scala.collection.mutable.ListBuffer[Int]
+ *    <b>val</b> jl : java.util.List[Int] = sl
+ *    <b>val</b> sl2 : scala.collection.mutable.Buffer[Int] = jl
+ *    assert(sl eq sl2)g</pre>
+ *  <p>
+ *    Note that no conversion is provided from <code>scala.collection.immutable.List</code>
+ *    to <code>java.util.List</code>. Instead it is convertible to an immutable
+ *    <code>java.util.Collection</code> which provides size and interation
+ *    capabilities, but not access by index as would be provided by
+ *    <code>java.util.List</code>.<br/>
+ *    This is intentional: in combination the implementation of
+ *    <code>scala.collection.immutable.List</code> and the typical usage
+ *    patterns of <code>java.util.List</code> would perform extremely poorly.
+ *  </p>
  *
- * <p>
- * Note that no conversion is provided from scala.collection.immutable.List to java.util.List.
- * Instead it is convertible to an immutable java.util.Collection which provides size and
- * interation capabilities, but not access by index as would be provided by java.util.List.
- * This is intentional: in combination the implementation of scala.collection.immutable.List
- * and the typical usage patterns of java.util.List would perform extremely poorly.
- *
- * @author Miles Sabin
+ *  @author Miles Sabin
  */
 object JavaConversions {
   import java.{ lang => jl, util => ju }

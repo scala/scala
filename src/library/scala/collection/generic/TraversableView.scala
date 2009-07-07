@@ -13,8 +13,11 @@ package scala.collection.generic
 
 import TraversableView.NoBuilder
 
-/** A base class for views of Traversable.
- *  Every subclass has to implenment the foreach method
+/** <p>
+ *    A base class for views of <a href="../Traversable.html"
+ *    target="ContentFrame"><code>Traversable<code></a>.<br/>
+ *    Every subclass has to implenment the <code>foreach</code> method.
+ *  </p>
  *
  *  @author Martin Odersky
  *  @version 2.8

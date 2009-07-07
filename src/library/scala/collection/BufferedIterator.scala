@@ -11,8 +11,8 @@
 
 package scala.collection
 
-/** Buffered iterators are iterators which provide a method `head` that inspects the next
- *  element without discarding it.
+/** Buffered iterators are iterators which provide a method <code>head</code>
+ *  that inspects the next element without discarding it.
  *
  *  @author  Martin Odersky
  *  @version 2.8

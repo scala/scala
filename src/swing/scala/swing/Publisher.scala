@@ -1,20 +1,33 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2007-2009, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
+
 package scala.swing
 
 import scala.collection._
 import scala.collection.mutable.{Buffer, HashSet, Set}
 import event.Event
 
-/**
- * Notifies registered reactions when an event is published. Publishers are also
- * reactors and listen to themselves per default as a convenience.
- *
- * In order to reduce memory leaks, reactions are weakly referenced by default,
- * unless they implement <code>Reactions.StronglyReferenced</code>. That way,
- * the lifetime of reactions are more easily bound to the registering object,
- * which are reactors in common client code and hold strong references to their
- * reactions. As a result, reactors can be garbage collected even though they
- * still have reactions registered at some publisher, but not vice versa
- * since reactors (strongly) reference publishers they are interested in.
+/** <p>
+ *    Notifies registered reactions when an event is published. Publishers are
+ *    also reactors and listen to themselves per default as a convenience.
+ *  </p>
+ *  <p>
+ *    In order to reduce memory leaks, reactions are weakly referenced by default,
+ *    unless they implement <code>Reactions.StronglyReferenced</code>. That way,
+ *    the lifetime of reactions are more easily bound to the registering object,
+ *    which are reactors in common client code and hold strong references to their
+ *    reactions. As a result, reactors can be garbage collected even though they
+ *    still have reactions registered at some publisher, but not vice versa
+ *    since reactors (strongly) reference publishers they are interested in.
+ *  </p>
  */
 trait Publisher extends Reactor {
   import Reactions._

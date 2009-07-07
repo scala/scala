@@ -13,14 +13,20 @@ package scala.collection.generic
 
 import collection.mutable.Buffer
 
-/** This trait implements a forwarder for iterable objects. It forwards
- *  all calls to a different iterable object, except for
- *
- *    - toString, hashCode, equals, stringPrefix
- *    - newBuilder, view
- *    - all calls creating a new iterable objetc of the same kind
- *
- *  The above methods are forwarded by subclass IterableProxy
+/** <p>
+ *    This trait implements a forwarder for iterable objects. It forwards
+ *    all calls to a different iterable object, except for
+ *  </p>
+ *  <ul>
+ *    <li><code>toString</code>, <code>hashCode</code>, <code>equals</code>,
+ *      <code>stringPrefix</code></li>
+ *    <li><code>newBuilder</code>, <code>view</code></li>
+ *    <li>all calls creating a new iterable objetc of the same kind</li>
+ *  </ul>
+ *  <p>
+ *    The above methods are forwarded by subclass <a href="../IterableProxy.html"
+ *    target="ContentFrame"><code>IterableProxy</code></a>.
+ *  </p>
  *
  *  @author  Martin Odersky
  *  @version 2.8

@@ -14,19 +14,28 @@ import util.control.Breaks._
 // import immutable.Stream
 import generic._
 
-/** A template trait for iterable collections.
- *
- *  Collection classes mixing in this trait provide a method
- *  <code>iterator</code> which returns an iterator over all the
- *  elements contained in the collection. They also provide a method `newBuilder`
- *  which creates a builder for collections of the same kind.
- *
- *  This trait implements Traversable's `foreach` method by stepping through
- *  all elements. Subclasses of `Iterable` should re-implement `foreach` with
- *  something more efficient, if possible.
- *
- *  This trait adds methods `iterator`, `zip`, `zipAll`, `zipWithIndex`, `sameElements`,
- *  `takeRight`, `dropRight` to the methods inherited from trait `Traversable`.
+/** <p>
+ *    A template trait for iterable collections.
+ *  </p>
+ *  <p>
+ *    Collection classes mixing in this trait provide a method
+ *    <code>iterator</code> which returns an iterator over all the
+ *    elements contained in the collection. They also provide a method
+ *    <code>newBuilder</code> which creates a builder for collections
+ *    of the same kind.
+ *  </p>
+ *  <p>
+ *    This trait implements <code>Traversable</code>'s <code>foreach</code>
+ *    method by stepping through all elements. Subclasses of <code>Iterable</code>
+ *    should re-implement <code>foreach</code> with something more efficient,
+ *    if possible.
+ *  </p>
+ *  <p>
+ *    This trait adds methods <code>iterator</code>, <code>zip</code>,
+ *    <code>zipAll</code>, <code>zipWithIndex</code>, <code>sameElements</code>,
+ *    <code>takeRight</code>, <code>dropRight</code> to the methods inherited
+ *    from trait <code>Traversable</code>.
+ *  </p>
  *
  *  @author Martin Odersky
  *  @version 2.8

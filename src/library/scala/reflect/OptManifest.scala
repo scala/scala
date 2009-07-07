@@ -12,8 +12,12 @@
 package scala.reflect
 
 /** <p>
-  *   A <code>OptManifest[T]</code> is an optional @see Manifest.
-  *   It is either a Manifest or the value NoManifest
-  */
+ *    A <code>OptManifest[T]</code> is an optional <a href="Manifest.html"
+ *    target="ContentFrame"><code>Manifest</code></a>.<br/>
+ *    It is either a <code>Manifest</code> or the value <code>NoManifest</code>.
+ *  </p>
+ *
+ *  @author Martin Odersky
+ */
 @serializable
 trait OptManifest[+T]

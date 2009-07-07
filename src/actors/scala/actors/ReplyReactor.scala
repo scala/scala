@@ -10,14 +10,14 @@
 
 package scala.actors
 
-/**
- * The ReplyReactor trait extends the Reactor trait with
- * methods to reply to the sender of a message.
- * Sending a message to a ReplyReactor implicitly
- * passes a reference to the sender together with the
- * message.
+/** <p>
+ *    The <code>ReplyReactor</code> trait extends the <code>Reactor</code>
+ *    trait with methods to reply to the sender of a message.
+ *    Sending a message to a <code>ReplyReactor</code> implicitly
+ *    passes a reference to the sender together with the message.
+ *  </p>
  *
- * @author Philipp Haller
+ *  @author Philipp Haller
  */
 trait ReplyReactor extends Reactor {
 
