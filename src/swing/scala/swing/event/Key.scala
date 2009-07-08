@@ -11,6 +11,9 @@
 
 package scala.swing.event
 
+/**
+ * Enumeration of key codes used by key events.
+ */
 object Key extends Enumeration {
   import java.awt.event.KeyEvent._
 
@@ -21,6 +24,8 @@ object Key extends Enumeration {
     val Standard = Value(java.awt.event.KeyEvent.KEY_LOCATION_STANDARD)
     val Unknown = Value(java.awt.event.KeyEvent.KEY_LOCATION_UNKNOWN)
   }
+
+  type Modifiers = Int
 
   object Modifier {
     import java.awt.event.InputEvent._

@@ -39,13 +39,22 @@ class TextField(text0: String, columns0: Int) extends TextComponent with TextCom
   def columns: Int = peer.getColumns
   def columns_=(n: Int) = peer.setColumns(n)
 
-  peer.addActionListener(Swing.ActionListener { e =>
+  private lazy val actionListener = Swing.ActionListener { e =>
     publish(EditDone(TextField.this))
-  })
+  }
 
-  peer.addFocusListener(new FocusAdapter {
-    override def focusLost(e: java.awt.event.FocusEvent) { publish(EditDone(TextField.this)) }
-  })
+  override def onFirstSubscribe {
+    super.onFirstSubscribe
+    peer.addActionListener(actionListener)
+    peer.addFocusListener(new FocusAdapter {
+      override def focusLost(e: java.awt.event.FocusEvent) { publish(EditDone(TextField.this)) }
+    })
+  }
+
+  override def onLastUnsubscribe {
+    super.onLastUnsubscribe
+    peer.removeActionListener(actionListener)
+  }
 
   def verifier: String => Boolean = s => peer.getInputVerifier.verify(peer)
   def verifier_=(v: String => Boolean) {

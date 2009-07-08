@@ -16,7 +16,7 @@ import javax.swing.table._
 import javax.swing.event._
 import java.awt.{Dimension, Color}
 import event._
-import scala.collection.mutable.Set
+import scala.collection.mutable.{Set, Vector}
 
 object Table {
   object AutoResizeMode extends Enumeration {
@@ -122,7 +122,8 @@ class Table extends Component with Scrollable with Publisher {
   }
   import Table._
 
-  def this(rowData: Array[Array[Any]], columnNames: Seq[Any]) = {
+  // TODO: use Vector[_ <: Vector[Any]], see ticket #2005
+  def this(rowData: Array[Array[Any]], columnNames: Seq[_]) = {
     this()
     peer.setModel(new AbstractTableModel {
       override def getColumnName(column: Int) = columnNames(column).toString
