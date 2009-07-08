@@ -23,15 +23,14 @@ import Utility.sbToString
  *  @version 1.0
  */
 @SerialVersionUID(0 - 2518644165573446725L)
-class NamespaceBinding(val prefix: String,
-                       val uri: String,
-                       val parent: NamespaceBinding) extends AnyRef {
-
+case class NamespaceBinding(prefix: String, uri: String, parent: NamespaceBinding) extends AnyRef
+{
   if (null != prefix && 0 == prefix.length())
     throw new IllegalArgumentException("zero length prefix not allowed")
 
   def getURI(_prefix: String): String =
-    if (prefix == _prefix) uri else parent.getURI(_prefix)
+    if (prefix == _prefix) uri
+    else parent getURI _prefix
 
   /** Returns some prefix that is mapped to the prefix.
    *
@@ -39,7 +38,8 @@ class NamespaceBinding(val prefix: String,
    *  @return
    */
   def getPrefix(_uri: String): String =
-    if (_uri == uri) uri else parent.getURI(_uri)
+    if (_uri == uri) uri
+    else parent getURI _uri
 
   override def toString(): String = sbToString(buildString(_, TopScope))
 
