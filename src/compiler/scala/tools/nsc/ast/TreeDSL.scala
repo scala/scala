@@ -43,10 +43,7 @@ trait TreeDSL {
 
     object LIT extends (Any => Literal) {
       def apply(x: Any)   = Literal(Constant(x))
-      def unapply(x: Any) = x match {
-        case Literal(Constant(value)) => Some(value)
-        case _                        => None
-      }
+      def unapply(x: Any) = condOpt(x) { case Literal(Constant(value)) => value }
     }
 
     // You might think these could all be vals, but empirically I have found that

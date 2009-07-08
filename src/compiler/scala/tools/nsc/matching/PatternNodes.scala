@@ -123,61 +123,79 @@ trait PatternNodes extends ast.TreeDSL
   def mkEmptyTreeBind(vs: List[Symbol], tpe: Type)  = mkBind(vs, tpe, EmptyTree)
   def mkEqualsRef(xs: List[Type])                   = typeRef(NoPrefix, EqualsPatternClass, xs)
 
-  def normalizedListPattern(pats: List[Tree], tptArg: Type): Tree = pats match {
-    case Nil                            => gen.mkNil
-    case (sp @ Strip(_, _: Star)) :: _  => makeBind(definedVars(sp), WILD(sp.tpe))
-    case x :: xs                        =>
-      val (consType, resType): (Type, Type) = {
-        val MethodType(args, TypeRef(pre, sym, _)) = ConsClass.primaryConstructor.tpe
+  /** For folding a list into a well-typed x :: y :: etc :: tree. */
+  private def listFolder(tpe: Type) = {
+    val MethodType(_, TypeRef(pre, sym, _)) = ConsClass.primaryConstructor.tpe
+    val consRef                             = typeRef(pre, sym, List(tpe))
+    val listRef                             = typeRef(pre, ListClass, List(tpe))
 
-        val mkTypeRef   = TypeRef(pre, _: Symbol, List(tptArg))
+    def fold(x: Tree, xs: Tree) = x match {
+      case sp @ Strip(_, _: Star) => makeBind(definedVars(sp), WILD(sp.tpe))
+      case _                      =>
         val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "matching$dummy")
-        val res         = mkTypeRef(sym)
+        val consType    = MethodType(dummyMethod newSyntheticValueParams List(tpe, listRef), consRef)
 
-        (MethodType(dummyMethod newSyntheticValueParams List(tptArg, mkTypeRef(ListClass)), res), res)
-      }
-      Apply(TypeTree(consType), List(x, normalizedListPattern(xs, tptArg))) setType resType
-  }
-
-  // if Apply target !isType and takes no args, returns target prefix and symbol
-  object Apply_Value {
-    def unapply(x: Any) = x match {
-      case x @ Apply(fun, args) if !fun.isType && args.isEmpty  => Some(x.tpe.prefix, x.symbol)
-      case _                                                    => None
+        Apply(TypeTree(consType), List(x, xs)) setType consRef
     }
+
+    fold _
   }
 
-  // if Apply tpe !isCaseClass and Apply_Value says false, return the Apply target
-  object Apply_Function {
-    /* see t301 */
-    def isApplyFunction(t: Apply) = !isCaseClass(t.tpe) || !Apply_Value.unapply(t).isEmpty
-    def unapply(x: Any) = x match {
-      case x @ Apply(fun, Nil) if isApplyFunction(x)  => Some(fun)
-      case _                                          => None
-    }
-  }
+  def normalizedListPattern(pats: List[Tree], tptArg: Type): Tree =
+    pats.foldRight(gen.mkNil)(listFolder(tptArg))
 
-  // if Apply target isType (? what does this imply exactly) returns type and arguments.
+  // An Apply that's a constructor pattern (case class)
+  // foo match { case C() => true }
   object Apply_CaseClass {
-    def unapply(x: Any) = x match {
-      case x @ Apply(fun, args) if fun.isType => Some(x.tpe, args)
-      case _                                  => None
+    def unapply(x: Any) = condOpt(x) {
+      case x @ Apply(fn, args) if fn.isType => (x.tpe, args)
     }
   }
 
-  object UnApply_TypeApply {
-    def unapply(x: UnApply) = x match {
-      case UnApply(Apply(TypeApply(sel @ Select(stor, nme.unapplySeq), List(tptArg)), _), ArrayValue(_, xs)::Nil)
-        if (stor.symbol eq ListModule)  => Some(tptArg, xs)
-      case _                                        => None
+  // No-args Apply where fn is not a type - looks like, case object with prefix?
+  //
+  // class Pip {
+  //   object opcodes { case object EmptyInstr }
+  //   def bop(x: Any) = x match { case opcodes.EmptyInstr => true }
+  // }
+  object Apply_Value {
+    def unapply(x: Any) = condOpt(x) {
+      case x @ Apply(fn, Nil) if !fn.isType => (x.tpe.prefix, x.symbol)
     }
   }
 
+  // No-args Apply for all the other cases
+  // val Bop = Nil
+  // def foo(x: Any) = x match { case Bop => true }
+  object Apply_Function {
+    def isApplyFunction(t: Apply) = cond(t) {
+      case Apply_Value(_, _)        => true
+      case x if !isCaseClass(x.tpe) => true
+    }
+    def unapply(x: Any) = condOpt(x) {
+      case x @ Apply(fn, Nil) if isApplyFunction(x) => fn
+    }
+  }
+
+  // unapplySeq extractor
+  // val List(x,y) = List(1,2)
+  object UnapplySeq {
+    private object TypeApp {
+      def unapply(x: Any) = condOpt(x) {
+        case TypeApply(sel @ Select(stor, nme.unapplySeq), List(tpe)) if stor.symbol eq ListModule => tpe
+      }
+    }
+    def unapply(x: UnApply) = condOpt(x) {
+      case UnApply(Apply(TypeApp(tptArg), _), List(ArrayValue(_, xs))) => (tptArg, xs)
+    }
+  }
+
+  // unapply extractor
+  // val Pair(_,x) = Pair(1,2)
   object __UnApply {
     private def paramType(fn: Tree) = fn.tpe match { case m: MethodType => m.paramTypes.head }
-    def unapply(x: Tree) = x match {
-      case Strip(vs, UnApply(Apply(fn, _), args)) => Some(vs, paramType(fn), args)
-      case _                                      => None
+    def unapply(x: Tree) = condOpt(x) {
+      case Strip(vs, UnApply(Apply(fn, _), args)) => (vs, paramType(fn), args)
     }
   }
 
@@ -195,11 +213,8 @@ trait PatternNodes extends ast.TreeDSL
     def unapply(x: Tree): Option[(Set[Symbol], Tree)] = Some(strip(Set(), x))
   }
 
-  object BoundVariables {
-    def unapply(x: Tree): Option[List[Symbol]] = Some(Pattern(x).boundVariables)
-  }
   object Stripped {
-    def unapply(x: Tree): Option[Tree] = Some(Pattern(x).stripped)
+    def unapply(x: Tree): Option[Tree] = Some(unbind(x))
   }
 
   final def definedVars(x: Tree): List[Symbol] = {
@@ -215,29 +230,25 @@ trait PatternNodes extends ast.TreeDSL
   }
 
   /** pvar: the symbol of the pattern variable
-   *  temp: the temp variable that holds the actual value
+   *  tvar: the temporary variable that holds the actual value
    */
-  case class Binding(pvar: Symbol, temp: Symbol) {
-    override def toString() = "%s @ %s".format(pvar.name, temp.name)
+  case class Binding(pvar: Symbol, tvar: Symbol) {
+    override def toString() = "%s @ %s".format(pvar.name, tvar.name)
   }
 
   case class Bindings(bindings: Binding*) extends Function1[Symbol, Option[Ident]] {
-    private def castIfNeeded(pvar: Symbol, t: Symbol) =
-      if (t.tpe <:< pvar.tpe) ID(t) else ID(t) AS_ANY pvar.tpe
+    private def castIfNeeded(pvar: Symbol, tvar: Symbol) =
+      if (tvar.tpe <:< pvar.tpe) ID(tvar)
+      else ID(tvar) AS_ANY pvar.tpe
 
-    def add(vs: Iterable[Symbol], temp: Symbol): Bindings =
-      Bindings((vs.toList map (Binding(_: Symbol, temp))) ++ bindings : _*)
+    def add(vs: Iterable[Symbol], tvar: Symbol): Bindings =
+      Bindings((vs.toList map (Binding(_: Symbol, tvar))) ++ bindings : _*)
 
     def apply(v: Symbol): Option[Ident] =
-      (bindings find (_.pvar eq v) map (x => Ident(x.temp) setType v.tpe)) match {
-        case res @ Some(_)  => traceAndReturn("Bindings.apply = ", res)
-        case res            => res
-      }
+      bindings find (_.pvar eq v) map (x => Ident(x.tvar) setType v.tpe)
 
-    override def toString() = bindings.toList match {
-      case Nil      => ""
-      case xs       => xs.mkString(" Bound(", ", ", ")")
-    }
+    override def toString() =
+      if (bindings.isEmpty) "" else bindings.mkString(" Bound(", ", ", ")")
 
     /** The corresponding list of value definitions. */
     final def targetParams(implicit typer: Typer): List[ValDef] =
