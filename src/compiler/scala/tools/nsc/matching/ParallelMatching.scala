@@ -19,7 +19,7 @@ import MatchUtil._
  *  `g':  guard
  *  `bx': body index
  *
- *   internal representation is (temp:List[Symbol], row:List[Row])
+ *   internal representation is (tvars:List[Symbol], rows:List[Row])
  *
  *         tmp1      tmp_n
  *    Row( p_11  ...  p_1n   g_1  b_1 ) + subst
@@ -279,7 +279,7 @@ trait ParallelMatching extends ast.TreeDSL {
     }
 
     /** the injection here handles alternatives and unapply type tests */
-    final def make(temp: List[Symbol], row1: List[Row]): Rep = {
+    final def make(tvars: List[Symbol], row1: List[Row]): Rep = {
       // Martin: I am not really sure what stype is doing, but it caused aliases.scala to fail
       // The problem is if a val has a singleType of some other module. Then isModule is true and
       // sType is called. But it ends up mixing the prefix of the other module with the val symbol
@@ -309,17 +309,17 @@ trait ParallelMatching extends ast.TreeDSL {
 
         // @pre for doUnapplySeq: is not right-ignoring (no star pattern) ; no exhaustivity check
         def doUnapplySeq(tptArg: Tree, xs: List[Tree]) = {
-          temp(j) setFlag Flags.TRANS_FLAG
+          tvars(j) setFlag Flags.TRANS_FLAG
           rebind(normalizedListPattern(xs, tptArg.tpe))
         }
 
         def doUnapplyApply(ua: UnApply, fn: Tree) = {
           val MethodType(List(arg, _*), _) = fn.tpe
           val npat =
-            if (temp(j).tpe <:< arg.tpe) ua
+            if (tvars(j).tpe <:< arg.tpe) ua
             else Typed(ua, TypeTree(arg.tpe)) setType arg.tpe
 
-          // TRACE("doUnapplyApply: %s <:< %s == %s", temp(j).tpe, argtpe, (temp(j).tpe <:< argtpe))
+          // TRACE("doUnapplyApply: %s <:< %s == %s", tvars(j).tpe, argtpe, (tvars(j).tpe <:< argtpe))
           logAndReturn("doUnapplyApply: ", rebind(npat) setType arg.tpe)
         }
         def doApplyFunction(o: Tree, fn: Tree) = {
@@ -341,7 +341,7 @@ trait ParallelMatching extends ast.TreeDSL {
         // pattern match before the final curtain falls.
         val f = List[PartialFunction[Tree, Tree]](
           { case _: Alternative                       => opat } ,
-          { case Typed(p @ Stripped(_: UnApply), tpt) => if (temp(j).tpe <:< tpt.tpe) rebind(p) else opat } ,
+          { case Typed(p @ Stripped(_: UnApply), tpt) => if (tvars(j).tpe <:< tpt.tpe) rebind(p) else opat } ,
           { case x if doReturnOriginal(x)             => opat } ,
           { case x if doRebindTyped(x)                => rebindTyped() } ,  // Ident(_) != nme.WILDCARD
           { case _: This                              => opat } ,
@@ -356,9 +356,9 @@ trait ParallelMatching extends ast.TreeDSL {
         f(unbind(opat))
       }
 
-      val row = row1 flatMap (_ expand classifyPat)
-      if (row.length != row1.length) make(temp, row)  // recursive call if any change
-      else Rep(temp, row).checkExhaustive
+      val rows = row1 flatMap (_ expand classifyPat)
+      if (rows.length != row1.length) make(tvars, rows)  // recursive call if any change
+      else Rep(tvars, rows).checkExhaustive
     }
 
     override def toString() = {
@@ -472,7 +472,7 @@ trait ParallelMatching extends ast.TreeDSL {
     tor and possibly a default arc). Foreach constructorcin the selected column, its arc is deﬁned as
     follows:
 
-    Let {i1,...,ij} be the row-indices of the patterns in the column that matchc. Since the pat-
+    Let {i1,...,ij} be the rows-indices of the patterns in the column that matchc. Since the pat-
     terns are viewed as regular expressions, this will be the indices of the patterns that either
     have the same constructor c, or are wildcards.
 
@@ -510,7 +510,7 @@ trait ParallelMatching extends ast.TreeDSL {
       private lazy val sym = scrut.sym
 
       def mkFail(xs: List[Row]) =
-        make(sym :: rest.temp, xs)
+        make(sym :: rest.tvars, xs)
 
       /** Splices scrutinee's symbol in between the given lists */
       def mkNewRep(pre: List[Symbol], post: List[Symbol], rows: List[Row]) =
@@ -527,7 +527,7 @@ trait ParallelMatching extends ast.TreeDSL {
     }
 
     /** {case ... if guard => bx} else {guardedRest} */
-    /** VariableRule: The top-most row has only variable (non-constructor) patterns. */
+    /** VariableRule: The top-most rows has only variable (non-constructor) patterns. */
     case class VariableRule(subst: Bindings, guard: Guard, guardedRest: Rep, bx: Int) extends RuleApplication {
       def pats: Patterns = impossible
       def rest: Rep = guardedRest
@@ -560,16 +560,16 @@ trait ParallelMatching extends ast.TreeDSL {
       def defaultRows: List[Row]  = defaultIndexSet.toList reverseMap grabRow
 
       protected def grabRow(index: Int): Row = {
-        val r = rest.row(index)
+        val r = rest.rows(index)
         if (defaultV.isEmpty) r
         else r.rebind2(pats(index).boundVariables, scrut.sym)  // get vars
       }
 
-      /** inserts row indices using in to list of tagIndices */
+      /** inserts rows indices using in to list of tagIndices */
       protected def tagIndicesToReps() : List[(Int, Rep)] =
-        tagIndices map { case (k, v) => (k, make(rest.temp, (v reverseMap grabRow) ::: defaultRows)) } toList
+        tagIndices map { case (k, v) => (k, make(rest.tvars, (v reverseMap grabRow) ::: defaultRows)) } toList
 
-      protected def defaultsToRep() = make(rest.temp, defaultRows)
+      protected def defaultsToRep() = make(rest.tvars, defaultRows)
 
       protected def insertTagIndexPair(tag: Int, index: Int) =
         tagIndices = tagIndices.update(tag, index :: tagIndices.getOrElse(tag, Nil))
@@ -608,7 +608,7 @@ trait ParallelMatching extends ast.TreeDSL {
       final def tree(): Tree = {
         val (branches, defaultV, defaultRep) = this.getTransition // tag body pairs
         val cases = for ((tag, r) <- branches) yield {
-          val r2 = make(r.temp, r.row map (x => x rebind bindVars(tag, x.subst)))
+          val r2 = make(r.tvars, r.rows map (x => x rebind bindVars(tag, x.subst)))
 
           CASE(Literal(tag)) ==> r2.toTree
         }
@@ -646,7 +646,7 @@ trait ParallelMatching extends ast.TreeDSL {
       final def getTransition(): Branch[UnapplyCall] = {
         val unapplyRes  = newVarCapture(ua.pos, app.tpe)
         val rhs         = Apply(fxn, scrut.id :: applyTail) setType unapplyRes.tpe
-        val zipped      = pats zip rest.row
+        val zipped      = pats zip rest.rows
         val nrowsOther  = zipped.tail flatMap {
           case (Stripped(sameUnapplyCall(_)), _)  => Nil
           case (pat, r)                           => List(r insert pat)
@@ -655,7 +655,7 @@ trait ParallelMatching extends ast.TreeDSL {
         def mkTransition(vdefs: List[Tree], ntemps: List[Symbol], nrows: List[Row]) =
           Branch(
             UnapplyCall(typedValDef(unapplyRes, rhs), vdefs),
-            mkNewRep(ntemps, rest.temp, nrows),
+            mkNewRep(ntemps, rest.tvars, nrows),
             if (nrowsOther.isEmpty) None else Some(mkFail(nrowsOther))
           )
 
@@ -739,7 +739,7 @@ trait ParallelMatching extends ast.TreeDSL {
       }
 
       protected def makeSuccRep(vs: List[Symbol], tail: Symbol, nrows: List[Row]) =
-        make(vs ::: tail :: rest.temp, nrows)
+        make(vs ::: tail :: rest.tvars, nrows)
 
       /** True if 'next' must be checked even if 'first' failed to match after passing its length test
         * (the conditional supplied by getPrecondition.) This is an optimization to avoid checking sequences
@@ -789,9 +789,9 @@ trait ParallelMatching extends ast.TreeDSL {
           (vs.zipWithIndex map { case (v,i) => typedValDef(v, elemAt(i)) }) ::: List(lastBinding)
 
         val (nrows, frows) = List.unzip(
-          for ((c, row) <- pats zip rest.row) yield getSubPatterns(ys.size, c) match {
-            case Some(ps) => (Some(row insert ps), if (mustCheck(av, c)) Some(row insert c) else None)
-            case None     => (None, Some(row insert c))
+          for ((c, rows) <- pats zip rest.rows) yield getSubPatterns(ys.size, c) match {
+            case Some(ps) => (Some(rows insert ps), if (mustCheck(av, c)) Some(rows insert c) else None)
+            case None     => (None, Some(rows insert c))
           })
 
         val succ = makeSuccRep(vs, tail, nrows flatMap (x => x))
@@ -833,7 +833,7 @@ trait ParallelMatching extends ast.TreeDSL {
       }
 
       override protected def makeSuccRep(vs: List[Symbol], tail: Symbol, nrows: List[Row]) =
-        mkNewRep(vs ::: List(tail), rest.temp, nrows)
+        mkNewRep(vs ::: List(tail), rest.tvars, nrows)
 
       // precondition for matching
       override protected def getPrecondition(tree: Tree, lengthArg: Int) =
@@ -855,15 +855,15 @@ trait ParallelMatching extends ast.TreeDSL {
 
         val label       = owner.newLabel(scrut.pos, newName(scrut.pos, "failCont%")) // warning, untyped
         val succ        = List(
-          rest.row.head.insert2(List(EmptyTree), head.boundVariables, scrut.sym),
-          Row(getDummies(1 + rest.temp.length), NoBinding, NoGuard, shortCut(label))
+          rest.rows.head.insert2(List(EmptyTree), head.boundVariables, scrut.sym),
+          Row(getDummies(1 + rest.tvars.length), NoBinding, NoGuard, shortCut(label))
         )
 
         // todo: optimize if no guard, and no further tests
-        val fail    = mkFail(List.map2(rest.row.tail, pats.tail.ps)(_ insert _))
+        val fail    = mkFail(List.map2(rest.rows.tail, pats.tail.ps)(_ insert _))
         val action  = typer typed (scrut.id ANY_== value)
 
-        (Branch(action, mkNewRep(Nil, rest.temp, succ), Some(fail)), label)
+        (Branch(action, mkNewRep(Nil, rest.tvars, succ), Some(fail)), label)
       }
 
       final def tree() = {
@@ -888,8 +888,8 @@ trait ParallelMatching extends ast.TreeDSL {
       }
 
       // moreSpecific: more specific patterns
-      //     subsumed: more general patterns (subsuming current), row index and subpatterns
-      //    remaining: remaining, row index and pattern
+      //     subsumed: more general patterns (subsuming current), rows index and subpatterns
+      //    remaining: remaining, rows index and pattern
       def join[T](xs: List[Option[T]]): List[T] = xs.flatMap(x => x)
       val (moreSpecific, subsumed, remaining) : (List[Tree], List[(Int, List[Tree])], List[(Int, Tree)]) = unzip3(
         for ((pat @ Stripped(spat), j) <- pats.zip) yield {
@@ -947,14 +947,14 @@ trait ParallelMatching extends ast.TreeDSL {
             else moreSpecific.zip(subsumed) map { case (mspat, (j, pats)) => (j, mspat::pats) }
           val ntriples =
             for ((j, ps) <- subtests ; val Strip(vs, thePat) = pats(j)) yield
-              (rest row j).insert2(ps, vs, casted.sym)
+              (rest rows j).insert2(ps, vs, casted.sym)
 
-          make(subtestTemps ::: accessorTemps ::: rest.temp, ntriples)
+          make(subtestTemps ::: accessorTemps ::: rest.tvars, ntriples)
         }
 
         // fails      => transition to translate(remaining)
         val nmatrixFail: Option[Rep] = {
-          val ntriples = for ((j, pat) <- remaining) yield (rest row j) insert pat
+          val ntriples = for ((j, pat) <- remaining) yield (rest rows j) insert pat
           if (ntriples.isEmpty) None else Some(mkFail(ntriples))
         }
 
@@ -980,7 +980,7 @@ trait ParallelMatching extends ast.TreeDSL {
 
         // dig out case field accessors that were buried in (***)
         val cfa       = if (pats.isCaseHead) casted.accessors else Nil
-        val caseTemps = srep.temp match { case x :: xs if x == casted.sym => xs ; case x => x }
+        val caseTemps = srep.tvars match { case x :: xs if x == casted.sym => xs ; case x => x }
         def needCast  = if (casted.sym ne scrut.sym) List(VAL(casted.sym) === (scrut.id AS_ANY castedTpe)) else Nil
         val vdefs     = needCast ::: (
           for ((tmp, accessor) <- caseTemps zip cfa) yield
@@ -997,20 +997,20 @@ trait ParallelMatching extends ast.TreeDSL {
       def replace(hs: List[Tree])                       = copy(pat = hs)            // substitutes for patterns
       def rebind(b: Bindings)                           = copy(subst = b)           // substitutes for bindings
 
-      def rebind2(vs: Iterable[Symbol], temp: Symbol) =
-        copy(subst = subst.add(vs, temp))
-      def insert2(hs: List[Tree], vs: Iterable[Symbol], temp: Symbol) =             // prepends and prepends
-        copy(pat = hs ::: pat, subst = subst.add(vs, temp))
+      def rebind2(vs: Iterable[Symbol], tvars: Symbol) =
+        copy(subst = subst.add(vs, tvars))
+      def insert2(hs: List[Tree], vs: Iterable[Symbol], tvars: Symbol) =             // prepends and prepends
+        copy(pat = hs ::: pat, subst = subst.add(vs, tvars))
 
       def insert(p: Pattern)                            = copy(pat = p.tree :: pat) // transitioning to patterns
 
-      /** returns true if the patterns in this row cover a type symbols "combination" and there is no guard
+      /** returns true if the patterns in this rows cover a type symbols "combination" and there is no guard
        *  @param comb pairs of (column index, type symbol)
        */
       def covers(combos: List[Combo]) =
         guard.isEmpty && (combos forall (c => c isCovered pat(c.index)))
 
-      // returns this row with alternatives expanded
+      // returns this rows with alternatives expanded
       def expand(classifyPat: (Tree, Int) => Tree): List[Row] = {
         def getAlternativeBranches(p: Tree): List[Tree] = {
           def get_BIND(pctx: TreeFunction1, p:Tree): List[Tree] = p match {
@@ -1046,7 +1046,7 @@ trait ParallelMatching extends ast.TreeDSL {
     case class Branch[T](action: T, succ: Rep, fail: Option[Rep])
     case class UnapplyCall(ua: Tree, args: List[Tree])
 
-    case class Rep(val temp: List[Symbol], val row: List[Row]) {
+    case class Rep(val tvars: List[Symbol], val rows: List[Row]) {
       import Flags._
 
       /** Converts this to a tree - recursively acquires subreps. */
@@ -1065,7 +1065,7 @@ trait ParallelMatching extends ast.TreeDSL {
         else emptySymbolSet
 
       private def setsToCombine: List[(Int, Set[Symbol])] =
-        for ((sym, i) <- temp.zipWithIndex ; if toUse(sym)) yield {
+        for ((sym, i) <- tvars.zipWithIndex ; if toUse(sym)) yield {
           sym resetFlag MUTABLE
           (i, candidates(sym.tpe.typeSymbol))
         }
@@ -1077,22 +1077,22 @@ trait ParallelMatching extends ast.TreeDSL {
         case (i, syms) :: cs  => for (s <- syms.toList; rest <- combine(cs)) yield Combo(i, s) :: rest
       }
 
-      /*   internal representation is (temp:List[Symbol], row:List[Row])
+      /*   internal representation is (tvars:List[Symbol], rows:List[Row])
        *
        *         tmp1       tmp_m
        */
       final def applyRule(): RuleApplication = {
         def dropIndex[T](xs: List[T], n: Int) = (xs take n) ::: (xs drop (n + 1))
 
-        lazy val Row(pats, subst, guard, index) = row.head
-        lazy val guardedRest        = if (guard.isEmpty) null else make(temp, row.tail)
+        lazy val Row(pats, subst, guard, index) = rows.head
+        lazy val guardedRest        = if (guard.isEmpty) null else make(tvars, rows.tail)
         lazy val (defaults, others) = pats span (p => isDefaultPattern(unbind(p)))
 
-        if (row.isEmpty) ErrorRule()
+        if (rows.isEmpty) ErrorRule()
         else others match {
-          /** top-most row contains only variables/wildcards */
+          /** top-most rows contains only variables/wildcards */
           case Nil          =>
-            val binding = (defaults map (_.boundVariables) zip temp) .
+            val binding = (defaults map (_.boundVariables) zip tvars) .
               foldLeft(subst)((b, pair) => b.add(pair._1, pair._2))
 
             VariableRule(binding, guard, guardedRest, index)
@@ -1100,17 +1100,17 @@ trait ParallelMatching extends ast.TreeDSL {
           /** cut out the column (px) containing the non-default pattern. */
           case (rpat @ Strip(vs, _)) :: _ =>
             val px        = defaults.size
-            val column    = rpat :: (row.tail map (_ pat px))
-            val restTemp  = dropIndex(temp, px)
-            val restRows  = row map (r => r replace dropIndex(r.pat, px))
+            val column    = rpat :: (rows.tail map (_ pat px))
+            val restTemp  = dropIndex(tvars, px)
+            val restRows  = rows map (r => r replace dropIndex(r.pat, px))
 
-            MixtureRule(new Scrutinee(temp(px)), column, make(restTemp, restRows))
+            MixtureRule(new Scrutinee(tvars(px)), column, make(restTemp, restRows))
         }
       }
 
       def checkExhaustive: this.type = {
         val allcomb = combine(setsToCombine)
-        if (allcomb forall (combo => row exists (_ covers combo)))
+        if (allcomb forall (combo => rows exists (_ covers combo)))
           return this
 
         // if we reach here, patterns were not exhaustive
@@ -1119,26 +1119,26 @@ trait ParallelMatching extends ast.TreeDSL {
           case Combo(j, sym) :: rest  => if (j == i) pad(sym.name.toString) else mkPad(rest, i)
         }
         def mkMissingStr(open: List[Combo]) =
-          "missing combination " + temp.indices.map(mkPad(open, _)).mkString + "\n"
+          "missing combination " + tvars.indices.map(mkPad(open, _)).mkString + "\n"
 
-        val missingCombos = allcomb filter (open => row.forall(!_.covers(open))) map mkMissingStr
-        cunit.warning(temp.head.pos, "match is not exhaustive!\n" + missingCombos.mkString)
+        val missingCombos = allcomb filter (open => rows.forall(!_.covers(open))) map mkMissingStr
+        cunit.warning(tvars.head.pos, "match is not exhaustive!\n" + missingCombos.mkString)
         this
       }
 
       // a fancy toString method for debugging
       override def toString() = {
-        val tempStr = (temp map (t => pad(t.name))).mkString
+        val tempStr = (tvars map (t => pad(t.name))).mkString
         val underlines = tempStr.replaceAll("""\S""", "-")
         val rowStr = (
-          for (Row(pat, subst, guard, bx) <- row) yield {
+          for (Row(pat, subst, guard, bx) <- rows) yield {
             val extraStr: String = guard.toString + subst
             "%s %s\n".format(pat map pad mkString, extraStr)
           }
         ) mkString
 
-        if (temp.size == 0) "Rep(%dx%d)".format(temp.size, row.size)
-        else "Rep(%dx%d)\n%s\n%s\n%s".format(temp.size, row.size, tempStr, underlines, rowStr)
+        if (tvars.size == 0) "Rep(%dx%d)".format(tvars.size, rows.size)
+        else "Rep(%dx%d)\n%s\n%s\n%s".format(tvars.size, rows.size, tempStr, underlines, rowStr)
       }
 
       private val NPAD = 15
