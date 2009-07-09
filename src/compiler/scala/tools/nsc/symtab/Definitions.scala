@@ -190,6 +190,8 @@ trait Definitions {
       def Product_productArity = getMember(ProductRootClass, nme.productArity)
       def Product_productElement = getMember(ProductRootClass, nme.productElement)
       def Product_productPrefix = getMember(ProductRootClass, nme.productPrefix)
+      def Product_canEqual = getMember(ProductRootClass, nme.canEqual_)
+
     val MaxProductArity = 22
     /* <unapply> */
     val ProductClass: Array[Symbol] = new Array(MaxProductArity + 1)

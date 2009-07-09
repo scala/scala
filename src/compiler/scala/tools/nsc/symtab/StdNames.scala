@@ -266,6 +266,7 @@ trait StdNames {
     val box = newTermName("box")
     val boxArray = newTermName("boxArray")
     val forceBoxedArray = newTermName("forceBoxedArray")
+    val canEqual_ = newTermName("canEqual")
     val checkInitialized = newTermName("checkInitialized")
     val classOf = newTermName("classOf")
     val copy = newTermName("copy")
