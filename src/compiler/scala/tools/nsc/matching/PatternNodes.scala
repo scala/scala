@@ -20,32 +20,44 @@ trait PatternNodes extends ast.TreeDSL
   import symtab.Flags
   import Types._
   import CODE._
-  import definitions.{ ConsClass, ListClass, EqualsPatternClass, ListModule }
+  import definitions.{ ConsClass, ListClass, AnyRefClass, EqualsPatternClass, ListModule }
 
-  type TypeTest = (Type, Type) => Boolean
+  type TypeComparison = (Type, Type) => Boolean
 
-  case class TypeComparison(x: Type, y: Type) {
+  // Tests on Types
+  def isEquals(t: Type)           = cond(t) { case TypeRef(_, EqualsPatternClass, _) => true }
+  def isAnyRef(t: Type)           = t <:< AnyRefClass.tpe
+  def isCaseClass(t: Type)        = t.typeSymbol hasFlag Flags.CASE
+
+  // Comparisons on types
+  // def sameSymbols: TypeComparison  = _.typeSymbol eq _.typeSymbol
+  // def samePrefix: TypeComparison   = _.prefix =:= _.prefix
+  // def isSubErased: TypeComparison  = (t1, t2) => cond((t1, t2)) {
+  //   case (_: TypeRef, _: TypeRef) => !t1.isArray && samePrefix(t1,t2) && (sameSymbols(t1,t2) || isSubClass(t1, t2))
+  // }
+
+  // def isSubClass: TypeComparison   = (t1, t2) => t1.baseClasses exists (_ eq t2.typeSymbol)
+  // def isSubType: TypeComparison    = (t1, t2) => isSubClass(t1, t2) && (t1 <:< t2)
+  // def isPatMatch: TypeComparison   = (t1, t2) => isSubType(t1, t2)
+
+  def decodedEqualsType(tpe: Type) =
+    condOpt(tpe) { case TypeRef(_, EqualsPatternClass, List(arg))  => arg } getOrElse (tpe)
+
+  // If we write isSubtypeOf like:
+  //
+  //   = t1.baseTypeSeq exists (_ =:= t2)
+  //
+  // ..then all tests pass except for test/files/run/bug1434.scala, which involves:
+  // class A[T], B extends A[Any], C extends B ; ... match { case _: A[_] => .. ; case _: C => .. ; case _: B => .. }
+  // and a match error is thrown, which is interesting because either of C or B should match.
+  def isSubtypeOf(t1: Type, t2: Type) = t1.baseTypeSeq exists (p => cmpSymbols(p, t2))
+  def cmpSymbols(t1: Type, t2: Type)  = t1.typeSymbol eq t2.typeSymbol
+
+  case class TypeComp(x: Type, y: Type) {
     def xIsaY = x <:< y
     def yIsaX = y <:< x
     def eqSymbol = cmpSymbols(x, y)
     def eqPrefix = x.prefix =:= y.prefix
-
-    private def cmpSymbols(t1: Type, t2: Type) = t1.typeSymbol eq t2.typeSymbol
-    // true if t2 is a parent of t1.  Should this be rather: tpe.baseTypes.exists...?
-    private def  parenthood(t1: Type, t2: Type) = {
-      // t1.parents exists (p => cmpSymbols(p, t2))
-      t1.baseClasses exists (_ eq t2.typeSymbol)
-    }
-    // true if t1 is direct subtype of t2 (can't use just <:< cause have to take variance into account)
-    private def subtypehood(t1: Type, t2: Type) = {
-      // t1.parents exists (p => cmpSymbols(p, t2) && p <:< t2)
-      t1.baseClasses exists (p => (p eq t2.typeSymbol) && p.tpe <:< t2)
-    }
-
-    def yParentsX = parenthood(x, y)
-    def xParentsY = parenthood(y, x)
-    def xExtendsY = subtypehood(x, y)
-    def yExtendsX = subtypehood(y, x)
 
     object erased {
       import Types._
@@ -53,7 +65,7 @@ trait PatternNodes extends ast.TreeDSL
        *  ideally there is a better way to do it, and ideally defined in Types.scala
        */
       private def cmpErased(t1: Type, t2: Type) = (t1, t2) match {
-        case (_: TypeRef, _: TypeRef) => !t1.isArray && eqPrefix && (eqSymbol || parenthood(t1, t2))
+        case (_: TypeRef, _: TypeRef) => !t1.isArray && eqPrefix && (eqSymbol || isSubtypeOf(t1, t2))
         case _ => false
       }
 
@@ -86,7 +98,7 @@ trait PatternNodes extends ast.TreeDSL
       def   isNothing = is(NothingClass)
       def     isArray = is(ArrayClass)
 
-      def cmp(other: Type): TypeComparison = TypeComparison(tpe, tpeWRTEquality(other))
+      def cmp(other: Type): TypeComp = TypeComp(tpe, tpeWRTEquality(other))
 
       def coversSym(sym: Symbol) = {
         lazy val lmoc = sym.linkedModuleOfClass
@@ -199,13 +211,8 @@ trait PatternNodes extends ast.TreeDSL
     }
   }
 
-  /** returns all variables that are binding the given pattern
-   *  @param   x a pattern
-   *  @return  vs variables bound, p pattern proper
-   */
-
+  // break a pattern down into bound variables and underlying tree.
   object Strip  {
-    // all variables binding the given pattern
     private def strip(syms: Set[Symbol], t: Tree): (Set[Symbol], Tree) = t match {
       case b @ Bind(_, pat) => strip(syms + b.symbol, pat)
       case _                => (syms, t)
