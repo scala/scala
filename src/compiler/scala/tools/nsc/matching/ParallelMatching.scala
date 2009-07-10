@@ -543,51 +543,48 @@ trait ParallelMatching extends ast.TreeDSL {
       defaultPattern: Option[Tree])
     extends RuleApplication
     {
-      lazy val defaultVars  = defaultPattern.toList flatMap (_.boundVariables)
-      lazy val defaultRows  =
-        if (defaultPattern.isEmpty) Nil
-        else List((rest rows literals.size).rebind2(defaultVars, scrut.sym))
-
-      protected var tagIndices = IntMap.empty[List[Int]]
-
-      protected def grabRow(index: Int): Row = {
-        val r = rest.rows(index)
-        if (defaultVars.isEmpty) r
-        else r.rebind2(pats(index).boundVariables, scrut.sym)  // get vars
+      private object NUM {
+        def unapply(x: Tree): Option[Int] = condOpt(unbind(x)) { case Literal(c) => c.intValue }
       }
-
-      private def listToRep(indices: List[Int]) =
-        make(rest.tvars, (indices reverseMap grabRow) ::: defaultRows)
-
-      val varMap: List[(Int, List[Symbol])] = {
-        def insertPair(tag: Int, index: Int, x: Tree) = {
-          tagIndices = tagIndices.update(tag, index :: tagIndices.getOrElse(tag, Nil))
-          Some(tag, definedVars(x))
-        }
-
-        (for ((p, i) <- pats.zip) yield unbind(p) match {
-          case LIT(c: Byte)   => insertPair(c, i, p)
-          case LIT(c: Short)  => insertPair(c, i, p)
-          case LIT(c: Int)    => insertPair(c, i, p)
-          case LIT(c: Char)   => insertPair(c.toInt, i, p)
-          case _              => None
-        }) flatMap (x => x) reverse
+      // bound vars and rows for default pattern (only one row, but a list is easier to use later)
+      val (defaultVars, defaultRows) = defaultPattern match {
+        case None               => (Nil, Nil)
+        case Some(Strip(vs, p)) => (vs, List((rest rows literals.size).rebind2(vs, scrut.sym)))
       }
+      // literalMap is a map from each literal to a list of row indices.
+      // varMap is a list from each literal to a list of the defined vars.
+      val (literalMap, varMap) = {
+        val tags    = literals map { case NUM(tag) => tag }
+        val varMap  = tags zip (literals map definedVars)
+        val litMap  =
+          tags.zipWithIndex.reverse.foldLeft(IntMap.empty[List[Int]]) {
+            // we reverse before the fold so the list can be built with ::
+            case (map, (tag, index)) => map.update(tag, index :: map.getOrElse(tag, Nil))
+          }
 
-      private def bindVars(Tag: Int, orig: Bindings): Bindings = {
-        def myBindVars(rest: List[(Int, List[Symbol])], bnd: Bindings): Bindings = rest match {
-          case Nil => bnd
-          case (Tag,vs)::xs => myBindVars(xs, bnd.add(vs, scrut.sym))
-          case (_,  vs)::xs => myBindVars(xs, bnd)
-        }
-        myBindVars(varMap, orig)
+        (litMap, varMap)
       }
 
       final def tree(): Tree = {
+        def bindVars(Tag: Int, orig: Bindings): Bindings = {
+          def myBindVars(rest: List[(Int, List[Symbol])], bnd: Bindings): Bindings = rest match {
+            case Nil => bnd
+            case (Tag,vs)::xs => myBindVars(xs, bnd.add(vs, scrut.sym))
+            case (_,  vs)::xs => myBindVars(xs, bnd)
+          }
+          myBindVars(varMap, orig)
+        }
+
+        // creates a row transformer for injecting the default case bindings at a given index
+        def addDefaultVars(index: Int): Row => Row =
+          if (defaultVars.isEmpty) identity
+          else (r: Row) => r.rebind2(pats(index).boundVariables, scrut.sym)
+
         val cases =
-          for ((tag, vs) <- tagIndices.toList) yield {
-            val r   = listToRep(vs)
-            val r2  = make(r.tvars, r.rows map (x => x rebind bindVars(tag, x.subst)))
+          for ((tag, indices) <- literalMap.toList) yield {
+            val newRows = indices map (i => addDefaultVars(i)(rest rows i))
+            val r       = make(rest.tvars, newRows ::: defaultRows)
+            val r2      = make(r.tvars, r.rows map (x => x rebind bindVars(tag, x.subst)))
 
             CASE(Literal(tag)) ==> r2.toTree
           }
