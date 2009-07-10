@@ -25,9 +25,9 @@ trait PatternNodes extends ast.TreeDSL
   type TypeComparison = (Type, Type) => Boolean
 
   // Tests on Types
-  def isEquals(t: Type)           = cond(t) { case TypeRef(_, EqualsPatternClass, _) => true }
-  def isAnyRef(t: Type)           = t <:< AnyRefClass.tpe
-  def isCaseClass(t: Type)        = t.typeSymbol hasFlag Flags.CASE
+  def isEquals(t: Type)       = cond(t) { case TypeRef(_, EqualsPatternClass, _) => true }
+  def isAnyRef(t: Type)       = t <:< AnyRefClass.tpe
+  def isCaseClass(t: Type)    = t.typeSymbol hasFlag Flags.CASE
 
   // Comparisons on types
   // def sameSymbols: TypeComparison  = _.typeSymbol eq _.typeSymbol
@@ -109,7 +109,7 @@ trait PatternNodes extends ast.TreeDSL
 
         (tpe.typeSymbol == sym) ||
         (symtpe <:< tpe) ||
-        (symtpe.parents exists (_.typeSymbol eq tpe.typeSymbol)) || // e.g. Some[Int] <: Option[&b]
+        (symtpe.parents exists (x => cmpSymbols(x, tpe))) || // e.g. Some[Int] <: Option[&b]
         ((tpe.prefix memberType sym) <:< tpe)  // outer, see combinator.lexical.Scanner
       }
     }
@@ -212,12 +212,12 @@ trait PatternNodes extends ast.TreeDSL
   }
 
   // break a pattern down into bound variables and underlying tree.
-  object Strip  {
-    private def strip(syms: Set[Symbol], t: Tree): (Set[Symbol], Tree) = t match {
-      case b @ Bind(_, pat) => strip(syms + b.symbol, pat)
-      case _                => (syms, t)
+  object Strip {
+    private def strip(t: Tree, syms: List[Symbol] = Nil): (Tree, List[Symbol]) = t match {
+      case b @ Bind(_, pat) => strip(pat, b.symbol :: syms)
+      case _                => (t, syms)
     }
-    def unapply(x: Tree): Option[(Set[Symbol], Tree)] = Some(strip(Set(), x))
+    def unapply(x: Tree): Option[(List[Symbol], Tree)] = Some(strip(x).swap)
   }
 
   object Stripped {
