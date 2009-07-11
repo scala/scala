@@ -10,8 +10,6 @@
 
 package scala.actors
 
-import forkjoin.ForkJoinPool
-
 /**
  * The <code>IScheduler</code> trait provides a common interface
  * for all schedulers used to execute actor tasks.
@@ -66,7 +64,7 @@ trait IScheduler {
    */
   def onTerminate(a: Reactor)(f: => Unit): Unit
 
-  def managedBlock(blocker: ForkJoinPool.ManagedBlocker) {
+  def managedBlock(blocker: ManagedBlocker) {
     blocker.block()
   }
 }

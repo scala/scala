@@ -16,7 +16,7 @@ class ForkJoinScheduler extends Thread with IScheduler with TerminationMonitor {
 
   private val CHECK_FREQ = 50
 
-  override def managedBlock(blocker: ForkJoinPool.ManagedBlocker) {
+  override def managedBlock(blocker: ManagedBlocker) {
     ForkJoinPool.managedBlock(blocker, true)
   }
 
@@ -41,6 +41,13 @@ class ForkJoinScheduler extends Thread with IScheduler with TerminationMonitor {
     } catch {
       case _: QuitException =>
         Debug.info(this+": initiating shutdown...")
+        while (!pool.isQuiescent()) {
+          try {
+            Thread.sleep(10)
+          } catch {
+            case ignore: InterruptedException =>
+          }
+        }
         pool.shutdown()
         // allow thread to exit
     }

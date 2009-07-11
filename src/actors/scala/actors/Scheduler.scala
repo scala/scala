@@ -25,16 +25,14 @@ object Scheduler extends DelegatingScheduler {
   Debug.info("initializing "+this+"...")
 
   def makeNewScheduler: IScheduler = {
-/*
     val workQueue = new LinkedBlockingQueue[Runnable](100000)
     val threadPool = new ThreadPoolExecutor(ThreadPoolConfig.corePoolSize,
                                             ThreadPoolConfig.maxPoolSize,
                                             50L,
                                             TimeUnit.MILLISECONDS,
                                             workQueue)
-    val s = new SimpleExecutorScheduler(threadPool, true)
-*/
-    val s = new ForkJoinScheduler
+    val s = new ThreadPoolScheduler(threadPool, true)
+    //val s = new ForkJoinScheduler
     Debug.info(this+": starting new "+s+" ["+s.getClass+"]")
     s.start()
     s
@@ -45,7 +43,7 @@ object Scheduler extends DelegatingScheduler {
   /* Assumes <code>sched</code> holds an instance
    * of <code>FJTaskScheduler2</code>.
    */
-  def snapshot(): Unit = synchronized {
+  @deprecated def snapshot(): Unit = synchronized {
     if (sched.isInstanceOf[FJTaskScheduler2]) {
       val fjts = sched.asInstanceOf[FJTaskScheduler2]
       tasks = fjts.snapshot()

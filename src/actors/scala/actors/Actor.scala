@@ -14,8 +14,6 @@ import scala.compat.Platform
 import java.util.{Timer, TimerTask}
 import java.util.concurrent.ExecutionException
 
-import forkjoin.ForkJoinPool
-
 /**
  * The <code>Actor</code> object provides functions for the definition of
  * actors, as well as actor operations, such as
@@ -644,7 +642,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
       scheduler execute task
     }
 
-  class ActorBlocker(timeout: Long) extends ForkJoinPool.ManagedBlocker {
+  class ActorBlocker(timeout: Long) extends ManagedBlocker {
     def block() = {
       if (timeout > 0)
         Actor.this.suspendActorFor(timeout)
