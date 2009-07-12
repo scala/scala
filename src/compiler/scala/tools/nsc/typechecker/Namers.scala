@@ -1094,6 +1094,8 @@ trait Namers { self: Analyzer =>
           }
           if (!ainfos.isEmpty)
             annotated.setAnnotations(ainfos)
+          if (annotated.isTypeSkolem)
+            annotated.deSkolemize.setAnnotations(ainfos)
         case _ =>
       }
       implicit val scopeKind = TypeSigScopeKind

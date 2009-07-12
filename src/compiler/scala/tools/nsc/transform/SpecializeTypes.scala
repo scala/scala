@@ -188,10 +188,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private def specializedName(sym: Symbol, env: TypeEnv): Name = {
     val tvars = if (sym.isClass) env.keySet
                 else specializedTypeVars(sym.info).intersect(env.keySet)
-    log("specName(" + sym + ") env " + env + " tvars: " + tvars + " stv: " + specializedTypeVars(sym.info) + " info: " + sym.info)
     val (methparams, others) = tvars.toList.partition(_.owner.isMethod)
     val tvars1 = methparams.sort(_.name.toString < _.name.toString)
     val tvars2 = others.sort(_.name.toString < _.name.toString)
+    log("specName(" + sym + ") env " + env)
     specializedName(sym.name, tvars1 map env, tvars2 map env)
   }
 
@@ -552,18 +552,21 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private def normalizeMember(owner: Symbol, sym: Symbol, outerEnv: TypeEnv): List[Symbol] = {
     if (sym.isMethod && !sym.info.typeParams.isEmpty) {
       val (stps, tps) = splitParams(sym.info.typeParams)
-      val res = sym :: (for (env <- specializations(stps)) yield {
+      val res = sym :: (for (env <- specializations(stps) if needsSpecialization(env, sym)) yield {
         val keys = env.keys.toList;
         val vals = env.values.toList
         val specMember =  sym.cloneSymbol(owner).setFlag(SPECIALIZED).resetFlag(DEFERRED)
         specMember.name = specializedName(sym, env)
+
         typeEnv(specMember) = outerEnv ++ env
         val tps1 = cloneSymbols(tps)
         for (tp <- tps1) tp.setInfo(tp.info.subst(keys, vals))
-        val methodType = sym.info.resultType.subst(keys ::: tps, vals ::: (tps1 map (_.tpe)))
+        // the cloneInfo is necessary so that method parameter symbols are cloned at the new owner
+        val methodType = sym.info.resultType.subst(keys ::: tps, vals ::: (tps1 map (_.tpe))).cloneInfo(specMember)
 
         specMember.setInfo(polyType(tps1, methodType))
-        log("expanded member: " + sym + " -> " + specMember + ": " + specMember.info + " env: " + env)
+
+        log("expanded member: " + sym  + ": " + sym.info + " -> " + specMember + ": " + specMember.info + " env: " + env)
         info(specMember) = NormalizedMember(sym)
         overloads(sym) = Overload(specMember, env) :: overloads(sym)
         specMember

@@ -511,7 +511,13 @@ abstract class CopyPropagation {
 
     /** Drop everything known about mutable record fields.
      *
-     *  @param state ...
+     *  A simple escape analysis would help here. Some of the records we
+     *  track never leak to other methods, therefore they can not be changed.
+     *  We should not drop their bindings in this case. A closure object
+     *  would be such an example. Some complications:
+     *
+     *   - outer pointers. An closure escapes as an outer pointer to another
+     *     nested closure.
      */
     final def invalidateRecords(state: copyLattice.State) {
       def shouldRetain(sym: Symbol): Boolean = {
