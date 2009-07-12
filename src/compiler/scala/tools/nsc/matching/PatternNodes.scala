@@ -240,7 +240,7 @@ trait PatternNodes extends ast.TreeDSL
    *  tvar: the temporary variable that holds the actual value
    */
   case class Binding(pvar: Symbol, tvar: Symbol) {
-    override def toString() = "%s @ %s".format(pvar.name, tvar.name)
+    override def toString() = "%s: %s @ %s: %s".format(pvar.name, pvar.tpe, tvar.name, tvar.tpe)
   }
 
   case class Bindings(bindings: Binding*) extends Function1[Symbol, Option[Ident]] {
@@ -248,8 +248,20 @@ trait PatternNodes extends ast.TreeDSL
       if (tvar.tpe <:< pvar.tpe) ID(tvar)
       else ID(tvar) AS_ANY pvar.tpe
 
-    def add(vs: Iterable[Symbol], tvar: Symbol): Bindings =
-      Bindings((vs.toList map (Binding(_: Symbol, tvar))) ++ bindings : _*)
+    def add(vs: Iterable[Symbol], tvar: Symbol): Bindings = {
+      def newBinding(v: Symbol) = {
+        // see bug #1843 for the consequences of not setting info.
+        // there is surely a better way to do this, especially since
+        // this looks to be the only usage of containsTp anywhere
+        // in the compiler, but it suffices for now.
+        if (tvar.info containsTp WildcardType)
+          tvar setInfo v.info
+
+        Binding(v, tvar)
+      }
+      val newBindings = vs.toList map newBinding
+      Bindings(newBindings ++ bindings: _*)
+    }
 
     def apply(v: Symbol): Option[Ident] =
       bindings find (_.pvar eq v) map (x => Ident(x.tvar) setType v.tpe)
