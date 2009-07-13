@@ -7,6 +7,7 @@
 
 package scala.tools.nsc.util
 import scala.tools.nsc.io.{AbstractFile, VirtualFile}
+import annotation.tailrec
 
 object SourceFile {
   // Be very careful touching these.
@@ -19,15 +20,15 @@ object SourceFile {
   final val CR = '\u000D'
   final val SU = '\u001A'
 
-  def isLineBreak(c: Int) = c match {
-  case LF|FF|CR|SU => true
-  case _ => false
+  def isLineBreakChar(c: Int) = c match {
+    case LF|FF|CR|SU  => true
+    case _            => false
   }
 }
 /** abstract base class of a source file used in the compiler */
 abstract class SourceFile {
   import SourceFile._
-  def content : RandomAccessSeq[Char] // normalized, must end in SU
+  def content : Array[Char]         // normalized, must end in SU
   def file    : AbstractFile
   def isLineBreak(idx : Int) : Boolean
   def length : Int
@@ -46,120 +47,85 @@ abstract class SourceFile {
   def dbg(offset: Int) = (new OffsetPosition(this, offset)).dbgString
   def path = file.path
 
-  def beginsWith(offset: Int, text: String): Boolean
-  def skipWhitespace(offset: Int): Int
-  def lineToString(index: Int): String
+  def beginsWith(offset: Int, text: String): Boolean =
+    (content drop offset) startsWith text
 
-  def identifier(pos : Position, compiler  : scala.tools.nsc.Global) : Option[String] = None
+  def lineToString(index: Int): String =
+    content drop lineToOffset(index) takeWhile (c => !isLineBreakChar(c)) mkString
 
+  @tailrec
+  final def skipWhitespace(offset: Int): Int =
+    if (content(offset).isWhitespace) skipWhitespace(offset + 1) else offset
+
+  def identifier(pos: Position, compiler: Global): Option[String] = None
 }
+
 /** a file whose contents do not change over time */
-class BatchSourceFile(val file : AbstractFile, _content : Array[Char]) extends SourceFile {
+class BatchSourceFile(val file : AbstractFile, val content: Array[Char]) extends SourceFile {
   import SourceFile._
+
   def this(_file: AbstractFile)                 = this(_file, _file.toCharArray)
   def this(sourceName: String, cs: Seq[Char])   = this(new VirtualFile(sourceName), cs.toArray)
-  def this(_file: AbstractFile, cs: Seq[Char])  = this(_file, cs.toArray)
+  def this(file: AbstractFile, cs: Seq[Char])   = this(file, cs.toArray)
 
   override def equals(that : Any) = that match {
     case that : BatchSourceFile => file == that.file
     case _ => false
   }
   override def hashCode = file.hashCode
-
-  var content = _content
-  var length = _content.length
-
-  def setContent(newContent : Array[Char]) {
-    content = newContent
-    length = newContent.length
-  }
+  val length = content.length
 
   // in SourceFileFragments, these are overridden to compensate during offset calculation
   // Invariant: length + start = underlyingLength
   def underlyingLength = length
   def start = 0
 
-  override def identifier(pos : Position, compiler : scala.tools.nsc.Global) = pos match {
-    case OffsetPosition(source,offset) if source == this && offset != -1 =>
-      import java.lang.Character
-      var i = offset + 1
-      while (i < content.length &&
-             (compiler.syntaxAnalyzer.isOperatorPart(content(i)) ||
-              compiler.syntaxAnalyzer.isIdentifierPart(content(i)))) i = i + 1
-
-      assert(i > offset)
-      if (i <= content.length && offset >= 0)
-        Some(new String(content, offset, i - offset))
-      else None
-  case _ => super.identifier(pos, compiler)
+  override def identifier(pos: Position, compiler: Global) = pos match {
+    case OffsetPosition(source, offset) if source == this && offset != -1 =>
+      def isOK(c: Char) = {
+        import compiler.syntaxAnalyzer.{ isOperatorPart, isIdentifierPart }
+        isIdentifierPart(c) || isOperatorPart(c)
+      }
+      Some(new String(content drop offset takeWhile isOK))
+    case _ =>
+      super.identifier(pos, compiler)
   }
 
   def isLineBreak(idx: Int) =
-    if (idx >= content.length) false
-    else if (!SourceFile.isLineBreak(content(idx))) false
-    else if (content(idx) == CR && content(idx + 1) == LF) false
-    else true
-
-  def beginsWith(offset: Int, text: String): Boolean = {
-    var idx = 0
-    while (idx < text.length()) {
-      if (offset + idx >= content.length) return false
-      if (content(offset + idx) != text.charAt(idx)) return false
-      idx += 1
+    if (idx >= length) false else content(idx) match {
+      // don't identify the CR in CR LF as a line break, since LF will do.
+      case CR => (idx + 1 == length) || (content(idx + 1) != LF)
+      case x  => isLineBreakChar(x)
     }
-    return true
+
+  // An array which maps line numbers (counting from 0) to char offset into content
+  private lazy val lineIndices: Array[Int] = {
+    val xs = content.indices filter isLineBreak map (_ + 1) toArray
+    val arr = new Array[Int](xs.length + 1)
+    arr(0) = 0
+    System.arraycopy(xs, 0, arr, 1, xs.length)
+
+    arr
   }
-  def skipWhitespace(offset: Int): Int =
-    if (content(offset).isWhitespace) skipWhitespace(offset + 1)
-    else offset
+  // A reverse map which also hunts down the right answer on non-exact lookups
+  private class SparseReverser() {
+    val revMap = Map(lineIndices.zipWithIndex: _*)
 
-  def lineToString(index: Int): String = {
-    var offset = lineToOffset(index)
-    val buf = new StringBuilder()
-    while (!isLineBreak(offset) && offset < content.length) {
-      buf.append(content(offset))
-      offset += 1
-    }
-    buf.toString()
-  }
-  object line {
-    var index  = 0
-    var offset = 0
+    def apply(x: Int): Int = revMap.get(x) match {
+      case Some(res)  => res
+      case _          =>
+        var candidate = x - 1
+        while (!revMap.contains(candidate))
+          candidate -= 1
 
-    def find(toFind: Int, isIndex: Boolean): Int = {
-      if (toFind == 0) return 0
-      if (!isIndex && (toFind > content.length)) {
-        throw new Error(toFind + " not valid offset in " +
-                        file.name + ":" + content.length)
-      }
-
-      def get(isIndex : Boolean) = if (isIndex) index else offset
-
-      val isBackward = toFind <= get(isIndex)
-      val increment = if (isBackward) -1 else + 1
-      val oneIfBackward = if (isBackward) +1 else 0
-
-      while (true) {
-        if (!isIndex && offset == toFind) return index;
-        if (isBackward && offset <= 0)
-          throw new Error(offset + " " + index + " " + toFind + " " + isIndex);
-        offset = offset + increment
-        if (!isBackward) assert(offset <= content.length);
-
-        if (isLineBreak(offset + (if (isBackward) 0 else -1))) {
-          index = index + increment
-          if (isIndex && index + oneIfBackward == toFind)
-            return offset + oneIfBackward;
-        }
-      }
-      throw new Error()
+        revMap(candidate)
     }
   }
-  def offsetToLine(offset: Int): Int = line.find(offset, false)
-  def lineToOffset(index : Int): Int = line.find(index , true)
+  private lazy val lineIndicesRev = new SparseReverser()
+
+  def lineToOffset(index : Int): Int = lineIndices(index)
+  def offsetToLine(offset: Int): Int = lineIndicesRev(offset)
 }
-
-
 
 /** A source file composed of multiple other source files.
  *
