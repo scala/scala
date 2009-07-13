@@ -103,6 +103,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   } with Statistics
 
+  util.Statistics.enabled = settings.Ystatistics.value
+
   /** Computing pairs of overriding/overridden symbols */
   object overridingPairs extends {
     val global: Global.this.type = Global.this
@@ -641,6 +643,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
    */
   class Run {
 
+    var isDefined = false
+
     private val firstPhase = {
       // ----------- Initialization code -------------------------
       curRunId += 1
@@ -731,6 +735,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val mixinPhase = phaseNamed("mixin")
     val icodePhase = phaseNamed("icode")
 
+    isDefined = true
+
     /** A test whether compilation should stop at phase with given name */
     protected def stopPhase(name : String) = settings.stop.contains(name)
 
@@ -800,7 +806,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       	    warning("It is not possible to check the result of the "+globalPhase.name+" phase")
           }
         }
-        if (settings.statistics.value) statistics.print(phase)
+        if (settings.Ystatistics.value) statistics.print(phase)
         advancePhase
       }
 

@@ -18,7 +18,10 @@ trait CompilerControl { self: Global =>
 
   /** Info given for every member found by completion
    */
-  case class Member(val sym: Symbol, val tpe: Type, val accessible: Boolean, val inherited: Boolean, val viaView: Symbol)
+  case class Member(val sym: Symbol, val tpe: Type, val accessible: Boolean, val inherited: Boolean, val viaView: Symbol) {
+    def shadows(other: Member) =
+      sym.name == other.sym.name && (sym.tpe matches other.sym.tpe)
+  }
 
   /** The scheduler by which client and compiler communicate
    *  Must be initialized before starting compilerRunner

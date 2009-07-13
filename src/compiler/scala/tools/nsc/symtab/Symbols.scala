@@ -749,7 +749,7 @@ trait Symbols {
     /** Return info without checking for initialization or completing */
     def rawInfo: Type = {
       var infos = this.infos
-      assert(infos != null, name)
+      assert(infos != null)
       val curPeriod = currentPeriod
       val curPid = phaseId(curPeriod)
 

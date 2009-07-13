@@ -10,8 +10,7 @@
 //todo: treat :::= correctly
 package scala.tools.nsc.typechecker
 
-import scala.collection.mutable.{HashMap, ListBuffer}
-import scala.compat.Platform.currentTime
+import scala.collection.mutable.{LinkedHashMap, ListBuffer}
 import scala.tools.nsc.util.{HashSet, Position, Set, NoPosition, SourceFile}
 import symtab.Flags._
 import util.HashSet
@@ -38,6 +37,7 @@ self: Analyzer =>
   var manifFail = 0L
   var hits = 0
   var misses = 0
+  var uncached = 0
 
   /** Search for an implicit value. See the comment on `result` at the end of class `ImplicitSearch`
    *  for more info how the search is conducted.
@@ -60,8 +60,8 @@ self: Analyzer =>
     result
   }
 
-  final val sizeLimit = 100
-  val implicitsCache = new HashMap[Type, SearchResult]
+  final val sizeLimit = 50000
+  val implicitsCache = new LinkedHashMap[AnyRef, SearchResult]
 
   def resetImplicits() { implicitsCache.clear() }
 
@@ -210,7 +210,6 @@ self: Analyzer =>
     }
 
     if (util.Statistics.enabled) implcnt += 1
-    private val startTime = if (util.Statistics.enabled) currentTime else 0l
 
     /** Issues an error signalling ambiguous implicits */
     private def ambiguousImplicitError(info1: ImplicitInfo, info2: ImplicitInfo,
@@ -639,6 +638,37 @@ self: Analyzer =>
       }
     }
 
+    /** An extractor for types of the form ? { name: ? }
+     */
+    object WildcardName {
+      def unapply(pt: Type): Option[Name] = pt match {
+        case RefinedType(List(WildcardType), decls) =>
+          decls.toList match {
+            case List(sym) if (sym.tpe == WildcardType) => Some(sym.name)
+            case _ => None
+          }
+        case _ =>
+          None
+      }
+    }
+
+    /** Return cached search result if found. Otherwise update cache
+     *  but keep within sizeLimit entries
+     */
+    def cacheResult(key: AnyRef): SearchResult = implicitsCache get key match {
+      case Some(r) =>
+        hits += 1
+        r
+      case None =>
+        misses += 1
+        val r = searchImplicit(implicitsOfExpectedType, false)
+        //println("new fact: search implicit of "+key+" = "+r)
+        implicitsCache(key) = r
+        if (implicitsCache.size >= sizeLimit)
+          implicitsCache -= implicitsCache.keysIterator.next
+        r
+    }
+
     /** The result of the implicit search:
      *  First search implicits visible in current context.
      *  If that fails, search implicits in expected type `pt`.
@@ -646,40 +676,29 @@ self: Analyzer =>
      *  If all fails return SearchFailure
      */
     def bestImplicit: SearchResult = {
-      //val start = System.nanoTime()
+      val start = System.nanoTime()
       var result = searchImplicit(context.implicitss, true)
-      //val timer1 = System.nanoTime()
-      //if (result == SearchFailure) inscopeFail += timer1 - start else inscopeSucceed += timer1 - start
+      val timer1 = System.nanoTime()
+      if (result == SearchFailure) inscopeFail += timer1 - start else inscopeSucceed += timer1 - start
       if (result == SearchFailure) {
-        if (pt.isInstanceOf[UniqueType])
-          implicitsCache get pt match {
-            case Some(r) =>
-              hits += 1
-              result = r
-            case None =>
-              misses += 1
-              result = searchImplicit(implicitsOfExpectedType, false)
-            //          println("new fact: search implicit of "+pt+" = "+result)
-            //          if (implicitsCache.size >= sizeLimit)
-            //            implicitsCache -= implicitsCache.values.next
-            implicitsCache(pt) = result
-          }
-        else
-          result = searchImplicit(implicitsOfExpectedType, false)
+        result = pt match {
+          case _: UniqueType => cacheResult(pt)
+          case WildcardName(name) => cacheResult(name)
+          case _ => uncached += 1; searchImplicit(implicitsOfExpectedType, false)
+         }
       }
-      //val timer2 = System.nanoTime()
-      //if (result == SearchFailure) oftypeFail += timer2 - timer1 else oftypeSucceed += timer2 - timer1
+
+      val timer2 = System.nanoTime()
+      if (result == SearchFailure) oftypeFail += timer2 - timer1 else oftypeSucceed += timer2 - timer1
       if (result == SearchFailure) {
         val resultTree = implicitManifest(pt)
         if (resultTree != EmptyTree) result = new SearchResult(resultTree, EmptyTreeTypeSubstituter)
       }
-      //val timer3 = System.nanoTime()
-      //if (result == SearchFailure) manifFail += timer3 - timer2 else manifSucceed += timer3 - timer2
+      val timer3 = System.nanoTime()
+      if (result == SearchFailure) manifFail += timer3 - timer2 else manifSucceed += timer3 - timer2
       if (result == SearchFailure && settings.debug.value)
         println("no implicits found for "+pt+" "+pt.typeSymbol.info.baseClasses+" "+parts(pt)+implicitsOfExpectedType)
-      //implicitTime += System.nanoTime() - start
-
-      if (util.Statistics.enabled) impltime += (currentTime - startTime)
+      implicitTime += System.nanoTime() - start
       result
     }
 

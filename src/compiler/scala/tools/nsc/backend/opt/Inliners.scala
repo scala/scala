@@ -277,7 +277,7 @@ abstract class Inliners extends SubComponent {
 
 
     val tfa = new analysis.MethodTFA();
-    tfa.stat = settings.statistics.value
+    tfa.stat = settings.Ystatistics.value
 
     // how many times have we already inlined this method here?
     private val inlinedMethods: Map[Symbol, Int] = new HashMap[Symbol, Int] {

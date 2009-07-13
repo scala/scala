@@ -35,12 +35,18 @@ abstract class UnPickler {
    */
   def unpickle(bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) {
     try {
-      new UnPickle(bytes, offset, classRoot, moduleRoot, filename)
+      val p = if (currentRun.isDefined &&
+                  currentRun.picklerPhase != NoPhase &&
+                  phase.id > currentRun.picklerPhase.id) currentRun.picklerPhase
+              else phase
+      atPhase(p) {
+        new UnPickle(bytes, offset, classRoot, moduleRoot, filename)
+      }
     } catch {
       case ex: IOException =>
         throw ex
       case ex: Throwable =>
-        if (settings.debug.value) ex.printStackTrace()
+        /*if (settings.debug.value)*/ ex.printStackTrace()
         throw new RuntimeException("error reading Scala signature of "+filename+": "+ex.getMessage())
     }
   }
@@ -798,11 +804,13 @@ abstract class UnPickler {
 
     private class LazyTypeRef(i: Int) extends LazyType {
       private val definedAtRunId = currentRunId
+      private val p = phase
       // In IDE, captures class files dependencies so they can be reloaded when their dependencies change.
       private val ideHook = unpickleIDEHook
       override def complete(sym: Symbol) : Unit = {
         val tp = ideHook(at(i, readType))
-        sym setInfo tp
+        if (p != phase) atPhase(p) (sym setInfo tp)
+        else sym setInfo tp
         if (currentRunId != definedAtRunId) sym.setInfo(adaptToNewRunMap(tp))
       }
       override def load(sym: Symbol) { complete(sym) }

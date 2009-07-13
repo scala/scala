@@ -60,7 +60,9 @@ trait Scopes {
    *  @return          ...
    */
   def newScope(initElems: ScopeEntry): Scope = new NormalScope(initElems)
+
   final def newScope: Scope = newScope(null: ScopeEntry)
+
   trait PackageScopeDependMap {
     def createDepend(from : Symbol, name : Name) : Unit
   }
@@ -306,22 +308,38 @@ trait Scopes {
     def lookupWithContext(name : Name)(from : Symbol) : Symbol = lookup(name)
 
     /** lookup a symbol entry matching given name.
-     *
-     *  @param name ...
-     *  @return     ...
+     *  @note from Martin: I believe this is a hotspot or will be one
+     *  in future versions of the type system. I have reverted the previous
+     *  change to use iterators as too costly.
      */
     def lookupEntry(name: Name): ScopeEntry = {
-      val it =
-        if (hashtable != null) hashtableIterator(name.start & HASHMASK)
-        else entryIterator(elems)
-
-      it find (_.sym.name == name) orNull
+      var e: ScopeEntry = null
+      if (hashtable ne null) {
+        e = hashtable(name.start & HASHMASK)
+        while ((e ne null) && e.sym.name != name) {
+          e = e.tail
+        }
+      } else {
+        e = elems
+        while ((e ne null) && e.sym.name != name) {
+          e = e.next
+        }
+      }
+      e
     }
 
-    /** lookup next entry with same name as this one */
+    /** lookup next entry with same name as this one
+     *  @note from Martin: I believe this is a hotspot or will be one
+     *  in future versions of the type system. I have reverted the previous
+     *  change to use iterators as too costly.
+     */
     def lookupNextEntry(entry: ScopeEntry): ScopeEntry = {
-      val it = if (hashtable == null) entry.entryIterator else entry.bucketIterator
-      (it drop 1) find (_.sym.name == entry.sym.name) orNull
+      var e = entry
+      if (hashtable ne null)
+        do { e = e.tail } while ((e ne null) && e.sym.name != entry.sym.name)
+      else
+        do { e = e.next } while ((e ne null) && e.sym.name != entry.sym.name);
+      e
     }
 
     /** Return all symbols as a list in the order they were entered in this scope.

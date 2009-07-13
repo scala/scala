@@ -319,7 +319,9 @@ self =>
           val decls = tree.tpe.decls.toList map (member(_, false))
           val inherited = tree.tpe.members.toList diff decls map (member(_, true))
           val implicits = applicableViews(tree, context) flatMap implicitMembers
-          decls ::: inherited ::: implicits
+          def isVisible(m: Member) =
+            !(decls exists (_.shadows(m))) && !(inherited exists (_.shadows(m)))
+          decls ::: inherited ::: (implicits filter isVisible)
         case None =>
           throw new FatalError("no context found for "+pos)
       }

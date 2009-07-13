@@ -1037,10 +1037,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
               case MyError(n,ex) =>
                 Console.println(tree1)
                 throw MyError(n + 1, ex)
-              case ex : AssertionError =>
-                Console.println(tree1)
-                throw MyError(0, ex)
-              case ex => throw ex
+//              case ex : AssertionError =>
+//                Console.println(tree1)
+//                throw MyError(0, ex)
+//              case ex => throw ex
             }
         }
       }
