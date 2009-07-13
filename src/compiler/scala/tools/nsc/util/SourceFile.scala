@@ -61,7 +61,7 @@ abstract class SourceFile {
 }
 
 /** a file whose contents do not change over time */
-class BatchSourceFile(val file : AbstractFile, _content: Array[Char]) extends SourceFile {
+class BatchSourceFile(val file : AbstractFile, val content: Array[Char]) extends SourceFile {
   import SourceFile._
 
   def this(_file: AbstractFile)                 = this(_file, _file.toCharArray)
@@ -73,14 +73,7 @@ class BatchSourceFile(val file : AbstractFile, _content: Array[Char]) extends So
     case _ => false
   }
   override def hashCode = file.hashCode
-
-  var content = _content
-  var length = _content.length
-
-  def setContent(newContent : Array[Char]) {
-    content = newContent
-    length = newContent.length
-  }
+  val length = content.length
 
   // in SourceFileFragments, these are overridden to compensate during offset calculation
   // Invariant: length + start = underlyingLength
