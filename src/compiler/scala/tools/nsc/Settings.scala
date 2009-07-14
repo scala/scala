@@ -794,6 +794,7 @@ trait ScalacSettings {
   val Xwarndeadcode = BooleanSetting    ("-Ywarn-dead-code", "Emit warnings for dead code")
   val specialize    = BooleanSetting    ("-Yspecialize", "Specialize generic code on types.")
   val Yrangepos     = BooleanSetting    ("-Yrangepos", "Use range positions for syntax trees.")
+  val Yidedebug     = BooleanSetting    ("-Yide-debug", "Generate, validate and output trees using the interactive compiler.")
 
   /**
    * -P "Plugin" settings

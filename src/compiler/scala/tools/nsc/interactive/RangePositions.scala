@@ -152,7 +152,7 @@ self: nsc.Global =>
                 println(tree.id)
                 tree
               }
-            throw new Error()//debug
+            //throw new Error()//debug
 
 //          println("splitting "+splitNode)
             splitNode setPos new TransparentPosition(splitNode.pos.source.get, splitNode.pos.start, splitNode.pos.point, splitNode.pos.end)
@@ -234,7 +234,7 @@ self: nsc.Global =>
       inform(msg)
       inform("================= in =================")
       inform(tree.toString)
-      throw new ValidateError
+      throw new ValidateError(msg)
     }
     def validate(tree: Tree, encltree: Tree): Unit = try {
       if (!tree.isEmpty) {
@@ -247,7 +247,17 @@ self: nsc.Global =>
             error(encltree+" does not include "+tree)
           findOverlapping(tree.children flatMap solidDescendants) match {
             case List() => ;
-            case xs => error("overlapping trees: "+xs)
+            case xs => {
+              for((x, y) <- xs) {
+                println("Overlapping tree x: "+x.pos+" "+x.getClass.getName)
+                println(x)
+                println("Overlapping tree y: "+y.pos+" "+y.getClass.getName)
+                println(y)
+              }
+              println("Ancestor: "+tree.getClass.getName)
+
+              error("overlapping trees: "+xs)
+            }
           }
         }
         for (ct <- tree.children flatMap solidDescendants) validate(ct, tree)
@@ -260,7 +270,7 @@ self: nsc.Global =>
     validate(tree, tree)
   }
 
-  class ValidateError extends Exception
+  class ValidateError(msg : String) extends Exception(msg)
 
   // ---------------- Locating trees ----------------------------------
 

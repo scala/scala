@@ -8,8 +8,10 @@ package scala.tools.nsc
 
 import java.io.File
 
+import scala.concurrent.SyncVar
+
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
-import scala.tools.nsc.util.FakePos //{Position}
+import scala.tools.nsc.util.{ BatchSourceFile, FakePos } //{Position}
 
 /** The main class for NSC, a compiler for the programming
  *  language Scala.
@@ -46,6 +48,23 @@ object Main extends AnyRef with EvalLoop {
     val command = new CompilerCommand(args.toList, settings, error, false)
     if (command.settings.version.value)
       reporter.info(null, versionMsg, true)
+    else if (command.settings.Yidedebug.value) {
+      val compiler = new interactive.Global(command.settings, reporter)
+      import compiler._
+      for (file <- command.files) {
+        val sf = getSourceFile(file)
+        var cu = unitOf(sf)
+        val reloaded = new SyncVar[Either[Unit, Throwable]]
+        askReload(List(sf), reloaded)
+        reloaded.get.right.toOption match {
+          case Some(thr) => logError("Failure in presentation compiler", thr)
+          case _ =>
+        }
+        cu = unitOf(sf)
+        val tree = cu.body
+        treePrinters.create(System.out).print(tree)
+      }
+    }
     else {
       if (command.settings.target.value == "msil") {
         val libpath = System.getProperty("msil.libpath")
