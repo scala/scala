@@ -229,44 +229,63 @@ self: nsc.Global =>
   // ---------------- Validating positions ----------------------------------
 
   override def validatePositions(tree: Tree) {
-    def error(msg: String) {
-      inform("**** bad positions:")
-      inform(msg)
-      inform("================= in =================")
+    def reportTree(prefix : String, tree : Tree) {
+      val source = tree.pos.source match {
+        case Some(sf) => " in file "+sf
+        case None => ""
+      }
+
+      inform("== "+prefix+" tree ["+tree.id+"] of type "+tree.productPrefix+" at "+tree.pos.show+source)
+      inform("")
       inform(tree.toString)
+      inform("")
+    }
+
+    def error(msg: String)(body : => Unit) {
+      inform("======= Bad positions: "+msg)
+      inform("")
+      body
+      inform("=== While validating")
+      inform("")
+      inform(tree.toString)
+      inform("")
+      inform("=======")
       throw new ValidateError(msg)
     }
-    def validate(tree: Tree, encltree: Tree): Unit = try {
+
+    def validate(tree: Tree, encltree: Tree): Unit = {
       if (!tree.isEmpty) {
         if (!tree.pos.isDefined)
-          error("tree without position["+tree.id+"]:"+tree)
+          error("Unpositioned tree ["+tree.id+"]") { reportTree("Unpositioned", tree) }
         if (!tree.pos.isSynthetic) {
           if (encltree.pos.isSynthetic)
-            error("synthetic "+encltree+" contains nonsynthetic["+tree.id+"] " + tree)
+            error("Synthetic tree ["+encltree.id+"] contains nonsynthetic tree ["+tree.id+"]") {
+            reportTree("Enclosing", encltree)
+            reportTree("Enclosed", tree)
+            }
           if (!(encltree.pos includes tree.pos))
-            error(encltree+" does not include "+tree)
+            error("Enclosing tree ["+encltree.id+"] does not include tree ["+tree.id+"]") {
+              reportTree("Enclosing", encltree)
+              reportTree("Enclosed", tree)
+            }
+
           findOverlapping(tree.children flatMap solidDescendants) match {
             case List() => ;
             case xs => {
-              for((x, y) <- xs) {
-                println("Overlapping tree x: "+x.pos+" "+x.getClass.getName)
-                println(x)
-                println("Overlapping tree y: "+y.pos+" "+y.getClass.getName)
-                println(y)
+              error("Overlapping trees "+xs.map { case (x, y) => (x.id, y.id) }.mkString("", ", ", "")) {
+                reportTree("Ancestor", tree)
+                for((x, y) <- xs) {
+                  reportTree("First overlapping", x)
+                  reportTree("Second overlapping", y)
+                }
               }
-              println("Ancestor: "+tree.getClass.getName)
-
-              error("overlapping trees: "+xs)
             }
           }
         }
         for (ct <- tree.children flatMap solidDescendants) validate(ct, tree)
       }
-    } catch {
-      case ex: ValidateError =>
-        println("error while validating "+tree)
-      throw ex
     }
+
     validate(tree, tree)
   }
 

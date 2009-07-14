@@ -169,9 +169,11 @@ abstract class TreeBuilder {
                 Modifiers(FINAL), x, Nil,
                 Template(parents, self, NoMods, List(Nil), argss, stats, cpos.toSynthetic))
             }),
-          New(
-            Ident(x) setPos npos.toSynthetic,
-            List(Nil)) setPos npos
+          atPos(npos) {
+            New(
+              Ident(x) setPos npos.toSynthetic,
+              List(Nil))
+          }
         )
       }
     }

@@ -2291,7 +2291,8 @@ self =>
       if (parents.isEmpty)
         parents = List(scalaAnyRefConstr)
       if (mods.hasFlag(Flags.CASE)) parents = parents ::: List(productConstr)
-      atPos(tstart) {
+      val tstart0 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
+      atPos(tstart0) {
         Template(parents, self, constrMods, vparamss, argss, body, o2p(tstart).toSynthetic)
       }
     }
