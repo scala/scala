@@ -566,6 +566,9 @@ trait ParallelMatching extends ast.TreeDSL {
       }
 
       final def tree(): Tree = {
+        // Just a demo of breakIf
+        // Interpreter.breakIf(true, "lits" -> literals, "mixlit" -> this, literalMap)
+
         def bindVars(Tag: Int, orig: Bindings): Bindings = {
           def myBindVars(rest: List[(Int, List[Symbol])], bnd: Bindings): Bindings = rest match {
             case Nil => bnd

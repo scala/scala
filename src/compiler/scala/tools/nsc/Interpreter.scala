@@ -903,11 +903,37 @@ class Interpreter(val settings: Settings, out: PrintWriter)
 
 /** Utility methods for the Interpreter. */
 object Interpreter {
-  def breakIf(assertion: => Boolean, args: Any*): Unit =
+  object DebugParam {
+    implicit def tuple2debugparam[T](x: (String, T))(implicit m: scala.reflect.Manifest[T]): DebugParam[T] =
+      DebugParam(x._1, x._2)
+
+    implicit def any2debugparam[T](x: T)(implicit m: scala.reflect.Manifest[T]): DebugParam[T] =
+      DebugParam("p" + getCount(), x)
+
+    private var counter = 0
+    def getCount() = { counter += 1; counter }
+  }
+  case class DebugParam[T](name: String, param: T)(implicit m: scala.reflect.Manifest[T]) {
+    val manifest = m
+    val typeStr = {
+      val str = manifest.toString
+      // I'm sure there are more to be discovered...
+      val regexp1 = """(.*?)\[(.*)\]""".r
+      val regexp2str = """.*\.type#"""
+      val regexp2 = (regexp2str + """(.*)""").r
+
+      (str.replaceAll("""\n""", "")) match {
+        case regexp1(clazz, typeArgs) => "%s[%s]".format(clazz, typeArgs.replaceAll(regexp2str, ""))
+        case regexp2(clazz)           => clazz
+        case _                        => str
+      }
+    }
+  }
+  def breakIf(assertion: => Boolean, args: DebugParam[_]*): Unit =
     if (assertion) break(args.toList)
 
-  // start a repl binding supplied args to p1, p2, etc.
-  def break(args: List[Any]): Unit = {
+  // start a repl, binding supplied args
+  def break(args: List[DebugParam[_]]): Unit = {
     val intLoop = new InterpreterLoop
     intLoop.settings = new Settings(Console.println)
     intLoop.createInterpreter
@@ -916,7 +942,10 @@ object Interpreter {
     // rebind exit so people don't accidentally call System.exit by way of predef
     intLoop.interpreter.beQuietDuring {
       intLoop.interpreter.interpret("""def exit = println("Type :quit to resume program execution.")""")
-      println(intLoop.inject(args))
+      for (p <- args) {
+        intLoop.interpreter.bind(p.name, p.typeStr, p.param)
+        println("%s: %s".format(p.name, p.typeStr))
+      }
     }
     intLoop.repl()
     intLoop.closeInterpreter
