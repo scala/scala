@@ -7,6 +7,7 @@
 
 package scala.tools.nsc.util
 import scala.tools.nsc.io.{AbstractFile, VirtualFile}
+import scala.collection.mutable.ArrayBuffer
 import annotation.tailrec
 
 object SourceFile {
@@ -98,8 +99,33 @@ class BatchSourceFile(val file : AbstractFile, val content: Array[Char]) extends
       case x  => isLineBreakChar(x)
     }
 
+  private lazy val lineIndices: Array[Int] = {
+    val buf = new ArrayBuffer[Int]
+    buf += 0
+    for (i <- 0 until content.length) if (isLineBreak(i)) buf += i + 1
+    buf += content.length // sentinel, so that findLine below works smoother
+    buf.toArray
+  }
+
+  def lineToOffset(index : Int): Int = lineIndices(index)
+
+  private var lastLine = 0
+
+  def offsetToLine(offset: Int): Int = {
+    val lines = lineIndices
+    def findLine(lo: Int, hi: Int, mid: Int): Int =
+      if (offset < lines(mid)) findLine(lo, mid - 1, (lo + mid - 1) / 2)
+      else if (offset >= lines(mid + 1)) findLine(mid + 1, hi, (mid + 1 + hi) / 2)
+      else mid
+    lastLine = findLine(0, lines.length, lastLine)
+    lastLine
+  }
+
+/**
+
   // An array which maps line numbers (counting from 0) to char offset into content
   private lazy val lineIndices: Array[Int] = {
+
     val xs = content.indices filter isLineBreak map (_ + 1) toArray
     val arr = new Array[Int](xs.length + 1)
     arr(0) = 0
@@ -125,6 +151,8 @@ class BatchSourceFile(val file : AbstractFile, val content: Array[Char]) extends
 
   def lineToOffset(index : Int): Int = lineIndices(index)
   def offsetToLine(offset: Int): Int = lineIndicesRev(offset)
+
+  */
 }
 
 /** A source file composed of multiple other source files.
