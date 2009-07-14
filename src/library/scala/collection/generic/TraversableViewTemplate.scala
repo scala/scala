@@ -19,6 +19,12 @@ import TraversableView.NoBuilder
  *    target="contentFrame"><code>Traversable</code></a>.<br/>
  *    Every subclass has to implement the <code>foreach</code> method.
  *  </p>
+ *  @note Methods such as map/flatMap on this will not invoke the implicitly passed
+ *        Builder factory, but will return a new view directly, to preserve by-name behavior.
+ *        The new view is then cast to the factory's result type.
+ *        This means that every BuilderFactory that takes a
+ *        View as its From type parameter must yield the same view (or a generic superclass of it)
+ *        as its result parameter. If that assumption is broken, cast errors might result.
  *
  *  @author Martin Odersky
  *  @version 2.8
@@ -136,23 +142,26 @@ self =>
   protected def newTakenWhile(p: A => Boolean): Transformed[A] = new TakenWhile { val pred = p }
 
   override def ++[B >: A, That](that: Traversable[B])(implicit bf: BuilderFactory[B, That, This]): That = {
-    val b = bf(thisCollection)
-    if (b.isInstanceOf[NoBuilder[_]]) newAppended(that).asInstanceOf[That]
-    else super.++[B, That](that)(bf)
+    newAppended(that).asInstanceOf[That]
+// was:    val b = bf(thisCollection)
+//     if (b.isInstanceOf[NoBuilder[_]]) newAppended(that).asInstanceOf[That]
+//    else super.++[B, That](that)(bf)
   }
 
   override def ++[B >: A, That](that: Iterator[B])(implicit bf: BuilderFactory[B, That, This]): That = ++[B, That](that.toStream)
 
   override def map[B, That](f: A => B)(implicit bf: BuilderFactory[B, That, This]): That = {
-    val b = bf(thisCollection)
-    if (b.isInstanceOf[NoBuilder[_]]) newMapped(f).asInstanceOf[That]
-    else super.map[B, That](f)(bf)
+    newMapped(f).asInstanceOf[That]
+// was:        val b = bf(thisCollection)
+//          if (b.isInstanceOf[NoBuilder[_]]) newMapped(f).asInstanceOf[That]
+//    else super.map[B, That](f)(bf)
   }
 
   override def flatMap[B, That](f: A => Traversable[B])(implicit bf: BuilderFactory[B, That, This]): That = {
-    val b = bf(thisCollection)
-    if (b.isInstanceOf[NoBuilder[_]]) newFlatMapped(f).asInstanceOf[That]
-    else super.flatMap[B, That](f)(bf)
+    newFlatMapped(f).asInstanceOf[That]
+// was:    val b = bf(thisCollection)
+//     if (b.isInstanceOf[NoBuilder[_]]) newFlatMapped(f).asInstanceOf[That]
+//    else super.flatMap[B, That](f)(bf)
   }
 
   override def filter(p: A => Boolean): This = newFiltered(p).asInstanceOf[This]
