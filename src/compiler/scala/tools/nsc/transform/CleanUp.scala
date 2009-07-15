@@ -345,6 +345,14 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           }
         }
 
+        def boxArray(t: Tree) = {
+          val sym = currentOwner.newValue(ad.pos, mkTerm()) setInfo ObjectClass.tpe
+          BLOCK(
+            VAL(sym) === t,
+            IF (NULL ANY_== REF(sym)) THEN NULL ELSE gen.mkRuntimeCall(nme.boxArray, List(REF(sym)))
+          )
+        }
+
         /* ### BOXING PARAMS & UNBOXING RESULTS ### */
 
         /* Transforms the result of a reflective call (always an AnyRef) to
@@ -358,52 +366,49 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
          *   is enough even for value (int et al.) values as the result of
          *   a dynamic call will box them as a side-effect. */
         def fixResult(resType: Type)(tree: Tree): Tree = localTyper typed {
-          def boxArray = {
-            val sym = currentOwner.newValue(ad.pos, mkTerm()) setInfo ObjectClass.tpe
-            BLOCK(
-              VAL(sym) === tree,
-              IF (NULL ANY_== REF(sym)) THEN NULL ELSE gen.mkRuntimeCall(nme.boxArray, List(REF(sym)))
-            )
-          }
           resType.typeSymbol match {
             case UnitClass    => BLOCK(tree, REF(BoxedUnit_UNIT))
-            case ArrayClass   => boxArray
+            case ArrayClass   => boxArray(tree)
             case ObjectClass  => tree
             case _            => tree AS_ATTR resType
           }
         }
 
         /* Transforms the parameters of a dynamic apply (always AnyRefs) to
-         * something compatible with reclective calls. The transformation depends
+         * something compatible with reflective calls. The transformation depends
          * on the method's static parameter types.
          * - for (unboxed) arrays, the (non-null) value is tested for its erased
          *   type. If it is a boxed array, the array is unboxed. If it is an
-         *   unboxed array, it is left alone. */
-        def fixParams(params: List[Tree], paramTypes: List[Type]): List[Tree] =
-          for ((param, paramType) <- params zip paramTypes) yield {
-            localTyper typed {
-              if (paramType.typeSymbol == ArrayClass) {
-                val sym = currentOwner.newValue(ad.pos, mkTerm()) setInfo ObjectClass.tpe
-                assert(paramType.typeArgs.length == 1)
-                val arrayType = paramType.typeArgs(0).normalize
-                lazy val unboxMethod = getMember(BoxedArrayClass, nme.unbox)
+         *   unboxed array, it is left alone - except that for varargs in structural
+         *   types to work properly, if the parameter is an Array and the parameter
+         *   type a Seq, it is routed through the boxed logic. */
+        def fixParams(params: List[Tree], paramTypes: List[Type]): List[Tree] = {
+          def doUnboxedArray(param: Tree, paramType: Type) = {
+            val sym = currentOwner.newValue(ad.pos, mkTerm()) setInfo ObjectClass.tpe
+            assert(paramType.typeArgs.length == 1)
+            val arrayType = paramType.typeArgs(0).normalize
+            lazy val unboxMethod = getMember(BoxedArrayClass, nme.unbox)
 
-                BLOCK(
-                  VAL(sym) === param,
-                  IF (NULL ANY_== REF(sym)) .
-                    THEN (NULL) .
-                  ELSE (
-                    IF (REF(sym) IS_OBJ BoxedArrayClass.tpe) .
-                      THEN (((REF(sym) AS_ATTR BoxedArrayClass.tpe) DOT unboxMethod)(LIT(arrayType)))
-                    ELSE
-                      REF(sym)
-                  )
-                )
-              }
-              else
-                param
+            BLOCK(
+              VAL(sym) === param,
+              IF (NULL ANY_== REF(sym)) .
+                THEN (NULL) .
+              ELSE (
+                IF (REF(sym) IS_OBJ BoxedArrayClass.tpe) .
+                  THEN (((REF(sym) AS_ATTR BoxedArrayClass.tpe) DOT unboxMethod)(LIT(arrayType)))
+                ELSE
+                  REF(sym)
+              )
+            )
+          }
+          for ((param, paramType) <- params zip paramTypes) yield localTyper typed {
+            (param.tpe, paramType.typeSymbol) match {
+              case (_, ArrayClass)                        => doUnboxedArray(param, paramType)
+              case (TypeRef(_, ArrayClass, _), SeqClass)  => boxArray(param)  // ticket #1141
+              case _                                      => param
             }
           }
+        }
 
         /* ### CALLING THE APPLY -> one for operators (see above), one for normal methods ### */
         def callAsOperator(paramTypes: List[Type], resType: Type): Tree = localTyper typed {
