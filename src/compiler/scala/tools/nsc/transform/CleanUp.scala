@@ -408,7 +408,14 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         /* ### CALLING THE APPLY -> one for operators (see above), one for normal methods ### */
         def callAsOperator(paramTypes: List[Type], resType: Type): Tree = localTyper typed {
           def default = callAsMethod(paramTypes, resType)
-          if (getPrimitiveReplacementForStructuralCall isDefinedAt ad.symbol.name) {
+          // This is more indirect than it should be (and I don't think it spots every
+          // case either) but it's the most direct way I could see to address ticket #1110
+          // given the information available from this vantage.
+          def useOperator =
+            (getPrimitiveReplacementForStructuralCall isDefinedAt ad.symbol.name) &&
+            ((resType :: paramTypes) forall (x => isValueClass(x.typeSymbol)))
+
+          if (useOperator) {
             val (operator, test)  = getPrimitiveReplacementForStructuralCall(ad.symbol.name)
             def args              = qual :: fixParams(params, paramTypes)
 
