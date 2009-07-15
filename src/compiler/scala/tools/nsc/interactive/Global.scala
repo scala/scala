@@ -4,6 +4,7 @@ import java.io.{ PrintWriter, StringWriter }
 
 import scala.collection.mutable.{LinkedHashMap, SynchronizedMap}
 import scala.concurrent.SyncVar
+import scala.util.control.ControlException
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{SourceFile, Position, RangePosition, OffsetPosition, NoPosition, WorkScheduler}
 import scala.tools.nsc.reporters._
@@ -77,11 +78,19 @@ self =>
         throw new TyperResult(located)
       }
       val typerRun = currentTyperRun
-      pollForWork()
-      if (typerRun != currentTyperRun) {
-        integrateNew()
-        throw new FreshRunReq
-      }
+
+      while(true)
+        try {
+          pollForWork()
+          if (typerRun == currentTyperRun)
+            return
+
+          integrateNew()
+          throw new FreshRunReq
+        } catch {
+          case ex : ValidateError => // Ignore, this will have been reported elsewhere
+          case t : Throwable => throw t
+        }
     }
   }
 
@@ -421,9 +430,8 @@ self =>
     }
   }
 
-  class TyperResult(val tree: Tree) extends Exception
+  class TyperResult(val tree: Tree) extends Exception with ControlException
 
   assert(globalPhase.id == 0)
-
 }
 

@@ -44,5 +44,5 @@ class Breaks {
 /** A singleton object providing the Break functionality */
 object Breaks extends Breaks
 
-private class BreakException extends RuntimeException
+private class BreakException extends RuntimeException with ControlException
 

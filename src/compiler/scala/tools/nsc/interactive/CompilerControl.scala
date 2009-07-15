@@ -1,6 +1,7 @@
 package scala.tools.nsc.interactive
 
 import scala.concurrent.SyncVar
+import scala.util.control.ControlException
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{SourceFile, Position, WorkScheduler}
 import scala.tools.nsc.symtab._
@@ -104,8 +105,8 @@ trait CompilerControl { self: Global =>
 
   // ---------------- Interpreted exeptions -------------------
 
-  class CancelActionReq extends Exception
-  class FreshRunReq extends Exception
-  class ShutdownReq extends Exception
+  class CancelActionReq extends Exception with ControlException
+  class FreshRunReq extends Exception with ControlException
+  class ShutdownReq extends Exception with ControlException
 
 }

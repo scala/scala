@@ -11,6 +11,7 @@
 package scala.actors
 
 import scala.compat.Platform
+import scala.util.control.ControlException
 import java.util.{Timer, TimerTask}
 import java.util.concurrent.ExecutionException
 
@@ -881,7 +882,7 @@ case class Exit(from: AbstractActor, reason: AnyRef)
  * @version 0.9.8
  * @author Philipp Haller
  */
-private[actors] class SuspendActorException extends Throwable {
+private[actors] class SuspendActorException extends Throwable with ControlException {
   /*
    * For efficiency reasons we do not fill in
    * the execution stack trace.

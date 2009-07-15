@@ -11,9 +11,10 @@
 
 package scala.actors
 
+import scala.util.control.ControlException
 import java.lang.{InterruptedException, Runnable}
 
-private[actors] class KillActorException extends Throwable {
+private[actors] class KillActorException extends Throwable with ControlException {
   /*
    * For efficiency reasons we do not fill in
    * the execution stack trace.

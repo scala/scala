@@ -10,6 +10,7 @@
 
 package scala.actors
 
+import scala.util.control.ControlException
 import java.lang.{Runnable, Thread, InterruptedException}
 
 /**
@@ -95,7 +96,7 @@ abstract class SchedulerService(daemon: Boolean) extends Thread with ActorGC {
  * @version 0.9.8
  * @author Philipp Haller
  */
-private[actors] class QuitException extends Throwable {
+private[actors] class QuitException extends Throwable with ControlException {
   /*
    For efficiency reasons we do not fill in
    the execution stack trace.
