@@ -5,13 +5,26 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+
+// $Id$
+
+
 package scala
 
-/** A marker trait for data structures that cannot be hashed, for instance
- *  because they are mutable and at the same time support structural equaality, so hashing them
- *  would lead to unpredictable results.
- *  Such data structures have `hashCode` throw an UnsupportedOperationException. They retain
- *  the original object hashcode with `identityHashCode`.
+/** <p>
+ *    A marker trait for data structures that cannot be hashed, for instance
+ *    because they are mutable and at the same time support structural
+ *    equality, so hashing them would lead to unpredictable results.
+ *  </p>
+ *  <p>
+ *    Such data structures have <code>hashCode</code> throw an <a href=""
+ *    target="contentFrame" class="java/lang/UnsupportedOperationException">
+ *    <code>java.lang.UnsupportedOperationException</code></a>. They retain
+ *    the original object hashcode with <code>identityHashCode</code>.
+ *  </p>
+ *
+ *  @author  Martin Odersky
+ *  @version 1.0
  */
 trait Unhashable extends Object {
 

@@ -5,18 +5,24 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+
+// $Id: $
+
+
 package scala.util
 
-/** A convenience trait for simplifying hashCode creation.
- *  Mix this into a class and define val hashValues = Seq(x1, x2, ...)
- *  and your hashCode will be derived from those values.  If you define
- *  equals in terms of equalHashValues then your hashCode and equals
- *  methods will never be out of sync.  Something like:
- *
- *  override def equals(other: Any) = other match {
- *    case x: YourClass => this equalHashValues x
- *    case _            => false
- *  }
+/** <p>
+ *    A convenience trait for simplifying hashCode creation.
+ *    Mix this into a class and define <code>val hashValues = Seq(x1, x2, ...)</code>
+ *    and your <code>hashCode</code> will be derived from those values.
+ *    If you define <code>equals</code> in terms of <code>equalHashValues</code>
+ *    then your <code>hashCode</code> and <code>equals</code> methods will
+ *    never be out of sync.  Something like:
+ *  </p><pre>
+ *    <b>override def</b> equals(other: Any) = other <b>match</b> {
+ *      <b>case</b> x: YourClass => <b>this</b> equalHashValues x
+ *      <b>case</b> _            => <b>false</b>
+ *    }</pre>
  *
  * @author Paul Phillips
  */
@@ -53,3 +59,4 @@ object Hashable
     case x          => x.asInstanceOf[AnyRef].hashCode
   }
 }
+
