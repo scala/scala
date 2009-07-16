@@ -74,7 +74,7 @@ class Names {
     while (i < len) {
       if (nc + i == chrs.length) {
         val newchrs = new Array[Char](chrs.length * 2)
-        Array.copy(chrs, 0, newchrs, 0, chrs.length)
+        compat.Platform.arraycopy(chrs, 0, newchrs, 0, chrs.length)
         chrs = newchrs
       }
       chrs(nc + i) = cs(offset + i)
@@ -208,7 +208,7 @@ class Names {
      *  @param offset ...
      */
     final def copyChars(cs: Array[Char], offset: Int) =
-      Array.copy(chrs, index, cs, offset, len)
+      compat.Platform.arraycopy(chrs, index, cs, offset, len)
 
     /** return the ascii representation of this name
      */

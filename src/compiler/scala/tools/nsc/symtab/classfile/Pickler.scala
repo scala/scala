@@ -109,7 +109,7 @@ abstract class Pickler extends SubComponent {
       case None =>
         if (ep == entries.length) {
           val entries1 = new Array[AnyRef](ep * 2)
-          Array.copy(entries, 0, entries1, 0, ep)
+          System.arraycopy(entries, 0, entries1, 0, ep)
           entries = entries1
         }
         entries(ep) = entry

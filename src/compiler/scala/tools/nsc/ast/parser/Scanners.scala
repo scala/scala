@@ -865,7 +865,7 @@ trait Scanners {
   protected def enterKeyword(n: Name, tokenId: Int) {
     while (tokenId >= keyName.length) {
       val newTokName = new Array[Name](keyName.length * 2)
-      Array.copy(keyName, 0, newTokName, 0, newTokName.length)
+      compat.Platform.arraycopy(keyName, 0, newTokName, 0, newTokName.length)
       keyName = newTokName
     }
     keyName(tokenId) = n

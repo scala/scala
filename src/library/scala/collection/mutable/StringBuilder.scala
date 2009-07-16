@@ -13,6 +13,7 @@ package scala.collection.mutable
 
 import collection.generic._
 import scala.runtime.RichString
+import compat.Platform.arraycopy
 
 /** <p>
  *    A mutable sequence of characters.  This class provides an API compatible
@@ -114,7 +115,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
       while (n > newsize)
         newsize = newsize * 2
       val newar = new Array[Char](newsize)
-      Array.copy(array, 0, newar, 0, count)
+      arraycopy(array, 0, newar, 0, count)
       array = newar
     }
   }
@@ -156,7 +157,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
   def deleteCharAt(index: Int): StringBuilder = {
     if (index < 0 || index >= count)
       throw new StringIndexOutOfBoundsException(index)
-    compat.Platform.arraycopy(array, index + 1, array, index, count - index - 1)
+    arraycopy(array, index + 1, array, index, count - index - 1)
     count -= 1
     this
   }
@@ -271,7 +272,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
     else {
       val len = sb.length
       ensureCapacity(count + len)
-      compat.Platform.arraycopy(sb.toArray, 0, array, count, len)
+      arraycopy(sb.toArray, 0, array, count, len)
       count += len
       this
     }
@@ -336,7 +337,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    */
   def appendAll(x: Array[Char], offset: Int, len: Int): StringBuilder = {
     ensureCapacity(count + len)
-    compat.Platform.arraycopy(x, offset, array, count, len)
+    arraycopy(x, offset, array, count, len)
     count += len
     this
   }
@@ -403,7 +404,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
     val end0 = if (end > count) count else end
     val len = end0 - start
     if (len > 0) {
-      compat.Platform.arraycopy(array, start + len, array, start, count - end0)
+      arraycopy(array, start + len, array, start, count - end0)
       count -= len
     }
     this
@@ -433,7 +434,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
     val newCount = count + len - (end0 - start)
     ensureCapacity(newCount)
 
-    compat.Platform.arraycopy(array, end, array, start + len, count - end)
+    arraycopy(array, end, array, start + len, count - end)
     str.getChars(0, len, array, start)
     count = newCount
     this
@@ -467,8 +468,8 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
                 "offset " + offset + ", len " + len +
                 ", str.length " + str.length)
     ensureCapacity(count + len)
-    compat.Platform.arraycopy(array, index, array, index + len, count - index)
-    compat.Platform.arraycopy(str, offset, array, index, len)
+    arraycopy(array, index, array, index + len, count - index)
+    arraycopy(str, offset, array, index, len)
     count += len
     this
   }
@@ -515,7 +516,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
     val str = if (x == null) "null" else x
     val len = str.length
     ensureCapacity(count + len)
-    compat.Platform.arraycopy(array, at, array, at + len, count - at)
+    arraycopy(array, at, array, at + len, count - at)
     str.getChars(0, len, array, at)
     count += len
     this
@@ -550,8 +551,8 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
       throw new StringIndexOutOfBoundsException(at)
     val len = x.length
     ensureCapacity(count + len)
-    compat.Platform.arraycopy(array, at, array, at + len, count - at)
-    compat.Platform.arraycopy(x, 0, array, at, len)
+    arraycopy(array, at, array, at + len, count - at)
+    arraycopy(x, 0, array, at, len)
     count += len
     this
   }
@@ -610,7 +611,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
     if (at < 0 || at > count)
       throw new StringIndexOutOfBoundsException(at)
     ensureCapacity(count + 1)
-    compat.Platform.arraycopy(array, at, array, at + 1, count - at)
+    arraycopy(array, at, array, at + 1, count - at)
     array(at) = x
     count += 1
     this
@@ -868,7 +869,7 @@ object StringBuilder {
   // method <code>java.util.Arrays.copyOf</code> exists since 1.6
   private def copyOf(src: Array[Char], newLength: Int): Array[Char] = {
     val dest = new Array[Char](newLength)
-    compat.Platform.arraycopy(src, 0, dest, 0, Math.min(src.length, newLength))
+    arraycopy(src, 0, dest, 0, Math.min(src.length, newLength))
     dest
   }
 
