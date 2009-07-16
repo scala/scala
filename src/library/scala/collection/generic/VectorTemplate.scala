@@ -230,7 +230,10 @@ trait VectorTemplate[+A, +This <: VectorTemplate[A, This] with Vector[A]] extend
       var i = offset
       val thisLen = length
       val thatElems = that.iterator
-      while (i < thisLen && thatElems.hasNext && this(i) == thatElems.next()) {
+      while (i < thisLen && thatElems.hasNext) {
+        if (this(i) != thatElems.next())
+          return false
+
         i += 1
       }
       !thatElems.hasNext
