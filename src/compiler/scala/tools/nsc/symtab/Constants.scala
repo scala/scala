@@ -74,7 +74,7 @@ trait Constants {
      *  @return      ...
      */
     override def equals(other: Any): Boolean = other match {
-      case that: Constant => this.value == that.value && this.tag == that.tag
+      case that: Constant => this.tag == that.tag && this.value == that.value
       case _ => false
     }
 
