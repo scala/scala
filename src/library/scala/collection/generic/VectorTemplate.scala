@@ -238,15 +238,18 @@ trait VectorTemplate[+A, +This <: VectorTemplate[A, This] with Vector[A]] extend
 
   override def endsWith[B](that: Sequence[B]): Boolean = that match {
     case that: Vector[_] =>
-      val thisLen = length
-      val thatLen = that.length
-      var i = thisLen - 1
-      var j = thatLen - 1
-      while (i >= 0 && j >= 0 && this(i) == that(j)) {
-        i -= 1
-        j -= 1
+      var i = length - 1
+      var j = that.length - 1
+
+      (j <= i) && {
+        while (j >= 0) {
+          if (this(i) != that(j))
+            return false
+          i -= 1
+          j -= 1
+        }
+        true
       }
-      j == 0
     case _ =>
       super.endsWith(that)
   }
