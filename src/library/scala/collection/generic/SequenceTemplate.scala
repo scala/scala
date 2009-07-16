@@ -479,7 +479,10 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
     case that1: Sequence[a] =>
       val these = this.iterator
       val those = that1.iterator
-      while (these.hasNext && those.hasNext && these.next() == those.next()) {}
+      while (these.hasNext && those.hasNext)
+        if (these.next() != those.next())
+          return false
+
       !these.hasNext && !those.hasNext
     case _ =>
       false
