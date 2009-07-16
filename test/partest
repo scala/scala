@@ -45,7 +45,7 @@ fi
 EXT_CLASSPATH=""
 if [ -z "$EXT_CLASSPATH" ] ; then
     if [ -f "$SCALA_HOME/lib/scala-partest.jar" ] ; then
-        for ext in `ls -d "$SCALA_HOME"/lib/*` ; do
+        for ext in "$SCALA_HOME"/lib/* ; do
             if [ -z "$EXT_CLASSPATH" ] ; then
                 EXT_CLASSPATH="$ext"
             else

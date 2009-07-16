@@ -41,7 +41,7 @@ fi
 # Constructing the extension classpath
 TOOL_CLASSPATH="@classpath@"
 if [ -z "$TOOL_CLASSPATH" ] ; then
-    for ext in `ls -d "$SCALA_HOME"/lib/*` ; do
+    for ext in "$SCALA_HOME"/lib/* ; do
         if [ -z "$TOOL_CLASSPATH" ] ; then
             TOOL_CLASSPATH="$ext"
         else
