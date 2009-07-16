@@ -354,7 +354,7 @@ abstract class TreeBuilder {
                         makeFor(mapName, flatMapName, rest, body))
       case ValFrom(pos, pat, rhs) :: Filter(_, test) :: rest =>
         makeFor(mapName, flatMapName,
-                ValFrom(pos, pat, makeCombination(r2p(rhs.pos.start, pos.point, test.pos.end), nme.filter, rhs, pat.syntheticDuplicate, test)) :: rest,
+                ValFrom(pos, pat, makeCombination(rhs.pos union test.pos, nme.filter, rhs, pat.syntheticDuplicate, test)) :: rest,
                 body)
       case ValFrom(pos, pat, rhs) :: rest =>
         val valeqs = rest.take(definitions.MaxTupleArity - 1).takeWhile(_.isInstanceOf[ValEq]);

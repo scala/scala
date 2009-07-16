@@ -74,9 +74,11 @@ abstract class TreePrinters {
     def printParam(tree: Tree) {
       tree match {
         case ValDef(mods, name, tp, rhs) =>
+          if (settings.Xprintpos.value) print(tree.pos.show)
           printAnnotations(tree)
           print(symName(tree, name)); printOpt(": ", tp); printOpt(" = ", rhs)
         case TypeDef(mods, name, tparams, rhs) =>
+          if (settings.Xprintpos.value) print(tree.pos.show)
           print(symName(tree, name))
           printTypeParams(tparams); print(rhs)
       }

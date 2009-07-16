@@ -144,7 +144,7 @@ self =>
     treePrinters.create(pw).print(tree)
     pw.flush
 
-    val typed = new SyncVar[Either[Tree, Throwable]]
+    val typed = new Response[Tree]
     askTypeAt(pos, typed)
     val typ = typed.get.left.toOption match {
       case Some(tree) =>
@@ -156,7 +156,16 @@ self =>
       case None => "<None>"
     }
 
-    source.content.view.drop(start).take(length).mkString+" : "+source.path+" ("+start+", "+end+")\n\nlocateTree:\n"+sw.toString+"\n\naskTypeAt:\n"+typ
+    val completionResponse = new Response[List[Member]]
+    askCompletion(pos, completionResponse)
+    val completion = completionResponse.get.left.toOption match {
+      case Some(members) =>
+        members mkString "\n"
+      case None => "<None>"
+    }
+
+    source.content.view.drop(start).take(length).mkString+" : "+source.path+" ("+start+", "+end+
+    ")\n\nlocateTree:\n"+sw.toString+"\n\naskTypeAt:\n"+typ+"\n\ncompletion:\n"+completion
   }
 
   // ----------------- The Background Runner Thread -----------------------
@@ -325,6 +334,7 @@ self =>
               s.tree.symbol
             )}
           }
+          println("completion at "+tree+" "+tree.tpe)
           val decls = tree.tpe.decls.toList map (member(_, false))
           val inherited = tree.tpe.members.toList diff decls map (member(_, true))
           val implicits = applicableViews(tree, context) flatMap implicitMembers

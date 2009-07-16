@@ -298,15 +298,16 @@ self =>
         syntaxError(in.offset, msg, skipIt)
     }
 
+    def expectedMsg(token: Int): String =
+      token2string(token) + " expected but " +token2string(in.token) + " found."
+
     /** Consume one token of the specified type, or
       * signal an error if it is not there.
       */
     def accept(token: Int): Int = {
       val offset = in.offset
       if (in.token != token) {
-        val msg =
-          token2string(token) + " expected but " +token2string(in.token) + " found."
-        syntaxErrorOrIncomplete(msg, true)
+        syntaxErrorOrIncomplete(expectedMsg(token), false)
         if ((token == RPAREN || token == RBRACE || token == RBRACKET))
           if (in.parenBalance(token) + assumedClosingParens(token) < 0)
             assumedClosingParens(token) += 1
@@ -543,20 +544,22 @@ self =>
 
 /* -------- IDENTIFIERS AND LITERALS ------------------------------------------- */
 
-    def ident(): Name =
+    def ident(skipIt: Boolean): Name =
       if (in.token == IDENTIFIER || in.token == BACKQUOTED_IDENT) {
         val name = in.name.encode
         in.nextToken()
         name
       } else {
-        accept(IDENTIFIER)
+        syntaxErrorOrIncomplete(expectedMsg(IDENTIFIER), skipIt)
         nme.ERROR
       }
+
+    def ident(): Name = ident(true)
 
     def selector(t: Tree): Tree = {
       val point = in.offset
       //assert(t.pos.isDefined, t)
-      Select(t, ident()) setPos r2p(t.pos.start, point, in.lastOffset)
+      Select(t, ident(false)) setPos r2p(t.pos.start, point, in.lastOffset)
     }
 
     /** Path       ::= StableId
@@ -848,7 +851,7 @@ self =>
       if (in.token == HASH) {
         val hashOffset = in.skipToken()
         val nameOffset = in.offset
-        val name = ident()
+        val name = ident(false)
         val sel = atPos(t.pos.start, if (name == nme.ERROR) hashOffset else nameOffset) {
           SelectFromTypeTree(t, name.toTypeName)
         }
