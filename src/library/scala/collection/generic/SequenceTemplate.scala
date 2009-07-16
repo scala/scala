@@ -506,7 +506,10 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
   def equalsWith[B](that: Sequence[B])(f: (A,B) => Boolean): Boolean = {
     val i = this.iterator
     val j = that.iterator
-    while (i.hasNext && j.hasNext && f(i.next, j.next)) ()
+    while (i.hasNext && j.hasNext)
+      if (!f(i.next, j.next))
+        return false
+
     !i.hasNext && !j.hasNext
   }
 
