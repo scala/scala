@@ -257,13 +257,6 @@ trait VectorTemplate[+A, +This <: VectorTemplate[A, This] with Vector[A]] extend
       super.endsWith(that)
   }
 
-  override def indexOfSeq[B >: A](that: Sequence[B]): Int = {
-    var i = 0
-    val last = length - that.length
-    while (i <= last && !startsWith(that, i)) i += 1
-    negLength(i)
-  }
-
   override def equals(that: Any): Boolean = that match {
     case that1: Vector[a] =>
       val len = this.length
