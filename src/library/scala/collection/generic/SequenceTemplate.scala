@@ -314,8 +314,7 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
   }
 
   /** @return -1 if <code>that</code> not contained in this, otherwise the
-   *  index where <code>that</code> is contained
-   *  @see String.indexOf
+   *  first index where <code>that</code> is contained.
    */
   def indexOfSeq[B >: A](that: Sequence[B]): Int = indexOfSeq(that, 0)
 
@@ -335,6 +334,16 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
       -1
     }
 
+  /** @return -1 if <code>that</code> not contained in this, otherwise the
+  *  last index where <code>that</code> is contained.
+  *  @note may not terminate for infinite-sized collections.
+  */
+  def lastIndexOfSeq[B >: A](that: Sequence[B]): Int = lastIndexOfSeq(that, that.length)
+
+  // since there's no way to find the last index in an infinite sequence,
+  // we just document it may not terminate and assume it will.
+  def lastIndexOfSeq[B >: A](that: Sequence[B], fromIndex: Int): Int =
+    lastIndexOf_KMP(thisCollection, 0, length, that, 0, that.length, fromIndex)
 
   /** Tests if the given value <code>elem</code> is a member of this
    *  sequence.
@@ -492,7 +501,7 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
   private def KMP[B](S: Seq[B], W: Seq[B]): Option[Int] = {
     // trivial cases
     if (W.isEmpty) return Some(0)
-    else if (W drop 1 isEmpty) return S.indexOf(W(0)) match {
+    else if (W drop 1 isEmpty) return (S indexOf W(0)) match {
       case -1 => None
       case x  => Some(x)
     }
@@ -558,7 +567,6 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
         case Some(x)  => (src.length - tgt.length - x) + sourceOffset
       }
     }
-
 
   override def equals(that: Any): Boolean = that match {
     case that1: Sequence[a] =>
