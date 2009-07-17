@@ -320,7 +320,7 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
   def indexOfSeq[B >: A](that: Sequence[B]): Int = indexOfSeq(that, 0)
 
   def indexOfSeq[B >: A](that: Sequence[B], fromIndex: Int): Int =
-    if (that.hasDefiniteSize)
+    if (thisCollection.hasDefiniteSize && that.hasDefiniteSize)
       indexOf_KMP(thisCollection, 0, length, that, 0, that.length, fromIndex)
     else {
       var i = fromIndex
