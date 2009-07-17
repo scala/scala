@@ -12,7 +12,6 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="lib1" level="project" />
     <orderEntry type="module" module-name="actors" />
     <orderEntry type="module" module-name="compiler" />
     <orderEntry type="module" module-name="dbc" />
@@ -20,6 +19,9 @@
     <orderEntry type="module" module-name="partest" />
     <orderEntry type="module" module-name="scalap" />
     <orderEntry type="module" module-name="swing" />
+    <orderEntry type="library" name="Project ant library" level="project" />
+    <orderEntry type="library" name="Project Scala SDK" level="project" />
+    <orderEntry type="library" name="ant" level="application" />
   </component>
 </module>
 

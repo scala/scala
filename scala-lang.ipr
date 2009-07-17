@@ -6,7 +6,7 @@
       <additionalClassPath />
       <antReference projectDefault="true" />
       <customJdkName value="" />
-      <maximumHeapSize value="1024" />
+      <maximumHeapSize value="128" />
       <maximumStackSize value="32" />
       <properties />
     </buildFile>
@@ -1180,11 +1180,12 @@
         <option name="myLocal" value="false" />
       </profile>
     </profiles>
-    <list size="4">
-      <item index="0" class="java.lang.String" itemvalue="SERVER PROBLEM" />
-      <item index="1" class="java.lang.String" itemvalue="INFO" />
-      <item index="2" class="java.lang.String" itemvalue="WARNING" />
-      <item index="3" class="java.lang.String" itemvalue="ERROR" />
+    <list size="5">
+      <item index="0" class="java.lang.String" itemvalue="MISSPELLED" />
+      <item index="1" class="java.lang.String" itemvalue="SERVER PROBLEM" />
+      <item index="2" class="java.lang.String" itemvalue="INFO" />
+      <item index="3" class="java.lang.String" itemvalue="WARNING" />
+      <item index="4" class="java.lang.String" itemvalue="ERROR" />
     </list>
   </component>
   <component name="JavacSettings">
@@ -1377,7 +1378,7 @@
     <option name="ADDITIONAL_OPTIONS_STRING" value="" />
   </component>
   <component name="ScalacSettings">
-    <option name="MAXIMUM_HEAP_SIZE" value="512" />
+    <option name="MAXIMUM_HEAP_SIZE" value="1024" />
     <option name="DEPRECATION" value="false" />
     <option name="UNCHECKED" value="false" />
   </component>
@@ -1385,6 +1386,19 @@
     <option name="myConfigurationMap">
       <map>
         <entry key="$PROJECT_DIR$">
+          <value>
+            <SvnBranchConfiguration>
+              <option name="branchUrls">
+                <list>
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
+                </list>
+              </option>
+              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
+            </SvnBranchConfiguration>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/bin">
           <value>
             <SvnBranchConfiguration>
               <option name="branchUrls">
@@ -1487,30 +1501,17 @@
   </component>
   <component name="WebServicesPlugin" addRequiredLibraries="true" />
   <component name="libraryTable">
-    <library name="ant">
+    <library name="Project ant library">
       <CLASSES>
         <root url="jar://$PROJECT_DIR$/lib/ant/ant-contrib.jar!/" />
         <root url="jar://$PROJECT_DIR$/lib/ant/vizant.jar!/" />
         <root url="jar://$PROJECT_DIR$/lib/ant/maven-ant-tasks-2.0.9.jar!/" />
         <root url="jar://$PROJECT_DIR$/lib/ant/ant-dotnet-1.0.jar!/" />
-        <root url="jar:///Users/ilya/work/perforce/IDEA/lib/ant/lib/ant.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
     </library>
-    <library name="lib">
-      <CLASSES>
-        <root url="jar://$PROJECT_DIR$/test/files/lib/enums.jar!/" />
-        <root url="jar://$PROJECT_DIR$/test/files/lib/ScalaCheck.jar!/" />
-        <root url="jar://$PROJECT_DIR$/test/files/lib/nest.jar!/" />
-        <root url="jar://$PROJECT_DIR$/test/files/lib/genericNest.jar!/" />
-        <root url="jar://$PROJECT_DIR$/test/files/lib/annotations.jar!/" />
-        <root url="jar://$PROJECT_DIR$/test/files/lib/methvsfield.jar!/" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES />
-    </library>
-    <library name="lib1">
+    <library name="Project Scala SDK">
       <CLASSES>
         <root url="jar://$PROJECT_DIR$/lib/scala-library.jar!/" />
         <root url="jar://$PROJECT_DIR$/lib/jline.jar!/" />
@@ -1520,22 +1521,6 @@
         <root url="jar://$PROJECT_DIR$/lib/ScalaCheck.jar!/" />
         <root url="jar://$PROJECT_DIR$/lib/scala-library-src.jar!/" />
         <root url="jar://$PROJECT_DIR$/lib/msil.jar!/" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES />
-    </library>
-    <library name="mylib">
-      <CLASSES>
-        <root url="jar:///Users/ilya/work/scala-2.7.4.final/lib/scala-library.jar!/" />
-        <root url="jar:///Users/ilya/work/scala-2.7.4.final/lib/scala-compiler.jar!/" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES />
-    </library>
-    <library name="testlib">
-      <CLASSES>
-        <root url="jar://$PROJECT_DIR$/dists/latest/lib/scalap.jar!/" />
-        <root url="jar://$PROJECT_DIR$/dists/latest/lib/scala-partest.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
