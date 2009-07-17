@@ -465,7 +465,7 @@ public class ForkJoinPool /*extends AbstractExecutorService*/ {
                 --last;
             int newLength = arraySizeFor(last+1);
             if (newLength < len)
-                workers = Arrays.copyOf(ws, newLength);
+                workers = copyOfWorkers(ws, newLength);
         }
     }
 
