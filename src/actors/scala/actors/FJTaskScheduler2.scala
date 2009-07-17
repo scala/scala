@@ -119,6 +119,9 @@ class FJTaskScheduler2(val initCoreSize: Int, val maxSize: Int, daemon: Boolean)
   def execute(task: Runnable): Unit =
     executor execute task
 
+  def executeFromActor(task: Runnable) =
+    execute(task)
+
   def execute(fun: => Unit): Unit =
     executor.execute(new Runnable {
       def run() { fun }

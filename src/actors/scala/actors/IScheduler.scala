@@ -35,6 +35,8 @@ trait IScheduler {
    */
   def execute(task: Runnable): Unit
 
+  def executeFromActor(task: Runnable): Unit
+
   /** Shuts down the scheduler.
    */
   def shutdown(): Unit

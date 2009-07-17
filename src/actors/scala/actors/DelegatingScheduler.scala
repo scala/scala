@@ -36,6 +36,8 @@ trait DelegatingScheduler extends IScheduler {
 
   def execute(task: Runnable) = impl.execute(task)
 
+  def executeFromActor(task: Runnable) = impl.executeFromActor(task)
+
   def shutdown(): Unit = synchronized {
     if (sched ne null) {
       sched.shutdown()

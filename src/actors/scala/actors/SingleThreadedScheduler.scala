@@ -23,6 +23,9 @@ class SingleThreadedScheduler extends IScheduler {
     task.run()
   }
 
+  def executeFromActor(task: Runnable) =
+    execute(task)
+
   def execute(fun: => Unit): Unit =
     execute(new Runnable {
       def run() { fun }

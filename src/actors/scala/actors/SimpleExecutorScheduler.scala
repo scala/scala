@@ -53,6 +53,9 @@ class SimpleExecutorScheduler(protected var executor: ExecutorService,
     }
   }
 
+  def executeFromActor(task: Runnable) =
+    execute(task)
+
   def onShutdown() {
     executor.shutdown()
   }

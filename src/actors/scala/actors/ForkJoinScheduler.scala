@@ -7,6 +7,8 @@ class ForkJoinScheduler extends Thread with IScheduler with TerminationMonitor {
 
   private val pool = {
     val p = new ForkJoinPool()
+    // enable locally FIFO scheduling mode
+    p.setAsyncMode(true)
     Debug.info(this+": parallelism "+p.getParallelism())
     Debug.info(this+": max pool size "+p.getMaximumPoolSize())
     p
@@ -54,14 +56,14 @@ class ForkJoinScheduler extends Thread with IScheduler with TerminationMonitor {
   }
 
   def execute(task: Runnable) {
+    pool.execute(task)
+  }
+
+  def executeFromActor(task: Runnable) {
     val recAction = new RecursiveAction {
       def compute() = task.run()
     }
-    val thread = Thread.currentThread()
-    if (thread.isInstanceOf[ForkJoinWorkerThread])
-      recAction.fork()
-    else
-      pool.execute(task)
+    recAction.fork()
   }
 
   /** Submits a closure for execution.

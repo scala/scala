@@ -17,8 +17,8 @@ import java.lang.reflect.*;
  * subclassable solely for the sake of adding functionality -- there
  * are no overridable methods dealing with scheduling or
  * execution. However, you can override initialization and termination
- * cleanup methods surrounding the main task processing loop.  If you
- * do create such a subclass, you will also need to supply a custom
+ * methods surrounding the main task processing loop.  If you do
+ * create such a subclass, you will also need to supply a custom
  * ForkJoinWorkerThreadFactory to use it in a ForkJoinPool.
  *
  */
@@ -199,6 +199,11 @@ public class ForkJoinWorkerThread extends Thread {
     long lastEventCount;
 
     /**
+     * True if use local fifo, not default lifo, for local polling
+     */
+    private boolean locallyFifo;
+
+    /**
      * Creates a ForkJoinWorkerThread operating in the given pool.
      * @param pool the pool this thread works in
      * @throws NullPointerException if pool is null
@@ -232,6 +237,14 @@ public class ForkJoinWorkerThread extends Thread {
         return poolIndex;
     }
 
+    /**
+     * Establishes local first-in-first-out scheduling mode for forked
+     * tasks that are never joined.
+     * @param async if true, use locally FIFO scheduling
+     */
+    void setAsyncMode(boolean async) {
+        locallyFifo = async;
+    }
 
     // Runstate management
 
@@ -392,7 +405,7 @@ public class ForkJoinWorkerThread extends Thread {
      */
     private static void setSlot(ForkJoinTask<?>[] q, int i,
                                 ForkJoinTask<?> t){
-//TR        _unsafe.putOrderedObject((Object)q, (i << qShift) + qBase, (Object)t);
+//TR        _unsafe.putOrderedObject(q, (i << qShift) + qBase, t);
         _unsafe.putObjectVolatile((Object)q, (i << qShift) + qBase, (Object)t);
     }
 
@@ -436,7 +449,7 @@ public class ForkJoinWorkerThread extends Thread {
      * either empty or contended.
      * @return a task, or null if none or contended.
      */
-    private ForkJoinTask<?> deqTask() {
+    final ForkJoinTask<?> deqTask() {
         ForkJoinTask<?> t;
         ForkJoinTask<?>[] q;
         int i;
@@ -490,11 +503,15 @@ public class ForkJoinWorkerThread extends Thread {
     }
 
     /**
-     * Returns next task to pop.
+     * Returns next task.
      */
     final ForkJoinTask<?> peekTask() {
         ForkJoinTask<?>[] q = queue;
-        return q == null? null : q[(sp - 1) & (q.length - 1)];
+        if (q == null)
+            return null;
+        int mask = q.length - 1;
+        int i = locallyFifo? base : (sp - 1);
+        return q[i & mask];
     }
 
     /**
@@ -572,14 +589,22 @@ public class ForkJoinWorkerThread extends Thread {
     }
 
     /**
-     * Pops or steals a task
+     * gets and removes a local or stolen a task
      * @return a task, if available
      */
     final ForkJoinTask<?> pollTask() {
-        ForkJoinTask<?> t = popTask();
+        ForkJoinTask<?> t = locallyFifo? deqTask() : popTask();
         if (t == null && (t = scan()) != null)
             ++stealCount;
         return t;
+    }
+
+    /**
+     * gets a local task
+     * @return a task, if available
+     */
+    final ForkJoinTask<?> pollLocalTask() {
+        return locallyFifo? deqTask() : popTask();
     }
 
     /**
@@ -606,6 +631,20 @@ public class ForkJoinWorkerThread extends Thread {
         ForkJoinTask<?> t;
         while (base != sp && (t = deqTask()) != null)
             t.cancelIgnoringExceptions();
+    }
+
+    /**
+     * Drains tasks to given collection c
+     * @return the number of tasks drained
+     */
+    final int drainTasksTo(Collection<ForkJoinTask<?>> c) {
+        int n = 0;
+        ForkJoinTask<?> t;
+        while (base != sp && (t = deqTask()) != null) {
+            c.add(t);
+            ++n;
+        }
+        return n;
     }
 
     /**

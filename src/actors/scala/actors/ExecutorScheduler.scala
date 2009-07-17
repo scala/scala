@@ -42,6 +42,9 @@ class ExecutorScheduler(protected var executor: ExecutorService) extends Schedul
     }
   }
 
+  def executeFromActor(task: Runnable) =
+    execute(task)
+
   /** This method is called when the <code>SchedulerService</code>
    *  shuts down.
    */

@@ -926,15 +926,14 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
     protected abstract boolean exec();
 
     /**
-     * Returns, but does not unschedule or execute, the task most
-     * recently forked by the current thread but not yet executed, if
-     * one is available. There is no guarantee that this task will
-     * actually be polled or executed next.
-     * This method is designed primarily to support extensions,
-     * and is unlikely to be useful otherwise.
-     * This method may be invoked only from within
-     * ForkJoinTask computations. Attempts to invoke in other contexts
-     * result in exceptions or errors possibly including ClassCastException.
+     * Returns, but does not unschedule or execute, the task queued by
+     * the current thread but not yet executed, if one is
+     * available. There is no guarantee that this task will actually
+     * be polled or executed next.  This method is designed primarily
+     * to support extensions, and is unlikely to be useful otherwise.
+     * This method may be invoked only from within ForkJoinTask
+     * computations. Attempts to invoke in other contexts result in
+     * exceptions or errors possibly including ClassCastException.
      *
      * @return the next task, or null if none are available
      */
@@ -943,32 +942,32 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
     }
 
     /**
-     * Unschedules and returns, without executing, the task most
-     * recently forked by the current thread but not yet executed.
-     * This method is designed primarily to support extensions,
-     * and is unlikely to be useful otherwise.
-     * This method may be invoked only from within
-     * ForkJoinTask computations. Attempts to invoke in other contexts
-     * result in exceptions or errors possibly including ClassCastException.
+     * Unschedules and returns, without executing, the next task
+     * queued by the current thread but not yet executed.  This method
+     * is designed primarily to support extensions, and is unlikely to
+     * be useful otherwise.  This method may be invoked only from
+     * within ForkJoinTask computations. Attempts to invoke in other
+     * contexts result in exceptions or errors possibly including
+     * ClassCastException.
      *
      * @return the next task, or null if none are available
      */
     protected static ForkJoinTask<?> pollNextLocalTask() {
-        return ((ForkJoinWorkerThread)(Thread.currentThread())).popTask();
+        return ((ForkJoinWorkerThread)(Thread.currentThread())).pollLocalTask();
     }
 
     /**
-     * Unschedules and returns, without executing, the task most
-     * recently forked by the current thread but not yet executed, if
-     * one is available, or if not available, a task that was forked
-     * by some other thread, if available. Availability may be
-     * transient, so a <code>null</code> result does not necessarily
-     * imply quiecence of the pool this task is operating in.
-     * This method is designed primarily to support extensions,
-     * and is unlikely to be useful otherwise.
-     * This method may be invoked only from within
+     * Unschedules and returns, without executing, the next task
+     * queued by the current thread but not yet executed, if one is
+     * available, or if not available, a task that was forked by some
+     * other thread, if available. Availability may be transient, so a
+     * <code>null</code> result does not necessarily imply quiecence
+     * of the pool this task is operating in.  This method is designed
+     * primarily to support extensions, and is unlikely to be useful
+     * otherwise.  This method may be invoked only from within
      * ForkJoinTask computations. Attempts to invoke in other contexts
-     * result in exceptions or errors possibly including ClassCastException.
+     * result in exceptions or errors possibly including
+     * ClassCastException.
      *
      * @return a task, or null if none are available
      */

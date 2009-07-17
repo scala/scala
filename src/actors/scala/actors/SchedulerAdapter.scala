@@ -28,6 +28,9 @@ trait SchedulerAdapter extends IScheduler {
   def execute(task: Runnable): Unit =
     execute { task.run() }
 
+  def executeFromActor(task: Runnable): Unit =
+    execute(task)
+
   /** Shuts down the scheduler.
    */
   def shutdown(): Unit =

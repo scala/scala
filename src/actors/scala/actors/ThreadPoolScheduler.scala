@@ -53,6 +53,9 @@ class ThreadPoolScheduler(protected var executor: ThreadPoolExecutor,
     }
   }
 
+  def executeFromActor(task: Runnable) =
+    execute(task)
+
   def onShutdown() {
     executor.shutdown()
   }

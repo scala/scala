@@ -144,10 +144,13 @@ trait Reactor extends OutputChannel[Any] {
     throw Actor.suspendException
   }
 
+  /* This method is guaranteed to be executed from inside
+     an actors act method.
+   */
   protected def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) = {
-    scheduler execute (new LightReaction(this,
-                                         if (f eq null) continuation else f,
-                                         msg))
+    scheduler executeFromActor (new LightReaction(this,
+                                                  if (f eq null) continuation else f,
+                                                  msg))
   }
 
   def start(): Reactor = {
