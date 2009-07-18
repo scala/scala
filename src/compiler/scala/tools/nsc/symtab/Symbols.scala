@@ -1044,8 +1044,24 @@ trait Symbols {
 
     /** Return every accessor of a primary constructor parameter in this case class
      */
-    final def caseFieldAccessors: List[Symbol] =
-      info.decls.toList filter (sym => !(sym hasFlag PRIVATE) && sym.hasFlag(CASEACCESSOR))
+    final def caseFieldAccessors: List[Symbol] = {
+      val allAccessors = info.decls.toList filter (_ hasFlag CASEACCESSOR)
+
+      // if a case class has private fields, the accessors will come back in the wrong
+      // order unless we do some more work.  See ticket #1373 and test bug1373.scala.
+      def findRightAccessor(cpa: Symbol) = {
+        val toFind = cpa.fullNameString + "$"
+        // def fail = throw new Error("Accessor for %s not found among %s".format(cpa.fullNameString, allAccessors))
+        def isRightAccessor(s: Symbol) =
+          if (s hasFlag ACCESSOR) s.accessed.id == cpa.id
+          else s.fullNameString startsWith toFind
+
+        if (cpa.isOuterAccessor || cpa.isOuterField) None
+        else allAccessors find isRightAccessor
+      }
+
+      constrParamAccessors map findRightAccessor flatten
+    }
 
     final def constrParamAccessors: List[Symbol] =
       info.decls.toList filter (sym => !sym.isMethod && sym.hasFlag(PARAMACCESSOR))
