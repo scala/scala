@@ -361,15 +361,7 @@ trait LinearSequenceTemplate[+A, +This <: LinearSequenceTemplate[A, This] with L
   }
 
   override def equals(that: Any): Boolean = that match {
-    case that1: LinearSequence[a] =>
-      var these = this
-      var those = that1
-      while (!these.isEmpty && !those.isEmpty && these.head == those.head) {
-        these = these.tail
-        those = those.tail
-      }
-      these.isEmpty && those.isEmpty
-    case _ =>
-      super.equals(that)
+    case that: LinearSequence[_]  => this sameElements that
+    case _                        => super.equals(that)
   }
 }

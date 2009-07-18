@@ -569,16 +569,8 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
     }
 
   override def equals(that: Any): Boolean = that match {
-    case that1: Sequence[a] =>
-      val these = this.iterator
-      val those = that1.iterator
-      while (these.hasNext && those.hasNext)
-        if (these.next() != those.next())
-          return false
-
-      !these.hasNext && !those.hasNext
-    case _ =>
-      false
+    case that: Sequence[_]  => this sameElements that
+    case _                  => false
   }
 
   /** Need to override string, so that it's not the Function1's string that gets mixed in.

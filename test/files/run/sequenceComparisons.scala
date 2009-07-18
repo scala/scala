@@ -9,6 +9,7 @@ object Test {
   // the commented out ones in seqMakers
 
   val seqMakers = List[List[Int] => Sequence[Int]](
+    // scala.Array(_: _*),
     mutable.ArrayBuffer(_: _*),
     // mutable.ArrayStack(_: _*),
     mutable.Buffer(_: _*),
@@ -30,6 +31,7 @@ object Test {
 
   abstract class Data[T] {
     val seq: Sequence[T]
+    private def seqList = seq.toList
     // _1 is inputs which must be true, _2 which must be false
     type Inputs = (List[List[T]], List[List[T]])
     case class Method(
@@ -40,6 +42,8 @@ object Test {
       def trueList  = inputs._1
       def falseList = inputs._2
     }
+
+    lazy val eqeq = Method(_ == _, (List(seqList), List(Nil, seqList drop 1, seqList ::: seqList)), "%s == %s")
 
     val startsWithInputs: Inputs
     lazy val startsWith = Method(_ startsWith _, startsWithInputs, "%s startsWith %s")
@@ -54,7 +58,7 @@ object Test {
     val sameElementsInputs: Inputs
     lazy val sameElements = Method(_ sameElements _, sameElementsInputs, "%s sameElements %s")
 
-    def methodList = List(startsWith, endsWith, indexOfSeq, sameElements)
+    def methodList = List(eqeq, startsWith, endsWith, indexOfSeq, sameElements)
   }
 
   object test1 extends Data[Int] {
@@ -97,12 +101,6 @@ object Test {
     for (s1f <- seqMakers ; s2f <- seqMakers ; testData <- List(test1)) {
       import testData._
       val scrut = s1f(seq)
-
-      // for (s <- starters ; val rhs = s2f(s))
-      //   assertOne(scrut, rhs, scrut startsWith rhs, "%s startsWith %s")
-      //
-      // for (ns <- nonStarters ; val rhs = s2f(ns))
-      //   assertOne(scrut, rhs, !(scrut startsWith rhs), "!(%s startsWith %s)")
 
       for (Method(f, (trueList, falseList), descr) <- methodList) {
         for (s <- trueList; val rhs = s2f(s))
