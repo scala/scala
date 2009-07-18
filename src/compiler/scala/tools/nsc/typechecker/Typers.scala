@@ -1607,6 +1607,10 @@ trait Typers { self: Analyzer =>
      *  @return       ...
      */
     def typedCase(cdef: CaseDef, pattpe: Type, pt: Type): CaseDef = {
+      // verify no _* except in last position
+      for (Apply(_, xs) <- cdef.pat ; x <- xs dropRight 1 ; if treeInfo isStar x)
+        error(x.pos, "_* may only come last")
+
       val pat1: Tree = typedPattern(cdef.pat, pattpe)
       val guard1: Tree = if (cdef.guard == EmptyTree) EmptyTree
                          else typed(cdef.guard, BooleanClass.tpe)
