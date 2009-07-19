@@ -194,7 +194,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
             "."+sym.name
           if (sym == ArrayClass)
             ARRAY_TAG.toString+(args map jsig).mkString
-          else if (sym.isTypeParameterOrSkolem)
+          else if (sym.isTypeParameterOrSkolem && !sym.owner.isTypeParameterOrSkolem /*not a higher-order type parameter, as these are suppressed*/)
             TVAR_TAG.toString+sym.name+";"
           else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass)
             jsig(ObjectClass.tpe)
