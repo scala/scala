@@ -1,12 +1,25 @@
 package scala.actors
 
 import java.lang.Thread.State
+import java.util.{Collection, ArrayList}
 import forkjoin._
 
-class ForkJoinScheduler extends Thread with IScheduler with TerminationMonitor {
+/** The <code>ForkJoinScheduler</code> is backed by a lightweight
+ *  fork-join task execution framework.
+ *
+ * @author Philipp Haller
+ */
+class ForkJoinScheduler extends Runnable with IScheduler with TerminationMonitor {
 
-  private val pool = {
-    val p = new ForkJoinPool()
+  private var pool = makeNewPool()
+  private var terminating = false
+  private var snapshoting = false
+  private var drainedTasks: Collection[ForkJoinTask[_]] = null
+
+  private val CHECK_FREQ = 10
+
+  private def makeNewPool(): DrainableForkJoinPool = {
+    val p = new DrainableForkJoinPool()
     // enable locally FIFO scheduling mode
     p.setAsyncMode(true)
     Debug.info(this+": parallelism "+p.getParallelism())
@@ -14,13 +27,20 @@ class ForkJoinScheduler extends Thread with IScheduler with TerminationMonitor {
     p
   }
 
-  private var terminating = false
-
-  private val CHECK_FREQ = 50
-
-  override def managedBlock(blocker: ManagedBlocker) {
-    ForkJoinPool.managedBlock(blocker, true)
+  /** Starts this scheduler.
+   */
+  def start() {
+    (new Thread(this)).start()
   }
+
+  private def allWorkersBlocked: Boolean =
+    (pool.workers != null) &&
+    pool.workers.forall(t => {
+      (t == null) || {
+        val s = t.getState()
+        s == State.BLOCKED || s == State.WAITING || s == State.TIMED_WAITING
+      }
+    })
 
   override def run() {
     try {
@@ -31,11 +51,25 @@ class ForkJoinScheduler extends Thread with IScheduler with TerminationMonitor {
           } catch {
             case _: InterruptedException =>
           }
+
           if (terminating)
             throw new QuitException
 
           if (allTerminated) {
             //Debug.info(this+": all actors terminated")
+            throw new QuitException
+          }
+
+          if (!snapshoting) {
+            val poolSize = pool.getPoolSize()
+            if (allWorkersBlocked && (poolSize < ThreadPoolConfig.maxPoolSize)) {
+              pool.setParallelism(poolSize + 1)
+            }
+          } else if (pool.isQuiescent()) {
+            val list = new ArrayList[ForkJoinTask[_]]
+            val num = pool.drainTasksTo(list)
+            Debug.info(this+": drained "+num+" tasks")
+            drainedTasks = list
             throw new QuitException
           }
         }
@@ -75,6 +109,10 @@ class ForkJoinScheduler extends Thread with IScheduler with TerminationMonitor {
       def run() { fun }
     })
 
+  override def managedBlock(blocker: ManagedBlocker) {
+    ForkJoinPool.managedBlock(blocker, true)
+  }
+
   /** Shuts down the scheduler.
    */
   def shutdown(): Unit = synchronized {
@@ -82,6 +120,33 @@ class ForkJoinScheduler extends Thread with IScheduler with TerminationMonitor {
   }
 
   def isActive =
-    !pool.isShutdown()
+    (pool ne null) && !pool.isShutdown()
+
+  /** Suspends the scheduler. All threads that were in use by the
+   *  scheduler and its internal thread pool are terminated.
+   */
+  def snapshot() = synchronized {
+    snapshoting = true
+  }
+
+  /** Resumes the execution of the scheduler if it was previously
+   *  suspended using <code>ForkJoinScheduler.snapshot</code>.
+   */
+  def restart() {
+    synchronized {
+      if (!snapshoting)
+        error("snapshot has not been invoked")
+      else if (isActive)
+        error("scheduler is still active")
+      else
+        snapshoting = false
+    }
+    pool = makeNewPool()
+    val iter = drainedTasks.iterator()
+    while (iter.hasNext()) {
+      pool.execute(iter.next())
+    }
+    start()
+  }
 
 }

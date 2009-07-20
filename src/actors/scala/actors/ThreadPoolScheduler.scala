@@ -15,8 +15,7 @@ import java.util.concurrent.{ThreadPoolExecutor, RejectedExecutionException}
 
 /**
  * The <code>ThreadPoolScheduler</code> class uses an
- * <code>ExecutorService</code> to execute <code>Actor</code>s. It
- * does not start an additional thread.
+ * <code>ThreadPoolExecutor</code> to execute <code>Actor</code>s.
  *
  * A <code>ThreadPoolScheduler</code> attempts to shut down
  * the underlying <code>ExecutorService</code> only if
@@ -29,7 +28,11 @@ import java.util.concurrent.{ThreadPoolExecutor, RejectedExecutionException}
  * @author Philipp Haller
  */
 class ThreadPoolScheduler(protected var executor: ThreadPoolExecutor,
-                          protected var terminate: Boolean) extends TerminationService(terminate) {
+                          protected var terminate: Boolean)
+  extends Thread with TerminationMonitor with ExecutorScheduler {
+
+  private var terminating = false
+  protected val CHECK_FREQ = 10
 
   /* This constructor (and the var above) is currently only used to work
    * around a bug in scaladoc, which cannot deal with early initializers
@@ -39,33 +42,6 @@ class ThreadPoolScheduler(protected var executor: ThreadPoolExecutor,
     this(null, true)
   }
 
-  /** Submits a <code>Runnable</code> for execution.
-   *
-   *  @param  task  the task to be executed
-   */
-  def execute(task: Runnable) {
-    try {
-      executor execute task
-    } catch {
-      case ree: RejectedExecutionException =>
-        // run task on current thread
-        task.run()
-    }
-  }
-
-  def executeFromActor(task: Runnable) =
-    execute(task)
-
-  def onShutdown() {
-    executor.shutdown()
-  }
-
-  /** The scheduler is active if the underlying <code>ExecutorService</code>
-   *  has not been shut down.
-   */
-  def isActive =
-    (executor ne null) && !executor.isShutdown()
-
   override def managedBlock(blocker: ManagedBlocker) {
     val coreSize = executor.getCorePoolSize()
     if ((executor.getActiveCount() >= coreSize - 1) && coreSize < ThreadPoolConfig.maxPoolSize) {
@@ -73,4 +49,51 @@ class ThreadPoolScheduler(protected var executor: ThreadPoolExecutor,
     }
     blocker.block()
   }
+
+  override def run() {
+    try {
+      while (true) {
+        this.synchronized {
+          try {
+            wait(CHECK_FREQ)
+          } catch {
+            case _: InterruptedException =>
+          }
+
+          if (terminating)
+            throw new QuitException
+
+          if (terminate && allTerminated)
+            throw new QuitException
+
+          val coreSize = executor.getCorePoolSize()
+          if ((executor.getActiveCount() >= coreSize - 1) && coreSize < ThreadPoolConfig.maxPoolSize) {
+            executor.setCorePoolSize(coreSize + 1)
+          }
+        }
+      }
+    } catch {
+      case _: QuitException =>
+        Debug.info(this+": initiating shutdown...")
+        // invoke shutdown hook
+        onShutdown()
+        // allow thread to exit
+    }
+  }
+
+  /** Submits a closure for execution.
+   *
+   *  @param  fun  the closure to be executed
+   */
+  def execute(fun: => Unit): Unit =
+    execute(new Runnable {
+      def run() { fun }
+    })
+
+  /** Shuts down the scheduler.
+   */
+  def shutdown(): Unit = synchronized {
+    terminating = true
+  }
+
 }

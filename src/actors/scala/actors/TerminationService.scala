@@ -20,7 +20,8 @@ import java.lang.{Runnable, Thread, InterruptedException}
  *
  * @author Philipp Haller
  */
-abstract class TerminationService(terminate: Boolean) extends Thread with TerminationMonitor {
+abstract class TerminationService(terminate: Boolean)
+  extends Thread with IScheduler with TerminationMonitor {
 
   private var terminating = false
 

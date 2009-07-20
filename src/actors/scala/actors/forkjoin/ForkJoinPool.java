@@ -143,7 +143,7 @@ public class ForkJoinPool /*extends AbstractExecutorService*/ {
      * in a consistent enough state to be randomly accessed without
      * locking by workers performing work-stealing.
      */
-    volatile ForkJoinWorkerThread[] workers;
+    public volatile ForkJoinWorkerThread[] workers;
 
     /**
      * Lock protecting access to workers.

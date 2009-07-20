@@ -23,7 +23,8 @@ import java.util.concurrent.{ThreadPoolExecutor, TimeUnit, LinkedBlockingQueue, 
  *
  * @author Philipp Haller
  */
-class DefaultExecutorScheduler(daemon: Boolean) extends ExecutorScheduler {
+class DefaultExecutorScheduler(daemon: Boolean)
+  extends SchedulerService(daemon) with ExecutorScheduler {
 
   def this() =
     this(false)
@@ -45,7 +46,7 @@ class DefaultExecutorScheduler(daemon: Boolean) extends ExecutorScheduler {
                                                   workQueue,
                                                   threadFactory)
 
-  executor = threadPool
+  val executor = threadPool
 
   override val CHECK_FREQ = 50
 }
