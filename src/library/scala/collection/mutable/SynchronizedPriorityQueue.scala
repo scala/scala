@@ -39,7 +39,7 @@ class SynchronizedPriorityQueue[A <% Ordered[A]] extends PriorityQueue[A] {
    *
    *  @param  iter        an iterable object
    */
-  override def ++=(iter: Iterable[A]): Unit = synchronized { super.++=(iter) }
+  override def ++=(iter: collection.Iterable[A]): Unit = synchronized { super.++=(iter) }
 
   /** Adds all elements provided by an iterator into the priority queue.
    *

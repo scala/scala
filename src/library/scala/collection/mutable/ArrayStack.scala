@@ -93,7 +93,7 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
    *
    * @param x The source of elements to push
    */
-  def ++=(x : Iterable[T]): this.type = { x.foreach(this +=(_)); this }
+  def ++=(x : collection.Iterable[T]): this.type = { x.foreach(this +=(_)); this }
 
 
   /**

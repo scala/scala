@@ -54,14 +54,14 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *  @param iter  the iterable object.
    *  @return      the updated buffer.
    */
-  override def ++(iter: Iterable[A]): Buffer[A] = self.++(iter)
+  override def ++(iter: collection.Iterable[A]): Buffer[A] = self.++(iter)
 
   /** Appends a number of elements provided by an iterable object
    *  via its <code>iterator</code> method.
    *
    *  @param iter  the iterable object.
    */
-  override def ++=(iter: Iterable[A]): this.type = { self.++=(iter); this }
+  override def ++=(iter: collection.Iterable[A]): this.type = { self.++=(iter); this }
 
   /** Appends a sequence of elements to this buffer.
    *
@@ -74,7 +74,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *
    *  @param iter  the iterable object.
    */
-  override def appendAll(iter: Iterable[A]): Unit = self.appendAll(iter)
+  override def appendAll(iter: collection.Iterable[A]): Unit = self.appendAll(iter)
 
   /** Prepend a single element to this buffer and return
    *  the identity of the buffer.
@@ -89,7 +89,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *
    *  @param iter  the iterable object.
    */
-  override def ++:(iter: Iterable[A]): Buffer[A] = self.++:(iter)
+  override def ++:(iter: collection.Iterable[A]): Buffer[A] = self.++:(iter)
 
   /** Prepend an element to this list.
    *
@@ -103,7 +103,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *
    *  @param iter  the iterable object.
    */
-  override def prependAll(elems: Iterable[A]): Unit = self.prependAll(elems)
+  override def prependAll(elems: collection.Iterable[A]): Unit = self.prependAll(elems)
 
   /** Inserts new elements at the index <code>n</code>. Opposed to method
    *  <code>update</code>, this method will not replace an element with a
@@ -121,7 +121,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *  @param n     the index where a new element will be inserted.
    *  @param iter  the iterable object providing all elements to insert.
    */
-  def insertAll(n: Int, iter: Iterable[A]): Unit = self.insertAll(n, iter)
+  def insertAll(n: Int, iter: collection.Iterable[A]): Unit = self.insertAll(n, iter)
 
   /** Replace element at index <code>n</code> with the new element
    *  <code>newelem</code>.

@@ -54,7 +54,7 @@ abstract class PriorityQueueProxy[A <% Ordered[A]] extends PriorityQueue[A]
    *
    *  @param  iter        an iterable object
    */
-  override def ++=(iter: Iterable[A]): Unit = self ++= iter
+  override def ++=(iter: collection.Iterable[A]): Unit = self ++= iter
 
   /** Adds all elements provided by an iterator into the priority queue.
    *

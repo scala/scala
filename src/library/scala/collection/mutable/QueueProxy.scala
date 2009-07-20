@@ -51,7 +51,7 @@ trait QueueProxy[A] extends Queue[A] with SeqProxy[A] {
    *
    *  @param  iter        an iterable object
    */
-  override def ++=(iter: Iterable[A]): Unit = self ++= iter
+  override def ++=(iter: collection.Iterable[A]): Unit = self ++= iter
 
   /** Adds all elements provided by an iterator
    *  at the end of the queue. The elements are prepended in the order they

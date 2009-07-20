@@ -72,7 +72,7 @@ class Stack[A] private (var elems: List[A]) extends collection.Sequence[A] with 
   def pushAll(elems: collection.Traversable[A]): this.type = { for (elem <- elems) { push(elem); () }; this }
 
   @deprecated("use pushAll") def ++=(it: Iterator[A]): this.type = pushAll(it)
-  @deprecated("use pushAll") def ++=(it: Iterable[A]): this.type = pushAll(it)
+  @deprecated("use pushAll") def ++=(it: collection.Iterable[A]): this.type = pushAll(it)
 
   /** Returns the top element of the stack. This method will not remove
    *  the element from the stack. An error is signaled if there is no
