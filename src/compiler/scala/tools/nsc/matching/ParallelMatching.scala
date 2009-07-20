@@ -988,8 +988,9 @@ trait ParallelMatching extends ast.TreeDSL {
         // dig out case field accessors that were buried in (***)
         val cfa         = if (pats.isCaseHead) casted.accessors else Nil
         val caseTemps   = srep.tvars match { case x :: xs if x == casted.sym => xs ; case x => x }
-        def castedScrut = typedValDef(casted.sym, scrut.id AS castedTpe)
+        def castedScrut = typedValDef(casted.sym, scrut.id AS_ANY castedTpe)
         def needCast    = if (casted.sym ne scrut.sym) List(castedScrut) else Nil
+
 
         val vdefs       = needCast ::: (
           for ((tmp, accessor) <- caseTemps zip cfa) yield

@@ -114,6 +114,8 @@ trait TreeDSL {
 
       /** Casting & type tests -- working our way toward understanding exactly
        *  what differs between the different forms of IS and AS.
+       *
+       *  See ticket #2168 for one illustration of AS vs. AS_ANY.
        */
       def AS(tpe: Type)       = TypeApply(Select(target, Any_asInstanceOf), List(TypeTree(tpe)))
       def AS_ANY(tpe: Type)   = gen.mkAsInstanceOf(target, tpe)
