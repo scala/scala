@@ -119,7 +119,7 @@ abstract class TreePrinters {
     }
 
     def printAnnotations(tree: Tree) {
-      if (tree.symbol.rawInfo.isComplete) {
+      if (tree.tpe != null) {
         val annots = tree.symbol.annotations
         if (!annots.isEmpty) {
           annots foreach { annot => print("@"+annot+" ") }
@@ -276,6 +276,9 @@ abstract class TreePrinters {
           print("("); printValueParams(vparams); print(" => "); print(body); print(")")
 
         case Assign(lhs, rhs) =>
+          print(lhs); print(" = "); print(rhs)
+
+        case AssignOrNamedArg(lhs, rhs) =>
           print(lhs); print(" = "); print(rhs)
 
         case If(cond, thenp, elsep) =>
