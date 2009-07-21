@@ -63,10 +63,10 @@ private[remote] class Proxy(node: Node, name: Symbol, @transient var kernel: Net
   def !?(msec: Long, msg: Any): Option[Any] =
     del !? (msec, msg)
 
-  def !!(msg: Any): Future[Any] =
+  override def !!(msg: Any): Future[Any] =
     del !! msg
 
-  def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] =
+  override def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] =
     del !! (msg, f)
 
   def linkTo(to: AbstractActor): Unit =

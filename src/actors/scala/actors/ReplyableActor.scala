@@ -47,12 +47,12 @@ trait ReplyableActor extends ReplyableReactor {
       // should never be invoked; return dummy value
       def !?(msec: Long, msg: Any): Option[Any] = Some(msg)
       // should never be invoked; return dummy value
-      def !!(msg: Any): Future[Any] = {
+      override def !!(msg: Any): Future[Any] = {
         val someChan = new Channel[Any](Actor.self(thiz.scheduler))
         Futures.fromInputChannel(someChan)
       }
       // should never be invoked; return dummy value
-      def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] = {
+      override def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] = {
         val someChan = new Channel[A](Actor.self(thiz.scheduler))
         Futures.fromInputChannel(someChan)
       }

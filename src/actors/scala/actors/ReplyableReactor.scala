@@ -57,7 +57,7 @@ trait ReplyableReactor extends Replyable[Any, Any] {
    * Sends <code>msg</code> to this actor and immediately
    * returns a future representing the reply value.
    */
-  def !!(msg: Any): Future[Any] = {
+  override def !!(msg: Any): Future[Any] = {
     val ftch = new Channel[Any](Actor.rawSelf(thiz.scheduler))
     thiz.send(msg, ftch)
     Futures.fromInputChannel(ftch)
@@ -70,7 +70,7 @@ trait ReplyableReactor extends Replyable[Any, Any] {
    * <code>f</code>. This also allows to recover a more
    * precise type for the reply value.
    */
-  def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] = {
+  override def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] = {
     val ftch = new Channel[A](Actor.rawSelf(thiz.scheduler))
     thiz.send(msg, new OutputChannel[Any] {
       def !(msg: Any) =
