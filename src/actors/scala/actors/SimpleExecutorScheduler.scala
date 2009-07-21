@@ -8,7 +8,7 @@
 
 // $Id$
 
-package scala.actors
+package scala.actors.scheduler
 
 import java.util.concurrent.ExecutorService
 

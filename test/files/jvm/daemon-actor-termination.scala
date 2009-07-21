@@ -1,4 +1,5 @@
-import scala.actors.{Actor, DefaultExecutorScheduler}
+import scala.actors.Actor
+import scala.actors.scheduler.DefaultExecutorScheduler
 
 /* Test that a daemon Actor that hasn't finished does not prevent termination */
 

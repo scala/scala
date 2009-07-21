@@ -11,6 +11,7 @@
 package scala.actors
 
 import java.util.concurrent._
+import scheduler.{DelegatingScheduler, ThreadPoolConfig, ThreadPoolScheduler, ForkJoinScheduler}
 
 /**
  * The <code>Scheduler</code> object is used by <code>Actor</code> to

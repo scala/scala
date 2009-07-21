@@ -18,6 +18,8 @@ import java.lang.Thread.State
 import scala.collection.Set
 import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, HashSet}
 
+import scheduler.{ThreadPoolConfig, QuitException}
+
 /**
  * FJTaskScheduler2
  *

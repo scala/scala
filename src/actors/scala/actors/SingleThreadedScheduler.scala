@@ -8,7 +8,7 @@
 
 // $Id$
 
-package scala.actors
+package scala.actors.scheduler
 
 /**
  * This scheduler executes the tasks of an actor on a single

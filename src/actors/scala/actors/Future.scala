@@ -10,6 +10,8 @@
 
 package scala.actors
 
+import scheduler.DefaultExecutorScheduler
+
 /**
  * <p>
  *   A <code>Future[T]</code> is a function of arity 0 that

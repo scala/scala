@@ -8,10 +8,9 @@
 
 // $Id$
 
-package scala.actors
+package scala.actors.scheduler
 
-import scala.collection.mutable.HashMap
-import java.util.concurrent.{ThreadPoolExecutor, RejectedExecutionException}
+import java.util.concurrent.ThreadPoolExecutor
 
 /**
  * The <code>ThreadPoolScheduler</code> class uses an

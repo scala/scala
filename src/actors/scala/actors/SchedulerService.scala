@@ -8,7 +8,7 @@
 
 // $Id: $
 
-package scala.actors
+package scala.actors.scheduler
 
 import scala.util.control.ControlException
 import java.lang.{Runnable, Thread, InterruptedException}

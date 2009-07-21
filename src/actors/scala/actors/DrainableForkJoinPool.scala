@@ -1,4 +1,4 @@
-package scala.actors
+package scala.actors.scheduler
 
 import java.util.Collection
 import forkjoin.{ForkJoinPool, ForkJoinTask}

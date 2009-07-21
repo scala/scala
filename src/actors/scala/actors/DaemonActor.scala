@@ -8,6 +8,8 @@
 
 package scala.actors
 
+import scheduler.DaemonScheduler
+
 /**
  * Base trait for actors with daemon semantics.
  * Unlike a regular <code>Actor</code>, an active <code>DaemonActor</code> will

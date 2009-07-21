@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.actors
+package scala.actors.scheduler
 
 /**
  * Default scheduler for actors with daemon semantics, such as those backing futures.
@@ -14,5 +14,7 @@ package scala.actors
  * @author Erik Engbrecht
  */
 object DaemonScheduler extends DelegatingScheduler {
+
   def makeNewScheduler(): IScheduler = new DefaultExecutorScheduler(true)
+
 }
