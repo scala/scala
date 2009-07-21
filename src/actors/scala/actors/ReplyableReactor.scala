@@ -27,13 +27,8 @@ trait ReplyableReactor extends Replyable[Any, Any] {
    * @param  msg the message to be sent
    * @return     the reply
    */
-  def !?(msg: Any): Any = {
-    val replyCh = new Channel[Any](Actor.self(thiz.scheduler))
-    thiz.send(msg, replyCh)
-    replyCh.receive {
-      case x => x
-    }
-  }
+  def !?(msg: Any): Any =
+    (this !! msg)()
 
   /**
    * Sends <code>msg</code> to this actor and awaits reply
@@ -45,23 +40,28 @@ trait ReplyableReactor extends Replyable[Any, Any] {
    *              <code>Some(x)</code> where <code>x</code> is the reply
    */
   def !?(msec: Long, msg: Any): Option[Any] = {
-    val replyCh = new Channel[Any](Actor.self(thiz.scheduler))
-    thiz.send(msg, replyCh)
-    replyCh.receiveWithin(msec) {
-      case TIMEOUT => None
-      case x => Some(x)
+    val myself = Actor.rawSelf(thiz.scheduler)
+    val res = new scala.concurrent.SyncVar[Any]
+    val out = new OutputChannel[Any] {
+      def !(msg: Any) =
+        res set msg
+      def send(msg: Any, replyTo: OutputChannel[Any]) =
+        res set msg
+      def forward(msg: Any) =
+        res set msg
+      def receiver =
+        myself
     }
+    thiz.send(msg, out)
+    res.get(msec)
   }
 
   /**
    * Sends <code>msg</code> to this actor and immediately
    * returns a future representing the reply value.
    */
-  override def !!(msg: Any): Future[Any] = {
-    val ftch = new Channel[Any](Actor.rawSelf(thiz.scheduler))
-    thiz.send(msg, ftch)
-    Futures.fromInputChannel(ftch)
-  }
+  override def !!(msg: Any): Future[Any] =
+    this !! (msg, { case x => x })
 
   /**
    * Sends <code>msg</code> to this actor and immediately
@@ -71,18 +71,44 @@ trait ReplyableReactor extends Replyable[Any, Any] {
    * precise type for the reply value.
    */
   override def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] = {
-    val ftch = new Channel[A](Actor.rawSelf(thiz.scheduler))
-    thiz.send(msg, new OutputChannel[Any] {
-      def !(msg: Any) =
+    val myself = Actor.rawSelf(thiz.scheduler)
+    val ftch = new Channel[A](myself)
+    val res = new scala.concurrent.SyncVar[A]
+
+    val out = new OutputChannel[Any] {
+      def !(msg: Any) = {
         ftch ! f(msg)
-      def send(msg: Any, replyTo: OutputChannel[Any]) =
+        res set f(msg)
+      }
+      def send(msg: Any, replyTo: OutputChannel[Any]) = {
         ftch.send(f(msg), replyTo)
-      def forward(msg: Any) =
-        ftch.forward(f(msg))
+        res set f(msg)
+      }
+      def forward(msg: Any) = {
+        ftch forward f(msg)
+        res set f(msg)
+      }
       def receiver =
-        ftch.receiver
-    })
-    Futures.fromInputChannel(ftch)
+        myself
+    }
+
+    thiz.send(msg, out)
+
+    new Future[A](ftch) {
+      def apply() =
+        if (isSet) value.get.asInstanceOf[A]
+        else {
+          value = Some(res.get)
+          value.get.asInstanceOf[A]
+        }
+      def respond(k: A => Unit): Unit =
+        if (isSet) k(value.get.asInstanceOf[A])
+        else inputChannel.react {
+ 	  case any => value = Some(any); k(value.get.asInstanceOf[A])
+        }
+      def isSet =
+        !value.isEmpty
+    }
   }
 
 }
