@@ -13,15 +13,24 @@ object Test {
 
   class MyDaemon extends DaemonActor {
     def act() {
-      println("MSG1")
-      Thread.sleep(5000)
-      println("done")
+      react {
+        case 'hello =>
+          println("MSG1")
+          reply()
+          react {
+            case 'bye =>
+              println("done")
+          }
+      }
     }
   }
+
   def main(args: Array[String]) {
     val daemon = new MyDaemon
     daemon.start()
-    Thread.sleep(500) // give the daemon a chance to start
-    println("MSG2")
+    Actor.actor {
+      daemon !? 'hello
+      println("MSG2")
+    }
   }
 }
