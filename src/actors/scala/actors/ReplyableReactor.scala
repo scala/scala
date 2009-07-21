@@ -58,7 +58,7 @@ trait ReplyableReactor extends Replyable[Any, Any] {
    * returns a future representing the reply value.
    */
   def !!(msg: Any): Future[Any] = {
-    val ftch = new Channel[Any](Actor.self(thiz.scheduler))
+    val ftch = new Channel[Any](Actor.rawSelf(thiz.scheduler))
     thiz.send(msg, ftch)
     Futures.fromInputChannel(ftch)
   }
@@ -71,7 +71,7 @@ trait ReplyableReactor extends Replyable[Any, Any] {
    * precise type for the reply value.
    */
   def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] = {
-    val ftch = new Channel[A](Actor.self(thiz.scheduler))
+    val ftch = new Channel[A](Actor.rawSelf(thiz.scheduler))
     thiz.send(msg, new OutputChannel[Any] {
       def !(msg: Any) =
         ftch ! f(msg)

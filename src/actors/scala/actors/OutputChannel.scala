@@ -42,8 +42,8 @@ trait OutputChannel[-Msg] {
   def forward(msg: Msg): Unit
 
   /**
-   * Returns the <code>Actor</code> that is
+   * Returns the <code>Reactor</code> that is
    * receiving from this <code>OutputChannel</code>.
    */
-  def receiver: Actor
+  def receiver: Reactor
 }
