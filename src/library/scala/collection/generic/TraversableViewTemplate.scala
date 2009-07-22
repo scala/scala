@@ -67,7 +67,7 @@ self =>
     }
     override def stringPrefix = self.stringPrefix+"S"
     override def slice(from1: Int, until1: Int): This =
-      newSliced(from + (from1 max 0), from + (until1 max 0)).asInstanceOf[This]
+      newSliced(from1 max 0, until1 max 0).asInstanceOf[This]
   }
 
   trait Mapped[B] extends Transformed[B] {
