@@ -18,4 +18,5 @@ class WeakReference[+T <: AnyRef](value: T, queue: ReferenceQueue[T]) extends Re
   val underlying: java.lang.ref.WeakReference[_ <: T] =
     if (queue == null) new java.lang.ref.WeakReference[T](value)
     else new java.lang.ref.WeakReference[T](value, queue.underlying.asInstanceOf[java.lang.ref.ReferenceQueue[T]])
+  queue.register(this)
 }

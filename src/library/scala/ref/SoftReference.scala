@@ -18,4 +18,5 @@ class SoftReference[+T <: AnyRef](value : T, queue : ReferenceQueue[T]) extends 
   val underlying: java.lang.ref.SoftReference[_ <: T] =
     if (queue == null) new java.lang.ref.SoftReference[T](value);
     else new java.lang.ref.SoftReference[T](value, queue.underlying.asInstanceOf[java.lang.ref.ReferenceQueue[T]])
+  queue.register(this)
 }

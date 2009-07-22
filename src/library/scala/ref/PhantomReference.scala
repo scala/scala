@@ -16,5 +16,6 @@ package scala.ref
 class PhantomReference[+T <: AnyRef](value: T, queue: ReferenceQueue[T]) extends ReferenceWrapper[T] {
   val underlying: java.lang.ref.PhantomReference[_ <: T] =
     new java.lang.ref.PhantomReference[T](value, queue.underlying.asInstanceOf[java.lang.ref.ReferenceQueue[T]])
+  queue.register(this)
 }
 
