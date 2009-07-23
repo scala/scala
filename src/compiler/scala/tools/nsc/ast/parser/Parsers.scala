@@ -1827,7 +1827,7 @@ self =>
       val t = TypeBoundsTree(
         bound(SUPERTYPE, nme.Nothing),
         bound(SUBTYPE, nme.Any))
-      t setPos (t.hi.pos union t.lo.pos)
+      t setPos (wrappingPos(List(t.hi, t.lo)))
       t
     }
 

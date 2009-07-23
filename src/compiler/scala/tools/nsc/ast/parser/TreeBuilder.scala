@@ -76,7 +76,13 @@ abstract class TreeBuilder {
           // with binds embedded in pattern tree1
           val start = tree.pos.start
           val end = start + name.decode.length
-          buf += ((name, TypeTree(), r2p(start, start, end)))
+
+          // if the name range does overlap the bind we assume it is
+          // a fresh name (ie. generated from for(... ; (a, b) <- (1, 2) ...))
+          // make it transparent
+          val namePos0 = r2p(start, start, end)
+          val namePos = if (namePos0 overlaps tree.pos) makeTransparent(namePos0) else namePos0
+          buf += ((name, TypeTree(), namePos))
         }
         traverse(tree1)
       case _ =>

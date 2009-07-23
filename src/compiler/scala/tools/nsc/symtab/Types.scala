@@ -1323,6 +1323,8 @@ trait Types {
       for ((from, targets) <- refs(Expansive).iterator)
         for (target <- targets) {
           var thatInfo = classInfo(target)
+          if (thatInfo.state != Initialized)
+            change = change | thatInfo.propagate()
           addRefs(Expansive, from, thatInfo.getRefs(NonExpansive, target))
         }
       change = change || refs(0) != lastRefs(0) || refs(1) != lastRefs(1)
