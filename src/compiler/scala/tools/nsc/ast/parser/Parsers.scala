@@ -867,7 +867,8 @@ self =>
     def wildcardType(start: Int) = {
       val pname = freshName(o2p(start), "_$").toTypeName
       val t = atPos(start) { Ident(pname) }
-      val param = atPos(t2p(t)) { makeSyntheticTypeParam(pname, typeBounds()) }
+      val bounds = typeBounds()
+      val param = atPos(t.pos union bounds.pos) { makeSyntheticTypeParam(pname, bounds) }
       placeholderTypes = param :: placeholderTypes
       t
     }
@@ -1822,10 +1823,13 @@ self =>
 
     /** TypeBounds ::= [`>:' Type] [`<:' Type]
      */
-    def typeBounds(): TypeBoundsTree =
-      TypeBoundsTree(
+    def typeBounds(): TypeBoundsTree = {
+      val t = TypeBoundsTree(
         bound(SUPERTYPE, nme.Nothing),
         bound(SUBTYPE, nme.Any))
+      t setPos (t.hi.pos union t.lo.pos)
+      t
+    }
 
     def bound(tok: Int, default: Name): Tree =
       if (in.token == tok) { in.nextToken(); typ() }
@@ -2422,11 +2426,11 @@ self =>
         if (in.token == ARROW) {
           first match {
             case Typed(tree @ This(name), tpt) if (name == nme.EMPTY.toTypeName) =>
-              self = atPos(tree.pos) { makeSelfDef(nme.WILDCARD, tpt) }
+              self = atPos(tree.pos union tpt.pos) { makeSelfDef(nme.WILDCARD, tpt) }
             case _ =>
               convertToParam(first) match {
                 case tree @ ValDef(_, name, tpt, EmptyTree) if (name != nme.ERROR) =>
-                  self = atPos(tree.pos) { makeSelfDef(name, tpt) }
+                  self = atPos(tree.pos union tpt.pos) { makeSelfDef(name, tpt) }
                 case _ =>
               }
           }

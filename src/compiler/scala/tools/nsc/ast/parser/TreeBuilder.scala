@@ -201,7 +201,7 @@ abstract class TreeBuilder {
   /** Create tree representing a do-while loop */
   def makeDoWhile(lname: Name, body: Tree, cond: Tree): Tree = {
     val continu = Apply(Ident(lname), Nil)
-    val rhs = Block(List(body), atPos(o2p(body.pos.end)) { If(cond, continu, Literal(())) })
+    val rhs = Block(List(body), If(cond, continu, Literal(())))
     LabelDef(lname, Nil, rhs)
   }
 
@@ -368,9 +368,9 @@ abstract class TreeBuilder {
         val ids = (defpat1 :: defpats) map makeValue
         val rhs1 = makeForYield(
           List(ValFrom(pos, defpat1, rhs)),
-          Block(pdefs, makeTupleTerm(ids, true) setPos wrappingPos(ids)) setPos wrappingPos(pdefs))
+          Block(pdefs, atPos(wrappingPos(ids)) { makeTupleTerm(ids, true) }) setPos wrappingPos(pdefs))
         val allpats = (pat :: pats) map (_.syntheticDuplicate)
-        val vfrom1 = ValFrom(r2p(pos.start, pos.point, rhs1.pos.end), makeTuple(allpats, false), rhs1)
+        val vfrom1 = ValFrom(r2p(pos.start, pos.point, rhs1.pos.end), atPos(wrappingPos(allpats)) { makeTuple(allpats, false) } , rhs1)
         makeFor(mapName, flatMapName, vfrom1 :: rest1, body)
       case _ =>
         EmptyTree //may happen for erroneous input
