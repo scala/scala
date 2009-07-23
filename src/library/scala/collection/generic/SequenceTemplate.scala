@@ -602,8 +602,8 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
   }
 
   /** Is <code>that</code> a slice in this? */
-  @deprecated("Should be repaced by <code>indexOf(that) != -1</code>")
-  def containsSlice[B](that: Sequence[B]): Boolean = indexOf(that) != -1
+  @deprecated("Should be repaced by <code>indexOfSeq(that) != -1</code>")
+  def containsSlice[B](that: Sequence[B]): Boolean = indexOfSeq(that) != -1
 
  /**
    * returns a projection that can be used to call non-strict <code>filter</code>,
