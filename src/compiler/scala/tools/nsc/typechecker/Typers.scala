@@ -1763,7 +1763,7 @@ trait Typers { self: Analyzer =>
               }
               EmptyTree
             case _ =>
-              if (localTarget && !includesTargetPos(tree))
+              if (localTarget && !includesTargetPos(stat)) {
                 stat
               } else {
                 val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) this

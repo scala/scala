@@ -1,4 +1,5 @@
-package scala.actors.scheduler
+package scala.actors
+package scheduler
 
 import java.lang.Thread.State
 import java.util.{Collection, ArrayList}

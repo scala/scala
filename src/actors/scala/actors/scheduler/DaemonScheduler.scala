@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.actors.scheduler
+package scala.actors
+package scheduler
 
 /**
  * Default scheduler for actors with daemon semantics, such as those backing futures.

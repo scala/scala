@@ -22,11 +22,11 @@ class Global(settings: Settings, reporter: Reporter)
      with RichCompilationUnits {
 self =>
 
-  settings.XprintPos.value = true
-
   import definitions._
 
   override def onlyPresentation = true
+
+  settings.Xprintpos.value = true
 
   /** A list indicating in which order some units should be typechecked.
    *  All units in firsts are typechecked before any unit not in this list

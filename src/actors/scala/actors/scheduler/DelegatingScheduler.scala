@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.actors.scheduler
+package scala.actors
+package scheduler
 
 /**
  * @author Erik Engbrecht
