@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.xml.transform
+package scala.xml
+package transform
 
 class RuleTransformer(rules: RewriteRule*) extends BasicTransformer {
   override def transform(n: Node): Seq[Node] =

@@ -5,7 +5,8 @@
 // $Id$
 
 
-package scala.tools.nsc.symtab
+package scala.tools.nsc
+package symtab
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.immutable.Map

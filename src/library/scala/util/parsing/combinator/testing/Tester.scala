@@ -9,6 +9,7 @@
 // $Id$
 
 package scala.util.parsing.combinator.testing
+import scala.util.parsing.combinator._
 
 import scala.util.parsing.combinator.lexical.Lexical
 import scala.util.parsing.combinator.syntactical.TokenParsers

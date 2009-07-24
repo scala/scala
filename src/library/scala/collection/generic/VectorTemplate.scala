@@ -9,6 +9,7 @@
 // $Id$
 
 package scala.collection.generic
+import scala.collection._
 
 import mutable.ArrayBuffer
 

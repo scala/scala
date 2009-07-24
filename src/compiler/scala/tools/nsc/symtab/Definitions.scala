@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.symtab
+package scala.tools.nsc
+package symtab
 
 import scala.collection.mutable.{HashMap, HashSet}
 import scala.tools.nsc.util.{Position, NoPosition}

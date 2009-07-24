@@ -1,7 +1,8 @@
-package scala.tools.nsc.interactive
+package scala.tools.nsc
+package interactive
 
 import collection.mutable.ArrayBuffer
-import nsc.util.Position
+import util.Position
 
 trait ContextTrees { self: Global =>
 

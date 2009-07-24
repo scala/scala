@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.models
+package scala.tools.nsc
+package models
 
 import java.lang.Character.isJavaIdentifierPart
 import java.lang.Thread
@@ -344,7 +345,7 @@ class SemanticTokens(val compiler: Global) {
           }
             case sft : SelectFromTypeTree =>
               build(sft.qualifier); // XXX: broken
-                if (false) Console.err.println("SFTT: " + sft + " sym=" + sft.symbol + " selector=" + sft.selector + " qual=" + sft.qualifier + " qual.sym=" +
+                if (false) Console.err.println("SFTT: " + sft + " sym=" + sft.symbol + " name=" + sft.name + " qual=" + sft.qualifier + " qual.sym=" +
                           sft.qualifier.symbol +
                           " qual.pos=" + (sft.qualifier.pos).dbgString + " symbol=" + sft.symbol + " type=" + tpe0 +
                           " type.sym=" + tpe0.typeSymbol);

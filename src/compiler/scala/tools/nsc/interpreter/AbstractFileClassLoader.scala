@@ -3,7 +3,8 @@
  */
 // $Id: $
 
-package scala.tools.nsc.interpreter
+package scala.tools.nsc
+package interpreter
 
 import scala.tools.nsc.io.AbstractFile
 import scala.util.ScalaClassLoader

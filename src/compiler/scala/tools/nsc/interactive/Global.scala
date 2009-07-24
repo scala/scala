@@ -1,4 +1,5 @@
-package scala.tools.nsc.interactive
+package scala.tools.nsc
+package interactive
 
 import java.io.{ PrintWriter, StringWriter }
 
@@ -14,12 +15,14 @@ import scala.tools.nsc.ast._
 /** The main class of the presentation compiler in an interactive environment such as an IDE
  */
 class Global(settings: Settings, reporter: Reporter)
-  extends nsc.Global(settings, reporter)
+  extends scala.tools.nsc.Global(settings, reporter)
      with CompilerControl
      with RangePositions
      with ContextTrees
      with RichCompilationUnits {
 self =>
+
+  settings.XprintPos.value = true
 
   import definitions._
 
@@ -414,7 +417,7 @@ self =>
         assert(unit.status >= JustParsed)
         unit.targetPos = pos
         try {
-          println("starting type targetted check")
+          println("starting targeted type check")
           typeCheck(unit)
           throw new FatalError("tree not found")
         } catch {

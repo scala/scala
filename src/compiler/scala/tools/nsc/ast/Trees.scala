@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.ast
+package scala.tools.nsc
+package ast
 
 import java.io.{PrintWriter, StringWriter}
 
@@ -273,6 +274,10 @@ trait Trees {
     override var symbol: Symbol = NoSymbol
   }
 
+  trait RefTree extends SymTree {
+    def name: Name
+  }
+
   abstract class DefTree extends SymTree {
     def name: Name
     override def isDef = true
@@ -338,14 +343,18 @@ trait Trees {
     final def hasFlag(mask: Long): Boolean = (mods.flags & mask) != 0
   }
 
-  /** Package clause */
-  case class PackageDef(name: Name, stats: List[Tree])
+  /** Package clause
+   */
+  case class PackageDef(pid: RefTree, stats: List[Tree])
        extends MemberDef {
+    def name = pid.name
     def mods = NoMods
   }
 
+/* disabled, as this is now dangerous
   def PackageDef(sym: Symbol, stats: List[Tree]): PackageDef =
-    PackageDef(sym.name, stats) setSymbol sym
+    PackageDef(Ident(sym.name), stats) setSymbol sym
+*/
 
   abstract class ImplDef extends MemberDef {
     def impl: Template
@@ -812,10 +821,10 @@ trait Trees {
   def This(sym: Symbol): Tree = This(sym.name) setSymbol sym
 
   /** Designator <qualifier> . <selector> */
-  case class Select(qualifier: Tree, selector: Name)
-       extends SymTree {
-    override def isTerm = selector.isTermName
-    override def isType = selector.isTypeName
+  case class Select(qualifier: Tree, name: Name)
+       extends RefTree {
+    override def isTerm = name.isTermName
+    override def isType = name.isTypeName
   }
 
   def Select(qualifier: Tree, sym: Symbol): Select =
@@ -823,7 +832,7 @@ trait Trees {
 
   /** Identifier <name> */
   case class Ident(name: Name)
-       extends SymTree {
+       extends RefTree {
     override def isTerm = name.isTermName
     override def isType = name.isTypeName
   }
@@ -880,8 +889,8 @@ trait Trees {
         extends TypTree
 
   /** Type selection <qualifier> # <selector>, eliminated by RefCheck */
-  case class SelectFromTypeTree(qualifier: Tree, selector: Name)
-       extends TypTree with SymTree
+  case class SelectFromTypeTree(qualifier: Tree, name: Name)
+       extends TypTree with RefTree
 
   /** Intersection type <parent1> with ... with <parentN> { <decls> }, eliminated by RefCheck */
   case class CompoundTypeTree(templ: Template)
@@ -909,8 +918,8 @@ trait Trees {
 
 /* A standard pattern match
   case EmptyTree =>
-  case PackageDef(name, stats) =>
-     // package name { stats }
+  case PackageDef(pid, stats) =>
+     // package pid { stats }
   case ClassDef(mods, name, tparams, impl) =>
      // mods class name [tparams] impl   where impl = extends parents { defs }
   case ModuleDef(mods, name, impl) =>                             (eliminated by refcheck)
@@ -1023,7 +1032,7 @@ trait Trees {
 
   abstract class TreeCopier {
     def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], impl: Template): ClassDef
-    def PackageDef(tree: Tree, name: Name, stats: List[Tree]): PackageDef
+    def PackageDef(tree: Tree, pid: RefTree, stats: List[Tree]): PackageDef
     def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template): ModuleDef
     def ValDef(tree: Tree, mods: Modifiers, name: Name, tpt: Tree, rhs: Tree): ValDef
     def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef
@@ -1071,8 +1080,8 @@ trait Trees {
   class StrictTreeCopier extends TreeCopier {
     def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], impl: Template) =
       new ClassDef(mods, name, tparams, impl).copyAttrs(tree);
-    def PackageDef(tree: Tree, name: Name, stats: List[Tree]) =
-      new PackageDef(name, stats).copyAttrs(tree)
+    def PackageDef(tree: Tree, pid: RefTree, stats: List[Tree]) =
+      new PackageDef(pid, stats).copyAttrs(tree)
     def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template) =
       new ModuleDef(mods, name, impl).copyAttrs(tree)
     def ValDef(tree: Tree, mods: Modifiers, name: Name, tpt: Tree, rhs: Tree) =
@@ -1166,10 +1175,10 @@ trait Trees {
       if (mods0 == mods) && (name0 == name) && (tparams0 == tparams) && (impl0 == impl) => t
       case _ => treeCopy.ClassDef(tree, mods, name, tparams, impl)
     }
-    def PackageDef(tree: Tree, name: Name, stats: List[Tree]) = tree match {
-      case t @ PackageDef(name0, stats0)
-      if (name0 == name) && (stats0 == stats) => t
-      case _ => treeCopy.PackageDef(tree, name, stats)
+    def PackageDef(tree: Tree, pid: RefTree, stats: List[Tree]) = tree match {
+      case t @ PackageDef(pid0, stats0)
+      if (pid0 == pid) && (stats0 == stats) => t
+      case _ => treeCopy.PackageDef(tree, pid, stats)
     }
     def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template) = tree match {
       case t @ ModuleDef(mods0, name0, impl0)
@@ -1392,10 +1401,13 @@ trait Trees {
     def transform(tree: Tree): Tree = tree match {
       case EmptyTree =>
         tree
-      case PackageDef(name, stats) =>
-        atOwner(tree.symbol.moduleClass) {
-          treeCopy.PackageDef(tree, name, transformStats(stats, currentOwner))
-        }
+      case PackageDef(pid, stats) =>
+        treeCopy.PackageDef(
+          tree, transform(pid).asInstanceOf[RefTree],
+          atOwner(tree.symbol.moduleClass) {
+            transformStats(stats, currentOwner)
+          }
+        )
       case ClassDef(mods, name, tparams, impl) =>
         atOwner(tree.symbol) {
           treeCopy.ClassDef(tree, transformModifiers(mods), name,
@@ -1544,7 +1556,8 @@ trait Trees {
     def traverse(tree: Tree): Unit =  tree match {
       case EmptyTree =>
         ;
-      case PackageDef(name, stats) =>
+      case PackageDef(pid, stats) =>
+        traverse(pid)
         atOwner(tree.symbol.moduleClass) {
           traverseTrees(stats)
         }

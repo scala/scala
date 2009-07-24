@@ -11,7 +11,7 @@
 
 package scala.collection.mutable
 
-import generic._
+import scala.collection.generic._
 
 /** This class implements mutable sets using a hashtable.
  *

@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.doc
+package scala.tools.nsc
+package doc
 
 /**
  *  @author Stephane Micheloud, Sean McDirmid, Geoffrey Washburn

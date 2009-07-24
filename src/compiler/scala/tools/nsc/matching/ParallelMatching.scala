@@ -5,7 +5,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.matching
+package scala.tools.nsc
+package matching
 
 import util.Position
 import collection._

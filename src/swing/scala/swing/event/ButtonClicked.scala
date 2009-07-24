@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.swing.event
+package scala.swing
+package event
 
 case class ButtonClicked(override val source: AbstractButton) extends ActionEvent(source)
 

@@ -9,8 +9,8 @@
 // $Id$
 
 
-package scala.xml.dtd
-
+package scala.xml
+package dtd
 
 import ContentModel.ElemName
 import scala.util.automata._

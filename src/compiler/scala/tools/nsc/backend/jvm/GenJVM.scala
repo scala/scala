@@ -5,7 +5,8 @@
 
 // $Id$
 
-package scala.tools.nsc.backend.jvm
+package scala.tools.nsc
+package backend.jvm
 
 import java.io.{DataOutputStream, File, OutputStream}
 import java.nio.ByteBuffer

@@ -4,8 +4,9 @@
  */
 // $Id$
 
-package scala.tools.nsc.symtab
-import nsc.ast.Trees
+package scala.tools.nsc
+package symtab
+import ast.Trees
 
 import util._
 

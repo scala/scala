@@ -8,7 +8,8 @@
 
 // $Id$
 
-package scala.xml.persistent
+package scala.xml
+package persistent
 
 import java.io.{File, FileOutputStream}
 import java.nio.ByteBuffer

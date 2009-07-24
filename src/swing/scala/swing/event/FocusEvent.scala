@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.swing.event
+package scala.swing
+package event
 
 /**
  * The other component is None if it is a non Swing, i.e., AWT or native, component.

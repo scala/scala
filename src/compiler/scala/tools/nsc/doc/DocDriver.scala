@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.doc
+package scala.tools.nsc
+package doc
 
 /**
  *  This is an abstract class for documentation plugins.

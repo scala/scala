@@ -10,6 +10,7 @@
 
 
 package scala.collection.generic
+import scala.collection._
 
 /** <p>
  *    A generic template for maps from keys of type <code>A</code> to values

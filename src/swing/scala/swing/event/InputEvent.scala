@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.swing.event
+package scala.swing
+package event
 
 trait InputEvent extends ComponentEvent {
   def peer: java.awt.event.InputEvent

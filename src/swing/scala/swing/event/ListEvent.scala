@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.swing.event
+package scala.swing
+package event
 
 trait ListEvent[A] extends ComponentEvent {
   override val source: ListView[A]

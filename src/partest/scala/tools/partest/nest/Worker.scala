@@ -5,7 +5,8 @@
 
 // $Id$
 
-package scala.tools.partest.nest
+package scala.tools.partest
+package nest
 
 import java.io._
 import java.net.{URLClassLoader, URL}
@@ -15,7 +16,7 @@ import scala.tools.nsc.{ObjectRunner, GenericRunnerCommand}
 
 import scala.actors.{Actor, Exit, TIMEOUT}
 import scala.actors.Actor._
-import scalap.scalax.rules.scalasig.{ByteCode, ClassFileParser, ScalaSigAttributeParsers}
+import scala.tools.scalap.scalax.rules.scalasig.{ByteCode, ClassFileParser, ScalaSigAttributeParsers}
 
 case class RunTests(kind: String, files: List[File])
 case class Results(succ: Int, fail: Int, logs: List[LogFile], outdirs: List[File])

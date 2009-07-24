@@ -5,7 +5,8 @@
 
 // $Id$
 
-package scala.tools.partest.nest
+package scala.tools.partest
+package nest
 
 /* This class is used to load an instance of DirectRunner using
  * a custom class loader.

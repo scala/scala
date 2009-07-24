@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.dbc.datatype;
+package scala.dbc
+package datatype;
 
 
 /** A SQL type for a string of characters of arbitrary length with

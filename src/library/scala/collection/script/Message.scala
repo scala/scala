@@ -10,6 +10,7 @@
 
 
 package scala.collection.script
+import scala.collection._
 
 import Predef._
 import mutable.ArrayBuffer

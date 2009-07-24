@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.reporters
+package scala.tools.nsc
+package reporters
 
 import java.io.{BufferedReader, InputStreamReader, IOException, PrintWriter}
 import util._

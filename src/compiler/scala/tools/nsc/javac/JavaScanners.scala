@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc.javac
+package scala.tools.nsc
+package javac
 
 import scala.tools.nsc.util._
 import SourceFile.{LF, FF, CR, SU}

@@ -9,7 +9,8 @@
 // $Id:Field.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
-package scala.dbc.result
+package scala.dbc
+package result
 
 
 import scala.dbc.datatype._

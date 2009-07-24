@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.plugins
+package scala.tools.nsc
+package plugins
 
 import java.io.File
 import java.net.URLClassLoader

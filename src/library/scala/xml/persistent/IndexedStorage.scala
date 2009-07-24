@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.xml.persistent
+package scala.xml
+package persistent
 
 import scala.collection.mutable
 import java.io.File

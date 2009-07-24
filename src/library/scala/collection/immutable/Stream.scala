@@ -11,8 +11,8 @@
 
 package scala.collection.immutable
 
-import mutable.ListBuffer
-import generic._
+import scala.collection.mutable.ListBuffer
+import scala.collection.generic._
 
 /**
  * <p>The class <code>Stream</code> implements lazy lists where elements

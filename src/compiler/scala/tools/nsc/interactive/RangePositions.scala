@@ -1,4 +1,5 @@
-package scala.tools.nsc.interactive
+package scala.tools.nsc
+package interactive
 
 import ast.Trees
 import scala.tools.nsc.util.{SourceFile, Position, RangePosition, OffsetPosition, NoPosition, SyntheticOffsetPosition, WorkScheduler}
@@ -22,7 +23,7 @@ import scala.collection.mutable.ListBuffer
  *   Otherwise, the singleton consisting of the node itself.
  */
 trait RangePositions extends Trees with Positions {
-self: nsc.Global =>
+self: scala.tools.nsc.Global =>
 
   case class Range(pos: Position, tree: Tree) {
     def isFree = tree == EmptyTree

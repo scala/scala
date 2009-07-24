@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.transform
+package scala.tools.nsc
+package transform
 
 /** <p>
  *    A base class for transforms.

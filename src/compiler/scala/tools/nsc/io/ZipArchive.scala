@@ -5,7 +5,8 @@
 // $Id$
 
 
-package scala.tools.nsc.io
+package scala.tools.nsc
+package io
 
 import java.io.{File, IOException, InputStream}
 import java.net.URL

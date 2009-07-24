@@ -1,6 +1,7 @@
 package scala.collection.mutable
 
-import generic._
+import scala.collection.generic._
+import scala.collection.immutable
 import BitSetTemplate.{LogWL, updateArray}
 
 /** A class for mutable bitsets */

@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.transform
+package scala.tools.nsc
+package transform
 
 import scala.tools.nsc.symtab.Flags
 
@@ -203,7 +204,7 @@ abstract class TailCalls extends Transform
 
         case EmptyTree => tree
 
-        case PackageDef(name, stats) =>
+        case PackageDef(_, _) =>
           super.transform(tree)
 
         case ClassDef(_, name, _, _) =>

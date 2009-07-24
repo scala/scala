@@ -1,4 +1,5 @@
-package scala.tools.nsc.symtab
+package scala.tools.nsc
+package symtab
 import scala.tools.nsc.util._
 import scala.collection.mutable._
 import scala.tools.nsc.io._
@@ -643,7 +644,7 @@ trait IdeSupport extends SymbolTable { // added to global, not analyzers.
   // make the trees less detailed.
   override def sanitize(tree : Tree) : Tree = lightDuplicator.transform(tree match {
   case Template(_,vdef,_) => Template(Nil, sanitize(vdef).asInstanceOf[ValDef], Nil)
-  case PackageDef(nme, _) => PackageDef(nme, Nil)
+  case PackageDef(pid, _) => PackageDef(pid, Nil)
   case DefDef(mods, _, _, _, _:TypeTree, _) => DefDef(NoMods, nme.ERROR, Nil, Nil, TypeTree(), Literal(()))
   case DefDef(mods, _, _, _, restpt, _) => DefDef(NoMods, nme.ERROR, Nil, Nil, sanitize(restpt), Literal(()))
   case ValDef(_, _, _ : TypeTree, _) => ValDef(NoMods, nme.ERROR, TypeTree(), EmptyTree)

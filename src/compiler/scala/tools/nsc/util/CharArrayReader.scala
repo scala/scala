@@ -4,7 +4,8 @@
  */
 // $Id: NewCharArrayReader.scala 16893 2009-01-13 13:09:22Z cunei $
 
-package scala.tools.nsc.util
+package scala.tools.nsc
+package util
 
 import scala.tools.nsc.util.SourceFile.{LF, FF, CR, SU}
 

@@ -11,7 +11,7 @@
 
 package scala.collection.mutable
 
-import generic._
+import scala.collection.generic._
 
 /** This class is used internally to implement data structures that
  *  are based on resizable arrays.

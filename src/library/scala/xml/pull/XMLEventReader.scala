@@ -8,7 +8,8 @@
 
 // $Id$
 
-package scala.xml.pull
+package scala.xml
+package pull
 
 import java.util.concurrent.LinkedBlockingQueue
 import java.nio.channels.ClosedChannelException

@@ -7,7 +7,7 @@
 \*                                                                      */
 package scala.collection.mutable
 
-import generic._
+import scala.collection.generic._
 
 /** <p>
  *    A subtrait of <a href="../Iterable.html" target="contentFrame">

@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.swing.event
+package scala.swing
+package event
 
 abstract class TableEvent(override val source: Table) extends ComponentEvent
 

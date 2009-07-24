@@ -8,7 +8,8 @@
 
 // $Id$
 
-package scala.actors.remote
+package scala.actors
+package remote
 
 /**
  * @version 0.9.10

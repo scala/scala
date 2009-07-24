@@ -11,7 +11,7 @@
 
 package scala.collection.mutable
 
-import generic._
+import scala.collection.generic._
 // import immutable.{List, Nil, ::}
 
 //import Predef.NoSuchElementException

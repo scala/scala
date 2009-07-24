@@ -5,7 +5,9 @@
 
 // $Id$
 
-package scala.tools.nsc.backend.icode
+package scala.tools.nsc
+package backend
+package icode
 
 //import scala.tools.nsc.ast._
 import scala.collection.mutable.{Map, Set}

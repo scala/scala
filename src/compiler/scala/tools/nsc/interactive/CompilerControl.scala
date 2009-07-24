@@ -1,4 +1,5 @@
-package scala.tools.nsc.interactive
+package scala.tools.nsc
+package interactive
 
 import scala.concurrent.SyncVar
 import scala.util.control.ControlException

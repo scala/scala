@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.models
+package scala.tools.nsc
+package models
 
 import scala.tools.nsc.Global
 import scala.tools.nsc.util.{Position,NoPosition}
@@ -198,9 +199,9 @@ abstract class Models {
 
     def update0(members1: List[Tree]): Boolean = {
       // Console.err.println("update0 " + this + " " + members1)
+      // Martin: This is rather ugly code. We should use pattern matching here!
       if (members1.length == 1 && members1.head.isInstanceOf[PackageDef])
         return update0(members1.head.asInstanceOf[PackageDef].stats)
-
       val marked = new HashSet[HasTree]
       var updated = false
       for (mmbr1 <- members1) if (mmbr1.isInstanceOf[PackageDef]) {

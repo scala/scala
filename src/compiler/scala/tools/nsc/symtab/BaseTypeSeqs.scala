@@ -2,7 +2,8 @@
  * Copyright 2005-2009 LAMP/EPFL
  * @author  Martin Odersky
  */
-package scala.tools.nsc.symtab
+package scala.tools.nsc
+package symtab
 
 // todo implement in terms of BitSet
 import scala.collection.mutable.ListBuffer

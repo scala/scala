@@ -93,7 +93,7 @@ class FastScalac extends Scalac {
 
       val args = (cmdOptions ::: (sourceFiles map (_.toString))).toArray
       try {
-        if(nsc.CompileClient.main0(args) > 0 && failonerror)
+        if (scala.tools.nsc.CompileClient.main0(args) > 0 && failonerror)
           error("Compile failed; see the compiler error output for details.")
       }
       catch {

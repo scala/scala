@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.typechecker
+package scala.tools.nsc
+package typechecker
 
 /** The main attribution phase.
  */

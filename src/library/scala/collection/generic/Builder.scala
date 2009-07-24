@@ -9,6 +9,7 @@
 // $Id$
 
 package scala.collection.generic
+import scala.collection._
 
 /** The base trait of all builders.
  *  A builder lets one construct a collection incrementally, by adding

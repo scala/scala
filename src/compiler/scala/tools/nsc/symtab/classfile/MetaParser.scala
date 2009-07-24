@@ -4,7 +4,9 @@
  */
 // $Id$
 
-package scala.tools.nsc.symtab.classfile
+package scala.tools.nsc
+package symtab
+package classfile
 
 import java.util.{StringTokenizer, NoSuchElementException}
 

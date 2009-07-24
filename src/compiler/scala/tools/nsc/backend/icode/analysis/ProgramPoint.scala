@@ -5,7 +5,8 @@
 
 // $Id$
 
-package scala.tools.nsc.backend.icode.analysis
+package scala.tools.nsc
+package backend.icode.analysis
 
 /** Program points are locations in the program where we want to
  *  assert certain properties through data flow analysis, e.g.

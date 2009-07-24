@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.ast
+package scala.tools.nsc
+package ast
 
 import symtab.Flags._
 import symtab.SymbolTable
@@ -324,7 +325,7 @@ abstract class TreeInfo {
   /** Compilation unit is the predef object
    */
   def isPredefUnit(tree: Tree): Boolean = tree match {
-    case PackageDef(nme.scala_, List(obj)) => isPredefObj(obj)
+    case PackageDef(Ident(nme.scala_), List(obj)) => isPredefObj(obj)
     case _ => false
   }
 

@@ -8,7 +8,8 @@
 
 // $Id$
 
-package scala.xml.parsing
+package scala.xml
+package parsing
 
 import scala.xml.factory.NodeFactory
 import org.xml.sax.InputSource

@@ -10,7 +10,7 @@
 
 package scala.collection.mutable
 
-import generic._
+import scala.collection.generic._
 
 /** Todo: this has O(n) cost for element removal.
  *  Should be rewritten to be more efficient.

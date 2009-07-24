@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.transform
+package scala.tools.nsc
+package transform
 
 import symtab._
 import Flags._
@@ -120,7 +121,7 @@ abstract class LiftCode extends Transform with Reifiers {
 
 // case EmptyTree =>
 // case LiftPoint(tree) =>
-// case PackageDef(name, stats) =>
+// case PackageDef(pid, stats) =>
 // case ClassDef(mods, name, tparams, impl) =>
 // case ValDef(mods, name, tpt, rhs) =>
 // case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>

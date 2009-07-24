@@ -1,4 +1,5 @@
-package scala.tools.nsc.interactive
+package scala.tools.nsc
+package interactive
 
 import scala.collection._
 
@@ -6,7 +7,7 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import dependencies._
 
 import util.FakePos
-import nsc.io.AbstractFile
+import io.AbstractFile
 
 /** A simple build manager, using the default scalac dependency tracker.
  *  The transitive closure of all dependent files on a modified file
@@ -17,7 +18,7 @@ import nsc.io.AbstractFile
  */
 class SimpleBuildManager(val settings: Settings) extends BuildManager {
 
-  val compiler: nsc.Global = new nsc.Global(settings)
+  val compiler: scala.tools.nsc.Global = new scala.tools.nsc.Global(settings)
 
   /** Managed source files. */
   private val sources: mutable.Set[AbstractFile] = new mutable.HashSet[AbstractFile]

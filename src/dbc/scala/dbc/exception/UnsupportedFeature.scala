@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.dbc.exception;
+package scala.dbc
+package exception
 
 
 /** A type category for all SQL types that store constant-precision numbers. */

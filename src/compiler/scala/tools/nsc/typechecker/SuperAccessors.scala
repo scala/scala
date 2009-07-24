@@ -4,11 +4,12 @@
  */
 // $Id$
 
-package scala.tools.nsc.typechecker
+package scala.tools.nsc
+package typechecker
 
 import scala.collection.mutable.ListBuffer
-import nsc.symtab.Flags._
-import scala.tools.nsc.util.{Position}
+import symtab.Flags._
+import util.Position
 
 /** This phase adds super accessors for all super calls that
  *  either appear in a trait or have as a target a member of some outer class.

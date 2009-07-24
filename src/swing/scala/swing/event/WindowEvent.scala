@@ -9,6 +9,7 @@
 // $Id$
 
 
-package scala.swing.event
+package scala.swing
+package event
 
 abstract class WindowEvent(override val source: Window) extends UIEvent

@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.ast
+package scala.tools.nsc
+package ast
 
 import compat.Platform.{EOL => LINE_SEPARATOR}
 import java.io.{OutputStream, PrintWriter, Writer}

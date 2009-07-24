@@ -9,6 +9,7 @@
 // $Id$
 
 package scala.collection.generic
+import scala.collection._
 
 /** This class represents collections that can be added to other
  *  collections using a '+' operator.

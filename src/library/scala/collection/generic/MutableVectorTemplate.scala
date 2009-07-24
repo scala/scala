@@ -10,6 +10,7 @@
 
 
 package scala.collection.generic
+import scala.collection._
 
 /** A subtrait of collection.Vector which represents sequences
  *  that can be mutated.

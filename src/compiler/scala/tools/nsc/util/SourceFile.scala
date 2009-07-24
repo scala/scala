@@ -5,7 +5,8 @@
 
 // $Id$
 
-package scala.tools.nsc.util
+package scala.tools.nsc
+package util
 import scala.tools.nsc.io.{AbstractFile, VirtualFile}
 import scala.collection.mutable.ArrayBuffer
 import annotation.tailrec

@@ -4,7 +4,8 @@
  */
 // $Id: SymbolicXMLBuilder.scala 17756 2009-05-18 14:28:59Z rytz $
 
-package scala.tools.nsc.ast.parser
+package scala.tools.nsc
+package ast.parser
 
 import collection.mutable.Map
 import xml.{ EntityRef, Text }

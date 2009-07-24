@@ -2,7 +2,8 @@
  * Copyright 2005-2009 LAMP/EPFL
  * @author  Martin Odersky
  */
-package scala.tools.nsc.ast.parser
+package scala.tools.nsc
+package ast.parser
 
 /** A patch that postulates that a brace needs to be inserted or deleted at a given position.
  *  @param off  The offset where the brace needs to be inserted or deleted

@@ -1,4 +1,5 @@
-package scala.tools.nsc.util
+package scala.tools.nsc
+package util
 
 import java.io.{FileReader, BufferedReader, StreamTokenizer, FileNotFoundException}
 import scala.tools.nsc.io.AbstractFile

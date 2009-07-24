@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.xml.persistent
+package scala.xml
+package persistent
 
 /** an Index returns some unique key that is part of a node
  */

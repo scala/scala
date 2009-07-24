@@ -4,7 +4,9 @@
  */
 // $Id$
 
-package scala.tools.nsc.symtab.classfile
+package scala.tools.nsc
+package symtab
+package classfile
 
 /** Variable length byte arrays, with methods for basic pickling and unpickling.
  *

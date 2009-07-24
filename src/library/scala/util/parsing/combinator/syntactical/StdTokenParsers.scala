@@ -10,6 +10,7 @@
 
 
 package scala.util.parsing.combinator.syntactical
+import scala.util.parsing.combinator._
 
 import scala.util.parsing.syntax._
 import scala.collection.mutable.HashMap

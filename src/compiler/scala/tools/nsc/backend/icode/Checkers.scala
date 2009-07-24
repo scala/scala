@@ -5,7 +5,9 @@
 
 // $Id$
 
-package scala.tools.nsc.backend.icode
+package scala.tools.nsc
+package backend
+package icode
 
 import scala.collection.mutable.{Buffer, ListBuffer, Map, HashMap}
 import scala.tools.nsc.symtab._

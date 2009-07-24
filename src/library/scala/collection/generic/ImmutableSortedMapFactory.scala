@@ -10,6 +10,7 @@
 
 
 package scala.collection.generic
+import scala.collection._
 
 /** A template for companion objects of immutable.Map and subclasses thereof.
  */

@@ -12,7 +12,7 @@
 
 package scala.collection.immutable
 
-import generic._
+import scala.collection.generic._
 
 /** The canonical factory of <a href="ListMap.html">ListMap</a>'s */
 object ListMap extends ImmutableMapFactory[ListMap] {

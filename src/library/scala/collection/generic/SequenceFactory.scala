@@ -10,6 +10,8 @@
 
 
 package scala.collection.generic
+import scala.collection._
+import scala.collection._
 
 /** A template for companion objects of Sequence and subclasses thereof.
  */

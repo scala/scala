@@ -10,6 +10,9 @@
 
 
 package scala.util.parsing.json
+import scala.util.parsing.combinator._
+import scala.util.parsing.combinator.syntactical._
+import scala.util.parsing.combinator.lexical._
 
 /**
  * This object provides a simple interface to the JSON parser class. The default conversion

@@ -1,4 +1,5 @@
-package scala.tools.nsc.dependencies
+package scala.tools.nsc
+package dependencies
 
 import symtab.Flags
 

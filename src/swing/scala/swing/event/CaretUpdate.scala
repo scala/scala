@@ -9,6 +9,7 @@
 // $Id$
 
 
-package scala.swing.event
+package scala.swing
+package event
 
 case class CaretUpdate(override val source: TextComponent) extends ComponentEvent

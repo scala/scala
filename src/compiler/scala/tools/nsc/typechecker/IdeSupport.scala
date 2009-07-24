@@ -1,4 +1,5 @@
-package scala.tools.nsc.typechecker;
+package scala.tools.nsc
+package typechecker;
 import scala.collection.mutable.{WeakHashMap, LinkedHashSet}
 trait IdeSupport extends Analyzer {
   val global : Global with symtab.IdeSupport
@@ -99,6 +100,7 @@ trait IdeSupport extends Analyzer {
   }
   override def newTyper(txt : Context) : Typer = new Typer(txt)
   class Typer(context : Context) extends super.Typer(context) {
+    /*  !!! Miles, do we need still this? It's broken as it is because we have to return a Symbol not a Context
     override def qualifyingClassContext(tree: Tree, qual: Name, packageOK: Boolean): Context = {
       if (qual.isEmpty) super.qualifyingClassContext(tree, qual, packageOK)
       else {
@@ -116,6 +118,7 @@ trait IdeSupport extends Analyzer {
         c
       }
     }
+    */
     // no adapting.
     override protected def adapt(tree: Tree, mode: Int, pt: Type): Tree = super.adapt(tree,mode,pt)
     override def typed1(tree: Tree, mode: Int, pt: Type): Tree = tree match {

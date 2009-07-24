@@ -4,7 +4,9 @@
 
 // $Id$
 
-package scala.tools.nsc.symtab.clr
+package scala.tools.nsc
+package symtab
+package clr
 
 import java.io.File
 import java.util.{Comparator, StringTokenizer}

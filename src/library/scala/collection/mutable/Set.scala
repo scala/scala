@@ -11,7 +11,7 @@
 
 package scala.collection.mutable
 
-import generic._
+import scala.collection.generic._
 
 /** A generic trait for mutable sets. Concrete set implementations
  *  have to provide functionality for the abstract methods in Set:

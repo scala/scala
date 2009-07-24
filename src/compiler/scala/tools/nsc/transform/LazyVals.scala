@@ -1,4 +1,5 @@
-package scala.tools.nsc.transform;
+package scala.tools.nsc
+package transform;
 
 import scala.tools.nsc._
 import scala.collection.mutable.HashMap

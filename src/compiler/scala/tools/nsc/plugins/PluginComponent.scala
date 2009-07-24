@@ -5,7 +5,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.plugins
+package scala.tools.nsc
+package plugins
 
 /** A component that is part of a Plugin.
  *

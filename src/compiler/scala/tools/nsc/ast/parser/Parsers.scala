@@ -6,7 +6,8 @@
 //todo: allow infix type patterns
 
 
-package scala.tools.nsc.ast.parser
+package scala.tools.nsc
+package ast.parser
 
 import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.util.{Position, OffsetPosition, NoPosition, BatchSourceFile}
@@ -2340,14 +2341,16 @@ self =>
 
   /** Create a tree representing a packaging */
     def makePackaging(start: Int, pkg: Tree, stats: List[Tree]): PackageDef =
-      atPos(start, pkg.pos.point) {
+      atPos(start, pkg.pos.point) { PackageDef(pkg.asInstanceOf[RefTree], stats) }
+/*
         pkg match {
-          case Ident(name) =>
-            PackageDef(name, stats)
-          case Select(qual, name) =>
-            makePackaging(start, qual, List(PackageDef(name, stats)))
+          case id @ Ident(_) =>
+            PackageDef(id, stats)
+          case Select(qual, name) => // drop this to flatten packages
+            makePackaging(start, qual, List(PackageDef(Ident(name), stats)))
         }
       }
+*/
 
     /** Create a tree representing a package object, converting
      *    package object foo { ... }
@@ -2528,34 +2531,32 @@ self =>
       stats.toList
     }
 
-    /** CompilationUnit ::= [package QualId semi] TopStatSeq
+    /** CompilationUnit ::= {package QualId semi} TopStatSeq
      */
     def compilationUnit(): Tree = checkNoEscapingPlaceholders {
-      val ts = new ListBuffer[Tree]
-
-      // @S: the IDE can insert phantom semi-colons before package during editing
-      // @S: just eat them (doesn't really change the grammar)
-      while (in.token == SEMI) in.nextToken()
-      val start = in.offset
-      if (in.token == PACKAGE) {
-        in.nextToken()
-	if (in.token == OBJECT) {
-	  ts += makePackageObject(start, objectDef(NoMods))
-	  if (in.token != EOF) {
-	    acceptStatSep()
-	    ts ++= topStatSeq()
-	  }
-	} else {
-          val pkg = qualId()
-          newLineOptWhenFollowedBy(LBRACE)
-          if (in.token == EOF) {
-            ts += makePackaging(start, pkg, List())
-          } else if (isStatSep) {
-            in.nextToken()
-            ts += makePackaging(start, pkg, topStatSeq())
-          } else {
-            accept(LBRACE)
-            ts += makePackaging(start, pkg, topStatSeq())
+      def topstats(): List[Tree] = {
+        val ts = new ListBuffer[Tree]
+        while (in.token == SEMI) in.nextToken()
+        val start = in.offset
+        if (in.token == PACKAGE) {
+          in.nextToken()
+	  if (in.token == OBJECT) {
+	    ts += makePackageObject(start, objectDef(NoMods))
+	    if (in.token != EOF) {
+	      acceptStatSep()
+	      ts ++= topStatSeq()
+	    }
+	  } else {
+            val pkg = qualId()
+            newLineOptWhenFollowedBy(LBRACE)
+            if (in.token == EOF) {
+              ts += makePackaging(start, pkg, List())
+            } else if (isStatSep) {
+              in.nextToken()
+              ts += makePackaging(start, pkg, topstats())
+            } else {
+              accept(LBRACE)
+              ts += makePackaging(start, pkg, topStatSeq())
               accept(RBRACE)
               ts ++= topStatSeq()
             }
@@ -2563,13 +2564,15 @@ self =>
         } else {
           ts ++= topStatSeq()
         }
-        val stats = ts.toList
-        atPos(start) {
-          stats match {
-            case List(stat @ PackageDef(_, _)) => stat
-            case _ => makePackaging(start, atPos(o2p(start)) { Ident(nme.EMPTY_PACKAGE_NAME) }, stats)
-          }
+        ts.toList
+      }
+      val start = in.offset
+      atPos(start) {
+        topstats() match {
+          case List(stat @ PackageDef(_, _)) => stat
+          case stats => makePackaging(start, atPos(o2p(start)) { Ident(nme.EMPTY_PACKAGE_NAME) }, stats)
         }
+      }
     }
   }
 }

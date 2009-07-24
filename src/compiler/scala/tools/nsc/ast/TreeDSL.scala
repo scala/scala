@@ -4,7 +4,8 @@
  * @author  Paul Phillips
  */
 
-package scala.tools.nsc.ast
+package scala.tools.nsc
+package ast
 
 /** A DSL for generating scala code.  The goal is that the
  *  code generating code should look a lot like the code it

@@ -1,6 +1,7 @@
-package scala.tools.nsc.dependencies;
+package scala.tools.nsc
+package dependencies;
 import util.SourceFile;
-import nsc.io.AbstractFile
+import io.AbstractFile
 
 trait DependencyAnalysis extends SubComponent with Files {
   import global._

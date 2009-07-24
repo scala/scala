@@ -1,4 +1,5 @@
-package scala.tools.nsc.symtab
+package scala.tools.nsc
+package symtab
 
 trait SymbolWalker {
   val global : Global

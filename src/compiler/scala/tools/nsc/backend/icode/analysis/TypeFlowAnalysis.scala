@@ -5,7 +5,8 @@
 
 // $Id$
 
-package scala.tools.nsc.backend.icode.analysis
+package scala.tools.nsc
+package backend.icode.analysis
 
 import scala.collection.{mutable, immutable}
 

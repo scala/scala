@@ -9,7 +9,9 @@
 // $Id$
 
 
-package scala.xml.dtd
+package scala.xml
+package dtd
+
 import Utility.sbToString
 
 abstract class Decl

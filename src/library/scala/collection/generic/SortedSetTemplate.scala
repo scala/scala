@@ -10,6 +10,7 @@
 // !!! todo: integrate in new collections library
 
 package scala.collection.generic
+import scala.collection._
 
 /** A template for sets which are sorted.
  *

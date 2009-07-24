@@ -1,6 +1,7 @@
 package scala.collection.immutable
 
-import generic._
+import scala.collection.generic._
+import scala.collection.mutable
 
 /** A subtrait of collection.Iterable which represents iterables
  *  that cannot be mutated.

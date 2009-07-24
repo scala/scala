@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.swing.event
+package scala.swing
+package event
 
 trait ComponentEvent extends UIEvent {
   override val source: Component

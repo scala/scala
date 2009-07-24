@@ -1,4 +1,5 @@
-package scala.tools.nsc.interactive
+package scala.tools.nsc
+package interactive
 
 import scala.collection._
 
@@ -6,7 +7,7 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import util.FakePos
 
 import dependencies._
-import nsc.io.AbstractFile
+import io.AbstractFile
 
 trait BuildManager {
 
@@ -27,7 +28,7 @@ trait BuildManager {
   /** Save dependency information to `file'. */
   def saveTo(file: AbstractFile)
 
-  def compiler: nsc.Global
+  def compiler: scala.tools.nsc.Global
 }
 
 

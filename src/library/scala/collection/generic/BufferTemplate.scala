@@ -11,8 +11,9 @@
 
 package scala.collection.generic
 
-import mutable.Buffer
-import script._
+import scala.collection._
+import scala.collection.mutable.Buffer
+import scala.collection.script._
 
 /** Buffers are used to create sequences of elements incrementally by
  *  appending, prepending, or inserting new elements. It is also

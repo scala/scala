@@ -16,7 +16,7 @@
  */
 package scala.collection.immutable
 
-import generic._
+import scala.collection.generic._
 
 trait SortedSet[A] extends Set[A] with collection.SortedSet[A] with SortedSetTemplate[A, SortedSet[A]] {
   /** Needs to be overridden in subclasses. */

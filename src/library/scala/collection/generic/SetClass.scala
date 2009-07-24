@@ -10,6 +10,7 @@
 
 
 package scala.collection.generic
+import scala.collection._
 
 trait SetClass[A, +CC[X] <: Set[X]] extends TraversableClass[A, CC] {
   def empty: CC[A] = companion.empty[A]

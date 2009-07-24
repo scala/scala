@@ -23,8 +23,8 @@ import reporters.{ ConsoleReporter, Reporter }
 import symtab.{ Flags, Names }
 import util.{ SourceFile, BatchSourceFile, ClassPath }
 import scala.util.NameTransformer
-import nsc.{ InterpreterResults => IR }
-import nsc.interpreter._
+import scala.tools.nsc.{ InterpreterResults => IR }
+import interpreter._
 import Interpreter._
 
 /** <p>

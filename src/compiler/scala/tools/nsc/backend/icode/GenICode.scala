@@ -5,7 +5,9 @@
 
 // $Id$
 
-package scala.tools.nsc.backend.icode
+package scala.tools.nsc
+package backend
+package icode
 
 import scala.collection.mutable.{Map, HashMap, ListBuffer, Buffer, HashSet}
 import scala.tools.nsc.symtab._
@@ -77,8 +79,8 @@ abstract class GenICode extends SubComponent  {
     def gen(tree: Tree, ctx: Context): Context = tree match {
       case EmptyTree => ctx
 
-      case PackageDef(name, stats) =>
-        gen(stats, ctx setPackage name)
+      case PackageDef(pid, stats) =>
+        gen(stats, ctx setPackage pid.name)
 
       case ClassDef(mods, name, _, impl) =>
         log("Generating class: " + tree.symbol.fullNameString)

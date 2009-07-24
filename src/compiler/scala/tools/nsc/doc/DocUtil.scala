@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.doc
+package scala.tools.nsc
+package doc
 
 import java.io.StringReader
 import org.xml.sax.InputSource

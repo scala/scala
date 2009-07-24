@@ -14,7 +14,7 @@ package scala.collection
 import mutable.ListBuffer
 // import immutable.{List, Nil, ::}
 import generic._
-import util.control.Breaks._
+import scala.util.control.Breaks._
 
 /** Class <code>Sequence[A]</code> represents sequences of elements
  *  of type <code>A</code>.

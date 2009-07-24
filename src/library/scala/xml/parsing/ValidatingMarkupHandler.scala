@@ -9,8 +9,8 @@
 // $Id$
 
 
-package scala.xml.parsing
-
+package scala.xml
+package parsing
 
 import scala.xml.dtd._
 import scala.util.logging.Logged

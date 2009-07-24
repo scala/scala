@@ -10,7 +10,8 @@
 
 package scala.collection.immutable
 
-import generic._
+import scala.collection.generic._
+import scala.collection.mutable
 
 /** This class implements immutable sets using a hash table.
  * It is optimized for sequential accesses where the last updated table is accessed most often.

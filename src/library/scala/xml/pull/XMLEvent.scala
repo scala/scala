@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.xml.pull
+package scala.xml
+package pull
 
 /** This class represents an XML event for pull parsing.
  *  Pull parsing means that during the traversal of the XML

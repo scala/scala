@@ -9,6 +9,7 @@
 // $Id$
 
 
-package scala.swing.event
+package scala.swing
+package event
 
 case class WindowDeiconified(override val source: Window) extends WindowEvent(source)

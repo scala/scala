@@ -1,4 +1,7 @@
-package scala.tools.scalap.scalax.rules.scalasig
+package scala.tools.scalap
+package scalax
+package rules
+package scalasig
 
 trait Flags {
   def hasFlag(flag : Long) : Boolean

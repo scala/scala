@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.ast
+package scala.tools.nsc
+package ast
 
 import scala.collection.mutable.ListBuffer
 import symtab.Flags._

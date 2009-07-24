@@ -10,6 +10,7 @@
 
 
 package scala.collection.generic
+import scala.collection._
 
 import Math.MAX_INT
 import TraversableView.NoBuilder

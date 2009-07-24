@@ -1,6 +1,7 @@
 package scala.collection.immutable
 
-import generic._
+import scala.collection.generic._
+import scala.collection.mutable
 
 /** A subtrait of Traversable in package collection which represents traversables
  *  that cannot be mutated.

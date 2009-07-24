@@ -2,7 +2,8 @@
  * Copyright 2005-2009 LAMP/EPFL
  */
 // $Id$
-package scala.tools.nsc.io
+package scala.tools.nsc
+package io
 import scala.collection.{mutable=>mut}
 
 /**

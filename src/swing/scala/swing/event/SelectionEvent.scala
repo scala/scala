@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.swing.event
+package scala.swing
+package event
 
 /**
  * An event that indicates a change in a selection such as in a list view or a table.

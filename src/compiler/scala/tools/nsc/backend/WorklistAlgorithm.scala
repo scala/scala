@@ -5,7 +5,8 @@
 
 // $Id$
 
-package scala.tools.nsc.backend
+package scala.tools.nsc
+package backend
 
 import scala.tools.nsc.ast._
 import scala.collection.mutable.Stack

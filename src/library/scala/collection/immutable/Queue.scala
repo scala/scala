@@ -27,8 +27,7 @@ object Queue {
 @serializable
 class Queue[+A] protected(
   protected val  in: List[A],
-  protected val out: List[A])
-extends immutable.Sequence[A]
+  protected val out: List[A]) extends Sequence[A]
 {
   /** Returns the <code>n</code>-th element of this queue.
    *  The first element is at position 0.

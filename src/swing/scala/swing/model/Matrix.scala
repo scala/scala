@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.swing.model
+package scala.swing
+package model
 
 /*trait Matrix[A] extends Function2[Int, Int, A] {
 

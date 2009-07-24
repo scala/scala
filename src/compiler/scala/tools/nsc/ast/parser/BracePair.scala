@@ -2,7 +2,8 @@
  * Copyright 2005-2009 LAMP/EPFL
  * @author  Martin Odersky
  */
-package scala.tools.nsc.ast.parser
+package scala.tools.nsc
+package ast.parser
 
 /** A descriptor for a matching pair of braces.
  *  @param loff  The offset of the opening brace (-1 means missing)

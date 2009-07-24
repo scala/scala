@@ -5,7 +5,8 @@
 
 // $Id$
 
-package scala.tools.partest.nest
+package scala.tools.partest
+package nest
 
 import java.io.{Writer, PrintWriter, Reader, BufferedReader,
                 IOException, InputStream, StringWriter, InputStreamReader,

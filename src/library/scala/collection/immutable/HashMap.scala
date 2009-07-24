@@ -11,7 +11,8 @@
 
 package scala.collection.immutable
 
-import generic._
+import scala.collection.generic._
+import scala.collection.mutable
 import annotation.unchecked.uncheckedVariance
 
 /** This class implements immutable maps using a hash table.

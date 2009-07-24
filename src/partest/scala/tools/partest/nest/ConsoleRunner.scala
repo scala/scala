@@ -5,7 +5,8 @@
 
 // $Id$
 
-package scala.tools.partest.nest
+package scala.tools.partest
+package nest
 
 import java.io.{File, PrintStream, FileOutputStream, BufferedReader,
                 InputStreamReader, StringWriter, PrintWriter}
@@ -131,7 +132,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
           fileManager.latestCompFile.getParentFile.getParentFile.getCanonicalFile
       NestUI.outline("Scala compiler classes in: "+dir+"\n")
 
-      NestUI.outline("Scala version is:          "+nsc.Properties.versionMsg+"\n")
+      NestUI.outline("Scala version is:          "+scala.tools.nsc.Properties.versionMsg+"\n")
       NestUI.outline("Scalac options are:        "+fileManager.SCALAC_OPTS+"\n")
 
       val vmBin  = javaHome + File.separator + "bin"

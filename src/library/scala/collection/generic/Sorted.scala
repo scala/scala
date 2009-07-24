@@ -9,6 +9,7 @@
 // $Id$
 
 package scala.collection.generic
+import scala.collection._
 
 /** Any collection (including maps) whose keys (or elements) are ordered.
  *

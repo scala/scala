@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.dbc.statement
+package scala.dbc
+package statement
 
 
 /** An expression that calculates some value from fields. */

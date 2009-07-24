@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.dbc.datatype;
+package scala.dbc
+package datatype;
 
 
 /** The SQL type for a truth value. */

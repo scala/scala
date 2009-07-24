@@ -1,7 +1,8 @@
-package scala.tools.nsc.dependencies;
+package scala.tools.nsc
+package dependencies;
 
 import java.io.{InputStream, OutputStream, PrintStream, InputStreamReader, BufferedReader}
-import nsc.io.{AbstractFile, PlainFile}
+import io.{AbstractFile, PlainFile}
 
 import scala.collection._;
 

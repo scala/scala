@@ -8,7 +8,8 @@
 
 // $Id$
 
-package scala.xml.include
+package scala.xml
+package include
 
 /**
  * <p>

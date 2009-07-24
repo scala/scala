@@ -5,7 +5,8 @@
 
 // $Id$
 
-package scala.tools.partest.nest
+package scala.tools.partest
+package nest
 
 import scala.tools.nsc.{Global, Settings, CompilerCommand, FatalError}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}

@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.ast
+package scala.tools.nsc
+package ast
 
 import compat.Platform.EOL
 import symtab.Flags._
@@ -317,8 +318,10 @@ abstract class NodePrinters {
             traverse(tpt, level + 1, true)
             traverse(rhs, level + 1, false)
             printcln(")")
-          case PackageDef(name, stats) =>
-            println("PackageDef("+name+", ")
+          case PackageDef(pid, stats) =>
+            println("PackageDef(")
+            traverse(pid, level + 1, false)
+            println(",\n")
             for (stat <- stats)
               traverse(stat, level + 1, false)
             printcln(")")

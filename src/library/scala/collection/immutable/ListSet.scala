@@ -11,7 +11,7 @@
 
 package scala.collection.immutable
 
-import generic._
+import scala.collection.generic._
 
 /** The canonical factory of <a href="ListSet.html">ListSet</a>'s */
 object ListSet extends SetFactory[ListSet] {

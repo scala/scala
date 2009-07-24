@@ -7,7 +7,8 @@
 \*                                                                      */
 package scala.collection.immutable
 
-import generic._
+import scala.collection.generic._
+import scala.collection.mutable
 
 /** A subtrait of collection.Sequence which represents sequences
  *  that cannot be mutated.

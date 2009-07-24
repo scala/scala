@@ -12,7 +12,7 @@
 package scala.collection.mutable
 
 import Predef._
-import generic._
+import scala.collection.generic._
 
 /** This class implements mutable maps using a hashtable.
  *

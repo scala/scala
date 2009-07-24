@@ -9,7 +9,8 @@
 // $Id:Tuple.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
-package scala.dbc.result;
+package scala.dbc
+package result;
 
 
 /** An ISO-9075:2003 (SQL) table row. This is equivalent to a tuple in the relational model. */

@@ -7,6 +7,7 @@
 \*                                                                      */
 
 package scala.collection.generic
+import scala.collection._
 
 // Methods could be printed by  cat MapTemplate.scala | egrep '^  (override )?def'
 

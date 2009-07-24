@@ -8,7 +8,8 @@
 //todo: use inherited type info also for vars and values
 //todo: disallow C#D in superclass
 //todo: treat :::= correctly
-package scala.tools.nsc.typechecker
+package scala.tools.nsc
+package typechecker
 
 import scala.collection.mutable.{LinkedHashMap, ListBuffer}
 import scala.tools.nsc.util.{HashSet, Position, Set, NoPosition, SourceFile}

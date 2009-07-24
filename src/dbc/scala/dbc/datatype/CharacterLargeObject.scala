@@ -9,7 +9,8 @@
 // $Id:CharacterLargeObject.scala 6853 2006-03-20 16:58:47 +0100 (Mon, 20 Mar 2006) dubochet $
 
 
-package scala.dbc.datatype;
+package scala.dbc
+package datatype;
 
 
 /** A SQL type for an unbounded length string of characters with arbitrary

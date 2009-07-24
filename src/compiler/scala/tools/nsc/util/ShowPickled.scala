@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.util
+package scala.tools.nsc
+package util
 
 import java.io.{File, FileInputStream, PrintStream, IOException}
 import java.lang.Long.toHexString

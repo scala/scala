@@ -8,7 +8,8 @@
 //todo: use inherited type info also for vars and values
 //todo: disallow C#D in superclass
 //todo: treat :::= correctly
-package scala.tools.nsc.typechecker
+package scala.tools.nsc
+package typechecker
 
 import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.util.control.ControlException
@@ -516,24 +517,20 @@ trait Typers { self: Analyzer =>
         tparam.symbol.deSkolemize
       }
 
-    /** The qualifying class of a this or super with prefix <code>qual</code>.
-     *
-     *  @param tree ...
-     *  @param qual ...
-     *  @return     ...
+    /** The qualifying class
+     *  of a this or super with prefix <code>qual</code>.
      */
-    def qualifyingClassContext(tree: Tree, qual: Name, packageOK: Boolean): Context = {
-      var c = context.enclClass
-      if (!qual.isEmpty) {
-        while (c != NoContext && c.owner.name != qual) c = c.outer.enclClass
+    def qualifyingClass(tree: Tree, qual: Name, packageOK: Boolean): Symbol =
+      context.enclClass.owner.ownerChain.find(o => qual.isEmpty || o.isClass && o.name == qual) match {
+        case Some(c) if packageOK || !c.isPackageClass =>
+          c
+        case _ =>
+          error(
+            tree.pos,
+            if (qual.isEmpty) tree+" can be used only in a class, object, or template"
+            else qual+" is not an enclosing class")
+          NoSymbol
       }
-      if (c == NoContext || !(packageOK || c.enclClass.tree.isInstanceOf[Template]))
-        error(
-          tree.pos,
-          if (qual.isEmpty) tree+" can be used only in a class, object, or template"
-          else qual+" is not an enclosing class")
-      c
-    }
 
     /** The typer for an expression, depending on where we are. If we are before a superclass
      *  call, this is a typer over a constructor context; otherwise it is the current typer.
@@ -1750,11 +1747,9 @@ trait Typers { self: Analyzer =>
 
     def typedStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val inBlock = exprOwner == context.owner
-      val localTarget =
-        context.unit != null &&
-        context.unit.targetPos != NoPosition &&
-        (stats exists (context.unit.targetPos includes _.pos))
-
+      def includesTargetPos(tree: Tree) =
+        !tree.pos.isSynthetic && context.unit != null && (tree.pos includes context.unit.targetPos)
+      val localTarget = stats exists includesTargetPos
       def typedStat(stat: Tree): Tree = {
         if (context.owner.isRefinementClass && !treeInfo.isDeclaration(stat))
           errorTree(stat, "only declarations allowed here")
@@ -1768,7 +1763,7 @@ trait Typers { self: Analyzer =>
               }
               EmptyTree
             case _ =>
-              if (localTarget && !(context.unit.targetPos includes stat.pos)) {
+              if (localTarget && !includesTargetPos(tree))
                 stat
               } else {
                 val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) this
@@ -2272,8 +2267,7 @@ trait Typers { self: Analyzer =>
      *
      * @param annClass the expected annotation class
      */
-    def typedAnnotation(ann: Tree, mode: Int = EXPRmode, selfsym: Symbol = NoSymbol,
-                        annClass: Symbol = AnnotationClass, requireJava: Boolean = false): AnnotationInfo = {
+    def typedAnnotation(ann: Tree, mode: Int = EXPRmode, selfsym: Symbol = NoSymbol, annClass: Symbol = AnnotationClass, requireJava: Boolean = false): AnnotationInfo = {
       lazy val annotationError = AnnotationInfo(ErrorType, Nil, Nil)
       var hasError: Boolean = false
       def error(pos: Position, msg: String) = {
@@ -3148,14 +3142,11 @@ trait Typers { self: Analyzer =>
 */
       }
 
+      def qualifyingClassSym(qual: Name): Symbol =
+        if (tree.symbol != NoSymbol) tree.symbol else qualifyingClass(tree, qual, false)
+
       def typedSuper(qual: Name, mix: Name) = {
-        val (clazz, selftype) =
-          if (tree.symbol != NoSymbol) {
-            (tree.symbol, tree.symbol.thisType)
-          } else {
-            val clazzContext = qualifyingClassContext(tree, qual, false)
-            (clazzContext.owner, clazzContext.prefix)
-          }
+        val clazz = qualifyingClassSym(qual)
         if (clazz == NoSymbol) setError(tree)
         else {
           def findMixinSuper(site: Type): Type = {
@@ -3186,26 +3177,19 @@ trait Typers { self: Analyzer =>
             } else {
               findMixinSuper(clazz.info)
             }
-          tree setSymbol clazz setType mkSuperType(selftype, owntype)
+          tree setSymbol clazz setType mkSuperType(clazz.thisType, owntype)
         }
       }
 
       def typedThis(qual: Name) = {
-        val (clazz, selftype) =
-          if (tree.symbol != NoSymbol) {
-            (tree.symbol, tree.symbol.thisType)
-          } else {
-            val clazzContext = qualifyingClassContext(tree, qual, false)
-            (clazzContext.owner, clazzContext.prefix)
-          }
+        val clazz = qualifyingClassSym(qual)
         if (clazz == NoSymbol) setError(tree)
         else {
-          tree setSymbol clazz setType selftype.underlying
-          if (isStableContext(tree, mode, pt)) tree setType selftype
+          tree setSymbol clazz setType clazz.thisType.underlying
+          if (isStableContext(tree, mode, pt)) tree setType clazz.thisType
           tree
         }
       }
-
 
       /** Attribute a selection where <code>tree</code> is <code>qual.name</code>.
        *  <code>qual</code> is already attributed.
@@ -3485,11 +3469,12 @@ trait Typers { self: Analyzer =>
       if ((sym ne null) && (sym ne NoSymbol)) sym.initialize
       //if (settings.debug.value && tree.isDef) log("typing definition of "+sym);//DEBUG
       tree match {
-        case PackageDef(name, stats) =>
+        case PackageDef(pid, stats) =>
+          val pid1 = typedQualifier(pid).asInstanceOf[RefTree]
           assert(sym.moduleClass ne NoSymbol, sym)
           val stats1 = newTyper(context.make(tree, sym.moduleClass, sym.info.decls))
             .typedStats(stats, NoSymbol)
-          treeCopy.PackageDef(tree, name, stats1) setType NoType
+          treeCopy.PackageDef(tree, pid1, stats1) setType NoType
 
         case tree @ ClassDef(_, _, _, _) =>
           newTyper(context.makeNewScope(tree, sym)).typedClassDef(tree)

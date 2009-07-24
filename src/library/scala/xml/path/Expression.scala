@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.xml.path
+package scala.xml
+package path
 
 object Expression
 {

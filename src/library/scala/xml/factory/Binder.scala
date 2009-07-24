@@ -9,8 +9,8 @@
 // $Id$
 
 
-package scala.xml.factory
-
+package scala.xml
+package factory
 
 import scala.xml.parsing.ValidatingMarkupHandler
 

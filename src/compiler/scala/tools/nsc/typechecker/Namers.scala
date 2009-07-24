@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.typechecker
+package scala.tools.nsc
+package typechecker
 
 import scala.collection.mutable.HashMap
 import scala.tools.nsc.util.Position
@@ -70,7 +71,7 @@ trait Namers { self: Analyzer =>
 
     def setPrivateWithin[Sym <: Symbol](tree: Tree, sym: Sym, mods: Modifiers): Sym = {
       if (!mods.privateWithin.isEmpty)
-        sym.privateWithin = typer.qualifyingClassContext(tree, mods.privateWithin, true).owner
+        sym.privateWithin = typer.qualifyingClass(tree, mods.privateWithin, true)
       sym
     }
 
@@ -175,19 +176,21 @@ trait Namers { self: Analyzer =>
       } else scope enter sym
     }
 
-    def enterPackageSymbol(pos: Position, name: Name): Symbol = {
-      val (cscope, cowner) =
-        if (context.owner == EmptyPackageClass) (RootClass.info.decls, RootClass)
-        else (context.scope, context.owner)
-      val p: Symbol = cscope.lookupWithContext(name)(context.owner)
-      if (p.isPackage && cscope == p.owner.info.decls) {
-        p
-      } else {
-        val pkg = cowner.newPackage(pos, name)
+    def enterPackageSymbol(pos: Position, pid: RefTree, pkgOwner: Symbol): Symbol = {
+      val owner = pid match {
+        case Ident(name) =>
+          pkgOwner
+        case Select(qual: RefTree, name) =>
+          enterPackageSymbol(pos, qual, pkgOwner).moduleClass
+      }
+      var pkg = owner.info.decls.lookupWithContext(pid.name)(owner)
+      if (!pkg.isPackage || owner != pkg.owner) {
+        pkg = owner.newPackage(pos, pid.name)
         pkg.moduleClass.setInfo(new PackageClassInfoType(newScope, pkg.moduleClass, null))
         pkg.setInfo(pkg.moduleClass.tpe)
-        enterInScope(pkg, cscope)
+        enterInScope(pkg, owner.info.decls)
       }
+      pkg
     }
 
     def enterClassSymbol(tree : ClassDef): Symbol = {
@@ -324,8 +327,9 @@ trait Namers { self: Analyzer =>
       if (tree.symbol == NoSymbol) {
         val owner = context.owner
         tree match {
-          case PackageDef(name, stats) =>
-            tree.symbol = enterPackageSymbol(tree.pos, name)
+          case PackageDef(pid, stats) =>
+            tree.symbol = enterPackageSymbol(tree.pos, pid,
+              if (context.owner == EmptyPackageClass) RootClass else context.owner)
             val namer = newNamer(
                 context.make(tree, tree.symbol.moduleClass, tree.symbol.info.decls))
             namer.enterSyms(stats)

@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.util
+package scala.tools.nsc
+package util
 
 class HashSet[T >: Null <: AnyRef](initialCapacity: Int) extends Set[T] {
 

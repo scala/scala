@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.dbc.value;
+package scala.dbc
+package value;
 
 
 import java.math._;

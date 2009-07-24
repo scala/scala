@@ -11,8 +11,8 @@
 
 package scala.collection.immutable
 
-import mutable.ListBuffer
-import generic._
+import scala.collection.mutable.ListBuffer
+import scala.collection.generic._
 
 /** A class representing an ordered collection of elements of type
  *  <code>a</code>. This class comes with two implementing case
@@ -220,8 +220,6 @@ sealed abstract class List[+A] extends LinearSequence[A]
     }
     loop(drop(n), this)
   }
-
-  // dropRight is inherited from Stream
 
   /** Split the list at a given point and return the two parts thus
    *  created.

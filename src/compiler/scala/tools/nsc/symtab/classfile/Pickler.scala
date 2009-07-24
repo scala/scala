@@ -4,7 +4,9 @@
  */
 // $Id$
 
-package scala.tools.nsc.symtab.classfile
+package scala.tools.nsc
+package symtab
+package classfile
 
 import java.lang.{Float, Double}
 import scala.tools.nsc.util.{Position, NoPosition, ShowPickled}
@@ -210,8 +212,8 @@ abstract class Pickler extends SubComponent {
       tree match {
         case EmptyTree =>
 
-        case tree@PackageDef(name, stats) =>
-          putEntry(name)
+        case tree@PackageDef(pid, stats) =>
+          putTree(pid)
           putTrees(stats)
 
         case ClassDef(mods, name, tparams, impl) =>
@@ -622,12 +624,12 @@ abstract class Pickler extends SubComponent {
           writeNat(EMPTYtree)
           TREE
 
-        case tree@PackageDef(name, stats) =>
+        case tree@PackageDef(pid, stats) =>
           writeNat(PACKAGEtree)
           writeRef(tree.tpe)
           writeRef(tree.symbol)
           writeRef(tree.mods)
-          writeRef(name)
+          writeRef(pid)
           writeRefs(stats)
           TREE
 

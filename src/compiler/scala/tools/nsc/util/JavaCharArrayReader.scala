@@ -4,7 +4,8 @@
  */
 // $Id: CharArrayReader.scala 17610 2009-04-30 22:38:36Z extempore $
 
-package scala.tools.nsc.util
+package scala.tools.nsc
+package util
 
 import scala.tools.nsc.util.SourceFile.{LF, FF, CR, SU}
 

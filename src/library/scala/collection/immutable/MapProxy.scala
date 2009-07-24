@@ -11,7 +11,7 @@
 
 package scala.collection.immutable
 
-import generic.MapProxyTemplate
+import scala.collection.generic.MapProxyTemplate
 
 /** <p>
  *    This is a simple wrapper class for <a href="Map.html"
@@ -26,10 +26,10 @@ import generic.MapProxyTemplate
  *  @version 2.0, 31/12/2006
  */
 
-trait MapProxy[A, +B] extends immutable.Map[A, B] with MapProxyTemplate[A, B, immutable.Map[A, B]]
+trait MapProxy[A, +B] extends Map[A, B] with MapProxyTemplate[A, B, Map[A, B]]
 {
   override def thisCollection = this
-  private def newProxy[B1 >: B](newSelf: immutable.Map[A, B1]): MapProxy[A, B1] =
+  private def newProxy[B1 >: B](newSelf: Map[A, B1]): MapProxy[A, B1] =
     new MapProxy[A, B1] { val self = newSelf }
 
   override def empty = newProxy(self.empty)

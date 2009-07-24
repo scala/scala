@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.symtab
+package scala.tools.nsc
+package symtab
 
 /** Additions to the type checker that can be added at
  *  run time.  Typically these are added by

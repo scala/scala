@@ -10,6 +10,7 @@
 
 
 package scala.collection.generic
+import scala.collection._
 
 /** A template for maps whose keys are sorted.
  *  To create a concrete sorted map, you need to implement the rangeImpl method,

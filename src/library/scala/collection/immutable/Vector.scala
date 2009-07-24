@@ -7,8 +7,8 @@
 \*                                                                      */
 package scala.collection.immutable
 
-import generic._
-import mutable.ArrayBuffer
+import scala.collection.generic._
+import scala.collection.mutable.ArrayBuffer
 
 /** A subtrait of collection.Vector which represents sequences
  *  that cannot be mutated.

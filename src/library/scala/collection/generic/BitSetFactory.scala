@@ -7,6 +7,7 @@
 \*                                                                      */
 // $Id$
 package scala.collection.generic
+import scala.collection._
 
 trait BitSetFactory[Coll <: BitSet with BitSetTemplate[Coll]] {
   def newBuilder: Builder[Int, Coll] = new AddingBuilder[Int, Coll](empty)

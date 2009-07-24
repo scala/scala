@@ -1,4 +1,5 @@
-package scala.tools.nsc.interactive
+package scala.tools.nsc
+package interactive
 
 import scala.collection._
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
@@ -6,7 +7,7 @@ import scala.util.control.Breaks._
 
 import dependencies._
 import util.FakePos
-import nsc.io.AbstractFile
+import io.AbstractFile
 
 /** A more defined build manager, based on change sets. For each
  *  updated source file, it computes the set of changes to its
@@ -16,7 +17,7 @@ import nsc.io.AbstractFile
  */
 class RefinedBuildManager(val settings: Settings) extends Changes with BuildManager {
 
-  class BuilderGlobal(settings: Settings) extends nsc.Global(settings)  {
+  class BuilderGlobal(settings: Settings) extends scala.tools.nsc.Global(settings)  {
 
     object referencesAnalysis extends {
       val global: BuilderGlobal.this.type = BuilderGlobal.this

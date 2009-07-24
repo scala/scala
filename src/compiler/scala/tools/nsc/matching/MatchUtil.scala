@@ -1,7 +1,8 @@
 /* NSC -- new Scala compiler
  */
 
-package scala.tools.nsc.matching
+package scala.tools.nsc
+package matching
 
 /**
  *  Utility classes, most of which probably belong somewhere else.

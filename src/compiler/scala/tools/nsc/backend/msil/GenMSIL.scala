@@ -5,7 +5,8 @@
 
 // $Id$
 
-package scala.tools.nsc.backend.msil
+package scala.tools.nsc
+package backend.msil
 
 import java.io.{File, IOException}
 import java.nio.{ByteBuffer, ByteOrder}

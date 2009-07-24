@@ -11,7 +11,7 @@
 
 package scala.collection.immutable
 
-import generic._
+import scala.collection.generic._
 import BitSetTemplate.{LogWL, updateArray}
 
 /** a base class for immutable bit sets

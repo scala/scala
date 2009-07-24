@@ -10,6 +10,7 @@
 
 
 package scala.collection.generic
+import scala.collection._
 
 /** The reason for this class is so that we can
  *  have both a generic immutable `+` with signature

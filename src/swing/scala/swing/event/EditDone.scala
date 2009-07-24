@@ -9,6 +9,7 @@
 // $Id$
 
 
-package scala.swing.event
+package scala.swing
+package event
 
 case class EditDone(override val source: TextField) extends ValueChanged(source)

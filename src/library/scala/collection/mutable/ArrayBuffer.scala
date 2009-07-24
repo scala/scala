@@ -11,7 +11,7 @@
 
 package scala.collection.mutable
 
-import generic._
+import scala.collection.generic._
 
 /** An implementation of the <code>Buffer</code> class using an array to
  *  represent the assembled sequence internally. Append, update and random

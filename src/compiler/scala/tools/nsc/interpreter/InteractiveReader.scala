@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.interpreter
+package scala.tools.nsc
+package interpreter
 import scala.util.control.Exception._
 
 /** Reads lines from an input stream */

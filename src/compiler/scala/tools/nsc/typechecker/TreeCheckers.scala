@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.typechecker
+package scala.tools.nsc
+package typechecker
 
 import scala.tools.nsc.symtab.Flags._
 import scala.tools.nsc.util.{Position, NoPosition}

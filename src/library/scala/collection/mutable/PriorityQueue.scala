@@ -11,7 +11,7 @@
 
 package scala.collection.mutable
 
-import generic.{ Addable, Cloneable, Growable }
+import scala.collection.generic.{ Addable, Cloneable, Growable }
 
 
 /** This class implements priority queues using a heap.

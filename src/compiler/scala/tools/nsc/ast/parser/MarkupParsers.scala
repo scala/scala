@@ -4,7 +4,8 @@
  */
 // $Id: MarkupParsers.scala 17754 2009-05-18 10:54:00Z milessabin $
 
-package scala.tools.nsc.ast.parser
+package scala.tools.nsc
+package ast.parser
 
 import scala.collection.mutable
 import scala.util.control.ControlException

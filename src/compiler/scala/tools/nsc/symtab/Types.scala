@@ -4,7 +4,8 @@
  */
 //
 
-package scala.tools.nsc.symtab
+package scala.tools.nsc
+package symtab
 
 import scala.collection.immutable
 import scala.collection.mutable.{ListBuffer, HashMap, WeakHashMap}

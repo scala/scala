@@ -8,7 +8,8 @@
 
 // $Id$
 
-package scala.xml.factory
+package scala.xml
+package factory
 
 import parsing.{ FactoryAdapter, NoBindingFactoryAdapter }
 import org.xml.sax.InputSource

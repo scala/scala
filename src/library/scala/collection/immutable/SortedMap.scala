@@ -17,7 +17,7 @@
  */
 package scala.collection.immutable
 
-import generic._
+import scala.collection.generic._
 import annotation.unchecked.uncheckedVariance
 
 trait SortedMap[A, +B] extends Map[A, B]
@@ -26,7 +26,7 @@ trait SortedMap[A, +B] extends Map[A, B]
                          with SortedMapTemplate[A, B, SortedMap[A, B]] {
 
   override protected[this] def newBuilder : Builder[(A, B), SortedMap[A, B]] =
-    immutable.SortedMap.newBuilder[A, B]
+    SortedMap.newBuilder[A, B]
 
   override def updated [B1 >: B](key: A, value: B1): SortedMap[A, B1] = this + ((key, value))
 

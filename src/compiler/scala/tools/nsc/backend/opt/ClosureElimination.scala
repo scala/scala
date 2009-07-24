@@ -5,7 +5,8 @@
 
 // $Id$
 
-package scala.tools.nsc.backend.opt;
+package scala.tools.nsc
+package backend.opt;
 
 import scala.collection.mutable.{Map, HashMap};
 import scala.tools.nsc.backend.icode.analysis.LubError;

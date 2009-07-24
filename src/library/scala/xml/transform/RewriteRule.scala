@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.xml.transform
+package scala.xml
+package transform
 
 /** a RewriteRule, when applied to a term, yields either
  *  the resulting of rewriting or the term itself it the rule

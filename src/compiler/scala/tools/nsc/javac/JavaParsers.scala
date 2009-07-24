@@ -6,7 +6,8 @@
 //todo: allow infix type patterns
 
 
-package scala.tools.nsc.javac
+package scala.tools.nsc
+package javac
 
 import scala.tools.nsc.util.{Position, OffsetPosition, NoPosition, BatchSourceFile}
 import scala.collection.mutable.ListBuffer
@@ -113,12 +114,8 @@ trait JavaParsers extends JavaScanners {
 
     def blankExpr = Ident(nme.WILDCARD)
 
-    def makePackaging(pkg: Tree, stats: List[Tree]): PackageDef = pkg match {
-      case Ident(name) =>
-        PackageDef(name, stats).setPos(pkg.pos)
-      case Select(qual, name) =>
-        makePackaging(qual, List(PackageDef(name, stats).setPos(pkg.pos)))
-    }
+    def makePackaging(pkg: RefTree, stats: List[Tree]): PackageDef =
+      atPos(pkg.pos) {  PackageDef(pkg, stats) }
 
     def makeTemplate(parents: List[Tree], stats: List[Tree]) =
       Template(
@@ -239,8 +236,8 @@ trait JavaParsers extends JavaScanners {
 
     // -------------------- specific parsing routines ------------------
 
-    def qualId(): Tree = {
-      var t: Tree = atPos(in.currentPos) { Ident(ident()) }
+    def qualId(): RefTree = {
+      var t: RefTree = atPos(in.currentPos) { Ident(ident()) }
       while (in.token == DOT) {
         in.nextToken
         t = atPos(in.currentPos) { Select(t, ident()) }
@@ -861,7 +858,7 @@ trait JavaParsers extends JavaScanners {
      */
     def compilationUnit(): Tree = {
       var pos = in.currentPos;
-      val pkg =
+      val pkg: RefTree =
         if (in.token == AT || in.token == PACKAGE) {
           annotations()
           pos = in.currentPos

@@ -1,11 +1,12 @@
-package scala.tools.nsc.interactive
+package scala.tools.nsc
+package interactive
 
 import ast.Trees
 import scala.tools.nsc.util.{SourceFile, Position, RangePosition, OffsetPosition, NoPosition, SyntheticOffsetPosition, WorkScheduler}
 import scala.collection.mutable.ListBuffer
 
 trait Positions {
-self: nsc.Global =>
+self: scala.tools.nsc.Global =>
 
   def rangePos(source: SourceFile, start: Int, point: Int, end: Int) =
     new OffsetPosition(source, point)

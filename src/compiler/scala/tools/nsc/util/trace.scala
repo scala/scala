@@ -1,4 +1,5 @@
-package scala.tools.nsc.util
+package scala.tools.nsc
+package util
 
 object trace {
   def apply[T](msg: String)(value: T): T = {

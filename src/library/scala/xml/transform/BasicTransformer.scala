@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.xml.transform
+package scala.xml
+package transform
 
 /** A class for XML transformations.
  *

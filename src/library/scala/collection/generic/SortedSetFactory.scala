@@ -10,6 +10,7 @@
 
 
 package scala.collection.generic
+import scala.collection._
 
 /** A template for companion objects of Set and subclasses thereof.
  */

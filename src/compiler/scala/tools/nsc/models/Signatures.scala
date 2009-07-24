@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.models
+package scala.tools.nsc
+package models
 
 import scala.collection.mutable.{HashMap, HashSet}
 import scala.tools.nsc.{Global => Compiler}

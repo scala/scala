@@ -11,7 +11,7 @@ package scala.collection
 
 // import immutable.{List, Stream, Nil}
 import mutable.{Buffer, ArrayBuffer, ListBuffer}
-import util.control.Breaks
+import scala.util.control.Breaks
 import generic._
 
 /** <p>

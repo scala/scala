@@ -4,7 +4,8 @@
  */
 // $Id: NamesDefaults.scala 17081 2009-02-10 17:45:38Z rytz $
 
-package scala.tools.nsc.typechecker
+package scala.tools.nsc
+package typechecker
 
 import scala.collection.mutable.ListBuffer
   import symtab.Flags._

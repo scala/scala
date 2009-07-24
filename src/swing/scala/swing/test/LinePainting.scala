@@ -1,4 +1,5 @@
-package scala.swing.test
+package scala.swing
+package test
 import scala.swing.Swing._
 import scala.swing.{MainFrame, Panel, SimpleGUIApplication}
 import scala.swing.event._

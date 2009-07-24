@@ -10,7 +10,9 @@
 //
 // -----------------------------------------------------------------------------
 
-package scala.tools.scalap.scalax.rules
+package scala.tools.scalap
+package scalax
+package rules
 
 trait Functor[+A] {
   type M[+A] <: Functor[A]

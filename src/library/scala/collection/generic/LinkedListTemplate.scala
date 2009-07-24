@@ -10,6 +10,7 @@
 
 
 package scala.collection.generic
+import scala.collection._
 
 /** This extensible class may be used as a basis for implementing linked
  *  list. Type variable <code>A</code> refers to the element type of the

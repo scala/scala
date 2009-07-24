@@ -9,7 +9,9 @@
 // $Id$
 
 
-package scala.dbc.statement.expression;
+package scala.dbc
+package statement
+package expression;
 
 
 abstract class Select extends Expression {

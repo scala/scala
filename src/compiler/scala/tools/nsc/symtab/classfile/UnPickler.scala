@@ -4,7 +4,9 @@
  */
 // $Id$
 
-package scala.tools.nsc.symtab.classfile
+package scala.tools.nsc
+package symtab
+package classfile
 
 import java.io.IOException
 import java.lang.{Float, Double}
@@ -457,9 +459,9 @@ abstract class UnPickler {
 
         case PACKAGEtree =>
           val symbol = readSymbolRef()
-          val name = readNameRef()
+          val pid = readTreeRef().asInstanceOf[RefTree]
           val stats = until(end, readTreeRef)
-          PackageDef(name, stats) setType tpe
+          PackageDef(pid, stats) setType tpe
 
         case CLASStree =>
           val symbol = readSymbolRef()

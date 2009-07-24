@@ -8,7 +8,8 @@
 
 // $Id$
 
-package scala.actors.remote
+package scala.actors
+package remote
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream,
                 ObjectInputStream, ObjectOutputStream, InputStream,

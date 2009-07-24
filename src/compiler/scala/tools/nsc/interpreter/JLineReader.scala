@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.interpreter
+package scala.tools.nsc
+package interpreter
 
 import java.io.File
 import jline.{ History, ConsoleReader, ArgumentCompletor }

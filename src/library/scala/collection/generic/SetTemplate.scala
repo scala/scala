@@ -9,6 +9,7 @@
 // $Id$
 
 package scala.collection.generic
+import scala.collection._
 
 /** <p>
  *    A generic template for sets of type <code>A</code>.<br/>

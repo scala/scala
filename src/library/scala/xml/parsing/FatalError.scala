@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.xml.parsing;
+package scala.xml
+package parsing;
 
 
 case class FatalError(msg:String) extends java.lang.RuntimeException(msg);

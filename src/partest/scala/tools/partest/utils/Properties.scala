@@ -8,7 +8,8 @@
 
 // $Id$
 
-package scala.tools.partest.utils
+package scala.tools.partest
+package utils
 
 /** Loads partest.properties from the jar. */
 object Properties extends scala.util.PropertiesTrait {

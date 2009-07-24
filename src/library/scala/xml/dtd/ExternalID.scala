@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.xml.dtd
+package scala.xml
+package dtd
 
 /** an ExternalIDs - either PublicID or SystemID
  *

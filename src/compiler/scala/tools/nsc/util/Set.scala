@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.util
+package scala.tools.nsc
+package util
 
 /** A common class for lightweight sets.
  */

@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.dbc.statement
+package scala.dbc
+package statement
 
 
 /** A join behaviour in a <code>Jointure</code>. */

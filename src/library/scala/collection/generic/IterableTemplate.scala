@@ -9,6 +9,7 @@
 // $Id$
 
 package scala.collection.generic
+import scala.collection._
 
 import util.control.Breaks._
 // import immutable.Stream // !!!

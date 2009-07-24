@@ -4,7 +4,8 @@
  */
 // $Id: Tokens.scala 12886 2007-09-17 16:36:10Z mcdirmid $
 
-package scala.tools.nsc.javac
+package scala.tools.nsc
+package javac
 
 object JavaTokens {
 

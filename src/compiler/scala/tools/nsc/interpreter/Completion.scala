@@ -19,7 +19,8 @@
 // 6) Security: Are we using the filesystem unnecessarily?
 //
 
-package scala.tools.nsc.interpreter
+package scala.tools.nsc
+package interpreter
 
 import jline._
 import java.net.URL

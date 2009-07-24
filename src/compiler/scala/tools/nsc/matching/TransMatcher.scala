@@ -25,7 +25,8 @@
  * 12 Regular Expression    --
  */
 
-package scala.tools.nsc.matching
+package scala.tools.nsc
+package matching
 
 import util.Position
 import ast.{ TreePrinters, Trees }

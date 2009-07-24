@@ -10,6 +10,7 @@
 
 
 package scala.collection.generic
+import scala.collection._
 
 import mutable.Buffer
 // import immutable.{List, Nil, ::, Stream}

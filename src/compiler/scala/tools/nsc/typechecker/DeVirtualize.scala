@@ -4,7 +4,8 @@
  */
 // $Id: RefChecks.scala 13735 2008-01-18 17:18:58Z odersky $
 
-package scala.tools.nsc.typechecker
+package scala.tools.nsc
+package typechecker
 
 import symtab.Flags._
 import transform.{InfoTransform, TypingTransformers}

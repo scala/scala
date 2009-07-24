@@ -11,7 +11,7 @@
 
 package scala.collection.mutable
 
-import generic.MapProxyTemplate
+import scala.collection.generic.MapProxyTemplate
 
 /** <p>
  *    This is a simple wrapper class for <a href="Map.html"
@@ -26,7 +26,7 @@ import generic.MapProxyTemplate
  *  @version 2.0, 31/12/2006
  */
 
-trait MapProxy[A, B] extends mutable.Map[A, B] with MapProxyTemplate[A, B, mutable.Map[A, B]]
+trait MapProxy[A, B] extends Map[A, B] with MapProxyTemplate[A, B, Map[A, B]]
 {
   override def thisCollection = this
   override def empty: MapProxy[A, B] = new MapProxy[A, B] { val self = MapProxy.this.self.empty }

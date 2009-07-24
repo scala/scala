@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.dbc.datatype;
+package scala.dbc
+package datatype;
 
 
 /** A type category for all SQL types that store varying-precision

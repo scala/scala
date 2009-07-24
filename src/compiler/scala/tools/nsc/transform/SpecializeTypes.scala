@@ -1,4 +1,5 @@
-package scala.tools.nsc.transform
+package scala.tools.nsc
+package transform
 
 import scala.tools.nsc.symtab.Flags
 import scala.tools.nsc.util.FreshNameCreator
@@ -899,12 +900,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           } else
             super.transform(tree)
 
-        case PackageDef(name, stats) =>
+        case PackageDef(pid, stats) =>
           tree.symbol.info // make sure specializations have been peformed
           log("PackageDef owner: " + symbol)
           atOwner(tree, symbol) {
             val specMembers = implSpecClasses(stats) map localTyper.typed
-            treeCopy.PackageDef(tree, name, transformStats(stats ::: specMembers, symbol.moduleClass))
+            treeCopy.PackageDef(tree, pid, transformStats(stats ::: specMembers, symbol.moduleClass))
           }
 
         case Template(parents, self, body) =>

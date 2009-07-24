@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.matching
+package scala.tools.nsc
+package matching
 
 import scala.tools.nsc.util.{Position, NoPosition}
 

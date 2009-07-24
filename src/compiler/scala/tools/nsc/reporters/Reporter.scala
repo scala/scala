@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.reporters
+package scala.tools.nsc
+package reporters
 
 import scala.tools.nsc.util._
 

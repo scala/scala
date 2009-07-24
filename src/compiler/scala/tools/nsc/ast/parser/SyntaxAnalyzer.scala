@@ -4,7 +4,8 @@
  */
 // $Id: SyntaxAnalyzer.scala 17080 2009-02-10 17:19:16Z rytz $
 
-package scala.tools.nsc.ast.parser
+package scala.tools.nsc
+package ast.parser
 
 import javac._
 

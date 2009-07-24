@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 // $Id: Scanners.scala 17285 2009-03-11 13:51:56Z rytz $
-package scala.tools.nsc.ast.parser
+package scala.tools.nsc
+package ast.parser
 
 import scala.tools.nsc.util._
 import SourceFile.{LF, FF, CR, SU}

@@ -11,7 +11,7 @@
 
 package scala.collection.immutable
 
-import generic._
+import scala.collection.generic._
 
 /** The canonical factory of <a href="TreeSet.html">TreeSet</a>'s. */
 object TreeSet extends SortedSetFactory[TreeSet]{

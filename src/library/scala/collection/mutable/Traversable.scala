@@ -7,7 +7,7 @@
 \*                                                                      */
 package scala.collection.mutable
 
-import generic._
+import scala.collection.generic._
 
 /** A subtrait of collection.Traversable which represents traversables
  *  that can be mutated.

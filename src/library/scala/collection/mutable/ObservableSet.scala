@@ -11,7 +11,7 @@
 
 package scala.collection.mutable
 
-import script._
+import scala.collection.script._
 
 /** This class is typically used as a mixin. It adds a subscription
  *  mechanism to the <code>Set</code> class into which this abstract

@@ -11,7 +11,7 @@
 
 package scala.collection.immutable
 
-import generic._
+import scala.collection.generic._
 
 /** <p>
  *    A generic trait for immutable sets. Concrete set implementations have

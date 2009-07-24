@@ -9,6 +9,7 @@
 // $Id$
 
 
-package scala.swing.event
+package scala.swing
+package event
 
 case class ValueChanged(override val source: Component) extends ComponentEvent

@@ -11,7 +11,7 @@
 
 package scala.collection.mutable
 
-import JavaConversions._
+import scala.collection.JavaConversions._
 
 class WeakHashMap[A, B] extends JMapWrapper[A, B](new java.util.WeakHashMap) {
   override def empty = new WeakHashMap[A, B]

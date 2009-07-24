@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.dbc.value;
+package scala.dbc
+package value;
 
 
 abstract class ApproximateNumeric [Type] extends Value {

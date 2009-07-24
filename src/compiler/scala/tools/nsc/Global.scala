@@ -146,7 +146,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
 // ------------------ Reporting -------------------------------------
 
-  import nsc.util.NoPosition
+  import util.NoPosition
   def error(msg: String) = reporter.error(NoPosition, msg)
   def warning(msg: String) = reporter.warning(NoPosition, msg)
   def inform(msg: String) = Console.err.println(msg)

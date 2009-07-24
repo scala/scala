@@ -11,7 +11,7 @@
 
 package scala.collection.mutable
 
-import generic._
+import scala.collection.generic._
 
 @serializable
 class ListMap[A, B] extends Map[A, B] with MutableMapTemplate[A, B, ListMap[A, B]] {

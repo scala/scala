@@ -10,6 +10,9 @@
 
 
 package scala.collection.generic
+import scala.collection._
+
+import scala.collection._
 
 abstract class Companion[+CC[X] <: Traversable[X]] {
   type Coll = CC[_]

@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.swing.event
+package scala.swing
+package event
 
 /** <p>
  *    An event that indicates some editing operation that can be still in

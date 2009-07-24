@@ -10,6 +10,7 @@
 
 
 package scala.util.parsing.combinator.syntactical
+import scala.util.parsing.combinator._
 
 /** <p>
  *    This is the core component for token-based parsers.

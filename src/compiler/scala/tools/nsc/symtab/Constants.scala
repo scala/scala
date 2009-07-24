@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc.symtab
+package scala.tools.nsc
+package symtab
 
 
 import java.lang.Integer.toOctalString

@@ -5,7 +5,8 @@
 // $Id$
 
 
-package scala.tools.nsc.io
+package scala.tools.nsc
+package io
 
 import java.io.{File, FileInputStream, InputStream, IOException}
 import java.nio.{ByteBuffer, CharBuffer}
@@ -28,7 +29,7 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
   private var chars: CharBuffer = CharBuffer.allocate(0x4000)
 
   private def reportEncodingError(filename:String) = {
-    reporter.error(nsc.util.NoPosition,
+    reporter.error(util.NoPosition,
                    "IO error while decoding "+filename+" with "+decoder.charset()+"\n"+
                    "Please try specifying another one using the -encoding option")
   }

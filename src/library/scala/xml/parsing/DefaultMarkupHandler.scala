@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.xml.parsing
+package scala.xml
+package parsing
 
 
 /** default implemenation of markup handler always returns NodeSeq.Empty */

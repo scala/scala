@@ -8,7 +8,9 @@
 
 // $Id$
 
-package scala.xml.include.sax
+package scala.xml
+package include.sax
+import scala.xml.include._
 
 import org.xml.sax.SAXException
 import org.xml.sax.SAXParseException

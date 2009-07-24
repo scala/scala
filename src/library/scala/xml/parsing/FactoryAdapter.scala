@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.xml.parsing
+package scala.xml
+package parsing
 
 import java.io.{InputStream, Reader, File, FileDescriptor, FileInputStream}
 import scala.collection.mutable.Stack

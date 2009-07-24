@@ -8,7 +8,8 @@
 
 // $Id$
 
-package scala.tools.partest.utils
+package scala.tools.partest
+package utils
 
 /**
  * @author Thomas Hofer

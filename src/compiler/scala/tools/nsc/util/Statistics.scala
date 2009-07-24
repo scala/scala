@@ -5,7 +5,8 @@
 
 // $Id$
 
-package scala.tools.nsc.util
+package scala.tools.nsc
+package util
 
 object Statistics {
   var enabled = false

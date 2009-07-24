@@ -9,6 +9,7 @@
 // $Id$
 
 package scala.collection.generic
+import scala.collection._
 
 /** A template for companion objects of <code>immutable.Map</code> and
  *  subclasses thereof.
