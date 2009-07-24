@@ -229,6 +229,13 @@ object Test extends Application {
   def transform(s: String, f: String => String = identity _) = f(s)
   println(transform("my text"))
 
+
+  // a bug reported on a mailing list: see comment in Typer.typedModuleDef
+  object TT
+  class TT(x: Int = 1)
+  val v = new TT()
+
+
   // result type of the default getter is inferred (parameter type mentions type parameter T)
   def test10[T](x: List[T] = List(1,2)) = x
   println(test10())

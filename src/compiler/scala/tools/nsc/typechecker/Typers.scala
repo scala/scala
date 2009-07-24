@@ -1219,6 +1219,12 @@ trait Typers { self: Analyzer =>
     def typedModuleDef(mdef: ModuleDef): Tree = {
       //Console.println("sourcefile of " + mdef.symbol + "=" + mdef.symbol.sourceFile)
 //      attributes(mdef)
+      // initialize all constructors of the linked class: the type completer (Namer.methodSig)
+      // might add default getters to this object. example: "object T; class T(x: Int = 1)"
+      val linkedClass = mdef.symbol.linkedClassOfModule
+      if (linkedClass != NoSymbol)
+        for (c <- linkedClass.info.decl(nme.CONSTRUCTOR).alternatives)
+          c.initialize
       val clazz = mdef.symbol.moduleClass
       val typedMods = removeAnnotations(mdef.mods)
       assert(clazz != NoSymbol)
