@@ -73,7 +73,7 @@ trait TraversableProxyTemplate[+A, +This <: TraversableTemplate[A, This] with Tr
   override def toIterable: Iterable[A] = self.toIterable
   override def toSequence: Sequence[A] = self.toSequence
   override def toStream: Stream[A] = self.toStream
-  override def toSet[B >: A]: Set[B] = self.toSet
+  override def toSet[B >: A]: immutable.Set[B] = self.toSet
 //  override def sortWith(lt : (A,A) => Boolean): This = self.sortWith(lt)
   override def mkString(start: String, sep: String, end: String): String = self.mkString(start, sep, end)
   override def mkString(sep: String): String = self.mkString(sep)

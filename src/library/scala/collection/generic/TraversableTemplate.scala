@@ -713,7 +713,8 @@ self =>
 
   /** Returns a set with all unique elements in this traversable object.
    */
-  def toSet[B >: A]: Set[B] = Set() ++ thisCollection
+  @experimental
+  def toSet[B >: A]: immutable.Set[B] = immutable.Set() ++ thisCollection
 
   /** Sort the traversable according to the comparison function
    *  <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>,
