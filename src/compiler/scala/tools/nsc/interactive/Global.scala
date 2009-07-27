@@ -26,8 +26,6 @@ self =>
 
   override def onlyPresentation = true
 
-  settings.Xprintpos.value = true
-
   /** A list indicating in which order some units should be typechecked.
    *  All units in firsts are typechecked before any unit not in this list
    *  Modified by askToDoFirst, reload, typeAtTree.
@@ -122,14 +120,14 @@ self =>
       case Some(action) =>
         try {
           acting = true
-          println("picked up work item: "+action)
+          //println("picked up work item: "+action)
           action()
-          println("done with work item: "+action)
+          //println("done with work item: "+action)
         } catch {
           case ex: CancelActionReq =>
-            println("cancelled work item: "+action)
+            //println("cancelled work item: "+action)
         } finally {
-          println("quitting work item: "+action)
+          //println("quitting work item: "+action)
           acting = false
         }
       case None =>
@@ -197,10 +195,12 @@ self =>
         case ex: ShutdownReq =>
           ;
         case ex =>
-          ex.printStackTrace()
           outOfDate = false
-          inform("Fatal Error: "+ex)
           compileRunner = newRunnerThread
+          ex match {
+            case _ : ValidateError => // This will have been reported elsewhere
+            case _ => inform("Fatal Error: "+ex)
+          }
       }
     }
     start()
@@ -209,13 +209,13 @@ self =>
   /** Compile all given units
    */
   private def backgroundCompile() {
-    inform("Starting new presentation compiler type checking pass")
+    //inform("Starting new presentation compiler type checking pass")
     reporter.reset
     firsts = firsts filter (s => unitOfFile contains (s.file))
     val prefix = firsts map unitOf
     val units = prefix ::: (unitOfFile.values.toList diff prefix)
     recompile(units)
-    inform("Everything is now up to date")
+    //inform("Everything is now up to date")
   }
 
   /** Reset unit to just-parsed state */
@@ -244,11 +244,11 @@ self =>
   def recompile(units: List[RichCompilationUnit]) {
     for (unit <- units) {
       reset(unit)
-      inform("parsing: "+unit)
+      //inform("parsing: "+unit)
       parse(unit)
     }
     for (unit <- units) {
-      inform("type checking: "+unit)
+      //inform("type checking: "+unit)
       activeLocks = 0
       currentTyperRun.typeCheck(unit)
       unit.status = currentRunId
@@ -277,7 +277,6 @@ self =>
       val unit = new RichCompilationUnit(source)
       unitOfFile(source.file) = unit
       parse(unit)
-      if (settings.Xprintpos.value) treePrinter.print(unit)
     }
     moveToFront(sources)
   }

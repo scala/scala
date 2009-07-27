@@ -2183,8 +2183,8 @@ self =>
         val savedViews = implicitClassViews
         val implicitViewBuf = new ListBuffer[Tree]
         val tparams = typeParamClauseOpt(name, implicitViewBuf)
-        val tstart = in.offset
         implicitClassViews = implicitViewBuf.toList
+        val tstart = (in.offset::implicitClassViews.map(_.pos.start)).min
         if (!implicitClassViews.isEmpty && mods.hasFlag(Flags.TRAIT)) {
           syntaxError("traits cannot have type parameters with <% bounds", false)
           implicitClassViews = List()

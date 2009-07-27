@@ -145,12 +145,12 @@ self: scala.tools.nsc.Global =>
           } else {
             val splitNode =
               if (conflicting.size == 1 && (conflicting.head.pos includes tree.pos)) {
-                println("*** splitting \n"+conflicting.head+"\n--- because it conflicts with ---\n"+tree)
-                println(tree.id)
+                //println("*** splitting \n"+conflicting.head+"\n--- because it conflicts with ---\n"+tree)
+                //println(tree.id)
                 conflicting.head
               } else {
-                println("*** splitting \n"+tree+"\n--- because it conflicts with trees in ---\n"+conflicting)
-                println(tree.id)
+                //println("*** splitting \n"+tree+"\n--- because it conflicts with trees in ---\n"+conflicting)
+                //println(tree.id)
                 tree
               }
             //throw new Error()//debug

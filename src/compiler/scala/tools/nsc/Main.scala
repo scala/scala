@@ -49,22 +49,17 @@ object Main extends AnyRef with EvalLoop {
     if (command.settings.version.value)
       reporter.info(null, versionMsg, true)
     else if (command.settings.Yidedebug.value) {
-      command.settings.Xprintpos.value = true
       val compiler = new interactive.Global(command.settings, reporter)
-      import compiler._
+      import compiler.{ reporter => _, _ }
 
       val sfs = command.files.map(getSourceFile(_))
       val reloaded = new SyncVar[Either[Unit, Throwable]]
       askReload(sfs, reloaded)
       reloaded.get.right.toOption match {
-        case Some(thr) => logError("Failure in presentation compiler", thr)
-        case _ =>
+        case Some(ex) => reporter.cancelled = true // Causes exit code to be non-0
+        case None => reporter.reset // Causes other compiler errors to be ignored
       }
-      for (sf <- sfs) {
-        val cu = unitOf(sf)
-        val tree = cu.body
-        treePrinters.create(System.out).print(tree)
-      }
+      askShutdown
     }
     else {
       if (command.settings.target.value == "msil") {
