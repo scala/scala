@@ -1,5 +1,4 @@
-/* TODO: Reintegrate
-* /*                     __                                               *\
+/*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
@@ -10,7 +9,8 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
 
 /** This class can be used as an adaptor to create mutable maps from
@@ -28,7 +28,7 @@ class ImmutableMapAdaptor[A, B](protected var imap: immutable.Map[A, B])
 extends Map[A, B]
 {
 
-  def size: Int = imap.size
+  override def size: Int = imap.size
 
   def get(key: A): Option[B] = imap.get(key)
 
@@ -40,14 +40,14 @@ extends Map[A, B]
 
   override def isDefinedAt(key: A) = imap.isDefinedAt(key)
 
-  override def keySet: Set[A] = imap.keys
+  override def keySet: collection.Set[A] = imap.keySet
 
   override def keysIterator: Iterator[A] = imap.keysIterator
 
   @deprecated("use `keysIterator' instead")
   override def keys: Iterator[A] = imap.keysIterator
 
-  override def valueIterable: Iterable[B] = imap.valueIterable
+  override def valueIterable: collection.Iterable[B] = imap.valueIterable
 
   override def valuesIterator: Iterator[B] = imap.valuesIterator
 
@@ -57,22 +57,25 @@ extends Map[A, B]
   def iterator: Iterator[(A, B)] = imap.iterator
 
   @deprecated("use `iterator' instead")
-  def elements = iterator
+  override def elements = iterator
 
   override def toList: List[(A, B)] = imap.toList
 
-  def update(key: A, value: B): Unit = { imap = imap.update(key, value) }
+  override def update(key: A, value: B): Unit = { imap = imap.update(key, value) }
 
   def -= (key: A): this.type = { imap = imap - key; this }
 
+  def += (kv: (A, B)): this.type = { imap = imap + kv; this }
+
   override def clear(): Unit = { imap = imap.empty }
 
-  override def transform(f: (A, B) => B): Unit = { imap = imap.transform(f) }
+  override def transform(f: (A, B) => B): this.type = { imap = imap.transform(f); this }
 
-  override def retain(p: (A, B) => Boolean): Unit = {
+  override def retain(p: (A, B) => Boolean): this.type = {
     imap = imap.filter(xy => p(xy._1, xy._2))
+    this
   }
 
   override def toString() = imap.toString()
 }
-*/
+

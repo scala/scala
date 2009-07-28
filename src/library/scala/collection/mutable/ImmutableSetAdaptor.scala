@@ -1,4 +1,3 @@
-/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -10,7 +9,8 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
 
 /** This class can be used as an adaptor to create mutable sets from
@@ -25,7 +25,7 @@ package scala.collection.mutable
 @serializable
 class ImmutableSetAdaptor[A](protected var set: immutable.Set[A]) extends Set[A] {
 
-  def size: Int = set.size
+  override def size: Int = set.size
 
   override def isEmpty: Boolean = set.isEmpty
 
@@ -45,9 +45,9 @@ class ImmutableSetAdaptor[A](protected var set: immutable.Set[A]) extends Set[A]
 
   def +=(elem: A): this.type = { set = set + elem; this }
 
-  def -=(elem: A): Unit = { set = set - elem }
+  def -=(elem: A): this.type = { set = set - elem; this }
 
   override def clear(): Unit = { set = set.empty }
 
 }
-*/
+
