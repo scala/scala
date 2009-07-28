@@ -2341,7 +2341,7 @@ self =>
 
   /** Create a tree representing a packaging */
     def makePackaging(start: Int, pkg: Tree, stats: List[Tree]): PackageDef =
-      atPos(start, pkg.pos.point) { PackageDef(pkg.asInstanceOf[RefTree], stats) }
+      atPos(start, pkg.pos.point, in.lastOffset max start) { PackageDef(pkg.asInstanceOf[RefTree], stats) }
 /*
         pkg match {
           case id @ Ident(_) =>
@@ -2566,7 +2566,7 @@ self =>
         }
         ts.toList
       }
-      val start = in.offset
+      val start = in.offset max 0
       atPos(start) {
         topstats() match {
           case List(stat @ PackageDef(_, _)) => stat

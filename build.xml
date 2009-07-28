@@ -1743,6 +1743,9 @@ POSITIONS
 ============================================================================ -->
 
   <target name="test.positions" depends="pack.done">
+    <antcall target="test.positions.tests.sub" inheritRefs="true">
+      <param name="test.tests.srcs" value="${test.dir}/files/positions"/>
+    </antcall>
     <antcall target="test.positions.sub" inheritRefs="true">
       <param name="test.srcs" value="${src.dir}/compiler"/>
     </antcall>
@@ -1763,9 +1766,6 @@ POSITIONS
     </antcall>
     <antcall target="test.positions.sub" inheritRefs="true">
       <param name="test.srcs" value="${src.dir}/scalap"/>
-    </antcall>
-    <antcall target="test.positions.tests.sub" inheritRefs="true">
-      <param name="test.tests.srcs" value="${test.dir}/files/positions"/>
     </antcall>
     <antcall target="test.positions.tests.sub" inheritRefs="true">
       <param name="test.tests.srcs" value="${test.dir}/files/pos"/>
