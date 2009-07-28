@@ -41,7 +41,7 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
      with Builder[A, This]
      with Growable[A]
      with Shrinkable[A]
-     with Cloneable[This]
+     with Cloneable[mutable.Set[A]]
 { self =>
 
   /** A common implementation of <code>newBuilder</code> for all mutable sets
@@ -103,7 +103,7 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
    */
   def clear() { foreach(-=) }
 
-  override def clone(): This = empty ++= thisCollection
+  override def clone(): mutable.Set[A] = empty ++= thisCollection
 
   def result: This = thisCollection
 

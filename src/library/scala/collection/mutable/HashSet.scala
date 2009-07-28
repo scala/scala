@@ -48,7 +48,7 @@ class HashSet[A] extends Set[A]
     }
   }
 
-  override def clone(): HashSet[A] = new HashSet[A] ++= this
+  override def clone(): Set[A] = new HashSet[A] ++= this
 }
 
 /** Factory object for `HashSet` class */
