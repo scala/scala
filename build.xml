@@ -1742,84 +1742,84 @@ FORWARDED TARGETS FOR NIGHTLY BUILDS
 POSITIONS
 ============================================================================ -->
 
-	<target name="test.positions" depends="pack.done">
-		<antcall target="test.positions.sub" inheritRefs="true">
-			<param name="test.srcs" value="${src.dir}/compiler"/>
-		</antcall>
-		<antcall target="test.positions.sub" inheritRefs="true">
-			<param name="test.srcs" value="${src.dir}/library"/>
-		</antcall>
-		<antcall target="test.positions.sub" inheritRefs="true">
-			<param name="test.srcs" value="${src.dir}/actors"/>
-		</antcall>
-		<antcall target="test.positions.sub" inheritRefs="true">
-			<param name="test.srcs" value="${src.dir}/dbc"/>
-		</antcall>
-		<antcall target="test.positions.sub" inheritRefs="true">
-			<param name="test.srcs" value="${src.dir}/swing"/>
-		</antcall>
-		<antcall target="test.positions.sub" inheritRefs="true">
-			<param name="test.srcs" value="${src.dir}/partest"/>
-		</antcall>
-		<antcall target="test.positions.sub" inheritRefs="true">
-			<param name="test.srcs" value="${src.dir}/scalap"/>
-		</antcall>
-		<antcall target="test.positions.tests.sub" inheritRefs="true">
-			<param name="test.tests.srcs" value="${test.dir}/files/positions"/>
-		</antcall>
-		<antcall target="test.positions.tests.sub" inheritRefs="true">
-			<param name="test.tests.srcs" value="${test.dir}/files/pos"/>
-		</antcall>
-		<antcall target="test.positions.tests.sub" inheritRefs="true">
-			<param name="test.tests.srcs" value="${test.dir}/files/run"/>
-		</antcall>
-  	<antcall target="test.positions.tests.sub" inheritRefs="true">
-			<param name="test.tests.srcs" value="${test.dir}/files/neg"/>
-	  </antcall>
-	</target>
-	
-	<target name="test.positions.sub">
-	  <echo message="Validating positions for: ${test.srcs}"/>
-		<if>
-			<isfileselected file="${test.srcs}">
-				<type type="dir"/>
-			</isfileselected>
-			<then>
-				<property name="srcdir" value="${test.srcs}"/>
-				<property name="srcs" value="**/*.scala"/>
-		  </then>
-			<else>
-				<dirname property="srcdir" file="${test.srcs}"/>
-				<basename property="srcs" file="${test.srcs}"/>
-			</else>
-	  </if>
-		<scalacfork
-	  	destdir=""
-	    compilerpathref="pack.classpath"
-	  	srcdir="${srcdir}"
-	    params="-Xprint-pos -Yide-debug"
-	    jvmargs="${scalacfork.jvmargs}">
-	    <include name="${srcs}"/>
-	  </scalacfork>
-	</target>
+  <target name="test.positions" depends="pack.done">
+    <antcall target="test.positions.sub" inheritRefs="true">
+      <param name="test.srcs" value="${src.dir}/compiler"/>
+    </antcall>
+    <antcall target="test.positions.sub" inheritRefs="true">
+      <param name="test.srcs" value="${src.dir}/library"/>
+    </antcall>
+    <antcall target="test.positions.sub" inheritRefs="true">
+      <param name="test.srcs" value="${src.dir}/actors"/>
+    </antcall>
+    <antcall target="test.positions.sub" inheritRefs="true">
+      <param name="test.srcs" value="${src.dir}/dbc"/>
+    </antcall>
+    <antcall target="test.positions.sub" inheritRefs="true">
+      <param name="test.srcs" value="${src.dir}/swing"/>
+    </antcall>
+    <antcall target="test.positions.sub" inheritRefs="true">
+      <param name="test.srcs" value="${src.dir}/partest"/>
+    </antcall>
+    <antcall target="test.positions.sub" inheritRefs="true">
+      <param name="test.srcs" value="${src.dir}/scalap"/>
+    </antcall>
+    <antcall target="test.positions.tests.sub" inheritRefs="true">
+      <param name="test.tests.srcs" value="${test.dir}/files/positions"/>
+    </antcall>
+    <antcall target="test.positions.tests.sub" inheritRefs="true">
+      <param name="test.tests.srcs" value="${test.dir}/files/pos"/>
+    </antcall>
+    <antcall target="test.positions.tests.sub" inheritRefs="true">
+      <param name="test.tests.srcs" value="${test.dir}/files/run"/>
+    </antcall>
+    <antcall target="test.positions.tests.sub" inheritRefs="true">
+      <param name="test.tests.srcs" value="${test.dir}/files/neg"/>
+    </antcall>
+  </target>
+  
+  <target name="test.positions.sub">
+    <echo message="Validating positions for: ${test.srcs}"/>
+    <if>
+      <isfileselected file="${test.srcs}">
+        <type type="dir"/>
+      </isfileselected>
+      <then>
+        <property name="srcdir" value="${test.srcs}"/>
+        <property name="srcs" value="**/*.scala"/>
+      </then>
+      <else>
+        <dirname property="srcdir" file="${test.srcs}"/>
+        <basename property="srcs" file="${test.srcs}"/>
+      </else>
+    </if>
+    <scalacfork
+      destdir=""
+      compilerpathref="pack.classpath"
+      srcdir="${srcdir}"
+      params="-Xprint-pos -Yide-debug"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="${srcs}"/>
+    </scalacfork>
+  </target>
 
-	<target name="test.positions.tests.sub">
-		<foreach target="test.positions.sub"
-			inheritAll="true"
-			inheritRefs="true"
-			param="test.srcs">
-			<path>
-			  <fileset dir="${test.tests.srcs}" includes="*.scala"/>
-				<dirset dir="${test.tests.srcs}">
-					<include name="*"/>
-			  </dirset>
-		  </path>
-	  </foreach>
-	</target>
-	
-	<!-- ===========================================================================
-	MISCELLANEOUS
-	============================================================================ -->
+  <target name="test.positions.tests.sub">
+    <foreach target="test.positions.sub"
+      inheritAll="true"
+      inheritRefs="true"
+      param="test.srcs">
+      <path>
+        <fileset dir="${test.tests.srcs}" includes="*.scala"/>
+        <dirset dir="${test.tests.srcs}">
+          <include name="*"/>
+        </dirset>
+      </path>
+    </foreach>
+  </target>
+  
+<!-- ===========================================================================
+MISCELLANEOUS
+============================================================================ -->
 
   <target name="graph.init">
     <taskdef name="vizant" classname="vizant.Vizant" classpath="${lib-ant.dir}/vizant.jar"/>
