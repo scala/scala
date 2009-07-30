@@ -8,60 +8,67 @@ package scala.tools.nsc
 package util
 
 object Position {
-  // a static field
-  private val tabInc = 8
+  val tabInc = 8
 }
 
 trait Position {
-  import Position.tabInc
-
-  /** An optional value containing the point of this position as an offset in a source file,
-   *  or None if not defined
-   */
-  def offset: Option[Int] = None
 
   /** An optional value containing the source file referred to by this position, or
    *  None if not defined.
    */
-  def source: Option[SourceFile] = None
+  def source: SourceFile = throw new UnsupportedOperationException("Position.source")
 
   /** Is this position neither a NoPosition nor a FakePosition?
    *  If isDefined is true, offset and source are both defined.
    */
   def isDefined: Boolean = false
 
-  /** Is this position a synthetic position? */
-  def isSynthetic: Boolean = false
+  /** Is this position a transparent position? */
+  def isTransparent: Boolean = false
 
-  /** if possible, make this position a synthetic one */
-  def toSynthetic: Position = this
+  /** Is this position a range position? */
+  def isRange: Boolean = false
 
-  /** The start of the position's range */
-  def start: Int = point
+  /** Is this position a non-transparent range position? */
+  def isOpaqueRange: Boolean = false
+
+  /** if opaque range, make this position transparent */
+  def makeTransparent: Position = this
+
+  /** The start of the position's range, error if not a range position */
+  def start: Int = throw new UnsupportedOperationException("Position.start")
+
+  /** The start of the position's range, or point if not a range position */
+  def startOrPoint: Int = point
 
   /**  The point (where the ^ is) of the position */
-  def point: Int = offset.get
+  def point: Int = throw new UnsupportedOperationException("Position.point")
 
-  /** The end of the position's range */
-  def end: Int = point
+  /**  The point (where the ^ is) of the position, or else `default' if undefined */
+  def pointOrElse(default: Int): Int = default
 
-  def startOrElse(d: Int) = offset.getOrElse(d)
-  def pointOrElse(d: Int) = offset.getOrElse(d)
-  def endOrElse(d: Int) = offset.getOrElse(d)
+  /** The end of the position's range, error if not a range position */
+  def end: Int = throw new UnsupportedOperationException("Position.end")
 
+  /** The end of the position's range, or point if not a range position */
+  def endOrPoint: Int = point
+
+  @deprecated("use point instead")
+  def offset: Option[Int] = if (isDefined) Some(point) else None
+
+  /** The same position with a different start value (if a range) */
   def withStart(off: Int) = this
+
+  /** The same position with a different end value (if a range) */
   def withEnd(off: Int) = this
+
+  /** The same position with a different point value (if a range or offset) */
   def withPoint(off: Int) = this
 
   /** If this is a range, the union with the other range, with the point of this position.
    *  Otherwise, this position
    */
   def union(pos: Position) = this
-
-  /** The underlying position; for a SyntheticAliasPosition this is the underlying position
-   *  of the aliased tree.
-   */
-  def underlying = this
 
   /** If this is a range position, the offset position of its start.
    *  Otherwise the position itself
@@ -71,7 +78,7 @@ trait Position {
   /** If this is a range position, the offset position of its point.
    *  Otherwise the position itself
    */
-  def focusPoint = this
+  def focus = this
 
   /** If this is a range position, the offset position of its end.
    *  Otherwise the position itself
@@ -79,72 +86,51 @@ trait Position {
   def focusEnd = this
 
   /** Does this position include the given position `pos`.
-   *  This holds if both positions are defined, and the range [start..end] of this position
+   *  This holds this is a range position and its range [start..end]
    *  is the same or covers the range of the given position.
    */
-  def includes(pos: Position) =
-    isDefined && pos.isDefined && start <= pos.start && pos.end <= end
+  def includes(pos: Position) = false
 
   /** Does this position properly include the given position `pos` ("properly" meaning their
    *  ranges are not the same)?
    */
   def properlyIncludes(pos: Position) =
-    includes(pos) && (start < pos.start || pos.end < end)
+    includes(pos) && (start < pos.startOrPoint || pos.endOrPoint < end)
 
   /** Does this position precede that position?
    *  This holds if both positions are defined and the end point of this position
    *  is not larger than the start point of the given position.
    */
   def precedes(pos: Position) =
-    isDefined && pos.isDefined && end <= pos.start
+    isDefined && pos.isDefined && endOrPoint <= pos.startOrPoint
 
   /** Does this position properly precede the given position `pos` ("properly" meaning their ranges
    *  do not share a common point).
    */
   def properlyPrecedes(pos: Position) =
-    precedes(pos) && start < pos.end
+    isDefined && pos.isDefined && startOrPoint < pos.endOrPoint
 
   /** Does this position overlap with that position?
-   *  This holds if both positions are defined and there is an interval of
+   *  This holds if both positions are ranges and there is an interval of
    *  non-zero length that is shared by both position ranges.
    */
   def overlaps(pos: Position) =
-    isDefined && pos.isDefined &&
-    (pos.start < end && start < pos.end) || (start < pos.end && pos.start < end)
+    isRange && pos.isRange &&
+    ((pos.start < end && start < pos.end) || (start < pos.end && pos.start < end))
 
   /** Does this position cover the same range as that position?
+   *  Holds only if both position are ranges
    */
   def sameRange(pos: Position) =
-    isDefined && pos.isDefined && start == pos.start && end == pos.end
+    isRange && pos.isRange && start == pos.start && end == pos.end
 
-  def line: Option[Int] =
-    if (offset.isEmpty || source.isEmpty) None
-    else Some(source.get.offsetToLine(offset.get) + 1)
+  def line: Int = throw new UnsupportedOperationException("Position.line")
 
-  def column: Option[Int] =
-    if (offset.isEmpty || source.isEmpty)
-      None
-    else {
-      var column = 1
-      // find beginning offset for line
-      val line = source.get.offsetToLine(offset.get)
-      var coffset = source.get.lineToOffset(line)
-      var continue = true
-      while (continue) {
-        if (coffset == offset.getOrElse(-1)) continue = false
-        else if (source.get.asInstanceOf[BatchSourceFile].content(coffset) == '\t')
-          column = ((column - 1) / tabInc * tabInc) + tabInc + 1
-        else column += 1
-        coffset += 1
-      }
-      Some(column)
-    }
+  def column: Int = throw new UnsupportedOperationException("Position.column")
 
-  def lineContent: String = {
-    val line = this.line
-    if (!line.isEmpty) source.get.lineToString(line.get - 1)
+  def lineContent: String =
+    if (isDefined) source.lineToString(line - 1)
     else "NO_LINE"
-  }
 
   /** Map this position to a position in an original source
    * file.  If the SourceFile is a normal SourceFile, simply
@@ -153,75 +139,87 @@ trait Position {
   def inUltimateSource(source : SourceFile) =
     if (source == null) this else source.positionInUltimateSource(this)
 
-  def dbgString = {
-    (if (source.isEmpty) "" else "source-" + source.get.path) +
-      (if (line.isEmpty) "" else "line-" + line.get) +
-        (if (offset.isEmpty) ""
-         else if (offset.get >= source.get.length) "out-of-bounds-" + offset.get
-         else {
-           val ret = "offset=" + offset.get;
-           var add = "";
-           /*
-           while (offset.get + add.length < source.get.length &&
-                  add.length < 10) add = add + source.get.content(offset.get + add.length());
-           */
-           ret + " c[0..9]=\"" + add + "\"";
-         })
-  }
+  def dbgString = toString
 
   def show: String = "["+toString+"]"
 }
 
-case object NoPosition extends Position
-case class FakePos(msg: String) extends Position {
-  override def toString=msg
+case object NoPosition extends Position {
+  override def dbgString = toString
 }
 
-case class OffsetPosition(source0: SourceFile, offset0: Int) extends Position {
-  override def source = Some(source0)
-  override def offset = Some(offset0)
-  override def withPoint(off: Int) = new OffsetPosition(source0, off)
+case class FakePos(msg: String) extends Position {
+  override def toString = msg
+}
+
+class OffsetPosition(override val source: SourceFile, override val point: Int) extends Position {
   override def isDefined = true
-  override def toSynthetic: Position = new SyntheticOffsetPosition(source0, offset0)
-  override def equals(that : Any) = that match {
-  case that : OffsetPosition => offset0 == that.offset0 && source0.file == that.source0.file
-  case that => false
+  override def pointOrElse(default: Int): Int = point
+  override def withPoint(off: Int) = new OffsetPosition(source, off)
+
+  override def line: Int = source.offsetToLine(point) + 1
+
+  override def column: Int = {
+    var idx = source.lineToOffset(source.offsetToLine(point))
+    var col = 0
+    while (idx != point) {
+      col += (if (source.content(idx) == '\t') Position.tabInc - col % Position.tabInc else 1)
+      idx += 1
+    }
+    col + 1
   }
-  override def hashCode = offset0 * 37 + source0.file.hashCode
+
+  override def union(pos: Position) =
+    if (pos.isRange) pos else this
+
+  override def equals(that : Any) = that match {
+    case that : OffsetPosition => point == that.point && source.file == that.source.file
+    case that => false
+  }
+  override def hashCode = point * 37 + source.file.hashCode
+
+  override def dbgString =
+    "source-"+source.path+
+    ",line-"+line+
+    (if (point >= source.length) ",out-of-bounds-"+point
+     else ",offset="+point)
+
   override def show = "["+point+"]"
 }
 
-class SyntheticOffsetPosition(source0: SourceFile, offset0: Int) extends OffsetPosition(source0, offset0) {
-  override def isSynthetic = true
-  override def toSynthetic = this
-  override def withPoint(off: Int) = new SyntheticOffsetPosition(source0, off)
-  override def show = "<["+point+"]>"
-/*
+/** new for position ranges */
+class RangePosition(source: SourceFile, override val start: Int, point: Int, override val end: Int)
+extends OffsetPosition(source, point) {
+  if (start > end) assert(false, "bad position: "+show)
+  override def isRange: Boolean = true
+  override def isOpaqueRange: Boolean = true
+  override def startOrPoint: Int = start
+  override def endOrPoint: Int = end
+  override def withStart(off: Int) = new RangePosition(source, off, point, end)
+  override def withEnd(off: Int) = new RangePosition(source, start, point, off)
+  override def withPoint(off: Int) = new RangePosition(source, start, off, end)
+  override def focusStart = new OffsetPosition(source, start)
+  override def focus = {
+    if (focusCache eq NoPosition) focusCache = new OffsetPosition(source, point)
+    focusCache
+  }
+  override def focusEnd = new OffsetPosition(source, end)
+  override def makeTransparent = new TransparentPosition(source, start, point, end)
+  override def includes(pos: Position) = pos.isDefined && start <= pos.startOrPoint && pos.endOrPoint <= end
   override def union(pos: Position) =
-    if (pos.isDefined && !pos.isSynthetic) pos
-    else this
-*/
+    if (pos.isRange) new RangePosition(source, start min pos.start, point, end max pos.end) else this
+  override def toString = "RangePosition("+source+", "+start+", "+point+", "+end+")"
+  override def show = "["+start+":"+end+"]"
+  private var focusCache: Position = NoPosition
 }
 
-/** new for position ranges */
-class RangePosition(source0: SourceFile, override val start: Int, override val point: Int, override val end: Int)
-extends OffsetPosition(source0, point) {
-  override def isDefined = true
-  override def startOrElse(d: Int) = start
-  override def pointOrElse(d: Int) = point
-  override def withStart(off: Int) = new RangePosition(source0, off, point, end)
-  override def withEnd(off: Int) = new RangePosition(source0, start, point, off)
-  override def withPoint(off: Int) = new RangePosition(source0, start, off, end)
-  override def endOrElse(d: Int) = end
-  override def focusStart = OffsetPosition(source0, start)
-  override def focusPoint = OffsetPosition(source0, point)
-  override def focusEnd = OffsetPosition(source0, end)
-  override def toString = "RangePosition("+source0+", "+start+", "+point+", "+end+")"
-  override def show = "["+start+":"+end+"]"
-  override def union(pos: Position) =
-    if (pos.isDefined && !pos.isSynthetic) new RangePosition(source0, start min pos.start, point, end max pos.end)
-    else this
+class TransparentPosition(source: SourceFile, start: Int, point: Int, end: Int) extends RangePosition(source, start, point, end) {
+  override def isOpaqueRange: Boolean = false
+  override def isTransparent = true
+  override def makeTransparent = this
+  override def show = "<"+start+":"+end+">"
 }
+
 
 
 

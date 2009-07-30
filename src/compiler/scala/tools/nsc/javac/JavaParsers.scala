@@ -24,7 +24,7 @@ trait JavaParsers extends JavaScanners {
   class JavaUnitParser(val unit: global.CompilationUnit) extends JavaParser {
     val in = new JavaUnitScanner(unit)
     def freshName(pos : Position, prefix : String) = unit.fresh.newName(pos, prefix)
-    implicit def i2p(offset : Int) : Position = new OffsetPosition(unit.source,offset)
+    implicit def i2p(offset : Int) : Position = new OffsetPosition(unit.source, offset)
     def warning(pos : Int, msg : String) : Unit = unit.warning(pos, msg)
     def syntaxError(pos: Int, msg: String) : Unit = unit.error(pos, msg)
   }
@@ -35,7 +35,7 @@ trait JavaParsers extends JavaScanners {
     protected def posToReport: Int = in.currentPos
     protected def freshName(pos : Position, prefix : String): Name
     protected implicit def i2p(offset : Int) : Position
-    private implicit def p2i(pos : Position): Int = pos.offset.getOrElse(-1)
+    private implicit def p2i(pos : Position): Int = if (pos.isDefined) pos.point else -1
 
     /** The simple name of the package of the currently parsed file */
     private var thisPackageName: Name = nme.EMPTY

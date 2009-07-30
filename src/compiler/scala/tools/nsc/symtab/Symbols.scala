@@ -248,7 +248,7 @@ trait Symbols {
       var cnt = 0
       def freshName() = { cnt += 1; newTermName("x$" + cnt) }
       def param(tp: Type) =
-        newValueParameter(owner.pos, freshName()).setFlag(SYNTHETIC).setInfo(tp)
+        newValueParameter(owner.pos.focus, freshName()).setFlag(SYNTHETIC).setInfo(tp)
       argtypess map (_.map(param))
     }
 

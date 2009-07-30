@@ -327,8 +327,10 @@ trait NamesDefaults { self: Analyzer =>
                      else TypeApply(default1, targs.map(_.duplicate)).setPos(pos)
           val default2 = (default1 /: previousArgss)((tree, args) =>
             Apply(tree, args.map(_.duplicate)).setPos(pos))
-          if (positional) default2
-          else atPos(pos) { AssignOrNamedArg(Ident(p.name), default2) }
+          atPos(pos) {
+            if (positional) default2
+            else AssignOrNamedArg(Ident(p.name), default2)
+          }
         })
         (givenArgs ::: defaultArgs, Nil)
       } else (givenArgs, missing filter (! _.hasFlag(DEFAULTPARAM)))

@@ -76,8 +76,10 @@ trait EtaExpansion { self: Analyzer =>
         if (treeInfo.isPureExpr(tree)) tree
         else {
           val vname: Name = freshName(tree.pos, 0)
-          defs += atPos(tree.pos)(ValDef(Modifiers(SYNTHETIC), vname, TypeTree(), tree))
-          Ident(vname) setPos tree.pos.toSynthetic
+          defs += atPos(tree.pos) {
+            ValDef(Modifiers(SYNTHETIC), vname, TypeTree(), tree)
+          }
+          Ident(vname) setPos tree.pos.focus
         }
       val tree1 = tree match {
         // a partial application using named arguments has the following form:
@@ -99,7 +101,7 @@ trait EtaExpansion { self: Analyzer =>
         case Ident(name) =>
           tree
       }
-      if (tree1 ne tree) tree1 setPos makeTransparent(tree1.pos)
+      if (tree1 ne tree) tree1 setPos tree1.pos.makeTransparent
       tree1
     }
 
@@ -114,8 +116,9 @@ trait EtaExpansion { self: Analyzer =>
         tree
       case MethodType(paramSyms, restpe) =>
         val params = paramSyms map (sym =>
-          ValDef(Modifiers(SYNTHETIC | PARAM), sym.name, TypeTree(sym.tpe), EmptyTree))
-        atPos(makeTransparent(tree.pos)) {
+          ValDef(Modifiers(SYNTHETIC | PARAM),
+                 sym.name, TypeTree(sym.tpe) , EmptyTree))
+        atPos(tree.pos.makeTransparent) {
           Function(params, expand(Apply(tree, params map gen.paramToArg), restpe))
         }
       case _ =>

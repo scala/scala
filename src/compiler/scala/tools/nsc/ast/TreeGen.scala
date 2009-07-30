@@ -244,7 +244,7 @@ abstract class TreeGen
 
   // var m$: T = null; or, if class member: local var m$: T = _;
   def mkModuleVarDef(accessor: Symbol) = {
-    val mvar = accessor.owner.newVariable(accessor.pos.toSynthetic, nme.moduleVarName(accessor.name))
+    val mvar = accessor.owner.newVariable(accessor.pos.focus, nme.moduleVarName(accessor.name))
       .setInfo(accessor.tpe.finalResultType)
       .setFlag(MODULEVAR);
     if (mvar.owner.isClass) {
@@ -305,11 +305,11 @@ abstract class TreeGen
     if (treeInfo.isPureExpr(expr)) {
       within(() => expr);
     } else {
-      val temp = owner.newValue(expr.pos.toSynthetic, unit.fresh.newName(expr.pos, "ev$"))
-      .setFlag(SYNTHETIC).setInfo(expr.tpe);
-      atPos(expr.pos) {
-        Block(List(ValDef(temp, expr)), within(() => Ident(temp) setType expr.tpe))
-      }
+      val temp = owner.newValue(expr.pos.makeTransparent, unit.fresh.newName(expr.pos, "ev$"))
+        .setFlag(SYNTHETIC).setInfo(expr.tpe)
+      val containing = within(() => Ident(temp) setPos temp.pos.focus setType expr.tpe)
+      ensureNonOverlapping(containing, List(expr))
+      Block(List(ValDef(temp, expr)), containing) setPos (containing.pos union expr.pos)
     }
 
   def evalOnceAll(exprs: List[Tree], owner: Symbol, unit: CompilationUnit)(within: (List[() => Tree]) => Tree): Tree = {
@@ -319,15 +319,16 @@ abstract class TreeGen
       if (treeInfo.isPureExpr(expr)) {
         exprs1 += (() => expr)
       } else {
-        val temp = owner.newValue(expr.pos.toSynthetic, unit.fresh.newName(expr.pos))
+        val temp = owner.newValue(expr.pos.makeTransparent, unit.fresh.newName(expr.pos, "ev$"))
           .setFlag(SYNTHETIC).setInfo(expr.tpe)
         vdefs += ValDef(temp, expr)
-        exprs1 += (() => Ident(temp) setType expr.tpe)
+        exprs1 += (() => Ident(temp) setPos temp.pos.focus setType expr.tpe)
       }
     }
     val prefix = vdefs.toList
-    val result = within(exprs1.toList)
-    if (prefix.isEmpty) result
-    else Block(prefix, result) setPos (prefix.head.pos union result.pos)
+    val containing = within(exprs1.toList)
+    ensureNonOverlapping(containing, exprs)
+    if (prefix.isEmpty) containing
+    else Block(prefix, containing) setPos (prefix.head.pos union containing.pos)
   }
 }

@@ -204,12 +204,12 @@ class SemanticTokens(val compiler: Global) {
     val map = new scala.collection.mutable.LinkedHashMap[Int,Symbol]
     map.clear // populate the map.
       class visitor extends walker.Visitor {
-      def contains(pos : Position) = map.contains(pos.offset.get)
-      def apply(pos : Position) = map(pos.offset.get)
-      def update(pos : Position, sym : Symbol) : Unit = if (pos.offset.isDefined) {
-        val offset = pos.offset.get
+      def contains(pos : Position) = map.contains(pos.point)
+      def apply(pos : Position) = map(pos.point)
+      def update(pos : Position, sym : Symbol) : Unit = if (pos.isDefined) {
+        val offset = pos.point
         map(offset) = sym
-        val isDef = pos.offset == sym.pos.offset
+        val isDef = pos.point == sym.pos.point
         list.put(offset, (if (isDef) new Def(sym) else new Use(sym, NoType)));
       }
     }
@@ -224,10 +224,10 @@ class SemanticTokens(val compiler: Global) {
     def build(tree0: Tree): Unit = try {
       /* if (tree0.pos != NoPosition) */ tree0 match {
       case tree: ImplDef =>
-        val pos = eatKeywords(unit.source.asInstanceOf[BatchSourceFile], tree.pos.offset.get)
+        val pos = eatKeywords(unit.source.asInstanceOf[BatchSourceFile], tree.pos.point)
         if (pos == -1) {
 
-        } else buildDef(tree.symbol, eatKeywords(unit.source.asInstanceOf[BatchSourceFile], tree.pos.offset.get));
+        } else buildDef(tree.symbol, eatKeywords(unit.source.asInstanceOf[BatchSourceFile], tree.pos.point));
         tree match {
           case cdef: ClassDef => build(cdef.tparams)
           case _ => ;
@@ -242,7 +242,7 @@ class SemanticTokens(val compiler: Global) {
           // todo: review whether this is correct, or whether abstract getters should be included.
           {
             val pos : Int = if (tree.name.toString().equals("<init>")) -1 else
-              eatKeywords(unit.source.asInstanceOf[BatchSourceFile], tree.pos.offset.get);
+              eatKeywords(unit.source.asInstanceOf[BatchSourceFile], tree.pos.point);
           if (false) Console.err.println("VALDEF: tree=" + tree + " sym=" + tree.symbol + " pos0=" +
             tree.symbol.pos + " alias=" + tree.symbol.alias + " pos1=" +
             pos + " pos2=" + tree.pos.dbgString + " " + tree.symbol.hasFlag(Flags.SYNTHETIC));
@@ -256,8 +256,8 @@ class SemanticTokens(val compiler: Global) {
                 build(ddef.tparams);
 
                 for (l0 <- ddef.vparamss; arg <- l0) {
-                  val pos0 : Int = if (!unit.source.beginsWith(arg.pos.offset.get, "val ")) arg.pos.offset.get;
-                                             else unit.source.skipWhitespace(arg.pos.offset.get + ("val ").length());
+                  val pos0 : Int = if (!unit.source.beginsWith(arg.pos.point, "val ")) arg.pos.point;
+                                             else unit.source.skipWhitespace(arg.pos.point + ("val ").length());
                   buildDef(arg.symbol, pos0);
                   build(arg.tpt);
                 }
@@ -281,7 +281,7 @@ class SemanticTokens(val compiler: Global) {
       case tree: PackageDef =>
         //Console.err.println("PACKAGE: " + tree.name);
         if (false) {
-          val pos = eatKeywords(unit.source.asInstanceOf[BatchSourceFile], tree.pos.offset.getOrElse(-1))
+          val pos = eatKeywords(unit.source.asInstanceOf[BatchSourceFile], tree.pos.pointOrElse(-1))
           if (pos != -1)
             buildDef(tree.symbol, pos)
         }
@@ -290,13 +290,13 @@ class SemanticTokens(val compiler: Global) {
         for (arg <- tree.vparams if arg.pos != NoPosition) {
           val name = arg.name.toString().trim()
           val pos: Int =
-            if (unit.source.beginsWith(arg.pos.offset.getOrElse(-1), "val "))
-              unit.source.skipWhitespace(arg.pos.offset.getOrElse(-1) + ("val ").length())
-            else if (unit.source.asInstanceOf[BatchSourceFile].content(arg.pos.offset.get) == ':') {
-              var posx : Int = arg.pos.offset.get
+            if (unit.source.beginsWith(arg.pos.pointOrElse(-1), "val "))
+              unit.source.skipWhitespace(arg.pos.pointOrElse(-1) + ("val ").length())
+            else if (unit.source.asInstanceOf[BatchSourceFile].content(arg.pos.point) == ':') {
+              var posx : Int = arg.pos.point
               while (unit.source.asInstanceOf[BatchSourceFile].content(posx - 1).isWhitespace) posx = posx - 1
               posx - name.length()
-            } else arg.pos.offset.get
+            } else arg.pos.point
           buildDef(arg.symbol, pos)
           build(arg.tpt)
         }
@@ -314,13 +314,13 @@ class SemanticTokens(val compiler: Global) {
         def buildT( tree : Tree, tpe : Type) : Unit = if (tree.pos != NoPosition) tpe match {
           case tpe0 : TypeRef => tree match {
             case apt : AppliedTypeTree =>
-              buildUse(tpe.typeSymbol, apt.tpt.pos.offset.getOrElse(-1), tpe0);
+              buildUse(tpe.typeSymbol, apt.tpt.pos.pointOrElse(-1), tpe0);
           //Console.err.println("APT: " + treex + " vs. " + treex.original);
           //Console.err.println("APT: " + treex.pos + " vs. " + treex.original.pos + " " + unit.source.dbg(treex.original.pos));
               //Console.err.println("APT: " + apt.tpt + " sym0=" + apt.tpt.symbol + " sym1=" + tpe0.sym + " apt.args=" + apt.args + " tpe0.args=" + tpe0.args);
 
               buildTs (apt.args, tpe0.args);
-            case ident : Ident => buildUse(tpe0.sym, ident.pos.offset.getOrElse(-1), tpe0);
+            case ident : Ident => buildUse(tpe0.sym, ident.pos.pointOrElse(-1), tpe0);
             case select : Select =>
           if (select.symbol == NoSymbol)
               try {
@@ -336,10 +336,10 @@ class SemanticTokens(val compiler: Global) {
             case tpt : TypeTree =>
           if (tpt.symbol ne null) {
             Console.err.println("SYM0 " + tpt.symbol + " " + (tpt.pos).dbgString);
-            buildUse(tpt.symbol, tpt.pos.offset.getOrElse(-1), tpe0);
+            buildUse(tpt.symbol, tpt.pos.pointOrElse(-1), tpe0);
           } else if (tpe0.typeSymbol ne null) {
             //Console.err.println("TYPE_SYM1 " + tpe0.symbol + " " + unit.source.dbg(tpt.pos));
-            buildUse(tpe0.typeSymbol, tpt.pos.offset.getOrElse(-1), tpe0);
+            buildUse(tpe0.typeSymbol, tpt.pos.pointOrElse(-1), tpe0);
           } else {
             Console.err.println("UNKNOWN TPT0: " + (tpt.pos).dbgString + " tpt=" + tpt + " " + tpt.symbol + " tpe0="+ tpe0 + " " + tpe0.typeSymbol + " tpe0.args=" + tpe0.args);
           }
@@ -385,7 +385,7 @@ class SemanticTokens(val compiler: Global) {
           if (false) Console.err.println("UNKNOWN TPE10: " + tpe0 + " " + tree + " " + tree.getClass() + " " + (tree.pos).dbgString);
           }
         case tpe0 : SingleType => tree match {
-          case ident  : Ident  => buildUse(tpe0.sym, ident.pos.offset.getOrElse(-1), tpe0);
+          case ident  : Ident  => buildUse(tpe0.sym, ident.pos.pointOrElse(-1), tpe0);
           case select : Select =>
             buildUse(tpe0.termSymbol, selectPos(select), tpe0);
             //Console.err.println("QUALIFIER-0: " + select.qualifier + " " + unit.source.dbg(select.qualifier.pos) + " " + tpe0.prefix + " " + tpe0.prefix.getClass() + " " + tpe0.prefix.getClass().getSuperclass() +" " + tpe0.prefix.widen + " " + tpe0.prefix.toLongString);
@@ -419,16 +419,16 @@ class SemanticTokens(val compiler: Global) {
       case tree: AbsTypeDef =>
         //Console.err.println("ABS: " + tree.symbol + " " + unit.source.dbg(tree.namePos) + " " + tree.pos.dbgString);
         buildDef(tree.symbol, tree.namePos)
-        buildDef(tree.symbol, tree.pos.offset.getOrElse(-1))
+        buildDef(tree.symbol, tree.pos.pointOrElse(-1))
         build(tree.tparams); //@M
         build(tree.lo)
         build(tree.hi)
 */
       case tree: Bind =>
-        buildDef(tree.symbol, tree.pos.offset.getOrElse(-1))
+        buildDef(tree.symbol, tree.pos.pointOrElse(-1))
         build(tree.body)
       case tree: Ident =>
-        buildUse(tree.symbol, tree.pos.offset.getOrElse(-1), tree.tpe)
+        buildUse(tree.symbol, tree.pos.pointOrElse(-1), tree.tpe)
       case tree: Select =>
         try {
           build(tree.qualifier)
@@ -436,7 +436,7 @@ class SemanticTokens(val compiler: Global) {
               case e : Error => Console.err.println("SELECTQ: " + tree + " " + tree.qualifier + " " + (tree.qualifier.pos).dbgString); throw e;
             }
             try {
-              if (tree.pos.offset.isDefined && tree.pos.offset.get >= unit.source.length) {
+              if (tree.pos.isDefined && tree.pos.point >= unit.source.length) {
                 if (false) Console.err.println("BAD_SELECT_QUALIFIER " + tree + " @ " + (tree.pos).dbgString);
 
         } else {
@@ -490,11 +490,11 @@ class SemanticTokens(val compiler: Global) {
       case tree : Alternative => build(tree.trees);
       case tree : This    =>
 
-        if (tree.symbol ne null) buildUse(tree.symbol, tree.pos.offset.getOrElse(-1), tree.tpe);
+        if (tree.symbol ne null) buildUse(tree.symbol, tree.pos.pointOrElse(-1), tree.tpe);
         //Thread.dumpStack();
       case tree : TypeDef =>
         //Console.err.println("ALIAS: " + tree);
-        build(tree.rhs); build(tree.tparams); buildDef(tree.symbol, tree.pos.offset.getOrElse(-1));
+        build(tree.rhs); build(tree.tparams); buildDef(tree.symbol, tree.pos.pointOrElse(-1));
       case tree : DocDef     => build(tree.definition);
       case tree: Import => build(tree.expr)
       case tree: AppliedTypeTree => ;
@@ -550,7 +550,7 @@ class SemanticTokens(val compiler: Global) {
 
   def selectPos(tree: Select): Int = if (tree.pos == NoPosition) -1 else {
     val buf = unit.source.asInstanceOf[BatchSourceFile].content
-    if (tree.pos.offset.get >= buf.length) {
+    if (tree.pos.point >= buf.length) {
       if (false) {
         Console.err.println("" + tree + "@" + tree.pos + " not in " +
                            unit.source.file.name + "[" + buf.length + "]");
@@ -561,13 +561,13 @@ class SemanticTokens(val compiler: Global) {
     }
 
     val pos : Int =
-      if (buf(tree.pos.offset.get) != '.') tree.pos.offset.get
+      if (buf(tree.pos.point) != '.') tree.pos.point
       else {
         def f(x : Int) : Int = {
           if (buf(x).isWhitespace) f(x + 1)
           else x
         }
-        f(tree.pos.offset.get + 1)
+        f(tree.pos.point + 1)
       }
     pos
   };

@@ -82,16 +82,16 @@ class BatchSourceFile(val file : AbstractFile, val content: Array[Char]) extends
   def underlyingLength = length
   def start = 0
 
-  override def identifier(pos: Position, compiler: Global) = pos match {
-    case OffsetPosition(source, offset) if source == this && offset != -1 =>
+  override def identifier(pos: Position, compiler: Global) =
+    if (pos.isDefined && pos.source == this && pos.point != -1) {
       def isOK(c: Char) = {
         import compiler.syntaxAnalyzer.{ isOperatorPart, isIdentifierPart }
         isIdentifierPart(c) || isOperatorPart(c)
       }
-      Some(new String(content drop offset takeWhile isOK))
-    case _ =>
+      Some(new String(content drop pos.point takeWhile isOK))
+    } else {
       super.identifier(pos, compiler)
-  }
+    }
 
   def isLineBreak(idx: Int) =
     if (idx >= length) false else content(idx) match {
@@ -112,6 +112,9 @@ class BatchSourceFile(val file : AbstractFile, val content: Array[Char]) extends
 
   private var lastLine = 0
 
+  /** Convert offset to line in this source file
+   *  Lines are numbered from 0
+   */
   def offsetToLine(offset: Int): Int = {
     val lines = lineIndices
     def findLine(lo: Int, hi: Int, mid: Int): Int =

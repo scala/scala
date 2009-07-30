@@ -24,11 +24,8 @@ abstract class SyntaxAnalyzer extends SubComponent with Parsers with MarkupParse
       unit.body =
         if (unit.source.file.name.endsWith(".java")) new JavaUnitParser(unit).parse()
         else if (!global.reporter.incompleteHandled) new UnitParser(unit).smartParse()
-        else {
-          val result = new UnitParser(unit).parse()
-          if (global.settings.Yrangepos.value) global.validatePositions(unit.body)
-          result
-        }
+        else new UnitParser(unit).parse()
+      if (global.settings.Yrangepos.value) global.validatePositions(unit.body)
     }
   }
 }

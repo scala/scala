@@ -150,7 +150,6 @@ self =>
 
     def o2p(offset: Int): Position
     def r2p(start: Int, mid: Int, end: Int): Position
-    def t2p(tree: Tree): Position = SyntheticAliasPosition(tree)
     //private implicit def p2i(pos: Position) = pos.offset.get
 
     /** whether a non-continuable syntax error has been seen */
@@ -220,7 +219,9 @@ self =>
       placeholderTypes = List()
       var t = op
       if (!placeholderTypes.isEmpty && t.isInstanceOf[AppliedTypeTree]) {
-        t = atPos(t.pos) { ExistentialTypeTree(t, placeholderTypes.reverse) }
+        val expos = t.pos
+        ensureNonOverlapping(t, placeholderTypes)
+        t = atPos(expos) { ExistentialTypeTree(t, placeholderTypes.reverse) }
         placeholderTypes = List()
       }
       placeholderTypes = placeholderTypes ::: savedPlaceholderTypes
@@ -342,9 +343,9 @@ self =>
         ret
       }
 
-    def errorTypeTree = TypeTree().setType(ErrorType).setPos(o2p(in.offset).toSynthetic)
-    def errorTermTree = Literal(Constant(null)).setPos(o2p(in.offset).toSynthetic)
-    def errorPatternTree = Ident(nme.WILDCARD).setPos(o2p(in.offset).toSynthetic)
+    def errorTypeTree = TypeTree().setType(ErrorType).setPos(o2p(in.offset))
+    def errorTermTree = Literal(Constant(null)).setPos(o2p(in.offset))
+    def errorPatternTree = Ident(nme.WILDCARD).setPos(o2p(in.offset))
 
     /** Check that type parameter is not by name T* */
     def checkNotByName(t: Tree) = t match {
@@ -451,13 +452,13 @@ self =>
       tree match {
         case Ident(name) =>
           removeAsPlaceholder(name)
-          ValDef(Modifiers(Flags.PARAM), name, TypeTree() setPos o2p(tree.pos.end), EmptyTree)
+          ValDef(Modifiers(Flags.PARAM), name, TypeTree() setPos o2p(tree.pos.endOrPoint), EmptyTree)
         case Typed(tree @ Ident(name), tpe) if (tpe.isType) => // get the ident!
           removeAsPlaceholder(name)
           ValDef(Modifiers(Flags.PARAM), name, tpe, EmptyTree)
         case _ =>
           syntaxError(tree.pos, "not a legal formal parameter", false)
-          ValDef(Modifiers(Flags.PARAM), nme.ERROR, errorTypeTree setPos o2p(tree.pos.end).toSynthetic, EmptyTree)
+          ValDef(Modifiers(Flags.PARAM), nme.ERROR, errorTypeTree setPos o2p(tree.pos.endOrPoint), EmptyTree)
       }
     }
 
@@ -536,7 +537,7 @@ self =>
               leftAssoc && prec == precedence(opstack.head.operator))) {
         val opinfo = opstack.head
         opstack = opstack.tail
-        top = atPos(opinfo.operand.pos.start, opinfo.offset) {
+        top = atPos(opinfo.operand.pos.startOrPoint, opinfo.offset) {
           makeBinop(isExpr, opinfo.operand, opinfo.operator, top)
         }
       }
@@ -560,7 +561,7 @@ self =>
     def selector(t: Tree): Tree = {
       val point = in.offset
       //assert(t.pos.isDefined, t)
-      Select(t, ident(false)) setPos r2p(t.pos.start, point, in.lastOffset)
+      Select(t, ident(false)) setPos r2p(t.pos.startOrPoint, point, in.lastOffset)
     }
 
     /** Path       ::= StableId
@@ -613,7 +614,7 @@ self =>
     def selectors(t: Tree, typeOK: Boolean, dotOffset: Int): Tree =
       if (typeOK && in.token == TYPE) {
         in.nextToken()
-        atPos(t.pos.start, dotOffset) { SingletonTypeTree(t) }
+        atPos(t.pos.startOrPoint, dotOffset) { SingletonTypeTree(t) }
       } else {
         val t1 = selector(t)
         if (in.token == DOT) { selectors(t1, typeOK, in.skipToken()) }
@@ -774,7 +775,7 @@ self =>
         val op = ident()
         val tycon = atPos(opOffset) { Ident(op.toTypeName) }
         newLineOptWhenFollowing(isTypeIntroToken)
-        def mkOp(t1: Tree) = atPos(t.pos.start, opOffset) { AppliedTypeTree(tycon, List(t, t1)) }
+        def mkOp(t1: Tree) = atPos(t.pos.startOrPoint, opOffset) { AppliedTypeTree(tycon, List(t, t1)) }
         if (leftAssoc)
           infixTypeRest(mkOp(compoundType(isPattern)), isPattern, InfixMode.LeftOp)
         else
@@ -797,7 +798,7 @@ self =>
         in.nextToken(); ts += annotType(isPattern)
       }
       newLineOptWhenFollowedBy(LBRACE)
-      atPos(t.pos.start) {
+      atPos(t.pos.startOrPoint) {
         if (in.token == LBRACE) {
           // Warn if they are attempting to refine Unit; we can't be certain it's
           // scala.Unit they're refining because at this point all we have is an
@@ -853,12 +854,12 @@ self =>
         val hashOffset = in.skipToken()
         val nameOffset = in.offset
         val name = ident(false)
-        val sel = atPos(t.pos.start, if (name == nme.ERROR) hashOffset else nameOffset) {
+        val sel = atPos(t.pos.startOrPoint, if (name == nme.ERROR) hashOffset else nameOffset) {
           SelectFromTypeTree(t, name.toTypeName)
         }
         simpleTypeRest(sel, isPattern)
       } else if (in.token == LBRACKET) {
-        simpleTypeRest(atPos(t.pos.start) { AppliedTypeTree(t, typeArgs(isPattern, false)) }, isPattern)
+        simpleTypeRest(atPos(t.pos.startOrPoint) { AppliedTypeTree(t, typeArgs(isPattern, false)) }, isPattern)
       } else {
         t
       }
@@ -1046,7 +1047,7 @@ self =>
         if (in.token == EQUALS) {
           t match {
             case Ident(_) | Select(_, _) | Apply(_, _) =>
-              t = atPos(t.pos.start, in.skipToken()) { makeAssign(t, expr()) }
+              t = atPos(t.pos.startOrPoint, in.skipToken()) { makeAssign(t, expr()) }
             case _ =>
           }
         } else if (in.token == COLON) {
@@ -1057,7 +1058,7 @@ self =>
             val uscorePos = in.skipToken()
             if (isIdent && in.name == nme.STAR) {
               in.nextToken()
-              t = atPos(t.pos.start, colonPos) {
+              t = atPos(t.pos.startOrPoint, colonPos) {
                 Typed(t, atPos(uscorePos) { Ident(nme.WILDCARD_STAR.toTypeName) })
               }
             } else {
@@ -1066,13 +1067,13 @@ self =>
           } else if (in.token == AT) {
             t = (t /: annotations(false, false)) (makeAnnotated)
           } else {
-            t = atPos(t.pos.start, colonPos) {
+            t = atPos(t.pos.startOrPoint, colonPos) {
               val tpt =
                 if (location == Local) typ() else infixType(false, InfixMode.FirstOp)
               if (isWildcard(t))
                 (placeholderParams: @unchecked) match {
                   case (vd @ ValDef(mods, name, _, _)) :: rest =>
-                    placeholderParams = treeCopy.ValDef(vd, mods, name, tpt.syntheticDuplicate, EmptyTree) :: rest
+                    placeholderParams = treeCopy.ValDef(vd, mods, name, tpt.duplicate, EmptyTree) :: rest
                 }
               // this does not correspond to syntax, but is necessary to
               // accept closures. We might restrict closures to be between {...} only.
@@ -1080,7 +1081,7 @@ self =>
             }
           }
         } else if (in.token == MATCH) {
-          t = atPos(t.pos.start, in.skipToken()) {
+          t = atPos(t.pos.startOrPoint, in.skipToken()) {
             Match(stripParens(t), surround(LBRACE, RBRACE)(caseClauses(), Nil))
           }
         }
@@ -1093,7 +1094,7 @@ self =>
           case _ => false
         }
         if (in.token == ARROW && (location != InTemplate || lhsIsTypedParamList)) {
-          t = atPos(t.pos.start, in.skipToken()) {
+          t = atPos(t.pos.startOrPoint, in.skipToken()) {
             Function(convertToParams(t), if (location != InBlock) expr() else block())
           }
         }
@@ -1119,7 +1120,7 @@ self =>
           val topinfo = opstack.head
           opstack = opstack.tail
           val od = stripParens(reduceStack(true, base, topinfo.operand, 0, true))
-          return atPos(od.pos.start, topinfo.offset) {
+          return atPos(od.pos.startOrPoint, topinfo.offset) {
             Select(od, topinfo.operator.encode)
           }
         }
@@ -1174,9 +1175,9 @@ self =>
         case USCORE =>
           val start = in.offset
           val pname = freshName(o2p(start), "x$")
-          val id = atPos(start) (Ident(pname))
           in.nextToken()
-          val param = atPos(t2p(id)){ makeSyntheticParam(pname) }
+          val id = atPos(start) (Ident(pname))
+          val param = atPos(id.pos.focus){ makeSyntheticParam(pname) }
           placeholderParams = param :: placeholderParams
           id
         case LPAREN =>
@@ -1213,7 +1214,7 @@ self =>
           val t1 = stripParens(t)
           t1 match {
             case Ident(_) | Select(_, _) =>
-              val tapp = atPos(t1.pos.start, in.offset) {
+              val tapp = atPos(t1.pos.startOrPoint, in.offset) {
                 TypeApply(t1, typeArgs(false, true))
               }
               simpleExprRest(tapp, true)
@@ -1221,7 +1222,7 @@ self =>
               t1
           }
         case LPAREN | LBRACE if (canApply) =>
-          val app = atPos(t.pos.start, in.offset) {
+          val app = atPos(t.pos.startOrPoint, in.offset) {
             // look for anonymous function application like (f _)(x) and
             // translate to (f _).apply(x), bug #460
             val sel = t match {
@@ -1234,7 +1235,7 @@ self =>
           }
           simpleExprRest(app, true)
         case USCORE =>
-          atPos(t.pos.start, in.skipToken()) {
+          atPos(t.pos.startOrPoint, in.skipToken()) {
             Typed(stripParens(t), Function(List(), EmptyTree))
           }
         case _ =>
@@ -1360,7 +1361,7 @@ self =>
       if (in.token == IF) enums += makeFilter(in.offset, guard())
     }
 
-    def makeFilter(start: Int, tree: Tree) = Filter(r2p(start, tree.pos.point, tree.pos.end), tree)
+    def makeFilter(start: Int, tree: Tree) = Filter(r2p(start, tree.pos.point, tree.pos.endOrPoint), tree)
 
 /* -------- PATTERNS ------------------------------------------- */
 
@@ -1398,7 +1399,7 @@ self =>
       val p = pattern2(seqOK)
       p match {
         case Ident(name) if (treeInfo.isVarPattern(p) && in.token == COLON) =>
-          atPos(p.pos.start, in.skipToken()) { Typed(p, compoundType(true)) }
+          atPos(p.pos.startOrPoint, in.skipToken()) { Typed(p, compoundType(true)) }
         case _ =>
           p
       }
@@ -1419,7 +1420,7 @@ self =>
               pattern3(seqOK)
             } else if (treeInfo.isVarPattern(p)) {
               in.nextToken()
-              atPos(p.pos.start) { Bind(name, pattern3(seqOK)) }
+              atPos(p.pos.startOrPoint) { Bind(name, pattern3(seqOK)) }
             } else {
               p
             }
@@ -1438,7 +1439,7 @@ self =>
       val base = opstack
       var top = simplePattern(seqOK)
       if (seqOK && isIdent && in.name == STAR)
-        return atPos(top.pos.start, in.skipToken())(Star(stripParens(top)))
+        return atPos(top.pos.startOrPoint, in.skipToken())(Star(stripParens(top)))
 
       while (isIdent && in.name != BAR) {
         top = reduceStack(
@@ -1498,7 +1499,7 @@ self =>
           else t
         case USCORE =>
           in.nextToken()
-          atPos(start) { Ident(nme.WILDCARD) }
+          atPos(start, start) { Ident(nme.WILDCARD) }
         case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
              STRINGLIT | SYMBOLLIT | TRUE | FALSE | NULL =>
           atPos(start) { literal(false) }
@@ -1762,7 +1763,7 @@ self =>
         val t = typ()
         if (isIdent && in.name == STAR) {
           in.nextToken()
-          atPos(t.pos.start, t.pos.point) {
+          atPos(t.pos.startOrPoint, t.pos.point) {
             AppliedTypeTree(
               rootScalaDot(nme.REPEATED_PARAM_CLASS_NAME.toTypeName), List(t))
           }
@@ -1834,7 +1835,7 @@ self =>
 
     def bound(tok: Int, default: Name): Tree =
       if (in.token == tok) { in.nextToken(); typ() }
-      else atPos(o2p(in.lastOffset).toSynthetic) { rootScalaDot(default.toTypeName) }
+      else atPos(o2p(in.lastOffset)) { rootScalaDot(default.toTypeName) }
 
 /* -------- DEFS ------------------------------------------- */
 
@@ -2008,7 +2009,7 @@ self =>
         }
         trees
       }
-      (lhs.toList.init flatMap (mkDefs(_, tp.syntheticDuplicate, rhs.syntheticDuplicate))) ::: mkDefs(lhs.last, tp, rhs)
+      (lhs.toList.init flatMap (mkDefs(_, tp.duplicate, rhs.duplicate))) ::: mkDefs(lhs.last, tp, rhs)
     }
 
     /** VarDef ::= PatDef
@@ -2047,7 +2048,7 @@ self =>
       val start = in.skipToken()
       if (in.token == THIS) {
         atPos(start, in.skipToken()) {
-          val vparamss = paramClauses(nme.CONSTRUCTOR, implicitClassViews map (_.syntheticDuplicate), false)
+          val vparamss = paramClauses(nme.CONSTRUCTOR, implicitClassViews map (_.duplicate), false)
           newLineOptWhenFollowedBy(LBRACE)
           val rhs = if (in.token == LBRACE) {
                       atPos(in.offset) { constrBlock(vparamss) }
@@ -2184,7 +2185,7 @@ self =>
         val implicitViewBuf = new ListBuffer[Tree]
         val tparams = typeParamClauseOpt(name, implicitViewBuf)
         implicitClassViews = implicitViewBuf.toList
-        val tstart = (in.offset::implicitClassViews.map(_.pos.start)).min
+        val tstart = (in.offset::implicitClassViews.map(_.pos.startOrPoint)).min
         if (!implicitClassViews.isEmpty && mods.hasFlag(Flags.TRAIT)) {
           syntaxError("traits cannot have type parameters with <% bounds", false)
           implicitClassViews = List()
@@ -2301,7 +2302,7 @@ self =>
       if (mods.hasFlag(Flags.CASE)) parents = parents ::: List(productConstr)
       val tstart0 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
       atPos(tstart0) {
-        Template(parents, self, constrMods, vparamss, argss, body, o2p(tstart).toSynthetic)
+        Template(parents, self, constrMods, vparamss, argss, body, o2p(tstart))
       }
     }
 
@@ -2362,7 +2363,7 @@ self =>
     def makePackageObject(start: Int, objDef: ModuleDef): PackageDef = objDef match {
       case ModuleDef(mods, name, impl) =>
         makePackaging(
-          start, atPos(o2p(objDef.pos.start)){ Ident(name) }, List(ModuleDef(mods, nme.PACKAGEkw, impl)))
+          start, atPos(o2p(objDef.pos.startOrPoint)){ Ident(name) }, List(ModuleDef(mods, nme.PACKAGEkw, impl)))
     }
 
     /** Packaging ::= package QualId [nl] `{' TopStatSeq `}'
@@ -2520,7 +2521,7 @@ self =>
           stats ++= localDef
           if (in.token == RBRACE || in.token == CASE) {
             syntaxError("block must end in result expression, not in definition", false)
-            stats += Literal(()).setPos(o2p(in.offset).toSynthetic)
+            stats += Literal(()).setPos(o2p(in.offset))
           } else acceptStatSep()
         } else if (isStatSep) {
           in.nextToken()

@@ -130,6 +130,8 @@ self: Analyzer =>
   class ImplicitSearch(tree: Tree, pt: Type, isView: Boolean, context0: Context)
     extends Typer(context0) {
 
+    assert(tree.isEmpty || tree.pos.isDefined)
+
     import infer._
 
     /** Is implicit info `info1` better than implicit info `info2`?
@@ -293,7 +295,7 @@ self: Analyzer =>
           isCompatible(depoly(info.tpe), wildPt) &&
           isStable(info.pre)) {
 
-        val itree = atPos(tree) {
+        val itree = atPos(tree.pos.focus) {
           if (info.pre == NoPrefix) Ident(info.name)
           else Select(gen.mkAttributedQualifier(info.pre), info.name)
         }
@@ -307,8 +309,9 @@ self: Analyzer =>
           val itree1 =
             if (isView)
               typed1(
-                Apply(itree, List(Ident("<argument>").setType(approximate(pt.typeArgs.head)))),
-                EXPRmode, approximate(pt.typeArgs.tail.head))
+                atPos(itree.pos) (
+                  Apply(itree, List(Ident("<argument>").setType(approximate(pt.typeArgs.head))))),
+                  EXPRmode, approximate(pt.typeArgs.tail.head))
             else
               typed1(itree, EXPRmode, wildPt)
 
@@ -338,6 +341,7 @@ self: Analyzer =>
               // to methTypeArgs
               val result = new SearchResult(itree2, subst)
               if (traceImplicits) println("RESULT = "+result)
+              // println("RESULT = "+itree+"///"+itree1+"///"+itree2)//DEBUG
               result
             } else {
               if (traceImplicits) println("incompatible???")
@@ -595,7 +599,7 @@ self: Analyzer =>
       def manifestFactoryCall(constructor: String, args: Tree*): Tree =
         if (args contains EmptyTree) EmptyTree
         else
-          typed(atPos(tree) {
+          typed(atPos(tree.pos.focus) {
             Apply(
               TypeApply(
                 Select(gen.mkAttributedRef(ManifestModule), constructor),
@@ -657,9 +661,14 @@ self: Analyzer =>
      *  but keep within sizeLimit entries
      */
     def cacheResult(key: AnyRef): SearchResult = implicitsCache get key match {
-      case Some(r) =>
+      case Some(sr: SearchResult) =>
         hits += 1
-        r
+        if (sr == SearchFailure) sr
+        else {
+          val result = new SearchResult(sr.tree.duplicate, sr.subst)
+          for (t <- result.tree) t.setPos(tree.pos.focus)
+          result
+        }
       case None =>
         misses += 1
         val r = searchImplicit(implicitsOfExpectedType, false)

@@ -93,10 +93,6 @@ List[Int]'s type parameters do not match type T's expected parameters: class Lis
 Error occured in an application involving default arguments.
   test4()
   ^
-error: type mismatch;
- found   : List[Int]
- required: List[List[scala.List[List[X forSome { type X }]]]]
-Error occured in an application involving default arguments.
 names-defaults-neg.scala:80: error: type mismatch;
  found   : List[Int]
  required: scala.List[scala.List[?]]
@@ -117,4 +113,4 @@ names-defaults-neg.scala:105: error: multiple overloaded alternatives of method 
 names-defaults-neg.scala:108: error: multiple overloaded alternatives of method bar define default arguments
   def bar(i: Int = 129083) = i
       ^
-29 errors found
+28 errors found

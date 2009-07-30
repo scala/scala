@@ -105,7 +105,7 @@ trait Trees {
     }
 
     val id = nodeCount
-    //assert(id != 225)
+//    assert(id != 14427)
     nodeCount += 1
 
     private var rawpos: Position = NoPosition
@@ -118,17 +118,14 @@ trait Trees {
     def tpe_=(t: Type) = rawtpe = t
 
     def setPos(pos: Position): this.type = {
-      pos match {
-        case SyntheticAliasPosition(orig) => assert(orig != this)
-        case _ =>
-      } // !!!
-      rawpos = pos;
+      rawpos = pos
+/*
+      for (c <- this.children)
+        if (c.pos.isOpaqueRange && !pos.includes(c.pos)) {
+          assert(false, "non-enclosing positions in "+this)
+        }
+*/
       this
-    }
-
-    def setOriginal(tree: Tree): this.type = tree.pos match {
-      case SyntheticAliasPosition(orig) => setOriginal(orig)
-      case _ => setPos(if (tree.pos.isDefined) SyntheticAliasPosition(tree) else tree.pos)
     }
 
     def setType(tp: Type): this.type = {
@@ -177,7 +174,7 @@ trait Trees {
     /** The direct child trees of this tree
      *  EmptyTrees are always omitted. Lists are collapsed.
      */
-    def children(): List[Tree] = {
+    def children: List[Tree] = {
       def subtrees(x: Any): List[Tree] = x match {
         case EmptyTree => List()
         case t: Tree => List(t)
@@ -252,14 +249,15 @@ trait Trees {
       } else false
     }
 
+    /** Make a copy of this tree, keeping all attributes,
+     *  except that all positions are focussed (so nothing
+     *  in this tree will be found when searching by position).
+     */
     def duplicate: this.type =
       (duplicator transform this).asInstanceOf[this.type]
 
     def shallowDuplicate: this.type =
       ((new ShallowDuplicator(this)) transform this).asInstanceOf[this.type]
-
-    def syntheticDuplicate: this.type =
-      (syntheticDuplicator transform this).asInstanceOf[this.type]
 
     def copyAttrs(tree: Tree): this.type = {
       rawpos = tree.rawpos
@@ -297,13 +295,9 @@ trait Trees {
 
   private lazy val duplicator = new Transformer {
     override val treeCopy = new StrictTreeCopier
-  }
-
-  private lazy val syntheticDuplicator = new Transformer {
-    override val treeCopy = new StrictTreeCopier
     override def transform(t: Tree) = {
       val t1 = super.transform(t)
-      if (t1 ne t) t1.setOriginal(t)
+      if ((t1 ne t) && t1.pos.isRange) t1 setPos t.pos.focus
       t1
     }
   }
@@ -436,7 +430,9 @@ trait Trees {
 
   def ValDef(sym: Symbol, rhs: Tree): ValDef =
     atPos(sym.pos) {
-      ValDef(Modifiers(sym.flags), sym.name, TypeTree(sym.tpe), rhs) setSymbol sym
+      ValDef(Modifiers(sym.flags), sym.name,
+             TypeTree(sym.tpe) setPos sym.pos.focus,
+             rhs) setSymbol sym
     }
 
   def ValDef(sym: Symbol): ValDef = ValDef(sym, EmptyTree)
@@ -473,7 +469,7 @@ trait Trees {
              sym.name,
              sym.typeParams map TypeDef,
              vparamss,
-             TypeTree(sym.tpe.finalResultType),
+             TypeTree(sym.tpe.finalResultType) setPos sym.pos.focus,
              rhs) setSymbol sym
     }
 
@@ -492,9 +488,7 @@ trait Trees {
 
   /** Abstract type, type parameter, or type alias */
   case class TypeDef(mods: Modifiers, name: Name, tparams: List[TypeDef], rhs: Tree)
-       extends MemberDef {
-    def namePos = pos.offset.map(n => n - name.length).getOrElse(-1)
-  }
+       extends MemberDef
 
   /** A TypeDef node which defines given `sym' with given tight hand side `rhs'. */
   def TypeDef(sym: Symbol, rhs: Tree): TypeDef =
@@ -603,17 +597,20 @@ trait Trees {
     // create parameters for <init> as synthetic trees.
     var vparamss1 =
       vparamss map (vps => vps.map { vd =>
-        atPos(vd) {
+        atPos(vd.pos.focus) {
           ValDef(
             Modifiers(vd.mods.flags & (IMPLICIT | DEFAULTPARAM) | PARAM) withAnnotations vd.mods.annotations,
-            vd.name, vd.tpt.syntheticDuplicate, vd.rhs.syntheticDuplicate)
+            vd.name, vd.tpt.duplicate, vd.rhs.duplicate)
         }})
     val (edefs, rest) = body span treeInfo.isEarlyDef
     val (evdefs, etdefs) = edefs partition treeInfo.isEarlyValDef
     val (lvdefs, gvdefs) = List.unzip {
       evdefs map {
         case vdef @ ValDef(mods, name, tpt, rhs) =>
-          val fld = treeCopy.ValDef(vdef.syntheticDuplicate, mods, name, TypeTree() setOriginal tpt, EmptyTree)
+          val fld = treeCopy.ValDef(
+            vdef.duplicate, mods, name,
+            atPos(vdef.pos.focus) { TypeTree() setOriginal tpt setPos tpt.pos.focus }, // atPos in case
+            EmptyTree)
           val local = treeCopy.ValDef(vdef, Modifiers(PRESUPER), name, tpt, rhs)
           (local, fld)
       }
@@ -859,10 +856,11 @@ trait Trees {
   case class TypeTree() extends TypTree {
     override def symbol = if (tpe == null) null else tpe.typeSymbol
 
-    def original: Tree = pos match {
-      case SyntheticAliasPosition(orig) => orig
-      case _ => null
-    }
+    private var orig: Tree = null // should be EmptyTree?
+
+    def original: Tree = orig
+
+    def setOriginal(tree: Tree): this.type = { orig = tree; setPos(tree.pos); this }
 
     override def isEmpty = (tpe eq null) || tpe == NoType
   }
@@ -878,10 +876,6 @@ trait Trees {
   case class Annotated(annot: Tree, arg: Tree) extends Tree {
     override def isType = arg.isType
     override def isTerm = arg.isTerm
-    override def setPos(pos: Position) : this.type = {
-//      assert(pos.start != 27934, this)
-      super.setPos(pos)
-    }
   }
 
   /** Singleton type, eliminated by RefCheck */
@@ -1706,7 +1700,7 @@ trait Trees {
       if (tree.tpe ne null) tree.tpe = typeSubst(tree.tpe)
       super.traverse(tree)
     }
-    override def apply[T <: Tree](tree: T): T = super.apply(tree.syntheticDuplicate)
+    override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
     override def toString() = "TreeTypeSubstituter("+from+","+to+")"
   }
 
@@ -1724,7 +1718,7 @@ trait Trees {
       if (tree.hasSymbol) subst(from, to)
       super.traverse(tree)
     }
-    override def apply[T <: Tree](tree: T): T = super.apply(tree.syntheticDuplicate)
+    override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
     override def toString() = "TreeSymSubstituter("+from+","+to+")"
   }
 
@@ -1754,26 +1748,9 @@ trait Trees {
     }
   }
 
-  object syntheticMaker extends Traverser {
-    override def traverse(t: Tree) {
-      if (!t.pos.isSynthetic) {
-        t setPos t.pos.toSynthetic
-        super.traverse(t)
-      }
-    }
-  }
-
   def atPos[T <: Tree](pos: Position)(tree: T): T = {
     posAssigner.pos = pos
     posAssigner.traverse(tree)
-    tree
-  }
-
-  def atPos[T <: Tree](original: Tree)(tree: T): T =
-    atPos(SyntheticAliasPosition(original))(tree)
-
-  def makeSynthetic[T <: Tree](tree: T): T = {
-    syntheticMaker.traverse(tree)
     tree
   }
 
@@ -1850,24 +1827,6 @@ trait Trees {
     def isDef : Boolean
     def hasSymbol : Boolean
     def isTop : Boolean
-  }
-
-  /** A position to be used for synthetic trees that correspond to some original tree
-   *  @note Trees with synthetic positions may not contain trees with real positions inside them!
-   */
-  case class SyntheticAliasPosition(original: Tree) extends Position {
-    override def isDefined: Boolean = true
-    override def isSynthetic: Boolean = true
-    override def offset: Option[Int] = original.pos.offset
-    override def source: Option[SourceFile] = original.pos.source
-    override def start: Int = original.pos.start
-    override def point: Int = original.pos.point
-    override def end: Int = original.pos.end
-    override def underlying = original.pos.underlying
-    override def focusStart = original.pos.focusStart
-    override def focusPoint = original.pos.focusPoint
-    override def focusEnd = original.pos.focusEnd
-    override def show = "["+ underlying.show +"]"
   }
 }
 

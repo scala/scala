@@ -129,7 +129,7 @@ trait Printers { self: ICodes =>
 //      if (settings.Xdce.value)
 //        print(if (i.useful) "   " else " * ");
       if (settings.debug.value)
-        print(i.pos.line.map(_.toString).getOrElse(""))
+        if (i.pos.isDefined) print(i.pos.line.toString)
       println(i.toString())
     }
   }

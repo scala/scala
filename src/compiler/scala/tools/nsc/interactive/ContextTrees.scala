@@ -56,7 +56,7 @@ trait ContextTrees { self: Global =>
    */
   def addContext(contexts: Contexts, context: Context) {
     val cpos = context.tree.pos
-    if (isTransparent(cpos))
+    if (cpos.isTransparent)
       for (t <- context.tree.children flatMap solidDescendants)
         addContext(contexts, context, t.pos)
     else
@@ -68,7 +68,7 @@ trait ContextTrees { self: Global =>
    */
   def addContext(contexts: Contexts, context: Context, cpos: Position) {
     try {
-      if (!cpos.isDefined || cpos.isSynthetic) {}
+      if (!cpos.isRange) {}
       else if (contexts.isEmpty) contexts += new ContextTree(cpos, context)
       else {
         val hi = contexts.length - 1

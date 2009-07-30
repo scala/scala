@@ -199,7 +199,7 @@ abstract class GenICode extends SubComponent  {
     private def genLoad(tree: Tree, ctx: Context, expectedType: TypeKind): Context = {
       var generatedType = expectedType
       if (settings.debug.value)
-        log("at line: " + (tree.pos).line.map(_.toString).getOrElse(tree.pos.toString))
+        log("at line: " + (if (tree.pos.isDefined) tree.pos.line else tree.pos))
 
       /**
        * Generate code for primitive arithmetic operations.
@@ -1427,10 +1427,10 @@ abstract class GenICode extends SubComponent  {
         case None =>
           val local = ctx.makeLocal(l.pos, definitions.AnyRefClass.typeConstructor, eqEqTempName.toString)
           //assert(!l.pos.source.isEmpty, "bad position, unit = "+unit+", tree = "+l+", pos = "+l.pos.source)
-          assert(l.pos.source.get == unit.source)
-          assert(r.pos.source.get == unit.source)
-          local.start = (l.pos).line.get
-          local.end   = (r.pos).line.get
+          assert(l.pos.source == unit.source)
+          assert(r.pos.source == unit.source)
+          local.start = (l.pos).line
+          local.end   = (r.pos).line
           local
       }
 

@@ -42,7 +42,7 @@ trait CompilerControl { self: Global =>
   }
 
   /** The compilation unit corresponding to a position */
-  def unitOf(pos: Position): RichCompilationUnit = unitOf(pos.source.get)
+  def unitOf(pos: Position): RichCompilationUnit = unitOf(pos.source)
 
   /** Remove the CompilationUnit corresponding to the given SourceFile
    *  from consideration for recompilation.

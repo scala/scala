@@ -1,8 +1,7 @@
 package scala.tools.nsc
-package interactive
 
 import ast.Trees
-import scala.tools.nsc.util.{SourceFile, Position, RangePosition, OffsetPosition, NoPosition, SyntheticOffsetPosition, WorkScheduler}
+import scala.tools.nsc.util.{SourceFile, Position, RangePosition, OffsetPosition, NoPosition, WorkScheduler}
 import scala.collection.mutable.ListBuffer
 
 trait Positions {
@@ -18,7 +17,12 @@ self: scala.tools.nsc.Global =>
    */
   def wrappingPos(trees: List[Tree]): Position = trees.head.pos
 
-  def makeTransparent(pos: Position) = pos
+  /** Ensure that given tree has no positions that overlap with
+   *  any of the positions of `others`. This is done by
+   *  shortening the range or assinging TransparentPositions
+   *  to some of the nodes in `tree`.
+   */
+  def ensureNonOverlapping(tree: Tree, others: List[Tree]) {}
 
   def validatePositions(tree: Tree) {}
 }

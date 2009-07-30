@@ -120,4 +120,6 @@ abstract class SymbolTable extends Names
 
   /** The phase which has given index as identifier */
   val phaseWithId: Array[Phase]
+
+  def ensureNonOverlapping(tree: Tree, others: List[Tree])
 }

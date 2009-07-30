@@ -1269,9 +1269,9 @@ abstract class GenJVM extends SubComponent {
 //        assert(instr.pos.source.isEmpty || instr.pos.source.get == (clasz.cunit.source), "sources don't match")
 //        val crtLine = instr.pos.line.get(lastLineNr);
         val crtLine = try {
-          (instr.pos).line.get
+          (instr.pos).line
         } catch {
-          case _: NoSuchElementException =>
+          case _: UnsupportedOperationException =>
             log("Warning: wrong position in: " + method)
             lastLineNr
         }
@@ -1439,7 +1439,7 @@ abstract class GenJVM extends SubComponent {
             log("Converting from: " + src + " to: " + dst);
           if (dst == BOOL) {
             Console.println("Illegal conversion at: " + clasz +
-                            " at: " + pos.source.get + ":" + pos.line.getOrElse(-1));
+                            " at: " + pos.source + ":" + pos.line);
           } else
             jcode.emitT2T(javaType(src), javaType(dst));
 

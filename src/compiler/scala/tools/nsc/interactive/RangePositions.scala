@@ -2,7 +2,7 @@ package scala.tools.nsc
 package interactive
 
 import ast.Trees
-import scala.tools.nsc.util.{SourceFile, Position, RangePosition, OffsetPosition, NoPosition, SyntheticOffsetPosition, WorkScheduler}
+import scala.tools.nsc.util.{SourceFile, Position, RangePosition, OffsetPosition, NoPosition, WorkScheduler}
 import scala.collection.mutable.ListBuffer
 
 /** Handling range positions
@@ -29,50 +29,40 @@ self: scala.tools.nsc.Global =>
     def isFree = tree == EmptyTree
   }
 
-  class TransparentPosition(source0: SourceFile, start: Int, point: Int, end: Int) extends RangePosition(source0, start, point, end) {
-    override def show = "<"+super.show+">"
-  }
-
-  def isTransparent(pos: Position) = pos.isInstanceOf[TransparentPosition]
-
-  def isRange(pos: Position) = pos.isInstanceOf[RangePosition] && !isTransparent(pos)
-
-  protected var splitAllowed = false
-
   override def rangePos(source: SourceFile, start: Int, point: Int, end: Int) =
     new RangePosition(source, start, point, end)
 
-  /** A position that wraps the non-empty set of trees.
+  /** A position that wraps a set of trees.
+   *  The point of the wrapping position is the point of the default position.
+   *  If some of the trees are ranges, returns a range position enclosing all ranges
+   *  Otherwise returns default position.
+   */
+  def wrappingPos(default: Position, trees: List[Tree]): Position = {
+    val ranged = trees filter (_.pos.isRange)
+    if (ranged.isEmpty) default.focus
+    else new RangePosition(default.source, (ranged map (_.pos.start)).min, default.point, (ranged map (_.pos.end)).max)
+  }
+
+  /** A position that wraps a non-empty set of trees.
    *  The point of the wrapping position is the point of the first trees' position.
-   *  If all some the trees are non-synthetic, returns a range position enclosing the non-synthetic trees
-   *  Otherwise returns a synthetic offset position to point.
+   *  If some of the trees are ranges, returns a range position enclosing all ranges
+   *  Otherwise returns first tree's position.
    */
   override def wrappingPos(trees: List[Tree]): Position = {
     val headpos = trees.head.pos
-    if (headpos.isDefined) {
-      val source = headpos.source.get
-      val point = headpos.point
-      val nonsynthetic = trees filter (t => t.pos.isDefined && !t.pos.isSynthetic)
-      if (nonsynthetic.isEmpty)
-        new SyntheticOffsetPosition(source, point)
-      else
-        new RangePosition(source, (nonsynthetic map (_.pos.start)).min, point, (nonsynthetic map (_.pos.end)).max)
-    } else {
-      headpos
-    }
+    if (headpos.isDefined) wrappingPos(headpos, trees) else headpos
   }
 
-  override def makeTransparent(pos: Position) = pos match {
-    case rp: RangePosition if (!rp.isSynthetic) =>
-      new TransparentPosition(rp.source.get, rp.start, rp.point, rp.end)
-    case _ =>
-      pos
-  }
+/*
+  override def integratePos(tree: Tree, pos: Position) =
+    if (pos.isSynthetic && !tree.pos.isSynthetic) tree.syntheticDuplicate
+    else tree
+*/
 
   // -------------- ensuring no overlaps -------------------------------
 
   def solidDescendants(tree: Tree): List[Tree] =
-    if (isTransparent(tree.pos)) tree.children flatMap solidDescendants
+    if (tree.pos.isTransparent) tree.children flatMap solidDescendants
     else List(tree)
 
   /** A free range from `lo` to `hi` */
@@ -95,7 +85,7 @@ self: scala.tools.nsc.Global =>
       assert(conflicting.nonEmpty)
       rs
     case r :: rs1 =>
-      assert(!isTransparent(t.pos))
+      assert(!t.pos.isTransparent)
       if (r.isFree && (r.pos includes t.pos)) {
 //      println("subdividing "+r+"/"+t.pos)
         maybeFree(t.pos.end, r.pos.end) ::: List(Range(t.pos, t)) ::: maybeFree(r.pos.start, t.pos.start) ::: rs1
@@ -110,67 +100,31 @@ self: scala.tools.nsc.Global =>
     if (ts.head == t) replacement ::: ts.tail
     else ts.head :: replace(ts.tail, t, replacement)
 
-  /** Ensure that given list of trees has mutually non-overlapping positions,
-   *  by assinging TransparentPositions to some of them, if necessary
+  /** Ensure that given tree has no positions that overlap with
+   *  any of the positions of `others`. This is done by
+   *  shortening the range or assinging TransparentPositions
+   *  to some of the nodes in `tree`.
    */
-  def ensureNonOverlapping(cts: List[Tree]): Unit = {
-
-    def isSplittable(node: Tree) = node match {
-      case Function(_, _) | CaseDef(_, _, _) | Match(_, _) => true
-      case _ => false
+  override def ensureNonOverlapping(tree: Tree, others: List[Tree]) {
+    def isOverlapping(pos: Position) =
+      pos.isRange && (others exists (pos overlaps _.pos))
+    if (isOverlapping(tree.pos)) {
+      val children = tree.children
+      children foreach (ensureNonOverlapping(_, others))
+      if (tree.pos.isOpaqueRange) {
+        val wpos = wrappingPos(tree.pos.focus, children)
+        tree setPos (if (isOverlapping(wpos)) tree.pos.makeTransparent else wpos)
+      }
     }
-
-    /** Do a pass over all child trees `cts`, where `ranges` reflects positions previously
-     *  encountered. If there are overlaps, break up one node by making its position a TransparentPosition
-     *  and do another pass of `ensureOverlapping`.
-     *  @param ranges   The current list of non-overlapping ranges,
-     *                  both occupied and free, sorted from later to earlier.
-     *                  No TransparentPositions allowed here!
-     *  @param trees    The list of trees to insert in ranges.
-     */
-    def iterate(ranges: List[Range], trees: List[Tree]): Unit = trees match {
-      case List() =>
-        ;
-      case tree :: trees1 =>
-        if (isTransparent(tree.pos))
-          iterate(ranges, solidDescendants(tree) ::: trees1)
-        else if (!tree.pos.isDefined || tree.pos.isSynthetic)
-          iterate(ranges, trees1)
-        else {
-          val conflicting = new ListBuffer[Tree]
-          val ranges1 = insert(ranges, tree, conflicting)
-//          println("inserted "+tree+"; ranges = "+ranges1)
-          if (conflicting.isEmpty) {
-            iterate(ranges1, trees1)
-          } else {
-            val splitNode =
-              if (conflicting.size == 1 && (conflicting.head.pos includes tree.pos)) {
-                //println("*** splitting \n"+conflicting.head+"\n--- because it conflicts with ---\n"+tree)
-                //println(tree.id)
-                conflicting.head
-              } else {
-                //println("*** splitting \n"+tree+"\n--- because it conflicts with trees in ---\n"+conflicting)
-                //println(tree.id)
-                tree
-              }
-            //throw new Error()//debug
-
-//          println("splitting "+splitNode)
-            splitNode setPos new TransparentPosition(splitNode.pos.source.get, splitNode.pos.start, splitNode.pos.point, splitNode.pos.end)
-            ensureNonOverlapping(replace(cts, splitNode, solidDescendants(splitNode)))
-          }
-        }
-    }
-//    println("ensure non overlap "+cts)
-    if (phase.id <= currentRun.typerPhase.id)
-      iterate(List(maxFree), cts)
   }
 
-  /** Does given list of trees have mutually non-overlapping positions? */
+  /** Does given list of trees have mutually non-overlapping positions?
+   *  pre: None of the trees is transparent
+   */
   def findOverlapping(cts: List[Tree]): List[(Tree, Tree)] = {
     var ranges = List(maxFree)
     for (ct <- cts) {
-      if (ct.pos.isDefined && !ct.pos.isSynthetic) {
+      if (ct.pos.isOpaqueRange) {
         val conflicting = new ListBuffer[Tree]
         ranges = insert(ranges, ct, conflicting)
         if (conflicting.nonEmpty) return conflicting.toList map (t => (t, ct))
@@ -189,20 +143,17 @@ self: scala.tools.nsc.Global =>
    *  @param  trees  The children to position. All children must be positionable.
    */
   private def setChildrenPos(pos: Position, trees: List[Tree]): Unit = try {
-    var remainingRange = pos
     for (tree <- trees) {
       if (!tree.isEmpty && tree.pos == NoPosition) {
-        val children = tree.children filter (c => !c.isEmpty && !c.pos.isSynthetic)
+        val children = tree.children
         if (children.isEmpty) {
-          tree setPos new OffsetPosition(pos.source.get, remainingRange.start)
+          tree setPos pos.focus
         } else {
-          setChildrenPos(remainingRange, children)
-          tree setPos wrappingPos(children)
+          setChildrenPos(pos, children)
+          tree setPos wrappingPos(pos, children)
         }
-        remainingRange = new RangePosition(pos.source.get, tree.pos.end, pos.point, pos.end)
       }
     }
-    ensureNonOverlapping(trees)
   } catch {
     case ex: Exception =>
       println("error while set children pos "+pos+" of "+trees)
@@ -213,7 +164,7 @@ self: scala.tools.nsc.Global =>
    *  This means: Set position of a node and position all its unpositioned children.
    */
   override def atPos[T <: Tree](pos: Position)(tree: T): T =
-    if (isRange(pos)) {
+    if (pos.isOpaqueRange) {
       if (!tree.isEmpty && tree.pos == NoPosition) {
         tree.setPos(pos)
         val children = tree.children
@@ -231,11 +182,7 @@ self: scala.tools.nsc.Global =>
 
   override def validatePositions(tree: Tree) {
     def reportTree(prefix : String, tree : Tree) {
-      val source = tree.pos.source match {
-        case Some(sf) => " in file "+sf
-        case None => ""
-      }
-
+      val source = if (tree.pos.isDefined) tree.pos.source else ""
       inform("== "+prefix+" tree ["+tree.id+"] of type "+tree.productPrefix+" at "+tree.pos.show+source)
       inform("")
       inform(tree.toString)
@@ -258,8 +205,8 @@ self: scala.tools.nsc.Global =>
       if (!tree.isEmpty) {
         if (!tree.pos.isDefined)
           error("Unpositioned tree ["+tree.id+"]") { reportTree("Unpositioned", tree) }
-        if (!tree.pos.isSynthetic) {
-          if (encltree.pos.isSynthetic)
+        if (tree.pos.isRange) {
+          if (!encltree.pos.isRange)
             error("Synthetic tree ["+encltree.id+"] contains nonsynthetic tree ["+tree.id+"]") {
             reportTree("Enclosing", encltree)
             reportTree("Enclosed", tree)
@@ -306,8 +253,8 @@ self: scala.tools.nsc.Global =>
       this.last
     }
     override def traverse(t: Tree) {
-      if (!t.pos.isSynthetic && (t.pos includes pos)) {
-        if (!isTransparent(t.pos)) last = t
+      if (t.pos includes pos) {
+        if (!t.pos.isTransparent) last = t
         super.traverse(t)
       }
     }

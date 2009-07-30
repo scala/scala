@@ -24,6 +24,8 @@ self =>
 
   import definitions._
 
+  settings.Xprintpos.value = true
+
   override def onlyPresentation = true
 
   /** A list indicating in which order some units should be typechecked.
@@ -67,8 +69,7 @@ self =>
     }
     if (activeLocks == 0) {
       if (context.unit != null &&
-          !result.pos.isSynthetic &&
-          !isTransparent(result.pos) &&
+          result.pos.isOpaqueRange &&
           (result.pos includes context.unit.targetPos)) {
         integrateNew()
         var located = new Locator(context.unit.targetPos) locateIn result
@@ -368,7 +369,7 @@ self =>
   class TreeReplacer(from: Tree, to: Tree) extends Transformer {
     override def transform(t: Tree): Tree = {
       if (t == from) to
-      else if ((t.pos includes from.pos) || isTransparent(t.pos)) super.transform(t)
+      else if ((t.pos includes from.pos) || t.pos.isTransparent) super.transform(t)
       else t
     }
   }

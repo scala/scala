@@ -32,6 +32,7 @@ trait Product extends AnyRef {
    */
   def productArity: Int
 
+  /** An iterator that returns all fields of this product */
   def productIterator: Iterator[Any] = new Iterator[Any] {
     private var c: Int = 0
     private val cmax = productArity

@@ -504,10 +504,7 @@ abstract class GenMSIL extends SubComponent {
         }
       }
 
-      val line = (sym.pos).line match {
-        case Some(l) => l
-        case None => 0
-      }
+      val line = sym.pos.line
       tBuilder.setPosition(line, iclass.cunit.source.file.name)
 
       if (isTopLevelModule(sym)) {
@@ -1217,12 +1214,7 @@ abstract class GenMSIL extends SubComponent {
 
         needAdditionalRet = false
 
-	    val currentLineNr = (instr.pos).line match {
-          case Some(line) => line
-          case None =>
-            log("Warning: wrong position in: " + method)
-          lastLineNr
-        } // if getting line number fails
+	val currentLineNr = instr.pos.line
 
         if (currentLineNr != lastLineNr) {
           mcode.setPosition(currentLineNr)
@@ -1677,8 +1669,7 @@ abstract class GenMSIL extends SubComponent {
             case DOUBLE => mcode.Emit(OpCodes.Conv_R8)
             case _ =>
               Console.println("Illegal conversion at: " + clasz +
-                              " at: " + pos.source.get + ":" +
-			    pos.line.get)
+                              " at: " + pos.source + ":" + pos.line)
           }
 
         case ArrayLength(_) =>

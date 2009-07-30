@@ -67,7 +67,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       newSyntheticMethod(name, flags | OVERRIDE, tpeCons)
 
     def newSyntheticMethod(name: Name, flags: Int, tpeCons: Symbol => Type) = {
-      val method = clazz.newMethod(clazz.pos.toSynthetic, name) setFlag (flags | SYNTHETICMETH)
+      val method = clazz.newMethod(clazz.pos.focus, name) setFlag (flags | SYNTHETICMETH)
       method setInfo tpeCons(method)
       clazz.info.decls.enter(method).asInstanceOf[TermSymbol]
     }
@@ -169,7 +169,7 @@ trait SyntheticMethods extends ast.TreeDSL {
 
       // returns (Apply, Bind)
       def makeTrees(acc: Symbol, cpt: Type): (Tree, Bind) = {
-        val varName             = context.unit.fresh.newName(clazz.pos.toSynthetic, acc.name + "$")
+        val varName             = context.unit.fresh.newName(clazz.pos.focus, acc.name + "$")
         val (eqMethod, binding) =
           if (cpt.isVarargs)  (nme.sameElements, Star(WILD()))
           else                (nme.EQ          , WILD()      )
@@ -215,7 +215,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     def newAccessorMethod(tree: Tree): Tree = tree match {
       case DefDef(_, _, _, _, _, rhs) =>
         var newAcc = tree.symbol.cloneSymbol
-        newAcc.name = context.unit.fresh.newName(tree.symbol.pos.toSynthetic, tree.symbol.name + "$")
+        newAcc.name = context.unit.fresh.newName(tree.symbol.pos.focus, tree.symbol.name + "$")
         newAcc setFlag SYNTHETIC resetFlag (ACCESSOR | PARAMACCESSOR | PRIVATE)
         newAcc = newAcc.owner.info.decls enter newAcc
         val result = typer typed { DEF(newAcc) === rhs.duplicate }

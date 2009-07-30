@@ -2553,7 +2553,6 @@ A type's typeSymbol should never be inspected directly.
         newAnnots
     }
 
-
     def mapOver(annot: AnnotationInfo): Option[AnnotationInfo] = {
       val AnnotationInfo(atp, args, assocs) = annot
 
@@ -2827,6 +2826,7 @@ A type's typeSymbol should never be inspected directly.
 
   /** A base class to compute all substitutions */
   abstract class SubstMap[T](from: List[Symbol], to: List[T]) extends TypeMap {
+
     /** Are `sym' and `sym1' the same.
      *  Can be tuned by subclasses.
      */
@@ -2953,20 +2953,16 @@ A type's typeSymbol should never be inspected directly.
       object trans extends TypeMapTransformer {
         override def transform(tree: Tree) =
           tree match {
-            case tree@Ident(_) if from contains tree.symbol =>
+            case Ident(name) if from contains tree.symbol =>
               val totpe = to(from.indexOf(tree.symbol))
-              if (!totpe.isStable) {
-                giveup()
-              } else {
-                tree.duplicate.setType(totpe)
-              }
+              if (!totpe.isStable) giveup()
+              else Ident(name).setPos(tree.pos).setSymbol(tree.symbol).setType(totpe)
 
             case _ => super.transform(tree)
           }
       }
       trans.transform(tree)
-      }
-
+    }
 
   }
 
@@ -3039,7 +3035,7 @@ A type's typeSymbol should never be inspected directly.
       object treeTrans extends TypeMapTransformer {
         override def transform(tree: Tree): Tree =
           tree match {
-            case tree@Ident(name) =>
+            case Ident(name) =>
               tree.tpe.withoutAnnotations match {
                 case DeBruijnIndex(level, pid) =>
                   if (level == 1) {
@@ -3052,9 +3048,12 @@ A type's typeSymbol should never be inspected directly.
                        setType typeRef(NoPrefix, sym, Nil))
                     }
                   } else
-                    tree.duplicate.setType(
-                      DeBruijnIndex(level-1, pid))
-                case _ => super.transform(tree)
+                    Ident(name)
+                      .setPos(tree.pos)
+                      .setSymbol(tree.symbol)
+                      .setType(DeBruijnIndex(level-1, pid))
+                case _ =>
+                  super.transform(tree)
 
               }
             case _ => super.transform(tree)
