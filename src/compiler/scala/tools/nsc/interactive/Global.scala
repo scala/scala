@@ -235,7 +235,7 @@ self =>
   /** Parse unit and create a name index. */
   def parse(unit: RichCompilationUnit): Unit = {
     currentTyperRun.compileLate(unit)
-    validatePositions(unit.body)
+    if (!reporter.hasErrors) validatePositions(unit.body)
     //println("parsed: [["+unit.body+"]]")
     unit.status = JustParsed
   }

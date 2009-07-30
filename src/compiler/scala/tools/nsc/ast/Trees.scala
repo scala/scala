@@ -105,7 +105,7 @@ trait Trees {
     }
 
     val id = nodeCount
-//    assert(id != 14427)
+//    assert(id != 1223)
     nodeCount += 1
 
     private var rawpos: Position = NoPosition
@@ -619,7 +619,8 @@ trait Trees {
       if (constrMods.isTrait) {
         if (body forall treeInfo.isInterfaceMember) List()
         else List(
-          DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, List(), List(List()), TypeTree(), Block(lvdefs, Literal(()))))
+          atPos(wrappingPos(superPos, lvdefs)) (
+            DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, List(), List(List()), TypeTree(), Block(lvdefs, Literal(())))))
       } else {
         // convert (implicit ... ) to ()(implicit ... ) if its the only parameter section
         if (vparamss1.isEmpty ||
@@ -630,9 +631,12 @@ trait Trees {
         }
         val superCall = (superRef /: argss) (Apply)
         List(
-          DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(()))))
+          atPos(wrappingPos(superPos, lvdefs ::: argss.flatten)) (
+            DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(())))))
       }
     }
+    // println("typed template, gvdefs = "+gvdefs+", parents = "+parents+", constrs = "+constrs)
+    constrs foreach (ensureNonOverlapping(_, parents ::: gvdefs))
     // remove defaults
     val vparamss2 = vparamss map (vps => vps map { vd =>
       treeCopy.ValDef(vd, vd.mods &~ DEFAULTPARAM, vd.name, vd.tpt, EmptyTree)

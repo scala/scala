@@ -15,6 +15,11 @@ import symtab.Flags.MUTABLE
 
 /** This class builds instance of <code>Tree</code> that represent XML.
  *
+ * Note from martin: This needs to have its position info reworked. I don't understand exactly
+ * what's done here. To make validation pass, I set many positions to be transparent. Not sure this
+ * is a good idea for navigating XML trees in the IDE< but it's the best I can do right now. If someone
+ * who understands this part better wants to give it a shot, please do!
+ *
  *  @author  Burak Emir
  *  @version 1.0
  */
@@ -202,7 +207,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean)
       case (None, x)    => (null, x)
     }
 
-    def mkAttributeTree(pre: String, key: String, value: Tree) = atPos(pos) {
+    def mkAttributeTree(pre: String, key: String, value: Tree) = atPos(pos.makeTransparent) {
       // XXX this is where we'd like to put Select(value, nme.toString_) for #1787
       // after we resolve the Some(foo) situation.
       val baseArgs = List(const(key), value, Ident(_md))
@@ -222,9 +227,9 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean)
         case _                  => handleUnprefixedAttribute(k, v)
       }
 
-    lazy val scopeDef     = atPos(pos)(ValDef(NoMods, _scope, _scala_xml_NamespaceBinding, Ident(_tmpscope)))
-    lazy val tmpScopeDef  = atPos(pos)(ValDef(Modifiers(MUTABLE), _tmpscope, _scala_xml_NamespaceBinding, Ident(_scope)))
-    lazy val metadataDef  = atPos(pos)(ValDef(Modifiers(MUTABLE), _md, _scala_xml_MetaData, _scala_xml_Null))
+    lazy val scopeDef     = ValDef(NoMods, _scope, _scala_xml_NamespaceBinding, Ident(_tmpscope))
+    lazy val tmpScopeDef  = ValDef(Modifiers(MUTABLE), _tmpscope, _scala_xml_NamespaceBinding, Ident(_scope))
+    lazy val metadataDef  = ValDef(Modifiers(MUTABLE), _md, _scala_xml_MetaData, _scala_xml_Null)
     val makeSymbolicAttrs = if (!attributes.isEmpty) Ident(_md) else _scala_xml_Null
 
     val (attrResult, nsResult) =
@@ -236,7 +241,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean)
       }
 
     val body = mkXML(
-      pos,
+      pos.makeTransparent,
       false,
       const(pre),
       const(newlabel),
@@ -245,6 +250,6 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean)
       args
     )
 
-    atPos(pos)( Block(nsResult, Block(attrResult, body)) )
+    atPos(pos.makeTransparent)( Block(nsResult, Block(attrResult, body)) )
   }
 }

@@ -426,10 +426,10 @@ self =>
 /* ---------- TREE CONSTRUCTION ------------------------------------------- */
 
     def atPos[T <: Tree](offset: Int)(t: T): T =
-      global.atPos(r2p(offset, offset, in.lastOffset))(t)
+      global.atPos(r2p(offset, offset, in.lastOffset max offset))(t)
     def atPos[T <: Tree](start: Int, point: Int)(t: T): T =
-      global.atPos(r2p(start, point, in.lastOffset))(t)
-    def atPos[T <: Tree](start: Int, point: Int, end: Int)(t: T): T =
+      global.atPos(r2p(start, point, in.lastOffset max start))(t)
+    def atPos[T <: Tree](start: Int, point: Int, end: Int)(t: T): T = // !!! put an { brace here and observe
       global.atPos(r2p(start, point, end))(t)
     def atPos[T <: Tree](pos: Position)(t: T): T =
       global.atPos(pos)(t)
@@ -2342,7 +2342,7 @@ self =>
 
   /** Create a tree representing a packaging */
     def makePackaging(start: Int, pkg: Tree, stats: List[Tree]): PackageDef =
-      atPos(start, pkg.pos.point, in.lastOffset max start) { PackageDef(pkg.asInstanceOf[RefTree], stats) }
+      atPos(start, pkg.pos.point) { PackageDef(pkg.asInstanceOf[RefTree], stats) }
 /*
         pkg match {
           case id @ Ident(_) =>

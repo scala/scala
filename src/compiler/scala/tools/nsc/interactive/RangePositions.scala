@@ -2,6 +2,7 @@ package scala.tools.nsc
 package interactive
 
 import ast.Trees
+import symtab.Positions
 import scala.tools.nsc.util.{SourceFile, Position, RangePosition, OffsetPosition, NoPosition, WorkScheduler}
 import scala.collection.mutable.ListBuffer
 
@@ -37,7 +38,7 @@ self: scala.tools.nsc.Global =>
    *  If some of the trees are ranges, returns a range position enclosing all ranges
    *  Otherwise returns default position.
    */
-  def wrappingPos(default: Position, trees: List[Tree]): Position = {
+  override def wrappingPos(default: Position, trees: List[Tree]): Position = {
     val ranged = trees filter (_.pos.isRange)
     if (ranged.isEmpty) default.focus
     else new RangePosition(default.source, (ranged map (_.pos.start)).min, default.point, (ranged map (_.pos.end)).max)

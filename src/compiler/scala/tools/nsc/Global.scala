@@ -34,7 +34,6 @@ import backend.icode.analysis._
 
 class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
                                                              with CompilationUnits
-                                                             with Positions
                                                              with Plugins
                                                              with PhaseAssembly
 {
