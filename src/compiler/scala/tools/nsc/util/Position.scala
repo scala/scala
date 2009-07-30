@@ -11,7 +11,7 @@ package util
 object Position {
   val tabInc = 8
 }
-/** The class and its subclasses represent positions of ASTs and symbols.
+/** The Position class and its subclasses represent positions of ASTs and symbols.
  *  Except for NoPosition and FakePos, every position refers to a SourceFile
  *  and to an offset in the sourcefile (its `point'). For batch compilation,
  *  that's all. For interactive IDE's there are also RangePositions

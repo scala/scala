@@ -2568,11 +2568,9 @@ self =>
         ts.toList
       }
       val start = in.offset max 0
-      atPos(start) {
-        topstats() match {
-          case List(stat @ PackageDef(_, _)) => stat
-          case stats => makePackaging(start, atPos(o2p(start)) { Ident(nme.EMPTY_PACKAGE_NAME) }, stats)
-        }
+      topstats() match {
+        case List(stat @ PackageDef(_, _)) => stat
+        case stats => makePackaging(start, atPos(o2p(start)) { Ident(nme.EMPTY_PACKAGE_NAME) }, stats)
       }
     }
   }
