@@ -66,10 +66,12 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
   }
 
   def update(added: Set[AbstractFile], removed: Set[AbstractFile]) {
-    removeFiles(removed)
-    update(added)
+    sources --= removed
+    val changes = new mutable.HashMap[Symbol, List[Change]]
+    for (f <- removed; sym <- definitions(f))
+      changes += sym -> List(Removed(Class(sym.fullNameString)))
+    update(added ++ invalidated(removed, changes))
   }
-
 
   /** The given files have been modified by the user. Recompile
    *  them and all files that depend on them. Only files that
