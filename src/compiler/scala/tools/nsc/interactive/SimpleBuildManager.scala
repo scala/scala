@@ -18,7 +18,13 @@ import io.AbstractFile
  */
 class SimpleBuildManager(val settings: Settings) extends BuildManager {
 
-  val compiler: scala.tools.nsc.Global = new scala.tools.nsc.Global(settings)
+  class BuilderGlobal(settings: Settings) extends scala.tools.nsc.Global(settings)  {
+    def newRun() = new Run()
+  }
+
+  protected def newCompiler(settings: Settings) = new BuilderGlobal(settings)
+
+  val compiler = newCompiler(settings)
 
   /** Managed source files. */
   private val sources: mutable.Set[AbstractFile] = new mutable.HashSet[AbstractFile]
@@ -40,7 +46,7 @@ class SimpleBuildManager(val settings: Settings) extends BuildManager {
    */
   def update(files: Set[AbstractFile]) {
     val deps = compiler.dependencyAnalysis.dependencies
-    val run = new compiler.Run()
+    val run = compiler.newRun()
     compiler.inform("compiling " + files)
 
     val toCompile =

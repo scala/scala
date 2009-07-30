@@ -14,11 +14,16 @@ abstract class References extends SubComponent with Files {
   def newPhase(prev: Phase) = new ReferenceAnalysisPhase(prev)
 
   /** Top level definitions per source file. */
-  val definitions: mutable.Map[AbstractFile, List[Symbol]] = new mutable.HashMap[AbstractFile, List[Symbol]]
+  val definitions: mutable.Map[AbstractFile, List[Symbol]] =
+    new mutable.HashMap[AbstractFile, List[Symbol]] {
+      override def default(f : AbstractFile) = Nil
+  }
 
   /** External references used by source file. */
   var references: immutable.Map[AbstractFile, immutable.Set[String]] =
-    new immutable.HashMap[AbstractFile, immutable.Set[String]]
+    new immutable.HashMap[AbstractFile, immutable.Set[String]] {
+      override def default(f : AbstractFile) = immutable.Set()
+    }
 
   class ReferenceAnalysisPhase(prev: Phase) extends StdPhase(prev) {
     def apply(unit: global.CompilationUnit) {

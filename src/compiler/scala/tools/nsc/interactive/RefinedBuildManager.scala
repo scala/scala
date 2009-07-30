@@ -30,8 +30,13 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
       phasesSet += dependencyAnalysis
       phasesSet += referencesAnalysis
     }
+
+    def newRun() = new Run()
   }
-  val compiler = new BuilderGlobal(settings)
+
+  protected def newCompiler(settings: Settings) = new BuilderGlobal(settings)
+
+  val compiler = newCompiler(settings)
   import compiler.Symbol
 
   /** Managed source files. */
@@ -62,7 +67,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
    */
   def update(files: Set[AbstractFile]): Unit = if (!files.isEmpty) {
     val deps = compiler.dependencyAnalysis.dependencies
-    val run = new compiler.Run()
+    val run = compiler.newRun()
     compiler.inform("compiling " + files)
 
     run.compileFiles(files.toList)
