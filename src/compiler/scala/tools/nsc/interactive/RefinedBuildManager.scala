@@ -59,18 +59,21 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
   /** Remove the given files from the managed build process. */
   def removeFiles(files: Set[AbstractFile]) {
     sources --= files
+    update(invalidatedByRemove(files))
+  }
+
+  /** Return the set of invalidated files caused by removing the given files.
+   */
+  private def invalidatedByRemove(files: Set[AbstractFile]): Set[AbstractFile] = {
     val changes = new mutable.HashMap[Symbol, List[Change]]
     for (f <- files; sym <- definitions(f))
       changes += sym -> List(Removed(Class(sym.fullNameString)))
-    update(invalidated(files, changes))
+    invalidated(files, changes)
   }
 
   def update(added: Set[AbstractFile], removed: Set[AbstractFile]) {
     sources --= removed
-    val changes = new mutable.HashMap[Symbol, List[Change]]
-    for (f <- removed; sym <- definitions(f))
-      changes += sym -> List(Removed(Class(sym.fullNameString)))
-    update(added ++ invalidated(removed, changes))
+    update(added ++ invalidatedByRemove(removed))
   }
 
   /** The given files have been modified by the user. Recompile
