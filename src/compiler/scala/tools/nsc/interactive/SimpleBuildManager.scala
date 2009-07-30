@@ -40,6 +40,11 @@ class SimpleBuildManager(val settings: Settings) extends BuildManager {
     sources --= files
   }
 
+  def update(added: Set[AbstractFile], removed: Set[AbstractFile]) {
+    removeFiles(removed)
+    update(added)
+  }
+
   /** The given files have been modified by the user. Recompile
    *  them and all files that depend on them. Only files that
    *  have been previously added as source files are recompiled.

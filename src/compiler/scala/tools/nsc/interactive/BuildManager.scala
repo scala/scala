@@ -20,7 +20,7 @@ trait BuildManager {
   /** The given files have been modified by the user. Recompile
    *  them and their dependent files.
    */
-  def update(files: Set[AbstractFile])
+  def update(added: Set[AbstractFile], removed: Set[AbstractFile])
 
   /** Load saved dependency information. */
   def loadFrom(file: AbstractFile)
@@ -62,7 +62,7 @@ object BuildManagerTest extends EvalLoop {
     loop { line =>
       val args = List.fromString(line, ' ')
       val command = new CompilerCommand(args, new Settings(error), error, true)
-      buildManager.update(command.files)
+      buildManager.update(command.files, Set.empty)
     }
 
   }
