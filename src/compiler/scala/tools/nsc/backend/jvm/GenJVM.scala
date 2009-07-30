@@ -38,8 +38,9 @@ abstract class GenJVM extends SubComponent {
 
   /** JVM code generation phase
    */
-  class JvmPhase(prev: Phase) extends StdPhase(prev) {
+  class JvmPhase(prev: Phase) extends ICodePhase(prev) {
 
+    def name = phaseName
     override def erasedTypes = true
     object codeGenerator extends BytecodeGenerator
 
@@ -48,11 +49,11 @@ abstract class GenJVM extends SubComponent {
       if (settings.Xdce.value)
         icodes.classes.retain { (sym: Symbol, cls: IClass) => !inliner.isClosureClass(sym) || deadCode.liveClosures(sym) }
 
-      classes.values foreach codeGenerator.genClass
+      classes.values foreach apply
     }
 
-    override def apply(unit: CompilationUnit) {
-      abort("JVM works on icode classes, not on compilation units!")
+    override def apply(cls: IClass) {
+      codeGenerator.genClass(cls)
     }
   }
 
