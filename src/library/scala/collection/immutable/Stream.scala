@@ -448,9 +448,9 @@ object Stream extends SequenceFactory[Stream] {
    *  @param f     the function that's repeatedly applied
    *  @return      the stream returning the infinite sequence of values `start, f(start), f(f(start)), ...`
    */
-  def iterate(start: Int)(f: Int => Int): Stream[Int] = new Cons(start, iterate(f(start))(f))
+  def iterate[A](start: A)(f: A => A): Stream[A] = new Cons(start, iterate(f(start))(f))
 
-  override def iterate(start: Int, len: Int)(f: Int => Int): Stream[Int] =
+  override def iterate[A](start: A, len: Int)(f: A => A): Stream[A] =
     iterate(start)(f) take len
 
   /**
@@ -476,10 +476,10 @@ object Stream extends SequenceFactory[Stream] {
   /**
    * Create an infinite stream containing the given element expression (which is computed for each
    * occurrence)
+   *
    * @param elem the element composing the resulting stream
-   * @return the stream containing an inifinite number of elem
+   * @return the stream containing an infinite number of elem
    */
-  @deprecated("use `fill' instead")
   def continually[A](elem: => A): Stream[A] = new Cons(elem, continually(elem))
 
   override def fill[A](n: Int)(elem: => A): Stream[A] =
@@ -530,9 +530,9 @@ object Stream extends SequenceFactory[Stream] {
    * Create an infinite stream containing the given element.
    *
    * @param elem the element composing the resulting stream
-   * @return the stream containing an inifinite number of elem
+   * @return the stream containing an infinite number of elem
    */
-  @deprecated("use fill(elem) instead")
+  @deprecated("use `continually' instead")
   def const[A](elem: A): Stream[A] = cons(elem, const(elem))
 
   /** Create a stream containing several copies of an element.
