@@ -62,6 +62,8 @@ class SimpleBuildManager(val settings: Settings) extends BuildManager {
                     (if(settings.debug.value) toCompile.mkString(", ")
                      else toCompile.size + " files"))
 
+    buildingFiles(toCompile)
+
     run.compileFiles(files.toList)
   }
 

@@ -22,6 +22,9 @@ trait BuildManager {
    */
   def update(added: Set[AbstractFile], removed: Set[AbstractFile])
 
+  /** Notification that the supplied set of files is being built */
+  def buildingFiles(included: Set[AbstractFile]) {}
+
   /** Load saved dependency information. */
   def loadFrom(file: AbstractFile)
 

@@ -49,6 +49,7 @@ object Main extends AnyRef with EvalLoop {
     if (command.settings.version.value)
       reporter.info(null, versionMsg, true)
     else if (command.settings.Yidedebug.value) {
+      command.settings.Xprintpos.value = true
       val compiler = new interactive.Global(command.settings, reporter)
       import compiler.{ reporter => _, _ }
 

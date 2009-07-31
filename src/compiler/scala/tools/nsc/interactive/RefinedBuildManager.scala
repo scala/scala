@@ -74,9 +74,9 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
    *  have been previously added as source files are recompiled.
    */
   private def update(files: Set[AbstractFile]): Unit = if (!files.isEmpty) {
-    val deps = compiler.dependencyAnalysis.dependencies
     val run = compiler.newRun()
     compiler.inform("compiling " + files)
+    buildingFiles(files)
 
     run.compileFiles(files.toList)
     if (compiler.reporter.hasErrors) {

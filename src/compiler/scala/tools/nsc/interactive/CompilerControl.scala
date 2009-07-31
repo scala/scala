@@ -82,6 +82,11 @@ trait CompilerControl { self: Global =>
       override def toString = "typeat "+pos.source+" "+pos.show
     }
 
+  def askType(source: SourceFile, forceReload: Boolean, result: Response[Tree]) =
+    scheduler postWorkItem new WorkItem {
+      def apply() = self.getTypedTree(source, forceReload, result)
+  }
+
   /** Set sync var `result' to list of members that are visible
    *  as members of the tree enclosing `pos`, possibly reachable by an implicit.
    *   - if `selection` is false, as identifiers in the scope enclosing `pos`

@@ -24,8 +24,6 @@ self =>
 
   import definitions._
 
-  settings.Xprintpos.value = true
-
   override def onlyPresentation = true
 
   /** A list indicating in which order some units should be typechecked.
@@ -122,14 +120,14 @@ self =>
       case Some(action) =>
         try {
           acting = true
-          println("picked up work item: "+action)
+          //println("picked up work item: "+action)
           action()
-          println("done with work item: "+action)
+          //println("done with work item: "+action)
         } catch {
           case ex: CancelActionReq =>
-            println("cancelled work item: "+action)
+            //println("cancelled work item: "+action)
         } finally {
-          println("quitting work item: "+action)
+          //println("quitting work item: "+action)
           acting = false
         }
       case None =>
@@ -211,13 +209,13 @@ self =>
   /** Compile all given units
    */
   private def backgroundCompile() {
-    inform("Starting new presentation compiler type checking pass")
+    //inform("Starting new presentation compiler type checking pass")
     reporter.reset
     firsts = firsts filter (s => unitOfFile contains (s.file))
     val prefix = firsts map unitOf
     val units = prefix ::: (unitOfFile.values.toList diff prefix) filter (!_.isUpToDate)
     recompile(units)
-    inform("Everything is now up to date")
+    //inform("Everything is now up to date")
   }
 
   /** Reset unit to just-parsed state */
@@ -300,9 +298,23 @@ self =>
     new Locator(pos) locateIn typedTree
   }
 
+  /** A fully attributed tree corresponding to the entire compilation unit  */
+  def typedTree(source: SourceFile, forceReload: Boolean): Tree = {
+    val unit = unitOf(source)
+    val sources = List(source)
+    if (unit.status == NotLoaded || forceReload) reloadSources(sources)
+    moveToFront(sources)
+    currentTyperRun.typedTree(unitOf(source))
+  }
+
   /** Set sync var `result` to a fully attributed tree located at position `pos`  */
   def getTypedTreeAt(pos: Position, result: Response[Tree]) {
     respond(result)(typedTreeAt(pos))
+  }
+
+  /** Set sync var `result` to a fully attributed tree corresponding to the entire compilation unit  */
+  def getTypedTree(source : SourceFile, forceReload: Boolean, result: Response[Tree]) {
+    respond(result)(typedTree(source, forceReload))
   }
 
   def stabilizedType(tree: Tree): Type = tree match {
@@ -403,8 +415,6 @@ self =>
 
   /** The typer run */
   class TyperRun extends Run {
-    println("new typer run")
-
     // units is always empty
     // symSource, symData are ignored
     override def compiles(sym: Symbol) = false
@@ -438,6 +448,13 @@ self =>
           unit.targetPos = NoPosition
         }
       }
+    }
+
+    def typedTree(unit: RichCompilationUnit): Tree = {
+      assert(unit.status >= JustParsed)
+      unit.targetPos = NoPosition
+      typeCheck(unit)
+      unit.body
     }
 
     /** Apply a phase to a compilation unit
