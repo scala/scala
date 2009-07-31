@@ -904,14 +904,28 @@ trait Namers { self: Analyzer =>
         vparam.tpt.tpe = ErrorType
       }
 
+      addDefaultGetters(meth, vparamss, tparams, overriddenSymbol)
 
-      // add the getter methods for default arguments.
+      thisMethodType(
+        if (tpt.isEmpty) {
+          // replace deSkolemized symbols with skolemized ones (for resultPt computed by looking at overridden symbol, right?)
+          val pt = resultPt.substSym(tparamSyms, tparams map (_.symbol))
+          // compute result type from rhs
+          tpt.tpe = widenIfNotFinal(meth, typer.computeType(rhs, pt), pt)
+          tpt setPos meth.pos.focus
+          tpt.tpe
+        } else typer.typedType(tpt).tpe)
+    }
 
-      /** Adding the "override" and "defaultparam" (for inherited defaults) flags
-       *  has to be done here. Typer is too late, if an inherited default is used
-       *  before the method is typechecked, the corresponding param would not yet
-       *  have the "defaultparam" flag.
-       */
+    /**
+     * For every default argument, insert a method computing that default
+     *
+     * Also adds the "override" and "defaultparam" (for inherited defaults) flags
+     * Typer is too late, if an inherited default is used before the method is
+     * typechecked, the corresponding param would not yet have the "defaultparam"
+     * flag.
+     */
+    private def addDefaultGetters(meth: Symbol, vparamss: List[List[ValDef]], tparams: List[TypeDef], overriddenSymbol: => Symbol) {
       val isConstr = meth.isConstructor
       val overridden = if (isConstr || !meth.owner.isClass) NoSymbol
                        else overriddenSymbol
@@ -928,8 +942,6 @@ trait Namers { self: Analyzer =>
 
       var posCounter = 1
 
-      // Martin to Lukas: this needs to be reviewed in light of range positions.
-
       // for each value parameter, create the getter method if it has a default argument. previous
       // denotes the parameter lists which are on the left side of the current one. these get added
       // to the default getter. Example: "def foo(a: Int)(b: Int = a)" gives "foo$default$1(a: Int) = a"
@@ -941,7 +953,7 @@ trait Namers { self: Analyzer =>
           // true if the corresponding parameter of the base class has a default argument
           val baseHasDefault = overrides && (baseParams.head hasFlag DEFAULTPARAM)
           if (sym hasFlag DEFAULTPARAM) {
-        	// generate a default getter for that argument
+            // generate a default getter for that argument
             val oflag = if (baseHasDefault) OVERRIDE else 0
             val name = (if (isConstr) "init" else meth.name) +"$default$"+ posCounter
 
@@ -996,14 +1008,14 @@ trait Namers { self: Analyzer =>
             }
 
             val defTpt = subst(copyUntyped(vparam.tpt))
-            val defRhs = copyUntyped(vparam.rhs)// this should not be synthetic?
+            val defRhs = copyUntyped(vparam.rhs)
 
             val defaultTree = atPos(vparam.pos.focus) {
               DefDef(
                 Modifiers(meth.flags & (PRIVATE | PROTECTED | FINAL)) | SYNTHETIC | DEFAULTPARAM | oflag,
                 name, deftParams, defvParamss, defTpt, defRhs)
             }
-            meth.owner.resetFlag(INTERFACE)
+            meth.owner.resetFlag(INTERFACE) // there's a concrete member now
             val default = parentNamer.enterSyntheticSym(defaultTree)
             sym.defaultGetter = default
           } else if (baseHasDefault) {
@@ -1018,16 +1030,6 @@ trait Namers { self: Analyzer =>
         if (overrides) baseParamss = baseParamss.tail
         previous ::: List(vparams)
       })
-
-      thisMethodType(
-        if (tpt.isEmpty) {
-          // replace deSkolemized symbols with skolemized ones (for resultPt computed by looking at overridden symbol, right?)
-          val pt = resultPt.substSym(tparamSyms, tparams map (_.symbol))
-          // compute result type from rhs
-          tpt.tpe = widenIfNotFinal(meth, typer.computeType(rhs, pt), pt)
-          tpt setPos meth.pos.focus
-          tpt.tpe
-        } else typer.typedType(tpt).tpe)
     }
 
     //@M! an abstract type definition (abstract type member/type parameter) may take type parameters, which are in scope in its bounds
