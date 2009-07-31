@@ -18,14 +18,10 @@ abstract class Changes {
 
   abstract class Change
 
-  /** Modifiers of target have changed */
-  case class Mods(from: Long, to: Long)(target: Symbol) extends Change {
-    def moreRestrictive: Boolean =
-      ((((to & PRIVATE) != 0) && (from & PRIVATE) == 0)
-        || (((to & PROTECTED) != 0) && (from & PROTECTED) == 0))
-
-    def morePermissive: Boolean = !moreRestrictive
-  }
+  /** Are the new modifiers more restrictive than the old ones? */
+  private def moreRestrictive(from: Long, to: Long): Boolean =
+    ((((to & PRIVATE) != 0) && (from & PRIVATE) == 0)
+     || (((to & PROTECTED) != 0) && (from & PROTECTED) == 0))
 
 
   /** An entity in source code, either a class or a member definition.
@@ -170,7 +166,7 @@ abstract class Changes {
           cs += Removed(toEntity(o))
         else {
           val newSym = n.suchThat(ov => sameType(ov.tpe, o.tpe))
-          if (newSym == NoSymbol) {
+          if (newSym == NoSymbol || moreRestrictive(o.flags, newSym.flags)) {
             cs += Changed(toEntity(o))(n + " changed from " + o.tpe + " to " + n.tpe + " flags: " + Flags.flagsToString(o.flags))
           } else
             newMembers -= newSym

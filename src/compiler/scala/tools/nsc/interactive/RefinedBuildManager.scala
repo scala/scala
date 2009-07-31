@@ -19,16 +19,9 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
 
   class BuilderGlobal(settings: Settings) extends scala.tools.nsc.Global(settings)  {
 
-    object referencesAnalysis extends {
-      val global: BuilderGlobal.this.type = BuilderGlobal.this
-      val runsAfter = List("icode")
-      val runsRightAfter = None
-    } with References
-
     override def computeInternalPhases() {
       super.computeInternalPhases
       phasesSet += dependencyAnalysis
-      phasesSet += referencesAnalysis
     }
 
     def newRun() = new Run()
@@ -93,7 +86,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
 
     val changesOf = new mutable.HashMap[Symbol, List[Change]]
 
-    val defs = compiler.referencesAnalysis.definitions
+    val defs = compiler.dependencyAnalysis.definitions
     for (val src <- files; val syms = defs(src); val sym <- syms) {
       definitions(src).find(_.fullNameString == sym.fullNameString) match {
         case Some(oldSym) =>
@@ -180,10 +173,10 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
 
   /** Update the map of definitions per source file */
   private def updateDefinitions {
-    for ((src, localDefs) <- compiler.referencesAnalysis.definitions) {
+    for ((src, localDefs) <- compiler.dependencyAnalysis.definitions) {
       definitions(src) = (localDefs map (_.cloneSymbol))
     }
-    this.references = compiler.referencesAnalysis.references
+    this.references = compiler.dependencyAnalysis.references
   }
 
   /** Load saved dependency information. */
