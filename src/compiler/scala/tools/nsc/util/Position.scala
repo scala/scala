@@ -46,7 +46,7 @@ object Position {
  *  pos.endOrPoint
  *  pos.pointOrElse(default)
  *
- *  Theseare less strict about the kind of position on which they can be applied.
+ *  These are less strict about the kind of position on which they can be applied.
  *
  *  The following conversion methods are often used:
  *

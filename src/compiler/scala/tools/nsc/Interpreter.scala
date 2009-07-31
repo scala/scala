@@ -119,7 +119,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
 
   /** the compiler's classpath, as URL's */
   val compilerClasspath: List[URL] = {
-    import net.Utility.parseURL
+    import scala.net.Utility.parseURL
     val classpathPart =
       ClassPath.expandPath(compiler.settings.classpath.value).map(s => new File(s).toURL)
 

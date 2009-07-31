@@ -1077,7 +1077,7 @@ trait Trees {
 
   class StrictTreeCopier extends TreeCopier {
     def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], impl: Template) =
-      new ClassDef(mods, name, tparams, impl).copyAttrs(tree);
+      new ClassDef(mods, name, tparams, impl).copyAttrs(tree)
     def PackageDef(tree: Tree, pid: RefTree, stats: List[Tree]) =
       new PackageDef(pid, stats).copyAttrs(tree)
     def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template) =

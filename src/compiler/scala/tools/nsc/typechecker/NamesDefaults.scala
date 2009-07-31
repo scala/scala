@@ -101,16 +101,16 @@ trait NamesDefaults { self: Analyzer =>
     /**
      * Transform a function into a block, and assing context.namedApplyBlockInfo to
      * the new block as side-effect.
+     *
+     * `baseFun' is typed, the resulting block must be typed as well.
+     *
      * Fun is transformed in the following way:
-     *  - Ident(f)                             ==>  Block(Nil, Ident(f))
-     *  - Select(qual, f) if (qual is stable)  ==>  Block(Nil, Select(qual, f))
-     *  - Select(qual, f) otherwise            ==>  Block(ValDef(qual$1, qual), Select(qual$1, f))
-     *  - TypeApply(fun, targs)                ==>  Block(Nil or qual$1, TypeApply(fun, targs))
-     *  - Select(New(TypeTree()), <init>)      ==>  Block(Nil, Select(New(TypeTree()), <init>))
-     *  - Select(New(Select(qual, typeName)), <init>) if (qual is stable)
-     *       ==>  Block(Nil, Select(...))
-     *  - Select(New(Select(qual, typeName)), <init>) otherwise
-     *       ==>  Block(ValDef(qual$1, qual), Select(New(Select(qual$1, typeName)), <init>))
+     *  - Ident(f)                                    ==>  Block(Nil, Ident(f))
+     *  - Select(qual, f) if (qual is stable)         ==>  Block(Nil, Select(qual, f))
+     *  - Select(qual, f) otherwise                   ==>  Block(ValDef(qual$1, qual), Select(qual$1, f))
+     *  - TypeApply(fun, targs)                       ==>  Block(Nil or qual$1, TypeApply(fun, targs))
+     *  - Select(New(TypeTree()), <init>)             ==>  Block(Nil, Select(New(TypeTree()), <init>))
+     *  - Select(New(Select(qual, typeName)), <init>) ==>  Block(Nil, Select(...))     NOTE: qual must be stable in a `new'
      */
     def baseFunBlock(baseFun: Tree): Tree = {
       val isConstr = baseFun.symbol.isConstructor
@@ -139,26 +139,32 @@ trait NamesDefaults { self: Analyzer =>
         case _ => (baseFun, Nil, Nil)
       }
 
-      def blockWithQualifier(qual: Tree, fun: Symbol => Tree, defaultQual: Symbol => Option[Tree]) = {
-        val sym = blockTyper.context.owner.newValue(baseFun1.pos,
-                                                    unit.fresh.newName(baseFun1.pos, "qual$"))
+      // never used for constructor calls, they always have a stable qualifier
+      def blockWithQualifier(qual: Tree, selected: Name) = {
+        val sym = blockTyper.context.owner.newValue(qual.pos, unit.fresh.newName(qual.pos, "qual$"))
                             .setInfo(qual.tpe)
         blockTyper.context.scope.enter(sym)
-        val vd = atPos(sym.pos) { ValDef(sym, qual).setType(NoType) }
-        var baseFunTransformed: Tree = fun(sym)
-        if (!funTargs.isEmpty)
-          baseFunTransformed = treeCopy.TypeApply(baseFun, baseFunTransformed, funTargs)
-        val b = atPos(baseFun1.pos) { Block(List(vd), baseFunTransformed)
-                                      .setType(baseFunTransformed.tpe) }
+        val vd = atPos(sym.pos)(ValDef(sym, qual).setType(NoType))
+
+        var baseFunTransformed = atPos(baseFun.pos.makeTransparent) {
+          // don't use treeCopy: it would assign opaque position.
+          val f = Select(gen.mkAttributedRef(sym), selected)
+                   .setType(baseFun1.tpe).setSymbol(baseFun1.symbol)
+          if (funTargs.isEmpty) f
+          else TypeApply(f, funTargs).setType(baseFun.tpe)
+        }
+
+        val b = Block(List(vd), baseFunTransformed)
+                  .setType(baseFunTransformed.tpe).setPos(baseFun.pos)
+
+        val defaultQual = Some(atPos(qual.pos.focus)(gen.mkAttributedRef(sym)))
         context.namedApplyBlockInfo =
-          Some((b, NamedApplyInfo(defaultQual(sym), defaultTargs, Nil, blockTyper)))
+          Some((b, NamedApplyInfo(defaultQual, defaultTargs, Nil, blockTyper)))
         b
       }
 
-      def blockWithoutQualifier(fun: Tree, defaultQual: Option[Tree]) = {
-       val fun1 = if (funTargs.isEmpty) fun
-                  else treeCopy.TypeApply(baseFun, fun, funTargs)
-        val b = atPos(baseFun.pos) { Block(Nil, fun1).setType(fun1.tpe) }
+      def blockWithoutQualifier(defaultQual: Option[Tree]) = {
+        val b = atPos(baseFun.pos)(Block(Nil, baseFun).setType(baseFun.tpe))
         context.namedApplyBlockInfo =
           Some((b, NamedApplyInfo(defaultQual, defaultTargs, Nil, blockTyper)))
         b
@@ -168,43 +174,40 @@ trait NamesDefaults { self: Analyzer =>
         // constructor calls
 
         case Select(New(TypeTree()), _) if isConstr =>
-          blockWithoutQualifier(baseFun1, None)
+          blockWithoutQualifier(None)
 
         case Select(New(Ident(_)), _) if isConstr =>
-          blockWithoutQualifier(baseFun1, None)
+          blockWithoutQualifier(None)
 
         case Select(nev @ New(sel @ Select(qual, typeName)), constr) if isConstr =>
           // #2057
           val module = baseFun.symbol.owner.linkedModuleOfClass
-          val defaultQual = if (module == NoSymbol) None
-                            else Some(gen.mkAttributedSelect(qual.duplicate, module))
+          val defaultQual =
+            if (module == NoSymbol) None
+            else Some(atPos(qual.pos.focus)(gen.mkAttributedSelect(qual.duplicate, module)))
           // in `new q.C()', q is always stable
           assert(treeInfo.isPureExpr(qual), qual)
-          blockWithoutQualifier(baseFun1, defaultQual)
+          blockWithoutQualifier(defaultQual)
 
         // super constructor calls
-
         case Select(Super(_, _), _) if isConstr =>
-          blockWithoutQualifier(baseFun1, None)
+          blockWithoutQualifier(None)
 
         // self constructor calls (in secondary constructors)
-
         case Select(qual, name) if isConstr =>
           assert(treeInfo.isPureExpr(qual), qual)
-          blockWithoutQualifier(baseFun1, None)
+          blockWithoutQualifier(None)
 
         // other method calls
 
         case Ident(_) =>
-          blockWithoutQualifier(baseFun1, None)
+          blockWithoutQualifier(None)
 
         case Select(qual, name) =>
           if (treeInfo.isPureExpr(qual))
-            blockWithoutQualifier(baseFun1, Some(qual.duplicate))
+            blockWithoutQualifier(Some(qual.duplicate))
           else
-            blockWithQualifier(qual,
-                               sym => treeCopy.Select(baseFun1, gen.mkAttributedRef(sym), name),
-                               sym => Some(gen.mkAttributedRef(sym)))
+            blockWithQualifier(qual, name)
       }
     }
 
@@ -224,7 +227,7 @@ trait NamesDefaults { self: Analyzer =>
         val byName = tpe.typeSymbol == ByNameParamClass
         val s = context.owner.newValue(arg.pos, unit.fresh.newName(arg.pos, "x$"))
         val valType = if (byName) functionType(List(), arg.tpe)
-                  else arg.tpe
+                      else arg.tpe
         s.setInfo(valType)
         (context.scope.enter(s), byName)
       })
@@ -232,7 +235,7 @@ trait NamesDefaults { self: Analyzer =>
         val (sym, byName) = symP
         val body = if (byName) blockTyper.typed(Function(List(), arg))
                    else arg
-        ValDef(sym, body).setType(NoType)
+        atPos(body.pos)(ValDef(sym, body).setType(NoType))
       })
     }
 
@@ -240,8 +243,7 @@ trait NamesDefaults { self: Analyzer =>
     if (isNamedApplyBlock(tree)) {
       context.namedApplyBlockInfo.get._1
     } else tree match {
-      // we know that Apply(Apply(...)) can only be an application of a curried method;
-      // for functions, it's transformed to applying the .apply() method already.
+      // `fun' is typed. `namelessArgs' might be typed or not, if they are types are kept.
       case Apply(fun, namelessArgs) =>
         val transformedFun = transformNamedApplication(typer, mode, pt)(fun, x => x)
         if (transformedFun.isErroneous) setError(tree)
@@ -268,20 +270,21 @@ trait NamesDefaults { self: Analyzer =>
               // refArgs: definition-site order again
               val refArgs = List.map2(reorderArgs(valDefs, argPos), formals)((vDef, tpe) => {
                 val ref = gen.mkAttributedRef(vDef.symbol)
-                // for by-name parameters, the local value is a nullary function returning the argument
-                if (tpe.typeSymbol == ByNameParamClass) Apply(ref, List())
-                else ref
+                atPos(vDef.pos.focus) {
+                  // for by-name parameters, the local value is a nullary function returning the argument
+                  if (tpe.typeSymbol == ByNameParamClass) Apply(ref, List())
+                  else ref
+                }
               })
               // cannot call blockTyper.typedBlock here, because the method expr might be partially applied only
               val res = blockTyper.doTypedApply(tree, expr, refArgs, mode, pt)
-              val block = treeCopy.Block(existingBlock, stats ::: valDefs, res).setType(res.tpe)
+              res.setPos(res.pos.makeTransparent)
+              val block = Block(stats ::: valDefs, res).setType(res.tpe).setPos(tree.pos)
               context.namedApplyBlockInfo =
                 Some((block, NamedApplyInfo(qual, targs, vargss ::: List(refArgs), blockTyper)))
               block
           }
         }
-
-      // case ApplyDynamic??? case AppliedTypeTree???
 
       case baseFun => // also treats "case TypeApply(fun, targs)" and "case Select(New(..), <init>)"
         baseFunBlock(baseFun)
@@ -324,9 +327,9 @@ trait NamesDefaults { self: Analyzer =>
             case None => gen.mkAttributedRef(p.defaultGetter)
           }
           default1 = if (targs.isEmpty) default1
-                     else TypeApply(default1, targs.map(_.duplicate)).setPos(pos)
+                     else TypeApply(default1, targs.map(_.duplicate))
           val default2 = (default1 /: previousArgss)((tree, args) =>
-            Apply(tree, args.map(_.duplicate)).setPos(pos))
+            Apply(tree, args.map(_.duplicate)))
           atPos(pos) {
             if (positional) default2
             else AssignOrNamedArg(Ident(p.name), default2)
