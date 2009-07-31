@@ -96,7 +96,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
       }
     }
     println("Changes: " + changesOf)
-    updateDefinitions
+    updateDefinitions(files)
     update(invalidated(files, changesOf))
   }
 
@@ -172,8 +172,8 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
   }
 
   /** Update the map of definitions per source file */
-  private def updateDefinitions {
-    for ((src, localDefs) <- compiler.dependencyAnalysis.definitions) {
+  private def updateDefinitions(files: Set[AbstractFile]) {
+    for (src <- files; val localDefs = compiler.dependencyAnalysis.definitions(src)) {
       definitions(src) = (localDefs map (_.cloneSymbol))
     }
     this.references = compiler.dependencyAnalysis.references
