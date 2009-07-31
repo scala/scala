@@ -622,6 +622,12 @@ trait Symbols {
 
     def ownerChain: List[Symbol] = this :: owner.ownerChain
 
+    def ownersIterator: Iterator[Symbol] = new Iterator[Symbol] {
+      private var current = Symbol.this
+      def hasNext = current ne NoSymbol
+      def next = { val r = current; current = current.owner; r }
+    }
+
     // same as ownerChain contains sym, but more efficient
     def hasTransOwner(sym: Symbol) = {
       var o = this
@@ -1869,6 +1875,7 @@ trait Symbols {
     override def owner: Symbol = throw new Error("no-symbol does not have owner")
     override def sourceFile: AbstractFile = null
     override def ownerChain: List[Symbol] = List()
+    override def ownersIterator: Iterator[Symbol] = Iterator.empty
     override def alternatives: List[Symbol] = List()
     override def reset(completer: Type) {}
     override def info: Type = NoType

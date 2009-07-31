@@ -45,14 +45,11 @@ self =>
   /** Is a background compiler run needed? */
   private var outOfDate = false
 
+  /** Units compiled by a run with id >= minRunId are considered up-to-date  */
+  private[interactive] var minRunId = 1
+
   /** Is a reload/background compiler currently running? */
   private var acting = false
-
-  /** The status value of a unit that has not yet been loaded */
-  final val NotLoaded = -1
-
-  /** The status value of a unit that has not yet been typechecked */
-  final val JustParsed = 0
 
   // ----------- Overriding hooks in nsc.Global -----------------------
 
@@ -113,7 +110,11 @@ self =>
   def pollForWork() {
     scheduler.pollException() match {
       case Some(ex: CancelActionReq) => if (acting) throw ex
-      case Some(ex: FreshRunReq) => if (outOfDate) throw ex
+      case Some(ex: FreshRunReq) =>
+        currentTyperRun = new TyperRun()
+        minRunId = currentRunId
+        if (outOfDate) throw ex
+        else outOfDate = true
       case Some(ex: Throwable) => throw ex
       case _ =>
     }
@@ -121,14 +122,14 @@ self =>
       case Some(action) =>
         try {
           acting = true
-          //println("picked up work item: "+action)
+          println("picked up work item: "+action)
           action()
-          //println("done with work item: "+action)
+          println("done with work item: "+action)
         } catch {
           case ex: CancelActionReq =>
-            //println("cancelled work item: "+action)
+            println("cancelled work item: "+action)
         } finally {
-          //println("quitting work item: "+action)
+          println("quitting work item: "+action)
           acting = false
         }
       case None =>
@@ -159,7 +160,7 @@ self =>
     }
 
     val completionResponse = new Response[List[Member]]
-    askCompletion(pos, completionResponse)
+    askTypeCompletion(pos, completionResponse)
     val completion = completionResponse.get.left.toOption match {
       case Some(members) =>
         members mkString "\n"
@@ -210,13 +211,13 @@ self =>
   /** Compile all given units
    */
   private def backgroundCompile() {
-    //inform("Starting new presentation compiler type checking pass")
+    inform("Starting new presentation compiler type checking pass")
     reporter.reset
     firsts = firsts filter (s => unitOfFile contains (s.file))
     val prefix = firsts map unitOf
-    val units = prefix ::: (unitOfFile.values.toList diff prefix)
+    val units = prefix ::: (unitOfFile.values.toList diff prefix) filter (!_.isUpToDate)
     recompile(units)
-    //inform("Everything is now up to date")
+    inform("Everything is now up to date")
   }
 
   /** Reset unit to just-parsed state */
@@ -312,42 +313,50 @@ self =>
 
   import analyzer.{SearchResult, ImplicitSearch}
 
-  def completion(pos: Position, result: Response[List[Member]]) {
-    respond(result) {
-      val tree = typedTreeAt(pos)
-      locateContext(pos) match {
-        case Some(context) =>
-          val superAccess = tree.isInstanceOf[Super]
-          val pre = stabilizedType(tree)
-          def member(sym: Symbol, inherited: Boolean) = new Member(
-            sym,
-            pre memberType sym,
-            context.isAccessible(sym, pre, superAccess),
-            inherited,
-            NoSymbol
-          )
-          def implicitMembers(s: SearchResult): List[Member] = {
-            val vtree = viewApply(s, tree, context)
-            val vpre = stabilizedType(vtree)
-            vtree.tpe.members map { sym => new Member(
-              sym,
-              vpre memberType sym,
-              context.isAccessible(sym, vpre, false),
-              false,
-              s.tree.symbol
-            )}
-          }
-          println("completion at "+tree+" "+tree.tpe)
-          val decls = tree.tpe.decls.toList map (member(_, false))
-          val inherited = tree.tpe.members.toList diff decls map (member(_, true))
-          val implicits = applicableViews(tree, context) flatMap implicitMembers
-          def isVisible(m: Member) =
-            !(decls exists (_.shadows(m))) && !(inherited exists (_.shadows(m)))
-          decls ::: inherited ::: (implicits filter isVisible)
-        case None =>
-          throw new FatalError("no context found for "+pos)
-      }
+  def getScopeCompletion(pos: Position, result: Response[List[Member]]) {
+    respond(result) { scopeMembers(pos) }
+  }
+
+  def scopeMembers(pos: Position): List[Member] = {
+    val context = doLocateContext(pos)
+    List() // to be completed
+  }
+
+  def getTypeCompletion(pos: Position, result: Response[List[Member]]) {
+    respond(result) { typeMembers(pos) }
+  }
+
+  def typeMembers(pos: Position): List[Member] = {
+    val tree = typedTreeAt(pos)
+    val context = doLocateContext(pos)
+    val superAccess = tree.isInstanceOf[Super]
+    val pre = stabilizedType(tree)
+    def member(sym: Symbol, inherited: Boolean) = new Member(
+      sym,
+      pre memberType sym,
+      context.isAccessible(sym, pre, superAccess),
+      inherited,
+      NoSymbol
+    )
+    def implicitMembers(s: SearchResult): List[Member] = {
+      val vtree = viewApply(s, tree, context)
+      val vpre = stabilizedType(vtree)
+      vtree.tpe.members map { sym => new Member(
+        sym,
+        vpre memberType sym,
+        context.isAccessible(sym, vpre, false),
+        false,
+        s.tree.symbol
+      )}
     }
+    println("typeMembers at "+tree+" "+tree.tpe)
+    val decls = tree.tpe.decls.toList map (member(_, false))
+    val inherited = tree.tpe.members.toList diff decls map (member(_, true))
+    val implicits = applicableViews(tree, context) flatMap implicitMembers
+    def isVisible(m: Member) =
+      !(decls exists (_.shadows(m))) && !(inherited exists (_.shadows(m)))
+    val allMembers = decls ::: inherited ::: (implicits filter isVisible)
+    allMembers // filter (_.sym.name.startsWith(prefix))
   }
 
   def applicableViews(tree: Tree, context: Context): List[SearchResult] =
@@ -394,6 +403,8 @@ self =>
 
   /** The typer run */
   class TyperRun extends Run {
+    println("new typer run")
+
     // units is always empty
     // symSource, symData are ignored
     override def compiles(sym: Symbol) = false

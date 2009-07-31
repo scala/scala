@@ -92,7 +92,7 @@ object REPL {
       show(typeatResult)
     }
     def doComplete(pos: Position) {
-      comp.askCompletion(pos, completeResult)
+      comp.askTypeCompletion(pos, completeResult)
       show(completeResult)
     }
     loop { line =>

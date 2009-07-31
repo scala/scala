@@ -392,7 +392,7 @@ trait Contexts { self: Analyzer =>
     def isAccessible(sym: Symbol, pre: Type, superAccess: Boolean): Boolean = {
 
       /** Are we inside definition of `sym'? */
-      def accessWithin(sym: Symbol): Boolean = this.owner.ownerChain contains sym
+      def accessWithin(sym: Symbol): Boolean = this.owner.ownersIterator contains sym
 /*
         var c = this
         while (c != NoContext && c.owner != owner) {

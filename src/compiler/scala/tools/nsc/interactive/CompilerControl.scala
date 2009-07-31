@@ -54,10 +54,16 @@ trait CompilerControl { self: Global =>
   def locateTree(pos: Position): Tree =
     new Locator(pos) locateIn unitOf(pos).body
 
-  /** Locate smallest context that encloses position
+  /** Locates smallest context that encloses position as an optional value.
    */
   def locateContext(pos: Position): Option[Context] =
     locateContext(unitOf(pos).contexts, pos)
+
+  /** Returns the smallest context that contains given `pos`, throws FatalError if none exists.
+   */
+  def doLocateContext(pos: Position): Context = locateContext(pos) getOrElse {
+    throw new FatalError("no context found for "+pos)
+  }
 
   /** Make sure a set of compilation units is loaded and parsed.
    *  Return () to syncvar `result` on completion.
@@ -76,10 +82,23 @@ trait CompilerControl { self: Global =>
       override def toString = "typeat "+pos.source+" "+pos.show
     }
 
-  def askCompletion(pos: Position, result: Response[List[Member]]) =
+  /** Set sync var `result' to list of members that are visible
+   *  as members of the tree enclosing `pos`, possibly reachable by an implicit.
+   *   - if `selection` is false, as identifiers in the scope enclosing `pos`
+   */
+  def askTypeCompletion(pos: Position, result: Response[List[Member]]) =
     scheduler postWorkItem new WorkItem {
-      def apply() = self.completion(pos, result)
-      override def toString = "completion "+pos.source+" "+pos.show
+      def apply() = self.getTypeCompletion(pos, result)
+      override def toString = "type completion "+pos.source+" "+pos.show
+    }
+
+  /** Set sync var `result' to list of members that are visible
+   *  as members of the scope enclosing `pos`.
+   */
+  def askScopeCompletion(pos: Position, result: Response[List[Member]]) =
+    scheduler postWorkItem new WorkItem {
+      def apply() = self.getScopeCompletion(pos, result)
+      override def toString = "scope completion "+pos.source+" "+pos.show
     }
 
   /** Ask to do unit first on present and subsequent type checking passes */
