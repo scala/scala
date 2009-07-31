@@ -280,11 +280,16 @@ trait LinearSequenceTemplate[+A, +This <: LinearSequenceTemplate[A, This] with L
     case that1: LinearSequence[_] =>
       var these = this
       var those = that1
-      while (!these.isEmpty && !those.isEmpty && these.head == those.head) {
+      while (these != null && those != null && !these.isEmpty && !those.isEmpty && these.head == those.head) {
         these = these.tail
         those = those.tail
       }
-      these.isEmpty && those.isEmpty
+      if (these == null)
+        those == null
+      else if (those == null)
+        false
+      else
+        these.isEmpty && those.isEmpty
     case _ => super.sameElements(that)
   }
 
