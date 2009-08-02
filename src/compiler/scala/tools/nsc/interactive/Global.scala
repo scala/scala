@@ -24,6 +24,8 @@ self =>
 
   import definitions._
 
+  final val debugIDE = false
+
   override def onlyPresentation = true
 
   /** A list indicating in which order some units should be typechecked.
@@ -120,14 +122,14 @@ self =>
       case Some(action) =>
         try {
           acting = true
-          //println("picked up work item: "+action)
+          if (debugIDE) println("picked up work item: "+action)
           action()
-          //println("done with work item: "+action)
+          if (debugIDE) println("done with work item: "+action)
         } catch {
           case ex: CancelActionReq =>
-            //println("cancelled work item: "+action)
+            if (debugIDE) println("cancelled work item: "+action)
         } finally {
-          //println("quitting work item: "+action)
+          if (debugIDE) println("quitting work item: "+action)
           acting = false
         }
       case None =>
@@ -209,13 +211,13 @@ self =>
   /** Compile all given units
    */
   private def backgroundCompile() {
-    //inform("Starting new presentation compiler type checking pass")
+    if (debugIDE) inform("Starting new presentation compiler type checking pass")
     reporter.reset
     firsts = firsts filter (s => unitOfFile contains (s.file))
     val prefix = firsts map unitOf
     val units = prefix ::: (unitOfFile.values.toList diff prefix) filter (!_.isUpToDate)
     recompile(units)
-    //inform("Everything is now up to date")
+    if (debugIDE) inform("Everything is now up to date")
   }
 
   /** Reset unit to just-parsed state */
@@ -244,11 +246,11 @@ self =>
   def recompile(units: List[RichCompilationUnit]) {
     for (unit <- units) {
       reset(unit)
-      //inform("parsing: "+unit)
+      if (debugIDE) inform("parsing: "+unit)
       parse(unit)
     }
     for (unit <- units) {
-      //inform("type checking: "+unit)
+      if (debugIDE) inform("type checking: "+unit)
       activeLocks = 0
       currentTyperRun.typeCheck(unit)
       unit.status = currentRunId
@@ -329,59 +331,85 @@ self =>
     respond(result) { scopeMembers(pos) }
   }
 
-  def scopeMembers(pos: Position): List[Member] = {
+  /** Return all members visible without prefix in context enclosing `pos`. */
+  def scopeMembers(pos: Position): List[ScopeMember] = {
+    typedTreeAt(pos) // to make sure context is entered
     val context = doLocateContext(pos)
-    List() // to be completed
+    val locals = new LinkedHashMap[Name, ScopeMember]
+    def addScopeMember(sym: Symbol, pre: Type, viaImport: Tree) =
+      if (!(locals contains sym.name)) {
+        locals(sym.name) = new ScopeMember(
+          sym,
+          pre.memberType(sym),
+          context.isAccessible(sym, pre, false),
+          viaImport)
+      }
+    var cx = context
+    while (cx != NoContext) {
+      for (sym <- cx.scope)
+        addScopeMember(sym, NoPrefix, EmptyTree)
+      cx = cx.enclClass
+      val pre = cx.prefix
+      for (sym <- pre.members)
+        addScopeMember(sym, pre, EmptyTree)
+      cx = cx.outer
+    }
+    for (imp <- context.imports) {
+      val pre = imp.qual.tpe
+      for (sym <- imp.allImportedSymbols) {
+        addScopeMember(sym, pre, imp.qual)
+      }
+    }
+    locals.valuesIterator.toList
   }
 
   def getTypeCompletion(pos: Position, result: Response[List[Member]]) {
     respond(result) { typeMembers(pos) }
   }
 
-  def typeMembers(pos: Position): List[Member] = {
+  def typeMembers(pos: Position): List[TypeMember] = {
     val tree = typedTreeAt(pos)
+    println("typeMembers at "+tree+" "+tree.tpe)
     val context = doLocateContext(pos)
     val superAccess = tree.isInstanceOf[Super]
+    val scope = newScope
+    val members = new LinkedHashMap[Symbol, TypeMember]
+    def addTypeMember(sym: Symbol, pre: Type, inherited: Boolean, viaView: Symbol) {
+      val symtpe = pre.memberType(sym)
+      if (scope.lookupAll(sym.name) forall (sym => !(members(sym).tpe matches symtpe))) {
+        scope enter sym
+        members(sym) = new TypeMember(
+          sym,
+          symtpe,
+          context.isAccessible(sym, pre, superAccess && (viaView == NoSymbol)),
+          inherited,
+          viaView)
+      }
+    }
+    def viewApply(view: SearchResult): Tree = {
+      assert(view.tree != EmptyTree)
+      try {
+        analyzer.newTyper(context.makeImplicit(false)).typed(Apply(view.tree, List(tree)) setPos tree.pos)
+      } catch {
+        case ex: TypeError => EmptyTree
+      }
+    }
     val pre = stabilizedType(tree)
-    def member(sym: Symbol, inherited: Boolean) = new Member(
-      sym,
-      pre memberType sym,
-      context.isAccessible(sym, pre, superAccess),
-      inherited,
-      NoSymbol
-    )
-    def implicitMembers(s: SearchResult): List[Member] = {
-      val vtree = viewApply(s, tree, context)
+    for (sym <- tree.tpe.decls)
+      addTypeMember(sym, pre, false, NoSymbol)
+    for (sym <- tree.tpe.members)
+      addTypeMember(sym, pre, true, NoSymbol)
+    val applicableViews: List[SearchResult] =
+      new ImplicitSearch(tree, functionType(List(tree.tpe), AnyClass.tpe), true, context.makeImplicit(false))
+        .allImplicits
+    for (view <- applicableViews) {
+      val vtree = viewApply(view)
       val vpre = stabilizedType(vtree)
-      vtree.tpe.members map { sym => new Member(
-        sym,
-        vpre memberType sym,
-        context.isAccessible(sym, vpre, false),
-        false,
-        s.tree.symbol
-      )}
+      for (sym <- vtree.tpe.members) {
+        addTypeMember(sym, vpre, false, view.tree.symbol)
+      }
     }
-    println("typeMembers at "+tree+" "+tree.tpe)
-    val decls = tree.tpe.decls.toList map (member(_, false))
-    val inherited = tree.tpe.members.toList diff decls map (member(_, true))
-    val implicits = applicableViews(tree, context) flatMap implicitMembers
-    def isVisible(m: Member) =
-      !(decls exists (_.shadows(m))) && !(inherited exists (_.shadows(m)))
-    val allMembers = decls ::: inherited ::: (implicits filter isVisible)
-    allMembers // filter (_.sym.name.startsWith(prefix))
-  }
-
-  def applicableViews(tree: Tree, context: Context): List[SearchResult] =
-    new ImplicitSearch(tree, functionType(List(tree.tpe), AnyClass.tpe), true, context.makeImplicit(false))
-      .allImplicits
-
-  def viewApply(view: SearchResult, tree: Tree, context: Context): Tree = {
-    assert(view.tree != EmptyTree)
-    try {
-      analyzer.newTyper(context.makeImplicit(false)).typed(Apply(view.tree, List(tree)) setPos tree.pos)
-    } catch {
-      case ex: TypeError => EmptyTree
-    }
+    members.valuesIterator.toList
   }
 
   // ---------------- Helper classes ---------------------------

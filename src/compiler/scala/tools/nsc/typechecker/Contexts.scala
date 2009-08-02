@@ -575,6 +575,18 @@ trait Contexts { self: Analyzer =>
       result
     }
 
+    def allImportedSymbols: List[Symbol] =
+      qual.tpe.members flatMap (transformImport(tree.selectors, _))
+
+    private def transformImport(selectors: List[(Name, Name)], sym: Symbol): List[Symbol] = selectors match {
+      case List() => List()
+      case List((nme.WILDCARD, _)) => List(sym)
+      case (from, to) :: _ if (from == sym.name) =>
+        if (to == nme.WILDCARD) List()
+        else { val sym1 = sym.cloneSymbol; sym1.name = to; List(sym1) }
+      case _ :: rest => transformImport(rest, sym)
+    }
+
     override def toString() = tree.toString()
 
     override def hashCode = tree.hashCodeStructure + depth

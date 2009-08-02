@@ -7,14 +7,20 @@
 package scala.tools.nsc
 package symtab
 
+// Martin: I am about 1/4 way on a cleanup of scopes.
+// The most important change is that scopes are now Iterables.
+// This removed the need for the various iterators on ScopeEntries.
+// ScopeEntries are conceptually an internal representation detail,
+// so it's better not to return them in public iterators.
+// It's true that other code also references ScopeEntries but that's
+// done for performance (and could be reviewed).
+// Another addition is a lookupAll method that returns all symbols with
+// a name in a scopein an iterator.
+// I still have to remove all the cruft about PackageScope's and the like
+// that's a leftover from the old Eclipse plugin days.
+//
 trait Scopes {
   self: SymbolTable =>
-
-  def entryIterator(e: ScopeEntry): Iterator[ScopeEntry] =
-    if (e == null) Iterator.empty else e.entryIterator
-
-  def bucketIterator(e: ScopeEntry): Iterator[ScopeEntry] =
-    if (e == null) Iterator.empty else e.bucketIterator
 
   class ScopeEntry(val sym: Symbol, val owner: Scope) {
     /** the next entry in the hash bucket
@@ -24,19 +30,6 @@ trait Scopes {
     /** the next entry in this scope
      */
     var next: ScopeEntry = null
-
-    class ScopeEntryIterator(f: ScopeEntry => ScopeEntry) extends Iterator[ScopeEntry] {
-      private var buf: ScopeEntry = ScopeEntry.this
-      def hasNext = buf != null
-      def next = {
-        val res = buf
-        buf = f(buf)
-        res
-      }
-    }
-
-    def bucketIterator: Iterator[ScopeEntry] = new ScopeEntryIterator(_.tail)
-    def entryIterator: Iterator[ScopeEntry] = new ScopeEntryIterator(_.next)
 
     override def hashCode(): Int = sym.name.start
     override def toString(): String = sym.toString()
@@ -54,7 +47,11 @@ trait Scopes {
     e
   }
 
-  object NoScopeEntry extends ScopeEntry(NoSymbol, null)
+  // Martin: This code contains a lot of stuff for the old Eclipse plugin.
+  // Now it's just needless complexity, which should be eleminated.
+  // We should make the elems list doubly-linked,
+  // and have scopes inherit from LinearSequence,
+  // that way, we need to do way fewer toList than before.
 
   /**
    *  @param initElems ...
@@ -128,7 +125,7 @@ trait Scopes {
     }
   }
 
-  abstract class Scope(initElems: ScopeEntry) {
+  abstract class Scope(initElems: ScopeEntry) extends Iterable[Symbol] {
 
     var elems: ScopeEntry = initElems
 
@@ -139,9 +136,6 @@ trait Scopes {
     /** the hash table
      */
     private var hashtable: Array[ScopeEntry] = null
-    private def hashtableIterator(index: Int): Iterator[ScopeEntry] =
-      if (hashtable == null) Iterator.empty
-      else bucketIterator(hashtable(index))
 
     /** a cache for all elements, to be used by symbol iterator.
      */
@@ -186,10 +180,18 @@ trait Scopes {
 
 
     /** is the scope empty? */
-    def isEmpty: Boolean = elems eq null
+    override def isEmpty: Boolean = elems eq null
 
     /** the number of entries in this scope */
-    def size: Int = entryIterator(elems).length
+    override def size: Int = {
+      var s = 0
+      var e = elems
+      while (e ne null) {
+        s += 1
+        e = e.next
+      }
+      s
+    }
 
     /** enter a scope entry
      *
@@ -303,6 +305,15 @@ trait Scopes {
       val e = lookupEntry(name)
       if (e eq null) NoSymbol else e.sym
     }
+
+    /** Returns an iterator eidling every symbol with given name in this scope.
+     */
+    def lookupAll(name: Name): Iterator[Symbol] = new Iterator[Symbol] {
+      var e = lookupEntry(name)
+      def hasNext: Boolean = e ne null
+      def next: Symbol = { val r = e.sym; e = lookupNextEntry(e); r }
+    }
+
     /** Can lookup symbols and trace who the client is.
      */
     def lookupEntryWithContext(name : Name)(from : Symbol) : ScopeEntry = lookupEntry(name)
@@ -345,7 +356,7 @@ trait Scopes {
 
     /** Return all symbols as a list in the order they were entered in this scope.
      */
-    def toList: List[Symbol] = {
+    override def toList: List[Symbol] = {
       if (elemsCache eq null) {
         elemsCache = Nil
         var e = elems
@@ -361,12 +372,12 @@ trait Scopes {
      */
     def iterator: Iterator[Symbol] = toList.iterator
 
-    @deprecated("use `iterator'") def elements = iterator
+    override def foreach[U](p: Symbol => U): Unit = toList foreach p
 
-    def filter(p: Symbol => Boolean): Scope =
+    override def filter(p: Symbol => Boolean): Scope =
       if (!(toList forall p)) newScope(toList filter p) else this
 
-    def mkString(start: String, sep: String, end: String) =
+    override def mkString(start: String, sep: String, end: String) =
       toList.map(_.defString).mkString(start, sep, end)
 
     override def toString(): String = mkString("{\n  ", ";\n  ", "\n}")
@@ -389,16 +400,21 @@ trait Scopes {
   /** The error scope.
    */
   class ErrorScope(owner: Symbol) extends Scope(null: ScopeEntry) {
+    /* The following method was intended to be here,
+     * but it was written (in two different iterations!) so that
+     * it was actually a no-op. That's why I am leaving it comment-out
+     * for now.
     override def lookupEntry(name: Name): ScopeEntry = {
-      def errorScope =
+      def errorSym =
         if (name.isTermName) owner newErrorValue name
         else owner newErrorClass name
 
-      super.lookupEntry(name) match {
-        case NoScopeEntry   => enter(errorScope) ; super.lookupEntry(name)
-        case e              => e
+       super.lookupEntry(name) match {
+        case null => enter(errorSym); lookupEntry(name)
+        case e    => e
       }
     }
+     */
   }
 }
 

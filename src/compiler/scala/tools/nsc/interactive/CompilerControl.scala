@@ -20,10 +20,13 @@ trait CompilerControl { self: Global =>
 
   /** Info given for every member found by completion
    */
-  case class Member(val sym: Symbol, val tpe: Type, val accessible: Boolean, val inherited: Boolean, val viaView: Symbol) {
-    def shadows(other: Member) =
-      sym.name == other.sym.name && (sym.tpe matches other.sym.tpe)
-  }
+  case class Member(val sym: Symbol, val tpe: Type, val accessible: Boolean)
+
+  class TypeMember(sym: Symbol, tpe: Type, accessible: Boolean, val inherited: Boolean, val viaView: Symbol = NoSymbol)
+  extends Member(sym, tpe, accessible)
+
+  class ScopeMember(sym: Symbol, tpe: Type, accessible: Boolean, val viaImport: Tree = EmptyTree)
+  extends Member(sym, tpe, accessible)
 
   /** The scheduler by which client and compiler communicate
    *  Must be initialized before starting compilerRunner
