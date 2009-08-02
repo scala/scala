@@ -6,22 +6,7 @@ import io.{AbstractFile, PlainFile}
 
 import scala.collection._;
 
-trait Files {
-
-  /** Resolve the given name to a file. */
-  implicit def toFile(name: String): AbstractFile = {
-    val file = rootDirectory.lookupPathUnchecked(name, false)
-    assert(file ne null, name)
-    file
-  }
-
-  /** The directory where file lookup should start at. */
-  var rootDirectory: AbstractFile = {
-    AbstractFile.getDirectory(".")
-//     val roots = java.io.File.listRoots()
-//     assert(roots.length > 0)
-//     new PlainFile(roots(0))
-  }
+trait Files { self : SubComponent =>
 
   class FileDependencies(val classpath : String) {
 
@@ -73,7 +58,7 @@ trait Files {
       (direct, indirect);
     }
 
-    /** Return the sef of files that depend on the given changed files.
+    /** Return the set of files that depend on the given changed files.
      *  It computes the transitive closure up to the given depth.
      */
     def dependentFiles(depth: Int, changed: Set[AbstractFile]): Set[AbstractFile] = {
@@ -99,21 +84,16 @@ trait Files {
       indirect --= changed
     }
 
-    def writeTo(file: AbstractFile) {
-      writeToFile(file)(out => writeTo(new PrintStream(out)))
+    def writeTo(file: AbstractFile, fromFile : AbstractFile => String) {
+      writeToFile(file)(out => writeTo(new PrintStream(out), fromFile))
     }
 
-    def writeTo(print : PrintStream) : Unit = {
-      def prettify(path: String): String =
-        if (path.startsWith("./"))
-          path.substring(2, path.length)
-        else path
-
+    def writeTo(print : PrintStream, fromFile : AbstractFile => String) : Unit = {
       cleanEmpty();
       def emit(tracker : Tracker){
         for ((f, ds) <- tracker;
               d <- ds){
-          print.println(prettify(f.toString) + " -> " + prettify(d.toString));
+          print.println(fromFile(f) + " -> " + fromFile(d));
         }
       }
 
@@ -126,52 +106,47 @@ trait Files {
     }
   }
 
-
-
   object FileDependencies{
     val Separator = "-------";
 
-    def readFrom(file: AbstractFile): FileDependencies = readFromFile(file) { in =>
-      val reader = new BufferedReader(new InputStreamReader(in));
-      val it = new FileDependencies(reader.readLine);
-      reader.readLine;
-      var line : String = null;
+    def readFrom(file: AbstractFile, toFile : String => AbstractFile): Option[FileDependencies] = readFromFile(file) { in =>
+      val reader = new BufferedReader(new InputStreamReader(in))
+      val it = new FileDependencies(reader.readLine)
+      reader.readLine
+      var line : String = null
       while ({line = reader.readLine; (line != null) && (line != Separator)}){
         line.split(" -> ") match {
-          case Array(from, on) => it.depends(from, on);
-          case x => error("Parse error: Unrecognised string " + line);
-        };
+          case Array(from, on) => it.depends(toFile(from), toFile(on));
+          case x => global.inform("Parse error: Unrecognised string " + line); return None
+        }
       }
 
       while ({line = reader.readLine; (line != null) && (line != Separator)}){
         line.split(" -> ") match {
-          case Array(source, target) => it.emits(source, target);
-          case x => error("Parse error: Unrecognised string " + line);
-        };
+          case Array(source, target) => it.emits(toFile(source), toFile(target));
+          case x => global.inform("Parse error: Unrecognised string " + line); return None
+        }
       }
 
-      it;
+      Some(it)
     }
   }
-
 
   def writeToFile[T](file: AbstractFile)(f: OutputStream => T) : T = {
     val out = file.output
     try {
-      f(out);
+      f(out)
     } finally {
-      out.close;
+      out.close
     }
   }
 
   def readFromFile[T](file: AbstractFile)(f: InputStream => T) : T = {
     val in = file.input
     try{
-      f(in);
+      f(in)
     } finally {
-      in.close;
+      in.close
     }
   }
 }
-
-object Files extends Files;

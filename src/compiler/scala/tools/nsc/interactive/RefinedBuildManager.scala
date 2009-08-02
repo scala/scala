@@ -41,7 +41,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
     }
 
   /** External references used by source file. */
-  private var references: immutable.Map[AbstractFile, immutable.Set[String]] = _
+  private var references: mutable.Map[AbstractFile, immutable.Set[String]] = _
 
   /** Add the given source files to the managed build process. */
   def addSourceFiles(files: Set[AbstractFile]) {
@@ -114,60 +114,71 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
       break
     }
 
-    for ((oldSym, changes) <- changesOf; change <- changes) {
+    // changesOf will be empty just after initialization with a saved
+    // dependencies file.
+    if (changesOf.isEmpty)
+      buf ++= directDeps
+    else {
+      for ((oldSym, changes) <- changesOf; change <- changes) {
 
-      def checkParents(cls: Symbol, file: AbstractFile) {
-        val parentChange = cls.info.parents.exists(_.typeSymbol.fullNameString == oldSym.fullNameString)
-//        println("checkParents " + cls + " oldSym: " + oldSym + " parentChange: " + parentChange + " " + cls.info.parents)
-        change match {
-          case Changed(Class(_)) if parentChange =>
-            invalidate(file, "parents have changed", change)
+        def checkParents(cls: Symbol, file: AbstractFile) {
+          val parentChange = cls.info.parents.exists(_.typeSymbol.fullNameString == oldSym.fullNameString)
+//          println("checkParents " + cls + " oldSym: " + oldSym + " parentChange: " + parentChange + " " + cls.info.parents)
+          change match {
+            case Changed(Class(_)) if parentChange =>
+              invalidate(file, "parents have changed", change)
 
-          case Added(Definition(_)) if parentChange =>
-            invalidate(file, "inherited new method", change)
+            case Added(Definition(_)) if parentChange =>
+              invalidate(file, "inherited new method", change)
 
-          case Removed(Definition(_)) if parentChange =>
-            invalidate(file, "inherited method removed", change)
+            case Removed(Definition(_)) if parentChange =>
+              invalidate(file, "inherited method removed", change)
 
-          case _ => ()
+            case _ => ()
+          }
         }
-      }
 
-      def checkInterface(cls: Symbol, file: AbstractFile) {
-        change match {
-          case Added(Definition(name)) =>
-            if (cls.info.decls.iterator.exists(_.fullNameString == name))
-              invalidate(file, "of new method with existing name", change)
-          case Changed(Class(name)) =>
-            if (cls.info.typeSymbol.fullNameString == name)
-              invalidate(file, "self type changed", change)
-          case _ =>
-            ()
+        def checkInterface(cls: Symbol, file: AbstractFile) {
+          change match {
+            case Added(Definition(name)) =>
+              if (cls.info.decls.iterator.exists(_.fullNameString == name))
+                invalidate(file, "of new method with existing name", change)
+            case Changed(Class(name)) =>
+              if (cls.info.typeSymbol.fullNameString == name)
+                invalidate(file, "self type changed", change)
+            case _ =>
+              ()
+          }
         }
-      }
 
-      def checkReferences(file: AbstractFile) {
-//        println(file + ":" + references(file))
-        val refs = references(file)
-        change match {
-          case Removed(Definition(name)) if refs(name) =>
-            invalidate(file, " it references deleted definition", change)
-          case Removed(Class(name)) if (refs(name)) =>
-            invalidate(file, " it references deleted class", change)
-          case Changed(Definition(name)) if (refs(name)) =>
-            invalidate(file, " it references changed definition", change)
-          case _ => ()
+        def checkReferences(file: AbstractFile) {
+//          println(file + ":" + references(file))
+          val refs = references(file)
+          if (refs.isEmpty)
+            invalidate(file, "it is a direct dependency and we don't yet have finer-grained dependency information", change)
+          else {
+            change match {
+              case Removed(Definition(name)) if refs(name) =>
+                invalidate(file, "it references deleted definition", change)
+              case Removed(Class(name)) if (refs(name)) =>
+                invalidate(file, "it references deleted class", change)
+              case Changed(Definition(name)) if (refs(name)) =>
+                invalidate(file, "it references changed definition", change)
+              case _ => ()
+            }
+          }
         }
-      }
 
-      breakable {
-        for (file <- directDeps) {
-          for (cls <- definitions(file)) checkParents(cls, file)
-          for (cls <- definitions(file)) checkInterface(cls, file)
-          checkReferences(file)
+        breakable {
+          for (file <- directDeps) {
+            for (cls <- definitions(file)) checkParents(cls, file)
+            for (cls <- definitions(file)) checkInterface(cls, file)
+            checkReferences(file)
+          }
         }
       }
     }
+
     buf
   }
 
@@ -180,13 +191,16 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
   }
 
   /** Load saved dependency information. */
-  def loadFrom(file: AbstractFile) {
-    compiler.dependencyAnalysis.loadFrom(file)
+  def loadFrom(file: AbstractFile, toFile: String => AbstractFile) : Boolean = {
+    val success = compiler.dependencyAnalysis.loadFrom(file, toFile)
+    if (success)
+      sources ++= compiler.dependencyAnalysis.managedFiles
+    success
   }
 
   /** Save dependency information to `file'. */
-  def saveTo(file: AbstractFile) {
+  def saveTo(file: AbstractFile, fromFile: AbstractFile => String) {
     compiler.dependencyAnalysis.dependenciesFile = file
-    compiler.dependencyAnalysis.saveDependencies()
+    compiler.dependencyAnalysis.saveDependencies(fromFile)
   }
 }

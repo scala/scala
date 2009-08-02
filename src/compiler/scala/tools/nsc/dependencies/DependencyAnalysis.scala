@@ -38,6 +38,8 @@ trait DependencyAnalysis extends SubComponent with Files {
 
   var dependencies = newDeps
 
+  def managedFiles = dependencies.dependencies.keySet
+
   /** Top level definitions per source file. */
   val definitions: mutable.Map[AbstractFile, List[Symbol]] =
     new mutable.HashMap[AbstractFile, List[Symbol]] {
@@ -45,28 +47,34 @@ trait DependencyAnalysis extends SubComponent with Files {
   }
 
   /** External references used by source file. */
-  var references: immutable.Map[AbstractFile, immutable.Set[String]] =
-    new immutable.HashMap[AbstractFile, immutable.Set[String]] {
+  val references: mutable.Map[AbstractFile, immutable.Set[String]] =
+    new mutable.HashMap[AbstractFile, immutable.Set[String]] {
       override def default(f : AbstractFile) = immutable.Set()
     }
 
   /** Write dependencies to the current file. */
-  def saveDependencies() =
+  def saveDependencies(fromFile: AbstractFile => String) =
     if(dependenciesFile.isDefined)
-      dependencies.writeTo(dependenciesFile.get)
+      dependencies.writeTo(dependenciesFile.get, fromFile)
 
   /** Load dependencies from the given file and save the file reference for
    *  future saves.
    */
-  def loadFrom(f: AbstractFile) {
+  def loadFrom(f: AbstractFile, toFile: String => AbstractFile) : Boolean = {
     dependenciesFile = f
-    val fd = FileDependencies.readFrom(f);
-    dependencies = if (fd.classpath != classpath) {
-      if(settings.debug.value){
-        println("Classpath has changed. Nuking dependencies");
-      }
-      newDeps
-    } else fd
+    FileDependencies.readFrom(f, toFile) match {
+      case Some(fd) =>
+        val success = fd.classpath == classpath
+        dependencies = if (success) fd else {
+          if(settings.debug.value){
+            println("Classpath has changed. Nuking dependencies");
+          }
+          newDeps
+        }
+
+        success
+      case None => false
+    }
   }
 
   def filter(files : List[SourceFile]) : List[SourceFile] =
@@ -80,7 +88,7 @@ trait DependencyAnalysis extends SubComponent with Files {
     else {
       val (direct, indirect) = dependencies.invalidatedFiles(maxDepth);
       val filtered = files.filter(x => {
-        val f = x.path.absolute;
+        val f = x.file.absolute
         direct(f) || indirect(f) || !dependencies.containsFile(f);
       })
       filtered match {
@@ -102,7 +110,11 @@ trait DependencyAnalysis extends SubComponent with Files {
       if (f != null){
         val source: AbstractFile = unit.source.file;
         for (d <- unit.icode){
-          dependencies.emits(source, nameToFile(unit.source.file, d.toString))
+          val name = d.symbol match {
+            case _ : ModuleClassSymbol => d.toString+"$"
+            case _ => d.toString
+          }
+          dependencies.emits(source, nameToFile(unit.source.file, name))
         }
 
         for (d <- unit.depends; if (d.sourceFile != null)){
@@ -124,7 +136,7 @@ trait DependencyAnalysis extends SubComponent with Files {
               && (!tree.symbol.hasFlag(Flags.JAVA))
               && ((tree.symbol.sourceFile eq null)
                   || (tree.symbol.sourceFile.path != file.path))) {
-            references = references.updated(file, references(file) + tree.symbol.fullNameString)
+            references += file -> (references(file) + tree.symbol.fullNameString)
           }
           tree match {
             case cdef: ClassDef if !cdef.symbol.isModuleClass && !cdef.symbol.hasFlag(Flags.PACKAGE) =>

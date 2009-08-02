@@ -68,13 +68,16 @@ class SimpleBuildManager(val settings: Settings) extends BuildManager {
   }
 
   /** Load saved dependency information. */
-  def loadFrom(file: AbstractFile) {
-    compiler.dependencyAnalysis.loadFrom(file)
+  def loadFrom(file: AbstractFile, toFile: String => AbstractFile) : Boolean = {
+    val success = compiler.dependencyAnalysis.loadFrom(file, toFile)
+    if (success)
+      sources ++= compiler.dependencyAnalysis.managedFiles
+    success
   }
 
   /** Save dependency information to `file'. */
-  def saveTo(file: AbstractFile) {
+  def saveTo(file: AbstractFile, fromFile: AbstractFile => String) {
     compiler.dependencyAnalysis.dependenciesFile = file
-    compiler.dependencyAnalysis.saveDependencies()
+    compiler.dependencyAnalysis.saveDependencies(fromFile)
   }
 }

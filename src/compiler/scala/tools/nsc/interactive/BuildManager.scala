@@ -26,14 +26,13 @@ trait BuildManager {
   def buildingFiles(included: Set[AbstractFile]) {}
 
   /** Load saved dependency information. */
-  def loadFrom(file: AbstractFile)
+  def loadFrom(file: AbstractFile, toFile: String => AbstractFile) : Boolean
 
   /** Save dependency information to `file'. */
-  def saveTo(file: AbstractFile)
+  def saveTo(file: AbstractFile, fromFile: AbstractFile => String)
 
   def compiler: scala.tools.nsc.Global
 }
-
 
 
 /** Simple driver for testing the build manager. It presents
