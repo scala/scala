@@ -24,9 +24,6 @@ class SingleThreadedScheduler extends IScheduler {
     task.run()
   }
 
-  def executeFromActor(task: Runnable) =
-    execute(task)
-
   def execute(fun: => Unit): Unit =
     execute(new Runnable {
       def run() { fun }
@@ -39,4 +36,8 @@ class SingleThreadedScheduler extends IScheduler {
   def onTerminate(actor: Reactor)(f: => Unit) {}
 
   def isActive = true
+
+  def managedBlock(blocker: scala.concurrent.ManagedBlocker) {
+    blocker.block()
+  }
 }

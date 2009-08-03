@@ -20,6 +20,8 @@ import scala.collection.mutable.HashMap
 private[remote] class Proxy(node: Node, name: Symbol, @transient var kernel: NetKernel) extends AbstractActor {
   import java.io.{IOException, ObjectOutputStream, ObjectInputStream}
 
+  type Future[+R] = scala.actors.Future[R]
+
   @transient
   private[remote] var del: Actor = null
   startDelegate()

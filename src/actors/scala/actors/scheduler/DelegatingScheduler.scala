@@ -9,6 +9,8 @@
 package scala.actors
 package scheduler
 
+import scala.concurrent.ManagedBlocker
+
 /**
  * @author Erik Engbrecht
  */
@@ -37,7 +39,7 @@ trait DelegatingScheduler extends IScheduler {
 
   def execute(task: Runnable) = impl.execute(task)
 
-  def executeFromActor(task: Runnable) = impl.executeFromActor(task)
+  override def executeFromActor(task: Runnable) = impl.executeFromActor(task)
 
   def shutdown(): Unit = synchronized {
     if (sched ne null) {

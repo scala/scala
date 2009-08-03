@@ -11,7 +11,7 @@
 package scala.actors
 package scheduler
 
-import java.util.concurrent.{ExecutorService, RejectedExecutionException}
+import scala.concurrent.ThreadPoolRunner
 
 /**
  * The <code>ExecutorScheduler</code> class uses an
@@ -19,29 +19,9 @@ import java.util.concurrent.{ExecutorService, RejectedExecutionException}
  *
  * @author Philipp Haller
  */
-trait ExecutorScheduler extends IScheduler {
+trait ExecutorScheduler extends IScheduler with ThreadPoolRunner[Unit] {
 
-  protected def executor: ExecutorService
-
-  /** Submits a <code>Runnable</code> for execution.
-   *
-   *  @param  task  the task to be executed
-   */
-  def execute(task: Runnable) {
-    try {
-      executor execute task
-    } catch {
-      case ree: RejectedExecutionException =>
-        // run task on current thread
-        task.run()
-    }
-  }
-
-  def executeFromActor(task: Runnable) =
-    execute(task)
-
-  /** This method is called when the <code>SchedulerService</code>
-   *  shuts down.
+  /** This method is called when the scheduler shuts down.
    */
   def onShutdown(): Unit =
     executor.shutdown()
@@ -51,4 +31,5 @@ trait ExecutorScheduler extends IScheduler {
    */
   def isActive =
     (executor ne null) && !executor.isShutdown
+
 }

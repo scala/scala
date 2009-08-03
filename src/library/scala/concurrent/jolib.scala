@@ -11,6 +11,7 @@
 
 package scala.concurrent
 
+import ops._
 
 /**
  * Library for using join-calculus concurrent primitives in Scala.
@@ -44,7 +45,7 @@ package scala.concurrent
         case None => () => ()
         case Some((p, r)) => {
           val args = values(p)
-          () => concurrent.ops.spawn(r(args))
+          () => spawn(r(args))
         }
       }
 

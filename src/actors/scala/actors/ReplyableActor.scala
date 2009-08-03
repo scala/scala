@@ -84,6 +84,7 @@ trait ReplyableActor extends ReplyableReactor {
   override def !!(msg: Any): Future[Any] = {
     val ftch = new Channel[Any](Actor.self(thiz.scheduler))
     val linkedChannel = new AbstractActor {
+      type Future[+R] = scala.actors.Future[R]
       def !(msg: Any) =
         ftch ! msg
       def send(msg: Any, replyTo: OutputChannel[Any]) =

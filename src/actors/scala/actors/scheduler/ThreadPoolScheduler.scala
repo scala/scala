@@ -12,6 +12,7 @@ package scala.actors
 package scheduler
 
 import java.util.concurrent.ThreadPoolExecutor
+import scala.concurrent.ManagedBlocker
 
 /**
  * The <code>ThreadPoolScheduler</code> class uses an
@@ -44,7 +45,7 @@ class ThreadPoolScheduler(protected var executor: ThreadPoolExecutor,
 
   override def managedBlock(blocker: ManagedBlocker) {
     val coreSize = executor.getCorePoolSize()
-    if ((executor.getActiveCount() >= coreSize - 1) && coreSize < ThreadPoolConfig.maxPoolSize) {
+    if (coreSize < ThreadPoolConfig.maxPoolSize && (executor.getActiveCount() >= coreSize - 1)) {
       executor.setCorePoolSize(coreSize + 1)
     }
     blocker.block()
@@ -67,7 +68,7 @@ class ThreadPoolScheduler(protected var executor: ThreadPoolExecutor,
             throw new QuitException
 
           val coreSize = executor.getCorePoolSize()
-          if ((executor.getActiveCount() >= coreSize - 1) && coreSize < ThreadPoolConfig.maxPoolSize) {
+          if (coreSize < ThreadPoolConfig.maxPoolSize && (executor.getActiveCount() >= coreSize - 1)) {
             executor.setCorePoolSize(coreSize + 1)
           }
         }

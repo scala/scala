@@ -94,7 +94,7 @@ class ForkJoinScheduler extends Runnable with IScheduler with TerminationMonitor
     pool.execute(task)
   }
 
-  def executeFromActor(task: Runnable) {
+  override def executeFromActor(task: Runnable) {
     val recAction = new RecursiveAction {
       def compute() = task.run()
     }
@@ -110,8 +110,11 @@ class ForkJoinScheduler extends Runnable with IScheduler with TerminationMonitor
       def run() { fun }
     })
 
-  override def managedBlock(blocker: ManagedBlocker) {
-    ForkJoinPool.managedBlock(blocker, true)
+  override def managedBlock(blocker: scala.concurrent.ManagedBlocker) {
+    ForkJoinPool.managedBlock(new ForkJoinPool.ManagedBlocker {
+      def block = blocker.block()
+      def isReleasable() = blocker.isReleasable
+    }, true)
   }
 
   /** Shuts down the scheduler.

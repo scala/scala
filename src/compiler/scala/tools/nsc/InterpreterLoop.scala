@@ -55,6 +55,8 @@ object InterpreterControl {
 }
 import InterpreterControl._
 
+import scala.concurrent.ops.defaultRunner
+
 /** The
  *  <a href="http://scala-lang.org/" target="_top">Scala</a>
  *  interactive shell.  It provides a read-eval-print loop around

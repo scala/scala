@@ -16,8 +16,11 @@ package scala.actors
  *
  * @author Philipp Haller
  */
-trait Replyable[-T, +R] {
-
+trait Replyable[-T, +R] extends scala.concurrent.AsyncInvokable[T, R] {
+/*
+  def apply(msg: T): this.Future[R] =
+    this !! msg
+*/
   /**
    * Sends <code>msg</code> to this Replyable and awaits reply
    * (synchronous).
@@ -45,8 +48,8 @@ trait Replyable[-T, +R] {
    * @param  msg the message to be sent
    * @return     the future
    */
-  def !!(msg: T): (() => R) =
-    () => this !? msg
+  def !!(msg: T): this.Future[R]
+//    () => this !? msg
 
   /**
    * Sends <code>msg</code> to this actor and immediately
@@ -59,7 +62,7 @@ trait Replyable[-T, +R] {
    * @param    f the function to be applied to the response
    * @return     the future
    */
-  def !![P](msg: T, f: PartialFunction[R, P]): (() => P) =
-    () => f(this !? msg)
+  def !![P](msg: T, f: PartialFunction[R, P]): this.Future[P]
+//    () => f(this !? msg)
 
 }

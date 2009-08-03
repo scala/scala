@@ -643,7 +643,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
       scheduler executeFromActor task
     }
 
-  private class ActorBlocker(timeout: Long) extends ManagedBlocker {
+  private class ActorBlocker(timeout: Long) extends scala.concurrent.ManagedBlocker {
     def block() = {
       if (timeout > 0)
         Actor.this.suspendActorFor(timeout)
@@ -651,7 +651,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
         Actor.this.suspendActor()
       true
     }
-    def isReleasable() =
+    def isReleasable =
       !Actor.this.isSuspended
   }
 

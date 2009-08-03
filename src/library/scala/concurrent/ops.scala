@@ -16,10 +16,13 @@ import java.lang.Thread
 
 /** The object <code>ops</code> ...
  *
- *  @author  Martin Odersky, Stepan Koltsov
- *  @version 1.0, 12/03/2003
+ *  @author  Martin Odersky, Stepan Koltsov, Philipp Haller
  */
 object ops {
+
+  implicit val defaultRunner: TaskRunner[Unit] =
+    TaskRunners.threadRunner
+
   /**
    *  If expression computed successfully return it in <code>Left</code>,
    *  otherwise return exception in <code>Right</code>.
@@ -36,18 +39,17 @@ object ops {
    *
    *  @param  p the expression to evaluate
    */
-  def spawn(p: => Unit) = {
-    val t = new Thread() { override def run() = p }
-    t.start()
+  def spawn(p: => Unit)(implicit runner: TaskRunner[Unit]): Unit = {
+    runner submit (() => p)
   }
 
   /**
    *  @param p ...
    *  @return  ...
    */
-  def future[A](p: => A): () => A = {
+  def future[A](p: => A)(implicit runner: TaskRunner[Unit]): () => A = {
     val result = new SyncVar[Either[A, Throwable]]
-    spawn { result set tryCatch(p) }
+    spawn({ result set tryCatch(p) })(runner)
     () => result.get match {
     	case Left(a) => a
     	case Right(t) => throw t

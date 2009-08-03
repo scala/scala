@@ -42,12 +42,12 @@ class DefaultExecutorScheduler(daemon: Boolean)
 
   private val threadPool = new ThreadPoolExecutor(ThreadPoolConfig.corePoolSize,
                                                   ThreadPoolConfig.maxPoolSize,
-                                                  50L,
+                                                  60000L,
                                                   TimeUnit.MILLISECONDS,
                                                   workQueue,
                                                   threadFactory)
 
   val executor = threadPool
 
-  override val CHECK_FREQ = 50
+  override val CHECK_FREQ = 10
 }

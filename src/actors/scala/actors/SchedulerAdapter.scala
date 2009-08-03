@@ -28,9 +28,6 @@ trait SchedulerAdapter extends IScheduler {
   def execute(task: Runnable): Unit =
     execute { task.run() }
 
-  def executeFromActor(task: Runnable): Unit =
-    execute(task)
-
   /** Shuts down the scheduler.
    */
   def shutdown(): Unit =
@@ -64,4 +61,8 @@ trait SchedulerAdapter extends IScheduler {
    */
   def onTerminate(a: Reactor)(f: => Unit) =
     Scheduler.onTerminate(a)(f)
+
+  def managedBlock(blocker: scala.concurrent.ManagedBlocker) {
+    blocker.block()
+  }
 }

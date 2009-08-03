@@ -11,7 +11,6 @@
 
 package scala.concurrent
 
-
 /** <p>
  *    Library for using Pi-calculus concurrent primitives in
  *    <a href="http://scala-lang.org/" target="_top">Scala</a>. As an
@@ -32,6 +31,8 @@ package scala.concurrent
  *  @version 1.0
  */
 object pilib {
+
+  import TaskRunners.threadRunner
 
   //////////////////////////////// SPAWN /////////////////////////////////
 
