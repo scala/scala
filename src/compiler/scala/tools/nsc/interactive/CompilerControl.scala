@@ -12,7 +12,11 @@ import scala.tools.nsc.ast._
  */
 trait CompilerControl { self: Global =>
 
-  /** Response wrapper to client
+  /** Response {
+    override def toString = "TypeMember("+sym+","+tpe+","+accessible+","+inherited+","+viaView+")"
+  }{
+    override def toString = "TypeMember("+sym+","+tpe+","+accessible+","+inherited+","+viaView+")"
+  }wrapper to client
    */
   type Response[T] = SyncVar[Either[T, Throwable]]
 
@@ -20,13 +24,14 @@ trait CompilerControl { self: Global =>
 
   /** Info given for every member found by completion
    */
-  case class Member(val sym: Symbol, val tpe: Type, val accessible: Boolean)
+  abstract class Member {
+    val sym: Symbol
+    val tpe: Type
+    val accessible: Boolean
+  }
 
-  class TypeMember(sym: Symbol, tpe: Type, accessible: Boolean, val inherited: Boolean, val viaView: Symbol = NoSymbol)
-  extends Member(sym, tpe, accessible)
-
-  class ScopeMember(sym: Symbol, tpe: Type, accessible: Boolean, val viaImport: Tree = EmptyTree)
-  extends Member(sym, tpe, accessible)
+  case class TypeMember(sym: Symbol, tpe: Type, accessible: Boolean, inherited: Boolean, viaView: Symbol) extends Member
+  case class ScopeMember(sym: Symbol, tpe: Type, accessible: Boolean, viaImport: Tree) extends Member
 
   /** The scheduler by which client and compiler communicate
    *  Must be initialized before starting compilerRunner
@@ -88,6 +93,7 @@ trait CompilerControl { self: Global =>
   def askType(source: SourceFile, forceReload: Boolean, result: Response[Tree]) =
     scheduler postWorkItem new WorkItem {
       def apply() = self.getTypedTree(source, forceReload, result)
+      override def toString = "typecheck"
   }
 
   /** Set sync var `result' to list of members that are visible

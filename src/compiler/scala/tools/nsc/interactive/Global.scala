@@ -201,7 +201,7 @@ self =>
           compileRunner = newRunnerThread
           ex match {
             case _ : ValidateError => // This will have been reported elsewhere
-            case _ => inform("Fatal Error: "+ex)
+            case _ => ex.printStackTrace(); inform("Fatal Error: "+ex)
           }
       }
     }
@@ -331,13 +331,18 @@ self =>
     respond(result) { scopeMembers(pos) }
   }
 
+  val Dollar = newTermName("$")
+
   /** Return all members visible without prefix in context enclosing `pos`. */
   def scopeMembers(pos: Position): List[ScopeMember] = {
     typedTreeAt(pos) // to make sure context is entered
     val context = doLocateContext(pos)
     val locals = new LinkedHashMap[Name, ScopeMember]
     def addScopeMember(sym: Symbol, pre: Type, viaImport: Tree) =
-      if (!(locals contains sym.name)) {
+      if (!sym.name.decode.containsName(Dollar) &&
+          !sym.hasFlag(Flags.SYNTHETIC) &&
+          !locals.contains(sym.name)) {
+        //println("adding scope member: "+pre+" "+sym)
         locals(sym.name) = new ScopeMember(
           sym,
           pre.memberType(sym),
@@ -360,11 +365,14 @@ self =>
         addScopeMember(sym, pre, imp.qual)
       }
     }
-    locals.valuesIterator.toList
+    val result = locals.valuesIterator.toList
+    if (debugIDE) for (m <- result) println(m)
+    result
   }
 
   def getTypeCompletion(pos: Position, result: Response[List[Member]]) {
     respond(result) { typeMembers(pos) }
+    if (debugIDE) scopeMembers(pos)
   }
 
   def typeMembers(pos: Position): List[TypeMember] = {
