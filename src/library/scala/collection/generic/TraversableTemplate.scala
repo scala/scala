@@ -716,30 +716,6 @@ self =>
   @experimental
   def toSet[B >: A]: immutable.Set[B] = immutable.Set() ++ thisCollection
 
-  /** Sort the traversable according to the comparison function
-   *  <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>,
-   *  which should be true iff <code>e1</code> is smaller than
-   *  <code>e2</code>.
-   *  The sort is stable. That is elements that are equal wrt `lt` appear in the
-   *  same order in the sorted traversable as in the original.
-   *
-   *  @param lt the comparison function
-   *  @return   a traversable sorted according to the comparison function
-   *            <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>.
-   *  @ex <pre>
-   *    List("Steve", "Tom", "John", "Bob")
-   *      .sort((e1, e2) => (e1 compareTo e2) &lt; 0) =
-   *    List("Bob", "John", "Steve", "Tom")</pre>
-   *  !!!
-  def sortWith(lt : (A,A) => Boolean): This = {
-    val arr = toArray
-    Array.sortWith(arr, lt)
-    val b = newBuilder[A]
-    for (x <- arr) b += x
-    b.result
-  }
-  */
-
   /** Returns a string representation of this traversable object. The resulting string
    *  begins with the string <code>start</code> and is finished by the string
    *  <code>end</code>. Inside, the string representations of elements (w.r.t.
