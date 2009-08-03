@@ -7,7 +7,7 @@ import util.Position
 trait ContextTrees { self: Global =>
 
   type Context = analyzer.Context
-  val NoContext = analyzer.NoContext
+  lazy val NoContext = analyzer.NoContext
   type Contexts = ArrayBuffer[ContextTree]
 
   /** A context tree contains contexts that are indexed by positions.
