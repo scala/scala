@@ -134,6 +134,16 @@ class RichString(val self: String) extends Proxy with Vector[Char] with VectorTe
       new String(chars)
     }
 
+  /** Returns this string with the given <code>prefix</code> stripped. */
+  def stripPrefix(prefix: String) =
+    if (self.startsWith(prefix)) self.substring(prefix.length)
+    else self
+
+  /** Returns this string with the given <code>suffix</code> stripped. */
+  def stripSuffix(suffix: String) =
+    if (self.endsWith(suffix)) self.substring(0, self.length() - suffix.length)
+    else self
+
   /** <p>
    *    For every line in this string:
    *  </p>
