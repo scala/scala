@@ -19,7 +19,7 @@ import java.lang.Runnable
  *
  *  @author Philipp Haller
  */
-class ReactorTask extends Runnable {
+private[actors] class ReactorTask extends Runnable {
 
   private var reactor: Reactor = null
   private var fun: () => Unit = null

@@ -143,6 +143,7 @@ class MessageQueue {
       if (tmp eq last) {
         last = null
       }
+      changeSize(-1)
       Some((tmp.msg, tmp.session))
     } else {
       var curr = first
@@ -157,6 +158,7 @@ class MessageQueue {
           if (curr eq last) {
             last = prev
           }
+          changeSize(-1)
           found = Some((curr.msg, curr.session))
         }
       }

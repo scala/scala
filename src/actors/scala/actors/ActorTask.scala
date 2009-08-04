@@ -19,7 +19,7 @@ import java.lang.Runnable
  *
  *  @author Philipp Haller
  */
-class ActorTask extends Runnable {
+private[actors] class ActorTask extends Runnable {
 
   private var a: Actor = null
   private var fun: () => Unit = null

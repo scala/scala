@@ -19,7 +19,7 @@ import java.util.concurrent.ExecutionException
  *
  * @author Philipp Haller
  */
-trait ReplyableActor extends ReplyableReactor {
+private[actors] trait ReplyableActor extends ReplyableReactor {
   thiz: AbstractActor with ReplyReactor =>
 
   /**

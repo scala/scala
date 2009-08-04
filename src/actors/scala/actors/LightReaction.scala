@@ -22,7 +22,7 @@ import java.lang.Runnable
  *
  *  @author Philipp Haller
  */
-class LightReaction(a: Reactor, f: PartialFunction[Any, Unit], msg: Any) extends ReactorTask(a, () => {
+private[actors] class LightReaction(a: Reactor, f: PartialFunction[Any, Unit], msg: Any) extends ReactorTask(a, () => {
   if (f == null)
     a.act()
   else
