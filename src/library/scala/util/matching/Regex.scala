@@ -114,6 +114,16 @@ class Regex(regex: String, groupNames: String*) {
     m.replaceFirst(replacement)
   }
 
+  /** Splits the provided character sequence around matches of this
+   *  regexp.
+   *
+   *  @param toSplit The character sequence to split
+   *  @return        The array of strings computed by splitting the
+   *                 input around matches of this regexp
+   */
+  def split(toSplit: java.lang.CharSequence): Array[String] =
+    pattern.split(toSplit)
+
   /** The string defining the regular expression */
   override def toString = regex
 }
