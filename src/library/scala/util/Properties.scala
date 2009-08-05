@@ -72,6 +72,7 @@ private[scala] trait PropertiesTrait
   val javaVmInfo            = sysprop("java.vm.info")
   val javaVersion           = sysprop("java.version")
   val tmpDir                = sysprop("java.io.tmpdir")
+  val userName              = sysprop("user.name")
   val scalaHome             = sysprop("scala.home", null) // XXX places do null checks...
 
   // provide a main method so version info can be obtained by running this

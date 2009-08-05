@@ -58,43 +58,15 @@ class CompileSocket {
 
   /** A temporary directory to use */
   val tmpDir = {
-    val totry = List(
-        ("scala.home", List("var", "scala-devel")),
-        ("java.io.tmpdir", List("scala-devel")),
-        ("user.home", List("tmp")))
+    val udir  = Option(Properties.userName) getOrElse "shared"
+    val f     = (scala.io.File(Properties.tmpDir) / "scala-devel" / udir).file
+    f.mkdirs()
 
-    /** Expand a property-extensions pair into a complete File object */
-    def expand(trial: (String, List[String])): Option[File] = {
-      val (topdirProp, extensions) = trial
-      val topdir = System.getProperty(topdirProp)
-      if (topdir eq null)
-        return None
-
-      val fulldir =
-        extensions.foldLeft[File](new File(topdir))(
-            (dir,ext) => new File(dir, ext))
-
-      Some(fulldir)
+    if (f.isDirectory && f.canWrite) {
+      info("[Temp directory: " + f + "]")
+      f
     }
-
-    /** Try to create directory f, and then see if it can
-     *  be written into. */
-    def isDirWritable(f: File): Boolean = {
-      f.mkdirs()
-      f.isDirectory && f.canWrite
-    }
-
-    def findTmpDir(): File = {
-      for (trial <- totry) expand(trial) match {
-        case Some(dir) if isDirWritable(dir) =>
-          info("[Temp directory: " + dir + "]")
-          return dir
-        case _ =>
-      }
-      fatal("Could not find a directory for temporary files")
-    }
-
-    findTmpDir()
+    else fatal("Could not find a directory for temporary files")
   }
 
   /* A directory holding port identification files */

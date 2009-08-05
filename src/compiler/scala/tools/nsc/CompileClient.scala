@@ -29,13 +29,14 @@ class StandardCompileClient {
   def absFileNames(paths: String) = {
     val sep = File.pathSeparator
     val pathsList = paths.split(sep).toList
-    pathsList.map(absFileName).mkString("", sep, "")
+    pathsList map absFileName mkString sep
   }
 
   protected def normalize(args: Array[String]): (String, String) = {
-     var i = 0
+    var i = 0
     val vmArgs = new StringBuilder
     var serverAdr = ""
+
     while (i < args.length) {
       val arg = args(i)
       if (fileEndings exists(arg endsWith _)) {
@@ -52,18 +53,17 @@ class StandardCompileClient {
         shutdown = true
       }
       i += 1
+
       if (i < args.length) {
-        if (arg == "-classpath" ||
-            arg == "-sourcepath" ||
-            arg == "-bootclasspath" ||
-            arg == "-extdirs" ||
-            arg == "-d") {
-          args(i) = absFileNames(args(i))
-          i += 1
-        } else if (arg == "-server") {
-          serverAdr = args(i)
-          args(i-1) = ""
-          args(i) = ""
+        arg match {
+          case "-classpath" | "-sourcepath" | "-bootclasspath" | "-extdirs" | "-d"  =>
+            args(i) = absFileNames(args(i))
+            i += 1
+          case "-server"  =>
+            serverAdr = args(i)
+            args(i-1) = ""
+            args(i) = ""
+          case _          =>
         }
       }
     }
@@ -72,13 +72,9 @@ class StandardCompileClient {
 
   // used by class ant.FastScalac to skip exit statement in Ant.
   def main0(args0: Array[String]): Int = {
-    val args =
-      if (args0.exists(arg => arg == "-d"))
-        args0
-      else
-        ("-d" :: "." :: args0.toList).toArray
-
+    val args = if (args0 contains "-d") args0 else Array("-d", ".") ++ args0
     val (vmArgs, serverAdr) = normalize(args)
+
     if (version) {
       Console.println(versionMsg)
       return 0
@@ -109,21 +105,13 @@ class StandardCompileClient {
         Console.println(fromServer)
         fromServer = in.readLine()
       }
-      in.close()
-      out.close()
-      socket.close()
+      in.close ; out.close ; socket.close
     }
     if (sawerror) 1 else 0
   }
 
-  def main(args: Array[String]) {
-    try {
-      val status = main0(args)
-      exit(status)
-    } catch {
-      case e: Exception => exit(1)
-    }
-  }
+  def main(args: Array[String]): Unit =
+    exit(try main0(args) catch { case e: Exception => 1 })
 }
 
 
