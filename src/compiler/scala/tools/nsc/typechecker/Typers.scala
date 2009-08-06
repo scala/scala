@@ -3857,11 +3857,15 @@ trait Typers { self: Analyzer =>
     /** Types a type constructor tree used in a new or supertype */
     def typedTypeConstructor(tree: Tree, mode: Int): Tree = {
       val result = typed(tree, typeMode(mode) | FUNmode, WildcardType)
-      val restpe = result.tpe.normalize
+
+      val restpe = result.tpe.normalize // normalize to get rid of type aliases for the following check (#1241)
       if (!phase.erasedTypes && restpe.isInstanceOf[TypeRef] && !restpe.prefix.isStable) {
         error(tree.pos, restpe.prefix+" is not a legal prefix for a constructor")
       }
-      result setType restpe // @M: normalization is done during erasure
+
+      // @M: during uncurry, all types are normalized (after refchecks and before genicode)
+      result // must not normalize before refchecks, and thus must not do `result setType(restpe)`
+      // the original type must be ref-checked first, so that bounds of type args of type aliases are checked (see #2208)
     }
 
     def typedTypeConstructor(tree: Tree): Tree = typedTypeConstructor(tree, NOmode)
