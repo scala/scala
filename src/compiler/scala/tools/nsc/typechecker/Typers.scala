@@ -762,8 +762,14 @@ trait Typers { self: Analyzer =>
         adapt(tree setType tr.normalize.skolemizeExistential(context.owner, tree), mode, pt)
       case et @ ExistentialType(_, _) if ((mode & (EXPRmode | LHSmode)) == EXPRmode) =>
         adapt(tree setType et.skolemizeExistential(context.owner, tree), mode, pt)
-      case PolyType(tparams, restpe) if ((mode & (TAPPmode | PATTERNmode)) == 0) => // (3)
-        assert((mode & HKmode) == 0) //@M
+      case PolyType(tparams, restpe) if ((mode & (TAPPmode | PATTERNmode | HKmode)) == 0) => // (3)
+        // assert((mode & HKmode) == 0) //@M a PolyType in HKmode represents an anonymous type function,
+        // we're in HKmode since a higher-kinded type is expected --> hence, don't implicitly apply it to type params!
+        // ticket #2197 triggered turning the assert into a guard
+        // I guess this assert wasn't violated before because type aliases weren't expanded as eagerly
+        //  (the only way to get a PolyType for an anonymous type function is by normalisation, which applies eta-expansion)
+          // -- are we sure we want to expand aliases this early?
+          // -- what caused this change in behaviour??
         val tparams1 = cloneSymbols(tparams)
         val tree1 = if (tree.isType) tree
                     else TypeApply(tree, tparams1 map (tparam =>
