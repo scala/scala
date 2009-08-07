@@ -279,7 +279,7 @@ final class ListBuffer[A]
 
   override def iterator = new Iterator[A] {
     var cursor: List[A] = null
-    def hasNext: Boolean = !start.isEmpty && cursor != last0
+    def hasNext: Boolean = !start.isEmpty && (cursor ne last0)
     def next(): A =
       if (!hasNext) {
         throw new NoSuchElementException("next on empty Iterator")
