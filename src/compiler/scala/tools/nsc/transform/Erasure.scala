@@ -251,7 +251,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
     }
     if (needsJavaSig(info)) {
       try {
-        println("Java sig of "+sym+" is "+jsig2(true, List(), sym.info))//DEBUG
+        //println("Java sig of "+sym+" is "+jsig2(true, List(), sym.info))//DEBUG
         Some(jsig2(true, List(), info))
       } catch {
         case ex: UnknownSig => None
