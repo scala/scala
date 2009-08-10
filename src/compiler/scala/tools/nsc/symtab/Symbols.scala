@@ -1410,7 +1410,7 @@ trait Symbols {
         if (settings.debug.value) "package class" else "package"
       else if (isModuleClass)
         if (settings.debug.value) "singleton class" else "object"
-      else if (isAnonymousClass) "template"
+      else if (isAnonymousClass) "anonymous class"
       else if (isRefinementClass) ""
       else if (isTrait) "trait"
       else if (isClass) "class"

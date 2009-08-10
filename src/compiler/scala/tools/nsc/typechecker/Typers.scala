@@ -746,7 +746,7 @@ trait Typers { self: Analyzer =>
     protected def adapt(tree: Tree, mode: Int, pt: Type): Tree = tree.tpe match {
       case atp @ AnnotatedType(_, _, _) if canAdaptAnnotations(tree, mode, pt) => // (-1)
         adaptAnnotations(tree, mode, pt)
-      case ct @ ConstantType(value) if ((mode & (TYPEmode | FUNmode)) == 0 && (ct <:< pt)) => // (0)
+      case ct @ ConstantType(value) if ((mode & (TYPEmode | FUNmode)) == 0 && (ct <:< pt) && !onlyPresentation) => // (0)
         treeCopy.Literal(tree, value)
       case OverloadedType(pre, alts) if ((mode & FUNmode) == 0) => // (1)
         inferExprAlternative(tree, pt)
@@ -1595,11 +1595,9 @@ trait Typers { self: Analyzer =>
       namer.enterSyms(block.stats)
       for (stat <- block.stats) {
         if (onlyPresentation && stat.isDef) {
-          if (stat.isDef) {
-            var e = context.scope.lookupEntry(stat.symbol.name)
-            while ((e ne null) && (e.sym ne stat.symbol)) e = e.tail
-            if (e eq null) context.scope.enter(stat.symbol)
-          }
+          var e = context.scope.lookupEntry(stat.symbol.name)
+          while ((e ne null) && (e.sym ne stat.symbol)) e = e.tail
+          if (e eq null) context.scope.enter(stat.symbol)
         }
         enterLabelDef(stat)
       }
@@ -2536,9 +2534,8 @@ trait Typers { self: Analyzer =>
         }
       var localSyms = collection.immutable.Set[Symbol]()
       var boundSyms = collection.immutable.Set[Symbol]()
-      var localInstances = collection.immutable.Map[SymInstance, Symbol]()
       def isLocal(sym: Symbol): Boolean =
-        if (sym == NoSymbol) false
+        if (sym == NoSymbol || sym.isRefinementClass || sym.isLocalDummy) false
         else if (owner == NoSymbol) tree exists (defines(_, sym))
         else containsDef(owner, sym) || isRawParameter(sym)
       def containsLocal(tp: Type): Boolean =
@@ -2559,33 +2556,19 @@ trait Typers { self: Analyzer =>
       // add all local symbols of `tp' to `localSyms'
       // expanding higher-kinded types into individual copies for each instance.
       def addLocals(tp: Type) {
+        val remainingSyms = new ListBuffer[Symbol]
         def addIfLocal(sym: Symbol, tp: Type) {
-          if (sym != NoSymbol && !sym.isRefinementClass && isLocal(sym) &&
-              !(localSyms contains sym) && !(boundSyms contains sym) ) {
+          if (isLocal(sym) && !localSyms.contains(sym) && !boundSyms.contains(sym)) {
             if (sym.typeParams.isEmpty) {
               localSyms += sym
-              addLocals(sym.existentialBound)
-            } else if (tp.typeArgs.isEmpty) {
-              unit.error(tree.pos,
-                "implementation restriction: can't existentially abstract over higher-kinded type" + tp)
+              remainingSyms += sym
             } else {
-              val inst = new SymInstance(sym, tp)
-              if (!(localInstances contains inst)) {
-                val bound = sym.existentialBound match {
-                  case PolyType(tparams, restpe) =>
-                    restpe.subst(tparams, tp.typeArgs)
-                  case t =>
-                    t
-                }
-                val local = trackSetInfo(recycle(sym.owner.newAbstractType(
-                  sym.pos, unit.fresh.newName(sym.pos, sym.name.toString))
-                    .setFlag(sym.flags)))(bound)
-                localInstances += (inst -> local)
-                addLocals(bound)
-              }
+              unit.error(tree.pos,
+                "can't existentially abstract over parameterized type " + tp)
             }
           }
         }
+
         for (t <- tp) {
           t match {
             case ExistentialType(tparams, _) =>
@@ -2608,42 +2591,12 @@ trait Typers { self: Analyzer =>
           addIfLocal(t.termSymbol, t)
           addIfLocal(t.typeSymbol, t)
         }
-      }
-
-      object substLocals extends TypeMap {
-        override val dropNonConstraintAnnotations = true
-
-        def apply(t: Type): Type = t match {
-          case TypeRef(_, sym, args) if (sym.isLocal && args.length > 0) =>
-            localInstances.get(new SymInstance(sym, t)) match {
-              case Some(local) => typeRef(NoPrefix, local, List())
-              case None => mapOver(t)
-            }
-          case _ => mapOver(t)
-        }
-
-        override def mapOver(arg: Tree, giveup: ()=>Nothing) = {
-          object substLocalTrees extends TypeMapTransformer {
-            override def transform(tr: Tree) = {
-              localInstances.get(new SymInstance(tr.symbol, tr.tpe)) match {
-                case Some(local) =>
-                  Ident(local.existentialToString)
-                    .setSymbol(tr.symbol).copyAttrs(tr).setType(
-                      typeRef(NoPrefix, local, List()))
-
-                case None => super.transform(tr)
-              }
-            }
-          }
-
-          substLocalTrees.transform(arg)
-        }
+        for (sym <- remainingSyms) addLocals(sym.existentialBound)
       }
 
       val normalizedTpe = normalizeLocals(tree.tpe)
       addLocals(normalizedTpe)
-
-      packSymbols(localSyms.toList ::: localInstances.values.toList, substLocals(normalizedTpe))
+      packSymbols(localSyms.toList, normalizedTpe)
     }
 
     protected def typedExistentialTypeTree(tree: ExistentialTypeTree, mode: Int): Tree = {

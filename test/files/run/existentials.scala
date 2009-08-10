@@ -52,7 +52,7 @@ object Bug1189 {
 
 object Test extends Application {
 
-  val x = { class I[T]; (new C(new I[String]), new C(new I[Int])) }
+  val x = { class I; class J; (new C(new I), new C(new J)) }
   val y: (C[X], C[Y]) forSome { type X; type Y } = x
 
    def foo(x : Counter[T] { def name : String } forSome { type T }) = x match {

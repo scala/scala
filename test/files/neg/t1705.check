@@ -1,0 +1,7 @@
+t1705.scala:9: error: can't existentially abstract over parameterized type this.T[Z]
+    val c = new C{
+            ^
+t1705.scala:14: error: can't existentially abstract over parameterized type C[String]
+    val x1 = {
+             ^
+two errors found
