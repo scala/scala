@@ -20,3 +20,20 @@ object Test {
   def f(x: int): int = x
   f(p+1)
 }
+
+object test2 {
+  sealed trait HMap {
+    def +[T](v: T) = HSome(v,this)
+  }
+
+  final case class HSome[T, L <: HMap](head: T, tail: L) extends HMap
+
+  final object HEmpty extends HMap
+
+  val set = HEmpty + 3 + "3"
+  implicit def select[T](t: HSome[T,_]) = t.head
+  implicit def selectTail[L](t: HSome[_,L]) = t.tail
+
+  def foo(x: Int) = 3
+  foo(set)
+}

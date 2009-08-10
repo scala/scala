@@ -168,7 +168,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
     def jsig(tp: Type): String = jsig2(false, List(), tp)
 
     def jsig2(toplevel: Boolean, tparams: List[Symbol], tp0: Type): String = {
-      val tp = tp0.normalize
+      val tp = tp0.dealias
       tp match {
         case st: SubType =>
           jsig2(toplevel, tparams, st.supertype)
@@ -251,7 +251,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
     }
     if (needsJavaSig(info)) {
       try {
-        //println("Java sig of "+sym+" is "+jsig2(true, List(), sym.info))//DEBUG
+        println("Java sig of "+sym+" is "+jsig2(true, List(), sym.info))//DEBUG
         Some(jsig2(true, List(), info))
       } catch {
         case ex: UnknownSig => None

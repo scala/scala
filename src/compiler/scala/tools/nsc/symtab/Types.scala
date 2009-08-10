@@ -191,6 +191,7 @@ trait Types {
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) = underlying.instantiateTypeParams(formals, actuals)
     override def skolemizeExistential(owner: Symbol, origin: AnyRef) = underlying.skolemizeExistential(owner, origin)
     override def normalize = maybeRewrap(underlying.normalize)
+    override def dealias = maybeRewrap(underlying.dealias)
     override def cloneInfo(owner: Symbol) = maybeRewrap(underlying.cloneInfo(owner))
     override def prefixString = underlying.prefixString
     override def isComplete = underlying.isComplete
@@ -347,6 +348,9 @@ trait Types {
 
     /** Reduce to beta eta-long normal form. Expands type aliases and converts higher-kinded TypeRef's to PolyTypes. @M */
     def normalize = this // @MAT
+
+    /** Expands type aliases. */
+    def dealias = this
 
     /** Is this type produced as a repair for an error? */
     def isError: Boolean = typeSymbol.isError || termSymbol.isError
@@ -1492,6 +1496,13 @@ A type's typeSymbol should never be inspected directly.
     private def argsMaybeDummy = if (isHigherKinded) higherKindedArgs else args
 
     private var normalized: Type = null
+
+    override def dealias: Type =
+      if (sym.isAliasType && sym.info.typeParams.length == args.length) {
+        val xform = transform(sym.info.resultType)
+        assert(xform ne this, this)
+        xform.dealias
+      } else this
 
     def normalize0: Type =
       if (sym.isAliasType) { // beta-reduce
