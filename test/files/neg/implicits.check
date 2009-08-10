@@ -7,4 +7,9 @@ Note that implicit conversions are not applicable because they are ambiguous:
  are possible conversion functions from Pos to ?{val +: ?}
   f(p+1)
     ^
-one error found
+implicits.scala:38: error: type mismatch;
+ found   : test2.HSome[java.lang.String,test2.HMap]
+ required: Int
+  foo(set)
+      ^
+two errors found
