@@ -182,10 +182,19 @@ abstract class UnPickler {
         case EXTref | EXTMODCLASSref =>
           val name = readNameRef()
           val owner = if (readIndex == end) definitions.RootClass else readSymbolRef()
-          sym = if (name.toTermName == nme.ROOT) definitions.RootClass
-                else if (name == nme.ROOTPKG) definitions.RootPackage
-                else if (tag == EXTref) owner.info.decl(name)
-                else owner.info.decl(name).moduleClass
+          def fromName(name: Name) =
+            if (name.toTermName == nme.ROOT) definitions.RootClass
+            else if (name == nme.ROOTPKG) definitions.RootPackage
+            else if (tag == EXTref) owner.info.decl(name)
+            else owner.info.decl(name).moduleClass
+          sym = fromName(name)
+          // If sym not found try with expanded name.
+          // This can happen if references to private symbols are
+          // read from outside; for instance when checking the children of a class
+          // (see t1722)
+          if (sym == NoSymbol) {
+            sym = fromName(owner.expandedName(name))
+          }
 
           // If the owner is overloaded (i.e. a method), it's not possible to select the
           // right member => return NoSymbol. This can only happen when unpickling a tree.
