@@ -24,6 +24,10 @@ object Source {
   val DefaultBufSize = 2048
   val NoReset: () => Source = () => throw new UnsupportedOperationException()
 
+  /** Creates a <code>Source</code> from System.in.
+   */
+  def stdin = fromInputStream(System.in)
+
   def fromIterable(iterable: Iterable[Char]): Source = new Source {
     def reset() = fromIterable(iterable)
     val iter = iterable.iterator
