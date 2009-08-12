@@ -31,7 +31,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
       extends Builder[Char, String]
          with Vector[Char] {
 
-  require(initCapacity > 0)
+  require(initCapacity >= 0)
 
   /** The value is used for character storage. */
   private var array = new Array[Char](initCapacity + initValue.length)
