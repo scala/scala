@@ -4576,12 +4576,13 @@ A type's typeSymbol should never be inspected directly.
               val l = lub(as, decr(depth))
               val g = glb(as, decr(depth))
               if (l <:< g) l
-              else {
+              else if(!(tparam.info.bounds contains tparam)){ //@M can't deal with f-bounds, see #2251
                 val owner = commonOwner(as)
                 val qvar = makeFreshExistential("", commonOwner(as), mkTypeBounds(g, l))
                 capturedParams += qvar
                 qvar.tpe
               }
+              else NoType
             }
       }
       try {
