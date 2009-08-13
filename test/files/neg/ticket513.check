@@ -1,0 +1,4 @@
+ticket513.scala:6: error: type arguments [NotThatBound] do not conform to trait T's type parameter bounds [A <: Bound]
+object Wrong extends Wrap[T[NotThatBound]]
+                     ^
+one error found

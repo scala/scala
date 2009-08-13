@@ -22,7 +22,7 @@ import TraversableView.NoBuilder
 trait SequenceView[+A, +Coll <: Sequence[_]] extends SequenceViewTemplate[A, Coll, SequenceView[A, Coll]]
 
 object SequenceView {
-  type Coll = TraversableView[_, _]
+  type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}
   implicit def builderFactory[A]: BuilderFactory[A, SequenceView[A, Sequence[_]], Coll] = new BuilderFactory[A, SequenceView[A, Sequence[_]], Coll] { def apply(from: Coll) = new NoBuilder }
 }
 

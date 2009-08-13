@@ -860,11 +860,8 @@ abstract class RefChecks extends InfoTransform {
       var result = tree
 
       def doTypeTraversal(f: (Type) => Unit) =
-        if (!inPattern) {
-          new TypeTraverser {
-            def traverse(tp: Type) { f(tp) }
-          } traverse tree.tpe
-        }
+        if (!inPattern)
+          new ForEachTypeTraverser(f) traverse tree.tpe
 
       // Apply RefChecks to annotations. Makes sure the annotations conform to
       // type bounds (bug #935), issues deprecation warnings for symbols used

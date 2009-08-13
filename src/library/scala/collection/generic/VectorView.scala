@@ -23,6 +23,6 @@ import TraversableView.NoBuilder
 trait VectorView[+A, +Coll <: Vector[_]] extends VectorViewTemplate[A, Coll, VectorView[A, Coll]]
 
 object VectorView {
-  type Coll = TraversableView[_, _]
+  type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}
   implicit def builderFactory[A]: BuilderFactory[A, VectorView[A, Vector[_]], Coll] = new BuilderFactory[A, VectorView[A, Vector[_]], Coll] { def apply(from: Coll) = new NoBuilder }
 }
