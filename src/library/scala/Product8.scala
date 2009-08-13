@@ -22,6 +22,7 @@ object Product8 {
 
 /** Product8 is a cartesian product of 8 components.
  *
+ *  @since 2.3
  */
 trait Product8[+T1, +T2, +T3, +T4, +T5, +T6, +T7, +T8] extends Product {
   /**

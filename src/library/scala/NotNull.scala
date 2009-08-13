@@ -7,6 +7,8 @@
 \*                                                                      */
 package scala
 
-/** A marker trait for things that are not allowed to be null
+/**
+ * A marker trait for things that are not allowed to be null
+ * @since 2.5
  */
 trait NotNull {}

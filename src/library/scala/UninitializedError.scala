@@ -16,5 +16,6 @@ import Predef._
 /** This class represents uninitialized variable/value errors.
  *
  *  @author  Martin Odersky
+ *  @since   2.5
  */
 final class UninitializedError extends RuntimeException("uninitialized value")

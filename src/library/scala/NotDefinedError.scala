@@ -14,4 +14,7 @@ package scala
 
 import Predef._
 
+/**
+ * @since 2.0
+ */
 final class NotDefinedError(msg: String) extends Error("not defined: " + msg)

@@ -22,6 +22,7 @@ object Product1 {
 
 /** Product1 is a cartesian product of 1 component.
  *
+ *  @since 2.3
  */
 trait Product1[+T1] extends Product {
   /**

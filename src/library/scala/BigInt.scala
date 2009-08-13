@@ -17,6 +17,7 @@ import java.{ lang => jl }
 /**
  *  @author  Martin Odersky
  *  @version 1.0, 15/07/2003
+ *  @since 2.1
  */
 object BigInt {
 

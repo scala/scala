@@ -12,6 +12,8 @@
 package scala
 
 /** Counted iterators keep track of the number of elements seen so far
+ *
+ *  @since 2.0
  */
 @deprecated("use iterator.zipWithIndex instead")
 trait CountedIterator[+A] extends Iterator[A] {

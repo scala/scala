@@ -11,7 +11,11 @@ package scala.net
 import java.net.{ URL, MalformedURLException }
 import scala.util.control.Exception._
 
-/** Skeleton in anticipation of more convenience methods. */
+/**
+ * Skeleton in anticipation of more convenience methods.
+ *
+ * @since 2.8
+ */
 object Utility
 {
   def parseURL(s: String): Option[URL] =

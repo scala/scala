@@ -31,6 +31,7 @@ package scala
  *
  * @author  Geoffrey Washburn
  * @version 1.0, 2008-04-03
+ * @since 2.7
  */
 
 trait Equiv[T] {

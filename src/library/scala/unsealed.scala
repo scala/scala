@@ -11,5 +11,8 @@
 
 package scala
 
+/**
+ * @since 2.4
+ */
 @deprecated("use `unchecked' instead")
 class unsealed extends Annotation

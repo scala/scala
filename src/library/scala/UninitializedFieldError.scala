@@ -21,6 +21,8 @@ import Predef._
  *
  *  Note: This check requires the new initialization order,
  *    planned for 2.8.0 and available under -Xexperimental.
+ *
+ *  @since 2.7
  */
 final case class UninitializedFieldError(msg: String)
            extends RuntimeException(msg) {

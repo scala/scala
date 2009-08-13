@@ -39,5 +39,7 @@ package scala
  *    <a href="MatchError.html"><code>MatchError</code></a>
  *    will be raised at runtime.
  *  </p>
+ *
+ *  @since 2.4
  */
 class unchecked extends Annotation {}

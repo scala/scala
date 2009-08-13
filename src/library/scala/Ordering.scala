@@ -38,6 +38,7 @@ import java.util.Comparator
  *
  * @author Geoffrey Washburn
  * @version 0.9.5, 2008-04-15
+ * @since 2.7
  */
 
 trait Ordering[T] extends Comparator[T] with PartialOrdering[T] {

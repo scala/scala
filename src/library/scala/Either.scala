@@ -11,6 +11,7 @@ package scala
  *
  * @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  * @version 1.0, 11/10/2008
+ * @since 2.7
  */
 sealed abstract class Either[+A, +B] {
   /**

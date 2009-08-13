@@ -16,6 +16,7 @@ package scala
  *
  *  @author  Burak Emir
  *  @version 1.0
+ *  @since   2.3
  */
 trait Product extends AnyRef {
 

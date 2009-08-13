@@ -22,6 +22,7 @@ object Product7 {
 
 /** Product7 is a cartesian product of 7 components.
  *
+ *  @since 2.3
  */
 trait Product7[+T1, +T2, +T3, +T4, +T5, +T6, +T7] extends Product {
   /**

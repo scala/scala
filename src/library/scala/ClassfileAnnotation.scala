@@ -19,5 +19,6 @@ package scala
  *
  *  @author  Martin Odersky
  *  @version 1.1, 2/02/2007
+ *  @since 2.4
  */
 trait ClassfileAnnotation extends StaticAnnotation

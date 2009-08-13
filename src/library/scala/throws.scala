@@ -26,5 +26,6 @@ import Predef._
  *
  * @author  Nikolay Mihaylov
  * @version 1.0, 19/05/2006
+ * @since   2.1
  */
 class throws(clazz: Class[_]) extends StaticAnnotation

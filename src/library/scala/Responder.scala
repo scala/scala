@@ -17,6 +17,7 @@ package scala
  *  @version 1.0
  *
  *  @see class Responder
+ *  @since 2.1
  */
 object Responder {
 
@@ -64,6 +65,7 @@ object Responder {
  *  @author Martin Odersky
  *  @author Burak Emir
  *  @version 1.0
+ *  @since 2.1
  */
 abstract class Responder[+A] {
 

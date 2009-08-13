@@ -25,6 +25,7 @@ package scala
  *
  *  @author  Martin Odersky
  *  @version 1.0
+ *  @since   2.8
  */
 trait Unhashable extends Object {
 

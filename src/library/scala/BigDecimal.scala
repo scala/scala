@@ -16,6 +16,7 @@ import java.math.MathContext
 /**
  *  @author  Stephane Micheloud
  *  @version 1.0
+ *  @since 2.7
  */
 object BigDecimal
 {

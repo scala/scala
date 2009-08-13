@@ -20,5 +20,7 @@ package scala
  *   Method body is not generated if method is marked with <code>@native</code>,
  *   but it is type checked when present.
  * </p>
+ *
+ * @since 2.6
  */
 class native extends StaticAnnotation {}

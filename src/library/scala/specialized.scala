@@ -15,6 +15,8 @@ package scala
  *  Only primitive types are supported and no name resolution is currently
  *  done on the string arguments (meaning imports and type aliases are
  *  not resolved).
+ *
+ *  @since 2.8
  */
 class specialized(types: String) extends StaticAnnotation {
   def this() {

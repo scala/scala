@@ -26,5 +26,6 @@ package scala
  *
  *  @author  Lex Spoon
  *  @version 1.1, 2007-11-5
+ *  @since   2.6
  */
 trait TypeConstraint extends Annotation

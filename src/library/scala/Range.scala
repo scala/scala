@@ -176,6 +176,7 @@ object GenericRange
  *
  *  @author Martin Odersky
  *  @version 2.8
+ *  @since   2.5
  */
 class Range(val start: Int, val end: Int, val step: Int)
 extends VectorView[Int, Vector[Int]] with RangeToString[Int]
