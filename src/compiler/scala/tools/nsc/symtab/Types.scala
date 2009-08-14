@@ -1382,7 +1382,7 @@ trait Types {
 //    assert(!pre.isInstanceOf[ClassInfoType], this)
 //    assert(!(sym hasFlag (PARAM | EXISTENTIAL)) || pre == NoPrefix, this)
 //    assert(args.isEmpty || !sym.info.typeParams.isEmpty, this)
-
+//    assert(args.isEmpty || ((sym ne AnyClass) && (sym ne NothingClass))
     private var parentsCache: List[Type] = _
     private var parentsPeriod = NoPeriod
     private var baseTypeSeqCache: BaseTypeSeq = _
@@ -1481,8 +1481,13 @@ A type's typeSymbol should never be inspected directly.
     // (!result.isEmpty) IFF isHigherKinded
     override def typeParams: List[Symbol] = if (args.isEmpty) typeParamsDirect else List()
 
-    //@M equivalent to (!typeParams.isEmpty && args.isEmpty)  because args.isEmpty is checked in typeParams
-    override def isHigherKinded = !typeParams.isEmpty
+    //@M equivalent to:
+    //  (!typeParams.isEmpty && args.isEmpty) &&   //  because args.isEmpty is checked in typeParams
+    //  !isRawType(this)                           // needed for subtyping
+    override def isHigherKinded
+      = !typeParams.isEmpty &&
+      // otherwise raw types are considered higher-kinded types during subtyping:
+        (phase.erasedTypes || !sym.hasFlag(JAVA))
 
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type =
       if (isHigherKinded) {
@@ -3751,9 +3756,9 @@ A type's typeSymbol should never be inspected directly.
             val sym2 = tr2.sym
             val pre1 = tr1.pre
             val pre2 = tr2.pre
-            ((if (sym1 == sym2) phase.erasedTypes || pre1 <:< pre2
+            (((if (sym1 == sym2) phase.erasedTypes || pre1 <:< pre2
               else (sym1.name == sym2.name && isUnifiable(pre1, pre2))) &&
-             isSubArgs(tr1.args, tr2.args, sym1.typeParams)
+             isSubArgs(tr1.args, tr2.args, sym1.typeParams))
              ||
              sym2.isClass && {
                val base = tr1 baseType sym2
