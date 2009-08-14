@@ -2520,7 +2520,7 @@ self =>
         } else if (isDefIntro || isLocalModifier || in.token == AT) {
           stats ++= localDef
           if (in.token == RBRACE || in.token == CASE) {
-            syntaxError("block must end in result expression, not in definition", false)
+            //syntaxError("block must end in result expression, not in definition", false)
             stats += Literal(()).setPos(o2p(in.offset))
           } else acceptStatSep()
         } else if (isStatSep) {

@@ -101,5 +101,5 @@ object N26 extends Ee
 object N31 extends Ee
 {
     // If we use List[C](N26,N25), we achieve successful compilation
-    val data = List(N26,N25)
+    val data = List[C](N26,N25)
 }
