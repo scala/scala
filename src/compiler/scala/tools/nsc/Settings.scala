@@ -795,6 +795,7 @@ trait ScalacSettings {
   val specialize    = BooleanSetting    ("-Yspecialize", "Specialize generic code on types.")
   val Yrangepos     = BooleanSetting    ("-Yrangepos", "Use range positions for syntax trees.")
   val Yidedebug     = BooleanSetting    ("-Yide-debug", "Generate, validate and output trees using the interactive compiler.")
+  val Ytyperdebug   = BooleanSetting    ("-Ytyper-debug", "Trace all type assignements")
 
   /**
    * -P "Plugin" settings

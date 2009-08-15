@@ -459,6 +459,29 @@ trait Infer {
 
     /* -- Type instantiation------------------------------------------------ */
 
+    /** Replace any (possibly bounded) wildcard types in type `tp`
+     *  by existentially bound variables.
+     */
+    def makeFullyDefined(tp: Type): Type = {
+      val tparams = new ListBuffer[Symbol]
+      def addTypeParam(bounds: TypeBounds): Type = {
+        val tparam =
+          context.owner.newAbstractType(context.tree.pos.focus, newTypeName("_"+tparams.size))
+            .setFlag(EXISTENTIAL)
+            .setInfo(bounds)
+        tparams += tparam
+        tparam.tpe
+      }
+      val tp1 = tp map {
+        case WildcardType =>
+          addTypeParam(TypeBounds(NothingClass.tpe, AnyClass.tpe))
+        case BoundedWildcardType(bounds) =>
+          addTypeParam(bounds)
+        case t => t
+      }
+      existentialAbstraction(tparams.toList, tp1)
+    }
+
     /** Return inferred type arguments of polymorphic expression, given
      *  its type parameters and result type and a prototype <code>pt</code>.
      *  If no minimal type variables exist that make the
@@ -1229,7 +1252,7 @@ trait Infer {
             ptvars foreach instantiateTypeVar
           } else { if (settings.debug.value) Console.println("no instance: "); instError }
         } else { if (settings.debug.value) Console.println("not a subtype " + restpe.instantiateTypeParams(undetparams, tvars) + " of " + ptWithWildcards); instError }
-      } else { if (settings.debug.value) Console.println("not fuly defined: " + pt); instError }
+      } else { if (settings.debug.value) Console.println("not fully defined: " + pt); instError }
     }
 
     def instBounds(tvar: TypeVar): (Type, Type) = {

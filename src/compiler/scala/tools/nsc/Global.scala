@@ -350,7 +350,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   } with Analyzer
 
   /** Switch to turn on detailed type logs */
-  var printTypings = false
+  var printTypings = settings.Ytyperdebug.value
 
   // phaseName = "superaccessors"
   object superAccessors extends {

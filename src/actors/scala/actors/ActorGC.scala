@@ -92,7 +92,7 @@ trait ActorGC extends IScheduler {
       case Some(r) =>
         // invoking clear will not cause r to be enqueued
         r.clear()
-        refSet -= r
+        refSet -= r.asInstanceOf[Reference[t] forSome { type t <: Reactor }]
       case None =>
         // do nothing
     }

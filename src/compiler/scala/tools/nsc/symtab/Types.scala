@@ -505,6 +505,11 @@ trait Types {
     /** Apply `f' to each part of this type */
     def foreach(f: Type => Unit) { new ForEachTypeTraverser(f).traverse(this) }
 
+    /** Apply `f' to each part of this type; children get mapped before their parents */
+    def map(f: Type => Type): Type = new TypeMap {
+      def apply(x: Type) = f(mapOver(x))
+    } apply this
+
     /** Is there part of this type which satisfies predicate `p'? */
     def exists(p: Type => Boolean): Boolean = !find(p).isEmpty
 
@@ -3488,23 +3493,25 @@ A type's typeSymbol should never be inspected directly.
     if (subsametypeRecursions == 0) undoLog = List()
   }
 
-  def hasDifferentTypeSymbol(sym: Symbol, tp: Type): Boolean = {
-    // assert(sym.isAbstractType)
-    sym ne tp.typeSymbol
+  def isDifferentType(tp1: Type, tp2: Type): Boolean = try {
+    subsametypeRecursions += 1
+    val lastUndoLog = undoLog
+    val result = isSameType0(tp1, tp2)
+    undoTo(lastUndoLog)
+    !result
+  } finally {
+    subsametypeRecursions -= 1
+    if (subsametypeRecursions == 0) undoLog = List()
   }
-  // `hasDifferentTypeSymbol` is a faster version of `isDifferentTypeConstructor`,
-  // which was only ever called when `tp1.typeSymbolDirect.isAbstractType`
-  // def isDifferentTypeConstructor(tp1: Type, tp2: Type): Boolean = {
-  // try {
-  //   subsametypeRecursions += 1
-  //   val lastUndoLog = undoLog
-  //   val result = isSameType0(tp1.typeConstructor(true), tp2.typeConstructor(true))
-  //   undoTo(lastUndoLog)
-  //   !result
-  // } finally {
-  //   subsametypeRecursions -= 1
-  //   if (subsametypeRecursions == 0) undoLog = List()
-  // }
+
+  def isDifferentTypeConstructor(tp1: Type, tp2: Type): Boolean = tp1 match {
+    case TypeRef(pre1, sym1, _) =>
+      tp2 match {
+        case TypeRef(pre2, sym2, _) => sym1 != sym2 || isDifferentType(pre1, pre2)
+        case _ => true
+      }
+    case _ => true
+  }
 
   def normalizePlus(tp: Type) =
     if (isRawType(tp)) rawToExistential(tp)
@@ -3815,7 +3822,8 @@ A type's typeSymbol should never be inspected directly.
         isSubType(tp1.normalize, tp2.normalize, depth)
       } else if (sym2.isAbstractType) {
         val tp2a = tp2.bounds.lo
-        hasDifferentTypeSymbol(sym2, tp2a) && tp1 <:< tp2a || fourthTry
+//        isDifferentTypeConstructor(tp2a, tp2.pre, sym2) && tp1 <:< tp2a || fourthTry
+        isDifferentTypeConstructor(tp2, tp2a) && tp1 <:< tp2a || fourthTry
       } else if (sym2 == NotNullClass) {
         tp1.isNotNull
       } else if (sym2 == SingletonClass) {
@@ -3882,7 +3890,7 @@ A type's typeSymbol should never be inspected directly.
           isSubType(tp1.normalize, tp2.normalize, depth)
         } else if (sym1.isAbstractType) {
           val tp1a = tp1.bounds.hi
-          hasDifferentTypeSymbol(sym1, tp1a) && tp1a <:< tp2
+          isDifferentTypeConstructor(tp1, tp1a) && tp1a <:< tp2
         } else if (sym1 == NothingClass) {
           true
         } else if (sym1 == NullClass) {
@@ -3946,9 +3954,9 @@ A type's typeSymbol should never be inspected directly.
           else (sym1.name == sym2.name) && isUnifiable(pre1, pre2)) &&
          (sym2 == AnyClass || isSubArgs(args1, args2, sym1.typeParams)) //@M: Any is kind-polymorphic
          ||
-         sym1.isAbstractType && hasDifferentTypeSymbol(sym1, tp1.bounds.hi) && (tp1.bounds.hi <:< tp2)
+         sym1.isAbstractType && isDifferentTypeConstructor(tp1, tp1.bounds.hi) && (tp1.bounds.hi <:< tp2)
          ||
-         sym2.isAbstractType && hasDifferentTypeSymbol(sym2, tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo)
+         sym2.isAbstractType && isDifferentTypeConstructor(tp2, tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo)
          ||
          sym2.isClass &&
          ({ val base = tp1 baseType sym2; !(base eq tp1) && (base <:< tp2) })
@@ -4002,7 +4010,7 @@ A type's typeSymbol should never be inspected directly.
            isSubType0(tp1a, tp2a, depth)
          })
       case (_, TypeRef(pre2, sym2, args2))
-      if (sym2.isAbstractType && hasDifferentTypeSymbol(sym2, tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo) ||
+      if (sym2.isAbstractType && isDifferentTypeConstructor(tp2, tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo) ||
           sym2 == NotNullClass && tp1.isNotNull) =>
         true
       case (_, TypeRef(pre2, sym2, args2))
@@ -4577,13 +4585,14 @@ A type's typeSymbol should never be inspected directly.
               val l = lub(as, decr(depth))
               val g = glb(as, decr(depth))
               if (l <:< g) l
-              else if(!(tparam.info.bounds contains tparam)){ //@M can't deal with f-bounds, see #2251
+              else { // Martin: I removed this, because incomplete. Not sure there is a good way to fix it. For the moment we
+                     // just err on the conservative side, i.e. with a bound that is too high.
+                     // if(!(tparam.info.bounds contains tparam)){ //@M can't deal with f-bounds, see #2251
                 val owner = commonOwner(as)
                 val qvar = makeFreshExistential("", commonOwner(as), mkTypeBounds(g, l))
                 capturedParams += qvar
                 qvar.tpe
               }
-              else NoType
             }
       }
       try {

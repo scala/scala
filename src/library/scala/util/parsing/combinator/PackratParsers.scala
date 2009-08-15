@@ -133,8 +133,8 @@ trait PackratParsers extends Parsers {
 
   private case class MemoEntry[+T](var r: Either[LR,ParseResult[_]]){
     def getResult: ParseResult[T] = r match {
-      case Left(LR(res,_,_)) => res
-      case Right(res) => res
+      case Left(LR(res,_,_)) => res.asInstanceOf[ParseResult[T]]
+      case Right(res) => res.asInstanceOf[ParseResult[T]]
     }
   }
 
@@ -226,9 +226,9 @@ to update each parser involved in the recursion.
   private def lrAnswer[T](p: Parser[T], in: PackratReader[Elem], growable: LR): ParseResult[T] = growable match {
     //growable will always be having a head, we can't enter lrAnswer otherwise
     case LR(seed ,rule, Some(head)) =>
-      if(head.getHead != p) /*not head rule, so not growing*/ seed
+      if(head.getHead != p) /*not head rule, so not growing*/ seed.asInstanceOf[ParseResult[T]]
       else {
-        in.updateCacheAndGet(p, MemoEntry(Right[LR, ParseResult[T]](seed)))
+        in.updateCacheAndGet(p, MemoEntry(Right[LR, ParseResult[T]](seed.asInstanceOf[ParseResult[T]])))
         seed match {
           case f@Failure(_,_) => f
           case e@Error(_,_) => e
@@ -287,7 +287,7 @@ to update each parser involved in the recursion.
               case MemoEntry(Left(recDetect)) => {
                 setupLR(p, inMem, recDetect)
                 //all setupLR does is change the heads of the recursions, so the seed will stay the same
-                recDetect match {case LR(seed, _, _) => seed}
+                recDetect match {case LR(seed, _, _) => seed.asInstanceOf[ParseResult[T]]}
               }
               case MemoEntry(Right(res: ParseResult[T])) => res
             }
@@ -301,7 +301,7 @@ to update each parser involved in the recursion.
     //store the head into the recursionHeads
     rest.recursionHeads.put(rest.pos, head /*match {case Head(hp,involved,_) => Head(hp,involved,involved)}*/)
     val oldRes: ParseResult[T] = rest.getFromCache(p).get match {
-      case MemoEntry(Right(x)) => x
+      case MemoEntry(Right(x)) => x.asInstanceOf[ParseResult[T]]
       case _ => throw new Exception("impossible match")
     }
 
