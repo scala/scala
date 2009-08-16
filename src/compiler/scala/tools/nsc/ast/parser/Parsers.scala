@@ -75,7 +75,8 @@ self =>
 
     def warning(offset: Int, msg: String) { unit.warning(o2p(offset), msg) }
 
-    def deprecationWarning(offset: Int, msg: String) {
+    def deprecationWarning(offset: Int,
+                           msg: String) {
       unit.deprecationWarning(o2p(offset), msg)
     }
 
@@ -429,7 +430,7 @@ self =>
       global.atPos(r2p(offset, offset, in.lastOffset max offset))(t)
     def atPos[T <: Tree](start: Int, point: Int)(t: T): T =
       global.atPos(r2p(start, point, in.lastOffset max start))(t)
-    def atPos[T <: Tree](start: Int, point: Int, end: Int)(t: T): T = // !!! put an { brace here and observe
+    def atPos[T <: Tree](start: Int, point: Int, end: Int)(t: T): T =
       global.atPos(r2p(start, point, end))(t)
     def atPos[T <: Tree](pos: Position)(t: T): T =
       global.atPos(pos)(t)

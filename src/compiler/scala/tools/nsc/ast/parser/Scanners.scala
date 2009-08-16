@@ -1042,16 +1042,31 @@ trait Scanners {
 
       var lineCount = 1
       var lastOffset = 0
+      var indent = 0
+      val oldBalance = collection.mutable.Map[Int, Int]()
+      def markBalance() = for ((k, v) <- balance) oldBalance(k) = v
+      markBalance()
 
-      def scan(bpbuf: ListBuffer[BracePair]): Int = {
+      def scan(bpbuf: ListBuffer[BracePair]): (Int, Int) = {
         if (token != NEWLINE && token != NEWLINES) {
           while (lastOffset < offset) {
             if (buf(lastOffset) == LF) lineCount += 1
             lastOffset += 1
           }
-          while (lineCount > lineStart.length)
+          while (lineCount > lineStart.length) {
             lineStart += offset
+            // reset indentation unless there are new opening brackets or
+            // braces since last ident line and at the same time there
+            // are no new braces.
+            if (balance(RPAREN) >= oldBalance(RPAREN) &&
+                balance(RBRACKET) >= oldBalance(RBRACKET) ||
+                balance(RBRACE) != oldBalance(RBRACE)) {
+              indent = column(offset)
+              markBalance()
+            }
+          }
         }
+
         token match {
           case LPAREN =>
             balance(RPAREN) -= 1; nextToken(); scan(bpbuf)
@@ -1065,17 +1080,18 @@ trait Scanners {
             balance(RBRACE) -= 1
             val lc = lineCount
             val loff = offset
+            val lindent = indent
             val bpbuf1 = new ListBuffer[BracePair]
             nextToken()
-            val roff = scan(bpbuf1)
+            val (roff, rindent) = scan(bpbuf1)
             if (lc != lineCount)
-              bpbuf += BracePair(loff, roff, bpbuf1.toList)
+              bpbuf += BracePair(loff, lindent, roff, rindent, bpbuf1.toList)
             scan(bpbuf)
           case RBRACE =>
             balance(RBRACE) += 1
-            val off = offset; nextToken(); off
+            val off = offset; nextToken(); (off, indent)
           case EOF =>
-            -1
+            (-1, -1)
           case _ =>
             nextToken(); scan(bpbuf)
         }
@@ -1083,15 +1099,24 @@ trait Scanners {
 
       val bpbuf = new ListBuffer[BracePair]
       while (token != EOF) {
-        val roff = scan(bpbuf)
+        val (roff, rindent) = scan(bpbuf)
         if (roff != -1) {
-          val current = BracePair(-1, roff, bpbuf.toList)
+          val current = BracePair(-1, -1, roff, rindent, bpbuf.toList)
           bpbuf.clear()
           bpbuf += current
         }
       }
+
+      def printBP(bp: BracePair, indent: Int) {
+        println(" "*indent+line(bp.loff)+":"+bp.lindent+" to "+line(bp.roff)+":"+bp.rindent)
+        if (bp.nested.nonEmpty)
+          for (bp1 <- bp.nested) {
+            printBP(bp1, indent + 2)
+          }
+      }
 //      println("lineStart = "+lineStart)//DEBUG
-//      println("bracepairs = "+bpbuf.toList)//DEBUG
+//      println("bracepairs = ")
+//      for (bp <- bpbuf.toList) printBP(bp, 0)
       bpbuf.toList
     }
 
@@ -1104,7 +1129,8 @@ trait Scanners {
         else if (mid + 1 < lineStart.length && offset >= lineStart(mid + 1)) findLine(mid + 1, hi)
         else mid
       }
-      findLine(0, lineStart.length - 1)
+      if (offset <= 0) 0
+      else findLine(0, lineStart.length - 1)
     }
 
     def column(offset: Int): Int = {
@@ -1139,22 +1165,24 @@ trait Scanners {
     def insertRBrace(): List[BracePatch] = {
       def insert(bps: List[BracePair]): List[BracePatch] = bps match {
         case List() => patches
-        case (bp @ BracePair(loff, roff, nested)) :: bps1 =>
-          val lcol = leftColumn(loff)
-          val rcol = rightColumn(roff, lcol)
-          if (lcol <= rcol) insert(bps1)
+        case (bp @ BracePair(loff, lindent, roff, rindent, nested)) :: bps1 =>
+          if (lindent <= rindent) insert(bps1)
           else {
-//            println("patch inside "+bp+"/"+line(loff)+"/"+lineStart(line(loff))+"/"+lcol+"/"+rcol)//DEBUG
+//           println("patch inside "+bp+"/"+line(loff)+"/"+lineStart(line(loff))+"/"+lindent"/"+rindent)//DEBUG
             val patches1 = insert(nested)
             if (patches1 ne patches) patches1
             else {
-//              println("patch for "+bp)//DEBUG
               var lin = line(loff) + 1
-              while (lin < lineStart.length && column(lineStart(lin)) > lcol)
+              while (lin < lineStart.length && column(lineStart(lin)) > lindent)
                 lin += 1
-              if (lin < lineStart.length)
-                insertPatch(patches, BracePatch(lineStart(lin), true))
-              else patches
+              if (lin < lineStart.length) {
+                val patches1 = insertPatch(patches, BracePatch(lineStart(lin), true))
+                //println("patch for "+bp+"/"+imbalanceMeasure+"/"+new ParensAnalyzer(unit, patches1).imbalanceMeasure)
+                /*if (improves(patches1))*/
+                patches1
+                /*else insert(bps1)*/
+                // (this test did not seem to work very well in practice)
+              } else patches
             }
           }
       }
@@ -1164,10 +1192,8 @@ trait Scanners {
     def deleteRBrace(): List[BracePatch] = {
       def delete(bps: List[BracePair]): List[BracePatch] = bps match {
         case List() => patches
-        case BracePair(loff, roff, nested) :: bps1 =>
-          val lcol = leftColumn(loff)
-          val rcol = rightColumn(roff, lcol)
-          if (lcol >= rcol) delete(bps1)
+        case BracePair(loff, lindent, roff, rindent, nested) :: bps1 =>
+          if (lindent >= rindent) delete(bps1)
           else {
             val patches1 = delete(nested)
             if (patches1 ne patches) patches1
@@ -1176,6 +1202,18 @@ trait Scanners {
       }
       delete(bracePairs)
     }
+
+    def imbalanceMeasure: Int = {
+      def measureList(bps: List[BracePair]): Int =
+        (bps map measure).sum
+      def measure(bp: BracePair): Int =
+        (if (bp.lindent != bp.rindent) 1 else 0) + measureList(bp.nested)
+      measureList(bracePairs)
+    }
+
+    def improves(patches1: List[BracePatch]): Boolean =
+      imbalanceMeasure > new ParensAnalyzer(unit, patches1).imbalanceMeasure
+
     override def error(offset: Int, msg: String) {}
   }
 }

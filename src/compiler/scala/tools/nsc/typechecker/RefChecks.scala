@@ -843,15 +843,15 @@ abstract class RefChecks extends InfoTransform {
 
       def isCaseApply(sym : Symbol) = sym.isSourceMethod && sym.hasFlag(CASE) && sym.name == nme.apply
 
-      def checkTypeRef(tp: TypeRef, pos: Position) {
-        val TypeRef(pre, sym, args) = tp
-        checkDeprecated(sym, pos)
-        if (!tp.isHigherKinded)
-          checkBoundsWithPos(pre, sym.owner, sym.typeParams, args, pos)
+      def checkTypeRef(tp: Type, pos: Position) = tp match {
+        case TypeRef(pre, sym, args) =>
+          checkDeprecated(sym, pos)
+          if (!tp.isHigherKinded)
+            checkBoundsWithPos(pre, sym.owner, sym.typeParams, args, pos)
+        case _ =>
       }
       def checkAnnotations(tpes: List[(Type, Position)]) {
-        for ((tp @ TypeRef(_,_,_), pos) <- tpes)
-          checkTypeRef(tp, pos)
+        for ((tp, pos) <- tpes) checkTypeRef(tp, pos)
       }
 
       val savedLocalTyper = localTyper
@@ -897,10 +897,18 @@ abstract class RefChecks extends InfoTransform {
           validateBaseTypes(currentOwner)
           checkAllOverrides(currentOwner)
 
-        case TypeTree() => doTypeTraversal {
-          case t: TypeRef => checkTypeRef(t, tree.pos)
-          case _ =>
-        }
+        case TypeTree() =>
+          val existentialParams = new ListBuffer[Symbol]
+          doTypeTraversal { // check all bounds, except those that are
+                            // existential type parameters
+            case ExistentialType(tparams, tpe) =>
+              existentialParams ++= tparams
+            case t: TypeRef =>
+              val exparams = existentialParams.toList
+              val wildcards = exparams map (_ => WildcardType)
+              checkTypeRef(t.subst(exparams, wildcards), tree.pos)
+            case _ =>
+          }
 
         case TypeApply(fn, args) =>
           checkBounds(NoPrefix, NoSymbol, fn.tpe.typeParams, args map (_.tpe))
