@@ -151,7 +151,7 @@ trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] 
    *
    *  @note will not terminate for infinite-sized iterables.
    *  @param that  the other iterable
-   *  @return true, iff both iterables contain the same elements.
+   *  @return true, iff both iterables contain the same elements in the same order.
    *  @note  Might return different results for different runs, unless this iterable is ordered
    */
   def sameElements[B >: A](that: Iterable[B]): Boolean = {

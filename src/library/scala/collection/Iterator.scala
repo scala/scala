@@ -12,6 +12,7 @@
 package scala.collection
 
 import mutable.{Buffer, ArrayBuffer, ListBuffer}
+import annotation.tailrec
 // import immutable.{List, Nil, ::, Stream}
 
 /** The <code>Iterator</code> object provides various functions for
@@ -298,8 +299,14 @@ trait Iterator[+A] { self =>
    *  @param n the number of elements to drop
    *  @return  the new iterator
    */
-  def drop(n: Int): Iterator[A] =
-    if (n > 0 && hasNext) { next(); drop(n - 1) } else this
+  def drop(n: Int): Iterator[A] = {
+    @tailrec
+    def loop(left: Int): Iterator[A] =
+      if (left > 0 && hasNext) { next; loop(left - 1) }
+      else this
+
+    loop(n)
+  }
 
   /** Advances this iterator past the first `from` elements using `drop`,
    *  and then takes `until - from` elements, using `take`.
