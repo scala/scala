@@ -144,19 +144,19 @@ abstract class TreeBuilder {
   }
 
   /** Create tree representing (unencoded) binary operation expression or pattern. */
-  def makeBinop(isExpr: Boolean, left: Tree, op: Name, right: Tree): Tree = {
+  def makeBinop(isExpr: Boolean, left: Tree, op: Name, right: Tree, opPos: Position): Tree = {
     val arguments = right match {
       case Parens(args) => args
       case _ => List(right)
     }
     if (isExpr) {
       if (treeInfo.isLeftAssoc(op)) {
-        Apply(Select(stripParens(left), op.encode), arguments)
+        Apply(atPos(left.pos union opPos) { Select(stripParens(left), op.encode) }, arguments)
       } else {
         val x = freshName()
         Block(
           List(ValDef(Modifiers(SYNTHETIC), x, TypeTree(), stripParens(left))),
-          Apply(Select(stripParens(right), op.encode), List(Ident(x))))
+          Apply(atPos(right.pos union opPos) { Select(stripParens(right), op.encode) }, List(Ident(x))))
       }
     } else {
       Apply(Ident(op.encode), stripParens(left) :: arguments)

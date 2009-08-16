@@ -538,8 +538,9 @@ self =>
               leftAssoc && prec == precedence(opstack.head.operator))) {
         val opinfo = opstack.head
         opstack = opstack.tail
+        val opPos = rangePos(opinfo.operand.pos.source, opinfo.offset, opinfo.offset, opinfo.offset+opinfo.operator.length)
         top = atPos(opinfo.operand.pos.startOrPoint, opinfo.offset) {
-          makeBinop(isExpr, opinfo.operand, opinfo.operator, top)
+          makeBinop(isExpr, opinfo.operand, opinfo.operator, top, opPos)
         }
       }
       top

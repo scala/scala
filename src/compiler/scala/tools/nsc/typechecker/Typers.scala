@@ -3071,7 +3071,7 @@ trait Typers { self: Analyzer =>
           case Select(qualqual, vname) =>
             gen.evalOnce(qualqual, context.owner, context.unit) { qq =>
               val qq1 = qq()
-              mkAssign(Select(qq1, vname) setPos qq1.pos)
+              mkAssign(Select(qq1, vname) setPos qual.pos)
             }
           case Apply(Select(table, nme.apply), indices) =>
             gen.evalOnceAll(table :: indices, context.owner, context.unit) { ts =>
