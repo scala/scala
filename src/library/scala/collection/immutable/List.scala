@@ -13,6 +13,7 @@ package scala.collection.immutable
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.generic._
+import annotation.tailrec
 
 /** A class representing an ordered collection of elements of type
  *  <code>a</code>. This class comes with two implementing case
@@ -102,6 +103,7 @@ sealed abstract class List[+A] extends LinearSequence[A]
    *  @return  the reversed list of results.
    */
   def reverseMap[B](f: A => B): List[B] = {
+    @tailrec
     def loop(l: List[A], res: List[B]): List[B] = l match {
       case Nil => res
       case head :: tail => loop(tail, f(head) :: res)
@@ -214,6 +216,7 @@ sealed abstract class List[+A] extends LinearSequence[A]
    *  @return the suffix of length <code>n</code> of the list
    */
   override def takeRight(n: Int): List[A] = {
+    @tailrec
     def loop(lead: List[A], lag: List[A]): List[A] = lead match {
       case Nil => lag
       case _ :: tail => loop(tail, lag.tail)
@@ -264,9 +267,14 @@ sealed abstract class List[+A] extends LinearSequence[A]
    *  @return  the longest suffix of the list whose first element
    *           does not satisfy the predicate <code>p</code>.
    */
-  override def dropWhile(p: A => Boolean): List[A] =
-    if (isEmpty || !p(head)) this
-    else tail dropWhile p
+  override def dropWhile(p: A => Boolean): List[A] = {
+    @tailrec
+    def loop(xs: List[A]): List[A] =
+      if (xs.isEmpty || !p(xs.head)) xs
+      else loop(xs.tail)
+
+    loop(this)
+  }
 
   /** Returns the longest prefix of the list whose elements all satisfy
    *  the given predicate, and the rest of the list.
