@@ -22,16 +22,19 @@ import java.net.{ URI, URL }
  */
 object Source {
   val DefaultBufSize = 2048
-  val NoReset: () => Source = () => throw new UnsupportedOperationException()
 
   /** Creates a <code>Source</code> from System.in.
    */
   def stdin = fromInputStream(System.in)
 
+  /** Creates a <code>Source</code> from an Iterable.
+   *
+   *  @param    iterable  the Iterable
+   *  @return   the <code>Source</code> instance.
+   */
   def fromIterable(iterable: Iterable[Char]): Source = new Source {
-    def reset() = fromIterable(iterable)
     val iter = iterable.iterator
-  }
+  } withReset(() => fromIterable(iterable))
 
   /** Creates a <code>Source</code> instance from a single character.
    *
@@ -79,18 +82,13 @@ object Source {
    */
   def fromFile(file: JFile, bufferSize: Int = DefaultBufSize)(implicit codec: Codec = Codec.default): Source = {
     val inputStream = new FileInputStream(file)
-    setFileDescriptor(file,
-      BufferedSource.fromInputStream(inputStream, bufferSize, () => fromFile(file, bufferSize)(codec)))
-  }
 
-  /** This method sets the descr property of the given source to a string of the form "file:"+path
-   *  @param file the file whose path we want to describe
-   *  @param s    the source whose property we set
-   *  @return     s
-   */
-  private def setFileDescriptor(file: JFile, source: Source): Source = {
-    source.descr = "file:" + file.getAbsolutePath
-    source
+    BufferedSource.fromInputStream(
+      inputStream,
+      bufferSize,
+      () => fromFile(file, bufferSize)(codec),
+      () => inputStream.close()
+    ) withDescription ("file:" + file.getAbsolutePath)
   }
 
   /** same as fromInputStream(url.openStream(), enc)
@@ -101,35 +99,28 @@ object Source {
   /** same as BufferedSource.fromInputStream(is)
    */
   def fromInputStream(inputStream: InputStream)(implicit codec: Codec = Codec.default): Source =
-    BufferedSource.fromInputStream(inputStream, DefaultBufSize, () => fromInputStream(inputStream)(codec))
+    BufferedSource.fromInputStream(
+      inputStream,
+      DefaultBufSize,
+      () => fromInputStream(inputStream)(codec),
+      () => inputStream.close()
+    )
 }
 
+
 /** The class <code>Source</code> implements an iterable representation
- *  of source files. Calling method <code>reset</code> returns an identical,
- *  resetted source.
+ *  of source data.  Calling method <code>reset</code> returns an identical,
+ *  resetted source, where possible.
  *
  *  @author  Burak Emir
  *  @version 1.0
  */
-abstract class Source extends Iterator[Char] {
-
-  // ------ protected values
-
+abstract class Source extends Iterator[Char]
+{
   /** the actual iterator */
   protected val iter: Iterator[Char]
 
-  protected var cline = 1
-  protected var ccol = 1
-
   // ------ public values
-
-  /** position of last character returned by next*/
-  var pos = 0
-
-  /** the last character returned by next.
-   *  the value before the first call to next is undefined.
-   */
-  var ch: Char = _
 
   /** description of this source, default empty */
   var descr: String = ""
@@ -137,91 +128,99 @@ abstract class Source extends Iterator[Char] {
   var nerrors = 0
   var nwarnings = 0
 
-  /** default col increment for tabs '\t', set to 4 initially
-   */
-  var tabinc = 4
-
-  //
-  // -- methods
-  //
-
   /** convenience method, returns given line (not including newline)
    *  from Source.
    *
    *  @param line the line index, first line is 1
    *  @return     the character string of the specified line.
-   *  @throws scala.compat.Platform.IllegalArgumentException
    *
    */
-  def getLine(line: Int): String = { // faster than getLines.drop(line).next
-    // todo: should @throws scala.compat.Platform.IndexOutOfBoundsException
-    if (line < 1) throw new IllegalArgumentException(line.toString)
-    val buf = new StringBuilder
-    val it = reset
-    var i = 0
+  def getLine(line: Int): String = getLines() drop (line - 1) next
 
-    while (it.hasNext && i < (line-1))
-      if ('\n' == it.next)
-        i += 1;
-
-    if (!it.hasNext) // this should not happen
-      throw new IllegalArgumentException(
-        "line " + line + " does not exist"
-      )
-
-    var ch = it.next
-    while (it.hasNext && '\n' != ch) {
-      buf append ch
-      ch = it.next
-    }
-
-    if ('\n' != ch)
-      buf append ch
-
-    val res = buf.toString()
-    buf setLength 0  // hopefully help collector to deallocate StringBuilder
-    res
-  }
-
-  /** returns an iterator who returns lines (including newline character).
-   *  a line ends in \n.
-   */
-  def getLines: Iterator[String] = new Iterator[String] {
-    val buf = new StringBuilder
-    def next = {
-      var ch = iter.next
-      while (ch != '\n' && iter.hasNext) {
-        buf append ch
-        ch = iter.next
+  class LineIterator(separator: String) extends Iterator[String] {
+    require(separator.length == 1 || separator.length == 2, "Line separator may be 1 or 2 characters only.")
+    lazy val iter: BufferedIterator[Char] = Source.this.iter.buffered
+    // For two character newline sequences like \r\n, we peek at
+    // the iterator head after seeing \r, and drop the \n if present.
+    val isNewline: Char => Boolean = {
+      val firstCh = separator(0)
+      if (separator.length == 1) (_ == firstCh)
+      else (ch: Char) => (ch == firstCh) && iter.hasNext && {
+        val res = iter.head == separator(1)
+        if (res) { iter.next }  // drop the second character
+        res
       }
-      buf append ch
-      val res = buf.toString()
-      buf setLength 0  // clean things up for next call of "next"
-      res
     }
+    private[this] val sb = new StringBuilder
+
+    private def getc() =
+      if (!iter.hasNext) false
+      else {
+        val ch = iter.next
+        if (isNewline(ch)) false
+        else {
+          sb append ch
+          true
+        }
+      }
+
     def hasNext = iter.hasNext
+    def next = {
+      sb.clear
+      while (getc()) { }
+      sb.toString
+    }
   }
+
+  /** returns an iterator who returns lines (NOT including newline character(s)).
+   *  If no separator is given, the platform-specific value "line.separator" is used.
+   *  a line ends in \r, \n, or \r\n.
+   */
+  def getLines(separator: String = compat.Platform.EOL): Iterator[String] =
+    new LineIterator(separator)
+
   /** Returns <code>true</code> if this source has more characters.
    */
   def hasNext = iter.hasNext
 
-  /** returns next character and has the following side-effects: updates
-   *  position (ccol and cline) and assigns the character to ch
+  /** Returns next character.
    */
-  def next: Char = {
-    ch = iter.next
-    pos = Position.encode(cline, ccol)
-    ch match {
-      case '\n' =>
-        ccol = 1
-        cline += 1
-      case '\t' =>
-        ccol += tabinc
-      case _ =>
-        ccol += 1
+  def next: Char = positioner.next
+
+  class Positioner {
+    /** the last character returned by next. */
+    var ch: Char = _
+
+    /** position of last character returned by next */
+    var pos = 0
+
+    /** current line and column */
+    var cline = 1
+    var ccol = 1
+
+    /** default col increment for tabs '\t', set to 4 initially */
+    var tabinc = 4
+
+    def next: Char = {
+      ch = iter.next
+      pos = Position.encode(cline, ccol)
+      ch match {
+        case '\n' =>
+          ccol = 1
+          cline += 1
+        case '\t' =>
+          ccol += tabinc
+        case _ =>
+          ccol += 1
+      }
+      ch
     }
-    ch
   }
+  object NoPositioner extends Positioner {
+    override def next: Char = iter.next
+  }
+  def ch = positioner.ch
+  def pos = positioner.pos
 
   /** Reports an error message to the output stream <code>out</code>.
    *
@@ -238,24 +237,17 @@ abstract class Source extends Iterator[Char] {
     report(pos, msg, out)
   }
 
+  private def spaces(n: Int) = List.fill(n)(' ').mkString
   /**
    *  @param pos the source position (line/column)
    *  @param msg the error message to report
    *  @param out PrintStream to use
    */
   def report(pos: Int, msg: String, out: PrintStream) {
-    val buf = new StringBuilder
-    val line = Position.line(pos)
-    val col = Position.column(pos)
-    buf.append(descr + ":" + line + ":" + col + ": " + msg)
-    buf append getLine(line)
-    var i = 1
-    while (i < col) {
-      buf append ' '
-      i += 1
-    }
-    buf append '^'
-    out.println(buf.toString)
+    val line = Position line pos
+    val col = Position column pos
+
+    out println "%s:%d:%d: %s%s%s^".format(descr, line, col, msg, getLine(line), spaces(col - 1))
   }
 
   /**
@@ -272,6 +264,35 @@ abstract class Source extends Iterator[Char] {
     report(pos, "warning! " + msg, out)
   }
 
+  private[this] var resetFunction: () => Source = null
+  private[this] var closeFunction: () => Unit = null
+  private[this] var positioner: Positioner = new Positioner
+
+  def withReset(f: () => Source): this.type = {
+    resetFunction = f
+    this
+  }
+  def withClose(f: () => Unit): this.type = {
+    closeFunction = f
+    this
+  }
+  def withDescription(text: String): this.type = {
+    descr = text
+    this
+  }
+  // we'd like to default to no positioning, but for now we break
+  // less by defaulting to status quo.
+  def withPositioning(on: Boolean): this.type = {
+    positioner = if (on) new Positioner else NoPositioner
+    this
+  }
+
+  /** The close() method closes the underlying resource. */
+  def close: Unit     =
+    if (closeFunction != null) closeFunction()
+
   /** The reset() method creates a fresh copy of this Source. */
-  def reset(): Source
+  def reset(): Source =
+    if (resetFunction != null) resetFunction()
+    else throw new UnsupportedOperationException("Source's reset() method was not set.")
 }

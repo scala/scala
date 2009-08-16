@@ -10,7 +10,8 @@
 
 package scala.io
 
-import java.io.{ FileInputStream, FileOutputStream, File => JFile }
+import java.io.{ FileInputStream, FileOutputStream, BufferedWriter, OutputStreamWriter, File => JFile }
+import collection.Traversable
 
 object File
 {
@@ -37,6 +38,10 @@ class File(val file: JFile) extends collection.Iterable[File]
     if (file.isDirectory) file.listFiles.iterator map (x => new File(x))
     else Iterator.empty
 
+  /** Convenience function for iterating over the lines in the file.
+   */
+  def lines: Iterator[String] = toSource.getLines()
+
 	/** Deletes the file or directory recursively. Returns false if it failed.
 	 *  Use with caution!
 	 */
@@ -54,6 +59,25 @@ class File(val file: JFile) extends collection.Iterable[File]
 
 	/** Obtains a OutputStream. */
 	def outputStream(append: Boolean = false) = new FileOutputStream(file, append)
+
+	/** Obtains an OutputStreamWriter wrapped around a FileOutputStream.
+	 *  This should behave like a less broken version of java.io.FileWriter,
+	 *  in that unlike the java version you can specify the encoding.
+	 */
+	def writer(append: Boolean = false)(implicit codec: Codec = Codec.default) =
+	  new OutputStreamWriter(outputStream(append), codec.charSet)
+
+	/** Wraps a BufferedWriter around the result of writer().
+	 */
+	def bufferedWriter(append: Boolean = false)(implicit codec: Codec = Codec.default) =
+	  new BufferedWriter(writer(append)(codec))
+
+	/** Writes all the Strings in the given iterator to the file. */
+	def writeAll(xs: Traversable[String], append: Boolean = false)(implicit codec: Codec = Codec.default): Unit = {
+	  val out = bufferedWriter(append)(codec)
+	  xs foreach (out write _)
+	  out close
+  }
 
 	/** Attempts to return the file extension. */
 	def extension = file.getName match {

@@ -96,7 +96,7 @@ object PagedSeq {
   /** Constructs a character sequence from a scala.io.Source value
    */
   def fromSource(source: io.Source) =
-    fromLines(source.getLines)
+    fromLines(source.getLines())
 }
 
 
