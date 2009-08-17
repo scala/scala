@@ -150,6 +150,18 @@ object Iterator {
     def next(): Int = { val result = i; i += step; result }
   }
 
+  /**
+   * Create an infinite iterator based on the given expression
+   * (which is recomputed for every element)
+   *
+   * @param elem the element composing the resulting iterator
+   * @return the iterator containing an infinite number of elem
+   */
+  def continually[A](elem: => A): Iterator[A] = new Iterator[A] {
+    def hasNext = true
+    def next = elem
+  }
+
   /** A wrapper class for the `flatten `method that is added to class Iterator with implicit conversion @see iteratorIteratorWrapper.
    */
   class IteratorIteratorOps[A](its: Iterator[Iterator[A]]) {
@@ -755,7 +767,7 @@ trait Iterator[+A] { self =>
    *  last step may be less than the given step, or both.  What is
    *  guaranteed is that each element of the original iterator will
    *  appear in at least one sequence in the sliding iterator, UNLESS
-   *  the step size is larger than the windowsSize.
+   *  the step size is larger than the windowSize.
    */
   def sliding(windowSize: Int, step: Int = 1): Iterator[Sequence[A]] = {
     require(windowSize >= 1 && step >= 1)
