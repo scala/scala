@@ -102,24 +102,14 @@ object Iterator {
       else empty.next()
   }
 
-  /** An iterator that repeatedly applies a given function to a start value.
-   *
-   *  @param start the start value of the iterator
-   *  @param len   the number of elements returned by the iterator
-   *  @param f     the function that's repeatedly applied
-   *  @return      the iterator returning `len` values in the sequence `start, f(start), f(f(start)), ...`
-   */
-  @deprecated("Use `iterate(start)(f) take len' instead")
-  def iterate[T](start: T, len: Int)(f: T => T): Iterator[T] = iterate(start)(f) take len
-
-  /** An infinite iterator that repeatedly applies a given function to a start value.
+  /** An infinite iterator that repeatedly applies a given function to the previous result.
    *
    *  @param start the start value of the iterator
    *  @param f     the function that's repeatedly applied
    *  @return      the iterator returning the infinite sequence of values `start, f(start), f(f(start)), ...`
    */
   def iterate[T](start: T)(f: T => T): Iterator[T] = new Iterator[T] {
-    private var acc = start
+    private[this] var acc = start
     def hasNext: Boolean = true
     def next(): T = { val res = acc ; acc = f(acc) ; res }
   }

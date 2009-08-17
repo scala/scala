@@ -57,8 +57,8 @@ object Source {
    */
   def fromString(s: String): Source = fromIterable(s)
 
-  /** Create a <code>Source</code> from array of bytes, with
-   *  empty description.
+  /** Create a <code>Source</code> from array of bytes, decoding
+   *  the bytes according to codec.
    *
    *  @param bytes ...
    *  @param enc   ...
@@ -66,6 +66,11 @@ object Source {
    */
   def fromBytes(bytes: Array[Byte])(implicit codec: Codec = Codec.default): Source =
     fromString(new String(bytes, codec.name))
+
+  /** Create a <code>Source</code> from array of bytes, assuming
+   *  one byte per character (ISO-8859-1 encoding.)
+   */
+  def fromRawBytes(bytes: Array[Byte]): Source = fromString(new String(bytes, Codec.ISO8859.name))
 
   /** creates Source from file with given name, setting
    *  its description to filename.
@@ -120,6 +125,13 @@ object Source {
   }
 }
 
+// Coming Soon?
+//
+// abstract class Source2[T] extends Iterable[T] { }
+//
+// abstract class ByteSource() extends Source2[Byte] { }
+//
+// abstract class CharSource(implicit codec: Codec = Codec.default) extends Source2[Char] { }
 
 /** The class <code>Source</code> implements an iterable representation
  *  of source data.  Calling method <code>reset</code> returns an identical,
