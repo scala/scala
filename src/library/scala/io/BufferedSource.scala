@@ -24,24 +24,9 @@ class BufferedSource(inputStream: InputStream)(implicit codec: Codec = Codec.def
   def reader() = new InputStreamReader(inputStream, codec.decoder)
   def bufferedReader() = new BufferedReader(reader(), DefaultBufSize)
 
-  // It would be nice if we could do something like this:
-  //   Stream continually getc() takeWhile (_ != -1) map (_.toChar) iterator
-  // ...but the Stream is not collected so memory grows without bound
-
-  class ContinuallyIterator[T](cond: T => Boolean, body: => T) extends BufferedIterator[T] {
-    private[this] var hd: T = body
-    def head = hd
-    def hasNext = cond(hd)
-    def next = {
-      val res = hd
-      hd = body
-      res
-    }
-  }
-
   override val iter = {
     val reader = bufferedReader()
-    new ContinuallyIterator[Int](_ != -1, codec wrap reader.read()) map (_.toChar)
+    Iterator continually (codec wrap reader.read()) takeWhile (_ != -1) map (_.toChar)
   }
 }
 
