@@ -76,6 +76,11 @@ object Source {
    */
   def fromURI(uri: URI)(implicit codec: Codec = Codec.default): Source = fromFile(new JFile(uri))
 
+  /** same as fromInputStream(url.openStream())(codec)
+   */
+  def fromURL(url: URL)(implicit codec: Codec = Codec.default): Source =
+    fromInputStream(url.openStream())(codec)
+
   /** Creates Source from <code>file</code>, using given character encoding,
    *  setting its description to filename. Input is buffered in a buffer of
    *  size <code>bufferSize</code>.
@@ -83,7 +88,7 @@ object Source {
   def fromFile(file: JFile, bufferSize: Int = DefaultBufSize)(implicit codec: Codec = Codec.default): Source = {
     val inputStream = new FileInputStream(file)
 
-    BufferedSource.fromInputStream(
+    fromInputStream(
       inputStream,
       bufferSize,
       () => fromFile(file, bufferSize)(codec),
@@ -91,20 +96,28 @@ object Source {
     ) withDescription ("file:" + file.getAbsolutePath)
   }
 
-  /** same as fromInputStream(url.openStream(), enc)
+  /** Reads data from <code>inputStream</code> with a buffered reader,
+   *  using encoding in implicit parameter <code>codec</code>.
+   *
+   *  @param  inputStream  the input stream from which to read
+   *  @param  bufferSize   buffer size (defaults to Source.DefaultBufSize)
+   *  @param  reset        a () => Source which resets the stream (if unset, reset() will throw an Exception)
+   *  @param  codec        (implicit) a scala.io.Codec specifying behavior (defaults to Codec.default)
+   *  @return              the buffered source
    */
-  def fromURL(url: URL)(implicit codec: Codec = Codec.default): Source =
-    fromInputStream(url.openStream())
-
-  /** same as BufferedSource.fromInputStream(is)
-   */
-  def fromInputStream(inputStream: InputStream)(implicit codec: Codec = Codec.default): Source =
-    BufferedSource.fromInputStream(
-      inputStream,
-      DefaultBufSize,
-      () => fromInputStream(inputStream)(codec),
-      () => inputStream.close()
-    )
+  def fromInputStream(
+    inputStream: InputStream,
+    bufferSize: Int = DefaultBufSize,
+    reset: () => Source = null,
+    close: () => Unit = null
+  )(implicit codec: Codec = Codec.default): Source =
+  {
+    // workaround for default arguments being unable to refer to other parameters
+    val resetFn = if (reset == null) () => fromInputStream(inputStream, bufferSize, reset, close) else reset
+    new BufferedSource(inputStream)(codec) .
+      withReset (resetFn) .
+      withClose (close)
+  }
 }
 
 
