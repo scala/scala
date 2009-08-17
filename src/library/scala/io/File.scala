@@ -10,7 +10,9 @@
 
 package scala.io
 
-import java.io.{ FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter, File => JFile }
+import java.io.{
+  FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
+  BufferedInputStream, File => JFile }
 import collection.Traversable
 
 object File
@@ -41,6 +43,15 @@ class File(val file: JFile)(implicit val codec: Codec = Codec.default) extends c
   /** Convenience function for iterating over the lines in the file.
    */
   def lines(): Iterator[String] = toSource().getLines()
+
+  /** Convenience function for iterating over the bytes in a file.
+   *  Note they are delivered as Ints as they come from the read() call,
+   *  you can map (_.toByte) if you would really prefer Bytes.
+   */
+  def bytes(): Iterator[Int] = {
+    val in = new BufferedInputStream(inputStream())
+    Iterator continually in.read() takeWhile (_ != -1)
+  }
 
   /** Convenience function to import entire file into a String.
    */
