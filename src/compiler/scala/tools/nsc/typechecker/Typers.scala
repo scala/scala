@@ -1130,7 +1130,7 @@ trait Typers { self: Analyzer =>
                       "\n is not a subclass of the super"+ps.head.typeSymbol+
                       "\n of the mixin " + psym);
             } else {
-              error(parent.pos, psym+" needs to be a trait be mixed in")
+              error(parent.pos, psym+" needs to be a trait to be mixed in")
             }
           }
           if (psym hasFlag FINAL) {
