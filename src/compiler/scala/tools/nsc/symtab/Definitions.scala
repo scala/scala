@@ -727,6 +727,9 @@ trait Definitions {
       String_+ = newMethod(
         StringClass, "+", anyparam, StringClass.typeConstructor) setFlag FINAL
 
+      // #2264
+      val tmp = AnnotationDefaultAttr
+
       if (forMSIL) {
         val intType = IntClass.typeConstructor
         val intParam = List(intType)
