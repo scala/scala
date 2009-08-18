@@ -168,7 +168,13 @@ class Interpreter(val settings: Settings, out: PrintWriter)
   /** Generates names pre0, pre1, etc. via calls to apply method */
   class NameCreator(pre: String) {
     private var x = -1
-    def apply(): String = { x += 1 ; pre + x.toString }
+    def apply(): String = {
+      x += 1
+      val name = pre + x.toString
+      // make sure we don't overwrite their unwisely named res3 etc.
+      if (allBoundNames exists (_.toString == name)) apply()
+      else name
+    }
     def reset(): Unit = x = -1
     def didGenerate(name: String) =
       (name startsWith pre) && ((name drop pre.length) forall (_.isDigit))
