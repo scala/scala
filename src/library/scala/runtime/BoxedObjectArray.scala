@@ -11,9 +11,7 @@
 
 package scala.runtime
 
-
 import Predef._
-import compat.Platform.createArray
 
 @serializable
 final class BoxedObjectArray[A <: AnyRef](val value: Array[AnyRef]) extends BoxedArray[A] {
@@ -26,7 +24,6 @@ final class BoxedObjectArray[A <: AnyRef](val value: Array[AnyRef]) extends Boxe
     value(index) = elem
   }
 
-  def unbox(elemTag: String): AnyRef = value
   def unbox(elemClass: Class[_]): AnyRef = value
 
 /*
@@ -37,26 +34,5 @@ final class BoxedObjectArray[A <: AnyRef](val value: Array[AnyRef]) extends Boxe
   override def hashCode(): Int = (value.asInstanceOf[AnyRef]).hashCode()
 */
 
-  private def create(length: Int): Array[AnyRef] = {
-    createArray(value.getClass().getComponentType(), length).asInstanceOf[Array[AnyRef]]
-  }
-
-  final override def filter(p: A => Boolean): BoxedArray[A] = {
-    val include = new Array[Boolean](value.length)
-    var len = 0
-    var i = 0
-    while (i < value.length) {
-      if (p(value(i).asInstanceOf[A])) { include(i) = true; len += 1 }
-      i += 1
-    }
-    val result = create(len)
-    len = 0
-    i = 0
-    while (len < result.length) {
-      if (include(i)) { result(len) = value(i); len += 1 }
-      i += 1
-    }
-    new BoxedObjectArray[A](result)
-  }
 }
 

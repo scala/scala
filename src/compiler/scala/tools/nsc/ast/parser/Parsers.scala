@@ -166,8 +166,9 @@ self =>
     }
     import treeBuilder.{global => _, _}
 
-    /** The implicit view parameters of the surrounding class */
-    var implicitClassViews: List[Tree] = Nil
+    /** The types of the context bounds of type parameters of the surrounding class
+     */
+    var classContextBounds: List[Tree] = Nil
 
     /** this is the general parse method
      */
@@ -1661,7 +1662,7 @@ self =>
      *  ClassParams       ::= ClassParam {`,' ClassParam}
      *  ClassParam        ::= {Annotation}  [{Modifier} (`val' | `var')] Id [`:' ParamType] [`=' Expr]
      */
-    def paramClauses(owner: Name, implicitViews: List[Tree], ofCaseClass: Boolean): List[List[ValDef]] = {
+    def paramClauses(owner: Name, contextBounds: List[Tree], ofCaseClass: Boolean): List[List[ValDef]] = {
       var implicitmod = 0
       var caseParam = ofCaseClass
       def param(): ValDef = {
@@ -1715,8 +1716,8 @@ self =>
         val params = new ListBuffer[ValDef]
         if (in.token != RPAREN) {
           if (in.token == IMPLICIT) {
-            if (!implicitViews.isEmpty)
-              syntaxError("cannot have both view bounds `<%' and implicit parameters", false)
+            if (!contextBounds.isEmpty)
+              syntaxError("cannot have both implicit parameters and context bounds `: ...' on type parameters", false)
             in.nextToken()
             implicitmod = Flags.IMPLICIT
           }
@@ -1750,18 +1751,18 @@ self =>
           incompleteInputError("auxiliary constructor needs non-implicit parameter list")
         else
           syntaxError(start, "auxiliary constructor needs non-implicit parameter list", false)
-      addImplicitViews(owner, result, implicitViews)
+      addEvidenceParams(owner, result, contextBounds)
     }
 
     /** ParamType ::= Type | `=>' Type | Type `*'
      */
     def paramType(): Tree =
-      if (in.token == ARROW)
+      if (in.token == ARROW) {
         atPos(in.skipToken()) {
           AppliedTypeTree(
             rootScalaDot(nme.BYNAME_PARAM_CLASS_NAME.toTypeName), List(typ()))
         }
-      else {
+      } else {
         val t = typ()
         if (isIdent && in.name == STAR) {
           in.nextToken()
@@ -1777,9 +1778,9 @@ self =>
      *  VariantTypeParam      ::= {Annotation} [`+' | `-'] TypeParam
      *  FunTypeParamClauseOpt ::= [FunTypeParamClause]
      *  FunTypeParamClause    ::= `[' TypeParam {`,' TypeParam} `]']
-     *  TypeParam             ::= Id TypeParamClauseOpt TypeBounds [<% Type]
+     *  TypeParam             ::= Id TypeParamClauseOpt TypeBounds {<% Type} {":" Type}
      */
-    def typeParamClauseOpt(owner: Name, implicitViewBuf: ListBuffer[Tree]): List[TypeDef] = {
+    def typeParamClauseOpt(owner: Name, contextBoundBuf: ListBuffer[Tree]): List[TypeDef] = {
       def typeParam(ms: Modifiers): TypeDef = {
         var mods = ms | Flags.PARAM
         val start = in.offset
@@ -1799,16 +1800,21 @@ self =>
             nme.WILDCARD
           } else ident()).toTypeName
         val param = atPos(start, nameOffset) {
-          val tparams = typeParamClauseOpt(pname, null) // @M TODO null --> no higher-order view bounds for now
+          val tparams = typeParamClauseOpt(pname, null) // @M TODO null --> no higher-order context bounds for now
           TypeDef(mods, pname, tparams, typeBounds())
         }
-        if (in.token == VIEWBOUND && (implicitViewBuf ne null))
-          implicitViewBuf += atPos(start, in.skipToken()) {
-            val t = typ()
-            atPos(t.pos) {
-              makeFunctionTypeTree(List(Ident(pname)), t)
+        if (contextBoundBuf ne null) {
+          while (in.token == VIEWBOUND) {
+            contextBoundBuf += atPos(in.skipToken()) {
+              makeFunctionTypeTree(List(Ident(pname)), typ())
             }
           }
+          while (in.token == COLON) {
+            contextBoundBuf += atPos(in.skipToken()) {
+              AppliedTypeTree(typ(), List(Ident(pname)))
+            }
+          }
+        }
         param
       }
       val params = new ListBuffer[TypeDef]
@@ -2050,7 +2056,7 @@ self =>
       val start = in.skipToken()
       if (in.token == THIS) {
         atPos(start, in.skipToken()) {
-          val vparamss = paramClauses(nme.CONSTRUCTOR, implicitClassViews map (_.duplicate), false)
+          val vparamss = paramClauses(nme.CONSTRUCTOR, classContextBounds map (_.duplicate), false)
           newLineOptWhenFollowedBy(LBRACE)
           val rhs = if (in.token == LBRACE) {
                       atPos(in.offset) { constrBlock(vparamss) }
@@ -2065,11 +2071,12 @@ self =>
         val nameOffset = in.offset
         val name = ident()
         atPos(start, if (name == nme.ERROR) start else nameOffset) {
-          // implicitViewBuf is for view bounded type parameters of the form
-          // [T <% B]; it contains the equivalent implicit parameter, i.e. (implicit p: T => B)
-          val implicitViewBuf = new ListBuffer[Tree]
-          val tparams = typeParamClauseOpt(name, implicitViewBuf)
-          val vparamss = paramClauses(name, implicitViewBuf.toList, false)
+          // contextBoundBuf is for context bounded type parameters of the form
+          // [T : B] or [T : => B]; it contains the equivalent implicit parameter type,
+          // i.e. (B[T] or T => B)
+          val contextBoundBuf = new ListBuffer[Tree]
+          val tparams = typeParamClauseOpt(name, contextBoundBuf)
+          val vparamss = paramClauses(name, contextBoundBuf.toList, false)
           newLineOptWhenFollowedBy(LBRACE)
           var restype = typedOpt()
           val rhs =
@@ -2105,7 +2112,7 @@ self =>
           t = Apply(t, argumentExprs())
           newLineOptWhenFollowedBy(LBRACE)
         }
-        if (implicitClassViews.isEmpty) t
+        if (classContextBounds.isEmpty) t
         else Apply(t, vparamss.last.map(vp => Ident(vp.name)))
       }
 
@@ -2183,19 +2190,19 @@ self =>
       val nameOffset = in.offset
       val name = ident().toTypeName
       atPos(start, if (name == nme.ERROR.toTypeName) start else nameOffset) {
-        val savedViews = implicitClassViews
-        val implicitViewBuf = new ListBuffer[Tree]
-        val tparams = typeParamClauseOpt(name, implicitViewBuf)
-        implicitClassViews = implicitViewBuf.toList
-        val tstart = (in.offset::implicitClassViews.map(_.pos.startOrPoint)).min
-        if (!implicitClassViews.isEmpty && mods.hasFlag(Flags.TRAIT)) {
-          syntaxError("traits cannot have type parameters with <% bounds", false)
-          implicitClassViews = List()
+        val savedContextBounds = classContextBounds
+        val contextBoundBuf = new ListBuffer[Tree]
+        val tparams = typeParamClauseOpt(name, contextBoundBuf)
+        classContextBounds = contextBoundBuf.toList
+        val tstart = (in.offset::classContextBounds.map(_.pos.startOrPoint)).min
+        if (!classContextBounds.isEmpty && mods.hasFlag(Flags.TRAIT)) {
+          syntaxError("traits cannot have type parameters with context bounds `: ...'", false)
+          classContextBounds = List()
         }
         val constrAnnots = annotations(false, true)
         val (constrMods, vparamss) =
           if (mods.hasFlag(Flags.TRAIT)) (Modifiers(Flags.TRAIT), List())
-          else (accessModifierOpt(), paramClauses(name, implicitClassViews, mods.hasFlag(Flags.CASE)))
+          else (accessModifierOpt(), paramClauses(name, classContextBounds, mods.hasFlag(Flags.CASE)))
         var mods1 = mods
         if (mods hasFlag Flags.TRAIT) {
           if (settings.Xexperimental.value && in.token == SUBTYPE) mods1 |= Flags.DEFERRED
@@ -2205,7 +2212,7 @@ self =>
         val template = templateOpt(mods1, name, constrMods withAnnotations constrAnnots, vparamss, tstart)
         if (isInterface(mods1, template.body)) mods1 |= Flags.INTERFACE
         val result = ClassDef(mods1, name, tparams, template)
-        implicitClassViews = savedViews
+        classContextBounds = savedContextBounds
         result
       }
     }

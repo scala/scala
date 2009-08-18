@@ -130,7 +130,7 @@ self: Analyzer =>
   class ImplicitSearch(tree: Tree, pt: Type, isView: Boolean, context0: Context)
     extends Typer(context0) {
 
-    assert(tree.isEmpty || tree.pos.isDefined)
+    assert(tree.isEmpty || tree.pos.isDefined, tree)
 
     import infer._
 
@@ -599,7 +599,7 @@ self: Analyzer =>
       def manifestFactoryCall(constructor: String, args: Tree*): Tree =
         if (args contains EmptyTree) EmptyTree
         else
-          typed(atPos(tree.pos.focus) {
+          typed { atPos(tree.pos.focus) {
             Apply(
               TypeApply(
                 Select(gen.mkAttributedRef(ManifestModule), constructor),
@@ -607,7 +607,7 @@ self: Analyzer =>
               ),
               args.toList
             )
-          })
+          }}
 
       /** Re-wraps a type in a manifest before calling inferImplicit on the result */
       def findManifest(tp: Type): Tree =
@@ -619,7 +619,12 @@ self: Analyzer =>
         case ConstantType(value) =>
           findManifest(tp.deconst)
         case TypeRef(pre, sym, args) =>
-          if (sym.isClass) {
+          if (isValueClass(sym)) {
+            typed { atPos(tree.pos.focus) {
+              Select(gen.mkAttributedRef(ManifestModule), sym.name.toString)
+            }}
+          }
+          else if (sym.isClass) {
             val suffix = gen.mkClassOf(tp) :: (args map findManifest)
             manifestFactoryCall(
               "classType",

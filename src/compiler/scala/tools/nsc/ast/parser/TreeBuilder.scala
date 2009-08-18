@@ -507,12 +507,13 @@ abstract class TreeBuilder {
   def makeFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree =
     AppliedTypeTree(rootScalaDot(newTypeName("Function" + argtpes.length)), argtpes ::: List(restpe))
 
-  /** Append implicit view section if for `implicitViews' if nonempty */
-  def addImplicitViews(owner: Name, vparamss: List[List[ValDef]], implicitViews: List[Tree]): List[List[ValDef]] = {
-    val mods = Modifiers(if (owner.isTypeName) PARAMACCESSOR | LOCAL | PRIVATE else PARAM)
-    def makeViewParam(tpt: Tree) = ValDef(mods | IMPLICIT, freshName("view$"), tpt, EmptyTree)
-    if (implicitViews.isEmpty) vparamss
-    else vparamss ::: List(implicitViews map makeViewParam)
+  /** Append implicit parameter section if `contextBounds' nonempty */
+  def addEvidenceParams(owner: Name, vparamss: List[List[ValDef]], contextBounds: List[Tree]): List[List[ValDef]] =
+    if (contextBounds.isEmpty) vparamss
+    else {
+      val mods = Modifiers(if (owner.isTypeName) PARAMACCESSOR | LOCAL | PRIVATE else PARAM)
+      def makeEvidenceParam(tpt: Tree) = ValDef(mods | IMPLICIT, freshName("man$"), tpt, EmptyTree)
+      vparamss ::: List(contextBounds map makeEvidenceParam)
   }
 
 }

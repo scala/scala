@@ -115,11 +115,9 @@ self =>
    *  we recognize that fact and optimize to get more laziness.
    */
   override def ++[B >: A, That](that: Traversable[B])(implicit bf: BuilderFactory[B, That, Stream[A]]): That = {
-    def loop(these: Stream[A]): Stream[B] =
-      if (these.isEmpty) that.toStream else new Stream.Cons(these.head, loop(these.tail))
-    loop(this).asInstanceOf[That]
-// was:    if (bf.isInstanceOf[Stream.StreamBuilderFactory[_]]) loop(this).asInstanceOf[That]
-//    else super.++(that)
+    // we assume there is no other builder factory on streams and therefore know that That = Stream[A]
+    (if (isEmpty) that.toStream
+     else new Stream.Cons(head, (tail ++ that).asInstanceOf[Stream[A]])).asInstanceOf[That]
   }
 
   /** Create a new stream which contains all elements of this stream
@@ -135,12 +133,9 @@ self =>
    *  @return  <code>f(a<sub>0</sub>), ..., f(a<sub>n</sub>)</code> if this
    *           sequence is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
    */
-  override def map[B, That](f: A => B)(implicit bf: BuilderFactory[B, That, Stream[A]]): That = {
-    def loop(these: Stream[A]): Stream[B] =
-      if (these.isEmpty) Stream.Empty else new Stream.Cons(f(these.head), loop(these.tail))
-    loop(this).asInstanceOf[That]
-// was:    if (bf.isInstanceOf[Stream.StreamBuilderFactory[_]]) loop(this).asInstanceOf[That]
-//         else super.map(f)
+  override final def map[B, That](f: A => B)(implicit bf: BuilderFactory[B, That, Stream[A]]): That = {
+    (if (isEmpty) Stream.Empty
+     else new Stream.Cons(f(head), (tail map f).asInstanceOf[Stream[B]])).asInstanceOf[That]
   }
 
   /** Applies the given function <code>f</code> to each element of
@@ -150,17 +145,17 @@ self =>
    *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
    *           this stream is <code>[a<sub>0</sub>, ..., a<sub>n</sub>]</code>.
    */
-  override def flatMap[B, That](f: A => Traversable[B])(implicit bf: BuilderFactory[B, That, Stream[A]]): That = {
-    def loop(these: Stream[A]): Stream[B] =
-      if (these.isEmpty) Stream.Empty
-      else {
-        val seg = f(these.head)
-        if (seg.isEmpty) loop(these.tail)
-        else seg.toStream append loop(these.tail)
-      }
-    loop(this).asInstanceOf[That]
-// was:    if (bf.isInstanceOf[Stream.StreamBuilderFactory[_]]) loop(this).asInstanceOf[That]
-//    else super.flatMap(f)
+  override final def flatMap[B, That](f: A => Traversable[B])(implicit bf: BuilderFactory[B, That, Stream[A]]): That = {
+    // we assume there is no other builder factory on streams and therefore know that That = Stream[B]
+    // optimization: drop A's for which f yields no B
+    var rest = this
+    var seg: Traversable[B] = null
+    do {
+      if (rest.isEmpty) return Stream.Empty.asInstanceOf[That]
+      seg = f(rest.head)
+      rest = rest.tail
+    } while (seg.isEmpty)
+    (seg.toStream append (rest flatMap f).asInstanceOf[Stream[B]]).asInstanceOf[That]
   }
 
   /** Returns all the elements of this stream that satisfy the
@@ -169,16 +164,11 @@ self =>
    *  @param p the predicate used to filter the stream.
    *  @return the elements of this stream satisfying <code>p</code>.
    */
-  override def filter(p: A => Boolean): Stream[A] = {
-    // drops A's for which p yields false
-    def loop(these: Stream[A]): Stream[A] =
-      if (these.isEmpty) Stream.Empty
-      else {
-        val b = p(these.head)
-        if (!b) loop(these.tail)
-        else new Stream.Cons(these.head, these.tail filter p)
-      }
-    loop(this)
+  override final def filter(p: A => Boolean): Stream[A] = {
+    // optimization: drop leading prefix of elems for which f returns false
+    var rest = this dropWhile (!p(_))
+    if (rest.isEmpty) Stream.Empty
+    else new Stream.Cons(rest.head, rest.tail filter p)
   }
 
   /** Returns all the elements of this stream that satisfy the
@@ -199,13 +189,10 @@ self =>
    *              <code>Stream(a<sub>0</sub>, ..., a<sub>m</sub>)
    *              zip Stream(b<sub>0</sub>, ..., b<sub>n</sub>)</code> is invoked.
    */
-  override def zip[A1 >: A, B, That](that: Sequence[B])(implicit bf: BuilderFactory[(A1, B), That, Stream[A]]): That = {
-    def loop(these: Stream[A], elems2: Iterator[B]): Stream[(A1, B)] =
-      if (these.isEmpty || !elems2.hasNext) Stream.Empty
-      else new Stream.Cons((these.head, elems2.next), loop(these.tail, elems2))
-    loop(this, that.iterator).asInstanceOf[That]
-// was:    if (bf.isInstanceOf[Stream.StreamBuilderFactory[_]]) loop(this, that.iterator).asInstanceOf[That]
-//    else super.zip[A1, B, That](that)
+  override final def zip[A1 >: A, B, That](that: Sequence[B])(implicit bf: BuilderFactory[(A1, B), That, Stream[A]]): That = {
+    // we assume there is no other builder factory on streams and therefore know that That = Stream[(A1, B)]
+    (if (this.isEmpty || that.isEmpty) Stream.Empty
+     else new Stream.Cons((this.head, that.head), (this.tail zip that.tail).asInstanceOf[Stream[(A1, B)]])).asInstanceOf[That]
   }
 
   /** Zips this iterable with its indices. `s.zipWithIndex` is equivalent to

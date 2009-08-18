@@ -1,35 +1,35 @@
-x=(), m=void
-x=true, m=boolean
-x=a, m=char
-x=1, m=int
+x=(), m=Unit
+x=true, m=Boolean
+x=a, m=Char
+x=1, m=Int
 x=abc, m=java.lang.String
 x='abc, m=scala.Symbol
 
-x=List(()), m=scala.collection.immutable.List[void]
-x=List(true), m=scala.collection.immutable.List[boolean]
-x=List(1), m=scala.collection.immutable.List[int]
+x=List(()), m=scala.collection.immutable.List[Unit]
+x=List(true), m=scala.collection.immutable.List[Boolean]
+x=List(1), m=scala.collection.immutable.List[Int]
 x=List(abc), m=scala.collection.immutable.List[java.lang.String]
 x=List('abc), m=scala.collection.immutable.List[scala.Symbol]
 
-x=[Z, m=Array[boolean]
-x=[C, m=Array[char]
-x=[I, m=Array[int]
+x=[Z, m=Array[Boolean]
+x=[C, m=Array[Char]
+x=[I, m=Array[Int]
 x=Array(abc), m=Array[java.lang.String]
 x=Array('abc), m=Array[scala.Symbol]
 
-x=((),()), m=scala.Tuple2[void, void]
-x=(true,false), m=scala.Tuple2[boolean, boolean]
-x=(1,2), m=scala.Tuple2[int, int]
+x=((),()), m=scala.Tuple2[Unit, Unit]
+x=(true,false), m=scala.Tuple2[Boolean, Boolean]
+x=(1,2), m=scala.Tuple2[Int, Int]
 x=(abc,xyz), m=scala.Tuple2[java.lang.String, java.lang.String]
 x=('abc,'xyz), m=scala.Tuple2[scala.Symbol, scala.Symbol]
 
 x=Test$, m=Test$
 x=scala.collection.immutable.List$, m=scala.collection.immutable.List$
 
-x=Foo, m=Foo[int]
-x=Foo, m=Foo[scala.collection.immutable.List[int]]
-x=Foo, m=Foo[Foo[int]]
-x=Foo, m=Foo[scala.collection.immutable.List[Foo[int]]]
+x=Foo, m=Foo[Int]
+x=Foo, m=Foo[scala.collection.immutable.List[Int]]
+x=Foo, m=Foo[Foo[Int]]
+x=Foo, m=Foo[scala.collection.immutable.List[Foo[Int]]]
 
 x=Test1$$anon$1, m=Test1$$anon$1
 

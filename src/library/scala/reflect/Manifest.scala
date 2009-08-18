@@ -11,6 +11,8 @@
 
 package scala.reflect
 
+import scala.runtime._
+
 /** <p>
   *   A <code>Manifest[T]</code> is an opaque descriptor for type <code>T</code>.
   *   Currently, its only use is to give access to the erasure of the type as a
@@ -60,6 +62,12 @@ trait Manifest[T] extends OptManifest[T] {
     case _ => false
   }
 
+  def newArray(len: Int): BoxedArray[T] = {
+    // it's safe to assume T <: AnyRef here because the method is overridden for all value type manifests
+    new BoxedObjectArray(java.lang.reflect.Array.newInstance(erasure, len).asInstanceOf[Array[AnyRef]])
+      .asInstanceOf[BoxedArray[T]]
+  }
+
   private[reflect] def typeArguments: Option[List[Manifest[_]]] = None
 
 }
@@ -75,6 +83,60 @@ trait Manifest[T] extends OptManifest[T] {
   * </p>
   */
 object Manifest {
+
+  val Byte = new (Manifest[Byte] @serializable) {
+    def erasure = java.lang.Byte.TYPE
+    override def toString = "Byte"
+    override def newArray(len: Int): BoxedArray[Byte] = new BoxedByteArray(new Array[Byte](len))
+  }
+
+  val Short = new (Manifest[Short] @serializable) {
+    def erasure = java.lang.Short.TYPE
+    override def toString = "Short"
+    override def newArray(len: Int): BoxedArray[Short] = new BoxedShortArray(new Array[Short](len))
+  }
+
+  val Char = new (Manifest[Char] @serializable) {
+    def erasure = java.lang.Character.TYPE
+    override def toString = "Char"
+    override def newArray(len: Int): BoxedArray[Char] = new BoxedCharArray(new Array[Char](len))
+  }
+
+  val Int = new (Manifest[Int] @serializable) {
+    def erasure = java.lang.Integer.TYPE
+    override def toString = "Int"
+    override def newArray(len: Int): BoxedArray[Int] = new BoxedIntArray(new Array[Int](len))
+  }
+
+  val Long = new (Manifest[Long] @serializable) {
+    def erasure = java.lang.Long.TYPE
+    override def toString = "Long"
+    override def newArray(len: Int): BoxedArray[Long] = new BoxedLongArray(new Array[Long](len))
+  }
+
+  val Float = new (Manifest[Float] @serializable) {
+    def erasure = java.lang.Float.TYPE
+    override def toString = "Float"
+    override def newArray(len: Int): BoxedArray[Float] = new BoxedFloatArray(new Array[Float](len))
+  }
+
+  val Double = new (Manifest[Double] @serializable) {
+    def erasure = java.lang.Double.TYPE
+    override def toString = "Double"
+    override def newArray(len: Int): BoxedArray[Double] = new BoxedDoubleArray(new Array[Double](len))
+  }
+
+  val Boolean = new (Manifest[Boolean] @serializable) {
+    def erasure = java.lang.Boolean.TYPE
+    override def toString = "Boolean"
+    override def newArray(len: Int): BoxedArray[Boolean] = new BoxedBooleanArray(new Array[Boolean](len))
+  }
+
+  val Unit = new (Manifest[Unit] @serializable) {
+    def erasure = java.lang.Void.TYPE
+    override def toString = "Unit"
+    override def newArray(len: Int): BoxedArray[Unit] = new BoxedUnitArray(new Array[Unit](len))
+  }
 
   /** Manifest for the singleton type `value.type'. */
   def singleType[T](value: Any): Manifest[T] =
@@ -92,6 +154,7 @@ object Manifest {
   def classType[T](clazz: Predef.Class[T]): Manifest[T] =
     new (Manifest[T] @serializable) {
       val erasure = clazz
+      // Martin why is toString a lazy val instead of a def?
       override lazy val toString = erasure.getName
     }
 
@@ -104,7 +167,7 @@ object Manifest {
       override def <:<(that: Manifest[_]): Boolean = {
         that.typeArguments match {
           case Some(thatArgs) =>
-            super.<:<(that) && args.equalsWith(thatArgs) { (x, y) => x <:< y }
+            super.<:<(that) && ((args zip thatArgs) forall { case (x, y) => x <:< y })
           case None =>
             false
         }
@@ -151,7 +214,7 @@ object Manifest {
   /** Manifest for the intersection type `parents_0 with ... with parents_n'. */
   def intersectionType[T](parents: Manifest[_]*): Manifest[T] =
     new (Manifest[T] @serializable) {
-      lazy val erasure = parents.first.erasure
+      lazy val erasure = parents.head.erasure
       override lazy val toString = parents.mkString(" with ")
     }
 

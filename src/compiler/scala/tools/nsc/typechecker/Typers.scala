@@ -301,7 +301,7 @@ trait Typers { self: Analyzer =>
             case t => t
           }
           "\n Note that "+tree.symbol+" is not stable because its type, "+tree.tpe+", is volatile."
-        } else ""))
+      } else ""))
 
     /** Would tree be a stable (i.e. a pure expression) if the type
      *  of its symbol was not volatile?
@@ -1265,7 +1265,11 @@ trait Typers { self: Analyzer =>
               r
             } else {
               val rhs = gen.mkCheckInit(Select(This(value.owner), value))
-              val r = DefDef(getter, typed(rhs, EXPRmode, value.tpe))
+              val r = typed {
+                atPos(getter.pos.focus) {
+                  DefDef(getter, rhs)
+                }
+              }.asInstanceOf[DefDef]
               r.tpt.setPos(tpt.pos.focus)
               r
             }
@@ -1273,15 +1277,22 @@ trait Typers { self: Analyzer =>
           checkNoEscaping.privates(getter, getterDef.tpt)
           def setterDef(setter: Symbol): DefDef = {
             setter.setAnnotations(value.annotations)
-            val result = atPos(vdef.pos.focus)(
-              DefDef(setter,
-                if ((mods hasFlag DEFERRED) || (setter hasFlag OVERLOADED))
-                  EmptyTree
-                else
-                  typed(Assign(Select(This(value.owner), value),
-                               Ident(setter.paramss.head.head)))))
-            treeCopy.DefDef(result, result.mods, result.name, result.tparams,
-                            result.vparamss, result.tpt, result.rhs)
+            val result = typed {
+              atPos(vdef.pos.focus) {
+                DefDef(
+                  setter,
+                  if ((mods hasFlag DEFERRED) || (setter hasFlag OVERLOADED))
+                    EmptyTree
+                  else
+                    Assign(Select(This(value.owner), value),
+                           Ident(setter.paramss.head.head)))
+              }
+            }
+            result.asInstanceOf[DefDef]
+            // Martin: was
+            // treeCopy.DefDef(result, result.mods, result.name, result.tparams,
+            //                result.vparamss, result.tpt, result.rhs)
+            // but that's redundant, no?
           }
 
           val gs = new ListBuffer[DefDef]
