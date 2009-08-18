@@ -6,10 +6,8 @@
 
 package scala.tools.nsc
 
-import java.lang.{Thread, System, Runtime}
-import java.lang.NumberFormatException
-import java.io.{File, IOException, PrintWriter, FileOutputStream}
-import java.io.{BufferedReader, FileReader}
+import java.io.{ File, IOException, FileNotFoundException, PrintWriter, FileOutputStream }
+import java.io.{ BufferedReader, FileReader }
 import java.util.regex.Pattern
 import java.net._
 
@@ -25,17 +23,13 @@ class CompileSocket {
   protected def cmdName = Properties.cmdName //todo: lazy val
 
   /** The vm part of the command to start a new scala compile server */
-  protected val vmCommand =
-    Properties.scalaHome match {
-      case null =>
-        cmdName
-      case dirname =>
-        val trial = new File(new File(dirname, "bin"), cmdName)
-        if (trial.canRead)
-          trial.getPath
-        else
-          cmdName
-    }
+  protected val vmCommand = Properties.scalaHome match {
+    case null     => cmdName
+    case dirname  =>
+      val trial = scala.io.File(dirname) / "bin" / cmdName
+      if (trial.canRead) trial.path
+      else cmdName
+  }
 
   /** The class name of the scala compile server */
   protected val serverClass = "scala.tools.nsc.CompileServer"
@@ -44,7 +38,7 @@ class CompileSocket {
   val errorRegex = ".*(errors? found|don't know|bad option).*"
 
   /** A Pattern object for checking compiler output for errors */
-  val errorPattern = Pattern.compile(errorRegex)
+  val errorPattern = Pattern compile errorRegex
 
   protected def error(msg: String) = System.err.println(msg)
 
@@ -144,14 +138,12 @@ class CompileSocket {
 
   /** Set the port number to which a scala compile server is connected */
   def setPort(port: Int) {
-    try {
-      val f = new PrintWriter(new FileOutputStream(portFile(port)))
-      f.println(new java.security.SecureRandom().nextInt.toString)
-      f.close()
-    } catch {
-      case ex: /*FileNotFound+Security*/Exception =>
-        fatal("Cannot create file: " +
-              portFile(port).getAbsolutePath())
+    val file = scala.io.File(portFile(port))
+    val secret = new java.security.SecureRandom().nextInt.toString
+
+    try file writeAll List(secret) catch {
+      case e @ (_: FileNotFoundException | _: SecurityException) =>
+        fatal("Cannot create file: %s".format(file.absolutePath))
     }
   }
 
@@ -162,7 +154,7 @@ class CompileSocket {
     * create a new daemon if necessary.  Returns null if the connection
     * cannot be established.
     */
-  def getOrCreateSocket(vmArgs: String, create: Boolean): Socket = {
+  def getOrCreateSocket(vmArgs: String, create: Boolean = true): Socket = {
     val nAttempts = 49  // try for about 5 seconds
     def getsock(attempts: Int): Socket =
       if (attempts == 0) {
@@ -193,45 +185,40 @@ class CompileSocket {
     getsock(nAttempts)
   }
 
-  /** Same as getOrCreateSocket(vmArgs, true). */
-  def getOrCreateSocket(vmArgs: String): Socket =
-    getOrCreateSocket(vmArgs, true)
+  // XXX way past time for this to be central
+  def parseInt(x: String): Option[Int] =
+    try   { Some(x.toInt) }
+    catch { case _: NumberFormatException => None }
 
   def getSocket(serverAdr: String): Socket = {
-    val cpos = serverAdr indexOf ':'
-    if (cpos < 0)
-      fatal("Malformed server address: " + serverAdr + "; exiting")
-    else {
-      val hostName = serverAdr.substring(0, cpos)
-      val port = try {
-        serverAdr.substring(cpos+1).toInt
-      } catch {
-        case ex: Throwable =>
-          fatal("Malformed server address: " + serverAdr + "; exiting")
-      }
-      getSocket(hostName, port)
+    def fail = fatal("Malformed server address: %s; exiting" format serverAdr)
+    (serverAdr indexOf ':') match {
+      case -1   => fail
+      case cpos =>
+        val hostName: String = serverAdr take cpos
+        parseInt(serverAdr drop (cpos + 1)) match {
+          case Some(port) => getSocket(hostName, port)
+          case _          => fail
+        }
     }
   }
 
   def getSocket(hostName: String, port: Int): Socket =
-    try {
-      new Socket(hostName, port)
-    } catch {
-      case e: /*IO+Security*/Exception =>
-        fatal("Unable to establish connection to server " +
-              hostName + ":" + port + "; exiting")
+    try new Socket(hostName, port) catch {
+      case e @ (_: IOException | _: SecurityException) =>
+        fatal("Unable to establish connection to server %s:%d; exiting".format(hostName, port))
     }
 
   def getPassword(port: Int): String = {
-    val ff = portFile(port)
-    val f = new BufferedReader(new FileReader(ff))
+    val ff = scala.io.File(portFile(port))
+    val f = ff.bufferedReader()
+
     // allow some time for the server to start up
-    var retry = 50
-    while (ff.length() == 0 && retry > 0) {
-      Thread.sleep(100)
-      retry -= 1
+    def check = {
+      Thread sleep 100
+      ff.file.length()
     }
-    if (ff.length() == 0) {
+    if (Iterator continually check take 50 find (_ > 0) isEmpty) {
       ff.delete()
       fatal("Unable to establish connection to server.")
     }

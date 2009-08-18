@@ -45,12 +45,10 @@ abstract class SocketServer {
   // some cleanup, if any
   def timeout() {}
 
-  val serverSocket = try {
-    new ServerSocket(0)
-  } catch {
-    case e: IOException =>
-      fatal("Could not listen on any port; exiting.")
-  }
+  val serverSocket =
+    try new ServerSocket(0)
+    catch { case e: IOException => fatal("Could not listen on any port; exiting.") }
+
   val port: Int = serverSocket.getLocalPort()
 
   def run() {

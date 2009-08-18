@@ -22,6 +22,29 @@ object File
 
   def apply(fileName: String) = new File(new JFile(fileName))
   def apply(file: JFile)      = new File(file)
+
+  private def randomPrefix = {
+    import scala.util.Random.nextInt
+    import Character.isJavaIdentifierPart
+
+    (Iterator continually nextInt)
+    . map (x => ((x % 60) + 'A').toChar)
+    . filter (isJavaIdentifierPart)
+    . take (6)
+    . mkString
+  }
+  // Create a temporary file
+  def tempfile(prefix: String = randomPrefix, suffix: String = null, dir: JFile = null) =
+    apply(JFile.createTempFile(prefix, suffix, dir))
+
+  // Like tempfile but creates a directory instead
+  def tempdir(prefix: String = randomPrefix, suffix: String = null, dir: JFile = null) = {
+    val file = tempfile(prefix, suffix, dir)
+    file.delete()
+    file.mkdirs()
+    file
+  }
+
 }
 import File._
 
@@ -33,6 +56,16 @@ import File._
  */
 class File(val file: JFile)(implicit val codec: Codec = Codec.default) extends collection.Iterable[File]
 {
+  def path = file.getPath()
+  def absolutePath = file.getAbsolutePath()
+  def delete() = file.delete()
+  def mkdirs() = file.mkdirs()
+  def isFile = file.isFile()
+  def canRead = file.canRead()
+  def canWrite = file.canWrite()
+
+  def isFresher(other: File) = file.lastModified > other.file.lastModified
+
   /** If file is a directory, an iterator over its contents.
    *  If not, an empty iterator.
    */

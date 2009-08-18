@@ -25,8 +25,9 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
   protected def classpathDefault =
     syspropopt("env.classpath") orElse syspropopt("java.class.path") getOrElse ""
 
-  protected def bootclasspathDefault =
-    concatPath(syspropopt("sun.boot.class.path"), guessedScalaBootClassPath)
+  protected def bootclasspathDefault = syspropopt("sun.boot.class.path") getOrElse ""
+    // XXX scala-library.jar was being added to both boot and regular classpath until 8/18/09
+    // concatPath(syspropopt("sun.boot.class.path"), guessedScalaBootClassPath)
 
   protected def extdirsDefault =
     concatPath(syspropopt("java.ext.dirs"), guessedScalaExtDirs)
@@ -216,6 +217,9 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
   lazy val PhasesSetting       = untupled(tupled(phase _) andThen add[PhasesSetting])
   lazy val DefinesSetting      = add(defines())
   lazy val OutputSetting       = untupled(tupled(output _) andThen add[OutputSetting])
+
+  override def toString() =
+    "Settings(\n%s)" format (settingSet filter (s => !s.isDefault) map ("  " + _ + "\n") mkString)
 }
 
 object Settings {
@@ -403,6 +407,7 @@ object Settings {
     def eqValues: List[Any] = List(name, value)
     def isEq(other: Setting) = eqValues == other.eqValues
     override def hashCode() = name.hashCode
+    override def toString() = "%s = %s".format(name, value)
   }
 
   /** A setting represented by a positive integer */

@@ -268,7 +268,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     if (forMSIL) inform("[AssemRefs = " + settings.assemrefs.value + "]")
   }
 
-  def getSourceFile(f: AbstractFile): SourceFile =
+  def getSourceFile(f: AbstractFile): BatchSourceFile =
     new BatchSourceFile(f, reader.read(f))
 
   def getSourceFile(name: String): SourceFile = {
