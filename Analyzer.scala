@@ -61,6 +61,7 @@ class Analyzer(val global: Global) extends Plugin
 					catch { case fe: scala.tools.nsc.FatalError => callback.superclassNotFound(name.toString); None }
 				}
 			val superclasses = superclassesAll.filter(_.isDefined).map(_.get)
+			//println("Superclass names: " + superclassNames.mkString(", ") + "\n\tall: " + superclasses.mkString(", "))
 			
 			for(unit <- currentRun.units)
 			{
