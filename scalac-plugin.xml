@@ -1,0 +1,4 @@
+<plugin>
+  <name>xsbt-analyze</name>
+  <classname>xsbt.Analyzer</classname>
+</plugin>
