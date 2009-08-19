@@ -10,7 +10,7 @@
 
 
 package scala.runtime
-
+import scala.reflect.Manifest
 import compat.Platform
 
 /**
@@ -21,6 +21,8 @@ import compat.Platform
  */
 @serializable
 final class BoxedAnyArray[A](val length: Int) extends BoxedArray[A] {
+
+  def elemManifest: Manifest[A] = null
 
   private var boxed = new Array[AnyRef](length)
 //  private val hash = boxed.hashCode()
@@ -226,16 +228,5 @@ final class BoxedAnyArray[A](val length: Int) extends BoxedArray[A] {
   override def copyTo(from: Int, dest: AnyRef, to: Int, len: Int) {
     var dest1 = adapt(dest)
     Array.copy(if (unboxed ne null) unboxed else boxed, from, dest1, to, len)
-  }
-
-  final override def filter(p: A => Boolean): BoxedArray[A] = {
-    val (len, include) = countAndMemo(p)
-    val result = new BoxedAnyArray[A](len)
-    var i, j = 0
-    while (j < len) {
-      if (include(i)) { result(j) = this(i); j += 1 }
-      i += 1
-    }
-    result
   }
 }
