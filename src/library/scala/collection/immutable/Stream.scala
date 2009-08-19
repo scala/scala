@@ -222,6 +222,21 @@ self =>
     b
   }
 
+  override def mkString(start: String, sep: String, end: String): String = {
+    this.force
+    super.mkString(start, sep, end)
+  }
+
+  override def mkString(sep: String): String = {
+    this.force
+    super.mkString(sep)
+  }
+
+  override def mkString: String = {
+    this.force
+    super.mkString
+  }
+
   /** Returns the <code>n</code> first elements of this stream, or else the whole
    *  stream, if it has less than <code>n</code> elements.
    *
