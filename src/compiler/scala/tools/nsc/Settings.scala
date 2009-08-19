@@ -25,9 +25,12 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
   protected def classpathDefault =
     syspropopt("env.classpath") orElse syspropopt("java.class.path") getOrElse ""
 
-  protected def bootclasspathDefault = syspropopt("sun.boot.class.path") getOrElse ""
+  protected def bootclasspathDefault =
+    concatPath(syspropopt("sun.boot.class.path"), guessedScalaBootClassPath)
+    // syspropopt("sun.boot.class.path") getOrElse ""
     // XXX scala-library.jar was being added to both boot and regular classpath until 8/18/09
-    // concatPath(syspropopt("sun.boot.class.path"), guessedScalaBootClassPath)
+    // Removing from boot classpath caused build/quick/bin/scala to fail.
+    // Note to self, figure out how/why the bootclasspath is tied up with the locker/quick/pack.
 
   protected def extdirsDefault =
     concatPath(syspropopt("java.ext.dirs"), guessedScalaExtDirs)
