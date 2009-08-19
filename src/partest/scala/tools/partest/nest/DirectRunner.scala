@@ -54,7 +54,7 @@ trait DirectRunner {
     var logsToDelete: List[File] = List()
     var outdirsToDelete: List[File] = List()
     workers foreach { w =>
-      receiveWithin(600 * 1000) {
+      receiveWithin(3600 * 1000) {
         case Results(s, f, logs, outdirs) =>
           logsToDelete = logsToDelete ::: logs.filter(_.toDelete)
           outdirsToDelete = outdirsToDelete ::: outdirs
@@ -62,6 +62,7 @@ trait DirectRunner {
           fails += f
         case TIMEOUT =>
           // add at least one failure
+          NestUI.verbose("worker timed out; adding failed test")
           fails += 1
       }
     }
