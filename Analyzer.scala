@@ -15,13 +15,13 @@ import xsbti.{AnalysisCallback, AnalysisCallbackContainer}
 class Analyzer(val global: Global) extends Plugin
 {
 	val callback = global.asInstanceOf[AnalysisCallbackContainer].analysisCallback
-	
+
 	import global._
-	
+
 	val name = "xsbt-analyze"
 	val description = "A plugin to find all concrete instances of a given class and extract dependency information."
 	val components = List[PluginComponent](Component)
-	
+
 	/* ================================================== */
 	// These two templates abuse scope for source compatibility between Scala 2.7.x and 2.8.x so that a single
 	// sbt codebase compiles with both series of versions.
@@ -39,7 +39,7 @@ class Analyzer(val global: Global) extends Plugin
 		override val runsAfter = afterPhase :: runsBefore
 	}
 	/* ================================================== */
-	
+
 	private object Component extends CompatiblePluginComponent("jvm")
 	{
 		val global = Analyzer.this.global
@@ -53,16 +53,8 @@ class Analyzer(val global: Global) extends Plugin
 		def run
 		{
 			val outputDirectory = new File(global.settings.outdir.value)
-			val superclassNames = callback.superclassNames.map(newTermName)
-			val superclassesAll =
-				for(name <- superclassNames) yield
-				{
-					try { Some(global.definitions.getClass(name)) }
-					catch { case fe: scala.tools.nsc.FatalError => callback.superclassNotFound(name.toString); None }
-				}
-			val superclasses = superclassesAll.filter(_.isDefined).map(_.get)
-			//println("Superclass names: " + superclassNames.mkString(", ") + "\n\tall: " + superclasses.mkString(", "))
-			
+			val superclasses = callback.superclassNames flatMap(classForName)
+
 			for(unit <- currentRun.units)
 			{
 				// build dependencies structure
@@ -90,7 +82,7 @@ class Analyzer(val global: Global) extends Plugin
 					else
 						callback.sourceDependency(onSource.file, sourceFile)
 				}
-				
+
 				// find subclasses and modules with main methods
 				for(clazz @ ClassDef(mods, n, _, _) <- unit.body)
 				{
@@ -105,7 +97,7 @@ class Analyzer(val global: Global) extends Plugin
 							callback.foundApplication(sourceFile, sym.fullNameString)
 					}
 				}
-				
+
 				// build list of generated classes
 				for(iclass <- unit.icode)
 				{
@@ -129,11 +121,25 @@ class Analyzer(val global: Global) extends Plugin
 			}
 		}
 	}
-	
+
+	private def classForName(name: String) =
+	{
+		try
+		{
+			if(name.indexOf('.') < 0)
+			{
+				val sym = definitions.EmptyPackageClass.info.member(newTypeName(name))
+				if(sym != NoSymbol) Some( sym ) else { callback.superclassNotFound(name); None }
+			}
+			else
+				Some( global.definitions.getClass(newTermName(name)) )
+		}
+		catch { case fe: scala.tools.nsc.FatalError =>  callback.superclassNotFound(name); None }
+	}
 	private def classFile(sym: Symbol): Option[AbstractFile] =
 	{
 		import scala.tools.nsc.symtab.Flags
-		val name = sym.fullNameString(java.io.File.separatorChar) + (if (sym.hasFlag(Flags.MODULE)) "$" else "")
+		val name = sym.fullNameString(File.separatorChar) + (if (sym.hasFlag(Flags.MODULE)) "$" else "")
 		val entry = classPath.root.find(name, false)
 		if (entry ne null)
 			Some(entry.classFile)
@@ -148,7 +154,7 @@ class Analyzer(val global: Global) extends Plugin
 		else
 			None
 	}
-	
+
 	private def isTopLevelModule(sym: Symbol): Boolean =
 		atPhase (currentRun.picklerPhase.next) {
 			sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass
@@ -169,29 +175,32 @@ class Analyzer(val global: Global) extends Plugin
 		else
 			new File(packageFile(outputDirectory, s.owner.enclClass), s.simpleName.toString)
 	}
-	
+
 	private def hasMainMethod(sym: Symbol): Boolean =
 	{
 		val main = sym.info.nonPrivateMember(newTermName("main"))//nme.main)
-		main.tpe match
-		{
-			case OverloadedType(pre, alternatives) => alternatives.exists(alt => isVisible(alt) && isMainType(pre.memberType(alt)))
-			case tpe => isVisible(main) && isMainType(main.owner.thisType.memberType(main))
+		atPhase(currentRun.typerPhase.next) {
+			main.tpe match
+			{
+				case OverloadedType(pre, alternatives) => alternatives.exists(alt => isVisible(alt) && isMainType(pre.memberType(alt)))
+				case tpe => isVisible(main) && isMainType(main.owner.thisType.memberType(main))
+			}
 		}
 	}
 	private def isVisible(sym: Symbol) = sym != NoSymbol && sym.isPublic && !sym.isDeferred
-	private def isMainType(tpe: Type) =
+	private def isMainType(tpe: Type): Boolean =
 	{
 		tpe match
 		{
 			// singleArgument is of type Symbol in 2.8.0 and type Type in 2.7.x
 			case MethodType(List(singleArgument), result) => isUnitType(result) && isStringArray(singleArgument)
-			case _ => false
+			case PolyType(typeParams, result) => isMainType(result)
+			case _ =>  false
 		}
 	}
 	private lazy val StringArrayType = appliedType(definitions.ArrayClass.typeConstructor, definitions.StringClass.tpe :: Nil)
 	// isStringArray is overloaded to handle the incompatibility between 2.7.x and 2.8.0
-	private def isStringArray(tpe: Type): Boolean = tpe.typeSymbol == StringArrayType.typeSymbol
+	private def isStringArray(tpe: Type): Boolean = tpe =:= StringArrayType
 	private def isStringArray(sym: Symbol): Boolean = isStringArray(sym.tpe)
 	private def isUnitType(tpe: Type) = tpe.typeSymbol == definitions.UnitClass
 }

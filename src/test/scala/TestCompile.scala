@@ -7,6 +7,8 @@ import FileUtilities.{classLocationFile, withTemporaryDirectory, write}
 
 object TestCompile
 {
+	/** Tests running the compiler interface with the analyzer plugin with a test callback.  The test callback saves all information
+	* that the plugin sends it for post-compile analysis by the provided function.*/
 	def apply[T](arguments: Seq[String], superclassNames: Seq[String])(f: (TestCallback, Logger) => T): T =
 	{
 		val pluginLocation = classLocationFile[Analyzer]
@@ -21,6 +23,8 @@ object TestCompile
 			f(testCallback, log)
 		}
 	}
+	/** Tests running the compiler interface with the analyzer plugin.  The provided function is given a ClassLoader that can
+	* load the compiled classes..*/
 	def apply[T](sources: Seq[File])(f: ClassLoader => T): T =
 		CallbackTest.apply(sources, Nil){ case (callback, outputDir, log) => f(new URLClassLoader(Array(outputDir.toURI.toURL))) }
 }
@@ -38,6 +42,9 @@ object CallbackTest
 }
 object WithFiles
 {
+	/** Takes the relative path -> content pairs and writes the content to a file in a temporary directory.  The written file
+	* path is the relative path resolved against the temporary directory path.  The provided function is called with the resolved file paths
+	* in the same order as the inputs. */
 	def apply[T](sources: (File, String)*)(f: Seq[File] => T): T =
 	{
 		withTemporaryDirectory { dir =>
