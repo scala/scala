@@ -103,6 +103,6 @@ object Random extends Random
       swap(n - 1, k)
     }
 
-    buf.toSeq
+    buf.toSequence
   }
 }

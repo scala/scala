@@ -112,10 +112,10 @@ trait Binders extends AbstractSyntax with Mappable {
     def binds(b: binderType): Boolean = substitution.contains(b)
 
     def indexFor(b: binderType): Option[Int] = {
-      val iter = this.iterator.counted
-      for (that <- iter) {
+      val iter = this.iterator.zipWithIndex
+      for ((that, count) <- iter) {
         if (that.name == b.name) // TODO: why do name equals and structural equals differ?
-          return Some(iter.count)
+          return Some(count + 1)
         else
           Console.println(that+"!="+b)
       }

@@ -244,8 +244,8 @@ sealed abstract class LongMap[+T] extends scala.collection.immutable.Map[Long, T
 
   override def updated[S >: T](key : Long, value : S) : LongMap[S] = this match {
     case LongMap.Bin(prefix, mask, left, right) => if (!hasMatch(key, prefix, mask)) join(key, LongMap.Tip(key, value), prefix, this);
-                                          else if (zero(key, mask)) LongMap.Bin(prefix, mask, left.update(key, value), right)
-                                          else LongMap.Bin(prefix, mask, left, right.update(key, value));
+                                          else if (zero(key, mask)) LongMap.Bin(prefix, mask, left.updated(key, value), right)
+                                          else LongMap.Bin(prefix, mask, left, right.updated(key, value));
     case LongMap.Tip(key2, value2) => if (key == key2) LongMap.Tip(key, value);
                              else join(key, LongMap.Tip(key, value), key2, this);
     case LongMap.Nil => LongMap.Tip(key, value);

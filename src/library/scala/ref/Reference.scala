@@ -15,7 +15,8 @@ package scala.ref
  * @author Sean McDirmid
  */
 trait Reference[+T <: AnyRef] extends Function0[T] {
-  @deprecated def isValid: Boolean
+  @deprecated("Use .get.isDefined instead")
+  def isValid: Boolean
   /** return the underlying value */
   def apply(): T
   /** return <code>Some</code> underlying if it hasn't been collected, otherwise <code>None</code> */

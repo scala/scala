@@ -21,7 +21,7 @@ package scala.collection.mutable
  *  @version 1.0, 08/07/2003
  */
 @serializable
-class History[A, B] extends AnyRef with Subscriber[A, B] with Collection[(B, A)]
+class History[A, B] extends AnyRef with Subscriber[A, B] with Iterable[(B, A)]
 {
   protected val log: Queue[(B, A)] = new Queue[(B, A)]
   val maxHistory: Int = 1000

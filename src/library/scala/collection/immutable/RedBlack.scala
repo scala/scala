@@ -86,10 +86,10 @@ abstract class RedBlack[A] {
     }
     def smallest: NonEmpty[B] = if (left.isEmpty) this else left.smallest
     def toStream: Stream[(A,B)] =
-      left.toStream append Stream((key,value)) append right.toStream
+      left.toStream ++ Stream((key,value)) ++ right.toStream
 
     def iterator: Iterator[(A, B)] =
-      left.iterator append Iterator.single(Pair(key, value)) append right.iterator
+      left.iterator ++ Iterator.single(Pair(key, value)) ++ right.iterator
 
     def foreach[U](f: (A, B) =>  U) {
       left foreach f

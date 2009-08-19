@@ -19,7 +19,8 @@ import ops._
  * @author  Vincent Cremet
  * @version 1.0, 17/10/2003
  */
-@deprecated object jolib {
+@deprecated("Will be removed.")
+object jolib {
 
   type Pattern = List[Signal]
 

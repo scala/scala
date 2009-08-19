@@ -51,7 +51,8 @@ object Iterator {
    *  @param its the argument iterators that are to be concatenated
    *  @return the concatenation of all the argument iterators
    */
-  @deprecated def concat[A](xss: Iterator[A]*): Iterator[A] = xss.iterator.flatten
+  @deprecated("use <code>++</code>")
+  def concat[A](xss: Iterator[A]*): Iterator[A] = xss.iterator.flatten
 
   /** An iterator that returns the results of some element computation a number of times.
    *  @param   len  The number of elements returned

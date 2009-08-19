@@ -39,7 +39,7 @@ trait Publisher[A, This <: Publisher[A, This]] {
   def removeSubscriptions() { filters.clear }
 
   protected def publish(event: A): Unit =
-    filters.keys.foreach(sub =>
+    filters.keysIterator.foreach(sub =>
       if (filters.entryExists(sub, p => p(event)))
         sub.notify(this, event)
     )

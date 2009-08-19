@@ -231,7 +231,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
 
         {
           var k = 0; while(k < pos) {
-            val labels = delta1(k).keys
+            val labels = delta1(k).keysIterator
             val hmap =
               new mutable.HashMap[_labelT, immutable.BitSet]
             for (lab <- labels) {
