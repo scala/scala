@@ -61,7 +61,7 @@ extends Map[A, B]
 
   override def toList: List[(A, B)] = imap.toList
 
-  override def update(key: A, value: B): Unit = { imap = imap.update(key, value) }
+  override def update(key: A, value: B): Unit = { imap = imap.updated(key, value) }
 
   def -= (key: A): this.type = { imap = imap - key; this }
 
