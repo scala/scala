@@ -95,7 +95,7 @@ class File(val file: JFile)(implicit val codec: Codec = Codec.default) extends c
    */
   def deleteRecursively(): Boolean = deleteRecursively(file)
   private def deleteRecursively(f: JFile): Boolean = {
-    if (f.isDirectory) file.listFiles match {
+    if (f.isDirectory) f.listFiles match {
       case null =>
       case xs   => xs foreach deleteRecursively
     }
