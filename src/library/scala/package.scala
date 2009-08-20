@@ -26,7 +26,6 @@ package object scala {
 
   type Stream[+A] = scala.collection.immutable.Stream[A]
   val Stream = scala.collection.immutable.Stream
-  val #:: = scala.collection.immutable.#::
 
   type StringBuilder = scala.collection.mutable.StringBuilder
   val StringBuilder = scala.collection.mutable.StringBuilder
