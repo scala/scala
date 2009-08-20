@@ -295,7 +295,6 @@ trait StdNames {
     val hashCode_ = newTermName("hashCode")
     val hasNext = newTermName("hasNext")
     val head = newTermName("head")
-    val identity = newTermName("identity")
     val invoke_ = newTermName("invoke")
     val isInstanceOf_ = newTermName("isInstanceOf")
     val isDefinedAt = newTermName("isDefinedAt")

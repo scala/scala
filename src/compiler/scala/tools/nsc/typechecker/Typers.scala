@@ -991,7 +991,10 @@ trait Typers { self: Analyzer =>
       if (qual.isTerm &&
           ((qual.symbol eq null) || !qual.symbol.isTerm || qual.symbol.isValue) &&
           phase.id <= currentRun.typerPhase.id && !qtpe.isError && !tp.isError &&
-          qtpe.typeSymbol != NullClass && qtpe.typeSymbol != NothingClass && qtpe != WildcardType) {
+          qtpe.typeSymbol != NullClass && qtpe.typeSymbol != NothingClass && qtpe != WildcardType &&
+          context.implicitsEnabled) { // don't try to convert a top-level type that's the subject of an implicit search
+                                     // (otherwise we get divergence, e.g., starting at `conforms` during ant quick.bin)
+                                     // note: implicit arguments are still inferred (this kind of "chaining" is allowed)
         val coercion = inferView(qual, qtpe, name, tp)
         if (coercion != EmptyTree)
           typedQualifier(atPos(qual.pos)(Apply(coercion, List(qual))))
