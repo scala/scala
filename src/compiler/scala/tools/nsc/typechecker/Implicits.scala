@@ -69,7 +69,7 @@ self: Analyzer =>
   /** If type `pt` an instance of Manifest or OptManifest, or an abstract type lower-bounded
    *  by such an instance?
    */
-  def isManifest(pt: Type): Boolean = pt match {
+  def isManifest(pt: Type): Boolean = pt.dealias match {
     case TypeRef(_, ManifestClass, List(_)) |
          TypeRef(_, OptManifestClass, List(_)) => true
     case TypeRef(_, tsym, _) => tsym.isAbstractType && isManifest(pt.bounds.lo)
@@ -130,7 +130,7 @@ self: Analyzer =>
   class ImplicitSearch(tree: Tree, pt: Type, isView: Boolean, context0: Context)
     extends Typer(context0) {
 
-    assert(tree.isEmpty || tree.pos.isDefined, tree)
+//    assert(tree.isEmpty || tree.pos.isDefined, tree)
 
     import infer._
 
