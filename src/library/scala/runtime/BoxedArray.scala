@@ -63,6 +63,7 @@ abstract class BoxedArray[A] extends Vector[A] with VectorTemplate[A, BoxedArray
       case elem: AnyRef if ScalaRunTime.isArray(elem) => ScalaRunTime.boxArray(elem).deep
       case elem => elem
     }
+    def update(idx: Int, elem: Any) = error("Result of deep cannot be updated.")
     override def stringPrefix = "Array"
   }
 
