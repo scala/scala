@@ -11,7 +11,7 @@ object CheckBasic extends Specification
 	"Compiling basic file should succeed" in {
 		WithFiles(basicName -> basicSource){ files =>
 			TestCompile(files){ loader => Class.forName("org.example.Basic", false, loader) }
-			true must be(true) // don't know how to just check that previous line completes without exception
+			true must beTrue // don't know how to just check that previous line completes without exception
 		}
 	}
 	"Analyzer plugin should send source begin and end" in {
