@@ -11,6 +11,7 @@
 
 package scala
 
+import annotation.experimental
 
 /** A partial function of type <code>PartialFunction[A, B]</code> is a
  *  unary function where the domain does not include all values of type
@@ -44,3 +45,49 @@ trait PartialFunction[-A, +B] extends AnyRef with (A => B) {
   }
 }
 
+/** A few handy operations which leverage the extra bit of information
+ *  available in partial functions.  Examples:
+ *
+ * <pre>
+ *  import PartialFunction._
+ *
+ *  def strangeConditional(other: Any): Boolean = ?(other) {
+ *    case x: String if x == "abc" || x == "def"  => true
+ *    case x: Int => true
+ *  }
+ *  def onlyInt(v: Any): Option[Int] = opt(v) { case x: Int => x }
+ * </pre>
+ *
+ *  @author  Paul Phillips
+ *  @since   2.8
+ */
+@experimental
+object PartialFunction
+{
+  /** Creates a Boolean test based on a value and a partial function.
+   *  It behaves like a 'match' statement with an implied 'case _ => false'
+   *  following the supplied cases.
+   *
+   *  @param  x   the value to test
+   *  @param  pf  the partial function
+   *  @return true, iff <code>x</code> is in the domain of pf && pf(x) == true
+   */
+  def ?[T](x: T)(pf: PartialFunction[T, Boolean]): Boolean =
+    (pf isDefinedAt x) && pf(x)
+
+  /** Transforms a PartialFunction[T,U] `pf' into Function1[T,Option[U]] `f'
+   *  whose result is Some(x) if the argument is in pf's domain and None otherwise,
+   *  and applies it to the value `x'.  In effect, it is a 'match' statement
+   *  which wraps all case results in Some(_) and adds 'case _ => None' to the end.
+   *
+   *  @param  x     the value to test
+   *  @param  pf    the PartialFunction[T,U]
+   *  @return Some(pf(x)) iff (pf isDefinedAt x) and None otherwise
+   */
+  def opt[T,U](x: T)(pf: PartialFunction[T, U]): Option[U] =
+    if (pf isDefinedAt x) Some(pf(x)) else None
+
+  // If only getOrElse were a bit less unwieldy...
+  // def opt[T,U](x: T, default: U)(pf: PartialFunction[T, U]): U =
+  //   opt(x)(pf) getOrElse default
+}
