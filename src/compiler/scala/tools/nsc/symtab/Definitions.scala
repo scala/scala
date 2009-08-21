@@ -111,6 +111,7 @@ trait Definitions {
         if (!ClassClass.unsafeTypeParams.isEmpty && !phase.erasedTypes)
           appliedType(ClassClass.tpe, List(classType))
         else ClassClass.tpe
+      def Predef_identity = getMember(PredefModule, nme.identity)
       def Predef_error    = getMember(PredefModule, nme.error)
     lazy val ConsoleModule: Symbol = getModule("scala.Console")
     lazy val ScalaRunTimeModule: Symbol = getModule("scala.runtime.ScalaRunTime")

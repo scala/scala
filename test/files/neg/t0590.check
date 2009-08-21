@@ -1,6 +1,5 @@
-t0590.scala:2: error: type mismatch;
- found   : Null(null)
- required: T
+t0590.scala:2: error: diverging implicit expansion for type (Null(null)) => T
+starting with method foo in object Test
   implicit def foo[T] : T = null
                             ^
 one error found

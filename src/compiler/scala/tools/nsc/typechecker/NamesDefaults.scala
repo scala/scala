@@ -390,16 +390,9 @@ trait NamesDefaults { self: Analyzer =>
               argPos(index) = pos
               rhs
             case t: Tree =>
-            //@M was: errorTree(arg, ...)
-            // this throws an exception that's caught in `tryTypedApply` (as it uses `silent`)
-            // unfortunately, tryTypedApply recovers from the exception if you use errorTree(arg, ...) and conforms is allowed as a view (see tryImplicit in Implicits)
-            // because it tries to produce a new qualifier (if the old one was P, the new one will be conforms.apply(P)), and if that works, it pretends nothing happened
-            // so, to make sure tryTypedApply fails, pass EmptyTree instead
-                errorTree(EmptyTree, "reference to "+ name +" is ambiguous; it is both, a parameter\n"+
+              errorTree(arg, "reference to "+ name +" is ambiguous; it is both, a parameter\n"+
                              "name of the method and the name of a variable currently in scope.")
           }
-          //@M note that we don't get here when an ambiguity was detected (during the computation of res),
-          // as errorTree throws an exception
           typer.context.undetparams = udp
           res
         }
