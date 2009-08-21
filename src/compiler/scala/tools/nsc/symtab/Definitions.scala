@@ -180,6 +180,8 @@ trait Definitions {
     // scala.reflect
     lazy val ManifestClass        = getClass("scala.reflect.Manifest")
     lazy val ManifestModule       = getModule("scala.reflect.Manifest")
+    lazy val FullManifestClass   = getClass("scala.reflect.FullManifest")
+    lazy val FullManifestModule  = getModule("scala.reflect.FullManifest")
     lazy val OptManifestClass     = getClass("scala.reflect.OptManifest")
     lazy val NoManifest           = getModule("scala.reflect.NoManifest")
     lazy val CodeClass            = getClass(sn.Code)

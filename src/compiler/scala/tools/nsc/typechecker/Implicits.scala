@@ -578,10 +578,12 @@ self: Analyzer =>
     /** The manifest corresponding to type `pt`, provided `pt` is an instance of Manifest.
      */
     private def implicitManifest(pt: Type): Tree = pt match {
+      case TypeRef(_, FullManifestClass, List(arg)) =>
+        manifestOfType(arg, true)
       case TypeRef(_, ManifestClass, List(arg)) =>
-        manifestOfType(arg)
+        manifestOfType(arg, false)
       case TypeRef(_, OptManifestClass, List(arg)) =>
-        val itree = manifestOfType(arg)
+        val itree = manifestOfType(arg, false)
         if (itree == EmptyTree) gen.mkAttributedRef(NoManifest) else itree
       case TypeRef(_, tsym, _) if (tsym.isAbstractType) =>
         implicitManifest(pt.bounds.lo)
@@ -593,7 +595,7 @@ self: Analyzer =>
       * reflect.Manifest for type 'tp'. An EmptyTree is returned if
       * no manifest is found. todo: make this instantiate take type params as well?
       */
-    private def manifestOfType(tp: Type): Tree = {
+    private def manifestOfType(tp: Type, full: Boolean): Tree = {
 
       /** Creates a tree that calls the factory method called constructor in object reflect.Manifest */
       def manifestFactoryCall(constructor: String, args: Tree*): Tree =
@@ -602,16 +604,18 @@ self: Analyzer =>
           typed { atPos(tree.pos.focus) {
             Apply(
               TypeApply(
-                Select(gen.mkAttributedRef(ManifestModule), constructor),
+                Select(gen.mkAttributedRef(if (full) FullManifestModule else ManifestModule), constructor),
                 List(TypeTree(tp))
               ),
               args.toList
             )
           }}
 
-      /** Re-wraps a type in a manifest before calling inferImplicit on the result */
-      def findManifest(tp: Type): Tree =
-        inferImplicit(tree, appliedType(ManifestClass.typeConstructor, List(tp)), true, false, context).tree
+      /** Re-wraps a type in a manifest before calling inferImplicit on th  e result */
+      def findManifest(tp: Type, manifestClass: Symbol = if (full) FullManifestClass else ManifestClass) =
+        inferImplicit(tree, appliedType(manifestClass.typeConstructor, List(tp)), true, false, context).tree
+
+      def findArgManifest(tp: Type) = findManifest(tp, if (full) FullManifestClass else OptManifestClass)
 
       tp.normalize match {
         case ThisType(_) | SingleType(_, _) =>
@@ -621,11 +625,11 @@ self: Analyzer =>
         case TypeRef(pre, sym, args) =>
           if (isValueClass(sym)) {
             typed { atPos(tree.pos.focus) {
-              Select(gen.mkAttributedRef(ManifestModule), sym.name.toString)
+              Select(gen.mkAttributedRef(FullManifestModule), sym.name.toString)
             }}
           }
           else if (sym.isClass) {
-            val suffix = gen.mkClassOf(tp) :: (args map findManifest)
+            val suffix = gen.mkClassOf(tp) :: (args map findArgManifest)
             manifestFactoryCall(
               "classType",
               (if ((pre eq NoPrefix) || pre.typeSymbol.isStaticOwner) suffix
@@ -637,7 +641,7 @@ self: Analyzer =>
           else {
             manifestFactoryCall(
               "abstractType",
-              findManifest(pre) :: Literal(sym.name.toString) :: findManifest(tp.bounds.hi) :: (args map findManifest): _*)
+              findManifest(pre) :: Literal(sym.name.toString) :: findManifest(tp.bounds.hi) :: (args map findArgManifest): _*)
           }
         case RefinedType(parents, decls) =>
           // refinement is not generated yet
