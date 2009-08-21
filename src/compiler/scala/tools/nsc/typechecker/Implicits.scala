@@ -646,7 +646,7 @@ self: Analyzer =>
         case RefinedType(parents, decls) =>
           // refinement is not generated yet
           if (parents.length == 1) findManifest(parents.head)
-          else manifestFactoryCall("intersectionType", parents map findManifest: _*)
+          else manifestFactoryCall("intersectionType", parents map (findManifest(_)): _*)
         case _ =>
           EmptyTree
       }
