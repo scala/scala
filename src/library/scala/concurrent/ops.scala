@@ -39,7 +39,7 @@ object ops {
    *
    *  @param  p the expression to evaluate
    */
-  def spawn(p: => Unit)(implicit runner: TaskRunner[Unit]): Unit = {
+  def spawn(p: => Unit)(implicit runner: TaskRunner[Unit] = defaultRunner): Unit = {
     runner submit (() => p)
   }
 
@@ -47,7 +47,7 @@ object ops {
    *  @param p ...
    *  @return  ...
    */
-  def future[A](p: => A)(implicit runner: TaskRunner[Unit]): () => A = {
+  def future[A](p: => A)(implicit runner: TaskRunner[Unit] = defaultRunner): () => A = {
     val result = new SyncVar[Either[A, Throwable]]
     spawn({ result set tryCatch(p) })(runner)
     () => result.get match {
