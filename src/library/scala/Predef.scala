@@ -76,6 +76,10 @@ object Predef {
   val Map = collection.immutable.Map
   val Set = collection.immutable.Set
 
+  // no longer a view: subsumed by `conforms` (which is less likely to give rise to ambiguities)
+  // @see `conforms` for the implicit version
+  def identity[A](x: A): A = x
+
   // errors and asserts -------------------------------------------------
 
   def error(message: String): Nothing = throw new RuntimeException(message)
@@ -180,8 +184,6 @@ object Predef {
 
   // views --------------------------------------------------------------
 
-  implicit def identity[A](x: A): A = x
-
   implicit def byteWrapper(x: Byte)     = new runtime.RichByte(x)
   implicit def shortWrapper(x: Short)   = new runtime.RichShort(x)
   implicit def intWrapper(x: Int)       = new runtime.RichInt(x)
@@ -248,6 +250,14 @@ object Predef {
     def subSequence(start: Int, end: Int): CharSequence = seqToCharSequence(xs.slice(start, end))
     override def toString: String = xs.mkString("")
   }
+
+  // used, for example, in the encoding of generalized constraints
+  // we need a new type constructor `<:<` and evidence `conforms`, as
+  // reusing `Function2` and `identity` leads to ambiguities (any2stringadd is inferred)
+  // to constrain any abstract type T that's in scope in a method's argument list (not just the method's own type parameters)
+  // simply add an implicit argument of type `T <:< U`, where U is the required upper bound (for lower-bounds, use: `U <: T`)
+  sealed abstract class <:<[-From, +To] extends (From => To)
+  implicit def conforms[A]: A <:< A = new (A <:< A) {def apply(x: A) = x}
 
   def currentThread = java.lang.Thread.currentThread()
 }

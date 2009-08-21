@@ -247,16 +247,17 @@ self: Analyzer =>
     private def typedImplicit(info: ImplicitInfo): SearchResult =
        context.openImplicits find (dominates(pt, _)) match {
          case Some(pending) =>
-           //println("Pending implicit "+pending+" dominates "+pt+"/"+undetParams)
+           // println("Pending implicit "+pending+" dominates "+pt+"/"+undetParams) //@MDEBUG
            throw DivergentImplicit
            SearchFailure
          case None =>
            try {
              context.openImplicits = pt :: context.openImplicits
-             //println("  "*context.openImplicits.length+"typed implicit "+info+" for "+pt)
+             // println("  "*context.openImplicits.length+"typed implicit "+info+" for "+pt) //@MDEBUG
              typedImplicit0(info)
            } catch {
              case DivergentImplicit =>
+               // println("DivergentImplicit for pt:"+ pt +", open implicits:"+context.openImplicits) //@MDEBUG
                if (context.openImplicits.tail.isEmpty) {
                  if (!(pt.isErroneous))
                    context.unit.error(
@@ -413,16 +414,17 @@ self: Analyzer =>
        *  This is the case if all of the following holds:
        *   - the info's type is not erroneous,
        *   - the info is not shadowed by another info with the same name,
-       *   - if the symbol is Predef.identity, then we are not looking for a view,
        *   - the result of typedImplicit is non-empty.
        *   @return A search result with an attributed tree containing the implicit if succeeded,
        *           SearchFailure if not.
        */
       def tryImplicit(info: ImplicitInfo): SearchResult =
-        if (!containsError(info.tpe) &&
-            !(isLocal && shadowed.contains(info.name)) &&
-            (!isView || info.sym != Predef_identity)) typedImplicit(info)
-        else SearchFailure
+        if (containsError(info.tpe) ||
+            (isLocal && shadowed.contains(info.name)) //||
+            // (isView && (info.sym == Predef_identity || info.sym == Predef_conforms}))    //@M this condition prevents no-op conversions, which are a problem (besides efficiency),
+            // one example is removeNames in NamesDefaults, which relies on the type checker failing in case of ambiguity between an assignment/named arg
+           ) SearchFailure
+        else typedImplicit(info)
 
       def appInfos(is: List[ImplicitInfo]): Map[ImplicitInfo, SearchResult] = {
         var applicable = Map[ImplicitInfo, SearchResult]()
