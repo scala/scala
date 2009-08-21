@@ -47,7 +47,7 @@ object Map extends ImmutableMapFactory[Map] {
 
   class WithDefault[A, +B](underlying: Map[A, B], d: A => B) extends Map[A, B] {
     override def size = underlying.size
-    def get(key: A) = underlying.get(key)
+    def get(key: A) = underlying.get(key) orElse Some(default(key))
     def iterator = underlying.iterator
     override def empty = new WithDefault(underlying.empty, d)
     override def updated[B1 >: B](key: A, value: B1): WithDefault[A, B1] = new WithDefault[A, B1](underlying.updated[B1](key, value), d)
