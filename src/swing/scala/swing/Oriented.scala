@@ -11,15 +11,25 @@
 
 package scala.swing
 
+object Oriented {
+  trait Wrapper extends Oriented {
+    def peer: OrientedMixin
+
+    /*
+     * Need to revert to structural type, since scroll bars are oriented
+     * and these are created by scroll panes. Shouldn't be a bootleneck.
+     */
+    protected type OrientedMixin = {
+      def getOrientation(): Int
+      def setOrientation(n: Int)
+    }
+    def orientation: Orientation.Value = Orientation(peer.getOrientation)
+  }
+}
+
 /**
  * Something that can have an orientation.
  */
 trait Oriented {
-  def peer: javax.swing.JComponent with OrientedMixin
-
-  protected trait OrientedMixin {
-    def getOrientation(): Int
-    def setOrientation(n: Int)
-  }
-  def orientation: Orientation.Value = Orientation(peer.getOrientation)
+  def orientation: Orientation.Value
 }

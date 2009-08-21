@@ -14,6 +14,7 @@ package scala.swing
 import javax.swing._
 import javax.swing.text._
 import javax.swing.event._
+import java.awt.Color
 import event._
 
 object TextComponent {
@@ -48,6 +49,10 @@ class TextComponent extends Component with Publisher {
     def selectionVisible_=(b: Boolean) { peer.getCaret.setSelectionVisible(b) }
     def blinkRate: Int = peer.getCaret.getBlinkRate
     def blinkRate_=(n: Int) { peer.getCaret.setBlinkRate(n) }
+    def color: Color = peer.getCaretColor
+    def color_=(c: Color) = peer.setCaretColor(c)
+    def position: Int = peer.getCaretPosition
+    def position_=(p: Int) = peer.setCaretPosition(p)
 
     peer.addCaretListener {
       new CaretListener {

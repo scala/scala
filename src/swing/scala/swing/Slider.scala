@@ -23,9 +23,8 @@ import event._
  *
  * @see javax.swing.JSlider
  */
-class Slider extends Component with Orientable with Publisher {
-  override lazy val peer: JSlider with OrientedMixin =
-    new JSlider with OrientedMixin
+class Slider extends Component with Orientable.Wrapper with Publisher {
+  override lazy val peer: JSlider = new JSlider
 
   def min: Int = peer.getMinimum
   def min_=(v: Int) { peer.setMinimum(v) }

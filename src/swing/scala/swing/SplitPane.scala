@@ -21,9 +21,9 @@ import Swing._
  *
  * @see javax.swing.JSplitPane
  */
-class SplitPane(o: Orientation.Value, left: Component, right: Component) extends Component with Container with Orientable {
-  override lazy val peer: javax.swing.JSplitPane with OrientedMixin =
-    new javax.swing.JSplitPane(o.id, left.peer, right.peer) with OrientedMixin
+class SplitPane(o: Orientation.Value, left: Component, right: Component) extends Component with Container with Orientable.Wrapper {
+  override lazy val peer: javax.swing.JSplitPane =
+    new javax.swing.JSplitPane(o.id, left.peer, right.peer)
   def this(o: Orientation.Value) = this(o, new Component {}, new Component {})
   def this() = this(Orientation.Horizontal)
 

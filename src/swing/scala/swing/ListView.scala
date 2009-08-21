@@ -128,8 +128,7 @@ object ListView {
     override lazy val peer: ListCellRenderer = new DefaultListCellRenderer
     def componentFor(list: ListView[_], isSelected: Boolean, focused: Boolean, a: Any, index: Int): Component = {
       val c = peer.getListCellRendererComponent(list.peer, a, index, isSelected, focused).asInstanceOf[JComponent]
-      val w = UIElement.cachedWrapper[Component](c)
-      if (w eq null) Component.wrap(c) else w
+      Component.wrap(c)
     }
   }
 }

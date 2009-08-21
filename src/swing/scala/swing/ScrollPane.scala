@@ -81,4 +81,6 @@ class ScrollPane extends Component with Container {
   def horizontalScrollBarPolicy = BarPolicy.wrap(peer.getHorizontalScrollBarPolicy)
   def horizontalScrollBarPolicy_=(p: BarPolicy.Value) = peer.setHorizontalScrollBarPolicy(p.horizontalPeer)
 
+  def horizontalScrollBar = ScrollBar.wrap(peer.getHorizontalScrollBar)
+  def verticalScrollBar = ScrollBar.wrap(peer.getVerticalScrollBar)
 }

@@ -25,8 +25,10 @@ object Component {
   /**
    * Wraps a given Java Swing Component into a new wrapper.
    */
-  def wrap(c: JComponent): Component = new Component {
-    override lazy val peer = c
+  def wrap(c: JComponent): Component = {
+    val w = UIElement.cachedWrapper[Component](c)
+    if (w != null) w
+    else new Component { override lazy val peer = c }
   }
 }
 

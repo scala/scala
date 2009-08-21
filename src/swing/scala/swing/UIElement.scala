@@ -28,18 +28,22 @@ object UIElement {
 
   /**
    * Returns the wrapper for a given peer, null if there is no cached wrapper
-   * for the given component.
+   * for the given component of the given type. Should never throw an exception.
    */
-  private[swing] def cachedWrapper[C<:UIElement](c: java.awt.Component): C = (c match {
-    case c: javax.swing.JComponent => c.getClientProperty(ClientKey)
-    case _ => wrapperCache.get(c)
-  }).asInstanceOf[C]
+  private[swing] def cachedWrapper[C<:UIElement](c: java.awt.Component): C = {
+    val w = c match {
+      case c: javax.swing.JComponent => c.getClientProperty(ClientKey)
+      case _ => wrapperCache.get(c)
+    }
+    try { w.asInstanceOf[C] } catch { case _ => null }
+  }
 
   /**
-   * Wraps a given AWT component in a UIElement.
+   * Wraps a given AWT component in a UIElement. If there is no wrapper in the
+   * cache, this method will create a new one.
    */
   def wrap(c: java.awt.Component): UIElement = {
-    val w = cachedWrapper(c)
+    val w = cachedWrapper[UIElement](c)
     if (w != null) w
     else new UIElement { def peer = c }
   }
@@ -53,6 +57,9 @@ object UIElement {
  * @note [Java Swing] This trait does not have an exact counterpart in
  * Java Swing. The peer is of type java.awt.Component since this is the
  * least common upper bound of possible underlying peers.
+ *
+ * @note [Implementation] A UIElement automatically adds itself to the
+ * component cache on creation.
  *
  * @see java.awt.Component
  */
