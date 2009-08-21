@@ -32,16 +32,13 @@ object Swing {
   implicit def pair2Point(p: (Int, Int)): Point = new Point(p._1, p._2)
   implicit def pair2Point(p: (Int, Int, Int, Int)): Rectangle = new Rectangle(p._1, p._2, p._3, p._4)
 
-  /**
-   * Allows one to use blocks as runnables.
-   */
-  implicit def block2Runnable(block: =>Unit): Runnable = new Runnable {
-    override def run = block
+  @inline final def Runnable(@inline block: =>Unit) = new Runnable {
+    def run = block
   }
-  def ChangeListener(f: ChangeEvent => Unit) = new ChangeListener {
+  final def ChangeListener(f: ChangeEvent => Unit) = new ChangeListener {
     def stateChanged(e: ChangeEvent) { f(e) }
   }
-  def ActionListener(f: ActionEvent => Unit) = new ActionListener {
+  final def ActionListener(f: ActionEvent => Unit) = new ActionListener {
     def actionPerformed(e: ActionEvent) { f(e) }
   }
 
@@ -137,11 +134,11 @@ object Swing {
    * Schedule the given code to be executed on the Swing event dispatching
    * thread (EDT). Returns immediately.
    */
-  def onEDT(op: =>Unit) = SwingUtilities invokeLater op
+  @inline final def onEDT(op: =>Unit) = SwingUtilities invokeLater Runnable(op)
 
   /**
    * Schedule the given code to be executed on the Swing event dispatching
    * thread (EDT). Blocks until after the code has been run.
    */
-  def onEDTWait(op: =>Unit) = SwingUtilities invokeAndWait op
+  @inline final def onEDTWait(op: =>Unit) = SwingUtilities invokeAndWait Runnable(op)
 }
