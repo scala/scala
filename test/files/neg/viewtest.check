@@ -3,10 +3,4 @@ viewtest.scala:43: error: type mismatch;
  required: List[a(in method view3)]
         case y1: List[a] => compareLists(x, y1)
                                             ^
-viewtest.scala:104: error: ambiguous implicit values:
- both method view4 in object O of type [a](x: a)a
- and method identity in object Predef of type [A](x: A)A
- match expected type (test.Str) => test.Ordered[test.Str]
-        t = t insert Str(s)
-              ^
-two errors found
+one error found

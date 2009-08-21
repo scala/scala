@@ -420,8 +420,8 @@ self: Analyzer =>
        */
       def tryImplicit(info: ImplicitInfo): SearchResult =
         if (containsError(info.tpe) ||
-            (isLocal && shadowed.contains(info.name)) //||
-            // (isView && (info.sym == Predef_identity || info.sym == Predef_conforms}))    //@M this condition prevents no-op conversions, which are a problem (besides efficiency),
+            (isLocal && shadowed.contains(info.name)) ||
+            (isView && (info.sym == Predef_conforms))  //@M this condition prevents no-op conversions, which are a problem (besides efficiency),
             // one example is removeNames in NamesDefaults, which relies on the type checker failing in case of ambiguity between an assignment/named arg
            ) SearchFailure
         else typedImplicit(info)
