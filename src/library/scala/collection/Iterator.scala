@@ -727,63 +727,132 @@ trait Iterator[+A] { self =>
     buf
   }
 
-  /** Returns an iterator which groups this iterator into fixed size
-   *  blocks, possibly except for the final block.  For instance:
-   *    <code>(1 to 8).iterator grouped 3</code>
-   *  will return an iterator equivalent to
-   *    Iterator(Seq(1,2,3), Seq(4,5,6), Seq(7,8))
-   */
-  def grouped(size: Int): Iterator[Sequence[A]] = new Iterator[Sequence[A]] {
-    def hasNext = self.hasNext
-    def next = self takeDestructively size toList
-  }
-  /** Returns an iterator which presents a "sliding window" of the
-   *  given size across this iterator.  For instance:
-   *    <code>(1 to 5).iterator sliding 3</code>
-   *  will return an iterator equivalent to
-   *    Iterator(Seq(1,2,3), Seq(2,3,4), Seq(3,4,5))
+  /** A flexible iterator for transforming an Iterator[A] into an
+   *  Iterator[Sequence[A]], with configurable sequence size, step, and
+   *  strategy for dealing with elements which don't fit evenly.
    *
-   *  The optional 'step' parameter if given advances the window
-   *  by the given number of positions.
-   *
-   *  Note: if your parameters don't perfectly "fit" the sequence,
-   *  the last result may be of a size less than windowSize, and the
-   *  last step may be less than the given step, or both.  What is
-   *  guaranteed is that each element of the original iterator will
-   *  appear in at least one sequence in the sliding iterator, UNLESS
-   *  the step size is larger than the windowSize.
+   *  Typical uses can be achieved via methods `grouped' and `sliding'.
    */
-  def sliding(windowSize: Int, step: Int = 1): Iterator[Sequence[A]] = {
-    require(windowSize >= 1 && step >= 1)
+  class GroupedIterator[B >: A](self: Iterator[A], size: Int, step: Int) extends Iterator[Sequence[B]] {
+    require(size >= 1 && size >= 1)
 
-    val buf = takeDestructively(windowSize)
+    private[this] var buffer: ArrayBuffer[B] = ArrayBuffer()  // the buffer
+    private[this] var filled = false                          // whether the buffer is "hot"
+    private[this] var _partial = true                         // whether we deliver short sequences
+    private[this] var pad: Option[() => B] = None             // what to pad short sequences with
 
-    if (!self.hasNext) Iterator single buf.toList
-    else new Iterator[Sequence[A]] {
-      private[this] var filled = true
-      private[this] var buffer = ArrayBuffer(buf: _*)
-      def fill() = {
-        val xs = self takeDestructively step
-        val len = xs.length min buf.size
+    /** Public functions which can be used to configure the iterator before use. */
+    def withPadding(x: => B): this.type = {
+      pad = Some(() => x)
+      this
+    }
+    def withPartial(x: Boolean): this.type = {
+      _partial = x
+      if (_partial == true) // reset pad since otherwise it will take precedence
+        pad = None
 
-        (len > 0) && {
-          buffer trimStart len
-          buffer ++= (xs takeRight len)
+      this
+    }
+
+    private def padding(x: Int) = List.fill(x)(pad.get())
+    private def gap = (step - size) max 0
+
+    private def go(count: Int) = {
+      val prevSize = buffer.size
+      def isFirst = prevSize == 0
+      // If there is padding defined we insert it immediately
+      // so the rest of the code can be oblivious
+      val xs: Seq[B] = {
+        val res = self takeDestructively count
+        // extra checks so we don't calculate length unless there's reason
+        if (pad.isDefined && !self.hasNext) {
+          val shortBy = count - res.length
+          if (shortBy > 0) res ++ padding(shortBy) else res
+        }
+        else res
+      }
+      lazy val len = xs.length
+      lazy val incomplete = len < count
+
+      // if 0 elements are requested, or if the number of newly obtained
+      // elements is less than the gap between sequences, we are done.
+      def deliver(howMany: Int) = {
+        (howMany > 0 && len > gap) && {
+          if (!isFirst)
+            buffer trimStart (step min prevSize)
+
+          val available =
+            if (isFirst) len
+            else howMany min (len - gap)
+
+          buffer ++= (xs takeRight available)
           filled = true
           true
         }
       }
 
-      def hasNext = filled || fill()
-      def next = {
-        if (!filled)
-          fill()
+      if (xs.isEmpty) false                         // self ran out of elements
+      else if (_partial) deliver(len min size)      // if _partial is true, we deliver regardless
+      else if (incomplete) false                    // !_partial && incomplete means no more seqs
+      else if (isFirst) deliver(len)                // first element
+      else deliver(step min size)                   // the typical case
+    }
 
-        filled = false
-        buffer.toList
-      }
+    // fill() returns false if no more sequences can be produced
+    private def fill(): Boolean = {
+      if (!self.hasNext) false
+      // the first time we grab size, but after that we grab step
+      else if (buffer.isEmpty) go(size)
+      else go(step)
+    }
+
+    def hasNext = filled || fill()
+    def next = {
+      if (!filled)
+        fill()
+
+      filled = false
+      buffer.toList
     }
   }
+
+  /** Returns an iterator which groups this iterator into fixed size
+   *  blocks.  Example usages:
+   *
+   *  <pre>
+   *    // Returns List(List(1, 2, 3), List(4, 5, 6), List(7)))
+   *    (1 to 7).iterator grouped 3 toList
+   *    // Returns List(List(1, 2, 3), List(4, 5, 6))
+   *    (1 to 7).iterator grouped 3 withPartial false toList
+   *    // Returns List(List(1, 2, 3), List(4, 5, 6), List(7, 20, 25)
+   *    // Illustrating that withPadding's argument is by-name.
+   *    val it2 = Iterator.iterate(20)(_ + 5)
+   *    (1 to 7).iterator grouped 3 withPadding it2.next toList
+   *  </pre>
+   */
+  def grouped[B >: A](size: Int): GroupedIterator[B] =
+    new GroupedIterator[B](self, size, size)
+
+  /** Returns an iterator which presents a "sliding window" view of
+   *  another iterator.  The first argument is the window size, and
+   *  the second is how far to advance the window on each iteration;
+   *  defaults to 1.  Example usages:
+   *
+   *  <pre>
+   *    // returns List(List(1, 2, 3), List(2, 3, 4), List(3, 4, 5))
+   *    (1 to 5).iterator.sliding(3).toList
+   *    // returns List(List(1, 2, 3, 4), List(4, 5))
+   *    (1 to 5).iterator.sliding(4, 3).toList
+   *    // returns List(List(1, 2, 3, 4))
+   *    (1 to 5).iterator.sliding(4, 3).withPartial(false).toList
+   *    // List(List(1, 2, 3, 4), List(4, 5, 30, 35))
+   *    // Illustrating that withPadding's argument is by-name.
+   *    val it2 = Iterator.iterate(20)(_ + 5)
+   *    (1 to 5).iterator.sliding(4, 3).withPadding(it2.next).toList
+   *  </pre>
+   */
+  def sliding[B >: A](size: Int, step: Int = 1): GroupedIterator[B] =
+    new GroupedIterator[B](self, size, step)
 
   /** Returns the number of elements in this iterator.
    *  @note The iterator is at its end after this method returns.
