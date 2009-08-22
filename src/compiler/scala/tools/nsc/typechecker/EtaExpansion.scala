@@ -93,7 +93,7 @@ trait EtaExpansion { self: Analyzer =>
           defs ++= stats
           liftoutPrefix(fun)
         case Apply(fn, args) =>
-          treeCopy.Apply(tree, liftoutPrefix(fn), List.mapConserve(args)(liftout)) setType null
+          treeCopy.Apply(tree, liftoutPrefix(fn), args mapConserve (liftout)) setType null
         case TypeApply(fn, args) =>
           treeCopy.TypeApply(tree, liftoutPrefix(fn), args) setType null
         case Select(qual, name) =>

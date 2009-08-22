@@ -77,7 +77,7 @@ object Iterable extends TraversableFactory[Iterable] {
   }
 
   /** The maximum element of a non-empty sequence of ordered elements */
-  @deprecated("use seq.max iConstead")
+  @deprecated("use seq.max instead")
   def max[A <% Ordered[A]](seq: Iterable[A]): A = {
     val xs = seq.iterator
     if (!xs.hasNext) throw new IllegalArgumentException("max(<empty>)")

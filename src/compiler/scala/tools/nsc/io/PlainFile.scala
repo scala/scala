@@ -96,7 +96,7 @@ class PlainFile(val file: File) extends AbstractFile {
   def delete {
     if (file.isFile) file.delete
     else if (file.isDirectory) {
-      elements.foreach(_.delete)
+      iterator.foreach(_.delete)
       file.delete
     }
   }

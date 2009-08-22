@@ -78,7 +78,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
       val tp = expandAlias(tp0)
       tp match {
         case ClassInfoType(parents, decls, clazz) =>
-          val parents1 = List.mapConserve(parents)(uncurry)
+          val parents1 = parents mapConserve (uncurry)
           if (parents1 eq parents) tp
           else ClassInfoType(parents1, decls, clazz) // @MAT normalize in decls??
         case PolyType(_, _) =>

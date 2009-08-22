@@ -464,7 +464,7 @@ self: Analyzer =>
 
       if (applicable.isEmpty && !invalidImplicits.isEmpty) {
         infer.setAddendum(tree.pos, () =>
-          "\n Note: implicit "+invalidImplicits.first+" is not applicable here"+
+          "\n Note: implicit "+invalidImplicits.head+" is not applicable here"+
           "\n because it comes after the application point and it lacks an explicit result type")
       }
 

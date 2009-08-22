@@ -170,7 +170,7 @@ trait PhaseAssembly { self: Global =>
 	  if (sanity.length == 0) {
 	    throw new FatalError("There is no runs right after dependency, where there should be one! This is not supposed to happen!")
 	  } else if (sanity.length > 1) {
-	    var msg = "Multiple phases want to run right after the phase " + sanity.first.to.phasename + "\n"
+	    var msg = "Multiple phases want to run right after the phase " + sanity.head.to.phasename + "\n"
 	    msg += "Phases: "
 	    sanity = sanity.sort((e1,e2) => (e1.frm.phasename compareTo e2.frm.phasename) < 0)
 	    for (edge <- sanity) {
@@ -308,7 +308,7 @@ trait PhaseAssembly { self: Global =>
     sbuf.append("digraph G {\n")
     for (edge <- graph.edges) {
       sbuf.append("\"" + edge.frm.allPhaseNames + "(" + edge.frm.level + ")" + "\"->\"" + edge.to.allPhaseNames + "(" + edge.to.level + ")" + "\"")
-      if (! edge.frm.phaseobj.get.first.internal) {
+      if (! edge.frm.phaseobj.get.head.internal) {
        	extnodes += edge.frm
       }
       edge.frm.phaseobj match { case None => null case Some(ln) => if(ln.size > 1) fatnodes += edge.frm }

@@ -1099,7 +1099,7 @@ trait Typers { self: Analyzer =>
 */
 
         //Console.println("parents("+clazz") = "+supertpt :: mixins);//DEBUG
-        List.mapConserve(supertpt :: mixins)(tpt => checkNoEscaping.privates(clazz, tpt))
+        supertpt :: mixins mapConserve (tpt => checkNoEscaping.privates(clazz, tpt))
       } catch {
         case ex: TypeError =>
           templ.tpe = null
@@ -1206,7 +1206,7 @@ trait Typers { self: Analyzer =>
       val typedMods = removeAnnotations(cdef.mods)
       assert(clazz != NoSymbol)
       reenterTypeParams(cdef.tparams)
-      val tparams1 = List.mapConserve(cdef.tparams)(typedTypeDef)
+      val tparams1 = cdef.tparams mapConserve (typedTypeDef)
       val impl1 = newTyper(context.make(cdef.impl, clazz, scopeFor(cdef.impl, TypedDefScopeKind)))
         .typedTemplate(cdef.impl, parentTypes(cdef.impl))
       val impl2 = addSyntheticMethods(impl1, clazz, context)
@@ -1497,9 +1497,9 @@ trait Typers { self: Analyzer =>
       val meth = ddef.symbol
       reenterTypeParams(ddef.tparams)
       reenterValueParams(ddef.vparamss)
-      val tparams1 = List.mapConserve(ddef.tparams)(typedTypeDef)
+      val tparams1 = ddef.tparams mapConserve (typedTypeDef)
       val vparamss1 = List.mapConserve(ddef.vparamss)(vparams1 =>
-        List.mapConserve(vparams1)(typedValDef))
+        vparams1 mapConserve (typedValDef))
       for (vparams1 <- vparamss1; if !vparams1.isEmpty; vparam1 <- vparams1.init) {
         if (vparam1.symbol.tpe.typeSymbol == RepeatedParamClass)
           error(vparam1.pos, "*-parameter must come last")
@@ -1568,7 +1568,7 @@ trait Typers { self: Analyzer =>
 
     def typedTypeDef(tdef: TypeDef): TypeDef = {
       reenterTypeParams(tdef.tparams) // @M!
-      val tparams1 = List.mapConserve(tdef.tparams)(typedTypeDef) // @M!
+      val tparams1 = tdef.tparams mapConserve (typedTypeDef) // @M!
       val typedMods = removeAnnotations(tdef.mods)
       val rhs1 = checkNoEscaping.privates(tdef.symbol, typedType(tdef.rhs))
       checkNonCyclic(tdef.symbol)
@@ -1734,7 +1734,7 @@ trait Typers { self: Analyzer =>
           vparam.symbol
         }
 
-        val vparams = List.mapConserve(fun.vparams)(typedValDef)
+        val vparams = fun.vparams mapConserve (typedValDef)
 //        for (vparam <- vparams) {
 //          checkNoEscaping.locals(context.scope, WildcardType, vparam.tpt); ()
 //        }
@@ -1848,7 +1848,7 @@ trait Typers { self: Analyzer =>
         if (newStats.isEmpty) stats
         else stats ::: newStats.toList
       }
-      val result = List.mapConserve(stats)(typedStat)
+      val result = stats mapConserve (typedStat)
       if (phase.erasedTypes) result
       else checkNoDoubleDefsAndAddSynthetics(result)
     }
@@ -1857,7 +1857,7 @@ trait Typers { self: Analyzer =>
       checkDead(constrTyperIf((mode & SCCmode) != 0).typed(arg, mode & stickyModes | newmode, pt))
 
     def typedArgs(args: List[Tree], mode: Int) =
-      List.mapConserve(args)(arg => typedArg(arg, mode, 0, WildcardType))
+      args mapConserve (arg => typedArg(arg, mode, 0, WildcardType))
 
     def typedArgs(args: List[Tree], mode: Int, originalFormals: List[Type], adaptedFormals: List[Type]) = {
       if (isVarArgs(originalFormals)) {
@@ -2755,7 +2755,7 @@ trait Typers { self: Analyzer =>
 
       def typedArrayValue(elemtpt: Tree, elems: List[Tree]) = {
         val elemtpt1 = typedType(elemtpt, mode)
-        val elems1 = List.mapConserve(elems)(elem => typed(elem, mode, elemtpt1.tpe))
+        val elems1 = elems mapConserve (elem => typed(elem, mode, elemtpt1.tpe))
         treeCopy.ArrayValue(tree, elemtpt1, elems1)
           .setType(
             (if (isFullyDefined(pt) && !phase.erasedTypes) pt
@@ -3387,7 +3387,7 @@ trait Typers { self: Analyzer =>
       }
 
       def typedCompoundTypeTree(templ: Template) = {
-        val parents1 = List.mapConserve(templ.parents)(typedType(_, mode))
+        val parents1 = templ.parents mapConserve (typedType(_, mode))
         if (parents1 exists (_.tpe.isError)) tree setType ErrorType
         else {
           val decls = scopeFor(tree, CompoundTreeScopeKind)
@@ -3488,11 +3488,11 @@ trait Typers { self: Analyzer =>
 
         case Sequence(elems) =>
           checkRegPatOK(tree.pos, mode)
-          val elems1 = List.mapConserve(elems)(elem => typed(elem, mode, pt))
+          val elems1 = elems mapConserve (elem => typed(elem, mode, pt))
           treeCopy.Sequence(tree, elems1) setType pt
 
         case Alternative(alts) =>
-          val alts1 = List.mapConserve(alts)(alt => typed(alt, mode | ALTmode, pt))
+          val alts1 = alts mapConserve (alt => typed(alt, mode | ALTmode, pt))
           treeCopy.Alternative(tree, alts1) setType pt
 
         case Star(elem) =>
@@ -3615,7 +3615,7 @@ trait Typers { self: Analyzer =>
                       // in the then-branch above. (see pos/tcpoly_overloaded.scala)
                       // this assert is too strict: be tolerant for errors like trait A { def foo[m[x], g]=error(""); def x[g] = foo[g/*ERR: missing argument type*/] }
                       //assert(fun1.symbol.info.isInstanceOf[OverloadedType] || fun1.symbol.isError) //, (fun1.symbol,fun1.symbol.info,fun1.symbol.info.getClass,args,tparams))
-                        List.mapConserve(args)(typedHigherKindedType(_, mode))
+                        args mapConserve (typedHigherKindedType(_, mode))
                       }
 
           //@M TODO: context.undetparams = undets_fun ?
@@ -3630,7 +3630,7 @@ trait Typers { self: Analyzer =>
         case ApplyDynamic(qual, args) =>
           val reflectiveCalls = !(settings.refinementMethodDispatch.value == "invoke-dynamic")
           val qual1 = typed(qual, AnyRefClass.tpe)
-          val args1 = List.mapConserve(args)(arg => if (reflectiveCalls) typed(arg, AnyRefClass.tpe) else typed(arg))
+          val args1 = args mapConserve (arg => if (reflectiveCalls) typed(arg, AnyRefClass.tpe) else typed(arg))
           treeCopy.ApplyDynamic(tree, qual1, args1) setType (if (reflectiveCalls) AnyRefClass.tpe else tree.symbol.info.resultType)
 
         case Super(qual, mix) =>

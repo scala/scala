@@ -2472,14 +2472,14 @@ A type's typeSymbol should never be inspected directly.
         if (bounds1 eq bounds) tp
         else BoundedWildcardType(bounds1.asInstanceOf[TypeBounds])
       case rtp @ RefinedType(parents, decls) =>
-        val parents1 = List.mapConserve(parents)(this)
+        val parents1 = parents mapConserve (this)
         val decls1 = mapOver(decls)
         //if ((parents1 eq parents) && (decls1 eq decls)) tp
         //else refinementOfClass(tp.typeSymbol, parents1, decls1)
         copyRefinedType(rtp, parents1, decls1)
 /*
       case ClassInfoType(parents, decls, clazz) =>
-        val parents1 = List.mapConserve(parents)(this);
+        val parents1 = parents mapConserve (this);
         val decls1 = mapOver(decls);
         if ((parents1 eq parents) && (decls1 eq decls)) tp
         else cloneDecls(ClassInfoType(parents1, new Scope(), clazz), tp, decls1)
@@ -2510,7 +2510,7 @@ A type's typeSymbol should never be inspected directly.
         else OverloadedType(pre1, alts)
       case AntiPolyType(pre, args) =>
         val pre1 = this(pre)
-        val args1 = List.mapConserve(args)(this)
+        val args1 = args mapConserve (this)
         if ((pre1 eq pre) && (args1 eq args)) tp
         else AntiPolyType(pre1, args1)
       case TypeVar(_, constr) =>
@@ -2562,7 +2562,7 @@ A type's typeSymbol should never be inspected directly.
       else { // map is not the identity --> do cloning properly
         val clonedSyms = origSyms map (_.cloneSymbol)
         val clonedInfos = clonedSyms map (_.info.substSym(origSyms, clonedSyms))
-        val transformedInfos = List.mapConserve(clonedInfos)(this)
+        val transformedInfos = clonedInfos mapConserve (this)
         List.map2(clonedSyms, transformedInfos) {
           ((newSym, newInfo) => newSym.setInfo(newInfo))
         }
@@ -2821,7 +2821,7 @@ A type's typeSymbol should never be inspected directly.
                 if (ps.isEmpty) throwError
                 else if (sym eq ps.head)
                   // @M! don't just replace the whole thing, might be followed by type application
-                  appliedType(as.head, List.mapConserve(args)(this)) // @M: was as.head
+                  appliedType(as.head, args mapConserve (this)) // @M: was as.head
                 else instParam(ps.tail, as.tail);
               val symclazz = sym.owner
               if (symclazz == clazz && (pre.widen.typeSymbol isNonBottomSubClass symclazz)) {
@@ -3280,7 +3280,7 @@ A type's typeSymbol should never be inspected directly.
         if (sym.isPackageClass) tp
         else {
           val pre1 = this(pre)
-          val args1 = List.mapConserve(args)(this)
+          val args1 = args mapConserve (this)
           val sym1 = adaptToNewRun(pre1, sym)
           if ((pre1 eq pre) && (sym1 eq sym) && (args1 eq args)/* && sym.isExternal*/) tp
           else typeRef(pre1, sym1, args1)
@@ -3300,12 +3300,12 @@ A type's typeSymbol should never be inspected directly.
       case ClassInfoType(parents, decls, clazz) =>
         if (clazz.isPackageClass) tp
         else {
-          val parents1 = List.mapConserve(parents)(this)
+          val parents1 = parents mapConserve (this)
           if (parents1 eq parents) tp
           else ClassInfoType(parents1, decls, clazz)
         }
       case RefinedType(parents, decls) =>
-        val parents1 = List.mapConserve(parents)(this)
+        val parents1 = parents mapConserve (this)
         if (parents1 eq parents) tp
         else refinedType(parents1, tp.typeSymbol.owner, decls, tp.typeSymbol.owner.pos)
       case SuperType(_, _) => mapOver(tp)
@@ -4310,7 +4310,7 @@ A type's typeSymbol should never be inspected directly.
     val ts0 = elimSub0(ts)
     if (ts0.length <= 1) ts0
     else {
-      val ts1 = List.mapConserve(ts0)(t => elimAnonymousClass(t.underlying))
+      val ts1 = ts0 mapConserve (t => elimAnonymousClass(t.underlying))
       if (ts1 eq ts0) ts0
       else elimSub(ts1, depth)
     }
@@ -4329,7 +4329,7 @@ A type's typeSymbol should never be inspected directly.
         else throw new Error("trying to do lub/glb of typevar "+tp)
       case t => t
     }
-    val strippedTypes = List.mapConserve(ts)(stripType)
+    val strippedTypes = ts mapConserve (stripType)
     (strippedTypes, quantified)
   }
 

@@ -153,9 +153,9 @@ abstract class Changes {
 
     // new members not yet visited
     val newMembers = mutable.HashSet[Symbol]()
-    newMembers ++= to.info.decls.elements
+    newMembers ++= to.info.decls.iterator
 
-    for (o <- from.info.decls.elements;
+    for (o <- from.info.decls.iterator;
          val n = to.info.decl(o.name)) {
       newMembers -= n
 

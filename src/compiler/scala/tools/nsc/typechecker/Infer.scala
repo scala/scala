@@ -1193,7 +1193,7 @@ trait Infer {
       case TypeRef(_, sym, _) if sym.isAliasType =>
         widen(tp.normalize)
       case rtp @ RefinedType(parents, decls) =>
-        copyRefinedType(rtp, List.mapConserve(parents)(widen), decls)
+        copyRefinedType(rtp, parents mapConserve (widen), decls)
       case AnnotatedType(_, underlying, _) =>
         widen(underlying)
       case _ =>

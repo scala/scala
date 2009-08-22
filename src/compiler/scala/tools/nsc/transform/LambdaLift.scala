@@ -29,7 +29,7 @@ abstract class LambdaLift extends InfoTransform {
           typeRef(apply(sym.owner.enclClass.thisType), sym, args)
         } else mapOver(tp)
       case ClassInfoType(parents, decls, clazz) =>
-        val parents1 = List.mapConserve(parents)(this)
+        val parents1 = parents mapConserve (this)
         if (parents1 eq parents) tp
         else ClassInfoType(parents1, decls, clazz)
       case _ =>
