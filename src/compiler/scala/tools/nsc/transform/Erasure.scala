@@ -148,7 +148,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
 
   private def needsJavaSig(tp: Type) = !settings.Ynogenericsig.value && NeedsSigCollector.collect(tp)
 
-  private lazy val tagOfClass = new HashMap[Symbol,Char] + (
+  private lazy val tagOfClass = Map[Symbol,Char](
     ByteClass -> BYTE_TAG,
     CharClass -> CHAR_TAG,
     DoubleClass -> DOUBLE_TAG,

@@ -41,14 +41,8 @@ object ClassPath {
   }
 
   /** Split path using platform-dependent path separator */
-  def splitPath(path: String): List[String] = {
-    val strtok = new StringTokenizer(path, File.pathSeparator)
-    val buf = new collection.mutable.ListBuffer[String]
-    while (strtok.hasMoreTokens()) {
-      buf + strtok.nextToken()
-    }
-    buf.toList
-  }
+  def splitPath(path: String): List[String] =
+    path split File.pathSeparator toList
 
   /** Expand path with expanding stars */
   def expandPath(path: String): List[String] = splitPath(path).flatMap(expandStar(_))

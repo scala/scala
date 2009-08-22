@@ -212,7 +212,7 @@ trait JavaParsers extends JavaScanners {
       }
 
     def repsep[T <: Tree](p: () => T, sep: Int): List[T] = {
-      val buf = new ListBuffer[T] + p()
+      val buf = ListBuffer[T](p())
       while (in.token == sep) {
         in.nextToken
         buf += p()
@@ -456,7 +456,7 @@ trait JavaParsers extends JavaScanners {
 
     def bound(): Tree =
       atPos(in.currentPos) {
-        val buf = new ListBuffer[Tree] + typ()
+        val buf = ListBuffer[Tree](typ())
         while (in.token == AMP) {
           in.nextToken
           buf += typ()
@@ -577,7 +577,7 @@ trait JavaParsers extends JavaScanners {
      *  these potential definitions are real or not.
      */
     def fieldDecls(pos: Position, mods: Modifiers, tpt: Tree, name: Name): List[Tree] = {
-      val buf = new ListBuffer[Tree] + varDecl(pos, mods, tpt, name)
+      val buf = ListBuffer[Tree](varDecl(pos, mods, tpt, name))
       val maybe = new ListBuffer[Tree] // potential variable definitions.
       while (in.token == COMMA) {
         in.nextToken

@@ -2413,7 +2413,7 @@ self =>
                    in.token == LBRACKET || //todo: remove
                    in.token == AT ||
                    isModifier) {
-          stats ++ joinComment(List(topLevelTmplDef))
+          stats ++= joinComment(List(topLevelTmplDef))
         } else if (!isStatSep) {
           syntaxErrorOrIncomplete("expected class or object definition", true)
         }

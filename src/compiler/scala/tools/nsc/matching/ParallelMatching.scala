@@ -560,7 +560,7 @@ trait ParallelMatching extends ast.TreeDSL {
         val litMap  =
           tags.zipWithIndex.reverse.foldLeft(IntMap.empty[List[Int]]) {
             // we reverse before the fold so the list can be built with ::
-            case (map, (tag, index)) => map.update(tag, index :: map.getOrElse(tag, Nil))
+            case (map, (tag, index)) => map.updated(tag, index :: map.getOrElse(tag, Nil))
           }
 
         (litMap, varMap)
