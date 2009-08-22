@@ -105,14 +105,14 @@ trait PhaseAssembly { self: Global =>
       var chain: List[SubComponent] = Nil
 
       var lvl = 1
-      var nds = nodes.values.filter(_.level == lvl).toList
+      var nds = nodes.valuesIterator.filter(_.level == lvl).toList
       while(nds.size > 0) {
 	nds = nds.sort((n1,n2) => (n1.phasename compareTo n2.phasename) < 0)
 	for (n <- nds) {
 	  chain = chain ::: n.phaseobj.get
 	}
 	lvl += 1
-	nds = nodes.values.filter(_.level == lvl).toList
+	nds = nodes.valuesIterator.filter(_.level == lvl).toList
       }
       chain
     }
@@ -203,7 +203,7 @@ trait PhaseAssembly { self: Global =>
      *  dependency on something that is dropped.
      */
     def removeDanglingNodes() {
-      var dnodes = nodes.values.filter(_.phaseobj.isEmpty)
+      var dnodes = nodes.valuesIterator filter (_.phaseobj.isEmpty)
       for (node <- dnodes) {
 	val msg = "dropping dependency on node with no phase object: "+node.phasename
         informProgress(msg)

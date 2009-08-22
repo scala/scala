@@ -53,7 +53,7 @@ object BuildManagerTest extends EvalLoop {
       Set.empty ++ (fs map AbstractFile.getFile)
 
     val settings = new Settings(error)
-    val command = new CompilerCommand(List.fromArray(args), settings, error, false)
+    val command = new CompilerCommand(args.toList, settings, error, false)
 //    settings.make.value = "off"
 //    val buildManager: BuildManager = new SimpleBuildManager(settings)
     val buildManager: BuildManager = new RefinedBuildManager(settings)
@@ -62,7 +62,7 @@ object BuildManagerTest extends EvalLoop {
 
     // enter resident mode
     loop { line =>
-      val args = List.fromString(line, ' ')
+      val args = line.split(' ').toList
       val command = new CompilerCommand(args, new Settings(error), error, true)
       buildManager.update(command.files, Set.empty)
     }

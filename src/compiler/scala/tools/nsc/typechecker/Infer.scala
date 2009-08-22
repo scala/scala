@@ -676,7 +676,7 @@ trait Infer {
       val argtpes1 = argtpes map {
         case NamedType(name, tp) => // a named argument
           var res = tp
-          val pos = params.findIndexOf(p => p.name == name && !p.hasFlag(SYNTHETIC))
+          val pos = params.indexWhere(p => p.name == name && !p.hasFlag(SYNTHETIC))
           if (pos == -1) {
             if (positionalAllowed) { // treat assignment as positional argument
               argPos(index) = index
@@ -1117,7 +1117,7 @@ trait Infer {
       val detargs = if (keepNothings || (targs eq null)) targs
                     else adjustTypeArgs(tparams, targs, WildcardType, uninstantiated)
       val undetparams = uninstantiated.toList
-      val detparams = tparams remove (undetparams contains _)
+      val detparams = tparams filterNot (undetparams contains _)
       substExpr(tree, detparams, detargs, pt)
       if (inferInfo)
         println("inferred expr instance "+tree+", detargs = "+detargs+", undetparams = "+undetparams)

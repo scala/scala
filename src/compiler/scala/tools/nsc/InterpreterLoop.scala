@@ -405,7 +405,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
   /** process command-line arguments and do as they request */
   def main(args: Array[String]) {
     def error1(msg: String) = out println ("scala: " + msg)
-    val command = new InterpreterCommand(List fromArray args, error1)
+    val command = new InterpreterCommand(args.toList, error1)
     def neededHelp(): String =
       (if (command.settings.help.value) command.usageMsg + "\n" else "") +
       (if (command.settings.Xhelp.value) command.xusageMsg + "\n" else "")

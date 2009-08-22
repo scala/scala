@@ -109,7 +109,7 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
 
     // if arg is of form -Xfoo:bar,baz,quux
     def parseColonArg(s: String): Option[List[String]] = {
-      val idx = s.findIndexOf(_ == ':')
+      val idx = s indexWhere (_ == ':')
       val (p, args) = (s.substring(0, idx), s.substring(idx+1).split(",").toList)
 
       // any non-Nil return value means failure and we return s unmodified

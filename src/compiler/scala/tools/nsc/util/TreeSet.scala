@@ -43,9 +43,11 @@ class TreeSet[T >: Null <: AnyRef](less: (T, T) => Boolean) extends Set[T] {
 
   def iterator = {
     def elems(t: Tree): Iterator[T] = {
-      var it = Iterator.single(t.elem)
+      var it = Iterator single t.elem
       if (t.l ne null) it = elems(t.l) append it
       if (t.r ne null) it = it append elems(t.r)
+      // if (t.l ne null) it = elems(t.l) ++ it
+      // if (t.r ne null) it = it ++ elems(t.r)
       it
     }
     if (tree eq null) Iterator.empty else elems(tree)

@@ -215,7 +215,7 @@ self =>
     reporter.reset
     firsts = firsts filter (s => unitOfFile contains (s.file))
     val prefix = firsts map unitOf
-    val units = prefix ::: (unitOfFile.values.toList diff prefix) filter (!_.isUpToDate)
+    val units = prefix ::: (unitOfFile.valuesIterator.toList diff prefix) filter (!_.isUpToDate)
     recompile(units)
     if (debugIDE) inform("Everything is now up to date")
   }
