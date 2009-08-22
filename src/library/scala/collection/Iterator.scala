@@ -839,13 +839,13 @@ trait Iterator[+A] { self =>
    *  defaults to 1.  Example usages:
    *
    *  <pre>
-   *    // returns List(List(1, 2, 3), List(2, 3, 4), List(3, 4, 5))
+   *    // Returns List(List(1, 2, 3), List(2, 3, 4), List(3, 4, 5))
    *    (1 to 5).iterator.sliding(3).toList
-   *    // returns List(List(1, 2, 3, 4), List(4, 5))
+   *    // Returns List(List(1, 2, 3, 4), List(4, 5))
    *    (1 to 5).iterator.sliding(4, 3).toList
-   *    // returns List(List(1, 2, 3, 4))
+   *    // Returns List(List(1, 2, 3, 4))
    *    (1 to 5).iterator.sliding(4, 3).withPartial(false).toList
-   *    // List(List(1, 2, 3, 4), List(4, 5, 30, 35))
+   *    // Returns List(List(1, 2, 3, 4), List(4, 5, 20, 25))
    *    // Illustrating that withPadding's argument is by-name.
    *    val it2 = Iterator.iterate(20)(_ + 5)
    *    (1 to 5).iterator.sliding(4, 3).withPadding(it2.next).toList

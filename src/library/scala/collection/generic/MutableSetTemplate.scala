@@ -178,10 +178,10 @@ trait MutableSetTemplate[A, +This <: MutableSetTemplate[A, This] with mutable.Se
     thisCollection
   }
 
-  /** Removes a number of elements provided by a traversible object and returns
+  /** Removes a number of elements provided by a Traversable object and returns
    *  the collection itself.
    *
-   *  @param iter     the iterable object.
+   *  @param iter     the Traversable object.
    */
   @deprecated("Use --= instead if you intend to remove by side effect from an existing collection.\n"+
               "Use `clone() --=' if you intend to create a new collection.")

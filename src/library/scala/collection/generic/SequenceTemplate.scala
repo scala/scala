@@ -618,7 +618,7 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
   @deprecated("use `drop' instead")
   def slice(from: Int): Sequence[A] = slice(from, length)
 
-  @deprecated("Should be replaced by  <code>(s1, s2) forall { case (x, y) => f(x, y) }</code>")
+  @deprecated("Should be replaced by <code>(s1, s2) forall { case (x, y) => f(x, y) }</code>")
   def equalsWith[B](that: Sequence[B])(f: (A,B) => Boolean): Boolean = {
     val i = this.iterator
     val j = that.iterator
@@ -630,7 +630,7 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
   }
 
   /** Is <code>that</code> a slice in this? */
-  @deprecated("Should be repaced by <code>indexOfSeq(that) != -1</code>")
+  @deprecated("Should be replaced by <code>indexOfSeq(that) != -1</code>")
   def containsSlice[B](that: Sequence[B]): Boolean = indexOfSeq(that) != -1
 
  /**
