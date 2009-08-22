@@ -734,7 +734,7 @@ trait Iterator[+A] { self =>
    *  Typical uses can be achieved via methods `grouped' and `sliding'.
    */
   class GroupedIterator[B >: A](self: Iterator[A], size: Int, step: Int) extends Iterator[Sequence[B]] {
-    require(size >= 1 && size >= 1)
+    require(size >= 1 && step >= 1)
 
     private[this] var buffer: ArrayBuffer[B] = ArrayBuffer()  // the buffer
     private[this] var filled = false                          // whether the buffer is "hot"
