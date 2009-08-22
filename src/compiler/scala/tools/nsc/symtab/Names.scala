@@ -95,7 +95,7 @@ class Names {
     md5.update(bytes, 0, len)
     val hash = md5.digest()
     val sb = new StringBuilder
-    sb.append(cs, 0, prefixSuffixLen)
+    sb.appendAll(cs, 0, prefixSuffixLen)
     sb.append("$$$$")
     for (i <- 0 until hash.length) {
       val b = hash(i)
@@ -103,7 +103,7 @@ class Names {
       sb.append((b & 0xF).toHexString)
     }
     sb.append("$$$$")
-    sb.append(cs, len - prefixSuffixLen, prefixSuffixLen)
+    sb.appendAll(cs, len - prefixSuffixLen, prefixSuffixLen)
     sb.toString
   }
 

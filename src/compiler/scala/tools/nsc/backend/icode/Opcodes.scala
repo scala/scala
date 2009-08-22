@@ -389,7 +389,7 @@ trait Opcodes { self: ICodes =>
       override def toString(): String ="CREATE_ARRAY "+elem.toString() + " x " + dims;
 
       override def consumed = dims;
-      override def consumedTypes = List.make(dims, INT)
+      override def consumedTypes = List.fill(dims)(INT)
       override def produced = 1;
     }
 

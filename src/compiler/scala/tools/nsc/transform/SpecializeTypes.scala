@@ -251,7 +251,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         primitiveTypes.get(t.trim) match {
           case Some(tpe) => buf += tpe
           case None =>
-            error("Invalid type " + t + ". Expected one of " + primitiveTypes.keys.mkString("", ", ", "."))
+            error("Invalid type " + t + ". Expected one of " + primitiveTypes.keysIterator.mkString("", ", ", "."))
         }
       buf.toList
     }
@@ -269,7 +269,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             tpes
           case _ =>
             log(sym + " specialized on everything")
-            primitiveTypes.values.toList
+            primitiveTypes.valuesIterator.toList
         }
       case _ =>
         Nil
@@ -300,7 +300,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private def needsSpecialization(env: TypeEnv, sym: Symbol): Boolean = {
     def needsIt(tpe: Type): Boolean =  tpe match {
       case TypeRef(pre, sym, args) =>
-        (env.keys.contains(sym)
+        (env.keysIterator.contains(sym)
          || (args exists needsIt))
       case PolyType(tparams, resTpe) => needsIt(resTpe)
       case MethodType(argTpes, resTpe) =>
@@ -555,8 +555,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     if (sym.isMethod && !sym.info.typeParams.isEmpty) {
       val (stps, tps) = splitParams(sym.info.typeParams)
       val res = sym :: (for (env <- specializations(stps) if needsSpecialization(env, sym)) yield {
-        val keys = env.keys.toList;
-        val vals = env.values.toList
+        val keys = env.keysIterator.toList;
+        val vals = env.valuesIterator.toList
         val specMember =  sym.cloneSymbol(owner).setFlag(SPECIALIZED).resetFlag(DEFERRED)
         specMember.name = specializedName(sym, env)
 
@@ -1172,11 +1172,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   /** Create specialized class definitions */
   def implSpecClasses(trees: List[Tree]): List[Tree] = {
     val buf = new mutable.ListBuffer[Tree]
-    for (val tree <- trees)
+    for (tree <- trees)
       tree match {
         case ClassDef(_, _, _, impl) =>
           tree.symbol.info // force specialization
-          for (val ((sym1, env), specCls) <- specializedClass if sym1 == tree.symbol)
+          for (((sym1, env), specCls) <- specializedClass if sym1 == tree.symbol)
             buf +=
               ClassDef(specCls, Template(specCls.info.parents map TypeTree, emptyValDef, List())
                          .setSymbol(specCls.newLocalDummy(sym1.pos)))

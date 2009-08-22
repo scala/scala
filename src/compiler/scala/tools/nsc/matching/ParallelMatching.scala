@@ -1036,7 +1036,7 @@ trait ParallelMatching extends ast.TreeDSL {
         val newPats: List[Tree] = List.map2(pat, pat.indices.toList)(classifyPat)
 
         // expand alternatives if any are present
-        (newPats findIndexOf isAlternative) match {
+        (newPats indexWhere isAlternative) match {
           case -1     => List(replace(newPats))
           case index  =>
             val (prefix, alts :: suffix) = newPats splitAt index

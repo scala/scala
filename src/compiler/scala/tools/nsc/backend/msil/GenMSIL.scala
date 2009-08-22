@@ -45,15 +45,15 @@ abstract class GenMSIL extends SubComponent {
       val codeGenerator = new BytecodeGenerator
 
       //classes is ICodes.classes, a HashMap[Symbol, IClass]
-      classes.values foreach codeGenerator.findEntryPoint
+      classes.valuesIterator foreach codeGenerator.findEntryPoint
 
       codeGenerator.initAssembly
 
-      classes.values foreach codeGenerator.createTypeBuilder
-      classes.values foreach codeGenerator.createClassMembers
+      classes.valuesIterator foreach codeGenerator.createTypeBuilder
+      classes.valuesIterator foreach codeGenerator.createClassMembers
 
       try {
-        classes.values foreach codeGenerator.genClass
+        classes.valuesIterator foreach codeGenerator.genClass
       } finally {
         codeGenerator.writeAssembly
       }
@@ -464,7 +464,7 @@ abstract class GenMSIL extends SubComponent {
     }
 
     private def createTypes() {
-      for (sym <- classes.keys) {
+      for (sym <- classes.keysIterator) {
         val iclass   = classes(sym)
         val tBuilder = types(sym.asInstanceOf[clrTypes.global.Symbol]).asInstanceOf[TypeBuilder]
 
@@ -1141,7 +1141,7 @@ abstract class GenMSIL extends SubComponent {
       })
 
       // take care of order in which exHInstructions are executed (BeginExceptionBlock as last)
-      bb2exHInstructions.keys.foreach((b) => {
+      bb2exHInstructions.keysIterator.foreach((b) => {
         bb2exHInstructions(b).sort((i1, i2) => (!i1.isInstanceOf[BeginExceptionBlock]))
       })
 

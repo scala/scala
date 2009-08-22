@@ -181,7 +181,7 @@ trait Trees {
         case xs: List[_] => xs flatMap subtrees
         case _ => List()
       }
-      productElements.toList flatMap subtrees
+      productIterator.toList flatMap subtrees
     }
 
     override def toString(): String = {

@@ -931,7 +931,7 @@ trait Scanners {
   { // initialization
     enterKeywords()
     // Build keyword array
-    keyCode = Array.make(maxKey + 1, IDENTIFIER)
+    keyCode = Array.fill(maxKey + 1)(IDENTIFIER)
     for (j <- 0 until tokenCount if keyName(j) ne null)
       keyCode(keyName(j).start) = j.toByte
   }

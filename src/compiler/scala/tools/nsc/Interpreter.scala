@@ -217,7 +217,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
   /** Indent some code by the width of the scala> prompt.
    *  This way, compiler error messages read better.
    */
-  private final val spaces = List.make(7, " ").mkString
+  private final val spaces = List.fill(7)(" ").mkString
   def indentCode(code: String) =
     stringFrom(str =>
       for (line <- code.lines) {

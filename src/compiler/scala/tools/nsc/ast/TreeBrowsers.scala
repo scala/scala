@@ -112,7 +112,7 @@ abstract class TreeBrowsers {
     def isLeaf(node: Any): Boolean = packChildren(node).length == 0
 
     def removeTreeModelListener(l: TreeModelListener): Unit =
-      listeners remove (x => x == l)
+      listeners filterNot (_ == l)
 
     /** we ignore this message for now */
     def valueForPathChanged(path: TreePath, newValue: Any) = ()

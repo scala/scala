@@ -57,7 +57,7 @@ self: Analyzer =>
     if (traceImplicits && !tree.isEmpty && !context.undetparams.isEmpty)
       println("typing implicit with undetermined type params: "+context.undetparams+"\n"+tree)
     val result = new ImplicitSearch(tree, pt, isView, context.makeImplicit(reportAmbiguous)).bestImplicit
-    context.undetparams = context.undetparams remove (result.subst.from contains _)
+    context.undetparams = context.undetparams filterNot (result.subst.from contains _)
     result
   }
 
@@ -469,7 +469,7 @@ self: Analyzer =>
       }
 
       /** A candidate for best applicable info wrt `improves` */
-      val best = (NoImplicitInfo /: applicable.keys) (
+      val best = (NoImplicitInfo /: applicable.keysIterator) (
         (best, alt) => if (improves(alt, best)) alt else best)
       if (best == NoImplicitInfo) SearchFailure
       else {
@@ -564,7 +564,7 @@ self: Analyzer =>
         case List() => ts
         case (t @ TypeRef(pre, _, _)) :: ts1 =>
           if (ts1 exists (_.prefix <:< pre)) compactify(ts1)
-          else t :: compactify(ts1 remove (pre <:< _.prefix))
+          else t :: compactify(ts1 filterNot (pre <:< _.prefix))
       }
       getParts(tp)
       for ((k, ts) <- partMap.iterator.toList; t <- compactify(ts)) yield t
@@ -726,7 +726,7 @@ self: Analyzer =>
     def allImplicits: List[SearchResult] = {
       val invalidImplicits = new ListBuffer[Symbol]
       def search(iss: List[List[ImplicitInfo]], isLocal: Boolean) =
-        applicableInfos(iss, isLocal, invalidImplicits).values.toList
+        applicableInfos(iss, isLocal, invalidImplicits).valuesIterator.toList
       search(context.implicitss, true) ::: search(implicitsOfExpectedType, false)
     }
   }

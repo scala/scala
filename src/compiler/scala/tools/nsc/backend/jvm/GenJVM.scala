@@ -49,7 +49,7 @@ abstract class GenJVM extends SubComponent {
       if (settings.Xdce.value)
         icodes.classes.retain { (sym: Symbol, cls: IClass) => !inliner.isClosureClass(sym) || deadCode.liveClosures(sym) }
 
-      classes.values foreach apply
+      classes.valuesIterator foreach apply
     }
 
     override def apply(cls: IClass) {
@@ -383,7 +383,7 @@ abstract class GenJVM extends SubComponent {
         case ArrayAnnotArg(args) =>
           buf.put('['.toByte)
           buf.putShort(args.length.toShort)
-          for (val elem <- args) emitArgument(elem)
+          args foreach emitArgument
 
         case NestedAnnotArg(annInfo) =>
           buf.put('@'.toByte)

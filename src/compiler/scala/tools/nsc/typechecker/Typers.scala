@@ -1497,9 +1497,8 @@ trait Typers { self: Analyzer =>
       val meth = ddef.symbol
       reenterTypeParams(ddef.tparams)
       reenterValueParams(ddef.vparamss)
-      val tparams1 = ddef.tparams mapConserve (typedTypeDef)
-      val vparamss1 = List.mapConserve(ddef.vparamss)(vparams1 =>
-        vparams1 mapConserve (typedValDef))
+      val tparams1 = ddef.tparams mapConserve typedTypeDef
+      val vparamss1 = ddef.vparamss mapConserve (_ mapConserve typedValDef)
       for (vparams1 <- vparamss1; if !vparams1.isEmpty; vparam1 <- vparams1.init) {
         if (vparam1.symbol.tpe.typeSymbol == RepeatedParamClass)
           error(vparam1.pos, "*-parameter must come last")
@@ -1657,7 +1656,7 @@ trait Typers { self: Analyzer =>
 
     def typedCases(tree: Tree, cases: List[CaseDef], pattp0: Type, pt: Type): List[CaseDef] = {
       var pattp = pattp0
-      List.mapConserve(cases) ( cdef =>
+      cases mapConserve (cdef =>
         newTyper(context.makeNewScope(cdef, context.owner)(TypedCasesScopeKind))
           .typedCase(cdef, pattp, pt))
 /* not yet!
@@ -3410,7 +3409,7 @@ trait Typers { self: Analyzer =>
           // @M: kind-arity checking is done here and in adapt, full kind-checking is in checkKindBounds (in Infer)
             val args1 =
               if(!tpt1.symbol.rawInfo.isComplete)
-                List.mapConserve(args){(x: Tree) => typedHigherKindedType(x, mode)}
+                args mapConserve (typedHigherKindedType(_, mode))
                 // if symbol hasn't been fully loaded, can't check kind-arity
               else map2Conserve(args, tparams) {
                 (arg, tparam) =>

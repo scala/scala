@@ -177,7 +177,7 @@ trait ModelExtractor {
     override def typeParams = csym.typeParams.map(TypeParam)
     override def valueParams = {
       if (constructorArgs.isEmpty) Nil
-      else constructorArgs.values.toList :: Nil
+      else constructorArgs.valuesIterator.toList :: Nil
     }
     def isTrait = csym.isTrait
     override def kind = if (sym.isTrait) "trait" else "class"
@@ -255,7 +255,7 @@ trait ModelExtractor {
         }
       });
     }
-    def members0(f: Symbol => Boolean) = decls.filterKeys(f).values.toList
+    def members0(f: Symbol => Boolean) = decls.filterKeys(f).valuesIterator.toList
     def members(c: Category): Iterable[Member] = members0(c.f)
     object inherited extends mutable.LinkedHashMap[Symbol, List[Member]]() {
       override def default(tpe: Symbol) = Nil

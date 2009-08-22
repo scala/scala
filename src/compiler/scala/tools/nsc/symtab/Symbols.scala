@@ -133,7 +133,7 @@ trait Symbols {
 
     /** Remove all annotations matching the given class. */
     def removeAnnotation(cls: Symbol): Unit =
-      setAnnotations(annotations.remove(_.atp.typeSymbol == cls))
+      setAnnotations(annotations filterNot (_.atp.typeSymbol == cls))
 
     /** set when symbol has a modifier of the form private[X], NoSymbol otherwise.
      *  Here's some explanation how privateWithin gets combined with access flags:

@@ -72,7 +72,7 @@ class Settings {
     (if (!encodingBf.isEmpty) "-encoding" :: encoding :: Nil else Nil) :::
     (if (!targetBf.isEmpty) "-target:"+target :: Nil else Nil) :::
     (if (optimiseBf) "-optimise" :: Nil else Nil) :::
-    (if (!moreBf.isEmpty) List.fromString(more, ' ') else Nil)
+    (if (!moreBf.isEmpty) (more split ' ').toList else Nil)
 
   override def equals(that: Any): Boolean = that match {
     case cs: Settings =>

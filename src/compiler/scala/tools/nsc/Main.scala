@@ -36,7 +36,7 @@ object Main extends AnyRef with EvalLoop {
 
   def resident(compiler: Global) {
     loop { line =>
-      val args = List.fromString(line, ' ')
+      val args = line.split(' ').toList
       val command = new CompilerCommand(args, new Settings(error), error, true)
       new compiler.Run() compile command.files
     }

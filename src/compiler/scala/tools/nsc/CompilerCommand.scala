@@ -33,7 +33,7 @@ class CompilerCommand(
   val cmdName = "scalac"
 
   private val helpSyntaxColumnWidth: Int =
-    Iterable.max(settings.allSettings map (_.helpSyntax.length))
+    (settings.allSettings map (_.helpSyntax.length)) max
 
   private def format(s: String): String = {
     val buf = new StringBuilder(s)

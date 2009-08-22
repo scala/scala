@@ -497,7 +497,7 @@ trait Definitions {
     }
 
     /** Test whether a method symbol is that of a boxing method. */
-    def isBox(m: Symbol) = (boxMethod.values contains m) && cond(m.tpe) {
+    def isBox(m: Symbol) = (boxMethod.valuesIterator contains m) && cond(m.tpe) {
       case MethodType(List(arg), _) => cond(boxMethod get arg.tpe.typeSymbol) {
         case Some(`m`) => true
       }

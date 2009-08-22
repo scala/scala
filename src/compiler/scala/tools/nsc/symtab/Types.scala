@@ -3019,9 +3019,8 @@ A type's typeSymbol should never be inspected directly.
   class InstantiateDeBruijnMap(actuals: List[Type]) extends TypeMap {
     override val dropNonConstraintAnnotations = true
 
-
     private var existSyms = immutable.Map.empty[Int, Symbol]
-    def existentialsNeeded: List[Symbol] = existSyms.values.toList
+    def existentialsNeeded: List[Symbol] = existSyms.valuesIterator.toList
 
     /* Return the type symbol for referencing a parameter index
      * inside the existential quantifier.  */

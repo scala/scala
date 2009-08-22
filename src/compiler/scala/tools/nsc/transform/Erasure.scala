@@ -874,7 +874,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
       else {
         val (bridges, toBeRemoved) = bridgeDefs(base)
         if (bridges.isEmpty) stats
-        else (stats remove (stat => toBeRemoved contains stat.symbol)) ::: bridges
+        else (stats filterNot (stat => toBeRemoved contains stat.symbol)) ::: bridges
       }
 
     /** <p>
