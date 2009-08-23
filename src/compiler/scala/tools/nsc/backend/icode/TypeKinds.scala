@@ -25,10 +25,30 @@ package icode
 
 */
 
-import scala.collection.mutable.{Map, HashMap}
+import scala.collection.mutable.{ Map, HashMap }
 
 trait TypeKinds { self: ICodes =>
   import global._
+  import definitions.{ ArrayClass, AnyRefClass, ObjectClass, NullClass, NothingClass }
+
+  /** A map from scala primitive Types to ICode TypeKinds */
+  lazy val primitiveTypeMap: collection.Map[Symbol, TypeKind] = {
+    import definitions._
+    collection.Map(
+      UnitClass     -> UNIT,
+      BooleanClass  -> BOOL,
+      CharClass     -> CHAR,
+      ByteClass     -> BYTE,
+      ShortClass    -> SHORT,
+      IntClass      -> INT,
+      LongClass     -> LONG,
+      FloatClass    -> FLOAT,
+      DoubleClass   -> DOUBLE
+    )
+  }
+  /** Reverse map for toType */
+  private lazy val reversePrimitiveMap: collection.Map[TypeKind, Symbol] =
+    collection.Map(primitiveTypeMap.toList map (_.swap) : _*)
 
   /** This class represents a type kind. Type kinds
    * represent the types that the VM know (or the ICode
@@ -36,22 +56,14 @@ trait TypeKinds { self: ICodes =>
    */
   sealed abstract class TypeKind {
 
-    def toType: Type = this match {
-      case UNIT            => definitions.UnitClass.tpe
-      case BOOL            => definitions.BooleanClass.tpe
-      case BYTE            => definitions.ByteClass.tpe
-      case SHORT           => definitions.ShortClass.tpe
-      case CHAR            => definitions.CharClass.tpe
-      case INT             => definitions.IntClass.tpe
-      case LONG            => definitions.LongClass.tpe
-      case FLOAT           => definitions.FloatClass.tpe
-      case DOUBLE          => definitions.DoubleClass.tpe
-      case REFERENCE(cls)  => cls.tpe //typeRef(cls.typeConstructor.prefix, cls, Nil)
-      //case VALUE(cls)      => typeRef(cls.typeConstructor.prefix, cls, Nil);
-      case ARRAY(elem)     => typeRef(definitions.ArrayClass.typeConstructor.prefix,
-                                      definitions.ArrayClass,
-                                      elem.toType :: Nil)
-      case _ => abort("Unknown type kind.")
+    def toType: Type = (reversePrimitiveMap get this) match {
+      case Some(sym)  => sym.tpe
+      case None       => this match {
+        case REFERENCE(cls)  => cls.tpe // typeRef(cls.typeConstructor.prefix, cls, Nil)
+        // case VALUE(cls)      => typeRef(cls.typeConstructor.prefix, cls, Nil)
+        case ARRAY(elem)     => typeRef(ArrayClass.typeConstructor.prefix, ArrayClass, List(elem.toType))
+        case _ => abort("Unknown type kind.")
+      }
     }
 
     def isReferenceType: Boolean = false
@@ -114,12 +126,12 @@ trait TypeKinds { self: ICodes =>
         (b.isReferenceType || b.isArrayType))
       toTypeKind(lub0(a.toType, b.toType))
     else if (a == b) a
-    else if (a == REFERENCE(definitions.NothingClass)) b
-    else if (b == REFERENCE(definitions.NothingClass)) a
+    else if (a == REFERENCE(NothingClass)) b
+    else if (b == REFERENCE(NothingClass)) a
     else (a, b) match {
-      case (BOXED(a1), BOXED(b1)) => if (a1 == b1) a else REFERENCE(definitions.AnyRefClass)
-      case (BOXED(_), REFERENCE(_)) | (REFERENCE(_), BOXED(_)) => REFERENCE(definitions.AnyRefClass)
-      case (BOXED(_), ARRAY(_)) | (ARRAY(_), BOXED(_)) => REFERENCE(definitions.AnyRefClass)
+      case (BOXED(a1), BOXED(b1)) => if (a1 == b1) a else REFERENCE(AnyRefClass)
+      case (BOXED(_), REFERENCE(_)) | (REFERENCE(_), BOXED(_)) => REFERENCE(AnyRefClass)
+      case (BOXED(_), ARRAY(_)) | (ARRAY(_), BOXED(_)) => REFERENCE(AnyRefClass)
       case (BYTE, INT) | (INT, BYTE) => INT
       case (SHORT, INT) | (INT, SHORT) => INT
       case (CHAR, INT) | (INT, CHAR) => INT
@@ -131,7 +143,7 @@ trait TypeKinds { self: ICodes =>
   case object UNIT extends TypeKind {
     def maxType(other: TypeKind): TypeKind = other match {
       case UNIT => UNIT
-      case REFERENCE(a) if a == definitions.NothingClass => UNIT
+      case REFERENCE(NothingClass)  => UNIT
       case _ => abort("Uncomparable type kinds: UNIT with " + other)
     }
   }
@@ -140,7 +152,7 @@ trait TypeKinds { self: ICodes =>
   case object BOOL extends TypeKind {
     override def maxType(other: TypeKind): TypeKind = other match {
       case BOOL => BOOL
-      case REFERENCE(a) if a == definitions.NothingClass => BOOL
+      case REFERENCE(NothingClass) => BOOL
       case _ => abort("Uncomparable type kinds: BOOL with " + other)
     }
   }
@@ -150,7 +162,7 @@ trait TypeKinds { self: ICodes =>
     override def maxType(other: TypeKind): TypeKind =
       other match {
         case BYTE | SHORT | CHAR | INT | LONG | FLOAT | DOUBLE => other
-        case REFERENCE(a) if a == definitions.NothingClass => BYTE
+        case REFERENCE(NothingClass) => BYTE
         case _ => abort("Uncomparable type kinds: BYTE with " + other)
       }
   }
@@ -160,7 +172,7 @@ trait TypeKinds { self: ICodes =>
     override def maxType(other: TypeKind): TypeKind =
       other match {
         case BYTE | SHORT | CHAR => SHORT
-        case REFERENCE(a) if a == definitions.NothingClass => SHORT
+        case REFERENCE(NothingClass) => SHORT
         case INT | LONG | FLOAT | DOUBLE => other
         case _ => abort("Uncomparable type kinds: SHORT with " + other)
       }
@@ -171,7 +183,7 @@ trait TypeKinds { self: ICodes =>
     override def maxType(other: TypeKind): TypeKind =
       other match {
         case BYTE | SHORT | CHAR => CHAR
-        case REFERENCE(a) if a == definitions.NothingClass => CHAR
+        case REFERENCE(NothingClass) => CHAR
         case INT | LONG | FLOAT | DOUBLE => other
         case _ => abort("Uncomparable type kinds: CHAR with " + other)
       }
@@ -183,7 +195,7 @@ trait TypeKinds { self: ICodes =>
     override def maxType(other: TypeKind): TypeKind =
       other match {
         case BYTE | SHORT | CHAR | INT => INT
-        case REFERENCE(a) if a == definitions.NothingClass => INT
+        case REFERENCE(NothingClass) => INT
         case LONG | FLOAT | DOUBLE => other
         case _ => abort("Uncomparable type kinds: INT with " + other)
       }
@@ -194,7 +206,7 @@ trait TypeKinds { self: ICodes =>
     override def maxType(other: TypeKind): TypeKind =
       other match {
         case BYTE | SHORT | CHAR | INT | LONG => LONG
-        case REFERENCE(a) if a == definitions.NothingClass => LONG
+        case REFERENCE(NothingClass) => LONG
         case FLOAT | DOUBLE => DOUBLE
         case _ => abort("Uncomparable type kinds: LONG with " + other)
       }
@@ -204,8 +216,8 @@ trait TypeKinds { self: ICodes =>
   case object FLOAT extends TypeKind {
     override def maxType(other: TypeKind): TypeKind = other match {
       case BYTE | SHORT | CHAR | INT | LONG | FLOAT => FLOAT
-        case REFERENCE(a) if a == definitions.NothingClass => FLOAT
-      case DOUBLE => DOUBLE
+      case REFERENCE(NothingClass)                  => FLOAT
+      case DOUBLE                                   => DOUBLE
       case _ => abort("Uncomparable type kinds: FLOAT with " + other)
     }
   }
@@ -215,7 +227,7 @@ trait TypeKinds { self: ICodes =>
     override def maxType(other: TypeKind): TypeKind =
       if (other.isNumericType)
         DOUBLE
-      else if (other == REFERENCE(definitions.NothingClass)) DOUBLE
+      else if (other == REFERENCE(NothingClass)) DOUBLE
       else abort("Uncomparable type kinds: DOUBLE with " + other)
   }
 
@@ -232,7 +244,7 @@ trait TypeKinds { self: ICodes =>
   final case class REFERENCE(cls: Symbol) extends TypeKind {
     assert(cls ne null,
            "REFERENCE to null class symbol.")
-    assert(cls != definitions.ArrayClass,
+    assert(cls != ArrayClass,
            "REFERENCE to Array is not allowed, should be ARRAY[..] instead")
     assert(cls != NoSymbol,
            "REFERENCE to NoSymbol not allowed!")
@@ -247,23 +259,21 @@ trait TypeKinds { self: ICodes =>
      */
     override def maxType(other: TypeKind): TypeKind =
       other match {
-        case REFERENCE(_) =>
-          REFERENCE(definitions.AnyRefClass)
-        case ARRAY(_) =>
-          REFERENCE(definitions.AnyRefClass)
+        case REFERENCE(_) | ARRAY(_) =>
+          REFERENCE(AnyRefClass)
         case _ =>
           abort("Uncomparbale type kinds: REFERENCE with " + other)
       }
 
     /** Checks subtyping relationship. */
     override def <:<(other: TypeKind): Boolean =
-      if (cls == definitions.NothingClass)
+      if (cls == NothingClass)
         true
       else other match {
         case REFERENCE(cls2) =>
           cls.tpe <:< cls2.tpe
         case ARRAY(_) =>
-          cls == definitions.NullClass
+          cls == NullClass
         case _ => false
       }
 
@@ -318,7 +328,7 @@ trait TypeKinds { self: ICodes =>
     override def maxType(other: TypeKind): TypeKind =
       other match {
         case REFERENCE(_) =>
-          REFERENCE(definitions.AnyRefClass)
+          REFERENCE(AnyRefClass)
         case ARRAY(elem2) =>
           ARRAY(elem maxType elem2)
         case _ =>
@@ -331,10 +341,8 @@ trait TypeKinds { self: ICodes =>
       other match {
         case ARRAY(elem2) =>
           elem <:< elem2
-        case REFERENCE(sym) =>
-          (sym == definitions.AnyRefClass ||
-           sym == definitions.ObjectClass) // TODO: platform dependent!
-
+        case REFERENCE(AnyRefClass | ObjectClass) =>
+          true  //  TODO: platform dependent!
         case _ => false
       }
 
@@ -358,7 +366,7 @@ trait TypeKinds { self: ICodes =>
     override def maxType(other: TypeKind): TypeKind =
       other match {
         case REFERENCE(_) | ARRAY(_) | BOXED(_) =>
-          REFERENCE(definitions.AnyRefClass)
+          REFERENCE(AnyRefClass)
         case _ =>
           abort("Uncomparbale type kinds: ARRAY with " + other)
       }
@@ -366,9 +374,8 @@ trait TypeKinds { self: ICodes =>
     /** Checks subtyping relationship. */
     override def <:<(other: TypeKind): Boolean =
       other match {
-        case REFERENCE(sym) =>
-          (sym == definitions.AnyRefClass ||
-           sym == definitions.ObjectClass) // TODO: platform dependent!
+        case REFERENCE(AnyRefClass | ObjectClass) =>
+          true // TODO: platform dependent!
 
         case BOXED(other) =>
           kind == other
@@ -398,7 +405,7 @@ trait TypeKinds { self: ICodes =>
     override def maxType(other: TypeKind): TypeKind =
       other match {
         case REFERENCE(_) =>
-          REFERENCE(definitions.AnyRefClass)
+          REFERENCE(AnyRefClass)
         case _ =>
           abort("Uncomparbale type kinds: ConcatClass with " + other)
       }
@@ -415,31 +422,25 @@ trait TypeKinds { self: ICodes =>
   /** Return the TypeKind of the given type */
   def toTypeKind(t: Type): TypeKind = t match {
     case ThisType(sym) =>
-      if (sym == definitions.ArrayClass)
+      if (sym == ArrayClass)
         AnyRefReference
       else
         REFERENCE(sym)
 
     case SingleType(pre, sym) =>
-      primitiveTypeMap get sym match {
-        case Some(k) => k
-        case None    => REFERENCE(sym)
-      }
+      (primitiveTypeMap get sym) getOrElse REFERENCE(sym)
 
     case ConstantType(value) =>
       toTypeKind(t.underlying)
 
     case TypeRef(_, sym, args) =>
-      primitiveTypeMap get sym match {
-        case Some(k) => k
-        case None    => arrayOrClassType(sym, args)
-      }
+      (primitiveTypeMap get sym) getOrElse arrayOrClassType(sym, args)
 
     case ClassInfoType(_, _, sym) =>
       primitiveTypeMap get sym match {
         case Some(k) => k
         case None    =>
-          if (sym == definitions.ArrayClass)
+          if (sym == ArrayClass)
             abort("ClassInfoType to ArrayClass!")
           else
             REFERENCE(sym)
@@ -459,7 +460,7 @@ trait TypeKinds { self: ICodes =>
   /** Return the type kind of a class, possibly an array type.
    */
   private def arrayOrClassType(sym: Symbol, targs: List[Type]): TypeKind = {
-    if (sym == definitions.ArrayClass)
+    if (sym == ArrayClass)
       ARRAY(toTypeKind(targs.head))
     else if (sym.isClass)
         REFERENCE(sym)
@@ -467,25 +468,6 @@ trait TypeKinds { self: ICodes =>
       assert(sym.isType, sym) // it must be compiling Array[a]
       AnyRefReference
     }
-  }
-
-  /** A map from scala primitive Types to ICode TypeKinds */
-  private var primitiveTypeMap: Map[Symbol, TypeKind] = null
-
-  /** Initialize the map from scala primitive types to ICode types */
-  def initPrimitiveTypeMap = {
-    log("Initializing primitive map")
-    primitiveTypeMap = new HashMap()
-    primitiveTypeMap += (definitions.UnitClass -> UNIT)
-    primitiveTypeMap += (definitions.BooleanClass -> BOOL)
-    primitiveTypeMap += (definitions.ByteClass -> BYTE)
-    primitiveTypeMap += (definitions.ShortClass -> SHORT)
-    primitiveTypeMap += (definitions.CharClass -> CHAR)
-    primitiveTypeMap += (definitions.IntClass -> INT)
-    primitiveTypeMap += (definitions.LongClass -> LONG)
-    primitiveTypeMap += (definitions.FloatClass -> FLOAT)
-    primitiveTypeMap += (definitions.DoubleClass -> DOUBLE)
-//    primitiveTypeMap += (definitions.StringClass -> STRING)
   }
 
 }
