@@ -11,6 +11,7 @@
 
 package scala.collection.generic
 import scala.collection._
+import annotation.tailrec
 
 /** This extensible class may be used as a basis for implementing linked
  *  list. Type variable <code>A</code> refers to the element type of the
@@ -30,12 +31,17 @@ trait LinkedListTemplate[A, This >: Null <: Sequence[A] with LinkedListTemplate[
 
   override def length: Int = 1 + (if (next eq null) 0 else next.length)
 
-  override def head: A = elem
-
+  override def head: A    = elem
   override def tail: This = next
 
-  def append(that: This): Unit =
-    if (next eq null) next = that else next.append(that)
+  def append(that: This): Unit = {
+    @tailrec
+    def loop(x: This): Unit = {
+      if (x.next eq null) x.next = that
+      else loop(x.next)
+    }
+    loop(thisCollection)
+  }
 
   def insert(that: This): Unit = if (that ne null) {
     that.append(next)
@@ -51,18 +57,14 @@ trait LinkedListTemplate[A, This >: Null <: Sequence[A] with LinkedListTemplate[
     }
     these
   }
-
-  override def apply(n: Int): A = {
+  private def atLocation[T](n: Int)(f: This => T) = {
     val loc = drop(n)
-    if (loc ne null) loc.elem
+    if (loc ne null) f(loc)
     else throw new IndexOutOfBoundsException(n.toString)
   }
 
-  def update(n: Int, x: A) {
-    val loc = drop(n)
-    if (loc ne null) loc.elem = x
-    else throw new IndexOutOfBoundsException(n.toString)
-  }
+  override def apply(n: Int): A   = atLocation(n)(_.elem)
+  def update(n: Int, x: A): Unit  = atLocation(n)(_.elem = x)
 
   def get(n: Int): Option[A] = {
     val loc = drop(n)

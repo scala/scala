@@ -278,18 +278,23 @@ trait LinearSequenceTemplate[+A, +This <: LinearSequenceTemplate[A, This] with L
    */
   override def sameElements[B >: A](that: Iterable[B]): Boolean = that match {
     case that1: LinearSequence[_] =>
-      var these = this
+      // !!! todo: do the LinearSequence methods need to assume null might be
+      // used to indicate termination or not? The fact that null is checked for
+      // here would seem to indicate "yes", but the comment in LinkedListTemplate is
+      //   !!! todo: integrate with LinearSequence, need to drop null then.
+      // which contradicts the need for null checking here in two different ways:
+      //   1) LinkedList does not currently inherit from LinearSequenceTemplate
+      //   2) According to that comment, if it does it will stop using null
+      //      (but what is the alternative?)
+      def isEmpty(xs: LinearSequence[_]) = xs == null || xs.isEmpty
+      var these = thisCollection
       var those = that1
-      while (these != null && those != null && !these.isEmpty && !those.isEmpty && these.head == those.head) {
+
+      while (!isEmpty(these) && !isEmpty(those) && these.head == those.head) {
         these = these.tail
         those = those.tail
       }
-      if (these == null)
-        those == null
-      else if (those == null)
-        false
-      else
-        these.isEmpty && those.isEmpty
+      isEmpty(these) && isEmpty(those)
     case _ => super.sameElements(that)
   }
 
