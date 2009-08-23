@@ -788,7 +788,8 @@ trait ParallelMatching extends ast.TreeDSL {
 
       protected def lengthCheck(tree: Tree, len: Int, op: TreeFunction2) = {
         def compareOp = head.tpe member nme.lengthCompare  // symbol for "lengthCompare" method
-        typer typed op((tree.duplicate DOT compareOp)(LIT(len)), ZERO)
+        // first ascertain lhs is not null: bug #2241
+        typer typed((tree OBJ_!= NULL) AND op((tree.duplicate DOT compareOp)(LIT(len)), ZERO))
       }
 
       // precondition for matching: sequence is exactly length of arg
