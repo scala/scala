@@ -34,6 +34,36 @@ object Numeric {
   }
   implicit object IntIsIntegral extends IntIsIntegral with Ordering.IntOrdering
 
+  trait ShortIsIntegral extends Integral[Short] {
+    def plus(x: Short, y: Short): Short = (x + y).toShort
+    def minus(x: Short, y: Short): Short = (x - y).toShort
+    def times(x: Short, y: Short): Short = (x * y).toShort
+    def quot(x: Short, y: Short): Short = (x / y).toShort
+    def rem(x: Short, y: Short): Short = (x % y).toShort
+    def negate(x: Short): Short = (-x).toShort
+    def fromInt(x: Int): Short = x.toShort
+    def toInt(x: Short): Int = x.toInt
+    def toLong(x: Short): Long = x.toLong
+    def toFloat(x: Short): Float = x.toFloat
+    def toDouble(x: Short): Double = x.toDouble
+  }
+  implicit object ShortIsIntegral extends ShortIsIntegral with Ordering.ShortOrdering
+
+  trait ByteIsIntegral extends Integral[Byte] {
+    def plus(x: Byte, y: Byte): Byte = (x + y).toByte
+    def minus(x: Byte, y: Byte): Byte = (x - y).toByte
+    def times(x: Byte, y: Byte): Byte = (x * y).toByte
+    def quot(x: Byte, y: Byte): Byte = (x / y).toByte
+    def rem(x: Byte, y: Byte): Byte = (x % y).toByte
+    def negate(x: Byte): Byte = (-x).toByte
+    def fromInt(x: Int): Byte = x.toByte
+    def toInt(x: Byte): Int = x.toInt
+    def toLong(x: Byte): Long = x.toLong
+    def toFloat(x: Byte): Float = x.toFloat
+    def toDouble(x: Byte): Double = x.toDouble
+  }
+  implicit object ByteIsIntegral extends ByteIsIntegral with Ordering.ByteOrdering
+
   trait LongIsIntegral extends Integral[Long] {
     def plus(x: Long, y: Long): Long = x + y
     def minus(x: Long, y: Long): Long = x - y
