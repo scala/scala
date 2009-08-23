@@ -11,8 +11,8 @@
 
 package scala.concurrent
 
-
 import java.lang.Thread
+import scala.util.control.Exception.allCatch
 
 /** The object <code>ops</code> ...
  *
@@ -24,16 +24,14 @@ object ops {
     TaskRunners.threadRunner
 
   /**
-   *  If expression computed successfully return it in <code>Left</code>,
-   *  otherwise return exception in <code>Right</code>.
+   *  If expression computed successfully return it in <code>Right</code>,
+   *  otherwise return exception in <code>Left</code>.
    */
-  private def tryCatch[A](left: => A): Either[A, Throwable] = {
-    try {
-      Left(left)
-    } catch {
-      case t => Right(t)
-    }
-  }
+  private def tryCatch[A](body: => A): Either[Throwable, A] =
+    allCatch[A] either body
+
+  private def getOrThrow[A](x: Either[Throwable, A]): A =
+    x.fold[A](throw _, identity _)
 
   /** Evaluates an expression asynchronously.
    *
@@ -48,12 +46,9 @@ object ops {
    *  @return  ...
    */
   def future[A](p: => A)(implicit runner: TaskRunner[Unit] = defaultRunner): () => A = {
-    val result = new SyncVar[Either[A, Throwable]]
+    val result = new SyncVar[Either[Throwable, A]]
     spawn({ result set tryCatch(p) })(runner)
-    () => result.get match {
-    	case Left(a) => a
-    	case Right(t) => throw t
-    }
+    () => getOrThrow(result.get)
   }
 
   /**
@@ -62,12 +57,9 @@ object ops {
    *  @return   ...
    */
   def par[A, B](xp: => A, yp: => B): (A, B) = {
-    val y = new SyncVar[Either[B, Throwable]]
+    val y = new SyncVar[Either[Throwable, B]]
     spawn { y set tryCatch(yp) }
-    (xp, y.get match {
-    	case Left(b) => b
-    	case Right(t) => throw t
-    })
+    (xp, getOrThrow(y.get))
   }
 
   /**
