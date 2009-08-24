@@ -58,13 +58,13 @@ object Console {
   final val INVISIBLE  = "\033[8m"
 
   private val outVar = new DynamicVariable[PrintStream](java.lang.System.out)
+  private val errVar = new DynamicVariable[PrintStream](java.lang.System.err)
   private val inVar = new DynamicVariable[BufferedReader](
     new BufferedReader(new InputStreamReader(java.lang.System.in)))
 
   def out = outVar.value
+  def err = errVar.value
   def in = inVar.value
-
-  val err = java.lang.System.err
 
   /** Set the default output stream.
    *
@@ -102,6 +102,42 @@ object Console {
     withOut(new PrintStream(out))(thunk)
 
 
+  /** Set the default error stream.
+   *
+   *  @param err the new error stream.
+   */
+  def setErr(err: PrintStream) { errVar.value = err }
+
+  /** Set the default error stream for the duration
+   *  of execution of one thunk.
+   *
+   *  @param err the new error stream.
+   *  @param thunk the code to execute with
+   *               the new error stream active
+   *  @return ...
+   */
+  def withErr[T](err: PrintStream)(thunk: =>T): T =
+    errVar.withValue(err)(thunk)
+
+  /** Set the default error stream.
+   *
+   *  @param err the new error stream.
+   */
+  def setErr(err: OutputStream): Unit =
+    setErr(new PrintStream(err))
+
+  /** Set the default error stream for the duration
+   *  of execution of one thunk.
+   *
+   *  @param err the new error stream.
+   *  @param thunk the code to execute with
+   *               the new error stream active
+   *  @return ...
+   */
+  def withErr[T](err: OutputStream)(thunk: =>T): T =
+    withErr(new PrintStream(err))(thunk)
+
+
   /** Set the default input stream.
    *
    *  @param reader specifies the new input stream.
@@ -117,8 +153,8 @@ object Console {
    *  @param thunk the code to execute with
    *               the new input stream active
    */
-    def withIn[T](reader: Reader)(thunk: =>T): T =
-      inVar.withValue(new BufferedReader(reader))(thunk)
+  def withIn[T](reader: Reader)(thunk: =>T): T =
+    inVar.withValue(new BufferedReader(reader))(thunk)
 
 
   /** Set the default input stream.
