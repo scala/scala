@@ -3845,6 +3845,12 @@ trait Typers { self: Analyzer =>
       case Some(tree1) => transformed -= tree; tree1
       case None => typed(tree, pt)
     }
+
+    def findManifest(tp: Type, full: Boolean) =
+      inferImplicit(
+        EmptyTree,
+        appliedType((if (full) FullManifestClass else PartialManifestClass).typeConstructor, List(tp)),
+        true, false, context)
 /*
     def convertToTypeTree(tree: Tree): Tree = tree match {
       case TypeTree() => tree
