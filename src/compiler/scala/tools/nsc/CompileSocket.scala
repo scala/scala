@@ -6,10 +6,16 @@
 
 package scala.tools.nsc
 
-import java.io.{ File, IOException, FileNotFoundException, PrintWriter, FileOutputStream }
+import java.io.{ IOException, FileNotFoundException, PrintWriter, FileOutputStream }
 import java.io.{ BufferedReader, FileReader }
 import java.util.regex.Pattern
 import java.net._
+import java.security.SecureRandom
+
+import scala.io.File
+import scala.util.control.Exception.catching
+
+// class CompileChannel { }
 
 /** This class manages sockets for the fsc offline compiler.  */
 class CompileSocket {
@@ -26,7 +32,7 @@ class CompileSocket {
   protected val vmCommand = Properties.scalaHome match {
     case null     => cmdName
     case dirname  =>
-      val trial = scala.io.File(dirname) / "bin" / cmdName
+      val trial = File(dirname) / "bin" / cmdName
       if (trial.canRead) trial.path
       else cmdName
   }
@@ -53,7 +59,7 @@ class CompileSocket {
   /** A temporary directory to use */
   val tmpDir = {
     val udir  = Option(Properties.userName) getOrElse "shared"
-    val f     = (scala.io.File(Properties.tmpDir) / "scala-devel" / udir).file
+    val f     = (File(Properties.tmpDir) / "scala-devel" / udir).file
     f.mkdirs()
 
     if (f.isDirectory && f.canWrite) {
@@ -64,7 +70,7 @@ class CompileSocket {
   }
 
   /* A directory holding port identification files */
-  val portsDir =  new File(tmpDir, dirName)
+  val portsDir = File(tmpDir) / dirName
   portsDir.mkdirs
 
   /** Maximum number of polls for an available port */
@@ -97,24 +103,16 @@ class CompileSocket {
   }
 
   /** The port identification file */
-  def portFile(port: Int) = new File(portsDir, port.toString())
+  def portFile(port: Int) = portsDir / port.toString
 
   /** Poll for a server port number; return -1 if none exists yet */
-  private def pollPort(): Int = {
-    val hits = portsDir.listFiles()
-    if (hits.length == 0) -1
-    else
-      try {
-        for (i <- 1 until hits.length) hits(i).delete()
-        hits(0).getName.toInt
-      } catch {
-        case ex: NumberFormatException =>
-          fatal(ex.toString() +
-                "\nbad file in temp directory: " +
-                hits(0).getAbsolutePath() +
-                "\nplease remove the file and try again")
-      }
-  }
+  private def pollPort(): Int =
+    portsDir.iterator.toList match {
+      case Nil      => -1
+      case p :: xs  =>
+        xs forall (_.delete())
+        p.name.toInt
+    }
 
   /** Get the port number to which a scala compile server is connected;
    *  If no server is running yet, then create one.
@@ -138,8 +136,8 @@ class CompileSocket {
 
   /** Set the port number to which a scala compile server is connected */
   def setPort(port: Int) {
-    val file = scala.io.File(portFile(port))
-    val secret = new java.security.SecureRandom().nextInt.toString
+    val file    = portFile(port)
+    val secret  = new SecureRandom().nextInt.toString
 
     try file writeAll List(secret) catch {
       case e @ (_: FileNotFoundException | _: SecurityException) =>
@@ -148,7 +146,7 @@ class CompileSocket {
   }
 
   /** Delete the port number to which a scala compile server was connected */
-  def deletePort(port: Int) { portFile(port).delete() }
+  def deletePort(port: Int) = portFile(port).delete()
 
   /** Get a socket connected to a daemon.  If create is true, then
     * create a new daemon if necessary.  Returns null if the connection
@@ -210,8 +208,8 @@ class CompileSocket {
     }
 
   def getPassword(port: Int): String = {
-    val ff = scala.io.File(portFile(port))
-    val f = ff.bufferedReader()
+    val ff  = portFile(port)
+    val f   = ff.bufferedReader()
 
     // allow some time for the server to start up
     def check = {

@@ -12,7 +12,7 @@ package scala.io
 
 import java.io.{
   FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
-  BufferedInputStream, File => JFile }
+  BufferedInputStream, BufferedOutputStream, File => JFile }
 import collection.Traversable
 
 object File
@@ -56,6 +56,7 @@ import File._
  */
 class File(val file: JFile)(implicit val codec: Codec = Codec.default) extends collection.Iterable[File]
 {
+  def name = file.getName()
   def path = file.getPath()
   def absolutePath = file.getAbsolutePath()
   def delete() = file.delete()
@@ -82,7 +83,7 @@ class File(val file: JFile)(implicit val codec: Codec = Codec.default) extends c
    *  you can map (_.toByte) if you would really prefer Bytes.
    */
   def bytes(): Iterator[Int] = {
-    val in = new BufferedInputStream(inputStream())
+    val in = bufferedInput()
     Iterator continually in.read() takeWhile (_ != -1)
   }
 
@@ -104,9 +105,11 @@ class File(val file: JFile)(implicit val codec: Codec = Codec.default) extends c
 
   /** Obtains an InputStream. */
   def inputStream() = new FileInputStream(file)
+  def bufferedInput() = new BufferedInputStream(inputStream())
 
   /** Obtains a OutputStream. */
   def outputStream(append: Boolean = false) = new FileOutputStream(file, append)
+  def bufferedOutput(append: Boolean = false) = new BufferedOutputStream(outputStream(append))
 
   /** Obtains an InputStreamReader wrapped around a FileInputStream.
    */
