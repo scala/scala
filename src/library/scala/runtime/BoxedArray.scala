@@ -57,13 +57,12 @@ abstract class BoxedArray[A] extends Vector[A] with VectorTemplate[A, BoxedArray
    *  Example:   Array(Array(1, 2), Array(3, 4)).deep.toString
    *  prints:    Array(Array(1, 2), Array(3, 4))
    */
-  def deep: Vector[Any] = new Vector[Any] {
+  def deep: collection.Vector[Any] = new collection.Vector[Any] {
     def length = self.length
     def apply(idx: Int): Any = self.apply(idx) match {
       case elem: AnyRef if ScalaRunTime.isArray(elem) => ScalaRunTime.boxArray(elem).deep
       case elem => elem
     }
-    def update(idx: Int, elem: Any) = error("Result of deep cannot be updated.")
     override def stringPrefix = "Array"
   }
 

@@ -25,64 +25,11 @@ import scala.runtime._
   * </p>
   */
 @serializable
-trait Manifest[T] extends OptManifest[T] {
-
-  /** A class representing the type U to which T would be erased. Note
-    * that there is no subtyping relationship between T and U. */
-  def erasure: Predef.Class[_]
-
-  /** Tests whether the type represented by this manifest is a subtype of
-    * the type represented by `that' manifest. BE AWARE: the current
-    * implementation is an approximation, as the test is done on the
-    * erasure of the type. */
-  def <:<(that: Manifest[_]): Boolean = {
-    def subtype(sub: Predef.Class[_], sup: Predef.Class[_]): Boolean = {
-      val subSuperClass = sub.getSuperclass
-      val subSuperInterfaces = sub.getInterfaces.toList
-      val subSuper =
-        (if (subSuperClass == null) Nil else List(subSuperClass)) ::: subSuperInterfaces
-      (subSuper contains sup) || (subSuper exists (subtype(_, sup)))
-    }
-    def subargs(args1: List[OptManifest[_]], args2: List[OptManifest[_]]): Boolean = {
-      (args1 zip args2) forall {
-        case (x: Manifest[_], y: Manifest[_]) => x <:< y // !!! [Martin] this is wrong, need to take variance into account
-        case (NoManifest, NoManifest) => true
-        case _ => false
-      }
-    }
-    (this.erasure == that.erasure || subtype(this.erasure, that.erasure)) &&
-    subargs(this.typeArguments, that.typeArguments)
-  }
-
-  /** Tests whether the type represented by this manifest is a supertype
-    * of the type represented by `that' manifest. BE AWARE: the current
-    * implementation is an approximation, as the test is done on the
-    * erasure of the type. */
-  def >:>(that: Manifest[_]): Boolean =
-    that <:< this
-
-  /** Tests whether the type represented by this manifest is equal to the
-    * type represented by `that' manifest. BE AWARE: the current
-    * implementation is an approximation, as the test is done on the
-    * erasure of the type. */
-  override def equals(that: Any): Boolean = that match {
-    case m: Manifest[_] => this.erasure == m.erasure
-    case _ => false
-  }
-
-  def newArray(len: Int): BoxedArray[T] = {
-    // it's safe to assume T <: AnyRef here because the method is overridden for all value type manifests
-    new BoxedObjectArray(java.lang.reflect.Array.newInstance(erasure, len).asInstanceOf[Array[AnyRef]])
-      .asInstanceOf[BoxedArray[T]]
-  }
-
-  def typeArguments: List[OptManifest[_]] = List()
-
-  protected def argString = if (typeArguments.isEmpty) "" else typeArguments.mkString("[", ", ", "]")
-
+trait Manifest[T] extends ClassManifest[T] {
+  override def typeArguments: List[Manifest[_]] = List()
 }
 
-/** <p>
+/** <ps>
   *   This object is used by the compiler and <b>should not be used in client
   *   code</b>. The object <code>Manifest</code> defines factory methods for
   *   manifests.
@@ -94,31 +41,84 @@ trait Manifest[T] extends OptManifest[T] {
   */
 object Manifest {
 
-  val Byte = FullManifest.Byte
-  val Short = FullManifest.Short
-  val Char = FullManifest.Char
-  val Int = FullManifest.Int
-  val Long = FullManifest.Long
-  val Float = FullManifest.Float
-  val Double = FullManifest.Double
-  val Boolean = FullManifest.Boolean
-  val Unit = FullManifest.Unit
+  val Byte = new (Manifest[Byte] @serializable) {
+    def erasure = java.lang.Byte.TYPE
+    override def toString = "Byte"
+    override def newArray(len: Int): BoxedArray[Byte] = new BoxedByteArray(new Array[Byte](len))
+  }
 
-  def singleType[T](value: Any): FullManifest[T] = FullManifest.singleType(value)
+  val Short = new (Manifest[Short] @serializable) {
+    def erasure = java.lang.Short.TYPE
+    override def toString = "Short"
+    override def newArray(len: Int): BoxedArray[Short] = new BoxedShortArray(new Array[Short](len))
+  }
 
-  /** Manifest for the class type `clazz[args]', where `clazz' is
+  val Char = new (Manifest[Char] @serializable) {
+    def erasure = java.lang.Character.TYPE
+    override def toString = "Char"
+    override def newArray(len: Int): BoxedArray[Char] = new BoxedCharArray(new Array[Char](len))
+  }
+
+  val Int = new (Manifest[Int] @serializable) {
+    def erasure = java.lang.Integer.TYPE
+    override def toString = "Int"
+    override def newArray(len: Int): BoxedArray[Int] = new BoxedIntArray(new Array[Int](len))
+  }
+
+  val Long = new (Manifest[Long] @serializable) {
+    def erasure = java.lang.Long.TYPE
+    override def toString = "Long"
+    override def newArray(len: Int): BoxedArray[Long] = new BoxedLongArray(new Array[Long](len))
+  }
+
+  val Float = new (Manifest[Float] @serializable) {
+    def erasure = java.lang.Float.TYPE
+    override def toString = "Float"
+    override def newArray(len: Int): BoxedArray[Float] = new BoxedFloatArray(new Array[Float](len))
+  }
+
+  val Double = new (Manifest[Double] @serializable) {
+    def erasure = java.lang.Double.TYPE
+    override def toString = "Double"
+    override def newArray(len: Int): BoxedArray[Double] = new BoxedDoubleArray(new Array[Double](len))
+  }
+
+  val Boolean = new (Manifest[Boolean] @serializable) {
+    def erasure = java.lang.Boolean.TYPE
+    override def toString = "Boolean"
+    override def newArray(len: Int): BoxedArray[Boolean] = new BoxedBooleanArray(new Array[Boolean](len))
+  }
+
+  val Unit = new (Manifest[Unit] @serializable) {
+    def erasure = java.lang.Void.TYPE
+    override def toString = "Unit"
+    override def newArray(len: Int): BoxedArray[Unit] = new BoxedUnitArray(new Array[Unit](len))
+  }
+
+  /** Manifest for the singleton type `value.type'. */
+  def singleType[T](value: Any): Manifest[T] =
+    new (Manifest[T] @serializable) {
+      lazy val erasure =
+        value match {
+          case anyRefValue: AnyRef => anyRefValue.getClass
+          case anyValue => error("There is no singleton type for AnyVal values")
+        }
+      override lazy val toString = value.toString + ".type"
+    }
+
+  /** Manifest for the class type `clazz', where `clazz' is
     * a top-level or static class. */
-  def classType[T](clazz: Predef.Class[_], args: OptManifest[_]*): Manifest[T] =
+  def classType[T](clazz: Predef.Class[T], args: Manifest[_]*): Manifest[T] =
     classType(None, clazz, args: _*)
 
   /** Manifest for the class type `clazz[args]', where `clazz' is
     * a top-level or static class. */
-  def classType[T](prefix: Manifest[_], clazz: Predef.Class[_], args: OptManifest[_]*): Manifest[T] =
+  def classType[T](prefix: Manifest[_], clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
     classType(Some(prefix), clazz, args: _*)
 
   /** Manifest for the class type `clazz[args]', where `clazz' is
     * a top-level or static class. */
-  def classType[T](prefix: Option[Manifest[_]], clazz: Predef.Class[_], args: OptManifest[_]*): Manifest[T] =
+  def classType[T](prefix: Option[Manifest[_]], clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
     new (Manifest[T] @serializable) {
       def erasure = clazz
       override val typeArguments = args.toList
@@ -131,7 +131,7 @@ object Manifest {
   /** Manifest for the abstract type `prefix # name'. `upperBound' is not
     * strictly necessary as it could be obtained by reflection. It was
     * added so that erasure can be calculated without reflection. */
-  def abstractType[T](prefix: Manifest[_], name: String, upperBound: Manifest[_], args: OptManifest[_]*): Manifest[T] =
+  def abstractType[T](prefix: Manifest[_], name: String, upperBound: Manifest[_], args: Manifest[_]*): Manifest[T] =
     new (Manifest[T] @serializable) {
       def erasure = upperBound.erasure
       override val typeArguments = args.toList

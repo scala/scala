@@ -385,15 +385,32 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
               // when calling into java varargs, make sure it's an array - see bug #1360
               def forceToArray(arg: Tree) = {
                 val Typed(tree, _) = arg
-                lazy val isTraversable = tree.tpe.baseClasses contains TraversableClass
-                lazy val toArray = tree.tpe member nme.toArray
-
-                if (isJava && isTraversable && toArray != NoSymbol)
-                  Apply(gen.mkAttributedSelect(tree, toArray), Nil) setType tree.tpe.memberType(toArray)
-                else
-                  tree
+                if (!isJava || tree.tpe.typeSymbol == ArrayClass) tree
+                else {
+                  val traversableTpe = tree.tpe.baseType(TraversableClass)
+                  val toArray = tree.tpe member nme.toArray
+                  if (traversableTpe != NoType && toArray != NoSymbol) {
+                    val arguments =
+                      if (toArray.tpe.paramTypes.isEmpty) List() // !!! old style toArray
+                      else { // new style, with manifest
+                        val manifestOpt = localTyper.findManifest(tree.tpe.typeArgs.head, false)
+                        if (manifestOpt.tree.isEmpty) {
+                          unit.error(tree.pos, "cannot find class manifest for element type of "+tree.tpe)
+                          List(Literal(Constant(null)))
+                        } else {
+                          List(manifestOpt.tree)
+                        }
+                      }
+                    atPhase(phase.next) {
+                      localTyper.typed {
+                        atPos(pos) {
+                          Apply(gen.mkAttributedSelect(tree, toArray), arguments)
+                        }
+                      }
+                    }
+                  } else tree
+                }
               }
-
               if (args.isEmpty)
                 List(mkArrayValue(args))
               else {
