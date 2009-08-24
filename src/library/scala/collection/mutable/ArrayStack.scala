@@ -150,7 +150,7 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
   override def isEmpty = index == 0;
 
   /**
-   * Iterates over the stack in fifo order.
+   * Iterates over the stack in LIFO order.
    */
   def iterator: Iterator[T] = new Iterator[T]{
     var currentIndex = index;
