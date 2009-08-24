@@ -112,6 +112,7 @@ trait Definitions {
           appliedType(ClassClass.tpe, List(classType))
         else ClassClass.tpe
       def Predef_error    = getMember(PredefModule, nme.error)
+      def Predef_identity = getMember(PredefModule, nme.identity)
       def Predef_conforms = getMember(PredefModule, nme.conforms)
     lazy val ConsoleModule: Symbol = getModule("scala.Console")
     lazy val ScalaRunTimeModule: Symbol = getModule("scala.runtime.ScalaRunTime")

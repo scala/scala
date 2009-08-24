@@ -414,6 +414,7 @@ self: Analyzer =>
        *  This is the case if all of the following holds:
        *   - the info's type is not erroneous,
        *   - the info is not shadowed by another info with the same name,
+       *   - we're not trying to infer a view that amounts to the identity function (specifically, Predef.identity or Predef.conforms)
        *   - the result of typedImplicit is non-empty.
        *   @return A search result with an attributed tree containing the implicit if succeeded,
        *           SearchFailure if not.
@@ -421,7 +422,7 @@ self: Analyzer =>
       def tryImplicit(info: ImplicitInfo): SearchResult =
         if (containsError(info.tpe) ||
             (isLocal && shadowed.contains(info.name)) ||
-            (isView && (info.sym == Predef_conforms))  //@M this condition prevents no-op conversions, which are a problem (besides efficiency),
+            (isView && (info.sym == Predef_identity || info.sym == Predef_conforms))  //@M this condition prevents no-op conversions, which are a problem (besides efficiency),
             // one example is removeNames in NamesDefaults, which relies on the type checker failing in case of ambiguity between an assignment/named arg
            ) SearchFailure
         else typedImplicit(info)

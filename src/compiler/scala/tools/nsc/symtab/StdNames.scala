@@ -270,6 +270,7 @@ trait StdNames {
     val canEqual_ = newTermName("canEqual")
     val checkInitialized = newTermName("checkInitialized")
     val classOf = newTermName("classOf")
+    val identity = newTermName("identity")
     val conforms = newTermName("conforms")
     val copy = newTermName("copy")
     val dottype = newTermName(".type")
