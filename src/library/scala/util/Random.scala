@@ -68,6 +68,23 @@ class Random(val self: java.util.Random) {
    */
   def nextLong(): Long = self.nextLong()
 
+  /** Returns a pseudorandomly generated String.  This routine does
+   *  not take any measures to preserve the randomness of the distribution
+   *  in the face of factors like unicode's variable-length encoding,
+   *  so please don't use this for anything important.  It's primarily
+   *  intended for generating test data.
+   *
+   *  @param  length    the desired length of the String
+   *  @return           the String
+   */
+  def nextString(length: Int) = {
+    def toChar(ch: Int): List[Char] =
+      try new String(Array(ch), 0, 1) toList
+      catch { case _: IllegalArgumentException => Nil }
+
+    Stream continually toChar(nextInt()) flatMap (x => x) take length mkString
+  }
+
   def setSeed(seed: Long) { self.setSeed(seed) }
 }
 
