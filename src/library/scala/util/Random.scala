@@ -82,7 +82,7 @@ class Random(val self: java.util.Random) {
       try new String(Array(ch), 0, 1) toList
       catch { case _: IllegalArgumentException => Nil }
 
-    Stream continually toChar(nextInt()) flatMap (x => x) take length mkString
+    Stream continually toChar(Math.abs(nextInt()) % (1 << 16)) flatMap (x => x) take length mkString
   }
 
   def setSeed(seed: Long) { self.setSeed(seed) }
