@@ -171,6 +171,22 @@ self =>
     else new Stream.Cons(rest.head, rest.tail filter p)
   }
 
+  /** Apply the given function <code>f</code> to each element of this linear sequence
+   *  (while respecting the order of the elements).
+   *
+   *  @param f the treatment to apply to each element.
+   *  @note  Overridden here as final to trigger tail-call optimization, which replaces
+   *         'this' with 'tail' at each iteration. This is absolutely necessary
+   *         for allowing the GC to collect the underlying stream as elements are
+   *         consumed.
+   */
+  override final def foreach[B](f: A => B) {
+    if (!this.isEmpty) {
+      f(head)
+      tail.foreach(f)
+    }
+  }
+
   /** Returns all the elements of this stream that satisfy the
    *  predicate <code>p</code>. The order of the elements is preserved.
    *
