@@ -539,7 +539,7 @@ self =>
               leftAssoc && prec == precedence(opstack.head.operator))) {
         val opinfo = opstack.head
         opstack = opstack.tail
-        val opPos = rangePos(opinfo.operand.pos.source, opinfo.offset, opinfo.offset, opinfo.offset+opinfo.operator.length)
+        val opPos = r2p(opinfo.offset, opinfo.offset, opinfo.offset+opinfo.operator.length)
         top = atPos(opinfo.operand.pos.startOrPoint, opinfo.offset) {
           makeBinop(isExpr, opinfo.operand, opinfo.operator, top, opPos)
         }
@@ -1111,6 +1111,11 @@ self =>
     def postfixExpr(): Tree = {
       val base = opstack
       var top = prefixExpr()
+      // Various errors in XML literals can cause xmlLiteral to propagate
+      // EmptyTree's. Watch out for them here.
+      if (top == EmptyTree)
+        return EmptyTree
+
       while (isIdent) {
         top = reduceStack(true, base, top, precedence(in.name), treeInfo.isLeftAssoc(in.name))
         val op = in.name
@@ -1118,7 +1123,10 @@ self =>
         ident()
         newLineOptWhenFollowing(isExprIntroToken)
         if (isExprIntro) {
-          top = prefixExpr()
+          val next = prefixExpr()
+          if (next == EmptyTree)
+            return reduceStack(true, base, top, 0, true)
+          top = next
         } else {
           val topinfo = opstack.head
           opstack = opstack.tail
