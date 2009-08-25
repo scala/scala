@@ -10,12 +10,12 @@
 
 
 package scala.runtime
-import scala.reflect.Manifest
+import scala.reflect.ClassManifest
 
 @serializable
 final class BoxedBooleanArray(val value: Array[Boolean]) extends BoxedArray[Boolean] {
 
-  def elemManifest = Manifest.Boolean
+  def elemManifest = ClassManifest.Boolean
 
   def length: Int = value.length
 

@@ -12,7 +12,7 @@
 package scala.runtime
 
 import Predef._
-import scala.reflect.Manifest
+import scala.reflect.ClassManifest
 import collection.mutable.{Vector, ArrayBuilder, ArrayBuffer}
 import collection.generic._
 import collection.Sequence
@@ -26,7 +26,7 @@ import collection.Sequence
 abstract class BoxedArray[A] extends Vector[A] with VectorTemplate[A, BoxedArray[A]] with Boxed { self =>
 
   /** The manifest of the element type */
-  def elemManifest: Manifest[A]
+  def elemManifest: ClassManifest[A]
 
   /** The length of the array */
   def length: Int

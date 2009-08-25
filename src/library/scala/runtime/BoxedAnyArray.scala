@@ -10,7 +10,7 @@
 
 
 package scala.runtime
-import scala.reflect.Manifest
+import scala.reflect.ClassManifest
 import compat.Platform
 
 /**
@@ -22,7 +22,7 @@ import compat.Platform
 @serializable
 final class BoxedAnyArray[A](val length: Int) extends BoxedArray[A] {
 
-  def elemManifest: Manifest[A] = null
+  def elemManifest: ClassManifest[A] = null
 
   private var boxed = new Array[AnyRef](length)
 //  private val hash = boxed.hashCode()

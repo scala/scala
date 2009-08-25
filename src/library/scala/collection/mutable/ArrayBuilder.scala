@@ -12,11 +12,11 @@
 package scala.collection.mutable
 
 import scala.collection.generic._
-import scala.reflect.Manifest
+import scala.reflect.ClassManifest
 import scala.runtime.BoxedArray
 
 /** A builder class for arrays */
-class ArrayBuilder[A](manifest: Manifest[A]) extends Builder[A, BoxedArray[A]] {
+class ArrayBuilder[A](manifest: ClassManifest[A]) extends Builder[A, BoxedArray[A]] {
 
   private var elems: BoxedArray[A] = _
   private var capacity: Int = 0

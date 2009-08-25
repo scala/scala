@@ -10,12 +10,12 @@
 
 
 package scala.runtime
-import scala.reflect.Manifest
+import scala.reflect.ClassManifest
 
 @serializable
 final class BoxedLongArray(val value: Array[Long]) extends BoxedArray[Long] {
 
-  def elemManifest = Manifest.Long
+  def elemManifest = ClassManifest.Long
 
   def length: Int = value.length
 

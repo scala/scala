@@ -76,6 +76,12 @@ object Predef {
   val Map = collection.immutable.Map
   val Set = collection.immutable.Set
 
+  type Manifest[T] = scala.reflect.Manifest[T]
+  type ClassManifest[T] = scala.reflect.ClassManifest[T]
+  def evidence[T](implicit e: T) = e
+  def manifest[T](implicit m: Manifest[T]) = m
+  def classManifest[T](implicit m: ClassManifest[T]) = m
+
   // will soon stop being a view: subsumed by `conforms` (which is less likely to give rise to ambiguities)
   // @see `conforms` for the implicit version
   implicit def identity[A](x: A): A = x
