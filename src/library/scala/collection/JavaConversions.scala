@@ -30,7 +30,7 @@ package scala.collection
  *    again will return the original source object, eg.
  *  </p>
  *  <pre>
- *    <b>import</b> scala.collections.JavaConversions._
+ *    <b>import</b> scala.collection.JavaConversions._
  *
  *    <b>val</b> sl = <b>new</b> scala.collection.mutable.ListBuffer[Int]
  *    <b>val</b> jl : java.util.List[Int] = sl
