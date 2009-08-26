@@ -13,7 +13,7 @@ import concurrent.ThreadRunner
 import util.Properties.{ isWin, isMac }
 import util.control.Exception.catching
 import java.lang.{ Process => JProcess, ProcessBuilder => JProcessBuilder }
-import java.io.{ IOException, InputStream, OutputStream, BufferedReader, InputStreamReader, File => JFile }
+import java.io.{ IOException, InputStream, OutputStream, BufferedReader, InputStreamReader, PrintWriter, File => JFile }
 import java.util.concurrent.LinkedBlockingQueue
 
 /** The <code>Process</code> object contains convenience functions
@@ -116,8 +116,10 @@ class Process(processCreator: () => JProcess) extends Iterable[String]
   def destroy() = process.destroy()
   def rerun() = new Process(processCreator)
 
-  def iterator = _out.iterator
-  def err = _err.iterator
+  def stdout    = iterator
+  def iterator  = _out.iterator
+  def stderr    = _err.iterator
+  lazy val stdin = new PrintWriter(_in, true)
 
   class StreamedConsumer(in: InputStream) extends Thread with Iterable[String] {
     private val queue = new LinkedBlockingQueue[String]
@@ -143,6 +145,8 @@ class Process(processCreator: () => JProcess) extends Iterable[String]
 
   private val _err = createConsumer(process.getErrorStream)
   private val _out = createConsumer(process.getInputStream)
+  private val _in  = process.getOutputStream()
+
   private def createConsumer(in: InputStream) = {
     val t = new StreamedConsumer(in)
     t.start()
