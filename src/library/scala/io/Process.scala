@@ -13,14 +13,15 @@ import concurrent.ThreadRunner
 import util.Properties.{ isWin, isMac }
 import util.control.Exception.catching
 import java.lang.{ Process => JProcess, ProcessBuilder => JProcessBuilder }
-import java.io.{ InputStream, OutputStream, BufferedReader, InputStreamReader, File => JFile }
+import java.io.{ IOException, InputStream, OutputStream, BufferedReader, InputStreamReader, File => JFile }
+import java.util.concurrent.LinkedBlockingQueue
 
 /** The <code>Process</code> object contains convenience functions
  *  for running external processes.
  *
  *  An example usage:
  *  <pre>
- *    io.Process.shell("ls", cwd = io.File("/")) foreach println
+ *    io.Process("ls", cwd = io.File("/")) foreach println
  *  </pre>
  *
  *  See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4109888
@@ -41,6 +42,7 @@ object Process
   private[Process] class ProcessBuilder(val pb: JProcessBuilder)
   {
     def this(cmd: String*) = this(new JProcessBuilder(cmd.toArray: _*))
+    def start() = new Process(() => pb.start())
 
     def withOnlyEnv(env: Map[String, String]): this.type = {
       pb.environment.clear()
@@ -61,8 +63,12 @@ object Process
 
       this
     }
+    def withRedirectedErrorStream(merged: Boolean): this.type = {
+      pb redirectErrorStream merged
+      this
+    }
 
-    def start(): Process = new Process(pb.start())
+    override def toString() = "ProcessBuilder(%s)" format pb.command()
   }
 
   // This can be fleshed out if more variations come up
@@ -75,49 +81,74 @@ object Process
    *  @param    command   the command line
    *  @return             a Process object
    */
-  def shell(
+  def apply(
     command: String,
     env: Map[String, String] = null,
-    cwd: File = null
+    cwd: File = null,
+    redirect: Boolean = false
   ): Process =
-      apply(shell(command), env, cwd)
+      exec(shell(command), env, cwd)
 
   /** Executes the given command line.
    *
    *  @param    command   the command line
    *  @return             a Process object
    */
-  def apply(
+  def exec(
     command: Seq[String],
     env: Map[String, String] = null,
-    cwd: File = null
+    cwd: File = null,
+    redirect: Boolean = false
   ): Process =
       new ProcessBuilder(command: _*) withEnv env withCwd cwd start
 }
 import Process._
 
 @experimental
-class Process(val process: JProcess) extends Iterable[String]
+class Process(processCreator: () => JProcess) extends Iterable[String]
 {
-  class StreamedConsumer(in: InputStream) extends Thread with Iterable[String] {
-    private val reader = new BufferedReader(new InputStreamReader(in))
-    private lazy val stream: Stream[String] =
-      Stream continually reader.readLine takeWhile (_ != null)
-
-    // call/block on force in case it's not done collecting output
-    def iterator = stream.force.iterator
-    override def run() { stream.force }
-    def slurp() = { this.start() ; this }
-  }
-
-  private val _err = new StreamedConsumer(process.getErrorStream).slurp()
-  private val _out = new StreamedConsumer(process.getInputStream).slurp()
+  lazy val process = processCreator()
 
   def exitValue(): Option[Int] =
     catching(classOf[IllegalThreadStateException]) opt process.exitValue()
 
+  def waitFor() = process.waitFor()
+  def destroy() = process.destroy()
+  def rerun() = new Process(processCreator)
+
   def iterator = _out.iterator
   def err = _err.iterator
+
+  class StreamedConsumer(in: InputStream) extends Thread with Iterable[String] {
+    private val queue = new LinkedBlockingQueue[String]
+    private val reader = new BufferedReader(new InputStreamReader(in))
+
+    def iterator = {
+      join()  // make sure this thread is complete
+      new Iterator[String] {
+        val it = queue.iterator()
+        def hasNext = it.hasNext
+        def next = it.next
+      }
+    }
+    override def run() {
+      reader.readLine match {
+        case null =>
+        case x    =>
+          queue put x
+          run()
+      }
+    }
+  }
+
+  private val _err = createConsumer(process.getErrorStream)
+  private val _out = createConsumer(process.getInputStream)
+  private def createConsumer(in: InputStream) = {
+    val t = new StreamedConsumer(in)
+    t.start()
+    t
+  }
+
   override def toString() = "Process(%s)" format process.toString()
 }
 
