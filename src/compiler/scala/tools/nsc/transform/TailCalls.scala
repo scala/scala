@@ -162,8 +162,8 @@ abstract class TailCalls extends Transform
           newCtx.label.setInfo(MethodType(currentClassParam :: tree.symbol.tpe.params, tree.symbol.tpe.finalResultType))
           newCtx.tailPos = true
 
-          val t1 = if (newCtx.currentMethod.isFinal ||
-                       newCtx.currentMethod.enclClass.hasFlag(Flags.MODULE)) {
+          val isEligible = newCtx.currentMethod.isFinal || (newCtx.currentMethod.enclClass hasFlag Flags.MODULE)
+          if (isEligible) {
             newCtx.tparams = Nil
             log("  Considering " + name + " for tailcalls")
             tree.symbol.tpe match {
@@ -171,30 +171,26 @@ abstract class TailCalls extends Transform
                 newCtx.tparams = tparams map (_.symbol)
                 newCtx.label.setInfo(
                   newCtx.label.tpe.substSym(tpes, tparams map (_.symbol)))
-              case _ => ()
+              case _ =>
             }
-
-            //println("label.tpe: " + newCtx.label.tpe)
-            var newRHS = transform(rhs, newCtx);
-            if (newCtx.accessed) {
-              log("Rewrote def " + newCtx.currentMethod)
-              isTransformed = true
-
-              val newThis = newCtx.currentMethod.newValue(tree.pos, nme.THIS)
-                 .setInfo(currentClass.tpe)
-                 .setFlag(Flags.SYNTHETIC)
-              newRHS =
-                  typed(atPos(tree.pos)(Block(List(
-                    ValDef(newThis, This(currentClass))),
-                    LabelDef(newCtx.label,
-                             newThis :: (List.flatten(vparams) map (_.symbol)),
-                             newRHS))));
-              treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt, newRHS);
-            } else
-              treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt, newRHS);
-          } else {
-            treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt, transform(rhs, newCtx))
           }
+          val t1 = treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt,
+            transform(rhs, newCtx) match {
+              case newRHS if isEligible && newCtx.accessed =>
+                log("Rewrote def " + newCtx.currentMethod)
+                isTransformed = true
+                val newThis = newCtx.currentMethod
+                  . newValue (tree.pos, nme.THIS)
+                  . setInfo (currentClass.tpe)
+                  . setFlag (Flags.SYNTHETIC)
+
+                typed(atPos(tree.pos)(Block(
+                  List(ValDef(newThis, This(currentClass))),
+                  LabelDef(newCtx.label, newThis :: (vparams.flatten map (_.symbol)), newRHS)
+                )))
+              case rhs  => rhs
+            }
+          )
 
           if (!isTransformed && tailrecRequired(dd))
             unit.error(dd.pos, "could not optimize @tailrec annotated method")
