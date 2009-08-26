@@ -13,6 +13,7 @@ package scala.collection.immutable
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.generic._
+import scala.annotation.tailrec
 
 /**
  * <p>The class <code>Stream</code> implements lazy lists where elements
@@ -180,11 +181,21 @@ self =>
    *         for allowing the GC to collect the underlying stream as elements are
    *         consumed.
    */
+  @tailrec
   override final def foreach[B](f: A => B) {
     if (!this.isEmpty) {
       f(head)
       tail.foreach(f)
     }
+  }
+
+  /** Stream specialization of foldLeft which allows GC to collect
+   *  along the way.
+   */
+  @tailrec
+  override final def foldLeft[B](z: B)(op: (B, A) => B): B = {
+    if (this.isEmpty) z
+    else tail.foldLeft(op(z, head))(op)
   }
 
   /** Returns all the elements of this stream that satisfy the
