@@ -134,6 +134,38 @@ self =>
     result
   }
 
+  /** Returns the sum of all elements with respect to the numeric operations in `num` */
+  def sum[B >: A](implicit num: Numeric[B]): B = {
+    var acc = num.zero
+    for (x <- self) acc = num.plus(acc, x)
+    acc
+  }
+
+  /** Returns the product of all elements with respect to the numeric operations in `num` */
+  def product[B >: A](implicit num: Numeric[B]): B = {
+    var acc = num.one
+    for (x <- self) acc = num.times(acc, x)
+    acc
+  }
+
+  /** Returns the minimal element with respect to the given ordering `cmp` */
+  def min[B >: A](implicit cmp: Ordering[B]): A = {
+    require(!self.isEmpty, "min(<empty>)")
+    var acc = self.head
+    for (x <- self)
+      if (cmp.lt(x, acc)) acc = x
+    acc
+  }
+
+  /** Returns the maximal element with respect to the given ordering `cmp` */
+  def max[B >: A](implicit cmp: Ordering[B]): A = {
+    require(!self.isEmpty, "max(<empty>)")
+    var acc = self.head
+    for (x <- self)
+      if (cmp.gt(x, acc)) acc = x
+    acc
+  }
+
   /** Returns true if this collection is known to have finite size.
    *  This is the case if the collection type is strict, or if the
    *  collection type is non-strict (e.g. it's a Stream), but all
