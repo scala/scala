@@ -68,7 +68,7 @@ trait TraversableProxyTemplate[+A, +This <: TraversableTemplate[A, This] with Tr
   override def copyToBuffer[B >: A](dest: Buffer[B]) = self.copyToBuffer(dest)
   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) = self.copyToArray(xs, start, len)
   override def copyToArray[B >: A](xs: Array[B], start: Int) = self.copyToArray(xs, start)
-  override def toArray[B >: A]: Array[B] = self.toArray
+  override def toArray[B >: A: ClassManifest]: Array[B] = self.toArray
   override def toList: List[A] = self.toList
   override def toIterable: Iterable[A] = self.toIterable
   override def toSequence: Sequence[A] = self.toSequence

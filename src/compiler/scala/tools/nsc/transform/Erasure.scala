@@ -21,10 +21,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
   // @S: XXX: why is this here? earsure is a typer, if you comment this
   //          out erasure still works, uses its own typed methods.
   lazy val typerXXX = this.typer
-  import typerXXX.{typed}             // methods to type trees
+  import typerXXX.{typed, typedPos}             // methods to type trees
 
   import CODE._
-  def typedPos(pos: Position)(tree: Tree) = typed { atPos(pos)(tree) }
 
   val phaseName: String = "erasure"
 
@@ -387,7 +386,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
         })
     }
 
-    /** generate  ScalaRuntime.boxArray(tree) */
+    /** generate  ScalaRuntime.boxArray(tree)
+     *  !!! todo: optimize this in case the runtime type is known
+     */
     private def boxArray(tree: Tree): Tree = tree match {
       case LabelDef(name, params, rhs) =>
         val rhs1 = boxArray(rhs)
@@ -451,12 +452,12 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
             ELSE (x())
           )
         )
-        else if (pt.typeSymbol isNonBottomSubClass BoxedArrayClass) once (x =>
-          (IF (x() IS_OBJ BoxedArrayClass.tpe) THEN (x()) ELSE boxArray(x()))
-        )
-        else if (isSeqClass(pt.typeSymbol)) once (x =>
-          (IF (x() IS_OBJ pt) THEN (x()) ELSE (boxArray(x())))
-        )
+        else if (pt.typeSymbol isNonBottomSubClass BoxedArrayClass)
+          once (x =>
+            (IF (x() IS_OBJ BoxedArrayClass.tpe) THEN (x()) ELSE boxArray(x())))
+        else if (isSeqClass(pt.typeSymbol))
+          once (x =>
+            (IF (x() IS_OBJ pt) THEN (x()) ELSE (boxArray(x()))))
         else asPt(tree)
       } else asPt(tree)
     }
@@ -560,12 +561,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
       tree match {
         case Apply(Select(New(tpt), name), args) if (tpt.tpe.typeSymbol == BoxedArrayClass) =>
           assert(name == nme.CONSTRUCTOR);
-          val translated: Tree =
-            if (args.length >= 2) REF(ArrayModule) DOT nme.ofDim
-            else                  NEW(BoxedAnyArrayClass) DOT name
-
-          atPos(tree.pos) {
-            Typed(Apply(translated, args), tpt)
+          assert(args.length < 2)
+          typedPos(tree.pos) {
+            Typed(Apply(NEW(BoxedAnyArrayClass) DOT name, args), tpt)
           }
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List()) if tree.symbol == Any_asInstanceOf =>
           val qual1 = typedQualifier(qual)

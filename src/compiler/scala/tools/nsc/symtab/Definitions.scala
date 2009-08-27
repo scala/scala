@@ -649,6 +649,10 @@ trait Definitions {
       addModuleMethod(DoubleClass, "NegativeInfinity", java.lang.Double.NEGATIVE_INFINITY)
     }
 
+    /** Is symbol a phantom class for which no runtime representation exists? */
+    def isPhantomClass(sym: Symbol) =
+      sym == AnyClass || sym == AnyValClass || sym == NullClass || sym == NothingClass
+
     /** Is symbol a value class? */
     def isValueClass(sym: Symbol): Boolean =
       (sym eq UnitClass) || (boxedClass contains sym)

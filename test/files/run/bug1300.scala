@@ -1,6 +1,7 @@
 object Test extends Application
 {
   val a1 = Array(0,1,2,3).toArray[Any]
+//  val a1 = x1.toArray[Any]
   val a2 = Array('a','b','c','d').toArray[Any]
   val a3 = Array("e","f","g","h").toArray[Any]
 

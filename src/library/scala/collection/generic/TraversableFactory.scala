@@ -34,7 +34,7 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with TraversableClass[
     b.result
   }
 
-  /** An iterable that contains the results of some element computation a number of times.
+  /** A traversable that contains the results of some element computation a number of times.
    *  @param   n  the number of elements returned
    *  @param   elem the element computation
    */
@@ -48,7 +48,7 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with TraversableClass[
     b.result
   }
 
-  /** A two-dimensional iterable that contains the results of some element computation a number of times.
+  /** A two-dimensional traversable that contains the results of some element computation a number of times.
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   elem the element computation
@@ -56,7 +56,7 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with TraversableClass[
   def fill[A](n1: Int, n2: Int)(elem: => A): CC[CC[A]] =
     tabulate(n1)(_ => fill(n2)(elem))
 
-  /** A three-dimensional iterable that contains the results of some element computation a number of times.
+  /** A three-dimensional traversable that contains the results of some element computation a number of times.
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   n3  the number of elements in the 3nd dimension
@@ -65,7 +65,7 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with TraversableClass[
   def fill[A](n1: Int, n2: Int, n3: Int)(elem: => A): CC[CC[CC[A]]] =
     tabulate(n1)(_ => fill(n2, n3)(elem))
 
-  /** A four-dimensional iterable that contains the results of some element computation a number of times.
+  /** A four-dimensional traversable that contains the results of some element computation a number of times.
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   n3  the number of elements in the 3nd dimension
@@ -75,7 +75,7 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with TraversableClass[
   def fill[A](n1: Int, n2: Int, n3: Int, n4: Int)(elem: => A): CC[CC[CC[CC[A]]]] =
     tabulate(n1)(_ => fill(n2, n3, n4)(elem))
 
-  /** A five-dimensional iterable that contains the results of some element computation a number of times.
+  /** A five-dimensional traversable that contains the results of some element computation a number of times.
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   n3  the number of elements in the 3nd dimension
@@ -86,10 +86,10 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with TraversableClass[
   def fill[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(elem: => A): CC[CC[CC[CC[CC[A]]]]] =
     tabulate(n1)(_ => fill(n2, n3, n4, n5)(elem))
 
-  /** An iterable containing values of a given function over a range of integer values starting from 0.
-   *  @param  n   The number of elements in the iterable
+  /** A traversable containing values of a given function over a range of integer values starting from 0.
+   *  @param  n   The number of elements in the traversable
    *  @param  f   The function computing element values
-   *  @return An iterable consisting of elements `f(0), ..., f(n -1)`
+   *  @return A traversable consisting of elements `f(0), ..., f(n -1)`
    */
   def tabulate[A](n: Int)(f: Int => A): CC[A] = {
     val b = newBuilder[A]
@@ -101,7 +101,7 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with TraversableClass[
     b.result
   }
 
-  /** A two-dimensional iterable containing values of a given function over ranges of integer values starting from 0.
+  /** A two-dimensional traversable containing values of a given function over ranges of integer values starting from 0.
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   f   The function computing element values
@@ -109,7 +109,7 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with TraversableClass[
   def tabulate[A](n1: Int, n2: Int)(f: (Int, Int) => A): CC[CC[A]] =
     tabulate(n1)(i1 => tabulate(n2)(f(i1, _)))
 
-  /** A three-dimensional iterable containing values of a given function over ranges of integer values starting from 0.
+  /** A three-dimensional traversable containing values of a given function over ranges of integer values starting from 0.
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   n3  the number of elements in the 3nd dimension
@@ -118,7 +118,7 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with TraversableClass[
   def tabulate[A](n1: Int, n2: Int, n3: Int)(f: (Int, Int, Int) => A): CC[CC[CC[A]]] =
     tabulate(n1)(i1 => tabulate(n2, n3)(f(i1, _, _)))
 
-  /** A four-dimensional iterable containing values of a given function over ranges of integer values starting from 0.
+  /** A four-dimensional traversable containing values of a given function over ranges of integer values starting from 0.
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   n3  the number of elements in the 3nd dimension
@@ -128,7 +128,7 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with TraversableClass[
   def tabulate[A](n1: Int, n2: Int, n3: Int, n4: Int)(f: (Int, Int, Int, Int) => A): CC[CC[CC[CC[A]]]] =
     tabulate(n1)(i1 => tabulate(n2, n3, n4)(f(i1, _, _, _)))
 
-  /** A five-dimensional iterable containing values of a given function over ranges of integer values starting from 0.
+  /** A five-dimensional traversable containing values of a given function over ranges of integer values starting from 0.
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   n3  the number of elements in the 3nd dimension
@@ -139,21 +139,20 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with TraversableClass[
   def tabulate[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(f: (Int, Int, Int, Int, Int) => A): CC[CC[CC[CC[CC[A]]]]] =
     tabulate(n1)(i1 => tabulate(n2, n3, n4, n5)(f(i1, _, _, _, _)))
 
-  /** An iterable containing a sequence of increasing integers in a range.
+  /** A traversable containing a sequence of increasing integers in a range.
    *
-   *  @param from the start value of the iterable
-   *  @param end the end value of the iterable (the first value NOT returned)
-   *  @return  the iterable with values in range `start, start + 1, ..., end - 1`
+   *  @param from the start value of the traversable
+   *  @param end the end value of the traversable (the first value NOT returned)
+   *  @return  the traversable with values in range `start, start + 1, ..., end - 1`
    *  up to, but exclusding, `end`.
    */
-  def range[A](start: Int, end: Int): CC[Int] = range(start, end, 1)
+  def range(start: Int, end: Int): CC[Int] = range(start, end, 1)
 
-  /** An iterable containing equally spaced values in some integer interval.
-
-   *  @param start the start value of the iterable
-   *  @param end   the end value of the iterable (the first value NOT returned)
-   *  @param step  the increment value of the iterable (must be positive or negative)
-   *  @return      the iterable with values in `start, start + step, ...` up to, but excluding `end`
+  /** A traversable containing equally spaced values in some integer interval.
+    *  @param start the start value of the traversable
+   *  @param end   the end value of the traversable (the first value NOT returned)
+   *  @param step  the increment value of the traversable (must be positive or negative)
+   *  @return      the traversable with values in `start, start + step, ...` up to, but excluding `end`
    */
   def range(start: Int, end: Int, step: Int): CC[Int] = {
     if (step == 0) throw new IllegalArgumentException("zero step")
@@ -166,12 +165,12 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with TraversableClass[
     b.result
   }
 
-  /** An iterable containing repeated applications of a function to a start value.
+  /** A traversable containing repeated applications of a function to a start value.
    *
-   *  @param start the start value of the iterable
-   *  @param len   the number of elements returned by the iterable
+   *  @param start the start value of the traversable
+   *  @param len   the number of elements returned by the traversable
    *  @param f     the function that's repeatedly applied
-   *  @return      the iterable returning `len` values in the sequence `start, f(start), f(f(start)), ...`
+   *  @return      the traversable returning `len` values in the sequence `start, f(start), f(f(start)), ...`
    */
   def iterate[A](start: A, len: Int)(f: A => A): CC[A] = {
     val b = newBuilder[A]

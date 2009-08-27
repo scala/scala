@@ -31,7 +31,7 @@ object RichString {
 
 import RichString._
 
-class RichString(val self: String) extends Proxy with Vector[Char] with VectorTemplate[Char, RichString] with PartialFunction[Int, Char] with Ordered[String] {
+class RichString(val self: String) extends Proxy with Vector[Char] with VectorTemplate[Char, RichString] with PartialFunction[Int, Char] with Ordered[String] with Boxed {
 
   /** Creates a string builder buffer as builder for this class */
   override protected[this] def newBuilder = RichString.newBuilder
@@ -209,11 +209,13 @@ class RichString(val self: String) extends Proxy with Vector[Char] with VectorTe
     else
       throw new NumberFormatException("For input string: \"null\"")
 
+  /* !!! causes crash?
   def toArray: Array[Char] = {
     val result = new Array[Char](length)
     self.getChars(0, length, result, 0)
     result
   }
+  */
 
   /** <p>
    *  Uses the underlying string as a pattern (in a fashion similar to
@@ -230,7 +232,7 @@ class RichString(val self: String) extends Proxy with Vector[Char] with VectorTe
    *  @throws java.lang.IllegalArgumentException
    */
   def format(args : Any*) : String =
-    java.lang.String.format(self, args.toArray[Any].asInstanceOf[Array[AnyRef]]: _*)
+    java.lang.String.format(self, args.asInstanceOf[Seq[AnyRef]].toArray: _*)
 
   /** <p>
    *  Like format(args*) but takes an initial Locale parameter
@@ -247,6 +249,6 @@ class RichString(val self: String) extends Proxy with Vector[Char] with VectorTe
    *  @throws java.lang.IllegalArgumentException
    */
   def format(l: java.util.Locale, args: Any*): String =
-    java.lang.String.format(l, self, args.toArray[Any].asInstanceOf[Array[AnyRef]]: _*)
+    java.lang.String.format(l, self, args.asInstanceOf[Seq[AnyRef]].toArray: _*)
 }
 

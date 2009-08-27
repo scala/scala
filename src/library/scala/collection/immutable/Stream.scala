@@ -370,7 +370,7 @@ self =>
     result
   }
 
-  override def flatten[B](implicit toTraversable: A => Traversable[B]): Stream[B] = {
+  override def flatten[B](implicit asTraversable: A => /*<:<!!!*/ Traversable[B]): Stream[B] = {
     def flatten1(t: Traversable[B]): Stream[B] =
       if (!t.isEmpty)
         new Stream.Cons(t.head, flatten1(t.tail))
@@ -380,7 +380,7 @@ self =>
     if (isEmpty)
       Stream.empty
     else
-      flatten1(toTraversable(head))
+      flatten1(asTraversable(head))
   }
 
   /** Defines the prefix of this object's <code>toString</code> representation as ``Stream''.
@@ -553,7 +553,7 @@ object Stream extends SequenceFactory[Stream] {
   /** The concatenation of all streams returned by an iterator
    */
   @deprecated("use xs.toStream.flatten instead")
-  def concat[A](xs: Iterator[Stream[A]]): Stream[A] = xs.toStream.flatten
+  def concat[A](xs: Iterator[Stream[A]]): Stream[A] = xs.toStream.flatten //(conforms[Stream[A], collection.Traversable[A]])
 
   /**
    * Create a stream with element values

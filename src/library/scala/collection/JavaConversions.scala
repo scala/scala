@@ -52,7 +52,7 @@ package scala.collection
 object JavaConversions {
   import java.{ lang => jl, util => ju }
   import scala.collection.{ generic, immutable, mutable, Traversable }
-  import scala.reflect.Manifest
+  import scala.reflect.ClassManifest
 
   // Scala => Java
 
@@ -157,7 +157,7 @@ object JavaConversions {
    * @param s The <code>Set</code> to be converted.
    * @return A Java <code>Set</code> view of the argument.
    */
-  implicit def asSet[A](s : mutable.Set[A])(implicit m : Manifest[A]) : ju.Set[A] = s match {
+  implicit def asSet[A](s : mutable.Set[A])(implicit m : ClassManifest[A]) : ju.Set[A] = s match {
     case JSetWrapper(wrapped) => wrapped
     case _ => new MutableSetWrapper(s)(m)
   }
@@ -175,7 +175,7 @@ object JavaConversions {
    * @param m The <code>Map</code> to be converted.
    * @return A Java <code>Map</code> view of the argument.
    */
-  implicit def asMap[A, B](m : mutable.Map[A, B])(implicit ma : Manifest[A]) : ju.Map[A, B] = m match {
+  implicit def asMap[A, B](m : mutable.Map[A, B])(implicit ma : ClassManifest[A]) : ju.Map[A, B] = m match {
     case JMapWrapper(wrapped) => wrapped
     case _ => new MutableMapWrapper(m)(ma)
   }
@@ -365,7 +365,7 @@ object JavaConversions {
     def result = this
   }
 
-  case class MutableSetWrapper[A](underlying : mutable.Set[A])(m : Manifest[A]) extends ju.AbstractSet[A] {
+  case class MutableSetWrapper[A](underlying : mutable.Set[A])(m : ClassManifest[A]) extends ju.AbstractSet[A] {
     self =>
     def size = underlying.size
     override def add(elem: A) = { val sz = underlying.size ; underlying += elem ; sz < underlying.size }
@@ -408,7 +408,7 @@ object JavaConversions {
     override def empty = JSetWrapper(new ju.HashSet[A])
   }
 
-  case class MutableMapWrapper[A, B](underlying : mutable.Map[A, B])(m : Manifest[A]) extends ju.AbstractMap[A, B] {
+  case class MutableMapWrapper[A, B](underlying : mutable.Map[A, B])(m : ClassManifest[A]) extends ju.AbstractMap[A, B] {
     self =>
     override def size = underlying.size
 

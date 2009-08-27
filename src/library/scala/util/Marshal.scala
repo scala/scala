@@ -19,9 +19,9 @@ package scala.util
  */
 object Marshal {
   import java.io._
-  import scala.reflect.Manifest
+  import scala.reflect.ClassManifest
 
-  def dump[A](o: A)(implicit m: Manifest[A]): Array[Byte] = {
+  def dump[A](o: A)(implicit m: ClassManifest[A]): Array[Byte] = {
     val ba = new ByteArrayOutputStream(512)
     val out = new ObjectOutputStream(ba)
     out.writeObject(m)
@@ -33,9 +33,9 @@ object Marshal {
   @throws(classOf[IOException])
   @throws(classOf[ClassCastException])
   @throws(classOf[ClassNotFoundException])
-  def load[A](buffer: Array[Byte])(implicit expected: Manifest[A]): A = {
+  def load[A](buffer: Array[Byte])(implicit expected: ClassManifest[A]): A = {
     val in = new ObjectInputStream(new ByteArrayInputStream(buffer))
-    val found = in.readObject.asInstanceOf[Manifest[_]]
+    val found = in.readObject.asInstanceOf[ClassManifest[_]]
     if (found <:< expected) {
       val o = in.readObject.asInstanceOf[A]
       in.close()

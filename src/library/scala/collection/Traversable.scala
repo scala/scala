@@ -74,7 +74,7 @@ trait Traversable[+A] extends TraversableTemplate[A, Traversable[A]]
   override def copyToBuffer[B >: A](dest: Buffer[B])
   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int)
   override def copyToArray[B >: A](xs: Array[B], start: Int)
-  override def toArray[B >: A]: Array[B]
+  override def toArray[B >: A : ClassManifest]: Array[B]
   override def toList: List[A]
   override def toIterable: Iterable[A]
   override def toSequence: Sequence[A]
@@ -102,64 +102,5 @@ object Traversable extends TraversableFactory[Traversable] { self =>
   implicit def builderFactory[A]: BuilderFactory[A, Traversable[A], Coll] = new VirtualBuilderFactory[A]
 
   def newBuilder[A]: Builder[A, Traversable[A]] = immutable.Traversable.newBuilder[A]
-
-  /** A wrapper class which adds `flatten` and `transpose` methods to iterables or iterable element type`.
-   */
-  class TraversableTraversableOps[This <: Traversable[Traversable[A]], A](self: This) {
-
-    /** Returns the concatenation of all elements of the wrapped iterable `self` */
-    def flatten[That](implicit bf: BuilderFactory[A, That, This]): That = {
-      val b = bf(self)
-      for (xs <- self)
-        b ++= xs
-      b.result
-    }
-
-    /** Returns the transposition of the wrapped iterable `self`: rows become columns and columns become rows.
-     */
-    def transpose[Row, That](implicit bf: BuilderFactory[A, Row, This], bbf: BuilderFactory[Row, That, This]): That = {
-      val bs: Array[Builder[A, Row]] = self.head.map(_ => bf(self))(Traversable.builderFactory[Builder[A, Row]]).toArray
-      for (xs <- self) {
-        var i = 0
-        for (x <- xs) {
-          bs(i) += x
-          i += 1
-        }
-      }
-      val bb = bbf(self)
-      for (b <- bs) bb += b.result
-      bb.result
-    }
-  }
-
-  /** A wrapper class which adds an `unzip` method to iterable whose elements are pairs.
-  	*/
-  class PairTraversableOps[This <: Traversable[(A1, A2)], A1, A2](self: This) {
-
-    /** Returns a pair of iterables consisting of the first, respectively second, component of all
-     *  elements in the wrapped iterable `self`.
-     */
-    def unzip[That1, That2](implicit bf1: BuilderFactory[A1, That1, This], bf2: BuilderFactory[A2, That2, This]): (That1, That2) = {
-      val b1 = bf1(self)
-      val b2 = bf2(self)
-      for ((x1, x2) <- self) {
-        b1 += x1
-        b2 += x2
-      }
-      (b1.result, b2.result)
-    }
-  }
-
-  /** Implicit wrapper conversion of iterables with iterable elements.
-   *  @see TraversableTraversableOps
-   */
-  implicit def traversableTraversableWrapper[This <: Traversable[Traversable[A]], A](self: This) =
-    new TraversableTraversableOps[This, A](self) // !!! error if type parameters are omitted
-
-  /** Implicit wrapper conversion of iterables with pairs as elements.
-   *  @see PairTraversableOps
-   */
-  implicit def pairTraversableWrapper[This <: Traversable[(A1, A2)], A1, A2](self: This) =
-    new PairTraversableOps[This, A1, A2](self)
 }
 

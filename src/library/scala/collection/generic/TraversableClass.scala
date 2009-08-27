@@ -29,29 +29,29 @@ trait TraversableClass[+A, +CC[X] <: Traversable[X]] {
   /** The generic builder that builds instances of CC at arbitrary element types. */
   def genericBuilder[B]: Builder[B, CC[B]] = companion.newBuilder[B]
 
-  def unzip[A1, A2](implicit toPair: A => (A1, A2)): (CC[A1], CC[A2]) = {
+  def unzip[A1, A2](implicit asPair: A => /*<:<!!!*/ (A1, A2)): (CC[A1], CC[A2]) = {
     val b1 = genericBuilder[A1]
     val b2 = genericBuilder[A2]
     for (xy <- this) {
-      val (x, y) = toPair(xy)
+      val (x, y) = asPair(xy)
       b1 += x
       b2 += y
     }
     (b1.result, b2.result)
   }
 
-  def flatten[B](implicit toTraversable: A => Traversable[B]): CC[B] = {
+  def flatten[B](implicit asTraversable: A => /*<:<!!!*/ Traversable[B]): CC[B] = {
     val b = genericBuilder[B]
     for (xs <- this)
-      b ++= toTraversable(xs)
+      b ++= asTraversable(xs)
     b.result
   }
 
-  def transpose[B](implicit toTraversable: A => Traversable[B]): CC[CC[B] @uncheckedVariance] = {
-    val bs: Array[Builder[B, CC[B]]] = head.map(_ => genericBuilder[B]).toArray
+  def transpose[B](implicit asTraversable: A => /*<:<!!!*/ Traversable[B]): CC[CC[B] @uncheckedVariance] = {
+    val bs: Vector[Builder[B, CC[B]]] = asTraversable(head).map(_ => genericBuilder[B]).toVector
     for (xs <- this) {
       var i = 0
-      for (x <- toTraversable(xs)) {
+      for (x <- asTraversable(xs)) {
         bs(i) += x
         i += 1
       }

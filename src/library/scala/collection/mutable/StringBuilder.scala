@@ -14,6 +14,7 @@ package scala.collection.mutable
 import collection.generic._
 import scala.runtime.RichString
 import compat.Platform.arraycopy
+import scala.reflect.Manifest
 
 /** <p>
  *    A mutable sequence of characters.  This class provides an API compatible

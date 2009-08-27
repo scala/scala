@@ -107,7 +107,7 @@ object Random extends Random
     // only make it work that way if it's called like
     //   shuffle[Int,List](List.range(0,100))
     // which nicely defeats the "convenience" portion of "convenience method".
-    val buf: Array[T] = seq.toArray
+    val buf = seq.toVector
 
     def swap(i1: Int, i2: Int) {
       val tmp = buf(i1)

@@ -599,7 +599,7 @@ self: Analyzer =>
       * reflect.Manifest for type 'tp'. An EmptyTree is returned if
       * no manifest is found. todo: make this instantiate take type params as well?
       */
-    def manifestOfType(tp: Type, full: Boolean): Tree = {
+    private def manifestOfType(tp: Type, full: Boolean): Tree = {
 
       /** Creates a tree that calls the factory method called constructor in object reflect.Manifest */
       def manifestFactoryCall(constructor: String, args: Tree*): Tree =
@@ -627,25 +627,22 @@ self: Analyzer =>
         case ConstantType(value) =>
           manifestOfType(tp0.deconst, full)
         case TypeRef(pre, sym, args) =>
-          if (isValueClass(sym)) {
+          if (isValueClass(sym) || isPhantomClass(sym)) {
             typed { atPos(tree.pos.focus) {
               Select(gen.mkAttributedRef(FullManifestModule), sym.name.toString)
             }}
-          }
-          else if (sym.isClass) {
+          } else if (sym.isClass) {
             val suffix = gen.mkClassOf(tp0) :: (args map findSubManifest)
             manifestFactoryCall(
               "classType",
               (if ((pre eq NoPrefix) || pre.typeSymbol.isStaticOwner) suffix
                else findSubManifest(pre) :: suffix): _*)
-          }
-          else if (sym.isTypeParameterOrSkolem || sym.isExistential) {
-            EmptyTree  // a manifest should have been found by normal searchImplicit
-          }
-          else {
+          } else if (sym.isAbstractType && !sym.isTypeParameterOrSkolem && !sym.isExistential) {
             manifestFactoryCall(
               "abstractType",
               findSubManifest(pre) :: Literal(sym.name.toString) :: findManifest(tp0.bounds.hi) :: (args map findSubManifest): _*)
+          } else {
+            EmptyTree  // a manifest should have been found by normal searchImplicit
           }
         case RefinedType(parents, decls) =>
           // refinement is not generated yet

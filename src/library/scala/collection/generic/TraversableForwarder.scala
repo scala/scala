@@ -59,7 +59,7 @@ trait TraversableForwarder[+A] extends Traversable[A] {
   override def reduceRightOption[B >: A](op: (A, B) => B): Option[B] = underlying.reduceRightOption(op)
   override def copyToBuffer[B >: A](dest: Buffer[B]) = underlying.copyToBuffer(dest)
   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) = underlying.copyToArray(xs, start, len)
-  override def toArray[B >: A]: Array[B] = underlying.toArray
+  override def toArray[B >: A : ClassManifest]: Array[B] = underlying.toArray
   override def toList: List[A] = underlying.toList
   override def toSequence: Sequence[A] = underlying.toSequence
   override def toStream: Stream[A] = underlying.toStream

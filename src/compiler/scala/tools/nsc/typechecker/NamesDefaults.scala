@@ -31,7 +31,7 @@ trait NamesDefaults { self: Analyzer =>
 
 
   /** @param pos maps indicies from old to new */
-  def reorderArgs[T](args: List[T], pos: Int => Int): List[T] = {
+  def reorderArgs[T: ClassManifest](args: List[T], pos: Int => Int): List[T] = {
     val res = new Array[T](args.length)
     // (hopefully) faster than zipWithIndex
     (0 /: args) { case (index, arg) => res(pos(index)) = arg; index + 1 }
@@ -39,7 +39,7 @@ trait NamesDefaults { self: Analyzer =>
   }
 
   /** @param pos maps indicies from new to old (!) */
-  def reorderArgsInv[T](args: List[T], pos: Int => Int): List[T] = {
+  def reorderArgsInv[T: ClassManifest](args: List[T], pos: Int => Int): List[T] = {
     val argsArray = args.toArray
     val res = new ListBuffer[T]
     for (i <- 0 until argsArray.length)

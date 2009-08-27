@@ -180,7 +180,7 @@ trait Typers { self: Analyzer =>
     def applyImplicitArgs(fun: Tree): Tree = fun.tpe match {
       case MethodType(params, _) =>
         var positional = true
-        val argResults = params map (_.tpe) map (inferImplicit(fun, _, true, false, context))
+        val argResults = params map (p => inferImplicit(fun, p.tpe, true, false, context))
         val args = argResults.zip(params) flatMap {
           case (arg, param) =>
             if (arg != SearchFailure) {
@@ -188,8 +188,10 @@ trait Typers { self: Analyzer =>
               else List(atPos(arg.tree.pos)(new AssignOrNamedArg(Ident(param.name), (arg.tree))))
             } else {
               if (!param.hasFlag(DEFAULTPARAM))
-                context.error(fun.pos, "could not find implicit value for parameter "+
-                                       param.name +":"+ param.tpe +".")
+                context.error(
+                  fun.pos, "could not find implicit value for "+
+                  (if (param.name startsWith nme.EVIDENCE_PARAM_PREFIX) "evidence parameter of type "
+                   else "parameter "+param.name+": ")+param.tpe)
               positional = false
               Nil
             }
@@ -956,7 +958,7 @@ trait Typers { self: Analyzer =>
                 if (coercion != EmptyTree) {
                   if (settings.debug.value) log("inferred view from "+tree.tpe+" to "+pt+" = "+coercion+":"+coercion.tpe)
                   return newTyper(context.makeImplicit(context.reportAmbiguousErrors)).typed(
-                      Apply(coercion, List(tree)) setPos tree.pos, mode, pt)
+                    Apply(coercion, List(tree)) setPos tree.pos, mode, pt)
                 }
               }
             }
@@ -3778,6 +3780,8 @@ trait Typers { self: Analyzer =>
       ret
     }
 
+    def typedPos(pos: Position)(tree: Tree) = typed(atPos(pos)(tree))
+
     /** Types expression <code>tree</code> with given prototype <code>pt</code>.
      *
      *  @param tree ...
@@ -3851,6 +3855,16 @@ trait Typers { self: Analyzer =>
         EmptyTree,
         appliedType((if (full) FullManifestClass else PartialManifestClass).typeConstructor, List(tp)),
         true, false, context)
+
+    def getManifestTree(pos: Position, tp: Type, full: Boolean): Tree = {
+      val manifestOpt = findManifest(tp, false)
+      if (manifestOpt.tree.isEmpty) {
+        error(pos, "cannot find "+(if (full) "" else "class ")+"manifest for element type of "+tp)
+        Literal(Constant(null))
+      } else {
+        manifestOpt.tree
+      }
+    }
 /*
     def convertToTypeTree(tree: Tree): Tree = tree match {
       case TypeTree() => tree

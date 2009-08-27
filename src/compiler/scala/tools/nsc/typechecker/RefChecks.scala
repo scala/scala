@@ -708,13 +708,7 @@ abstract class RefChecks extends InfoTransform {
             List(transform(cdef))
           }
         } else {
-          val vdef =
-            localTyper.typed {
-              atPos(tree.pos) {
-                gen.mkModuleVarDef(sym)
-              }
-            }
-
+          val vdef = localTyper.typedPos(tree.pos) { gen.mkModuleVarDef(sym) }
           val ddef =
             atPhase(phase.next) {
               localTyper.typed {
@@ -930,6 +924,19 @@ abstract class RefChecks extends InfoTransform {
         if (tpt.tpe.typeSymbol == ArrayClass && args.length >= 2) =>
           unit.deprecationWarning(tree.pos,
             "new Array(...) with multiple dimensions has been deprecated; use Array.ofDim(...) instead")
+          val manif = {
+            var etpe = tpt.tpe
+            for (_ <- args) { etpe = etpe.typeArgs.headOption.getOrElse(NoType) }
+            if (etpe == NoType) {
+              unit.error(tree.pos, "too many dimensions for array creation")
+              Literal(Constant(null))
+            } else {
+              localTyper.getManifestTree(tree.pos, etpe, false)
+            }
+          }
+          result = localTyper.typedPos(tree.pos) {
+            Apply(Apply(Select(gen.mkAttributedRef(ArrayModule), nme.ofDim), args), List(manif))
+          }
           currentApplication = tree
 
         case Apply(fn, args) =>

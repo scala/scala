@@ -23,9 +23,15 @@ class ArrayBuilder[A](manifest: ClassManifest[A]) extends Builder[A, BoxedArray[
   private var size: Int = 0
 
   private def mkArray(size: Int): BoxedArray[A] = {
-    val newelems = manifest.newArray(size)
-    if (this.size > 0) Array.copy(elems.value, 0, newelems.value, 0, this.size)
-    newelems
+    if (manifest != null) {
+      val newelems = manifest.newArray(size)
+      if (this.size > 0) Array.copy(elems.value, 0, newelems.value, 0, this.size)
+      newelems
+    } else { // !!!
+      val newelems = new scala.runtime.BoxedAnyArray[A](size)
+      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
+      newelems
+    }
   }
 
   private def resize(size: Int) {

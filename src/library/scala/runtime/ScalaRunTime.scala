@@ -11,6 +11,8 @@
 
 package scala.runtime
 
+import scala.reflect.ClassManifest
+
 /* The object <code>ScalaRunTime</code> provides ...
  */
 object ScalaRunTime {
@@ -18,6 +20,7 @@ object ScalaRunTime {
   def isArray(x: AnyRef): Boolean = (x != null && x.getClass.isArray) || (x != null && x.isInstanceOf[BoxedArray[_]])
   def isValueClass(clazz: Class[_]) = clazz.isPrimitive()
 
+  // todo: [for Gilles] replace with boxArray
   def forceBoxedArray[A <: Any](xs: Seq[A]): Array[A] = {
     val array = new Array[A](xs.length)
     var i = 0
@@ -117,17 +120,31 @@ object ScalaRunTime {
     if (x eq null) null else x.unbox(elemClass)
 
   def boxArray(value: AnyRef): BoxedArray[_] = value match {
-    case x: Array[Byte] => new BoxedByteArray(x)
-    case x: Array[Short] => new BoxedShortArray(x)
-    case x: Array[Char] => new BoxedCharArray(x)
+    case x: Array[AnyRef] => new BoxedObjectArray(x, ClassManifest.classType(x.getClass.getComponentType))
     case x: Array[Int] => new BoxedIntArray(x)
+    case x: Array[Double] => new BoxedDoubleArray(x)
     case x: Array[Long] => new BoxedLongArray(x)
     case x: Array[Float] => new BoxedFloatArray(x)
-    case x: Array[Double] => new BoxedDoubleArray(x)
+    case x: Array[Char] => new BoxedCharArray(x)
+    case x: Array[Byte] => new BoxedByteArray(x)
+    case x: Array[Short] => new BoxedShortArray(x)
     case x: Array[Boolean] => new BoxedBooleanArray(x)
-    case x: Array[AnyRef] => new BoxedObjectArray(x)
     case x: BoxedArray[_] => x
     case null => null
+  }
+
+  def box(value: AnyRef): AnyRef = value match {
+    case x: String => new RichString(x)
+    case x: Array[AnyRef] => new BoxedObjectArray(x, ClassManifest.classType(x.getClass.getComponentType))
+    case x: Array[Int] => new BoxedIntArray(x)
+    case x: Array[Double] => new BoxedDoubleArray(x)
+    case x: Array[Long] => new BoxedLongArray(x)
+    case x: Array[Float] => new BoxedFloatArray(x)
+    case x: Array[Char] => new BoxedCharArray(x)
+    case x: Array[Byte] => new BoxedByteArray(x)
+    case x: Array[Short] => new BoxedShortArray(x)
+    case x: Array[Boolean] => new BoxedBooleanArray(x)
+    case x => x
   }
 
   /** Given any Scala value, convert it to a String.

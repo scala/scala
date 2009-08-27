@@ -171,6 +171,7 @@ trait VectorTemplate[+A, +This <: VectorTemplate[A, This] with Vector[A]] extend
     }
   }
 
+
   // Overridden methods from Sequence
 
   override def lengthCompare(len: Int): Int = length - len
@@ -258,6 +259,7 @@ trait VectorTemplate[+A, +This <: VectorTemplate[A, This] with Vector[A]] extend
     case _ =>
       super.endsWith(that)
   }
+
 
   override def equals(that: Any): Boolean = that match {
     case that: Vector[_]  => this.length == that.length && startsWith(that, 0)

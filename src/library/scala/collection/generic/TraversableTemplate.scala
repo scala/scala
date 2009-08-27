@@ -11,6 +11,7 @@
 
 package scala.collection.generic
 import scala.collection._
+import scala.reflect.ClassManifest
 
 // import immutable.{List, Stream, Nil} //!!!
 import mutable.{Buffer, ArrayBuffer, ListBuffer}
@@ -718,7 +719,7 @@ self =>
   /** Converts this traversable to a fresh Array containing all elements.
    *  @note  Will not terminate for infinite-sized collections.
    */
-  def toArray[B >: A]: Array[B] = {
+  def toArray[B >: A : ClassManifest]: Array[B] = {
     val result = new Array[B](size)
     copyToArray(result, 0)
     result
@@ -738,6 +739,11 @@ self =>
    *  @note Will not terminate for infinite-sized collections.
    */
   def toSequence: Sequence[A] = toList
+
+  /** Returns a vector with all elements in this traversable object.
+   *  @note Will not terminate for infinite-sized collections.
+   */
+  def toVector[B >: A]: mutable.Vector[B] = (new ArrayBuffer[B] ++= thisCollection)
 
   /** Returns a stream with all elements in this traversable object.
    */

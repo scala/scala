@@ -11,6 +11,7 @@
 
 package scala.collection.generic
 import scala.collection._
+import annotation.unchecked.uncheckedVariance
 
 import mutable.{ListBuffer, HashMap}
 
@@ -593,7 +594,7 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
    *      .sortWith((e1, e2) => (e1 compareTo e2) &lt; 0) =
    *    List("Bob", "John", "Steve", "Tom")</pre>
    */
-  def sortWith(lt: (A, A) => Boolean): This = {
+  def sortWith(lt: (A, A) => Boolean)(implicit m: ClassManifest[A @uncheckedVariance]): This = {
     val arr = toArray
     import java.util.{Arrays, Comparator}
     Arrays.sort(arr, new Comparator[A] {

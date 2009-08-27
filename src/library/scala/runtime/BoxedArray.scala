@@ -45,8 +45,48 @@ abstract class BoxedArray[A] extends Vector[A] with VectorTemplate[A, BoxedArray
 
   // !!! todo: remove
   override def genericBuilder[B]: Builder[B, BoxedArray[B]] = new ArrayBuffer[B].mapResult {
-    _.toArray.asInstanceOf[BoxedArray[B]]
+    _.toArray(null).asInstanceOf[BoxedArray[B]]
   }
+
+  /** Convert to Java array.
+   *  @param elemTag    Either one of the tags ".N" where N is the name of a primitive type
+   *                    (@see ScalaRunTime), or a full class name.
+   */
+  def unbox(elemClass: Class[_]): AnyRef
+
+  /** The underlying array value
+   */
+  def value: AnyRef
+
+  def copyFrom(src: AnyRef, from: Int, to: Int, len: Int): Unit =
+    Array.copy(src, from, value, to, len)
+
+  def copyTo(from: Int, dest: AnyRef, to: Int, len: Int): Unit = {
+    Array.copy(value, from, dest, to, len)
+  }
+
+  override def toArray[B >: A](implicit m: ClassManifest[B]): Array[B] = {
+    if ((elemManifest ne null) && (elemManifest.erasure eq m.erasure)) this.asInstanceOf[Array[B]]
+    else super.toArray[B]
+  }
+
+/*
+  override def equals(other: Any) =
+    (value eq other) ||
+
+    other.isInstanceOf[BoxedArray[_]] && (value == other.asInstanceOf[BoxedArray[_]].value)
+
+  override def hashCode(): Int = value.hashCode()
+*/
+  /** Fills the given array <code>xs</code> with the elements of
+   *  this sequence starting at position <code>start</code>.
+   *
+   *  @param  xs the array to fill.
+   *  @param  start starting index.
+   *  @pre    the array must be large enough to hold all elements.
+   */
+  override def copyToArray[B](xs: Array[B], start: Int, len: Int): Unit =
+    copyTo(0, xs, start, len)
 
   /** Creates a possible nested vector which consists of all the elements
    *  of this array. If the elements are arrays themselves, the `deep' transformation
@@ -65,46 +105,6 @@ abstract class BoxedArray[A] extends Vector[A] with VectorTemplate[A, BoxedArray
     }
     override def stringPrefix = "Array"
   }
-
-  /*
-  override def genericBuilder[B]: Builder[B, BoxedArray[B]] = new ArrayBuffer[B].mapResult {
-    _.toArray.asInstanceOf[BoxedArray[B]]
-  }
-  */
-
-  /** Convert to Java array.
-   *  @param elemTag    Either one of the tags ".N" where N is the name of a primitive type
-   *                    (@see ScalaRunTime), or a full class name.
-   */
-  def unbox(elemClass: Class[_]): AnyRef
-
-  /** The underlying array value
-   */
-  def value: AnyRef
-
-  def copyFrom(src: AnyRef, from: Int, to: Int, len: Int): Unit =
-    Array.copy(src, from, value, to, len)
-
-  def copyTo(from: Int, dest: AnyRef, to: Int, len: Int): Unit = {
-    Array.copy(value, from, dest, to, len)
-  }
-/*
-  override def equals(other: Any) =
-    (value eq other) ||
-
-    other.isInstanceOf[BoxedArray[_]] && (value == other.asInstanceOf[BoxedArray[_]].value)
-
-  override def hashCode(): Int = value.hashCode()
-*/
-  /** Fills the given array <code>xs</code> with the elements of
-   *  this sequence starting at position <code>start</code>.
-   *
-   *  @param  xs the array to fill.
-   *  @param  start starting index.
-   *  @pre    the array must be large enough to hold all elements.
-   */
-  override def copyToArray[B](xs: Array[B], start: Int, len: Int): Unit =
-    copyTo(0, xs, start, len)
 
   @deprecated("use deep.toString instead")
   final def deepToString() = deepMkString(stringPrefix + "(", ", ", ")")

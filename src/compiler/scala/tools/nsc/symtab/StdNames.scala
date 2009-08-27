@@ -82,6 +82,7 @@ trait StdNames {
     val INTERPRETER_VAR_PREFIX = "res"
     val INTERPRETER_IMPORT_WRAPPER = "$iw"
     val INTERPRETER_SYNTHVAR_PREFIX = "synthvar$"
+    val EVIDENCE_PARAM_PREFIX = "evidence$"
 
     def LOCAL(clazz: Symbol) = newTermName(LOCALDUMMY_PREFIX_STRING + clazz.name+">")
     def TUPLE_FIELD(index: Int) = newTermName(TUPLE_FIELD_PREFIX_STRING + index)
