@@ -154,6 +154,12 @@ INITIALISATION
 ============================================================================ -->
 
   <target name="init">
+    <fail message="You need to set the ANT_OPTS environment variable to something like '-Xms512M -Xmx1024M -Xss1M -XX:MaxPermSize=128M'">
+      <condition><or>
+          <not><isset property="env.ANT_OPTS"/></not>
+          <equals arg1="${env.ANT_OPTS}" arg2=""/>
+        </or></condition>
+    </fail>
   <!-- Setting-up Ant contrib tasks -->
     <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant/ant-contrib.jar"/>
   <!-- This is the start time for the distribution -->
