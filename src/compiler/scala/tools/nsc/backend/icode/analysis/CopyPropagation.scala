@@ -464,9 +464,7 @@ abstract class CopyPropagation {
             case Boxed(loc1) if (loc1 == target)  => false
             case _ => true
           }) && (target match {
-            case Field(AllRecords, sym1) =>
-              println(target + " sym1: " + sym1.idString + " loc: " + loc.idString)
-              !(loc == sym1)
+            case Field(AllRecords, sym1) => !(loc == sym1)
             case _ => true
           })
         }
