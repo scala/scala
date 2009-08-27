@@ -751,7 +751,8 @@ trait ParallelMatching extends ast.TreeDSL {
               // ...which means this logic must be applied more broadly than I had inferred from the comment
               // "...even if [x] failed to match *after* passing its length test." So one would think that means
               // the second case would only not be tried if scrut.length == 2, and reachable the rest of the time.
-              case (false, false) => nextLen == firstLen   // same length (self compare ruled out up top)
+              // XXX note this used to say "nextLen == firstLen" and this caused #2187.  Rewrite this.
+              case (false, false) => nextLen >= firstLen   // same length (self compare ruled out up top)
             })
         })
 
