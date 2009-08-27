@@ -10,6 +10,7 @@
 
 package scala.reflect
 
+import annotation.experimental
 import util.control.Exception._
 import util.ScalaClassLoader._
 import java.lang.{ Class => JClass }
@@ -22,6 +23,7 @@ object RichClass
   implicit def classWrapper[T](x: JClass[T]): RichClass[T] = new RichClass(x)
 }
 
+@experimental
 final class RichClass[T](val self: JClass[T]) extends Proxy
 {
   // The getConstructors and getDeclaredConstructors methods on java.lang.Class[T]

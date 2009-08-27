@@ -22,15 +22,12 @@ object JavaConversions {
       type Future[+R] = () => R
 
       def submit(task: () => Unit): this.Future[Unit] = {
-        val result = new SyncVar[Either[Unit, Throwable]]
+        val result = new SyncVar[Either[Throwable, Unit]]
         val runnable = new Runnable {
           def run() { result set tryCatch(task()) }
         }
         exec.execute(runnable)
-        () => result.get match {
-          case Left(a) => a
-          case Right(t) => throw t
-        }
+        () => ops getOrThrow result.get
       }
 
       def managedBlock(blocker: ManagedBlocker) {

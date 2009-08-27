@@ -15,15 +15,9 @@ trait TaskRunner[T] extends AsyncInvokable[() => T, T] {
 
   def managedBlock(blocker: ManagedBlocker): Unit
 
-  /** If expression computed successfully return it in <code>Left</code>,
-   *  otherwise return exception in <code>Right</code>.
+  /** If expression computed successfully return it in <code>Right</code>,
+   *  otherwise return exception in <code>Left</code>.
    */
-  protected def tryCatch[A](left: => A): Either[A, Exception] = {
-    try {
-      Left(left)
-    } catch {
-      case e: Exception => Right(e)
-    }
-  }
-
+  protected def tryCatch[A](body: => A): Either[Exception, A] =
+    ops tryCatchEx body
 }

@@ -18,8 +18,8 @@ import scala.util.control.Exception.allCatch
  *
  *  @author  Martin Odersky, Stepan Koltsov, Philipp Haller
  */
-object ops {
-
+object ops
+{
   implicit val defaultRunner: TaskRunner[Unit] =
     TaskRunners.threadRunner
 
@@ -27,10 +27,15 @@ object ops {
    *  If expression computed successfully return it in <code>Right</code>,
    *  otherwise return exception in <code>Left</code>.
    */
-  private def tryCatch[A](body: => A): Either[Throwable, A] =
+  def tryCatch[A](body: => A): Either[Throwable, A] =
     allCatch[A] either body
 
-  private def getOrThrow[A](x: Either[Throwable, A]): A =
+  def tryCatchEx[A](body: => A): Either[Exception, A] =
+    try Right(body) catch {
+      case ex: Exception  => Left(ex)
+    }
+
+  def getOrThrow[T <: Throwable, A](x: Either[T, A]): A =
     x.fold[A](throw _, identity _)
 
   /** Evaluates an expression asynchronously.

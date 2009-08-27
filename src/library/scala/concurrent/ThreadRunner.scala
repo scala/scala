@@ -11,15 +11,12 @@ class ThreadRunner[T] extends TaskRunner[T] {
   type Future[+S] = () => S
 
   def submit(task: () => T): this.Future[T] = {
-    val result = new SyncVar[Either[T, Exception]]
+    val result = new SyncVar[Either[Exception, T]]
     val runnable = new Runnable {
       def run() { result set tryCatch(task()) }
     }
     (new Thread(runnable)).start()
-    () => result.get match {
-      case Left(a) => a
-      case Right(t) => throw t
-    }
+    () => ops getOrThrow result.get
   }
 
   def managedBlock(blocker: ManagedBlocker) {
