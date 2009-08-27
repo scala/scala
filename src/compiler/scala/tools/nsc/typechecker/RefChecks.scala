@@ -631,6 +631,9 @@ abstract class RefChecks extends InfoTransform {
               nonSensibleWarning(pre+"values of types "+normalizeAll(qual.tpe.widen)+" and "+normalizeAll(args.head.tpe.widen),
                                  alwaysEqual) // @MAT normalize for consistency in error message, otherwise part is normalized due to use of `typeSymbol', but the rest isn't
             def hasObjectEquals = receiver.info.member(nme.equals_) == Object_equals
+            // see if it has any == methods beyond Any's and AnyRef's: ticket #2240
+            def hasOverloadedEqEq = receiver.info.member(nme.EQ).alternatives.length > 2
+
             if (formal == UnitClass && actual == UnitClass)
               nonSensible("", true)
             else if ((receiver == BooleanClass || receiver == UnitClass) &&
@@ -646,7 +649,7 @@ abstract class RefChecks extends InfoTransform {
                      (name == nme.EQ || name == nme.LE))
               nonSensible("non-null ", false)
             else if ((isNew(qual) || isNew(args.head)) && hasObjectEquals &&
-                     (name == nme.EQ || name == nme.NE))
+                     (name == nme.EQ || name == nme.NE) && !hasOverloadedEqEq)
               nonSensibleWarning("a fresh object", false)
           case _ =>
         }
