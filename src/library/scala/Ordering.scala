@@ -43,6 +43,10 @@ import java.util.Comparator
 
 trait Ordering[T] extends Comparator[T] with PartialOrdering[T] {
   outer =>
+
+  /** An Ordering is defined at all x and y. */
+  def tryCompare(x: T, y: T) = Some(compare(x, y))
+
  /** Returns a negative integer iff <code>x</code> comes before
    * <code>y</code> in the ordering, returns 0 iff <code>x</code>
    * is the same in the ordering as <code>y</code>, and returns a

@@ -13,11 +13,8 @@ import org.xml.sax.InputSource
 import scala.collection.immutable.{ListMap, TreeSet}
 import scala.xml._
 
-object DocUtil {
-
-  //def dquote(str: String): NodeSeq =
-  //  DQUOTE :: Text(str) :: DQUOTE :: Nil
-
+object DocUtil
+{
   def load(str: String): NodeSeq =
     if ((str == null) || (str.length == 0))
       NodeSeq.Empty
@@ -27,13 +24,6 @@ object DocUtil {
         else "<div>" + str + "</div>"
       XML.load(new StringReader(xmlSrc))
     }
-
-  //object DQUOTE extends SpecialNode {
-   // def toString(sb: StringBuffer) = {
-   //   sb.append("\""); sb
-   // }
-   // def label = "#PCDATA"
-  //}
 
   def br(nodes: NodeSeq): NodeSeq = nodes ++ (<br/>)
   def hr(nodes: NodeSeq): NodeSeq = nodes ++ (<hr/>)
@@ -83,40 +73,29 @@ object DocUtil {
   def div0(title: String): NodeSeq =
     (<div class="doctitle-larger">{Text(title)}</div>);
 
-  def merge[T](ts0: TreeSet[T], ts1: TreeSet[T]): TreeSet[T] = {
-    var ts = ts0
-    for (t <- ts1.toList) ts += t
-    ts
+  def merge[T](ts0: TreeSet[T], ts1: TreeSet[T]): TreeSet[T] = ts0 ++ ts1
+
+  def merge[T,S](ts0: ListMap[T,TreeSet[S]], ts1: ListMap[T,TreeSet[S]]): ListMap[T,TreeSet[S]] = {
+    (ts1 foldLeft ts0) { case (xs, (k, v)) =>
+      if (xs contains k) xs.updated(k, xs(k) ++ v)
+      else xs.updated(k, v)
+    }
   }
 
-  def merge[T,S <: Ordered[S]](ts0: ListMap[T,TreeSet[S]],
-                               ts1: ListMap[T,TreeSet[S]]): ListMap[T,TreeSet[S]] = {
-    var ts = ts0
-    for (t <- ts1.iterator) {
-      if (!ts.contains(t._1))
-        ts = ts.updated(t._1, TreeSet.empty[S](Ordering.ordered[S]));
-      ts = ts.updated(t._1, merge(ts(t._1), t._2))
-    }
-    ts
-  }
   implicit def coerceIterable[T](list : Iterable[T]) = NodeWrapper(list.iterator)
   implicit def coerceIterator[T](list : Iterator[T]) = NodeWrapper(list)
 
-  case class NodeWrapper[T](list : Iterator[T]) {
+  case class NodeWrapper[T](list: Iterator[T]) {
+    def interleave(xs: Seq[NodeSeq], sep: NodeSeq): NodeSeq =
+      if (xs.isEmpty) NodeSeq.Empty
+      else if (xs.size == 1) xs.head
+      else xs.head ++ sep ++ interleave(xs.tail, sep)
 
-    def mkXML(begin: NodeSeq, separator: NodeSeq, end: NodeSeq)(f: T => NodeSeq): NodeSeq = {
-      var seq: NodeSeq = begin
-      val i = list
-      while (i.hasNext) {
-        seq = seq ++ f(i.next);
-        if (i.hasNext) seq = seq ++ separator;
-      }
-      seq ++ end
-    }
+    def mkXML(begin: NodeSeq, separator: NodeSeq, end: NodeSeq)(f: T => NodeSeq): NodeSeq =
+      begin ++ interleave(list.toSequence map f, separator) ++ end
 
-    def mkXML(begin: String, separator: String, end: String)(f: T => NodeSeq): NodeSeq = {
-      this.mkXML(Text(begin),Text(separator),Text(end))(f);
-    }
+    def mkXML(begin: String, separator: String, end: String)(f: T => NodeSeq): NodeSeq =
+      this.mkXML(Text(begin), Text(separator), Text(end))(f)
 
     def surround(open: String, close: String)(f: T => NodeSeq) =
       if (list.hasNext) mkXML(open, ", ", close)(f)

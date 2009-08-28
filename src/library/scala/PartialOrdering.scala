@@ -37,6 +37,16 @@ package scala
 
 trait PartialOrdering[T] extends Equiv[T] {
   outer =>
+
+  /** Result of comparing <code>x</code> with operand <code>y</code>.
+   *  Returns <code>None</code> if operands are not comparable.
+   *  If operands are comparable, returns <code>Some(r)</code> where
+   *  <code>r &lt; 0</code>    iff    <code>x &lt; y</code>
+   *  <code>r == 0</code>   iff    <code>x == y</code>
+   *  <code>r &gt; 0</code>    iff    <code>x &gt; y</code>
+   */
+  def tryCompare(x: T, y: T): Option[Int]
+
   /** Returns <code>true</code> iff <code>x</code> comes before
    *  <code>y</code> in the ordering.
    */
@@ -62,9 +72,9 @@ trait PartialOrdering[T] extends Equiv[T] {
    */
   def equiv(x: T, y: T): Boolean = lteq(x,y) && lteq(y,x)
 
-
-  def reverse : PartialOrdering[T] = new PartialOrdering[T]{
+  def reverse : PartialOrdering[T] = new PartialOrdering[T] {
     override def reverse = outer;
-    def lteq(x : T, y : T) = outer.lteq(y, x);
+    def lteq(x: T, y: T) = outer.lteq(y, x)
+    def tryCompare(x: T, y: T) = outer.tryCompare(y, x)
   }
 }

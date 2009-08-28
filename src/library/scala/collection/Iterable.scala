@@ -65,29 +65,11 @@ object Iterable extends TraversableFactory[Iterable] {
 
   /** The minimum element of a non-empty sequence of ordered elements */
   @deprecated("use seq.min instead")
-  def min[A <% Ordered[A]](seq: Iterable[A]): A = {
-    val xs = seq.iterator
-    if (!xs.hasNext) throw new IllegalArgumentException("min(<empty>)")
-    var min = xs.next
-    while (xs.hasNext) {
-      val x = xs.next
-      if (x < min) min = x
-    }
-    min
-  }
+  def min[A](seq: Iterable[A])(implicit ord: Ordering[A]): A = seq.min
 
   /** The maximum element of a non-empty sequence of ordered elements */
   @deprecated("use seq.max instead")
-  def max[A <% Ordered[A]](seq: Iterable[A]): A = {
-    val xs = seq.iterator
-    if (!xs.hasNext) throw new IllegalArgumentException("max(<empty>)")
-    var max = xs.next
-    while (xs.hasNext) {
-      val x = xs.next
-      if (max < x) max = x
-    }
-    max
-  }
+  def max[A](seq: Iterable[A])(implicit ord: Ordering[A]): A = seq.max
 
   @deprecated("use View instead") type Projection[A] = IterableView[A, Coll]
 }
