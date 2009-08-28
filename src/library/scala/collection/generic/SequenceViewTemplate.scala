@@ -123,14 +123,6 @@ trait SequenceViewTemplate[+A,
     override def stringPrefix = super.stringPrefix+"P"
   }
 
-  trait Zipped[B] extends Transformed[(A, B)] {
-    protected[this] val other: Sequence[B]
-    override def iterator: Iterator[(A, B)] = self.iterator zip other.iterator
-    override def length = self.length min other.length
-    override def apply(idx: Int): (A, B) = (self.apply(idx), other.apply(idx))
-    override def stringPrefix = super.stringPrefix+"Z"
-  }
-
   /** Boilerplate method, to override in each subclass
    *  This method could be eliminated if Scala had virtual classes
    */
@@ -145,9 +137,6 @@ trait SequenceViewTemplate[+A,
   protected def newPatched[B >: A](_from: Int, _patch: Sequence[B], _replaced: Int): Transformed[B] = new Patched[B] {
     val from = _from; val patch = _patch; val replaced = _replaced
   }
-  protected def newZipped[B](that: Sequence[B]): Transformed[(A, B)] = new Zipped[B] {
-    val other = that
-  }
 
   override def reverse: This = newReversed.asInstanceOf[This]
 
@@ -160,19 +149,6 @@ trait SequenceViewTemplate[+A,
 
   override def padTo[B >: A, That](len: Int, elem: B)(implicit bf: BuilderFactory[B, That, This]): That =
     patch(length, fill(len - length)(elem), 0)
-
-  override def zip[A1 >: A, B, That](that: Sequence[B])(implicit bf: BuilderFactory[(A1, B), That, This]): That = {
-    newZipped(that).asInstanceOf[That]
-// was:    val b = bf(thisCollection)
-//    if (b.isInstanceOf[NoBuilder[_]]) newZipped(that).asInstanceOf[That]
-//    else super.zip[A1, B, That](that)(bf)
-  }
-
-  override def zipWithIndex[A1 >: A, That](implicit bf: BuilderFactory[(A1, Int), That, This]): That =
-    zip[A1, Int, That](Sequence.range(0, length))(bf)
-
-  override def zipAll[B, A1 >: A, That](that: Sequence[B], thisElem: A1, thatElem: B)(implicit bf: BuilderFactory[(A1, B), That, This]): That =
-    self.padTo(that.length, thisElem).zip(that.padTo(this.length, thatElem))(bf.asInstanceOf[BuilderFactory[(A1, B), That, Any]])
 }
 
 

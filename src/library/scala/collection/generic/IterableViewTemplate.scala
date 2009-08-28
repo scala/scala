@@ -55,6 +55,42 @@ extends Iterable[A] with IterableTemplate[A, This] with TraversableView[A, Coll]
     override def iterator = self.iterator dropWhile pred
   }
 
+  trait Zipped[B] extends Transformed[(A, B)] {
+    protected[this] val other: Iterable[B]
+    override def iterator: Iterator[(A, B)] = self.iterator zip other.iterator
+    override def stringPrefix = super.stringPrefix+"Z"
+  }
+
+  trait ZippedAll[A1 >: A, B] extends Transformed[(A1, B)] {
+    protected[this] val other: Iterable[B]
+    val thisElem: A1
+    val thatElem: B
+    override def iterator: Iterator[(A1, B)] =
+      self.iterator.zipAll(other.iterator, thisElem, thatElem)
+  }
+
+  override def zip[A1 >: A, B, That](that: Iterable[B])(implicit bf: BuilderFactory[(A1, B), That, This]): That = {
+    newZipped(that).asInstanceOf[That]
+// was:    val b = bf(thisCollection)
+//    if (b.isInstanceOf[NoBuilder[_]]) newZipped(that).asInstanceOf[That]
+//    else super.zip[A1, B, That](that)(bf)
+  }
+
+  override def zipWithIndex[A1 >: A, That](implicit bf: BuilderFactory[(A1, Int), That, This]): That =
+    zip[A1, Int, That](Stream from 0)(bf)
+
+  override def zipAll[B, A1 >: A, That](that: Iterable[B], thisElem: A1, thatElem: B)(implicit bf: BuilderFactory[(A1, B), That, This]): That =
+    newZippedAll(that, thisElem, thatElem).asInstanceOf[That]
+
+  protected def newZipped[B](that: Iterable[B]): Transformed[(A, B)] = new Zipped[B] {
+    val other = that
+  }
+  protected def newZippedAll[A1 >: A, B](that: Iterable[B], _thisElem: A1, _thatElem: B): Transformed[(A1, B)] = new ZippedAll[A1, B] {
+    val other: Iterable[B] = that
+    val thisElem = _thisElem
+    val thatElem = _thatElem
+  }
+
   /** Boilerplate method, to override in each subclass
    *  This method could be eliminated if Scala had virtual classes
    */

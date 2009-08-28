@@ -33,6 +33,9 @@ trait IterableProxyTemplate[+A, +This <: IterableTemplate[A, This] with Iterable
   override def foldRight[B](z: B)(op: (A, B) => B): B = self.foldRight(z)(op)
   override def reduceRight[B >: A](op: (A, B) => B): B = self.reduceRight(op)
   override def toIterable: Iterable[A] = self.toIterable
+  override def zip[A1 >: A, B, That](that: Iterable[B])(implicit bf: BuilderFactory[(A1, B), That, This]): That = self.zip[A1, B, That](that)(bf)
+  override def zipAll[B, A1 >: A, That](that: Iterable[B], thisElem: A1, thatElem: B)(implicit bf: BuilderFactory[(A1, B), That, This]): That = self.zipAll(that, thisElem, thatElem)(bf)
+  override def zipWithIndex[A1 >: A, That](implicit bf: BuilderFactory[(A1, Int), That, This]): That = self.zipWithIndex(bf)
   override def head: A = self.head
   override def takeRight(n: Int): This = self.takeRight(n)
   override def dropRight(n: Int): This = self.dropRight(n)

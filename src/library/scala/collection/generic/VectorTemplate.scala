@@ -96,7 +96,7 @@ trait VectorTemplate[+A, +This <: VectorTemplate[A, This] with Vector[A]] extend
   override def reduceRight[B >: A](op: (A, B) => B): B =
     if (length > 0) foldr(0, length - 1, this(length - 1), op) else super.reduceRight(op)
 
-  override def zip[A1 >: A, B, That](that: Sequence[B])(implicit bf: BuilderFactory[(A1, B), That, This]): That = that match {
+  override def zip[A1 >: A, B, That](that: Iterable[B])(implicit bf: BuilderFactory[(A1, B), That, This]): That = that match {
     case that: Vector[_] =>
       val b = bf(thisCollection)
       var i = 0

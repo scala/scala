@@ -65,7 +65,28 @@ trait VectorViewTemplate[+A,
     override def foreach[U](f: B =>  U) = super[Transformed].foreach(f)
   }
 
-  trait Zipped[B] extends Transformed[(A, B)] with super.Zipped[B]
+  trait Zipped[B] extends Transformed[(A, B)] {
+    protected[this] val other: Iterable[B]
+    def length = self.length min other.size
+    def apply(idx: Int): (A, B) = (self.apply(idx), other.iterator drop idx next)
+    override def stringPrefix = super.stringPrefix+"Z"
+  }
+
+  trait ZippedAll[A1 >: A, B] extends Transformed[(A1, B)] {
+    protected[this] val other: Iterable[B]
+    val thisElem: A1
+    val thatElem: B
+    override def iterator: Iterator[(A1, B)] =
+      self.iterator.zipAll(other.iterator, thisElem, thatElem)
+
+    def length = self.length max other.size
+    def apply(idx: Int): (A1, B) = {
+      val z1 = if (idx < self.length) self.apply(idx) else thisElem
+      val z2 = if (idx < other.size) other drop idx head else thatElem
+      (z1, z2)
+    }
+    override def stringPrefix = super.stringPrefix+"Z"
+  }
 
   /** Boilerplate method, to override in each subclass
    *  This method could be eliminated if Scala had virtual classes
@@ -81,7 +102,12 @@ trait VectorViewTemplate[+A,
   protected override def newPatched[B >: A](_from: Int, _patch: Sequence[B], _replaced: Int): Transformed[B] = new Patched[B] {
     val from = _from; val patch = _patch; val replaced = _replaced
   }
-  protected override def newZipped[B](that: Sequence[B]): Transformed[(A, B)] = new Zipped[B] {
+  protected override def newZipped[B](that: Iterable[B]): Transformed[(A, B)] = new Zipped[B] {
     val other = that
+  }
+  protected override def newZippedAll[A1 >: A, B](that: Iterable[B], _thisElem: A1, _thatElem: B): Transformed[(A1, B)] = new ZippedAll[A1, B] {
+    val other: Iterable[B] = that
+    val thisElem = _thisElem
+    val thatElem = _thatElem
   }
 }

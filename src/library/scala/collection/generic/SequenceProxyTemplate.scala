@@ -29,9 +29,6 @@ trait SequenceProxyTemplate[+A, +This <: SequenceTemplate[A, This] with Sequence
   override def lengthCompare(len: Int): Int = self.lengthCompare(len)
   override def size = self.size
   override def isDefinedAt(x: Int): Boolean = self.isDefinedAt(x)
-  override def zip[A1 >: A, B, That](that: Sequence[B])(implicit bf: BuilderFactory[(A1, B), That, This]): That = self.zip[A1, B, That](that)(bf)
-  override def zipAll[B, A1 >: A, That](that: Sequence[B], thisElem: A1, thatElem: B)(implicit bf: BuilderFactory[(A1, B), That, This]): That = self.zipAll(that, thisElem, thatElem)(bf)
-  override def zipWithIndex[A1 >: A, That](implicit bf: BuilderFactory[(A1, Int), That, This]): That = self.zipWithIndex(bf)
   override def segmentLength(p: A => Boolean, from: Int): Int = self.segmentLength(p, from)
   override def prefixLength(p: A => Boolean) = self.prefixLength(p)
   override def indexWhere(p: A => Boolean): Int = self.indexWhere(p)
