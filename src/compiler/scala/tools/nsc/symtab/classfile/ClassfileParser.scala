@@ -362,8 +362,12 @@ abstract class ClassfileParser {
     val parts = name.toString.split(Array('.', '$'))
     var sym: Symbol = definitions.RootClass
     atPhase(currentRun.flattenPhase.prev) {
-      for (part <- parts) {
-        sym = sym.info.decl(part)//.suchThat(module == _.isModule)
+      for (part0 <- parts; val part = newTermName(part0)) {
+        val sym1 = sym.info.decl(part.encode)//.suchThat(module == _.isModule)
+        if (sym1 == NoSymbol)
+          sym = sym.info.decl(part.encode.toTypeName)
+        else
+          sym = sym1
       }
     }
 //    println("found: " + sym)
