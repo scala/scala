@@ -100,6 +100,9 @@ PROPERTIES
 ============================================================================ -->
 
   <property environment="env"/>
+  <!-- if ANT_OPTS is already set by the environment, it will be unaltered,
+       but if it is unset it will take this default value. -->
+  <property name="env.ANT_OPTS" value="-Xms512M -Xmx1024M -Xss1M -XX:MaxPermSize=128M" />
 
   <!-- Prevents system classpath from being used -->
   <property name="build.sysclasspath" value="ignore"/>
@@ -154,12 +157,6 @@ INITIALISATION
 ============================================================================ -->
 
   <target name="init">
-    <fail message="You need to set the ANT_OPTS environment variable to something like '-Xms512M -Xmx1024M -Xss1M -XX:MaxPermSize=128M'">
-      <condition><or>
-          <not><isset property="env.ANT_OPTS"/></not>
-          <equals arg1="${env.ANT_OPTS}" arg2=""/>
-        </or></condition>
-    </fail>
   <!-- Setting-up Ant contrib tasks -->
     <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant/ant-contrib.jar"/>
   <!-- This is the start time for the distribution -->
