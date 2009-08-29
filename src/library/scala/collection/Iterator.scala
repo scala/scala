@@ -675,7 +675,7 @@ trait Iterator[+A] { self =>
    *  @param op  The operator to apply
    *  @return  If the iterable is non-empty, the result of the operations as an Option, otherwise None.
    */
-  def reduceLeftOpt[B >: A](op: (B, A) => B): Option[B] = {
+  def reduceLeftOption[B >: A](op: (B, A) => B): Option[B] = {
     if (!hasNext) None else Some(reduceLeft(op))
   }
 
@@ -684,7 +684,7 @@ trait Iterator[+A] { self =>
    *  @param op  The operator to apply
    *  @return  If the iterable is non-empty, the result of the operations as an Option, otherwise None.
    */
-  def reduceRightOpt[B >: A](op: (A, B) => B): Option[B] = {
+  def reduceRightOption[B >: A](op: (A, B) => B): Option[B] = {
     if (!hasNext) None else Some(reduceRight(op))
   }
 

@@ -55,9 +55,9 @@ trait Traversable[+A] extends TraversableTemplate[A, Traversable[A]]
   override def foldRight[B](z: B)(op: (A, B) => B): B
   override def :\ [B](z: B)(op: (A, B) => B): B
   override def reduceLeft[B >: A](op: (B, A) => B): B
-  override def reduceLeftOpt[B >: A](op: (B, A) => B): Option[B]
+  override def reduceLeftOption[B >: A](op: (B, A) => B): Option[B]
   override def reduceRight[B >: A](op: (A, B) => B): B
-  override def reduceRightOpt[B >: A](op: (A, B) => B): Option[B]
+  override def reduceRightOption[B >: A](op: (A, B) => B): Option[B]
   override def head: A
   override def headOption: Option[A]
   override def tail: Traversable[A]
