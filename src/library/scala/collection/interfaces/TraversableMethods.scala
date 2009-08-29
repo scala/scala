@@ -33,7 +33,9 @@ trait TraversableMethods[+A, +This <: TraversableTemplate[A, This] with Traversa
   def toIterable: Iterable[A]
   def toList: List[A]
   def toSequence: Sequence[A]
+  def toSet[B >: A]: immutable.Set[B]
   def toStream: Stream[A]
+  def toVector[B >: A]: mutable.Vector[B]
 
   // strings
   def addString(b: StringBuilder): StringBuilder

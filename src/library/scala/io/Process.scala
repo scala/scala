@@ -27,7 +27,10 @@ import java.util.concurrent.LinkedBlockingQueue
  *  See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4109888
  *  for a dated list of the many obstacles to a clean interface.
  *
-|*  This is not finished!! Do not rely upon it yet.
+ *  This is not finished!! Do not rely upon it yet.
+ *
+ *  TODO - remove requirement that process complete before we
+ *  can get an iterator.
  *
  *  @author   Paul Phillips
  *  @since    2.8
@@ -36,6 +39,7 @@ import java.util.concurrent.LinkedBlockingQueue
 @experimental
 object Process
 {
+  lazy val javaVmArguments = java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments()
   lazy val runtime = Runtime.getRuntime()
 
   @experimental

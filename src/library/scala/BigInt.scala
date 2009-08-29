@@ -110,7 +110,7 @@ object BigInt {
  *  @version 1.0, 15/07/2003
  */
 @serializable
-class BigInt(val bigInteger: BigInteger) extends jl.Number
+class BigInt(val bigInteger: BigInteger) extends jl.Number with ScalaNumericConversions
 {
   /** Returns the hash code for this BigInt. */
   override def hashCode(): Int = this.bigInteger.hashCode()

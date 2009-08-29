@@ -10,8 +10,21 @@
 
 package scala
 
-import java.math.{BigDecimal => BigDec}
-import java.math.MathContext
+import java.{ lang => jl }
+import java.math.{ MathContext, BigDecimal => BigDec }
+
+/** Conversions which present a consistent conversion interface
+ *  across all the numeric types.
+ */
+trait ScalaNumericConversions extends jl.Number {
+  def toChar = intValue.toChar
+  def toByte = byteValue
+  def toShort = shortValue
+  def toInt = intValue
+  def toLong = longValue
+  def toFloat = floatValue
+  def toDouble = doubleValue
+}
 
 /**
  *  @author  Stephane Micheloud
@@ -83,7 +96,7 @@ object BigDecimal
   // note we don't use the static valueOf because it doesn't let us supply
   // a MathContext, but we should be duplicating its logic, modulo caching.
   def apply(d: Double, mc: MathContext): BigDecimal =
-    new BigDecimal(new BigDec(java.lang.Double.toString(d), mc), mc)
+    new BigDecimal(new BigDec(jl.Double.toString(d), mc), mc)
 
   /** Translates a character array representation of a <code>BigDecimal</code>
    *  into a <code>BigDecimal</code>.
@@ -156,7 +169,7 @@ object BigDecimal
 class BigDecimal(
   val bigDecimal: BigDec,
   val mc: MathContext)
-extends java.lang.Number
+extends jl.Number with ScalaNumericConversions
 {
   def this(bigDecimal: BigDec) = this(bigDecimal, BigDecimal.defaultMathContext)
   import BigDecimal.RoundingMode._
@@ -164,7 +177,12 @@ extends java.lang.Number
   /** Cuts way down on the wrapper noise. */
   private implicit def bigdec2BigDecimal(x: BigDec): BigDecimal = new BigDecimal(x, mc)
 
-  /** Returns the hash code for this BigDecimal. */
+  /** Returns the hash code for this BigDecimal.
+   *  Note that this does not use the underlying java object's
+   *  hashCode because we compare BigDecimals with compareTo
+   *  which deems 2 == 2.00, whereas in java these are unequal
+   *  with unequal hashCodes.
+   */
   override def hashCode(): Int = doubleValue.hashCode()
 
   /** Compares this BigDecimal with the specified value for equality.
@@ -341,10 +359,10 @@ extends java.lang.Number
 
   /** This BigDecimal as an exact value.
    */
-  def byteValueExact: Byte    = bigDecimal.byteValueExact
-  def shortValueExact: Short  = bigDecimal.shortValueExact
-  def intValueExact: Int      = bigDecimal.intValueExact
-  def longValueExact: Long    = bigDecimal.longValueExact
+  def toByteExact = bigDecimal.byteValueExact
+  def toShortExact = bigDecimal.shortValueExact
+  def toIntExact = bigDecimal.intValueExact
+  def toLongExact = bigDecimal.longValueExact
 
   /** Creates a partially constructed GenericRange[BigDecimal] in range
    *  <code>[start;end)</code>, where start is the target BigDecimal.  The step
