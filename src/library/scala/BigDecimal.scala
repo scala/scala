@@ -165,7 +165,7 @@ extends java.lang.Number
   private implicit def bigdec2BigDecimal(x: BigDec): BigDecimal = new BigDecimal(x, mc)
 
   /** Returns the hash code for this BigDecimal. */
-  override def hashCode(): Int = this.bigDecimal.hashCode()
+  override def hashCode(): Int = doubleValue.hashCode()
 
   /** Compares this BigDecimal with the specified value for equality.
    *  Will only claim equality with scala.BigDecimal and java.math.BigDecimal.
