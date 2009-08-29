@@ -107,6 +107,10 @@ object Ordering
 {
   def apply[T](implicit ord : Ordering[T]) = ord
 
+  def fromLessThan[T](cmp: (T, T) => Boolean): Ordering[T] = new Ordering[T] {
+    def compare(x: T, y: T) = if (cmp(x, y)) -1 else if (cmp(y, x)) 1 else 0
+  }
+
   def ordered[A <: Ordered[A]] : Ordering[A] = new Ordering[A] {
     def compare(x : A, y : A) = x.compare(y);
   }

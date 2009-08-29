@@ -11,7 +11,6 @@
 
 package scala.collection.generic
 import scala.collection._
-import annotation.unchecked.uncheckedVariance
 
 import mutable.{ListBuffer, HashMap}
 
@@ -519,33 +518,6 @@ trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] 
   /** Need to override string, so that it's not the Function1's string that gets mixed in.
    */
   override def toString = super[IterableTemplate].toString
-
-  /** Sort the sequence according to the comparison function
-   *  <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>,
-   *  which should be true iff <code>e1</code> is smaller than
-   *  <code>e2</code>.
-   *  The sort is stable. That is elements that are equal wrt `lt` appear in the
-   *  same order in the sorted sequence as in the original.
-   *
-   *  @param lt the comparison function
-   *  @return   a sequence sorted according to the comparison function
-   *            <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>.
-   *  @ex <pre>
-   *    List("Steve", "Tom", "John", "Bob")
-   *      .sortWith((e1, e2) => (e1 compareTo e2) &lt; 0) =
-   *    List("Bob", "John", "Steve", "Tom")</pre>
-   */
-  def sortWith(lt: (A, A) => Boolean)(implicit m: ClassManifest[A @uncheckedVariance]): This = {
-    val arr = toArray
-    import java.util.{Arrays, Comparator}
-    Arrays.sort(arr, new Comparator[A] {
-      override def compare(a: A, b: A) =
-        if (lt(a, b)) -1 else if (lt(b, a)) 1 else 0
-    })
-    val b = newBuilder
-    for (x <- arr) b += x
-    b.result
-  }
 
   /** Returns index of the last element satisying a predicate, or -1. */
   @deprecated("use `lastIndexWhere' instead")

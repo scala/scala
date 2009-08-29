@@ -10,6 +10,7 @@
 
 package scala.collection.generic
 import scala.collection._
+import annotation.unchecked.uncheckedVariance
 
 import util.control.Breaks._
 // import immutable.Stream // !!!
@@ -204,6 +205,31 @@ trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] 
       b += ((x, i))
       i +=1
     }
+    b.result
+  }
+
+  /** Sort the iterable according to the comparison function
+   *  <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>,
+   *  which should be true iff <code>e1</code> is smaller than
+   *  <code>e2</code>.
+   *  The sort is stable. That is elements that are equal wrt `lt` appear in the
+   *  same order in the sorted sequence as in the original.
+   *
+   *  @param lt the comparison function
+   *  @return   an iterable sorted according to the comparison function
+   *            <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>.
+   *  @ex <pre>
+   *    List("Steve", "Tom", "John", "Bob")
+   *      .sortWith((e1, e2) => (e1 compareTo e2) &lt; 0) =
+   *    List("Bob", "John", "Steve", "Tom")</pre>
+   */
+  def sortWith(lt: (A, A) => Boolean)(implicit m: ClassManifest[A @uncheckedVariance]): This = {
+    // !!! can we supply a default argument to m: ClassManifest ?
+    val arr = toArray
+    java.util.Arrays.sort(arr, Ordering fromLessThan lt)
+
+    val b = newBuilder
+    for (x <- arr) b += x
     b.result
   }
 
