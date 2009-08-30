@@ -78,11 +78,23 @@ class Random(val self: java.util.Random) {
    *  @return           the String
    */
   def nextString(length: Int) = {
-    def toChar(ch: Int): List[Char] =
-      try new String(Array(ch), 0, 1) toList
-      catch { case _: IllegalArgumentException => Nil }
+    def safeChar() = {
+      val surrogateStart: Int = 0xD800
+      val res = nextInt(surrogateStart - 1) + 1
+      res.toChar
+    }
 
-    Stream continually toChar(Math.abs(nextInt()) % (1 << 16)) flatMap (x => x) take length mkString
+    List.fill(length)(safeChar()).mkString
+  }
+
+  /** Returns a pseudorandomly generated String drawing upon
+   *  only ASCII characters between 33 and 126.
+   */
+  def nextASCIIString(length: Int) = {
+    val (min, max) = (33, 126)
+    def nextDigit = nextInt(max - min) + min
+
+    new String(Array.fill(length)(nextDigit.toByte), "ASCII")
   }
 
   def setSeed(seed: Long) { self.setSeed(seed) }
