@@ -17,7 +17,10 @@ import collection.Traversable
 
 object File
 {
-  def apply(path: Path) = path.toFile
+  def apply(path: Path)(implicit codec: Codec = null) = {
+    val res = path.toFile
+    if (codec == null) res else res withCodec codec
+  }
 
   // Create a temporary file
   def makeTemp(prefix: String = Path.randomPrefix, suffix: String = null, dir: JFile = null) =
@@ -39,6 +42,10 @@ extends Path(jfile)
 {
   private def getCodec(): Codec =
     if (creationCodec == null) Codec.default else creationCodec
+
+  /** For explicitly setting the creation codec if necessary.
+   */
+  def withCodec(codec: Codec) = new File(jfile)(codec)
 
   override def toDirectory: Directory = new Directory(jfile)
   override def toFile: File = this

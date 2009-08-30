@@ -138,9 +138,11 @@ class Path private[io] (val jfile: JFile)
 
   // creations
   def create(): Boolean = true
-  def createDirectory(): Directory =
-    if (jfile.mkdirs()) new Directory(jfile)
+  def createDirectory(force: Boolean = true): Directory = {
+    val res = if (force) jfile.mkdirs() else jfile.mkdir()
+    if (res) new Directory(jfile)
     else fail("Failed to create new directory.")
+  }
   def createFile(): File =
     if (jfile.createNewFile()) new File(jfile)
     else fail("Failed to create new file.")
