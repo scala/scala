@@ -13,48 +13,61 @@ import collection.Traversable
 
 object Directory
 {
-  def apply(fileName: String) = new Directory(new JFile(fileName))
-  def apply(file: JFile)      = new Directory(file)
-  def apply(file: File)       = new Directory(file.file)
+  def apply(path: Path)       = path.toDirectory
+
+  // Like File.makeTemp but creates a directory instead
+  def makeTemp(prefix: String = Path.randomPrefix, suffix: String = null, dir: JFile = null): Directory = {
+    val path = File.makeTemp(prefix, suffix, dir)
+    path.delete()
+    path.createDirectory()
+  }
 }
-import Directory._
+import Path._
 
 /** An abstraction for directories.
  *
  *  @author  Paul Phillips
  *  @since   2.8
  */
-class Directory(val file: JFile) extends collection.Iterable[File]
+class Directory(jfile: JFile) extends Path(jfile)
 {
-  /** At creation time we enforce that if the path in question
-   *  exists, it is a directory.  Obviously you can fool it by
-   *  changing the situation after this instance is created, so
-   *  don't consider this a lasting guarantee.
-   */
-  require(!file.exists() || file.isDirectory())
+  override def toDirectory: Directory = this
+  override def toFile: File = new File(jfile)
+  override def create(): Boolean = jfile.mkdirs()
+  override def isValid = jfile.isDirectory() || !jfile.exists()
 
   /** An iterator over the contents of this directory.
    */
-  def iterator: Iterator[File] =
-    file.listFiles match {
+  def list: Iterator[Path] =
+    jfile.listFiles match {
       case null   => Iterator.empty
-      case xs     => xs.iterator map File.apply
+      case xs     => xs.iterator map Path.apply
     }
+
+  def dirs: Iterator[Directory] = list filterMap { case x: Directory => x }
+  def files: Iterator[File] = list filterMap { case x: File => x }
+
+  def deepList(depth: Int = 1): Iterator[Path] =
+    if (depth == 0) Iterator.empty
+    else list ++ (dirs flatMap (_ deepList (depth - 1)))
 
   /** An iterator over the directories underneath this directory,
    *  to the (optionally) given depth.
    */
   def subdirs(depth: Int = 1): Iterator[Directory] =
-    if (depth == 0) Iterator.empty else {
-      val (d1, d2) = iterator filter (_.file.isDirectory) map Directory.apply duplicate
+    deepList(depth) filterMap { case x: Directory => x }
 
-      d1 ++ (d2 flatMap (_ subdirs (depth - 1)))
+  /** Deletes the directory recursively. Returns false on failure.
+   *  Use with caution!
+   */
+  def deleteRecursively(): Boolean = deleteRecursively(jfile)
+  private def deleteRecursively(f: JFile): Boolean = {
+    if (f.isDirectory) f.listFiles match {
+      case null =>
+      case xs   => xs foreach deleteRecursively
     }
-
-  override def toString() = "Directory(%s)".format(file.getCanonicalPath())
-  override def equals(other: Any) = other match {
-    case x: Directory => this.file == x.file
-    case _            => false
+    f.delete()
   }
-  override def hashCode = file.hashCode
+
+  override def toString() = "Directory(%s)".format(path)
 }

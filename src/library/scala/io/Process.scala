@@ -63,7 +63,7 @@ object Process
 
     def withCwd(cwd: File): this.type = {
       if (cwd != null)
-        pb directory cwd.file
+        pb directory cwd.jfile
 
       this
     }

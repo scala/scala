@@ -17,143 +17,87 @@ import collection.Traversable
 
 object File
 {
-  final val extensionRegex = """^.*\.([^.]+)$""".r
-  implicit def fileWrapper(file: JFile): File = new File(file)
+  def apply(path: Path) = path.toFile
 
-  def apply(fileName: String) = new File(new JFile(fileName))
-  def apply(file: JFile)      = new File(file)
-
-  private def randomPrefix = {
-    import scala.util.Random.nextInt
-    import Character.isJavaIdentifierPart
-
-    (Iterator continually nextInt)
-    . map (x => ((x % 60) + 'A').toChar)
-    . filter (isJavaIdentifierPart)
-    . take (6)
-    . mkString
-  }
   // Create a temporary file
-  def tempfile(prefix: String = randomPrefix, suffix: String = null, dir: JFile = null) =
+  def makeTemp(prefix: String = Path.randomPrefix, suffix: String = null, dir: JFile = null) =
     apply(JFile.createTempFile(prefix, suffix, dir))
-
-  // Like tempfile but creates a directory instead
-  def tempdir(prefix: String = randomPrefix, suffix: String = null, dir: JFile = null) = {
-    val file = tempfile(prefix, suffix, dir)
-    file.delete()
-    file.mkdirs()
-    file
-  }
-
 }
-import File._
+import Path._
 
-/** An abstraction for files.  For now it is little more than a wrapper
- *  around java.io.File.
+/** An abstraction for files.  For character data, a Codec
+ *  can be supplied at either creation time or when a method
+ *  involving character data is called (with the latter taking
+ *  precdence if supplied.) If neither is available, the value
+ *  of scala.io.Codec.default is used.
  *
  *  @author  Paul Phillips
  *  @since   2.8
  */
-class File(val file: JFile)(implicit val codec: Codec = Codec.default) extends collection.Iterable[File]
+class File(jfile: JFile)(implicit val creationCodec: Codec = null)
+extends Path(jfile)
 {
-  def name = file.getName()
-  def path = file.getPath()
-  def absolutePath = file.getAbsolutePath()
-  def delete() = file.delete()
-  def mkdirs() = file.mkdirs()
-  def isFile = file.isFile()
-  def canRead = file.canRead()
-  def canWrite = file.canWrite()
+  private def getCodec(): Codec =
+    if (creationCodec == null) Codec.default else creationCodec
 
-  def isFresher(other: File) = file.lastModified > other.file.lastModified
+  override def toDirectory: Directory = new Directory(jfile)
+  override def toFile: File = this
+  override def create(): Boolean = jfile.createNewFile()
+  override def isValid = jfile.isFile() || !jfile.exists()
 
-  /** If file is a directory, an iterator over its contents.
-   *  If not, an empty iterator.
+  /** Convenience functions for iterating over the bytes in a file.
    */
-  def iterator: Iterator[File] =
-    if (file.isDirectory) file.listFiles.iterator map (x => new File(x))
-    else Iterator.empty
-
-  /** Convenience function for iterating over the lines in the file.
-   */
-  def lines(): Iterator[String] = toSource().getLines()
-
-  /** Convenience function for iterating over the bytes in a file.
-   *  Note they are delivered as Ints as they come from the read() call,
-   *  you can map (_.toByte) if you would really prefer Bytes.
-   */
-  def bytes(): Iterator[Int] = {
+  def bytesAsInts(): Iterator[Int] = {
     val in = bufferedInput()
     Iterator continually in.read() takeWhile (_ != -1)
   }
 
+  def bytes(): Iterator[Byte] = bytesAsInts() map (_.toByte)
+  def chars(codec: Codec = getCodec()) = (Source fromFile jfile)(codec)
+
+  /** Convenience function for iterating over the lines in the file.
+   */
+  def lines(codec: Codec = getCodec()): Iterator[String] = chars(codec).getLines()
+
   /** Convenience function to import entire file into a String.
    */
-  def slurp() = toSource().mkString
-
-  /** Deletes the file or directory recursively. Returns false if it failed.
-   *  Use with caution!
-   */
-  def deleteRecursively(): Boolean = deleteRecursively(file)
-  private def deleteRecursively(f: JFile): Boolean = {
-    if (f.isDirectory) f.listFiles match {
-      case null =>
-      case xs   => xs foreach deleteRecursively
-    }
-    f.delete()
-  }
+  def slurp(codec: Codec = getCodec()) = chars(codec).mkString
 
   /** Obtains an InputStream. */
-  def inputStream() = new FileInputStream(file)
+  def inputStream() = new FileInputStream(jfile)
   def bufferedInput() = new BufferedInputStream(inputStream())
 
   /** Obtains a OutputStream. */
-  def outputStream(append: Boolean = false) = new FileOutputStream(file, append)
+  def outputStream(append: Boolean = false) = new FileOutputStream(jfile, append)
   def bufferedOutput(append: Boolean = false) = new BufferedOutputStream(outputStream(append))
 
   /** Obtains an InputStreamReader wrapped around a FileInputStream.
    */
-  def reader() =
+  def reader(codec: Codec = getCodec()) =
     new InputStreamReader(inputStream, codec.charSet)
 
   /** Obtains an OutputStreamWriter wrapped around a FileOutputStream.
    *  This should behave like a less broken version of java.io.FileWriter,
    *  in that unlike the java version you can specify the encoding.
    */
-  def writer(append: Boolean = false) =
+  def writer(append: Boolean = false, codec: Codec = getCodec()) =
     new OutputStreamWriter(outputStream(append), codec.charSet)
 
   /** Wraps a BufferedReader around the result of reader().
    */
-  def bufferedReader() = new BufferedReader(reader())
+  def bufferedReader(codec: Codec = getCodec()) = new BufferedReader(reader(codec))
 
   /** Wraps a BufferedWriter around the result of writer().
    */
-  def bufferedWriter(append: Boolean = false) = new BufferedWriter(writer(append))
+  def bufferedWriter(append: Boolean = false, codec: Codec = getCodec()) =
+    new BufferedWriter(writer(append, codec))
 
   /** Writes all the Strings in the given iterator to the file. */
-  def writeAll(xs: Traversable[String], append: Boolean = false): Unit = {
-    val out = bufferedWriter(append)
+  def writeAll(xs: Traversable[String], append: Boolean = false, codec: Codec = getCodec()): Unit = {
+    val out = bufferedWriter(append, codec)
     try xs foreach (out write _)
     finally out close
   }
 
-  /** Attempts to return the file extension. */
-  def extension = file.getName match {
-    case extensionRegex(x)  => Some(x)
-    case _                  => None
-  }
-
-  /** Creates a Source from this file. */
-  def toSource(): Source = (Source fromFile file)(codec)
-
-  /** Creates a new File with the specified path appended. */
-  def /(child: String) = new File(new JFile(file, child))
-
-  override def toString() = file.toString
-  override def equals(other: Any) = other match {
-    case x: File    => this.file == x.file
-    case _          => false
-  }
-  override def hashCode = file.hashCode
+  override def toString() = "File(%s)".format(path)
 }

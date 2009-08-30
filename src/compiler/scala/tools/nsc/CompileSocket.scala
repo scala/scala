@@ -12,7 +12,7 @@ import java.util.regex.Pattern
 import java.net._
 import java.security.SecureRandom
 
-import scala.io.File
+import scala.io.{ File, Path }
 import scala.util.control.Exception.catching
 
 // class CompileChannel { }
@@ -59,8 +59,7 @@ class CompileSocket {
   /** A temporary directory to use */
   val tmpDir = {
     val udir  = Option(Properties.userName) getOrElse "shared"
-    val f     = (File(Properties.tmpDir) / "scala-devel" / udir).file
-    f.mkdirs()
+    val f     = (Path(Properties.tmpDir) / "scala-devel" / udir).createDirectory()
 
     if (f.isDirectory && f.canWrite) {
       info("[Temp directory: " + f + "]")
@@ -70,8 +69,7 @@ class CompileSocket {
   }
 
   /* A directory holding port identification files */
-  val portsDir = File(tmpDir) / dirName
-  portsDir.mkdirs
+  val portsDir = (tmpDir / dirName).createDirectory
 
   /** Maximum number of polls for an available port */
   private val MaxAttempts = 100
@@ -103,11 +101,11 @@ class CompileSocket {
   }
 
   /** The port identification file */
-  def portFile(port: Int) = portsDir / port.toString
+  def portFile(port: Int) = portsDir / File(port.toString)
 
   /** Poll for a server port number; return -1 if none exists yet */
   private def pollPort(): Int =
-    portsDir.iterator.toList match {
+    portsDir.list.toList match {
       case Nil      => -1
       case p :: xs  =>
         xs forall (_.delete())
@@ -141,7 +139,7 @@ class CompileSocket {
 
     try file writeAll List(secret) catch {
       case e @ (_: FileNotFoundException | _: SecurityException) =>
-        fatal("Cannot create file: %s".format(file.absolutePath))
+        fatal("Cannot create file: %s".format(file.path))
     }
   }
 
@@ -214,7 +212,7 @@ class CompileSocket {
     // allow some time for the server to start up
     def check = {
       Thread sleep 100
-      ff.file.length()
+      ff.length
     }
     if (Iterator continually check take 50 find (_ > 0) isEmpty) {
       ff.delete()

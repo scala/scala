@@ -55,7 +55,7 @@ class StandardCompileServer extends SocketServer
     }
 
   override def timeout() {
-    if (!compileSocket.portFile(port).file.exists())
+    if (!compileSocket.portFile(port).exists)
       fatal("port file no longer exists; skipping cleanup")
   }
 
@@ -142,11 +142,10 @@ class StandardCompileServer extends SocketServer
   }
 
   /** A directory holding redirected output */
-  private val redirectDir = File(compileSocket.tmpDir) / "output-redirects"
-  redirectDir.mkdirs
+  private val redirectDir = (compileSocket.tmpDir / "output-redirects").createDirectory
 
   private def redirect(setter: PrintStream => Unit, filename: String): Unit =
-    setter(new PrintStream(redirectDir / filename bufferedOutput()))
+    setter(new PrintStream((redirectDir / filename).createFile.bufferedOutput()))
 
   def main(args: Array[String]) {
     redirect(System.setOut, "scala-compile-server-out.log")

@@ -12,7 +12,7 @@ import java.io.{
   FileReader, InputStreamReader, PrintWriter, FileWriter,
   IOException
 }
-import scala.io.File
+import scala.io.{ Directory, File, Path }
 // import scala.io.arm.ManagedResource
 import java.io.{ File => JFile }
 import java.lang.reflect.InvocationTargetException
@@ -71,12 +71,12 @@ object ScriptRunner
   }
 
   /** Choose a jar filename to hold the compiled version of a script. */
-  private def jarFileFor(scriptFile: String): JFile = {
+  private def jarFileFor(scriptFile: String): File = {
     val name =
       if (scriptFile endsWith ".jar") scriptFile
       else scriptFile + ".jar"
 
-    File(name).file
+    File(name)
   }
 
   def copyStreams(in: InputStream, out: OutputStream) = {
@@ -93,22 +93,22 @@ object ScriptRunner
   /** Try to create a jar file out of all the contents
    *  of the directory <code>sourcePath</code>.
    */
-  private def tryMakeJar(jarFile: JFile, sourcePath: JFile) = {
-    def addFromDir(jar: JarOutputStream, dir: JFile, prefix: String) {
-      def addFileToJar(entry: JFile) = {
-        jar putNextEntry new JarEntry(prefix + entry.getName)
-        copyStreams(new FileInputStream(entry), jar)
+  private def tryMakeJar(jarFile: File, sourcePath: Directory) = {
+    def addFromDir(jar: JarOutputStream, dir: Directory, prefix: String) {
+      def addFileToJar(entry: File) = {
+        jar putNextEntry new JarEntry(prefix + entry.name)
+        copyStreams(entry.inputStream, jar)
         jar.closeEntry
       }
 
-      dir.listFiles foreach { entry =>
-        if (entry.isFile) addFileToJar(entry)
-        else addFromDir(jar, entry, prefix + entry.getName + "/")
+      dir.list foreach { entry =>
+        if (entry.isFile) addFileToJar(entry.toFile)
+        else addFromDir(jar, entry.toDirectory, prefix + entry.name + "/")
       }
     }
 
     try {
-      val jar = new JarOutputStream(File(jarFile).outputStream())
+      val jar = new JarOutputStream(jarFile.outputStream())
       addFromDir(jar, sourcePath, "")
       jar.close
     }
@@ -118,7 +118,7 @@ object ScriptRunner
   }
 
   /** Read the entire contents of a file as a String. */
-  private def contentsOfFile(filename: String) = File(filename).toSource().mkString
+  private def contentsOfFile(filename: String) = File(filename).slurp()
 
   /** Find the length of the header in the specified file, if
     * there is one.  The header part starts with "#!" or "::#!"
@@ -249,16 +249,14 @@ object ScriptRunner
     scriptFile: String)
     (handler: String => Boolean): Boolean =
   {
-    import Interpreter.deleteRecursively
-
     /** Compiles the script file, and returns the directory with the compiled
      *  class files, if the compilation succeeded.
      */
-    def compile: Option[JFile] = {
-      val compiledPath = File tempdir "scalascript"
+    def compile: Option[Directory] = {
+      val compiledPath = Directory makeTemp "scalascript"
 
       // delete the directory after the user code has finished
-      addShutdownHook(deleteRecursively(compiledPath.file))
+      addShutdownHook(compiledPath.deleteRecursively())
 
       settings.outdir.value = compiledPath.path
 
@@ -269,37 +267,37 @@ object ScriptRunner
         val wrapped = wrappedScript(scriptMain(settings), scriptFile, compiler getSourceFile _)
 
         cr compileSources List(wrapped)
-        if (reporter.hasErrors) None else Some(compiledPath.file)
+        if (reporter.hasErrors) None else Some(compiledPath)
       }
-      else if (compileWithDaemon(settings, scriptFile)) Some(compiledPath.file)
+      else if (compileWithDaemon(settings, scriptFile)) Some(compiledPath)
       else None
     }
 
     if (settings.savecompiled.value) {
-      val jarFile = File(jarFileFor(scriptFile))
+      val jarFile = jarFileFor(scriptFile)
       def jarOK   = jarFile.canRead && (jarFile isFresher File(scriptFile))
 
       def recompile() = {
-        jarFile.delete
+        jarFile.delete()
 
         compile match {
           case Some(compiledPath) =>
-            tryMakeJar(jarFile.file, compiledPath)
+            tryMakeJar(jarFile, compiledPath)
             if (jarOK) {
-              deleteRecursively(compiledPath)
-              handler(jarFile.absolutePath)
+              compiledPath.deleteRecursively()
+              handler(jarFile.toAbsolute.path)
             }
             // jar failed; run directly from the class files
-            else handler(compiledPath.getPath)
+            else handler(compiledPath.path)
           case _  => false
         }
       }
 
-      if (jarOK) handler(jarFile.absolutePath)  // pre-compiled jar is current
-      else recompile()                          // jar old - recompile the script.
+      if (jarOK) handler(jarFile.toAbsolute.path) // pre-compiled jar is current
+      else recompile()                            // jar old - recompile the script.
     }
     // don't use a cache jar at all--just use the class files
-    else compile map (cp => handler(cp.getPath)) getOrElse false
+    else compile map (cp => handler(cp.path)) getOrElse false
   }
 
   /** Run a script after it has been compiled
@@ -368,7 +366,7 @@ object ScriptRunner
     command: String,
 		scriptArgs: List[String]) : Boolean =
 	{
-    val scriptFile = File.tempfile("scalacmd", ".scala")
+    val scriptFile = File.makeTemp("scalacmd", ".scala")
     // save the command to the file
     scriptFile writeAll List(command)
 

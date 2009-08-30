@@ -152,6 +152,7 @@ object StringVector
     while (i >= 0) {
       if (p(s charAt i))
         return i
+      i -= 1
     }
     -1
   }

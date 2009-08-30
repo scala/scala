@@ -51,11 +51,11 @@ trait PartialFunction[-A, +B] extends AnyRef with (A => B) {
  * <pre>
  *  import PartialFunction._
  *
- *  def strangeConditional(other: Any): Boolean = ?(other) {
+ *  def strangeConditional(other: Any): Boolean = cond(other) {
  *    case x: String if x == "abc" || x == "def"  => true
  *    case x: Int => true
  *  }
- *  def onlyInt(v: Any): Option[Int] = opt(v) { case x: Int => x }
+ *  def onlyInt(v: Any): Option[Int] = condOpt(v) { case x: Int => x }
  * </pre>
  *
  *  @author  Paul Phillips
@@ -72,7 +72,7 @@ object PartialFunction
    *  @param  pf  the partial function
    *  @return true, iff <code>x</code> is in the domain of pf && pf(x) == true
    */
-  def ?[T](x: T)(pf: PartialFunction[T, Boolean]): Boolean =
+  def cond[T](x: T)(pf: PartialFunction[T, Boolean]): Boolean =
     (pf isDefinedAt x) && pf(x)
 
   /** Transforms a PartialFunction[T,U] `pf' into Function1[T,Option[U]] `f'
@@ -84,7 +84,7 @@ object PartialFunction
    *  @param  pf    the PartialFunction[T,U]
    *  @return Some(pf(x)) iff (pf isDefinedAt x) and None otherwise
    */
-  def opt[T,U](x: T)(pf: PartialFunction[T, U]): Option[U] =
+  def condOpt[T,U](x: T)(pf: PartialFunction[T, U]): Option[U] =
     if (pf isDefinedAt x) Some(pf(x)) else None
 
   // If only getOrElse were a bit less unwieldy...
