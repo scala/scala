@@ -12,7 +12,7 @@
 package scala.collection
 
 import mutable.{Buffer, ArrayBuffer, ListBuffer}
-import annotation.tailrec
+import annotation.{ tailrec, experimental }
 // import immutable.{List, Nil, ::, Stream}
 
 /** The <code>Iterator</code> object provides various functions for
@@ -358,6 +358,22 @@ trait Iterator[+A] { self =>
       private def skip() = while (self.hasNext && !p(self.head)) self.next()
       def hasNext = { skip(); self.hasNext }
       def next() = { skip(); self.next() }
+    }
+  }
+
+ /** Returns a new iterator based on the partial function <code>pf</code>,
+  *  containing pf(x) for all the elements which are defined on pf.
+  *  The order of the elements is preserved.
+  *  @param pf the partial function which filters and maps the iterator.
+  *  @return the new iterator.
+  */
+  @experimental
+  def filterMap[B](pf: PartialFunction[Any, B]): Iterator[B] = {
+    val self = buffered
+    new Iterator[B] {
+      private def skip() = while (self.hasNext && !pf.isDefinedAt(self.head)) self.next()
+      def hasNext = { skip(); self.hasNext }
+      def next() = { skip(); pf(self.next()) }
     }
   }
 
