@@ -29,7 +29,7 @@ import generic._
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  */
-trait SequenceTemplate[+A, +This <: IterableTemplate[A, This] with Sequence[A]] extends IterableTemplate[A, This] { self =>
+trait SequenceTemplate[+A, +This <: SequenceTemplate[A, This] with Sequence[A]] extends IterableTemplate[A, This] { self =>
 
   import Traversable.breaks._
 

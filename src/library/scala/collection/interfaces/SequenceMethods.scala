@@ -15,7 +15,10 @@ import scala.reflect.ClassManifest
 
 trait SequenceMethods[+A, +This <: SequenceTemplate[A, This] with Sequence[A]] extends IterableMethods[A, This]
 {
+  // abstract
   def apply(idx: Int): A
+  def length: Int
+
   def contains(elem: Any): Boolean
   def diff[B >: A, That](that: Sequence[B]): This
   def endsWith[B](that: Sequence[B]): Boolean
@@ -34,7 +37,6 @@ trait SequenceMethods[+A, +This <: SequenceTemplate[A, This] with Sequence[A]] e
   def lastIndexOf[B >: A](elem: B, end: Int): Int
   def lastIndexWhere(p: A => Boolean): Int
   def lastIndexWhere(p: A => Boolean, end: Int): Int
-  def length: Int
   def lengthCompare(len: Int): Int
   def padTo[B >: A, That](len: Int, elem: B)(implicit bf: BuilderFactory[B, That, This]): That
   def patch[B >: A, That](from: Int, patch: Sequence[B], replaced: Int)(implicit bf: BuilderFactory[B, That, This]): That

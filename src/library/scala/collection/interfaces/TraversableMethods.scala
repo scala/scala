@@ -15,11 +15,13 @@ import scala.reflect.ClassManifest
 
 trait TraversableMethods[+A, +This <: TraversableTemplate[A, This] with Traversable[A]]
 {
+  // abstract
+  def foreach[U](f: A => U): Unit
+
   // maps/iteration
   def flatMap[B, That](f: A => Traversable[B])(implicit bf: BuilderFactory[B, That, This]): That
   def map[B, That](f: A => B)(implicit bf: BuilderFactory[B, That, This]): That
   def filterMap[B, That](pf: PartialFunction[Any, B])(implicit bf: BuilderFactory[B, That, This]): That
-  def foreach[U](f: A => U): Unit
 
   // new collections
   def ++[B >: A, That](that: Iterator[B])(implicit bf: BuilderFactory[B, That, This]): That
