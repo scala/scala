@@ -11,7 +11,8 @@
 package scala.xml
 package persistent
 
-import java.io.{File, FileOutputStream}
+import scala.io.File
+import java.io.{ File => JFile, FileOutputStream }
 import java.nio.ByteBuffer
 import java.nio.channels.Channels
 
@@ -26,9 +27,9 @@ import java.nio.channels.Channels
  *  @author Burak Emir
  */
 abstract class CachedFileStorage(private val file1: File)
-extends java.lang.Thread with scala.util.logging.Logged {
-
-  private val file2 = new File(file1.getParent, file1.getName+"$")
+extends java.lang.Thread with scala.util.logging.Logged
+{
+  private val file2 = (file1.parent.get / (file1.name + "$")).toFile
 
   /**  either equals file1 or file2, references the next file in which updates will be stored
    */
@@ -45,19 +46,11 @@ extends java.lang.Thread with scala.util.logging.Logged {
   /** finds and loads the storage file. subclasses should call this method
    *  prior to any other, but only once, to obtain the initial sequence of nodes.
    */
-  protected def initialNodes: Iterator[Node] = (file1.exists, file2.exists) match {
-    case (false,false) =>
-      theFile = file1
-      Iterator.empty
-    case (true, true ) if (file1.lastModified < file2.lastModified) =>
-      theFile = file2
-      load
-    case (true, _ ) =>
-      theFile = file1
-      load
-    case _ =>
-      theFile = file2
-      load
+  protected lazy val initialNodes: Iterator[Node] = {
+    val (e1, e2) = (file1.exists, file2.exists)
+
+    theFile = if (e2 && (file2 isFresher file1)) file2 else file1
+    if (!e1 && !e2) Iterator.empty else load
   }
 
   /** returns an iterator over the nodes in this storage */
@@ -73,8 +66,9 @@ extends java.lang.Thread with scala.util.logging.Logged {
   private def load: Iterator[Node] = {
     import scala.io.Source
     import scala.xml.parsing.ConstructingParser
+
     log("[load]\nloading "+theFile)
-    val src = Source.fromFile(theFile)()
+    val src = theFile.chars()
     log("parsing "+theFile)
     val res = ConstructingParser.fromSource(src,false).document.docElem(0)
     switch
@@ -87,16 +81,16 @@ extends java.lang.Thread with scala.util.logging.Logged {
     log("[save]\ndeleting "+theFile);
     theFile.delete();
     log("creating new "+theFile);
-    theFile.createNewFile();
-    val fos = new FileOutputStream(theFile)
+    theFile.createFile();
+    val fos = theFile.outputStream()
     val c   = fos.getChannel()
 
     // @todo: optimize
     val storageNode = <nodes>{ nodes.toList }</nodes>
-    val w = Channels.newWriter(c, "utf-8")
-    XML.write(w, storageNode, "utf-8", true, null)
+    val w = Channels.newWriter(c, "UTF-8")
+    XML.write(w, storageNode, "UTF-8", true, null)
 
-    log("writing to "+theFile);
+    log("writing to "+theFile)
 
     w.close
     c.close
@@ -108,16 +102,17 @@ extends java.lang.Thread with scala.util.logging.Logged {
 
   /** run method of the thread. remember to use start() to start a thread, not run. */
   override def run = {
-    log("[run]\nstarting storage thread, checking every "+interval+" ms");
-    while(true) {
-      Thread.sleep( this.interval );
+    log("[run]\nstarting storage thread, checking every %d ms" format interval)
+
+    while (true) {
+      Thread sleep interval
       save
     }
   }
 
   /** forces writing of contents to the file, even if there has not been any update. */
   def flush = {
-    this.dirty = true;
+    this.dirty = true
     save
   }
 }

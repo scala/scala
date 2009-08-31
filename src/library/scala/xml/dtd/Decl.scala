@@ -23,7 +23,7 @@ abstract class MarkupDecl extends Decl {
 /** an element declaration
  */
 case class ElemDecl(name: String, contentModel: ContentModel)
-extends MarkupDecl with DtdTypeSymbol
+extends MarkupDecl
 {
   override def buildString(sb: StringBuilder): StringBuilder = {
     sb
@@ -37,7 +37,7 @@ extends MarkupDecl with DtdTypeSymbol
 }
 
 case class AttListDecl(name: String, attrs:List[AttrDecl])
-extends MarkupDecl with DtdTypeSymbol {
+extends MarkupDecl {
   override def buildString(sb: StringBuilder): StringBuilder = {
     sb
     .append("<!ATTLIST ")

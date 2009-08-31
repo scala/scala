@@ -13,6 +13,7 @@ package scala.io
 import java.io.{
   FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
   BufferedInputStream, BufferedOutputStream, File => JFile }
+import java.nio.channels.FileChannel
 import collection.Traversable
 
 object File
@@ -77,6 +78,7 @@ extends Path(jfile)
   /** Obtains a OutputStream. */
   def outputStream(append: Boolean = false) = new FileOutputStream(jfile, append)
   def bufferedOutput(append: Boolean = false) = new BufferedOutputStream(outputStream(append))
+  // def channel(append: Boolean = false) = outputStream(append).getChannel()
 
   /** Obtains an InputStreamReader wrapped around a FileInputStream.
    */

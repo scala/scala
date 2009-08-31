@@ -50,10 +50,7 @@ class Scanner extends Tokens with parsing.TokenTests {
     if (c == d) next else error("expected '"+d+"' found '"+c+"' !");
   }
 
-  final def accS(ds: Seq[Char]) {
-    val jt = ds.iterator
-    while (jt.hasNext) { acc(jt.next) }
-  }
+  final def accS(ds: Seq[Char]) { ds foreach acc }
 
   final def readToken: Int =
     if (isSpace(c)) {

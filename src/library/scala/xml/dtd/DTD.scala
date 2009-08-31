@@ -34,13 +34,9 @@ abstract class DTD {
 
   var decls: List[Decl] = Nil
 
-  override def toString() = {
-    val sb = new StringBuilder("DTD [\n")
-    if (null != externalID)
-      sb.append(externalID.toString()).append('\n')
-    for (d <- decls)
-      sb.append(d.toString()).append('\n')
-    sb.append("]").toString()
-  }
-
+  override def toString() =
+    "DTD [\n%s%s]".format(
+      Option(externalID) getOrElse "",
+      decls.mkString("", "\n", "\n")
+    )
 }
