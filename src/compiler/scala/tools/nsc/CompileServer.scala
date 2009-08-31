@@ -145,7 +145,7 @@ class StandardCompileServer extends SocketServer
   private val redirectDir = (compileSocket.tmpDir / "output-redirects").ensureDirectory()
 
   private def redirect(setter: PrintStream => Unit, filename: String): Unit =
-    setter(new PrintStream((redirectDir / filename).createFile.bufferedOutput()))
+    setter(new PrintStream((redirectDir / filename).ensureFile.bufferedOutput()))
 
   def main(args: Array[String]) {
     redirect(System.setOut, "scala-compile-server-out.log")

@@ -121,6 +121,7 @@ class CompileSocket {
 
     if (port < 0)
       startNewServer(vmArgs)
+
     while (port < 0 && attempts < MaxAttempts) {
       attempts += 1
       Thread.sleep(sleepTime)

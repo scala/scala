@@ -81,7 +81,7 @@ extends java.lang.Thread with scala.util.logging.Logged
     log("[save]\ndeleting "+theFile);
     theFile.delete();
     log("creating new "+theFile);
-    theFile.createFile();
+    theFile.ensureFile();
     val fos = theFile.outputStream()
     val c   = fos.getChannel()
 

@@ -151,6 +151,10 @@ class Path private[io] (val jfile: JFile)
   def ensureDirectory(force: Boolean = true): Directory =
     if (this.isDirectory) this.toDirectory else createDirectory(force)
 
+  /** This is temporary while I try to unbreak fsc. */
+  def ensureFile(): File =
+    if (this.isFile) this.toFile else createFile()
+
   // deletions
   def delete() = jfile.delete()
   def deleteIfExists() = if (jfile.exists()) delete() else false
