@@ -80,30 +80,12 @@ object ContentModelParser extends Scanner { // a bit too permissive concerning #
 
   //                      (' S? mixed ::= '#PCDATA' S? ')'
   //                                    | '#PCDATA' (S? '|' S? atom)* S? ')*'
-  /*
-  def mixed = {
-    accept( TOKEN_PCDATA );
-    sOpt;
-    if( token == RPAREN )
-      PCDATA_
-    else {
-      val t = choiceRest( PCDATA_ );
-      if( !isMixed( t ) )
-        error("mixed content models must be like (#PCDATA.|.|.|.)*");
-      accept( RPAREN );
-      // lax: (workaround for buggy Java XML parser in JDK1.4.2)
-      if( token == STAR ) accept( STAR );
-      // strict:
-      // accept( STAR );
-      Star( t )
-    }
-  }
-*/
+
   //       '(' S? regexp ::= cp S? [seqRest|choiceRest] ')' [ '+' | '*' | '?' ]
   def regexp: RegExp = {
     val p = particle;
     sOpt;
-    maybeSuffix( token match {
+    maybeSuffix(token match {
       case RPAREN  => nextToken; p
       case CHOICE  => val q = choiceRest( p );accept( RPAREN ); q
       case COMMA   => val q = seqRest( p );   accept( RPAREN ); q

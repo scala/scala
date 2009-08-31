@@ -14,7 +14,9 @@ package dtd
 
 import scala.util.regexp.WordExp
 import scala.util.automata.{DetWordAutom, SubsetConstruction, WordBerrySethi}
+import scala.collection.mutable.HashSet
 import Utility.sbToString
+import PartialFunction._
 
 object ContentModel extends WordExp {
   type _labelT = ElemName
@@ -28,27 +30,21 @@ object ContentModel extends WordExp {
     override def toString() = "ElemName(\""+name+"\")"
   }
 
-  def isMixed(cm: ContentModel) = cm.isInstanceOf[MIXED]
+  def isMixed(cm: ContentModel) = cond(cm) { case _: MIXED => true }
   def containsText(cm: ContentModel) = (cm == PCDATA) || isMixed(cm)
-
   def parse(s: String): ContentModel = ContentModelParser.parse(s)
 
   def getLabels(r: RegExp): scala.collection.Set[String] = {
-    val s = new scala.collection.mutable.HashSet[String]()
-    def traverse1(xs: Seq[RegExp]) {
-      val it = xs.iterator
-      while (it.hasNext) traverse(it.next)
-    }
-    def traverse(r: RegExp) {
-      r match { // !!! check for match translation problem
-        case Letter(ElemName(name)) => s += name
-        case Star(  x @ _  ) => traverse( x ) // bug if x@_*
-        case Sequ( xs @ _* ) => traverse1(xs)
-        case Alt(  xs @ _* ) => traverse1(xs)
-      }
+    val s = new HashSet[String]()
+
+    def traverse(r: RegExp): Unit = r match { // !!! check for match translation problem
+      case Letter(ElemName(name)) => s += name
+      case Star(  x @ _  ) => traverse( x ) // bug if x@_*
+      case Sequ( xs @ _* ) => xs foreach traverse
+      case Alt(  xs @ _* ) => xs foreach traverse
     }
     traverse(r)
-    return s
+    s
   }
 
   def buildString(r: RegExp): String = sbToString(buildString(r, _))
@@ -66,14 +62,10 @@ object ContentModel extends WordExp {
   }
 
   def buildString(c: ContentModel, sb: StringBuilder): StringBuilder = c match {
-    case ANY =>
-      sb.append("ANY")
-    case EMPTY =>
-      sb.append("EMPTY")
-    case PCDATA =>
-      sb.append("(#PCDATA)")
-    case ELEMENTS( _ ) | MIXED( _ ) =>
-      c.buildString(sb)
+    case ANY                    => sb append "ANY"
+    case EMPTY                  => sb append "EMPTY"
+    case PCDATA                 => sb append "(#PCDATA)"
+    case ELEMENTS(_) | MIXED(_) => c buildString sb
   }
 
   def buildString(r: RegExp, sb:StringBuilder): StringBuilder = r match {  // !!! check for match translation problem
@@ -91,21 +83,10 @@ object ContentModel extends WordExp {
 
 }
 
-sealed abstract class ContentModel {
-
+sealed abstract class ContentModel
+{
   override def toString(): String = sbToString(buildString)
-
-  def buildString(sb:StringBuilder): StringBuilder;
-  /*
-  def validate(cs: NodeSeq): Boolean = this.match {
-    case ANY         => true
-    case EMPTY       => cs.length == 0
-    case PCDATA      => cs.length == 0
-                     || (cs.length == 1 && cs(0).isInstanceOf[Text])
-    case m@MIXED(r)    => m.runDFA(cs)
-    case e@ELEMENTS(r) => e.runDFA(cs)
-  }
-  */
+  def buildString(sb: StringBuilder): StringBuilder
 }
 
 case object PCDATA extends ContentModel {

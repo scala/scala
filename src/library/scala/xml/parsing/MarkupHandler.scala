@@ -28,37 +28,26 @@ import scala.xml.dtd._
  */
 abstract class MarkupHandler extends Logged
 {
-  // impl. of Logged
-  //def log(msg:String) = {}
-
-  /** returns true is this markup handler is validing */
+  /** returns true is this markup handler is validating */
   val isValidating: Boolean = false
 
   var decls: List[Decl] = Nil
-
   var ent: Map[String, EntityDecl] = new HashMap[String, EntityDecl]()
 
-  def lookupElemDecl(Label: String): ElemDecl =  {
-    def lookup(xs:List[Decl]): ElemDecl = xs match {
-      case (z @ ElemDecl(Label, _)) :: zs => return z
-      case _::zs                        => lookup(zs)
-      case _                            => return null
-    }
-    lookup(decls)
+  def lookupElemDecl(Label: String): ElemDecl = {
+    for (z @ ElemDecl(Label, _) <- decls)
+      return z
+
+    null
   }
 
-  def replacementText(entityName: String): Source = ent.get(entityName) match {
-    case Some(ParsedEntityDecl(_, IntDef(value))) =>
-      Source.fromString(value)
-    case Some(ParameterEntityDecl(_, IntDef(value))) =>
-      Source.fromString(" "+value+" ")
-    case Some(_) =>
-      Source.fromString("<!-- "+entityName+"; -->")
-    case None =>
-      Source.fromString("<!-- unknown entity "+entityName+"; -->")
-  }
-
- //def checkChildren(pos:int, pre: String, label:String,ns:NodeSeq): Unit = {}
+  def replacementText(entityName: String): Source =
+    Source fromString ((ent get entityName) match {
+      case Some(ParsedEntityDecl(_, IntDef(value)))     => value
+      case Some(ParameterEntityDecl(_, IntDef(value)))  => " %s " format value
+      case Some(_)                                      => "<!-- %s; -->" format entityName
+      case None                                         => "<!-- unknown entity %s; -->" format entityName
+    })
 
   def endDTD(n: String): Unit = ()
 
@@ -93,19 +82,10 @@ abstract class MarkupHandler extends Logged
   def elem(pos: Int, pre: String, label: String, attrs: MetaData, scope: NamespaceBinding, args: NodeSeq): NodeSeq
 
   /** callback method invoked by MarkupParser after parsing PI.
-   *
-   *  @param pos      the position in the source file
-   *  @param target   ...
-   *  @param txt      ...
-   *  @return         ...
    */
   def procInstr(pos: Int, target: String, txt: String): NodeSeq
 
   /** callback method invoked by MarkupParser after parsing comment.
-   *
-   *  @param pos      the position in the source file
-   *  @param comment  ...
-   *  @return         ...
    */
   def comment(pos: Int, comment: String): NodeSeq
 
@@ -124,37 +104,23 @@ abstract class MarkupHandler extends Logged
 
   def attListDecl(name: String, attList: List[AttrDecl]): Unit = ()
 
-  def parameterEntityDecl(name: String, edef: EntityDef) {
-    //log("parameterEntityDecl("+name+","+edef+")");
+  private def someEntityDecl(name: String, edef: EntityDef, f: (String, EntityDef) => EntityDecl): Unit =
     edef match {
-      case _:ExtDef if !isValidating =>
-        ; // ignore (cf REC-xml 4.4.1)
-      case _ =>
-        val y =  ParameterEntityDecl(name, edef)
-        decls = y :: decls
+      case _: ExtDef if !isValidating =>  // ignore (cf REC-xml 4.4.1)
+      case _  =>
+        val y = f(name, edef)
+        decls ::= y
         ent.update(name, y)
-        //log("ent.get(..) = "+ent.get(name))
     }
-  }
 
-  def parsedEntityDecl(name: String, edef: EntityDef): Unit = edef match {
-    case _:ExtDef if !isValidating =>
-      ; // ignore (cf REC-xml 4.8 and 4.4.1)
-    case _ =>
-      val y = ParsedEntityDecl(name, edef)
-      decls = y :: decls
-      ent.update(name, y)
-  }
+  def parameterEntityDecl(name: String, edef: EntityDef): Unit =
+    someEntityDecl(name, edef, ParameterEntityDecl.apply _)
 
-  def unparsedEntityDecl(name: String, extID: ExternalID, notat: String): Unit =
-    {}
+  def parsedEntityDecl(name: String, edef: EntityDef): Unit =
+    someEntityDecl(name, edef, ParsedEntityDecl.apply _)
 
+  def peReference(name: String) { decls ::= PEReference(name) }
+  def unparsedEntityDecl(name: String, extID: ExternalID, notat: String): Unit = ()
   def notationDecl(notat: String, extID: ExternalID): Unit = ()
-
-  def peReference(name: String) { decls = PEReference(name) :: decls }
-
-  /** report a syntax error */
   def reportSyntaxError(pos: Int, str: String): Unit
-
 }
-
