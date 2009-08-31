@@ -57,6 +57,13 @@ abstract class GenJVM extends SubComponent {
     }
   }
 
+  /** Return the suffix of a class name */
+  def moduleSuffix(sym: Symbol) =
+    if (sym.hasFlag(Flags.MODULE) && !sym.isMethod &&
+       !sym.isImplClass && !sym.hasFlag(Flags.JAVA)) "$"
+    else "";
+
+
   var pickledBytes = 0 // statistics
 
   /**
@@ -497,7 +504,7 @@ abstract class GenJVM extends SubComponent {
         for (innerSym <- innerClasses.toList.sort(_.name.length < _.name.length)) {
           var outerName = javaName(innerSym.rawowner)
           // remove the trailing '$'
-          if (outerName.endsWith("$"))
+          if (outerName.endsWith("$") && isTopLevelModule(clasz.symbol))
             outerName = outerName.substring(0, outerName.length - 1)
           var flags = javaFlags(innerSym)
           if (innerSym.rawowner.hasFlag(Flags.MODULE))
@@ -1631,9 +1638,7 @@ abstract class GenJVM extends SubComponent {
      * </p>
      */
     def javaName(sym: Symbol): String = {
-      val suffix = if (sym.hasFlag(Flags.MODULE) && !sym.isMethod &&
-                        !sym.isImplClass &&
-                        !sym.hasFlag(Flags.JAVA)) "$" else "";
+      val suffix = moduleSuffix(sym)
 
       if (sym == definitions.NothingClass)
         return javaName(definitions.RuntimeNothingClass)

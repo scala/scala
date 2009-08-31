@@ -189,7 +189,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
               }
             }
           def classSig: String =
-            "L"+atPhase(currentRun.icodePhase)(sym.fullNameString).replace('.', '/')
+            "L"+atPhase(currentRun.icodePhase)(sym.fullNameString + global.genJVM.moduleSuffix(sym)).replace('.', '/')
           def classSigSuffix: String =
             "."+sym.name
           if (sym == ArrayClass)
