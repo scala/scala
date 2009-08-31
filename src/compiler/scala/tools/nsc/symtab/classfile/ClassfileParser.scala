@@ -424,7 +424,7 @@ abstract class ClassfileParser {
     val staticInfo = ClassInfoType(List(), staticDefs, statics)
 
     if (!isScala && !isScalaRaw) {
-      //println("Entering inner classes for " + clazz)
+//      println("Entering inner classes for " + clazz)
       enterOwnInnerClasses
     }
     val curbp = in.bp
@@ -991,21 +991,28 @@ abstract class ClassfileParser {
      */
     def classSymbol(externalName: Name): Symbol = {
       /** Return the symbol of `innerName', having the given `externalName'. */
-      def innerSymbol(externalName: Name, innerName: Name, static: Boolean): Symbol =
+      def innerSymbol(externalName: Name, innerName: Name, static: Boolean): Symbol = {
+        def getMember(sym: Symbol, name: Name): Symbol =
+          if (static)
+            if (sym == clazz) staticDefs.lookup(name)
+            else sym.linkedModuleOfClass.info.member(name)
+          else
+            if (sym == clazz) instanceDefs.lookup(name)
+            else sym.info.member(name)
+
         innerClasses.get(externalName) match {
           case Some(entry) =>
             val sym = classSymbol(entry.outerName)
-            if (static) {
-              val s = atPhase(currentRun.typerPhase)(sym.linkedModuleOfClass.info.member(innerName.toTypeName))
-              assert(s ne NoSymbol, sym + "." + innerName + " linkedModule: " + sym.linkedModuleOfClass + sym.linkedModuleOfClass.info.members)
-              s
-            } else
-              sym.info.member(innerName.toTypeName)
+            val s = atPhase(currentRun.typerPhase)(getMember(sym, innerName.toTypeName))
+            assert(s ne NoSymbol, sym + "." + innerName + " linkedModule: " + sym.linkedModuleOfClass + sym.linkedModuleOfClass.info.members)
+            s
+
           case None =>
             val cls = classNameToSymbol(externalName)
             cls
             //if (static) cls.linkedClassOfModule else cls
         }
+      }
 
       get(externalName) match {
         case Some(entry) =>
@@ -1022,16 +1029,6 @@ abstract class ClassfileParser {
       alias.initialize
       val tparams1 = cloneSymbols(alias.typeParams)
       sym.setInfo(polyType(tparams1, alias.tpe.substSym(alias.typeParams, tparams1)))
-    }
-  }
-
-  /** A lazy type that represents a Java inner class. */
-  class LazyInnerClassType(innerEntry: InnerClassEntry) extends LazyType {
-    override def complete(sym: Symbol) {
-//      println("completing " + sym)
-      val clazz = innerClasses.classSymbol(innerEntry.externalName)
-//      println("found symbol: " + clazz)
-      sym.setInfo(clazz.info)
     }
   }
 
