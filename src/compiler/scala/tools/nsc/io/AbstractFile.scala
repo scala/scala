@@ -10,6 +10,7 @@ package io
 
 import java.io.{File, FileOutputStream, IOException, InputStream, OutputStream}
 import java.net.URL
+import scala.io.{ File => SFile }
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -17,8 +18,8 @@ import scala.collection.mutable.ArrayBuffer
  * @author Philippe Altherr
  * @version 1.0, 23/03/2004
  */
-object AbstractFile {
-
+object AbstractFile
+{
   /** Returns "getFile(new File(path))". */
   def getFile(path: String): AbstractFile = getFile(new File(path))
 
@@ -46,7 +47,7 @@ object AbstractFile {
     if (file.isFile() && file.exists()) {
       val path = file.getPath()
       if (path.endsWith(".jar") || path.endsWith(".zip"))
-        return ZipArchive.fromFile(file);
+        return ZipArchive fromFile SFile(file)
     }
     null
   }
