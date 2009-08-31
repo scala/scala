@@ -69,7 +69,7 @@ class CompileSocket {
   }
 
   /* A directory holding port identification files */
-  val portsDir = (tmpDir / dirName).createDirectory
+  val portsDir = (tmpDir / dirName).createDirectory()
 
   /** Maximum number of polls for an available port */
   private val MaxAttempts = 100
