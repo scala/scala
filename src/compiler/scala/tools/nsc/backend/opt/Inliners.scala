@@ -531,7 +531,7 @@ abstract class Inliners extends SubComponent {
 
   /** Is the given class a subtype of a function trait? */
   def isClosureClass(cls: Symbol): Boolean = {
-    val res = cls.isFinal && cls.hasFlag(Flags.SYNTHETIC) &&
+    val res = cls.isFinal && cls.hasFlag(Flags.SYNTHETIC) && !cls.isModuleClass &&
         cls.tpe.parents.exists { t =>
           val TypeRef(_, sym, _) = t;
           definitions.FunctionClass exists sym.==
