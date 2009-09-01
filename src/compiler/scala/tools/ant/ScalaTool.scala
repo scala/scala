@@ -65,7 +65,7 @@ class ScalaTool extends MatchingTask {
   /** An (optional) path to all JARs that this script depend on. Paths must be
     * relative to the scala home directory. If not set, all JAR archives and
     * folders in "lib/" are automatically added. */
-  private var classpath: Option[Path] = None
+  private var classpath: List[String] = Nil
 
   /** Comma-separated Java system properties to pass to the JRE. Properties
     * are formated as name=value. Properties scala.home, scala.tool.name and
@@ -104,18 +104,31 @@ class ScalaTool extends MatchingTask {
     }
   }
 
-  /** Sets the classpath with which to run the tool. */
-  def setClassPath(input: Path): Unit =
-    if (classpath.isEmpty)
-      classpath = Some(input)
-    else
-      classpath.get.append(input)
-  def createClassPath: Path = {
-    if (classpath.isEmpty) classpath = Some(emptyPath)
-    classpath.get.createPath()
+  /**
+   * Sets the classpath with which to run the tool.
+   * Note that this mechanism of setting the classpath is generally preferred
+   * for general purpose scripts, as this does not assume all elements are
+   * relative to the ant basedir.  Additionally, the platform specific demarcation
+   * of any script variables (e.g. ${SCALA_HOME} or %SCALA_HOME%) can be specified
+   * in a platform independant way (e.g. @SCALA_HOME@) and automatically translated
+   * for you.
+   */
+  def setClassPath(input: String): Unit = {
+    classpath = classpath ::: input.split(",").toList
   }
-  def setClassPathRef(input: Reference): Unit =
-    createClassPath.setRefid(input)
+
+  /**
+   * Adds an Ant Path reference to the tool's classpath.
+   * Note that all entries in the path must exist either relative to the project
+   * basedir or with an absolute path to a file in the filesystem.  As a result,
+   * this is not a mechanism for setting the classpath for more general use scripts,
+   * such as those distributed within sbaz distribution packages.
+   */
+  def setClassPathRef(input: Reference): Unit = {
+    val tmpPath = emptyPath
+    tmpPath.setRefid(input)
+    classpath = classpath ::: tmpPath.list.toList
+  }
 
   /** Sets JVM properties that will be set whilst running the tool. */
   def setProperties(input: String) = {
@@ -145,13 +158,12 @@ class ScalaTool extends MatchingTask {
     /** Gets the value of the classpath attribute in a Scala-friendly form.
       * @returns The class path as a list of files. */
     private def getUnixclasspath: String =
-      classpath.getOrElse(emptyPath).list.mkString("", ":", "")
+      transposeVariableMarkup(classpath.mkString("", ":", "").replace('\\', '/'), "${", "}")
 
     /** Gets the value of the classpath attribute in a Scala-friendly form.
       * @returns The class path as a list of files. */
     private def getWinclasspath: String =
-      classpath.getOrElse(emptyPath).list.map(_.replace('/', '\\')).
-                mkString("", ";", "")
+      transposeVariableMarkup(classpath.mkString("", ";", "").replace('/', '\\'), "%", "%")
 
     private def getProperties: String =
       properties.map({
@@ -174,6 +186,29 @@ class ScalaTool extends MatchingTask {
       val stream = clazz.getClassLoader() getResourceAsStream resource
       if (stream == null) Stream.empty
       else Stream continually stream.read() takeWhile (_ != -1) map (_.asInstanceOf[Char])
+    }
+
+    // Converts a variable like @SCALA_HOME@ to ${SCALA_HOME} when pre = "${" and post = "}"
+    private def transposeVariableMarkup(text: String, pre: String, post: String) : String = {
+      val chars = scala.io.Source.fromString(text)
+      val builder = new StringBuilder()
+
+      while (chars.hasNext) {
+        val char = chars.next
+        if (char == '@') {
+          var char = chars.next
+          val token = new StringBuilder()
+          while (chars.hasNext && char != '@') {
+            token.append(char)
+            char = chars.next
+          }
+          if (token.toString == "")
+            builder.append('@')
+          else
+            builder.append(pre + token.toString + post)
+        } else builder.append(char)
+      }
+      builder.toString
     }
 
     private def readAndPatchResource(resource: String, tokens: Map[String, String]): String = {
