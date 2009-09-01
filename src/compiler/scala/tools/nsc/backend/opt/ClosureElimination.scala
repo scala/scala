@@ -195,6 +195,8 @@ abstract class ClosureElimination extends SubComponent {
         CONSTANT(k)
       case Deref(This) =>
         THIS(definitions.ObjectClass)
+      case Boxed(LocalVar(v)) =>
+        LOAD_LOCAL(v)
     }
 
     /** is field 'f' accessible from method 'm'? */

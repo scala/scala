@@ -1002,7 +1002,10 @@ abstract class ClassfileParser {
 
         innerClasses.get(externalName) match {
           case Some(entry) =>
-            val sym = classSymbol(entry.outerName)
+            val outerName =
+              if (entry.outerName.endsWith("$")) entry.outerName.subName(0, entry.outerName.length - 1)
+              else entry.outerName
+            val sym = classSymbol(outerName)
             val s = atPhase(currentRun.typerPhase)(getMember(sym, innerName.toTypeName))
             assert(s ne NoSymbol, sym + "." + innerName + " linkedModule: " + sym.linkedModuleOfClass + sym.linkedModuleOfClass.info.members)
             s
