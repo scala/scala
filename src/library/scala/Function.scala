@@ -11,12 +11,39 @@
 
 package scala
 
+import annotation.experimental
+
 /** A module defining utility methods for higher-order functional programming.
  *
  *  @author  Martin Odersky
  *  @version 1.0, 29/11/2006
  */
-object Function {
+object Function
+{
+  /** Given a starting value, the returned object can be repeatedly
+   *  applied with Function1s and then the result retrieved with apply().
+   *  At each iteration the argument is checked for null before function
+   *  application; if it is ever null, the result will be null.
+   *
+   *  <pre>
+   *    case class Bop(next: Bop)
+   *    val x = Bop(Bop(Bop(null)))
+   *    ?:(x)(_.next)()                         // returns Bop(Bop(null))
+   *    ?:(x)(_.next)(_.next)()                 // returns Bop(null)
+   *    ?:(x)(_.next)(_.next)(_.next)()         // returns null
+   *    ?:(x)(_.next)(_.next)(_.next)(_.next)() // still returns null!
+   *  </pre>
+   *
+   *  @param  x The starting value
+   *  @return   The ?: object, containing apply methods T => U and () => T
+   */
+  @experimental
+  case class ?:[T](x: T) {
+    def apply(): T = x
+    def apply[U >: Null](f: T => U): ?:[U] =
+      if (x == null) ?:[U](null)
+      else ?:[U](f(x))
+  }
 
   /** Given a sequence of functions <code>f<sub>1</sub></code>, ...,
    *  <code>f<sub>n</sub></code>, return the function <code>f<sub>1</sub>
