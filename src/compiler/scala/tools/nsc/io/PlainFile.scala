@@ -77,7 +77,7 @@ class PlainFile(val givenPath: Path) extends AbstractFile {
   }
 
   /** Does this abstract file denote an existing file? */
-  def create: Unit = if (!exists) givenPath.ensureFile()
+  def create: Unit = if (!exists) givenPath.createFile()
 
   /** Delete the underlying file or directory (recursively). */
   def delete: Unit =

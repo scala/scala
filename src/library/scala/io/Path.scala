@@ -138,22 +138,18 @@ class Path private[io] (val jfile: JFile)
 
   // creations
   def create(): Boolean = true
-  def createDirectory(force: Boolean = true): Directory = {
+  def createDirectory(force: Boolean = true, failIfExists: Boolean = false): Directory = {
     val res = if (force) jfile.mkdirs() else jfile.mkdir()
-    if (res) new Directory(jfile)
-    else fail("Failed to create new directory.")
+    if (!res && exists && failIfExists) fail("Directory '%s' already exists." format name)
+    else if (isDirectory) toDirectory
+    else new Directory(jfile)
   }
-  def createFile(): File =
-    if (jfile.createNewFile()) new File(jfile)
-    else fail("Failed to create new file.")
-
-  /** Like createDirectory, but does not fail if it already exists. */
-  def ensureDirectory(force: Boolean = true): Directory =
-    if (this.isDirectory) this.toDirectory else createDirectory(force)
-
-  /** This is temporary while I try to unbreak fsc. */
-  def ensureFile(): File =
-    if (this.isFile) this.toFile else createFile()
+  def createFile(failIfExists: Boolean = false): File = {
+    val res = jfile.createNewFile()
+    if (!res && exists && failIfExists) fail("File '%s' already exists." format name)
+    else if (isFile) toFile
+    else new File(jfile)
+  }
 
   // deletions
   def delete() = jfile.delete()

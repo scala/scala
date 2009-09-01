@@ -223,7 +223,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
    */
   def fileNamed(name: String): AbstractFile = {
     assert(isDirectory)
-    Option(lookupName(name, false)) getOrElse new PlainFile((sfile / name).ensureFile())
+    Option(lookupName(name, false)) getOrElse new PlainFile((sfile / name).createFile())
   }
 
   /**
@@ -232,7 +232,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
    */
   def subdirectoryNamed(name: String): AbstractFile = {
     assert (isDirectory)
-    Option(lookupName(name, true)) getOrElse new PlainFile((sfile / name).ensureDirectory())
+    Option(lookupName(name, true)) getOrElse new PlainFile((sfile / name).createDirectory())
   }
 
   /** Returns the path of this abstract file. */

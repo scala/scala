@@ -59,7 +59,7 @@ class CompileSocket {
   /** A temporary directory to use */
   val tmpDir = {
     val udir  = Option(Properties.userName) getOrElse "shared"
-    val f     = (Path(Properties.tmpDir) / "scala-devel" / udir).ensureDirectory()
+    val f     = (Path(Properties.tmpDir) / "scala-devel" / udir).createDirectory()
 
     if (f.isDirectory && f.canWrite) {
       info("[Temp directory: " + f + "]")
@@ -69,7 +69,7 @@ class CompileSocket {
   }
 
   /* A directory holding port identification files */
-  val portsDir = (tmpDir / dirName).ensureDirectory()
+  val portsDir = (tmpDir / dirName).createDirectory()
 
   /** Maximum number of polls for an available port */
   private val MaxAttempts = 100
