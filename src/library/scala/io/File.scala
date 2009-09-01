@@ -12,7 +12,7 @@ package scala.io
 
 import java.io.{
   FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
-  BufferedInputStream, BufferedOutputStream, File => JFile }
+  BufferedInputStream, BufferedOutputStream, IOException, File => JFile }
 import java.nio.channels.FileChannel
 import collection.Traversable
 
@@ -25,7 +25,14 @@ object File
   // Create a temporary file
   def makeTemp(prefix: String = Path.randomPrefix, suffix: String = null, dir: JFile = null) =
     apply(JFile.createTempFile(prefix, suffix, dir))
+
+  import java.nio.channels.Channel
+  type Closeable = { def close(): Unit }
+  def closeQuietly(target: Closeable) {
+    try target.close() catch { case e: IOException => }
+  }
 }
+import File._
 import Path._
 
 /** An abstraction for files.  For character data, a Codec
@@ -45,7 +52,6 @@ with Streamable.Chars
   override def toDirectory: Directory = new Directory(jfile)
   override def toFile: File = this
 
-  override def create(): Boolean = jfile.createNewFile()
   override def isValid = jfile.isFile() || !jfile.exists()
   override def length = super[Path].length
 
@@ -73,6 +79,39 @@ with Streamable.Chars
     val out = bufferedWriter(append, codec)
     try xs foreach (out write _)
     finally out close
+  }
+
+  def copyFile(destPath: Path, preserveFileDate: Boolean = false) = {
+    val FIFTY_MB = 1024 * 1024 * 50
+    val dest = destPath.toFile
+    if (!isValid) fail("Source %s is not a valid file." format name)
+    if (this.normalize == dest.normalize) fail("Source and destination are the same.")
+    if (!dest.parent.map(_.exists).getOrElse(false)) fail("Destination cannot be created.")
+    if (dest.exists && !dest.canWrite) fail("Destination exists but is not writable.")
+    if (dest.isDirectory) fail("Destination exists but is a directory.")
+
+    lazy val in_s = inputStream()
+    lazy val out_s = dest.outputStream()
+    lazy val in = in_s.getChannel()
+    lazy val out = out_s.getChannel()
+
+    try {
+      val size = in.size()
+      var pos, count = 0L
+      while (pos < size) {
+        count = (size - pos) min FIFTY_MB
+        pos += out.transferFrom(in, pos, count)
+      }
+    }
+    finally List[Closeable](out, out_s, in, in_s) foreach closeQuietly
+
+    if (this.length != dest.length)
+      fail("Failed to completely copy %s to %s".format(name, dest.name))
+
+    if (preserveFileDate)
+      dest.lastModified = this.lastModified
+
+    ()
   }
 
   override def toString() = "File(%s)".format(path)

@@ -125,9 +125,14 @@ class Path private[io] (val jfile: JFile)
   def isDirectory = jfile.isDirectory()
   def isAbsolute = jfile.isAbsolute()
   def isHidden = jfile.isHidden()
+  def isSymlink = parent.isDefined && {
+    val x = parent.get / name
+    x.normalize != x.toAbsolute
+  }
 
   // Information
   def lastModified = jfile.lastModified()
+  def lastModified_=(time: Long) = jfile setLastModified time // should use setXXX function?
   def length = jfile.length()
 
   // Boolean path comparisons
@@ -137,7 +142,6 @@ class Path private[io] (val jfile: JFile)
   def isFresher(other: Path) = lastModified > other.lastModified
 
   // creations
-  def create(): Boolean = true
   def createDirectory(force: Boolean = true, failIfExists: Boolean = false): Directory = {
     val res = if (force) jfile.mkdirs() else jfile.mkdir()
     if (!res && exists && failIfExists) fail("Directory '%s' already exists." format name)

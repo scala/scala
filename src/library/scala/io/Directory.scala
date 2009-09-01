@@ -33,7 +33,6 @@ class Directory(jfile: JFile) extends Path(jfile)
 {
   override def toDirectory: Directory = this
   override def toFile: File = new File(jfile)
-  override def create(): Boolean = jfile.mkdirs()
   override def isValid = jfile.isDirectory() || !jfile.exists()
 
   /** An iterator over the contents of this directory.
