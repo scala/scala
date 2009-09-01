@@ -34,7 +34,7 @@ import util.Random.nextASCIIString
 
 object Path
 {
-  // not sure whether this will be problematic
+  // not certain these won't be problematic, but looks good so far
   implicit def string2path(s: String): Path = apply(s)
   implicit def jfile2path(jfile: JFile): Path = apply(jfile)
 

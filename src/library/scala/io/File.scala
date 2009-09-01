@@ -18,10 +18,9 @@ import collection.Traversable
 
 object File
 {
-  def apply(path: Path)(implicit codec: Codec = null) = {
-    val res = path.toFile
-    if (codec == null) res else res withCodec codec
-  }
+  def apply(path: Path)(implicit codec: Codec = null) =
+    if (codec != null) new File(path.jfile)(codec)
+    else path.toFile
 
   // Create a temporary file
   def makeTemp(prefix: String = Path.randomPrefix, suffix: String = null, dir: JFile = null) =
@@ -40,74 +39,22 @@ import Path._
  */
 class File(jfile: JFile)(implicit val creationCodec: Codec = null)
 extends Path(jfile)
+with Streamable.Chars
 {
-  private def getCodec(): Codec =
-    if (creationCodec == null) Codec.default else creationCodec
-
-  /** For explicitly setting the creation codec if necessary.
-   */
-  def withCodec(codec: Codec) = new File(jfile)(codec)
-
+  def withCodec(codec: Codec): File = new File(jfile)(codec)
   override def toDirectory: Directory = new Directory(jfile)
   override def toFile: File = this
+
   override def create(): Boolean = jfile.createNewFile()
   override def isValid = jfile.isFile() || !jfile.exists()
-
-  /** Convenience functions for iterating over the bytes in a file.
-   */
-  def bytesAsInts(): Iterator[Int] = {
-    val in = bufferedInput()
-    Iterator continually in.read() takeWhile (_ != -1)
-  }
-  /** This one is intended as the fast way.
-   */
-  def toByteArray(): Array[Byte] = {
-    val arr = new Array[Byte](length.toInt)
-    val len = arr.length
-    lazy val in = bufferedInput()
-    var offset = 0
-
-    try {
-      def loop() {
-        if (offset < len) {
-          val read = in.read(arr, offset, len - offset)
-          if (read >= 0) {
-            offset += read
-            loop()
-          }
-        }
-      }
-      loop()
-
-      if (offset == arr.length) arr
-      else fail("Could not read entire file '%s' (%d of %d bytes)".format(name, offset, len))
-    }
-    finally in.close()
-  }
-  def bytes(): Iterator[Byte] = bytesAsInts() map (_.toByte)
-  def chars(codec: Codec = getCodec()) = (Source fromFile jfile)(codec)
-
-  /** Convenience function for iterating over the lines in the file.
-   */
-  def lines(codec: Codec = getCodec()): Iterator[String] = chars(codec).getLines()
-
-  /** Convenience function to import entire file into a String.
-   */
-  def slurp(codec: Codec = getCodec()) = chars(codec).mkString
+  override def length = super[Path].length
 
   /** Obtains an InputStream. */
   def inputStream() = new FileInputStream(jfile)
-  def bufferedInput() = new BufferedInputStream(inputStream())
 
   /** Obtains a OutputStream. */
   def outputStream(append: Boolean = false) = new FileOutputStream(jfile, append)
   def bufferedOutput(append: Boolean = false) = new BufferedOutputStream(outputStream(append))
-  // def channel(append: Boolean = false) = outputStream(append).getChannel()
-
-  /** Obtains an InputStreamReader wrapped around a FileInputStream.
-   */
-  def reader(codec: Codec = getCodec()) =
-    new InputStreamReader(inputStream, codec.charSet)
 
   /** Obtains an OutputStreamWriter wrapped around a FileOutputStream.
    *  This should behave like a less broken version of java.io.FileWriter,
@@ -115,10 +62,6 @@ extends Path(jfile)
    */
   def writer(append: Boolean = false, codec: Codec = getCodec()) =
     new OutputStreamWriter(outputStream(append), codec.charSet)
-
-  /** Wraps a BufferedReader around the result of reader().
-   */
-  def bufferedReader(codec: Codec = getCodec()) = new BufferedReader(reader(codec))
 
   /** Wraps a BufferedWriter around the result of writer().
    */
