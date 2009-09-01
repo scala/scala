@@ -59,7 +59,7 @@ object AbstractFile
    * @return     ...
    */
   def getURL(url: URL): AbstractFile =
-    Some(url) filterMap { case url: URL if isJarOrZip(url.getPath) => ZipArchive fromURL url } orNull
+    Option(url) filterMap { case url: URL if isJarOrZip(url.getPath) => ZipArchive fromURL url } orNull
 }
 
 /**

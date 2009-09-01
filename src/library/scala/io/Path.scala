@@ -144,13 +144,13 @@ class Path private[io] (val jfile: JFile)
   // creations
   def createDirectory(force: Boolean = true, failIfExists: Boolean = false): Directory = {
     val res = if (force) jfile.mkdirs() else jfile.mkdir()
-    if (!res && exists && failIfExists) fail("Directory '%s' already exists." format name)
+    if (!res && failIfExists && exists) fail("Directory '%s' already exists." format name)
     else if (isDirectory) toDirectory
     else new Directory(jfile)
   }
   def createFile(failIfExists: Boolean = false): File = {
     val res = jfile.createNewFile()
-    if (!res && exists && failIfExists) fail("File '%s' already exists." format name)
+    if (!res && failIfExists && exists) fail("File '%s' already exists." format name)
     else if (isFile) toFile
     else new File(jfile)
   }
