@@ -948,6 +948,9 @@ abstract class GenICode extends SubComponent  {
           ctx1.exitScope
           ctx1
 
+        case Typed(Super(_, _), _) =>
+          genLoad(This(ctx.clazz.symbol), ctx, expectedType)
+
         case Typed(expr, _) =>
           genLoad(expr, ctx, expectedType)
 
