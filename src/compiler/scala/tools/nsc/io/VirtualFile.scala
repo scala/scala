@@ -8,8 +8,7 @@
 package scala.tools.nsc
 package io
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream,
-                File, InputStream, OutputStream}
+import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream, File }
 
 /** This class implements an in-memory file.
  *

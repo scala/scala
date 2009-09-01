@@ -8,13 +8,14 @@
 package scala.tools.nsc
 package io
 
-import scala.io.File
+import scala.io.{ File, Path }
 import java.net.URL
 import java.util.Enumeration
-import java.io.{ File => JFile, IOException, InputStream, BufferedInputStream }
+import java.io.{ File => JFile, IOException, InputStream, BufferedInputStream, ByteArrayInputStream }
 import java.util.zip.{ ZipEntry, ZipFile, ZipInputStream }
 import PartialFunction._
 
+import scala.collection.Traversable
 import scala.collection.mutable.{ Map, HashMap }
 import scala.collection.immutable.{ StringVector => SV }
 import scala.collection.JavaConversions.asIterator
@@ -23,17 +24,9 @@ import scala.collection.JavaConversions.asIterator
  * @author  Philippe Altherr
  * @version 1.0, 23/03/2004
  */
-object ZipArchive {
-
-  //########################################################################
-
-  /**
-   * ...
-   *
-   * @param path ...
-   *  @return     ...
-   */
-  def fromPath(path: String): AbstractFile = fromFile(File(path))
+object ZipArchive
+{
+  def fromPath(path: Path): ZipArchive = fromFile(path.toFile)
 
   /**
    * If the specified file <code>file</code> exists and is a readable
@@ -43,93 +36,116 @@ object ZipArchive {
    * @param file ...
    * @return     ...
    */
-  def fromFile(file: File): AbstractFile =
-    try { new ZipArchive(file, new ZipFile(file.jfile)) }
+  def fromFile(file: File): ZipArchive =
+    try new ZipArchive(file, new ZipFile(file.jfile))
     catch { case _: IOException => null }
 
   /**
    * Returns an abstract directory backed by the specified archive.
-   *
-   * @param archive ...
-   * @return        ...
    */
-  def fromArchive(archive: ZipFile): AbstractFile =
+  def fromArchive(archive: ZipFile): ZipArchive =
     new ZipArchive(File(archive.getName()), archive)
 
   /**
    * Returns an abstract directory backed by the specified archive.
-   *
-   * @param url ...
-   * @return    ...
    */
-  def fromURL(url: URL): AbstractFile =
-    new URLZipArchive(url)
+  def fromURL(url: URL): AbstractFile = new URLZipArchive(url)
+
+  private[io] class ZipEntryTraversableClass(in: InputStream) extends Traversable[ZipEntry] {
+    val zis = new ZipInputStream(in)
+
+    def foreach[U](f: ZipEntry => U) = {
+      def loop(x: ZipEntry): Unit = if (x != null) {
+        f(x)
+        zis.closeEntry()
+        loop(zis.getNextEntry())
+      }
+      loop(zis.getNextEntry())
+    }
+  }
 }
 
-private[io] trait ZipFileCommon
+/** This abstraction aims to factor out the common code between
+ *  ZipArchive (backed by a zip file) and URLZipArchive (backed
+ *  by an InputStream.)
+ */
+private[io] trait ZipContainer extends AbstractFile
 {
-  import SV.{ splitAt }
+  /** Abstract types */
+  type SourceType             // InputStream or AbstractFile
+  type CreationType           // InputStream or ZipFile
+  type ZipTrav = Traversable[ZipEntry] { def zis: ZipInputStream }
 
-  protected def splitPath(path: String): (String, String) = {
-    (path lastIndexOf '/') match {
-      case -1   => ("/", path)
-      case idx  => splitAt(path, idx + 1)
+  /** Abstract values */
+  protected val creationSource: CreationType
+  protected val root: DirEntryInterface
+  protected def DirEntryConstructor: (AbstractFile, String, String) => DirEntryInterface
+  protected def FileEntryConstructor: (SourceType, String, String, ZipEntry) => FileEntryInterface
+  protected def ZipTravConstructor: CreationType => ZipTrav
+
+  protected[io] trait EntryInterface extends VirtualFile {
+    def name: String
+    def path: String
+  }
+
+  protected[io] trait DirEntryInterface extends EntryInterface {
+    def source: SourceType
+    val entries: Map[String, EntryInterface] = new HashMap()
+    var entry: ZipEntry = _
+
+    override def input = throw new Error("cannot read directories")
+    override def lastModified: Long =
+      if (entry ne null) entry.getTime() else super.lastModified
+
+    override def isDirectory = true
+    override def iterator: Iterator[AbstractFile] = entries.valuesIterator
+    override def lookupName(name: String, directory: Boolean): AbstractFile = {
+      def slashName = if (directory) name + "/" else name
+      entries.getOrElse(slashName, null)
     }
   }
 
-  protected def byteInputStream(in: InputStream): InputStream = {
-    val buf = new BufferedInputStream(in)
-    val bytes = Iterator continually in.read().toByte takeWhile (_ != -1)
-    new java.io.ByteArrayInputStream(bytes.toSequence.toArray)
+  protected[io] trait FileEntryInterface extends EntryInterface {
+    def entry: ZipEntry
+
+    override def lastModified: Long = entry.getTime()
+    override def sizeOption = Some(entry.getSize().toInt)
   }
 
-  protected def zipEntryIterator(zis: ZipInputStream): Iterator[ZipEntry] = {
-    Iterator continually zis.getNextEntry() takeWhile (_ != null)
-  }
-}
+  class ZipRootCreator(f: ZipRootCreator => SourceType) {
+    val root = DirEntryConstructor(ZipContainer.this, "<root>", "/")
 
-/**
- * This class implements an abstract directory backed by a zip
- * archive. We let the encoding be <code>null</code>, because we behave like
- * a directory.
- *
- * @author  Philippe Altherr
- * @version 1.0, 23/03/2004
- */
-final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file) with ZipFileCommon
-{
-  assert(archive ne null)
+    // Map from paths to DirEntries
+    val dirs = HashMap[String, DirEntryInterface]("/" -> root)
+    val traverser = ZipTravConstructor(creationSource)
+    private[this] var _parent: DirEntryInterface = _
+    def parent = _parent
 
-  /** The root directory  */
-  private lazy val root = {
-    val root = new DirEntry(this, "<root>", "/")
-
-    // A path to DirEntry map
-    val dirs: Map[String, DirEntry] = new HashMap()
-    dirs("/") = root
-    val entries = asIterator(archive.entries())
-
-    entries foreach { case entry: ZipEntry =>
+    def addEntry(entry: ZipEntry) {
       val path = entry.getName
       if (entry.isDirectory) {
-        val dir: DirEntry = getDir(dirs, path)
+        val dir: DirEntryInterface = getDir(dirs, path)
         if (dir.entry == null) dir.entry = entry
       }
       else {
         val (home, name) = splitPath(path)
-        val parent: DirEntry = getDir(dirs, home)
-        parent.entries.update(name, new FileEntry(parent, name, path, entry))
+        _parent = getDir(dirs, home)
+        _parent.entries(name) = FileEntryConstructor(f(this), name, path, entry)
       }
     }
 
-    root
+    def apply() = {
+      traverser foreach addEntry
+      root
+    }
   }
 
-  /** Returns true. */
-  override def isDirectory = true
-
-  /** Returns all abstract subfiles of this abstract directory. */
-  override def iterator: Iterator[AbstractFile] = root.iterator
+  protected def splitPath(path: String): (String, String) = {
+    (path lastIndexOf '/') match {
+      case -1   => ("/", path)
+      case idx  => SV.splitAt(path, idx + 1)
+    }
+  }
 
   /**
    * Returns the abstract file in this abstract directory with the
@@ -146,34 +162,55 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
   override def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile =
     throw new UnsupportedOperationException()
 
+  /** Returns all abstract subfiles of this abstract directory. */
+  override def iterator: Iterator[AbstractFile] = root.iterator
+
   /**
-   * Lookups the specified table for a DirEntry with the specified
-   * path. If successful, returns the found DirEntry. Otherwise
-   * creates a new DirEntry, enters it into the table and in the
-   * table of its parent ZipDir and returns it.
+   * Looks up the path in the given map and returns if found.
+   * If not present, creates a new DirEntry, adds to both given
+   * map and parent.entries, and returns it.
    */
-  private def getDir(dirs: Map[String, DirEntry], path: String): DirEntry =
-    (dirs get path) getOrElse {
-      val (home, name) = splitPath(SV.dropRight(path, 1))
-      val parent: DirEntry = getDir(dirs, home)
-      val dir = new DirEntry(parent, name, path)
-      parent.entries.update(name + SV.last(path), dir)
-      dirs.update(path, dir)
+  protected def getDir(dirs: Map[String, DirEntryInterface], path: String): DirEntryInterface =
+    dirs.getOrElseUpdate(path, {
+      val (home, name) = splitPath(SV init path)
+      val parent = getDir(dirs, home)
+      val dir = DirEntryConstructor(parent, name, path)
+      parent.entries(name + path.last) = dir
       dir
-    }
+    })
 
-  //########################################################################
-  // Private Class - Entry
+  override def isDirectory = true
+}
 
-  /** Superclass of archive entries */
+/**
+ * This class implements an abstract directory backed by a zip
+ * archive. We let the encoding be <code>null</code>, because we behave like
+ * a directory.
+ *
+ * @author  Philippe Altherr
+ * @version 1.0, 23/03/2004
+ */
+final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file) with ZipContainer
+{
+  self =>
+
+  type SourceType = AbstractFile
+  type CreationType = ZipFile
+
+  protected val creationSource        = archive
+  protected lazy val root             = new ZipRootCreator(_.parent)()
+  protected def DirEntryConstructor   = new DirEntry(_, _, _)
+  protected def FileEntryConstructor  = new FileEntry(_, _, _, _)
+  protected def ZipTravConstructor    = zipTraversableFromZipFile _
+
   abstract class Entry(
     override val container: AbstractFile,
     name: String,
     path: String
   ) extends VirtualFile(name, path)
   {
-    final override def path = "%s(%s)".format(ZipArchive.this, pathInArchive)
-    final def getArchive = ZipArchive.this.archive
+    final override def path = "%s(%s)".format(self, pathInArchive)
+    final def getArchive = self.archive
     def pathInArchive = super.path
 
     override def hashCode = super.hashCode + container.hashCode
@@ -183,46 +220,32 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
       })
   }
 
-  //########################################################################
-  // Private Class - DirEntry
-
-  /** A directory archive entry */
-  private final class DirEntry(
+  final class DirEntry(
     container: AbstractFile,
     name: String,
     path: String
-  ) extends Entry(container, name, path)
+  ) extends Entry(container, name, path) with DirEntryInterface
   {
-    val entries: Map[String, Entry] = new HashMap()
-    var entry: ZipEntry = _
-
-    override def isDirectory = true
-    override def input = throw new Error("cannot read directories")
-
-    override def lastModified: Long =
-      if (entry ne null) entry.getTime() else super.lastModified
-
-    override def iterator: Iterator[AbstractFile] = entries.valuesIterator
-
-    override def lookupName(name: String, directory: Boolean): AbstractFile = {
-      def slashName = if (directory) name + "/" else name
-      entries.getOrElse(slashName, null)
-    }
+    def source = container
   }
 
-  /** A regular file archive entry */
   final class FileEntry(
     container: AbstractFile,
     name: String,
     path: String,
     val entry: ZipEntry
-  ) extends Entry(container, name, path)
+  ) extends Entry(container, name, path) with FileEntryInterface
   {
-    def archive = ZipArchive.this.archive
-    override def lastModified: Long = entry.getTime()
-    override def input = archive.getInputStream(entry)
-    override def sizeOption = Some(entry.getSize().toInt)
+    def archive = self.archive
+    override def input = archive getInputStream entry
   }
+
+  private def zipTraversableFromZipFile(z: ZipFile): ZipTrav =
+    new Traversable[ZipEntry] {
+      def zis: ZipInputStream = null  // not valid for this type
+      val itStream = asIterator(z.entries()).toStream
+      def foreach[U](f: ZipEntry => U) = itStream foreach f
+    }
 }
 
 /**
@@ -232,112 +255,53 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
  * @author  Stephane Micheloud
  * @version 1.0, 29/05/2007
  */
-final class URLZipArchive(url: URL) extends AbstractFile with ZipFileCommon {
-  assert(url ne null)
+final class URLZipArchive(url: URL) extends AbstractFile with ZipContainer
+{
+  type SourceType   = InputStream
+  type CreationType = InputStream
 
-  private lazy val root: DirEntry = {
-    val root = new DirEntry("<root>", "/")
+  protected lazy val creationSource = input
+  protected lazy val root = new ZipRootCreator(x => byteInputStream(x.traverser.zis))()
 
-    // A path to DirEntry map
-    val dirs: Map[String, DirEntry] = new HashMap()
-    dirs("/") = root
-
-    val zis = new ZipInputStream(input)
-    zipEntryIterator(zis) foreach { case entry =>
-      val path = entry.getName()
-      assert(entry.isDirectory() == path.endsWith("/"),
-             this.toString() + " - " + path);
-      if (entry.isDirectory()) {
-        val dir: DirEntry = getDir(dirs, path)
-        assert(dir.entry eq null, this.toString() + " - " + path)
-        dir.entry = entry
-      } else {
-        val index = path.lastIndexOf('/')
-        val name = if (index < 0) path else path.substring(index + 1)
-        val home = if (index < 0) "/"  else path.substring(0, index + 1)
-        val parent: DirEntry = getDir(dirs, home)
-        assert(!parent.entries.contains(path), this.toString() + " - " + path)
-        val in = byteInputStream(zis)
-        parent.entries.update(name, new FileEntry(name, path, entry, in))
-      }
-      zis.closeEntry()
-    }
-    root
-  }
-
-  def container = throw new Error("unsupported")
+  protected def DirEntryConstructor   = (_, name, path) => new DirEntry(name, path)
+  protected def FileEntryConstructor  = new FileEntry(_, _, _, _)
+  protected def ZipTravConstructor    = new ZipArchive.ZipEntryTraversableClass(_)
 
   def name: String = url.getFile()
   def path: String = url.getPath()
-  def file: JFile = null
+  def input: InputStream = url.openStream()
   def absolute: AbstractFile = this
-  def isDirectory: Boolean = true
-
   def lastModified: Long =
     try url.openConnection().getLastModified()
     catch { case _: IOException => 0 }
 
+  /** Methods we don't support but have to implement because of the design */
+  def file: JFile = null
   def create: Unit = throw new UnsupportedOperationException
   def delete: Unit = throw new UnsupportedOperationException
-
-  def input: InputStream = url.openStream()
   def output = throw new Error("unsupported")
+  def container = throw new Error("unsupported")
 
-  override def iterator: Iterator[AbstractFile] = root.iterator
-
-  override def lookupName(name: String, directory: Boolean): AbstractFile =
-    root.lookupName(name, directory)
-
-  /** Returns an abstract file with the given name. It does not
-   *  check that it exists.
-   */
-  def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile =
-    throw new UnsupportedOperationException()
-
-  private def getDir(dirs: Map[String, DirEntry], path: String): DirEntry =
-    dirs.get(path) match {
-      case Some(dir) => dir
-      case None =>
-        val index = path.lastIndexOf('/', path.length() - 2)
-        val name = if (index < 0) path else path.substring(index + 1)
-        val home = if (index < 0) "/"  else path.substring(0, index + 1)
-        val parent: DirEntry = getDir(dirs, home)
-        val dir = new DirEntry(name.substring(0, name.length() - 1), path)
-        parent.entries.update(name, dir)
-        dirs.update(path, dir)
-        dir
-    }
-
-  /** Superclass of archive entries */
   abstract class Entry(name: String, path: String) extends VirtualFile(name, path) {
     final override def path = "%s(%s)".format(URLZipArchive.this, super.path)
   }
-
-  /** A directory archive entry */
-  private final class DirEntry(name: String, path: String) extends Entry(name, path) {
-    val entries: Map[String, Entry] = new HashMap()
-    var entry: ZipEntry = _
-
-    override def isDirectory = true
-    override def input = throw new Error("cannot read directories")
-
-    override def lastModified: Long =
-      if (entry ne null) entry.getTime() else super.lastModified
-
-    override def iterator: Iterator[AbstractFile] = entries.valuesIterator
-
-    override def lookupName(name: String, directory: Boolean): AbstractFile =
-      entries.get(if (directory) name + "/" else name) match {
-        case Some(dir) => dir
-        case None => null
-      }
+  final class DirEntry(name: String, path: String) extends Entry(name, path) with DirEntryInterface {
+    def source = input
+  }
+  final class FileEntry(
+    val in: InputStream,
+    name: String,
+    path: String,
+    val entry: ZipEntry
+  ) extends Entry(name, path) with FileEntryInterface
+  {
+    override def input = in
   }
 
-  final class FileEntry(name: String, path: String,
-                        val entry: ZipEntry, val in: InputStream)
-        extends Entry(name, path) {
-    override def lastModified: Long = entry.getTime()
-    override def input = in
-    override def sizeOption = Some(entry.getSize().toInt)
+  /** Private methods **/
+  private def byteInputStream(in: InputStream): InputStream = {
+    val buf = new BufferedInputStream(in)
+    val bytes = Iterator continually in.read().toByte takeWhile (_ != -1)
+    new ByteArrayInputStream(bytes.toSequence.toArray)
   }
 }
