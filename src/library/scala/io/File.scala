@@ -59,7 +59,31 @@ extends Path(jfile)
     val in = bufferedInput()
     Iterator continually in.read() takeWhile (_ != -1)
   }
+  /** This one is intended as the fast way.
+   */
+  def toByteArray(): Array[Byte] = {
+    val arr = new Array[Byte](length.toInt)
+    val len = arr.length
+    lazy val in = bufferedInput()
+    var offset = 0
 
+    try {
+      def loop() {
+        if (offset < len) {
+          val read = in.read(arr, offset, len - offset)
+          if (read >= 0) {
+            offset += read
+            loop()
+          }
+        }
+      }
+      loop()
+
+      if (offset == arr.length) arr
+      else fail("Could not read entire file '%s' (%d of %d bytes)".format(name, offset, len))
+    }
+    finally in.close()
+  }
   def bytes(): Iterator[Byte] = bytesAsInts() map (_.toByte)
   def chars(codec: Codec = getCodec()) = (Source fromFile jfile)(codec)
 

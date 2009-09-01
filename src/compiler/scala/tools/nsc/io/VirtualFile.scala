@@ -9,14 +9,15 @@ package scala.tools.nsc
 package io
 
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream, File }
+import PartialFunction._
 
 /** This class implements an in-memory file.
  *
  *  @author  Philippe Altherr
  *  @version 1.0, 23/03/2004
  */
-class VirtualFile(val name: String, _path: String) extends AbstractFile {
-
+class VirtualFile(val name: String, _path: String) extends AbstractFile
+{
   assert((name ne null) && (path ne null), name + " - " + path)
 
   //########################################################################
@@ -32,11 +33,7 @@ class VirtualFile(val name: String, _path: String) extends AbstractFile {
   def this(name: String) = this(name, name)
 
   override def hashCode = name.hashCode
-  override def equals(that : Any) = that match {
-  case that : VirtualFile => name == that.name
-  case _ => false
-  }
-
+  override def equals(that: Any) = cond(that) { case x: VirtualFile => x.name == name }
 
   //########################################################################
   // Private data

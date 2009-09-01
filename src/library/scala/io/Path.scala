@@ -54,11 +54,11 @@ object Path
   def roots: List[Path] = JFile.listRoots().toList map Path.apply
 
   def apply(path: String): Path = apply(new JFile(path))
-  def apply(jfile: JFile): Path = {
+  def apply(jfile: JFile): Path =
     if (jfile.isFile) new File(jfile)
     else if (jfile.isDirectory) new Directory(jfile)
     else new Path(jfile)
-  }
+
   private[io] def randomPrefix = nextASCIIString(6)
   private[io] def fail(msg: String) = throw FileOperationException(msg)
 }
