@@ -71,7 +71,11 @@ abstract class GenJVM extends SubComponent {
    *
    */
   class BytecodeGenerator {
+    import JAccessFlags._
+
     val MIN_SWITCH_DENSITY = 0.7
+    val INNER_CLASSES_FLAGS =
+      (ACC_PUBLIC | ACC_PRIVATE | ACC_PROTECTED | ACC_STATIC | ACC_FINAL | ACC_INTERFACE | ACC_ABSTRACT)
     val StringBuilderClass = definitions.getClass2("scala.StringBuilder", "scala.collection.mutable.StringBuilder").fullNameString
     val BoxesRunTime = "scala.runtime.BoxesRunTime"
 
@@ -513,7 +517,7 @@ abstract class GenJVM extends SubComponent {
           innerClassesAttr.addEntry(javaName(innerSym),
               outerName,
               innerSym.rawname.toString,
-              flags);
+              (flags & INNER_CLASSES_FLAGS));
         }
       }
     }
