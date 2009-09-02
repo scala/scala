@@ -339,7 +339,11 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.dstore_1    => code.emit(STORE_LOCAL(code.getLocal(1, DOUBLE)))
         case JVM.dstore_2    => code.emit(STORE_LOCAL(code.getLocal(2, DOUBLE)))
         case JVM.dstore_3    => code.emit(STORE_LOCAL(code.getLocal(3, DOUBLE)))
-        case JVM.astore_0    => code.emit(STORE_LOCAL(code.getLocal(0, OBJECT)))
+        case JVM.astore_0    =>
+          if (method.isStatic)
+            code.emit(STORE_LOCAL(code.getLocal(0, OBJECT)))
+          else
+            code.emit(STORE_THIS(OBJECT))
         case JVM.astore_1    => code.emit(STORE_LOCAL(code.getLocal(1, OBJECT)))
         case JVM.astore_2    => code.emit(STORE_LOCAL(code.getLocal(2, OBJECT)))
         case JVM.astore_3    => code.emit(STORE_LOCAL(code.getLocal(3, OBJECT)))

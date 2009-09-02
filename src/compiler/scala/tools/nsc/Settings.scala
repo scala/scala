@@ -723,7 +723,7 @@ trait ScalacSettings {
   val make          = ChoiceSetting     ("-make", "Specify recompilation detection strategy", List("all", "changed", "immediate", "transitive"), "all") .
                                           withHelpSyntax("-make:<strategy>")
   val nowarnings    = BooleanSetting    ("-nowarn", "Generate no warnings")
-  val XO            = BooleanSetting    ("-optimise", "Generates faster bytecode by applying optimisations to the program")
+  val XO            = BooleanSetting    ("-optimise", "Generates faster bytecode by applying optimisations to the program").withAbbreviation("-optimize")
   val printLate     = BooleanSetting    ("-print", "Print program with all Scala-specific features removed")
   val sourcepath    = StringSetting     ("-sourcepath", "path", "Specify where to find input source files", "")
   val target        = ChoiceSetting     ("-target", "Specify for which target object files should be built", List("jvm-1.5", "msil"), "jvm-1.5")
