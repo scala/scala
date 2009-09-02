@@ -1414,7 +1414,10 @@ trait Types {
       val args = typeArgsOrDummies
       if (args.length == sym.typeParams.length)
         tp.asSeenFrom(pre, sym.owner).instantiateTypeParams(sym.typeParams, args)
-      else { assert(sym.typeParams.isEmpty || (args exists (_.isError)), tp); tp }
+      else {
+        assert(sym.typeParams.isEmpty || (args exists (_.isError)) || isRaw(sym, args)/*#2266/2305*/, tp)
+        tp
+      }
       // @M TODO maybe we shouldn't instantiate type params if isHigherKinded -- probably needed for partial type application though
     }
 
