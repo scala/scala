@@ -494,7 +494,7 @@ abstract class GenMSIL extends SubComponent {
           if (settings.debug.value)
             log("auto-generating cloneable method for " + sym)
           val attrs: Short = (MethodAttributes.Public | MethodAttributes.Virtual |
-                              MethodAttributes.HideBySig)
+                              MethodAttributes.HideBySig).toShort
           val cloneMethod = tBuilder.DefineMethod("Clone", attrs, MOBJECT,
                                                   MsilType.EmptyTypes)
           val clCode = cloneMethod.GetILGenerator()
@@ -2212,8 +2212,8 @@ abstract class GenMSIL extends SubComponent {
 
           // CHECK: verify if getMethodName is better than msilName
           val mirrorMethod = mirrorTypeBuilder.DefineMethod(getMethodName(m),
-                                                            MethodAttributes.Public |
-                                                            MethodAttributes.Static,
+                                                            (MethodAttributes.Public |
+                                                            MethodAttributes.Static).toShort,
                                                             msilType(m.tpe.resultType),
                                                             paramTypes)
 
@@ -2256,7 +2256,7 @@ abstract class GenMSIL extends SubComponent {
       val mFunctionType: MsilType = msilType(functionType)
       val anonfunField: FieldBuilder = delegateCallers.DefineField(
         "$anonfunField$$" + nbDelegateCallers, mFunctionType,
-        FieldAttributes.InitOnly | FieldAttributes.Public | FieldAttributes.Static)
+        (FieldAttributes.InitOnly | FieldAttributes.Public | FieldAttributes.Static).toShort)
       mcode.Emit(OpCodes.Stsfld, anonfunField)
 
 
@@ -2267,7 +2267,7 @@ abstract class GenMSIL extends SubComponent {
       }
       val caller: MethodBuilder = delegateCallers.DefineMethod(
         "$delegateCaller$$" + nbDelegateCallers,
-        MethodAttributes.Final | MethodAttributes.Public | MethodAttributes.Static,
+        (MethodAttributes.Final | MethodAttributes.Public | MethodAttributes.Static).toShort,
         msilType(returnType), (params map (_.tpe)).map(msilType).toArray)
       for (i <- 0 until params.length)
         caller.DefineParameter(i, ParameterAttributes.None, "arg" + i) // FIXME: use name of parameter symbol

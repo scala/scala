@@ -776,6 +776,7 @@ PACKED QUICK BUILD (PACK)
       <pathelement location="${build-pack.dir}/lib/scala-partest.jar"/>
       <pathelement location="${build-pack.dir}/lib/scalap.jar"/>
       <pathelement location="${ant.jar}"/>
+      <pathelement location="${jline.jar}"/>
     </path>
     <taskdef resource="scala/tools/ant/antlib.xml" classpathref="pack.classpath"/>
     <taskdef resource="scala/tools/partest/antlib.xml" classpathref="pack.classpath"/>
