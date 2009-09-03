@@ -508,7 +508,7 @@ abstract class GenJVM extends SubComponent {
         for (innerSym <- innerClasses.toList.sort(_.name.length < _.name.length)) {
           var outerName = javaName(innerSym.rawowner)
           // remove the trailing '$'
-          if (outerName.endsWith("$") && isTopLevelModule(clasz.symbol))
+          if (outerName.endsWith("$") && isTopLevelModule(innerSym.rawowner))
             outerName = outerName.substring(0, outerName.length - 1)
           var flags = javaFlags(innerSym)
           if (innerSym.rawowner.hasFlag(Flags.MODULE))
