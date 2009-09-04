@@ -392,7 +392,15 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
                   if (traversableTpe != NoType && toArray != NoSymbol) {
                     val arguments =
                       if (toArray.tpe.paramTypes.isEmpty) List() // !!! old style toArray
-                      else List(localTyper.getManifestTree(tree.pos, tree.tpe.typeArgs.head, false)) // new style, with manifest
+                      else { // new style, with manifest
+                        val manifestOpt = localTyper.findManifest(tree.tpe.typeArgs.head, false)
+                        if (manifestOpt.tree.isEmpty) {
+                          unit.error(tree.pos, "cannot find class manifest for element type of "+tree.tpe)
+                          List(Literal(Constant(null)))
+                        } else {
+                          List(manifestOpt.tree)
+                        }
+                      }
                     atPhase(phase.next) {
                       localTyper.typed {
                         atPos(pos) {

@@ -12,6 +12,7 @@
 package scala.reflect
 
 import scala.runtime._
+import scala.collection.mutable._
 
 /** <p>
   *   A <code>Manifest[T]</code> is an opaque descriptor for type <code>T</code>.
@@ -45,54 +46,63 @@ object Manifest {
     def erasure = java.lang.Byte.TYPE
     override def toString = "Byte"
     override def newArray(len: Int): BoxedArray[Byte] = new BoxedByteArray(new Array[Byte](len))
+    override def newArrayVector(len: Int): ArrayVector[Byte] = new ByteArrayVector(new Array[Byte](len))
   }
 
   val Short = new (Manifest[Short] @serializable) {
     def erasure = java.lang.Short.TYPE
     override def toString = "Short"
     override def newArray(len: Int): BoxedArray[Short] = new BoxedShortArray(new Array[Short](len))
+    override def newArrayVector(len: Int): ArrayVector[Short] = new ShortArrayVector(new Array[Short](len))
   }
 
   val Char = new (Manifest[Char] @serializable) {
     def erasure = java.lang.Character.TYPE
     override def toString = "Char"
     override def newArray(len: Int): BoxedArray[Char] = new BoxedCharArray(new Array[Char](len))
+    override def newArrayVector(len: Int): ArrayVector[Char] = new CharArrayVector(new Array[Char](len))
   }
 
   val Int = new (Manifest[Int] @serializable) {
     def erasure = java.lang.Integer.TYPE
     override def toString = "Int"
     override def newArray(len: Int): BoxedArray[Int] = new BoxedIntArray(new Array[Int](len))
+    override def newArrayVector(len: Int): ArrayVector[Int] = new IntArrayVector(new Array[Int](len))
   }
 
   val Long = new (Manifest[Long] @serializable) {
     def erasure = java.lang.Long.TYPE
     override def toString = "Long"
     override def newArray(len: Int): BoxedArray[Long] = new BoxedLongArray(new Array[Long](len))
+    override def newArrayVector(len: Int): ArrayVector[Long] = new LongArrayVector(new Array[Long](len))
   }
 
   val Float = new (Manifest[Float] @serializable) {
     def erasure = java.lang.Float.TYPE
     override def toString = "Float"
     override def newArray(len: Int): BoxedArray[Float] = new BoxedFloatArray(new Array[Float](len))
+    override def newArrayVector(len: Int): ArrayVector[Float] = new FloatArrayVector(new Array[Float](len))
   }
 
   val Double = new (Manifest[Double] @serializable) {
     def erasure = java.lang.Double.TYPE
     override def toString = "Double"
     override def newArray(len: Int): BoxedArray[Double] = new BoxedDoubleArray(new Array[Double](len))
+    override def newArrayVector(len: Int): ArrayVector[Double] = new DoubleArrayVector(new Array[Double](len))
   }
 
   val Boolean = new (Manifest[Boolean] @serializable) {
     def erasure = java.lang.Boolean.TYPE
     override def toString = "Boolean"
     override def newArray(len: Int): BoxedArray[Boolean] = new BoxedBooleanArray(new Array[Boolean](len))
+    override def newArrayVector(len: Int): ArrayVector[Boolean] = new BooleanArrayVector(new Array[Boolean](len))
   }
 
   val Unit = new (Manifest[Unit] @serializable) {
     def erasure = java.lang.Void.TYPE
     override def toString = "Unit"
     override def newArray(len: Int): BoxedArray[Unit] = new BoxedUnitArray(new Array[Unit](len))
+    override def newArrayVector(len: Int): ArrayVector[Unit] = new UnitArrayVector(new Array[Unit](len))
   }
 
   val Any: Manifest[Any] = new ClassTypeManifest[Any](None, classOf[java.lang.Object], List()) {

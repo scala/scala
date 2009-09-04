@@ -12,7 +12,7 @@ package scala.collection.generic
 import scala.collection._
 import annotation.unchecked.uncheckedVariance
 
-import util.control.Breaks._
+import scala.util.control.Breaks._
 // import immutable.Stream // !!!
 
 /** <p>

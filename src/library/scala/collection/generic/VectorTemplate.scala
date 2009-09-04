@@ -136,7 +136,7 @@ trait VectorTemplate[+A, +This <: VectorTemplate[A, This] with Vector[A]] extend
   }
 
   override def head: A = if (isEmpty) super.head else this(0)
-  override def tail: This = slice(1, length)
+  override def tail: This = if (isEmpty) super.tail else slice(1, length)
   override def last: A = if (length > 0) this(length - 1) else super.last
   override def init: This = if (length > 0) slice(0, length - 1) else super.init
   override def take(n: Int): This = slice(0, n)

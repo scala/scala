@@ -34,8 +34,6 @@ trait SequenceTemplate[+A, +This <: SequenceTemplate[A, This] with Sequence[A]] 
   import Traversable.breaks._
 
   /** Returns the length of the sequence.
-   *
-   *  @return the sequence length.
    */
   def length: Int
 
@@ -262,7 +260,7 @@ trait SequenceTemplate[+A, +This <: SequenceTemplate[A, This] with Sequence[A]] 
 
   def indexOfSeq[B >: A](that: Sequence[B], fromIndex: Int): Int =
     if (thisCollection.hasDefiniteSize && that.hasDefiniteSize)
-      indexOf_KMP(thisCollection, 0, length, that, 0, that.length, fromIndex)
+      KMP.indexOf(thisCollection, 0, length, that, 0, that.length, fromIndex)
     else {
       var i = fromIndex
       var s: Sequence[A] = thisCollection drop i
@@ -285,7 +283,7 @@ trait SequenceTemplate[+A, +This <: SequenceTemplate[A, This] with Sequence[A]] 
   // since there's no way to find the last index in an infinite sequence,
   // we just document it may not terminate and assume it will.
   def lastIndexOfSeq[B >: A](that: Sequence[B], fromIndex: Int): Int =
-    lastIndexOf_KMP(thisCollection, 0, length, that, 0, that.length, fromIndex)
+    KMP.lastIndexOf(thisCollection, 0, length, that, 0, that.length, fromIndex)
 
   /** Tests if the given value <code>elem</code> is a member of this
    *  sequence.
@@ -403,7 +401,7 @@ trait SequenceTemplate[+A, +This <: SequenceTemplate[A, This] with Sequence[A]] 
     val (prefix, rest) = this.splitAt(from)
     b ++= prefix
     b ++= patch
-    b ++= rest drop replaced
+    b ++= rest/*.view*/ drop replaced // !!! todo: make this a view
     b.result
   }
 
@@ -412,6 +410,7 @@ trait SequenceTemplate[+A, +This <: SequenceTemplate[A, This] with Sequence[A]] 
    */
   def padTo[B >: A, That](len: Int, elem: B)(implicit bf: BuilderFactory[B, That, This]): That = {
     val b = bf(thisCollection)
+    b.sizeHint(length max len)
     var diff = len - length
     b ++= thisCollection
     while (diff > 0) {
@@ -428,6 +427,8 @@ trait SequenceTemplate[+A, +This <: SequenceTemplate[A, This] with Sequence[A]] 
    */
   override def toSequence: Sequence[A] = thisCollection
 
+  /** The range of all indices of this sequence.
+   */
   def indices: Range = 0 until length
 
   override def view = new SequenceView[A, This] {
@@ -438,77 +439,6 @@ trait SequenceTemplate[+A, +This <: SequenceTemplate[A, This] with Sequence[A]] 
   }
 
   override def view(from: Int, until: Int) = view.slice(from, until)
-
-  // KMP implementation by paulp, based on the undoubtedly reliable wikipedia entry
-  private def KMP[B](S: Seq[B], W: Seq[B]): Option[Int] = {
-    // trivial cases
-    if (W.isEmpty) return Some(0)
-    else if (W drop 1 isEmpty) return (S indexOf W(0)) match {
-      case -1 => None
-      case x  => Some(x)
-    }
-
-    val T: Array[Int] = {
-      val arr = new Array[Int](W.length)
-      var pos = 2
-      var cnd = 0
-      arr(0) = -1
-      arr(1) = 0
-      while (pos < W.length) {
-        if (W(pos - 1) == W(cnd)) {
-          arr(pos) = cnd + 1
-          pos += 1
-          cnd += 1
-        }
-        else if (cnd > 0) {
-          cnd = arr(cnd)
-        }
-        else {
-          arr(pos) = 0
-          pos += 1
-        }
-      }
-      arr
-    }
-
-    var m, i = 0
-    def mi = m + i
-
-    while (mi < S.length) {
-      if (W(i) == S(mi)) {
-        i += 1
-        if (i == W.length)
-          return Some(m)
-      }
-      else {
-        m = mi - T(i)
-        if (i > 0)
-          i = T(i)
-      }
-    }
-    None
-  }
-  private def indexOf_KMP[B](
-    source: Seq[B], sourceOffset: Int, sourceCount: Int,
-    target: Seq[B], targetOffset: Int, targetCount: Int,
-    fromIndex: Int): Int =
-      KMP(source.slice(sourceOffset, sourceCount) drop fromIndex, target.slice(targetOffset, targetCount)) match {
-        case None     => -1
-        case Some(x)  => x + fromIndex
-      }
-
-  private def lastIndexOf_KMP[B](
-    source: Seq[B], sourceOffset: Int, sourceCount: Int,
-    target: Seq[B], targetOffset: Int, targetCount: Int,
-    fromIndex: Int): Int = {
-      val src = (source.slice(sourceOffset, sourceCount) take fromIndex).reverse
-      val tgt = target.slice(targetOffset, targetCount).reverse
-
-      KMP(src, tgt) match {
-        case None     => -1
-        case Some(x)  => (src.length - tgt.length - x) + sourceOffset
-      }
-    }
 
   override def equals(that: Any): Boolean = that match {
     case that: Sequence[_]  => this sameElements that

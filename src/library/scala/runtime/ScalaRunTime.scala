@@ -12,12 +12,14 @@
 package scala.runtime
 
 import scala.reflect.ClassManifest
+import scala.collection.Sequence
+import scala.collection.mutable._
 
 /* The object <code>ScalaRunTime</code> provides ...
  */
 object ScalaRunTime {
 
-  def isArray(x: AnyRef): Boolean = (x != null && x.getClass.isArray) || (x != null && x.isInstanceOf[BoxedArray[_]])
+  def isArray(x: AnyRef): Boolean = x != null && (x.getClass.isArray || x.isInstanceOf[BoxedArray[_]])
   def isValueClass(clazz: Class[_]) = clazz.isPrimitive()
 
   // todo: [for Gilles] replace with boxArray
@@ -26,6 +28,28 @@ object ScalaRunTime {
     var i = 0
     for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
+  }
+
+  def toArray[T](xs: scala.collection.Sequence[T]) = {
+    val arr = new Array[AnyRef](xs.length)
+    var i = 0
+    for (x <- xs) arr(i) = x.asInstanceOf[AnyRef]
+    arr
+  }
+
+  /** Convert arrays to sequences, leave sequences as they are */
+  def toSequence[T](xs: AnyRef): Sequence[T] = xs match {
+    case ts: Sequence[T] => ts.asInstanceOf[Sequence[T]]
+    case x: Array[AnyRef] => new ObjectArrayVector(x, ClassManifest.classType(x.getClass.getComponentType))
+    case x: Array[Int] => new IntArrayVector(x).asInstanceOf[Array[T]]
+    case x: Array[Double] => new DoubleArrayVector(x).asInstanceOf[Array[T]]
+    case x: Array[Long] => new LongArrayVector(x).asInstanceOf[Array[T]]
+    case x: Array[Float] => new FloatArrayVector(x).asInstanceOf[Array[T]]
+    case x: Array[Char] => new CharArrayVector(x).asInstanceOf[Array[T]]
+    case x: Array[Byte] => new ByteArrayVector(x).asInstanceOf[Array[T]]
+    case x: Array[Short] => new ShortArrayVector(x).asInstanceOf[Array[T]]
+    case x: Array[Boolean] => new BooleanArrayVector(x).asInstanceOf[Array[T]]
+    case null => null
   }
 
   def checkInitialized[T <: AnyRef](x: T): T =
@@ -118,6 +142,14 @@ object ScalaRunTime {
 
   def arrayValue[A](x: BoxedArray[A], elemClass: Class[_]): AnyRef =
     if (x eq null) null else x.unbox(elemClass)
+
+  /** Temporary method to go to new array representation
+   *  !!! can be reomved once bootstrap is complete !!!
+   */
+  def unboxedArray[A](x: AnyRef): AnyRef = x match {
+    case ba: BoxedArray[_] => ba.value
+    case _ => x
+  }
 
   def boxArray(value: AnyRef): BoxedArray[_] = value match {
     case x: Array[AnyRef] => new BoxedObjectArray(x, ClassManifest.classType(x.getClass.getComponentType))

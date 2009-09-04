@@ -15,7 +15,7 @@ import scala.collection._
 import mutable.ListBuffer
 // import immutable.{List, Nil, ::}
 import generic._
-import util.control.Breaks._
+import scala.util.control.Breaks._
 
 /** Class <code>Linear[A]</code> represents linear sequences of elements.
  *  For such sequences `isEmpty`, `head` and `tail` are guaranteed to be

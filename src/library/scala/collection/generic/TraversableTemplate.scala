@@ -135,38 +135,6 @@ self =>
     result
   }
 
-  /** Returns the sum of all elements with respect to the numeric operations in `num` */
-  def sum[B >: A](implicit num: Numeric[B]): B = {
-    var acc = num.zero
-    for (x <- self) acc = num.plus(acc, x)
-    acc
-  }
-
-  /** Returns the product of all elements with respect to the numeric operations in `num` */
-  def product[B >: A](implicit num: Numeric[B]): B = {
-    var acc = num.one
-    for (x <- self) acc = num.times(acc, x)
-    acc
-  }
-
-  /** Returns the minimal element with respect to the given ordering `cmp` */
-  def min[B >: A](implicit cmp: Ordering[B]): A = {
-    require(!self.isEmpty, "min(<empty>)")
-    var acc = self.head
-    for (x <- self)
-      if (cmp.lt(x, acc)) acc = x
-    acc
-  }
-
-  /** Returns the maximal element with respect to the given ordering `cmp` */
-  def max[B >: A](implicit cmp: Ordering[B]): A = {
-    require(!self.isEmpty, "max(<empty>)")
-    var acc = self.head
-    for (x <- self)
-      if (cmp.gt(x, acc)) acc = x
-    acc
-  }
-
   /** Returns true if this collection is known to have finite size.
    *  This is the case if the collection type is strict, or if the
    *  collection type is non-strict (e.g. it's a Stream), but all
@@ -235,6 +203,14 @@ self =>
     b.result
   }
 
+  /** Returns a traversable with all elements of this traversable which do not satisfy the predicate
+   *  <code>p</code>.
+   *
+   *  @param p the predicate used to test elements
+   *  @return  the traversable without all elements that satisfy <code>p</code>
+   */
+  def filterNot(p: A => Boolean): This = filter(!p(_))
+
   /** Returns a new traversable based on the partial function <code>pf</code>,
   *  containing pf(x) for all the elements which are defined on pf.
   *  The order of the elements is preserved.
@@ -247,14 +223,6 @@ self =>
     for (x <- this) if (pf.isDefinedAt(x)) b += pf(x)
     b.result
   }
-
-  /** Returns a traversable with all elements of this traversable which do not satisfy the predicate
-   *  <code>p</code>.
-   *
-   *  @param p the predicate used to test elements
-   *  @return  the traversable without all elements that satisfy <code>p</code>
-   */
-  def filterNot(p: A => Boolean): This = filter(!p(_))
 
   /** Returns a traversable with all elements of this traversable which do not satisfy the predicate
    *  <code>p</code>.
@@ -389,15 +357,15 @@ self =>
    */
   def /: [B](z: B)(op: (B, A) => B): B = foldLeft(z)(op)
 
-  /** Combines the elements of this iterable together using the binary
+  /** Combines the elements of this traversable together using the binary
    *  function <code>f</code>, from right to left, and starting with
    *  the value <code>z</code>.
    *
    *  @note Will not terminate for infinite-sized collections.
-   *  @note Might return different results for different runs, unless this iterable is ordered, or
+   *  @note Might return different results for different runs, unless this traversable is ordered, or
    *        the operator is associative and commutative.
    *  @return <code>f(a<sub>0</sub>, f(a<sub>1</sub>, f(..., f(a<sub>n</sub>, z)...)))</code>
-   *          if the iterable is <code>[a<sub>0</sub>, a1, ..., a<sub>n</sub>]</code>.
+   *          if the traversable is <code>[a<sub>0</sub>, a1, ..., a<sub>n</sub>]</code>.
    */
   def foldRight[B](z: B)(op: (A, B) => B): B = {
     var elems: List[A] = Nil
@@ -408,7 +376,7 @@ self =>
   /** An alias for <code>foldRight</code>.
    *  That is, <code>xs :\ z</code> is the same as <code>xs foldRight z</code>
    *  @note Will not terminate for infinite-sized collections.
-   *  @note Might return different results for different runs, unless this iterable is ordered, or
+   *  @note Might return different results for different runs, unless this traversable is ordered, or
    *        the operator is associative and commutative.
    */
   def :\ [B](z: B)(op: (A, B) => B): B = foldRight(z)(op)
@@ -446,15 +414,15 @@ self =>
     if (isEmpty) None else Some(reduceLeft(op))
   }
 
-  /** Combines the elements of this iterable object together using the binary
+  /** Combines the elements of this traversable object together using the binary
    *  operator <code>op</code>, from right to left
    *  @note Will not terminate for infinite-sized collections.
-   *  @note Might return different results for different runs, unless this iterable is ordered, or
+   *  @note Might return different results for different runs, unless this traversable is ordered, or
    *        the operator is associative and commutative.
    *  @param op  The operator to apply
    *
    *  @return <code>a<sub>0</sub> op (... op (a<sub>n-1</sub> op a<sub>n</sub>)...)</code>
-   *          if the iterable object has elements <code>a<sub>0</sub>, a<sub>1</sub>, ...,
+   *          if the traversable object has elements <code>a<sub>0</sub>, a<sub>1</sub>, ...,
    *          a<sub>n</sub></code>.
    *
    *  @throws Predef.UnsupportedOperationException if the iterator is empty.
@@ -466,16 +434,48 @@ self =>
     elems.reduceLeft[B]((x, y) => op(y, x))
   }
 
- /** Combines the elements of this iterable object together using the binary
+ /** Combines the elements of this traversable object together using the binary
    *  operator <code>op</code>, from right to left.
    *  @note Will not terminate for infinite-sized collections.
-   *  @note Might return different results for different runs, unless this iterable is ordered, or
+   *  @note Might return different results for different runs, unless this traversable is ordered, or
    *        the operator is associative and commutative.
    *  @param op  The operator to apply
-   *  @return  If the iterable is non-empty, the result of the operations as an Option, otherwise None.
+   *  @return  If the traversable is non-empty, the result of the operations as an Option, otherwise None.
    */
   def reduceRightOption[B >: A](op: (A, B) => B): Option[B] = {
     if (isEmpty) None else Some(reduceRight(op))
+  }
+
+  /** Returns the sum of all elements with respect to the numeric operations in `num` */
+  def sum[B >: A](implicit num: Numeric[B]): B = {
+    var acc = num.zero
+    for (x <- self) acc = num.plus(acc, x)
+    acc
+  }
+
+  /** Returns the product of all elements with respect to the numeric operations in `num` */
+  def product[B >: A](implicit num: Numeric[B]): B = {
+    var acc = num.one
+    for (x <- self) acc = num.times(acc, x)
+    acc
+  }
+
+  /** Returns the minimal element with respect to the given ordering `cmp` */
+  def min[B >: A](implicit cmp: Ordering[B]): A = {
+    require(!self.isEmpty, "<empty>.min")
+    var acc = self.head
+    for (x <- self)
+      if (cmp.lt(x, acc)) acc = x
+    acc
+  }
+
+  /** Returns the maximal element with respect to the given ordering `cmp` */
+  def max[B >: A](implicit cmp: Ordering[B]): A = {
+    require(!self.isEmpty, "<empty>.max")
+    var acc = self.head
+    for (x <- self)
+      if (cmp.gt(x, acc)) acc = x
+    acc
   }
 
   /** The first element of this traversable.
@@ -504,7 +504,10 @@ self =>
    *  except the first one.
    *  @note  Might return different results for different runs, unless this traversable is ordered
    */
-  def tail: This = drop(1)
+  def tail: This = {
+    require(!self.isEmpty, "<empty>.tail")
+    drop(1)
+  }
 
   /** The last element of this traversable.
    *
@@ -730,7 +733,7 @@ self =>
    */
   def toList: List[A] = (new ListBuffer[A] ++= thisCollection).toList
 
-  /** Returns an iterable with all elements in this traversable object.
+  /** Returns an traversable with all elements in this traversable object.
    *  @note Will not terminate for infinite-sized collections.
    */
   def toIterable: Iterable[A] = toStream
@@ -840,9 +843,9 @@ self =>
    *  @param from   The index of the first element of the slice
    *  @param until  The index of the element following the slice
    *  @note  The difference between `view` and `slice` is that `view` produces
-   *         a view of the current iterable, whereas `slice` produces a new iterable.
+   *         a view of the current traversable, whereas `slice` produces a new traversable.
    *
-   *  @note  Might return different results for different runs, unless this iterable is ordered
+   *  @note  Might return different results for different runs, unless this traversable is ordered
    *  @note view(from, to)  is equivalent to view.slice(from, to)
    */
   def view(from: Int, until: Int): TraversableView[A, This] = view.slice(from, until)

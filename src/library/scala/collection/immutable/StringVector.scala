@@ -10,8 +10,8 @@
 
 package scala.collection.immutable
 
-import util.matching.Regex
-import annotation.experimental
+import scala.util.matching.Regex
+import scala.annotation.experimental
 
 /** An incomplete implementation of all the methods on Vector,
  *  written as static methods which take a String as a faux "this"

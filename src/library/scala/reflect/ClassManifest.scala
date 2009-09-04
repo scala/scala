@@ -13,6 +13,7 @@ package scala.reflect
 
 import scala.runtime._
 import scala.collection.immutable.Nil
+import scala.collection.mutable.{ArrayVector, ObjectArrayVector}
 
 /** <p>
   *   A <code>ClassManifest[T]</code> is an opaque descriptor for type <code>T</code>.
@@ -76,6 +77,11 @@ trait ClassManifest[T] extends OptManifest[T] {
     new BoxedObjectArray(java.lang.reflect.Array.newInstance(erasure, len).asInstanceOf[Array[AnyRef]])
       .asInstanceOf[BoxedArray[T]]
   }
+
+  def newArrayVector(len: Int): ArrayVector[T] =
+    // it's safe to assume T <: AnyRef here because the method is overridden for all value type manifests
+    new ObjectArrayVector(java.lang.reflect.Array.newInstance(erasure, len).asInstanceOf[Array[AnyRef]])
+      .asInstanceOf[ArrayVector[T]]
 
   def typeArguments: List[OptManifest[_]] = List()
 
