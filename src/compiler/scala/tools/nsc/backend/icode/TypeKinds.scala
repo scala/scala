@@ -330,7 +330,8 @@ trait TypeKinds { self: ICodes =>
         case REFERENCE(_) =>
           REFERENCE(AnyRefClass)
         case ARRAY(elem2) =>
-          ARRAY(elem maxType elem2)
+          if (elem == elem2) ARRAY(elem)
+          else REFERENCE(AnyRefClass)
         case _ =>
           abort("Uncomparbale type kinds: ARRAY with " + other)
       }
