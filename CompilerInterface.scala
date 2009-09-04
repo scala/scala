@@ -3,7 +3,8 @@
  */
 package xsbt
 
-import xsbti.{AnalysisCallback,AnalysisCallbackContainer,Logger}
+import xsbti.{AnalysisCallback,Logger}
+import scala.tools.nsc.{Phase, SubComponent}
 
 class CompilerInterface
 {
@@ -14,10 +15,28 @@ class CompilerInterface
 		val reporter = new LoggerReporter(maximumErrors, log)
 		val settings = new Settings(reporter.error)
 		val command = new CompilerCommand(args.toList, settings, error, false)
-		
-		object compiler extends Global(command.settings, reporter) with AnalysisCallbackContainer
+
+		object compiler extends Global(command.settings, reporter)
 		{
-			def analysisCallback = callback
+			object sbtAnalyzer extends
+			{
+				val global: compiler.type = compiler
+				val phaseName = Analyzer.name
+				val runsAfter = List("jvm")
+				val runsRightAfter = None
+			}
+			with SubComponent
+			{
+				val analyzer = new Analyzer(global, callback)
+				def newPhase(prev: Phase) = analyzer.newPhase(prev)
+				def name = phaseName
+			}
+			override protected def builtInPhaseDescriptors() = (super.builtInPhaseDescriptors ++ Seq(sbtAnalyzer))
+			/*override protected def computeInternalPhases()
+			{
+				super.computeInternalPhases()
+				phasesSet += sbtAnalyzer
+			}*/
 		}
 		if(!reporter.hasErrors)
 		{

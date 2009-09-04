@@ -10,46 +10,21 @@ import symtab.Flags
 import scala.collection.mutable.{HashMap, HashSet, Map, Set}
 
 import java.io.File
-import xsbti.{AnalysisCallback, AnalysisCallbackContainer}
+import xsbti.AnalysisCallback
 
-class Analyzer(val global: Global) extends Plugin
+object Analyzer
 {
-	val callback = global.asInstanceOf[AnalysisCallbackContainer].analysisCallback
-
+	def name = "xsbt-analyzer"
+}
+final class Analyzer(val global: Global, val callback: AnalysisCallback) extends NotNull
+{
 	import global._
 
-	val name = "xsbt-analyze"
-	val description = "A plugin to find all concrete instances of a given class and extract dependency information."
-	val components = List[PluginComponent](Component)
-
-	/* ================================================== */
-	// These two templates abuse scope for source compatibility between Scala 2.7.x and 2.8.x so that a single
-	// sbt codebase compiles with both series of versions.
-	// In 2.8.x, PluginComponent.runsAfter has type List[String] and the method runsBefore is defined on
-	//   PluginComponent with default value Nil.
-	// In 2.7.x, runsBefore does not exist on PluginComponent and PluginComponent.runsAfter has type String.
-	//
-	// Therefore, in 2.8.x, object runsBefore is shadowed by PluginComponent.runsBefore (which is Nil) and so
-	//   afterPhase :: runsBefore
-	// is equivalent to List[String](afterPhase)
-	// In 2.7.x, object runsBefore is not shadowed and so runsAfter has type String.
-	private object runsBefore { def :: (s: String) = s }
-	private abstract class CompatiblePluginComponent(afterPhase: String) extends PluginComponent
-	{
-		override val runsAfter = afterPhase :: runsBefore
-	}
-	/* ================================================== */
-
-	private object Component extends CompatiblePluginComponent("jvm")
-	{
-		val global = Analyzer.this.global
-		val phaseName = Analyzer.this.name
-		def newPhase(prev: Phase) = new AnalyzerPhase(prev)
-	}
-
+	def newPhase(prev: Phase): Phase = new AnalyzerPhase(prev)
 	private class AnalyzerPhase(prev: Phase) extends Phase(prev)
 	{
-		def name = Analyzer.this.name
+		override def description = "A plugin to find all concrete instances of a given class and extract dependency information."
+		def name = Analyzer.name
 		def run
 		{
 			val outputDirectory = new File(global.settings.outdir.value)

@@ -3,7 +3,7 @@ package xsbt
 import java.io.File
 import java.net.URLClassLoader
 import xsbti.{Logger, TestCallback, TestLogger}
-import FileUtilities.{classLocationFile, withTemporaryDirectory, write}
+import FileUtilities.withTemporaryDirectory
 
 object TestCompile
 {
@@ -11,15 +11,10 @@ object TestCompile
 	* that the plugin sends it for post-compile analysis by the provided function.*/
 	def apply[T](arguments: Seq[String], superclassNames: Seq[String])(f: (TestCallback, Logger) => T): T =
 	{
-		val pluginLocation = classLocationFile[Analyzer]
-		assert(pluginLocation.exists)
-		val path = pluginLocation.getAbsolutePath
-		val pluginArg = if(pluginLocation.getName.endsWith(".jar")) List("-Xplugin:" + path) else List("-Xpluginsdir", path)
 		val testCallback = new TestCallback(superclassNames.toArray)
 		val i = new CompilerInterface
-		val newArgs = "-Xplugin-require:xsbt-analyze" :: pluginArg ::: arguments.toList
 		TestLogger { log =>
-			i.run(newArgs.toArray, testCallback, 5, log)
+			i.run(arguments.toArray, testCallback, 5, log)
 			f(testCallback, log)
 		}
 	}
