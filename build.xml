@@ -75,14 +75,14 @@ END-USER TARGETS
   
   <target name="freshlocker"
     description="Replaces the Locker compiler and library by one built from current sources.">
-    <antcall target="locker.clean"/>
-    <antcall target="locker.done"/>
+    <antcall target="palo.clean"/>
+    <antcall target="palo.done"/>
   </target>
   
   <target name="newlocker"
     description="Unlocks the Locker compiler and library and lets them be updated by Scalac.">
     <antcall target="locker.unlock"/>
-    <antcall target="locker.done"/>
+    <antcall target="palo.done"/>
   </target>
 
   <target name="newlibs"
@@ -130,6 +130,7 @@ PROPERTIES
   <!-- Sets location of build folders -->
   <property name="build.dir" value="${basedir}/build"/>
   <property name="build-locker.dir" value="${build.dir}/locker"/>
+  <property name="build-palo.dir" value="${build.dir}/palo"/>
   <property name="build-quick.dir" value="${build.dir}/quick"/>
   <property name="build-optimised.dir" value="${build.dir}/optimised"/>
   <property name="build-pack.dir" value="${build.dir}/pack"/>
@@ -151,6 +152,7 @@ PROPERTIES
       value="${env.ANT_OPTS}"/>
 
   <property name="javac.cmd" value="${env.JAVA_HOME}/bin/javac"/>
+  <property name="java.cmd" value="${env.JAVA_HOME}/bin/java"/>
 
 <!-- ===========================================================================
 INITIALISATION
@@ -319,7 +321,7 @@ LOCAL REFERENCE BUILD (LOCKER)
     </path>
   </target>
   
-  <target name="locker.clean" depends="quick.clean">
+  <target name="locker.clean" depends="palo.clean">
     <delete dir="${build-locker.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
   </target>
   
@@ -327,6 +329,48 @@ LOCAL REFERENCE BUILD (LOCKER)
     <delete file="${build-locker.dir}/all.complete"/>
     <delete file="${build-locker.dir}/library.complete"/>
     <delete file="${build-locker.dir}/compiler.complete"/>
+  </target>
+
+<!-- ===========================================================================
+PACKED LOCKER BUILD (PALO)
+============================================================================ -->
+
+  <target name="palo.start" depends="locker.done"/>
+
+  <target name="palo.pre-lib" depends="palo.start">
+    <uptodate
+      property="palo.lib.available"
+      targetfile="${build-palo.dir}/lib/scala-library.jar"
+      srcfile="${build-locker.dir}/library.complete"/>
+  </target>
+
+  <target name="palo.lib" depends="palo.pre-lib" unless="palo.lib.available">
+    <mkdir dir="${build-palo.dir}/lib"/>
+    <jar destfile="${build-palo.dir}/lib/scala-library.jar">
+      <fileset dir="${build-locker.dir}/classes/library"/>
+    </jar>
+  </target>
+
+  <target name="palo.pre-comp" depends="palo.lib">
+    <uptodate
+      property="palo.comp.available"
+      targetfile="${build-palo.dir}/lib/scala-compiler.jar"
+      srcfile="${build-locker.dir}/compiler.complete"/>
+  </target>
+
+  <target name="palo.comp" depends="palo.pre-comp" unless="palo.comp.available">
+    <mkdir dir="${build-palo.dir}/lib"/>
+    <jar destfile="${build-palo.dir}/lib/scala-compiler.jar" manifest="${basedir}/META-INF/MANIFEST.MF">
+      <fileset dir="${build-locker.dir}/classes/compiler"/>
+      <!-- filemode / dirmode: see trac ticket #1294 -->
+    </jar>
+  </target>
+
+  <target name="palo.done" depends="palo.comp">
+  </target>
+
+  <target name="palo.clean" depends="quick.clean">
+    <delete dir="${build-palo.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
   </target>
 
 <!-- ===========================================================================
