@@ -1392,6 +1392,8 @@ trait Typers { self: Analyzer =>
 
       var tpt1 = checkNoEscaping.privates(sym, typer1.typedType(vdef.tpt))
       checkNonCyclic(vdef, tpt1)
+      if (sym.hasAnnotation(definitions.VolatileAttr) && !sym.hasFlag(MUTABLE))
+        error(vdef.pos, "values cannot be volatile")
       val rhs1 =
         if (vdef.rhs.isEmpty) {
           if (sym.isVariable && sym.owner.isTerm && phase.id <= currentRun.typerPhase.id)
