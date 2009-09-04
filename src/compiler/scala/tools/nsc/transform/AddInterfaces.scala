@@ -77,6 +77,11 @@ abstract class AddInterfaces extends InfoTransform {
       atPhase(implClassPhase) {
         val implName = nme.implClassName(iface.name)
         var impl = if (iface.owner.isClass) iface.owner.info.decl(implName) else NoSymbol
+        if (impl != NoSymbol && settings.XO.value) {
+          log("unlinking impl class " + impl)
+          iface.owner.info.decls.unlink(impl)
+          impl = NoSymbol
+        }
         if (impl == NoSymbol) {
           impl = iface.cloneSymbolImpl(iface.owner)
           impl.name = implName
