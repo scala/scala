@@ -1,17 +1,20 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+package scala.util.control
 
-
-package scala.runtime
-
-import Predef.RuntimeException
-import scala.util.control.ControlException
-
-class NonLocalReturnException[T](val key: AnyRef, val value: T) extends RuntimeException with ControlException
+/** A trait for exceptions which, for efficiency reasons, do not
+ *  fill in the stack trace.
+ *
+ *  @author   Paul Phillips
+ *  @since    2.8
+ */
+trait NoStackTrace extends Throwable
+{
+  override def fillInStackTrace(): Throwable = this
+}

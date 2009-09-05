@@ -97,10 +97,4 @@ abstract class SchedulerService(daemon: Boolean) extends Thread with ActorGC {
  * @version 0.9.8
  * @author Philipp Haller
  */
-private[actors] class QuitException extends Throwable with ControlException {
-  /*
-   For efficiency reasons we do not fill in
-   the execution stack trace.
-   */
-  override def fillInStackTrace(): Throwable = this
-}
+private[actors] class QuitException extends Throwable with ControlException

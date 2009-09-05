@@ -882,10 +882,4 @@ case class Exit(from: AbstractActor, reason: AnyRef)
  * @version 0.9.8
  * @author Philipp Haller
  */
-private[actors] class SuspendActorException extends Throwable with ControlException {
-  /*
-   * For efficiency reasons we do not fill in
-   * the execution stack trace.
-   */
-  override def fillInStackTrace(): Throwable = this
-}
+private[actors] class SuspendActorException extends Throwable with ControlException

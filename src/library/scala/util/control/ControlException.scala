@@ -36,4 +36,4 @@ package scala.util.control
  *
  * @author Miles Sabin
  */
-trait ControlException extends Throwable
+trait ControlException extends Throwable with NoStackTrace
