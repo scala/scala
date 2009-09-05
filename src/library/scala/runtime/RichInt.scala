@@ -32,23 +32,6 @@ final class RichInt(val start: Int) extends Proxy with Ordered[Int] {
   def max(that: Int): Int = if (start > that) start else that
   def abs: Int = if (start < 0) -start else start
 
-  /** Execute a block of code this many times.
-   *  For instance: 5 times { println("hello") }
-   *
-   *  N.B. this way of repeatedly executing an action has
-   *  far superior performance to any other approach in the
-   *  library.  It's not just syntactic sugar, it is faster
-   *  than anything but a locally implemented while loop and
-   *  of course less error prone than the while loop.
-   */
-  def times(body: => Unit) {
-    var i = 0
-    while (i < start) {
-      body
-      i += 1
-    }
-  }
-
   def toBinaryString: String = java.lang.Integer.toBinaryString(start)
   def toHexString: String = java.lang.Integer.toHexString(start)
   def toOctalString: String = java.lang.Integer.toOctalString(start)

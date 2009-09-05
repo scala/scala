@@ -18,18 +18,9 @@ package scala.actors
  * @author Philipp Haller
  */
 @serializable
-class MessageQueueElement(var msg: Any, var session: OutputChannel[Any], var next: MessageQueueElement) {
+class MessageQueueElement(val msg: Any, val session: OutputChannel[Any], var next: MessageQueueElement) {
   def this() = this(null, null, null)
   def this(msg: Any, session: OutputChannel[Any]) = this(msg, session, null)
-}
-
-object MessageQueue {
-  // for tracing purposes
-  private var queueNumberAssigner = 0
-  private def getQueueNumber = synchronized {
-    queueNumberAssigner += 1
-    queueNumberAssigner
-  }
 }
 
 /**
@@ -42,13 +33,9 @@ object MessageQueue {
  * @author Philipp Haller
  */
 @serializable
-class MessageQueue(label: String) {
-  def this() = this("Unlabelled")
-  private val queueNumber = MessageQueue.getQueueNumber
-  private var trace = false // set to true to print out all appends/removes
-
-  private var first: MessageQueueElement = null
-  private var last: MessageQueueElement = null  // last eq null iff list is empty
+class MessageQueue(protected val label: String) {
+  protected var first: MessageQueueElement = null
+  protected var last: MessageQueueElement = null  // last eq null iff list is empty
   private var _size = 0
 
   def size = _size
@@ -60,9 +47,6 @@ class MessageQueue(label: String) {
 
   def append(msg: Any, session: OutputChannel[Any]) {
     changeSize(1) // size always increases by 1
-    if (trace)
-      printQueue("APPEND %s" format msg)
-
     val el = new MessageQueueElement(msg, session)
 
     if (isEmpty) first = el
@@ -100,12 +84,7 @@ class MessageQueue(label: String) {
 
     var curr = first
     while (curr != null)
-      if (test(curr.msg)) {
-        if (trace)
-          printQueue("GET %s" format curr.msg)
-
-        return Some(curr.msg) // early return
-      }
+      if (test(curr.msg)) return Some(curr.msg) // early return
       else curr = curr.next
 
     None
@@ -123,9 +102,6 @@ class MessageQueue(label: String) {
     var pos = 0
 
     def foundMsg(x: MessageQueueElement) = {
-      if (trace)
-        printQueue("REMOVE %s" format x.msg)
-
       changeSize(-1)
       Some(x)
     }
@@ -165,6 +141,33 @@ class MessageQueue(label: String) {
       None
     }
   }
+}
+
+/** Debugging trait.
+ */
+private[actors] trait MessageQueueTracer extends MessageQueue
+{
+  private val queueNumber = MessageQueueTracer.getQueueNumber
+
+  override def append(msg: Any, session: OutputChannel[Any]) {
+    super.append(msg, session)
+    printQueue("APPEND %s" format msg)
+  }
+  override def get(n: Int)(p: Any => Boolean): Option[Any] = {
+    val res = super.get(n)(p)
+    printQueue("GET %s" format res)
+    res
+  }
+  override def remove(n: Int)(p: Any => Boolean): Option[(Any, OutputChannel[Any])] = {
+    val res = super.remove(n)(p)
+    printQueue("REMOVE %s" format res)
+    res
+  }
+  override def extractFirst(p: Any => Boolean): MessageQueueElement = {
+    val res = super.extractFirst(p)
+    printQueue("EXTRACT_FIRST %s" format res)
+    res
+  }
 
   private def printQueue(msg: String) = {
     def firstMsg = if (first eq null) "null" else first.msg
@@ -173,4 +176,13 @@ class MessageQueue(label: String) {
     println("[%s size=%d] [%s] first = %s, last = %s".format(this, size, msg, firstMsg, lastMsg))
   }
   override def toString() = "%s:%d".format(label, queueNumber)
+}
+
+object MessageQueueTracer {
+  // for tracing purposes
+  private var queueNumberAssigner = 0
+  private def getQueueNumber = synchronized {
+    queueNumberAssigner += 1
+    queueNumberAssigner
+  }
 }
