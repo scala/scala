@@ -2,7 +2,7 @@ package xsbt
 
 import java.io.File
 import java.net.URLClassLoader
-import xsbti.{Logger, TestCallback, TestLogger}
+import xsbti.TestCallback
 import FileUtilities.withTemporaryDirectory
 
 object TestCompile
@@ -13,7 +13,8 @@ object TestCompile
 	{
 		val testCallback = new TestCallback(superclassNames.toArray)
 		val i = new CompilerInterface
-		TestLogger { log =>
+		val log = new BufferedLogger(new ConsoleLogger)
+		log.bufferQuietly {
 			i.run(arguments.toArray, testCallback, 5, log)
 			f(testCallback, log)
 		}

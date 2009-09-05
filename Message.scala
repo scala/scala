@@ -3,9 +3,7 @@
  */
 package xsbt
 
-import xsbti.F0
-
 object Message
 {
-	def apply(s: => String) = new F0[String] { def apply() = s }
+	def apply(s: => String) = new xsbti.F0[String] { def apply() = s }
 }
