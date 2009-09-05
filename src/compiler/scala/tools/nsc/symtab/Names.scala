@@ -8,7 +8,7 @@ package scala.tools.nsc
 package symtab
 
 import scala.util.NameTransformer
-import scala.io.UTF8Codec
+import scala.io.Codec
 import java.security.MessageDigest
 
 /** The class <code>Names</code> ...
@@ -87,24 +87,19 @@ class Names {
 
   private lazy val md5 = MessageDigest.getInstance("MD5")
 
-  private def toMD5(s: String, prefixSuffixLen: Int) = {
-//  println("COMPACTIFY "+s)
-    val cs: Array[Char] = s.toCharArray
-    val bytes = new Array[Byte](cs.length * 4)
-    val len = UTF8Codec.encode(cs, 0, bytes, 0, cs.length)
-    md5.update(bytes, 0, len)
-    val hash = md5.digest()
-    val sb = new StringBuilder
-    sb.appendAll(cs, 0, prefixSuffixLen)
-    sb.append("$$$$")
-    for (i <- 0 until hash.length) {
-      val b = hash(i)
-      sb.append(((b >> 4) & 0xF).toHexString)
-      sb.append((b & 0xF).toHexString)
-    }
-    sb.append("$$$$")
-    sb.appendAll(cs, len - prefixSuffixLen, prefixSuffixLen)
-    sb.toString
+  /** "COMPACTIFY" */
+  private def toMD5(s: String, edge: Int) = {
+    import collection.immutable.StringVector._
+    val prefix = take(s, edge)
+    val suffix = takeRight(s, edge)
+    val marker = "$$$$"
+
+    val cs = s.toArray
+    val bytes = Codec fromUTF8 cs
+    md5 update bytes
+    val md5chars = md5.digest() map (b => (b & 0xFF).toHexString) mkString
+
+    prefix + marker + md5chars + marker + suffix
   }
 
   def compactify(s: String): String =
@@ -142,11 +137,8 @@ class Names {
    *  @param len    ...
    *  @return       the created term name
    */
-  def newTermName(bs: Array[Byte], offset: Int, len: Int): Name = {
-    val cs = new Array[Char](bs.length)
-    val nchrs = UTF8Codec.decode(bs, offset, cs, 0, len)
-    newTermName(cs, 0, nchrs)
-  }
+  def newTermName(bs: Array[Byte], offset: Int, len: Int): Name =
+    newTermName(Codec toUTF8 bs.slice(offset, offset + len) mkString)
 
   /** Create a type name from the characters in <code>cs[offset..offset+len-1]</code>.
    *
@@ -172,7 +164,6 @@ class Names {
    */
   def newTypeName(bs: Array[Byte], offset: Int, len: Int): Name =
     newTermName(bs, offset, len).toTypeName
-
 
   def nameChars: Array[Char] = chrs
 
@@ -228,8 +219,11 @@ class Names {
      *  Array must have enough remaining space for all bytes
      *  (i.e. maximally 3*length bytes).
      */
-    final def copyUTF8(bs: Array[Byte], offset: Int): Int =
-      UTF8Codec.encode(chrs, index, bs, offset, len)
+    final def copyUTF8(bs: Array[Byte], offset: Int): Int = {
+      val bytes = Codec fromUTF8 chrs.slice(index, index + len)
+      compat.Platform.arraycopy(bytes, 0, bs, offset, bytes.length)
+      offset + bytes.length
+    }
 
     /** return the hash value of this name
      */

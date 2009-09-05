@@ -271,8 +271,11 @@ object BytePickle {
       (s.stream(0), new UnPicklerState(s.stream.slice(1, s.stream.length), s.dict));
   }
 
-  def string: SPU[String] =
-    share(wrap((a: Array[Byte]) => UTF8Codec.decode(a, 0, a.length), (s:String) => UTF8Codec.encode(s), bytearray));
+  def string: SPU[String] = share(wrap(
+    (a: Array[Byte]) => Codec toUTF8 a mkString,
+    (s: String) => Codec fromUTF8 s,
+    bytearray
+  ))
 
   def bytearray: SPU[Array[Byte]] = {
     wrap((l:List[Byte]) => l.toArray, (_.toList), list(byte))

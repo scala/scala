@@ -83,6 +83,24 @@ object Codec {
     new Codec(decoder.charset()) { override def decoder = _decoder }
   }
 
+  def toUTF8(bytes: Array[Byte]): Array[Char] = {
+    val bbuffer = java.nio.ByteBuffer wrap bytes
+    val cbuffer = UTF8 decode bbuffer
+    val chars = new Array[Char](cbuffer.remaining())
+    cbuffer get chars
+
+    chars
+  }
+
+  def fromUTF8(cs: CharSequence): Array[Byte] = {
+    val cbuffer = java.nio.CharBuffer wrap cs
+    val bbuffer = UTF8 encode cbuffer
+    val bytes = new Array[Byte](bbuffer.remaining())
+    bbuffer get bytes
+
+    bytes
+  }
+
   implicit def string2codec(s: String) = apply(s)
   implicit def charset2codec(c: Charset) = apply(c)
   implicit def decoder2codec(cd: CharsetDecoder) = apply(cd)
