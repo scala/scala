@@ -18,6 +18,8 @@ import collection.Traversable
 
 object File
 {
+  def pathSeparator = JFile.pathSeparator
+
   def apply(path: Path)(implicit codec: Codec = null) =
     if (codec != null) new File(path.jfile)(codec)
     else path.toFile

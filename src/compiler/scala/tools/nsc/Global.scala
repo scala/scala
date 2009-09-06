@@ -623,17 +623,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     buildCompilerFromPhasesSet()       // PhaseAssembly.scala
   }
 
-  /* Simple option value to hold the compiler phase chain */
-  private var phasesCache: Option[List[SubComponent]] = None
+  /* The phase descriptor list */
+  lazy val phaseDescriptors: List[SubComponent] = computePhaseDescriptors
 
   /* The set of phase objects that is the basis for the compiler phase chain */
   protected val phasesSet : HashSet[SubComponent] = new HashSet[SubComponent]
-
-  /** A accessor for the phase descriptor list (List of SubComponents), Only calculate the list once */
-  def phaseDescriptors = {
-    if (phasesCache.isEmpty) phasesCache = Some(computePhaseDescriptors)
-    phasesCache.get
-  }
 
   /** A description of the phases that will run */
   def phaseDescriptions: String = {
