@@ -75,7 +75,7 @@ abstract class Pickler extends SubComponent {
      *  Such symbols should be treated as if they were local.
      */
     private def isUnrootedExistential(sym: Symbol) =
-      sym.isAbstractType && sym.hasFlag(EXISTENTIAL) && sym.owner.isPackageClass
+      sym.isAbstractType && sym.hasFlag(EXISTENTIAL)
 
     private def normalizedOwner(sym: Symbol) =
       if (isUnrootedExistential(sym)) root else sym.owner
