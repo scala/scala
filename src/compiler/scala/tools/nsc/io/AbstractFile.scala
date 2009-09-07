@@ -8,10 +8,8 @@
 package scala.tools.nsc
 package io
 
-import java.io.{ File => JFile, FileOutputStream, IOException, InputStream, OutputStream }
+import java.io.{File, FileOutputStream, IOException, InputStream, OutputStream}
 import java.net.URL
-import scala.io.{ Path, Directory, File }
-import PartialFunction._
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -19,23 +17,21 @@ import scala.collection.mutable.ArrayBuffer
  * @author Philippe Altherr
  * @version 1.0, 23/03/2004
  */
-object AbstractFile
-{
-  def isJarOrZip(f: Path) = cond(f.extension) { case Some("zip" | "jar") => true }
+object AbstractFile {
 
   /** Returns "getFile(new File(path))". */
-  def getFile(path: String): AbstractFile = getFile(Path(path))
-  def getFile(path: Path): AbstractFile = getFile(path.toFile)
+  def getFile(path: String): AbstractFile = getFile(new File(path))
 
   /**
    * If the specified File exists and is a regular file, returns an
    * abstract regular file backed by it. Otherwise, returns <code>null</code>.
    */
   def getFile(file: File): AbstractFile =
-    if (file.isFile) new PlainFile(file) else null
+    if (file.isFile() && file.exists()) new PlainFile(file) else null
+
 
   /** Returns "getDirectory(new File(path))". */
-  def getDirectory(path: Path): AbstractFile = getDirectory(path.toFile)
+  def getDirectory(path: String): AbstractFile = getDirectory(new File(path))
 
   /**
    * If the specified File exists and is either a directory or a
@@ -45,10 +41,15 @@ object AbstractFile
    * @param file ...
    * @return     ...
    */
-  def getDirectory(file: File): AbstractFile =
-    if (file.isDirectory) new PlainFile(file)
-    else if (file.isFile && isJarOrZip(file)) ZipArchive fromFile file
-    else null
+  def getDirectory(file: File): AbstractFile = {
+    if (file.isDirectory() && file.exists()) return new PlainFile(file)
+    if (file.isFile() && file.exists()) {
+      val path = file.getPath()
+      if (path.endsWith(".jar") || path.endsWith(".zip"))
+        return ZipArchive.fromFile(file);
+    }
+    null
+  }
 
   /**
    * If the specified URL exists and is a readable zip or jar archive,
@@ -59,7 +60,15 @@ object AbstractFile
    * @return     ...
    */
   def getURL(url: URL): AbstractFile =
-    Option(url) filterMap { case url: URL if isJarOrZip(url.getPath) => ZipArchive fromURL url } orNull
+    if (url ne null) {
+      val path = url.getPath()
+      if (path.endsWith(".jar") || path.endsWith(".zip"))
+        ZipArchive.fromURL(url)
+      else
+        null
+    }
+    else
+      null
 }
 
 /**
@@ -101,12 +110,11 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   def container : AbstractFile
 
   /** Returns the underlying File if any and null otherwise. */
-  def file: JFile
-  def sfile = File(file) // XXX
+  def file: File
 
   /** Does this abstract file denote an existing file? */
   def exists: Boolean =
-    if (file ne null) file.exists
+    if (file ne null) file.exists()
     else true
 
   /** Create a file on disk, if one does not exist already. */
@@ -199,11 +207,11 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   private def lookup(getFile: (AbstractFile, String, Boolean) => AbstractFile,
                      path0: String,
                      directory: Boolean): AbstractFile = {
-    val separator = JFile.separatorChar
+    val separator = File.separatorChar
     // trim trailing '/'s
-    val path: String = if (path0.last == separator) path0 dropRight 1 else path0
+    val path = if (path0.charAt(path0.length - 1) == separator) path0.substring(0, path0.length - 1) else path0
     val length = path.length()
-    assert(length > 0 && !(path.last == separator), path)
+    assert(0 < length && path.lastIndexOf(separator) < length - 1, path)
     var file = this
     var start = 0
     while (true) {
@@ -223,7 +231,14 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
    */
   def fileNamed(name: String): AbstractFile = {
     assert(isDirectory)
-    Option(lookupName(name, false)) getOrElse new PlainFile((sfile / name).createFile())
+    val existing = lookupName(name, false)
+    if (existing == null) {
+      val newFile = new File(file, name)
+      newFile.createNewFile()
+      new PlainFile(newFile)
+    } else {
+      existing
+    }
   }
 
   /**
@@ -232,7 +247,14 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
    */
   def subdirectoryNamed(name: String): AbstractFile = {
     assert (isDirectory)
-    Option(lookupName(name, true)) getOrElse new PlainFile((sfile / name).createDirectory())
+    val existing = lookupName(name, true)
+    if (existing == null) {
+      val dir = new File(file, name)
+      dir.mkdir()
+      new PlainFile(dir)
+    } else {
+      existing
+    }
   }
 
   /** Returns the path of this abstract file. */

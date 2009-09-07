@@ -6,19 +6,12 @@
 
 package scala.tools.nsc
 
-import java.io.{
-  InputStream, OutputStream,
-  BufferedReader, FileInputStream, FileOutputStream,
-  FileReader, InputStreamReader, PrintWriter, FileWriter,
-  IOException
-}
-import scala.io.{ Directory, File, Path }
-// import scala.io.arm.ManagedResource
-import java.io.{ File => JFile }
+import java.io.{BufferedReader, File, FileInputStream, FileOutputStream,
+                FileReader, InputStreamReader, PrintWriter,
+	        FileWriter, IOException}
 import java.lang.reflect.InvocationTargetException
 import java.net.URL
-import java.util.jar.{ JarEntry, JarOutputStream }
-import java.util.regex.Pattern
+import java.util.jar.{JarEntry, JarOutputStream}
 
 import scala.tools.nsc.io.PlainFile
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
@@ -50,123 +43,136 @@ import scala.tools.nsc.util.{ClassPath, CompoundSourceFile, BatchSourceFile, Sou
  *  @todo    It would be better if error output went to stderr instead
  *           of stdout...
  */
-object ScriptRunner
-{
-  /* While I'm chasing down the fsc and script bugs. */
-  def DBG(msg: Any) {
-    System.err.println(msg.toString)
-    System.err.flush()
-  }
-
+object ScriptRunner {
   /** Default name to use for the wrapped script */
   val defaultScriptMain = "Main"
 
-  private def addShutdownHook(body: => Unit) =
-    Runtime.getRuntime addShutdownHook new Thread { override def run { body } }
-
   /** Pick a main object name from the specified settings */
-  def scriptMain(settings: Settings) = settings.script.value match {
-    case "" => defaultScriptMain
-    case x  => x
-  }
+  def scriptMain(settings: Settings) =
+    if (settings.script.value == "")
+      defaultScriptMain
+    else
+      settings.script.value
 
-  /** Choose a jar filename to hold the compiled version of a script. */
+  /** Choose a jar filename to hold the compiled version
+   * of a script
+   */
   private def jarFileFor(scriptFile: String): File = {
-    val name =
-      if (scriptFile endsWith ".jar") scriptFile
-      else scriptFile + ".jar"
+    val filename =
+      if (scriptFile.matches(".*\\.[^.\\\\/]*"))
+        scriptFile.replaceFirst("\\.[^.\\\\/]*$", ".jar")
+      else
+        scriptFile + ".jar"
 
-    File(name)
-  }
-
-  def copyStreams(in: InputStream, out: OutputStream) = {
-    val buf = new Array[Byte](10240)
-
-    def loop: Unit = in.read(buf, 0, buf.length) match {
-      case -1 => in.close()
-      case n  => out.write(buf, 0, n) ; loop
-    }
-
-    loop
+    new File(filename)
   }
 
   /** Try to create a jar file out of all the contents
    *  of the directory <code>sourcePath</code>.
    */
-  private def tryMakeJar(jarFile: File, sourcePath: Directory) = {
-    def addFromDir(jar: JarOutputStream, dir: Directory, prefix: String) {
-      def addFileToJar(entry: File) = {
-        jar putNextEntry new JarEntry(prefix + entry.name)
-        copyStreams(entry.inputStream, jar)
-        jar.closeEntry
-      }
-
-      dir.list foreach { entry =>
-        if (entry.isFile) addFileToJar(entry.toFile)
-        else addFromDir(jar, entry.toDirectory, prefix + entry.name + "/")
-      }
-    }
-
+  private def tryMakeJar(jarFile: File, sourcePath: File) = {
     try {
-      val jar = new JarOutputStream(jarFile.outputStream())
-      addFromDir(jar, sourcePath, "")
+      val jarFileStream = new FileOutputStream(jarFile)
+      val jar = new JarOutputStream(jarFileStream)
+      val buf = new Array[Byte](10240)
+
+      def addFromDir(dir: File, prefix: String) {
+        for (entry <- dir.listFiles) {
+          if (entry.isFile) {
+            jar.putNextEntry(new JarEntry(prefix + entry.getName))
+
+            val input = new FileInputStream(entry)
+            var n = input.read(buf, 0, buf.length)
+            while (n >= 0) {
+              jar.write (buf, 0, n)
+              n = input.read(buf, 0, buf.length)
+            }
+            jar.closeEntry
+            input.close
+          } else {
+            addFromDir(entry, prefix + entry.getName + "/")
+          }
+        }
+      }
+
+      addFromDir(sourcePath, "")
       jar.close
-    }
-    catch {
-      case _: Error => jarFile.delete() // XXX what errors to catch?
+    } catch {
+      case _:Error => jarFile.delete // XXX what errors to catch?
     }
   }
 
+
   /** Read the entire contents of a file as a String. */
-  private def contentsOfFile(filename: String) = File(filename).slurp()
+  private def contentsOfFile(filename: String): String = {
+    val strbuf = new StringBuilder
+    val reader = new FileReader(filename)
+    val cbuf = new Array[Char](1024)
+    while(true) {
+      val n = reader.read(cbuf)
+      if (n <= 0)
+        return strbuf.toString
+      strbuf.append(cbuf, 0, n)
+    }
+    throw new Error("impossible")
+  }
 
   /** Find the length of the header in the specified file, if
     * there is one.  The header part starts with "#!" or "::#!"
     * and ends with a line that begins with "!#" or "::!#".
     */
   private def headerLength(filename: String): Int = {
-    val headerPattern = Pattern.compile("""^(::)?!#.*(\r|\n|\r\n)""", Pattern.MULTILINE)
-    val fileContents = contentsOfFile(filename)
-    def isValid = List("#!", "::#!") exists (fileContents startsWith _)
+    import java.util.regex._
 
-    if (!isValid) 0 else {
-      val matcher = headerPattern matcher fileContents
-      if (matcher.find) matcher.end
-      else throw new IOException("script file does not close its header with !# or ::!#")
-    }
+    val fileContents = contentsOfFile(filename)
+
+    if (!(fileContents.startsWith("#!") || fileContents.startsWith("::#!")))
+      return 0
+
+    val matcher =
+      (Pattern.compile("^(::)?!#.*(\\r|\\n|\\r\\n)", Pattern.MULTILINE)
+              .matcher(fileContents))
+    if (!matcher.find)
+      throw new IOException("script file does not close its header with !# or ::!#")
+    return matcher.end
   }
 
   /** Split a fully qualified object name into a
    *  package and an unqualified object name */
-  private def splitObjectName(fullname: String): (Option[String], String) =
-    (fullname lastIndexOf '.') match {
-      case -1   => (None, fullname)
-      case idx  => (Some(fullname take idx), fullname drop (idx + 1))
-    }
+  private def splitObjectName(fullname: String):
+  (Option[String],String) =
+  {
+    val idx = fullname.lastIndexOf('.')
+    if (idx < 0)
+      (None, fullname)
+    else
+      (Some(fullname.substring(0,idx)), fullname.substring(idx+1))
+  }
 
   /** Code that is added to the beginning of a script file to make
    *  it a complete Scala compilation unit.
    */
-  protected def preambleCode(objectName: String): String = {
-    val (maybePack, objName)  = splitObjectName(objectName)
-    val packageDecl           = maybePack map ("package %s\n" format _) getOrElse ("")
+  protected def preambleCode(objectName: String) =  {
+    val (maybePack, objName) = splitObjectName(objectName)
 
-    return """|
-    |  object %s {
-    |    def main(argv: Array[String]): Unit = {
-    |      val args = argv
-    |      new AnyRef {
-    |""".stripMargin.format(objName)
+    val packageDecl =
+      maybePack match {
+	case Some(pack) => "package " + pack + "\n"
+	case None => ""
+      }
+
+    (packageDecl +
+     "object " + objName + " {\n" +
+     "  def main(argv: Array[String]): Unit = {\n" +
+     "  val args = argv;\n" +
+     "  new AnyRef {\n")
   }
 
   /** Code that is added to the end of a script file to make
    *  it a complete Scala compilation unit.
    */
-  val endCode = """
-    |      }
-    |    }
-    |  }
-    |""".stripMargin
+  val endCode = "\n} \n} }\n"
+
 
   /** Wrap a script file into a runnable object named
    *  <code>scala.scripting.Main</code>.
@@ -174,12 +180,20 @@ object ScriptRunner
   def wrappedScript(
     objectName: String,
     filename: String,
-    getSourceFile: PlainFile => BatchSourceFile): SourceFile =
+    getSourceFile: PlainFile => SourceFile): SourceFile =
   {
-    val preamble = new BatchSourceFile("<script preamble>", preambleCode(objectName).toCharArray)
+    val preamble =
+      new BatchSourceFile("<script preamble>",
+		     preambleCode(objectName).toCharArray)
+
     val middle = {
-      val bsf = getSourceFile(PlainFile fromPath filename)
-      new SourceFileFragment(bsf, headerLength(filename), bsf.length)
+      val f = new File(filename)
+      val bsf = getSourceFile(new PlainFile(f)).asInstanceOf[BatchSourceFile]
+      new SourceFileFragment(
+          bsf,
+          headerLength(filename),
+          bsf.length)
+//          f.length.asInstanceOf[Int])
     }
     val end = new BatchSourceFile("<script trailer>", endCode.toCharArray)
 
@@ -196,42 +210,53 @@ object ScriptRunner
       settings: GenericRunnerSettings,
       scriptFileIn: String): Boolean =
   {
-    val scriptFile = CompileClient absFileName scriptFileIn
+    val scriptFile = CompileClient.absFileName(scriptFileIn)
+    for (setting <- List(
+            settings.classpath,
+            settings.sourcepath,
+            settings.bootclasspath,
+            settings.extdirs,
+            settings.outdir))
+      setting.value = CompileClient.absFileNames(setting.value)
 
-    {
-      import settings._
-      for (setting <- List(classpath, sourcepath, bootclasspath, extdirs, outdir)) {
-        // DBG("%s = %s".format(setting.name, setting.value))
-        setting.value = CompileClient absFileName setting.value
-      }
+    val compSettingNames =
+      (new Settings(error)).allSettings.map(_.name)
+
+    val compSettings =
+      settings.allSettings.filter(stg =>
+        compSettingNames.contains(stg.name))
+
+    val coreCompArgs =
+      compSettings.foldLeft[List[String]](Nil)((args, stg) =>
+        stg.unparse ::: args)
+
+    val compArgs =
+      (coreCompArgs :::
+        List("-Xscript", scriptMain(settings), scriptFile))
+
+    val socket = CompileSocket.getOrCreateSocket("")
+    if (socket eq null)
+      return false
+
+    val out = new PrintWriter(socket.getOutputStream(), true)
+    val in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
+
+    out.println(CompileSocket.getPassword(socket.getPort))
+    out.println(compArgs.mkString("", "\0", ""))
+
+    var compok = true
+
+    var fromServer = in.readLine()
+    while (fromServer ne null) {
+      Console.err.println(fromServer)
+      if (CompileSocket.errorPattern.matcher(fromServer).matches)
+        compok = false
+
+      fromServer = in.readLine()
     }
-
-    val compSettingNames  = new Settings(error).allSettings map (_.name)
-    val compSettings      = settings.allSettings filter (compSettingNames contains _.name)
-    val coreCompArgs      = compSettings flatMap (_.unparse)
-    val compArgs          = coreCompArgs ::: List("-Xscript", scriptMain(settings), scriptFile)
-    var compok            = true
-
-    // XXX temporary as I started using ManagedResource not remembering it wasn't checked in.
-    def ManagedResource[T](x: => T) = Some(x)
-
-    for {
-      socket <- ManagedResource(CompileSocket getOrCreateSocket "")
-      val _ = if (socket == null) return false
-      out <- ManagedResource(new PrintWriter(socket.getOutputStream(), true))
-      in <- ManagedResource(new BufferedReader(new InputStreamReader(socket.getInputStream())))
-    } {
-      out println (CompileSocket getPassword socket.getPort)
-      out println (compArgs mkString "\0")
-
-      for (fromServer <- (Iterator continually in.readLine()) takeWhile (_ != null)) {
-        Console.err println fromServer
-        if (CompileSocket.errorPattern matcher fromServer matches)
-          compok = false
-      }
-      // XXX temp until managed resource is available
-      in.close() ; out.close() ; socket.close()
-    }
+    in.close()
+    out.close()
+    socket.close()
 
     compok
   }
@@ -244,80 +269,101 @@ object ScriptRunner
     *
     * @returns true if compilation and the handler succeeds, false otherwise.
     */
-  private def withCompiledScript(
-    settings: GenericRunnerSettings,
-    scriptFile: String)
-    (handler: String => Boolean): Boolean =
-  {
-    /** Compiles the script file, and returns the directory with the compiled
-     *  class files, if the compilation succeeded.
-     */
-    def compile: Option[Directory] = {
-      val compiledPath = Directory makeTemp "scalascript"
+  private def withCompiledScript
+        (settings: GenericRunnerSettings, scriptFile: String)
+        (handler: String => Boolean)
+        : Boolean = {
+    import Interpreter.deleteRecursively
+
+    /** Compiles the script file, and returns
+      * the directory with the compiled class files,
+      * if the compilation succeeded.
+      */
+    def compile: Option[File] = {
+      val compiledPath = File.createTempFile("scalascript", "")
+      compiledPath.delete  // the file is created as a file; make it a directory
+      compiledPath.mkdirs
 
       // delete the directory after the user code has finished
-      addShutdownHook(compiledPath.deleteRecursively())
+      Runtime.getRuntime.addShutdownHook(new Thread {
+	override def run { deleteRecursively(compiledPath) }})
 
-      settings.outdir.value = compiledPath.path
+      settings.outdir.value = compiledPath.getPath
 
       if (settings.nocompdaemon.value) {
         val reporter = new ConsoleReporter(settings)
         val compiler = newGlobal(settings, reporter)
         val cr = new compiler.Run
-        val wrapped = wrappedScript(scriptMain(settings), scriptFile, compiler getSourceFile _)
-
-        cr compileSources List(wrapped)
-        if (reporter.hasErrors) None else Some(compiledPath)
+	  val wrapped =
+	    wrappedScript(
+	      scriptMain(settings),
+	      scriptFile,
+	      compiler.getSourceFile _)
+          cr.compileSources(List(wrapped))
+          if (!reporter.hasErrors)
+	    Some(compiledPath)
+	  else
+	    None
+      } else {
+        if (compileWithDaemon(settings, scriptFile))
+          Some(compiledPath)
+	else
+	  None
       }
-      else if (compileWithDaemon(settings, scriptFile)) Some(compiledPath)
-      else None
     }
 
     if (settings.savecompiled.value) {
       val jarFile = jarFileFor(scriptFile)
-      def jarOK   = jarFile.canRead && (jarFile isFresher File(scriptFile))
 
-      def recompile() = {
-        jarFile.delete()
+      def jarOK = (jarFile.canRead &&
+        (jarFile.lastModified > new File(scriptFile).lastModified))
+
+      if (jarOK) {
+        // pre-compiled jar is current
+        handler(jarFile.getAbsolutePath)
+      } else {
+        // The pre-compiled jar is old.  Recompile the script.
+        jarFile.delete
 
         compile match {
           case Some(compiledPath) =>
             tryMakeJar(jarFile, compiledPath)
             if (jarOK) {
-              compiledPath.deleteRecursively()
-              handler(jarFile.toAbsolute.path)
+	      deleteRecursively(compiledPath)  // may as well do it now
+	      handler(jarFile.getAbsolutePath)
+            } else {
+	      // jar failed; run directly from the class files
+	      handler(compiledPath.getPath)
             }
-            // jar failed; run directly from the class files
-            else handler(compiledPath.path)
-          case _  => false
+	  case None => false
         }
       }
-
-      if (jarOK) handler(jarFile.toAbsolute.path) // pre-compiled jar is current
-      else recompile()                            // jar old - recompile the script.
+    } else {
+      // don't use a cache jar at all--just use the class files
+      compile match {
+	case Some(compiledPath) => handler(compiledPath.getPath)
+	case None => false
+      }
     }
-    // don't use a cache jar at all--just use the class files
-    else compile map (cp => handler(cp.path)) getOrElse false
   }
+
 
   /** Run a script after it has been compiled
    *
    * @returns true if execution succeeded, false otherwise
    */
-  private def runCompiled(
-    settings: GenericRunnerSettings,
-		compiledLocation: String,
-		scriptArgs: List[String]): Boolean =
-	{
-    def fileToURL(f: JFile): Option[URL] =
-      try Some(f.toURL) catch { case _: Exception => None }
+  private def runCompiled(settings: GenericRunnerSettings,
+			  compiledLocation: String,
+			  scriptArgs: List[String]) : Boolean = {
+    def fileToURL(f: File): Option[URL] =
+      try { Some(f.toURL) }
+    catch { case e => Console.err.println(e); None }
 
     def paths(str: String, expandStar: Boolean): List[URL] =
-      for {
-        file <- ClassPath.expandPath(str, expandStar) map (new JFile(_))
-        if file.exists
-        url <- fileToURL(file)
-      } yield url
+      for (
+        file <- ClassPath.expandPath(str, expandStar) map (new File(_)) if file.exists;
+        val url = fileToURL(file); if !url.isEmpty
+      ) yield url.get
 
     val classpath =
       (paths(settings.bootclasspath.value, true) :::
@@ -330,47 +376,64 @@ object ScriptRunner
         scriptMain(settings),
         scriptArgs.toArray)
       true
-    }
-    catch {
-      case e @ (_: ClassNotFoundException | _: NoSuchMethodException) =>
-        Console println e
+    } catch {
+      case e: ClassNotFoundException =>
+        Console.println(e)
         false
-      case e: InvocationTargetException =>
+      case e: NoSuchMethodException =>
+        Console.println(e)
+        false
+      case e:InvocationTargetException =>
         e.getCause.printStackTrace
         false
     }
   }
+
 
   /** Run a script file with the specified arguments and compilation
    *  settings.
    *
    * @returns true if compilation and execution succeeded, false otherwise.
    */
-  def runScript(
-    settings: GenericRunnerSettings,
+  def runScript(settings: GenericRunnerSettings,
 		scriptFile: String,
-		scriptArgs: List[String]): Boolean =
-	{
-	  if (File(scriptFile).isFile)
-	    withCompiledScript(settings, scriptFile) { runCompiled(settings, _, scriptArgs) }
-	  else
-	    throw new IOException("no such file: " + scriptFile)
+		scriptArgs: List[String]) : Boolean = {
+    val f = new File(scriptFile)
+    if (!f.isFile) {
+      throw new IOException("no such file: " + scriptFile)
+    } else {
+      try {
+	withCompiledScript(settings, scriptFile){compiledLocation =>
+	  runCompiled(settings, compiledLocation, scriptArgs)
+	}
+      } catch {
+	case e => throw e
+      }
+    }
   }
 
   /** Run a command
    *
    * @returns true if compilation and execution succeeded, false otherwise.
    */
-  def runCommand(
-    settings: GenericRunnerSettings,
-    command: String,
-		scriptArgs: List[String]) : Boolean =
-	{
-    val scriptFile = File.makeTemp("scalacmd", ".scala")
-    // save the command to the file
-    scriptFile writeAll List(command)
+  def runCommand(settings: GenericRunnerSettings,
+		 command: String,
+		 scriptArgs: List[String]) : Boolean = {
+    val scriptFile = File.createTempFile("scalacmd", ".scala")
 
-    try withCompiledScript(settings, scriptFile.path) { runCompiled(settings, _, scriptArgs) }
-    finally scriptFile.delete()  // in case there was a compilation error
+    // save the command to the file
+    {
+      val str = new FileWriter(scriptFile)
+      str.write(command)
+      str.close()
+    }
+
+    try {
+      withCompiledScript(settings, scriptFile.getPath){compiledLocation =>
+        runCompiled(settings, compiledLocation, scriptArgs)
+      }
+    } catch {
+      case e => throw e
+    } finally scriptFile.delete()  // in case there was a compilation error
   }
 }

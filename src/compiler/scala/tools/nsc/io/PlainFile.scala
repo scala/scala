@@ -8,9 +8,7 @@
 package scala.tools.nsc
 package io
 
-import java.io.{ File => JFile, FileInputStream, FileOutputStream, IOException }
-import scala.io.{ File, Path }
-import PartialFunction._
+import java.io.{File, FileInputStream, FileOutputStream, IOException}
 
 object PlainFile
 {
@@ -18,46 +16,56 @@ object PlainFile
    * If the specified File exists, returns an abstract file backed
    * by it. Otherwise, returns null.
    */
-  def fromPath(file: Path): PlainFile =
-    if (file.exists) new PlainFile(file) else null
+  def fromFile(file: File): PlainFile =
+    if (file.exists()) new PlainFile(file) else null
+
+  def fromPath(path: String): PlainFile = fromFile(new File(path))
 }
 
 /** This class implements an abstract file backed by a File.
  */
-class PlainFile(val givenPath: Path) extends AbstractFile {
-  assert(path ne null)
+class PlainFile(val file: File) extends AbstractFile {
+  private val fpath = try { file.getCanonicalPath }
+                      catch { case _: IOException => file.getAbsolutePath }
 
-  val file = givenPath.jfile
-  private val fpath = try givenPath.normalize catch { case _: IOException => givenPath.toAbsolute }
+  assert(file ne null)
+//  assert(file.exists(), "non-existent file: " + file)
 
   /** Returns the name of this abstract file. */
-  def name = givenPath.name
+  def name = file.getName()
 
   /** Returns the path of this abstract file. */
-  def path = givenPath.path
+  def path = file.getPath()
 
   /** The absolute file. */
-  def absolute = new PlainFile(givenPath.normalize)
+  def absolute = new PlainFile(file.getCanonicalFile())
 
-  override def container: AbstractFile = new PlainFile(givenPath.parent.get)
-  override def input = givenPath.toFile.inputStream()
-  override def output = givenPath.toFile.outputStream()
-  override def sizeOption = Some(givenPath.length.toInt)
+  override def container : AbstractFile = new PlainFile(file.getParentFile)
+
+  override def input = new FileInputStream(file)
+  override def output = new FileOutputStream(file)
+
+  override def sizeOption = Some(file.length.toInt)
 
   override def hashCode(): Int = fpath.hashCode
+
   override def equals(that: Any): Boolean =
-    cond(that) { case other: PlainFile  => fpath == other.fpath }
+    that.isInstanceOf[PlainFile] &&
+      fpath.equals(that.asInstanceOf[PlainFile].fpath)
 
   /** Is this abstract file a directory? */
-  def isDirectory: Boolean = givenPath.isDirectory
+  def isDirectory: Boolean = file.isDirectory()
 
   /** Returns the time that this abstract file was last modified. */
-  def lastModified: Long = givenPath.lastModified
+  def lastModified: Long = file.lastModified()
 
   /** Returns all abstract subfiles of this abstract directory. */
   def iterator: Iterator[AbstractFile] = {
-    assert(isDirectory, "not a directory '%s'" format this)
-    givenPath.toDirectory.list filter (_.exists) map (new PlainFile(_))
+    assert(isDirectory, "not a directory '" + this + "'")
+    val names: Array[String] = file.list()
+    if ((names eq null) || names.length == 0) Iterator.empty
+    else names.iterator.map { name: String => new File(file, name) }
+      .filter(_.exists).map(file => new PlainFile(file))
   }
 
   /**
@@ -71,22 +79,34 @@ class PlainFile(val givenPath: Path) extends AbstractFile {
    * @return          ...
    */
   def lookupName(name: String, directory: Boolean): AbstractFile = {
-    val child = givenPath / name
-    if ((child.isDirectory && directory) || (child.isFile && !directory)) new PlainFile(child)
-    else null
+    //assert(isDirectory, "not a directory '" + this + "'")
+    val child = new File(file, name)
+    if (!child.exists() || (directory != child.isDirectory) ||
+        directory == child.isFile()) null
+    else new PlainFile(child)
   }
 
   /** Does this abstract file denote an existing file? */
-  def create: Unit = if (!exists) givenPath.createFile()
+  def create {
+    if (!exists)
+      file.createNewFile()
+  }
 
   /** Delete the underlying file or directory (recursively). */
-  def delete: Unit =
-    if (givenPath.isFile) givenPath.delete()
-    else if (givenPath.isDirectory) givenPath.toDirectory.deleteRecursively()
+  def delete {
+    if (file.isFile) file.delete
+    else if (file.isDirectory) {
+      iterator.foreach(_.delete)
+      file.delete
+    }
+  }
 
   /** Returns a plain file with the given name. It does not
    *  check that it exists.
    */
-  def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile =
-    new PlainFile(givenPath / name)
+  def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile = {
+    val f = new File(file, name)
+    new PlainFile(f)
+  }
+
 }

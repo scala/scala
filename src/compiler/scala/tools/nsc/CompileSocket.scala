@@ -6,16 +6,12 @@
 
 package scala.tools.nsc
 
-import java.io.{ IOException, FileNotFoundException, PrintWriter, FileOutputStream }
-import java.io.{ BufferedReader, FileReader }
+import java.lang.{Thread, System, Runtime}
+import java.lang.NumberFormatException
+import java.io.{File, IOException, PrintWriter, FileOutputStream}
+import java.io.{BufferedReader, FileReader}
 import java.util.regex.Pattern
 import java.net._
-import java.security.SecureRandom
-
-import scala.io.{ File, Path }
-import scala.util.control.Exception.catching
-
-// class CompileChannel { }
 
 /** This class manages sockets for the fsc offline compiler.  */
 class CompileSocket {
@@ -29,13 +25,17 @@ class CompileSocket {
   protected def cmdName = Properties.cmdName //todo: lazy val
 
   /** The vm part of the command to start a new scala compile server */
-  protected val vmCommand = Properties.scalaHome match {
-    case null     => cmdName
-    case dirname  =>
-      val trial = File(dirname) / "bin" / cmdName
-      if (trial.canRead) trial.path
-      else cmdName
-  }
+  protected val vmCommand =
+    Properties.scalaHome match {
+      case null =>
+        cmdName
+      case dirname =>
+        val trial = new File(new File(dirname, "bin"), cmdName)
+        if (trial.canRead)
+          trial.getPath
+        else
+          cmdName
+    }
 
   /** The class name of the scala compile server */
   protected val serverClass = "scala.tools.nsc.CompileServer"
@@ -44,7 +44,7 @@ class CompileSocket {
   val errorRegex = ".*(errors? found|don't know|bad option).*"
 
   /** A Pattern object for checking compiler output for errors */
-  val errorPattern = Pattern compile errorRegex
+  val errorPattern = Pattern.compile(errorRegex)
 
   protected def error(msg: String) = System.err.println(msg)
 
@@ -59,7 +59,8 @@ class CompileSocket {
   /** A temporary directory to use */
   val tmpDir = {
     val udir  = Option(Properties.userName) getOrElse "shared"
-    val f     = (Path(Properties.tmpDir) / "scala-devel" / udir).createDirectory()
+    val f     = new File(Properties.tmpDir, "scala-devel/" + udir)
+    f.mkdirs()
 
     if (f.isDirectory && f.canWrite) {
       info("[Temp directory: " + f + "]")
@@ -69,7 +70,8 @@ class CompileSocket {
   }
 
   /* A directory holding port identification files */
-  val portsDir = (tmpDir / dirName).createDirectory()
+  val portsDir =  new File(tmpDir, dirName)
+  portsDir.mkdirs
 
   /** Maximum number of polls for an available port */
   private val MaxAttempts = 100
@@ -101,16 +103,24 @@ class CompileSocket {
   }
 
   /** The port identification file */
-  def portFile(port: Int) = portsDir / File(port.toString)
+  def portFile(port: Int) = new File(portsDir, port.toString())
 
   /** Poll for a server port number; return -1 if none exists yet */
-  private def pollPort(): Int =
-    portsDir.list.toList match {
-      case Nil      => -1
-      case p :: xs  =>
-        xs forall (_.delete())
-        p.name.toInt
-    }
+  private def pollPort(): Int = {
+    val hits = portsDir.listFiles()
+    if (hits.length == 0) -1
+    else
+      try {
+        for (i <- 1 until hits.length) hits(i).delete()
+        hits(0).getName.toInt
+      } catch {
+        case ex: NumberFormatException =>
+          fatal(ex.toString() +
+                "\nbad file in temp directory: " +
+                hits(0).getAbsolutePath() +
+                "\nplease remove the file and try again")
+      }
+  }
 
   /** Get the port number to which a scala compile server is connected;
    *  If no server is running yet, then create one.
@@ -121,7 +131,6 @@ class CompileSocket {
 
     if (port < 0)
       startNewServer(vmArgs)
-
     while (port < 0 && attempts < MaxAttempts) {
       attempts += 1
       Thread.sleep(sleepTime)
@@ -135,23 +144,25 @@ class CompileSocket {
 
   /** Set the port number to which a scala compile server is connected */
   def setPort(port: Int) {
-    val file    = portFile(port)
-    val secret  = new SecureRandom().nextInt.toString
-
-    try file writeAll List(secret) catch {
-      case e @ (_: FileNotFoundException | _: SecurityException) =>
-        fatal("Cannot create file: %s".format(file.path))
+    try {
+      val f = new PrintWriter(new FileOutputStream(portFile(port)))
+      f.println(new java.security.SecureRandom().nextInt.toString)
+      f.close()
+    } catch {
+      case ex: /*FileNotFound+Security*/Exception =>
+        fatal("Cannot create file: " +
+              portFile(port).getAbsolutePath())
     }
   }
 
   /** Delete the port number to which a scala compile server was connected */
-  def deletePort(port: Int) = portFile(port).delete()
+  def deletePort(port: Int) { portFile(port).delete() }
 
   /** Get a socket connected to a daemon.  If create is true, then
     * create a new daemon if necessary.  Returns null if the connection
     * cannot be established.
     */
-  def getOrCreateSocket(vmArgs: String, create: Boolean = true): Socket = {
+  def getOrCreateSocket(vmArgs: String, create: Boolean): Socket = {
     val nAttempts = 49  // try for about 5 seconds
     def getsock(attempts: Int): Socket =
       if (attempts == 0) {
@@ -182,40 +193,45 @@ class CompileSocket {
     getsock(nAttempts)
   }
 
-  // XXX way past time for this to be central
-  def parseInt(x: String): Option[Int] =
-    try   { Some(x.toInt) }
-    catch { case _: NumberFormatException => None }
+  /** Same as getOrCreateSocket(vmArgs, true). */
+  def getOrCreateSocket(vmArgs: String): Socket =
+    getOrCreateSocket(vmArgs, true)
 
   def getSocket(serverAdr: String): Socket = {
-    def fail = fatal("Malformed server address: %s; exiting" format serverAdr)
-    (serverAdr indexOf ':') match {
-      case -1   => fail
-      case cpos =>
-        val hostName: String = serverAdr take cpos
-        parseInt(serverAdr drop (cpos + 1)) match {
-          case Some(port) => getSocket(hostName, port)
-          case _          => fail
-        }
+    val cpos = serverAdr indexOf ':'
+    if (cpos < 0)
+      fatal("Malformed server address: " + serverAdr + "; exiting")
+    else {
+      val hostName = serverAdr.substring(0, cpos)
+      val port = try {
+        serverAdr.substring(cpos+1).toInt
+      } catch {
+        case ex: Throwable =>
+          fatal("Malformed server address: " + serverAdr + "; exiting")
+      }
+      getSocket(hostName, port)
     }
   }
 
   def getSocket(hostName: String, port: Int): Socket =
-    try new Socket(hostName, port) catch {
-      case e @ (_: IOException | _: SecurityException) =>
-        fatal("Unable to establish connection to server %s:%d; exiting".format(hostName, port))
+    try {
+      new Socket(hostName, port)
+    } catch {
+      case e: /*IO+Security*/Exception =>
+        fatal("Unable to establish connection to server " +
+              hostName + ":" + port + "; exiting")
     }
 
   def getPassword(port: Int): String = {
-    val ff  = portFile(port)
-    val f   = ff.bufferedReader()
-
+    val ff = portFile(port)
+    val f = new BufferedReader(new FileReader(ff))
     // allow some time for the server to start up
-    def check = {
-      Thread sleep 100
-      ff.length
+    var retry = 50
+    while (ff.length() == 0 && retry > 0) {
+      Thread.sleep(100)
+      retry -= 1
     }
-    if (Iterator continually check take 50 find (_ > 0) isEmpty) {
+    if (ff.length() == 0) {
       ff.delete()
       fatal("Unable to establish connection to server.")
     }
