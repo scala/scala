@@ -94,7 +94,15 @@ abstract class Duplicators extends Analyzer {
     def fixType(tpe: Type): Type = {
       val tpe1 = envSubstitution(tpe)
       log("tpe1: " + tpe1)
-      (new FixInvalidSyms)(tpe1)
+      val tpe2: Type = (new FixInvalidSyms)(tpe1)
+      val tpe3 = tpe2 match {
+        case TypeRef(_, sym, _) if (sym.owner == oldClassOwner) =>
+          log("seeing " + sym.fullNameString + " from a different angle")
+          tpe2.asSeenFrom(newClassOwner.thisType, oldClassOwner)
+        case _ => tpe2
+      }
+      log("tpe2: " + tpe3)
+      tpe3
     }
 
     /** Return the new symbol corresponding to `sym'. */

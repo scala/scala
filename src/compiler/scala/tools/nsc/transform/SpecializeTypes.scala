@@ -310,7 +310,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       case _ => false
     }
 
-    (needsIt(sym.tpe)
+    (needsIt(sym.info)
      || (isNormalizedMember(sym) && info(sym).typeBoundsIn(env)))
 
   }
@@ -733,7 +733,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
       case ClassInfoType(base, decls, clazz) =>
 //        val parents = base map specializedType
-//        log("set parents of " + clazz + " to: " + parents)
+        log("transformInfo " + clazz )
         val res = ClassInfoType(base map specializedType, newScope(specializeClass(clazz, typeEnv(clazz))), clazz)
         res
 
@@ -1211,7 +1211,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   /** Cast `tree' to 'pt', unless tpe is a subtype of pt, or pt is Unit.  */
   def maybeCastTo(pt: Type, tpe: Type, tree: Tree): Tree =
     if ((pt == definitions.UnitClass.tpe) || (tpe <:< pt)) {
-      log("no need to cast from " + tpe + " to " + pt)
+      //log("no need to cast from " + tpe + " to " + pt)
       tree
     } else
       gen.mkAsInstanceOf(tree, pt)
