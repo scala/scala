@@ -177,7 +177,8 @@ trait LinearSequenceTemplate[+A, +This <: LinearSequenceTemplate[A, This] with L
     else f(head, tail.foldRight(z)(f))
 
   /** Combines the elements of this list together using the binary
-   *  operator <code>op</code>, from left to right
+   *  operator <code>op</code>, from left to right.
+   *
    *  @param op  The operator to apply
    *  @return <code>op(... op(a<sub>0</sub>,a<sub>1</sub>), ..., a<sub>n</sub>)</code>
       if the list has elements
@@ -189,7 +190,8 @@ trait LinearSequenceTemplate[+A, +This <: LinearSequenceTemplate[A, This] with L
     else tail.foldLeft[B](head)(f)
 
   /** Combines the elements of this iterable object together using the binary
-   *  operator <code>op</code>, from right to left
+   *  operator <code>op</code>, from right to left.
+   *
    *  @note Will not terminate for infinite-sized collections.
    *  @param op  The operator to apply
    *

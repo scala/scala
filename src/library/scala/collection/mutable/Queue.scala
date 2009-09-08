@@ -42,7 +42,7 @@ class Queue[A] extends MutableList[A] with Cloneable[Queue[A]] {
       val res = first0.elem
       first0 = first0.next
       if (first0 eq null) last0 = null
-      len = len - 1
+      len -= 1
       res
     }
 
@@ -58,7 +58,7 @@ class Queue[A] extends MutableList[A] with Cloneable[Queue[A]] {
     else if (p(first0.elem)) {
       val res: Option[A] = Some(first0.elem)
       first0 = first0.next
-      len = len - 1
+      len -= 1
       if (first0 eq null) {
         last0 = null
       } else if (first0.next eq null) {
@@ -86,7 +86,7 @@ class Queue[A] extends MutableList[A] with Cloneable[Queue[A]] {
       while ((first0 ne null) && p(first0.elem)) {
         res += first0.elem
         first0 = first0.next
-        len = len - 1
+        len -= 1
         if (first0 eq null) {
           last0 = null
         } else if (first0.next eq null) {
@@ -116,7 +116,7 @@ class Queue[A] extends MutableList[A] with Cloneable[Queue[A]] {
         cell.next = cell.next.next
         if (cell.next eq null)
           last0 = cell
-        len = len - 1
+        len -= 1
         res
       }
     }

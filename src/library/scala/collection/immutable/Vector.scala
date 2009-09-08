@@ -17,7 +17,7 @@ trait Vector[+A] extends Sequence[A]
                     with collection.Vector[A]
                     with TraversableClass[A, Vector]
                     with VectorTemplate[A, Vector[A]] {
-  override def companion: Companion[Vector]  = Vector
+  override def companion: Companion[Vector] = Vector
 }
 
 object Vector extends SequenceFactory[Vector] {

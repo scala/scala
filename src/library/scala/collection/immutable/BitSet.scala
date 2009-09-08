@@ -14,8 +14,9 @@ package scala.collection.immutable
 import scala.collection.generic._
 import BitSetTemplate.{LogWL, updateArray}
 
-/** a base class for immutable bit sets
+/** A base class for immutable bit sets.
  */
+@serializable @SerialVersionUID(1611436763290191562L)
 abstract class BitSet extends Set[Int]
                          with collection.BitSet
                          with BitSetTemplate[BitSet] {
@@ -23,7 +24,8 @@ abstract class BitSet extends Set[Int]
 
   def fromArray(elems: Array[Long]): BitSet = BitSet.fromArray(elems)
 
-  /** Update word at index `idx`; enlarge set if `idx` outside range of set
+  /** Update word at index <code>idx</code>; enlarge set if <code>idx</code>
+   *  outside range of set.
    */
   protected def updateWord(idx: Int, w: Long): BitSet
 

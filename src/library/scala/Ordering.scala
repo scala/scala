@@ -40,7 +40,7 @@ import java.util.Comparator
  * @version 0.9.5, 2008-04-15
  * @since 2.7
  */
-
+@serializable
 trait Ordering[T] extends Comparator[T] with PartialOrdering[T] {
   outer =>
 
@@ -86,9 +86,9 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] {
   /** Returns the argument which comes earlier in the ordering. */
   def min(x: T, y: T): T = if (lteq(x, y)) x else y
 
-  override def reverse : Ordering[T] = new Ordering[T]{
-    override def reverse = outer;
-    def compare(x : T, y : T) = outer.compare(y, x);
+  override def reverse: Ordering[T] = new Ordering[T]{
+    override def reverse = outer
+    def compare(x: T, y: T) = outer.compare(y, x)
   }
 
   class Ops(lhs: T) {
@@ -103,260 +103,260 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] {
   implicit def mkOrderingOps(lhs: T): Ops = new Ops(lhs)
 }
 
-object Ordering
-{
+object Ordering {
+
   def apply[T](implicit ord : Ordering[T]) = ord
 
   def fromLessThan[T](cmp: (T, T) => Boolean): Ordering[T] = new Ordering[T] {
     def compare(x: T, y: T) = if (cmp(x, y)) -1 else if (cmp(y, x)) 1 else 0
   }
 
-  def ordered[A <: Ordered[A]] : Ordering[A] = new Ordering[A] {
-    def compare(x : A, y : A) = x.compare(y);
+  def ordered[A <: Ordered[A]]: Ordering[A] = new Ordering[A] {
+    def compare(x: A, y: A) = x.compare(y)
   }
 
   trait UnitOrdering extends Ordering[Unit] {
-    def compare(x : Unit, y : Unit) = 0;
+    def compare(x: Unit, y: Unit) = 0
   }
   implicit object Unit extends UnitOrdering
 
   trait BooleanOrdering extends Ordering[Boolean] {
-    def compare(x : Boolean, y : Boolean) = (x, y) match {
-      case (false, true) => -1;
-      case (true, false) => 1;
-      case _ => 0;
+    def compare(x: Boolean, y: Boolean) = (x, y) match {
+      case (false, true) => -1
+      case (true, false) => 1
+      case _ => 0
     }
   }
   implicit object Boolean extends BooleanOrdering
 
   trait ByteOrdering extends Ordering[Byte] {
-    def compare(x : Byte, y : Byte) = x.toInt - y.toInt;
+    def compare(x: Byte, y: Byte) = x.toInt - y.toInt
   }
   implicit object Byte extends ByteOrdering
 
   trait CharOrdering extends Ordering[Char] {
-    def compare(x : Char, y : Char) = x.toInt - y.toInt;
+    def compare(x: Char, y: Char) = x.toInt - y.toInt
   }
   implicit object Char extends CharOrdering
 
   trait ShortOrdering extends Ordering[Short] {
-    def compare(x : Short, y : Short) = x.toInt - y.toInt;
+    def compare(x: Short, y: Short) = x.toInt - y.toInt
   }
   implicit object Short extends ShortOrdering
 
   trait IntOrdering extends Ordering[Int] {
-    def compare(x : Int, y : Int) =
-      if(x < y) -1;
-      else if (x == y) 0;
+    def compare(x: Int, y: Int) =
+      if (x < y) -1
+      else if (x == y) 0
       else 1
   }
   implicit object Int extends IntOrdering
 
   trait LongOrdering extends Ordering[Long] {
-    def compare(x : Long, y : Long) =
-      if(x < y) -1;
-      else if (x == y) 0;
+    def compare(x: Long, y: Long) =
+      if (x < y) -1
+      else if (x == y) 0
       else 1
   }
   implicit object Long extends LongOrdering
 
   trait FloatOrdering extends Ordering[Float] {
-    def compare(x : Float, y : Float) =
-      if(x < y) -1;
-      else if (x == y) 0;
+    def compare(x: Float, y: Float) =
+      if (x < y) -1
+      else if (x == y) 0
       else 1
   }
   implicit object Float extends FloatOrdering
 
   trait DoubleOrdering extends Ordering[Double] {
-    def compare(x : Double, y : Double) =
-      if(x < y) -1;
-      else if (x == y) 0;
+    def compare(x: Double, y: Double) =
+      if (x < y) -1
+      else if (x == y) 0
       else 1
   }
   implicit object Double extends DoubleOrdering
 
   trait BigIntOrdering extends Ordering[BigInt] {
-    def compare(x : BigInt, y : BigInt) = x.compare(y);
+    def compare(x: BigInt, y: BigInt) = x.compare(y)
   }
   implicit object BigInt extends BigIntOrdering
 
   trait BigDecimalOrdering extends Ordering[BigDecimal] {
-    def compare(x : BigDecimal, y : BigDecimal) = x.compare(y);
+    def compare(x: BigDecimal, y: BigDecimal) = x.compare(y)
   }
   implicit object BigDecimal extends BigDecimalOrdering
 
   trait StringOrdering extends Ordering[String] {
-    def compare(x : String, y : String) = x.compareTo(y);
+    def compare(x: String, y: String) = x.compareTo(y)
   }
   implicit object String extends StringOrdering
 
-  implicit def Option[T](implicit ord : Ordering[T]) : Ordering[Option[T]] =
+  implicit def Option[T](implicit ord: Ordering[T]) : Ordering[Option[T]] =
     new Ordering[Option[T]] {
       def compare(x : Option[T], y : Option[T]) = (x, y) match {
-        case (None, None) => 0;
-        case (None, _) => -1;
+        case (None, None) => 0
+        case (None, _) => -1
         case (_, None) => 1
-        case (Some(x), Some(y)) => ord.compare(x, y);
+        case (Some(x), Some(y)) => ord.compare(x, y)
       }
     }
 
-  implicit def Iterable[T](implicit ord : Ordering[T]) : Ordering[Iterable[T]] =
+  implicit def Iterable[T](implicit ord: Ordering[T]): Ordering[Iterable[T]] =
     new Ordering[Iterable[T]] {
-      def compare(x : Iterable[T], y : Iterable[T]) : Int = {
-        val xe = x.iterator;
-        val ye = y.iterator;
+      def compare(x: Iterable[T], y: Iterable[T]): Int = {
+        val xe = x.iterator
+        val ye = y.iterator
 
-        while (xe.hasNext && ye.hasNext){
-          val res = ord.compare(xe.next, ye.next);
-          if (res != 0) return res;
+        while (xe.hasNext && ye.hasNext) {
+          val res = ord.compare(xe.next, ye.next)
+          if (res != 0) return res
         }
 
-        Boolean.compare(xe.hasNext, ye.hasNext);
+        Boolean.compare(xe.hasNext, ye.hasNext)
       }
     }
 
-  implicit def Tuple2[T1, T2](implicit ord1 : Ordering[T1], ord2 : Ordering[T2]) : Ordering[(T1, T2)] =
+  implicit def Tuple2[T1, T2](implicit ord1: Ordering[T1], ord2: Ordering[T2]): Ordering[(T1, T2)] =
     new Ordering[(T1, T2)]{
-      def compare(x : Tuple2[T1, T2], y : Tuple2[T1, T2]) : Int = {
-        val compare1 = ord1.compare(x._1, y._1);
-        if (compare1 != 0) return compare1;
-        val compare2 = ord2.compare(x._2, y._2);
-        if (compare2 != 0) return compare2;
-        0;
+      def compare(x: (T1, T2), y: (T1, T2)): Int = {
+        val compare1 = ord1.compare(x._1, y._1)
+        if (compare1 != 0) return compare1
+        val compare2 = ord2.compare(x._2, y._2)
+        if (compare2 != 0) return compare2
+        0
       }
     }
 
-  implicit def Tuple3[T1, T2, T3](implicit ord1 : Ordering[T1], ord2 : Ordering[T2], ord3 : Ordering[T3]) : Ordering[(T1, T2, T3)] =
+  implicit def Tuple3[T1, T2, T3](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3]) : Ordering[(T1, T2, T3)] =
     new Ordering[(T1, T2, T3)]{
-      def compare(x : Tuple3[T1, T2, T3], y : Tuple3[T1, T2, T3]) : Int = {
-        val compare1 = ord1.compare(x._1, y._1);
-        if (compare1 != 0) return compare1;
-        val compare2 = ord2.compare(x._2, y._2);
-        if (compare2 != 0) return compare2;
-        val compare3 = ord3.compare(x._3, y._3);
-        if (compare3 != 0) return compare3;
-        0;
+      def compare(x: (T1, T2, T3), y: (T1, T2, T3)): Int = {
+        val compare1 = ord1.compare(x._1, y._1)
+        if (compare1 != 0) return compare1
+        val compare2 = ord2.compare(x._2, y._2)
+        if (compare2 != 0) return compare2
+        val compare3 = ord3.compare(x._3, y._3)
+        if (compare3 != 0) return compare3
+        0
       }
     }
 
-  implicit def Tuple4[T1, T2, T3, T4](implicit ord1 : Ordering[T1], ord2 : Ordering[T2], ord3 : Ordering[T3], ord4 : Ordering[T4]) : Ordering[(T1, T2, T3, T4)] =
+  implicit def Tuple4[T1, T2, T3, T4](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3], ord4: Ordering[T4]) : Ordering[(T1, T2, T3, T4)] =
     new Ordering[(T1, T2, T3, T4)]{
-      def compare(x : Tuple4[T1, T2, T3, T4], y : Tuple4[T1, T2, T3, T4]) : Int = {
-        val compare1 = ord1.compare(x._1, y._1);
-        if (compare1 != 0) return compare1;
-        val compare2 = ord2.compare(x._2, y._2);
-        if (compare2 != 0) return compare2;
-        val compare3 = ord3.compare(x._3, y._3);
-        if (compare3 != 0) return compare3;
-        val compare4 = ord4.compare(x._4, y._4);
-        if (compare4 != 0) return compare4;
-        0;
+      def compare(x: (T1, T2, T3, T4), y: (T1, T2, T3, T4)): Int = {
+        val compare1 = ord1.compare(x._1, y._1)
+        if (compare1 != 0) return compare1
+        val compare2 = ord2.compare(x._2, y._2)
+        if (compare2 != 0) return compare2
+        val compare3 = ord3.compare(x._3, y._3)
+        if (compare3 != 0) return compare3
+        val compare4 = ord4.compare(x._4, y._4)
+        if (compare4 != 0) return compare4
+        0
       }
     }
 
-  implicit def Tuple5[T1, T2, T3, T4, T5](implicit ord1 : Ordering[T1], ord2 : Ordering[T2], ord3 : Ordering[T3], ord4 : Ordering[T4], ord5 : Ordering[T5]) : Ordering[(T1, T2, T3, T4, T5)] =
+  implicit def Tuple5[T1, T2, T3, T4, T5](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3], ord4: Ordering[T4], ord5: Ordering[T5]): Ordering[(T1, T2, T3, T4, T5)] =
     new Ordering[(T1, T2, T3, T4, T5)]{
-      def compare(x : Tuple5[T1, T2, T3, T4, T5], y : Tuple5[T1, T2, T3, T4, T5]) : Int = {
-        val compare1 = ord1.compare(x._1, y._1);
-        if (compare1 != 0) return compare1;
-        val compare2 = ord2.compare(x._2, y._2);
-        if (compare2 != 0) return compare2;
-        val compare3 = ord3.compare(x._3, y._3);
-        if (compare3 != 0) return compare3;
-        val compare4 = ord4.compare(x._4, y._4);
-        if (compare4 != 0) return compare4;
-        val compare5 = ord5.compare(x._5, y._5);
-        if (compare5 != 0) return compare5;
-        0;
+      def compare(x: (T1, T2, T3, T4, T5), y: Tuple5[T1, T2, T3, T4, T5]): Int = {
+        val compare1 = ord1.compare(x._1, y._1)
+        if (compare1 != 0) return compare1
+        val compare2 = ord2.compare(x._2, y._2)
+        if (compare2 != 0) return compare2
+        val compare3 = ord3.compare(x._3, y._3)
+        if (compare3 != 0) return compare3
+        val compare4 = ord4.compare(x._4, y._4)
+        if (compare4 != 0) return compare4
+        val compare5 = ord5.compare(x._5, y._5)
+        if (compare5 != 0) return compare5
+        0
       }
     }
 
-  implicit def Tuple6[T1, T2, T3, T4, T5, T6](implicit ord1 : Ordering[T1], ord2 : Ordering[T2], ord3 : Ordering[T3], ord4 : Ordering[T4], ord5 : Ordering[T5], ord6 : Ordering[T6]) : Ordering[(T1, T2, T3, T4, T5, T6)] =
+  implicit def Tuple6[T1, T2, T3, T4, T5, T6](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3], ord4: Ordering[T4], ord5: Ordering[T5], ord6: Ordering[T6]): Ordering[(T1, T2, T3, T4, T5, T6)] =
     new Ordering[(T1, T2, T3, T4, T5, T6)]{
-      def compare(x : Tuple6[T1, T2, T3, T4, T5, T6], y : Tuple6[T1, T2, T3, T4, T5, T6]) : Int = {
-        val compare1 = ord1.compare(x._1, y._1);
-        if (compare1 != 0) return compare1;
-        val compare2 = ord2.compare(x._2, y._2);
-        if (compare2 != 0) return compare2;
-        val compare3 = ord3.compare(x._3, y._3);
-        if (compare3 != 0) return compare3;
-        val compare4 = ord4.compare(x._4, y._4);
-        if (compare4 != 0) return compare4;
-        val compare5 = ord5.compare(x._5, y._5);
-        if (compare5 != 0) return compare5;
-        val compare6 = ord6.compare(x._6, y._6);
-        if (compare6 != 0) return compare6;
-        0;
+      def compare(x: (T1, T2, T3, T4, T5, T6), y: (T1, T2, T3, T4, T5, T6)): Int = {
+        val compare1 = ord1.compare(x._1, y._1)
+        if (compare1 != 0) return compare1
+        val compare2 = ord2.compare(x._2, y._2)
+        if (compare2 != 0) return compare2
+        val compare3 = ord3.compare(x._3, y._3)
+        if (compare3 != 0) return compare3
+        val compare4 = ord4.compare(x._4, y._4)
+        if (compare4 != 0) return compare4
+        val compare5 = ord5.compare(x._5, y._5)
+        if (compare5 != 0) return compare5
+        val compare6 = ord6.compare(x._6, y._6)
+        if (compare6 != 0) return compare6
+        0
       }
     }
 
-  implicit def Tuple7[T1, T2, T3, T4, T5, T6, T7](implicit ord1 : Ordering[T1], ord2 : Ordering[T2], ord3 : Ordering[T3], ord4 : Ordering[T4], ord5 : Ordering[T5], ord6 : Ordering[T6], ord7 : Ordering[T7]) : Ordering[(T1, T2, T3, T4, T5, T6, T7)] =
+  implicit def Tuple7[T1, T2, T3, T4, T5, T6, T7](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3], ord4: Ordering[T4], ord5: Ordering[T5], ord6: Ordering[T6], ord7: Ordering[T7]): Ordering[(T1, T2, T3, T4, T5, T6, T7)] =
     new Ordering[(T1, T2, T3, T4, T5, T6, T7)]{
-      def compare(x : Tuple7[T1, T2, T3, T4, T5, T6, T7], y : Tuple7[T1, T2, T3, T4, T5, T6, T7]) : Int = {
-        val compare1 = ord1.compare(x._1, y._1);
-        if (compare1 != 0) return compare1;
-        val compare2 = ord2.compare(x._2, y._2);
-        if (compare2 != 0) return compare2;
-        val compare3 = ord3.compare(x._3, y._3);
-        if (compare3 != 0) return compare3;
-        val compare4 = ord4.compare(x._4, y._4);
-        if (compare4 != 0) return compare4;
-        val compare5 = ord5.compare(x._5, y._5);
-        if (compare5 != 0) return compare5;
-        val compare6 = ord6.compare(x._6, y._6);
-        if (compare6 != 0) return compare6;
-        val compare7 = ord7.compare(x._7, y._7);
-        if (compare7 != 0) return compare7;
-        0;
+      def compare(x: (T1, T2, T3, T4, T5, T6, T7), y: (T1, T2, T3, T4, T5, T6, T7)): Int = {
+        val compare1 = ord1.compare(x._1, y._1)
+        if (compare1 != 0) return compare1
+        val compare2 = ord2.compare(x._2, y._2)
+        if (compare2 != 0) return compare2
+        val compare3 = ord3.compare(x._3, y._3)
+        if (compare3 != 0) return compare3
+        val compare4 = ord4.compare(x._4, y._4)
+        if (compare4 != 0) return compare4
+        val compare5 = ord5.compare(x._5, y._5)
+        if (compare5 != 0) return compare5
+        val compare6 = ord6.compare(x._6, y._6)
+        if (compare6 != 0) return compare6
+        val compare7 = ord7.compare(x._7, y._7)
+        if (compare7 != 0) return compare7
+        0
       }
     }
 
-  implicit def Tuple8[T1, T2, T3, T4, T5, T6, T7, T8](implicit ord1 : Ordering[T1], ord2 : Ordering[T2], ord3 : Ordering[T3], ord4 : Ordering[T4], ord5 : Ordering[T5], ord6 : Ordering[T6], ord7 : Ordering[T7], ord8 : Ordering[T8]) : Ordering[(T1, T2, T3, T4, T5, T6, T7, T8)] =
+  implicit def Tuple8[T1, T2, T3, T4, T5, T6, T7, T8](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3], ord4: Ordering[T4], ord5: Ordering[T5], ord6: Ordering[T6], ord7: Ordering[T7], ord8: Ordering[T8]): Ordering[(T1, T2, T3, T4, T5, T6, T7, T8)] =
     new Ordering[(T1, T2, T3, T4, T5, T6, T7, T8)]{
-      def compare(x : Tuple8[T1, T2, T3, T4, T5, T6, T7, T8], y : Tuple8[T1, T2, T3, T4, T5, T6, T7, T8]) : Int = {
-        val compare1 = ord1.compare(x._1, y._1);
-        if (compare1 != 0) return compare1;
-        val compare2 = ord2.compare(x._2, y._2);
-        if (compare2 != 0) return compare2;
-        val compare3 = ord3.compare(x._3, y._3);
-        if (compare3 != 0) return compare3;
-        val compare4 = ord4.compare(x._4, y._4);
-        if (compare4 != 0) return compare4;
-        val compare5 = ord5.compare(x._5, y._5);
-        if (compare5 != 0) return compare5;
-        val compare6 = ord6.compare(x._6, y._6);
-        if (compare6 != 0) return compare6;
-        val compare7 = ord7.compare(x._7, y._7);
-        if (compare7 != 0) return compare7;
-        val compare8 = ord8.compare(x._8, y._8);
-        if (compare8 != 0) return compare8;
-        0;
+      def compare(x: (T1, T2, T3, T4, T5, T6, T7, T8), y: (T1, T2, T3, T4, T5, T6, T7, T8)): Int = {
+        val compare1 = ord1.compare(x._1, y._1)
+        if (compare1 != 0) return compare1
+        val compare2 = ord2.compare(x._2, y._2)
+        if (compare2 != 0) return compare2
+        val compare3 = ord3.compare(x._3, y._3)
+        if (compare3 != 0) return compare3
+        val compare4 = ord4.compare(x._4, y._4)
+        if (compare4 != 0) return compare4
+        val compare5 = ord5.compare(x._5, y._5)
+        if (compare5 != 0) return compare5
+        val compare6 = ord6.compare(x._6, y._6)
+        if (compare6 != 0) return compare6
+        val compare7 = ord7.compare(x._7, y._7)
+        if (compare7 != 0) return compare7
+        val compare8 = ord8.compare(x._8, y._8)
+        if (compare8 != 0) return compare8
+        0
       }
     }
 
-  implicit def Tuple9[T1, T2, T3, T4, T5, T6, T7, T8, T9](implicit ord1 : Ordering[T1], ord2 : Ordering[T2], ord3 : Ordering[T3], ord4 : Ordering[T4], ord5 : Ordering[T5], ord6 : Ordering[T6], ord7 : Ordering[T7], ord8 : Ordering[T8], ord9 : Ordering[T9]) : Ordering[(T1, T2, T3, T4, T5, T6, T7, T8, T9)] =
+  implicit def Tuple9[T1, T2, T3, T4, T5, T6, T7, T8, T9](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3], ord4: Ordering[T4], ord5: Ordering[T5], ord6: Ordering[T6], ord7: Ordering[T7], ord8 : Ordering[T8], ord9: Ordering[T9]): Ordering[(T1, T2, T3, T4, T5, T6, T7, T8, T9)] =
     new Ordering[(T1, T2, T3, T4, T5, T6, T7, T8, T9)]{
-      def compare(x : Tuple9[T1, T2, T3, T4, T5, T6, T7, T8, T9], y : Tuple9[T1, T2, T3, T4, T5, T6, T7, T8, T9]) : Int = {
-        val compare1 = ord1.compare(x._1, y._1);
-        if (compare1 != 0) return compare1;
-        val compare2 = ord2.compare(x._2, y._2);
-        if (compare2 != 0) return compare2;
-        val compare3 = ord3.compare(x._3, y._3);
-        if (compare3 != 0) return compare3;
-        val compare4 = ord4.compare(x._4, y._4);
-        if (compare4 != 0) return compare4;
-        val compare5 = ord5.compare(x._5, y._5);
-        if (compare5 != 0) return compare5;
-        val compare6 = ord6.compare(x._6, y._6);
-        if (compare6 != 0) return compare6;
-        val compare7 = ord7.compare(x._7, y._7);
-        if (compare7 != 0) return compare7;
-        val compare8 = ord8.compare(x._8, y._8);
-        if (compare8 != 0) return compare8;
-        val compare9 = ord9.compare(x._9, y._9);
-        if (compare9 != 0) return compare9;
-        0;
+      def compare(x: (T1, T2, T3, T4, T5, T6, T7, T8, T9), y: (T1, T2, T3, T4, T5, T6, T7, T8, T9)): Int = {
+        val compare1 = ord1.compare(x._1, y._1)
+        if (compare1 != 0) return compare1
+        val compare2 = ord2.compare(x._2, y._2)
+        if (compare2 != 0) return compare2
+        val compare3 = ord3.compare(x._3, y._3)
+        if (compare3 != 0) return compare3
+        val compare4 = ord4.compare(x._4, y._4)
+        if (compare4 != 0) return compare4
+        val compare5 = ord5.compare(x._5, y._5)
+        if (compare5 != 0) return compare5
+        val compare6 = ord6.compare(x._6, y._6)
+        if (compare6 != 0) return compare6
+        val compare7 = ord7.compare(x._7, y._7)
+        if (compare7 != 0) return compare7
+        val compare8 = ord8.compare(x._8, y._8)
+        if (compare8 != 0) return compare8
+        val compare9 = ord9.compare(x._9, y._9)
+        if (compare9 != 0) return compare9
+        0
       }
     }
 

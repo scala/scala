@@ -1,11 +1,24 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
+
 package scala.collection.mutable
 
 import scala.collection.generic._
 import scala.collection.immutable
 import BitSetTemplate.{LogWL, updateArray}
 
-/** A class for mutable bitsets */
-class BitSet (protected var elems: Array[Long]) extends Set[Int]
+/** A class for mutable bitsets.
+ */
+@serializable @SerialVersionUID(8483111450368547763L)
+class BitSet(protected var elems: Array[Long]) extends Set[Int]
                                                   with collection.BitSet
                                                   with BitSetTemplate[BitSet]
                                                   with MutableSetTemplate[Int, BitSet] {
@@ -36,7 +49,7 @@ class BitSet (protected var elems: Array[Long]) extends Set[Int]
   /** Adds element to bitset,
    *  @return element was already present.
    */
-  override def add (elem: Int): Boolean = {
+  override def add(elem: Int): Boolean = {
     require(elem >= 0)
     if (contains(elem)) false
     else {
@@ -49,7 +62,7 @@ class BitSet (protected var elems: Array[Long]) extends Set[Int]
   /** Removes element from bitset.
    *  @return element was already present.
    */
-  override def remove (elem: Int): Boolean = {
+  override def remove(elem: Int): Boolean = {
     require(elem >= 0)
     if (contains(elem)) {
       val idx = elem >> LogWL

@@ -5,6 +5,10 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+
+// $Id: $
+
+
 package scala.collection.mutable
 
 import scala.collection.generic._
