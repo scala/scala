@@ -1,4 +1,3 @@
-/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -12,6 +11,8 @@
 
 package scala.collection.mutable
 
+import scala.collection.generic._
+import scala.collection.script._
 
 /** This is a simple proxy class for <a href="Buffer.html"
  *  target="contentFrame"><code>scala.collection.mutable.Buffer</code></a>.
@@ -45,7 +46,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    */
   def +=(elem: A): this.type = { self.+=(elem); this }
 
-  override def readOnly = self.readOnly
+//  override def readOnly = self.readOnly
 
   /** Appends a number of elements provided by an iterable object
    *  via its <code>iterator</code> method. The identity of the
@@ -54,14 +55,14 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *  @param iter  the iterable object.
    *  @return      the updated buffer.
    */
-  override def ++(iter: collection.Iterable[A]): Buffer[A] = self.++(iter)
+  def ++(iter: collection.Iterable[A]): Buffer[A] = self.++(iter)
 
   /** Appends a number of elements provided by an iterable object
    *  via its <code>iterator</code> method.
    *
    *  @param iter  the iterable object.
    */
-  override def ++=(iter: collection.Iterable[A]): this.type = { self.++=(iter); this }
+  def ++=(iter: collection.Iterable[A]): this.type = { self.++=(iter); this }
 
   /** Appends a sequence of elements to this buffer.
    *
@@ -74,7 +75,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *
    *  @param iter  the iterable object.
    */
-  override def appendAll(iter: collection.Iterable[A]): Unit = self.appendAll(iter)
+  def appendAll(iter: collection.Iterable[A]): Unit = self.appendAll(iter)
 
   /** Prepend a single element to this buffer and return
    *  the identity of the buffer.
@@ -89,7 +90,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *
    *  @param iter  the iterable object.
    */
-  override def ++:(iter: collection.Iterable[A]): Buffer[A] = self.++:(iter)
+  def ++:(iter: collection.Iterable[A]): Buffer[A] = self.++:(iter)
 
   /** Prepend an element to this list.
    *
@@ -103,7 +104,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *
    *  @param iter  the iterable object.
    */
-  override def prependAll(elems: collection.Iterable[A]): Unit = self.prependAll(elems)
+  def prependAll(elems: collection.Iterable[A]): Unit = self.prependAll(elems)
 
   /** Inserts new elements at the index <code>n</code>. Opposed to method
    *  <code>update</code>, this method will not replace an element with a
@@ -122,6 +123,8 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *  @param iter  the iterable object providing all elements to insert.
    */
   def insertAll(n: Int, iter: collection.Iterable[A]): Unit = self.insertAll(n, iter)
+
+  override def insertAll(n: Int, iter: collection.Traversable[A]): Unit = self.insertAll(n, iter)
 
   /** Replace element at index <code>n</code> with the new element
    *  <code>newelem</code>.
@@ -145,7 +148,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *
    *  @param cmd  the message to send.
    */
-  override def <<(cmd: Message[(Location, A)]): Unit = self << cmd
+  override def <<(cmd: Message[A]): Unit = self << cmd
 
   /** Return a clone of this buffer.
    *
@@ -155,4 +158,3 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
     def self = BufferProxy.this.self.clone()
   }
 }
-*/

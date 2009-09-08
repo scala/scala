@@ -8,8 +8,9 @@
 
 // $Id$
 
-// !!! todo: integrate in collections framework
 package scala.collection.mutable;
+
+import scala.collection.generic._
 
 private object Utils{
   def growArray(x : Array[AnyRef]) = {
@@ -33,8 +34,15 @@ private object Utils{
  */
 @cloneable
 class ArrayStack[T] private(private var table : Array[AnyRef],
-                            private var index : Int) extends Iterable[T]{
+                            private var index : Int) extends collection.Sequence[T] with Cloneable[ArrayStack[T]] {
   def this() = this(new Array[AnyRef](1), 0);
+
+  /** Retrieve n'th element from stack, where top of stack has index 0 */
+  def apply(n: Int) =
+    table(index - 1 - n).asInstanceOf[T]
+
+  /** The number of elements in the stack */
+  def length = index
 
   /**
    * Push an element onto the stack.
