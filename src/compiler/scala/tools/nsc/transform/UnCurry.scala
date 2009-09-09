@@ -543,9 +543,11 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           treeCopy.UnApply(tree, fn1, args1)
 
         case Apply(fn, args) =>
+          // XXX settings.noassertions.value temporarily retained to avoid
+          // breakage until a reasonable interface is settled upon.
           def elideFunctionCall(sym: Symbol) =
             sym != null && (sym.elisionLevel match {
-              case Some(x)  => x < settings.elideLevel.value
+              case Some(x)  => (x < settings.elideLevel.value) || settings.noassertions.value
               case _        => false
             })
           if (elideFunctionCall(fn.symbol)) {
