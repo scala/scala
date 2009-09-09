@@ -264,13 +264,17 @@ self =>
 
   // ----------------- Implementations of client commmands -----------------------
 
-  def respond[T](result: Response[T])(op: => T): Unit = try {
-    result set Left(op)
-  } catch {
-    case ex =>
-      result set Right(ex)
-      throw ex
-  }
+  def respond[T](result: Response[T])(op: => T): Unit =
+    while(true)
+      try {
+        result set Left(op)
+        return
+      } catch {
+        case ex : ControlException =>
+        case ex =>
+          result set Right(ex)
+          throw ex
+      }
 
   /** Make sure a set of compilation units is loaded and parsed */
   def reloadSources(sources: List[SourceFile]) {
