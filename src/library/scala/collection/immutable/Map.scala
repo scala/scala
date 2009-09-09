@@ -27,11 +27,6 @@ trait Map[A, +B] extends Iterable[(A, B)]
   override def updated [B1 >: B](key: A, value: B1): Map[A, B1]
   def + [B1 >: B](kv: (A, B1)): Map[A, B1]
 
-  /** A hash method compatible with <code>equals</code>
-   */
-  override def hashCode() =
-    (Map.hashSeed /: this) (_ * 41 + _.hashCode)
-
   /** The same map with a given default function !!! todo: move to general maps? */
   def withDefault[B1 >: B](d: A => B1): Map[A, B1] = new Map.WithDefault[A, B1](this, d)
 
@@ -40,7 +35,6 @@ trait Map[A, +B] extends Iterable[(A, B)]
 }
 
 object Map extends ImmutableMapFactory[Map] {
-  private val hashSeed = "Map".hashCode
   implicit def builderFactory[A, B]: BuilderFactory[(A, B), Map[A, B], Coll] = new MapBuilderFactory[A, B]
 
   def empty[A, B]: Map[A, B] = new EmptyMap[A, B]

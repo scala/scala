@@ -10,6 +10,7 @@
 
 package scala.collection.generic
 import scala.collection._
+import PartialFunction._
 
 /** <p>
  *    A generic template for sets of type <code>A</code>.<br/>
@@ -153,6 +154,18 @@ self =>
    */
   def subsetOf(that: Set[A]): Boolean = forall(that.contains)
 
+  /** Defines the prefix of this object's <code>toString</code> representation.
+   */
+  override def stringPrefix: String = "Set"
+
+  /** Need to override string, so that it's not the Function1's string that gets mixed in.
+   */
+  override def toString = super[IterableTemplate].toString
+
+  // override def hashCode() = (this map (_.hashCode)).foldLeft(0)(_ + _)
+  override def hashCode() = this map (_.hashCode) sum
+  override def canEqualCollection(that: Any) = that.isInstanceOf[Set[_]]
+
   /** Compares this set with another object and returns true, iff the
    *  other object is also a set which contains the same elements as
    *  this set.
@@ -162,27 +175,10 @@ self =>
    *  @return     <code>true</code> iff this set and the other set
    *              contain the same elements.
    */
-  override def equals(that: Any): Boolean = that match {
-    case other: Set[_] =>
-      if (this.size == other.size)
-        try { // can we find a safer way to do this?
-          subsetOf(other.asInstanceOf[Set[A]])
-        } catch {
-          case ex: ClassCastException => false
-        }
-      else false
-    case _ =>
-      false
-  }
-
-  /** Defines the prefix of this object's <code>toString</code> representation.
-   */
-  override def stringPrefix: String = "Set"
-
-  /** Need to override string, so that it's not the Function1's string that gets mixed in.
-   */
-  override def toString = super[IterableTemplate].toString
+  override def equals(that: Any): Boolean = anyEq(that) || (cond(that) {
+    case x: Set[A] if (x canEqualCollection this) && size == x.size =>
+      // can we find a safer way to do this?
+      try this subsetOf x.asInstanceOf[Set[A]]
+      catch { case ex: ClassCastException => false }
+  })
 }
-
-
-

@@ -160,6 +160,10 @@ class PriorityQueue[A](implicit ord: Ordering[A])
    *
    *  @return true, iff both queues contain the same sequence of elements.
    */
+  override def canEqualCollection(that: Any) = that.isInstanceOf[PriorityQueue[_]]
+  // !!! At this writing this is the only sequence which imposes stricter
+  // equality requirements, if there is some logic behind this we should
+  // document it.
   override def equals(obj: Any): Boolean = obj match {
     case that: PriorityQueue[_] => (this.iterator zip that.iterator) forall { case (x, y) => x == y }
     case _                      => false

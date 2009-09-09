@@ -45,8 +45,8 @@ object LongMap{
   def apply[T](elems : (Long, T)*) : LongMap[T] =
     elems.foldLeft(empty[T])((x, y) => x.updated(y._1, y._2));
 
-
-  private[immutable] case object Nil extends LongMap[Nothing]{
+  private[immutable] case object Nil extends LongMap[Nothing] {
+    // Important, don't remove this! See IntMap for explanation.
     override def equals(that : Any) = that match {
       case (that : AnyRef) if (this eq that) => true;
       case (that : LongMap[_]) => false; // The only empty LongMaps are eq Nil

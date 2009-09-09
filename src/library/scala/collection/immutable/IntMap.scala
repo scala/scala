@@ -44,8 +44,11 @@ object IntMap{
   def apply[T](elems : (Int, T)*) : IntMap[T] =
     elems.foldLeft(empty[T])((x, y) => x.updated(y._1, y._2));
 
-
-  private[immutable] case object Nil extends IntMap[Nothing]{
+  private[immutable] case object Nil extends IntMap[Nothing] {
+    // Important! Without this equals method in place, an infinite
+    // loop from Map.equals => size => pattern-match-on-Nil => equals
+    // develops.  Case objects and custom equality don't mix without
+    // careful handling.
     override def equals(that : Any) = that match {
       case (that : AnyRef) if (this eq that) => true;
       case (that : IntMap[_]) => false; // The only empty IntMaps are eq Nil

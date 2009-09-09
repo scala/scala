@@ -29,14 +29,5 @@ final class ObjectArrayVector[A <: AnyRef](val value: Array[AnyRef], val elemMan
   }
 
   def unbox(elemClass: Class[_]): AnyRef = value
-
-/*
-  override def equals(other: Any): Boolean =
-    (value eq other.asInstanceOf[AnyRef]) ||
-    other.isInstanceOf[ObjectArrayVector[_]] && (value eq other.asInstanceOf[ObjectArrayVector[_]].value)
-
-  override def hashCode(): Int = (value.asInstanceOf[AnyRef]).hashCode()
-*/
-
 }
 

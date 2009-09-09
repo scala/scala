@@ -17,6 +17,7 @@ object Test {
     // null on Nil
     // mutable.LinkedList(_: _*),
     mutable.ListBuffer(_: _*),
+    // mutable.PriorityQueue(_: _*),
     // immutable.Queue(_: _*),
     // mutable.Queue(_: _*),
     immutable.Sequence(_: _*),
@@ -115,7 +116,6 @@ object Test {
   def main(args: Array[String]): Unit = {
     runSeqs()
 
-    if (failures.isEmpty) println("All %d tests passed.".format(testCount))
-    else failures foreach println
+    assert(failures.isEmpty, failures mkString "\n")
   }
 }

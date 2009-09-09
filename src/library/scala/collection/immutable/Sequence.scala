@@ -18,12 +18,9 @@ trait Sequence[+A] extends Iterable[A]
                       with TraversableClass[A, Sequence]
                       with SequenceTemplate[A, Sequence[A]] {
   override def companion: Companion[Sequence] = Sequence
-
-  override def hashCode = (Sequence.hashSeed /: this)(_ * 41 + _.hashCode)
 }
 
 object Sequence extends SequenceFactory[Sequence] {
-  private val hashSeed = "Sequence".hashCode
   implicit def builderFactory[A]: BuilderFactory[A, Sequence[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, Sequence[A]] = new mutable.ListBuffer
 }

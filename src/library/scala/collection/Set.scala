@@ -32,18 +32,3 @@ object Set extends SetFactory[Set] {
   override def empty[A]: Set[A] = immutable.Set.empty[A]
   implicit def builderFactory[A]: BuilderFactory[A, Set[A], Coll] = setBuilderFactory[A]
 }
-
-/* !!! what to do about this?
-override def hashCode() =
-    (0 /: this)((hash, e) => hash + e.hashCode())
-
-  override def toArray[B >: A]: Array[B] = {
-    val result = new Array[B](size)
-    copyToArray(result, 0)
-    result
-  }
-
-  /** Defines the prefix of this object's <code>toString</code> representation.
-   */
-  override protected def stringPrefix : String = "Set"
-*/

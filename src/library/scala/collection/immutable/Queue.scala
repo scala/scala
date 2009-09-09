@@ -127,18 +127,4 @@ class Queue[+A] protected(
   /** Returns a string representation of this queue.
    */
   override def toString() = mkString("Queue(", ", ", ")")
-
-  /** Compares two queues for equality by comparing
-   *  each element in the queues.
-   *
-   *  @return true, iff the two queues are structurally equal.
-   */
-  override def equals(o: Any): Boolean = o match {
-    case q: Queue[_]  => this sameElements q
-    case _            => false
-  }
-
-  override lazy val hashCode: Int =
-    if (isEmpty) 0
-    else dequeue match { case (x,y) => x.hashCode + y.hashCode }
 }

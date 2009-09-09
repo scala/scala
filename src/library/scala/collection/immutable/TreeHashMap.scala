@@ -59,18 +59,6 @@ class TreeHashMap[Key, +Value] private (private val underlying : IntMap[AssocMap
 
   override lazy val size = underlying.values.foldLeft(0)((x, y) => x + y.size);
 
-  // todo: probably drop to make conform with general equals/hashcode policy
-  override def equals(that : Any) = that match {
-    case (that : TreeHashMap[_, _]) =>
-      if (this eq that) true
-      else if (this.size != that.size) false;
-      else this.underlying == that.underlying;
-    case _ => false
-  }
-
-  // todo: probably drop to make conform with general equals/hashcode policy
-  override def hashCode = underlying.hashCode
-
   override def foreach[U](f : ((Key, Value)) =>  U) = underlying.foreachValue(_.foreach(f));
 
   override def toList : List[(Key, Value)] = {
@@ -222,15 +210,6 @@ private[collection] sealed abstract class AssocMap[Key, +Value] extends immutabl
         case Some(x) => tail.sameMappings(x);
       }
   }
-
-  override def equals(that : Any) =
-    if (this eq that.asInstanceOf[AnyRef]) true;
-    else that match {
-      case (that : AssocMap[_, _]) =>
-        if (this.size != that.size) false;
-        else this.sameMappings(that);
-      case _ => false;
-    }
 
   final def merge[S >: Value](that : AssocMap[Key, S]) : AssocMap[Key, S] = (this, that) match {
     case (Nil(), that) => that;

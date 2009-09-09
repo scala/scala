@@ -274,6 +274,8 @@ trait IterableTemplate[+A, +This <: IterableTemplate[A, This] with Iterable[A]] 
    */
   override def view(from: Int, until: Int) = view.slice(from, until)
 
+  protected def anyEq(that: Any) = this eq that.asInstanceOf[AnyRef]
+
   @deprecated("use `head' instead") def first: A = head
 
   /** <code>None</code> if traversable is empty. */

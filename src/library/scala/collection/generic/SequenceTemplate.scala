@@ -16,6 +16,7 @@ import mutable.{ListBuffer, HashMap}
 
 // import immutable.{List, Nil, ::}
 import generic._
+import PartialFunction._
 
 /** Class <code>Sequence[A]</code> represents sequences of elements
  *  of type <code>A</code>.
@@ -440,14 +441,16 @@ trait SequenceTemplate[+A, +This <: SequenceTemplate[A, This] with Sequence[A]] 
 
   override def view(from: Int, until: Int) = view.slice(from, until)
 
-  override def equals(that: Any): Boolean = that match {
-    case that: Sequence[_]  => this sameElements that
-    case _                  => false
-  }
-
   /** Need to override string, so that it's not the Function1's string that gets mixed in.
    */
   override def toString = super[IterableTemplate].toString
+
+  override def hashCode() = (Sequence.hashSeed /: this)(_ * 41 + _.hashCode)
+  override def canEqualCollection(that: Any) = that.isInstanceOf[Sequence[_]]
+  override def equals(that: Any): Boolean =
+    anyEq(that) || (cond(that) {
+      case x: Sequence[_] if (x canEqualCollection this) => this sameElements x
+    })
 
   /** Returns index of the last element satisying a predicate, or -1. */
   @deprecated("use `lastIndexWhere' instead")

@@ -8,9 +8,10 @@
 
 // $Id$
 
-
 package scala.collection.generic
+
 import scala.collection._
+import PartialFunction._
 
 /** <p>
  *    A generic template for maps from keys of type <code>A</code> to values
@@ -254,6 +255,17 @@ self =>
   override def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder =
     this.iterator.map { case (k, v) => k+" -> "+v }.addString(b, start, sep, end)
 
+  /** Defines the prefix of this object's <code>toString</code> representation.
+   */
+  override def stringPrefix: String = "Map"
+
+  /** Need to override string, so that it's not the Function1's string that gets mixed in.
+   */
+  override def toString = super[IterableTemplate].toString
+
+  override def hashCode() = this map (_.hashCode) sum
+  override def canEqualCollection(that: Any) = that.isInstanceOf[Map[_, _]]
+
   /** Compares two maps structurally; i.e. checks if all mappings
    *  contained in this map are also contained in the other map,
    *  and vice versa.
@@ -262,28 +274,10 @@ self =>
    *  @return     <code>true</code> iff both maps contain exactly the
    *              same mappings.
    */
-  override def equals(that: Any): Boolean = that match {
-    case other: Map[a, b] =>
-      if (this.size == other.size)
-        try { // can we find a safer way to do this?
-          this forall {
-            case (key, value) => other.get(key.asInstanceOf[a]) match {
-              case None => false
-              case Some(otherval) => value == otherval
-            }
-          }
-        } catch {
-          case ex: ClassCastException => false
-        }
-      else false
-    case _ => false
-  }
-
-  /** Defines the prefix of this object's <code>toString</code> representation.
-   */
-  override def stringPrefix: String = "Map"
-
-  /** Need to override string, so that it's not the Function1's string that gets mixed in.
-   */
-  override def toString = super[IterableTemplate].toString
+  override def equals(that: Any): Boolean =
+    anyEq(that) || (cond(that) {
+      case x: Map[A, _] if x.canEqualCollection(this) && size == x.size =>
+        try this forall { case (k, v) => x.get(k.asInstanceOf[A]) == Some(v) }
+        catch { case ex: ClassCastException => false }
+    })
 }
