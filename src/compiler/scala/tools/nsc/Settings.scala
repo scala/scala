@@ -10,6 +10,7 @@ import java.io.File
 import io.AbstractFile
 import util.SourceFile
 import Settings._
+import annotation.elidable
 
 class Settings(errorFn: String => Unit) extends ScalacSettings {
   def this() = this(Console.println)
@@ -316,8 +317,14 @@ object Settings {
     def str(name: String, arg: String, descr: String, default: String) =
       new StringSetting(name, arg, descr, default)
 
-    def sint(name: String, descr: String, default: Int, min: Option[Int], max: Option[Int]) =
-      new IntSetting(name, descr, default, min, max)
+    def sint(
+      name: String,
+      descr: String,
+      default: Int,
+      range: Option[(Int, Int)] = None,
+      parser: String => Option[Int] = _ => None
+    ) =
+      new IntSetting(name, descr, default, range, parser)
 
     def multi(name: String, arg: String, descr: String) =
       new MultiStringSetting(name, arg, descr)
@@ -413,53 +420,55 @@ object Settings {
     override def toString() = "%s = %s".format(name, value)
   }
 
-  /** A setting represented by a positive integer */
+  /** A setting represented by an integer */
   class IntSetting private[Settings](
     val name: String,
     val descr: String,
     val default: Int,
-    val min: Option[Int],
-    val max: Option[Int])
+    val range: Option[(Int, Int)],
+    parser: String => Option[Int])
   extends Setting(descr) {
     type T = Int
     protected var v = default
+
+    // not stable values!
+    val IntMin = Int.MinValue
+    val IntMax = Int.MaxValue
+    def min = range map (_._1) getOrElse IntMin
+    def max = range map (_._2) getOrElse IntMax
+
     override def value_=(s: Int) =
       if (isInputValid(s)) super.value_=(s) else errorMsg
 
     // Validate that min and max are consistent
-    (min, max) match {
-      case (Some(i), Some(j)) => assert(i <= j)
-      case _ => ()
-    }
+    assert(min <= max)
 
     // Helper to validate an input
-    private def isInputValid(k: Int): Boolean = (min, max) match {
-      case (Some(i), Some(j)) => (i <= k) && (k <= j)
-      case (Some(i), None) => (i <= k)
-      case (None, Some(j)) => (k <= j)
-      case _ => true
-    }
+    private def isInputValid(k: Int): Boolean = (min <= k) && (k <= max)
 
     // Helper to generate a textual explaination of valid inputs
     private def getValidText: String = (min, max) match {
-      case (Some(i), Some(j)) => "must be between "+i+" and "+j
-      case (Some(i), None)    => "must be greater than or equal to "+i
-      case (None, Some(j))    => "must be less than or equal to "+j
-      case _                  => throw new Error("this should never be used")
+      case (IntMin, IntMax)   => "can be any integer"
+      case (IntMin, x)        => "must be less than or equal to "+x
+      case (x, IntMax)        => "must be greater than or equal to "+x
+      case _                  => "must be between %d and %d".format(min, max)
     }
 
     // Ensure that the default value is actually valid
     assert(isInputValid(default))
 
-    def parseInt(x: String): Option[Int] =
-      try   { Some(x.toInt) }
-      catch { case _: NumberFormatException => None }
+    def parseArgument(x: String): Option[Int] = {
+      parser(x) orElse {
+        try   { Some(x.toInt) }
+        catch { case _: NumberFormatException => None }
+      }
+    }
 
     def errorMsg = errorFn("invalid setting for -"+name+" "+getValidText)
 
     def tryToSet(args: List[String]) =
       if (args.isEmpty) errorAndValue("missing argument", None)
-      else parseInt(args.head) match {
+      else parseArgument(args.head) match {
         case Some(i)  => value = i ; Some(args.tail)
         case None     => errorMsg ; None
       }
@@ -740,7 +749,8 @@ trait ScalacSettings {
   val assemrefs     = StringSetting     ("-Xassem-path", "path", "List of assemblies referenced by the program (only relevant with -target:msil)", ".").dependsOn(target, "msil")
   val Xchecknull    = BooleanSetting    ("-Xcheck-null", "Emit warning on selection of nullable reference")
   val checkInit     = BooleanSetting    ("-Xcheckinit", "Add runtime checks on field accessors. Uninitialized accesses result in an exception being thrown.")
-  val noassertions  = BooleanSetting    ("-Xdisable-assertions", "Generate no assertions and assumptions")
+  val elideLevel    = IntSetting        ("-Xelide-level", "Generate calls to @elidable-marked methods only method priority is greater than argument.",
+                                                elidable.ASSERTION, None, elidable.byName.get(_))
   val Xexperimental = BooleanSetting    ("-Xexperimental", "Enable experimental extensions")
   val noForwarders  = BooleanSetting    ("-Xno-forwarders", "Do not generate static forwarders in mirror classes")
   val future        = BooleanSetting    ("-Xfuture", "Turn on future language features")
@@ -787,7 +797,7 @@ trait ScalacSettings {
   val Ynogenericsig = BooleanSetting    ("-Yno-generic-signatures", "Suppress generation of generic signatures for Java")
   val noimports     = BooleanSetting    ("-Yno-imports", "Compile without any implicit imports")
   val nopredefs     = BooleanSetting    ("-Yno-predefs", "Compile without any implicit predefined values")
-  val Yrecursion    = IntSetting        ("-Yrecursion", "Recursion depth used when locking symbols", 0, Some(0), None)
+  val Yrecursion    = IntSetting        ("-Yrecursion", "Recursion depth used when locking symbols", 0, Some(0, Int.MaxValue), _ => None)
   val selfInAnnots  = BooleanSetting    ("-Yself-in-annots", "Include a \"self\" identifier inside of annotations")
   val Xshowtrees    = BooleanSetting    ("-Yshow-trees", "Show detailed trees when used in connection with -print:phase")
   val skip          = PhasesSetting     ("-Yskip", "Skip")

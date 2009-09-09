@@ -11,7 +11,6 @@
 
 package scala
 
-
 /** The <code>Predef</code> object provides definitions that are
  *  accessible in all Scala compilation units without explicit
  *  qualification.
@@ -97,21 +96,28 @@ object Predef {
     throw new Throwable()
   }
 
+  import annotation.elidable
+  import annotation.elidable.ASSERTION
+
+  @elidable(ASSERTION)
   def assert(assertion: Boolean) {
     if (!assertion)
       throw new java.lang.AssertionError("assertion failed")
   }
 
+  @elidable(ASSERTION)
   def assert(assertion: Boolean, message: => Any) {
     if (!assertion)
       throw new java.lang.AssertionError("assertion failed: "+ message)
   }
 
+  @elidable(ASSERTION)
   def assume(assumption: Boolean) {
     if (!assumption)
       throw new java.lang.AssertionError("assumption failed")
   }
 
+  @elidable(ASSERTION)
   def assume(assumption: Boolean, message: => Any) {
     if (!assumption)
       throw new java.lang.AssertionError("assumption failed: "+ message)

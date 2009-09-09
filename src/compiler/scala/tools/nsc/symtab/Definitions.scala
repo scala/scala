@@ -96,6 +96,7 @@ trait Definitions {
     lazy val TailrecClass               = getClass("scala.annotation.tailrec")
     lazy val SwitchClass                = getClass("scala.annotation.switch")
     lazy val ExperimentalClass          = getClass("scala.annotation.experimental")
+    lazy val ElidableMethodClass        = getClass("scala.annotation.elidable")
 
     // fundamental reference classes
     lazy val ScalaObjectClass     = getClass("scala.ScalaObject")

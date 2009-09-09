@@ -441,6 +441,16 @@ trait Symbols {
             None
         }
       }
+    def elisionLevel: Option[Int] = {
+      if (!hasAnnotation(ElidableMethodClass)) None
+      else annotations find (_.atp.typeSymbol == ElidableMethodClass) flatMap { annot =>
+        // since we default to enabled by default, only look hard for falsity
+        annot.args match {
+          case Literal(Constant(x: Int)) :: Nil => Some(x)
+          case x => println(x) ; None
+        }
+      }
+    }
 
     /** Does this symbol denote a wrapper object of the interpreter or its class? */
     final def isInterpreterWrapper =
