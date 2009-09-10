@@ -3217,6 +3217,13 @@ trait Typers { self: Analyzer =>
                  else ""))
           }
           setError(tree)
+
+          val tree1 = tree match {
+            case Select(_, _) => treeCopy.Select(tree, qual, name)
+            case SelectFromTypeTree(_, _) => treeCopy.SelectFromTypeTree(tree, qual, name)
+          }
+
+          tree1
         } else {
           val tree1 = tree match {
             case Select(_, _) => treeCopy.Select(tree, qual, name)
