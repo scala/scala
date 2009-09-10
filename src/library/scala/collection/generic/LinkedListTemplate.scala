@@ -17,7 +17,6 @@ import annotation.tailrec
  *  list. Type variable <code>A</code> refers to the element type of the
  *  list, type variable <code>This</code> is used to model self types of
  *  linked lists.
- *  !!! todo: integrate with LinearSequence, need to drop null then.
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @version 2.8
@@ -40,7 +39,7 @@ trait LinkedListTemplate[A, This >: Null <: Sequence[A] with LinkedListTemplate[
       if (x.next eq null) x.next = that
       else loop(x.next)
     }
-    loop(thisCollection)
+    loop(repr)
   }
 
   def insert(that: This): Unit = if (that ne null) {
@@ -50,7 +49,7 @@ trait LinkedListTemplate[A, This >: Null <: Sequence[A] with LinkedListTemplate[
 
   override def drop(n: Int): This = {
     var i = 0
-    var these: This = thisCollection
+    var these: This = repr
     while (i < n && (these ne null)) {
       these = these.next.asInstanceOf[This] // !!! concrete overrides abstract problem
       i += 1
