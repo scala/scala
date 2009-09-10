@@ -16,7 +16,8 @@ END-USER TARGETS
     <property name="scalac.args.optimise" value="-optimise"/>
     <antcall target="build"/>
   </target>
-  
+  <target name="optimise" depends="build.optimise"/>
+
   <target name="clean" depends="quick.clean"
     description="Removes binaries of compiler and library. Distributions are untouched."/>
 
@@ -1256,7 +1257,8 @@ BOOTRAPING TEST AND TEST SUITE
 
   <target name="test.run" depends="pack.done">
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
-             timeout="1200000" javaccmd="${javac.cmd}">
+             timeout="1200000" javaccmd="${javac.cmd}"
+             scalacopts="${scalac.args.optimise}">
       <classpath>
         <path refid="pack.classpath"/>
         <fileset dir="${test.dir}/files/lib" includes="*.jar"/>
@@ -1270,7 +1272,8 @@ BOOTRAPING TEST AND TEST SUITE
 
   <target name="test.suite" depends="pack.done">
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
-             timeout="1200000" javaccmd="${javac.cmd}">
+             timeout="1200000" javaccmd="${javac.cmd}"
+             scalacopts="${scalac.args.optimise}">
       <classpath>
         <path refid="pack.classpath"/>
         <fileset dir="${test.dir}/files/lib" includes="*.jar"/>
