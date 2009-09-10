@@ -135,8 +135,6 @@ PROPERTIES
 
   <!-- Additional command line arguments for scalac. They are added to all build targets -->
   <property name="scalac.args" value=""/>
-  <property name="scalac.args.optimise" value=""/>
-  <property name="scalac.args.all" value="${scalac.args} ${scalac.args.optimise}"/>
   <property name="javac.args" value=""/>
 
   <!-- Sets location of pre-compiled libraries -->
@@ -180,6 +178,8 @@ INITIALISATION
 ============================================================================ -->
 
   <target name="init">
+    <property name="scalac.args.optimise" value=""/>
+    <property name="scalac.args.all" value="${scalac.args} ${scalac.args.optimise}"/>
   <!-- Setting-up Ant contrib tasks -->
     <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant/ant-contrib.jar"/>
   <!-- This is the start time for the distribution -->
