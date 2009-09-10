@@ -3216,14 +3216,21 @@ trait Typers { self: Analyzer =>
                   "\npossible cause: maybe a semicolon is missing before `"+decode(name)+"'?"
                  else ""))
           }
-          setError(tree)
 
-          val tree1 = tree match {
-            case Select(_, _) => treeCopy.Select(tree, qual, name)
-            case SelectFromTypeTree(_, _) => treeCopy.SelectFromTypeTree(tree, qual, name)
-          }
-
-          tree1
+          // Temporary workaround to retain type information for qual so that askTypeCompletion has something to
+          // work with. This appears to work in the context of the IDE, but is incorrect and needs to be
+          // revisited.
+          if (onlyPresentation) {
+            // Nb. this appears to throw away the effects of setError, but some appear to be
+            // retained across the copy.
+            setError(tree)
+            val tree1 = tree match {
+              case Select(_, _) => treeCopy.Select(tree, qual, name)
+              case SelectFromTypeTree(_, _) => treeCopy.SelectFromTypeTree(tree, qual, name)
+            }
+            tree1
+          } else
+            setError(tree)
         } else {
           val tree1 = tree match {
             case Select(_, _) => treeCopy.Select(tree, qual, name)
