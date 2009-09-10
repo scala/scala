@@ -19,7 +19,7 @@ import TraversableView.NoBuilder
  * @author Martin Odersky
  * @version 2.8
  */
-trait SequenceView[+A, +Coll <: Sequence[_]] extends SequenceViewTemplate[A, Coll, SequenceView[A, Coll]]
+trait SequenceView[+A, +Coll] extends SequenceViewTemplate[A, Coll, SequenceView[A, Coll]]
 
 object SequenceView {
   type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}

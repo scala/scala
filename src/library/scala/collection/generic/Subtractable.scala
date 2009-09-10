@@ -19,7 +19,7 @@ import scala.collection._
  */
 trait Subtractable[A, +This <: Subtractable[A, This]] { self =>
 
-  protected def thisCollection: This
+  protected def repr: This
 
   /** Returns a new collection that contains all elements of the current collection
    *  except a given element.
@@ -43,7 +43,7 @@ trait Subtractable[A, +This <: Subtractable[A, This]] { self =>
    *
    *  @param elems     the traversable object containing the elements that do not form part of the new collection.
    */
-  def --(elems: Traversable[A]): This = (thisCollection /: elems) (_ - _)
+  def --(elems: Traversable[A]): This = (repr /: elems) (_ - _)
 
   /** Returns a new collection that contains all elements of the current collection
    *  except the elements provided by an iterator
@@ -51,5 +51,5 @@ trait Subtractable[A, +This <: Subtractable[A, This]] { self =>
    *  @param elems     the iterator containing the elements that do not form part of the new collection
    *  @note  same as --
    */
-  def --(iter: Iterator[A]): This = (thisCollection /: iter) (_ - _)
+  def --(iter: Iterator[A]): This = (repr /: iter) (_ - _)
 }

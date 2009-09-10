@@ -6,23 +6,23 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: DoubleArrayVector.scala 18572 2009-08-25 14:14:11Z odersky $
+// $Id: WrappedDoubleArray.scala 18572 2009-08-25 14:14:11Z odersky $
 
 
 package scala.collection.mutable
 import scala.reflect.ClassManifest
 
 @serializable
-final class DoubleArrayVector(val value: Array[Double]) extends ArrayVector[Double] {
+final class WrappedDoubleArray(val array: Array[Double]) extends WrappedArray[Double] {
 
   def elemManifest = ClassManifest.Double
 
-  def length: Int = value.length
+  def length: Int = array.length
 
-  def apply(index: Int): Double = value(index)
+  def apply(index: Int): Double = array(index)
 
   def update(index: Int, elem: Double) {
-    value(index) = elem
+    array(index) = elem
   }
-  def unbox(elemClass: Class[_]): AnyRef = value
+  def unbox(elemClass: Class[_]): AnyRef = array
 }

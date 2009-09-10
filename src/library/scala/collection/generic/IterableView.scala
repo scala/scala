@@ -19,7 +19,7 @@ import TraversableView.NoBuilder
  *  @author Martin Odersky
  *  @version 2.8
  */
-trait IterableView[+A, +Coll <: Iterable[_]] extends IterableViewTemplate[A, Coll, IterableView[A, Coll]]
+trait IterableView[+A, +Coll] extends IterableViewTemplate[A, Coll, IterableView[A, Coll]]
 
 object IterableView {
   type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}

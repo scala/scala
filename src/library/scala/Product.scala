@@ -18,7 +18,7 @@ package scala
  *  @version 1.0
  *  @since   2.3
  */
-trait Product extends AnyRef {
+trait Product extends Equals {
 
   /** for a product <code>A(x_1,...,x_k)</code>, returns <code>x_(n+1)</code>
    *  for <code>0 &lt;= n &lt; k</code>
@@ -56,5 +56,5 @@ trait Product extends AnyRef {
    *  in the face of subtyping.  For more, see
    *    http://www.artima.com/lejava/articles/equality.html
    */
-  def canEqual(other: Any) = true
+  override def canEqual(other: Any): Boolean = true
 }

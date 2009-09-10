@@ -6,23 +6,23 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: IntArrayVector.scala 18572 2009-08-25 14:14:11Z odersky $
+// $Id: WrappedFloatArray.scala 18572 2009-08-25 14:14:11Z odersky $
 
 
 package scala.collection.mutable
 import scala.reflect.ClassManifest
 
 @serializable
-final class IntArrayVector(val value: Array[Int]) extends ArrayVector[Int] {
+final class WrappedFloatArray(val array: Array[Float]) extends WrappedArray[Float] {
 
-  def elemManifest = ClassManifest.Int
+  def elemManifest = ClassManifest.Float
 
-  def length: Int = value.length
+  def length: Int = array.length
 
-  def apply(index: Int): Int = value(index)
+  def apply(index: Int): Float = array(index)
 
-  def update(index: Int, elem: Int) {
-    value(index) = elem
+  def update(index: Int, elem: Float) {
+    array(index) = elem
   }
-  def unbox(elemClass: Class[_]): AnyRef = value
+  def unbox(elemClass: Class[_]): AnyRef = array
 }

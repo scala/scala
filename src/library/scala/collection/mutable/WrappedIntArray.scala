@@ -6,23 +6,23 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: CharArrayVector.scala 18572 2009-08-25 14:14:11Z odersky $
+// $Id: WrappedIntArray.scala 18572 2009-08-25 14:14:11Z odersky $
 
 
 package scala.collection.mutable
 import scala.reflect.ClassManifest
 
 @serializable
-final class CharArrayVector(val value: Array[Char]) extends ArrayVector[Char] {
+final class WrappedIntArray(val array: Array[Int]) extends WrappedArray[Int] {
 
-  def elemManifest = ClassManifest.Char
+  def elemManifest = ClassManifest.Int
 
-  def length: Int = value.length
+  def length: Int = array.length
 
-  def apply(index: Int): Char = value(index)
+  def apply(index: Int): Int = array(index)
 
-  def update(index: Int, elem: Char) {
-    value(index) = elem
+  def update(index: Int, elem: Int) {
+    array(index) = elem
   }
-  def unbox(elemClass: Class[_]): AnyRef = value
+  def unbox(elemClass: Class[_]): AnyRef = array
 }

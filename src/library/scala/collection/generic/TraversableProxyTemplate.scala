@@ -89,7 +89,7 @@ private class TraversableProxyTemplateConfirmation[+A, +This <: TraversableTempl
   extends TraversableProxyTemplate[A, Traversable[A]]
   with interfaces.TraversableMethods[A, Traversable[A]]
 {
-  def self: This = thisCollection.asInstanceOf[This]
+  def self: This = repr.asInstanceOf[This]
   protected[this] def newBuilder = collection.Traversable.newBuilder[A]
   // : Builder[A, This]
 }

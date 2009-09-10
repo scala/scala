@@ -20,6 +20,10 @@ import scala.annotation.experimental
  *  I looked for the fastest way to do these operations so there
  *  is some unattractiveness.
  *
+ *  Martin: We should disable this because it is superseded in functionality by
+ *  StringLike/StringOps. We need to clarify whether performance is good enough with the new scheme.
+ *  If not, maybe we need to bring back this object in some form.
+ *
  *  @author Paul Phillips
  *  @version 2.8
  */

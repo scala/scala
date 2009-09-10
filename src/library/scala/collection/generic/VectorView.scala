@@ -20,7 +20,7 @@ import TraversableView.NoBuilder
  * @author Martin Odersky
  * @version 2.8
  */
-trait VectorView[+A, +Coll <: Vector[_]] extends VectorViewTemplate[A, Coll, VectorView[A, Coll]]
+trait VectorView[+A, +Coll] extends VectorViewTemplate[A, Coll, VectorView[A, Coll]]
 
 object VectorView {
   type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}

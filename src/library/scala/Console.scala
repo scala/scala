@@ -220,7 +220,7 @@ object Console {
    *       target="contentFrame">Console.printf</a>.
    */
   @deprecated("For console output, use <code>Console.printf</code>. For <code>String</code>\n"+
-              "formatting, <code>RichString</code>'s <code>format</code> method.")
+              "formatting, <code>StringOps</code>'s <code>format</code> method.")
   def format(text: String, args: Any*) {
     if (text eq null) out.printf("null")
     else out.print(text format (args : _*))

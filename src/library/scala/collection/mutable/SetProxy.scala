@@ -22,7 +22,7 @@ import scala.collection.generic.SetProxyTemplate
  */
 trait SetProxy[A] extends Set[A] with SetProxyTemplate[A, Set[A]]
 {
-  override def thisCollection = this
+  override def repr = this
   override def empty = new SetProxy[A] { val self = SetProxy.this.self.empty }
   override def + (elem: A) = { self += elem ; this }
   override def - (elem: A) = { self -= elem ; this }

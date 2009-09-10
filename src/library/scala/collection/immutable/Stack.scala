@@ -111,12 +111,6 @@ class Stack[+A] extends Sequence[A] {
     def next: A = { val r = top; cur = cur.pop; r }
   }
 
-  /** Returns the hash code for this stack.
-   *
-   *  @return the hash code of the stack.
-   */
-  override def hashCode(): Int = "Stack".hashCode
-
   /**
    * Redefines the prefix of the string representation.
    */
@@ -128,7 +122,6 @@ class Stack[+A] extends Sequence[A] {
     override def length: Int = Stack.this.length + 1
     override def top: B = elem
     override def pop: Stack[B] = Stack.this
-    override def hashCode(): Int = elem.hashCode() * 37 + Stack.this.hashCode()
   }
 }
 

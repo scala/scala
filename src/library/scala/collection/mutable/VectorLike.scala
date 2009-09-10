@@ -6,22 +6,26 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: MutableVectorTemplate.scala 18387 2009-07-24 15:28:37Z odersky $
 
 
-package scala.collection.generic
-import scala.collection._
+package scala.collection
+package mutable
+import generic._
 
 /** A subtrait of collection.Vector which represents sequences
  *  that can be mutated.
  */
-trait MutableVectorTemplate[A, +This <: MutableVectorTemplate[A, This] with mutable.Vector[A]] extends VectorTemplate[A, This] { self =>
+trait VectorLike[A, +Repr] extends scala.collection.VectorLike[A, Repr] { self =>
+
+  override protected[this] def thisCollection: Vector[A] = this.asInstanceOf[Vector[A]]
+  override protected[this] def toCollection(repr: Repr): Vector[A] = repr.asInstanceOf[Vector[A]]
 
   def update(idx: Int, elem: A)
 
   /** Creates a view of this iterable @see Iterable.View
    */
-  override def view = new MutableVectorView[A, This] {
+  override def view = new MutableVectorView[A, Repr] {
     protected lazy val underlying = self.repr
     override def iterator = self.iterator
     override def length = self.length

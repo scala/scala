@@ -12,7 +12,6 @@
 package scala.collection.mutable
 
 import collection.generic._
-import scala.runtime.RichString
 import compat.Platform.arraycopy
 import scala.reflect.Manifest
 

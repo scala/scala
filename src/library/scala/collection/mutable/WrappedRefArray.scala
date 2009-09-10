@@ -6,23 +6,27 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: DoubleArrayVector.scala 17680 2009-05-08 16:33:15Z odersky $
+// $Id: WrappedObjectArray.scala 18589 2009-08-27 14:45:35Z odersky $
 
 
 package scala.collection.mutable
 import scala.reflect.ClassManifest
 
+import Predef._
+
 @serializable
-final class UnitArrayVector(val value: Array[Unit]) extends ArrayVector[Unit] {
+final class WrappedRefArray[A](val array: Array[AnyRef]) extends WrappedArray[A] {
 
-  def elemManifest = ClassManifest.Unit
+  lazy val elemManifest = ClassManifest.classType[A](array.getClass.getComponentType)
 
-  def length: Int = value.length
+  def length: Int = array.length
 
-  def apply(index: Int): Unit = value(index)
+  def apply(index: Int): A = array(index).asInstanceOf[A]
 
-  def update(index: Int, elem: Unit) {
-    value(index) = elem
+  def update(index: Int, elem: A) {
+    array(index) = elem.asInstanceOf[AnyRef]
   }
-  def unbox(elemClass: Class[_]): AnyRef = value
+
+  def unbox(elemClass: Class[_]): AnyRef = array
 }
+

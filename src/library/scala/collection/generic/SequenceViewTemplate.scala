@@ -21,7 +21,7 @@ import TraversableView.NoBuilder
  * @version 2.8
  */
 trait SequenceViewTemplate[+A,
-                           +Coll <: Sequence[_],
+                           +Coll,
                            +This <: SequenceView[A, Coll] with SequenceViewTemplate[A, Coll, This]]
   extends Sequence[A] with SequenceTemplate[A, This] with IterableView[A, Coll] with IterableViewTemplate[A, Coll, This]
 { self =>
@@ -142,7 +142,7 @@ trait SequenceViewTemplate[+A,
 
   override def patch[B >: A, That](from: Int, patch: Sequence[B], replaced: Int)(implicit bf: BuilderFactory[B, That, This]): That = {
     newPatched(from, patch, replaced).asInstanceOf[That]
-// was:    val b = bf(thisCollection)
+// was:    val b = bf(repr)
 //    if (b.isInstanceOf[NoBuilder[_]]) newPatched(from, patch, replaced).asInstanceOf[That]
 //    else super.patch[B, That](from, patch, replaced)(bf)
   }

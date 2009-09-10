@@ -19,7 +19,7 @@ trait Sorted[K, +This <: Sorted[K, This]]{
   def ordering : Ordering[K];
 
   /** The current collection */
-  protected def thisCollection: This
+  protected def repr: This
 
   /** return as a projection the set of keys in this collection */
   def keySet: SortedSet[K]
@@ -74,10 +74,10 @@ trait Sorted[K, +This <: Sorted[K, This]]{
   def to(to: K): This = {
     // tough!
     val i = keySet.from(to).iterator;
-    if (!i.hasNext) return thisCollection
+    if (!i.hasNext) return repr
     val next = i.next;
     if (next == to) {
-      if (!i.hasNext) return thisCollection
+      if (!i.hasNext) return repr
       else return until(i.next)
     } else return until(next)
   }

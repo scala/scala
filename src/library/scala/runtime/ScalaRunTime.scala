@@ -40,15 +40,15 @@ object ScalaRunTime {
   /** Convert arrays to sequences, leave sequences as they are */
   def toSequence[T](xs: AnyRef): Sequence[T] = xs match {
     case ts: Sequence[T] => ts.asInstanceOf[Sequence[T]]
-    case x: Array[AnyRef] => new ObjectArrayVector(x, ClassManifest.classType(x.getClass.getComponentType))
-    case x: Array[Int] => new IntArrayVector(x).asInstanceOf[Array[T]]
-    case x: Array[Double] => new DoubleArrayVector(x).asInstanceOf[Array[T]]
-    case x: Array[Long] => new LongArrayVector(x).asInstanceOf[Array[T]]
-    case x: Array[Float] => new FloatArrayVector(x).asInstanceOf[Array[T]]
-    case x: Array[Char] => new CharArrayVector(x).asInstanceOf[Array[T]]
-    case x: Array[Byte] => new ByteArrayVector(x).asInstanceOf[Array[T]]
-    case x: Array[Short] => new ShortArrayVector(x).asInstanceOf[Array[T]]
-    case x: Array[Boolean] => new BooleanArrayVector(x).asInstanceOf[Array[T]]
+    case x: Array[AnyRef] => new WrappedRefArray(x).asInstanceOf[Array[T]]
+    case x: Array[Int] => new WrappedIntArray(x).asInstanceOf[Array[T]]
+    case x: Array[Double] => new WrappedDoubleArray(x).asInstanceOf[Array[T]]
+    case x: Array[Long] => new WrappedLongArray(x).asInstanceOf[Array[T]]
+    case x: Array[Float] => new WrappedFloatArray(x).asInstanceOf[Array[T]]
+    case x: Array[Char] => new WrappedCharArray(x).asInstanceOf[Array[T]]
+    case x: Array[Byte] => new WrappedByteArray(x).asInstanceOf[Array[T]]
+    case x: Array[Short] => new WrappedShortArray(x).asInstanceOf[Array[T]]
+    case x: Array[Boolean] => new WrappedBooleanArray(x).asInstanceOf[Array[T]]
     case null => null
   }
 
@@ -163,20 +163,6 @@ object ScalaRunTime {
     case x: Array[Boolean] => new BoxedBooleanArray(x)
     case x: BoxedArray[_] => x
     case null => null
-  }
-
-  def box(value: AnyRef): AnyRef = value match {
-    case x: String => new RichString(x)
-    case x: Array[AnyRef] => new BoxedObjectArray(x, ClassManifest.classType(x.getClass.getComponentType))
-    case x: Array[Int] => new BoxedIntArray(x)
-    case x: Array[Double] => new BoxedDoubleArray(x)
-    case x: Array[Long] => new BoxedLongArray(x)
-    case x: Array[Float] => new BoxedFloatArray(x)
-    case x: Array[Char] => new BoxedCharArray(x)
-    case x: Array[Byte] => new BoxedByteArray(x)
-    case x: Array[Short] => new BoxedShortArray(x)
-    case x: Array[Boolean] => new BoxedBooleanArray(x)
-    case x => x
   }
 
   /** Given any Scala value, convert it to a String.

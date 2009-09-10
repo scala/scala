@@ -20,7 +20,7 @@ import TraversableView.NoBuilder
  * @version 2.8
  */
 trait MutableVectorViewTemplate[A,
-                                +Coll <: mutable.Vector[_],
+                                +Coll,
                                 +This <: MutableVectorView[A, Coll] with MutableVectorViewTemplate[A, Coll, This]]
   extends mutable.Vector[A] with MutableVectorTemplate[A, This] with VectorView[A, Coll] with VectorViewTemplate[A, Coll, This]
 { self =>

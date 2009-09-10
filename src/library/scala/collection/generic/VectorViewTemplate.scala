@@ -21,7 +21,7 @@ import TraversableView.NoBuilder
  * @version 2.8
  */
 trait VectorViewTemplate[+A,
-                         +Coll <: Vector[_],
+                         +Coll,
                          +This <: VectorView[A, Coll] with VectorViewTemplate[A, Coll, This]]
   extends Vector[A] with VectorTemplate[A, This] with SequenceView[A, Coll] with SequenceViewTemplate[A, Coll, This]
 { self =>

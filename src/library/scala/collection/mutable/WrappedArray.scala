@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: ArrayVector.scala 18589 2009-08-27 14:45:35Z odersky $
+// $Id: WrappedArray.scala 18589 2009-08-27 14:45:35Z odersky $
 
 
 package scala.collection.mutable
@@ -21,7 +21,10 @@ import collection.generic._
  *  @author  Martin Odersky, Stephane Micheloud
  *  @version 1.0
  */
-abstract class ArrayVector[A] extends Vector[A] with VectorTemplate[A, ArrayVector[A]] { self =>
+abstract class WrappedArray[A] extends Vector[A] with VectorLike[A, WrappedArray[A]] with Proxy { self =>
+
+  override protected[this] def thisCollection: WrappedArray[A] = this
+  override protected[this] def toCollection(repr: WrappedArray[A]): WrappedArray[A] = repr
 
   /** The manifest of the element type */
   def elemManifest: ClassManifest[A]
@@ -36,10 +39,13 @@ abstract class ArrayVector[A] extends Vector[A] with VectorTemplate[A, ArrayVect
   def update(index: Int, elem: A): Unit
 
   /** The underlying array */
-  def value: AnyRef
+  def array: AnyRef
+
+  /** The original of a proxy represented by a wrapped array */
+  override def self = repr
 
   /** Creates new builder for this collection ==> move to subclasses
    */
-  override protected[this] def newBuilder: Builder[A, ArrayVector[A]] =
-    new ArrayVectorBuilder[A](elemManifest)
+  override protected[this] def newBuilder: Builder[A, WrappedArray[A]] =
+    new WrappedArrayBuilder[A](elemManifest)
 }

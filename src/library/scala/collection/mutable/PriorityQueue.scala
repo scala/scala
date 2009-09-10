@@ -18,6 +18,12 @@ import scala.collection.generic.{ Addable, Cloneable, Growable }
  *  To prioritize elements of type T there must be an implicit
  *  Ordering[T] available at creation.
  *
+ *  Martin: This class is utterly broken. It uses a resizable array
+ *  as a heap, yet pretends to be a sequence via this same resizable array.
+ *  Needless to say, order of elements is different in the two.
+ *  So this class needs to be redesigned so that it uses the array only
+ *  in its implementation, but implements a sequence interface separately.
+ *
  *  @author  Matthias Zenger
  *  @version 1.0, 03/05/2004
  */
@@ -34,7 +40,7 @@ class PriorityQueue[A](implicit ord: Ordering[A])
   size0 += 1                                    // we do not use array(0)
   override def length: Int = super.length - 1   // adjust length accordingly
   override def isEmpty: Boolean = size0 < 2
-  override protected def thisCollection = this
+  override def repr = this
 
   // hey foreach, our 0th element doesn't exist
   override def foreach[U](f: A => U) {
@@ -156,14 +162,9 @@ class PriorityQueue[A](implicit ord: Ordering[A])
     }
   }
 
-  /** Checks if two queues are structurally identical.
-   *
-   *  @return true, iff both queues contain the same sequence of elements.
+  /** This is utterly broken: Two priority queues of different length can still be equal!
+   *  The method should be removed once PriotyQueue inserts correctly into the sequence class hierarchy.
    */
-  override def canEqualCollection(that: Any) = that.isInstanceOf[PriorityQueue[_]]
-  // !!! At this writing this is the only sequence which imposes stricter
-  // equality requirements, if there is some logic behind this we should
-  // document it.
   override def equals(obj: Any): Boolean = obj match {
     case that: PriorityQueue[_] => (this.iterator zip that.iterator) forall { case (x, y) => x == y }
     case _                      => false

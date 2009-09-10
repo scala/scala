@@ -6,23 +6,23 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: ByteArrayVector.scala 18572 2009-08-25 14:14:11Z odersky $
+// $Id: WrappedCharArray.scala 18572 2009-08-25 14:14:11Z odersky $
 
 
 package scala.collection.mutable
 import scala.reflect.ClassManifest
 
 @serializable
-final class ByteArrayVector(val value: Array[Byte]) extends ArrayVector[Byte] {
+final class WrappedCharArray(val array: Array[Char]) extends WrappedArray[Char] {
 
-  def elemManifest = ClassManifest.Byte
+  def elemManifest = ClassManifest.Char
 
-  def length: Int = value.length
+  def length: Int = array.length
 
-  def apply(index: Int): Byte = value(index)
+  def apply(index: Int): Char = array(index)
 
-  def update(index: Int, elem: Byte) {
-    value(index) = elem
+  def update(index: Int, elem: Char) {
+    array(index) = elem
   }
-  def unbox(elemClass: Class[_]): AnyRef = value
+  def unbox(elemClass: Class[_]): AnyRef = array
 }

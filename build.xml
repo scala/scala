@@ -258,6 +258,7 @@ LOCAL REFERENCE BUILD (LOCKER)
       srcdir="${src.dir}/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="scala/Predef.scala"/>
+      <include name="scala/LowPriorityImplicits.scala"/>
       <compilationpath>
         <pathelement location="${build-locker.dir}/classes/library"/>
       </compilationpath>
@@ -271,6 +272,7 @@ LOCAL REFERENCE BUILD (LOCKER)
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
+      <exclude name="scala/LowPriorityImplicits.scala"/>
       <compilationpath>
         <pathelement location="${build-locker.dir}/classes/library"/>
       </compilationpath>
@@ -439,6 +441,7 @@ QUICK BUILD (QUICK)
       srcdir="${src.dir}/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="scala/Predef.scala"/>
+      <include name="scala/LowPriorityImplicits.scala"/>
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
       </compilationpath>
@@ -452,6 +455,7 @@ QUICK BUILD (QUICK)
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
+      <exclude name="scala/LowPriorityImplicits.scala"/>
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
       </compilationpath>
@@ -896,6 +900,7 @@ BOOTSTRAPPING BUILD (STRAP)
       target="jvm-1.5"
       addparams="${scalac.args.all}">
       <include name="scala/Predef.scala"/>
+      <include name="scala/LowPriorityImplicits.scala"/>
     </scalac>
     <scalac
       srcdir="${src.dir}/library"
@@ -905,6 +910,7 @@ BOOTSTRAPPING BUILD (STRAP)
       addparams="${scalac.args.all}">
       <include name="**/*.scala"/>
       <exclude name="scala/Predef.scala"/>
+      <exclude name="scala/LowPriorityImplicits.scala"/>
     </scalac>
     <scalac
       srcdir="${src.dir}/actors"

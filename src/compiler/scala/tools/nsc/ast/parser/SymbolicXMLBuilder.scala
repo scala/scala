@@ -59,6 +59,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean)
   private def LL[A](x: A*): List[List[A]] = List(List(x:_*))
   private def const(x: Any) = x match {
     case s: runtime.RichString  => Literal(Constant(s.toString))  // not our finest hour
+    case s: collection.immutable.StringLike[_] => Literal(Constant(s.toString))  // not our finest hour
     case _                      => Literal(Constant(x))
   }
   private def wild                          = Ident(nme.WILDCARD)

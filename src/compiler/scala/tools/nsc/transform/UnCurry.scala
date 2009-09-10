@@ -373,67 +373,57 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
     }
 
     def transformArgs(pos: Position, args: List[Tree], formals: List[Type], isJava: Boolean) = {
-      if (formals.isEmpty) {
-        assert(args.isEmpty); List()
-      } else {
-        val args1 =
-          formals.last match {
-            case TypeRef(pre, sym, List(elempt)) if (sym == RepeatedParamClass) =>
-              def mkArrayValue(ts: List[Tree]) =
-                atPos(pos)(ArrayValue(TypeTree(elempt), ts) setType formals.last);
-
-              // when calling into java varargs, make sure it's an array - see bug #1360
-              def forceToArray(arg: Tree) = {
-                val Typed(tree, _) = arg
-                if (!isJava || tree.tpe.typeSymbol == ArrayClass) tree
-                else {
-                  val traversableTpe = tree.tpe.baseType(TraversableClass)
-                  val toArray = tree.tpe member nme.toArray
-                  if (traversableTpe != NoType && toArray != NoSymbol) {
-                    val arguments =
-                      if (toArray.tpe.paramTypes.isEmpty) List() // !!! old style toArray
-                      else { // new style, with manifest
-                        val manifestOpt = localTyper.findManifest(tree.tpe.typeArgs.head, false)
-                        if (manifestOpt.tree.isEmpty) {
-                          unit.error(tree.pos, "cannot find class manifest for element type of "+tree.tpe)
-                          List(Literal(Constant(null)))
-                        } else {
-                          List(manifestOpt.tree)
-                        }
-                      }
-                    atPhase(phase.next) {
-                      localTyper.typed {
-                        atPos(pos) {
-                          Apply(gen.mkAttributedSelect(tree, toArray), arguments)
-                        }
-                      }
-                    }
-                  } else tree
-                }
+      val args1 = formals.lastOption match {
+        case Some(TypeRef(pre, sym, List(elempt))) if (sym == RepeatedParamClass) =>
+          def callMethod(tree: Tree, nme: Name): Tree = {
+            val sym = tree.tpe member nme
+            assert(sym != NoSymbol)
+            val arguments =
+              if (sym.tpe.paramTypes.isEmpty) List() // !!! no manifest required
+              else List(localTyper.getManifestTree(tree.pos, tree.tpe.typeArgs.head, false)) // call with manifest
+            atPhase(phase.next) {
+              localTyper.typedPos(pos) {
+                Apply(gen.mkAttributedSelect(tree, sym), arguments)
               }
-              if (args.isEmpty)
-                List(mkArrayValue(args))
-              else {
-                val suffix: Tree =
-                  if (treeInfo isWildcardStarArg args.last) forceToArray(args.last)
-                  else mkArrayValue(args drop (formals.length - 1))
+            }
+          }
 
-                args.take(formals.length - 1) ::: List(suffix)
-              }
-            case _ => args
+          def mkArrayValue(ts: List[Tree]) = {
+            val arr = ArrayValue(TypeTree(elempt), ts) setType formals.last
+            if (isJava || inPattern) arr
+            else callMethod(arr, nme.toSequence) // println("need to callMethod("+arr+", nme.toSequence)"); arr }
           }
-        List.map2(formals, args1) { (formal, arg) =>
-          if (formal.typeSymbol != ByNameParamClass) {
-            arg
-          } else if (isByNameRef(arg)) {
-            byNameArgs.addEntry(arg)
-            arg setType functionType(List(), arg.tpe)
-          } else {
-            val fun = localTyper.typed(
-              Function(List(), arg) setPos arg.pos).asInstanceOf[Function];
-            new ChangeOwnerTraverser(currentOwner, fun.symbol).traverse(arg);
-            transformFunction(fun)
+
+          // when calling into java varargs, make sure it's an array - see bug #1360
+          def forceToArray(arg: Tree) = {
+            val Typed(tree, _) = arg
+            if (isJava && tree.tpe.typeSymbol != ArrayClass &&
+                (tree.tpe.typeSymbol isSubClass TraversableClass)) callMethod(tree, nme.toArray)
+            else tree
           }
+
+          if (args.isEmpty)
+            List(mkArrayValue(args))
+          else {
+            val suffix: Tree =
+              if (treeInfo isWildcardStarArg args.last) forceToArray(args.last)
+              else mkArrayValue(args drop (formals.length - 1))
+            args.take(formals.length - 1) ::: List(suffix)
+          }
+        case _ =>
+          args
+      }
+      List.map2(formals, args1) { (formal, arg) =>
+        if (formal.typeSymbol != ByNameParamClass) {
+          arg
+        } else if (isByNameRef(arg)) {
+          byNameArgs.addEntry(arg)
+          arg setType functionType(List(), arg.tpe)
+        } else {
+          val fun = localTyper.typed(
+            Function(List(), arg) setPos arg.pos).asInstanceOf[Function];
+          new ChangeOwnerTraverser(currentOwner, fun.symbol).traverse(arg);
+          transformFunction(fun)
         }
       }
     }

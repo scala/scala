@@ -15,7 +15,7 @@ import scala.reflect.ClassManifest
 import annotation.unchecked.uncheckedVariance
 
 trait AddableMethods[A, +This <: Addable[A, This]] {
-  protected def thisCollection: This
+  protected def repr: This
   def +(elem: A): This
   def + (elem1: A, elem2: A, elems: A*): This
   def ++ (elems: Traversable[A]): This
@@ -23,7 +23,7 @@ trait AddableMethods[A, +This <: Addable[A, This]] {
 }
 
 trait SubtractableMethods[A, +This <: Subtractable[A, This]] {
-  protected def thisCollection: This
+  protected def repr: This
   def -(elem: A): This
   def -(elem1: A, elem2: A, elems: A*): This
   def --(elems: Traversable[A]): This

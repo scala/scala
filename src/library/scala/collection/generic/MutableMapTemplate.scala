@@ -173,7 +173,7 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
   @deprecated("This operation will create a new map in the future. To add elements as a side\n"+
               "effect to an existing map and return that map itself, use -=. If you do want\n"+
               "to create a fresh map, you can use `clone() -=` to avoid a @deprecated warning.")
-  override def -(key: A): This = { -=(key); thisCollection }
+  override def -(key: A): This = { -=(key); repr }
 
   /** If given key is defined in this map, remove it and return associated value as an Option.
    *  If key is not present return None.
@@ -221,10 +221,10 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
   }
 
   override def clone(): This =
-    empty ++= thisCollection
+    empty ++= repr
 
   /** The result when this map is used as a builder */
-  def result: This = thisCollection
+  def result: This = repr
 
   /** Removes two or more elements from this collection and returns
    *  the collection itself.
@@ -237,7 +237,7 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
               "Use `clone() -=' if you intend to create a new collection.")
   override def -(elem1: A, elem2: A, elems: A*): This = {
     this -= elem1 -= elem2 --= elems
-    thisCollection
+    repr
   }
 
   /** Removes a number of elements provided by a Traversable object and returns
@@ -249,7 +249,7 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
               "Use `clone() --=' if you intend to create a new collection.")
   override def --(iter: Traversable[A]): This = {
     for (elem <- iter) -=(elem)
-    thisCollection
+    repr
   }
 
 
@@ -262,6 +262,6 @@ trait MutableMapTemplate[A, B, +This <: MutableMapTemplate[A, B, This] with muta
               "Use `clone() --=' if you intend to create a new collection.")
   override def --(iter: Iterator[A]): This = {
     for (elem <- iter) -=(elem)
-    thisCollection
+    repr
   }
 }

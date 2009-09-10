@@ -71,7 +71,7 @@ self =>
    *  @param elems     the traversable object.
    */
   override def ++[B1 >: B](elems: Traversable[(A, B1)]): immutable.Map[A, B1] =
-    ((thisCollection: immutable.Map[A, B1]) /: elems) (_ + _)
+    ((repr: immutable.Map[A, B1]) /: elems) (_ + _)
 
   /** Adds a number of elements provided by an iterator
    *  and returns a new collection with the added elements.
@@ -79,7 +79,7 @@ self =>
    *  @param iter   the iterator
    */
   override def ++[B1 >: B] (iter: Iterator[(A, B1)]): immutable.Map[A, B1] =
-    ((thisCollection: immutable.Map[A, B1]) /: iter) (_ + _)
+    ((repr: immutable.Map[A, B1]) /: iter) (_ + _)
 
   /** This function transforms all the values of mappings contained
    *  in this map with function <code>f</code>.
@@ -88,7 +88,7 @@ self =>
    *  @return  the updated map
    */
   def transform[C, That](f: (A, B) => C)(implicit bf: BuilderFactory[(A, C), That, This]): That = {
-    val b = bf(thisCollection)
+    val b = bf(repr)
     for ((key, value) <- this) b += ((key, f(key, value)))
     b.result
   }
@@ -104,7 +104,7 @@ self =>
    *           with a negated predicate instead.
    */
   override def filterNot(p: ((A, B)) => Boolean): This = {
-    var res: This = thisCollection
+    var res: This = repr
     for (kv <- this)
       if (p(kv)) res = (res - kv._1).asInstanceOf[This] // !!! concrete overrides abstract problem
     res

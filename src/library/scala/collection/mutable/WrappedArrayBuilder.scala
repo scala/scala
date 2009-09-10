@@ -15,15 +15,15 @@ import scala.collection.generic._
 import scala.reflect.ClassManifest
 
 /** A builder class for arrays */
-class ArrayVectorBuilder[A](manifest: ClassManifest[A]) extends Builder[A, ArrayVector[A]] {
+class WrappedArrayBuilder[A](manifest: ClassManifest[A]) extends Builder[A, WrappedArray[A]] {
 
-  private var elems: ArrayVector[A] = _
+  private var elems: WrappedArray[A] = _
   private var capacity: Int = 0
   private var size: Int = 0
 
-  private def mkArray(size: Int): ArrayVector[A] = {
-    val newelems = manifest.newArrayVector(size)
-    if (this.size > 0) Array.copy(elems.value, 0, newelems.value, 0, this.size)
+  private def mkArray(size: Int): WrappedArray[A] = {
+    val newelems = manifest.newWrappedArray(size)
+    if (this.size > 0) Array.copy(elems.array, 0, newelems.array, 0, this.size)
     newelems
   }
 

@@ -21,7 +21,7 @@ import scala.collection._
 trait SortedSetTemplate[A, +This <: SortedSet[A] with SortedSetTemplate[A, This]] extends Sorted[A, This] with SetTemplate[A, This] {
 self =>
 
-  override def keySet = thisCollection
+  override def keySet = repr
 
   override def firstKey: A = head
   override def lastKey: A = last

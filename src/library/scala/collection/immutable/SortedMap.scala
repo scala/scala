@@ -54,7 +54,7 @@ trait SortedMap[A, +B] extends Map[A, B]
    *  @param elems     the traversable object.
    */
   override def ++[B1 >: B](elems: collection.Traversable[(A, B1)]): SortedMap[A, B1] =
-    ((thisCollection: SortedMap[A, B1]) /: elems) (_ + _)
+    ((repr: SortedMap[A, B1]) /: elems) (_ + _)
 
   /** Adds a number of elements provided by an iterator
    *  and returns a new collection with the added elements.
@@ -62,7 +62,7 @@ trait SortedMap[A, +B] extends Map[A, B]
    *  @param iter   the iterator
    */
   override def ++[B1 >: B] (iter: Iterator[(A, B1)]): SortedMap[A, B1] =
-    ((thisCollection: SortedMap[A, B1]) /: iter) (_ + _)
+    ((repr: SortedMap[A, B1]) /: iter) (_ + _)
 }
 
 object SortedMap extends ImmutableSortedMapFactory[SortedMap] {

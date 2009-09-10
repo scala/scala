@@ -23,7 +23,7 @@ import TraversableView.NoBuilder
  *  @author Martin Odersky
  *  @version 2.8
  */
-trait TraversableView[+A, +Coll <: Traversable[_]] extends TraversableViewTemplate[A, Coll, TraversableView[A, Coll]]
+trait TraversableView[+A, +Coll] extends TraversableViewTemplate[A, Coll, TraversableView[A, Coll]]
 
 object TraversableView {
   class NoBuilder[A] extends Builder[A, Nothing] {

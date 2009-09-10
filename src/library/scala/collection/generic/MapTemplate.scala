@@ -238,7 +238,7 @@ self =>
    *  @param elems     the traversable object.
    */
   def ++[B1 >: B](elems: Traversable[(A, B1)]): Map[A, B1] =
-    ((thisCollection: Map[A, B1]) /: elems) (_ + _)
+    ((repr: Map[A, B1]) /: elems) (_ + _)
 
   /** Adds a number of elements provided by an iterator
    *  and returns a new collection with the added elements.
@@ -246,7 +246,7 @@ self =>
    *  @param iter   the iterator
    */
   def ++[B1 >: B] (iter: Iterator[(A, B1)]): Map[A, B1] =
-    ((thisCollection: Map[A, B1]) /: iter) (_ + _)
+    ((repr: Map[A, B1]) /: iter) (_ + _)
 
   /** Creates a string representation for this map.
    *
@@ -256,6 +256,7 @@ self =>
     this.iterator.map { case (k, v) => k+" -> "+v }.addString(b, start, sep, end)
 
   /** Defines the prefix of this object's <code>toString</code> representation.
+   *  !!! todo: remove stringPrefix overrides where possible
    */
   override def stringPrefix: String = "Map"
 
@@ -264,7 +265,6 @@ self =>
   override def toString = super[IterableTemplate].toString
 
   override def hashCode() = this map (_.hashCode) sum
-  override def canEqualCollection(that: Any) = that.isInstanceOf[Map[_, _]]
 
   /** Compares two maps structurally; i.e. checks if all mappings
    *  contained in this map are also contained in the other map,
@@ -274,10 +274,23 @@ self =>
    *  @return     <code>true</code> iff both maps contain exactly the
    *              same mappings.
    */
-  override def equals(that: Any): Boolean =
-    anyEq(that) || (cond(that) {
-      case x: Map[A, _] if x.canEqualCollection(this) && size == x.size =>
-        try this forall { case (k, v) => x.get(k.asInstanceOf[A]) == Some(v) }
-        catch { case ex: ClassCastException => false }
-    })
+  override def equals(that: Any): Boolean = that match {
+    case that: Map[b, _] =>
+      (this eq that) ||
+      /*(that canEqual this) && !!!*/
+      (this.size == that.size) && {
+      try {
+        this forall {
+          case (k, v) => that.get(k.asInstanceOf[b]) match {
+            case Some(`v`) => true
+            case _ => false
+          }
+        }
+      } catch {
+        case ex: ClassCastException =>
+          println("calss cast "); false
+      }}
+    case _ =>
+      false
+  }
 }

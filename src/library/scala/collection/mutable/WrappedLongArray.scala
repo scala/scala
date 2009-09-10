@@ -6,23 +6,23 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: BooleanArrayVector.scala 18572 2009-08-25 14:14:11Z odersky $
+// $Id: WrappedLongArray.scala 18572 2009-08-25 14:14:11Z odersky $
 
 
 package scala.collection.mutable
 import scala.reflect.ClassManifest
 
 @serializable
-final class BooleanArrayVector(val value: Array[Boolean]) extends ArrayVector[Boolean] {
+final class WrappedLongArray(val array: Array[Long]) extends WrappedArray[Long] {
 
-  def elemManifest = ClassManifest.Boolean
+  def elemManifest = ClassManifest.Long
 
-  def length: Int = value.length
+  def length: Int = array.length
 
-  def apply(index: Int): Boolean = value(index)
+  def apply(index: Int): Long = array(index)
 
-  def update(index: Int, elem: Boolean) {
-    value(index) = elem
+  def update(index: Int, elem: Long) {
+    array(index) = elem
   }
-  def unbox(elemClass: Class[_]): AnyRef = value
+  def unbox(elemClass: Class[_]): AnyRef = array
 }

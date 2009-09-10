@@ -20,7 +20,7 @@ import TraversableView.NoBuilder
  *  @version 2.8
  */
 trait IterableViewTemplate[+A,
-                           +Coll <: Iterable[_],
+                           +Coll,
                            +This <: IterableView[A, Coll] with IterableViewTemplate[A, Coll, This]]
 extends Iterable[A] with IterableTemplate[A, This] with TraversableView[A, Coll] with TraversableViewTemplate[A, Coll, This]
 { self =>
@@ -71,7 +71,7 @@ extends Iterable[A] with IterableTemplate[A, This] with TraversableView[A, Coll]
 
   override def zip[A1 >: A, B, That](that: Iterable[B])(implicit bf: BuilderFactory[(A1, B), That, This]): That = {
     newZipped(that).asInstanceOf[That]
-// was:    val b = bf(thisCollection)
+// was:    val b = bf(repr)
 //    if (b.isInstanceOf[NoBuilder[_]]) newZipped(that).asInstanceOf[That]
 //    else super.zip[A1, B, That](that)(bf)
   }

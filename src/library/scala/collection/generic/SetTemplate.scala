@@ -162,9 +162,7 @@ self =>
    */
   override def toString = super[IterableTemplate].toString
 
-  // override def hashCode() = (this map (_.hashCode)).foldLeft(0)(_ + _)
   override def hashCode() = this map (_.hashCode) sum
-  override def canEqualCollection(that: Any) = that.isInstanceOf[Set[_]]
 
   /** Compares this set with another object and returns true, iff the
    *  other object is also a set which contains the same elements as
@@ -175,10 +173,14 @@ self =>
    *  @return     <code>true</code> iff this set and the other set
    *              contain the same elements.
    */
-  override def equals(that: Any): Boolean = anyEq(that) || (cond(that) {
-    case x: Set[A] if (x canEqualCollection this) && size == x.size =>
-      // can we find a safer way to do this?
-      try this subsetOf x.asInstanceOf[Set[A]]
-      catch { case ex: ClassCastException => false }
-  })
+  override def equals(that: Any): Boolean = that match {
+    case that: Set[A] =>
+      (this eq that) ||
+      /*(that canEqual this) &&!!!*/
+      (this.size == that.size) &&
+      (try this subsetOf that.asInstanceOf[Set[A]]
+       catch { case ex: ClassCastException => false })
+    case _ =>
+      false
+  }
 }

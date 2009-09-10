@@ -121,7 +121,7 @@ trait TreeDSL {
       /** Methods for sequences **/
       def DROP(count: Int): Tree =
         if (count == 0) target
-        else (target DOT nme.drop)(LIT(count)) DOT nme.toSeq
+        else (target DOT nme.drop)(LIT(count)) DOT nme.toSequence
 
       /** Casting & type tests -- working our way toward understanding exactly
        *  what differs between the different forms of IS and AS.

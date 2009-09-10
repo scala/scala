@@ -19,7 +19,7 @@ import TraversableView.NoBuilder
  * @author Martin Odersky
  * @version 2.8
  */
-trait MutableVectorView[A, +Coll <: mutable.Vector[_]] extends MutableVectorViewTemplate[A, Coll, MutableVectorView[A, Coll]]
+trait MutableVectorView[A, +Coll] extends MutableVectorViewTemplate[A, Coll, MutableVectorView[A, Coll]]
 
 object MutableVectorView {
   type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}

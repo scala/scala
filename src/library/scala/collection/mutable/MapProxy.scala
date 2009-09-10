@@ -28,7 +28,7 @@ import scala.collection.generic.MapProxyTemplate
 
 trait MapProxy[A, B] extends Map[A, B] with MapProxyTemplate[A, B, Map[A, B]]
 {
-  override def thisCollection = this
+  override def repr = this
   override def empty: MapProxy[A, B] = new MapProxy[A, B] { val self = MapProxy.this.self.empty }
 
   override def +(kv: (A, B)) = { self.update(kv._1, kv._2) ; this }
