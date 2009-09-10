@@ -1491,7 +1491,7 @@ FORWARDED TARGETS FOR NIGHTLY BUILDS
 ============================================================================ -->
 
   <target name="nightly">
-    <property name="scalac.args.optimise" value="-optimise"/>
+    <!-- disabled until problems are fixed <property name="scalac.args.optimise" value="-optimise"/> -->
     <antcall target="all.done"/>
     <ant antfile="${src.dir}/build/pack.xml" target="pack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
