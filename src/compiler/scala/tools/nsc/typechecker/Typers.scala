@@ -1143,6 +1143,17 @@ trait Typers { self: Analyzer =>
           if (psym hasFlag FINAL) {
             error(parent.pos, "illegal inheritance from final "+psym)
           }
+          // XXX I think this should issue a sharper warning of some kind like
+          // "change your code now!" as there are material bugs (which will not be fixed)
+          // associated with case class inheritance.
+          if ((context.owner hasFlag CASE) && !phase.erasedTypes) {
+            for (ancestor <- parent.tpe.baseClasses find (_ hasFlag CASE))
+              unit.deprecationWarning(parent.pos, (
+                "case class `%s' has case class ancestor `%s'.  This has been deprecated " +
+                "for unduly complicating both usage and implementation.  You should instead " +
+                "use extractors for pattern matching on non-leaf nodes." ).format(context.owner, ancestor)
+              )
+          }
           if (psym.isSealed && !phase.erasedTypes) {
             if (context.unit.source.file != psym.sourceFile)
               error(parent.pos, "illegal inheritance from sealed "+psym)

@@ -928,7 +928,7 @@ override def runTest() {
 
   object Ticket710 {  // compile-only
     def method {
-      sealed case class Parent()
+      sealed class Parent()
       case object Child extends Parent()
       val x: Parent = Child
       x match {

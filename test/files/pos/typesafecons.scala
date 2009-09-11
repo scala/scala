@@ -4,7 +4,7 @@ object Pair {
    type Second <: Pair
  }
 
- case class End extends Pair {
+ class End extends Pair {
    type First = Nothing
    type Second = End
 
