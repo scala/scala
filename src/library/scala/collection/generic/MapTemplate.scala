@@ -277,7 +277,7 @@ self =>
   override def equals(that: Any): Boolean = that match {
     case that: Map[b, _] =>
       (this eq that) ||
-      /*(that canEqual this) && !!!*/
+      (that canEqual this) &&
       (this.size == that.size) && {
       try {
         this forall {

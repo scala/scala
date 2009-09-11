@@ -778,6 +778,7 @@ class Worker(val fileManager: FileManager) extends Actor {
             val resFile = results(0)
             // 2. Compile source file
             if (!compileMgr.shouldCompile(outDir, List(file), kind, logFile)) {
+              NestUI.verbose("compilerMgr failed to compile %s to %s".format(file, outDir))
               succeeded = false
             } else {
 

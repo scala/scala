@@ -445,7 +445,7 @@ trait SequenceLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   override def hashCode() = (Sequence.hashSeed /: this)(_ * 41 + _.hashCode)
 
   override def equals(that: Any): Boolean = that match {
-    case that: Sequence[_]  => /*(that canEqual this)!!! &&*/ (this sameElements that)
+    case that: Sequence[_]  => (that canEqual this) && (this sameElements that)
     case _                  => false
   }
 

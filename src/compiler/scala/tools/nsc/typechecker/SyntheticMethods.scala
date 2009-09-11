@@ -39,11 +39,10 @@ trait SyntheticMethods extends ast.TreeDSL {
   // to override this method anyways.
   protected def typer : Typer = global.typer.asInstanceOf[Typer]
 
-  /**
-   *  @param templ ...
-   *  @param clazz ...
-   *  @param unit  ...
-   *  @return      ...
+  /** Add the synthetic methods to case classes.  Note that a lot of the
+   *  complexity herein is a consequence of case classes inheriting from
+   *  case classes, which has been deprecated as of Sep 11 2009.  So when
+   *  the opportunity for removal arises, this can be simplified.
    */
   def addSyntheticMethods(templ: Template, clazz: Symbol, context: Context): Template = {
 
@@ -142,7 +141,9 @@ trait SyntheticMethods extends ast.TreeDSL {
       }
     }
 
-    /** The canEqual method for case classes.
+    /** The canEqual method for case classes.  Note that if we spot
+     *  a user-supplied equals implementation, we simply return true
+     *  so as not to interfere.
      */
     def canEqualMethod: Tree = {
       val method  = syntheticMethod(nme.canEqual_, 0, makeTypeConstructor(List(AnyClass.tpe), BooleanClass.tpe))

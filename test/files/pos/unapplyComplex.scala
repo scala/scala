@@ -1,4 +1,6 @@
-trait Complex extends Product2[Double, Double]
+trait Complex extends Product2[Double, Double] {
+  def canEqual(other: Any) = other.isInstanceOf[Complex]
+}
 
 class ComplexRect(val _1: Double, val _2: Double) extends Complex {
   override def toString = "ComplexRect("+_1+","+_2+")"

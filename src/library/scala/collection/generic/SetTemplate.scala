@@ -176,7 +176,7 @@ self =>
   override def equals(that: Any): Boolean = that match {
     case that: Set[A] =>
       (this eq that) ||
-      /*(that canEqual this) &&!!!*/
+      (that canEqual this) &&
       (this.size == that.size) &&
       (try this subsetOf that.asInstanceOf[Set[A]]
        catch { case ex: ClassCastException => false })

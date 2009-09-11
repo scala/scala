@@ -50,11 +50,4 @@ trait Product extends Equals {
    *  toString methods.
    */
   def productPrefix = ""
-
-  /**
-   *  An equality helper method to assist in maintaining reflexivity
-   *  in the face of subtyping.  For more, see
-   *    http://www.artima.com/lejava/articles/equality.html
-   */
-  override def canEqual(other: Any): Boolean = true
 }
