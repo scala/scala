@@ -77,7 +77,7 @@ object XML extends XMLLoader[Elem]
     node: Node,
     enc: String = encoding,
     xmlDecl: Boolean = false,
-    doctype: dtd.DocType
+    doctype: dtd.DocType = null
     ): Unit =
   {
     val fos = new FileOutputStream(filename)

@@ -12,7 +12,6 @@
 package scala
 
 import collection.immutable.StringOps
-import collection.mutable.StringBuilder
 import collection.generic.BuilderFactory
 
 /** The <code>Predef</code> object provides definitions that are

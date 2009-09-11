@@ -106,6 +106,13 @@ sealed abstract class Option[+A] extends Product {
   def filter(p: A => Boolean): Option[A] =
     if (isEmpty || p(this.get)) this else None
 
+  /** If the option is nonempty, p(value), otherwise false.
+   *
+   *  @param  p   the predicate to test
+   */
+  def exists(p: A => Boolean): Boolean =
+    !isEmpty && p(this.get)
+
   /** Apply the given procedure <code>f</code> to the option's value,
    *  if it is nonempty. Do nothing if it is empty.
    *

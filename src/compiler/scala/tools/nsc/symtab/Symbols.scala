@@ -447,7 +447,7 @@ trait Symbols {
         // since we default to enabled by default, only look hard for falsity
         annot.args match {
           case Literal(Constant(x: Int)) :: Nil => Some(x)
-          case x => println(x) ; None
+          case _                                => None
         }
       }
     }
