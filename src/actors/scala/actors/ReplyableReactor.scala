@@ -20,8 +20,6 @@ package scala.actors
 trait ReplyableReactor extends Replyable[Any, Any] {
   thiz: ReplyReactor =>
 
-  type Future[+S] = scala.actors.Future[S]
-
   /**
    * Sends <code>msg</code> to this actor and awaits reply
    * (synchronous).

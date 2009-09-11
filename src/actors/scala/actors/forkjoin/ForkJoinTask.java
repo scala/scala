@@ -4,7 +4,7 @@
  * http://creativecommons.org/licenses/publicdomain
  */
 
-package scala.actors.forkjoin;
+package scala.concurrent.forkjoin;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.*;

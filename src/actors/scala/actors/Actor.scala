@@ -13,7 +13,7 @@ package scala.actors
 import scala.compat.Platform
 import scala.util.control.ControlException
 import java.util.{Timer, TimerTask}
-import java.util.concurrent.ExecutionException
+import java.util.concurrent.{ExecutionException, Callable}
 
 /**
  * The <code>Actor</code> object provides functions for the definition of
@@ -398,11 +398,14 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
    */
   private var onTimeout: Option[TimerTask] = None
 
+  private class RunCallable(fun: () => Unit) extends Callable[Unit] with Runnable {
+    def call() = fun()
+    def run() = fun()
+  }
+
   protected[this] override def makeReaction(fun: () => Unit): Runnable = {
     if (isSuspended)
-      new Runnable {
-        def run() { fun() }
-      }
+      new RunCallable(fun)
     else
       new ActorTask(this, fun)
   }

@@ -2,29 +2,36 @@ package scala.concurrent
 
 import java.util.concurrent.{ExecutorService, Callable, TimeUnit}
 
-import scala.annotation.unchecked.uncheckedVariance
-
 /** The <code>ThreadPoolRunner</code> trait...
  *
  *  @author Philipp Haller
  */
-trait ThreadPoolRunner[T] extends TaskRunner[T] {
+trait ThreadPoolRunner extends FutureTaskRunner {
 
-  type Future[+R] = RichFuture[R]
+  type Task[T] = Callable[T] with Runnable
+  type Future[T] = RichFuture[T]
 
-  trait RichFuture[+S] extends java.util.concurrent.Future[S @uncheckedVariance]
-                          with (() => S)
+  private class RunCallable[S](fun: () => S) extends Runnable with Callable[S] {
+    def run() = fun()
+    def call() = fun()
+  }
+
+  implicit def functionAsTask[S](fun: () => S): Task[S] =
+    new RunCallable(fun)
+
+  implicit def futureAsFunction[S](x: Future[S]): () => S =
+    () => x.get()
+
+  trait RichFuture[S] extends java.util.concurrent.Future[S]
+                         with (() => S)
 
   protected def executor: ExecutorService
 
-  def submit(task: () => T): this.Future[T] = {
-    val callable = new Callable[T] {
-      def call() = task()
-    }
-    toRichFuture(executor.submit[T](callable))
+  def submit[S](task: Task[S]): Future[S] = {
+    toRichFuture(executor.submit[S](task))
   }
 
-  def execute(task: Runnable): Unit =
+  def execute[S](task: Task[S]): Unit =
     executor execute task
 
   def managedBlock(blocker: ManagedBlocker) {

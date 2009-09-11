@@ -6,12 +6,23 @@ import java.lang.Thread
  *
  *  @author Philipp Haller
  */
-class ThreadRunner[T] extends TaskRunner[T] {
+class ThreadRunner extends FutureTaskRunner {
 
-  type Future[+S] = () => S
+  type Task[T] = () => T
+  type Future[T] = () => T
 
-  def submit(task: () => T): this.Future[T] = {
-    val result = new SyncVar[Either[Exception, T]]
+  implicit def functionAsTask[S](fun: () => S): Task[S] = fun
+  implicit def futureAsFunction[S](x: Future[S]): () => S = x
+
+  def execute[S](task: Task[S]) {
+    val runnable = new Runnable {
+      def run() { tryCatch(task()) }
+    }
+    (new Thread(runnable)).start()
+  }
+
+  def submit[S](task: Task[S]): Future[S] = {
+    val result = new SyncVar[Either[Exception, S]]
     val runnable = new Runnable {
       def run() { result set tryCatch(task()) }
     }

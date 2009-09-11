@@ -4,16 +4,15 @@ package scala.concurrent
  *
  *  @author Philipp Haller
  */
-trait TaskRunner[T] extends AsyncInvokable[() => T, T] {
+trait TaskRunner {
 
-  def submit(task: () => T): Future[T]
+  type Task[T]
+
+  implicit def functionAsTask[S](fun: () => S): Task[S]
+
+  def execute[S](task: Task[S]): Unit
 
   def shutdown(): Unit
-
-  def !!(task: () => T): Future[T] =
-    submit(task)
-
-  def managedBlock(blocker: ManagedBlocker): Unit
 
   /** If expression computed successfully return it in <code>Right</code>,
    *  otherwise return exception in <code>Left</code>.

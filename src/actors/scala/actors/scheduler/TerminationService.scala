@@ -55,15 +55,6 @@ abstract class TerminationService(terminate: Boolean)
     }
   }
 
-  /** Submits a closure for execution.
-   *
-   *  @param  fun  the closure to be executed
-   */
-  def execute(fun: => Unit): Unit =
-    execute(new Runnable {
-      def run() { fun }
-    })
-
   /** Shuts down the scheduler.
    */
   def shutdown(): Unit = synchronized {

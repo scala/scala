@@ -11,6 +11,7 @@
 package scala.actors
 package scheduler
 
+import java.util.concurrent.Callable
 import scala.concurrent.ThreadPoolRunner
 
 /**
@@ -19,7 +20,24 @@ import scala.concurrent.ThreadPoolRunner
  *
  * @author Philipp Haller
  */
-trait ExecutorScheduler extends IScheduler with ThreadPoolRunner[Unit] {
+trait ExecutorScheduler extends IScheduler with ThreadPoolRunner {
+
+  def execute(task: Runnable) {
+    super[ThreadPoolRunner].execute(task.asInstanceOf[Task[Unit]])
+  }
+
+  private class RunCallable(fun: => Unit) extends Callable[Unit] with Runnable {
+    def call() { fun }
+    def run() { fun }
+  }
+
+  /** Submits a closure for execution.
+   *
+   *  @param  fun  the closure to be executed
+   */
+  override def execute(fun: => Unit) {
+    super[ThreadPoolRunner].execute((new RunCallable(fun)).asInstanceOf[Task[Unit]])
+  }
 
   /** This method is called when the scheduler shuts down.
    */

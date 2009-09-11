@@ -3,7 +3,7 @@ package scheduler
 
 import java.lang.Thread.State
 import java.util.{Collection, ArrayList}
-import forkjoin._
+import scala.concurrent.forkjoin._
 
 /** The <code>ForkJoinScheduler</code> is backed by a lightweight
  *  fork-join task execution framework.
@@ -95,6 +95,7 @@ class ForkJoinScheduler extends Runnable with IScheduler with TerminationMonitor
   }
 
   override def executeFromActor(task: Runnable) {
+    // TODO: only pass RecursiveAction (with Runnable), and cast to it
     val recAction = new RecursiveAction {
       def compute() = task.run()
     }

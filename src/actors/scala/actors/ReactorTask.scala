@@ -12,6 +12,7 @@
 package scala.actors
 
 import java.lang.Runnable
+import java.util.concurrent.Callable
 
 /** <p>
  *    The class <code>ReactorTask</code>...
@@ -19,7 +20,7 @@ import java.lang.Runnable
  *
  *  @author Philipp Haller
  */
-private[actors] class ReactorTask extends Runnable {
+private[actors] class ReactorTask extends Callable[Unit] with Runnable {
 
   private var reactor: Reactor = null
   private var fun: () => Unit = null
@@ -29,6 +30,8 @@ private[actors] class ReactorTask extends Runnable {
     this.reactor = reactor
     this.fun = fun
   }
+
+  def call() = run()
 
   def run() {
     val saved = Actor.tl.get

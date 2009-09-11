@@ -26,4 +26,4 @@
  * are those that directly implement this algorithmic design pattern.
  *
  */
-package jsr166y;
+package scala.concurrent.forkjoin;

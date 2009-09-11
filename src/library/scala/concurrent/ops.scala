@@ -20,21 +20,25 @@ import scala.util.control.Exception.allCatch
  */
 object ops
 {
-  implicit val defaultRunner: TaskRunner[Unit] =
+
+  implicit val defaultRunner: FutureTaskRunner =
     TaskRunners.threadRunner
 
   /**
    *  If expression computed successfully return it in <code>Right</code>,
    *  otherwise return exception in <code>Left</code>.
    */
+  //TODO: make private
   def tryCatch[A](body: => A): Either[Throwable, A] =
     allCatch[A] either body
 
+  //TODO: make private
   def tryCatchEx[A](body: => A): Either[Exception, A] =
     try Right(body) catch {
       case ex: Exception  => Left(ex)
     }
 
+  //TODO: make private
   def getOrThrow[T <: Throwable, A](x: Either[T, A]): A =
     x.fold[A](throw _, identity _)
 
@@ -42,18 +46,16 @@ object ops
    *
    *  @param  p the expression to evaluate
    */
-  def spawn(p: => Unit)(implicit runner: TaskRunner[Unit] = defaultRunner): Unit = {
-    runner submit (() => p)
+  def spawn(p: => Unit)(implicit runner: TaskRunner = defaultRunner): Unit = {
+    runner execute runner.functionAsTask(() => p)
   }
 
   /**
    *  @param p ...
    *  @return  ...
    */
-  def future[A](p: => A)(implicit runner: TaskRunner[Unit] = defaultRunner): () => A = {
-    val result = new SyncVar[Either[Throwable, A]]
-    spawn({ result set tryCatch(p) })(runner)
-    () => getOrThrow(result.get)
+  def future[A](p: => A)(implicit runner: FutureTaskRunner = defaultRunner): () => A = {
+    runner.futureAsFunction(runner submit runner.functionAsTask(() => p))
   }
 
   /**

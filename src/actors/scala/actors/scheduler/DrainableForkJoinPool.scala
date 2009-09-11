@@ -2,7 +2,7 @@ package scala.actors
 package scheduler
 
 import java.util.Collection
-import forkjoin.{ForkJoinPool, ForkJoinTask}
+import scala.concurrent.forkjoin.{ForkJoinPool, ForkJoinTask}
 
 private class DrainableForkJoinPool extends ForkJoinPool {
 
