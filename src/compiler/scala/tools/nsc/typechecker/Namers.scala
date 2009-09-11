@@ -1007,7 +1007,11 @@ trait Namers { self: Analyzer =>
               }
             }
 
-            val defTpt = subst(copyUntyped(vparam.tpt))
+            val defTpt = subst(copyUntyped(vparam.tpt match {
+              // default getter for by-name params
+              case AppliedTypeTree(_, List(arg)) if sym.hasFlag(BYNAMEPARAM) => arg
+              case t => t
+            }))
             val defRhs = copyUntyped(vparam.rhs)
 
             val defaultTree = atPos(vparam.pos.focus) {

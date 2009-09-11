@@ -127,6 +127,12 @@ object Test extends Application {
   def bn2(a: Int, b: => Int)(c: Int = b) = a + b
   println(bn2(b = get(2), a = get(1))()) // should get: 1, 2, 2
 
+  def bn3(a: => Int = get(10)) = 0
+  def bn4(a: => Int = get(20)) = {a; a}
+  println(bn3())
+  println(bn4())
+  println(bn4(a = 0))
+
 
   // constructors
   val a1 = new A(b = "dlkfj")(d = 102)

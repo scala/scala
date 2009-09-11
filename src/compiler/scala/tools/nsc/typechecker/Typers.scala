@@ -1412,7 +1412,11 @@ trait Typers { self: Analyzer =>
                 else if (sym1.isSkolem) matches(sym, sym1.deSkolemize)
                 else super[SubstTypeMap].matches(sym, sym1)
             }
-            subst(tpt1.tpe)
+            // allow defaults on by-name parameters
+            if (sym hasFlag BYNAMEPARAM)
+              if (tpt1.tpe.typeArgs.isEmpty) WildcardType // during erasure tpt1 is Funciton0
+              else subst(tpt1.tpe.typeArgs(0))
+            else subst(tpt1.tpe)
           } else tpt1.tpe
           newTyper(typer1.context.make(vdef, sym)).transformedOrTyped(vdef.rhs, tpt2)
         }
