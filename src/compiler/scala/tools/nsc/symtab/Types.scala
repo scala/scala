@@ -1410,15 +1410,11 @@ trait Types {
       sym.isModuleClass || sym == NothingClass || isValueClass(sym) || super.isNotNull
 
     // @M: propagate actual type params (args) to `tp', by replacing formal type parameters with actual ones
+    // if tp is higher kinded, the "actual" type arguments are types that simply reference the corresponding type parameters  (unbound type variables)
     def transform(tp: Type): Type = {
-      val args = typeArgsOrDummies
-      if (args.length == sym.typeParams.length)
-        tp.asSeenFrom(pre, sym.owner).instantiateTypeParams(sym.typeParams, args)
-      else {
-        assert(sym.typeParams.isEmpty || (args exists (_.isError)) || isRaw(sym, args)/*#2266/2305*/, tp)
-        tp
-      }
-      // @M TODO maybe we shouldn't instantiate type params if isHigherKinded -- probably needed for partial type application though
+      val res = tp.asSeenFrom(pre, sym.owner)
+      if (sym.typeParams.isEmpty || (args exists (_.isError)) || isRaw(sym, args)/*#2266/2305*/) res
+      else res.instantiateTypeParams(sym.typeParams, typeArgsOrDummies)
     }
 
     //@M! use appliedType on the polytype that represents the bounds (or if aliastype, the rhs)
