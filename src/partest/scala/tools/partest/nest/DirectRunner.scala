@@ -11,6 +11,7 @@ package nest
 import java.io.{File, PrintStream, FileOutputStream, BufferedReader,
                 InputStreamReader, StringWriter, PrintWriter}
 import java.util.StringTokenizer
+import scala.tools.nsc.io.Directory
 
 import scala.actors.Actor._
 import scala.actors.TIMEOUT
@@ -66,13 +67,9 @@ trait DirectRunner {
           fails += 1
       }
     }
-    logsToDelete.foreach { log =>
-      NestUI.verbose("deleting "+log)
-      fileManager.deleteRecursive(log)
-    }
-    outdirsToDelete.foreach { outdir =>
-      NestUI.verbose("deleting "+outdir)
-      fileManager.deleteRecursive(outdir)
+    for (x <- logsToDelete ::: outdirsToDelete) {
+      NestUI.verbose("deleting "+x)
+      Directory(x).deleteRecursively()
     }
 
     (succs, fails)

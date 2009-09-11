@@ -8,7 +8,7 @@
 package scala.tools.nsc
 package io
 
-import java.io.{File, FileInputStream, InputStream, IOException}
+import java.io.{ FileInputStream, InputStream, IOException, File => JFile }
 import java.nio.{ByteBuffer, CharBuffer}
 import java.nio.channels.{FileChannel, ReadableByteChannel, Channels}
 import java.nio.charset.{CharsetDecoder, CoderResult}
@@ -38,10 +38,10 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
   // Public Methods
 
   /** Reads the file with the specified name. */
-  def read(filename: String): Array[Char]= read(new File(filename))
+  def read(filename: String): Array[Char]= read(new JFile(filename))
 
   /** Reads the specified file. */
-  def read(file: File): Array[Char] = {
+  def read(file: JFile): Array[Char] = {
     val c = new FileInputStream(file).getChannel
     try {
       read(c)

@@ -8,7 +8,7 @@
 package scala.tools.nsc
 package plugins
 
-import java.io.File
+import io.{ File, Path }
 
 /** Support for run-time loading of compiler plugins.
  *
@@ -16,7 +16,9 @@ import java.io.File
  *  @version 1.1, 2009/1/2
  *  Updated 2009/1/2 by Anders Bach Nielsen: Added features to implement SIP 00002
  */
-trait Plugins { self: Global =>
+trait Plugins
+{
+  self: Global =>
 
   /** Load a rough list of the plugins.  For speed, it
    *  does not instantiate a compiler run.  Therefore it cannot
@@ -24,24 +26,17 @@ trait Plugins { self: Global =>
    *  filtered from the final list of plugins.
    */
   protected def loadRoughPluginsList(): List[Plugin] = {
-    val jars = settings.plugin.value.map(new File(_))
-    val dirs =
-      for (name <- settings.pluginsDir.value.split(File.pathSeparator).toList)
-	yield new File(name)
+    val jars = settings.plugin.value map Path.apply
+    val dirs = (settings.pluginsDir.value split File.pathSeparator).toList map Path.apply
+    val classes = Plugin.loadAllFrom(jars, dirs, settings.disable.value)
+
+    classes foreach (c => Plugin.instantiate(c, this))
 
     for (plugClass <- Plugin.loadAllFrom(jars, dirs, settings.disable.value))
     yield Plugin.instantiate(plugClass, this)
   }
 
-  private var roughPluginsListCache: Option[List[Plugin]] = None
-
-  protected def roughPluginsList: List[Plugin] =
-    roughPluginsListCache match {
-      case Some(list) => list
-      case None =>
-	roughPluginsListCache = Some(loadRoughPluginsList)
-        roughPluginsListCache.get
-    }
+  protected lazy val roughPluginsList: List[Plugin] = loadRoughPluginsList
 
   /** Load all available plugins.  Skips plugins that
    *  either have the same name as another one, or which
@@ -54,105 +49,70 @@ trait Plugins { self: Global =>
       plugNames: Set[String],
       phaseNames: Set[String]): List[Plugin] =
     {
-      plugins match {
-	case Nil => Nil
-	case plug :: rest =>
-	  val plugPhaseNames = Set.empty ++ plug.components.map(_.phaseName)
-	  def withoutPlug = pick(rest, plugNames, plugPhaseNames)
-	  def withPlug =
-	    (plug ::
-	     pick(rest,
-		  plugNames+plug.name,
-		  phaseNames++plugPhaseNames))
+      if (plugins.isEmpty) return Nil // early return
 
-	  if (plugNames.contains(plug.name)) {
-	    if (settings.verbose.value)
-	      inform("[skipping a repeated plugin: " + plug.name + "]")
-	    withoutPlug
-	  } else if (settings.disable.value contains(plug.name)) {
-	    if (settings.verbose.value)
-	      inform("[disabling plugin: " + plug.name + "]")
-	    withoutPlug
-	  } else {
-	    val commonPhases = phaseNames.intersect(plugPhaseNames)
-	    if (!commonPhases.isEmpty) {
-	      if (settings.verbose.value)
-		inform("[skipping plugin " + plug.name +
-		       "because it repeats phase names: " +
-		       commonPhases.mkString(", ") + "]")
-	      withoutPlug
-	    } else {
-	      if (settings.verbose.value)
-		inform("[loaded plugin " + plug.name + "]")
-	      withPlug
-	    }
-	  }
+      val plug :: tail      = plugins
+      val plugPhaseNames    = Set(plug.components map (_.phaseName): _*)
+      def withoutPlug       = pick(tail, plugNames, plugPhaseNames)
+      def withPlug          = plug :: pick(tail, plugNames + plug.name, phaseNames ++ plugPhaseNames)
+      lazy val commonPhases = phaseNames intersect plugPhaseNames
+
+      def note(msg: String): Unit = if (settings.verbose.value) inform(msg format plug.name)
+      def fail(msg: String)       = { note(msg) ; withoutPlug }
+
+      if (plugNames contains plug.name)
+        fail("[skipping a repeated plugin: %s]")
+      else if (settings.disable.value contains plug.name)
+        fail("[disabling plugin: %s]")
+      else if (!commonPhases.isEmpty)
+        fail("[skipping plugin %s because it repeats phase names: " + (commonPhases mkString ", ") + "]")
+      else {
+        note("[loaded plugin %s]")
+        withPlug
       }
     }
 
-    val plugs =
-    pick(roughPluginsList,
-	 Set.empty,
-	 Set.empty ++ phasesSet.map(_.phaseName))
+    val plugs = pick(roughPluginsList, Set(), phasesSet map (_.phaseName) toSet)
 
-    for (req <- settings.require.value; if !plugs.exists(p => p.name==req))
+    /** Verify requirements are present. */
+    for (req <- settings.require.value ; if !(plugs exists (_.name == req)))
       error("Missing required plugin: " + req)
 
+    /** Process plugin options. */
+    def namec(plug: Plugin) = plug.name + ":"
+    def optList(xs: List[String], p: Plugin) = xs filter (_ startsWith namec(p))
+    def doOpts(p: Plugin): List[String] =
+      optList(settings.pluginOptions.value, p) map (_ stripPrefix namec(p))
 
-    for (plug <- plugs) {
-      val nameColon = plug.name + ":"
-      val opts = for {
-	raw <- settings.pluginOptions.value
-	if raw.startsWith(nameColon)
-      } yield raw.substring(nameColon.length)
-
+    for (p <- plugs) {
+      val opts = doOpts(p)
       if (!opts.isEmpty)
-	plug.processOptions(opts, error)
+        p.processOptions(opts, error)
     }
 
-    for {
-      opt <- settings.pluginOptions.value
-      if !plugs.exists(p => opt.startsWith(p.name + ":"))
-    } error("bad option: -P:" + opt)
+    /** Verify no non-existent plugin given with -P */
+    for (opt <- settings.pluginOptions.value ; if plugs forall (p => optList(List(opt), p).isEmpty))
+      error("bad option: -P:" + opt)
 
     plugs
   }
 
-  private var pluginsCache: Option[List[Plugin]] = None
-
-  def plugins: List[Plugin] = {
-    if (pluginsCache.isEmpty)
-      pluginsCache = Some(loadPlugins)
-    pluginsCache.get
-  }
+  lazy val plugins: List[Plugin] = loadPlugins
 
   /** A description of all the plugins that are loaded */
-  def pluginDescriptions: String = {
-    val messages =
-      for (plugin <- roughPluginsList)
-	yield plugin.name + " - " + plugin.description
-    messages.mkString("\n")
-  }
+  def pluginDescriptions: String =
+    roughPluginsList map (x => "%s - %s".format(x.name, x.description)) mkString "\n"
 
   /**
    * Extract all phases supplied by plugins and add them to the phasesSet.
    * @see phasesSet
    */
-  protected def computePluginPhases() {
-    val plugPhases = plugins.flatMap(_.components)
-    for (pPhase <- plugPhases) {
-      phasesSet += pPhase
-     }
-   }
+  protected def computePluginPhases(): Unit =
+    phasesSet ++= (plugins flatMap (_.components))
 
   /** Summary of the options for all loaded plugins */
-  def pluginOptionsHelp: String = {
-    val buf = new StringBuffer
-    for (plug <- roughPluginsList; help <- plug.optionsHelp) {
-      buf append ("Options for plugin " + plug.name + ":\n")
-      buf append help
-      buf append "\n"
-    }
-    buf.toString
-  }
+  def pluginOptionsHelp: String =
+    (for (plug <- roughPluginsList ; help <- plug.optionsHelp) yield {
+      "Options for plugin %s:\n%s\n".format(plug.name, help)
+    }) mkString
 }

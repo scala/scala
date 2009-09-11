@@ -10,6 +10,7 @@ package nest
 
 import java.io.{File, FilenameFilter, IOException, StringWriter}
 import java.net.URI
+import scala.tools.nsc.io.Directory
 
 trait FileManager {
 
@@ -18,12 +19,7 @@ trait FileManager {
     if (inx < 0) name else name.substring(0, inx)
   }
 
-  def deleteRecursive(dir: File) {
-    if (dir.isDirectory) {
-      for (file <- dir.list) deleteRecursive(new File(dir, file))
-    }
-    dir.delete
-  }
+  def deleteRecursive(dir: File) { Directory(dir).deleteRecursively() }
 
   /**
    * Compares two files using a Java implementation of the GNU diff

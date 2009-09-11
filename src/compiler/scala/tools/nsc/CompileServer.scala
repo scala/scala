@@ -6,10 +6,9 @@
 
 package scala.tools.nsc
 
-import java.io.{BufferedOutputStream, File, FileOutputStream, PrintStream}
-import java.lang.{Runtime, System, Thread}
+import java.io.{ BufferedOutputStream, FileOutputStream, PrintStream, File => JFile }
+import io.File
 
-import scala.concurrent.ops.spawn
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.FakePos //Position
 import scala.tools.util.SocketServer
@@ -22,7 +21,8 @@ import scala.tools.util.SocketServer
  *  @author Martin Odersky
  *  @version 1.0
  */
-class StandardCompileServer extends SocketServer {
+class StandardCompileServer extends SocketServer
+{
   def compileSocket: CompileSocket = CompileSocket // todo: make this a lazy val
 
   val versionMsg = "Fast Scala compiler " +
@@ -44,6 +44,7 @@ class StandardCompileServer extends SocketServer {
   }
 
   private val runtime = Runtime.getRuntime()
+  import runtime.{ totalMemory, freeMemory, maxMemory }
 
   var reporter: ConsoleReporter = _
 
@@ -54,24 +55,31 @@ class StandardCompileServer extends SocketServer {
     }
 
   override def timeout() {
-    if (!compileSocket.portFile(port).exists())
+    if (!compileSocket.portFile(port).exists)
       fatal("port file no longer exists; skipping cleanup")
+  }
+
+  def printMemoryStats() {
+    System.out.println("New session, total memory = %s, max memory = %s, free memory = %s".format(
+      totalMemory, maxMemory, freeMemory))
+    System.out.flush()
+  }
+
+  def isMemoryFullEnough() = {
+    runtime.gc()
+    (totalMemory - freeMemory).toDouble / maxMemory.toDouble > MaxCharge
   }
 
   protected def newOfflineCompilerCommand(
     arguments: List[String],
     settings: Settings,
     error: String => Unit,
-    interactive: Boolean)
-  = new OfflineCompilerCommand(arguments, settings, error, interactive)
+    interactive: Boolean
+  ) = new OfflineCompilerCommand(arguments, settings, error, interactive)
 
   def session() {
-    System.out.println("New session" +
-                       ", total memory = "+ runtime.totalMemory() +
-                       ", max memory = " + runtime.maxMemory() +
-                       ", free memory = " + runtime.freeMemory)
-    System.out.flush()
-    val password = compileSocket.getPassword(port)
+    printMemoryStats()
+    val password = compileSocket getPassword port
     val guessedPassword = in.readLine()
     val input = in.readLine()
     if ((input ne null) && password == guessedPassword) {
@@ -127,24 +135,17 @@ class StandardCompileServer extends SocketServer {
               shutDown = true
             }
             reporter.printSummary()
-            runtime.gc()
-            if ((runtime.totalMemory() - runtime.freeMemory()).toDouble /
-                runtime.maxMemory().toDouble > MaxCharge) compiler = null
+            if (isMemoryFullEnough)
+              compiler = null
           }
     }
   }
 
   /** A directory holding redirected output */
-  private val redirectDir = new File(compileSocket.tmpDir, "output-redirects")
-  redirectDir.mkdirs
+  private val redirectDir = (compileSocket.tmpDir / "output-redirects").createDirectory()
 
-  private def redirect(setter: PrintStream => Unit, filename: String) {
-    setter(
-      new PrintStream(
-        new BufferedOutputStream(
-          new FileOutputStream(
-            new File(redirectDir, filename)))))
-  }
+  private def redirect(setter: PrintStream => Unit, filename: String): Unit =
+    setter(new PrintStream((redirectDir / filename).createFile().bufferedOutput()))
 
   def main(args: Array[String]) {
     redirect(System.setOut, "scala-compile-server-out.log")
