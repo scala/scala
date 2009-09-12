@@ -46,63 +46,63 @@ object Manifest {
     def erasure = java.lang.Byte.TYPE
     override def toString = "Byte"
     override def newArray(len: Int): BoxedArray[Byte] = new BoxedByteArray(new Array[Byte](len))
-    override def newWrappedArray(len: Int): WrappedArray[Byte] = new WrappedByteArray(new Array[Byte](len))
+    override def newWrappedArray(len: Int): WrappedArray[Byte] = new WrappedArray.ofByte(new Array[Byte](len))
   }
 
   val Short = new (Manifest[Short] @serializable) {
     def erasure = java.lang.Short.TYPE
     override def toString = "Short"
     override def newArray(len: Int): BoxedArray[Short] = new BoxedShortArray(new Array[Short](len))
-    override def newWrappedArray(len: Int): WrappedArray[Short] = new WrappedShortArray(new Array[Short](len))
+    override def newWrappedArray(len: Int): WrappedArray[Short] = new WrappedArray.ofShort(new Array[Short](len))
   }
 
   val Char = new (Manifest[Char] @serializable) {
     def erasure = java.lang.Character.TYPE
     override def toString = "Char"
     override def newArray(len: Int): BoxedArray[Char] = new BoxedCharArray(new Array[Char](len))
-    override def newWrappedArray(len: Int): WrappedArray[Char] = new WrappedCharArray(new Array[Char](len))
+    override def newWrappedArray(len: Int): WrappedArray[Char] = new WrappedArray.ofChar(new Array[Char](len))
   }
 
   val Int = new (Manifest[Int] @serializable) {
     def erasure = java.lang.Integer.TYPE
     override def toString = "Int"
     override def newArray(len: Int): BoxedArray[Int] = new BoxedIntArray(new Array[Int](len))
-    override def newWrappedArray(len: Int): WrappedArray[Int] = new WrappedIntArray(new Array[Int](len))
+    override def newWrappedArray(len: Int): WrappedArray[Int] = new WrappedArray.ofInt(new Array[Int](len))
   }
 
   val Long = new (Manifest[Long] @serializable) {
     def erasure = java.lang.Long.TYPE
     override def toString = "Long"
     override def newArray(len: Int): BoxedArray[Long] = new BoxedLongArray(new Array[Long](len))
-    override def newWrappedArray(len: Int): WrappedArray[Long] = new WrappedLongArray(new Array[Long](len))
+    override def newWrappedArray(len: Int): WrappedArray[Long] = new WrappedArray.ofLong(new Array[Long](len))
   }
 
   val Float = new (Manifest[Float] @serializable) {
     def erasure = java.lang.Float.TYPE
     override def toString = "Float"
     override def newArray(len: Int): BoxedArray[Float] = new BoxedFloatArray(new Array[Float](len))
-    override def newWrappedArray(len: Int): WrappedArray[Float] = new WrappedFloatArray(new Array[Float](len))
+    override def newWrappedArray(len: Int): WrappedArray[Float] = new WrappedArray.ofFloat(new Array[Float](len))
   }
 
   val Double = new (Manifest[Double] @serializable) {
     def erasure = java.lang.Double.TYPE
     override def toString = "Double"
     override def newArray(len: Int): BoxedArray[Double] = new BoxedDoubleArray(new Array[Double](len))
-    override def newWrappedArray(len: Int): WrappedArray[Double] = new WrappedDoubleArray(new Array[Double](len))
+    override def newWrappedArray(len: Int): WrappedArray[Double] = new WrappedArray.ofDouble(new Array[Double](len))
   }
 
   val Boolean = new (Manifest[Boolean] @serializable) {
     def erasure = java.lang.Boolean.TYPE
     override def toString = "Boolean"
     override def newArray(len: Int): BoxedArray[Boolean] = new BoxedBooleanArray(new Array[Boolean](len))
-    override def newWrappedArray(len: Int): WrappedArray[Boolean] = new WrappedBooleanArray(new Array[Boolean](len))
+    override def newWrappedArray(len: Int): WrappedArray[Boolean] = new WrappedArray.ofBoolean(new Array[Boolean](len))
   }
 
   val Unit = new (Manifest[Unit] @serializable) {
     def erasure = java.lang.Void.TYPE
     override def toString = "Unit"
     override def newArray(len: Int): BoxedArray[Unit] = new BoxedUnitArray(new Array[Unit](len))
-    override def newWrappedArray(len: Int): WrappedArray[Unit] = new WrappedUnitArray(new Array[Unit](len))
+    override def newWrappedArray(len: Int): WrappedArray[Unit] = new WrappedArray.ofUnit(new Array[Unit](len))
   }
 
   val Any: Manifest[Any] = new ClassTypeManifest[Any](None, classOf[java.lang.Object], List()) {

@@ -33,16 +33,16 @@ class LowPriorityImplicits {
     case x: Array[Unit] => arrayWrapper(x).asInstanceOf[WrappedArray[T]]
   }
 
-  implicit def arrayWrapper[T <: AnyRef](xs: Array[T]): WrappedRefArray[T] = new WrappedRefArray[T](xs.asInstanceOf[Array[AnyRef]])
-  implicit def arrayWrapper(xs: Array[Int]): WrappedIntArray = new WrappedIntArray(xs)
-  implicit def arrayWrapper(xs: Array[Double]): WrappedDoubleArray = new WrappedDoubleArray(xs)
-  implicit def arrayWrapper(xs: Array[Long]): WrappedLongArray = new WrappedLongArray(xs)
-  implicit def arrayWrapper(xs: Array[Float]): WrappedFloatArray = new WrappedFloatArray(xs)
-  implicit def arrayWrapper(xs: Array[Char]): WrappedCharArray = new WrappedCharArray(xs)
-  implicit def arrayWrapper(xs: Array[Byte]): WrappedByteArray = new WrappedByteArray(xs)
-  implicit def arrayWrapper(xs: Array[Short]): WrappedShortArray = new WrappedShortArray(xs)
-  implicit def arrayWrapper(xs: Array[Boolean]): WrappedBooleanArray = new WrappedBooleanArray(xs)
-  implicit def arrayWrapper(xs: Array[Unit]): WrappedUnitArray = new WrappedUnitArray(xs)
+  implicit def arrayWrapper[T <: AnyRef](xs: Array[T]): WrappedArray[T] = new WrappedArray.ofRef[T](xs.asInstanceOf[Array[AnyRef]])
+  implicit def arrayWrapper(xs: Array[Int]): WrappedArray[Int] = new WrappedArray.ofInt(xs)
+  implicit def arrayWrapper(xs: Array[Double]): WrappedArray[Double] = new WrappedArray.ofDouble(xs)
+  implicit def arrayWrapper(xs: Array[Long]): WrappedArray[Long] = new WrappedArray.ofLong(xs)
+  implicit def arrayWrapper(xs: Array[Float]): WrappedArray[Float] = new WrappedArray.ofFloat(xs)
+  implicit def arrayWrapper(xs: Array[Char]): WrappedArray[Char] = new WrappedArray.ofChar(xs)
+  implicit def arrayWrapper(xs: Array[Byte]): WrappedArray[Byte] = new WrappedArray.ofByte(xs)
+  implicit def arrayWrapper(xs: Array[Short]): WrappedArray[Short] = new WrappedArray.ofShort(xs)
+  implicit def arrayWrapper(xs: Array[Boolean]): WrappedArray[Boolean] = new WrappedArray.ofBoolean(xs)
+  implicit def arrayWrapper(xs: Array[Unit]): WrappedArray[Unit] = new WrappedArray.ofUnit(xs)
 
   implicit def wrapString(s: String): WrappedString = new WrappedString(s)
   implicit def unwrapString(ws: WrappedString): String = ws.self

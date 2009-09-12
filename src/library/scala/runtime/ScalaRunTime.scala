@@ -30,6 +30,12 @@ object ScalaRunTime {
     array
   }
 
+  /** Get generic array element */
+  def getArrayElem(xs: AnyRef, idx: Int): Any = java.lang.reflect.Array.get(xs, idx)
+
+  /** Get generic array element */
+  def setArrayElem(xs: AnyRef, idx: Int, value: Any): Unit = java.lang.reflect.Array.set(xs, idx, value)
+
   def toArray[T](xs: scala.collection.Sequence[T]) = {
     val arr = new Array[AnyRef](xs.length)
     var i = 0
@@ -37,19 +43,21 @@ object ScalaRunTime {
     arr
   }
 
-  /** Convert arrays to sequences, leave sequences as they are */
+  /** Convert arrays to sequences, leave sequences as they are
+   *  !!! see duplication wrt
+   */
   def toSequence[T](xs: AnyRef): Sequence[T] = xs match {
     case ts: Sequence[T] => ts.asInstanceOf[Sequence[T]]
-    case x: Array[AnyRef] => new WrappedRefArray(x).asInstanceOf[Array[T]]
-    case x: Array[Int] => new WrappedIntArray(x).asInstanceOf[Array[T]]
-    case x: Array[Double] => new WrappedDoubleArray(x).asInstanceOf[Array[T]]
-    case x: Array[Long] => new WrappedLongArray(x).asInstanceOf[Array[T]]
-    case x: Array[Float] => new WrappedFloatArray(x).asInstanceOf[Array[T]]
-    case x: Array[Char] => new WrappedCharArray(x).asInstanceOf[Array[T]]
-    case x: Array[Byte] => new WrappedByteArray(x).asInstanceOf[Array[T]]
-    case x: Array[Short] => new WrappedShortArray(x).asInstanceOf[Array[T]]
-    case x: Array[Boolean] => new WrappedBooleanArray(x).asInstanceOf[Array[T]]
     case null => null
+    case x: Array[AnyRef] => new WrappedArray.ofRef(x).asInstanceOf[Array[T]]
+    case x: Array[Int] => new WrappedArray.ofInt(x).asInstanceOf[Array[T]]
+    case x: Array[Double] => new WrappedArray.ofDouble(x).asInstanceOf[Array[T]]
+    case x: Array[Long] => new WrappedArray.ofLong(x).asInstanceOf[Array[T]]
+    case x: Array[Float] => new WrappedArray.ofFloat(x).asInstanceOf[Array[T]]
+    case x: Array[Char] => new WrappedArray.ofChar(x).asInstanceOf[Array[T]]
+    case x: Array[Byte] => new WrappedArray.ofByte(x).asInstanceOf[Array[T]]
+    case x: Array[Short] => new WrappedArray.ofShort(x).asInstanceOf[Array[T]]
+    case x: Array[Boolean] => new WrappedArray.ofBoolean(x).asInstanceOf[Array[T]]
   }
 
   def checkInitialized[T <: AnyRef](x: T): T =
