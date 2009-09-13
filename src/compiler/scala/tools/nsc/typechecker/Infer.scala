@@ -1324,8 +1324,8 @@ trait Infer {
               patternWarning(tp, "abstract type ")
             else if (sym.isAliasType)
               check(tp.normalize, bound)
-            else if (sym == NothingClass || sym == NullClass)
-              error(pos, "this type cannot be used in a type pattern")
+            else if (sym == NothingClass || sym == NullClass || sym == AnyValClass)
+              error(pos, "type "+tp+" cannot be used in a type pattern or isInstanceOf test")
             else
               for (arg <- args) {
                 if (sym == ArrayClass) check(arg, bound)

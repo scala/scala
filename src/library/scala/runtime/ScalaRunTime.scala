@@ -30,11 +30,14 @@ object ScalaRunTime {
     array
   }
 
-  /** Get generic array element */
-  def getArrayElem(xs: AnyRef, idx: Int): Any = java.lang.reflect.Array.get(xs, idx)
+  /** Retrieve generic array element */
+  def array_apply(xs: AnyRef, idx: Int): Any = java.lang.reflect.Array.get(xs, idx)
 
-  /** Get generic array element */
-  def setArrayElem(xs: AnyRef, idx: Int, value: Any): Unit = java.lang.reflect.Array.set(xs, idx, value)
+  /** update generic array element */
+  def array_update(xs: AnyRef, idx: Int, value: Any): Unit = java.lang.reflect.Array.set(xs, idx, value)
+
+  /** Get generic array length */
+  def array_length(xs: AnyRef): Int = java.lang.reflect.Array.getLength(xs)
 
   def toArray[T](xs: scala.collection.Sequence[T]) = {
     val arr = new Array[AnyRef](xs.length)
