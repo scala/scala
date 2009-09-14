@@ -20,7 +20,10 @@ import scala.util.control.Exception.allCatch
  */
 object ops
 {
-
+  // !!! I don't think this should be implicit, but it does need to be
+  // made available as a default argument (difficult at present, see spawn.)
+  // If it is merely implicit without being specified as a default, then it
+  // will not be in scope for callers unless ops._ is first imported.
   implicit val defaultRunner: FutureTaskRunner =
     TaskRunners.threadRunner
 
@@ -46,7 +49,12 @@ object ops
    *
    *  @param  p the expression to evaluate
    */
-  def spawn(p: => Unit)(implicit runner: TaskRunner = defaultRunner): Unit = {
+  // !!! this should have a signature like:
+  //   def spawn(p: => Unit)(implicit runner: TaskRunner = defaultRunner): Unit
+  // but at present the mixture of by-name argument and default implicit causes a crash.
+
+  def spawn(p: => Unit): Unit = spawn(p, defaultRunner)
+  def spawn(p: => Unit, runner: TaskRunner): Unit = {
     runner execute runner.functionAsTask(() => p)
   }
 
@@ -54,7 +62,10 @@ object ops
    *  @param p ...
    *  @return  ...
    */
-  def future[A](p: => A)(implicit runner: FutureTaskRunner = defaultRunner): () => A = {
+  // See spawn above, this should have a signature like
+  // def future[A](p: => A)(implicit runner: FutureTaskRunner = defaultRunner): () => A
+  def future[A](p: => A): () => A = future[A](p, defaultRunner)
+  def future[A](p: => A, runner: FutureTaskRunner): () => A = {
     runner.futureAsFunction(runner submit runner.functionAsTask(() => p))
   }
 
