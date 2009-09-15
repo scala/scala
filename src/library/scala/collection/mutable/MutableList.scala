@@ -74,7 +74,7 @@ class MutableList[A] extends LinearSequence[A]
    */
   def get(n: Int): Option[A] = first0.get(n)
 
-  protected def prependElem(elem: A): Unit = {
+  protected def prependElem(elem: A) {
     first0 = new LinkedList[A](elem, first0)
     if (len == 0)
       last0 = first0
@@ -90,7 +90,8 @@ class MutableList[A] extends LinearSequence[A]
       len = len + 1
     }
 
-  @deprecated("use clear instead") def reset() { clear() }
+  @deprecated("use clear instead")
+  def reset() { clear() }
 
   /** Returns an iterator over all elements of this list.
    */

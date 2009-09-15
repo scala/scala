@@ -25,6 +25,7 @@ object Queue {
  *  @version 1.0, 08/07/2003
  */
 @serializable
+@SerialVersionUID(-7622936493364270175L)
 class Queue[+A] protected(
   protected val  in: List[A],
   protected val out: List[A]) extends Sequence[A]
@@ -110,7 +111,7 @@ class Queue[+A] protected(
   def dequeue: (A, Queue[A]) = out match {
     case Nil if !in.isEmpty => val rev = in.reverse ; (rev.head, new Queue(Nil, rev.tail))
     case x :: xs            => (x, new Queue(in, xs))
-    case _                  => throw new NoSuchElementException("queue empty")
+    case _                  => throw new NoSuchElementException("dequeue on empty queue")
   }
 
   /** Returns the first element in the queue, or throws an error if there
@@ -122,7 +123,7 @@ class Queue[+A] protected(
   def front: A =
     if (!out.isEmpty) out.head
     else if (!in.isEmpty) in.last
-    else throw new NoSuchElementException("queue empty")
+    else throw new NoSuchElementException("front on empty queue")
 
   /** Returns a string representation of this queue.
    */

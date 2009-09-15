@@ -27,7 +27,11 @@ trait Set[A] extends (A => Boolean)
   override def companion: Companion[Set] = Set
 }
 
-/* Factory object for `Set` class */
+/** Factory object for <code>Set</code> class.
+ *
+ *  @author  Martin Odersky
+ *  @version 2.8
+ */
 object Set extends SetFactory[Set] {
   override def empty[A]: Set[A] = immutable.Set.empty[A]
   implicit def builderFactory[A]: BuilderFactory[A, Set[A], Coll] = setBuilderFactory[A]

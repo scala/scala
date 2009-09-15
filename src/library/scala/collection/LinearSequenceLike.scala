@@ -312,7 +312,8 @@ trait LinearSequenceLike[+A, +Repr <: LinearSequenceLike[A, Repr]] extends Seque
     (b.result, these)
   }
 
-  /** Returns true iff the other linear sequence contains the same elements as this one.
+  /** Returns <code>true</code> iff the other linear sequence contains the
+   *  same elements as this one.
    *
    *  @note will not terminate for two infinite-sized linear sequences.
    *  @param that  the other linear sequence
@@ -320,13 +321,14 @@ trait LinearSequenceLike[+A, +Repr <: LinearSequenceLike[A, Repr]] extends Seque
   override def sameElements[B >: A](that: Iterable[B]): Boolean = that match {
     case that1: LinearSequence[_] =>
       var these = this
-      var those = that
+      var those = that1
       while (!these.isEmpty && !those.isEmpty && these.head == those.head) {
         these = these.tail
         those = those.tail
       }
       these.isEmpty && those.isEmpty
-    case _ => super.sameElements(that)
+    case _ =>
+      super.sameElements(that)
   }
 
   // Overridden methods from Sequence

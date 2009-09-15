@@ -8,7 +8,9 @@
 
 // $Id: VectorTemplate.scala 18646 2009-09-04 16:56:11Z odersky $
 
+
 package scala.collection
+
 import generic._
 import mutable.ArrayBuffer
 

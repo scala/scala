@@ -113,7 +113,7 @@ object Test {
     }
   }
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]) {
     runSeqs()
 
     assert(failures.isEmpty, failures mkString "\n")

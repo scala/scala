@@ -376,7 +376,7 @@ object Actor {
  *
  * @author Philipp Haller
  */
-@serializable
+@serializable @SerialVersionUID(-781154067877019505L)
 trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
 
   /* The following two fields are only used when the actor

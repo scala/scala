@@ -13,9 +13,6 @@ package scala.collection
 
 import generic._
 
-// Methods could be printed by  cat Traversibe.scala | egrep '^  (override )?def'
-
-
 /** <p>
  *    This trait implements a proxy for iterable objects. It forwards
  *    all calls to a different iterable object.

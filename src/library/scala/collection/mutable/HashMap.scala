@@ -13,8 +13,7 @@ package scala.collection.mutable
 
 import scala.collection.generic._
 
-
-@serializable
+@serializable @SerialVersionUID(-8682987922734091219L)
 class HashMap[A, B] extends Map[A, B]
                        with MutableMapTemplate[A, B, HashMap[A, B]]
                        with HashTable[A] {

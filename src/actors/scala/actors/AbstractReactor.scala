@@ -8,6 +8,12 @@
 
 // $Id$
 
+/**
+ * The <code>AbstractReactor</code> trait.
+ *
+ * @version 0.9.18
+ * @author Philipp Haller
+ */
 package scala.actors
 
 trait AbstractReactor[-T] {

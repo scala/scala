@@ -6,6 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
+// $Id$
+
+
 package scala.collection.immutable
 
 import scala.collection.generic.SetProxyTemplate
@@ -19,7 +22,6 @@ import scala.collection.generic.SetProxyTemplate
  *    dynamically using object composition and forwarding.
  *  </p>
  */
-
 trait SetProxy[A] extends Set[A] with SetProxyTemplate[A, Set[A]]
 {
   override def repr = this

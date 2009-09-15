@@ -1,9 +1,20 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
+
 package scala.collection.immutable
 
 import scala.collection.generic._
 import scala.collection.mutable
 
-/** A subtrait of collection.Sequence which represents sequences
+/** A subtrait of <code>collection.Sequence</code> which represents sequences
  *  that cannot be mutated.
  */
 trait LinearSequence[+A] extends Sequence[A]

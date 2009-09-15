@@ -7,9 +7,11 @@
 \*                                                                      */
 
 // $Id$
+
+
 package scala.collection.immutable
 
-@serializable
+@serializable @SerialVersionUID(8691885935445612921L)
 abstract class RedBlack[A] {
 
   def isSmaller(x: A, y: A): Boolean
@@ -30,14 +32,14 @@ abstract class RedBlack[A] {
     def delete(k: A): Tree[B] = del(k)
     def foreach[U](f: (A, B) =>  U)
     @deprecated("use `foreach' instead")
-    def visit[T](input : T)(f : (T,A,B) => Tuple2[Boolean,T]) : Tuple2[Boolean,T];
+    def visit[T](input: T)(f: (T, A, B) => (Boolean, T)): (Boolean, T)
     def toStream: Stream[(A,B)]
     def iterator: Iterator[(A, B)]
     @deprecated("use `iterator' instead") def elements = iterator
     def upd[B1 >: B](k: A, v: B1): Tree[B1]
     def del(k: A): Tree[B]
     def smallest: NonEmpty[B]
-    def range(from : Option[A], until : Option[A]) : Tree[B]
+    def range(from: Option[A], until: Option[A]): Tree[B]
     def first : A
     def last : A
     def count : Int
@@ -85,27 +87,28 @@ abstract class RedBlack[A] {
       }
     }
     def smallest: NonEmpty[B] = if (left.isEmpty) this else left.smallest
+
     def toStream: Stream[(A,B)] =
       left.toStream ++ Stream((key,value)) ++ right.toStream
 
     def iterator: Iterator[(A, B)] =
       left.iterator ++ Iterator.single(Pair(key, value)) ++ right.iterator
 
-    def foreach[U](f: (A, B) =>  U) {
+    def foreach[U](f: (A, B) => U) {
       left foreach f
       f(key, value)
       right foreach f
     }
 
     @deprecated("use `foreach' instead")
-    def visit[T](input : T)(f : (T,A,B) => Tuple2[Boolean,T]) : Tuple2[Boolean,T] = {
+    def visit[T](input: T)(f: (T,A,B) => (Boolean, T)): (Boolean, T) = {
       val left = this.left.visit(input)(f)
       if (!left._1) return left
       val middle = f(left._2, key, value)
       if (!middle._1) return middle
       return this.right.visit(middle._2)(f)
     }
-   override def range(from : Option[A], until : Option[A]) : Tree[B] = {
+   override def range(from: Option[A], until: Option[A]): Tree[B] = {
       if (from == None && until == None) return this
       if (from != None && isSmaller(key, from.get)) return right.range(from, until);
       if (until != None && (isSmaller(until.get,key) || !isSmaller(key,until.get)))
@@ -132,12 +135,12 @@ abstract class RedBlack[A] {
     def iterator: Iterator[(A, Nothing)] = Iterator.empty
     def toStream: Stream[(A,Nothing)] = Stream.empty
 
-    def foreach[U](f: (A, Nothing) =>  U) {}
+    def foreach[U](f: (A, Nothing) => U) {}
 
     @deprecated("use `foreach' instead")
-    def visit[T](input : T)(f : (T,A,Nothing) => Tuple2[Boolean,T]) = Tuple2(true,input)
+    def visit[T](input: T)(f: (T, A, Nothing) => (Boolean, T)) = (true, input)
 
-    def range(from : Option[A], until : Option[A]) = this
+    def range(from: Option[A], until: Option[A]) = this
     def first = throw new NoSuchElementException("empty map")
     def last = throw new NoSuchElementException("empty map")
     def count = 0

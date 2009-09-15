@@ -7,6 +7,8 @@
 \*                                                                      */
 
 // $Id: Traversable.scala 15188 2008-05-24 15:01:02Z stepancheg $
+
+
 package scala.collection
 
 // import immutable.{List, Stream, Nil}
@@ -93,13 +95,18 @@ trait Traversable[+A] extends TraversableTemplate[A, Traversable[A]]
   */
 }
 
-/** Factory methods and utilities for instances of type Traversable */
+/** Factory methods and utilities for instances of type <code>Traversable</code>.
+ *
+ *  @author Martin Odersky
+ *  @version 2.8
+ */
 object Traversable extends TraversableFactory[Traversable] { self =>
 
   /** provide break functionality separate from client code */
   private[collection] val breaks: Breaks = new Breaks
 
-  implicit def builderFactory[A]: BuilderFactory[A, Traversable[A], Coll] = new VirtualBuilderFactory[A]
+  implicit def builderFactory[A]: BuilderFactory[A, Traversable[A], Coll] =
+    new VirtualBuilderFactory[A]
 
   def newBuilder[A]: Builder[A, Traversable[A]] = immutable.Traversable.newBuilder[A]
 }

@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -31,16 +31,30 @@ trait Publisher[A, This <: Publisher[A, This]] {
   private val filters = new HashMap[SubThis, Set[Filter]] with MultiMap[SubThis, Filter]
   private val suspended = new HashSet[SubThis]
 
-  def subscribe(sub: SubThis): Unit = subscribe(sub, event => true)
-  def subscribe(sub: SubThis, filter: Filter): Unit = filters(sub) += filter
-  def suspendSubscription(sub: SubThis): Unit = suspended += sub
-  def activateSubscription(sub: SubThis): Unit = suspended -= sub
-  def removeSubscription(sub: SubThis): Unit = filters -= sub
+  def subscribe(sub: SubThis) { subscribe(sub, event => true) }
+  def subscribe(sub: SubThis, filter: Filter) { filters(sub) += filter }
+  def suspendSubscription(sub: SubThis) { suspended += sub }
+  def activateSubscription(sub: SubThis) { suspended -= sub }
+  def removeSubscription(sub: SubThis) { filters -= sub }
   def removeSubscriptions() { filters.clear }
 
-  protected def publish(event: A): Unit =
+  protected def publish(event: A) {
     filters.keysIterator.foreach(sub =>
       if (filters.entryExists(sub, p => p(event)))
         sub.notify(this, event)
     )
+  }
+
+  /** Checks if two publishers are structurally identical.
+   *
+   *  @return true, iff both publishers contain the same sequence of elements.
+   */
+  override def equals(obj: Any): Boolean = obj match {
+    case that: Publisher[_, _] =>
+      (this.filters equals that.filters) &&
+      (this.suspended equals that.suspended)
+    case _ =>
+      false
+  }
+
 }

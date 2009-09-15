@@ -5,8 +5,12 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+
 // $Id$
+
+
 package scala.collection.generic
+
 import scala.collection._
 
 trait BitSetFactory[Coll <: BitSet with BitSetTemplate[Coll]] {

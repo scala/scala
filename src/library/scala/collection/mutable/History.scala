@@ -21,6 +21,7 @@ package scala.collection.mutable
  *  @version 1.0, 08/07/2003
  */
 @serializable
+@SerialVersionUID(5219213543849892588L)
 class History[A, B] extends AnyRef with Subscriber[A, B] with Iterable[(B, A)]
 {
   protected val log: Queue[(B, A)] = new Queue[(B, A)]
@@ -30,7 +31,7 @@ class History[A, B] extends AnyRef with Subscriber[A, B] with Iterable[(B, A)]
    *  @param pub   ...
    *  @param event ...
    */
-  def notify(pub: B, event: A): Unit = {
+  def notify(pub: B, event: A) {
     if (log.length >= maxHistory)
       log.dequeue
 
@@ -41,5 +42,14 @@ class History[A, B] extends AnyRef with Subscriber[A, B] with Iterable[(B, A)]
   def iterator: Iterator[(B, A)] = log.iterator
   def events: Iterator[A] = log.iterator.map { case (_, e) => e }
 
-  def clear(): Unit = log.clear
+  def clear() { log.clear }
+
+  /** Checks if two history objects are structurally identical.
+   *
+   *  @return true, iff both history objects contain the same sequence of elements.
+   */
+  override def equals(obj: Any): Boolean = obj match {
+    case that: History[_, _] => this.log equals that.log
+    case _                   => false
+  }
 }

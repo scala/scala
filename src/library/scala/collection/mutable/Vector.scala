@@ -6,14 +6,14 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: $
+// $Id$
 
 
 package scala.collection.mutable
 
 import scala.collection.generic._
 
-/** A subtrait of collection.Vector which represents sequences
+/** A subtrait of <code>collection.Vector</code> which represents sequences
  *  that can be mutated.
  */
 trait Vector[A] extends Sequence[A]

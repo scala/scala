@@ -9,17 +9,17 @@
 // $Id$
 
 
+package scala.collection.immutable
+
+import scala.collection.generic._
+import annotation.unchecked.uncheckedVariance
+
 /** A map whose keys are sorted.
  *
  *  @author Sean McDirmid
  *  @author Martin Odersky
  *  @version 2.8
  */
-package scala.collection.immutable
-
-import scala.collection.generic._
-import annotation.unchecked.uncheckedVariance
-
 trait SortedMap[A, +B] extends Map[A, B]
                          with collection.SortedMap[A, B]
                          with ImmutableMapTemplate[A, B, SortedMap[A, B]]

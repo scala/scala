@@ -8,6 +8,7 @@
 
 // $Id$
 
+
 package scala.collection.immutable
 
 import scala.collection.generic._

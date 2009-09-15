@@ -10,7 +10,6 @@
 
 
 package scala.collection.generic
-import scala.collection._
 
 import scala.collection._
 
@@ -19,14 +18,13 @@ abstract class Companion[+CC[X] <: Traversable[X]] {
 
   def newBuilder[A]: Builder[A, CC[A]]
 
- /** The empty iterable of type CC */
+ /** The empty iterable of type <code>CC</code>. */
   def empty[A]: CC[A] = newBuilder[A].result
 
-  /** Creates an iterable of type CC with specified elements */
+  /** Creates an iterable of type <code>CC</code> with specified elements. */
   def apply[A](args: A*): CC[A] = {
     val b = newBuilder[A]
     b ++= args
     b.result
   }
 }
-

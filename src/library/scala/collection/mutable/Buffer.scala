@@ -29,7 +29,8 @@ trait Buffer[A] extends Sequence[A]
   override def companion: Companion[Buffer] = Buffer
 }
 
-/* Factory object for `Buffer` trait */
+/** Factory object for <code>Buffer</code> trait.
+ */
 object Buffer extends SequenceFactory[Buffer] {
   implicit def builderFactory[A]: BuilderFactory[A, Buffer[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, Buffer[A]] = new ArrayBuffer

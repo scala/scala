@@ -25,7 +25,6 @@ import scala.collection.generic.MapProxyTemplate
  *  @author  Matthias Zenger, Martin Odersky
  *  @version 2.0, 31/12/2006
  */
-
 trait MapProxy[A, +B] extends Map[A, B] with MapProxyTemplate[A, B, Map[A, B]]
 {
   override def repr = this

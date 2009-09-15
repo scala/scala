@@ -8,6 +8,7 @@
 
 // $Id$
 
+
 package scala.collection
 
 import generic.MapProxyTemplate

@@ -8,21 +8,22 @@
 
 // $Id$
 
-package scala.collection.mutable;
+
+package scala.collection.mutable
 
 import scala.collection.generic._
 
-private object Utils{
-  def growArray(x : Array[AnyRef]) = {
-    val y = new Array[AnyRef](x.length * 2);
-    Array.copy(x, 0, y, 0, x.length);
-    y;
+private object Utils {
+  def growArray(x: Array[AnyRef]) = {
+    val y = new Array[AnyRef](x.length * 2)
+    Array.copy(x, 0, y, 0, x.length)
+    y
   }
 
-  def clone(x : Array[AnyRef]) = {
-    val y = new Array[AnyRef](x.length);
-    Array.copy(x, 0, y, 0, x.length);
-    y;
+  def clone(x: Array[AnyRef]) = {
+    val y = new Array[AnyRef](x.length)
+    Array.copy(x, 0, y, 0, x.length)
+    y
   }
 }
 
@@ -35,10 +36,10 @@ private object Utils{
 @cloneable
 class ArrayStack[T] private(private var table : Array[AnyRef],
                             private var index : Int) extends collection.Sequence[T] with Cloneable[ArrayStack[T]] {
-  def this() = this(new Array[AnyRef](1), 0);
+  def this() = this(new Array[AnyRef](1), 0)
 
   /** Retrieve n'th element from stack, where top of stack has index 0 */
-  def apply(n: Int) =
+  def apply(n: Int): T =
     table(index - 1 - n).asInstanceOf[T]
 
   /** The number of elements in the stack */
@@ -49,21 +50,21 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
    *
    * @param x The element to push
    */
-  def push(x : T) = {
-    if (index == table.length) table = Utils.growArray(table);
-    table(index) = x.asInstanceOf[AnyRef];
-    index += 1;
+  def push(x: T) {
+    if (index == table.length) table = Utils.growArray(table)
+    table(index) = x.asInstanceOf[AnyRef]
+    index += 1
   }
 
   /**
    * Pop the top element off the stack.
    */
-  def pop = {
-    if (index == 0) error("Stack empty");
-    index -= 1;
-    val x = table(index).asInstanceOf[T];
-    table(index) = null;
-    x;
+  def pop: T = {
+    if (index == 0) error("Stack empty")
+    index -= 1
+    val x = table(index).asInstanceOf[T]
+    table(index) = null
+    x
   }
 
   /** View the top element of the stack. */
@@ -73,19 +74,19 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
   /**
    * View the top element of the stack.
    */
-  def top = table(index - 1).asInstanceOf[T]
+  def top: T = table(index - 1).asInstanceOf[T]
 
   /**
    * Duplicate the top element of the stack.
    */
-  def dup = push(top);
+  def dup = push(top)
 
   /**
    * Empties the stack.
    */
-  def clear = {
-    index = 0;
-    table = new Array(1);
+  def clear {
+    index = 0
+    table = new Array(1)
   }
 
   /**
@@ -94,14 +95,14 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
    *
    * @param f The function to drain to.
    */
-  def drain(f : T => Unit) = while(!isEmpty) f(pop);
+  def drain(f: T => Unit) = while (!isEmpty) f(pop)
 
   /**
    * Pushes all the provided elements onto the stack.
    *
    * @param x The source of elements to push
    */
-  def ++=(x : collection.Iterable[T]): this.type = { x.foreach(this +=(_)); this }
+  def ++=(x: collection.Iterable[T]): this.type = { x.foreach(this +=(_)); this }
 
 
   /**
@@ -109,16 +110,14 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
    *
    * @param x The source of elements to push
    */
-  def ++=(x : Iterator[T]): this.type = { x.foreach(this +=(_)); this }
+  def ++=(x: Iterator[T]): this.type = { x.foreach(this +=(_)); this }
 
   /**
    *  Alias for push.
    *
    *  @param x The element to push
    */
-  def +=(x : T): this.type = { push(x); this }
-
-
+  def +=(x: T): this.type = { push(x); this }
 
   /**
    * Pop the top two elements off the stack, apply f to them and push the result
@@ -126,15 +125,15 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
    *
    * @param f The combining function
    */
-  def combine(f : (T, T) => T) = push(f(pop, pop));
+  def combine(f: (T, T) => T) = push(f(pop, pop));
 
   /**
    * Repeatedly combine the top elements of the stack until the stack contains only
    * one element.
    */
-  def reduceWith(f : (T, T) => T) = while(size > 1) combine(f)
+  def reduceWith(f: (T, T) => T) = while(size > 1) combine(f)
 
-  override def size = index;
+  override def size = index
 
   /**
    * Evaluates the expression, preserving the contents of the stack so that
@@ -143,39 +142,39 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
    *
    * @param action The action to run.
    */
-  def preserving[T](action : => T) = {
-    val oldIndex = index;
-    val oldTable = Utils.clone(table);
+  def preserving[T](action: => T) = {
+    val oldIndex = index
+    val oldTable = Utils.clone(table)
 
-    try{
-      action;
+    try {
+      action
     } finally {
-      index = oldIndex;
-      table = oldTable;
+      index = oldIndex
+      table = oldTable
     }
   }
 
-  override def isEmpty = index == 0;
+  override def isEmpty: Boolean = index == 0
 
   /**
    * Iterates over the stack in LIFO order.
    */
-  def iterator: Iterator[T] = new Iterator[T]{
-    var currentIndex = index;
-    def hasNext = currentIndex > 0;
+  def iterator: Iterator[T] = new Iterator[T] {
+    var currentIndex = index
+    def hasNext = currentIndex > 0
     def next = {
-      currentIndex -= 1;
-      table(currentIndex).asInstanceOf[T];
+      currentIndex -= 1
+      table(currentIndex).asInstanceOf[T]
     }
   }
 
-  override def foreach[U](f : T =>  U){
-    var currentIndex = index;
-    while(currentIndex > 0){
-      currentIndex -= 1;
-      f(table(currentIndex).asInstanceOf[T]);
+  override def foreach[U](f: T =>  U) {
+    var currentIndex = index
+    while (currentIndex > 0) {
+      currentIndex -= 1
+      f(table(currentIndex).asInstanceOf[T])
     }
   }
 
-  override def clone = new ArrayStack[T](Utils.clone(table), index);
+  override def clone = new ArrayStack[T](Utils.clone(table), index)
 }

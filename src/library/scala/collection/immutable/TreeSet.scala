@@ -13,15 +13,17 @@ package scala.collection.immutable
 
 import scala.collection.generic._
 
-/** The canonical factory of <a href="TreeSet.html">TreeSet</a>'s. */
+/** The canonical factory of <a href="TreeSet.html">TreeSet</a>'s.
+ */
 object TreeSet extends SortedSetFactory[TreeSet]{
 
-  implicit def implicitBuilder[A](implicit ordering : Ordering[A]) : Builder[A, TreeSet[A]] = newBuilder[A](ordering)
-  def newBuilder[A](implicit ordering : Ordering[A]) : Builder[A, TreeSet[A]] = new AddingBuilder(empty[A](ordering))
+  implicit def implicitBuilder[A](implicit ordering: Ordering[A]): Builder[A, TreeSet[A]] = newBuilder[A](ordering)
+  def newBuilder[A](implicit ordering: Ordering[A]): Builder[A, TreeSet[A]] =
+    new AddingBuilder(empty[A](ordering))
 
   /** The empty set of this type
    */
-  def empty[A](implicit ordering : Ordering[A]) = new TreeSet[A]
+  def empty[A](implicit ordering: Ordering[A]) = new TreeSet[A]
 
 }
 
@@ -30,16 +32,16 @@ object TreeSet extends SortedSetFactory[TreeSet]{
  *  @author  Martin Odersky
  *  @version 2.0, 02/01/2007
  */
-
-@serializable
-class TreeSet[A](override val size: Int, t: RedBlack[A]#Tree[Unit])(implicit val ordering : Ordering[A])
+@serializable @SerialVersionUID(-234066569443569402L)
+class TreeSet[A](override val size: Int, t: RedBlack[A]#Tree[Unit])
+                (implicit val ordering: Ordering[A])
   extends RedBlack[A] with SortedSet[A] with SortedSetTemplate[A, TreeSet[A]] {
 
   override def stringPrefix = "TreeSet"
 
   def isSmaller(x: A, y: A) = compare(x,y) < 0
 
-  def this()(implicit ordering : Ordering[A]) = this(0, null)(ordering)
+  def this()(implicit ordering: Ordering[A]) = this(0, null)(ordering)
 
   protected val tree: RedBlack[A]#Tree[Unit] = if (size == 0) Empty else t
 
@@ -59,14 +61,14 @@ class TreeSet[A](override val size: Int, t: RedBlack[A]#Tree[Unit])(implicit val
   /** A new TreeSet with the entry added is returned,
    *  assuming that elem is <em>not</em> in the TreeSet.
    */
-  def insert (elem: A): TreeSet[A] = {
+  def insert(elem: A): TreeSet[A] = {
     assert(tree.lookup(elem).isEmpty)
     newSet(size + 1, tree.update(elem, ()))
   }
 
   def - (elem:A): TreeSet[A] =
     if (tree.lookup(elem).isEmpty) this
-    else newSet(size - 1, tree.delete(elem))
+    else newSet(size - 1, tree delete elem)
 
   /** Checks if this set contains element <code>elem</code>.
    *

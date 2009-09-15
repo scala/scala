@@ -8,14 +8,19 @@
 
 // $Id$
 
+
 package scala.collection
 
 import generic._
 import mutable.ArrayBuffer
 
-/** Sequences that support O(1) element access and O(1) length computation.
- *  This class does not add any methods to Sequence but overrides several
- *  methods with optimized implementations.
+/** <p>
+ *    Sequences that support O(1) element access and O(1) length computation.
+ *  </p>
+ *  <p>
+ *    This class does not add any methods to <code>Sequence</code> but
+ *    overrides several methods with optimized implementations.
+ *  </p>
  *
  *  @author Sean McDirmid
  *  @author Martin Odersky

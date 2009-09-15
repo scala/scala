@@ -5,12 +5,16 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+
+// $Id$
+
+
 package scala.collection.immutable
 
 import scala.collection.generic._
 import scala.collection.mutable.ArrayBuffer
 
-/** A subtrait of collection.Vector which represents sequences
+/** A subtrait of <code>collection.Vector</code> which represents sequences
  *  that cannot be mutated.
  */
 trait Vector[+A] extends Sequence[A]
@@ -21,10 +25,14 @@ trait Vector[+A] extends Sequence[A]
 }
 
 object Vector extends SequenceFactory[Vector] {
-  class Impl[A](buf: ArrayBuffer[A]) extends Vector[A] { // todo: insert better vector implementation here
+  // todo: insert better vector implementation here
+  @serializable @SerialVersionUID(7129304555082767876L)
+  class Impl[A](buf: ArrayBuffer[A]) extends Vector[A] {
     def length = buf.length
     def apply(idx: Int) = buf.apply(idx)
   }
-  implicit def builderFactory[A]: BuilderFactory[A, Vector[A], Coll] = new VirtualBuilderFactory[A]
-  def newBuilder[A]: Builder[A, Vector[A]] = new ArrayBuffer[A] mapResult (buf => new Impl(buf))
+  implicit def builderFactory[A]: BuilderFactory[A, Vector[A], Coll] =
+    new VirtualBuilderFactory[A]
+  def newBuilder[A]: Builder[A, Vector[A]] =
+    new ArrayBuffer[A] mapResult (buf => new Impl(buf))
 }

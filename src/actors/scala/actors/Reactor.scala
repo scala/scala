@@ -114,7 +114,7 @@ trait Reactor extends OutputChannel[Any] {
     var tmpMbox = startMbox
     var done = false
     while (!done) {
-      val qel = tmpMbox.extractFirst((m: Any) => handlesMessage(m))
+      val qel = tmpMbox.extractFirst(handlesMessage)
       if (tmpMbox ne mailbox)
         tmpMbox.foreach((m, s) => mailbox.append(m, s))
       if (null eq qel) {

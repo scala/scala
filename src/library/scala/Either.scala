@@ -1,17 +1,28 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
+
 package scala
 
-/**
- * <p>
- * The <code>Either</code> type represents a value of one of two possible types (a disjoint union).
- * The data constructors; <code>Left</code> and <code>Right</code> represent the two possible
- * values. The <code>Either</code> type is often used as an alternative to
- * <code>scala.Option</code> where <code>Left</code> represents failure (by convention) and
- * <code>Right</code> is akin to <code>Some</code>.
- * </p>
+/** <p>
+ *   The <code>Either</code> type represents a value of one of two possible
+ *   types (a disjoint union). The data constructors <code>Left</code> and
+ *   <code>Right</code> represent the two possible values.
+ *   The <code>Either</code> type is often used as an alternative to
+ *   <code>scala.Option</code> where <code>Left</code> represents failure
+ *   (by convention) and <code>Right</code> is akin to <code>Some</code>.
+ *  </p>
  *
- * @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
- * @version 1.0, 11/10/2008
- * @since 2.7
+ *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
+ *  @version 1.0, 11/10/2008
+ *  @since 2.7
  */
 sealed abstract class Either[+A, +B] {
   /**
@@ -50,6 +61,7 @@ sealed abstract class Either[+A, +B] {
    */
   def isRight = false // Default here, overriden in Right.
 }
+
 /**
  * The left side of the disjoint union, as opposed to the <code>Right</code> side.
  *
@@ -57,6 +69,7 @@ sealed abstract class Either[+A, +B] {
  * @version 1.0, 11/10/2008
  */
 final case class Left[+A, +B](a: A) extends Either[A, B] { override def isLeft = true }
+
 /**
  * The right side of the disjoint union, as opposed to the <code>Left</code> side.
  *
@@ -273,27 +286,25 @@ object Either {
       case Right(b) => Right(f(b))
     }
 
-    /**
-     * Returns <code>None</code> if this is a <code>Left</code> or if the given predicate
-     * <code>p</code> does not hold for the right value, otherwise, returns a <code>Right</code>.
+    /** Returns <code>None</code> if this is a <code>Left</code> or if the
+     *  given predicate <code>p</code> does not hold for the right value,
+     *  otherwise, returns a <code>Right</code>.
      */
     def filter[X](p: B => Boolean): Option[Either[X, B]] = e match {
       case Left(_) => None
       case Right(b) => if(p(b)) Some(Right(b)) else None
     }
 
-    /**
-     * Returns a <code>Seq</code> containing the <code>Right</code> value if it exists or an empty
-     * <code>Seq</code> if this is a <code>Left</code>.
+    /** Returns a <code>Seq</code> containing the <code>Right</code> value if
+     *  it exists or an empty <code>Seq</code> if this is a <code>Left</code>.
      */
     def toSeq = e match {
       case Left(_) => Seq.empty
       case Right(b) => Seq(b)
     }
 
-    /**
-     * Returns a <code>Some</code> containing the <code>Right</code> value if it exists or a
-     * <code>None</code> if this is a <code>Left</code>.
+    /** Returns a <code>Some</code> containing the <code>Right</code> value
+     *  if it exists or a <code>None</code> if this is a <code>Left</code>.
      */
     def toOption = e match {
       case Left(_) => None
@@ -322,9 +333,8 @@ object Either {
     case Right(t) => t
   }
 
-  /**
-   * If the condition satisfies, return the given A in <code>Left</code>, otherwise, return the
-   * given B in <code>Right</code>.
+  /** If the condition satisfies, return the given A in <code>Left</code>,
+   *  otherwise, return the given B in <code>Right</code>.
    */
   def cond[A, B](test: Boolean, right: => B, left: => A) =
     if(test) Right(right) else Left(left)

@@ -1,6 +1,18 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id: $
+
+
 package scala.collection.generic
 
-/** KMP implementation, based on the undoubtedly reliable wikipedia entry
+/** KMP implementation, based on the undoubtedly reliable wikipedia entry.
+ *
  *  @author paulp
  */
 object KMP {
@@ -59,8 +71,8 @@ object KMP {
     target: Seq[B], targetOffset: Int, targetCount: Int,
     fromIndex: Int): Int =
       KMP(source.slice(sourceOffset, sourceCount) drop fromIndex, target.slice(targetOffset, targetCount)) match {
-        case None     => -1
-        case Some(x)  => x + fromIndex
+        case None    => -1
+        case Some(x) => x + fromIndex
       }
 
   def lastIndexOf[B](
@@ -71,8 +83,8 @@ object KMP {
       val tgt = target.slice(targetOffset, targetCount).reverse
 
       KMP(src, tgt) match {
-        case None     => -1
-        case Some(x)  => (src.length - tgt.length - x) + sourceOffset
+        case None    => -1
+        case Some(x) => (src.length - tgt.length - x) + sourceOffset
       }
     }
 }

@@ -136,29 +136,32 @@ object Manifest {
       override lazy val toString = value.toString + ".type"
     }
 
-  /** Manifest for the class type `clazz[args]', where `clazz' is
-    * a top-level or static class.
-    * @note This no-prefix, no-arguments case is separate because we
-    *       it's called from ScalaRunTime.boxArray itself. If we
-    *       pass varargs as arrays into this, we get an infinitely recursive call
-    *       to boxArray. (Besides, having a separate case is more efficient)
-    */
+  /** Manifest for the class type <code>clazz[args]</code>, where <code>clazz</code>
+   *  is a top-level or static class.
+   *  @note This no-prefix, no-arguments case is separate because we
+   *        it's called from ScalaRunTime.boxArray itself. If we
+   *        pass varargs as arrays into this, we get an infinitely recursive call
+   *        to boxArray. (Besides, having a separate case is more efficient)
+   */
   def classType[T](clazz: Predef.Class[_]): Manifest[T] =
     new ClassTypeManifest[T](None, clazz, Nil)
 
-  /** Manifest for the class type `clazz', where `clazz' is
-    * a top-level or static class and args are its type arguments. */
+  /** Manifest for the class type <code>clazz</code>, where <code>clazz</code>
+   *  is a top-level or static class and <code>args</code> are its type arguments.
+   */
   def classType[T](clazz: Predef.Class[T], arg1: Manifest[_], args: Manifest[_]*): Manifest[T] =
     new ClassTypeManifest[T](None, clazz, arg1 :: args.toList)
 
-  /** Manifest for the class type `clazz[args]', where `clazz' is
-    * a class with non-package prefix type `prefix` and type arguments `args`.
-    */
+  /** Manifest for the class type <code>clazz[args]</code>, where <code>clazz</code>
+   *  is a class with non-package prefix type <code>prefix</code> and type
+   *  arguments <code>args</code>.
+   */
   def classType[T](prefix: Manifest[_], clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
     new ClassTypeManifest[T](Some(prefix), clazz, args.toList)
 
-  /** Manifest for the class type `clazz[args]', where `clazz' is
-    * a top-level or static class. */
+  /** Manifest for the class type <code>clazz[args]</code>, where `clazz' is
+   *  a top-level or static class.
+   */
   @serializable
   private class ClassTypeManifest[T](prefix: Option[Manifest[_]],
                                      val erasure: Predef.Class[_],
@@ -169,9 +172,11 @@ object Manifest {
       argString
    }
 
-  /** Manifest for the abstract type `prefix # name'. `upperBound' is not
-    * strictly necessary as it could be obtained by reflection. It was
-    * added so that erasure can be calculated without reflection. */
+  /** Manifest for the abstract type <code>prefix # name</code>.
+   *  <code>upperBound</code> is not strictly necessary as it could be obtained
+   *  by reflection. It was added so that erasure can be calculated without
+   *  reflection.
+   */
   def abstractType[T](prefix: Manifest[_], name: String, upperBound: Manifest[_], args: Manifest[_]*): Manifest[T] =
     new (Manifest[T] @serializable) {
       def erasure = upperBound.erasure

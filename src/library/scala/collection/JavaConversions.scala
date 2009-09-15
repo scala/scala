@@ -8,6 +8,7 @@
 
 // $Id$
 
+
 package scala.collection
 
 /** <p>

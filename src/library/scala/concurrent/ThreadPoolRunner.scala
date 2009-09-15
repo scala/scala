@@ -1,3 +1,14 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+// $Id$
+
+
 package scala.concurrent
 
 import java.util.concurrent.{ExecutorService, Callable, TimeUnit}
@@ -31,8 +42,9 @@ trait ThreadPoolRunner extends FutureTaskRunner {
     toRichFuture(executor.submit[S](task))
   }
 
-  def execute[S](task: Task[S]): Unit =
+  def execute[S](task: Task[S]) {
     executor execute task
+  }
 
   def managedBlock(blocker: ManagedBlocker) {
     blocker.block()

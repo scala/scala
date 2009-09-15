@@ -5,14 +5,18 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+
+// $Id$
+
+
 package scala.collection.mutable
 
 import scala.collection.generic._
 
-/** A subtrait of collection.Traversable which represents traversables
- *  that can be mutated.
+/** A subtrait of <code>collection.Traversable</code> which represents
+ *  traversables that can be mutated.
  *
- *  @author   Martin Odersky
+ *  @author  Martin Odersky
  *  @version 2.8
  */
 trait Traversable[A] extends collection.Traversable[A]
@@ -22,9 +26,14 @@ trait Traversable[A] extends collection.Traversable[A]
   override def companion: Companion[Traversable] = Traversable
 }
 
-/* A factory object for the trait `Traversable` */
+/** A factory object for the trait <code>Traversable</code>.
+ *
+ *  @author  Martin Odersky
+ *  @version 2.8
+ */
 object Traversable extends TraversableFactory[Traversable] {
-  implicit def builderFactory[A]: BuilderFactory[A, Traversable[A], Coll] = new VirtualBuilderFactory[A]
+  implicit def builderFactory[A]: BuilderFactory[A, Traversable[A], Coll] =
+    new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, Traversable[A]] = new ArrayBuffer
 }
 

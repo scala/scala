@@ -44,7 +44,7 @@ object Array {
     val destArray = boxArray(dest).asInstanceOf[BoxedArray[AnyRef]]
 
     var i = 0;
-    while(i < length) {
+    while (i < length) {
       destArray(destPos + i) = srcArray(srcPos + i)
       i += 1
     }
@@ -72,7 +72,7 @@ object Array {
   /** Returns array of length 0 */
   def empty[A: ClassManifest]: Array[A] = new Array[A](0)
 
- /** Create an array with given elements.
+  /** Create an array with given elements.
    *
    *  @param xs the elements to put in the array
    *  @return the array containing elements xs.
@@ -171,7 +171,9 @@ object Array {
     b.result
   }
 
-  /** An array that contains the results of some element computation a number of times.
+  /** An array that contains the results of some element computation a number
+   *  of times.
+   *
    *  @param   n  the number of elements returned
    *  @param   elem the element computation
    */
@@ -185,7 +187,9 @@ object Array {
     b.result
   }
 
-  /** A two-dimensional array that contains the results of some element computation a number of times.
+  /** A two-dimensional array that contains the results of some element
+   *  computation a number of times.
+   *
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   elem the element computation
@@ -193,7 +197,9 @@ object Array {
   def fill[A: ClassManifest](n1: Int, n2: Int)(elem: => A): Array[Array[A]] =
     tabulate(n1)(_ => fill(n2)(elem))
 
-  /** A three-dimensional array that contains the results of some element computation a number of times.
+  /** A three-dimensional array that contains the results of some element
+   *  computation a number of times.
+   *
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   n3  the number of elements in the 3nd dimension
@@ -202,7 +208,9 @@ object Array {
   def fill[A: ClassManifest](n1: Int, n2: Int, n3: Int)(elem: => A): Array[Array[Array[A]]] =
     tabulate(n1)(_ => fill(n2, n3)(elem))
 
-  /** A four-dimensional array that contains the results of some element computation a number of times.
+  /** A four-dimensional array that contains the results of some element
+   *  computation a number of times.
+   *
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   n3  the number of elements in the 3nd dimension
@@ -212,7 +220,9 @@ object Array {
   def fill[A: ClassManifest](n1: Int, n2: Int, n3: Int, n4: Int)(elem: => A): Array[Array[Array[Array[A]]]] =
     tabulate(n1)(_ => fill(n2, n3, n4)(elem))
 
-  /** A five-dimensional array that contains the results of some element computation a number of times.
+  /** A five-dimensional array that contains the results of some element
+   *  computation a number of times.
+   *
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   n3  the number of elements in the 3nd dimension
@@ -223,7 +233,9 @@ object Array {
   def fill[A: ClassManifest](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(elem: => A): Array[Array[Array[Array[Array[A]]]]] =
     tabulate(n1)(_ => fill(n2, n3, n4, n5)(elem))
 
-  /** An array containing values of a given function over a range of integer values starting from 0.
+  /** An array containing values of a given function over a range of integer
+   *  values starting from 0.
+   *
    *  @param  n   The number of elements in the traversable
    *  @param  f   The function computing element values
    *  @return A traversable consisting of elements `f(0), ..., f(n -1)`
@@ -238,7 +250,9 @@ object Array {
     b.result
   }
 
-  /** A two-dimensional array containing values of a given function over ranges of integer values starting from 0.
+  /** A two-dimensional array containing values of a given function over
+   *  ranges of integer values starting from 0.
+   *
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   f   The function computing element values
@@ -246,7 +260,9 @@ object Array {
   def tabulate[A: ClassManifest](n1: Int, n2: Int)(f: (Int, Int) => A): Array[Array[A]] =
     tabulate(n1)(i1 => tabulate(n2)(f(i1, _)))
 
-  /** A three-dimensional array containing values of a given function over ranges of integer values starting from 0.
+  /** A three-dimensional array containing values of a given function over
+   *  ranges of integer values starting from 0.
+   *
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   n3  the number of elements in the 3nd dimension
@@ -255,7 +271,9 @@ object Array {
   def tabulate[A: ClassManifest](n1: Int, n2: Int, n3: Int)(f: (Int, Int, Int) => A): Array[Array[Array[A]]] =
     tabulate(n1)(i1 => tabulate(n2, n3)(f(i1, _, _)))
 
-  /** A four-dimensional array containing values of a given function over ranges of integer values starting from 0.
+  /** A four-dimensional array containing values of a given function over
+   *  ranges of integer values starting from 0.
+   *
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   n3  the number of elements in the 3nd dimension
@@ -265,7 +283,9 @@ object Array {
   def tabulate[A: ClassManifest](n1: Int, n2: Int, n3: Int, n4: Int)(f: (Int, Int, Int, Int) => A): Array[Array[Array[Array[A]]]] =
     tabulate(n1)(i1 => tabulate(n2, n3, n4)(f(i1, _, _, _)))
 
-  /** A five-dimensional array containing values of a given function over ranges of integer values starting from 0.
+  /** A five-dimensional array containing values of a given function over
+   *  ranges of integer values starting from 0.
+   *
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   n3  the number of elements in the 3nd dimension
@@ -285,8 +305,9 @@ object Array {
    */
   def range(start: Int, end: Int): Array[Int] = range(start, end, 1)
 
- /** An array containing equally spaced values in some integer interval.
-    *  @param start the start value of the array
+  /** An array containing equally spaced values in some integer interval.
+   *
+   *  @param start the start value of the array
    *  @param end   the end value of the array (the first value NOT returned)
    *  @param step  the increment value of the array (must be positive or negative)
    *  @return      the array with values in `start, start + step, ...` up to, but excluding `end`

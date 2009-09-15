@@ -17,7 +17,7 @@ package scala.actors
  * @version 0.9.9
  * @author Philipp Haller
  */
-@serializable
+@serializable @SerialVersionUID(7124278808020037465L)
 class MessageQueueElement(val msg: Any, val session: OutputChannel[Any], var next: MessageQueueElement) {
   def this() = this(null, null, null)
   def this(msg: Any, session: OutputChannel[Any]) = this(msg, session, null)
@@ -32,7 +32,7 @@ class MessageQueueElement(val msg: Any, val session: OutputChannel[Any], var nex
  * @version 0.9.9
  * @author Philipp Haller
  */
-@serializable
+@serializable @SerialVersionUID(2168935872884095767L)
 class MessageQueue(protected val label: String) {
   protected var first: MessageQueueElement = null
   protected var last: MessageQueueElement = null  // last eq null iff list is empty
@@ -41,7 +41,7 @@ class MessageQueue(protected val label: String) {
   def size = _size
   final def isEmpty = last eq null
 
-  protected def changeSize(diff: Int) = {
+  protected def changeSize(diff: Int) {
     _size += diff
   }
 
@@ -73,7 +73,7 @@ class MessageQueue(protected val label: String) {
     acc
   }
 
-  /** Returns the n-th msg that satisfies the predicate
+  /** Returns the n-th message that satisfies the predicate <code>p</code>
    *  without removing it.
    */
   def get(n: Int)(p: Any => Boolean): Option[Any] = {
@@ -90,11 +90,14 @@ class MessageQueue(protected val label: String) {
     None
   }
 
-  /** Removes the n-th msg that satisfies the predicate.
+  /** Removes the n-th message that satisfies the predicate <code>p</code>.
    */
   def remove(n: Int)(p: Any => Boolean): Option[(Any, OutputChannel[Any])] =
     removeInternal(n)(p) map (x => (x.msg, x.session))
 
+  /** Extracts the first message that satisfies the predicate <code>p</code>
+   *  or <code>null</code> if <code>p</code> fails for all of them.
+   */
   def extractFirst(p: Any => Boolean): MessageQueueElement =
     removeInternal(0)(p) orNull
 

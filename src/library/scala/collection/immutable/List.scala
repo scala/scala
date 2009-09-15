@@ -743,6 +743,7 @@ object List extends SequenceFactory[List] {
 
   /** Returns the list resulting from applying the given function <code>f</code>
    *  to corresponding elements of the argument lists.
+   *
    *  @param f function to apply to each pair of elements.
    *  @return <code>[f(a0,b0), ..., f(an,bn)]</code> if the lists are
    *          <code>[a0, ..., ak]</code>, <code>[b0, ..., bl]</code> and
@@ -837,7 +838,7 @@ object List extends SequenceFactory[List] {
    *  @param xss the list of lists
    *  @return    the transposed list of lists
    */
-  @deprecated("use p`xss.transpose' instead")
+  @deprecated("use `xss.transpose' instead")
   def transpose[A](xss: List[List[A]]): List[List[A]] = {
     val buf = new ListBuffer[List[A]]
     var yss = xss

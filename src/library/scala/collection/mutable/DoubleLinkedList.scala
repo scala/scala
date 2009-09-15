@@ -20,7 +20,7 @@ import scala.collection.generic._
  *  @author Martin Odersky
  *  @version 2.8
  */
-@serializable
+@serializable @SerialVersionUID(419155950203746706L)
 class DoubleLinkedList[A](_elem: A, _next: DoubleLinkedList[A]) extends LinearSequence[A]
                                                                    with TraversableClass[A, DoubleLinkedList]
                                                                    with DoubleLinkedListTemplate[A, DoubleLinkedList[A]] {

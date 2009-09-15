@@ -66,7 +66,9 @@ object Iterator {
       else empty.next()
   }
 
-  /** An iterator that returns values of a given function over a range of integer values starting from 0.
+  /** An iterator that returns values of a given function over a range of
+   *  integer values starting from 0.
+   *
    *  @param end   The argument up to which values are tabulated.
    *  @param f     The function computing the results
    *  @return  An iterator with values `f(0) ... f(end-1)`
@@ -79,7 +81,7 @@ object Iterator {
       else empty.next()
   }
 
- /** An iterator returning successive values in some integer interval.
+  /** An iterator returning successive values in some integer interval.
    *
    *  @param start the start value of the iterator
    *  @param end   the end value of the iterator (the first value NOT returned)
@@ -88,7 +90,7 @@ object Iterator {
   def range(start: Int, end: Int): Iterator[Int] = range(start, end, 1)
 
   /** An iterator returning equally spaced values in some integer interval.
-
+   *
    *  @param start the start value of the iterator
    *  @param end   the end value of the iterator (the first value NOT returned)
    *  @param step  the increment value of the iterator (must be positive or negative)
@@ -134,22 +136,24 @@ object Iterator {
     def next(): Int = { val result = i; i += step; result }
   }
 
-  /**
-   * Create an infinite iterator based on the given expression
-   * (which is recomputed for every element)
+  /** Create an infinite iterator based on the given expression
+   *  (which is recomputed for every element)
    *
-   * @param elem the element composing the resulting iterator
-   * @return the iterator containing an infinite number of elem
+   *  @param elem the element composing the resulting iterator
+   *  @return the iterator containing an infinite number of elem
    */
   def continually[A](elem: => A): Iterator[A] = new Iterator[A] {
     def hasNext = true
     def next = elem
   }
 
-  /** A wrapper class for the `flatten `method that is added to class Iterator with implicit conversion @see iteratorIteratorWrapper.
+  /** A wrapper class for the <code>flatten</code> method that is added to
+   *  class <code>Iterator</code> with implicit conversion
+   *  @see iteratorIteratorWrapper.
    */
   class IteratorIteratorOps[A](its: Iterator[Iterator[A]]) {
-    /** If `its` is an iterator of iterators, `its.flatten` gives the iterator that is the concatenation of all iterators in `its`.
+    /** If `its` is an iterator of iterators, `its.flatten` gives the iterator
+     *  that is the concatenation of all iterators in `its`.
      */
     def flatten: Iterator[A] = new Iterator[A] {
       private var it: Iterator[A] = empty
@@ -292,6 +296,7 @@ trait Iterator[+A] { self =>
 
   /** Advances this iterator past the first <code>n</code> elements,
    *  or the length of the iterator, whichever is smaller.
+   *
    *  @param n the number of elements to drop
    *  @return  the new iterator
    */
@@ -362,8 +367,9 @@ trait Iterator[+A] { self =>
   }
 
  /** Returns a new iterator based on the partial function <code>pf</code>,
-  *  containing pf(x) for all the elements which are defined on pf.
+  *  containing <code>pf(x)</code> for all the elements which are defined on pf.
   *  The order of the elements is preserved.
+  *
   *  @param pf the partial function which filters and maps the iterator.
   *  @return the new iterator.
   */
@@ -443,15 +449,15 @@ trait Iterator[+A] { self =>
   /** Return an iterator formed from this iterator and the specified iterator
    *  <code>that</code> by associating each element of the former with
    *  the element at the same position in the latter.
-   *  If one of the two iterators is longer than the other, its remaining elements are ignored.
-   *
+   *  If one of the two iterators is longer than the other, its remaining
+   *  elements are ignored.
    */
   def zip[B](that: Iterator[B]) = new Iterator[(A, B)] {
     def hasNext = self.hasNext && that.hasNext
     def next = (self.next, that.next)
   }
 
-  /** Return a new iterator with a length equal or longer to `len`.
+  /** Return a new iterator with a length equal or longer to <code>len</code>.
    *  If the current iterator returns fewer than `len` elements
    *  return `elem` until the required length `len` is reached.
    */
@@ -659,7 +665,8 @@ trait Iterator[+A] { self =>
   def :\[B](z: B)(op: (A, B) => B): B = foldRight(z)(op)
 
   /** Combines the elements of this iterator together using the binary
-   *  operator <code>op</code>, from left to right
+   *  operator <code>op</code>, from left to right.
+   *
    *  @param op  The operator to apply
    *  @return <code>op(... op(a<sub>0</sub>,a<sub>1</sub>), ..., a<sub>n</sub>)</code>
       if the iterator yields elements
@@ -686,7 +693,7 @@ trait Iterator[+A] { self =>
     else throw new UnsupportedOperationException("empty.reduceRight")
   }
 
- /** Combines the elements of this iterator together using the binary
+  /** Combines the elements of this iterator together using the binary
    *  operator <code>op</code>, from left to right
    *  @param op  The operator to apply
    *  @return  If the iterable is non-empty, the result of the operations as an Option, otherwise None.
@@ -695,8 +702,9 @@ trait Iterator[+A] { self =>
     if (!hasNext) None else Some(reduceLeft(op))
   }
 
- /** Combines the elements of this iterable object together using the binary
+  /** Combines the elements of this iterable object together using the binary
    *  operator <code>op</code>, from right to left.
+   *
    *  @param op  The operator to apply
    *  @return  If the iterable is non-empty, the result of the operations as an Option, otherwise None.
    */
@@ -743,7 +751,7 @@ trait Iterator[+A] { self =>
     buf
   }
 
-  /** A flexible iterator for transforming an Iterator[A] into an
+  /** A flexible iterator for transforming an <code>Iterator[A]</code> into an
    *  Iterator[Sequence[A]], with configurable sequence size, step, and
    *  strategy for dealing with elements which don't fit evenly.
    *
@@ -978,7 +986,7 @@ trait Iterator[+A] { self =>
     res.toList
   }
 
-   /** Traverse this iterator and return all elements in a stream.
+  /** Traverse this iterator and return all elements in a stream.
    *
    *  @return  A stream which enumerates all elements of this iterator.
    */
@@ -1060,7 +1068,7 @@ trait Iterator[+A] { self =>
 
   override def toString = (if (hasNext) "non-empty" else "empty")+" iterator"
 
- /** Returns a new iterator that first yields the elements of this
+  /** Returns a new iterator that first yields the elements of this
    *  iterator followed by the elements provided by iterator <code>that</code>.
    */
   @deprecated("use <code>++</code>")
@@ -1107,10 +1115,12 @@ trait Iterator[+A] { self =>
       i += 1
     }
   }
+
   @deprecated("use copyToArray instead")
   def readInto[B >: A](xs: Array[B], start: Int) {
     readInto(xs, start, xs.length - start)
   }
+
   @deprecated("use copyToArray instead")
   def readInto[B >: A](xs: Array[B]) {
     readInto(xs, 0, xs.length)
