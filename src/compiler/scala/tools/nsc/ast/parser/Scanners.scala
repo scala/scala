@@ -711,18 +711,32 @@ trait Scanners {
       if (base <= 10 && ch == '.') {
         val lookahead = lookaheadReader
         lookahead.nextChar()
+        def restOfNumber() = {
+          putChar(ch)
+          nextChar()
+          getFraction()
+        }
+
         lookahead.ch match {
-          case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' |
-               '8' | '9' | 'd' | 'D' | 'e' | 'E' | 'f' | 'F' =>
-            putChar(ch)
-            nextChar()
-            return getFraction()
+          case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
+            return restOfNumber()
+
+          /** These letters may be part of a literal, or a method invocation on an Int */
+          case 'd' | 'D' | 'f' | 'F' =>
+            lookahead.nextChar()
+            if (!isIdentifierPart(lookahead.ch))
+              return restOfNumber()
+
+          /** A little more special handling for e.g. 5e7 */
+          case 'e' | 'E' =>
+            lookahead.nextChar()
+            val ch = lookahead.ch
+            if (!isIdentifierPart(ch) || (ch >= '0' && ch <= '9') || ch == '+' || ch == '-')
+              return restOfNumber()
+
           case _ =>
-            if (!isIdentifierStart(lookahead.ch)) {
-              putChar(ch)
-              nextChar()
-              return getFraction()
-            }
+            if (!isIdentifierStart(lookahead.ch))
+              return restOfNumber()
         }
       }
       if (base <= 10 &&
