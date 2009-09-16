@@ -55,7 +55,7 @@ trait ScalaClassLoader extends JavaClassLoader
   }
 }
 
-class URLClassLoader(urls: List[URL], parent: JavaClassLoader)
+class URLClassLoader(urls: Seq[URL], parent: JavaClassLoader)
     extends java.net.URLClassLoader(urls.toArray, parent)
     with ScalaClassLoader
 {
