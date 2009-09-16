@@ -29,22 +29,6 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
     private val classConstantMeth = new HashMap[String, Symbol]
 
-    // a map from the symbols of the Scala primitive types to the symbols
-    // of the modules of the Java box classes
-    private val javaBoxClassModule = new HashMap[Symbol, Symbol]
-
-    if (!forMSIL) {
-      javaBoxClassModule(BooleanClass) = getModule("java.lang.Boolean")
-      javaBoxClassModule(ByteClass)    = getModule("java.lang.Byte")
-      javaBoxClassModule(ShortClass)   = getModule("java.lang.Short")
-      javaBoxClassModule(IntClass)     = getModule("java.lang.Integer")
-      javaBoxClassModule(CharClass)    = getModule("java.lang.Character")
-      javaBoxClassModule(LongClass)    = getModule("java.lang.Long")
-      javaBoxClassModule(FloatClass)   = getModule("java.lang.Float")
-      javaBoxClassModule(DoubleClass)  = getModule("java.lang.Double")
-      javaBoxClassModule(UnitClass)    = getModule("java.lang.Void")
-    }
-
     private var localTyper: analyzer.Typer = null
 
     private lazy val serializableAnnotation =
@@ -577,8 +561,13 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       case Literal(c) if (c.tag == ClassTag) && !forMSIL=>
         val tpe = c.typeValue
         typedWithPos(tree.pos) {
-          if (isValueClass(tpe.typeSymbol) || tpe.typeSymbol == definitions.UnitClass)
-            Select(REF(javaBoxClassModule(tpe.typeSymbol)), "TYPE")
+          if (isValueClass(tpe.typeSymbol) || tpe.typeSymbol == definitions.UnitClass) {
+            if (tpe.typeSymbol == UnitClass)
+              Select(REF(BoxedUnit_TYPE), BoxedUnit_TYPE)
+            else
+              Select(REF(boxedModule(tpe.typeSymbol)), nme.TYPE_)
+          }
+
           else tree
         }
 

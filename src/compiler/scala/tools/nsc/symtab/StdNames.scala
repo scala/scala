@@ -51,6 +51,7 @@ trait StdNames {
     val THROWkw = newTermName("throw")
     val TRAITkw = newTermName("trait")
     val TRUEkw = newTermName("true")
+    val TYPE_ = newTermName("TYPE")
     val TRYkw = newTermName("try")
     val TYPEkw = newTermName("type")
     val VALkw = newTermName("val")

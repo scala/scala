@@ -85,6 +85,7 @@ trait Definitions {
     lazy val MatchErrorClass                = getClass("scala.MatchError")
     // java is hard coded because only used by structural values
     lazy val InvocationTargetExceptionClass = getClass("java.lang.reflect.InvocationTargetException")
+    lazy val NoSuchMethodExceptionClass     = getClass("java.lang.NoSuchMethodException")
 
     // annotations
     lazy val AnnotationClass            = getClass("scala.Annotation")
@@ -350,6 +351,7 @@ trait Definitions {
     lazy val BoxedUnitClass         = getClass("scala.runtime.BoxedUnit")
     lazy val BoxedUnitModule        = getModule("scala.runtime.BoxedUnit")
       def BoxedUnit_UNIT = getMember(BoxedUnitModule, "UNIT")
+      def BoxedUnit_TYPE = getMember(BoxedUnitModule, "TYPE")
 
     // special attributes
     lazy val SerializableAttr: Symbol = getClass("scala.serializable")
@@ -488,6 +490,7 @@ trait Definitions {
         .setInfo(mkTypeBounds(NothingClass.typeConstructor, AnyClass.typeConstructor))
 
     val boxedClass = new HashMap[Symbol, Symbol]
+    val boxedModule = new HashMap[Symbol, Symbol]
     val unboxMethod = new HashMap[Symbol, Symbol] // Type -> Method
     val boxMethod = new HashMap[Symbol, Symbol] // Type -> Method
     val boxedArrayClass = new HashMap[Symbol, Symbol]
@@ -513,6 +516,7 @@ trait Definitions {
 
       val clazz = newClass(ScalaPackageClass, name, anyvalparam) setFlag (ABSTRACT | FINAL)
       boxedClass(clazz) = getClass(boxedName)
+      boxedModule(clazz) = getModule(boxedName)
       boxedArrayClass(clazz) = getClass("scala.runtime.Boxed" + name + "Array")
       refClass(clazz) = getClass("scala.runtime." + name + "Ref")
       abbrvTag(clazz) = tag

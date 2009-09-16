@@ -17,6 +17,8 @@ public final class BoxedUnit implements java.io.Serializable {
 
     public final static BoxedUnit UNIT = new BoxedUnit();
 
+    public final static Class<Void> TYPE = java.lang.Void.TYPE;
+
     private BoxedUnit() { }
 
     public boolean equals(java.lang.Object other) {
