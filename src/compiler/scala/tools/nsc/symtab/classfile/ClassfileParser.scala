@@ -536,7 +536,8 @@ abstract class ClassfileParser {
     }
   }
 
-  /** Convert repeated parameters to arrays if they occur as part of a Java method
+  /** Convert array parameters denoting a repeated parameter of a Java method
+   *  to JavaRepeatedParamClass types.
    */
   private def arrayToRepeated(tp: Type): Type = tp match {
     case MethodType(params, rtpe) =>
@@ -544,7 +545,7 @@ abstract class ClassfileParser {
       assert(formals.last.typeSymbol == definitions.ArrayClass)
       val method = params.last.owner
       val newParams = method.newSyntheticValueParams(formals.init :::
-           List(appliedType(definitions.RepeatedParamClass.typeConstructor, List(formals.last.typeArgs.head))))
+           List(appliedType(definitions.JavaRepeatedParamClass.typeConstructor, List(formals.last.typeArgs.head))))
       MethodType(newParams, rtpe)
     case PolyType(tparams, rtpe) =>
       PolyType(tparams, arrayToRepeated(rtpe))

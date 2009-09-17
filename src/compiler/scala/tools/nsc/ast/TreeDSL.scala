@@ -119,6 +119,10 @@ trait TreeDSL {
       def ===(rhs: Tree)            = Assign(target, rhs)
 
       /** Methods for sequences **/
+      //[Martin] I don't understand why the toSequence call is needed.
+      //It seems redundant. If you want a widening, a Typed (xxx: Sequence)
+      //would be more efficient. If you want to also deal with arrays,
+      //it's won't work like this, because arrays will lack the toSequence method.
       def DROP(count: Int): Tree =
         if (count == 0) target
         else (target DOT nme.drop)(LIT(count)) DOT nme.toSequence

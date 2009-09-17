@@ -172,8 +172,8 @@ trait SyntheticMethods extends ast.TreeDSL {
       def makeTrees(acc: Symbol, cpt: Type): (Tree, Bind) = {
         val varName             = context.unit.fresh.newName(clazz.pos.focus, acc.name + "$")
         val (eqMethod, binding) =
-          if (cpt.isVarargs)  (nme.sameElements, Star(WILD()))
-          else                (nme.EQ          , WILD()      )
+          if (isRepeatedParamType(cpt))  (nme.sameElements, Star(WILD()))
+          else                           (nme.EQ          , WILD()      )
 
         ((varName DOT eqMethod)(Ident(acc)), varName BIND binding)
       }

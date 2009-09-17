@@ -832,8 +832,7 @@ abstract class RefChecks extends InfoTransform {
       def isRepeatedParamArg(tree: Tree) = currentApplication match {
         case Apply(fn, args) =>
           !args.isEmpty && (args.last eq tree) &&
-          fn.tpe.paramTypes.length == args.length &&
-          fn.tpe.paramTypes.last.typeSymbol == RepeatedParamClass
+          fn.tpe.paramTypes.length == args.length && isRepeatedParamType(fn.tpe.paramTypes.last)
         case _ =>
           false
       }

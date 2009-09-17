@@ -338,6 +338,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         }
 
         def boxArray(t: Tree) = {
+          assert(!settings.newArrays.value)
           val sym = currentOwner.newValue(ad.pos, mkTerm()) setInfo ObjectClass.tpe
           BLOCK(
             VAL(sym) === t,

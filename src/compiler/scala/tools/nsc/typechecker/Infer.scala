@@ -33,8 +33,7 @@ trait Infer {
   private def assertNonCyclic(tvar: TypeVar) =
     assert(tvar.constr.inst != tvar, tvar.origin)
 
-  def isVarArgs(formals: List[Type]) =
-    !formals.isEmpty && (formals.last.typeSymbol == RepeatedParamClass)
+  def isVarArgs(formals: List[Type]) = !formals.isEmpty && isRepeatedParamType(formals.last)
 
   /** The formal parameter types corresponding to <code>formals</code>.
    *  If <code>formals</code> has a repeated last parameter, a list of
@@ -575,6 +574,8 @@ trait Infer {
           tparam.tpe
         } else if (targ.typeSymbol == RepeatedParamClass) {
           targ.baseType(SeqClass)
+        } else if (targ.typeSymbol == JavaRepeatedParamClass) {
+          targ.baseType(ArrayClass)
         } else {
           targ.widen
         }

@@ -22,7 +22,8 @@ import scala.tools.nsc.util.Position
  *  - for every argument to a def parameter `x: => T':
  *      if argument is not a reference to a def parameter:
  *        convert argument `e' to (expansion of) `() => e'
- *  - for every repeated parameter `x: T*' --> x: Seq[T].
+ *  - for every repeated Scala parameter `x: T*' --> x: Seq[T].
+ *  - for every repeated Java parameter `x: T*' --> x: Array[T].
  *  - for every argument list that corresponds to a repeated parameter
  *       (a_1, ..., a_n) => (Seq(a_1, ..., a_n))
  *  - for every argument list that is an escaped sequence
@@ -67,6 +68,8 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           apply(functionType(List(), arg))
         case TypeRef(pre, sym, args) if (sym == RepeatedParamClass) =>
           apply(appliedType(SeqClass.typeConstructor, args))
+        case TypeRef(pre, sym, args) if (sym == JavaRepeatedParamClass) =>
+          apply(appliedType(ArrayClass.typeConstructor, args))
         case _ =>
           expandAlias(mapOver(tp))
       }
@@ -89,31 +92,13 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
     }
   }
 
-  /** Convert repeated parameters to arrays if they occur as part of a Java method
-   */
-  private def repeatedToArray(tp: Type): Type = tp match {
-    case MethodType(params, rtpe)
-    if (!params.isEmpty && params.last.tpe.typeSymbol == RepeatedParamClass) =>
-      val arrayParam = params.last.owner.newSyntheticValueParams(List(
-        appliedType(ArrayClass.typeConstructor, List(params.last.tpe.typeArgs.head))))
-      MethodType(params.init ::: arrayParam, rtpe)
-    case PolyType(tparams, rtpe) =>
-      val rtpe1 = repeatedToArray(rtpe)
-      if (rtpe1 eq rtpe) tp
-      else PolyType(tparams, rtpe1)
-    case _ =>
-      tp
-  }
-
   /** - return symbol's transformed type,
    *  - if symbol is a def parameter with transformed type T, return () => T
    *
    * @MAT: starting with this phase, the info of every symbol will be normalized
    */
   def transformInfo(sym: Symbol, tp: Type): Type =
-    if (sym.isType) uncurryType(tp)
-    else if (sym.isMethod && sym.hasFlag(JAVA)) uncurry(repeatedToArray(tp))
-    else uncurry(tp)
+    if (sym.isType) uncurryType(tp) else uncurry(tp)
 
   /** Traverse tree omitting local method definitions.
    *  If a `return' is encountered, set `returnFound' to true.
@@ -374,8 +359,10 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
 
     def transformArgs(pos: Position, args: List[Tree], formals: List[Type], isJava: Boolean) = {
       val args1 = formals.lastOption match {
-        case Some(TypeRef(pre, sym, List(elempt))) if (sym == RepeatedParamClass) =>
+        case Some(lastFormal) if isRepeatedParamType(lastFormal) =>
+
           def callMethod(tree: Tree, nme: Name): Tree = {
+            assert(!settings.newArrays.value)
             val sym = tree.tpe member nme
             assert(sym != NoSymbol)
             val arguments =
@@ -389,17 +376,41 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           }
 
           def mkArrayValue(ts: List[Tree]) = {
-            val arr = ArrayValue(TypeTree(elempt), ts) setType formals.last
+            val elemTp = lastFormal.typeArgs.head
+            val arr = ArrayValue(TypeTree(elemTp), ts) setType arrayType(elemTp)
             if (isJava || inPattern) arr
+            else if (settings.newArrays.value)
+              atPhase(phase.next) {
+                localTyper.typedPos(pos) {
+                  val predef = gen.mkAttributedRef(PredefModule)
+                  val meth =
+                    if ((elemTp <:< AnyRefClass.tpe) || isValueClass(elemTp.typeSymbol))
+                      Select(predef, "wrapArray")
+                    else
+                      TypeApply(Select(predef, "genericWrapArray"), List(TypeTree(elemTp)))
+                  Apply(meth, List(arr))
+                }
+              }
             else callMethod(arr, nme.toSequence) // println("need to callMethod("+arr+", nme.toSequence)"); arr }
-          }
+          } setType formals.last
 
           // when calling into java varargs, make sure it's an array - see bug #1360
           def forceToArray(arg: Tree) = {
             val Typed(tree, _) = arg
             if (isJava && tree.tpe.typeSymbol != ArrayClass &&
-                (tree.tpe.typeSymbol isSubClass TraversableClass)) callMethod(tree, nme.toArray)
-            else tree
+                (tree.tpe.typeSymbol isSubClass TraversableClass)) {
+              if (settings.newArrays.value) {
+                val toArraySym = tree.tpe member nme.toArray
+                assert(toArraySym != NoSymbol)
+                atPhase(phase.next) {
+                  localTyper.typedPos(pos) {
+                    Apply(
+                      gen.mkAttributedSelect(tree, toArraySym),
+                      List(localTyper.getManifestTree(tree.pos, tree.tpe.typeArgs.head, false)))
+                  }
+                }
+              } else callMethod(tree, nme.toArray)
+            } else tree
           }
 
           if (args.isEmpty)

@@ -133,6 +133,16 @@ trait Definitions {
       nme.REPEATED_PARAM_CLASS_NAME,
       tparam => seqType(tparam.typeConstructor)
     )
+
+    lazy val JavaRepeatedParamClass = newCovariantPolyClass(
+      ScalaPackageClass,
+      nme.JAVA_REPEATED_PARAM_CLASS_NAME,
+      tparam => arrayType(tparam.typeConstructor)
+    )
+
+    def isRepeatedParamType(tp: Type) =
+      tp.typeSymbol == RepeatedParamClass || tp.typeSymbol == JavaRepeatedParamClass
+
     lazy val ByNameParamClass = newCovariantPolyClass(
       ScalaPackageClass,
       nme.BYNAME_PARAM_CLASS_NAME,
@@ -282,6 +292,7 @@ trait Definitions {
     }
 
     def seqType(arg: Type) = typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(arg))
+    def arrayType(arg: Type) = typeRef(ArrayClass.typeConstructor.prefix, ArrayClass, List(arg))
 
     //
     // .NET backend
@@ -666,12 +677,13 @@ trait Definitions {
     def isNumericValueClass(sym: Symbol): Boolean =
       (sym ne BooleanClass) && (boxedClass contains sym)
 
+    // !!! todo comment & rename!
     def isValueType(sym: Symbol) =
       isValueClass(sym) || unboxMethod.contains(sym)
 
     /** Is symbol a value or array class? */
     def isUnboxedClass(sym: Symbol): Boolean =
-      isValueType(sym) || sym == ArrayClass
+      isValueType(sym) || !settings.newArrays.value && sym == ArrayClass
 
     def signature(tp: Type): String = {
       def erasure(tp: Type): Type = tp match {
@@ -740,8 +752,8 @@ trait Definitions {
         StringClass, "+", anyparam, StringClass.typeConstructor) setFlag FINAL
 
       // #2264
-      val tmp = AnnotationDefaultAttr
-
+      var tmp = AnnotationDefaultAttr
+      tmp = RepeatedParamClass // force initalization
       if (forMSIL) {
         val intType = IntClass.typeConstructor
         val intParam = List(intType)
@@ -781,8 +793,7 @@ trait Definitions {
         newMethod(StringClass, "trim", List(), stringType)
         newMethod(StringClass, "intern", List(), stringType)
         newMethod(StringClass, "replace", List(charType, charType), stringType)
-        newMethod(StringClass, "toCharArray", List(),
-                  appliedType(ArrayClass.typeConstructor, List(charType)))
+        newMethod(StringClass, "toCharArray", List(), arrayType(charType))
       }
     } //init
 

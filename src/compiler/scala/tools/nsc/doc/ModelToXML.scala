@@ -57,7 +57,7 @@ trait ModelToXML extends ModelExtractor {
       if (definitions.isFunctionType(tpe)) {
         val (args,r) = tpe.normalize.typeArgs.splitAt(tpe.normalize.typeArgs.length - 1);
         args.mkXML("(", ", ", ")")(link) ++ Text(" => ") ++ link(r.head);
-      } else if (tpe.typeSymbol == definitions.RepeatedParamClass) {
+      } else if (definitions.isRepeatedParamType(tpe)) {
         assert(tpe.typeArgs.length == 1)
         link(tpe.typeArgs(0)) ++ Text("*")
       } else if (tpe.typeSymbol == definitions.ByNameParamClass) {

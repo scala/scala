@@ -743,7 +743,7 @@ self: Analyzer =>
       val timer3 = System.nanoTime()
       if (result == SearchFailure) manifFail += timer3 - timer2 else manifSucceed += timer3 - timer2
       if (result == SearchFailure && settings.debug.value)
-        println("no implicits found for "+pt+" "+pt.typeSymbol.info.baseClasses+" "+parts(pt)+implicitsOfExpectedType)
+        log("no implicits found for "+pt+" "+pt.typeSymbol.info.baseClasses+" "+parts(pt)+implicitsOfExpectedType)
       implicitTime += System.nanoTime() - start
       result
     }

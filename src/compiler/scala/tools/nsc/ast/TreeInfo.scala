@@ -170,8 +170,10 @@ abstract class TreeInfo {
 
   /** Is type a of the form T* ? */
   def isRepeatedParamType(tpt: Tree) = tpt match {
-    case AppliedTypeTree(Select(_, rp), _) => rp == nme.REPEATED_PARAM_CLASS_NAME.toTypeName
-    case TypeTree() => tpt.tpe.typeSymbol == definitions.RepeatedParamClass
+    case AppliedTypeTree(Select(_, rp), _) =>
+      rp == nme.REPEATED_PARAM_CLASS_NAME.toTypeName ||
+      rp == nme.JAVA_REPEATED_PARAM_CLASS_NAME.toTypeName
+    case TypeTree() => definitions.isRepeatedParamType(tpt.tpe)
     case _ => false
   }
 

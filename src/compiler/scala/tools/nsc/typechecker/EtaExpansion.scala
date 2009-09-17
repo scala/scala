@@ -76,6 +76,7 @@ trait EtaExpansion { self: Analyzer =>
         if (treeInfo.isPureExpr(tree)) tree
         else {
           val vname: Name = freshName(tree.pos, 0)
+          // Problem with ticket #2351 here
           defs += atPos(tree.pos) {
             ValDef(Modifiers(SYNTHETIC), vname, TypeTree(), tree)
           }

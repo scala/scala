@@ -336,7 +336,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           if (sym.isSubClass(ownerClass)) true else false
         case _ => false
       }
-      if (v.info.typeSymbol == definitions.RepeatedParamClass) {
+      if (definitions.isRepeatedParamType(v.info)) {
         res = gen.wildcardStar(res)
         log("adapted to wildcard star: " + res)
       }

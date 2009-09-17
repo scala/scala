@@ -273,8 +273,15 @@ abstract class TreeGen
   def mkModuleAccessDcl(accessor: Symbol) =
     DefDef(accessor setFlag lateDEFERRED, EmptyTree)
 
-  def mkRuntimeCall(meth: Name, args: List[Tree]): Tree =
+  def mkRuntimeCall(meth: Name, args: List[Tree]): Tree = {
+    assert(!settings.newArrays.value || meth.toString != "boxArray")
     Apply(Select(mkAttributedRef(ScalaRunTimeModule), meth), args)
+  }
+
+  // !!! todo: remove
+  def mkPredefCall(meth: Name, args: List[Tree]): Tree = {
+    Apply(Select(mkAttributedRef(PredefModule), meth), args)
+  }
 
   /** Make a synchronized block on 'monitor'. */
   def mkSynchronized(monitor: Tree, body: Tree): Tree =
@@ -285,7 +292,7 @@ abstract class TreeGen
 
   def paramToArg(vparam: Symbol) = {
     val arg = Ident(vparam)
-    if (vparam.tpe.typeSymbol == RepeatedParamClass) wildcardStar(arg)
+    if (isRepeatedParamType(vparam.tpe)) wildcardStar(arg)
     else arg
   }
 

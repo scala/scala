@@ -218,29 +218,29 @@ object Predef extends LowPriorityImplicits {
 
   implicit def any2stringadd(x: Any) = new runtime.StringAdd(x)
 
-  implicit def genericAugmentArray[T](xs: Array[T]): ArrayOps[T] = (xs: AnyRef) match { // !!! drop the AnyRef and get unreachable code errors!
-    case x: Array[AnyRef] => augmentArray[AnyRef](x).asInstanceOf[ArrayOps[T]]
-    case x: Array[Int] => augmentArray(x).asInstanceOf[ArrayOps[T]]
-    case x: Array[Double] => augmentArray(x).asInstanceOf[ArrayOps[T]]
-    case x: Array[Long] => augmentArray(x).asInstanceOf[ArrayOps[T]]
-    case x: Array[Float] => augmentArray(x).asInstanceOf[ArrayOps[T]]
-    case x: Array[Char] => augmentArray(x).asInstanceOf[ArrayOps[T]]
-    case x: Array[Byte] => augmentArray(x).asInstanceOf[ArrayOps[T]]
-    case x: Array[Short] => augmentArray(x).asInstanceOf[ArrayOps[T]]
-    case x: Array[Boolean] => augmentArray(x).asInstanceOf[ArrayOps[T]]
-    case x: Array[Unit] => augmentArray(x).asInstanceOf[ArrayOps[T]]
+  implicit def genericArrayOps[T](xs: Array[T]): ArrayOps[T] = (xs: AnyRef) match { // !!! drop the AnyRef and get unreachable code errors!
+    case x: Array[AnyRef] => arrayOps[AnyRef](x).asInstanceOf[ArrayOps[T]]
+    case x: Array[Int] => arrayOps(x).asInstanceOf[ArrayOps[T]]
+    case x: Array[Double] => arrayOps(x).asInstanceOf[ArrayOps[T]]
+    case x: Array[Long] => arrayOps(x).asInstanceOf[ArrayOps[T]]
+    case x: Array[Float] => arrayOps(x).asInstanceOf[ArrayOps[T]]
+    case x: Array[Char] => arrayOps(x).asInstanceOf[ArrayOps[T]]
+    case x: Array[Byte] => arrayOps(x).asInstanceOf[ArrayOps[T]]
+    case x: Array[Short] => arrayOps(x).asInstanceOf[ArrayOps[T]]
+    case x: Array[Boolean] => arrayOps(x).asInstanceOf[ArrayOps[T]]
+    case x: Array[Unit] => arrayOps(x).asInstanceOf[ArrayOps[T]]
   }
 
-  implicit def augmentArray[T <: AnyRef](xs: Array[T]): ArrayOps[T] = new ArrayOps.ofRef[T](xs.asInstanceOf[Array[AnyRef]])
-  implicit def augmentArray(xs: Array[Int]): ArrayOps[Int] = new ArrayOps.ofInt(xs)
-  implicit def augmentArray(xs: Array[Double]): ArrayOps[Double] = new ArrayOps.ofDouble(xs)
-  implicit def augmentArray(xs: Array[Long]): ArrayOps[Long] = new ArrayOps.ofLong(xs)
-  implicit def augmentArray(xs: Array[Float]): ArrayOps[Float] = new ArrayOps.ofFloat(xs)
-  implicit def augmentArray(xs: Array[Char]): ArrayOps[Char] = new ArrayOps.ofChar(xs)
-  implicit def augmentArray(xs: Array[Byte]): ArrayOps[Byte] = new ArrayOps.ofByte(xs)
-  implicit def augmentArray(xs: Array[Short]): ArrayOps[Short] = new ArrayOps.ofShort(xs)
-  implicit def augmentArray(xs: Array[Boolean]): ArrayOps[Boolean] = new ArrayOps.ofBoolean(xs)
-  implicit def augmentArray(xs: Array[Unit]): ArrayOps[Unit] = new ArrayOps.ofUnit(xs)
+  implicit def arrayOps[T <: AnyRef](xs: Array[T]): ArrayOps[T] = new ArrayOps.ofRef[T](xs.asInstanceOf[Array[AnyRef]])
+  implicit def arrayOps(xs: Array[Int]): ArrayOps[Int] = new ArrayOps.ofInt(xs)
+  implicit def arrayOps(xs: Array[Double]): ArrayOps[Double] = new ArrayOps.ofDouble(xs)
+  implicit def arrayOps(xs: Array[Long]): ArrayOps[Long] = new ArrayOps.ofLong(xs)
+  implicit def arrayOps(xs: Array[Float]): ArrayOps[Float] = new ArrayOps.ofFloat(xs)
+  implicit def arrayOps(xs: Array[Char]): ArrayOps[Char] = new ArrayOps.ofChar(xs)
+  implicit def arrayOps(xs: Array[Byte]): ArrayOps[Byte] = new ArrayOps.ofByte(xs)
+  implicit def arrayOps(xs: Array[Short]): ArrayOps[Short] = new ArrayOps.ofShort(xs)
+  implicit def arrayOps(xs: Array[Boolean]): ArrayOps[Boolean] = new ArrayOps.ofBoolean(xs)
+  implicit def arrayOps(xs: Array[Unit]): ArrayOps[Unit] = new ArrayOps.ofUnit(xs)
 
   implicit def exceptionWrapper(exc: Throwable) = new runtime.RichException(exc)
 
