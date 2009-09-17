@@ -15,6 +15,7 @@ object Test extends Properties("Array") {
     arbArray[AnyVal](arbAnyVal)
   ) map (_.arbitrary)
 
+  // inspired by #1857 and #2352
   property("eq/ne") =
     forAll(oneOf(myGens: _*)) { c1 =>
       forAll(oneOf(myGens: _*)) { c2 =>
@@ -23,6 +24,7 @@ object Test extends Properties("Array") {
     }
 
   def smallInt = choose(1, 10)
+  // inspired by #2299
   property("ofDim") = forAll(smallInt) { i1 =>
     forAll(smallInt) { i2 =>
       forAll(smallInt) { i3 =>
