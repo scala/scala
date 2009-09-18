@@ -46,12 +46,43 @@ final class RichChar(x: Char) extends Proxy with Ordered[Char] {
   def isDigit: Boolean = Character.isDigit(x)
   def isLetter: Boolean = Character.isLetter(x)
   def isLetterOrDigit: Boolean = Character.isLetterOrDigit(x)
-  def isLowerCase: Boolean = Character.isLowerCase(x)
-  def isUpperCase: Boolean = Character.isUpperCase(x)
   def isWhitespace: Boolean = Character.isWhitespace(x)
+  def isSpaceChar: Boolean = Character.isSpaceChar(x)
+  def isHighSurrogate: Boolean = Character.isHighSurrogate(x)
+  def isLowSurrogate: Boolean = Character.isLowSurrogate(x)
+  def isUnicodeIdentifierStart: Boolean = Character.isUnicodeIdentifierStart(x)
+  def isUnicodeIdentifierPart: Boolean = Character.isUnicodeIdentifierPart(x)
+  def isIdentifierIgnorable: Boolean = Character.isIdentifierIgnorable(x)
+  def isMirrored: Boolean = Character.isMirrored(x)
 
-  def toLowerCase: Char = Character.toLowerCase(x)
-  def toUpperCase: Char = Character.toUpperCase(x)
+  def isLower: Boolean = Character.isLowerCase(x)
+  def isUpper: Boolean = Character.isUpperCase(x)
+  def isTitleCase: Boolean = Character.isTitleCase(x)
+
+  def toLower: Char = Character.toLowerCase(x)
+  def toUpper: Char = Character.toUpperCase(x)
+  def toTitleCase: Char = Character.toTitleCase(x)
+
+  def getType: Int = Character.getType(x)
+  def getNumericValue: Int = Character.getNumericValue(x)
+  def getDirectionality: Byte = Character.getDirectionality(x)
+  def reverseBytes: Char = Character.reverseBytes(x)
+
+  // Java 5 Character methods not added:
+  //
+  // public static boolean isDefined(char ch)
+  // public static boolean isJavaIdentifierStart(char ch)
+  // public static boolean isJavaIdentifierPart(char ch)
+
+  @deprecated("Use ch.toLower instead")
+  def toLowerCase: Char = toLower
+  @deprecated("Use ch.toUpper instead")
+  def toUpperCase: Char = toUpper
+
+  @deprecated("Use ch.isLower instead")
+  def isLowerCase: Boolean = isLower
+  @deprecated("Use ch.isUpper instead")
+  def isUpperCase: Boolean = isUpper
 
   /** Create a <code>[Char]</code> over the characters from 'x' to 'y' - 1
    */
