@@ -70,7 +70,10 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
         succs foreach { p =>
           if (!worklist.contains(p))
             worklist += p;
-          in(p) = lattice.lub(/*in(p) :: */(p.predecessors map out.apply))
+//          if (!p.exceptionHandlerHeader) {
+//            println("lubbing " + p.predecessors + " outs: " + p.predecessors.map(out.apply).mkString("\n", "\n", ""))
+            in(p) = lattice.lub(/*in(p) :: */(p.predecessors map out.apply), p.exceptionHandlerStart)
+//          }
         }
       }
     }
@@ -91,7 +94,7 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
       if (stat) iterations += 1
       val point = worklist.iterator.next; worklist -= point
 
-      out(point) = lattice.lub(point.successors map in.apply)
+      out(point) = lattice.lub(point.successors map in.apply, false) // TODO check for exception handlers
       val input = f(point, out(point))
 
       if ((lattice.bottom == in(point)) || input != in(point)) {

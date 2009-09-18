@@ -30,7 +30,7 @@ trait ExceptionHandlers { self: ICodes =>
 
     def setStartBlock(b: BasicBlock) = {
       _startBlock = b;
-      b.exceptionHandlerHeader = true
+      b.exceptionHandlerStart = true
     }
     def startBlock = _startBlock;
 

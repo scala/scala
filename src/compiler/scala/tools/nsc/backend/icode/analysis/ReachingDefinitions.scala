@@ -38,7 +38,7 @@ abstract class ReachingDefinitions {
     }, Nil)
 
     /** The least upper bound is set inclusion for locals, and pairwise set inclusion for stacks. */
-    def lub2(a: Elem, b: Elem): Elem =
+    def lub2(exceptional: Boolean)(a: Elem, b: Elem): Elem =
       if (bottom == a) b
       else if (bottom == b) a
       else {

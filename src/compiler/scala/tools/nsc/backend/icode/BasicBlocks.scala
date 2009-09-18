@@ -59,8 +59,8 @@ trait BasicBlocks {
       if (b) setFlag(LOOP_HEADER) else resetFlag(LOOP_HEADER)
 
     /** Is this block the start block of an exception handler? */
-    def exceptionHandlerHeader = hasFlag(EX_HEADER)
-    def exceptionHandlerHeader_=(b: Boolean) =
+    def exceptionHandlerStart = hasFlag(EX_HEADER)
+    def exceptionHandlerStart_=(b: Boolean) =
       if (b) setFlag(EX_HEADER) else resetFlag(EX_HEADER)
 
     /** Has this basic block been modified since the last call to 'toList'? */
@@ -425,7 +425,7 @@ trait BasicBlocks {
     private def exceptionalSucc(b: BasicBlock, succs: List[BasicBlock]): List[BasicBlock] = {
       def findSucc(s: BasicBlock): List[BasicBlock] = {
         val ss = method.exh flatMap { h =>
-          if (h.covers(s)) List(h.startBlock) else Nil
+          if (h.covers(s) /*&& mayThrow(h.startBlock.firstInstruction)*/) List(h.startBlock) else Nil
         }
         ss ++ (ss flatMap findSucc)
       }

@@ -15,4 +15,5 @@ package backend.icode.analysis
 trait ProgramPoint[a <: ProgramPoint[a]] {
   def predecessors: List[a]
   def successors: List[a]
+  def exceptionHandlerStart: Boolean
 }

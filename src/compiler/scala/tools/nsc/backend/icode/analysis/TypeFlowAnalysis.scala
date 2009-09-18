@@ -29,7 +29,7 @@ abstract class TypeFlowAnalysis {
     def top    = Object
     def bottom = All
 
-    def lub2(a: Elem, b: Elem) =
+    def lub2(exceptional: Boolean)(a: Elem, b: Elem) =
       if (a eq bottom) b
       else if (b eq bottom) a
       else icodes.lub(a, b)
@@ -46,11 +46,10 @@ abstract class TypeFlowAnalysis {
     override val bottom = new TypeStack
     val exceptionHandlerStack: TypeStack = new TypeStack(List(REFERENCE(definitions.AnyRefClass)))
 
-    def lub2(s1: TypeStack, s2: TypeStack) = {
+    def lub2(exceptional: Boolean)(s1: TypeStack, s2: TypeStack) = {
       if (s1 eq bottom) s2
       else if (s2 eq bottom) s1
-      else if (s1 eq exceptionHandlerStack) s1
-      else if (s2 eq exceptionHandlerStack) s2
+      else if ((s1 eq exceptionHandlerStack) || (s2 eq exceptionHandlerStack)) Predef.error("merging with exhan stack")
       else {
 //        if (s1.length != s2.length)
 //          throw new CheckerError("Incompatible stacks: " + s1 + " and " + s2);
@@ -82,7 +81,7 @@ abstract class TypeFlowAnalysis {
     override val top    = new Elem(new VarBinding, typeStackLattice.top)
     override val bottom = new Elem(new VarBinding, typeStackLattice.bottom)
 
-    def lub2(a: Elem, b: Elem) = {
+    def lub2(exceptional: Boolean)(a: Elem, b: Elem) = {
       val IState(env1, s1) = a
       val IState(env2, s2) = b
 
@@ -90,15 +89,17 @@ abstract class TypeFlowAnalysis {
 
       for (binding1 <- env1.iterator) {
         val tp2 = env2(binding1._1)
-        resultingLocals += ((binding1._1, typeLattice.lub2(binding1._2, tp2)))
+        resultingLocals += ((binding1._1, typeLattice.lub2(exceptional)(binding1._2, tp2)))
       }
 
       for (binding2 <- env2.iterator if resultingLocals(binding2._1) eq typeLattice.bottom) {
         val tp1 = env1(binding2._1)
-        resultingLocals += ((binding2._1, typeLattice.lub2(binding2._2, tp1)))
+        resultingLocals += ((binding2._1, typeLattice.lub2(exceptional)(binding2._2, tp1)))
       }
 
-      IState(resultingLocals, typeStackLattice.lub2(a.stack, b.stack))
+      IState(resultingLocals,
+        if (exceptional) typeStackLattice.exceptionHandlerStack
+        else typeStackLattice.lub2(exceptional)(a.stack, b.stack))
     }
   }
 
@@ -375,10 +376,10 @@ abstract class TypeFlowAnalysis {
       val bindings = out.vars
       val stack = out.stack
 
-//      if (settings.debug.value) {
-//        Console.println("Stack: " + stack);
-//        Console.println(i);
-//      }
+      if (settings.debug.value) {
+        Console.println("[before] Stack: " + stack);
+        Console.println(i);
+      }
       i match {
 
         case THIS(clasz) =>

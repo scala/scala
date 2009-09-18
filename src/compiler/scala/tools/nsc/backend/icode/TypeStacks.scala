@@ -79,24 +79,8 @@ trait TypeStacks { self: ICodes =>
       (types.length == other.types.length) &&
       List.forall2(types, other.types) ((t1, t2) => t1 <:< t2 || t2 <:< t1)
 
-    def mergeWith(that: TypeStack): TypeStack = {
-      def merge(a: TypeStack, b: TypeStack): TypeStack = {
-        val lst = List.map2(a.types, b.types) ((k1, k2) => k1 match {
-          case REFERENCE(cls1) =>
-            val REFERENCE(cls2) = k2
-            lub(k1,k2)
-          case _ => k1
-        })
-        new TypeStack(lst)
-      }
-
-      assert(this agreesWith that,
-             "Incompatible type stacks: " + this + ", " + that)
-      merge(this, that)
-    }
-
     /* This method returns a String representation of the stack */
-    override def toString() = types.mkString("<", ",", ">")
+    override def toString() = types.mkString("\n", "\n", "\n")
 
     override def equals(other: Any): Boolean =
       other.isInstanceOf[TypeStack] &&

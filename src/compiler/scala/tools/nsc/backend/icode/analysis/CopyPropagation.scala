@@ -177,14 +177,14 @@ abstract class CopyPropagation {
 
     val exceptionHandlerStack = Unknown :: Nil
 
-    def lub2(a: Elem, b: Elem): Elem = {
+    def lub2(exceptional: Boolean)(a: Elem, b: Elem): Elem = {
       if (a eq bottom)      b
       else if (b eq bottom) a
       else if (a == b) a
       else {
+        //assert(!(a.stack eq exceptionHandlerStack) && !(b.stack eq exceptionHandlerStack))
         val resStack =
-          if (a.stack eq exceptionHandlerStack) a.stack
-          else if (b.stack eq exceptionHandlerStack) b.stack
+          if (exceptional) exceptionHandlerStack
           else {
 //            if (a.stack.length != b.stack.length)
 //              throw new LubError(a, b, "Invalid stacks in states: ");

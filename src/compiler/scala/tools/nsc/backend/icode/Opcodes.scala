@@ -92,6 +92,12 @@ trait Opcodes { self: ICodes =>
 
   object opcodes {
 
+    def mayThrow(i: Instruction): Boolean = i match {
+      case LOAD_LOCAL(_) | STORE_LOCAL(_) | CONSTANT(_) | THIS(_) | CZJUMP(_, _, _, _)
+              | DROP(_) | DUP(_) | RETURN(_) | LOAD_EXCEPTION() | JUMP(_) | CJUMP(_, _, _, _) => false
+      case _ => true
+    }
+
     /** Loads "this" on top of the stack.
      * Stack: ...
      *    ->: ...:ref

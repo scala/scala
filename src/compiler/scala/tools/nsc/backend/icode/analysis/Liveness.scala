@@ -33,7 +33,7 @@ abstract class Liveness {
       override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
     }
 
-    def lub2(a: Elem, b: Elem): Elem = a ++ b
+    def lub2(exceptional: Boolean)(a: Elem, b: Elem): Elem = a ++ b
   }
 
   final class LivenessAnalysis extends DataFlowAnalysis[livenessLattice.type] {
