@@ -47,7 +47,20 @@ public class BoxesRunTime {
     }
 
     public static Character boxToCharacter(char c) {
-        return Character.valueOf(c);
+        // !!! Temporarily working around the "impossible" (?) fact that
+        // c can have a negative value here.  In any revision since r17461 try:
+        //   def foo = new (Short => Char) { def apply(x: Short) = x.toChar }
+        //   foo(-100)
+        // and the -100 will get to Character, which will duly crash.
+        // The bug was masked before because the Characters were created
+        // with "new Character(c)" and the constructor avenue must have
+        // some check against negative values, whereas the static method doesn't.
+        //
+        // It appears to be Short-specific; I can't get anything similar
+        // out of Byte or Int.
+        return Character.valueOf((char)(c & 0xFFFF));
+        // return new Character(c); <-- this also would work
+        // return Character.valueOf(c); <-- but not this
     }
 
     public static Byte boxToByte(byte b) {
