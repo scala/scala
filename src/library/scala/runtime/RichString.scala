@@ -232,7 +232,7 @@ class RichString(val self: String) extends Proxy with Vector[Char] with VectorTe
    *  @throws java.lang.IllegalArgumentException
    */
   def format(args : Any*) : String =
-    java.lang.String.format(self, args.asInstanceOf[Seq[AnyRef]].toArray: _*)
+    java.lang.String.format(self, args.asInstanceOf[Seq[AnyRef]]: _*)
 
   /** <p>
    *  Like format(args*) but takes an initial Locale parameter
@@ -249,6 +249,6 @@ class RichString(val self: String) extends Proxy with Vector[Char] with VectorTe
    *  @throws java.lang.IllegalArgumentException
    */
   def format(l: java.util.Locale, args: Any*): String =
-    java.lang.String.format(l, self, args.asInstanceOf[Seq[AnyRef]].toArray: _*)
+    java.lang.String.format(l, self, args.asInstanceOf[Seq[AnyRef]]: _*)
 }
 

@@ -274,13 +274,8 @@ abstract class TreeGen
     DefDef(accessor setFlag lateDEFERRED, EmptyTree)
 
   def mkRuntimeCall(meth: Name, args: List[Tree]): Tree = {
-    assert(!settings.newArrays.value || meth.toString != "boxArray")
+    assert(meth.toString != "boxArray") // !!! can be removed once arrays are in.
     Apply(Select(mkAttributedRef(ScalaRunTimeModule), meth), args)
-  }
-
-  // !!! todo: remove
-  def mkPredefCall(meth: Name, args: List[Tree]): Tree = {
-    Apply(Select(mkAttributedRef(PredefModule), meth), args)
   }
 
   /** Make a synchronized block on 'monitor'. */

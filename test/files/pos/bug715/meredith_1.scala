@@ -72,7 +72,7 @@ trait XMLRenderer {
       pojo.getClass.getName,
       null,
       TopScope,
-      progeny : _*
+      progeny.asInstanceOf[Array[scala.xml.Node]] : _*
       )
   }
 }

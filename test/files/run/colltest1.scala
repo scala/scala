@@ -55,7 +55,7 @@ object Test extends Application {
     secondFive copyToBuffer buf
     assert(buf.result == ten, buf.result)
     assert(ten.toArray.size == 10)
-    assert(ten.toArray == ten)
+    assert(ten.toArray.toSequence == ten, ten.toArray.toSequence)
     assert(ten.toIterable == ten)
     assert(ten.toList == ten)
     assert(ten.toSequence == ten)
@@ -125,7 +125,7 @@ object Test extends Application {
     assert((ten ++ ten).removeDuplicates == ten)
     assert(ten.patch(3, List(4, 5, 6, 7), 4) == ten)
     assert(ten.patch(0, List(1, 2, 3), 9) == List(1, 2, 3, 10))
-    assert(empty.padTo(10, 7) == Array.fill(10)(7))
+    assert(empty.padTo(10, 7) == Array.fill(10)(7).toSequence)
     assert((ten zip ten.indices) == ten.zipWithIndex)
   }
 
@@ -177,7 +177,7 @@ object Test extends Application {
     assert(m.keySet.size == 26)
     assert(m.size == 26)
     assert(m.keySet == Set() ++ m.keysIterator)
-    assert(m.keySet.toList == m.keysIterator.toList)
+    assert(m.keySet == m.keysIterator.toList.toSet, m.keySet.toList+"!="+m.keysIterator.toList.toSet)
     val m1 = empty ++ m
     val mm = m -- m.keySet.toList
     assert(mm.isEmpty, mm)
@@ -198,7 +198,7 @@ object Test extends Application {
   sequenceTest(Nil)
   sequenceTest(List())
   sequenceTest(Stream.empty)
-  sequenceTest(Array())
+  sequenceTest(Array[Int]())
   sequenceTest(mutable.ArrayBuffer())
   sequenceTest(mutable.ListBuffer())
   orderedTraversableTest(Traversable())

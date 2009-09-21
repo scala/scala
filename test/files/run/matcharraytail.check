@@ -1,2 +1,2 @@
 Array(foo, bar, baz)
-Array(bar, baz)
+ArrayBuffer(bar, baz)

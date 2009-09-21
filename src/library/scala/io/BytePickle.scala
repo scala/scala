@@ -65,8 +65,8 @@ object BytePickle {
   def refDef: PU[RefDef] = new PU[RefDef] {
     def appP(b: RefDef, s: Array[Byte]): Array[Byte] =
       b match {
-        case Ref() => Array.concat(s, (List[Byte](0)).toArray)
-        case Def() => Array.concat(s, (List[Byte](1)).toArray)
+        case Ref() => Array.concat(s, Array[Byte](0))
+        case Def() => Array.concat(s, Array[Byte](1))
       };
     def appU(s: Array[Byte]): (RefDef, Array[Byte]) =
       if (s(0) == 0) (Ref(), s.slice(1, s.length))
@@ -229,7 +229,7 @@ object BytePickle {
     sequ(j, pa, (x: a) => lift(i(x)))
 
   def appendByte(a: Array[Byte], b: Int): Array[Byte] =
-    Array.concat(a, (List[Byte](b.asInstanceOf[Byte])).toArray)
+    Array.concat(a, Array(b.toByte))
 
   def nat2Bytes(x: Int): Array[Byte] = {
     val buf = new ArrayBuffer[Byte]
@@ -266,7 +266,7 @@ object BytePickle {
 
   def byte: SPU[Byte] = new SPU[Byte] {
     def appP(b: Byte, s: PicklerState): PicklerState =
-      new PicklerState(Array.concat(s.stream, (List[Byte](b)).toArray), s.dict);
+      new PicklerState(Array.concat(s.stream, Array(b)), s.dict)
     def appU(s: UnPicklerState): (Byte, UnPicklerState) =
       (s.stream(0), new UnPicklerState(s.stream.slice(1, s.stream.length), s.dict));
   }

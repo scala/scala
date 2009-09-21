@@ -21,7 +21,7 @@ object PagedSeq {
   final val UndeterminedEnd = Math.MAX_INT
 
   /** Constructs a character sequence from a character iterator */
-  def fromIterator[T](source: Iterator[T]): PagedSeq[T] =
+  def fromIterator[T: ClassManifest](source: Iterator[T]): PagedSeq[T] =
     new PagedSeq[T]((data: Array[T], start: Int, len: Int) => {
       var i = 0
       while (i < len && source.hasNext) {
@@ -32,7 +32,7 @@ object PagedSeq {
     })
 
   /** Constructs a character sequence from a character iterable */
-  def fromIterable[T](source: Iterable[T]): PagedSeq[T] =
+  def fromIterable[T: ClassManifest](source: Iterable[T]): PagedSeq[T] =
     fromIterator(source.iterator)
 
   /** Constructs a character sequence from a string iterator */
@@ -107,7 +107,7 @@ import PagedSeq._
  *
  * @author Martin Odersky
  */
-class PagedSeq[T] protected(
+class PagedSeq[T: ClassManifest] protected(
   more: (Array[T], Int, Int) => Int,
   first1: Page[T],
   start: Int,
@@ -191,7 +191,7 @@ extends collection.Vector[T]
 
 /** Page containing up to PageSize characters of the input sequence.
  */
-private class Page[T](val num: Int) {
+private class Page[T: ClassManifest](val num: Int) {
 
   private final val PageSize = 4096
 

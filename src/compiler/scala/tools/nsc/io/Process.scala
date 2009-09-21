@@ -42,7 +42,7 @@ object Process
   @experimental
   private[Process] class ProcessBuilder(val pb: JProcessBuilder)
   {
-    def this(cmd: String*) = this(new JProcessBuilder(cmd.toArray: _*))
+    def this(cmd: String*) = this(new JProcessBuilder(cmd: _*))
     def start() = new Process(() => pb.start())
 
     def withOnlyEnv(env: Map[String, String]): this.type = {

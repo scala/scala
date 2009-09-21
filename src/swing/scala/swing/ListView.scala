@@ -204,7 +204,7 @@ class ListView[A] extends Component {
      * The currently selected items.
      */
     object items extends scala.collection.SequenceProxy[A] {
-      def self = peer.getSelectedValues.map(_.asInstanceOf[A])
+      def self = peer.getSelectedValues.toSequence.map(_.asInstanceOf[A])
       def leadIndex: Int = peer.getSelectionModel.getLeadSelectionIndex
       def anchorIndex: Int = peer.getSelectionModel.getAnchorSelectionIndex
     }

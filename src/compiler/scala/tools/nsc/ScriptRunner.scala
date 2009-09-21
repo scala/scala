@@ -326,7 +326,7 @@ object ScriptRunner
       ObjectRunner.run(
         classpath,
         scriptMain(settings),
-        scriptArgs.toArray)
+        scriptArgs)
       true
     }
     catch {

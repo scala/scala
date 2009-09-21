@@ -227,6 +227,11 @@ trait Definitions {
     }
 
     val MaxTupleArity, MaxProductArity, MaxFunctionArity = 22
+    /** The maximal dimensions of a generic array creation.
+     *  I.e. new Array[Array[Array[Array[Array[T]]]]] creates a 5 times
+     *  nested array. More is not allowed.
+     */
+    val MaxArrayDims = 5
     lazy val TupleClass     = mkArityArray("Tuple", MaxTupleArity)
     lazy val ProductClass   = mkArityArray("Product", MaxProductArity)
     lazy val FunctionClass  = mkArityArray("Function", MaxFunctionArity, 0)
@@ -673,17 +678,15 @@ trait Definitions {
     def isValueClass(sym: Symbol): Boolean =
       (sym eq UnitClass) || (boxedClass contains sym)
 
-    /** Is symbol a value class? */
+    /** Is symbol a numeric value class? */
     def isNumericValueClass(sym: Symbol): Boolean =
       (sym ne BooleanClass) && (boxedClass contains sym)
 
-    // !!! todo comment & rename!
-    def isValueType(sym: Symbol) =
+    // !!! todo merge with isValueClass
+    def isValueType(sym: Symbol) = {
+      assert(isValueClass(sym) || !unboxMethod.contains(sym))
       isValueClass(sym) || unboxMethod.contains(sym)
-
-    /** Is symbol a value or array class? */
-    def isUnboxedClass(sym: Symbol): Boolean =
-      isValueType(sym) || !settings.newArrays.value && sym == ArrayClass
+    }
 
     def signature(tp: Type): String = {
       def erasure(tp: Type): Type = tp match {
@@ -750,6 +753,29 @@ trait Definitions {
         tparam => MethodType(List(), tparam.typeConstructor)) setFlag FINAL
       String_+ = newMethod(
         StringClass, "+", anyparam, StringClass.typeConstructor) setFlag FINAL
+
+      val forced = List( // force initialization of every symbol that is enetred as a side effect
+        AnnotationDefaultAttr,
+        RepeatedParamClass,
+        JavaRepeatedParamClass,
+        ByNameParamClass,
+        UnitClass,
+        ByteClass,
+        ShortClass,
+        CharClass,
+        IntClass,
+        LongClass,
+        FloatClass,
+        DoubleClass,
+        BooleanClass,
+        AnyClass,
+        AnyRefClass,
+        AnyValClass,
+        NullClass,
+        NothingClass,
+        SingletonClass,
+        EqualsPatternClass
+      )
 
       // #2264
       var tmp = AnnotationDefaultAttr

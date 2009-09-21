@@ -90,7 +90,7 @@ object LisSeqArr extends TestCase("LisSeqArr") with Assert {
   def runTest {
     assertEquals((List(1,2,3): Any) match { case   List(x,y,_*) => (x,y)}, (1,2))
     assertEquals((List(1,2,3): Any) match { case    Seq(x,y,_*) => (x,y)}, (1,2))
-    assertEquals((Array(1,2,3): Any) match { case   Seq(x,y,_*) => (x,y)}, (1,2))
+    //assertEquals((Array(1,2,3): Any) match { case   Seq(x,y,_*) => (x,y)}, (1,2))
     //assertEquals((Array(1,2,3): Any) match { case Array(x,y,_*) => {x,y}}, {1,2})
 
     // just compile, feature request #1196

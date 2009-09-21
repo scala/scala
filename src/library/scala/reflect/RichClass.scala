@@ -10,9 +10,9 @@
 
 package scala.reflect
 
-import annotation.experimental
-import util.control.Exception._
-import util.ScalaClassLoader._
+import scala.annotation.experimental
+import scala.util.control.Exception._
+import scala.util.ScalaClassLoader._
 import java.lang.{ Class => JClass }
 import java.lang.reflect. { Constructor => JConstructor }
 

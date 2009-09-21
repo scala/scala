@@ -655,10 +655,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
    */
   class Run {
 
-//    settings.newArrays.value = true
-//    settings.print.value = List("era")
-     if (settings.verbose.value) println("compiling with newArrays = "+settings.newArrays.value)
-
     var isDefined = false
 
     private val firstPhase = {

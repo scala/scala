@@ -548,7 +548,7 @@ trait Symbols {
 
     /** Is this symbol a sealed class?*/
     final def isSealed: Boolean =
-      isClass && (hasFlag(SEALED) || isUnboxedClass(this))
+      isClass && (hasFlag(SEALED) || isValueClass(this))
 
     /** Is this symbol locally defined? I.e. not accessed from outside `this' instance */
     final def isLocal: Boolean = owner.isTerm

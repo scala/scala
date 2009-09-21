@@ -62,7 +62,7 @@ class JavaCharArrayReader(buf: RandomAccessSeq[Char], start: Int, /* startline: 
   def next: Char = {
     //cline = nextline
     //ccol = nextcol
-    val buf = this.buf.asInstanceOf[runtime.BoxedCharArray].value
+    val buf = this.buf.asInstanceOf[collection.mutable.WrappedArray[Char]].array
     if(!hasNext) {
       ch = SU
       return SU  // there is an endless stream of SU's at the end

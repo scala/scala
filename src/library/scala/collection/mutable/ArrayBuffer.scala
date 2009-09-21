@@ -40,9 +40,11 @@ class ArrayBuffer[A](override protected val initialSize: Int)
   def clear() { reduceToSize(0) }
 
   override def sizeHint(len: Int) {
-    val newarray = new Array[AnyRef](len min 1)
-    Array.copy(array, 0, newarray, 0, size0)
-    array = newarray
+    if (len > size && len >= 1) {
+      val newarray = new Array[AnyRef](len min 1)
+      Array.copy(array, 0, newarray, 0, size0)
+      array = newarray
+    }
   }
 
   /** Appends a single element to this buffer and returns

@@ -916,7 +916,7 @@ abstract class RefChecks extends InfoTransform {
             List(ValDef(_, pname, tpt, _)),
             Match(_, CaseDef(pat1, _, _) :: _))))
           if ((pname startsWith nme.CHECK_IF_REFUTABLE_STRING) &&
-              isIrrefutable(pat1, tpt.tpe)) =>
+              isIrrefutable(pat1, tpt.tpe) && (qual.tpe <:< tree.tpe)) =>
             result = qual
 
         case Apply(Select(New(tpt), name), args)

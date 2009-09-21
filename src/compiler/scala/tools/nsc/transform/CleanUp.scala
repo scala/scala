@@ -337,7 +337,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           }
         }
 
-        def boxArray(t: Tree) = {
+        def boxArray(t: Tree) = t
+/* was:
           assert(!settings.newArrays.value)
           val sym = currentOwner.newValue(ad.pos, mkTerm()) setInfo ObjectClass.tpe
           BLOCK(
@@ -345,6 +346,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             IF (NULL ANY_== REF(sym)) THEN NULL ELSE gen.mkRuntimeCall(nme.boxArray, List(REF(sym)))
           )
         }
+*/
 
         /* ### BOXING PARAMS & UNBOXING RESULTS ### */
 

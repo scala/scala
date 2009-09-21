@@ -19,16 +19,20 @@ import scala.collection.mutable._
  */
 object ScalaRunTime {
 
-  def isArray(x: AnyRef): Boolean = x != null && (x.getClass.isArray || x.isInstanceOf[BoxedArray[_]])
+  def isArray(x: AnyRef): Boolean = // !!! remove once newarrays
+    x != null && (x.getClass.isArray || x.isInstanceOf[BoxedArray[_]])
+
+  def isArray(x: AnyRef, atLevel: Int): Boolean =
+    x != null && isArrayClass(x.getClass, atLevel)
+
+  private def isArrayClass(clazz: Class[_], atLevel: Int): Boolean =
+    clazz.isArray && (atLevel == 1 || isArrayClass(clazz.getComponentType, atLevel - 1))
+
   def isValueClass(clazz: Class[_]) = clazz.isPrimitive()
 
-  // todo: [for Gilles] replace with boxArray
-  def forceBoxedArray[A <: Any](xs: Seq[A]): Array[A] = {
-    val array = new Array[A](xs.length)
-    var i = 0
-    for (x <- xs.iterator) { array(i) = x; i += 1 }
-    array
-  }
+  // todo: remove?
+  def forceBoxedArray[A <: Any](xs: Seq[A]): Array[A] =
+    throw new Error(" not implemented: forceBoxedArray")
 
   /** Retrieve generic array element */
   def array_apply(xs: AnyRef, idx: Int): Any = java.lang.reflect.Array.get(xs, idx)
@@ -39,28 +43,23 @@ object ScalaRunTime {
   /** Get generic array length */
   def array_length(xs: AnyRef): Int = java.lang.reflect.Array.getLength(xs)
 
+  /** Convert a numeric value array to an object array.
+   *  Needed to deal with vararg arguments of primtive types that are passed
+   *  to a generic Java vararg parameter T ...
+   */
+  def toObjectArray(src: AnyRef): Array[Object] = {
+    val length = array_length(src)
+    val dest = new Array[Object](length)
+    for (i <- 0 until length)
+      array_update(dest, i, array_apply(src, i))
+    dest
+  }
+
   def toArray[T](xs: scala.collection.Sequence[T]) = {
     val arr = new Array[AnyRef](xs.length)
     var i = 0
     for (x <- xs) arr(i) = x.asInstanceOf[AnyRef]
     arr
-  }
-
-  /** Convert arrays to sequences, leave sequences as they are
-   *  !!! see duplication wrt
-   */
-  def toSequence[T](xs: AnyRef): Sequence[T] = xs match {
-    case ts: Sequence[T] => ts.asInstanceOf[Sequence[T]]
-    case null => null
-    case x: Array[AnyRef] => new WrappedArray.ofRef(x).asInstanceOf[Array[T]]
-    case x: Array[Int] => new WrappedArray.ofInt(x).asInstanceOf[Array[T]]
-    case x: Array[Double] => new WrappedArray.ofDouble(x).asInstanceOf[Array[T]]
-    case x: Array[Long] => new WrappedArray.ofLong(x).asInstanceOf[Array[T]]
-    case x: Array[Float] => new WrappedArray.ofFloat(x).asInstanceOf[Array[T]]
-    case x: Array[Char] => new WrappedArray.ofChar(x).asInstanceOf[Array[T]]
-    case x: Array[Byte] => new WrappedArray.ofByte(x).asInstanceOf[Array[T]]
-    case x: Array[Short] => new WrappedArray.ofShort(x).asInstanceOf[Array[T]]
-    case x: Array[Boolean] => new WrappedArray.ofBoolean(x).asInstanceOf[Array[T]]
   }
 
   def checkInitialized[T <: AnyRef](x: T): T =
@@ -191,7 +190,10 @@ object ScalaRunTime {
    */
   def stringOf(arg : Any): String = arg match {
     case null => "null"
-    case (arg : AnyRef) if isArray(arg) => boxArray(arg).deepToString
+    case arg: AnyRef if isArray(arg) =>
+      val d: collection.Vector[Any] = WrappedArray.make(arg).deep
+      d.toString
+    case arg: WrappedArray[_] => arg.deep.toString
     case arg => arg.toString
   }
 }

@@ -13,7 +13,7 @@ package scala.reflect
 
 import scala.runtime._
 import scala.collection.immutable.Nil
-import scala.collection.mutable.{WrappedArray}
+import scala.collection.mutable.{WrappedArray, ArrayBuilder}
 
 /** <p>
   *   A <code>ClassManifest[T]</code> is an opaque descriptor for type <code>T</code>.
@@ -72,24 +72,50 @@ trait ClassManifest[T] extends OptManifest[T] {
     case _ => false
   }
 
-  def newArray(len: Int): BoxedArray[T] = {
-    // it's safe to assume T <: AnyRef here because the method is overridden for all value type manifests
-    new BoxedObjectArray(java.lang.reflect.Array.newInstance(erasure, len).asInstanceOf[Array[AnyRef]])
-      .asInstanceOf[BoxedArray[T]]
-  }
+  protected def arrayClass: Predef.Class[Array[T]] =
+    java.lang.reflect.Array.newInstance(erasure, 0).getClass
+      .asInstanceOf[Predef.Class[Array[T]]]
 
-  def newArray1(len: Int): Array[T] =
+  def arrayManifest: ClassManifest[Array[T]] =
+    ClassManifest.classType[Array[T]](arrayClass)
+
+  def newArray(len: Int): Array[T] =
     java.lang.reflect.Array.newInstance(erasure, len).asInstanceOf[Array[T]]
+
+  def newArray2(len: Int): Array[Array[T]] =
+    java.lang.reflect.Array.newInstance(
+      java.lang.reflect.Array.newInstance(erasure, 0).getClass, len)
+        .asInstanceOf[Array[Array[T]]]
+
+  def newArray3(len: Int): Array[Array[Array[T]]] =
+    java.lang.reflect.Array.newInstance(
+      java.lang.reflect.Array.newInstance(erasure, 0, 0).getClass, len)
+        .asInstanceOf[Array[Array[Array[T]]]]
+
+  def newArray4(len: Int): Array[Array[Array[Array[T]]]] =
+    java.lang.reflect.Array.newInstance(
+      java.lang.reflect.Array.newInstance(erasure, 0, 0, 0).getClass, len)
+        .asInstanceOf[Array[Array[Array[Array[T]]]]]
+
+  def newArray5(len: Int): Array[Array[Array[Array[Array[T]]]]] =
+    java.lang.reflect.Array.newInstance(
+      java.lang.reflect.Array.newInstance(erasure, 0, 0, 0, 0).getClass, len)
+        .asInstanceOf[Array[Array[Array[Array[Array[T]]]]]]
 
   def newWrappedArray(len: Int): WrappedArray[T] =
     // it's safe to assume T <: AnyRef here because the method is overridden for all value type manifests
-    new WrappedArray.ofRef(java.lang.reflect.Array.newInstance(erasure, len).asInstanceOf[Array[AnyRef]])
-      .asInstanceOf[WrappedArray[T]]
+    new WrappedArray.ofRef[T with AnyRef](newArray(len).asInstanceOf[Array[T with AnyRef]]).asInstanceOf[WrappedArray[T]]
+
+  def newArrayBuilder(): ArrayBuilder[T] =
+    // it's safe to assume T <: AnyRef here because the method is overridden for all value type manifests
+    new ArrayBuilder.ofRef[T with AnyRef]()(this.asInstanceOf[ClassManifest[T with AnyRef]]).asInstanceOf[ArrayBuilder[T]]
 
   def typeArguments: List[OptManifest[_]] = List()
 
-  protected def argString = if (typeArguments.isEmpty) "" else typeArguments.mkString("[", ", ", "]")
-
+  protected def argString =
+    if (typeArguments.nonEmpty) typeArguments.mkString("[", ", ", "]")
+    else if (erasure.isArray) "["+ClassManifest.fromClass(erasure.getComponentType)+"]"
+    else ""
 }
 
 /** <p>
@@ -114,9 +140,23 @@ object ClassManifest {
   val Boolean = Manifest.Boolean
   val Unit = Manifest.Unit
   val Any = Manifest.Any
+  val Object = Manifest.Object
   val AnyVal = Manifest.AnyVal
   val Nothing = Manifest.Nothing
   val Null = Manifest.Null
+
+  def fromClass[T](clazz: Predef.Class[T]): ClassManifest[T] = clazz match {
+    case java.lang.Byte.TYPE => Byte.asInstanceOf[ClassManifest[T]]
+    case java.lang.Short.TYPE => Short.asInstanceOf[ClassManifest[T]]
+    case java.lang.Character.TYPE => Char.asInstanceOf[ClassManifest[T]]
+    case java.lang.Integer.TYPE => Int.asInstanceOf[ClassManifest[T]]
+    case java.lang.Long.TYPE => Long.asInstanceOf[ClassManifest[T]]
+    case java.lang.Float.TYPE => Float.asInstanceOf[ClassManifest[T]]
+    case java.lang.Double.TYPE => Double.asInstanceOf[ClassManifest[T]]
+    case java.lang.Boolean.TYPE => Boolean.asInstanceOf[ClassManifest[T]]
+    case java.lang.Void.TYPE => Unit.asInstanceOf[ClassManifest[T]]
+    case _ => classType[T with AnyRef](clazz).asInstanceOf[ClassManifest[T]]
+  }
 
   def singleType[T](value: Any): Manifest[T] = Manifest.singleType(value)
 
@@ -127,31 +167,36 @@ object ClassManifest {
     *       pass varargs as arrays into this, we get an infinitely recursive call
     *       to boxArray. (Besides, having a separate case is more efficient)
     */
-  def classType[T](clazz: Predef.Class[_]): ClassManifest[T] =
+  def classType[T <: AnyRef](clazz: Predef.Class[_]): ClassManifest[T] =
     new ClassTypeManifest[T](None, clazz, Nil)
 
   /** ClassManifest for the class type `clazz[args]', where `clazz' is
     * a top-level or static class and `args` are its type arguments */
-  def classType[T](clazz: Predef.Class[_], arg1: OptManifest[_], args: OptManifest[_]*): ClassManifest[T] =
+  def classType[T <: AnyRef](clazz: Predef.Class[_], arg1: OptManifest[_], args: OptManifest[_]*): ClassManifest[T] =
     new ClassTypeManifest[T](None, clazz, arg1 :: args.toList)
 
   /** ClassManifest for the class type `clazz[args]', where `clazz' is
     * a class with non-package prefix type `prefix` and type arguments `args`.
     */
-  def classType[T](prefix: OptManifest[_], clazz: Predef.Class[_], args: OptManifest[_]*): ClassManifest[T] =
+  def classType[T <: AnyRef](prefix: OptManifest[_], clazz: Predef.Class[_], args: OptManifest[_]*): ClassManifest[T] =
     new ClassTypeManifest[T](Some(prefix), clazz, args.toList)
 
   /** Manifest for the class type `clazz[args]', where `clazz' is
     * a top-level or static class. */
   @serializable
-  private class ClassTypeManifest[T](prefix: Option[OptManifest[_]],
-                                     val erasure: Predef.Class[_],
-                                     override val typeArguments: List[OptManifest[_]]) extends ClassManifest[T] {
+  private class ClassTypeManifest[T <: AnyRef](prefix: Option[OptManifest[_]],
+                                               val erasure: Predef.Class[_],
+                                               override val typeArguments: List[OptManifest[_]]) extends ClassManifest[T] {
     override def toString =
       (if (prefix.isEmpty) "" else prefix.get.toString+"#") +
       (if (erasure.isArray) "Array" else erasure.getName) +
       argString
    }
+
+  def arrayType[T](arg: OptManifest[_]): ClassManifest[Array[T]] = arg match {
+    case NoManifest => Object.asInstanceOf[ClassManifest[Array[T]]]
+    case m: ClassManifest[_] => m.asInstanceOf[ClassManifest[T]].arrayManifest
+  }
 
   /** ClassManifest for the abstract type `prefix # name'. `upperBound' is not
     * strictly necessary as it could be obtained by reflection. It was

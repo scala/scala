@@ -228,7 +228,7 @@ self =>
    *  @throws java.lang.IllegalArgumentException
    */
   def format(args : Any*) : String =
-    java.lang.String.format(toString, args.asInstanceOf[Seq[AnyRef]].toArray: _*)
+    java.lang.String.format(toString, args.asInstanceOf[Seq[AnyRef]]: _*)
 
   /** <p>
    *  Like format(args*) but takes an initial Locale parameter
@@ -245,6 +245,6 @@ self =>
    *  @throws java.lang.IllegalArgumentException
    */
   def format(l: java.util.Locale, args: Any*): String =
-    java.lang.String.format(l, toString, args.asInstanceOf[Seq[AnyRef]].toArray: _*)
+    java.lang.String.format(l, toString, args.asInstanceOf[Seq[AnyRef]]: _*)
 }
 

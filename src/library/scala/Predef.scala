@@ -12,7 +12,7 @@
 package scala
 
 import collection.immutable.StringOps
-import collection.mutable.{StringBuilder, ArrayOps}
+import collection.mutable.ArrayOps
 import collection.generic.BuilderFactory
 
 /** The <code>Predef</code> object provides definitions that are
@@ -67,7 +67,7 @@ object Predef extends LowPriorityImplicits {
 
   private val P = scala.`package`  // to force scala package object to be seen.
   private val L = scala.collection.immutable.List // to force Nil, :: to be seen.
-  private val S = StringBuilder // to force StringBuilder to be seen.
+  private val S = scala.collection.mutable.StringBuilder // to force StringBuilder to be seen.
 
   val $scope = scala.xml.TopScope
 
@@ -81,13 +81,15 @@ object Predef extends LowPriorityImplicits {
 
   type Manifest[T] = scala.reflect.Manifest[T]
   type ClassManifest[T] = scala.reflect.ClassManifest[T]
-  def evidence[T](implicit e: T) = e
+  def implicitly[T](implicit e: T) = e
   def manifest[T](implicit m: Manifest[T]) = m
   def classManifest[T](implicit m: ClassManifest[T]) = m
 
   // will soon stop being a view: subsumed by `conforms` (which is less likely to give rise to ambiguities)
   // @see `conforms` for the implicit version
   implicit def identity[A](x: A): A = x
+
+  def currentThread = java.lang.Thread.currentThread()
 
   // errors and asserts -------------------------------------------------
 
@@ -214,7 +216,7 @@ object Predef extends LowPriorityImplicits {
   implicit def unaugmentString(x: StringOps): String = x.repr
 
   implicit def stringBuilderFactory: BuilderFactory[Char, String, String] =
-    new BuilderFactory[Char, String, String] { def apply(from: String) = new StringBuilder }
+    new BuilderFactory[Char, String, String] { def apply(from: String) = new scala.collection.mutable.StringBuilder }
 
   implicit def any2stringadd(x: Any) = new runtime.StringAdd(x)
 
@@ -229,9 +231,10 @@ object Predef extends LowPriorityImplicits {
     case x: Array[Short] => arrayOps(x).asInstanceOf[ArrayOps[T]]
     case x: Array[Boolean] => arrayOps(x).asInstanceOf[ArrayOps[T]]
     case x: Array[Unit] => arrayOps(x).asInstanceOf[ArrayOps[T]]
+    case null => null
   }
 
-  implicit def arrayOps[T <: AnyRef](xs: Array[T]): ArrayOps[T] = new ArrayOps.ofRef[T](xs.asInstanceOf[Array[AnyRef]])
+  implicit def arrayOps[T <: AnyRef](xs: Array[T]): ArrayOps[T] = new ArrayOps.ofRef[T](xs)
   implicit def arrayOps(xs: Array[Int]): ArrayOps[Int] = new ArrayOps.ofInt(xs)
   implicit def arrayOps(xs: Array[Double]): ArrayOps[Double] = new ArrayOps.ofDouble(xs)
   implicit def arrayOps(xs: Array[Long]): ArrayOps[Long] = new ArrayOps.ofLong(xs)
@@ -294,6 +297,13 @@ object Predef extends LowPriorityImplicits {
     override def toString: String = xs.mkString("")
   }
 
+  implicit def arrayToCharSequence(xs: Array[Char]): CharSequence = new CharSequence {
+    def length: Int = xs.length
+    def charAt(index: Int): Char = xs(index)
+    def subSequence(start: Int, end: Int): CharSequence = arrayToCharSequence(xs.slice(start, end))
+    override def toString: String = xs.mkString("")
+  }
+
   // used, for example, in the encoding of generalized constraints
   // we need a new type constructor `<:<` and evidence `conforms`, as
   // reusing `Function2` and `identity` leads to ambiguities (any2stringadd is inferred)
@@ -302,5 +312,16 @@ object Predef extends LowPriorityImplicits {
   sealed abstract class <:<[-From, +To] //extends (From => To)
   implicit def conforms[A]: A <:< A = new (A <:< A) {def convert(x: A) = x}
 
-  def currentThread = java.lang.Thread.currentThread()
+  /** A type for which there is aways an implicit value.
+   *  @see fallbackBuilderFactory in Array.scala
+   */
+  class DummyImplicit
+
+  object DummyImplicit {
+
+    /** An implicit value yielding a DummyImplicit.
+     *   @see fallbackBuilderFactory in Array.scala
+     */
+    implicit def dummyImplicit: DummyImplicit = new DummyImplicit
+  }
 }

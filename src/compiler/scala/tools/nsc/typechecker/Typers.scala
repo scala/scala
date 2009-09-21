@@ -142,12 +142,6 @@ trait Typers { self: Analyzer =>
    */
   val HKmode        = 0x4000 // @M: could also use POLYmode | TAPPmode
 
-  /** The mode <code>JAVACALLmode</code> is set when we are typing a call to a Java method
-   *  needed temporarily for vararg conversions
-   *  !!!VARARG-CONVERSION!!!
-   */
-  val JAVACALLmode  = 0x8000
-
   /** The mode <code>TYPEPATmode</code> is set when we are typing a type in a pattern
    */
   val TYPEPATmode   = 0x10000
@@ -162,7 +156,6 @@ trait Typers { self: Analyzer =>
 
   private def argMode(fun: Tree, mode: Int) =
     if (treeInfo.isSelfOrSuperConstrCall(fun)) mode | SCCmode
-    else if (fun.symbol hasFlag JAVA) mode | JAVACALLmode // !!!VARARG-CONVERSION!!!
     else mode
 
   abstract class Typer(context0: Context) {
@@ -710,6 +703,23 @@ trait Typers { self: Analyzer =>
         ex
     }}
 
+    /** Utility method: Try op1 on tree. If that gives an error try op2 instead.
+     */
+    def tryBoth(tree: Tree)(op1: (Typer, Tree) => Tree)(op2: (Typer, Tree) => Tree): Tree =
+      silent(op1(_, tree.duplicate)) match {
+        case result1: Tree =>
+          result1
+        case ex1: TypeError =>
+          silent(op2(_, tree)) match {
+            case result2: Tree =>
+//              println("snd succeeded: "+result2)
+              result2
+            case ex2: TypeError =>
+              reportTypeError(tree.pos, ex1)
+              setError(tree)
+          }
+      }
+
     /** Perform the following adaptations of expression, pattern or type `tree' wrt to
      *  given mode `mode' and given prototype `pt':
      *  (-1) For expressions with annotated types, let AnnotationCheckers decide what to do
@@ -907,20 +917,7 @@ trait Typers { self: Analyzer =>
           assert((mode & HKmode) == 0) //@M
           instantiate(tree, mode, pt)
         } else if (tree.tpe <:< pt) {
-          def isStructuralType(tpe: Type): Boolean = tpe match {
-            case RefinedType(ps, decls) =>
-              decls.toList exists (x => x.isTerm && x.allOverriddenSymbols.isEmpty)
-            case _ =>
-              false
-          }
-          if (isStructuralType(pt) && tree.tpe.typeSymbol == ArrayClass && !settings.newArrays.value) {
-            // all Arrays used as structural refinement typed values must be boxed
-            // this does not solve the case where the type to be adapted to comes
-            // from a type variable that was bound by a strctural but is instantiated
-            typed(Apply(Select(gen.mkAttributedRef(ScalaRunTimeModule), nme.forceBoxedArray), List(tree)))
-          }
-          else
-            tree
+          tree
         } else {
           if ((mode & PATTERNmode) != 0) {
             if ((tree.symbol ne null) && tree.symbol.isModule)
@@ -1883,33 +1880,8 @@ trait Typers { self: Analyzer =>
         val prefix =
           List.map2(args take nonVarCount, adaptedFormals take nonVarCount) ((arg, formal) =>
             typedArg(arg, mode, 0, formal))
-
-        // if array is passed into java vararg and formal's element is not an array,
-        // convert it to vararg by adding : _*
-        // this is a gross hack to enable vararg transition; remove it as soon as possible.
-        // !!!VARARG-CONVERSION!!!
-        def hasArrayElement(tpe: Type) =
-          tpe.typeArgs.length == 1 && tpe.typeArgs.head.typeSymbol == ArrayClass
-        var args0 = args
-        if ((mode & JAVACALLmode) != 0 &&
-            (args.length == originalFormals.length) &&
-            !hasArrayElement(adaptedFormals(nonVarCount)) &&
-            !settings.XnoVarargsConversion.value) {
-              val lastarg = typedArg(args(nonVarCount), mode, REGPATmode, WildcardType)
-              if ((lastarg.tpe.typeSymbol == ArrayClass || lastarg.tpe.typeSymbol == NullClass) &&
-                  !treeInfo.isWildcardStarArg(lastarg)) {
-                if (lastarg.tpe.typeSymbol == ArrayClass)
-                  unit.warning(
-                    lastarg.pos,
-                    "I'm seeing an array passed into a Java vararg.\n"+
-                    "I assume that the elements of this array should be passed as individual arguments to the vararg.\n"+
-                    "Therefore I follow the array with a `: _*', to mark it as a vararg argument.\n"+
-                    "If that's not what you want, compile this file with option -Xno-varargs-conversion.")
-                args0 = args.init ::: List(gen.wildcardStar(args.last))
-              }
-            }
         val suffix =
-          List.map2(args0 drop nonVarCount, adaptedFormals drop nonVarCount) ((arg, formal) =>
+          List.map2(args drop nonVarCount, adaptedFormals drop nonVarCount) ((arg, formal) =>
             typedArg(arg, mode, REGPATmode, formal))
         prefix ::: suffix
       } else {
@@ -3600,8 +3572,13 @@ trait Typers { self: Analyzer =>
 
         case Typed(expr, tpt) =>
           if (treeInfo.isWildcardStarArg(tree)) {
-            val expr1 = typed(expr, mode & stickyModes, seqType(pt))
-            expr1.tpe.baseType(SeqClass) match {
+            val expr0 = typed(expr, mode & stickyModes, WildcardType)
+            val (expr1, baseClass) =
+              if (expr0.tpe.typeSymbol == ArrayClass)
+                (adapt(expr0, mode & stickyModes, arrayType(pt)), ArrayClass)
+              else
+                (adapt(expr0, mode & stickyModes, seqType(pt)), SeqClass)
+            expr1.tpe.baseType(baseClass) match {
               case TypeRef(_, _, List(elemtp)) =>
                 treeCopy.Typed(tree, expr1, tpt setType elemtp) setType elemtp
               case _ =>
@@ -3659,11 +3636,18 @@ trait Typers { self: Analyzer =>
         case Apply(fun, args) =>
           typedApply(fun, args) match {
             case Apply(Select(New(tpt), name), args)
-            if (settings.newArrays.value && tpt.tpe.typeSymbol == ArrayClass && args.length == 1 && erasure.isTopLevelGenericArray(tpt.tpe)) =>
+            if (tpt.tpe != null &&
+                tpt.tpe.typeSymbol == ArrayClass &&
+                args.length == 1 &&
+                erasure.GenericArray.unapply(tpt.tpe).isDefined) => // !!! todo simplify by using extractor
               // convert new Array[T](len) to evidence[ClassManifest[T]].newArray(len)
+              // convert new Array^N[T](len) for N > 1 to evidence[ClassManifest[T]].newArrayN(len)
+              val Some((level, manifType)) = erasure.GenericArray.unapply(tpt.tpe)
+              if (level > MaxArrayDims)
+                error(tree.pos, "cannot create a generic multi-dimensional array of more than "+MaxArrayDims+" dimensions")
               val newArrayApp = atPos(tree.pos) {
-                val manif = getManifestTree(tree.pos, tpt.tpe.typeArgs.head, false)
-                Apply(Select(manif, nme.newArray), args)
+                val manif = getManifestTree(tree.pos, manifType, false)
+                Apply(Select(manif, if (level == 1) "newArray" else "newArray"+level), args)
               }
               typed(newArrayApp, mode, pt)
             case tree1 =>

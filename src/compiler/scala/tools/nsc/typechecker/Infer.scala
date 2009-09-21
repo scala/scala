@@ -860,7 +860,7 @@ trait Infer {
     def isInProperSubClassOrObject(sym1: Symbol, sym2: Symbol) =
       sym2 == NoSymbol || isProperSubClassOrObject(sym1.owner, sym2.owner)
 
-    def isStrictlyMoreSpecific(ftpe1: Type, ftpe2: Type, sym1: Symbol, sym2: Symbol): Boolean =
+    def isStrictlyMoreSpecific(ftpe1: Type, ftpe2: Type, sym1: Symbol, sym2: Symbol): Boolean = {
       // ftpe1 / ftpe2 are OverloadedTypes (possibly with one single alternative) if they
       // denote the type of an "apply" member method (see "followApply")
       ftpe1.isError || {
@@ -871,8 +871,11 @@ trait Infer {
                                  (!phase.erasedTypes || covariantReturnOverride(ftpe1, ftpe2))) 1 else 0)
         val subClassCount = (if (isInProperSubClassOrObject(sym1, sym2)) 1 else 0) -
                             (if (isInProperSubClassOrObject(sym2, sym1)) 1 else 0)
+        //println("is more specific? "+sym1+sym1.locationString+"/"+sym2+sym2.locationString+":"+
+        //        specificCount+"/"+subClassCount+"/"+)
         specificCount + subClassCount > 0
       }
+    }
 /*
       ftpe1.isError || {
         if (isAsSpecific(ftpe1, ftpe2))

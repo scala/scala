@@ -176,7 +176,7 @@ extends BatchSourceFile(name, contents)
     this(
       name,
       components.toList,
-      Array.concat(components.toList.map(comp =>
+      Array.concat(components.map(comp =>
         CompoundSourceFile.stripSU(comp.content).toArray):_*))
   }
 

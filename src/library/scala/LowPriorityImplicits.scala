@@ -20,20 +20,10 @@ import collection.immutable.WrappedString
  */
 class LowPriorityImplicits {
 
-  implicit def genericWapArray[T](xs: Array[T]): WrappedArray[T] = (xs: AnyRef) match { // !!! drop the AnyRef and get unreachable code errors!
-    case x: Array[AnyRef] => wrapArray[AnyRef](x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Int] => wrapArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Double] => wrapArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Long] => wrapArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Float] => wrapArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Char] => wrapArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Byte] => wrapArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Short] => wrapArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Boolean] => wrapArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Unit] => wrapArray(x).asInstanceOf[WrappedArray[T]]
-  }
+  implicit def genericWrapArray[T](xs: Array[T]): WrappedArray[T] =
+    WrappedArray.make(xs)
 
-  implicit def wrapArray[T <: AnyRef](xs: Array[T]): WrappedArray[T] = new WrappedArray.ofRef[T](xs.asInstanceOf[Array[AnyRef]])
+  implicit def wrapArray[T <: AnyRef](xs: Array[T]): WrappedArray[T] = new WrappedArray.ofRef[T](xs)
   implicit def wrapArray(xs: Array[Int]): WrappedArray[Int] = new WrappedArray.ofInt(xs)
   implicit def wrapArray(xs: Array[Double]): WrappedArray[Double] = new WrappedArray.ofDouble(xs)
   implicit def wrapArray(xs: Array[Long]): WrappedArray[Long] = new WrappedArray.ofLong(xs)

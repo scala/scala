@@ -1,3 +1,4 @@
 Array(1, 2, 3)
 null
+Array(Array(0, 0, 0), Array(0, 0, 0), Array(0, 0, 0))
 Array(Array(0, 1, 2), Array(1, 2, 3), Array(2, 3, 4))

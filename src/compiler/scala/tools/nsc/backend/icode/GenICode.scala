@@ -865,8 +865,7 @@ abstract class GenICode extends SubComponent  {
           } else {
             ctx.bb.emit(THIS(ctx.clazz.symbol), tree.pos)
             if (tree.symbol == definitions.ArrayClass)
-              generatedType = REFERENCE(
-                if (settings.newArrays.value) definitions.ObjectClass else definitions.BoxedAnyArrayClass)
+              generatedType = REFERENCE(definitions.ObjectClass)
             else
               generatedType = REFERENCE(ctx.clazz.symbol)
           }

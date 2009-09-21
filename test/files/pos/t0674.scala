@@ -39,9 +39,9 @@ for(a <- Some(1);
     l <- Some(12);
     m <- Some(13);
     n <- Some(14);
-    o <- Some(15);
-    p <- Some(16);
-    q <- Some(17)
+    o <- Some(15)
+//    p <- Some(16);
+//    q <- Some(17)
 //    r <- Some(18);
 //    s <- Some(19)
    ) yield a)

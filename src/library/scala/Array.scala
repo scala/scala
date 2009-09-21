@@ -13,39 +13,52 @@ package scala
 
 import scala.collection.generic._
 import scala.collection.Traversable
-import scala.collection.mutable.{Vector, ArrayBuilder}
+import scala.collection.mutable.{Vector, ArrayBuilder, GenericArray}
 import compat.Platform.arraycopy
 import scala.reflect.ClassManifest
+import scala.runtime.ScalaRunTime.{array_apply, array_update}
+
+/** A class containing a fall back builder for arrays where the element type
+ *  does not have a class manifest. In that case a generic array is built.
+ */
+class FallbackArrayBuilding {
+
+  /** A builder factory that generates a generic array.
+   *  Called instead of Array.newBuilder if the element type of an array
+   *  does not have a class manifest. Note that fallbackBuilder fcatory
+   *  needs an implicit parameter (otherwise it would not be dominated in implicit search
+   *  by Array.builderFactory). We make sure that that implicit search is always
+   *  succesfull.
+   */
+  implicit def fallbackBuilderFactory[T](implicit m: DummyImplicit): BuilderFactory[T, GenericArray[T], Array[_]] =
+    new BuilderFactory[T, GenericArray[T], Array[_]] {
+      def apply(from: Array[_]) = GenericArray.newBuilder[T]
+    }
+}
 
 /** This object contains utility methods operating on arrays.
  *
  *  @author Martin Odersky
  *  @version 1.0
  */
-object Array {
+object Array extends FallbackArrayBuilding {
 
   import runtime.BoxedArray;
   import scala.runtime.ScalaRunTime.boxArray;
 
-  implicit def builderFactory[A]/* !!!(implicit m: ClassManifest[A])*/: BuilderFactory[A, Array[A], Array[_]] =
-    new BuilderFactory[A, Array[A], Array[_]] { def apply(from: Array[_]) = newBuilder[A](null) }
+  implicit def builderFactory[T](implicit m: ClassManifest[T]): BuilderFactory[T, Array[T], Array[_]] =
+    new BuilderFactory[T, Array[T], Array[_]] { def apply(from: Array[_]) = ArrayBuilder.make[T]()(m) }
 
-  def newBuilder[A](implicit m: ClassManifest[A]): Builder[A, Array[A]] =
-    new ArrayBuilder[A](m).asInstanceOf[Builder[A, Array[A]]] // the cast is safe, because the erasure of Array[A] is BoxedArray[A]
+  def newBuilder[T](implicit m: ClassManifest[T]): ArrayBuilder[T] = ArrayBuilder.make[T]()(m)
 
-  private def slowcopy(
-                     src : AnyRef,
-                  srcPos : Int,
-                    dest : AnyRef,
-                 destPos : Int,
-                  length : Int) {
-
-    val srcArray = boxArray(src).asInstanceOf[BoxedArray[AnyRef]]
-    val destArray = boxArray(dest).asInstanceOf[BoxedArray[AnyRef]]
-
-    var i = 0;
+  private def slowcopy(src : AnyRef,
+                       srcPos : Int,
+                       dest : AnyRef,
+                       destPos : Int,
+                       length : Int) {
+    var i = 0
     while (i < length) {
-      destArray(destPos + i) = srcArray(srcPos + i)
+      array_update(dest, i, array_apply(src, i))
       i += 1
     }
   }
@@ -70,102 +83,115 @@ object Array {
   }
 
   /** Returns array of length 0 */
-  def empty[A: ClassManifest]: Array[A] = new Array[A](0)
+  def empty[T: ClassManifest]: Array[T] = new Array[T](0)
 
   /** Create an array with given elements.
    *
    *  @param xs the elements to put in the array
    *  @return the array containing elements xs.
    */
-  def apply[A: ClassManifest](xs: A*): Array[A] = {
-    val array = new Array[A](xs.length)
+  def apply[T: ClassManifest](xs: T*): Array[T] = {
+    val array = new Array[T](xs.length)
     var i = 0
     for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
 
-  def apply(xs: Boolean*): Array[Boolean] = {
-    val array = new Array[Boolean](xs.length)
-    var i = 0
+  def apply(x: Boolean, xs: Boolean*): Array[Boolean] = {
+    val array = new Array[Boolean](xs.length + 1)
+    array(0) = x
+    var i = 1
     for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
 
-  def apply(xs: Byte*): Array[Byte] = {
-    val array = new Array[Byte](xs.length)
-    var i = 0
+  def apply(x: Byte, xs: Byte*): Array[Byte] = {
+    val array = new Array[Byte](xs.length + 1)
+    array(0) = x
+    var i = 1
     for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
 
-  def apply(xs: Short*): Array[Short] = {
-    val array = new Array[Short](xs.length)
-    var i = 0
+  def apply(x: Short, xs: Short*): Array[Short] = {
+    val array = new Array[Short](xs.length + 1)
+    array(0) = x
+    var i = 1
     for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
 
-  def apply(xs: Char*): Array[Char] = {
-    val array = new Array[Char](xs.length)
-    var i = 0
+  def apply(x: Char, xs: Char*): Array[Char] = {
+    val array = new Array[Char](xs.length + 1)
+    array(0) = x
+    var i = 1
     for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
 
-  def apply(xs: Int*): Array[Int] = {
-    val array = new Array[Int](xs.length)
-    var i = 0
+  def apply(x: Int, xs: Int*): Array[Int] = {
+    val array = new Array[Int](xs.length + 1)
+    array(0) = x
+    var i = 1
     for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
 
-  def apply(xs: Long*): Array[Long] = {
-    val array = new Array[Long](xs.length)
-    var i = 0
+  def apply(x: Long, xs: Long*): Array[Long] = {
+    val array = new Array[Long](xs.length + 1)
+    array(0) = x
+    var i = 1
     for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
 
-  def apply(xs: Float*): Array[Float] = {
-    val array = new Array[Float](xs.length)
-    var i = 0
+  def apply(x: Float, xs: Float*): Array[Float] = {
+    val array = new Array[Float](xs.length + 1)
+    array(0) = x
+    var i = 1
     for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
 
-  def apply(xs: Double*): Array[Double] = {
-    val array = new Array[Double](xs.length)
-    var i = 0
+  def apply(x: Double, xs: Double*): Array[Double] = {
+    val array = new Array[Double](xs.length + 1)
+    array(0) = x
+    var i = 1
     for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
 
-  def apply(xs: Unit*): Array[Unit] = {
-    val array = new Array[Unit](xs.length)
-    var i = 0
+  def apply(x: Unit, xs: Unit*): Array[Unit] = {
+    val array = new Array[Unit](xs.length + 1)
+    array(0) = x
+    var i = 1
     for (x <- xs.iterator) { array(i) = x; i += 1 }
     array
   }
 
   /** Create array with given dimensions */
-  def ofDim[A: ClassManifest](n1: Int): Array[A] =
-    new Array[A](n1)
-  def ofDim[A: ClassManifest](n1: Int, n2: Int): Array[Array[A]] =
-    tabulate(n1)(_ => ofDim[A](n2))
-  def ofDim[A: ClassManifest](n1: Int, n2: Int, n3: Int): Array[Array[Array[A]]] =
-    tabulate(n1)(_ => ofDim[A](n2, n3))
-  def ofDim[A: ClassManifest](n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[A]]]] =
-    tabulate(n1)(_ => ofDim[A](n2, n3, n4))
-  def ofDim[A: ClassManifest](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[A]]]]] =
-    tabulate(n1)(_ => ofDim[A](n2, n3, n4, n5))
+  def ofDim[T: ClassManifest](n1: Int): Array[T] =
+    new Array[T](n1)
+  def ofDim[T: ClassManifest](n1: Int, n2: Int): Array[Array[T]] = {
+    val arr: Array[Array[T]] = (new Array[Array[T]](n1): Array[Array[T]])
+    for (i <- 0 until n1) arr(i) = new Array[T](n2)
+    arr
+    // tabulate(n1)(_ => ofDim[T](n2))
+  }
+  def ofDim[T: ClassManifest](n1: Int, n2: Int, n3: Int): Array[Array[Array[T]]] =
+    tabulate(n1)(_ => ofDim[T](n2, n3))
+  def ofDim[T: ClassManifest](n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[T]]]] =
+    tabulate(n1)(_ => ofDim[T](n2, n3, n4))
+  def ofDim[T: ClassManifest](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[T]]]]] =
+    tabulate(n1)(_ => ofDim[T](n2, n3, n4, n5))
 
   /** Concatenate all argument sequences into a single array.
    *
    *  @param xs the given argument sequences
    *  @return   the array created from the concatenated arguments
    */
-  def concat[A: ClassManifest](xss: Traversable[A]*): Array[A] = {
-    val b = newBuilder[A]
+  def concat[T: ClassManifest](xss: Array[T]*): Array[T] = {
+    val b = newBuilder[T]
     b.sizeHint(xss.map(_.size).sum)
     for (xs <- xss) b ++= xs
     b.result
@@ -177,8 +203,8 @@ object Array {
    *  @param   n  the number of elements returned
    *  @param   elem the element computation
    */
-  def fill[A: ClassManifest](n: Int)(elem: => A): Array[A] = {
-    val b = newBuilder[A]
+  def fill[T: ClassManifest](n: Int)(elem: => T): Array[T] = {
+    val b = newBuilder[T]
     var i = 0
     while (i < n) {
       b += elem
@@ -194,7 +220,7 @@ object Array {
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   elem the element computation
    */
-  def fill[A: ClassManifest](n1: Int, n2: Int)(elem: => A): Array[Array[A]] =
+  def fill[T: ClassManifest](n1: Int, n2: Int)(elem: => T): Array[Array[T]] =
     tabulate(n1)(_ => fill(n2)(elem))
 
   /** A three-dimensional array that contains the results of some element
@@ -205,7 +231,7 @@ object Array {
    *  @param   n3  the number of elements in the 3nd dimension
    *  @param   elem the element computation
    */
-  def fill[A: ClassManifest](n1: Int, n2: Int, n3: Int)(elem: => A): Array[Array[Array[A]]] =
+  def fill[T: ClassManifest](n1: Int, n2: Int, n3: Int)(elem: => T): Array[Array[Array[T]]] =
     tabulate(n1)(_ => fill(n2, n3)(elem))
 
   /** A four-dimensional array that contains the results of some element
@@ -217,7 +243,7 @@ object Array {
    *  @param   n4  the number of elements in the 4th dimension
    *  @param   elem the element computation
    */
-  def fill[A: ClassManifest](n1: Int, n2: Int, n3: Int, n4: Int)(elem: => A): Array[Array[Array[Array[A]]]] =
+  def fill[T: ClassManifest](n1: Int, n2: Int, n3: Int, n4: Int)(elem: => T): Array[Array[Array[Array[T]]]] =
     tabulate(n1)(_ => fill(n2, n3, n4)(elem))
 
   /** A five-dimensional array that contains the results of some element
@@ -230,7 +256,7 @@ object Array {
    *  @param   n5  the number of elements in the 5th dimension
    *  @param   elem the element computation
    */
-  def fill[A: ClassManifest](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(elem: => A): Array[Array[Array[Array[Array[A]]]]] =
+  def fill[T: ClassManifest](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(elem: => T): Array[Array[Array[Array[Array[T]]]]] =
     tabulate(n1)(_ => fill(n2, n3, n4, n5)(elem))
 
   /** An array containing values of a given function over a range of integer
@@ -240,8 +266,8 @@ object Array {
    *  @param  f   The function computing element values
    *  @return A traversable consisting of elements `f(0), ..., f(n -1)`
    */
-  def tabulate[A: ClassManifest](n: Int)(f: Int => A): Array[A] = {
-    val b = newBuilder[A]
+  def tabulate[T: ClassManifest](n: Int)(f: Int => T): Array[T] = {
+    val b = newBuilder[T]
     var i = 0
     while (i < n) {
       b += f(i)
@@ -257,7 +283,7 @@ object Array {
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   f   The function computing element values
    */
-  def tabulate[A: ClassManifest](n1: Int, n2: Int)(f: (Int, Int) => A): Array[Array[A]] =
+  def tabulate[T: ClassManifest](n1: Int, n2: Int)(f: (Int, Int) => T): Array[Array[T]] =
     tabulate(n1)(i1 => tabulate(n2)(f(i1, _)))
 
   /** A three-dimensional array containing values of a given function over
@@ -268,7 +294,7 @@ object Array {
    *  @param   n3  the number of elements in the 3nd dimension
    *  @param   f   The function computing element values
    */
-  def tabulate[A: ClassManifest](n1: Int, n2: Int, n3: Int)(f: (Int, Int, Int) => A): Array[Array[Array[A]]] =
+  def tabulate[T: ClassManifest](n1: Int, n2: Int, n3: Int)(f: (Int, Int, Int) => T): Array[Array[Array[T]]] =
     tabulate(n1)(i1 => tabulate(n2, n3)(f(i1, _, _)))
 
   /** A four-dimensional array containing values of a given function over
@@ -280,7 +306,7 @@ object Array {
    *  @param   n4  the number of elements in the 4th dimension
    *  @param   f   The function computing element values
    */
-  def tabulate[A: ClassManifest](n1: Int, n2: Int, n3: Int, n4: Int)(f: (Int, Int, Int, Int) => A): Array[Array[Array[Array[A]]]] =
+  def tabulate[T: ClassManifest](n1: Int, n2: Int, n3: Int, n4: Int)(f: (Int, Int, Int, Int) => T): Array[Array[Array[Array[T]]]] =
     tabulate(n1)(i1 => tabulate(n2, n3, n4)(f(i1, _, _, _)))
 
   /** A five-dimensional array containing values of a given function over
@@ -293,7 +319,7 @@ object Array {
    *  @param   n5  the number of elements in the 5th dimension
    *  @param   f   The function computing element values
    */
-  def tabulate[A: ClassManifest](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(f: (Int, Int, Int, Int, Int) => A): Array[Array[Array[Array[Array[A]]]]] =
+  def tabulate[T: ClassManifest](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(f: (Int, Int, Int, Int, Int) => T): Array[Array[Array[Array[Array[T]]]]] =
     tabulate(n1)(i1 => tabulate(n2, n3, n4, n5)(f(i1, _, _, _, _)))
 
   /** An array containing a sequence of increasing integers in a range.
@@ -330,8 +356,8 @@ object Array {
    *  @param f     the function that's repeatedly applied
    *  @return      the array returning `len` values in the sequence `start, f(start), f(f(start)), ...`
    */
-  def iterate[A: ClassManifest](start: A, len: Int)(f: A => A): Array[A] = {
-    val b = newBuilder[A]
+  def iterate[T: ClassManifest](start: T, len: Int)(f: T => T): Array[T] = {
+    val b = newBuilder[T]
     var acc = start
     var i = 0
     while (i < len) {
@@ -347,7 +373,10 @@ object Array {
    *  @param x the selector value
    *  @return  sequence wrapped in an option, if this is a Sequence, otherwise none
    */
-  def unapplySeq[A](x: Array[A]): Some[Array[A]] = Some(x)
+  def unapplySeq[T](x: Array[T]): Option[Vector[T]] =
+    if (x == null) None else Some(x.toVector)
+    // !!! the null check should to be necessary, but without it 2241 fails. Seems to be a bug
+    // in pattern matcher.
 
   /** Create an array containing several copies of an element.
    *
@@ -356,8 +385,8 @@ object Array {
    *  @return     an array composed of n elements all equal to elem
    */
   @deprecated("use `Array.fill' instead")
-  def make[A: ClassManifest](n: Int, elem: A): Array[A] = {
-    val a = new Array[A](n)
+  def make[T: ClassManifest](n: Int, elem: T): Array[T] = {
+    val a = new Array[T](n)
     var i = 0
     while (i < n) {
       a(i) = elem
@@ -370,8 +399,8 @@ object Array {
    *  over given range <code>[0..n)</code>
    */
   @deprecated("use `Array.tabulate' instead")
-  def fromFunction[A: ClassManifest](f: Int => A)(n: Int): Array[A] = {
-    val a = new Array[A](n)
+  def fromFunction[T: ClassManifest](f: Int => T)(n: Int): Array[T] = {
+    val a = new Array[T](n)
     var i = 0
     while (i < n) {
       a(i) = f(i)
@@ -384,28 +413,28 @@ object Array {
    *  over given range <code>[0..n1, 0..n2)</code>
    */
   @deprecated("use `Array.tabulate' instead")
-  def fromFunction[A: ClassManifest](f: (Int, Int) => A)(n1: Int, n2: Int): Array[Array[A]] =
+  def fromFunction[T: ClassManifest](f: (Int, Int) => T)(n1: Int, n2: Int): Array[Array[T]] =
     fromFunction(i => fromFunction(f(i, _))(n2))(n1)
 
   /** Create an array containing the values of a given function <code>f</code>
    *  over given range <code>[0..n1, 0..n2, 0..n3)</code>
    */
   @deprecated("use `Array.tabulate' instead")
-  def fromFunction[A: ClassManifest](f: (Int, Int, Int) => A)(n1: Int, n2: Int, n3: Int): Array[Array[Array[A]]] =
+  def fromFunction[T: ClassManifest](f: (Int, Int, Int) => T)(n1: Int, n2: Int, n3: Int): Array[Array[Array[T]]] =
     fromFunction(i => fromFunction(f(i, _, _))(n2, n3))(n1)
 
   /** Create an array containing the values of a given function <code>f</code>
    *  over given range <code>[0..n1, 0..n2, 0..n3, 0..n4)</code>
    */
   @deprecated("use `Array.tabulate' instead")
-  def fromFunction[A: ClassManifest](f: (Int, Int, Int, Int) => A)(n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[A]]]] =
+  def fromFunction[T: ClassManifest](f: (Int, Int, Int, Int) => T)(n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[T]]]] =
     fromFunction(i => fromFunction(f(i, _, _, _))(n2, n3, n4))(n1)
 
   /** Create an array containing the values of a given function <code>f</code>
    *  over given range <code>[0..n1, 0..n2, 0..n3, 0..n4, 0..n5)</code>
    */
   @deprecated("use `Array.tabulate' instead")
-  def fromFunction[A: ClassManifest](f: (Int, Int, Int, Int, Int) => A)(n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[A]]]]] =
+  def fromFunction[T: ClassManifest](f: (Int, Int, Int, Int, Int) => T)(n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[T]]]]] =
     fromFunction(i => fromFunction(f(i, _, _, _, _))(n2, n3, n4, n5))(n1)
 }
 
@@ -415,11 +444,7 @@ object Array {
  *  @author Martin Odersky
  *  @version 1.0
  */
-final class Array[A](_length: Int) extends Vector[A]
-                                      with TraversableClass[A, Array]
-                                      with VectorTemplate[A, Array[A]] {
-
-  override def companion: Companion[Array] = throw new Error()
+final class Array[T](_length: Int) {
 
    /** Multidimensional array creation */
    @deprecated("use `Array.ofDim' instead")
@@ -494,7 +519,7 @@ final class Array[A](_length: Int) extends Vector[A]
    *  @throws ArrayIndexOutOfBoundsException if <code>i < 0</code> or
    *          <code>length <= i</code>
    */
-  def apply(i: Int): A = throw new Error()
+  def apply(i: Int): T = throw new Error()
 
   /** <p>
    *    Update the element at given index.
@@ -513,74 +538,5 @@ final class Array[A](_length: Int) extends Vector[A]
    *  @throws ArrayIndexOutOfBoundsException if <code>i < 0</code> or
    *          <code>length <= i</code>
    */
-  override def update(i: Int, x: A) { throw new Error() }
-
-  /** Creates a possible nested vector which consists of all the elements
-   *  of this array. If the elements are arrays themselves, the `deep' transformation
-   *  is applied recursively to them. The stringPrefix of the vector is
-   *  "Array", hence the vector prints like an array with all its
-   *  elements shown, and the same recursively for any subarrays.
-   *
-   *  Example:   Array(Array(1, 2), Array(3, 4)).deep.toString
-   *  prints:    Array(Array(1, 2), Array(3, 4))
-   */
-  def deep: Vector[Any] = throw new Error()
-
-  /**
-   *  @return a deep string representation of this array.
-   */
-  @deprecated("use deep.toString instead")
-  def deepToString(): String = throw new Error()
-
-  /** <p>
-   *    Returns a string representation of this array object. The resulting string
-   *    begins with the string <code>start</code> and is finished by the string
-   *    <code>end</code>. Inside, the string representations of elements (w.r.t.
-   *    the method <code>deepToString()</code>) are separated by the string
-   *    <code>sep</code>. For example:
-   *  </p>
-   *  <p>
-   *    <code>Array(Array(1, 2), Array(3)).deepMkString("[", "; ", "]") = "[[1; 2]; [3]]"</code>
-   *  </p>
-   *
-   *  @param start starting string.
-   *  @param sep separator string.
-   *  @param end ending string.
-   *  @return a string representation of this array object.
-   */
-  @deprecated("use deep.mkString instead")
-  def deepMkString(start: String, sep: String, end: String): String =
-    throw new Error()
-
-  /** Returns a string representation of this array object. The string
-   *  representations of elements (w.r.t. the method <code>deepToString()</code>)
-   *  are separated by the string <code>sep</code>.
-   *
-   *  @param sep separator string.
-   *  @return a string representation of this array object.
-   */
-  @deprecated("use deep.mkString instead")
-  def deepMkString(sep: String): String = throw new Error()
-
-  /** <p>
-   *    Returns <code>true</code> if the two specified arrays are
-   *    <em>deeply equal</em> to one another.
-   *  </p>
-   *  <p>
-   *    Two array references are considered deeply equal if both are null,
-   *    or if they refer to arrays that contain the same number of elements
-   *    and all corresponding pairs of elements in the two arrays are deeply
-   *    equal.
-   *  </p>
-   *  <p>
-   *    See also method <code>deepEquals</code> in the Java class
-   *    <a href="http://java.sun.com/javase/6/docs/api/java/util/Arrays.html"
-   *    target="_top">java.utils.Arrays</a>
-   *  </p>
-   *
-   *  @param that the second
-   *  @return     <code>true</code> iff both arrays are deeply equal.
-   */
-  @deprecated("use array1.deep.equals(array2.deep) instead")
-  def deepEquals(that: Any): Boolean = throw new Error()
+  def update(i: Int, x: T) { throw new Error() }
 }

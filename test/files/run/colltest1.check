@@ -14,10 +14,10 @@ new test starting with Stream()
 1
 Stream(1, ?)
 new test starting with Array()
-10: Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-9: Array(2, 3, 4, 5, 6, 7, 8, 9, 10)
+10: ArrayBuffer(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+9: ArrayBuffer(2, 3, 4, 5, 6, 7, 8, 9, 10)
 1
-Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+ArrayBuffer(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 new test starting with ArrayBuffer()
 10: ArrayBuffer(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 9: ArrayBuffer(2, 3, 4, 5, 6, 7, 8, 9, 10)

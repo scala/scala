@@ -702,10 +702,10 @@ object Test extends TestConsoleMain {
   object Bug995 extends TestCase("aladdin #995") {
     def foo(v: Any): String = v match {
       case s: Seq[_] => "Seq" // see hack in object Seq.unapplySeq
-      //case a: AnyRef if runtime.ScalaRunTime.isArray(a) => "Array"
+      case a: AnyRef if runtime.ScalaRunTime.isArray(a) => "Array"
       case _ => v.toString
     }
-    override def runTest { assertEquals("Seq", foo(Array(0))) }
+    override def runTest { assertEquals("Array", foo(Array(0))) }
   }
 
   // bug#1093 (contribution #460)

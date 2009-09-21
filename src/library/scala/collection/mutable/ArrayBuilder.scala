@@ -16,70 +16,21 @@ import scala.reflect.ClassManifest
 import scala.runtime.BoxedArray
 
 /** A builder class for arrays */
-class ArrayBuilder[A](manifest: ClassManifest[A]) extends Builder[A, BoxedArray[A]] {
-
-  private var elems: BoxedArray[A] = _
-  private var capacity: Int = 0
-  private var size: Int = 0
-
-  private def mkArray(size: Int): BoxedArray[A] = {
-    if (false && manifest != null) { // !!!
-      val newelems = manifest.newArray(size)
-      if (this.size > 0) Array.copy(elems.value, 0, newelems.value, 0, this.size)
-      newelems
-    } else { // !!!
-      val newelems = new scala.runtime.BoxedAnyArray[A](size)
-      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
-      newelems
-    }
-  }
-
-  private def resize(size: Int) {
-    elems = mkArray(size)
-    capacity = size
-  }
-
-  override def sizeHint(size: Int) {
-    if (capacity < size) resize(size)
-  }
-
-  private def ensureSize(size: Int) {
-    if (capacity < size) {
-      var newsize = if (capacity == 0) 16 else capacity * 2
-      while (newsize < size) newsize *= 2
-      resize(newsize)
-    }
-  }
-
-  def +=(elem: A): this.type = {
-    ensureSize(size + 1)
-    elems(size) = elem
-    size += 1
-    this
-  }
-
-  def clear() {
-    size = 0
-  }
-
-  def result() = {
-    if (capacity != 0 && capacity == size) elems
-    else mkArray(size)
-  }
-
-  // todo: add ++=
-}
+abstract class ArrayBuilder[T] extends Builder[T, Array[T]]
 
 object ArrayBuilder {
 
-  class ofRef[T <: AnyRef] extends Builder[T, Array[AnyRef]] {
+  def make[T: ClassManifest](): ArrayBuilder[T] =
+    implicitly[ClassManifest[T]].newArrayBuilder()
 
-    private var elems: Array[AnyRef] = _
+  class ofRef[T <: AnyRef : ClassManifest] extends ArrayBuilder[T] {
+
+    private var elems: Array[T] = _
     private var capacity: Int = 0
     private var size: Int = 0
 
-    private def mkArray(size: Int): Array[AnyRef] = {
-      val newelems = new Array[AnyRef](size)
+    private def mkArray(size: Int): Array[T] = {
+      val newelems = new Array[T](size)
       if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
       newelems
     }
@@ -94,8 +45,9 @@ object ArrayBuilder {
     }
 
     private def ensureSize(size: Int) {
+      if (capacity == 0) resize(16)
       if (capacity < size) {
-        var newsize = if (capacity == 0) 16 else capacity * 2
+        var newsize = capacity * 2
         while (newsize < size) newsize *= 2
         resize(newsize)
       }
@@ -111,7 +63,7 @@ object ArrayBuilder {
     override def ++=(xs: scala.collection.Traversable[T]): this.type = (xs: AnyRef) match {
       case xs: WrappedArray.ofRef[_] =>
         ensureSize(this.size + xs.length)
-        Array.copy(elems, this.size, xs.array, 0, xs.length)
+        Array.copy(xs.array, 0, elems, this.size, xs.length)
         size += xs.length
         this
       case _ =>
@@ -128,7 +80,7 @@ object ArrayBuilder {
     }
   }
 
-  class ofByte extends Builder[Byte, Array[Byte]] {
+  class ofByte extends ArrayBuilder[Byte] {
 
     private var elems: Array[Byte] = _
     private var capacity: Int = 0
@@ -150,8 +102,9 @@ object ArrayBuilder {
     }
 
     private def ensureSize(size: Int) {
+      if (capacity == 0) resize(16)
       if (capacity < size) {
-        var newsize = if (capacity == 0) 16 else capacity * 2
+        var newsize = capacity * 2
         while (newsize < size) newsize *= 2
         resize(newsize)
       }
@@ -167,7 +120,7 @@ object ArrayBuilder {
     override def ++=(xs: scala.collection.Traversable[Byte]): this.type = xs match {
       case xs: WrappedArray.ofByte =>
         ensureSize(this.size + xs.length)
-        Array.copy(elems, this.size, xs.array, 0, xs.length)
+        Array.copy(xs.array, 0, elems, this.size, xs.length)
         size += xs.length
         this
       case _ =>
@@ -184,7 +137,7 @@ object ArrayBuilder {
     }
   }
 
-  class ofShort extends Builder[Short, Array[Short]] {
+  class ofShort extends ArrayBuilder[Short] {
 
     private var elems: Array[Short] = _
     private var capacity: Int = 0
@@ -206,8 +159,9 @@ object ArrayBuilder {
     }
 
     private def ensureSize(size: Int) {
+      if (capacity == 0) resize(16)
       if (capacity < size) {
-        var newsize = if (capacity == 0) 16 else capacity * 2
+        var newsize = capacity * 2
         while (newsize < size) newsize *= 2
         resize(newsize)
       }
@@ -223,7 +177,7 @@ object ArrayBuilder {
     override def ++=(xs: scala.collection.Traversable[Short]): this.type = xs match {
       case xs: WrappedArray.ofShort =>
         ensureSize(this.size + xs.length)
-        Array.copy(elems, this.size, xs.array, 0, xs.length)
+        Array.copy(xs.array, 0, elems, this.size, xs.length)
         size += xs.length
         this
       case _ =>
@@ -240,7 +194,7 @@ object ArrayBuilder {
     }
   }
 
-  class ofChar extends Builder[Char, Array[Char]] {
+  class ofChar extends ArrayBuilder[Char] {
 
     private var elems: Array[Char] = _
     private var capacity: Int = 0
@@ -262,8 +216,9 @@ object ArrayBuilder {
     }
 
     private def ensureSize(size: Int) {
+      if (capacity == 0) resize(16)
       if (capacity < size) {
-        var newsize = if (capacity == 0) 16 else capacity * 2
+        var newsize = capacity * 2
         while (newsize < size) newsize *= 2
         resize(newsize)
       }
@@ -279,7 +234,7 @@ object ArrayBuilder {
     override def ++=(xs: scala.collection.Traversable[Char]): this.type = xs match {
       case xs: WrappedArray.ofChar =>
         ensureSize(this.size + xs.length)
-        Array.copy(elems, this.size, xs.array, 0, xs.length)
+        Array.copy(xs.array, 0, elems, this.size, xs.length)
         size += xs.length
         this
       case _ =>
@@ -296,7 +251,7 @@ object ArrayBuilder {
     }
   }
 
-  class ofInt extends Builder[Int, Array[Int]] {
+  class ofInt extends ArrayBuilder[Int] {
 
     private var elems: Array[Int] = _
     private var capacity: Int = 0
@@ -318,8 +273,9 @@ object ArrayBuilder {
     }
 
     private def ensureSize(size: Int) {
+      if (capacity == 0) resize(16)
       if (capacity < size) {
-        var newsize = if (capacity == 0) 16 else capacity * 2
+        var newsize = capacity * 2
         while (newsize < size) newsize *= 2
         resize(newsize)
       }
@@ -335,7 +291,7 @@ object ArrayBuilder {
     override def ++=(xs: scala.collection.Traversable[Int]): this.type = xs match {
       case xs: WrappedArray.ofInt =>
         ensureSize(this.size + xs.length)
-        Array.copy(elems, this.size, xs.array, 0, xs.length)
+        Array.copy(xs.array, 0, elems, this.size, xs.length)
         size += xs.length
         this
       case _ =>
@@ -352,7 +308,7 @@ object ArrayBuilder {
     }
   }
 
-  class ofLong extends Builder[Long, Array[Long]] {
+  class ofLong extends ArrayBuilder[Long] {
 
     private var elems: Array[Long] = _
     private var capacity: Int = 0
@@ -374,8 +330,9 @@ object ArrayBuilder {
     }
 
     private def ensureSize(size: Int) {
+      if (capacity == 0) resize(16)
       if (capacity < size) {
-        var newsize = if (capacity == 0) 16 else capacity * 2
+        var newsize = capacity * 2
         while (newsize < size) newsize *= 2
         resize(newsize)
       }
@@ -391,7 +348,7 @@ object ArrayBuilder {
     override def ++=(xs: scala.collection.Traversable[Long]): this.type = xs match {
       case xs: WrappedArray.ofLong =>
         ensureSize(this.size + xs.length)
-        Array.copy(elems, this.size, xs.array, 0, xs.length)
+        Array.copy(xs.array, 0, elems, this.size, xs.length)
         size += xs.length
         this
       case _ =>
@@ -408,7 +365,7 @@ object ArrayBuilder {
     }
   }
 
-  class ofFloat extends Builder[Float, Array[Float]] {
+  class ofFloat extends ArrayBuilder[Float] {
 
     private var elems: Array[Float] = _
     private var capacity: Int = 0
@@ -430,8 +387,9 @@ object ArrayBuilder {
     }
 
     private def ensureSize(size: Int) {
+      if (capacity == 0) resize(16)
       if (capacity < size) {
-        var newsize = if (capacity == 0) 16 else capacity * 2
+        var newsize = capacity * 2
         while (newsize < size) newsize *= 2
         resize(newsize)
       }
@@ -447,7 +405,7 @@ object ArrayBuilder {
     override def ++=(xs: scala.collection.Traversable[Float]): this.type = xs match {
       case xs: WrappedArray.ofFloat =>
         ensureSize(this.size + xs.length)
-        Array.copy(elems, this.size, xs.array, 0, xs.length)
+        Array.copy(xs.array, 0, elems, this.size, xs.length)
         size += xs.length
         this
       case _ =>
@@ -464,7 +422,7 @@ object ArrayBuilder {
     }
   }
 
-  class ofDouble extends Builder[Double, Array[Double]] {
+  class ofDouble extends ArrayBuilder[Double] {
 
     private var elems: Array[Double] = _
     private var capacity: Int = 0
@@ -486,8 +444,9 @@ object ArrayBuilder {
     }
 
     private def ensureSize(size: Int) {
+      if (capacity == 0) resize(16)
       if (capacity < size) {
-        var newsize = if (capacity == 0) 16 else capacity * 2
+        var newsize = capacity * 2
         while (newsize < size) newsize *= 2
         resize(newsize)
       }
@@ -503,7 +462,7 @@ object ArrayBuilder {
     override def ++=(xs: scala.collection.Traversable[Double]): this.type = xs match {
       case xs: WrappedArray.ofDouble =>
         ensureSize(this.size + xs.length)
-        Array.copy(elems, this.size, xs.array, 0, xs.length)
+        Array.copy(xs.array, 0, elems, this.size, xs.length)
         size += xs.length
         this
       case _ =>
@@ -520,7 +479,7 @@ object ArrayBuilder {
     }
   }
 
-  class ofBoolean extends Builder[Boolean, Array[Boolean]] {
+  class ofBoolean extends ArrayBuilder[Boolean] {
 
     private var elems: Array[Boolean] = _
     private var capacity: Int = 0
@@ -542,8 +501,9 @@ object ArrayBuilder {
     }
 
     private def ensureSize(size: Int) {
+      if (capacity == 0) resize(16)
       if (capacity < size) {
-        var newsize = if (capacity == 0) 16 else capacity * 2
+        var newsize = capacity * 2
         while (newsize < size) newsize *= 2
         resize(newsize)
       }
@@ -559,7 +519,7 @@ object ArrayBuilder {
     override def ++=(xs: scala.collection.Traversable[Boolean]): this.type = xs match {
       case xs: WrappedArray.ofBoolean =>
         ensureSize(this.size + xs.length)
-        Array.copy(elems, this.size, xs.array, 0, xs.length)
+        Array.copy(xs.array, 0, elems, this.size, xs.length)
         size += xs.length
         this
       case _ =>
@@ -576,7 +536,7 @@ object ArrayBuilder {
     }
   }
 
-  class ofUnit extends Builder[Unit, Array[Unit]] {
+  class ofUnit extends ArrayBuilder[Unit] {
 
     private var elems: Array[Unit] = _
     private var capacity: Int = 0
@@ -598,8 +558,9 @@ object ArrayBuilder {
     }
 
     private def ensureSize(size: Int) {
+      if (capacity == 0) resize(16)
       if (capacity < size) {
-        var newsize = if (capacity == 0) 16 else capacity * 2
+        var newsize = capacity * 2
         while (newsize < size) newsize *= 2
         resize(newsize)
       }
@@ -615,7 +576,7 @@ object ArrayBuilder {
     override def ++=(xs: scala.collection.Traversable[Unit]): this.type = xs match {
       case xs: WrappedArray.ofUnit =>
         ensureSize(this.size + xs.length)
-        Array.copy(elems, this.size, xs.array, 0, xs.length)
+        Array.copy(xs.array, 0, elems, this.size, xs.length)
         size += xs.length
         this
       case _ =>

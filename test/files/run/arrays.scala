@@ -348,13 +348,6 @@ object Test {
     val x1 = Array.concat(Array(1, 2), Array(3, 4))
     val y1 = Array(1, 2, 3, 4)
     check(x1 sameElements y1, x1.toList, y1.toList)
-
-    val x2 = Array.concat(List(1, 2), List(3, 4))
-    check(x2 sameElements y1, x2.toList, y1.toList)
-
-    val x3 = Array.concat(<a>aaa</a>, <x>xxx</x>)
-    val y3 = <a>aaa</a><x>xxx</x>;
-    check(x3 sameElements y3, x3.toList, y3.toList)
   }
 
   //##########################################################################

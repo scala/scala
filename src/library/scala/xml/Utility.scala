@@ -292,7 +292,7 @@ object Utility extends AnyRef with parsing.TokenTests
   def getName(s: String, index: Int): String = {
     if (index >= s.length) null
     else (s drop index) match {
-      case Seq(x, xs @ _*) if isNameStart(x)  => (Array(x) ++ (xs takeWhile isNameChar)).mkString
+      case Seq(x, xs @ _*) if isNameStart(x)  => x.toString + (xs takeWhile isNameChar).mkString
       case _                                  => ""
     }
   }

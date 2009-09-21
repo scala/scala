@@ -1,4 +1,4 @@
-class Foo[@specialized A] {
+class Foo[@specialized A: ClassManifest] {
 
   // conflicting in bounds, expect a normalized member calling m
   // and bridge + implementation in specialized subclasses

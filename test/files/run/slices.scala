@@ -23,24 +23,24 @@ object Test extends Application {
   println
 
   // arrays
-  println(Array(1, 2, 3, 4).slice(1, 2))
-  println(Array(1, 2, 3, 4).slice(2, 1))
-  println(Array(1, 2, 3, 4).slice(-1, 1))
-  println(Array(1, 2, 3, 4).slice(1, -1))
-  println(Array(1, 2, 3, 4).slice(-2, 2))
+  println(Array(1, 2, 3, 4).slice(1, 2).deep)
+  println(Array(1, 2, 3, 4).slice(2, 1).deep)
+  println(Array(1, 2, 3, 4).slice(-1, 1).deep)
+  println(Array(1, 2, 3, 4).slice(1, -1).deep)
+  println(Array(1, 2, 3, 4).slice(-2, 2).deep)
   println
 
-  println(Array(1, 2, 3, 4) take 3)
-  println(Array(1, 2, 3) take 3)
-  println(Array(1, 2) take 3)
-  println((Array(): Array[Int]) take 3)
-  println(Array[Nothing]() take 3)  // contrib #757
+  println(Array(1, 2, 3, 4) take 3 deep)
+  println(Array(1, 2, 3) take 3 deep)
+  println(Array(1, 2) take 3 deep)
+  println((Array(): Array[Int]) take 3 deep)
+//  println(Array[Nothing]() take 3)  // contrib #757
   println
 
-  println(Array(1, 2, 3, 4) drop 3)
-  println(Array(1, 2, 3) drop 3)
-  println(Array(1, 2) drop 3)
-  println((Array(): Array[Int]) drop 3)
-  println(Array[Nothing]() drop 3)
+  println(Array(1, 2, 3, 4) drop 3 deep)
+  println(Array(1, 2, 3) drop 3 deep)
+  println(Array(1, 2) drop 3 deep)
+  println((Array(): Array[Int]) drop 3 deep)
+//  println(Array[Nothing]() drop 3)
   println
 }
