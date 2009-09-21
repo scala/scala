@@ -1157,22 +1157,19 @@ trait Typers { self: Analyzer =>
             else
               psym addChild context.owner
           }
-          // !!! This block temporarily disabled because as of r18692 it is breaking
-          // the build.
-          //
-          // if (!(selfType <:< parent.tpe.typeOfThis) &&
-          //     !phase.erasedTypes &&
-          //     !(context.owner hasFlag SYNTHETIC) && // don't do this check for synthetic concrete classes for virtuals (part of DEVIRTUALIZE)
-          //     !(settings.suppressVTWarn.value))
-          // {
-          //   //Console.println(context.owner);//DEBUG
-          //   //Console.println(context.owner.unsafeTypeParams);//DEBUG
-          //   //Console.println(List.fromArray(context.owner.info.closure));//DEBUG
-          //   error(parent.pos, "illegal inheritance;\n self-type "+
-          //         selfType+" does not conform to "+parent +
-          //         "'s selftype "+parent.tpe.typeOfThis)
-          //   if (settings.explaintypes.value) explainTypes(selfType, parent.tpe.typeOfThis)
-          // }
+          if (!(selfType <:< parent.tpe.typeOfThis) &&
+              !phase.erasedTypes &&
+              !(context.owner hasFlag SYNTHETIC) && // don't do this check for synthetic concrete classes for virtuals (part of DEVIRTUALIZE)
+              !(settings.suppressVTWarn.value))
+          {
+            //Console.println(context.owner);//DEBUG
+            //Console.println(context.owner.unsafeTypeParams);//DEBUG
+            //Console.println(List.fromArray(context.owner.info.closure));//DEBUG
+            error(parent.pos, "illegal inheritance;\n self-type "+
+                  selfType+" does not conform to "+parent +
+                  "'s selftype "+parent.tpe.typeOfThis)
+            if (settings.explaintypes.value) explainTypes(selfType, parent.tpe.typeOfThis)
+          }
           if (parents exists (p => p != parent && p.tpe.typeSymbol == psym && !psym.isError))
             error(parent.pos, psym+" is inherited twice")
         }
