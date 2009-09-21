@@ -8,18 +8,33 @@ package scala.tools.nsc
 package ast.parser
 
 import scala.collection.mutable
+import mutable.{ Buffer, ArrayBuffer, ListBuffer, HashMap }
 import scala.util.control.ControlException
 import scala.tools.nsc.util.{Position,NoPosition,SourceFile,CharArrayReader}
 import scala.xml.{Text, TextBuffer}
 import SourceFile.{SU,LF}
 import scala.annotation.switch
 
+// XXX/Note: many/most of the functions in here are almost direct cut and pastes
+// from another file - scala.xml.parsing.MarkupParser, it looks like.
+// (It was like that when I got here.) They used to be commented "[Duplicate]" but
+// since approximately all of them were, I snipped it as noise.  As far as I can
+// tell this wasn't for any particularly good reason, but slightly different
+// compiler and library parser interfaces meant it would take some setup.
+//
+// I rewrote most of these, but not as yet the library versions: so if you are
+// tempted to touch any of these, please be aware of that situation and try not
+// to let it get any worse.  -- paulp
+
 /** This trait ...
  *
  *  @author  Burak Emir
  *  @version 1.0
  */
-trait MarkupParsers {self: Parsers =>
+trait MarkupParsers
+{
+  self: Parsers =>
+
   case object MissingEndTagException extends RuntimeException with ControlException {
     override def getMessage = "start tag was here: "
   }
@@ -34,42 +49,62 @@ trait MarkupParsers {self: Parsers =>
 
   import global._
 
-  class MarkupParser(parser: UnitParser, presWS: Boolean) /*with scala.xml.parsing.MarkupParser[Tree,Tree] */{
+  class MarkupParser(parser: UnitParser, final val preserveWS: Boolean) {
 
-    import Tokens.{EMPTY, LBRACE, RBRACE}
+    import Tokens.{ EMPTY, LBRACE, RBRACE }
 
-    final val preserveWS = presWS
     var input : CharArrayReader = _
 
-    import parser.{symbXMLBuilder => handle, o2p, r2p}
+    import parser.{ symbXMLBuilder => handle, o2p, r2p }
 
     def curOffset : Int = input.charOffset - 1
     var tmppos : Position = NoPosition
     def ch = input.ch
     /** this method assign the next character to ch and advances in input */
-    def nextch = { val result = input.ch; input.nextChar(); result } // { s.in.next; /*s.xNext;*/ ch = s.in.ch ; pos = s.in.cpos }
+    def nextch = { val result = input.ch; input.nextChar(); result }
 
     var xEmbeddedBlock = false
+
+    /** Execute body with a variable saved and restored after execution */
+    def saving[A,B](getter: A, setter: (A) => Unit)(body: => B): B = {
+      val saved = getter
+      try body
+      finally setter(saved)
+    }
 
     /** munch expected XML token, report syntax error for unexpected.
      *
      *  @param that ...
      */
-    /*[Duplicate]*/
     def xToken(that: Char): Unit =
       if (ch == that) nextch
       else if (ch == SU) throw TruncatedXML
-      else reportSyntaxError("'" + that + "' expected instead of '" + ch + "'")
+      else reportSyntaxError("'%s' expected instead of '%s'".format(that, ch))
 
-    var debugLastStartElement = new mutable.Stack[(Int, String)]
+    private var debugLastStartElement = new mutable.Stack[(Int, String)]
+    private def debugLastPos = debugLastStartElement.top._1
+    private def debugLastElem = debugLastStartElement.top._2
+    private def unreachable = Predef.error("Cannot be reached.")
+
+    private def errorBraces() = {
+      reportSyntaxError("in XML content, please use '}}' to express '}'")
+      throw ConfusedAboutBracesException
+    }
+    private def errorNoEnd(tag: String) = {
+      reportSyntaxError("expected closing tag of " + tag)
+      throw MissingEndTagException
+    }
+    private def errorAndResult[T](msg: String, x: T): T = {
+      reportSyntaxError(msg)
+      x
+    }
 
     /** checks whether next character starts a Scala block, if yes, skip it.
      * @return true if next character starts a scala block
      */
-    /*[Duplicate]*/ def xCheckEmbeddedBlock: Boolean = {
+    def xCheckEmbeddedBlock: Boolean = {
       // attentions, side-effect, used in xText
       xEmbeddedBlock = (ch == '{') && { nextch; (ch != '{') }
-      //Console.println("pos = "+pos+" xEmbeddedBlock returns "+xEmbeddedBlock)
       xEmbeddedBlock
     }
 
@@ -79,25 +114,25 @@ trait MarkupParsers {self: Parsers =>
      *                      | `"` { _ } `"`
      *                      | `{` scalablock `}`
      */
-    /*[Duplicate]*/ def xAttributes = {
-      var aMap = new mutable.HashMap[String, Tree]()
+    def xAttributes = {
+      val aMap = new HashMap[String, Tree]()
+
       while (xml.Parsing.isNameStart(ch)) {
         val start = curOffset
         val key = xName
         xEQ
         val delim = ch
         val mid = curOffset
-        val value: /* AttribValue[*/Tree/*]*/ = ch match {
+        val value: Tree = ch match {
           case '"' | '\'' =>
             nextch
             val tmp = xAttributeValue(delim)
             nextch
-            try {
-              handle.parseAttribute(r2p(start, mid, curOffset), tmp)
-            } catch {
-              case e =>
-                reportSyntaxError("error parsing attribute value")
-                parser.errorTermTree
+
+            try handle.parseAttribute(r2p(start, mid, curOffset), tmp)
+            catch {
+              case e: RuntimeException =>
+                errorAndResult("error parsing attribute value", parser.errorTermTree)
             }
 
           case '{'  =>
@@ -106,18 +141,15 @@ trait MarkupParsers {self: Parsers =>
           case SU =>
             throw TruncatedXML
           case _ =>
-            reportSyntaxError("' or \" delimited attribute value" +
-                              " or '{' scala-expr '}' expected" )
-            Literal(Constant("<syntax-error>"))
+            errorAndResult("' or \" delimited attribute value or '{' scala-expr '}' expected", Literal(Constant("<syntax-error>")))
         }
         // well-formedness constraint: unique attribute names
-        if (aMap.contains(key)) {
-          reportSyntaxError( "attribute "+key+" may only be defined once" )
-        }
-        aMap.update(key, value)
-        if ((ch != '/') && (ch != '>')) {
+        if (aMap contains key)
+          reportSyntaxError("attribute %s may only be defined once" format key)
+
+        aMap(key) = value
+        if (ch != '/' && ch != '>')
           xSpace
-        }
       }
       aMap
     }
@@ -125,52 +157,45 @@ trait MarkupParsers {self: Parsers =>
     /** attribute value, terminated by either ' or ". value may not contain <.
      *  @param endch either ' or "
      */
-    /*[Duplicate]*/ def xAttributeValue(endCh: Char): String = {
+    def xAttributeValue(endCh: Char): String = {
       val buf = new StringBuilder
       while (ch != endCh) {
-        if (ch == SU)
-          throw TruncatedXML
-        buf append ch
-        nextch
+        // well-formedness constraint
+        if (ch == '<') return errorAndResult("'<' not allowed in attrib value", "")
+        else if (ch == SU) throw TruncatedXML
+        else buf append nextch
       }
-      val str = buf.toString()
-
       // @todo: normalize attribute value
-      // well-formedness constraint
-      if (str.indexOf('<') != -1) {
-        reportSyntaxError( "'<' not allowed in attrib value" ); ""
-      } else {
-        str
-      }
+      buf.toString
     }
 
     /** parse a start or empty tag.
      *  [40] STag         ::= '<' Name { S Attribute } [S]
      *  [44] EmptyElemTag ::= '<' Name { S Attribute } [S]
      */
-    /*[Duplicate]*/ def xTag: (String, mutable.Map[String, Tree]) = {
+    def xTag: (String, mutable.Map[String, Tree]) = {
       val elemName = xName
       xSpaceOpt
-      val aMap =
-        if (xml.Parsing.isNameStart(ch)) xAttributes
-        else new mutable.HashMap[String, Tree]()
-      (elemName, aMap)
+
+      (elemName, xAttributes)
     }
 
     /** [42]  '<' xmlEndTag ::=  '<' '/' Name S? '>'
      */
-    /*[Duplicate]*/
     def xEndTag(startName: String) {
       xToken('/')
-      val endName = xName
-      if (endName != startName) {
-        reportSyntaxError("expected closing tag of " + startName)
-        throw MissingEndTagException
-      }
+      if (xName != startName)
+        errorNoEnd(startName)
+
       xSpaceOpt
       xToken('>')
     }
 
+    /** Create a non-destructive lookahead reader and see if the head
+     *  of the input would match the given String.  If yes, return true
+     *  and drop the entire String from input; if no, return false
+     *  and leave input unchanged.
+     */
     private def peek(lookingFor: String): Boolean = {
       val la = input.lookaheadReader
       for (c <- lookingFor) {
@@ -183,43 +208,45 @@ trait MarkupParsers {self: Parsers =>
       true
     }
 
+    /** Take characters from input stream until given String "until"
+     *  is seen.  Once seen, the accumulated characters are passed
+     *  along with the current Position to the supplied handler function.
+     */
+    private def xTakeUntil[T](
+      handler: (Position, String) => T,
+      positioner: () => Position,
+      until: String): T =
+    {
+      val sb = new StringBuilder
+      val head = until charAt 0
+      val rest = until drop 1
+
+      while (true) {
+        if (ch == head && peek(rest))
+          return handler(positioner(), sb.toString)
+        else if (ch == SU)
+          throw TruncatedXML
+
+        sb append ch
+        nextch
+      }
+      unreachable
+    }
+
     /** '<! CharData ::= [CDATA[ ( {char} - {char}"]]>"{char} ) ']]>'
      *
      * see [15]
      */
-    /*[Duplicate]*/
     def xCharData: Tree = {
       val start = curOffset
       "[CDATA[" foreach xToken
       val mid = curOffset
-      val sb = new StringBuilder
-
-      while (true) {
-        if (ch == ']' && peek("]>"))
-          return handle.charData(r2p(start, mid, curOffset), sb.toString)
-        else if (ch == SU)
-          throw TruncatedXML
-
-        sb append ch
-        nextch
-      }
-      Predef.error("this cannot happen")
+      xTakeUntil(handle.charData, () => r2p(start, mid, curOffset), "]]>")
     }
 
     def xUnparsed: Tree = {
       val start = curOffset
-      val sb = new StringBuilder
-
-      while (true) {
-        if (ch == '<' && peek("/xml:unparsed>"))
-          return handle.unparsed(r2p(start, start, curOffset), sb.toString)
-        else if (ch == SU)
-          throw TruncatedXML
-
-        sb append ch
-        nextch
-      }
-      Predef.error("this cannot happen")
+      xTakeUntil(handle.unparsed, () => r2p(start, start, curOffset), "</xml:unparsed>")
     }
 
     /** CharRef ::= "&#" '0'..'9' {'0'..'9'} ";"
@@ -227,7 +254,6 @@ trait MarkupParsers {self: Parsers =>
      *
      * see [66]
      */
-    /*[Duplicate]*/
     def xCharRef: String = {
       val hex = (ch == 'x') && { nextch; true }
       val base = if (hex) 16 else 10
@@ -257,31 +283,13 @@ trait MarkupParsers {self: Parsers =>
      *
      * see [15]
      */
-    /*[Duplicate]*/
     def xComment: Tree = {
       val start = curOffset - 2   // Rewinding to include "<!"
-      val sb = new StringBuilder
       "--" foreach xToken
-
-      while (true) {
-        if (ch == '-' && peek("->"))
-          return handle.comment(r2p(start, start, curOffset), sb.toString)
-        else if (ch == SU)
-          throw TruncatedXML
-
-        sb append ch
-        nextch
-      }
-      Predef.error("this cannot happen")
+      xTakeUntil(handle.comment, () => r2p(start, start, curOffset), "-->")
     }
 
-    /**
-     *  @param pos ...
-     *  @param ts  ...
-     *  @param txt ...
-     */
-    /*[Duplicate]*/
-    def appendText(pos: Position, ts: mutable.Buffer[Tree], txt: String) {
+    def appendText(pos: Position, ts: Buffer[Tree], txt: String) {
       val toAppend =
         if (preserveWS) Seq(txt)
         else TextBuffer.fromString(txt).toText map (_.text)
@@ -289,29 +297,31 @@ trait MarkupParsers {self: Parsers =>
       toAppend foreach (t => ts append handle.text(pos, t))
     }
 
-    /** adds entity/character to to ts as side-effect
+    /** adds entity/character to ts as side-effect
      *  @precond ch == '&amp;'
      */
-    def content_AMP(ts: mutable.ArrayBuffer[Tree]) {
+    def content_AMP(ts: ArrayBuffer[Tree]) {
       nextch
-      ch match {
+      val toAppend = ch match {
         case '#' => // CharacterRef
           nextch
           val theChar = handle.text(tmppos, xCharRef)
           xToken(';')
-          ts.append(theChar)
-        case _ => // EntityRef
+          theChar
+        case _ =>   // EntityRef
           val n = xName
           xToken(';')
-          ts.append(handle.entityRef(tmppos, n))
+          handle.entityRef(tmppos, n)
       }
+
+      ts append toAppend
     }
 
     /**
      *  @precond ch == '{'
      *  @postcond: xEmbeddedBlock == false!
      */
-    def content_BRACE(p: Position, ts: mutable.ArrayBuffer[Tree]): Unit =
+    def content_BRACE(p: Position, ts: ArrayBuffer[Tree]): Unit =
       if (xCheckEmbeddedBlock) ts append xEmbeddedExpr
       else appendText(p, ts, xText)
 
@@ -321,7 +331,7 @@ trait MarkupParsers {self: Parsers =>
      *  @param ts ...
      *  @return   ...
      */
-    private def content_LT(ts: mutable.ArrayBuffer[Tree]): Boolean = {
+    private def content_LT(ts: ArrayBuffer[Tree]): Boolean = {
       if (ch == '/')
         return true   // end tag
 
@@ -335,44 +345,38 @@ trait MarkupParsers {self: Parsers =>
       false
     }
 
-    /*[Duplicate]*/
-    def content: mutable.Buffer[Tree] = {
-      var ts = new mutable.ArrayBuffer[Tree]
-      var exit = false
-      while (!exit) {
+    def content: Buffer[Tree] = {
+      val ts = new ArrayBuffer[Tree]
+      while (true) {
         if (xEmbeddedBlock)
-          ts.append(xEmbeddedExpr)
+          ts append xEmbeddedExpr
         else {
           tmppos = o2p(curOffset)
           ch match {
-            case '<' => // end tag, cdata, comment, pi or child node
-              nextch
-              exit = content_LT(ts)
-            case '{' => // either the character '{' or an embedded scala block
-              content_BRACE(tmppos, ts)
-            case '&' => // EntityRef or CharRef
-              content_AMP(ts)
-            case SU =>
-              exit = true
-            case _ =>  // text content
-              appendText(tmppos, ts, xText)
-              // here xEmbeddedBlock might be true
+            // end tag, cdata, comment, pi or child node
+            case '<'  => nextch ; if (content_LT(ts)) return ts
+            // either the character '{' or an embedded scala block }
+            case '{'  => content_BRACE(tmppos, ts)  // }
+            // EntityRef or CharRef
+            case '&'  => content_AMP(ts)
+            case SU   => return ts
+            // text content - here xEmbeddedBlock might be true
+            case _    => appendText(tmppos, ts, xText)
           }
         }
       }
-      ts
+      unreachable
     }
 
     /** '<' element ::= xmlTag1 '>'  { xmlExpr | '{' simpleExpr '}' } ETag
      *                | xmlTag1 '/' '>'
      */
-    /*[Duplicate]*/ def element: Tree = {
+    def element: Tree = {
       val start = curOffset
       val (qname, attrMap) = xTag
       if (ch == '/') { // empty element
-        xToken('/')
-        xToken('>')
-        handle.element(r2p(start, start, curOffset), qname, attrMap, new mutable.ListBuffer[Tree])
+        "/>" foreach xToken
+        handle.element(r2p(start, start, curOffset), qname, attrMap, new ListBuffer[Tree])
       }
       else { // handle content
         xToken('>')
@@ -399,195 +403,152 @@ trait MarkupParsers {self: Parsers =>
      *  pre-condition:  ch != ':' // assured by definition of XMLSTART token
      *  post-condition: name does neither start, nor end in ':'
      */
-    /*[Duplicate]*/   def xName: String = {
-      if (ch == SU) {
-	throw TruncatedXML
-      } else if ( !xml.Parsing.isNameStart(ch)) {
-        reportSyntaxError("name expected, but char '"+ch+"' cannot start a name")
-        return ""
-      }
+    def xName: String = {
+      if (ch == SU) throw TruncatedXML
+      else if (!xml.Parsing.isNameStart(ch))
+        return errorAndResult("name expected, but char '%s' cannot start a name" format ch, "")
+
       val buf = new StringBuilder
-      do {
-        buf append ch; nextch
-      } while (xml.Parsing.isNameChar(ch))
-      if (':' == buf.last) {
+
+      do buf append nextch
+      while (xml.Parsing.isNameChar(ch))
+
+      if (buf.last == ':') {
         reportSyntaxError( "name cannot end in ':'" )
-        buf.setLength(buf.length - 1)
+        buf setLength (buf.length - 1)
       }
-      val n = buf.toString().intern()
-      //cbuf.length = 0
-      n
+      buf.toString.intern
     }
 
     /** scan [S] '=' [S]*/
-    /*[Duplicate]*/   def xEQ = { xSpaceOpt; xToken('='); xSpaceOpt }
+    def xEQ = { xSpaceOpt; xToken('='); xSpaceOpt }
 
     /** skip optional space S? */
-    /*[Duplicate]*/   def xSpaceOpt = { while (xml.Parsing.isSpace(ch)) { nextch }}
+    def xSpaceOpt = { while (xml.Parsing.isSpace(ch)) { nextch }}
 
     /** scan [3] S ::= (#x20 | #x9 | #xD | #xA)+ */
-    /*[Duplicate]*/ def xSpace =
+    def xSpace =
       if (xml.Parsing.isSpace(ch)) { nextch; xSpaceOpt }
-      else if (ch == SU)
-        throw TruncatedXML
+      else if (ch == SU) throw TruncatedXML
       else reportSyntaxError("whitespace expected")
 
     /** '<?' ProcInstr ::= Name [S ({Char} - ({Char}'>?' {Char})]'?>'
      *
      * see [15]
      */
-    /*[Duplicate]*/ def xProcInstr: Tree = {
-      val sb = new StringBuilder()
+    // <?xml2 version="1.0" encoding="UTF-8" standalone="yes"?>
+    def xProcInstr: Tree = {
       val n = xName
-
-      if (xml.Parsing.isSpace(ch)) {
-        xSpace
-        while (true) {
-          if (ch == '?' && { sb.append(ch); nextch; ch == '>' }) {
-            sb.length = sb.length - 1
-            nextch
-            return handle.procInstr(tmppos, n, sb.toString)
-          } else
-            sb.append(ch);
-          nextch
-        }
-      }
-      xToken('?')
-      xToken('>')
-      handle.procInstr(tmppos, n, sb.toString)
+      xSpaceOpt
+      xTakeUntil(handle.procInstr(_: Position, n, _:String), () => tmppos, "?>")
     }
 
     /** parse character data.
      *  precondition: xEmbeddedBlock == false (we are not in a scala block)
      */
-    /*[Duplicate]*/ def xText: String = {
-      if (xEmbeddedBlock) Predef.error("internal error: encountered embedded block"); // assert
-      var exit = false
+    def xText: String = {
+      assert(!xEmbeddedBlock, "internal error: encountered embedded block")
       val buf = new StringBuilder
-      while (!exit && (ch!=SU)) {
-        val expectRBRACE = ch == '}'
-        if (expectRBRACE) {
-          val la = input.lookaheadReader
-          la.nextChar()
-          if (la.ch != '}') {
-            reportSyntaxError("in XML content, please use '}}' to express '}'")
-            throw ConfusedAboutBracesException
-          }
-          nextch
+      def done = buf.toString
+
+      while (ch != SU) {
+        if (ch == '}') {
+          if (charComingAfter(nextch) == '}') nextch
+          else errorBraces
         }
+
         buf append ch
         nextch
-        exit = xCheckEmbeddedBlock ||(ch == '<') || (ch == '&')
+        if (xCheckEmbeddedBlock || ch == '<' ||  ch == '&')
+          return done
       }
-      buf.toString
+      done
     }
 
-    /** append Unicode character to name buffer*/
-    //private def putChar(c: char) = cbuf.append(c)
+    /** Some try/catch/finally logic used by xLiteral and xLiteralPattern.  */
+    private def xLiteralCommon(f: () => Tree, ifTruncated: Exception => Unit): Tree =
+      try f()
+      catch {
+        case ex: RuntimeException =>
+          ex match {
+            case c @ TruncatedXML =>
+              ifTruncated(c)
+            case c @ (MissingEndTagException | ConfusedAboutBracesException) =>
+              parser.syntaxError(debugLastPos, c.getMessage + debugLastElem + ">")
+            case _: ArrayIndexOutOfBoundsException =>
+              parser.syntaxError(debugLastPos, "missing end tag in XML literal for <%s>" format debugLastElem)
+            case _ => throw ex
+          }
+          EmptyTree
+      }
+      finally parser.in resume Tokens.XMLSTART
+
+    /** Use a lookahead parser to run speculative body, and return the first char afterward. */
+    private def charComingAfter(body: => Unit): Char = {
+      input = input.lookaheadReader
+      body
+      val res = ch
+      input = parser.in
+      res
+    }
 
     /** xLiteral = element { element }
      *  @return Scala representation of this xml literal
-     *  precondition: s.xStartsXML == true
      */
-    def xLiteral: Tree = try {
-      input = parser.in
-      handle.isPattern = false
-
-      //val pos = s.currentPos
-      var tree:Tree = null
-      val ts = new mutable.ArrayBuffer[Tree]()
-      val start = curOffset
-      tmppos = o2p(curOffset)    // Iuli: added this line, as it seems content_LT uses tmppos when creating trees
-//      assert(ch == '<')
-//      nextch
-      content_LT(ts)
-      //Console.println("xLiteral:ts = "+ts.toList)
-      //lastend = s.in.bp
-      //lastch  = s.in.ch
-      //if (settings.debug.value) {
-      //  Console.println("DEBUG 1: I am getting char '"+ch+"' at lastend "+lastend+" pos = "+pos); // DEBUG
-      //}
-      input = input.lookaheadReader
-      xSpaceOpt
-      // parse more XML ?
-      if (ch == '<') {
+    def xLiteral: Tree = xLiteralCommon(
+      () => {
         input = parser.in
-        xSpaceOpt
-        while (ch == '<') {
-          nextch
-          ts.append(element)
+        handle.isPattern = false
+
+        val ts = new ArrayBuffer[Tree]
+        val start = curOffset
+        tmppos = o2p(curOffset)    // Iuli: added this line, as it seems content_LT uses tmppos when creating trees
+        content_LT(ts)
+
+        // parse more XML ?
+        if (charComingAfter(xSpaceOpt) == '<') {
           xSpaceOpt
+          while (ch == '<') {
+            nextch
+            ts append element
+            xSpaceOpt
+          }
+          handle.makeXMLseq(r2p(start, start, curOffset), ts)
         }
-        tree = handle.makeXMLseq(r2p(start, start, curOffset), ts)
-      } else {
-        input = parser.in
-        assert(ts.length == 1)
-        tree = ts(0)
-      }
-      tree
-    } catch {
-      case c @ TruncatedXML =>
-        parser.incompleteInputError(c.getMessage)
-        EmptyTree
-
-      case c @ (MissingEndTagException | ConfusedAboutBracesException) =>
-        parser.syntaxError((debugLastStartElement.top._1):Int,
-                           c.getMessage + debugLastStartElement.top._2+">")
-        EmptyTree
-
-      case _:ArrayIndexOutOfBoundsException =>
-        parser.syntaxError((debugLastStartElement.top._1),
-                      "missing end tag in XML literal for <"
-                      +debugLastStartElement.top._2+">");
-        EmptyTree
-    } finally {
-      parser.in.resume(Tokens.XMLSTART)
-    }
+        else {
+          assert(ts.length == 1)
+          ts(0)
+        }
+      },
+      ex => parser.incompleteInputError(ex.getMessage)
+    )
 
     /** @see xmlPattern. resynchronizes after successful parse
      *  @return this xml pattern
-     *  precondition: s.xStartsXML == true
      */
-    def xLiteralPattern: Tree = try {
-      input = parser.in
-      val oldMode = handle.isPattern;
-      handle.isPattern = true
-//      assert(ch == '<')
-//      nextch
-      var tree = xPattern; xSpaceOpt;
-      handle.isPattern = oldMode;
-      tree
-    } catch {
-      case c @ TruncatedXML =>
-        parser.syntaxError(curOffset, c.getMessage)
-        EmptyTree
-
-      case c @ (MissingEndTagException | ConfusedAboutBracesException) =>
-        parser.syntaxError((debugLastStartElement.top._1),
-                      c.getMessage + debugLastStartElement.top._2+">")
-        EmptyTree
-
-      case _:ArrayIndexOutOfBoundsException =>
-        parser.syntaxError((debugLastStartElement.top._1),
-                      "missing end tag in XML literal for <"
-                      +debugLastStartElement.top._2+">")
-        EmptyTree
-    } finally {
-      parser.in.resume(Tokens.XMLSTART)
-    }
+    def xLiteralPattern: Tree = xLiteralCommon(
+      () => {
+        input = parser.in
+        saving[Boolean, Tree](handle.isPattern, handle.isPattern = _) {
+          handle.isPattern = true
+          val tree = xPattern
+          xSpaceOpt
+          tree
+        }
+      },
+      ex => parser.syntaxError(curOffset, ex.getMessage)
+    )
 
     def escapeToScala[A](op: => A, kind: String) = {
       xEmbeddedBlock = false
-      val savedSepRegions = parser.in.sepRegions
-      parser.in.resume(LBRACE)
-
-      try op
-      finally {
-        parser.in.sepRegions = savedSepRegions // parser.in.sepRegions.tail
-        if (parser.in.token != RBRACE) {
-          reportSyntaxError(" expected end of Scala "+kind)
-        }
+      val res = saving[List[Int], A](parser.in.sepRegions, parser.in.sepRegions = _) {
+        parser.in resume LBRACE
+        op
       }
+      if (parser.in.token != RBRACE)
+        reportSyntaxError(" expected end of Scala "+kind)
+
+      res
     }
 
     def xEmbeddedExpr: Tree = escapeToScala(parser.block(), "block")
@@ -596,35 +557,11 @@ trait MarkupParsers {self: Parsers =>
      */
     def xScalaPatterns: List[Tree] = escapeToScala(parser.patterns(true), "pattern")
 
-    var scannerState: List[List[Int]] = Nil
-
-/*
-    private def pushScannerState {
-      scannerState = s.sepRegions :: scannerState
-      s.sepRegions = Nil
-    }
-    private def popScannerState {
-      s.sepRegions = scannerState.head
-      scannerState = scannerState.tail
-    }
-    */
-/*
-    private def init {
-      ch = s.in.ch
-      curOffset = s.in.ccurOffset
-    }
-    */
-
     def reportSyntaxError(str: String) = {
       parser.syntaxError(curOffset, "in XML literal: " + str)
       nextch
     }
-/*
-    private def sync {
-      xEmbeddedBlock = false
-      s.xSync
-    }
-*/
+
     /** '<' xPattern  ::= Name [S] { xmlPattern | '{' pattern3 '}' } ETag
      *                  | Name [S] '/' '>'
      */
@@ -633,50 +570,46 @@ trait MarkupParsers {self: Parsers =>
       val qname = xName
       debugLastStartElement.push((start, qname))
       xSpaceOpt
-      if (ch == '/') { // empty tag
-        nextch
-        xToken('>')
-        return handle.makeXMLpat(r2p(start, start, curOffset), qname, new mutable.ArrayBuffer[Tree]())
-      }
 
-      // else: tag with content
+      val ts = new ArrayBuffer[Tree]
+      val isEmptyTag = (ch == '/') && { nextch ; true }
       xToken('>')
-      var ts = new mutable.ArrayBuffer[Tree]
-      var exit = false
-      while (! exit) {
-        val start1 = curOffset
-        if (xEmbeddedBlock) {
-          ts ++= xScalaPatterns
-        } else
-          ch match {
-            case '<' => // tag
+
+      if (!isEmptyTag) {
+        // recurses until it hits a termination condition, then returns
+        def doPattern: Boolean = {
+          val start1 = curOffset
+          if (xEmbeddedBlock) ts ++= xScalaPatterns
+          else ch match {
+            case '<'  => // tag
               nextch
-              if (ch != '/') { //child
-                ts.append(xPattern)
-              } else {
-                exit = true
-              }
-            case '{' => // embedded Scala patterns
+              if (ch != '/') ts append xPattern   // child
+              else return false                   // terminate
+
+            case '{'  => // embedded Scala patterns
               while (ch == '{') {
                 nextch
                 ts ++= xScalaPatterns
               }
-              // postcond: xEmbeddedBlock = false;
-              if (xEmbeddedBlock) Predef.error("problem with embedded block"); // assert
+              assert(!xEmbeddedBlock, "problem with embedded block")
 
-            case SU =>
+            case SU   =>
               throw TruncatedXML
 
-            case _ => // text
+            case _    => // text
               appendText(r2p(start1, start1, curOffset), ts, xText)
-              // here  xEmbeddedBlock might be true;
-              //if( xEmbeddedBlock ) throw new ApplicationError("after:"+text); // assert
+              // here xEmbeddedBlock might be true:
+              // if (xEmbeddedBlock) throw new ApplicationError("after:"+text); // assert
           }
+          true
+        }
+
+        while (doPattern) { }  // call until false
+        xEndTag(qname)
+        debugLastStartElement.pop
       }
-      xEndTag(qname)
-      debugLastStartElement.pop
+
       handle.makeXMLpat(r2p(start, start, curOffset), qname, ts)
     }
-
   } /* class MarkupParser */
 }
