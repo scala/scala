@@ -24,4 +24,7 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
   val stylesheetfile = StringSetting    ("-stylesheetfile", "stylesheetfile", "File to change style of the generated documentation", "style.css")
   val pagetop        = StringSetting    ("-top", "pagetop", "Include top text for each page", "")
   val windowtitle    = StringSetting    ("-windowtitle", "windowtitle", "Specify window title of generated HTML documentation", "Scala 2")
+
+  // working around issue described in r18708.
+  suppressVTWarn.value = true
 }

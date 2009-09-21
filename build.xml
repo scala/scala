@@ -1148,7 +1148,6 @@ DOCUMENTATION
     <stopwatch name="docs.lib.timer"/>
     <mkdir dir="${build-docs.dir}/library"/>
     <scaladoc
-	  addParams="-Ysuppress-vt-typer-warnings"
       destdir="${build-docs.dir}/library"
       windowtitle="Scala Library"
       doctitle="Scala ${version.number} API"
@@ -1232,7 +1231,6 @@ DOCUMENTATION
     <stopwatch name="docs.comp.timer"/>
     <mkdir dir="${build-docs.dir}/compiler"/>
     <scaladoc
-	  addParams="-Ysuppress-vt-typer-warnings"
       destdir="${build-docs.dir}/compiler"
       windowtitle="Scala Compiler"
       doctitle="Scala Compiler ${version.number} API"
