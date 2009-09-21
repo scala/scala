@@ -106,7 +106,7 @@ END-USER TARGETS
   <target name="replacelocker"
     description="Replaces the Locker compiler and library by fresh ones built from current sources.">
     <antcall target="palo.clean"/>
-    <antcall target="palo.done"/>
+    <antcall target="unlocklocker"/>
   </target>
   <target name="freshlocker.optimise">
     <property name="scalac.args.optimise" value="-optimise"/>
