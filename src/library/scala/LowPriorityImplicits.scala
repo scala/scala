@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Predef.scala 18558 2009-08-24 14:03:30Z moors $
+// $Id$
 
 
 package scala
@@ -14,9 +14,13 @@ package scala
 import collection.mutable._
 import collection.immutable.WrappedString
 
-/** The `LowPriorityImplicits` class provides implicit values that are
- *  valid in all Scala compilation units without explicit qualification, but that
- *  are partially overridden by higher-priority conmversions in Predef
+/** The `LowPriorityImplicits` class provides implicit values that
+ *  are valid in all Scala compilation units without explicit qualification,
+ *  but that are partially overridden by higher-priority conversions in object
+ *  `Predef`.
+ *
+ *  @author  Martin Odersky
+ *  @since 2.8
  */
 class LowPriorityImplicits {
 

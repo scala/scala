@@ -1,11 +1,19 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
- * @author  Martin Odersky
- */
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
 // $Id$
+
 
 package scala.util
 
+/**
+ *  @author  Martin Odersky
+ */
 object NameTransformer {
   private val nops = 128
   private val ncodes = 26 * 26

@@ -15,7 +15,7 @@ package scala
  * @since 2.8
  */
 object Numeric {
-   trait BigIntIsIntegral extends Integral[BigInt] {
+  trait BigIntIsIntegral extends Integral[BigInt] {
     def plus(x: BigInt, y: BigInt): BigInt = x + y
     def minus(x: BigInt, y: BigInt): BigInt = x - y
     def times(x: BigInt, y: BigInt): BigInt = x * y

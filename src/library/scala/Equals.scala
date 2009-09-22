@@ -8,19 +8,21 @@
 
 // $Id: Equals.scala 18478 2009-08-13 21:30:20Z stepancheg $
 
+
 package scala
 
-/** An interface containing operations for equality
- *  The only method not already present in AnyRef is canEqual
+/** An interface containing operations for equality.
+ *  The only method not already present in class `AnyRef` is `canEqual`.
  */
 trait Equals {
+
   /** A method that should be called from every well-designed equals method
-   *  that is open to be overridden in a subclass. See Programming in Scala, Chapter 28
-   *  for discussion and design.
+   *  that is open to be overridden in a subclass. See Programming in Scala,
+   *  Chapter 28 for discussion and design.
    */
   def canEqual(that: Any): Boolean
 
-  /** The equality method defined in AnyRef
+  /** The equality method defined in `AnyRef`.
    */
   def equals(that: Any): Boolean
 }

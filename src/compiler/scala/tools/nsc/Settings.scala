@@ -136,37 +136,39 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
 
     def doArgs(args: List[String]): List[String] = {
       if (args.isEmpty) return Nil
-      val p = args.head
-      if (p == "") return args.tail // it looks like ant passes "" sometimes
-
-      if (!p.startsWith("-")) {
-        errorFn("Parameter '" + p + "' does not start with '-'.")
-        return args
+      val arg :: rest = args
+      if (arg == "") {
+        // it looks like Ant passes "" sometimes
+        doArgs(rest)
       }
-      else if (p == "-") {
+      else if (!arg.startsWith("-")) {
+        errorFn("Argument '" + arg + "' does not start with '-'.")
+        args
+      }
+      else if (arg == "-") {
         errorFn("'-' is not a valid argument.")
-        return args
+        args
       }
-
-      // we dispatch differently based on the appearance of p:
-      // 1) If it has a : it is presumed to be -Xfoo:bar,baz
-      // 2) If the first two chars are the name of a command, -Dfoo=bar
-      // 3) Otherwise, the whole string should be a command name
-      //
-      // Internally we use Option[List[String]] to discover error,
-      // but the outside expects our arguments back unchanged on failure
-      if (p contains ":") parseColonArg(p) match {
-        case Some(_)  => args.tail
-        case None     => args
-      }
-      else if (isPropertyArg(p)) parsePropertyArg(p) match {
-        case Some(_)  => args.tail
-        case None     => args
-      }
-      else parseNormalArg(p, args.tail) match {
-        case Some(xs) => xs
-        case None     => args
-      }
+      else
+        // we dispatch differently based on the appearance of p:
+        // 1) If it has a : it is presumed to be -Xfoo:bar,baz
+        // 2) If the first two chars are the name of a command, -Dfoo=bar
+        // 3) Otherwise, the whole string should be a command name
+        //
+        // Internally we use Option[List[String]] to discover error,
+        // but the outside expects our arguments back unchanged on failure
+        if (arg contains ":") parseColonArg(arg) match {
+          case Some(_)  => doArgs(rest)
+          case None     => args
+        }
+        else if (isPropertyArg(arg)) parsePropertyArg(arg) match {
+          case Some(_)  => doArgs(rest)
+          case None     => args
+        }
+        else parseNormalArg(arg, rest) match {
+          case Some(xs) => xs
+          case None     => args
+        }
     }
 
     doArgs(args)

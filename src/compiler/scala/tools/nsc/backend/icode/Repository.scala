@@ -36,7 +36,7 @@ trait Repository {
   def icode(sym: Symbol, force: Boolean): IClass =
     if (available(sym)) icode(sym).get
     else {
-    	log("loading " + sym)
+      log("loading " + sym)
       load(sym)
       assert(available(sym))
       loaded(sym)
