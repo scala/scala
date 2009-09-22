@@ -94,10 +94,11 @@ class BatchSourceFile(val file : AbstractFile, val content: Array[Char]) extends
     }
 
   def isLineBreak(idx: Int) =
-    if (idx >= length) false else content(idx) match {
+    if (idx >= length) false else {
+      val ch = content(idx)
       // don't identify the CR in CR LF as a line break, since LF will do.
-      case CR => (idx + 1 == length) || (content(idx + 1) != LF)
-      case x  => isLineBreakChar(x.toChar)
+      if (ch == CR) (idx + 1 == length) || (content(idx + 1) != LF)
+      else isLineBreakChar(ch)
     }
 
   private lazy val lineIndices: Array[Int] = {

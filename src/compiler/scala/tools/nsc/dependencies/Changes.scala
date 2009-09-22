@@ -20,9 +20,8 @@ abstract class Changes {
 
   /** Are the new modifiers more restrictive than the old ones? */
   private def moreRestrictive(from: Long, to: Long): Boolean =
-    ((((to & PRIVATE) != 0) && (from & PRIVATE) == 0)
-     || (((to & PROTECTED) != 0) && (from & PROTECTED) == 0))
-
+    ((((to & PRIVATE) != 0L) && (from & PRIVATE) == 0L)
+     || (((to & PROTECTED) != 0L) && (from & PROTECTED) == 0L))
 
   /** An entity in source code, either a class or a member definition.
    *  Name is fully-qualified.

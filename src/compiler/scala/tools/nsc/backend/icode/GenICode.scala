@@ -1349,6 +1349,36 @@ abstract class GenICode extends SubComponent  {
         ctx1.bb.close
       }
 
+      /** Log equality tests to file if they are playing with typefire */
+      def logEqEq(l: Tree, r: Tree, op: String) {
+        def mayBeNumericComparison: Boolean = {
+          def isPossiblyBoxed(sym: Symbol): Boolean = {
+            import definitions._
+
+            // good enough for now
+            (sym == ObjectClass) ||
+            (sym isNonBottomSubClass BoxedNumberClass) ||
+            (sym isNonBottomSubClass BoxedCharacterClass)
+          }
+
+          val lsym = l.tpe.typeSymbol
+          val rsym = r.tpe.typeSymbol
+
+          (lsym != rsym) && (isPossiblyBoxed(lsym) && isPossiblyBoxed(rsym))
+        }
+
+        val tkl = toTypeKind(l.tpe)
+        val tkr = toTypeKind(r.tpe)
+        lazy val whereAreWe = tree.pos.source + ":" + tree.pos.line
+        def logit(preface: String) =
+          runtime.BoxesRunTime.log("[%s] %s %s %s (%s)".format(preface, l.tpe, op, r.tpe, whereAreWe))
+
+        if (tkl.isNumericType && tkr.isNumericType && tkl != tkr)
+          logit(" KNOWN ")
+        else if (mayBeNumericComparison)
+          logit("UNKNOWN")
+      }
+
       if (settings.debug.value)
         log("Entering genCond with tree: " + tree);
 
@@ -1363,6 +1393,9 @@ abstract class GenICode extends SubComponent  {
             }
             else if ((code == scalaPrimitives.EQ || code == scalaPrimitives.NE)) {
               val Select(leftArg, _) = fun;
+              if (settings.logEquality.value)
+                logEqEq(leftArg, args.head, (if (code == scalaPrimitives.EQ) "==" else "!="))
+
               if (toTypeKind(leftArg.tpe).isReferenceType) {
                 if (code == scalaPrimitives.EQ)
                   genEqEqPrimitive(leftArg, args.head, ctx, thenCtx, elseCtx)
@@ -1393,9 +1426,6 @@ abstract class GenICode extends SubComponent  {
                   genCond(args.head, ctxInterm, thenCtx, elseCtx)
 
                 case _ =>
-                  // TODO (maybe): deal with the equals case here
-                  // Current semantics: rich equals (from runtime.Comparator) only when == is used
-                  // See genEqEqPrimitive for implementation
                   var ctx1 = genLoad(tree, ctx, BOOL)
                   ctx1.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL), tree.pos)
                   ctx1.bb.close
@@ -1510,9 +1540,7 @@ abstract class GenICode extends SubComponent  {
             nonNullCtx.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL))
             nonNullCtx.bb.close
         }
-
       }
-
     }
 
     /**

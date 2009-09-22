@@ -511,7 +511,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
             drainSendBuffer(mailbox)
             // keep going
             () => {}
-          } else if (msec == 0) {
+          } else if (msec == 0L) {
             done = true
             receiveTimeout
           } else {
@@ -601,7 +601,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
             drainSendBuffer(mailbox)
             // keep going
             () => {}
-          } else if (msec == 0) {
+          } else if (msec == 0L) {
             done = true
             receiveTimeout
           } else {

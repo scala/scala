@@ -16,6 +16,7 @@ import scala.tools.nsc.util.{Position, NoPosition}
 import Flags._
 import PickleFormat._
 import collection.mutable.{HashMap, ListBuffer}
+import annotation.switch
 
 /** This abstract class implements ..
  *
@@ -101,7 +102,7 @@ abstract class UnPickler {
 
     /** Does entry represent an (internal) symbol */
     private def isSymbolEntry(i: Int): Boolean = {
-      val tag = bytes(index(i))
+      val tag = bytes(index(i)).toInt
       (firstSymTag <= tag && tag <= lastSymTag &&
        (tag != CLASSsym || !isRefinementSymbolEntry(i)))
     }
@@ -114,19 +115,19 @@ abstract class UnPickler {
 
     /** Does entry represent a name? */
     private def isNameEntry(i: Int): Boolean = {
-      val tag = bytes(index(i))
+      val tag = bytes(index(i)).toInt
       tag == TERMname || tag == TYPEname
     }
 
     /** Does entry represent a symbol annotation? */
     private def isSymbolAnnotationEntry(i: Int): Boolean = {
-      val tag = bytes(index(i))
+      val tag = bytes(index(i)).toInt
       tag == SYMANNOT
     }
 
     /** Does the entry represent children of a symbol? */
     private def isChildrenEntry(i: Int): Boolean = {
-      val tag = bytes(index(i))
+      val tag = bytes(index(i)).toInt
       tag == CHILDREN
     }
 
@@ -136,7 +137,7 @@ abstract class UnPickler {
     private def isRefinementSymbolEntry(i: Int): Boolean = {
       val savedIndex = readIndex
       readIndex = index(i)
-      val tag = readByte()
+      val tag = readByte().toInt
       if (tag != CLASSsym) assert(false)
       readNat(); // read length
       val result = readNameRef() == nme.REFINE_CLASS_NAME.toTypeName
@@ -230,10 +231,10 @@ abstract class UnPickler {
             case CLASSsym =>
               sym =
                 if (name == classRoot.name && owner == classRoot.owner)
-                  (if ((flags & MODULE) != 0) moduleRoot.moduleClass
+                  (if ((flags & MODULE) != 0L) moduleRoot.moduleClass
                    else classRoot)
                 else
-                  if ((flags & MODULE) != 0) owner.newModuleClass(NoPosition, name)
+                  if ((flags & MODULE) != 0L) owner.newModuleClass(NoPosition, name)
                   else owner.newClass(NoPosition, name)
               if (readIndex != end) sym.typeOfThis = new LazyTypeRef(readNat())
             case MODULEsym =>
@@ -351,11 +352,11 @@ abstract class UnPickler {
 
     /** Read a constant */
     private def readConstant(): Constant = {
-      val tag = readByte()
+      val tag = readByte().toInt
       val len = readNat()
-      tag match {
+      (tag: @switch) match {
         case LITERALunit    => Constant(())
-        case LITERALboolean => Constant(if (readLong(len) == 0) false else true)
+        case LITERALboolean => Constant(if (readLong(len) == 0L) false else true)
         case LITERALbyte    => Constant(readLong(len).asInstanceOf[Byte])
         case LITERALshort   => Constant(readLong(len).asInstanceOf[Short])
         case LITERALchar    => Constant(readLong(len).asInstanceOf[Char])

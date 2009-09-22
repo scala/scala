@@ -854,7 +854,7 @@ trait Scanners {
 
   def isSpecial(c: Char) = {
     val chtp = Character.getType(c)
-    chtp == Character.MATH_SYMBOL || chtp == Character.OTHER_SYMBOL
+    chtp == Character.MATH_SYMBOL.toInt || chtp == Character.OTHER_SYMBOL.toInt
   }
 
   def isOperatorPart(c : Char) : Boolean = (c: @switch) match {

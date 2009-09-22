@@ -717,10 +717,10 @@ trait Types {
             val sym = entry.sym
             if (sym.getFlag(requiredFlags) == requiredFlags) {
               val excl = sym.getFlag(excluded)
-              if (excl == 0 &&
+              if (excl == 0L &&
                   (// omit PRIVATE LOCALS unless selector class is contained in class owning the def.
                    (bcs eq bcs0) ||
-                   sym.getFlag(PRIVATE | LOCAL) != (PRIVATE | LOCAL) ||
+                   sym.getFlag(PRIVATE | LOCAL) != (PRIVATE | LOCAL).toLong ||
                    (bcs0.head.hasTransOwner(bcs.head)))) {
                 if (name.isTypeName || stableOnly && sym.isStable) {
 //                  if (util.Statistics.enabled) findMemberNanos += System.nanoTime() - startTime
@@ -752,7 +752,7 @@ trait Types {
                     members enter sym
                   }
                 }
-              } else if (excl == DEFERRED) {
+              } else if (excl == DEFERRED.toLong) {
                 continue = true
               }
             }

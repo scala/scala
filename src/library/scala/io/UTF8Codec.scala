@@ -33,7 +33,7 @@ object UTF8Codec
 
   @deprecated("""Use new String(Array(ch), 0, 1).getBytes("UTF-8") instead""")
   def encode(ch: Int): Array[Byte] =
-    if ((Character getType ch) == Character.SURROGATE) UNI_REPLACEMENT_BYTES
+    if ((Character getType ch) == Character.SURROGATE.toInt) UNI_REPLACEMENT_BYTES
     else try new String(Array(ch), 0, 1) getBytes "UTF-8" catch {
       case _: IllegalArgumentException  => UNI_REPLACEMENT_BYTES
     }

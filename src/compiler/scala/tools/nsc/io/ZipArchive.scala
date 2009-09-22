@@ -299,8 +299,9 @@ final class URLZipArchive(url: URL) extends AbstractFile with ZipContainer
 
   /** Private methods **/
   private def byteInputStream(in: InputStream): InputStream = {
+    val minusOne = (-1).toByte
     val buf = new BufferedInputStream(in)
-    val bytes = Iterator continually in.read().toByte takeWhile (_ != -1)
+    val bytes = Iterator continually in.read().toByte takeWhile (_ != minusOne)
     new ByteArrayInputStream(bytes.toSequence.toArray)
   }
 }

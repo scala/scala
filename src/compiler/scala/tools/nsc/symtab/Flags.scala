@@ -192,7 +192,7 @@ object Flags {
       var mask=m
       var i=0
       while (i <= 62) {
-	if ((mask&1) == 1) return i
+	if ((mask&1) == 1L) return i
 	mask >>= 1
 	i += 1
       }
@@ -255,16 +255,16 @@ object Flags {
     var f = flags
     val pw =
       if (privateWithin == "") {
-        if ((flags & (PRIVATE | LOCAL)) == (PRIVATE | LOCAL)) {
+        if ((flags & (PRIVATE | LOCAL)) == (PRIVATE | LOCAL).toLong) {
           f = f & ~(PRIVATE | LOCAL)
           "private[this]"
-        } else if ((flags & (PROTECTED | LOCAL)) == (PROTECTED | LOCAL)) {
+        } else if ((flags & (PROTECTED | LOCAL)) == (PROTECTED | LOCAL).toLong) {
           f = f & ~(PROTECTED | LOCAL)
           "protected[this]"
         } else {
           ""
         }
-      } else if ((f & PROTECTED) != 0) {
+      } else if ((f & PROTECTED) != 0L) {
         f = f & ~PROTECTED
         "protected[" + privateWithin + "]"
       } else {
@@ -327,9 +327,9 @@ object Flags {
   }
 
   class Flag(mods: Long) {
-    def isPrivate   = (mods & PRIVATE  ) != 0
-    def isProtected = (mods & PROTECTED) != 0
-    def isVariable  = (mods &   MUTABLE) != 0
+    def isPrivate   = (mods & PRIVATE  ) != 0L
+    def isProtected = (mods & PROTECTED) != 0L
+    def isVariable  = (mods &   MUTABLE) != 0L
     def isPublic    = !isPrivate && !isProtected
   }
 }

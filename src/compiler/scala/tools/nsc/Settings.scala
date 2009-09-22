@@ -105,7 +105,10 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
     ): Option[List[String]] =
       lookupSetting(cmd) match {
         case None       => errorFn("Parameter '" + cmd + "' is not recognised by Scalac.") ; None
-        case Some(cmd)  => setter(cmd)(args)
+        case Some(cmd)  =>
+          val res = setter(cmd)(args)
+          cmd.postSetHook()
+          res
       }
 
     // if arg is of form -Xfoo:bar,baz,quux
@@ -357,6 +360,12 @@ object Settings {
     private[Settings] def setErrorHandler(e: String => Unit) = _errorFn = e
     def errorFn(msg: String) = _errorFn(msg)
     def errorAndValue[T](msg: String, x: T): T = { errorFn(msg) ; x }
+
+    /** Will be called after this Setting is set, for any cases where the
+     *  Setting wants to perform extra work. */
+    private var _postSetHook: () => Unit = () => ()
+    def postSetHook(): Unit = _postSetHook()
+    def withPostSetHook(f: () => Unit): this.type = { _postSetHook = f ; this }
 
     /** After correct Setting has been selected, tryToSet is called with the
      *  remainder of the command line.  It consumes any applicable arguments and
@@ -807,6 +816,8 @@ trait ScalacSettings {
                                           withHelpSyntax("-Ysqueeze:<enabled>")
   val Ystatistics   = BooleanSetting    ("-Ystatistics", "Print compiler statistics")
   val stop          = PhasesSetting     ("-Ystop", "Stop after phase")
+  val logEquality   = BooleanSetting    ("-Ylog-equality", "Log all noteworthy equality tests (hardcoded to /tmp/scala-equality-log.txt)") .
+                        withPostSetHook(() => scala.runtime.BoxesRunTime.setEqEqLogging(true))
   val refinementMethodDispatch =
                       ChoiceSetting     ("-Ystruct-dispatch", "Selects dispatch method for structural refinement method calls",
                         List("no-cache", "mono-cache", "poly-cache", "invoke-dynamic"), "poly-cache") .

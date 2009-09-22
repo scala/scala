@@ -84,7 +84,7 @@ abstract class OverridingPairs {
           fillDecls(bcs.tail, deferredflag)
           var e = bcs.head.info.decls.elems;
           while (e ne null) {
-            if (e.sym.getFlag(DEFERRED) == deferredflag && !exclude(e.sym))
+            if (e.sym.getFlag(DEFERRED) == deferredflag.toLong && !exclude(e.sym))
               decls enter e.sym;
             e = e.next
           }

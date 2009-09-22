@@ -106,8 +106,8 @@ abstract class ClassfileParser {
       throw new IOException("class file '" + in.file + "' "
                             + "has wrong magic number 0x" + toHexString(magic)
                             + ", should be 0x" + toHexString(JAVA_MAGIC))
-    val minorVersion = in.nextChar
-    val majorVersion = in.nextChar
+    val minorVersion = in.nextChar.toInt
+    val majorVersion = in.nextChar.toInt
     if ((majorVersion < JAVA_MAJOR_VERSION) ||
         ((majorVersion == JAVA_MAJOR_VERSION) &&
          (minorVersion < JAVA_MINOR_VERSION)))
@@ -151,7 +151,7 @@ abstract class ClassfileParser {
       var name = values(index).asInstanceOf[Name]
       if (name eq null) {
         val start = starts(index)
-        if (in.buf(start) != CONSTANT_UTF8) errorBadTag(start)
+        if (in.buf(start).toInt != CONSTANT_UTF8) errorBadTag(start)
         name = newTermName(in.buf, start + 3, in.getChar(start + 1))
         values(index) = name
       }
@@ -172,7 +172,7 @@ abstract class ClassfileParser {
       var c = values(index).asInstanceOf[Symbol]
       if (c eq null) {
         val start = starts(index)
-        if (in.buf(start) != CONSTANT_CLASS) errorBadTag(start)
+        if (in.buf(start).toInt != CONSTANT_CLASS) errorBadTag(start)
         val name = getExternalName(in.getChar(start + 1))
         if (name.endsWith("$"))
           c = definitions.getModule(name.subName(0, name.length - 1))
@@ -188,7 +188,7 @@ abstract class ClassfileParser {
      */
     def getClassName(index: Int): Name = {
       val start = starts(index)
-      if (in.buf(start) != CONSTANT_CLASS) errorBadTag(start)
+      if (in.buf(start).toInt != CONSTANT_CLASS) errorBadTag(start)
       getExternalName(in.getChar(start + 1))
     }
 
@@ -206,9 +206,10 @@ abstract class ClassfileParser {
       var f = values(index).asInstanceOf[Symbol]
       if (f eq null) {
         val start = starts(index)
-        if (in.buf(start) != CONSTANT_FIELDREF &&
-            in.buf(start) != CONSTANT_METHODREF &&
-            in.buf(start) != CONSTANT_INTFMETHODREF) errorBadTag(start)
+        val first = in.buf(start).toInt
+        if (first != CONSTANT_FIELDREF &&
+            first != CONSTANT_METHODREF &&
+            first != CONSTANT_INTFMETHODREF) errorBadTag(start)
         val ownerTpe = getClassOrArrayType(in.getChar(start + 1))
         if (settings.debug.value)
           log("getMemberSymbol(static: " + static + "): owner type: " + ownerTpe + " " + ownerTpe.typeSymbol.originalName)
@@ -260,11 +261,11 @@ abstract class ClassfileParser {
       var p = values(index).asInstanceOf[(Name, Type)]
       if (p eq null) {
         val start = starts(index)
-        if (in.buf(start) != CONSTANT_NAMEANDTYPE) errorBadTag(start)
-        val name = getName(in.getChar(start + 1))
+        if (in.buf(start).toInt != CONSTANT_NAMEANDTYPE) errorBadTag(start)
+        val name = getName(in.getChar(start + 1).toInt)
         // create a dummy symbol for method types
         val dummySym = ownerTpe.typeSymbol.newMethod(ownerTpe.typeSymbol.pos, name)
-        var tpe  = getType(dummySym, in.getChar(start + 3))
+        var tpe  = getType(dummySym, in.getChar(start + 3).toInt)
 
         // fix the return type, which is blindly set to the class currently parsed
         if (name == nme.CONSTRUCTOR)
@@ -288,7 +289,7 @@ abstract class ClassfileParser {
       var c: Type = null
       if (value eq null) {
         val start = starts(index)
-        if (in.buf(start) != CONSTANT_CLASS) errorBadTag(start)
+        if (in.buf(start).toInt != CONSTANT_CLASS) errorBadTag(start)
         val name = getExternalName(in.getChar(start + 1))
         if (name(0) == ARRAY_TAG) {
           c = sigToType(null, name)
@@ -321,9 +322,9 @@ abstract class ClassfileParser {
       var value = values(index)
       if (value eq null) {
         val start = starts(index)
-        value = in.buf(start) match {
+        value = (in.buf(start).toInt: @switch) match {
           case CONSTANT_STRING =>
-            Constant(getName(in.getChar(start + 1)).toString())
+            Constant(getName(in.getChar(start + 1).toInt).toString())
           case CONSTANT_INTEGER =>
             Constant(in.getInt(start + 1))
           case CONSTANT_FLOAT =>
@@ -399,7 +400,7 @@ abstract class ClassfileParser {
 
   def parseClass() {
     val jflags = in.nextChar
-    val isAnnotation = (jflags & JAVA_ACC_ANNOTATION) != 0
+    val isAnnotation = hasAnnotation(jflags)
     var sflags = transFlags(jflags, true)
     var nameIdx = in.nextChar
     externalName = pool.getClassName(nameIdx)
@@ -452,7 +453,7 @@ abstract class ClassfileParser {
       for (i <- 0 until methodCount) parseMethod()
       if (!sawPrivateConstructor &&
           (instanceDefs.lookup(nme.CONSTRUCTOR) == NoSymbol &&
-           (sflags & INTERFACE) == 0))
+           (sflags & INTERFACE) == 0L))
         {
           //Console.println("adding constructor to " + clazz);//DEBUG
           instanceDefs.enter(
@@ -480,8 +481,8 @@ abstract class ClassfileParser {
   def parseField() {
     val jflags = in.nextChar
     var sflags = transFlags(jflags, false)
-    if ((sflags & FINAL) == 0) sflags = sflags | MUTABLE
-    if ((sflags & PRIVATE) != 0 && !global.settings.XO.value) {
+    if ((sflags & FINAL) == 0L) sflags = sflags | MUTABLE
+    if ((sflags & PRIVATE) != 0L && !global.settings.XO.value) {
       in.skip(4); skipAttributes()
     } else {
       val name = pool.getName(in.nextChar)
@@ -496,9 +497,9 @@ abstract class ClassfileParser {
   }
 
   def parseMethod() {
-    val jflags = in.nextChar
+    val jflags = in.nextChar.toInt
     var sflags = transFlags(jflags, false)
-    if ((jflags & JAVA_ACC_PRIVATE) != 0 && !global.settings.XO.value) {
+    if (isPrivate(jflags) && !global.settings.XO.value) {
       val name = pool.getName(in.nextChar)
       if (name == nme.CONSTRUCTOR)
         sawPrivateConstructor = true
@@ -506,7 +507,7 @@ abstract class ClassfileParser {
     } else {
       if ((jflags & JAVA_ACC_BRIDGE) != 0)
         sflags |= BRIDGE
-      if ((sflags & PRIVATE) != 0 && global.settings.XO.value) {
+      if ((sflags & PRIVATE) != 0L && global.settings.XO.value) {
         in.skip(4); skipAttributes()
       } else {
         val name = pool.getName(in.nextChar)
@@ -517,7 +518,7 @@ abstract class ClassfileParser {
             case MethodType(params, restpe) =>
               // if this is a non-static inner class, remove the explicit outer parameter
               val newParams = innerClasses.get(externalName) match {
-                case Some(entry) if !isScalaRaw && (entry.jflags & JAVA_ACC_STATIC) == 0 =>
+                case Some(entry) if !isScalaRaw && !isStatic(entry.jflags) =>
                   assert(params.head.tpe.typeSymbol == clazz.owner, params.head.tpe.typeSymbol + ": " + clazz.owner)
                   params.tail
                 case _ =>
@@ -944,10 +945,10 @@ abstract class ClassfileParser {
         case nme.InnerClassesATTR if !isScala =>
           val entries = in.nextChar.toInt
           for (i <- 0 until entries) {
-            val innerIndex = in.nextChar
-            val outerIndex = in.nextChar
-            val nameIndex = in.nextChar
-            val jflags = in.nextChar
+            val innerIndex = in.nextChar.toInt
+            val outerIndex = in.nextChar.toInt
+            val nameIndex = in.nextChar.toInt
+            val jflags = in.nextChar.toInt
             if (innerIndex != 0 && outerIndex != 0 && nameIndex != 0) {
               val entry = InnerClassEntry(innerIndex, outerIndex, nameIndex, jflags)
               innerClasses += (pool.getClassName(innerIndex) -> entry)
@@ -1020,7 +1021,7 @@ abstract class ClassfileParser {
 
       get(externalName) match {
         case Some(entry) =>
-          val clazz = innerSymbol(entry.externalName, entry.originalName, (entry.jflags & JAVA_ACC_STATIC) != 0)
+          val clazz = innerSymbol(entry.externalName, entry.originalName, isStatic(entry.jflags))
           clazz
         case None =>
           classNameToSymbol(externalName)
@@ -1057,10 +1058,10 @@ abstract class ClassfileParser {
   }
 
   protected def getOwner(flags: Int): Symbol =
-    if ((flags & JAVA_ACC_STATIC) != 0) statics else clazz
+    if (isStatic(flags)) statics else clazz
 
   protected def getScope(flags: Int): Scope =
-    if ((flags & JAVA_ACC_STATIC) != 0) staticDefs else instanceDefs
+    if (isStatic(flags)) staticDefs else instanceDefs
 
   protected def transFlags(flags: Int, isClass: Boolean): Long = {
     var res = 0l
@@ -1079,7 +1080,7 @@ abstract class ClassfileParser {
       res = res | SYNTHETIC
     if ((flags & JAVA_ACC_STATIC) != 0)
       res = res | STATIC
-    if (isClass && ((res & DEFERRED) != 0))
+    if (isClass && ((res & DEFERRED) != 0L))
         res = res & ~DEFERRED | ABSTRACT
 
     res | JAVA
@@ -1089,4 +1090,11 @@ abstract class ClassfileParser {
     if ((jflags & (JAVA_ACC_PRIVATE | JAVA_ACC_PROTECTED | JAVA_ACC_PUBLIC)) == 0)
       sym.privateWithin = sym.toplevelClass.owner
   }
+
+  @inline final private def isPrivate(flags: Int) =
+    (flags & JAVA_ACC_PRIVATE) != 0
+  @inline final private def isStatic(flags: Int) =
+    (flags & JAVA_ACC_STATIC) != 0
+  @inline final private def hasAnnotation(flags: Int) =
+    (flags & JAVA_ACC_ANNOTATION) != 0
 }

@@ -37,7 +37,7 @@ trait TokenTests {
   */
   def isNameChar(ch: Char) = isNameStart(ch) || (ch match {
     case '.' | '-' | ':' => true;
-    case _ => java.lang.Character.getType( ch ).asInstanceOf[Byte] match {
+    case _ => java.lang.Character.getType( ch ).toByte match {
       case java.lang.Character.COMBINING_SPACING_MARK => true; // Mc
       case java.lang.Character.ENCLOSING_MARK => true;         // Me
       case java.lang.Character.NON_SPACING_MARK => true;       // Mn

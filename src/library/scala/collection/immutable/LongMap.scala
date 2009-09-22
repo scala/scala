@@ -4,7 +4,7 @@ package scala.collection.immutable;
  * @author David MacIver
  */
 private[immutable] object LongMapUtils{
-  def zero(i : Long, mask : Long) = (i & mask) == 0;
+  def zero(i : Long, mask : Long) = (i & mask) == 0L;
   def mask(i : Long, mask : Long) = i & (complement(mask - 1) ^ mask)
   def hasMatch(key : Long, prefix : Long, m : Long) = mask(key, m) == prefix;
   def unsignedCompare(i : Long, j : Long) = (i < j) ^ (i < 0) ^ (j < 0)

@@ -11,6 +11,8 @@
 
 package scala.runtime;
 
+import java.io.*;
+
 /** An object (static class) that defines methods used for creating,
   * reverting, and calculating with, boxed values. There are four classes
   * of methods in this object:
@@ -25,7 +27,44 @@ package scala.runtime;
   * @author  Martin Odersky
   * @contributor Stepan Koltsov
   * @version 2.0 */
-public class BoxesRunTime {
+public class BoxesRunTime
+{
+    /**** Temporary code to support logging all equality comparisons. ****/
+    private static boolean eqeqLogging = false;
+    private static String eqeqLogName = "/tmp/trunk-eqeq.log";
+    private static FileWriter eqeqLog;
+    public static void setEqEqLogging(boolean state) {
+      eqeqLogging = state;
+      if (state) {
+        try { eqeqLog = new FileWriter(eqeqLogName, true); }
+        catch (IOException e) { eqeqLog = null; }
+
+        log("Started eqeq log at " + (new java.util.Date()));
+      }
+    }
+    private static String obToString(Object o) {
+      String s = o.toString() + " (" + o.getClass().getSimpleName() + ")";
+      return s.replaceAll("\\n", " ");
+    }
+    private static void logInternal(String msg, Object a, Object b, String where) {
+      log(msg + obToString(a) + " == " + obToString(b) + " " + where);
+    }
+
+    public static String whereAreWe() {
+      StackTraceElement e = Thread.currentThread().getStackTrace()[3];
+      return"(" + e.getClassName() + "." + e.getMethodName() + e.getFileName() + ":" + e.getLineNumber() + ")";
+    }
+    public static void log(String msg) {
+      if (eqeqLogging && eqeqLog != null) {
+        try {
+          eqeqLog.write(msg + "\n");
+          eqeqLog.flush();
+        }
+        catch (IOException e) { }
+      }
+    }
+
+    /**** End temporary logging section. ****/
 
     private static final int CHAR = 0, BYTE = 1, SHORT = 2, INT = 3, LONG = 4, FLOAT = 5, DOUBLE = 6, OTHER = 7;
 
@@ -121,16 +160,15 @@ public class BoxesRunTime {
         return d == null ? 0.0d : ((Double)d).doubleValue();
     }
 
-/* COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON */
+    /**************************************/
 
-    /** A rich implementation of the <code>equals</code> method that overrides the
-      * default equals because Java's boxed primitives are utterly broken. This equals
-      * is inserted instead of a normal equals by the Scala compiler (in the
-      * ICode phase, method <code>genEqEqPrimitive</code>) only when either
-      * side of the comparison is a subclass of <code>AnyVal</code>, of
-      * <code>java.lang.Number</code>, of <code>java.lang.Character</code> or
-      * is exactly <code>Any</code> or <code>AnyRef</code>. */
     public static boolean equals(Object a, Object b) {
+        if ((a instanceof Number || a instanceof Character) && (b instanceof Number || b instanceof Character)) {
+          if (a.getClass() != b.getClass()) {
+            logInternal("[ BOXED ] Comparing: ", a, b, whereAreWe());
+          }
+        }
+
         if (a == null || b == null)
             return a == b;
         if (a.equals(b))
@@ -139,31 +177,40 @@ public class BoxesRunTime {
             int acode = typeCode(a);
             int bcode = typeCode(b);
             int maxcode = (acode < bcode) ? bcode : acode;
+            boolean res = false;
             if (maxcode <= INT) {
                 int aa = (acode == CHAR) ? ((Character) a).charValue() : ((Number) a).intValue();
                 int bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).intValue();
-                return aa == bb;
+                res = (aa == bb);
             }
             if (maxcode <= LONG) {
                 long aa = (acode == CHAR) ? ((Character) a).charValue() : ((Number) a).longValue();
                 long bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).longValue();
-                return aa == bb;
+                res = (aa == bb);
             }
             if (maxcode <= FLOAT) {
                 float aa = (acode == CHAR) ? ((Character) a).charValue() : ((Number) a).floatValue();
                 float bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).floatValue();
-                return aa == bb;
+                res = (aa == bb);
             }
             if (maxcode <= DOUBLE) {
                 double aa = (acode == CHAR) ? ((Character) a).charValue() : ((Number) a).doubleValue();
                 double bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).doubleValue();
-                return aa == bb;
+                res = (aa == bb);
             }
 
-            return b.equals(a);
+            if (res || b.equals(a)) {
+              String msg;
+              if (res) msg = "[ BOXED ] Overriding equals between different types: ";
+              else msg = "[ BOXED ] Overriding equals because b.equals(a): ";
+              logInternal(msg, a, b, whereAreWe());
+              return true;
+            }
+            return false;
         }
         return false;
     }
+
 
 /* OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS */
 

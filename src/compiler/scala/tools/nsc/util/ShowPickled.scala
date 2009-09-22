@@ -127,7 +127,7 @@ object ShowPickled extends Names {
         case POLYtpe =>
           printTypeRef(); buf.until(end, printSymbolRef)
         case LITERALboolean =>
-          out.print(if (buf.readLong(len) == 0) " false" else " true")
+          out.print(if (buf.readLong(len) == 0L) " false" else " true")
         case LITERALbyte    =>
           out.print(" " + buf.readLong(len).asInstanceOf[Byte])
         case LITERALshort   =>

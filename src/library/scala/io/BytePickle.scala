@@ -69,7 +69,7 @@ object BytePickle {
         case Def() => Array.concat(s, Array[Byte](1))
       };
     def appU(s: Array[Byte]): (RefDef, Array[Byte]) =
-      if (s(0) == 0) (Ref(), s.slice(1, s.length))
+      if (s(0) == (0: Byte)) (Ref(), s.slice(1, s.length))
       else (Def(), s.slice(1, s.length));
   }
 

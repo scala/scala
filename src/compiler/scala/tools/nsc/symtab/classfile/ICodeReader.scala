@@ -79,7 +79,7 @@ abstract class ICodeReader extends ClassfileParser {
     val jflags = in.nextChar
     val isAttribute = (jflags & JAVA_ACC_ANNOTATION) != 0
     var sflags = transFlags(jflags, true)
-    if ((sflags & DEFERRED) != 0) sflags = sflags & ~DEFERRED | ABSTRACT
+    if ((sflags & DEFERRED) != 0L) sflags = sflags & ~DEFERRED | ABSTRACT
     val c = pool.getClassSymbol(in.nextChar)
 
     parseInnerClasses()
@@ -278,7 +278,7 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.fload       => code.emit(LOAD_LOCAL(code.getLocal(in.nextByte, FLOAT)));  size += 1
         case JVM.dload       => code.emit(LOAD_LOCAL(code.getLocal(in.nextByte, DOUBLE))); size += 1
         case JVM.aload       =>
-          val local = in.nextByte; size += 1
+          val local = in.nextByte.toInt; size += 1
           if (local == 0 && !method.isStatic)
             code.emit(THIS(method.symbol.owner));
           else

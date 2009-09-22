@@ -61,7 +61,7 @@ trait BitSetTemplate[+This <: BitSetTemplate[This] with Set[Int]] extends SetTem
     for (i <- 0 until nwords) {
       val w = word(i)
       for (j <- i * WordLength until (i + 1) * WordLength) {
-        if ((w & (1L << j)) != 0) f(j)
+        if ((w & (1L << j)) != 0L) f(j)
       }
     }
   }
@@ -109,7 +109,7 @@ trait BitSetTemplate[+This <: BitSetTemplate[This] with Set[Int]] extends SetTem
   /** Does the set contain the given element?
    */
   def contains(elem: Int): Boolean =
-    0 <= elem && (word(elem >> LogWL) & (1L << elem)) != 0
+    0 <= elem && (word(elem >> LogWL) & (1L << elem)) != 0L
 
   /** Is the set a subset of the given bitset
    */
@@ -154,6 +154,6 @@ object BitSetTemplate {
   private def popCount(w: Long): Int = {
     def pc2(w: Int) = if (w == 0) 0 else pc1(w & 0xff) + pc1(w >>> 8)
     def pc4(w: Int) = if (w == 0) 0 else pc2(w & 0xffff) + pc2(w >>> 16)
-    if (w == 0) 0 else pc4(w.toInt) + pc4((w >>> 32).toInt)
+    if (w == 0L) 0 else pc4(w.toInt) + pc4((w >>> 32).toInt)
   }
 }

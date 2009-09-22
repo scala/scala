@@ -331,44 +331,43 @@ object Utility extends AnyRef with parsing.TokenTests
    * @return      ...
    */
   def parseAttributeValue(value: String): Seq[Node] = {
-    val zs: Seq[Char] = value
     val sb  = new StringBuilder
     var rfb: StringBuilder = null
     val nb = new NodeBuffer()
-    val it = zs.iterator
+
+    val it = value.iterator
     while (it.hasNext) {
       var c = it.next
-      c match {
-        case '&' => // entity! flush buffer into text node
-          it.next match {
-            case '#' =>
-              c = it.next
-              val theChar = parseCharRef ({ ()=> c },{ () => c = it.next },{s => throw new RuntimeException(s)})
-              sb.append(theChar)
-
-            case x =>
-              if (rfb eq null) rfb = new StringBuilder()
-              rfb.append(x)
-              c = it.next
-              while (c != ';') {
-                rfb.append(c)
-                c = it.next
-              }
-              val ref = rfb.toString()
-              rfb.setLength(0)
-              unescape(ref,sb) match {
-                case null =>
-                  if (sb.length > 0) {          // flush buffer
-                    nb += Text(sb.toString())
-                    sb.setLength(0)
-                  }
-                  nb += EntityRef(sb.toString()) // add entityref
-                case _ =>
-              }
+      // entity! flush buffer into text node
+      if (c == '&') {
+        c = it.next
+        if (c == '#') {
+          c = it.next
+          val theChar = parseCharRef ({ ()=> c },{ () => c = it.next },{s => throw new RuntimeException(s)})
+          sb.append(theChar)
+        }
+        else {
+          if (rfb eq null) rfb = new StringBuilder()
+          rfb append c
+          c = it.next
+          while (c != ';') {
+            rfb.append(c)
+            c = it.next
           }
-        case x   =>
-          sb.append(x)
+          val ref = rfb.toString()
+          rfb.setLength(0)
+          unescape(ref,sb) match {
+            case null =>
+              if (sb.length > 0) {          // flush buffer
+                nb += Text(sb.toString())
+                sb.setLength(0)
+              }
+              nb += EntityRef(sb.toString()) // add entityref
+            case _ =>
+          }
+        }
       }
+      else sb append c
     }
     if (sb.length > 0) { // flush buffer
       val x = Text(sb.toString())

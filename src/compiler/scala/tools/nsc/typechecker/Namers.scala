@@ -338,7 +338,7 @@ trait Namers { self: Analyzer =>
           case tree @ ClassDef(mods, name, tparams, impl) =>
             tree.symbol = enterClassSymbol(tree)
             finishWith(tparams)
-            if ((mods.flags & CASE) != 0) {
+            if ((mods.flags & CASE) != 0L) {
               val m = ensureCompanionObject(tree, caseModuleDef(tree))
               caseClassOfModuleClass(m.moduleClass) = tree
             }
@@ -364,24 +364,24 @@ trait Namers { self: Analyzer =>
 
           case vd @ ValDef(mods, name, tp, rhs) =>
             if ((!context.owner.isClass ||
-                 (mods.flags & (PRIVATE | LOCAL)) == (PRIVATE | LOCAL) ||
+                 (mods.flags & (PRIVATE | LOCAL)) == (PRIVATE | LOCAL).toLong ||
                  name.endsWith(nme.OUTER, nme.OUTER.length) ||
                  context.unit.isJava) &&
-                (mods.flags & LAZY) == 0) {
+                (mods.flags & LAZY) == 0L) {
               tree.symbol = enterInScope(owner.newValue(tree.pos, name)
                 .setFlag(mods.flags))
               finish
             } else {
               // add getter and possibly also setter
               val accflags: Long = ACCESSOR |
-                (if ((mods.flags & MUTABLE) != 0) mods.flags & ~MUTABLE & ~PRESUPER
+                (if ((mods.flags & MUTABLE) != 0L) mods.flags & ~MUTABLE & ~PRESUPER
                  else mods.flags & ~PRESUPER | STABLE)
               if (nme.isSetterName(name))
                 context.error(tree.pos, "Names of vals or vars may not end in `_='")
               // .isInstanceOf[..]: probably for (old) IDE hook. is this obsolete?
               val getter = enterAliasMethod(tree, name, accflags, mods)
               setInfo(getter)(namerOf(getter).getterTypeCompleter(vd))
-              if ((mods.flags & MUTABLE) != 0) {
+              if ((mods.flags & MUTABLE) != 0L) {
                 val setter = enterAliasMethod(tree, nme.getterToSetter(name),
                                             accflags & ~STABLE & ~CASEACCESSOR,
                                             mods)
@@ -393,7 +393,7 @@ trait Namers { self: Analyzer =>
                 } else {
                   var vsym =
                     if (!context.owner.isClass) {
-                      assert((mods.flags & LAZY) != 0) // if not a field, it has to be a lazy val
+                      assert((mods.flags & LAZY) != 0L) // if not a field, it has to be a lazy val
                       owner.newValue(tree.pos, name + "$lzy" ).setFlag(mods.flags | MUTABLE)
                     } else {
                       owner.newValue(tree.pos, nme.getterToLocal(name))
@@ -402,7 +402,7 @@ trait Namers { self: Analyzer =>
                     }
                   enterInScope(vsym)
                   setInfo(vsym)(namerOf(vsym).typeCompleter(tree))
-                  if ((mods.flags & LAZY) != 0)
+                  if ((mods.flags & LAZY) != 0L)
                     vsym.setLazyAccessor(getter)
                   vsym
                 }
@@ -418,7 +418,7 @@ trait Namers { self: Analyzer =>
             finishWith(tparams)
           case TypeDef(mods, name, tparams, _) =>
             var flags: Long = mods.flags
-            if ((flags & PARAM) != 0) flags |= DEFERRED
+            if ((flags & PARAM) != 0L) flags |= DEFERRED
             var sym = new TypeSymbol(owner, tree.pos, name).setFlag(flags)
             setPrivateWithin(tree, sym, mods)
             tree.symbol = enterInScope(sym)

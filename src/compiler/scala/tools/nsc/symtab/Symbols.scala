@@ -306,7 +306,7 @@ trait Symbols {
     // True if the symbol is locked but still below the allowed recursion depth.
     // False otherwise
     def lockOK: Boolean = {
-      ((rawflags & LOCKED) == 0) ||
+      ((rawflags & LOCKED) == 0L) ||
       ((settings.Yrecursion.value != 0) &&
        (recursionTable get this match {
          case Some(n) => (n <= settings.Yrecursion.value)
@@ -315,7 +315,7 @@ trait Symbols {
 
     // Lock a symbol, using the handler if the recursion depth becomes too great.
     def lock(handler: => Unit) = {
-      if ((rawflags & LOCKED) != 0) {
+      if ((rawflags & LOCKED) != 0L) {
         if (settings.Yrecursion.value != 0) {
           recursionTable get this match {
             case Some(n) =>
@@ -336,7 +336,7 @@ trait Symbols {
 
     // Unlock a symbol
     def unlock() = {
-      if ((rawflags & LOCKED) != 0) {
+      if ((rawflags & LOCKED) != 0L) {
         activeLocks -= 1
         rawflags = rawflags & ~LOCKED
         if (settings.Yrecursion.value != 0)
@@ -373,7 +373,7 @@ trait Symbols {
     final def isValueParameter = isTerm && hasFlag(PARAM)
     final def isLocalDummy = isTerm && nme.isLocalDummyName(name)
     final def isMethod = isTerm && hasFlag(METHOD)
-    final def isSourceMethod = isTerm && (flags & (METHOD | STABLE)) == METHOD // ???
+    final def isSourceMethod = isTerm && (flags & (METHOD | STABLE)) == METHOD.toLong // ???
     final def isLabel = isMethod && !hasFlag(ACCESSOR) && hasFlag(LABEL)
     final def isInitializedToDefault = !isType && (getFlag(DEFAULTINIT | ACCESSOR) == (DEFAULTINIT | ACCESSOR))
     final def isClassConstructor = isTerm && (name == nme.CONSTRUCTOR)
@@ -673,7 +673,7 @@ trait Symbols {
     final def setFlag(mask: Long): this.type = { rawflags = rawflags | mask; this }
     final def resetFlag(mask: Long): this.type = { rawflags = rawflags & ~mask; this }
     final def getFlag(mask: Long): Long = flags & mask
-    final def hasFlag(mask: Long): Boolean = (flags & mask) != 0
+    final def hasFlag(mask: Long): Boolean = (flags & mask) != 0L
     final def resetFlags { rawflags = rawflags & TopLevelCreationFlags }
 
     /** The class or term up to which this symbol is accessible,
@@ -1777,7 +1777,7 @@ trait Symbols {
       else rawowner
 
     override def name: Name =
-      if ((rawflags & notDEFERRED) != 0 && phase.devirtualized && !phase.erasedTypes) {
+      if ((rawflags & notDEFERRED) != 0L && phase.devirtualized && !phase.erasedTypes) {
         newTypeName(rawname+"$trait") // (part of DEVIRTUALIZE)
       } else if (phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass) {
         if (flatname == nme.EMPTY) {
@@ -1806,7 +1806,7 @@ trait Symbols {
     /** the self type of an object foo is foo.type, not class<foo>.this.type
      */
     override def typeOfThis: Type =
-      if (getFlag(MODULE | IMPLCLASS) == MODULE && owner != NoSymbol)
+      if (getFlag(MODULE | IMPLCLASS) == MODULE.toLong && owner != NoSymbol)
         singleType(owner.thisType, sourceModule)
       else thissym.tpe
 

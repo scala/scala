@@ -69,7 +69,7 @@ trait Trees {
     def isTrait     = hasFlag(TRAIT | notDEFERRED) // (part of DEVIRTUALIZE)
     def isImplicit  = hasFlag(IMPLICIT )
     def isPublic    = !isPrivate && !isProtected
-    def hasFlag(flag: Long) = (flag & flags) != 0
+    def hasFlag(flag: Long) = (flag & flags) != 0L
     def & (flag: Long): Modifiers = {
       val flags1 = flags & flag
       if (flags1 == flags) this
@@ -334,7 +334,7 @@ trait Trees {
       case ValDef(mods, _, _, _)    => if (mods.isVariable) "var" else "val"
       case _ => ""
     }
-    final def hasFlag(mask: Long): Boolean = (mods.flags & mask) != 0
+    final def hasFlag(mask: Long): Boolean = (mods.flags & mask) != 0L
   }
 
   /** Package clause
@@ -624,7 +624,7 @@ trait Trees {
       } else {
         // convert (implicit ... ) to ()(implicit ... ) if its the only parameter section
         if (vparamss1.isEmpty ||
-            !vparamss1.head.isEmpty && (vparamss1.head.head.mods.flags & IMPLICIT) != 0)
+            !vparamss1.head.isEmpty && (vparamss1.head.head.mods.flags & IMPLICIT) != 0L)
           vparamss1 = List() :: vparamss1;
         val superRef: Tree = atPos(superPos) {
           Select(Super(nme.EMPTY.toTypeName, nme.EMPTY.toTypeName), nme.CONSTRUCTOR)

@@ -55,11 +55,11 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
   def writeLongNat(x: Long) {
     def writeNatPrefix(x: Long) {
       val y = x >>> 7
-      if (y != 0) writeNatPrefix(y)
+      if (y != 0L) writeNatPrefix(y)
       writeByte(((x & 0x7f) | 0x80).asInstanceOf[Int])
     }
     val y = x >>> 7
-    if (y != 0) writeNatPrefix(y)
+    if (y != 0L) writeNatPrefix(y)
     writeByte((x & 0x7f).asInstanceOf[Int])
   }
 
@@ -113,7 +113,7 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
     do {
       b = readByte()
       x = (x << 7) + (b & 0x7f)
-    } while ((b & 0x80) != 0);
+    } while ((b & 0x80) != 0L);
     x
   }
 

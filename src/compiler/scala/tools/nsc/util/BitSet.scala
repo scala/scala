@@ -59,7 +59,7 @@ abstract class BitSet {
   }
 
   def contains(elem: Int): Boolean =
-    0 <= elem && (word(elem >> LogWL) & (1L << elem)) != 0
+    0 <= elem && (word(elem >> LogWL) & (1L << elem)) != 0L
 
   def subSet(other: BitSet): Boolean =
     (0 until nwords) forall (idx => (this.word(idx) & ~ other.word(idx)) == 0L)
