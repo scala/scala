@@ -74,25 +74,26 @@ abstract class Pickler extends SubComponent {
     private var ep = 0
     private val index = new LinkedHashMap[AnyRef, Int]
 
-    /** Is symbol an existentially bound variable with a package as owner?
-     *  Such symbols should be treated as if they were local.
+//    private var boundSyms: List[Symbol] = Nil
+
+    /** Returns usually symbol's owner, but picks classfile root instead
+     *  for existentially bound variables that have a non-local owner.
+     *  Question: Should this be done for refinement class symbols as well?
      */
-    private def isUnrootedExistential(sym: Symbol) =
-      sym.isAbstractType && sym.hasFlag(EXISTENTIAL)
+    private def localizedOwner(sym: Symbol) =
+      if (sym.isAbstractType && sym.hasFlag(EXISTENTIAL) && !isLocal(sym.owner)) root
+      else sym.owner
 
-    private def normalizedOwner(sym: Symbol) =
-      if (isUnrootedExistential(sym)) root else sym.owner
-
-    /** Is root in symbol.owner*?
-     *
-     *  @param sym ...
-     *  @return    ...
+    /** Is root in symbol.owner*, or should it be treated as a local symbol
+     *  anyway? This is the case if symbol is a refinement class or
+     *  an existentially bound variable.
      */
     private def isLocal(sym: Symbol): Boolean =
-      sym.isRefinementClass ||
-      sym.name.toTermName == rootName && sym.owner == rootOwner ||
-      sym != NoSymbol && isLocal(sym.owner) ||
-      isUnrootedExistential(sym)
+      !sym.isPackageClass &&
+      (sym.name.toTermName == rootName && sym.owner == rootOwner ||
+       sym != NoSymbol && isLocal(sym.owner) ||
+       sym.isRefinementClass ||
+       sym.isAbstractType && sym.hasFlag(EXISTENTIAL))
 
     private def staticAnnotations(annots: List[AnnotationInfo]) =
       annots filter(ann =>
@@ -177,6 +178,9 @@ abstract class Pickler extends SubComponent {
         case ConstantType(value) =>
           putConstant(value)
         case TypeRef(pre, sym, args) =>
+//          if (sym.isAbstractType && (sym hasFlag EXISTENTIAL))
+//            if (!(boundSyms contains sym))
+//              println("unbound existential: "+sym+sym.locationString)
           putType(pre); putSymbol(sym); putTypes(args)
         case TypeBounds(lo, hi) =>
           putType(lo); putType(hi)
@@ -192,7 +196,14 @@ abstract class Pickler extends SubComponent {
         case PolyType(tparams, restpe) =>
           putType(restpe); putSymbols(tparams)
         case ExistentialType(tparams, restpe) =>
-          putType(restpe); putSymbols(tparams)
+//          val savedBoundSyms = boundSyms
+//          boundSyms = tparams ::: boundSyms
+//          try {
+            putType(restpe);
+//          } finally {
+//            boundSyms = savedBoundSyms
+//          }
+          putSymbols(tparams)
         case AnnotatedType(annotations, underlying, selfsym) =>
           putType(underlying)
           if (settings.selfInAnnots.value) putSymbol(selfsym)
@@ -483,7 +494,7 @@ abstract class Pickler extends SubComponent {
      */
     private def writeSymInfo(sym: Symbol) {
       writeRef(sym.name)
-      writeRef(normalizedOwner(sym))
+      writeRef(localizedOwner(sym))
       writeLongNat((rawFlagsToPickled(sym.flags & PickledFlags)))
       if (sym.privateWithin != NoSymbol) writeRef(sym.privateWithin)
       writeRef(sym.info)
@@ -990,7 +1001,7 @@ abstract class Pickler extends SubComponent {
       def printSymInfo(sym: Symbol) {
         var posOffset = 0
         printRef(sym.name)
-        printRef(normalizedOwner(sym))
+        printRef(localizedOwner(sym))
         print(flagsToString(sym.flags & PickledFlags)+" ")
         if (sym.privateWithin != NoSymbol) printRef(sym.privateWithin)
         printRef(sym.info)
