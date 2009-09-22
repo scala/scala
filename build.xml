@@ -1560,7 +1560,11 @@ FORWARDED TARGETS FOR NIGHTLY BUILDS
 
   <target name="nightly">
     <!-- disabled until problems are fixed <property name="scalac.args.optimise" value="-optimise"/> -->
-    <antcall target="all.done"/>
+    <antcall target="nightly-nopt"/>
+  </target>
+
+  <target name="nightly-nopt" depends="all.done">
+    <!-- cannot antcall all.done, the properties defined in there (dist.dir) are not returned. need depends. -->
     <ant antfile="${src.dir}/build/pack.xml" target="pack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
 
