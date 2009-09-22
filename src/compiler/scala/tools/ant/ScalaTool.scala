@@ -67,6 +67,10 @@ class ScalaTool extends MatchingTask {
     * folders in "lib/" are automatically added. */
   private var classpath: List[String] = Nil
 
+  /** An (optional) path to JARs that this script depends on relative to the
+    * ant project's basedir. */
+  private var classpathPath: Path = emptyPath
+
   /** Comma-separated Java system properties to pass to the JRE. Properties
     * are formated as name=value. Properties scala.home, scala.tool.name and
     * scala.tool.version are always set. */
@@ -116,6 +120,12 @@ class ScalaTool extends MatchingTask {
   def setClassPath(input: String): Unit = {
     classpath = classpath ::: input.split(",").toList
   }
+
+  /**
+   * A special method that allows ant classpath path definitions to be nested
+   * within this ant task.
+   */
+  def createClassPath: Path = classpathPath.createPath()
 
   /**
    * Adds an Ant Path reference to the tool's classpath.
@@ -260,6 +270,9 @@ class ScalaTool extends MatchingTask {
       ("javaflags", javaFlags),
       ("toolflags", toolFlags)
     )
+    // Consolidate Paths into classpath
+    classpath = classpath ::: classpathPath.list.toList
+    // Generate the scripts
     if (platforms.contains("unix")) {
       val unixPatches = patches + (("classpath", getUnixclasspath))
       val unixTemplateResource = resourceRoot + "tool-unix.tmpl"
