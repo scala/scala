@@ -24,10 +24,6 @@ class PartestTask extends Task {
     posFiles = Some(input)
   }
 
-  def addConfiguredPos5Tests(input: FileSet) {
-    pos5Files = Some(input)
-  }
-
   def addConfiguredNegTests(input: FileSet) {
     negFiles = Some(input)
   }
@@ -111,7 +107,6 @@ class PartestTask extends Task {
   private var showLog: Boolean = false
   private var runFailed: Boolean = false
   private var posFiles: Option[FileSet] = None
-  private var pos5Files: Option[FileSet] = None
   private var negFiles: Option[FileSet] = None
   private var runFiles: Option[FileSet] = None
   private var jvmFiles: Option[FileSet] = None
@@ -149,15 +144,14 @@ class PartestTask extends Task {
     else
       Array()
 
-  private def getPosFiles      = getFilesAndDirs(posFiles)
-  private def getPos5Files     = getFilesAndDirs(pos5Files)
-  private def getNegFiles      = getFiles(negFiles)
-  private def getRunFiles      = getFiles(runFiles)
-  private def getJvmFiles      = getFilesAndDirs(jvmFiles)
-  private def getResidentFiles = getFiles(residentFiles)
-  private def getScriptFiles   = getFiles(scriptFiles)
-  private def getShootoutFiles = getFiles(shootoutFiles)
-  private def getScalapFiles = getFiles(scalapFiles)
+  private def getPosFiles       = getFilesAndDirs(posFiles)
+  private def getNegFiles       = getFiles(negFiles)
+  private def getRunFiles       = getFiles(runFiles)
+  private def getJvmFiles       = getFilesAndDirs(jvmFiles)
+  private def getResidentFiles  = getFiles(residentFiles)
+  private def getScriptFiles    = getFiles(scriptFiles)
+  private def getShootoutFiles  = getFiles(shootoutFiles)
+  private def getScalapFiles    = getFiles(scalapFiles)
 
   override def execute() {
     if (debug)
@@ -219,81 +213,37 @@ class PartestTask extends Task {
     if (!timeout.isEmpty)
       setFileManagerStringProperty("timeout", timeout.get)
 
-    var allSucesses: Int = 0
-    var allFailures: Int = 0
+    type TFSet = (Array[File], String, String)
+    val testFileSets = List(
+      (getPosFiles, "pos", "Compiling files that are expected to build"),
+      (getNegFiles, "neg", "Compiling files that are expected to fail"),
+      (getRunFiles, "run", "Compiling and running files"),
+      (getJvmFiles, "jvm", "Compiling and running files"),
+      (getResidentFiles, "res", "Running resident compiler scenarii"),
+      (getScriptFiles, "script", "Running script files"),
+      (getShootoutFiles, "shootout", "Running shootout tests"),
+      (getScalapFiles, "scalap", "Running scalap tests")
+    )
 
-    if (getPosFiles.size > 0) {
-      log("Compiling files that are expected to build")
-      val (successes, failures) = runTestsForFiles(getPosFiles, "pos")
-      allSucesses += successes
-      allFailures += failures
+    def runSet(set: TFSet): (Int, Int) = {
+      val (files, name, msg) = set
+      if (files.isEmpty) (0, 0)
+      else {
+        log(msg)
+        runTestsForFiles(files, name)
+      }
     }
 
-    if (getPos5Files.size > 0) {
-      log("Compiling files that are expected to build")
-      val (successes, failures) = runTestsForFiles(getPos5Files, "pos")
-      allSucesses += successes
-      allFailures += failures
-    }
+    val (allSuccesses, allFailures): (Int, Int) =
+      (testFileSets map runSet).foldLeft((0, 0))((sums, x) => (sums._1 + x._1, sums._2 + x._2))
 
-    if (getNegFiles.size > 0) {
-      log("Compiling files that are expected to fail")
-      val (successes, failures) = runTestsForFiles(getNegFiles, "neg")
-      allSucesses += successes
-      allFailures += failures
-    }
+    def f = if (errorOnFailed && allFailures > 0) error(_) else log(_: String)
+    def s = if (allFailures > 1) "s" else ""
+    val msg =
+      if (allFailures > 0) "Test suite finished with %d case%s failing.".format(allFailures, s)
+      else if (allSuccesses == 0) "There were no tests to run."
+      else "Test suite finished with no failures."
 
-    if (getRunFiles.size > 0) {
-      log("Compiling and running files")
-      val (successes, failures) = runTestsForFiles(getRunFiles, "run")
-      allSucesses += successes
-      allFailures += failures
-    }
-
-    if (getJvmFiles.size > 0) {
-      log("Compiling and running files")
-      val (successes, failures) = runTestsForFiles(getJvmFiles, "jvm")
-      allSucesses += successes
-      allFailures += failures
-    }
-
-    if (getResidentFiles.size > 0) {
-      log("Running resident compiler scenarii")
-      val (successes, failures) = runTestsForFiles(getResidentFiles, "res")
-      allSucesses += successes
-      allFailures += failures
-    }
-
-    if (getScriptFiles.size > 0) {
-      log("Running script files")
-      val (successes, failures) = runTestsForFiles(getScriptFiles, "script")
-      allSucesses += successes
-      allFailures += failures
-    }
-
-    if (getShootoutFiles.size > 0) {
-      log("Running shootout tests")
-      val (successes, failures) = runTestsForFiles(getShootoutFiles, "shootout")
-      allSucesses += successes
-      allFailures += failures
-    }
-
-    if (getScalapFiles.size > 0) {
-      log("Running scalap tests")
-      val (successes, failures) = runTestsForFiles(getScalapFiles, "scalap")
-      allSucesses += successes
-      allFailures += failures
-    }
-
-    if ((getPosFiles.size + getNegFiles.size + getRunFiles.size + getResidentFiles.size + getScriptFiles.size + getShootoutFiles.size) == 0)
-      log("There where no tests to run.")
-    else if (allFailures == 0)
-      log("Test suite finished with no failures.")
-    else {
-      val msg = "Test suite finished with " + allFailures +
-                " case" + (if (allFailures > 1) "s" else "") + " failing."
-      if (errorOnFailed) error(msg) else log(msg)
-    }
+    f(msg)
   }
-
 }
