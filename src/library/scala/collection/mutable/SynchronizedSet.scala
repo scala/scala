@@ -7,10 +7,10 @@
 \*                                                                      */
 
 // $Id$
-// !!! check whether we have all methods */
 
 package scala.collection.mutable
 
+import scala.collection.script._
 
 /** This class should be used as a mixin. It synchronizes the <code>Set</code>
  *  functions of the class into which it is mixed in.
@@ -97,11 +97,10 @@ trait SynchronizedSet[A] extends Set[A] {
     super.toString
   }
 
-/* TODO: Reintegrate
   override def <<(cmd: Message[A]): Unit = synchronized {
     super.<<(cmd)
   }
-*/
+
   override def clone(): Set[A] = synchronized {
     super.clone()
   }

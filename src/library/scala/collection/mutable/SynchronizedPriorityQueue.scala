@@ -11,11 +11,6 @@
 
 package scala.collection.mutable
 
-// A dummy to fool ant until reintegration.
-class SynchronizedPriorityQueue
-
-/* TODO: Reintegrate
-
 /** This class implements synchronized priority queues using a heap.
  *  The elements of the queue have to be ordered in terms of the
  *  <code>Ordered[T]</code> class.
@@ -23,7 +18,7 @@ class SynchronizedPriorityQueue
  *  @author  Matthias Zenger
  *  @version 1.0, 03/05/2004
  */
-class SynchronizedPriorityQueue[A <% Ordered[A]] extends PriorityQueue[A] {
+class SynchronizedPriorityQueue[A](implicit ord: Ordering[A]) extends PriorityQueue[A] {
 
   /** Checks if the queue is empty.
    *
@@ -35,20 +30,35 @@ class SynchronizedPriorityQueue[A <% Ordered[A]] extends PriorityQueue[A] {
    *
    *  @param  elem        the element to insert
    */
-  override def +=(elem: A): Unit = synchronized { super.+=(elem) }
+  override def +=(elem: A): this.type = {
+    synchronized {
+      super.+=(elem)
+    }
+    this
+  }
 
   /** Adds all elements provided by an <code>Iterable</code> object
    *  into the priority queue.
    *
    *  @param  iter        an iterable object
    */
-  override def ++=(iter: collection.Iterable[A]): Unit = synchronized { super.++=(iter) }
+  def ++=(iter: collection.Iterable[A]): this.type = {
+    synchronized {
+      super.++=(iter)
+    }
+    this
+  }
 
   /** Adds all elements provided by an iterator into the priority queue.
    *
    *  @param  it        an iterator
    */
-  override def ++=(it: Iterator[A]): Unit = synchronized { super.++=(it) }
+  override def ++=(it: Iterator[A]): this.type = {
+    synchronized {
+      super.++=(it)
+    }
+    this
+  }
 
   /** Adds all elements to the queue.
    *
@@ -94,4 +104,3 @@ class SynchronizedPriorityQueue[A <% Ordered[A]] extends PriorityQueue[A] {
    */
   override def toString(): String = synchronized { super.toString() }
 }
-*/

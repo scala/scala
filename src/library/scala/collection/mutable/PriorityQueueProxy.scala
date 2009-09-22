@@ -10,11 +10,6 @@
 
 package scala.collection.mutable
 
-// A dummy to fool ant until reintegration.
-abstract class PriorityQueueProxy
-
-/* TODO: Reintegrate
-
 /** This class implements priority queues using a heap. The
  *  elements of the queue have to be ordered in terms of the
  *  <code>Ordered[T]</code> class.
@@ -22,8 +17,8 @@ abstract class PriorityQueueProxy
  *  @author  Matthias Zenger
  *  @version 1.0, 03/05/2004
  */
-abstract class PriorityQueueProxy[A <% Ordered[A]] extends PriorityQueue[A]
-         with RandomAccessSeqProxy[A]
+abstract class PriorityQueueProxy[A](implicit ord: Ordering[A]) extends PriorityQueue[A]
+         with Proxy
 {
 
   def self: PriorityQueue[A]
@@ -49,20 +44,26 @@ abstract class PriorityQueueProxy[A <% Ordered[A]] extends PriorityQueue[A]
    *
    *  @param  elem        the element to insert
    */
-  override def +=(elem: A): Unit = self += elem
+  override def +=(elem: A): this.type = { self += elem; this }
 
   /** Adds all elements provided by an <code>Iterable</code> object
    *  into the priority queue.
    *
    *  @param  iter        an iterable object
    */
-  override def ++=(iter: collection.Iterable[A]): Unit = self ++= iter
+  def ++=(iter: collection.Iterable[A]): this.type = {
+    self ++= iter
+    this
+  }
 
   /** Adds all elements provided by an iterator into the priority queue.
    *
    *  @param  it        an iterator
    */
-  override def ++=(it: Iterator[A]): Unit = self ++= it
+  override def ++=(it: Iterator[A]): this.type = {
+    self ++= it
+    this
+  }
 
   /** Adds all elements to the queue.
    *
@@ -101,4 +102,3 @@ abstract class PriorityQueueProxy[A <% Ordered[A]] extends PriorityQueue[A]
     def self = PriorityQueueProxy.this.self.clone()
   }
 }
-*/

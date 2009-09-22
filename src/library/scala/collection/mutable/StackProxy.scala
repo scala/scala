@@ -11,18 +11,13 @@
 
 package scala.collection.mutable
 
-// A dummy to fool ant until reintegration.
-trait StackProxy
-
-/* TODO: Reintegrate
-
 /** A stack implements a data structure which allows to store and retrieve
  *  objects in a last-in-first-out (LIFO) fashion.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 10/05/2004
  */
-trait StackProxy[A] extends Stack[A] with SeqProxy[A] {
+trait StackProxy[A] extends Stack[A] with Proxy {
 
   def self: Stack[A]
 
@@ -46,7 +41,20 @@ trait StackProxy[A] extends Stack[A] with SeqProxy[A] {
    *
    *  @param  elem        the element to push onto the stack
    */
-  override def +=(elem: A): Unit = self += elem
+  def +=(elem: A): this.type = {
+    self push elem
+    this
+  }
+
+  override def pushAll(elems: Iterator[A]): this.type = {
+    self pushAll elems
+    this
+  }
+
+  override def pushAll(elems: collection.Traversable[A]): this.type = {
+    self pushAll elems
+    this
+  }
 
   /** Pushes all elements provided by an <code>Iterable</code> object
    *  on top of the stack. The elements are pushed in the order they
@@ -54,7 +62,10 @@ trait StackProxy[A] extends Stack[A] with SeqProxy[A] {
    *
    *  @param  iter        an iterable object
    */
-    override def ++=(iter: collection.Iterable[A]): Unit = self ++= iter
+  @deprecated("use pushAll") override def ++=(iter: collection.Iterable[A]): this.type = {
+    self ++= iter
+    this
+  }
 
   /** Pushes all elements provided by an iterator
    *  on top of the stack. The elements are pushed in the order they
@@ -62,14 +73,15 @@ trait StackProxy[A] extends Stack[A] with SeqProxy[A] {
    *
    *  @param  iter        an iterator
    */
-  override def ++=(it: Iterator[A]): Unit = self ++= it
+  @deprecated("use pushAll") override def ++=(it: Iterator[A]): this.type = {
+    self ++= it
+    this
+  }
 
-  /** Pushes a sequence of elements on top of the stack. The first element
-   *  is pushed first, etc.
-   *
-   *  @param  elems       a sequence of elements
-   */
-  override def push(elems: A*): Unit = self ++= elems
+  override def push(elem1: A, elem2: A, elems: A*): this.type = {
+    self.push(elem1).push(elem2).pushAll(elems)
+    this
+  }
 
   /** Returns the top element of the stack. This method will not remove
    *  the element from the stack. An error is signaled if there is no
@@ -113,4 +125,3 @@ trait StackProxy[A] extends Stack[A] with SeqProxy[A] {
     def self = StackProxy.this.self.clone()
   }
 }
-*/

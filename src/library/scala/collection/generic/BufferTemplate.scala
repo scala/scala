@@ -327,6 +327,8 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
     for (elem <- iter) -=(elem)
     repr
   }
+
+  @deprecated("Use toSequence instead") def readOnly: Sequence[A] = toSequence
 }
 
 

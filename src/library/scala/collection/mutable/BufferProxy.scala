@@ -46,7 +46,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    */
   def +=(elem: A): this.type = { self.+=(elem); this }
 
-//  override def readOnly = self.readOnly
+  override def readOnly: collection.Sequence[A] = self.readOnly
 
   /** Appends a number of elements provided by an iterable object
    *  via its <code>iterator</code> method. The identity of the
