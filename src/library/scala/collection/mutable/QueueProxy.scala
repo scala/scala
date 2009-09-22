@@ -1,4 +1,3 @@
-/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -12,6 +11,10 @@
 
 package scala.collection.mutable
 
+// A dummy to fool ant until reintegration.
+trait QueueProxy
+
+/* TODO: Reintegrate
 
 /** <code>Queue</code> objects implement data structures that allow to
  *  insert and retrieve elements in a first-in-first-out (FIFO) manner.

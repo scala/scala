@@ -1,4 +1,3 @@
-/* TODO: Reintegrate
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
@@ -12,6 +11,10 @@
 
 package scala.collection.mutable
 
+// A dummy to fool ant until reintegration.
+class SynchronizedPriorityQueue
+
+/* TODO: Reintegrate
 
 /** This class implements synchronized priority queues using a heap.
  *  The elements of the queue have to be ordered in terms of the
