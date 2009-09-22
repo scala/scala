@@ -448,17 +448,24 @@ trait StdNames {
     final val IOOBException = newTermName("java.lang.IndexOutOfBoundsException")
     final val BoxedNumber   = newTermName("java.lang.Number")
     final val BoxedCharacter = newTermName("java.lang.Character")
-    final val BoxedBoolean = newTermName("java.lang.Boolean")
+    final val BoxedBoolean  = newTermName("java.lang.Boolean")
+    final val BoxedByte     = newTermName("java.lang.Byte")
+    final val BoxedShort    = newTermName("java.lang.Short")
+    final val BoxedInteger  = newTermName("java.lang.Integer")
+    final val BoxedLong     = newTermName("java.lang.Long")
+    final val BoxedFloat    = newTermName("java.lang.Float")
+    final val BoxedDouble   = newTermName("java.lang.Double")
+
     final val MethodAsObject = newTermName("java.lang.reflect.Method")
 
-    Boxed += (nme.Boolean -> newTermName("java.lang.Boolean"))
-    Boxed += (nme.Byte    -> newTermName("java.lang.Byte"))
-    Boxed += (nme.Char    -> newTermName("java.lang.Character"))
-    Boxed += (nme.Short   -> newTermName("java.lang.Short"))
-    Boxed += (nme.Int     -> newTermName("java.lang.Integer"))
-    Boxed += (nme.Long    -> newTermName("java.lang.Long"))
-    Boxed += (nme.Float   -> newTermName("java.lang.Float"))
-    Boxed += (nme.Double  -> newTermName("java.lang.Double"))
+    Boxed += (nme.Boolean -> BoxedBoolean)
+    Boxed += (nme.Byte    -> BoxedByte)
+    Boxed += (nme.Char    -> BoxedCharacter)
+    Boxed += (nme.Short   -> BoxedShort)
+    Boxed += (nme.Int     -> BoxedInteger)
+    Boxed += (nme.Long    -> BoxedLong)
+    Boxed += (nme.Float   -> BoxedFloat)
+    Boxed += (nme.Double  -> BoxedDouble)
   }
 
   private class MSILNames extends SymbolNames {

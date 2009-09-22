@@ -364,6 +364,13 @@ trait Definitions {
     lazy val BoxedNumberClass       = getClass(sn.BoxedNumber)
     lazy val BoxedCharacterClass    = getClass(sn.BoxedCharacter)
     lazy val BoxedBooleanClass      = getClass(sn.BoxedBoolean)
+    lazy val BoxedByteClass         = getClass("java.lang.Byte")
+    lazy val BoxedShortClass        = getClass("java.lang.Short")
+    lazy val BoxedIntClass          = getClass("java.lang.Integer")
+    lazy val BoxedLongClass         = getClass("java.lang.Long")
+    lazy val BoxedFloatClass        = getClass("java.lang.Float")
+    lazy val BoxedDoubleClass       = getClass("java.lang.Double")
+
     lazy val BoxedUnitClass         = getClass("scala.runtime.BoxedUnit")
     lazy val BoxedUnitModule        = getModule("scala.runtime.BoxedUnit")
       def BoxedUnit_UNIT = getMember(BoxedUnitModule, "UNIT")
