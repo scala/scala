@@ -291,7 +291,7 @@ final class ListBuffer[A]
   }
 
   /** expose the underlying list but do not mark it as exported */
-  def readOnly: List[A] = start
+  override def readOnly: List[A] = start
 
   // Private methods
 

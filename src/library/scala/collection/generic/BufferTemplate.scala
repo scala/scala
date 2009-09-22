@@ -328,7 +328,7 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
     repr
   }
 
-  @deprecated("Use toSequence instead") def readOnly: Sequence[A] = toSequence
+  def readOnly: List[A] = toList
 }
 
 
