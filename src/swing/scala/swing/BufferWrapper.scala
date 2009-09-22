@@ -32,7 +32,7 @@ protected[swing] abstract class BufferWrapper[A] extends Buffer[A] { outer =>
   }
   protected def insertAt(n: Int, a: A)
 
-  def readOnly: Vector[A] = new Vector[A] {
+  override def readOnly: Vector[A] = new Vector[A] {
     def length = outer.length
     def apply(idx : Int) = outer.apply(idx)
     override def stringPrefix = outer.stringPrefix + "RO"

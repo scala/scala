@@ -328,7 +328,7 @@ trait BufferTemplate[A, +This <: BufferTemplate[A, This] with Buffer[A]]
     repr
   }
 
-  def readOnly: List[A] = toList
+  def readOnly: collection.Sequence[A] = toSequence
 }
 
 

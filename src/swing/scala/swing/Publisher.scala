@@ -146,7 +146,7 @@ abstract class RefBuffer[A <: AnyRef] extends Buffer[A] with SingleRefCollection
     underlying.insertAll(n, iter.view.map(Ref(_)))
   }
   def update(n: Int, el: A) { purgeReferences(); underlying(n) = Ref(el) }
-  def readOnly : Seq[A] = new Seq[A] {
+  override def readOnly : Seq[A] = new Seq[A] {
     def length = self.length
     def iterator = self.iterator
     def apply(n: Int) = self(n)
