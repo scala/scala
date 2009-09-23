@@ -12,6 +12,7 @@
 package scala.xml
 package dtd
 
+import PartialFunction._
 import ContentModel.ElemName
 import scala.util.automata._
 
@@ -42,24 +43,17 @@ class ElementValidator() extends Function1[Node,Boolean] {
   /** set meta data, enabling attribute validation */
   def setMetaData(adecls: List[AttrDecl]) { this.adecls = adecls }
 
-  def getIterator(nodes: Seq[Node], skipPCDATA: Boolean): Iterator[ElemName] =
-    nodes.toList
-	 .filter { x => x match {
-           case y:SpecialNode => y match {
+  def getIterator(nodes: Seq[Node], skipPCDATA: Boolean): Iterator[ElemName] = {
+    def isAllWhitespace(a: Atom[_]) = cond(a.data) { case s: String if s.trim.isEmpty  => true }
 
-             case a:Atom[_] if (a.data.isInstanceOf[String] &&
-                                a.data.asInstanceOf[String].trim.length == 0 ) =>
-                false; // always skip all-whitespace nodes
-
-              case _ =>
-                !skipPCDATA
-
-            }
-            case _ =>
-              x.namespace eq null
-          }}
-          .map { x => ElemName(x.label) }
-          .iterator;
+    nodes.filter {
+      case y: SpecialNode => y match {
+        case a: Atom[_] if isAllWhitespace(a) => false  // always skip all-whitespace nodes
+        case _                                => !skipPCDATA
+      }
+      case x                                  => x.namespace eq null
+    } . map (x => ElemName(x.label)) iterator
+  }
 
   /** check attributes, return true if md corresponds to attribute declarations in adecls.
    */
@@ -116,60 +110,37 @@ class ElementValidator() extends Function1[Node,Boolean] {
    *  @pre contentModel != null
    */
   def check(nodes: Seq[Node]): Boolean = contentModel match {
-    case ANY =>
-      true
-
-    case EMPTY =>
-      !getIterator(nodes, false).hasNext
-
-    case PCDATA =>
-      !getIterator(nodes, true).hasNext
-
-    case MIXED(ContentModel.Alt(branches @ _*))  => //@todo
+    case ANY    => true
+    case EMPTY  => !getIterator(nodes, false).hasNext
+    case PCDATA => !getIterator(nodes, true).hasNext
+    case MIXED(ContentModel.Alt(branches @ _*))  =>   // @todo
       val j = exc.length
-      def find(Key: String): Boolean = {
-        var res = false
-        val jt = branches.iterator
-        while (jt.hasNext && !res)
-          jt.next match { // !!! check for match translation problem
-            case ContentModel.Letter(ElemName(Key)) => res = true;
-            case _                                  =>
-          }
-        res
+      def find(Key: String): Boolean =
+        branches exists { case ContentModel.Letter(ElemName(Key)) => true ; case _ => false }
+
+      getIterator(nodes, true) map (_.name) filterNot find foreach {
+        exc ::= MakeValidationException fromUndefinedElement _
       }
+      (exc.length == j)   // - true if no new exception
 
-      var it = getIterator(nodes, true); while(it.hasNext) {
-        var label = it.next.name;
-        if (!find(label)) {
-          exc = MakeValidationException.fromUndefinedElement(label) :: exc;
-        }
-      }
-
-      (exc.length == j) //- true if no new exception
-
-    case _:ELEMENTS =>
+    case _: ELEMENTS =>
       var q = 0
-      val it = getIterator(nodes, false)
-      while (it.hasNext) {
-        val e = it.next
-        dfa.delta(q).get(e) match {
-          case Some(p) => q = p
-          case _       => throw ValidationException("element "+e+" not allowed here")
+      getIterator(nodes, false) foreach { e =>
+        (dfa delta q get e) match {
+          case Some(p)  => q = p
+          case _        => throw ValidationException("element %s not allowed here" format e)
         }
       }
-      dfa.isFinal(q) //- true if arrived in final state
+
+      dfa isFinal q       // - true if arrived in final state
   }
 
   /** applies various validations - accumulates error messages in exc
    *  @todo: fail on first error, ignore other errors (rearranging conditions)
    */
-  def apply(n: Node): Boolean = {
+  def apply(n: Node): Boolean =
     //- ? check children
-    var res = (null == contentModel) || check( n.child );
-
+    ((contentModel == null) || check(n.child)) &&
     //- ? check attributes
-    res = ((null == adecls) || check( n.attributes )) && res;
-
-    res
-  }
+    ((adecls == null) || check(n.attributes))
 }

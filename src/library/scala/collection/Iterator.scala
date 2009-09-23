@@ -366,6 +366,15 @@ trait Iterator[+A] { self =>
     }
   }
 
+  /** Returns an iterator over all the elements of this iterator which
+   *  do not satisfy the predicate <code>p</code>.
+   *
+   *  @param p the predicate used to filter.
+   *  @return  the elements of this iterator not satisfying <code>p</code>.
+   */
+
+  def filterNot(p: A => Boolean): Iterator[A] = filter(!p(_))
+
  /** Returns a new iterator based on the partial function <code>pf</code>,
   *  containing <code>pf(x)</code> for all the elements which are defined on pf.
   *  The order of the elements is preserved.
