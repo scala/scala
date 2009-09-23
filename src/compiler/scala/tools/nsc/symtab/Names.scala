@@ -89,9 +89,8 @@ class Names {
 
   /** "COMPACTIFY" */
   private def toMD5(s: String, edge: Int) = {
-    import collection.immutable.StringVector._
-    val prefix = take(s, edge)
-    val suffix = takeRight(s, edge)
+    val prefix = s take edge
+    val suffix = s takeRight edge
     val marker = "$$$$"
 
     val cs = s.toArray

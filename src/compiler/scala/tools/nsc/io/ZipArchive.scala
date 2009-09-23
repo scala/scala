@@ -16,7 +16,6 @@ import PartialFunction._
 
 import scala.collection.Traversable
 import scala.collection.mutable.{ Map, HashMap }
-import scala.collection.immutable.{ StringVector => SV }
 import scala.collection.JavaConversions.asIterator
 
 /**
@@ -142,7 +141,7 @@ private[io] trait ZipContainer extends AbstractFile
   protected def splitPath(path: String): (String, String) = {
     (path lastIndexOf '/') match {
       case -1   => ("/", path)
-      case idx  => SV.splitAt(path, idx + 1)
+      case idx  => path splitAt (idx + 1)
     }
   }
 
@@ -171,7 +170,7 @@ private[io] trait ZipContainer extends AbstractFile
    */
   protected def getDir(dirs: Map[String, DirEntryInterface], path: String): DirEntryInterface =
     dirs.getOrElseUpdate(path, {
-      val (home, name) = splitPath(SV init path)
+      val (home, name) = splitPath(path init)
       val parent = getDir(dirs, home)
       val dir = DirEntryConstructor(parent, name, path)
       parent.entries(name + path.last) = dir

@@ -20,7 +20,7 @@ import scala.collection.mutable.ArrayBuffer
  */
 object AbstractFile
 {
-  def isJarOrZip(f: Path) = cond(f.extension) { case Some("zip" | "jar") => true }
+  def isJarOrZip(f: Path) = cond(f.extension) { case "zip" | "jar" => true }
 
   /** Returns "getFile(new File(path))". */
   def getFile(path: String): AbstractFile = getFile(Path(path))

@@ -10,7 +10,6 @@ import java.io.{
   BufferedInputStream, BufferedOutputStream, File => JFile }
 import java.net.{ URI, URL }
 import collection.{ Sequence, Traversable }
-import collection.immutable.{ StringVector => SV }
 import PartialFunction._
 import scala.util.Random.nextASCIIString
 
@@ -104,13 +103,11 @@ class Path private[io] (val jfile: JFile)
     case None     => Nil
     case Some(p)  => p :: p.parents
   }
-  // if name ends with an extension (e.g. "foo.jpg") returns the extension ("jpg")
-  def extension: Option[String] =
-    condOpt(SV.lastIndexWhere(name, _ == '.')) {
-      case idx if idx != -1 => SV.drop(name, idx + 1)
-    }
-  // Alternative approach:
-  // (Option fromReturnValue SV.lastIndexWhere(name, _ == '.') map (x => SV.drop(name, x + 1))
+  // if name ends with an extension (e.g. "foo.jpg") returns the extension ("jpg"), otherwise ""
+  def extension: String = (name lastIndexOf '.') match {
+    case -1   => ""
+    case idx  => name drop (idx + 1)
+  }
 
   // Boolean tests
   def canRead = jfile.canRead()
