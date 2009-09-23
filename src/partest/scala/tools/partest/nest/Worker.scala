@@ -235,24 +235,32 @@ class Worker(val fileManager: FileManager) extends Actor {
     // check whether there is a ".javaopts" file
     val argsFile = new File(logFile.getParentFile, fileBase+".javaopts")
     val argString = if (argsFile.exists) {
-      NestUI.verbose("argsFile: "+argsFile)
+      NestUI.verbose("Found javaopts file: "+argsFile)
       val fileReader = new FileReader(argsFile)
       val reader = new BufferedReader(fileReader)
       val options = reader.readLine()
       reader.close()
+      NestUI.verbose("Found javaopts file '%s', using options: '%s'".format(argsFile, options))
       options
     } else ""
-    NestUI.verbose("JAVA_OPTS: "+argString)
 
     val cp = System.getProperty("java.class.path", ".")
     NestUI.verbose("java.class.path: "+cp)
 
     def quote(path: String) = "\""+path+"\""
 
+    // Note! As this currently functions, JAVA_OPTS must precede argString
+    // because when an option is repeated to java only the last one wins.
+    // That means until now all the .javaopts files were being ignored because
+    // they all attempt to change options which are also defined in
+    // scalatest.java_opts, leading to debug output like:
+    //
+    // debug: Found javaopts file 'files/shootout/message.scala-2.javaopts', using options: '-Xss32k'
+    // debug: java -Xss32k -Xss2m -Xms256M -Xmx1024M -classpath [...]
     val cmd =
       JAVACMD+
-      " "+argString+
       " "+JAVA_OPTS+
+      " "+argString+
       " -classpath "+outDir+File.pathSeparator+CLASSPATH+
       " -Djava.library.path="+logFile.getParentFile.getAbsolutePath+
       " -Dscalatest.output="+outDir.getAbsolutePath+
