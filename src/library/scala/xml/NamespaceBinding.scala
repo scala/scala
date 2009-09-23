@@ -25,37 +25,31 @@ import Utility.sbToString
 @SerialVersionUID(0 - 2518644165573446725L)
 case class NamespaceBinding(prefix: String, uri: String, parent: NamespaceBinding) extends AnyRef
 {
-  if (null != prefix && 0 == prefix.length())
+  if (prefix != null && prefix.isEmpty)
     throw new IllegalArgumentException("zero length prefix not allowed")
 
   def getURI(_prefix: String): String =
-    if (prefix == _prefix) uri
-    else parent getURI _prefix
+    if (prefix == _prefix) uri else parent getURI _prefix
 
-  /** Returns some prefix that is mapped to the prefix.
+  /** Returns some prefix that is mapped to the URI.
    *
-   *  @param _uri
-   *  @return
+   * @param _uri the input URI
+   * @return the prefix that is mapped to the input URI, or null
+   * if no prefix is mapped to the URI.
    */
   def getPrefix(_uri: String): String =
-    if (_uri == uri) uri
-    else parent getURI _uri
+    if (_uri == uri) prefix else parent getPrefix _uri
 
   override def toString(): String = sbToString(buildString(_, TopScope))
 
   def buildString(stop: NamespaceBinding): String = sbToString(buildString(_, stop))
   def buildString(sb: StringBuilder, stop: NamespaceBinding): Unit = {
-    if (this ne stop) { // contains?
-      sb.append(" xmlns")
-      if (prefix ne null) {
-        sb.append(':').append(prefix)
-      }
-      sb.append('=')
-      .append('"')
-      .append(if (uri == null) "" else uri)
-      .append('"');
-      parent.buildString(sb, stop) // copy(ignore)
-    }
-  }
+    if (this eq stop) return    // contains?
 
+    val s = " xmlns%s=\"%s\"".format(
+      (if (prefix != null) ":" + prefix else ""),
+      (if (uri != null) uri else "")
+    )
+    parent.buildString(sb append s, stop) // copy(ignore)
+  }
 }
