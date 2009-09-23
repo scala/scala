@@ -227,11 +227,7 @@ abstract class Enumeration(initial: Int, names: String*) {
     /** The empty value set */
     val empty = new ValueSet(BitSet.empty)
     /** A value set consisting of given elements */
-    def apply(elems: Value*): ValueSet = {
-      var s = empty
-      for (elem <- elems) s = s + elem // !!! change to s += elem --> error
-      s
-    }
+    def apply(elems: Value*): ValueSet = elems.foldLeft(empty)(_ + _)
     /** A builder object for value sets */
     def newBuilder: Builder[Value, ValueSet] = new AddingBuilder(empty)
     /** The implicit builder for value sets */

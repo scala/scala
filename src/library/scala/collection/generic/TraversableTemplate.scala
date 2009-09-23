@@ -11,11 +11,6 @@
 
 package scala.collection.generic
 import scala.collection._
-import scala.reflect.ClassManifest
-
-// import immutable.{List, Stream, Nil} //!!!
-import mutable.{Buffer, ArrayBuffer, ListBuffer}
-import annotation.experimental
 
 /** <p>
  *    A template trait for traversable collections.

@@ -164,14 +164,6 @@ final class BoxedAnyArray[A](val length: Int) extends BoxedArray[A] {
     unboxed
   }
 
-/* !!! todo: deal with array equality
-  override def equals(other: Any): Boolean =
-    other.isInstanceOf[BoxedAnyArray[_]] && (this eq (other.asInstanceOf[BoxedAnyArray[_]])) ||
-    (if (unboxed eq null) boxed == other else unboxed == other)
-
-  override def hashCode(): Int = hash
-*/
-
   def value: AnyRef = {
     if (unboxed eq null) throw new NotDefinedError("BoxedAnyArray.value")
     unboxed

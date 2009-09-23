@@ -70,8 +70,7 @@ object GenericArray extends SequenceFactory[GenericArray] {
   def newBuilder[A]: Builder[A, GenericArray[A]] =
     new ArrayBuffer[A] mapResult { buf =>
       val result = new GenericArray[A](buf.length)
-      for (i <- 0 until buf.length) result.array(i) = buf(i).asInstanceOf[AnyRef]
-      // !!! todo: replace with    buf.copyToArray(result.array, 0)
+      buf.copyToArray(result.array.asInstanceOf[Array[Any]], 0)
       result
     }
 }

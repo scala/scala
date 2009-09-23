@@ -51,7 +51,7 @@ trait ScalaClassLoader extends JavaClassLoader
     if (!Modifier.isStatic(method.getModifiers))
       throw new NoSuchMethodException(objectName + ".main is not static")
 
-    asContext(method.invoke(null, Array(arguments.toArray).toSequence: _*)) // !!! todo: remove toSequence once newarrays starr is in
+    asContext(method.invoke(null, Array(arguments.toArray: AnyRef): _*))  // !!! : AnyRef shouldn't be necessary
   }
 }
 

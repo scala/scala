@@ -12,8 +12,6 @@ package scala.collection
 import generic._
 import annotation.unchecked.uncheckedVariance
 
-// import immutable.Stream // !!!
-
 /** <p>
  *    A template trait for iterable collections.
  *  </p>

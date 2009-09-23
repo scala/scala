@@ -7,7 +7,6 @@
 \*                                                                      */
 
 // $Id$
-// !!! todo: integrate in new collections library
 
 package scala.collection
 

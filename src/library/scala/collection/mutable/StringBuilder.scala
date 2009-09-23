@@ -843,10 +843,8 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
 }
 
 
-object StringBuilder {
-
-  type Array[T] = scala.Array[T] // !!!
-
+object StringBuilder
+{
   // method <code>java.util.Arrays.copyOf</code> exists since 1.6
   private def copyOf(src: Array[Char], newLength: Int): Array[Char] = {
     val dest = new Array[Char](newLength)

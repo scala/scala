@@ -16,7 +16,6 @@ import scala.collection.mutable
 
 /** A subtrait of <code>collection.Traversable</code> which represents
  *  traversables that cannot be mutated.
- *  !!! todo: revise equality
  *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky

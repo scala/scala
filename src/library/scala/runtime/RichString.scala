@@ -209,13 +209,11 @@ class RichString(val self: String) extends Proxy with Vector[Char] with VectorTe
     else
       throw new NumberFormatException("For input string: \"null\"")
 
-  /* !!! causes crash?
   def toArray: Array[Char] = {
     val result = new Array[Char](length)
     self.getChars(0, length, result, 0)
     result
   }
-  */
 
   /** <p>
    *  Uses the underlying string as a pattern (in a fashion similar to

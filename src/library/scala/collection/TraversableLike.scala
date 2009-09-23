@@ -11,9 +11,8 @@
 
 package scala.collection
 import generic._
-import scala.reflect.ClassManifest
 
-// import immutable.{List, Stream, Nil} //!!!
+import scala.reflect.ClassManifest
 import mutable.{Buffer, ArrayBuffer, ListBuffer}
 import annotation.experimental
 

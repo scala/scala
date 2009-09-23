@@ -10,10 +10,6 @@
 
 package scala.collection.generic
 import scala.collection._
-import annotation.unchecked.uncheckedVariance
-
-import scala.util.control.Breaks._
-// import immutable.Stream // !!!
 
 /** <p>
  *    A template trait for iterable collections.
