@@ -278,6 +278,10 @@ abstract class TreeGen
     Apply(Select(mkAttributedRef(ScalaRunTimeModule), meth), args)
   }
 
+  def mkRuntimeCall(meth: Name, targs: List[Type], args: List[Tree]): Tree = {
+    Apply(TypeApply(Select(mkAttributedRef(ScalaRunTimeModule), meth), targs map TypeTree), args)
+  }
+
   /** Make a synchronized block on 'monitor'. */
   def mkSynchronized(monitor: Tree, body: Tree): Tree =
     Apply(Select(monitor, Object_synchronized), List(body))

@@ -116,15 +116,6 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
         case st: SubType =>
           apply(st.supertype)
         case TypeRef(pre, sym, args) =>
-          def isGeneric(tp: Type): Boolean = tp match {
-            case TypeRef(pre, sym, args) =>
-              sym.isAbstractType && !(sym.owner hasFlag JAVA) ||
-              sym == ArrayClass && args.length == 1 && isGeneric(args.head)
-            case ExistentialType(tparams, restp) =>
-              isGeneric(restp)
-            case _ =>
-              false
-          }
           if (sym == ArrayClass)
             if (unboundedGenericArrayLevel(tp) == 1) ObjectClass.tpe
             else if (args.head.typeSymbol == NothingClass || args.head.typeSymbol == NullClass) arrayType(ObjectClass.tpe)
@@ -406,7 +397,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
              sym.tpe.resultType <:< bridge.tpe.resultType
     }
 
-// -------- boxing/unboxing --------------------------------------------------------
+// -------- erasure on trees ------------------------------------------
 
   override def newTyper(context: Context) = new Eraser(context)
 
@@ -597,11 +588,15 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
               assert(qual1.symbol.isStable, qual1.symbol);
               qual1 = Apply(qual1, List()) setPos qual1.pos setType qual1.tpe.resultType
             } else if (!(qual1.isInstanceOf[Super] || (qual1.tpe.typeSymbol isSubClass tree.symbol.owner))) {
-              // println("member cast "+tree.symbol+" "+tree.symbol.ownerChain+" "+qual1+" "+qual1.tpe)
+              assert(tree.symbol.owner != ArrayClass)
               qual1 = cast(qual1, tree.symbol.owner.tpe)
             }
             treeCopy.Select(tree, qual1, name)
           }
+        case SelectFromArray(qual, name, erasure) =>
+          var qual1 = typedQualifier(qual)
+          if (!(qual1.tpe <:< erasure)) qual1 = cast(qual1, erasure)
+          Select(qual1, name) copyAttrs tree
         case _ =>
           tree
       }
@@ -638,6 +633,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
       }
       def adaptBranch(branch: Tree): Tree =
         if (branch == EmptyTree) branch else adaptToType(branch, tree1.tpe);
+
       tree1 match {
         case If(cond, thenp, elsep) =>
           treeCopy.If(tree1, cond, adaptBranch(thenp), adaptBranch(elsep))
@@ -925,11 +921,18 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
                                         fun.symbol != Object_isInstanceOf) =>
             // leave all other type tests/type casts, remove all other type applications
             fun
-          case Apply(fn @ Select(qual, name), args)
-          if (fn.symbol.owner == ArrayClass && (unboundedGenericArrayLevel(qual.tpe.widen) == 1)) =>
-            // convert calls to apply/update/length on generic arrays to
-            // calls of ScalaRunTime.array_xxx method calls
-            typedPos(tree.pos) { gen.mkRuntimeCall("array_"+name, qual :: args) }
+          case Apply(fn @ Select(qual, name), args) if (fn.symbol.owner == ArrayClass) =>
+            if (unboundedGenericArrayLevel(qual.tpe.widen) == 1)
+              // convert calls to apply/update/length on generic arrays to
+              // calls of ScalaRunTime.array_xxx method calls
+              typedPos(tree.pos) { gen.mkRuntimeCall("array_"+name, qual :: args) }
+            else
+              // store exact array erasure in map to be retrieved later when we might
+              // need to do the cast in adaptMember
+              treeCopy.Apply(
+                tree,
+                SelectFromArray(qual, name, erasure(qual.tpe)).copyAttrs(fn),
+                args)
           case Apply(fn, args) =>
             if (fn.symbol == Any_asInstanceOf)
               fn match {

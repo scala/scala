@@ -3570,9 +3570,15 @@ trait Typers { self: Analyzer =>
         case Typed(expr, tpt) =>
           if (treeInfo.isWildcardStarArg(tree)) {
             val expr0 = typed(expr, mode & stickyModes, WildcardType)
+            def subArrayType(pt: Type) =
+              if (isValueClass(pt.typeSymbol) || !isFullyDefined(pt)) arrayType(pt)
+              else {
+                val tparam = makeFreshExistential("", context.owner, TypeBounds(NothingClass.tpe, pt))
+                ExistentialType(List(tparam), arrayType(tparam.tpe))
+              }
             val (expr1, baseClass) =
               if (expr0.tpe.typeSymbol == ArrayClass)
-                (adapt(expr0, mode & stickyModes, arrayType(pt)), ArrayClass)
+                (adapt(expr0, mode & stickyModes, subArrayType(pt)), ArrayClass)
               else
                 (adapt(expr0, mode & stickyModes, seqType(pt)), SeqClass)
             expr1.tpe.baseType(baseClass) match {

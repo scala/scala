@@ -821,7 +821,7 @@ trait Trees {
 
   def This(sym: Symbol): Tree = This(sym.name) setSymbol sym
 
-  /** Designator <qualifier> . <selector> */
+  /** Designator <qualifier> . <name> */
   case class Select(qualifier: Tree, name: Name)
        extends RefTree {
     override def isTerm = name.isTermName
@@ -886,7 +886,7 @@ trait Trees {
   case class SingletonTypeTree(ref: Tree)
         extends TypTree
 
-  /** Type selection <qualifier> # <selector>, eliminated by RefCheck */
+  /** Type selection <qualifier> # <name>, eliminated by RefCheck */
   case class SelectFromTypeTree(qualifier: Tree, name: Name)
        extends TypTree with RefTree
 
@@ -908,6 +908,10 @@ trait Trees {
        extends TypTree
 
   case class Parens(args: List[Tree]) extends Tree // only used during parsing
+
+  /** Array selection <qualifier> . <name> only used during erasure */
+  case class SelectFromArray(qualifier: Tree, name: Name, erasure: Type)
+       extends TermTree with RefTree
 
   trait StubTree extends Tree {
     def underlying : AnyRef
@@ -1073,6 +1077,7 @@ trait Trees {
     def AppliedTypeTree(tree: Tree, tpt: Tree, args: List[Tree]): AppliedTypeTree
     def TypeBoundsTree(tree: Tree, lo: Tree, hi: Tree): TypeBoundsTree
     def ExistentialTypeTree(tree: Tree, tpt: Tree, whereClauses: List[Tree]): ExistentialTypeTree
+    def SelectFromArray(tree: Tree, qualifier: Tree, selector: Name, erasure: Type): SelectFromArray
   }
 
   class StrictTreeCopier extends TreeCopier {
@@ -1164,6 +1169,8 @@ trait Trees {
       new TypeBoundsTree(lo, hi).copyAttrs(tree)
     def ExistentialTypeTree(tree: Tree, tpt: Tree, whereClauses: List[Tree]) =
       new ExistentialTypeTree(tpt, whereClauses).copyAttrs(tree)
+    def SelectFromArray(tree: Tree, qualifier: Tree, selector: Name, erasure: Type) =
+      new SelectFromArray(qualifier, selector, erasure).copyAttrs(tree)
   }
 
   class LazyTreeCopier(treeCopy: TreeCopier) extends TreeCopier {
@@ -1388,6 +1395,11 @@ trait Trees {
       if (tpt0 == tpt) && (whereClauses0 == whereClauses) => t
       case _ => treeCopy.ExistentialTypeTree(tree, tpt, whereClauses)
     }
+    def SelectFromArray(tree: Tree, qualifier: Tree, selector: Name, erasure: Type) = tree match {
+      case t @ SelectFromArray(qualifier0, selector0, _)
+      if (qualifier0 == qualifier) && (selector0 == selector) => t
+      case _ => treeCopy.SelectFromArray(tree, qualifier, selector, erasure)
+    }
   }
 
   abstract class Transformer {
@@ -1510,6 +1522,8 @@ trait Trees {
         treeCopy.TypeBoundsTree(tree, transform(lo), transform(hi))
       case ExistentialTypeTree(tpt, whereClauses) =>
         treeCopy.ExistentialTypeTree(tree, transform(tpt), transformTrees(whereClauses))
+      case SelectFromArray(qualifier, selector, erasure) =>
+        treeCopy.SelectFromArray(tree, transform(qualifier), selector, erasure)
       case tree : StubTree =>
         tree.symbol = NoSymbol
         tree.tpe = null
@@ -1659,6 +1673,8 @@ trait Trees {
         traverse(lo); traverse(hi)
       case ExistentialTypeTree(tpt, whereClauses) =>
         traverse(tpt); traverseTrees(whereClauses)
+      case SelectFromArray(qualifier, selector, erasure) =>
+        traverse(qualifier)
       case Parens(ts) =>
         traverseTrees(ts)
       case tree : StubTree =>

@@ -2660,7 +2660,8 @@ A type's typeSymbol should never be inspected directly.
   private val emptySymCount = scala.collection.immutable.Map[Symbol, Int]()
 
   /** Make an existential variable.
-   *  @param suffix  A suffix to be appended to the freshly generated name
+   *  [martin:] this should get moved to Symbols where the other symbols are created.
+   *  @param name    suffix to be appended to the freshly generated name
    *                 It's ususally "", except for type variables abstracting
    *                 over values, where it is ".type".
    *  @param owner   The owner of the variable
