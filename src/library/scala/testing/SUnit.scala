@@ -150,12 +150,9 @@ object SUnit {
 
   /** an AssertFailed is thrown for a failed assertion */
   case class AssertFailed(msg: String, stackTrace: Boolean) extends RuntimeException {
-    private val msg0 = if (stackTrace) {
-      import java.io._
-      val wrt = new StringWriter
-      printStackTrace(new PrintWriter(wrt))
-      wrt.toString
-    } else msg
+    private val msg0 =
+      if (stackTrace) super.getStackTrace().map(_.toString + "\n").mkString
+      else msg
     override def toString() =
       if (msg0 eq null) "failed assertion: " + msg else msg0
   }

@@ -69,7 +69,7 @@ abstract class FactoryAdapter extends DefaultHandler with factory.XMLLoader[Node
    * @return a new XML element.
    */
   def createNode(pre: String, elemName: String, attribs: MetaData,
-                 scope: NamespaceBinding, chIter: List[Node]): Node //abstract
+                 scope: NamespaceBinding, chIter: List[Node]): Node // abstract
 
   /** creates a Text node.
    * @param text
@@ -94,20 +94,25 @@ abstract class FactoryAdapter extends DefaultHandler with factory.XMLLoader[Node
   */
   override def characters(ch: Array[Char], offset: Int, length: Int): Unit = {
     if (!capture) return
-    if (!normalizeWhitespace) {
-      // compliant: report every character
-      return buffer.appendAll(ch, offset, length)
-    }
-
+    // compliant: report every character
+    else if (!normalizeWhitespace) buffer.appendAll(ch, offset, length)
     // normalizing whitespace is not compliant, but useful
-    var i: Int = offset
-    while (i < offset + length) {
-      val c = if (ch(i).isWhitespace) ' ' else ch(i)
-      buffer append c
-      i += 1
-      // if that was whitespace, drop until non whitespace
-      if (c == ' ') while (ch(i).isWhitespace) i += 1
+    else {
+      var it = ch.slice(offset, offset + length).iterator
+      while (it.hasNext) {
+        val c = it.next
+        val isSpace = c.isWhitespace
+        buffer append (if (isSpace) ' ' else c)
+        if (isSpace)
+          it = it dropWhile (_.isWhitespace)
+      }
     }
+  }
+
+  private def splitName(s: String) = {
+    val idx = s indexOf ':'
+    if (idx < 0) (null, s)
+    else (s take idx, s drop (idx + 1))
   }
 
   /* ContentHandler methods */
@@ -119,61 +124,42 @@ abstract class FactoryAdapter extends DefaultHandler with factory.XMLLoader[Node
     qname: String,
     attributes: Attributes): Unit =
   {
-    /*elemCount = elemCount + 1; STATISTICS */
     captureText()
-    //Console.println("FactoryAdapter::startElement("+uri+","+_localName+","+qname+","+attributes+")");
-    tagStack.push(curTag)
-    curTag = qname; //localName ;
+    tagStack push curTag
+    curTag = qname
 
-    val colon = qname.indexOf(':'.asInstanceOf[Int])
-    val localName = if(-1 == colon) qname else qname.substring(colon+1,qname.length())
-
-    //Console.println("FactoryAdapter::startElement - localName ="+localName);
-
+    val localName = splitName(qname)._2
     capture = nodeContainsText(localName)
 
-    hStack.push(null)
+    hStack push null
     var m: MetaData = Null
+    var scpe: NamespaceBinding = TopScope
 
-    var scpe = scopeStack.top
-    for (i <- List.range(0, attributes.getLength())) {
-      //val attrType = attributes.getType(i); // unused for now
-      val qname = attributes.getQName(i)
-      val value = attributes.getValue(i)
-      val colon = qname.indexOf(':'.asInstanceOf[Int])
-      if (-1 != colon) {                     // prefixed attribute
-        val pre = qname.substring(0, colon)
-        val key = qname.substring(colon+1, qname.length())
-        if ("xmlns" /*XML.xmlns*/ == pre)
-          scpe = value.length() match {
-            case 0 => new NamespaceBinding(key, null,  scpe)
-            case _ => new NamespaceBinding(key, value, scpe)
-          }
-        else
-          m = new PrefixedAttribute(pre, key, Text(value), m)
-      } else if ("xmlns" /*XML.xmlns*/ == qname)
-        scpe = value.length() match {
-          case 0 => new NamespaceBinding(null, null,  scpe)
-          case _ => new NamespaceBinding(null, value, scpe)
-        }
+    for (i <- (0 until attributes.getLength()).toList) {
+      val qname = attributes getQName i
+      val value = (attributes getValue i) match { case "" => null ; case x => x }
+      val (pre, key) = splitName(qname)
+
+      if (pre == "xmlns" || (pre == null && qname == "xmlns")) {
+        val arg = if (pre == null) null else key
+        scpe = new NamespaceBinding(arg, value, scpe)
+      }
       else
-        m = new UnprefixedAttribute(qname, Text(value), m)
+        m = Attribute(Option(pre), key, Text(value), m)
     }
-    scopeStack.push(scpe)
-    attribStack.push(m)
-    ()
-  } // startElement(String,String,String,Attributes)
+
+    scopeStack push scpe
+    attribStack push m
+  }
 
 
   /** captures text, possibly normalizing whitespace
    */
   def captureText(): Unit = {
-    if (capture) {
-      val text = buffer.toString()
-      if (text.length() > 0)
-        hStack.push(createText(text))
-    }
-    buffer.setLength(0)
+    if (capture && buffer.length > 0)
+      hStack push createText(buffer.toString)
+
+    buffer.clear()
   }
 
   /** End element.
@@ -182,43 +168,25 @@ abstract class FactoryAdapter extends DefaultHandler with factory.XMLLoader[Node
    * @param qname
    * @throws org.xml.sax.SAXException if ..
    */
-  override def endElement(uri: String , _localName: String , qname: String): Unit = {
+  override def endElement(uri: String , _localName: String, qname: String): Unit = {
     captureText()
-
     val metaData = attribStack.pop
 
     // reverse order to get it right
-    var v: List[Node] = Nil
-    var child: Node = hStack.pop
-    while (child ne null) {
-      v = child::v
-      child = hStack.pop
-    }
-
-    val colon = qname.indexOf(':'.asInstanceOf[Int])
-    val localName =
-      if (-1 == colon) qname
-      else qname.substring(colon+1, qname.length())
-
+    val v = (Iterator continually hStack.pop takeWhile (_ != null)).toList.reverse
+    val (pre, localName) = splitName(qname)
     val scp = scopeStack.pop
+
     // create element
-    val pre = if (-1 == colon) null else qname.substring(0, colon)
     rootElem = createNode(pre, localName, metaData, scp, v)
-
-    hStack.push(rootElem)
-
-    // set
+    hStack push rootElem
     curTag = tagStack.pop
-
-    capture =
-      if (curTag ne null) nodeContainsText(curTag) // root level
-      else false
-  } // endElement(String,String,String)
+    capture = curTag != null && nodeContainsText(curTag) // root level
+  }
 
   /** Processing instruction.
   */
   override def processingInstruction(target: String, data: String) {
-    for (pi <- createProcInstr(target, data))
-      hStack.push(pi)
+    hStack pushAll createProcInstr(target, data)
   }
 }
