@@ -667,7 +667,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 //    println("\tunify \t" + tp1 + "\n\t\t" + tp2)
     (tp1, tp2) match {
     case (TypeRef(_, sym1, _), _) if sym1.hasAnnotation(SpecializedClass) =>
-      if (definitions.isValueType(tp2.typeSymbol))
+      if (definitions.isValueClass(tp2.typeSymbol))
         env + ((sym1, tp2))
       else
         env

@@ -154,7 +154,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
           apply(atp)
         case ClassInfoType(parents, decls, clazz) =>
           ClassInfoType(
-            if ((clazz == ObjectClass) || (isValueType(clazz))) List()
+            if ((clazz == ObjectClass) || (isValueClass(clazz))) List()
             else if (clazz == ArrayClass) List(erasedTypeRef(ObjectClass))
             else removeDoubleObject(parents map this),
             decls, clazz)
@@ -573,7 +573,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
             atPos(tree.pos)(Apply(Select(qual1, "to" + targClass.name), List()))
           else
 */
-          if (isValueType(targClass)) unbox(qual1, targ.tpe)
+          if (isValueClass(targClass)) unbox(qual1, targ.tpe)
           else tree
         case Select(qual, name) if (name != nme.CONSTRUCTOR) =>
           if (tree.symbol == NoSymbol)
@@ -586,9 +586,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
             adaptMember(atPos(tree.pos)(Select(qual, getMember(ObjectClass, name))))
           else {
             var qual1 = typedQualifier(qual);
-            if ((isValueType(qual1.tpe.typeSymbol) && !isUnboxedValueMember(tree.symbol)))
+            if ((isValueClass(qual1.tpe.typeSymbol) && !isUnboxedValueMember(tree.symbol)))
               qual1 = box(qual1)
-            else if (!isValueType(qual1.tpe.typeSymbol) && isUnboxedValueMember(tree.symbol))
+            else if (!isValueClass(qual1.tpe.typeSymbol) && isUnboxedValueMember(tree.symbol))
               qual1 = unbox(qual1, tree.symbol.owner.tpe)
 
             if (isValueClass(tree.symbol.owner) && !isValueClass(qual1.tpe.typeSymbol))

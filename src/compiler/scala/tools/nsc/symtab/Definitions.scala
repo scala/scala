@@ -689,12 +689,6 @@ trait Definitions {
     def isNumericValueClass(sym: Symbol): Boolean =
       (sym ne BooleanClass) && (boxedClass contains sym)
 
-    // !!! todo merge with isValueClass
-    def isValueType(sym: Symbol) = {
-      assert(isValueClass(sym) || !unboxMethod.contains(sym))
-      isValueClass(sym) || unboxMethod.contains(sym)
-    }
-
     def signature(tp: Type): String = {
       def erasure(tp: Type): Type = tp match {
         case st: SubType => erasure(st.supertype)
