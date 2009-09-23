@@ -25,6 +25,8 @@ import Predef._
 trait Proxy {
   def self: Any
   override def hashCode: Int = self.hashCode
-  override def equals(that: Any): Boolean = that equals self
+  override def equals(that: Any): Boolean =
+    if(that == null) false
+    else that equals self
   override def toString: String = self.toString
 }
