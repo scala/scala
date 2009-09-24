@@ -1,7 +1,8 @@
 package examples.actors
 
-import scala.actors._
+import scala.actors.{Actor, Scheduler}
 import scala.actors.Actor._
+import scala.actors.scheduler.SingleThreadedScheduler
 
 object message {
   def main(args: Array[String]) {
@@ -33,5 +34,7 @@ object message {
 
     val firstActor = actorChain(nActors, null)
     var i = n; while (i > 0) { firstActor ! 0; i -= 1 }
+
+    Scheduler.shutdown()
   }
 }

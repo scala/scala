@@ -11,17 +11,33 @@
 package scala.actors
 package scheduler
 
+import scala.collection.mutable.Queue
+
 /**
- * This scheduler executes the tasks of an actor on a single
- * thread (the current thread).
+ * This scheduler executes actor tasks on the current thread.
  *
- * @version 0.9.18
  * @author Philipp Haller
  */
 class SingleThreadedScheduler extends IScheduler {
 
+  private val tasks = new Queue[Runnable]
+
+  /** The maximum number of nested tasks that are run
+   *  without unwinding the call stack.
+   */
+  protected val maxNesting = 10
+
+  private var curNest = 0
+  private var isShutdown = false
+
   def execute(task: Runnable) {
-    task.run()
+    if (curNest < maxNesting) {
+      curNest += 1
+      task.run()
+    } else {
+      curNest = 0
+      tasks += task
+    }
   }
 
   def execute(fun: => Unit): Unit =
@@ -29,13 +45,23 @@ class SingleThreadedScheduler extends IScheduler {
       def run() { fun }
     })
 
-  def shutdown() {}
+  def shutdown() {
+    isShutdown = false
+    while (!tasks.isEmpty) {
+      val task = tasks.dequeue()
+      task.run()
+    }
+    isShutdown = true
+  }
 
   def newActor(actor: Reactor) {}
   def terminated(actor: Reactor) {}
+
+  // TODO: run termination handlers at end of shutdown.
   def onTerminate(actor: Reactor)(f: => Unit) {}
 
-  def isActive = true
+  def isActive =
+    !isShutdown
 
   def managedBlock(blocker: scala.concurrent.ManagedBlocker) {
     blocker.block()
