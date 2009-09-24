@@ -122,5 +122,3 @@ Garbage Collection
 [gc04] Garbage Collector Ergonomics
        http://java.sun.com/j2se/1.5.0/docs/guide/vm/gc-ergonomics.html
 
-
-$Id$
