@@ -29,43 +29,6 @@ import java.io.*;
   * @version 2.0 */
 public class BoxesRunTime
 {
-    /**** Temporary code to support logging all equality comparisons. ****/
-    private static boolean eqeqLogging = false;
-    private static String eqeqLogName = "/tmp/trunk-eqeq.log";
-    private static FileWriter eqeqLog;
-    public static void setEqEqLogging(boolean state) {
-      eqeqLogging = state;
-      if (state) {
-        try { eqeqLog = new FileWriter(eqeqLogName, true); }
-        catch (IOException e) { eqeqLog = null; }
-
-        log("Started eqeq log at " + (new java.util.Date()));
-      }
-    }
-    private static String obToString(Object o) {
-      String s = o.toString() + " (" + o.getClass().getSimpleName() + ")";
-      return s.replaceAll("\\n", " ");
-    }
-    private static void logInternal(String msg, Object a, Object b, String where) {
-      log(msg + obToString(a) + " == " + obToString(b) + " " + where);
-    }
-
-    public static String whereAreWe() {
-      StackTraceElement e = Thread.currentThread().getStackTrace()[3];
-      return"(" + e.getClassName() + "." + e.getMethodName() + e.getFileName() + ":" + e.getLineNumber() + ")";
-    }
-    public static void log(String msg) {
-      if (eqeqLogging && eqeqLog != null) {
-        try {
-          eqeqLog.write(msg + "\n");
-          eqeqLog.flush();
-        }
-        catch (IOException e) { }
-      }
-    }
-
-    /**** End temporary logging section. ****/
-
     private static final int CHAR = 0, BYTE = 1, SHORT = 2, INT = 3, LONG = 4, FLOAT = 5, DOUBLE = 6, OTHER = 7;
 
     private static int typeCode(Object a) {
@@ -92,8 +55,8 @@ public class BoxesRunTime
         //   foo(-100)
         // and the -100 will get to Character, which will duly crash.
         // The bug was masked before because the Characters were created
-        // with "new Character(c)" and the constructor avenue must have
-        // some check against negative values, whereas the static method doesn't.
+        // with "new Character(c)", but now the static method uses the argument
+        // as an index into a cache array, which can't be negative.
         //
         // It appears to be Short-specific; I can't get anything similar
         // out of Byte or Int.
@@ -369,7 +332,7 @@ public class BoxesRunTime
     public static boolean equals(Object a, Object b) {
         if ((a instanceof Number || a instanceof Character) && (b instanceof Number || b instanceof Character)) {
           if (a.getClass() != b.getClass()) {
-            logInternal("[ BOXED ] Comparing: ", a, b, whereAreWe());
+            Equality.logInternal("[ BOXED ] Comparing: ", a, b, Equality.whereAreWe());
           }
         }
 
@@ -407,7 +370,7 @@ public class BoxesRunTime
               String msg;
               if (res) msg = "[ BOXED ] Overriding equals between different types: ";
               else msg = "[ BOXED ] Overriding equals because b.equals(a): ";
-              logInternal(msg, a, b, whereAreWe());
+              Equality.logInternal(msg, a, b, Equality.whereAreWe());
               return true;
             }
             return false;

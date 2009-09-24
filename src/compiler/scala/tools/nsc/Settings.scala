@@ -819,7 +819,7 @@ trait ScalacSettings {
   val Ystatistics   = BooleanSetting    ("-Ystatistics", "Print compiler statistics")
   val stop          = PhasesSetting     ("-Ystop", "Stop after phase")
   val logEquality   = BooleanSetting    ("-Ylog-equality", "Log all noteworthy equality tests (hardcoded to /tmp/scala-equality-log.txt)") .
-                        withPostSetHook(() => scala.runtime.BoxesRunTime.setEqEqLogging(true))
+                        withPostSetHook(() => scala.runtime.Equality.logEverything = true)
   val refinementMethodDispatch =
                       ChoiceSetting     ("-Ystruct-dispatch", "Selects dispatch method for structural refinement method calls",
                         List("no-cache", "mono-cache", "poly-cache", "invoke-dynamic"), "poly-cache") .

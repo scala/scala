@@ -811,7 +811,7 @@ abstract class ClassfileParser {
     }
 
     def parseAnnotArg: Option[ClassfileAnnotArg] = {
-      val tag = in.nextByte
+      val tag = in.nextByte.toChar
       val index = in.nextChar
       tag match {
         case STRING_TAG =>

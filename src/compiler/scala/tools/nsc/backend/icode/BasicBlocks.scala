@@ -340,6 +340,19 @@ trait BasicBlocks {
       instrs foreach (i => emit(i, i.pos))
     }
 
+    /** The semantics of this are a little odd but it's designed to work
+     *  seamlessly with the existing code.  It emits each supplied instruction,
+     *  then closes the block.  The odd part is that if the instruction has
+     *  pos == NoPosition, it calls the 1-arg emit, but otherwise it calls
+     *  the 2-arg emit.  This way I could retain existing behavior exactly by
+     *  calling setPos on any instruction using the two arg version which
+     *  I wanted to include in a call to emitOnly.
+     */
+    def emitOnly(instrs: Instruction*) {
+      instrs foreach (i => if (i.pos == NoPosition) emit(i) else emit(i, i.pos))
+      this.close
+    }
+
     /** Close the block */
     def close {
       assert(instructionList.length > 0, "Empty block.")

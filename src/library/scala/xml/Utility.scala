@@ -87,7 +87,7 @@ object Utility extends AnyRef with parsing.TokenTests
   object Escapes {
     /** For reasons unclear escape and unescape are a long ways from
         being logical inverses. */
-    private val pairs = List(
+    val pairs = Map(
       "lt"    -> '<',
       "gt"    -> '>',
       "amp"   -> '&',
@@ -96,10 +96,10 @@ object Utility extends AnyRef with parsing.TokenTests
       // is valid xhtml but not html, and IE doesn't know it, says jweb
       // "apos"  -> '\''
     )
-    val escMap    = Map((for ((s, c) <- pairs) yield (c, "&%s;" format s)) : _*)
-    val unescMap  = Map(("apos"  -> '\'') :: pairs : _*)
+    val escMap    = pairs map { case (s, c) => c-> ("&%s;" format s) }
+    val unescMap  = pairs ++ Map("apos"  -> '\'')
   }
-  import Escapes._
+  import Escapes.{ escMap, unescMap }
 
   /**
    * Appends escaped string to <code>s</code>.

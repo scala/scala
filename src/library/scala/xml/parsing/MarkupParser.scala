@@ -14,6 +14,7 @@ package parsing
 
 import scala.io.Source
 import scala.xml.dtd._
+import Utility.Escapes.{ pairs => unescape }
 
 /**
  * An XML parser.
@@ -515,32 +516,21 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
           // postcond: xEmbeddedBlock == false!
           case '&' => // EntityRef or CharRef
             nextch;
-            ch match {
-              case '#' => // CharacterRef
-                nextch;
-                val theChar = handle.text( tmppos,
-                                          xCharRef ({ ()=> ch },{ () => nextch }) );
-                xToken(';');
-                ts &+ theChar ;
-              case _ => // EntityRef
-                val n = xName
-                xToken(';')
-                n match {
-                  case "lt"    => ts &+ '<'
-                  case "gt"    => ts &+ '>'
-                  case "amp"   => ts &+ '&'
-                  case "quot" => ts &+ '"'
-                  case _ =>
-                    /*
-                     ts + handle.entityRef( tmppos, n ) ;
-                     */
-                    push(n)
-                }
+            if (ch == '#') {    // CharacterRef
+              nextch
+              val theChar = handle.text(tmppos, xCharRef(() => ch, () => nextch))
+              xToken(';');
+              ts &+ theChar
+            }
+            else {      // EntityRef
+              val n = xName
+              xToken(';')
+
+              if (unescape contains n) ts &+ unescape(n)
+              else push(n)
             }
           case _ => // text content
-            //Console.println("text content?? pos = "+pos);
             appendText(tmppos, ts, xText);
-          // here xEmbeddedBlock might be true
           }
     /*}*/
     }

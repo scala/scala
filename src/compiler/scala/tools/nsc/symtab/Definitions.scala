@@ -127,6 +127,7 @@ trait Definitions {
     lazy val TypeConstraintClass  = getClass("scala.TypeConstraint")
     lazy val SingletonClass       = newClass(ScalaPackageClass, nme.Singleton, anyparam) setFlag (ABSTRACT | TRAIT | FINAL)
     lazy val SerializableClass    = getClass(sn.Serializable)
+    lazy val ComparableClass      = getClass("java.lang.Comparable")
 
     lazy val RepeatedParamClass = newCovariantPolyClass(
       ScalaPackageClass,

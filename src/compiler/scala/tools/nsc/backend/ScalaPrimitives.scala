@@ -508,6 +508,8 @@ abstract class ScalaPrimitives {
 
     case _ => false
   }
+  def isUniversalEqualityOp(code: Int): Boolean = (code == EQ) || (code == NE)
+  def isReferenceEqualityOp(code: Int): Boolean = (code == ID) || (code == NI)
 
   def isArithmeticOp(code: Int): Boolean = code match {
     case POS | NEG | NOT => true; // unary
