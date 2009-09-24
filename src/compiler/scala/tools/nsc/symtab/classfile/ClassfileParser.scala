@@ -545,8 +545,14 @@ abstract class ClassfileParser {
       val formals = tp.paramTypes
       assert(formals.last.typeSymbol == definitions.ArrayClass)
       val method = params.last.owner
-      val newParams = method.newSyntheticValueParams(formals.init :::
-           List(appliedType(definitions.JavaRepeatedParamClass.typeConstructor, List(formals.last.typeArgs.head))))
+      val elemtp = formals.last.typeArgs.head match {
+        case RefinedType(List(t1, t2), _) if (t1.typeSymbol.isAbstractType && t2.typeSymbol == definitions.ObjectClass) =>
+          t1 // drop intersection with Object for abstract types in varargs. UnCurry can handle them.
+        case t =>
+          t
+      }
+      val newParams = method.newSyntheticValueParams(
+        formals.init ::: List(appliedType(definitions.JavaRepeatedParamClass.typeConstructor, List(elemtp))))
       MethodType(newParams, rtpe)
     case PolyType(tparams, rtpe) =>
       PolyType(tparams, arrayToRepeated(rtpe))
@@ -641,7 +647,13 @@ abstract class ClassfileParser {
           tpe
         case ARRAY_TAG =>
           while ('0' <= sig(index) && sig(index) <= '9') index += 1
-          appliedType(definitions.ArrayClass.tpe, List(sig2type(tparams, skiptvs)))
+          var elemtp = sig2type(tparams, skiptvs)
+          // make unbounded Array[T] where T is a type variable into Array[T with Object]
+          // (this is necessary because such arrays have a representation which is incompatibe
+          // with arrays of primitive types.
+          if (elemtp.typeSymbol.isAbstractType && !(elemtp <:< definitions.ObjectClass.tpe))
+            elemtp = intersectionType(List(elemtp, definitions.ObjectClass.tpe))
+          appliedType(definitions.ArrayClass.tpe, List(elemtp))
         case '(' =>
           // we need a method symbol. given in line 486 by calling getType(methodSym, ..)
           assert(sym ne null)

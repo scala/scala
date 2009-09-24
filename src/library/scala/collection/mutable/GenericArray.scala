@@ -27,7 +27,7 @@ extends Vector[A]
 
   override def companion: Companion[GenericArray] = GenericArray
 
-  var array: Array[AnyRef] = new Array[AnyRef](length)
+  val array: Array[AnyRef] = new Array[AnyRef](length)
 
   def apply(idx: Int): A = {
     if (idx >= length) throw new IndexOutOfBoundsException(idx.toString)

@@ -72,35 +72,30 @@ trait ClassManifest[T] extends OptManifest[T] {
     case _ => false
   }
 
-  protected def arrayClass: Predef.Class[Array[T]] =
-    java.lang.reflect.Array.newInstance(erasure, 0).getClass
-      .asInstanceOf[Predef.Class[Array[T]]]
+  protected def arrayClass[T](tp: Predef.Class[_]): Predef.Class[Array[T]] =
+    java.lang.reflect.Array.newInstance(tp, 0).getClass.asInstanceOf[Predef.Class[Array[T]]]
 
   def arrayManifest: ClassManifest[Array[T]] =
-    ClassManifest.classType[Array[T]](arrayClass)
+    ClassManifest.classType[Array[T]](arrayClass[T](erasure))
 
   def newArray(len: Int): Array[T] =
     java.lang.reflect.Array.newInstance(erasure, len).asInstanceOf[Array[T]]
 
   def newArray2(len: Int): Array[Array[T]] =
-    java.lang.reflect.Array.newInstance(
-      java.lang.reflect.Array.newInstance(erasure, 0).getClass, len)
-        .asInstanceOf[Array[Array[T]]]
+    java.lang.reflect.Array.newInstance(arrayClass[T](erasure), len)
+      .asInstanceOf[Array[Array[T]]]
 
   def newArray3(len: Int): Array[Array[Array[T]]] =
-    java.lang.reflect.Array.newInstance(
-      java.lang.reflect.Array.newInstance(erasure, 0, 0).getClass, len)
-        .asInstanceOf[Array[Array[Array[T]]]]
+    java.lang.reflect.Array.newInstance(arrayClass[Array[T]](arrayClass[T](erasure)), len)
+      .asInstanceOf[Array[Array[Array[T]]]]
 
   def newArray4(len: Int): Array[Array[Array[Array[T]]]] =
-    java.lang.reflect.Array.newInstance(
-      java.lang.reflect.Array.newInstance(erasure, 0, 0, 0).getClass, len)
-        .asInstanceOf[Array[Array[Array[Array[T]]]]]
+    java.lang.reflect.Array.newInstance(arrayClass[Array[Array[T]]](arrayClass[Array[T]](arrayClass[T](erasure))), len)
+      .asInstanceOf[Array[Array[Array[Array[T]]]]]
 
   def newArray5(len: Int): Array[Array[Array[Array[Array[T]]]]] =
-    java.lang.reflect.Array.newInstance(
-      java.lang.reflect.Array.newInstance(erasure, 0, 0, 0, 0).getClass, len)
-        .asInstanceOf[Array[Array[Array[Array[Array[T]]]]]]
+    java.lang.reflect.Array.newInstance(arrayClass[Array[Array[Array[T]]]](arrayClass[Array[Array[T]]](arrayClass[Array[T]](arrayClass[T](erasure)))), len)
+      .asInstanceOf[Array[Array[Array[Array[Array[T]]]]]]
 
   def newWrappedArray(len: Int): WrappedArray[T] =
     // it's safe to assume T <: AnyRef here because the method is overridden for all value type manifests

@@ -30,7 +30,7 @@ trait Manifest[T] extends ClassManifest[T] {
   override def typeArguments: List[Manifest[_]] = List()
 
   override def arrayManifest: Manifest[Array[T]] =
-    Manifest.classType[Array[T]](arrayClass)
+    Manifest.classType[Array[T]](arrayClass[T](erasure))
 }
 
 /** <ps>
