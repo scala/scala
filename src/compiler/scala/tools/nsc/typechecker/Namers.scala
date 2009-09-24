@@ -307,8 +307,9 @@ trait Namers { self: Analyzer =>
           ltype = new PolyTypeCompleter(tparams, ltype, tree, sym, context) //@M
           if (sym.isTerm) skolemize(tparams)
         }
-        if ((sym.name == nme.copy || sym.name.startsWith(nme.copy + "$default$")) &&
-            sym.hasFlag(SYNTHETIC)) {
+        def copyIsSynthetic() = sym.owner.info.member(nme.copy).hasFlag(SYNTHETIC)
+        if (sym.name == nme.copy && sym.hasFlag(SYNTHETIC) ||
+            sym.name.startsWith(nme.copy + "$default$") && copyIsSynthetic()){
           // the 'copy' method of case classes needs a special type completer to make bug0054.scala (and others)
           // work. the copy method has to take exactly the same parameter types as the primary constructor.
           setInfo(sym)(mkTypeCompleter(tree)(copySym => {

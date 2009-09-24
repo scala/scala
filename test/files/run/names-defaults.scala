@@ -257,9 +257,11 @@ object Test extends Application {
     spawn(b = { val ttt = 1; ttt }, a = 0)
   }
 
-  // # 2382
+  // #2382
   class A2382[+T](x: T => Int) { def foo(a: T => Int = x) = 0 }
 
+  // #2390
+  case class A2390[T](x: Int) { def copy(a: Int)(b: Int = 0) = 0 }
 
   // DEFINITIONS
   def test1(a: Int, b: String) = println(a +": "+ b)
