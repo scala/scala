@@ -678,7 +678,7 @@ trait Iterator[+A] { self =>
    *
    *  @param op  The operator to apply
    *  @return <code>op(... op(a<sub>0</sub>,a<sub>1</sub>), ..., a<sub>n</sub>)</code>
-      if the iterator yields elements
+   *  if the iterator yields elements
    *          <code>a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub></code>.
    *  @throws Predef.UnsupportedOperationException if the iterator is empty.
    */
