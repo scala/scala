@@ -233,7 +233,9 @@ trait NamesDefaults { self: Analyzer =>
       })
       List.map2(symPs, args)((symP, arg) => {
         val (sym, byName) = symP
-        val body = if (byName) blockTyper.typed(Function(List(), arg))
+        // resetAttrs required for #2290. given a block { val x = 1; x }, when wrapping into a function
+        // () => { val x = 1; x }, the owner of symbol x must change (to the apply method of the function).
+        val body = if (byName) blockTyper.typed(Function(List(), resetAttrs(arg)))
                    else arg
         atPos(body.pos)(ValDef(sym, body).setType(NoType))
       })

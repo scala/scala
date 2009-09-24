@@ -65,6 +65,30 @@ abstract class RefChecks extends InfoTransform {
     var currentApplication: Tree = EmptyTree
     var inPattern: Boolean = false
 
+    // only one overloaded alternative is allowed to define default arguments
+    private def checkDefaultsInOverloaded(clazz: Symbol) {
+      def check(members: List[Symbol]): Unit = members match {
+        case x :: xs =>
+          if (x.paramss.exists(_.exists(p => p.hasFlag(DEFAULTPARAM)))) {
+            val others = xs.filter(alt => {
+              alt.name == x.name &&
+              alt.paramss.exists(_.exists(_.hasFlag(DEFAULTPARAM))) &&
+              (!alt.isConstructor || alt.owner == x.owner) // constructors of different classes are allowed to have defaults
+            })
+            if (!others.isEmpty) {
+              val all = x :: others
+              val rest = if (all.exists(_.owner != clazz)) ".\nThe members with defaults are defined in "+
+                         all.map(_.owner).mkString("", " and ", ".")
+              unit.error(clazz.pos, "in "+ clazz +", multiple overloaded alternatives of "+ x +
+                         " define default arguments"+ rest)
+              }
+          }
+          check(xs)
+        case _ => ()
+      }
+      check(clazz.info.members)
+    }
+
 // Override checking ------------------------------------------------------------
 
     /** 1. Check all members of class `clazz' for overriding conditions.
@@ -891,6 +915,7 @@ abstract class RefChecks extends InfoTransform {
         case Template(_, _, _) =>
           localTyper = localTyper.atOwner(tree, currentOwner)
           validateBaseTypes(currentOwner)
+          checkDefaultsInOverloaded(currentOwner)
           checkAllOverrides(currentOwner)
 
         case TypeTree() =>

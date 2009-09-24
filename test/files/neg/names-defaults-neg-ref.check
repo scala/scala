@@ -1,0 +1,16 @@
+names-defaults-neg-ref.scala:3: error: in anonymous class $anon, multiple overloaded alternatives of method f define default arguments.
+The members with defaults are defined in trait B2235 and trait A2235.
+  new A2235 with B2235
+      ^
+names-defaults-neg-ref.scala:7: error: in class A, multiple overloaded alternatives of method foo define default arguments()
+class A {
+      ^
+names-defaults-neg-ref.scala:17: error: in class C, multiple overloaded alternatives of method bar define default arguments.
+The members with defaults are defined in class C and class B.
+class C extends B {
+      ^
+names-defaults-neg-ref.scala:21: error: overriding method bar$default$1 in class B of type => String;
+ method bar$default$1 has incompatible type
+  def bar(i: Int = 129083) = i
+          ^
+four errors found

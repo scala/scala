@@ -1550,30 +1550,9 @@ trait Typers { self: Analyzer =>
         for (vparams <- ddef.vparamss; vparam <- vparams)
           checkStructuralCondition(meth.owner, vparam)
 
-      // only one overloaded method is allowed to have defaults
-      if (phase.id <= currentRun.typerPhase.id &&
-          meth.owner.isClass && meth.paramss.exists(_.exists(_.hasFlag(DEFAULTPARAM)))) {
-        // don't do the check if it has already failed for another alternatvie
-        if (meth.paramss.exists(_.exists(p => p.hasFlag(DEFAULTPARAM) &&
-                                              !p.defaultGetter.tpe.isError))) {
-          val overloads = meth.owner.info.member(meth.name)
-          val others = overloads.filter(alt => {
-            alt != meth && alt.paramss.exists(_.exists(_.hasFlag(DEFAULTPARAM)))
-          })
-          if (others != NoSymbol) {
-            // setting `ErrorType' to defaultGetters prevents the error
-            // messages saying "foo$default$1 is defined twice"
-            for (ps <- meth.paramss; p <- ps)
-              if (p hasFlag DEFAULTPARAM) p.defaultGetter.setInfo(ErrorType)
-            for (alt <- others.alternatives; ps <- alt.paramss; p <- ps)
-              if (p hasFlag DEFAULTPARAM) p.defaultGetter.setInfo(ErrorType)
-            error(meth.pos, "multiple overloaded alternatives of "+ meth +" define default arguments")
-          }
-        }
-
-        if (meth.paramss.exists(ps => ps.exists(_.hasFlag(DEFAULTPARAM)) && isRepeatedParamType(ps.last.tpe)))
-          error(meth.pos, "a parameter section with a `*'-parameter is not allowed to have default arguments")
-      }
+      if (phase.id <= currentRun.typerPhase.id && meth.owner.isClass &&
+          meth.paramss.exists(ps => ps.exists(_.hasFlag(DEFAULTPARAM)) && isRepeatedParamType(ps.last.tpe)))
+        error(meth.pos, "a parameter section with a `*'-parameter is not allowed to have default arguments")
 
       treeCopy.DefDef(ddef, typedMods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
     }
@@ -1835,7 +1814,9 @@ trait Typers { self: Analyzer =>
               while ((e1 ne null) && e1.owner == scope) {
                 if (!accesses(e.sym, e1.sym) && !accesses(e1.sym, e.sym) &&
                     (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe)))
-                  if (!e.sym.isErroneous && !e1.sym.isErroneous)
+                  // default getters are defined twice when multiple overloads have defaults. an
+                  // error for this is issued in RefChecks.checkDefaultsInOverloaded
+                  if (!e.sym.isErroneous && !e1.sym.isErroneous && !e.sym.hasFlag(DEFAULTPARAM))
                     error(e.sym.pos, e1.sym+" is defined twice"+
                           {if(!settings.debug.value) "" else " in "+unit.toString})
                 e1 = scope.lookupNextEntry(e1);

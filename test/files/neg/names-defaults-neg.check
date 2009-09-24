@@ -104,13 +104,4 @@ names-defaults-neg.scala:83: error: type mismatch;
 Error occured in an application involving default arguments.
   new A2[String]()
   ^
-names-defaults-neg.scala:95: error: multiple overloaded alternatives of method foo define default arguments
-  def foo(a: Int = 0) = a
-      ^
-names-defaults-neg.scala:105: error: multiple overloaded alternatives of method foo define default arguments
-  override def foo(a: Int = 1092) = a
-               ^
-names-defaults-neg.scala:108: error: multiple overloaded alternatives of method bar define default arguments
-  def bar(i: Int = 129083) = i
-      ^
-28 errors found
+25 errors found

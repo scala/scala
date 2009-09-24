@@ -251,6 +251,13 @@ object Test extends Application {
   // (cannot call f using the default, List(1,2) doesn't match the param type)
 
 
+  // #2290
+  def spawn(a: Int, b: => Unit) = { () }
+  def t {
+    spawn(b = { val ttt = 1; ttt }, a = 0)
+  }
+
+
   // DEFINITIONS
   def test1(a: Int, b: String) = println(a +": "+ b)
   def test2(u: Int, v: Int)(k: String, l: Int) = println(l +": "+ k +", "+ (u + v))

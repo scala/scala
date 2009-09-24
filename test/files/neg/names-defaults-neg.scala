@@ -90,12 +90,6 @@ object Test extends Application {
   def test8[T](x: => T) = println("test8")
 }
 
-// only one overloaded alternative is allowed to have defaults
-class A {
-  def foo(a: Int = 0) = a
-  def foo(b: String = "another") = b
-}
-
 class B {
   def foo(a: Int) = a
   def bar(u: String = "ldksj") = u
