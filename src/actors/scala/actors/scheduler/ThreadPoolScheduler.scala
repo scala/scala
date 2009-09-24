@@ -8,46 +8,54 @@
 
 // $Id$
 
-package scala.actors
-package scheduler
+package scala.actors.scheduler
 
 import java.util.concurrent.ThreadPoolExecutor
+import scala.actors.Debug
 import scala.concurrent.ManagedBlocker
 
 /**
- * The <code>ThreadPoolScheduler</code> class uses an
+ * The <code>ThreadPoolScheduler</code> class uses a
  * <code>ThreadPoolExecutor</code> to execute <code>Actor</code>s.
  *
  * A <code>ThreadPoolScheduler</code> attempts to shut down
- * the underlying <code>ExecutorService</code> only if
+ * the underlying <code>ThreadPoolExecutor</code> only if
  * <code>terminate</code> is set to true.
  *
- * Otherwise, the <code>ExecutorService</code> must be shut down either
- * directly or by shutting down the
+ * Otherwise, the <code>ThreadPoolExecutor</code> must be shut down
+ * either directly or by shutting down the
  * <code>ThreadPoolScheduler</code> instance.
  *
  * @author Philipp Haller
  */
 class ThreadPoolScheduler(protected var executor: ThreadPoolExecutor,
-                          protected var terminate: Boolean)
-  extends Thread with TerminationMonitor with ExecutorScheduler {
+                          protected var terminate: Boolean,
+                          protected val daemon: Boolean)
+  extends Thread with ExecutorScheduler with TerminationMonitor {
+
+  setDaemon(daemon)
 
   private var terminating = false
   protected val CHECK_FREQ = 10
 
   /* This constructor (and the var above) is currently only used to work
    * around a bug in scaladoc, which cannot deal with early initializers
-   * (to be used in subclasses such as DefaultExecutorScheduler) properly.
+   * (to be used in subclasses such as DefaultThreadPoolScheduler)
+   * properly.
    */
-  def this() {
-    this(null, true)
+  def this(d: Boolean) {
+    this(null, true, d)
   }
 
-  override def managedBlock(blocker: ManagedBlocker) {
+  protected def adjustCorePoolSize() {
     val coreSize = executor.getCorePoolSize()
     if (coreSize < ThreadPoolConfig.maxPoolSize && (executor.getActiveCount() >= coreSize - 1)) {
       executor.setCorePoolSize(coreSize + 1)
     }
+  }
+
+  override def managedBlock(blocker: ManagedBlocker) {
+    adjustCorePoolSize()
     blocker.block()
   }
 
@@ -61,16 +69,12 @@ class ThreadPoolScheduler(protected var executor: ThreadPoolExecutor,
             case _: InterruptedException =>
           }
 
-          if (terminating)
+          if (terminating || (terminate && allTerminated))
             throw new QuitException
 
-          if (terminate && allTerminated)
-            throw new QuitException
+          gc()
 
-          val coreSize = executor.getCorePoolSize()
-          if (coreSize < ThreadPoolConfig.maxPoolSize && (executor.getActiveCount() >= coreSize - 1)) {
-            executor.setCorePoolSize(coreSize + 1)
-          }
+          adjustCorePoolSize()
         }
       }
     } catch {

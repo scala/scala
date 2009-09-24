@@ -15,8 +15,8 @@ import scala.collection.mutable.HashMap
 
 trait TerminationMonitor {
 
-  private var pendingReactions = 0
-  private val termHandlers = new HashMap[Reactor, () => Unit]
+  protected var pendingReactions = 0
+  protected val termHandlers = new HashMap[Reactor, () => Unit]
   private var started = false
 
   /** newActor is invoked whenever a new actor is started. */
@@ -60,4 +60,5 @@ trait TerminationMonitor {
     started && pendingReactions <= 0
   }
 
+  protected def gc() {}
 }

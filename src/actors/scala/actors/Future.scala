@@ -10,7 +10,7 @@
 
 package scala.actors
 
-import scheduler.DefaultExecutorScheduler
+import scheduler.DefaultThreadPoolScheduler
 
 /**
  * <p>
@@ -40,7 +40,7 @@ abstract class Future[+T](val inputChannel: InputChannel[T]) extends Responder[T
  */
 object Futures {
 
-  private lazy val sched = new DefaultExecutorScheduler(true)
+  private lazy val sched = new DefaultThreadPoolScheduler(true)
 
   def future[T](body: => T): Future[T] = {
     case object Eval

@@ -26,7 +26,7 @@ import scheduler.{ThreadPoolConfig, QuitException}
  * @version 0.9.18
  * @author Philipp Haller
  */
-class FJTaskScheduler2(val initCoreSize: Int, val maxSize: Int, daemon: Boolean) extends Thread with ActorGC {
+class FJTaskScheduler2(val initCoreSize: Int, val maxSize: Int, daemon: Boolean) extends Thread with IScheduler with ActorGC {
   setDaemon(daemon)
 
   /** Default constructor creates a non-daemon thread. */

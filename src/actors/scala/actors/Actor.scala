@@ -398,6 +398,9 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
    */
   private var onTimeout: Option[TimerTask] = None
 
+  /* Used for notifying scheduler when blocking inside <code>receive</code>. */
+  private lazy val blocker = new ActorBlocker(0)
+
   private class RunCallable(fun: () => Unit) extends Callable[Unit] with Runnable {
     def call() = fun()
     def run() = fun()
@@ -457,7 +460,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
           } else {
             waitingFor = f.isDefinedAt
             isSuspended = true
-            scheduler.managedBlock(new ActorBlocker(0))
+            scheduler.managedBlock(blocker)
             done = true
           }
         }

@@ -13,6 +13,7 @@ package scala.actors
 import java.lang.ref.{Reference, WeakReference, ReferenceQueue}
 
 import scala.collection.mutable.{HashMap, HashSet}
+import scala.actors.scheduler.TerminationMonitor
 
 /**
  * ActorGC keeps track of the number of live actors being managed by a
@@ -24,10 +25,8 @@ import scala.collection.mutable.{HashMap, HashSet}
  * (e.g. act method finishes, exit explicitly called, an exception is thrown),
  * the ActorGC is informed via the <code>terminated</code> method.
  */
-trait ActorGC extends IScheduler {
-
-  private var pendingReactions = 0
-  private val termHandlers = new HashMap[Reactor, () => Unit]
+trait ActorGC extends TerminationMonitor {
+  self: IScheduler =>
 
   /** Actors are added to refQ in newActor. */
   private val refQ = new ReferenceQueue[Reactor]
@@ -40,7 +39,7 @@ trait ActorGC extends IScheduler {
   private val refSet = new HashSet[Reference[t] forSome { type t <: Reactor }]
 
   /** newActor is invoked whenever a new actor is started. */
-  def newActor(a: Reactor) = synchronized {
+  override def newActor(a: Reactor) = synchronized {
     // registers a reference to the actor with the ReferenceQueue
     val wr = new WeakReference[Reactor](a, refQ)
     refSet += wr
@@ -48,7 +47,7 @@ trait ActorGC extends IScheduler {
   }
 
   /** Removes unreachable actors from refSet. */
-  protected def gc() = synchronized {
+  protected override def gc() = synchronized {
     // check for unreachable actors
     def drainRefQ() {
       val wr = refQ.poll
@@ -66,17 +65,17 @@ trait ActorGC extends IScheduler {
     println(this+": size of refSet: "+refSet.size)
   }
 
-  protected def allTerminated: Boolean = synchronized {
+  protected override def allTerminated: Boolean = synchronized {
     pendingReactions <= 0
   }
 
-  def onTerminate(a: Reactor)(f: => Unit) = synchronized {
+  override def onTerminate(a: Reactor)(f: => Unit): Unit = synchronized {
     termHandlers += (a -> (() => f))
   }
 
   /* Called only from <code>Reaction</code>.
    */
-  def terminated(a: Reactor) = synchronized {
+  override def terminated(a: Reactor) = synchronized {
     // execute registered termination handler (if any)
     termHandlers.get(a) match {
       case Some(handler) =>

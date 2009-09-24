@@ -23,7 +23,8 @@ import java.lang.{Runnable, Thread, InterruptedException}
  * @version 0.9.18
  * @author Philipp Haller
  */
-abstract class SchedulerService(daemon: Boolean) extends Thread with ActorGC {
+abstract class SchedulerService(daemon: Boolean) extends Thread with IScheduler with ActorGC {
+
   setDaemon(daemon)
 
   def this() =

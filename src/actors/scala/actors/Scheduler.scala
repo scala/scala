@@ -11,7 +11,7 @@
 package scala.actors
 
 import java.util.concurrent._
-import scheduler.{DelegatingScheduler, ThreadPoolConfig, ThreadPoolScheduler, ForkJoinScheduler}
+import scheduler.{DelegatingScheduler, ThreadPoolConfig, ThreadPoolScheduler, ForkJoinScheduler, DefaultThreadPoolScheduler}
 
 /**
  * The <code>Scheduler</code> object is used by <code>Actor</code> to
@@ -24,14 +24,7 @@ object Scheduler extends DelegatingScheduler {
   Debug.info("initializing "+this+"...")
 
   def makeNewScheduler: IScheduler = {
-    val workQueue = new LinkedBlockingQueue[Runnable]
-    val threadPool = new ThreadPoolExecutor(ThreadPoolConfig.corePoolSize,
-                                            ThreadPoolConfig.maxPoolSize,
-                                            60000L,
-                                            TimeUnit.MILLISECONDS,
-                                            workQueue,
-                                            new ThreadPoolExecutor.CallerRunsPolicy)
-    val s = new ThreadPoolScheduler(threadPool, true)
+    val s = new DefaultThreadPoolScheduler(false)
     //val s = new ForkJoinScheduler
     Debug.info(this+": starting new "+s+" ["+s.getClass+"]")
     s.start()
