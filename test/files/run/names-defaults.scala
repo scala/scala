@@ -257,6 +257,9 @@ object Test extends Application {
     spawn(b = { val ttt = 1; ttt }, a = 0)
   }
 
+  // # 2382
+  class A2382[+T](x: T => Int) { def foo(a: T => Int = x) = 0 }
+
 
   // DEFINITIONS
   def test1(a: Int, b: String) = println(a +": "+ b)

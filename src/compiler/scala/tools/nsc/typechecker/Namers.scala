@@ -906,15 +906,20 @@ trait Namers { self: Analyzer =>
 
       addDefaultGetters(meth, vparamss, tparams, overriddenSymbol)
 
-      thisMethodType(
-        if (tpt.isEmpty) {
+      thisMethodType({
+        val rt = if (tpt.isEmpty) {
           // replace deSkolemized symbols with skolemized ones (for resultPt computed by looking at overridden symbol, right?)
           val pt = resultPt.substSym(tparamSyms, tparams map (_.symbol))
           // compute result type from rhs
           tpt.tpe = widenIfNotFinal(meth, typer.computeType(rhs, pt), pt)
           tpt setPos meth.pos.focus
           tpt.tpe
-        } else typer.typedType(tpt).tpe)
+        } else typer.typedType(tpt).tpe
+        // #2382: return type of default getters are always @uncheckedVariance
+        if (meth.hasFlag(DEFAULTPARAM))
+          rt.withAnnotation(AnnotationInfo(definitions.uncheckedVarianceClass.tpe, List(), List()))
+        else rt
+      })
     }
 
     /**
@@ -989,9 +994,9 @@ trait Namers { self: Analyzer =>
 
             // If the parameter type mentions any type parameter of the method, let the compiler infer the
             // return type of the default getter => allow "def foo[T](x: T = 1)" to compile.
-            // This is better than always inferring the result type, for example in
+            // This is better than always using Wildcard for inferring the result type, for example in
             //    def f(i: Int, m: Int => Int = identity _) = m(i)
-            // if we infer the default's type, we get "Nothing => Nothing", and the default is not usable.
+            // if we use Wildcard as expected, we get "Nothing => Nothing", and the default is not usable.
             val names = deftParams map { case TypeDef(_, name, _, _) => name }
             object subst extends Transformer {
               override def transform(tree: Tree): Tree = tree match {
@@ -1002,8 +1007,8 @@ trait Namers { self: Analyzer =>
               }
               def apply(tree: Tree) = {
                 val r = transform(tree)
-                if (r.find(_.isEmpty).isEmpty) r
-                else TypeTree()
+                if (r.exists(_.isEmpty)) TypeTree()
+                else r
               }
             }
 
