@@ -2,7 +2,7 @@
  * Copyright 2005-2009 LAMP/EPFL
  * @author Martin Odersky
  */
-// $Id: SyntaxAnalyzer.scala 17080 2009-02-10 17:19:16Z rytz $
+// $Id$
 
 package scala.tools.nsc
 package ast.parser

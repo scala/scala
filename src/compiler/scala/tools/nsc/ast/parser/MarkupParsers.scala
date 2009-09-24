@@ -2,7 +2,7 @@
  * Copyright 2005-2009 LAMP/EPFL
  * @author Burak Emir
  */
-// $Id: MarkupParsers.scala 17754 2009-05-18 10:54:00Z milessabin $
+// $Id$
 
 package scala.tools.nsc
 package ast.parser

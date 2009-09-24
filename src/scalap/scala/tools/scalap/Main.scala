@@ -5,7 +5,7 @@
 **
 */
 
-// $Id: Main.scala 9834 2007-01-31 16:31:25Z michelou $
+// $Id$
 
 package scala.tools.scalap
 

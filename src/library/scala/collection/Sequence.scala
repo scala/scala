@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Sequence.scala 16092 2008-09-12 10:37:06Z nielsen $
+// $Id$
 
 
 package scala.collection

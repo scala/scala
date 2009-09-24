@@ -1,5 +1,3 @@
-// $Id$
-
 import scala._;
 class m1() {
   def n() = 0;

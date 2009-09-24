@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: BufferedIterator.scala 12641 2007-08-22 16:01:57Z mcdirmid $
+// $Id$
 
 
 package scala.collection

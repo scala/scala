@@ -63,7 +63,7 @@ trait Idioms {
 
   class IdiomaticTarget[idi[x], idiom <: Idiom[idi], s](i: idiom, tgt: s) {
     def dot [t](fun: s => t, name: String) = new IdiomaticApp2[idi, idiom, t](i, i.liftedApply(i.pureMethod(name, fun))(i.pure(tgt)))
-  } // TODO: `.` -->  java.lang.ClassFormatError: Illegal method name "." in class Idioms$IdiomaticTarget
+  } // TODO: `.` -->  java.lang.ClassFormatError: Illegal method name "." in class Idioms$Id$
 
   class IdiomaticFunction[idi[x], idiom <: Idiom[idi], s, t](i: idiom, fun: s => t) {
     def <| (a: idi[s]) = new IdiomaticApp[idi, idiom, t](i, i.liftedApply(i.pure(fun))(a))

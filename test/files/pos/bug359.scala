@@ -1,5 +1,3 @@
-// $Id$
-
 object Bug359 {
   class C;
   def f1(xs: List[C]): C = {

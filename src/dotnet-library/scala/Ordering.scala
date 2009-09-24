@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Ordering.scala 17712 2009-05-12 14:30:04Z extempore $
+// $Id$
 
 package scala
 

@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: BeanProperty.scala 17925 2009-05-30 18:10:21Z rytz $
+// $Id$
 
 
 package scala.reflect

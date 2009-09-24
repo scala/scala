@@ -2,7 +2,7 @@
  * Copyright 2005-2009 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id: RefChecks.scala 13735 2008-01-18 17:18:58Z odersky $
+// $Id$
 
 package scala.tools.nsc
 package typechecker

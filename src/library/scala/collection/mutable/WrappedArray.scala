@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: WrappedArray.scala 18589 2009-08-27 14:45:35Z odersky $
+// $Id$
 
 
 package scala.collection.mutable

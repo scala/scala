@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: ArrayBuffer.scala 18387 2009-07-24 15:28:37Z odersky $
+// $Id$
 
 
 package scala.collection.mutable

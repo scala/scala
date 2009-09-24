@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Iterator.scala 15939 2008-08-26 14:33:17Z stepancheg $
+// $Id$
 
 
 package scala.collection

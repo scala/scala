@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: PagedSeqReader.scala 14416 2008-03-19 01:17:25Z mihaylov $
+// $Id$
 
 package scala.util.parsing.input
 

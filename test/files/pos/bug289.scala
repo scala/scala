@@ -1,5 +1,3 @@
-// $Id$
-
 class A {
   object B;
 }

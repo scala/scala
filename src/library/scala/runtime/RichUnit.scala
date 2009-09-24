@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: RichUnit.scala 14532 2008-04-07 12:23:22Z washburn $
+// $Id$
 
 
 package scala.runtime

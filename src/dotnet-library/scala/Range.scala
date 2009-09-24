@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Range.scala 17726 2009-05-13 19:53:43Z extempore $
+// $Id$
 
 package scala
 

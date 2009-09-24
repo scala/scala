@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: NonLocalReturnException.scala 15604 2008-07-24 09:56:59Z phaller $
+// $Id$
 
 
 package scala.runtime

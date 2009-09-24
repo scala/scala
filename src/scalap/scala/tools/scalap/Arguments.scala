@@ -5,7 +5,7 @@
 **
 */
 
-// $Id: Arguments.scala 5837 2006-02-23 17:37:25 +0000 (Thu, 23 Feb 2006) michelou $
+// $Id$
 
 package scala.tools.scalap
 

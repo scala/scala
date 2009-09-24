@@ -1,5 +1,3 @@
-// $Id$
-
 abstract class Bug360A { self: Bug360C =>
   def f: String = "hello";
 }

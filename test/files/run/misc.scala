@@ -1,5 +1,3 @@
-// $Id$
-
 object Test {
 
   def fac(n: Int): Int = if (n < 2) 1 else fac(n - 1) * n;

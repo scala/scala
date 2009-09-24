@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: EditorPane.scala $
+// $Id$
 
 package scala.swing
 

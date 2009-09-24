@@ -1,5 +1,3 @@
-// $Id$
-
 object Test {
   def fun: Int = {
     object o {

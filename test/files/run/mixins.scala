@@ -1,5 +1,3 @@
-// $Id$
-
 // Test 1: "super" coming from mixins
 
 import Console._;

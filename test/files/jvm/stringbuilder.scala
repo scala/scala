@@ -1,5 +1,3 @@
-/* $Id$ */
-
 import testing.SUnit._
 
 /** Test the Scala implementation of class <code>scala.StringBuilder</code>.

@@ -2,7 +2,7 @@
  * Copyright 2005-2009 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id: NewCharArrayReader.scala 16893 2009-01-13 13:09:22Z cunei $
+// $Id$
 
 package scala.tools.nsc
 package util

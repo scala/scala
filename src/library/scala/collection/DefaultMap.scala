@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Map.scala 17537 2009-04-20 18:37:37Z odersky $
+// $Id$
 
 
 package scala.collection

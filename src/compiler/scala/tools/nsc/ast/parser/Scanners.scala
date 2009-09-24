@@ -2,7 +2,7 @@
  * Copyright 2005-2009 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id: Scanners.scala 17285 2009-03-11 13:51:56Z rytz $
+// $Id$
 package scala.tools.nsc
 package ast.parser
 

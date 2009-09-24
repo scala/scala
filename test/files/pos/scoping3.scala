@@ -1,5 +1,3 @@
-// $Id$
-
 object CI {
   trait TreeDisplay {
     type TreeNode <: ITreeNode

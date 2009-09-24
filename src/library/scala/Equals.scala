@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Equals.scala 18478 2009-08-13 21:30:20Z stepancheg $
+// $Id$
 
 
 package scala

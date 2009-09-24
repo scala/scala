@@ -3,3 +3,4 @@ object Test extends Application {
   def foo2(x: AnyRef) = x match { case x: Function0[Any] => x() }
 }
 
+

@@ -1,7 +1,5 @@
 /*
  * Try exception handling and finally blocks.
- *
- * $Id$
  */
 
 trait Tree extends Exception;

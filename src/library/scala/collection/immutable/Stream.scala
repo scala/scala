@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Stream.scala 16287 2008-10-18 13:41:36Z nielsen $
+// $Id$
 
 
 package scala.collection.immutable

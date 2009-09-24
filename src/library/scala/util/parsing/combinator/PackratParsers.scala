@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id:$
+// $Id$
 
 package scala.util.parsing.combinator
 

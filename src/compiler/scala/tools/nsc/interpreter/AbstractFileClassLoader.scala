@@ -1,7 +1,7 @@
 /* NSC -- new Scala compiler
  * Copyright 2005-2009 LAMP/EPFL
  */
-// $Id: $
+// $Id$
 
 package scala.tools.nsc
 package interpreter

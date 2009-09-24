@@ -12,3 +12,4 @@ object foo {
     r.app(y)
   }
 }
+

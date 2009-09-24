@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: TraversableLike.scala 18589 2009-08-27 14:45:35Z odersky $
+// $Id$
 
 
 package scala.collection

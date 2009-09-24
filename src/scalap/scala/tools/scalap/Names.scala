@@ -5,7 +5,7 @@
 **
 */
 
-// $Id: Names.scala 5838 2006-02-23 17:54:21 +0000 (Thu, 23 Feb 2006) michelou $
+// $Id$
 
 package scala.tools.scalap
 

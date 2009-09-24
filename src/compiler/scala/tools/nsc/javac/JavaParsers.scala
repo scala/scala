@@ -2,7 +2,7 @@
  * Copyright 2005-2009 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id: Parsers.scala 15004 2008-05-13 16:37:33Z odersky $
+// $Id$
 //todo: allow infix type patterns
 
 

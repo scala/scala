@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: List.scala 16287 2008-10-18 13:41:36Z nielsen $
-
 
 package scala.collection.immutable
 

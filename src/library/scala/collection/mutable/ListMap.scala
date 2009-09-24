@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: HashMap.scala 17715 2009-05-12 18:33:22Z odersky $
+// $Id$
 
 
 package scala.collection.mutable

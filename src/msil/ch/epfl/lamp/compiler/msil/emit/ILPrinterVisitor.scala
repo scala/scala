@@ -2,7 +2,7 @@
  * System.Reflection.Emit-like API for writing .NET assemblies in MSIL
  */
 
-// $Id: ILPrinterVisitor.java 14755 2008-04-22 08:13:32Z lorch $
+// $Id$
 
 package ch.epfl.lamp.compiler.msil.emit
 

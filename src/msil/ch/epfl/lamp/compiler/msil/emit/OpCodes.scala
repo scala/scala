@@ -2,7 +2,7 @@
  * System.Reflection.Emit-like API for writing .NET assemblies to MSIL
  */
 
-// $Id: OpCodes.java 168 2005-12-12 14:20:06Z mihaylov $
+// $Id$
 
 package ch.epfl.lamp.compiler.msil.emit
 

@@ -2,7 +2,7 @@
  * Copyright 2005-2009 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id: NamesDefaults.scala 17081 2009-02-10 17:45:38Z rytz $
+// $Id$
 
 package scala.tools.nsc
 package typechecker

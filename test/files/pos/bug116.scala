@@ -1,5 +1,3 @@
-// $Id$
-
 class C {
   def this(x: Int) = {
     this();

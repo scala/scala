@@ -1,5 +1,4 @@
 // test "foo = expr" clauses in for comprehensions
-// $Id$
 
 import scala.collection.immutable.Queue
 import scala.{List=>L}

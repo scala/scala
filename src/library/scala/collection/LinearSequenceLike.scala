@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: LinearSequenceTemplate.scala 18646 2009-09-04 16:56:11Z odersky $
+// $Id$
 
 
 package scala.collection

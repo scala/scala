@@ -5,7 +5,7 @@
 **
 */
 
-// $Id: JavaWriter.scala 5838 2006-02-23 17:54:21Z michelou $
+// $Id$
 
 package scala.tools.scalap
 

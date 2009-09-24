@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: IterableLike.scala 18602 2009-08-29 00:54:16Z extempore $
+// $Id$
 
 package scala.collection
 import generic._

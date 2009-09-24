@@ -2,7 +2,7 @@
  * Copyright 2005-2009 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id: Typers.scala 17229 2009-03-02 19:09:42Z extempore $
+// $Id$
 
 //todo: rewrite or disllow new T where T is a mixin (currently: <init> not a member of T)
 //todo: use inherited type info also for vars and values

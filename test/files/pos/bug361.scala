@@ -1,5 +1,3 @@
-// $Id$
-
 class Bug361Global extends Bug361Trees
 
 abstract class Bug361Trees { self: Bug361Global =>

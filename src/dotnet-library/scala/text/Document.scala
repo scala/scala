@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Document.scala 11950 2007-06-08 12:08:26Z michelou $
+// $Id$
 
 
 package scala.text

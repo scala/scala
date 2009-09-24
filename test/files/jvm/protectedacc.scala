@@ -1,7 +1,6 @@
 //############################################################################
 // Test Java interaction with scala inner classes
 //############################################################################
-// $Id:  $
 
 import java.io.{BufferedReader, File, FileWriter, InputStreamReader}
 

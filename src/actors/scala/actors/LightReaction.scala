@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Reaction.scala 17862 2009-05-27 23:27:05Z phaller $
+// $Id$
 
 
 package scala.actors

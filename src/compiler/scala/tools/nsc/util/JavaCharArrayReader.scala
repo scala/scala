@@ -2,7 +2,7 @@
  * Copyright 2005-2009 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id: CharArrayReader.scala 17610 2009-04-30 22:38:36Z extempore $
+// $Id$
 
 package scala.tools.nsc
 package util

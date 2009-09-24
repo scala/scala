@@ -1,5 +1,3 @@
-// $Id$
-
 // Test constructors, including multiple ones.
 
 class A(x: Int, y: Int) {

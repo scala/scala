@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: PagedSeq.scala 14497 2008-04-04 12:09:06Z washburn $
+// $Id$
 
 
 package scala.collection.immutable

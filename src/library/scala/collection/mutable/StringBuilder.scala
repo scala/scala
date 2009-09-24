@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: StringBuilder.scala 16884 2009-01-09 16:52:09Z cunei $
+// $Id$
 
 
 package scala.collection.mutable

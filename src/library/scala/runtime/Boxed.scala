@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Buffer.scala 15799 2008-08-15 18:23:54Z odersky $
+// $Id$
 
 
 package scala.runtime

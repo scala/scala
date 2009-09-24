@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Random.scala 14498 2008-04-04 12:12:27Z washburn $
+// $Id$
 
 
 package scala.util

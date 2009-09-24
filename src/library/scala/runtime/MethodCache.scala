@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: ScalaRunTime.scala 16292 2008-10-18 21:32:45Z washburn $
+// $Id$
 
 
 package scala.runtime

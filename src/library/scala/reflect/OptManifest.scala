@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Manifest.scala 16625 2008-11-25 16:04:12Z michelou $
+// $Id$
 
 
 package scala.reflect

@@ -1,4 +1,4 @@
-/* $Id$
+/*
  * Test file for immutable queues.
  */
 

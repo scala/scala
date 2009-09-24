@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: ClassManifest.scala 18534 2009-08-21 13:44:04Z odersky $
+// $Id$
 
 
 package scala.reflect

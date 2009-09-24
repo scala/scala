@@ -2,7 +2,7 @@
  * System.Reflection.Emit-like API for writing .NET assemblies to MSIL
  */
 
-// $Id: MethodBuilder.java 14655 2008-04-15 09:37:02Z lorch $
+// $Id$
 
 package ch.epfl.lamp.compiler.msil.emit
 

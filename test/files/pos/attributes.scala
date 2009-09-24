@@ -1,5 +1,3 @@
-/* $Id$ */
-
 @serializable  class C1;
 @serializable @volatile  class C2;
 @serializable @volatile  class C3;
