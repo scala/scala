@@ -15,13 +15,13 @@ import scala.collection.mutable.HashMap
 
 trait TerminationMonitor {
 
-  protected var pendingReactions = 0
-  protected val termHandlers = new HashMap[Reactor, () => Unit]
+  protected var activeActors = 0
+  protected val terminationHandlers = new HashMap[Reactor, () => Unit]
   private var started = false
 
   /** newActor is invoked whenever a new actor is started. */
   def newActor(a: Reactor) = synchronized {
-    pendingReactions += 1
+    activeActors += 1
     if (!started)
       started = true
   }
@@ -33,16 +33,20 @@ trait TerminationMonitor {
    *  @param  f  the closure to be registered
    */
   def onTerminate(a: Reactor)(f: => Unit): Unit = synchronized {
-    termHandlers += (a -> (() => f))
+    terminationHandlers += (a -> (() => f))
   }
 
-  def terminated(a: Reactor) = synchronized {
+  /** Registers that the specified actor has terminated.
+   *
+   *  @param  a  the actor that has terminated
+   */
+  def terminated(a: Reactor) = {
     // obtain termination handler (if any)
     val todo = synchronized {
-      termHandlers.get(a) match {
+      terminationHandlers.get(a) match {
         case Some(handler) =>
-          termHandlers -= a
-          () => handler
+          terminationHandlers -= a
+          handler
         case None =>
           () => { /* do nothing */ }
       }
@@ -52,13 +56,16 @@ trait TerminationMonitor {
     todo()
 
     synchronized {
-      pendingReactions -= 1
+      activeActors -= 1
     }
   }
 
-  protected def allTerminated: Boolean = synchronized {
-    started && pendingReactions <= 0
+  /** Checks whether all actors have terminated. */
+  @deprecated("this method is going to be removed in a future release")
+  def allTerminated: Boolean = synchronized {
+    started && activeActors <= 0
   }
 
+  /** Checks for actors that have become garbage. */
   protected def gc() {}
 }

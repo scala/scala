@@ -25,9 +25,9 @@ import scheduler.DefaultThreadPoolScheduler
  * </p>
  *
  * @author Philipp Haller
- * @version 0.9.16
  */
 abstract class Future[+T](val inputChannel: InputChannel[T]) extends Responder[T] with Function0[T] {
+  @deprecated("this member is going to be removed in a future release")
   protected var value: Option[Any] = None
   def isSet: Boolean
 }
@@ -35,17 +35,14 @@ abstract class Future[+T](val inputChannel: InputChannel[T]) extends Responder[T
 /**
  * The <code>Futures</code> object contains methods that operate on Futures.
  *
- * @version 0.9.8
  * @author Philipp Haller
  */
 object Futures {
 
-  private lazy val sched = new DefaultThreadPoolScheduler(true)
+  private case object Eval
 
   def future[T](body: => T): Future[T] = {
-    case object Eval
-    val a = new Actor {
-      override def scheduler: IScheduler = sched
+    val a = new DaemonActor {
       def act() {
         Actor.react {
           case Eval => Actor.reply(body)
@@ -139,7 +136,7 @@ object Futures {
     results
   }
 
-  def fromInputChannel[T](inputChannel: InputChannel[T]): Future[T] =
+  private[actors] def fromInputChannel[T](inputChannel: InputChannel[T]): Future[T] =
     new Future[T](inputChannel) {
       def apply() =
         if (isSet) value.get.asInstanceOf[T]

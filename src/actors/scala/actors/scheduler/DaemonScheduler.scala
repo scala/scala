@@ -16,6 +16,6 @@ package scheduler
  */
 object DaemonScheduler extends DelegatingScheduler {
 
-  def makeNewScheduler(): IScheduler = new DefaultExecutorScheduler(true)
+  def makeNewScheduler(): IScheduler = new DefaultThreadPoolScheduler(true)
 
 }

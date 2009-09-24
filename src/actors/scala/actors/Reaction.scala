@@ -23,10 +23,10 @@ private[actors] class KillActorException extends Throwable with ControlException
  *    <code>java.lang.Runnable</code></a>.
  *  </p>
  *
- *  @version 0.9.10
+ *  @deprecated("this class is going to be removed in a future release")
  *  @author Philipp Haller
  */
-private[actors] class Reaction(a: Actor, f: PartialFunction[Any, Unit], msg: Any) extends ActorTask(a, () => {
+class Reaction(a: Actor, f: PartialFunction[Any, Unit], msg: Any) extends ActorTask(a, () => {
   if (f == null)
     a.act()
   else

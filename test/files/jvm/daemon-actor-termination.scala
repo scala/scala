@@ -1,16 +1,7 @@
-import scala.actors.Actor
-import scala.actors.scheduler.DefaultExecutorScheduler
+import scala.actors.{Actor, DaemonActor}
 
 /* Test that a daemon Actor that hasn't finished does not prevent termination */
-
-trait DaemonActor extends Actor {
-  override def scheduler =
-    Test.daemonSched
-}
-
 object Test {
-  val daemonSched =
-    new DefaultExecutorScheduler(true)
 
   class MyDaemon extends DaemonActor {
     def act() {

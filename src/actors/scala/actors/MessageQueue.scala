@@ -14,10 +14,10 @@ package scala.actors
  * This class is used by our efficient message queue
  * implementation.
  *
- * @version 0.9.9
  * @author Philipp Haller
  */
 @serializable @SerialVersionUID(7124278808020037465L)
+@deprecated("this class is going to be removed in a future release")
 class MessageQueueElement(val msg: Any, val session: OutputChannel[Any], var next: MessageQueueElement) {
   def this() = this(null, null, null)
   def this(msg: Any, session: OutputChannel[Any]) = this(msg, session, null)
@@ -29,10 +29,10 @@ class MessageQueueElement(val msg: Any, val session: OutputChannel[Any], var nex
  * library. Classes in this package are supposed to be the only
  * clients of this class.
  *
- * @version 0.9.9
  * @author Philipp Haller
  */
 @serializable @SerialVersionUID(2168935872884095767L)
+@deprecated("this class is going to be removed in a future release")
 class MessageQueue(protected val label: String) {
   protected var first: MessageQueueElement = null
   protected var last: MessageQueueElement = null  // last eq null iff list is empty

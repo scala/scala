@@ -14,7 +14,7 @@ import scala.concurrent.ManagedBlocker
 /**
  * @author Erik Engbrecht
  */
-trait DelegatingScheduler extends IScheduler {
+private[actors] trait DelegatingScheduler extends IScheduler {
   protected def makeNewScheduler(): IScheduler
 
   protected var sched: IScheduler = null

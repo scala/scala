@@ -15,7 +15,7 @@ package scala.actors
  *
  *  Providing an implementation for the
  *  <code>execute(f: => Unit)</code> method is sufficient to
- *  obtain a concrete class that extends <code>IScheduler</code>.
+ *  obtain a concrete <code>IScheduler</code> implementation.
  *
  *  @author Philipp Haller
  */

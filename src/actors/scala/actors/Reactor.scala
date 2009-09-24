@@ -20,14 +20,14 @@ import scala.collection.mutable.Queue
 trait Reactor extends OutputChannel[Any] {
 
   /* The actor's mailbox. */
-  protected val mailbox = new MessageQueue("Reactor")
+  protected[this] val mailbox = new MessageQueue("Reactor")
 
-  protected var sendBuffer = new Queue[(Any, OutputChannel[Any])]
+  protected[this] var sendBuffer = new Queue[(Any, OutputChannel[Any])]
 
   /* If the actor waits in a react, continuation holds the
    * message handler that react was called with.
    */
-  protected var continuation: PartialFunction[Any, Unit] = null
+  protected[this] var continuation: PartialFunction[Any, Unit] = null
 
   /* Whenever this Actor executes on some thread, waitingFor is
    * guaranteed to be equal to waitingForNone.
@@ -36,8 +36,8 @@ trait Reactor extends OutputChannel[Any] {
    * waitingForNone, this Actor is guaranteed not to execute on some
    * thread.
    */
-  protected val waitingForNone = (m: Any) => false
-  protected var waitingFor: Any => Boolean = waitingForNone
+  protected[this] val waitingForNone = (m: Any) => false
+  protected[this] var waitingFor: Any => Boolean = waitingForNone
 
   /**
    * The behavior of an actor is specified by implementing this
@@ -147,7 +147,7 @@ trait Reactor extends OutputChannel[Any] {
   /* This method is guaranteed to be executed from inside
      an actors act method.
    */
-  protected def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) = {
+  protected[this] def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) = {
     scheduler executeFromActor (new LightReaction(this,
                                                   if (f eq null) continuation else f,
                                                   msg))
@@ -184,7 +184,7 @@ trait Reactor extends OutputChannel[Any] {
     throw new KillActorException
   }
 
-  protected[actors] def exit(): Nothing = {
+  protected[this] def exit(): Nothing = {
     terminated()
     throw Actor.suspendException
   }

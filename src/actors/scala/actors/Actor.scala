@@ -638,7 +638,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
   }
 
   // guarded by lock of this
-  protected override def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
+  protected[this] override def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
     if ((f eq null) && (continuation eq null)) {
       // do nothing (timeout is handled instead)
     }

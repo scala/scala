@@ -20,7 +20,7 @@ import scala.concurrent.ThreadPoolRunner
  *
  * @author Philipp Haller
  */
-trait ExecutorScheduler extends IScheduler with ThreadPoolRunner {
+private[scheduler] trait ExecutorScheduler extends IScheduler with ThreadPoolRunner {
 
   def execute(task: Runnable) {
     super[ThreadPoolRunner].execute(task.asInstanceOf[Task[Unit]])

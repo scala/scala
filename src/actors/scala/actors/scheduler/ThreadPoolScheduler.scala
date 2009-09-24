@@ -47,7 +47,7 @@ class ThreadPoolScheduler(protected var executor: ThreadPoolExecutor,
     this(null, true, d)
   }
 
-  protected def adjustCorePoolSize() {
+  private def adjustCorePoolSize() {
     val coreSize = executor.getCorePoolSize()
     if (coreSize < ThreadPoolConfig.maxPoolSize && (executor.getActiveCount() >= coreSize - 1)) {
       executor.setCorePoolSize(coreSize + 1)
