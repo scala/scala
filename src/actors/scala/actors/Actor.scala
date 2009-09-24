@@ -406,14 +406,14 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
     def run() = fun()
   }
 
-  protected[this] override def makeReaction(fun: () => Unit): Runnable = {
+  private[actors] override def makeReaction(fun: () => Unit): Runnable = {
     if (isSuspended)
       new RunCallable(fun)
     else
       new ActorTask(this, fun)
   }
 
-  protected[this] override def resumeReceiver(item: (Any, OutputChannel[Any]), onSameThread: Boolean) {
+  private[actors] override def resumeReceiver(item: (Any, OutputChannel[Any]), onSameThread: Boolean) {
     if (!onTimeout.isEmpty) {
       onTimeout.get.cancel()
       onTimeout = None
@@ -638,7 +638,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
   }
 
   // guarded by lock of this
-  protected[this] override def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
+  private[actors] override def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
     if ((f eq null) && (continuation eq null)) {
       // do nothing (timeout is handled instead)
     }
