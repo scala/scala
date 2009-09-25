@@ -1949,7 +1949,7 @@ A type's typeSymbol should never be inspected directly.
 
     /** Add a number of annotations to this type */
     override def withAnnotations(annots: List[AnnotationInfo]): Type =
-      AnnotatedType(annots:::this.annotations, this, selfsym)
+      copy(annots:::this.annotations)
 
     /** Remove any annotations from this type */
     override def withoutAnnotations = underlying.withoutAnnotations

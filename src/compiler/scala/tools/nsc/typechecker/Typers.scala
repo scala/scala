@@ -1260,15 +1260,30 @@ trait Typers { self: Analyzer =>
     def addGetterSetter(stat: Tree): List[Tree] = stat match {
       case ValDef(mods, name, tpt, rhs)
         if (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL).toLong && !stat.symbol.isModuleVar =>
+
+        def memberAnnots(annots: List[AnnotationInfo], memberClass: Symbol) = {
+          annots.filter(ann => ann.atp match {
+            case AnnotatedType(annots, _, _) =>
+              annots.exists(_.atp.typeSymbol == memberClass) ||
+              (memberClass == FieldClass && annots.forall(ann => {
+                val annClass = ann.atp.typeSymbol
+                annClass != GetterClass && annClass != SetterClass &&
+                annClass != BeanGetterClass && annClass != BeanSetterClass
+              }))
+            case _ => memberClass == FieldClass
+          })
+        }
+
         val isDeferred = mods hasFlag DEFERRED
         val value = stat.symbol
+        val allAnnots = value.annotations
+        value.setAnnotations(memberAnnots(allAnnots, FieldClass))
+
         val getter = if (isDeferred) value else value.getter(value.owner)
         assert(getter != NoSymbol, stat)
         if (getter hasFlag OVERLOADED)
           error(getter.pos, getter+" is defined twice")
-
-        // todo: potentially dangerous not to duplicate the trees and clone the symbols / types.
-        getter.setAnnotations(value.annotations)
+        getter.setAnnotations(memberAnnots(allAnnots, GetterClass))
 
         if (value.hasFlag(LAZY)) List(stat)
         else {
@@ -1290,8 +1305,8 @@ trait Typers { self: Analyzer =>
             }
           }
           checkNoEscaping.privates(getter, getterDef.tpt)
-          def setterDef(setter: Symbol): DefDef = {
-            setter.setAnnotations(value.annotations)
+          def setterDef(setter: Symbol, isBean: Boolean = false): DefDef = {
+            setter.setAnnotations(memberAnnots(allAnnots, if (isBean) BeanSetterClass else SetterClass))
             val result = typed {
               atPos(vdef.pos.focus) {
                 DefDef(
@@ -1315,12 +1330,19 @@ trait Typers { self: Analyzer =>
           if (mods hasFlag MUTABLE) {
             val setter = getter.setter(value.owner)
             gs.append(setterDef(setter))
-            if (!forMSIL && (value.hasAnnotation(BeanPropertyAttr) ||
-                 value.hasAnnotation(BooleanBeanPropertyAttr))) {
-              val beanSetterName = "set" + name(0).toString.toUpperCase +
-                                   name.subName(1, name.length)
+          }
+          if (!forMSIL && (value.hasAnnotation(BeanPropertyAttr) ||
+              value.hasAnnotation(BooleanBeanPropertyAttr))) {
+            val nameSuffix = name(0).toString.toUpperCase + name.subName(1, name.length)
+            val beanGetterName =
+              (if (value.hasAnnotation(BooleanBeanPropertyAttr)) "is" else "get") +
+              nameSuffix
+            val beanGetter = value.owner.info.decl(beanGetterName)
+            beanGetter.setAnnotations(memberAnnots(allAnnots, BeanGetterClass))
+            if (mods hasFlag MUTABLE) {
+              val beanSetterName = "set" + nameSuffix
               val beanSetter = value.owner.info.decl(beanSetterName)
-              gs.append(setterDef(beanSetter))
+              gs.append(setterDef(beanSetter, isBean = true))
             }
           }
           if (mods hasFlag DEFERRED) gs.toList else vdef :: gs.toList
