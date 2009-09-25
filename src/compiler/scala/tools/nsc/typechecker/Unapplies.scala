@@ -94,10 +94,10 @@ trait Unapplies extends ast.TreeDSL
   }
 
   def copyUntyped[T <: Tree](tree: T): T =
-    applyAndReturn[T](UnTyper traverse _)(tree.duplicate)
+    returning[T](UnTyper traverse _)(tree.duplicate)
 
   def copyUntypedInvariant(td: TypeDef): TypeDef =
-    applyAndReturn[TypeDef](UnTyper traverse _)(
+    returning[TypeDef](UnTyper traverse _)(
       treeCopy.TypeDef(td, td.mods &~ (COVARIANT | CONTRAVARIANT), td.name,
                        td.tparams, td.rhs).duplicate
     )

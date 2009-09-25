@@ -170,7 +170,7 @@ trait ParallelMatching extends ast.TreeDSL {
         }
       }
 
-      applyAndReturn[Tree](resetTraverser traverse _)(lxtt transform tree)
+      returning[Tree](resetTraverser traverse _)(lxtt transform tree)
     }
 
     final def isReached(bx: Int)        = labels contains bx
@@ -366,7 +366,7 @@ trait ParallelMatching extends ast.TreeDSL {
 
       // tests
       def isDefined = sym ne NoSymbol
-      def isSimple  = tpe.isChar || tpe.isInt
+      def isSimple  = tpe.isByte || tpe.isShort || tpe.isChar || tpe.isInt
 
       // sequences
       def seqType   = tpe.widen baseType SeqClass

@@ -93,6 +93,8 @@ trait PatternNodes extends ast.TreeDSL
 
       // These tests for final classes can inspect the typeSymbol
       private def is(s: Symbol) = tpe.typeSymbol eq s
+      def      isByte = is(ByteClass)
+      def     isShort = is(ShortClass)
       def       isInt = is(IntClass)
       def      isChar = is(CharClass)
       def   isBoolean = is(BooleanClass)
