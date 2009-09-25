@@ -47,8 +47,12 @@ class Directory(jfile: JFile) extends Path(jfile)
   def dirs: Iterator[Directory] = list filterMap { case x: Directory => x }
   def files: Iterator[File] = list filterMap { case x: File => x }
 
-  def deepList(depth: Int = 1): Iterator[Path] =
-    if (depth == 0) Iterator.empty
+  /** If optional depth argument is not given, will recurse
+   *  until it runs out of contents.
+   */
+  def deepList(depth: Int = -1): Iterator[Path] =
+    if (depth < 0) list ++ (dirs flatMap (_ deepList (depth)))
+    else if (depth == 0) Iterator.empty
     else list ++ (dirs flatMap (_ deepList (depth - 1)))
 
   /** An iterator over the directories underneath this directory,
