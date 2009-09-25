@@ -13,9 +13,6 @@ class Test4$Foo3
 @test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=file:///dev/null)
 private final int Test4$Foo4.x
 
-@test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=file:///dev/null)
-public int Test4$Foo4.x()
-
 @test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=file:///dev/zero)
 public int Test4$Foo5.bar()
 
@@ -27,9 +24,6 @@ public Test4$Foo7()
 
 @test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=constructor val)
 private final int Test4$Foo8.n
-
-@test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=constructor val)
-public int Test4$Foo8.n()
 
 0
 99
