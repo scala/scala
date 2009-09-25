@@ -220,7 +220,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     indent()
     printModifiers(m)
     if (m.isAccessor) {
-      val indexOfSetter = m.parent.get.children.findIndexOf(x => x.isInstanceOf[MethodSymbol] &&
+      val indexOfSetter = m.parent.get.children.indexWhere(x => x.isInstanceOf[MethodSymbol] &&
                       x.asInstanceOf[MethodSymbol].name == n + "_$eq")
       print(if (indexOfSetter > 0) "var " else "val ")
     } else {

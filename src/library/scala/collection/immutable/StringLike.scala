@@ -127,7 +127,7 @@ self =>
     else if (toString.length == 0) ""
     else {
       val chars = toString.toCharArray
-      chars(0) = chars(0).toUpperCase
+      chars(0) = chars(0).toUpper
       new String(chars)
     }
 

@@ -1,7 +1,7 @@
 /*     ___ ____ ___   __   ___   ___
 **    / _// __// _ | / /  / _ | / _ \    Scala classfile decoder
-**  __\ \/ /__/ __ |/ /__/ __ |/ ___/    (c) 2003-2006, LAMP/EPFL
-** /____/\___/_/ |_/____/_/ |_/_/
+**  __\ \/ /__/ __ |/ /__/ __ |/ ___/    (c) 2003-2009, LAMP/EPFL
+** /____/\___/_/ |_/____/_/ |_/_/        http://scala-lang.org/
 **
 */
 
@@ -29,7 +29,7 @@ class MetaParser(meta: String) {
   }
 
   protected def parseType: Unit = {
-    if (token.startsWith("?"))
+    if (token startsWith "?")
       res.append(token.substring(1))
     else
       res.append(token)
@@ -60,7 +60,7 @@ class MetaParser(meta: String) {
         else if (token == "constr")
           Some(parseConstrField)
         else
-          None;
+          None
       } catch {
         case _ => None
       }

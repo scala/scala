@@ -1,7 +1,7 @@
 /*     ___ ____ ___   __   ___   ___
 **    / _// __// _ | / /  / _ | / _ \  Scala classfile decoder
-**  __\ \/ /__/ __ |/ /__/ __ |/ ___/  (c) 2003-2006, LAMP/EPFL
-** /____/\___/_/ |_/____/_/ |_/_/
+**  __\ \/ /__/ __ |/ /__/ __ |/ ___/  (c) 2003-2009, LAMP/EPFL
+** /____/\___/_/ |_/____/_/ |_/_/      http://scala-lang.org/
 **
 */
 
@@ -49,7 +49,7 @@ object Arguments {
       this
     }
 
-    def parseBinding(str: String, separator: Char): Pair[String, String] = {
+    def parseBinding(str: String, separator: Char): (String, String) = {
       val eqls = str.indexOf(separator)
       if (eqls < 0) {
         error("missing '" + separator + "' in binding '" + str + "'")
@@ -65,34 +65,34 @@ object Arguments {
       res
     }
 
-    def parse(args: Array[String], res: Arguments): Unit = {
+    def parse(args: Array[String], res: Arguments) {
       if (args != null) {
-        var i = 0;
+        var i = 0
         while (i < args.length)
           if ((args(i) == null) || (args(i).length() == 0))
-            i = i + 1
+            i += 1
           else if (args(i).charAt(0) != optionPrefix) {
             res.addOther(args(i))
-            i = i + 1
+            i += 1
           } else if (options contains args(i)) {
             res.addOption(args(i))
-            i = i + 1
+            i += 1
           } else if (optionalArgs contains args(i)) {
             if ((i + 1) == args.length) {
               error("missing argument for '" + args(i) + "'")
-              i = i + 1
+              i += 1
             } else {
               res.addArgument(args(i), args(i + 1))
-              i = i + 2
+              i += 2
             }
           } else if (optionalBindings contains args(i)) {
             if ((i + 1) == args.length) {
               error("missing argument for '" + args(i) + "'")
-              i = i + 1
+              i += 1
             } else {
               res.addBinding(args(i),
                 parseBinding(args(i + 1), optionalBindings(args(i))));
-              i = i + 2
+              i += 2
             }
           } else {
             var iter = prefixes.iterator
@@ -101,7 +101,7 @@ object Arguments {
               val prefix = iter.next
               if (args(i) startsWith prefix) {
                 res.addPrefixed(prefix, args(i).substring(prefix.length()).trim());
-                i = i + 1
+                i += 1
               }
             }
             if (i == j) {
@@ -144,7 +144,9 @@ class Arguments {
 
   def addOption(option: String): Unit = options += option
 
-  def addArgument(option: String, arg: String): Unit = arguments(option) = arg
+  def addArgument(option: String, arg: String) {
+    arguments(option) = arg
+  }
 
   def addPrefixed(prefix: String, arg: String): Unit =
     if (prefixes isDefinedAt prefix)
@@ -164,8 +166,9 @@ class Arguments {
       }
     }
 
-  def addBinding(tag: String, binding: Pair[String, String]): Unit =
+  def addBinding(tag: String, binding: Pair[String, String]) {
     addBinding(tag, binding._1, binding._2)
+  }
 
   def addOther(arg: String): Unit = others += arg
 

@@ -33,7 +33,8 @@ object Scheduler extends DelegatingScheduler {
 
   /* Only <code>ForkJoinScheduler</code> implements this method.
    */
-  @deprecated def snapshot() {
+  @deprecated("snapshot will be removed")
+  def snapshot() {
     if (sched.isInstanceOf[ForkJoinScheduler]) {
       sched.asInstanceOf[ForkJoinScheduler].snapshot()
     } else
@@ -42,7 +43,8 @@ object Scheduler extends DelegatingScheduler {
 
   /* Only <code>ForkJoinScheduler</code> implements this method.
    */
-  @deprecated def restart() {
+  @deprecated("restart will be removed")
+  def restart() {
     if (sched.isInstanceOf[ForkJoinScheduler]) {
       sched.asInstanceOf[ForkJoinScheduler].restart()
     } else

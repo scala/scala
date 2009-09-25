@@ -1,3 +1,9 @@
+/* NSC -- new Scala compiler
+ * Copyright 2005-2009 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+// $Id$
+
 package scala.tools.nsc
 package interactive
 
@@ -87,7 +93,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
     val changesOf = new mutable.HashMap[Symbol, List[Change]]
 
     val defs = compiler.dependencyAnalysis.definitions
-    for (val src <- files; val syms = defs(src); val sym <- syms) {
+    for (src <- files; val syms = defs(src); sym <- syms) {
       definitions(src).find(_.fullNameString == sym.fullNameString) match {
         case Some(oldSym) =>
           changesOf(oldSym) = changeSet(oldSym, sym)

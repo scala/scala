@@ -31,7 +31,7 @@ object Main {
 
   /**Prints usage information for scalap.
    */
-  def usage: Unit = {
+  def usage {
     Console.println("usage: scalap {<option>} <name>")
     Console.println("where <option> is")
     Console.println("  -private           print private definitions")
@@ -52,7 +52,7 @@ object Main {
    *
    * @param clazz the class file to be processed.
    */
-  def processJavaClassFile(clazz: Classfile): Unit = {
+  def processJavaClassFile(clazz: Classfile) {
     // construct a new output stream writer
     val out = new OutputStreamWriter(Console.out)
     val writer = new JavaWriter(clazz, out)
@@ -67,7 +67,7 @@ object Main {
     val baos = new ByteArrayOutputStream
     val stream = new PrintStream(baos)
     val syms = scalaSig.topLevelClasses ::: scalaSig.topLevelObjects
-    syms.first.parent match {
+    syms.head.parent match {
     //Partial match
       case Some(p) if (p.name != "<empty>") => {
         val path = p.path

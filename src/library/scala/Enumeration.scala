@@ -169,14 +169,16 @@ abstract class Enumeration(initial: Int, names: String*) {
     /** this enumeration value as an <code>Int</code> bit mask.
      *  @throws IllegalArgumentException if <code>id</code> is greater than 31
      */
-    @deprecated def mask32: Int = {
+    @deprecated("mask32 will be removed")
+    def mask32: Int = {
       if (id >= 32) throw new IllegalArgumentException
       1  << id
     }
     /** this enumeration value as an <code>Long</code> bit mask.
      *  @throws IllegalArgumentException if <code>id</code> is greater than 63
      */
-    @deprecated def mask64: Long = {
+    @deprecated("mask64 will be removed")
+    def mask64: Long = {
       if (id >= 64) throw new IllegalArgumentException
       1L << id
     }

@@ -1,7 +1,7 @@
 /*     ___ ____ ___   __   ___   ___
 **    / _// __// _ | / /  / _ | / _ \    Scala classfile decoder
-**  __\ \/ /__/ __ |/ /__/ __ |/ ___/    (c) 2003-2006, LAMP/EPFL
-** /____/\___/_/ |_/____/_/ |_/_/
+**  __\ \/ /__/ __ |/ /__/ __ |/ ___/    (c) 2003-2009, LAMP/EPFL
+** /____/\___/_/ |_/____/_/ |_/_/        http://scala-lang.org/
 **
 */
 
@@ -28,7 +28,7 @@ class ByteArrayReader(content: Array[Byte]) {
   /** read a byte
    */
   def nextByte: Byte = {
-    bp = bp + 1
+    bp += 1
     buf(bp - 1)
   }
 
@@ -37,21 +37,21 @@ class ByteArrayReader(content: Array[Byte]) {
   def nextBytes(len: Int): Array[Byte] = {
     val res = new Array[Byte](len)
     System.arraycopy(buf, bp, res, 0, len)
-    bp = bp + len
+    bp += len
     res
   }
 
   /** read a character
    */
   def nextChar: Char = {
-    bp = bp + 2
+    bp += 2
     (((buf(bp - 2) & 0xff) << 8) + (buf(bp - 1) & 0xff)).asInstanceOf[Char]
   }
 
   /** read an integer
    */
   def nextInt: Int = {
-    bp = bp + 4
+    bp += 4
     ((buf(bp - 4) & 0xff) << 24) +
     ((buf(bp - 3) & 0xff) << 16) +
     ((buf(bp - 2) & 0xff) <<  8) +
@@ -78,7 +78,7 @@ class ByteArrayReader(content: Array[Byte]) {
     var b: Byte = 0
     do {
       b = buf(bp)
-      bp = bp + 1
+      bp += 1
       x = (x << 7) + (b & 0x7f)
     } while ((b & 0x80) != 0)
     x
@@ -91,7 +91,7 @@ class ByteArrayReader(content: Array[Byte]) {
     var i: Int = 0
     while (i < n) {
       x = (x << 8) + (nextByte & 0xff)
-      i = i + 1
+      i += 1
     }
     val leading: Int = 64 - (n * 8)
     x << leading >> leading
@@ -103,21 +103,21 @@ class ByteArrayReader(content: Array[Byte]) {
     val cs: Array[Char] = new Array(len)
     var i = bp
     var j = 0
-    bp = bp + len
+    bp += len
     while (i < bp) {
       var b: Int = buf(i) & 0xFF
-      i = i + 1
+      i += 1
       if (b >= 0xE0) {
         b = ((b & 0x0F) << 12) | (buf(i) & 0x3F) << 6
-        i = i + 1
+        i += 1
         b = b | (buf(i) & 0x3F)
-        i = i + 1
+        i += 1
       } else if (b >= 0xC0) {
         b = ((b & 0x1F) << 6) | (buf(i) & 0x3F)
-        i = i + 1
+        i += 1
       }
       cs(j) = b.asInstanceOf[Char]
-      j = j + 1
+      j += 1
     }
     new String(cs, 0, j)
   }
@@ -150,8 +150,8 @@ class ByteArrayReader(content: Array[Byte]) {
 
    /** skip next 'n' bytes
   */
-  def skip(n: Int): Unit = {
-    bp = bp + n
+  def skip(n: Int) {
+    bp += n
   }
 
 }
