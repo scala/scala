@@ -11,8 +11,6 @@
 
 package scala.collection
 
-import generic.MapProxyTemplate
-
 /** This is a simple wrapper class for <a href="Map.html"
  *  target="contentFrame"><code>scala.collection.Map</code></a>.
  *  It is most useful for assembling customized map abstractions
@@ -21,4 +19,4 @@ import generic.MapProxyTemplate
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
  */
-trait MapProxy[A, +B] extends Map[A, B] with MapProxyTemplate[A, B, Map[A, B]]
+trait MapProxy[A, +B] extends Map[A, B] with MapProxyLike[A, B, Map[A, B]]

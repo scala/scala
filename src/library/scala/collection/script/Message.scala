@@ -9,8 +9,8 @@
 // $Id$
 
 
-package scala.collection.script
-import scala.collection._
+package scala.collection
+package script
 
 import Predef._
 import mutable.ArrayBuffer

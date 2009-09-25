@@ -9,9 +9,10 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import scala.collection.generic._
+import generic._
 
 /** <p>
  *    This class is used internally to represent mutable lists. It is the
@@ -26,7 +27,7 @@ import scala.collection.generic._
  */
 @serializable @SerialVersionUID(5938451523372603072L)
 class MutableList[A] extends LinearSequence[A]
-                        with LinearSequenceTemplate[A, MutableList[A]]
+                        with LinearSequenceLike[A, MutableList[A]]
                         with Builder[A, MutableList[A]] {
 
   override protected[this] def newBuilder = new MutableList[A]

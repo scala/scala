@@ -9,9 +9,10 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import scala.collection.generic._
+import generic._
 
 /** This class implements single linked lists where both the head (<code>elem</code>)
  *  and the tail (<code>next</code>) are mutable.
@@ -22,11 +23,11 @@ import scala.collection.generic._
  */
 @serializable
 class LinkedList[A](_elem: A, _next: LinkedList[A]) extends LinearSequence[A]
-                                                       with TraversableClass[A, LinkedList]
-                                                       with LinkedListTemplate[A, LinkedList[A]] {
+                                                       with GenericTraversableTemplate[A, LinkedList]
+                                                       with LinkedListLike[A, LinkedList[A]] {
   elem = _elem
   next = _next
-  override def companion: Companion[LinkedList] = LinkedList
+  override def companion: GenericCompanion[LinkedList] = LinkedList
 }
 
 object LinkedList extends SequenceFactory[LinkedList] {

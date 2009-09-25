@@ -1,4 +1,5 @@
-package scala.collection.immutable;
+package scala.collection
+package immutable
 
 /**
  * @author David MacIver
@@ -134,7 +135,7 @@ import LongMap._;
  * <a href="http://citeseer.ist.psu.edu/okasaki98fast.html">Fast Mergeable Long Maps</a>
  * by Okasaki and Gill. Essentially a trie based on binary digits of the the integers.
  */
-sealed abstract class LongMap[+T] extends scala.collection.immutable.Map[Long, T] with scala.collection.generic.ImmutableMapTemplate[Long, T, LongMap[T]] {
+sealed abstract class LongMap[+T] extends Map[Long, T] with MapLike[Long, T, LongMap[T]] {
   override def empty: LongMap[T] = LongMap.Nil;
 
   override def toList = {

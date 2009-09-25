@@ -310,10 +310,11 @@ self: Analyzer =>
         try {
           val itree1 =
             if (isView)
-              typed1(
+              typed1 (
                 atPos(itree.pos) (
                   Apply(itree, List(Ident("<argument>").setType(approximate(pt.typeArgs.head))))),
-                  EXPRmode, approximate(pt.typeArgs.tail.head))
+                EXPRmode, approximate(pt.typeArgs.tail.head)
+              )
             else
               typed1(itree, EXPRmode, wildPt)
 

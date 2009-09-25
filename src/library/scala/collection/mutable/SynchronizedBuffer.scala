@@ -9,9 +9,10 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import scala.collection.script._
+import script._
 
 /** This class should be used as a mixin. It synchronizes the <code>Buffer</code>
  *  methods of the class into which it is mixed in.
@@ -21,7 +22,7 @@ import scala.collection.script._
  */
 trait SynchronizedBuffer[A] extends Buffer[A] {
 
-  import collection.Traversable
+  import scala.collection.Traversable
 
   abstract override def length: Int = synchronized {
     super.length

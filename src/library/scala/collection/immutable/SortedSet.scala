@@ -9,9 +9,11 @@
 // $Id$
 
 
-package scala.collection.immutable
+package scala.collection
+package immutable
 
-import scala.collection.generic._
+import generic._
+import mutable.Builder
 
 /** A sorted set.
  *
@@ -19,7 +21,7 @@ import scala.collection.generic._
  *  @author Martin Odersky
  *  @version 2.8
  */
-trait SortedSet[A] extends Set[A] with collection.SortedSet[A] with SortedSetTemplate[A, SortedSet[A]] {
+trait SortedSet[A] extends Set[A] with scala.collection.SortedSet[A] with SortedSetLike[A, SortedSet[A]] {
   /** Needs to be overridden in subclasses. */
   override def empty: SortedSet[A] = throw new UnsupportedOperationException("SortedMap.empty")
 }

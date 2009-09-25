@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.collection.mutable;
+package scala.collection
+package mutable
 
 object OpenHashMap{
   def apply[K, V](elems : (K, V)*) = {

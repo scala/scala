@@ -13,8 +13,6 @@ package scala.collection
 import generic._
 
 import mutable.ListBuffer
-// import immutable.{List, Nil, ::}
-import generic._
 import scala.util.control.Breaks._
 
 /** Class <code>Linear[A]</code> represents linear sequences of elements.

@@ -12,8 +12,9 @@
 package scala.collection
 package immutable
 
-import scala.util.matching.Regex
 import generic._
+import mutable.Builder
+import scala.util.matching.Regex
 
 object StringLike {
 

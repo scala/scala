@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.collection.immutable
+package scala.collection
+package immutable
 
 import scala.annotation.tailrec
 

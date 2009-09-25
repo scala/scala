@@ -9,19 +9,20 @@
 // $Id$
 
 
-package scala.collection.immutable
+package scala.collection
+package immutable
 
-import scala.collection.generic._
-import scala.collection.mutable
+import generic._
+import mutable.Builder
 
 /** A subtrait of <code>collection.Sequence</code> which represents sequences
  *  that cannot be mutated.
  */
 trait LinearSequence[+A] extends Sequence[A]
-                            with collection.LinearSequence[A]
-                            with TraversableClass[A, LinearSequence]
-                            with LinearSequenceTemplate[A, LinearSequence[A]] {
-  override def companion: Companion[LinearSequence] = LinearSequence
+                            with scala.collection.LinearSequence[A]
+                            with GenericTraversableTemplate[A, LinearSequence]
+                            with LinearSequenceLike[A, LinearSequence[A]] {
+  override def companion: GenericCompanion[LinearSequence] = LinearSequence
 }
 
 object LinearSequence extends SequenceFactory[LinearSequence] {

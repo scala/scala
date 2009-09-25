@@ -9,12 +9,13 @@
 // $Id$
 
 
-package scala.collection.immutable
+package scala.collection
+package immutable
 
-import scala.collection.generic._
-import scala.collection.mutable
+import generic._
+import mutable.Builder
 
-/** A subtrait of collection.Iterable which represents iterables
+/** A subtrait of scala.collection.Iterable which represents iterables
  *  that cannot be mutated.
  *
  *  @author  Matthias Zenger
@@ -22,10 +23,10 @@ import scala.collection.mutable
  *  @version 2.8
  */
 trait Iterable[+A] extends Traversable[A]
-                      with collection.Iterable[A]
-                      with TraversableClass[A, Iterable]
-                      with IterableTemplate[A, Iterable[A]] {
-  override def companion: Companion[Iterable] = Iterable
+                      with scala.collection.Iterable[A]
+                      with GenericTraversableTemplate[A, Iterable]
+                      with IterableLike[A, Iterable[A]] {
+  override def companion: GenericCompanion[Iterable] = Iterable
 }
 
 /** A factory object for the trait <code>Iterable</code>.

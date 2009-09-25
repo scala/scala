@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.collection.immutable
+package scala.collection
+package immutable
 
 @serializable @SerialVersionUID(8691885935445612921L)
 abstract class RedBlack[A] {

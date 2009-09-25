@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
 /** This class can be used to construct data structures that are based
  *  on hashtables. Class <code>HashTable[A]</code> implements a hashtable
@@ -28,7 +29,7 @@ package scala.collection.mutable
  *  @author  Martin Odersky
  *  @version 2.0, 31/12/2006
  */
-trait HashTable[A] extends AnyRef {
+trait HashTable[A] {
 
   protected type Entry >: Null <: HashEntry[A, Entry]
 

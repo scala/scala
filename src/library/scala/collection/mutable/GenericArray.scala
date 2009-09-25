@@ -9,9 +9,10 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import scala.collection.generic._
+import generic._
 
 /** This class is used internally to implement data structures that
  *  are based on resizable arrays.
@@ -22,10 +23,10 @@ import scala.collection.generic._
  */
 class GenericArray[A](override val length: Int)
 extends Vector[A]
-   with TraversableClass[A, GenericArray]
-   with VectorTemplate[A, GenericArray[A]] {
+   with GenericTraversableTemplate[A, GenericArray]
+   with VectorLike[A, GenericArray[A]] {
 
-  override def companion: Companion[GenericArray] = GenericArray
+  override def companion: GenericCompanion[GenericArray] = GenericArray
 
   val array: Array[AnyRef] = new Array[AnyRef](length)
 

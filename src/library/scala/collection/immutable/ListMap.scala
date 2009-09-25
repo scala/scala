@@ -9,9 +9,10 @@
 // $Id$
 
 
-package scala.collection.immutable
+package scala.collection
+package immutable
 
-import scala.collection.generic._
+import generic._
 
 /** The canonical factory of <a href="ListMap.html">ListMap</a>'s.
  */
@@ -31,7 +32,7 @@ object ListMap extends ImmutableMapFactory[ListMap] {
  *  @version 2.0, 01/01/2007
  */
 @serializable @SerialVersionUID(301002838095710379L)
-class ListMap[A, +B] extends Map[A, B] with ImmutableMapTemplate[A, B, ListMap[A, B]] {
+class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] {
 
   override def empty = ListMap.empty
 

@@ -8,8 +8,8 @@
 
 // $Id$
 
-package scala.collection.generic
-import scala.collection._
+package scala.collection
+package generic
 
 /** This class represents collections that can be augmented using a `+=` operator
  *  and that can be cleared of all elements using the `clear` method.

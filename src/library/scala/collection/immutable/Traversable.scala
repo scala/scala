@@ -9,10 +9,11 @@
 // $Id$
 
 
-package scala.collection.immutable
+package scala.collection
+package immutable
 
-import scala.collection.generic._
-import scala.collection.mutable
+import generic._
+import mutable.Builder
 
 /** A subtrait of <code>collection.Traversable</code> which represents
  *  traversables that cannot be mutated.
@@ -21,11 +22,11 @@ import scala.collection.mutable
  *  @author  Martin Odersky
  *  @version 2.8
  */
-trait Traversable[+A] extends collection.Traversable[A]
-                         with TraversableClass[A, Traversable]
-                         with TraversableTemplate[A, Traversable[A]]
+trait Traversable[+A] extends scala.collection.Traversable[A]
+                         with GenericTraversableTemplate[A, Traversable]
+                         with TraversableLike[A, Traversable[A]]
                          with Immutable {
-  override def companion: Companion[Traversable] = Traversable
+  override def companion: GenericCompanion[Traversable] = Traversable
 }
 
 /** A factory object for the trait <code>Traversable</code>.

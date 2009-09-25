@@ -9,10 +9,10 @@
 // $Id$
 
 
-package scala.collection.immutable
+package scala.collection
+package immutable
 
-import scala.collection.generic._
-import scala.collection.mutable
+import generic._
 import annotation.unchecked.uncheckedVariance
 
 /** <p>
@@ -33,9 +33,9 @@ import annotation.unchecked.uncheckedVariance
  *  @version 2.0, 19/01/2007
  */
 @serializable @SerialVersionUID(8886909077084990906L)
-class HashMap[A, +B] extends Map[A,B] with ImmutableMapTemplate[A, B, HashMap[A, B]] with mutable.HashTable[A] {
+class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with mutable.HashTable[A] {
 
-  type Entry = collection.mutable.DefaultEntry[A, Any]
+  type Entry = scala.collection.mutable.DefaultEntry[A, Any]
 
   protected var later: HashMap[A, B @uncheckedVariance] = null
   protected var oldKey: A = _

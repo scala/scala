@@ -9,9 +9,11 @@
 // $Id$
 
 
-package scala.collection.immutable
+package scala.collection
+package immutable
 
-import scala.collection.generic._
+import generic._
+import mutable.Builder
 import annotation.unchecked.uncheckedVariance
 
 /** A map whose keys are sorted.
@@ -21,9 +23,9 @@ import annotation.unchecked.uncheckedVariance
  *  @version 2.8
  */
 trait SortedMap[A, +B] extends Map[A, B]
-                         with collection.SortedMap[A, B]
-                         with ImmutableMapTemplate[A, B, SortedMap[A, B]]
-                         with SortedMapTemplate[A, B, SortedMap[A, B]] {
+                         with scala.collection.SortedMap[A, B]
+                         with MapLike[A, B, SortedMap[A, B]]
+                         with SortedMapLike[A, B, SortedMap[A, B]] {
 
   override protected[this] def newBuilder : Builder[(A, B), SortedMap[A, B]] =
     SortedMap.newBuilder[A, B]
@@ -53,7 +55,7 @@ trait SortedMap[A, +B] extends Map[A, B]
    *
    *  @param elems     the traversable object.
    */
-  override def ++[B1 >: B](elems: collection.Traversable[(A, B1)]): SortedMap[A, B1] =
+  override def ++[B1 >: B](elems: scala.collection.Traversable[(A, B1)]): SortedMap[A, B1] =
     ((repr: SortedMap[A, B1]) /: elems) (_ + _)
 
   /** Adds a number of elements provided by an iterator

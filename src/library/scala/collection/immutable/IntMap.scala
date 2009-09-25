@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.collection.immutable;
+package scala.collection
+package immutable;
 
 /**
  * @author David MacIver
@@ -147,7 +148,7 @@ import IntMap._
  * <a href="http://citeseer.ist.psu.edu/okasaki98fast.html">Fast Mergeable Integer Maps</a>
  * by Okasaki and Gill. Essentially a trie based on binary digits of the the integers.
  */
-sealed abstract class IntMap[+T] extends scala.collection.immutable.Map[Int, T] with scala.collection.generic.ImmutableMapTemplate[Int, T, IntMap[T]] {
+sealed abstract class IntMap[+T] extends Map[Int, T] with MapLike[Int, T, IntMap[T]] {
   override def empty: IntMap[T] = IntMap.Nil;
 
   override def toList = {

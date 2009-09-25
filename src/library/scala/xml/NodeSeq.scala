@@ -12,8 +12,9 @@
 package scala.xml
 
 import collection.immutable
-import collection.generic._
-import collection.mutable.ListBuffer
+import collection.SequenceLike
+import collection.mutable.{Builder, ListBuffer}
+import collection.generic.BuilderFactory
 
 /** This object ...
  *
@@ -37,7 +38,7 @@ object NodeSeq {
  *  @author  Burak Emir
  *  @version 1.0
  */
-abstract class NodeSeq extends immutable.Sequence[Node] with SequenceTemplate[Node, NodeSeq] {
+abstract class NodeSeq extends immutable.Sequence[Node] with SequenceLike[Node, NodeSeq] {
   import NodeSeq.seqToNodeSeq // import view magic for NodeSeq wrappers
 
   /** Creates a list buffer as builder for this class */

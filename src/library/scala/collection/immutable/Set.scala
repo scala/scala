@@ -9,9 +9,10 @@
 // $Id$
 
 
-package scala.collection.immutable
+package scala.collection
+package immutable
 
-import scala.collection.generic._
+import generic._
 
 /** <p>
  *    A generic trait for immutable sets. Concrete set implementations have
@@ -31,10 +32,10 @@ import scala.collection.generic._
  *  @version 2.8
  */
 trait Set[A] extends Iterable[A]
-                with collection.Set[A]
-                with SetClass[A, Set]
-                with SetTemplate[A, Set[A]] {
-  override def companion: Companion[Set] = Set
+                with scala.collection.Set[A]
+                with GenericSetTemplate[A, Set]
+                with SetLike[A, Set[A]] {
+  override def companion: GenericCompanion[Set] = Set
 }
 
 object Set extends SetFactory[Set] {

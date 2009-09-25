@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.collection.immutable
+package scala.collection
+package immutable
 
 import java.io._
 import scala.util.matching.Regex
@@ -112,7 +113,7 @@ class PagedSeq[T: ClassManifest] protected(
   first1: Page[T],
   start: Int,
   end: Int)
-extends collection.Vector[T]
+extends scala.collection.Vector[T]
 {
   /**  A paged sequence is constructed from a method that produces more characters when asked.
    *  The producer method is analogous to the read method in java.io.Reader.

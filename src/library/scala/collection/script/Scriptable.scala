@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.collection.script
+package scala.collection
+package script
 
 
 /** Classes that mix in the <code>Scriptable</code> class allow

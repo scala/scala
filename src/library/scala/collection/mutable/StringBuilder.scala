@@ -9,9 +9,10 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import collection.generic._
+import generic._
 import compat.Platform.arraycopy
 import scala.reflect.Manifest
 

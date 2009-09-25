@@ -9,10 +9,10 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import scala.collection.generic._
-import scala.collection.immutable
+import generic._
 
 /** A Buffer implementation back up by a list. It provides constant time
  *  prepend and append. Most other operations are linear.
@@ -24,14 +24,14 @@ import scala.collection.immutable
 @serializable @SerialVersionUID(3419063961353022661L)
 final class ListBuffer[A]
       extends Buffer[A]
-         with TraversableClass[A, ListBuffer]
-         with BufferTemplate[A, ListBuffer[A]]
+         with GenericTraversableTemplate[A, ListBuffer]
+         with BufferLike[A, ListBuffer[A]]
          with Builder[A, List[A]]
          with SequenceForwarder[A]
 {
-  override def companion: Companion[ListBuffer] = ListBuffer
+  override def companion: GenericCompanion[ListBuffer] = ListBuffer
 
-  import collection.Traversable
+  import scala.collection.Traversable
 
   private var start: List[A] = Nil
   private var last0: ::[A] = _

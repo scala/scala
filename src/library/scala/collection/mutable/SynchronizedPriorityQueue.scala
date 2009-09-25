@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
 /** This class implements synchronized priority queues using a heap.
  *  The elements of the queue have to be ordered in terms of the
@@ -42,7 +43,7 @@ class SynchronizedPriorityQueue[A](implicit ord: Ordering[A]) extends PriorityQu
    *
    *  @param  iter        an iterable object
    */
-  def ++=(iter: collection.Iterable[A]): this.type = {
+  def ++=(iter: scala.collection.Iterable[A]): this.type = {
     synchronized {
       super.++=(iter)
     }

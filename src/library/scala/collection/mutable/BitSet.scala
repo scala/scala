@@ -9,19 +9,19 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import scala.collection.generic._
-import scala.collection.immutable
-import BitSetTemplate.{LogWL, updateArray}
+import generic._
+import BitSetLike.{LogWL, updateArray}
 
 /** A class for mutable bitsets.
  */
 @serializable @SerialVersionUID(8483111450368547763L)
 class BitSet(protected var elems: Array[Long]) extends Set[Int]
-                                                  with collection.BitSet
-                                                  with BitSetTemplate[BitSet]
-                                                  with MutableSetTemplate[Int, BitSet] {
+                                                  with scala.collection.BitSet
+                                                  with BitSetLike[BitSet]
+                                                  with SetLike[Int, BitSet] {
 
   override def empty = BitSet.empty
 

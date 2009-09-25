@@ -12,6 +12,7 @@
 package scala.collection
 
 import generic._
+import mutable.Builder
 
 /** <p>
  *    Class <code>Linear[A]</code> represents linear sequences of elements.
@@ -27,9 +28,9 @@ import generic._
  *  @version 1.0, 16/07/2003
  */
 trait LinearSequence[+A] extends Sequence[A]
-                            with TraversableClass[A, LinearSequence]
-                            with LinearSequenceTemplate[A, LinearSequence[A]] {
-  override def companion: Companion[LinearSequence] = LinearSequence
+                            with GenericTraversableTemplate[A, LinearSequence]
+                            with LinearSequenceLike[A, LinearSequence[A]] {
+  override def companion: GenericCompanion[LinearSequence] = LinearSequence
 }
 
 object LinearSequence extends SequenceFactory[LinearSequence] {

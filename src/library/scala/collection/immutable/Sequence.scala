@@ -9,19 +9,20 @@
 // $Id$
 
 
-package scala.collection.immutable
+package scala.collection
+package immutable
 
-import scala.collection.generic._
-import scala.collection.mutable
+import generic._
+import mutable.Builder
 
 /** A subtrait of collection.Sequence which represents sequences
  *  that cannot be mutated.
  */
 trait Sequence[+A] extends Iterable[A]
-                      with collection.Sequence[A]
-                      with TraversableClass[A, Sequence]
-                      with SequenceTemplate[A, Sequence[A]] {
-  override def companion: Companion[Sequence] = Sequence
+                      with scala.collection.Sequence[A]
+                      with GenericTraversableTemplate[A, Sequence]
+                      with SequenceLike[A, Sequence[A]] {
+  override def companion: GenericCompanion[Sequence] = Sequence
 }
 
 object Sequence extends SequenceFactory[Sequence] {

@@ -12,8 +12,9 @@
 package scala.collection
 package immutable
 
-import scala.util.matching.Regex
 import generic._
+import mutable.Builder
+import scala.util.matching.Regex
 
 class WrappedString(override val self: String) extends Vector[Char] with StringLike[WrappedString] with Proxy {
 

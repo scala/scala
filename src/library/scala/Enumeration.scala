@@ -11,10 +11,10 @@
 
 package scala
 
-
-import scala.collection.mutable.{Map, HashMap}
+import scala.collection.SetLike
+import scala.collection.mutable.{Builder, AddingBuilder, Map, HashMap}
 import scala.collection.immutable.{Set, BitSet}
-import scala.collection.generic.{Builder, BuilderFactory, AddingBuilder, SetTemplate}
+import scala.collection.generic.BuilderFactory
 
 /** <p>
  *    Defines a finite set of values specific to the enumeration. Typically
@@ -213,7 +213,7 @@ abstract class Enumeration(initial: Int, names: String*) {
    *  Iterating through this set will yield values in increasing order of their ids.
    *  @param   ids   The set of ids of values, organized as a BitSet.
    */
-  class ValueSet private[Enumeration] (val ids: BitSet) extends Set[Value] with SetTemplate[Value, ValueSet] {
+  class ValueSet private[Enumeration] (val ids: BitSet) extends Set[Value] with SetLike[Value, ValueSet] {
     override def empty = ValueSet.empty
     def contains(v: Value) = ids contains (v.id)
     def + (value: Value) = new ValueSet(ids + value.id)

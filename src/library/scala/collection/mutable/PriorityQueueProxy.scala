@@ -8,7 +8,8 @@
 
 // $Id$
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
 /** This class implements priority queues using a heap. The
  *  elements of the queue have to be ordered in terms of the
@@ -51,7 +52,7 @@ abstract class PriorityQueueProxy[A](implicit ord: Ordering[A]) extends Priority
    *
    *  @param  iter        an iterable object
    */
-  def ++=(iter: collection.Iterable[A]): this.type = {
+  def ++=(iter: scala.collection.Iterable[A]): this.type = {
     self ++= iter
     this
   }

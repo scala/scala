@@ -9,10 +9,11 @@
 // $Id$
 
 
-package scala.collection.immutable
+package scala.collection
+package immutable
 
-import scala.collection.mutable.ListBuffer
-import scala.collection.generic._
+import generic._
+import mutable.{Builder, ListBuffer}
 import annotation.tailrec
 
 /** A class representing an ordered collection of elements of type
@@ -26,11 +27,11 @@ import annotation.tailrec
  */
 sealed abstract class List[+A] extends LinearSequence[A]
                                   with Product
-                                  with TraversableClass[A, List]
-                                  with LinearSequenceTemplate[A, List[A]] {
-  override def companion: Companion[List] = List
+                                  with GenericTraversableTemplate[A, List]
+                                  with LinearSequenceLike[A, List[A]] {
+  override def companion: GenericCompanion[List] = List
 
-  import collection.{Iterable, Traversable, Sequence, Vector}
+  import scala.collection.{Iterable, Traversable, Sequence, Vector}
 
   /** Returns true if the list does not contain any elements.
    *  @return <code>true</code>, iff the list is empty.
@@ -140,7 +141,7 @@ sealed abstract class List[+A] extends LinearSequence[A]
     loop(this)
   }
 
-  // Overridden methods from IterableTemplate or overloaded variants of such methods
+  // Overridden methods from IterableLike or overloaded variants of such methods
 
   /** Create a new list which contains all elements of this list
    *  followed by all elements of Traversable `that'
@@ -223,6 +224,8 @@ sealed abstract class List[+A] extends LinearSequence[A]
     }
     loop(drop(n), this)
   }
+
+  // dropRight is inherited from Stream
 
   /** Split the list at a given point and return the two parts thus
    *  created.
@@ -354,7 +357,7 @@ sealed abstract class List[+A] extends LinearSequence[A]
    *    <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>,
    *    which should be true iff <code>e1</code> is smaller than
    *    <code>e2</code>.
-   *  !!! todo: move sorting to IterableTemplate
+   *  !!! todo: move sorting to IterableLike
    *  </p>
    *
    *  @param lt the comparison function
@@ -429,9 +432,6 @@ sealed abstract class List[+A] extends LinearSequence[A]
     ms(this)
   }
 
-  // !!! The above sort could be replaced by:
-  //   def sort(lt: (A, A) => Boolean): List[A] = super.sortWith(lt)
-  // except that it fails to find a ClassManifest.
 }
 
 /** The empty list.
@@ -496,7 +496,7 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
  */
 object List extends SequenceFactory[List] {
 
-  import collection.{Iterable, Sequence, Vector}
+  import scala.collection.{Iterable, Sequence, Vector}
 
   implicit def builderFactory[A]: BuilderFactory[A, List[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, List[A]] = new ListBuffer[A]

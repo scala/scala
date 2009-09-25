@@ -12,8 +12,6 @@
 package scala.collection
 package mutable
 
-import generic.Builder
-
 import scala.reflect.ClassManifest
 
 abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] {

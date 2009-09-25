@@ -12,7 +12,7 @@ package scala
 
 import annotation.experimental
 import collection.immutable.Vector
-import collection.generic.VectorView
+import collection.VectorView
 import util.control.Exception.catching
 import util.Hashable
 

@@ -9,11 +9,12 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
 import Predef._
 import scala.reflect.ClassManifest
-import collection.generic._
+import scala.collection.generic._
 
 /**
  *  <p>A class representing <code>Array[T]</code></p>
@@ -52,16 +53,16 @@ abstract class WrappedArray[T] extends Vector[T] with ArrayLike[T, WrappedArray[
 object WrappedArray {
 
   def make[T](x: AnyRef): WrappedArray[T] = x match {
-    case x: Array[AnyRef] => wrapArray[AnyRef](x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Int] => wrapArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Double] => wrapArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Long] => wrapArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Float] => wrapArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Char] => wrapArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Byte] => wrapArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Short] => wrapArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Boolean] => wrapArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Unit] => wrapArray(x).asInstanceOf[WrappedArray[T]]
+    case x: Array[AnyRef] => wrapRefArray[AnyRef](x).asInstanceOf[WrappedArray[T]]
+    case x: Array[Int] => wrapIntArray(x).asInstanceOf[WrappedArray[T]]
+    case x: Array[Double] => wrapDoubleArray(x).asInstanceOf[WrappedArray[T]]
+    case x: Array[Long] => wrapLongArray(x).asInstanceOf[WrappedArray[T]]
+    case x: Array[Float] => wrapFloatArray(x).asInstanceOf[WrappedArray[T]]
+    case x: Array[Char] => wrapCharArray(x).asInstanceOf[WrappedArray[T]]
+    case x: Array[Byte] => wrapByteArray(x).asInstanceOf[WrappedArray[T]]
+    case x: Array[Short] => wrapShortArray(x).asInstanceOf[WrappedArray[T]]
+    case x: Array[Boolean] => wrapBooleanArray(x).asInstanceOf[WrappedArray[T]]
+    case x: Array[Unit] => wrapUnitArray(x).asInstanceOf[WrappedArray[T]]
   }
 
   implicit def builderFactory[T](implicit m: ClassManifest[T]): BuilderFactory[T, WrappedArray[T], WrappedArray[_]] =

@@ -9,9 +9,10 @@
 // $Id$
 
 
-package scala.collection.immutable
+package scala.collection
+package immutable
 
-import scala.collection.generic._
+import generic._
 
 /** The canonical factory of <a href="ListSet.html">ListSet</a>'s */
 object ListSet extends SetFactory[ListSet] {
@@ -30,9 +31,9 @@ object ListSet extends SetFactory[ListSet] {
  */
 @serializable
 class ListSet[A] extends Set[A]
-                    with SetClass[A, ListSet]
-                    with SetTemplate[A, ListSet[A]] { self =>
-  override def companion: Companion[ListSet] = ListSet
+                    with GenericSetTemplate[A, ListSet]
+                    with SetLike[A, ListSet[A]] { self =>
+  override def companion: GenericCompanion[ListSet] = ListSet
 
   /** Returns the number of elements in this set.
    *

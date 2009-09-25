@@ -8,13 +8,15 @@
 
 // $Id$
 
-package scala.collection.generic
-import scala.collection._
+package scala.collection
+package generic
+
+import mutable.{Builder, MapBuilder}
 
 /** A template for companion objects of <code>immutable.Map</code> and
  *  subclasses thereof.
  */
-abstract class ImmutableMapFactory[CC[A, +B] <: immutable.Map[A, B] with ImmutableMapTemplate[A, B, CC[A, B]]]
+abstract class ImmutableMapFactory[CC[A, +B] <: immutable.Map[A, B] with immutable.MapLike[A, B, CC[A, B]]]
   extends MapFactory[CC] {
 
   def newBuilder[A, B] = new MapBuilder[A, B, CC[A, B]](empty[A, B])

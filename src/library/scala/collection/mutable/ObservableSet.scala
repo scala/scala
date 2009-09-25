@@ -9,9 +9,10 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import scala.collection.script._
+import script._
 
 /** This class is typically used as a mixin. It adds a subscription
  *  mechanism to the <code>Set</code> class into which this abstract

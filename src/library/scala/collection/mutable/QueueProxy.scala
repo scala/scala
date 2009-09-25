@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
 /** <code>Queue</code> objects implement data structures that allow to
  *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
@@ -49,7 +50,7 @@ trait QueueProxy[A] extends Queue[A] with Proxy {
    *
    *  @param  iter        an iterable object
    */
-  def ++=(iter: collection.Iterable[A]): this.type = {
+  def ++=(iter: scala.collection.Iterable[A]): this.type = {
     self ++= iter
     this
   }

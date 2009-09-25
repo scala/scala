@@ -8,7 +8,8 @@
 
 // $Id$
 
-package scala.collection.immutable
+package scala.collection
+package immutable
 
 // A dummy to fool ant until reintegration.
 class TreeHashMap
@@ -39,7 +40,7 @@ object TreeHashMap {
  *
  * @author David MacIver
  */
-class TreeHashMap[Key, +Value] private (private val underlying : IntMap[AssocMap[Key, Value]]) extends scala.collection.immutable.Map[Key, Value]{
+class TreeHashMap[Key, +Value] private (private val underlying : IntMap[AssocMap[Key, Value]]) extends Map[Key, Value]{
   def iterator : Iterator[(Key, Value)] = new Iterator[(Key, Value)]{
     val assocIt = new AssocMapIterator(AssocMap.empty[Key, Value]);
     val intIterator = underlying.values;

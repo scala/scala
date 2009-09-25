@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
 @serializable
 final class LinkedEntry[A, B](val key: A, var value: B)

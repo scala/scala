@@ -27,7 +27,7 @@ trait VectorLike[+A, +Repr] extends SequenceLike[A, Repr] { self =>
   override protected[this] def thisCollection: Vector[A] = this.asInstanceOf[Vector[A]]
   override protected[this] def toCollection(repr: Repr): Vector[A] = repr.asInstanceOf[Vector[A]]
 
-  // Overridden methods from IterableTemplate
+  // Overridden methods from IterableLike
 
   /** The iterator returned by the iterator method
    */

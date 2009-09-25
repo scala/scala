@@ -13,8 +13,7 @@ package scala.runtime
 
 import Predef._
 import scala.reflect.ClassManifest
-import collection.mutable.{Vector, ArrayBuilder, ArrayBuffer}
-import collection.generic._
+import collection.mutable._
 import collection.Sequence
 
 /**
@@ -23,7 +22,7 @@ import collection.Sequence
  *  @author  Martin Odersky, Stephane Micheloud
  *  @version 1.0
  */
-abstract class BoxedArray[A] extends Vector[A] with VectorTemplate[A, BoxedArray[A]] with Boxed { self =>
+abstract class BoxedArray[A] extends Vector[A] with VectorLike[A, BoxedArray[A]] with Boxed { self =>
 
   val ex = new Error("trying to create a BoxedArray")
   ex.printStackTrace()

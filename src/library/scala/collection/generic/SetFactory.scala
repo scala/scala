@@ -9,14 +9,16 @@
 // $Id$
 
 
-package scala.collection.generic
-import scala.collection._
+package scala.collection
+package generic
+
+import mutable.{Builder, AddingBuilder}
 
 /** A template for companion objects of <code>Set</code> and subclasses
  *  thereof.
  */
-abstract class SetFactory[CC[X] <: Set[X] with SetTemplate[X, CC[X]]]
-  extends Companion[CC] {
+abstract class SetFactory[CC[X] <: Set[X] with SetLike[X, CC[X]]]
+  extends GenericCompanion[CC] {
 
   def newBuilder[A]: Builder[A, CC[A]] = new AddingBuilder[A, CC[A]](empty[A])
 

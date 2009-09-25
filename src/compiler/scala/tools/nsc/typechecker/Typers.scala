@@ -237,7 +237,14 @@ trait Typers { self: Analyzer =>
                  else to.typeSymbol.newValue(tree.pos, name)
       psym = to.decls enter psym
       psym setInfo tp
+      try {
       inferView(tree, from, to, true)
+      } catch {
+        case ex: AssertionError =>
+          println("infer view "+tree+" "+name+" "+context.undetparams)
+          throw ex
+      }
+
     }
 
     import infer._

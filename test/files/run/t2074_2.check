@@ -1,1 +1,3 @@
-VectorViewTemplateZ((1,1), (2,2), (3,3))
+VectorView(1, 2, 3)
+VectorView(1, 2, 3)
+VectorViewZ((1,1), (2,2), (3,3))

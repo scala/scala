@@ -1,5 +1,5 @@
 t2031.scala:8: error: polymorphic expression cannot be instantiated to expected type;
- found   : [A]scala.collection.generic.Builder[A,scala.collection.immutable.TreeSet[A]]
+ found   : [A]scala.collection.mutable.Builder[A,scala.collection.immutable.TreeSet[A]]
  required: scala.collection.generic.BuilderFactory[Int,?,scala.collection.immutable.TreeSet[Int]]
  res0.map(x => x)(TreeSet.newBuilder)
                           ^

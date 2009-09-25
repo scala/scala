@@ -10,6 +10,7 @@
 package scala.collection
 
 import generic._
+import mutable.Builder
 
 /** A map whose keys are sorted.
  *
@@ -17,7 +18,7 @@ import generic._
  *  @author Martin Odersky
  *  @version 2.8
  */
-trait SortedMap[A, +B] extends Map[A, B] with SortedMapTemplate[A, B, SortedMap[A, B]] {
+trait SortedMap[A, +B] extends Map[A, B] with SortedMapLike[A, B, SortedMap[A, B]] {
   /** Needs to be overridden in subclasses. */
   override def empty = SortedMap.empty[A, B]
 

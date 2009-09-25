@@ -9,12 +9,14 @@
 // $Id$
 
 
-package scala.collection.generic
-import scala.collection._
+package scala.collection
+package generic
+
+import mutable.Builder
 
 /** A template for companion objects of mutable.Map and subclasses thereof.
  */
-abstract class SortedMapFactory[CC[A, B] <: SortedMap[A, B] with SortedMapTemplate[A, B, CC[A, B]]] {
+abstract class SortedMapFactory[CC[A, B] <: SortedMap[A, B] with SortedMapLike[A, B, CC[A, B]]] {
 
   type Coll = CC[_, _]
 

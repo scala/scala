@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
 
 /** <code>Publisher[A,This]</code> objects publish events of type <code>A</code>

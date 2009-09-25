@@ -10,15 +10,13 @@
 
 package scala.collection
 
-import generic._
-
 /** A sorted set.
  *
  *  @author Sean McDirmid
  *  @author Martin Odersky
  *  @version 2.8
  */
-trait SortedSet[A] extends Set[A] with SortedSetTemplate[A, SortedSet[A]] {
+trait SortedSet[A] extends Set[A] with SortedSetLike[A, SortedSet[A]] {
   /** Needs to be overridden in subclasses. */
   override def empty: SortedSet[A] = throw new UnsupportedOperationException("SortedMap.empty")
 }

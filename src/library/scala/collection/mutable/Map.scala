@@ -9,20 +9,20 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import scala.collection.generic._
+import generic._
 
 trait Map[A, B]
   extends Iterable[(A, B)]
-     with collection.Map[A, B]
-     with MutableMapTemplate[A, B, Map[A, B]]
-     with Unhashable {
+     with scala.collection.Map[A, B]
+     with MapLike[A, B, Map[A, B]] {
 
   override def empty: Map[A, B] = Map.empty
 
   /** Return a read-only projection of this map.  !!! or just use an (immutable) MapProxy?
-  def readOnly : collection.Map[A, B] = new collection.Map[A, B] {
+  def readOnly : scala.collection.Map[A, B] = new scala.collection.Map[A, B] {
     override def size = self.size
     override def update(key: A, value: B) = self.update(key, value)
     override def - (elem: A) = self - elem

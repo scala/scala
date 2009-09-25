@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
 /** A stack implements a data structure which allows to store and retrieve
  *  objects in a last-in-first-out (LIFO) fashion.
@@ -51,7 +52,7 @@ trait StackProxy[A] extends Stack[A] with Proxy {
     this
   }
 
-  override def pushAll(elems: collection.Traversable[A]): this.type = {
+  override def pushAll(elems: scala.collection.Traversable[A]): this.type = {
     self pushAll elems
     this
   }
@@ -62,7 +63,7 @@ trait StackProxy[A] extends Stack[A] with Proxy {
    *
    *  @param  iter        an iterable object
    */
-  @deprecated("use pushAll") override def ++=(iter: collection.Iterable[A]): this.type = {
+  @deprecated("use pushAll") override def ++=(iter: scala.collection.Iterable[A]): this.type = {
     self ++= iter
     this
   }

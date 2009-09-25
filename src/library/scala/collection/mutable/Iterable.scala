@@ -5,9 +5,10 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import scala.collection.generic._
+import generic._
 
 /** <p>
  *    A subtrait of <a href="../Iterable.html" target="contentFrame">
@@ -19,10 +20,10 @@ import scala.collection.generic._
  *  @version 2.8
  */
 trait Iterable[A] extends Traversable[A]
-                     with collection.Iterable[A]
-                     with TraversableClass[A, Iterable]
-                     with IterableTemplate[A, Iterable[A]] {
-  override def companion: Companion[Iterable] = Iterable
+                     with scala.collection.Iterable[A]
+                     with GenericTraversableTemplate[A, Iterable]
+                     with IterableLike[A, Iterable[A]] {
+  override def companion: GenericCompanion[Iterable] = Iterable
 }
 
 /** <p>

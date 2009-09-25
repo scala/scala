@@ -9,9 +9,10 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import scala.collection.generic.{ Addable, Cloneable, Growable }
+import generic.{ Addable, Growable }
 
 
 /** This class implements priority queues using a heap.
@@ -102,7 +103,7 @@ class PriorityQueue[A](implicit ord: Ordering[A])
    *
    *  @param  iter        an iterable object
    */
-  def ++(elems: Traversable[A]) = { this.clone() ++= elems }  // ??? XXX why does this "override nothing" with override?
+  override def ++(elems: scala.collection.Traversable[A]) = { this.clone() ++= elems }  // ??? XXX why does this "override nothing" with override?
 
   /** Adds all elements provided by an iterator into the priority queue.
    *

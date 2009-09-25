@@ -9,9 +9,11 @@
 // $Id$
 
 
-package scala.collection.immutable
+package scala.collection
+package immutable
 
-import scala.collection.generic._
+import generic._
+import mutable.{Builder, AddingBuilder}
 
 /** The canonical factory of <a href="TreeSet.html">TreeSet</a>'s.
  */
@@ -35,7 +37,7 @@ object TreeSet extends SortedSetFactory[TreeSet]{
 @serializable @SerialVersionUID(-234066569443569402L)
 class TreeSet[A](override val size: Int, t: RedBlack[A]#Tree[Unit])
                 (implicit val ordering: Ordering[A])
-  extends RedBlack[A] with SortedSet[A] with SortedSetTemplate[A, TreeSet[A]] {
+  extends RedBlack[A] with SortedSet[A] with SortedSetLike[A, TreeSet[A]] {
 
   override def stringPrefix = "TreeSet"
 

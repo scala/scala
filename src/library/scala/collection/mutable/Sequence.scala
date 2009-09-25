@@ -9,20 +9,20 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import scala.collection.generic._
+import generic._
 
 /** A subtrait of <code>collection.Sequence</code> which represents sequences
  *  that can be mutated.
  *  The class adds an <code>update</code> method to <code>collection.Sequence</code>.
  */
 trait Sequence[A] extends Iterable[A]
-                     with collection.Sequence[A]
-                     with TraversableClass[A, Sequence]
-                     with SequenceTemplate[A, Sequence[A]]
-                     with Unhashable {
-  override def companion: Companion[Sequence] = Sequence
+                     with scala.collection.Sequence[A]
+                     with GenericTraversableTemplate[A, Sequence]
+                     with SequenceLike[A, Sequence[A]] {
+  override def companion: GenericCompanion[Sequence] = Sequence
 
   def update(idx: Int, elem: A)
 }

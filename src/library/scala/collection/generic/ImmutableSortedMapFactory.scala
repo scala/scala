@@ -9,12 +9,14 @@
 // $Id$
 
 
-package scala.collection.generic
-import scala.collection._
+package scala.collection
+package generic
+
+import mutable.{Builder, MapBuilder}
 
 /** A template for companion objects of immutable.Map and subclasses thereof.
  */
-abstract class ImmutableSortedMapFactory[CC[A, B] <: immutable.SortedMap[A, B] with SortedMapTemplate[A, B, CC[A, B]]]
+abstract class ImmutableSortedMapFactory[CC[A, B] <: immutable.SortedMap[A, B] with SortedMapLike[A, B, CC[A, B]]]
   extends SortedMapFactory[CC] {
 
   def newBuilder[A, B](implicit ord: Ordering[A]): Builder[(A, B), CC[A, B]] =

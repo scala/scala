@@ -8,9 +8,10 @@
 
 // $Id$
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import scala.collection.script._
+import script._
 
 /** This class should be used as a mixin. It synchronizes the <code>Set</code>
  *  functions of the class into which it is mixed in.
@@ -19,7 +20,7 @@ import scala.collection.script._
  *  @version 1.0, 08/07/2003
  */
 trait SynchronizedSet[A] extends Set[A] {
-  import collection.Traversable
+  import scala.collection.Traversable
 
   abstract override def size: Int = synchronized {
     super.size
@@ -69,7 +70,7 @@ trait SynchronizedSet[A] extends Set[A] {
     super.remove(elem)
   }
 
-  override def intersect(that: collection.Set[A]) = synchronized {
+  override def intersect(that: scala.collection.Set[A]) = synchronized {
     super.intersect(that)
   }
 

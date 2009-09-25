@@ -27,7 +27,7 @@ trait ArrayLike[A, +Repr] extends VectorLike[A, Repr] { self =>
    *  Example:   Array(Array(1, 2), Array(3, 4)).deep.toString
    *  prints:    Array(Array(1, 2), Array(3, 4))
    */
-  def deep: scala.collection.Vector[Any] = new collection.Vector[Any] {
+  def deep: scala.collection.Vector[Any] = new scala.collection.Vector[Any] {
     def length = self.length
     def apply(idx: Int): Any = self.apply(idx) match {
       case x: AnyRef if x.getClass.isArray => WrappedArray.make(x).deep

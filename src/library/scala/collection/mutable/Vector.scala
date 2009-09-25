@@ -9,18 +9,19 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import scala.collection.generic._
+import generic._
 
 /** A subtrait of <code>collection.Vector</code> which represents sequences
  *  that can be mutated.
  */
 trait Vector[A] extends Sequence[A]
-                   with collection.Vector[A]
-                   with TraversableClass[A, Vector]
-                   with MutableVectorTemplate[A, Vector[A]] {
-  override def companion: Companion[Vector]  = Vector
+                   with scala.collection.Vector[A]
+                   with GenericTraversableTemplate[A, Vector]
+                   with VectorLike[A, Vector[A]] {
+  override def companion: GenericCompanion[Vector]  = Vector
 }
 
 object Vector extends SequenceFactory[Vector] {

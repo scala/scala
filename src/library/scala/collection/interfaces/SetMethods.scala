@@ -6,9 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.interfaces
+package scala.collection
+package interfaces
 
-import scala.collection._
 import generic._
 import mutable.Buffer
 import scala.reflect.ClassManifest
@@ -30,7 +30,7 @@ trait SubtractableMethods[A, +This <: Subtractable[A, This]] {
   def --(iter: Iterator[A]): This
 }
 
-trait SetMethods[A, +This <: SetTemplate[A, This] with Set[A]]
+trait SetMethods[A, +This <: SetLike[A, This] with Set[A]]
 extends IterableMethods[A, This]
 with AddableMethods[A, This]
 with SubtractableMethods[A, This]

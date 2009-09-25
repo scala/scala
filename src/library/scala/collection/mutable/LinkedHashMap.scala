@@ -9,10 +9,11 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
+import generic._
 import Predef._
-import scala.collection.generic._
 
 /** This class implements mutable maps using a hashtable.
  *
@@ -27,7 +28,7 @@ object LinkedHashMap extends MutableMapFactory[LinkedHashMap] {
 
 @serializable
 class LinkedHashMap[A, B] extends Map[A, B]
-                             with MutableMapTemplate[A, B, LinkedHashMap[A, B]]
+                             with MapLike[A, B, LinkedHashMap[A, B]]
                              with HashTable[A] {
 
   override def empty = LinkedHashMap.empty[A, B]

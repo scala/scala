@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
 
 /** This class should be used as a mixin. It synchronizes the <code>Map</code>
@@ -33,13 +34,13 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
   override def getOrElseUpdate(key: A, default: => B): B = synchronized { super.getOrElseUpdate(key, default) }
   override def transform(f: (A, B) => B): this.type = synchronized[this.type] { super.transform(f) }
   override def retain(p: (A, B) => Boolean): this.type = synchronized[this.type] { super.retain(p) }
-  override def valueIterable: collection.Iterable[B] = synchronized { super.valueIterable }
+  override def valueIterable: scala.collection.Iterable[B] = synchronized { super.valueIterable }
   @deprecated("Use `valuesIterator' instead") override def values: Iterator[B] = synchronized { super.valuesIterator }
   override def valuesIterator: Iterator[B] = synchronized { super.valuesIterator }
   override def clone() = synchronized { super.clone() }
   override def foreach[U](f: ((A, B)) => U) = synchronized { super.foreach(f) }
   override def apply(key: A): B = synchronized { super.apply(key) }
-  override def keySet: collection.Set[A] = synchronized { super.keySet }
+  override def keySet: scala.collection.Set[A] = synchronized { super.keySet }
   @deprecated("Use `keysIterator' instead") override def keys: Iterator[A] = synchronized { super.keysIterator }
   override def keysIterator: Iterator[A] = synchronized { super.keysIterator }
   override def isEmpty: Boolean = synchronized { super.isEmpty }

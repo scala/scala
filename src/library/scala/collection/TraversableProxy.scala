@@ -11,9 +11,7 @@
 
 package scala.collection
 
-import generic._
-
-// Methods could be printed by  cat TraversibeTemplate.scala | egrep '^  (override )?def'
+// Methods could be printed by  cat TraversibeLike.scala | egrep '^  (override )?def'
 
 
 /** This trait implements a proxy for traversable objects. It forwards
@@ -22,4 +20,4 @@ import generic._
  *  @author  Martin Odersky
  *  @version 2.8
  */
-trait TraversableProxy[+A] extends Traversable[A] with TraversableProxyTemplate[A, Traversable[A]]
+trait TraversableProxy[+A] extends Traversable[A] with TraversableProxyLike[A, Traversable[A]]

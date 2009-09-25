@@ -6,12 +6,12 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.interfaces
+package scala.collection
+package interfaces
 
-import scala.collection._
 import generic._
 
-trait MapMethods[A, +B, +This <: MapTemplate[A, B, This] with Map[A, B]]
+trait MapMethods[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
 extends IterableMethods[(A, B), This]
 with SubtractableMethods[A, This]
 {

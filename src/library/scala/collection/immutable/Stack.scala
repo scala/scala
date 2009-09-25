@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.collection.immutable
+package scala.collection
+package immutable
 
 import scala.annotation.tailrec
 
@@ -79,7 +80,7 @@ class Stack[+A] protected (protected val elems: List[A]) extends Sequence[A] {
    *  @param   elems      the iterable object.
    *  @return the stack with the new elements on top.
    */
-  def pushAll[B >: A](elems: collection.Traversable[B]): Stack[B] =
+  def pushAll[B >: A](elems: scala.collection.Traversable[B]): Stack[B] =
     ((this: Stack[B]) /: elems)(_ push _)
 
   /** Returns the top element of the stack. An error is signaled if

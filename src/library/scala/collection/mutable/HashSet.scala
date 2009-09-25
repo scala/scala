@@ -9,9 +9,10 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import scala.collection.generic._
+import generic._
 
 /** This class implements mutable sets using a hashtable.
  *
@@ -21,10 +22,10 @@ import scala.collection.generic._
  */
 @serializable
 class HashSet[A] extends Set[A]
-                    with SetClass[A, HashSet]
-                    with MutableSetTemplate[A, HashSet[A]]
+                    with GenericSetTemplate[A, HashSet]
+                    with SetLike[A, HashSet[A]]
                     with FlatHashTable[A] {
-  override def companion: Companion[HashSet] = HashSet
+  override def companion: GenericCompanion[HashSet] = HashSet
 
   override def size = super.size
 

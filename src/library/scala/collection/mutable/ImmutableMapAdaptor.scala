@@ -40,14 +40,14 @@ extends Map[A, B]
 
   override def isDefinedAt(key: A) = imap.isDefinedAt(key)
 
-  override def keySet: collection.Set[A] = imap.keySet
+  override def keySet: scala.collection.Set[A] = imap.keySet
 
   override def keysIterator: Iterator[A] = imap.keysIterator
 
   @deprecated("use `keysIterator' instead")
   override def keys: Iterator[A] = imap.keysIterator
 
-  override def valueIterable: collection.Iterable[B] = imap.valueIterable
+  override def valueIterable: scala.collection.Iterable[B] = imap.valueIterable
 
   override def valuesIterator: Iterator[B] = imap.valuesIterator
 

@@ -8,20 +8,21 @@
 
 // $Id$
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import scala.collection.generic._
+import generic._
 
 /** Todo: this has O(n) cost for element removal.
  *  Should be rewritten to be more efficient.
  */
 @serializable
 class LinkedHashSet[A] extends Set[A]
-                          with SetClass[A, LinkedHashSet]
-                          with MutableSetTemplate[A, LinkedHashSet[A]]
+                          with GenericSetTemplate[A, LinkedHashSet]
+                          with SetLike[A, LinkedHashSet[A]]
                           with FlatHashTable[A]
 {
-  override def companion: Companion[LinkedHashSet] = LinkedHashSet
+  override def companion: GenericCompanion[LinkedHashSet] = LinkedHashSet
 
   protected val ordered = new ListBuffer[A]
 

@@ -8,8 +8,10 @@
 
 // $Id$
 
-package scala.collection.generic
-import scala.collection._
+package scala.collection
+package generic
+
+import mutable.Builder
 
 /** A base class for builder factories
  */

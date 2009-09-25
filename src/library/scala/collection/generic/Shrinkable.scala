@@ -8,8 +8,8 @@
 
 // $Id$
 
-package scala.collection.generic
-import scala.collection._
+package scala.collection
+package generic
 
 /** This class represents collections that can be reduced using a -= operator.
  *

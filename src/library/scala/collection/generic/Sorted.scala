@@ -8,8 +8,8 @@
 
 // $Id$
 
-package scala.collection.generic
-import scala.collection._
+package scala.collection
+package generic
 
 /** Any collection (including maps) whose keys (or elements) are ordered.
  *

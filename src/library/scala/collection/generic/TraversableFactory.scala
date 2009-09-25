@@ -8,13 +8,13 @@
 
 // $Id$
 
-package scala.collection.generic
-import scala.collection._
+package scala.collection
+package generic
 
 /** A template for companion objects of Traversable and subclasses thereof.
  */
-abstract class TraversableFactory[CC[X] <: Traversable[X] with TraversableClass[X, CC]]
-  extends Companion[CC] {
+abstract class TraversableFactory[CC[X] <: Traversable[X] with GenericTraversableTemplate[X, CC]]
+  extends GenericCompanion[CC] {
 
   class VirtualBuilderFactory[A] extends BuilderFactory[A, CC[A], CC[_]] {
     def apply(from: Coll) = from.genericBuilder[A]

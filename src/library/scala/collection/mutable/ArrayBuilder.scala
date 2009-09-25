@@ -9,11 +9,11 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import scala.collection.generic._
+import generic._
 import scala.reflect.ClassManifest
-import scala.runtime.BoxedArray
 
 /** A builder class for arrays */
 abstract class ArrayBuilder[T] extends Builder[T, Array[T]]

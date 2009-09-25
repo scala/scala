@@ -9,12 +9,13 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import scala.collection.generic._
+import generic._
 
 @serializable
-class ListMap[A, B] extends Map[A, B] with MutableMapTemplate[A, B, ListMap[A, B]] {
+class ListMap[A, B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] {
 
 
   override def empty = ListMap.empty[A, B]

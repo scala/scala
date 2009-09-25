@@ -9,7 +9,8 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
 @serializable
 final class DefaultEntry[A, B](val key: A, var value: B)

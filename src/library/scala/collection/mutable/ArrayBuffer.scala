@@ -9,9 +9,10 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import scala.collection.generic._
+import generic._
 
 /** An implementation of the <code>Buffer</code> class using an array to
  *  represent the assembled sequence internally. Append, update and random
@@ -25,15 +26,15 @@ import scala.collection.generic._
 @serializable @SerialVersionUID(1529165946227428979L)
 class ArrayBuffer[A](override protected val initialSize: Int)
   extends Buffer[A]
-     with TraversableClass[A, ArrayBuffer]
-     with BufferTemplate[A, ArrayBuffer[A]]
-     with VectorTemplate[A, ArrayBuffer[A]]
+     with GenericTraversableTemplate[A, ArrayBuffer]
+     with BufferLike[A, ArrayBuffer[A]]
+     with VectorLike[A, ArrayBuffer[A]]
      with Builder[A, ArrayBuffer[A]]
      with ResizableArray[A] {
 
-  override def companion: Companion[ArrayBuffer] = ArrayBuffer
+  override def companion: GenericCompanion[ArrayBuffer] = ArrayBuffer
 
-  import collection.Traversable
+  import scala.collection.Traversable
 
   def this() = this(16)
 

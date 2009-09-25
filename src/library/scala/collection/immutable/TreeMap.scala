@@ -9,9 +9,11 @@
 // $Id$
 
 
-package scala.collection.immutable
+package scala.collection
+package immutable
 
-import scala.collection.generic._
+import generic._
+import mutable.Builder
 
 /** The canonical factory of <a href="TreeMap.html">TreeMap</a>'s. */
 object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
@@ -30,8 +32,8 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
 class TreeMap[A, +B](override val size: Int, t: RedBlack[A]#Tree[B])(implicit val ordering: Ordering[A])
   extends RedBlack[A]
      with SortedMap[A, B]
-     with SortedMapTemplate[A, B, TreeMap[A, B]]
-     with ImmutableMapTemplate[A, B, TreeMap[A, B]] {
+     with SortedMapLike[A, B, TreeMap[A, B]]
+     with MapLike[A, B, TreeMap[A, B]] {
 
   def isSmaller(x: A, y: A) = ordering.lt(x, y)
 

@@ -12,8 +12,7 @@
 package scala.runtime
 
 import java.lang.Character
-import collection.Vector
-import collection.generic.VectorView
+import collection.{Vector, VectorView}
 import Predef.{require, NoSuchElementException}
 
 /** <p>

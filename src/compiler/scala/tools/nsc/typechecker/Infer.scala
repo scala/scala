@@ -166,7 +166,7 @@ trait Infer {
           // this can happen if during solving a cyclic type paramater
           // such as T <: T gets completed. See #360
           tvar.constr.inst = ErrorType
-        } else assert(false, tvar.origin)
+        } else assert(false, tvar.origin+" at "+tvar.origin.typeSymbol.owner)
     tvars map instantiate
   }
 

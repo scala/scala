@@ -8,7 +8,8 @@
 
 // $Id$
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
 import Predef._
 

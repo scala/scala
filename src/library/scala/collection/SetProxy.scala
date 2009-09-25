@@ -11,8 +11,6 @@
 
 package scala.collection
 
-import generic.SetProxyTemplate
-
 /** This is a simple wrapper class for <a href="Set.html"
  *  target="contentFrame"><code>scala.collection.Set</code></a>.
  *  It is most useful for assembling customized set abstractions
@@ -23,4 +21,4 @@ import generic.SetProxyTemplate
  *  @version 2.0, 01/01/2007
  */
 
-trait SetProxy[A] extends Set[A] with SetProxyTemplate[A, Set[A]]
+trait SetProxy[A] extends Set[A] with SetProxyLike[A, Set[A]]

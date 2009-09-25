@@ -9,9 +9,10 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import scala.collection.generic._
+import generic._
 
 /** A stack implements a data structure which allows to store and retrieve
  *  objects in a last-in-first-out (LIFO) fashion.
@@ -21,7 +22,7 @@ import scala.collection.generic._
  *  @version 2.8
  */
 @serializable @cloneable
-class Stack[A] private (var elems: List[A]) extends collection.Sequence[A] with Cloneable[Stack[A]] {
+class Stack[A] private (var elems: List[A]) extends scala.collection.Sequence[A] with Cloneable[Stack[A]] {
 
   def this() = this(Nil)
 
@@ -69,10 +70,10 @@ class Stack[A] private (var elems: List[A]) extends collection.Sequence[A] with 
    *  @param   elems      the iterable object.
    *  @return the stack with the new elements on top.
    */
-  def pushAll(elems: collection.Traversable[A]): this.type = { for (elem <- elems) { push(elem); () }; this }
+  def pushAll(elems: scala.collection.Traversable[A]): this.type = { for (elem <- elems) { push(elem); () }; this }
 
   @deprecated("use pushAll") def ++=(it: Iterator[A]): this.type = pushAll(it)
-  @deprecated("use pushAll") def ++=(it: collection.Iterable[A]): this.type = pushAll(it)
+  @deprecated("use pushAll") def ++=(it: scala.collection.Iterable[A]): this.type = pushAll(it)
 
   /** Returns the top element of the stack. This method will not remove
    *  the element from the stack. An error is signaled if there is no

@@ -9,9 +9,10 @@
 // $Id$
 
 
-package scala.collection.mutable
+package scala.collection
+package mutable
 
-import scala.collection.JavaConversions._
+import JavaConversions._
 
 class WeakHashMap[A, B] extends JMapWrapper[A, B](new java.util.WeakHashMap) {
   override def empty = new WeakHashMap[A, B]

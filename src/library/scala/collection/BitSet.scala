@@ -16,7 +16,7 @@ import generic._
 /** common base class for mutable and immutable bit sets
  */
 trait BitSet extends Set[Int]
-                with BitSetTemplate[BitSet] {
+                with BitSetLike[BitSet] {
   override def empty: BitSet = BitSet.empty
 }
 
