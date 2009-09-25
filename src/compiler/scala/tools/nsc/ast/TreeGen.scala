@@ -307,9 +307,10 @@ abstract class TreeGen
 
   /** Used in situations where you need to access value of an expression several times
    */
-  def evalOnce(expr: Tree, owner: Symbol, unit: CompilationUnit)(within: (() => Tree) => Tree): Tree =
+  def evalOnce(expr: Tree, owner: Symbol, unit: CompilationUnit)(within: (() => Tree) => Tree): Tree = {
+    var used = false
     if (treeInfo.isPureExpr(expr)) {
-      within(() => expr);
+      within(() => if (used) expr.duplicate else { used = true; expr })
     } else {
       val temp = owner.newValue(expr.pos.makeTransparent, unit.fresh.newName(expr.pos, "ev$"))
         .setFlag(SYNTHETIC).setInfo(expr.tpe)
@@ -317,19 +318,26 @@ abstract class TreeGen
       ensureNonOverlapping(containing, List(expr))
       Block(List(ValDef(temp, expr)), containing) setPos (containing.pos union expr.pos)
     }
+  }
 
   def evalOnceAll(exprs: List[Tree], owner: Symbol, unit: CompilationUnit)(within: (List[() => Tree]) => Tree): Tree = {
     val vdefs = new ListBuffer[ValDef]
     val exprs1 = new ListBuffer[() => Tree]
+    val used = new Array[Boolean](exprs.length)
+    var i = 0
     for (expr <- exprs) {
       if (treeInfo.isPureExpr(expr)) {
-        exprs1 += (() => expr)
+        exprs1 += {
+          val idx = i
+          () => if (used(idx)) expr.duplicate else { used(idx) = true; expr }
+        }
       } else {
         val temp = owner.newValue(expr.pos.makeTransparent, unit.fresh.newName(expr.pos, "ev$"))
           .setFlag(SYNTHETIC).setInfo(expr.tpe)
         vdefs += ValDef(temp, expr)
         exprs1 += (() => Ident(temp) setPos temp.pos.focus setType expr.tpe)
       }
+      i += 1
     }
     val prefix = vdefs.toList
     val containing = within(exprs1.toList)

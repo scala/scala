@@ -376,6 +376,9 @@ abstract class TreePrinters {
           print(tpt);
           printColumn(whereClauses, " forSome { ", ";", "}")
 
+        case SelectFromArray(qualifier, name, _) =>
+          print(qualifier); print(".<arr>"); print(symName(tree, name))
+
         case tree: StubTree =>
           print(tree.toString)
 
