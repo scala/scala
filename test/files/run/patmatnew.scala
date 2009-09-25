@@ -880,11 +880,8 @@ object C {
     }
 
 override def runTest() {
-    // We no longer assert these are true, because they are no longer true!
-    // See ticket #1503 for details, but it is unsound to let L(Nil) be
-    // seen as an N by the LHS of a match.
-    // assertTrue(empty( new L(Nil) ))
-    // assertTrue(singleton( new L(List(1)) ))
+    assertTrue(empty( new L(Nil) ))
+    assertTrue(singleton( new L(List(1)) ))
 }
 
 }  // end Ticket346
