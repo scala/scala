@@ -11,8 +11,9 @@ import scala.collection.mutable
 import mutable.{ Buffer, ArrayBuffer, ListBuffer, HashMap }
 import scala.util.control.ControlException
 import scala.tools.nsc.util.{Position,NoPosition,SourceFile,CharArrayReader}
-import scala.xml.{Text, TextBuffer}
-import SourceFile.{SU,LF}
+import scala.xml.{ Text, TextBuffer }
+import scala.xml.Utility.{ isNameStart, isNameChar, isSpace }
+import SourceFile.{ SU, LF }
 import scala.annotation.switch
 
 // XXX/Note: many/most of the functions in here are almost direct cut and pastes
@@ -117,7 +118,7 @@ trait MarkupParsers
     def xAttributes = {
       val aMap = new HashMap[String, Tree]()
 
-      while (xml.Parsing.isNameStart(ch)) {
+      while (isNameStart(ch)) {
         val start = curOffset
         val key = xName
         xEQ
@@ -405,13 +406,13 @@ trait MarkupParsers
      */
     def xName: String = {
       if (ch == SU) throw TruncatedXML
-      else if (!xml.Parsing.isNameStart(ch))
+      else if (!isNameStart(ch))
         return errorAndResult("name expected, but char '%s' cannot start a name" format ch, "")
 
       val buf = new StringBuilder
 
       do buf append nextch
-      while (xml.Parsing.isNameChar(ch))
+      while (isNameChar(ch))
 
       if (buf.last == ':') {
         reportSyntaxError( "name cannot end in ':'" )
@@ -424,11 +425,11 @@ trait MarkupParsers
     def xEQ = { xSpaceOpt; xToken('='); xSpaceOpt }
 
     /** skip optional space S? */
-    def xSpaceOpt = { while (xml.Parsing.isSpace(ch)) { nextch }}
+    def xSpaceOpt = { while (isSpace(ch)) { nextch }}
 
     /** scan [3] S ::= (#x20 | #x9 | #xD | #xA)+ */
     def xSpace =
-      if (xml.Parsing.isSpace(ch)) { nextch; xSpaceOpt }
+      if (isSpace(ch)) { nextch; xSpaceOpt }
       else if (ch == SU) throw TruncatedXML
       else reportSyntaxError("whitespace expected")
 

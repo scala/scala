@@ -97,7 +97,7 @@ class XMLEventReader(src: Source) extends ProducerConsumerIterator[XMLEvent]
 
     override def run() {
       curInput = input
-      interruptibly { this.nextch ; this.document() }
+      interruptibly { this.initialize.document() }
       setEvent(POISON)
     }
   }

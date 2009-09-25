@@ -11,6 +11,7 @@ import SourceFile.{LF, FF, CR, SU}
 import Tokens._
 import scala.annotation.switch
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
+import scala.xml.Utility.{ isNameStart }
 
 trait Scanners {
   val global : Global
@@ -264,7 +265,7 @@ trait Scanners {
           val last = if (charOffset >= 2) buf(charOffset - 2) else ' '
           nextChar()
           last match {
-            case ' '|'\t'|'\n'|'{'|'('|'>' if xml.Parsing.isNameStart(ch) || ch == '!' || ch == '?' =>
+            case ' '|'\t'|'\n'|'{'|'('|'>' if isNameStart(ch) || ch == '!' || ch == '?' =>
               token = XMLSTART
             case _ =>
               // Console.println("found '<', but last is '"+in.last+"'"); // DEBUG

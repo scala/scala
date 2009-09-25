@@ -17,20 +17,13 @@ import java.io.File
 import scala.io.{ Source, Codec }
 
 object ConstructingParser {
-
-  def fromFile(inp: File, preserveWS: Boolean) = {
+  def fromFile(inp: File, preserveWS: Boolean) =
     // XXX why does the default implicit not work here when building locker,
     // unless the empty parameter list is supplied?
-    val p = new ConstructingParser(Source.fromFile(inp)(), preserveWS)
-    p.nextch
-    p
-  }
+    new ConstructingParser(Source.fromFile(inp)(), preserveWS) initialize
 
-  def fromSource(inp: Source, preserveWS: Boolean) = {
-    val p = new ConstructingParser(inp, preserveWS)
-    p.nextch
-    p
-  }
+  def fromSource(inp: Source, preserveWS: Boolean) =
+    new ConstructingParser(inp, preserveWS) initialize
 }
 
 /** An xml parser. parses XML and invokes callback methods of a MarkupHandler.

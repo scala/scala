@@ -11,6 +11,8 @@
 
 package scala.xml
 
+import Utility.{ isNameStart }
+
 case object Null extends MetaData {
 
   /** appends given MetaData items to this MetaData list */
@@ -25,18 +27,19 @@ case object Null extends MetaData {
 
   override def filter(f: MetaData => Boolean): MetaData = this
 
-  /** returns null */
   def getNamespace(owner: Node) = null
 
   final override def hasNext = false
+  def next = null
+  def key = null
+  def value = null
 
   final override def length = 0
-
   final override def length(i: Int) = i
 
   def isPrefixed = false
 
-  /** deep equals method */
+  /** deep equals method - XXX */
   override def equals(that: Any) = that match {
     case m: MetaData => m.length == 0
     case _ => false
@@ -44,17 +47,11 @@ case object Null extends MetaData {
 
   def equals1(that:MetaData) = that.length == 0
 
-  def key = null
-
-  def value = null
-
   override def map(f: MetaData => Text): List[Text] = Nil
-
-  def next = null
 
   /** null */
   def apply(key: String) = {
-    if(!Parsing.isNameStart (key charAt 0))
+    if(!isNameStart(key charAt 0))
       throw new IllegalArgumentException("not a valid attribute name '"+key+"', so can never match !")
     null
   }

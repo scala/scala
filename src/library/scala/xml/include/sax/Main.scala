@@ -10,99 +10,73 @@
 
 package scala.xml
 package include.sax
-import scala.xml.include._
 
-import org.xml.sax.SAXException
-import org.xml.sax.SAXParseException
-import org.xml.sax.EntityResolver
+import scala.xml.include._
+import scala.util.control.Exception.{ catching, ignoring }
+import org.xml.sax.{ SAXException, SAXParseException, EntityResolver, XMLReader }
 import org.xml.sax.helpers.XMLReaderFactory
-import org.xml.sax.XMLReader
 
 object Main {
+  private val xercesClass = "org.apache.xerces.parsers.SAXParser"
+  private val namespacePrefixes = "http://xml.org/sax/features/namespace-prefixes"
+  private val lexicalHandler = "http://xml.org/sax/properties/lexical-handler"
 
-    /**
-      * The driver method for xinc
-      * Output is written to System.out via Conolse
-      * </p>
-      *
-      * @param args  contains the URLs and/or filenames
-      *              of the documents to be procesed.
-      */
-    def main(args: Array[String]) {
-      var parser: XMLReader = null
-      var err = false
+  /**
+  * The driver method for xinc
+  * Output is written to System.out via Conolse
+  * </p>
+  *
+  * @param args  contains the URLs and/or filenames
+  *              of the documents to be procesed.
+  */
+  def main(args: Array[String]) {
+    def saxe[T](body: => T) = catching[T](classOf[SAXException]) opt body
+    def error(msg: String) = System.err.println(msg)
+
+    val parser: XMLReader =
+      saxe[XMLReader](XMLReaderFactory.createXMLReader()) getOrElse (
+        saxe[XMLReader](XMLReaderFactory.createXMLReader(xercesClass)) getOrElse (
+          return error("Could not find an XML parser")
+        )
+      )
+
+    // Need better namespace handling
+    try parser.setFeature(namespacePrefixes, true)
+    catch { case e: SAXException => return System.err.println(e) }
+
+    if (args.isEmpty)
+      return
+
+    val (resolver, args2): (Option[EntityResolver], Array[String]) =
+      if (args.size < 2 || args(0) != "-r") (None, args)
+      else catching(classOf[Exception]) opt {
+        val r = Class.forName(args(1)).newInstance().asInstanceOf[EntityResolver]
+        parser setEntityResolver r
+        (r, args drop 2)
+      } orElse (return error("Could not load requested EntityResolver"))
+
+    for (arg <- args2) {
       try {
-        parser = XMLReaderFactory.createXMLReader()
+        val includer = new XIncludeFilter()
+        includer setParent parser
+        val s = new XIncluder(System.out, "UTF-8")
+        includer setContentHandler s
+
+        resolver map (includer setEntityResolver _)
+        // SAXException here means will not support comments
+        ignoring(classOf[SAXException]) {
+          includer.setProperty(lexicalHandler, s)
+          s setFilter includer
+        }
+        includer parse arg
       }
       catch {
-        case e:SAXException =>
-          try {
-            parser = XMLReaderFactory.createXMLReader(
-              "org.apache.xerces.parsers.SAXParser")
-          } catch {
-            case e2:SAXException =>
-              System.err.println("Could not find an XML parser")
-              err = true
-          }
-      }
-
-      if(err) return;
-      // Need better namespace handling
-      try {
-        parser.setFeature("http://xml.org/sax/features/namespace-prefixes", true);
-      }
-      catch {
-        case e:SAXException =>
-          System.err.println(e)
-          err = true
-      }
-      if (err) return
-
-      if (args.length == 0) return
-      var resolver: EntityResolver = null
-      var arg: Int = 0
-      if (args(0).equals("-r")) {
-        try {
-          resolver = Class.forName(args(1)).newInstance().asInstanceOf[EntityResolver];
-          parser.setEntityResolver(resolver);
-        }
-        catch {
-          case ex:Exception =>
-            System.err.println("Could not load requested EntityResolver")
-            err = true
-        }
-        arg = 2
-      }
-      if (err) return
-
-      while (arg < args.length) {
-        try {
-          val includer = new XIncludeFilter();
-          includer.setParent(parser)
-          val s = new XIncluder(System.out, "UTF-8")
-          includer.setContentHandler(s)
-          if (resolver != null) includer.setEntityResolver(resolver)
-          try {
-            includer.setProperty(
-              "http://xml.org/sax/properties/lexical-handler",
-              s)
-            s.setFilter(includer)
-          }
-          catch {
-            case e:SAXException => // Will not support comments
-          }
-          includer.parse(args(arg))
-        }
-        catch {
-          case e:SAXParseException =>
-            System.err.println(e)
-            System.err.println("Problem in " + e.getSystemId()
-                               + " at line " + e.getLineNumber())
-          case e: Exception => // be specific about exceptions????
-            System.err.println(e)
-            e.printStackTrace()
-        }
-        arg += 1
+        case e: SAXParseException =>
+          error(e.toString)
+          error("Problem in %s at line %d".format(e.getSystemId, e.getLineNumber))
+        case e: SAXException =>
+          error(e.toString)
       }
     }
+  }
 }

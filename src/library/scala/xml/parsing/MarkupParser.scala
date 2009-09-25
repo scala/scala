@@ -30,7 +30,9 @@ import Utility.Escapes.{ pairs => unescape }
  * @author  Burak Emir
  * @version 1.0
  */
-trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with MarkupHandler =>
+trait MarkupParser extends AnyRef with TokenTests
+{
+  self: MarkupParser with MarkupHandler =>
 
   val input: Source
 
@@ -239,6 +241,14 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
 
   //var xEmbeddedBlock = false;
 
+  /** As the current code requires you to call nextch once manually
+   *  after construction, this method formalizes that suboptimal reality.
+   */
+  def initialize: this.type = {
+    nextch
+    this
+  }
+
   /** this method assign the next character to ch and advances in input */
   def nextch {
     if (curInput.hasNext) {
@@ -270,11 +280,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
     }
   }
 
-  def xToken(that: Seq[Char]): Unit = {
-    val it = that.iterator;
-    while (it.hasNext)
-      xToken(it.next);
-  }
+  def xToken(that: Seq[Char]): Unit = that foreach xToken
 
   /** parse attribute and create namespace scope, metadata
    *  [41] Attributes    ::= { S Name Eq AttValue }
@@ -391,49 +397,26 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
     val pos1 = pos
     val sb: StringBuilder = new StringBuilder()
     while (true) {
-      if (ch==']'  &&
-         { sb.append(ch); nextch; ch == ']' } &&
-         { sb.append(ch); nextch; ch == '>' } ) {
-        sb.length = sb.length - 2
-        nextch;
-        return handle.text( pos1, sb.toString() );
-      } else sb.append( ch );
+      if (ch==']' &&
+          { sb.append(ch); nextch; ch == ']' } &&
+          { sb.append(ch); nextch; ch == '>' } ) {
+            sb.setLength(sb.length - 2);
+            nextch;
+            return PCData(sb.toString)
+          } else sb.append( ch );
       nextch;
     }
+    // bq: (todo) increase grace when meeting CDATA section
     throw FatalError("this cannot happen");
-  };
+  }
 
   /** CharRef ::= "&amp;#" '0'..'9' {'0'..'9'} ";"
    *            | "&amp;#x" '0'..'9'|'A'..'F'|'a'..'f' { hexdigit } ";"
    *
    * see [66]
    */
-  def xCharRef(ch: () => Char, nextch: () => Unit): String = {
+  def xCharRef(ch: () => Char, nextch: () => Unit): String =
     Utility.parseCharRef(ch, nextch, reportSyntaxError _)
-    /*
-    val hex  = (ch() == 'x') && { nextch(); true };
-    val base = if (hex) 16 else 10;
-    var i = 0;
-    while (ch() != ';') {
-      ch() match {
-        case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
-          i = i * base + Character.digit( ch(), base );
-        case 'a' | 'b' | 'c' | 'd' | 'e' | 'f'
-           | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' =>
-          if (! hex)
-            reportSyntaxError("hex char not allowed in decimal char ref\n"
-                         +"Did you mean to write &#x ?");
-          else
-            i = i * base + Character.digit(ch(), base);
-        case _ =>
-          reportSyntaxError("character '" + ch() + " not allowed in char ref\n");
-      }
-      nextch();
-    }
-    new String(Array(i.asInstanceOf[char]))
-    */
-  }
-
 
   /** Comment ::= '&lt;!--' ((Char - '-') | ('-' (Char - '-')))* '--&gt;'
    *
@@ -441,8 +424,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
    */
   def xComment: NodeSeq = {
     val sb: StringBuilder = new StringBuilder()
-    xToken('-')
-    xToken('-')
+    xToken("--")
     while (true) {
       if (ch == '-'  && { sb.append(ch); nextch; ch == '-' }) {
         sb.length = sb.length - 1
@@ -933,7 +915,7 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
     case _ if isSpace(ch) =>
       xSpace
     case _ =>
-      reportSyntaxError("markupdecl: unexpected character '"+ch+"' #" + ch.asInstanceOf[Int])
+      reportSyntaxError("markupdecl: unexpected character '"+ch+"' #" + ch.toInt)
       nextch
   }
 
@@ -1097,22 +1079,9 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
     handle.notationDecl(notat, extID)
   }
 
-  /**
-   * report a syntax error
-   */
-  def reportSyntaxError(pos: Int, str: String) {
-    curInput.reportError(pos, str)
-    //error("MarkupParser::synerr") // DEBUG
-  }
-
+  def reportSyntaxError(pos: Int, str: String): Unit = curInput.reportError(pos, str)
   def reportSyntaxError(str: String): Unit = reportSyntaxError(pos, str)
-
-  /**
-   * report a syntax error
-   */
-  def reportValidationError(pos: Int, str: String) {
-    curInput.reportError(pos, str)
-  }
+  def reportValidationError(pos: Int, str: String): Unit = reportSyntaxError(pos, str)
 
   def push(entityName: String) {
     //Console.println("BEFORE PUSHING  "+ch)
@@ -1125,26 +1094,11 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
     nextch
   }
 
-  /*
-  def push(src:Source) = {
-    curInput = src
-    nextch
-  }
-  */
-
   def pushExternal(systemId: String) {
-    //Console.print("BEFORE PUSH, curInput = $"+curInput.descr)
-    //Console.println(" stack = "+inpStack.map { x => "$"+x.descr })
-
-    //Console.print("[PUSHING EXTERNAL "+systemId+"]")
     if (!eof)
       inpStack = curInput :: inpStack
 
     curInput = externalSource(systemId)
-
-    //Console.print("AFTER PUSH, curInput = $"+curInput.descr)
-    //Console.println(" stack = "+inpStack.map { x => "$"+x.descr })
-
     nextch
   }
 
@@ -1154,8 +1108,6 @@ trait MarkupParser extends AnyRef with TokenTests { self:  MarkupParser with Mar
     ch = curInput.ch
     pos = curInput.pos
     eof = false // must be false, because of places where entity refs occur
-    //Console.println("\n AFTER POP, curInput = $"+curInput.descr);
-    //Console.println(inpStack.map { x => x.descr });
   }
 
   /** for the moment, replace only character references

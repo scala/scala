@@ -12,24 +12,11 @@ package scala.xml
 package include.sax
 import scala.xml.include._
 
-import org.xml.sax.Attributes
-import org.xml.sax.SAXException
-import org.xml.sax.XMLReader
-import org.xml.sax.EntityResolver
-import org.xml.sax.Locator
-import org.xml.sax.helpers.XMLReaderFactory
-import org.xml.sax.helpers.XMLFilterImpl
-import org.xml.sax.helpers.NamespaceSupport
-import org.xml.sax.helpers.AttributesImpl
+import org.xml.sax.{ Attributes, SAXException, XMLReader, EntityResolver, Locator }
+import org.xml.sax.helpers.{ XMLReaderFactory, XMLFilterImpl, NamespaceSupport, AttributesImpl }
 
-import java.net.URL
-import java.net.URLConnection
-import java.net.MalformedURLException
-import java.io.UnsupportedEncodingException
-import java.io.IOException
-import java.io.InputStream
-import java.io.BufferedInputStream
-import java.io.InputStreamReader
+import java.net.{ URL, URLConnection, MalformedURLException }
+import java.io.{ UnsupportedEncodingException, IOException, InputStream, BufferedInputStream, InputStreamReader }
 import java.util.Stack
 
 /**
