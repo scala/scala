@@ -51,7 +51,7 @@ abstract class BasicTransformer extends Function1[Node,Node]
         val nch = transform(ch)
 
         if (ch eq nch) n
-        else           Elem(n.prefix, n.label, n.attributes, n.scope, nch:_*)
+        else           Elem(n.prefix, n.label, n.attributes, n.scope, nch: _*)
     }
     else n
   }

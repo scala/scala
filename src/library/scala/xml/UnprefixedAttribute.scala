@@ -25,22 +25,19 @@ extends Attribute
 
   /** same as this(key, Text(value), next) */
   def this(key: String, value: String, next: MetaData) =
-    this(key, if (value ne null) Text(value) else {val z:NodeSeq=null;z}, next)
+    this(key, if (value ne null) Text(value) else null: NodeSeq, next)
 
   /** same as this(key, value.get, next), or no attribute if value is None */
   def this(key: String, value: Option[Seq[Node]], next: MetaData) =
-    this(key, if (!value.isEmpty) value.get else {val z:NodeSeq=null;z}, next)
+    this(key, value.orNull, next)
 
   /** returns a copy of this unprefixed attribute with the given next field*/
-  def copy(next: MetaData) =
-    new UnprefixedAttribute(key, value, next)
+  def copy(next: MetaData) = new UnprefixedAttribute(key, value, next)
 
   def equals1(m: MetaData) =
     !m.isPrefixed && (m.key == key) && (m.value sameElements value)
 
-  /** returns null */
-  final def getNamespace(owner: Node): String =
-    null
+  final def getNamespace(owner: Node): String = null
 
   /**
    * Gets value of unqualified (unprefixed) attribute with given key, null if not found
@@ -62,12 +59,9 @@ extends Attribute
   def apply(namespace: String, scope: NamespaceBinding, key: String): Seq[Node] =
     next(namespace, scope, key)
 
-  /** returns the hashcode.
-   */
   override def hashCode() =
     key.hashCode() * 7 + { if(value ne null) value.hashCode() * 53 else 0 } + next.hashCode()
 
-  /** returns false */
   final def isPrefixed = false
 
   /** appends string representation of only this attribute to stringbuffer.

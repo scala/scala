@@ -24,6 +24,7 @@ case class EvElemStart(pre: String, label: String, attrs: MetaData, scope: Names
 
 /** An element is encountered the last time */
 case class EvElemEnd(pre: String, label: String) extends XMLEvent
+
 /** A text node is encountered */
 case class EvText(text: String) extends XMLEvent
 

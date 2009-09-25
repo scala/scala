@@ -29,28 +29,20 @@ object MetaData {
   @tailrec
   def concatenate(attribs: MetaData, new_tail: MetaData): MetaData =
     if (attribs eq Null) new_tail
-    else concatenate(attribs.next, attribs.copy(new_tail))
+    else concatenate(attribs.next, attribs copy new_tail)
 
   /**
    * returns normalized MetaData, with all duplicates removed and namespace prefixes resolved to
    *  namespace URIs via the given scope.
    */
   def normalize(attribs: MetaData, scope: NamespaceBinding): MetaData = {
-    import collection.mutable.HashSet
-    def iterate(md: MetaData, normalized_attribs: MetaData, map: HashSet[String]): MetaData = {
-      if (md eq Null)
-        normalized_attribs
-      else {
-        val universal_key = getUniversalKey(md, scope)
-        if (map.contains(universal_key))
-          iterate(md.next, normalized_attribs, map)
-        else {
-          map += universal_key
-          iterate(md.next, md.copy(normalized_attribs), map)
-        }
-      }
+    def iterate(md: MetaData, normalized_attribs: MetaData, set: Set[String]): MetaData = {
+      lazy val key = getUniversalKey(md, scope)
+      if (md eq Null) normalized_attribs
+      else if (set(key)) iterate(md.next, normalized_attribs, set)
+      else iterate(md.next, md copy normalized_attribs, set + key)
     }
-    iterate(attribs, Null, new HashSet[String])
+    iterate(attribs, Null, Set())
   }
 
   /**
@@ -156,19 +148,9 @@ abstract class MetaData extends Iterable[MetaData]
     case _            => false
   }
 
-  /** returns an iterator on attributes */
-  def iterator: Iterator[MetaData] = new Iterator[MetaData] {
-    var x: MetaData = MetaData.this
-    def hasNext = Null != x
-    def next = {
-      val y = x
-      x = x.next
-      y
-    }
-  }
-  override def size : Int = 1 + {
-    if (Null == next) 0 else next.size
-  }
+  /** Returns an iterator on attributes */
+  def iterator: Iterator[MetaData] = Iterator.iterate(this)(_.next) takeWhile (_ != Null)
+  override def size: Int = 1 + iterator.length
 
   /** shallow equals method */
   def equals1(that: MetaData): Boolean

@@ -11,6 +11,10 @@
 
 package scala.xml
 
+object Text {
+  def apply(data: String) = new Text(data)
+  def unapply(other: Any) = other match { case x: Text => Some(x.data) ; case _ => None }
+}
 
 /** The class <code>Text</code> implements an XML node for text (PCDATA).
  *  It is used in both non-bound and bound XML representations.
@@ -19,14 +23,14 @@ package scala.xml
  *
  *  @param text the text contained in this node, may not be null.
  */
-case class Text(_data: String) extends Atom[String](_data)
+class Text(data: String) extends Atom[String](data)
 {
-  if (null == data)
+  if (data == null)
     throw new IllegalArgumentException("tried to construct Text with null")
 
+  /** XXX More hashCode flailing. */
   final override def equals(x: Any) = x match {
     case s:String  => s == data
-    case s:Text    => data == s.data
     case s:Atom[_] => data == s.data
     case _ => false
   }
@@ -39,5 +43,4 @@ case class Text(_data: String) extends Atom[String](_data)
    */
   override def buildString(sb: StringBuilder) =
     Utility.escape(data, sb)
-
 }
