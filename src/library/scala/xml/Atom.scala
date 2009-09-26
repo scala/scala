@@ -20,7 +20,7 @@ package scala.xml
 @serializable
 class Atom[+A](val data: A) extends SpecialNode
 {
-  if (data.asInstanceOf[AnyRef] == null)
+  if (data == null)
     throw new IllegalArgumentException("cannot construct Atom(null)")
 
   final override def doCollectNamespaces = false

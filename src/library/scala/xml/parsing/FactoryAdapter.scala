@@ -135,14 +135,15 @@ abstract class FactoryAdapter extends DefaultHandler with factory.XMLLoader[Node
     var m: MetaData = Null
     var scpe: NamespaceBinding = TopScope
 
-    for (i <- (0 until attributes.getLength()).toList) {
+    for (i <- 0 until attributes.getLength()) {
       val qname = attributes getQName i
-      val value = (attributes getValue i) match { case "" => null ; case x => x }
+      val value = attributes getValue i
       val (pre, key) = splitName(qname)
+      def nullIfEmpty(s: String) = if (s == "") null else s
 
       if (pre == "xmlns" || (pre == null && qname == "xmlns")) {
         val arg = if (pre == null) null else key
-        scpe = new NamespaceBinding(arg, value, scpe)
+        scpe = new NamespaceBinding(arg, nullIfEmpty(value), scpe)
       }
       else
         m = Attribute(Option(pre), key, Text(value), m)

@@ -12,8 +12,14 @@
 package scala.xml
 
 object Text {
-  def apply(data: String) = new Text(data)
-  def unapply(other: Any) = other match { case x: Text => Some(x.data) ; case _ => None }
+  def apply(data: String) =
+    if (data != null) new Text(data)
+    else throw new IllegalArgumentException("tried to construct Text with null")
+
+  def unapply(other: Any) = other match {
+    case x: Text  => Some(x.data)
+    case _        => None
+  }
 }
 
 /** The class <code>Text</code> implements an XML node for text (PCDATA).
