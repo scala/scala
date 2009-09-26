@@ -222,12 +222,10 @@ class OffsetPosition(override val source: SourceFile, override val point: Int) e
   }
   override def hashCode = point * 37 + source.file.hashCode
 
-  override def dbgString =
-    "source-"+source.path+
-    ",line-"+line+
-    (if (point >= source.length) ",out-of-bounds-"+point
-     else ",offset="+point)
-
+  override def toString = {
+    val pointmsg = if (point > source.length) "out-of-bounds-" else "offset="
+    "source-%s,line-%s,%s%s".format(source.path, line, pointmsg, point)
+  }
   override def show = "["+point+"]"
 }
 
