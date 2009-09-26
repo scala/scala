@@ -26,6 +26,7 @@ import mutable.Builder
  *  @author  Martin Odersky
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
+ *  @since   2.8
  */
 trait LinearSequence[+A] extends Sequence[A]
                             with GenericTraversableTemplate[A, LinearSequence]
@@ -33,6 +34,9 @@ trait LinearSequence[+A] extends Sequence[A]
   override def companion: GenericCompanion[LinearSequence] = LinearSequence
 }
 
+/**
+ *  @since 2.8
+ */
 object LinearSequence extends SequenceFactory[LinearSequence] {
   implicit def builderFactory[A]: BuilderFactory[A, LinearSequence[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, LinearSequence[A]] = immutable.LinearSequence.newBuilder[A]

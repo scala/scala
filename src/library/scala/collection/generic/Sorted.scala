@@ -14,6 +14,7 @@ package generic
 /** Any collection (including maps) whose keys (or elements) are ordered.
  *
  *  @author Sean McDirmid
+ *  @since  2.8
  */
 trait Sorted[K, +This <: Sorted[K, This]]{
   def ordering : Ordering[K];

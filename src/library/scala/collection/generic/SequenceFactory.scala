@@ -13,6 +13,8 @@ package scala.collection
 package generic
 
 /** A template for companion objects of Sequence and subclasses thereof.
+ *
+ *  @since 2.8
  */
 abstract class SequenceFactory[CC[X] <: Sequence[X] with GenericTraversableTemplate[X, CC]] extends TraversableFactory[CC] {
 

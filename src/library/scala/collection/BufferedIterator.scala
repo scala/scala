@@ -16,6 +16,7 @@ package scala.collection
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait BufferedIterator[+A] extends Iterator[A] {
 

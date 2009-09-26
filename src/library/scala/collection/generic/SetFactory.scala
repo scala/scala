@@ -16,6 +16,8 @@ import mutable.{Builder, AddingBuilder}
 
 /** A template for companion objects of <code>Set</code> and subclasses
  *  thereof.
+ *
+ *  @since 2.8
  */
 abstract class SetFactory[CC[X] <: Set[X] with SetLike[X, CC[X]]]
   extends GenericCompanion[CC] {

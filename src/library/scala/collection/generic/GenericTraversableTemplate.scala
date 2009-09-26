@@ -15,6 +15,9 @@ package generic
 import mutable.Builder
 import annotation.unchecked.uncheckedVariance
 
+/**
+ * @since 2.8
+ */
 trait GenericTraversableTemplate[+A, +CC[X] <: Traversable[X]] {
 
   def foreach[U](f: A => U): Unit

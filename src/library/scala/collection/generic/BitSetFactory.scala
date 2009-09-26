@@ -15,6 +15,9 @@ package generic
 import scala.collection._
 import mutable.{Builder, AddingBuilder}
 
+/**
+ * @since 2.8
+ */
 trait BitSetFactory[Coll <: BitSet with BitSetLike[Coll]] {
   def newBuilder: Builder[Int, Coll] = new AddingBuilder[Int, Coll](empty)
   def empty: Coll

@@ -21,6 +21,7 @@ import mutable.ArrayBuffer
  *  @author Sean McDirmid
  *  @author Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait VectorLike[+A, +Repr] extends SequenceLike[A, Repr] { self =>
 

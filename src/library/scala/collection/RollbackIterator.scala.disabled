@@ -15,6 +15,7 @@ import scala.collection.mutable.{ArrayBuffer}
 /** Rollback iterators are buffered iterators which allow for unbounded rollbacks
  *
  *  @author  Sean McDirmid
+ *  @since   2.5
  */
 class RollbackIterator[+A](underlying: Iterator[A]) extends BufferedIterator.Default[A] {
   private[this] var rollback: ArrayBuffer[A] = null

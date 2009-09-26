@@ -28,6 +28,7 @@ import scala.util.control.Breaks
  *
  *  @author Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait Traversable[+A] extends TraversableLike[A, Traversable[A]]
                          with GenericTraversableTemplate[A, Traversable] {

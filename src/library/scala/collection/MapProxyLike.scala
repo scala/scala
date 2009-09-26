@@ -17,6 +17,7 @@ import generic._
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait MapProxyLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
       extends MapLike[A, B, This]

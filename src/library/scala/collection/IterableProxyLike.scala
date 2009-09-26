@@ -22,6 +22,7 @@ import mutable.Buffer
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait IterableProxyLike[+A, +This <: IterableLike[A, This] with Iterable[A]]
     extends IterableLike[A, This]

@@ -24,6 +24,7 @@ import scala.util.control.Breaks._
  *  @author  Martin Odersky
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
+ *  @since   2.8
  */
 trait LinearSequenceLike[+A, +Repr <: LinearSequenceLike[A, Repr]] extends SequenceLike[A, Repr] { self: Repr =>
 

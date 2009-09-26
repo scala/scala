@@ -13,6 +13,9 @@ import generic._
 import mutable.Buffer
 import scala.reflect.ClassManifest
 
+/**
+ * @since 2.8
+ */
 trait SequenceMethods[+A, +This <: SequenceLike[A, This] with Sequence[A]] extends IterableMethods[A, This]
 {
   // abstract

@@ -12,6 +12,8 @@ package scala.collection
 package generic
 
 /** A template for companion objects of Traversable and subclasses thereof.
+ *
+ *  @since 2.8
  */
 abstract class TraversableFactory[CC[X] <: Traversable[X] with GenericTraversableTemplate[X, CC]]
   extends GenericCompanion[CC] {

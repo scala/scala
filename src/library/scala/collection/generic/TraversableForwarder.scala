@@ -34,6 +34,7 @@ import mutable.Buffer
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait TraversableForwarder[+A] extends Traversable[A] {
 

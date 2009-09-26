@@ -21,6 +21,7 @@ import generic._
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait SequenceProxyLike[+A, +This <: SequenceLike[A, This] with Sequence[A]] extends SequenceLike[A, This] with IterableProxyLike[A, This] {
   override def length: Int = self.length

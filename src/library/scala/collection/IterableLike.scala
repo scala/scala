@@ -39,6 +39,7 @@ import annotation.unchecked.uncheckedVariance
  *
  *  @author Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait IterableLike[+A, +Repr] extends Equals with TraversableLike[A, Repr] {
 self =>

@@ -1,6 +1,8 @@
 package scala.collection.generic
 
 /** A template for companion objects of Traversable and subclasses thereof.
+ *
+ *  @since 2.8
  */
 abstract class GenericTraversableFactory {
   

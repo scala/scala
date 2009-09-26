@@ -22,6 +22,7 @@ import mutable.Buffer
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait TraversableProxyLike[+A, +This <: TraversableLike[A, This] with Traversable[A]] extends TraversableLike[A, This] with Proxy {
   def self: This

@@ -16,6 +16,8 @@ import mutable.Builder
 
 /** A template for companion objects of <code>mutable.Map</code> and
  *  subclasses thereof.
+ *
+ *  @since 2.8
  */
 abstract class MapFactory[CC[A, B] <: Map[A, B] with MapLike[A, B, CC[A, B]]] {
 

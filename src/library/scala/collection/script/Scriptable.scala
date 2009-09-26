@@ -18,6 +18,7 @@ package script
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 09/05/2004
+ *  @since   2.8
  */
 trait Scriptable[A] {
   /** Send a message to this scriptable object.

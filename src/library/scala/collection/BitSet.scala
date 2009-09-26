@@ -14,13 +14,18 @@ package scala.collection
 import generic._
 
 /** common base class for mutable and immutable bit sets
+ *
+ *  @since 1
  */
 trait BitSet extends Set[Int]
                 with BitSetLike[BitSet] {
   override def empty: BitSet = BitSet.empty
 }
 
-/** A factory object for bitsets */
+/** A factory object for bitsets
+ *
+ *  @since 2.8
+ */
 object BitSet extends BitSetFactory[BitSet] {
   val empty: BitSet = immutable.BitSet.empty
 }

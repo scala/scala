@@ -37,12 +37,17 @@ import generic._
  *
  * @note Of you additions and mutations return the same kind of map as the map
  *       you are defining, you should inherit from <code>MapLike</code> as well.
+ *
+ * @since 1
  */
 trait Map[A, +B] extends Iterable[(A, B)] with MapLike[A, B, Map[A, B]] {
   def empty: Map[A, B] = Map.empty
 }
 
-/* Factory object for `Map` class */
+/* Factory object for `Map` class
+ *
+ * @since 2.5
+ */
 object Map extends ImmutableMapFactory[immutable.Map] {
   def empty[A, B]: immutable.Map[A, B] = immutable.Map.empty
   implicit def builderFactory[A, B]: BuilderFactory[(A, B), Map[A, B], Coll] = new MapBuilderFactory[A, B]

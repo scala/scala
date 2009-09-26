@@ -23,6 +23,7 @@ import scala.collection._
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait SequenceForwarder[+A] extends Sequence[A] with IterableForwarder[A] {
 

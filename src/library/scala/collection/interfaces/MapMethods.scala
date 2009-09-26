@@ -11,6 +11,9 @@ package interfaces
 
 import generic._
 
+/**
+ * @since 2.8
+ */
 trait MapMethods[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
 extends IterableMethods[(A, B), This]
 with SubtractableMethods[A, This]

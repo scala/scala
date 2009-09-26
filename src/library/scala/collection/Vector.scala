@@ -25,6 +25,7 @@ import mutable.{Builder, ArrayBuffer}
  *  @author Sean McDirmid
  *  @author Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait Vector[+A] extends Sequence[A]
                     with GenericTraversableTemplate[A, Vector]

@@ -15,6 +15,8 @@ import BitSetLike._
 import generic._
 
 /** common base class for mutable and immutable bit sets
+ *
+ *  @since 2.8
  */
 trait BitSetLike[+This <: BitSetLike[This] with Set[Int]] extends SetLike[Int, This] { self =>
 

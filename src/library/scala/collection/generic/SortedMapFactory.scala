@@ -15,6 +15,8 @@ package generic
 import mutable.Builder
 
 /** A template for companion objects of mutable.Map and subclasses thereof.
+ *
+ *  @since 2.8
  */
 abstract class SortedMapFactory[CC[A, B] <: SortedMap[A, B] with SortedMapLike[A, B, CC[A, B]]] {
 

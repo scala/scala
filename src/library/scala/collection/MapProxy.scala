@@ -18,5 +18,6 @@ package scala.collection
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 21/07/2003
+ *  @since   1
  */
 trait MapProxy[A, +B] extends Map[A, B] with MapProxyLike[A, B, Map[A, B]]

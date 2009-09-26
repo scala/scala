@@ -17,6 +17,7 @@ package generic
  *  @author   Martin Odersky
  *  @owner   Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait Addable[A, +This <: Addable[A, This]] { self =>
 

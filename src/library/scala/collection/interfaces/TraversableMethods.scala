@@ -13,6 +13,9 @@ import generic._
 import mutable.Buffer
 import scala.reflect.ClassManifest
 
+/**
+ * @since 2.8
+ */
 trait TraversableMethods[+A, +This <: TraversableLike[A, This] with Traversable[A]]
 {
   // abstract

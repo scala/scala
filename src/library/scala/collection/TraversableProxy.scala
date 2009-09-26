@@ -19,5 +19,6 @@ package scala.collection
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait TraversableProxy[+A] extends Traversable[A] with TraversableProxyLike[A, Traversable[A]]

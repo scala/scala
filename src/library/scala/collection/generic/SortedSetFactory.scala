@@ -15,6 +15,8 @@ package generic
 import mutable.Builder
 
 /** A template for companion objects of Set and subclasses thereof.
+ *
+ *  @since 2.8
  */
 abstract class SortedSetFactory[CC[A] <: SortedSet[A] with SortedSetLike[A, CC[A]]] {
   type Coll = CC[_]

@@ -19,6 +19,7 @@ import generic._
  * @author Sean McDirmid
  * @author Martin Odersky
  * @version 2.8
+ * @since   2.8
  */
 trait VectorView[+A, +Coll] extends VectorViewLike[A, Coll, VectorView[A, Coll]]
 

@@ -31,6 +31,7 @@ import collection.mutable.Buffer
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait IterableForwarder[+A] extends Iterable[A] with TraversableForwarder[A] {
 

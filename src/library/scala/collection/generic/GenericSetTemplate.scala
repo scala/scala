@@ -12,6 +12,9 @@
 package scala.collection
 package generic
 
+/**
+ * @ since 2.8
+ */
 trait GenericSetTemplate[A, +CC[X] <: Set[X]] extends GenericTraversableTemplate[A, CC] {
   def empty: CC[A] = companion.empty[A]
 }

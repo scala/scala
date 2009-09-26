@@ -16,5 +16,6 @@ package scala.collection
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait SequenceProxy[+A] extends Sequence[A] with SequenceProxyLike[A, Sequence[A]]

@@ -19,6 +19,7 @@ import generic._
 /** Contains a KMP implementation, based on the undoubtedly reliable wikipedia entry.
  *
  *  @author paulp
+ *  @since  2.8
  */
 object SequenceLike {
 
@@ -105,6 +106,7 @@ object SequenceLike {
  *  @author  Martin Odersky
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
+ *  @since   2.8
  */
 trait SequenceLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
 

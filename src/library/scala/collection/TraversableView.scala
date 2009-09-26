@@ -23,6 +23,7 @@ import TraversableView.NoBuilder
  *
  *  @author Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait TraversableView[+A, +Coll] extends TraversableViewLike[A, Coll, TraversableView[A, Coll]]
 

@@ -16,6 +16,7 @@ package generic
  *  @author   Martin Odersky
  *  @owner   Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait Subtractable[A, +This <: Subtractable[A, This]] { self =>
 

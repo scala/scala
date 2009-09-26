@@ -49,6 +49,7 @@ package scala.collection
  *  </p>
  *
  *  @author Miles Sabin
+ *  @since  2.8
  */
 object JavaConversions {
   import java.{ lang => jl, util => ju }

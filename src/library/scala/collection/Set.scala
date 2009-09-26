@@ -19,6 +19,7 @@ import generic._
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   1
  */
 trait Set[A] extends (A => Boolean)
                 with Iterable[A]
@@ -31,6 +32,7 @@ trait Set[A] extends (A => Boolean)
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 object Set extends SetFactory[Set] {
   override def empty[A]: Set[A] = immutable.Set.empty[A]

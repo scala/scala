@@ -20,5 +20,6 @@ import generic._
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait IterableProxy[+A] extends Iterable[A] with IterableProxyLike[A, Iterable[A]]

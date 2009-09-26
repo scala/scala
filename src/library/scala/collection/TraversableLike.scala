@@ -60,6 +60,7 @@ import annotation.experimental
  *
  *  @author Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait TraversableLike[+A, +Repr] {
 self =>

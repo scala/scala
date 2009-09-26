@@ -14,6 +14,9 @@ import mutable.Buffer
 import scala.reflect.ClassManifest
 import annotation.unchecked.uncheckedVariance
 
+/**
+ * @since 2.8
+ */
 trait IterableMethods[+A, +This <: IterableLike[A, This] with Iterable[A]] extends TraversableMethods[A, This]
 {
   // abstract

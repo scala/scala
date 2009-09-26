@@ -14,6 +14,9 @@ package generic
 
 import mutable.Builder
 
+/**
+ * @since 2.8
+ */
 abstract class GenericCompanion[+CC[X] <: Traversable[X]] {
   type Coll = CC[_]
 
