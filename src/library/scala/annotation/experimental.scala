@@ -10,6 +10,8 @@ package scala.annotation
 /** <p>
  *    An annotation for experimental features.
  *  </p>
+ *
+ *  @since 2.8
  */
 final class experimental(message: String) extends StaticAnnotation {
   def this() = this("")

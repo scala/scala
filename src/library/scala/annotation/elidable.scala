@@ -24,6 +24,8 @@ import java.util.logging.Level
  *    @elidable(FINE) def bar = log("bar")
  *
  *  scalac -Xelide-methods-below=1000
+ *
+ *  @since 2.8
  */
 final class elidable(final val level: Int) extends StaticAnnotation {}
 
@@ -33,6 +35,8 @@ final class elidable(final val level: Int) extends StaticAnnotation {}
  *  time to check an elision level it's staring at a tree like
  *    (Select(Level, Select(FINEST, Apply(intValue, Nil))))
  *  instead of the number 300.
+ *
+ *  @since 2.8
  */
 object elidable {
   final val ALL = Int.MinValue  // Level.ALL.intValue()
