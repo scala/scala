@@ -16,6 +16,9 @@ import generic._
 import mutable.Builder
 import scala.util.matching.Regex
 
+/**
+ * @since 2.8
+ */
 class WrappedString(override val self: String) extends Vector[Char] with StringLike[WrappedString] with Proxy {
 
   override protected[this] def thisCollection: WrappedString = this
@@ -25,6 +28,9 @@ class WrappedString(override val self: String) extends Vector[Char] with StringL
   override protected[this] def newBuilder = WrappedString.newBuilder
 }
 
+/**
+ * @since 2.8
+ */
 object WrappedString {
   def newBuilder: Builder[Char, WrappedString] = new StringBuilder() mapResult (new WrappedString(_))
 }

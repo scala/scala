@@ -24,6 +24,7 @@ object Queue {
  *
  *  @author  Erik Stenman
  *  @version 1.0, 08/07/2003
+ *  @since   1
  */
 @serializable
 @SerialVersionUID(-7622936493364270175L)

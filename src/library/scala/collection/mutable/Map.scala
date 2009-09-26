@@ -14,6 +14,9 @@ package mutable
 
 import generic._
 
+/**
+ * @since 1
+ */
 trait Map[A, B]
   extends Iterable[(A, B)]
      with scala.collection.Map[A, B]

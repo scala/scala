@@ -17,6 +17,8 @@ import generic._
  *  an efficient + method which adds an element to the collection.
  *  Collections are built from their empty element using this + method.
  *  @param empty   The empty element of the collection.
+ *
+ *  @since 2.8
  */
 class SetBuilder[A, Coll <: Addable[A, Coll] with scala.collection.Iterable[A] with scala.collection.IterableLike[A, Coll]](empty: Coll)
 extends Builder[A, Coll] {

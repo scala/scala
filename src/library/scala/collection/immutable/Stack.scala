@@ -30,6 +30,7 @@ object Stack {
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 10/07/2003
+ *  @since   1
  */
 @serializable @SerialVersionUID(1976480595012942526L)
 class Stack[+A] protected (protected val elems: List[A]) extends Sequence[A] {

@@ -12,6 +12,7 @@
 package scala.collection.immutable
 
 /** An object for creating immutable iterators.
+  * @since 2.4
   */
 object ImmutableIterator {
   case object Empty extends ImmutableIterator[Nothing] {
@@ -60,6 +61,7 @@ object ImmutableIterator {
  *
  *  @author  Sean McDirmid
  *  @version 1.0
+ *  @since   2.4
  */
 sealed abstract class ImmutableIterator[+A] {
 

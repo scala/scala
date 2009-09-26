@@ -20,6 +20,7 @@ package mutable
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   1
  */
 trait MultiMap[A, B] extends Map[A, Set[B]] {
   protected def makeSet: Set[B] = new HashSet[B]

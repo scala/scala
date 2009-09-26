@@ -20,6 +20,7 @@ import generic._
  *  @author Matthias Zenger
  *  @author Martin Odersky
  *  @version 2.8
+ *  @since   1
  */
 @serializable @SerialVersionUID(419155950203746706L)
 class DoubleLinkedList[A](_elem: A, _next: DoubleLinkedList[A]) extends LinearSequence[A]

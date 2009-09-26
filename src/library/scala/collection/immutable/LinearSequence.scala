@@ -17,6 +17,8 @@ import mutable.Builder
 
 /** A subtrait of <code>collection.Sequence</code> which represents sequences
  *  that cannot be mutated.
+ *
+ *  @since 2.8
  */
 trait LinearSequence[+A] extends Sequence[A]
                             with scala.collection.LinearSequence[A]
@@ -25,6 +27,9 @@ trait LinearSequence[+A] extends Sequence[A]
   override def companion: GenericCompanion[LinearSequence] = LinearSequence
 }
 
+/**
+ * @since 2.8
+ */
 object LinearSequence extends SequenceFactory[LinearSequence] {
   implicit def builderFactory[A]: BuilderFactory[A, LinearSequence[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, LinearSequence[A]] = new mutable.ListBuffer

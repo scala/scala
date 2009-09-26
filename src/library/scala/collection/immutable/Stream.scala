@@ -36,6 +36,7 @@ import scala.annotation.tailrec
  *
  * @author Martin Odersky, Matthias Zenger
  * @version 1.1 08/08/03
+ * @since   2.8
  */
 abstract class Stream[+A] extends LinearSequence[A]
                              with GenericTraversableTemplate[A, Stream]
@@ -395,6 +396,7 @@ self =>
  *
  * @author Martin Odersky, Matthias Zenger
  * @version 1.1 08/08/03
+ * @since   2.8
  */
 object Stream extends SequenceFactory[Stream] {
 

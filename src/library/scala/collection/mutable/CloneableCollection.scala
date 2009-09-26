@@ -14,6 +14,8 @@ package mutable
 
 /** The J2ME version of the library defined this trait with a <code>clone</code>
  *  method to substitute for the lack of <code>Object.clone</code> there.
+ *
+ *  @since 2.6
  */
 @deprecated("use Cloneable instead")
 trait CloneableCollection {

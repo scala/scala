@@ -15,6 +15,8 @@ import generic._
 
 /** A subtrait of collection.Vector which represents sequences
  *  that can be mutated.
+ *
+ *  @since 2.8
  */
 trait ArrayLike[A, +Repr] extends VectorLike[A, Repr] { self =>
 

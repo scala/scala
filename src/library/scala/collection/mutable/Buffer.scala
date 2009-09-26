@@ -22,6 +22,7 @@ import generic._
  *  @author Matthias Zenger
  *  @author Martin Odersky
  *  @version 2.8
+ *  @since   1
   */
 @cloneable
 trait Buffer[A] extends Sequence[A]

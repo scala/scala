@@ -19,6 +19,7 @@ package mutable
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
+ *  @since   2.8
  */
 trait DoubleLinkedListLike[A, This >: Null <: LinearSequence[A] with DoubleLinkedListLike[A, This]] extends LinkedListLike[A, This] { self =>
 

@@ -22,6 +22,7 @@ import script._
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 16/04/2004
+ *  @since   1
  */
 trait BufferProxy[A] extends Buffer[A] with Proxy {
 

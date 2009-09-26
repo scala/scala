@@ -15,6 +15,7 @@ import generic._
 
 /** Todo: this has O(n) cost for element removal.
  *  Should be rewritten to be more efficient.
+ *  @since 2.2
  */
 @serializable
 class LinkedHashSet[A] extends Set[A]

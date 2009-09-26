@@ -18,6 +18,7 @@ package mutable
  *
  *  @author  Matthias Zenger
  *  @version 1.1, 09/05/2004
+ *  @since   1
  */
 trait SetProxy[A] extends Set[A] with SetProxyLike[A, Set[A]]
 {

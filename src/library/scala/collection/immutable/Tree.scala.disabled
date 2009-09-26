@@ -56,6 +56,7 @@ package scala.collection.immutable
  *
  *  @author  Erik Stenman, Michel Schinz
  *  @version 1.1, 2005-01-20
+ *  @since   1
  */
 
 @serializable

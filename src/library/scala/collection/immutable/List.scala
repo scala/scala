@@ -24,6 +24,7 @@ import annotation.tailrec
  *
  *  @author  Martin Odersky and others
  *  @version 2.8
+ *  @since   2.8
  */
 sealed abstract class List[+A] extends LinearSequence[A]
                                   with Product
@@ -438,6 +439,7 @@ sealed abstract class List[+A] extends LinearSequence[A]
  *
  *  @author  Martin Odersky
  *  @version 1.0, 15/07/2003
+ *  @since   2.8
  */
 @SerialVersionUID(0 - 8256821097970055419L)
 case object Nil extends List[Nothing] {
@@ -457,6 +459,7 @@ case object Nil extends List[Nothing] {
  *
  *  @author  Martin Odersky
  *  @version 1.0, 15/07/2003
+ *  @since   2.8
  */
 @SerialVersionUID(0L - 8476791151983527571L)
 final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extends List[B] {
@@ -493,6 +496,7 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 object List extends SequenceFactory[List] {
 

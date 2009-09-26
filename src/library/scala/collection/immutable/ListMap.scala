@@ -15,6 +15,8 @@ package immutable
 import generic._
 
 /** The canonical factory of <a href="ListMap.html">ListMap</a>'s.
+ *
+ *  @since 1
  */
 object ListMap extends ImmutableMapFactory[ListMap] {
   implicit def builderFactory[A, B]: BuilderFactory[(A, B), ListMap[A, B], Coll] =
@@ -30,6 +32,7 @@ object ListMap extends ImmutableMapFactory[ListMap] {
  *  @author  Matthias Zenger
  *  @author  Martin Oderskty
  *  @version 2.0, 01/01/2007
+ *  @since   1
  */
 @serializable @SerialVersionUID(301002838095710379L)
 class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] {

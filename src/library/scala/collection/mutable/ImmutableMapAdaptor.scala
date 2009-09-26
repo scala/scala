@@ -22,6 +22,7 @@ package mutable
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @version 2.0, 01/01/2007
+ *  @since   1
  */
 @serializable
 class ImmutableMapAdaptor[A, B](protected var imap: immutable.Map[A, B])

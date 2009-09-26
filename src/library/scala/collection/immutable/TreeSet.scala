@@ -16,6 +16,8 @@ import generic._
 import mutable.{Builder, AddingBuilder}
 
 /** The canonical factory of <a href="TreeSet.html">TreeSet</a>'s.
+ *
+ *  @since 1
  */
 object TreeSet extends SortedSetFactory[TreeSet]{
 
@@ -33,6 +35,7 @@ object TreeSet extends SortedSetFactory[TreeSet]{
  *
  *  @author  Martin Odersky
  *  @version 2.0, 02/01/2007
+ *  @since   1
  */
 @serializable @SerialVersionUID(-234066569443569402L)
 class TreeSet[A](override val size: Int, t: RedBlack[A]#Tree[Unit])

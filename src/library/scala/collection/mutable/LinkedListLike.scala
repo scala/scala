@@ -22,6 +22,7 @@ import annotation.tailrec
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait LinkedListLike[A, This >: Null <: Sequence[A] with LinkedListLike[A, This]] extends SequenceLike[A, This] { self =>
 

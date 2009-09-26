@@ -16,6 +16,8 @@ import generic._
 
 /** A subtrait of <code>collection.Sequence</code> which represents sequences
  *  that cannot be mutated.
+ *
+ *  @since 2.8
  */
 trait LinearSequence[A] extends Sequence[A]
                            with scala.collection.LinearSequence[A]

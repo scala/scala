@@ -27,6 +27,7 @@ import generic.{ Addable, Growable }
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 03/05/2004
+ *  @since   1
  */
 
 @serializable @cloneable

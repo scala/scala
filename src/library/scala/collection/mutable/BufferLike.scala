@@ -23,6 +23,7 @@ import script._
  *  @author Matthias Zenger
  *  @author Martin Odersky
  *  @version 2.8
+ *  @since   2.8
   */
 @cloneable
 trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]

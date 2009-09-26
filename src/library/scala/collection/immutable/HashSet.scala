@@ -30,6 +30,7 @@ import generic._
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.3
  */
 @serializable @SerialVersionUID(4020728942921483037L)
 class HashSet[A] extends Set[A]
@@ -137,6 +138,7 @@ class HashSet[A] extends Set[A]
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.3
  */
 object HashSet extends SetFactory[HashSet] {
   implicit def builderFactory[A]: BuilderFactory[A, HashSet[A], Coll] = setBuilderFactory[A]

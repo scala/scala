@@ -13,6 +13,8 @@ package mutable
 
 /** A builder that constructs its result lazily. Iterators or iterables to
  *  be added to this builder with `++=` are not evaluated until `result` is called.
+ *
+ *  @since 2.8
  */
 abstract class LazyBuilder[Elem, +To] extends Builder[Elem, To] {
   /** The different segments of elements to be added to the builder, represented as iterators */

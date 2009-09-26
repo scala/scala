@@ -17,6 +17,8 @@ import generic._
 /** A subtrait of <code>collection.Sequence</code> which represents sequences
  *  that can be mutated.
  *  The class adds an <code>update</code> method to <code>collection.Sequence</code>.
+ *
+ *  @since 2.8
  */
 trait Sequence[A] extends Iterable[A]
                      with scala.collection.Sequence[A]
@@ -31,6 +33,7 @@ trait Sequence[A] extends Iterable[A]
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 object Sequence extends SequenceFactory[Sequence] {
   implicit def builderFactory[A]: BuilderFactory[A, Sequence[A], Coll] = new VirtualBuilderFactory[A]

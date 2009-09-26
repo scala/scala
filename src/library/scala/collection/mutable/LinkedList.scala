@@ -20,6 +20,7 @@ import generic._
  *  @author Matthias Zenger
  *  @author Martin Odersky
  *  @version 2.8
+ *  @since   1
  */
 @serializable
 class LinkedList[A](_elem: A, _next: LinkedList[A]) extends LinearSequence[A]

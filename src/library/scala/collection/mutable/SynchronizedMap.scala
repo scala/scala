@@ -18,6 +18,7 @@ package mutable
  *
  *  @author  Matthias Zenger, Martin Odersky
  *  @version 2.0, 31/12/2006
+ *  @since   1
  */
 trait SynchronizedMap[A, B] extends Map[A, B] {
 

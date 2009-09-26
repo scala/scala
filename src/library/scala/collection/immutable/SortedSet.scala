@@ -20,6 +20,7 @@ import mutable.Builder
  *  @author Sean McDirmid
  *  @author Martin Odersky
  *  @version 2.8
+ *  @since   2.4
  */
 trait SortedSet[A] extends Set[A] with scala.collection.SortedSet[A] with SortedSetLike[A, SortedSet[A]] {
   /** Needs to be overridden in subclasses. */

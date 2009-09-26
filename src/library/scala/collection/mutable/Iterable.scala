@@ -18,6 +18,7 @@ import generic._
  *
  *  @author   Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait Iterable[A] extends Traversable[A]
                      with scala.collection.Iterable[A]

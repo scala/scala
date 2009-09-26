@@ -14,6 +14,9 @@ package mutable
 
 import generic._
 
+/**
+ * @since 2.8
+ */
 @serializable
 class ListMap[A, B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] {
 

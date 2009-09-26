@@ -25,6 +25,7 @@ import generic._
  *  @author Matthias Zenger
  *  @author Martin Odersky
  *  @version 2.8
+ *  @since   1
  */
 trait Set[A] extends Iterable[A]
                 with scala.collection.Set[A]

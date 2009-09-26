@@ -18,6 +18,7 @@ import TraversableView.NoBuilder
  * @author Sean McDirmid
  * @author Martin Odersky
  * @version 2.8
+ * @since   2.8
  */
 trait VectorViewLike[A,
                      +Coll,

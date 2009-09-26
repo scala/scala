@@ -13,6 +13,9 @@ package mutable
 
 import Predef._
 
+/**
+ * @since 2.3
+ */
 trait FlatHashTable[A] {
 
   /** The load factor for the hash table; must be < 500 (0.5)

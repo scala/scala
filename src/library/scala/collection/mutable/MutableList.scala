@@ -24,6 +24,7 @@ import generic._
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   1
  */
 @serializable @SerialVersionUID(5938451523372603072L)
 class MutableList[A] extends LinearSequence[A]

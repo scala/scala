@@ -21,6 +21,7 @@ import annotation.unchecked.uncheckedVariance
  *  @author Sean McDirmid
  *  @author Martin Odersky
  *  @version 2.8
+ *  @since   2.4
  */
 trait SortedMap[A, +B] extends Map[A, B]
                          with scala.collection.SortedMap[A, B]
@@ -67,6 +68,9 @@ trait SortedMap[A, +B] extends Map[A, B]
     ((repr: SortedMap[A, B1]) /: iter) (_ + _)
 }
 
+/**
+ * @since 2.4
+ */
 object SortedMap extends ImmutableSortedMapFactory[SortedMap] {
   implicit def builderFactory[A, B](implicit ord: Ordering[A]): BuilderFactory[(A, B), SortedMap[A, B], Coll] = new SortedMapBuilderFactory[A, B]
   def empty[A, B](implicit ord: Ordering[A]): SortedMap[A, B] = TreeMap.empty[A, B]

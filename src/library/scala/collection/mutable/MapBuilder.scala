@@ -15,6 +15,8 @@ package mutable
  *  to add new elements.
  *  Collections are built from their `empty` element using this + method.
  *  @param empty   The empty element of the collection.
+ *
+ *  @since 2.8
  */
 class MapBuilder[A, B, Coll <: scala.collection.Map[A, B] with scala.collection.MapLike[A, B, Coll]](empty: Coll)
 extends Builder[(A, B), Coll] {

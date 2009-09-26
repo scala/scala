@@ -19,6 +19,7 @@ import generic._
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @version 2.0, 31/12/2006
+ *  @since   1
  */
 @serializable
 class HashSet[A] extends Set[A]

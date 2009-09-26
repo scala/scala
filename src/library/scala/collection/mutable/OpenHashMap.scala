@@ -12,6 +12,9 @@
 package scala.collection
 package mutable
 
+/**
+ * @since 2.7
+ */
 object OpenHashMap{
   def apply[K, V](elems : (K, V)*) = {
     val dict = new OpenHashMap[K, V];
@@ -47,6 +50,7 @@ import OpenHashMap.Entry;
  * keys should work without significant performance loss.
  *
  * @author David MacIver
+ * @since  2.7
  */
 class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutable.Map[Key, Value]{
   def this() = this(8);

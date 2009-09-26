@@ -18,6 +18,7 @@ package mutable
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 03/05/2004
+ *  @since   1
  */
 class SynchronizedPriorityQueue[A](implicit ord: Ordering[A]) extends PriorityQueue[A] {
 

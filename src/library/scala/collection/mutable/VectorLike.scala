@@ -15,6 +15,8 @@ import generic._
 
 /** A subtrait of scala.collection.Vector which represents sequences
  *  that can be mutated.
+ *
+ *  @since 2.8
  */
 trait VectorLike[A, +Repr] extends scala.collection.VectorLike[A, Repr] { self =>
 

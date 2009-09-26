@@ -17,6 +17,8 @@ import mutable.{Builder, ArrayBuffer}
 
 /** A subtrait of <code>collection.Vector</code> which represents sequences
  *  that cannot be mutated.
+ *
+ *  @since 2.8
  */
 trait Vector[+A] extends Sequence[A]
                     with scala.collection.Vector[A]
@@ -25,6 +27,9 @@ trait Vector[+A] extends Sequence[A]
   override def companion: GenericCompanion[Vector] = Vector
 }
 
+/**
+ * @since 2.8
+ */
 object Vector extends SequenceFactory[Vector] {
   // todo: insert better vector implementation here
   @serializable @SerialVersionUID(7129304555082767876L)

@@ -41,6 +41,8 @@ import generic._
  *    It is also good idea to override methods <code>foreach</code> and
  *    <code>size</code> for efficiency.
  *  </p>
+ *
+ *  @since 2.8
  */
 trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
   extends MapLikeBase[A, B, This]

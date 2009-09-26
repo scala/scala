@@ -14,6 +14,9 @@ package mutable
 
 import JavaConversions._
 
+/**
+ * @since 2.8
+ */
 class WeakHashMap[A, B] extends JMapWrapper[A, B](new java.util.WeakHashMap) {
   override def empty = new WeakHashMap[A, B]
 }

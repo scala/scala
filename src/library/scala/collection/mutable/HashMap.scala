@@ -14,6 +14,9 @@ package mutable
 
 import generic._
 
+/**
+ * @since 1
+ */
 @serializable @SerialVersionUID(-8682987922734091219L)
 class HashMap[A, B] extends Map[A, B]
                        with MapLike[A, B, HashMap[A, B]]

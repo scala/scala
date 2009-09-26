@@ -29,6 +29,7 @@ package mutable
  *
  *  @author Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait MapLikeBase[A, B, +This <: MapLikeBase[A, B, This] with Map[A, B]]
   extends scala.collection.MapLike[A, B, This] with Cloneable[This] {

@@ -39,6 +39,7 @@ import generic._
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]] extends scala.collection.MapLike[A, B, This] {
 self =>

@@ -14,6 +14,9 @@ package mutable
 
 import scala.reflect.ClassManifest
 
+/**
+ * @since 2.8
+ */
 abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] {
 
   private def rowBuilder[U]: Builder[U, Array[U]] =
@@ -50,6 +53,9 @@ abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] {
   }
 }
 
+/**
+ * @since 2.8
+ */
 object ArrayOps {
 
   class ofRef[T <: AnyRef](override val repr: Array[T]) extends ArrayOps[T] with ArrayLike[T, Array[T]] {

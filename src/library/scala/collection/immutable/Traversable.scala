@@ -21,6 +21,7 @@ import mutable.Builder
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait Traversable[+A] extends scala.collection.Traversable[A]
                          with GenericTraversableTemplate[A, Traversable]
@@ -33,6 +34,7 @@ trait Traversable[+A] extends scala.collection.Traversable[A]
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 object Traversable extends TraversableFactory[Traversable] {
   implicit def builderFactory[A]: BuilderFactory[A, Traversable[A], Coll] =

@@ -20,6 +20,7 @@ import generic._
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   1
  */
 @serializable @cloneable
 class Stack[A] private (var elems: List[A]) extends scala.collection.Sequence[A] with Cloneable[Stack[A]] {

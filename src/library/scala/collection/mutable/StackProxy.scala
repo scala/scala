@@ -17,6 +17,7 @@ package mutable
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 10/05/2004
+ *  @since   1
  */
 trait StackProxy[A] extends Stack[A] with Proxy {
 

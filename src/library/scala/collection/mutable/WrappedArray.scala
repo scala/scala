@@ -21,6 +21,7 @@ import scala.collection.generic._
  *
  *  @author  Martin Odersky, Stephane Micheloud
  *  @version 1.0
+ *  @since 2.8
  */
 abstract class WrappedArray[T] extends Vector[T] with ArrayLike[T, WrappedArray[T]] {
 

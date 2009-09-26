@@ -16,6 +16,8 @@ import generic._
 import BitSetLike.{LogWL, updateArray}
 
 /** A class for mutable bitsets.
+ *
+ *  @since 1
  */
 @serializable @SerialVersionUID(8483111450368547763L)
 class BitSet(protected var elems: Array[Long]) extends Set[Int]

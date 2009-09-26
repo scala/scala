@@ -20,6 +20,8 @@ package immutable
  *    It is most useful for assembling customized set abstractions
  *    dynamically using object composition and forwarding.
  *  </p>
+ *
+ *  @since 2.8
  */
 trait SetProxy[A] extends Set[A] with SetProxyLike[A, Set[A]]
 {

@@ -21,6 +21,7 @@ import mutable.Builder
  *  @author  Matthias Zenger
  *  @author   Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 trait Iterable[+A] extends Traversable[A]
                       with scala.collection.Iterable[A]
@@ -33,6 +34,7 @@ trait Iterable[+A] extends Traversable[A]
  *
  *  @author   Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 object Iterable extends TraversableFactory[Iterable] {
   implicit def builderFactory[A]: BuilderFactory[A, Iterable[A], Coll] = new VirtualBuilderFactory[A]

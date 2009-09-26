@@ -13,6 +13,8 @@ package scala.collection
 package mutable
 
 /** A trait for cloneable collections.
+ *
+ * @since 2.8
  */
 @cloneable
 trait Cloneable[+A <: AnyRef]  {

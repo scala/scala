@@ -17,6 +17,8 @@ import generic._
  *  A builder lets one construct a collection incrementally, by adding
  *  elements to the builder with += and then converting to the required
  *  collection type with `result`.
+ *
+ *  @since 2.8
  */
 trait Builder[-Elem, +To] extends Growable[Elem] {
 

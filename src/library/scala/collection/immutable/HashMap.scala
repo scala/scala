@@ -31,6 +31,7 @@ import annotation.unchecked.uncheckedVariance
  *
  *  @author  Martin Odersky
  *  @version 2.0, 19/01/2007
+ *  @since   2.3
  */
 @serializable @SerialVersionUID(8886909077084990906L)
 class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with mutable.HashTable[A] {
@@ -179,6 +180,7 @@ class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with mut
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.3
  */
 object HashMap extends ImmutableMapFactory[HashMap] {
   implicit def builderFactory[A, B]: BuilderFactory[(A, B), HashMap[A, B], Coll] = new MapBuilderFactory[A, B]

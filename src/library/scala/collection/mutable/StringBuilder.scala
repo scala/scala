@@ -25,6 +25,7 @@ import scala.reflect.Manifest
  *  @author Stephane Micheloud
  *  @author Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 @serializable
 @SerialVersionUID(0 - 8525408645367278351L)

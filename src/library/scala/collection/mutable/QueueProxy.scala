@@ -17,6 +17,7 @@ package mutable
  *
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
+ *  @since   1
  */
 trait QueueProxy[A] extends Queue[A] with Proxy {
 

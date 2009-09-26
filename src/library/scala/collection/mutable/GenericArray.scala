@@ -20,6 +20,7 @@ import generic._
  *  @author  Matthias Zenger, Burak Emir
  *  @author Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 class GenericArray[A](override val length: Int)
 extends Vector[A]

@@ -17,6 +17,8 @@ import scala.util.matching.Regex
 
 /** The PagedSeq object defines a lazy implementations of
  *  a random access sequence.
+ *
+ *  @since 2.7
  */
 object PagedSeq {
   final val UndeterminedEnd = Math.MAX_INT
@@ -107,6 +109,7 @@ import PagedSeq._
  *  in ``pages'', i.e. arrays of fixed size.
  *
  * @author Martin Odersky
+ * @since  2.7
  */
 class PagedSeq[T: ClassManifest] protected(
   more: (Array[T], Int, Int) => Int,

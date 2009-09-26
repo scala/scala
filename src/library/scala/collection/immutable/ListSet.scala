@@ -14,7 +14,10 @@ package immutable
 
 import generic._
 
-/** The canonical factory of <a href="ListSet.html">ListSet</a>'s */
+/** The canonical factory of <a href="ListSet.html">ListSet</a>'s
+ *
+ *  @since 1
+ */
 object ListSet extends SetFactory[ListSet] {
   implicit def builderFactory[A]: BuilderFactory[A, ListSet[A], Coll] = setBuilderFactory[A]
   override def empty[A] = new ListSet[A]
@@ -28,6 +31,7 @@ object ListSet extends SetFactory[ListSet] {
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 09/07/2003
+ *  @since   1
  */
 @serializable
 class ListSet[A] extends Set[A]

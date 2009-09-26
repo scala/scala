@@ -40,6 +40,9 @@ private[immutable] object LongMapUtils{
 
 import LongMapUtils._
 
+/**
+ * @since 2.7
+ */
 object LongMap{
   def empty[T] : LongMap[T]  = LongMap.Nil;
   def singleton[T](key : Long, value : T) : LongMap[T] = LongMap.Tip(key, value);
@@ -134,6 +137,8 @@ import LongMap._;
  * Specialised immutable map structure for long keys, based on
  * <a href="http://citeseer.ist.psu.edu/okasaki98fast.html">Fast Mergeable Long Maps</a>
  * by Okasaki and Gill. Essentially a trie based on binary digits of the the integers.
+ *
+ * @since 2.7
  */
 sealed abstract class LongMap[+T] extends Map[Long, T] with MapLike[Long, T, LongMap[T]] {
   override def empty: LongMap[T] = LongMap.Nil;

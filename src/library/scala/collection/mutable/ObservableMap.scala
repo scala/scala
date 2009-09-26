@@ -23,6 +23,7 @@ import script._
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @version 2.0, 31/12/2006
+ *  @since   1
  */
 trait ObservableMap[A, B, This <: ObservableMap[A, B, This]]
       extends Map[A, B]

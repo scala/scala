@@ -22,6 +22,7 @@ import generic._
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   1
  */
 @serializable @SerialVersionUID(1529165946227428979L)
 class ArrayBuffer[A](override protected val initialSize: Int)
@@ -164,6 +165,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @since   2.8
  */
 object ArrayBuffer extends SequenceFactory[ArrayBuffer] {
   implicit def builderFactory[A]: BuilderFactory[A, ArrayBuffer[A], Coll] =

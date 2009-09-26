@@ -12,6 +12,9 @@
 package scala.collection
 package immutable
 
+/**
+ * @since 2.8
+ */
 class StringOps(override val repr: String) extends StringLike[String] {
 
   override protected[this] def thisCollection: WrappedString = new WrappedString(repr)

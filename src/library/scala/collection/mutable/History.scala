@@ -20,6 +20,7 @@ package mutable
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
+ *  @since   1
  */
 @serializable
 @SerialVersionUID(5219213543849892588L)

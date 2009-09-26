@@ -35,6 +35,7 @@ import script._
  *    <code>size</code> for efficiency.
  *  </p>
  *
+ *  @since 2.8
  */
 trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
   extends scala.collection.SetLike[A, This]

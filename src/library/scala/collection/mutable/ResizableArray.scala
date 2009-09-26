@@ -20,6 +20,7 @@ import generic._
  *  @author  Matthias Zenger, Burak Emir
  *  @author Martin Odersky
  *  @version 2.8
+ *  @since   1
  */
 trait ResizableArray[A] extends Vector[A]
                            with GenericTraversableTemplate[A, ResizableArray]

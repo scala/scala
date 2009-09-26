@@ -33,6 +33,7 @@ private object Utils {
  * than the standard mutable stack.
  *
  * @author David MacIver
+ * @since  2.7
  */
 @cloneable
 class ArrayStack[T] private(private var table : Array[AnyRef],
