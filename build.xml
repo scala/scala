@@ -15,8 +15,9 @@ END-USER TARGETS
     
   <target name="build-opt"
     description="Builds the optimised Scala compiler and library. Executables are in 'build/pack/bin'.">
-    <property name="scalac.args.optimise" value="-optimise"/>
-    <antcall target="build"/>
+    <antcall target="build"> 
+      <param name="scalac.args.optimise" value="-optimise"/>
+    </antcall>
   </target>
     
   <target name="build.optimise"><antcall target="build"/></target> <!-- for compat, remove when unused -->
@@ -28,8 +29,9 @@ END-USER TARGETS
   <target name="test" depends="test.done"
     description="Runs test suite and bootstrapping test on Scala compiler and library."/>
   <target name="test.optimise">
-    <property name="scalac.args.optimise" value="-optimise"/>
-    <antcall target="test"/>
+    <antcall target="test"> 
+      <param name="scalac.args.optimise" value="-optimise"/>
+    </antcall>
   </target>
 
   <target name="docs" depends="docs.done"
@@ -50,8 +52,9 @@ END-USER TARGETS
   
   <target name="dist-opt"
     description="Makes a new optimised distribution and tests it. Will remove existing binaries and documentation.">
-    <property name="scalac.args.optimise" value="-optimise"/>
-    <antcall target="dist"/>
+    <antcall target="dist"> 
+      <param name="scalac.args.optimise" value="-optimise"/>
+    </antcall>
   </target>
   
   <target name="dist.optimise"><antcall target="optdist"/></target> <!-- for compat, remove when unused -->
@@ -59,8 +62,9 @@ END-USER TARGETS
   <target name="fastdist" depends="dist.done"
     description="Makes a new distribution without testing it or removing partially build elements"/>
   <target name="fastdist.optimise">
-    <property name="scalac.args.optimise" value="-optimise"/>
-    <antcall target="fastdist"/>
+    <antcall target="fastdist"> 
+      <param name="scalac.args.optimise" value="-optimise"/>
+    </antcall>
   </target>
 
   <target name="distclean" depends="dist.clean"
@@ -82,8 +86,9 @@ END-USER TARGETS
   
   <target name="replacestarr-opt"
     description="Replaces the Starr compiler and library by fresh, optimised ones built from current sources and tests them.">
-    <property name="scalac.args.optimise" value="-optimise"/>
-    <antcall target="newstarr"/>
+    <antcall target="newstarr"> 
+      <param name="scalac.args.optimise" value="-optimise"/>
+    </antcall>
   </target>
   
   <target name="newstarr.optimise"><antcall target="optnewstarr"/></target> <!-- for compat, remove when unused -->
@@ -109,14 +114,16 @@ END-USER TARGETS
     <antcall target="unlocklocker"/>
   </target>
   <target name="freshlocker.optimise">
-    <property name="scalac.args.optimise" value="-optimise"/>
-    <antcall target="freshlocker"/>
+    <antcall target="freshlocker"> 
+      <param name="scalac.args.optimise" value="-optimise"/>
+    </antcall>    
   </target>
   
   <target name="replacelocker-opt"
     description="Replaces the Locker compiler and library by fresh, optimised ones built from current sources.">
-    <property name="scalac.args.optimise" value="-optimise"/>
-    <antcall target="replacelocker"/>
+    <antcall target="replacelocker"> 
+      <param name="scalac.args.optimise" value="-optimise"/>
+    </antcall>    
   </target>
   
   <target name="newlocker.optimise"><antcall target="replacelocker"/></target> <!-- for compat, remove when unused -->
@@ -195,6 +202,7 @@ INITIALISATION
 ============================================================================ -->
 
   <target name="init">
+  <!-- The scalac.args.optimise is selectively overridden in certain antcall tasks. -->
     <property name="scalac.args.optimise" value=""/>
     <property name="scalac.args.all" value="${scalac.args} ${scalac.args.optimise}"/>
   <!-- Setting-up Ant contrib tasks -->
@@ -529,9 +537,10 @@ QUICK BUILD (QUICK)
   </target>
   
   <target name="quick.newlibs" depends="quick.lib" if="libs.outdated">
-    <antcall target="libs.done"/>
-    <property name="fjbg.jar" value="${build-libs.dir}/fjbg.jar"/>
-    <property name="msil.jar" value="${build-libs.dir}/msil.jar"/>
+    <antcall target="libs.done">
+      <param name="fjbg.jar" value="${build-libs.dir}/fjbg.jar"/>
+      <param name="msil.jar" value="${build-libs.dir}/msil.jar"/>
+    </antcall>
   </target>
   
   <target name="quick.libs" depends="quick.newlibs" unless="libs.outdated">
@@ -1589,8 +1598,10 @@ FORWARDED TARGETS FOR NIGHTLY BUILDS
 ============================================================================ -->
 
   <target name="nightly">
-    <!-- disabled until problems are fixed <property name="scalac.args.optimise" value="-optimise"/> -->
-    <antcall target="nightly-nopt"/>
+    <antcall target="nightly-nopt">
+      <!-- disabled until problems are fixed -->
+      <!-- <param name="scalac.args.optimise" value="-optimise"/> -->
+    </antcall>
   </target>
 
   <target name="nightly-nopt" depends="all.done">
