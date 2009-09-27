@@ -60,9 +60,19 @@ public class BoxesRunTime
         //
         // It appears to be Short-specific; I can't get anything similar
         // out of Byte or Int.
-        return Character.valueOf((char)(c & 0xFFFF));
-        // return new Character(c); <-- this also would work
-        // return Character.valueOf(c); <-- but not this
+        Character ret;
+
+        // straightforward workarounds like bitmasking do not seem to
+        // work here; is java optimizing out "impossible" tests/ops? I
+        // don't know, but this is the safe way:
+        try {
+          ret = Character.valueOf(c);
+        }
+        catch (ArrayIndexOutOfBoundsException e) {
+          ret = new Character(c);
+        }
+
+        return ret;
     }
 
     public static Byte boxToByte(byte b) {
