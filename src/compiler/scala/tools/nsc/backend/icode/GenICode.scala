@@ -69,7 +69,7 @@ abstract class GenICode extends SubComponent  {
     override def apply(unit: CompilationUnit): Unit = {
       this.unit = unit
       unit.icode.clear
-      log("Generating icode for " + unit)
+      informProgress("Generating icode for " + unit)
       gen(unit.body)
       this.unit = null
     }
