@@ -12,4 +12,9 @@ implicits.scala:38: error: type mismatch;
  required: Int
   foo(set)
       ^
-two errors found
+implicits.scala:46: error: type mismatch;
+ found   : List[Any]
+ required: scala.List[Mxml]
+        children.toList.flatMap ( e => {
+                                ^
+three errors found
