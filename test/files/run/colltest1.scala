@@ -127,6 +127,8 @@ object Test extends Application {
     assert(ten.patch(0, List(1, 2, 3), 9) == List(1, 2, 3, 10))
     assert(empty.padTo(10, 7) == Array.fill(10)(7).toSequence)
     assert((ten zip ten.indices) == ten.zipWithIndex)
+    assert(ten sortWith (_ < _) == ten)
+    assert(ten sortWith (_ > _) == ten.reverse)
   }
 
   def setTest(empty: => Set[String]) {

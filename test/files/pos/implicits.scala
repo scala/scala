@@ -30,3 +30,9 @@ object Test1625 {
     println("=> result: " + res)
   }
 }
+
+object Test2188 {
+  implicit def toJavaList[A: ClassManifest](t:collection.Sequence[A]):java.util.List[A] = java.util.Arrays.asList(t.toArray:_*)
+
+  val x: java.util.List[String] = List("foo")
+}

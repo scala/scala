@@ -609,7 +609,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
      *  @param pt   ...
      *  @return     the adapted tree
      */
-    override protected def adapt(tree: Tree, mode: Int, pt: Type): Tree =
+    override protected def adapt(tree: Tree, mode: Int, pt: Type, original: Tree = EmptyTree): Tree =
       adaptToType(tree, pt)
 
     /** A replacement for the standard typer's `typed1' method */

@@ -238,13 +238,12 @@ trait Typers { self: Analyzer =>
       psym = to.decls enter psym
       psym setInfo tp
       try {
-      inferView(tree, from, to, true)
+        inferView(tree, from, to, true)
       } catch {
         case ex: AssertionError =>
-          println("infer view "+tree+" "+name+" "+context.undetparams)
+          println("inverView "+tree+", from = "+from+", name = "+name+" tp = "+tp)
           throw ex
       }
-
     }
 
     import infer._
@@ -762,25 +761,25 @@ trait Typers { self: Analyzer =>
      *  (13) When in mode EXPRmode, apply a view
      *  If all this fails, error
      */
-    protected def adapt(tree: Tree, mode: Int, pt: Type): Tree = tree.tpe match {
+    protected def adapt(tree: Tree, mode: Int, pt: Type, original: Tree = EmptyTree): Tree = tree.tpe match {
       case atp @ AnnotatedType(_, _, _) if canAdaptAnnotations(tree, mode, pt) => // (-1)
         adaptAnnotations(tree, mode, pt)
       case ct @ ConstantType(value) if ((mode & (TYPEmode | FUNmode)) == 0 && (ct <:< pt) && !onlyPresentation) => // (0)
         treeCopy.Literal(tree, value)
       case OverloadedType(pre, alts) if ((mode & FUNmode) == 0) => // (1)
         inferExprAlternative(tree, pt)
-        adapt(tree, mode, pt)
+        adapt(tree, mode, pt, original)
       case PolyType(List(), restpe) => // (2)
-        adapt(tree setType restpe, mode, pt)
+        adapt(tree setType restpe, mode, pt, original)
       case TypeRef(_, sym, List(arg))
       if ((mode & EXPRmode) != 0 && sym == ByNameParamClass) => // (2)
-        adapt(tree setType arg, mode, pt)
+        adapt(tree setType arg, mode, pt, original)
       case tr @ TypeRef(_, sym, _)
       if sym.isAliasType && tr.normalize.isInstanceOf[ExistentialType] &&
         ((mode & (EXPRmode | LHSmode)) == EXPRmode) =>
-        adapt(tree setType tr.normalize.skolemizeExistential(context.owner, tree), mode, pt)
+        adapt(tree setType tr.normalize.skolemizeExistential(context.owner, tree), mode, pt, original)
       case et @ ExistentialType(_, _) if ((mode & (EXPRmode | LHSmode)) == EXPRmode) =>
-        adapt(tree setType et.skolemizeExistential(context.owner, tree), mode, pt)
+        adapt(tree setType et.skolemizeExistential(context.owner, tree), mode, pt, original)
       case PolyType(tparams, restpe) if ((mode & (TAPPmode | PATTERNmode | HKmode)) == 0) => // (3)
         // assert((mode & HKmode) == 0) //@M a PolyType in HKmode represents an anonymous type function,
         // we're in HKmode since a higher-kinded type is expected --> hence, don't implicitly apply it to type params!
@@ -794,7 +793,7 @@ trait Typers { self: Analyzer =>
                     else TypeApply(tree, tparams1 map (tparam =>
                       TypeTree(tparam.tpe) setPos tree.pos.focus)) setPos tree.pos
         context.undetparams = context.undetparams ::: tparams1
-        adapt(tree1 setType restpe.substSym(tparams, tparams1), mode, pt)
+        adapt(tree1 setType restpe.substSym(tparams, tparams1), mode, pt, original)
       case mt: ImplicitMethodType if ((mode & (EXPRmode | FUNmode | LHSmode)) == EXPRmode) => // (4.1)
         if (!context.undetparams.isEmpty/* && (mode & POLYmode) == 0 disabled to make implicits in new collection work; we should revisit this. */) { // (9)
           context.undetparams = inferExprInstance(
@@ -805,7 +804,17 @@ trait Typers { self: Analyzer =>
               // so we need to instantiate to minimal type List[Nothing].
         }
         val typer1 = constrTyperIf(treeInfo.isSelfOrSuperConstrCall(tree))
-        typer1.typed(typer1.applyImplicitArgs(tree), mode, pt)
+        if (original != EmptyTree && pt != WildcardType)
+          typer1.silent(tpr => tpr.typed(tpr.applyImplicitArgs(tree), mode, pt)) match {
+            case result: Tree => result
+            case ex: TypeError =>
+              if (settings.debug.value) log("fallback on implicits: "+tree)
+              val tree1 = typed(original, mode, WildcardType)
+              tree1.tpe = addAnnotations(tree1, tree1.tpe)
+              if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt, EmptyTree)
+          }
+        else
+          typer1.typed(typer1.applyImplicitArgs(tree), mode, pt)
       case mt: MethodType
       if (((mode & (EXPRmode | FUNmode | LHSmode)) == EXPRmode) &&
           (context.undetparams.isEmpty || (mode & POLYmode) != 0)) =>
@@ -825,7 +834,7 @@ trait Typers { self: Analyzer =>
           //println("eta "+tree+" ---> "+tree1+":"+tree1.tpe)
           typed(tree1, mode, pt)
         } else if (!meth.isConstructor && mt.params.isEmpty) { // (4.3)
-          adapt(typed(Apply(tree, List()) setPos tree.pos), mode, pt)
+          adapt(typed(Apply(tree, List()) setPos tree.pos), mode, pt, original)
         } else if (context.implicitsEnabled) {
           errorTree(tree, "missing arguments for "+meth+meth.locationString+
                     (if (meth.isConstructor) ""
@@ -933,7 +942,7 @@ trait Typers { self: Analyzer =>
               return tree
           }
           val tree1 = constfold(tree, pt) // (10) (11)
-          if (tree1.tpe <:< pt) adapt(tree1, mode, pt)
+          if (tree1.tpe <:< pt) adapt(tree1, mode, pt, original)
           else {
             if ((mode & (EXPRmode | FUNmode)) == EXPRmode) {
               pt.normalize match {
@@ -2966,10 +2975,6 @@ trait Typers { self: Analyzer =>
 
       /** Try to apply function to arguments; if it does not work try to
        *  insert an implicit conversion.
-       *
-       *  @param fun  ...
-       *  @param args ...
-       *  @return     ...
        */
       def tryTypedApply(fun: Tree, args: List[Tree]): Tree = {
         val start = System.nanoTime()
@@ -3775,7 +3780,7 @@ trait Typers { self: Analyzer =>
 
         tree1.tpe = addAnnotations(tree1, tree1.tpe)
 
-        val result = if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt)
+        val result = if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt, tree)
         if (printTypings) println("adapted "+tree1+":"+tree1.tpe.widen+" to "+pt+", "+context.undetparams); //DEBUG
 //      for (t <- tree1.tpe) assert(t != WildcardType)
 //      if ((mode & TYPEmode) != 0) println("type: "+tree1+" has type "+tree1.tpe)

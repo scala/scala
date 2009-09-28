@@ -451,6 +451,19 @@ trait Infer {
       tp.isInstanceOf[MethodType] && // can perform implicit () instantiation
       tp.paramTypes.length == 0 && isCompatible(tp.resultType, pt)
 
+    /** Like weakly compatible but don't apply any implicit conversions yet.
+     *  Used when comparing the result type of a method with its prototype.
+     */
+    def isConservativelyCompatible(tp: Type, pt: Type): Boolean = {
+      val savedImplicitsEnabled = context.implicitsEnabled
+      context.implicitsEnabled = false
+      try {
+        isWeaklyCompatible(tp, pt)
+      } finally {
+        context.implicitsEnabled = savedImplicitsEnabled
+      }
+    }
+
     def isCoercible(tp: Type, pt: Type): Boolean = false
 
     def isCompatible(tps: List[Type], pts: List[Type]): Boolean =
@@ -556,7 +569,7 @@ trait Infer {
         case ex: NoInstance => WildcardType
       }
       val tvars = tparams map freshVar
-      if (isWeaklyCompatible(restpe.instantiateTypeParams(tparams, tvars), pt))
+      if (isConservativelyCompatible(restpe.instantiateTypeParams(tparams, tvars), pt))
         List.map2(tparams, tvars) ((tparam, tvar) =>
           instantiateToBound(tvar, varianceInTypes(formals)(tparam)))
       else
@@ -611,7 +624,7 @@ trait Infer {
       }
       // check first whether type variables can be fully defined from
       // expected result type.
-      if (!isWeaklyCompatible(restpe.instantiateTypeParams(tparams, tvars), pt)) {
+      if (!isConservativelyCompatible(restpe.instantiateTypeParams(tparams, tvars), pt)) {
 //      just wait and instantiate from the arguments.
 //      that way, we can try to apply an implicit conversion afterwards.
 //      This case could happen if restpe is not fully defined, so that
@@ -821,9 +834,13 @@ trait Infer {
       case OverloadedType(pre, alts) =>
         alts exists (alt => isAsSpecific(pre.memberType(alt), ftpe2))
       case et: ExistentialType =>
-        et.withTypeVars(isAsSpecific(_, ftpe2)) // !!! why isStrictly?
+        et.withTypeVars(isAsSpecific(_, ftpe2))
+      case mt: ImplicitMethodType =>
+        isAsSpecific(ftpe1.resultType, ftpe2)
       case MethodType(params @ (x :: xs), _) =>
         isApplicable(List(), ftpe2, params map (_.tpe), WildcardType)
+      case PolyType(tparams, mt: ImplicitMethodType) =>
+        isAsSpecific(PolyType(tparams, mt.resultType), ftpe2)
       case PolyType(_, MethodType(params @ (x :: xs), _)) =>
         isApplicable(List(), ftpe2, params map (_.tpe), WildcardType)
       case ErrorType =>
@@ -834,12 +851,17 @@ trait Infer {
             alts forall (alt => isAsSpecific(ftpe1, pre.memberType(alt)))
           case et: ExistentialType =>
             et.withTypeVars(isAsSpecific(ftpe1, _))
+          case mt: ImplicitMethodType =>
+            isAsSpecific(ftpe1, mt.resultType)
+          case PolyType(tparams, mt: ImplicitMethodType) =>
+            isAsSpecific(ftpe1, PolyType(tparams, mt.resultType))
           case MethodType(_, _) | PolyType(_, MethodType(_, _)) =>
             true
           case _ =>
             isAsSpecificValueType(ftpe1, ftpe2, List(), List())
         }
     }
+
 /*
     def isStrictlyMoreSpecific(ftpe1: Type, ftpe2: Type): Boolean =
       ftpe1.isError || isAsSpecific(ftpe1, ftpe2) &&

@@ -410,17 +410,22 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
             }
           }
 
+          val lastElemType = lastFormal.typeArgs.head
           var suffix: Tree =
             if (!args.isEmpty && (treeInfo isWildcardStarArg args.last)) {
               val Typed(tree, _) = args.last;
-              if (isJava && !(tree.tpe.typeSymbol == ArrayClass) && (tree.tpe.typeSymbol isSubClass TraversableClass)) sequenceToArray(tree)
-              else tree
+              if (isJava)
+                if (tree.tpe.typeSymbol == ArrayClass) tree
+                else sequenceToArray(tree)
+              else
+                if (tree.tpe.typeSymbol isSubClass TraversableClass) tree
+                else arrayToSequence(tree, lastElemType)
             } else {
-              val lastElemType = lastFormal.typeArgs.head
               val tree = mkArrayValue(args drop (formals.length - 1), lastElemType)
               if (isJava || inPattern) tree
               else arrayToSequence(tree, lastElemType)
             }
+
           atPhase(phase.next) {
             if (isJava &&
                 suffix.tpe.typeSymbol == ArrayClass &&

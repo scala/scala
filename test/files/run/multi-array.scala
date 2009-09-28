@@ -10,4 +10,5 @@ object Test extends Application {
   for (i <- 0 until 3; j <- 0 until 3)
     aaiComplete(i)(j) = i + j
   println(aaiComplete.deepToString)
+  assert(aaiComplete.last.last == 4)
 }
