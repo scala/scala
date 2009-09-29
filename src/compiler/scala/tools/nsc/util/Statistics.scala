@@ -57,7 +57,6 @@ abstract class Statistics {
         inform("    successful manifest: "+showRelTyper(analyzer.manifSucceed))
         inform("        failed manifest: "+showRelTyper(analyzer.manifFail))
         inform("implicit cache hitratio: "+"%2.1f".format(analyzer.hits.toDouble / (analyzer.hits + analyzer.misses) * 100))
-        inform("implicit cache coverage: "+"%2.1f".format((analyzer.hits + analyzer.misses).toDouble / (analyzer.hits + analyzer.misses) * 100))
         inform("time spent in failed   : "+showRelTyper(analyzer.failedSilent))
         inform("       failed op=      : "+showRelTyper(analyzer.failedOpEqs))
         inform("       failed apply    : "+showRelTyper(analyzer.failedApplies))

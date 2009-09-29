@@ -1714,7 +1714,7 @@ trait Trees {
     }
   }
 
-  case class TreeTypeSubstituter(val from: List[Symbol], to: List[Type]) extends Traverser {
+  class TreeTypeSubstituter(val from: List[Symbol], to: List[Type]) extends Traverser {
     val typeSubst = new SubstTypeMap(from, to)
     override def traverse(tree: Tree) {
       if (tree.tpe ne null) tree.tpe = typeSubst(tree.tpe)
