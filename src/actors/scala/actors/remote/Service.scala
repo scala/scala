@@ -14,7 +14,7 @@ package scala.actors.remote
  * @version 0.9.10
  * @author Philipp Haller
  */
-trait Service {
+private[remote] trait Service {
   val kernel = new NetKernel(this)
   val serializer: Serializer
   def node: Node

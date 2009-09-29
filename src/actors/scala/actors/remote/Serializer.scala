@@ -16,7 +16,7 @@ import java.lang.ClassNotFoundException
 
 import java.io.{DataInputStream, DataOutputStream, EOFException, IOException}
 
-abstract class Serializer(val service: Service) {
+private[remote] abstract class Serializer(val service: Service) {
   def serialize(o: AnyRef): Array[Byte]
   def deserialize(a: Array[Byte]): AnyRef
 

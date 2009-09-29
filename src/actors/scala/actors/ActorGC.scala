@@ -14,46 +14,16 @@ import java.lang.ref.{Reference, WeakReference, ReferenceQueue}
 import java.util.WeakHashMap
 
 import scala.collection.mutable.{HashMap, HashSet}
+import scala.actors.scheduler.TerminationMonitor
 
-object ActorGC {
-
-  private var pendingReactions = 0
-  private val termHandlers = new HashMap[Actor, () => Unit]
-
-  def newActor(a: Actor) = synchronized {
-    pendingReactions += 1
-  }
-
-  def allTerminated: Boolean = synchronized {
-    pendingReactions <= 0
-  }
-
-  private[actors] def onTerminate(a: Actor)(f: => Unit) = synchronized {
-    termHandlers += (a -> (() => f))
-  }
-
-  /* Called only from <code>Reaction</code>.
-   */
-  private[actors] def terminated(a: Actor) = synchronized {
-    // execute registered termination handler (if any)
-    termHandlers.get(a) match {
-      case Some(handler) =>
-        handler()
-        // remove mapping
-        termHandlers -= a
-      case None =>
-        // do nothing
-    }
-
-    pendingReactions -= 1
-  }
+object ActorGC extends TerminationMonitor {
 
   private[actors] def getPendingCount = synchronized {
-    pendingReactions
+    activeActors
   }
 
   private[actors] def setPendingCount(cnt: Int) = synchronized {
-    pendingReactions = cnt
+    activeActors = cnt
   }
 
 }

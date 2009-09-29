@@ -62,7 +62,7 @@ object RemoteActor {
     createKernelOnPort(port)
   }
 
-  def createKernelOnPort(port: Int): NetKernel = {
+  private[remote] def createKernelOnPort(port: Int): NetKernel = {
     val serv = TcpService(port, cl)
     val kern = serv.kernel
     val s = Actor.self
@@ -117,7 +117,7 @@ object RemoteActor {
     selfKernel.getOrCreateProxy(node, sym)
   }
 
-  def someKernel: NetKernel =
+  private[remote] def someKernel: NetKernel =
     kernels.values.next
 }
 

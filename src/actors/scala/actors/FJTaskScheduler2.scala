@@ -10,42 +10,39 @@
 
 package scala.actors
 
-import compat.Platform
-
 import java.lang.{Runnable, Thread, InterruptedException, System, Runtime}
-
-import scala.collection.Set
-import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, HashSet}
+import scala.actors.threadpool.{ThreadPoolExecutor, TimeUnit, LinkedBlockingQueue}
 
 /**
  * FJTaskScheduler2
  *
- * @version 0.9.18
+ * @version 0.9.19
  * @author Philipp Haller
  */
 class FJTaskScheduler2 extends Thread with IScheduler {
   // as long as this thread runs, JVM should not exit
   setDaemon(false)
 
-  var printStats = false
+  @deprecated var printStats = false
 
-  val rt = Runtime.getRuntime()
-  val minNumThreads = 4
+  @deprecated val rt = Runtime.getRuntime()
+  private val numCores = rt.availableProcessors()
+  @deprecated val minNumThreads = 4
 
-  val coreProp = try {
+  @deprecated val coreProp = try {
     System.getProperty("actors.corePoolSize")
   } catch {
     case ace: java.security.AccessControlException =>
       null
   }
-  val maxProp =
+  @deprecated val maxProp =
     try {
       System.getProperty("actors.maxPoolSize")
     } catch {
       case ace: java.security.AccessControlException =>
         null
     }
-  val timeFreqProp =
+  @deprecated val timeFreqProp =
     try {
       System.getProperty("actors.timeFreq")
     } catch {
@@ -56,7 +53,6 @@ class FJTaskScheduler2 extends Thread with IScheduler {
   val initCoreSize =
     if (null ne coreProp) Integer.parseInt(coreProp)
     else {
-      val numCores = rt.availableProcessors()
       if (2 * numCores > minNumThreads)
         2 * numCores
       else
@@ -67,7 +63,7 @@ class FJTaskScheduler2 extends Thread with IScheduler {
     if (null ne maxProp) Integer.parseInt(maxProp)
     else 256
 
-  val timeFreq =
+  @deprecated val timeFreq =
     if (null ne timeFreqProp) Integer.parseInt(timeFreqProp)
     else 10
 
@@ -75,34 +71,55 @@ class FJTaskScheduler2 extends Thread with IScheduler {
 
   Debug.info(this+": corePoolSize = "+coreSize+", maxPoolSize = "+maxSize)
 
-  private val executor =
-    new FJTaskRunnerGroup(coreSize)
+  private val executor = {
+    val workQueue = new LinkedBlockingQueue[Runnable]
 
-  private var terminating = false
+    new ThreadPoolExecutor(coreSize,
+                           maxSize,
+                           60000L,
+                           TimeUnit.MILLISECONDS,
+                           workQueue,
+                           new ThreadPoolExecutor.CallerRunsPolicy)
+  }
+
+  @volatile private var terminating = false
   private var suspending = false
 
   private var submittedTasks = 0
 
-  def printActorDump {}
+  @deprecated def printActorDump {}
 
   private val TICK_FREQ = 50
-  private val CHECK_FREQ = 100
+  private val CHECK_FREQ = timeFreq
 
-  def onLockup(handler: () => Unit) =
+  @deprecated def onLockup(handler: () => Unit) =
     lockupHandler = handler
 
-  def onLockup(millis: Int)(handler: () => Unit) = {
+  @deprecated def onLockup(millis: Int)(handler: () => Unit) = {
     //LOCKUP_CHECK_FREQ = millis / CHECK_FREQ
     lockupHandler = handler
   }
 
   private var lockupHandler: () => Unit = null
 
-  private def allWorkersBlocked: Boolean =
-    executor.threads.forall(t => {
-      val s = t.getState()
-      s == Thread.State.BLOCKED || s == Thread.State.WAITING || s == Thread.State.TIMED_WAITING
-    })
+  private def numWorkersBlocked = {
+    executor.mainLock.lock()
+    val iter = executor.workers.iterator()
+    var numBlocked = 0
+    while (iter.hasNext()) {
+      val w = iter.next().asInstanceOf[ThreadPoolExecutor#Worker]
+      if (w.tryLock()) {
+        // worker is idle
+        w.unlock()
+      } else {
+        val s = w.thread.getState()
+        if (s == Thread.State.WAITING || s == Thread.State.TIMED_WAITING)
+          numBlocked += 1
+      }
+    }
+    executor.mainLock.unlock()
+    numBlocked
+  }
 
   override def run() {
     try {
@@ -116,24 +133,20 @@ class FJTaskScheduler2 extends Thread with IScheduler {
           }
 
           if (!suspending) {
-
-            // check if we need more threads
-            if (coreSize < maxSize
-                && allWorkersBlocked
-                && executor.checkPoolSize()) {
-                  //Debug.info(this+": increasing thread pool size")
-                  coreSize += 1
-                }
-            else {
+            // check if we need more worker threads
+            val activeBlocked = numWorkersBlocked
+            if (coreSize - activeBlocked < numCores && coreSize < maxSize) {
+              coreSize = numCores + activeBlocked
+              Debug.info(this+": increasing thread pool size to "+coreSize)
+              executor.setCorePoolSize(coreSize)
+            } else {
               if (ActorGC.allTerminated) {
                 // if all worker threads idle terminate
                 if (executor.getActiveCount() == 0) {
                   Debug.info(this+": initiating shutdown...")
+                  Debug.info(this+": corePoolSize = "+coreSize+", maxPoolSize = "+maxSize)
 
-                  // Note that we don't have to shutdown
-                  // the FJTaskRunnerGroup since there is
-                  // no separate thread associated with it,
-                  // and FJTaskRunner threads have daemon status.
+                  terminating = true
                   throw new QuitException
                 }
               }
@@ -145,7 +158,8 @@ class FJTaskScheduler2 extends Thread with IScheduler {
     } catch {
       case _: QuitException =>
         // allow thread to exit
-        if (printStats) executor.stats()
+        //if (printStats) executor.stats()
+        executor.shutdown()
     }
   }
 
@@ -171,9 +185,17 @@ class FJTaskScheduler2 extends Thread with IScheduler {
     terminating = true
   }
 
-  def snapshot(): LinkedQueue = {
+  @deprecated def snapshot(): LinkedQueue = {
     suspending = true
-    executor.snapshot()
+    val tasks: java.util.List[_] = executor.shutdownNow()
+    val linkedQ = new LinkedQueue
+    val iter = tasks.iterator()
+    while (iter.hasNext()) {
+      linkedQ put iter.next()
+    }
+    linkedQ
   }
 
+  private[actors] override def isActive =
+    !terminating
 }

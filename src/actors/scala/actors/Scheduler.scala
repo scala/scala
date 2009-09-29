@@ -10,12 +10,7 @@
 
 package scala.actors
 
-import compat.Platform
-
 import java.lang.{Runnable, Thread, InterruptedException}
-
-import scala.collection.Set
-import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, HashSet}
 
 /**
  * The <code>Scheduler</code> object is used by
@@ -26,13 +21,22 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
  */
 object Scheduler extends IScheduler {
 
-  private var sched: IScheduler = {
+  def makeNewScheduler: IScheduler = {
     val s = new FJTaskScheduler2
+    Debug.info(this+": starting new "+s+" ["+s.getClass+"]")
     s.start()
     s
   }
 
-  def impl = sched
+  private var sched: IScheduler =
+    makeNewScheduler
+
+  def impl = {
+    if (!sched.isActive)
+      sched = makeNewScheduler
+    sched
+  }
+
   def impl_= (scheduler: IScheduler) = {
     sched = scheduler
   }
@@ -65,7 +69,7 @@ object Scheduler extends IScheduler {
     //Actor.timer = new java.util.Timer
     if (tasks ne null) {
       while (!tasks.isEmpty()) {
-        sched.execute(tasks.take().asInstanceOf[FJTask])
+        sched.execute(tasks.take().asInstanceOf[Runnable])
       }
       tasks = null
     }
@@ -81,7 +85,7 @@ object Scheduler extends IScheduler {
       })
     } else
 */
-      sched execute task
+      impl execute task
   }
 
   def execute(fun: => Unit) {
@@ -94,7 +98,7 @@ object Scheduler extends IScheduler {
       })
     } else
 */
-      sched execute { fun }
+      impl execute { fun }
   }
 
   /* This method is used to notify the scheduler
@@ -147,17 +151,21 @@ trait IScheduler {
    */
   def shutdown(): Unit
 
-  def onLockup(handler: () => Unit): Unit
-  def onLockup(millis: Int)(handler: () => Unit): Unit
-  def printActorDump: Unit
+  @deprecated def onLockup(handler: () => Unit): Unit
+  @deprecated def onLockup(millis: Int)(handler: () => Unit): Unit
+  @deprecated def printActorDump: Unit
 
+  @deprecated
   val QUIT_TASK = new Reaction(null) {
     override def run(): Unit = {}
     override def toString() = "QUIT_TASK"
   }
+
+  private[actors] def isActive: Boolean = true
 }
 
 
+@deprecated
 trait WorkerThreadScheduler extends IScheduler {
   /**
    *  @param  worker the worker thread executing tasks
@@ -263,6 +271,7 @@ private[actors] class QuitException extends Throwable {
  * @version 0.9.18
  * @author Philipp Haller
  */
+@deprecated
 class WorkerThread(sched: WorkerThreadScheduler) extends Thread {
   private var task: Runnable = null
   private[actors] var running = true

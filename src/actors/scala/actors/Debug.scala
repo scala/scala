@@ -29,6 +29,7 @@ object Debug {
     if (lev > 0) System.err.println("Error: " + s)
 }
 
+@deprecated
 class Debug(tag: String) {
   private var lev = 2
 

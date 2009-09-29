@@ -17,7 +17,7 @@ import java.io.{ByteArrayInputStream, ByteArrayOutputStream,
 /**
  *  @author Guy Oliver
  */
-class CustomObjectInputStream(os: InputStream, cl: ClassLoader) extends ObjectInputStream(os) {
+private[remote] class CustomObjectInputStream(os: InputStream, cl: ClassLoader) extends ObjectInputStream(os) {
   override def resolveClass(cd: ObjectStreamClass): Class[T] forSome { type T } =
     try {
       cl.loadClass(cd.getName())
@@ -30,7 +30,7 @@ class CustomObjectInputStream(os: InputStream, cl: ClassLoader) extends ObjectIn
 /**
  *  @author Philipp Haller
  */
-class JavaSerializer(serv: Service, cl: ClassLoader) extends Serializer(serv) {
+private[remote] class JavaSerializer(serv: Service, cl: ClassLoader) extends Serializer(serv) {
   def serialize(o: AnyRef): Array[Byte] = {
     val bos = new ByteArrayOutputStream()
     val out = new ObjectOutputStream(bos)

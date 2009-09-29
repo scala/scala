@@ -10,7 +10,7 @@
 
 package scala.actors.remote
 
-object FreshNameCreator {
+private[remote] object FreshNameCreator {
 
   protected var counter = 0
   protected val counters = new scala.collection.mutable.HashMap[String, Int]

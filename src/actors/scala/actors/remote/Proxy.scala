@@ -84,7 +84,7 @@ class Proxy(node: Node, name: Symbol, @transient var kernel: NetKernel) extends 
 }
 
 @serializable
-class LinkToFun extends Function2[AbstractActor, Proxy, Unit] {
+private[remote] class LinkToFun extends Function2[AbstractActor, Proxy, Unit] {
   def apply(target: AbstractActor, creator: Proxy) {
     target.linkTo(creator)
   }
@@ -93,7 +93,7 @@ class LinkToFun extends Function2[AbstractActor, Proxy, Unit] {
 }
 
 @serializable
-class UnlinkFromFun extends Function2[AbstractActor, Proxy, Unit] {
+private[remote] class UnlinkFromFun extends Function2[AbstractActor, Proxy, Unit] {
   def apply(target: AbstractActor, creator: Proxy) {
     target.unlinkFrom(creator)
   }
@@ -102,7 +102,7 @@ class UnlinkFromFun extends Function2[AbstractActor, Proxy, Unit] {
 }
 
 @serializable
-class ExitFun(reason: AnyRef) extends Function2[AbstractActor, Proxy, Unit] {
+private[remote] class ExitFun(reason: AnyRef) extends Function2[AbstractActor, Proxy, Unit] {
   def apply(target: AbstractActor, creator: Proxy) {
     target.exit(creator, reason)
   }
@@ -110,7 +110,7 @@ class ExitFun(reason: AnyRef) extends Function2[AbstractActor, Proxy, Unit] {
     "<ExitFun>("+reason.toString+")"
 }
 
-case class Apply0(rfun: Function2[AbstractActor, Proxy, Unit])
+private[remote] case class Apply0(rfun: Function2[AbstractActor, Proxy, Unit])
 
 /**
  * @version 0.9.17

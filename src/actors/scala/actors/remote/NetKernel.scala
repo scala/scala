@@ -12,21 +12,23 @@ package scala.actors.remote
 
 import scala.collection.mutable.{HashMap, HashSet}
 
-case class NamedSend(senderLoc: Locator, receiverLoc: Locator, data: Array[Byte], session: Symbol)
+private[remote] case class NamedSend(senderLoc: Locator, receiverLoc: Locator, data: Array[Byte], session: Symbol)
 
-case class RemoteApply0(senderLoc: Locator, receiverLoc: Locator, rfun: Function2[AbstractActor, Proxy, Unit])
-case class LocalApply0(rfun: Function2[AbstractActor, Proxy, Unit], a: AbstractActor)
+private[remote] case class RemoteApply0(senderLoc: Locator, receiverLoc: Locator, rfun: Function2[AbstractActor, Proxy, Unit])
 
-case class  SendTo(a: OutputChannel[Any], msg: Any, session: Symbol)
-case object Terminate
+private[remote] case class LocalApply0(rfun: Function2[AbstractActor, Proxy, Unit], a: AbstractActor)
 
-case class Locator(node: Node, name: Symbol)
+private[remote] case class SendTo(a: OutputChannel[Any], msg: Any, session: Symbol)
+
+private[remote] case object Terminate
+
+private[remote] case class Locator(node: Node, name: Symbol)
 
 /**
  * @version 0.9.17
  * @author Philipp Haller
  */
-class NetKernel(service: Service) {
+private[remote] class NetKernel(service: Service) {
 
   def sendToNode(node: Node, msg: AnyRef) = {
     val bytes = service.serializer.serialize(msg)
