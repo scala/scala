@@ -560,6 +560,12 @@ trait ParallelMatching extends ast.TreeDSL {
 
       /** translate outcome of the rule application into code (possible involving recursive application of rewriting) */
       def tree(): Tree
+
+      override def toString = {
+        "RuleApplication/%s (%s: %s) { %s ... }".format(
+          getClass(), scrut, scrut.tpe, head
+        )
+      }
     }
 
     case class ErrorRule() extends RuleApplication {
@@ -650,7 +656,7 @@ trait ParallelMatching extends ast.TreeDSL {
         cases match {
           case List(CaseDef(lit, _, body))  =>
             // only one case becomes if/else
-            IF (scrut.id ANY_== lit) THEN body ELSE defaultTree
+            IF (scrut.id MEMBER_== lit) THEN body ELSE defaultTree
           case _                            =>
             // otherwise cast to an Int if necessary and run match
             val target: Tree = if (!scrut.tpe.isInt) scrut.id DOT nme.toInt else scrut.id
@@ -848,7 +854,7 @@ trait ParallelMatching extends ast.TreeDSL {
 
       // precondition for matching: sequence is exactly length of arg
       protected def getPrecondition(tree: Tree, lengthArg: Int) =
-        lengthCheck(tree, lengthArg, _ ANY_== _)
+        lengthCheck(tree, lengthArg, _ MEMBER_== _)
 
       final def tree() = {
         val Branch(TransitionContext(transition), succ, Some(fail)) = this.getTransition
@@ -900,7 +906,7 @@ trait ParallelMatching extends ast.TreeDSL {
 
         // todo: optimize if no guard, and no further tests
         val fail    = mkFail(List.map2(rest.rows.tail, pats.tail.ps)(_ insert _))
-        val action  = typer typed (scrut.id ANY_== value)
+        val action  = typer typed (scrut.id MEMBER_== value)
 
         (Branch(action, mkNewRep(Nil, rest.tvars, succ), fail), label)
       }
@@ -1268,9 +1274,9 @@ trait ParallelMatching extends ast.TreeDSL {
       typer typed (tpe match {
         case ct: ConstantType => ct.value match {
             case v @ Constant(null) if isAnyRef(scrutTree.tpe)  => scrutTree ANY_EQ NULL
-            case v                                              => scrutTree ANY_== Literal(v)
+            case v                                              => scrutTree MEMBER_== Literal(v)
           }
-        case _: SingletonType if useEqTest                      => REF(tpe.termSymbol) ANY_== scrutTree
+        case _: SingletonType if useEqTest                      => REF(tpe.termSymbol) MEMBER_== scrutTree
         case _ if scrutTree.tpe <:< tpe && isAnyRef(tpe)        => scrutTree OBJ_!= NULL
         case _                                                  => scrutTree IS tpe
       })

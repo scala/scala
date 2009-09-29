@@ -92,6 +92,13 @@ trait TreeDSL {
         else if (other == EmptyTree) target
         else gen.mkAnd(target, other)
 
+      /** Note - calling ANY_== in the matcher caused primitives to get boxed
+       *  for the comparison, whereas looking up nme.EQ does not.
+       */
+      def MEMBER_== (other: Tree)   = {
+        if (target.tpe == null) ANY_==(other)
+        else fn(target, target.tpe member nme.EQ, other)
+      }
       def ANY_NE  (other: Tree)     = fn(target, nme.ne, toAnyRef(other))
       def ANY_EQ  (other: Tree)     = fn(target, nme.eq, toAnyRef(other))
       def ANY_==  (other: Tree)     = fn(target, Any_==, other)
