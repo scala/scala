@@ -1,0 +1,7 @@
+t2316.scala:28: error: ambiguous implicit values:
+ both method T1FromT3 in object T1 of type (implicit t3: test.T3)test.T1
+ and method T1FromT2 in object T1 of type (implicit t2: test.T2)test.T1
+ match expected type test.T1
+      val t1 = requireT1
+               ^
+one error found

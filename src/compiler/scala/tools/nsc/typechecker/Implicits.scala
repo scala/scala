@@ -38,7 +38,6 @@ self: Analyzer =>
   var manifFail = 0L
   var hits = 0
   var misses = 0
-  var uncached = 0
 
   /** Search for an implicit value. See the comment on `result` at the end of class `ImplicitSearch`
    *  for more info how the search is conducted.
@@ -62,7 +61,7 @@ self: Analyzer =>
   }
 
   final val sizeLimit = 50000
-  val implicitsCache = new LinkedHashMap[AnyRef, SearchResult]
+  val implicitsCache = new LinkedHashMap[Type, List[List[ImplicitInfo]]]
 
   def resetImplicits() { implicitsCache.clear() }
 
@@ -577,8 +576,18 @@ self: Analyzer =>
      *  These are all implicits found in companion objects of classes C
      *  such that some part of `tp` has C as one of its superclasses.
      */
-    private def implicitsOfExpectedType: List[List[ImplicitInfo]] =
-      parts(pt).iterator.map(implicitsOfClass).toList
+    private def implicitsOfExpectedType: List[List[ImplicitInfo]] = implicitsCache get pt match {
+      case Some(implicitInfoss) => hits += 1; implicitInfoss
+      case None                 => {
+        misses += 1
+        val implicitInfoss = parts(pt).iterator.map(implicitsOfClass).toList
+        implicitsCache(pt) = implicitInfoss
+        if (implicitsCache.size >= sizeLimit)
+          implicitsCache -= implicitsCache.keysIterator.next
+        implicitInfoss
+      }
+    }
+
 
     /** The manifest corresponding to type `pt`, provided `pt` is an instance of Manifest.
      */
@@ -674,50 +683,6 @@ self: Analyzer =>
       }
     }
 
-    /** Construct a fresh symbol tree for an implicit parameter
-        because of caching, must clone symbols that represent bound variables,
-        or we will end up with different bound variables that are represented by the same symbol */
-    def freshenFunctionParameters(tree : Tree) : Tree = new Transformer {
-      currentOwner = context.owner
-      override val treeCopy = new LazyTreeCopier
-      override def transform(tr : Tree) = super.transform(tr match {
-        case Function(vparams, body) => {
-          // New tree
-          val sym = tr.symbol cloneSymbol currentOwner
-          val res = tr.duplicate setSymbol sym
-          // New parameter symbols
-          var oldsyms = vparams map (_.symbol)
-          var newsyms = cloneSymbols(oldsyms, sym)
-          // Fix all symbols
-          new TreeSymSubstituter(oldsyms, newsyms) traverse res
-          res
-        }
-        case x => x
-      })
-    } transform tree
-
-    /** Return cached search result if found. Otherwise update cache
-     *  but keep within sizeLimit entries
-     */
-    def cacheResult(key: AnyRef): SearchResult = implicitsCache get key match {
-      case Some(sr: SearchResult) =>
-        hits += 1
-        if (sr == SearchFailure) sr
-        else {
-          val result = new SearchResult(freshenFunctionParameters(sr.tree.duplicate), sr.subst) // #2201: generate fresh symbols for parameters
-          for (t <- result.tree) t.setPos(tree.pos.focus)
-          result
-        }
-      case None =>
-        misses += 1
-        val r = searchImplicit(implicitsOfExpectedType, false)
-        //println("new fact: search implicit of "+key+" = "+r)
-        implicitsCache(key) = r
-        if (implicitsCache.size >= sizeLimit)
-          implicitsCache -= implicitsCache.keysIterator.next
-        r
-    }
-
     /** The result of the implicit search:
      *  First search implicits visible in current context.
      *  If that fails, search implicits in expected type `pt`.
@@ -729,13 +694,8 @@ self: Analyzer =>
       var result = searchImplicit(context.implicitss, true)
       val timer1 = System.nanoTime()
       if (result == SearchFailure) inscopeFail += timer1 - start else inscopeSucceed += timer1 - start
-      if (result == SearchFailure) {
-        result = pt match {
-          case _: UniqueType => cacheResult(pt)
-          case WildcardName(name) => cacheResult(name)
-          case _ => uncached += 1; searchImplicit(implicitsOfExpectedType, false)
-         }
-      }
+      if (result == SearchFailure)
+        result = searchImplicit(implicitsOfExpectedType, false)
 
       val timer2 = System.nanoTime()
       if (result == SearchFailure) oftypeFail += timer2 - timer1 else oftypeSucceed += timer2 - timer1
