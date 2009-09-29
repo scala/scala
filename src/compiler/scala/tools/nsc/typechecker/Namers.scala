@@ -1106,7 +1106,7 @@ trait Namers { self: Analyzer =>
       val annotated = if (sym.isModule) sym.moduleClass else sym
       // typeSig might be called multiple times, e.g. on a ValDef: val, getter, setter
       // parse the annotations only once.
-      if (annotated.rawAnnotations.isEmpty) tree match {
+      if (!annotated.isInitialized) tree match {
         case defn: MemberDef =>
           val ainfos = defn.mods.annotations filter { _ != null } map { ann =>
             // need to be lazy, #1782

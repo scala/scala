@@ -450,6 +450,9 @@ trait TypeKinds { self: ICodes =>
     case ExistentialType(tparams, t) =>
       toTypeKind(t)
 
+    case AnnotatedType(_, t, _) =>
+      toTypeKind(t)
+
     //case WildcardType => // bq: useful hack when wildcard types come here
     //  REFERENCE(definitions.ObjectClass)
 

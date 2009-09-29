@@ -93,6 +93,15 @@ object Test4 {
     def this() = this("")
   }
   class Foo8(@SourceAnnotation("constructor val") val n: Int) {}
+  class Foo9 {
+    import scala.annotation.target._
+    import scala.reflect.BeanProperty
+    @(SourceAnnotation @getter)("http://apple.com") val x = 0
+    @BeanProperty @(SourceAnnotation @beanSetter)("http://uppla.com") var y = 0
+
+    type myAnn = SourceAnnotation @beanGetter @field
+    @BeanProperty @myAnn("http://eppli.com") var z = 0
+  }
   def run {
     import java.lang.annotation.Annotation
     import java.lang.reflect.AnnotatedElement
@@ -121,6 +130,8 @@ object Test4 {
     classOf[Foo7].getDeclaredConstructors foreach printSourceAnnotations
     classOf[Foo8].getDeclaredFields  foreach printSourceAnnotations
     classOf[Foo8].getDeclaredMethods foreach printSourceAnnotations
+    classOf[Foo9].getDeclaredFields  foreach printSourceAnnotations
+    classOf[Foo9].getDeclaredMethods foreach printSourceAnnotations
   }
 }
 

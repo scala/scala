@@ -25,5 +25,17 @@ public Test4$Foo7()
 @test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=constructor val)
 private final int Test4$Foo8.n
 
+@test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=http://eppli.com)
+private int Test4$Foo9.z
+
+@test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=http://apple.com)
+public int Test4$Foo9.x()
+
+@test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=http://eppli.com)
+public int Test4$Foo9.getZ()
+
+@test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=http://uppla.com)
+public void Test4$Foo9.setY(int)
+
 0
 99

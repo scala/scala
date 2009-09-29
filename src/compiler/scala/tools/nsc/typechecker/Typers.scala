@@ -1293,7 +1293,8 @@ trait Typers { self: Analyzer =>
         val isDeferred = mods hasFlag DEFERRED
         val value = stat.symbol
         val allAnnots = value.annotations
-        value.setAnnotations(memberAnnots(allAnnots, FieldClass))
+        if (!isDeferred)
+          value.setAnnotations(memberAnnots(allAnnots, FieldClass))
 
         val getter = if (isDeferred) value else value.getter(value.owner)
         assert(getter != NoSymbol, stat)

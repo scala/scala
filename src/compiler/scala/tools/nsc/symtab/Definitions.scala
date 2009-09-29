@@ -98,11 +98,11 @@ trait Definitions {
     lazy val SwitchClass                = getClass("scala.annotation.switch")
     lazy val ExperimentalClass          = getClass("scala.annotation.experimental")
     lazy val ElidableMethodClass        = getClass("scala.annotation.elidable")
-    lazy val FieldClass                 = getClass("scala.annotation.field")
-    lazy val GetterClass                = getClass("scala.annotation.getter")
-    lazy val SetterClass                = getClass("scala.annotation.setter")
-    lazy val BeanGetterClass            = getClass("scala.annotation.beanGetter")
-    lazy val BeanSetterClass            = getClass("scala.annotation.beanSetter")
+    lazy val FieldClass                 = getClass("scala.annotation.target.field")
+    lazy val GetterClass                = getClass("scala.annotation.target.getter")
+    lazy val SetterClass                = getClass("scala.annotation.target.setter")
+    lazy val BeanGetterClass            = getClass("scala.annotation.target.beanGetter")
+    lazy val BeanSetterClass            = getClass("scala.annotation.target.beanSetter")
 
     // fundamental reference classes
     lazy val ScalaObjectClass     = getClass("scala.ScalaObject")
