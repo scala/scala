@@ -125,7 +125,7 @@ trait PatternNodes extends ast.TreeDSL
   }
 
   final def getDummies(i: Int): List[Tree] = List.fill(i)(EmptyTree)
-  final def getDummyPatterns(i: Int): List[Pattern] = List.fill(i)(EmptyPattern)
+  final def getDummyPatterns(i: Int): List[Pattern] = List.fill(i)(NoPattern)
 
   def makeBind(vs: List[Symbol], pat: Tree): Tree = vs match {
     case Nil      => pat
