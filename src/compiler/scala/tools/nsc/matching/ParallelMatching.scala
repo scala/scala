@@ -976,8 +976,8 @@ trait ParallelMatching extends ast.TreeDSL {
             case q @ Typed(pp, _) if xIsaY                    => (alts(pp, q), dummy, None)   // never =:= for <equals>
             // case z: UnApply                                   => (None, None, pass)
             case z: UnApply                                   => (EmptyTree, dummy, pass)
-            case _ if erased.xIsaY || xIsaY && !isDef         => (alts(EmptyTree, pat), subs, None) // never =:= for <e
-            case _ if erased.yIsaX || yIsaX || isDef          => (EmptyTree, dummy, pass)     // subsuming (matched *an
+            case _ if erased.xIsaY || xIsaY && !isDef         => (alts(EmptyTree, pat), subs, None) // never =:= for <equals>
+            case _ if erased.yIsaX || yIsaX || isDef          => (EmptyTree, dummy, pass)     // subsuming (matched *and* remaining pattern)
             case _                                            => (None, None, pass)
             // The below fixes bugs 425 and 816 with only the small downside
             // of causing 60 other tests to fail.
