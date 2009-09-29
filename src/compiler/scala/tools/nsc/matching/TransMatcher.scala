@@ -202,13 +202,16 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
     val mch     = typer typed rep.toTree              // executes algorithm, converts tree to DFA
     val dfatree = typer typed Block(vars, mch)        // packages into a code block
 
-    // TRACE("handlePattern(\n  roots = %s\n  cases = %s\n  rep = %s\n  initRep = %s\n)",
-    //   roots, cases.mkString("(\n    ", "\n    ", "\n)"), rep, irep)
-    // TRACE("dfatree(1) = " + toCompactString(dfatree))
-
     // redundancy check
-    for ((cs, bx) <- cases.zipWithIndex)
-      if (!matrix.isReached(bx)) cunit.error(cs.body.pos, "unreachable code")
+    for ((cs, bx) <- cases.zipWithIndex) {
+      // if (!matrix.isReached(bx)) {
+      //   println("cases = %s".format(cases))
+      //   println("matrix = %s, rep = %s".format(matrix, rep))
+      //   println("dfatree = " + toCompactString(dfatree))
+      // }
+      if (!matrix.isReached(bx))
+        cunit.error(cs.body.pos, "unreachable code")
+    }
 
     // cleanup performs squeezing and resets any remaining TRANS_FLAGs
     matrix cleanup dfatree
