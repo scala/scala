@@ -21,7 +21,6 @@ import scala.util.Random
 
 /* Object TcpService.
  *
- * @version 0.9.9
  * @author Philipp Haller
  */
 private[remote] object TcpService {
@@ -64,7 +63,6 @@ private[remote] object TcpService {
 
 /* Class TcpService.
  *
- * @version 0.9.10
  * @author Philipp Haller
  */
 private[remote] class TcpService(port: Int, cl: ClassLoader) extends Thread with Service {

@@ -13,7 +13,6 @@ package scala.actors.remote
 import scala.collection.mutable.HashMap
 
 /**
- * @version 0.9.17
  * @author Philipp Haller
  */
 @serializable
@@ -113,7 +112,6 @@ private[remote] class ExitFun(reason: AnyRef) extends Function2[AbstractActor, P
 private[remote] case class Apply0(rfun: Function2[AbstractActor, Proxy, Unit])
 
 /**
- * @version 0.9.17
  * @author Philipp Haller
  */
 private[remote] class DelegateActor(creator: Proxy, node: Node, name: Symbol, kernel: NetKernel) extends Actor {

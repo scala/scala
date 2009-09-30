@@ -15,7 +15,6 @@ package scala.actors
  *  <code>execute(f: => Unit)</code> method is sufficient to
  *  obtain a concrete <code>IScheduler</code> class.
  *
- *  @version 0.9.18
  *  @author Philipp Haller
  */
 trait SchedulerAdapter extends IScheduler {

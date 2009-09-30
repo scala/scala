@@ -13,23 +13,6 @@ package scala.actors
 
 import java.lang.{InterruptedException, Runnable}
 
-/** <p>
- *    This exception is thrown whenever an actor exits.
- *    Its purpose is to let <code>exit</code> have
- *    return type <code>Nothing</code>.
- *  </p>
- *
- *  @version 0.9.10
- *  @author Philipp Haller
- */
-private[actors] class ExitActorException extends Throwable {
-  /*
-   * For efficiency reasons we do not fill in
-   * the execution stack trace.
-   */
-  override def fillInStackTrace(): Throwable = this
-}
-
 private[actors] class KillActorException extends Throwable {
   /*
    * For efficiency reasons we do not fill in
@@ -45,69 +28,16 @@ private[actors] class KillActorException extends Throwable {
  *    <code>java.lang.Runnable</code></a>.
  *  </p>
  *
- *  @version 0.9.10
+ *  @deprecated("this class is going to be removed in a future release")
  *  @author Philipp Haller
  */
-@deprecated
-class Reaction extends Runnable {
-
-  private[actors] var a: Actor = _
-  private var f: PartialFunction[Any, Unit] = _
-  private var msg: Any = _
-
-  def this(a: Actor, f: PartialFunction[Any, Unit], msg: Any) = {
-    this()
-    this.a = a
-    this.f = f
-    this.msg = msg
-  }
+class Reaction(a: Actor, f: PartialFunction[Any, Unit], msg: Any) extends ActorTask(a, () => {
+  if (f == null)
+    a.act()
+  else
+    f(msg)
+}) {
 
   def this(a: Actor) = this(a, null, null)
-
-  def run() {
-    val saved = Actor.tl.get.asInstanceOf[Actor]
-    Actor.tl.set(a)
-    a.isDetached = false
-    try {
-      if (a.shouldExit) // links
-        a.exit()
-      else {
-        try {
-          if (f == null)
-            a.act()
-          else
-            f(msg)
-        } catch {
-          case _: KillActorException =>
-        }
-        a.kill(); a.exit()
-      }
-    }
-    catch {
-      case eae: ExitActorException => {
-        //Debug.info(a+": exiting...")
-        ActorGC.terminated(a)
-      }
-      case _: SuspendActorException => {
-        // do nothing (continuation is already saved)
-      }
-      case t: Throwable => {
-        Debug.info(a+": caught "+t)
-        ActorGC.terminated(a)
-        // links
-        a.synchronized {
-          if (!a.links.isEmpty)
-            a.exitLinked(t)
-          else
-            t.printStackTrace()
-        }
-      }
-    } finally {
-      Actor.tl.set(saved)
-      this.a = null
-      this.f = null
-      this.msg = null
-    }
-  }
 
 }

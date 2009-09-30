@@ -11,7 +11,6 @@
 package scala.actors.remote
 
 /**
- * @version 0.9.10
  * @author Philipp Haller
  */
 private[remote] trait Service {

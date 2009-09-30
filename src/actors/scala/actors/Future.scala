@@ -23,9 +23,9 @@ package scala.actors
  * </p>
  *
  * @author Philipp Haller
- * @version 0.9.16
  */
-abstract class Future[+T](val ch: InputChannel[Any]) extends Responder[T] with Function0[T] {
+abstract class Future[+T](val ch: InputChannel[T]) extends Responder[T] with Function0[T] {
+  @deprecated
   protected var value: Option[Any] = None
   def isSet: Boolean
 }
@@ -33,18 +33,21 @@ abstract class Future[+T](val ch: InputChannel[Any]) extends Responder[T] with F
 /**
  * The <code>Futures</code> object contains methods that operate on Futures.
  *
- * @version 0.9.8
  * @author Philipp Haller
  */
 object Futures {
 
+  private case object Eval
+
   def future[T](body: => T): Future[T] = {
-    case object Eval
-    val a = Actor.actor {
-      Actor.react {
-        case Eval => Actor.reply(body)
+    val a = new Actor {
+      def act() {
+        Actor.react {
+          case Eval => Actor.reply(body)
+        }
       }
     }
+    a.start()
     a !! (Eval, { case any => any.asInstanceOf[T] })
   }
 
@@ -55,7 +58,8 @@ object Futures {
   }
 
   def awaitEither[a, b](ft1: Future[a], ft2: Future[b]): Any = {
-    val FutCh1 = ft1.ch; val FutCh2 = ft2.ch
+    val FutCh1 = ft1.ch
+    val FutCh2 = ft2.ch
     Actor.receive {
       case FutCh1 ! arg1 => arg1
       case FutCh2 ! arg2 => arg2
@@ -129,4 +133,26 @@ object Futures {
     }
     results
   }
+
+  private[actors] def fromInputChannel[T](inputChannel: InputChannel[T]): Future[T] =
+    new Future[T](inputChannel) {
+      def apply() =
+        if (isSet) value.get.asInstanceOf[T]
+        else inputChannel.receive {
+          case any => value = Some(any); value.get.asInstanceOf[T]
+        }
+      def respond(k: T => Unit): Unit =
+        if (isSet) k(value.get.asInstanceOf[T])
+        else inputChannel.react {
+ 	  case any => value = Some(any); k(value.get.asInstanceOf[T])
+        }
+      def isSet = value match {
+        case None => inputChannel.receiveWithin(0) {
+          case TIMEOUT => false
+          case any => value = Some(any); true
+        }
+        case Some(_) => true
+      }
+    }
+
 }

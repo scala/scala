@@ -6,13 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Actor.scala 16759 2008-12-15 10:19:01Z phaller $
+// $Id: Actor.scala 18840 2009-09-30 15:42:18Z phaller $
 
 package scala.actors
 
-import scala.collection.mutable.{HashSet, Queue}
 import scala.compat.Platform
-
 import java.util.{Timer, TimerTask}
 
 /**
@@ -21,14 +19,16 @@ import java.util.{Timer, TimerTask}
  * <code>receive</code>, <code>react</code>, <code>reply</code>,
  * etc.
  *
- * @version 0.9.18
  * @author Philipp Haller
  */
 object Actor {
 
-  private[actors] val tl = new ThreadLocal[Actor]
+  private[actors] val tl = new ThreadLocal[Reactor]
 
-  private[actors] var timer = new Timer
+  // timer thread runs as daemon
+  private[actors] val timer = new Timer(true)
+
+  private[actors] val suspendException = new SuspendActorException
 
   /**
    * Returns the currently executing actor. Should be used instead
@@ -37,13 +37,26 @@ object Actor {
    *
    * @return returns the currently executing actor.
    */
-  def self: Actor = {
-    var a = tl.get.asInstanceOf[Actor]
-    if (null eq a) {
-      a = new ActorProxy(currentThread)
-      tl.set(a)
-    }
-    a
+  def self: Actor = self(Scheduler)
+
+  private[actors] def self(sched: IScheduler): Actor =
+    rawSelf(sched).asInstanceOf[Actor]
+
+  private[actors] def rawSelf: Reactor = rawSelf(Scheduler)
+
+  private[actors] def rawSelf(sched: IScheduler): Reactor = {
+    val s = tl.get.asInstanceOf[Reactor]
+    if (s eq null) {
+      val r = new ActorProxy(currentThread, sched)
+      tl.set(r)
+      r
+    } else
+      s
+  }
+
+  private def parentScheduler: IScheduler = {
+    val s = tl.get.asInstanceOf[Reactor]
+    if (s eq null) Scheduler else s.scheduler
   }
 
   /**
@@ -55,9 +68,9 @@ object Actor {
    * even if its <code>ActorProxy</code> has died for some reason.
    */
   def resetProxy {
-    val a = tl.get.asInstanceOf[Actor]
+    val a = tl.get
     if ((null ne a) && a.isInstanceOf[ActorProxy])
-      tl.set(new ActorProxy(currentThread))
+      tl.set(new ActorProxy(currentThread, parentScheduler))
   }
 
   /**
@@ -90,11 +103,12 @@ object Actor {
    * @return       the newly created actor. Note that it is automatically started.
    */
   def actor(body: => Unit): Actor = {
-    val actor = new Actor {
+    val a = new Actor {
       def act() = body
+      override final val scheduler: IScheduler = parentScheduler
     }
-    actor.start()
-    actor
+    a.start()
+    a
   }
 
   /**
@@ -125,6 +139,7 @@ object Actor {
       def act() {
         Responder.run(body)
       }
+      override final val scheduler: IScheduler = parentScheduler
     }
     a.start()
     a
@@ -173,7 +188,7 @@ object Actor {
    * @return   this function never returns
    */
   def react(f: PartialFunction[Any, Unit]): Nothing =
-    self.react(f)
+    rawSelf.react(f)
 
   /**
    * Lightweight variant of <code>receiveWithin</code>.
@@ -190,41 +205,44 @@ object Actor {
     self.reactWithin(msec)(f)
 
   def eventloop(f: PartialFunction[Any, Unit]): Nothing =
-    self.react(new RecursiveProxyHandler(self, f))
+    rawSelf.react(new RecursiveProxyHandler(rawSelf, f))
 
-  private class RecursiveProxyHandler(a: Actor, f: PartialFunction[Any, Unit])
+  private class RecursiveProxyHandler(a: Reactor, f: PartialFunction[Any, Unit])
           extends PartialFunction[Any, Unit] {
     def isDefinedAt(m: Any): Boolean =
       true // events are immediately removed from the mailbox
     def apply(m: Any) {
       if (f.isDefinedAt(m)) f(m)
-      self.react(this)
+      a.react(this)
     }
   }
 
   /**
    * Returns the actor which sent the last received message.
    */
-  def sender: OutputChannel[Any] = self.sender
+  def sender: OutputChannel[Any] =
+    rawSelf.asInstanceOf[ReplyReactor].sender
 
   /**
    * Send <code>msg</code> to the actor waiting in a call to
    * <code>!?</code>.
    */
-  def reply(msg: Any): Unit = self.reply(msg)
+  def reply(msg: Any): Unit =
+    rawSelf.asInstanceOf[ReplyReactor].reply(msg)
 
   /**
    * Send <code>()</code> to the actor waiting in a call to
    * <code>!?</code>.
    */
-  def reply(): Unit = self.reply(())
+  def reply(): Unit =
+    rawSelf.asInstanceOf[ReplyReactor].reply(())
 
   /**
    * Returns the number of messages in <code>self</code>'s mailbox
    *
    * @return the number of messages in <code>self</code>'s mailbox
    */
-  def mailboxSize: Int = self.mailboxSize
+  def mailboxSize: Int = rawSelf.mailboxSize
 
   /**
    * <p>
@@ -253,7 +271,7 @@ object Actor {
   }
 
   implicit def mkBody[a](body: => a) = new Body[a] {
-    def andThen[b](other: => b): Unit = self.seq(body, other)
+    def andThen[b](other: => b): Unit = rawSelf.seq(body, other)
   }
 
   /**
@@ -280,15 +298,15 @@ object Actor {
    * Links <code>self</code> to actor <code>to</code>.
    *
    * @param  to the actor to link to
-   * @return
+   * @return    the parameter actor
    */
   def link(to: AbstractActor): AbstractActor = self.link(to)
 
   /**
-   * Links <code>self</code> to actor defined by <code>body</code>.
+   * Links <code>self</code> to the actor defined by <code>body</code>.
    *
-   * @param body ...
-   * @return     ...
+   * @param body the body of the actor to link to
+   * @return     the parameter actor
    */
   def link(body: => Unit): Actor = self.link(body)
 
@@ -354,63 +372,55 @@ object Actor {
  *   </li>
  * </ul>
  *
- * @version 0.9.18
  * @author Philipp Haller
  */
-@serializable
-trait Actor extends AbstractActor {
+@serializable @SerialVersionUID(-781154067877019505L)
+trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
 
-  private var received: Option[Any] = None
-
-  private val waitingForNone = (m: Any) => false
-  private var waitingFor: Any => Boolean = waitingForNone
+  /* The following two fields are only used when the actor
+   * suspends by blocking its underlying thread, for example,
+   * when waiting in a receive or synchronous send.
+   */
+  @volatile
   private var isSuspended = false
 
-  protected val mailbox = new MessageQueue
-  private var sessions: List[OutputChannel[Any]] = Nil
-
-  protected def scheduler: IScheduler =
-    Scheduler
-
-  /**
-   * Returns the number of messages in this actor's mailbox
-   *
-   * @return the number of messages in this actor's mailbox
+  /* This field is used to communicate the received message from
+   * the invocation of send to the place where the thread of
+   * the receiving actor resumes inside receive/receiveWithin.
    */
-  def mailboxSize: Int = synchronized {
-    mailbox.size
+  private var received: Option[Any] = None
+
+  /* This option holds a TimerTask when the actor waits in a
+   * reactWithin/receiveWithin. The TimerTask is cancelled when
+   * the actor can continue.
+   */
+  private var onTimeout: Option[TimerTask] = None
+
+  private[actors] override def makeReaction(fun: () => Unit): Runnable = {
+    if (isSuspended)
+      new Runnable { def run() = fun() }
+    else
+      new ActorTask(this, fun)
   }
 
-  /**
-   * Sends <code>msg</code> to this actor (asynchronous) supplying
-   * explicit reply destination.
-   *
-   * @param  msg      the message to send
-   * @param  replyTo  the reply destination
-   */
-  def send(msg: Any, replyTo: OutputChannel[Any]) = synchronized {
-    tick()
-    if (waitingFor(msg)) {
-      received = Some(msg)
-
-      if (isSuspended)
-        sessions = replyTo :: sessions
-      else
-        sessions = List(replyTo)
-
-      waitingFor = waitingForNone
-
-      if (!onTimeout.isEmpty) {
-        onTimeout.get.cancel()
-        onTimeout = None
-      }
-
-      if (isSuspended)
+  private[actors] override def resumeReceiver(item: (Any, OutputChannel[Any]), onSameThread: Boolean) {
+    if (!onTimeout.isEmpty) {
+      onTimeout.get.cancel()
+      onTimeout = None
+    }
+    if (isSuspended) {
+      synchronized {
+        received = Some(item._1)
+        senders = item._2 :: senders
         resumeActor()
-      else // assert continuation != null
-        scheduler.execute(new Reaction(this, continuation, msg))
+      }
     } else {
-      mailbox.append(msg, replyTo)
+      senders = List(item._2)
+      // assert continuation != null
+      if (onSameThread)
+        continuation(item._1)
+      else
+        scheduleActor(continuation, item._1)
     }
   }
 
@@ -421,24 +431,39 @@ trait Actor extends AbstractActor {
    * @return      result of processing the received value
    */
   def receive[R](f: PartialFunction[Any, R]): R = {
-    assert(Actor.self == this, "receive from channel belonging to other actor")
-    if (shouldExit) exit() // links
-    this.synchronized {
-      tick()
+    assert(Actor.self(scheduler) == this, "receive from channel belonging to other actor")
+
+    synchronized {
+      if (shouldExit) exit() // links
+      drainSendBuffer(mailbox)
+    }
+
+    var done = false
+    while (!done) {
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
       if (null eq qel) {
-        waitingFor = f.isDefinedAt
-        isSuspended = true
-        suspendActor()
+        synchronized {
+          // in mean time new stuff might have arrived
+          if (!sendBuffer.isEmpty) {
+            drainSendBuffer(mailbox)
+            // keep going
+          } else {
+            waitingFor = f.isDefinedAt
+            isSuspended = true
+            suspendActor()
+            done = true
+          }
+        }
       } else {
         received = Some(qel.msg)
-        sessions = qel.session :: sessions
+        senders = qel.session :: senders
+        done = true
       }
-      waitingFor = waitingForNone
-      isSuspended = false
     }
+
     val result = f(received.get)
-    sessions = sessions.tail
+    received = None
+    senders = senders.tail
     result
   }
 
@@ -451,46 +476,63 @@ trait Actor extends AbstractActor {
    * @return      result of processing the received value
    */
   def receiveWithin[R](msec: Long)(f: PartialFunction[Any, R]): R = {
-    assert(Actor.self == this, "receive from channel belonging to other actor")
-    if (shouldExit) exit() // links
-    this.synchronized {
-      tick()
-      // first, remove spurious TIMEOUT message from mailbox if any
-      val spurious = mailbox.extractFirst((m: Any) => m == TIMEOUT)
+    assert(Actor.self(scheduler) == this, "receive from channel belonging to other actor")
 
+    synchronized {
+      if (shouldExit) exit() // links
+      drainSendBuffer(mailbox)
+    }
+
+    // first, remove spurious TIMEOUT message from mailbox if any
+    mailbox.extractFirst((m: Any) => m == TIMEOUT)
+
+    val receiveTimeout = () => {
+      if (f.isDefinedAt(TIMEOUT)) {
+        received = Some(TIMEOUT)
+        senders = this :: senders
+      } else
+        error("unhandled timeout")
+    }
+
+    var done = false
+    while (!done) {
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
       if (null eq qel) {
-        if (msec == 0) {
-          if (f.isDefinedAt(TIMEOUT))
-            return f(TIMEOUT)
-          else
-            error("unhandled timeout")
-        }
-        else {
-          waitingFor = f.isDefinedAt
-          isSuspended = true
-          received = None
-          suspendActorFor(msec)
-          if (received.isEmpty) {
-            if (f.isDefinedAt(TIMEOUT)) {
+        val todo = synchronized {
+          // in mean time new stuff might have arrived
+          if (!sendBuffer.isEmpty) {
+            drainSendBuffer(mailbox)
+            // keep going
+            () => {}
+          } else if (msec == 0L) {
+            done = true
+            receiveTimeout
+          } else {
+            waitingFor = f.isDefinedAt
+            received = None
+            isSuspended = true
+            suspendActorFor(msec)
+            done = true
+            if (received.isEmpty) {
+              // actor is not resumed because of new message
+              // therefore, waitingFor has not been updated, yet.
               waitingFor = waitingForNone
-              isSuspended = false
-              val result = f(TIMEOUT)
-              return result
-            }
-            else
-              error("unhandled timeout")
+              receiveTimeout
+            } else
+              () => {}
           }
         }
+        todo()
       } else {
         received = Some(qel.msg)
-        sessions = qel.session :: sessions
+        senders = qel.session :: senders
+        done = true
       }
-      waitingFor = waitingForNone
-      isSuspended = false
     }
+
     val result = f(received.get)
-    sessions = sessions.tail
+    received = None
+    senders = senders.tail
     result
   }
 
@@ -502,22 +544,15 @@ trait Actor extends AbstractActor {
    *
    * @param  f    a partial function with message patterns and actions
    */
-  def react(f: PartialFunction[Any, Unit]): Nothing = {
-    assert(Actor.self == this, "react on channel belonging to other actor")
-    if (shouldExit) exit() // links
-    this.synchronized {
-      tick()
-      val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
-      if (null eq qel) {
-        waitingFor = f.isDefinedAt
-        continuation = f
-        isDetached = true
-      } else {
-        sessions = List(qel.session)
-        scheduleActor(f, qel.msg)
-      }
-      throw new SuspendActorException
+  override def react(f: PartialFunction[Any, Unit]): Nothing = {
+    assert(Actor.self(scheduler) == this, "react on channel belonging to other actor")
+    synchronized {
+      if (shouldExit) exit() // links
+      drainSendBuffer(mailbox)
     }
+    continuation = f
+    searchMailbox(mailbox, f.isDefinedAt, false)
+    throw Actor.suspendException
   }
 
   /**
@@ -531,168 +566,59 @@ trait Actor extends AbstractActor {
    * @param  f    a partial function with message patterns and actions
    */
   def reactWithin(msec: Long)(f: PartialFunction[Any, Unit]): Nothing = {
-    assert(Actor.self == this, "react on channel belonging to other actor")
-    if (shouldExit) exit() // links
-    this.synchronized {
-      tick()
-      // first, remove spurious TIMEOUT message from mailbox if any
-      val spurious = mailbox.extractFirst((m: Any) => m == TIMEOUT)
+    assert(Actor.self(scheduler) == this, "react on channel belonging to other actor")
 
+    synchronized {
+      if (shouldExit) exit() // links
+      drainSendBuffer(mailbox)
+    }
+
+    // first, remove spurious TIMEOUT message from mailbox if any
+    mailbox.extractFirst((m: Any) => m == TIMEOUT)
+
+    val receiveTimeout = () => {
+      if (f.isDefinedAt(TIMEOUT)) {
+        senders = List(this)
+        scheduleActor(f, TIMEOUT)
+      } else
+        error("unhandled timeout")
+    }
+
+    var done = false
+    while (!done) {
       val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
       if (null eq qel) {
-        if (msec == 0) {
-          if (f.isDefinedAt(TIMEOUT)) {
-            sessions = List(Actor.self)
-            scheduleActor(f, TIMEOUT)
+        val todo = synchronized {
+          // in mean time new stuff might have arrived
+          if (!sendBuffer.isEmpty) {
+            drainSendBuffer(mailbox)
+            // keep going
+            () => {}
+          } else if (msec == 0L) {
+            done = true
+            receiveTimeout
+          } else {
+            waitingFor = f.isDefinedAt
+            continuation = f
+            val thisActor = this
+            onTimeout = Some(new TimerTask {
+              def run() { thisActor.send(TIMEOUT, thisActor) }
+            })
+            Actor.timer.schedule(onTimeout.get, msec)
+            done = true
+            () => {}
           }
-          else
-            error("unhandled timeout")
         }
-        else {
-          waitingFor = f.isDefinedAt
-
-          val thisActor = this
-          onTimeout = Some(new TimerTask {
-            def run() { thisActor ! TIMEOUT }
-          })
-          Actor.timer.schedule(onTimeout.get, msec)
-
-          continuation = f
-          isDetached = true
-        }
+        todo()
       } else {
-        sessions = List(qel.session)
+        senders = List(qel.session)
         scheduleActor(f, qel.msg)
-      }
-      throw new SuspendActorException
-    }
-  }
-
-  /**
-   * The behavior of an actor is specified by implementing this
-   * abstract method. Note that the preferred way to create actors
-   * is through the <code>actor</code> method
-   * defined in object <code>Actor</code>.
-   */
-  def act(): Unit
-
-  /**
-   * Sends <code>msg</code> to this actor (asynchronous).
-   */
-  def !(msg: Any) {
-    send(msg, Actor.self)
-  }
-
-  /**
-   * Forwards <code>msg</code> to this actor (asynchronous).
-   */
-  def forward(msg: Any) {
-    send(msg, Actor.sender)
-  }
-
-  /**
-   * Sends <code>msg</code> to this actor and awaits reply
-   * (synchronous).
-   *
-   * @param  msg the message to be sent
-   * @return     the reply
-   */
-  def !?(msg: Any): Any = {
-    val replyCh = Actor.self.freshReplyChannel
-    send(msg, replyCh)
-    replyCh.receive {
-      case x => x
-    }
-  }
-
-  /**
-   * Sends <code>msg</code> to this actor and awaits reply
-   * (synchronous) within <code>msec</code> milliseconds.
-   *
-   * @param  msec the time span before timeout
-   * @param  msg  the message to be sent
-   * @return      <code>None</code> in case of timeout, otherwise
-   *              <code>Some(x)</code> where <code>x</code> is the reply
-   */
-  def !?(msec: Long, msg: Any): Option[Any] = {
-    val replyCh = Actor.self.freshReplyChannel
-    send(msg, replyCh)
-    replyCh.receiveWithin(msec) {
-      case TIMEOUT => None
-      case x => Some(x)
-    }
-  }
-
-  /**
-   * Sends <code>msg</code> to this actor and immediately
-   * returns a future representing the reply value.
-   */
-  def !!(msg: Any): Future[Any] = {
-    val ftch = new Channel[Any](Actor.self)
-    send(msg, ftch)
-    new Future[Any](ftch) {
-      def apply() =
-        if (isSet) value.get
-        else ch.receive {
-          case any => value = Some(any); any
-        }
-      def respond(k: Any => Unit): Unit =
- 	if (isSet) k(value.get)
- 	else ch.react {
- 	  case any => value = Some(any); k(any)
- 	}
-      def isSet = value match {
-        case None => ch.receiveWithin(0) {
-          case TIMEOUT => false
-          case any => value = Some(any); true
-        }
-        case Some(_) => true
+        done = true
       }
     }
-  }
 
-  /**
-   * Sends <code>msg</code> to this actor and immediately
-   * returns a future representing the reply value.
-   * The reply is post-processed using the partial function
-   * <code>f</code>. This also allows to recover a more
-   * precise type for the reply value.
-   */
-  def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] = {
-    val ftch = new Channel[Any](Actor.self)
-    send(msg, ftch)
-    new Future[A](ftch) {
-      def apply() =
-        if (isSet) value.get.asInstanceOf[A]
-        else ch.receive {
-          case any => value = Some(f(any)); value.get.asInstanceOf[A]
-        }
-      def respond(k: A => Unit): Unit =
- 	if (isSet) k(value.get.asInstanceOf[A])
- 	else ch.react {
- 	  case any => value = Some(f(any)); k(value.get.asInstanceOf[A])
- 	}
-      def isSet = value match {
-        case None => ch.receiveWithin(0) {
-          case TIMEOUT => false
-          case any => value = Some(f(any)); true
-        }
-        case Some(_) => true
-      }
-    }
+    throw Actor.suspendException
   }
-
-  /**
-   * Replies with <code>msg</code> to the sender.
-   */
-  def reply(msg: Any) {
-    sender ! msg
-  }
-
-  private var rc: Channel[Any] = null
-  private[actors] def replyChannel = rc
-  private[actors] def freshReplyChannel: Channel[Any] =
-    { rc = new Channel[Any](this); rc }
 
   /**
    * Receives the next message from this actor's mailbox.
@@ -701,18 +627,8 @@ trait Actor extends AbstractActor {
     case x => x
   }
 
-  def sender: OutputChannel[Any] = sessions.head
-
-  def receiver: Actor = this
-
-  private var continuation: PartialFunction[Any, Unit] = null
-  private var onTimeout: Option[TimerTask] = None
-  // accessed in Reaction
-  private[actors] var isDetached = false
-  private var isWaiting = false
-
   // guarded by lock of this
-  protected def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
+  private[actors] override def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
     if ((f eq null) && (continuation eq null)) {
       // do nothing (timeout is handled instead)
     }
@@ -723,14 +639,8 @@ trait Actor extends AbstractActor {
       scheduler execute task
     }
 
-  private def tick(): Unit =
-    scheduler tick this
-
-  private[actors] var kill: () => Unit = () => {}
-
   private def suspendActor() {
-    isWaiting = true
-    while (isWaiting) {
+    while (isSuspended) {
       try {
         wait()
       } catch {
@@ -745,8 +655,7 @@ trait Actor extends AbstractActor {
     val ts = Platform.currentTime
     var waittime = msec
     var fromExc = false
-    isWaiting = true
-    while (isWaiting) {
+    while (isSuspended) {
       try {
         fromExc = false
         wait(waittime)
@@ -756,24 +665,24 @@ trait Actor extends AbstractActor {
           val now = Platform.currentTime
           val waited = now-ts
           waittime = msec-waited
-          if (waittime < 0) { isWaiting = false }
+          if (waittime < 0) { isSuspended = false }
         }
       }
-      if (!fromExc) { isWaiting = false }
+      if (!fromExc) { isSuspended = false }
     }
     // links: check if we should exit
     if (shouldExit) exit()
   }
 
   private def resumeActor() {
-    isWaiting = false
+    isSuspended = false
     notify()
   }
 
   /**
    * Starts this actor.
    */
-  def start(): Actor = synchronized {
+  override def start(): Actor = synchronized {
     // Reset various flags.
     //
     // Note that we do *not* reset `trapExit`. The reason is that
@@ -792,49 +701,36 @@ trait Actor extends AbstractActor {
     this
   }
 
-  private def seq[a, b](first: => a, next: => b): Unit = {
-    val s = Actor.self
-    val killNext = s.kill
-    s.kill = () => {
-      s.kill = killNext
-
-      // to avoid stack overflow:
-      // instead of directly executing `next`,
-      // schedule as continuation
-      scheduleActor({ case _ => next }, 1)
-      throw new SuspendActorException
-    }
-    first
-    throw new KillActorException
-  }
-
   private[actors] var links: List[AbstractActor] = Nil
 
   /**
    * Links <code>self</code> to actor <code>to</code>.
    *
-   * @param to ...
-   * @return   ...
+   * @param to the actor to link to
+   * @return   the parameter actor
    */
   def link(to: AbstractActor): AbstractActor = {
-    assert(Actor.self == this, "link called on actor different from self")
-    synchronized {
-      links = to :: links
-    }
-    to.linkTo(this)
+    assert(Actor.self(scheduler) == this, "link called on actor different from self")
+    this linkTo to
+    to linkTo this
     to
   }
 
   /**
-   * Links <code>self</code> to actor defined by <code>body</code>.
+   * Links <code>self</code> to the actor defined by <code>body</code>.
+   *
+   * @param body the body of the actor to link to
+   * @return     the parameter actor
    */
   def link(body: => Unit): Actor = {
-    val actor = new Actor {
+    assert(Actor.self(scheduler) == this, "link called on actor different from self")
+    val a = new Actor {
       def act() = body
+      override final val scheduler: IScheduler = Actor.this.scheduler
     }
-    link(actor)
-    actor.start()
-    actor
+    link(a)
+    a.start()
+    a
   }
 
   private[actors] def linkTo(to: AbstractActor) = synchronized {
@@ -845,15 +741,13 @@ trait Actor extends AbstractActor {
    * Unlinks <code>self</code> from actor <code>from</code>.
    */
   def unlink(from: AbstractActor) {
-    assert(Actor.self == this, "unlink called on actor different from self")
-    synchronized {
-      links = links.remove(from.==)
-    }
-    from.unlinkFrom(this)
+    assert(Actor.self(scheduler) == this, "unlink called on actor different from self")
+    this unlinkFrom from
+    from unlinkFrom this
   }
 
   private[actors] def unlinkFrom(from: AbstractActor) = synchronized {
-    links = links.remove(from.==)
+    links = links.filter(from.!=)
   }
 
   var trapExit = false
@@ -885,18 +779,19 @@ trait Actor extends AbstractActor {
   /**
    * Terminates with exit reason <code>'normal</code>.
    */
-  def exit(): Nothing = {
+  override def exit(): Nothing = {
     // links
     if (!links.isEmpty)
       exitLinked()
-    throw new ExitActorException
+    terminated()
+    throw Actor.suspendException
   }
 
   // Assume !links.isEmpty
   private[actors] def exitLinked() {
     exiting = true
     // remove this from links
-    val mylinks = links.remove(this.==)
+    val mylinks = links.filter(this.!=)
     // exit linked processes
     mylinks.foreach((linked: AbstractActor) => {
       unlink(linked)
@@ -917,16 +812,26 @@ trait Actor extends AbstractActor {
       this ! Exit(from, reason)
     }
     else if (reason != 'normal)
-      this.synchronized {
+      synchronized {
         shouldExit = true
         exitReason = reason
+        // resume this Actor in a way that
+        // causes it to exit
+        // (because shouldExit == true)
         if (isSuspended)
           resumeActor()
-        else if (isDetached)
-          scheduleActor(null, null)
+        else if (waitingFor ne waitingForNone) {
+          scheduleActor(continuation, null)
+        }
       }
   }
 
+  /* Requires qualified private, because <code>RemoteActor</code> must
+   * register a termination handler.
+   */
+  private[actors] def onTerminate(f: => Unit) {
+    ActorGC.onTerminate(this) { f }
+  }
 }
 
 
@@ -961,10 +866,4 @@ case class Exit(from: AbstractActor, reason: AnyRef)
  * @version 0.9.8
  * @author Philipp Haller
  */
-private[actors] class SuspendActorException extends Throwable {
-  /*
-   * For efficiency reasons we do not fill in
-   * the execution stack trace.
-   */
-  override def fillInStackTrace(): Throwable = this
-}
+private[actors] class SuspendActorException extends Throwable
