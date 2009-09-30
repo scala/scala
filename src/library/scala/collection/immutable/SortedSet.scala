@@ -26,3 +26,11 @@ trait SortedSet[A] extends Set[A] with scala.collection.SortedSet[A] with Sorted
   /** Needs to be overridden in subclasses. */
   override def empty: SortedSet[A] = throw new UnsupportedOperationException("SortedMap.empty")
 }
+
+/**
+ * @since 2.4
+ */
+object SortedSet extends ImmutableSortedSetFactory[SortedSet] {
+  implicit def builderFactory[A](implicit ord: Ordering[A]): BuilderFactory[A, SortedSet[A], Coll] = new SortedSetBuilderFactory[A]
+  def empty[A](implicit ord: Ordering[A]): SortedSet[A] = TreeSet.empty[A]
+}

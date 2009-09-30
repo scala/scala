@@ -265,6 +265,8 @@ trait Types {
     def typeOfThis: Type = typeSymbol.typeOfThis
 
     /** Map to a singleton type which is a subtype of this type.
+     *  todo: change to singleton type of an existentgially defined variable
+     *  of the right type instead of making this a `this` of a refined type.
      */
     def narrow: Type =
       if (phase.erasedTypes) this
@@ -1065,13 +1067,37 @@ trait Types {
       if (period != currentPeriod) { // no caching in IDE
         baseTypeSeqPeriod = currentPeriod
         if (!isValidForBaseClasses(period)) {
-          if (util.Statistics.enabled)
-            compoundBaseTypeSeqCount += 1
-          baseTypeSeqCache = undetBaseTypeSeq
-          baseTypeSeqCache = memo(compoundBaseTypeSeq(this))(_.baseTypeSeq updateHead typeSymbol.tpe)
-//          println("normalizing baseTypeSeq of "+typeSymbol+"/"+parents+": "+baseTypeSeqCache)//DEBUG
-          baseTypeSeqCache.normalize(parents)
-//          println("normalized baseTypeSeq of "+typeSymbol+"/"+parents+": "+baseTypeSeqCache)//DEBUG
+          if (parents.exists(_.exists(_.isInstanceOf[TypeVar]))) {
+            // rename type vars to fresh type params, take base type sequence of
+            // resulting type, and rename back allthe entries in thats sequence
+            var tvs = Set[TypeVar]()
+            for (p <- parents)
+              for (t <- p) t match {
+                case tv: TypeVar => tvs += tv
+                case _ =>
+              }
+            val varToParamMap = (Map[Type, Symbol]() /: tvs)((m, tv) => m + (tv -> tv.origin.typeSymbol.cloneSymbol))
+            val paramToVarMap = Map[Symbol, Type]() ++ (varToParamMap map { case (t, tsym) => (tsym -> t) })
+            val varToParam = new TypeMap {
+              def apply(tp: Type): Type = tp match {
+                case tv: TypeVar => varToParamMap(tp).tpe
+                case _ => mapOver(tp)
+              }
+            }
+            val paramToVar = new TypeMap {
+              def apply(tp: Type) = tp match {
+                case TypeRef(_, tsym, _) if paramToVarMap.isDefinedAt(tsym) => paramToVarMap(tsym)
+                case _ => mapOver(tp)
+              }
+            }
+            val bts = copyRefinedType(this.asInstanceOf[RefinedType], parents map varToParam, varToParam mapOver decls).baseTypeSeq
+            baseTypeSeqCache = bts lateMap paramToVar
+          } else {
+            if (util.Statistics.enabled)
+              compoundBaseTypeSeqCount += 1
+            baseTypeSeqCache = undetBaseTypeSeq
+            baseTypeSeqCache = memo(compoundBaseTypeSeq(this))(_.baseTypeSeq updateHead typeSymbol.tpe)
+          }
         }
         //Console.println("baseTypeSeq(" + typeSymbol + ") = " + baseTypeSeqCache.toList);//DEBUG
       }
@@ -2543,7 +2569,7 @@ A type's typeSymbol should never be inspected directly.
       }
 
     /** Map this function over given scope */
-    private def mapOver(scope: Scope): Scope = {
+    def mapOver(scope: Scope): Scope = {
       val elems = scope.toList
       val elems1 = mapOver(elems)
       if (elems1 eq elems) scope
@@ -3787,7 +3813,7 @@ A type's typeSymbol should never be inspected directly.
             secondTry
           case _ =>
             if (constr2.inst != NoType) tp1 <:< constr2.inst
-            else isRelatable(tv2, tp1) && { constr2.lobounds = tp1 :: constr2.lobounds; true }
+            else isRelatable(tv2, tp1) && { assert(tp1 != tv2); constr2.lobounds = tp1 :: constr2.lobounds; true }
         }
       case _ =>
         secondTry
@@ -3995,7 +4021,7 @@ A type's typeSymbol should never be inspected directly.
         tp1 <:< bounds.hi
       case (_, tv2 @ TypeVar(_, constr2)) =>
         if (constr2.inst != NoType) tp1 <:< constr2.inst
-        else isRelatable(tv2, tp1) && { constr2.lobounds = tp1 :: constr2.lobounds; true }
+        else isRelatable(tv2, tp1) && { assert(tp1 != tv2); constr2.lobounds = tp1 :: constr2.lobounds; true }
       case (tv1 @ TypeVar(_, constr1), _) =>
         if (constr1.inst != NoType) constr1.inst <:< tp2
         else isRelatable(tv1, tp2) && { constr1.hibounds = tp2 :: constr1.hibounds; true }

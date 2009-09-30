@@ -616,9 +616,17 @@ trait Infer {
     *  @throws                  NoInstance
     */
     def methTypeArgs(tparams: List[Symbol], formals: List[Type], restpe: Type,
-                             argtpes: List[Type], pt: Type,
-                             uninstantiated: ListBuffer[Symbol]): List[Type] = {
+                     argtpes: List[Type], pt: Type,
+                     uninstantiated: ListBuffer[Symbol]): List[Type] = {
       val tvars = tparams map freshVar
+      if (inferInfo)
+        println("methTypeArgs tparams = "+tparams+
+                ", formals = "+formals+
+                ", restpe = "+restpe+
+                ", argtpes = "+argtpes+
+                ", pt = "+pt+
+                ", uninstantiated = "+uninstantiated+
+                ", tvars = "+tvars+" "+(tvars map (_.constr)))
       if (formals.length != argtpes.length) {
         throw new NoInstance("parameter lists differ in length")
       }
@@ -646,7 +654,8 @@ trait Infer {
         }
         ()
       }
-//      println("solve "+tvars+" "+(tvars map (_.constr)))
+      if (inferInfo)
+        println("solve "+tvars+" "+(tvars map (_.constr)))
       val targs = solvedTypes(tvars, tparams, tparams map varianceInTypes(formals),
                               false, lubDepth(formals) max lubDepth(argtpes))
 //      val res =
@@ -1194,11 +1203,9 @@ trait Infer {
           val uninstantiated = new ListBuffer[Symbol]
           val targs = methTypeArgs(undetparams, formals, restpe, argtpes, pt, uninstantiated)
           checkBounds(fn.pos, NoPrefix, NoSymbol, undetparams, targs, "inferred ")
-          //Console.println("UNAPPLY subst type "+undetparams+" to "+targs+" in "+fn+" ( "+args+ ")")
           val treeSubst = new TreeTypeSubstituter(undetparams, targs)
           treeSubst.traverse(fn)
           treeSubst.traverseTrees(args)
-          //Console.println("UNAPPLY gives "+fn+" ( "+args+ "), argtpes = "+argtpes+", pt = "+pt)
           uninstantiated.toList
         } catch {
           case ex: NoInstance =>

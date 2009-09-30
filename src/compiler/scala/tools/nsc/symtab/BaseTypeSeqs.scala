@@ -30,6 +30,7 @@ trait BaseTypeSeqs {
   import definitions._
 
   class BaseTypeSeq(parents: List[Type], elems: Array[Type]) {
+  self =>
 
     /** The number of types in the sequence */
     def length: Int = elems.length
@@ -90,7 +91,7 @@ trait BaseTypeSeqs {
     /** Return all evaluated types in this sequence as a list */
     def toList: List[Type] = elems.toList
 
-    private def copy(head: Type, offset: Int): BaseTypeSeq = {
+    protected def copy(head: Type, offset: Int): BaseTypeSeq = {
       val arr = new Array[Type](elems.length + offset)
       compat.Platform.arraycopy(elems, 0, arr, offset, elems.length)
       arr(0) = head
@@ -117,39 +118,31 @@ trait BaseTypeSeqs {
       new BaseTypeSeq(parents, arr)
     }
 
-    def exists(p: Type => Boolean): Boolean = elems exists p
-//      (0 until length) exists (i => p(this(i)))
-
-    def normalize(parents: List[Type]) {}
-/*
-      var j = 0
-      while (j < elems.length) {
-        elems(j) match {
-          case RefinedType(variants, decls) =>
-            // can't assert decls.isEmpty; see t0764
-            //if (!decls.isEmpty) assert(false, "computing closure of "+this+":"+this.isInstanceOf[RefinedType]+"/"+closureCache(j))
-            //Console.println("compute closure of "+this+" => glb("+variants+")")
-            elems(j) = mergePrefixAndArgs(variants, -1, maxBaseTypeSeqDepth(variants) + LubGlbMargin) match {
-              case Some(tp0) => tp0
-              case None => throw new TypeError(
-                "the type intersection "+(parents mkString " with ")+" is malformed"+
-                "\n --- because ---"+
-                "\n no common type instance of base types "+(variants mkString ", and ")+" exists.")
-            }
-          case _ =>
-        }
-        j += 1
-      }
+    def lateMap(f: Type => Type): BaseTypeSeq = new BaseTypeSeq(parents map f, elems) {
+      override def apply(i: Int) = f(self.apply(i))
+      override def rawElem(i: Int) = f(self.rawElem(i))
+      override def typeSymbol(i: Int) = self.typeSymbol(i)
+      override def toList = self.toList map f
+      override protected def copy(head: Type, offset: Int) = (self map f).copy(head, offset)
+      override def map(g: Type => Type) = lateMap(g)
+      override def lateMap(g: Type => Type) = self.lateMap(x => g(f(x)))
+      override def exists(p: Type => Boolean) = elems exists (x => p(f(x)))
+      override protected def maxDepthOfElems: Int = elems map (x => maxDpth(f(x))) max
+      override def toString = elems.mkString("MBTS(", ",", ")")
     }
-*/
-    lazy val maxDepth: Int = {
+
+    def exists(p: Type => Boolean): Boolean = elems exists p
+
+    lazy val maxDepth: Int = maxDepthOfElems
+
+    protected def maxDepthOfElems = {
       var d = 0
       for (i <- 0 until length) d = Math.max(d, maxDpth(elems(i)))
       d
     }
 
     /** The maximum depth of type `tp' */
-    private def maxDpth(tp: Type): Int = tp match {
+    protected def maxDpth(tp: Type): Int = tp match {
       case TypeRef(pre, sym, args) =>
         max(maxDpth(pre), maxDpth(args) + 1)
       case RefinedType(parents, decls) =>
@@ -190,7 +183,7 @@ trait BaseTypeSeqs {
   def baseTypeSingletonSeq(tp: Type): BaseTypeSeq = new BaseTypeSeq(List(), Array(tp))
 
   /** Create the base type sequence of a compound type wuth given tp.parents */
-  def compoundBaseTypeSeq(tp: Type/*tsym: Symbol, parents: List[Type]*/): BaseTypeSeq = {
+  def compoundBaseTypeSeq(tp: Type): BaseTypeSeq = {
     val tsym = tp.typeSymbol
     val parents = tp.parents
 //    Console.println("computing baseTypeSeq of " + tsym.tpe + " " + parents)//DEBUG

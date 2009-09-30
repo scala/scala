@@ -9,6 +9,7 @@
 // $Id$
 
 package scala.collection
+import generic._
 
 /** A sorted set.
  *
@@ -21,3 +22,14 @@ trait SortedSet[A] extends Set[A] with SortedSetLike[A, SortedSet[A]] {
   /** Needs to be overridden in subclasses. */
   override def empty: SortedSet[A] = throw new UnsupportedOperationException("SortedMap.empty")
 }
+
+/**
+ * @since 2.8
+ */
+object SortedSet extends ImmutableSortedSetFactory[immutable.SortedSet] {
+  implicit def builderFactory[A](implicit ord: Ordering[A]): BuilderFactory[A, SortedSet[A], Coll] = new SortedSetBuilderFactory[A]
+  def empty[A](implicit ord: Ordering[A]): immutable.SortedSet[A] = immutable.SortedSet.empty[A](ord)
+}
+
+
+
