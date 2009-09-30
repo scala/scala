@@ -20,7 +20,7 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap, Queue, Stack, Has
 /**
  * FJTaskScheduler2
  *
- * @version 0.9.18
+ * @version 0.9.19
  * @author Philipp Haller
  */
 class FJTaskScheduler2 extends Thread with IScheduler {
@@ -65,7 +65,7 @@ class FJTaskScheduler2 extends Thread with IScheduler {
   private val executor =
     new FJTaskRunnerGroup(coreSize)
 
-  private var terminating = false
+  @volatile private var terminating = false
   private var suspending = false
 
   private var lastActivity = Platform.currentTime
@@ -121,6 +121,7 @@ class FJTaskScheduler2 extends Thread with IScheduler {
 
                   // terminate timer thread
                   Actor.timer.cancel()
+                  terminating = true
                   throw new QuitException
                 }
               }
@@ -173,4 +174,6 @@ class FJTaskScheduler2 extends Thread with IScheduler {
     executor.snapshot()
   }
 
+  private[actors] override def isActive =
+    !terminating
 }
