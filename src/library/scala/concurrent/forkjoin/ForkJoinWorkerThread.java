@@ -405,8 +405,7 @@ public class ForkJoinWorkerThread extends Thread {
      */
     private static void setSlot(ForkJoinTask<?>[] q, int i,
                                 ForkJoinTask<?> t){
-//TR        _unsafe.putOrderedObject(q, (i << qShift) + qBase, t);
-        _unsafe.putObjectVolatile((Object)q, (i << qShift) + qBase, (Object)t);
+        _unsafe.putOrderedObject(q, (i << qShift) + qBase, t);
     }
 
     /**
@@ -422,8 +421,7 @@ public class ForkJoinWorkerThread extends Thread {
      * Sets sp in store-order.
      */
     private void storeSp(int s) {
-//TR        _unsafe.putOrderedInt(this, spOffset, s);
-        _unsafe.putIntVolatile(this, spOffset, s);
+        _unsafe.putOrderedInt(this, spOffset, s);
     }
 
     // Main queue methods

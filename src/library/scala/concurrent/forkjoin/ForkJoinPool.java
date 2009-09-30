@@ -12,10 +12,6 @@ import java.util.concurrent.atomic.*;
 import sun.misc.Unsafe;
 import java.lang.reflect.*;
 
-interface RunnableFuture<T> extends Runnable {
-  //TR placeholder for java.util.concurrent.RunnableFuture
-}
-
 /**
  * An {@link ExecutorService} for running {@link ForkJoinTask}s.  A
  * ForkJoinPool provides the entry point for submissions from
@@ -61,7 +57,7 @@ interface RunnableFuture<T> extends Runnable {
  * pools with greater than the maximum result in
  * IllegalArgumentExceptions.
  */
-public class ForkJoinPool /*extends AbstractExecutorService*/ {
+public class ForkJoinPool extends AbstractExecutorService {
 
     /*
      * See the extended comments interspersed below for design,
@@ -1337,7 +1333,7 @@ public class ForkJoinPool /*extends AbstractExecutorService*/ {
          */
         void awaitSyncRelease(ForkJoinPool p) {
             while (thread != null && !p.syncIsReleasable(this))
-                LockSupport.park();//TR park(this);
+                LockSupport.park(this);
         }
 
         /**
@@ -1346,7 +1342,7 @@ public class ForkJoinPool /*extends AbstractExecutorService*/ {
         void awaitSpareRelease() {
             while (thread != null) {
                 if (!Thread.interrupted())
-                    LockSupport.park();//TR park(this);
+                    LockSupport.park(this);
             }
         }
     }
