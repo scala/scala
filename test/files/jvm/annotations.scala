@@ -130,8 +130,8 @@ object Test4 {
     classOf[Foo7].getDeclaredConstructors foreach printSourceAnnotations
     classOf[Foo8].getDeclaredFields  foreach printSourceAnnotations
     classOf[Foo8].getDeclaredMethods foreach printSourceAnnotations
-    classOf[Foo9].getDeclaredFields  foreach printSourceAnnotations
-    classOf[Foo9].getDeclaredMethods foreach printSourceAnnotations
+    classOf[Foo9].getDeclaredFields.sortWith((x, y) => x.toString < y.toString)  foreach printSourceAnnotations
+    classOf[Foo9].getDeclaredMethods.sortWith((x, y) => x.toString < y.toString) foreach printSourceAnnotations
   }
 }
 
