@@ -18,7 +18,8 @@ package scala.annotation.target
  * behavior can be changed.
  *
  * In the following example, the annotation {{{@Id}}} will be added
- * to the bean getter {{{getX}}}
+ * only to the bean getter {{{getX}}}. In order to annotate the field
+ * as well, the meta-annotation {{{@field}}} would need to be added.
  *
  * {{{
  * import javax.persistence.Id
@@ -30,10 +31,10 @@ package scala.annotation.target
  * The syntax can be improved using a type alias:
  *
  * {{{
- * object myAnnotations {
+ * object ScalaJPA {
  *   type Id = javax.persistence.Id @beanGetter
  * }
- * import myAnnotations.Id
+ * import ScalaJPA.Id
  * class A {
  *   @Id @BeanProperty val x = 0
  * }
