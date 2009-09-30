@@ -15,28 +15,19 @@ import java.lang.Runnable
 import java.util.concurrent.Callable
 
 /** <p>
- *    The class <code>ReactorTask</code>...
+ *    The class <code>ReactorTask</code>.
  *  </p>
  *
  *  @author Philipp Haller
  */
-private[actors] class ReactorTask extends Callable[Unit] with Runnable {
-
-  private var reactor: Reactor = null
-  private var fun: () => Unit = null
-
-  def this(reactor: Reactor, fun: () => Unit) {
-    this()
-    this.reactor = reactor
-    this.fun = fun
-  }
-
-  def call() = run()
+private[actors] class ReactorTask[T <: Reactor](var reactor: T, var fun: () => Unit)
+  extends Callable[Unit] with Runnable {
 
   def run() {
     val saved = Actor.tl.get
     Actor.tl set reactor
     try {
+      beforeExecuting()
       try {
         try {
           fun()
@@ -50,18 +41,24 @@ private[actors] class ReactorTask extends Callable[Unit] with Runnable {
       reactor.kill()
     }
     catch {
-      case _: SuspendActorException => {
+      case _: SuspendActorException =>
         // do nothing (continuation is already saved)
-      }
-      case t: Exception => {
-        Debug.info(reactor+": caught "+t)
+
+      case e: Exception =>
+        Debug.info(reactor+": caught "+e)
         reactor.terminated()
-      }
+        afterExecuting(e)
     } finally {
       Actor.tl set saved
       this.reactor = null
       this.fun = null
     }
   }
+
+  def call() = run()
+
+  protected def beforeExecuting() {}
+
+  protected def afterExecuting(e: Exception) {}
 
 }

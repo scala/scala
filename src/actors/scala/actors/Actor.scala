@@ -430,7 +430,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
       if (onSameThread)
         continuation(item._1)
       else
-        scheduleActor(null, item._1)
+        scheduleActor(continuation, item._1)
     }
   }
 
@@ -843,7 +843,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
         if (isSuspended)
           resumeActor()
         else if (waitingFor ne waitingForNone) {
-          scheduleActor(null, null)
+          scheduleActor(continuation, null)
         }
       }
   }

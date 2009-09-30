@@ -87,7 +87,7 @@ trait Reactor extends OutputChannel[Any] {
     if (onSameThread)
       continuation(item._1)
     else
-      scheduleActor(null, item._1)
+      scheduleActor(continuation, item._1)
   }
 
   def !(msg: Any) {
@@ -107,7 +107,7 @@ trait Reactor extends OutputChannel[Any] {
     }
   }
 
-  // assume continuation has been set
+  // assume continuation != null
   private[actors] def searchMailbox(startMbox: MessageQueue,
                                     handlesMessage: Any => Boolean,
                                     resumeOnSameThread: Boolean) {
@@ -145,19 +145,20 @@ trait Reactor extends OutputChannel[Any] {
   }
 
   /* This method is guaranteed to be executed from inside
-     an actors act method.
+   * an actors act method.
+   *
+   * assume handler != null
    */
-  private[actors] def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) = {
-    scheduler executeFromActor (new LightReaction(this,
-                                                  if (f eq null) continuation else f,
-                                                  msg))
+  private[actors] def scheduleActor(handler: PartialFunction[Any, Unit], msg: Any) = {
+    val fun = () => handler(msg)
+    val task = new ReactorTask(this, fun)
+    scheduler executeFromActor task
   }
 
   def start(): Reactor = {
-    scheduler execute {
-      scheduler.newActor(this)
-      (new LightReaction(this)).run()
-    }
+    scheduler.newActor(this)
+    val task = new ReactorTask(this, () => act())
+    scheduler execute task
     this
   }
 
