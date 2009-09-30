@@ -247,10 +247,25 @@ trait PatternNodes extends ast.TreeDSL
     override def toString() = "%s: %s @ %s: %s".format(pvar.name, pvar.tpe, tvar.name, tvar.tpe)
   }
 
+  case class BindingsInfo(xs: List[BindingInfo]) {
+    def idents = xs map (_.ident)
+    def vsyms = xs map (_.vsym)
+
+    def vdefs(implicit context: MatchMatrixContext) =
+      xs map (x => context.typedValDef(x.vsym, x.ident))
+  }
+  case class BindingInfo(vsym: Symbol, ident: Ident)
+
   case class Bindings(bindings: Binding*) extends Function1[Symbol, Option[Ident]] {
     private def castIfNeeded(pvar: Symbol, tvar: Symbol) =
       if (tvar.tpe <:< pvar.tpe) ID(tvar)
       else ID(tvar) AS_ANY pvar.tpe
+
+    // filters the given list down to those defined in these bindings
+    def infoFor(vs: List[Symbol]): BindingsInfo = BindingsInfo(
+      for (v <- vs ; substv <- apply(v)) yield
+        BindingInfo(v, substv)
+    )
 
     def add(vs: Iterable[Symbol], tvar: Symbol): Bindings = {
       def newBinding(v: Symbol) = {

@@ -26,9 +26,8 @@ trait TreeDSL {
     type BooleanTreeFunction2 = (Tree, Tree) => Boolean
 
     // Add a null check to a Tree => Tree function
-    // (this assumes your result Tree is representing a Boolean expression)
-    def nullSafe[T](f: TreeFunction1): TreeFunction1 =
-      tree => (tree OBJ_!= NULL) AND f(tree)
+    def nullSafe[T](f: TreeFunction1, ifNull: Tree): TreeFunction1 =
+      tree => IF (tree MEMBER_== NULL) THEN ifNull ELSE f(tree)
 
     // XXX these two are in scala.PartialFunction now, just have to
     // settle on the final names.
@@ -62,8 +61,8 @@ trait TreeDSL {
     // So it's inconsistent until I devise a better way.
     val TRUE          = LIT(true)
     val FALSE         = LIT(false)
-    val NULL          = LIT(null)
     val ZERO          = LIT(0)
+    def NULL          = LIT(null)
     def UNIT          = LIT(())
 
     object WILD {
@@ -142,6 +141,8 @@ trait TreeDSL {
       def IS(tpe: Type)       = gen.mkIsInstanceOf(target, tpe, true)
       def IS_OBJ(tpe: Type)   = gen.mkIsInstanceOf(target, tpe, false)
 
+      // XXX having some difficulty expressing nullSafe in a way that doesn't freak out value types
+      // def TOSTRING()          = nullSafe(fn(_: Tree, nme.toString_), LIT("null"))(target)
       def TOSTRING()          = fn(target, nme.toString_)
       def GETCLASS()          = fn(target, Object_getClass)
     }
@@ -198,7 +199,7 @@ trait TreeDSL {
 
     /** Top level accessible. */
     def THROW(sym: Symbol, msg: Tree = null) = {
-      val arg = if (msg == null) Nil else List(msg.TOSTRING)
+      val arg: List[Tree] = if (msg == null) Nil else List(msg.TOSTRING())
       Throw(New(TypeTree(sym.tpe), List(arg)))
     }
     def NEW(tpe: Tree, args: Tree*)   = New(tpe, List(args.toList))

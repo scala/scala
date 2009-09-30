@@ -396,7 +396,7 @@ abstract class ExplicitOuter extends InfoTransform
             unit.error(tree.pos, "could not emit switch for @switch annotated match")
         }
 
-        localTyper.typed(t_untyped, context.resultType)
+        localTyper.typed(t_untyped, context.matchResultType)
       }
 
       if (nguard.isEmpty) t

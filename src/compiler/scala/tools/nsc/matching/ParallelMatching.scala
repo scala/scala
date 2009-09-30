@@ -13,6 +13,7 @@ import collection._
 import mutable.BitSet
 import immutable.IntMap
 import MatchUtil._
+import annotation.elidable
 
 /** Translation of match expressions.
  *
@@ -38,9 +39,6 @@ import MatchUtil._
 trait ParallelMatching extends ast.TreeDSL {
   self: transform.ExplicitOuter with PatternNodes =>
 
-  // debugging var, set to true to see how sausages are made
-  private var trace = false
-
   import global.{ typer => _, _ }
   import definitions.{ AnyRefClass, EqualsPatternClass, IntClass, getProductArgs, productProj }
   import symtab.Flags
@@ -51,10 +49,15 @@ trait ParallelMatching extends ast.TreeDSL {
   // XXX temp
   def toPats(xs: List[Tree]): List[Pattern] = xs map (x => Pattern(x))
 
+  // debugging val, set to true with -Ypmat-debug
+  private final def trace = settings.Ypmatdebug.value
+
   def ifDebug(body: => Unit): Unit          = { if (settings.debug.value) body }
   def DBG(msg: => String): Unit             = { ifDebug(println(msg)) }
 
+  @elidable(elidable.FINE)
   def TRACE(f: String, xs: Any*): Unit      = { if (trace) println(if (xs.isEmpty) f else f.format(xs : _*)) }
+
   def logAndReturn[T](s: String, x: T): T   = { log(s + x.toString) ; x }
   def traceAndReturn[T](s: String, x: T): T = { TRACE(s + x.toString) ; x }
 
@@ -62,8 +65,6 @@ trait ParallelMatching extends ast.TreeDSL {
   def isDefaultPattern(t: Tree)   = cond(unbind(t)) { case EmptyTree | WILD() => true }
   def isStar(t: Tree)             = cond(unbind(t)) { case Star(q) => isDefaultPattern(q) }
   def isRightIgnoring(t: Tree)    = cond(unbind(t)) { case ArrayValue(_, xs) if !xs.isEmpty => isStar(xs.last) }
-  def isLabellable(t: Tree)       = !cond(t)        { case _: Throw | _: Literal => true }
-  def isModule(t: Tree)           = t.symbol.isModule || t.tpe.termSymbol.isModule
 
   // If the given pattern contains alternatives, return it as a list of patterns.
   // Makes typed copies of any bindings found so all alternatives point to final state.
@@ -219,46 +220,17 @@ trait ParallelMatching extends ast.TreeDSL {
      *  the function takes care of binding
      */
     final def requestBody(bx: Int, subst: Bindings): Tree = {
-      val target = targets(bx)
-      lazy val FinalState(bindings, body, freeVars) = target
+      implicit val ctx = context
+      lazy val target @ FinalState(bindings, body, freeVars) = targets(bx)
+      lazy val substInfo = subst infoFor freeVars
+      import substInfo._
 
       // shortcut
-      def labelJump: Tree = Apply(ID(shortCuts(-bx-1)), Nil)
-
-      // first time this bx is requested
-      def firstTime: Tree = {
-        // might be bound elsewhere
-        val (vsyms, vdefs) : (List[Symbol], List[Tree]) = List.unzip(
-          for (v <- freeVars ; substv <- subst(v)) yield
-            (v, typedValDef(v, substv))
-        )
-
-        // @bug: typer is not able to digest a body of type Nothing being assigned result type Unit
-        val tpe       = if (body.tpe.isNothing) body.tpe else resultType
-        target.setLabel(owner.newLabel(body.pos, "body%"+bx) setInfo MethodType(vsyms, tpe))
-
-        squeezedBlock(vdefs, (
-          if (isLabellable(body)) LabelDef(target.label, vsyms, body setType tpe)
-          else body.duplicate setType tpe
-        ))
-      }
-
-      def successiveTimes: Tree = {
-        val args  = freeVars map subst flatten
-        val fmls  = target.label.tpe.paramTypes
-        def vds   = for (v <- freeVars ; substv <- subst(v)) yield typedValDef(v, substv)
-
-        if (isLabellable(body)) ID(target.label) APPLY (args)
-        else                    squeezedBlock(vds, body.duplicate setType resultType)
-      }
-
-      if (bx < 0) labelJump
-      else {
-        target.incrementReached
-
-        if (target.isReachedOnce) firstTime
-        else successiveTimes
-      }
+      if (bx < 0) Apply(ID(shortCuts(-bx-1)), Nil)
+      // first time this bx is requested - might be bound elsewhere
+      else if (target.isNotReached) target.createLabelBody("body%"+bx, vsyms, vdefs)
+      // call label "method" if possible
+      else target.getLabelBody(idents, vdefs)
     }
 
     /** the injection here handles alternatives and unapply type tests */
@@ -285,18 +257,17 @@ trait ParallelMatching extends ast.TreeDSL {
             if (tvars(j).tpe <:< arg.tpe) ua
             else Typed(ua, TypeTree(arg.tpe)) setType arg.tpe
           )
-
-          // TRACE("doUnapplyApply: %s <:< %s == %s", tvars(j).tpe, argtpe, (tvars(j).tpe <:< argtpe))
-          logAndReturn("doUnapplyApply: ", rebind(npat) setType arg.tpe)
+          rebind(npat) setType arg.tpe
         }
         def doValMatch(x: Tree, fn: Tree) = {
+          def isModule = x.symbol.isModule || x.tpe.termSymbol.isModule
           def examinePrefix(path: Tree) = (path, path.tpe) match {
             case (_, t: ThisType)     => singleType(t, x.symbol)            // cases 2/3 are e.g. `case Some(p._2)' in s.c.jcl.Map
             case (_: Apply, _)        => PseudoType(x)                      // outer-matching: test/files/pos/t154.scala
             case _                    => singleType(Pattern(path).mkSingleton, x.symbol)  // old
           }
           val singletonType =
-            if (isModule(x)) Pattern(x).mkSingleton else fn match {
+            if (isModule) Pattern(x).mkSingleton else fn match {
               case Select(path, _)  => examinePrefix(path)
               case x: Ident         => equalsCheck(x)
             }
@@ -805,7 +776,7 @@ trait ParallelMatching extends ast.TreeDSL {
         def compareOp = head.tpe member nme.lengthCompare  // symbol for "lengthCompare" method
         def cmpFunction(t1: Tree) = op((t1.duplicate DOT compareOp)(LIT(len)), ZERO)
         // first ascertain lhs is not null: bug #2241
-        typer typed nullSafe(cmpFunction _)(tree)
+        typer typed nullSafe(cmpFunction _, FALSE)(tree)
       }
 
       // precondition for matching: sequence is exactly length of arg
@@ -1073,11 +1044,35 @@ trait ParallelMatching extends ast.TreeDSL {
     case class FinalState(bindings: Bindings, body: Tree, freeVars: List[Symbol]) extends State {
       private var referenceCount = 0
       private var _label: Symbol = null
-      def incrementReached: Unit =    { referenceCount += 1 }
       def setLabel(s: Symbol): Unit = { _label = s }
       def label = _label
 
+      // arguments to pass to this body%xx
+      def labelParamTypes = label.tpe.paramTypes
+
+      def createLabelBody(name: String, args: List[Symbol], vdefs: List[Tree]) = {
+        require(_label == null)
+        _label = owner.newLabel(body.pos, name) setInfo MethodType(args, tpe)
+        referenceCount += 1
+
+        squeezedBlock(vdefs,
+          if (isLabellable) LabelDef(label, args, body setType tpe)
+          else duplicate
+        )
+      }
+
+      def getLabelBody(idents: List[Tree], vdefs: List[Tree]): Tree = {
+        referenceCount += 1
+        if (isLabellable) ID(label) APPLY (idents)
+        else squeezedBlock(vdefs, duplicate)
+      }
+
+      // @bug: typer is not able to digest a body of type Nothing being assigned result type Unit
+      def tpe = if (body.tpe.isNothing) body.tpe else matchResultType
+      def duplicate = body.duplicate setType tpe
+
       def isFinal = true
+      def isLabellable = !cond(body)  { case _: Throw | _: Literal => true }
       def isNotReached = referenceCount == 0
       def isReachedOnce = referenceCount == 1
       def isReachedTwice = referenceCount > 1

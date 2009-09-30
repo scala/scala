@@ -14,7 +14,7 @@
  * Types which must be decomposed into conditionals and simple types:
  *
  * 2 Typed                  x: Int
- * 4 Stable Identifier      Bob
+ * 4 Stable Identifier      Bob or `x`
  * 5 Constructor            Symbol("abc")
  * 6 Tuple                  (5, 5)
  * 7 Extractor              List(1, 2)
@@ -60,7 +60,7 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
     handleOuter: TreeFunction1,   // Tree => Tree function
     typer: Typer,                 // a local typer
     owner: Symbol,                // the current owner
-    resultType: Type)             // the expected result type of the whole match
+    matchResultType: Type)        // the expected result type of the whole match
   {
     def newVar(
       pos: Position,
