@@ -54,6 +54,10 @@ MAIN DISTRIBUTION PACKAGING
         <exclude name="dists/**"/>
         <exclude name="logs/**"/>
         <exclude name="sandbox/**"/>
+        <exclude name="test/partest"/>
+      </tarfileset>
+      <tarfileset dir="${basedir}" prefix="scala-${version.number}-sources" filemode="755">
+        <include name="test/partest"/>
       </tarfileset>
     </tar>
     <checksum file="${dists.dir}/archives/scala-${version.number}-sources.tgz" fileext=".md5"/>
