@@ -29,12 +29,9 @@ object boundedbuffer {
   }
 
   def main(args: Array[String]) {
-    scala.actors.Debug.level = 3
-    actor {
-      val buf = new BoundedBuffer[Int](1)
-      buf.put(42)
-      println("" + buf.get)
-      buf.stop()
-    }
+    val buf = new BoundedBuffer[Int](1)
+    buf.put(42)
+    println("" + buf.get)
+    buf.stop()
   }
 }

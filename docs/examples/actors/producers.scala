@@ -62,7 +62,7 @@ abstract class Producer[T] {
 }
 
 object producers extends Application {
-  scala.actors.Debug.level = 3
+
   class Tree(val left: Tree, val elem: Int, val right: Tree)
   def node(left: Tree, elem: Int, right: Tree): Tree = new Tree(left, elem, right)
   def node(elem: Int): Tree = node(null, elem, null)

@@ -3,7 +3,6 @@ package examples.actors
 import scala.actors.Actor._
 
 object looping extends Application {
-  scala.actors.Debug.level = 3
   case object A
 
   val a = actor {
