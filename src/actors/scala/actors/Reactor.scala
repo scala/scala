@@ -22,7 +22,7 @@ trait Reactor extends OutputChannel[Any] {
   /* The actor's mailbox. */
   private[actors] val mailbox = new MessageQueue("Reactor")
 
-  private[actors] var sendBuffer = new Queue[(Any, OutputChannel[Any])]
+  private[actors] val sendBuffer = new Queue[(Any, OutputChannel[Any])]
 
   /* If the actor waits in a react, continuation holds the
    * message handler that react was called with.
@@ -69,11 +69,7 @@ trait Reactor extends OutputChannel[Any] {
       if (waitingFor ne waitingForNone) {
         val savedWaitingFor = waitingFor
         waitingFor = waitingForNone
-        () => scheduler execute (makeReaction(() => {
-          val startMbox = new MessageQueue("Start")
-          synchronized { startMbox.append(msg, replyTo) }
-          searchMailbox(startMbox, savedWaitingFor, true)
-        }))
+        startSearch(msg, replyTo, savedWaitingFor)
       } else {
         sendBuffer.enqueue((msg, replyTo))
         () => { /* do nothing */ }
@@ -81,6 +77,13 @@ trait Reactor extends OutputChannel[Any] {
     }
     todo()
   }
+
+  private[actors] def startSearch(msg: Any, replyTo: OutputChannel[Any], handler: Any => Boolean) =
+    () => scheduler execute (makeReaction(() => {
+      val startMbox = new MessageQueue("Start")
+      synchronized { startMbox.append(msg, replyTo) }
+      searchMailbox(startMbox, handler, true)
+    }))
 
   private[actors] def makeReaction(fun: () => Unit): Runnable =
     new ReactorTask(this, fun)
