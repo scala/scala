@@ -1559,6 +1559,8 @@ A type's typeSymbol should never be inspected directly.
         PolyType(typeParams, typeRef(pre, sym.initialize, dummyArgs))
       } else if (sym.isRefinementClass) {
         sym.info.normalize // @MO to AM: OK?
+        //@M I think this is okay, but changeset 12414 (which fixed #1241) re-introduced another bug (#2208)
+        // see typedTypeConstructor in Typers
       } else {
         super.normalize
       }

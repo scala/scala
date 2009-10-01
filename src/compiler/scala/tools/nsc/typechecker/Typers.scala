@@ -3875,11 +3875,26 @@ trait Typers { self: Analyzer =>
     /** Types a type constructor tree used in a new or supertype */
     def typedTypeConstructor(tree: Tree, mode: Int): Tree = {
       val result = typed(tree, typeMode(mode) | FUNmode, WildcardType)
-      val restpe = result.tpe.normalize
+
+      val restpe = result.tpe.normalize // normalize to get rid of type aliases for the following check (#1241)
       if (!phase.erasedTypes && restpe.isInstanceOf[TypeRef] && !restpe.prefix.isStable) {
         error(tree.pos, restpe.prefix+" is not a legal prefix for a constructor")
       }
-      result setType restpe // @M: normalization is done during erasure
+
+      //@M fix for #2208
+      // if there are no type arguments, normalization does not bypass any checks, so perform it to get rid of AnyRef
+      if(result.tpe.typeArgs.isEmpty) {
+        // minimal check: if(result.tpe.typeSymbolDirect eq AnyRefClass) {
+        // must expand the fake AnyRef type alias, because bootstrapping (init in Definitions) is not
+        // designed to deal with the cycles in the scala package (ScalaObject extends
+        // AnyRef, but the AnyRef type alias is entered after the scala package is
+        // loaded and completed, so that ScalaObject is unpickled while AnyRef is not
+        // yet defined )
+        result setType(restpe)
+      } else { // must not normalize: type application must be (bounds-)checked (during RefChecks), see #2208
+        // during uncurry (after refchecks), all types are normalized
+        result
+      }
     }
 
     def typedTypeConstructor(tree: Tree): Tree = typedTypeConstructor(tree, NOmode)
