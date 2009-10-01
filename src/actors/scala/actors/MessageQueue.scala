@@ -14,13 +14,15 @@ package scala.actors
  * This class is used by our efficient message queue
  * implementation.
  *
+ * @version 0.9.9
  * @author Philipp Haller
  */
-@serializable @SerialVersionUID(7124278808020037465L)
+@serializable
 @deprecated
-class MessageQueueElement(val msg: Any, val session: OutputChannel[Any], var next: MessageQueueElement) {
-  def this() = this(null, null, null)
-  def this(msg: Any, session: OutputChannel[Any]) = this(msg, session, null)
+class MessageQueueElement {
+  var msg: Any = _
+  var session: OutputChannel[Any] = null
+  var next: MessageQueueElement = null
 }
 
 /**
@@ -29,37 +31,41 @@ class MessageQueueElement(val msg: Any, val session: OutputChannel[Any], var nex
  * library. Classes in this package are supposed to be the only
  * clients of this class.
  *
+ * @version 0.9.9
  * @author Philipp Haller
  */
-@serializable @SerialVersionUID(2168935872884095767L)
+@serializable
 @deprecated
-class MessageQueue(protected val label: String) {
-  protected var first: MessageQueueElement = null
-  protected var last: MessageQueueElement = null  // last eq null iff list is empty
+class MessageQueue {
+  var first: MessageQueueElement = null
+  // last == null iff list empty
+  var last: MessageQueueElement = null
+
+  def isEmpty = null eq last
+
   private var _size = 0
-
   def size = _size
-  final def isEmpty = last eq null
 
-  protected def changeSize(diff: Int) {
+  protected def changeSize(diff: Int) = {
     _size += diff
   }
 
-  def append(msg: Any, session: OutputChannel[Any]) {
+  def append(msg: Any, session: OutputChannel[Any]) = {
     changeSize(1) // size always increases by 1
-    val el = new MessageQueueElement(msg, session)
 
-    if (isEmpty) first = el
-    else last.next = el
-
-    last = el
-  }
-
-  def foreach(f: (Any, OutputChannel[Any]) => Unit) {
-    var curr = first
-    while (curr != null) {
-      f(curr.msg, curr.session)
-      curr = curr.next
+    if (null eq last) { // list empty
+      val el = new MessageQueueElement
+      el.msg = msg
+      el.session = session
+      first = el
+      last = el
+    }
+    else {
+      val el = new MessageQueueElement
+      el.msg = msg
+      el.session = session
+      last.next = el
+      last = el
     }
   }
 
@@ -73,121 +79,128 @@ class MessageQueue(protected val label: String) {
     acc
   }
 
-  /** Returns the n-th message that satisfies the predicate <code>p</code>
+  /** Returns the n-th msg that satisfies the predicate
    *  without removing it.
    */
   def get(n: Int)(p: Any => Boolean): Option[Any] = {
+    var found: Option[Any] = None
     var pos = 0
 
     def test(msg: Any): Boolean =
-      p(msg) && (pos == n || { pos += 1; false })
-
-    var curr = first
-    while (curr != null)
-      if (test(curr.msg)) return Some(curr.msg) // early return
-      else curr = curr.next
-
-    None
-  }
-
-  /** Removes the n-th message that satisfies the predicate <code>p</code>.
-   */
-  def remove(n: Int)(p: Any => Boolean): Option[(Any, OutputChannel[Any])] =
-    removeInternal(n)(p) map (x => (x.msg, x.session))
-
-  /** Extracts the first message that satisfies the predicate <code>p</code>
-   *  or <code>null</code> if <code>p</code> fails for all of them.
-   */
-  def extractFirst(p: Any => Boolean): MessageQueueElement = {
-    val option = removeInternal(0)(p)
-    if (option.isEmpty) null else option.get
-  }
-
-  private def removeInternal(n: Int)(p: Any => Boolean): Option[MessageQueueElement] = {
-    var pos = 0
-
-    def foundMsg(x: MessageQueueElement) = {
-      changeSize(-1)
-      Some(x)
-    }
-    def test(msg: Any): Boolean =
-      p(msg) && (pos == n || { pos += 1 ; false })
-
-    if (isEmpty)    // early return
-      return None
-
-    // special handling if returning the head
-    if (test(first.msg)) {
-      val res = first
-      first = first.next
-      if (res eq last)
-        last = null
-
-      foundMsg(res)
-    }
-    else {
-      var curr = first.next   // init to element #2
-      var prev = first
-
-      while (curr != null) {
-        if (test(curr.msg)) {
-          prev.next = curr.next
-          if (curr eq last)
-            last = prev
-
-          return foundMsg(curr) // early return
-        }
+      if (p(msg)) {
+        if (pos == n)
+          true
         else {
-          prev = curr
-          curr = curr.next
+          pos += 1
+          false
+        }
+      } else
+        false
+
+    if (last == null) None
+    else if (test(first.msg))
+      Some(first.msg)
+    else {
+      var curr = first
+      while(curr.next != null && found.isEmpty) {
+        curr = curr.next
+        if (test(curr.msg))
+          found = Some(curr.msg)
+      }
+      found
+    }
+  }
+
+  /** Removes the n-th msg that satisfies the predicate.
+   */
+  def remove(n: Int)(p: Any => Boolean): Option[(Any, OutputChannel[Any])] = {
+    var found: Option[(Any, OutputChannel[Any])] = None
+    var pos = 0
+
+    def test(msg: Any): Boolean =
+      if (p(msg)) {
+        if (pos == n)
+          true
+        else {
+          pos += 1
+          false
+        }
+      } else
+        false
+
+    if (last == null) None
+    else if (test(first.msg)) {
+      val tmp = first
+      // remove first element
+      first = first.next
+      // might have to update last
+      if (tmp eq last) {
+        last = null
+      }
+      Some((tmp.msg, tmp.session))
+    } else {
+      var curr = first
+      var prev = curr
+      while(curr.next != null && found.isEmpty) {
+        prev = curr
+        curr = curr.next
+        if (test(curr.msg)) {
+          // remove curr
+          prev.next = curr.next
+          // might have to update last
+          if (curr eq last) {
+            last = prev
+          }
+          found = Some((curr.msg, curr.session))
         }
       }
-      // not found
-      None
+      found
     }
   }
-}
 
-/** Debugging trait.
- */
-private[actors] trait MessageQueueTracer extends MessageQueue
-{
-  private val queueNumber = MessageQueueTracer.getQueueNumber
+  def extractFirst(p: Any => Boolean): MessageQueueElement = {
+    changeSize(-1) // assume size decreases by 1
 
-  override def append(msg: Any, session: OutputChannel[Any]) {
-    super.append(msg, session)
-    printQueue("APPEND %s" format msg)
-  }
-  override def get(n: Int)(p: Any => Boolean): Option[Any] = {
-    val res = super.get(n)(p)
-    printQueue("GET %s" format res)
-    res
-  }
-  override def remove(n: Int)(p: Any => Boolean): Option[(Any, OutputChannel[Any])] = {
-    val res = super.remove(n)(p)
-    printQueue("REMOVE %s" format res)
-    res
-  }
-  override def extractFirst(p: Any => Boolean): MessageQueueElement = {
-    val res = super.extractFirst(p)
-    printQueue("EXTRACT_FIRST %s" format res)
-    res
-  }
+    val msg = if (null eq last) null
+    else {
+      // test first element
+      if (p(first.msg)) {
+        val tmp = first
+        // remove first element
+        first = first.next
 
-  private def printQueue(msg: String) = {
-    def firstMsg = if (first eq null) "null" else first.msg
-    def lastMsg = if (last eq null) "null" else last.msg
+        // might have to update last
+        if (tmp eq last) {
+          last = null
+        }
 
-    println("[%s size=%d] [%s] first = %s, last = %s".format(this, size, msg, firstMsg, lastMsg))
-  }
-  override def toString() = "%s:%d".format(label, queueNumber)
-}
+        tmp
+      }
+      else {
+        var curr = first
+        var prev = curr
+        while(curr.next != null) {
+          prev = curr
+          curr = curr.next
+          if (p(curr.msg)) {
+            // remove curr
+            prev.next = curr.next
 
-object MessageQueueTracer {
-  // for tracing purposes
-  private var queueNumberAssigner = 0
-  private def getQueueNumber = synchronized {
-    queueNumberAssigner += 1
-    queueNumberAssigner
+            // might have to update last
+            if (curr eq last) {
+              last = prev
+            }
+
+            return curr
+          }
+        }
+        null
+      }
+    }
+
+    if (null eq msg)
+      changeSize(1) // correct wrong assumption
+
+    msg
   }
 }

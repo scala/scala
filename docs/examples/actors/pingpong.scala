@@ -14,6 +14,7 @@ case object Stop
  * @version 1.1
  */
 object pingpong extends Application {
+  scala.actors.Debug.level = 3
   val pong = new Pong
   val ping = new Ping(100000, pong)
   ping.start

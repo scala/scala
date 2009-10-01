@@ -22,6 +22,7 @@ import scala.compat.Platform
  *
  * Use class <code>FJTaskScheduler2</code> instead.
  *
+ * @version 0.9.18
  * @author Philipp Haller
  */
 @deprecated

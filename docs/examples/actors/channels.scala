@@ -4,6 +4,7 @@ import scala.actors._
 import scala.actors.Actor._
 
 object channels extends Application {
+  scala.actors.Debug.level = 3
   case class Msg(ch1: Channel[Int], ch2: Channel[String])
 
   val a = actor {

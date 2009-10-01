@@ -8,7 +8,7 @@ import scala.actors.{Channel, OutputChannel}
  @version 1.1, 09/21/2007
  */
 object fringe extends Application {
-
+  scala.actors.Debug.level = 3
   abstract class Tree
   case class Node(left: Tree, right: Tree) extends Tree
   case class Leaf(v: Int) extends Tree

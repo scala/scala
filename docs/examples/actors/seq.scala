@@ -1,6 +1,7 @@
 package examples.actors
 
 object seq extends Application {
+  scala.actors.Debug.level = 3
   import scala.actors.Actor._
   val a = actor {
     { react {

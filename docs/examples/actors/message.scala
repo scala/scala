@@ -4,6 +4,7 @@ import scala.actors._
 import scala.actors.Actor._
 
 object message {
+  scala.actors.Debug.level = 3
   def main(args: Array[String]) {
     val n = try { args(0).toInt }
     catch {
@@ -13,7 +14,7 @@ object message {
     }
     val nActors = 500
     val finalSum = n * nActors
-    Scheduler.impl = new SingleThreadedScheduler
+    //Scheduler.impl = new SingleThreadedScheduler
 
     def beh(next: Actor, sum: Int) {
       react {

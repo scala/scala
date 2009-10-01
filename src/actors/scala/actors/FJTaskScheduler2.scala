@@ -16,6 +16,7 @@ import scala.actors.threadpool.{ThreadPoolExecutor, TimeUnit, LinkedBlockingQueu
 /**
  * FJTaskScheduler2
  *
+ * @version 0.9.19
  * @author Philipp Haller
  */
 class FJTaskScheduler2 extends Thread with IScheduler {

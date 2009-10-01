@@ -25,6 +25,7 @@ private[remote] case object Terminate
 private[remote] case class Locator(node: Node, name: Symbol)
 
 /**
+ * @version 0.9.17
  * @author Philipp Haller
  */
 private[remote] class NetKernel(service: Service) {

@@ -4,7 +4,7 @@ import scala.actors.{Actor, Exit}
 import scala.actors.Actor._
 
 object links extends Application {
-
+  scala.actors.Debug.level = 3
   case object Stop
 
   actor {

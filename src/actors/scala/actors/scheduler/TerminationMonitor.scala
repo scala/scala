@@ -15,11 +15,11 @@ import scala.collection.mutable.HashMap
 private[actors] trait TerminationMonitor {
 
   protected var activeActors = 0
-  protected val terminationHandlers = new HashMap[Reactor, () => Unit]
+  protected val terminationHandlers = new HashMap[Actor, () => Unit]
   private var started = false
 
   /** newActor is invoked whenever a new actor is started. */
-  def newActor(a: Reactor) = synchronized {
+  def newActor(a: Actor) = synchronized {
     activeActors += 1
     if (!started)
       started = true
@@ -31,7 +31,7 @@ private[actors] trait TerminationMonitor {
    *  @param  a  the actor
    *  @param  f  the closure to be registered
    */
-  def onTerminate(a: Reactor)(f: => Unit): Unit = synchronized {
+  def onTerminate(a: Actor)(f: => Unit): Unit = synchronized {
     terminationHandlers += (a -> (() => f))
   }
 
@@ -39,7 +39,7 @@ private[actors] trait TerminationMonitor {
    *
    *  @param  a  the actor that has terminated
    */
-  def terminated(a: Reactor) = {
+  def terminated(a: Actor) = {
     // obtain termination handler (if any)
     val todo = synchronized {
       terminationHandlers.get(a) match {

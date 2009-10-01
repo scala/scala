@@ -13,6 +13,7 @@ package scala.actors
 /**
  * The <code>AbstractActor</code> trait.
  *
+ * @version 0.9.18
  * @author Philipp Haller
  */
 trait AbstractActor extends OutputChannel[Any] {

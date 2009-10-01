@@ -14,6 +14,7 @@ package scala.actors
  * The <code>OutputChannel</code> trait provides a common interface
  * for all channels to which values can be sent.
  *
+ * @version 0.9.17
  * @author Philipp Haller
  */
 trait OutputChannel[-Msg] {
@@ -41,8 +42,8 @@ trait OutputChannel[-Msg] {
   def forward(msg: Msg): Unit
 
   /**
-   * Returns the <code>Reactor</code> that is
+   * Returns the <code>Actor</code> that is
    * receiving from this <code>OutputChannel</code>.
    */
-  def receiver: Reactor
+  def receiver: Actor
 }
