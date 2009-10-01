@@ -501,38 +501,19 @@ abstract class GenICode extends SubComponent  {
 
         case Try(block, catches, finalizer) =>
           val kind = toTypeKind(tree.tpe)
-          var tmp: Local = null
-          val guardResult = kind != UNIT && mayCleanStack(finalizer)
-          if (guardResult) {
-            tmp = ctx.makeLocal(tree.pos, tree.tpe, "tmp")
-          }
 
           var handlers = for (CaseDef(pat, _, body) <- catches.reverse)
             yield pat match {
               case Typed(Ident(nme.WILDCARD), tpt) => (tpt.tpe.typeSymbol, kind, {
                 ctx: Context =>
                   ctx.bb.emit(DROP(REFERENCE(tpt.tpe.typeSymbol)));
-                  val ctx1 = genLoad(body, ctx, kind);
-                  if (guardResult) {
-                    ctx1.bb.emit(STORE_LOCAL(tmp))
-                    val ctx2 = genLoad(finalizer, ctx1, UNIT)
-                    ctx2.bb.emit(LOAD_LOCAL(tmp))
-                    ctx2
-                  } else
-                    genLoad(finalizer, ctx1, UNIT);
+                  genLoad(body, ctx, kind);
                 })
 
               case Ident(nme.WILDCARD) => (definitions.ThrowableClass, kind, {
                 ctx: Context =>
                   ctx.bb.emit(DROP(REFERENCE(definitions.ThrowableClass)))
-                  val ctx1 = genLoad(body, ctx, kind)
-                  if (guardResult) {
-                    ctx1.bb.emit(STORE_LOCAL(tmp))
-                    val ctx2 = genLoad(finalizer, ctx1, UNIT)
-                    ctx2.bb.emit(LOAD_LOCAL(tmp))
-                    ctx2
-                  } else
-                    genLoad(finalizer, ctx1, UNIT)
+                  genLoad(body, ctx, kind)
                 })
 
               case Bind(name, _) =>
@@ -541,35 +522,18 @@ abstract class GenICode extends SubComponent  {
                 (pat.symbol.tpe.typeSymbol, kind, {
                   ctx: Context =>
                     ctx.bb.emit(STORE_LOCAL(exception), pat.pos);
-                    val ctx1 = genLoad(body, ctx, kind);
-                    if (guardResult) {
-                      ctx1.bb.emit(STORE_LOCAL(tmp))
-                      val ctx2 = genLoad(finalizer, ctx1, UNIT)
-                      ctx2.bb.emit(LOAD_LOCAL(tmp))
-                      ctx2
-                    } else
-                      genLoad(finalizer, ctx1, UNIT);
+                    genLoad(body, ctx, kind);
                 })
             }
 
-          val duppedFinalizer = (new DuplicateLabels(ctx.labels.keySet))(ctx, finalizer)
-          if (settings.debug.value)
-            log("Duplicated finalizer: " + duppedFinalizer)
           ctx.Try(
             bodyCtx => {
               generatedType = kind; //toTypeKind(block.tpe);
-              val ctx1 = genLoad(block, bodyCtx, generatedType);
-              if (guardResult) {
-                val tmp = ctx1.makeLocal(tree.pos, tree.tpe, "tmp")
-                ctx1.bb.emit(STORE_LOCAL(tmp))
-                val ctx2 = genLoad(duppedFinalizer, ctx1, UNIT)
-                ctx2.bb.emit(LOAD_LOCAL(tmp))
-                ctx2
-              } else
-                genLoad(duppedFinalizer, ctx1, UNIT)
+              genLoad(block, bodyCtx, generatedType);
             },
             handlers,
-            finalizer)
+            finalizer,
+            tree)
 
         case Throw(expr) =>
           val ctx1 = genLoad(expr, ctx, THROWABLE)
@@ -796,7 +760,7 @@ abstract class GenICode extends SubComponent  {
                   exhCtx.bb.emit(THROW())
                   exhCtx.bb.enterIgnoreMode
                   exhCtx
-                })), EmptyTree);
+                })), EmptyTree, tree);
               if (settings.debug.value)
                 log("synchronized block end with block " + ctx1.bb +
                     " closed=" + ctx1.bb.closed);
@@ -1730,6 +1694,8 @@ abstract class GenICode extends SubComponent  {
       override def equals(other: Any) = f == other;
     }
 
+    def duplicateFinalizer(ctx: Context, finalizer: Tree) =
+      (new DuplicateLabels(ctx.labels.keySet))(ctx, finalizer)
 
     /**
      * The Context class keeps information relative to the current state
@@ -1960,10 +1926,34 @@ abstract class GenICode extends SubComponent  {
        */
       def Try(body: Context => Context,
               handlers: List[(Symbol, TypeKind, (Context => Context))],
-              finalizer: Tree) = {
+              finalizer: Tree,
+              tree: Tree) = {
+
         val outerCtx = this.dup       // context for generating exception handlers, covered by finalizer
         val finalizerCtx = this.dup   // context for generating finalizer handler
         val afterCtx = outerCtx.newBlock
+        var tmp: Local = null
+        val kind = toTypeKind(tree.tpe)
+        val guardResult = kind != UNIT && mayCleanStack(finalizer)
+
+        if (guardResult) {
+          tmp = this.makeLocal(tree.pos, tree.tpe, "tmp")
+        }
+
+        def emitFinalizer(ctx: Context): Context = if (!finalizer.isEmpty) {
+          val ctx1 = finalizerCtx.dup.newBlock
+          ctx.bb.emit(JUMP(ctx1.bb))
+          ctx.bb.close
+
+          if (guardResult) {
+            ctx1.bb.emit(STORE_LOCAL(tmp))
+            val ctx2 = genLoad(duplicateFinalizer(ctx1, finalizer), ctx1, UNIT)
+            ctx2.bb.emit(LOAD_LOCAL(tmp))
+            ctx2
+          } else
+            genLoad(duplicateFinalizer(ctx1, finalizer), ctx1, UNIT)
+        } else ctx
+
 
         val finalizerExh = if (finalizer != EmptyTree) Some({
           val exh = outerCtx.newHandler(NoSymbol, toTypeKind(finalizer.tpe)) // finalizer covers exception handlers
@@ -1985,23 +1975,26 @@ abstract class GenICode extends SubComponent  {
             var ctx1 = outerCtx.enterHandler(exh)
             if (settings.Xdce.value) ctx1.bb.emit(LOAD_EXCEPTION())
             ctx1 = handler._3(ctx1)
-            ctx1.bb.emit(JUMP(afterCtx.bb))
-            ctx1.bb.close
+            // emit finalizer
+            val ctx2 = emitFinalizer(ctx1)
+            ctx2.bb.emit(JUMP(afterCtx.bb))
+            ctx2.bb.close
             exh
           }
         val bodyCtx = this.newBlock
         if (finalizer != EmptyTree)
           bodyCtx.addFinalizer(finalizer)
 
-        val finalCtx = body(bodyCtx)
+        var finalCtx = body(bodyCtx)
+        finalCtx = emitFinalizer(finalCtx)
 
         outerCtx.bb.emit(JUMP(bodyCtx.bb))
         outerCtx.bb.close
 
-        exhs.reverse foreach finalCtx.removeHandler
-        if (finalizer != EmptyTree) {
-          finalCtx.removeFinalizer(finalizer)
-        }
+//        exhs.reverse foreach finalCtx.removeHandler
+//        if (finalizer != EmptyTree) {
+//          finalCtx.removeFinalizer(finalizer)
+//        }
 
         finalCtx.bb.emit(JUMP(afterCtx.bb))
         finalCtx.bb.close
