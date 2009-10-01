@@ -4005,10 +4005,29 @@ A type's typeSymbol should never be inspected directly.
          (res1 <:< res2) &&
          tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
       case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
-        (tparams1.length == tparams2.length &&
-         List.forall2(tparams1, tparams2)
-           ((p1, p2) => p2.info.substSym(tparams2, tparams1) <:< p1.info) &&
-         res1 <:< res2.substSym(tparams2, tparams1))
+        tparams1.length == tparams2.length && {
+          if(tparams1.isEmpty) res1 <:< res2 // fast-path: monomorphic nullary method type
+          else if(tparams1.head.owner.isMethod) {  // fast-path: polymorphic method type -- type params cannot be captured
+            List.forall2(tparams1, tparams2)((p1, p2) =>
+              p2.info.substSym(tparams2, tparams1) <:< p1.info) &&
+            res1 <:< res2.substSym(tparams2, tparams1)
+          } else { // normalized higher-kinded type
+            //@M for an example of why we need to generate fresh symbols, see neg/tcpoly_ticket2101.scala
+            val tpsFresh = cloneSymbols(tparams1) // @M cloneSymbols(tparams2) should be equivalent -- TODO: check
+
+            (List.forall2(tparams1, tparams2)((p1, p2) =>
+            p2.info.substSym(tparams2, tpsFresh) <:< p1.info.substSym(tparams1, tpsFresh)) &&
+            res1.substSym(tparams1, tpsFresh) <:< res2.substSym(tparams2, tpsFresh))
+
+            //@M the forall in the previous test could be optimised to the following,
+            // but not worth the extra complexity since it only shaves 1s from quick.comp
+            //   (List.forall2(tpsFresh/*optimisation*/, tparams2)((p1, p2) =>
+            //   p2.info.substSym(tparams2, tpsFresh) <:< p1.info /*optimisation, == (p1 from tparams1).info.substSym(tparams1, tpsFresh)*/) &&
+            // this optimisation holds because inlining cloneSymbols in `val tpsFresh = cloneSymbols(tparams1)` gives:
+            // val tpsFresh = tparams1 map (_.cloneSymbol)
+            // for (tpFresh <- tpsFresh) tpFresh.setInfo(tpFresh.info.substSym(tparams1, tpsFresh))
+          }
+        }
       case (TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
         lo2 <:< lo1 && hi1 <:< hi2
       case (AnnotatedType(_,_,_), _) =>

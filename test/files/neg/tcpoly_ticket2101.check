@@ -1,0 +1,4 @@
+tcpoly_ticket2101.scala:2: error: type arguments [T2,X] do not conform to class T's type parameter bounds [A[Y] <: T[A,B],B]
+class T2[X] extends T[T2, X] // ill-typed
+                    ^
+one error found
