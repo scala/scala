@@ -1996,11 +1996,6 @@ abstract class GenICode extends SubComponent  {
         outerCtx.bb.emit(JUMP(bodyCtx.bb))
         outerCtx.bb.close
 
-//        exhs.reverse foreach finalCtx.removeHandler
-//        if (finalizer != EmptyTree) {
-//          finalCtx.removeFinalizer(finalizer)
-//        }
-
         finalCtx.bb.emit(JUMP(afterCtx.bb))
         finalCtx.bb.close
 
