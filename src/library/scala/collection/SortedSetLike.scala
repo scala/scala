@@ -21,6 +21,8 @@ import generic._
 trait SortedSetLike[A, +This <: SortedSet[A] with SortedSetLike[A, This]] extends Sorted[A, This] with SetLike[A, This] {
 self =>
 
+  implicit def ordering: Ordering[A]
+
   override def keySet = repr
 
   override def firstKey: A = head

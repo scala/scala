@@ -36,11 +36,9 @@ self =>
   override def keySet : SortedSet[A] = new DefaultKeySortedSet
 
   protected class DefaultKeySortedSet extends super.DefaultKeySet with SortedSet[A] {
-    def ordering = self.ordering;
-    /** We can't give an implementation of +/- here because we do not have a generic sorted set implementation
-     */
-    override def + (elem: A): SortedSet[A] = throw new UnsupportedOperationException("keySet.+")
-    override def - (elem: A): SortedSet[A] = throw new UnsupportedOperationException("keySet.-")
+    implicit def ordering = self.ordering
+    override def + (elem: A): SortedSet[A] = (SortedSet[A]() ++ this + elem)
+    override def - (elem: A): SortedSet[A] = (SortedSet[A]() ++ this - elem)
     override def rangeImpl(from : Option[A], until : Option[A]) : SortedSet[A] = {
       val map = self.rangeImpl(from, until)
       new map.DefaultKeySortedSet

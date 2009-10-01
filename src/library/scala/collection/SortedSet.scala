@@ -20,7 +20,7 @@ import generic._
  */
 trait SortedSet[A] extends Set[A] with SortedSetLike[A, SortedSet[A]] {
   /** Needs to be overridden in subclasses. */
-  override def empty: SortedSet[A] = throw new UnsupportedOperationException("SortedMap.empty")
+  override def empty: SortedSet[A] = SortedSet.empty[A]
 }
 
 /**
