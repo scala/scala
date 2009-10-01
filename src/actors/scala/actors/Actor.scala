@@ -390,6 +390,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
    * the invocation of send to the place where the thread of
    * the receiving actor resumes inside receive/receiveWithin.
    */
+  @volatile
   private var received: Option[Any] = None
 
   /* This option holds a TimerTask when the actor waits in a

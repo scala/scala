@@ -24,6 +24,7 @@ trait ReplyReactor extends Reactor {
   /* A list of the current senders. The head of the list is
    * the sender of the message that was received last.
    */
+  @volatile
   private[actors] var senders: List[OutputChannel[Any]] =
     Nil
 

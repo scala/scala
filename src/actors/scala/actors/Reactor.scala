@@ -27,6 +27,7 @@ trait Reactor extends OutputChannel[Any] {
   /* If the actor waits in a react, continuation holds the
    * message handler that react was called with.
    */
+  @volatile
   private[actors] var continuation: PartialFunction[Any, Unit] = null
 
   /* Whenever this Actor executes on some thread, waitingFor is
@@ -37,6 +38,8 @@ trait Reactor extends OutputChannel[Any] {
    * thread.
    */
   private[actors] val waitingForNone = (m: Any) => false
+
+  // guarded by lock of this
   private[actors] var waitingFor: Any => Boolean = waitingForNone
 
   /**
@@ -82,6 +85,9 @@ trait Reactor extends OutputChannel[Any] {
   private[actors] def makeReaction(fun: () => Unit): Runnable =
     new ReactorTask(this, fun)
 
+  /* Note that this method is called without holding a lock.
+   * Therefore, to read an up-to-date continuation, it must be @volatile.
+   */
   private[actors] def resumeReceiver(item: (Any, OutputChannel[Any]), onSameThread: Boolean) {
     // assert continuation != null
     if (onSameThread)
@@ -166,6 +172,7 @@ trait Reactor extends OutputChannel[Any] {
    * built on top of `seq`. Note that the only invocation of
    * `kill` is supposed to be inside `Reaction.run`.
    */
+  @volatile
   private[actors] var kill: () => Unit =
     () => { exit() }
 
