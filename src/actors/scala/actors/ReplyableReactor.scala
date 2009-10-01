@@ -17,7 +17,7 @@ package scala.actors
  *
  * @author Philipp Haller
  */
-trait ReplyableReactor extends Replyable[Any, Any] {
+private[actors] trait ReplyableReactor extends Replyable[Any, Any] {
   thiz: ReplyReactor =>
 
   /**
