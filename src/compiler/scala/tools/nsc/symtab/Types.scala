@@ -3741,10 +3741,29 @@ A type's typeSymbol should never be inspected directly.
     || // @M! normalize reduces higher-kinded case to PolyType's
     ((tp1.normalize, tp2.normalize) match {
       case (PolyType(tparams1, res1), PolyType(tparams2, res2)) => // @assume tp1.isHigherKinded && tp2.isHigherKinded (as they were both normalized to PolyType)
-        tparams1.length == tparams2.length &&
-        List.forall2(tparams1, tparams2) (
-          (p1, p2) => p2.info.substSym(tparams2, tparams1) <:< p1.info) &&
-        res1 <:< res2.substSym(tparams2, tparams1)
+        tparams1.length == tparams2.length && {
+          if(tparams1.isEmpty) res1 <:< res2 // fast-path: monomorphic nullary method type
+          else if(tparams1.head.owner.isMethod) {  // fast-path: polymorphic method type -- type params cannot be captured
+            List.forall2(tparams1, tparams2)((p1, p2) =>
+              p2.info.substSym(tparams2, tparams1) <:< p1.info) &&
+            res1 <:< res2.substSym(tparams2, tparams1)
+          } else { // normalized higher-kinded type
+            //@M for an example of why we need to generate fresh symbols, see neg/tcpoly_ticket2101.scala
+            val tpsFresh = cloneSymbols(tparams1) // @M cloneSymbols(tparams2) should be equivalent -- TODO: check
+
+            (List.forall2(tparams1, tparams2)((p1, p2) =>
+              p2.info.substSym(tparams2, tpsFresh) <:< p1.info.substSym(tparams1, tpsFresh)) &&
+              res1.substSym(tparams1, tpsFresh) <:< res2.substSym(tparams2, tpsFresh))
+
+            //@M the forall in the previous test could be optimised to the following,
+            // but not worth the extra complexity since it only shaves 1s from quick.comp
+            //   (List.forall2(tpsFresh/*optimisation*/, tparams2)((p1, p2) =>
+            //   p2.info.substSym(tparams2, tpsFresh) <:< p1.info /*optimisation, == (p1 from tparams1).info.substSym(tparams1, tpsFresh)*/) &&
+            // this optimisation holds because inlining cloneSymbols in `val tpsFresh = cloneSymbols(tparams1)` gives:
+            // val tpsFresh = tparams1 map (_.cloneSymbol)
+            // for (tpFresh <- tpsFresh) tpFresh.setInfo(tpFresh.info.substSym(tparams1, tpsFresh))
+          }
+        }
 
       case (_, _) => false // @assume !tp1.isHigherKinded || !tp2.isHigherKinded
       // --> thus, cannot be subtypes (Any/Nothing has already been checked)
@@ -3948,6 +3967,7 @@ A type's typeSymbol should never be inspected directly.
     firstTry
   }
 
+/* DEAD
   /** Does type `tp1' conform to `tp2'?
    */
   private def isSubType1(tp1: Type, tp2: Type, depth: Int): Boolean = {
@@ -4102,6 +4122,7 @@ A type's typeSymbol should never be inspected directly.
       ((tp1n ne tp1) || (tp2n ne tp2)) && isSubType(tp1n, tp2n, depth)
     }
   }
+*/
 
   /** Are `tps1' and `tps2' lists of equal length such
    *  that all elements of `tps1' conform to corresponding elements
