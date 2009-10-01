@@ -77,79 +77,6 @@ trait ParallelMatching extends ast.TreeDSL {
     }
   }
 
-  // For isDefaultPattern, to do?
-  // cond(tree) { case Typed(WILD(), _) if tree.tpe <:< scrut.tpe  => true }
-  // null check?
-
-  // this won't compile in compiler, but works in REPL - ?
-  // val List(isInt, isChar, isBoolean, isArray, isNothing) = {
-  //   import definitions._
-  //   def testFor(s: Symbol): Type => Boolean = (tpe: Type) => tpe.typeSymbol eq s
-  //
-  //   List(IntClass, CharClass, BooleanClass, ArrayClass, NothingClass) map testFor
-  // }
-
-  object Pattern {
-    def apply(x: Tree): Pattern = new Pattern(x)
-    def apply(x: Tree, preGuard: Tree): Pattern = new Pattern(x, preGuard)
-    def unapply(other: Pattern): Option[Tree] = Some(other.tree)
-  }
-
-  class Pattern private (val tree: Tree, val preGuard: Tree) {
-    def this(tree: Tree) = this(tree, null)
-    import definitions._
-
-    def    sym  = tree.symbol
-    def    tpe  = tree.tpe
-    def prefix  = tpe.prefix
-    def isEmpty = tree.isEmpty
-
-    def isSymValid = (sym != null) && (sym != NoSymbol)
-
-    def setType(tpe: Type): this.type = {
-      tree setType tpe
-      this
-    }
-    lazy val stripped = strip(tree)._1
-    lazy val boundVariables = strip(tree)._2
-    lazy val unbound: Pattern = copy(stripped)
-
-    def mkSingleton = tpe match {
-      case st: SingleType => st
-      case _              => singleType(prefix, sym)
-    }
-
-    final def isBind              = cond(tree)     { case x: Bind => true }
-    final def isDefault           = cond(stripped) { case EmptyTree | WILD() => true }
-    final def isStar              = cond(stripped) { case Star(q) => Pattern(q).isDefault }
-    final def isAlternative       = cond(stripped) { case Alternative(_) => true }
-    final def isRightIgnoring     = cond(stripped) { case ArrayValue(_, xs) if !xs.isEmpty => Pattern(xs.last).isStar }
-
-    /** returns true if pattern tests an object */
-    final def isObjectTest(head: Type) =
-      isSymValid && prefix.isStable && (head =:= mkSingleton)
-
-    /** Helpers **/
-    private def strip(t: Tree, syms: List[Symbol] = Nil): (Tree, List[Symbol]) = t match {
-      case b @ Bind(_, pat) => strip(pat, b.symbol :: syms)
-      case _                => (t, syms)
-    }
-
-    /** Standard methods **/
-    def copy(
-      tree: Tree = this.tree,
-      preGuard: Tree = this.preGuard
-    ): Pattern = new Pattern(tree, preGuard)
-
-    override def toString() = "Pattern(%s)".format(tree)
-    override def equals(other: Any) = other match {
-      case Pattern(t) => this.tree == t
-      case _          => super.equals(other)
-    }
-    override def hashCode() = tree.hashCode()
-  }
-  val NoPattern = Pattern(EmptyTree)
-
   import collection.mutable.{ HashMap, ListBuffer }
   class MatchMatrix(context: MatchMatrixContext, data: MatchMatrixInit) {
     import context._
@@ -345,6 +272,8 @@ trait ParallelMatching extends ast.TreeDSL {
       def castedTo(headType: Type) =
         if (tpe =:= headType) this
         else new Scrutinee(newVar(pos, headType, flags = flags))
+
+      override def toString() = "Scrutinee(sym = %s, tpe = %s, id = %s)".format(sym, tpe, id)
     }
 
     case class Patterns(scrut: Scrutinee, ps: List[Pattern]) {
@@ -358,8 +287,9 @@ trait ParallelMatching extends ast.TreeDSL {
         case __UnApply(_,argtpe,_)    => argtpe                   // ?? why argtpe?
         case _                        => head.tpe
       }
-      lazy val isCaseHead = isCaseClass(headType)
-      lazy val dummies = if (isCaseHead) getDummies(headType.typeSymbol.caseFieldAccessors.length) else Nil
+      def isCaseHead = isCaseClass(headType)
+      def dummies = if (isCaseHead) getDummies(headType.typeSymbol.caseFieldAccessors.length) else Nil
+      def dummyPatterns = dummies map (x => Pattern(x))
 
       def apply(i: Int): Pattern = ps(i)
       // XXX temp
@@ -717,27 +647,14 @@ trait ParallelMatching extends ast.TreeDSL {
         (first ne next) && (isDefaultPattern(next) || cond((first, next)) {
           case (av: ArrayValue, bv: ArrayValue) =>
             // number of non-star elements in each sequence
-            val (firstLen, nextLen) = (elemLength(av), elemLength(bv))
+            val (len1, len2)    = (elemLength(av), elemLength(bv))
+            val (star1, star2)  = (isRightIgnoring(av), isRightIgnoring(bv))
 
-            // !isAllDefaults(av) ||
-            ((isRightIgnoring(av), isRightIgnoring(bv)) match {
-              case (true, true)   => nextLen < firstLen   // Seq(a,b,c,_*) followed by Seq(a,b,_*) because of (a,b)
-              case (true, false)  =>
-                isAllDefaults(av) && (nextLen < firstLen)
-                // nextLen < firstLen   // Seq(a,b,c,_*) followed by Seq(a,b) because of (a,b)
-              case (false, true)  => true
-              // case (false, true)  => nextLen <= firstLen  // Seq(a,b) followed by Seq(a,b,c,_*) cannot match since len == 2
-              // however that conditional causes the following to fail with 2nd case unreachable:
-              // def not_unreachable2(xs:Seq[Char]) = xs match {
-              //   case Seq(x, y) => x::y::Nil
-              //   case Seq(x, y, z, _*) => List(x,y)
-              // }
-              // ...which means this logic must be applied more broadly than I had inferred from the comment
-              // "...even if [x] failed to match *after* passing its length test." So one would think that means
-              // the second case would only not be tried if scrut.length == 2, and reachable the rest of the time.
-              // XXX note this used to say "nextLen == firstLen" and this caused #2187.  Rewrite this.
-              case (false, false) => nextLen >= firstLen   // same length (self compare ruled out up top)
-            })
+            // this still needs rewriting.
+            ( star1 &&  star2 && len2  < len1                     ) ||  // Seq(a,b,c,_*) followed by Seq(a,b,_*) because of (a,b)
+            ( star1 && !star2 && len2  < len1 && isAllDefaults(av)) ||  // Seq(a,b,c,_*) followed by Seq(a,b) because of (a,b)
+            (!star1 &&  star2                                     ) ||
+            (!star1 && !star2 && len2 >= len1                     )
         })
 
       case class TransitionContext(f: TreeFunction2)
@@ -854,12 +771,12 @@ trait ParallelMatching extends ast.TreeDSL {
     /** mixture rule for type tests
     **/
     class MixTypes(val pats: Patterns, val rest: Rep) extends RuleApplication {
-      private def subpatterns(p: Tree): List[Tree] = p match {
-        case Bind(_, p)                                                 => subpatterns(p)
-        case app @ Apply(fn, ps) if isCaseClass(app.tpe) && fn.isType   => if (pats.isCaseHead) ps else pats.dummies
-        case Apply(fn, xs) if !xs.isEmpty || fn.isType                  => abort("strange Apply")
-        case _                                                          => pats.dummies
-      }
+      private def subpatterns(p: Pattern): List[Pattern] =
+        p.stripped match {
+          case app @ Apply(fn, ps) if isCaseClass(app.tpe) && fn.isType   => if (pats.isCaseHead) toPats(ps) else pats.dummyPatterns
+          case Apply(fn, xs) if !xs.isEmpty || fn.isType                  => abort("strange Apply")
+          case _                                                          => pats.dummyPatterns
+        }
 
       // moreSpecific: more specific patterns
       //     subsumed: more general patterns (subsuming current), rows index and subpatterns
@@ -873,7 +790,7 @@ trait ParallelMatching extends ast.TreeDSL {
           lazy val isDef                = isDefaultPattern(pat)
           lazy val dummy                = (j, pats.dummies)
           lazy val pass                 = (j, pat)
-          lazy val subs                 = (j, subpatterns(pat))
+          lazy val subs                 = (j, subpatterns(Pattern(pat)) map (_.tree))
 
           lazy val cmpOld: TypeComp  = spat.tpe cmp pats.headType  // contains type info about pattern's type vs. head pattern
           import cmpOld.{ erased }
