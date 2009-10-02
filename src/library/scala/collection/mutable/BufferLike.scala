@@ -33,7 +33,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
                    with Addable[A, This]
                    with Subtractable[A, This]
                    with Cloneable[This]
-                   with SequenceLike[A, This]
+                   with SeqLike[A, This]
 { self =>
 
   import scala.collection.{Iterable, Traversable}
@@ -329,7 +329,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
     repr
   }
 
-  def readOnly: scala.collection.Sequence[A] = toSequence
+  def readOnly: scala.collection.Seq[A] = toSeq
 }
 
 

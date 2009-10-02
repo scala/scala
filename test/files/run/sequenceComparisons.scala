@@ -1,27 +1,27 @@
 import scala.collection.{ mutable, immutable }
-import collection.{ Sequence, Traversable }
+import collection.{ Seq, Traversable }
 
 object Test {
   // TODO:
   //
-  // SequenceProxy
-  // SequenceForwarder
+  // SeqProxy
+  // SeqForwarder
   // the commented out ones in seqMakers
 
-  val seqMakers = List[List[Int] => Sequence[Int]](
+  val seqMakers = List[List[Int] => Seq[Int]](
     // scala.Array(_: _*),
     mutable.ArrayBuffer(_: _*),
     // mutable.ArrayStack(_: _*),
     mutable.Buffer(_: _*),
-    mutable.LinearSequence(_: _*),
+    mutable.LinearSeq(_: _*),
     // null on Nil
     // mutable.LinkedList(_: _*),
     mutable.ListBuffer(_: _*),
     // mutable.PriorityQueue(_: _*),
     // immutable.Queue(_: _*),
     // mutable.Queue(_: _*),
-    immutable.Sequence(_: _*),
-    mutable.Sequence(_: _*),
+    immutable.Seq(_: _*),
+    mutable.Seq(_: _*),
     // immutable.Stack(_: _*),
     // mutable.Stack(_: _*),
     immutable.Vector(_: _*),
@@ -31,12 +31,12 @@ object Test {
   )
 
   abstract class Data[T] {
-    val seq: Sequence[T]
+    val seq: Seq[T]
     private def seqList = seq.toList
     // _1 is inputs which must be true, _2 which must be false
     type Inputs = (List[List[T]], List[List[T]])
     case class Method(
-      f: (Sequence[T], Sequence[T]) => Boolean,
+      f: (Seq[T], Seq[T]) => Boolean,
       inputs: Inputs,
       descr: String
     ) {
@@ -53,7 +53,7 @@ object Test {
     lazy val endsWith = Method(_ endsWith _, endsWithInputs, "%s endsWith %s")
 
     val indexOfSeqInputs: Inputs
-    private def subseqTest(s1: Sequence[T], s2: Sequence[T]) = (s1 indexOfSeq s2) != -1
+    private def subseqTest(s1: Seq[T], s2: Seq[T]) = (s1 indexOfSeq s2) != -1
     lazy val indexOfSeq = Method(subseqTest _, indexOfSeqInputs, "(%s indexOfSeq %s) != -1")
 
     val sameElementsInputs: Inputs

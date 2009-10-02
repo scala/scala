@@ -15,7 +15,7 @@ import generic._
 import mutable.ArrayBuffer
 
 /** Sequences that support O(1) element access and O(1) length computation.
- *  This class does not add any methods to Sequence but overrides several
+ *  This class does not add any methods to Seq but overrides several
  *  methods with optimized implementations.
  *
  *  @author Sean McDirmid
@@ -23,7 +23,7 @@ import mutable.ArrayBuffer
  *  @version 2.8
  *  @since   2.8
  */
-trait VectorLike[+A, +Repr] extends SequenceLike[A, Repr] { self =>
+trait VectorLike[+A, +Repr] extends SeqLike[A, Repr] { self =>
 
   override protected[this] def thisCollection: Vector[A] = this.asInstanceOf[Vector[A]]
   override protected[this] def toCollection(repr: Repr): Vector[A] = repr.asInstanceOf[Vector[A]]
@@ -177,7 +177,7 @@ trait VectorLike[+A, +Repr] extends SequenceLike[A, Repr] { self =>
   }
 
 
-  // Overridden methods from Sequence
+  // Overridden methods from Seq
 
   override def lengthCompare(len: Int): Int = length - len
 
@@ -223,7 +223,7 @@ trait VectorLike[+A, +Repr] extends SequenceLike[A, Repr] { self =>
       } else Iterator.empty.next
   }
 
-  override def startsWith[B](that: Sequence[B], offset: Int): Boolean = that match {
+  override def startsWith[B](that: Seq[B], offset: Int): Boolean = that match {
     case that: Vector[_] =>
       var i = offset
       var j = 0
@@ -247,7 +247,7 @@ trait VectorLike[+A, +Repr] extends SequenceLike[A, Repr] { self =>
       !thatElems.hasNext
   }
 
-  override def endsWith[B](that: Sequence[B]): Boolean = that match {
+  override def endsWith[B](that: Seq[B]): Boolean = that match {
     case that: Vector[_] =>
       var i = length - 1
       var j = that.length - 1

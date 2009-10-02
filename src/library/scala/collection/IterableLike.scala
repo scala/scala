@@ -364,8 +364,6 @@ self =>
   /** <code>None</code> if iterable is empty. */
   @deprecated("use `headOption' instead") def firstOption: Option[A] = headOption
 
-  @deprecated("use `toSequence' instead") def toSeq: Sequence[A] = toSequence
-
   /**
    * returns a projection that can be used to call non-strict <code>filter</code>,
    * <code>map</code>, and <code>flatMap</code> methods that build projections

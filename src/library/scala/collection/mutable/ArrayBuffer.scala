@@ -167,7 +167,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
  *  @version 2.8
  *  @since   2.8
  */
-object ArrayBuffer extends SequenceFactory[ArrayBuffer] {
+object ArrayBuffer extends SeqFactory[ArrayBuffer] {
   implicit def builderFactory[A]: BuilderFactory[A, ArrayBuffer[A], Coll] =
     new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, ArrayBuffer[A]] = new ArrayBuffer[A]

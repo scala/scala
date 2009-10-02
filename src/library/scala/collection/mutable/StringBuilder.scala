@@ -35,6 +35,8 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
 
   require(initCapacity >= 0)
 
+  import scala.collection.Seq
+
   /** The value is used for character storage. */
   private var array = new Array[Char](initCapacity + initValue.length)
 

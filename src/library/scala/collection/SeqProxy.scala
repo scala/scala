@@ -10,18 +10,12 @@
 
 
 package scala.collection
-package generic
 
-/** A template for companion objects of Sequence and subclasses thereof.
+/** This trait implements a proxy for sequence objects. It forwards
+ *  all calls to a different sequence object.
  *
- *  @since 2.8
+ *  @author  Martin Odersky
+ *  @version 2.8
+ *  @since   2.8
  */
-abstract class SequenceFactory[CC[X] <: Sequence[X] with GenericTraversableTemplate[X, CC]] extends TraversableFactory[CC] {
-
-  /** This method is called in a pattern match { case Sequence(...) => }.
-   *
-   *  @param x the selector value
-   *  @return  sequence wrapped in an option, if this is a Sequence, otherwise none
-   */
-  def unapplySeq[A](x: CC[A]): Some[CC[A]] = Some(x)
-}
+trait SeqProxy[+A] extends Seq[A] with SeqProxyLike[A, Seq[A]]

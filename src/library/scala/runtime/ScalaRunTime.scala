@@ -12,7 +12,7 @@
 package scala.runtime
 
 import scala.reflect.ClassManifest
-import scala.collection.Sequence
+import scala.collection.Seq
 import scala.collection.mutable._
 
 /* The object <code>ScalaRunTime</code> provides ...
@@ -55,7 +55,7 @@ object ScalaRunTime {
     dest
   }
 
-  def toArray[T](xs: scala.collection.Sequence[T]) = {
+  def toArray[T](xs: scala.collection.Seq[T]) = {
     val arr = new Array[AnyRef](xs.length)
     var i = 0
     for (x <- xs) arr(i) = x.asInstanceOf[AnyRef]

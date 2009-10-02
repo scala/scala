@@ -17,14 +17,14 @@ import generic._
 /** A subtrait of <code>collection.Vector</code> which represents sequences
  *  that can be mutated.
  */
-trait Vector[A] extends Sequence[A]
+trait Vector[A] extends Seq[A]
                    with scala.collection.Vector[A]
                    with GenericTraversableTemplate[A, Vector]
                    with VectorLike[A, Vector[A]] {
   override def companion: GenericCompanion[Vector]  = Vector
 }
 
-object Vector extends SequenceFactory[Vector] {
+object Vector extends SeqFactory[Vector] {
   implicit def builderFactory[A]: BuilderFactory[A, Vector[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, Vector[A]] = new ArrayBuffer
 }

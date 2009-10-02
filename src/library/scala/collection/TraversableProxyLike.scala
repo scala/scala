@@ -72,7 +72,7 @@ trait TraversableProxyLike[+A, +This <: TraversableLike[A, This] with Traversabl
   override def toArray[B >: A: ClassManifest]: Array[B] = self.toArray
   override def toList: List[A] = self.toList
   override def toIterable: Iterable[A] = self.toIterable
-  override def toSequence: Sequence[A] = self.toSequence
+  override def toSeq: Seq[A] = self.toSeq
   override def toStream: Stream[A] = self.toStream
   override def toSet[B >: A]: immutable.Set[B] = self.toSet
   override def mkString(start: String, sep: String, end: String): String = self.mkString(start, sep, end)

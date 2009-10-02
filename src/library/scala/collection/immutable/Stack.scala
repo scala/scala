@@ -33,7 +33,7 @@ object Stack {
  *  @since   1
  */
 @serializable @SerialVersionUID(1976480595012942526L)
-class Stack[+A] protected (protected val elems: List[A]) extends Sequence[A] {
+class Stack[+A] protected (protected val elems: List[A]) extends Seq[A] {
 
   def this() = this(Nil)
 

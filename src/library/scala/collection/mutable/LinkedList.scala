@@ -23,7 +23,7 @@ import generic._
  *  @since   1
  */
 @serializable
-class LinkedList[A](_elem: A, _next: LinkedList[A]) extends LinearSequence[A]
+class LinkedList[A](_elem: A, _next: LinkedList[A]) extends LinearSeq[A]
                                                        with GenericTraversableTemplate[A, LinkedList]
                                                        with LinkedListLike[A, LinkedList[A]] {
   elem = _elem
@@ -31,7 +31,7 @@ class LinkedList[A](_elem: A, _next: LinkedList[A]) extends LinearSequence[A]
   override def companion: GenericCompanion[LinkedList] = LinkedList
 }
 
-object LinkedList extends SequenceFactory[LinkedList] {
+object LinkedList extends SeqFactory[LinkedList] {
   implicit def builderFactory[A]: BuilderFactory[A, LinkedList[A], Coll] =
     new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, LinkedList[A]] =

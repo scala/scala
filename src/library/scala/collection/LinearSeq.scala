@@ -19,7 +19,7 @@ import mutable.Builder
  *    For such sequences <code>isEmpty</code>, <code>head</code> and
  *    <code>tail</code> are guaranteed to be efficient constant time (or near so)
  *    operations.<br/>
- *    It does not add any methods to <code>Sequence</code> but overrides several
+ *    It does not add any methods to <code>Seq</code> but overrides several
  *    methods with optimized implementations.
  *  </p>
  *
@@ -28,16 +28,16 @@ import mutable.Builder
  *  @version 1.0, 16/07/2003
  *  @since   2.8
  */
-trait LinearSequence[+A] extends Sequence[A]
-                            with GenericTraversableTemplate[A, LinearSequence]
-                            with LinearSequenceLike[A, LinearSequence[A]] {
-  override def companion: GenericCompanion[LinearSequence] = LinearSequence
+trait LinearSeq[+A] extends Seq[A]
+                            with GenericTraversableTemplate[A, LinearSeq]
+                            with LinearSeqLike[A, LinearSeq[A]] {
+  override def companion: GenericCompanion[LinearSeq] = LinearSeq
 }
 
 /**
  *  @since 2.8
  */
-object LinearSequence extends SequenceFactory[LinearSequence] {
-  implicit def builderFactory[A]: BuilderFactory[A, LinearSequence[A], Coll] = new VirtualBuilderFactory[A]
-  def newBuilder[A]: Builder[A, LinearSequence[A]] = immutable.LinearSequence.newBuilder[A]
+object LinearSeq extends SeqFactory[LinearSeq] {
+  implicit def builderFactory[A]: BuilderFactory[A, LinearSeq[A], Coll] = new VirtualBuilderFactory[A]
+  def newBuilder[A]: Builder[A, LinearSeq[A]] = immutable.LinearSeq.newBuilder[A]
 }

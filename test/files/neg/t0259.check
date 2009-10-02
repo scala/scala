@@ -1,7 +1,7 @@
 t0259.scala:4: error: double definition:
 constructor TestCase3:(groups: String*)test.TestCase3 and
 constructor TestCase3:(groups: (String, Int)*)test.TestCase3 at line 3
-have same type after erasure: (groups: Sequence)test.TestCase3
+have same type after erasure: (groups: Seq)test.TestCase3
   def this( groups: String*) = this()
       ^
 one error found

@@ -24,7 +24,7 @@ import annotation.tailrec
  *  @version 2.8
  *  @since   2.8
  */
-trait LinkedListLike[A, This >: Null <: Sequence[A] with LinkedListLike[A, This]] extends SequenceLike[A, This] { self =>
+trait LinkedListLike[A, This >: Null <: Seq[A] with LinkedListLike[A, This]] extends SeqLike[A, This] { self =>
 
   var elem: A = _
   var next: This = _

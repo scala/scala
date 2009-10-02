@@ -301,6 +301,6 @@ final class URLZipArchive(url: URL) extends AbstractFile with ZipContainer
     val minusOne = (-1).toByte
     val buf = new BufferedInputStream(in)
     val bytes = Iterator continually in.read().toByte takeWhile (_ != minusOne)
-    new ByteArrayInputStream(bytes.toSequence.toArray)
+    new ByteArrayInputStream(bytes.toSeq.toArray)
   }
 }

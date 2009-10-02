@@ -21,7 +21,7 @@ import generic._
  *  @author paulp
  *  @since  2.8
  */
-object SequenceLike {
+object SeqLike {
 
   private def KMP[B](S: Seq[B], W: Seq[B]): Option[Int] = {
     // trivial cases
@@ -95,7 +95,7 @@ object SequenceLike {
     }
 }
 
-/** Class <code>Sequence[A]</code> represents sequences of elements
+/** Class <code>Seq[A]</code> represents sequences of elements
  *  of type <code>A</code>.
  *  It adds the following methods to class Iterable:
  *   `length`, `lengthCompare`, `apply`, `isDefinedAt`, `segmentLength`, `prefixLength`,
@@ -108,10 +108,10 @@ object SequenceLike {
  *  @version 1.0, 16/07/2003
  *  @since   2.8
  */
-trait SequenceLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
+trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
 
-  override protected[this] def thisCollection: Sequence[A] = this.asInstanceOf[Sequence[A]]
-  override protected[this] def toCollection(repr: Repr): Sequence[A] = repr.asInstanceOf[Sequence[A]]
+  override protected[this] def thisCollection: Seq[A] = this.asInstanceOf[Seq[A]]
+  override protected[this] def toCollection(repr: Repr): Seq[A] = repr.asInstanceOf[Seq[A]]
 
   import Traversable.breaks._
 
@@ -304,7 +304,7 @@ trait SequenceLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *
    * @see String.startsWith
    */
-  def startsWith[B](that: Sequence[B], offset: Int): Boolean = {
+  def startsWith[B](that: Seq[B], offset: Int): Boolean = {
     val i = this.iterator drop offset
     val j = that.iterator
     while (j.hasNext && i.hasNext)
@@ -320,12 +320,12 @@ trait SequenceLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    * @return true if <code>that</code> is a prefix of <code>this</code>,
    * otherwise false
    */
-  def startsWith[B](that: Sequence[B]): Boolean = startsWith(that, 0)
+  def startsWith[B](that: Seq[B]): Boolean = startsWith(that, 0)
 
   /** @return true if this sequence end with that sequence
    *  @see String.endsWith
    */
-  def endsWith[B](that: Sequence[B]): Boolean = {
+  def endsWith[B](that: Seq[B]): Boolean = {
     val i = this.iterator.drop(length - that.length)
     val j = that.iterator
     while (i.hasNext && j.hasNext)
@@ -338,14 +338,14 @@ trait SequenceLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   /** @return -1 if <code>that</code> not contained in this, otherwise the
    *  first index where <code>that</code> is contained.
    */
-  def indexOfSeq[B >: A](that: Sequence[B]): Int = indexOfSeq(that, 0)
+  def indexOfSeq[B >: A](that: Seq[B]): Int = indexOfSeq(that, 0)
 
-  def indexOfSeq[B >: A](that: Sequence[B], fromIndex: Int): Int =
+  def indexOfSeq[B >: A](that: Seq[B], fromIndex: Int): Int =
     if (this.hasDefiniteSize && that.hasDefiniteSize)
-      SequenceLike.indexOf(thisCollection, 0, length, that, 0, that.length, fromIndex)
+      SeqLike.indexOf(thisCollection, 0, length, that, 0, that.length, fromIndex)
     else {
       var i = fromIndex
-      var s: Sequence[A] = thisCollection drop i
+      var s: Seq[A] = thisCollection drop i
       while (!s.isEmpty) {
         if (s startsWith that)
           return i
@@ -360,12 +360,12 @@ trait SequenceLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   *  last index where <code>that</code> is contained.
   *  @note may not terminate for infinite-sized collections.
   */
-  def lastIndexOfSeq[B >: A](that: Sequence[B]): Int = lastIndexOfSeq(that, that.length)
+  def lastIndexOfSeq[B >: A](that: Seq[B]): Int = lastIndexOfSeq(that, that.length)
 
   // since there's no way to find the last index in an infinite sequence,
   // we just document it may not terminate and assume it will.
-  def lastIndexOfSeq[B >: A](that: Sequence[B], fromIndex: Int): Int =
-    SequenceLike.lastIndexOf(thisCollection, 0, length, that, 0, that.length, fromIndex)
+  def lastIndexOfSeq[B >: A](that: Seq[B], fromIndex: Int): Int =
+    SeqLike.lastIndexOf(thisCollection, 0, length, that, 0, that.length, fromIndex)
 
   /** Tests if the given value <code>elem</code> is a member of this
    *  sequence.
@@ -390,7 +390,7 @@ trait SequenceLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  @return     a sequence containing the elements of this
    *              sequence and those of the given sequence <code>that</code>.
    */
-  def union[B >: A, That](that: Sequence[B])(implicit bf: BuilderFactory[B, That, Repr]): That =
+  def union[B >: A, That](that: Seq[B])(implicit bf: BuilderFactory[B, That, Repr]): That =
     this ++ that
 
   /** <p>
@@ -412,7 +412,7 @@ trait SequenceLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *              <i>m</i> copies of each element present in both sequences,
    *              where <i>m</i> is defined as above.
    */
-  def diff[B >: A, That](that: Sequence[B]): Repr = {
+  def diff[B >: A, That](that: Seq[B]): Repr = {
     val occ = occCounts(that)
     val b = newBuilder
     for (x <- this)
@@ -438,7 +438,7 @@ trait SequenceLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  @return     the sequence of elements contained both in this sequence and
    *              in the given sequence <code>that</code>.
    */
-  def intersect[B >: A, That](that: Sequence[B]): Repr = {
+  def intersect[B >: A, That](that: Seq[B]): Repr = {
     val occ = occCounts(that)
     val b = newBuilder
     for (x <- this)
@@ -449,7 +449,7 @@ trait SequenceLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     b.result
   }
 
-  private def occCounts[B](seq: Sequence[B]): mutable.Map[B, Int] = {
+  private def occCounts[B](seq: Seq[B]): mutable.Map[B, Int] = {
     val occ = new mutable.HashMap[B, Int] { override def default(k: B) = 0 }
     for (y <- seq) occ(y) += 1
     occ
@@ -474,7 +474,7 @@ trait SequenceLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  except that `replaced` elements starting from `from` are replaced
    *  by `patch`.
    */
-  def patch[B >: A, That](from: Int, patch: Sequence[B], replaced: Int)(implicit bf: BuilderFactory[B, That, Repr]): That = {
+  def patch[B >: A, That](from: Int, patch: Seq[B], replaced: Int)(implicit bf: BuilderFactory[B, That, Repr]): That = {
     val b = bf(repr)
     val (prefix, rest) = this.splitAt(from)
     b ++= toCollection(prefix)
@@ -532,13 +532,13 @@ trait SequenceLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *
    *  @return  the sequence itself
    */
-  override def toSequence: Sequence[A] = thisCollection
+  override def toSeq: Seq[A] = thisCollection
 
   /** The range of all indices of this sequence.
    */
   def indices: Range = 0 until length
 
-  override def view = new SequenceView[A, Repr] {
+  override def view = new SeqView[A, Repr] {
     protected lazy val underlying = self.repr
     override def iterator = self.iterator
     override def length = self.length
@@ -547,10 +547,10 @@ trait SequenceLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
 
   override def view(from: Int, until: Int) = view.slice(from, until)
 
-  override def hashCode() = (Sequence.hashSeed /: this)(_ * 41 + _.hashCode)
+  override def hashCode() = (Seq.hashSeed /: this)(_ * 41 + _.hashCode)
 
   override def equals(that: Any): Boolean = that match {
-    case that: Sequence[_]  => (that canEqual this) && (this sameElements that)
+    case that: Seq[_]  => (that canEqual this) && (this sameElements that)
     case _                  => false
   }
 
@@ -569,10 +569,10 @@ trait SequenceLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     *  @throws IndexOutOfBoundsException if <code>from &lt; 0</code>
     */
   @deprecated("use `drop' instead")
-  def slice(from: Int): Sequence[A] = toCollection(slice(from, length))
+  def slice(from: Int): Seq[A] = toCollection(slice(from, length))
 
   @deprecated("Should be replaced by <code>(s1, s2) forall { case (x, y) => f(x, y) }</code>")
-  def equalsWith[B](that: Sequence[B])(f: (A,B) => Boolean): Boolean = {
+  def equalsWith[B](that: Seq[B])(f: (A,B) => Boolean): Boolean = {
     val i = this.iterator
     val j = that.iterator
     while (i.hasNext && j.hasNext)
@@ -584,7 +584,7 @@ trait SequenceLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
 
   /** Is <code>that</code> a slice in this? */
   @deprecated("Should be replaced by <code>indexOfSeq(that) != -1</code>")
-  def containsSlice[B](that: Sequence[B]): Boolean = indexOfSeq(that) != -1
+  def containsSlice[B](that: Seq[B]): Boolean = indexOfSeq(that) != -1
 
  /**
    * returns a projection that can be used to call non-strict <code>filter</code>,

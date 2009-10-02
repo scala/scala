@@ -37,7 +37,7 @@ private object Utils {
  */
 @cloneable
 class ArrayStack[T] private(private var table : Array[AnyRef],
-                            private var index : Int) extends scala.collection.Sequence[T] with Cloneable[ArrayStack[T]] {
+                            private var index : Int) extends scala.collection.Seq[T] with Cloneable[ArrayStack[T]] {
   def this() = this(new Array[AnyRef](1), 0)
 
   /** Retrieve n'th element from stack, where top of stack has index 0 */

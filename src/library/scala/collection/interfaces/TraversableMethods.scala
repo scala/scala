@@ -37,7 +37,7 @@ trait TraversableMethods[+A, +This <: TraversableLike[A, This] with Traversable[
   def toArray[B >: A : ClassManifest]: Array[B]
   def toIterable: Iterable[A]
   def toList: List[A]
-  def toSequence: Sequence[A]
+  def toSeq: Seq[A]
   def toSet[B >: A]: immutable.Set[B]
   def toStream: Stream[A]
   def toVector[B >: A]: mutable.Vector[B]

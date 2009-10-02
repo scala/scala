@@ -92,7 +92,7 @@ object DocUtil
       else xs.head ++ sep ++ interleave(xs.tail, sep)
 
     def mkXML(begin: NodeSeq, separator: NodeSeq, end: NodeSeq)(f: T => NodeSeq): NodeSeq =
-      begin ++ interleave(list.toSequence map f, separator) ++ end
+      begin ++ interleave(list.toSeq map f, separator) ++ end
 
     def mkXML(begin: String, separator: String, end: String)(f: T => NodeSeq): NodeSeq =
       this.mkXML(Text(begin), Text(separator), Text(end))(f)

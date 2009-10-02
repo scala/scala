@@ -79,7 +79,7 @@ trait Traversable[+A] extends TraversableLike[A, Traversable[A]]
   override def toArray[B >: A : ClassManifest]: Array[B]
   override def toList: List[A]
   override def toIterable: Iterable[A]
-  override def toSequence: Sequence[A]
+  override def toSeq: Seq[A]
   override def toStream: Stream[A]
 //  override def sortWith(lt : (A,A) => Boolean): Traversable[A]
   override def mkString(start: String, sep: String, end: String): String

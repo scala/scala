@@ -19,10 +19,10 @@ import TraversableView.NoBuilder
  * @author Martin Odersky
  * @version 2.8
  */
-trait SequenceView[+A, +Coll] extends SequenceViewLike[A, Coll, SequenceView[A, Coll]]
+trait SeqView[+A, +Coll] extends SeqViewLike[A, Coll, SeqView[A, Coll]]
 
-object SequenceView {
+object SeqView {
   type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}
-  implicit def builderFactory[A]: BuilderFactory[A, SequenceView[A, Sequence[_]], Coll] = new BuilderFactory[A, SequenceView[A, Sequence[_]], Coll] { def apply(from: Coll) = new NoBuilder }
+  implicit def builderFactory[A]: BuilderFactory[A, SeqView[A, Seq[_]], Coll] = new BuilderFactory[A, SeqView[A, Seq[_]], Coll] { def apply(from: Coll) = new NoBuilder }
 }
 

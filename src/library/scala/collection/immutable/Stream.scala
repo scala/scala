@@ -38,13 +38,13 @@ import scala.annotation.tailrec
  * @version 1.1 08/08/03
  * @since   2.8
  */
-abstract class Stream[+A] extends LinearSequence[A]
+abstract class Stream[+A] extends LinearSeq[A]
                              with GenericTraversableTemplate[A, Stream]
-                             with LinearSequenceLike[A, Stream[A]] {
+                             with LinearSeqLike[A, Stream[A]] {
 self =>
   override def companion: GenericCompanion[Stream] = Stream
 
-  import scala.collection.{Traversable, Iterable, Sequence, Vector}
+  import scala.collection.{Traversable, Iterable, Seq, Vector}
 
   /** is this stream empty? */
   def isEmpty: Boolean
@@ -317,7 +317,7 @@ self =>
     these
   }
 
-  // there's nothing we can do about dropRight, so we just keep the definition in LinearSequence
+  // there's nothing we can do about dropRight, so we just keep the definition in LinearSeq
 
   /** Returns the longest prefix of this stream whose elements satisfy
    *  the predicate <code>p</code>.
@@ -398,7 +398,7 @@ self =>
  * @version 1.1 08/08/03
  * @since   2.8
  */
-object Stream extends SequenceFactory[Stream] {
+object Stream extends SeqFactory[Stream] {
 
   /** The factory for streams.
    *  @note Methods such as map/flatMap will not invoke the Builder factory,
@@ -415,7 +415,7 @@ object Stream extends SequenceFactory[Stream] {
   /** Creates a new builder for a stream */
   def newBuilder[A]: Builder[A, Stream[A]] = new StreamBuilder[A]
 
-  import scala.collection.{Iterable, Sequence, Vector}
+  import scala.collection.{Iterable, Seq, Vector}
 
   /** A builder for streams
    *  @note: This builder is lazy only in the sense that it does not go downs the spine

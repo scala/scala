@@ -54,7 +54,7 @@ extends Vector[A]
   /** Copy all elements to a buffer
    *  @param   The buffer to which elements are copied
   override def copyToBuffer[B >: A](dest: Buffer[B]) {
-    dest ++= (array: Sequence[AnyRef]).asInstanceOf[Sequence[B]]
+    dest ++= (array: Seq[AnyRef]).asInstanceOf[Seq[B]]
   }
    */
 
@@ -67,7 +67,7 @@ extends Vector[A]
   }
 }
 
-object GenericArray extends SequenceFactory[GenericArray] {
+object GenericArray extends SeqFactory[GenericArray] {
   implicit def builderFactory[A]: BuilderFactory[A, GenericArray[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, GenericArray[A]] =
     new ArrayBuffer[A] mapResult { buf =>

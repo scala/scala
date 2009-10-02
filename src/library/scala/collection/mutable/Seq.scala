@@ -14,28 +14,28 @@ package mutable
 
 import generic._
 
-/** A subtrait of <code>collection.Sequence</code> which represents sequences
+/** A subtrait of <code>collection.Seq</code> which represents sequences
  *  that can be mutated.
- *  The class adds an <code>update</code> method to <code>collection.Sequence</code>.
+ *  The class adds an <code>update</code> method to <code>collection.Seq</code>.
  *
  *  @since 2.8
  */
-trait Sequence[A] extends Iterable[A]
-                     with scala.collection.Sequence[A]
-                     with GenericTraversableTemplate[A, Sequence]
-                     with SequenceLike[A, Sequence[A]] {
-  override def companion: GenericCompanion[Sequence] = Sequence
+trait Seq[A] extends Iterable[A]
+                     with scala.collection.Seq[A]
+                     with GenericTraversableTemplate[A, Seq]
+                     with SeqLike[A, Seq[A]] {
+  override def companion: GenericCompanion[Seq] = Seq
 
   def update(idx: Int, elem: A)
 }
 
-/** A factory object for the trait <code>Sequence</code>.
+/** A factory object for the trait <code>Seq</code>.
  *
  *  @author  Martin Odersky
  *  @version 2.8
  *  @since   2.8
  */
-object Sequence extends SequenceFactory[Sequence] {
-  implicit def builderFactory[A]: BuilderFactory[A, Sequence[A], Coll] = new VirtualBuilderFactory[A]
-  def newBuilder[A]: Builder[A, Sequence[A]] = new ArrayBuffer
+object Seq extends SeqFactory[Seq] {
+  implicit def builderFactory[A]: BuilderFactory[A, Seq[A], Coll] = new VirtualBuilderFactory[A]
+  def newBuilder[A]: Builder[A, Seq[A]] = new ArrayBuffer
 }

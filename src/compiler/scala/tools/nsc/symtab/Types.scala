@@ -4780,7 +4780,7 @@ A type's typeSymbol should never be inspected directly.
   val shorthands = Set(
     "scala.collection.immutable.List",
     "scala.collection.immutable.Nil",
-    "scala.collection.Sequence",
+    "scala.collection.Seq",
     "scala.collection.Traversable",
     "scala.collection.Iterable",
     "scala.collection.mutable.StringBuilder",

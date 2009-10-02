@@ -368,10 +368,10 @@ object Array extends FallbackArrayBuilding {
     b.result
   }
 
-  /** This method is called in a pattern match { case Sequence(...) => }.
+  /** This method is called in a pattern match { case Seq(...) => }.
    *
    *  @param x the selector value
-   *  @return  sequence wrapped in an option, if this is a Sequence, otherwise none
+   *  @return  sequence wrapped in an option, if this is a Seq, otherwise none
    */
   def unapplySeq[T](x: Array[T]): Option[Vector[T]] =
     if (x == null) None else Some(x.toVector)

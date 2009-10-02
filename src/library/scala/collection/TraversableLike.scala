@@ -718,7 +718,7 @@ self =>
   /** Returns a sequence with all elements in this traversable object.
    *  @note Will not terminate for infinite-sized collections.
    */
-  def toSequence: Sequence[A] = toList
+  def toSeq: Seq[A] = toList
 
   /** Returns a vector with all elements in this traversable object.
    *  @note Will not terminate for infinite-sized collections.

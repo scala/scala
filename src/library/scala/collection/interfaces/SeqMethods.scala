@@ -16,43 +16,43 @@ import scala.reflect.ClassManifest
 /**
  * @since 2.8
  */
-trait SequenceMethods[+A, +This <: SequenceLike[A, This] with Sequence[A]] extends IterableMethods[A, This]
+trait SeqMethods[+A, +This <: SeqLike[A, This] with Seq[A]] extends IterableMethods[A, This]
 {
   // abstract
   def apply(idx: Int): A
   def length: Int
 
   def contains(elem: Any): Boolean
-  def diff[B >: A, That](that: Sequence[B]): This
-  def endsWith[B](that: Sequence[B]): Boolean
-  def indexOfSeq[B >: A](that: Sequence[B]): Int
-  def indexOfSeq[B >: A](that: Sequence[B], fromIndex: Int): Int
+  def diff[B >: A, That](that: Seq[B]): This
+  def endsWith[B](that: Seq[B]): Boolean
+  def indexOfSeq[B >: A](that: Seq[B]): Int
+  def indexOfSeq[B >: A](that: Seq[B], fromIndex: Int): Int
   def indexOf[B >: A](elem: B): Int
   def indexOf[B >: A](elem: B, from: Int): Int
   def indexWhere(p: A => Boolean): Int
   def indexWhere(p: A => Boolean, from: Int): Int
   def indices: Range
-  def intersect[B >: A, That](that: Sequence[B]): This
+  def intersect[B >: A, That](that: Seq[B]): This
   def isDefinedAt(x: Int): Boolean
-  def lastIndexOfSeq[B >: A](that: Sequence[B]): Int
-  def lastIndexOfSeq[B >: A](that: Sequence[B], fromIndex: Int): Int
+  def lastIndexOfSeq[B >: A](that: Seq[B]): Int
+  def lastIndexOfSeq[B >: A](that: Seq[B], fromIndex: Int): Int
   def lastIndexOf[B >: A](elem: B): Int
   def lastIndexOf[B >: A](elem: B, end: Int): Int
   def lastIndexWhere(p: A => Boolean): Int
   def lastIndexWhere(p: A => Boolean, end: Int): Int
   def lengthCompare(len: Int): Int
   def padTo[B >: A, That](len: Int, elem: B)(implicit bf: BuilderFactory[B, That, This]): That
-  def patch[B >: A, That](from: Int, patch: Sequence[B], replaced: Int)(implicit bf: BuilderFactory[B, That, This]): That
+  def patch[B >: A, That](from: Int, patch: Seq[B], replaced: Int)(implicit bf: BuilderFactory[B, That, This]): That
   def prefixLength(p: A => Boolean): Int
   def removeDuplicates: This
   def reverse: This
   def reverseIterator: Iterator[A]
   def segmentLength(p: A => Boolean, from: Int): Int
-  def slice(from: Int): Sequence[A]
-  def startsWith[B](that: Sequence[B]): Boolean
-  def startsWith[B](that: Sequence[B], offset: Int): Boolean
-  def union[B >: A, That](that: Sequence[B])(implicit bf: BuilderFactory[B, That, This]): That
+  def slice(from: Int): Seq[A]
+  def startsWith[B](that: Seq[B]): Boolean
+  def startsWith[B](that: Seq[B], offset: Int): Boolean
+  def union[B >: A, That](that: Seq[B])(implicit bf: BuilderFactory[B, That, This]): That
 
-  override def view: SequenceView[A, This]
-  override def view(from: Int, until: Int): SequenceView[A, This]
+  override def view: SeqView[A, This]
+  override def view(from: Int, until: Int): SeqView[A, This]
 }

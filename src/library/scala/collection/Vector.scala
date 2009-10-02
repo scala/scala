@@ -27,13 +27,13 @@ import mutable.{Builder, ArrayBuffer}
  *  @version 2.8
  *  @since   2.8
  */
-trait Vector[+A] extends Sequence[A]
+trait Vector[+A] extends Seq[A]
                     with GenericTraversableTemplate[A, Vector]
                     with VectorLike[A, Vector[A]] {
   override def companion: GenericCompanion[Vector] = Vector
 }
 
-object Vector extends SequenceFactory[Vector] {
+object Vector extends SeqFactory[Vector] {
   implicit def builderFactory[A]: BuilderFactory[A, Vector[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, Vector[A]] = mutable.Vector.newBuilder[A]
 }

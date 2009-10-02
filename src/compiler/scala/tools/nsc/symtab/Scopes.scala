@@ -50,7 +50,7 @@ trait Scopes {
   // Martin: This code contains a lot of stuff for the old Eclipse plugin.
   // Now it's just needless complexity, which should be eleminated.
   // We should make the elems list doubly-linked,
-  // and have scopes inherit from LinearSequence,
+  // and have scopes inherit from LinearSeq,
   // that way, we need to do way fewer toList than before.
 
   /**

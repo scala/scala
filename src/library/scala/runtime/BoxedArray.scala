@@ -14,7 +14,7 @@ package scala.runtime
 import Predef._
 import scala.reflect.ClassManifest
 import collection.mutable._
-import collection.Sequence
+import collection.Seq
 
 /**
  *  <p>A class representing <code>Array[T]</code></p>

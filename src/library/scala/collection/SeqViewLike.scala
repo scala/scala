@@ -12,7 +12,7 @@
 package scala.collection
 
 import generic._
-import Sequence.fill
+import Seq.fill
 import TraversableView.NoBuilder
 
 /** A non-strict projection of an iterable.
@@ -20,13 +20,13 @@ import TraversableView.NoBuilder
  * @author Martin Odersky
  * @version 2.8
  */
-trait SequenceViewLike[+A,
+trait SeqViewLike[+A,
                            +Coll,
-                           +This <: SequenceView[A, Coll] with SequenceViewLike[A, Coll, This]]
-  extends Sequence[A] with SequenceLike[A, This] with IterableView[A, Coll] with IterableViewLike[A, Coll, This]
+                           +This <: SeqView[A, Coll] with SeqViewLike[A, Coll, This]]
+  extends Seq[A] with SeqLike[A, This] with IterableView[A, Coll] with IterableViewLike[A, Coll, This]
 { self =>
 
-  trait Transformed[+B] extends SequenceView[B, Coll] with super.Transformed[B] {
+  trait Transformed[+B] extends SeqView[B, Coll] with super.Transformed[B] {
     override def length: Int
     override def apply(idx: Int): B
   }
@@ -60,12 +60,12 @@ trait SequenceViewLike[+A,
     override def length = index(self.length)
     override def apply(idx: Int) = {
       val row = findRow(idx, 0, self.length - 1)
-      mapping(self(row)).toSequence(idx - index(row))
+      mapping(self(row)).toSeq(idx - index(row))
     }
   }
 
   trait Appended[B >: A] extends Transformed[B] with super.Appended[B] {
-    lazy val restSeq = rest.toSequence
+    lazy val restSeq = rest.toSeq
     override def length = self.length + restSeq.length
     override def apply(idx: Int) =
       if (idx < self.length) self(idx) else restSeq(idx - self.length)
@@ -111,7 +111,7 @@ trait SequenceViewLike[+A,
 
   trait Patched[B >: A] extends Transformed[B] {
     protected[this] val from: Int
-    protected[this] val patch: Sequence[B]
+    protected[this] val patch: Seq[B]
     protected[this] val replaced: Int
     private lazy val plen = patch.length
     override def iterator: Iterator[B] = self.iterator patch (from, patch.iterator, replaced)
@@ -134,13 +134,13 @@ trait SequenceViewLike[+A,
   protected override def newDroppedWhile(p: A => Boolean): Transformed[A] = new DroppedWhile { val pred = p }
   protected override def newTakenWhile(p: A => Boolean): Transformed[A] = new TakenWhile { val pred = p }
   protected def newReversed: Transformed[A] = new Reversed { }
-  protected def newPatched[B >: A](_from: Int, _patch: Sequence[B], _replaced: Int): Transformed[B] = new Patched[B] {
+  protected def newPatched[B >: A](_from: Int, _patch: Seq[B], _replaced: Int): Transformed[B] = new Patched[B] {
     val from = _from; val patch = _patch; val replaced = _replaced
   }
 
   override def reverse: This = newReversed.asInstanceOf[This]
 
-  override def patch[B >: A, That](from: Int, patch: Sequence[B], replaced: Int)(implicit bf: BuilderFactory[B, That, This]): That = {
+  override def patch[B >: A, That](from: Int, patch: Seq[B], replaced: Int)(implicit bf: BuilderFactory[B, That, This]): That = {
     newPatched(from, patch, replaced).asInstanceOf[That]
 // was:    val b = bf(repr)
 //    if (b.isInstanceOf[NoBuilder[_]]) newPatched(from, patch, replaced).asInstanceOf[That]
@@ -150,7 +150,7 @@ trait SequenceViewLike[+A,
   override def padTo[B >: A, That](len: Int, elem: B)(implicit bf: BuilderFactory[B, That, This]): That =
     patch(length, fill(len - length)(elem), 0)
 
-  override def stringPrefix = "SequenceView"
+  override def stringPrefix = "SeqView"
 }
 
 

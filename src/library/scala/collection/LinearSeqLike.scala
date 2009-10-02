@@ -18,7 +18,7 @@ import scala.util.control.Breaks._
 /** Class <code>Linear[A]</code> represents linear sequences of elements.
  *  For such sequences `isEmpty`, `head` and `tail` are guaranteed to be
  *  efficient constant time (or near so) operations.
- *  It does not add any methods to <code>Sequence</code> but overrides
+ *  It does not add any methods to <code>Seq</code> but overrides
  *  several methods with optimized implementations.
  *
  *  @author  Martin Odersky
@@ -26,10 +26,10 @@ import scala.util.control.Breaks._
  *  @version 1.0, 16/07/2003
  *  @since   2.8
  */
-trait LinearSequenceLike[+A, +Repr <: LinearSequenceLike[A, Repr]] extends SequenceLike[A, Repr] { self: Repr =>
+trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr] { self: Repr =>
 
-  override protected[this] def thisCollection: LinearSequence[A] = this.asInstanceOf[LinearSequence[A]]
-  override protected[this] def toCollection(repr: Repr): LinearSequence[A] = repr.asInstanceOf[LinearSequence[A]]
+  override protected[this] def thisCollection: LinearSeq[A] = this.asInstanceOf[LinearSeq[A]]
+  override protected[this] def toCollection(repr: Repr): LinearSeq[A] = repr.asInstanceOf[LinearSeq[A]]
 
   /** Abstract method to be implemented in a subclass */
   def isEmpty: Boolean
@@ -318,7 +318,7 @@ trait LinearSequenceLike[+A, +Repr <: LinearSequenceLike[A, Repr]] extends Seque
    *  @param that  the other linear sequence
    */
   override def sameElements[B >: A](that: Iterable[B]): Boolean = that match {
-    case that1: LinearSequence[_] =>
+    case that1: LinearSeq[_] =>
       var these = this
       var those = that1
       while (!these.isEmpty && !those.isEmpty && these.head == those.head) {
@@ -330,7 +330,7 @@ trait LinearSequenceLike[+A, +Repr <: LinearSequenceLike[A, Repr]] extends Seque
       super.sameElements(that)
   }
 
-  // Overridden methods from Sequence
+  // Overridden methods from Seq
 
   /** Result of comparing <code>length</code> with operand <code>len</code>.
    *  returns <code>x</code> where

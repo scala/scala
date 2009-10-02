@@ -27,8 +27,8 @@ import generic._
  *  @since   1
  */
 @serializable @SerialVersionUID(5938451523372603072L)
-class MutableList[A] extends LinearSequence[A]
-                        with LinearSequenceLike[A, MutableList[A]]
+class MutableList[A] extends LinearSeq[A]
+                        with LinearSeqLike[A, MutableList[A]]
                         with Builder[A, MutableList[A]] {
 
   override protected[this] def newBuilder = new MutableList[A]

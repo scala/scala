@@ -39,7 +39,7 @@ trait IterableForwarder[+A] extends Iterable[A] with TraversableForwarder[A] {
   protected def underlying: Iterable[A]
 
   // Iterable delegates
-  // Iterable methods could be printed by  cat IterableTemplate.scala | sed -n '/trait Iterable/,$ p' | egrep '^  (override )?def'
+  // Iterable methods could be printed by  cat IterableLike.scala | sed -n '/trait Iterable/,$ p' | egrep '^  (override )?def'
 
   override def iterator = underlying.iterator
   override def sameElements[B >: A](that: Iterable[B]): Boolean = underlying.sameElements(that)

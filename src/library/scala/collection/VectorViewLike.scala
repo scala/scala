@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Sequence.scala 16092 2008-09-12 10:37:06Z nielsen $
+// $Id: Seq.scala 16092 2008-09-12 10:37:06Z nielsen $
 
 
 package scala.collection
@@ -24,7 +24,7 @@ import TraversableView.NoBuilder
 trait VectorViewLike[+A,
                          +Coll,
                          +This <: VectorView[A, Coll] with VectorViewLike[A, Coll, This]]
-  extends Vector[A] with VectorLike[A, This] with SequenceView[A, Coll] with SequenceViewLike[A, Coll, This]
+  extends Vector[A] with VectorLike[A, This] with SeqView[A, Coll] with SeqViewLike[A, Coll, This]
 { self =>
 
   trait Transformed[+B] extends VectorView[B, Coll] with super.Transformed[B]
@@ -100,7 +100,7 @@ trait VectorViewLike[+A,
   protected override def newDroppedWhile(p: A => Boolean): Transformed[A] = new DroppedWhile { val pred = p }
   protected override def newTakenWhile(p: A => Boolean): Transformed[A] = new TakenWhile { val pred = p }
   protected override def newReversed: Transformed[A] = new Reversed { }
-  protected override def newPatched[B >: A](_from: Int, _patch: Sequence[B], _replaced: Int): Transformed[B] = new Patched[B] {
+  protected override def newPatched[B >: A](_from: Int, _patch: Seq[B], _replaced: Int): Transformed[B] = new Patched[B] {
     val from = _from; val patch = _patch; val replaced = _replaced
   }
   protected override def newZipped[B](that: Iterable[B]): Transformed[(A, B)] = new Zipped[B] {

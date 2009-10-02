@@ -20,7 +20,7 @@ import mutable.{Builder, ArrayBuffer}
  *
  *  @since 2.8
  */
-trait Vector[+A] extends Sequence[A]
+trait Vector[+A] extends Seq[A]
                     with scala.collection.Vector[A]
                     with GenericTraversableTemplate[A, Vector]
                     with VectorLike[A, Vector[A]] {
@@ -30,7 +30,7 @@ trait Vector[+A] extends Sequence[A]
 /**
  * @since 2.8
  */
-object Vector extends SequenceFactory[Vector] {
+object Vector extends SeqFactory[Vector] {
   // todo: insert better vector implementation here
   @serializable @SerialVersionUID(7129304555082767876L)
   class Impl[A](buf: ArrayBuffer[A]) extends Vector[A] {

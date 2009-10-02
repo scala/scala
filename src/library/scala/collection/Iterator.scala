@@ -752,7 +752,7 @@ trait Iterator[+A] { self =>
    *  understand) this method takes the way one might expect, leaving
    *  the original iterator with 'size' fewer elements.
    */
-  private def takeDestructively(size: Int): Sequence[A] = {
+  private def takeDestructively(size: Int): Seq[A] = {
     val buf = new ArrayBuffer[A]
     var i = 0
     while (self.hasNext && i < size) {
@@ -763,12 +763,12 @@ trait Iterator[+A] { self =>
   }
 
   /** A flexible iterator for transforming an <code>Iterator[A]</code> into an
-   *  Iterator[Sequence[A]], with configurable sequence size, step, and
+   *  Iterator[Seq[A]], with configurable sequence size, step, and
    *  strategy for dealing with elements which don't fit evenly.
    *
    *  Typical uses can be achieved via methods `grouped' and `sliding'.
    */
-  class GroupedIterator[B >: A](self: Iterator[A], size: Int, step: Int) extends Iterator[Sequence[B]] {
+  class GroupedIterator[B >: A](self: Iterator[A], size: Int, step: Int) extends Iterator[Seq[B]] {
     require(size >= 1 && step >= 1)
 
     private[this] var buffer: ArrayBuffer[B] = ArrayBuffer()  // the buffer
@@ -1008,7 +1008,7 @@ trait Iterator[+A] { self =>
    *
    *  @return  A sequence which enumerates all elements of this iterator.
    */
-  def toSequence: Sequence[A] = {
+  def toSeq: Seq[A] = {
     val buffer = new ArrayBuffer[A]
     this copyToBuffer buffer
     buffer
@@ -1096,8 +1096,8 @@ trait Iterator[+A] { self =>
    *
    * @return  a sequence which enumerates all elements of this iterator.
    */
-  @deprecated("use toSequence instead")
-  def collect: Sequence[A] = toSequence
+  @deprecated("use toSeq instead")
+  def collect: Seq[A] = toSeq
 
   /** Returns a counted iterator from this iterator.
    */

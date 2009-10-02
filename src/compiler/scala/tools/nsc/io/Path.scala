@@ -9,7 +9,7 @@ import java.io.{
   FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
   BufferedInputStream, BufferedOutputStream, File => JFile }
 import java.net.{ URI, URL }
-import collection.{ Sequence, Traversable }
+import collection.{ Seq, Traversable }
 import PartialFunction._
 import scala.util.Random.nextASCIIString
 

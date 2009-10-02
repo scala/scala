@@ -25,7 +25,7 @@ import generic._
  *  @since   1
   */
 @cloneable
-trait Buffer[A] extends Sequence[A]
+trait Buffer[A] extends Seq[A]
                    with GenericTraversableTemplate[A, Buffer]
                    with BufferLike[A, Buffer[A]] {
   override def companion: GenericCompanion[Buffer] = Buffer
@@ -33,7 +33,7 @@ trait Buffer[A] extends Sequence[A]
 
 /** Factory object for <code>Buffer</code> trait.
  */
-object Buffer extends SequenceFactory[Buffer] {
+object Buffer extends SeqFactory[Buffer] {
   implicit def builderFactory[A]: BuilderFactory[A, Buffer[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, Buffer[A]] = new ArrayBuffer
 }

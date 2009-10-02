@@ -15,22 +15,22 @@ package immutable
 import generic._
 import mutable.Builder
 
-/** A subtrait of <code>collection.Sequence</code> which represents sequences
+/** A subtrait of collection.Seq which represents sequences
  *  that cannot be mutated.
  *
  *  @since 2.8
  */
-trait LinearSequence[+A] extends Sequence[A]
-                            with scala.collection.LinearSequence[A]
-                            with GenericTraversableTemplate[A, LinearSequence]
-                            with LinearSequenceLike[A, LinearSequence[A]] {
-  override def companion: GenericCompanion[LinearSequence] = LinearSequence
+trait Seq[+A] extends Iterable[A]
+                      with scala.collection.Seq[A]
+                      with GenericTraversableTemplate[A, Seq]
+                      with SeqLike[A, Seq[A]] {
+  override def companion: GenericCompanion[Seq] = Seq
 }
 
 /**
  * @since 2.8
  */
-object LinearSequence extends SequenceFactory[LinearSequence] {
-  implicit def builderFactory[A]: BuilderFactory[A, LinearSequence[A], Coll] = new VirtualBuilderFactory[A]
-  def newBuilder[A]: Builder[A, LinearSequence[A]] = new mutable.ListBuffer
+object Seq extends SeqFactory[Seq] {
+  implicit def builderFactory[A]: BuilderFactory[A, Seq[A], Coll] = new VirtualBuilderFactory[A]
+  def newBuilder[A]: Builder[A, Seq[A]] = new mutable.ListBuffer
 }

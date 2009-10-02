@@ -63,7 +63,7 @@ trait ResizableArray[A] extends Vector[A]
   /** Copy all elements to a buffer
    *  @param   The buffer to which elements are copied
   override def copyToBuffer[B >: A](dest: Buffer[B]) {
-    dest ++= (array: Sequence[AnyRef]).asInstanceOf[Sequence[B]]
+    dest ++= (array: Seq[AnyRef]).asInstanceOf[Seq[B]]
   }
    */
 
@@ -114,7 +114,7 @@ trait ResizableArray[A] extends Vector[A]
   }
 }
 
-object ResizableArray extends SequenceFactory[ResizableArray] {
+object ResizableArray extends SeqFactory[ResizableArray] {
   implicit def builderFactory[A]: BuilderFactory[A, ResizableArray[A], Coll] = new VirtualBuilderFactory[A]
   def newBuilder[A]: Builder[A, ResizableArray[A]] = new ArrayBuffer[A]
 }
