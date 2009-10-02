@@ -78,9 +78,9 @@ trait ParallelMatching extends ast.TreeDSL
   class MatchMatrix(val context: MatrixContext, data: MatrixInit) extends MatchMatrixOptimizer {
     import context._
 
-    val MatrixInit(roots, cases, failTree) = data
-    val ExpandedMatrix(rows, targets)           = expand(roots, cases)
-    val expansion: Rep                          = make(roots, rows)
+    val MatrixInit(roots, cases, failTree)  = data
+    val ExpandedMatrix(rows, targets)       = expand(roots, cases)
+    val expansion: Rep                      = make(roots, rows)
 
     val shortCuts   = new ListBuffer[Symbol]()
 
@@ -108,51 +108,44 @@ trait ParallelMatching extends ast.TreeDSL
 
     /** the injection here handles alternatives and unapply type tests */
     final def make(tvars: List[Symbol], row1: List[Row]): Rep = {
-      def equalsCheck(x: Tree) =
-        if (x.symbol.isValue) singleType(NoPrefix, x.symbol)
-        else Pattern(x).mkSingleton
-
       def classifyPat(opat: Pattern, j: Int): Pattern = {
-        def vars                    = opat.boundVariables
-        def rebind(t: Pattern)      = Pattern(makeBind(vars, t.boundTree))
-        def rebindEmpty(tpe: Type)  = Pattern(mkEmptyTreeBind(vars, tpe))
-        def rebindTyped()           = Pattern(mkTypedBind(vars, equalsCheck(opat.tree)))
-
         // @pre for doUnapplySeq: is not right-ignoring (no star pattern) ; no exhaustivity check
         def doUnapplySeq(tptArg: Tree, xs: List[Tree]) = {
           tvars(j) setFlag Flags.TRANS_FLAG
-          rebind(Pattern(normalizedListPattern(xs, tptArg.tpe)))
+
+          opat rebindTo normalizedListPattern(xs, tptArg.tpe)
         }
 
         def doUnapplyApply(ua: UnApply, fn: Tree) = {
           val MethodType(List(arg, _*), _) = fn.tpe
-          val npat = Pattern(
+          val npat =
             if (tvars(j).tpe <:< arg.tpe) ua
             else Typed(ua, TypeTree(arg.tpe)) setType arg.tpe
-          )
-          rebind(npat) setType arg.tpe
+
+          opat rebindTo npat
         }
         def doValMatch(x: Tree, fn: Tree) = {
-          def isModule = x.symbol.isModule || x.tpe.termSymbol.isModule
+          val p = Pattern(x)
+
           def examinePrefix(path: Tree) = (path, path.tpe) match {
             case (_, t: ThisType)     => singleType(t, x.symbol)            // cases 2/3 are e.g. `case Some(p._2)' in s.c.jcl.Map
             case (_: Apply, _)        => PseudoType(x)                      // outer-matching: test/files/pos/t154.scala
             case _                    => singleType(Pattern(path).mkSingleton, x.symbol)  // old
           }
           val singletonType =
-            if (isModule) Pattern(x).mkSingleton else fn match {
+            if (p.isModule) p.mkSingleton else fn match {
               case Select(path, _)  => examinePrefix(path)
-              case x: Ident         => equalsCheck(x)
+              case x: Ident         => Pattern(fn).equalsCheck
             }
-          val typeToTest = mkEqualsRef(List(singletonType))
+          val typeToTest = mkEqualsRef(singletonType)
 
-          rebind(Pattern(Typed(WILD(typeToTest), TypeTree(singletonType)) setType typeToTest))
+          val t = Typed(WILD(typeToTest), TypeTree(singletonType)) setType typeToTest
+          opat rebindTo t
         }
 
         def doReturnOriginal(t: Tree) = cond(t) {
           case EmptyTree | WILD() | _: Literal | _: Typed | _: ArrayValue   => true
         }
-        def doRebindTyped(t: Tree) = cond(t) { case _: Ident | _: Select => true }
 
         // NOTE - this seemingly pointless representation has a point.  Until extractors
         // can be trusted, I only feel safe using them by using one to a match, because it is
@@ -160,15 +153,15 @@ trait ParallelMatching extends ast.TreeDSL
         // pattern match before the final curtain falls.
         val f = List[PartialFunction[Tree, Pattern]](
           { case _: Alternative                       => opat } ,
-          { case Typed(p @ Stripped(_: UnApply), tpt) => if (tvars(j).tpe <:< tpt.tpe) rebind(Pattern(p)) else opat } ,
+          { case Typed(p @ Stripped(_: UnApply), tpt) => if (tvars(j).tpe <:< tpt.tpe) opat rebindTo p else opat } ,
           { case x if doReturnOriginal(x)             => opat } ,
-          { case x if doRebindTyped(x)                => rebindTyped() } ,  // Ident(_) != nme.WILDCARD
+          { case _: Ident | _: Select                 => opat.rebindToEqualsCheck() } ,
           { case _: This                              => opat } ,
           { case UnapplySeq(tptArg, xs)               => doUnapplySeq(tptArg, xs) } ,
           { case ua @ UnApply(Apply(fn, _), _)        => doUnapplyApply(ua, fn) } ,
           { case x @ Apply_Function(fn)               => doValMatch(x, fn) } ,
-          { case Apply_Value(pre, sym)                => rebindEmpty(mkEqualsRef(List(singleType(pre, sym)))) } ,
-          { case Apply_CaseClass(tpe, args)           => if (args.isEmpty) rebindEmpty(tpe) else opat } ,
+          { case Apply_Value(pre, sym)                => opat rebindToEmpty mkEqualsRef(singleType(pre, sym)) } ,
+          { case Apply_CaseClass(tpe, args)           => if (args.isEmpty) opat rebindToEmpty tpe else opat } ,
           { case x                                    => abort("Unexpected pattern: " + x.getClass + " => " + x) }
         ) reduceLeft (_ orElse _)
 

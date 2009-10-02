@@ -16,6 +16,11 @@ trait PatternBindings extends ast.TreeDSL
   import definitions.{ EqualsPatternClass }
   import CODE._
 
+  /** EqualsPattern **/
+  def isEquals(tpe: Type)           = cond(tpe) { case TypeRef(_, EqualsPatternClass, _) => true }
+  def mkEqualsRef(tpe: Type)        = typeRef(NoPrefix, EqualsPatternClass, List(tpe))
+  def decodedEqualsType(tpe: Type)  = condOpt(tpe) { case TypeRef(_, EqualsPatternClass, List(arg)) => arg } getOrElse (tpe)
+
   // If the given pattern contains alternatives, return it as a list of patterns.
   // Makes typed copies of any bindings found so all alternatives point to final state.
   def extractBindings(p: Tree, prevBindings: Tree => Tree = identity[Tree] _): List[Tree] = {
@@ -31,13 +36,6 @@ trait PatternBindings extends ast.TreeDSL
     case Nil      => pat
     case x :: xs  => Bind(x, makeBind(xs, pat)) setType pat.tpe
   }
-
-  private def mkBind(vs: List[Symbol], tpe: Type, arg: Tree) =
-    makeBind(vs, Typed(arg, TypeTree(tpe)) setType tpe)
-
-  def mkTypedBind(vs: List[Symbol], tpe: Type)      = mkBind(vs, tpe, WILD(tpe))
-  def mkEmptyTreeBind(vs: List[Symbol], tpe: Type)  = mkBind(vs, tpe, EmptyTree)
-  def mkEqualsRef(xs: List[Type])                   = typeRef(NoPrefix, EqualsPatternClass, xs)
 
   case class Binding(pvar: Symbol, tvar: Symbol) {
     override def toString() = "%s: %s @ %s: %s".format(pvar.name, pvar.tpe, tvar.name, tvar.tpe)

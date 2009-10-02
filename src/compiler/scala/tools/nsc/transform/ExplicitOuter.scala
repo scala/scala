@@ -491,6 +491,7 @@ abstract class ExplicitOuter extends InfoTransform
     override def transformUnit(unit: CompilationUnit) {
       cunit = unit
       atPhase(phase.next) { super.transformUnit(unit) }
+      cunit = null
     }
   }
 

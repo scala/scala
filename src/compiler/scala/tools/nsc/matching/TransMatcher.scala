@@ -27,7 +27,9 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
   import symtab.Flags
   import CODE._
 
-  var cunit: CompilationUnit = _  // memory leak?
+  // cunit is set to the current unit in ExplicitOuter's transformUnit,
+  // and nulled out afterward to avoid leaking.
+  var cunit: CompilationUnit = _
 
   def newName(pos: Position, s: String) = cunit.fresh.newName(pos, s)
 

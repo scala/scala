@@ -64,6 +64,8 @@ trait Patterns extends ast.TreeDSL {
   // 8.1.4
   case class StableIdPattern(tree: Ident) extends Pattern { }
 
+  // 8.1.4 (b)
+
   // 8.1.5
   case class ConstructorPattern(tree: Apply) extends ApplyPattern {
     // XXX todo
@@ -77,19 +79,30 @@ trait Patterns extends ast.TreeDSL {
   }
 
   // 8.1.7
-  case class ExtractorPattern(tree: UnApply) extends Pattern { }
+  case class ExtractorPattern(tree: UnApply) extends Pattern {
+    private val UnApply(Apply(fn, _), args) = tree
+    private val MethodType(List(arg, _*), _) = fn.tpe
+
+    def uaTyped = Typed(tree, TypeTree(arg.tpe)) setType arg.tpe
+  }
 
   // 8.1.8
   case class SequencePattern(tree: ArrayValue) extends Pattern { }
 
   // 8.1.8 (b)
-  case class SequenceStarPattern(tree: ArrayValue) extends Pattern { }
+  case class SequenceStarPattern(tree: ArrayValue) extends Pattern {
+    // def removeStar(xs: List[Pattern]): List[Pattern] =
+    //   xs.init ::: List(Pattern(makeBind(xs.last.boundVariables, WILD(scrut.seqType))))
+  }
 
   // 8.1.9
   // InfixPattern ... subsumed by Constructor/Extractor Patterns
 
   // 8.1.10
-  case class AlternativePattern(tree: Alternative, subpatterns: Seq[Pattern]) extends Pattern { }
+  case class AlternativePattern(tree: Alternative) extends Pattern {
+    private val Alternative(subtrees) = tree
+    lazy val subpatterns = subtrees map Pattern.apply
+  }
 
   // 8.1.11
   // XMLPattern ... for now, subsumed by SequencePattern, but if we want
@@ -110,7 +123,7 @@ trait Patterns extends ast.TreeDSL {
     def apply(tree: Tree): Pattern = tree match {
       case x: Bind              => apply(unbind(tree)) withBoundTree x
       case EmptyTree | WILD()   => WildcardPattern()
-      case x @ Alternative(ps)  => AlternativePattern(x, ps map apply)
+      case x @ Alternative(ps)  => AlternativePattern(x)
       case x: Apply             => ApplyPattern(x)
       case x: Typed             => TypedPattern(x)
       case x: Literal           => LiteralPattern(x)
@@ -137,6 +150,7 @@ trait Patterns extends ast.TreeDSL {
   //
   //    val newpat = Typed(EmptyTree, TypeTree(tpe)) setType tpe)
   //
+  // This is also how Select(qual, name) is handled.
   object ApplyPattern {
     def apply(x: Apply): Pattern = {
       val Apply(fn, args) = x
@@ -181,17 +195,46 @@ trait Patterns extends ast.TreeDSL {
     }
     lazy val boundVariables = strip(boundTree)
 
+    private def wrapBindings(vs: List[Symbol], pat: Tree): Tree = vs match {
+      case Nil      => pat
+      case x :: xs  => Bind(x, wrapBindings(xs, pat)) setType pat.tpe
+    }
+
+    // If a tree has bindings, boundTree looks something like
+    //   Bind(v3, Bind(v2, Bind(v1, tree)))
+    // This takes the given tree and creates a new pattern
+    //   using the same bindings.
+    def rebindTo(t: Tree): Pattern =
+      Pattern(wrapBindings(boundVariables, t))
+
+    // Wrap this pattern's bindings around (_: Type)
+    def rebindToType(tpe: Type): Pattern =
+      rebindTo(Typed(WILD(tpe), TypeTree(tpe)) setType tpe)
+
+    // Wrap them around _
+    def rebindToEmpty(tpe: Type): Pattern =
+      rebindTo(Typed(EmptyTree, TypeTree(tpe)) setType tpe)
+
+    // Wrap them around a singleton type for an EqualsPattern check.
+    def rebindToEqualsCheck(): Pattern =
+      rebindToType(equalsCheck)
+
     def    sym  = tree.symbol
     def    tpe  = tree.tpe
     def prefix  = tpe.prefix
     def isEmpty = tree.isEmpty
 
     def isSymValid = (sym != null) && (sym != NoSymbol)
+    def isModule = sym.isModule || tpe.termSymbol.isModule
 
     def setType(tpe: Type): this.type = {
       tree setType tpe
       this
     }
+
+    def equalsCheck =
+      if (sym.isValue) singleType(NoPrefix, sym)
+      else mkSingleton
 
     def mkSingleton = tpe match {
       case st: SingleType => st

@@ -26,7 +26,6 @@ trait PatternNodes extends ast.TreeDSL
   type TypeComparison = (Type, Type) => Boolean
 
   // Tests on Types
-  def isEquals(t: Type)       = cond(t) { case TypeRef(_, EqualsPatternClass, _) => true }
   def isAnyRef(t: Type)       = t <:< AnyRefClass.tpe
   def isCaseClass(t: Type)    = t.typeSymbol hasFlag Flags.CASE
 
@@ -41,8 +40,6 @@ trait PatternNodes extends ast.TreeDSL
   // def isSubType: TypeComparison    = (t1, t2) => isSubClass(t1, t2) && (t1 <:< t2)
   // def isPatMatch: TypeComparison   = (t1, t2) => isSubType(t1, t2)
 
-  def decodedEqualsType(tpe: Type) =
-    condOpt(tpe) { case TypeRef(_, EqualsPatternClass, List(arg))  => arg } getOrElse (tpe)
 
   // If we write isSubtypeOf like:
   //
