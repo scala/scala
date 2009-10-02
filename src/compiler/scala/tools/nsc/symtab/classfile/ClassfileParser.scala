@@ -608,7 +608,7 @@ abstract class ClassfileParser {
                         case '*' => mkTypeBounds(definitions.NothingClass.tpe,
                                                  definitions.AnyClass.tpe)
                       }
-                      val newtparam = makeExistential("?"+i, sym, bounds)
+                      val newtparam = sym.newExistential(sym.pos, "?"+i) setInfo bounds
                       existentials += newtparam
                       xs += newtparam.tpe
                       i += 1

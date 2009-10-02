@@ -77,6 +77,8 @@ trait Types {
 
   private var explainSwitch = false
 
+  private final val alternativeNarrow = false
+
   private final val LogPendingSubTypesThreshold = 50
   private final val LogPendingBaseTypesThreshold = 50
 
@@ -270,7 +272,10 @@ trait Types {
      */
     def narrow: Type =
       if (phase.erasedTypes) this
-      else {
+      else if (alternativeNarrow) { // investigate why this does not work!
+        val tparam = commonOwner(this) freshExistential ".type" setInfo singletonBounds(this)
+        tparam.tpe
+      } else {
         val cowner = commonOwner(this)
         refinedType(List(this), cowner, EmptyScope, cowner.pos).narrow
       }
@@ -2687,26 +2692,9 @@ A type's typeSymbol should never be inspected directly.
   private val emptySymMap = scala.collection.immutable.Map[Symbol, Symbol]()
   private val emptySymCount = scala.collection.immutable.Map[Symbol, Int]()
 
-  /** Make an existential variable.
-   *  [martin:] this should get moved to Symbols where the other symbols are created.
-   *  @param name    suffix to be appended to the freshly generated name
-   *                 It's ususally "", except for type variables abstracting
-   *                 over values, where it is ".type".
-   *  @param owner   The owner of the variable
-   *  @param bounds  The variable's bounds
-   */
-  def makeExistential(name: String, owner: Symbol, bounds: TypeBounds): Symbol =
-    recycle(
-      owner.newAbstractType(owner.pos, newTypeName(name)).setFlag(EXISTENTIAL)
-    ).setInfo(bounds)
-
-  /** Make an existential variable with a fresh name. */
-  def makeFreshExistential(suffix: String, owner: Symbol, bounds: TypeBounds): Symbol =
-    makeExistential(freshName()+suffix, owner, bounds)
-
   def typeParamsToExistentials(clazz: Symbol, tparams: List[Symbol]): List[Symbol] = {
     val eparams = for ((tparam, i) <- tparams.zipWithIndex) yield {
-      makeExistential("?"+i, clazz, tparam.info.bounds)
+      clazz.newExistential(clazz.pos, "?"+i).setInfo(tparam.info.bounds)
     }
     for (tparam <- eparams) tparam setInfo tparam.info.substSym(tparams, eparams)
     eparams
@@ -2787,7 +2775,7 @@ A type's typeSymbol should never be inspected directly.
     def stabilize(pre: Type, clazz: Symbol): Type = {
       capturedPre get clazz match {
         case None =>
-          val qvar = makeFreshExistential(".type", clazz, singletonBounds(pre))
+          val qvar = clazz freshExistential ".type" setInfo singletonBounds(pre)
           capturedPre += (clazz -> qvar)
           capturedParams = qvar :: capturedParams
           qvar
@@ -3061,13 +3049,9 @@ A type's typeSymbol should never be inspected directly.
         val symowner = oldSym.owner // what should be used??
         val bound = singletonBounds(actuals(actualIdx))
 
-        val sym =
-          symowner.newAbstractType(oldSym.pos, oldSym.name+".type")
-
+        val sym = symowner.newExistential(oldSym.pos, oldSym.name+".type")
         sym.setInfo(bound)
         sym.setFlag(oldSym.flags)
-        sym.setFlag(EXISTENTIAL)
-
 
         existSyms = existSyms + (actualIdx -> sym)
         sym
@@ -3360,12 +3344,6 @@ A type's typeSymbol should never be inspected directly.
 
 // Helper Methods  -------------------------------------------------------------
 
-  private var nextid = 0
-  private def freshName() = {
-    nextid += 1
-    "_"+nextid
-  }
-
   final val LubGlbMargin = 0
 
   /** The maximum allowable depth of lubs or glbs over types `ts'
@@ -3502,7 +3480,7 @@ A type's typeSymbol should never be inspected directly.
   private var subsametypeRecursions: Int = 0
 
   private def isUnifiable(pre1: Type, pre2: Type) =
-    (beginsWithTypeVar(pre1) || beginsWithTypeVar(pre2)) && (pre1 =:= pre2)
+    (beginsWithTypeVarOrIsRefined(pre1) || beginsWithTypeVarOrIsRefined(pre2)) && (pre1 =:= pre2)
 
   private def equalSymsAndPrefixes(sym1: Symbol, pre1: Type, sym2: Symbol, pre2: Type): Boolean =
     if (sym1 == sym2) phase.erasedTypes || pre1 =:= pre2
@@ -3700,12 +3678,18 @@ A type's typeSymbol should never be inspected directly.
     if (subsametypeRecursions == 0) undoLog = List()
   }
 
-  /** Does this type have a prefix that begins with a type variable */
-  def beginsWithTypeVar(tp: Type): Boolean = tp match {
+  /** Does this type have a prefix that begins with a type variable,
+   *  or is it a refinement type? For type prefixes that fulfil this condition,
+   *  type selections with the same name of equal (wrt) =:= prefixes are
+   *  considered equal wrt =:=
+   */
+  def beginsWithTypeVarOrIsRefined(tp: Type): Boolean = tp match {
     case SingleType(pre, sym) =>
-      !(sym hasFlag PACKAGE) && beginsWithTypeVar(pre)
+      !(sym hasFlag PACKAGE) && beginsWithTypeVarOrIsRefined(pre)
     case TypeVar(_, constr) =>
-      constr.inst == NoType || beginsWithTypeVar(constr.inst)
+      constr.inst == NoType || beginsWithTypeVarOrIsRefined(constr.inst)
+    case RefinedType(_, _) =>
+      true
     case _ =>
       false
   }
@@ -4657,8 +4641,7 @@ A type's typeSymbol should never be inspected directly.
               else { // Martin: I removed this, because incomplete. Not sure there is a good way to fix it. For the moment we
                      // just err on the conservative side, i.e. with a bound that is too high.
                      // if(!(tparam.info.bounds contains tparam)){ //@M can't deal with f-bounds, see #2251
-                val owner = commonOwner(as)
-                val qvar = makeFreshExistential("", commonOwner(as), mkTypeBounds(g, l))
+                val qvar = commonOwner(as) freshExistential "" setInfo mkTypeBounds(g, l)
                 capturedParams += qvar
                 qvar.tpe
               }

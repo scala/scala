@@ -3589,7 +3589,7 @@ trait Typers { self: Analyzer =>
             def subArrayType(pt: Type) =
               if (isValueClass(pt.typeSymbol) || !isFullyDefined(pt)) arrayType(pt)
               else {
-                val tparam = makeFreshExistential("", context.owner, TypeBounds(NothingClass.tpe, pt))
+                val tparam = context.owner freshExistential "" setInfo TypeBounds(NothingClass.tpe, pt)
                 ExistentialType(List(tparam), arrayType(tparam.tpe))
               }
             val (expr1, baseClass) =

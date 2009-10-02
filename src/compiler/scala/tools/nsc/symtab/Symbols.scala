@@ -36,6 +36,12 @@ trait Symbols {
   /** Used to keep track of the recursion depth on locked symbols */
   private var recursionTable = Map.empty[Symbol, Int]
 
+  private var nextexid = 0
+  private def freshExistentialName() = {
+    nextexid += 1
+    "_"+nextexid
+  }
+
 /*
   type Position;
   def NoPos : Position;
@@ -251,6 +257,19 @@ trait Symbols {
         newValueParameter(owner.pos.focus, freshName()).setFlag(SYNTHETIC).setInfo(tp)
       argtypess map (_.map(param))
     }
+
+    /** Make an existential variable.
+     *  @param name    suffix to be appended to the freshly generated name
+     *                 It's ususally "", except for type variables abstracting
+     *                 over values, where it is ".type".
+     *  @param owner   The owner of the variable
+     *  @param bounds  The variable's bounds
+     */
+    final def newExistential(pos: Position, name: Name): Symbol =
+      newAbstractType(pos, name.toTypeName).setFlag(EXISTENTIAL)
+
+    final def freshExistential(suffix: String): Symbol =
+      newExistential(pos, freshExistentialName()+suffix)
 
     /** Synthetic value parameters when parameter symbols are not available.
      *  Calling this method multiple times will re-use the same parameter names.
