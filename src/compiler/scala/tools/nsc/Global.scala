@@ -822,7 +822,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         advancePhase
       }
 
-      println(narrowCount+" narrowings")
+      //println(narrowCount+" narrowings")
 
       if (settings.Xshowcls.value != "")
         showDef(newTermName(settings.Xshowcls.value), false)
