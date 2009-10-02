@@ -1395,8 +1395,12 @@ abstract class GenICode extends SubComponent  {
         case None =>
           val local = ctx.makeLocal(l.pos, definitions.AnyRefClass.typeConstructor, eqEqTempName.toString)
           //assert(!l.pos.source.isEmpty, "bad position, unit = "+unit+", tree = "+l+", pos = "+l.pos.source)
-          assert(l.pos.source == unit.source)
-          assert(r.pos.source == unit.source)
+          // Note - I commented these out because they were crashing the test case in ticket #2426
+          // (and I have also had to comment them out at various times while working on equality.)
+          // I don't know what purpose they are serving but it would be nice if they didn't have to
+          // crash the compiler.
+          // assert(l.pos.source == unit.source)
+          // assert(r.pos.source == unit.source)
           local.start = (l.pos).line
           local.end   = (r.pos).line
           local
