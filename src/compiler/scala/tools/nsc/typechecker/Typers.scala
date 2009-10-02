@@ -1425,7 +1425,7 @@ trait Typers { self: Analyzer =>
      *  into the symbol's ``annotations'' in the type completer / namer)
      */
     def removeAnnotations(mods: Modifiers): Modifiers =
-      Modifiers(mods.flags, mods.privateWithin, Nil)
+      Modifiers(mods.flags, mods.privateWithin, Nil, mods.positions)
 
     /**
      *  @param vdef ...

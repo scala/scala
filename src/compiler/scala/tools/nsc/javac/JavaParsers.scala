@@ -543,7 +543,7 @@ trait JavaParsers extends JavaScanners {
                   atPos(pos) {
                     New(rootId(nme.AnnotationDefaultATTR.toTypeName), List(List()))
                   }
-                mods1 = Modifiers(mods1.flags, mods1.privateWithin, annot :: mods1.annotations)
+                mods1 = Modifiers(mods1.flags, mods1.privateWithin, annot :: mods1.annotations, mods1.positions)
                 skipTo(SEMI)
                 accept(SEMI)
                 blankExpr

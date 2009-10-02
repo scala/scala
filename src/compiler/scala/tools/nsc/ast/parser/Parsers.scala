@@ -1549,11 +1549,13 @@ self =>
       else
         mods
 
-    private def addMod(mods: Modifiers, mod: Long): Modifiers = {
+    private def addMod(mods: Modifiers, mod: Long, pos: Position): Modifiers = {
       if (mods hasFlag mod) syntaxError(in.offset, "repeated modifier", false)
       in.nextToken()
-      mods | mod
+      (mods | mod) withPosition (mod, pos)
     }
+
+    private def tokenRange(token: TokenData) = r2p(token.offset, token.offset, token.offset + token.name.length - 1)
 
     /** AccessQualifier ::= "[" (Id | this) "]"
      */
@@ -1588,21 +1590,21 @@ self =>
     def modifiers(): Modifiers = normalize {
       def loop(mods: Modifiers): Modifiers = in.token match {
         case ABSTRACT =>
-          loop(addMod(mods, Flags.ABSTRACT))
+          loop(addMod(mods, Flags.ABSTRACT, tokenRange(in)))
         case FINAL =>
-          loop(addMod(mods, Flags.FINAL))
+          loop(addMod(mods, Flags.FINAL, tokenRange(in)))
         case SEALED =>
-          loop(addMod(mods, Flags.SEALED))
+          loop(addMod(mods, Flags.SEALED, tokenRange(in)))
         case PRIVATE =>
-          loop(accessQualifierOpt(addMod(mods, Flags.PRIVATE)))
+          loop(accessQualifierOpt(addMod(mods, Flags.PRIVATE, tokenRange(in))))
         case PROTECTED =>
-          loop(accessQualifierOpt(addMod(mods, Flags.PROTECTED)))
+          loop(accessQualifierOpt(addMod(mods, Flags.PROTECTED, tokenRange(in))))
         case OVERRIDE =>
-          loop(addMod(mods, Flags.OVERRIDE))
+          loop(addMod(mods, Flags.OVERRIDE, tokenRange(in)))
         case IMPLICIT =>
-          loop(addMod(mods, Flags.IMPLICIT))
+          loop(addMod(mods, Flags.IMPLICIT, tokenRange(in)))
         case LAZY =>
-          loop(addMod(mods, Flags.LAZY))
+          loop(addMod(mods, Flags.LAZY, tokenRange(in)))
         case NEWLINE =>
           in.nextToken()
           loop(mods)
@@ -1618,15 +1620,15 @@ self =>
     def localModifiers(): Modifiers = {
       def loop(mods: Modifiers): Modifiers = in.token match {
         case ABSTRACT =>
-          loop(addMod(mods, Flags.ABSTRACT))
+          loop(addMod(mods, Flags.ABSTRACT, tokenRange(in)))
         case FINAL =>
-          loop(addMod(mods, Flags.FINAL))
+          loop(addMod(mods, Flags.FINAL, tokenRange(in)))
         case SEALED =>
-          loop(addMod(mods, Flags.SEALED))
+          loop(addMod(mods, Flags.SEALED, tokenRange(in)))
         case IMPLICIT =>
-          loop(addMod(mods, Flags.IMPLICIT))
+          loop(addMod(mods, Flags.IMPLICIT, tokenRange(in)))
         case LAZY =>
-          loop(addMod(mods, Flags.LAZY))
+          loop(addMod(mods, Flags.LAZY, tokenRange(in)))
         case _ =>
           mods
       }
@@ -1957,26 +1959,23 @@ self =>
         syntaxError("lazy not allowed here. Only vals can be lazy", false)
       in.token match {
         case VAL =>
-          patDefOrDcl(pos, mods)
+          patDefOrDcl(pos, mods withPosition(VAL, tokenRange(in)))
         case VAR =>
-          patDefOrDcl(pos, mods | Flags.MUTABLE)
+          patDefOrDcl(pos, (mods | Flags.MUTABLE) withPosition (VAR, tokenRange(in)))
         case DEF =>
-          List(funDefOrDcl(pos, mods))
+          List(funDefOrDcl(pos, mods withPosition(DEF, tokenRange(in))))
         case TYPE =>
-          List(typeDefOrDcl(pos, mods))
+          List(typeDefOrDcl(pos, mods withPosition(TYPE, tokenRange(in))))
         case _ =>
           List(tmplDef(pos, mods))
       }
     }
 
+    private def caseAwareTokenOffset = if (in.token == CASECLASS || in.token == CASEOBJECT) in.prev.offset else in.offset
+
     def nonLocalDefOrDcl : List[Tree] = {
       val annots = annotations(true, false)
-      val pos =
-        if (in.token == CASECLASS || in.token == CASEOBJECT)
-          in.prev.offset
-        else
-          in.offset
-      defOrDcl(pos, modifiers() withAnnotations annots)
+      defOrDcl(caseAwareTokenOffset, modifiers() withAnnotations annots)
     }
 
     /** PatDef ::= Pattern2 {`,' Pattern2} [`:' Type] `=' Expr
@@ -2165,7 +2164,7 @@ self =>
     /** Hook for IDE, for top-level classes/objects */
     def topLevelTmplDef: Tree = {
       val annots = annotations(true, false)
-      val pos = in.offset
+      val pos = caseAwareTokenOffset
       val mods = modifiers() withAnnotations annots
       tmplDef(pos, mods)
     }
@@ -2178,15 +2177,15 @@ self =>
       if (mods.hasFlag(Flags.LAZY)) syntaxError("classes cannot be lazy", false)
       in.token match {
         case TRAIT =>
-          classDef(pos, mods | Flags.TRAIT | Flags.ABSTRACT)
+          classDef(pos, (mods | Flags.TRAIT | Flags.ABSTRACT) withPosition (Flags.TRAIT, tokenRange(in)))
         case CLASS =>
           classDef(pos, mods)
         case CASECLASS =>
-          classDef(pos, mods | Flags.CASE)
+          classDef(pos, (mods | Flags.CASE) withPosition (Flags.CASE, tokenRange(in.prev /*scanner skips on 'case' to 'class', thus take prev*/)))
         case OBJECT =>
           objectDef(pos, mods)
         case CASEOBJECT =>
-          objectDef(pos, mods | Flags.CASE)
+          objectDef(pos, (mods | Flags.CASE) withPosition (Flags.CASE, tokenRange(in.prev /*scanner skips on 'case' to 'object', thus take prev*/)))
         case _ =>
           syntaxErrorOrIncomplete("expected start of definition", true)
           EmptyTree
@@ -2591,7 +2590,7 @@ self =>
         }
         ts.toList
       }
-      val start = in.offset max 0
+      val start = caseAwareTokenOffset max 0
       topstats() match {
         case List(stat @ PackageDef(_, _)) => stat
         case stats => makePackaging(start, atPos(o2p(start)) { Ident(nme.EMPTY_PACKAGE_NAME) }, stats)

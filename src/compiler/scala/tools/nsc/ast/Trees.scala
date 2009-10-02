@@ -52,7 +52,7 @@ trait Trees {
    *    <strong>Note:</strong> the typechecker drops these annotations,
    *    use the AnnotationInfo's (Symbol.annotations) in later phases.
    */
-  case class Modifiers(flags: Long, privateWithin: Name, annotations: List[Tree]) {
+  case class Modifiers(flags: Long, privateWithin: Name, annotations: List[Tree], positions: Map[Long, Position]) {
     def isCovariant     = hasFlag(COVARIANT    )  // marked with `+'
     def isContravariant = hasFlag(CONTRAVARIANT)  // marked with `-'
     def isPrivate   = hasFlag(PRIVATE  )
@@ -73,24 +73,26 @@ trait Trees {
     def & (flag: Long): Modifiers = {
       val flags1 = flags & flag
       if (flags1 == flags) this
-      else Modifiers(flags1, privateWithin, annotations)
+      else Modifiers(flags1, privateWithin, annotations, positions)
     }
     def &~ (flag: Long): Modifiers = {
       val flags1 = flags & (~flag)
       if (flags1 == flags) this
-      else Modifiers(flags1, privateWithin, annotations)
+      else Modifiers(flags1, privateWithin, annotations, positions)
     }
     def | (flag: Long): Modifiers = {
       val flags1 = flags | flag
       if (flags1 == flags) this
-      else Modifiers(flags1, privateWithin, annotations)
+      else Modifiers(flags1, privateWithin, annotations, positions)
     }
     def withAnnotations(annots: List[Tree]) =
       if (annots.isEmpty) this
-      else Modifiers(flags, privateWithin, annotations ::: annots)
+      else Modifiers(flags, privateWithin, annotations ::: annots, positions)
+    def withPosition(flag: Long, position: Position) =
+    	Modifiers(flags, privateWithin, annotations, positions + (flag -> position))
   }
 
-  def Modifiers(flags: Long, privateWithin: Name): Modifiers = Modifiers(flags, privateWithin, List())
+  def Modifiers(flags: Long, privateWithin: Name): Modifiers = Modifiers(flags, privateWithin, List(), new Map.EmptyMap)
   def Modifiers(flags: Long): Modifiers = Modifiers(flags, nme.EMPTY.toTypeName)
 
   val NoMods = Modifiers(0)
@@ -1552,7 +1554,7 @@ trait Trees {
         else transform(stat)) filter (EmptyTree !=)
     def transformUnit(unit: CompilationUnit) { unit.body = transform(unit.body) }
     def transformModifiers(mods: Modifiers): Modifiers =
-      Modifiers(mods.flags, mods.privateWithin, transformTrees(mods.annotations))
+      Modifiers(mods.flags, mods.privateWithin, transformTrees(mods.annotations), mods.positions)
 
     def atOwner[A](owner: Symbol)(trans: => A): A = {
       val prevOwner = currentOwner
