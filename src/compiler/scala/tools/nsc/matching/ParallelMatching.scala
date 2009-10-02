@@ -18,27 +18,6 @@ import MatchUtil._
 import annotation.elidable
 import Function.tupled
 
-/** Translation of match expressions.
- *
- *  `p':  pattern
- *  `g':  guard
- *  `bx': body index
- *
- *   internal representation is (tvars:List[Symbol], rows:List[Row])
- *
- *         tmp1      tmp_n
- *    Row( p_11  ...  p_1n   g_1  b_1 ) + subst
- *
- *    Row( p_m1  ...  p_mn   g_m  b_m ) + subst
- *
- * Implementation based on the algorithm described in
- *
- *   "A Term Pattern-Match Compiler Inspired by Finite Automata Theory"
- *   Mikael Pettersson
- *   ftp://ftp.ida.liu.se/pub/labs/pelab/papers/cc92pmc.ps.gz
- *
- *  @author Burak Emir
- */
 trait ParallelMatching extends ast.TreeDSL
       with Matrix
       with Patterns
@@ -109,20 +88,13 @@ trait ParallelMatching extends ast.TreeDSL
     /** the injection here handles alternatives and unapply type tests */
     final def make(tvars: List[Symbol], row1: List[Row]): Rep = {
       def classifyPat(opat: Pattern, j: Int): Pattern = {
+        def testVar = tvars(j)
+
         // @pre for doUnapplySeq: is not right-ignoring (no star pattern) ; no exhaustivity check
         def doUnapplySeq(tptArg: Tree, xs: List[Tree]) = {
-          tvars(j) setFlag Flags.TRANS_FLAG
+          testVar setFlag Flags.TRANS_FLAG
 
           opat rebindTo normalizedListPattern(xs, tptArg.tpe)
-        }
-
-        def doUnapplyApply(ua: UnApply, fn: Tree) = {
-          val MethodType(List(arg, _*), _) = fn.tpe
-          val npat =
-            if (tvars(j).tpe <:< arg.tpe) ua
-            else Typed(ua, TypeTree(arg.tpe)) setType arg.tpe
-
-          opat rebindTo npat
         }
         def doValMatch(x: Tree, fn: Tree) = {
           val p = Pattern(x)
@@ -153,15 +125,17 @@ trait ParallelMatching extends ast.TreeDSL
         // pattern match before the final curtain falls.
         val f = List[PartialFunction[Tree, Pattern]](
           { case _: Alternative                       => opat } ,
-          { case Typed(p @ Stripped(_: UnApply), tpt) => if (tvars(j).tpe <:< tpt.tpe) opat rebindTo p else opat } ,
+          { case _: Typed                             => opat simplify testVar } ,
           { case x if doReturnOriginal(x)             => opat } ,
+          // This busts things for now
+          // { case _: Ident                             => opat.simplify() } ,
           { case _: Ident | _: Select                 => opat.rebindToEqualsCheck() } ,
           { case _: This                              => opat } ,
           { case UnapplySeq(tptArg, xs)               => doUnapplySeq(tptArg, xs) } ,
-          { case ua @ UnApply(Apply(fn, _), _)        => doUnapplyApply(ua, fn) } ,
+          { case UnApply(Apply(fn, _), _)             => opat simplify testVar } ,
           { case x @ Apply_Function(fn)               => doValMatch(x, fn) } ,
-          { case Apply_Value(pre, sym)                => opat rebindToEmpty mkEqualsRef(singleType(pre, sym)) } ,
-          { case Apply_CaseClass(tpe, args)           => if (args.isEmpty) opat rebindToEmpty tpe else opat } ,
+          { case Apply_Value(_, _)                    => opat simplify testVar } ,
+          { case Apply_CaseClass(_, _)                => opat.simplify() } ,
           { case x                                    => abort("Unexpected pattern: " + x.getClass + " => " + x) }
         ) reduceLeft (_ orElse _)
 
@@ -265,7 +239,7 @@ trait ParallelMatching extends ast.TreeDSL
         def unapply(x: Patterns) = if (x.scrut.isSimple) x.extractSimpleSwitch else None
       }
 
-      def mkRule(rest: Rep): RuleApplication =
+      def mkRule(rest: Rep): RuleApplication = {
         logAndReturn("mkRule: ", head.boundTree match {
             case x if isEquals(x.tpe)                 => new MixEquals(this, rest)
             case x: ArrayValue if isRightIgnoring(x)  => new MixSequenceStar(this, rest)
@@ -277,7 +251,14 @@ trait ParallelMatching extends ast.TreeDSL
             }
           }
         )
-    }
+      }
+    } // Patterns
+
+    /** picks which rewrite rule to apply
+     *  @precondition: column does not contain alternatives
+     */
+    def MixtureRule(scrut: Scrutinee, column: List[Pattern], rest: Rep): RuleApplication =
+      Patterns(scrut, column) mkRule rest
 
     /**
      * Class encapsulating a guard expression in a pattern match:
@@ -290,47 +271,7 @@ trait ParallelMatching extends ast.TreeDSL
     }
     val NoGuard = Guard(EmptyTree)
 
-    /** "The Mixture Rule"
-
-          {v=pat1, pats1 .. } {q1}
-    match {..               } {..}
-          {v=patn, patsn .. } {qn}
-
-    The is the real work-horse of the algorithm. There is some column whose top-most pattern is a
-    constructor. (Forsimplicity, itisdepicted above asthe left-most column, but anycolumn will do.)
-    The goal is to build a test state with the variablevand some outgoing arcs (one for each construc-
-    tor and possibly a default arc). Foreach constructorcin the selected column, its arc is deﬁned as
-    follows:
-
-    Let {i1,...,ij} be the rows-indices of the patterns in the column that match c. Since the pat-
-    terns are viewed as regular expressions, this will be the indices of the patterns that either
-    have the same constructor c, or are wildcards.
-
-    Let {pat1,...,patj} be the patterns in the column corresponding to the indices computed
-    above, and let nbe the arity of the constructor c, i.e. the number of sub-patterns it has. For
-    eachpati, its n sub-patterns are extracted; if pat i is a wildcard, nwildcards are produced
-    instead, each tagged with the right path variable. This results in a pattern matrix with n
-    columns and j rows. This matrix is then appended to the result of selecting, from each col-
-    umn in the rest of the original matrix, those rows whose indices are in {i1,...,ij}. Finally
-    the indices are used to select the corresponding ﬁnal states that go with these rows. Note
-    that the order of the indices is signiﬁcant; selected rows do not change their relative orders.
-    The arc for the constructor c is now deﬁned as (c’,state), where c’ is cwith any
-    immediate sub-patterns replaced by their path variables (thus c’ is a simple pattern), and
-    state is the result of recursively applying match to the new matrix and the new sequence
-    of ﬁnal states.
-
-    Finally, the possibility for matching failure is considered. If the set of constructors is exhaustive,
-    then no more arcs are computed. Otherwise, a default arc(_,state)is the last arc. If there are
-    any wildcard patterns in the selected column, then their rows are selected from the rest of the
-    matrix and the ﬁnal states, and the state is the result of applying match to the new matrix and
-    states. Otherwise,the error state is used after its reference count has been incremented.
-    **/
-
-    /** picks which rewrite rule to apply
-     *  @precondition: column does not contain alternatives
-     */
-    def MixtureRule(scrut: Scrutinee, column: List[Pattern], rest: Rep): RuleApplication =
-      Patterns(scrut, column) mkRule rest
+    /***** Rule Applications *****/
 
     sealed abstract class RuleApplication {
       def pats: Patterns
@@ -476,7 +417,7 @@ trait ParallelMatching extends ast.TreeDSL
       def newVarCapture(pos: Position, tpe: Type) =
         newVar(pos, tpe, flags = scrut.flags)
 
-      /** returns (unapply-call, success-rep, optional fail-rep*/
+    /** returns (un)apply-call, success-rep, optional fail-rep */
       final def getTransition(): Branch[UnapplyCall] = {
         val unapplyRes  = newVarCapture(ua.pos, app.tpe)
         val rhs         = Apply(fxn, scrut.id :: trailingArgs) setType unapplyRes.tpe
@@ -826,6 +767,8 @@ trait ParallelMatching extends ast.TreeDSL
       }
     }
 
+  /*** States, Rows, Etc. ***/
+
     case class Row(pat: List[Pattern], subst: Bindings, guard: Guard, bx: Int) {
       def insert(h: Pattern)              = copy(pat = h :: pat)
       def insert(hs: List[Pattern])       = copy(pat = hs ::: pat)    // prepends supplied tree
@@ -915,7 +858,6 @@ trait ParallelMatching extends ast.TreeDSL
       def isReachedOnce = referenceCount == 1
       def isReachedTwice = referenceCount > 1
     }
-
 
     case class Combo(index: Int, sym: Symbol) {
       // is this combination covered by the given pattern?
